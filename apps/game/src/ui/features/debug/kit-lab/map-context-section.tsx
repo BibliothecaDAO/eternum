@@ -65,6 +65,7 @@ const line = (order: Partial<Parameters<typeof orderTip>[0]>) => {
     staminaWait: undefined,
     staminaHeld: undefined,
     site: undefined,
+    byRealm: false,
     ...order,
   });
   return tip ? <LabTip line={tip.line} cost={tip.cost ?? undefined} /> : null;

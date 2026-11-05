@@ -26,7 +26,13 @@ export const PlayPage = () => {
   const ages = facts.board ? agesShown(facts.board, facts.gaps) : [];
   return (
     <PageFrame painting={firstVisit ? "dark-plains" : "brooding-plains"} stage={firstVisit} offersInstall>
-      {firstVisit && <h1 className="mb-6 max-w-[48rem] text-app-display text-app-ink">{LORE_LINE}</h1>}
+      {/* On a short phone (a browser's toolbars showing) the line draws at title size, so Play free stays on the first
+          screen. */}
+      {firstVisit && (
+        <h1 className="mb-6 max-w-[48rem] text-app-display text-app-ink [@media(max-height:720px)]:mb-3 [@media(max-height:720px)]:text-app-title">
+          {LORE_LINE}
+        </h1>
+      )}
       <div
         className="grid grid-cols-1 gap-6 lg:min-h-[40rem] lg:[grid-template-columns:var(--play-columns)]"
         style={{ "--play-columns": `minmax(0,1.5fr) repeat(${ages.length}, minmax(0,1fr))` } as CSSProperties}

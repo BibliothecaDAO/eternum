@@ -21,7 +21,7 @@ const FIRST_RELIC_ID = ResourcesIds.StaminaRelic1;
 /** The stamina relics, which last their uses rather than their duration. */
 const STAMINA_RELIC_IDS = new Set<number>([ResourcesIds.StaminaRelic1, ResourcesIds.StaminaRelic2]);
 import { buildingCostModeOf, type BuildingCostMode } from "../utils/building-cost-mode";
-import { enabledHelpTransfers, type HelpTransfer } from "../utils/army-help";
+import { enabledHelpTransfers, type HelpBetween, type HelpTransfer } from "../utils/army-help";
 import { isModeRuleEnabled } from "../utils/mode-rules";
 import { tierStrength } from "../utils/tier-strength";
 import { hasEnabledProductionPath } from "../utils/production-path";
@@ -247,8 +247,8 @@ export class ClientConfigManager {
     ].some((slots) => Number(slots) > 0);
   }
   /** The Help transfers this game allows between a player's own entities; see enabledHelpTransfers. */
-  helpTransfers(withStructure: boolean): HelpTransfer[] {
-    return enabledHelpTransfers((command) => this.isCommandEnabled(command), withStructure, this.hasGuardSlots());
+  helpTransfers(between: HelpBetween): HelpTransfer[] {
+    return enabledHelpTransfers((command) => this.isCommandEnabled(command), between, this.hasGuardSlots());
   }
   /** Whether an army may attack only what nobody owns (Frontier): the contract refuses a guarded structure that has
    *  an owner, so no surface offers it. */

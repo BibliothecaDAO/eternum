@@ -1791,6 +1791,19 @@ button.ui-relic:focus-visible {
   color: var(--hud-bad);
 }
 
+/* ── Modal layer (HudModalLayer): one card over the dimmed screen, in its middle. ── */
+.ui-modal {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: theme(spacing.4);
+  background: color-mix(in srgb, var(--hud-night) 60%, transparent);
+}
+/* The layer's card takes the keyboard's focus as it opens, so the next Tab reaches its first control; it draws no ring. */
+.ui-modal [role="dialog"][tabindex="-1"]:focus {
+  outline: none;
+}
+
 /* ── Notice: a line the game says about the screen it sits in (a refusal, a warning, a success); in Events it is a row. */
 .ui-notice {
   display: flex;

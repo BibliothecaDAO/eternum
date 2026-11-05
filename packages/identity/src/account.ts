@@ -30,9 +30,13 @@ const REALMS_BOT = shortString("REALMS_BOT");
  * (realms_id, guardian_public_key) from no deployer, so it has the same address on every shard that runs the same
  * account class and guardian.
  */
-export const realmsAccountAddress = (realmsId: string, accountClassHash: string, guardianPublicKey: string): string => {
-  const constructorHash = computeHashOnElements([realmsId, guardianPublicKey]);
-  const address = computeHashOnElements([CONTRACT_ADDRESS_PREFIX, 0n, realmsId, accountClassHash, constructorHash]);
+export const realmsAccountAddress = (realmsId: string, accountClassHash: string, guardianPublicKey: string): string =>
+  counterfactualAddress(realmsId, accountClassHash, [realmsId, guardianPublicKey]);
+
+/** Where a contract deployed from no deployer lands: Starknet's address of salt, class and constructor calldata. */
+export const counterfactualAddress = (salt: string, classHash: string, calldata: readonly string[]): string => {
+  const constructorHash = computeHashOnElements([...calldata]);
+  const address = computeHashOnElements([CONTRACT_ADDRESS_PREFIX, 0n, salt, classHash, constructorHash]);
   // Pedersen over felts returns a hex string; the declared union also admits bytes.
   return toHex(BigInt(address as string) % ADDRESS_BOUND);
 };

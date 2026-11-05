@@ -69,47 +69,55 @@ export const PageFrame = (props: PageFrameProps) => {
   );
 };
 
-const PhoneFrame = ({ title, notice, foot, fill = false, painting, stage = false, children }: PageFrameProps) => (
-  // The page ends where the on-screen keyboard begins (--keyboard), so what is typed and what it answers stay in sight.
-  <div
-    className={
-      stage ? "app-frame h-[calc(100dvh-var(--keyboard,0px))]" : "flex h-[calc(100dvh-var(--keyboard,0px))] flex-col"
-    }
-    data-stage={stage || undefined}
-  >
-    {stage && painting && (
-      <img aria-hidden {...paintingSources(painting)} sizes="100vw" alt="" className="app-frame__painting" />
-    )}
-    <header
-      data-band="top"
-      className="flex min-h-12 shrink-0 items-center gap-1 px-gutter pt-[env(safe-area-inset-top)]"
-    >
-      <PhoneHead title={title} />
-    </header>
-    {/* The page fills the first screen at least, so the footer starts below it and no fold falls among its links. */}
+const PhoneFrame = ({ title, notice, foot, fill = false, painting, stage = false, children }: PageFrameProps) => {
+  // A stage that is not one of the places is a step (the doorway, a landing, Not found): one screen, with nothing under
+  // it to scroll to. The places and every other page end on the footer.
+  const place = useIsPlace();
+  const step = stage && !place;
+  return (
+    // The page ends where the on-screen keyboard begins (--keyboard), so what is typed and what it answers stay in sight.
     <div
-      className={fill ? "flex min-h-0 flex-1 flex-col px-gutter pb-2" : "min-h-0 flex-1 overflow-y-auto px-gutter pb-4"}
+      className={
+        stage ? "app-frame h-[calc(100dvh-var(--keyboard,0px))]" : "flex h-[calc(100dvh-var(--keyboard,0px))] flex-col"
+      }
+      data-stage={stage || undefined}
     >
-      <main data-band="body" className={fill ? "min-h-0 flex-1" : "min-h-full"}>
-        {children}
-      </main>
-      {!fill && <AppFooter />}
-    </div>
-    {notice ? (
-      <div data-band="notice" className="shrink-0 px-gutter pb-2">
-        {notice}
+      {stage && painting && (
+        <img aria-hidden {...paintingSources(painting)} sizes="100vw" alt="" className="app-frame__painting" />
+      )}
+      <header
+        data-band="top"
+        className="flex min-h-12 shrink-0 items-center gap-1 px-gutter pt-[env(safe-area-inset-top)]"
+      >
+        <PhoneHead title={title} />
+      </header>
+      {/* The page fills the first screen at least, so the footer starts below it and no fold falls among its links. */}
+      <div
+        className={
+          fill ? "flex min-h-0 flex-1 flex-col px-gutter pb-2" : "min-h-0 flex-1 overflow-y-auto px-gutter pb-4"
+        }
+      >
+        <main data-band="body" className={fill ? "min-h-0 flex-1" : "min-h-full"}>
+          {children}
+        </main>
+        {!fill && !step && <AppFooter />}
       </div>
-    ) : null}
-    {foot ? (
-      <div data-band="foot" className="shrink-0 px-gutter pb-3">
-        {foot}
+      {notice ? (
+        <div data-band="notice" className="shrink-0 px-gutter pb-2">
+          {notice}
+        </div>
+      ) : null}
+      {foot ? (
+        <div data-band="foot" className="shrink-0 px-gutter pb-3">
+          {foot}
+        </div>
+      ) : null}
+      <div data-band="tabs" data-keyboard-hides className="shrink-0">
+        <TabBar />
       </div>
-    ) : null}
-    <div data-band="tabs" data-keyboard-hides className="shrink-0">
-      <TabBar />
     </div>
-  </div>
-);
+  );
+};
 
 /** The app's own landscape: the ground of a desktop page that is about no one game. */
 const APP_LANDSCAPE: Painting = "brooding-plains";
@@ -126,7 +134,9 @@ const DesktopFrame = ({
 }: PageFrameProps) => {
   useDesktopKeys();
   return (
-    <div className="app-frame" data-stage={stage || undefined}>
+    // As tall as the window at least. A phone's frame is exactly the visible screen (dvh): Android's Chrome measures the
+    // large viewport unit with its toolbar hidden, so a frame sized by it runs past the screen and the page scrolls.
+    <div className="app-frame min-h-dvh" data-stage={stage || undefined}>
       <img aria-hidden {...paintingSources(painting)} sizes="100vw" alt="" className="app-frame__painting" />
       <DesktopBar notice={notice} />
       <div className="app-frame__page">

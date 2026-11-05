@@ -1,7 +1,10 @@
 import { Effect } from "effect";
 import { deliverWalletNotices } from "./wallet-changes";
 import { resendWalletNotices } from "./wallet-notices";
-import { createIdentityAuth, type IdentityAuth } from "./auth";
+import { createIdentityAuth, walletChainServicesOf, type IdentityAuth } from "./auth";
+import { encodeChainName } from "@realms-world/chain";
+import { identityL2Configuration } from "./l2";
+import { finishRecoveries } from "./wallet-recovery";
 import { superviseNotifiers } from "./directory";
 import { decodeIdentityEnv, type IdentityEnv } from "./env";
 import { routeIdentityRequest } from "./routes";
@@ -23,7 +26,16 @@ export default {
     const env = decodeIdentityEnv(rawEnv);
     await Effect.runPromise(deliverWalletNotices(env.DB, resendWalletNotices(env.RESEND_API_KEY, env.BASE_URL)));
     await superviseNotifiers(env.DB, env.SHARD_NOTIFIER);
+    await finishWalletRecoveries(env);
   },
+};
+
+/** Finishes default wallets' recoveries whose 7 days are up (wallet-recovery.ts); without our sponsor key none can be sent. */
+const finishWalletRecoveries = async (env: IdentityEnv) => {
+  const chain = walletChainServicesOf(env);
+  if (!chain.paymaster.canSponsor) return;
+  const chainId = encodeChainName(identityL2Configuration(env).chainId);
+  await finishRecoveries({ ...chain, db: env.DB, guardian: env.GUARDIAN, chainId });
 };
 
 /** Reads completed game slot numbers from the launch Worker through its service binding. */

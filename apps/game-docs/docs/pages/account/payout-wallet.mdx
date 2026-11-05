@@ -14,23 +14,51 @@ Your payout wallet is the Starknet wallet linked to your Realms account. Frontie
 - carry a Blitz rating;
 - receive Blitz chests and claim the season prize;
 - withdraw your Frontier realm's LORDS, and receive them and any prize when the season ends;
-- found your Frontier home with a Realm the wallet holds, so it claims labor each day.
+- create your Frontier home with a Realm the wallet holds, so it claims labor each day.
 
 A game's results, chest and prize go to the wallet its seat was played with, even if you change your payout wallet
 afterwards.
 
-## Linking a wallet
+## Your Realms wallet
+
+Every account can have a Realms wallet, made in one tap. After you choose your name, and at each visit until you have a
+payout wallet, the game offers **Create my wallet**: your device makes a passkey, opened with your face, fingerprint or
+screen lock, and that passkey owns the wallet. It becomes your payout wallet at once. If you signed in more than ten
+minutes ago, you also type the six-digit code sent to your email, as for any wallet change.
+
+There is no seed phrase. The passkey syncs to your other devices through your phone's or computer's password manager
+(iCloud Keychain, Google Password Manager). Realms co-signs as the wallet's guardian but can never move your LORDS on
+its own: every send needs your passkey.
+
+Your LORDS show in **Settings**, **Payout wallet**, with **Send**: paste an address (an exchange's deposit address, or
+your own wallet), choose the amount, **Review**, then **Confirm with your passkey**. Each send pays its network fee in
+LORDS from the wallet, shown before you confirm: never more than the most shown, and what it does not use comes back.
+**Max** sends everything but that fee. Blitz entries, chests and prizes paid from your Realms wallet show their fee and
+confirm with the passkey the same way.
+
+### If you lose your passkey
+
+Open **Settings**, **Payout wallet**, **Lost your passkey?** on any device you can sign in on. Make a new passkey there
+and type the code sent to your email. The recovery starts at once and we email you about it; after 7 days your new
+passkey owns the Realms wallet, with everything in it, at the same address.
+
+Until then, the passkey you have now can stop it: the wallet shows **Recovery under way** with the day it ends, and
+**Not you? Cancel it** confirms with that passkey. So if someone else gets into your email, you have a week to cancel.
+
+## Linking a wallet you have
 
 Open **Settings**, **Payout wallet**. Every **Link wallet** in the game (a Blitz lobby, your LORDS in Frontier, your
 card on You) takes you there and brings you back once it is linked.
 
-- **I have a wallet:** Ready (formerly Argent), Braavos or Controller.
-- **I need one:** Ready, in this browser with its extension, or by email with no install. On a phone, Ready by email.
+**I have a wallet:** Ready (formerly Argent), Braavos or Controller. Linking takes two steps: the wallet signs a
+message, then you type a six-digit code sent to your account's email. Your Realms wallet keeps what it holds, and its
+Send, after you link another.
 
-Linking takes two steps: the wallet signs a message, then you type a six-digit code sent to your account's email. Realms
-creates no wallet and holds no key.
-
-<Shot frame="panel" name="account/payout-wallet" caption="Settings, Payout wallet: I have a wallet, or I need one." />
+<Shot
+  frame="panel"
+  name="account/payout-wallet"
+  caption="Settings, Payout wallet: Create my wallet, or I have a wallet."
+/>
 
 ## Replacing or unlinking
 
@@ -43,5 +71,6 @@ the wait gives you time to notice a change you did not make. Payouts to a wallet
 
 ## Network fees
 
-Paying an entry, minting test tokens, opening a chest and claiming a prize are transactions your wallet signs, and it
-pays their network fee in STRK. With no STRK for the fee, the page offers **Swap on AVNU**.
+From your Realms wallet, the fee is paid in LORDS, inside the same transaction. From a wallet you linked, paying an
+entry, minting test tokens, opening a chest and claiming a prize are transactions your wallet signs, and it pays their
+network fee in STRK. With no STRK for the fee, the page offers **Swap on AVNU**.

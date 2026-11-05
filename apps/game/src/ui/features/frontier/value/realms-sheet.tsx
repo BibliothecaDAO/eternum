@@ -1,12 +1,11 @@
 import "./realms-sheet.css";
 
 import { formatExact } from "@bibliothecadao/types";
-import type { AlertsAsk, DayAsk } from "@/shell/profile/alerts-ask";
+import type { AlertsAsk } from "@/shell/profile/alerts-ask";
 import { Icon } from "@/ui/design-system/icon";
 import { HudButton, HudNotice, HudSheet, HudWindowFoot } from "@/ui/design-system/kit/hud-elements";
 import {
   ADD_TO_HOME_SCREEN,
-  ALERTS_ASK,
   CLAIMING_LABOR,
   EACH_DAY,
   HOME_STEP_WORDS,
@@ -23,21 +22,18 @@ import {
   seasonEndsIn,
 } from "@/ui/design-system/kit/words";
 import { HomeArt } from "@/ui/shared/components/home-art";
-import { AlertsAskCard } from "../alerts-ask-card";
 import type { LaborHome, RealmLaborPlan, SeasonDay } from "./realm-labor";
 import type { RealmLaborFacts } from "./use-realm-labor";
 
 /**
  * The daily claim of a home founded with a held Realm or a campaign's ticket (owner's pick, option C of
  * reports/realm-labor-1.md): the home's picture with what it gives each day, the days around today, and the claim. Once
- * claimed it says when the next day opens, and offers a push for it while this device would not get one: the game day's
- * ask (useDayAsk) right after the claim, else the small Remind me beside the next day's time.
+ * claimed it says when the next day opens, with the small Remind me beside it while this device would not get its push.
  */
 export const RealmsSheet = ({
   labor,
   map,
   ask,
-  dayAsk,
   sending,
   onClaim,
   onClose,
@@ -46,8 +42,6 @@ export const RealmsSheet = ({
   /** A held Realm's map from the Realm index, when the account's held-Realms answer has one. */
   map: string | null;
   ask: AlertsAsk;
-  /** The game day's ask, which takes the small Remind me's place until Not now. */
-  dayAsk: DayAsk | null;
   sending: boolean;
   onClaim: () => void;
   onClose: () => void;
@@ -58,7 +52,7 @@ export const RealmsSheet = ({
         <HomeBanner home={labor.home} labor={labor} map={map} />
         <SeasonStrip days={labor.days} />
         {isStorageShort(labor.plan) && <HudNotice tone="warn" line={laborFits(labor.plan.fits, labor.plan.total)} />}
-        {labor.plan.claimed && <NextDay labor={labor} ask={ask} dayAsk={dayAsk} />}
+        {labor.plan.claimed && <NextDay labor={labor} ask={ask} />}
         {labor.plan.claimable && <ClaimFoot plan={labor.plan} sending={sending} onClaim={onClaim} />}
       </div>
     ) : (
@@ -122,31 +116,16 @@ const SeasonStrip = ({ days }: { days: SeasonDay[] }) => (
   </ol>
 );
 
-/**
- * Once claimed: what the next day's claim waits for, and the push that says when it opens. The game day's ask takes the
- * countdown's place and says it, so a phone's sheet keeps it and its foot in view.
- */
-const NextDay = ({ labor, ask, dayAsk }: { labor: RealmLaborFacts; ask: AlertsAsk; dayAsk: DayAsk | null }) => {
-  if (labor.nextDay !== null && dayAsk) {
-    const opensIn = dayOpensIn(labor.nextDay, labor.secondsLeft);
-    return (
-      <AlertsAskCard
-        dayAsk={dayAsk}
-        says={{ remind: ALERTS_ASK.claim(opensIn), install: `${opensIn}. ${ALERTS_ASK.install}` }}
-        verb="turn-on"
-      />
-    );
-  }
-  return (
-    <div className="realm-labor__next" role="timer">
-      <Icon name="hourglass" size={22} />
-      <span>
-        {labor.nextDay === null ? seasonEndsIn(labor.secondsLeft) : dayOpensIn(labor.nextDay, labor.secondsLeft)}
-      </span>
-      {labor.nextDay !== null && <Reminder ask={ask} />}
-    </div>
-  );
-};
+/** Once claimed: what the next day's claim waits for, and the push that says when it opens. */
+const NextDay = ({ labor, ask }: { labor: RealmLaborFacts; ask: AlertsAsk }) => (
+  <div className="realm-labor__next" role="timer">
+    <Icon name="hourglass" size={22} />
+    <span>
+      {labor.nextDay === null ? seasonEndsIn(labor.secondsLeft) : dayOpensIn(labor.nextDay, labor.secondsLeft)}
+    </span>
+    {labor.nextDay !== null && <Reminder ask={ask} />}
+  </div>
+);
 
 /** The ask for the next day's push: secondary, never the sheet's weight; its state once on. */
 const Reminder = ({ ask }: { ask: AlertsAsk }) => {

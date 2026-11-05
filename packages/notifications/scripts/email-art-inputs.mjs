@@ -12,6 +12,7 @@ export const ART = {
   "sign-in-code": { painting: "frontier-mist", focus: 0.55, title: "Your sign-in code" },
   "wallet-changed": { painting: "season-citadel", focus: 0.45, title: "Payout wallet changed" },
   "wallet-unlinked": { painting: "season-citadel", focus: 0.45, title: "Payout wallet unlinked" },
+  "wallet-recovery": { painting: "season-citadel", focus: 0.45, title: "Wallet recovery started" },
 };
 
 export const paintingFile = (name) => new URL(`images/landscapes/${name}-1536.webp`, publicDir);

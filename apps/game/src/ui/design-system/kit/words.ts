@@ -140,7 +140,6 @@ export const exploresBought = (count: number) => `+${count} ${count === 1 ? "exp
 /** The HUD's tab for everything the player holds. */
 export const EMPIRE = "Empire";
 /** The places: the nav's words. */
-const MAP = "Map";
 export const REALM = "Realm";
 /** The world map, as the Realm / World switch names it. */
 export const WORLD = "World";
@@ -565,6 +564,13 @@ export const TRANSFER_TROOPS = {
   failed: "The troops could not be moved.",
   changed: "The armies' troops changed",
 } as const;
+/** Troops raised from the realm's stock into its army beside it (the realm selected, the army right-clicked). */
+export const REINFORCE = {
+  verb: "Reinforce",
+  title: (army: string) => `Reinforce ${army}`,
+  sending: "Reinforcing…",
+  failed: "The army could not be reinforced.",
+} as const;
 /** A realm's armies, as a list's name. */
 export const ARMIES = "Armies";
 /** The day-done card's count of the armies that ended with the day. */
@@ -733,14 +739,11 @@ export const REMINDER_ON = "Reminder on";
 /** The same ask on an iPhone in its browser, which sends push only to the installed app. */
 export const ADD_TO_HOME_SCREEN = "Add to Home Screen";
 export const TURNING_ALERTS_ON = "Turning on";
-/**
- * The game day's ask to turn alerts on (useDayAsk): after the day's claim for a home with one, on the day's summary for
- * a home without, so its line promises a claim only to a home that has one.
- */
-export const ALERTS_ASK = {
-  /** After the claim, in the next day's countdown's place ("Day 13 opens in 7h 14m"). */
-  claim: (opensIn: string) => `${opensIn}. Get one push when your claim is ready.`,
-  day: (day: number) => `Get one push when Day ${day} opens.`,
+/** The popup that asks for alerts (useAlertsPopup): what this device would get, then the tap. */
+export const ALERTS_POPUP = {
+  title: "Know when to come back",
+  /** The kinds the asked level pushes, as Settings names them (kindsList). */
+  brings: (kinds: readonly NotificationKind[]) => `A push for ${kindsList(kinds)}.`,
   install: "On an iPhone, alerts need Realms on your Home Screen first.",
   turnOn: "Turn on alerts",
   notNow: "Not now",
@@ -762,8 +765,11 @@ export const campaignTicketName = (campaign: CampaignKey, golden: boolean) =>
 export const HOME_STEP_WORDS = {
   title: "Choose your home",
   /** The step's one verb, and what it says while the home is founded. */
-  found: "Found your realm",
-  founding: "Founding your realm…",
+  found: "Create your realm",
+  founding: "Creating your realm…",
+  /** The name a new account was given at sign-up, said where the player first chooses something of their own. */
+  playsAs: (name: string) => `You play as ${name}`,
+  changeOnYou: "Change it on You",
   /** While the account's Realms and ticket are read: the step offers nothing yet, and says why. */
   loading: "Reading what you hold…",
   freeHome: "A free home",
@@ -858,6 +864,8 @@ export const PITCH = "A new land every day";
 
 /** The sign-in flow's words: its titles, its two ways in and the steps on its buttons. */
 export const SIGN_IN_WORDS = {
+  /** A new account's name when its suggested one cannot be kept (too short once the name rule has its way). */
+  defaultName: "Wanderer",
   discord: "Discord",
   or: "or",
   email: "Email",
@@ -894,6 +902,8 @@ export const JOIN_WORDS = {
   goldenStub: "Golden · Devcon · Mumbai",
   laborEachDay: (amount: number) => `${formatExact(amount)} Labor ${EACH_DAY}`,
   essenceEachDay: (amount: number) => `${formatExact(amount)} Essence ${EACH_DAY}`,
+  /** The reveal's way on, into the Devcon game's Realm step. */
+  startAdventure: "Start your adventure",
   continue: "Continue",
   closed: "Devcon tickets have closed.",
   taken: "Another player already opened this ticket.",
@@ -1068,11 +1078,19 @@ export const CHAT_WORDS = {
 
 /** The doorway into a match: its four steps and what holds it until the player acts. */
 export const DOORWAY_WORDS = {
-  account: "Account",
-  realm: REALM,
-  map: MAP,
-  play: "Play",
-  /** The track, named for assistive technology. */
+  /** What each step of the track does while it runs, over the bar. */
+  account: "Signing in",
+  realm: "Preparing your realm",
+  map: "Loading the map",
+  play: "Entering the world",
+  stepOf: (step: number, of: number) => `Step ${step} of ${of}`,
+  secondsLeft: (seconds: number) => `About ${seconds} s left`,
+  /** What the first minutes hold, said while a player's map loads. */
+  claimTitle: "Claim Labor every day",
+  claimDetail: "Your realm's daily claim, free each Frontier day",
+  firstTitle: "First: build a Barracks",
+  firstDetail: "Then send your first army to explore",
+  /** The bar, named for assistive technology. */
   entering: "Entering the game",
   signInToPlay: "Sign in to play.",
   notOnThisGame: "Not on this game.",
@@ -1100,7 +1118,7 @@ export const SEASON_WORDS = {
   /** Under the LORDS the player's realm has earned this season. */
   lordsEarned: "LORDS earned",
   /** Frontier's board before any realm is on it, and how to get on it. */
-  boardEmpty: "No realm yet. Found one from Play.",
+  boardEmpty: "No realm yet. Create one from Play.",
   /** A player with no realm on Frontier's board this season. */
   notOnBoard: "Not on Frontier's board yet",
   /** Frontier's seasons that have ended, under its board. */
@@ -1174,26 +1192,43 @@ export const WALLET_WORDS = {
   stepCode: "Email code",
   haveOne: "I have a wallet",
   haveOneLine: "Ready · Braavos · Controller",
-  needOne: "I need one",
-  needOneLine: "Ready: browser or email",
-  needOneLinePhone: "Ready, by email",
   ready: "Ready",
   braavos: "Braavos",
   controller: "Controller",
   extension: "extension",
   byEmail: "by email",
-  formerlyArgent: "formerly Argent",
-  noInstall: "by email · no install",
-  inThisBrowser: "In this browser",
-  addExtension: "Add Ready's extension",
-  byEmailTitle: "By email",
-  noInstallShort: "No install",
-  keysStay: "Ready's page; your keys stay there",
-  emailStep: "Email and password, on Ready's page",
-  approveStep: "Approve Realms",
-  codeStep: "Signature, then our code",
-  backFromReady: "Added Ready? Reload, then link it.",
-  anotherWallet: "Another wallet",
+  yourWallet: "Your wallet",
+  realmsWallet: "Realms wallet",
+  createWallet: "Create my wallet",
+  createLine: "One tap with your face, fingerprint or screen lock. No seed phrase.",
+  confirmPasskey: "Confirm with your passkey",
+  send: "Send",
+  sendTo: "To",
+  sendToHint: "An exchange deposit address, or your own wallet",
+  sendAmount: "Amount",
+  inWallet: (lords: string) => `${lords} LORDS in your wallet`,
+  review: "Review",
+  sendLine: (lords: string, to: string) => `Send ${lords} LORDS to ${to}`,
+  sent: "Sent",
+  notAnAddress: "Not a Starknet address",
+  notAnAmount: "Enter an amount up to what your wallet holds, less the fee",
+  sendMax: "Max",
+  /** A default wallet's network fee, paid in LORDS: about what it takes, and the most it may (the rest comes back). */
+  networkFee: (about: string, most: string) => `Network fee about ${about} LORDS, at most ${most}`,
+  /** The wallet holds less LORDS than its fee may take. */
+  feeShort: (most: string, held: string) => `The network fee needs up to ${most} LORDS. Your wallet holds ${held}.`,
+  /** The wallet holds no LORDS to price its fee with. */
+  noFeeLords: "Sending pays a network fee in LORDS, and your wallet holds none.",
+  pricing: "Working out the fee",
+  feeRose: "The network fee went up. Check it and confirm again.",
+  walletUnread: "Your Realms wallet could not be read.",
+  lostPasskey: "Lost your passkey?",
+  recoverTitle: "Recover your wallet",
+  recoverLine:
+    "Make a new passkey on this device. In 7 days it takes over your Realms wallet; until then, the passkey you have now can cancel. We email you when it starts.",
+  makeNewPasskey: "Make a new passkey",
+  recoveryUnderWay: (date: string) => `Recovery under way: a new passkey takes over this wallet on ${date}.`,
+  cancelRecovery: "Not you? Cancel it",
   codeSentTo: "Code sent to",
   sending: "Sending…",
   newCode: "New code",
@@ -1217,10 +1252,16 @@ export const WALLET_WORDS = {
 /** What every value screen shares: a fee the payout wallet cannot pay yet. */
 export const VALUE_WORDS = {
   confirming: "Confirming…",
-  unconfirmed: "The network has not confirmed it yet",
+  /** A send whose answer was lost: it may still land, and nothing new is sent until the chain says. */
+  onItsWay: "Your last send is on its way: the network has not confirmed it yet.",
+  checkAgain: "Check again",
+  sendAgain: "Send it again",
+  lastSendFailed: "Your last send did not go through.",
   refused: "The ledger refused it.",
   noStrk: "No STRK for the fee",
   swapOnAvnu: "Swap on AVNU",
+  /** The purse's deposit, paid over the game from the payout wallet. */
+  depositTitle: (amount: string) => `Deposit ${amount} LORDS`,
 } as const;
 
 /** A paid Blitz's entry, in its lobby. */
@@ -1330,14 +1371,19 @@ export const NOTIFICATION_KIND_WORDS = {
   points: "Hyperstructure points",
 } as const satisfies Record<NotificationKind, string>;
 
+/** Kinds of alert as one list, in the table's order ("fights, results and messages"). */
+const kindsList = (kinds: readonly NotificationKind[]): string => {
+  const named = kinds.map((kind) => NOTIFICATION_KIND_WORDS[kind]);
+  return named.length === 1 ? named[0]! : `${named.slice(0, -1).join(", ")} and ${named.at(-1)}`;
+};
+
 /**
  * What a level brings, in one line under the levels: the kinds it carries beyond the level below it, as the kinds table
  * gives them ("Important, plus deliveries and trades, …").
  */
 export const levelLine = (kinds: readonly NotificationKind[], below: NotificationLevel | null): string => {
   if (kinds.length === 0) return "No alerts";
-  const named = kinds.map((kind) => NOTIFICATION_KIND_WORDS[kind]);
-  const list = named.length === 1 ? named[0]! : `${named.slice(0, -1).join(", ")} and ${named.at(-1)}`;
+  const list = kindsList(kinds);
   return below === null || below === "off"
     ? `${list.charAt(0).toUpperCase()}${list.slice(1)}`
     : `${LEVEL_WORDS[below]}, plus ${list}`;

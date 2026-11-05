@@ -22,6 +22,10 @@ is fixed in the ledger's constructor. The deployer is the ledger's admin and fun
 environment marked `coldAdmin` in `environments.json` instead asks for its public cold-admin address, and setup refuses
 a saved `admin` anywhere else.
 
+Setup does not ask for AVNU's paymaster key. To let the identity Worker sponsor default wallets' recovery steps, add it
+to the environment's `inputs.json` as `avnuPaymasterApiKey`; the next apply installs it as the Worker secret
+`AVNU_PAYMASTER_API_KEY`. Without it, wallets still send and receive, and recovery is refused.
+
 The first account step prints one deployer address to fund with about **250 STRK**, then stops. Run the same apply
 command after funding it. The command deploys that account, transfers 30 STRK to the relay and 1 STRK to the monitor,
 and deploys them. The owner funds only the deployer. The keys remain separate: the deployer/admin key stays on the owner

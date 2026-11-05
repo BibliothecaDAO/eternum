@@ -10,11 +10,11 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 import { resolveEntryContextFromLandingSelection } from "@/game-entry/context";
-import { HomeSourcePicker } from "./home-source-picker";
+import { HomeSourcePicker, useNothingToChoose } from "./home-source-picker";
 import { RealmNumberPicker } from "./realm-number-picker";
 import { createAutoSettleEntryKey, useAutoSettleStore } from "@/hooks/store/use-auto-settle-store";
 import { useAccountStore } from "@/hooks/store/use-account-store";
-import { useIdentitySessionStore } from "@/hooks/context/identity-session";
+import { identityUsername, useIdentitySession, useIdentitySessionStore } from "@/hooks/context/identity-session";
 import { useRequestSignIn } from "@/shell/sign-in/connect";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 
@@ -24,7 +24,6 @@ import { submitSettlement } from "@/services/settlement";
 import { fetchSettlementSnapshot, type SettlementSnapshot } from "@/runtime/world/herald-pre-session-reader";
 import { isGameOver, isMember } from "@/runtime/world/directory";
 import { markGameEntryMilestone } from "@/ui/layouts/game-entry-timeline";
-import { gamePainting, modeLabel } from "@/shell/game-links";
 import { resultsHref } from "@/shell/season-tab/results-link";
 import { Pill } from "@/ui/design-system/kit/pill";
 import { ClockChip } from "@/ui/design-system/kit/clock-chip";
@@ -177,11 +176,14 @@ export const GameEntryModal = ({
 
   const expectedSettlementCount = SEASON_SETTLEMENT_COUNT;
   const hasEnteredGameRef = useRef(false);
+  // A Frontier realm this entry created: its player arrives in it, to build (the owner's pick F3).
+  const createdRealmRef = useRef(false);
   const entityWaitAbortControllerRef = useRef<AbortController | null>(null);
 
   const navigationEntryContext = entryContext;
   useEffect(() => {
     hasEnteredGameRef.current = false;
+    createdRealmRef.current = false;
   }, [isOpen, chainId, gameId]);
 
   const resetBootstrapDependentState = useCallback(() => {
@@ -450,6 +452,7 @@ export const GameEntryModal = ({
         structureEntityId: useUIStore.getState().structureEntityId,
         worldMapReturnPosition: useUIStore.getState().worldMapReturnPosition,
         isSpectateMode: spectate,
+        realmFirst: createdRealmRef.current,
         renderer: parseRendererOptions(new URLSearchParams(window.location.search)),
       });
 
@@ -544,6 +547,8 @@ export const GameEntryModal = ({
           selectedRealm: isEternumDevMode ? Number(devRealmNumber) : undefined,
         }),
       );
+      // Known before the indexer answers: its first read can already open the game, which then enters this realm.
+      createdRealmRef.current = isFrontierMode;
 
       setSettleStage("syncing");
       const finalSnapshot = await waitForSettlementTarget(settlementTarget);
@@ -591,7 +596,12 @@ export const GameEntryModal = ({
     markOpening(autoSettleEntryKey, Date.now());
   }, [autoSettleEnabled, autoSettleEntryKey, isOpen, markOpening]);
 
-  const foundsOnItsOwn = isEternumMode && autoSettleEnabled;
+  // A Frontier player with nothing to choose (a ticket or a free home, no Realm) has their realm created without a press;
+  // an Eternum entry founds by itself when its link asks (autoSettle).
+  const nothingToChoose = useNothingToChoose(worldMeta?.preset_id ?? 0);
+  const foundsOnItsOwn =
+    (isEternumMode && autoSettleEnabled) ||
+    (isFrontierMode && worldMeta !== null && nothingToChoose && !choosingSource && registeredRealmId === null);
   useEffect(() => {
     if (!foundsOnItsOwn || phase !== "settlement" || isSettling || autoSettleAttemptedRef.current) {
       return;
@@ -610,6 +620,12 @@ export const GameEntryModal = ({
 
   if (!isOpen) return null;
 
+  // The Realm step asks: the homes to choose from, and Create your realm. It asks again after a failed creation, the
+  // failure said over it, whether the player pressed or the realm was being created without a press.
+  const choosingHome =
+    phase === "settlement" &&
+    isSeasonMode &&
+    ((!foundsOnItsOwn && settleStage === "idle") || (isFrontierMode && settleStage === "error"));
   const view = doorwayView({
     source: "entry",
     phase,
@@ -624,8 +640,7 @@ export const GameEntryModal = ({
     <DoorwayScreen
       view={view}
       realm={null}
-      title={worldMeta ? modeLabel(worldMeta) : undefined}
-      painting={worldMeta ? gamePainting(worldMeta) : undefined}
+      game={worldMeta ?? undefined}
       onRetry={
         accountError
           ? () => window.location.reload()
@@ -636,6 +651,17 @@ export const GameEntryModal = ({
       onSignIn={() => requestSignIn()}
       onSpectate={handleSpectate}
       results={resultsHref(game)}
+      asking={choosingHome}
+      verb={
+        choosingHome ? (
+          <FoundButton
+            upgrading={choosingSource}
+            founding={isSettling}
+            ready={(!isEternumDevMode || validDevRealmNumber) && (!isFrontierMode || (validHeldRealm && homeSettled))}
+            onFound={() => void handleSettle()}
+          />
+        ) : undefined
+      }
     >
       {phase === "settlement-waiting" && <ClockChip prefix="starts" at={seasonStartAt ?? undefined} now={nowSeconds} />}
       {phase === "settlement" && isBlitzMode && worldMeta && (
@@ -643,48 +669,39 @@ export const GameEntryModal = ({
           {`${BLITZ_WORDS.preparing} ${Math.min(worldMeta.player_count, worldMeta.roster_count)}/${worldMeta.roster_count}`}
         </Pill>
       )}
-      {phase === "settlement" &&
-        isSeasonMode &&
-        !foundsOnItsOwn &&
-        (settleStage === "idle" || (isFrontierMode && settleStage === "error")) && (
-          <>
-            {isFrontierMode && worldMeta && (
-              <HomeSourcePicker
-                presetId={worldMeta.preset_id}
-                title={choosingSource ? HOME_STEP_WORDS.attachTitle : undefined}
-                takenRealmIds={takenRealmIds}
-                requireSource={choosingSource}
-                onSourceAvailable={setSourceAvailable}
-                registered={registeredRealmId}
-                value={heldRealmNumber}
-                onChange={setHeldRealmNumber}
-                onSettled={setHomeSettled}
-                disabled={isSettling}
-              />
-            )}
-            {choosingSource && <p>{HOME_STEP_WORDS.attachLine}</p>}
-            {settlementError && <HudNotice tone="bad" line={settlementError} />}
-            {isEternumDevMode && (
-              <RealmNumberPicker value={devRealmNumber} onChange={setDevRealmNumber} disabled={isSettling} />
-            )}
-            <FoundButton
-              upgrading={choosingSource}
-              founding={isSettling}
-              ready={(!isEternumDevMode || validDevRealmNumber) && (!isFrontierMode || (validHeldRealm && homeSettled))}
-              onFound={() => void handleSettle()}
+      {choosingHome && (
+        <>
+          {isFrontierMode && worldMeta && (
+            <HomeSourcePicker
+              presetId={worldMeta.preset_id}
+              title={choosingSource ? HOME_STEP_WORDS.attachTitle : undefined}
+              takenRealmIds={takenRealmIds}
+              requireSource={choosingSource}
+              onSourceAvailable={setSourceAvailable}
+              registered={registeredRealmId}
+              value={heldRealmNumber}
+              onChange={setHeldRealmNumber}
+              onSettled={setHomeSettled}
+              disabled={isSettling}
             />
-            {choosingSource && (
-              <button
-                type="button"
-                className="home-picker__link"
-                disabled={isSettling}
-                onClick={() => setSourceLessHome(false)}
-              >
-                {HOME_STEP_WORDS.keepFree}
-              </button>
-            )}
-          </>
-        )}
+          )}
+          {choosingSource ? <p>{HOME_STEP_WORDS.attachLine}</p> : isFrontierMode && <PlaysAs />}
+          {settlementError && <HudNotice tone="bad" line={settlementError} />}
+          {isEternumDevMode && (
+            <RealmNumberPicker value={devRealmNumber} onChange={setDevRealmNumber} disabled={isSettling} />
+          )}
+          {choosingSource && (
+            <button
+              type="button"
+              className="home-picker__link"
+              disabled={isSettling}
+              onClick={() => setSourceLessHome(false)}
+            >
+              {HOME_STEP_WORDS.keepFree}
+            </button>
+          )}
+        </>
+      )}
       {phase === "ready" && !isSpectateMode && isEternumDevMode && (
         <button
           type="button"
@@ -698,6 +715,19 @@ export const GameEntryModal = ({
         </button>
       )}
     </DoorwayScreen>
+  );
+};
+
+/** The name the account plays under, chosen for it at sign-up and changed on You. */
+export const PlaysAs = () => {
+  const { session } = useIdentitySession();
+  const name = session ? identityUsername(session) : null;
+  if (!name) return null;
+  return (
+    <p className="flex w-full items-center gap-2 text-hud-body text-app-ink">
+      <span className="flex-1">{HOME_STEP_WORDS.playsAs(name)}</span>
+      <span className="opacity-70">{HOME_STEP_WORDS.changeOnYou}</span>
+    </p>
   );
 };
 

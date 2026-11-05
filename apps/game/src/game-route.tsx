@@ -42,7 +42,7 @@ const TransactionListenerBridge = () => {
 const ReadyApp = ({ backgroundImage, setupResult, account }: ReadyAppProps) => {
   return (
     <GameProvider value={setupResult} account={account}>
-      <MusicRouterProvider modeId={getGameModeId()}>
+      <MusicRouterProvider modeId={getGameModeId()} waitsForWorld>
         <ErrorBoundary>
           <PlaySceneHandoff />
           <StoryEventAudioCues />

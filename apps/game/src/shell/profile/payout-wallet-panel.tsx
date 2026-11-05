@@ -1,44 +1,59 @@
 import { WALLET_WORDS } from "@/ui/design-system/kit/words";
 import { Icon as SemanticIcon, type IconMeaning } from "@/ui/design-system/icon";
-import { SIGN_IN_CODE_LENGTH, type SignInOptions } from "@realms-world/identity";
+import {
+  IdentityRequestError,
+  isSameStarknetAddress,
+  SIGN_IN_CODE_LENGTH,
+  type NewPasskey,
+  type SignInOptions,
+} from "@realms-world/identity";
 import { PAYOUT_WALLET_CHANGE_SECONDS } from "@realms-world/value-ledger/payout-wallet";
 import { lazy, Suspense, useCallback, useEffect, useState } from "react";
 
-import { identityClient } from "@/hooks/context/identity-session";
+import { noteDefaultWallet, useDefaultWallet } from "@/hooks/context/default-wallet";
+import { identityClient, identityUsername, useIdentitySessionStore } from "@/hooks/context/identity-session";
 import { shortAddress } from "@/ui/design-system/kit/address";
 import { AppButton, AppChip, AppChoice, AppCode, AppNotice } from "@/ui/design-system/kit/app-elements";
 
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { failureSentence } from "@/ui/modules/identity/identity-failures";
+import { createPasskey } from "@/ui/modules/identity/passkey";
 
-import { useLayout } from "../frame/layout";
+import { l2Provider } from "@/runtime/l2-rpc";
+
 import { Loading } from "../loading";
+import { WalletUnread } from "@/shell/value/wallet-unread";
+import { RealmsWalletFunds } from "./realms-wallet-funds";
+import { RealmsWalletRecovery, RecoverStart } from "./realms-wallet-recovery";
 
 const WalletPicker = lazy(() =>
   import("@/shell/value/wallet-actions").then((module) => ({ default: module.WalletPicker })),
 );
 
-/** Ready's extension in this browser's store. */
-const READY_EXTENSION = navigator.userAgent.includes("Firefox")
-  ? "https://addons.mozilla.org/en-US/firefox/addon/argent-x/"
-  : "https://chromewebstore.google.com/detail/dlcobpjiigpikoobohmabehhmhfoodbb";
-
-/** A wallet change waiting for its code: linking the wallet just proven, or unlinking. */
-type Change = { kind: "link"; proof: SignInOptions } | { kind: "unlink" };
+/**
+ * A wallet change waiting for its code: linking the wallet just proven, unlinking, making the account's default wallet
+ * its payout wallet (a sign-in minutes old needs none: CreateWallet), or starting its recovery with a new passkey.
+ */
+type Change =
+  | { kind: "link"; proof: SignInOptions }
+  | { kind: "unlink" }
+  /** The passkey just made, which the server keeps only once the code lets the wallet in; none when it has one. */
+  | { kind: "default"; passkey: NewPasskey | undefined }
+  | { kind: "recover"; passkey: NewPasskey };
 
 type Step =
   | { kind: "linked" }
   | { kind: "choose" }
   | { kind: "pick" }
-  | { kind: "need" }
-  | { kind: "back" }
+  | { kind: "recover" }
   | { kind: "code"; change: Change };
 
 /**
  * The payout wallet (design 3): linking or replacing takes the new wallet's signature and a 6-digit code sent to the
  * account's email; unlinking takes the code alone, so a player who lost the wallet can still unlink it. The first wallet
- * receives at once; a replacement's first payout waits out the co-signer's hold. A player with no wallet is sent to Ready,
- * whose email wallet needs no install. We create no wallet and hold no key.
+ * receives at once; a replacement's first payout waits out the co-signer's hold. A player with no wallet makes the
+ * default wallet: a Ready 0.5 account their passkey owns, with the Realms guardian (apps/realms/server/
+ * default-wallet-plugin.ts). We hold no key that can move it.
  */
 export const PayoutWalletPanel = ({
   wallet,
@@ -51,27 +66,56 @@ export const PayoutWalletPanel = ({
   onChanged: () => void;
 }) => {
   const [step, setStep] = useState<Step>(wallet === null ? { kind: "choose" } : { kind: "linked" });
+  const { wallet: defaultWallet, failed: walletUnread, retry: readWalletAgain } = useDefaultWallet();
+  const isDefault = wallet !== null && !!defaultWallet && isSameStarknetAddress(wallet, defaultWallet.address);
   const changed = () => {
     setStep({ kind: "linked" });
     onChanged();
+  };
+  const recover = () => setStep({ kind: "recover" });
+  const body = () => {
+    if (step.kind === "recover" && defaultWallet)
+      return (
+        <RecoverStart
+          replacing={defaultWallet.credentialId}
+          onPasskey={(passkey) => setStep({ kind: "code", change: { kind: "recover", passkey } })}
+          onCancel={() => setStep(wallet === null ? { kind: "choose" } : { kind: "linked" })}
+        />
+      );
+    if (step.kind === "linked" && wallet !== null)
+      return (
+        <Linked
+          address={wallet}
+          isDefault={isDefault}
+          onReplace={() => setStep({ kind: "choose" })}
+          onUnlink={() => setStep({ kind: "code", change: { kind: "unlink" } })}
+          onRecover={recover}
+        />
+      );
+    return <Linking step={step} email={email} onStep={setStep} onChanged={changed} />;
   };
   return (
     <div className="flex flex-col gap-4">
       {step.kind === "code" && step.change.kind === "unlink" && (
         <p className="text-app-heading text-app-ink">{WALLET_WORDS.unlinkTitle}</p>
       )}
-      {step.kind === "linked" && wallet !== null ? (
-        <Linked
-          address={wallet}
-          onReplace={() => setStep({ kind: "choose" })}
-          onUnlink={() => setStep({ kind: "code", change: { kind: "unlink" } })}
-        />
-      ) : (
-        <Linking step={step} email={email} onStep={setStep} onChanged={changed} />
+      {walletUnread && <WalletUnread onRetry={readWalletAgain} />}
+      {body()}
+      {defaultWallet && !isDefault && (step.kind === "linked" || step.kind === "choose") && (
+        <RealmsWallet address={defaultWallet.address} onRecover={recover} />
       )}
     </div>
   );
 };
+
+/** The Realms wallet while payouts go elsewhere: it keeps what it holds, its Send and its recovery. */
+const RealmsWallet = ({ address, onRecover }: { address: string; onRecover: () => void }) => (
+  <>
+    <WalletCard address={address} name={WALLET_WORDS.realmsWallet} chip={null} />
+    <RealmsWalletFunds address={address} />
+    <RealmsWalletRecovery address={address} onRecover={onRecover} />
+  </>
+);
 
 const Linking = ({
   step,
@@ -84,7 +128,6 @@ const Linking = ({
   onStep: (step: Step) => void;
   onChanged: () => void;
 }) => {
-  const layout = useLayout();
   const pick = (proof: SignInOptions) => onStep({ kind: "code", change: { kind: "link", proof } });
   switch (step.kind) {
     case "code":
@@ -96,109 +139,96 @@ const Linking = ({
           <Suspense fallback={<Loading />}>
             <WalletPicker onProof={pick} />
           </Suspense>
-          <Step icon="download" word={WALLET_WORDS.needOne} onClick={() => onStep({ kind: "need" })} />
-        </>
-      );
-    case "need":
-      return layout === "phone" ? <ReadyByEmail onProof={pick} /> : <GetReady onStep={onStep} onProof={pick} />;
-    case "back":
-      return (
-        <>
-          <Track at={0} />
-          <Suspense fallback={<Loading />}>
-            <WalletPicker only={["argentX"]} onProof={pick} />
-          </Suspense>
-          <p className="text-app-body text-app-muted">{WALLET_WORDS.backFromReady}</p>
-          <Step icon="refresh" word={WALLET_WORDS.anotherWallet} onClick={() => onStep({ kind: "pick" })} />
         </>
       );
     default:
-      return <Choose layout={layout} onStep={onStep} />;
+      return <Choose onStep={onStep} onChanged={onChanged} />;
   }
 };
 
-/** No wallet yet: the player has one, or goes to Ready for one. */
-const Choose = ({ layout, onStep }: { layout: "phone" | "desktop"; onStep: (step: Step) => void }) => (
+/** No wallet yet: make the default wallet with a passkey, or link one the player has. */
+const Choose = ({ onStep, onChanged }: { onStep: (step: Step) => void; onChanged: () => void }) => (
   <>
-    <Track at={-1} />
     <PrizesGoHere />
-    <div className="grid grid-cols-2 gap-3">
-      <AppChoice
-        icon="backpack"
-        title={WALLET_WORDS.haveOne}
-        detail={WALLET_WORDS.haveOneLine}
-        onClick={() => onStep({ kind: "pick" })}
-      />
-      <AppChoice
-        icon="download"
-        title={WALLET_WORDS.needOne}
-        detail={layout === "phone" ? WALLET_WORDS.needOneLinePhone : WALLET_WORDS.needOneLine}
-        onClick={() => onStep({ kind: "need" })}
-      />
-    </div>
+    <CreateWallet
+      onCreated={onChanged}
+      onCodeNeeded={(passkey) => onStep({ kind: "code", change: { kind: "default", passkey } })}
+    />
+    <AppChoice
+      icon="backpack"
+      title={WALLET_WORDS.haveOne}
+      detail={WALLET_WORDS.haveOneLine}
+      onClick={() => onStep({ kind: "pick" })}
+    />
   </>
 );
 
-/** Desktop: Ready's extension in this browser, or Ready's email wallet, which opens at once. */
-const GetReady = ({ onStep, onProof }: { onStep: (step: Step) => void; onProof: (proof: SignInOptions) => void }) => {
-  const [byEmail, setByEmail] = useState(false);
-  if (byEmail) return <ReadyByEmail onProof={onProof} />;
-  const addExtension = () => {
-    window.open(READY_EXTENSION, "_blank", "noopener,noreferrer");
-    onStep({ kind: "back" });
+/**
+ * Create my wallet: a passkey made on this device (or the one the account made before), then the wallet written as the
+ * payout wallet. A sign-in more than minutes old is asked for an emailed code first (`onCodeNeeded`), as any wallet
+ * change is.
+ */
+const CreateWallet = ({
+  onCreated,
+  onCodeNeeded,
+}: {
+  onCreated: () => void;
+  onCodeNeeded: (passkey: NewPasskey | undefined) => void;
+}) => {
+  const session = useIdentitySessionStore((state) => state.session);
+  const { wallet: existing } = useDefaultWallet();
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  if (!session) return null;
+  // Until the account's wallet is known, no passkey is made: one that already has a wallet would get a useless one.
+  const unknown = existing === undefined;
+  const { realmsId, email } = session.user;
+  const create = async () => {
+    setBusy(true);
+    setError(null);
+    let passkey: NewPasskey | undefined;
+    try {
+      passkey = existing
+        ? undefined
+        : await createPasskey({ realmsId, email, name: identityUsername(session) ?? email });
+      noteDefaultWallet(realmsId, await identityClient.createDefaultWallet({ passkey }));
+      onCreated();
+    } catch (cause) {
+      if (cause instanceof IdentityRequestError && cause.code === "CODE_REQUIRED") onCodeNeeded(passkey);
+      else setError(failureSentence("wallet", cause));
+    } finally {
+      setBusy(false);
+    }
   };
   return (
-    <>
-      <ReadyName line={WALLET_WORDS.formerlyArgent} />
-      <div className="grid grid-cols-2 gap-3">
-        <AppChoice
-          icon="download"
-          title={WALLET_WORDS.inThisBrowser}
-          detail={WALLET_WORDS.addExtension}
-          onClick={addExtension}
-        />
-        <AppChoice
-          icon="mail"
-          title={WALLET_WORDS.byEmailTitle}
-          detail={WALLET_WORDS.noInstallShort}
-          onClick={() => setByEmail(true)}
-        />
-      </div>
-      <KeysStay />
-    </>
+    <div className="flex flex-col gap-2.5">
+      <AppButton
+        kind="primary"
+        icon="lock"
+        disabled={unknown}
+        busy={busy ? WALLET_WORDS.confirmPasskey : undefined}
+        onClick={create}
+      >
+        {WALLET_WORDS.createWallet}
+      </AppButton>
+      <p className="text-app-body text-app-muted">{WALLET_WORDS.createLine}</p>
+      {error && <p className="text-app-body text-app-bad">{error}</p>}
+    </div>
   );
 };
 
-/** Ready's email wallet: Ready's own page signs the player up or in; the wallet then signs and our code follows. */
-const ReadyByEmail = ({ onProof }: { onProof: (proof: SignInOptions) => void }) => (
-  <>
-    <ReadyName line={WALLET_WORDS.noInstall} />
-    <ol className="grid grid-cols-3 gap-2.5">
-      {(
-        [
-          ["mail", WALLET_WORDS.emailStep],
-          ["check", WALLET_WORDS.approveStep],
-          ["backpack", WALLET_WORDS.codeStep],
-        ] as const
-      ).map(([icon, word], index) => (
-        <li
-          key={word}
-          className="relative flex flex-col items-center gap-2 rounded-xl border border-app-line-strong bg-app-well px-1.5 pb-2.5 pt-4 text-center text-app-label text-app-ink"
-        >
-          <span className="absolute -left-1.5 -top-2.5 flex size-[26px] items-center justify-center rounded-full border border-app-gold bg-app-dark text-app-label text-app-gold">
-            {index + 1}
-          </span>
-          <SemanticIcon name={icon} size={36} />
-          {word}
-        </li>
-      ))}
-    </ol>
-    <Suspense fallback={<Loading />}>
-      <WalletPicker only={["argentWebWallet"]} onProof={onProof} />
-    </Suspense>
-    <KeysStay />
-  </>
-);
+/** The recovery started with this code, held until its escape is on chain, so the wallet shows it under way at once. */
+const startRecovery = async (code: string, passkey: NewPasskey) => {
+  const started = await identityClient.startWalletRecovery({ passkey, code });
+  await l2Provider().waitForTransaction(started, { retryInterval: 1_000 });
+};
+
+/** The account's default wallet written as its payout wallet with this code; every surface shows it at once. */
+const writeDefaultWallet = async (code: string, passkey: NewPasskey | undefined) => {
+  const wallet = await identityClient.createDefaultWallet({ passkey, code });
+  const realmsId = useIdentitySessionStore.getState().session?.user.realmsId;
+  if (realmsId) noteDefaultWallet(realmsId, wallet);
+};
 
 /**
  * The emailed code: sent when the step opens, entered in six boxes, and spent on the change the moment the sixth digit
@@ -230,10 +260,12 @@ const CodeStep = ({ change, email, onDone }: { change: Change; email: string; on
     setError(null);
     try {
       if (change.kind === "link") await identityClient.linkWallet({ ...change.proof, code: entered });
-      else await identityClient.unlinkWallet(entered);
+      else if (change.kind === "unlink") await identityClient.unlinkWallet(entered);
+      else if (change.kind === "recover") await startRecovery(entered, change.passkey);
+      else await writeDefaultWallet(entered, change.passkey);
       onDone();
     } catch (cause) {
-      setError(failureSentence(change.kind, cause));
+      setError(failureSentence(change.kind === "default" ? "wallet" : change.kind, cause));
     } finally {
       setBusy(false);
     }
@@ -274,25 +306,51 @@ const CodeStep = ({ change, email, onDone }: { change: Change; email: string; on
 };
 
 /** A linked wallet; Replace and Unlink each take a new code, and the wallet that follows waits out the hold. */
-const Linked = ({ address, onReplace, onUnlink }: { address: string; onReplace: () => void; onUnlink: () => void }) => (
-  <>
-    <Track at={STEPS.length} />
-    <WalletCard address={address} chip={{ icon: "check", word: WALLET_WORDS.canReceive }} />
-    <PrizesGoHere />
-    <div className="grid grid-cols-2 gap-3">
-      <AppButton kind="secondary" icon="refresh" onClick={onReplace}>
-        {WALLET_WORDS.replace}
-      </AppButton>
-      <AppButton kind="secondary" tone="bad" icon="lock" onClick={onUnlink}>
-        {WALLET_WORDS.unlink}
-      </AppButton>
-    </div>
-    <p className="flex items-center gap-2.5 text-app-body text-app-muted">
-      <SemanticIcon name="clock" size={22} />
-      {WALLET_WORDS.newWalletWaits(PAYOUT_WALLET_CHANGE_SECONDS / 3600)}
-    </p>
-  </>
-);
+const Linked = ({
+  address,
+  isDefault,
+  onReplace,
+  onUnlink,
+  onRecover,
+}: {
+  address: string;
+  /** The account's own default wallet, which the player knows by name rather than by address. */
+  isDefault: boolean;
+  onReplace: () => void;
+  onUnlink: () => void;
+  onRecover: () => void;
+}) => {
+  const [sending, setSending] = useState(false);
+  return (
+    <>
+      {!isDefault && <Track at={STEPS.length} />}
+      <WalletCard
+        address={address}
+        name={isDefault ? WALLET_WORDS.realmsWallet : undefined}
+        chip={{ icon: "check", word: WALLET_WORDS.canReceive }}
+      />
+      {isDefault && <RealmsWalletFunds address={address} onSending={setSending} />}
+      {!sending && (
+        <>
+          {isDefault && <RealmsWalletRecovery address={address} onRecover={onRecover} />}
+          <PrizesGoHere />
+          <div className="grid grid-cols-2 gap-3">
+            <AppButton kind="secondary" icon="refresh" onClick={onReplace}>
+              {WALLET_WORDS.replace}
+            </AppButton>
+            <AppButton kind="secondary" tone="bad" icon="lock" onClick={onUnlink}>
+              {WALLET_WORDS.unlink}
+            </AppButton>
+          </div>
+          <p className="flex items-center gap-2.5 text-app-body text-app-muted">
+            <SemanticIcon name="clock" size={22} />
+            {WALLET_WORDS.newWalletWaits(PAYOUT_WALLET_CHANGE_SECONDS / 3600)}
+          </p>
+        </>
+      )}
+    </>
+  );
+};
 
 const STEPS: { icon: IconMeaning; word: string }[] = [
   { icon: "backpack", word: WALLET_WORDS.stepWallet },
@@ -342,10 +400,25 @@ const Track = ({ at }: { at: number }) => (
   </ol>
 );
 
-const WalletCard = ({ address, chip }: { address: string; chip: { icon: IconMeaning; word: string } | null }) => (
+const WalletCard = ({
+  address,
+  name,
+  chip,
+}: {
+  address: string;
+  name?: string;
+  chip: { icon: IconMeaning; word: string } | null;
+}) => (
   <div className="flex min-h-[64px] items-center gap-3 rounded-xl border border-app-line-strong bg-app-well px-3.5">
     <SemanticIcon name="backpack" size={38} />
-    <span className="whitespace-nowrap text-app-strong text-app-ink">{shortAddress(address)}</span>
+    <span className="flex flex-col">
+      {name && <span className="text-app-strong text-app-ink">{name}</span>}
+      <span
+        className={cn("whitespace-nowrap", name ? "text-app-label text-app-muted" : "text-app-strong text-app-ink")}
+      >
+        {shortAddress(address)}
+      </span>
+    </span>
     {chip && (
       <span className="ml-auto">
         <AppChip tone="good" icon={chip.icon}>
@@ -356,26 +429,12 @@ const WalletCard = ({ address, chip }: { address: string; chip: { icon: IconMean
   </div>
 );
 
-const ReadyName = ({ line }: { line: string }) => (
-  <p className="flex items-baseline gap-2.5">
-    <span className="text-app-title text-app-ink">{WALLET_WORDS.ready}</span>
-    <span className="text-app-body text-app-muted">{line}</span>
-  </p>
-);
-
 const PrizesGoHere = () => (
   <p className="flex items-center gap-2 text-app-body text-app-muted">
     <SemanticIcon name="lords" size={26} />
     <SemanticIcon name="reward-chest" size={26} />
     <SemanticIcon name="victory" size={26} />
     <span className="ml-1">{WALLET_WORDS.prizesGoHere}</span>
-  </p>
-);
-
-const KeysStay = () => (
-  <p className="flex items-center gap-2.5 text-app-body text-app-muted">
-    <SemanticIcon name="lock" size={22} />
-    {WALLET_WORDS.keysStay}
   </p>
 );
 

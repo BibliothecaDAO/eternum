@@ -15,6 +15,7 @@ import {
 } from "./directory";
 import { ACCOUNT_CLASS_HASH, socialProvidersOf, type IdentityEnv } from "./env";
 import { json } from "./http";
+import { keepBrowser, noteBrowser } from "./browsers";
 import { handleBuildOrders } from "./build-orders";
 import { campaignStandings, hasCampaignHomeSource, homeSourceOf, playerAccounts } from "./campaign-entry";
 import {
@@ -31,6 +32,7 @@ import { handleRatings } from "./ratings";
 import { handleRatingTop } from "./rating-top";
 import { handleAccountsHealth, handleChatHealth } from "./health";
 import { handlePushSubscriptions } from "./push-notifications";
+import { handleWalletCounts } from "./wallet-counts";
 
 /** What the Worker reaches outside its bindings: the colo cache and the shards' Heralds. */
 interface WorkerPlatform {
@@ -143,6 +145,10 @@ export const routeIdentityRequest = async (
   }
   if (pathname === "/api/operator/payout-identity" && request.method === "GET")
     return handlePayoutIdentity(request, env);
+  if (pathname === "/api/operator/wallets" && request.method === "GET") {
+    if (!(await isOperator(env, request))) return json({ error: "unauthorized" }, 401);
+    return handleWalletCounts(env.DB);
+  }
   if (pathname === "/api/directory/shards" && request.method === "GET") {
     if (!(await isOperator(env, request))) return json({ error: "unauthorized" }, 401);
     return json({ shards: await registeredShards(env.DB) });
@@ -244,15 +250,17 @@ const sendCodeWithExpiry = async (request: Request, auth: IdentityAuth): Promise
 
 /**
  * Sessions always expose the current link, with no cached eligibility state. The app reads its session each time it
- * opens, so this is where the account's visit is written.
+ * opens, so this is where the browser gets its id and where the account's visit, and the browser it was on, are written.
  */
 const accountSession = async (request: Request, auth: IdentityAuth, db: D1Database): Promise<Response> => {
   const response = await auth.handler(request);
   const body = await response.text();
-  const userId = (JSON.parse(body || "null") as { user?: { id?: unknown } } | null)?.user?.id;
-  if (response.ok && typeof userId === "string") await noteVisit(db, userId, Date.now());
   const headers = new Headers(response.headers);
   headers.set("cache-control", "no-store");
+  const browser = keepBrowser(request, headers);
+  const user = (JSON.parse(body || "null") as { user?: { id?: unknown; realmsId?: unknown } } | null)?.user;
+  if (response.ok && typeof user?.id === "string" && typeof user.realmsId === "string")
+    await db.batch([noteVisit(db, user.id, Date.now()), noteBrowser(db, user.realmsId, browser)]);
   return new Response(body, { status: response.status, headers });
 };
 
@@ -262,5 +270,4 @@ const noteVisit = (db: D1Database, userId: string, now: number) =>
     .prepare(
       `UPDATE "user" SET "lastSeenAt" = ?1 WHERE "id" = ?2 AND ("lastSeenAt" IS NULL OR "lastSeenAt" <= ?1 - ?3)`,
     )
-    .bind(now, userId, VISIT_RECORD_SECONDS * 1000)
-    .run();
+    .bind(now, userId, VISIT_RECORD_SECONDS * 1000);

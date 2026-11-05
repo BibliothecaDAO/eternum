@@ -3,11 +3,12 @@ import { createRoot } from "react-dom/client";
 import { beforeEach, expect, it, vi } from "vitest";
 import type { LordsDeposit } from "@realms-world/value-ledger/deposits";
 import type { AccountInterface, Call, ProviderInterface } from "starknet";
+import { forgetUncertain } from "@/ui/modules/identity/uncertain-sends";
 import { sendFromWallet, type WalletSendOutcome } from "@/ui/modules/identity/wallet-send";
 import { depositStructure } from "../../../../../../value-relay/test-support/deposit-structure";
+import { useDepositPaymentStore } from "@/hooks/store/use-deposit-payment-store";
 import { FrontierPurse } from "./frontier-purse";
 const wallet = vi.hoisted(() => ({
-  props: null as null | { calls: (Call & { calldata: string[] })[]; onState: (state: WalletSendOutcome) => void },
   refetch: vi.fn(),
   available: 20n,
   history: [] as LordsDeposit[],
@@ -42,16 +43,23 @@ vi.mock("@tanstack/react-query", () => ({
     refetch: wallet.refetch,
   }),
 }));
-vi.mock("@/shell/value/wallet-actions", () => ({
-  WalletSign: (props: typeof wallet.props) => {
-    wallet.props = props;
-    return <p>Wallet opened</p>;
-  },
-}));
 const realm = depositStructure("0x30");
+/** The payment the purse opened on the app sheet, as the payment dialog reads it. */
+const paid = () =>
+  useDepositPaymentStore.getState().payment as null | {
+    calls: (Call & { calldata: string[] })[];
+    onLanded: () => void;
+  };
+/** The payment landed, as the dialog answers it: closed, then the purse told. */
+const land = () =>
+  act(() => {
+    const payment = paid()!;
+    useDepositPaymentStore.getState().close();
+    payment.onLanded();
+  });
 beforeEach(() => {
   localStorage.clear();
-  wallet.props = null;
+  useDepositPaymentStore.getState().close();
   wallet.available = 20n;
   wallet.history = [];
   vi.clearAllMocks();
@@ -108,123 +116,147 @@ it("confirms one payment, resets the form and sends a second deposit with a fres
   expect(amount(view.host).inputMode).toBe("numeric");
   expect(amount(view.host).value).toBe("10");
   await act(async () => view.button("Deposit LORDS").click());
-  const first = wallet.props!.calls[1].calldata.at(-1);
+  const first = paid()!.calls[1].calldata.at(-1);
   expect(amount(view.host).disabled).toBe(true);
-  act(() => wallet.props!.onState({ kind: "landed" }));
+  land();
   expect(amount(view.host).disabled).toBe(false);
-  expect(localStorage.length).toBe(0);
+  expect(attempt()).toBeNull();
+  expect(view.host.textContent).toContain("Payment confirmed. Waiting for the spend-only credit.");
   edit(amount(view.host), "25");
   await act(async () => view.button("Deposit LORDS").click());
-  expect(wallet.props!.calls[1].calldata.slice(-2)).toEqual(["25", expect.any(String)]);
-  expect(wallet.props!.calls[1].calldata.at(-1)).not.toBe(first);
+  expect(paid()!.calls[1].calldata.slice(-2)).toEqual(["25", expect.any(String)]);
+  expect(paid()!.calls[1].calldata.at(-1)).not.toBe(first);
   expect(view.host.querySelector("[data-spend-lords]")?.getAttribute("data-spend-lords")).toBe("20");
   view.unmount();
 });
-it.each(["no-strk", "refused"] as const)(
-  "allows editing a definitively unsent or reverted %s payment",
-  async (kind) => {
-    const view = await render();
-    await act(async () => view.button("Deposit LORDS").click());
-    act(() => wallet.props!.onState({ kind, reason: "Rejected" }));
-    act(() => view.button("Edit or cancel deposit").click());
-    expect(amount(view.host).disabled).toBe(false);
-    edit(amount(view.host), "3");
-    await act(async () => view.button("Deposit LORDS").click());
-    expect(wallet.props!.calls[1].calldata.at(-2)).toBe("3");
-    view.unmount();
-  },
-);
 
-async function answerWallet(error: unknown) {
+it("says the network fee is shown before confirming, never that it is paid in STRK", async () => {
+  const view = await render();
+  expect(view.host.textContent).toContain("The network fee is shown before you confirm.");
+  expect(view.host.textContent).not.toContain("STRK");
+  view.unmount();
+});
+
+/** The saved payment's terms: its amount and request identity, or null once there is none. */
+const attempt = () => {
+  const key = Object.keys(localStorage).find((name) => name.startsWith("lords-deposit:"));
+  return key ? localStorage.getItem(key) : null;
+};
+
+/** The purse's calls sent through the one wallet send, its wallet answering `execute` as given. */
+async function send(execute: () => Promise<unknown>, receipt: Promise<object> = Promise.resolve({})) {
   const account = {
     address: "0x33",
     estimateInvokeFee: async () => ({ overall_fee: 1n }),
-    execute: vi.fn().mockRejectedValue(error),
+    execute: vi.fn(execute),
   } as unknown as AccountInterface;
   const provider = {
     callContract: async () => ["1", "0"],
-    waitForTransaction: vi.fn(),
+    waitForTransaction: vi.fn(() => receipt),
   } as unknown as ProviderInterface;
-  const props = wallet.props!;
-  const signed = vi.fn();
-  const outcome = await sendFromWallet(account, "0x33", props.calls, provider, signed);
-  act(() => props.onState(outcome));
-  expect(account.execute).toHaveBeenCalledOnce();
-  expect(account.execute).toHaveBeenCalledWith(props.calls);
-  expect(signed).not.toHaveBeenCalled();
-  expect(provider.waitForTransaction).not.toHaveBeenCalled();
+  const calls = paid()!.calls;
+  let outcome: WalletSendOutcome | undefined;
+  await act(async () => {
+    outcome = await sendFromWallet(account, "0x33", calls, provider, () => {});
+  });
+  expect(account.execute).toHaveBeenCalledWith(calls);
   return outcome;
 }
+
+async function expectEditable(view: Awaited<ReturnType<typeof render>>, first: unknown) {
+  act(() => view.button("Edit or cancel deposit").click());
+  expect(attempt()).toBeNull();
+  expect(amount(view.host).disabled).toBe(false);
+  edit(amount(view.host), "3");
+  await act(async () => view.button("Deposit LORDS").click());
+  expect(paid()!.calls[1].calldata.at(-2)).toBe("3");
+  expect(paid()!.calls[1].calldata.at(-1)).not.toBe(first);
+}
+
+it("offers Edit or cancel while nothing has been handed to a wallet", async () => {
+  const view = await render();
+  try {
+    edit(amount(view.host), "25");
+    await act(async () => view.button("Deposit LORDS").click());
+    expect(amount(view.host).disabled).toBe(true);
+    const first = paid()!.calls[1].calldata.at(-1);
+    // Open on the app sheet: nothing to retry until it closes.
+    expect(view.button("Retry payment")).toBeUndefined();
+    act(() => useDepositPaymentStore.getState().close());
+    expect(view.button("Retry payment")).toBeDefined();
+    await expectEditable(view, first);
+  } finally {
+    view.unmount();
+  }
+});
+
+it("allows editing a payment the ledger reverted", async () => {
+  const view = await render();
+  try {
+    await act(async () => view.button("Deposit LORDS").click());
+    const first = paid()!.calls[1].calldata.at(-1);
+    const reverted = { isReverted: () => true, revert_reason: "Failure reason: 'Ledger: deposits paused'." };
+    expect(await send(async () => ({ transaction_hash: "0xtx" }), Promise.resolve(reverted))).toEqual({
+      kind: "refused",
+      reason: "Ledger: deposits paused",
+    });
+    await expectEditable(view, first);
+  } finally {
+    view.unmount();
+  }
+});
 
 const walletRefusals = [
   { name: "USER_REFUSED_OP", error: { code: 113, message: "USER_REFUSED_OP" } },
   { name: "User abort", error: new Error("User abort") },
 ];
 
-it.each(walletRefusals)("allows cancelling and editing a first $name refusal", async ({ error }) => {
+it.each(walletRefusals)("allows cancelling and editing a $name refusal", async ({ error }) => {
   const view = await render();
   try {
     edit(amount(view.host), "25");
     await act(async () => view.button("Deposit LORDS").click());
-    const first = wallet.props!.calls;
-    expect(await answerWallet(error)).toEqual({ kind: "refused", reason: "Payment rejected in wallet." });
-    act(() => view.button("Edit or cancel deposit").click());
-    expect(localStorage.length).toBe(0);
-    expect(amount(view.host).disabled).toBe(false);
-    expect(view.button("Deposit LORDS")).toBeDefined();
-    edit(amount(view.host), "3");
-    await act(async () => view.button("Deposit LORDS").click());
-    expect(wallet.props!.calls[1].calldata.at(-2)).toBe("3");
-    expect(wallet.props!.calls[1].calldata.at(-1)).not.toBe(first[1].calldata.at(-1));
+    const first = paid()!.calls[1].calldata.at(-1);
+    await expect(send(async () => Promise.reject(error))).rejects.toBe(error);
+    await expectEditable(view, first);
   } finally {
     view.unmount();
   }
 });
 
-it.each(walletRefusals)("keeps an earlier uncertain payment after a $name retry refusal", async ({ error }) => {
+it("holds an uncertain payment's exact terms across reopening until the chain settles it", async () => {
   let view = await render();
   try {
     edit(amount(view.host), "25");
     await act(async () => view.button("Deposit LORDS").click());
-    const first = wallet.props!.calls;
-    expect(await answerWallet(new Error("response lost"))).toMatchObject({ kind: "uncertain" });
-    const saved = localStorage.getItem(localStorage.key(0)!);
+    const first = paid()!.calls;
+    expect(await send(async () => Promise.reject(new Error("response lost")))).toEqual({ kind: "unconfirmed" });
+    expect(view.button("Edit or cancel deposit")).toBeUndefined();
+    expect(view.host.textContent).toContain("Payment status is uncertain.");
+    const saved = attempt();
+    // The payment closed (the dialog's Close, or the page left): reopening offers the same payment again.
     view.unmount();
+    act(() => useDepositPaymentStore.getState().close());
     view = await render();
-    await act(async () => view.button("Retry payment").click());
-    expect(wallet.props!.calls).toEqual(first);
-    expect(await answerWallet(error)).toEqual({ kind: "refused", reason: "Payment rejected in wallet." });
+    expect(paid()).toBeNull();
+    expect(amount(view.host).value).toBe("25");
+    expect(amount(view.host).disabled).toBe(true);
     expect(view.button("Edit or cancel deposit")).toBeUndefined();
     expect(view.button("Deposit LORDS")).toBeUndefined();
-    expect(amount(view.host).disabled).toBe(true);
-    expect(amount(view.host).value).toBe("25");
-    expect(localStorage.length).toBe(1);
-    expect(localStorage.getItem(localStorage.key(0)!)).toBe(saved);
     expect(view.host.textContent).toContain("Payment status is uncertain.");
+    await act(async () => view.button("Retry payment").click());
+    // The same payment, so the send's own check settles it and nothing is paid twice.
+    expect(paid()!.calls).toEqual(first);
+    expect(paid()!.calls[1].calldata.at(-2)).toBe("25");
+    expect(attempt()).toBe(saved);
+    // The chain says it never ran: its terms may change again.
+    act(() => forgetUncertain("0x33"));
+    expect(view.button("Edit or cancel deposit")).toBeDefined();
+    expect(view.host.textContent).not.toContain("Payment status is uncertain.");
+    land();
+    expect(amount(view.host).disabled).toBe(false);
+    expect(attempt()).toBeNull();
   } finally {
     view.unmount();
   }
-});
-it("restores the exact uncertain 25 LORDS display and signed terms across reopening and an unsent retry", async () => {
-  let view = await render();
-  edit(amount(view.host), "25");
-  await act(async () => view.button("Deposit LORDS").click());
-  const first = wallet.props!.calls;
-  act(() => wallet.props!.onState({ kind: "uncertain", reason: "Unavailable" }));
-  expect(view.button("Edit or cancel deposit")).toBeUndefined();
-  view.unmount();
-  wallet.props = null;
-  view = await render();
-  expect(wallet.props).toBeNull();
-  expect(amount(view.host).value).toBe("25");
-  expect(amount(view.host).disabled).toBe(true);
-  await act(async () => view.button("Retry payment").click());
-  expect(wallet.props!.calls).toEqual(first);
-  expect(wallet.props!.calls[1].calldata.at(-2)).toBe("25");
-  act(() => wallet.props!.onState({ kind: "no-strk" }));
-  expect(view.button("Edit or cancel deposit")).toBeUndefined();
-  expect(amount(view.host).disabled).toBe(true);
-  act(() => wallet.props!.onState({ kind: "landed" }));
-  expect(amount(view.host).disabled).toBe(false);
-  view.unmount();
 });

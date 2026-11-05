@@ -24,6 +24,9 @@ vi.mock("@/hooks/context/identity-session", () => ({
       ? { status: "signed-in", session: identity.state.session }
       : { status: "signed-out", session: null },
   notificationOwnerOf: () => null,
+  // The account's chosen name, as the real reader gives it: none while the name is still the account's id.
+  identityUsername: (session: { user: { id: string; name: string } }) =>
+    session.user.name === session.user.id ? null : session.user.name,
 }));
 vi.mock("../play/play-page", () => ({ PlayPage: () => <p>Fixture home</p> }));
 vi.mock("../play/age-pages", () => ({ DominionPage: () => null, EternumPage: () => null, FrontierPage: () => null }));
@@ -174,6 +177,6 @@ it("draws the Devcon game's Realm step with the held golden ticket chosen and Fo
   await vi.waitFor(() => expect(lab.textContent).toContain("1 ticket · 1 Realm"));
   expect(lab.textContent).toContain("Golden Devcon ticket");
   expect(lab.textContent).toContain("4786");
-  const found = [...lab.querySelectorAll("button")].find((each) => each.textContent === "Found your realm");
+  const found = [...lab.querySelectorAll("button")].find((each) => each.textContent === "Create your realm");
   await vi.waitFor(() => expect(found?.disabled).toBe(false));
 });

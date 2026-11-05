@@ -1,3 +1,4 @@
+import { TERRAIN_GROUND_TEXTURE_PATHS } from "@/three/terrain/terrain-ground-catalog";
 import { markGameEntryMilestone } from "@/ui/layouts/game-entry-timeline";
 
 type GameRouteModule = typeof import("./game-route");
@@ -76,9 +77,19 @@ const preloadGameRouteModule = (): Promise<GameRouteModule> => {
   return gameRoutePreloadPromise;
 };
 
-/** The game's module graph and renderer load only once a player enters a game, never from the shell. */
+/** The game's module graph and renderer load once a player heads into a game: a way in pressed, or the entry itself. */
 export const loadGameRouteForPlayEntry = createPlayRouteEntryLoader({
   markPrefetchScheduled: () => markGameEntryMilestone("asset-prefetch-scheduled"),
   preloadGameRouteModule,
   primeEntry: primeWebGpuRendererModules,
 });
+
+/**
+ * A way into a game pressed (Play free, Play, Resume, Enter, Watch): the game's code starts loading, and the map's
+ * ground textures (3.4 MB, the largest files a first view asks for) are fetched into the browser's cache, so the minute
+ * a new player spends signing in pays for them rather than the doorway's wait.
+ */
+export const primeGameEntry = (): void => {
+  void loadGameRouteForPlayEntry().catch(() => undefined);
+  for (const path of TERRAIN_GROUND_TEXTURE_PATHS) void fetch(path).catch(() => undefined);
+};

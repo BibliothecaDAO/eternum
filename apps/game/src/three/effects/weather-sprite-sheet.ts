@@ -2,6 +2,7 @@ import { ClampToEdgeWrapping, DataTexture, LinearFilter, SRGBColorSpace } from "
 import { texture } from "three/tsl";
 import type TextureNode from "three/src/nodes/accessors/TextureNode.js";
 import { loadKtx2Texture } from "../utils/utils";
+import { afterWorldInteractive } from "@/game-entry/world-interactive";
 
 export const WEATHER_SPRITE_SHEETS = {
   lightning: {
@@ -40,7 +41,13 @@ export function loadWeatherSpriteSheet(sheet: SpriteSheet): TextureNode {
   placeholder.needsUpdate = true;
   const node = texture(placeholder);
   loadedSheets.set(sheet.url, node);
-  void loadKtx2Texture(sheet.url)
+  // The sheet waits for the first view: no storm needs it before, and its file would slow the map's on a slow link.
+  afterWorldInteractive(() => loadInto(node, placeholder, sheet.url));
+  return node;
+}
+
+const loadInto = (node: TextureNode, placeholder: DataTexture, url: string): void => {
+  void loadKtx2Texture(url)
     .then((loadedTexture) => {
       loadedTexture.colorSpace = SRGBColorSpace;
       loadedTexture.minFilter = loadedTexture.magFilter = LinearFilter;
@@ -50,6 +57,5 @@ export function loadWeatherSpriteSheet(sheet: SpriteSheet): TextureNode {
       node.value = loadedTexture;
       placeholder.dispose();
     })
-    .catch((error: unknown) => console.error(`[Weather] Failed to load sprite sheet ${sheet.url}`, error));
-  return node;
-}
+    .catch((error: unknown) => console.error(`[Weather] Failed to load sprite sheet ${url}`, error));
+};

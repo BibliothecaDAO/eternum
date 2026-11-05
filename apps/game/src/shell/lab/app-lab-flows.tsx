@@ -5,10 +5,9 @@ import { CAMPAIGNS } from "@realms-world/identity";
 import { useState, type ReactNode } from "react";
 import { useParams } from "react-router-dom";
 
-import { gamePainting } from "@/shell/game-links";
 import { Pill } from "@/ui/design-system/kit/pill";
 import { DoorwayScreen } from "@/ui/features/game-entry/doorway/doorway-screen";
-import { FoundButton } from "@/ui/features/game-entry/game-entry-modal";
+import { FoundButton, PlaysAs } from "@/ui/features/game-entry/game-entry-modal";
 import { HomeSourcePicker } from "@/ui/features/game-entry/home-source-picker";
 
 import { ClockChip } from "@/ui/design-system/kit/clock-chip";
@@ -105,6 +104,9 @@ export const LabConnect = () => {
   );
 };
 
+/** The Frontier game the lab's doorway enters: the campaign's season, as the home step's picker reads it. */
+const LAB_FRONTIER = { mode: "frontier", preset_id: CAMPAIGNS[DEVCON.campaign].presets[0] } as const;
+
 /** The doorway into Frontier at one of its holds (/lab/app/<screen>/doorway/<state>), as entering a game draws it. */
 export const LabDoorway = () => {
   const { state } = useParams();
@@ -115,13 +117,14 @@ export const LabDoorway = () => {
     <DoorwayScreen
       view={doorway.view}
       realm={doorway.realm}
-      title="Frontier"
-      painting={gamePainting({ mode: "frontier" })}
+      game={LAB_FRONTIER}
       onRetry={noop}
       onOpenRealm={noop}
       onSignIn={noop}
       onSpectate={noop}
       results="/lab/app/reward-sealed/results/0x5245414c4d53-7"
+      asking={state === "home"}
+      verb={state === "home" ? <FoundButton founding={false} ready onFound={noop} /> : undefined}
     >
       {/* The entry's own chips at the realm step, as game-entry-modal passes them. */}
       {state === "waiting" && <ClockChip prefix="starts" at={now + LAB_SEASON_WAIT} now={now} />}
@@ -131,21 +134,20 @@ export const LabDoorway = () => {
   );
 };
 
-/** The Devcon game's Realm step over the screen's holdings, as game-entry-modal draws it: the pick, then Found. */
+/** The Devcon game's Realm step over the screen's holdings, as game-entry-modal draws it: the pick, its verb pinned. */
 const LabHomeStep = () => {
   const [value, setValue] = useState("");
-  const [settled, setSettled] = useState(false);
   return (
     <>
       <HomeSourcePicker
-        presetId={CAMPAIGNS[DEVCON.campaign].presets[0]}
+        presetId={LAB_FRONTIER.preset_id}
         registered={null}
         value={value}
         onChange={setValue}
-        onSettled={setSettled}
+        onSettled={noop}
         disabled={false}
       />
-      <FoundButton founding={false} ready={settled} onFound={noop} />
+      <PlaysAs />
     </>
   );
 };

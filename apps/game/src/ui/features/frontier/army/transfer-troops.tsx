@@ -86,7 +86,7 @@ export const TransferTroopsSheet = ({
   return (
     <HudSheet label={TRANSFER_TROOPS.title} onClose={onClose}>
       {counts !== first && <HudNotice tone="warn" line={TRANSFER_TROOPS.changed} />}
-      <TransferAmount key={counts} realm={realm} pair={pair} onSent={onClose} />
+      <TransferAmount key={counts} realm={realm} pair={pair} />
     </HudSheet>
   );
 };
@@ -94,11 +94,9 @@ export const TransferTroopsSheet = ({
 const TransferAmount = ({
   realm,
   pair: { picked, tapped, pickedAt, tappedAt },
-  onSent,
 }: {
   realm: NativeRows["Structure"];
   pair: TransferPair;
-  onSent: () => void;
 }) => {
   const {
     setup: { systemCalls, store },
@@ -195,7 +193,6 @@ const TransferAmount = ({
           count: multiplyByPrecision(sent),
         }),
       );
-      onSent();
     } catch (error) {
       toast.failed(error, TRANSFER_TROOPS.failed);
     }

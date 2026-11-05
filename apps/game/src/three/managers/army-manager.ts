@@ -130,6 +130,7 @@ import { scheduleFrameBudgetWork, type FrameBudgetWorkScheduler } from "../frame
 import type { NativeFactStore, NativeRows } from "@bibliothecadao/eternum/game-client";
 import type { PipelineCompiler } from "../pipeline-compiler";
 import { armyHomeStructureId } from "@/utils/native-id";
+import { afterWorldInteractive } from "@/game-entry/world-interactive";
 
 const MEMORY_MONITORING_ENABLED = env.VITE_PUBLIC_ENABLE_MEMORY_MONITORING;
 
@@ -1058,7 +1059,10 @@ export class ArmyManager {
 
   /** Each army's hull loads in the background so its first shoreline crossing does not render as a ghost. */
   private warmShipModels(armies: readonly ArmyData[]): void {
-    void this.armyModel.preloadModels(armies.map((army) => TROOP_TO_SHIP_MODEL[army.category][army.tier]));
+    // Warmed once the first view is up: no army crosses a shore before it.
+    afterWorldInteractive(
+      () => void this.armyModel.preloadModels(armies.map((army) => TROOP_TO_SHIP_MODEL[army.category][army.tier])),
+    );
   }
 
   private setVisibleArmyOrder(order: ID[]): void {

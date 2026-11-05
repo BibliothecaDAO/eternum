@@ -435,6 +435,35 @@ describe("the Deploy sheet", () => {
     host.remove();
   });
 
+  it.each([
+    ["seven Wheat deploys four troops at 1.75 each", 7, "of 4", "7 WheatDeploy"],
+    ["three and a half Wheat deploys two", 3.5, "of 2", null],
+  ])("prices Max on the whole batch with Rations: %s", (_case, wheat, most, price) => {
+    (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
+    const { store, row } = frontierDay();
+    const board = store.require("BoardRules", { game_id: 1 });
+    store.applyFacts([
+      { model: "BoardRules", key: "0xa", value: { ...board, ration_step: "250000000" } },
+      {
+        model: "RealmKnowledge",
+        key: "0xd",
+        value: { game_id: 1, structure_id: 7, learned: String((1n << 14n) | (1n << 17n)) },
+      },
+      {
+        model: "ResourceBalance",
+        key: "0xc",
+        value: { game_id: 1, entity_id: 7, resource_type: 35, balance: String(Math.round(wheat * 1_000_000_000)) },
+      },
+    ] as never);
+    const { host, root } = render(store, row);
+    click(host.querySelector('button[aria-label="Army 2"]')!);
+    press(host, "Max");
+    expect(outOf(host)).toBe(most);
+    if (price) expect(foot(host)).toBe(price);
+    act(() => root.unmount());
+    host.remove();
+  });
+
   it("says at Max that the wheat caps the count, offers Get Wheat on the line, and keeps Max at the most as the farms fill", () => {
     (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
     const { store, row } = frontierDay();

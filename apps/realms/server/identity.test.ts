@@ -1,5 +1,5 @@
-import { environmentL2 } from "@realms-world/chain";
-import { readdirSync, readFileSync, mkdtempSync, writeFileSync, rmSync } from "node:fs";
+import { encodeChainName, environmentL2 } from "@realms-world/chain";
+import { readdirSync, readFileSync, mkdtempSync, rmSync } from "node:fs";
 import { createHash } from "node:crypto";
 import { execFileSync } from "node:child_process";
 import { tmpdir } from "node:os";
@@ -12,15 +12,20 @@ import {
 } from "@realms-world/identity";
 import { botRealmsId, deviceChangeHash, realmsAccountAddress } from "@realms-world/identity/account";
 import { createGuardian } from "@realms-world/guardian";
-import { byteArray, CallData, ec, hash, typedData, type TypedData } from "starknet";
-import { getPlatformProxy } from "wrangler";
+import { byteArray, CallData, ec, hash, outsideExecution, typedData, type TypedData } from "starknet";
 import { afterAll, beforeAll, describe, expect, it, onTestFinished, vi } from "vitest";
 
 import { Effect } from "effect";
-import { deliverWalletNotices } from "./wallet-changes";
+import { deliverWalletNotices, type SendWalletNotice } from "./wallet-changes";
 import { createIdentityAuth } from "./auth";
 import { WalletNotDeployedError, type VerifyWalletSignature } from "./wallet-signature";
 import { ACCOUNT_CLASS_HASH, type IdentityEnv } from "./env";
+import { PaymasterRefusedError, type Paymaster, type WalletFee } from "./paymaster";
+import { finishRecoveries, readAttemptState } from "./wallet-recovery";
+import { RpcError, type ProviderInterface } from "starknet";
+import type { WalletEscape } from "@realms-world/identity/wallet";
+import { defaultWalletDeployment, passkeySigner, passkeySignerGuid } from "@realms-world/identity/wallet";
+import { generateKeyPairSync } from "node:crypto";
 import { realmsIdOf } from "./realms-id";
 import { routeIdentityRequest } from "./routes";
 import { campaignCodeHash } from "./campaigns";
@@ -29,13 +34,15 @@ import { campaignTicketFor } from "./campaign-ticket-store";
 import { createCampaignReferralStore } from "./campaign-referral-store";
 import { accountKey } from "./campaign-entry";
 import { ORIGIN } from "./workerd-harness";
+import { createTestD1 } from "./test-d1";
 import { sendCampaign, stillFits, visitRecord } from "../scripts/comeback-campaign";
 
 const GUARDIAN_KEY = "0x2dccce1da22003777062ee0870e9881b460a8b7eca276870f57c601f182136c";
 const CHAIN_ID = "0x5245414c4d535f53484152445f41";
 
-const storageDirectory = mkdtempSync(join(tmpdir(), "identity-platform-"));
-let proxy: Awaited<ReturnType<typeof getPlatformProxy<{ DB: D1Database }>>>;
+let database: ReturnType<typeof createTestD1>;
+/** A cache that keeps nothing, so every directory read in these tests is fresh. */
+const noCache = { match: async () => undefined, put: async () => undefined } as unknown as Cache;
 const OPERATOR_TOKEN = "operator-test-token";
 
 /** The Heralds this test's shards answer from, by URL; a missing entry answers 503, and STALLED never answers. */
@@ -59,9 +66,24 @@ const relay = vi.fn(async (_input: RequestInfo | URL, _init?: RequestInit) =>
 let env: IdentityEnv;
 let auth: ReturnType<typeof createIdentityAuth>;
 
+/** The default wallets' paymaster, as AVNU answers: it builds what it is asked and submits what it is given; our key lets it sponsor. */
+const paymaster = {
+  canSponsor: true,
+  build: vi.fn<Paymaster["build"]>(),
+  execute: vi.fn<Paymaster["execute"]>(),
+};
+/** What the paymaster's build answers: the execution, and the fee the wallet pays itself (none when sponsored). */
+const built = (typedData: unknown, fee: WalletFee | null = null) => ({ typedData, fee }) as never;
+/** Whether the chain holds a contract at an address; default wallets start undeployed. */
+const isDeployed = vi.fn(async (_address: string) => false);
+/** A wallet's owner escape as the chain answers; none unless a test starts one. */
+const readEscape = vi.fn(
+  async (_address: string): Promise<WalletEscape> => ({ status: "none", readyAt: null, newOwner: null }),
+);
+
 /** The email provider's inbox: the last sign-in code sent to each address. */
 const sentCodes = new Map<string, string>();
-const notices = vi.fn(async (_email: string, _address: string | null, _id: string) => {});
+const notices = vi.fn<SendWalletNotice>(async () => {});
 /** Sign-in codes requested per address, as the rate limiter counts them. */
 const codesRequested = new Map<string, number>();
 const countSignInCode = (email: string) => {
@@ -92,17 +114,7 @@ const verifyAsWallet = vi.fn<VerifyWalletSignature>(async (message, signature, a
 });
 
 beforeAll(async () => {
-  vi.stubEnv("TMPDIR", storageDirectory);
-  const configPath = join(storageDirectory, "wrangler.json");
-  writeFileSync(
-    configPath,
-    JSON.stringify({
-      name: "identity-route-storage",
-      compatibility_date: "2026-07-30",
-      d1_databases: [{ binding: "DB", database_name: "identity", database_id: "00000000-0000-0000-0000-000000000000" }],
-    }),
-  );
-  proxy = await getPlatformProxy<{ DB: D1Database }>({ configPath, persist: false });
+  database = createTestD1();
   const migrations = new URL("../migrations/", import.meta.url);
   const statements = readdirSync(migrations)
     .sort()
@@ -112,7 +124,7 @@ beforeAll(async () => {
     .split(";")
     .map((statement) => statement.trim())
     .filter(Boolean);
-  await proxy.env.DB.batch(statements.map((statement) => proxy.env.DB.prepare(statement)));
+  await database.db.batch(statements.map((statement) => database.db.prepare(statement)));
   env = {
     ENVIRONMENT: "staging",
     BASE_URL: ORIGIN,
@@ -129,7 +141,7 @@ beforeAll(async () => {
     SHARD_NOTIFIER: {} as IdentityEnv["SHARD_NOTIFIER"],
     CHAT_ROOM: {} as IdentityEnv["CHAT_ROOM"],
     CHAT_INBOX: {} as IdentityEnv["CHAT_INBOX"],
-    DB: proxy.env.DB,
+    DB: database.db,
     GUARDIAN: createGuardian(GUARDIAN_KEY),
     LAUNCH: { fetch: vi.fn(async () => Response.json({ chains: [] })) },
     VALUE_RELAY: { fetch: relay },
@@ -142,17 +154,13 @@ beforeAll(async () => {
     verifyWalletSignature: verifyAsWallet,
     sendWalletNotice: notices,
     sendSignInCode: async (email, code) => void sentCodes.set(email, code),
+    paymaster,
+    isDeployed: (address) => isDeployed(address),
+    readEscape: (address) => readEscape(address),
   });
 }, 60_000);
 
-afterAll(async () => {
-  try {
-    await proxy?.dispose();
-  } finally {
-    vi.unstubAllEnvs();
-    rmSync(storageDirectory, { recursive: true, force: true });
-  }
-});
+afterAll(() => database?.close());
 
 /** A shard manifest under our guardian and account class, the only kind our directory lists. */
 const shardManifest = (chainId: string) => ({
@@ -182,7 +190,7 @@ const createBrowser = (parentDomainCookies: string[] = []) => {
       env,
       auth,
       {
-        cache: proxy.caches.default as unknown as Cache,
+        cache: noCache,
         fetchShard,
         readLaunchDirectory: async () => launchDirectory,
       },
@@ -332,7 +340,7 @@ const handoffCodeOf = (page: string) => /class="code">(\d{6})</.exec(page)?.[1] 
 const otherCode = (code: string) => String((Number(code) + 1) % 1_000_000).padStart(6, "0");
 
 const userCount = async () =>
-  ((await proxy.env.DB.prepare('SELECT count(*) AS n FROM "user"').first()) as { n: number }).n;
+  ((await database.db.prepare('SELECT count(*) AS n FROM "user"').first()) as { n: number }).n;
 
 const deviceChangeFor = (realmsId: string, overrides: Partial<{ account: string; counter: number }> = {}) => ({
   chainId: CHAIN_ID,
@@ -358,21 +366,23 @@ describe("identity Worker", () => {
     expect((await browser.session())?.user.realmsId).toBeTruthy();
   });
 
+  const now = () => Math.floor(Date.now() / 1000);
+  const lastSeen = async (realmsId: string) =>
+    visitRecord.seconds(
+      ((await database.db.prepare(visitRecord.lastVisit(realmsId)).first()) as { lastSeenAt?: unknown } | null)
+        ?.lastSeenAt,
+    );
+  const setLastSeen = (realmsId: string, seconds: number) =>
+    database.db
+      .prepare('UPDATE "user" SET "lastSeenAt" = ? WHERE "realmsId" = ?')
+      .bind(seconds * 1000, realmsId)
+      .run();
+
   it("keeps an account's last visit after it signs out, so a news email still sees that it came back", async () => {
     const DAY = 24 * 60 * 60;
-    const now = () => Math.floor(Date.now() / 1000);
-    const lastSeen = async (realmsId: string) =>
-      visitRecord.seconds(
-        ((await proxy.env.DB.prepare(visitRecord.lastVisit(realmsId)).first()) as { lastSeenAt?: unknown } | null)
-          ?.lastSeenAt,
-      );
-    const setLastSeen = (realmsId: string, seconds: number) =>
-      proxy.env.DB.prepare('UPDATE "user" SET "lastSeenAt" = ? WHERE "realmsId" = ?')
-        .bind(seconds * 1000, realmsId)
-        .run();
     /** The sender's own read and rule: a founded Devcon player, no confirmed action, the record long begun. */
     const stillAway = async (realmsId: string) =>
-      stillFits("D", { lastAction: 0, lastVisit: await lastSeen(realmsId) }, now() - DAY, 0);
+      stillFits("D", { lastAction: 0, lastVisit: await lastSeen(realmsId) }, now(), 0);
 
     // A visit is the app reading its session; signing out deletes the session but not the visit.
     const researcher = createBrowser();
@@ -384,9 +394,8 @@ describe("identity Worker", () => {
     await researcher.session();
     expect((await researcher.request("/api/auth/sign-out", { body: {} })).status).toBe(200);
     expect(await researcher.session()).toBeNull();
-    const sessionsLeft = await proxy.env.DB.prepare(
-      'SELECT count(*) AS n FROM "session" s JOIN "user" u ON u.id = s."userId" WHERE u."realmsId" = ?',
-    )
+    const sessionsLeft = await database.db
+      .prepare('SELECT count(*) AS n FROM "session" s JOIN "user" u ON u.id = s."userId" WHERE u."realmsId" = ?')
       .bind(realmsId)
       .first<{ n: number }>();
     expect(sessionsLeft?.n).toBe(0);
@@ -428,6 +437,46 @@ describe("identity Worker", () => {
     });
     expect(sent).toEqual([ids[0], ids[2]]);
     expect(counts).toMatchObject({ sent: 2, cameBack: 1 });
+  });
+
+  it("counts a player away from the visit record's first full hour, when it began less than a day before", async () => {
+    const HOUR = 60 * 60;
+    // Wrangler's own migrations table, as production has it: the sender reads from it when migration 0026 ran.
+    await database.db
+      .prepare(
+        "CREATE TABLE IF NOT EXISTS d1_migrations (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT UNIQUE, applied_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP)",
+      )
+      .run();
+    const recordBegan = (secondsAgo: number) =>
+      database.db
+        .prepare(
+          "INSERT INTO d1_migrations (name, applied_at) VALUES ('0026_last_seen.sql', ?1) ON CONFLICT(name) DO UPDATE SET applied_at = ?1",
+        )
+        .bind(new Date((now() - secondsAgo) * 1000).toISOString().slice(0, 19).replace("T", " "))
+        .run();
+    /** The sender's own reads (when the record began, the account's last visit) and rule, at this moment. */
+    const stillAway = async (realmsId: string, lastAction = 0) => {
+      const { results } = await database.db.prepare(visitRecord.began).all();
+      return stillFits("D", { lastAction, lastVisit: await lastSeen(realmsId) }, now(), visitRecord.beganAt(results));
+    };
+
+    const player = createBrowser();
+    expect((await signInWithCode(player, "early-away@realms.test")).status).toBe(200);
+    const { realmsId } = (await player.session())!.user;
+    // Last seen before the record began 11 hours ago (as the migration seeded it from an older session).
+    await recordBegan(11 * HOUR);
+    await setLastSeen(realmsId, now() - 12 * HOUR);
+    expect(await stillAway(realmsId)).toBe(true);
+    // Away counts from the record's first full hour (10 hours ago), not from 24 hours ago.
+    expect(await stillAway(realmsId, now() - 20 * HOUR)).toBe(true);
+    expect(await stillAway(realmsId, now() - 9 * HOUR)).toBe(false);
+    // In the record's first hour a visit may be missing from it: nobody is away yet.
+    await recordBegan(HOUR / 2);
+    expect(await stillAway(realmsId)).toBe(false);
+    // Opening the game brings the player back.
+    await recordBegan(11 * HOUR);
+    await player.session();
+    expect(await stillAway(realmsId)).toBe(false);
   });
 
   it("creates an account on an email's first sign-in with a code, and signs the same account in after", async () => {
@@ -504,7 +553,8 @@ describe("identity Worker", () => {
     expect((await signIn("wrong@realms.test", wrongCode)).status).toBe(400);
 
     await ask("late@realms.test");
-    await proxy.env.DB.prepare('UPDATE "verification" SET "expiresAt" = ? WHERE "identifier" LIKE ?')
+    await database.db
+      .prepare('UPDATE "verification" SET "expiresAt" = ? WHERE "identifier" LIKE ?')
       .bind(new Date(Date.now() - 1_000).toISOString(), "%late@realms.test")
       .run();
     expect((await signIn("late@realms.test", sentCodes.get("late@realms.test"))).status).toBe(400);
@@ -588,9 +638,8 @@ describe("identity Worker", () => {
       const owner = createBrowser();
       expect((await signInWithCode(owner, "owner@realms.test")).status).toBe(200);
       const account = (await owner.session())!.user;
-      const discordRows = await proxy.env.DB.prepare(
-        `SELECT count(*) AS n FROM "account" WHERE "userId" = ? AND "providerId" = 'discord'`,
-      )
+      const discordRows = await database.db
+        .prepare(`SELECT count(*) AS n FROM "account" WHERE "userId" = ? AND "providerId" = 'discord'`)
         .bind(account.id)
         .first<{ n: number }>();
       expect(discordRows?.n).toBe(0);
@@ -698,9 +747,8 @@ describe("identity Worker", () => {
       expect(claims.filter((claim) => claim.status === 200).length).toBeLessThanOrEqual(1);
       // Taken, or out of tries: either way no live hold is left to take, and a late try does not make one.
       await app.request("/api/auth/discord-handoff", { body: { code: otherCode(code) } });
-      const live = await proxy.env.DB.prepare(
-        "SELECT count(*) AS n FROM discord_handoffs WHERE code_hash = ?1 AND attempts < 3",
-      )
+      const live = await database.db
+        .prepare("SELECT count(*) AS n FROM discord_handoffs WHERE code_hash = ?1 AND attempts < 3")
         .bind(createHash("sha256").update(code).digest("hex"))
         .first<{ n: number }>();
       expect(live?.n).toBe(0);
@@ -717,7 +765,8 @@ describe("identity Worker", () => {
       const profile = { id: "80351110224670006", username: "clock", email: "clock@discord.test", verified: true };
       const code = handoffCodeOf(await (await returnInAnotherBrowser(app, createBrowser(), profile)).text());
       const hold = () =>
-        proxy.env.DB.prepare("SELECT attempts, expires_at FROM discord_handoffs WHERE code_hash = ?1")
+        database.db
+          .prepare("SELECT attempts, expires_at FROM discord_handoffs WHERE code_hash = ?1")
           .bind(createHash("sha256").update(code).digest("hex"))
           .first<{ attempts: number; expires_at: number }>();
       const before = await hold();
@@ -753,7 +802,7 @@ describe("identity Worker", () => {
     await signInWithCode(browser, "unverified@realms.test");
     const user = (await browser.session())!.user;
     // An account from before Discord and email codes were the only ways in.
-    await proxy.env.DB.prepare('UPDATE "user" SET "emailVerified" = 0 WHERE "id" = ?').bind(user.id).run();
+    await database.db.prepare('UPDATE "user" SET "emailVerified" = 0 WHERE "id" = ?').bind(user.id).run();
     const refused = await browser.request("/api/devices", { body: deviceChangeFor(user.realmsId) });
     expect(refused.status).toBe(403);
     expect(await refused.json()).toEqual({ error: "account_not_secured" });
@@ -1460,25 +1509,27 @@ describe("identity Worker", () => {
       });
     };
 
-    let devices = 0;
+    /** A browser the app opened in before, under the id it was given there: another account signing in on it. */
+    const sameBrowserAs = (browserId: string) => createBrowser([`realms-identity.browser=${browserId}`]);
     /**
-     * A signed-in player. By default each signs in with their own mailbox and on their own device, approved by the
-     * guardian through /api/devices as the client asks; `email` and `device` make one share another's, and
-     * `device: null` approves none yet.
+     * A signed-in player, each by default with their own mailbox on their own browser, which the app opens by reading
+     * its session. `email` shares another's mailbox; `on` signs in on another player's browser; `opened: false` signs
+     * in on a browser the app has not opened in since, so no browser is known for the account yet.
      */
-    const player = async (name: string, { email, device }: { email?: string; device?: string | null } = {}) => {
-      const browser = createBrowser();
-      await signInWithCode(browser, email ?? `${name}@realms.test`);
-      const realmsId = (await browser.session())!.user.realmsId;
+    const player = async (
+      name: string,
+      { email, on, opened = true }: { email?: string; on?: string; opened?: boolean } = {},
+    ) => {
+      const address = email ?? `${name}@realms.test`;
+      const browser = on ? sameBrowserAs(on) : createBrowser();
+      await signInWithCode(browser, address);
+      const realmsId = opened
+        ? (await browser.session())!.user.realmsId
+        : (await env.DB.prepare('SELECT "realmsId" FROM "user" WHERE "email" = ?')
+            .bind(address.toLowerCase())
+            .first<{ realmsId: string }>())!.realmsId;
       await heraldsAnswerFor(realmsId, { [shard]: false });
       const account = accountKey(realmsAccountAddress(realmsId, ACCOUNT_CLASS_HASH, await env.GUARDIAN.publicKey()));
-      let counter = 0;
-      const onDevice = async (deviceKey: string) => {
-        const change = { ...deviceChangeFor(realmsId, { counter: ++counter }), chainId: "0xd5", deviceKey };
-        expect((await browser.request("/api/devices", { body: change })).status).toBe(200);
-      };
-      const own = device === undefined ? `0x${(0xd0000 + ++devices).toString(16)}` : device;
-      if (own !== null) await onDevice(own);
       const call = async (path: string, body?: unknown) => {
         await publishHeralds();
         const response = await browser.request(path, body === undefined ? {} : { body });
@@ -1487,11 +1538,24 @@ describe("identity Worker", () => {
       return {
         browser,
         realmsId,
-        device: own,
-        onDevice,
-        /** Signs out, as the client does: the session and its device rows go. */
+        /** The id of the browser this player signed in on first; null until the app opens there. */
+        browserId: async () =>
+          (
+            await env.DB.prepare('SELECT "browser" FROM "account_browsers" WHERE "realmsId" = ? ORDER BY rowid LIMIT 1')
+              .bind(realmsId)
+              .first<{ browser: string }>()
+          )?.browser ?? null,
+        /** The app opens in this player's browser, reading its session. */
+        open: () => browser.session(),
+        /** Signs in on another player's browser too, where the app opens. */
+        signInOn: async (browserId: string) => {
+          const other = sameBrowserAs(browserId);
+          await signInWithCode(other, address);
+          await other.session();
+        },
+        /** Signs out, as the client does: the session goes, and the browser keeps its id. */
         signOut: async () => expect((await browser.request("/api/auth/sign-out", { body: {} })).status).toBe(200),
-        signIn: () => signInWithCode(browser, email ?? `${name}@realms.test`),
+        signIn: () => signInWithCode(browser, address),
         redeem: (body: Record<string, unknown> = {}) => call("/api/campaigns/redeem", { campaign, ...body }),
         referral: () => call(`/api/campaigns/referral?campaign=${campaign}`),
         code: async () => (await call(`/api/campaigns/referral?campaign=${campaign}`))[1].code as string,
@@ -1669,32 +1733,33 @@ describe("identity Worker", () => {
       expect(await inviter.redeem()).toEqual(ticket("regular"));
     });
 
-    it("counts one person once: a friend sharing a mailbox or device with the inviter or a counted friend is excluded", async () => {
+    it("counts one person once: a friend sharing a mailbox or browser with the inviter or a counted friend is excluded", async () => {
       const inviter = await player("ref-alts", { email: "Ref.Alts@gmail.com" });
       inviter.found("free");
       const code = await inviter.code();
-      const join = async (name: string, options: { email?: string; device?: string | null }) => {
+      const join = async (name: string, options: { email?: string; on?: string; opened?: boolean }) => {
         const friend = await player(name, options);
         expect(await friend.redeem({ referral: code })).toEqual(ticket("regular"));
         friend.found("campaign", 1);
         return friend;
       };
-      // The inviter's own inbox by Gmail's dots and +tags, and the inviter's own device: neither counts.
+      // The inviter's own inbox by Gmail's dots and +tags, and the inviter's own browser: neither counts.
       await join("ref-alts-mail", { email: "refalts+two@googlemail.com" });
-      await join("ref-alts-device", { device: inviter.device });
+      await join("ref-alts-browser", { on: (await inviter.browserId())! });
       expect((await inviter.referral())[1]).toEqual(answer("free", ["excluded", "excluded"]));
       expect(await campaignTicketFor(env.DB, inviter.realmsId, 6)).toBeNull();
-      // A friend of their own counts; another on that friend's device does not; one with no device yet waits for it.
+      // A friend of their own counts; another on that friend's browser does not; one whose browser the app has not
+      // opened in yet waits for it.
       const real = await join("ref-alts-real", {});
-      await join("ref-alts-copy", { device: real.device });
-      const later = await join("ref-alts-later", { device: null });
+      await join("ref-alts-copy", { on: (await real.browserId())! });
+      const later = await join("ref-alts-later", { opened: false });
       expect((await inviter.referral())[1]).toEqual(
         answer("ticket", ["excluded", "excluded", "counted", "excluded", "founded"], {
           tier: "regular",
           earned: { ticket: true },
         }),
       );
-      await later.onDevice("0xfeed");
+      await later.open();
       expect((await inviter.referral())[1].friends.map(({ state }: { state: string }) => state)).toEqual([
         "excluded",
         "excluded",
@@ -1704,71 +1769,70 @@ describe("identity Worker", () => {
       ]);
     });
 
-    it("keeps excluding a friend on the inviter's device after the inviter signs out and back in", async () => {
-      const inviter = await player("ref-signout", { device: "0xa11ce" });
-      inviter.found("free");
-      const code = await inviter.code();
-      const twin = await player("ref-signout-twin", { device: "0xa11ce" });
-      expect(await twin.redeem({ referral: code })).toEqual(ticket("regular"));
-      twin.found("campaign", 1);
-      expect((await inviter.referral())[1]).toEqual(answer("free", ["excluded"]));
-      // Sign-out deletes the inviter's session and with it every device_sessions row; signing back in registers none.
-      await inviter.signOut();
-      await inviter.signIn();
-      const rows = await env.DB.prepare('SELECT COUNT(*) AS n FROM "device_sessions" WHERE "realmsId" = ?')
-        .bind(inviter.realmsId)
-        .first<{ n: number }>();
-      expect(rows).toEqual({ n: 0 });
-      expect((await inviter.referral())[1]).toEqual(answer("free", ["excluded"]));
-      expect(await campaignTicketFor(env.DB, inviter.realmsId, 6)).toBeNull();
-      // The same for a friend who approved a counted friend's device and signed out before counting.
-      const real = await player("ref-signout-real");
-      expect(await real.redeem({ referral: code })).toEqual(ticket("regular"));
-      real.found("campaign", 1);
-      const borrower = await player("ref-signout-borrow", { device: null });
-      expect(await borrower.redeem({ referral: code })).toEqual(ticket("regular"));
-      await borrower.onDevice(real.device!);
-      await borrower.signOut();
-      borrower.found("campaign", 1);
-      expect((await inviter.referral())[1].friends.map(({ state }: { state: string }) => state)).toEqual([
-        "excluded",
-        "counted",
-        "excluded",
-      ]);
+    it("excludes a second account on the inviter's browser through sign-outs, and never counts two accounts for each other", async () => {
+      // The owner's test: two accounts on one browser, each taking the other's link.
+      const first = await player("ref-same-first");
+      first.found("free");
+      const firstCode = await first.code();
+      const shared = (await first.browserId())!;
+      await first.signOut();
+      const second = await player("ref-same-second", { on: shared });
+      expect(await second.redeem({ referral: firstCode })).toEqual(ticket("regular"));
+      second.found("campaign", 1);
+      // Back on its browser after signing out, the first account finds it under the same one id.
+      await first.signIn();
+      await first.open();
+      const browsers = await env.DB.prepare('SELECT "browser" FROM "account_browsers" WHERE "realmsId" = ?')
+        .bind(first.realmsId)
+        .all<{ browser: string }>();
+      expect(browsers.results).toEqual([{ browser: shared }]);
+      expect((await first.referral())[1]).toEqual(answer("free", ["excluded"]));
+      expect(await campaignTicketFor(env.DB, first.realmsId, 6)).toBeNull();
+      // The older account takes the newer one's link: it gets its ticket, but brought the newer one no friend.
+      expect(await first.redeem({ referral: await second.code() })).toEqual(ticket("regular"));
+      expect(await referralRows(first)).toEqual([]);
+      expect((await second.referral())[1].friends).toEqual([]);
+      // So does an older account on a browser of its own.
+      const elder = await player("ref-same-elder");
+      const newcomer = await player("ref-same-newcomer");
+      expect(await elder.redeem({ referral: await newcomer.code() })).toEqual(ticket("regular"));
+      expect(await referralRows(elder)).toEqual([]);
     });
 
     it("counts one person once when settlements race, each deciding from its own snapshot", async () => {
       const inviter = await player("ref-racing");
       inviter.found("free");
       const code = await inviter.code();
-      const own = { mailbox: "ref-racing@realms.test", devices: [inviter.device!] };
+      const inviterBrowser = (await inviter.browserId())!;
+      const own = { mailbox: "ref-racing@realms.test", browsers: [inviterBrowser] };
       const store = createCampaignReferralStore(env.DB);
-      const join = async (name: string, options: { email?: string; device?: string | null }) => {
+      const join = async (name: string, options: { email?: string; on?: string }) => {
         const friend = await player(name, options);
         expect(await friend.redeem({ referral: code })).toEqual(ticket("regular"));
         friend.found("campaign", 1);
         return friend;
       };
-      // Shared device: an older read decided to count the later friend, a newer one the earlier; both writes land.
-      const first = await join("ref-racing-a", { device: "0xdef" });
-      const second = await join("ref-racing-b", { device: "0xdef" });
-      await store.markCounted(campaign, inviter.realmsId, own, [{ friend: second.realmsId, deviceKey: "0xdef" }], 1);
-      await store.markCounted(campaign, inviter.realmsId, own, [{ friend: first.realmsId, deviceKey: "0xdef" }], 2);
-      // Shared mailbox: the same race between two aliases of one inbox, on their own devices.
+      // Shared browser: an older read decided to count the later friend, a newer one the earlier; both writes land.
+      const first = await join("ref-racing-a", {});
+      const shared = (await first.browserId())!;
+      const second = await join("ref-racing-b", { on: shared });
+      await store.markCounted(campaign, inviter.realmsId, own, [{ friend: second.realmsId, browser: shared }], 1);
+      await store.markCounted(campaign, inviter.realmsId, own, [{ friend: first.realmsId, browser: shared }], 2);
+      // Shared mailbox: the same race between two aliases of one inbox, on their own browsers.
       const third = await join("ref-racing-c", { email: "racer@gmail.com" });
       const fourth = await join("ref-racing-d", { email: "ra.cer+alt@gmail.com" });
       await store.markCounted(
         campaign,
         inviter.realmsId,
         own,
-        [{ friend: fourth.realmsId, deviceKey: fourth.device! }],
+        [{ friend: fourth.realmsId, browser: (await fourth.browserId())! }],
         3,
       );
       await store.markCounted(
         campaign,
         inviter.realmsId,
         own,
-        [{ friend: third.realmsId, deviceKey: third.device! }],
+        [{ friend: third.realmsId, browser: (await third.browserId())! }],
         4,
       );
       const counted = await env.DB.prepare(
@@ -1781,46 +1845,41 @@ describe("identity Worker", () => {
       expect((await inviter.referral())[1]).toEqual(
         answer("ticket", ["excluded", "counted", "excluded", "counted"], { tier: "regular", earned: { ticket: true } }),
       );
-      // Nor does a write for the inviter's own mailbox or device count anyone.
-      const self = await join("ref-racing-self", { device: inviter.device });
-      await store.markCounted(
-        campaign,
-        inviter.realmsId,
-        own,
-        [{ friend: self.realmsId, deviceKey: inviter.device! }],
-        5,
-      );
+      // Nor does a write for the inviter's own mailbox or browser count anyone.
+      const self = await join("ref-racing-self", { on: inviterBrowser });
+      await store.markCounted(campaign, inviter.realmsId, own, [{ friend: self.realmsId, browser: inviterBrowser }], 5);
       expect((await inviter.referral())[1].link.counted).toBe(2);
     });
 
-    it("compares every device each friend ever approved, not only the one kept, in sequence and when writes race", async () => {
-      const inviter = await player("ref-alldev");
+    it("compares every browser each friend was signed in on, not only the one kept, in sequence and when writes race", async () => {
+      const inviter = await player("ref-allbrowsers");
       inviter.found("free");
       const code = await inviter.code();
-      const own = { mailbox: "ref-alldev@realms.test", devices: [inviter.device!] };
-      const join = async (name: string, devices: string[]) => {
-        const friend = await player(name, { device: devices[0]! });
-        for (const device of devices.slice(1)) await friend.onDevice(device);
+      const own = { mailbox: "ref-allbrowsers@realms.test", browsers: [(await inviter.browserId())!] };
+      const [a1, a2, c1, c2, c3] = Array.from({ length: 5 }, () => crypto.randomUUID());
+      const join = async (name: string, browsers: string[]) => {
+        const friend = await player(name, { on: browsers[0]! });
+        for (const browser of browsers.slice(1)) await friend.signInOn(browser);
         expect(await friend.redeem({ referral: code })).toEqual(ticket("regular"));
         return friend;
       };
-      // In sequence: A approved 0xa1 and 0xa2 and is kept on 0xa1; it counts. B, on 0xa2 alone, qualifies on a later read.
-      const a = await join("ref-alldev-a", ["0xa1", "0xa2"]);
+      // In sequence: A was on a1 and a2 and is kept on a1; it counts. B, on a2 alone, qualifies on a later read.
+      const a = await join("ref-allbrowsers-a", [a1!, a2!]);
       a.found("campaign", 1);
       expect((await inviter.referral())[1].friends.map(({ state }: { state: string }) => state)).toEqual(["counted"]);
-      const b = await join("ref-alldev-b", ["0xa2"]);
+      const b = await join("ref-allbrowsers-b", [a2!]);
       b.found("campaign", 1);
       expect((await inviter.referral())[1]).toEqual(
         answer("ticket", ["counted", "excluded"], { tier: "regular", earned: { ticket: true } }),
       );
-      // Racing writes, the shared 0xc3 neither friend's kept device: the second write counts no one.
+      // Racing writes, the shared c3 neither friend's kept browser: the second write counts no one.
       const store = createCampaignReferralStore(env.DB);
-      const c = await join("ref-alldev-c", ["0xc1", "0xc3"]);
-      const d = await join("ref-alldev-d", ["0xc2", "0xc3"]);
+      const c = await join("ref-allbrowsers-c", [c1!, c3!]);
+      const d = await join("ref-allbrowsers-d", [c2!, c3!]);
       c.found("campaign", 1);
       d.found("campaign", 1);
-      await store.markCounted(campaign, inviter.realmsId, own, [{ friend: d.realmsId, deviceKey: "0xc2" }], 10);
-      await store.markCounted(campaign, inviter.realmsId, own, [{ friend: c.realmsId, deviceKey: "0xc1" }], 11);
+      await store.markCounted(campaign, inviter.realmsId, own, [{ friend: d.realmsId, browser: c2! }], 10);
+      await store.markCounted(campaign, inviter.realmsId, own, [{ friend: c.realmsId, browser: c1! }], 11);
       expect((await inviter.referral())[1]).toEqual(
         answer("ticket", ["counted", "excluded", "excluded", "counted"], { tier: "regular", earned: { ticket: true } }),
       );
@@ -2349,7 +2408,12 @@ describe("identity Worker", () => {
     await signInWithCode(browser, "wallet-factor@realms.test");
     const address = createWallet();
     expect((await proveWallet(browser, address, "link")).status).toBe(200);
-    expect(notices).toHaveBeenLastCalledWith("wallet-factor@realms.test", expect.any(String), expect.any(String));
+    expect(notices).toHaveBeenLastCalledWith(
+      "wallet-factor@realms.test",
+      expect.any(String),
+      expect.any(String),
+      "payout",
+    );
     for (const otp of [undefined, "12345", "1234567", "12345678", "abcdef"]) {
       expect((await browser.request("/api/auth/siws/unlink", { body: { otp } })).status).toBe(400);
     }
@@ -2359,7 +2423,7 @@ describe("identity Worker", () => {
     expect((await browser.request("/api/auth/siws/unlink", { body: { otp: wrong } })).status).toBe(400);
     expect((await browser.session())!.user.address).not.toBeNull();
     expect((await browser.request("/api/auth/siws/unlink", { body: { otp } })).status).toBe(200);
-    expect(notices).toHaveBeenLastCalledWith("wallet-factor@realms.test", null, expect.any(String));
+    expect(notices).toHaveBeenLastCalledWith("wallet-factor@realms.test", null, expect.any(String), "payout");
     expect((await browser.request("/api/auth/siws/unlink", { body: { otp } })).status).toBe(400);
     const expired = await walletCode(browser);
     await env.DB.prepare("UPDATE verification SET expiresAt = ? WHERE identifier = ?")
@@ -2568,5 +2632,894 @@ describe("the account's own arithmetic", () => {
     expect(realmsAccountAddress(realmsId, ACCOUNT_CLASS_HASH, ec.starkCurve.getStarkKey(GUARDIAN_KEY))).toBe(
       "0x3b5a624d64098f9369e61f21d89fc5a0bf2bd3137e7123f53234db67c8af69",
     );
+  });
+});
+
+describe("default wallet", () => {
+  /** A passkey as the browser makes it: its id and its P-256 public key as a SubjectPublicKeyInfo, base64url. */
+  const makePasskey = () => {
+    const { publicKey } = generateKeyPairSync("ec", { namedCurve: "P-256" });
+    return {
+      credentialId: Buffer.from(crypto.getRandomValues(new Uint8Array(16))).toString("base64url"),
+      publicKey: Buffer.from(publicKey.export({ format: "der", type: "spki" })).toString("base64url"),
+      x: `0x${BigInt(`0x${Buffer.from(publicKey.export({ format: "jwk" }).x!, "base64url").toString("hex")}`).toString(16)}`,
+    };
+  };
+  const newPlayer = async () => {
+    const browser = createBrowser();
+    await signInWithCode(browser, `wallet-${crypto.randomUUID()}@realms.test`);
+    return browser;
+  };
+  const create = (browser: ReturnType<typeof createBrowser>, body: Record<string, unknown>) =>
+    browser.request("/api/auth/wallet/default", { body });
+  const withWallet = async () => {
+    const browser = await newPlayer();
+    const passkey = makePasskey();
+    const created = await create(browser, {
+      passkey: { credentialId: passkey.credentialId, publicKey: passkey.publicKey },
+    });
+    expect(created.status).toBe(200);
+    const { wallet } = (await created.json()) as { wallet: { address: string } };
+    return { browser, passkey, wallet };
+  };
+  const LORDS = "0x124aeb495b947201f5fac96fd1138e326ad86195b98df6dec9009158a533b49";
+  const transfer = { contractAddress: LORDS, entrypoint: "transfer", calldata: ["0x5", "0x64", "0x0"] };
+  const executionFor = (calls = [transfer], nonce = "0x99") =>
+    outsideExecution.getTypedData(
+      encodeChainName(environmentL2(env.ENVIRONMENT).chain),
+      { caller: "0x414e595f43414c4c4552", execute_after: 1, execute_before: 1_900_000_000 },
+      nonce,
+      calls,
+      "2",
+    );
+
+  it("is made from the player's passkey at the Ready 0.5 address and written as the payout wallet", async () => {
+    notices.mockClear();
+    const { browser, passkey, wallet } = await withWallet();
+    const { user } = (await browser.session())!;
+    const expected = defaultWalletDeployment(
+      { origin: ORIGIN, rpId: new URL(ORIGIN).hostname, publicKeyX: passkey.x },
+      await env.GUARDIAN.publicKey(),
+      user.realmsId,
+    );
+    expect(wallet.address).toBe(expected.address);
+    expect(user.address).toBe(expected.address);
+    expect(notices).toHaveBeenCalledWith(user.email, expected.address, expect.any(String), "payout");
+    const history = await env.DB.prepare(
+      "SELECT wallet FROM wallet_link_history WHERE account = ? AND replaced_at IS NULL",
+    )
+      .bind(user.realmsId)
+      .first<{ wallet: string }>();
+    expect(history?.wallet).toBe(expected.address);
+    const read = (await (await browser.request("/api/auth/wallet/default")).json()) as { wallet: unknown };
+    expect(read.wallet).toEqual({
+      address: expected.address,
+      credentialId: passkey.credentialId,
+      publicKeyX: passkey.x,
+      origin: ORIGIN,
+      rpId: new URL(ORIGIN).hostname,
+    });
+  });
+
+  it("answers a retry, even with another passkey, with the first wallet", async () => {
+    const { browser, wallet } = await withWallet();
+    const again = makePasskey();
+    const retried = await create(browser, {
+      passkey: { credentialId: again.credentialId, publicKey: again.publicKey },
+    });
+    expect(((await retried.json()) as { wallet: { address: string } }).wallet.address).toBe(wallet.address);
+  });
+
+  /** Ages the browser's session past the minutes a sign-in vouches for a first wallet. */
+  const ageSignIn = async (browser: ReturnType<typeof createBrowser>) => {
+    const { user } = (await browser.session())!;
+    await env.DB.prepare(`UPDATE session SET "createdAt" = ? WHERE "userId" = ?`)
+      .bind(new Date(Date.now() - 11 * 60 * 1000).toISOString(), user.id)
+      .run();
+  };
+  const passkeyBody = (passkey: ReturnType<typeof makePasskey>) => ({
+    credentialId: passkey.credentialId,
+    publicKey: passkey.publicKey,
+  });
+
+  it("takes an emailed code once the sign-in is more than minutes old, as any wallet change does", async () => {
+    const browser = await newPlayer();
+    await ageSignIn(browser);
+    const passkey = makePasskey();
+    const stale = await create(browser, { passkey: passkeyBody(passkey) });
+    expect(stale.status).toBe(403);
+    expect(((await stale.json()) as { message: string }).message).toBe("CODE_REQUIRED");
+    expect((await browser.session())!.user.address ?? null).toBeNull();
+    const linked = await create(browser, { passkey: passkeyBody(passkey), otp: await walletCode(browser) });
+    expect(linked.status).toBe(200);
+    const { wallet } = (await linked.json()) as { wallet: { address: string; publicKeyX: string } };
+    expect(wallet.publicKeyX).toBe(passkey.x);
+    expect((await browser.session())!.user.address).toBe(wallet.address);
+  });
+
+  it("keeps nothing of a passkey refused for want of a code, so a stolen session cannot plant one", async () => {
+    const browser = await newPlayer();
+    await ageSignIn(browser);
+    // Someone holding the session cookie, but not the inbox, offers their own passkey.
+    const planted = await create(browser, { passkey: passkeyBody(makePasskey()) });
+    expect(planted.status).toBe(403);
+    expect(
+      ((await (await browser.request("/api/auth/wallet/default")).json()) as { wallet: unknown }).wallet,
+    ).toBeNull();
+    // The owner, with the code, makes the wallet from their own passkey.
+    const owner = makePasskey();
+    const made = await create(browser, { passkey: passkeyBody(owner), otp: await walletCode(browser) });
+    expect(((await made.json()) as { wallet: { publicKeyX: string } }).wallet.publicKeyX).toBe(owner.x);
+  });
+
+  it("never replaces a linked wallet without a code", async () => {
+    const browser = createBrowser();
+    await signInWithCode(browser, `linked-${crypto.randomUUID()}@realms.test`);
+    const linked = createWallet();
+    expect((await proveWallet(browser, linked, "link")).status).toBe(200);
+    const passkey = makePasskey();
+    const refused = await create(browser, {
+      passkey: { credentialId: passkey.credentialId, publicKey: passkey.publicKey },
+    });
+    expect(refused.status).toBe(400);
+    expect(((await refused.json()) as { message: string }).message).toBe("WALLET_ALREADY_LINKED");
+    expect(BigInt((await browser.session())!.user.address!)).toBe(BigInt(linked));
+  });
+
+  it("refuses a public key that is not P-256", async () => {
+    const browser = await newPlayer();
+    const refused = await create(browser, { passkey: { credentialId: "abc", publicKey: "AAAA" } });
+    expect(((await refused.json()) as { message: string }).message).toBe("PASSKEY_INVALID");
+  });
+
+  it("builds a send paid by the wallet in LORDS, deploying the wallet with its first, and answers its fee", async () => {
+    const { browser, passkey, wallet } = await withWallet();
+    const { user } = (await browser.session())!;
+    const fee = { estimated: "0x6d5e1a3a2b8c0000", max: "0x7e4a18b6f2a40000" };
+    paymaster.build.mockResolvedValueOnce(built(executionFor(), fee));
+    const first = await browser.request("/api/auth/wallet/default/build", { body: { calls: [transfer] } });
+    expect(await first.json()).toEqual({ typedData: JSON.parse(JSON.stringify(executionFor())), fee });
+    expect(paymaster.build).toHaveBeenLastCalledWith(
+      wallet.address,
+      [transfer],
+      defaultWalletDeployment(
+        { origin: ORIGIN, rpId: new URL(ORIGIN).hostname, publicKeyX: passkey.x },
+        await env.GUARDIAN.publicKey(),
+        user.realmsId,
+      ),
+      "wallet",
+    );
+    isDeployed.mockResolvedValueOnce(true);
+    paymaster.build.mockResolvedValueOnce(built(executionFor(), fee));
+    await browser.request("/api/auth/wallet/default/build", { body: { calls: [transfer] } });
+    expect(paymaster.build).toHaveBeenLastCalledWith(wallet.address, [transfer], null, "wallet");
+    paymaster.build.mockReset();
+  });
+
+  it("answers a build the paymaster refuses (too little LORDS for its fee) as proven not sent", async () => {
+    const { browser } = await withWallet();
+    paymaster.build.mockRejectedValueOnce(new PaymasterRefusedError("u256_sub Overflow"));
+    const refused = await browser.request("/api/auth/wallet/default/build", { body: { calls: [transfer] } });
+    expect(refused.status).toBe(502);
+    expect(((await refused.json()) as { message: string }).message).toBe("PAYMASTER_REFUSED");
+    paymaster.build.mockReset();
+  });
+
+  it("refuses to build a call to the wallet itself", async () => {
+    const { browser, wallet } = await withWallet();
+    const selfCall = { contractAddress: wallet.address, entrypoint: "trigger_escape_guardian", calldata: ["0x1"] };
+    const refused = await browser.request("/api/auth/wallet/default/build", { body: { calls: [selfCall] } });
+    expect(((await refused.json()) as { message: string }).message).toBe("WALLET_SELF_CALL");
+    expect(paymaster.build).not.toHaveBeenCalled();
+  });
+
+  it("submits the passkey's signature with the guardian's over the execution's hash, the wallet paying, with no daily cap", async () => {
+    const { browser, wallet } = await withWallet();
+    const execution = executionFor();
+    const ownerSignature = ["0x4", "0x1", "0x2"];
+    paymaster.execute.mockResolvedValue("0xabc");
+    const sent = await browser.request("/api/auth/wallet/default/execute", {
+      body: { typedData: execution, ownerSignature },
+    });
+    expect(await sent.json()).toEqual({ transactionHash: "0xabc" });
+    const [address, submitted, signature, , payer] = paymaster.execute.mock.lastCall!;
+    expect(address).toBe(wallet.address);
+    expect(submitted).toEqual(execution);
+    expect(payer).toBe("wallet");
+    const guardian = await env.GUARDIAN.publicKey();
+    expect(signature.slice(0, 6).map(BigInt)).toEqual([2n, 4n, 1n, 2n, 0n, BigInt(guardian)]);
+    const digest = typedData.getMessageHash(execution, wallet.address);
+    const [r, s] = signature.slice(6).map(BigInt);
+    expect(
+      ec.starkCurve.verify(new ec.starkCurve.Signature(r!, s!), digest, ec.starkCurve.getPublicKey(GUARDIAN_KEY)),
+    ).toBe(true);
+    // The wallet pays its own fees, so nothing caps how often it sends.
+    for (let call = 1; call <= 4; call += 1) {
+      const next = await browser.request("/api/auth/wallet/default/execute", {
+        body: { typedData: executionFor([transfer], `0x${(0x100 + call).toString(16)}`), ownerSignature },
+      });
+      expect(next.status).toBe(200);
+    }
+    expect(paymaster.execute).toHaveBeenCalledTimes(5);
+    paymaster.execute.mockReset();
+  });
+
+  it("answers a send the paymaster refuses as proven never sent", async () => {
+    const { browser } = await withWallet();
+    paymaster.execute.mockRejectedValueOnce(new PaymasterRefusedError("invalid signature"));
+    const refused = await browser.request("/api/auth/wallet/default/execute", {
+      body: { typedData: executionFor(), ownerSignature: ["0x4"] },
+    });
+    expect(refused.status).toBe(502);
+    expect(((await refused.json()) as { message: string }).message).toBe("PAYMASTER_REFUSED");
+    paymaster.execute.mockReset();
+  });
+
+  it("answers a lost paymaster answer as uncertain, and resubmits the same signed execution", async () => {
+    const { browser } = await withWallet();
+    const execution = executionFor([transfer], "0x77");
+    // The paymaster accepted the execution, then its answer was lost.
+    paymaster.execute.mockRejectedValueOnce(new TypeError("fetch failed"));
+    const lost = await browser.request("/api/auth/wallet/default/execute", {
+      body: { typedData: execution, ownerSignature: ["0x4"] },
+    });
+    expect(lost.status).toBe(503);
+    expect(((await lost.json()) as { message: string }).message).toBe("SEND_UNCERTAIN");
+    // The browser sends the same signed execution again: the same nonce, so it can run once.
+    paymaster.execute.mockResolvedValueOnce("0xsame");
+    const again = await browser.request("/api/auth/wallet/default/execute", {
+      body: { typedData: execution, ownerSignature: ["0x4"] },
+    });
+    expect(await again.json()).toEqual({ transactionHash: "0xsame" });
+    expect(paymaster.execute.mock.calls.map(([, submitted]) => submitted)).toEqual([execution, execution]);
+    paymaster.execute.mockReset();
+  });
+
+  it("without the sponsor key still sends (the wallet pays), and refuses a cancel and a recovery before anything is spent", async () => {
+    const { browser, wallet } = await withWallet();
+    paymaster.canSponsor = false;
+    try {
+      paymaster.build.mockResolvedValueOnce(built(executionFor(), { estimated: "0x1", max: "0x2" }));
+      expect((await browser.request("/api/auth/wallet/default/build", { body: { calls: [transfer] } })).status).toBe(
+        200,
+      );
+      paymaster.execute.mockResolvedValueOnce("0xpaid");
+      const sent = await browser.request("/api/auth/wallet/default/execute", {
+        body: { typedData: executionFor(), ownerSignature: ["0x4"] },
+      });
+      expect(await sent.json()).toEqual({ transactionHash: "0xpaid" });
+      const cancel = { contractAddress: wallet.address, entrypoint: "cancel_escape", calldata: [] };
+      const cancelBuild = await browser.request("/api/auth/wallet/default/build", { body: { calls: [cancel] } });
+      expect(cancelBuild.status).toBe(503);
+      expect(((await cancelBuild.json()) as { message: string }).message).toBe("SPONSOR_UNAVAILABLE");
+      const cancelSend = await browser.request("/api/auth/wallet/default/execute", {
+        body: { typedData: executionFor([cancel]), ownerSignature: ["0x4"] },
+      });
+      expect(((await cancelSend.json()) as { message: string }).message).toBe("SPONSOR_UNAVAILABLE");
+      const lost = makePasskey();
+      const recovery = await browser.request("/api/auth/wallet/default/recovery", {
+        body: { passkey: passkeyBody(lost), otp: await walletCode(browser) },
+      });
+      expect(recovery.status).toBe(503);
+      expect(((await recovery.json()) as { message: string }).message).toBe("SPONSOR_UNAVAILABLE");
+      expect(paymaster.build).toHaveBeenCalledTimes(1);
+      expect(paymaster.execute).toHaveBeenCalledTimes(1);
+    } finally {
+      paymaster.canSponsor = true;
+      paymaster.build.mockReset();
+      paymaster.execute.mockReset();
+    }
+  });
+
+  it("co-signs only an outside execution for this chain", async () => {
+    const { browser } = await withWallet();
+    const other = { ...executionFor(), domain: { ...executionFor().domain, chainId: "0x534e5f5345504f4c4941" } };
+    const refused = await browser.request("/api/auth/wallet/default/execute", {
+      body: { typedData: other, ownerSignature: ["0x4"] },
+    });
+    expect(((await refused.json()) as { message: string }).message).toBe("NOT_AN_OUTSIDE_EXECUTION");
+  });
+
+  describe("recovery", () => {
+    const rpId = new URL(ORIGIN).hostname;
+    const recover = async (
+      browser: ReturnType<typeof createBrowser>,
+      passkey: ReturnType<typeof makePasskey>,
+      otp: string,
+    ) => browser.request("/api/auth/wallet/default/recovery", { body: { passkey: passkeyBody(passkey), otp } });
+    const recoveryRow = (realmsId: string) =>
+      env.DB.prepare("SELECT attempt, credential_id, public_key_x, nonce FROM wallet_recoveries WHERE realms_id = ?")
+        .bind(realmsId)
+        .first<{ attempt: string; credential_id: string; public_key_x: string; nonce: string | null }>();
+    const walletRow = (realmsId: string) =>
+      env.DB.prepare("SELECT credential_id, public_key_x, deploy_key_x FROM default_wallets WHERE realms_id = ?")
+        .bind(realmsId)
+        .first<{ credential_id: string; public_key_x: string; deploy_key_x: string }>();
+    const recoveryNotices = (address: string) =>
+      env.DB.prepare("SELECT id FROM wallet_change_notices WHERE kind = 'recovery' AND address = ?")
+        .bind(address)
+        .all<{ id: string }>();
+    /** The escape's start as the player asked it: trigger_escape_owner naming the passkey just made. */
+    const escapeStart = (wallet: string, passkey: ReturnType<typeof makePasskey>) => ({
+      contractAddress: wallet,
+      entrypoint: "trigger_escape_owner",
+      calldata: passkeySigner({ origin: ORIGIN, rpId, publicKeyX: passkey.x }),
+    });
+    const escapeFinish = (wallet: string) => ({ contractAddress: wallet, entrypoint: "escape_owner", calldata: [] });
+    const guidOf = (passkey: ReturnType<typeof makePasskey>) =>
+      passkeySignerGuid({ origin: ORIGIN, rpId, publicKeyX: passkey.x });
+    const resetPaymaster = () => {
+      paymaster.build.mockReset();
+      paymaster.execute.mockReset();
+      notices.mockClear();
+    };
+    /** A wallet with a recovery started naming `lost`, its execution recorded; the paymaster's answer as `execute` says. */
+    const startedRecovery = async (execute: () => Promise<string> = async () => "0xescape") => {
+      const { browser, passkey, wallet } = await withWallet();
+      const { user } = (await browser.session())!;
+      const lost = makePasskey();
+      paymaster.build.mockResolvedValueOnce(built(executionFor([escapeStart(wallet.address, lost)], "0xe5")));
+      paymaster.execute.mockImplementationOnce(execute);
+      const answer = await recover(browser, lost, await walletCode(browser));
+      return { browser, realmsId: user.realmsId, passkey, lost, wallet, answer };
+    };
+
+    it("starts with the emailed code: the guardian alone signs the exact escape naming the new passkey, and the email is told", async () => {
+      resetPaymaster();
+      const { browser, passkey, wallet } = await withWallet();
+      const { user } = (await browser.session())!;
+      const lost = makePasskey();
+      const start = executionFor([escapeStart(wallet.address, lost)], "0xe1");
+      paymaster.build.mockResolvedValueOnce(built(start));
+      paymaster.execute.mockResolvedValueOnce("0xescape");
+      expect((await recover(browser, lost, "000000")).status).toBe(400);
+      expect(paymaster.execute).not.toHaveBeenCalled();
+      const started = await recover(browser, lost, await walletCode(browser));
+      expect(await started.json()).toEqual({ transactionHash: "0xescape" });
+      expect(paymaster.build.mock.lastCall![1]).toEqual([escapeStart(wallet.address, lost)]);
+      // A recovery step is the wallet's single call, with no fee call after it: sponsored.
+      expect(paymaster.build.mock.lastCall![3]).toBe("sponsor");
+      expect(paymaster.execute.mock.lastCall![4]).toBe("sponsor");
+      const [, , signature] = paymaster.execute.mock.lastCall!;
+      expect(signature).toHaveLength(2);
+      const digest = typedData.getMessageHash(start, wallet.address);
+      expect(
+        ec.starkCurve.verify(
+          new ec.starkCurve.Signature(BigInt(signature[0]!), BigInt(signature[1]!)),
+          digest,
+          ec.starkCurve.getPublicKey(GUARDIAN_KEY),
+        ),
+      ).toBe(true);
+      expect(await recoveryRow(user.realmsId)).toMatchObject({
+        credential_id: lost.credentialId,
+        public_key_x: lost.x,
+        nonce: "0xe1",
+      });
+      expect(notices).toHaveBeenCalledWith(user.email, wallet.address, expect.any(String), "recovery");
+      // The wallet keeps its owner until the 7 days are up.
+      expect((await walletRow(user.realmsId))?.public_key_x).toBe(passkey.x);
+      resetPaymaster();
+    });
+
+    it("signs nothing a paymaster substitutes: another new owner, target, entrypoint, or an extra call", async () => {
+      const { browser, wallet } = await withWallet();
+      const { user } = (await browser.session())!;
+      const asked = makePasskey();
+      const asWanted = escapeStart(wallet.address, asked);
+      const substitutes = [
+        [escapeStart(wallet.address, makePasskey())],
+        [{ ...asWanted, contractAddress: "0x1234" }],
+        [{ ...asWanted, entrypoint: "trigger_escape_guardian" }],
+        [asWanted, transfer],
+      ];
+      for (const calls of substitutes) {
+        resetPaymaster();
+        paymaster.build.mockResolvedValueOnce(built(executionFor(calls)));
+        const refused = await recover(browser, asked, await walletCode(browser));
+        expect(((await refused.json()) as { message: string }).message).toBe("PAYMASTER_REFUSED");
+        expect(paymaster.execute).not.toHaveBeenCalled();
+        expect(await recoveryRow(user.realmsId)).toBeNull();
+        expect((await recoveryNotices(wallet.address)).results).toEqual([]);
+      }
+      resetPaymaster();
+    });
+
+    it("refuses a second start while the first is unsettled, even before the chain shows it, and keeps the first", async () => {
+      resetPaymaster();
+      // The first start's answer is lost: its escape may land later.
+      const first = await startedRecovery(async () => {
+        throw new TypeError("fetch failed");
+      });
+      expect(((await first.answer.json()) as { message: string }).message).toBe("SEND_UNCERTAIN");
+      const kept = await recoveryRow(first.realmsId);
+      expect(kept).toMatchObject({ credential_id: first.lost.credentialId, nonce: "0xe5" });
+      paymaster.build.mockResolvedValueOnce(built(executionFor([escapeStart(first.wallet.address, makePasskey())])));
+      const second = await recover(first.browser, makePasskey(), await walletCode(first.browser));
+      expect(((await second.json()) as { message: string }).message).toBe("RECOVERY_UNDER_WAY");
+      expect(await recoveryRow(first.realmsId)).toEqual(kept);
+      resetPaymaster();
+    });
+
+    it("keeps the warning email of a start whose answer was lost, deliverable once", async () => {
+      resetPaymaster();
+      const lost = await startedRecovery(async () => {
+        throw new TypeError("connection reset");
+      });
+      const queued = (await recoveryNotices(lost.wallet.address)).results;
+      expect(queued).toHaveLength(1);
+      const sent = vi.fn<SendWalletNotice>(async () => {});
+      await Effect.runPromise(deliverWalletNotices(env.DB, sent));
+      await Effect.runPromise(deliverWalletNotices(env.DB, sent));
+      expect(
+        sent.mock.calls.filter(([, address, , kind]) => address === lost.wallet.address && kind === "recovery"),
+      ).toEqual([[expect.any(String), lost.wallet.address, queued[0]!.id, "recovery"]]);
+      resetPaymaster();
+    });
+
+    it("never lets the send path start an escape, and lets the owner's passkey cancel one", async () => {
+      resetPaymaster();
+      const { browser, wallet } = await withWallet();
+      const start = { contractAddress: wallet.address, entrypoint: "trigger_escape_owner", calldata: ["0x1"] };
+      const startBuild = await browser.request("/api/auth/wallet/default/build", { body: { calls: [start] } });
+      expect(((await startBuild.json()) as { message: string }).message).toBe("WALLET_SELF_CALL");
+      const startExecute = await browser.request("/api/auth/wallet/default/execute", {
+        body: { typedData: executionFor([start]), ownerSignature: ["0x4"] },
+      });
+      expect(((await startExecute.json()) as { message: string }).message).toBe("WALLET_SELF_CALL");
+      const cancel = { contractAddress: wallet.address, entrypoint: "cancel_escape", calldata: [] };
+      paymaster.build.mockResolvedValueOnce(built(executionFor([cancel])));
+      expect((await browser.request("/api/auth/wallet/default/build", { body: { calls: [cancel] } })).status).toBe(200);
+      // The wallet takes a cancel only as its single call, so it carries no fee call: sponsored.
+      expect(paymaster.build.mock.lastCall![3]).toBe("sponsor");
+      paymaster.execute.mockResolvedValueOnce("0xcancel");
+      const canceled = await browser.request("/api/auth/wallet/default/execute", {
+        body: { typedData: executionFor([cancel]), ownerSignature: ["0x4"] },
+      });
+      expect(await canceled.json()).toEqual({ transactionHash: "0xcancel" });
+      // The cancel carries the owner's signature and the guardian's: two signers.
+      expect(BigInt(paymaster.execute.mock.lastCall![2][0]!)).toBe(2n);
+      expect(paymaster.execute.mock.lastCall![4]).toBe("sponsor");
+      resetPaymaster();
+    });
+
+    /** The cron's pass, the chain answering as `chain` says. */
+    const finishWith = (
+      wallet: string,
+      chain: {
+        escape: WalletEscape;
+        owner: boolean;
+        succeeded?: boolean;
+        nonceSpent?: boolean;
+        chainTime?: number;
+      },
+    ) => {
+      paymaster.build.mockResolvedValue(built(executionFor([escapeFinish(wallet)], "0xf1")));
+      paymaster.execute.mockResolvedValue("0xfinish");
+      return finishRecoveries({
+        db: env.DB,
+        paymaster,
+        guardian: env.GUARDIAN,
+        chainId: encodeChainName(environmentL2(env.ENVIRONMENT).chain),
+        isDeployed: async () => true,
+        readEscape: async () => chain.escape,
+        readAttemptState: async () => ({
+          escape: chain.escape,
+          newOwnerOwns: chain.owner,
+          nonceSpent: chain.nonceSpent ?? false,
+          time: chain.chainTime ?? 1_000,
+        }),
+        succeeded: async () => chain.succeeded ?? true,
+      });
+    };
+
+    /** The sponsored recovery steps an account has taken today. */
+    const sponsoredSteps = async (realmsId: string) =>
+      (
+        await env.DB.prepare("SELECT COUNT(*) AS steps FROM sponsored_executions WHERE realms_id = ? AND day = ?")
+          .bind(realmsId, new Date().toISOString().slice(0, 10))
+          .first<{ steps: number }>()
+      )?.steps;
+    /** The next UTC day for this account: today's steps become yesterday's. */
+    const nextDay = (realmsId: string) =>
+      env.DB.prepare("UPDATE sponsored_executions SET day = '2000-01-01' WHERE realms_id = ?").bind(realmsId).run();
+    const none = { status: "none", readyAt: null, newOwner: null } as const;
+    const cancelOf = (wallet: string) => ({ contractAddress: wallet, entrypoint: "cancel_escape", calldata: [] });
+    /** The owner's passkey cancels the standing escape through the send path, its paymaster answering `execute`. */
+    const cancelEscape = async (
+      browser: ReturnType<typeof createBrowser>,
+      wallet: string,
+      nonce: string,
+      execute: () => Promise<string> = async () => `0xc${nonce.slice(2)}`,
+    ) => {
+      paymaster.execute.mockImplementationOnce(execute);
+      return browser.request("/api/auth/wallet/default/execute", {
+        body: { typedData: executionFor([cancelOf(wallet)], nonce), ownerSignature: ["0x4"] },
+      });
+    };
+
+    it("bounds a start and cancel loop to the account's sponsored steps for the day, across code windows and cron cleanups", async () => {
+      resetPaymaster();
+      const { browser, wallet } = await withWallet();
+      const { user } = (await browser.session())!;
+      isDeployed.mockResolvedValue(true);
+      try {
+        const sponsored = () => paymaster.execute.mock.calls.filter((call) => call[4] === "sponsor").length;
+        // The first cycle: a start, its cancel, and the cron forgetting the canceled attempt.
+        readEscape.mockResolvedValue(none);
+        const first = makePasskey();
+        paymaster.build.mockResolvedValueOnce(built(executionFor([escapeStart(wallet.address, first)], "0x101")));
+        paymaster.execute.mockResolvedValueOnce("0x201");
+        expect((await recover(browser, first, await walletCode(browser))).status).toBe(200);
+        expect((await cancelEscape(browser, wallet.address, "0x401")).status).toBe(200);
+        await finishWith(wallet.address, { escape: none, owner: false, nonceSpent: true });
+        expect(await recoveryRow(user.realmsId)).toBeNull();
+        expect(await sponsoredSteps(user.realmsId)).toBe(2);
+        // Three more cycles, each in a new code window after the cron's cleanup: every start is refused for the day,
+        // before its code is spent or anything is built, signed or sponsored.
+        for (const round of [2, 3, 4]) {
+          paymaster.build.mockClear();
+          const again = makePasskey();
+          const refused = await recover(browser, again, await walletCode(browser));
+          expect(refused.status).toBe(429);
+          expect(((await refused.json()) as { message: string }).message).toBe("SPONSOR_CAP_REACHED");
+          expect(paymaster.build).not.toHaveBeenCalled();
+          expect(await recoveryRow(user.realmsId)).toBeNull();
+          await finishWith(wallet.address, { escape: none, owner: false, nonceSpent: true });
+          expect(round).toBeGreaterThan(1);
+        }
+        expect(sponsored()).toBe(2);
+        expect(await sponsoredSteps(user.realmsId)).toBe(2);
+        // The next UTC day the account may start again.
+        await nextDay(user.realmsId);
+        resetPaymaster();
+        const later = makePasskey();
+        paymaster.build.mockResolvedValueOnce(built(executionFor([escapeStart(wallet.address, later)], "0x105")));
+        paymaster.execute.mockResolvedValueOnce("0x205");
+        expect((await recover(browser, later, await walletCode(browser))).status).toBe(200);
+        expect(await sponsoredSteps(user.realmsId)).toBe(1);
+      } finally {
+        readEscape.mockResolvedValue(none);
+        isDeployed.mockResolvedValue(false);
+        resetPaymaster();
+      }
+    });
+
+    it("keeps a step free for the owner's cancel: a start that would leave none is refused, the cancel goes through", async () => {
+      resetPaymaster();
+      const { realmsId, wallet, browser } = await startedRecovery();
+      // The start took one step; a second sponsored step (an earlier finish, say) leaves one, for the cancel.
+      await env.DB.prepare("INSERT INTO sponsored_executions (realms_id, nonce, day) VALUES (?, '0xearlier', ?)")
+        .bind(realmsId, new Date().toISOString().slice(0, 10))
+        .run();
+      // Another start would take the last step and leave the owner no cancel: refused before its code is spent.
+      paymaster.build.mockClear();
+      const start = await recover(browser, makePasskey(), await walletCode(browser));
+      expect(((await start.json()) as { message: string }).message).toBe("SPONSOR_CAP_REACHED");
+      expect(paymaster.build).not.toHaveBeenCalled();
+      expect((await cancelEscape(browser, wallet.address, "0x4c1")).status).toBe(200);
+      expect(await sponsoredSteps(realmsId)).toBe(3);
+      // All three spent: another cancel's build and send are refused before any paymaster call.
+      paymaster.build.mockClear();
+      paymaster.execute.mockClear();
+      const build = await browser.request("/api/auth/wallet/default/build", {
+        body: { calls: [cancelOf(wallet.address)] },
+      });
+      expect(build.status).toBe(429);
+      const send = await cancelEscape(browser, wallet.address, "0x4c2");
+      expect(((await send.json()) as { message: string }).message).toBe("SPONSOR_CAP_REACHED");
+      expect(paymaster.build).not.toHaveBeenCalled();
+      expect(paymaster.execute).not.toHaveBeenCalled();
+      resetPaymaster();
+    });
+
+    it("keeps a cancel's step counted whatever the paymaster answers, once per execution", async () => {
+      resetPaymaster();
+      const { browser, wallet, user } = await withWallet().then(async (made) => ({
+        ...made,
+        user: (await made.browser.session())!.user,
+      }));
+      const refused = await cancelEscape(browser, wallet.address, "0x4d1", async () => {
+        throw new PaymasterRefusedError("argent/invalid-escape");
+      });
+      expect(((await refused.json()) as { message: string }).message).toBe("PAYMASTER_REFUSED");
+      expect(await sponsoredSteps(user.realmsId)).toBe(1);
+      const lost = await cancelEscape(browser, wallet.address, "0x4d2", async () => {
+        throw new TypeError("fetch failed");
+      });
+      expect(((await lost.json()) as { message: string }).message).toBe("SEND_UNCERTAIN");
+      expect(await sponsoredSteps(user.realmsId)).toBe(2);
+      // The same signed cancel again counts no other step, and its refusal gives none back.
+      const resubmitted = await cancelEscape(browser, wallet.address, "0x4d2", async () => {
+        throw new PaymasterRefusedError("duplicated outside nonce");
+      });
+      expect(resubmitted.status).toBe(502);
+      expect(await sponsoredSteps(user.realmsId)).toBe(2);
+      resetPaymaster();
+    });
+
+    it("keeps a cancel counted when its first request is refused after a duplicate of it landed, so no fourth step is accepted", async () => {
+      resetPaymaster();
+      const { browser, wallet, realmsId } = await startedRecovery();
+      // The first request reaches the paymaster and waits; a duplicate of the same signed cancel lands meanwhile; then
+      // the first is refused (the duplicate spent its nonce).
+      let arrived!: () => void;
+      const atPaymaster = new Promise<void>((resolve) => (arrived = resolve));
+      let refuse!: () => void;
+      const refusal = new Promise<void>((resolve) => (refuse = resolve));
+      const first = cancelEscape(browser, wallet.address, "0xc001", async () => {
+        arrived();
+        await refusal;
+        throw new PaymasterRefusedError("outside nonce already spent");
+      });
+      await atPaymaster;
+      const duplicate = await cancelEscape(browser, wallet.address, "0xc001", async () => "0xaccepted");
+      expect(duplicate.status).toBe(200);
+      refuse();
+      expect((await first).status).toBe(502);
+      // The start and the landed cancel both stay counted.
+      expect(await sponsoredSteps(realmsId)).toBe(2);
+      await finishWith(wallet.address, { escape: none, owner: false, nonceSpent: true });
+      expect(await recoveryRow(realmsId)).toBeNull();
+      // A new start needs room for its cancel: refused.
+      paymaster.build.mockClear();
+      const again = await recover(browser, makePasskey(), await walletCode(browser));
+      expect(((await again.json()) as { message: string }).message).toBe("SPONSOR_CAP_REACHED");
+      expect(paymaster.build).not.toHaveBeenCalled();
+      // A third step may still go (another cancel); a fourth is refused before the paymaster.
+      expect((await cancelEscape(browser, wallet.address, "0xc002")).status).toBe(200);
+      paymaster.execute.mockClear();
+      const fourth = await cancelEscape(browser, wallet.address, "0xc003");
+      expect(((await fourth.json()) as { message: string }).message).toBe("SPONSOR_CAP_REACHED");
+      expect(paymaster.execute).not.toHaveBeenCalled();
+      expect(await sponsoredSteps(realmsId)).toBe(3);
+      resetPaymaster();
+    });
+
+    it("counts no wallet-paid send: after many sends the account still has its sponsored steps", async () => {
+      resetPaymaster();
+      const { browser, user } = await withWallet().then(async (made) => ({
+        ...made,
+        user: (await made.browser.session())!.user,
+      }));
+      paymaster.execute.mockResolvedValue("0xpaid");
+      for (let send = 0; send < 5; send += 1) {
+        const sent = await browser.request("/api/auth/wallet/default/execute", {
+          body: { typedData: executionFor([transfer], `0x${(0x500 + send).toString(16)}`), ownerSignature: ["0x4"] },
+        });
+        expect(sent.status).toBe(200);
+      }
+      expect(await sponsoredSteps(user.realmsId)).toBe(0);
+      resetPaymaster();
+    });
+
+    it("holds a ready escape's finish while today's steps are spent, and finishes it the next day", async () => {
+      resetPaymaster();
+      const { realmsId, lost, wallet } = await startedRecovery();
+      const day = new Date().toISOString().slice(0, 10);
+      await env.DB.batch(
+        ["0xa1", "0xa2"].map((nonce) =>
+          env.DB.prepare("INSERT INTO sponsored_executions (realms_id, nonce, day) VALUES (?, ?, ?)").bind(
+            realmsId,
+            nonce,
+            day,
+          ),
+        ),
+      );
+      resetPaymaster();
+      vi.spyOn(console, "error").mockImplementation(() => {});
+      const ready = { escape: { status: "ready" as const, readyAt: 1, newOwner: guidOf(lost) }, owner: true };
+      await finishWith(wallet.address, ready);
+      expect(paymaster.execute).not.toHaveBeenCalled();
+      expect(await recoveryRow(realmsId)).not.toBeNull();
+      await nextDay(realmsId);
+      await finishWith(wallet.address, ready);
+      expect(paymaster.execute.mock.lastCall![4]).toBe("sponsor");
+      expect(await recoveryRow(realmsId)).toBeNull();
+      expect(await sponsoredSteps(realmsId)).toBe(1);
+      vi.mocked(console.error).mockRestore();
+      resetPaymaster();
+    });
+
+    it("finishes a ready escape naming the saved passkey and hands the wallet to it, keeping its address", async () => {
+      resetPaymaster();
+      const { realmsId, passkey, lost, wallet } = await startedRecovery();
+      resetPaymaster();
+      await finishWith(wallet.address, {
+        escape: { status: "ready", readyAt: 1, newOwner: guidOf(lost) },
+        owner: true,
+      });
+      expect(paymaster.build.mock.lastCall).toEqual([wallet.address, [escapeFinish(wallet.address)], null, "sponsor"]);
+      expect(await walletRow(realmsId)).toEqual({
+        credential_id: lost.credentialId,
+        public_key_x: lost.x,
+        deploy_key_x: passkey.x,
+      });
+      expect(await recoveryRow(realmsId)).toBeNull();
+      resetPaymaster();
+    });
+
+    it("never finishes an escape that names another owner", async () => {
+      resetPaymaster();
+      const { realmsId, passkey, wallet } = await startedRecovery();
+      resetPaymaster();
+      await finishWith(wallet.address, {
+        escape: { status: "ready", readyAt: 1, newOwner: guidOf(makePasskey()) },
+        owner: false,
+      });
+      expect(paymaster.build).not.toHaveBeenCalled();
+      expect(paymaster.execute).not.toHaveBeenCalled();
+      expect((await walletRow(realmsId))?.public_key_x).toBe(passkey.x);
+      expect(await recoveryRow(realmsId)).not.toBeNull();
+      resetPaymaster();
+    });
+
+    it("forgets an attempt only once the chain proves it over, and adopts a finish cut short", async () => {
+      resetPaymaster();
+      const none = { status: "none" as const, readyAt: null, newOwner: null };
+      const delayed = await startedRecovery();
+      // Not on chain yet, its nonce unspent and its window open: it may still land.
+      await finishWith(delayed.wallet.address, { escape: none, owner: false, nonceSpent: false, chainTime: 1_000 });
+      expect(await recoveryRow(delayed.realmsId)).not.toBeNull();
+      // Its window closed with the nonce unspent: it never can run.
+      await finishWith(delayed.wallet.address, {
+        escape: none,
+        owner: false,
+        nonceSpent: false,
+        chainTime: 1_900_000_000,
+      });
+      expect(await recoveryRow(delayed.realmsId)).toBeNull();
+      const canceled = await startedRecovery();
+      // It ran (nonce spent) and no escape stands: canceled.
+      await finishWith(canceled.wallet.address, { escape: none, owner: false, nonceSpent: true });
+      expect(await recoveryRow(canceled.realmsId)).toBeNull();
+      expect((await walletRow(canceled.realmsId))?.public_key_x).toBe(canceled.passkey.x);
+      const cutShort = await startedRecovery();
+      await finishWith(cutShort.wallet.address, { escape: none, owner: true });
+      expect((await walletRow(cutShort.realmsId))?.public_key_x).toBe(cutShort.lost.x);
+      const unconfirmed = await startedRecovery();
+      await finishWith(unconfirmed.wallet.address, {
+        escape: { status: "ready", readyAt: 1, newOwner: guidOf(unconfirmed.lost) },
+        owner: false,
+        succeeded: false,
+      });
+      expect(await recoveryRow(unconfirmed.realmsId)).not.toBeNull();
+      resetPaymaster();
+    });
+
+    /**
+     * A chain that answers per block: at block 100 no escape and the nonce unspent; from block 101 the start has landed
+     * (escape waiting, nonce spent). It moves to block 101 after the first read, as a real chain may between reads.
+     */
+    const advancingChain = (passkey: ReturnType<typeof makePasskey>) => {
+      let head = 100;
+      const blocks: unknown[] = [];
+      const landed = ["0x6a000000", "0x2", "0x0", guidOf(passkey), "0x4", "0x1"];
+      const before = ["0x0", "0x0", "0x1", "0x0"];
+      return {
+        blocks,
+        provider: {
+          getBlockWithTxHashes: async () => ({ block_number: head, timestamp: 1_000 }),
+          callContract: async ({ entrypoint }: { entrypoint: string }, block: unknown) => {
+            blocks.push(block);
+            const at = typeof block === "number" ? block : ++head;
+            head = 101;
+            if (entrypoint === "get_escape_and_status") return at >= 101 ? landed : before;
+            if (entrypoint === "is_owner") return ["0x0"];
+            return [at >= 101 ? "0x0" : "0x1"];
+          },
+        } as unknown as ProviderInterface,
+      };
+    };
+
+    it("reads an attempt's escape, ownership and nonce at one block, so a start landing mid-read is never a cancel", async () => {
+      const lost = makePasskey();
+      const chain = advancingChain(lost);
+      const state = await readAttemptState(
+        chain.provider,
+        "0x123",
+        { origin: ORIGIN, rpId, publicKeyX: lost.x },
+        "0xe5",
+      );
+      // Block 100 throughout: no escape and the nonce unspent, never "no escape, nonce spent".
+      expect(state).toEqual({
+        escape: { status: "none", readyAt: null, newOwner: null },
+        newOwnerOwns: false,
+        nonceSpent: false,
+        time: 1_000,
+      });
+      expect(chain.blocks).toEqual([100, 100, 100]);
+    });
+
+    it("reads a never-deployed wallet as having nothing, and a genuine read failure as a failure", async () => {
+      const notFound = new RpcError({ code: 20, message: "Contract not found" } as never, "starknet_call", {});
+      const absent = {
+        getBlockWithTxHashes: async () => ({ block_number: 7, timestamp: 2_000 }),
+        callContract: async () => {
+          throw notFound;
+        },
+      } as unknown as ProviderInterface;
+      const owner = { origin: ORIGIN, rpId, publicKeyX: "0x1" };
+      expect(await readAttemptState(absent, "0x123", owner, "0x1")).toEqual({
+        escape: { status: "none", readyAt: null, newOwner: null },
+        newOwnerOwns: false,
+        nonceSpent: false,
+        time: 2_000,
+      });
+      const down = {
+        ...absent,
+        callContract: async () => Promise.reject(new TypeError("fetch failed")),
+      } as unknown as ProviderInterface;
+      await expect(readAttemptState(down, "0x123", owner, "0x1")).rejects.toThrow("fetch failed");
+    });
+
+    it("forgets an undeployed wallet's lost start once its window closed, and lets a new one start", async () => {
+      resetPaymaster();
+      const lostStart = await startedRecovery(async () => {
+        throw new TypeError("fetch failed");
+      });
+      const none = { status: "none" as const, readyAt: null, newOwner: null };
+      // The wallet was never deployed: nothing on chain, and the block is past the start's window.
+      await finishWith(lostStart.wallet.address, {
+        escape: none,
+        owner: false,
+        nonceSpent: false,
+        chainTime: 1_900_000_000,
+      });
+      expect(await recoveryRow(lostStart.realmsId)).toBeNull();
+      const next = makePasskey();
+      paymaster.build.mockResolvedValueOnce(built(executionFor([escapeStart(lostStart.wallet.address, next)], "0xe6")));
+      paymaster.execute.mockResolvedValueOnce("0xagain");
+      const again = await recover(lostStart.browser, next, await walletCode(lostStart.browser));
+      expect(await again.json()).toEqual({ transactionHash: "0xagain" });
+      resetPaymaster();
+    });
+
+    it("keeps a start made after an older expired escape until its own nonce or window settles it", async () => {
+      resetPaymaster();
+      const expired = { status: "expired" as const, readyAt: 1, newOwner: "0xold" };
+      // An older escape expired; this start's answer was lost, so it may still land.
+      readEscape.mockResolvedValueOnce(expired);
+      const later = await startedRecovery(async () => {
+        throw new TypeError("fetch failed");
+      });
+      expect(((await later.answer.json()) as { message: string }).message).toBe("SEND_UNCERTAIN");
+      await finishWith(later.wallet.address, { escape: expired, owner: false, nonceSpent: false, chainTime: 1_000 });
+      expect(await recoveryRow(later.realmsId)).not.toBeNull();
+      // Its window closed with its nonce unspent: it never can run.
+      await finishWith(later.wallet.address, {
+        escape: expired,
+        owner: false,
+        nonceSpent: false,
+        chainTime: 1_900_000_000,
+      });
+      expect(await recoveryRow(later.realmsId)).toBeNull();
+      resetPaymaster();
+    });
+
+    it("forgets the passkey and its email when the paymaster refuses the start", async () => {
+      resetPaymaster();
+      const refused = await startedRecovery(async () => {
+        throw new PaymasterRefusedError("refused");
+      });
+      expect(((await refused.answer.json()) as { message: string }).message).toBe("PAYMASTER_REFUSED");
+      expect(await recoveryRow(refused.realmsId)).toBeNull();
+      expect((await recoveryNotices(refused.wallet.address)).results).toEqual([]);
+      resetPaymaster();
+    });
+  });
+
+  it("counts, for the operator, the accounts still without a payout wallet", async () => {
+    await newPlayer();
+    const counts = (await (
+      await createBrowser().request("/api/operator/wallets", { token: OPERATOR_TOKEN })
+    ).json()) as { accounts: number; withoutWallet: number; paidToDefaultWallet: number; paidToLinkedWallet: number };
+    const expected = await env.DB.prepare(
+      `SELECT COUNT(*) AS n FROM "user" WHERE "emailVerified" = 1 AND address IS NULL`,
+    ).first<{ n: number }>();
+    expect(counts.withoutWallet).toBe(expected!.n);
+    expect(counts.withoutWallet).toBeGreaterThan(0);
+    expect(counts.paidToDefaultWallet).toBeGreaterThan(0);
+    expect(counts.accounts).toBe(counts.withoutWallet + counts.paidToDefaultWallet + counts.paidToLinkedWallet);
+    expect((await createBrowser().request("/api/operator/wallets")).status).toBe(401);
   });
 });

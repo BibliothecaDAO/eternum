@@ -1,9 +1,10 @@
-import { lazy, Suspense, useRef, useState } from "react";
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { configManager } from "@bibliothecadao/eternum";
 import type { NativeRows } from "@bibliothecadao/eternum/game-client";
 import { formatCharge, formatExact } from "@bibliothecadao/types";
-import type { WalletSendOutcome } from "@/ui/modules/identity/wallet-send";
+import { useDepositPaymentStore } from "@/hooks/store/use-deposit-payment-store";
+import { useHasUncertainSend } from "@/ui/modules/identity/uncertain-sends";
 import { depositCalls, wholeLords, type LordsDeposit } from "@realms-world/value-ledger/deposits";
 import { useIdentitySession } from "@/hooks/context/identity-session";
 import { payoutAddressOf } from "@/hooks/context/payout-wallet";
@@ -19,10 +20,6 @@ import { useRealmLords } from "./use-realm-lords";
 import { useSpendLords } from "./use-spend-lords";
 import { useLinkWallet } from "./link-wallet";
 import { FrontierWithdraw } from "./frontier-withdraw";
-
-const WalletSign = lazy(() =>
-  import("@/shell/value/wallet-actions").then(({ WalletSign }) => ({ default: WalletSign })),
-);
 
 /** The purse separates earned withdrawals from deposited, spend-only LORDS and their delivery receipts. */
 export function FrontierPurse({ realm, onClose }: { realm: NativeRows["Structure"]; onClose: () => void }) {
@@ -73,9 +70,11 @@ function DepositForm({ realm, attemptKey }: { realm: NativeRows["Structure"]; at
     const saved = localStorage.getItem(attemptKey);
     return saved ? JSON.parse(saved) : null;
   });
-  const [phase, setPhase] = useState<"idle" | "sending" | "uncertain">(() => (payment ? "uncertain" : "idle"));
-  const uncertain = useRef(payment !== null);
-  const [resume, setResume] = useState(false);
+  // Whether this wallet may have sent something not yet settled (uncertain-sends.ts): until the chain says, the
+  // payment's terms stay as they are, and nothing new is sent from it.
+  const uncertain = useHasUncertainSend(wallet);
+  const paying = useDepositPaymentStore((state) => !!payment && state.payment?.request === payment.request);
+  const openPayment = useDepositPaymentStore((state) => state.open);
   const [landed, setLanded] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const token = useQuery({
@@ -98,40 +97,48 @@ function DepositForm({ realm, attemptKey }: { realm: NativeRows["Structure"]; at
     !!game &&
     now >= Number(game.start_main_at) &&
     now < Number(game.end_at);
+  const clearAttempt = () => {
+    localStorage.removeItem(attemptKey);
+    setPayment(null);
+  };
+  const confirmed = () => {
+    clearAttempt();
+    setLanded(true);
+    void history.refetch();
+  };
+  /** The deposit's calls for these terms, once the ledger, its token and the session are read. */
+  const callsOf = (terms: { amount: string; request: string }) =>
+    ledger && token.data && session
+      ? depositCalls(
+          ledger.address,
+          token.data,
+          {
+            shard: chainId,
+            gameId,
+            account: String(realm.owner),
+            realmsId: session.user.realmsId,
+            home: String(realm.entity_id),
+          },
+          terms.amount,
+          terms.request,
+        )
+      : null;
+  /** Opens the payment of these terms from the payout wallet, on the app sheet (deposit-payment.tsx). */
+  const pay = (terms: { amount: string; request: string }) => {
+    const calls = callsOf(terms);
+    if (wallet && calls) openPayment({ owner: wallet, calls, ...terms, onLanded: confirmed });
+  };
   const begin = () => {
     try {
       wholeLords(amount);
       const next = { amount, request: `0x${crypto.randomUUID().replaceAll("-", "")}` };
       localStorage.setItem(attemptKey, JSON.stringify(next));
-      uncertain.current = false;
-      setResume(true);
       setError(null);
       setLanded(false);
-      setPhase("sending");
       setPayment(next);
+      pay(next);
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Invalid amount");
-    }
-  };
-  const clearAttempt = () => {
-    localStorage.removeItem(attemptKey);
-    setPayment(null);
-    setPhase("idle");
-    uncertain.current = false;
-    setResume(false);
-  };
-  const walletState = (state: "idle" | "sending" | WalletSendOutcome) => {
-    if (typeof state === "string") {
-      setPhase(state === "idle" && uncertain.current ? "uncertain" : state);
-      return;
-    }
-    if (state.kind === "landed") {
-      clearAttempt();
-      setLanded(true);
-      void history.refetch();
-    } else {
-      if (state.kind === "uncertain") uncertain.current = true;
-      setPhase(uncertain.current ? "uncertain" : "idle");
     }
   };
   return (
@@ -151,53 +158,24 @@ function DepositForm({ realm, attemptKey }: { realm: NativeRows["Structure"]; at
             disabled={!!payment}
             onChange={setAmount}
           />
-          <p>1 wallet LORDS = 1 spend-only LORDS. Your wallet also pays the Starknet network fee in STRK.</p>
+          <p>1 wallet LORDS = 1 spend-only LORDS. The network fee is shown before you confirm.</p>
           {error && <p role="alert">{error}</p>}
           {!payment && (
             <HudButton kind="primary" disabled={!ready || !token.data} onClick={begin}>
               Deposit LORDS
             </HudButton>
           )}
-          {payment && resume && !landed && ledger && token.data && session && (
-            <Suspense fallback={<p>Opening wallet…</p>}>
-              <WalletSign
-                key={payment.request}
-                onState={walletState}
-                owner={wallet}
-                calls={depositCalls(
-                  ledger.address,
-                  token.data,
-                  {
-                    shard: chainId,
-                    gameId,
-                    account: String(realm.owner),
-                    realmsId: session.user.realmsId,
-                    home: String(realm.entity_id),
-                  },
-                  payment.amount,
-                  payment.request,
-                )}
-                onLanded={() => {}}
-              />
-            </Suspense>
-          )}
-          {payment && !resume && (
-            <HudButton
-              kind="primary"
-              onClick={() => {
-                setResume(true);
-                setPhase("sending");
-              }}
-            >
+          {payment && !paying && (
+            <HudButton kind="primary" disabled={!callsOf(payment)} onClick={() => pay(payment)}>
               Retry payment
             </HudButton>
           )}
-          {payment && phase === "idle" && (
+          {payment && !uncertain && (
             <HudButton kind="quiet" onClick={clearAttempt}>
               Edit or cancel deposit
             </HudButton>
           )}
-          {payment && phase === "uncertain" && (
+          {payment && uncertain && (
             <p role="status">Payment status is uncertain. Retry this same payment to avoid a second deposit.</p>
           )}
           {landed && <p role="status">Payment confirmed. Waiting for the spend-only credit.</p>}

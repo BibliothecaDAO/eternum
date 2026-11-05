@@ -286,6 +286,25 @@ describe("the build sheet", () => {
     return { host, card, button, close };
   };
 
+  it("opens on the realm's first build while it has none, else on the first building, and keeps a pick over either", () => {
+    const { store, realm } = realmBoard();
+    labor(store, 10_000n);
+    const pressedOn = (sheet: ReturnType<typeof open>) =>
+      [...sheet.host.querySelectorAll('.ui-card__choose[aria-pressed="true"]')].map(
+        (card) => card.querySelector(".ui-card__title")?.textContent,
+      );
+    useUIStore.setState({ firstBuild: BuildingType.ResourceKnightT1 });
+    const first = open(store, realm);
+    expect(pressedOn(first)).toEqual(["Barracks"]);
+    act(() => first.card("Farm").click());
+    expect(pressedOn(first)).toEqual(["Farm"]);
+    first.close();
+    useUIStore.setState({ firstBuild: null });
+    const later = open(store, realm);
+    expect(pressedOn(later)).toEqual(["Farm"]);
+    later.close();
+  });
+
   it("keeps the realm's population in its head, used of all it can hold", () => {
     const { store, realm } = realmBoard();
     const total = 6 + configManager.getBasePopulationCapacity();

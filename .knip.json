@@ -79,7 +79,8 @@
     "packages/identity": {
       "entry": [
         "src/index.ts",
-        "src/account.ts"
+        "src/account.ts",
+        "src/wallet.ts"
       ]
     },
     "apps/guardian": {

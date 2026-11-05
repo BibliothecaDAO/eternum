@@ -159,7 +159,7 @@ it("compares both total XP values in the reported 500 into 1,500 merge and confi
       count: 500 * Number(PRECISION),
     }),
   );
-  expect(close).toHaveBeenCalledOnce();
+  expect(close).not.toHaveBeenCalled();
 });
 
 it.each([0, 499])("keeps both total XP values when the reported transfer sends %s troops", (sent) => {
@@ -243,7 +243,7 @@ it("opens at all the tapped army can take, and sends the amount the player slide
       count: Number(599n * PRECISION),
     }),
   );
-  expect(close).toHaveBeenCalledOnce();
+  expect(close).not.toHaveBeenCalled();
 });
 
 it("sends the way the map chose: picking the other army sends from it, and all empties it", async () => {
@@ -476,7 +476,7 @@ it("asks before dissolving an army with a whole upgrade more progression, then s
       count: 600 * Number(PRECISION),
     }),
   );
-  expect(close).toHaveBeenCalledOnce();
+  expect(close).not.toHaveBeenCalled();
 });
 
 it("clears confirmation when the amount changes, and lets the stronger army survive without it, picked the other way", async () => {

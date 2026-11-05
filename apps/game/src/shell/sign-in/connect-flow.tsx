@@ -1,5 +1,5 @@
-import { SIGN_IN_WORDS, WORDS } from "@/ui/design-system/kit/words";
-import { IdentityRequestError } from "@realms-world/identity";
+import { SIGN_IN_WORDS, WALLET_WORDS, WORDS } from "@/ui/design-system/kit/words";
+import { IdentityRequestError, type Session } from "@realms-world/identity";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 
@@ -9,23 +9,27 @@ import {
   useIdentitySession,
   useIdentitySessionStore,
 } from "@/hooks/context/identity-session";
+import { payoutAddressOf } from "@/hooks/context/payout-wallet";
 import { failureSentence, type IdentityAction } from "@/ui/modules/identity/identity-failures";
 
 import { returnPathOf } from "../return-path";
 import { CodeStep } from "./code-step";
+import { claimDefaultName } from "./default-name";
 import { useConnectStore } from "./connect";
 import { ShellWindow } from "../frame/shell-window";
 import { forgetDiscordStart, pendingDiscordStart, rememberDiscordStart, type DiscordPending } from "./discord-pending";
 import { HandoffStep } from "./handoff-step";
 import { ProfileStep } from "./profile-step";
+import { PayoutWalletPanel } from "../profile/payout-wallet-panel";
 import { StartStep } from "./start-step";
 
 /**
  * The one sign-in flow (spec 02), in the Connect window over whatever page the player is on, the game included; there
- * is no sign-in page. Discord or an emailed code, then, for a new account only, its name and portrait. It opens when a
- * surface asks (the bar's Connect, every Sign in, Play free: useRequestSignIn), when a sign-in comes back failed (an
- * `error` on the address), and for a session that has not claimed a name yet; once the account carries a name it
- * closes and the player goes on to the asker's `next`, or stays where they were.
+ * is no sign-in page. Discord or an emailed code, then straight on: a new account takes its suggested name and a
+ * portrait by itself (changed later on You), and only when no such name is free does the window ask for one. It opens
+ * when a surface asks (the bar's Connect, every Sign in, Play free: useRequestSignIn) and when a sign-in comes back
+ * failed (an `error` on the address); once the account carries a name it closes and the player goes on to the asker's
+ * `next`, or stays where they were.
  *
  * Discord returns the player to that same page. A phone may finish Discord in another browser than the one that asked
  * (an iPhone home-screen app's Safari view, the browser the Discord app opens): that browser is not signed in, it
@@ -33,7 +37,7 @@ import { StartStep } from "./start-step";
  */
 export const ConnectFlow = () => {
   const { status, session } = useIdentitySession();
-  const { request, nameDismissed, close } = useConnectStore();
+  const { request, nameDismissed, walletDismissed, close, dismissWallet } = useConnectStore();
   const returned = useReturnedFailure();
   const refresh = useIdentitySessionStore((state) => state.refresh);
   const named = session !== null && identityUsername(session) !== null;
@@ -47,10 +51,19 @@ export const ConnectFlow = () => {
     if (returned.line) endPending();
   }, [returned.line, endPending]);
   useGoOnOnceNamed(named, pending, endPending);
+  const naming = useDefaultName(session, named, refresh);
 
-  if (status === "loading" || named) return null;
+  if (status === "loading") return null;
+  if (named) {
+    if (walletDismissed || payoutAddressOf(session.user) !== null) return null;
+    return (
+      <ShellWindow title={WALLET_WORDS.yourWallet} onClose={dismissWallet}>
+        <PayoutWalletPanel wallet={null} email={session.user.email} onChanged={() => void refresh()} />
+      </ShellWindow>
+    );
+  }
   if (session) {
-    if (nameDismissed && !request) return null;
+    if (naming !== "refused" || (nameDismissed && !request)) return null;
     return (
       <ShellWindow title={SIGN_IN_WORDS.yourName} onClose={close}>
         <ProfileStep session={session} onClaimed={() => void refresh()} />
@@ -217,6 +230,22 @@ const useRefreshOnReturn = (waiting: boolean) => {
       window.removeEventListener("pageshow", back);
     };
   }, [refresh, waiting]);
+};
+
+/**
+ * A new account names itself once per session (claimDefaultName), then the session is read again so it carries the
+ * name. "refused" when no default name could be saved: the name step asks the player.
+ */
+const useDefaultName = (session: Session | null, named: boolean, refresh: () => Promise<unknown>) => {
+  const [state, setState] = useState<"naming" | "refused">("naming");
+  const tried = useRef<string | null>(null);
+  useEffect(() => {
+    if (!session || named || tried.current === session.user.id) return;
+    tried.current = session.user.id;
+    setState("naming");
+    void claimDefaultName(session).then((saved) => (saved ? refresh() : setState("refused")));
+  }, [session, named, refresh]);
+  return state;
 };
 
 /**

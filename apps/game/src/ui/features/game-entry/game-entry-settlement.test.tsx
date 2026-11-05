@@ -35,8 +35,13 @@ vi.mock("@/runtime/world/herald-pre-session-reader", () => ({
     settledCount: state.settled ? 1 : 0,
   }),
 }));
+// The indexer answers a moment after the founding, as it does live: the page draws what each read learns meanwhile.
 vi.mock("./selected-world-entity-wait", () => ({
-  waitForSelectedWorldEntityState: async ({ read }: { read: () => Promise<unknown> }) => read(),
+  waitForSelectedWorldEntityState: async ({ read }: { read: () => Promise<unknown> }) => {
+    const observation = await read();
+    await new Promise((indexed) => setTimeout(indexed, 50));
+    return observation;
+  },
   isSelectedWorldEntityWaitAborted: () => false,
 }));
 vi.mock("@/services/settlement", () => ({
@@ -54,48 +59,76 @@ afterEach(() => {
   vi.useRealTimers();
   vi.unstubAllGlobals();
 });
-it.each(["play", "settle"] as const)(
-  "enters once after founding for %s intent, with no delayed navigation after unmount",
-  async (entryIntent) => {
-    (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
-    vi.useFakeTimers();
-    state.settled = false;
-    state.navigate.mockClear();
-    state.milestone.mockClear();
-    useAccountStore.setState({ account: { address: "0x111" } as never });
-    // An account with no linked wallet: the Realm step offers the free home at once.
-    useIdentitySessionStore.setState({
-      status: "signed-in",
-      session: {
-        session: { id: "s", expiresAt: "2099-01-01T00:00:00Z", userId: "u" },
-        user: { id: "u", realmsId: "0x2", address: null, name: "u", email: "u@test" },
-      } as never,
-    });
-    // The relay registers the home's source before founding: this account names no Realm and holds no ticket.
-    vi.stubGlobal("fetch", async () => Response.json({}));
-    const host = document.createElement("div");
-    const root = createRoot(host);
-    const query = new QueryClient({ defaultOptions: { queries: { retry: false } } });
-    await act(async () =>
-      root.render(
-        <QueryClientProvider client={query}>
-          <MemoryRouter>
-            <GameEntryModal isOpen game={{ chainId: "0xa1", gameId: 8 }} entryIntent={entryIntent} />
-          </MemoryRouter>
-        </QueryClientProvider>,
-      ),
-    );
-    try {
-      expect(state.navigate).not.toHaveBeenCalled();
-      const found = [...host.querySelectorAll("button")].find((button) => button.textContent === "Found your realm")!;
-      await act(async () => found.click());
-      expect(state.navigate).toHaveBeenCalledTimes(1);
-      expect(state.milestone.mock.calls.filter(([name]) => name === "enter-game-started")).toHaveLength(1);
-    } finally {
+/** Opens the entry for a Frontier account with nothing to choose; returns its page and a way to close it. */
+const openEntry = async (entryIntent: "play" | "settle") => {
+  (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
+  vi.useFakeTimers();
+  state.navigate.mockClear();
+  state.milestone.mockClear();
+  useAccountStore.setState({ account: { address: "0x111" } as never });
+  // An account with no linked wallet and no ticket: nothing to choose, so its free home is created without a press.
+  useIdentitySessionStore.setState({
+    status: "signed-in",
+    session: {
+      session: { id: "s", expiresAt: "2099-01-01T00:00:00Z", userId: "u" },
+      user: { id: "u", realmsId: "0x2", address: null, name: "u", email: "u@test" },
+    } as never,
+  });
+  // The relay registers the home's source before founding: this account names no Realm and holds no ticket.
+  vi.stubGlobal("fetch", async () => Response.json({}));
+  const host = document.createElement("div");
+  const root = createRoot(host);
+  const query = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  await act(async () =>
+    root.render(
+      <QueryClientProvider client={query}>
+        <MemoryRouter>
+          <GameEntryModal isOpen game={{ chainId: "0xa1", gameId: 8 }} entryIntent={entryIntent} />
+        </MemoryRouter>
+      </QueryClientProvider>,
+    ),
+  );
+  await act(async () => vi.advanceTimersByTimeAsync(0));
+  await act(async () => vi.advanceTimersByTimeAsync(100));
+  return {
+    host,
+    close: async () => {
       await act(async () => root.unmount());
       query.clear();
+    },
+  };
+};
+
+const enteredAt = () => String(state.navigate.mock.calls[0]?.[0]);
+
+it.each(["play", "settle"] as const)(
+  "enters once after founding for %s intent, into the new realm, with no delayed navigation after unmount",
+  async (entryIntent) => {
+    state.settled = false;
+    const { host, close } = await openEntry(entryIntent);
+    try {
+      expect([...host.querySelectorAll("button")].some((button) => button.textContent === "Create your realm")).toBe(
+        false,
+      );
+      expect(state.navigate).toHaveBeenCalledTimes(1);
+      // The realm just created is where its player arrives, to build: the map boots, then hands off to it.
+      expect(enteredAt()).toBe("/g/0xa1/8/map?boot=map-first&resumeScene=hex");
+      expect(state.milestone.mock.calls.filter(([name]) => name === "enter-game-started")).toHaveLength(1);
+    } finally {
+      await close();
     }
     await act(async () => vi.advanceTimersByTimeAsync(1001));
     expect(state.navigate).toHaveBeenCalledTimes(1);
   },
 );
+
+it("opens a returning player's session on the map: only the entry that created the realm arrives in it", async () => {
+  state.settled = true;
+  const { close } = await openEntry("play");
+  try {
+    expect(state.navigate).toHaveBeenCalledTimes(1);
+    expect(enteredAt()).toBe("/g/0xa1/8/map");
+  } finally {
+    await close();
+  }
+});

@@ -23,6 +23,8 @@ type DoorwayBlocker = { kind: "sign-in" } | { kind: "retry"; line: string; openR
 
 export interface DoorwayView {
   steps: { step: DoorwayStep; state: StepState }[];
+  /** How far through the track the entry is, 0 to 100, for the doorway's one bar. */
+  percent: number;
   blocker: DoorwayBlocker | null;
   /** A Blitz the player is not on offers Watch; one that has ended offers its results. */
   spectating: "watch" | "results" | null;
@@ -53,6 +55,8 @@ interface BootSide {
   realmCanOpen?: boolean;
   /** The game is over and finalized, so it leads to its results instead of booting. */
   ended?: boolean;
+  /** The share of the opening view's model loads and compiles done (model-preparation), while the map waits on them. */
+  modelShare?: number;
 }
 
 const SPECTATOR_STEPS: DoorwayStep[] = ["map", "play"];
@@ -71,11 +75,40 @@ export const doorwayView = (side: EntrySide | BootSide): DoorwayView => {
   const found = side.source === "entry" ? entryPlace(side) : bootPlace(side);
   // A step the audience does not walk (a spectator's account) stands at the first one it does.
   const at = steps.includes(found.step) ? found : { ...found, step: steps[0] };
+  const within = at.done ? 1 : side.source === "boot" && at.step === "map" ? mapShare(side) : 0;
   return {
     steps: steps.map((step) => ({ step, state: stepState(step, at.step, at.done) })),
+    percent: percentAt(steps, at.step, within),
     blocker: at.blocker,
     spectating: at.spectating,
   };
+};
+
+/**
+ * Each step's span of the bar, by what it waits on: the account and the realm are quick reads and one action, the map
+ * is the files a slow link spends its minute on (measured: 50 of 66 s), the hand-off a moment.
+ */
+const STEP_SPANS: Record<DoorwayStep, number> = { account: 10, realm: 15, map: 70, play: 5 };
+
+/** The percent done at a step `within` (0–1) of the way through it, over the steps this audience walks. */
+const percentAt = (steps: DoorwayStep[], at: DoorwayStep, within: number): number => {
+  const total = steps.reduce((sum, step) => sum + STEP_SPANS[step], 0);
+  const before = steps.slice(0, steps.indexOf(at)).reduce((sum, step) => sum + STEP_SPANS[step], 0);
+  return Math.round((100 * (before + STEP_SPANS[at] * within)) / total);
+};
+
+/** How far the map step has come: its boot phases first, then the opening view's model loads, which take the longest. */
+const MAP_PHASES: Partial<Record<PlayRouteBootPhase, number>> = {
+  select_world: 0,
+  setup_game: 0.05,
+  initial_sync: 0.1,
+  seed_entry_state: 0.2,
+  init_renderer: 0.25,
+  wait_worldmap_ready: 0.3,
+};
+const mapShare = ({ phase, modelShare = 0 }: BootSide): number => {
+  const start = MAP_PHASES[phase] ?? 0;
+  return phase === "wait_worldmap_ready" ? start + (1 - start) * modelShare : start;
 };
 
 interface Place {

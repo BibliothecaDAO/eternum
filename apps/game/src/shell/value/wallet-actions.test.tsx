@@ -113,7 +113,7 @@ it("leaves one Try again when the wallet declines, which prompts the same wallet
   vi.spyOn(console, "error").mockImplementation(() => {});
   const ready = installWallet("argentX", { account: LINKED, approves: false });
   const { container, landed } = await openSend();
-  await settled(() => expect(container.textContent).toContain("Payment rejected in wallet."));
+  await settled(() => expect(container.textContent).toContain("The wallet did not confirm it"));
   expect(ready.transactions()).toHaveLength(1);
   await press(container, "Try again");
   await settled(() => expect(ready.transactions()).toHaveLength(2));
@@ -163,4 +163,206 @@ it("leaves Try again live while the linked wallet never answers, and prompts it 
   await settled(() => expect(ready.connections()).toHaveLength(2));
   expect(ready.transactions()).toEqual([]);
   expect(landed).not.toHaveBeenCalled();
+});
+
+/** The account's Realms wallet as the paying wallet, signed in: its passkey signs, and its fee is paid in LORDS. */
+const withRealmsWallet = async () => {
+  const { useIdentitySessionStore, identityClient } = await import("@/hooks/context/identity-session");
+  const realmsWallet = {
+    address: LINKED,
+    credentialId: "c",
+    publicKeyX: "0x1",
+    origin: "https://realms.test",
+    rpId: "realms.test",
+  };
+  vi.spyOn(identityClient, "readDefaultWallet").mockResolvedValue(realmsWallet);
+  useIdentitySessionStore.setState({
+    status: "signed-in",
+    session: {
+      session: { id: "s", expiresAt: "2099-01-01T00:00:00.000Z", userId: "u" },
+      user: { id: "u", realmsId: "0x9", name: "Ysolde", email: "you@mail.test", address: LINKED },
+    },
+  });
+  return {
+    realmsWallet,
+    signOut: () => useIdentitySessionStore.setState({ status: "anonymous", session: null }),
+  };
+};
+const LORDS = 10n ** 18n;
+/** A prepared send paying its own fee: about 7.88 LORDS, at most `max`. */
+const preparedPaying = (max: bigint, id = "first") => ({
+  execution: { primaryType: "OutsideExecution", id } as never,
+  fee: { estimated: 7_880_650_978_512_778_123n, max },
+});
+
+it("shows the Realms wallet's fee in LORDS before its passkey confirms, and opens no wallet", async () => {
+  const send = await import("@/ui/modules/identity/wallet-send");
+  const prepared = preparedPaying(9_120_000_000_000_000_000n);
+  const prepare = vi.spyOn(send, "prepareDefaultWalletSend").mockResolvedValue(prepared);
+  const sendFromDefault = vi.spyOn(send, "sendFromDefaultWallet").mockResolvedValue({ kind: "landed" });
+  const { realmsWallet, signOut } = await withRealmsWallet();
+  const braavos = installWallet("braavos", { account: LINKED });
+  try {
+    const { container, landed } = await openSend();
+    await settled(() => expect(buttonsOf(container)).toEqual(["Confirm with your passkey"]));
+    expect(container.textContent).toContain("Network fee about 7.89 LORDS, at most 9.12");
+    expect(prepare).toHaveBeenCalledWith(CALLS);
+    await press(container, "Confirm with your passkey");
+    await settled(() => expect(landed).toHaveBeenCalledOnce());
+    expect(sendFromDefault).toHaveBeenCalledWith(
+      realmsWallet,
+      prepared.execution,
+      JSON.stringify(CALLS),
+      expect.anything(),
+      expect.any(Function),
+    );
+    expect(braavos.connections()).toEqual([]);
+  } finally {
+    signOut();
+    vi.restoreAllMocks();
+  }
+});
+
+it("signs nothing whose fee rose past the one shown: a stale send is priced again and its new fee shown first", async () => {
+  const send = await import("@/ui/modules/identity/wallet-send");
+  const shown = preparedPaying(9n * LORDS, "shown");
+  const higher = preparedPaying(10n * LORDS, "higher");
+  const now = Date.now();
+  // Priced at 9 LORDS now; past the minute a prepared send keeps, the network asks 10.
+  vi.spyOn(send, "prepareDefaultWalletSend").mockImplementation(async () =>
+    Date.now() > now + 60_000 ? higher : shown,
+  );
+  const sendFromDefault = vi.spyOn(send, "sendFromDefaultWallet").mockResolvedValue({ kind: "landed" });
+  const { signOut } = await withRealmsWallet();
+  try {
+    const { container, landed } = await openSend();
+    await settled(() => expect(container.textContent).toContain("at most 9.00"));
+    // The player comes back two minutes later: the prepared send is stale, and the network fee went up meanwhile.
+    vi.spyOn(Date, "now").mockReturnValue(now + 120_000);
+    await press(container, "Confirm with your passkey");
+    await settled(() =>
+      expect(container.textContent).toContain("The network fee went up. Check it and confirm again."),
+    );
+    expect(container.textContent).toContain("at most 10.00");
+    expect(sendFromDefault).not.toHaveBeenCalled();
+    // Confirmed again, the fee now shown: it sends the execution priced at that fee.
+    await press(container, "Confirm with your passkey");
+    await settled(() => expect(landed).toHaveBeenCalledOnce());
+    expect(sendFromDefault).toHaveBeenCalledWith(
+      expect.anything(),
+      higher.execution,
+      JSON.stringify(CALLS),
+      expect.anything(),
+      expect.any(Function),
+    );
+  } finally {
+    signOut();
+    vi.restoreAllMocks();
+  }
+});
+
+it("shows why a send could not be prepared (too little LORDS for its fee), and prices it again on Try again", async () => {
+  const send = await import("@/ui/modules/identity/wallet-send");
+  const { IdentityRequestError } = await import("@realms-world/identity");
+  // Refused while the wallet is short of LORDS for the fee; priced once the player has added some.
+  let short = true;
+  vi.spyOn(send, "prepareDefaultWalletSend").mockImplementation(async () => {
+    if (short) throw new IdentityRequestError(502, "PAYMASTER_REFUSED");
+    return preparedPaying(9n * LORDS);
+  });
+  const sendFromDefault = vi.spyOn(send, "sendFromDefaultWallet");
+  const { signOut } = await withRealmsWallet();
+  try {
+    const { container } = await openSend();
+    await settled(() => expect(buttonsOf(container)).toEqual(["Try again"]));
+    expect(container.textContent).toContain("Check your wallet holds enough LORDS for it and its fee.");
+    short = false;
+    await press(container, "Try again");
+    await settled(() => expect(buttonsOf(container)).toEqual(["Confirm with your passkey"]));
+    expect(container.textContent).toContain("at most 9.00");
+    expect(sendFromDefault).not.toHaveBeenCalled();
+  } finally {
+    signOut();
+    vi.restoreAllMocks();
+  }
+});
+
+it("on re-entry with a send still uncertain, sends nothing new, and ends it once the chain says it landed", async () => {
+  const { useIdentitySessionStore, identityClient } = await import("@/hooks/context/identity-session");
+  const send = await import("@/ui/modules/identity/wallet-send");
+  const uncertain = await import("@/ui/modules/identity/uncertain-sends");
+  const realmsWallet = {
+    address: LINKED,
+    credentialId: "c",
+    publicKeyX: "0x1",
+    origin: "https://realms.test",
+    rpId: "realms.test",
+  };
+  vi.spyOn(identityClient, "readDefaultWallet").mockResolvedValue(realmsWallet);
+  const prepare = vi.spyOn(send, "prepareDefaultWalletSend");
+  const execute = vi.spyOn(identityClient, "executeDefaultWalletCall");
+  const standing = vi
+    .spyOn(uncertain, "standingOf")
+    .mockResolvedValueOnce({ kind: "pending" })
+    .mockResolvedValueOnce({ kind: "landed" });
+  useIdentitySessionStore.setState({
+    status: "signed-in",
+    session: {
+      session: { id: "s", expiresAt: "2099-01-01T00:00:00.000Z", userId: "u" },
+      user: { id: "u", realmsId: "0x9", name: "Ysolde", email: "you@mail.test", address: LINKED },
+    },
+  });
+  // The same send as this one was handed to the paymaster before the page closed; its answer was lost.
+  uncertain.rememberUncertain({
+    via: "passkey",
+    owner: LINKED,
+    calls: JSON.stringify(CALLS),
+    execution: { message: { Nonce: "0x77", "Execute Before": 2_000 } } as never,
+    ownerSignature: ["0x4"],
+    hash: null,
+    at: Date.now(),
+  });
+  try {
+    const { container, landed } = await openSend();
+    await settled(() => expect(container.textContent).toContain("Your last send is on its way"));
+    expect(buttonsOf(container)).toEqual(["Check again", "Send it again"]);
+    expect(prepare).not.toHaveBeenCalled();
+    await press(container, "Check again");
+    await settled(() => expect(landed).toHaveBeenCalledOnce());
+    expect(standing).toHaveBeenCalledTimes(2);
+    expect(execute).not.toHaveBeenCalled();
+    expect(uncertain.uncertainSendOf(LINKED)).toBeUndefined();
+  } finally {
+    useIdentitySessionStore.setState({ status: "anonymous", session: null });
+    vi.restoreAllMocks();
+  }
+});
+
+it("on re-entry with a connected wallet's send it never heard back from, opens no wallet and offers no new transfer", async () => {
+  const uncertain = await import("@/ui/modules/identity/uncertain-sends");
+  vi.spyOn(uncertain, "standingOf").mockResolvedValue({ kind: "pending" });
+  const braavos = installWallet("braavos", { account: LINKED });
+  // Accepted by the wallet a day ago, the page closed before its hash was kept.
+  uncertain.rememberUncertain({
+    via: "wallet",
+    owner: LINKED,
+    calls: JSON.stringify(CALLS),
+    hash: null,
+    at: Date.now() - 86_400_000,
+  });
+  try {
+    const { container, landed } = await openSend();
+    await settled(() => expect(container.textContent).toContain("Your last send is on its way"));
+    // Only asking the chain again: no release, no wallet, nothing new sent while the record stands.
+    expect(buttonsOf(container)).toEqual(["Check again"]);
+    await press(container, "Check again");
+    await settled(() => expect(buttonsOf(container)).toEqual(["Check again"]));
+    expect(braavos.connections()).toEqual([]);
+    expect(braavos.transactions()).toEqual([]);
+    expect(landed).not.toHaveBeenCalled();
+    expect(uncertain.uncertainSendOf(LINKED)).toBeDefined();
+  } finally {
+    uncertain.forgetUncertain(LINKED);
+    vi.restoreAllMocks();
+  }
 });

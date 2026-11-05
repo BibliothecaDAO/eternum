@@ -54,7 +54,7 @@ export const mergeScenario = (progressed: Progressed) => (): LabScenario => {
 };
 
 /** The spire's rules (written under the key the spire scenario gives them) with T1 armies held to a larger limit. */
-const raisedArmyLimit = (store: NativeFactStore): LabFact => {
+export const raisedArmyLimit = (store: NativeFactStore): LabFact => {
   const rules = wire(store.require("SliceRules", { game_id: 1 })) as {
     troop_limit_config: { t1_tier_modifier: number };
   };

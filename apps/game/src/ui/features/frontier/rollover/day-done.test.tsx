@@ -44,7 +44,8 @@ vi.mock("@/runtime/world/store", async (importOriginal) => ({
 }));
 
 /** Realm 7 as the HUD hands it to the day's end: its game and entity (a free home: the game has no Labor rules). */
-const REALM_7 = { game_id: 1, entity_id: 7n } as never;
+/** Realm 7, founded as the season opened. */
+const REALM_7 = { game_id: 1, entity_id: 7n, base: { created_at: 0 } } as never;
 
 vi.mock("@/hooks/context/game-context", () => ({ useGame: () => ({ setup: { store: facts } }) }));
 vi.mock("@/hooks/use-player-profile", () => ({
@@ -112,7 +113,7 @@ beforeEach(() => {
   herald.now = BEFORE_PLAYING_ON.now;
   herald.game = { end_at: "1793439960" };
   alerts.owner = null;
-  useAskMemory.setState({ notNows: 0, asked: {} });
+  useAskMemory.setState({ notNows: 0, shownAt: null });
   host = document.createElement("div");
   document.body.append(host);
   root = createRoot(host);
@@ -214,24 +215,53 @@ it("shows a dash for each total, and says history did not answer, with Try again
   expect(host.querySelector(`${SUMMARY} [role="alert"]`)?.textContent).toBe("This day's totals are unknownTry again");
 });
 
-describe("the alerts ask on the summary of a home with no daily claim", () => {
+describe("the alerts popup, which waits for the day's end", () => {
   /** Day 3, today: the summary of day 2 opens over it. */
   const today = () => dayOf({ ...RULES, endAt: Number(herald.game.end_at) }, BEFORE_PLAYING_ON.now)!;
-  const ask = () => host.querySelector(`${SUMMARY} .ui-notice`)?.textContent;
-  const buttons = () => [...host.querySelectorAll(`${SUMMARY} button`)].map((button) => button.textContent);
+  const popup = () => document.body.querySelector("[role='dialog'][aria-label='Know when to come back']");
+  /** Day 2's end already gone through on this device: the map opens clear. */
+  const day2Seen = () => window.localStorage.setItem(`frontier.day-done.1.${RECORDED_DAY.player}`, "2");
+  const settle = () => act(() => new Promise((resolve) => setTimeout(resolve, 50)));
 
-  it("offers the next day's push, by the season's own calendar, spending the day once it is shown", async () => {
+  it("opens nothing while the day's summary is up, and spends nothing", async () => {
     alerts.owner = "0x7";
     await openTheGame();
-    expect(ask()).toBe("Get one push when Day 4 opens.");
-    expect(buttons()).toEqual(["Remind me", "Continue"]);
-    expect(useAskMemory.getState().asked).toEqual({ "0x1:1": { day: 3, host: expect.any(String) } });
+    expect(host.querySelector(SUMMARY)).not.toBeNull();
+    expect(popup()).toBeNull();
+    expect(useAskMemory.getState().shownAt).toBeNull();
   });
 
-  it("spends nothing while the HUD's day end shows no summary", async () => {
+  it("opens over the player's own map once the day's end is gone through", async () => {
     alerts.owner = "0x7";
+    day2Seen();
     client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
-    // Visiting another realm: the day's end passes with no summary.
+    await act(async () => draw());
+    await settle();
+    expect(host.querySelector(SUMMARY)).toBeNull();
+    expect(popup()?.textContent).toContain(
+      "A push for each day's opening, rested armies, fights, results and messages.",
+    );
+    expect(useAskMemory.getState().shownAt).not.toBeNull();
+  });
+
+  it("gives the screen to a day's end that begins while it stands unanswered, counting no Not now", async () => {
+    alerts.owner = "0x7";
+    day2Seen();
+    client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    await act(async () => draw());
+    await settle();
+    expect(popup()).not.toBeNull();
+    // The next day's turn: the rollover begins the moment over the map.
+    await act(async () => useDayEndStore.getState().begin("live"));
+    expect(phase()).toBe("veil");
+    expect(popup()).toBeNull();
+    expect(useAskMemory.getState()).toMatchObject({ notNows: 0, shownAt: expect.any(Number) });
+  });
+
+  it("opens nothing on another player's realm", async () => {
+    alerts.owner = "0x7";
+    day2Seen();
+    client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
     await act(async () =>
       root.render(
         <QueryClientProvider client={client}>
@@ -239,30 +269,18 @@ describe("the alerts ask on the summary of a home with no daily claim", () => {
         </QueryClientProvider>,
       ),
     );
-    await act(() => new Promise((resolve) => setTimeout(resolve, 50)));
-    expect(host.querySelector(SUMMARY)).toBeNull();
-    expect(useAskMemory.getState().asked).toEqual({});
+    await settle();
+    expect(popup()).toBeNull();
   });
 
-  it("offers nothing on the season's last day: none follows it", async () => {
+  it("opens nothing on the season's last day: no day follows for its push", async () => {
     alerts.owner = "0x7";
+    day2Seen();
     herald.game = { end_at: String(today().end) };
-    await openTheGame();
-    expect(host.textContent).toContain("Realm kept · Day 3 is open");
-    expect(ask()).toBeUndefined();
-    expect(buttons()).toEqual(["Continue"]);
-  });
-
-  it("offers nothing when the season's short last stub is merged into today, making it the last day", async () => {
-    alerts.owner = "0x7";
-    const unmerged = today().end;
-    herald.game = { end_at: String(unmerged + RULES.dayUnitSeconds) };
-    // The calendar gives today the stub: it now ends with the season.
-    expect(today().end).toBe(unmerged + RULES.dayUnitSeconds);
-    await openTheGame();
-    expect(host.textContent).toContain("Realm kept · Day 3 is open");
-    expect(ask()).toBeUndefined();
-    expect(buttons()).toEqual(["Continue"]);
+    client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    await act(async () => draw());
+    await settle();
+    expect(popup()).toBeNull();
   });
 });
 
@@ -315,7 +333,7 @@ describe("a device arriving in a new day", () => {
   let lateBlockAt: number | null = null;
 
   /** Opens the game: the HUD's day end and the day's turn, on the game's clocks, with the camera's moves recorded. */
-  const openTheGameHere = async ({ visiting = false } = {}) => {
+  const openTheGameHere = async ({ visiting = false, realm = REALM_7 } = {}) => {
     stopRollover = watchDayTurn({
       store: facts as never,
       gameId: 1,
@@ -329,7 +347,7 @@ describe("a device arriving in a new day", () => {
     await act(async () =>
       root.render(
         <QueryClientProvider client={client}>
-          <DayDone rules={{ ...RULES, endAt: Number(herald.game.end_at) }} realm={REALM_7} visiting={visiting} />
+          <DayDone rules={{ ...RULES, endAt: Number(herald.game.end_at) }} realm={realm} visiting={visiting} />
         </QueryClientProvider>,
       ),
     );
@@ -428,6 +446,17 @@ describe("a device arriving in a new day", () => {
   it("does not play a day's end again on a device that went through it, summary or none", async () => {
     window.localStorage.setItem(MARK, "2");
     await openTheGameHere();
+    expect(host.querySelector(SUMMARY)).toBeNull();
+    expect(phase()).toBe("day");
+    expect(navigate).not.toHaveBeenCalled();
+  });
+
+  it("plays no end of a day that closed before the realm was founded: a new player stays where they arrived", async () => {
+    herald.history = [];
+    // Founded a minute into day 3, after day 2 had ended.
+    const founded = endedDay(RULES, herald.now)!.end + 60;
+    await openTheGameHere({ realm: { game_id: 1, entity_id: 7n, base: { created_at: founded } } as never });
+    await seconds(DAY_END_TIMING.nightfall + DAY_END_TIMING.black + DAY_END_TIMING.dawn);
     expect(host.querySelector(SUMMARY)).toBeNull();
     expect(phase()).toBe("day");
     expect(navigate).not.toHaveBeenCalled();

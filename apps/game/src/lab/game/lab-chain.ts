@@ -313,11 +313,13 @@ const answerDirectory = (
 
 /**
  * The lab's player is signed in as the app lab's (its session and guardian), so the game's HUD reads as a signed-in
- * player's. The identity client holds its own fetch, so its session read is answered on the client itself.
+ * player's. The identity client holds its own fetch, so its session read is answered on the client itself, and so is
+ * its default wallet's: the lab's player has none (a payout wallet it links is another wallet).
  */
 const signInLabPlayer = (wallet: string | undefined) => {
   const session = wallet ? { ...LAB_SESSION, user: { ...LAB_SESSION.user, address: wallet } } : LAB_SESSION;
   identityClient.getSession = async () => session;
+  identityClient.readDefaultWallet = async () => null;
   useIdentitySessionStore.getState().applySession(session);
 };
 

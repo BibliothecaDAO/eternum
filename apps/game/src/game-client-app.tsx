@@ -9,11 +9,12 @@ import { GameplayAccountSync } from "./hooks/context/gameplay-account-sync";
 import { useUIStore } from "./hooks/store/use-ui-store";
 import { normalizePlayBootLocation } from "./play/navigation/play-route-boot-normalization";
 import { LocalNotificationLifecycle } from "./pwa/local-notification-lifecycle";
+import { PlayRouteDoorway } from "./ui/features/game-entry/doorway/play-route-doorway";
 import { GameEntryModal } from "./ui/features/game-entry/game-entry-modal";
 import { useBootDocumentState } from "./ui/modules/boot-loader";
 import { ConstructionGate } from "./ui/modules/construction-gate";
-import { LoadingScreen } from "./ui/modules/loading-screen";
 import { getRandomBackgroundImage } from "./ui/utils/utils";
+import { resolveSpectateIntent } from "./utils/spectator-session";
 
 const LazyGameRoute = lazy(loadGameRouteForPlayEntry);
 
@@ -75,7 +76,20 @@ const GameRouteShell = ({ backgroundImage }: { backgroundImage: string }) => {
   }
 
   return (
-    <Suspense fallback={<LoadingScreen />}>
+    // While the game's code arrives, the same doorway stands at the map step: one loading screen from entry to play.
+    <Suspense
+      fallback={
+        <PlayRouteDoorway
+          phase="select_world"
+          audience={resolveSpectateIntent(location) ? "spectator" : "player"}
+          setup={null}
+          accountError={null}
+          ended={false}
+          retry={() => window.location.reload()}
+          currentTaskLabel=""
+        />
+      }
+    >
       <LazyGameRoute backgroundImage={backgroundImage} />
     </Suspense>
   );

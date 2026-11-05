@@ -81,6 +81,29 @@ const LORDS_UNIT = 10n ** 18n;
 /** LORDS in whole units, as a player counts them (18 decimals on chain): what is held, rounded down. */
 export const lordsOf = (wei: bigint): number => Number(wei / LORDS_UNIT);
 
+/** LORDS typed by a player ("12", "0.5") in wei; null when it is not an amount. */
+export const lordsWeiOf = (typed: string): bigint | null => {
+  const match = /^(\d+)(?:\.(\d{1,18}))?$/.exec(typed.trim());
+  if (!match) return null;
+  return BigInt(match[1]!) * LORDS_UNIT + BigInt((match[2] ?? "").padEnd(18, "0"));
+};
+
+/** Wei as a player types LORDS, every decimal kept and none trailing: lordsWeiOf's inverse. */
+export const lordsTextOf = (wei: bigint): string => {
+  const fraction = (wei % LORDS_UNIT).toString().padStart(18, "0").replace(/0+$/, "");
+  return fraction ? `${wei / LORDS_UNIT}.${fraction}` : String(wei / LORDS_UNIT);
+};
+
+/**
+ * Wei as LORDS to two decimals, for a network fee and what pays it: a fee rounded up, so the most shown is never under
+ * what it may take; a balance rounded down, so what is shown held is never more than is.
+ */
+export const lordsCentsTextOf = (wei: bigint, rounding: "up" | "down"): string => {
+  const cent = LORDS_UNIT / 100n;
+  const cents = rounding === "up" ? (wei + cent - 1n) / cent : wei / cent;
+  return `${cents / 100n}.${String(cents % 100n).padStart(2, "0")}`;
+};
+
 /** LORDS still to find, in whole units rounded up: 0.4 short is 1 more, never 0. */
 export const lordsShortOf = (wei: bigint): number => Number((wei + LORDS_UNIT - 1n) / LORDS_UNIT);
 
@@ -104,6 +127,13 @@ export const registerCalls = (
   ...(cash > 0n ? [{ contractAddress: lords, entrypoint: "approve", calldata: [ledger, ...u256(cash)] }] : []),
   { contractAddress: ledger, entrypoint: "register", calldata: [...keyCalldata(key), flag(sword), flag(shield)] },
 ];
+
+/** transfer(recipient, amount) on the ledger's LORDS token: a default wallet's Send. */
+export const transferLordsCall = (lords: string, recipient: string, amount: bigint): Call => ({
+  contractAddress: lords,
+  entrypoint: "transfer",
+  calldata: [recipient, ...u256(amount)],
+});
 
 /**
  * What one tap mints of a ledger's test token: enough for a ranked entry with its sword and its shield.

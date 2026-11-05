@@ -11,6 +11,7 @@ import { useEffect, useMemo, useRef } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 
 import { resolveHexHandoff } from "./scene-handoff-target";
+import { markWorldInteractive } from "./world-interactive";
 
 export const PlaySceneHandoff = () => {
   const snapshot = usePlayRouteBootSnapshot();
@@ -145,6 +146,7 @@ export const PlaySceneHandoff = () => {
     markGameEntryMilestone("overlay-ready");
     markGameEntryMilestone("overlay-dismissed");
     markGameEntryMilestone("world-interactive");
+    markWorldInteractive();
   }, [navigate, setShowBlankOverlay, snapshot.phase]);
 
   return null;

@@ -20,7 +20,7 @@ import {
   judgeAfterDoorway,
 } from "./evidence.mjs";
 import { watchReleaseMove } from "./stale-release.mjs";
-import { openOrderSendGate, VIEWPORT } from "./browser-session.mjs";
+import { openOrderSendGate, touchAt, VIEWPORT } from "./browser-session.mjs";
 import { ENTRY_BUTTON, findHomeCardEntry } from "./player-entry.mjs";
 import { judgeClickToResult, measureClickToResult } from "./click-latency.mjs";
 import { proveResultOnScreen, startResultCapture } from "./result-capture.mjs";
@@ -915,9 +915,11 @@ function purchasedRefillSteps() {
 
 /**
  * The purse's deposit amount as a player meets it, on the lab's spend-lords game: the HUD field read at rest, typed
- * into with real keys after a tap on it, a deposit begun (a desktop's Tab then Enter, a phone's tap), and the same page
- * loaded again with that begun deposit restored as the exact, locked amount offered only as Retry, never Edit or cancel.
- * The run's test profile holds no wallet, so the deposit is begun and saved but never signed. A phone is Chrome's device
+ * into with real keys after a tap on it, a deposit begun (a desktop's Tab then Enter, a phone's tap) with its payment
+ * opened on the app sheet, and the same page loaded again with that begun deposit restored as the exact, locked amount.
+ * The run's test profile holds no wallet, so nothing is handed to a wallet and nothing is uncertain: the restored
+ * deposit offers Retry payment and Edit or cancel, without the uncertain line (an uncertain send's hold is the unit
+ * tests'). A phone is Chrome's device
  * emulation: the field's numeric input mode and real browser key events injected after a real tap; a physical OS
  * keyboard is not exercised.
  */
@@ -971,7 +973,7 @@ const DEPOSIT_AMOUNT_STEPS = [
       }
       const field = await readUntil(
         () => browser.read(DEPOSIT_FIELD),
-        (state) => state?.disabled === true && state.edit,
+        (state) => state?.disabled === true && state.edit && state.paying !== null,
         SHEET_WAIT_MS,
       );
       return field ?? { field: null };
@@ -979,9 +981,9 @@ const DEPOSIT_AMOUNT_STEPS = [
     verify: ({ played }) =>
       played.blocked
         ? failed(played.blocked, played)
-        : played.edit
+        : played.edit && played.paying === "Deposit 25 LORDS"
           ? judgeDepositField(played, { value: "25", locked: true })
-          : failed("A begun deposit without a wallet must offer Edit or cancel", played),
+          : failed("A begun deposit must open its payment on the app sheet and, unsent, offer Edit or cancel", played),
   },
   {
     name: "deposit-amount-restored",
@@ -994,10 +996,10 @@ const DEPOSIT_AMOUNT_STEPS = [
     verify: ({ played }) =>
       !played.reloaded
         ? failed("The page did not load again", played)
-        : played.retry && played.uncertain && !played.deposit && !played.edit
+        : played.retry && played.edit && !played.uncertain && !played.deposit && played.paying === null
           ? judgeDepositField(played, { value: "25", locked: true })
           : failed(
-              "A restored deposit must offer Retry payment, not Edit or cancel, and say its status is uncertain",
+              "A restored deposit never handed to a wallet must offer Retry payment and Edit or cancel, not an uncertain status",
               played,
             ),
   },
@@ -1041,6 +1043,7 @@ const DEPOSIT_FIELD = `JSON.stringify((() => {
     edit: button("Edit or cancel deposit"),
     retry: button("Retry payment"),
     uncertain: [...sheet.querySelectorAll('[role="status"]')].some((line) => line.textContent.startsWith("Payment status is uncertain")),
+    paying: document.querySelector('[role="dialog"][aria-label^="Deposit "]')?.getAttribute("aria-label") ?? null,
   };
 })())`;
 
@@ -1388,7 +1391,7 @@ async function approveTenLords(browser, owner, evidence) {
     return { blocked: "Deposit unavailable, balances missing, or amount is not ten", before };
   browser.tap(button.offset);
   console.error(
-    "Approve the ten-LORDS deposit in the prepared linked wallet. Waiting up to ten minutes; Ctrl-C cancels.",
+    "Confirm the ten-LORDS deposit in its payment panel: the Realms wallet's passkey, or the linked wallet's prompt. Waiting up to ten minutes; Ctrl-C cancels.",
   );
   const after = await pollProof(
     owner,
@@ -1399,7 +1402,7 @@ async function approveTenLords(browser, owner, evidence) {
       state.earned === before.earned &&
       state.credited.some((id) => !before.credited.includes(id)),
     10 * 60_000,
-    "No deposit credit within ten minutes: prepare the linked wallet in this persistent headed profile, approve WalletSign, and check its STRK and devLords funding",
+    "No deposit credit within ten minutes: prepare the payout wallet in this persistent headed profile, confirm the payment, and check its devLords and its fee funding (LORDS for a Realms wallet, STRK for another)",
   );
   return {
     before,
@@ -3828,6 +3831,129 @@ function labMergeSteps(confirm) {
   ];
 }
 
+/** Realm 7, the lab's player realm, the troops its army holds before it is reinforced, and what Max then leaves. */
+const LAB_REALM = 7;
+const ARMY_BEFORE_REINFORCE = 1_498;
+const AT_THE_CHAIN = 1_000_000_000n;
+/** All 420 knights at home go, for 840 of the 1,000 wheat: the army, the knights' stock (26) and the wheat (35) after. */
+const REINFORCED = {
+  troops: String(1_918n * AT_THE_CHAIN),
+  26: "0",
+  35: String(160n * AT_THE_CHAIN),
+};
+/** How far below its token a realm's tile may lie at the map's zoom: the realm's token stands lower than an army's. */
+const REALM_TILE_BELOW_TOKEN_PX = [70, 50, 90];
+const REINFORCE_STATE = `JSON.stringify({
+  sheet: document.querySelector("[data-kit-sheet]")?.getAttribute("aria-label") ?? null,
+  text: document.querySelector("[data-kit-sheet]")?.textContent ?? null,
+  buttons: [...(document.querySelector("[data-kit-sheet]")?.querySelectorAll("button") ?? [])].map((button) => button.textContent.trim()),
+  sent: (window.__labChain?.sent ?? []).map(({ command }) => command.kind),
+  armyToken: document.querySelector('.mp-at[data-key="army:${PICKED_ARMY}"]')?.textContent ?? null,
+  structure: window.__eternumMapSelection?.structure?.id ?? null,
+  // The chain's answer to the reinforcement: the army's troops and each balance the realm paid from, as they stand after.
+  answered: Object.fromEntries((window.__labChain?.sent ?? [])
+    .filter(({ command }) => command.kind === "ManageTroops")
+    .flatMap(({ answered }) => answered)
+    .map(({ model, value }) => model === "ExplorerTroops" ? ["troops", String(value.troops.count)] : [String(value?.resource_type), String(value?.balance)])),
+})`;
+const REALM_TOKEN = `JSON.stringify((() => {
+  const slot = document.querySelector('.mp-at[data-key="structure:${LAB_REALM}"]');
+  if (!slot?.firstElementChild || getComputedStyle(slot).display === "none") return null;
+  const token = slot.firstElementChild.getBoundingClientRect();
+  return [Math.round(token.left + token.width / 2 - innerWidth / 2), Math.round(token.top + token.height / 2 - innerHeight / 2)];
+})())`;
+
+/**
+ * Reinforcing as Blitz does (owner, 4 November 2026: "right click from the realm to the army opens the reinforcement"):
+ * on the lab's reinforce game (src/lab/game/reinforce-scenario.ts) the realm is selected from its tile, the army beside
+ * it right-clicked for the Reinforce sheet (a phone's finger taps the realm and holds the army, through DevTools' touch
+ * input), Max pressed and Reinforce sent; the chain's RecruitExplorer answer leaves the army 420 knights stronger and
+ * the realm with no knights and 160 wheat, and the army's token reads it.
+ */
+const LAB_REINFORCE_STEPS = [
+  { name: "enter-on-map", settleMs: 3_000, verify: inScene("map") },
+  { name: "select-realm", play: selectTheRealm, settleMs: 0, verify: realmSelected },
+  { name: "open-reinforce", play: openTheReinforcement, settleMs: 0, verify: reinforceSheetOpen },
+  { name: "reinforce", play: reinforceWithMax, settleMs: 1_000, verify: armyReinforced },
+];
+
+/** A tap's finger and a hold's, as the map's gesture recognizer tells them apart (its long press is 500 ms). */
+const TAP_MS = 80;
+const HOLD_MS = 800;
+
+/** Taps under the realm's token until the map has the realm selected. */
+async function selectTheRealm({ browser, devTools }) {
+  browser.hover(POINTER_PARKED);
+  await sleep(HOVER_SETTLE_MS);
+  const token = browser.read(REALM_TOKEN);
+  if (!token) return { token, tapped: null };
+  for (const below of REALM_TILE_BELOW_TOKEN_PX) {
+    const tapped = [token[0], token[1] + below];
+    // A phone plays with a finger, a desktop with the mouse.
+    if (!onADesktop()) await touchAt(devTools, tapped, TAP_MS);
+    else browser.tap(tapped);
+    await sleep(HOVER_SETTLE_MS);
+    if (browser.read(REINFORCE_STATE).structure === LAB_REALM) return { token, tapped };
+  }
+  return { token, tapped: null };
+}
+
+function realmSelected({ played }) {
+  if (!played.token) return failed("the map draws no token for the player's realm", played);
+  return played.tapped ? completed(played) : failed("no tap under the realm's token selected it", played);
+}
+
+/** Right-clicks (a phone holds) the army's tile, found under its token, with the realm selected. */
+async function openTheReinforcement({ browser, devTools }) {
+  if (onADesktop()) browser.hover(POINTER_PARKED);
+  await sleep(HOVER_SETTLE_MS);
+  const army = browser.read(ARMY_TILES)[PICKED_ARMY];
+  if (!army) return { army: null, state: null };
+  if (!onADesktop()) await touchAt(devTools, army, HOLD_MS);
+  else browser.rightClick(army);
+  const state = await readUntil(
+    () => browser.read(REINFORCE_STATE),
+    (shown) => shown.sheet !== null,
+    MERGE_WAIT_MS,
+  );
+  return { army, state };
+}
+
+function reinforceSheetOpen({ played }) {
+  if (!played.army) return failed("the map draws no token for the realm's army", played);
+  if (played.state?.sheet !== "Reinforce Army 1")
+    return failed(`the right-click on the army opened ${played.state?.sheet ?? "no card"}`, played);
+  return completed({ sheet: played.state.sheet, buttons: played.state.buttons });
+}
+
+/** Max, then Reinforce, then the chain's answer: the army's token reads more troops than before. */
+async function reinforceWithMax({ browser, extraScreenshot }) {
+  browser.click("Max");
+  await sleep(HOVER_SETTLE_MS);
+  const chosen = browser.read(REINFORCE_STATE);
+  extraScreenshot("max");
+  browser.click("Reinforce");
+  const after = await readUntil(
+    () => browser.read(REINFORCE_STATE),
+    (shown) =>
+      shown.sent.includes("ManageTroops") && !shown.armyToken?.endsWith(ARMY_BEFORE_REINFORCE.toLocaleString("en-US")),
+    MERGE_WAIT_MS,
+  );
+  return { chosen: chosen.text, after };
+}
+
+function armyReinforced({ played }) {
+  const { after } = played;
+  if (!after.sent.includes("ManageTroops")) return failed("Reinforce sent no troop command", played);
+  const troops = Number((after.armyToken ?? "").replace(/^T\d/, "").replaceAll(",", ""));
+  if (!(troops > ARMY_BEFORE_REINFORCE))
+    return failed(`the army's token reads ${after.armyToken} after the reinforcement`, played);
+  if (after.sheet?.startsWith("Reinforce")) return failed("the Reinforce sheet stays open after the answer", played);
+  if (JSON.stringify(after.answered) !== JSON.stringify(REINFORCED))
+    return failed(`the chain left ${JSON.stringify(after.answered)}, not ${JSON.stringify(REINFORCED)}`, played);
+  return completed({ chosen: played.chosen, sent: after.sent, troops, panel: after.sheet });
+}
+
 /**
  * The owner's army just after its fight (src/lab/game/after-battle-scenario.ts): 4,015 knights on the camp they had
  * cleared, beside the ruin they attacked, both on battle cooldown. With nothing selected, hovering the army's tile opens
@@ -5069,7 +5195,7 @@ export const STEP_SETS = {
           );
           extraScreenshot("source-choice");
           if (tier !== "regular") return { tier, founded: false };
-          browser.click("Found your realm");
+          browser.click("Create your realm");
           return { tier, founded: true };
         },
         settleMs: 5_000,
@@ -5269,6 +5395,7 @@ export const STEP_SETS = {
     steps: labMergeSteps("Lose 100 XP, merge into Army 2"),
   },
   "lab-merge-keeps-tapped": { game: labSpireGame("merge-keeps-tapped"), steps: labMergeSteps(null) },
+  "lab-reinforce": { game: labSpireGame("reinforce"), steps: LAB_REINFORCE_STEPS },
   "lab-actions": { game: labSpireGame("actions"), steps: ACTION_STEPS },
   "lab-actions-spire": { game: LAB_SPIRE, steps: SPIRE_ACTION_STEPS },
   "lab-double-click": { game: { ...LAB_SPIRE, lab: "camp" }, steps: LAB_DOUBLE_CLICK_STEPS },
