@@ -1,11 +1,12 @@
 import { SIGN_IN_WORDS } from "@/ui/design-system/kit/words";
-import { IDENTITY_PORTRAITS, nameRuleViolation, type Session } from "@realms-world/identity";
+import { nameRuleViolation, type Session } from "@realms-world/identity";
 import { useState, type FormEvent } from "react";
 
 import { identityClient } from "@/hooks/context/identity-session";
 import { AppButton } from "@/ui/design-system/kit/app-elements";
 import { nameRefusal } from "@/ui/modules/identity/identity-failures";
 
+import { randomPortrait } from "./default-name";
 import { FailureLine } from "./failure-line";
 import { NameField, PortraitGrid } from "./fields";
 
@@ -60,5 +61,3 @@ export const ProfileStep = ({ session, onClaimed }: { session: Session; onClaime
     </form>
   );
 };
-
-const randomPortrait = (): string => IDENTITY_PORTRAITS[Math.floor(Math.random() * IDENTITY_PORTRAITS.length)];

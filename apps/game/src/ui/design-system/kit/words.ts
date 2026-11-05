@@ -140,7 +140,6 @@ export const exploresBought = (count: number) => `+${count} ${count === 1 ? "exp
 /** The HUD's tab for everything the player holds. */
 export const EMPIRE = "Empire";
 /** The places: the nav's words. */
-const MAP = "Map";
 export const REALM = "Realm";
 /** The world map, as the Realm / World switch names it. */
 export const WORLD = "World";
@@ -565,6 +564,13 @@ export const TRANSFER_TROOPS = {
   failed: "The troops could not be moved.",
   changed: "The armies' troops changed",
 } as const;
+/** Troops raised from the realm's stock into its army beside it (the realm selected, the army right-clicked). */
+export const REINFORCE = {
+  verb: "Reinforce",
+  title: (army: string) => `Reinforce ${army}`,
+  sending: "Reinforcing…",
+  failed: "The army could not be reinforced.",
+} as const;
 /** A realm's armies, as a list's name. */
 export const ARMIES = "Armies";
 /** The day-done card's count of the armies that ended with the day. */
@@ -762,8 +768,11 @@ export const campaignTicketName = (campaign: CampaignKey, golden: boolean) =>
 export const HOME_STEP_WORDS = {
   title: "Choose your home",
   /** The step's one verb, and what it says while the home is founded. */
-  found: "Found your realm",
-  founding: "Founding your realm…",
+  found: "Create your realm",
+  founding: "Creating your realm…",
+  /** The name a new account was given at sign-up, said where the player first chooses something of their own. */
+  playsAs: (name: string) => `You play as ${name}`,
+  changeOnYou: "Change it on You",
   /** While the account's Realms and ticket are read: the step offers nothing yet, and says why. */
   loading: "Reading what you hold…",
   freeHome: "A free home",
@@ -858,6 +867,8 @@ export const PITCH = "A new land every day";
 
 /** The sign-in flow's words: its titles, its two ways in and the steps on its buttons. */
 export const SIGN_IN_WORDS = {
+  /** A new account's name when its suggested one cannot be kept (too short once the name rule has its way). */
+  defaultName: "Wanderer",
   discord: "Discord",
   or: "or",
   email: "Email",
@@ -894,6 +905,8 @@ export const JOIN_WORDS = {
   goldenStub: "Golden · Devcon · Mumbai",
   laborEachDay: (amount: number) => `${formatExact(amount)} Labor ${EACH_DAY}`,
   essenceEachDay: (amount: number) => `${formatExact(amount)} Essence ${EACH_DAY}`,
+  /** The reveal's way on, into the Devcon game's Realm step. */
+  startAdventure: "Start your adventure",
   continue: "Continue",
   closed: "Devcon tickets have closed.",
   taken: "Another player already opened this ticket.",
@@ -1068,11 +1081,19 @@ export const CHAT_WORDS = {
 
 /** The doorway into a match: its four steps and what holds it until the player acts. */
 export const DOORWAY_WORDS = {
-  account: "Account",
-  realm: REALM,
-  map: MAP,
-  play: "Play",
-  /** The track, named for assistive technology. */
+  /** What each step of the track does while it runs, over the bar. */
+  account: "Signing in",
+  realm: "Preparing your realm",
+  map: "Loading the map",
+  play: "Entering the world",
+  stepOf: (step: number, of: number) => `Step ${step} of ${of}`,
+  secondsLeft: (seconds: number) => `About ${seconds} s left`,
+  /** What the first minutes hold, said while a player's map loads. */
+  claimTitle: "Claim Labor every day",
+  claimDetail: "Your realm's daily claim, free each Frontier day",
+  firstTitle: "First: build a Barracks",
+  firstDetail: "Then send your first army to explore",
+  /** The bar, named for assistive technology. */
   entering: "Entering the game",
   signInToPlay: "Sign in to play.",
   notOnThisGame: "Not on this game.",
@@ -1100,7 +1121,7 @@ export const SEASON_WORDS = {
   /** Under the LORDS the player's realm has earned this season. */
   lordsEarned: "LORDS earned",
   /** Frontier's board before any realm is on it, and how to get on it. */
-  boardEmpty: "No realm yet. Found one from Play.",
+  boardEmpty: "No realm yet. Create one from Play.",
   /** A player with no realm on Frontier's board this season. */
   notOnBoard: "Not on Frontier's board yet",
   /** Frontier's seasons that have ended, under its board. */

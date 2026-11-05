@@ -20,6 +20,10 @@ import { runRendererFrame } from "../../renderer-frame-runtime";
 import { SpireManager } from "../../managers/spire-manager";
 import { SceneName } from "../../types";
 import { resetGameEnd, skipGameEnd } from "./state";
+import { markWorldInteractive } from "@/game-entry/world-interactive";
+
+// These spires stand in a game whose first view is up: their models load at once.
+markWorldInteractive();
 
 vi.mock("@/three/map-layer", () => ({ activeMapLayer: () => false }));
 vi.mock("@/ui/config", () => ({ FELT_CENTER: () => 0, IS_FLAT_MODE: false }));

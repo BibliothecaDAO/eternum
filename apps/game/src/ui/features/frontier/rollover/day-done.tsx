@@ -56,7 +56,9 @@ export const DayDone = ({
   const rank = useClosingRankChange(ended?.day);
   const openedAt = useOpenedAt(now);
   const { phase, summaryMissed, landReady, begin, continueDay, showSummary } = useDayEndStore();
-  const unseen = !visiting && player !== null && ended !== null && (seen === null || seen < ended.day);
+  // A day that ended before this realm was founded is none of its player's: a new realm starts on the day it was made.
+  const realmsDay = ended !== null && ended.end > Number(realm.base.created_at);
+  const unseen = !visiting && player !== null && ended !== null && realmsDay && (seen === null || seen < ended.day);
   // A home with no daily claim is asked for alerts here; one with a claim is asked after its claim instead.
   const hasClaim = homeDailyClaim(setup.store, { gameId: realm.game_id, entityId: realm.entity_id }) !== null;
   const dayAsk = useDayAsk("summary", { hasClaim, nextDay: nextDayOf(rules, now) });

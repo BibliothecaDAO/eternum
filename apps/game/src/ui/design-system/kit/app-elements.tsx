@@ -809,11 +809,13 @@ export const AppTicket = ({
   stub: string;
   face?: "sealed" | "opened" | "golden";
 }) => (
-  <div className="app-ticket" data-face={face}>
-    <div key={face} className="app-ticket__card">
-      <div className="app-ticket__art">{art}</div>
-      <p className="app-ticket__line">{line}</p>
-      <p className="app-ticket__stub">{stub}</p>
+  <div className="app-ticket-room">
+    <div className="app-ticket" data-face={face}>
+      <div key={face} className="app-ticket__card">
+        <div className="app-ticket__art">{art}</div>
+        <p className="app-ticket__line">{line}</p>
+        <p className="app-ticket__stub">{stub}</p>
+      </div>
     </div>
   </div>
 );

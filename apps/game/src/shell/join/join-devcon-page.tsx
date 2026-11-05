@@ -14,13 +14,7 @@ import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { identityClient, useIdentitySession } from "@/hooks/context/identity-session";
 import { heldCampaignTicket, useHeldTicket, useTicketOpened } from "@/hooks/use-holdings";
 import { AppButton, AppNotice, AppPortrait, AppTicket } from "@/ui/design-system/kit/app-elements";
-import {
-  campaignTicketName,
-  DEVCON as DEVCON_NAME,
-  HOME_STEP_WORDS,
-  JOIN_WORDS,
-  TRY_AGAIN,
-} from "@/ui/design-system/kit/words";
+import { campaignTicketName, DEVCON as DEVCON_NAME, JOIN_WORDS, TRY_AGAIN } from "@/ui/design-system/kit/words";
 
 import { useLayout } from "../frame/layout";
 import { PageFrame } from "../frame/page-frame";
@@ -60,7 +54,7 @@ const FINAL_REFUSALS = new Map<string, string>([
  * Devcon's landing, where every flyer's QR leads (`/join/devcon/<code>`), and every friend's referral link
  * (`/join/devcon/r/<code>`, naming who sent it); `/join/devcon` serves a code already kept. One sequence, one job per
  * screen: the sealed ticket and Open (signing in first when needed, then opening at once), then what it holds (its
- * reveal, or the ticket the account already holds), then Choose your home, the Devcon game's Realm step. Nothing before
+ * reveal, or the ticket the account already holds), then Start your adventure, into the Devcon game's entry. Nothing before
  * the opening tells a golden ticket from another.
  */
 export const JoinDevconPage = () => {
@@ -206,7 +200,7 @@ const SentBy = ({ referral }: { referral: string }) => {
 
 /** The ticket this flyer opened, turned over: gold under its rays for a golden one, and what its realm claims each day. */
 const TicketRevealed = ({ tier, entry }: { tier: CampaignTicket["tier"]; entry: string | null }) => (
-  <DevconFrame foot={<ChooseYourHome entry={entry} />}>
+  <DevconFrame foot={<StartYourAdventure entry={entry} />}>
     <h1 className="text-app-title text-app-ink">{campaignTicketName(DEVCON.campaign, tier === "golden")}</h1>
     <DevconTicket tier={tier} />
   </DevconFrame>
@@ -221,7 +215,7 @@ const TicketHeld = ({ tier, entry }: { tier: CampaignTicket["tier"]; entry: stri
     forgetCampaignOpening();
   }, []);
   return (
-    <DevconFrame foot={<ChooseYourHome entry={entry} />}>
+    <DevconFrame foot={<StartYourAdventure entry={entry} />}>
       <h1 className="text-app-title text-app-ink">{JOIN_WORDS.alreadyHeld}</h1>
       <DevconTicket tier={tier} />
     </DevconFrame>
@@ -229,16 +223,16 @@ const TicketHeld = ({ tier, entry }: { tier: CampaignTicket["tier"]; entry: stri
 };
 
 /** On to the Devcon game's entry, whose Realm step stands on the ticket; it spins until the directory says where. */
-const ChooseYourHome = ({ entry }: { entry: string | null }) => (
+const StartYourAdventure = ({ entry }: { entry: string | null }) => (
   <AppButton
     kind="primary"
     size="lg"
     icon="play"
     step
-    busy={entry === null ? HOME_STEP_WORDS.title : undefined}
+    busy={entry === null ? JOIN_WORDS.startAdventure : undefined}
     to={entry ?? "/"}
   >
-    {HOME_STEP_WORDS.title}
+    {JOIN_WORDS.startAdventure}
   </AppButton>
 );
 
@@ -259,7 +253,7 @@ const DevconFrame = ({ notice, foot, children }: { notice?: ReactNode; foot: Rea
   const verb = <div className="flex justify-center">{foot}</div>;
   return (
     <PageFrame title={DEVCON_NAME} painting="frontier-mist" stage notice={notice} foot={phone ? verb : undefined}>
-      <div className="mx-auto flex max-w-[28rem] flex-col items-center gap-5 pt-4 text-center">
+      <div className="mx-auto flex max-w-[28rem] flex-col items-center gap-5 pt-4 text-center [@media(max-height:720px)]:gap-3 [@media(max-height:720px)]:pt-2">
         {children}
         {!phone && verb}
       </div>

@@ -11,17 +11,22 @@ const enabledIn = (game: "frontier" | "blitz" | "eternum") => {
 
 describe("army help transfers", () => {
   it("offers what each game's command mask allows: Frontier merges armies, the arena and Eternum move relics too", () => {
-    expect(enabledHelpTransfers(enabledIn("frontier"), false, false)).toEqual(["troops"]);
-    expect(enabledHelpTransfers(enabledIn("blitz"), false, true)).toEqual(["troops", "relics"]);
-    expect(enabledHelpTransfers(enabledIn("eternum"), true, true)).toEqual(["troops", "relics"]);
+    expect(enabledHelpTransfers(enabledIn("frontier"), "armies", false)).toEqual(["troops"]);
+    expect(enabledHelpTransfers(enabledIn("blitz"), "armies", true)).toEqual(["troops", "relics"]);
+    expect(enabledHelpTransfers(enabledIn("eternum"), "to-structure", true)).toEqual(["troops", "relics"]);
   });
 
-  it("moves troops to or from a structure only where it has guard slots, so a Frontier realm offers no Help", () => {
-    expect(enabledHelpTransfers(enabledIn("frontier"), true, false)).toEqual([]);
-    expect(enabledHelpTransfers(enabledIn("blitz"), true, false)).toEqual(["relics"]);
+  it("moves troops into a structure only where it has guard slots, so a Frontier realm takes none", () => {
+    expect(enabledHelpTransfers(enabledIn("frontier"), "to-structure", false)).toEqual([]);
+    expect(enabledHelpTransfers(enabledIn("blitz"), "to-structure", false)).toEqual(["relics"]);
+  });
+
+  it("sends troops out of a structure's stock without guard slots, so a Frontier realm reinforces its army", () => {
+    expect(enabledHelpTransfers(enabledIn("frontier"), "from-structure", false)).toEqual(["troops"]);
+    expect(enabledHelpTransfers(enabledIn("blitz"), "from-structure", false)).toEqual(["troops", "relics"]);
   });
 
   it("offers no Help where no transfer command is enabled", () => {
-    expect(enabledHelpTransfers(() => false, false, true)).toEqual([]);
+    expect(enabledHelpTransfers(() => false, "armies", true)).toEqual([]);
   });
 });

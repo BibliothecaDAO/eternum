@@ -887,3 +887,17 @@ it("opens chat on Global over the game when a mention's alert is pressed, the ga
   }
   Reflect.deleteProperty(navigator, "serviceWorker");
 });
+
+it("lights a plot on the player's own board for its first build, the Barracks, and none on a realm they visit", async () => {
+  await renderHud();
+  const own = useUIStore.getState().firstBuild;
+  try {
+    await renderVisit();
+    expect(useUIStore.getState().firstBuild).toBeNull();
+  } finally {
+    visiting.visit = null;
+  }
+  await renderHud();
+  expect(useUIStore.getState().firstBuild).toBe(own);
+  expect(own).toBe(BuildingType.ResourceKnightT1);
+});

@@ -14,6 +14,8 @@ type ResolveGameEntryTargetInput = GameRef & {
   structureEntityId: number;
   worldMapReturnPosition: WorldMapPosition | null;
   isSpectateMode: boolean;
+  /** A player who has just created their realm in this entry: they arrive in it, to build. */
+  realmFirst: boolean;
   renderer?: RendererRequest;
 };
 
@@ -27,27 +29,31 @@ type ResolvedGameEntryTarget = {
 const isFiniteCoordinate = (value: unknown): value is number => typeof value === "number" && Number.isFinite(value);
 
 /**
- * Every mode's session opens on the world map; the realm view is one press of Realm away. The renderer request the
- * entry was opened with goes on to the map, where the renderer reads it.
+ * A session opens on the world map, the realm view one press of Realm away (owner, 19 October 2026), except the entry
+ * that has just created the player's realm: the map boots, then hands off to the realm, where its first build is marked
+ * (the owner's pick F3, 4 November 2026). The renderer request the entry was opened with goes on to the map, where the
+ * renderer reads it.
  */
 const buildCanonicalGameEntryUrl = ({
   chainId,
   gameId,
   isSpectateMode,
+  realmFirst,
   worldMapPosition,
   renderer,
 }: GameRef & {
   isSpectateMode: boolean;
+  realmFirst: boolean;
   worldMapPosition: WorldMapPosition | null;
   renderer?: RendererRequest;
 }) => {
   return buildPlayHref({
     ...renderer,
-    bootMode: "direct",
+    bootMode: realmFirst ? "map-first" : "direct",
     chainId,
     gameId,
     col: worldMapPosition?.col ?? null,
-    resumeScene: null,
+    resumeScene: realmFirst ? "hex" : null,
     row: worldMapPosition?.row ?? null,
     scene: "map",
     spectate: isSpectateMode,
@@ -73,6 +79,9 @@ const resolveBootstrappedWorldMapTarget = (
   };
 };
 
+/** Only a player arrives in their realm; a spectator starts on the map. */
+const arrivesInRealm = (input: ResolveGameEntryTargetInput): boolean => input.realmFirst && !input.isSpectateMode;
+
 const buildWorldMapEntryTargetFromBootstrappedSelection = (
   input: ResolveGameEntryTargetInput,
   target: { structureEntityId: number; worldMapPosition: WorldMapPosition },
@@ -85,6 +94,7 @@ const buildWorldMapEntryTargetFromBootstrappedSelection = (
       gameId: input.gameId,
       worldMapPosition: target.worldMapPosition,
       isSpectateMode: input.isSpectateMode,
+      realmFirst: arrivesInRealm(input),
       renderer: input.renderer,
     }),
     worldMapPosition: target.worldMapPosition,
@@ -100,6 +110,8 @@ const buildFallbackGameEntryTarget = (input: ResolveGameEntryTargetInput): Resol
       gameId: input.gameId,
       worldMapPosition: null,
       isSpectateMode: input.isSpectateMode,
+      // Entered before the realm is selected, the hand-off waits for it rather than settling on the map.
+      realmFirst: arrivesInRealm(input),
       renderer: input.renderer,
     }),
     worldMapPosition: null,
@@ -112,6 +124,7 @@ export const resolveGameEntryTarget = ({
   structureEntityId,
   worldMapReturnPosition,
   isSpectateMode,
+  realmFirst,
   renderer,
 }: ResolveGameEntryTargetInput): ResolvedGameEntryTarget => {
   const input = {
@@ -120,6 +133,7 @@ export const resolveGameEntryTarget = ({
     structureEntityId,
     worldMapReturnPosition,
     isSpectateMode,
+    realmFirst,
     renderer,
   };
   const bootstrappedWorldMapTarget = resolveBootstrappedWorldMapTarget(input);

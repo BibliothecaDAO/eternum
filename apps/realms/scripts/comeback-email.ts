@@ -270,10 +270,10 @@ const VARIANTS: Record<VariantKey, Variant> = {
     docs: CHESTS_DOCS,
   },
   N: {
-    subject: (s) => `Your Devcon realm isn't founded yet. ${about(s.left)} LORDS are.`,
-    opening: "You made a Realms account at Devcon but haven't founded your realm. It takes one tap.",
+    subject: (s) => `Your Devcon realm isn't created yet. ${about(s.left)} LORDS are.`,
+    opening: "You made a Realms account at Devcon but haven't created your realm. It takes one tap.",
     claims: true,
-    action: "Found your realm",
+    action: "Create your realm",
     docs: { label: "How your Devcon ticket works", path: "/frontier/devcon/" },
   },
   P: {

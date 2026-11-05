@@ -1,7 +1,17 @@
 import { asRanked, formatCharge, type RankedWords } from "@bibliothecadao/types";
 import { computeEffectiveStaminaCost } from "@/lib/army-stamina/path-cost";
 import { staminaShortfall } from "@/ui/design-system/kit/reasons";
-import { ATTACK, EXPLORE, MOVE, SPIRE_WORDS, STAMINA, TRANSFER, UNEXPLORED, USE } from "@/ui/design-system/kit/words";
+import {
+  ATTACK,
+  EXPLORE,
+  MOVE,
+  REINFORCE,
+  SPIRE_WORDS,
+  STAMINA,
+  TRANSFER,
+  UNEXPLORED,
+  USE,
+} from "@/ui/design-system/kit/words";
 import { type MapSiteKind, siteGainLine } from "../sites/map-site-plan";
 import {
   type ActionPath,
@@ -31,6 +41,8 @@ type TileOrder = {
   site:
     | { kind: MapSiteKind; gain: number | undefined; stamina: { current: number; max: number } | undefined }
     | undefined;
+  /** The selection is the player's realm, not an army: its Help raises troops into the army beside it. */
+  byRealm: boolean;
 };
 
 export type OrderTip = {
@@ -71,8 +83,10 @@ const ORDERS: Partial<Record<ActionType, string>> = {
   [ActionType.UseSite]: USE,
 };
 
-const orderOf = ({ path, exploreStamina, food, site }: TileOrder): OrderTip | null => {
+const orderOf = ({ path, exploreStamina, food, site, byRealm }: TileOrder): OrderTip | null => {
   const actionType = path && path.length >= 2 ? ActionPaths.getActionType(path) : undefined;
+  // The realm's Help is a reinforcement, priced on its sheet.
+  if (path && byRealm && actionType === ActionType.Help) return { line: REINFORCE.verb, cost: null };
   const line = actionType === undefined ? undefined : ORDERS[actionType];
   if (!path || line === undefined) return null;
   // A crate costs nothing; the spire's entry is free, and its card picks the Ethereal layer to enter.

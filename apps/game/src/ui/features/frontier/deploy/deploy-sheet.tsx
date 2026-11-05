@@ -107,12 +107,12 @@ export const DeploySheet = ({
       sending={deploying}
       onDeploy={() => void deploy()}
       wheatLimit={
-        plan && wheatStop
+        plan?.raise && wheatStop
           ? {
               ...wheatStop,
-              held: plan.wheat,
-              perTroop: plan.wheatPerTroop,
-              wait: secondsUntilHeld(plan.wheat, plan.wheatPerTroop, wheatPerHour),
+              held: plan.raise.wheat,
+              perTroop: plan.raise.wheatFor(1),
+              wait: secondsUntilHeld(plan.raise.wheat, plan.raise.wheatFor(1), wheatPerHour),
             }
           : undefined
       }

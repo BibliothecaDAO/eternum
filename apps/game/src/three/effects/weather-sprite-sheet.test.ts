@@ -3,6 +3,7 @@ import { uv } from "three/tsl";
 import { DataTexture, CompressedTexture, LinearFilter, SRGBColorSpace } from "three";
 const loadKtx2Texture = vi.hoisted(() => vi.fn());
 vi.mock("../utils/utils", () => ({ loadKtx2Texture }));
+import { markWorldInteractive } from "@/game-entry/world-interactive";
 import {
   loadWeatherSpriteSheet,
   spriteSheetFrame,
@@ -24,10 +25,13 @@ it("samples the top-left first frame and advances across rows without bleeding i
   expect(spriteSheetOffset(sheet, 4)).toEqual({ x: 0, y: 0.5 });
   expect(spriteSheetOffset(sheet, 15)).toEqual({ x: 0.75, y: 0 });
 });
-it("shares compressed sheets and updates existing samples when worker decoding finishes", async () => {
+it("shares compressed sheets and updates existing samples when worker decoding finishes, once the first view is up", async () => {
   const decoded = new CompressedTexture([], 4, 4);
   loadKtx2Texture.mockResolvedValueOnce(decoded);
   const sheet = loadWeatherSpriteSheet(WEATHER_SPRITE_SHEETS.lightning);
+  // No sheet file before the first view: a slow link spends itself on the map's.
+  expect(loadKtx2Texture).not.toHaveBeenCalled();
+  markWorldInteractive();
   const placeholder = sheet.value as DataTexture;
   const dispose = vi.spyOn(placeholder, "dispose");
   const sample = sheet.sample(uv());

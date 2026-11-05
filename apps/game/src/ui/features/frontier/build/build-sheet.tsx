@@ -101,7 +101,8 @@ export const useOpenPlot = (realm: NativeRows["Structure"] | null): HexPosition 
 /**
  * The build sheet over the game's facts: the buildings the plot can hold at the realm's researched tier, the chosen
  * one standing on the plot as a ghost, its gains, and Build, or the price the realm cannot pay yet with its wait. It
- * opens on the first building and keeps the player's pick: with no free population, Build asks (RoomAsk) and offers the
+ * opens on the realm's first build while it has none (first-build.ts), else on the first building, and keeps the
+ * player's pick: with no free population, Build asks (RoomAsk) and offers the
  * Hut on this plot, never picking it for the player.
  */
 export const BuildSheet = ({
@@ -132,7 +133,8 @@ export const BuildSheet = ({
   const [scoutingKind, setScoutingKind] = useState<ScoutingSide>(nativeResearchConstants.KIND_RIFTS);
   const indexOf = (category: BuildingType | null) =>
     options?.findIndex((candidate) => candidate.category === category) ?? -1;
-  const chosen = Math.max(indexOf(picked), 0);
+  const firstBuild = useUIStore((state) => state.firstBuild);
+  const chosen = Math.max(indexOf(picked ?? firstBuild), 0);
   const option = options?.[chosen];
   const sending = useInFlight("plot", plotKey(realmId, plot)) !== undefined;
   const mode = useGameModeConfig();

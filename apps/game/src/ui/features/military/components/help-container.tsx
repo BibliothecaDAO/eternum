@@ -29,8 +29,13 @@ export const HelpContainer = ({
   allowBothDirections?: boolean;
 }) => {
   // Only the transfers the game allows between these two entities get a tab.
-  const withStructure = selected.type === ActorType.Structure || target.type === ActorType.Structure;
-  const transfers = useMemo(() => configManager.helpTransfers(withStructure), [withStructure]);
+  const between =
+    selected.type === ActorType.Structure
+      ? "from-structure"
+      : target.type === ActorType.Structure
+        ? "to-structure"
+        : "armies";
+  const transfers = useMemo(() => configManager.helpTransfers(between), [between]);
   const [transferType, setTransferType] = useState<TransferType>(
     transfers.includes("troops") ? TransferType.Troops : TransferType.Relics,
   );

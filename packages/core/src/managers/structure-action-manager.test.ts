@@ -57,6 +57,32 @@ describe("StructureActionManager.findActionPaths", () => {
     expect(ActionPaths.getActionType(actionPaths.get(ActionPaths.posKey(open))!)).toBe(ActionType.CreateArmy);
   });
 
+  it("reinforces the player's own army beside it from its stock where the game has no guard slots (Frontier)", () => {
+    vi.spyOn(configManager, "isCommandEnabled").mockImplementation((command) => command === "ManageTroops");
+    vi.spyOn(configManager, "hasGuardSlots").mockReturnValue(false);
+    const [own, foreign] = getNeighborHexes(STRUCTURE_POSITION.col, STRUCTURE_POSITION.row);
+    const armyHexes = new Map<number, Map<number, HexEntityInfo>>();
+    const exploredHexes = new Map<number, Map<number, BiomeType>>();
+    for (const [hex, owner] of [
+      [own, 0x123n],
+      [foreign, 0x999n],
+    ] as const) {
+      setNestedMapValue(armyHexes, hex.col - TEST_FELT_CENTER, hex.row - TEST_FELT_CENTER, { owner } as HexEntityInfo);
+      setNestedMapValue(exploredHexes, hex.col - TEST_FELT_CENTER, hex.row - TEST_FELT_CENTER, 1 as BiomeType);
+    }
+
+    const actionPaths = new StructureActionManager().findActionPaths(
+      STRUCTURE_POSITION,
+      armyHexes,
+      exploredHexes,
+      0x123n as never,
+      () => true,
+    );
+
+    expect(ActionPaths.getActionType(actionPaths.get(ActionPaths.posKey(own))!)).toBe(ActionType.Help);
+    expect(actionPaths.get(ActionPaths.posKey(foreign))).toBeUndefined();
+  });
+
   it("does not add ranged attacks for unexplored enemy armies", () => {
     const targetHex = findRadiusTwoHex();
     const armyHexes = new Map<number, Map<number, HexEntityInfo>>();

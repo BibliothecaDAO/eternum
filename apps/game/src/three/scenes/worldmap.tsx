@@ -2568,6 +2568,7 @@ export default class WorldmapScene extends WarpTravel {
       site: site
         ? siteUseFacts(this.game.store, site, this.selectedArmyRow(), getBlockTimestamp().currentDefaultTick)
         : undefined,
+      byRealm: getLiveWorldmapEntityActions().selectedEntityId != null && this.selectedArmyId() === null,
     });
   }
 
@@ -3776,9 +3777,15 @@ export default class WorldmapScene extends WarpTravel {
     const target = this.getHexagonEntity(sceneHexOf(targetHex));
     const targetActor = actorOnHex(target);
     if (!targetActor) return;
-    // Frontier's troops between two armies are the HUD's own card (TransferTroopsSheet), where the map's cards stand.
+    // Frontier's troops between two armies, and from the realm to its army beside it, are the HUD's own cards
+    // (TransferTroopsSheet, ReinforceSheet), where the map's cards stand.
     if (this.isFrontierHud() && selected.army && target.army) {
       this.openTargetCardForSelectedArmy(targetHex);
+      return;
+    }
+    if (this.isFrontierHud() && selected.structure && target.army) {
+      this.state.selectOnMap({ kind: "structure", entityId: selectedEntityId, tile: targetHex });
+      this.state.updateEntityActionHoveredHex(null);
       return;
     }
     const viewer = accountAddress();

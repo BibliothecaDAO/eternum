@@ -27,9 +27,13 @@ import { ServiceFailure } from "@/ui/design-system/kit/service-failure";
 import { useRequestSignIn } from "../sign-in/connect";
 import { ageOf } from "./ages";
 import { idleCard, type PlayItem } from "./play-board";
+import { primeGameEntry } from "@/game-entry-preload";
 
-/** An item's verb: where it leads, or, for a signed-out player's Play free, Connect first and then there. */
-type ItemVerb = { word: string; icon: IconMeaning; to: string; connectFirst?: true };
+/**
+ * An item's verb: where it leads, or, for a signed-out player's Play free, Connect first and then there. A verb into a
+ * game starts its files on the press.
+ */
+type ItemVerb = { word: string; icon: IconMeaning; to: string; connectFirst?: true; entersGame?: true };
 
 /** The directory game an item stands for; a slot still taking players has none. */
 const gameOf = (item: PlayItem): DirectoryGame | undefined =>
@@ -45,18 +49,18 @@ const verbOf = (item: PlayItem, signedIn: boolean): ItemVerb | null => {
   const game = gameOf(item);
   switch (item.verb) {
     case "enter":
-      return game ? { word: WORDS.enter, icon: "play", to: entryHref(game, "play") } : null;
+      return game ? { word: WORDS.enter, icon: "play", to: entryHref(game, "play"), entersGame: true } : null;
     case "resume":
-      return game ? { word: WORDS.resume, icon: "play", to: entryHref(game, "play") } : null;
+      return game ? { word: WORDS.resume, icon: "play", to: entryHref(game, "play"), entersGame: true } : null;
     case "play": {
       if (!game) return null;
       const entry = entryHref(game, "play");
       return signedIn
-        ? { word: WORDS.play, icon: "play", to: entry }
-        : { word: WORDS.playFree, icon: "play", to: entry, connectFirst: true };
+        ? { word: WORDS.play, icon: "play", to: entry, entersGame: true }
+        : { word: WORDS.playFree, icon: "play", to: entry, connectFirst: true, entersGame: true };
     }
     case "watch":
-      return game ? { word: WORDS.watch, icon: "watch", to: entryHref(game, "spectate") } : null;
+      return game ? { word: WORDS.watch, icon: "watch", to: entryHref(game, "spectate"), entersGame: true } : null;
     case "join":
       return { word: BLITZ_WORDS.join, icon: "plus", to: lobbyHref(item) };
     case "refund":
@@ -146,8 +150,17 @@ const ItemVerbButton = ({ item, signedIn, lead }: { item: PlayItem; signedIn: bo
   const verb = verbOf(item, signedIn);
   if (!verb) return null;
   // The verb by its name, whatever its word: what a script presses to take the game's step (the playtest runner).
+  // A way into a game starts the game's code and the map's ground on the press: sign-in's minute pays for them.
+  const prime = verb.entersGame ? primeGameEntry : () => undefined;
   const press = {
-    ...(verb.connectFirst ? { onClick: () => requestSignIn(verb.to) } : { to: verb.to }),
+    ...(verb.connectFirst
+      ? {
+          onClick: () => {
+            prime();
+            requestSignIn(verb.to);
+          },
+        }
+      : { to: verb.to, onClick: prime }),
     "data-play-verb": item.verb,
   };
   return lead ? (

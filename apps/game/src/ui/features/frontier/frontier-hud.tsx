@@ -45,6 +45,7 @@ import { layerChoices, layerName, type MapLayers, useMapLayers } from "./hud/map
 import { useOnePanel, useOrderSettledReturnsToTheArmy } from "./hud/one-panel";
 import { FrontierDayClock } from "./hud/day-pill";
 import { DayEndBlock, DayEndNotice, useDayEnd } from "./day-end/day-end";
+import { useFirstBuild, useMarkFirstBuild } from "./build/first-build";
 import { FrontierStrip, useStoreReadings } from "./hud/frontier-strip";
 import { RealmPanel } from "./hud/realm-panel";
 import { HudBands } from "./hud/hud-bands";
@@ -116,6 +117,8 @@ export const FrontierHud = ({
   // A tap on the board names the realm the board draws, so its cards read that realm: on a visit, the visited one's.
   // A card's way to Research may name the node it opens on (the castle's own research, a building's gate).
   const [researchPick, setResearchPick] = useState<string | undefined>();
+  // The realm's first build: its board lights a plot for it and the build sheet opens on it; a visit marks none.
+  useMarkFirstBuild(useFirstBuild(visit ? null : realm));
   const card = useSelectionCard({
     realm: shown,
     onResearch: (node) => {

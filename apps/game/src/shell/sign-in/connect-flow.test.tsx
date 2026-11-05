@@ -98,12 +98,12 @@ afterEach(() => {
 });
 
 describe("Connect", () => {
-  it("takes a new player from an emailed code through their name and portrait, on to where the asker sends them", async () => {
+  it("takes a new player from an emailed code straight on to where the asker sends them, named by their suggestion", async () => {
     useIdentitySessionStore.setState({ status: "anonymous", session: null });
     const sendCode = vi.spyOn(identityClient, "sendSignInCode").mockResolvedValue(sentCode(300));
     vi.spyOn(identityClient, "signInWithCode").mockResolvedValue(sessionOf({}));
     const save = vi.spyOn(identityClient, "updateUser").mockResolvedValue();
-    // The app's one first session load finds nobody; the refresh after the profile is saved finds the named player.
+    // The app's one first session load finds nobody; the refresh after the name is saved finds the named player.
     vi.spyOn(identityClient, "getSession")
       .mockResolvedValueOnce(null)
       .mockResolvedValue(sessionOf({ name: "Ysolde", image: "04", address: null }));
@@ -118,9 +118,53 @@ describe("Connect", () => {
       expect(ui.container.textContent).toContain("you@mail.test");
 
       await ui.type('input[autocomplete="one-time-code"]', "481927");
+      await act(async () => {});
+      // No name step: the suggested name and a portrait are saved by themselves, and the player goes on, meeting the
+      // wallet a new account has not made yet.
+      expect(save).toHaveBeenCalledTimes(1);
+      const saved = save.mock.calls[0][0] as { name: string; image: string };
+      expect(saved.name).toBe("Ysolde");
+      expect(IDENTITY_PORTRAITS).toContain(saved.image);
+      expect(ui.query('input[autocomplete="nickname"]')).toBeNull();
+      expect(ui.where()).toBe(NEXT);
+      expect(ui.window()?.getAttribute("aria-label")).toBe("Your wallet");
+    } finally {
+      await ui.unmount();
+    }
+  });
+
+  it("tries the suggestion with a number after it when the name is taken", async () => {
+    useIdentitySessionStore.setState({ status: "signed-in", session: sessionOf({ suggestedName: "ys.olde+devcon" }) });
+    const save = vi
+      .spyOn(identityClient, "updateUser")
+      .mockRejectedValueOnce(new Error("NAME_TAKEN"))
+      .mockResolvedValue();
+    vi.spyOn(identityClient, "getSession").mockResolvedValue(sessionOf({ name: "ysoldedevcon2", image: "04" }));
+    const ui = await mount("/g/0x5245414c4d53/1/map");
+    try {
+      await act(async () => {});
+      expect(save.mock.calls.map(([fields]) => (fields as { name: string }).name)).toEqual([
+        "ysoldedevcon",
+        "ysoldedevcon2",
+      ]);
+      expect(ui.window()).toBeNull();
+    } finally {
+      await ui.unmount();
+    }
+  });
+
+  it("asks for a name, with the rule and a portrait, only when no default name could be saved", async () => {
+    useIdentitySessionStore.setState({ status: "signed-in", session: sessionOf({}) });
+    const save = vi.spyOn(identityClient, "updateUser").mockRejectedValue(new Error("NAME_TAKEN"));
+    vi.spyOn(identityClient, "getSession").mockResolvedValue(sessionOf({ name: "Ysolde", image: "04" }));
+    const ui = await mount("/", NEXT);
+    try {
+      await act(async () => {});
+      // The suggestion and its four numbered forms were all taken.
+      expect(save).toHaveBeenCalledTimes(5);
+      expect(ui.window()?.getAttribute("aria-label")).toBe("Your name");
       const name = () => ui.query<HTMLInputElement>('input[autocomplete="nickname"]')!;
       expect(name().value).toBe("Ysolde");
-      expect(name().getAttribute("aria-invalid")).toBeNull();
       const picked = ui.query('[role="radio"][aria-checked="true"]')!.getAttribute("aria-label")!;
       expect(IDENTITY_PORTRAITS.map((id) => `Portrait ${id}`)).toContain(picked);
 
@@ -128,13 +172,10 @@ describe("Connect", () => {
       expect(name().getAttribute("aria-invalid")).toBe("true");
       expect(ui.query<HTMLButtonElement>('button[type="submit"]')!.disabled).toBe(true);
 
-      await ui.type('input[autocomplete="nickname"]', "Ysolde");
+      save.mockResolvedValue();
+      await ui.type('input[autocomplete="nickname"]', "Ysolde the Bold");
       await act(async () => ui.query<HTMLFormElement>("form")!.requestSubmit());
-      expect(save).toHaveBeenCalledWith({ name: "Ysolde", image: picked.replace("Portrait ", "") });
-      // No welcome step: the claimed name takes the player on, and a new account without a wallet meets its wallet.
-      await act(async () => {});
-      expect(ui.where()).toBe(NEXT);
-      expect(ui.window()?.getAttribute("aria-label")).toBe("Your wallet");
+      expect(save).toHaveBeenLastCalledWith({ name: "Ysolde the Bold", image: picked.replace("Portrait ", "") });
     } finally {
       await ui.unmount();
     }
@@ -203,18 +244,6 @@ describe("Connect", () => {
       await act(async () => {});
       expect(ui.container.textContent).toContain("That code is not right.");
       expect(ui.query<HTMLInputElement>('input[autocomplete="one-time-code"]')!.value).toBe("");
-    } finally {
-      await ui.unmount();
-    }
-  });
-
-  it("opens by itself on the name step, on any page, for a session that has no name yet", async () => {
-    useIdentitySessionStore.setState({ status: "signed-in", session: sessionOf({ image: "04" }) });
-    const ui = await mount("/g/0x5245414c4d53/1/map");
-    try {
-      expect(ui.window()?.getAttribute("aria-label")).toBe("Your name");
-      expect(ui.query<HTMLInputElement>('input[autocomplete="nickname"]')?.value).toBe("Ysolde");
-      expect(ui.query('[role="radio"][aria-checked="true"]')?.getAttribute("aria-label")).toBe("Portrait 04");
     } finally {
       await ui.unmount();
     }

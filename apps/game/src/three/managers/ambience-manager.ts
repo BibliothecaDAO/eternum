@@ -1,6 +1,7 @@
 import type GUI from "lil-gui";
 import { AudioManager } from "@/audio/core/AudioManager";
 import { WeatherType } from "./weather-manager";
+import { isWorldInteractive } from "@/game-entry/world-interactive";
 
 /**
  * Time of day periods for ambient sounds
@@ -189,9 +190,9 @@ export class AmbienceManager {
       return;
     }
 
-    // Check if AudioManager is ready
-    if (!this.isAudioReady()) {
-      return; // Wait until audio system is initialized
+    // Check if AudioManager is ready, and the first view is up: ambience waits behind the map's files.
+    if (!this.isAudioReady() || !isWorldInteractive()) {
+      return;
     }
 
     this.params.rainIntensity = Math.max(0, Math.min(1, rainIntensity));
