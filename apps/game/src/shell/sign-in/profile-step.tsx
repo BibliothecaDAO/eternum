@@ -11,9 +11,9 @@ import { FailureLine } from "./failure-line";
 import { NameField, PortraitGrid } from "./fields";
 
 /**
- * A new account's one step (spec 02): the name suggested at sign-up (the Discord name or the email's local part),
- * with what the identity service's rule asks of it while it does not pass, and a portrait already picked; Claim name
- * saves both.
+ * A new account's one step (spec 02): the name suggested at sign-up (the Discord name; empty for an email sign-up,
+ * with a line asking for one), with what the identity service's rule asks of it while it does not pass, and a portrait
+ * already picked; Claim name saves both.
  */
 export const ProfileStep = ({ session, onClaimed }: { session: Session; onClaimed: () => void }) => {
   const [name, setName] = useState(session.user.suggestedName ?? "");

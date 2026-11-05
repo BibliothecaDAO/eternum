@@ -164,6 +164,7 @@ const ACCOUNT_PAGES = {
   "connect-discord": { path: "first-visit/connect/discord", place: "Play" },
   "connect-name": { path: "first-visit/connect/name", place: "Play" },
   "connect-name-refused": { path: "first-visit/connect/name-refused", place: "Play" },
+  "connect-name-email": { path: "first-visit/connect/name-email", place: "Play" },
 };
 
 /** What holds for a page drawn whole: it did not fall to the error boundary, and it does not scroll sideways. */

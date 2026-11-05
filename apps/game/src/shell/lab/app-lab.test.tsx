@@ -107,6 +107,7 @@ it.each([
   ["connect/code-refused", "Too many tries with that code"],
   ["connect/discord", "Discord finished elsewhere?"],
   ["connect/name", "Claim name"],
+  ["connect/name-email", "Pick the name other players see on the leaderboards."],
   ["doorway/sign-in", "Sign in to play."],
   ["doorway/map", "Stolsli"],
   ["doorway/waiting", "Starts"],
