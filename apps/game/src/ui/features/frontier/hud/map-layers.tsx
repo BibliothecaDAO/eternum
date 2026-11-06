@@ -1,5 +1,6 @@
 import { useNowSeconds } from "@/hooks/helpers/use-block-timestamp";
 import { useNativeFacts } from "@/hooks/helpers/use-native-facts";
+import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useQuery } from "@/hooks/helpers/use-query";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { openPlace } from "@/play/navigation/open-place";
@@ -16,6 +17,7 @@ import {
   researchedDepth,
   type RuinChest,
   type RuinChests,
+  dayOf,
   ruinChestsToday,
   structureMapPosition,
   viewInLayer,
@@ -24,6 +26,8 @@ import type { NativeRows } from "@bibliothecadao/eternum/game-client";
 import { SCOPE_INPUT_MODELS } from "@bibliothecadao/eternum/game-sync";
 
 import { reachMark } from "../depth-art";
+import { usePlayerDay } from "../log/player-day";
+import { historyRuinDepths } from "./ruin-clears";
 
 /** A layer the map shows: the day's surface, the world (0), or an Ethereal layer below it. */
 export type MapLayer = 0 | EtherealLayer;
@@ -142,13 +146,21 @@ export const layerTab = (layers: MapLayers): WorldTab => ({
 const CHEST_MODELS = ["ExpeditionDiscovery", "RealmKnowledge", "GameRelease", ...SCOPE_INPUT_MODELS] as const;
 
 /**
- * The player's ruin chest on each layer today, the World then Ethereal I to III (ruinChestsToday: the clears the client
- * holds, against today's map). Read again as the day turns, so a new day's chests are open. None for a spectator.
+ * The player's ruin chest on each layer today, the World then Ethereal I to III (ruinChestsToday): today's clears from
+ * the player's own history of the day when it holds the whole day (the read Today and the day-done card share, so it
+ * costs no fetch of its own), else from the clears the client holds. Read again as the day turns, so a new day's
+ * chests are open. None for a spectator.
  */
 const useRuinChests = (rules: ExpeditionRules, realm: NativeRows["Structure"] | null): RuinChests | null => {
   const facts = useNativeFacts(CHEST_MODELS);
   const now = useNowSeconds();
-  return realm ? ruinChestsToday(facts.store, rules, realm, now) : null;
+  const player = useAccountStore((state) => state.account?.address ?? null);
+  const day = dayOf(rules, now);
+  const played = usePlayerDay(player, day);
+  if (!realm) return null;
+  // A read with no player holds none of their stories, so it proves nothing.
+  const clears = day && player ? historyRuinDepths(played, realm.entity_id, rules, day.index) : null;
+  return ruinChestsToday(facts.store, rules, realm, now, clears);
 };
 
 /**

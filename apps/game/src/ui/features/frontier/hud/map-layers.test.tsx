@@ -2,6 +2,7 @@ import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useChainTimeStore } from "@/hooks/store/use-chain-time-store";
 import { openPlace } from "@/play/navigation/open-place";
 import { requestLayerView } from "@/three/scenes/worldmap-layer-request";
@@ -22,9 +23,17 @@ import { campBeside } from "../sites/site-fixture";
 import { layerTab, layerViews, type MapLayers, useMapLayers } from "./map-layers";
 import { PlaceNav } from "./place-nav";
 
-const context = vi.hoisted(() => ({ store: null as NativeFactStore | null, mapView: true }));
+const context = vi.hoisted(() => ({
+  store: null as NativeFactStore | null,
+  mapView: true,
+  /** Herald's history read of the player's own stories (useStoryEvents); by default it failed, proving nothing. */
+  history: { data: [] as object[], isPending: false, isError: true, holdsSince: undefined as number | undefined },
+}));
 vi.mock("@/hooks/context/game-context", () => ({ useGame: () => ({ setup: { store: context.store } }) }));
 vi.mock("@/hooks/helpers/use-query", () => ({ useQuery: () => ({ isMapView: context.mapView }) }));
+vi.mock("@/hooks/store/use-story-events-store", () => ({
+  useStoryEvents: () => ({ ...context.history, refetch: () => {} }),
+}));
 vi.mock("@/play/navigation/open-place", () => ({ openPlace: vi.fn() }));
 vi.mock("@/three/scenes/worldmap-layer-request", () => ({ requestLayerView: vi.fn() }));
 
@@ -43,6 +52,8 @@ afterEach(() => {
   host.remove();
   setBlockTimestampSource(null);
   vi.clearAllMocks();
+  context.history = { data: [], isPending: false, isError: true, holdsSince: undefined };
+  useAccountStore.setState({ account: null } as never);
 });
 
 /** The open list's choices, each by its word and whether it is the one shown. */
@@ -343,6 +354,39 @@ describe("each layer's ruin chest today, on the layer switch", () => {
     expect(switchMarks()[1]).toBe("Ethereal I: chest not known without an army there");
   });
 
+  it("reads today's clears from the player's whole history of the day: no layer is unknown, wherever the armies are", () => {
+    const { store, realm, rules, now, today } = chestDay();
+    discovered(store, today, true);
+    // Ethereal I cleared earlier today; its army left, and Herald removed the receipt from the store.
+    wholeHistory(rules, now, [ruinPayout(rules, now, today, 1, "0xc1")]);
+    context.mapView = true;
+    act(() => root.render(<LayerSwitch rules={rules} realm={realm} />));
+    expect(switchMarks()).toEqual([
+      "World: chest to take today",
+      "Ethereal I: chest taken today",
+      "Ethereal II: chest to take today",
+      "Ethereal III: not researched",
+    ]);
+  });
+
+  it("falls back to what the store proves when the history lacks the day's start or a payout's battle", () => {
+    const { store, realm, rules, now, today } = chestDay();
+    discovered(store, today, true);
+    const [payout, battle] = ruinPayout(rules, now, today, 1, "0xc1");
+    // The battle that placed the payout is missing: the payout cannot be put on a layer.
+    wholeHistory(rules, now, [[payout!]]);
+    context.mapView = true;
+    act(() => root.render(<LayerSwitch rules={rules} realm={realm} />));
+    expect(switchMarks()[1]).toBe("Ethereal I: chest not known without an army there");
+
+    // The read holds only stories after the day began: the same.
+    act(() => {
+      context.history = { ...context.history, data: [payout!, battle!], holdsSince: now };
+      root.render(<LayerSwitch rules={rules} realm={realm} />);
+    });
+    expect(switchMarks()[1]).toBe("Ethereal I: chest not known without an army there");
+  });
+
   it.each([
     ["a desktop", false],
     ["a phone", true],
@@ -424,3 +468,30 @@ describe("each layer's ruin chest today, on the layer switch", () => {
     expect(openPlace).toHaveBeenCalledTimes(1);
   });
 });
+
+/** Realm 7's player signed in, and Herald's history of their stories holding the whole day (read from before it began). */
+const wholeHistory = (rules: ExpeditionRules, now: number, stories: object[][]) => {
+  useAccountStore.setState({ account: { address: "0x111" } } as never);
+  const start = expeditionDayEndsAt(rules, rules.startMainAt);
+  context.history = { data: stories.flat(), isPending: false, isError: false, holdsSince: start - 1 };
+  expect(now).toBeGreaterThan(start);
+};
+
+/** A ruin's payout to realm 7 today at `depth`, and the battle that won it in the same transaction, as history reads them. */
+const ruinPayout = (rules: ExpeditionRules, now: number, today: number, depth: number, tx: string) => {
+  const story = (kind: string, storyPayload: object) => ({
+    story: kind,
+    storyPayload,
+    tx_hash: tx,
+    owner: "0x111",
+    timestampMs: (now - 5) * 1_000,
+    timestamp: String(now - 5),
+  });
+  return [
+    story("SitePayout", { structure_id: 7, explorer_id: 201, site_id: 9_301, category: StructureType.Ruin }),
+    story("BattleEvent", {
+      defender_id: 9_301,
+      coord: { x: 6 * rules.spacing + 3, y: (today * 4 + depth) * rules.spacing + 3 },
+    }),
+  ];
+};

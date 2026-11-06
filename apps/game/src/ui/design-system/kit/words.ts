@@ -83,7 +83,6 @@ export const phraseText = ({ words, reading, readingFirst }: ClockPhrase): strin
 export const DAY_END = {
   endsIn: (day: number | undefined, secondsLeft: number | undefined) =>
     `${DAY} ${day ?? "—"} ends in ${dayLength(secondsLeft)}`,
-  toDo: (count: number) => `${count} left to do`,
   open: "Open",
   goes: "At day end, today's map, its armies and chests go",
   claim: "Claim today's Labor",

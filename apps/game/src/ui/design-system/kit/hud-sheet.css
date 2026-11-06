@@ -1859,6 +1859,10 @@ button.ui-relic:focus-visible {
   align-self: center;
   flex-shrink: 0;
 }
+/* A notice with its button reads as one row: the painting, the line and the button on one middle line. */
+.ui-notice:has(> .ui-notice__fix) {
+  align-items: center;
+}
 
 /* ── Action bubble: one of the HUD's round actions, its word under it, a count on its rim. ── */
 .ui-bubble {

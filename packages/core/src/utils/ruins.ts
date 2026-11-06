@@ -59,18 +59,20 @@ type ChestReader = Pick<NativeFactStore, "get" | "inGame" | "requireOrAbsent" | 
 
 /**
  * Each depth's ruin chest today for a home, the Surface then Ethereal I to III. The contract keeps the per-depth
- * entitlement in storage no row carries, so it is read from what does: the home's clear receipts in each depth's band
- * of today's map (claimed), and today's discovery row, which every home receives whatever its armies' positions and
- * which says whether any ruin was cleared today. A receipt is held only while its region is in the client's scope, so a
- * depth with none is open only when nothing was cleared today or its region is held; else it is unknown, never open.
- * Locked past the deepest layer researched. None outside the season, before per-depth ruins, or while the release is
- * unknown.
+ * entitlement in storage no row carries, so it is read from what does. `historyClears` is the depths the home's own
+ * history (Herald's immutable sink) shows cleared today when that history holds the whole day, else null: it is then
+ * the whole answer, every other depth open. Without it: the home's clear receipts in each depth's band of today's map
+ * (claimed), and today's discovery row, which every home receives whatever its armies' positions and which says whether
+ * any ruin was cleared today. A receipt is held only while its region is in the client's scope, so a depth with none is
+ * open only when nothing was cleared today or its region is held; else it is unknown, never open. Locked past the
+ * deepest layer researched. None outside the season, before per-depth ruins, or while the release is unknown.
  */
 export function ruinChestsToday(
   store: ChestReader,
   rules: ExpeditionRules,
   realm: Pick<NativeRows["Structure"], "game_id" | "entity_id">,
   nowSeconds: number,
+  historyClears: ReadonlySet<number> | null = null,
 ): RuinChests | null {
   const today = seasonDay(rules, nowSeconds);
   if (today === null || !perDepthRuins(store, realm.game_id)) return null;
@@ -90,8 +92,8 @@ export function ruinChestsToday(
   const deepest = researchedDepth(store, realm.game_id, realm.entity_id) ?? 0;
   const chest = (depth: number): RuinChest => {
     if (depth > deepest) return "locked";
-    if (claimed.has(depth)) return "claimed";
-    return nothingClearedToday || held(depth) ? "open" : "unknown";
+    if (claimed.has(depth) || historyClears?.has(depth)) return "claimed";
+    return historyClears || nothingClearedToday || held(depth) ? "open" : "unknown";
   };
   return [chest(0), chest(1), chest(2), chest(3)];
 }
