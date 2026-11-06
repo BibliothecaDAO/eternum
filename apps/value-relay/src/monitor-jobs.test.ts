@@ -73,11 +73,15 @@ it("reports a fresh completed audit as healthy, and refuses stale or paused prog
     value: { halted: null },
     value_error: null,
     season_error: null,
+    deposit_error: null,
     fee_balance: { warning: null, balance_wei: "1000000000000000000" },
     fee_balance_error: null,
   };
   f.data.set("observation", observation);
   expect((await f.monitor.health()).success).toBe(true);
+  f.data.set("observation", { ...observation, deposit_error: "deposit_receipt_snapshot_pending" });
+  expect((await f.monitor.health()).success).toBe(false);
+  f.data.set("observation", observation);
   f.data.set("progress", { halted: "lords_conservation:7:10" });
   expect((await f.monitor.health()).success).toBe(false);
   f.data.set("progress", { halted: null });

@@ -887,6 +887,39 @@ export function defineFactModels({ struct, model: declare }) {
       struct("expeditions::ExpeditionDiscoveryKey"),
       struct("expeditions::ExpeditionDiscovery"),
     ),
+    model(
+      "DepositSource",
+      "game",
+      [{ name: "game_id", type: "core::integer::u32" }],
+      struct("deposits::DepositSource"),
+    ),
+    model(
+      "SpendLords",
+      "game",
+      [
+        { name: "game_id", type: "core::integer::u32" },
+        { name: "account", type: "core::starknet::contract_address::ContractAddress" },
+      ],
+      struct("deposits::SpendLords"),
+    ),
+    model(
+      "PrincipalWithdrawal",
+      "game",
+      [
+        { name: "game_id", type: "core::integer::u32" },
+        { name: "account", type: "core::starknet::contract_address::ContractAddress" },
+      ],
+      struct("deposits::PrincipalWithdrawal"),
+    ),
+    model(
+      "DepositReceipt",
+      "game",
+      [
+        { name: "game_id", type: "core::integer::u32" },
+        { name: "id", type: "core::integer::u64" },
+      ],
+      struct("deposits::DepositReceipt"),
+    ),
     model("LaborRules", "game", [{ name: "game_id", type: "core::integer::u32" }], struct("entry::LaborRules")),
     model(
       "LaborGrant",
@@ -1371,6 +1404,7 @@ export const syncScopes = {
       "FrontierDiscoveryRules",
       "RelicDiscovery",
       "DepositRules",
+      "DepositSource",
       "WithdrawalRules",
       "ResourceToken",
       "BankRules",
@@ -1420,6 +1454,9 @@ export const syncScopes = {
   PointsAwarded: byPlayer,
   LordsWithdrawal: { owners: ["account"] },
   LaborGrant: { owners: ["account"] },
+  SpendLords: { owners: ["account"] },
+  PrincipalWithdrawal: { owners: ["account"] },
+  DepositReceipt: { owners: ["account"] },
   RaidEvent: { owners: ["player", "target_owner"] },
   WonderFaith: { owners: ["last_recorded_owner"] },
   TileOpt: { regions: [{ alt: "alt", x: "col", y: "row" }] },

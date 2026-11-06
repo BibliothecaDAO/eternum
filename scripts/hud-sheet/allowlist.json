@@ -2,6 +2,7 @@
   "apps/game/src/ui/design-system/atoms/hud-typography.ts": 11,
   "apps/game/src/ui/design-system/atoms/lib/utils.ts": 1,
   "apps/game/src/ui/design-system/atoms/overlay-surface.ts": 13,
+  "apps/game/src/ui/features/game-entry/home-source-picker.tsx": 1,
   "apps/game/src/ui/features/world/components/actions/spire-travel-modal.tsx": 22,
   "apps/game/src/ui/features/world/components/bottom-right-panel/hex-minimap.tsx": 7,
   "apps/game/src/ui/features/world/containers/compact-hud.tsx": 29,

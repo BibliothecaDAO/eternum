@@ -3,9 +3,39 @@ import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
-import { afterEach, expect, it } from "vitest";
+import { afterEach, expect, it, vi } from "vitest";
 
-import { modelPathOf, screenPoint, serveModelOverrides, setViewport } from "./browser-session.mjs";
+import {
+  createBrowserSession,
+  modelPathOf,
+  screenPoint,
+  serveModelOverrides,
+  setViewport,
+} from "./browser-session.mjs";
+
+const { spawnSync } = vi.hoisted(() => ({ spawnSync: vi.fn(() => ({ status: 0, stdout: "", stderr: "" })) }));
+vi.mock("node:child_process", async (original) => ({ ...(await original()), spawnSync }));
+
+it("rounds fractional offsets once for tap, hover, right-click and both double-click paths", () => {
+  spawnSync.mockClear();
+  const browser = createBrowserSession("pointer-proof", { profile: "/tmp/pointer-proof" });
+  const offset = [10.6, -20.4];
+  browser.tap(offset);
+  browser.hover(offset);
+  browser.rightClick(offset);
+  browser.doubleClick(offset);
+  const commands = spawnSync.mock.calls.map(([, args]) => args.slice(6));
+  expect(commands).toEqual([
+    ["batch", "mouse move 971 520", "mouse down", "mouse up"],
+    ["mouse", "move", "971", "520"],
+    ["batch", "mouse move 971 520", "mouse down right", "mouse up right"],
+    ["batch", "mouse move 971 520", "mouse down", "mouse up", "mouse move 971 520", "mouse down", "mouse up"],
+    [
+      "eval",
+      'document.elementFromPoint(971, 520)?.dispatchEvent(new MouseEvent("dblclick", { bubbles: true, cancelable: true, view: window, detail: 2, clientX: 971, clientY: 520 })) ?? false',
+    ],
+  ]);
+});
 
 const made = [];
 afterEach(() => made.splice(0).forEach((dir) => rmSync(dir, { recursive: true, force: true })));

@@ -1,3 +1,4 @@
+import { auditDeposits, auditDepositCustody, DepositConservationFault } from "./deposit-conservation";
 import { readMonitorFeeBalance, type MonitorFeeBalance } from "./monitor-balance";
 import { decodeMonitorSettings, type MonitorSettings } from "./monitor-env";
 import { checkSlotRoster, slotRosterReads } from "./roster-monitor";
@@ -107,6 +108,44 @@ export class ValueMonitor extends DurableObject<MonitorEnv> {
               }),
             ),
           );
+          const deposits = yield* Effect.result(
+            relayOperation("audit deposited LORDS", async () => {
+              const observations = [];
+              const ledger = {
+                rpcUrl: monitor.env.L2_RPC_URL,
+                address: ledgerAddress(monitor.env.ENVIRONMENT),
+                chainId: await monitor.env.IDENTITY.l2ChainId(),
+              };
+              try {
+                const journal = await auditDepositCustody(ledger);
+                if (!journal) return { enabled: false, games: [] };
+                for (const shard of await activeShards(monitor.env.IDENTITY)) {
+                  const registered = await readRegisteredShard(monitor.env.IDENTITY, shard.chainId);
+                  observations.push({
+                    chainId: shard.chainId,
+                    games: await auditDeposits(shardConnection(registered), registered.url, ledger, journal),
+                  });
+                }
+                return {
+                  enabled: true,
+                  principal: journal.principal,
+                  returned: journal.returned,
+                  games: observations,
+                };
+              } catch (error) {
+                if (error instanceof DepositConservationFault) {
+                  const row = `deposits:${error.message}`;
+                  await monitor.ctx.storage.put("progress", {
+                    ...(await monitor.status()),
+                    halted: row,
+                    fault: { row },
+                  });
+                  await Effect.runPromise(ports.ledger.pause());
+                }
+                throw error;
+              }
+            }),
+          );
           const held = yield* Effect.result(
             relayOperation("read relay held obligations", () => monitor.env.RELAY_REPORT.held()),
           );
@@ -127,6 +166,8 @@ export class ValueMonitor extends DurableObject<MonitorEnv> {
             season_error: Result.isSuccess(seasonAudit) ? seasonAudit.success : seasonAudit.failure.operation,
             value_error: Result.isFailure(value) ? value.failure.operation : null,
             held: Result.isSuccess(held) ? held.success : null,
+            deposits: Result.isSuccess(deposits) ? deposits.success : null,
+            deposit_error: Result.isFailure(deposits) ? deposits.failure.operation : null,
           };
           yield* relayOperation("publish value monitor", () => monitor.ctx.storage.put("observation", observation));
           return observation;
@@ -185,6 +226,7 @@ export class ValueMonitor extends DurableObject<MonitorEnv> {
       checked_at: number;
       fee_balance?: MonitorFeeBalance | null;
       fee_balance_error?: string | null;
+      deposit_error?: string | null;
       value: MonitorProgress | null;
       value_error: string | null;
       season_error: string | null;
@@ -202,6 +244,7 @@ export class ValueMonitor extends DurableObject<MonitorEnv> {
         observation?.value !== undefined &&
         observation.season_error === null &&
         observation.value_error === null &&
+        observation.deposit_error === null &&
         observation.fee_balance_error === null &&
         observation.fee_balance?.warning === null &&
         !progress.halted,

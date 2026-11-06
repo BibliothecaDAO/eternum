@@ -52,7 +52,8 @@ import { HudBands } from "./hud/hud-bands";
 import { MenuPage } from "./hud/menu-page";
 import { useHowToPlay } from "@/ui/modules/how-to-play";
 import { FrontierRealms } from "./value/frontier-realms";
-import { FrontierWithdraw } from "./value/frontier-withdraw";
+import { FrontierPurse } from "./value/frontier-purse";
+import { useSpendLords } from "./value/use-spend-lords";
 import { useLinkWalletPrompt, useOwedLords } from "./value/link-wallet";
 import { SeasonPayout } from "./value/season-payout";
 import { LordsPurse, PurseRow, RealmsChip } from "./value/lords-purse";
@@ -234,7 +235,7 @@ export const FrontierHud = ({
     <>
       <FrontierSurfaces realm={realm} rules={rules} />
       {showsCard && card?.sheet}
-      {surface === "withdraw" && realm && !visit && <FrontierWithdraw realm={realm} onClose={close} />}
+      {surface === "withdraw" && realm && !visit && <FrontierPurse realm={realm} onClose={close} />}
       {surface === "realms" && realm && !visit && <FrontierRealms labor={realmLabor} onClose={close} />}
       {surface === "army" && realm && !visit && <FrontierArmy realm={realm} choosing={armyChoosing} onClose={close} />}
       {surface === "army-lost" && <ArmyLostSheet onClose={close} />}
@@ -603,5 +604,13 @@ const RealmPurse = ({
 /** The player's own realm's LORDS, marked while the account has no linked wallet to receive them. */
 const OwnLordsPurse = ({ realm, onOpen }: { realm: NativeRows["Structure"]; onOpen: () => void }) => {
   const lords = useRealmLords(realm);
-  return <LordsPurse lords={lords} linkWalletLine={useLinkWalletPrompt(useOwedLords(realm))} onOpen={onOpen} />;
+  const spend = useSpendLords(realm);
+  return (
+    <LordsPurse
+      lords={lords}
+      spendOnly={spend.source ? (spend.balance?.available ?? 0n) : undefined}
+      linkWalletLine={useLinkWalletPrompt(useOwedLords(realm))}
+      onOpen={onOpen}
+    />
+  );
 };
