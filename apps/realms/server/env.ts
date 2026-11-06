@@ -95,17 +95,7 @@ export const vapidKeysOf = (env: IdentityEnv) => ({
 
 export const ACCOUNT_CLASS_HASH = playerAccount.accountClassHash;
 
-/**
- * Discord asks for consent every time: better-auth's default `prompt=none` hangs the Discord iPhone app's Authorize
- * screen, where a phone's sign-in now goes (discord/discord-api-docs#6160), and is undefined for anyone not signed in.
- */
 export const socialProvidersOf = (env: Pick<IdentityEnv, "DISCORD_CLIENT_ID" | "DISCORD_CLIENT_SECRET">) =>
   env.DISCORD_CLIENT_ID && env.DISCORD_CLIENT_SECRET
-    ? {
-        discord: {
-          clientId: env.DISCORD_CLIENT_ID,
-          clientSecret: env.DISCORD_CLIENT_SECRET,
-          prompt: "consent" as const,
-        },
-      }
+    ? { discord: { clientId: env.DISCORD_CLIENT_ID, clientSecret: env.DISCORD_CLIENT_SECRET } }
     : {};

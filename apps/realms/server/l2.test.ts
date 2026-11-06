@@ -143,7 +143,7 @@ it.each([
 });
 it("offers Discord only with its configured pair", () => {
   expect(socialProvidersOf({ DISCORD_CLIENT_ID: "id", DISCORD_CLIENT_SECRET: "secret" })).toEqual({
-    discord: { clientId: "id", clientSecret: "secret", prompt: "consent" },
+    discord: { clientId: "id", clientSecret: "secret" },
   });
 });
 
