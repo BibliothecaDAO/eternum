@@ -452,7 +452,7 @@ type LabArmySheet = {
   ethereal?: EtherealLayer;
 };
 
-/** A city's three stores: 18,000 a store, wheat lifted by Fields, troops by Drill. */
+/** A city's three stores: 18,000 a store, the Farm row researched to V (the owner's wheat, 6 November), Barracks to I. */
 const line = (overrides: Partial<StoreLine> & Pick<StoreLine, "kind">): StoreLine => ({
   perHour: undefined,
   held: undefined,
@@ -463,9 +463,16 @@ const line = (overrides: Partial<StoreLine> & Pick<StoreLine, "kind">): StoreLin
   ...overrides,
 });
 const STORE_LINES: StoreLine[] = [
-  line({ kind: "wheat", perHour: 1_500, sides: ["fields"], held: 4_410, fullIn: 9 * HOUR + 4 * 60 }),
+  line({
+    kind: "wheat",
+    perHour: 1_500,
+    rank: 5,
+    held: 4_410,
+    fullIn: 9 * HOUR + 4 * 60,
+    makers: ["9 Farms · +25/min"],
+  }),
   line({ kind: "labor", perHour: 500, held: 9_640, fullIn: 16 * HOUR + 44 * 60 }),
-  line({ kind: "troops", perHour: 600, sides: ["drill"], held: 1_200, fullIn: 28 * HOUR }),
+  line({ kind: "troops", perHour: 600, rank: 1, held: 1_200, fullIn: 28 * HOUR }),
 ];
 
 /** Today's lines, each written by the day log itself from the owner's 22 October stories (today-log-fixture.ts). */

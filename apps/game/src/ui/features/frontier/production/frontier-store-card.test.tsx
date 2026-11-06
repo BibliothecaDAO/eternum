@@ -78,3 +78,36 @@ it("keeps an open barracks figure fixed until the chain-proven floor advances", 
     host.remove();
   }
 });
+
+it("shows the Farm row's research tier as one rank gem, the higher of its two sides, and no side marks", () => {
+  (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
+  const { store, row } = frontierDay();
+  context.store = store;
+  const rules = readExpeditionRules(store, 1)!;
+  const host = document.createElement("div");
+  document.body.append(host);
+  const root = createRoot(host);
+  const gems = () =>
+    [...host.querySelectorAll("[data-store-card='wheat'] .ui-tier")].map((gem) => gem.getAttribute("aria-label"));
+  const learn = (learned: bigint) =>
+    store.applyFacts([
+      {
+        model: "RealmKnowledge",
+        key: "0xd",
+        value: { game_id: 1, structure_id: 7, learned: learned.toString() },
+      },
+    ]);
+  try {
+    act(() => root.render(<FrontierStoreCard realm={row} rules={rules} store="wheat" onDone={() => {}} />));
+    expect(gems()).toEqual([]);
+    // Fields 3 and Granary 5, in the Farm row's two three-bit fields.
+    act(() => learn(3n + (5n << 3n)));
+    expect(gems()).toEqual(["V"]);
+    expect(host.querySelectorAll("[data-icon='fields'], [data-icon='granary']")).toHaveLength(0);
+    act(() => learn(2n));
+    expect(gems()).toEqual(["II"]);
+  } finally {
+    act(() => root.unmount());
+    host.remove();
+  }
+});

@@ -1,11 +1,11 @@
 import { useGame } from "@/hooks/context/game-context";
+import type { Rank } from "@/ui/design-system/kit/words";
 import { openArmyDeployment } from "@/ui/features/military/utils/open-army-deployment";
-import { type ExpeditionRules, realmLearned, ResourceManager } from "@bibliothecadao/eternum";
+import { type ExpeditionRules, realmLearned, researchTier, ResourceManager } from "@bibliothecadao/eternum";
 import { safeInteger, type NativeRows } from "@bibliothecadao/eternum/game-client";
 
 import { useGoToFrontierPlace } from "../frontier-home";
 import { useRealmStores } from "../realm-stores";
-import { sidesTaken } from "../research/sides-taken";
 import { storeMakerLines } from "./store-makers";
 import { FRONTIER_STORES, isMadeStore, MADE_STORES, type MadeStore } from "../stores";
 import { StoreCard, type StoreLine } from "./store-card";
@@ -15,7 +15,7 @@ export type CardStore = MadeStore;
 export const CARD_STORE_KINDS = MADE_STORES;
 
 /**
- * One store's card over the game's facts: its rate an hour with the sides its row has taken, what it holds against its
+ * One store's card over the game's facts: its rate an hour with its row's research tier, what it holds against its
  * limit, when it is full, and whether a building makes it. Spending or building closes it on the way there.
  */
 export const FrontierStoreCard = ({
@@ -41,7 +41,7 @@ export const FrontierStoreCard = ({
   const line: StoreLine = {
     kind: store,
     perHour: reading?.perHour,
-    sides: learned === undefined ? undefined : sidesTaken(learned, row),
+    rank: learned === undefined ? undefined : (researchTier(learned, row) as Rank),
     held: reading?.amount,
     limit: reading?.limit,
     tone: reading?.tone ?? "calm",

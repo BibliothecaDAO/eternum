@@ -22,6 +22,12 @@ const renderCard = (card: StoreLine, onSpend = vi.fn(), onBuild = vi.fn()) => {
   act(() => root.render(<StoreCard line={card} onSpend={onSpend} onBuild={onBuild} />));
   return {
     text: () => host.querySelector(`section[aria-label='${card.kind}']`)!.textContent,
+    /** Each rank gem on the card, by what it reads to assistive technology, with the line it sits in. */
+    gems: () =>
+      [...host.querySelectorAll(`[data-store-card='${card.kind}'] .ui-tier`)].map((gem) => [
+        gem.getAttribute("aria-label"),
+        gem.parentElement!.textContent,
+      ]),
     press: (word: string) =>
       act(() => [...host.querySelectorAll("button")].find((b) => b.textContent === word)!.click()),
     done: () => {
@@ -38,6 +44,17 @@ describe("a store's card", () => {
     // Found by the store it is for, as the playtest's wheat-store step finds it (steps.mjs).
     expect(document.querySelectorAll('[data-store-card="wheat"]')).toHaveLength(1);
     card.done();
+  });
+
+  it("wears its row's research rank as one gem after the rate, and none before the first tier", () => {
+    const ranked = renderCard(line({ kind: "wheat", rank: 5 }));
+    expect(ranked.gems()).toEqual([["V", "+8/minV"]]);
+    ranked.done();
+    for (const rank of [0, undefined] as const) {
+      const unranked = renderCard(line({ kind: "wheat", rank }));
+      expect(unranked.gems()).toEqual([]);
+      unranked.done();
+    }
   });
 
   it("says a full store is full and sends the player where it is spent", () => {
