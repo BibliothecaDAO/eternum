@@ -9,6 +9,7 @@ import { AppButton, AppField, AppNotice } from "@/ui/design-system/kit/app-eleme
 import { Icon } from "@/ui/design-system/icon";
 
 import { failureSentence } from "@/ui/modules/identity/identity-failures";
+import { l2Provider } from "@/runtime/l2-rpc";
 import type { WalletFee } from "@/ui/modules/identity/wallet-send";
 
 import { Loading } from "../loading";
@@ -73,12 +74,15 @@ export const RealmsWalletFunds = ({
           </p>
           <Suspense fallback={<Loading />}>
             <WalletSign
+              // Another amount is another send, prepared and priced afresh.
+              key={String(stage.amount)}
               owner={address}
               calls={[transferLordsCall(token, stage.to, stage.amount)]}
               onLanded={() => {
                 setStage({ kind: "sent" });
                 funds.read();
               }}
+              onFeeShort={(amount) => setStage({ ...stage, amount })}
             />
           </Suspense>
           <AppButton kind="quiet" onClick={() => setStage({ kind: "view" })}>
@@ -233,13 +237,20 @@ const useSendFee = (self: string, funds: Funds): FeeQuote => {
   useEffect(() => {
     if (feeBalance === 0n) return;
     let current = true;
-    void import("@/ui/modules/identity/wallet-send")
-      .then(({ prepareDefaultWalletSend }) => prepareDefaultWalletSend([transferLordsCall(token, QUOTE_RECIPIENT, 1n)]))
-      .then(
+    void import("@/ui/modules/identity/wallet-send").then(({ prepareDefaultWalletSend, FeeRoomShortError }) =>
+      prepareDefaultWalletSend(self, [transferLordsCall(token, QUOTE_RECIPIENT, 1n)], l2Provider()).then(
         ({ fee }) =>
           current && setQuote(fee ? { kind: "priced", fee } : { kind: "unpriced", line: WALLET_WORDS.noFeeLords }),
-        (cause: unknown) => current && setQuote({ kind: "unpriced", line: failureSentence("send", cause) }),
-      );
+        // A wallet short of its fee is still priced: the room below says how much the fee needs.
+        (cause: unknown) =>
+          current &&
+          setQuote(
+            cause instanceof FeeRoomShortError
+              ? { kind: "priced", fee: cause.fee }
+              : { kind: "unpriced", line: failureSentence("send", cause) },
+          ),
+      ),
+    );
     return () => {
       current = false;
     };

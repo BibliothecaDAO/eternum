@@ -1221,6 +1221,10 @@ export const WALLET_WORDS = {
   noFeeLords: "Sending pays a network fee in LORDS, and your wallet holds none.",
   pricing: "Working out the fee",
   feeRose: "The network fee went up. Check it and confirm again.",
+  /** What a send asks for and its fee's max are more than the wallet holds. */
+  leaveForFee: (most: string) => `Leave ${most} LORDS in your wallet for the network fee.`,
+  /** The same send for what the wallet holds less its fee's max. */
+  sendInstead: (lords: string) => `Send ${lords} LORDS instead`,
   walletUnread: "Your Realms wallet could not be read.",
   lostPasskey: "Lost your passkey?",
   recoverTitle: "Recover your wallet",

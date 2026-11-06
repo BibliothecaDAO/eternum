@@ -9,9 +9,24 @@ const LORDS = "0x124aeb495b947201f5fac96fd1138e326ad86195b98df6dec9009158a533b49
 const TEST_LORDS = "0x9e57";
 const ledger = vi.hoisted(() => ({ token: "", balances: new Map<string, bigint[]>() }));
 const signs = vi.hoisted(() => [] as { owner: string; calls: unknown[] }[]);
+/** What the review finds the wallet can send beside the fee of the send it built, when that is less than asked. */
+const review = vi.hoisted(() => ({ spendable: null as bigint | null }));
 vi.mock("@/shell/value/wallet-actions", () => ({
-  WalletSign: (props: { owner: string; calls: unknown[]; onLanded: () => void }) => {
+  WalletSign: (props: {
+    owner: string;
+    calls: unknown[];
+    onLanded: () => void;
+    onFeeShort?: (spendable: bigint) => void;
+  }) => {
     signs.push(props);
+    if (review.spendable !== null && props.onFeeShort) {
+      const spendable = review.spendable;
+      return (
+        <button type="button" onClick={() => props.onFeeShort!(spendable)}>
+          Send what fits instead
+        </button>
+      );
+    }
     return (
       <button type="button" onClick={props.onLanded}>
         Confirm with your passkey
@@ -33,7 +48,15 @@ vi.mock("../value/ledger", async (actual) => ({
 }));
 /** The paymaster's quote of a send, as the identity Worker answers it: its fee, about 7.88 LORDS, at most 9.12. */
 const quote = vi.hoisted(() => vi.fn());
-vi.mock("@/ui/modules/identity/wallet-send", () => ({ prepareDefaultWalletSend: quote }));
+const FeeRoomShortError = vi.hoisted(
+  () =>
+    class FeeRoomShortError extends Error {
+      constructor(readonly fee: { estimated: bigint; max: bigint }) {
+        super("fee_room_short");
+      }
+    },
+);
+vi.mock("@/ui/modules/identity/wallet-send", () => ({ prepareDefaultWalletSend: quote, FeeRoomShortError }));
 const FEE = { estimated: 7_880_000_000_000_000_000n, max: 9_120_000_000_000_000_000n };
 
 import { RealmsWalletFunds } from "./realms-wallet-funds";
@@ -46,6 +69,7 @@ const holding = (token: string, balances: Record<string, bigint[]>) => {
   ledger.balances = new Map(Object.entries(balances).map(([at, held]) => [BigInt(at).toString(16), held]));
   quote.mockReset();
   quote.mockResolvedValue({ execution: {}, fee: FEE });
+  review.spendable = null;
 };
 
 const mounted: (() => Promise<void>)[] = [];
@@ -84,7 +108,11 @@ it("prices the send's fee as the form opens, offers the balance less its most as
   expect(funds.textContent).toContain("1,700 LORDS");
   await press(funds, "Send");
   // Priced on a send of one wei to another address: nothing is signed.
-  expect(quote).toHaveBeenCalledWith([{ contractAddress: LORDS, entrypoint: "transfer", calldata: ["0x1", "1", "0"] }]);
+  expect(quote).toHaveBeenCalledWith(
+    ADDRESS,
+    [{ contractAddress: LORDS, entrypoint: "transfer", calldata: ["0x1", "1", "0"] }],
+    expect.anything(),
+  );
   expect(funds.textContent).toContain(`fee at most ${FEE.max}`);
   const [to, amount] = [...funds.querySelectorAll("input")];
   expect(amount!.value).toBe("");
@@ -108,11 +136,43 @@ it("prices the send's fee as the form opens, offers the balance less its most as
     owner: ADDRESS,
     calls: [{ contractAddress: LORDS, entrypoint: "transfer", calldata: [EXCHANGE, String(1000n * WEI), "0"] }],
     onLanded: expect.any(Function),
+    onFeeShort: expect.any(Function),
   });
   await press(funds, "Confirm with your passkey");
   await act(async () => {});
   expect(funds.textContent).toContain("Sent");
   expect(funds.textContent).toContain("700 LORDS");
+});
+
+it("sends what the wallet holds less the fee its review built when Max, taken on the form's quote, leaves too little", async () => {
+  // Production, 2026-11-06: a first send of Max from 100 LORDS; the form's quote (with the deploy) asked at most
+  // 35.09, the send built at review 35.15, so Max left 0.05 LORDS short of the fee.
+  holding(LORDS, { [LORDS]: [100n * WEI] });
+  quote.mockResolvedValue({ execution: {}, fee: { estimated: 0n, max: 35_087_893_000_000_000_000n } });
+  const funds = await mount();
+  await press(funds, "Send");
+  const [to, amount] = [...funds.querySelectorAll("input")];
+  await press(funds, "Max");
+  expect(amount!.value).toBe("64.912107");
+  await type(to!, EXCHANGE);
+  review.spendable = 64_850_000_000_000_000_000n;
+  await press(funds, "Review");
+  await press(funds, "Send what fits instead");
+  // The same send for what fits, prepared afresh; the review now confirms it.
+  expect(funds.textContent).toContain("Send 64.85 LORDS to");
+  expect(signs.at(-1)).toMatchObject({
+    calls: [
+      { contractAddress: LORDS, entrypoint: "transfer", calldata: [EXCHANGE, String((64_850n * WEI) / 1000n), "0"] },
+    ],
+  });
+});
+
+it("reads a wallet short of its quoted fee as priced, saying how much the fee needs", async () => {
+  holding(LORDS, { [LORDS]: [5n * WEI] });
+  quote.mockRejectedValue(new FeeRoomShortError(FEE));
+  const funds = await mount();
+  await press(funds, "Send");
+  expect(funds.textContent).toContain("The network fee needs up to 9.12 LORDS. Your wallet holds 5.00.");
 });
 
 it("says how much the fee needs when the balance cannot cover it, and offers no Max or Review", async () => {

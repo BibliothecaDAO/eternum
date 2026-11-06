@@ -12,6 +12,7 @@ import { IdentityRequestError } from "@realms-world/identity";
 import { WALLET_GAS_TOKEN } from "@realms-world/identity/wallet";
 import { forgetUncertain, uncertainSendOf, UncertainSendNotKeptError } from "./uncertain-sends";
 import {
+  FeeRoomShortError,
   prepareDefaultWalletSend,
   sendFromDefaultWallet,
   sendFromWallet,
@@ -110,12 +111,19 @@ const feeCall = (amount: bigint, to = FORWARDER, token = WALLET_GAS_TOKEN) => ({
 });
 const FEE = { estimated: "0x6d5e1a3a2b8c0000", max: "0x7e4a18b6f2a40000" };
 const MAX = BigInt(FEE.max);
+const LORDS = 10n ** 18n;
+/** The chain as the wallet's LORDS (WALLET_GAS_TOKEN) read: `held` wei, for every balance asked. */
+const holding = (held: bigint) =>
+  ({
+    callContract: vi.fn(async () => [String(held & ((1n << 128n) - 1n)), String(held >> 128n)]),
+  }) as unknown as ProviderInterface;
+const PLENTY = holding(1_000n * LORDS);
 
 it("prepares a default wallet's send only as the asked calls on this chain, then its fee in LORDS within the max shown", async () => {
   const build = vi.spyOn(identityClient, "buildDefaultWalletCall");
   const paying = built([TRANSFER, feeCall(MAX)]);
   build.mockResolvedValueOnce({ typedData: paying, fee: FEE });
-  await expect(prepareDefaultWalletSend([TRANSFER])).resolves.toEqual({
+  await expect(prepareDefaultWalletSend(WALLET.address, [TRANSFER], PLENTY)).resolves.toEqual({
     execution: paying,
     fee: { estimated: BigInt(FEE.estimated), max: MAX },
   });
@@ -132,7 +140,9 @@ it("prepares a default wallet's send only as the asked calls on this chain, then
     built([TRANSFER, feeCall(MAX)], "0x534e5f5345504f4c4941"),
   ]) {
     build.mockResolvedValueOnce({ typedData: other, fee: FEE });
-    await expect(prepareDefaultWalletSend([TRANSFER])).rejects.toBeInstanceOf(UnexpectedExecutionError);
+    await expect(prepareDefaultWalletSend(WALLET.address, [TRANSFER], PLENTY)).rejects.toBeInstanceOf(
+      UnexpectedExecutionError,
+    );
   }
   build.mockRestore();
 });
@@ -141,9 +151,61 @@ it("prepares a sponsored step (a recovery's cancel) only as its call alone, with
   const cancel = { contractAddress: WALLET.address, entrypoint: "cancel_escape", calldata: [] };
   const build = vi.spyOn(identityClient, "buildDefaultWalletCall");
   build.mockResolvedValueOnce({ typedData: built([cancel]), fee: null });
-  await expect(prepareDefaultWalletSend([cancel])).resolves.toEqual({ execution: built([cancel]), fee: null });
+  // A sponsored step pays no fee: the wallet's LORDS are not read.
+  const empty = holding(0n);
+  await expect(prepareDefaultWalletSend(WALLET.address, [cancel], empty)).resolves.toEqual({
+    execution: built([cancel]),
+    fee: null,
+  });
+  expect(empty.callContract).not.toHaveBeenCalled();
   build.mockResolvedValueOnce({ typedData: built([cancel, feeCall(1n)]), fee: null });
-  await expect(prepareDefaultWalletSend([cancel])).rejects.toBeInstanceOf(UnexpectedExecutionError);
+  await expect(prepareDefaultWalletSend(WALLET.address, [cancel], empty)).rejects.toBeInstanceOf(
+    UnexpectedExecutionError,
+  );
+  build.mockRestore();
+});
+
+it("offers a send only when the wallet's LORDS cover it and its fee's max, as the paymaster checks at execute", async () => {
+  // Production, 2026-11-06 06:12Z: a first send (its fee carries the wallet's deploy) of Max from 100 LORDS, Max taken
+  // from the form's quote; the send built at review had a higher fee max, so the fee transfer could not be paid.
+  const held = 100n * LORDS;
+  const fee = { estimated: "0x0", max: `0x${35_142_608_000_000_000_000n.toString(16)}` };
+  const send = (amount: bigint) => ({
+    contractAddress: WALLET_GAS_TOKEN,
+    entrypoint: "transfer",
+    calldata: ["0x5", String(amount), "0"],
+  });
+  const chainHolding = holding(held);
+  const build = vi.spyOn(identityClient, "buildDefaultWalletCall");
+  const buildFor = (call: ReturnType<typeof send>) =>
+    build.mockResolvedValueOnce({ typedData: built([call, feeCall(BigInt(fee.max))]), fee });
+  const nearMax = send(64_912_107_000_000_000_000n);
+  buildFor(nearMax);
+  const short = await prepareDefaultWalletSend(WALLET.address, [nearMax], chainHolding).catch((error) => error);
+  expect(short).toBeInstanceOf(FeeRoomShortError);
+  expect(short).toMatchObject({ fee: { max: BigInt(fee.max) }, spendable: held - BigInt(fee.max) });
+  expect(chainHolding.callContract).toHaveBeenCalledWith({
+    contractAddress: WALLET_GAS_TOKEN,
+    entrypoint: "balance_of",
+    calldata: [WALLET.address],
+  });
+  // What it can send beside that max fits exactly.
+  const fits = send(held - BigInt(fee.max));
+  buildFor(fits);
+  await expect(prepareDefaultWalletSend(WALLET.address, [fits], chainHolding)).resolves.toMatchObject({
+    fee: { max: BigInt(fee.max) },
+  });
+  // LORDS a call approves for the ledger to take (a Blitz entry) count as spent too.
+  const entry = [
+    { contractAddress: WALLET_GAS_TOKEN, entrypoint: "approve", calldata: ["0x1ed9e7", String(70n * LORDS), "0"] },
+    { contractAddress: "0x1ed9e7", entrypoint: "register", calldata: [] },
+  ];
+  build.mockResolvedValueOnce({ typedData: built([...entry, feeCall(BigInt(fee.max))]), fee });
+  await expect(prepareDefaultWalletSend(WALLET.address, entry, chainHolding)).rejects.toBeInstanceOf(FeeRoomShortError);
+  // Another token's send (dev's test LORDS) spends none of the LORDS the fee is paid in: only the fee must fit.
+  const testLords = { ...send(500n * LORDS), contractAddress: "0x55a4" };
+  build.mockResolvedValueOnce({ typedData: built([testLords, feeCall(BigInt(fee.max))]), fee });
+  await expect(prepareDefaultWalletSend(WALLET.address, [testLords], chainHolding)).resolves.toBeDefined();
   build.mockRestore();
 });
 
