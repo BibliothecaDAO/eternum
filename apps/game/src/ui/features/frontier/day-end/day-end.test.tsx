@@ -60,7 +60,8 @@ describe("the day's end", () => {
 
     const lastHour = notice(42 * 60);
     const line = lastHour.host.querySelector(".ui-notice")!;
-    expect(line.textContent).toBe("Day 12 ends in 42m · 3 left to do" + "Open");
+    // The count of what is left is Today's to say: the notice keeps one line with Open (owner, 6 November).
+    expect(line.textContent).toBe("Day 12 ends in 42m" + "Open");
     expect(line.getAttribute("data-tone")).toBe("warn");
     act(() => lastHour.button("Open")!.click());
     expect(onOpen).toHaveBeenCalledOnce();
