@@ -217,33 +217,54 @@ it("keeps the final day's ruin reservation held through an absorbed bag boundary
 describe("each depth's ruin chest today", () => {
   const rules = { dayUnitSeconds: 100, spacing: 100, startMainAt: 0, endAt: 100_000, seed: 1n };
   const realm = { game_id: 1, entity_id: 7 };
-  const chests = (releaseId: number) => {
+  const discovery = (ruin_cleared: boolean) => ({
+    model: "ExpeditionDiscovery",
+    key: "0x71",
+    value: { game_id: 1, structure_id: 7n, epoch: 0n, empty_reveals: 0, ruin_cleared },
+  });
+  const chests = (releaseId: number, facts: object[]) => {
     const store = new NativeFactStore();
     store.setSnapshot({ gameId: 1, complete: true, timestamp: 1 });
     store.applyFacts([
       release(releaseId),
       { model: "RealmKnowledge", key: "0xd", value: { game_id: 1, structure_id: 7, learned: 1n << 48n } },
-      // Realm 7 cleared today's Surface ruin; another realm cleared today's Ethereal I.
-      {
-        model: "ExpeditionSite",
-        key: "0x21",
-        value: { ...site(home + 1n, 40), clear: { explorer_id: 1n, home_id: 7n, reward: null } },
-      },
+      // Another realm cleared today's Ethereal I: its receipt is not realm 7's.
       {
         model: "ExpeditionSite",
         key: "0x22",
         value: { ...site(otherHome + 1n, 140), clear: { explorer_id: 2n, home_id: 8n, reward: null } },
       },
+      ...facts,
     ] as never);
     return ruinChestsToday(store, rules, realm, 1);
   };
+  const surfaceClear = {
+    model: "ExpeditionSite",
+    key: "0x21",
+    value: { ...site(home + 1n, 40), clear: { explorer_id: 1n, home_id: 7n, reward: null } },
+  };
 
-  it("claims the depth the home cleared today, keeps the others open, and locks those not researched", () => {
+  it("opens every researched depth while today's discovery says nothing was cleared, and locks the rest", () => {
     expect(dayOf(rules, 1)?.index).toBe(0);
-    expect(chests(nativeReleaseConstants.RUIN_DEPTH_LIMIT_RELEASE)).toEqual(["claimed", "open", "locked", "locked"]);
+    expect(chests(nativeReleaseConstants.RUIN_DEPTH_LIMIT_RELEASE, [discovery(false)])).toEqual([
+      "open",
+      "open",
+      "locked",
+      "locked",
+    ]);
+  });
+
+  it("claims a depth by its receipt, and leaves a depth whose region it does not hold unknown, never open", () => {
+    // This store has no actor, so it holds no expedition scope: no region's missing receipt says the chest is there.
+    expect(chests(nativeReleaseConstants.RUIN_DEPTH_LIMIT_RELEASE, [discovery(true), surfaceClear])).toEqual([
+      "claimed",
+      "unknown",
+      "locked",
+      "locked",
+    ]);
   });
 
   it("says nothing before a home clears one ruin per depth", () => {
-    expect(chests(nativeReleaseConstants.RUIN_DEPTH_LIMIT_RELEASE - 1)).toBeNull();
+    expect(chests(nativeReleaseConstants.RUIN_DEPTH_LIMIT_RELEASE - 1, [discovery(false)])).toBeNull();
   });
 });

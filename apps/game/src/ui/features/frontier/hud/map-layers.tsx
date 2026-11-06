@@ -21,6 +21,7 @@ import {
   viewInLayer,
 } from "@bibliothecadao/eternum";
 import type { NativeRows } from "@bibliothecadao/eternum/game-client";
+import { SCOPE_INPUT_MODELS } from "@bibliothecadao/eternum/game-sync";
 
 import { reachMark } from "../depth-art";
 
@@ -44,8 +45,8 @@ const LAYER_MODELS = ["RealmKnowledge", "Structure"] as const;
 
 /**
  * The map's layers once the realm has researched Ethereal I, its spire a portal into them (owner, 4 November 2026: "its
- * a portal to the ethereal layer bro"): the world and each Ethereal layer it opens. None before Ethereal I, where the
- * view switch stays Realm / World. On the map, going to a layer keeps the camera's spot and moves it that many regions
+ * a portal to the ethereal layer bro"): the world and each Ethereal layer it opens. Before Ethereal I only the world,
+ * so the view switch stays Realm / World and carries the chests' marks alone, with no list. On the map, going to a layer keeps the camera's spot and moves it that many regions
  * down the map (viewInLayer), as a spire's portal does. In the realm's view too (owner, 6 November 2026: "can I get the
  * dropdown even in realms view?"): no layer is shown there, and a layer opens the map at the realm's site in it. The
  * route's move, like Realm / World's, lets go of what was selected. Each layer carries the player's ruin chest on it
@@ -62,7 +63,7 @@ export const useMapLayers = (
   const camera = useUIStore((state) => state.cameraTargetHex);
   const { isMapView } = useQuery();
   const deepest = realm ? (researchedDepth(facts.store, realm.game_id, realm.entity_id) ?? 0) : 0;
-  if (!realm || deepest === 0) return null;
+  if (!realm) return null;
   const site = realmSite(facts.store, realm);
   const from = isMapView ? (camera ?? site) : site;
   return {
@@ -115,24 +116,30 @@ const layerChoices = ({ layers, shown, go, chests }: MapLayers, chosen: () => vo
  * word. In the realm's view Realm is the choice checked, and choosing it keeps the view (`chosen` puts the open page
  * away).
  */
-export const layerViews = (layers: MapLayers, realm: { icon: IconMeaning; go: () => void }, chosen: () => void) => ({
-  icon: layerMark(layers.shown ?? 0),
-  word: layerName(layers.shown ?? 0),
-  items: [
-    viewChoice(REALM, realm.icon, layers.shown === null, () => (layers.shown === null ? chosen() : realm.go())),
-    ...layerChoices(layers, chosen),
-  ],
-  marks: layers.chests && <LayerChests chests={layers.chests} compact />,
-});
+export const layerViews = (layers: MapLayers, realm: { icon: IconMeaning; go: () => void }, chosen: () => void) => {
+  const marks = layers.chests && <LayerChests chests={layers.chests} compact />;
+  // Before Ethereal I there is one layer: the switch stays Realm / World, carrying the marks.
+  if (layers.layers.length === 1) return { marks };
+  return {
+    icon: layerMark(layers.shown ?? 0),
+    word: layerName(layers.shown ?? 0),
+    items: [
+      viewChoice(REALM, realm.icon, layers.shown === null, () => (layers.shown === null ? chosen() : realm.go())),
+      ...layerChoices(layers, chosen),
+    ],
+    marks,
+  };
+};
 
 /** The desktop's World tab over the layers: the layer shown, its list, and the four layers' chests before it opens. */
 export const layerTab = (layers: MapLayers): WorldTab => ({
   label: layerName(layers.shown ?? 0),
-  menu: layerChoices(layers),
+  menu: layers.layers.length > 1 ? layerChoices(layers) : undefined,
   badge: layers.chests && <LayerChests chests={layers.chests} />,
 });
 
-const CHEST_MODELS = ["ExpeditionSite", "RealmKnowledge", "GameRelease"] as const;
+/** What a layer's chest is read from: the receipts and today's discovery, and what the client's scope is derived from. */
+const CHEST_MODELS = ["ExpeditionDiscovery", "RealmKnowledge", "GameRelease", ...SCOPE_INPUT_MODELS] as const;
 
 /**
  * The player's ruin chest on each layer today, the World then Ethereal I to III (ruinChestsToday: the clears the client
@@ -144,11 +151,16 @@ const useRuinChests = (rules: ExpeditionRules, realm: NativeRows["Structure"] | 
   return realm ? ruinChestsToday(facts.store, rules, realm, now) : null;
 };
 
-/** A chest's state as its painting: the chest while it waits, a check once taken, a lock before the layer is open. */
-const CHEST_MARKS = { open: "chest", claimed: "check", locked: "lock" } as const satisfies Record<
-  RuinChest,
-  IconMeaning
->;
+/**
+ * A chest's state as its painting: the chest while it waits, a check once taken, a question while it is not known here
+ * (no army holds that layer in view), a lock before the layer is open.
+ */
+const CHEST_MARKS = {
+  open: "chest",
+  claimed: "check",
+  unknown: "help",
+  locked: "lock",
+} as const satisfies Record<RuinChest, IconMeaning>;
 
 /**
  * One layer's chest today, at the end of its row in the layer list. The row is chosen by its layer's word, so the mark

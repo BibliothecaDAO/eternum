@@ -7,7 +7,8 @@ import {
 } from "../../../../contracts/l3/world-native/schema/client.gen";
 import { StructureType, TileOccupier } from "@bibliothecadao/types";
 import { entityHomeNamespace } from "./entity-home";
-import { type ExpeditionRules, seasonDay } from "./expeditions";
+import { type ExpeditionRules, expeditionRealmSite, seasonDay } from "./expeditions";
+import { regionInGameSyncScope } from "../sync/model-manifest";
 import { researchedDepth } from "./realm-research";
 
 type RuinReader = Pick<NativeFactStore, "get" | "inGame">;
@@ -46,18 +47,27 @@ export function ruinDisappeared(store: RuinReader, site: NativeRows["ExpeditionS
   return [...store.inGame("ExpeditionSite", site.game_id)].some((row) => homeClearBand(row, home, spacing) === region);
 }
 
-/** A depth's ruin chest today: still to take, taken (the home cleared that depth's ruin today), or not researched. */
-export type RuinChest = "open" | "claimed" | "locked";
+/**
+ * A depth's ruin chest today: still to take, taken (the home cleared that depth's ruin today), not known here (some
+ * depth was cleared today and this depth's region is outside what the client holds), or not researched.
+ */
+export type RuinChest = "open" | "claimed" | "unknown" | "locked";
 /** Each depth's chest, the Surface then Ethereal I to III. */
 export type RuinChests = readonly [RuinChest, RuinChest, RuinChest, RuinChest];
 
+type ChestReader = Pick<NativeFactStore, "get" | "inGame" | "requireOrAbsent" | "subscriptionScope">;
+
 /**
- * Each depth's ruin chest today for a home, the Surface then Ethereal I to III: claimed where its clear receipts show a
- * ruin cleared in that depth's band of today's map (the contract's per-depth entitlement), locked past the deepest
- * layer the realm has researched. None outside the season, before per-depth ruins, or while the release is unknown.
+ * Each depth's ruin chest today for a home, the Surface then Ethereal I to III. The contract keeps the per-depth
+ * entitlement in storage no row carries, so it is read from what does: the home's clear receipts in each depth's band
+ * of today's map (claimed), and today's discovery row, which every home receives whatever its armies' positions and
+ * which says whether any ruin was cleared today. A receipt is held only while its region is in the client's scope, so a
+ * depth with none is open only when nothing was cleared today or its region is held; else it is unknown, never open.
+ * Locked past the deepest layer researched. None outside the season, before per-depth ruins, or while the release is
+ * unknown.
  */
 export function ruinChestsToday(
-  store: RuinReader,
+  store: ChestReader,
   rules: ExpeditionRules,
   realm: Pick<NativeRows["Structure"], "game_id" | "entity_id">,
   nowSeconds: number,
@@ -70,10 +80,32 @@ export function ruinChestsToday(
     const band = homeClearBand(row, home, rules.spacing);
     if (band !== null && Math.floor(band / 4) === today) claimed.add(band % 4);
   }
+  const nothingClearedToday =
+    store.requireOrAbsent("ExpeditionDiscovery", {
+      game_id: realm.game_id,
+      structure_id: realm.entity_id,
+      epoch: BigInt(today),
+    }).known?.ruin_cleared === false;
+  const held = depthRegionHeld(store, rules, home, nowSeconds);
   const deepest = researchedDepth(store, realm.game_id, realm.entity_id) ?? 0;
-  const chest = (depth: number): RuinChest => (depth > deepest ? "locked" : claimed.has(depth) ? "claimed" : "open");
+  const chest = (depth: number): RuinChest => {
+    if (depth > deepest) return "locked";
+    if (claimed.has(depth)) return "claimed";
+    return nothingClearedToday || held(depth) ? "open" : "unknown";
+  };
   return [chest(0), chest(1), chest(2), chest(3)];
 }
+
+/** Whether the client holds every row of the home's region at a depth today: where a missing receipt means none. */
+const depthRegionHeld = (store: ChestReader, rules: ExpeditionRules, home: number, nowSeconds: number) => {
+  const scope = store.subscriptionScope().known;
+  const site = expeditionRealmSite(rules, home, nowSeconds);
+  return (depth: number) =>
+    scope !== undefined &&
+    site !== null &&
+    // Today's site is on the Surface; each depth lies a region further down the same column.
+    regionInGameSyncScope(scope, { x: site.col, y: site.row + depth * rules.spacing });
+};
 
 /** Occupancy as commands see it: a vanished ruin leaves walkable terrain without erasing the raw facts. */
 export function activeTileOccupancy(

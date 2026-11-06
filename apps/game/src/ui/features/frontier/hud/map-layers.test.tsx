@@ -17,7 +17,7 @@ import type { NativeFactStore, NativeRows } from "@bibliothecadao/eternum/game-c
 import { StructureType } from "@bibliothecadao/types";
 import { nativeReleaseConstants } from "../../../../../../../contracts/l3/world-native/schema/client.gen";
 
-import { frontierDay } from "../deploy/deploy-fixture";
+import { campBeside } from "../sites/site-fixture";
 
 import { layerTab, layerViews, type MapLayers, useMapLayers } from "./map-layers";
 import { PlaceNav } from "./place-nav";
@@ -131,9 +131,12 @@ describe("the map's layers", () => {
   });
 });
 
-/** Realm 7's day, with per-depth ruins and Ethereal I and II researched: Ethereal III stays locked. */
-const chestDay = () => {
-  const { store, row: realm } = frontierDay();
+/**
+ * Realm 7's day with per-depth ruins and `researched` layers (Ethereal I and II by default, Ethereal III locked), and its
+ * army 201, the season's second day on the clock, so the first has clears of its own.
+ */
+const chestDay = (researched = 2n) => {
+  const { store } = campBeside();
   store.applyFacts([
     {
       model: "GameRelease",
@@ -145,40 +148,82 @@ const chestDay = () => {
         preset_commitment: 0x1abn,
       },
     },
-    { model: "RealmKnowledge", key: "0xd", value: { game_id: 1, structure_id: 7, learned: 2n << 48n } },
+    { model: "RealmKnowledge", key: "0xd", value: { game_id: 1, structure_id: 7, learned: researched << 48n } },
   ] as never);
   context.store = store;
   const rules = readExpeditionRules(store, 1)!;
-  return { store, realm, rules };
+  const realm = store.require("Structure", { game_id: 1, entity_id: 7 });
+  const now = expeditionDayEndsAt(rules, rules.startMainAt) + 10;
+  const today = seasonDay(rules, now)!;
+  clockAt(store, now);
+  return { store, realm, rules, now, today };
 };
 
-/** The chain's clock at `seconds`, as the HUD reads it (useNowSeconds) and the realm's site is placed by. */
-const clockAt = (seconds: number) =>
+/**
+ * The chain's clock at `seconds`, as the HUD reads it (useNowSeconds), the realm's site is placed by, and Herald's
+ * snapshot scopes the store at: realm 7's player, so the store holds what that player's subscription holds.
+ */
+const clockAt = (store: NativeFactStore, seconds: number) =>
   act(() => {
     useChainTimeStore.getState().anchor({ timestamp: seconds * 1_000 });
     setBlockTimestampSource(() => seconds);
+    store.setSnapshot({ gameId: 1, complete: true, actor: "0x111", timestamp: seconds });
   });
 
-/** A ruin cleared by `home` in the band of `day` at `depth`: its site's clear receipt naming the home. */
-const cleared = (store: NativeFactStore, rules: ExpeditionRules, home: number, day: number, depth: number) =>
+/** Today's discovery row for realm 7: whether any ruin was cleared today, as the contract writes it on every clear. */
+const discovered = (store: NativeFactStore, day: number, ruinCleared: boolean) =>
   act(() =>
     store.applyFacts([
       {
-        model: "ExpeditionSite",
-        key: `0x9${home}${day}${depth}`,
-        value: {
-          game_id: 1,
-          entity_id: BigInt(9_000 + home * 100 + day * 10 + depth),
-          category: StructureType.Ruin,
-          initial_guard_count: 999n,
-          alt: false,
-          col: 15,
-          row: (day * 4 + depth) * rules.spacing + 1,
-          clear: { explorer_id: 201n, home_id: BigInt(home), reward: null },
-        },
+        model: "ExpeditionDiscovery",
+        key: `0x8${day}`,
+        value: { game_id: 1, structure_id: 7n, epoch: BigInt(day), empty_reveals: 0, ruin_cleared: ruinCleared },
       },
     ] as never),
   );
+
+/** A ruin cleared by `home` in the band of `day` at `depth`, in the home's own column: its site's clear receipt. */
+const cleared = (store: NativeFactStore, rules: ExpeditionRules, home: number, day: number, depth: number) =>
+  act(() => store.applyFacts([receipt(rules, home, day, depth)] as never));
+/** The same receipt leaving the store, as Herald removes a row whose region leaves the subscription's scope. */
+const outOfScope = (store: NativeFactStore, rules: ExpeditionRules, home: number, day: number, depth: number) =>
+  act(() => store.applyFacts([{ ...receipt(rules, home, day, depth), value: null }] as never));
+const receipt = (rules: ExpeditionRules, home: number, day: number, depth: number) => ({
+  model: "ExpeditionSite",
+  key: `0x9${home}${day}${depth}`,
+  value: {
+    game_id: 1,
+    entity_id: BigInt(9_000 + home * 100 + day * 10 + depth),
+    category: StructureType.Ruin,
+    initial_guard_count: 999n,
+    alt: false,
+    col: (home - 1) * rules.spacing + 1,
+    row: (day * 4 + depth) * rules.spacing + 1,
+    clear: { explorer_id: 201n, home_id: BigInt(home), reward: null },
+  },
+});
+
+/**
+ * Realm 7's army 201 moved into its own column at `depth` today, which brings that layer's region into scope: its tile
+ * row leaves and the new one comes, as Herald sends a move.
+ */
+const armyIn = (store: NativeFactStore, rules: ExpeditionRules, today: number, depth: number) =>
+  act(() => {
+    const tile = [...store.entries("TileOccupancy")].find(([, row]) => row.entity_id === 201n)![1];
+    const key = `0x75${today}${depth}`;
+    store.applyFacts([
+      { model: "TileOccupancy", key: armyTileKeys.get(store) ?? SITE_FIXTURE_ARMY_TILE_KEY, value: null },
+      {
+        model: "TileOccupancy",
+        key,
+        value: { ...tile, col: 6 * rules.spacing + 2, row: (today * 4 + depth) * rules.spacing + 2 },
+      },
+    ] as never);
+    armyTileKeys.set(store, key);
+  });
+/** The army's tile row as Herald keys it on the wire (site-fixture's, then each move's): a move removes it by this key. */
+const SITE_FIXTURE_ARMY_TILE_KEY = "0x75";
+const armyTileKeys = new WeakMap<NativeFactStore, string>();
 
 /** The switch of the HUD over the real layers: the desktop's World tab, or a phone's view slot. */
 const LayerSwitch = ({
@@ -231,40 +276,36 @@ const listRows = () =>
   ]);
 
 describe("each layer's ruin chest today, on the layer switch", () => {
-  it("marks each layer claimed, open or locked from today's clears, and opens the next day's chests", () => {
-    const { store, realm, rules } = chestDay();
-    // The season's second day, so the first has clears of its own.
-    const now = expeditionDayEndsAt(rules, rules.startMainAt) + 10;
-    clockAt(now);
-    const today = seasonDay(rules, now)!;
+  it("opens every researched layer while nothing was cleared today, marks today's clears, and opens again tomorrow", () => {
+    const { store, realm, rules, now, today } = chestDay();
     expect(today).toBe(1);
-    cleared(store, rules, 7, today, 0);
+    discovered(store, today, false);
     // Another realm's clear, and realm 7's own of the day before, take nothing of today's.
     cleared(store, rules, 8, today, 1);
     cleared(store, rules, 7, today - 1, 2);
     context.mapView = true;
     act(() => root.render(<LayerSwitch rules={rules} realm={realm} />));
     expect(switchMarks()).toEqual([
-      "World: chest taken today",
+      "World: chest to take today",
       "Ethereal I: chest to take today",
       "Ethereal II: chest to take today",
       "Ethereal III: not researched",
     ]);
 
+    // Realm 7 clears today's Surface ruin: its region is the home's own, always held.
+    discovered(store, today, true);
+    cleared(store, rules, 7, today, 0);
     act(() => host.querySelector<HTMLButtonElement>('[role="tab"][aria-haspopup]')!.click());
     expect(listRows()).toEqual([
       ["World", "true", "claimed"],
-      ["Ethereal I", "false", "open"],
-      ["Ethereal II", "false", "open"],
+      ["Ethereal I", "false", "unknown"],
+      ["Ethereal II", "false", "unknown"],
     ]);
     choose("Ethereal II");
     expect(requestLayerView).toHaveBeenCalledTimes(1);
 
-    cleared(store, rules, 7, today, 2);
-    expect(switchMarks()[2]).toBe("Ethereal II: chest taken today");
-
-    // The day turns: yesterday's clears close nothing, every researched layer has its chest again.
-    clockAt(expeditionDayEndsAt(rules, now) + 1);
+    // The day turns: tomorrow's discovery holds no clear, so every researched layer has its chest again.
+    clockAt(store, expeditionDayEndsAt(rules, now) + 1);
     expect(switchMarks()).toEqual([
       "World: chest to take today",
       "Ethereal I: chest to take today",
@@ -273,11 +314,64 @@ describe("each layer's ruin chest today, on the layer switch", () => {
     ]);
   });
 
+  it("never reopens a taken chest whose layer's receipts leave the scope: it reads unknown until an army is there", () => {
+    const { store, realm, rules, today } = chestDay();
+    discovered(store, today, true);
+    armyIn(store, rules, today, 1);
+    cleared(store, rules, 7, today, 1);
+    context.mapView = true;
+    act(() => root.render(<LayerSwitch rules={rules} realm={realm} />));
+    expect(switchMarks()[1]).toBe("Ethereal I: chest taken today");
+
+    // The army leaves Ethereal I: the subscription drops that region, and Herald removes its receipt.
+    armyIn(store, rules, today, 2);
+    outOfScope(store, rules, 7, today, 1);
+    expect(switchMarks()).toEqual([
+      "World: chest to take today",
+      "Ethereal I: chest not known without an army there",
+      "Ethereal II: chest to take today",
+      "Ethereal III: not researched",
+    ]);
+
+    // A fresh snapshot of that scope never had the receipt: the same marks.
+    act(() => root.unmount());
+    root = createRoot(host);
+    const fresh = chestDay();
+    discovered(fresh.store, fresh.today, true);
+    armyIn(fresh.store, fresh.rules, fresh.today, 2);
+    act(() => root.render(<LayerSwitch rules={fresh.rules} realm={fresh.realm} />));
+    expect(switchMarks()[1]).toBe("Ethereal I: chest not known without an army there");
+  });
+
+  it.each([
+    ["a desktop", false],
+    ["a phone", true],
+  ])(
+    "on %s before Ethereal I, the switch stays Realm / World and carries the Surface's chest and three locks",
+    (_, phone) => {
+      const { store, realm, rules, today } = chestDay(0n);
+      discovered(store, today, false);
+      context.mapView = true;
+      act(() => root.render(<LayerSwitch rules={rules} realm={realm} phone={phone} />));
+      expect(switchMarks()).toEqual([
+        "World: chest to take today",
+        "Ethereal I: not researched",
+        "Ethereal II: not researched",
+        "Ethereal III: not researched",
+      ]);
+      expect(host.querySelector("[aria-haspopup]")).toBeNull();
+
+      discovered(store, today, true);
+      cleared(store, rules, 7, today, 0);
+      expect(switchMarks()[0]).toBe("World: chest taken today");
+    },
+  );
+
   it("opens the same list from the realm's view, where a layer opens the map at the realm's site in it", () => {
-    const { store, realm, rules } = chestDay();
-    const now = rules.startMainAt + 10;
-    clockAt(now);
-    cleared(store, rules, 7, seasonDay(rules, now)!, 1);
+    const { store, realm, rules, today } = chestDay();
+    discovered(store, today, true);
+    armyIn(store, rules, today, 1);
+    cleared(store, rules, 7, today, 1);
     context.mapView = false;
     act(() => root.render(<LayerSwitch rules={rules} realm={realm} />));
     const tabs = [...host.querySelectorAll<HTMLButtonElement>('[role="tab"]')];
@@ -291,7 +385,7 @@ describe("each layer's ruin chest today, on the layer switch", () => {
     expect(listRows()).toEqual([
       ["World", "false", "open"],
       ["Ethereal I", "false", "claimed"],
-      ["Ethereal II", "false", "open"],
+      ["Ethereal II", "false", "unknown"],
     ]);
     choose("Ethereal II");
     expect(requestLayerView).not.toHaveBeenCalled();
@@ -301,13 +395,13 @@ describe("each layer's ruin chest today, on the layer switch", () => {
     expect([scene, Math.floor(y / rules.spacing) % 4, Math.floor(Math.floor(y / rules.spacing) / 4)]).toEqual([
       "map",
       2,
-      seasonDay(rules, now),
+      today,
     ]);
   });
 
   it("on a phone in the realm's view, the view slot carries the marks and lists Realm checked, then each layer", () => {
-    const { realm, rules } = chestDay();
-    clockAt(rules.startMainAt + 10);
+    const { store, realm, rules, today } = chestDay();
+    discovered(store, today, false);
     context.mapView = false;
     const toRealm = vi.fn();
     const chosen = vi.fn();

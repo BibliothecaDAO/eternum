@@ -20,7 +20,7 @@ interface MapViewControlsProps {
  * opening the list of every layer (owner, 4 November 2026: "disagree here since we'll have more depth layers").
  */
 /** The World tab over the map's layers: the layer shown, its list, and what it carries before the list opens. */
-export type WorldTab = { label: string; menu: readonly MenuItem[]; badge?: ReactNode };
+export type WorldTab = { label: string; menu?: readonly MenuItem[]; badge?: ReactNode };
 
 /** Primary map navigation, with one space-saving layer toggle in the mobile HUD. */
 export function MapViewControls({

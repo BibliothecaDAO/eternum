@@ -456,6 +456,7 @@ export const layerChestLine = (layer: string, chest: RuinChest): string => `${la
 const LAYER_CHEST = {
   open: "chest to take today",
   claimed: "chest taken today",
+  unknown: "chest not known without an army there",
   locked: "not researched",
 } as const satisfies Record<RuinChest, string>;
 /** The day's own layer, as a site's card names its depth (the layer switch calls it World). */

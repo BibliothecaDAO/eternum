@@ -43,8 +43,11 @@ export const PlaceNav = ({
   onGo: (place: Place) => void;
   realmDot?: Dot;
   realmIcon?: IconMeaning;
-  /** The view shown and the list of views the switch opens in its place; none keeps the Realm / World switch. */
-  views?: { icon: IconMeaning; word: string; items: readonly MenuItem[]; marks?: ReactNode } | null;
+  /**
+   * The view shown and the list of views the switch opens in its place, and the marks it carries; without a view or a
+   * list it keeps the Realm / World switch.
+   */
+  views?: { icon?: IconMeaning; word?: string; items?: readonly MenuItem[]; marks?: ReactNode } | null;
   /** Whether Research has a node to buy; none leaves the slot out, for a player with no realm to research. */
   researchDot?: boolean;
   /** Events arrived since the Feed was last read. */
