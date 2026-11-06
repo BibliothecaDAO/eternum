@@ -31,6 +31,7 @@ import {
   TRAINING_BUILDINGS,
   WITHDRAWALS_CLOSED,
   YOU,
+  siteDepthName,
 } from "@/ui/design-system/kit/words";
 import { ArmyList, ArmyRow, OpenSlotRow } from "@/ui/features/frontier/hud/army-row";
 import { ArmyToken, OpenSlot } from "@/ui/features/frontier/hud/army-token";
@@ -249,7 +250,7 @@ const RUIN_CARD: LabSite = {
   fight: FIGHT(1_250, 1_520),
   pay: null,
   chest: { tier: 3, lords: 128 },
-  ruinChoice: { depth: "Surface", perDepth: true },
+  ruinChoice: { depth: siteDepthName(0), perDepth: true },
   xp: 145,
   verb: ATTACK_30,
 };

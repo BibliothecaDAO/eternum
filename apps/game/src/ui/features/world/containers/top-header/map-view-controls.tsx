@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import { StructureType, structureName } from "@bibliothecadao/types";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { HudButton, HudPill, HudTabs, type MenuItem } from "@/ui/design-system/kit/hud-elements";
@@ -18,7 +19,8 @@ interface MapViewControlsProps {
  * What the World tab shows on the map where a mode has layers below it (Frontier's Ethereal layers): the layer shown,
  * opening the list of every layer (owner, 4 November 2026: "disagree here since we'll have more depth layers").
  */
-export type WorldTab = { label: string; menu: readonly MenuItem[] };
+/** The World tab over the map's layers: the layer shown, its list, and what it carries before the list opens. */
+export type WorldTab = { label: string; menu: readonly MenuItem[]; badge?: ReactNode };
 
 /** Primary map navigation, with one space-saving layer toggle in the mobile HUD. */
 export function MapViewControls({
@@ -80,6 +82,7 @@ const MapViewSwitch = ({
         value={isLocalView ? "realm" : "world"}
         onChange={(view) => onNavigate(view === "world")}
       />,
+      ...(worldTab?.badge ? [<span key="badge">{worldTab.badge}</span>] : []),
     ]}
   </HudPill>
 );

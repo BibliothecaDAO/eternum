@@ -1,7 +1,6 @@
 import { useHomeKind } from "@/hooks/helpers/use-home-kind";
 import { homeIcon } from "@/ui/design-system/home-icons";
 import { useQuery } from "@/hooks/helpers/use-query";
-import { REALM } from "@/ui/design-system/kit/words";
 import type { ExpeditionRules } from "@bibliothecadao/eternum";
 import type { NativeRows } from "@bibliothecadao/eternum/game-client";
 
@@ -9,7 +8,7 @@ import { useGoToFrontierPlace } from "../frontier-home";
 import { realmDot, useRealmStores } from "../realm-stores";
 import { useResearchTree } from "../research/research-facts";
 import { canResearchNow } from "../research/research-tree";
-import { layerChoices, layerMark, layerName, type MapLayers, viewChoice } from "./map-layers";
+import { layerViews, type MapLayers } from "./map-layers";
 import { type Place, PlaceNav } from "./place-nav";
 
 /** What the HUD has open over the map: a nav page, the Menu, or a way the Menu opens. */
@@ -83,13 +82,7 @@ export const FrontierNav = ({
   return (
     <PlaceNav
       realmIcon={realmIcon}
-      views={
-        layers && {
-          icon: layerMark(layers.shown),
-          word: layerName(layers.shown),
-          items: [viewChoice(REALM, realmIcon, false, () => go("realm")), ...layerChoices(layers, putPageAway)],
-        }
-      }
+      views={layers && layerViews(layers, { icon: realmIcon, go: () => go("realm") }, putPageAway)}
       place={place}
       onRealm={!isMapView}
       onGo={go}

@@ -572,6 +572,36 @@ button.ui-chip:disabled {
   box-shadow: 0 0 10px var(--hud-rarity-5);
 }
 
+/* ── Layer chests: a layer's ruin chest today on the layer switch. In the list, the chest, check or lock ends the row;
+   on the switch, each layer's mark with that state on its corner, the mark faded once its chest is taken or while the
+   layer is locked. ── */
+.ui-chest {
+  display: inline-flex;
+  margin-left: auto;
+}
+.ui-chest:not([data-chest="open"]) {
+  opacity: 0.75;
+}
+.ui-layer-chests {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+}
+.ui-layer-chests__layer {
+  position: relative;
+  display: inline-flex;
+  padding: 0 3px 3px 0;
+}
+.ui-layer-chests__layer > :last-child {
+  position: absolute;
+  right: -2px;
+  bottom: -1px;
+}
+.ui-layer-chests__layer:not([data-chest="open"]) > :first-child {
+  opacity: 0.45;
+  filter: grayscale(1);
+}
+
 /* ── Tier: a gem in its rarity colour with the tier's numeral, Common I to Legendary V. ── */
 .ui-tier {
   --rarity: var(--hud-rarity-1);

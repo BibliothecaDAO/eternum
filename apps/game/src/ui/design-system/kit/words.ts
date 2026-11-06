@@ -6,6 +6,7 @@
 import type { ResolvedGameMode } from "@/config/game-modes/resolved-mode";
 import type { CampaignKey } from "@realms-world/identity";
 import type { NotificationKind, NotificationLevel } from "@bibliothecadao/notifications";
+import type { RuinChest } from "@bibliothecadao/eternum";
 import {
   BuildingType,
   XP,
@@ -450,6 +451,21 @@ export const ETHEREAL = "Ethereal";
 export const DEPTH_NUMERALS = ["I", "II", "III"] as const;
 /** A depth by its name: "Ethereal II". */
 export const depthName = (depth: 1 | 2 | 3): string => `${ETHEREAL} ${DEPTH_NUMERALS[depth - 1]}`;
+/** A layer's ruin chest today, as the layer switch's marks say it to assistive technology: "Ethereal II: chest taken". */
+export const layerChestLine = (layer: string, chest: RuinChest): string => `${layer}: ${LAYER_CHEST[chest]}`;
+const LAYER_CHEST = {
+  open: "chest to take today",
+  claimed: "chest taken today",
+  locked: "not researched",
+} as const satisfies Record<RuinChest, string>;
+/** The day's own layer, as a site's card names its depth (the layer switch calls it World). */
+const SURFACE = "Surface";
+/** A site's depth by its name, 0 the Surface, then Ethereal I to III; loud for a depth the map does not have. */
+export const siteDepthName = (depth: number): string => {
+  if (depth === 0) return SURFACE;
+  if (depth === 1 || depth === 2 || depth === 3) return depthName(depth);
+  throw new Error(`No expedition depth ${depth}`);
+};
 
 /**
  * A realm's spire, its card's words: whose it is, the army it acts for, each depth's entry or why not, and what entering

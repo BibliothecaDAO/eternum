@@ -3,7 +3,7 @@ import { StructureType, TileOccupier } from "@bibliothecadao/types";
 import { NativeFactStore } from "../client/native-fact-store";
 import { WorldSpatialProjection } from "../sync/world-spatial-projection";
 import { getTileAt } from "./tile";
-import { availableRuinLords, ruinDisappeared } from "./ruins";
+import { availableRuinLords, ruinChestsToday, ruinDisappeared } from "./ruins";
 import { nativeReleaseConstants } from "../../../../contracts/l3/world-native/schema/client.gen";
 import { dayOf } from "./days";
 
@@ -212,4 +212,38 @@ it("keeps the final day's ruin reservation held through an absorbed bag boundary
   const store = { get: (model: string) => rows[model] } as unknown as Pick<NativeFactStore, "get">;
   for (const at of [68 * 3600, 80 * 3600, 81 * 3600 - 1]) expect(availableRuinLords(store, 1, at)).toBe(7500n);
   expect(availableRuinLords(store, 1, 81 * 3600)).toBe(0n);
+});
+
+describe("each depth's ruin chest today", () => {
+  const rules = { dayUnitSeconds: 100, spacing: 100, startMainAt: 0, endAt: 100_000, seed: 1n };
+  const realm = { game_id: 1, entity_id: 7 };
+  const chests = (releaseId: number) => {
+    const store = new NativeFactStore();
+    store.setSnapshot({ gameId: 1, complete: true, timestamp: 1 });
+    store.applyFacts([
+      release(releaseId),
+      { model: "RealmKnowledge", key: "0xd", value: { game_id: 1, structure_id: 7, learned: 1n << 48n } },
+      // Realm 7 cleared today's Surface ruin; another realm cleared today's Ethereal I.
+      {
+        model: "ExpeditionSite",
+        key: "0x21",
+        value: { ...site(home + 1n, 40), clear: { explorer_id: 1n, home_id: 7n, reward: null } },
+      },
+      {
+        model: "ExpeditionSite",
+        key: "0x22",
+        value: { ...site(otherHome + 1n, 140), clear: { explorer_id: 2n, home_id: 8n, reward: null } },
+      },
+    ] as never);
+    return ruinChestsToday(store, rules, realm, 1);
+  };
+
+  it("claims the depth the home cleared today, keeps the others open, and locks those not researched", () => {
+    expect(dayOf(rules, 1)?.index).toBe(0);
+    expect(chests(nativeReleaseConstants.RUIN_DEPTH_LIMIT_RELEASE)).toEqual(["claimed", "open", "locked", "locked"]);
+  });
+
+  it("says nothing before a home clears one ruin per depth", () => {
+    expect(chests(nativeReleaseConstants.RUIN_DEPTH_LIMIT_RELEASE - 1)).toBeNull();
+  });
 });

@@ -1760,6 +1760,8 @@ export type MenuItem =
       icon?: IconMeaning;
       /** A painting the item brings itself (a building's art), in the icon's place. */
       lead?: ReactNode;
+      /** What ends the row after its word (a layer's ruin chest today). */
+      trail?: ReactNode;
       hint?: string;
       /** A choice of a select; an action leaves it out. */
       checked?: boolean;
@@ -1822,6 +1824,7 @@ export const HudMenu = forwardRef<
           {item.lead ?? (item.icon && <Icon name={item.icon} size={16} />)}
           <span className="ui-menu__label">{item.label}</span>
           {item.hint && !item.disabled && <span className="ui-menu__hint">{item.hint}</span>}
+          {item.trail}
         </button>
       ),
     )}

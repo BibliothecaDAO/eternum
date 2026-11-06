@@ -7,14 +7,28 @@ import {
 } from "../../../../contracts/l3/world-native/schema/client.gen";
 import { StructureType, TileOccupier } from "@bibliothecadao/types";
 import { entityHomeNamespace } from "./entity-home";
+import { type ExpeditionRules, seasonDay } from "./expeditions";
+import { researchedDepth } from "./realm-research";
 
 type RuinReader = Pick<NativeFactStore, "get" | "inGame">;
 
 export function ruinLimitPerDepth(store: Pick<RuinReader, "get">, gameId: number): boolean {
-  const release = store.get("GameRelease", { game_id: gameId });
-  if (!release) throw new Error("A ruin requires its game release");
-  return release.release_id >= nativeReleaseConstants.RUIN_DEPTH_LIMIT_RELEASE;
+  const perDepth = perDepthRuins(store, gameId);
+  if (perDepth === undefined) throw new Error("A ruin requires its game release");
+  return perDepth;
 }
+
+/** Whether a home clears one ruin per depth a day (release 9 on); unknown while the game's release is. */
+const perDepthRuins = (store: Pick<RuinReader, "get">, gameId: number): boolean | undefined => {
+  const release = store.get("GameRelease", { game_id: gameId });
+  return release && release.release_id >= nativeReleaseConstants.RUIN_DEPTH_LIMIT_RELEASE;
+};
+
+/** The band (day × 4 + depth) of a ruin the home has cleared, from its clear receipt; none for any other site. */
+const homeClearBand = (row: NativeRows["ExpeditionSite"], home: number, spacing: number): number | null =>
+  row.category === StructureType.Ruin && row.clear !== null && entityHomeNamespace(row.clear.home_id) === home
+    ? Math.floor(row.row / spacing)
+    : null;
 
 /** A clear closes other ruins at the same depth in its home namespace and map day; stored receipts remain visible. */
 export function ruinDisappeared(store: RuinReader, site: NativeRows["ExpeditionSite"]): boolean {
@@ -29,13 +43,36 @@ export function ruinDisappeared(store: RuinReader, site: NativeRows["ExpeditionS
       (row) => row.epoch === day && entityHomeNamespace(row.structure_id) === home && row.ruin_cleared,
     );
   }
-  return [...store.inGame("ExpeditionSite", site.game_id)].some(
-    (row) =>
-      row.category === StructureType.Ruin &&
-      row.clear !== null &&
-      entityHomeNamespace(row.clear.home_id) === home &&
-      Math.floor(row.row / spacing) === region,
-  );
+  return [...store.inGame("ExpeditionSite", site.game_id)].some((row) => homeClearBand(row, home, spacing) === region);
+}
+
+/** A depth's ruin chest today: still to take, taken (the home cleared that depth's ruin today), or not researched. */
+export type RuinChest = "open" | "claimed" | "locked";
+/** Each depth's chest, the Surface then Ethereal I to III. */
+export type RuinChests = readonly [RuinChest, RuinChest, RuinChest, RuinChest];
+
+/**
+ * Each depth's ruin chest today for a home, the Surface then Ethereal I to III: claimed where its clear receipts show a
+ * ruin cleared in that depth's band of today's map (the contract's per-depth entitlement), locked past the deepest
+ * layer the realm has researched. None outside the season, before per-depth ruins, or while the release is unknown.
+ */
+export function ruinChestsToday(
+  store: RuinReader,
+  rules: ExpeditionRules,
+  realm: Pick<NativeRows["Structure"], "game_id" | "entity_id">,
+  nowSeconds: number,
+): RuinChests | null {
+  const today = seasonDay(rules, nowSeconds);
+  if (today === null || !perDepthRuins(store, realm.game_id)) return null;
+  const home = entityHomeNamespace(realm.entity_id);
+  const claimed = new Set<number>();
+  for (const row of store.inGame("ExpeditionSite", realm.game_id)) {
+    const band = homeClearBand(row, home, rules.spacing);
+    if (band !== null && Math.floor(band / 4) === today) claimed.add(band % 4);
+  }
+  const deepest = researchedDepth(store, realm.game_id, realm.entity_id) ?? 0;
+  const chest = (depth: number): RuinChest => (depth > deepest ? "locked" : claimed.has(depth) ? "claimed" : "open");
+  return [chest(0), chest(1), chest(2), chest(3)];
 }
 
 /** Occupancy as commands see it: a vanished ruin leaves walkable terrain without erasing the raw facts. */
