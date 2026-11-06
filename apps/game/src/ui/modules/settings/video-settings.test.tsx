@@ -2,6 +2,7 @@ import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 
+import { pageNavigation } from "@/utils/page-navigation";
 import { VideoSettings } from "./video-settings";
 
 let host: HTMLDivElement;
@@ -107,15 +108,13 @@ it("applies Reduced motion at once, with nothing to reload", async () => {
 it("reloads the page as it is, a recovery's renderer in its address kept", async () => {
   window.history.replaceState(null, "", "/g/0x1/6/map?spectate=true&rendererMode=webgpu-force-webgl#world");
   await toggle("Shadows");
-  const assign = vi.fn();
-  const reload = vi.fn();
-  const location = vi
-    .spyOn(window, "location", "get")
-    .mockReturnValue({ href: window.location.href, assign, reload } as unknown as Location);
+  const open = vi.spyOn(pageNavigation, "open").mockImplementation(() => {});
+  const reload = vi.spyOn(pageNavigation, "reload").mockImplementation(() => {});
   await act(async () =>
     [...host.querySelectorAll("button")].find((button) => button.textContent === "Reload")!.click(),
   );
-  location.mockRestore();
-  expect([assign.mock.calls.length, reload.mock.calls.length]).toEqual([0, 1]);
+  expect([open.mock.calls.length, reload.mock.calls.length]).toEqual([0, 1]);
+  open.mockRestore();
+  reload.mockRestore();
   window.history.replaceState(null, "", page);
 });

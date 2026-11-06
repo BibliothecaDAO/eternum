@@ -87,13 +87,34 @@ export interface PreparedSend {
 }
 
 /**
+ * The wallet holds too little LORDS for what its calls spend and the most its fee may take: the paymaster would refuse
+ * it after the passkey signed (its fee transfer cannot be paid), so it is not offered. `spendable` is what the wallet
+ * can spend beside that fee (zero or less: it cannot even pay the fee).
+ */
+export class FeeRoomShortError extends Error {
+  readonly spendable: bigint;
+  constructor(
+    readonly fee: WalletFee,
+    held: bigint,
+  ) {
+    super("fee_room_short");
+    this.spendable = held - fee.max;
+  }
+}
+
+/**
  * The same send from the account's default wallet, in two steps. Prepare: the paymaster builds the outside execution
  * and this page checks it is exactly `calls` on this chain, then at most one fee call paying no more than the max it
- * shows (nothing is spent). Send, on the player's tap: their passkey signs its hash and the paymaster submits it with
- * the guardian's signature (apps/realms/server/default-wallet-plugin.ts). The wallet pays its fee in LORDS, so no STRK
- * is read. The tap opens the passkey at once, as Safari requires, with no request before it.
+ * shows, and that the wallet's LORDS cover what the calls spend and that max (nothing is spent). Send, on the player's
+ * tap: their passkey signs its hash and the paymaster submits it with the guardian's signature
+ * (apps/realms/server/default-wallet-plugin.ts). The wallet pays its fee in LORDS, so no STRK is read. The tap opens
+ * the passkey at once, as Safari requires, with no request before it.
  */
-export const prepareDefaultWalletSend = async (calls: Call[]): Promise<PreparedSend> => {
+export const prepareDefaultWalletSend = async (
+  owner: string,
+  calls: Call[],
+  provider: ProviderInterface,
+): Promise<PreparedSend> => {
   const requested = calls.map((call) => ({
     contractAddress: call.contractAddress,
     entrypoint: call.entrypoint,
@@ -103,8 +124,27 @@ export const prepareDefaultWalletSend = async (calls: Call[]): Promise<PreparedS
   const execution = built.typedData as unknown as TypedData;
   const fee = built.fee && { estimated: BigInt(built.fee.estimated), max: BigInt(built.fee.max) };
   if (!buildsExactly(execution, requested, fee)) throw new UnexpectedExecutionError();
+  if (fee) await requireFeeRoom(provider, owner, requested, fee);
   return { execution, fee };
 };
+
+/**
+ * The fee is the execution's last call, a LORDS transfer of up to its max: it runs after the asked calls, so the
+ * wallet must hold what they spend of LORDS plus that max, as the paymaster checks before it submits.
+ */
+const requireFeeRoom = async (provider: ProviderInterface, owner: string, calls: AskedCall[], fee: WalletFee) => {
+  const held = await tokenBalanceOf(provider, WALLET_GAS_TOKEN, owner);
+  if (feeTokenSpentBy(calls) + fee.max > held) throw new FeeRoomShortError(fee, held);
+};
+
+/** The LORDS (WALLET_GAS_TOKEN) the calls move out of the wallet: what they transfer, and what they let a contract take. */
+const feeTokenSpentBy = (calls: AskedCall[]) =>
+  calls
+    .filter((call) => BigInt(call.contractAddress) === BigInt(WALLET_GAS_TOKEN) && SPENDING.has(call.entrypoint))
+    .reduce((spent, { calldata: [, low, high] }) => spent + BigInt(low ?? 0) + (BigInt(high ?? 0) << 128n), 0n);
+
+/** ERC-20 entrypoints whose second and third arguments are LORDS leaving the wallet: sent, or approved for a pull. */
+const SPENDING = new Set(["transfer", "approve"]);
 
 export const sendFromDefaultWallet = async (
   wallet: DefaultWallet,
@@ -220,9 +260,11 @@ const landedOrRefused = async (provider: ProviderInterface, sent: string): Promi
 const RECEIPT_POLL_MS = 1_000;
 
 /** The wallet's STRK, the token the network fee is paid in on the build's L2. */
-const feeBalanceOf = async (provider: ProviderInterface, owner: string): Promise<bigint> => {
+const feeBalanceOf = (provider: ProviderInterface, owner: string) => tokenBalanceOf(provider, L2_CHAIN.gasToken, owner);
+
+const tokenBalanceOf = async (provider: ProviderInterface, token: string, owner: string): Promise<bigint> => {
   const [low, high] = await provider.callContract({
-    contractAddress: L2_CHAIN.gasToken,
+    contractAddress: token,
     entrypoint: "balance_of",
     calldata: [owner],
   });

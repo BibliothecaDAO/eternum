@@ -5,7 +5,7 @@ import { safeInteger, type NativeRows } from "@bibliothecadao/eternum/game-clien
 
 import { useGoToFrontierPlace } from "../frontier-home";
 import { useRealmStores } from "../realm-stores";
-import { sidesTaken } from "../research/sides-taken";
+import { sidePicks } from "../research/sides-taken";
 import { storeMakerLines } from "./store-makers";
 import { FRONTIER_STORES, isMadeStore, MADE_STORES, type MadeStore } from "../stores";
 import { StoreCard, type StoreLine } from "./store-card";
@@ -15,7 +15,7 @@ export type CardStore = MadeStore;
 export const CARD_STORE_KINDS = MADE_STORES;
 
 /**
- * One store's card over the game's facts: its rate an hour with the sides its row has taken, what it holds against its
+ * One store's card over the game's facts: its rate an hour with each side of its row's research, what it holds against its
  * limit, when it is full, and whether a building makes it. Spending or building closes it on the way there.
  */
 export const FrontierStoreCard = ({
@@ -41,7 +41,7 @@ export const FrontierStoreCard = ({
   const line: StoreLine = {
     kind: store,
     perHour: reading?.perHour,
-    sides: learned === undefined ? undefined : sidesTaken(learned, row),
+    sides: learned === undefined ? undefined : sidePicks(learned, row),
     held: reading?.amount,
     limit: reading?.limit,
     tone: reading?.tone ?? "calm",

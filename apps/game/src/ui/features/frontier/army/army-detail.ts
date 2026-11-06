@@ -28,7 +28,7 @@ export interface ArmyDetailFacts {
   stamina: StaminaBar;
   /** Seconds until the stamina is full; 0 or undefined once it is. */
   secondsToFull: number | undefined;
-  /** What each tile explored sends home, in whole Essence and labor: unknown at a depth with no rule, null in a game whose reveals pay none. */
+  /** What each tile explored sends home, in whole Essence or labor (one of the two a reveal): unknown at a depth with no rule, null in a game whose reveals pay none. */
   revealYield: number | undefined | null;
   progress: Record<AttributeKey, number> & { scoutingKinds: readonly ScoutKind[] };
   points: readonly number[];

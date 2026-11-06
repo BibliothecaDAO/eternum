@@ -1,3 +1,4 @@
+import { pageNavigation } from "@/utils/page-navigation";
 import { DOORWAY_WORDS } from "@/ui/design-system/kit/words";
 import { usePlayRouteReadinessStore } from "@/game-entry/play-route-readiness-store";
 import { HudNotice } from "@/ui/design-system/kit/hud-elements";
@@ -13,7 +14,7 @@ export const SceneFailureNotice = () => {
     <HudNotice
       tone="bad"
       line={failed === "map" ? DOORWAY_WORDS.mapNotDrawn : DOORWAY_WORDS.realmNotDrawn}
-      retry={() => window.location.reload()}
+      retry={() => pageNavigation.reload()}
     />
   );
 };

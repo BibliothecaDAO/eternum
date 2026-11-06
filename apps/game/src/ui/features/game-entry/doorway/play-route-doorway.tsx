@@ -1,3 +1,4 @@
+import { pageNavigation } from "@/utils/page-navigation";
 import { configManager } from "@bibliothecadao/eternum";
 import type { GameClientSetup } from "@bibliothecadao/eternum/game-client";
 import { useSyncExternalStore } from "react";
@@ -63,7 +64,7 @@ export const PlayRouteDoorway = ({
       realm={realm}
       game={entry ?? undefined}
       // The boot retries its own failures; an account that could not be set up retries the whole entry.
-      onRetry={phase === "error" ? retry : () => window.location.reload()}
+      onRetry={phase === "error" ? retry : () => pageNavigation.reload()}
       onOpenRealm={openRealmWithoutMap}
       onSignIn={() => requestSignIn()}
       results={route ? resultsHref(route) : undefined}

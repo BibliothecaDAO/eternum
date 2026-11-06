@@ -3,6 +3,8 @@ import {
   scopeInputKeys,
   gameSyncRowKeys,
   gameSyncScopeKeys,
+  SCOPE_INPUT_MODELS as SCOPE_INPUTS,
+  SCOPE_RULE_MODELS as SCOPE_RULES,
   type GameSyncScope,
 } from "@bibliothecadao/eternum/game-sync-models";
 import type { DecodedRecord } from "./types";
@@ -11,17 +13,10 @@ import type { DecodedRecord } from "./types";
 // scope it can move. Each side is one inversion, so routing, snapshots and scope invalidation read one rule.
 
 /** Rules every expedition scope reads: a change to one reaches every subscription. */
-const SCOPE_RULE_MODELS = new Set(["SliceRules", "GameRegistry", "SettlementRules"]);
+const SCOPE_RULE_MODELS: ReadonlySet<string> = new Set(SCOPE_RULES);
 
 /** Every model subscriptionScope reads: a change to any other model never moves a scope. */
-export const SCOPE_INPUT_MODELS = new Set([
-  ...SCOPE_RULE_MODELS,
-  "PlayerEntry",
-  "Structure",
-  "ExplorerTroops",
-  "TileOccupancy",
-  "ExpeditionSite",
-]);
+export const SCOPE_INPUT_MODELS: ReadonlySet<string> = new Set(SCOPE_INPUTS);
 
 /** The scope-input keys whose rows this scope was taken from, or would be taken from. */
 export function scopeInputInterest(scope: GameSyncScope): Set<string> {

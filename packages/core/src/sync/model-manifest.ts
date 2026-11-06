@@ -147,4 +147,27 @@ export function rowInGameSyncScope(model: string, row: Record<string, unknown>, 
   return keys.some((key) => held.has(key));
 }
 
+/** The rules every expedition scope reads (deriveGameSyncScope): a change to one moves every scope. */
+export const SCOPE_RULE_MODELS = ["SliceRules", "GameRegistry", "SettlementRules"] as const;
+/** Every model an expedition scope is derived from: a change to any other model never moves a scope. */
+export const SCOPE_INPUT_MODELS = [
+  ...SCOPE_RULE_MODELS,
+  "PlayerEntry",
+  "Structure",
+  "ExplorerTroops",
+  "TileOccupancy",
+  "ExpeditionSite",
+] as const;
+
+/**
+ * Whether a scope holds every region-scoped row of the map region at `coord` (its sites, tiles and occupants): one of
+ * the expedition's regions, or any region of a scope that holds every row. Outside it, a missing row says nothing.
+ */
+export function regionInGameSyncScope(scope: GameSyncScope, coord: { x: number; y: number }): boolean {
+  if (holdsEveryScopedRow(scope)) return true;
+  const spacing = scope.expedition?.spacing;
+  const region = spacing === undefined ? undefined : gameSyncRegion({ ...coord, alt: false }, spacing);
+  return region !== undefined && scope.expedition?.regions.has(region) === true;
+}
+
 export { deriveGameSyncScope, scopeInputKeys, scopeLookup } from "./subscription-scope";

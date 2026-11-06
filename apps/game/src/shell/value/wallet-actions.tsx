@@ -14,7 +14,7 @@ import { l2Provider } from "@/runtime/l2-rpc";
 import type { AccountInterface, Call, ProviderInterface } from "starknet";
 
 import { Loading } from "@/shell/loading";
-import { lordsCentsTextOf } from "@/shell/value/ledger";
+import { lordsCentsTextOf, lordsDownToCents, lordsTextOf } from "@/shell/value/ledger";
 import { NoStrkLine } from "@/shell/value/no-strk-line";
 import { WalletUnread } from "@/shell/value/wallet-unread";
 
@@ -29,6 +29,7 @@ import {
   type UncertainSend,
 } from "@/ui/modules/identity/uncertain-sends";
 import {
+  FeeRoomShortError,
   prepareDefaultWalletSend,
   sendFromDefaultWallet,
   sendFromWallet,
@@ -74,9 +75,16 @@ const ProofRows = ({ onProof }: { onProof: (proof: SignInOptions) => void }) => 
  * Only a wallet this browser has never opened is asked for, from the rows, once. A wallet with no STRK for the fee is
  * offered the swap instead; a sent call shows Confirming until its receipt lands, then `onLanded` (the panel reads the
  * ledger again), or the ledger's reason when it reverted. When `owner` is the account's default wallet, its passkey
- * signs instead, its network fee shown and paid in LORDS: no wallet opens and no STRK is needed.
+ * signs instead, its network fee shown and paid in LORDS: no wallet opens and no STRK is needed. A default wallet
+ * holding too little LORDS for the calls and their fee says how much to leave; `onFeeShort`, when a surface can send
+ * less (a plain Send), is offered what the wallet can send beside its fee instead.
  */
-export const WalletSign = (props: { owner: string; calls: Call[]; onLanded: () => void }) => {
+export const WalletSign = (props: {
+  owner: string;
+  calls: Call[];
+  onLanded: () => void;
+  onFeeShort?: (spendable: bigint) => void;
+}) => {
   const { wallet: defaultWallet, failed, retry } = useDefaultWallet();
   const uncertain = useUncertainSend(props.owner, JSON.stringify(props.calls), props.onLanded);
   if (defaultWallet === undefined) return failed ? <WalletUnread onRetry={retry} /> : <Loading />;
@@ -90,6 +98,7 @@ export const WalletSign = (props: { owner: string; calls: Call[]; onLanded: () =
         calls={props.calls}
         onLanded={props.onLanded}
         onUnconfirmed={uncertain.check}
+        onFeeShort={props.onFeeShort}
       />
     ) : (
       <StarknetProvider>
@@ -194,8 +203,15 @@ const OnItsWay = ({
 /** A prepared send is prepared again once it is this old, before the paymaster's time window can close on it. */
 const PREPARED_FOR_MS = 60_000;
 
-/** What the player sees before confirming: the send being prepared and priced, its fee, or why it could not be. */
-type Priced = { kind: "pricing" } | { kind: "priced"; fee: WalletFee | null } | { kind: "unpriced"; line: string };
+/**
+ * What the player sees before confirming: the send being prepared and priced, its fee, more than the wallet holds with
+ * that fee (and what it could send beside it), or why it could not be.
+ */
+type Priced =
+  | { kind: "pricing" }
+  | { kind: "priced"; fee: WalletFee | null }
+  | { kind: "short"; fee: WalletFee; spendable: bigint }
+  | { kind: "unpriced"; line: string };
 
 /**
  * The default wallet's send: prepared and priced as it opens (the paymaster builds it, this page checks it), its
@@ -207,11 +223,13 @@ const PasskeySend = ({
   calls,
   onLanded,
   onUnconfirmed,
+  onFeeShort,
 }: {
   wallet: DefaultWallet;
   calls: Call[];
   onLanded: () => void;
   onUnconfirmed: () => void;
+  onFeeShort?: (spendable: bigint) => void;
 }) => {
   const prepared = useRef<{ send: Promise<PreparedSend>; at: number } | null>(null);
   const [priced, setPriced] = useState<Priced>({ kind: "pricing" });
@@ -221,15 +239,14 @@ const PasskeySend = ({
   // Callers build their calls on each render; the send is prepared again only when what they ask for changes.
   const asked = JSON.stringify(calls);
   const prepare = useCallback(() => {
-    const send = prepareDefaultWalletSend(JSON.parse(asked) as Call[]);
+    const send = prepareDefaultWalletSend(wallet.address, JSON.parse(asked) as Call[], l2Provider());
     prepared.current = { send, at: Date.now() };
     send.then(
       ({ fee }) => prepared.current?.send === send && setPriced({ kind: "priced", fee }),
-      (cause: unknown) =>
-        prepared.current?.send === send && setPriced({ kind: "unpriced", line: failureSentence("send", cause) }),
+      (cause: unknown) => prepared.current?.send === send && setPriced(whyNotPrepared(cause)),
     );
     return send;
-  }, [asked]);
+  }, [wallet.address, asked]);
   useEffect(() => {
     void prepare().catch(() => {});
   }, [prepare]);
@@ -251,10 +268,34 @@ const PasskeySend = ({
       if (sent.kind === "unconfirmed") return onUnconfirmed();
       setState({ kind: "failed", line: sent.kind === "refused" ? sent.reason : VALUE_WORDS.refused });
     } catch (cause) {
-      setState({ kind: "failed", line: failureSentence("send", cause) });
+      // Prepared again and short: the fee's line replaces Confirm, nothing was signed.
+      setState(
+        cause instanceof FeeRoomShortError
+          ? { kind: "ready" }
+          : { kind: "failed", line: failureSentence("send", cause) },
+      );
     }
     prepared.current = null;
   };
+  if (priced.kind === "short") {
+    const fits = lordsDownToCents(priced.spendable);
+    return (
+      <div className="flex w-full flex-col gap-2.5">
+        <span className="text-app-label text-app-bad">
+          {WALLET_WORDS.leaveForFee(lordsCentsTextOf(priced.fee.max, "up"))}
+        </span>
+        {onFeeShort && fits > 0n ? (
+          <AppButton kind="primary" icon="lords" onClick={() => onFeeShort(fits)}>
+            {WALLET_WORDS.sendInstead(lordsTextOf(fits))}
+          </AppButton>
+        ) : (
+          <AppButton kind="primary" icon="refresh" onClick={priceAgain}>
+            {WALLET_WORDS.tryAgain}
+          </AppButton>
+        )}
+      </div>
+    );
+  }
   if (priced.kind === "unpriced")
     return (
       <div className="flex w-full flex-col gap-2.5">
@@ -287,6 +328,12 @@ const PasskeySend = ({
     </div>
   );
 };
+
+/** A send that could not be prepared: short of LORDS for it and its fee, or the failure's sentence. */
+const whyNotPrepared = (cause: unknown): Priced =>
+  cause instanceof FeeRoomShortError
+    ? { kind: "short", fee: cause.fee, spendable: cause.spendable }
+    : { kind: "unpriced", line: failureSentence("send", cause) };
 
 /** A fee built after the one shown that may take more than the player saw. */
 const feeRose = (shown: WalletFee | null, built: WalletFee | null) =>

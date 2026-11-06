@@ -15,6 +15,7 @@ vi.mock("@/ui/modules/identity/passkey", () => ({
 }));
 
 import { identityClient, useIdentitySessionStore } from "@/hooks/context/identity-session";
+import { pageNavigation } from "@/utils/page-navigation";
 import { setViewportWidth } from "../frame/test-viewport";
 import { useRequestSignIn, useConnectStore } from "./connect";
 import { TabBar } from "../frame/tabs";
@@ -428,12 +429,9 @@ describe("Your wallet", () => {
 });
 
 describe("Connect with a provider", () => {
-  // Where the test's provider sends the page: jsdom reports the navigation as not implemented and stays.
+  // Where the test's provider sends the page; the page stays, recording where it was sent.
   const PROVIDER = "https://accounts.google.test/o/oauth2/auth";
-  const navigations = () => {
-    const errors = vi.spyOn(console, "error").mockImplementation(() => {});
-    return () => errors.mock.calls.filter(([error]) => String(error).includes("navigation")).length;
-  };
+  const navigations = () => vi.spyOn(pageNavigation, "open").mockImplementation(() => {});
   const providerButtons = () =>
     [...document.body.querySelectorAll("button")].filter((button) => button.textContent?.startsWith("Continue with"));
 
@@ -453,7 +451,7 @@ describe("Connect with a provider", () => {
     try {
       await press(asked, "Continue with Google");
       expect(start).toHaveBeenLastCalledWith("google", NEXT);
-      expect(left()).toBe(1);
+      expect(left.mock.calls).toEqual([[PROVIDER]]);
     } finally {
       await asked.unmount();
     }

@@ -9,7 +9,36 @@ jobs:
     timeout-minutes: 20
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          sparse-checkout: .github/actions
+      # Only the media the asset checks and the terrain gallery read, found by tracing every file the job's steps open,
+      # stat or list. A step that starts reading anything else fails with ENOENT; add its path here.
+      - uses: ./.github/actions/checkout-without-media
+        with:
+          keep: |
+            apps/game/asset-sources/frontier-beasts/refined
+            apps/game/asset-sources/frontier-painted
+            apps/game/asset-sources/lab/frontier-beasts
+            apps/game/asset-sources/realms/devcon
+            apps/game/asset-sources/workshops
+            apps/game/public/images/buildings/construction
+            apps/game/public/images/icons
+            apps/game/public/images/logos
+            apps/game/public/models/biome-creatures
+            apps/game/public/models/characters/t1-knight-default
+            apps/game/public/models/ethereal
+            apps/game/public/models/frontier
+            apps/game/public/models/new-buildings-opt
+            apps/game/public/models/outposts
+            apps/game/public/models/procedural-terrain
+            apps/game/public/models/realms
+            apps/game/public/models/reward-tiles
+            apps/game/public/models/ships
+            apps/game/public/models/units
+            apps/game/public/textures/realms
+            apps/game/scripts/client-playtest/fixtures
 
       - uses: pnpm/action-setup@v4
         with:

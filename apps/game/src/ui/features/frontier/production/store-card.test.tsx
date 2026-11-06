@@ -2,6 +2,9 @@ import { act } from "react";
 import { createRoot } from "react-dom/client";
 import { describe, expect, it, vi } from "vitest";
 
+import { nativeResearchConstants as research } from "@bibliothecadao/eternum/game-client";
+
+import { sidePicks } from "../research/sides-taken";
 import { StoreCard, type StoreLine } from "./store-card";
 
 const line = (overrides: Partial<StoreLine> & Pick<StoreLine, "kind">): StoreLine => ({
@@ -22,6 +25,16 @@ const renderCard = (card: StoreLine, onSpend = vi.fn(), onBuild = vi.fn()) => {
   act(() => root.render(<StoreCard line={card} onSpend={onSpend} onBuild={onBuild} />));
   return {
     text: () => host.querySelector(`section[aria-label='${card.kind}']`)!.textContent,
+    /** Each research side on the card: its mark (data-side), whether it is drawn, its gem's reading, its line's rate. */
+    sides: () =>
+      [
+        ...host.querySelector(`[data-store-card='${card.kind}']`)!.closest("section")!.querySelectorAll("[data-side]"),
+      ].map((side) => [
+        side.getAttribute("data-side"),
+        side.querySelector(`[data-icon='${side.getAttribute("data-side")}']`) !== null,
+        side.querySelector(".ui-tier")!.getAttribute("aria-label"),
+        side.parentElement!.firstChild!.textContent,
+      ]),
     press: (word: string) =>
       act(() => [...host.querySelectorAll("button")].find((b) => b.textContent === word)!.click()),
     done: () => {
@@ -34,16 +47,29 @@ const renderCard = (card: StoreLine, onSpend = vi.fn(), onBuild = vi.fn()) => {
 describe("a store's card", () => {
   it("says the store's rate, what it holds against its limit and when it is full", () => {
     const card = renderCard(line({ kind: "wheat" }));
-    expect(card.text()).toBe("Wheat+8/minFull in 16h 44m9,640 / 18K");
+    expect(card.text()).toBe("WheatFull in 16h 44m+8/min9,640 / 18K");
     // Found by the store it is for, as the playtest's wheat-store step finds it (steps.mjs).
     expect(document.querySelectorAll('[data-store-card="wheat"]')).toHaveLength(1);
     card.done();
   });
 
+  it("shows each side of its row's research inline after the rate: the side's mark, then its rank gem", () => {
+    // Fields V and Granary III, in the Farm row's two three-bit fields.
+    const card = renderCard(line({ kind: "wheat", sides: sidePicks(5n + (3n << 3n), research.ROW_FARM) }));
+    expect(card.sides()).toEqual([
+      ["fields", true, "V", "+8/min"],
+      ["granary", true, "III", "+8/min"],
+    ]);
+    card.done();
+    const unknown = renderCard(line({ kind: "wheat", sides: undefined }));
+    expect(unknown.sides()).toEqual([]);
+    unknown.done();
+  });
+
   it("says a full store is full and sends the player where it is spent", () => {
     const onSpend = vi.fn();
     const card = renderCard(line({ kind: "labor", held: 18_000, tone: "ember" }), onSpend);
-    expect(card.text()).toBe("Labor0/minFullRealm18K");
+    expect(card.text()).toBe("LaborFullRealm0/min18K");
     card.press("Realm");
     expect(onSpend).toHaveBeenCalledWith("realm");
     card.done();

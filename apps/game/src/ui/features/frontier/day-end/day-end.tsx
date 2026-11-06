@@ -79,17 +79,17 @@ const readiestArmy = (armies: readonly DockArmy[]): DockArmy | undefined =>
   armies.toSorted((left, right) => (right.stamina?.current ?? 0) - (left.stamina?.current ?? 0))[0];
 
 /**
- * The last hour's line in the notices band (owner's pick, 4 November 2026: day end B): when the day ends and how much
- * is left to do, red in its last ten minutes; Open goes to Today, which says what goes. None before the last hour.
+ * The last hour's line in the notices band (owner's pick, 4 November 2026: day end B): when the day ends, red in its
+ * last ten minutes, on one line with Open (owner, 6 November 2026: the count of what is left wrapped it to two rows);
+ * Open goes to Today, which says what is left and what goes. None before the last hour.
  */
-export const DayEndNotice = ({ dayEnd: { clock, items }, onOpen }: { dayEnd: DayEnd; onOpen: () => void }) => {
+export const DayEndNotice = ({ dayEnd: { clock }, onOpen }: { dayEnd: DayEnd; onOpen: () => void }) => {
   if (clock.tone !== "ember" || clock.secondsLeft === undefined) return null;
-  const left = items.length > 0 ? ` · ${DAY_END.toDo(items.length)}` : "";
   return (
     <HudNotice
       tone={dayEndUrgency(clock.secondsLeft)}
       icon="hourglass"
-      line={`${DAY_END.endsIn(clock.day, clock.secondsLeft)}${left}`}
+      line={DAY_END.endsIn(clock.day, clock.secondsLeft)}
       fix={{ label: DAY_END.open, onClick: onOpen }}
     />
   );

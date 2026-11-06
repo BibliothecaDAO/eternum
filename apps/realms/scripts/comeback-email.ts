@@ -1,12 +1,14 @@
 // The Devcon Season 0 comeback email: one email in three variants, sent from the identity Worker's sender (Realms
-// <no-reply@realms.party>, Resend). Every number is read when it runs: the players, the chests won and the LORDS left
-// from Herald, the LORDS price from CoinGecko, a ticket home's daily claim, regular and golden, from the game's
-// LaborRules row; the invite's odds and count from the Devcon campaign (packages/identity/src/campaigns.ts). Each email
-// carries its account's stop link (server/news-email-opt-out.ts) as a footer link and as List-Unsubscribe headers.
-//   pnpm --dir apps/realms comeback-email dry-run [--env dev]        recipients per variant, counts only (read-only)
-//   pnpm --dir apps/realms comeback-email render <dir>               each variant's HTML (header inlined) and text
-//   pnpm --dir apps/realms comeback-email test <address> [--env dev] each variant once to that address's account
-//   pnpm --dir apps/realms comeback-email send <D,N,P> [--discord]   the campaign, after the owner's go
+// <no-reply@realms.party>, Resend). Its words and its send-record key come from a copy folder outside the repo
+// (comeback-copy.ts), checked against the live figures before anything goes. Every figure is read when it runs: the
+// players, the chests won and the LORDS left from Herald, the LORDS price from CoinGecko, a ticket home's daily claim,
+// regular and golden, from the game's LaborRules row; the invite's odds and count from the Devcon campaign
+// (packages/identity/src/campaigns.ts). Each email carries its account's stop link (server/news-email-opt-out.ts) as a
+// footer link and as List-Unsubscribe headers.
+//   pnpm --dir apps/realms comeback-email dry-run --copy <copy> [--env dev]  recipients per variant, counts only
+//   pnpm --dir apps/realms comeback-email render <dir> --copy <copy>         each copy file's HTML (header inlined), text
+//   pnpm --dir apps/realms comeback-email test <address> --copy <copy>       each copy file once to that address
+//   pnpm --dir apps/realms comeback-email send <D,N,P> --copy <copy> [--discord]  the campaign, after the owner's go
 // The environment's Resend key, auth secret and Cloudflare token come from its private directory and are never printed;
 // no player's email address is printed either.
 import { spawnSync } from "node:child_process";
@@ -21,6 +23,16 @@ import playtest from "../../../packages/core/src/sync/season-archives/playtest.j
 import { sendEmail, type Email } from "../../../packages/notifications/src/email";
 import BRAND from "../../../packages/notifications/src/brand.gen.json";
 import { newsEmailOptOutLink } from "../server/news-email-opt-out";
+import {
+  copyFiles,
+  copyFor,
+  fillCopy,
+  loadCopy,
+  type Block,
+  type Copy,
+  type CopyFolder,
+  type Figures,
+} from "./comeback-copy";
 import {
   Activity,
   awaySince,
@@ -43,8 +55,6 @@ import {
 const HERALD = "https://herald.realms.party";
 const GAME = 1;
 const TICKETS = "devcon-2026";
-/** This email's key in the send record (news_email_sends): an account it reached is never sent it again. */
-const NEWS_CAMPAIGN = "devcon-s0-comeback";
 
 /**
  * Where each environment's accounts live, and its app origin as the deployer publishes it
@@ -243,8 +253,8 @@ function d1(target: Target, query: string): Row[] {
  * Reserves the account in the send record before its email goes, in one statement that also checks the account has not
  * stopped news emails, so an interrupted or parallel run never sends it again.
  */
-function reserveSend(target: Target, delivery: Delivery): Reservation {
-  if (d1(target, sendRecord.reserve(NEWS_CAMPAIGN, delivery, Date.now())).length) return "reserved";
+function reserveSend(target: Target, campaign: string, delivery: Delivery): Reservation {
+  if (d1(target, sendRecord.reserve(campaign, delivery, Date.now())).length) return "reserved";
   return d1(target, sendRecord.optedOut(delivery))[0]?.newsEmailOptOutAt != null ? "opted_out" : "taken";
 }
 
@@ -253,59 +263,13 @@ const privateFile = <T>(target: Target, name: string): T =>
 
 // ---- The email ------------------------------------------------------------------------------------------------------
 
-type Claim = ReturnType<typeof campaignHomeClaim>;
-
-interface Variant {
-  subject: (season: Season) => string;
-  /** The variant's first lines: who the reader is to the season, and what waits for them. */
-  opening: (season: Season, claim: Claim) => string;
-  /** What the reader's invite link gives friends and earns the reader (apps/realms/server/campaign-referrals.ts). */
-  invite: (season: Season, golden: boolean) => string;
-  action: string;
-}
-
 /** The Devcon referral as the identity Worker settles it (packages/identity/src/campaigns.ts). */
 const { referral: REFERRAL } = CAMPAIGNS[TICKETS];
-const GOLDEN_ONE_IN = Math.round(1 / REFERRAL.goldenOdds);
-const FRIENDS_GET = `Bring friends into the mist. Each one who signs up through your invite link gets a Devcon realm, and 1 in ${GOLDEN_ONE_IN} of those realms is golden.`;
 
-/** A ticket holder's invite: a golden friend who counts turns the reader golden, and the link at its count does too. */
-const ticketInvite = (s: Season, golden: boolean) => {
-  if (golden)
-    return `Your realm is already golden. ${FRIENDS_GET} Once ${REFERRAL.goldenLinkAt} of them have founded a realm and cleared a site, every friend on your link turns golden too.`;
-  const gold = campaignHomeClaim(s.rules, true);
-  return `${FRIENDS_GET} If a golden friend founds a realm and clears a site, your realm turns golden and claims ${n(gold.labor)} Labor and ${n(gold.essence)} Essence a day. When ${REFERRAL.goldenLinkAt} friends do that, the whole link turns golden, for you and every friend on it.`;
+const n = (value: number) => {
+  if (!Number.isFinite(value)) throw new Error("a figure has no value");
+  return Math.round(value).toLocaleString("en-US");
 };
-
-const VARIANTS: Record<VariantKey, Variant> = {
-  D: {
-    subject: (s) => `${about(s.left)} LORDS are still in the chests. ${daysLeft(s)}.`,
-    opening: (_, claim) =>
-      `Your realm is still standing in the mist. It claims ${n(claim.labor)} Labor and ${n(claim.essence)} Essence every game day, and a day you miss is gone.`,
-    invite: ticketInvite,
-    action: "Back to your realm",
-  },
-  N: {
-    subject: (s) => `Your Devcon realm is waiting. So are ${about(s.left)} LORDS.`,
-    opening: (_, claim) =>
-      `You hold a Devcon ticket, but your realm hasn't been raised yet. One tap creates it, and from then on it claims ${n(claim.labor)} Labor and ${n(claim.essence)} Essence every game day.`,
-    invite: ticketInvite,
-    action: "Create your realm",
-  },
-  P: {
-    subject: (s) => `${n(s.players)} players are after ${n(s.pool)} LORDS. ${daysLeft(s)}.`,
-    opening: () => "You scouted Frontier in the playtest. Season 0 is live, and Devcon players are out in the ruins.",
-    // A home with no ticket and no held Realm claims nothing; the first counted friend gives it a ticket, golden when
-    // that friend is golden. A held Realm's home earns nothing more.
-    invite: (s) => {
-      const claim = campaignHomeClaim(s.rules, false);
-      return `${FRIENDS_GET} The first friend who founds a realm and clears a site earns you a Devcon ticket for your own home, which then claims ${n(claim.labor)} Labor and ${n(claim.essence)} Essence a day. If that friend's realm is golden, so is yours. A home that already claims from a Realm you hold earns nothing extra.`;
-    },
-    action: "Back to Frontier",
-  },
-};
-
-const n = (value: number) => Math.round(value).toLocaleString("en-US");
 /** LORDS left, rounded down to the thousand so "about" never overstates. */
 const about = (lords: number) => n(Math.floor(lords / 1000) * 1000);
 /** A dollar figure to two significant digits: "around $1,000". */
@@ -316,28 +280,36 @@ const daysLeft = (s: Season) => {
   return days <= 0 ? "Last day" : `${WORDS[days] ?? n(days)} day${days === 1 ? "" : "s"} left`;
 };
 /** The season's end as Herald serves it when the run starts, dated, so an extended season reads its new day. */
-const endsLine = (s: Season) => {
+const endsAt = (s: Season) => {
   const end = new Date(s.endsAt * 1000);
   const day = end.toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long", timeZone: "UTC" });
   const time = end.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", timeZone: "UTC" });
-  return `Season 0 ends ${day} at ${time} UTC.`;
+  return `${day} at ${time} UTC`;
 };
 
-/** The words, in order, that both the HTML and the text part say. */
-function paragraphs(variant: Variant, s: Season, golden: boolean) {
+/** Every figure a copy file may name, worded for one reader: their claim is golden when their ticket is. */
+function figuresFor(s: Season, golden: boolean): Figures {
+  const claim = campaignHomeClaim(s.rules, golden);
+  const gold = campaignHomeClaim(s.rules, true);
   return {
-    opening: variant.opening(s, campaignHomeClaim(s.rules, golden)),
-    hunt: `${n(s.players)} players are combing the ruins for ${n(s.pool)} LORDS, and only ${n(s.won)} have been dug up so far. About ${about(s.left)} LORDS (around ${dollars(s.usdLeft)}) still sit in the chests, and ${n(s.prize)} more go to the top three when the season ends.`,
-    ends: endsLine(s),
-    invite: `${variant.invite(s, golden)} Friends count until the season ends.`,
-    inviteWhere: "Your link is on your You page, under Invite friends.",
+    players: n(s.players),
+    pool: n(s.pool),
+    won: n(s.won),
+    left: about(s.left),
+    usdLeft: dollars(s.usdLeft),
+    prize: n(s.prize),
+    daysLeft: daysLeft(s),
+    endsAt: endsAt(s),
+    claimLabor: n(claim.labor),
+    claimEssence: n(claim.essence),
+    goldenLabor: n(gold.labor),
+    goldenEssence: n(gold.essence),
+    goldenOneIn: n(1 / REFERRAL.goldenOdds),
+    goldenLinkAt: n(REFERRAL.goldenLinkAt),
   };
 }
 
-const PREHEADER = `Each friend you bring gets a Devcon realm, and 1 in ${GOLDEN_ONE_IN} of them is golden.`;
 const HEADER_ID = "header";
-/** Where a player finds their own invite link: You, the Invite friends panel (apps/game/src/shell/profile). */
-const INVITE_PATH = "/profile";
 
 /** Who one email is for: their address, their app, their stop link, and whether their ticket is golden. */
 interface Reader {
@@ -347,30 +319,42 @@ interface Reader {
   golden: boolean;
 }
 
-function buildEmail(key: VariantKey, s: Season, reader: Reader, header: string, subjectPrefix = ""): Email {
-  const variant = VARIANTS[key];
-  const words = paragraphs(variant, s, reader.golden);
-  const subject = `${subjectPrefix}${variant.subject(s)}`;
+function buildEmail(
+  copy: CopyFolder,
+  key: VariantKey,
+  s: Season,
+  reader: Reader,
+  header: string,
+  subjectPrefix = "",
+): Email {
+  const words = fillCopy(copyFor(copy, key, reader.golden), figuresFor(s, reader.golden));
+  const subject = `${subjectPrefix}${words.subject}`;
   const text = [
-    words.opening,
-    words.hunt,
-    words.ends,
-    `${variant.action}: ${reader.app}`,
-    words.invite,
-    `${words.inviteWhere} ${reader.app}${INVITE_PATH}`,
+    ...words.blocks.flatMap((block) => textOf(block, words.action, reader)),
     `Realms · Frontier · Devcon Season 0\nSent to ${reader.to}, the email of your Realms account.\nStop these emails: ${reader.optOut}\nPrivacy: ${reader.app}/privacy`,
-  ]
-    .filter(Boolean)
-    .join("\n\n");
+  ].join("\n\n");
   return {
     sender: "Realms",
     to: reader.to,
     subject,
     text,
-    html: emailHtml({ subject, preheader: PREHEADER, words, variant, reader, s }),
+    html: emailHtml(subject, words, reader, s),
     images: [{ id: HEADER_ID, filename: "devcon-season-0.jpg", content: header }],
     headers: { "List-Unsubscribe": `<${reader.optOut}>`, "List-Unsubscribe-Post": "List-Unsubscribe=One-Click" },
   };
+}
+
+/** A block in the text part: the prize board is HTML only; the button and links spell out their address. */
+function textOf(block: Block, action: string, reader: Reader): string[] {
+  if (block.kind === "prizes") return [];
+  if (block.kind === "button") return [`${action}: ${reader.app}`];
+  if (block.kind === "link") return [`${block.text} ${reader.app}${block.path}`];
+  return [block.text];
+}
+
+/** Fills every copy file for its reader, so a copy that cannot be filled stops a run before any email goes. */
+function checkCopy(copy: CopyFolder, s: Season) {
+  for (const file of copyFiles(copy)) fillCopy(file.template, figuresFor(s, file.golden));
 }
 
 const {
@@ -392,7 +376,9 @@ const escape = (value: string) =>
   value.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll('"', "&quot;");
 const row = (padding: string, content: string, style = "") =>
   `<tr><td class="px" style="padding:${padding};${style}">${content}</td></tr>`;
-const reading = `font-family:${BODY};font-size:17px;line-height:26px;color:${CREAM}`;
+/** Paragraphs before the button are read; the ones after it are set smaller. */
+const READING = `font-family:${BODY};font-size:17px;line-height:26px`;
+const AFTER_BUTTON = `font-family:${BODY};font-size:15px;line-height:23px`;
 
 /** One prize figure, drawn large: the number, then what it is. */
 const stat = (figure: string, label: string, colour: string) =>
@@ -408,33 +394,40 @@ function prizeBoard(s: Season) {
   )}${grid([stat(n(s.prize), "LORDS for the top three", VIOLET), stat(n(s.players), "players in the season", VIOLET)])}</table>`;
 }
 
-function emailHtml(e: {
-  subject: string;
-  preheader: string;
-  words: ReturnType<typeof paragraphs>;
-  variant: Variant;
-  reader: Reader;
-  s: Season;
-}) {
+/** One table row per block, spaced by what it follows. */
+function blockRows(blocks: Block[], action: string, reader: Reader, s: Season) {
+  const button = blocks.findIndex((block) => block.kind === "button");
+  return blocks.map((block, index) => {
+    const face = index > button ? AFTER_BUTTON : READING;
+    if (block.kind === "prizes") return row("20px 34px 0", prizeBoard(s));
+    if (block.kind === "button")
+      return row(
+        "28px 40px 0",
+        `<table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr><td style="background:${GOLD};border-radius:8px"><a href="${escape(reader.app)}" style="display:inline-block;padding:15px 30px;font-family:${BODY};font-size:17px;font-weight:700;color:${INK};text-decoration:none">${escape(action)} &rarr;</a></td></tr></table>`,
+      );
+    if (block.kind === "link")
+      return row(
+        "8px 40px 0",
+        `<a href="${escape(`${reader.app}${block.path}`)}" style="${face};color:${GOLD};text-decoration:underline">${escape(block.text)}</a>`,
+      );
+    const padding = index === 0 ? "28px 40px 0" : index === button + 1 ? "32px 40px 0" : "16px 40px 0";
+    const style = {
+      plain: `${face};color:${CREAM}`,
+      bold: `${face};color:${CREAM};font-weight:700`,
+      callout: `${face};color:${CREAM};color:${GOLD2};font-weight:700`,
+    }[block.style];
+    return row(padding, escape(block.text), style);
+  });
+}
+
+function emailHtml(subject: string, words: Copy, reader: Reader, s: Season) {
   const rows = [
     `<tr><td style="padding:0;line-height:0;font-size:0"><img src="cid:${HEADER_ID}" width="600" alt="Realms · Frontier · Devcon Season 0" style="width:100%;max-width:600px;height:auto;display:block;border-radius:12px 12px 0 0"></td></tr>`,
-    row("28px 40px 0", escape(e.words.opening), `${reading};font-weight:700`),
-    row("16px 40px 0", escape(e.words.hunt), reading),
-    row("20px 34px 0", prizeBoard(e.s)),
-    row("16px 40px 0", escape(e.words.ends), `${reading};color:${GOLD2};font-weight:700`),
-    row(
-      "28px 40px 0",
-      `<table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr><td style="background:${GOLD};border-radius:8px"><a href="${escape(e.reader.app)}" style="display:inline-block;padding:15px 30px;font-family:${BODY};font-size:17px;font-weight:700;color:${INK};text-decoration:none">${escape(e.variant.action)} &rarr;</a></td></tr></table>`,
-    ),
-    row("32px 40px 0", escape(e.words.invite), `font-family:${BODY};font-size:15px;line-height:23px;color:${CREAM}`),
-    row(
-      "8px 40px 0",
-      `<a href="${escape(`${e.reader.app}${INVITE_PATH}`)}" style="font-family:${BODY};font-size:15px;line-height:23px;color:${GOLD};text-decoration:underline">${escape(e.words.inviteWhere)}</a>`,
-    ),
+    ...blockRows(words.blocks, words.action, reader, s),
     row("32px 40px 0", `<div style="height:1px;line-height:1px;font-size:0;background:${LINE}">&nbsp;</div>`),
     row(
       "18px 40px 36px",
-      `<a href="${escape(e.reader.app)}" style="color:${GOLD};text-decoration:none;font-weight:700">Realms</a> · Frontier · <span style="color:${VIOLET}">Devcon Season 0</span><br>Sent to ${escape(e.reader.to)}, the email of your Realms account.<br><a href="${escape(e.reader.optOut)}" style="color:${MUTED}">Stop these emails</a> · <a href="${escape(e.reader.app)}/privacy" style="color:${MUTED}">Privacy</a>`,
+      `<a href="${escape(reader.app)}" style="color:${GOLD};text-decoration:none;font-weight:700">Realms</a> · Frontier · <span style="color:${VIOLET}">Devcon Season 0</span><br>Sent to ${escape(reader.to)}, the email of your Realms account.<br><a href="${escape(reader.optOut)}" style="color:${MUTED}">Stop these emails</a> · <a href="${escape(reader.app)}/privacy" style="color:${MUTED}">Privacy</a>`,
       `font-family:${BODY};font-size:13px;line-height:20px;color:${MUTED}`,
     ),
   ];
@@ -445,7 +438,7 @@ function emailHtml(e: {
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="x-apple-disable-message-reformatting">
 <meta name="format-detection" content="telephone=no,address=no,email=no,date=no,url=no">
-<title>${escape(e.subject)}</title>
+<title>${escape(subject)}</title>
 <!--[if mso]><noscript><xml><o:OfficeDocumentSettings><o:PixelsPerInch>96</o:PixelsPerInch></o:OfficeDocumentSettings></xml></noscript><![endif]-->
 <style>
 body{margin:0;padding:0;-webkit-text-size-adjust:100%} table{border-collapse:collapse} img{border:0;outline:none;text-decoration:none}
@@ -453,7 +446,7 @@ body{margin:0;padding:0;-webkit-text-size-adjust:100%} table{border-collapse:col
 </style>
 </head>
 <body style="margin:0;padding:0;background:${NIGHT}">
-<div style="display:none;max-height:0;overflow:hidden;mso-hide:all">${escape(e.preheader)}${"&#847;&zwnj;&nbsp;".repeat(60)}</div>
+<div style="display:none;max-height:0;overflow:hidden;mso-hide:all">${escape(words.preheader)}${"&#847;&zwnj;&nbsp;".repeat(60)}</div>
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:${NIGHT}"><tr><td align="center" style="padding:24px 12px">
 <!--[if mso]><table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0"><tr><td><![endif]-->
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:600px;background:${NIGHT};border:1px solid ${LINE};border-radius:12px">
@@ -542,12 +535,13 @@ function figures(s: Season) {
 /** This moment, in seconds: who has come back is decided against it (`awaySince`). */
 const now = () => Math.floor(Date.now() / 1000);
 
-async function dryRun(target: Target) {
+async function dryRun(target: Target, copy: CopyFolder) {
   const season = await readSeason();
+  checkCopy(copy, season);
   const at = now();
   const visitsSince = visitsSinceOf(target);
   const since = awaySince(at, visitsSince);
-  const record = d1(target, `SELECT realmsId, status FROM news_email_sends WHERE campaign = '${NEWS_CAMPAIGN}'`);
+  const record = d1(target, `SELECT realmsId, status FROM news_email_sends WHERE campaign = '${copy.campaign}'`);
   const reserved = new Set(record.map((row) => row.realmsId));
   /** Reserved by a run that never marked them sent: check them against Resend's log before anything else. */
   const unresolved = record.filter((row) => row.status === "reserved").length;
@@ -582,6 +576,7 @@ async function dryRun(target: Target) {
     JSON.stringify(
       {
         readAt: new Date().toISOString(),
+        campaign: copy.campaign,
         awaySinceUtc: since === null ? null : new Date(since * 1000).toISOString(),
         confirmedBlock: season.confirmedBlock,
         historyBlock: season.activity.heldBlock,
@@ -603,19 +598,17 @@ function leftOutBy(account: Account, at: number, visitsSince: number | null) {
   return isAway({ ...account, lastAction: 0 }, at, visitsSince) ? ("actedOnly" as const) : ("visited" as const);
 }
 
-async function render(dir: string) {
+async function render(dir: string, copy: CopyFolder) {
   const [season, header] = await Promise.all([readSeason(), drawHeader()]);
-  const reader = {
-    to: "player@example.com",
-    app: TARGETS.production.app,
-    optOut: await newsEmailOptOutLink(TARGETS.production.app, "render-only", "0x0"),
-    golden: false,
-  };
+  checkCopy(copy, season);
+  const optOut = await newsEmailOptOutLink(TARGETS.production.app, "render-only", "0x0");
   mkdirSync(dir, { recursive: true });
-  for (const key of Object.keys(VARIANTS) as VariantKey[]) {
-    const email = buildEmail(key, season, reader, header);
-    writeFileSync(`${dir}/${key}.html`, email.html!.replace(`cid:${HEADER_ID}`, `data:image/jpeg;base64,${header}`));
-    writeFileSync(`${dir}/${key}.txt`, `Subject: ${email.subject}\n\n${email.text}\n`);
+  for (const { key, golden } of copyFiles(copy)) {
+    const reader = { to: "player@example.com", app: TARGETS.production.app, optOut, golden };
+    const email = buildEmail(copy, key, season, reader, header);
+    const name = `${dir}/${key}${golden ? ".golden" : ""}`;
+    writeFileSync(`${name}.html`, email.html!.replace(`cid:${HEADER_ID}`, `data:image/jpeg;base64,${header}`));
+    writeFileSync(`${name}.txt`, `Subject: ${email.subject}\n\n${email.text}\n`);
   }
   console.log(
     JSON.stringify({ figures: figures(season), headerKb: Math.round((header.length * 3) / 4 / 1024), wrote: dir }),
@@ -623,33 +616,33 @@ async function render(dir: string) {
 }
 
 /**
- * Each variant once to one address, the subject marked "[TEST X]", with the stop link of the account that address
+ * Each copy file once to one address, the subject marked "[TEST X]", with the stop link of the account that address
  * signs in to. Before each one it checks the account again, and nothing more goes once it has stopped news emails.
  * It logs counts, statuses and receipts only: never the account or its stop link, which can stop its emails.
  */
-async function test(target: Target, to: string) {
+async function test(target: Target, to: string, copy: CopyFolder) {
   if (!/^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/.test(to)) throw new Error("test needs one email address");
   const accountOf = () => d1(target, `SELECT realmsId, newsEmailOptOutAt FROM "user" WHERE email = '${to}'`)[0];
   const account = accountOf();
   if (!account) throw new Error("no account signs in with that address in this environment");
   const [season, header] = await Promise.all([readSeason(), drawHeader()]);
-  const reader = {
-    to,
-    app: target.app,
-    optOut: await optOutLinkOf(target, account.realmsId),
-    golden: false,
-  };
-  for (const key of Object.keys(VARIANTS) as VariantKey[]) {
+  checkCopy(copy, season);
+  const optOut = await optOutLinkOf(target, account.realmsId);
+  for (const { key, golden } of copyFiles(copy)) {
     if (accountOf()?.newsEmailOptOutAt != null) {
-      console.log(JSON.stringify({ variant: key, sent: false, skipped: "opted_out" }));
+      console.log(JSON.stringify({ variant: key, golden, sent: false, skipped: "opted_out" }));
       continue;
     }
-    const response = await sendEmail(resendKey(target), buildEmail(key, season, reader, header, `[TEST ${key}] `));
+    const reader = { to, app: target.app, optOut, golden };
+    const label = `${key}${golden ? " golden" : ""}`;
+    const email = buildEmail(copy, key, season, reader, header, `[TEST ${label}] `);
+    const response = await sendEmail(resendKey(target), email);
     const quota = Object.fromEntries([...response.headers].filter(([name]) => /quota|ratelimit/i.test(name)));
     const body = (await response.json().catch(() => ({}))) as Row;
     console.log(
       JSON.stringify({
         variant: key,
+        golden,
         status: response.status,
         id: body.id ?? null,
         sentAt: new Date().toISOString(),
@@ -666,8 +659,9 @@ async function test(target: Target, to: string) {
  * season is read once, so every email of a run says the same figures; each account is reserved in the send record,
  * with its opt-out checked again, before its email goes.
  */
-async function send(target: Target, variants: readonly VariantKey[], withDiscord: boolean) {
+async function send(target: Target, variants: readonly VariantKey[], withDiscord: boolean, copy: CopyFolder) {
   const [season, header] = await Promise.all([readSeason(), drawHeader()]);
+  checkCopy(copy, season);
   const visitsSince = visitsSinceOf(target);
   const deliveries = (readAccounts(target, season, true, visitsSince !== null) as Recipient[]).flatMap((account) => {
     const variant = variantOf(account, now(), visitsSince);
@@ -687,7 +681,7 @@ async function send(target: Target, variants: readonly VariantKey[], withDiscord
         visitsSince,
       );
     },
-    reserve: async (delivery) => reserveSend(target, delivery),
+    reserve: async (delivery) => reserveSend(target, copy.campaign, delivery),
     send: async (delivery): Promise<Handoff> => {
       const reader = {
         to: delivery.email,
@@ -695,21 +689,22 @@ async function send(target: Target, variants: readonly VariantKey[], withDiscord
         optOut: await optOutLinkOf(target, delivery.realmsId),
         golden: delivery.ticket === "golden",
       };
-      const response = await sendEmail(resendKey(target), buildEmail(delivery.variant, season, reader, header)).catch(
-        () => null,
-      );
+      const response = await sendEmail(
+        resendKey(target),
+        buildEmail(copy, delivery.variant, season, reader, header),
+      ).catch(() => null);
       if (!response || response.status >= 500) return { kind: "unknown" };
       if (!response.ok) return { kind: "refused" };
       const body = (await response.json().catch(() => ({}))) as Row;
       return { kind: "accepted", id: typeof body.id === "string" ? body.id : null };
     },
-    markSent: async (delivery, id) => void d1(target, sendRecord.markSent(NEWS_CAMPAIGN, delivery, id, Date.now())),
-    release: async (delivery) => void d1(target, sendRecord.release(NEWS_CAMPAIGN, delivery)),
+    markSent: async (delivery, id) => void d1(target, sendRecord.markSent(copy.campaign, delivery, id, Date.now())),
+    release: async (delivery) => void d1(target, sendRecord.release(copy.campaign, delivery)),
     pause: () => setTimeout(1000),
   });
   console.log(
     JSON.stringify({
-      campaign: NEWS_CAMPAIGN,
+      campaign: copy.campaign,
       variants,
       withDiscord,
       selected: deliveries.length,
@@ -726,16 +721,18 @@ const resendKey = (target: Target) => privateFile<{ resend: string }>(target, "i
 
 const args = process.argv.slice(2);
 const flag = (name: string) => args.includes(name);
-const envName = args[args.indexOf("--env") + 1];
-const target = flag("--env") ? TARGETS[envName as keyof typeof TARGETS] : TARGETS.production;
+const valueOf = (name: string) => (flag(name) ? args[args.indexOf(name) + 1] : undefined);
+const target = flag("--env") ? TARGETS[valueOf("--env") as keyof typeof TARGETS] : TARGETS.production;
 if (!target) throw new Error("--env is production or dev");
+const copyDir = valueOf("--copy");
+const copy = copyDir ? loadCopy(copyDir) : null;
 const [mode, argument] = args;
-if (mode === "dry-run") await dryRun(target);
-else if (mode === "render" && argument) await render(argument);
-else if (mode === "test" && argument) await test(target, argument);
-else if (mode === "send" && argument && /^[DNP](,[DNP])*$/.test(argument))
-  await send(target, argument.split(",") as VariantKey[], flag("--discord"));
+if (copy && mode === "dry-run") await dryRun(target, copy);
+else if (copy && mode === "render" && argument) await render(argument, copy);
+else if (copy && mode === "test" && argument) await test(target, argument, copy);
+else if (copy && mode === "send" && argument && /^[DNP](,[DNP])*$/.test(argument))
+  await send(target, argument.split(",") as VariantKey[], flag("--discord"), copy);
 else
   throw new Error(
-    "usage: comeback-email.ts dry-run | render <dir> | test <address> | send <D,N,P> [--discord] [--env dev]",
+    "usage: comeback-email.ts dry-run | render <dir> | test <address> | send <D,N,P> [--discord], each with --copy <dir> [--env dev]",
   );

@@ -12,7 +12,12 @@ const identity = vi.hoisted(() => {
       state.session = value;
     },
   };
-  return { originalSession, state, client: { sendSignInCode: vi.fn() }, signedIn: { on: false } };
+  return {
+    originalSession,
+    state,
+    client: { sendSignInCode: vi.fn(), readDefaultWallet: vi.fn() },
+    signedIn: { on: false },
+  };
 });
 vi.mock("@/hooks/context/identity-session", () => ({
   identityClient: identity.client,
@@ -54,6 +59,7 @@ it("answers fixture reads while mounted and restores the real runtime when leavi
   vi.stubGlobal("fetch", network);
   const socket = window.WebSocket;
   const sendCode = identity.client.sendSignInCode;
+  const readWallet = identity.client.readDefaultWallet;
   container = document.createElement("div");
   document.body.append(container);
   root = createRoot(container);
@@ -73,12 +79,15 @@ it("answers fixture reads while mounted and restores the real runtime when leavi
   expect(directory.shards[0].url).toBe("https://lab.invalid");
   await vi.waitFor(() => expect(identity.state.session).not.toBe(identity.originalSession));
   expect(identity.client.sendSignInCode).not.toBe(sendCode);
+  // The lab's player has no Realms wallet: the payout window offers to make one, not a failed read.
+  expect(await identity.client.readDefaultWallet()).toBeNull();
   await act(async () => root!.unmount());
   root = undefined;
   expect(await (await window.fetch("/api/directory")).json()).toEqual({ source: "network" });
   expect(window.fetch).toBe(network);
   expect(window.WebSocket).toBe(socket);
   expect(identity.client.sendSignInCode).toBe(sendCode);
+  expect(identity.client.readDefaultWallet).toBe(readWallet);
   expect(identity.state.session).toBe(identity.originalSession);
 });
 

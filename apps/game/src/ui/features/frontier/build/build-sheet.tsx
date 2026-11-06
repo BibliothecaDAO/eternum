@@ -13,7 +13,6 @@ import type { PriceKind } from "@/ui/design-system/kit/price-faces";
 import type { Refusal } from "@/ui/design-system/kit/refusal";
 import {
   BARRACKS,
-  type Rank,
   BUILD,
   makes,
   needsResearchPurchases,
@@ -362,7 +361,7 @@ const riseLine = (option: BuildOption): string | undefined =>
 
 /** Each independent research side wears its rank, from 0 through V. */
 const gemsOf = ({ sides, tier }: BuildOption): BuildTile["gems"] =>
-  sides ? sides.map(({ icon, picks }) => ({ side: icon, tier: picks as Rank })) : [{ tier }];
+  sides ? sides.map(({ icon, picks }) => ({ side: icon, tier: picks })) : [{ tier }];
 
 /** What one more gives: what it makes a minute, the population room it adds, or the attribute new armies start in. */
 const givesOf = ({ effect }: BuildOption): BuildTile["gives"] =>

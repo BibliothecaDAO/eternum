@@ -1,3 +1,4 @@
+import { pageNavigation } from "@/utils/page-navigation";
 import { FrontierSiteLab } from "./frontier-site-lab";
 import { FrontierBeastLab } from "./frontier-beast-lab";
 import { FrontierPaintedLab } from "./frontier-painted-lab";
@@ -548,7 +549,7 @@ function UnitModelLabView() {
         <div className="ml-error" role="alert">
           <strong>Model review needs attention</strong>
           <p>{error}</p>
-          <button onClick={() => location.reload()}>Reload lab</button>
+          <button onClick={() => pageNavigation.reload()}>Reload lab</button>
         </div>
       )}
     </main>
