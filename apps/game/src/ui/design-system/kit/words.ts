@@ -901,6 +901,8 @@ export const SIGN_IN_WORDS = {
   handoff: "Discord finished elsewhere? Enter its code.",
   handoffCode: "Discord code",
   discordAgain: "Try Discord again",
+  /** On a phone, whose tap opened the Discord app: the same sign-in on Discord's website instead. */
+  discordInBrowser: "Continue in browser",
 } as const;
 
 /** Devcon's landing and its ticket: the realm it promises, the ticket opened, and what each tier gives each day. */

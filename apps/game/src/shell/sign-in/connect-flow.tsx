@@ -1,4 +1,3 @@
-import { pageNavigation } from "@/utils/page-navigation";
 import { SIGN_IN_WORDS, WALLET_WORDS, WORDS } from "@/ui/design-system/kit/words";
 import { IdentityRequestError, type Session } from "@realms-world/identity";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -18,6 +17,8 @@ import { CodeStep } from "./code-step";
 import { claimDefaultName } from "./default-name";
 import { useConnectStore } from "./connect";
 import { ShellWindow } from "../frame/shell-window";
+import { opensDiscordApp } from "./discord-app";
+import { useDiscordAttempt } from "./discord-attempt";
 import { forgetDiscordStart, pendingDiscordStart, rememberDiscordStart, type DiscordPending } from "./discord-pending";
 import { HandoffStep } from "./handoff-step";
 import { ProfileStep } from "./profile-step";
@@ -112,14 +113,21 @@ const AnonymousConnect = ({
   const { run, running, error, setError } = useIdentityAction(returnedFailure);
   useRefreshOnReturn(step.kind === "discord");
 
+  const appHere = opensDiscordApp();
+  const discordOffered = step.kind === "start" && providers.includes("discord");
   // Discord brings the player back to `next`, or to this page; a failure comes back to the same page.
-  const continueWithDiscord = () =>
+  const discord = useDiscordAttempt(next ?? returnPathOf(location), appHere && discordOffered);
+
+  // The address is already there on a phone, so the app opens inside the tap; otherwise it opens once it comes.
+  const goToDiscord = (open: (address: string) => void) => () =>
     void run("discord", async () => {
-      const url = await identityClient.discordSignInUrl(next ?? returnPathOf(location));
+      const address = discord.ready() ?? (await discord.fetch());
+      if (address === null) return;
       rememberDiscordStart(next);
       setStep({ kind: "discord" });
-      pageNavigation.open(url);
+      open(address);
     });
+  const continueWithDiscord = goToDiscord(discord.inApp);
 
   const emailCode = (email: string) =>
     void run("send-code", async () => {
@@ -134,6 +142,7 @@ const AnonymousConnect = ({
           error={error}
           onCode={(code) => run("handoff", async () => applySession(await identityClient.claimDiscordHandoff(code)))}
           onDiscord={continueWithDiscord}
+          onBrowser={appHere ? goToDiscord(discord.inBrowser) : undefined}
           onTyping={() => setError(null)}
         />
       </ShellWindow>
