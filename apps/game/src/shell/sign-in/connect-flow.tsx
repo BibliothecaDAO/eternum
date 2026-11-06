@@ -1,4 +1,3 @@
-import { pageNavigation } from "@/utils/page-navigation";
 import { SIGN_IN_WORDS, WALLET_WORDS, WORDS } from "@/ui/design-system/kit/words";
 import { IdentityRequestError, type Session } from "@realms-world/identity";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -18,6 +17,7 @@ import { CodeStep } from "./code-step";
 import { claimDefaultName } from "./default-name";
 import { useConnectStore } from "./connect";
 import { ShellWindow } from "../frame/shell-window";
+import { openDiscordSignIn } from "./discord-app";
 import { forgetDiscordStart, pendingDiscordStart, rememberDiscordStart, type DiscordPending } from "./discord-pending";
 import { HandoffStep } from "./handoff-step";
 import { ProfileStep } from "./profile-step";
@@ -118,7 +118,7 @@ const AnonymousConnect = ({
       const url = await identityClient.discordSignInUrl(next ?? returnPathOf(location));
       rememberDiscordStart(next);
       setStep({ kind: "discord" });
-      pageNavigation.open(url);
+      openDiscordSignIn(url);
     });
 
   const emailCode = (email: string) =>

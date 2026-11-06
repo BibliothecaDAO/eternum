@@ -831,6 +831,13 @@ describe("identity Worker", () => {
     expect(await claim.json()).toEqual({ code: "OTP_EXPIRED" });
   });
 
+  it("asks Discord for consent, never prompt=none, which hangs the Discord iPhone app's Authorize", async () => {
+    const started = (await (
+      await createBrowser().request("/api/auth/sign-in/social", { body: { provider: "discord", callbackURL: "/" } })
+    ).json()) as { url: string };
+    expect(new URL(started.url).searchParams.get("prompt")).toBe("consent");
+  });
+
   it("refuses a device approval without a session", async () => {
     const response = await createBrowser().request("/api/devices", { body: deviceChangeFor(realmsIdOf("anyone")) });
     expect(response.status).toBe(401);
