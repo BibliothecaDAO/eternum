@@ -14,28 +14,38 @@ jobs:
     # answered where the artifact ships.
 
     steps:
-      - name: Checkout repository
+      - name: Checkout
         uses: actions/checkout@v4
-        # The shallow fetch of the whole 1.3 GB tree took 51-985 s. These binary media (612 MB) are read by no step
-        # or test of this job; a test that starts reading one fails with ENOENT. Text files stay, so the
-        # forbidden-hosts scan reads exactly what it reads in a full checkout.
         with:
-          sparse-checkout-cone-mode: false
-          sparse-checkout: |
-            /*
-            !/apps/game/asset-sources/realms/**/*.blend
-            !/apps/game/asset-sources/realms/**/*.glb
-            !/apps/game/asset-sources/frontier-painted/**/*.glb
-            !/apps/game/public/sound/**/*.mp3
-            !/apps/game/public/sound/**/*.wav
-            !/apps/game/public/sound/**/*.flac
-            !/apps/game/public/gifs/**/*.gif
-            !/apps/game/public/videos/**/*.mp4
-            !/apps/game/public/docs-media/**/*.mp4
-            !/apps/web/public/**/*.png
-            !/apps/web/public/**/*.mp4
-            !/apps/web/public/**/*.webp
-            !/apps/web/public/**/*.jpg
+          sparse-checkout: .github/actions
+      # Only the media the icon check and the client's tests read, found by tracing every file the job's steps open,
+      # stat or list. A step that starts reading anything else fails with ENOENT; add its path here.
+      - uses: ./.github/actions/checkout-without-media
+        with:
+          keep: |
+            apps/game/asset-sources/facets/masters
+            apps/game/asset-sources/frontier-beasts
+            apps/game/asset-sources/lab/realm-level-icons
+            apps/game/asset-sources/lab/rss-icons/before
+            apps/game/asset-sources/lab/rss-icons/history
+            apps/game/asset-sources/reward-chests/originals
+            apps/game/asset-sources/rss-icons/selected
+            apps/game/public/icons/facets
+            apps/game/public/images/blitz-chests
+            apps/game/public/images/buildings/construction
+            apps/game/public/images/covers/link-preview-54d58004.png
+            apps/game/public/images/festival
+            apps/game/public/images/landscapes
+            apps/game/public/images/logos
+            apps/game/public/models/characters/quaternius
+            apps/game/public/models/characters/t1-knight-default
+            apps/game/public/models/ethereal
+            apps/game/public/models/frontier
+            apps/game/public/models/new-buildings-opt
+            apps/game/public/models/outposts
+            apps/game/public/models/realms
+            apps/game/public/models/reward-tiles
+            scripts/icons/fixtures
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v4

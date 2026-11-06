@@ -125,6 +125,10 @@ it("reads on its first step when the stamina is full again and what each tile ex
   const stats = host.querySelector('[data-army-step="stats"]')!;
   expect(stats.textContent).toContain("Full in 4h");
   expect(stats.textContent).toContain("+75 a tile");
+  // A reveal pays one of the two, as the contract draws it: its chip's name says "or", and "a tile" once.
+  expect(stats.querySelector('[aria-label^="Essence"]')!.getAttribute("aria-label")).toBe(
+    "Essence or Labor, +75 a tile",
+  );
 
   // A full army in a game whose reveals pay nothing reads neither.
   act(() =>

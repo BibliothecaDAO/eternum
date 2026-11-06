@@ -31,10 +31,12 @@ export type DayHistory = "waiting" | "failed" | "short" | "whole";
  * so they agree. (The card once counted the game's newest stories instead, which an hour of everyone's play fills: on
  * prod it showed the leading player 1 reveal for 35.) The read keeps the newest stories, so it always holds the ones
  * after the day; a story is its sender's, so one of the player's own there is an act of theirs, from any device.
+ * `coverSnapshot` asks the read to catch up with the snapshot the store holds (useStoryReads), for a reader that takes
+ * the day's stories as all of them.
  */
-export const usePlayerDay = (player: string | null, day: DayBounds | null) => {
+export const usePlayerDay = (player: string | null, day: DayBounds | null, coverSnapshot = false) => {
   const owner = player === null ? undefined : `0x${BigInt(player).toString(16)}`;
-  const stories = useStoryEvents(OWN_STORIES, undefined, owner);
+  const stories = useStoryEvents(OWN_STORIES, undefined, owner, coverSnapshot);
   const span = day && { startMs: day.start * 1_000, endMs: day.end * 1_000 };
   const history = dayHistory(stories, day);
   return {
@@ -46,6 +48,8 @@ export const usePlayerDay = (player: string | null, day: DayBounds | null) => {
         ? ownStoriesOfDay(stories.data, player, { startMs: span.endMs, endMs: Infinity }).length > 0
         : false,
     retry: () => void stories.refetch(),
+    /** The block Herald's history held every story through when it answered; null while unknown. */
+    completeThroughBlock: stories.completeThroughBlock,
   };
 };
 

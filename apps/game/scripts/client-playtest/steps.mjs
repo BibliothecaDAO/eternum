@@ -1886,8 +1886,8 @@ const PLACE_TABS = { Map: "World", Realm: "Realm" };
 
 /**
  * Presses the place bar's switch where there is one (a phone, as it names the place), else the top bar's tab (a
- * desktop). On the map of a realm with an Ethereal layer, where the switch names the layer shown, it chooses the place
- * from the list of views the switch opens.
+ * desktop). For a realm with an Ethereal layer, the switch or the World tab opens the list of views instead, on the map
+ * and in the realm alike: the place is then chosen from that list.
  */
 function pressPlace(browser, place) {
   const presses = [
@@ -1897,7 +1897,9 @@ function pressPlace(browser, place) {
   ];
   for (const press of presses) {
     try {
-      return press();
+      press();
+      if (browser.viewChoices().length > 0) browser.chooseView(PLACE_TABS[place]);
+      return;
     } catch {
       // Not this button: the next way there.
     }

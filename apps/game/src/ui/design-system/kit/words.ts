@@ -6,6 +6,7 @@
 import type { ResolvedGameMode } from "@/config/game-modes/resolved-mode";
 import type { CampaignKey } from "@realms-world/identity";
 import type { NotificationKind, NotificationLevel } from "@bibliothecadao/notifications";
+import type { RuinChest } from "@bibliothecadao/eternum";
 import {
   BuildingType,
   XP,
@@ -82,7 +83,6 @@ export const phraseText = ({ words, reading, readingFirst }: ClockPhrase): strin
 export const DAY_END = {
   endsIn: (day: number | undefined, secondsLeft: number | undefined) =>
     `${DAY} ${day ?? "—"} ends in ${dayLength(secondsLeft)}`,
-  toDo: (count: number) => `${count} left to do`,
   open: "Open",
   goes: "At day end, today's map, its armies and chests go",
   claim: "Claim today's Labor",
@@ -450,6 +450,22 @@ export const ETHEREAL = "Ethereal";
 export const DEPTH_NUMERALS = ["I", "II", "III"] as const;
 /** A depth by its name: "Ethereal II". */
 export const depthName = (depth: 1 | 2 | 3): string => `${ETHEREAL} ${DEPTH_NUMERALS[depth - 1]}`;
+/** A layer's ruin chest today, as the layer switch's marks say it to assistive technology: "Ethereal II: chest taken". */
+export const layerChestLine = (layer: string, chest: RuinChest): string => `${layer}: ${LAYER_CHEST[chest]}`;
+const LAYER_CHEST = {
+  open: "chest to take today",
+  claimed: "chest taken today",
+  unknown: "chest not known without an army there",
+  locked: "not researched",
+} as const satisfies Record<RuinChest, string>;
+/** The day's own layer, as a site's card names its depth (the layer switch calls it World). */
+const SURFACE = "Surface";
+/** A site's depth by its name, 0 the Surface, then Ethereal I to III; loud for a depth the map does not have. */
+export const siteDepthName = (depth: number): string => {
+  if (depth === 0) return SURFACE;
+  if (depth === 1 || depth === 2 || depth === 3) return depthName(depth);
+  throw new Error(`No expedition depth ${depth}`);
+};
 
 /**
  * A realm's spire, its card's words: whose it is, the army it acts for, each depth's entry or why not, and what entering
@@ -1221,6 +1237,10 @@ export const WALLET_WORDS = {
   noFeeLords: "Sending pays a network fee in LORDS, and your wallet holds none.",
   pricing: "Working out the fee",
   feeRose: "The network fee went up. Check it and confirm again.",
+  /** What a send asks for and its fee's max are more than the wallet holds. */
+  leaveForFee: (most: string) => `Leave ${most} LORDS in your wallet for the network fee.`,
+  /** The same send for what the wallet holds less its fee's max. */
+  sendInstead: (lords: string) => `Send ${lords} LORDS instead`,
   walletUnread: "Your Realms wallet could not be read.",
   lostPasskey: "Lost your passkey?",
   recoverTitle: "Recover your wallet",
@@ -1727,9 +1747,12 @@ export const ARMY_DETAIL = {
   /** A Scouting effect on the kind its levels went to: "+10% discovery on Rifts". */
   onKind: (effect: string, kind: string) => `${effect} on ${kind}`,
   scoutingNext: (now: string, step: string) => `${now} · ${step} on the kind you pick`,
-  /** What each tile the army explores sends home, on its stamina row. */
+  /**
+   * What each tile the army explores sends home, on its stamina row: Essence or Labor, one of the two each reveal, as
+   * the contract draws it (exploration_rewards.cairo's reveal_reward). The chip's name reads the label then the amount.
+   */
   revealPays: (amount: string) => `+${amount} a tile`,
-  revealPaysLabel: `${ESSENCE} and ${LABOR} a tile`,
+  revealPaysLabel: `${ESSENCE} or ${LABOR},`,
   levelUp: "Level up",
   levelUps: "Level-ups",
   /** An attribute tile's hover: what its next tier gives and costs, "Rare: +10% → +20% damage · 200 XP". */

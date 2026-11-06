@@ -62,7 +62,7 @@
         "wait": 4000
       }
     ],
-    "crop": "[...document.querySelectorAll('section.app-panel')].find((s) => s.querySelector('h2')?.textContent.trim() === 'Payout wallet')"
+    "crop": "[...document.querySelectorAll('section.app-window')].find((s) => s.querySelector('h2')?.textContent.trim() === 'Payout wallet')"
   },
   {
     "name": "account/mint",
@@ -706,6 +706,12 @@
       },
       {
         "wait": 4000
+      },
+      {
+        "click": "section[aria-label=\"Your wallet\"] .app-window__close"
+      },
+      {
+        "wait": 1000
       }
     ],
     "crop": "[...document.querySelectorAll('section.app-panel')].find((s) => s.querySelector('h2')?.textContent.trim() === 'Account')"

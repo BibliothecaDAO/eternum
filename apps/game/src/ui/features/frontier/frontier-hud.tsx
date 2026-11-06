@@ -41,7 +41,7 @@ import { canResearchNow } from "./research/research-tree";
 import { ChatPage } from "./hud/chat-page";
 import { type DockArmy, useDockArmies } from "./hud/dock-armies";
 import { FrontierNav, type HudSurface } from "./hud/frontier-nav";
-import { layerChoices, layerName, type MapLayers, useMapLayers } from "./hud/map-layers";
+import { layerTab, type MapLayers, useMapLayers } from "./hud/map-layers";
 import { useOnePanel, useOrderSettledReturnsToTheArmy } from "./hud/one-panel";
 import { FrontierDayClock } from "./hud/day-pill";
 import { DayEndBlock, DayEndNotice, useDayEnd } from "./day-end/day-end";
@@ -165,7 +165,7 @@ export const FrontierHud = ({
         },
   });
   const seasonRank = useSeasonRank();
-  const layers = useMapLayers(rules, shown);
+  const layers = useMapLayers(rules, shown, visit ? null : realm);
   // The store card a ring or a plate opened, under the realm card on a desktop and under the strip on a phone.
   const [openStore, setOpenStore] = useState<CardStore | null>(null);
   if (showBlankOverlay) return null;
@@ -266,7 +266,7 @@ export const FrontierHud = ({
     <FrontierDesktop
       season={{ rank: seasonRank, onOpen: () => setSurface("season") }}
       clock={<FrontierDayClock rules={rules} onOpenToday={() => setSurface("today")} />}
-      worldTab={layers ? { label: layerName(layers.shown), menu: layerChoices(layers) } : undefined}
+      worldTab={layers ? layerTab(layers) : undefined}
       realm={
         shown && (
           <FrontierRealmPanel

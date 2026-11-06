@@ -24,6 +24,8 @@ import {
   type TroopType,
 } from "@bibliothecadao/types";
 
+import { siteDepthName } from "@/ui/design-system/kit/words";
+
 import { attackTargetName, type AttackTargetKind } from "./site-marks";
 
 const PRECISION = BigInt(RESOURCE_PRECISION);
@@ -94,9 +96,9 @@ export const readSiteCard = (
     chest: chest && {
       tier: chest.tier,
       amount: Number(chest.amount),
-      depth: ["Surface", "Ethereal I", "Ethereal II", "Ethereal III"][
-        Math.floor(site.row / store.require("SettlementRules", { game_id: site.game_id }).spacing) % 4
-      ]!,
+      depth: siteDepthName(
+        Math.floor(site.row / store.require("SettlementRules", { game_id: site.game_id }).spacing) % 4,
+      ),
       funded:
         chest.amount > 0n &&
         availableRuinLords(store, site.game_id, attack?.timestamp ?? getBlockTimestamp().currentDefaultTick) >=

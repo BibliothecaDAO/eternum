@@ -1,3 +1,4 @@
+import { pageNavigation } from "@/utils/page-navigation";
 import { useWorldAppearanceStore } from "@/hooks/store/use-world-appearance-store";
 import {
   readGraphicsPreferences,
@@ -64,7 +65,7 @@ export function VideoSettings() {
       </HudSetting>
       {waiting && (
         <HudSetting name="Applies after a reload">
-          <HudButton kind="secondary" size="sm" onClick={() => window.location.reload()}>
+          <HudButton kind="secondary" size="sm" onClick={() => pageNavigation.reload()}>
             Reload
           </HudButton>
         </HudSetting>

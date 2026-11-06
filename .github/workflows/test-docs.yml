@@ -14,16 +14,22 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-        # The pages ship images and video from the game's public folder, but no model, Blender source or sound: 558 MB
-        # of the tree, whose fetch timed this job out once. A build that starts to read one fails with ENOENT.
         with:
-          sparse-checkout-cone-mode: false
-          sparse-checkout: |
-            /*
-            !*.glb
-            !*.blend
-            !*.mp3
-            !*.wav
+          sparse-checkout: .github/actions
+      # Only the media the docs pages ship, found by tracing every file the job's steps open, stat or list. A step that
+      # starts reading anything else fails with ENOENT; add its path here.
+      - uses: ./.github/actions/checkout-without-media
+        with:
+          keep: |
+            apps/game/public/docs-media
+            apps/game/public/gifs
+            apps/game/public/icons/facets
+            apps/game/public/images/biomes
+            apps/game/public/images/buildings/construction
+            apps/game/public/images/covers
+            apps/game/public/images/logos
+            apps/game/public/images/ring_pass.png
+            apps/game/public/screenshots
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
       - name: Setup Node

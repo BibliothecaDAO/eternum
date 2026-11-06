@@ -1,3 +1,4 @@
+import { pageNavigation } from "@/utils/page-navigation";
 import { isRealmNumber, registerHomeSource } from "@/services/realm-entry";
 import { HudNotice } from "@/ui/design-system/kit/hud-elements";
 /**
@@ -642,11 +643,7 @@ export const GameEntryModal = ({
       realm={null}
       game={worldMeta ?? undefined}
       onRetry={
-        accountError
-          ? () => window.location.reload()
-          : settleStage === "error"
-            ? () => void handleSettle()
-            : handleRetry
+        accountError ? () => pageNavigation.reload() : settleStage === "error" ? () => void handleSettle() : handleRetry
       }
       onSignIn={() => requestSignIn()}
       onSpectate={handleSpectate}

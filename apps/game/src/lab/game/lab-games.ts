@@ -30,6 +30,7 @@ import { researchScenario } from "./research-scenario";
 import { settleScenario } from "./settle-scenario";
 import { upkeepScenario, spendLordsScenario } from "./upkeep-scenario";
 import { reinforceScenario } from "./reinforce-scenario";
+import { ruinChestsScenario, ruinChestsSurfaceScenario } from "./ruin-chests-scenario";
 
 /** The games the lab plays, by name: each a fixture and the chain's answers to the commands it proves. */
 export const LAB_SCENARIOS: Partial<Record<string, () => LabScenario>> = {
@@ -50,6 +51,8 @@ export const LAB_SCENARIOS: Partial<Record<string, () => LabScenario>> = {
   "low-stamina": lowStaminaScenario,
   "ruin-fight": ruinFightScenario,
   "ruin-far": ruinFarScenario,
+  "ruin-chests": ruinChestsScenario,
+  "ruin-chests-surface": ruinChestsSurfaceScenario,
   camp: campScenario,
   "cleared-camp": clearedCampScenario,
   fight: fightScenario,

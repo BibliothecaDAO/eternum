@@ -4,6 +4,9 @@ import wasm from "vite-plugin-wasm";
 import { defineConfig } from "vitest/config";
 import { ASSET_CHECK_FILES } from "./vitest.assets.files";
 
+/** Every client test file's setup, whatever pool runs it. */
+export const CLIENT_TEST_SETUP = "./src/setupTests.ts";
+
 function workerCap(cap: string | undefined) {
   return cap ? { maxWorkers: Number(cap), minWorkers: 1 } : {};
 }
@@ -21,13 +24,35 @@ export default defineConfig({
     // The shared machine caps test workers with VITEST_MAX_WORKERS, which vitest 2 does not read (only
     // VITEST_MAX_FORKS/THREADS), so local runs took every core but one. Unset, as on CI, vitest keeps its default.
     ...workerCap(process.env.VITEST_MAX_WORKERS),
+    // Each file gets a fresh vm context in a long-lived worker instead of a fresh process: spawning a process,
+    // loading vitest and building jsdom for each of ~940 files was most of the suite's time. A vm context keeps
+    // what it loaded until the worker ends, so a worker past the limit is replaced (4 workers peaked at 10.6 GB
+    // summed RSS without it, 6.8 GB with it).
+    pool: "vmThreads",
+    poolOptions: { vmThreads: { memoryLimit: "1GB" } },
+    // A test's `window` is jsdom's own here, so jsdom's requestAnimationFrame no longer runs on the faked setTimeout:
+    // frames advance with the fake clock only when faked by name.
+    fakeTimers: {
+      toFake: [
+        "setTimeout",
+        "clearTimeout",
+        "setInterval",
+        "clearInterval",
+        "setImmediate",
+        "clearImmediate",
+        "Date",
+        "requestAnimationFrame",
+        "cancelAnimationFrame",
+      ],
+    },
     environment: "jsdom",
     environmentMatchGlobs: [
       ["src/three/**/*.test.ts", "node"],
       ["src/three/**/__tests__/*.test.ts", "node"],
       ["scripts/**/*.test.mjs", "node"],
     ],
-    setupFiles: "./src/setupTests.ts",
+    // The vm pool's file boundary comes after the common setup, which gives jsdom its performance timeline.
+    setupFiles: [CLIENT_TEST_SETUP, "./src/test-isolation/file-boundary.setup.ts"],
     css: true,
     coverage: {
       provider: "v8",
@@ -43,6 +68,9 @@ export default defineConfig({
     },
   },
   resolve: {
+    // react-router-dom names its ESM build only under Node's `module-sync` condition, which Vite 5 does not set, and
+    // a vm context cannot load the CommonJS build it falls back to (that build requires an .mjs file).
+    conditions: ["module-sync"],
     alias: {
       // As in vite.config.ts: public assets precede the source root, since alias matching is first-match.
       "@/assets": path.resolve(__dirname, "./public/assets"),

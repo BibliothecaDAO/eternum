@@ -1,3 +1,4 @@
+import { pageNavigation } from "@/utils/page-navigation";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { type IdentitySessionStatus, useIdentitySession } from "@/hooks/context/identity-session";
 import { useUIStore } from "@/hooks/store/use-ui-store";
@@ -361,6 +362,6 @@ export const usePlayRouteBootController = (): PlayRouteBootControllerState => {
     ...snapshot,
     isReconnectRequired,
     // A scene that did not open retries the whole entry; the boot's own failures retry the bootstrap.
-    retry: bootstrap.error === null && readiness.sceneFailure ? () => window.location.reload() : bootstrap.retry,
+    retry: bootstrap.error === null && readiness.sceneFailure ? () => pageNavigation.reload() : bootstrap.retry,
   };
 };

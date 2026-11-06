@@ -17,7 +17,7 @@ const CALLS = [{ contractAddress: "0x10e5", entrypoint: "mint", calldata: [LINKE
 const unmounts: (() => Promise<void>)[] = [];
 
 /** The send as a panel opens it once its button is pressed, under the development build's replayed effects. */
-const openSend = async () => {
+const openSend = async (onFeeShort?: (spendable: bigint) => void) => {
   (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
   const landed = vi.fn();
   const container = document.createElement("div");
@@ -26,7 +26,7 @@ const openSend = async () => {
   await act(async () =>
     root.render(
       <StrictMode>
-        <WalletSign owner={LINKED} calls={CALLS} onLanded={landed} />
+        <WalletSign owner={LINKED} calls={CALLS} onLanded={landed} onFeeShort={onFeeShort} />
       </StrictMode>,
     ),
   );
@@ -206,7 +206,7 @@ it("shows the Realms wallet's fee in LORDS before its passkey confirms, and open
     const { container, landed } = await openSend();
     await settled(() => expect(buttonsOf(container)).toEqual(["Confirm with your passkey"]));
     expect(container.textContent).toContain("Network fee about 7.89 LORDS, at most 9.12");
-    expect(prepare).toHaveBeenCalledWith(CALLS);
+    expect(prepare).toHaveBeenCalledWith(LINKED, CALLS, expect.anything());
     await press(container, "Confirm with your passkey");
     await settled(() => expect(landed).toHaveBeenCalledOnce());
     expect(sendFromDefault).toHaveBeenCalledWith(
@@ -283,6 +283,49 @@ it("shows why a send could not be prepared (too little LORDS for its fee), and p
     await settled(() => expect(buttonsOf(container)).toEqual(["Confirm with your passkey"]));
     expect(container.textContent).toContain("at most 9.00");
     expect(sendFromDefault).not.toHaveBeenCalled();
+  } finally {
+    signOut();
+    vi.restoreAllMocks();
+  }
+});
+
+it("says how much LORDS to leave for the fee, offers what fits beside it, and signs nothing", async () => {
+  const send = await import("@/ui/modules/identity/wallet-send");
+  // 100 LORDS held; the send built at review may take a fee of up to 35.142608 LORDS.
+  const fee = { estimated: 11_000_000_000_000_000_000n, max: 35_142_608_000_000_000_000n };
+  vi.spyOn(send, "prepareDefaultWalletSend").mockRejectedValue(new send.FeeRoomShortError(fee, 100n * LORDS));
+  const sendFromDefault = vi.spyOn(send, "sendFromDefaultWallet");
+  const { signOut } = await withRealmsWallet();
+  try {
+    const fit = vi.fn();
+    const { container } = await openSend(fit);
+    await settled(() => expect(buttonsOf(container)).toEqual(["Send 64.85 LORDS instead"]));
+    expect(container.textContent).toContain("Leave 35.15 LORDS in your wallet for the network fee.");
+    await press(container, "Send 64.85 LORDS instead");
+    expect(fit).toHaveBeenCalledWith(64_850_000_000_000_000_000n);
+    expect(sendFromDefault).not.toHaveBeenCalled();
+  } finally {
+    signOut();
+    vi.restoreAllMocks();
+  }
+});
+
+it("says how much LORDS to leave for the fee where the amount is fixed (an entry), and prices it again on Try again", async () => {
+  const send = await import("@/ui/modules/identity/wallet-send");
+  const fee = { estimated: 11n * LORDS, max: 35n * LORDS };
+  let held = 100n * LORDS;
+  vi.spyOn(send, "prepareDefaultWalletSend").mockImplementation(async () => {
+    if (held < 105n * LORDS) throw new send.FeeRoomShortError(fee, held);
+    return preparedPaying(fee.max);
+  });
+  const { signOut } = await withRealmsWallet();
+  try {
+    const { container } = await openSend();
+    await settled(() => expect(buttonsOf(container)).toEqual(["Try again"]));
+    expect(container.textContent).toContain("Leave 35.00 LORDS in your wallet for the network fee.");
+    held = 120n * LORDS;
+    await press(container, "Try again");
+    await settled(() => expect(buttonsOf(container)).toEqual(["Confirm with your passkey"]));
   } finally {
     signOut();
     vi.restoreAllMocks();

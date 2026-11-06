@@ -112,7 +112,7 @@ beforeEach(async () => {
   (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
   localStorage.clear();
   useDepositPaymentStore.setState({ payment: null });
-  vi.spyOn(sends, "prepareDefaultWalletSend").mockImplementation(async (calls) => prepared(calls));
+  vi.spyOn(sends, "prepareDefaultWalletSend").mockImplementation(async (_owner, calls) => prepared(calls));
   const host = document.createElement("div");
   document.body.append(host);
   const root = createRoot(host);
@@ -242,7 +242,7 @@ it("closed while a stale fee is priced again, opens no passkey and sends nothing
   now += 120_000;
   let release!: () => void;
   vi.mocked(sends.prepareDefaultWalletSend).mockImplementationOnce(
-    (calls) => new Promise((resolve) => (release = () => resolve(prepared(calls)))),
+    (_owner, calls) => new Promise((resolve) => (release = () => resolve(prepared(calls)))),
   );
   await press("Confirm with your passkey");
   await press("Close");

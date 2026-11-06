@@ -104,6 +104,9 @@ export const lordsCentsTextOf = (wei: bigint, rounding: "up" | "down"): string =
   return `${cents / 100n}.${String(cents % 100n).padStart(2, "0")}`;
 };
 
+/** Wei cut down to whole cents of LORDS: an amount offered to send, written as lordsCentsTextOf shows it. */
+export const lordsDownToCents = (wei: bigint): bigint => wei - (wei % (LORDS_UNIT / 100n));
+
 /** LORDS still to find, in whole units rounded up: 0.4 short is 1 more, never 0. */
 export const lordsShortOf = (wei: bigint): number => Number((wei + LORDS_UNIT - 1n) / LORDS_UNIT);
 
