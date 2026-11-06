@@ -34,7 +34,7 @@ interface DeviceChangeDependencies {
 
 /**
  * POST /api/devices: the guardian's approval for one device change on the caller's own account. The account must be
- * the one the caller's Realms id places on every shard, and the caller must have signed in through Discord or an email
+ * the one the caller's Realms id places on every shard, and the caller must have signed in through a provider or an email
  * code, so no account without a verified way in obtains an approval.
  */
 export const handleDeviceChange = (request: Request, dependencies: DeviceChangeDependencies): Promise<Response> =>

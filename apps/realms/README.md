@@ -45,10 +45,10 @@ not answer is a retry, not a refusal. The wallet's Realm list for the picker com
 lookup selects the environment book directly.
 
 The client and Workers share the address book through `environmentL2`. The deployment workflow does not override its
-chain or ledger. The single `L2_RPC_URL` secret serves the Worker and the browser build. Discord is offered only when
-both optional credentials are configured; email code sign-in uses the required Resend key. The deployment script
-supplies the required generated VAPID pair; the push contact, notifier interval and account class are code constants.
-Operators configure and deploy the environment.
+chain or ledger. The single `L2_RPC_URL` secret serves the Worker and the browser build. Each sign-in provider (Google,
+Apple, Discord, X) is offered only when both its credentials are configured, and one set alone fails the environment;
+email code sign-in uses the required Resend key. The deployment script supplies the required generated VAPID pair; the
+push contact, notifier interval and account class are code constants. Operators configure and deploy the environment.
 
 ## Campaign tickets and founded free homes
 

@@ -4,7 +4,7 @@ import { presentsOperatorToken, VISIT_RECORD_SECONDS } from "@realms-world/ident
 import type { IdentityAuth } from "./auth";
 import { routeChat } from "./chat/routes";
 import { handleBotDeviceApproval, handleDeviceChange } from "./devices";
-import { claimDiscordHandoff, returnFromDiscord, startSocialSignIn } from "./discord-handoff";
+import { claimSocialHandoff, returnFromProvider, startSocialSignIn } from "./social-handoff";
 import {
   handleAdmitShard,
   handleDirectory,
@@ -67,11 +67,12 @@ export const routeIdentityRequest = async (
     return json({ providers: Object.keys(socialProvidersOf(env)) });
   if (pathname === "/api/auth/sign-in/social" && request.method === "POST")
     return startSocialSignIn(request, auth, env);
-  if (pathname === "/api/auth/callback/discord" && request.method === "GET")
-    return returnFromDiscord(request, auth, env);
-  if (pathname === "/api/auth/discord-handoff" && request.method === "POST") {
+  // Every provider's return (Apple's POST is turned into this GET by better-auth).
+  if (pathname.startsWith("/api/auth/callback/") && request.method === "GET")
+    return returnFromProvider(request, auth, env);
+  if (pathname === "/api/auth/social-handoff" && request.method === "POST") {
     if (!(await withinPublicBudget(env, "sign-in-code", request))) return json({ error: "too_many_attempts" }, 429);
-    return claimDiscordHandoff(request, env);
+    return claimSocialHandoff(request, env);
   }
   if (pathname.startsWith("/api/auth/")) return auth.handler(request);
   // A news email's stop link: its signature is its authority, and a mail client's one-click POST carries no Origin.

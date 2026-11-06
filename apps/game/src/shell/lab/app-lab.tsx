@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { Navigate, Route, Routes, useParams } from "react-router-dom";
 
 import { identityClient, useIdentitySessionStore } from "@/hooks/context/identity-session";
-import { IdentityRequestError } from "@realms-world/identity";
+import { IdentityRequestError, SOCIAL_PROVIDERS } from "@realms-world/identity";
 
 import { BlitzLobbyPage } from "../blitz/blitz-pages";
 import { BuildOrdersPage } from "../build-orders/build-orders-page";
@@ -275,7 +275,7 @@ const answerAppReads = (screen: LabScreen, field: number | null) => {
  */
 const answerIdentity = (screen: LabScreen) => {
   identityClient.listSignInProviders = async () => ["discord"];
-  identityClient.availableSignInProviders = async () => ["discord"];
+  identityClient.availableSignInProviders = async () => [...SOCIAL_PROVIDERS];
   identityClient.sendSignInCode = async () => ({ success: true, expires_at: Date.now() + 300_000 });
   const spend = async (code: unknown) => {
     if (code !== LAB_EMAIL_CODE) throw new IdentityRequestError(400, "INVALID_OTP");

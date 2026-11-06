@@ -3,6 +3,13 @@
  * code, the session's life, the portraits and the display name.
  */
 
+/**
+ * The accounts a player can sign in with besides an emailed code, by better-auth's provider ids, in the order the
+ * sign-in sheet offers them. The identity service offers one only while its OAuth client is configured.
+ */
+export const SOCIAL_PROVIDERS = ["google", "apple", "discord", "twitter"] as const;
+export type SocialProvider = (typeof SOCIAL_PROVIDERS)[number];
+
 /** A sign-in code's digits, and how long it signs in after it is sent. */
 export const SIGN_IN_CODE_LENGTH = 6;
 export const SIGN_IN_CODE_SECONDS = 10 * 60;
@@ -40,7 +47,7 @@ export const nameRuleViolation = (name: string): string | null => {
 };
 
 /**
- * A display name to offer a new player, from their Discord name: disallowed characters dropped, cut to the rules'
+ * A display name to offer a new player, from the name their sign-in provider knows: disallowed characters dropped, cut to the rules'
  * length. Null when nothing valid is left; the player can always type their own.
  */
 export const suggestedNameOf = (source: string): string | null => {

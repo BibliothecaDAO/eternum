@@ -161,7 +161,7 @@ const ACCOUNT_PAGES = {
   "settings-sign-out": { path: "home/profile/settings", place: "You", press: "Sign out" },
   "connect-start": { path: "first-visit/connect/start", place: "Play" },
   "connect-code": { path: "first-visit/connect/code", place: "Play" },
-  "connect-discord": { path: "first-visit/connect/discord", place: "Play" },
+  "connect-handoff": { path: "first-visit/connect/handoff", place: "Play" },
   "connect-name": { path: "first-visit/connect/name", place: "Play" },
   "connect-name-refused": { path: "first-visit/connect/name-refused", place: "Play" },
   "connect-name-email": { path: "first-visit/connect/name-email", place: "Play" },
