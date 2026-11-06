@@ -58,21 +58,31 @@ export type RuinChests = readonly [RuinChest, RuinChest, RuinChest, RuinChest];
 type ChestReader = Pick<NativeFactStore, "get" | "inGame" | "requireOrAbsent" | "subscriptionScope">;
 
 /**
+ * Today's clears as the home's own history shows them: the depths it places, and whether it is `complete`, holding
+ * every story of the day through the snapshot the store holds, each payout placed.
+ */
+export interface RuinHistory {
+  cleared: ReadonlySet<number>;
+  complete: boolean;
+}
+const NO_HISTORY: RuinHistory = { cleared: new Set(), complete: false };
+
+/**
  * Each depth's ruin chest today for a home, the Surface then Ethereal I to III. The contract keeps the per-depth
- * entitlement in storage no row carries, so it is read from what does. `historyClears` is the depths the home's own
- * history (Herald's immutable sink) shows cleared today when that history holds the whole day, else null: it is then
- * the whole answer, every other depth open. Without it: the home's clear receipts in each depth's band of today's map
- * (claimed), and today's discovery row, which every home receives whatever its armies' positions and which says whether
- * any ruin was cleared today. A receipt is held only while its region is in the client's scope, so a depth with none is
- * open only when nothing was cleared today or its region is held; else it is unknown, never open. Locked past the
- * deepest layer researched. None outside the season, before per-depth ruins, or while the release is unknown.
+ * entitlement in storage no row carries, so it is read from what does. Claimed: the home's clear receipts in each
+ * depth's band of today's map, and the depths its own history (Herald's immutable sink) shows cleared today. Open: a
+ * depth neither shows is open when that history is `complete` (it holds the whole day through the snapshot the store
+ * holds, and places every payout) and today's discovery row does not contradict it (a clear the history lacks); or when
+ * the discovery row, which every home receives whatever its armies' positions, says nothing was cleared today; or when
+ * the depth's region is in the client's scope, where a missing receipt means none. Else unknown, never open. Locked past
+ * the deepest layer researched. None outside the season, before per-depth ruins, or while the release is unknown.
  */
 export function ruinChestsToday(
   store: ChestReader,
   rules: ExpeditionRules,
   realm: Pick<NativeRows["Structure"], "game_id" | "entity_id">,
   nowSeconds: number,
-  historyClears: ReadonlySet<number> | null = null,
+  history: RuinHistory = NO_HISTORY,
 ): RuinChests | null {
   const today = seasonDay(rules, nowSeconds);
   if (today === null || !perDepthRuins(store, realm.game_id)) return null;
@@ -82,18 +92,20 @@ export function ruinChestsToday(
     const band = homeClearBand(row, home, rules.spacing);
     if (band !== null && Math.floor(band / 4) === today) claimed.add(band % 4);
   }
-  const nothingClearedToday =
-    store.requireOrAbsent("ExpeditionDiscovery", {
-      game_id: realm.game_id,
-      structure_id: realm.entity_id,
-      epoch: BigInt(today),
-    }).known?.ruin_cleared === false;
+  const discovery = store.requireOrAbsent("ExpeditionDiscovery", {
+    game_id: realm.game_id,
+    structure_id: realm.entity_id,
+    epoch: BigInt(today),
+  }).known;
+  const nothingClearedToday = discovery?.ruin_cleared === false;
+  // A history that shows no clear while the discovery row has one lags the facts: it proves nothing.
+  const historyProves = history.complete && !(discovery?.ruin_cleared === true && history.cleared.size === 0);
   const held = depthRegionHeld(store, rules, home, nowSeconds);
   const deepest = researchedDepth(store, realm.game_id, realm.entity_id) ?? 0;
   const chest = (depth: number): RuinChest => {
     if (depth > deepest) return "locked";
-    if (claimed.has(depth) || historyClears?.has(depth)) return "claimed";
-    return historyClears || nothingClearedToday || held(depth) ? "open" : "unknown";
+    if (claimed.has(depth) || history.cleared.has(depth)) return "claimed";
+    return historyProves || nothingClearedToday || held(depth) ? "open" : "unknown";
   };
   return [chest(0), chest(1), chest(2), chest(3)];
 }

@@ -1,6 +1,7 @@
 import { useNowSeconds } from "@/hooks/helpers/use-block-timestamp";
 import { useNativeFacts } from "@/hooks/helpers/use-native-facts";
 import { useAccountStore } from "@/hooks/store/use-account-store";
+import { useConnectionStore } from "@/hooks/store/use-connection-store";
 import { useQuery } from "@/hooks/helpers/use-query";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { openPlace } from "@/play/navigation/open-place";
@@ -27,7 +28,7 @@ import { SCOPE_INPUT_MODELS } from "@bibliothecadao/eternum/game-sync";
 
 import { reachMark } from "../depth-art";
 import { usePlayerDay } from "../log/player-day";
-import { historyRuinDepths } from "./ruin-clears";
+import { historyRuinClears } from "./ruin-clears";
 
 /** A layer the map shows: the day's surface, the world (0), or an Ethereal layer below it. */
 export type MapLayer = 0 | EtherealLayer;
@@ -155,12 +156,17 @@ const useRuinChests = (rules: ExpeditionRules, realm: NativeRows["Structure"] | 
   const facts = useNativeFacts(CHEST_MODELS);
   const now = useNowSeconds();
   const player = useAccountStore((state) => state.account?.address ?? null);
+  const snapshotBlock = useConnectionStore((state) => state.snapshotBlock);
   const day = dayOf(rules, now);
-  const played = usePlayerDay(player, day);
+  const played = usePlayerDay(player, day, true);
   if (!realm) return null;
+  // The history vouches for the facts only once it holds every story through the snapshot the store holds.
+  const coversSnapshot =
+    played.completeThroughBlock !== null && snapshotBlock !== null && played.completeThroughBlock >= snapshotBlock;
   // A read with no player holds none of their stories, so it proves nothing.
-  const clears = day && player ? historyRuinDepths(played, realm.entity_id, rules, day.index) : null;
-  return ruinChestsToday(facts.store, rules, realm, now, clears);
+  const history =
+    day && player ? historyRuinClears(played, coversSnapshot, realm.entity_id, rules, day.index) : undefined;
+  return ruinChestsToday(facts.store, rules, realm, now, history);
 };
 
 /**

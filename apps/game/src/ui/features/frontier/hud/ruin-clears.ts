@@ -1,4 +1,4 @@
-import { entityHomeNamespace, type ExpeditionRules } from "@bibliothecadao/eternum";
+import { entityHomeNamespace, type ExpeditionRules, type RuinHistory } from "@bibliothecadao/eternum";
 import { StructureType } from "@bibliothecadao/types";
 
 import type { DayHistory } from "../log/player-day";
@@ -7,26 +7,27 @@ import type { DayHistory } from "../log/player-day";
 type DayStory = { story: string; storyPayload: Record<string, unknown>; tx_hash: string };
 
 /**
- * The depths a home cleared its ruin at today, from the player's own history of the day (Herald's immutable sink, read
- * once by usePlayerDay): each ruin payout naming the home, placed by the winning battle of its transaction, as a
- * payout names no tile. None unless the history holds the whole day and every such payout has its battle there, so a
- * story the read lacks never reads as a chest still to take.
+ * Today's ruin clears of a home in the player's own history of the day (Herald's immutable sink, read by usePlayerDay,
+ * with what the stream delivered since): each ruin payout naming the home, placed by the winning battle of its
+ * transaction, as a payout names no tile. Complete only when the read holds the whole day through the snapshot the
+ * store holds (`coversSnapshot`) and places every payout, so a story the read lacks never reads as a chest still there.
  */
-export const historyRuinDepths = (
+export const historyRuinClears = (
   day: { stories: readonly DayStory[]; history: DayHistory },
+  coversSnapshot: boolean,
   home: number | bigint,
   rules: ExpeditionRules,
   today: number,
-): ReadonlySet<number> | null => {
-  if (day.history !== "whole") return null;
-  const depths = new Set<number>();
+): RuinHistory => {
+  const cleared = new Set<number>();
+  let placed = true;
   for (const payout of day.stories) {
     if (!isHomeRuinPayout(payout, home)) continue;
     const band = battleBand(day.stories, payout, rules.spacing);
-    if (band === null) return null;
-    if (Math.floor(band / 4) === today) depths.add(band % 4);
+    if (band === null) placed = false;
+    else if (Math.floor(band / 4) === today) cleared.add(band % 4);
   }
-  return depths;
+  return { cleared, complete: day.history === "whole" && coversSnapshot && placed };
 };
 
 /** A ruin's payout to this home (its realm's namespace, as the contract's entitlement keys it). */
