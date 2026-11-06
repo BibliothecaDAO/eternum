@@ -13,7 +13,7 @@ import {
 import { botRealmsId, deviceChangeHash, realmsAccountAddress } from "@realms-world/identity/account";
 import { createGuardian } from "@realms-world/guardian";
 import { byteArray, CallData, ec, hash, outsideExecution, typedData, type TypedData } from "starknet";
-import { afterAll, beforeAll, describe, expect, it, onTestFinished, vi } from "vitest";
+import { afterAll, beforeAll, beforeEach, describe, expect, it, onTestFinished, vi } from "vitest";
 
 import { Effect } from "effect";
 import { deliverWalletNotices, type SendWalletNotice } from "./wallet-changes";
@@ -36,6 +36,20 @@ import { accountKey } from "./campaign-entry";
 import { ORIGIN } from "./workerd-harness";
 import { createTestD1 } from "./test-d1";
 import { sendCampaign, stillFits, visitRecord } from "../scripts/comeback-campaign";
+
+/**
+ * Holds this test's clock an hour short of the Devcon close (2026-11-06 18:00Z), so a campaign test keeps testing the
+ * open campaign after the real close; a test of the close sets its own time past it. Only campaign tests take it: the
+ * rest keep the real clock their stored timestamps are compared against.
+ */
+function holdDevconOpen() {
+  const open = CAMPAIGNS["devcon-2026"].redeemUntil * 1000 - 3_600_000;
+  if (Date.now() <= open) return;
+  vi.useFakeTimers({ toFake: ["Date"], now: open, shouldAdvanceTime: true });
+  onTestFinished(() => {
+    vi.useRealTimers();
+  });
+}
 
 const GUARDIAN_KEY = "0x2dccce1da22003777062ee0870e9881b460a8b7eca276870f57c601f182136c";
 const CHAIN_ID = "0x5245414c4d535f53484152445f41";
@@ -1179,6 +1193,7 @@ describe("identity Worker", () => {
   };
 
   describe("flyer redemption", () => {
+    beforeEach(holdDevconOpen);
     const printed = async (code: string, tier: "regular" | "golden") =>
       env.DB.prepare('INSERT INTO "campaign_codes" ("campaign", "code_hash", "tier") VALUES (?, ?, ?)')
         .bind("devcon-2026", await campaignCodeHash("devcon-2026", code), tier)
@@ -1311,6 +1326,7 @@ describe("identity Worker", () => {
   });
 
   it("recovers a founded free home through the operator draw, preserving the ticket on retry", async () => {
+    holdDevconOpen();
     const shard = "https://recovery-season.test";
     onTestFinished(async () => {
       await env.DB.prepare("DELETE FROM shards WHERE url = ?").bind(shard).run();
@@ -1343,6 +1359,7 @@ describe("identity Worker", () => {
   });
 
   it("prints flyers whose codes, once loaded, give exactly the print run's golden count of golden tickets", async () => {
+    holdDevconOpen();
     const out = mkdtempSync(join(tmpdir(), "campaign-codes-"));
     const generate = () =>
       execFileSync("pnpm", ["campaign-codes", "devcon-2026", "24", "https://play.dev-realms.party", out], {
@@ -1398,6 +1415,7 @@ describe("identity Worker", () => {
   }, 60_000);
 
   it("keeps a flyer unspent for a home with a source, or while a shard cannot say", async () => {
+    holdDevconOpen();
     const shard = "https://devcon-season.test";
     await env.DB.prepare(`INSERT INTO shards (url, chainId, status, addedAt) VALUES (?, '0xdc', 'active', ?)`)
       .bind(shard, Date.now())
@@ -1468,6 +1486,7 @@ describe("identity Worker", () => {
   }, 30_000);
 
   describe("referrals", () => {
+    beforeEach(holdDevconOpen);
     const shard = "https://referral-season.test";
     const campaign = "devcon-2026";
     /** Homes founded in the referral shard's Devcon game, by account: their source and the season board's view of them. */

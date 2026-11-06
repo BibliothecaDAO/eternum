@@ -16,15 +16,28 @@ vi.mock("../herald", async (original) => ({
   useDirectory: () => ({ data: { games: [] }, isError: false }),
 }));
 
-import type { CampaignReferral } from "@realms-world/identity";
+import { CAMPAIGNS, type CampaignReferral } from "@realms-world/identity";
 import { MemoryRouter } from "react-router-dom";
 
 import { setViewportWidth } from "../frame/test-viewport";
 import { InvitePanel } from "./invite-panel";
+import { DEVCON } from "../join/devcon";
 
 let host: HTMLDivElement;
 let root: Root;
 let client: QueryClient;
+/**
+ * Holds each test's clock an hour short of the Devcon close (2026-11-06 18:00Z), so the panel keeps showing the open
+ * campaign after the real close.
+ */
+beforeEach(() => {
+  const open = CAMPAIGNS[DEVCON.campaign].redeemUntil * 1000 - 3_600_000;
+  if (Date.now() > open) vi.useFakeTimers({ toFake: ["Date"], now: open, shouldAdvanceTime: true });
+  return () => {
+    vi.useRealTimers();
+  };
+});
+
 beforeEach(() => {
   (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
   localStorage.clear();
