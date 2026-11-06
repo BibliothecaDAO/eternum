@@ -1,4 +1,4 @@
-import { GAME_ENTRYPOINTS } from "./entrypoints";
+import { GAME_ENTRYPOINTS } from "../../../packages/value-ledger/src/shard-entrypoints";
 import { hash } from "starknet";
 import { expect, test } from "bun:test";
 import { startReadRpc } from "../scripts/read-rpc";
