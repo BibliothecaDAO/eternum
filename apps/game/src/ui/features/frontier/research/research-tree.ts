@@ -22,6 +22,7 @@ import { BuildingType, formatExact, formatFigure, formatPercent, rankName } from
 import { POINT_CHOICES, availableScoutingChoices, scoutingChoices, type AttributeKey } from "../progression-choices";
 
 import { buildingIcon, buildingName } from "../build/building-names";
+import { sideMarks } from "./sides-taken";
 
 /**
  * The castle's tree as research.cairo and construction.cairo rule it, read from a realm's facts: every node a player
@@ -269,20 +270,24 @@ export const readResearchTree = (realm: RealmResearchFacts): TreeNode[] => {
     };
   };
 
-  type SideRule = { icon: IconMeaning; words: readonly [string, string]; at: (picks: number) => string };
-  /** Fields, Tools or Drill against Granary, Storeroom or Rations: what one more pick of each adds. */
-  const twoSides = (row: number, make: SideRule, other: SideRule) => ({
-    sides: (): SideEffect[] =>
-      [make, other].map((side, index) => ({
-        choice: index,
-        icon: side.icon,
-        name: side.words[0],
-        line: side.words[1],
-        now: side.at(picks(row, index)),
-        next: side.at(Math.min(5, picks(row, index) + 1)),
-      })),
-    taken: () => learned(row).sides.map((side) => (side === 0 ? make.icon : other.icon)),
-  });
+  type SideRule = { words: readonly [string, string]; at: (picks: number) => string };
+  /** Fields, Tools or Drill against Granary, Storeroom or Rations: what one more pick of each adds, under its mark. */
+  const twoSides = (row: number, make: SideRule, other: SideRule) => {
+    const [makeMark, otherMark] = sideMarks(row);
+    const mark = (side: number) => (side === 0 ? makeMark : otherMark);
+    return {
+      sides: (): SideEffect[] =>
+        [make, other].map((side, index) => ({
+          choice: index,
+          icon: mark(index),
+          name: side.words[0],
+          line: side.words[1],
+          now: side.at(picks(row, index)),
+          next: side.at(Math.min(5, picks(row, index) + 1)),
+        })),
+      taken: () => learned(row).sides.map(mark),
+    };
+  };
   const output = (count: number) => percent(count * realm.board.outputStepBps);
   const storage = (count: number) => percent(count * realm.board.storageStepBps);
   const rations = (count: number) => formatFigure(realm.wheatPerTroop(count));
@@ -300,12 +305,12 @@ export const readResearchTree = (realm: RealmResearchFacts): TreeNode[] => {
     now: `${other.words[0]} ${other.at(picks(row, 1))}`,
   });
   const farmSides: [SideRule, SideRule] = [
-    { icon: "fields", words: sides.fields, at: output },
-    { icon: "granary", words: sides.granary, at: storage },
+    { words: sides.fields, at: output },
+    { words: sides.granary, at: storage },
   ];
   const workshopSides: [SideRule, SideRule] = [
-    { icon: "tools", words: sides.tools, at: output },
-    { icon: "storehouse", words: sides.storeroom, at: storage },
+    { words: sides.tools, at: output },
+    { words: sides.storeroom, at: storage },
   ];
   // One side entry per purchase, on either side: the contract's purchases(learned, ROW_BARRACKS).
   const barracksBought = learned(ROWS.barracks).sides.length;
@@ -395,11 +400,7 @@ export const readResearchTree = (realm: RealmResearchFacts): TreeNode[] => {
           next: tier < 5 ? [{ rank: tier + 1 }] : undefined,
         }),
         {
-          ...twoSides(
-            ROWS.barracks,
-            { icon: "drill", words: sides.drill, at: output },
-            { icon: "rations", words: sides.rations, at: rations },
-          ),
+          ...twoSides(ROWS.barracks, { words: sides.drill, at: output }, { words: sides.rations, at: rations }),
           leadsTo: Object.values(TRAINING).map(({ row }) => `row-${row}`),
           gate: { name: gateBarracks, met: gateNeed.met, line: gateLine },
         },
