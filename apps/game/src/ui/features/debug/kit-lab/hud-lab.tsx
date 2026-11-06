@@ -64,6 +64,7 @@ import { buildingIcon, buildingName } from "@/ui/features/frontier/build/buildin
 import { nativeResearchConstants as research } from "@bibliothecadao/eternum/game-client";
 import { readResearchTree } from "@/ui/features/frontier/research/research-tree";
 import { StoreCard, type StoreLine } from "@/ui/features/frontier/production/store-card";
+import { sidePicks } from "@/ui/features/frontier/research/sides-taken";
 import { MADE_STORES } from "@/ui/features/frontier/stores";
 import { PlaceNav } from "@/ui/features/frontier/hud/place-nav";
 import { StatusStrip, type StoreReading } from "@/ui/features/frontier/hud/status-strip";
@@ -452,7 +453,11 @@ type LabArmySheet = {
   ethereal?: EtherealLayer;
 };
 
-/** A city's three stores: 18,000 a store, the Farm row researched to V (the owner's wheat, 6 November), Barracks to I. */
+/**
+ * A city's three stores, 18,000 a store, each with its research row's two sides as the realm's knowledge packs them
+ * (research.cairo's three-bit side counts): Fields V and Granary V (the owner's wheat, 6 November), Tools III and
+ * Storehouse I, Drill I.
+ */
 const line = (overrides: Partial<StoreLine> & Pick<StoreLine, "kind">): StoreLine => ({
   perHour: undefined,
   held: undefined,
@@ -466,13 +471,25 @@ const STORE_LINES: StoreLine[] = [
   line({
     kind: "wheat",
     perHour: 1_500,
-    rank: 5,
+    sides: sidePicks(5n + (5n << 3n), research.ROW_FARM),
     held: 4_410,
     fullIn: 9 * HOUR + 4 * 60,
     makers: ["9 Farms · +25/min"],
   }),
-  line({ kind: "labor", perHour: 500, held: 9_640, fullIn: 16 * HOUR + 44 * 60 }),
-  line({ kind: "troops", perHour: 600, rank: 1, held: 1_200, fullIn: 28 * HOUR }),
+  line({
+    kind: "labor",
+    perHour: 500,
+    sides: sidePicks((3n << 7n) + (1n << 10n), research.ROW_WORKSHOP),
+    held: 9_640,
+    fullIn: 16 * HOUR + 44 * 60,
+  }),
+  line({
+    kind: "troops",
+    perHour: 600,
+    sides: sidePicks(1n << 14n, research.ROW_BARRACKS),
+    held: 1_200,
+    fullIn: 28 * HOUR,
+  }),
 ];
 
 /** Today's lines, each written by the day log itself from the owner's 22 October stories (today-log-fixture.ts). */

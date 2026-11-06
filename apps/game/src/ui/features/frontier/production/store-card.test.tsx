@@ -2,6 +2,9 @@ import { act } from "react";
 import { createRoot } from "react-dom/client";
 import { describe, expect, it, vi } from "vitest";
 
+import { nativeResearchConstants as research } from "@bibliothecadao/eternum/game-client";
+
+import { sidePicks } from "../research/sides-taken";
 import { StoreCard, type StoreLine } from "./store-card";
 
 const line = (overrides: Partial<StoreLine> & Pick<StoreLine, "kind">): StoreLine => ({
@@ -22,11 +25,14 @@ const renderCard = (card: StoreLine, onSpend = vi.fn(), onBuild = vi.fn()) => {
   act(() => root.render(<StoreCard line={card} onSpend={onSpend} onBuild={onBuild} />));
   return {
     text: () => host.querySelector(`section[aria-label='${card.kind}']`)!.textContent,
-    /** Each rank gem on the card, by what it reads to assistive technology, with the line it sits in. */
-    gems: () =>
-      [...host.querySelectorAll(`[data-store-card='${card.kind}'] .ui-tier`)].map((gem) => [
-        gem.getAttribute("aria-label"),
-        gem.parentElement!.textContent,
+    /** Each research side on the card: its mark (data-side), whether that mark is drawn, its rank gem's reading. */
+    sides: () =>
+      [
+        ...host.querySelector(`[data-store-card='${card.kind}']`)!.closest("section")!.querySelectorAll("[data-side]"),
+      ].map((side) => [
+        side.getAttribute("data-side"),
+        side.querySelector(`[data-icon='${side.getAttribute("data-side")}']`) !== null,
+        side.querySelector(".ui-tier")!.getAttribute("aria-label"),
       ]),
     press: (word: string) =>
       act(() => [...host.querySelectorAll("button")].find((b) => b.textContent === word)!.click()),
@@ -46,15 +52,17 @@ describe("a store's card", () => {
     card.done();
   });
 
-  it("wears its row's research rank as one gem after the rate, and none before the first tier", () => {
-    const ranked = renderCard(line({ kind: "wheat", rank: 5 }));
-    expect(ranked.gems()).toEqual([["V", "+8/minV"]]);
-    ranked.done();
-    for (const rank of [0, undefined] as const) {
-      const unranked = renderCard(line({ kind: "wheat", rank }));
-      expect(unranked.gems()).toEqual([]);
-      unranked.done();
-    }
+  it("shows each side of its row's research on its own row: the side's mark, then its rank gem", () => {
+    // Fields V and Granary III, in the Farm row's two three-bit fields.
+    const card = renderCard(line({ kind: "wheat", sides: sidePicks(5n + (3n << 3n), research.ROW_FARM) }));
+    expect(card.sides()).toEqual([
+      ["fields", true, "V"],
+      ["granary", true, "III"],
+    ]);
+    card.done();
+    const unknown = renderCard(line({ kind: "wheat", sides: undefined }));
+    expect(unknown.sides()).toEqual([]);
+    unknown.done();
   });
 
   it("says a full store is full and sends the player where it is spent", () => {

@@ -18,7 +18,6 @@ import {
   HudCost,
   HudNotice,
   HudSheet,
-  HudTier,
   HudWindowFoot,
   rankedTip,
 } from "@/ui/design-system/kit/hud-elements";
@@ -40,6 +39,7 @@ import { PRICE_FACES, costLine, type Price } from "@/ui/design-system/kit/price-
 import type { ReactNode } from "react";
 import { reasonLine } from "@/ui/design-system/kit/reasons";
 import type { RealmPopulation } from "../realm/realm-population";
+import { SideRank } from "../research/side-rank";
 
 /**
  * One building on the build sheet (the owner's pick, option B · Cards): its painting and name with the population it
@@ -297,10 +297,7 @@ const Gives = ({ tile }: { tile: BuildTile }) => (
     </span>
     <span className="flex items-center justify-center gap-x-1.5 whitespace-nowrap">
       {tile.gems.map((gem, index) => (
-        <span key={gem.side ?? index} data-side={gem.side} className="flex items-center gap-0.5">
-          {gem.side && <SemanticIcon name={gem.side} size={12} />}
-          <HudTier tier={gem.tier} />
-        </span>
+        <SideRank key={gem.side ?? index} icon={gem.side} rank={gem.tier} />
       ))}
     </span>
   </span>

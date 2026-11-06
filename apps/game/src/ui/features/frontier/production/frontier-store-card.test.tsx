@@ -79,7 +79,7 @@ it("keeps an open barracks figure fixed until the chain-proven floor advances", 
   }
 });
 
-it("shows the Farm row's research tier as one rank gem, the higher of its two sides, and no side marks", () => {
+it("shows each side of the Farm row's research with its own rank gem, as the realm's knowledge holds them", () => {
   (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
   const { store, row } = frontierDay();
   context.store = store;
@@ -87,8 +87,13 @@ it("shows the Farm row's research tier as one rank gem, the higher of its two si
   const host = document.createElement("div");
   document.body.append(host);
   const root = createRoot(host);
-  const gems = () =>
-    [...host.querySelectorAll("[data-store-card='wheat'] .ui-tier")].map((gem) => gem.getAttribute("aria-label"));
+  const sides = () =>
+    [...host.querySelector("[data-store-card='wheat']")!.closest("section")!.querySelectorAll("[data-side]")].map(
+      (side) => [
+        side.querySelector("[data-icon]")!.getAttribute("data-icon"),
+        side.querySelector(".ui-tier")!.getAttribute("aria-label"),
+      ],
+    );
   const learn = (learned: bigint) =>
     store.applyFacts([
       {
@@ -99,13 +104,21 @@ it("shows the Farm row's research tier as one rank gem, the higher of its two si
     ]);
   try {
     act(() => root.render(<FrontierStoreCard realm={row} rules={rules} store="wheat" onDone={() => {}} />));
-    expect(gems()).toEqual([]);
-    // Fields 3 and Granary 5, in the Farm row's two three-bit fields.
+    expect(sides()).toEqual([
+      ["fields", "Untrained"],
+      ["granary", "Untrained"],
+    ]);
+    // Fields 3 and Granary 5, in the Farm row's two three-bit fields: each side keeps its own rank.
     act(() => learn(3n + (5n << 3n)));
-    expect(gems()).toEqual(["V"]);
-    expect(host.querySelectorAll("[data-icon='fields'], [data-icon='granary']")).toHaveLength(0);
+    expect(sides()).toEqual([
+      ["fields", "III"],
+      ["granary", "V"],
+    ]);
     act(() => learn(2n));
-    expect(gems()).toEqual(["II"]);
+    expect(sides()).toEqual([
+      ["fields", "II"],
+      ["granary", "Untrained"],
+    ]);
   } finally {
     act(() => root.unmount());
     host.remove();
