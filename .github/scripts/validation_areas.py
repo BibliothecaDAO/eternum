@@ -39,6 +39,7 @@ AREAS = {
         "contracts/l3/world-native/src/troops.cairo",
         "contracts/l3/player-account/class-hash.json",
         ".github/workflows/test-client.yml",
+        MEDIA_FREE_CHECKOUT,
         "apps/game/**",
         # The other surfaces the brand check (apps/game/src/brand/brand.test.ts) reads, and what the docs config reads.
         "README.md",
@@ -200,6 +201,7 @@ AREAS = {
     ],
     "terrain": [
         ".github/workflows/verify-terrain.yml",
+        MEDIA_FREE_CHECKOUT,
         "apps/game/src/three/**",
         "apps/game/scripts/**",
         "apps/game/public/**",
@@ -235,6 +237,7 @@ AREAS = {
     ],
     "docs": [
         ".github/workflows/test-docs.yml",
+        MEDIA_FREE_CHECKOUT,
         "apps/game-docs/**",
         "apps/launch-service/src/release.ts",
         "packages/**",
