@@ -1745,9 +1745,12 @@ export const ARMY_DETAIL = {
   /** A Scouting effect on the kind its levels went to: "+10% discovery on Rifts". */
   onKind: (effect: string, kind: string) => `${effect} on ${kind}`,
   scoutingNext: (now: string, step: string) => `${now} · ${step} on the kind you pick`,
-  /** What each tile the army explores sends home, on its stamina row. */
+  /**
+   * What each tile the army explores sends home, on its stamina row: Essence or Labor, one of the two each reveal, as
+   * the contract draws it (exploration_rewards.cairo's reveal_reward). The chip's name reads the label then the amount.
+   */
   revealPays: (amount: string) => `+${amount} a tile`,
-  revealPaysLabel: `${ESSENCE} and ${LABOR} a tile`,
+  revealPaysLabel: `${ESSENCE} or ${LABOR},`,
   levelUp: "Level up",
   levelUps: "Level-ups",
   /** An attribute tile's hover: what its next tier gives and costs, "Rare: +10% → +20% damage · 200 XP". */
