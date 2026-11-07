@@ -1156,9 +1156,12 @@ emoji (`Frontier · Day 12 · #7 ▲2`, `🧭 31 · 🚩 4 · 🎁 1`, `🏛️�
 link's landing says who shared which day and leads into the game, recording the visit for this browser; an account made
 on that browser afterwards is the link's, and counts as activated once it clears a site on the link's season board
 (`apps/realms` README, Shared links). Once the link is made and the player's name read, the sheet sends identity the
-card it drew as a JPEG, and the link unfurls as that card, titled "<name> shared Day 12 of Frontier". Dev:
-`/lab/kit/hud/day-share`, `day-share-quiet`; `/lab/kit/hud/day-done` shows the button. Code: `rollover/day-share.ts`
-(trail and post), `shell/share/` (the sheet, its steps and the landing).
+card it drew as a JPEG, and the link unfurls as that card, titled "<name> shared Day 12 of Frontier". A phone's sheet
+shows and copies the tall cut (1080 × 1350) and draws the wide cut out of sight for the unfurl. What a player's shared
+days brought stands on You as **Your shared days** once they shared one: days posted, opened by friends, friends who
+joined, and those who cleared a site. Dev: `/lab/kit/hud/day-share`, `day-share-quiet`; `/lab/kit/hud/day-done` shows
+the button; `/lab/app/shared-days/profile`. Code: `rollover/day-share.ts` (trail and post), `shell/share/` (the sheet,
+its steps and the landing), `shell/profile/shared-days-panel.tsx`.
 
 Coming back to a tab the browser put away (a phone's, mostly): a lost GPU (WebGL's context, which phones take from a tab
 in the background, or WebGPU's device) boots the page again on its route once it is seen, and a Herald stream silent for

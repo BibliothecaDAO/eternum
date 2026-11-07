@@ -32,6 +32,8 @@ import {
   LAB_FIRST_REFERRAL,
   LAB_REFERRALS,
   LAB_REFERRER,
+  LAB_NO_SHARES,
+  LAB_SHARE_TALLIES,
   LAB_GUARDIAN,
   LAB_HELD_REALMS,
   LAB_PLAYER,
@@ -207,6 +209,7 @@ function installLabFixtures(screen: LabScreen, field: number | null): () => void
     "redeemCampaignTicket",
     "campaignReferral",
     "campaignReferrer",
+    "shareTally",
     "readDefaultWallet",
   ];
   const descriptors = identityMethods.map(
@@ -289,6 +292,7 @@ const answerIdentity = (screen: LabScreen) => {
   };
   identityClient.campaignReferral = async () => LAB_REFERRALS[screen] ?? LAB_FIRST_REFERRAL;
   identityClient.campaignReferrer = async () => LAB_REFERRER;
+  identityClient.shareTally = async () => LAB_SHARE_TALLIES[screen] ?? LAB_NO_SHARES;
   // The lab's player has made no Realms wallet, so the payout window offers Create my wallet.
   identityClient.readDefaultWallet = async () => null;
   // The account's build orders, kept in the tab: each save is held, and read back, at the next revision.

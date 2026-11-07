@@ -692,6 +692,17 @@ export const DAY_SHARE_WORDS = {
   brought: (visits: string, joined: string) => `Your days brought ${visits} visits · ${joined} new players`,
 } as const;
 
+/** What the player's shared days brought, on their own page: each step a friend takes, counted. */
+export const SHARED_DAYS_WORDS = {
+  title: "Your shared days",
+  steps: {
+    posted: "Days posted",
+    visits: "Opened by friends",
+    joined: "Friends who joined",
+    activated: "Cleared a site",
+  },
+} as const;
+
 /** A shared link's landing: who shared which day, and the way into Frontier. */
 export const SHARED_LINK_WORDS = {
   /** Its title and pitch are the link's unfurl's too (@realms-world/identity's SHARED_MOMENT_WORDS), so both say one thing. */

@@ -18,6 +18,7 @@ import { useRequestSignIn } from "../sign-in/connect";
 import { AccountCard, SignOut } from "./account-card";
 import { DevicesCard } from "./devices-page";
 import { InvitePanel } from "./invite-panel";
+import { SharedDaysPanel } from "./shared-days-panel";
 import { NotificationsCard } from "./notifications";
 import { PlayerCard, ProfileView, RecentGames } from "./profile-view";
 import { SETTINGS_PATH } from "./settings-route";
@@ -170,8 +171,8 @@ const SignInCard = ({ line, verb }: { line: string | null; verb: string }) => {
 };
 
 /**
- * The player's own page: on desktop their card and the rows in the left column, their invite link and games at the
- * right.
+ * The player's own page: on desktop their card and the rows in the left column, their invite link, what their shared
+ * days brought and their games at the right.
  */
 const OwnProfile = ({ account }: { account: string }) => {
   if (useLayout() === "phone")
@@ -179,6 +180,7 @@ const OwnProfile = ({ account }: { account: string }) => {
       <div className="flex flex-col gap-4">
         <ProfileView account={account} own />
         <InvitePanel />
+        <SharedDaysPanel />
         <Rows />
       </div>
     );
@@ -190,6 +192,7 @@ const OwnProfile = ({ account }: { account: string }) => {
       </div>
       <div className="flex min-w-0 flex-col gap-5">
         <InvitePanel />
+        <SharedDaysPanel />
         <RecentGames account={account} own />
       </div>
     </div>
