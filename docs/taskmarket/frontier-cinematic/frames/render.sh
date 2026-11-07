@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Renders frames.html into the four locked frames. Needs Google Chrome (set CHROME to override its path).
+# Renders frames.html into the end cards and the optional start cards. Needs Google Chrome (set CHROME to override its path).
 set -euo pipefail
 
 here="$(cd "$(dirname "$0")" && pwd)"
