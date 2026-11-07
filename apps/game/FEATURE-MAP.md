@@ -1146,6 +1146,18 @@ from the last time it showed, stands on its page until answered, and three Not n
 `shell/profile/alerts-ask.ts`; `frontier/alerts-popup.tsx`; lab: `/lab/kit/hud/alerts-popup`, `alerts-popup-install`).
 Code: `hooks/store/use-day-end-store.ts`, `ExpeditionRollover`, `rollover/day-done.tsx` and `day-end-screen.tsx`.
 
+**Share your day**, on the day-done card once the day's totals are whole: the ended day's card at 1200 × 675 over the
+HUD (Frontier's lockup and the day, the player and their closing rank with its move, the day's trail, its totals, where
+to play), then the recap's two steps, **Copy image** (Save image where the clipboard takes no PNG) and **Post on X**.
+The trail is the day in order from the player's own stories: each site cleared by its kind, each chest opened, and each
+fight that cleared nothing (army lost, guard holds), 18 marks and then "+N". The post's text is the day as a line of
+emoji (`Frontier · Day 12 · #7 ▲2`, `🧭 31 · 🚩 4 · 🎁 1`, `🏛️🌀🌀💀🐺👹`) and links the player's own link for that day,
+`/s/<code>`, made by identity as the sheet opens (the game's address while it is made); Post records the post. The
+link's landing says who shared which day and leads into the game, recording the visit for this browser; an account made
+on that browser afterwards is the link's, and counts as activated once it clears a site on the link's season board
+(`apps/realms` README, Shared links). Dev: `/lab/kit/hud/day-share`, `day-share-quiet`; `/lab/kit/hud/day-done` shows
+the button. Code: `rollover/day-share.ts` (trail and post), `shell/share/` (the sheet, its steps and the landing).
+
 Coming back to a tab the browser put away (a phone's, mostly): a lost GPU (WebGL's context, which phones take from a tab
 in the background, or WebGPU's device) boots the page again on its route once it is seen, and a Herald stream silent for
 10 s is dropped and resumed (`three/renderer-device-loss-recovery.ts`, `herald-game-sync-transport.ts`); a day that

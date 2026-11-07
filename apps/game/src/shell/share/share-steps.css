@@ -1,0 +1,13 @@
+/* A sharing step's number, ringed before its words (share-steps.tsx): the order of copy, then post. */
+.share-steps__number {
+  display: inline-grid;
+  place-items: center;
+  width: 1.35em;
+  height: 1.35em;
+  margin-right: 0.4em;
+  border: 1.5px solid currentColor;
+  border-radius: 50%;
+  font-family: var(--font-ui);
+  font-size: 0.85em;
+  line-height: 1;
+}

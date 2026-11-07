@@ -652,10 +652,16 @@ export const RECAP_WORDS = {
   cards: "Your season's cards",
   next: "Next card",
   previous: "Previous card",
-  /**
-   * Sharing a season is a post on X with its image (owner, 4 November 2026): copy the image (save it, where the
-   * clipboard takes none), then post, and paste it in. The two steps are numbered, and the hint says the order.
-   */
+  /** The deck's image, where it is saved rather than copied. */
+  fileName: "my-season.png",
+} as const;
+
+/**
+ * Sharing a card is a post on X with its image (owner, 4 November 2026): copy the image (save it, where the clipboard
+ * takes none), then post, and paste it in. The two steps are numbered, and the hint says the order. The season's recap
+ * and the Frontier day's card share the same steps.
+ */
+export const SHARE_WORDS = {
   copy: "Copy image",
   copied: "Image copied",
   save: "Save image",
@@ -666,6 +672,33 @@ export const RECAP_WORDS = {
   /** While the card is made into an image. */
   making: "Making the image",
   failed: "The image could not be made.",
+} as const;
+
+/** A Frontier day's card, shared from the day-done card: the day, its fights in order, its totals and its rank. */
+export const DAY_SHARE_WORDS = {
+  share: "Share your day",
+  title: "Your day",
+  /** Over the card's row of marks: each fight and find of the day, in the order it happened. */
+  trail: "The day, in order",
+  quiet: "A day of scouting",
+  rank: "Season rank",
+  /** The marks past the card's row, counted after it: "+6". */
+  more: (count: number) => `+${count}`,
+  /** The image's file, where it is saved rather than copied. */
+  fileName: (day: number) => `frontier-day-${day}.png`,
+  /** Under the card, for a friend: where it is played, and that it costs nothing. */
+  playFree: "Free to play",
+  /** What the player's shared days brought so far, once they brought anyone: "Your days brought 12 visits · 3 players". */
+  brought: (visits: string, joined: string) => `Your days brought ${visits} visits · ${joined} new players`,
+} as const;
+
+/** A shared link's landing: who shared which day, and the way into Frontier. */
+export const SHARED_LINK_WORDS = {
+  sharedDay: (name: string | null, day: number) => `${name ?? "A player"} shared ${DAY} ${day} of Frontier`,
+  pitch: "A new map every day. Send your armies into the fog and bring home what they find. Your realm is free.",
+  play: "Start your adventure",
+  opening: "Opening…",
+  unknown: "This link leads to no shared day.",
 } as const;
 /** A season's end, told one of two ways (story): the mist lifted, or it grew too strong. */
 export const SEASON_ENDINGS = { lifted: "The mist lifted", strong: "The mist grew too strong" } as const;

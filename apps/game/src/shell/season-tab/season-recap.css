@@ -214,18 +214,6 @@
   flex-basis: 100%;
   text-align: center;
 }
-.season-recap__step-number {
-  display: inline-grid;
-  place-items: center;
-  width: 1.35em;
-  height: 1.35em;
-  margin-right: 0.4em;
-  border: 1.5px solid currentColor;
-  border-radius: 50%;
-  font-family: var(--font-ui);
-  font-size: 0.85em;
-  line-height: 1;
-}
 
 /* The deck: the cards over its foot, on the season's ground. */
 .season-deck {

@@ -3,6 +3,7 @@ import { useCurrentDefaultTick, useNowSeconds } from "@/hooks/helpers/use-block-
 import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { type DaySummary, useDayEndStore } from "@/hooks/store/use-day-end-store";
+import { getActiveGame } from "@/runtime/world";
 import { configManager, type readExpeditionRules } from "@bibliothecadao/eternum";
 import type { NativeRows } from "@bibliothecadao/eternum/game-client";
 import { RESOURCE_PRECISION } from "@bibliothecadao/types";
@@ -13,6 +14,8 @@ import { endedHomeArmies, homecomingAtNextDeploy } from "../frontier-home";
 import { dayClock, endedDay, nextDayOf } from "../hud/day-clock";
 import { usePlayerDay } from "../log/player-day";
 import { DayDoneCard } from "./day-done-card";
+import { dayTrail } from "./day-share";
+import { DayShareSheet, type SharedDay } from "@/shell/share/day-share-sheet";
 import { DayEndScreen } from "./day-end-screen";
 import { useClosingRankChange } from "./day-ranks";
 
@@ -56,6 +59,7 @@ export const DayDone = ({
   const rank = useClosingRankChange(ended?.day);
   const openedAt = useOpenedAt(now);
   const { phase, summaryMissed, landReady, begin, continueDay, showSummary } = useDayEndStore();
+  const [sharing, setSharing] = useState<SharedDay | null>(null);
   // A day that ended before this realm was founded is none of its player's: a new realm starts on the day it was made.
   const realmsDay = ended !== null && ended.end > Number(realm.base.created_at);
   const unseen = !visiting && player !== null && ended !== null && realmsDay && (seen === null || seen < ended.day);
@@ -67,6 +71,20 @@ export const DayDone = ({
     if (gone.length === 0 && totals.reveals === 0 && totals.cleared === 0) return null;
     const returned = homecomingAtNextDeploy(setup.store, realm, rules, now, tick);
     const taken = gone.reduce((sum, army) => sum + Number(army.troops.count / BigInt(RESOURCE_PRECISION)), 0);
+    const chainId = getActiveGame()?.chainId;
+    // A day is shared whole or not at all: its card never shows a total the player's history only half gives.
+    const share =
+      played.history === "whole" && chainId
+        ? () =>
+            setSharing({
+              player,
+              game: { chainId, gameId },
+              day: ended.day,
+              totals,
+              rank,
+              trail: dayTrail(played.stories),
+            })
+        : undefined;
     return (
       <DayDoneCard
         endedDay={ended.day}
@@ -78,6 +96,7 @@ export const DayDone = ({
         armies={gone.length}
         troopsLost={taken - (returned?.sent ?? 0)}
         returned={returned && returned.sent > 0 ? returned : undefined}
+        onShare={share}
         onContinue={continueDay}
       />
     );
@@ -114,6 +133,7 @@ export const DayDone = ({
   return (
     <>
       <DayEndScreen summary={summary} />
+      {sharing && summary && <DayShareSheet shared={sharing} onClose={() => setSharing(null)} />}
       <AlertsPopup clear={clear} />
     </>
   );

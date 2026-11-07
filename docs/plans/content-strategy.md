@@ -73,7 +73,7 @@ Every piece of content belongs to exactly one pillar. If a piece fits none, don'
 
 ## 4. What to build (smallest first, each with a gate)
 
-### 4.1 Frontier Day card
+### 4.1 Frontier Day card (built: [frontier-day-share.md](./frontier-day-share.md))
 
 At day end, or from Today, offer a card in the recap deck's two cuts. It shows the day number, tiles revealed, sites
 cleared (with the site marks already in `TARGET_MARKS`), chests found, XP gained, Season board rank and the change since

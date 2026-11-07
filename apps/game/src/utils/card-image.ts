@@ -1,4 +1,4 @@
-type CardSize = { width: number; height: number };
+export type CardSize = { width: number; height: number };
 
 /**
  * A card node made into a PNG at its own size: the one image every way of sending the card uses. The library is loaded
@@ -16,8 +16,8 @@ const cardImage = async (card: HTMLElement, { width, height }: CardSize): Promis
 };
 
 /** The card's image saved as a file, where the clipboard takes no PNG: the player adds it to the post themselves. */
-export const saveSeasonCard = async (card: HTMLElement, size: CardSize): Promise<void> =>
-  saveFile(new File([await cardImage(card, size)], "my-season.png", { type: "image/png" }));
+export const saveCardImage = async (card: HTMLElement, size: CardSize, fileName: string): Promise<void> =>
+  saveFile(new File([await cardImage(card, size)], fileName, { type: "image/png" }));
 
 /** Whether this browser's clipboard takes a PNG: only there is the card offered to copy. */
 export const canCopyCard = (): boolean =>
@@ -29,7 +29,7 @@ export const canCopyCard = (): boolean =>
  * The card's image put on the clipboard, to paste where the player posts. The image is handed over as it is being made,
  * so the clipboard is asked within the press itself, as Safari requires.
  */
-export const copySeasonCard = (card: HTMLElement, size: CardSize): Promise<void> =>
+export const copyCardImage = (card: HTMLElement, size: CardSize): Promise<void> =>
   navigator.clipboard.write([new ClipboardItem({ "image/png": cardImage(card, size) })]);
 
 const saveFile = (file: File) => {

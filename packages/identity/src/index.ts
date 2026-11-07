@@ -6,5 +6,6 @@ export * from "./client";
 export * from "./holdings";
 export * from "./operator";
 export * from "./profiles";
+export * from "./shares";
 export * from "./siws";
 export * from "./types";
