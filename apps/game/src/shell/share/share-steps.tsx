@@ -25,6 +25,7 @@ export const ShareSteps = ({
   line,
   url,
   icons,
+  postKind = "primary",
   onPost,
 }: {
   card: RefObject<HTMLElement>;
@@ -33,6 +34,8 @@ export const ShareSteps = ({
   line: string;
   url: string;
   icons: boolean;
+  /** Post on X is the sheet's one verb, unless another (a phone's Share) stands above it. */
+  postKind?: "primary" | "secondary";
   onPost?: () => void;
 }) => {
   const [state, setState] = useState<"idle" | "making" | "taken" | "failed">("idle");
@@ -63,7 +66,7 @@ export const ShareSteps = ({
         <StepNumber number={1} />
         {takeWord(copies, state === "taken")}
       </AppButton>
-      <AppButton kind="primary" icon={icons ? "twitter" : undefined} onClick={post}>
+      <AppButton kind={postKind} icon={icons ? "twitter" : undefined} onClick={post}>
         <StepNumber number={2} />
         {SHARE_WORDS.post}
       </AppButton>

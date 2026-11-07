@@ -672,6 +672,9 @@ export const SHARE_WORDS = {
   /** While the card is made into an image. */
   making: "Making the image",
   failed: "The image could not be made.",
+  /** A phone's share sheet, to any app the player picks: the card, its line and its link in one press. */
+  share: "Share",
+  shareFailed: "Sharing did not open. Copy the image and post it instead.",
 } as const;
 
 /** A Frontier day's card, shared from the day-done card: the day, its fights in order, its totals and its rank. */

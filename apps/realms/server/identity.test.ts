@@ -3972,6 +3972,28 @@ describe("shared links", () => {
     expect(await page("not-a-code")).toEqual([200, GAME_PAGE]);
   });
 
+  it("counts each visit by the channel its link was posted from, never the sharer's own", async () => {
+    const sharer = await player("sharer-channels");
+    const code = await sharer.share(30);
+    const via = (browser: ReturnType<typeof createBrowser>, channel: unknown) =>
+      browser.request(`/api/shares/${code}/visit`, { body: { via: channel } });
+    const channelsNow = async () =>
+      (
+        (await (await createBrowser().request("/api/operator/shares", { token: OPERATOR_TOKEN })).json()) as {
+          channels: { channel: string | null; visits: number }[];
+        }
+      ).channels;
+    const before = new Map((await channelsNow()).map(({ channel, visits }) => [channel, visits]));
+    await via(createBrowser(), "x");
+    await via(createBrowser(), "system");
+    await via(createBrowser(), "system");
+    await via(createBrowser(), "telegram");
+    await via(sharer.browser, "x");
+    const after = new Map((await channelsNow()).map(({ channel, visits }) => [channel, visits]));
+    const added = (channel: string | null) => (after.get(channel) ?? 0) - (before.get(channel) ?? 0);
+    expect([added("x"), added("system"), added(null)]).toEqual([1, 2, 1]);
+  });
+
   it("reports every moment's funnel to the operator only, and leaves joins whose board cannot answer for later", async () => {
     const sharer = await player("sharer-report");
     const code = await sharer.share(9);

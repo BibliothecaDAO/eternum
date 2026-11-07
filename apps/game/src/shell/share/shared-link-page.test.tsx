@@ -56,10 +56,21 @@ const play = () =>
 it("records the visit and says who shared which day, with the way into Frontier", async () => {
   service.openShare.mockResolvedValue({ kind: "frontier-day", moment: 12, name: "Ashwalker" });
   await open("/s/ABCD2345");
-  expect(service.openShare).toHaveBeenCalledWith("ABCD2345");
+  expect(service.openShare).toHaveBeenCalledWith("ABCD2345", null);
   expect(host.textContent).toContain("Ashwalker shared Day 12 of Frontier");
   await act(async () => (play() as HTMLElement).click());
   expect(host.textContent).toBe("Play page");
+});
+
+it("tells identity the channel the link was posted from, and nothing for one no player's link carries", async () => {
+  service.openShare.mockResolvedValue({ kind: "frontier-day", moment: 12, name: "Ashwalker" });
+  await open("/s/ABCD2345?via=system");
+  expect(service.openShare).toHaveBeenLastCalledWith("ABCD2345", "system");
+  // Another link opened afresh, as a new tab would.
+  await act(async () => root.unmount());
+  root = createRoot(host);
+  await open("/s/ABCD2346?via=fax");
+  expect(service.openShare).toHaveBeenLastCalledWith("ABCD2346", null);
 });
 
 it("still leads into the game from a link that leads to no shared day, and asks identity nothing for a malformed one", async () => {

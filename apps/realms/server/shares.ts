@@ -1,4 +1,10 @@
-import { isShareKind, SHARE_ACTIVATION_DAYS, type ShareMoment } from "@realms-world/identity";
+import {
+  isShareChannel,
+  isShareKind,
+  SHARE_ACTIVATION_DAYS,
+  type ShareChannel,
+  type ShareMoment,
+} from "@realms-world/identity";
 
 import type { IdentityAuth } from "./auth";
 import { keepBrowser } from "./browsers";
@@ -40,8 +46,8 @@ export async function handleSharePosted(request: Request, auth: IdentityAuth, db
 
 /**
  * POST /api/shares/<code>/visit: a browser opened a shared link. The visit is kept against the browser's id (given
- * now, when it has none), the one thing that later ties an account made on it to the link; the answer says what the
- * link shares and who shared it.
+ * now, when it has none), the one thing that later ties an account made on it to the link, and with the channel the
+ * link was posted from (`{ via }`); the answer says what the link shares and who shared it.
  */
 export async function handleShareVisit(request: Request, db: D1Database, code: string) {
   const store = createShareStore(db);
@@ -49,7 +55,7 @@ export async function handleShareVisit(request: Request, db: D1Database, code: s
   const shared = link ? await store.sharedLink(link) : null;
   if (!link || !shared) return json({ error: "share_unknown" }, 404);
   const headers = new Headers({ "cache-control": "no-store" });
-  await store.recordVisit(link, keepBrowser(request, headers));
+  await store.recordVisit(link, keepBrowser(request, headers), await visitChannel(request));
   return Response.json({ kind: shared.kind, moment: shared.moment, name: shared.name }, { headers });
 }
 
@@ -61,6 +67,12 @@ export async function handleShareTally(request: Request, auth: IdentityAuth, wor
   return json(await createShareStore(world.db).tallyOf(sharer));
 }
 
+/** The channel a visit's body names; null for none, or one no player's link carries. */
+const visitChannel = async (request: Request): Promise<ShareChannel | null> => {
+  const { via } = ((await request.json().catch(() => null)) ?? {}) as { via?: unknown };
+  return isShareChannel(via) ? via : null;
+};
+
 /** GET /api/operator/shares: every moment's funnel and the sharers who brought the most, settled first. */
 export async function handleShareReport(world: ShareWorld) {
   const now = nowSeconds();
@@ -71,6 +83,7 @@ export async function handleShareReport(world: ShareWorld) {
     // Boards that could not answer leave their joins for the next read; the report says how many wait on them.
     unsettledJoins: settled.unsettled,
     moments: await store.momentReport(),
+    channels: await store.channelReport(),
     topSharers: await store.topSharers(TOP_SHARERS),
   });
 }
