@@ -106,6 +106,8 @@ vi.mock("@bibliothecadao/eternum/game-client", async (importOriginal) => ({
 }));
 
 const { DayDone } = await import("./day-done");
+const { cardJpeg } = await import("@/utils/card-image");
+const { setViewportWidth } = await import("@/shell/frame/test-viewport");
 const { watchDayTurn } = await import("@/ui/features/world/components/expeditions/expedition-rollover");
 
 const RULES = { ...RECORDED_DAY.calendar, spacing: 100 };
@@ -212,8 +214,11 @@ it("shares day 2 as its card and a post: its trail, its totals and rank, and the
   const share = [...host.querySelectorAll("button")].find((button) => button.textContent === "Share your day");
   await act(async () => share!.click());
   const sheet = document.body.querySelector("section[aria-label='Share your day']")!;
-  expect(sheet.querySelector(".day-card__day")?.textContent).toBe("Day 2");
-  const marks = [...sheet.querySelectorAll<HTMLElement>(".day-card__mark")].map((mark) => mark.dataset.mark);
+  // A phone draws the tall cut.
+  const shown = sheet.querySelector<HTMLElement>(".day-share__frame .day-card")!;
+  expect(shown.dataset.cut).toBe("tall");
+  expect(shown.querySelector(".day-card__day")?.textContent).toBe("Day 2");
+  const marks = [...shown.querySelectorAll<HTMLElement>(".day-card__mark")].map((mark) => mark.dataset.mark);
   // Prod's day 2: five clears, two of the rifts after a fight their guard held.
   expect(marks).toEqual(["Beasts", "Beasts", "guard-holds", "Rift", "guard-holds", "Rift", "Beasts"]);
   expect(shares.createShare).toHaveBeenCalledWith({ kind: "frontier-day", chainId: "0x1", gameId: 1, moment: 2 });
@@ -221,7 +226,10 @@ it("shares day 2 as its card and a post: its trail, its totals and rank, and the
   // The link is made as the sheet opens; the post waits for nothing.
   await act(() => new Promise((resolve) => setTimeout(resolve, 10)));
   expect(sheet.textContent).toContain("Your days brought 12 visits · 3 new players");
-  // The link unfurls as the card the sheet drew.
+  // The link unfurls as the wide cut, which a phone's sheet draws out of sight.
+  const wide = sheet.querySelector<HTMLElement>(".day-share__out-of-sight .day-card")!;
+  expect(wide.dataset.cut).toBe("wide");
+  expect(cardJpeg).toHaveBeenCalledWith(wide, { width: 1200, height: 675 });
   expect(shares.uploadShareCard).toHaveBeenCalledWith("DAY2LINK", CARD_JPEG);
   const open = vi.spyOn(window, "open").mockImplementation(() => null);
   const post = [...sheet.querySelectorAll("button")].find((button) => button.textContent?.endsWith("Post on X"));
@@ -231,6 +239,22 @@ it("shares day 2 as its card and a post: its trail, its totals and rank, and the
   expect(intent.searchParams.get("text")).toBe("Frontier · Day 2 · #1\n🧭 35 · 🚩 5 · 🎁 0\n🐺🐺🛡️🌀🛡️🌀🐺");
   expect(shares.sharePosted).toHaveBeenCalledWith("DAY2LINK");
   open.mockRestore();
+});
+
+it("draws a desktop's day card in the wide cut, the one its link unfurls as, and no second copy", async () => {
+  setViewportWidth(1440);
+  try {
+    await openTheGame();
+    const share = [...host.querySelectorAll("button")].find((button) => button.textContent === "Share your day");
+    await act(async () => share!.click());
+    const sheet = document.body.querySelector("section[aria-label='Share your day']")!;
+    const cards = [...sheet.querySelectorAll<HTMLElement>(".day-card")];
+    expect(cards.map((card) => card.dataset.cut)).toEqual(["wide"]);
+    await act(() => new Promise((resolve) => setTimeout(resolve, 10)));
+    expect(cardJpeg).toHaveBeenLastCalledWith(cards[0], { width: 1200, height: 675 });
+  } finally {
+    vi.unstubAllGlobals();
+  }
 });
 
 it("shows a dash for each total, and says why, when the player's history no longer reaches the day's start", async () => {

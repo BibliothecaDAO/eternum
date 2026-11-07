@@ -1,7 +1,7 @@
 import "@/ui/design-system/kit/app-sheet.css";
 import "./day-share.css";
 
-import { SHARE_CARD, sharePath, type ShareMoment } from "@realms-world/identity";
+import { sharePath, type ShareMoment } from "@realms-world/identity";
 import { formatShort } from "@bibliothecadao/types";
 import { useQuery } from "@tanstack/react-query";
 import { useLayoutEffect, useRef, useState, type Ref, type RefObject } from "react";
@@ -10,7 +10,9 @@ import { createPortal } from "react-dom";
 import { identityClient } from "@/hooks/context/identity-session";
 import { usePlayerDisplayName, usePlayerName, usePlayerProfile } from "@/hooks/use-player-profile";
 import { playerPortraitUrl } from "@/services/identity/player-portrait";
-import { cardJpeg } from "@/utils/card-image";
+import { CARD_CUTS, cardJpeg, type CardCut } from "@/utils/card-image";
+
+import { useLayout } from "../frame/layout";
 
 import { shareHint, ShareSteps } from "./share-steps";
 import { ageOf } from "../play/ages";
@@ -21,8 +23,11 @@ import { CLOSE, DAY, DAY_SHARE_WORDS } from "@/ui/design-system/kit/words";
 import { dayTotalCells, type DayTotals } from "@/ui/features/frontier/log/day-totals";
 import { DAY_MARKS, dayPostText, rankMove, shownTrail, type DayMark } from "@/ui/features/frontier/rollover/day-share";
 
-/** The card's size as it is shared and unfurled: X's and Discord's feed (16:9), the recap deck's wide cut. */
-const CARD = { width: SHARE_CARD.width, height: SHARE_CARD.height };
+/** The icons' sizes in each cut: the tall cut's are larger, as its card stands on a phone's whole width. */
+const ICONS = { wide: { mark: 64, total: 48 }, tall: { mark: 84, total: 64 } } as const satisfies Record<
+  CardCut,
+  { mark: number; total: number }
+>;
 
 /** A Frontier day as its card tells it: whose, which, its totals, its closing rank and its trail. */
 export interface SharedDay {
@@ -36,16 +41,23 @@ export interface SharedDay {
 
 /**
  * Sharing a Frontier day, from the day-done card: the day's card at the size it is shared, fitted to the screen, then
- * the two steps (Copy image, Post on X). The post's link is the player's own for this day (identity's shared links,
+ * the two steps (Copy image, Post on X). A desktop draws the wide cut, a phone the tall one, as the season's recap does;
+ * the link always unfurls as the wide cut, which a phone draws out of sight for it. The post's link is the player's own for this day (identity's shared links,
  * made as the sheet opens so Post opens X within the press), which is how a friend it brings is told apart; while it
  * is made, or where it cannot be, the post links the game itself. Over the HUD, at the body's end, as the recap is.
  */
 export const DayShareSheet = ({ shared, onClose }: { shared: SharedDay; onClose: () => void }) => {
+  const cut: CardCut = useLayout() === "phone" ? "tall" : "wide";
+  const size = CARD_CUTS[cut];
   const card = useRef<HTMLDivElement>(null);
+  const wideOutOfSight = useRef<HTMLDivElement>(null);
   const [frame, width] = useWidth();
   const link = useShareLink({ kind: "frontier-day", ...shared.game, moment: shared.day });
   // The card is drawn for its unfurl once it says whose day it is, never with the name still being read.
-  useCardUnfurl(usePlayerName(shared.player)?.state === "waiting" ? undefined : link.code, card);
+  useCardUnfurl(
+    usePlayerName(shared.player)?.state === "waiting" ? undefined : link.code,
+    cut === "wide" ? card : wideOutOfSight,
+  );
   const game = ageOf("frontier").name;
   return createPortal(
     <section data-surface="shell" className="day-share" aria-label={DAY_SHARE_WORDS.share}>
@@ -54,18 +66,28 @@ export const DayShareSheet = ({ shared, onClose }: { shared: SharedDay; onClose:
           <h1 className="text-app-title text-app-ink">{DAY_SHARE_WORDS.share}</h1>
           <AppIconButton icon="close" label={CLOSE} kind="quiet" onClick={onClose} />
         </header>
-        <div ref={frame} className="day-share__frame" style={{ aspectRatio: `${CARD.width} / ${CARD.height}` }}>
-          <div className="day-share__scaler" style={{ transform: `scale(${(width ?? CARD.width) / CARD.width})` }}>
-            <DayCard cardRef={card} shared={shared} />
+        <div
+          ref={frame}
+          className="day-share__frame"
+          data-cut={cut}
+          style={{ aspectRatio: `${size.width} / ${size.height}` }}
+        >
+          <div className="day-share__scaler" style={{ transform: `scale(${(width ?? size.width) / size.width})` }}>
+            <DayCard cardRef={card} cut={cut} shared={shared} />
           </div>
         </div>
+        {cut === "tall" && (
+          <div className="day-share__out-of-sight" aria-hidden>
+            <DayCard cardRef={wideOutOfSight} cut="wide" shared={shared} />
+          </div>
+        )}
         <footer className="day-share__foot">
           <ShareTally />
           <p className="day-share__hint">{shareHint()}</p>
           <span className="day-share__steps">
             <ShareSteps
               card={card}
-              size={CARD}
+              size={size}
               fileName={DAY_SHARE_WORDS.fileName(shared.day)}
               line={dayPostText({ ...shared, game })}
               url={link.url}
@@ -109,7 +131,7 @@ const useCardUnfurl = (code: string | undefined, card: RefObject<HTMLDivElement>
   useQuery({
     queryKey: ["shareCard", code],
     queryFn: async () => {
-      await identityClient.uploadShareCard(code!, await cardJpeg(card.current!, CARD));
+      await identityClient.uploadShareCard(code!, await cardJpeg(card.current!, CARD_CUTS.wide));
       return true;
     },
     enabled: code !== undefined && card.current !== null,
@@ -145,12 +167,12 @@ const useWidth = () => {
  * The day's card, the node the image is made of: Frontier's lockup and the day; the player and their closing rank; the
  * day's trail, its fights and finds in order; its totals; and where to play, free.
  */
-const DayCard = ({ cardRef, shared }: { cardRef?: Ref<HTMLDivElement>; shared: SharedDay }) => {
+const DayCard = ({ cardRef, cut, shared }: { cardRef?: Ref<HTMLDivElement>; cut: CardCut; shared: SharedDay }) => {
   const profile = usePlayerProfile(shared.player);
   const name = usePlayerDisplayName(shared.player) ?? "";
   const { marks, more } = shownTrail(shared.trail);
   return (
-    <div ref={cardRef} className="day-card" style={CARD}>
+    <div ref={cardRef} className="day-card" data-cut={cut} style={CARD_CUTS[cut]}>
       <div className="day-card__top">
         <AppGameName age="frontier" name={ageOf("frontier").name} />
         <b className="day-card__day">
@@ -180,7 +202,7 @@ const DayCard = ({ cardRef, shared }: { cardRef?: Ref<HTMLDivElement>; shared: S
           ) : (
             marks.map((mark, index) => (
               <span key={index} className="day-card__mark" data-mark={mark} title={DAY_MARKS[mark].word}>
-                <Icon name={DAY_MARKS[mark].icon} size={64} />
+                <Icon name={DAY_MARKS[mark].icon} size={ICONS[cut].mark} />
               </span>
             ))
           )}
@@ -190,7 +212,7 @@ const DayCard = ({ cardRef, shared }: { cardRef?: Ref<HTMLDivElement>; shared: S
       <div className="day-card__totals">
         {dayTotalCells(shared.totals).map((cell) => (
           <span key={cell.icon} className="day-card__total">
-            <Icon name={cell.icon} size={48} />
+            <Icon name={cell.icon} size={ICONS[cut].total} />
             <b>{cell.value}</b>
             <small>{cell.name}</small>
           </span>

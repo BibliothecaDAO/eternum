@@ -42,6 +42,8 @@ import type { DirectoryGame } from "../herald";
 import { ageOf } from "../play/ages";
 import { seasonEnded, seasonTitle } from "../season";
 import { resultsHref } from "./results-link";
+import { CARD_CUTS, type CardCut } from "@/utils/card-image";
+
 import { shareHint, ShareSteps } from "../share/share-steps";
 
 type Entry = HeraldFrontierLeaderboardEntry;
@@ -50,8 +52,8 @@ type Entry = HeraldFrontierLeaderboardEntry;
  * The deck's two cuts, each at the size it is exported: the four cards side by side for X's and Discord's feed (16:9),
  * two by two for a phone's feed and story (4:5).
  */
-const CUTS = { wide: { width: 1200, height: 675 }, tall: { width: 1080, height: 1350 } } as const;
-type Cut = keyof typeof CUTS;
+const CUTS = CARD_CUTS;
+type Cut = CardCut;
 
 /** The deck's cards, in the order a story steps through them. */
 const CARDS = ["place", "podium", "sites", "haul"] as const;

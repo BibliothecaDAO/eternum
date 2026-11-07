@@ -53,9 +53,14 @@ id is the only tie. Phase 1 links unfurled with the site's one static preview im
 3. **Streaks.** "Day 12 · 🔥 9" for a run of days played. It needs Herald to answer "days played this season" per
    player. The day ranks already exist, but a rank is not proof the player played that day. _Decide by:_ D7 retention of
    sharers against everyone else. If sharing tracks with retention, a streak gives a reason to share every day.
-4. **A tall cut (1080 × 1350)** for stories, as the recap has.
-5. **Credit the sharer.** Show the tally on You ("Your days brought 12 visits · 3 players"). The API exists
-   (`GET /api/shares`). Rewarding play, never posting, keeps it on the right side of X's January 2026 rules.
+4. **A tall cut (1080 × 1350) (built).** A phone's sheet draws the tall cut, as the recap's does, and Copy image copies
+   it. The link still unfurls as the wide cut, which the phone's sheet draws out of sight for the upload. Both cuts'
+   sizes are one table, `CARD_CUTS` (`utils/card-image.ts`), which the recap reads too. Proof: `day-done.test.tsx` (a
+   phone's tall card and the wide upload, a desktop's single wide card) and the phone sheet captured in Chromium.
+5. **Credit the sharer (built).** "Your shared days" on You, once a day was shared: days posted, opened by friends,
+   friends who joined and those who cleared a site (`GET /api/shares`). It credits players brought, never posting, which
+   keeps it on the right side of X's January 2026 rules. Proof: `shell/profile/shared-days-panel.test.tsx`; lab:
+   `/lab/app/shared-days/profile`.
 
 ## Phase 3: from the player's day to the game's channels
 

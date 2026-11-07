@@ -1,4 +1,16 @@
+import { SHARE_CARD } from "@realms-world/identity";
+
 export type CardSize = { width: number; height: number };
+
+/**
+ * The two cuts a shared card is drawn in, at the size each is exported: wide for X's and Discord's feed (16:9, the size
+ * a link unfurls at), tall for a phone's feed and story (4:5). The season's recap and the day's card both draw them.
+ */
+export const CARD_CUTS = {
+  wide: { width: SHARE_CARD.width, height: SHARE_CARD.height },
+  tall: { width: 1080, height: 1350 },
+} as const satisfies Record<string, CardSize>;
+export type CardCut = keyof typeof CARD_CUTS;
 
 /**
  * A card node made into an image at its own size: a PNG for every way the player sends it, a JPEG where a link's

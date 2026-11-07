@@ -60,6 +60,14 @@
   font-size: var(--app-text-small);
 }
 
+/* A phone's sheet keeps the wide cut its link unfurls as out of sight: drawn, never shown, never read aloud. */
+.day-share__out-of-sight {
+  position: fixed;
+  top: 0;
+  left: -20000px;
+  pointer-events: none;
+}
+
 /* The card: the day across the top, the player and their rank, the trail, the totals, the foot. */
 .day-card {
   display: grid;
@@ -206,4 +214,57 @@
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--app-muted);
+}
+
+/*
+ * The tall cut (1080 × 1350), a phone's: the lockup over the day, the player and their rank, the trail in rows, the
+ * totals three to a row, all larger, so the card reads at a phone's width in a feed or a story.
+ */
+.day-card[data-cut="tall"] {
+  gap: 30px;
+  padding: 60px 56px 40px;
+}
+.day-card[data-cut="tall"] .day-card__top {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 20px;
+}
+.day-card[data-cut="tall"] .day-card__top .app-game-name__lockup {
+  height: 116px;
+}
+.day-card[data-cut="tall"] .day-card__day {
+  font-size: 156px;
+}
+.day-card[data-cut="tall"] .day-card__who {
+  grid-template-columns: 128px minmax(0, 1fr) auto;
+}
+.day-card[data-cut="tall"] .day-card__name {
+  font-size: 48px;
+}
+.day-card[data-cut="tall"] .day-card__rank b {
+  font-size: 80px;
+}
+.day-card[data-cut="tall"] .day-card__trail {
+  padding: 24px 28px;
+}
+.day-card[data-cut="tall"] .day-card__marks {
+  flex-wrap: wrap;
+  row-gap: 14px;
+  min-height: 84px;
+}
+.day-card[data-cut="tall"] .day-card__totals {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+}
+.day-card[data-cut="tall"] .day-card__total {
+  padding: 20px 8px;
+}
+.day-card[data-cut="tall"] .day-card__total b {
+  font-size: 44px;
+}
+.day-card[data-cut="tall"] .day-card__total small {
+  font-size: 22px;
+}
+.day-card[data-cut="tall"] :is(.day-card__rank small, .day-card__trail small, .day-card__foot) {
+  font-size: 24px;
 }
