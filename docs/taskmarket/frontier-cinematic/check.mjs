@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
- * Checks a film against spec.json: its container, size, frame rate and length, that it opens on the locked start
- * frame and holds the locked end frame to its close. Needs ffmpeg and ffprobe on PATH.
+ * Checks a film against spec.json: its container, size, frame rate and length, and that it holds the locked end frame
+ * to its close. Needs ffmpeg and ffprobe on PATH.
  *
  *   node check.mjs film.mp4
  *
@@ -23,7 +23,7 @@ if (!film) {
 
 const probe = probeFilm(film);
 const cut = resolveCut(probe.video);
-const checks = cut ? [...checkFormat(probe, cut), checkStartFrame(cut), checkEndHold(probe, cut)] : [];
+const checks = cut ? [...checkFormat(probe, cut), checkEndHold(probe, cut)] : [];
 const report = {
   film,
   cut: cut?.name ?? null,
@@ -60,20 +60,19 @@ function checkFormat({ video, audio, durationSeconds, megabytes }, cut) {
     result("video codec", video.codec_name === spec.videoCodec, video.codec_name),
     result("audio codec", audio?.codec_name === spec.audioCodec, audio?.codec_name ?? "no audio"),
     result("size", true, `${cut.width}x${cut.height}`),
-    result("fps", Math.abs(fps - spec.fps) < 0.01, fps.toFixed(2)),
+    result(
+      "fps",
+      spec.fps.some((allowed) => Math.abs(fps - allowed) < 0.01),
+      fps.toFixed(2),
+    ),
     result("duration", durationSeconds >= min && durationSeconds <= max, `${durationSeconds.toFixed(2)}s`),
     result("file size", megabytes <= spec.maxMegabytes, `${megabytes.toFixed(1)} MB`),
   ];
 }
 
-function checkStartFrame(cut) {
-  const similarity = frameSimilarity(["-i", film], cut.startFrame, "trim=end_frame=1");
-  return result("start frame", similarity >= spec.minFrameSimilarity, `ssim ${similarity.toFixed(3)}`);
-}
-
 function checkEndHold(probe, cut) {
   const holdStart = probe.durationSeconds - spec.endFrameHoldSeconds;
-  const similarity = frameSimilarity(["-ss", String(holdStart), "-i", film], cut.endFrame, "null");
+  const similarity = frameSimilarity(["-ss", String(holdStart), "-i", film], cut.endFrame);
   return result(
     `end frame held ${spec.endFrameHoldSeconds}s`,
     similarity >= spec.minFrameSimilarity,
@@ -81,10 +80,10 @@ function checkEndHold(probe, cut) {
   );
 }
 
-/** The lowest SSIM between the film's selected frames and a still. */
-function frameSimilarity(filmInput, still, selectFrames) {
+/** The lowest SSIM between the film's frames and a still. */
+function frameSimilarity(filmInput, still) {
   const stillInput = ["-loop", "1", "-i", join(here, still)];
-  const graph = `[0:v]${selectFrames}[film];[1:v]scale=out_range=tv[still];[film][still]ssim=stats_file=-`;
+  const graph = "[1:v]scale=out_range=tv[still];[0:v][still]ssim=stats_file=-";
   const compare = ["-filter_complex", graph, "-shortest", "-f", "null", "-"];
   const out = execFileSync("ffmpeg", ["-v", "error", ...filmInput, ...stillInput, ...compare], {
     maxBuffer: 64 * 1024 * 1024,

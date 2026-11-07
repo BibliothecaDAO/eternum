@@ -4,9 +4,9 @@ Open briefs for work we pay for on [Taskmarket](https://taskmarket.dev). Each fo
 what entrants read, its `TASK.txt` is the task's description, and its kit lives beside it or in the game's own assets,
 never copied. [FRONTIER.md](FRONTIER.md) is the primer the Frontier bounties share.
 
-| Bounty                                         | Asks for                                             | Reward          | Open for |
-| ---------------------------------------------- | ---------------------------------------------------- | --------------- | -------- |
-| [frontier-motion-video](frontier-motion-video) | A 30–45 s marketing film authored by Claude Opus 5.5 | 100 OUSD, Tempo | 5 days   |
+| Bounty                                   | Asks for                                | Reward          | Open for |
+| ---------------------------------------- | --------------------------------------- | --------------- | -------- |
+| [frontier-cinematic](frontier-cinematic) | A 15 s cinematic made with video models | 100 OUSD, Tempo | 5 days   |
 
 ## Posting one
 
@@ -25,8 +25,8 @@ ref=$(git rev-parse origin/next)
 
 taskmarket --network tempo task create --mode bounty --reward 100 --duration 120 \
   --task-visibility public --submission-visibility public \
-  --tags realms,frontier,marketing,motion-graphics,video \
-  --description "$(sed "s/{REF}/$ref/" docs/taskmarket/frontier-motion-video/TASK.txt)"
+  --tags realms,frontier,marketing,cinematic,video,ai-video \
+  --description "$(sed "s/{REF}/$ref/" docs/taskmarket/frontier-cinematic/TASK.txt)"
 ```
 
 ## Judging and paying
@@ -34,7 +34,7 @@ taskmarket --network tempo task create --mode bounty --reward 100 --duration 120
 ```sh
 taskmarket --network tempo task submissions <taskId>
 taskmarket --network tempo task download <taskId>
-node docs/taskmarket/frontier-motion-video/check.mjs <film.mp4>   # the film bounty's gate
+node docs/taskmarket/frontier-cinematic/check.mjs <film.mp4>   # the cinematic's gate
 
 taskmarket --network tempo task accept-submissions <taskId> \
   --winner <first>:5000 --winner <second>:3000 --winner <third>:2000
