@@ -8,7 +8,7 @@ import {
   type PushRegistration,
 } from "@bibliothecadao/notifications";
 import { TICKET_TIERS } from "./campaigns";
-import { SHARE_CARD, SHARE_KINDS, type ShareKind } from "./shares";
+import { SHARE_CARD, SHARE_KINDS, type ShareChannel, type ShareKind } from "./shares";
 import type { SiwsTypedData } from "./siws";
 import { buildSiwsMessage, payoutWalletStatement } from "./siws";
 import type { IdentityChainId, Session } from "./types";
@@ -548,9 +548,15 @@ export const createIdentityClient = ({ apiUrl, fetch = globalThis.fetch }: Ident
     if (!response.ok) throw await requestFailure(response);
   };
 
-  /** A friend opens a shared link: the visit is recorded for this browser, and the link says what it shares. */
-  const openShare = async (code: string): Promise<OpenedShare> =>
-    readJson(await request(`/shares/${encodeURIComponent(code)}/visit`, { method: "POST" }), decode(openedShareSchema));
+  /**
+   * A friend opens a shared link: the visit is recorded for this browser, with the channel the link was posted from
+   * (null for a link that names none), and the link says what it shares.
+   */
+  const openShare = async (code: string, via: ShareChannel | null): Promise<OpenedShare> =>
+    readJson(
+      await request(`/shares/${encodeURIComponent(code)}/visit`, { method: "POST", body: JSON.stringify({ via }) }),
+      decode(openedShareSchema),
+    );
 
   /** What the account's shared links brought, settled as it is read. */
   const shareTally = async (): Promise<ShareTally> =>

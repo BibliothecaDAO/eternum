@@ -1,7 +1,7 @@
 import "@/ui/design-system/kit/app-sheet.css";
 import "./day-share.css";
 
-import { sharePath, type ShareMoment } from "@realms-world/identity";
+import { sharePathVia, type ShareChannel, type ShareMoment } from "@realms-world/identity";
 import { formatShort } from "@bibliothecadao/types";
 import { useQuery } from "@tanstack/react-query";
 import { useLayoutEffect, useRef, useState, type Ref, type RefObject } from "react";
@@ -10,11 +10,12 @@ import { createPortal } from "react-dom";
 import { identityClient } from "@/hooks/context/identity-session";
 import { usePlayerDisplayName, usePlayerName, usePlayerProfile } from "@/hooks/use-player-profile";
 import { playerPortraitUrl } from "@/services/identity/player-portrait";
-import { CARD_CUTS, cardJpeg, type CardCut } from "@/utils/card-image";
+import { CARD_CUTS, canShareCardFile, cardJpeg, type CardCut } from "@/utils/card-image";
 
 import { useLayout } from "../frame/layout";
 
 import { shareHint, ShareSteps } from "./share-steps";
+import { SystemShare } from "./system-share";
 import { ageOf } from "../play/ages";
 import { Icon } from "@/ui/design-system/icon";
 import { AppGameName, AppIconButton, AppPortrait } from "@/ui/design-system/kit/app-elements";
@@ -41,24 +42,28 @@ export interface SharedDay {
 
 /**
  * Sharing a Frontier day, from the day-done card: the day's card at the size it is shared, fitted to the screen, then
- * the two steps (Copy image, Post on X). A desktop draws the wide cut, a phone the tall one, as the season's recap does;
- * the link always unfurls as the wide cut, which a phone draws out of sight for it. The post's link is the player's own for this day (identity's shared links,
- * made as the sheet opens so Post opens X within the press), which is how a friend it brings is told apart; while it
- * is made, or where it cannot be, the post links the game itself. Over the HUD, at the body's end, as the recap is.
+ * the two steps (Copy image, Post on X). A phone whose share sheet takes images also gets Share above them, to any app
+ * (owner, 7 November 2026: the day's card goes past X; the season's recap stays X only). A desktop draws the wide cut,
+ * a phone the tall one, as the season's recap does; the link always unfurls as the wide cut, which a phone draws out of
+ * sight for it. The post's link is the player's own for this day (identity's shared links, made as the sheet opens so
+ * a post opens within the press), with the channel it was posted from, which is how a friend it brings is told apart;
+ * while it is made, or where it cannot be, the post links the game itself. Over the HUD, at the body's end, as the
+ * recap is.
  */
 export const DayShareSheet = ({ shared, onClose }: { shared: SharedDay; onClose: () => void }) => {
-  const cut: CardCut = useLayout() === "phone" ? "tall" : "wide";
+  const phone = useLayout() === "phone";
+  const cut: CardCut = phone ? "tall" : "wide";
+  const systemShare = phone && canShareCardFile();
   const size = CARD_CUTS[cut];
   const card = useRef<HTMLDivElement>(null);
   const wideOutOfSight = useRef<HTMLDivElement>(null);
   const [frame, width] = useWidth();
   const link = useShareLink({ kind: "frontier-day", ...shared.game, moment: shared.day });
-  // The card is drawn for its unfurl once it says whose day it is, never with the name still being read.
-  useCardUnfurl(
-    usePlayerName(shared.player)?.state === "waiting" ? undefined : link.code,
-    cut === "wide" ? card : wideOutOfSight,
-  );
-  const game = ageOf("frontier").name;
+  // The card is made into an image once it says whose day it is, never with the name still being read.
+  const named = usePlayerName(shared.player)?.state !== "waiting";
+  useCardUnfurl(named ? link.code : undefined, cut === "wide" ? card : wideOutOfSight);
+  const line = dayPostText({ ...shared, game: ageOf("frontier").name });
+  const fileName = DAY_SHARE_WORDS.fileName(shared.day);
   return createPortal(
     <section data-surface="shell" className="day-share" aria-label={DAY_SHARE_WORDS.share}>
       <div className="day-share__layout">
@@ -83,15 +88,29 @@ export const DayShareSheet = ({ shared, onClose }: { shared: SharedDay; onClose:
         )}
         <footer className="day-share__foot">
           <ShareTally />
+          {systemShare && (
+            <span className="day-share__system">
+              <SystemShare
+                card={card}
+                size={size}
+                fileName={fileName}
+                line={line}
+                url={link.url("system")}
+                ready={named && link.code !== undefined}
+                onShared={link.posted}
+              />
+            </span>
+          )}
           <p className="day-share__hint">{shareHint()}</p>
           <span className="day-share__steps">
             <ShareSteps
               card={card}
               size={size}
-              fileName={DAY_SHARE_WORDS.fileName(shared.day)}
-              line={dayPostText({ ...shared, game })}
-              url={link.url}
+              fileName={fileName}
+              line={line}
+              url={link.url("x")}
               icons
+              postKind={systemShare ? "secondary" : "primary"}
               onPost={link.posted}
             />
           </span>
@@ -103,8 +122,8 @@ export const DayShareSheet = ({ shared, onClose }: { shared: SharedDay; onClose:
 };
 
 /**
- * The player's link for the moment, and the record that they posted it. A link is made once per moment by identity, so
- * the sheet opened again gets the same one.
+ * The player's link for the moment, as each channel posts it, and the record that they posted it. A link is made once
+ * per moment by identity, so the sheet opened again gets the same one.
  */
 const useShareLink = (moment: ShareMoment) => {
   const made = useQuery({
@@ -116,7 +135,7 @@ const useShareLink = (moment: ShareMoment) => {
   const code = made.data;
   return {
     code,
-    url: new URL(code ? sharePath(code) : "/", window.location.origin).href,
+    url: (via: ShareChannel) => new URL(code ? sharePathVia(code, via) : "/", window.location.origin).href,
     // A post that cannot be recorded is still posted; the tally misses it, the player does not.
     posted: () => void (code && identityClient.sharePosted(code).catch(() => undefined)),
   };

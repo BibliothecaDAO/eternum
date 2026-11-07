@@ -57,7 +57,8 @@ moment, `/s/<code>` (`@realms-world/identity`'s `SHARE_KINDS` and `sharePath`). 
 player, kind, game and moment and hands back the same code after; `POST /api/shares/<code>/posted` records that the
 player opened the post. The landing posts `/api/shares/<code>/visit` (public, on the per-client budget), which keeps the
 browser's first visit under its browser id (the same cookie the referral check reads, given at the visit when the
-browser has none) and answers who shared which moment.
+browser has none), with the channel the link was posted from (`{ via }`, the link's own `?via=`: `x` for X's compose
+page, `system` for a phone's share sheet), and answers who shared which moment.
 
 Sign-up reports nothing of its own. Settlement, run by any read below, gives each account made after one of its browsers
 opened another player's link to the first such link (first touch), never to the sharer's own accounts or any account on
@@ -76,9 +77,10 @@ holds the game's preview for as long as it caches the unfurl.
 
 - `GET /api/shares` (signed in): the account's `{links, posted, visits, joined, activated}`, settled first.
 - `GET /api/operator/shares` (operator token): every moment's funnel (`moments`: kind, chain, game, moment and the five
-  counts), the 20 sharers who brought the most (`topSharers`), `settledAt` and `unsettledJoins`, the joins whose board
-  could not answer. Read it for the share rate (a day's posted links against that day's players on its season board,
-  Herald's day ranks) and for activations per post, the number the content strategy is judged by
+  counts), visits from others' browsers by the channel their link was posted from (`channels`: `x`, `system`, and null
+  for a link that named none), the 20 sharers who brought the most (`topSharers`), `settledAt` and `unsettledJoins`, the
+  joins whose board could not answer. Read it for the share rate (a day's posted links against that day's players on its
+  season board, Herald's day ranks) and for activations per post, the number the content strategy is judged by
   (`docs/plans/content-strategy.md`).
 
 ```bash

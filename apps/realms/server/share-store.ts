@@ -1,4 +1,10 @@
-import { profileOfIdentityUser, type ShareKind, type ShareMoment, type ShareTally } from "@realms-world/identity";
+import {
+  profileOfIdentityUser,
+  type ShareKind,
+  type ShareChannel,
+  type ShareMoment,
+  type ShareTally,
+} from "@realms-world/identity";
 
 import { newPublicCode } from "./campaigns";
 
@@ -113,14 +119,14 @@ export function createShareStore(db: D1Database) {
         row ? { sharer: row.sharer, kind: row.kind, moment: row.moment, name: profileOfIdentityUser(row).name } : null,
       );
 
-  /** The browser's first visit to the link; a later one keeps the first. */
-  const recordVisit = (code: string, browser: string) =>
+  /** The browser's first visit to the link, with the channel it came through; a later one keeps the first. */
+  const recordVisit = (code: string, browser: string, via: ShareChannel | null) =>
     db
       .prepare(
-        `INSERT INTO "share_visits" ("code", "browser", "at") VALUES (?, ?, strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
-         ON CONFLICT DO NOTHING`,
+        `INSERT INTO "share_visits" ("code", "browser", "at", "via")
+         VALUES (?, ?, strftime('%Y-%m-%dT%H:%M:%fZ', 'now'), ?) ON CONFLICT DO NOTHING`,
       )
-      .bind(code, browser)
+      .bind(code, browser, via)
       .run();
 
   /**
@@ -186,6 +192,18 @@ export function createShareStore(db: D1Database) {
         .all<MomentReport>()
     ).results;
 
+  /** Visits from others' browsers by the channel their link was posted from; null for links that named none. */
+  const channelReport = async (): Promise<{ channel: ShareChannel | null; visits: number }[]> =>
+    (
+      await db
+        .prepare(
+          `SELECT v."via" AS "channel", COUNT(*) AS "visits"
+           FROM "share_visits" v JOIN "share_links" l ON l."code" = v."code"
+           WHERE ${OTHERS_VISIT} GROUP BY v."via" ORDER BY "visits" DESC`,
+        )
+        .all<{ channel: ShareChannel | null; visits: number }>()
+    ).results;
+
   /** The sharers who brought the most, by activations, then joins, then visits. */
   const topSharers = async (limit: number): Promise<SharerReport[]> =>
     (
@@ -210,6 +228,7 @@ export function createShareStore(db: D1Database) {
     markActivated,
     tallyOf,
     momentReport,
+    channelReport,
     topSharers,
   };
 }

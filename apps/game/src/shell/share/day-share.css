@@ -53,6 +53,11 @@
   color: rgb(var(--app-gold));
   font-size: var(--app-text-small);
 }
+/* A phone's Share, the sheet's one verb above the two steps to X, across the sheet's width. */
+.day-share__system {
+  display: grid;
+  flex-basis: 100%;
+}
 .day-share__hint {
   flex: 1 1 16rem;
   text-align: right;

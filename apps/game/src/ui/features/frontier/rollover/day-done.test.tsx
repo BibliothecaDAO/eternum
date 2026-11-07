@@ -41,7 +41,10 @@ const CARD_JPEG = vi.hoisted(() => new Blob(["card"], { type: "image/jpeg" }));
 vi.mock("@/utils/card-image", async (original) => ({
   ...(await original<typeof import("@/utils/card-image")>()),
   cardJpeg: vi.fn(async () => CARD_JPEG),
+  cardFile: vi.fn(async () => CARD_FILE),
 }));
+/** The card's PNG as a phone's share sheet takes it. */
+const CARD_FILE = vi.hoisted(() => new File(["card"], "frontier-day-2.png", { type: "image/png" }));
 vi.mock("@/hooks/context/identity-session", () => ({
   useIdentitySession: () => ({ session: null }),
   notificationOwnerOf: () => alerts.owner,
@@ -235,10 +238,46 @@ it("shares day 2 as its card and a post: its trail, its totals and rank, and the
   const post = [...sheet.querySelectorAll("button")].find((button) => button.textContent?.endsWith("Post on X"));
   await act(async () => post!.click());
   const intent = new URL(String(open.mock.calls[0]![0]));
-  expect(intent.searchParams.get("url")).toBe(`${window.location.origin}/s/DAY2LINK`);
+  expect(intent.searchParams.get("url")).toBe(`${window.location.origin}/s/DAY2LINK?via=x`);
   expect(intent.searchParams.get("text")).toBe("Frontier · Day 2 · #1\n🧭 35 · 🚩 5 · 🎁 0\n🐺🐺🛡️🌀🛡️🌀🐺");
   expect(shares.sharePosted).toHaveBeenCalledWith("DAY2LINK");
   open.mockRestore();
+});
+
+it("shares a phone's day through its own share sheet: the card, the post's line and the link it was posted from", async () => {
+  const share = vi.fn(async (_data: ShareData) => {});
+  vi.stubGlobal("navigator", Object.assign(Object.create(navigator), { canShare: () => true, share }));
+  try {
+    await openTheGame();
+    const open = [...host.querySelectorAll("button")].find((button) => button.textContent === "Share your day");
+    await act(async () => open!.click());
+    const sheet = document.body.querySelector("section[aria-label='Share your day']")!;
+    const buttons = () => [...sheet.querySelectorAll<HTMLButtonElement>("button")];
+    // The image is made before the press, while the button says so.
+    for (let tick = 0; tick < 50 && !buttons().some((button) => button.textContent === "Share"); tick += 1)
+      await act(() => new Promise((resolve) => setTimeout(resolve, 10)));
+    const system = buttons().find((button) => button.textContent === "Share")!;
+    // Share is the sheet's one verb; Post on X stands under it.
+    expect(system.dataset.kind).toBe("primary");
+    expect(buttons().find((button) => button.textContent?.endsWith("Post on X"))?.dataset.kind).toBe("secondary");
+
+    // Closing the sheet shares nothing.
+    share.mockRejectedValueOnce(Object.assign(new Error("closed"), { name: "AbortError" }));
+    shares.sharePosted.mockClear();
+    await act(async () => system.click());
+    expect(shares.sharePosted).not.toHaveBeenCalled();
+    expect(sheet.querySelector("[role='alert']")).toBeNull();
+
+    await act(async () => system.click());
+    expect(share).toHaveBeenLastCalledWith({
+      files: [CARD_FILE],
+      text: "Frontier · Day 2 · #1\n🧭 35 · 🚩 5 · 🎁 0\n🐺🐺🛡️🌀🛡️🌀🐺",
+      url: `${window.location.origin}/s/DAY2LINK?via=system`,
+    });
+    expect(shares.sharePosted).toHaveBeenCalledWith("DAY2LINK");
+  } finally {
+    vi.unstubAllGlobals();
+  }
 });
 
 it("draws a desktop's day card in the wide cut, the one its link unfurls as, and no second copy", async () => {

@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import type { ReactNode } from "react";
-import { useParams } from "react-router-dom";
+import { isShareChannel } from "@realms-world/identity";
+import { useParams, useSearchParams } from "react-router-dom";
 
 import { identityClient } from "@/hooks/context/identity-session";
 import { AGE_LOCKUP } from "@/ui/design-system/icon-meaning";
@@ -16,16 +17,18 @@ const SHARE_CODE = /^[A-Za-z0-9]{8}$/;
 
 /**
  * A shared link's landing (`/s/<code>`), where a friend lands from a player's post: who shared which day, what Frontier
- * is, and the way in. Opening it records this browser's visit with identity, the one record that later ties an account
- * made here to the post (apps/realms/server/shares.ts); the page asks nothing else of the visitor. A link that leads
+ * is, and the way in. Opening it records this browser's visit with identity, with the channel the link was posted from
+ * (`?via=`), the one record that later ties an account made here to the post (apps/realms/server/shares.ts); the page asks nothing else of the visitor. A link that leads
  * nowhere still leads into the game.
  */
 export const SharedLinkPage = () => {
   const { code } = useParams();
+  const [search] = useSearchParams();
+  const via = search.get("via");
   const valid = code !== undefined && SHARE_CODE.test(code);
   const opened = useQuery({
     queryKey: ["sharedLink", code],
-    queryFn: () => identityClient.openShare(code!),
+    queryFn: () => identityClient.openShare(code!, isShareChannel(via) ? via : null),
     enabled: valid,
     staleTime: Number.POSITIVE_INFINITY,
     retry: false,

@@ -47,9 +47,15 @@ id is the only tie. Phase 1 links unfurled with the site's one static preview im
    before and after the card, a link that leads nowhere), `day-done.test.tsx` (the upload), and the JPEG captured from
    the lab in Chromium. _Limit:_ a post made in the second or two before the upload lands unfurls with the game's
    preview, and X holds that for as long as it caches the card.
-2. **The phone's own share sheet.** On a phone, `navigator.share({ files: [card], text, url })` reaches WhatsApp,
-   Telegram and Discord as well as X, in one press. The owner chose X-only for the season recap, so this needs their
-   call. _Decide by:_ phone share of posts, and visits per post by channel (add `?via=` per channel).
+2. **The phone's own share sheet (built, owner's call on 7 November 2026; the recap stays X only).** A phone whose share
+   sheet takes image files gets **Share** above the two X steps. It hands over the tall card's PNG, the post's line and
+   the link, to whichever app the player picks. The image is made before the press, as a phone opens its sheet only
+   within the press. Each link names its channel (`?via=x` or `?via=system`). The landing hands it to identity with the
+   visit (migration 0033), and the operator's report counts visits by channel (`channels`). Proof: `day-done.test.tsx`
+   (closing the sheet records nothing; a share records the post with the card, line and `?via=system` link),
+   `shared-link-page.test.tsx`, `identity.test.ts` "shared links" (visits counted by channel, an unknown one as none,
+   never the sharer's own), and in Chromium with the share sheet stood in for: a 1080 × 1350 PNG of the tall card, its
+   line and its link. _Read:_ visits per post by channel tells whether the sheet's apps travel further than X.
 3. **Streaks.** "Day 12 · 🔥 9" for a run of days played. It needs Herald to answer "days played this season" per
    player. The day ranks already exist, but a rank is not proof the player played that day. _Decide by:_ D7 retention of
    sharers against everyone else. If sharing tracks with retention, a streak gives a reason to share every day.

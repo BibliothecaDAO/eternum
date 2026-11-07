@@ -39,6 +39,15 @@ export const cardJpeg = (card: HTMLElement, size: CardSize): Promise<Blob> => ca
 export const saveCardImage = async (card: HTMLElement, size: CardSize, fileName: string): Promise<void> =>
   saveFile(new File([await cardImage(card, size)], fileName, { type: "image/png" }));
 
+/** The card's image as a PNG file, the one a device's share sheet hands to the app the player picks. */
+export const cardFile = async (card: HTMLElement, size: CardSize, fileName: string): Promise<File> =>
+  new File([await cardImage(card, size)], fileName, { type: "image/png" });
+
+/** Whether this device's share sheet takes an image file: only there is the card offered to share through it. */
+export const canShareCardFile = (): boolean =>
+  typeof navigator.canShare === "function" &&
+  navigator.canShare({ files: [new File([""], "card.png", { type: "image/png" })] });
+
 /** Whether this browser's clipboard takes a PNG: only there is the card offered to copy. */
 export const canCopyCard = (): boolean =>
   typeof ClipboardItem !== "undefined" &&

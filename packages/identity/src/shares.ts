@@ -14,6 +14,18 @@ export const SHARE_PATH = "/s";
 export const sharePath = (code: string) => `${SHARE_PATH}/${code}`;
 
 /**
+ * Where a link was posted from: X's compose page (`x`) or the phone's own share sheet (`system`, whichever app the
+ * player picked there). A link carries it as `?via=`, its landing hands it to identity with the visit, and the
+ * operator's report counts visits by it.
+ */
+export const SHARE_CHANNELS = ["x", "system"] as const;
+export type ShareChannel = (typeof SHARE_CHANNELS)[number];
+export const isShareChannel = (value: unknown): value is ShareChannel =>
+  typeof value === "string" && (SHARE_CHANNELS as readonly string[]).includes(value);
+/** The link as one channel posts it: its address with where it was posted from. */
+export const sharePathVia = (code: string, via: ShareChannel) => `${sharePath(code)}?via=${via}`;
+
+/**
  * A shared moment's card as the game draws it and a link unfurls it: X's and Discord's feed size (16:9), a JPEG the
  * sharer's browser makes and the identity Worker keeps, at most `bytes` of it, at `cardPath` under the game's address.
  */
