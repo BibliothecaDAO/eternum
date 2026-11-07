@@ -1,15 +1,17 @@
 import "@/ui/design-system/kit/app-sheet.css";
 import "./day-share.css";
 
-import { sharePath, type ShareMoment } from "@realms-world/identity";
+import { SHARE_CARD, sharePath, type ShareMoment } from "@realms-world/identity";
 import { formatShort } from "@bibliothecadao/types";
 import { useQuery } from "@tanstack/react-query";
-import { useLayoutEffect, useRef, useState, type Ref } from "react";
+import { useLayoutEffect, useRef, useState, type Ref, type RefObject } from "react";
 import { createPortal } from "react-dom";
 
 import { identityClient } from "@/hooks/context/identity-session";
-import { usePlayerDisplayName, usePlayerProfile } from "@/hooks/use-player-profile";
+import { usePlayerDisplayName, usePlayerName, usePlayerProfile } from "@/hooks/use-player-profile";
 import { playerPortraitUrl } from "@/services/identity/player-portrait";
+import { cardJpeg } from "@/utils/card-image";
+
 import { shareHint, ShareSteps } from "./share-steps";
 import { ageOf } from "../play/ages";
 import { Icon } from "@/ui/design-system/icon";
@@ -19,8 +21,8 @@ import { CLOSE, DAY, DAY_SHARE_WORDS } from "@/ui/design-system/kit/words";
 import { dayTotalCells, type DayTotals } from "@/ui/features/frontier/log/day-totals";
 import { DAY_MARKS, dayPostText, rankMove, shownTrail, type DayMark } from "@/ui/features/frontier/rollover/day-share";
 
-/** The card's size as it is shared: X's and Discord's feed (16:9), the recap deck's wide cut. */
-const CARD = { width: 1200, height: 675 } as const;
+/** The card's size as it is shared and unfurled: X's and Discord's feed (16:9), the recap deck's wide cut. */
+const CARD = { width: SHARE_CARD.width, height: SHARE_CARD.height };
 
 /** A Frontier day as its card tells it: whose, which, its totals, its closing rank and its trail. */
 export interface SharedDay {
@@ -42,6 +44,8 @@ export const DayShareSheet = ({ shared, onClose }: { shared: SharedDay; onClose:
   const card = useRef<HTMLDivElement>(null);
   const [frame, width] = useWidth();
   const link = useShareLink({ kind: "frontier-day", ...shared.game, moment: shared.day });
+  // The card is drawn for its unfurl once it says whose day it is, never with the name still being read.
+  useCardUnfurl(usePlayerName(shared.player)?.state === "waiting" ? undefined : link.code, card);
   const game = ageOf("frontier").name;
   return createPortal(
     <section data-surface="shell" className="day-share" aria-label={DAY_SHARE_WORDS.share}>
@@ -89,11 +93,29 @@ const useShareLink = (moment: ShareMoment) => {
   });
   const code = made.data;
   return {
+    code,
     url: new URL(code ? sharePath(code) : "/", window.location.origin).href,
     // A post that cannot be recorded is still posted; the tally misses it, the player does not.
     posted: () => void (code && identityClient.sharePosted(code).catch(() => undefined)),
   };
 };
+
+/**
+ * Once the link is made, its card as the link unfurls it: the sheet draws the card, and the same drawing goes to
+ * identity as a JPEG, once per link while the sheet is open. Where it cannot be made or kept, the link unfurls with the
+ * game's own preview, and the post itself is untouched.
+ */
+const useCardUnfurl = (code: string | undefined, card: RefObject<HTMLDivElement>) =>
+  useQuery({
+    queryKey: ["shareCard", code],
+    queryFn: async () => {
+      await identityClient.uploadShareCard(code!, await cardJpeg(card.current!, CARD));
+      return true;
+    },
+    enabled: code !== undefined && card.current !== null,
+    staleTime: Number.POSITIVE_INFINITY,
+    retry: 1,
+  });
 
 /** What the player's shared days brought so far (identity's count), said once they brought a visit; nothing before. */
 const ShareTally = () => {

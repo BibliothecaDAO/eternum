@@ -34,6 +34,13 @@ const shares = vi.hoisted(() => ({
   createShare: vi.fn(async () => "DAY2LINK"),
   sharePosted: vi.fn(async () => {}),
   shareTally: vi.fn(async () => ({ links: 4, posted: 3, visits: 12, joined: 3, activated: 1 })),
+  uploadShareCard: vi.fn(async () => {}),
+}));
+/** The card's JPEG, as the browser makes it from the drawn card (a canvas jsdom has none of). */
+const CARD_JPEG = vi.hoisted(() => new Blob(["card"], { type: "image/jpeg" }));
+vi.mock("@/utils/card-image", async (original) => ({
+  ...(await original<typeof import("@/utils/card-image")>()),
+  cardJpeg: vi.fn(async () => CARD_JPEG),
 }));
 vi.mock("@/hooks/context/identity-session", () => ({
   useIdentitySession: () => ({ session: null }),
@@ -59,6 +66,7 @@ vi.mock("@/hooks/use-player-profile", () => ({
   usePlayerNames: () => ({ text: () => "", reading: () => ({ state: "waiting", text: "…" }) }),
   usePlayerProfile: () => ({ name: null, portrait: null }),
   usePlayerDisplayName: () => "Ashwalker",
+  usePlayerName: () => ({ state: "named", text: "Ashwalker", claimed: true }),
 }));
 vi.mock("@/runtime/world", () => ({ getActiveGame: () => ({ chainId: "0x1" }) }));
 vi.mock("@/hooks/store/use-account-store", async (importOriginal) => ({
@@ -213,6 +221,8 @@ it("shares day 2 as its card and a post: its trail, its totals and rank, and the
   // The link is made as the sheet opens; the post waits for nothing.
   await act(() => new Promise((resolve) => setTimeout(resolve, 10)));
   expect(sheet.textContent).toContain("Your days brought 12 visits · 3 new players");
+  // The link unfurls as the card the sheet drew.
+  expect(shares.uploadShareCard).toHaveBeenCalledWith("DAY2LINK", CARD_JPEG);
   const open = vi.spyOn(window, "open").mockImplementation(() => null);
   const post = [...sheet.querySelectorAll("button")].find((button) => button.textContent?.endsWith("Post on X"));
   await act(async () => post!.click());

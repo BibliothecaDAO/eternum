@@ -1155,8 +1155,10 @@ emoji (`Frontier · Day 12 · #7 ▲2`, `🧭 31 · 🚩 4 · 🎁 1`, `🏛️�
 `/s/<code>`, made by identity as the sheet opens (the game's address while it is made); Post records the post. The
 link's landing says who shared which day and leads into the game, recording the visit for this browser; an account made
 on that browser afterwards is the link's, and counts as activated once it clears a site on the link's season board
-(`apps/realms` README, Shared links). Dev: `/lab/kit/hud/day-share`, `day-share-quiet`; `/lab/kit/hud/day-done` shows
-the button. Code: `rollover/day-share.ts` (trail and post), `shell/share/` (the sheet, its steps and the landing).
+(`apps/realms` README, Shared links). Once the link is made and the player's name read, the sheet sends identity the
+card it drew as a JPEG, and the link unfurls as that card, titled "<name> shared Day 12 of Frontier". Dev:
+`/lab/kit/hud/day-share`, `day-share-quiet`; `/lab/kit/hud/day-done` shows the button. Code: `rollover/day-share.ts`
+(trail and post), `shell/share/` (the sheet, its steps and the landing).
 
 Coming back to a tab the browser put away (a phone's, mostly): a lost GPU (WebGL's context, which phones take from a tab
 in the background, or WebGPU's device) boots the page again on its route once it is seen, and a Herald stream silent for

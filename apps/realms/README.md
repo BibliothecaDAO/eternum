@@ -66,6 +66,14 @@ site cleared, within `SHARE_ACTIVATION_DAYS` (14) of joining. A board that canno
 read. A visit from the sharer's own browsers is never counted. A friend who opens the link in one browser (X's in-app
 browser) and signs up in another is not the link's: the browser id is the only tie.
 
+The link unfurls as its own. The Worker also takes the app's `/s/*` route. It serves the page the host serves, with its
+title, description and address saying who shared which moment (`SHARED_MOMENT_WORDS`), and its `og:image` and
+`twitter:image` naming the link's card once the sharer's browser made one. The share sheet draws the card and hands it
+over as a JPEG (`PUT /api/shares/<code>/card`, the sharer only, at most 1 MB). It is kept in R2 (`SHARE_CARDS`, the
+environment's `shareCardBucket`, which setup creates) and served at `GET /api/shares/<code>/card`. Until the card is
+kept, or for a code no link has, the page's own preview stands. A crawler that read the link before its card was kept
+holds the game's preview for as long as it caches the unfurl.
+
 - `GET /api/shares` (signed in): the account's `{links, posted, visits, joined, activated}`, settled first.
 - `GET /api/operator/shares` (operator token): every moment's funnel (`moments`: kind, chain, game, moment and the five
   counts), the 20 sharers who brought the most (`topSharers`), `settledAt` and `unsettledJoins`, the joins whose board

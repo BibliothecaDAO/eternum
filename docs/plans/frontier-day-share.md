@@ -36,14 +36,17 @@ Every number in the funnel comes from facts D1 already has (browser ids, account
 board. Sign-up writes nothing of its own; any read settles it (`apps/realms/README.md`, Shared links).
 
 **Known limits.** A friend who opens the link in X's in-app browser and signs up in Safari is not counted: the browser
-id is the only tie. The link unfurls with the site's one static preview image. Both are Phase 2 items.
+id is the only tie. Phase 1 links unfurled with the site's one static preview image; Phase 2 item 1 fixes that.
 
-## Phase 2: make the post better (decide with Phase 1's data)
+## Phase 2: make the post better (decide the rest with Phase 1's data)
 
-1. **The link unfurls as the player's card.** Today every `/s/<code>` unfurls the static link preview. Render the card
-   at the edge (a Worker route for `/s/*` that serves `index.html` with `og:image` pointing to an image of that day) so
-   the post shows the day even when the player skipped Copy image. _Decide by:_ the share of posts that carry an image.
-   If most players post text only, this is the highest-value fix.
+1. **The link unfurls as the player's card (built).** The identity Worker takes `/s/*` and serves the page with the
+   link's title, pitch, address and card in its unfurl tags. The share sheet uploads the card it drew as a JPEG (about
+   80 KB) once the link exists and the player's name is read. The card is kept in R2 and served at
+   `/api/shares/<code>/card`. Proof: `identity.test.ts` "shared links" (upload rules, the served card, the page's tags
+   before and after the card, a link that leads nowhere), `day-done.test.tsx` (the upload), and the JPEG captured from
+   the lab in Chromium. _Limit:_ a post made in the second or two before the upload lands unfurls with the game's
+   preview, and X holds that for as long as it caches the card.
 2. **The phone's own share sheet.** On a phone, `navigator.share({ files: [card], text, url })` reaches WhatsApp,
    Telegram and Discord as well as X, in one press. The owner chose X-only for the season recap, so this needs their
    call. _Decide by:_ phone share of posts, and visits per post by channel (add `?via=` per channel).
