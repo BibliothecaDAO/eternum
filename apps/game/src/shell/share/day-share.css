@@ -1,0 +1,209 @@
+/*
+ * Sharing a Frontier day (day-share-sheet.tsx): the sheet over the HUD, and the day's card it shows at its shared size
+ * (1200 × 675), an image on a fixed canvas in the app's palette and faces, as the season's deck is.
+ */
+.day-share {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  overflow-y: auto;
+  padding: max(24px, env(safe-area-inset-top)) 24px max(24px, env(safe-area-inset-bottom));
+  background: rgb(0 0 0 / 0.82);
+  color: var(--app-ink);
+  pointer-events: auto;
+}
+.day-share__layout {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  width: min(100%, 1200px);
+  margin: 0 auto;
+}
+.day-share__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+/* Its height is its aspect's, never the card's own size before the card is scaled to it. */
+.day-share__frame {
+  width: 100%;
+  min-height: 0;
+  overflow: clip;
+  border-radius: 16px;
+}
+.day-share__scaler {
+  width: max-content;
+  transform-origin: 0 0;
+}
+.day-share__foot,
+.day-share__steps {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+}
+.day-share__steps > [role="alert"] {
+  flex-basis: 100%;
+}
+.day-share__tally {
+  flex-basis: 100%;
+  text-align: right;
+  color: rgb(var(--app-gold));
+  font-size: var(--app-text-small);
+}
+.day-share__hint {
+  flex: 1 1 16rem;
+  text-align: right;
+  color: var(--app-muted);
+  font-size: var(--app-text-small);
+}
+
+/* The card: the day across the top, the player and their rank, the trail, the totals, the foot. */
+.day-card {
+  display: grid;
+  grid-template-rows: auto auto 1fr auto auto;
+  gap: 18px;
+  padding: 36px 44px 26px;
+  overflow: hidden;
+  border: 1px solid var(--app-line-strong);
+  border-radius: 18px;
+  background: radial-gradient(
+    circle at 78% 18%,
+    color-mix(in srgb, rgb(var(--app-gold)) 30%, var(--app-surface)),
+    var(--app-surface) 62%
+  );
+  color: var(--app-ink);
+  font-family: var(--font-body);
+  font-variant-numeric: tabular-nums;
+}
+.day-card__top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.day-card__top .app-game-name__lockup {
+  height: 84px;
+}
+.day-card__day {
+  font-family: var(--font-game);
+  font-size: 92px;
+  line-height: 0.9;
+  color: rgb(var(--app-gold));
+  text-shadow: 0 0 40px rgb(var(--app-gold) / 0.45);
+}
+.day-card__who {
+  display: grid;
+  grid-template-columns: 96px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 22px;
+}
+.day-card__portrait .app-portrait {
+  border-width: 3px;
+  box-shadow: 0 0 28px rgb(var(--app-gold) / 0.35);
+}
+.day-card__name {
+  overflow: hidden;
+  font-family: var(--font-display);
+  font-size: 40px;
+  line-height: 1.1;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.day-card__rank {
+  display: grid;
+  grid-template-columns: auto auto;
+  align-items: baseline;
+  column-gap: 10px;
+  justify-items: end;
+}
+.day-card__rank b {
+  font-family: var(--font-game);
+  font-size: 64px;
+  line-height: 1;
+}
+.day-card__rank [data-move] {
+  font-family: var(--font-ui);
+  font-size: 30px;
+  font-weight: 700;
+}
+.day-card__rank [data-move="up"] {
+  color: var(--app-good);
+}
+.day-card__rank [data-move="down"] {
+  color: var(--app-bad);
+}
+.day-card__rank small,
+.day-card__trail small {
+  grid-column: 1 / -1;
+  font-family: var(--font-ui);
+  font-size: 17px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--app-muted);
+}
+.day-card__trail {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 14px;
+  padding: 16px 20px;
+  border: 1px solid var(--app-line);
+  border-radius: 14px;
+  background: rgb(0 0 0 / 0.25);
+}
+.day-card__marks {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 6px;
+  min-height: 64px;
+}
+.day-card__mark[data-mark="army-lost"],
+.day-card__mark[data-mark="guard-holds"] {
+  opacity: 0.7;
+}
+.day-card__more {
+  margin-left: 10px;
+  font-family: var(--font-ui);
+  font-size: 30px;
+  color: var(--app-muted);
+}
+.day-card__quiet {
+  font-family: var(--font-display);
+  font-size: 28px;
+  color: var(--app-muted);
+}
+.day-card__totals {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 10px;
+}
+.day-card__total {
+  display: grid;
+  justify-items: center;
+  gap: 2px;
+  padding: 10px 6px;
+  border-radius: 12px;
+  background: rgb(0 0 0 / 0.22);
+}
+.day-card__total b {
+  font-family: var(--font-ui);
+  font-size: 30px;
+  line-height: 1.1;
+}
+.day-card__total small {
+  font-size: 16px;
+  color: var(--app-muted);
+  white-space: nowrap;
+}
+.day-card__foot {
+  display: flex;
+  justify-content: space-between;
+  font-family: var(--font-ui);
+  font-size: 19px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--app-muted);
+}

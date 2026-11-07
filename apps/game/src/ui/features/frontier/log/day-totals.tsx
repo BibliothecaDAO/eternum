@@ -14,19 +14,18 @@ export type DayTotals = {
   lords: number | undefined;
 };
 
+/** A day's totals as every surface writes them: what was revealed, cleared and found, then what it paid. */
+export const dayTotalCells = (totals: DayTotals): TotalCell[] => [
+  { icon: "explore", name: REVEALS, value: formatShort(totals.reveals) },
+  { icon: "flag", name: SITES_CLEARED, value: formatShort(totals.cleared) },
+  { icon: "chest", name: CHESTS, value: formatShort(totals.chests) },
+  { icon: "essence", name: ESSENCE, value: gained(totals.essence) },
+  { icon: "labor", name: resourceName(ResourcesIds.Labor), value: gained(totals.labor) },
+  { icon: "lords", name: LORDS, value: gained(totals.lords) },
+];
+
 /** The day's totals in two rows: what was revealed, cleared and found, then what it paid. */
-export const DayTotalsGrid = ({ totals }: { totals: DayTotals }) => (
-  <TotalsGrid
-    cells={[
-      { icon: "explore", name: REVEALS, value: formatShort(totals.reveals) },
-      { icon: "flag", name: SITES_CLEARED, value: formatShort(totals.cleared) },
-      { icon: "chest", name: CHESTS, value: formatShort(totals.chests) },
-      { icon: "essence", name: ESSENCE, value: gained(totals.essence) },
-      { icon: "labor", name: resourceName(ResourcesIds.Labor), value: gained(totals.labor) },
-      { icon: "lords", name: LORDS, value: gained(totals.lords) },
-    ]}
-  />
-);
+export const DayTotalsGrid = ({ totals }: { totals: DayTotals }) => <TotalsGrid cells={dayTotalCells(totals)} />;
 
 /** One total: its icon, the name the icon stands for, and its figure. */
 type TotalCell = { icon: IconMeaning; name: string; value: string };

@@ -21,6 +21,8 @@
   Cache-Control: no-cache
 /results/*
   Cache-Control: no-cache
+/s/*
+  Cache-Control: no-cache
 /profile
   Cache-Control: no-cache
 /profile/*

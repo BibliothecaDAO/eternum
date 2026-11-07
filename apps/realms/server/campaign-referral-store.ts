@@ -1,6 +1,6 @@
 import { profileOfIdentityUser, type CampaignKey, type TicketTier } from "@realms-world/identity";
 
-import { CODE_ALPHABET, CODE_LENGTH } from "./campaigns";
+import { newPublicCode } from "./campaigns";
 
 /** A friend as their inviter's settlement reads them: who they are to the anti-alt check, their ticket and their count. */
 export interface ReferredFriend {
@@ -46,11 +46,6 @@ const taken = (
 /** A new code takes another try only when it collides with another inviter's; eight letters make that rare. */
 const CODE_ATTEMPTS = 4;
 
-const newReferralCode = () =>
-  [...crypto.getRandomValues(new Uint8Array(CODE_LENGTH))]
-    .map((byte) => CODE_ALPHABET[byte % CODE_ALPHABET.length])
-    .join("");
-
 const GMAIL = new Set(["gmail.com", "googlemail.com"]);
 
 /**
@@ -87,7 +82,7 @@ export function createCampaignReferralStore(db: D1Database) {
         .prepare(
           `INSERT INTO "campaign_referrers" ("campaign", "referrer", "code") VALUES (?, ?, ?) ON CONFLICT DO NOTHING`,
         )
-        .bind(campaign, account, newReferralCode())
+        .bind(campaign, account, newPublicCode())
         .run();
     }
     throw new Error("referral_code_unavailable");

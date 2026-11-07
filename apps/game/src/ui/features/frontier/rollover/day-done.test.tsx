@@ -29,9 +29,16 @@ const facts = vi.hoisted(() => ({
 
 /** The alerts ask's reading of this device: no owner (no ask) unless a test signs one in. */
 const alerts = vi.hoisted(() => ({ owner: null as string | null }));
+/** Identity's shared links: the player's link for a day, and the record of its post. */
+const shares = vi.hoisted(() => ({
+  createShare: vi.fn(async () => "DAY2LINK"),
+  sharePosted: vi.fn(async () => {}),
+  shareTally: vi.fn(async () => ({ links: 4, posted: 3, visits: 12, joined: 3, activated: 1 })),
+}));
 vi.mock("@/hooks/context/identity-session", () => ({
   useIdentitySession: () => ({ session: null }),
   notificationOwnerOf: () => alerts.owner,
+  identityClient: shares,
 }));
 vi.mock("@/hooks/use-notification-preferences", () => ({
   useNotificationPreferences: () => ({ status: "ready", saved: { level: "off", revision: 1 }, save: vi.fn() }),
@@ -50,6 +57,8 @@ const REALM_7 = { game_id: 1, entity_id: 7n, base: { created_at: 0 } } as never;
 vi.mock("@/hooks/context/game-context", () => ({ useGame: () => ({ setup: { store: facts } }) }));
 vi.mock("@/hooks/use-player-profile", () => ({
   usePlayerNames: () => ({ text: () => "", reading: () => ({ state: "waiting", text: "…" }) }),
+  usePlayerProfile: () => ({ name: null, portrait: null }),
+  usePlayerDisplayName: () => "Ashwalker",
 }));
 vi.mock("@/runtime/world", () => ({ getActiveGame: () => ({ chainId: "0x1" }) }));
 vi.mock("@/hooks/store/use-account-store", async (importOriginal) => ({
@@ -139,6 +148,11 @@ const draw = () =>
 const totalsShown = () =>
   [...(host.querySelector(SUMMARY)?.querySelectorAll("[data-total]") ?? [])].map((cell) => cell.textContent);
 const phase = () => useDayEndStore.getState().phase;
+/** The summary's way into the new day, under Share your day. */
+const continueButton = () =>
+  [...(host.querySelector(SUMMARY)?.querySelectorAll("button") ?? [])].find(
+    (button) => button.textContent === "Continue",
+  )!;
 
 /** Opens the game with day 2 ended overnight, before the player played on, and reads the summary's totals. */
 const openTheGame = async () => {
@@ -183,6 +197,30 @@ it("sums the player's own day 2 as prod's history holds it, not the tail of the 
   expect(host.textContent).toContain("Tomorrow lasts8h");
   expect(cells).toEqual(PROD_DAY_2);
   expect(host.textContent).toContain("#1 → #1");
+});
+
+it("shares day 2 as its card and a post: its trail, its totals and rank, and the player's own link for the day", async () => {
+  await openTheGame();
+  const share = [...host.querySelectorAll("button")].find((button) => button.textContent === "Share your day");
+  await act(async () => share!.click());
+  const sheet = document.body.querySelector("section[aria-label='Share your day']")!;
+  expect(sheet.querySelector(".day-card__day")?.textContent).toBe("Day 2");
+  const marks = [...sheet.querySelectorAll<HTMLElement>(".day-card__mark")].map((mark) => mark.dataset.mark);
+  // Prod's day 2: five clears, two of the rifts after a fight their guard held.
+  expect(marks).toEqual(["Beasts", "Beasts", "guard-holds", "Rift", "guard-holds", "Rift", "Beasts"]);
+  expect(shares.createShare).toHaveBeenCalledWith({ kind: "frontier-day", chainId: "0x1", gameId: 1, moment: 2 });
+
+  // The link is made as the sheet opens; the post waits for nothing.
+  await act(() => new Promise((resolve) => setTimeout(resolve, 10)));
+  expect(sheet.textContent).toContain("Your days brought 12 visits · 3 new players");
+  const open = vi.spyOn(window, "open").mockImplementation(() => null);
+  const post = [...sheet.querySelectorAll("button")].find((button) => button.textContent?.endsWith("Post on X"));
+  await act(async () => post!.click());
+  const intent = new URL(String(open.mock.calls[0]![0]));
+  expect(intent.searchParams.get("url")).toBe(`${window.location.origin}/s/DAY2LINK`);
+  expect(intent.searchParams.get("text")).toBe("Frontier · Day 2 · #1\n🧭 35 · 🚩 5 · 🎁 0\n🐺🐺🛡️🌀🛡️🌀🐺");
+  expect(shares.sharePosted).toHaveBeenCalledWith("DAY2LINK");
+  open.mockRestore();
 });
 
 it("shows a dash for each total, and says why, when the player's history no longer reaches the day's start", async () => {
@@ -298,7 +336,7 @@ describe("history answering late as the day ends in the game", () => {
     expect(phase()).toBe("summary");
     await answer();
     expect(totalsShown()).toEqual(PROD_DAY_2);
-    act(() => host.querySelector<HTMLButtonElement>(`${SUMMARY} button`)!.click());
+    act(() => continueButton().click());
     expect(phase()).toBe("nightfall");
   });
 
@@ -314,7 +352,7 @@ describe("history answering late as the day ends in the game", () => {
     await answer();
     expect(useDayEndStore.getState()).toMatchObject({ phase: "summary", arrival: "later" });
     expect(totalsShown()).toEqual(PROD_DAY_2);
-    act(() => host.querySelector<HTMLButtonElement>(`${SUMMARY} button`)!.click());
+    act(() => continueButton().click());
     await seconds(DAY_END_TIMING.nightfall);
     expect(phase()).toBe("black");
     expect(window.localStorage.getItem(`frontier.day-done.1.${RECORDED_DAY.player}`)).toBe("1");
@@ -472,7 +510,7 @@ describe("a device arriving in a new day", () => {
   it("marks the day gone through only once Continue's black has the camera on the realm's new site", async () => {
     await openTheGameHere();
     expect(totalsShown()).toEqual(PROD_DAY_2);
-    act(() => host.querySelector<HTMLButtonElement>(`${SUMMARY} button`)!.click());
+    act(() => continueButton().click());
     expect(phase()).toBe("nightfall");
     expect(window.localStorage.getItem(MARK)).toBeNull();
     await throughTheBlack();

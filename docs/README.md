@@ -49,6 +49,8 @@ instructions; consult the component guides above for shipped behavior.
   [milestones](./plans/hired-agents-milestones.md)
 - [Mobile scope](./plans/mobile-client-scope.md)
 - Chat scope remains in the [retained plans directory](./plans).
+- [Content strategy](./plans/content-strategy.md): the content engine, pillars and share surfaces across the games
+- [Frontier day share](./plans/frontier-day-share.md): the daily share card, its link and the funnel identity counts
 - [Value-plane decisions](./plans/realms-value-plane-design.md) and
   [open audit dispositions](./plans/value-plane-loop-audit-2026-08-31.md)
 - [Character source pipeline decisions](./architecture/procedural-character-model-generation-pipeline-research.md)

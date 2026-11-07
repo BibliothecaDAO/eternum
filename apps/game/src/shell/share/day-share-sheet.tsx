@@ -1,0 +1,183 @@
+import "@/ui/design-system/kit/app-sheet.css";
+import "./day-share.css";
+
+import { sharePath, type ShareMoment } from "@realms-world/identity";
+import { formatShort } from "@bibliothecadao/types";
+import { useQuery } from "@tanstack/react-query";
+import { useLayoutEffect, useRef, useState, type Ref } from "react";
+import { createPortal } from "react-dom";
+
+import { identityClient } from "@/hooks/context/identity-session";
+import { usePlayerDisplayName, usePlayerProfile } from "@/hooks/use-player-profile";
+import { playerPortraitUrl } from "@/services/identity/player-portrait";
+import { shareHint, ShareSteps } from "./share-steps";
+import { ageOf } from "../play/ages";
+import { Icon } from "@/ui/design-system/icon";
+import { AppGameName, AppIconButton, AppPortrait } from "@/ui/design-system/kit/app-elements";
+import { CLOSE, DAY, DAY_SHARE_WORDS } from "@/ui/design-system/kit/words";
+
+import { dayTotalCells, type DayTotals } from "@/ui/features/frontier/log/day-totals";
+import { DAY_MARKS, dayPostText, rankMove, shownTrail, type DayMark } from "@/ui/features/frontier/rollover/day-share";
+
+/** The card's size as it is shared: X's and Discord's feed (16:9), the recap deck's wide cut. */
+const CARD = { width: 1200, height: 675 } as const;
+
+/** A Frontier day as its card tells it: whose, which, its totals, its closing rank and its trail. */
+export interface SharedDay {
+  player: string;
+  game: { chainId: string; gameId: number };
+  day: number;
+  totals: DayTotals;
+  rank: { from: number; to: number } | undefined;
+  trail: readonly DayMark[];
+}
+
+/**
+ * Sharing a Frontier day, from the day-done card: the day's card at the size it is shared, fitted to the screen, then
+ * the two steps (Copy image, Post on X). The post's link is the player's own for this day (identity's shared links,
+ * made as the sheet opens so Post opens X within the press), which is how a friend it brings is told apart; while it
+ * is made, or where it cannot be, the post links the game itself. Over the HUD, at the body's end, as the recap is.
+ */
+export const DayShareSheet = ({ shared, onClose }: { shared: SharedDay; onClose: () => void }) => {
+  const card = useRef<HTMLDivElement>(null);
+  const [frame, width] = useWidth();
+  const link = useShareLink({ kind: "frontier-day", ...shared.game, moment: shared.day });
+  const game = ageOf("frontier").name;
+  return createPortal(
+    <section data-surface="shell" className="day-share" aria-label={DAY_SHARE_WORDS.share}>
+      <div className="day-share__layout">
+        <header className="day-share__head">
+          <h1 className="text-app-title text-app-ink">{DAY_SHARE_WORDS.share}</h1>
+          <AppIconButton icon="close" label={CLOSE} kind="quiet" onClick={onClose} />
+        </header>
+        <div ref={frame} className="day-share__frame" style={{ aspectRatio: `${CARD.width} / ${CARD.height}` }}>
+          <div className="day-share__scaler" style={{ transform: `scale(${(width ?? CARD.width) / CARD.width})` }}>
+            <DayCard cardRef={card} shared={shared} />
+          </div>
+        </div>
+        <footer className="day-share__foot">
+          <ShareTally />
+          <p className="day-share__hint">{shareHint()}</p>
+          <span className="day-share__steps">
+            <ShareSteps
+              card={card}
+              size={CARD}
+              fileName={DAY_SHARE_WORDS.fileName(shared.day)}
+              line={dayPostText({ ...shared, game })}
+              url={link.url}
+              icons
+              onPost={link.posted}
+            />
+          </span>
+        </footer>
+      </div>
+    </section>,
+    document.body,
+  );
+};
+
+/**
+ * The player's link for the moment, and the record that they posted it. A link is made once per moment by identity, so
+ * the sheet opened again gets the same one.
+ */
+const useShareLink = (moment: ShareMoment) => {
+  const made = useQuery({
+    queryKey: ["shareLink", moment.kind, moment.chainId, moment.gameId, moment.moment],
+    queryFn: () => identityClient.createShare(moment),
+    staleTime: Number.POSITIVE_INFINITY,
+    retry: 1,
+  });
+  const code = made.data;
+  return {
+    url: new URL(code ? sharePath(code) : "/", window.location.origin).href,
+    // A post that cannot be recorded is still posted; the tally misses it, the player does not.
+    posted: () => void (code && identityClient.sharePosted(code).catch(() => undefined)),
+  };
+};
+
+/** What the player's shared days brought so far (identity's count), said once they brought a visit; nothing before. */
+const ShareTally = () => {
+  const tally = useQuery({ queryKey: ["shareTally"], queryFn: () => identityClient.shareTally(), retry: false });
+  if (!tally.data || tally.data.visits === 0) return null;
+  return (
+    <p className="day-share__tally">
+      {DAY_SHARE_WORDS.brought(formatShort(tally.data.visits), formatShort(tally.data.joined))}
+    </p>
+  );
+};
+
+/** The frame's width as laid out, which the card is scaled to; null until measured. */
+const useWidth = () => {
+  const [node, setNode] = useState<HTMLElement | null>(null);
+  const [width, setWidth] = useState<number | null>(null);
+  useLayoutEffect(() => {
+    if (!node || typeof ResizeObserver === "undefined") return;
+    const observer = new ResizeObserver(([entry]) => setWidth(entry!.contentRect.width));
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, [node]);
+  return [setNode, width] as const;
+};
+
+/**
+ * The day's card, the node the image is made of: Frontier's lockup and the day; the player and their closing rank; the
+ * day's trail, its fights and finds in order; its totals; and where to play, free.
+ */
+const DayCard = ({ cardRef, shared }: { cardRef?: Ref<HTMLDivElement>; shared: SharedDay }) => {
+  const profile = usePlayerProfile(shared.player);
+  const name = usePlayerDisplayName(shared.player) ?? "";
+  const { marks, more } = shownTrail(shared.trail);
+  return (
+    <div ref={cardRef} className="day-card" style={CARD}>
+      <div className="day-card__top">
+        <AppGameName age="frontier" name={ageOf("frontier").name} />
+        <b className="day-card__day">
+          {DAY} {shared.day}
+        </b>
+      </div>
+      <div className="day-card__who">
+        <span className="day-card__portrait">
+          <AppPortrait src={playerPortraitUrl(shared.player, profile.portrait)} name={name} size="fill" own />
+        </span>
+        <span className="day-card__name">{name}</span>
+        {shared.rank && (
+          <span className="day-card__rank">
+            <b>#{shared.rank.to}</b>
+            {rankMove(shared.rank) && (
+              <span data-move={shared.rank.to < shared.rank.from ? "up" : "down"}>{rankMove(shared.rank)}</span>
+            )}
+            <small>{DAY_SHARE_WORDS.rank}</small>
+          </span>
+        )}
+      </div>
+      <div className="day-card__trail" aria-label={DAY_SHARE_WORDS.trail}>
+        <small>{DAY_SHARE_WORDS.trail}</small>
+        <span className="day-card__marks">
+          {marks.length === 0 ? (
+            <span className="day-card__quiet">{DAY_SHARE_WORDS.quiet}</span>
+          ) : (
+            marks.map((mark, index) => (
+              <span key={index} className="day-card__mark" data-mark={mark} title={DAY_MARKS[mark].word}>
+                <Icon name={DAY_MARKS[mark].icon} size={64} />
+              </span>
+            ))
+          )}
+          {more > 0 && <b className="day-card__more">{DAY_SHARE_WORDS.more(more)}</b>}
+        </span>
+      </div>
+      <div className="day-card__totals">
+        {dayTotalCells(shared.totals).map((cell) => (
+          <span key={cell.icon} className="day-card__total">
+            <Icon name={cell.icon} size={48} />
+            <b>{cell.value}</b>
+            <small>{cell.name}</small>
+          </span>
+        ))}
+      </div>
+      <div className="day-card__foot">
+        <span>{window.location.host}</span>
+        <span>{DAY_SHARE_WORDS.playFree}</span>
+      </div>
+    </div>
+  );
+};

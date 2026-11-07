@@ -2700,8 +2700,10 @@ describe("identity Worker", () => {
       unnamed: 1,
       suggested: "johnprivate",
     });
-    // The next deploy runs only what is pending: 0031.
-    expect(await applyPendingMigrations(database.db)).toEqual(["0031_clear_unnamed_name_suggestions.sql"]);
+    // The next deploy runs only what is pending: 0031 (the later files are this database's already, as the test's).
+    expect(await applyPendingMigrations(database.db, "0031_clear_unnamed_name_suggestions.sql")).toEqual([
+      "0031_clear_unnamed_name_suggestions.sql",
+    ]);
     const cleared = async () => {
       expect(await suggestionOf(database.db, "john.private@realms.test")).toEqual({ unnamed: 1, suggested: null });
       expect(await suggestionOf(database.db, "old.unnamed@realms.test")).toEqual({ unnamed: 1, suggested: null });
@@ -2711,7 +2713,7 @@ describe("identity Worker", () => {
     };
     await cleared();
     // A repeat deploy has nothing pending, and 0031 run again, as after a crash halfway, changes nothing.
-    expect(await applyPendingMigrations(database.db)).toEqual([]);
+    expect(await applyPendingMigrations(database.db, "0031_clear_unnamed_name_suggestions.sql")).toEqual([]);
     await database.db.batch(
       migrationStatementsOf("0031_clear_unnamed_name_suggestions.sql").map((sql) => database.db.prepare(sql)),
     );
@@ -2774,8 +2776,9 @@ describe("identity Worker", () => {
       const before = (await fresh.db.prepare(`SELECT "id", "name", "suggestedName" FROM "user" ORDER BY "id"`).all())
         .results;
       // 0031 then finds nothing to change, nor does a repeat deploy or 0031 run again.
-      expect(await applyPendingMigrations(fresh.db)).toEqual(["0031_clear_unnamed_name_suggestions.sql"]);
-      expect(await applyPendingMigrations(fresh.db)).toEqual([]);
+      const through0031 = "0031_clear_unnamed_name_suggestions.sql";
+      expect(await applyPendingMigrations(fresh.db, through0031)).toEqual([through0031]);
+      expect(await applyPendingMigrations(fresh.db, through0031)).toEqual([]);
       await fresh.db.batch(
         migrationStatementsOf("0031_clear_unnamed_name_suggestions.sql").map((sql) => fresh.db.prepare(sql)),
       );
@@ -3712,5 +3715,183 @@ describe("default wallet", () => {
     expect(counts.paidToDefaultWallet).toBeGreaterThan(0);
     expect(counts.accounts).toBe(counts.withoutWallet + counts.paidToDefaultWallet + counts.paidToLinkedWallet);
     expect((await createBrowser().request("/api/operator/wallets")).status).toBe(401);
+  });
+});
+
+describe("shared links", () => {
+  const shard = "https://share-season.test";
+  const chainId = "0x5348415245";
+  const gameId = 52;
+  /** The season board of the shared game: sites cleared by account. */
+  const board = new Map<string, number>();
+  const publishBoard = () =>
+    heralds.set(`${shard}/games/${gameId}/leaderboard`, {
+      game_id: String(gameId),
+      mode: "frontier",
+      prize: null,
+      entries: [...board].map(([address, sites], index) => ({
+        address,
+        structure_id: String(index + 1),
+        campaign: null,
+        rank: index + 1,
+        sites_cleared: { total: sites, camps: sites, rifts: 0, ruins: 0, beasts: 0 },
+        chests_earned: 0,
+        rewards: { lords: "0", essence: "0", labor: "0" },
+        deepest_depth: 0,
+        level: 0,
+        order: 1,
+      })),
+    });
+
+  beforeAll(async () => {
+    await env.DB.prepare(`INSERT INTO shards (url, chainId, status, addedAt) VALUES (?, ?, 'active', ?)`)
+      .bind(shard, chainId, Date.now())
+      .run();
+    publishBoard();
+  });
+  afterAll(async () => {
+    await env.DB.prepare("UPDATE shards SET status = 'retired' WHERE url = ?").bind(shard).run();
+  });
+
+  /** A player signed in on their own browser, which the app opened (so the browser is known for the account). */
+  const player = async (name: string, browser = createBrowser()) => {
+    await signInWithCode(browser, `${name}@share.test`);
+    const { realmsId } = (await browser.session())!.user;
+    const account = accountKey(realmsAccountAddress(realmsId, ACCOUNT_CLASS_HASH, await env.GUARDIAN.publicKey()));
+    return {
+      browser,
+      realmsId,
+      share: async (moment: number) => {
+        const response = await browser.request("/api/shares", {
+          body: { kind: "frontier-day", chainId, gameId, moment },
+        });
+        expect(response.status).toBe(200);
+        return ((await response.json()) as { code: string }).code;
+      },
+      tally: async () =>
+        (await (await browser.request("/api/shares")).json()) as {
+          links: number;
+          posted: number;
+          visits: number;
+          joined: number;
+          activated: number;
+        },
+      clear: (sites = 1) => {
+        board.set(account, sites);
+        publishBoard();
+      },
+    };
+  };
+  const visit = async (browser: ReturnType<typeof createBrowser>, code: string) => {
+    const response = await browser.request(`/api/shares/${code}/visit`, { method: "POST" });
+    return [response.status, await response.json()] as [number, any];
+  };
+
+  it("gives a player one link per day, and says who shared it to whoever opens it", async () => {
+    const sharer = await player("sharer-one");
+    await env.DB.prepare(`UPDATE "user" SET "name" = 'Ashwalker' WHERE "realmsId" = ?`).bind(sharer.realmsId).run();
+    const code = await sharer.share(12);
+    expect(await sharer.share(12)).toBe(code);
+    expect(await sharer.share(13)).not.toBe(code);
+    expect(await visit(createBrowser(), code)).toEqual([200, { kind: "frontier-day", moment: 12, name: "Ashwalker" }]);
+    expect((await visit(createBrowser(), "NOPE2345"))[0]).toBe(404);
+  });
+
+  it("refuses a link for anything but a moment of a game, and for a signed-out browser", async () => {
+    const sharer = await player("sharer-refused");
+    for (const body of [
+      { kind: "season", chainId, gameId, moment: 1 },
+      { kind: "frontier-day", chainId: "devnet", gameId, moment: 1 },
+      { kind: "frontier-day", chainId, gameId, moment: 0 },
+      { kind: "frontier-day", chainId, gameId: 1.5, moment: 1 },
+    ])
+      expect((await sharer.browser.request("/api/shares", { body })).status).toBe(400);
+    const signedOut = createBrowser();
+    expect(
+      (await signedOut.request("/api/shares", { body: { kind: "frontier-day", chainId, gameId, moment: 1 } })).status,
+    ).toBe(401);
+  });
+
+  it("counts a friend who opened the link, then joined, then founded and cleared a site", async () => {
+    const sharer = await player("sharer-funnel");
+    expect(await sharer.tally()).toEqual({ links: 0, posted: 0, visits: 0, joined: 0, activated: 0 });
+    const code = await sharer.share(3);
+    expect((await sharer.browser.request(`/api/shares/${code}/posted`, { method: "POST" })).status).toBe(204);
+
+    // The sharer opening their own post is no reach.
+    await visit(sharer.browser, code);
+    const friendBrowser = createBrowser();
+    await visit(friendBrowser, code);
+    await visit(friendBrowser, code);
+    expect(await sharer.tally()).toEqual({ links: 1, posted: 1, visits: 1, joined: 0, activated: 0 });
+
+    const friend = await player("friend-funnel", friendBrowser);
+    expect(await sharer.tally()).toEqual({ links: 1, posted: 1, visits: 1, joined: 1, activated: 0 });
+    friend.clear(0);
+    expect((await sharer.tally()).activated).toBe(0);
+    friend.clear(1);
+    expect(await sharer.tally()).toEqual({ links: 1, posted: 1, visits: 1, joined: 1, activated: 1 });
+  });
+
+  it("gives a new account to the first link its browser opened, and never an account older than the visit", async () => {
+    const first = await player("sharer-first");
+    const second = await player("sharer-second");
+    const already = await player("already-playing");
+    const browser = createBrowser();
+    await visit(browser, await first.share(4));
+    await visit(browser, await second.share(4));
+    await signInWithCode(browser, "already-playing@share.test");
+    await browser.session();
+    await player("friend-first-touch", browser);
+    expect((await first.tally()).joined).toBe(1);
+    expect((await second.tally()).joined).toBe(0);
+    expect(already.realmsId).not.toBe("");
+  });
+
+  it("joins no one's link to the sharer's own new account on their own browser", async () => {
+    const sharer = await player("sharer-alt");
+    const code = await sharer.share(5);
+    await visit(sharer.browser, code);
+    await player("sharer-alt-second", sharer.browser);
+    expect((await sharer.tally()).joined).toBe(0);
+  });
+
+  it("reports every moment's funnel to the operator only, and leaves joins whose board cannot answer for later", async () => {
+    const sharer = await player("sharer-report");
+    const code = await sharer.share(9);
+    const friendBrowser = createBrowser();
+    await visit(friendBrowser, code);
+    await player("friend-report", friendBrowser);
+    expect((await createBrowser().request("/api/operator/shares")).status).toBe(401);
+
+    heralds.delete(`${shard}/games/${gameId}/leaderboard`);
+    const waiting = (await (
+      await createBrowser().request("/api/operator/shares", { token: OPERATOR_TOKEN })
+    ).json()) as {
+      unsettledJoins: number;
+    };
+    expect(waiting.unsettledJoins).toBeGreaterThan(0);
+    publishBoard();
+
+    const report = (await (
+      await createBrowser().request("/api/operator/shares", { token: OPERATOR_TOKEN })
+    ).json()) as {
+      unsettledJoins: number;
+      moments: Record<string, unknown>[];
+      topSharers: { realmsId: string; joined: number }[];
+    };
+    expect(report.unsettledJoins).toBe(0);
+    expect(report.moments).toContainEqual({
+      kind: "frontier-day",
+      chainId,
+      gameId,
+      moment: 9,
+      links: 1,
+      posted: 0,
+      visits: 1,
+      joined: 1,
+      activated: 0,
+    });
+    expect(report.topSharers.find((row) => row.realmsId === sharer.realmsId)?.joined).toBe(1);
   });
 });
