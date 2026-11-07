@@ -8,7 +8,7 @@ import {
   type PushRegistration,
 } from "@bibliothecadao/notifications";
 import { TICKET_TIERS } from "./campaigns";
-import { SHARE_KINDS, type ShareKind } from "./shares";
+import { SHARE_CARD, SHARE_KINDS, type ShareKind } from "./shares";
 import type { SiwsTypedData } from "./siws";
 import { buildSiwsMessage, payoutWalletStatement } from "./siws";
 import type { IdentityChainId, Session } from "./types";
@@ -538,6 +538,16 @@ export const createIdentityClient = ({ apiUrl, fetch = globalThis.fetch }: Ident
     if (!response.ok) throw await requestFailure(response);
   };
 
+  /** Hands identity the card the sheet drew for the account's link, which the link then unfurls as. */
+  const uploadShareCard = async (code: string, image: Blob): Promise<void> => {
+    const response = await request(`/shares/${encodeURIComponent(code)}/card`, {
+      method: "PUT",
+      headers: { "content-type": SHARE_CARD.type },
+      body: image,
+    });
+    if (!response.ok) throw await requestFailure(response);
+  };
+
   /** A friend opens a shared link: the visit is recorded for this browser, and the link says what it shares. */
   const openShare = async (code: string): Promise<OpenedShare> =>
     readJson(await request(`/shares/${encodeURIComponent(code)}/visit`, { method: "POST" }), decode(openedShareSchema));
@@ -596,6 +606,7 @@ export const createIdentityClient = ({ apiUrl, fetch = globalThis.fetch }: Ident
     campaignReferrer,
     createShare,
     sharePosted,
+    uploadShareCard,
     openShare,
     shareTally,
     getPushConfiguration: () => pushRequest("config", decode(pushConfigurationSchema)),

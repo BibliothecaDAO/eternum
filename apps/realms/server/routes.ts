@@ -1,5 +1,5 @@
 import { handlePayoutIdentity } from "./payout-identity";
-import { presentsOperatorToken, VISIT_RECORD_SECONDS } from "@realms-world/identity";
+import { presentsOperatorToken, SHARE_PATH, VISIT_RECORD_SECONDS } from "@realms-world/identity";
 
 import type { IdentityAuth } from "./auth";
 import { routeChat } from "./chat/routes";
@@ -38,6 +38,7 @@ import { handleRatings } from "./ratings";
 import { handleRatingTop } from "./rating-top";
 import { handleAccountsHealth, handleChatHealth } from "./health";
 import { handlePushSubscriptions } from "./push-notifications";
+import { handleShareCard, handleShareCardUpload, handleSharedPage } from "./share-cards";
 import {
   handleCreateShare,
   handleShareReport,
@@ -51,6 +52,8 @@ import { handleWalletCounts } from "./wallet-counts";
 /** What the Worker reaches outside its bindings: the colo cache and the shards' Heralds. */
 interface WorkerPlatform {
   cache: Cache;
+  /** The game's page as its host serves it, for a shared link's address (/s/<code>), which this Worker's route takes. */
+  fetchPage: (request: Request) => Promise<Response>;
   fetchShard: typeof fetch;
   readLaunchDirectory: () => Promise<{
     chains: { chainId: string; games: { gameId: number; slotId: number | null }[] }[];
@@ -68,6 +71,8 @@ export const routeIdentityRequest = async (
   platform: WorkerPlatform,
 ) => {
   const { pathname } = new URL(request.url);
+  if (pathname.startsWith(`${SHARE_PATH}/`) && request.method === "GET")
+    return handleSharedPage(request, { db: env.DB, cards: env.SHARE_CARDS, origin: env.BASE_URL }, platform.fetchPage);
   const sendsCode = pathname === "/api/auth/email-otp/send-verification-otp";
   const verifiesCode = ["/api/auth/sign-in/email-otp", "/api/auth/email-otp/check-verification-otp"].includes(pathname);
   const requestsCodeAccess = request.method === "POST" && (sendsCode || verifiesCode);
@@ -232,6 +237,9 @@ const routeShares = async (
   if (pathname === "/api/shares" && request.method === "GET")
     return handleShareTally(request, auth, shareWorld(env, platform));
   if (code && action === "posted" && request.method === "POST") return handleSharePosted(request, auth, env.DB, code);
+  if (code && action === "card" && request.method === "PUT")
+    return handleShareCardUpload(request, auth, env.DB, env.SHARE_CARDS, code);
+  if (code && action === "card" && request.method === "GET") return handleShareCard(env.SHARE_CARDS, code);
   if (code && action === "visit" && request.method === "POST") {
     if (!(await withinPublicBudget(env, "share", request))) return json({ error: "too_many_requests" }, 429);
     return handleShareVisit(request, env.DB, code);

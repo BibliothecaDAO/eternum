@@ -14,6 +14,22 @@ export const SHARE_PATH = "/s";
 export const sharePath = (code: string) => `${SHARE_PATH}/${code}`;
 
 /**
+ * A shared moment's card as the game draws it and a link unfurls it: X's and Discord's feed size (16:9), a JPEG the
+ * sharer's browser makes and the identity Worker keeps, at most `bytes` of it, at `cardPath` under the game's address.
+ */
+export const SHARE_CARD = { width: 1200, height: 675, type: "image/jpeg", bytes: 1_000_000 } as const;
+export const shareCardPath = (code: string) => `/api/shares/${code}/card`;
+
+/**
+ * What a shared link says before it is opened, on its landing and in its unfurl: who shared which moment, and what
+ * Frontier is. A sharer with no public name is "A player".
+ */
+export const SHARED_MOMENT_WORDS = {
+  title: (name: string | null, moment: number) => `${name ?? "A player"} shared Day ${moment} of Frontier`,
+  pitch: "A new map every day. Send your armies into the fog and bring home what they find. Your realm is free.",
+} as const;
+
+/**
  * How long after it joined a friend a share brought may still count as activated (founded a realm on the link's
  * season board and cleared a site there): a join that takes longer is the share's, but not its activation.
  */

@@ -4,7 +4,7 @@
  * every client and core's story text share (nouns, numbers, times, names, the voice) are @bibliothecadao/types' words.
  */
 import type { ResolvedGameMode } from "@/config/game-modes/resolved-mode";
-import type { CampaignKey } from "@realms-world/identity";
+import { SHARED_MOMENT_WORDS, type CampaignKey } from "@realms-world/identity";
 import type { NotificationKind, NotificationLevel } from "@bibliothecadao/notifications";
 import type { RuinChest } from "@bibliothecadao/eternum";
 import {
@@ -694,8 +694,9 @@ export const DAY_SHARE_WORDS = {
 
 /** A shared link's landing: who shared which day, and the way into Frontier. */
 export const SHARED_LINK_WORDS = {
-  sharedDay: (name: string | null, day: number) => `${name ?? "A player"} shared ${DAY} ${day} of Frontier`,
-  pitch: "A new map every day. Send your armies into the fog and bring home what they find. Your realm is free.",
+  /** Its title and pitch are the link's unfurl's too (@realms-world/identity's SHARED_MOMENT_WORDS), so both say one thing. */
+  sharedDay: SHARED_MOMENT_WORDS.title,
+  pitch: SHARED_MOMENT_WORDS.pitch,
   play: "Start your adventure",
   opening: "Opening…",
   unknown: "This link leads to no shared day.",

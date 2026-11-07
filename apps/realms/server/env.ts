@@ -55,6 +55,8 @@ export interface IdentityEnv extends Schema.Schema.Type<typeof IdentityVars> {
   /** One chat room per room id, and one direct-message inbox per Realms account. */
   CHAT_ROOM: DurableObjectNamespace<import("./chat/chat-room").ChatRoom>;
   CHAT_INBOX: DurableObjectNamespace<import("./chat/chat-inbox").ChatInbox>;
+  /** Shared links' cards, one per link, which the links unfurl as (share-cards.ts). */
+  SHARE_CARDS: import("./share-cards").ShareCards;
 }
 
 const decodeIdentityVars = Schema.decodeUnknownSync(IdentityVars, { onExcessProperty: "ignore" });
@@ -77,6 +79,7 @@ export const decodeIdentityEnv = (raw: Record<string, unknown>): IdentityEnv => 
     SHARD_NOTIFIER: raw.SHARD_NOTIFIER as IdentityEnv["SHARD_NOTIFIER"],
     CHAT_ROOM: raw.CHAT_ROOM as IdentityEnv["CHAT_ROOM"],
     CHAT_INBOX: raw.CHAT_INBOX as IdentityEnv["CHAT_INBOX"],
+    SHARE_CARDS: raw.SHARE_CARDS as IdentityEnv["SHARE_CARDS"],
   };
 };
 

@@ -73,6 +73,40 @@ const fetchShard = (async (input: RequestInfo | URL, init?: RequestInit) => {
     );
   return body === undefined ? new Response("unavailable", { status: 503 }) : Response.json(body);
 }) as typeof fetch;
+/**
+ * The game's page as its host serves it at a shared link's address: its unfurl's tags as index.html writes them once
+ * built. Any other address is the host's 404.
+ */
+const GAME_PAGE = `<!doctype html><html><head><title>Realms</title>
+<meta name="description" content="Fully onchain strategy" />
+<meta property="og:title" content="Realms" />
+<meta property="og:description" content="Fully onchain strategy" />
+<meta property="og:image" content="${ORIGIN}/images/covers/link-preview.png" />
+<meta property="og:url" content="${ORIGIN}" />
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:image" content="${ORIGIN}/images/covers/link-preview.png" />
+</head><body><div id="root"></div></body></html>`;
+const fetchPage = async (request: Request) =>
+  new URL(request.url).pathname.startsWith("/s/")
+    ? new Response(GAME_PAGE, { headers: { "content-type": "text/html; charset=utf-8", "cache-control": "no-cache" } })
+    : new Response("not found", { status: 404 });
+/** R2 as the identity Worker uses it for shared cards, held in memory. */
+const memoryBucket = () => {
+  const objects = new Map<string, { bytes: Uint8Array; contentType: string | undefined }>();
+  return {
+    objects,
+    put: async (key: string, value: ArrayBuffer, options?: { httpMetadata?: { contentType?: string } }) => {
+      objects.set(key, { bytes: new Uint8Array(value), contentType: options?.httpMetadata?.contentType });
+      return {};
+    },
+    get: async (key: string) => {
+      const object = objects.get(key);
+      return object ? { body: new Blob([object.bytes]).stream() } : null;
+    },
+    head: async (key: string) => (objects.has(key) ? {} : null),
+  };
+};
+const shareCards = memoryBucket();
 /** The value relay's golden upgrade route, as identity calls it through its service binding. */
 const relay = vi.fn(async (_input: RequestInfo | URL, _init?: RequestInit) =>
   Response.json({ campaign: "devcon-2026", tier: "golden" }),
@@ -202,6 +236,7 @@ beforeAll(async () => {
     PUBLIC_RATE_LIMIT: { limit: async () => ({ success: true }) },
     SIGN_IN_CODE_RATE_LIMIT: { limit: async ({ key }) => ({ success: countSignInCode(key) <= 3 }) },
     VERSION: { id: "test", tag: "", timestamp: "" },
+    SHARE_CARDS: shareCards as unknown as IdentityEnv["SHARE_CARDS"],
   };
   auth = createIdentityAuth(env, {
     verifyWalletSignature: verifyAsWallet,
@@ -228,22 +263,27 @@ const shardManifest = (chainId: string) => ({
  */
 const createBrowser = (parentDomainCookies: string[] = []) => {
   const cookies = new Map<string, string>();
-  const request = async (path: string, init: { method?: string; body?: unknown; token?: string } = {}) => {
+  /** `file`: a body sent as itself, under its own type (an image), in place of JSON. */
+  const request = async (
+    path: string,
+    init: { method?: string; body?: unknown; token?: string; file?: { bytes: Uint8Array; type: string } } = {},
+  ) => {
     const response = await routeIdentityRequest(
       new Request(`${ORIGIN}${path}`, {
-        method: init.method ?? (init.body === undefined ? "GET" : "POST"),
+        method: init.method ?? (init.body === undefined && init.file === undefined ? "GET" : "POST"),
         headers: {
           origin: ORIGIN,
-          "content-type": "application/json",
+          "content-type": init.file?.type ?? "application/json",
           cookie: [...parentDomainCookies, ...[...cookies].map(([name, value]) => `${name}=${value}`)].join("; "),
           ...(init.token ? { authorization: `Bearer ${init.token}` } : {}),
         },
-        ...(init.body === undefined ? {} : { body: JSON.stringify(init.body) }),
+        ...(init.file ? { body: init.file.bytes } : init.body === undefined ? {} : { body: JSON.stringify(init.body) }),
       }),
       env,
       auth,
       {
         cache: noCache,
+        fetchPage,
         fetchShard,
         readLaunchDirectory: async () => launchDirectory,
       },
@@ -3854,6 +3894,82 @@ describe("shared links", () => {
     await visit(sharer.browser, code);
     await player("sharer-alt-second", sharer.browser);
     expect((await sharer.tally()).joined).toBe(0);
+  });
+
+  /** A JPEG as the share sheet's browser makes it: its start marker, then the rest of its bytes. */
+  const jpeg = (size = 2_048) => {
+    const bytes = new Uint8Array(size).fill(7);
+    bytes.set([0xff, 0xd8, 0xff, 0xe0]);
+    return bytes;
+  };
+  const upload = (who: Awaited<ReturnType<typeof player>>, code: string, bytes: Uint8Array, type = "image/jpeg") =>
+    who.browser.request(`/api/shares/${code}/card`, { method: "PUT", file: { bytes, type } });
+  const page = async (code: string) => {
+    const response = await createBrowser().request(`/s/${code}`);
+    return [response.status, await response.text()] as [number, string];
+  };
+  const tag = (html: string, name: string) =>
+    new RegExp(`<meta (?:property|name)="${name}" content="([^"]*)"`).exec(html)?.[1];
+
+  it("keeps the card a sharer's browser made for their link, and serves it to anyone", async () => {
+    const sharer = await player("sharer-card");
+    const code = await sharer.share(14);
+    const card = jpeg();
+    expect((await upload(sharer, code, card)).status).toBe(204);
+    const served = await createBrowser().request(`/api/shares/${code}/card`);
+    expect(served.status).toBe(200);
+    expect(served.headers.get("content-type")).toBe("image/jpeg");
+    expect(new Uint8Array(await served.arrayBuffer())).toEqual(card);
+    expect((await createBrowser().request(`/api/shares/${await sharer.share(15)}/card`)).status).toBe(404);
+  });
+
+  it("takes a card only from the link's sharer, and only a JPEG of at most a megabyte", async () => {
+    const sharer = await player("sharer-card-refused");
+    const other = await player("other-card-refused");
+    const code = await sharer.share(16);
+    expect((await upload(other, code, jpeg())).status).toBe(404);
+    expect((await upload(sharer, code, jpeg(), "image/png")).status).toBe(400);
+    expect((await upload(sharer, code, new Uint8Array(2_048).fill(7))).status).toBe(400);
+    expect((await upload(sharer, code, jpeg(1_000_001))).status).toBe(400);
+    const signedOut = createBrowser();
+    expect(
+      (
+        await signedOut.request(`/api/shares/${code}/card`, {
+          method: "PUT",
+          file: { bytes: jpeg(), type: "image/jpeg" },
+        })
+      ).status,
+    ).toBe(401);
+    expect(shareCards.objects.has(`cards/${code}.jpg`)).toBe(false);
+  });
+
+  it("unfurls a shared link as its own: who shared which day, the pitch, its address, and its card once made", async () => {
+    const sharer = await player("sharer-unfurl");
+    await env.DB.prepare(`UPDATE "user" SET "name" = 'Ash "Walker" <3' WHERE "realmsId" = ?`)
+      .bind(sharer.realmsId)
+      .run();
+    const code = await sharer.share(21);
+    const [status, before] = await page(code);
+    expect(status).toBe(200);
+    expect(tag(before, "og:title")).toBe("Ash &quot;Walker&quot; &lt;3 shared Day 21 of Frontier");
+    expect(before).toContain("<title>Ash &quot;Walker&quot; &lt;3 shared Day 21 of Frontier</title>");
+    expect(tag(before, "og:description")).toBe(
+      "A new map every day. Send your armies into the fog and bring home what they find. Your realm is free.",
+    );
+    expect(tag(before, "og:url")).toBe(`${ORIGIN}/s/${code}`);
+    // Until the sharer's browser made the card, the game's own preview stands.
+    expect(tag(before, "og:image")).toBe(`${ORIGIN}/images/covers/link-preview.png`);
+
+    await upload(sharer, code, jpeg());
+    const [, after] = await page(code);
+    expect(tag(after, "og:image")).toBe(`${ORIGIN}/api/shares/${code}/card`);
+    expect(tag(after, "twitter:image")).toBe(`${ORIGIN}/api/shares/${code}/card`);
+    expect(tag(after, "twitter:card")).toBe("summary_large_image");
+  });
+
+  it("serves the game's page as the host answered for a link that leads nowhere", async () => {
+    expect(await page("NOPE2345")).toEqual([200, GAME_PAGE]);
+    expect(await page("not-a-code")).toEqual([200, GAME_PAGE]);
   });
 
   it("reports every moment's funnel to the operator only, and leaves joins whose board cannot answer for later", async () => {

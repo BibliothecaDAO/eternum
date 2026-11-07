@@ -138,7 +138,7 @@ const chainSpelling = (value: unknown): string | null => {
 };
 
 /** The signed-in account's Realms id, or the refusal to answer with. */
-const signedInRealmsId = async (request: Request, auth: IdentityAuth): Promise<string | Response> => {
+export const signedInRealmsId = async (request: Request, auth: IdentityAuth): Promise<string | Response> => {
   const session = await auth.api.getSession({ headers: request.headers }).catch(() => undefined);
   if (session === undefined) return json({ error: "authentication_unavailable" }, 503);
   return session?.user.realmsId ?? json({ error: "unauthorized" }, 401);

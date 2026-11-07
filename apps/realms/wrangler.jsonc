@@ -18,7 +18,11 @@
     "staging": {
       "name": "realms-identity-staging",
       "workers_dev": false,
-      "routes": [{ "pattern": "play.dev-realms.party/api/*", "zone_name": "dev-realms.party" }],
+      "routes": [
+        { "pattern": "play.dev-realms.party/api/*", "zone_name": "dev-realms.party" },
+        { "pattern": "play.dev-realms.party/s/*", "zone_name": "dev-realms.party" },
+      ],
+      "r2_buckets": [{ "binding": "SHARE_CARDS", "bucket_name": "realms-share-cards-staging" }],
       "vars": {
         "ENVIRONMENT": "staging",
         "BASE_URL": "https://play.dev-realms.party",
@@ -50,7 +54,11 @@
     "production": {
       "name": "realms-identity",
       "workers_dev": false,
-      "routes": [{ "pattern": "play.realms.party/api/*", "zone_name": "realms.party" }],
+      "routes": [
+        { "pattern": "play.realms.party/api/*", "zone_name": "realms.party" },
+        { "pattern": "play.realms.party/s/*", "zone_name": "realms.party" },
+      ],
+      "r2_buckets": [{ "binding": "SHARE_CARDS", "bucket_name": "realms-share-cards" }],
       "vars": {
         "ENVIRONMENT": "production",
         "BASE_URL": "https://play.realms.party",
