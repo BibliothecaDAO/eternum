@@ -1,0 +1,118 @@
+<!doctype html>
+<!--
+  The video's locked first and last frames. `render.sh` screenshots this page into the PNGs beside it.
+  Query: ?frame=start|end&w=<px>&h=<px>. An HTML-based video (HyperFrames, Remotion, plain GSAP) may lift the
+  markup below into its own first and last scenes, so the frames match by construction.
+-->
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <style>
+      @font-face {
+        font-family: "Cinzel";
+        font-weight: 600;
+        src: url("../../../../apps/game/public/fonts/cinzel-semibold.woff2") format("woff2");
+      }
+      @font-face {
+        font-family: "Exo 2";
+        src: url("../../../../apps/game/public/fonts/exo-2.woff2") format("woff2");
+      }
+
+      :root {
+        --ground: #130f0c;
+        --cream: #f4ebdc;
+        --gold: #dfaa54;
+        --violet: #bf98fb;
+      }
+
+      html,
+      body {
+        margin: 0;
+        overflow: hidden;
+        background: var(--ground);
+      }
+
+      .stage {
+        position: relative;
+        overflow: hidden;
+      }
+
+      /* Start: the Frontier painting under the dark grade, no words. The column walks into the mist. */
+      .start {
+        background: url("../../../../apps/game/public/images/landscapes/frontier-mist-1536.webp") center / cover;
+      }
+      .start.portrait {
+        /* Hold the walking column in a 9:16 crop. */
+        background-position: 54% center;
+      }
+      .start::after {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background:
+          radial-gradient(ellipse at 50% 55%, transparent 35%, rgba(10, 8, 6, 0.75) 100%), rgba(10, 8, 6, 0.2);
+      }
+
+      /* End: the Frontier lockup, the promise, the address. */
+      .end {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        background:
+          radial-gradient(circle at 50% 38%, rgba(191, 152, 251, 0.16), transparent 42%),
+          radial-gradient(ellipse at 50% 50%, transparent 55%, rgba(0, 0, 0, 0.55) 100%), var(--ground);
+      }
+      .end img {
+        height: 48%;
+      }
+      .end .promise {
+        margin-top: 4.5%;
+        font: 600 4.3vh "Cinzel";
+        letter-spacing: 0.06em;
+        color: var(--cream);
+      }
+      .end .address {
+        margin-top: 1.6%;
+        font: 2.8vh "Exo 2";
+        letter-spacing: 0.08em;
+        color: var(--gold);
+      }
+      .end.portrait img {
+        height: auto;
+        width: 59%;
+      }
+      .end.portrait .promise {
+        font-size: 2.6vh;
+        margin-top: 8%;
+      }
+      .end.portrait .address {
+        font-size: 1.9vh;
+        margin-top: 2.5%;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="stage" id="stage"></div>
+
+    <template id="start"><div class="start"></div></template>
+    <template id="end">
+      <div class="end">
+        <img src="../../../../apps/game/public/images/logos/frontier-lockup.webp" alt="Frontier · Realms" />
+        <div class="promise">A NEW MAP EVERY DAY</div>
+        <div class="address">FREE TO PLAY &nbsp;·&nbsp; PLAY.REALMS.PARTY</div>
+      </div>
+    </template>
+
+    <script>
+      const params = new URLSearchParams(location.search);
+      const width = Number(params.get("w") ?? 1920);
+      const height = Number(params.get("h") ?? 1080);
+      const frame = document.getElementById(params.get("frame") ?? "start").content.firstElementChild.cloneNode(true);
+
+      frame.classList.toggle("portrait", height > width);
+      Object.assign(frame.style, { width: `${width}px`, height: `${height}px` });
+      document.getElementById("stage").replaceWith(frame);
+    </script>
+  </body>
+</html>

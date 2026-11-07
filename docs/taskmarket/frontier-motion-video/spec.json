@@ -1,0 +1,25 @@
+{
+  "cuts": {
+    "landscape": {
+      "required": true,
+      "width": 1920,
+      "height": 1080,
+      "startFrame": "frames/start-1920x1080.png",
+      "endFrame": "frames/end-1920x1080.png"
+    },
+    "portrait": {
+      "required": false,
+      "width": 1080,
+      "height": 1920,
+      "startFrame": "frames/start-1080x1920.png",
+      "endFrame": "frames/end-1080x1920.png"
+    }
+  },
+  "fps": 30,
+  "durationSeconds": { "min": 30, "max": 45 },
+  "videoCodec": "h264",
+  "audioCodec": "aac",
+  "maxMegabytes": 100,
+  "endFrameHoldSeconds": 2,
+  "minFrameSimilarity": 0.97
+}
