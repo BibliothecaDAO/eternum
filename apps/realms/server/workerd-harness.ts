@@ -144,6 +144,8 @@ export const startWorker = async (options: {
   return {
     mf,
     signInWithEmailCode,
+    /** The last sign-in code the email provider was asked to send to this address. */
+    sentCode: (email: string) => inbox.get(email),
     db: (await mf.getD1Database("DB")) as unknown as D1Database,
     dispose: async () => {
       await disposeWorker(mf);

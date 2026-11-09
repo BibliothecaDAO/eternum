@@ -1,5 +1,5 @@
 import { APP_HOST, DOCS_ADDRESS } from "@/config/app-address";
-import { FOOTER_WORDS, NEWS_WORDS } from "@/ui/design-system/kit/words";
+import { ACCOUNT_DELETION_WORDS, FOOTER_WORDS, NEWS_WORDS } from "@/ui/design-system/kit/words";
 import { PAYOUT_WALLET_CHANGE_SECONDS } from "@realms-world/value-ledger/payout-wallet";
 import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import type { ReactNode } from "react";
@@ -9,6 +9,7 @@ import { communityPlace } from "./community";
 import { useLayout } from "./frame/layout";
 import { PageFrame } from "./frame/page-frame";
 import { ageOf } from "./play/ages";
+import { ACCOUNT_DELETION_PAGE, DELETE_ACCOUNT_PATH } from "./profile/settings-route";
 import { AppPanel } from "@/ui/design-system/kit/app-elements";
 
 /** The terms, the privacy policy and the credits: static text, so the shell serves it with no game module. */
@@ -489,6 +490,13 @@ const PRIVACY: LegalSection[] = [
           Note that on-chain data cannot be modified or deleted due to blockchain immutability. To exercise your rights
           regarding off-chain data, contact us via Discord.
         </p>
+        <p>
+          You can delete your Realms account yourself, in Settings.{" "}
+          <Link to={ACCOUNT_DELETION_PAGE} className="text-app-accent underline">
+            {ACCOUNT_DELETION_WORDS.page}
+          </Link>{" "}
+          says what is deleted and what stays.
+        </p>
       </>
     ),
   },
@@ -576,6 +584,44 @@ const CREDITS: LegalSection[] = [
     ),
   },
 ];
+
+const BulletList = ({ lines }: { lines: readonly string[] }) => (
+  <ul>
+    {lines.map((line) => (
+      <li key={line}>{line}</li>
+    ))}
+  </ul>
+);
+
+/** The public page the app stores link to for account deletion: how, then what goes and what stays, as Settings says. */
+const ACCOUNT_DELETION: LegalSection[] = [
+  {
+    title: ACCOUNT_DELETION_WORDS.stepsTitle,
+    body: (
+      <>
+        <p>{ACCOUNT_DELETION_WORDS.intro}</p>
+        <ol className="list-decimal space-y-1 pl-5">
+          {ACCOUNT_DELETION_WORDS.steps.map((step) => (
+            <li key={step}>{step}</li>
+          ))}
+        </ol>
+        <p>
+          <Link to={DELETE_ACCOUNT_PATH} className="text-app-accent underline">
+            {ACCOUNT_DELETION_WORDS.openSettings}
+          </Link>
+        </p>
+        <p>{ACCOUNT_DELETION_WORDS.cannotSignIn}</p>
+        {CONTACT}
+      </>
+    ),
+  },
+  { title: ACCOUNT_DELETION_WORDS.goesTitle, body: <BulletList lines={ACCOUNT_DELETION_WORDS.goes} /> },
+  { title: ACCOUNT_DELETION_WORDS.staysTitle, body: <BulletList lines={ACCOUNT_DELETION_WORDS.stays} /> },
+];
+
+export const AccountDeletionPage = () => (
+  <LegalPage title={ACCOUNT_DELETION_WORDS.page} updated="Nov 2026" sections={ACCOUNT_DELETION} />
+);
 
 export const TermsPage = () => <LegalPage title={FOOTER_WORDS.terms} updated="Nov 2026" sections={TERMS} />;
 

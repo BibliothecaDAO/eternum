@@ -14,7 +14,8 @@ export type IdentityAction =
   | "portrait"
   | "wallet"
   | "send"
-  | "recover";
+  | "recover"
+  | "delete";
 
 export class WrongNetworkError extends Error {}
 
@@ -57,6 +58,7 @@ const FALLBACK: Record<IdentityAction, string> = {
   wallet: "Your wallet was not made. Try again.",
   send: "Nothing was sent. Try again.",
   recover: "The recovery did not start. Try again.",
+  delete: "Your account was not deleted. Try again.",
 };
 
 /** One sentence per failure the player can act on; the detail goes to the console. */

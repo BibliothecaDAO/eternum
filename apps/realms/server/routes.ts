@@ -1,6 +1,7 @@
 import { handlePayoutIdentity } from "./payout-identity";
 import { presentsOperatorToken, VISIT_RECORD_SECONDS } from "@realms-world/identity";
 
+import { handleAccountDeletion } from "./account-deletion";
 import type { IdentityAuth } from "./auth";
 import { routeChat } from "./chat/routes";
 import { handleBotDeviceApproval, handleDeviceChange } from "./devices";
@@ -44,8 +45,8 @@ interface WorkerPlatform {
 }
 
 /**
- * Every /api route: identity under /api/auth, a news email's stop link, then devices, profiles, chat, notification
- * settings, build orders, campaign tickets and the directory.
+ * Every /api route: identity under /api/auth, a news email's stop link, then the account's deletion, devices, profiles,
+ * chat, notification settings, build orders, campaign tickets and the directory.
  */
 export const routeIdentityRequest = async (
   request: Request,
@@ -81,6 +82,7 @@ export const routeIdentityRequest = async (
   if (requiresSameOrigin(request, pathname) && request.headers.get("origin") !== new URL(env.BASE_URL).origin) {
     return json({ error: "invalid_origin" }, 403);
   }
+  if (pathname === "/api/account" && request.method === "DELETE") return handleAccountDeletion(request, auth, env);
   if (pathname === "/api/devices" && request.method === "POST") {
     return handleDeviceChange(request, {
       auth,

@@ -161,6 +161,15 @@ export class ChatInbox extends DurableObject<Record<string, unknown>> {
   }
 
   /**
+   * The owner deleted their account (account-deletion.ts): its conversations and block list go, and its open sockets
+   * close. Each peer's inbox keeps its own copy of their conversation, under the same retention as any other.
+   */
+  async forgetOwner(): Promise<void> {
+    this.ctx.storage.sql.exec("DELETE FROM messages; DELETE FROM threads; DELETE FROM blocks");
+    for (const socket of this.ctx.getWebSockets()) socket.close(1008, "account_deleted");
+  }
+
+  /**
    * The owner's conversations, the latest first: each thread with its last message and what the owner has not read.
    * This is how a client that starts empty (a new device, a reload, a return after messages came in offline) finds
    * them. Every conversation is listed, one with an account the owner blocked too: the client shows or hides it by the

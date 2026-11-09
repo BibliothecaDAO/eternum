@@ -61,7 +61,7 @@ export const APP_SPEC: readonly SpecPage[] = [
   {
     page: "Settings",
     route: "/profile/settings",
-    job: "Every setting on one page: account, payout wallet, notifications, music, devices, Sign out.",
+    job: "Every setting on one page: account, payout wallet, notifications, music, devices, Sign out, Delete account.",
     primary: "Link the payout wallet (the page's real job: it pays Blitz entries and prizes).",
     verdict: "keep",
   },
@@ -80,6 +80,14 @@ export const APP_SPEC: readonly SpecPage[] = [
     primary: "Read.",
     verdict: "merge",
     why: "Three pages of one kind: one Legal page with its three documents as tabs.",
+  },
+  {
+    page: "Delete your account",
+    route: "/account/delete",
+    job: "Public: how to delete a Realms account, what is deleted and what stays, and the way to Settings' row.",
+    primary: "Open Settings.",
+    verdict: "keep",
+    why: "Google Play requires a public web address for account deletion.",
   },
   {
     page: "Connect",
