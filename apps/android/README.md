@@ -52,33 +52,48 @@ icons, the App Link paths, or the target SDK Play requires each year. Game chang
    a `versionCode` it has seen) and writes both into `twa-manifest.json` and `app/build.gradle`; put the App Link paths
    back as above.
 2. Merge to `next`. The `android app` workflow (`.github/workflows/android-app.yml`) builds the release bundle on every
-   change under `apps/android/` and on manual dispatch, and uploads it as `android-bundle-unsigned`. Outside pull
-   requests it signs it with the upload key and uploads `android-bundle-signed`; without the key it warns and stops
-   there.
-3. Upload `android-bundle-signed` in Play Console: internal testing, then closed testing, then production (#5196).
+   change under `apps/android/` and on manual dispatch, and uploads it unsigned as `android-bundle-unsigned`.
+3. Sign it on the owner's machine (below). Workflows read no stored secret, so the upload key never reaches GitHub.
+4. Upload the signed bundle in Play Console: internal testing, then closed testing, then production (#5196).
+
+## Sign a release
+
+The upload key lives only on the owner's machine, in the production private directory that already holds the deployment
+credentials (`deploy/first/README.md`: outside the repository, mode 0700), as `android/upload.keystore`, mode 0600.
+`*.keystore` is ignored here too, so a copy dropped into this folder is never committed. Keep a backup offline.
+
+Take the bundle from the workflow run of the release commit, or build it from that commit with `./gradlew bundleRelease`
+(`app/build/outputs/bundle/release/app-release.aab`). An Android App Bundle is signed with `jarsigner` (apksigner signs
+APKs only), which asks for the keystore and key passwords:
+
+```bash
+KEYSTORE=<production private directory>/android/upload.keystore
+gh run download <run id> --name android-bundle-unsigned --dir /tmp/realms-bundle
+jarsigner -keystore "$KEYSTORE" -sigalg SHA256withRSA -digestalg SHA-256 \
+  -signedjar realms-<versionCode>.aab /tmp/realms-bundle/app-release.aab upload
+jarsigner -verify realms-<versionCode>.aab    # "jar verified."; warnings about a self-signed key are expected
+```
 
 ## Owner setup
 
 1. **Play account.** An organization Play developer account (it needs a D-U-N-S number); a personal account made after
    November 2023 must run a 14-day closed test with 12 testers before production.
-2. **Upload key.** Create it once, keep the file and its passwords backed up offline, never in git:
+2. **Upload key.** Create it once, in the production private directory (above):
 
    ```bash
-   keytool -genkeypair -v -keystore upload.keystore -alias upload -keyalg RSA -keysize 2048 -validity 10000
-   base64 -w0 upload.keystore    # the value of ANDROID_UPLOAD_KEYSTORE_BASE64
+   mkdir -p <production private directory>/android
+   keytool -genkeypair -v -keystore <production private directory>/android/upload.keystore -alias upload \
+     -keyalg RSA -keysize 2048 -validity 10000
+   chmod 600 <production private directory>/android/upload.keystore
    ```
 
-   In GitHub, Settings → Environments, create `android-upload`, limit its deployment branches to `next`, and add the
-   secrets `ANDROID_UPLOAD_KEYSTORE_BASE64`, `ANDROID_UPLOAD_KEYSTORE_PASSWORD`, `ANDROID_UPLOAD_KEY_ALIAS` (`upload`)
-   and `ANDROID_UPLOAD_KEY_PASSWORD`. They are the only stored secrets any workflow may read
-   (`.github/scripts/workflow-credentials.test.ts`).
-
 3. **Play App Signing.** Create the app `party.realms.play` and upload the first signed bundle by hand; Play keeps the
-   key installs are signed with and accepts bundles signed with the upload key.
+   key installs are signed with and accepts bundles signed with the upload key. A lost or leaked upload key is replaced
+   through Play Console.
 4. **Fingerprints (#5191).** Add both keys' SHA-256 to `twa-manifest.json`, from `apps/android`:
 
    ```bash
-   keytool -list -v -keystore upload.keystore -alias upload | grep SHA256
+   keytool -list -v -keystore <production private directory>/android/upload.keystore -alias upload | grep SHA256
    npx @bubblewrap/cli fingerprint add <upload key SHA-256> --name "upload key"
    npx @bubblewrap/cli fingerprint add <Play App Signing key SHA-256> --name "Play App Signing key"
    ```

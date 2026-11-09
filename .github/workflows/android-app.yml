@@ -1,8 +1,8 @@
 name: android app
 
-# The Android app's shell (apps/android): its Play release bundle, built on every change to it and signed with the Play
-# upload key outside pull requests. The site it opens deploys on its own: a store release is needed only when the shell
-# changes.
+# The Android app's shell (apps/android): its Play release bundle, built unsigned on every change to it. The owner signs
+# it with the upload key on their own machine (apps/android/README.md): workflows read no stored secret. The site it opens
+# deploys on its own: a store release is needed only when the shell changes.
 on:
   pull_request:
     paths: ["apps/android/**"]
@@ -48,53 +48,4 @@ jobs:
         with:
           name: android-bundle-unsigned
           path: apps/android/app/build/outputs/bundle/release/app-release.aab
-          if-no-files-found: error
-
-  # The upload key lives in the android-upload environment, which only next may use: a pull request never reaches it.
-  sign:
-    needs: bundle
-    if: github.event_name != 'pull_request'
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    environment: android-upload
-    env:
-      KEYSTORE_BASE64: ${{ secrets.ANDROID_UPLOAD_KEYSTORE_BASE64 }}
-      KEYSTORE_PASSWORD: ${{ secrets.ANDROID_UPLOAD_KEYSTORE_PASSWORD }}
-      KEY_ALIAS: ${{ secrets.ANDROID_UPLOAD_KEY_ALIAS }}
-      KEY_PASSWORD: ${{ secrets.ANDROID_UPLOAD_KEY_PASSWORD }}
-    steps:
-      - name: Find the upload key
-        id: key
-        run: |
-          if [ -n "$KEYSTORE_BASE64" ] && [ -n "$KEYSTORE_PASSWORD" ] && [ -n "$KEY_ALIAS" ] && [ -n "$KEY_PASSWORD" ]; then
-            echo "present=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "::warning title=Unsigned bundle::the android-upload environment lacks the upload key secrets (apps/android/README.md)"
-            echo "present=false" >> "$GITHUB_OUTPUT"
-          fi
-      - name: Download the unsigned bundle
-        if: steps.key.outputs.present == 'true'
-        uses: actions/download-artifact@v4
-        with:
-          name: android-bundle-unsigned
-      - name: Set up JDK 17
-        if: steps.key.outputs.present == 'true'
-        uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: "17"
-      - name: Sign the bundle with the upload key
-        if: steps.key.outputs.present == 'true'
-        run: |
-          echo "$KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/upload.keystore"
-          jarsigner -keystore "$RUNNER_TEMP/upload.keystore" -storepass:env KEYSTORE_PASSWORD -keypass:env KEY_PASSWORD \
-            -sigalg SHA256withRSA -digestalg SHA-256 app-release.aab "$KEY_ALIAS"
-          rm "$RUNNER_TEMP/upload.keystore"
-          jarsigner -verify app-release.aab | grep -q "jar verified."
-      - name: Upload the signed bundle
-        if: steps.key.outputs.present == 'true'
-        uses: actions/upload-artifact@v4
-        with:
-          name: android-bundle-signed
-          path: app-release.aab
           if-no-files-found: error
