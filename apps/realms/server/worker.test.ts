@@ -56,16 +56,14 @@ it("serves health and email sign-in while the chain is unreachable, and the top 
 
 it("unfurls a shared day through the deployed bundle: the host's page with the link's tags, then its published card", async () => {
   const sharer = await worker.signInWithEmailCode("day-sharer@realms.test");
-  const asSharer = (path: string, init: RequestInit = {}) =>
+  const asSharer = (path: string, method: string, type: string, body: string | Uint8Array) =>
     worker.mf.dispatchFetch(`${ORIGIN}${path}`, {
-      ...init,
-      headers: { origin: ORIGIN, cookie: sharer.cookie, ...(init.headers as Record<string, string>) },
+      method,
+      headers: { origin: ORIGIN, cookie: sharer.cookie, "content-type": type },
+      body,
     });
-  const made = await asSharer("/api/shares", {
-    method: "POST",
-    headers: { "content-type": "application/json" },
-    body: JSON.stringify({ kind: "frontier-day", chainId: "0x1", gameId: 1, moment: 12 }),
-  });
+  const moment = { kind: "frontier-day", chainId: "0x1", gameId: 1, moment: 12 };
+  const made = await asSharer("/api/shares", "POST", "application/json", JSON.stringify(moment));
   const { code } = (await made.json()) as { code: string };
   const tag = (html: string, name: string) =>
     new RegExp(`<meta (?:property|name)="${name}" content="([^"]*)"`).exec(html)?.[1];
@@ -83,11 +81,7 @@ it("unfurls a shared day through the deployed bundle: the host's page with the l
   // The press of a way to post publishes the card, which the link then unfurls as, to any crawler.
   const jpeg = new Uint8Array(4_096).fill(9);
   jpeg.set([0xff, 0xd8, 0xff, 0xe0]);
-  const published = await asSharer(`/api/shares/${code}/card`, {
-    method: "PUT",
-    headers: { "content-type": "image/jpeg" },
-    body: jpeg,
-  });
+  const published = await asSharer(`/api/shares/${code}/card`, "PUT", "image/jpeg", jpeg);
   expect(published.status).toBe(204);
   const after = await crawl(`/s/${code}?via=x`);
   expect(tag(after, "og:image")).toBe(`${ORIGIN}/api/shares/${code}/card`);
