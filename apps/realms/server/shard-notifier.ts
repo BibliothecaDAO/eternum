@@ -34,12 +34,12 @@ import {
   type RestingActor,
   type RestWatch,
 } from "./army-rest";
-import { decodeIdentityEnv, vapidKeysOf, type IdentityEnv } from "./env";
+import { decodeIdentityEnv, type IdentityEnv } from "./env";
 import { planDayOpenings, readEnrolledAccounts, readHomeClaim, type DayOpening } from "./day-open";
 import { NotificationPreferenceStore } from "./notification-preference-store";
 import { PushSubscriptionStore, type PushSubscriptionRow } from "./push-subscription-store";
 import { realmsIdsOfAccounts } from "./realms-accounts";
-import { sendPush } from "./web-push";
+import { sendToDevice } from "./push-notifications";
 
 const POLL_MS = 3_000;
 
@@ -425,7 +425,7 @@ const deliver = (env: IdentityEnv, entry: OutboxEntry, now: number): Promise<Del
         return { ended: "unwanted" } as const;
       if (!wantsGameAlerts(device, now) || (levels.get(entry.owner) ?? "off") === "off")
         return { ended: "unwanted" } as const;
-      const outcome = yield* Effect.promise(() => sendPush(vapidKeysOf(env), device, envelopeAt(entry, now, device)));
+      const outcome = yield* Effect.promise(() => sendToDevice(env, device, envelopeAt(entry, now, device)));
       if (outcome === "expired") yield* store.expire(entry.owner, entry.subscriptionId);
       return outcome === "retry"
         ? retryOrExpire(entry, now)

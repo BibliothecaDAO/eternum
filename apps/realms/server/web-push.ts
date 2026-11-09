@@ -1,4 +1,5 @@
 import { buildPushPayload } from "@block65/webcrypto-web-push";
+import { Buffer } from "node:buffer";
 import type { PushEnvelope } from "@bibliothecadao/notifications";
 
 interface VapidKeys {
@@ -14,10 +15,10 @@ interface PushDevice {
 }
 
 /** The longest one push service may take to answer: a stalled one must not hold every later alert for hours. */
-const SEND_TIMEOUT_MS = 10_000;
+export const SEND_TIMEOUT_MS = 10_000;
 
 /** What the push service did with one message: kept it, forgot the device, asked to retry, or refused it. */
-type PushOutcome = "accepted" | "expired" | "retry" | "rejected";
+export type PushOutcome = "accepted" | "expired" | "retry" | "rejected";
 
 /**
  * Encrypts the envelope for the device (RFC 8291), signs it with our VAPID key (RFC 8292) and hands it over. It lives at
@@ -59,12 +60,11 @@ export const sendPush = async (
   return "rejected";
 };
 
-/** A Topic is at most 32 characters of base64url (RFC 8030 5.4): the tag's SHA-256, cut to fit. */
-const pushTopic = async (tag: string): Promise<string> => {
-  const digest = new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(tag)));
-  return btoa(String.fromCharCode(...digest))
-    .replace(/\+/g, "-")
-    .replace(/\//g, "_")
-    .replace(/=+$/, "")
-    .slice(0, 32);
+/**
+ * A Topic is at most 32 characters of base64url (RFC 8030 5.4): the tag's SHA-256, cut to fit. APNs collapses by the
+ * same name, so one tag replaces itself on every transport.
+ */
+export const pushTopic = async (tag: string): Promise<string> => {
+  const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(tag));
+  return Buffer.from(digest).toString("base64url").slice(0, 32);
 };

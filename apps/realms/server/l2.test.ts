@@ -1,7 +1,7 @@
 import { afterEach, expect, it, vi } from "vitest";
 import { RpcProvider } from "starknet";
 import { identityL2Configuration, identityProvider, verifyIdentityChain, fetchIdentityRpc } from "./l2";
-import { decodeIdentityEnv, socialProvidersOf, vapidKeysOf } from "./env";
+import { apnsCredentialsOf, decodeIdentityEnv, socialProvidersOf, vapidKeysOf } from "./env";
 import { verifyWalletOnL2 } from "./wallet-signature";
 
 const env = {
@@ -176,4 +176,13 @@ it("requires the generated push pair but no sign-in provider or duplicated const
   for (const name of ["WEB_PUSH_VAPID_PUBLIC_KEY", "WEB_PUSH_VAPID_PRIVATE_KEY", "MARKETPLACE_API_URL"])
     expect(() => decodeIdentityEnv({ ...settings, [name]: undefined })).toThrow("identity_environment_invalid");
   expect(() => decodeIdentityEnv({ ...settings, APPLE_CLIENT_SECRET: "jwt" })).toThrow("APPLE_CLIENT_ID and");
+  expect(apnsCredentialsOf(decoded)).toBeNull();
+  const apns = { APNS_TEAM_ID: "team", APNS_KEY_ID: "key", APNS_PRIVATE_KEY: "pem" };
+  expect(apnsCredentialsOf(decodeIdentityEnv({ ...settings, ...apns }))).toEqual({
+    teamId: "team",
+    keyId: "key",
+    privateKey: "pem",
+  });
+  for (const name of Object.keys(apns))
+    expect(() => decodeIdentityEnv({ ...settings, ...apns, [name]: undefined })).toThrow("APNS_TEAM_ID, APNS_KEY_ID");
 });

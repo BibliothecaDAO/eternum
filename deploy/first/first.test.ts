@@ -636,6 +636,27 @@ test("the identity Worker gets AVNU's paymaster key only when inputs.json holds 
     expect(Object.values(workerSecrets(worker, input, secrets, keys, undefined))).not.toContain("fake-avnu-key");
 });
 
+test("the identity Worker gets the APNs key only when inputs.json holds all of it, and setup never asks for it", () => {
+  for (const environment of ["dev", "production"] as const)
+    expect(setupQuestions(environments[environment]).map(([name]) => name)).not.toContain("apnsPrivateKey");
+  const identity = workers.find((worker) => worker.id === "identity")!;
+  expect(Object.keys(workerSecrets(identity, input, secrets, keys, undefined))).not.toContain("APNS_PRIVATE_KEY");
+  const apns = { apnsTeamId: "FAKETEAM01", apnsKeyId: "FAKEKEY001", apnsPrivateKey: "fake-apns-pem" };
+  expect(workerSecrets(identity, { ...input, ...apns }, secrets, keys, undefined)).toMatchObject({
+    APNS_TEAM_ID: "FAKETEAM01",
+    APNS_KEY_ID: "FAKEKEY001",
+    APNS_PRIVATE_KEY: "fake-apns-pem",
+  });
+  for (const part of Object.keys(apns))
+    for (const value of [undefined, " "])
+      expect(() => validateInputs({ ...input, ...apns, [part]: value }, environments.dev)).toThrow("or none of them");
+  const others = workers.filter((worker) => worker.id !== "identity" && worker.id !== "admin");
+  for (const worker of others)
+    expect(Object.values(workerSecrets(worker, { ...input, ...apns }, secrets, keys, undefined))).not.toContain(
+      "fake-apns-pem",
+    );
+});
+
 test("the status monitor emails incidents through the identity Worker's Resend key, to the address setup recorded", () => {
   const status = workers.find((worker) => worker.id === "status")!;
   expect(workerSecrets(status, { ...input, alertEmail: "oncall@example.test" }, secrets, keys, undefined)).toEqual({

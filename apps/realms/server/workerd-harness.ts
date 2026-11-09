@@ -5,6 +5,7 @@ import { mkdtempSync, readdirSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { Miniflare } from "miniflare";
+import type { ApnsCredentials } from "./apns-push";
 import { afterAll } from "vitest";
 import { unstable_readConfig } from "wrangler";
 
@@ -72,6 +73,8 @@ export const startWorker = async (options: {
   environment?: "staging" | "production";
   storage: string;
   vapid: { publicKey: string; privateKey: string };
+  /** The APNs key, for an environment that pushes to the iOS app. */
+  apns?: ApnsCredentials;
   outbound: (request: Request) => Response | Promise<Response>;
   launchDirectory?: (request: Request) => Response | Promise<Response>;
 }) => {
@@ -106,6 +109,13 @@ export const startWorker = async (options: {
       RESEND_API_KEY: "unused",
       WEB_PUSH_VAPID_PUBLIC_KEY: options.vapid.publicKey,
       WEB_PUSH_VAPID_PRIVATE_KEY: options.vapid.privateKey,
+      ...(options.apns
+        ? {
+            APNS_TEAM_ID: options.apns.teamId,
+            APNS_KEY_ID: options.apns.keyId,
+            APNS_PRIVATE_KEY: options.apns.privateKey,
+          }
+        : {}),
     },
     serviceBindings: {
       LAUNCH: (request: Request) => options.launchDirectory?.(request) ?? Response.json({ chains: [] }),
@@ -177,6 +187,20 @@ export const vapidKeys = async () => {
   const jwk = (await crypto.subtle.exportKey("jwk", keys.privateKey)) as JsonWebKey;
   const raw = (await crypto.subtle.exportKey("raw", keys.publicKey)) as ArrayBuffer;
   return { publicKey: base64url(raw), privateKey: jwk.d! };
+};
+
+/** An APNs signing key as Apple issues it (a .p8 file's PEM), and its public half, which checks what was signed with it. */
+export const apnsKey = async () => {
+  const keys = (await crypto.subtle.generateKey({ name: "ECDSA", namedCurve: "P-256" }, true, [
+    "sign",
+    "verify",
+  ])) as CryptoKeyPair;
+  const der = Buffer.from((await crypto.subtle.exportKey("pkcs8", keys.privateKey)) as ArrayBuffer).toString("base64");
+  const privateKey = `-----BEGIN PRIVATE KEY-----\n${der.match(/.{1,64}/g)!.join("\n")}\n-----END PRIVATE KEY-----\n`;
+  // Apple names each key by its own id; a provider token is cached by it.
+  const keyId = crypto.randomUUID().replaceAll("-", "").slice(0, 10).toUpperCase();
+  const credentials: ApnsCredentials = { teamId: "TEAM000001", keyId, privateKey };
+  return { credentials, publicKey: keys.publicKey };
 };
 
 /**

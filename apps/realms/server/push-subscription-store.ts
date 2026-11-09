@@ -4,12 +4,14 @@ import type { PushRegistration } from "@bibliothecadao/notifications";
 const PUSH_FOREGROUND_LEASE_MS = 60_000;
 const DEVICES_PER_OWNER = 10;
 
-export interface PushSubscriptionRow {
+/** Where a device's pushes go: a browser's Web Push endpoint and keys, or the iOS app's APNs device token. */
+type PushTransport =
+  | { kind: "web"; endpoint: string; p256dh: string; auth: string; apnsToken: null }
+  | { kind: "apns"; apnsToken: string; endpoint: null; p256dh: null; auth: null };
+
+export type PushSubscriptionRow = PushTransport & {
   id: string;
   owner: string;
-  endpoint: string;
-  p256dh: string;
-  auth: string;
   revocationHash: string;
   gameAlertsEnabledAt: number | null;
   directMessagesEnabledAt: number | null;
@@ -17,7 +19,7 @@ export interface PushSubscriptionRow {
   /** The phone's IANA zone, as it last reported it; null until it does. */
   timeZone: string | null;
   createdAt: number;
-}
+};
 
 const tokenHash = async (token: string) =>
   [...new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(token)))]
@@ -63,7 +65,7 @@ function createPushSubscriptionStore(db: D1Database) {
           .all<PushSubscriptionRow>();
         return results;
       }),
-    /** A push service reported the endpoint gone. */
+    /** A push service reported the endpoint or device token gone. */
     expire: (owner: string, id: string) =>
       storeEffect(async () => {
         await db
@@ -103,18 +105,20 @@ async function registerSubscription(db: D1Database, input: PushRegistration) {
   const inserted = await db
     .prepare(
       `INSERT INTO "notification_push_subscriptions"
-         ("id", "owner", "endpoint", "p256dh", "auth", "revocationHash", "gameAlertsEnabledAt", "directMessagesEnabledAt",
-          "createdAt")
-       SELECT ?, ?, ?, ?, ?, ?, ?, ?, ?
+         ("id", "owner", "kind", "endpoint", "p256dh", "auth", "apnsToken", "revocationHash", "gameAlertsEnabledAt",
+          "directMessagesEnabledAt", "createdAt")
+       SELECT ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
        WHERE (SELECT count(*) FROM "notification_push_subscriptions" WHERE "owner" = ?) < ?
        ON CONFLICT DO NOTHING RETURNING "id"`,
     )
     .bind(
       registration.id,
       registration.owner,
+      registration.kind,
       registration.endpoint,
       registration.p256dh,
       registration.auth,
+      registration.apnsToken,
       registration.revocationHash,
       registration.gameAlertsEnabledAt,
       registration.directMessagesEnabledAt,
@@ -155,11 +159,9 @@ async function enableRequestedChannels(
 async function buildSubscriptionRow(input: PushRegistration): Promise<PushSubscriptionRow> {
   const now = Date.now();
   return {
+    ...transportOf(input),
     id: input.id,
     owner: input.owner,
-    endpoint: input.subscription.endpoint,
-    p256dh: input.subscription.keys.p256dh,
-    auth: input.subscription.keys.auth,
     revocationHash: await tokenHash(input.token),
     gameAlertsEnabledAt: input.gameAlerts ? now : null,
     directMessagesEnabledAt: input.directMessages ? now : null,
@@ -169,9 +171,18 @@ async function buildSubscriptionRow(input: PushRegistration): Promise<PushSubscr
   };
 }
 
+function transportOf(input: PushRegistration): PushTransport {
+  if ("apnsToken" in input)
+    return { kind: "apns", apnsToken: input.apnsToken, endpoint: null, p256dh: null, auth: null };
+  const { endpoint, keys } = input.subscription;
+  return { kind: "web", endpoint, p256dh: keys.p256dh, auth: keys.auth, apnsToken: null };
+}
+
 function matchesRegistration(existing: PushSubscriptionRow, expected: PushSubscriptionRow) {
   return (
+    existing.kind === expected.kind &&
     existing.endpoint === expected.endpoint &&
+    existing.apnsToken === expected.apnsToken &&
     existing.revocationHash === expected.revocationHash &&
     existing.p256dh === expected.p256dh &&
     existing.auth === expected.auth
