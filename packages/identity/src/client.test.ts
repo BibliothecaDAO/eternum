@@ -301,6 +301,27 @@ describe("decoded identity boundary", () => {
     expect(signTypedData).not.toHaveBeenCalled();
     expect(fetch).toHaveBeenCalledTimes(1);
   });
+  it("lists the offered sign-in providers in the sheet's order, and refuses one it does not know", async () => {
+    const answering = (providers: string[]) =>
+      createIdentityClient({ apiUrl: "/api", fetch: async () => Response.json({ providers }) });
+    expect(await answering(["twitter", "discord", "google"]).availableSignInProviders()).toEqual([
+      "google",
+      "discord",
+      "twitter",
+    ]);
+    expect(await answering([]).availableSignInProviders()).toEqual([]);
+    await expect(answering(["facebook"]).availableSignInProviders()).rejects.toBeInstanceOf(IdentityInvalidResponse);
+  });
+  it("starts a provider's sign-in with that provider and the page to come back to", async () => {
+    const fetch = vi.fn(async () => Response.json({ url: "https://accounts.google.com/o/oauth2/auth?state=s" }));
+    const client = createIdentityClient({ apiUrl: "/api", fetch });
+    expect(await client.socialSignInUrl("apple", "/play")).toBe("https://accounts.google.com/o/oauth2/auth?state=s");
+    expect(JSON.parse(String((fetch.mock.calls[0] as unknown as [string, RequestInit])[1].body))).toEqual({
+      provider: "apple",
+      callbackURL: "/play",
+      errorCallbackURL: "/play",
+    });
+  });
   it.each([
     "getPushConfiguration",
     "getNotificationPreferences",

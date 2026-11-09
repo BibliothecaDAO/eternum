@@ -52,7 +52,7 @@ const realmsIdOf = (ctx: SignedInContext) => {
 const unauthorized = (reason: string) => new APIError("UNAUTHORIZED", { message: `Unauthorized: ${reason}` });
 
 /**
- * A wallet is linked to a Realms account, never a way to sign in: players sign in with Discord or an emailed code. An
+ * A wallet is linked to a Realms account, never a way to sign in: players sign in with a provider or an emailed code. An
  * account has one wallet at a time and a wallet one account at a time; the unique `address` column is the race-proof
  * truth. Linking a new wallet replaces the account's current one in one update, and unlinking frees it for another
  * account.

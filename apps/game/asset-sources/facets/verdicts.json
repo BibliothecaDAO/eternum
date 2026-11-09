@@ -984,6 +984,16 @@
     "reason": "Nothing shipped for CoinGecko in the footer before. The official mark as realms.world shows it, geometry unchanged from its source (apps/web/src/site/data/socials.ts); white currentColor, as LORDS.",
     "officialSource": "apps/web/src/site/data/socials.ts"
   },
+  "official/brand-google": {
+    "verdict": "beats shipped",
+    "reason": "Nothing shipped for Google before; its sign-in button needs it. Google's standard G as its sign-in branding guidelines publish it, geometry and colours unchanged.",
+    "officialSource": "https://developers.google.com/identity/branding-guidelines"
+  },
+  "official/brand-apple": {
+    "verdict": "beats shipped",
+    "reason": "Nothing shipped for Apple before; its sign-in button needs it. Apple's logo, geometry unchanged, white on the dark button as Sign in with Apple's guidelines ask.",
+    "officialSource": "https://simpleicons.org/?q=apple"
+  },
   "faceted/beast-troll": {
     "verdict": "beats shipped",
     "reason": "Owner-selected troll-b: distinct guard silhouette at HUD sizes, normalized to the production subject-fill contract."

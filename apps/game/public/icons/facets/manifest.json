@@ -1466,6 +1466,16 @@
       "label": "CoinGecko",
       "family": "Brands"
     },
+    "brand-google": {
+      "token": "brand-google",
+      "label": "Google",
+      "family": "Brands"
+    },
+    "brand-apple": {
+      "token": "brand-apple",
+      "label": "Apple",
+      "family": "Brands"
+    },
     "beast-ammit": {
       "art": "beast-ammit",
       "label": "Ammit",
