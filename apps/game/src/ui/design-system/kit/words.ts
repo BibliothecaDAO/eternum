@@ -1225,9 +1225,9 @@ export const ACCOUNT_DELETION_WORDS = {
   staysTitle: "What stays",
   stays: [
     "Your Realms wallet stays on Starknet with everything in it: Realms cannot take or move it. Only your passkey controls it now. This app can no longer send from it, and email recovery ends, a recovery under way included. Move what you want to keep first.",
-    "Your game accounts stay on chain with their progress, but nobody can sign in to play them.",
+    "Your game accounts stay on chain with their progress. No one can sign in to them or add a device to them again; a device already added keeps its key on chain.",
     "Ratings stay on chain under the wallets that played.",
-    "Messages you sent stay with the players who got them and in game chat rooms, until chat's 30-day clean-up removes them.",
+    "Messages you sent stay with the players who got them and in chat rooms until they are 30 days old, then they are deleted.",
     "Campaign tickets, past wallet links and payout records stay under an anonymous id, so past games and payouts still add up.",
   ],
   confirm: "We email you a code. Enter it to delete your account.",

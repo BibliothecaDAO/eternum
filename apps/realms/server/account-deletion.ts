@@ -9,9 +9,15 @@ import { spendSignInCode } from "./wallet-changes";
 
 /**
  * DELETE /api/account `{ otp }`: deletes the signed-in Realms account, once an emailed sign-in code (the one a wallet
- * change takes) confirms it. The code is spent first; then one transaction removes or keeps every row the account owns,
- * and its chat inbox is emptied. A deleted account has no session, no email, no name and no way in: signing in with
- * the same email later makes a new account with a new Realms id.
+ * change takes) confirms it. The code is spent first; then one transaction removes or keeps every row the account owns
+ * and records the deletion (`account_deletions`). A deleted account has no session, no email, no name and no way in:
+ * signing in with the same email later makes a new account with a new Realms id.
+ *
+ * Chat lives outside that transaction, in the account's inbox, so its end is a second step that can always finish:
+ * the inbox is marked deleted and emptied and closes the account's sockets, in the inbox and in every room it joined
+ * (chat-inbox.ts `forgetOwner`). The request runs it at once; if it fails or the Worker stops first, the minute cron
+ * finishes it from the recorded deletion (`finishAccountDeletions`). Until then the account has no session, so it opens
+ * no new socket.
  *
  * The `user` row stays as an anonymous tombstone holding only its id, Realms id and creation time, because rows that
  * must stay reference its Realms id (and `campaign_tickets` would cascade away with it).
@@ -30,7 +36,10 @@ import { spendSignInCode } from "./wallet-changes";
  * | `default_wallets`, `wallet_recoveries`, `sponsored_executions`     | deleted: the wallet stays on chain, owned by   |
  * |                                                                    | the player's passkey; email recovery ends      |
  * | `wallet_change_notices`                                            | deleted                                        |
- * | `ChatInbox` (direct messages, block list)                          | emptied                                        |
+ * | `ChatInbox` (direct messages, block list, rooms joined)            | emptied, and closed to new messages for good   |
+ * | chat sockets (the inbox's and each room's)                         | closed                                         |
+ * | `account_deletions`                                                | written: the Realms id, when, and when chat    |
+ * |                                                                    | was closed                                     |
  * | `campaign_tickets`                                                 | kept: a spent flyer code stays spent, and the  |
  * |                                                                    | home it gave its source to is on chain         |
  * | `wallet_link_history`                                              | kept, its open link closed now: it says which  |
@@ -38,7 +47,7 @@ import { spendSignInCode } from "./wallet-changes";
  * | `pay_decisions`                                                    | kept: the ledger's record of signed payouts    |
  * | `social_handoffs`                                                  | kept until they expire (minutes); they hold    |
  * |                                                                    | session cookies this deletion already ended    |
- * | `ChatRoom` messages, peers' `ChatInbox` copies                     | kept under chat's 30-day retention             |
+ * | `ChatRoom` messages, peers' `ChatInbox` copies                     | kept until 30 days old (chat/retention.ts)     |
  * | On chain: gameplay accounts, ratings by wallet, the default wallet | kept: Realms cannot delete or move them        |
  */
 export const handleAccountDeletion = async (
@@ -53,8 +62,28 @@ export const handleAccountDeletion = async (
   const refusal = await spendCode(auth, env.DB, session.user, otp);
   if (refusal) return refusal;
   await env.DB.batch(accountDeletion(env.DB, session.user, session.user.realmsId, Date.now()));
-  await env.CHAT_INBOX.get(env.CHAT_INBOX.idFromName(session.user.realmsId)).forgetOwner();
+  await closeChat(env, session.user.realmsId);
   return json({ deleted: true });
+};
+
+/** The cron's step: closes chat for every deletion whose request stopped before it did (safe to run again). */
+export const finishAccountDeletions = async (env: Pick<IdentityEnv, "DB" | "CHAT_INBOX">): Promise<void> => {
+  const { results } = await env.DB.prepare(
+    `SELECT "realms_id" FROM "account_deletions" WHERE "chat_closed_at" IS NULL LIMIT 50`,
+  ).all<{ realms_id: string }>();
+  for (const { realms_id } of results) await closeChat(env, realms_id);
+};
+
+/** The deleted account's chat ends (its inbox's `forgetOwner`), then the deletion records it; a failure waits for the cron. */
+const closeChat = async (env: Pick<IdentityEnv, "DB" | "CHAT_INBOX">, realmsId: string) => {
+  try {
+    await env.CHAT_INBOX.get(env.CHAT_INBOX.idFromName(realmsId)).forgetOwner(realmsId);
+    await env.DB.prepare(`UPDATE "account_deletions" SET "chat_closed_at" = ? WHERE "realms_id" = ?`)
+      .bind(Date.now(), realmsId)
+      .run();
+  } catch (error) {
+    console.error("account_deletion_chat_unfinished", realmsId, error);
+  }
 };
 
 const CODE = new RegExp(`^\\d{${SIGN_IN_CODE_LENGTH}}$`);
@@ -99,7 +128,10 @@ const DELETED_BY_REALMS_ID = [
   ["sponsored_executions", "realms_id"],
 ] as const;
 
-/** One transaction: the account's rows removed, its wallet link closed, and its `user` row left anonymous. */
+/**
+ * One transaction: the account's rows removed, its wallet link closed, its `user` row left anonymous, and the deletion
+ * recorded with its chat still to close.
+ */
 const accountDeletion = (db: D1Database, user: User, realmsId: string, now: number): D1PreparedStatement[] => [
   ...DELETED_BY_REALMS_ID.map(([table, column]) =>
     db.prepare(`DELETE FROM "${table}" WHERE "${column}" = ?`).bind(realmsId),
@@ -112,6 +144,7 @@ const accountDeletion = (db: D1Database, user: User, realmsId: string, now: numb
     .prepare(`UPDATE "wallet_link_history" SET "replaced_at" = ? WHERE "account" = ? AND "replaced_at" IS NULL`)
     .bind(now, realmsId),
   anonymiseUser(db, user.id, now),
+  db.prepare(`INSERT INTO "account_deletions" ("realms_id", "deleted_at") VALUES (?, ?)`).bind(realmsId, now),
 ];
 
 /**

@@ -8,8 +8,9 @@ import {
   type WorldPublishMessage,
 } from "@bibliothecadao/types";
 
-import { chatMemberOf, consumeChatBudget, readChatFrame, sendChat, type ChatMember } from "./chat-sockets";
+import { chatInboxOf, chatMemberOf, consumeChatBudget, readChatFrame, sendChat, type ChatMember } from "./chat-sockets";
 import { pushMentions } from "./mention-push";
+import { retentionCutoff, wakeAtNextExpiry } from "./retention";
 import { isPushDeviceId } from "@bibliothecadao/notifications";
 interface RoomMember extends ChatMember {
   canWrite: boolean;
@@ -20,8 +21,7 @@ interface RoomMember extends ChatMember {
   seenOn?: string | null;
 }
 
-/** A room keeps thirty days of messages, and never more than its last five hundred. */
-const RETENTION_MS = 30 * 24 * 60 * 60 * 1000;
+/** A room keeps thirty days of messages (retention.ts), and never more than its last five hundred. */
 const HISTORY_LIMIT = 500;
 
 interface MessageRow extends Record<string, SqlStorageValue> {
@@ -36,7 +36,11 @@ interface MessageRow extends Record<string, SqlStorageValue> {
 
 /**
  * One chat room: its members' sockets and its history. Sockets use the hibernation API only, with no timer or
- * interval, so a room with no traffic is evicted from memory and costs nothing until the next message wakes it.
+ * interval, so a room with no traffic is evicted from memory and costs nothing until the next message wakes it, or its
+ * alarm, once, when its oldest message turns thirty days.
+ *
+ * Each member's inbox records the rooms it joins, so deleting an account closes its sockets here (`forgetMember`); a
+ * socket admitted for an account its inbox already counts as deleted closes at once.
  */
 export class ChatRoom extends DurableObject<Record<string, unknown>> {
   constructor(ctx: DurableObjectState, env: Record<string, unknown>) {
@@ -58,6 +62,11 @@ export class ChatRoom extends DurableObject<Record<string, unknown>> {
     this.ctx.acceptWebSocket(server, [member.realmsId]);
     const canWrite = request.headers.get("x-chat-can-write") === "true";
     server.serializeAttachment({ ...member, canWrite } satisfies RoomMember);
+    // Accepted before the inbox is asked: a deletion that lands while it answers finds this socket to close.
+    if (!(await chatInboxOf(this.env, member.realmsId).enterRoom(room))) {
+      server.close(1008, "account_deleted");
+      return new Response(null, { status: 101, webSocket: client });
+    }
     sendChat(server, {
       type: "joined:zone",
       zoneId: room,
@@ -95,6 +104,18 @@ export class ChatRoom extends DurableObject<Record<string, unknown>> {
     this.leave(socket);
   }
 
+  override async alarm(): Promise<void> {
+    await this.forgetExpired();
+  }
+
+  /**
+   * The account was deleted (account-deletion.ts): its sockets here close. Each close tells the room the account left,
+   * as any leaving does, and a closing socket is no longer listed as present.
+   */
+  forgetMember(realmsId: string): void {
+    for (const socket of this.ctx.getWebSockets(realmsId)) socket.close(1008, "account_deleted");
+  }
+
   /** Read-only readiness for the external monitor; it opens no socket and writes no message. */
   async health(): Promise<{ success: true }> {
     this.ctx.storage.sql.exec("SELECT id FROM messages LIMIT 1").toArray();
@@ -106,6 +127,7 @@ export class ChatRoom extends DurableObject<Record<string, unknown>> {
     cursor: string | undefined,
     limit: number,
   ): Promise<{ messages: WorldChatMessage[]; nextCursor: string | null }> {
+    await this.forgetExpired();
     const room = (await this.ctx.storage.get<string>("room")) ?? "";
     const before = cursor ? Date.parse(cursor) : Number.MAX_SAFE_INTEGER;
     const rows = this.ctx.storage.sql
@@ -140,10 +162,10 @@ export class ChatRoom extends DurableObject<Record<string, unknown>> {
       ...Object.values(row),
     );
     this.ctx.storage.sql.exec(
-      "DELETE FROM messages WHERE createdAt < ? OR id NOT IN (SELECT id FROM messages ORDER BY createdAt DESC LIMIT ?)",
-      row.createdAt - RETENTION_MS,
+      "DELETE FROM messages WHERE id NOT IN (SELECT id FROM messages ORDER BY createdAt DESC LIMIT ?)",
       HISTORY_LIMIT,
     );
+    await this.forgetExpired();
     this.broadcast({
       type: "world:message",
       zoneId: room,
@@ -152,6 +174,14 @@ export class ChatRoom extends DurableObject<Record<string, unknown>> {
     });
     // A player it mentions is told on each device not showing this room to them now.
     await pushMentions(this.env, room, row, (realmsId) => this.seenOn(realmsId));
+  }
+
+  /** Deletes the messages past thirty days, and wakes the room again when the next one is (retention.ts). */
+  private async forgetExpired() {
+    const sql = this.ctx.storage.sql;
+    sql.exec("DELETE FROM messages WHERE createdAt <= ?", retentionCutoff());
+    const { oldest } = sql.exec<{ oldest: number | null }>("SELECT MIN(createdAt) AS oldest FROM messages").one();
+    await wakeAtNextExpiry(this.ctx.storage, oldest);
   }
 
   /** The push devices an account's sockets here show the room on, visibly, now. */
@@ -171,6 +201,7 @@ export class ChatRoom extends DurableObject<Record<string, unknown>> {
   private presence(): PlayerPresencePayload[] {
     const members = new Map<string, ChatMember>();
     for (const socket of this.ctx.getWebSockets()) {
+      if (socket.readyState !== WebSocket.OPEN) continue;
       const member = socket.deserializeAttachment() as ChatMember;
       members.set(member.realmsId, member);
     }

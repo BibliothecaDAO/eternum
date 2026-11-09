@@ -208,6 +208,7 @@ function installLabFixtures(screen: LabScreen, field: number | null): () => void
     "campaignReferral",
     "campaignReferrer",
     "readDefaultWallet",
+    "deleteAccount",
   ];
   const descriptors = identityMethods.map(
     (name) => [name, Object.getOwnPropertyDescriptor(identityClient, name)] as const,
@@ -268,8 +269,8 @@ const answerAppReads = (screen: LabScreen, field: number | null) => {
 };
 
 /**
- * The identity service's answers for the account page: a code is always sent, and a wallet change spends the lab's
- * one code and refuses any other, as the service refuses it. A Devcon screen's account holds its ticket, or opens it
+ * The identity service's answers for the account page: a code is always sent, and a wallet change or the account's
+ * deletion spends the lab's one code and refuses any other, as the service refuses it. A Devcon screen's account holds its ticket, or opens it
  * with any flyer's code, as the service answers a first redemption. The client holds its own fetch, so its calls are
  * answered on the client itself.
  */
@@ -302,6 +303,7 @@ const answerIdentity = (screen: LabScreen) => {
     },
     unlinkWallet: spend,
     linkWallet: async ({ code }: { code?: string }) => spend(code).then(() => LAB_PLAYER),
+    deleteAccount: spend,
   });
 };
 

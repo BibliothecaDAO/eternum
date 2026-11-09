@@ -66,7 +66,7 @@ it("says what is deleted and what stays, the wallet's recovery included, before 
   expect(sheet).toContain("Your notification settings and push alerts on every device");
   expect(sheet).toContain("email recovery ends");
   expect(sheet).toContain("Your game accounts stay on chain");
-  expect(sheet).toContain("in game chat rooms");
+  expect(sheet).toContain("until they are 30 days old");
   expect(sendCode).not.toHaveBeenCalled();
 });
 
