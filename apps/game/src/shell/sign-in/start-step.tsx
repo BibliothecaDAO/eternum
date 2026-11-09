@@ -11,11 +11,14 @@ import { FailureLine } from "./failure-line";
  */
 export const StartStep = ({
   sending,
+  preparing,
   error,
   onDiscord,
   onEmail,
 }: {
   sending: boolean;
+  /** Discord's address is on its way: the button waits for it. */
+  preparing: boolean;
   error: string | null;
   onDiscord?: (() => void) | undefined;
   onEmail: (email: string) => void;
@@ -29,7 +32,14 @@ export const StartStep = ({
     <div className="flex flex-col gap-4">
       {onDiscord && (
         <>
-          <AppButton kind="primary" size="lg" icon="discord" onClick={onDiscord} disabled={sending}>
+          <AppButton
+            kind="primary"
+            size="lg"
+            icon="discord"
+            onClick={onDiscord}
+            disabled={sending}
+            busy={preparing ? SIGN_IN_WORDS.preparing : undefined}
+          >
             {SIGN_IN_WORDS.discord}
           </AppButton>
           <div className="flex items-center gap-3 text-app-label text-app-muted">

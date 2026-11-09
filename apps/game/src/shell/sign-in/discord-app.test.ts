@@ -8,7 +8,6 @@ const WEB =
   "https://discord.com/api/oauth2/authorize?scope=identify+email&response_type=code&client_id=42&redirect_uri=https%3A%2F%2Fid.test%2Fapi%2Fauth%2Fcallback%2Fdiscord&state=abc&prompt=none";
 const IPHONE = "Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 Mobile/15E148";
 const ANDROID = "Mozilla/5.0 (Linux; Android 15; Pixel 9) AppleWebKit/537.36 Chrome/130.0 Mobile Safari/537.36";
-const DESKTOP = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/130.0 Safari/537.36";
 
 const on = (userAgent: string) => vi.spyOn(navigator, "userAgent", "get").mockReturnValue(userAgent);
 const setVisibility = (state: DocumentVisibilityState) => {
@@ -38,13 +37,6 @@ describe("Discord's sign-in on a phone", () => {
     expect(intent).toBe(
       `intent://${discordAppUrl(WEB).slice("discord://".length)}#Intent;scheme=discord;package=com.discord;S.browser_fallback_url=${encodeURIComponent(WEB)};end`,
     );
-  });
-
-  it("stays on the website on a computer, with the identity service's address unchanged", () => {
-    on(DESKTOP);
-    openDiscordSignIn(WEB);
-    vi.advanceTimersByTime(APP_WAIT_MS);
-    expect(opened.mock.calls).toEqual([[WEB]]);
   });
 
   it("hands Android the app, with the website as Chrome's fallback", () => {

@@ -37,6 +37,7 @@ const labConnectStep = (step: string | undefined): { title: string; body: ReactN
         body: (
           <StartStep
             sending={false}
+            preparing={false}
             // Discord refused: its email already has an account, which signs in with an email code.
             error={step === "start-refused" ? labRefusal("discord", "account_not_linked") : null}
             onDiscord={noop}
@@ -66,7 +67,16 @@ const labConnectStep = (step: string | undefined): { title: string; body: ReactN
     case "discord":
       return {
         title: SIGN_IN_WORDS.discord,
-        body: <HandoffStep checking={false} error={null} onCode={async () => false} onDiscord={noop} onTyping={noop} />,
+        body: (
+          <HandoffStep
+            checking={false}
+            preparing={false}
+            error={null}
+            onCode={async () => false}
+            onDiscord={noop}
+            onTyping={noop}
+          />
+        ),
       };
     case "name":
     case "name-refused":

@@ -579,8 +579,16 @@ describe("Connect with Discord on a phone", () => {
   /** An authorize answer the test lets through when it chooses, as a slow identity service would. */
   const slowAnswer = () => {
     let send!: (url: string) => void;
-    const answer = new Promise<string>((resolve) => (send = resolve));
-    return { answer, send: (url: string) => act(async () => send(url)) };
+    let refuse!: (cause: Error) => void;
+    const answer = new Promise<string>((resolve, reject) => {
+      send = resolve;
+      refuse = reject;
+    });
+    return {
+      answer,
+      send: (url: string) => act(async () => send(url)),
+      fail: (cause: Error) => act(async () => refuse(cause)),
+    };
   };
   const button = (label: string) =>
     [...document.body.querySelectorAll("button")].find((each) => each.textContent === label);
@@ -628,15 +636,60 @@ describe("Connect with Discord on a phone", () => {
     }
   });
 
-  it("a tap before the answer waits for that same ask, never a second one", async () => {
+  it("while the address is on its way Discord waits, the answer opens nothing by itself, and the next tap opens the app inside itself", async () => {
     const slow = slowAnswer();
     const { ui, asked, opened } = await openOn(ANDROID, slow.answer);
     try {
-      await press("Discord");
-      expect(opened).not.toHaveBeenCalled();
+      expect(button("Preparing…")?.disabled).toBe(true);
+      await press("Preparing…");
       await slow.send(WEB);
+      expect(opened).not.toHaveBeenCalled();
+      expect(pendingDiscordStart()).toBeNull();
+      expect(button("Discord")?.disabled).toBe(false);
+      act(() => {
+        button("Discord")!.click();
+        expect(opened.mock.calls).toEqual([[discordAndroidIntent(WEB)]]);
+      });
       expect(asked).toHaveBeenCalledTimes(1);
+    } finally {
+      await ui.unmount();
+    }
+  });
+
+  it("after a refused ask, a tap asks again and opens nothing; the tap after the answer opens the app inside itself", async () => {
+    const slow = slowAnswer();
+    const { ui, asked, opened } = await openOn(ANDROID, slow.answer);
+    try {
+      await slow.fail(new IdentityRequestError(503, "unavailable"));
+      asked.mockImplementation(async () => WEB);
+      await press("Discord");
+      expect(asked).toHaveBeenCalledTimes(2);
+      expect(opened).not.toHaveBeenCalled();
+      act(() => {
+        button("Discord")!.click();
+        expect(opened.mock.calls).toEqual([[discordAndroidIntent(WEB)]]);
+      });
+      expect(asked).toHaveBeenCalledTimes(2);
+    } finally {
+      await ui.unmount();
+    }
+  });
+
+  it("on the Discord step, an address grown too old is asked again by Try Discord again, and only the next tap opens it", async () => {
+    vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout", "setInterval", "clearInterval", "Date"] });
+    const { ui, asked, opened } = await openOn(ANDROID);
+    const LATER = WEB.replace("state=first", "state=later");
+    try {
+      await press("Discord");
+      await wait(8 * 60_000);
+      asked.mockImplementation(async () => LATER);
+      await press("Try Discord again");
+      expect(asked).toHaveBeenCalledTimes(2);
       expect(opened.mock.calls).toEqual([[discordAndroidIntent(WEB)]]);
+      act(() => {
+        button("Try Discord again")!.click();
+        expect(opened.mock.calls).toEqual([[discordAndroidIntent(WEB)], [discordAndroidIntent(LATER)]]);
+      });
     } finally {
       await ui.unmount();
     }

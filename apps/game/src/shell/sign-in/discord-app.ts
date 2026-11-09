@@ -4,7 +4,7 @@ import { pageNavigation } from "@/utils/page-navigation";
 /**
  * Discord's sign-in, opened in the Discord app on a phone that has it, where the player is already signed in to
  * Discord: one tap on Authorize instead of a password and a code in the browser. The website is the way when there is
- * no app, on the player's choice, and on a computer.
+ * no app, on the player's choice, and on a computer, which loads it as a page.
  *
  * - The app's own address for a discord.com page is `discord://-/<path>`; its Authorize screen takes the same query.
  *   The https address cannot do it: on an iPhone Discord's apple-app-site-association refuses `/oauth2/authorize` with
@@ -38,15 +38,16 @@ export const discordAndroidIntent = (web: string) =>
   `intent://${appPath(web)}#Intent;scheme=discord;package=com.discord;S.browser_fallback_url=${encodeURIComponent(web)};end`;
 
 /**
- * Opens Discord's sign-in at `web`, the identity service's authorize address, in the app where there is one. Returns
- * what stops the rest of it (an iPhone's website fallback still to come). It must run inside the player's tap: a
- * browser hands a page to another app only from a tap.
+ * Opens Discord's sign-in at `web`, the identity service's authorize address, in a phone's app (`opensDiscordApp`).
+ * Returns what stops the rest of it (an iPhone's website fallback still to come). It must run inside the player's tap:
+ * a browser hands a page to another app only from a tap.
  */
 export const openDiscordSignIn = (web: string): (() => void) => {
-  if (isAndroid()) pageNavigation.open(discordAndroidIntent(web));
-  else if (isAppleMobile()) return openAppThenWebsite(web);
-  else pageNavigation.open(web);
-  return () => {};
+  if (isAndroid()) {
+    pageNavigation.open(discordAndroidIntent(web));
+    return () => {};
+  }
+  return openAppThenWebsite(web);
 };
 
 const openAppThenWebsite = (web: string) => {

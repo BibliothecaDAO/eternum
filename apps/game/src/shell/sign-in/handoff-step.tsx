@@ -15,6 +15,7 @@ import { FailureLine } from "./failure-line";
  */
 export const HandoffStep = ({
   checking,
+  preparing,
   error,
   onCode,
   onDiscord,
@@ -22,6 +23,8 @@ export const HandoffStep = ({
   onTyping,
 }: {
   checking: boolean;
+  /** Discord's address is on its way: Try Discord again waits for it. */
+  preparing: boolean;
   error: string | null;
   /** Signs in with the code; false when it was refused, and the boxes clear for another try. */
   onCode: (code: string) => Promise<boolean>;
@@ -51,7 +54,12 @@ export const HandoffStep = ({
         onType={type}
       />
       {checking && <p className="text-app-strong text-app-muted">{SIGN_IN_WORDS.checking}</p>}
-      <AppButton kind="secondary" icon="discord" onClick={onDiscord}>
+      <AppButton
+        kind="secondary"
+        icon="discord"
+        onClick={onDiscord}
+        busy={preparing ? SIGN_IN_WORDS.preparing : undefined}
+      >
         {SIGN_IN_WORDS.discordAgain}
       </AppButton>
       {onBrowser && (

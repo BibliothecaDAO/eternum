@@ -118,16 +118,29 @@ const AnonymousConnect = ({
   // Discord brings the player back to `next`, or to this page; a failure comes back to the same page.
   const discord = useDiscordAttempt(next ?? returnPathOf(location), appHere && discordOffered);
 
-  // The address is already there on a phone, so the app opens inside the tap; otherwise it opens once it comes.
-  const goToDiscord = (open: (address: string) => void) => () =>
+  const startDiscord = (open: () => void) => {
+    rememberDiscordStart(next);
+    setStep({ kind: "discord" });
+    open();
+  };
+  // A phone opens the app only from a tap that holds the address; a tap without one asks for it and opens nothing.
+  const openApp = () => {
+    const address = discord.ready();
+    if (address === null) return prepareApp();
+    startDiscord(() => discord.inApp(address));
+  };
+  // A refused ask says why; an answer makes the next tap the one that opens the app.
+  const prepareApp = () =>
     void run("discord", async () => {
-      const address = discord.ready() ?? (await discord.fetch());
-      if (address === null) return;
-      rememberDiscordStart(next);
-      setStep({ kind: "discord" });
-      open(address);
+      await discord.fetch();
     });
-  const continueWithDiscord = goToDiscord(discord.inApp);
+  // The website is a page load, which needs no tap: it opens once its address comes.
+  const openWebsite = () =>
+    void run("discord", async () => {
+      const address = await discord.fetch();
+      if (address !== null) startDiscord(() => discord.inBrowser(address));
+    });
+  const continueWithDiscord = appHere ? openApp : openWebsite;
 
   const emailCode = (email: string) =>
     void run("send-code", async () => {
@@ -139,10 +152,11 @@ const AnonymousConnect = ({
       <ShellWindow title={SIGN_IN_WORDS.discord} onClose={onClose}>
         <HandoffStep
           checking={running === "handoff"}
+          preparing={discord.asking}
           error={error}
           onCode={(code) => run("handoff", async () => applySession(await identityClient.claimDiscordHandoff(code)))}
           onDiscord={continueWithDiscord}
-          onBrowser={appHere ? goToDiscord(discord.inBrowser) : undefined}
+          onBrowser={appHere ? openWebsite : undefined}
           onTyping={() => setError(null)}
         />
       </ShellWindow>
@@ -172,6 +186,7 @@ const AnonymousConnect = ({
     <ShellWindow title={WORDS.connect} onClose={onClose}>
       <StartStep
         sending={running === "send-code" || running === "discord"}
+        preparing={discord.asking}
         error={error}
         onDiscord={providers.includes("discord") ? continueWithDiscord : undefined}
         onEmail={emailCode}

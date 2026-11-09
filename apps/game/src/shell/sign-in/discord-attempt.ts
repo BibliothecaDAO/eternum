@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import { identityClient } from "@/hooks/context/identity-session";
 import { pageNavigation } from "@/utils/page-navigation";
@@ -9,9 +9,10 @@ import { openDiscordSignIn } from "./discord-app";
  * The Connect window's one Discord sign-in attempt: the authorize address the identity service gave it, opened in the
  * app, in the browser or again, and nothing more once the window let it go.
  *
- * - With `early`, a phone asks for the address as soon as Discord is offered, so the tap opens the app from inside
- *   itself: a browser hands a page to another app only from a tap, and a slow answer would outlast it (Chrome:
- *   developer.chrome.com/docs/android/intents). It asks again before the address grows too old.
+ * - The app opens only from a tap that already holds the address: a browser hands a page to another app only from a
+ *   tap, and a slow answer would outlast it (Chrome: developer.chrome.com/docs/android/intents). `asking` says an
+ *   address is on its way, so the button can wait for it instead of taking a tap it cannot use.
+ * - With `early`, a phone asks for the address as soon as Discord is offered, and again before it grows too old.
  * - Each new address marks this browser as the one its sign-in belongs to (discord-handoff.ts), so an attempt keeps its
  *   address for the app, the browser and a retry, and asks for none while it is under way.
  * - Closing the window, signing in (the window goes) or opening again stops what an earlier launch still had to do, and
@@ -21,14 +22,20 @@ export const useDiscordAttempt = (returnTo: string, early: boolean) => {
   const attempt = useRef<Attempt | null>(null);
   const stopLaunch = useRef(() => {});
   const open = useRef(true);
+  const [asking, setAsking] = useState(false);
 
   const begin = useCallback(() => {
     const started = startAttempt(returnTo);
     attempt.current = started;
-    // A refused ask leaves no attempt: the tap asks again and shows that answer's failure.
-    started.answer.catch(() => {
-      if (attempt.current === started) attempt.current = null;
-    });
+    setAsking(true);
+    // A refused ask leaves no attempt: the next tap asks again and shows that answer's failure.
+    void started.answer
+      .catch(() => null)
+      .then((address) => {
+        if (attempt.current !== started) return;
+        if (address === null) attempt.current = null;
+        setAsking(false);
+      });
     return started;
   }, [returnTo]);
 
@@ -53,6 +60,8 @@ export const useDiscordAttempt = (returnTo: string, early: boolean) => {
   };
 
   return {
+    /** Whether an address is on its way. */
+    asking,
     /** The attempt's address, when it is already known: a tap can then open it from inside itself. */
     ready: (): string | null => current()?.address ?? null,
     /** Waits for the attempt's address, asking for one if none is under way; null once the window let it go. */
@@ -61,12 +70,12 @@ export const useDiscordAttempt = (returnTo: string, early: boolean) => {
       const address = await asked.answer;
       return open.current && attempt.current === asked ? address : null;
     },
-    /** Opens the address in the app where there is one, stopping what an earlier launch still had to do. */
+    /** Opens the address in a phone's app, from inside the tap, stopping what an earlier launch still had to do. */
     inApp: (address: string) => {
       stopLaunch.current();
       stopLaunch.current = openDiscordSignIn(address);
     },
-    /** Opens the address in this browser, the player's choice over the app. */
+    /** Opens the address in this browser: a computer's way, and a phone player's choice over the app. */
     inBrowser: (address: string) => {
       stopLaunch.current();
       pageNavigation.open(address);

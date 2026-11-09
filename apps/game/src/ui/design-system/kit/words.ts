@@ -881,6 +881,8 @@ export const PITCH = "A new land every day";
 /** The sign-in flow's words: its titles, its two ways in and the steps on its buttons. */
 export const SIGN_IN_WORDS = {
   discord: "Discord",
+  /** On a phone's Discord button while its sign-in address is on its way: the app opens only from a tap that has it. */
+  preparing: "Preparing…",
   or: "or",
   email: "Email",
   sendCode: "Send code",
