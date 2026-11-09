@@ -4,10 +4,14 @@ import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 
-/** Identity's tally of the player's shared days, as GET /api/shares answers it. */
+/** Identity's tally of the player's shared days, as GET /api/shares answers it, and the account signed in. */
 const service = vi.hoisted(() => ({ shareTally: vi.fn() }));
+const identity = vi.hoisted(() => ({
+  session: { user: { realmsId: "0xa" } } as { user: { realmsId: string } } | null,
+}));
 vi.mock("@/hooks/context/identity-session", async (original) => ({
   ...(await original<typeof import("@/hooks/context/identity-session")>()),
+  useIdentitySession: () => identity,
   identityClient: service,
 }));
 
@@ -18,6 +22,7 @@ let root: Root;
 beforeEach(() => {
   (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
   service.shareTally.mockReset();
+  identity.session = { user: { realmsId: "0xa" } };
   host = document.createElement("div");
   document.body.append(host);
   root = createRoot(host);
@@ -27,8 +32,10 @@ afterEach(async () => {
   host.remove();
 });
 
-const draw = async () => {
-  const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+/** Opens the player's page afresh (a new mount), on its own app or on the app `client` already serves. */
+const draw = async (client = new QueryClient({ defaultOptions: { queries: { retry: false } } })) => {
+  await act(async () => root.unmount());
+  root = createRoot(host);
   await act(async () =>
     root.render(
       <QueryClientProvider client={client}>
@@ -36,7 +43,7 @@ const draw = async () => {
       </QueryClientProvider>,
     ),
   );
-  await act(() => new Promise((resolve) => setTimeout(resolve, 0)));
+  await act(() => new Promise((resolve) => setTimeout(resolve, 10)));
 };
 const figures = () =>
   [...host.querySelectorAll(".app-figure")].map((figure) => [
@@ -56,11 +63,35 @@ it("counts each step a friend took through the player's shared days", async () =
   ]);
 });
 
-it("stands only once the player has shared a day, and says nothing when identity cannot tell", async () => {
+it("stands only once the player has posted a day, and says nothing when identity cannot tell", async () => {
   service.shareTally.mockResolvedValue({ links: 0, posted: 0, visits: 0, joined: 0, activated: 0 });
+  await draw();
+  expect(host.textContent).toBe("");
+  // A sheet opened and closed without a post made a link, but shared no day.
+  service.shareTally.mockResolvedValue({ links: 1, posted: 0, visits: 0, joined: 0, activated: 0 });
   await draw();
   expect(host.textContent).toBe("");
   service.shareTally.mockRejectedValue(new Error("identity unavailable"));
   await draw();
   expect(host.textContent).toBe("");
+});
+
+it("never shows the account before's counts to the next account on the same app, while its own are read or refused", async () => {
+  const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  service.shareTally.mockResolvedValue({ links: 6, posted: 5, visits: 1_240, joined: 31, activated: 12 });
+  await draw(client);
+  expect(figures()).toHaveLength(4);
+
+  // A signs out, then B signs in; B's read is slow, then refused.
+  identity.session = null;
+  await draw(client);
+  expect(host.textContent).toBe("");
+  let refuse!: (error: Error) => void;
+  service.shareTally.mockReturnValue(new Promise((_, reject) => (refuse = reject)));
+  identity.session = { user: { realmsId: "0xb" } };
+  await draw(client);
+  expect(host.textContent).toBe("");
+  await act(async () => refuse(new Error("identity unavailable")));
+  expect(host.textContent).toBe("");
+  expect(client.getQueryCache().findAll({ queryKey: ["own-shares", "0xa"] })).toEqual([]);
 });

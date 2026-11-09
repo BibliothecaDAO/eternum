@@ -1,25 +1,23 @@
 import "@/ui/design-system/kit/app-sheet.css";
 import "./day-share.css";
 
-import { sharePathVia, type ShareChannel, type ShareMoment } from "@realms-world/identity";
 import { formatShort } from "@bibliothecadao/types";
-import { useQuery } from "@tanstack/react-query";
-import { useLayoutEffect, useRef, useState, type Ref, type RefObject } from "react";
-import { createPortal } from "react-dom";
+import { useEffect, useLayoutEffect, useRef, useState, type Ref, type RefObject } from "react";
 
-import { identityClient } from "@/hooks/context/identity-session";
 import { usePlayerDisplayName, usePlayerName, usePlayerProfile } from "@/hooks/use-player-profile";
 import { playerPortraitUrl } from "@/services/identity/player-portrait";
 import { CARD_CUTS, canShareCardFile, cardJpeg, type CardCut } from "@/utils/card-image";
 
 import { useLayout } from "../frame/layout";
 
-import { shareHint, ShareSteps } from "./share-steps";
+import { useShareLink, useShareTally } from "./own-shares";
+import { shareHint, StepNumber, useShareSteps } from "./share-steps";
 import { SystemShare } from "./system-share";
 import { ageOf } from "../play/ages";
 import { Icon } from "@/ui/design-system/icon";
-import { AppGameName, AppIconButton, AppPortrait } from "@/ui/design-system/kit/app-elements";
-import { CLOSE, DAY, DAY_SHARE_WORDS } from "@/ui/design-system/kit/words";
+import { AGE_LOCKUP } from "@/ui/design-system/icon-meaning";
+import { HudButton, HudIconButton, HudModalLayer, HudNotice } from "@/ui/design-system/kit/hud-elements";
+import { CLOSE, DAY, DAY_SHARE_WORDS, SHARE_WORDS } from "@/ui/design-system/kit/words";
 
 import { dayTotalCells, type DayTotals } from "@/ui/features/frontier/log/day-totals";
 import { DAY_MARKS, dayPostText, rankMove, shownTrail, type DayMark } from "@/ui/features/frontier/rollover/day-share";
@@ -41,14 +39,14 @@ export interface SharedDay {
 }
 
 /**
- * Sharing a Frontier day, from the day-done card: the day's card at the size it is shared, fitted to the screen, then
- * the two steps (Copy image, Post on X). A phone whose share sheet takes images also gets Share above them, to any app
- * (owner, 7 November 2026: the day's card goes past X; the season's recap stays X only). A desktop draws the wide cut,
- * a phone the tall one, as the season's recap does; the link always unfurls as the wide cut, which a phone draws out of
- * sight for it. The post's link is the player's own for this day (identity's shared links, made as the sheet opens so
- * a post opens within the press), with the channel it was posted from, which is how a friend it brings is told apart;
- * while it is made, or where it cannot be, the post links the game itself. Over the HUD, at the body's end, as the
- * recap is.
+ * Sharing a Frontier day, from the day-done card, in the HUD's modal layer: the day's card at the size it is shared,
+ * fitted to the screen, then the two steps (Copy image, Post on X). A phone whose share sheet takes images also gets
+ * Share above them, to any app (owner, 7 November 2026: the day's card goes past X; the season's recap stays X only). A
+ * desktop draws the wide cut, a phone the tall one, as the season's recap does; the link always unfurls as the wide
+ * cut, which a phone draws out of sight for it. The post's link is the player's own for this day (identity's shared
+ * links, made as the sheet opens so a post opens within the press), with the channel it was posted from; while it is
+ * made, or where it cannot be, the post links the game itself. Nothing leaves the device until the player presses a
+ * way to post: that press publishes the card the link unfurls as (useCardPublication).
  */
 export const DayShareSheet = ({ shared, onClose }: { shared: SharedDay; onClose: () => void }) => {
   const phone = useLayout() === "phone";
@@ -61,110 +59,115 @@ export const DayShareSheet = ({ shared, onClose }: { shared: SharedDay; onClose:
   const link = useShareLink({ kind: "frontier-day", ...shared.game, moment: shared.day });
   // The card is made into an image once it says whose day it is, never with the name still being read.
   const named = usePlayerName(shared.player)?.state !== "waiting";
-  useCardUnfurl(named ? link.code : undefined, cut === "wide" ? card : wideOutOfSight);
+  const publish = useCardPublication(link, cut === "wide" ? card : wideOutOfSight, named);
   const line = dayPostText({ ...shared, game: ageOf("frontier").name });
   const fileName = DAY_SHARE_WORDS.fileName(shared.day);
-  return createPortal(
-    <section data-surface="shell" className="day-share" aria-label={DAY_SHARE_WORDS.share}>
-      <div className="day-share__layout">
-        <header className="day-share__head">
-          <h1 className="text-app-title text-app-ink">{DAY_SHARE_WORDS.share}</h1>
-          <AppIconButton icon="close" label={CLOSE} kind="quiet" onClick={onClose} />
-        </header>
-        <div
-          ref={frame}
-          className="day-share__frame"
-          data-cut={cut}
-          style={{ aspectRatio: `${size.width} / ${size.height}` }}
-        >
-          <div className="day-share__scaler" style={{ transform: `scale(${(width ?? size.width) / size.width})` }}>
-            <DayCard cardRef={card} cut={cut} shared={shared} />
+  const steps = useShareSteps({
+    card,
+    size,
+    fileName,
+    line,
+    url: link.url("x"),
+    onPost: () => {
+      publish();
+      link.posted();
+    },
+  });
+  return (
+    <HudModalLayer onClose={onClose}>
+      <section role="dialog" aria-modal="true" aria-label={DAY_SHARE_WORDS.share} className="day-share">
+        <div className="day-share__layout">
+          <header className="day-share__head">
+            <h1 className="text-hud-display">{DAY_SHARE_WORDS.share}</h1>
+            <HudIconButton icon="close" label={CLOSE} kind="quiet" onClick={onClose} />
+          </header>
+          <div
+            ref={frame}
+            data-surface="shell"
+            className="day-share__frame"
+            data-cut={cut}
+            style={{ aspectRatio: `${size.width} / ${size.height}` }}
+          >
+            <div className="day-share__scaler" style={{ transform: `scale(${(width ?? size.width) / size.width})` }}>
+              <DayCard cardRef={card} cut={cut} shared={shared} />
+            </div>
           </div>
-        </div>
-        {cut === "tall" && (
-          <div className="day-share__out-of-sight" aria-hidden>
-            <DayCard cardRef={wideOutOfSight} cut="wide" shared={shared} />
-          </div>
-        )}
-        <footer className="day-share__foot">
-          <ShareTally />
-          {systemShare && (
-            <span className="day-share__system">
-              <SystemShare
-                card={card}
-                size={size}
-                fileName={fileName}
-                line={line}
-                url={link.url("system")}
-                ready={named && link.code !== undefined}
-                onShared={link.posted}
-              />
-            </span>
+          {cut === "tall" && (
+            <div data-surface="shell" className="day-share__out-of-sight" aria-hidden>
+              <DayCard cardRef={wideOutOfSight} cut="wide" shared={shared} />
+            </div>
           )}
-          <p className="day-share__hint">{shareHint()}</p>
-          <span className="day-share__steps">
-            <ShareSteps
-              card={card}
-              size={size}
-              fileName={fileName}
-              line={line}
-              url={link.url("x")}
-              icons
-              postKind={systemShare ? "secondary" : "primary"}
-              onPost={link.posted}
-            />
-          </span>
-        </footer>
-      </div>
-    </section>,
-    document.body,
+          <footer className="day-share__foot">
+            <ShareTally />
+            {systemShare && (
+              <span className="day-share__system">
+                <SystemShare
+                  card={card}
+                  size={size}
+                  fileName={fileName}
+                  line={line}
+                  url={link.url("system")}
+                  ready={named && link.code !== undefined}
+                  onPress={publish}
+                  onShared={link.posted}
+                />
+              </span>
+            )}
+            <p className="day-share__hint text-hud-label text-hud-muted">{shareHint()}</p>
+            <span className="day-share__steps">
+              <HudButton kind="secondary" icon="copy" busy={steps.making} onClick={steps.take}>
+                <StepNumber number={1} />
+                {steps.word}
+              </HudButton>
+              <HudButton kind={systemShare ? "secondary" : "primary"} icon="twitter" onClick={steps.post}>
+                <StepNumber number={2} />
+                {SHARE_WORDS.post}
+              </HudButton>
+              {steps.failed && <HudNotice tone="bad" line={SHARE_WORDS.failed} />}
+            </span>
+          </footer>
+        </div>
+      </section>
+    </HudModalLayer>
   );
 };
 
 /**
- * The player's link for the moment, as each channel posts it, and the record that they posted it. A link is made once
- * per moment by identity, so the sheet opened again gets the same one.
+ * The card the link unfurls as, published by the player's press of a way to post (Post on X, Share) and by nothing
+ * else: the wide card is made into a JPEG as soon as it says whose day it is, held by this sheet alone, and handed to
+ * identity on the press, so the upload is under way before the post's page opens. Closing the sheet without that
+ * press publishes nothing. Once per sheet; a failed upload leaves the game's own preview, and the next press tries
+ * again.
  */
-const useShareLink = (moment: ShareMoment) => {
-  const made = useQuery({
-    queryKey: ["shareLink", moment.kind, moment.chainId, moment.gameId, moment.moment],
-    queryFn: () => identityClient.createShare(moment),
-    staleTime: Number.POSITIVE_INFINITY,
-    retry: 1,
-  });
-  const code = made.data;
-  return {
-    code,
-    url: (via: ShareChannel) => new URL(code ? sharePathVia(code, via) : "/", window.location.origin).href,
-    // A post that cannot be recorded is still posted; the tally misses it, the player does not.
-    posted: () => void (code && identityClient.sharePosted(code).catch(() => undefined)),
+const useCardPublication = (link: ReturnType<typeof useShareLink>, card: RefObject<HTMLDivElement>, ready: boolean) => {
+  const jpeg = useRef<Promise<Blob> | null>(null);
+  const published = useRef(false);
+  useEffect(() => {
+    if (!ready || !card.current || jpeg.current) return;
+    jpeg.current = cardJpeg(card.current, CARD_CUTS.wide);
+    jpeg.current.catch(() => {
+      jpeg.current = null;
+    });
+  }, [ready, card]);
+  return () => {
+    const node = card.current;
+    if (!link.code || published.current || !node) return;
+    published.current = true;
+    const image = (jpeg.current ??= cardJpeg(node, CARD_CUTS.wide));
+    image.then(link.publish).catch(() => {
+      published.current = false;
+      jpeg.current = null;
+    });
   };
 };
 
-/**
- * Once the link is made, its card as the link unfurls it: the sheet draws the card, and the same drawing goes to
- * identity as a JPEG, once per link while the sheet is open. Where it cannot be made or kept, the link unfurls with the
- * game's own preview, and the post itself is untouched.
- */
-const useCardUnfurl = (code: string | undefined, card: RefObject<HTMLDivElement>) =>
-  useQuery({
-    queryKey: ["shareCard", code],
-    queryFn: async () => {
-      await identityClient.uploadShareCard(code!, await cardJpeg(card.current!, CARD_CUTS.wide));
-      return true;
-    },
-    enabled: code !== undefined && card.current !== null,
-    staleTime: Number.POSITIVE_INFINITY,
-    retry: 1,
-  });
-
 /** What the player's shared days brought so far (identity's count), said once they brought a visit; nothing before. */
 const ShareTally = () => {
-  const tally = useQuery({ queryKey: ["shareTally"], queryFn: () => identityClient.shareTally(), retry: false });
-  if (!tally.data || tally.data.visits === 0) return null;
+  const tally = useShareTally();
+  if (!tally || tally.visits === 0) return null;
   return (
-    <p className="day-share__tally">
-      {DAY_SHARE_WORDS.brought(formatShort(tally.data.visits), formatShort(tally.data.joined))}
+    <p className="day-share__tally text-hud-label text-hud-gold">
+      {DAY_SHARE_WORDS.brought(formatShort(tally.visits), formatShort(tally.joined))}
     </p>
   );
 };
@@ -193,14 +196,14 @@ const DayCard = ({ cardRef, cut, shared }: { cardRef?: Ref<HTMLDivElement>; cut:
   return (
     <div ref={cardRef} className="day-card" data-cut={cut} style={CARD_CUTS[cut]}>
       <div className="day-card__top">
-        <AppGameName age="frontier" name={ageOf("frontier").name} />
+        <img className="day-card__lockup" src={AGE_LOCKUP.frontier} alt={ageOf("frontier").name} />
         <b className="day-card__day">
           {DAY} {shared.day}
         </b>
       </div>
       <div className="day-card__who">
         <span className="day-card__portrait">
-          <AppPortrait src={playerPortraitUrl(shared.player, profile.portrait)} name={name} size="fill" own />
+          <img src={playerPortraitUrl(shared.player, profile.portrait)} alt={name} />
         </span>
         <span className="day-card__name">{name}</span>
         {shared.rank && (

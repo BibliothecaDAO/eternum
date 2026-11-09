@@ -1,17 +1,14 @@
-import { useQuery } from "@tanstack/react-query";
-import { useState, type RefObject } from "react";
+import { useEffect, useState, type RefObject } from "react";
 
-import { AppButton } from "@/ui/design-system/kit/app-elements";
+import { HudButton, HudNotice } from "@/ui/design-system/kit/hud-elements";
 import { SHARE_WORDS } from "@/ui/design-system/kit/words";
 import { cardFile, type CardSize } from "@/utils/card-image";
-
-import { FailureLine } from "../sign-in/failure-line";
 
 /**
  * Share, through the device's own share sheet (a phone's): the card's image, the post's line and its link, to whichever
  * app the player picks there (X, WhatsApp, Telegram, Discord). The image is made before the press, while the button
- * says so, because a phone opens its sheet only within the press itself. A player who closes the sheet has shared
- * nothing; `onShared` hears only a share the sheet carried out.
+ * says so, because a phone opens its sheet only within the press itself. `onPress` hears the press; `onShared` only a
+ * share the sheet carried out, never one the player closed.
  */
 export const SystemShare = ({
   card,
@@ -20,6 +17,7 @@ export const SystemShare = ({
   line,
   url,
   ready,
+  onPress,
   onShared,
 }: {
   card: RefObject<HTMLElement>;
@@ -29,18 +27,14 @@ export const SystemShare = ({
   url: string;
   /** Whether the card says all it will (its player's name read): the image is made only then. */
   ready: boolean;
+  onPress: () => void;
   onShared: () => void;
 }) => {
+  const file = useCardFile(card, size, fileName, ready);
   const [failed, setFailed] = useState(false);
-  const file = useQuery({
-    queryKey: ["shareFile", fileName, size.width, size.height],
-    queryFn: () => cardFile(card.current!, size, fileName),
-    enabled: ready && card.current !== null,
-    staleTime: Number.POSITIVE_INFINITY,
-    retry: 1,
-  });
   const share = async (image: File) => {
     setFailed(false);
+    onPress();
     try {
       await navigator.share({ files: [image], text: line, url });
       onShared();
@@ -51,15 +45,36 @@ export const SystemShare = ({
   };
   return (
     <>
-      <AppButton
+      <HudButton
         kind="primary"
         icon="share"
-        busy={file.data ? undefined : SHARE_WORDS.making}
-        onClick={() => file.data && void share(file.data)}
+        busy={file.image ? undefined : SHARE_WORDS.making}
+        onClick={() => file.image && void share(file.image)}
       >
         {SHARE_WORDS.share}
-      </AppButton>
-      {(failed || file.isError) && <FailureLine line={SHARE_WORDS.shareFailed} />}
+      </HudButton>
+      {(failed || file.failed) && <HudNotice tone="bad" line={SHARE_WORDS.shareFailed} />}
     </>
   );
+};
+
+/**
+ * The card's image as a file, made once the card is ready and held by this button alone: a card drawn for another
+ * day, game or player is another button's, and never this one's file.
+ */
+const useCardFile = (card: RefObject<HTMLElement>, size: CardSize, fileName: string, ready: boolean) => {
+  const [made, setMade] = useState<{ image: File | null; failed: boolean }>({ image: null, failed: false });
+  useEffect(() => {
+    const node = card.current;
+    if (!ready || !node) return;
+    let current = true;
+    cardFile(node, size, fileName).then(
+      (image) => current && setMade({ image, failed: false }),
+      () => current && setMade({ image: null, failed: true }),
+    );
+    return () => {
+      current = false;
+    };
+  }, [card, size, fileName, ready]);
+  return made;
 };

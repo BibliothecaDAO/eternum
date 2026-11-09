@@ -19,7 +19,7 @@ import { createPortal } from "react-dom";
 import { usePlayerDisplayName, usePlayerProfile } from "@/hooks/use-player-profile";
 import { playerPortraitUrl } from "@/services/identity/player-portrait";
 import { Icon, type IconMeaning } from "@/ui/design-system/icon";
-import { AppGameName, AppPortrait } from "@/ui/design-system/kit/app-elements";
+import { AppButton, AppGameName, AppPortrait } from "@/ui/design-system/kit/app-elements";
 import { OrderEmblem } from "@/ui/design-system/kit/order-emblem";
 import { paintingSources } from "@/ui/design-system/kit/paintings";
 import { PlayerName } from "@/ui/design-system/kit/player-name";
@@ -31,6 +31,7 @@ import {
   RECAP_WORDS,
   RESULT_WORDS,
   SEASON_ENDINGS,
+  SHARE_WORDS,
 } from "@/ui/design-system/kit/words";
 import { SITE_COUNTS, SITE_KINDS } from "@/ui/features/frontier/board/season-detail";
 import { type PodiumHolder, seasonPodium } from "@/ui/features/frontier/board/season-pool";
@@ -44,7 +45,8 @@ import { seasonEnded, seasonTitle } from "../season";
 import { resultsHref } from "./results-link";
 import { CARD_CUTS, type CardCut } from "@/utils/card-image";
 
-import { shareHint, ShareSteps } from "../share/share-steps";
+import { FailureLine } from "../sign-in/failure-line";
+import { shareHint, StepNumber, useShareSteps } from "../share/share-steps";
 
 type Entry = HeraldFrontierLeaderboardEntry;
 
@@ -498,7 +500,10 @@ const Tile = ({ icon, value, label }: { icon: IconMeaning; value: string; label:
   </span>
 );
 
-/** The season's two sharing steps: its deck's image, then a post with the season's line and its Results. */
+/**
+ * The season's two sharing steps: its deck's image, then a post with the season's line and its Results. A phone's row
+ * has room for the numbers alone; a desktop's buttons wear their icons too.
+ */
 const ShareSeason = ({
   card,
   cut,
@@ -509,13 +514,26 @@ const ShareSeason = ({
   cut: Cut;
   line: string;
   gameRef: GameRef;
-}) => (
-  <ShareSteps
-    card={card}
-    size={CUTS[cut]}
-    fileName={RECAP_WORDS.fileName}
-    line={line}
-    url={new URL(resultsHref(gameRef), window.location.origin).href}
-    icons={cut === "wide"}
-  />
-);
+}) => {
+  const steps = useShareSteps({
+    card,
+    size: CUTS[cut],
+    fileName: RECAP_WORDS.fileName,
+    line,
+    url: new URL(resultsHref(gameRef), window.location.origin).href,
+  });
+  const icons = cut === "wide";
+  return (
+    <>
+      <AppButton kind="secondary" icon={icons ? "copy" : undefined} busy={steps.making} onClick={steps.take}>
+        <StepNumber number={1} />
+        {steps.word}
+      </AppButton>
+      <AppButton kind="primary" icon={icons ? "twitter" : undefined} onClick={steps.post}>
+        <StepNumber number={2} />
+        {SHARE_WORDS.post}
+      </AppButton>
+      {steps.failed && <FailureLine line={SHARE_WORDS.failed} />}
+    </>
+  );
+};

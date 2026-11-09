@@ -45,8 +45,10 @@ vi.mock("@/utils/card-image", async (original) => ({
 }));
 /** The card's PNG as a phone's share sheet takes it. */
 const CARD_FILE = vi.hoisted(() => new File(["card"], "frontier-day-2.png", { type: "image/png" }));
+/** The signed-in Realms account whose links the share sheet makes. */
+const SIGNED_IN = vi.hoisted(() => ({ session: { user: { realmsId: "0xa11ce" } } }));
 vi.mock("@/hooks/context/identity-session", () => ({
-  useIdentitySession: () => ({ session: null }),
+  useIdentitySession: () => SIGNED_IN,
   notificationOwnerOf: () => alerts.owner,
   identityClient: shares,
 }));
@@ -135,6 +137,7 @@ beforeEach(() => {
   herald.now = BEFORE_PLAYING_ON.now;
   herald.game = { end_at: "1793439960" };
   alerts.owner = null;
+  for (const call of Object.values(shares)) call.mockClear();
   useAskMemory.setState({ notNows: 0, shownAt: null });
   host = document.createElement("div");
   document.body.append(host);
@@ -229,11 +232,12 @@ it("shares day 2 as its card and a post: its trail, its totals and rank, and the
   // The link is made as the sheet opens; the post waits for nothing.
   await act(() => new Promise((resolve) => setTimeout(resolve, 10)));
   expect(sheet.textContent).toContain("Your days brought 12 visits · 3 new players");
-  // The link unfurls as the wide cut, which a phone's sheet draws out of sight.
+  // The link unfurls as the wide cut, which a phone's sheet draws out of sight and makes into its image at once, on the
+  // device: nothing is published before a way to post is pressed.
   const wide = sheet.querySelector<HTMLElement>(".day-share__out-of-sight .day-card")!;
   expect(wide.dataset.cut).toBe("wide");
   expect(cardJpeg).toHaveBeenCalledWith(wide, { width: 1200, height: 675 });
-  expect(shares.uploadShareCard).toHaveBeenCalledWith("DAY2LINK", CARD_JPEG);
+  expect(shares.uploadShareCard).not.toHaveBeenCalled();
   const open = vi.spyOn(window, "open").mockImplementation(() => null);
   const post = [...sheet.querySelectorAll("button")].find((button) => button.textContent?.endsWith("Post on X"));
   await act(async () => post!.click());
@@ -241,6 +245,9 @@ it("shares day 2 as its card and a post: its trail, its totals and rank, and the
   expect(intent.searchParams.get("url")).toBe(`${window.location.origin}/s/DAY2LINK?via=x`);
   expect(intent.searchParams.get("text")).toBe("Frontier · Day 2 · #1\n🧭 35 · 🚩 5 · 🎁 0\n🐺🐺🛡️🌀🛡️🌀🐺");
   expect(shares.sharePosted).toHaveBeenCalledWith("DAY2LINK");
+  // The press publishes the card the link unfurls as.
+  await act(() => new Promise((resolve) => setTimeout(resolve, 0)));
+  expect(shares.uploadShareCard).toHaveBeenCalledWith("DAY2LINK", CARD_JPEG);
   open.mockRestore();
 });
 
@@ -261,10 +268,11 @@ it("shares a phone's day through its own share sheet: the card, the post's line 
     expect(system.dataset.kind).toBe("primary");
     expect(buttons().find((button) => button.textContent?.endsWith("Post on X"))?.dataset.kind).toBe("secondary");
 
-    // Closing the sheet shares nothing.
+    // The press publishes the card; closing the phone's sheet then records no post.
+    expect(shares.uploadShareCard).not.toHaveBeenCalled();
     share.mockRejectedValueOnce(Object.assign(new Error("closed"), { name: "AbortError" }));
-    shares.sharePosted.mockClear();
     await act(async () => system.click());
+    expect(shares.uploadShareCard).toHaveBeenCalledWith("DAY2LINK", CARD_JPEG);
     expect(shares.sharePosted).not.toHaveBeenCalled();
     expect(sheet.querySelector("[role='alert']")).toBeNull();
 
@@ -291,6 +299,7 @@ it("draws a desktop's day card in the wide cut, the one its link unfurls as, and
     expect(cards.map((card) => card.dataset.cut)).toEqual(["wide"]);
     await act(() => new Promise((resolve) => setTimeout(resolve, 10)));
     expect(cardJpeg).toHaveBeenLastCalledWith(cards[0], { width: 1200, height: 675 });
+    expect(shares.uploadShareCard).not.toHaveBeenCalled();
   } finally {
     vi.unstubAllGlobals();
   }

@@ -1,16 +1,15 @@
 /*
- * Sharing a Frontier day (day-share-sheet.tsx): the sheet over the HUD, and the day's card it shows at its shared size
- * (1200 × 675), an image on a fixed canvas in the app's palette and faces, as the season's deck is.
+ * Sharing a Frontier day (day-share-sheet.tsx): the sheet in the HUD's modal layer, in the HUD's controls and type, and
+ * the day's card it shows at its shared size (1200 × 675), an image on a fixed canvas in the app's palette and faces,
+ * as the season's deck is.
  */
 .day-share {
-  position: fixed;
+  position: absolute;
   inset: 0;
-  z-index: 50;
   overflow-y: auto;
   padding: max(24px, env(safe-area-inset-top)) 24px max(24px, env(safe-area-inset-bottom));
   background: rgb(0 0 0 / 0.82);
-  color: var(--app-ink);
-  pointer-events: auto;
+  color: rgb(var(--hud-ink));
 }
 .day-share__layout {
   display: flex;
@@ -44,14 +43,12 @@
   justify-content: flex-end;
   gap: 12px;
 }
-.day-share__steps > [role="alert"] {
+.day-share__steps > .ui-notice {
   flex-basis: 100%;
 }
 .day-share__tally {
   flex-basis: 100%;
   text-align: right;
-  color: rgb(var(--app-gold));
-  font-size: var(--app-text-small);
 }
 /* A phone's Share, the sheet's one verb above the two steps to X, across the sheet's width. */
 .day-share__system {
@@ -61,8 +58,6 @@
 .day-share__hint {
   flex: 1 1 16rem;
   text-align: right;
-  color: var(--app-muted);
-  font-size: var(--app-text-small);
 }
 
 /* A phone's sheet keeps the wide cut its link unfurls as out of sight: drawn, never shown, never read aloud. */
@@ -96,7 +91,9 @@
   align-items: center;
   justify-content: space-between;
 }
-.day-card__top .app-game-name__lockup {
+.day-card__lockup {
+  display: block;
+  width: auto;
   height: 84px;
 }
 .day-card__day {
@@ -112,9 +109,20 @@
   align-items: center;
   gap: 22px;
 }
-.day-card__portrait .app-portrait {
-  border-width: 3px;
+/* The player's portrait in its ring, in the accent a player's own wears. */
+.day-card__portrait {
+  display: block;
+  aspect-ratio: 1;
+  overflow: hidden;
+  border: 3px solid rgb(var(--app-accent));
+  border-radius: var(--app-radius-round);
+  background: var(--app-surface-2);
   box-shadow: 0 0 28px rgb(var(--app-gold) / 0.35);
+}
+.day-card__portrait img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 .day-card__name {
   overflow: hidden;
@@ -234,7 +242,7 @@
   align-items: flex-start;
   gap: 20px;
 }
-.day-card[data-cut="tall"] .day-card__top .app-game-name__lockup {
+.day-card[data-cut="tall"] .day-card__lockup {
   height: 116px;
 }
 .day-card[data-cut="tall"] .day-card__day {

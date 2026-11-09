@@ -1146,25 +1146,25 @@ from the last time it showed, stands on its page until answered, and three Not n
 `shell/profile/alerts-ask.ts`; `frontier/alerts-popup.tsx`; lab: `/lab/kit/hud/alerts-popup`, `alerts-popup-install`).
 Code: `hooks/store/use-day-end-store.ts`, `ExpeditionRollover`, `rollover/day-done.tsx` and `day-end-screen.tsx`.
 
-**Share your day**, on the day-done card once the day's totals are whole: the ended day's card at 1200 × 675 over the
-HUD (Frontier's lockup and the day, the player and their closing rank with its move, the day's trail, its totals, where
-to play), then the recap's two steps, **Copy image** (Save image where the clipboard takes no PNG) and **Post on X**.
-The trail is the day in order from the player's own stories: each site cleared by its kind, each chest opened, and each
-fight that cleared nothing (army lost, guard holds), 18 marks and then "+N". The post's text is the day as a line of
-emoji (`Frontier · Day 12 · #7 ▲2`, `🧭 31 · 🚩 4 · 🎁 1`, `🏛️🌀🌀💀🐺👹`) and links the player's own link for that day,
-`/s/<code>`, made by identity as the sheet opens (the game's address while it is made); Post records the post. The
-link's landing says who shared which day and leads into the game, recording the visit for this browser; an account made
-on that browser afterwards is the link's, and counts as activated once it clears a site on the link's season board
-(`apps/realms` README, Shared links). Once the link is made and the player's name read, the sheet sends identity the
-card it drew as a JPEG, and the link unfurls as that card, titled "<name> shared Day 12 of Frontier". A phone's sheet
-shows and copies the tall cut (1080 × 1350) and draws the wide cut out of sight for the unfurl. A phone whose share
-sheet takes images also gets **Share** above the two steps: the tall card's PNG, the post's line and the link, to any
-app (the season recap stays X only). Each link names where it was posted from (`?via=x`, `?via=system`), which its
-landing hands identity with the visit. What a player's shared days brought stands on You as **Your shared days** once
-they shared one: days posted, opened by friends, friends who joined, and those who cleared a site. Dev:
-`/lab/kit/hud/day-share`, `day-share-quiet`; `/lab/kit/hud/day-done` shows the button; `/lab/app/shared-days/profile`.
-Code: `rollover/day-share.ts` (trail and post), `shell/share/` (the sheet, its steps and the landing),
-`shell/profile/shared-days-panel.tsx`.
+**Share your day**, on the day-done card once the day's totals are whole: the ended day's card in the HUD's modal layer
+(Frontier's lockup and the day, the player and their closing rank with its move, the day's trail, its totals, where to
+play), then two steps, **Copy image** (Save image where the clipboard takes no PNG) and **Post on X**, in the HUD's
+buttons. The trail is the day in order from the player's own stories: each site cleared by its kind, each chest opened,
+and each fight that cleared nothing (army lost, guard holds), 18 marks and then "+N". The post's text is the day as a
+line of emoji (`Frontier · Day 12 · #7 ▲2`, `🧭 31 · 🚩 4 · 🎁 1`, `🏛️🌀🌀💀🐺👹`) and links the signed-in player's own
+link for that day, `/s/<code>`, made by identity as the sheet opens (the game's address while it is made, or when nobody
+is signed in); Post records the post. Nothing leaves the device until a way to post is pressed: Post on X (or a phone's
+Share) publishes the card the link unfurls as, titled "<name> shared Day 12 of Frontier"; closing the sheet publishes
+nothing. The link's landing says who shared which day and leads into the game, recording the visit for this browser; an
+account made on that browser afterwards is the link's, and counts as activated once it clears a site on the link's
+season board (`apps/realms` README, Shared links). A phone's sheet shows and copies the tall cut (1080 × 1350) and draws
+the wide cut out of sight for the unfurl. A phone whose share sheet takes images also gets **Share** above the two
+steps: the tall card's PNG, the post's line and the link, to any app (the season recap stays X only). Each link carries
+the button that made it (`?via=x`, `?via=system`), which its landing hands identity with the visit. What a player's
+shared days brought stands on You as **Your shared days** once they posted one: days posted, opened by friends, friends
+who joined, and those who cleared a site. Dev: `/lab/kit/hud/day-share`, `day-share-quiet`; `/lab/kit/hud/day-done`
+shows the button; `/lab/app/shared-days/profile`. Code: `rollover/day-share.ts` (trail and post), `shell/share/` (the
+sheet, its steps, the account's links in `own-shares.ts`, and the landing), `shell/profile/shared-days-panel.tsx`.
 
 Coming back to a tab the browser put away (a phone's, mostly): a lost GPU (WebGL's context, which phones take from a tab
 in the background, or WebGPU's device) boots the page again on its route once it is seen, and a Herald stream silent for
