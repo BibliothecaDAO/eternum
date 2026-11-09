@@ -6,6 +6,36 @@ Players read what changed in What's new's patch notes, one file per release unde
 patch notes' editor at each release (that folder's `AGENTS.md`). A change does not add an entry of its own: say what a
 player meets in its pull request, and the editor takes it from there.
 
+## Design rules
+
+What a player sees follows these five rules. Each names the code or check that holds it, where one does; a change that
+breaks one is refused in review like a bug.
+
+1. **A side keeps its colour on every surface.** The player's own things are green, an ally's (a tribe member's) blue,
+   everyone else's red: the map's labels and plates, the minimap, army paths, stamina and health bars, portraits and
+   icons. A spectator has no side, so each player takes their seat's colour. Every surface reads `SIDE_COLOURS`,
+   `SIDE_HEX` or the seat colours from `src/tokens.ts` and never picks a green, blue or red of its own. The playtest's
+   `--steps blitz-plates` and `frontier-plates` fail a label drawn in another colour than its side's.
+2. **Map models face the camera.** The map's camera never turns, so every model on the map shows its front to it, from
+   the south: realms, villages, camps, chests, beasts and every other structure. A model is authored with its front on
+   +Z, and `resolveStructureRotationY` (`src/three/structures/structure-orientation.ts`) is the one place a structure's
+   yaw is decided.
+3. **The player owns the camera and the input.** Only a player's request to look somewhere moves the camera: the reasons
+   `CameraNavigation` lists in `src/three/scenes/worldmap-camera-target.ts`. An order, a fight, a build or a selection
+   leaves it where the player put it. No window has to be closed before the map answers again, and one panel stands at a
+   time (`src/ui/features/frontier/hud/one-panel.ts`): opening one puts the others away. An announcement, a result or a
+   loss stands long enough to read, then goes by itself. `worldmap-camera-stays.test.tsx`, `--steps lab-ruin-fight` and
+   the playtest's `hud-layout` step (no part over another) hold it.
+4. **The bar is a shipped commercial strategy game.** Art, models, icons, screens, video and onboarding are judged side
+   by side with what ships today and with the games this one stands beside (Age of Empires, Heroes of Might and Magic,
+   Civilization), at the sizes a player meets them: icons at HUD size, screens on a desktop and a phone. A change that
+   loses to what ships does not land. New art follows the lore, and a screen speaks through pictures (icons, paintings,
+   background art), never words alone. Icons fill their frame (`scripts/icons/AGENTS.md`).
+5. **Validate in the lab, then wire into the game.** A new screen, model, icon or flow is built and judged in the lab
+   (`/lab`, `src/lab/README.md`) before the game uses it. A lab page mounts the production components on real assets and
+   real or recorded game data, never a lab-only copy. A choice between options is made on a lab page that shows each
+   option as stills, desktop and phone, beside what ships; only the option picked is wired into the game.
+
 ## CRITICAL Git Rules for Parallel Agents CRITICAL
 
 Multiple agents may work on different files in the same worktree simultaneously. You MUST follow these rules:
