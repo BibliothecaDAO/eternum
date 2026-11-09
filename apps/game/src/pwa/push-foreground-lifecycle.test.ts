@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 const sync = vi.hoisted(() => vi.fn());
 vi.mock("./push-notification-client", () => ({ syncPushGameForeground: sync }));
+vi.mock("@/runtime/distribution-channel", () => ({ distributionChannel: () => "web" }));
 import { startPushForegroundLifecycle } from "./push-foreground-lifecycle";
 let cleanup: (() => void) | undefined;
 beforeEach(() => {

@@ -14,6 +14,13 @@ vi.mock("@/ui/modules/identity/passkey", () => ({
   PasskeyUnavailableError: class PasskeyUnavailableError extends Error {},
 }));
 
+/** The app the client runs in; the web unless a test is about the iOS app. */
+const app = vi.hoisted(() => ({ channel: "web" as "web" | "play" | "app-store" }));
+vi.mock("@/runtime/distribution-channel", () => ({
+  distributionChannel: () => app.channel,
+  opensThirdPartySignIn: () => app.channel !== "app-store",
+}));
+
 import { identityClient, useIdentitySessionStore } from "@/hooks/context/identity-session";
 import { pageNavigation } from "@/utils/page-navigation";
 import { setViewportWidth } from "../frame/test-viewport";
@@ -93,6 +100,7 @@ const sentCode = (seconds: number) => ({ success: true as const, expires_at: Dat
 
 afterEach(() => {
   vi.restoreAllMocks();
+  app.channel = "web";
   useIdentitySessionStore.setState({ status: "anonymous", session: null });
   useConnectStore.setState({ request: null, nameDismissed: false, walletDismissed: false });
   forgetSocialStart();
@@ -597,4 +605,43 @@ describe("Connect with a provider", () => {
       }
     },
   );
+
+  it.each(["web", "play"] as const)("offers the configured providers in the %s channel", async (channel) => {
+    app.channel = channel;
+    useIdentitySessionStore.setState({ status: "anonymous", session: null });
+    vi.spyOn(identityClient, "availableSignInProviders").mockResolvedValue(["google", "discord"]);
+    const view = await mount("/");
+    try {
+      await view.ask();
+      await act(async () => {});
+      expect(providerButtons().map((button) => button.textContent)).toEqual([
+        "Continue with Google",
+        "Continue with Discord",
+      ]);
+    } finally {
+      await view.unmount();
+    }
+  });
+
+  it("signs in with an emailed code only inside the iOS app: no provider is offered, nor asked for", async () => {
+    app.channel = "app-store";
+    useIdentitySessionStore.setState({ status: "anonymous", session: null });
+    const offered = vi
+      .spyOn(identityClient, "availableSignInProviders")
+      .mockResolvedValue(["google", "apple", "discord", "twitter"]);
+    const send = vi.spyOn(identityClient, "sendSignInCode").mockResolvedValue(sentCode(600));
+    const view = await mount("/");
+    try {
+      await view.ask();
+      await act(async () => {});
+      expect(offered).not.toHaveBeenCalled();
+      expect(providerButtons()).toEqual([]);
+      await view.type('input[type="email"]', "you@mail.test");
+      await act(async () => view.query<HTMLFormElement>("form")!.requestSubmit());
+      expect(send).toHaveBeenCalledWith("you@mail.test");
+      expect(view.window()?.textContent).toContain("Code sent");
+    } finally {
+      await view.unmount();
+    }
+  });
 });

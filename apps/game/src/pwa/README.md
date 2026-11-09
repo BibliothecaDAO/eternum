@@ -5,6 +5,11 @@ Install Realms is available on landing pages and in game Settings. The app-root 
 instructions, including Safari's Share/Add to Home Screen and File/Add to Dock flows. The control hides in standalone
 mode and after `appinstalled`. Installation does not request notification permission or activate a waiting worker.
 
+Inside the store apps (`src/runtime/distribution-channel.ts`) the client counts as installed, so nothing offers to
+install it. The iOS app registers no service worker (`runsServiceWorker`): its web view runs workers only for App-Bound
+Domains and the app does the worker's jobs natively, so no update is offered there either; each launch loads the current
+page. The Android app keeps the worker, which delivers its web push.
+
 The manifest, worker, offline document and icons are generated/verified by the production build. Service-worker
 registration is production-only; a Vite development server is not a complete installation test.
 
