@@ -8,7 +8,7 @@ export interface IdentityUser {
   email: string;
   /** Whether the player signed in with a code sent to `email`, so the address is theirs. */
   emailVerified?: boolean;
-  /** The display name offered before the player chooses one, from their Discord name or their email. */
+  /** The display name offered before the player chooses one, from the name their sign-in provider knows. */
   suggestedName?: string | null;
   /** The chosen portrait id ("01".."12"), or null before the user picks one. */
   image?: string | null;

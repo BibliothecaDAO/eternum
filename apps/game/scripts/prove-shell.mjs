@@ -149,7 +149,7 @@ const LAB_PAGES = [
   ["first-visit", "connect/start-refused"],
   ["first-visit", "connect/code"],
   ["first-visit", "connect/code-refused"],
-  ["first-visit", "connect/discord"],
+  ["first-visit", "connect/handoff"],
   ["first-visit", "connect/name"],
   ["first-visit", "connect/name-refused"],
   ["first-visit", "connect/name-email"],

@@ -57,7 +57,7 @@ const tallySelect = (groupColumns: string, where: string) => `
   ${where}`;
 
 /**
- * Shared links, their visits and the accounts they brought, in D1 (migrations/0032_shares.sql). Joins are written
+ * Shared links, their visits and the accounts they brought, in D1 (migrations/0033_shares.sql). Joins are written
  * from what D1 already holds (a visit's browser, the accounts signed in on it, when each was made), so a sign-up
  * reports nothing of its own and any read may settle them.
  */

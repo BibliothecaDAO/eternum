@@ -28,6 +28,13 @@ to the environment's `inputs.json` as `avnuPaymasterApiKey`, then run setup's ap
 Worker's `AVNU_PAYMASTER_API_KEY`. `deploy:cloudflare` installs no Worker secret. Without the key, wallets still send
 and receive, and recovery is refused.
 
+Setup asks for no other sign-in provider either. Once the owner's OAuth app for Google, Apple or X exists, add its pair
+to `inputs.json` (`googleClientId` and `googleClientSecret`, `appleClientId` and `appleClientSecret`, `twitterClientId`
+and `twitterClientSecret`; Apple's secret is the JWT `pnpm --dir apps/realms apple-client-secret` signs, good for six
+months) and run setup's apply: it installs them as the identity Worker's `<PROVIDER>_CLIENT_ID` and
+`<PROVIDER>_CLIENT_SECRET`, and the sign-in sheet offers that provider. Each app's redirect URL is
+`<origin>/api/auth/callback/<provider>`. A pair half set or blank is refused.
+
 The first account step prints one deployer address to fund with about **250 STRK**, then stops. Run the same apply
 command after funding it. The command deploys that account, transfers 30 STRK to the relay and 1 STRK to the monitor,
 and deploys them. The owner funds only the deployer. The keys remain separate: the deployer/admin key stays on the owner

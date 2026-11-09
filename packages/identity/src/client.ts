@@ -7,6 +7,7 @@ import {
   type NotificationPreferences,
   type PushRegistration,
 } from "@bibliothecadao/notifications";
+import { SOCIAL_PROVIDERS, type SocialProvider } from "./account-rules";
 import { TICKET_TIERS } from "./campaigns";
 import { SHARE_CARD, SHARE_KINDS, type ShareChannel, type ShareKind } from "./shares";
 import type { SiwsTypedData } from "./siws";
@@ -356,26 +357,26 @@ export const createIdentityClient = ({ apiUrl, fetch = globalThis.fetch }: Ident
   };
 
   /**
-   * Signs in with the code a Discord sign-in finished in another browser showed; only the browser that started it can.
+   * Signs in with the code a provider's sign-in finished in another browser showed; only the browser that started it can.
    */
-  const claimDiscordHandoff = async (code: string): Promise<Session> => {
+  const claimSocialHandoff = async (code: string): Promise<Session> => {
     await readJson(
-      await request("/auth/discord-handoff", { method: "POST", body: JSON.stringify({ code }) }),
+      await request("/auth/social-handoff", { method: "POST", body: JSON.stringify({ code }) }),
       decode(Schema.Struct({ success: Schema.Literal(true) })),
     );
     return requireSession();
   };
 
   /**
-   * Where to send the player to sign in with Discord; Discord returns them to `returnTo`, signed in, or with an
-   * `error` query parameter when sign-in did not complete. Finished in another browser, it shows a code there for
-   * `claimDiscordHandoff`.
+   * Where to send the player to sign in with a provider; it returns them to `returnTo`, signed in, or with an `error`
+   * query parameter when sign-in did not complete. Finished in another browser, it shows a code there for
+   * `claimSocialHandoff`.
    */
-  const discordSignInUrl = async (returnTo: string): Promise<string> => {
+  const socialSignInUrl = async (provider: SocialProvider, returnTo: string): Promise<string> => {
     const started = await readJson(
       await request("/auth/sign-in/social", {
         method: "POST",
-        body: JSON.stringify({ provider: "discord", callbackURL: returnTo, errorCallbackURL: returnTo }),
+        body: JSON.stringify({ provider, callbackURL: returnTo, errorCallbackURL: returnTo }),
       }),
       decode(Schema.Struct({ url: Schema.String })),
     );
@@ -584,17 +585,18 @@ export const createIdentityClient = ({ apiUrl, fetch = globalThis.fetch }: Ident
     linkWallet,
     unlinkWallet,
     listSignInProviders,
-    availableSignInProviders: async () =>
-      (
-        await readJson(
-          await request("/auth/providers", { method: "GET" }),
-          decode(Schema.Struct({ providers: Schema.mutable(Schema.Array(Schema.String)) })),
-        )
-      ).providers,
+    /** The providers the identity service offers, in the sheet's order. */
+    availableSignInProviders: async (): Promise<SocialProvider[]> => {
+      const { providers } = await readJson(
+        await request("/auth/providers", { method: "GET" }),
+        decode(Schema.Struct({ providers: Schema.Array(Schema.Literals(SOCIAL_PROVIDERS)) })),
+      );
+      return SOCIAL_PROVIDERS.filter((provider) => providers.includes(provider));
+    },
     sendSignInCode,
     signInWithCode,
-    claimDiscordHandoff,
-    discordSignInUrl,
+    claimSocialHandoff,
+    socialSignInUrl,
     approveDeviceChange,
     readDefaultWallet,
     createDefaultWallet,

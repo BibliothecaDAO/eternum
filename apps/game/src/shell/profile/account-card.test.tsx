@@ -17,7 +17,8 @@ const session = {
 
 it("asks before signing out, with Keep as the safe choice", async () => {
   (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
-  vi.spyOn(identityClient, "listSignInProviders").mockResolvedValue(["discord"]);
+  // better-auth lists its own email-code record too; only the sign-in providers are named, in the sheet's order.
+  vi.spyOn(identityClient, "listSignInProviders").mockResolvedValue(["twitter", "credential", "google"]);
   const container = document.createElement("div");
   document.body.append(container);
   const root = createRoot(container);
@@ -32,9 +33,9 @@ it("asks before signing out, with Keep as the safe choice", async () => {
   try {
     const button = (word: string) =>
       [...document.querySelectorAll("button")].find((candidate) => candidate.textContent === word);
-    expect(container.textContent).toContain("Discord · email");
-    // How the player signs in is not a way to Discord: no row of the account wears Discord's logo.
-    expect(container.querySelector('[data-icon="discord"]')).toBeNull();
+    expect(container.textContent).toContain("Google · X · email");
+    // How the player signs in is not a way to a provider: no row of the account wears a provider's mark.
+    expect(container.querySelector('[data-icon^="brand-"]')).toBeNull();
     expect(container.querySelector('[data-icon="lock"]')).not.toBeNull();
     await act(async () => button("Sign out")!.click());
     // The question is the app's dialog over the page: Keep is its way out, and so is Escape.
