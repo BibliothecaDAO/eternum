@@ -328,7 +328,7 @@ each closed by its cross, a tap outside, a swipe down or `Escape`. A right-click
 - **A season's name** is one rule (`seasonTitle`, `src/shell/season.ts`), read by every surface that shows one (the
   Season tab's clock and calendar chips and Past seasons, the recap's header, its deck's foot and the X post's line, and
   so Results): an archived season goes by its archive entry's own name, with no number (prod's October season is the
-  **Playtest**); any other by the number the directory serves ("Season 0" for Devcon, "Season 1" from Nov 9).
+  **Playtest**); any other by the number the directory serves ("Season 0" for Devcon, "Season 1").
 - **A Frontier season's end** is one recap, the same in the game and on its Results
   (`src/shell/season-tab/season-recap.tsx`; the owner's pick B, 1 November 2026: four cards, Wrapped style). It shows
   the season and how it ended, then your four cards:
