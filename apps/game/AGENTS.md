@@ -8,33 +8,62 @@ player meets in its pull request, and the editor takes it from there.
 
 ## Design rules
 
-What a player sees follows these five rules. Each names the code or check that holds it, where one does; a change that
-breaks one is refused in review like a bug.
+What a player sees follows these five rules. Each says where the code holds it today and, plainly, where it does not
+yet. A change that moves a surface away from a rule is refused in review like a bug; a change that closes a gap deletes
+it from here.
 
-1. **A side keeps its colour on every surface.** The player's own things are green, an ally's (a tribe member's) blue,
-   everyone else's red: the map's labels and plates, the minimap, army paths, stamina and health bars, portraits and
-   icons. A spectator has no side, so each player takes their seat's colour. Every surface reads `SIDE_COLOURS`,
-   `SIDE_HEX` or the seat colours from `src/tokens.ts` and never picks a green, blue or red of its own. The playtest's
-   `--steps blitz-plates` and `frontier-plates` fail a label drawn in another colour than its side's.
-2. **Map models face the camera.** The map's camera never turns, so every model on the map shows its front to it, from
-   the south: realms, villages, camps, chests, beasts and every other structure. A model is authored with its front on
-   +Z, and `resolveStructureRotationY` (`src/three/structures/structure-orientation.ts`) is the one place a structure's
-   yaw is decided.
-3. **The player owns the camera and the input.** Only a player's request to look somewhere moves the camera: the reasons
-   `CameraNavigation` lists in `src/three/scenes/worldmap-camera-target.ts`. An order, a fight, a build or a selection
-   leaves it where the player put it. No window has to be closed before the map answers again, and one panel stands at a
-   time (`src/ui/features/frontier/hud/one-panel.ts`): opening one puts the others away. An announcement, a result or a
-   loss stands long enough to read, then goes by itself. `worldmap-camera-stays.test.tsx`, `--steps lab-ruin-fight` and
-   the playtest's `hud-layout` step (no part over another) hold it.
+1. **A side keeps its colour on every surface.** To a playing viewer their own things are green, an ally's blue and
+   everyone else's red, nobody's included. Allies exist in Eternum only: there a tribe member is an ally, while in
+   Blitz, Duel and Frontier every other player is an enemy, tribe or not (`arePlayersAllied`,
+   `src/utils/entity-ownership.ts:39`). A watching viewer has no side: each player takes their seat's colour and
+   nobody's things are grey (`watchedSide`, `src/utils/entity-ownership.ts:121`; `seatSide`, `src/tokens.ts:772`). The
+   side comes from `sideOf` (`src/utils/entity-ownership.ts:57`), its colour from `SIDE_COLOURS` and `SIDE_HEX`
+   (`src/tokens.ts:763`). Today the map's labels and plates, the stamina bars on plates
+   (`src/three/map-plates/map-plates.css:75`), the minimap's borders and ownership marks
+   (`src/ui/design-system/hex-marker.tsx:9`; the paintings inside keep their own colours) and army paths
+   (`src/three/managers/army-path-colour.ts:9`) read it. The playtest's `--steps blitz-plates` and `frontier-plates`
+   check the labels only. Not yet: the guard stamina bar off the map is coloured by the stamina left
+   (`src/ui/features/military/components/guard-stamina-bar.tsx:11`), the battle screen's survival bars by the troops
+   left, for both sides (`src/ui/features/military/battle/battle-lab/outcome-strip.tsx:20`), and portraits carry no side
+   (`HudPortrait`, `src/ui/design-system/kit/hud-elements.tsx:2322`).
+2. **Map models that stand still face the camera.** The map's camera never turns (`enableRotate: false`,
+   `src/three/constants/rendering.ts:15`), so a model that stands on the map shows its front to the camera, from the
+   south, and is authored with its front on +Z. Armies are outside this rule: they take their own heading
+   (`src/three/managers/army-manager.ts:1204`). Today realms, villages, camps, cleared sites, Frontier beasts and their
+   skins face it through `resolveStructureRotationY` (`src/three/structures/structure-orientation.ts:11`), and chests
+   through their own zero yaw (`src/three/managers/chest-manager.ts:589`). Not yet: a bank is turned 120° before the
+   resolver is asked (`src/three/managers/structure-manager.ts:1483`), and hyperstructures, mines, fallen-realm ruins,
+   rifts and every other structure keep a one-of-six turn drawn from their tile, which
+   `src/three/structures/structure-orientation.test.ts:60` holds. A zero yaw faces the camera only when the asset's
+   front is on +Z: check it on a capture of the model.
+3. **The player owns the camera and the input.** The camera moves only for a reason `CameraNavigation` names
+   (`src/three/scenes/worldmap-camera-target.ts:20`): the map's first view, an address or a link, the minimap, a
+   shortcut key, a HUD control that shows an army, a spire's view switch. A tap or a selection on the map and every
+   order (explore, move, attack, build, deploy, claim) leave the camera where the player put it;
+   `src/three/scenes/worldmap-camera-stays.test.tsx:205` holds it for Frontier's and Blitz's orders. One panel stands at
+   a time: opening one puts the others away (`src/ui/features/frontier/hud/one-panel.ts:13`), and the playtest's
+   `hud-layout` step fails a HUD part drawn over another. A result or a loss stands long enough to read, then goes by
+   itself, as an army's loss does (`src/ui/features/frontier/army/army-lost.tsx:6`). Not yet: Frontier's day turn. Its
+   summary covers the map and takes every press until Continue
+   (`src/ui/features/frontier/rollover/day-end-screen.tsx:36`, `src/hooks/store/use-day-end-store.ts:115`), and the
+   camera then goes to the realm's new site by itself, with or without a summary
+   (`src/ui/features/world/components/expeditions/expedition-rollover.tsx:75`). The playtest's `lab-day-*` and
+   `lab-season-opens` steps below require both, so a change to it changes the summary's input, its dismissal, the
+   camera's move and those steps together.
 4. **The bar is a shipped commercial strategy game.** Art, models, icons, screens, video and onboarding are judged side
    by side with what ships today and with the games this one stands beside (Age of Empires, Heroes of Might and Magic,
    Civilization), at the sizes a player meets them: icons at HUD size, screens on a desktop and a phone. A change that
    loses to what ships does not land. New art follows the lore, and a screen speaks through pictures (icons, paintings,
-   background art), never words alone. Icons fill their frame (`scripts/icons/AGENTS.md`).
+   background art), never words alone. This is a review standard, not a check; the lab's painting comparison draws a
+   painting on its real component beside the art it replaces (`src/lab/README.md:18`). Icon delivery follows
+   `scripts/icons/AGENTS.md`.
 5. **Validate in the lab, then wire into the game.** A new screen, model, icon or flow is built and judged in the lab
-   (`/lab`, `src/lab/README.md`) before the game uses it. A lab page mounts the production components on real assets and
-   real or recorded game data, never a lab-only copy. A choice between options is made on a lab page that shows each
-   option as stills, desktop and phone, beside what ships; only the option picked is wired into the game.
+   (`/lab`, `src/lab/README.md`) before the game uses it. A lab page mounts the production components on real assets,
+   with real or recorded game data or representative native-fact fixtures, never a lab-only copy, as the chest opening
+   does (`src/lab/README.md:7`). A choice between options is made on a lab page that shows each option as stills,
+   desktop and phone, beside what ships; only the option picked is wired into the game. Stills compare options; motion
+   and interaction are proven by their temporal captures (`docs/architecture/animation-evaluation.md:103`, from the
+   repository root) and by the playtest.
 
 ## CRITICAL Git Rules for Parallel Agents CRITICAL
 
