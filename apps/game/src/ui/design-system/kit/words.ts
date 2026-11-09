@@ -890,6 +890,10 @@ export const SIGN_IN_PROVIDER_NAMES = {
 export const SIGN_IN_WORDS = {
   /** A provider's button, in the wording Google's and Apple's brand rules allow. */
   continueWith: (provider: SocialProvider) => `Continue with ${SIGN_IN_PROVIDER_NAMES[provider]}`,
+  /** On a provider's button while its sign-in address is on its way (a phone's Discord app opens only from a tap that has it). */
+  preparing: "Preparing…",
+  /** On a phone's Discord button once its tap handed the sign-in to the app, while the app comes up. */
+  opening: (provider: SocialProvider) => `Opening ${SIGN_IN_PROVIDER_NAMES[provider]}…`,
   or: "or",
   email: "Email",
   sendCode: "Send code",
@@ -906,10 +910,16 @@ export const SIGN_IN_WORDS = {
   portrait: "Portrait",
   /** Under the ways in: most visitors from a flyer are new, and their first sign-in is their sign-up. */
   firstSignIn: "New here? Your first sign-in creates your Realms account.",
-  /** After a provider, when it finished in another browser (a phone's Safari view, the provider app's browser). */
-  handoff: (provider: SocialProvider) => `${SIGN_IN_PROVIDER_NAMES[provider]} finished elsewhere? Enter its code.`,
+  /**
+   * Back from a provider, which may have finished in another browser (a phone's Safari view, the browser the provider's
+   * app opens): that page shows a code to bring here.
+   */
+  handoff: (provider: SocialProvider) =>
+    `Finished with ${SIGN_IN_PROVIDER_NAMES[provider]}? Enter the code its page showed you.`,
   handoffCode: (provider: SocialProvider) => `${SIGN_IN_PROVIDER_NAMES[provider]} code`,
   tryAgain: (provider: SocialProvider) => `Try ${SIGN_IN_PROVIDER_NAMES[provider]} again`,
+  /** On a phone, whose tap opened the Discord app: the same sign-in on Discord's website instead. */
+  continueInBrowser: "Continue in browser",
 } as const;
 
 /** Devcon's landing and its ticket: the realm it promises, the ticket opened, and what each tier gives each day. */

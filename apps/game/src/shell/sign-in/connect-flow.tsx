@@ -1,4 +1,3 @@
-import { pageNavigation } from "@/utils/page-navigation";
 import { SIGN_IN_PROVIDER_NAMES, SIGN_IN_WORDS, WALLET_WORDS, WORDS } from "@/ui/design-system/kit/words";
 import { IdentityRequestError, type Session, type SocialProvider } from "@realms-world/identity";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -18,6 +17,8 @@ import { CodeStep } from "./code-step";
 import { claimDefaultName } from "./default-name";
 import { useConnectStore } from "./connect";
 import { ShellWindow } from "../frame/shell-window";
+import { opensDiscordApp } from "./discord-app";
+import { useSocialAttempt } from "./social-attempt";
 import { forgetSocialStart, pendingSocialStart, rememberSocialStart, type SocialPending } from "./social-pending";
 import { HandoffStep } from "./handoff-step";
 import { ProfileStep } from "./profile-step";
@@ -91,11 +92,14 @@ export const ConnectFlow = () => {
 type Step =
   | { kind: "start" }
   | { kind: "code"; email: string; expiresAt: number | undefined }
+  | { kind: "inApp"; provider: SocialProvider }
   | { kind: "handoff"; provider: SocialProvider };
 
 /**
  * Before a session: a provider, or an email and then its code; after a provider, the code another browser shows, also
- * after the page reloaded while the provider was out (`resumed`).
+ * after the page reloaded while the provider was out (`resumed`). A phone's tap that hands Discord to its app leaves
+ * the screen as it was, its button busy (`inApp`): the code step shows once the page comes back from the app, when
+ * there can be a code.
  */
 const AnonymousConnect = ({
   next,
@@ -113,16 +117,63 @@ const AnonymousConnect = ({
   const applySession = useIdentitySessionStore((state) => state.applySession);
   const [step, setStep] = useState<Step>(resumed ? { kind: "handoff", provider: resumed } : { kind: "start" });
   const { run, running, error, setError } = useIdentityAction(returnedFailure);
-  useRefreshOnReturn(step.kind === "handoff");
+  const backFromApp = useCallback(
+    () => setStep((now) => (now.kind === "inApp" ? { kind: "handoff", provider: now.provider } : now)),
+    [],
+  );
+  useBackFromProvider(step.kind === "handoff" || step.kind === "inApp", backFromApp);
 
   // The provider brings the player back to `next`, or to this page; a failure comes back to the same page.
-  const continueWith = (provider: SocialProvider) =>
+  const returnTo = next ?? returnPathOf(location);
+  const appHere = opensDiscordApp();
+  const usesDiscordApp = (provider: SocialProvider) => provider === "discord" && appHere;
+  // The start screen, also drawn while the Discord app opens: Discord's address is kept ready under it.
+  const onStartScreen = step.kind === "start" || step.kind === "inApp";
+  const attempt = useSocialAttempt(
+    returnTo,
+    appHere && onStartScreen && providers.includes("discord") ? "discord" : null,
+  );
+
+  const startProvider = (provider: SocialProvider, out: Step, open: () => void) => {
+    rememberSocialStart(provider, next);
+    setStep(out);
+    open();
+  };
+  // A provider's website shows its code step at once: a home-screen app's Safari view may cover the page, not hide it.
+  const toWebsite = (provider: SocialProvider, address: string) =>
+    startProvider(provider, { kind: "handoff", provider }, () => attempt.inBrowser(address));
+  // A provider's website is a page load, which needs no tap: it opens once its address comes.
+  const openWebsite = (provider: SocialProvider) =>
     void run("social", async () => {
-      const url = await identityClient.socialSignInUrl(provider, next ?? returnPathOf(location));
-      rememberSocialStart(provider, next);
-      setStep({ kind: "handoff", provider });
-      pageNavigation.open(url);
+      const address = await attempt.fetch(provider);
+      if (address !== null) toWebsite(provider, address);
     });
+  // A phone opens the Discord app only from a tap that holds the address; a tap without one asks and opens nothing.
+  // An iPhone without the app goes on to the website the same way.
+  const openDiscordApp = () => {
+    const address = attempt.claim("discord");
+    if (address === null) return prepareDiscordApp();
+    startProvider("discord", { kind: "inApp", provider: "discord" }, () =>
+      attempt.inApp(address, () => toWebsite("discord", address)),
+    );
+  };
+  // A refused ask says why; an answer makes the next tap the one that opens the app.
+  const prepareDiscordApp = () =>
+    void run("social", async () => {
+      await attempt.fetch("discord");
+    });
+  const continueWith = (provider: SocialProvider) =>
+    usesDiscordApp(provider) ? openDiscordApp() : openWebsite(provider);
+  // Every way in on the start screen comes through here. While a provider's app is opening, the screen stays with
+  // that provider's button busy: any other way ends that sign-in first (its launch, address, saved return and step).
+  const choose = (go: () => void) => {
+    if (step.kind === "inApp") {
+      attempt.end();
+      forgetSocialStart();
+      setStep({ kind: "start" });
+    }
+    go();
+  };
 
   const emailCode = (email: string) =>
     void run("send-code", async () => {
@@ -135,9 +186,11 @@ const AnonymousConnect = ({
         <HandoffStep
           provider={step.provider}
           checking={running === "handoff"}
+          preparing={attempt.asking === step.provider}
           error={error}
           onCode={(code) => run("handoff", async () => applySession(await identityClient.claimSocialHandoff(code)))}
           onRetry={() => continueWith(step.provider)}
+          onBrowser={usesDiscordApp(step.provider) ? () => openWebsite("discord") : undefined}
           onTyping={() => setError(null)}
         />
       </ShellWindow>
@@ -167,10 +220,12 @@ const AnonymousConnect = ({
     <ShellWindow title={WORDS.connect} onClose={onClose}>
       <StartStep
         sending={running === "send-code" || running === "social"}
+        preparing={attempt.asking}
+        opening={step.kind === "inApp" ? step.provider : null}
         error={error}
         providers={providers}
-        onProvider={continueWith}
-        onEmail={emailCode}
+        onProvider={(provider) => choose(() => continueWith(provider))}
+        onEmail={(email) => choose(() => emailCode(email))}
       />
     </ShellWindow>
   );
@@ -220,14 +275,16 @@ const useReturnedFailure = () => {
 
 /**
  * While a provider is out: back on this page, the session is read again, since it may have finished in another tab of
- * this same browser (a provider's app opens a new one), and that signs this page in too.
+ * this same browser (a provider's app opens a new one), and that signs this page in too; `onBack` moves the window on.
  */
-const useRefreshOnReturn = (waiting: boolean) => {
+const useBackFromProvider = (waiting: boolean, onBack: () => void) => {
   const refresh = useIdentitySessionStore((state) => state.refresh);
   useEffect(() => {
     if (!waiting) return;
     const back = () => {
-      if (document.visibilityState === "visible") void refresh();
+      if (document.visibilityState !== "visible") return;
+      void refresh();
+      onBack();
     };
     document.addEventListener("visibilitychange", back);
     window.addEventListener("pageshow", back);
@@ -235,7 +292,7 @@ const useRefreshOnReturn = (waiting: boolean) => {
       document.removeEventListener("visibilitychange", back);
       window.removeEventListener("pageshow", back);
     };
-  }, [refresh, waiting]);
+  }, [onBack, refresh, waiting]);
 };
 
 /**

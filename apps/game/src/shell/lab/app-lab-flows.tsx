@@ -32,11 +32,15 @@ const labConnectStep = (step: string | undefined): { title: string; body: ReactN
   switch (step) {
     case "start":
     case "start-refused":
+    case "opening":
       return {
         title: WORDS.connect,
         body: (
           <StartStep
             sending={false}
+            preparing={null}
+            // A phone's tap handed Discord's sign-in to its app, which is coming up.
+            opening={step === "opening" ? "discord" : null}
             // A provider refused: its email already has an account, which signs in with an email code.
             error={step === "start-refused" ? labRefusal("social", "account_not_linked") : null}
             providers={SOCIAL_PROVIDERS}
@@ -71,6 +75,7 @@ const labConnectStep = (step: string | undefined): { title: string; body: ReactN
           <HandoffStep
             provider="google"
             checking={false}
+            preparing={false}
             error={null}
             onCode={async () => false}
             onRetry={noop}
