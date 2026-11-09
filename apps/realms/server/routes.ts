@@ -239,7 +239,7 @@ const routeShares = async (
   if (code && action === "posted" && request.method === "POST") return handleSharePosted(request, auth, env.DB, code);
   if (code && action === "card" && request.method === "PUT")
     return handleShareCardUpload(request, auth, env.DB, env.SHARE_CARDS, code);
-  if (code && action === "card" && request.method === "GET") return handleShareCard(env.SHARE_CARDS, code);
+  if (code && action === "card" && request.method === "GET") return handleShareCard(env.DB, env.SHARE_CARDS, code);
   if (code && action === "visit" && request.method === "POST") {
     if (!(await withinPublicBudget(env, "share", request))) return json({ error: "too_many_requests" }, 429);
     return handleShareVisit(request, env.DB, code);

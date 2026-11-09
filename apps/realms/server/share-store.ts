@@ -1,10 +1,5 @@
-import {
-  profileOfIdentityUser,
-  type ShareKind,
-  type ShareChannel,
-  type ShareMoment,
-  type ShareTally,
-} from "@realms-world/identity";
+import { profileOfIdentityUser } from "@realms-world/identity";
+import type { ShareKind, ShareChannel, ShareMoment, ShareTally } from "@realms-world/identity";
 
 import { newPublicCode } from "./campaigns";
 
@@ -16,7 +11,7 @@ export interface SharedLink {
   name: string | null;
 }
 
-/** A join still waiting to count as activated, with the season board that decides it. */
+/** A join not yet activated, with the season board that decides it. */
 export interface PendingJoin {
   friend: string;
   chainId: string;
@@ -131,14 +126,14 @@ export function createShareStore(db: D1Database) {
 
   /**
    * Gives each account made after one of its browsers opened another player's link to that link: the first such visit
-   * (first touch) and only once. The sharer's own accounts, and any account on a browser the sharer was signed in on,
-   * join no one's link.
+   * (first touch) and only once, joined when the account was made, however late a read settles it. The sharer's own
+   * accounts, and any account on a browser the sharer was signed in on, join no one's link.
    */
-  const settleJoins = (now: number) =>
+  const settleJoins = () =>
     db
       .prepare(
         `INSERT OR IGNORE INTO "share_joins" ("friend", "code", "joined_at")
-         SELECT b."realmsId", v."code", ?1
+         SELECT b."realmsId", v."code", CAST(strftime('%s', u."createdAt") AS INTEGER)
          FROM "share_visits" v
          JOIN "share_links" l ON l."code" = v."code"
          JOIN "account_browsers" b ON b."browser" = v."browser"
@@ -147,19 +142,18 @@ export function createShareStore(db: D1Database) {
            AND NOT EXISTS (SELECT 1 FROM "share_joins" j WHERE j."friend" = b."realmsId")
          ORDER BY julianday(v."at")`,
       )
-      .bind(now)
       .run();
 
-  /** Joins not yet activated that joined after `since`, with the season board of the link that brought each. */
-  const pendingJoins = async (since: number): Promise<PendingJoin[]> =>
+  /** Joins not yet activated, every sharer's or one sharer's, with the season board of the link that brought each. */
+  const pendingJoins = async (sharer?: string): Promise<PendingJoin[]> =>
     (
       await db
         .prepare(
           `SELECT j."friend", l."chain_id" AS "chainId", l."game_id" AS "gameId"
            FROM "share_joins" j JOIN "share_links" l ON l."code" = j."code"
-           WHERE j."activated_at" IS NULL AND j."joined_at" >= ?`,
+           WHERE j."activated_at" IS NULL AND (?1 IS NULL OR l."sharer" = ?1)`,
         )
-        .bind(since)
+        .bind(sharer ?? null)
         .all<PendingJoin>()
     ).results;
 
@@ -175,8 +169,12 @@ export function createShareStore(db: D1Database) {
         );
 
   /** What one account's links brought, every kind and moment together: one row, all zeros before its first link. */
-  const tallyOf = async (sharer: string): Promise<ShareTally> =>
-    (await db.prepare(tallySelect("", `WHERE l."sharer" = ?`)).bind(sharer).first<ShareTally>())!;
+  const tallyOf = async (sharer: string): Promise<ShareTally> => {
+    const tally = await db.prepare(tallySelect("", `WHERE l."sharer" = ?`)).bind(sharer).first<ShareTally>();
+    // An aggregate without GROUP BY always answers one row.
+    if (!tally) throw new Error("share_tally_unanswered");
+    return tally;
+  };
 
   /** Every moment's funnel, newest moment first. */
   const momentReport = async (): Promise<MomentReport[]> =>
@@ -192,16 +190,20 @@ export function createShareStore(db: D1Database) {
         .all<MomentReport>()
     ).results;
 
-  /** Visits from others' browsers by the channel their link was posted from; null for links that named none. */
-  const channelReport = async (): Promise<{ channel: ShareChannel | null; visits: number }[]> =>
+  /**
+   * First visits from others' browsers by the tag their link carried (`?via=`, null for none). A tag says which button
+   * made the link, not which app carried it, and a link posted both ways has no count of posts per tag: these are
+   * visits, never a rate per post.
+   */
+  const firstVisitsByTag = async (): Promise<{ tag: ShareChannel | null; visits: number }[]> =>
     (
       await db
         .prepare(
-          `SELECT v."via" AS "channel", COUNT(*) AS "visits"
+          `SELECT v."via" AS "tag", COUNT(*) AS "visits"
            FROM "share_visits" v JOIN "share_links" l ON l."code" = v."code"
            WHERE ${OTHERS_VISIT} GROUP BY v."via" ORDER BY "visits" DESC`,
         )
-        .all<{ channel: ShareChannel | null; visits: number }>()
+        .all<{ tag: ShareChannel | null; visits: number }>()
     ).results;
 
   /** The sharers who brought the most, by activations, then joins, then visits. */
@@ -228,7 +230,7 @@ export function createShareStore(db: D1Database) {
     markActivated,
     tallyOf,
     momentReport,
-    channelReport,
+    firstVisitsByTag,
     topSharers,
   };
 }

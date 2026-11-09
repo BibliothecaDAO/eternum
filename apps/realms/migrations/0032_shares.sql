@@ -19,8 +19,8 @@ create table "share_visits" (
   "at" text not null,
   primary key ("code", "browser")
 );
--- A new account a shared link brought: the first link one of its browsers opened before the account was made, and when
--- the account first stood on that link's season board with a site cleared.
+-- A new account a shared link brought: the first link one of its browsers opened before the account was made, when the
+-- account was made (`joined_at`), and when a read first found it on that link's season board with a site cleared.
 create table "share_joins" (
   "friend" text primary key references "user" ("realmsId") on delete cascade,
   "code" text not null references "share_links" ("code") on delete cascade,

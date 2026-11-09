@@ -16,9 +16,10 @@ const JPEG_START = [0xff, 0xd8, 0xff];
 const CARD_CACHE = "public, max-age=86400";
 
 /**
- * PUT /api/shares/<code>/card: the sharer's browser hands over the card it drew for its link, as the JPEG their post's
- * image is, so the link unfurls as the card. Only the link's sharer may, with at most SHARE_CARD.bytes of a JPEG; a
- * second card for the same link replaces the first.
+ * PUT /api/shares/<code>/card: the sharer publishes the card their browser drew for its link, as the JPEG their post's
+ * image is, so the link unfurls as the card. The share sheet sends it only on the player's press of a way to post
+ * (Post on X, Share), never as it opens. Only the link's sharer may, with at most SHARE_CARD.bytes of a JPEG; a second
+ * card for the same link replaces the first.
  */
 export async function handleShareCardUpload(
   request: Request,
@@ -38,18 +39,22 @@ export async function handleShareCardUpload(
   return new Response(null, { status: 204 });
 }
 
-/** GET /api/shares/<code>/card: the link's card, for its unfurl; 404 until its sharer's browser made one. */
-export async function handleShareCard(cards: ShareCards, code: string) {
+/**
+ * GET /api/shares/<code>/card: the link's card, for its unfurl; 404 until its sharer published one, and once the link
+ * is gone (its account's rows cascade), whatever R2 still holds.
+ */
+export async function handleShareCard(db: D1Database, cards: ShareCards, code: string) {
   const link = readCampaignCode(code);
-  const card = link ? await cards.get(cardKey(link)) : null;
+  const shared = link ? await createShareStore(db).sharedLink(link) : null;
+  const card = link && shared ? await cards.get(cardKey(link)) : null;
   if (!card) return json({ error: "card_unknown" }, 404);
   return new Response(card.body, { headers: { "content-type": SHARE_CARD.type, "cache-control": CARD_CACHE } });
 }
 
 /**
  * GET /s/<code>: the game's page as the host serves it, with what the link says written into its unfurl: who shared
- * which moment, the game's pitch, the link itself, and the card once its sharer's browser made one (else the game's
- * own preview stands). A crawler reads no script, so this is the only place an unfurl can learn whose link it is. A
+ * which moment, the game's pitch, the link itself, and the card once its sharer published one (else the game's own
+ * preview stands). A crawler reads no script, so this is the only place an unfurl can learn whose link it is. A
  * code no link has, or a page the host did not serve, passes through as the host answered it.
  */
 export async function handleSharedPage(

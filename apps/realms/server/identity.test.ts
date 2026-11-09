@@ -3873,6 +3873,55 @@ describe("shared links", () => {
     expect(await sharer.tally()).toEqual({ links: 1, posted: 1, visits: 1, joined: 1, activated: 1 });
   });
 
+  it("dates a join from the account's making, and counts a clear on the link's board however late it is first read", async () => {
+    const sharer = await player("sharer-late-read");
+    const friendBrowser = createBrowser();
+    await visit(friendBrowser, await sharer.share(6));
+    const friend = await player("friend-late-read", friendBrowser);
+    friend.clear(2);
+    // Nobody reads the tally until three weeks later, past any window counted from the read.
+    vi.useFakeTimers({ toFake: ["Date"], now: Date.now() + 21 * 24 * 3_600_000, shouldAdvanceTime: true });
+    onTestFinished(() => {
+      vi.useRealTimers();
+    });
+    expect(await sharer.tally()).toMatchObject({ joined: 1, activated: 1 });
+    const row = await env.DB.prepare(
+      `SELECT j."joined_at" AS "joinedAt", CAST(strftime('%s', u."createdAt") AS INTEGER) AS "madeAt"
+       FROM "share_joins" j JOIN "user" u ON u."realmsId" = j."friend" WHERE j."friend" = ?`,
+    )
+      .bind(friend.realmsId)
+      .first<{ joinedAt: number; madeAt: number }>();
+    expect(row!.joinedAt).toBe(row!.madeAt);
+  });
+
+  it("settles a join whose board stayed silent for weeks once it answers, and a sharer's read settles only their own", async () => {
+    const sharer = await player("sharer-silent-board");
+    const other = await player("sharer-other-reader");
+    const friendBrowser = createBrowser();
+    await visit(friendBrowser, await sharer.share(7));
+    const friend = await player("friend-silent-board", friendBrowser);
+    friend.clear(1);
+    const activatedAt = async () =>
+      (
+        await env.DB.prepare(`SELECT "activated_at" AS "at" FROM "share_joins" WHERE "friend" = ?`)
+          .bind(friend.realmsId)
+          .first<{ at: number | null }>()
+      )?.at ?? null;
+    // Another sharer's read leaves this join for its own sharer's read.
+    await other.tally();
+    expect(await activatedAt()).toBeNull();
+
+    heralds.delete(`${shard}/games/${gameId}/leaderboard`);
+    expect(await sharer.tally()).toMatchObject({ joined: 1, activated: 0 });
+    vi.useFakeTimers({ toFake: ["Date"], now: Date.now() + 28 * 24 * 3_600_000, shouldAdvanceTime: true });
+    onTestFinished(() => {
+      vi.useRealTimers();
+      publishBoard();
+    });
+    publishBoard();
+    expect(await sharer.tally()).toMatchObject({ joined: 1, activated: 1 });
+  });
+
   it("gives a new account to the first link its browser opened, and never an account older than the visit", async () => {
     const first = await player("sharer-first");
     const second = await player("sharer-second");
@@ -3921,6 +3970,10 @@ describe("shared links", () => {
     expect(served.headers.get("content-type")).toBe("image/jpeg");
     expect(new Uint8Array(await served.arrayBuffer())).toEqual(card);
     expect((await createBrowser().request(`/api/shares/${await sharer.share(15)}/card`)).status).toBe(404);
+    // A link that is gone (its account's rows cascade) serves no card, whatever R2 still holds.
+    await env.DB.prepare(`DELETE FROM "share_links" WHERE "code" = ?`).bind(code).run();
+    expect(shareCards.objects.has(`cards/${code}.jpg`)).toBe(true);
+    expect((await createBrowser().request(`/api/shares/${code}/card`)).status).toBe(404);
   });
 
   it("takes a card only from the link's sharer, and only a JPEG of at most a megabyte", async () => {
@@ -3972,25 +4025,25 @@ describe("shared links", () => {
     expect(await page("not-a-code")).toEqual([200, GAME_PAGE]);
   });
 
-  it("counts each visit by the channel its link was posted from, never the sharer's own", async () => {
+  it("counts first visits by the tag their link carried, never the sharer's own", async () => {
     const sharer = await player("sharer-channels");
     const code = await sharer.share(30);
     const via = (browser: ReturnType<typeof createBrowser>, channel: unknown) =>
       browser.request(`/api/shares/${code}/visit`, { body: { via: channel } });
-    const channelsNow = async () =>
+    const tagsNow = async () =>
       (
         (await (await createBrowser().request("/api/operator/shares", { token: OPERATOR_TOKEN })).json()) as {
-          channels: { channel: string | null; visits: number }[];
+          firstVisitsByTag: { tag: string | null; visits: number }[];
         }
-      ).channels;
-    const before = new Map((await channelsNow()).map(({ channel, visits }) => [channel, visits]));
+      ).firstVisitsByTag;
+    const before = new Map((await tagsNow()).map(({ tag, visits }) => [tag, visits]));
     await via(createBrowser(), "x");
     await via(createBrowser(), "system");
     await via(createBrowser(), "system");
     await via(createBrowser(), "telegram");
     await via(sharer.browser, "x");
-    const after = new Map((await channelsNow()).map(({ channel, visits }) => [channel, visits]));
-    const added = (channel: string | null) => (after.get(channel) ?? 0) - (before.get(channel) ?? 0);
+    const after = new Map((await tagsNow()).map(({ tag, visits }) => [tag, visits]));
+    const added = (tag: string | null) => (after.get(tag) ?? 0) - (before.get(tag) ?? 0);
     expect([added("x"), added("system"), added(null)]).toEqual([1, 2, 1]);
   });
 

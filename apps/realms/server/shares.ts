@@ -1,17 +1,13 @@
-import {
-  isShareChannel,
-  isShareKind,
-  SHARE_ACTIVATION_DAYS,
-  type ShareChannel,
-  type ShareMoment,
-} from "@realms-world/identity";
+import { isShareChannel, isShareKind } from "@realms-world/identity";
+import type { ShareChannel, ShareMoment } from "@realms-world/identity";
 
 import type { IdentityAuth } from "./auth";
 import { keepBrowser } from "./browsers";
 import { readCampaignCode } from "./campaigns";
 import { accountKey } from "./campaign-entry";
 import { json } from "./http";
-import { createShareStore, type PendingJoin } from "./share-store";
+import { createShareStore } from "./share-store";
+import type { PendingJoin } from "./share-store";
 
 /** What share settlement reads beyond D1: each game's season board, and the account each Realms id plays with. */
 export interface ShareWorld {
@@ -59,11 +55,11 @@ export async function handleShareVisit(request: Request, db: D1Database, code: s
   return Response.json({ kind: shared.kind, moment: shared.moment, name: shared.name }, { headers });
 }
 
-/** GET /api/shares: what the signed-in account's links brought, settled first. */
+/** GET /api/shares: what the signed-in account's links brought, its own joins settled first. */
 export async function handleShareTally(request: Request, auth: IdentityAuth, world: ShareWorld) {
   const sharer = await signedInRealmsId(request, auth);
   if (typeof sharer !== "string") return sharer;
-  await settleShares(world, nowSeconds());
+  await settleShares(world, nowSeconds(), sharer);
   return json(await createShareStore(world.db).tallyOf(sharer));
 }
 
@@ -73,7 +69,10 @@ const visitChannel = async (request: Request): Promise<ShareChannel | null> => {
   return isShareChannel(via) ? via : null;
 };
 
-/** GET /api/operator/shares: every moment's funnel and the sharers who brought the most, settled first. */
+/**
+ * GET /api/operator/shares: every moment's funnel, first visits by their link's tag and the sharers who brought the
+ * most, every join settled first.
+ */
 export async function handleShareReport(world: ShareWorld) {
   const now = nowSeconds();
   const settled = await settleShares(world, now);
@@ -83,20 +82,21 @@ export async function handleShareReport(world: ShareWorld) {
     // Boards that could not answer leave their joins for the next read; the report says how many wait on them.
     unsettledJoins: settled.unsettled,
     moments: await store.momentReport(),
-    channels: await store.channelReport(),
+    firstVisitsByTag: await store.firstVisitsByTag(),
     topSharers: await store.topSharers(TOP_SHARERS),
   });
 }
 
 /**
- * Settles what shared links brought: new accounts become joins of the link their browser opened first, then each
- * join within the activation window counts as activated once its link's season board shows it with a site cleared.
- * Every step is safe to repeat, so any read may settle; a board that cannot answer leaves its joins for the next.
+ * Settles what shared links brought: new accounts become joins of the link their browser opened first, then each join
+ * (every sharer's, or one sharer's) counts as activated once its link's season board shows it with a site cleared. The
+ * board is the window: a site cleared there was cleared in the season the link was shared from, however late it is
+ * read. Every step is safe to repeat, so any read may settle; a board that cannot answer leaves its joins for the next.
  */
-async function settleShares(world: ShareWorld, now: number) {
+async function settleShares(world: ShareWorld, now: number, sharer?: string) {
   const store = createShareStore(world.db);
-  await store.settleJoins(now);
-  const pending = await store.pendingJoins(now - SHARE_ACTIVATION_DAYS * 24 * 60 * 60);
+  await store.settleJoins();
+  const pending = await store.pendingJoins(sharer);
   let unsettled = 0;
   const activated: string[] = [];
   for (const [game, joins] of joinsByGame(pending)) {

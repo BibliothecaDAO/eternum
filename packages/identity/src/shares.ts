@@ -40,9 +40,3 @@ export const SHARED_MOMENT_WORDS = {
   title: (name: string | null, moment: number) => `${name ?? "A player"} shared Day ${moment} of Frontier`,
   pitch: "A new map every day. Send your armies into the fog and bring home what they find. Your realm is free.",
 } as const;
-
-/**
- * How long after it joined a friend a share brought may still count as activated (founded a realm on the link's
- * season board and cleared a site there): a join that takes longer is the share's, but not its activation.
- */
-export const SHARE_ACTIVATION_DAYS = 14;
