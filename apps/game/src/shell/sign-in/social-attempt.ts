@@ -13,6 +13,8 @@ import { openDiscordSignIn } from "./discord-app";
  *
  * - Each new address marks this browser as the one its sign-in belongs to (social-handoff.ts), so an attempt keeps its
  *   address for every way it is opened and asks for none while it is under way.
+ * - An attempt the player asked for is theirs until it is refused or the window goes: a background ask (Discord's
+ *   early address) never replaces it, so whichever provider the player chose is the one that opens.
  * - Closing the window, signing in (the window goes) or opening again stops what an earlier launch still had to do, and
  *   an address that comes back for an attempt the window let go opens nothing.
  * - The Discord app opens only from a tap that already holds the address: a browser hands a page to another app only
@@ -27,8 +29,8 @@ export const useSocialAttempt = (returnTo: string, early: SocialProvider | null)
   const [asking, setAsking] = useState<SocialProvider | null>(null);
 
   const begin = useCallback(
-    (provider: SocialProvider) => {
-      const started = startAttempt(provider, returnTo);
+    (provider: SocialProvider, owner: Owner) => {
+      const started = startAttempt(provider, returnTo, owner);
       attempt.current = started;
       setAsking(provider);
       // A refused ask leaves no attempt: the next tap asks again and shows that answer's failure.
@@ -54,8 +56,11 @@ export const useSocialAttempt = (returnTo: string, early: SocialProvider | null)
 
   useEffect(() => {
     if (!early) return;
-    begin(early);
-    const renew = window.setInterval(() => begin(early), FRESH_MS);
+    const prefetch = () => {
+      if (attempt.current?.owner !== "player") begin(early, "background");
+    };
+    prefetch();
+    const renew = window.setInterval(prefetch, FRESH_MS);
     return () => window.clearInterval(renew);
   }, [begin, early]);
 
@@ -69,11 +74,17 @@ export const useSocialAttempt = (returnTo: string, early: SocialProvider | null)
   return {
     /** The provider whose address is on its way, if any. */
     asking,
-    /** The provider's address, when it is already known: a tap can then open it from inside itself. */
-    ready: (provider: SocialProvider): string | null => current(provider)?.address ?? null,
+    /** The provider's address when it is already known, now the player's: a tap can open it from inside itself. */
+    claim: (provider: SocialProvider): string | null => {
+      const live = current(provider);
+      if (live === null || live.address === null) return null;
+      live.owner = "player";
+      return live.address;
+    },
     /** Waits for the provider's address, asking for one if none is under way; null once the window let it go. */
     fetch: async (provider: SocialProvider): Promise<string | null> => {
-      const asked = current(provider) ?? begin(provider);
+      const asked = current(provider) ?? begin(provider, "player");
+      asked.owner = "player";
       const address = await asked.answer;
       return open.current && attempt.current === asked ? address : null;
     },
@@ -93,17 +104,22 @@ export const useSocialAttempt = (returnTo: string, early: SocialProvider | null)
 /** better-auth keeps a sign-in's state for 10 minutes; an address is used, or asked again, well inside that. */
 const FRESH_MS = 8 * 60_000;
 
+/** Who asked: the player's tap, or the window ahead of it. */
+type Owner = "player" | "background";
+
 type Attempt = {
   provider: SocialProvider;
+  owner: Owner;
   returnTo: string;
   startedAt: number;
   answer: Promise<string>;
   address: string | null;
 };
 
-const startAttempt = (provider: SocialProvider, returnTo: string): Attempt => {
+const startAttempt = (provider: SocialProvider, returnTo: string, owner: Owner): Attempt => {
   const attempt: Attempt = {
     provider,
+    owner,
     returnTo,
     startedAt: Date.now(),
     answer: identityClient.socialSignInUrl(provider, returnTo),

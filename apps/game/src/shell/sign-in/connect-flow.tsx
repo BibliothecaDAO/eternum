@@ -138,7 +138,7 @@ const AnonymousConnect = ({
     });
   // A phone opens the Discord app only from a tap that holds the address; a tap without one asks and opens nothing.
   const openDiscordApp = () => {
-    const address = attempt.ready("discord");
+    const address = attempt.claim("discord");
     if (address === null) return prepareDiscordApp();
     startProvider("discord", () => attempt.inApp(address));
   };

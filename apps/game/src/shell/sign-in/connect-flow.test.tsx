@@ -850,6 +850,49 @@ describe("Connect with Discord on a phone", () => {
     }
   });
 
+  it("an idle start screen asks for Discord's address again before it grows old, and the tap opens the new one", async () => {
+    vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout", "setInterval", "clearInterval", "Date"] });
+    const { ui, asked, opened } = await openOn(ANDROID);
+    const RENEWED = WEB.replace("state=first", "state=renewed");
+    asked.mockImplementation(async () => RENEWED);
+    try {
+      await wait(8 * 60_000);
+      expect(asked.mock.calls).toEqual([
+        ["discord", NEXT],
+        ["discord", NEXT],
+      ]);
+      act(() => {
+        button("Continue with Discord")!.click();
+        expect(opened.mock.calls).toEqual([[discordAndroidIntent(RENEWED)]]);
+      });
+    } finally {
+      await ui.unmount();
+    }
+  });
+
+  it("Discord's renewal never replaces the provider the player chose: Google asked just before it still opens, once", async () => {
+    vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout", "setInterval", "clearInterval", "Date"] });
+    const GOOGLE = "https://accounts.google.test/o/oauth2/auth?state=g";
+    const google = slowAnswer();
+    const { ui, asked, opened } = await openOn(ANDROID);
+    asked.mockImplementation(async (provider) => (provider === "google" ? google.answer : WEB));
+    try {
+      await wait(8 * 60_000 - 1000);
+      await press("Continue with Google");
+      await wait(2000);
+      await google.send(GOOGLE);
+      expect(asked.mock.calls).toEqual([
+        ["discord", NEXT],
+        ["google", NEXT],
+      ]);
+      expect(opened.mock.calls).toEqual([[GOOGLE]]);
+      expect(pendingSocialStart()?.provider).toBe("google");
+      expect(ui.window()?.getAttribute("aria-label")).toBe("Google");
+    } finally {
+      await ui.unmount();
+    }
+  });
+
   it("a computer opens the identity service's address as it is, with no browser choice to add", async () => {
     useIdentitySessionStore.setState({ status: "anonymous", session: null });
     vi.spyOn(identityClient, "availableSignInProviders").mockResolvedValue(["google", "discord"]);
