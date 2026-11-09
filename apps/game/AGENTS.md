@@ -29,27 +29,32 @@ it from here.
 2. **Map models that stand still face the camera.** The map's camera never turns (`enableRotate: false`,
    `src/three/constants/rendering.ts:15`), so a model that stands on the map shows its front to the camera, from the
    south, and is authored with its front on +Z. Armies are outside this rule: they take their own heading
-   (`src/three/managers/army-manager.ts:1204`). Today realms, villages, camps, cleared sites, Frontier beasts and their
-   skins face it through `resolveStructureRotationY` (`src/three/structures/structure-orientation.ts:11`), and chests
-   through their own zero yaw (`src/three/managers/chest-manager.ts:589`). Not yet: a bank is turned 120° before the
-   resolver is asked (`src/three/managers/structure-manager.ts:1483`), and hyperstructures, mines, fallen-realm ruins,
-   rifts and every other structure keep a one-of-six turn drawn from their tile, which
-   `src/three/structures/structure-orientation.test.ts:60` holds. A zero yaw faces the camera only when the asset's
-   front is on +Z: check it on a capture of the model.
+   (`src/three/managers/army-manager.ts:1204`). Today a structure's models are handed together to
+   `resolveStructureRotationY` (`src/three/managers/structure-manager.ts:1495`), which gives zero yaw to any set holding
+   a settlement (realm, village, camp, cleared site), a Frontier beast or a skin of one of them, and keeps the turn it
+   was given otherwise (`src/three/structures/structure-orientation.ts:12`). A ruin or a rift drawn with its beast
+   therefore faces the camera (`src/three/structures/structure-orientation.test.ts:49`). Chests take their own zero yaw
+   (`src/three/managers/chest-manager.ts:589`). Not yet: a bank is turned 120° before the resolver is asked
+   (`src/three/managers/structure-manager.ts:1483`), and every other set keeps the one-of-six turn drawn from its tile
+   (`:1488`): hyperstructures, mines, and ruin and rift landmarks standing alone
+   (`src/three/structures/structure-orientation.test.ts:60`). A zero yaw faces the camera only when the asset's front is
+   on +Z: check it on a capture of the model.
 3. **The player owns the camera and the input.** The camera moves only for a reason `CameraNavigation` names
    (`src/three/scenes/worldmap-camera-target.ts:20`): the map's first view, an address or a link, the minimap, a
    shortcut key, a HUD control that shows an army, a spire's view switch. A tap or a selection on the map and every
    order (explore, move, attack, build, deploy, claim) leave the camera where the player put it;
    `src/three/scenes/worldmap-camera-stays.test.tsx:205` holds it for Frontier's and Blitz's orders. One panel stands at
-   a time: opening one puts the others away (`src/ui/features/frontier/hud/one-panel.ts:13`), and the playtest's
-   `hud-layout` step fails a HUD part drawn over another. A result or a loss stands long enough to read, then goes by
-   itself, as an army's loss does (`src/ui/features/frontier/army/army-lost.tsx:6`). Not yet: Frontier's day turn. Its
-   summary covers the map and takes every press until Continue
-   (`src/ui/features/frontier/rollover/day-end-screen.tsx:36`, `src/hooks/store/use-day-end-store.ts:115`), and the
-   camera then goes to the realm's new site by itself, with or without a summary
-   (`src/ui/features/world/components/expeditions/expedition-rollover.tsx:75`). The playtest's `lab-day-*` and
-   `lab-season-opens` steps below require both, so a change to it changes the summary's input, its dismissal, the
-   camera's move and those steps together.
+   a time: among Frontier's HUD surfaces, the map's selection card and the deploy order, opening one puts the others
+   away (`useOnePanel`, `src/ui/features/frontier/hud/one-panel.ts:37`), and the playtest's `hud-layout` step fails a
+   HUD part drawn over another. A notice over the map stands long enough to read, then goes by itself. An army's loss is
+   one: its notice closes after 3 s, sooner by its × or a new pick on the map
+   (`src/ui/features/frontier/army/army-lost.tsx:12`, `:20`). Pages outside a match, such as Results, are left by their
+   own buttons (`src/shell/season-tab/results-page.tsx:192`). Not yet: Frontier's day turn. A summary that is shown
+   covers the map and takes every press until Continue (`src/ui/features/frontier/rollover/day-end-screen.tsx:36`,
+   `src/hooks/store/use-day-end-store.ts:115`), and the day's turn then brings the camera onto the realm's new site,
+   with or without a summary (`src/ui/features/world/components/expeditions/expedition-rollover.tsx:75`). The playtest's
+   `lab-day-*` and `lab-season-opens` steps below require both, so a change to it changes the summary's input, its
+   dismissal, the camera's move and those steps together.
 4. **The bar is a shipped commercial strategy game.** Art, models, icons, screens, video and onboarding are judged side
    by side with what ships today and with the games this one stands beside (Age of Empires, Heroes of Might and Magic,
    Civilization), at the sizes a player meets them: icons at HUD size, screens on a desktop and a phone. A change that
