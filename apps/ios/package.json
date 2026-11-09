@@ -3,7 +3,8 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "capacitor:copy:before": "node scripts/write-offline-page.mjs"
+    "capacitor:copy:before": "node scripts/write-offline-page.mjs",
+    "upload:testflight": "bash scripts/upload-testflight.sh"
   },
   "dependencies": {
     "@capacitor/core": "^8.6.0",

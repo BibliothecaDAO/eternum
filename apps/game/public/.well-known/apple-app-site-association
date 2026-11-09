@@ -1,0 +1,13 @@
+{
+  "applinks": {
+    "details": [
+      {
+        "appIDs": [],
+        "components": [{ "/": "/g/*" }, { "/": "/join/devcon/*" }, { "/": "/results/*" }]
+      }
+    ]
+  },
+  "webcredentials": {
+    "apps": []
+  }
+}

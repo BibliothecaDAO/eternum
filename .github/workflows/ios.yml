@@ -1,0 +1,60 @@
+name: ios
+
+# The iOS app's shell (apps/ios) compiles. It builds for the simulator, unsigned: signing and the TestFlight upload run on
+# the owner's Mac (apps/ios/scripts/upload-testflight.sh), because deployment credentials never enter GitHub
+# (.github/scripts/workflow-credentials.test.ts).
+on:
+  pull_request:
+    paths: ["apps/ios/**"]
+  push:
+    branches: [next]
+    paths: ["apps/ios/**"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ios-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  simulator-build:
+    runs-on: macos-26
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          sparse-checkout: .github/actions
+      # The media the app bundles: its icon and launch images, and the offline page's icon
+      # (apps/ios/scripts/write-offline-page.mjs).
+      - uses: ./.github/actions/checkout-without-media
+        with:
+          keep: |
+            apps/ios/ios/App/App/Assets.xcassets
+            apps/game/public/images/game-pwa-192x192.png
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - name: Install the shell's dependencies
+        run: pnpm install --frozen-lockfile --filter @realms-world/ios
+      # cap sync writes the offline page and the Swift package of the installed plugins; a plugin installed without a
+      # sync committed leaves the native project different from what is checked in.
+      - name: Sync the native project and require it committed
+        run: |
+          pnpm --dir apps/ios exec cap sync ios
+          git diff --exit-code -- apps/ios/ios
+      - name: Build for the simulator, unsigned
+        run: |
+          xcodebuild build \
+            -project apps/ios/ios/App/App.xcodeproj \
+            -scheme App \
+            -configuration Release \
+            -destination "generic/platform=iOS Simulator" \
+            -derivedDataPath "$RUNNER_TEMP/DerivedData" \
+            CODE_SIGNING_ALLOWED=NO

@@ -4,6 +4,7 @@ import { isValidElement } from "react";
 import { createRoutesFromChildren, matchRoutes, Navigate, type RouteObject } from "react-router-dom";
 import { describe, expect, it } from "vitest";
 
+import iosApp from "../../ios/capacitor.config";
 import { parseShellRoutes } from "../scripts/shell-routes.mjs";
 import { appRoutes, RETIRED_PATHS } from "./app";
 
@@ -31,10 +32,12 @@ const matchesPagesPattern = (pattern: string, path: string) => {
 /** The shell's pages as the deploy check reads them too (scripts/shell-routes.mjs): one parser, one list. */
 const shellRewrites = parseShellRoutes(readHostingFile("_redirects"));
 
-const noCachePaths = readHostingFile("_headers")
-  .split(/\n(?=\/)/)
-  .filter((block) => /Cache-Control:\s*no-cache/i.test(block))
-  .map((block) => block.split("\n")[0].trim());
+/** Each `_headers` rule: its path pattern on the first line, then its headers. */
+const headerRules = readHostingFile("_headers").split(/\n(?=\/)/);
+
+const pathOfRule = (rule: string) => rule.split("\n")[0].trim();
+
+const noCachePaths = headerRules.filter((rule) => /Cache-Control:\s*no-cache/i.test(rule)).map(pathOfRule);
 
 /** `/` is the shell's own file, first on the list; every other page reaches it only through a rewrite. */
 const servesShell = (path: string) => shellRewrites.some((pattern) => matchesPagesPattern(pattern, path));
@@ -56,12 +59,14 @@ const pagePaths = [...new Set(routerPaths(routes))].filter(
   (path) => path !== NOT_FOUND_PATH && !retired.includes(path),
 );
 
-/** The paths `_redirects` sends permanently to Play. */
-const redirectsToPlay = readHostingFile("_redirects")
+/** Each `_redirects` rule as its source path, target and status. */
+const redirectRules = readHostingFile("_redirects")
   .split("\n")
   .map((line) => line.trim().split(/\s+/))
-  .filter(([from, to, status]) => from?.startsWith("/") && to === "/" && status === "301")
-  .map(([from]) => from);
+  .filter(([from]) => from?.startsWith("/"));
+
+/** The paths `_redirects` sends permanently to Play. */
+const redirectsToPlay = redirectRules.filter(([, to, status]) => to === "/" && status === "301").map(([from]) => from);
 
 /** URLs a pattern matches. A router splat also matches nothing, which a Pages splat does not, so both are sampled. */
 const sampleUrls = (pattern: string) => {
@@ -101,5 +106,40 @@ describe("hosting files", () => {
   it("serve the shell for nothing that is not a page, so missing assets stay 404s", () => {
     const urls = [...shellRewrites.flatMap(sampleUrls), "/assets/missing.js", "/models/missing.glb", "/missing"];
     expect(urls.filter((url) => servesShell(url) && !isPage(url))).toEqual([]);
+  });
+});
+
+/** The iOS app's association: the pages it opens (universal links) and the passkeys it shares with the site. */
+const APPLE_APP_SITE_ASSOCIATION = "/.well-known/apple-app-site-association";
+
+type AppleAppSiteAssociation = {
+  applinks: { details: { appIDs: string[]; components: { "/": string }[] }[] };
+  webcredentials: { apps: string[] };
+};
+
+const association: AppleAppSiteAssociation = JSON.parse(readHostingFile(APPLE_APP_SITE_ASSOCIATION.slice(1)));
+
+describe("the iOS app's association", () => {
+  it("is served as JSON at its own address, never through a redirect or the shell", () => {
+    const rule = headerRules.find((candidate) => pathOfRule(candidate) === APPLE_APP_SITE_ASSOCIATION);
+    expect(rule).toMatch(/Content-Type:\s*application\/json/i);
+    expect(redirectRules.filter(([from]) => matchesPagesPattern(from, APPLE_APP_SITE_ASSOCIATION))).toEqual([]);
+  });
+
+  it("opens the app on the router's pages only", () => {
+    const linkPaths = association.applinks.details.flatMap((detail) => detail.components.map((path) => path["/"]));
+    const pageUrls = pagePaths.flatMap(sampleUrls);
+    expect(linkPaths.filter((path) => !pageUrls.some((url) => matchesPagesPattern(path, url)))).toEqual([]);
+  });
+
+  // Empty until the owner adds the Apple Team ID (apps/ios/README.md); then each entry is `<Team ID>.<bundle id>`.
+  it("names the iOS app by its Team ID and bundle id, the same app for links and passkeys", () => {
+    const appIDs = association.applinks.details.flatMap((detail) => detail.appIDs);
+    expect(association.webcredentials.apps).toEqual(appIDs);
+    for (const appID of appIDs) {
+      const [teamId, ...bundleId] = appID.split(".");
+      expect(teamId, appID).toMatch(/^[A-Z0-9]{10}$/);
+      expect(bundleId.join("."), appID).toBe(iosApp.appId);
+    }
   });
 });
