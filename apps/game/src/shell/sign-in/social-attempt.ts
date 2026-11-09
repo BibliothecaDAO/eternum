@@ -96,10 +96,13 @@ export const useSocialAttempt = (returnTo: string, early: SocialProvider | null)
       attempt.current = null;
       setAsking(null);
     },
-    /** Opens Discord's address in a phone's app, from inside the tap, stopping what an earlier launch still had to do. */
-    inApp: (address: string) => {
+    /**
+     * Opens Discord's address in a phone's app, from inside the tap, stopping what an earlier launch still had to do;
+     * `website` is the way to the same address in the browser when an iPhone has no app to take it.
+     */
+    inApp: (address: string, website: () => void) => {
       stopLaunch.current();
-      stopLaunch.current = openDiscordSignIn(address);
+      stopLaunch.current = openDiscordSignIn(address, website);
     },
     /** Opens the address in this browser: every provider's way, and a phone player's choice over the Discord app. */
     inBrowser: (address: string) => {

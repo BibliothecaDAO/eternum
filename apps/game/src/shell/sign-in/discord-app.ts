@@ -13,9 +13,10 @@ import { pageNavigation } from "@/utils/page-navigation";
  *   (discord/discord-api-docs#6160). The website keeps the identity service's address as it is, so a computer and the
  *   website fallback sign in as they always have.
  * - Android's Chrome opens an `intent:` for the app, or its `browser_fallback_url` without it.
- * - An iPhone has no fallback for an app it lacks, so the website follows after `APP_WAIT_MS` while the page stays in
- *   front. A page that went to the background may have opened the app or may only have been switched away from: it
- *   cannot tell, so it stops there and the player chooses on the Discord step (the app again, the browser, or the code).
+ * - An iPhone has no fallback for an app it lacks, so the caller's website way follows after `APP_WAIT_MS` while the page
+ *   stays in front. A page that went to the background may have opened the app or may only have been switched away
+ *   from: it cannot tell, so it stops there and the player chooses on the Discord step (the app again, the browser, or
+ *   the code).
  *
  * The app sends Discord's answer to a browser, often not this one: social-handoff.ts shows a code there.
  */
@@ -38,19 +39,19 @@ export const discordAndroidIntent = (web: string) =>
   `intent://${appPath(web)}#Intent;scheme=discord;package=com.discord;S.browser_fallback_url=${encodeURIComponent(web)};end`;
 
 /**
- * Opens Discord's sign-in at `web`, the identity service's authorize address, in a phone's app (`opensDiscordApp`).
- * Returns what stops the rest of it (an iPhone's website fallback still to come). It must run inside the player's tap:
- * a browser hands a page to another app only from a tap.
+ * Opens Discord's sign-in at `web`, the identity service's authorize address, in a phone's app (`opensDiscordApp`), with
+ * `website` (the same address in the browser) as an iPhone's fallback. Returns what stops the rest of it (that fallback
+ * still to come). It must run inside the player's tap: a browser hands a page to another app only from a tap.
  */
-export const openDiscordSignIn = (web: string): (() => void) => {
+export const openDiscordSignIn = (web: string, website: () => void): (() => void) => {
   if (isAndroid()) {
     pageNavigation.open(discordAndroidIntent(web));
     return () => {};
   }
-  return openAppThenWebsite(web);
+  return openAppThenWebsite(web, website);
 };
 
-const openAppThenWebsite = (web: string) => {
+const openAppThenWebsite = (web: string, website: () => void) => {
   const stop = () => {
     window.clearTimeout(fallback);
     document.removeEventListener("visibilitychange", away);
@@ -61,7 +62,7 @@ const openAppThenWebsite = (web: string) => {
   };
   const fallback = window.setTimeout(() => {
     stop();
-    pageNavigation.open(web);
+    website();
   }, APP_WAIT_MS);
   document.addEventListener("visibilitychange", away);
   window.addEventListener("pagehide", stop);

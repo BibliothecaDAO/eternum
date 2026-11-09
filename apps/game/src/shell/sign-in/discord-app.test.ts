@@ -17,8 +17,11 @@ const setVisibility = (state: DocumentVisibilityState) => {
 
 describe("Discord's sign-in on a phone", () => {
   let opened: ReturnType<typeof vi.spyOn>;
+  // The caller's way to the same address in the browser.
+  const website = vi.fn(() => pageNavigation.open(WEB));
   beforeEach(() => {
     vi.useFakeTimers();
+    website.mockClear();
     opened = vi.spyOn(pageNavigation, "open").mockImplementation(() => {});
   });
   afterEach(() => {
@@ -41,23 +44,24 @@ describe("Discord's sign-in on a phone", () => {
 
   it("hands Android the app, with the website as Chrome's fallback", () => {
     on(ANDROID);
-    openDiscordSignIn(WEB);
+    openDiscordSignIn(WEB, website);
     vi.advanceTimersByTime(APP_WAIT_MS);
     expect(opened.mock.calls).toEqual([[discordAndroidIntent(WEB)]]);
   });
 
   it("on an iPhone whose page stays in front (no app, a refused address, the system's prompt cancelled), goes on to the website", () => {
     on(IPHONE);
-    openDiscordSignIn(WEB);
+    openDiscordSignIn(WEB, website);
     vi.advanceTimersByTime(APP_WAIT_MS - 1);
     expect(opened.mock.calls).toEqual([[discordAppUrl(WEB)]]);
     vi.advanceTimersByTime(1);
+    expect(website).toHaveBeenCalledTimes(1);
     expect(opened.mock.calls).toEqual([[discordAppUrl(WEB)], [WEB]]);
   });
 
   it("on an iPhone, leaving the page stops the website from loading by itself, also once the player is back", () => {
     on(IPHONE);
-    openDiscordSignIn(WEB);
+    openDiscordSignIn(WEB, website);
     setVisibility("hidden");
     setVisibility("visible");
     vi.advanceTimersByTime(APP_WAIT_MS * 4);
@@ -66,7 +70,7 @@ describe("Discord's sign-in on a phone", () => {
 
   it("on an iPhone, the returned stop ends the wait: nothing more opens", () => {
     on(IPHONE);
-    const stop = openDiscordSignIn(WEB);
+    const stop = openDiscordSignIn(WEB, website);
     vi.advanceTimersByTime(APP_WAIT_MS - 1);
     stop();
     vi.advanceTimersByTime(APP_WAIT_MS);

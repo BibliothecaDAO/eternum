@@ -892,6 +892,8 @@ export const SIGN_IN_WORDS = {
   continueWith: (provider: SocialProvider) => `Continue with ${SIGN_IN_PROVIDER_NAMES[provider]}`,
   /** On a provider's button while its sign-in address is on its way (a phone's Discord app opens only from a tap that has it). */
   preparing: "Preparing…",
+  /** On a phone's Discord button once its tap handed the sign-in to the app, while the app comes up. */
+  opening: (provider: SocialProvider) => `Opening ${SIGN_IN_PROVIDER_NAMES[provider]}…`,
   or: "or",
   email: "Email",
   sendCode: "Send code",

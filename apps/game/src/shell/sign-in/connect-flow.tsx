@@ -97,8 +97,9 @@ type Step =
 
 /**
  * Before a session: a provider, or an email and then its code; after a provider, the code another browser shows, also
- * after the page reloaded while the provider was out (`resumed`). A phone's tap that hands Discord to its app leaves the
- * screen as it was (`inApp`): the code step shows once the page comes back from the app, when there can be a code.
+ * after the page reloaded while the provider was out (`resumed`). A phone's tap that hands Discord to its app leaves
+ * the screen as it was, its button busy (`inApp`): the code step shows once the page comes back from the app, when
+ * there can be a code.
  */
 const AnonymousConnect = ({
   next,
@@ -138,17 +139,23 @@ const AnonymousConnect = ({
     setStep(out);
     open();
   };
+  // A provider's website shows its code step at once: a home-screen app's Safari view may cover the page, not hide it.
+  const toWebsite = (provider: SocialProvider, address: string) =>
+    startProvider(provider, { kind: "handoff", provider }, () => attempt.inBrowser(address));
   // A provider's website is a page load, which needs no tap: it opens once its address comes.
   const openWebsite = (provider: SocialProvider) =>
     void run("social", async () => {
       const address = await attempt.fetch(provider);
-      if (address !== null) startProvider(provider, { kind: "handoff", provider }, () => attempt.inBrowser(address));
+      if (address !== null) toWebsite(provider, address);
     });
   // A phone opens the Discord app only from a tap that holds the address; a tap without one asks and opens nothing.
+  // An iPhone without the app goes on to the website the same way.
   const openDiscordApp = () => {
     const address = attempt.claim("discord");
     if (address === null) return prepareDiscordApp();
-    startProvider("discord", { kind: "inApp", provider: "discord" }, () => attempt.inApp(address));
+    startProvider("discord", { kind: "inApp", provider: "discord" }, () =>
+      attempt.inApp(address, () => toWebsite("discord", address)),
+    );
   };
   // A refused ask says why; an answer makes the next tap the one that opens the app.
   const prepareDiscordApp = () =>
@@ -157,10 +164,10 @@ const AnonymousConnect = ({
     });
   const continueWith = (provider: SocialProvider) =>
     usesDiscordApp(provider) ? openDiscordApp() : openWebsite(provider);
-  // Every way in on the start screen comes through here. While a provider's app is opening, the screen stays: another
-  // way ends that sign-in first (its launch, its address, its saved return and its step), the same provider opens again.
-  const choose = (way: SocialProvider | "email", go: () => void) => {
-    if (step.kind === "inApp" && step.provider !== way) {
+  // Every way in on the start screen comes through here. While a provider's app is opening, the screen stays with
+  // that provider's button busy: any other way ends that sign-in first (its launch, address, saved return and step).
+  const choose = (go: () => void) => {
+    if (step.kind === "inApp") {
       attempt.end();
       forgetSocialStart();
       setStep({ kind: "start" });
@@ -214,10 +221,11 @@ const AnonymousConnect = ({
       <StartStep
         sending={running === "send-code" || running === "social"}
         preparing={attempt.asking}
+        opening={step.kind === "inApp" ? step.provider : null}
         error={error}
         providers={providers}
-        onProvider={(provider) => choose(provider, () => continueWith(provider))}
-        onEmail={(email) => choose("email", () => emailCode(email))}
+        onProvider={(provider) => choose(() => continueWith(provider))}
+        onEmail={(email) => choose(() => emailCode(email))}
       />
     </ShellWindow>
   );

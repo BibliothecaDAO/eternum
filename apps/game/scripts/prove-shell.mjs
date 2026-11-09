@@ -147,6 +147,7 @@ const LAB_PAGES = [
   ["first-visit", "credits"],
   ["first-visit", "connect/start"],
   ["first-visit", "connect/start-refused"],
+  ["first-visit", "connect/opening"],
   ["first-visit", "connect/code"],
   ["first-visit", "connect/code-refused"],
   ["first-visit", "connect/handoff"],

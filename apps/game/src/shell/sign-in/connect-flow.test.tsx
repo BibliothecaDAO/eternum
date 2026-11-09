@@ -679,7 +679,12 @@ describe("Connect with Discord on a phone", () => {
         expect(opened).toHaveBeenCalledTimes(1);
         expect(ui.window()?.getAttribute("aria-label")).toBe("Connect");
         expect(codeBoxes()).toBeNull();
-        expect(button("Continue with Discord")).toBeDefined();
+        // Discord's button waits with the kit's spinner while the app comes up.
+        expect(button("Continue with Discord")).toBeUndefined();
+        expect(button("Opening Discord…")?.disabled).toBe(true);
+        expect(button("Opening Discord…")?.getAttribute("aria-busy")).toBe("true");
+        expect(button("Opening Discord…")?.querySelector(".ui-spinner")).not.toBeNull();
+        expect(button("Continue with Google")?.disabled).toBe(false);
 
         // In the Discord app: the page behind it is hidden, then the player comes back without a sign-in here.
         await setVisibility("hidden");
@@ -690,6 +695,7 @@ describe("Connect with Discord on a phone", () => {
         expect(codeBoxes()).not.toBeNull();
         expect(button("Try Discord again")).toBeDefined();
         expect(button("Continue in browser")).toBeDefined();
+        expect(button("Opening Discord…")).toBeUndefined();
         expect(opened).toHaveBeenCalledTimes(1);
       } finally {
         await ui.unmount();
@@ -774,20 +780,27 @@ describe("Connect with Discord on a phone", () => {
     }
   });
 
-  it("tapping Discord again before the first wait ends opens the same attempt once, and only the latest wait goes on", async () => {
+  it("an iPhone with no app to take it waits on Discord's busy button, then opens the website on Discord's step", async () => {
     vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout", "setInterval", "clearInterval"] });
     const { ui, asked, opened } = await openOn(IPHONE);
     try {
       await press("Continue with Discord");
       await wait(1000);
-      await press("Continue with Discord");
-      await wait(APP_WAIT_MS - 1);
-      expect(opened.mock.calls).toEqual([[discordAppUrl(WEB)], [discordAppUrl(WEB)]]);
+      // The busy button takes no second tap.
+      await press("Opening Discord…");
+      await wait(APP_WAIT_MS - 1001);
+      expect(opened.mock.calls).toEqual([[discordAppUrl(WEB)]]);
+      expect(ui.window()?.getAttribute("aria-label")).toBe("Connect");
       await wait(1);
-      expect(opened.mock.calls).toEqual([[discordAppUrl(WEB)], [discordAppUrl(WEB)], [WEB]]);
+      expect(opened.mock.calls).toEqual([[discordAppUrl(WEB)], [WEB]]);
+      // As every provider's website: its step at once, for a home-screen app whose Safari view leaves the page in front.
+      expect(ui.window()?.getAttribute("aria-label")).toBe("Discord");
+      expect(ui.query('input[autocomplete="one-time-code"]')).not.toBeNull();
+      expect(button("Opening Discord…")).toBeUndefined();
       await wait(APP_WAIT_MS * 4);
-      expect(opened).toHaveBeenCalledTimes(3);
+      expect(opened).toHaveBeenCalledTimes(2);
       expect(asked).toHaveBeenCalledTimes(1);
+      expect(pendingSocialStart()?.next).toBe(NEXT);
     } finally {
       await ui.unmount();
     }
@@ -849,6 +862,8 @@ describe("Connect with Discord on a phone", () => {
       await wait(1000);
       // Google's address takes longer than the iPhone's wait has left.
       await press("Continue with Google");
+      expect(button("Opening Discord…")).toBeUndefined();
+      expect(button("Continue with Discord")).toBeDefined();
       await wait(APP_WAIT_MS * 4);
       expect(opened.mock.calls).toEqual([[discordAppUrl(WEB)]]);
       await google.send(GOOGLE);
@@ -905,6 +920,8 @@ describe("Connect with Discord on a phone", () => {
       await ui.type('input[type="email"]', "you@mail.test");
       await press("Continue with Discord");
       await sendCode(ui);
+      expect(button("Opening Discord…")).toBeUndefined();
+      expect(button("Continue with Discord")).toBeDefined();
       await setVisibility("hidden");
       await setVisibility("visible");
       expect(ui.window()?.getAttribute("aria-label")).toBe("Connect");
