@@ -1,0 +1,18 @@
+{
+  "name": "@realms-world/ios",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "capacitor:copy:before": "node scripts/write-offline-page.mjs"
+  },
+  "dependencies": {
+    "@capacitor/core": "^8.6.0",
+    "@capacitor/haptics": "^8.0.2",
+    "@capacitor/ios": "^8.6.0",
+    "@capacitor/push-notifications": "^8.1.3",
+    "@capacitor/share": "^8.0.3"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "^8.6.0"
+  }
+}
