@@ -131,11 +131,14 @@ const flows = (layout, persona) => {
   };
 };
 
-/** The lab's one emailed code (shell/lab/app-lab-fixtures.ts): it confirms a step, and any other is refused. */
-const LAB_EMAIL_CODE = readFileSync(new URL("../src/shell/lab/app-lab-fixtures.ts", import.meta.url), "utf8").match(
-  /LAB_EMAIL_CODE = "(\d+)"/,
-)[1];
-const WRONG_CODE = LAB_EMAIL_CODE === "222222" ? "333333" : "222222";
+/**
+ * The lab's one emailed code (shell/lab/app-lab-fixtures.ts): it confirms a step, and any other is refused. Read when
+ * the lab's flows run, so loading this module reads no file.
+ */
+const labEmailCode = () =>
+  readFileSync(new URL("../src/shell/lab/app-lab-fixtures.ts", import.meta.url), "utf8").match(
+    /LAB_EMAIL_CODE = "(\d+)"/,
+  )[1];
 
 /** A window open over the page, by its title. */
 const windowOpen = (title) => `document.querySelector('[role="dialog"][aria-label=${JSON.stringify(title)}]') !== null`;
@@ -148,7 +151,7 @@ const SIGNED_OUT = `[...document.querySelectorAll('[data-role="tab"]')].some((ta
  * each step shot: Delete account read through to its code, a wrong code refused, a new code, and the account deleted
  * with the lab's code, landing signed out on Play; then the public deletion page's way back to Settings' row.
  */
-const LAB_FLOWS = {
+const labFlows = (labCode = labEmailCode(), wrongCode = labCode === "222222" ? "333333" : "222222") => ({
   "delete-account": {
     // A player with a payout wallet: no wallet prompt opens over Settings.
     start: "/lab/app/wallet-ready/profile/settings?capture=1",
@@ -158,12 +161,12 @@ const LAB_FLOWS = {
         press("Email me a code"),
         `${pageSays("Code sent to")} && document.querySelector(".app-code input:not(:disabled)") !== null`,
       ),
-      showing(code(WRONG_CODE), pageSays("That code is not right.")),
+      showing(code(wrongCode), pageSays("That code is not right.")),
       showing(
         press("New code"),
         `document.querySelector(".app-code input")?.value === "" && ${pageSays("Code sent to")}`,
       ),
-      showing(code(LAB_EMAIL_CODE), `location.pathname === "/" && ${SIGNED_OUT} && !${windowOpen("Delete account")}`),
+      showing(code(labCode), `location.pathname === "/" && ${SIGNED_OUT} && !${windowOpen("Delete account")}`),
     ],
   },
   "deletion-page": {
@@ -175,7 +178,7 @@ const LAB_FLOWS = {
       ),
     ],
   },
-};
+});
 
 /**
  * The pages the live stack cannot show at will (a running Blitz season, a claim, a sealed chest, a paid entry, a
@@ -712,7 +715,7 @@ const main = async (argv) => {
       // The lab answers as its fixtures' player, so it runs once, with the new visitor's fresh profile.
       if (!state) {
         for (const labPage of LAB_PAGES) records.push(await measureLabPage(b, baseUrl, labPage, layout, dir));
-        for (const [name, flow] of Object.entries(LAB_FLOWS)) {
+        for (const [name, flow] of Object.entries(labFlows())) {
           const record = await runLabFlow(b, baseUrl, name, flow, layout, dir);
           records.push(record);
           console.log(
