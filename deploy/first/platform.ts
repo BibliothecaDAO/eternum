@@ -1,7 +1,7 @@
 import { resolve } from "node:path";
 import { randomBytes, createECDH, createHash } from "node:crypto";
 import { accountIdentity, newKey, type Keys } from "./chain";
-import { pagesSites, root, type Inputs, type PagesSite, type Target } from "./settings";
+import { pagesSites, root, signInClientsOf, type Inputs, type PagesSite, type Target } from "./settings";
 import type { PrivateStore } from "./private-store";
 import { command } from "./process";
 import { PublicError } from "./errors";
@@ -67,8 +67,7 @@ export function workerSecrets(
         OPERATOR_TOKEN: secrets.operator,
         WEB_PUSH_VAPID_PUBLIC_KEY: secrets.vapidPublic,
         WEB_PUSH_VAPID_PRIVATE_KEY: secrets.vapidPrivate,
-        DISCORD_CLIENT_ID: inputs.discordClientId,
-        DISCORD_CLIENT_SECRET: inputs.discordClientSecret,
+        ...signInClientSecrets(inputs),
         ...(inputs.avnuPaymasterApiKey ? { AVNU_PAYMASTER_API_KEY: inputs.avnuPaymasterApiKey } : {}),
       };
     case "launch":
@@ -101,6 +100,14 @@ export function workerSecrets(
       return adminSecrets(secrets, access);
   }
 }
+/** The identity Worker's secret pair for each sign-in provider inputs.json configures (apps/realms server/env.ts). */
+const signInClientSecrets = (inputs: Inputs): Record<string, string> =>
+  Object.fromEntries(
+    signInClientsOf(inputs).flatMap(({ provider, clientId, clientSecret }) => [
+      [`${provider.toUpperCase()}_CLIENT_ID`, clientId],
+      [`${provider.toUpperCase()}_CLIENT_SECRET`, clientSecret],
+    ]),
+  );
 function cloudflareFamily(path: string) {
   if (/^\/accounts\/[^/]+\/workers\/scripts(?:\/|$)/.test(path)) return "Workers scripts";
   if (/^\/accounts\/[^/]+\/d1(?:\/|$)/.test(path)) return "D1";

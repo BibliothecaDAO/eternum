@@ -1,4 +1,4 @@
-import { IDENTITY_PORTRAITS, IdentityRequestError, type Session } from "@realms-world/identity";
+import { IDENTITY_PORTRAITS, IdentityRequestError, type Session, type SocialProvider } from "@realms-world/identity";
 import { act } from "react";
 import { createRoot } from "react-dom/client";
 import { MemoryRouter, useLocation } from "react-router-dom";
@@ -21,7 +21,7 @@ import { useRequestSignIn, useConnectStore } from "./connect";
 import { TabBar } from "../frame/tabs";
 import { ConnectFlow } from "./connect-flow";
 import { APP_WAIT_MS, discordAndroidIntent, discordAppUrl } from "./discord-app";
-import { forgetDiscordStart, pendingDiscordStart, rememberDiscordStart } from "./discord-pending";
+import { forgetSocialStart, pendingSocialStart, rememberSocialStart } from "./social-pending";
 
 const NEXT = "/g/0x5245414c4d53/1/map?col=4&row=9&spectate=true";
 
@@ -96,7 +96,7 @@ afterEach(() => {
   vi.restoreAllMocks();
   useIdentitySessionStore.setState({ status: "anonymous", session: null });
   useConnectStore.setState({ request: null, nameDismissed: false, walletDismissed: false });
-  forgetDiscordStart();
+  forgetSocialStart();
 });
 
 describe("Connect", () => {
@@ -429,56 +429,59 @@ describe("Your wallet", () => {
   });
 });
 
-describe("Connect with Discord", () => {
-  // Where the test's Discord sends the page; the page stays, recording where it was sent.
-  const DISCORD = "https://discord.test/oauth2/authorize";
+describe("Connect with a provider", () => {
+  // Where the test's provider sends the page; the page stays, recording where it was sent.
+  const PROVIDER = "https://accounts.google.test/o/oauth2/auth";
   const navigations = () => vi.spyOn(pageNavigation, "open").mockImplementation(() => {});
+  const providerButtons = () =>
+    [...document.body.querySelectorAll("button")].filter((button) => button.textContent?.startsWith("Continue with"));
 
-  const pressDiscord = async (ui: Awaited<ReturnType<typeof mount>>) => {
+  const press = async (ui: Awaited<ReturnType<typeof mount>>, label: string) => {
     await ui.ask();
     await act(async () => {});
-    const discord = [...document.body.querySelectorAll("button")].find((button) => button.textContent === "Discord")!;
-    await act(async () => discord.click());
+    const button = providerButtons().find((each) => each.textContent === label)!;
+    await act(async () => button.click());
   };
 
-  it("sends Discord back to where the asker sends the player, or to this page", async () => {
+  it("sends the provider back to where the asker sends the player, or to this page", async () => {
     useIdentitySessionStore.setState({ status: "anonymous", session: null });
-    vi.spyOn(identityClient, "availableSignInProviders").mockResolvedValue(["discord"]);
-    const start = vi.spyOn(identityClient, "discordSignInUrl").mockResolvedValue(DISCORD);
+    vi.spyOn(identityClient, "availableSignInProviders").mockResolvedValue(["google", "discord"]);
+    const start = vi.spyOn(identityClient, "socialSignInUrl").mockResolvedValue(PROVIDER);
     const left = navigations();
     const asked = await mount("/", NEXT);
     try {
-      await pressDiscord(asked);
-      expect(start).toHaveBeenLastCalledWith(NEXT);
-      expect(left.mock.calls).toEqual([[DISCORD]]);
+      await press(asked, "Continue with Google");
+      expect(start).toHaveBeenLastCalledWith("google", NEXT);
+      expect(left.mock.calls).toEqual([[PROVIDER]]);
     } finally {
       await asked.unmount();
     }
     // Another visit, the first attempt abandoned.
     useConnectStore.setState({ request: null });
-    forgetDiscordStart();
+    forgetSocialStart();
     const here = await mount("/season?tab=frontier");
     try {
-      await pressDiscord(here);
-      expect(start).toHaveBeenLastCalledWith("/season?tab=frontier");
+      await press(here, "Continue with Discord");
+      expect(start).toHaveBeenLastCalledWith("discord", "/season?tab=frontier");
     } finally {
       await here.unmount();
     }
   });
 
-  it("signs in with the code another browser shows when Discord finished there, and says why a code is refused", async () => {
+  it("signs in with the code another browser shows when the provider finished there, and says why a code is refused", async () => {
     useIdentitySessionStore.setState({ status: "anonymous", session: null });
-    vi.spyOn(identityClient, "availableSignInProviders").mockResolvedValue(["discord"]);
-    vi.spyOn(identityClient, "discordSignInUrl").mockResolvedValue(DISCORD);
+    vi.spyOn(identityClient, "availableSignInProviders").mockResolvedValue(["google", "twitter"]);
+    vi.spyOn(identityClient, "socialSignInUrl").mockResolvedValue(PROVIDER);
     navigations();
     const claim = vi
-      .spyOn(identityClient, "claimDiscordHandoff")
+      .spyOn(identityClient, "claimSocialHandoff")
       .mockRejectedValueOnce(new IdentityRequestError(400, "INVALID_OTP"))
       .mockResolvedValue(sessionOf({ name: "Ysolde", image: "04" }));
     const ui = await mount("/", NEXT);
     try {
-      await pressDiscord(ui);
-      expect(ui.container.textContent).toContain("Discord finished elsewhere? Enter its code.");
+      await press(ui, "Continue with X");
+      expect(ui.window()?.getAttribute("aria-label")).toBe("X");
+      expect(ui.container.textContent).toContain("X finished elsewhere? Enter its code.");
       await ui.type('input[autocomplete="one-time-code"]', "111111");
       await act(async () => {});
       expect(ui.container.textContent).toContain("That code is not right.");
@@ -494,59 +497,60 @@ describe("Connect with Discord", () => {
     }
   });
 
-  it("comes back on the Discord step after the page reloads while Discord is out, and the code finishes that attempt", async () => {
+  it("comes back on the provider's step after the page reloads while it is out, and the code finishes that attempt", async () => {
     useIdentitySessionStore.setState({ status: "anonymous", session: null });
-    vi.spyOn(identityClient, "availableSignInProviders").mockResolvedValue(["discord"]);
-    const start = vi.spyOn(identityClient, "discordSignInUrl").mockResolvedValue(DISCORD);
+    vi.spyOn(identityClient, "availableSignInProviders").mockResolvedValue(["google", "apple"]);
+    const start = vi.spyOn(identityClient, "socialSignInUrl").mockResolvedValue(PROVIDER);
     navigations();
     const claim = vi
-      .spyOn(identityClient, "claimDiscordHandoff")
+      .spyOn(identityClient, "claimSocialHandoff")
       .mockResolvedValue(sessionOf({ name: "Ysolde", image: "04" }));
     const before = await mount("/", NEXT);
-    await pressDiscord(before);
+    await press(before, "Continue with Apple");
     await before.unmount();
     // A reload: the page and its memory are gone; only what the browser keeps is left.
     useConnectStore.setState({ request: null, nameDismissed: false, walletDismissed: false });
     const after = await mount("/");
     try {
-      expect(after.window()?.getAttribute("aria-label")).toBe("Discord");
+      expect(after.window()?.getAttribute("aria-label")).toBe("Apple");
+      expect(after.container.textContent).toContain("Try Apple again");
       await after.type('input[autocomplete="one-time-code"]', "482913");
       await act(async () => {});
       expect(claim).toHaveBeenCalledWith("482913");
       expect(start).toHaveBeenCalledTimes(1);
       expect(after.window()).toBeNull();
       expect(after.where()).toBe(NEXT);
-      expect(pendingDiscordStart()).toBeNull();
+      expect(pendingSocialStart()).toBeNull();
     } finally {
       await after.unmount();
     }
   });
 
-  it("ends a pending Discord sign-in when it comes back failed, when Connect is closed, or once it is too old", async () => {
+  it("ends a pending provider sign-in when it comes back failed, when Connect is closed, or once it is too old", async () => {
     useIdentitySessionStore.setState({ status: "anonymous", session: null });
     vi.spyOn(console, "error").mockImplementation(() => {});
-    rememberDiscordStart(NEXT);
+    rememberSocialStart("google", NEXT);
     const failed = await mount("/?error=access_denied");
     try {
       await act(async () => {});
       expect(failed.window()?.getAttribute("aria-label")).toBe("Connect");
-      expect(failed.container.textContent).toContain("Discord sign-in was cancelled.");
-      expect(pendingDiscordStart()).toBeNull();
+      expect(failed.container.textContent).toContain("Sign-in was cancelled.");
+      expect(pendingSocialStart()).toBeNull();
     } finally {
       await failed.unmount();
     }
 
-    rememberDiscordStart(NEXT);
+    rememberSocialStart("google", NEXT);
     const closed = await mount("/");
     try {
       await act(async () => closed.query<HTMLButtonElement>('button[aria-label="Close"]')!.click());
       expect(closed.window()).toBeNull();
-      expect(pendingDiscordStart()).toBeNull();
+      expect(pendingSocialStart()).toBeNull();
     } finally {
       await closed.unmount();
     }
 
-    rememberDiscordStart(NEXT, Date.now() - 11 * 60_000);
+    rememberSocialStart("google", NEXT, Date.now() - 11 * 60_000);
     const old = await mount("/");
     try {
       expect(old.window()).toBeNull();
@@ -555,19 +559,45 @@ describe("Connect with Discord", () => {
     }
   });
 
-  it("opens with Discord's refusal when a sign-in comes back failed, and takes it off the address", async () => {
+  it("opens with the provider's refusal when a sign-in comes back failed, and takes it off the address", async () => {
     useIdentitySessionStore.setState({ status: "anonymous", session: null });
     vi.spyOn(console, "error").mockImplementation(() => {});
     const ui = await mount("/season?tab=frontier&error=access_denied");
     try {
       await act(async () => {});
       expect(ui.window()?.getAttribute("aria-label")).toBe("Connect");
-      expect(ui.container.textContent).toContain("Discord sign-in was cancelled.");
+      expect(ui.container.textContent).toContain("Sign-in was cancelled.");
       expect(ui.where()).toBe("/season?tab=frontier");
     } finally {
       await ui.unmount();
     }
   });
+
+  it.each([
+    { providers: [], buttons: [] },
+    { providers: ["discord"], buttons: ["Continue with Discord"] },
+    {
+      providers: ["google", "apple", "discord", "twitter"],
+      buttons: ["Continue with Google", "Continue with Apple", "Continue with Discord", "Continue with X"],
+    },
+  ] satisfies { providers: SocialProvider[]; buttons: string[] }[])(
+    "offers exactly the configured providers, in the sheet's order: %j",
+    async ({ providers, buttons }) => {
+      useIdentitySessionStore.setState({ status: "anonymous", session: null });
+      vi.spyOn(identityClient, "availableSignInProviders").mockResolvedValue(providers);
+      const view = await mount("/");
+      try {
+        await view.ask();
+        await act(async () => {});
+        expect(providerButtons().map((button) => button.textContent)).toEqual(buttons);
+        expect(view.query('input[type="email"]')).not.toBeNull();
+        // Most visitors from a flyer are new: the one sheet says their first sign-in is their sign-up, whichever way in.
+        expect(document.body.textContent).toContain("New here? Your first sign-in creates your Realms account.");
+      } finally {
+        await view.unmount();
+      }
+    },
+  );
 });
 
 describe("Connect with Discord on a phone", () => {
@@ -604,9 +634,9 @@ describe("Connect with Discord on a phone", () => {
   const openOn = async (userAgent: string, start: Promise<string> | string = WEB) => {
     useIdentitySessionStore.setState({ status: "anonymous", session: null });
     vi.spyOn(navigator, "userAgent", "get").mockReturnValue(userAgent);
-    vi.spyOn(identityClient, "availableSignInProviders").mockResolvedValue(["discord"]);
+    vi.spyOn(identityClient, "availableSignInProviders").mockResolvedValue(["google", "discord"]);
     vi.spyOn(identityClient, "getSession").mockResolvedValue(null);
-    const asked = vi.spyOn(identityClient, "discordSignInUrl").mockImplementation(async () => start);
+    const asked = vi.spyOn(identityClient, "socialSignInUrl").mockImplementation(async () => start);
     const opened = vi.spyOn(pageNavigation, "open").mockImplementation(() => {});
     const ui = await mount("/", NEXT);
     await ui.ask();
@@ -620,17 +650,17 @@ describe("Connect with Discord on a phone", () => {
     const slow = slowAnswer();
     const { ui, asked, opened } = await openOn(IPHONE, slow.answer);
     try {
-      expect(asked.mock.calls).toEqual([[NEXT]]);
+      expect(asked.mock.calls).toEqual([["discord", NEXT]]);
       await slow.send(WEB);
       act(() => {
-        button("Discord")!.click();
+        button("Continue with Discord")!.click();
         // Inside the tap itself: no wait between the press and the app's address.
         expect(opened.mock.calls).toEqual([[discordAppUrl(WEB)]]);
       });
       await act(async () => {});
       expect(asked).toHaveBeenCalledTimes(1);
       expect(ui.window()?.getAttribute("aria-label")).toBe("Discord");
-      expect(pendingDiscordStart()?.next).toBe(NEXT);
+      expect(pendingSocialStart()?.next).toBe(NEXT);
     } finally {
       await ui.unmount();
     }
@@ -644,10 +674,10 @@ describe("Connect with Discord on a phone", () => {
       await press("Preparing…");
       await slow.send(WEB);
       expect(opened).not.toHaveBeenCalled();
-      expect(pendingDiscordStart()).toBeNull();
-      expect(button("Discord")?.disabled).toBe(false);
+      expect(pendingSocialStart()).toBeNull();
+      expect(button("Continue with Discord")?.disabled).toBe(false);
       act(() => {
-        button("Discord")!.click();
+        button("Continue with Discord")!.click();
         expect(opened.mock.calls).toEqual([[discordAndroidIntent(WEB)]]);
       });
       expect(asked).toHaveBeenCalledTimes(1);
@@ -662,11 +692,11 @@ describe("Connect with Discord on a phone", () => {
     try {
       await slow.fail(new IdentityRequestError(503, "unavailable"));
       asked.mockImplementation(async () => WEB);
-      await press("Discord");
+      await press("Continue with Discord");
       expect(asked).toHaveBeenCalledTimes(2);
       expect(opened).not.toHaveBeenCalled();
       act(() => {
-        button("Discord")!.click();
+        button("Continue with Discord")!.click();
         expect(opened.mock.calls).toEqual([[discordAndroidIntent(WEB)]]);
       });
       expect(asked).toHaveBeenCalledTimes(2);
@@ -680,7 +710,7 @@ describe("Connect with Discord on a phone", () => {
     const { ui, asked, opened } = await openOn(ANDROID);
     const LATER = WEB.replace("state=first", "state=later");
     try {
-      await press("Discord");
+      await press("Continue with Discord");
       await wait(8 * 60_000);
       asked.mockImplementation(async () => LATER);
       await press("Try Discord again");
@@ -699,13 +729,13 @@ describe("Connect with Discord on a phone", () => {
     vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout", "setInterval", "clearInterval"] });
     const { ui, opened } = await openOn(IPHONE);
     try {
-      await press("Discord");
+      await press("Continue with Discord");
       await wait(APP_WAIT_MS - 1);
       await act(async () => ui.query<HTMLButtonElement>('button[aria-label="Close"]')!.click());
       expect(ui.window()).toBeNull();
       await wait(APP_WAIT_MS * 4);
       expect(opened.mock.calls).toEqual([[discordAppUrl(WEB)]]);
-      expect(pendingDiscordStart()).toBeNull();
+      expect(pendingSocialStart()).toBeNull();
     } finally {
       await ui.unmount();
     }
@@ -715,7 +745,7 @@ describe("Connect with Discord on a phone", () => {
     vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout", "setInterval", "clearInterval"] });
     const { ui, asked, opened } = await openOn(IPHONE);
     try {
-      await press("Discord");
+      await press("Continue with Discord");
       await wait(1000);
       await press("Try Discord again");
       await wait(APP_WAIT_MS - 1);
@@ -730,24 +760,24 @@ describe("Connect with Discord on a phone", () => {
     }
   });
 
-  it("closing Connect while the address is still on its way opens nothing when it comes", async () => {
+  it("closing Connect while a provider's address is still on its way opens nothing when it comes", async () => {
     const slow = slowAnswer();
-    // A computer asks at the tap, as it always has.
+    // A computer asks at the tap, as it always has; every provider's website goes the same way.
     useIdentitySessionStore.setState({ status: "anonymous", session: null });
-    vi.spyOn(identityClient, "availableSignInProviders").mockResolvedValue(["discord"]);
-    const asked = vi.spyOn(identityClient, "discordSignInUrl").mockReturnValue(slow.answer);
+    vi.spyOn(identityClient, "availableSignInProviders").mockResolvedValue(["google", "discord"]);
+    const asked = vi.spyOn(identityClient, "socialSignInUrl").mockReturnValue(slow.answer);
     const opened = vi.spyOn(pageNavigation, "open").mockImplementation(() => {});
     const ui = await mount("/", NEXT);
     try {
       await ui.ask();
       await act(async () => {});
       expect(asked).not.toHaveBeenCalled();
-      await press("Discord");
+      await press("Continue with Google");
       expect(asked).toHaveBeenCalledTimes(1);
       await act(async () => ui.query<HTMLButtonElement>('button[aria-label="Close"]')!.click());
       await slow.send(WEB);
       expect(opened).not.toHaveBeenCalled();
-      expect(pendingDiscordStart()).toBeNull();
+      expect(pendingSocialStart()).toBeNull();
       expect(ui.window()).toBeNull();
     } finally {
       await ui.unmount();
@@ -758,7 +788,7 @@ describe("Connect with Discord on a phone", () => {
     vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout", "setInterval", "clearInterval"] });
     const { ui, asked, opened } = await openOn(IPHONE);
     try {
-      await press("Discord");
+      await press("Continue with Discord");
       await setVisibility("hidden");
       await setVisibility("visible");
       await wait(APP_WAIT_MS * 4);
@@ -769,7 +799,7 @@ describe("Connect with Discord on a phone", () => {
       await press("Continue in browser");
       expect(opened.mock.calls).toEqual([[discordAppUrl(WEB)], [WEB]]);
       expect(asked).toHaveBeenCalledTimes(1);
-      expect(pendingDiscordStart()?.next).toBe(NEXT);
+      expect(pendingSocialStart()?.next).toBe(NEXT);
     } finally {
       await ui.unmount();
     }
@@ -779,7 +809,7 @@ describe("Connect with Discord on a phone", () => {
     vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout", "setInterval", "clearInterval"] });
     const { ui, opened } = await openOn(IPHONE);
     try {
-      await press("Discord");
+      await press("Continue with Discord");
       await wait(1000);
       await press("Continue in browser");
       await wait(APP_WAIT_MS * 4);
@@ -792,7 +822,7 @@ describe("Connect with Discord on a phone", () => {
   it("on Android, Continue in browser opens the website of the attempt the app was handed", async () => {
     const { ui, asked, opened } = await openOn(ANDROID);
     try {
-      await press("Discord");
+      await press("Continue with Discord");
       await press("Continue in browser");
       expect(opened.mock.calls).toEqual([[discordAndroidIntent(WEB)], [WEB]]);
       expect(asked).toHaveBeenCalledTimes(1);
@@ -801,16 +831,35 @@ describe("Connect with Discord on a phone", () => {
     }
   });
 
+  it("on a phone, another provider still opens its own website, asked for at its tap", async () => {
+    const GOOGLE = "https://accounts.google.test/o/oauth2/auth?state=g";
+    const { ui, asked, opened } = await openOn(ANDROID);
+    asked.mockImplementation(async (provider) => (provider === "google" ? GOOGLE : WEB));
+    try {
+      await press("Continue with Google");
+      expect(asked.mock.calls).toEqual([
+        ["discord", NEXT],
+        ["google", NEXT],
+      ]);
+      expect(opened.mock.calls).toEqual([[GOOGLE]]);
+      expect(ui.window()?.getAttribute("aria-label")).toBe("Google");
+      expect(button("Continue in browser")).toBeUndefined();
+      expect(pendingSocialStart()?.provider).toBe("google");
+    } finally {
+      await ui.unmount();
+    }
+  });
+
   it("a computer opens the identity service's address as it is, with no browser choice to add", async () => {
     useIdentitySessionStore.setState({ status: "anonymous", session: null });
-    vi.spyOn(identityClient, "availableSignInProviders").mockResolvedValue(["discord"]);
-    vi.spyOn(identityClient, "discordSignInUrl").mockResolvedValue(WEB);
+    vi.spyOn(identityClient, "availableSignInProviders").mockResolvedValue(["google", "discord"]);
+    vi.spyOn(identityClient, "socialSignInUrl").mockResolvedValue(WEB);
     const opened = vi.spyOn(pageNavigation, "open").mockImplementation(() => {});
     const ui = await mount("/", NEXT);
     try {
       await ui.ask();
       await act(async () => {});
-      await press("Discord");
+      await press("Continue with Discord");
       expect(opened.mock.calls).toEqual([[WEB]]);
       expect(button("Continue in browser")).toBeUndefined();
     } finally {
@@ -818,24 +867,3 @@ describe("Connect with Discord on a phone", () => {
     }
   });
 });
-
-it.each([{ providers: [] }, { providers: ["discord"] }])(
-  "shows only configured social sign-in providers: %j",
-  async ({ providers }) => {
-    useIdentitySessionStore.setState({ status: "anonymous", session: null });
-    vi.spyOn(identityClient, "availableSignInProviders").mockResolvedValue(providers);
-    const view = await mount("/");
-    try {
-      await view.ask();
-      await act(async () => {});
-      expect(
-        [...document.body.querySelectorAll("button")].some((button) => button.textContent?.includes("Discord")),
-      ).toBe(providers.includes("discord"));
-      expect(view.query('input[type="email"]')).not.toBeNull();
-      // Most visitors from a flyer are new: the one sheet says their first sign-in is their sign-up, whichever way in.
-      expect(document.body.textContent).toContain("New here? Your first sign-in creates your Realms account.");
-    } finally {
-      await view.unmount();
-    }
-  },
-);

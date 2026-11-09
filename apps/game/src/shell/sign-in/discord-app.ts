@@ -17,7 +17,7 @@ import { pageNavigation } from "@/utils/page-navigation";
  *   front. A page that went to the background may have opened the app or may only have been switched away from: it
  *   cannot tell, so it stops there and the player chooses on the Discord step (the app again, the browser, or the code).
  *
- * The app sends Discord's answer to a browser, often not this one: discord-handoff.ts shows a code there.
+ * The app sends Discord's answer to a browser, often not this one: social-handoff.ts shows a code there.
  */
 export const APP_WAIT_MS = 2500;
 
