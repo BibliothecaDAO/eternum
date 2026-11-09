@@ -14,6 +14,7 @@ import { createPwaReleasePlugin } from "./build/pwa-release";
 import { APP_ADDRESS, STAGING_ORIGIN } from "./src/config/app-address";
 import { linkPreviewUrl } from "./src/brand/link-preview";
 import { hashedModels } from "./build/hashed-models";
+import { assetLinks } from "./build/asset-links";
 import { labArtwork } from "./build/lab-artwork";
 import { isDevEnvironment } from "./src/shell/frame/environment";
 import { l2EnvironmentProblem } from "./src/runtime/l2-environment";
@@ -84,6 +85,7 @@ export default defineConfig(({ command, mode }: ConfigEnv): UserConfig => {
     requireL2Environment(),
     labArtwork(isDevEnvironment(appEnv.VITE_PUBLIC_ENVIRONMENT)),
     hashedModels(),
+    assetLinks(),
     appIdentityHtml(identity),
     svgr({ dimensions: false, svgo: false, typescript: true }),
     react(),

@@ -18,6 +18,8 @@ STATIC = [
     ".github/workflows/static.yml",
     ".github/scripts/**",
     ".github/ISSUE_TEMPLATE/**",
+    # Runs on its own, on changes under apps/android.
+    ".github/workflows/android-app.yml",
     MEDIA_FREE_CHECKOUT,
 ]
 # The payout relay's, co-signer's and monitor's readers, which apps/herald/src/value-readers.test.ts drives against Herald.
@@ -41,6 +43,8 @@ AREAS = {
         ".github/workflows/test-client.yml",
         MEDIA_FREE_CHECKOUT,
         "apps/game/**",
+        # The Android app's package and signing keys, from which the client's build writes its Digital Asset Links.
+        "apps/android/twa-manifest.json",
         # The other surfaces the brand check (apps/game/src/brand/brand.test.ts) reads, and what the docs config reads.
         "README.md",
         "apps/game-docs/docs/styles.css",

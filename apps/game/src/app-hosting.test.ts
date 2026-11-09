@@ -4,6 +4,12 @@ import { isValidElement } from "react";
 import { createRoutesFromChildren, matchRoutes, Navigate, type RouteObject } from "react-router-dom";
 import { describe, expect, it } from "vitest";
 
+import {
+  ANDROID_APP_MANIFEST,
+  ASSET_LINKS_FILE,
+  assetLinksStatements,
+  readAndroidAppManifest,
+} from "../build/asset-links";
 import { parseShellRoutes } from "../scripts/shell-routes.mjs";
 import { appRoutes, RETIRED_PATHS } from "./app";
 
@@ -31,10 +37,18 @@ const matchesPagesPattern = (pattern: string, path: string) => {
 /** The shell's pages as the deploy check reads them too (scripts/shell-routes.mjs): one parser, one list. */
 const shellRewrites = parseShellRoutes(readHostingFile("_redirects"));
 
-const noCachePaths = readHostingFile("_headers")
-  .split(/\n(?=\/)/)
+const headerBlocks = readHostingFile("_headers").split(/\n(?=\/)/);
+
+const noCachePaths = headerBlocks
   .filter((block) => /Cache-Control:\s*no-cache/i.test(block))
   .map((block) => block.split("\n")[0].trim());
+
+/** The headers `_headers` gives the path, from every block whose pattern matches it. */
+const headersFor = (path: string) =>
+  headerBlocks
+    .filter((block) => matchesPagesPattern(block.split("\n")[0].trim(), path))
+    .flatMap((block) => block.split("\n").slice(1))
+    .map((line) => line.trim());
 
 /** `/` is the shell's own file, first on the list; every other page reaches it only through a rewrite. */
 const servesShell = (path: string) => shellRewrites.some((pattern) => matchesPagesPattern(pattern, path));
@@ -55,6 +69,12 @@ const retired: readonly string[] = RETIRED_PATHS;
 const pagePaths = [...new Set(routerPaths(routes))].filter(
   (path) => path !== NOT_FOUND_PATH && !retired.includes(path),
 );
+
+/** Every path pattern `_redirects` rewrites or redirects. */
+const redirectSources = readHostingFile("_redirects")
+  .split("\n")
+  .map((line) => line.trim().split(/\s+/)[0])
+  .filter((from) => from?.startsWith("/"));
 
 /** The paths `_redirects` sends permanently to Play. */
 const redirectsToPlay = readHostingFile("_redirects")
@@ -101,5 +121,12 @@ describe("hosting files", () => {
   it("serve the shell for nothing that is not a page, so missing assets stay 404s", () => {
     const urls = [...shellRewrites.flatMap(sampleUrls), "/assets/missing.js", "/models/missing.glb", "/missing"];
     expect(urls.filter((url) => servesShell(url) && !isPage(url))).toEqual([]);
+  });
+
+  it("serve the Android app's statement list as JSON at its own path, built from the app's manifest", () => {
+    const path = `/${ASSET_LINKS_FILE}`;
+    expect(headersFor(path)).toContain("Content-Type: application/json");
+    expect(redirectSources.filter((pattern) => matchesPagesPattern(pattern, path))).toEqual([]);
+    expect(() => assetLinksStatements(readAndroidAppManifest(ANDROID_APP_MANIFEST))).not.toThrow();
   });
 });
