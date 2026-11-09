@@ -50,6 +50,11 @@ const open = async (path: string) => {
   );
   await act(() => new Promise((resolve) => setTimeout(resolve, 0)));
 };
+/** What names the game on the page: each heading's words, and each image's name that says Frontier. */
+const frontierNames = () => [
+  ...[...host.querySelectorAll("h1, h2")].map((heading) => heading.textContent),
+  ...[...host.querySelectorAll("img")].map((image) => image.alt).filter((alt) => alt === "Frontier"),
+];
 const play = () =>
   [...host.querySelectorAll("a, button")].find((each) => each.textContent?.includes("Start your adventure"));
 
@@ -83,4 +88,15 @@ it("still leads into the game from a link that leads to no shared day, and asks 
   await open("/s/not-a-code");
   expect(service.openShare).not.toHaveBeenCalled();
   expect(host.textContent).toContain("This link leads to no shared day.");
+});
+
+it("names Frontier once, as its crest, with the shared day as the page's one heading, on a phone and a desktop", async () => {
+  service.openShare.mockResolvedValue({ kind: "frontier-day", moment: 12, name: "Ashwalker" });
+  for (const width of [390, 1440]) {
+    setViewportWidth(width);
+    await act(async () => root.unmount());
+    root = createRoot(host);
+    await open("/s/ABCD2345");
+    expect(frontierNames()).toEqual(["Ashwalker shared Day 12 of Frontier", "Frontier"]);
+  }
 });

@@ -47,7 +47,11 @@ export const SharedLinkPage = () => {
   );
 };
 
-/** The landing on Frontier's painting, its one verb at a phone's foot or under its words on a desktop. */
+/**
+ * The landing on Frontier's painting, its one verb at a phone's foot or under its words on a desktop. It has no page
+ * title: Frontier's crest above the words already names the game (owner, 9 November 2026: "double frontier feels
+ * weird").
+ */
 const SharedFrame = ({ notice, children }: { notice: ReactNode; children: ReactNode }) => {
   const phone = useLayout() === "phone";
   const verb = (
@@ -58,13 +62,7 @@ const SharedFrame = ({ notice, children }: { notice: ReactNode; children: ReactN
     </div>
   );
   return (
-    <PageFrame
-      title={ageOf("frontier").name}
-      painting="frontier-mist"
-      stage
-      notice={notice}
-      foot={phone ? verb : undefined}
-    >
+    <PageFrame painting="frontier-mist" stage notice={notice} foot={phone ? verb : undefined}>
       <div className="mx-auto flex max-w-[28rem] flex-col items-center gap-5 pt-4 text-center">
         {children}
         {!phone && verb}
