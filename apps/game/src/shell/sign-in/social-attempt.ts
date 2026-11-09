@@ -15,8 +15,8 @@ import { openDiscordSignIn } from "./discord-app";
  *   address for every way it is opened and asks for none while it is under way.
  * - An attempt the player asked for is theirs until it is refused or the window goes: a background ask (Discord's
  *   early address) never replaces it, so whichever provider the player chose is the one that opens.
- * - Closing the window, signing in (the window goes) or opening again stops what an earlier launch still had to do, and
- *   an address that comes back for an attempt the window let go opens nothing.
+ * - Closing the window, signing in (the window goes), opening again or a new attempt stops what an earlier launch still
+ *   had to do, and an address that comes back for an attempt the window let go opens nothing.
  * - The Discord app opens only from a tap that already holds the address: a browser hands a page to another app only
  *   from a tap, and a slow answer would outlast it (Chrome: developer.chrome.com/docs/android/intents). `asking` names
  *   the provider whose address is on its way, so its button can wait for it instead of taking a tap it cannot use.
@@ -30,6 +30,8 @@ export const useSocialAttempt = (returnTo: string, early: SocialProvider | null)
 
   const begin = useCallback(
     (provider: SocialProvider, owner: Owner) => {
+      // A new attempt ends what the last one's launch still had to do (an iPhone's website after its wait).
+      stopLaunch.current();
       const started = startAttempt(provider, returnTo, owner);
       attempt.current = started;
       setAsking(provider);

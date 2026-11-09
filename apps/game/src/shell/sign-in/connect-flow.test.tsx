@@ -481,7 +481,7 @@ describe("Connect with a provider", () => {
     try {
       await press(ui, "Continue with X");
       expect(ui.window()?.getAttribute("aria-label")).toBe("X");
-      expect(ui.container.textContent).toContain("X finished elsewhere? Enter its code.");
+      expect(ui.container.textContent).toContain("Finished with X? Enter the code its page showed you.");
       await ui.type('input[autocomplete="one-time-code"]', "111111");
       await act(async () => {});
       expect(ui.container.textContent).toContain("That code is not right.");
@@ -659,12 +659,43 @@ describe("Connect with Discord on a phone", () => {
       });
       await act(async () => {});
       expect(asked).toHaveBeenCalledTimes(1);
-      expect(ui.window()?.getAttribute("aria-label")).toBe("Discord");
       expect(pendingSocialStart()?.next).toBe(NEXT);
     } finally {
       await ui.unmount();
     }
   });
+
+  it.each([
+    ["an iPhone", IPHONE],
+    ["Android", ANDROID],
+  ])(
+    "on %s the tap opens the app straight away over the screen it was on; the code step shows only once the page comes back",
+    async (_, userAgent) => {
+      vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout", "setInterval", "clearInterval"] });
+      const { ui, opened } = await openOn(userAgent);
+      const codeBoxes = () => ui.query('input[autocomplete="one-time-code"]');
+      try {
+        await press("Continue with Discord");
+        expect(opened).toHaveBeenCalledTimes(1);
+        expect(ui.window()?.getAttribute("aria-label")).toBe("Connect");
+        expect(codeBoxes()).toBeNull();
+        expect(button("Continue with Discord")).toBeDefined();
+
+        // In the Discord app: the page behind it is hidden, then the player comes back without a sign-in here.
+        await setVisibility("hidden");
+        expect(codeBoxes()).toBeNull();
+        await setVisibility("visible");
+        expect(ui.window()?.getAttribute("aria-label")).toBe("Discord");
+        expect(ui.container.textContent).toContain("Finished with Discord? Enter the code its page showed you.");
+        expect(codeBoxes()).not.toBeNull();
+        expect(button("Try Discord again")).toBeDefined();
+        expect(button("Continue in browser")).toBeDefined();
+        expect(opened).toHaveBeenCalledTimes(1);
+      } finally {
+        await ui.unmount();
+      }
+    },
+  );
 
   it("while the address is on its way Discord waits, the answer opens nothing by itself, and the next tap opens the app inside itself", async () => {
     const slow = slowAnswer();
@@ -711,6 +742,8 @@ describe("Connect with Discord on a phone", () => {
     const LATER = WEB.replace("state=first", "state=later");
     try {
       await press("Continue with Discord");
+      await setVisibility("hidden");
+      await setVisibility("visible");
       await wait(8 * 60_000);
       asked.mockImplementation(async () => LATER);
       await press("Try Discord again");
@@ -741,13 +774,13 @@ describe("Connect with Discord on a phone", () => {
     }
   });
 
-  it("trying again before the first wait ends opens the same attempt once, and only the latest wait goes on", async () => {
+  it("tapping Discord again before the first wait ends opens the same attempt once, and only the latest wait goes on", async () => {
     vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout", "setInterval", "clearInterval"] });
     const { ui, asked, opened } = await openOn(IPHONE);
     try {
       await press("Continue with Discord");
       await wait(1000);
-      await press("Try Discord again");
+      await press("Continue with Discord");
       await wait(APP_WAIT_MS - 1);
       expect(opened.mock.calls).toEqual([[discordAppUrl(WEB)], [discordAppUrl(WEB)]]);
       await wait(1);
@@ -805,15 +838,22 @@ describe("Connect with Discord on a phone", () => {
     }
   });
 
-  it("choosing the browser during the iPhone's wait stops the automatic one", async () => {
+  it("choosing another provider during the iPhone's wait stops Discord's website", async () => {
     vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout", "setInterval", "clearInterval"] });
-    const { ui, opened } = await openOn(IPHONE);
+    const GOOGLE = "https://accounts.google.test/o/oauth2/auth?state=g";
+    const google = slowAnswer();
+    const { ui, asked, opened } = await openOn(IPHONE);
+    asked.mockImplementation(async (provider) => (provider === "google" ? google.answer : WEB));
     try {
       await press("Continue with Discord");
       await wait(1000);
-      await press("Continue in browser");
+      // Google's address takes longer than the iPhone's wait has left.
+      await press("Continue with Google");
       await wait(APP_WAIT_MS * 4);
-      expect(opened.mock.calls).toEqual([[discordAppUrl(WEB)], [WEB]]);
+      expect(opened.mock.calls).toEqual([[discordAppUrl(WEB)]]);
+      await google.send(GOOGLE);
+      expect(opened.mock.calls).toEqual([[discordAppUrl(WEB)], [GOOGLE]]);
+      expect(pendingSocialStart()?.provider).toBe("google");
     } finally {
       await ui.unmount();
     }
@@ -823,6 +863,8 @@ describe("Connect with Discord on a phone", () => {
     const { ui, asked, opened } = await openOn(ANDROID);
     try {
       await press("Continue with Discord");
+      await setVisibility("hidden");
+      await setVisibility("visible");
       await press("Continue in browser");
       expect(opened.mock.calls).toEqual([[discordAndroidIntent(WEB)], [WEB]]);
       expect(asked).toHaveBeenCalledTimes(1);

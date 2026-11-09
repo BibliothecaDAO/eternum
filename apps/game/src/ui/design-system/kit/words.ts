@@ -908,8 +908,12 @@ export const SIGN_IN_WORDS = {
   portrait: "Portrait",
   /** Under the ways in: most visitors from a flyer are new, and their first sign-in is their sign-up. */
   firstSignIn: "New here? Your first sign-in creates your Realms account.",
-  /** After a provider, when it finished in another browser (a phone's Safari view, the provider app's browser). */
-  handoff: (provider: SocialProvider) => `${SIGN_IN_PROVIDER_NAMES[provider]} finished elsewhere? Enter its code.`,
+  /**
+   * Back from a provider, which may have finished in another browser (a phone's Safari view, the browser the provider's
+   * app opens): that page shows a code to bring here.
+   */
+  handoff: (provider: SocialProvider) =>
+    `Finished with ${SIGN_IN_PROVIDER_NAMES[provider]}? Enter the code its page showed you.`,
   handoffCode: (provider: SocialProvider) => `${SIGN_IN_PROVIDER_NAMES[provider]} code`,
   tryAgain: (provider: SocialProvider) => `Try ${SIGN_IN_PROVIDER_NAMES[provider]} again`,
   /** On a phone, whose tap opened the Discord app: the same sign-in on Discord's website instead. */

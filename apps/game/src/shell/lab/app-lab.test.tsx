@@ -114,7 +114,7 @@ it.each([
   ["connect/start-refused", "has an account"],
   ["connect/code", "maelis@realms.test"],
   ["connect/code-refused", "Too many tries with that code"],
-  ["connect/handoff", "Google finished elsewhere?"],
+  ["connect/handoff", "Finished with Google? Enter the code its page showed you."],
   ["connect/name", "Claim name"],
   ["connect/name-email", "Pick the name other players see on the leaderboards."],
   ["doorway/sign-in", "Sign in to play."],
