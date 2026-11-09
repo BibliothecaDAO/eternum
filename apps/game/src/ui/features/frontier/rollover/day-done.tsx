@@ -15,7 +15,8 @@ import { dayClock, endedDay, nextDayOf } from "../hud/day-clock";
 import { usePlayerDay } from "../log/player-day";
 import { DayDoneCard } from "./day-done-card";
 import { dayTrail } from "./day-share";
-import { DayShareSheet, type SharedDay } from "@/shell/share/day-share-sheet";
+import type { SharedDay } from "@/shell/share/day-card";
+import { DayShareSheet } from "./day-share-sheet";
 import { DayEndScreen } from "./day-end-screen";
 import { useClosingRankChange } from "./day-ranks";
 

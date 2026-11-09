@@ -38,7 +38,7 @@ vi.mock("@/utils/card-image", async (original) => ({
 }));
 
 const { DayShareSheet } = await import("./day-share-sheet");
-const { setViewportWidth } = await import("../frame/test-viewport");
+const { setViewportWidth } = await import("@/shell/frame/test-viewport");
 
 const DAY = {
   day: 2,

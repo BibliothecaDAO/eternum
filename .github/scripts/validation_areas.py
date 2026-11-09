@@ -105,6 +105,8 @@ AREAS = {
         "apps/launch-service/**",
         "apps/admin/**",
         "apps/realms/**",
+        # The identity Worker's shared-link test serves the client's own page, whose unfurl tags it rewrites.
+        "apps/game/index.html",
         "apps/value-relay/**",
         "apps/status-monitor/**",
         "apps/indexer/**",

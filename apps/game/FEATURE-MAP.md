@@ -1163,8 +1163,9 @@ steps: the tall card's PNG, the post's line and the link, to any app (the season
 the button that made it (`?via=x`, `?via=system`), which its landing hands identity with the visit. What a player's
 shared days brought stands on You as **Your shared days** once they posted one: days posted, opened by friends, friends
 who joined, and those who cleared a site. Dev: `/lab/kit/hud/day-share`, `day-share-quiet`; `/lab/kit/hud/day-done`
-shows the button; `/lab/app/shared-days/profile`. Code: `rollover/day-share.ts` (trail and post), `shell/share/` (the
-sheet, its steps, the account's links in `own-shares.ts`, and the landing), `shell/profile/shared-days-panel.tsx`.
+shows the button; `/lab/app/shared-days/profile`. Code: `rollover/day-share.ts` (trail and post),
+`rollover/day-share-sheet.tsx` and `system-share.tsx` (the sheet), `shell/share/` (its steps, the account's links in
+`own-shares.ts`, and the landing), `shell/profile/shared-days-panel.tsx`.
 
 Coming back to a tab the browser put away (a phone's, mostly): a lost GPU (WebGL's context, which phones take from a tab
 in the background, or WebGPU's device) boots the page again on its route once it is seen, and a Herald stream silent for
