@@ -126,9 +126,11 @@ const AnonymousConnect = ({
   const returnTo = next ?? returnPathOf(location);
   const appHere = opensDiscordApp();
   const usesDiscordApp = (provider: SocialProvider) => provider === "discord" && appHere;
+  // The start screen, also drawn while the Discord app opens: Discord's address is kept ready under it.
+  const onStartScreen = step.kind === "start" || step.kind === "inApp";
   const attempt = useSocialAttempt(
     returnTo,
-    appHere && step.kind === "start" && providers.includes("discord") ? "discord" : null,
+    appHere && onStartScreen && providers.includes("discord") ? "discord" : null,
   );
 
   const startProvider = (provider: SocialProvider, out: Step, open: () => void) => {
@@ -155,6 +157,16 @@ const AnonymousConnect = ({
     });
   const continueWith = (provider: SocialProvider) =>
     usesDiscordApp(provider) ? openDiscordApp() : openWebsite(provider);
+  // Every way in on the start screen comes through here. While a provider's app is opening, the screen stays: another
+  // way ends that sign-in first (its launch, its address, its saved return and its step), the same provider opens again.
+  const choose = (way: SocialProvider | "email", go: () => void) => {
+    if (step.kind === "inApp" && step.provider !== way) {
+      attempt.end();
+      forgetSocialStart();
+      setStep({ kind: "start" });
+    }
+    go();
+  };
 
   const emailCode = (email: string) =>
     void run("send-code", async () => {
@@ -204,8 +216,8 @@ const AnonymousConnect = ({
         preparing={attempt.asking}
         error={error}
         providers={providers}
-        onProvider={continueWith}
-        onEmail={emailCode}
+        onProvider={(provider) => choose(provider, () => continueWith(provider))}
+        onEmail={(email) => choose("email", () => emailCode(email))}
       />
     </ShellWindow>
   );

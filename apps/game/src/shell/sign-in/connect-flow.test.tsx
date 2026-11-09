@@ -859,6 +859,69 @@ describe("Connect with Discord on a phone", () => {
     }
   });
 
+  /** An emailed code asked for, the identity Worker's answer coming at once or when the test lets it through. */
+  const emailAnswer = (held: boolean) => {
+    let send!: () => void;
+    const answer = new Promise<ReturnType<typeof sentCode>>((resolve) => (send = () => resolve(sentCode(300))));
+    vi.spyOn(identityClient, "sendSignInCode").mockImplementation(async () => (held ? answer : sentCode(300)));
+    return { send: () => act(async () => send()) };
+  };
+  const sendCode = async (ui: Awaited<ReturnType<typeof mount>>) => {
+    await act(async () => ui.query<HTMLFormElement>("form")!.requestSubmit());
+  };
+
+  it.each([
+    ["answers at once", false],
+    ["answers after the iPhone's wait", true],
+  ])(
+    "an emailed code chosen while the Discord app opens ends Discord's sign-in: the Worker %s, and the code step stays",
+    async (_, held) => {
+      vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout", "setInterval", "clearInterval"] });
+      const email = emailAnswer(held);
+      const { ui, asked, opened } = await openOn(IPHONE);
+      try {
+        await ui.type('input[type="email"]', "you@mail.test");
+        await press("Continue with Discord");
+        await sendCode(ui);
+        await wait(APP_WAIT_MS * 4);
+        if (held) await email.send();
+        expect(opened.mock.calls).toEqual([[discordAppUrl(WEB)]]);
+        expect(ui.window()?.getAttribute("aria-label")).toBe("Code sent");
+        expect(ui.container.textContent).toContain("you@mail.test");
+        expect(ui.container.textContent).not.toContain("Finished with Discord");
+        expect(pendingSocialStart()).toBeNull();
+        // Discord's address is not asked for again for a sign-in the player left.
+        expect(asked).toHaveBeenCalledTimes(1);
+      } finally {
+        await ui.unmount();
+      }
+    },
+  );
+
+  it("coming back to the page while the chosen email code is on its way never brings Discord's step back", async () => {
+    const email = emailAnswer(true);
+    const { ui, asked, opened } = await openOn(ANDROID);
+    try {
+      await ui.type('input[type="email"]', "you@mail.test");
+      await press("Continue with Discord");
+      await sendCode(ui);
+      await setVisibility("hidden");
+      await setVisibility("visible");
+      expect(ui.window()?.getAttribute("aria-label")).toBe("Connect");
+      expect(ui.container.textContent).not.toContain("Finished with Discord");
+      await email.send();
+      expect(ui.window()?.getAttribute("aria-label")).toBe("Code sent");
+      await setVisibility("hidden");
+      await setVisibility("visible");
+      expect(ui.window()?.getAttribute("aria-label")).toBe("Code sent");
+      expect(opened.mock.calls).toEqual([[discordAndroidIntent(WEB)]]);
+      expect(pendingSocialStart()).toBeNull();
+      expect(asked).toHaveBeenCalledTimes(1);
+    } finally {
+      await ui.unmount();
+    }
+  });
+
   it("on Android, Continue in browser opens the website of the attempt the app was handed", async () => {
     const { ui, asked, opened } = await openOn(ANDROID);
     try {
