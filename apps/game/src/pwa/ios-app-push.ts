@@ -20,7 +20,9 @@ import { pressAppChatAlert } from "./chat-alert-press";
  * - The device belongs to one account: signing out or switching accounts revokes it, and so does turning the app's
  *   alerts off in iOS Settings, at the next launch or sign-in.
  * - A registration is on only once the identity service answered it. One still unanswered, or one whose revocation has
- *   not been acknowledged, keeps its id and revocation token here until it is revoked (`IosAppPushDevice.state`).
+ *   not been acknowledged, keeps its id and revocation token here until it is revoked (`IosAppPushDevice.state`). An
+ *   acknowledged revocation is final at the service: a registration request for that id still running there is refused
+ *   (apps/realms server/push-subscription-store.ts), so a timed-out or restarted page can revoke at any time.
  * - APNs may give the app a new token (a restored or reset phone): the device is then registered again under it.
  * - While the app is in front iOS shows no alert: the game's own pages show what is happening.
  */
@@ -45,7 +47,7 @@ export const iosAppBridge = (): CapacitorBridge | null => {
 
 /**
  * This phone's registration with the identity service, with the alerts the player consented to, and where it stands:
- * - `pending`: sent and not answered yet. The attempt that sent it settles it; one the page closed on is revoked.
+ * - `pending`: sent and not answered yet. The attempt that sent it settles it; one no attempt here holds is revoked.
  * - `active`: the service answered it, so alerts arrive.
  * - `revoking`: it is to be revoked, and stays here until the service acknowledges that.
  */
@@ -197,26 +199,24 @@ const apnsTokenOf = (bridge: CapacitorBridge) =>
     bridge.nativePromise(PLUGIN, "register").catch((error: unknown) => settle(() => reject(error)));
   });
 
-/** The registrations this page sent that have not been answered: each one's attempt settles it once it is. */
-const unanswered = new Set<string>();
+/** The registrations this page is sending: reconciliation leaves the signed-in account's own to its attempt. */
+const sending = new Set<string>();
 
 const isUnderway = (device: IosAppPushDevice, owner: string | null) =>
-  device.state === "pending" && unanswered.has(device.id) && device.owner === owner;
+  device.state === "pending" && sending.has(device.id) && device.owner === owner;
 
 /**
- * Marks the registration as to be revoked, then revokes it, unless its request is still unanswered: its attempt revokes
- * it once the answer is in, so a revocation can never land before the registration it removes. The record goes only
- * once the service acknowledged, and only if it is still this registration's.
+ * Marks the registration as to be revoked, then revokes it. The service's acknowledgement is final, whatever request for
+ * that id is still running there, so only then does the record go, and only if it is still this registration's.
  */
 const revoke = async (device: IosAppPushDevice) => {
   const stored = readIosAppPushDevice();
   if (!stored || stored.id === device.id) writeDevice({ ...device, state: "revoking" });
-  if (unanswered.has(device.id)) return;
   await identityClient.revokePushSubscription(device.id, device.token);
   if (readIosAppPushDevice()?.id === device.id) writeDevice(null);
 };
 
-/** One registration at a time: the next starts once the last has settled, so none replaces another still unanswered. */
+/** One registration at a time: the next starts once the last has settled, so none replaces another's record. */
 let registering: Promise<unknown> = Promise.resolve();
 
 const registerDevice = (registration: Omit<IosAppPushDevice, "id" | "token" | "state">) => {
@@ -229,8 +229,9 @@ const registerDevice = (registration: Omit<IosAppPushDevice, "id" | "token" | "s
  * Registers this phone for the account under a new id and revocation token, after revoking the registration it held
  * (another account's, an old token's or an owed one: APNs tokens are unique). The registration is kept as pending
  * before it is sent, so it can be revoked even if the page closes first. It turns active only if the service answered
- * it, nothing revoked it meanwhile and its account is still signed in; otherwise it is revoked, and a revocation that
- * cannot reach the service stays owed for the next reconciliation.
+ * it, nothing revoked it meanwhile and its account is still signed in. Otherwise it is revoked, a timed-out request
+ * included: the service may still be inserting it, and refuses that insert once the revocation is acknowledged. A
+ * revocation that cannot reach the service stays owed for the next reconciliation.
  */
 const sendRegistration = async (registration: Omit<IosAppPushDevice, "id" | "token" | "state">) => {
   await disableIosAppPush();
@@ -242,7 +243,7 @@ const sendRegistration = async (registration: Omit<IosAppPushDevice, "id" | "tok
     state: "pending",
   };
   writeDevice(device);
-  unanswered.add(device.id);
+  sending.add(device.id);
   const { owner, id, token, apnsToken, gameAlerts, directMessages } = device;
   const refusal = await identityClient
     .registerPushSubscription({ owner, id, token, apnsToken, gameAlerts, directMessages })
@@ -250,7 +251,7 @@ const sendRegistration = async (registration: Omit<IosAppPushDevice, "id" | "tok
       () => null,
       (error: unknown) => error,
     )
-    .finally(() => unanswered.delete(id));
+    .finally(() => sending.delete(id));
   if (refusal === null && isStillWanted(device)) {
     writeDevice({ ...device, state: "active" });
     return device;

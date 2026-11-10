@@ -202,21 +202,28 @@ describe("the iOS app's push", () => {
 });
 
 /**
- * The identity service's registrations as it keeps them: subscribe inserts a row, revoke deletes the row that exists
- * then and nothing later (apps/realms server/push-subscription-store.ts). `holdSubscribe` keeps the next subscribe's
- * insert waiting until it is released.
+ * The identity service's registrations as it keeps them (apps/realms server/push-subscription-store.ts): subscribe
+ * inserts a row unless its id was revoked, and revoke deletes the row and records the id as revoked, both at the moment
+ * the service runs them. `holdSubscribe` keeps the next subscribe waiting before its insert; `timeOutSubscribe` makes the
+ * next one fail at the page (its ten-second timeout) while its insert is still to land at the service.
  */
 const identityService = () => {
   const rows = new Map<string, unknown>();
-  let release: () => void = () => undefined;
+  const revokedIds = new Set<string>();
+  const insert = (registration: { id: string }) => {
+    if (revokedIds.has(registration.id)) throw new Error("subscription_revoked");
+    rows.set(registration.id, registration);
+  };
   let held: Promise<void> | null = null;
+  let release: () => void = () => undefined;
   registered.mockImplementation(async (registration) => {
     await held;
-    rows.set(registration.id, registration);
+    insert(registration);
     return { id: registration.id };
   });
   revoked.mockImplementation(async (id) => {
     rows.delete(id);
+    revokedIds.add(id);
     return { revoked: true };
   });
   return {
@@ -227,6 +234,20 @@ const identityService = () => {
         held = null;
         release();
       };
+    },
+    timeOutSubscribe: () => {
+      let land: () => void = () => undefined;
+      registered.mockImplementationOnce(async (registration) => {
+        land = () => {
+          try {
+            insert(registration);
+          } catch {
+            // Refused at the service; the page stopped waiting long ago.
+          }
+        };
+        throw new DOMException("The operation timed out.", "TimeoutError");
+      });
+      return () => land();
     },
   };
 };
@@ -247,18 +268,38 @@ describe("a registration that is not answered yet, or whose cleanup failed", () 
 
       signIn(next);
       await reconcileIosAppPush(app.bridge, next);
-      // The revocation waits for the answer, and its credentials stay here until then.
-      expect(readIosAppPushDevice()).toEqual({ ...sent, state: "revoking" });
-
-      releaseSubscribe();
-      await expect(enabling).rejects.toThrow("Your account changed");
-      expect([...service.rows.keys()]).toEqual([]);
+      // Revoked at once: the service's acknowledgement is final, so the credentials can go.
       expect(revoked.mock.calls).toEqual([[sent.id, sent.token]]);
       expect(readIosAppPushDevice()).toBeNull();
+
+      releaseSubscribe();
+      await expect(enabling).rejects.toThrow("subscription_revoked");
+      expect([...service.rows.keys()]).toEqual([]);
+      expect(readIosAppPushDevice()).toBeNull();
+      const calls = revoked.mock.calls.length;
       await reconcileIosAppPush(app.bridge, next);
-      expect(revoked).toHaveBeenCalledOnce();
+      expect(revoked).toHaveBeenCalledTimes(calls);
     },
   );
+
+  it("revokes a subscribe the page timed out on, and its insert landing later at the service registers nothing", async () => {
+    const app = installApp();
+    const service = identityService();
+    const landInsert = service.timeOutSubscribe();
+    await expect(enableIosAppPush(app.bridge, OWNER, CONFIGURATION)).rejects.toThrow("The operation timed out.");
+    const [[id]] = revoked.mock.calls;
+    expect(readIosAppPushDevice()).toBeNull();
+    expect(await deviceSwitch()).toBe("off");
+
+    landInsert();
+    expect([...service.rows.keys()]).toEqual([]);
+    await reconcileIosAppPush(app.bridge, OWNER);
+    expect(revoked.mock.calls).toEqual([[id, expect.any(String)]]);
+
+    // The phone registers again, under a new id, with the same APNs token.
+    expect(await deviceSwitch({ press: true })).toBe("on");
+    expect([...service.rows.keys()]).toEqual([readIosAppPushDevice()!.id]);
+  });
 
   it("is off in Settings when the service refused it and its cleanup failed, and the next launch finishes the cleanup", async () => {
     const app = installApp();
