@@ -1,6 +1,5 @@
 import type { StudioPath } from "./camera-path";
-import type { StudioPlace } from "./fixture";
-import type { StudioSubject } from "./stage";
+import type { StudioPlace, StudioSubject } from "./stage";
 
 type Places = Record<StudioPlace, [number, number, number]>;
 

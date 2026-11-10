@@ -1,6 +1,6 @@
 import { expect, it } from "vitest";
 
-import { STUDIO_PLACES } from "./fixture";
+import { STUDIO_SETS } from "./fixture";
 import { STUDIO_TRIGGERS } from "./stage";
 import { STUDIO_TAKES } from "./takes";
 
@@ -23,12 +23,12 @@ it.each(Object.entries(STUDIO_TAKES))(
 
 it("explores as many hexes as the explorer's route holds", () => {
   const explores = STUDIO_TAKES.explore.path(places).cues.filter((cue) => cue.trigger === "explore");
-  expect(explores).toHaveLength(STUDIO_PLACES.exploreRoute.length);
+  expect(explores).toHaveLength(STUDIO_SETS.stage.exploreRoute.length);
 });
 
 it("walks the explorer one hex at a time, each into the row south of the last", () => {
-  let from = STUDIO_PLACES.exploreStart;
-  for (const hex of STUDIO_PLACES.exploreRoute) {
+  let from = STUDIO_SETS.stage.exploreStart;
+  for (const hex of STUDIO_SETS.stage.exploreRoute) {
     expect(hex.row).toBe(from.row + 1);
     expect(Math.abs(hex.col - from.col)).toBeLessThanOrEqual(1);
     from = hex;

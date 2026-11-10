@@ -5,7 +5,7 @@ import { WeatherType } from "@/three/managers/weather-manager";
 import { DAY_PHASE_PROGRESS } from "@/utils/cycle-progress";
 
 import type { StudioPath, StudioPose } from "./camera-path";
-import type { StudioTroop } from "./armies";
+import type { Hex, StudioTroop } from "./fixture";
 import { STUDIO_TRIGGERS, type StudioStage, type StudioTrigger } from "./stage";
 import { STUDIO_TAKES, isStudioTake } from "./takes";
 
@@ -73,6 +73,8 @@ export function createStudioBridge(
       return stage.pose();
     },
     places: () => stage.places(),
+    /** Where a hex of the set lies in the world, on its ground: what a path frames a subject by. */
+    at: (hex: Hex) => stage.at(hex),
     troops: (troops: { attacker?: TroopChoice; defender?: TroopChoice }) =>
       stage.setTroops({
         ...(troops.attacker && { attacker: resolveTroop(troops.attacker, stage.status().troops.attacker) }),

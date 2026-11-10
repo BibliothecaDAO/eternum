@@ -1,5 +1,5 @@
 import type { ArrowImpactEvent } from "@/three/projectiles/arrow-projectile-system";
-import { TroopTier, TroopType, type ID } from "@bibliothecadao/types";
+import { TroopTier, TroopType, type BiomeType, type ID } from "@bibliothecadao/types";
 import { Color, Euler, Vector3, type Scene } from "three";
 
 import {
@@ -17,14 +17,7 @@ import type { PipelineCompiler } from "@/three/pipeline-compiler";
 import { placePositionOnTerrain, type TerrainSurface } from "@/three/terrain/terrain-surface";
 import { getWorldPositionForHexCoordsInto } from "@/three/utils/utils";
 
-import { studioBiomeAt } from "./fixture";
-
-type Hex = { col: number; row: number };
-
-export interface StudioTroop {
-  category: TroopType;
-  tier: TroopTier;
-}
+import type { Hex, StudioTroop } from "./fixture";
 
 interface StudioArmy extends StudioTroop {
   entityId: number;
@@ -58,8 +51,9 @@ export class StudioArmies {
     scene: Scene,
     private readonly ground: TerrainSurface,
     compile: PipelineCompiler,
+    private readonly biomeAt: (hex: Hex) => BiomeType,
   ) {
-    this.model = new ArmyModel(scene, (col, row) => studioBiomeAt({ col, row }), undefined, compile);
+    this.model = new ArmyModel(scene, (col, row) => biomeAt({ col, row }), undefined, compile);
     this.model.setShadowsEnabled(true);
     this.characters = new ProceduralArmyCharacterLayer(scene);
     this.characters.setShadowsEnabled(true);
@@ -69,7 +63,7 @@ export class StudioArmies {
   /** Loads every troop's model once, so a troop changed mid-session swaps at once. */
   async prepare(): Promise<void> {
     const types = EVERY_TROOP.map(({ category, tier }) =>
-      this.model.getModelTypeForEntity(0, category, tier, studioBiomeAt({ col: 0, row: 0 })),
+      this.model.getModelTypeForEntity(0, category, tier, this.biomeAt({ col: 0, row: 0 })),
     );
     await this.model.preloadModels(new Set(types));
   }
@@ -77,12 +71,7 @@ export class StudioArmies {
   /** Puts an army on its hex, as the map renders an army into view; one already there is redrawn as given. */
   place(army: StudioArmy): void {
     this.withdraw(army.entityId);
-    const modelType = this.model.getModelTypeForEntity(
-      army.entityId,
-      army.category,
-      army.tier,
-      studioBiomeAt(army.hex),
-    );
+    const modelType = this.model.getModelTypeForEntity(army.entityId, army.category, army.tier, this.biomeAt(army.hex));
     const slot = this.model.allocateInstanceSlot(army.entityId);
     this.model.assignModelToEntity(army.entityId, modelType);
     this.model.updateInstance(
@@ -111,14 +100,17 @@ export class StudioArmies {
     return this.model.isEntityMoving(entityId);
   }
 
-  /** The army falls as a defeated army leaves the map. False when it is not on the set. */
-  defeat(entityId: number): boolean {
+  /**
+   * The army falls as a defeated army leaves the map. False when it is not on the set. A close camera can leave the
+   * map's skull out (`skull` false): it is sized for the map's distance and would cover the fall.
+   */
+  defeat(entityId: number, skull = true): boolean {
     const army = this.armies.get(entityId);
     if (!army) return false;
     if (this.characters.playDefeat(entityId)) this.articulated.delete(entityId);
     const at = this.hexPosition(army.hex);
     this.withdraw(entityId);
-    void this.fx.playFxAtCoords("skull", at.x, at.y + 2, at.z, 1, "Defeated!").promise.catch(() => {});
+    if (skull) void this.fx.playFxAtCoords("skull", at.x, at.y + 2, at.z, 1, "Defeated!").promise.catch(() => {});
     return true;
   }
 

@@ -74,6 +74,7 @@
     "optimize:outposts": "node scripts/outposts/optimize-outpost.mjs",
     "verify:outposts": "node scripts/outposts/verify-outpost.mjs",
     "prove:endgame": "node ./scripts/run-endgame-mist-study.mjs",
+    "film:studio": "node ./scripts/film-lab-studio.mjs",
     "prove:studio": "node ./scripts/prove-lab-studio.mjs",
     "prove:ethereal-depths": "node ./scripts/prove-ethereal-depths.mjs",
     "prove:day-end": "node ./scripts/prove-lab-day-end.mjs",

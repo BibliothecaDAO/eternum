@@ -8,6 +8,7 @@ import {
 
 import type { StudioKey, StudioPose } from "./camera-path";
 import { createStudioBridge, STUDIO_LIGHTS, STUDIO_TROOPS, type StudioBridge } from "./bridge";
+import { isStudioSet } from "./fixture";
 import { StudioStage } from "./stage";
 import { STUDIO_TAKES, isStudioTake } from "./takes";
 import "./view.css";
@@ -28,6 +29,8 @@ export function StudioLabView() {
   const gameMode = params.get("mode") === "frontier" ? "frontier" : "blitz";
   const forceWebGL = params.get("rendererMode") === "webgpu-force-webgl";
   const clean = params.get("clean") === "1";
+  const asked = params.get("set");
+  const set = isStudioSet(asked) ? asked : "stage";
   const canvas = useRef<HTMLCanvasElement>(null);
   const studio = useRef<{ stage: StudioStage; bridge: StudioBridge } | null>(null);
   const [ready, setReady] = useState(false);
@@ -60,7 +63,7 @@ export function StudioLabView() {
     setError(null);
     // A new world is a new stage: a take that rolled on the old one ended with it, and says nothing as it goes.
     setTake(null);
-    const stage = new StudioStage((name, args) => studio.current?.bridge.trigger(name, args));
+    const stage = new StudioStage(set, (name, args) => studio.current?.bridge.trigger(name, args));
     void mountProceduralTerrainDebugRenderer({
       canvas: canvas.current!,
       captureMode: false,
@@ -100,7 +103,7 @@ export function StudioLabView() {
       delete (window as StudioWindow).__studio;
       renderer?.dispose();
     };
-  }, [gameMode, forceWebGL]);
+  }, [gameMode, forceWebGL, set]);
 
   useStudioKeys(studio, () => setClean(!clean));
   const bridge = ready ? studio.current?.bridge : undefined;

@@ -14,7 +14,7 @@ const FRAME = 1 / 60;
  * ones; its models never load, so a moment that needs one (the attack, the fall, a tier) plays as nothing.
  */
 function stageOnBareLand(onCue: (name: string, args: Record<string, unknown>) => void = () => {}) {
-  const stage = new StudioStage(onCue);
+  const stage = new StudioStage("stage", onCue);
   const terrain = {
     sampleSurface: () => ({ height: 0 }),
     queueShroudReveal: vi.fn(),
@@ -135,6 +135,6 @@ describe("the set", () => {
     const { bridge } = bridgeOver(stage);
     void bridge.take("battle");
     bridge.reset();
-    expect(stage.status().cast).toEqual(["realm", "hyperstructure", "battle", "explorer"]);
+    expect(stage.status().cast).toEqual(["realm", "kingdoms", "hyperstructure", "battle", "host", "explorer"]);
   });
 });

@@ -263,6 +263,10 @@ its troop-and-tier table at the map's scale (`ARMY_MODEL_SCALE`), handed to the 
 hands it (`shouldPresentArmyProcedurally`, the T1 knight). A take stands only its own subjects on the set; Reset stands
 them all. The set lives in `src/lab/studio/`; nothing in it ships to players.
 
+`set=world` builds a second set with the same subjects at scale (`fixture.ts`, `STUDIO_SETS`): a continent of 76 by 50
+hexes holding every biome the game draws, a capital and fourteen realms at every tier, a host of 27 armies that marches
+on a call, six fights along a battle line, and mist over all of it but the capital's meadow, which lifts in seven rings.
+
 - **Takes:** Hyperstructure rising, Battle up close, Exploration, Realm through its tiers, Wide establisher. Each resets
   the set and plays its camera path with its cues on time, so every take replays the same. `?take=<name>` plays one when
   the set is up; `[data-take]` on the page reads `idle` again when it ends.
@@ -276,7 +280,10 @@ them all. The set lives in `src/lab/studio/`; nothing in it ships to players.
   settles when they end; `trigger(name, args)` plays `rise` (`{progress}`), `attack`, `defeat`, `explore`, `realm`
   (`{level}`) or `strike`; `pose(partial)` reads or moves the camera (`{target, distance, tilt, turn, fov}`, tilt 0
   looks straight down, turn 0 looks north); `places()`, `troops({attacker, defender})`, `time({scale, fixedStep})`,
-  `light(name)`, `weather(name)`, `clean(on)`, `reset()`, `status()`.
+  `light(name)`, `weather(name)`, `clean(on)`, `reset()`, `status()`. `attack` and `defeat` take `{battle}` (which fight
+  of the set; `defeat` also `{skull: false}`, for a camera close enough that the map's skull would cover the fall),
+  `march` walks the host a hex on, `lift` clears the next ring of mist, and `at({col, row})` gives a hex's place in the
+  world for a path's target.
 
 Start the client, drive the camera with the keys and mouse, replay a path and roll the takes, with one recording, stills
 and a transcript of every check, in a new directory (the port must be free):
@@ -284,6 +291,16 @@ and a transcript of every check, in a new directory (the port must be free):
 ```sh
 pnpm --dir apps/game prove:studio --port 4199 --out <fresh-evidence-directory>
 ```
+
+Film footage frame by frame, from a plan of shots, on a client you serve:
+
+```sh
+pnpm --dir apps/game film:studio --base-url https://127.0.0.1:<port> --plan <plan.json> --out <dir>
+```
+
+It holds the page's clock and saves one PNG for every 1/60 s of the world, read back from the canvas, so the footage
+plays evenly whatever the machine was doing while it was filmed; a screen recording of the same take does not. Each shot
+is a folder of frames; `--every 12` saves one frame in twelve for a quick look at a plan.
 
 `--base-url https://127.0.0.1:<port>` drives a client already served by you; `--size 1080x1920` films vertical;
 `--game frontier` uses Frontier's light; `--takes battle,explore` rolls only those.
