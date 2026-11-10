@@ -1,6 +1,8 @@
+import { Effect } from "effect";
 import { beforeAll, expect, it } from "vitest";
 
 import type { ChatInbox } from "./chat/chat-inbox";
+import { holdingInserts, storeOver } from "./held-push-registrations";
 
 import {
   buildWorkerBundle,
@@ -153,6 +155,70 @@ it("deletes an account only with its emailed code: its old session opens nothing
 
   await worker.dispose();
 }, 120_000);
+
+/** A phone's registration of each transport, as the subscribe route hands it to the store. */
+const PHONES = {
+  apns: { apnsToken: "cd".repeat(32) },
+  web: {
+    subscription: {
+      endpoint: "https://fcm.googleapis.com/fcm/send/leaving-late",
+      keys: { p256dh: "B".repeat(87), auth: "A".repeat(22) },
+    },
+  },
+};
+const registrationOf = (owner: string, id: string, phone: (typeof PHONES)[keyof typeof PHONES]) => ({
+  owner,
+  id,
+  token: crypto.randomUUID(),
+  gameAlerts: true,
+  directMessages: true,
+  ...phone,
+});
+
+it.each(["apns", "web"] as const)(
+  "refuses an in-flight %s registration when its account is deleted; the next account registers that phone",
+  async (kind) => {
+    const worker = await startWorker({
+      bundle,
+      storage: newStorage(),
+      vapid: await vapidKeys(),
+      outbound: () => new Response(null, { status: 599 }),
+    });
+    try {
+      await worker.db.batch(migrationStatements().map((statement) => worker.db.prepare(statement)));
+      const leaving = await worker.signInWithEmailCode(LEAVING);
+      const code = await deletionCode(worker, leaving.cookie);
+
+      // The subscribe route has authorized the session and reached the store; its insert waits.
+      const inserts = holdingInserts(worker.db);
+      const late = Effect.runPromise(
+        (await storeOver(inserts.held)).register(registrationOf(leaving.realmsId, crypto.randomUUID(), PHONES[kind])),
+      );
+      await inserts.atInsert;
+      expect((await deleteAccount(worker, leaving.cookie, code)).status).toBe(200);
+      inserts.release();
+
+      expect(await late).toBe("deleted");
+      const store = await storeOver(worker.db);
+      expect(await countOf(worker, "notification_push_subscriptions", "owner", leaving.realmsId)).toBe(0);
+      expect(await Effect.runPromise(store.gameAlertDevices([leaving.realmsId]))).toEqual([]);
+      expect(await Effect.runPromise(store.chatAlertDevices(leaving.realmsId, Date.now()))).toEqual([]);
+
+      // The same email signs in to a new account, which registers the same phone.
+      const returning = await worker.signInWithEmailCode(LEAVING);
+      const again = registrationOf(returning.realmsId, crypto.randomUUID(), PHONES[kind]);
+      expect(await Effect.runPromise(store.register(again))).toBe("registered");
+      expect(
+        (await Effect.runPromise(store.gameAlertDevices([leaving.realmsId, returning.realmsId]))).map(
+          ({ id, owner }) => ({ id, owner }),
+        ),
+      ).toEqual([{ id: again.id, owner: returning.realmsId }]);
+    } finally {
+      await worker.dispose();
+    }
+  },
+  120_000,
+);
 
 const sessionOf = async (worker: Worker, cookie: string) =>
   (await request(worker, cookie, "/api/auth/get-session")).json();

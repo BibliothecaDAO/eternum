@@ -119,8 +119,8 @@ async function registerSubscription(db: D1Database, input: PushRegistration) {
     .bind(input.id, input.owner)
     .first<PushSubscriptionRow>();
   if (existing) return enableRequestedChannels(db, existing, registration);
-  // One statement checks the per-owner cap and the id's revocation and inserts, so neither concurrent first
-  // registrations nor a revocation that lands first can be overtaken.
+  // One statement checks the per-owner cap, the id's revocation and the owner's account deletion and inserts, so
+  // neither concurrent first registrations, nor a revocation, nor a deletion that lands first can be overtaken.
   const inserted = await db
     .prepare(
       `INSERT INTO "notification_push_subscriptions"
@@ -129,6 +129,7 @@ async function registerSubscription(db: D1Database, input: PushRegistration) {
        SELECT ?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11
        WHERE (SELECT count(*) FROM "notification_push_subscriptions" WHERE "owner" = ?2) < ?12
          AND NOT EXISTS (SELECT 1 FROM "notification_push_revocations" WHERE "id" = ?1)
+         AND NOT EXISTS (SELECT 1 FROM "account_deletions" WHERE "realms_id" = ?2)
        ON CONFLICT DO NOTHING RETURNING "id"`,
     )
     .bind(
@@ -152,6 +153,8 @@ async function registerSubscription(db: D1Database, input: PushRegistration) {
     .bind(input.id)
     .first();
   if (revoked) return "revoked" as const;
+  const deleted = await db.prepare('SELECT 1 FROM "account_deletions" WHERE "realms_id" = ?').bind(input.owner).first();
+  if (deleted) return "deleted" as const;
   const owned = await db
     .prepare('SELECT count(*) AS "count" FROM "notification_push_subscriptions" WHERE "owner" = ?')
     .bind(input.owner)
