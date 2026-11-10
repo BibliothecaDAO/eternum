@@ -21,6 +21,8 @@ STATIC = [
     # Runs on its own, on changes under apps/android.
     ".github/workflows/android-app.yml",
     MEDIA_FREE_CHECKOUT,
+    # The iOS app's simulator build, which runs on its own when a file it reads changes (test_ios_workflow_paths.py).
+    ".github/workflows/ios.yml",
 ]
 # The payout relay's, co-signer's and monitor's readers, which apps/herald/src/value-readers.test.ts drives against Herald.
 VALUE_READERS = [
@@ -58,6 +60,8 @@ AREAS = {
         "apps/game-docs/docs/utils/paths.ts",
         "apps/game-docs/vite-plugin-llm-txt.mjs",
         "apps/status/public/index.html",
+        # The iOS app's bundle id, which src/app-hosting.test.ts holds the site's apple-app-site-association to.
+        "apps/ios/capacitor.config.ts",
         # The client job's own checkers, which its workflow runs through root package.json scripts.
         "scripts/hud-sheet/**",
         "scripts/icons/**",

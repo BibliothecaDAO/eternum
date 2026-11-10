@@ -12,6 +12,7 @@ import {
 } from "../build/asset-links";
 import { parseShellRoutes } from "../scripts/shell-routes.mjs";
 import { appRoutes, RETIRED_PATHS } from "./app";
+import iosApp from "../../ios/capacitor.config";
 
 /**
  * Cloudflare Pages answers a full page load, such as an OAuth return, with the app shell only where `_redirects`
@@ -128,5 +129,39 @@ describe("hosting files", () => {
     expect(headersFor(path)).toContain("Content-Type: application/json");
     expect(redirectSources.filter((pattern) => matchesPagesPattern(pattern, path))).toEqual([]);
     expect(() => assetLinksStatements(readAndroidAppManifest(ANDROID_APP_MANIFEST))).not.toThrow();
+  });
+});
+
+/** The iOS app's association: the pages it opens (universal links) and the passkeys it shares with the site. */
+const APPLE_APP_SITE_ASSOCIATION = "/.well-known/apple-app-site-association";
+
+type AppleAppSiteAssociation = {
+  applinks: { details: { appIDs: string[]; components: { "/": string }[] }[] };
+  webcredentials: { apps: string[] };
+};
+
+const association: AppleAppSiteAssociation = JSON.parse(readHostingFile(APPLE_APP_SITE_ASSOCIATION.slice(1)));
+
+describe("the iOS app's association", () => {
+  it("is served as JSON at its own address, never through a redirect or the shell", () => {
+    expect(headersFor(APPLE_APP_SITE_ASSOCIATION)).toContain("Content-Type: application/json");
+    expect(redirectSources.filter((pattern) => matchesPagesPattern(pattern, APPLE_APP_SITE_ASSOCIATION))).toEqual([]);
+  });
+
+  it("opens the app on the router's pages only", () => {
+    const linkPaths = association.applinks.details.flatMap((detail) => detail.components.map((path) => path["/"]));
+    const pageUrls = pagePaths.flatMap(sampleUrls);
+    expect(linkPaths.filter((path) => !pageUrls.some((url) => matchesPagesPattern(path, url)))).toEqual([]);
+  });
+
+  // Empty until the owner adds the Apple Team ID (apps/ios/README.md); then each entry is `<Team ID>.<bundle id>`.
+  it("names the iOS app by its Team ID and bundle id, the same app for links and passkeys", () => {
+    const appIDs = association.applinks.details.flatMap((detail) => detail.appIDs);
+    expect(association.webcredentials.apps).toEqual(appIDs);
+    for (const appID of appIDs) {
+      const [teamId, ...bundleId] = appID.split(".");
+      expect(teamId, appID).toMatch(/^[A-Z0-9]{10}$/);
+      expect(bundleId.join("."), appID).toBe(iosApp.appId);
+    }
   });
 });
