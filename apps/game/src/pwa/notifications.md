@@ -24,11 +24,14 @@ In the iOS app (apps/ios) the web view has no service worker or Web Push, so **T
 the identity service under a new device id and revocation token kept in the page's storage, and sends the first push. At
 launch and at each sign-in, sign-out or account switch the registration is checked: another account's, or one whose
 alerts were turned off in iOS Settings, is revoked; a changed APNs token registers the phone again after revoking the
-old registration. A tapped alert opens what it names by the service worker's rules (`isChatClient`,
-`notificationMatchesGame`), only when it is the signed-in account's alert for this registration; a chat alert tapped
-from a cold start waits for the chat drawn after it. iOS shows no alert while the app is in front. APNs receives the
-alert's title and body and its envelope (owner, device id, target, tag, times) as readable JSON over TLS, where Web Push
-encrypts its payload for the device.
+old registration. A registration is on only once the identity service answered it. One still unanswered or not yet
+acknowledged as revoked keeps its id and revocation token in the page's storage, and the next check revokes it, even for
+the same account and token. A sign-out while a registration is unanswered revokes it once the answer is in, so the
+revocation cannot land before the row it removes. A tapped alert opens what it names by the service worker's rules
+(`isChatClient`, `notificationMatchesGame`), only when it is the signed-in account's alert for this registration; a chat
+alert tapped from a cold start waits for the chat drawn after it. iOS shows no alert while the app is in front. APNs
+receives the alert's title and body and its envelope (owner, device id, target, tag, times) as readable JSON over TLS,
+where Web Push encrypts its payload for the device.
 
 Direct-message push begins only after chat persistence. The realtime service sends the identity server message/thread
 identity, recipient, sender display name and timestamp, but never private message content. The device sees a "Message

@@ -19,6 +19,8 @@ import { pressAppChatAlert } from "./chat-alert-press";
  *
  * - The device belongs to one account: signing out or switching accounts revokes it, and so does turning the app's
  *   alerts off in iOS Settings, at the next launch or sign-in.
+ * - A registration is on only once the identity service answered it. One still unanswered, or one whose revocation has
+ *   not been acknowledged, keeps its id and revocation token here until it is revoked (`IosAppPushDevice.state`).
  * - APNs may give the app a new token (a restored or reset phone): the device is then registered again under it.
  * - While the app is in front iOS shows no alert: the game's own pages show what is happening.
  */
@@ -41,7 +43,12 @@ export const iosAppBridge = (): CapacitorBridge | null => {
     : null;
 };
 
-/** This phone's registration as the identity service holds it, with the alerts the player consented to. */
+/**
+ * This phone's registration with the identity service, with the alerts the player consented to, and where it stands:
+ * - `pending`: sent and not answered yet. The attempt that sent it settles it; one the page closed on is revoked.
+ * - `active`: the service answered it, so alerts arrive.
+ * - `revoking`: it is to be revoked, and stays here until the service acknowledges that.
+ */
 export interface IosAppPushDevice {
   owner: string;
   id: string;
@@ -49,6 +56,7 @@ export interface IosAppPushDevice {
   apnsToken: string;
   gameAlerts: boolean;
   directMessages: boolean;
+  state: "pending" | "active" | "revoking";
 }
 
 const DEVICE_KEY = "realms:ios-app-push";
@@ -67,11 +75,12 @@ const writeDevice = (device: IosAppPushDevice | null) => {
   else localStorage.removeItem(DEVICE_KEY);
 };
 
-/** Settings' switch here: on while this account's registration stands, blocked once the player refused alerts. */
+/** Settings' switch here: on while this account's answered registration stands, blocked once the player refused. */
 export const iosAppPushState = async (bridge: CapacitorBridge, owner: string): Promise<"on" | "off" | "blocked"> => {
   const permission = await permissionOf(bridge, "checkPermissions");
   if (permission === "denied") return "blocked";
-  return permission === "granted" && readIosAppPushDevice()?.owner === owner ? "on" : "off";
+  const device = readIosAppPushDevice();
+  return permission === "granted" && device?.owner === owner && device.state === "active" ? "on" : "off";
 };
 
 /** Asks the player (iOS asks once; later it answers as they chose), then registers this phone for the account. */
@@ -92,20 +101,23 @@ export async function enableIosAppPush(
 /** Revokes this phone's registration: the identity service sends it nothing more. */
 export async function disableIosAppPush(): Promise<void> {
   const device = readIosAppPushDevice();
-  if (!device) return;
-  await identityClient.revokePushSubscription(device.id, device.token);
-  writeDevice(null);
+  if (device) await revoke(device);
 }
 
 /**
- * At launch and at each sign-in, sign-out or account switch: a registration that is not the signed-in account's, or
- * whose alerts the player turned off in iOS Settings, is revoked; one whose APNs token changed is registered again.
+ * At launch and at each sign-in, sign-out or account switch: a registration that is not the signed-in account's, whose
+ * alerts the player turned off in iOS Settings, or that was never answered or never finished revoking, is revoked; one
+ * whose APNs token changed is registered again. The signed-in account's registration still being sent is left to it.
  */
 export async function reconcileIosAppPush(bridge: CapacitorBridge, owner: string | null): Promise<void> {
   const device = readIosAppPushDevice();
-  if (!device) return;
-  if (device.owner !== owner || (await permissionOf(bridge, "checkPermissions")) !== "granted")
-    return disableIosAppPush();
+  if (!device || isUnderway(device, owner)) return;
+  if (
+    device.state !== "active" ||
+    device.owner !== owner ||
+    (await permissionOf(bridge, "checkPermissions")) !== "granted"
+  )
+    return revoke(device);
   const apnsToken = await apnsTokenOf(bridge);
   if (apnsToken !== device.apnsToken) await registerDevice({ ...device, apnsToken });
 }
@@ -185,24 +197,75 @@ const apnsTokenOf = (bridge: CapacitorBridge) =>
     bridge.nativePromise(PLUGIN, "register").catch((error: unknown) => settle(() => reject(error)));
   });
 
+/** The registrations this page sent that have not been answered: each one's attempt settles it once it is. */
+const unanswered = new Set<string>();
+
+const isUnderway = (device: IosAppPushDevice, owner: string | null) =>
+  device.state === "pending" && unanswered.has(device.id) && device.owner === owner;
+
+/**
+ * Marks the registration as to be revoked, then revokes it, unless its request is still unanswered: its attempt revokes
+ * it once the answer is in, so a revocation can never land before the registration it removes. The record goes only
+ * once the service acknowledged, and only if it is still this registration's.
+ */
+const revoke = async (device: IosAppPushDevice) => {
+  const stored = readIosAppPushDevice();
+  if (!stored || stored.id === device.id) writeDevice({ ...device, state: "revoking" });
+  if (unanswered.has(device.id)) return;
+  await identityClient.revokePushSubscription(device.id, device.token);
+  if (readIosAppPushDevice()?.id === device.id) writeDevice(null);
+};
+
+/** One registration at a time: the next starts once the last has settled, so none replaces another still unanswered. */
+let registering: Promise<unknown> = Promise.resolve();
+
+const registerDevice = (registration: Omit<IosAppPushDevice, "id" | "token" | "state">) => {
+  const attempt = registering.then(() => sendRegistration(registration));
+  registering = attempt.catch(() => undefined);
+  return attempt;
+};
+
 /**
  * Registers this phone for the account under a new id and revocation token, after revoking the registration it held
- * (another account's, or an old token's: APNs tokens are unique). The device is kept before it is sent, so a
- * registration that fails or is cut off can still be revoked.
+ * (another account's, an old token's or an owed one: APNs tokens are unique). The registration is kept as pending
+ * before it is sent, so it can be revoked even if the page closes first. It turns active only if the service answered
+ * it, nothing revoked it meanwhile and its account is still signed in; otherwise it is revoked, and a revocation that
+ * cannot reach the service stays owed for the next reconciliation.
  */
-const registerDevice = async (registration: Omit<IosAppPushDevice, "id" | "token">) => {
+const sendRegistration = async (registration: Omit<IosAppPushDevice, "id" | "token" | "state">) => {
   await disableIosAppPush();
   assertCurrentOwner(registration.owner);
-  const device: IosAppPushDevice = { ...registration, id: crypto.randomUUID(), token: crypto.randomUUID() };
+  const device: IosAppPushDevice = {
+    ...registration,
+    id: crypto.randomUUID(),
+    token: crypto.randomUUID(),
+    state: "pending",
+  };
   writeDevice(device);
+  unanswered.add(device.id);
   const { owner, id, token, apnsToken, gameAlerts, directMessages } = device;
-  try {
-    await identityClient.registerPushSubscription({ owner, id, token, apnsToken, gameAlerts, directMessages });
-  } catch (error) {
-    await disableIosAppPush().catch(() => undefined);
-    throw error;
+  const refusal = await identityClient
+    .registerPushSubscription({ owner, id, token, apnsToken, gameAlerts, directMessages })
+    .then(
+      () => null,
+      (error: unknown) => error,
+    )
+    .finally(() => unanswered.delete(id));
+  if (refusal === null && isStillWanted(device)) {
+    writeDevice({ ...device, state: "active" });
+    return device;
   }
-  return device;
+  await revoke(device).catch(() => undefined);
+  throw refusal ?? new Error("Your account changed. Reopen Settings.");
+};
+
+const isStillWanted = (device: IosAppPushDevice) => {
+  const stored = readIosAppPushDevice();
+  return (
+    stored?.id === device.id &&
+    stored.state === "pending" &&
+    notificationOwnerOf(useIdentitySessionStore.getState().session) === device.owner
+  );
 };
 
 const assertCurrentOwner = (owner: string) => {

@@ -114,6 +114,7 @@ describe("the iOS app's push", () => {
       apnsToken: TOKEN.toLowerCase(),
       gameAlerts: true,
       directMessages: true,
+      state: "active",
     });
     expect(registered.mock.calls).toEqual([
       [
@@ -182,7 +183,7 @@ describe("the iOS app's push", () => {
     const { app, device } = await enabledDevice();
     revoked.mockRejectedValueOnce(new Error("offline"));
     await expect(reconcileIosAppPush(app.bridge, null)).rejects.toThrow("offline");
-    expect(readIosAppPushDevice()).toEqual(device);
+    expect(readIosAppPushDevice()).toEqual({ ...device, state: "revoking" });
     await reconcileIosAppPush(app.bridge, null);
     expect(readIosAppPushDevice()).toBeNull();
   });
@@ -197,6 +198,119 @@ describe("the iOS app's push", () => {
     expect(readIosAppPushDevice()).toBeNull();
     await disableIosAppPush();
     expect(revoked).toHaveBeenCalledOnce();
+  });
+});
+
+/**
+ * The identity service's registrations as it keeps them: subscribe inserts a row, revoke deletes the row that exists
+ * then and nothing later (apps/realms server/push-subscription-store.ts). `holdSubscribe` keeps the next subscribe's
+ * insert waiting until it is released.
+ */
+const identityService = () => {
+  const rows = new Map<string, unknown>();
+  let release: () => void = () => undefined;
+  let held: Promise<void> | null = null;
+  registered.mockImplementation(async (registration) => {
+    await held;
+    rows.set(registration.id, registration);
+    return { id: registration.id };
+  });
+  revoked.mockImplementation(async (id) => {
+    rows.delete(id);
+    return { revoked: true };
+  });
+  return {
+    rows,
+    holdSubscribe: () => {
+      held = new Promise((resolve) => (release = resolve));
+      return () => {
+        held = null;
+        release();
+      };
+    },
+  };
+};
+
+describe("a registration that is not answered yet, or whose cleanup failed", () => {
+  it.each([
+    ["signing out", null],
+    ["another account signing in", OTHER],
+  ])(
+    "on %s while its subscribe is unanswered, ends with no registration at the service once it answers",
+    async (_, next) => {
+      const app = installApp();
+      const service = identityService();
+      const releaseSubscribe = service.holdSubscribe();
+      const enabling = enableIosAppPush(app.bridge, OWNER, CONFIGURATION);
+      await vi.waitFor(() => expect(registered).toHaveBeenCalledOnce());
+      const sent = readIosAppPushDevice()!;
+
+      signIn(next);
+      await reconcileIosAppPush(app.bridge, next);
+      // The revocation waits for the answer, and its credentials stay here until then.
+      expect(readIosAppPushDevice()).toEqual({ ...sent, state: "revoking" });
+
+      releaseSubscribe();
+      await expect(enabling).rejects.toThrow("Your account changed");
+      expect([...service.rows.keys()]).toEqual([]);
+      expect(revoked.mock.calls).toEqual([[sent.id, sent.token]]);
+      expect(readIosAppPushDevice()).toBeNull();
+      await reconcileIosAppPush(app.bridge, next);
+      expect(revoked).toHaveBeenCalledOnce();
+    },
+  );
+
+  it("is off in Settings when the service refused it and its cleanup failed, and the next launch finishes the cleanup", async () => {
+    const app = installApp();
+    registered.mockRejectedValueOnce(new Error("apns_unavailable"));
+    revoked.mockRejectedValueOnce(new Error("offline"));
+    await expect(enableIosAppPush(app.bridge, OWNER, CONFIGURATION)).rejects.toThrow("apns_unavailable");
+    expect(await deviceSwitch()).toBe("off");
+    const owed = readIosAppPushDevice()!;
+    expect(owed.state).toBe("revoking");
+
+    // Same account, same APNs token: the owed revocation is still made.
+    await reconcileIosAppPush(app.bridge, OWNER);
+    expect(revoked.mock.calls).toEqual([
+      [owed.id, owed.token],
+      [owed.id, owed.token],
+    ]);
+    expect(readIosAppPushDevice()).toBeNull();
+    expect(registered).toHaveBeenCalledOnce();
+  });
+
+  it("is revoked at the next launch when the app closed before its subscribe was answered, and is off until then", async () => {
+    const app = installApp({ permission: "granted" });
+    const interrupted: IosAppPushDevice = {
+      owner: OWNER,
+      id: "5c0f4e1a-2b3d-4c5e-8f6a-7b8c9d0e1f2a",
+      token: "9e8d7c6b-5a4f-4e3d-8c2b-1a0f9e8d7c6b",
+      apnsToken: TOKEN.toLowerCase(),
+      gameAlerts: true,
+      directMessages: true,
+      state: "pending",
+    };
+    localStorage.setItem("realms:ios-app-push", JSON.stringify(interrupted));
+    expect(await deviceSwitch()).toBe("off");
+    await reconcileIosAppPush(app.bridge, OWNER);
+    expect(revoked.mock.calls).toEqual([[interrupted.id, interrupted.token]]);
+    expect(readIosAppPushDevice()).toBeNull();
+    expect(registered).not.toHaveBeenCalled();
+  });
+
+  it("leaves the signed-in account's registration alone while it is being sent", async () => {
+    const app = installApp();
+    const service = identityService();
+    const releaseSubscribe = service.holdSubscribe();
+    const enabling = enableIosAppPush(app.bridge, OWNER, CONFIGURATION);
+    await vi.waitFor(() => expect(registered).toHaveBeenCalledOnce());
+    await reconcileIosAppPush(app.bridge, OWNER);
+    releaseSubscribe();
+    await enabling;
+    expect(revoked).not.toHaveBeenCalled();
+    expect(readIosAppPushDevice()?.state).toBe("active");
+    expect([...service.rows.keys()]).toEqual([readIosAppPushDevice()!.id]);
+    expect(await deviceSwitch()).toBe("on");
   });
 });
 
@@ -228,6 +342,7 @@ describe("a tapped alert", () => {
     apnsToken: TOKEN.toLowerCase(),
     gameAlerts: true,
     directMessages: true,
+    state: "active",
   };
   const HOME = "https://play.realms.test/";
   const GAME = "https://play.realms.test/g/0xa1/1/map";
