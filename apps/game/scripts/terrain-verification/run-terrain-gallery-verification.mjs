@@ -3,13 +3,14 @@ import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import sharp from "sharp";
 
 const DEFAULT_BASE_URL = "https://127.0.0.1:4173";
 const DEFAULT_ARTIFACT_DIRECTORY = ".context/verification/procedural-terrain/gallery";
 const READY_TIMEOUT_MS = 20_000;
 const POLL_MS = 250;
 const RENDERER_MODES = ["webgpu-auto", "webgpu-force-webgl"];
+/** The backend each mode must render on: three.js quietly drops to WebGL2 when the browser offers no WebGPU adapter. */
+const ACTIVE_MODE_OF = { "webgpu-auto": "webgpu", "webgpu-force-webgl": "webgl2-fallback" };
 const GROUND_MODES = ["flat", "textured"];
 const SCENE_IDS = [
   "all-biomes",
@@ -83,6 +84,9 @@ export function evaluateTerrainGalleryResults(results, options = {}) {
     const label = `${result.sceneId}/${result.rendererMode}/${result.groundMode}`;
     if (!result.routeMounted) reasons.push(`${label}: route did not mount`);
     if (!result.ready) reasons.push(`${label}: route did not become ready`);
+    if (result.snapshot && result.snapshot.activeMode !== ACTIVE_MODE_OF[result.rendererMode]) {
+      reasons.push(`${label}: rendered on ${result.snapshot.activeMode}, not ${ACTIVE_MODE_OF[result.rendererMode]}`);
+    }
     if (options.gameMode && result.snapshot?.gameMode !== options.gameMode)
       reasons.push(`${label}: world mode did not match request`);
     if (result.errors.length > 0) reasons.push(`${label}: browser reported ${result.errors[0]}`);
@@ -262,7 +266,7 @@ export function evaluateTerrainGalleryResults(results, options = {}) {
     if (!(result.snapshot?.drawCalls > 0 && result.snapshot.drawCalls <= drawCallBudget)) {
       reasons.push(`${label}: draw-call count exceeded policy or was unavailable`);
     }
-    if (!(result.imageCoverage >= 0.12)) reasons.push(`${label}: screenshot terrain coverage was below 12%`);
+    if (!(result.imageCoverage >= 0.12)) reasons.push(`${label}: drawn terrain coverage was below 12%`);
     if (enforceTiming && !(result.snapshot?.commitMs >= 0 && result.snapshot.commitMs <= 8)) {
       reasons.push(`${label}: main-thread commit exceeded 8 ms`);
     }
@@ -364,22 +368,11 @@ async function runGalleryScenario({
   const session = createBrowserSession(browserName, { headed, profile });
   const url = buildTerrainGalleryUrl(baseUrl, rendererMode, groundMode, sceneId, qualityTier, revealProgress);
   try {
-    runAgentBrowser(
-      session,
-      [
-        "open",
-        "about:blank",
-        "--args",
-        "--ignore-gpu-blocklist,--enable-gpu,--use-angle=vulkan,--enable-features=Vulkan,--enable-unsafe-webgpu",
-      ],
-      headed,
-    );
     runAgentBrowser(session, ["set", "viewport", "1440", "900"], headed);
-    runAgentBrowser(session, ["open", url, "--ignore-https-errors"], headed);
+    runAgentBrowser(session, ["open", url], headed);
     let state = waitForReady(session, headed);
     if (!state.routeMounted) {
-      runAgentBrowser(session, ["open", url, "--ignore-https-errors"], headed);
-      runAgentBrowser(session, ["set", "viewport", "1440", "900"], headed);
+      runAgentBrowser(session, ["open", url], headed);
       state = waitForReady(session, headed);
     }
     if (state.status === "ready") {
@@ -388,8 +381,10 @@ async function runGalleryScenario({
     }
     const errors = parseErrorLines(runAgentBrowser(session, ["errors"], headed));
     const screenshotPath = join(artifactDirectory, `${sceneId}-${rendererMode}-${groundMode}.png`);
-    runAgentBrowser(session, ["screenshot", screenshotPath], headed);
-    const imageCoverage = await measureScreenshotCoverage(screenshotPath);
+    const imageCoverage =
+      state.status === "ready"
+        ? captureDrawnFrame(session, screenshotPath, headed)
+        : capturePageWithoutTerrain(session, screenshotPath, headed);
     return {
       errors,
       groundMode,
@@ -410,16 +405,26 @@ async function runGalleryScenario({
   }
 }
 
-async function measureScreenshotCoverage(screenshotPath) {
-  const { data, info } = await sharp(screenshotPath).removeAlpha().raw().toBuffer({ resolveWithObject: true });
-  let contentPixels = 0;
-  for (let offset = 0; offset < data.length; offset += info.channels) {
-    const red = data[offset] - 216;
-    const green = data[offset + 1] - 208;
-    const blue = data[offset + 2] - 186;
-    if (red * red + green * green + blue * blue > 900) contentPixels += 1;
-  }
-  return contentPixels / (info.width * info.height);
+/**
+ * The frame the lab drew, as its own canvas read it back, saved as the capture; returns the share of it drawn over the
+ * clear colour. A screenshot cannot stand in: headless Chrome on Linux never puts a WebGPU canvas into one.
+ */
+function captureDrawnFrame(session, path, headed) {
+  const frame = parseAgentBrowserJson(
+    runAgentBrowser(
+      session,
+      ["eval", "window.__terrainVerification.captureFrame().then((frame) => JSON.stringify(frame))"],
+      headed,
+    ),
+  );
+  writeFileSync(path, Buffer.from(frame.png.slice(frame.png.indexOf(",") + 1), "base64"));
+  return frame.coverage;
+}
+
+/** A page that never became ready drew no terrain; its screenshot shows why. */
+function capturePageWithoutTerrain(session, path, headed) {
+  runAgentBrowser(session, ["screenshot", path], headed);
+  return 0;
 }
 
 function waitForReady(session, headed) {

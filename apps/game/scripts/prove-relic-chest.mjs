@@ -31,13 +31,7 @@ await withDevClient({ base, port, out }, async (baseUrl) => {
           writeFileSync(join(out, "proof.json"), JSON.stringify({ ok: false, records }, null, 2) + "\n");
           continue;
         }
-        browser.run([
-          "open",
-          `${baseUrl}/lab/relic-chest?capture=1&rendererMode=${backend}&mode=${game}`,
-          "--ignore-https-errors",
-          "--args",
-          "--ignore-gpu-blocklist,--enable-gpu,--use-angle=vulkan,--enable-features=Vulkan,--enable-unsafe-webgpu",
-        ]);
+        browser.run(["open", `${baseUrl}/lab/relic-chest?capture=1&rendererMode=${backend}&mode=${game}`]);
         browser.run(["set", "viewport", "1920", "1080"]);
         browser.run(["wait", "--fn", "document.querySelector('[data-relic-chest-lab]')?.dataset.ready === 'true'"]);
         devtools = await openPageDevTools(browser);

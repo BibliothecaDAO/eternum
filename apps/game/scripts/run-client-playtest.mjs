@@ -64,17 +64,8 @@ const PROBE_PATH = join(SCRIPTS_DIR, "client-playtest/probe.js");
 const DEFAULTS = { port: 4173, iterations: 3, rendererModes: RENDERER_MODES, timeoutMs: 30_000, cpuThrottle: 1 };
 const POLL_INTERVAL_MS = 500;
 const LOAD_SAMPLE_MS = 5_000;
-// The machine's GPU through Vulkan (headless Chrome otherwise renders on SwiftShader), WebGPU as Windows and macOS
-// players get it, a callable gc for retained-heap reads, and unrounded heap sizes.
-const BROWSER_ARGS = [
-  "--ignore-gpu-blocklist",
-  "--enable-gpu",
-  "--use-angle=vulkan",
-  "--enable-features=Vulkan",
-  "--enable-unsafe-webgpu",
-  "--js-flags=--expose-gc",
-  "--enable-precise-memory-info",
-];
+// Beside the session's GPU flags: a callable gc for retained-heap reads, and unrounded heap sizes.
+const MEMORY_ARGS = ["--js-flags=--expose-gc", "--enable-precise-memory-info"];
 /** The GPU the page draws on: the machine's default, or its integrated one (`--gpu low-power`, integrated-gpu.mjs). */
 const GPUS = ["default", "low-power"];
 
@@ -326,22 +317,16 @@ async function playRun(context) {
     ? () => {}
     : owner.adopt(`profile ${profile}`, () => rmSync(profile, { recursive: true, force: true }));
   const browser = createBrowserSession(`playtest-${label}-${Date.now().toString(36)}`, {
+    chromeArgs: MEMORY_ARGS,
     executablePath: context.integratedGpu?.launcher,
     headed: context.headed,
+    initScript: PROBE_PATH,
     profile,
   });
   const releaseBrowser = owner.adopt(`browser ${label}`, () => browser.close());
   let releaseDevTools = () => {};
   try {
-    browser.run([
-      "open",
-      "about:blank",
-      "--ignore-https-errors",
-      "--init-script",
-      PROBE_PATH,
-      "--args",
-      BROWSER_ARGS.join(","),
-    ]);
+    browser.run(["open", "about:blank"]);
     if (context.storageState) browser.run(["state", "load", context.storageState]);
     browser.run(["set", "viewport", String(VIEWPORT.width), String(VIEWPORT.height)]);
     const devTools = await openPageDevTools(browser);
