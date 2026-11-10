@@ -1,11 +1,10 @@
 import { siteKindOf, type SiteKind } from "@bibliothecadao/eternum";
-import { fightVerdict, formatShort, VERDICT_WORDS } from "@bibliothecadao/types";
+import { fightVerdict, formatShort, scaledToUnits } from "@bibliothecadao/types";
 
-import type { IconMeaning } from "@/ui/design-system/icon";
-import { CHESTS, DAY } from "@/ui/design-system/kit/words";
+import { DAY } from "@/ui/design-system/kit/words";
 
 import type { DayTotals } from "../log/day-totals";
-import { TARGET_MARKS } from "../sites/site-marks";
+import { paidResource, someReward } from "../log/today-totals";
 import { battleRecordOf } from "../sites/fight-record";
 
 /**
@@ -15,18 +14,18 @@ import { battleRecordOf } from "../sites/fight-record";
 export type DayMark = SiteKind | "chest" | "army-lost" | "guard-holds";
 
 /**
- * Each mark as the card paints it and the post writes it: its icon, its name for a screen reader, and the emoji a post
- * on X carries (Wordle's grid, owner's brief: the day's shape, spoiling nothing, since every realm's map is its own).
+ * Each mark as the post writes it, the emoji a post on X carries (Wordle's grid, owner's brief: the day's shape,
+ * spoiling nothing, since every realm's map is its own).
  */
 export const DAY_MARKS = {
-  Camp: { ...TARGET_MARKS.Camp, emoji: "👹" },
-  Rift: { ...TARGET_MARKS.Rift, emoji: "🌀" },
-  Ruin: { ...TARGET_MARKS.Ruin, emoji: "🏛️" },
-  Beasts: { ...TARGET_MARKS.Beasts, emoji: "🐺" },
-  chest: { word: CHESTS, icon: "chest", emoji: "🎁" },
-  "army-lost": { word: VERDICT_WORDS["army-lost"], icon: "skull", emoji: "💀" },
-  "guard-holds": { word: VERDICT_WORDS["guard-holds"], icon: "defend", emoji: "🛡️" },
-} as const satisfies Record<DayMark, { word: string; icon: IconMeaning; emoji: string }>;
+  Camp: "👹",
+  Rift: "🌀",
+  Ruin: "🏛️",
+  Beasts: "🐺",
+  chest: "🎁",
+  "army-lost": "💀",
+  "guard-holds": "🛡️",
+} as const satisfies Record<DayMark, string>;
 
 /** The totals a post leads with, each with its emoji, in the card's order. */
 const POST_TOTALS = [
@@ -35,7 +34,7 @@ const POST_TOTALS = [
   { total: "chests", emoji: "🎁" },
 ] as const satisfies readonly { total: keyof DayTotals; emoji: string }[];
 
-/** How many marks a trail shows before it counts the rest: a post's line, and the card's row, stay one line. */
+/** How many marks a post's line shows before it counts the rest, so it stays one line. */
 export const TRAIL_LENGTH = 18;
 
 interface DayStory {
@@ -61,13 +60,13 @@ const markOf = ({ story, storyPayload }: DayStory): DayMark | null => {
   return verdict === "victory" ? null : verdict;
 };
 
-/** The trail as a card or a post shows it: its first marks, and how many more there were. */
-export const shownTrail = (trail: readonly DayMark[]) => ({
+/** The trail as a post shows it: its first marks, and how many more there were. */
+const shownTrail = (trail: readonly DayMark[]) => ({
   marks: trail.slice(0, TRAIL_LENGTH),
   more: Math.max(0, trail.length - TRAIL_LENGTH),
 });
 
-/** A rank's move over the day, as a post and the card write it: "▲2", "▼1", or nothing for none. */
+/** A rank's move over the day, as the post and the card write it: "▲2", "▼1", or nothing for none. */
 export const rankMove = (rank: { from: number; to: number }) =>
   rank.to < rank.from ? `▲${rank.from - rank.to}` : rank.to > rank.from ? `▼${rank.to - rank.from}` : "";
 
@@ -95,6 +94,60 @@ export const dayPostText = ({
   const standing = rank ? ` · #${rank.to}${rankMove(rank) ? ` ${rankMove(rank)}` : ""}` : "";
   const counts = POST_TOTALS.map(({ total, emoji }) => `${emoji} ${formatShort(totals[total])}`).join(" · ");
   const { marks, more } = shownTrail(trail);
-  const line = marks.map((mark) => DAY_MARKS[mark].emoji).join("") + (more > 0 ? ` +${more}` : "");
+  const line = marks.map((mark) => DAY_MARKS[mark]).join("") + (more > 0 ? ` +${more}` : "");
   return [`${game} · ${DAY} ${day}${standing}`, counts, line].filter(Boolean).join("\n");
+};
+
+/**
+ * The day's best moment, the one its card is built round: a ruin chest's LORDS, else the clear of the strongest guard
+ * (its site, the guard it beat and what it paid), else the land revealed. A day enters no depth in its stories, so a
+ * depth is never its best.
+ */
+export type DayBest =
+  | { kind: "chest"; lords: number }
+  | {
+      kind: "clear";
+      site: SiteKind;
+      guard: number | undefined;
+      paid: { resource: "essence" | "labor" | "lords"; amount: number } | null;
+    }
+  | { kind: "reveals"; count: number };
+
+/** Which clear leads when two beat the same guard: the rarer site. */
+const SITE_RANK: Record<SiteKind, number> = { Ruin: 3, Rift: 2, Camp: 1, Beasts: 0 };
+
+/** The day's best moment from the player's own stories of the day (usePlayerDay), and its reveals as the fallback. */
+export const dayBest = (stories: readonly DayStory[], reveals: number): DayBest => {
+  const lords = Math.max(0, ...stories.filter(isChest).map(({ storyPayload }) => Number(storyPayload.amount)));
+  if (lords > 0) return { kind: "chest", lords };
+  const clears = stories
+    .filter(({ story }) => story === "SitePayout")
+    .map(({ storyPayload }) => clearOf(storyPayload, stories));
+  const best = clears.sort((a, b) => (b.guard ?? 0) - (a.guard ?? 0) || SITE_RANK[b.site] - SITE_RANK[a.site])[0];
+  return best ?? { kind: "reveals", count: reveals };
+};
+
+const isChest = ({ story }: DayStory) => story === "RewardChestOpened";
+
+/** A clear: its site, the guard the fight that won it beat, and what it paid. */
+const clearOf = (payout: Record<string, unknown>, stories: readonly DayStory[]) => {
+  const won = stories
+    .filter(
+      ({ story, storyPayload }) =>
+        story === "BattleEvent" && String(storyPayload.defender_id) === String(payout.site_id),
+    )
+    .map(({ storyPayload }) => battleRecordOf(storyPayload))
+    .find((record) => record?.guard.after === 0);
+  const reward = someReward(payout.reward);
+  return {
+    kind: "clear" as const,
+    site: siteKindOf(Number(payout.category)),
+    guard: won?.guard.before,
+    paid: reward ? paidOf(reward.resource_type, reward.amount) : null,
+  };
+};
+
+const paidOf = (resourceType: unknown, amount: unknown) => {
+  const resource = paidResource(resourceType);
+  return resource ? { resource, amount: scaledToUnits(BigInt(String(amount))) } : null;
 };

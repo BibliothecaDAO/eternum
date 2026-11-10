@@ -60,7 +60,7 @@ export const DayDone = ({
   const rank = useClosingRankChange(recap?.day);
   const openedAt = useOpenedAt(now);
   const { phase, summaryMissed, landReady, begin, continueDay, showSummary } = useDayEndStore();
-  const { onShare, sheet } = useDayShare(player, recap?.day, played);
+  const { onShare, sheet } = useDayShare(realm, recap?.day, played);
   // A day that ended before this realm was founded is none of its player's: a new realm starts on the day it was made.
   const realmsDay = ended !== null && ended.end > Number(realm.base.created_at);
   const unseen = !visiting && player !== null && ended !== null && realmsDay && (seen === null || seen < ended.day);

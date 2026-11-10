@@ -1,7 +1,9 @@
 import { StructureType } from "@bibliothecadao/types";
 import { describe, expect, it } from "vitest";
 
-import { DAY_MARKS, dayPostText, dayTrail, rankMove, shownTrail, TRAIL_LENGTH, type DayMark } from "./day-share";
+import { ResourcesIds } from "@bibliothecadao/types";
+
+import { DAY_MARKS, dayBest, dayPostText, dayTrail, rankMove, TRAIL_LENGTH, type DayMark } from "./day-share";
 
 const at = (minute: number) => minute * 60_000;
 const clear = (category: StructureType, minute: number) => ({
@@ -39,14 +41,8 @@ describe("a Frontier day's trail", () => {
     expect(dayTrail([{ story: "ExplorationReward", storyPayload: {}, timestampMs: 0 }])).toEqual([]);
   });
 
-  it("shows its first marks and counts the rest, so a long day stays one line", () => {
-    const trail = Array.from({ length: TRAIL_LENGTH + 4 }, (): DayMark => "Camp");
-    expect(shownTrail(trail)).toEqual({ marks: trail.slice(0, TRAIL_LENGTH), more: 4 });
-    expect(shownTrail(["Ruin"])).toEqual({ marks: ["Ruin"], more: 0 });
-  });
-
   it("gives every mark its own emoji, so a post's line reads one way", () => {
-    const emoji = Object.values(DAY_MARKS).map((mark) => mark.emoji);
+    const emoji = Object.values(DAY_MARKS);
     expect(new Set(emoji).size).toBe(emoji.length);
   });
 });
@@ -81,5 +77,64 @@ describe("a Frontier day's post", () => {
     expect(rankMove({ from: 9, to: 7 })).toBe("▲2");
     expect(rankMove({ from: 7, to: 9 })).toBe("▼2");
     expect(rankMove({ from: 7, to: 7 })).toBe("");
+  });
+});
+
+describe("a Frontier day's best moment", () => {
+  /** A clear of site `site` (of `category`), won by a fight against a guard of `guard` whole troops, paying `paid`. */
+  const won = (
+    site: number,
+    category: StructureType,
+    guard: number,
+    paid: { resource: number; amount: number } | null,
+  ) => [
+    {
+      story: "BattleEvent",
+      storyPayload: {
+        defender_id: site,
+        attacker: { before: "900000000000", after: "800000000000" },
+        defender: { before: `${guard}000000000`, after: "0" },
+      },
+      timestampMs: at(site),
+    },
+    {
+      story: "SitePayout",
+      storyPayload: {
+        site_id: site,
+        category,
+        reward: paid && { resource_type: paid.resource, amount: `${paid.amount}000000000` },
+      },
+      timestampMs: at(site),
+    },
+  ];
+
+  it("is the clear of the strongest guard, with the site, the guard and what it paid", () => {
+    const stories = [
+      ...won(1, StructureType.Camp, 300, { resource: ResourcesIds.Labor, amount: 650 }),
+      ...won(2, StructureType.Rift, 666, { resource: ResourcesIds.Essence, amount: 4_800 }),
+      // A guard that held is no clear.
+      fight(3, { army: "0", guard: "900000000000" }),
+    ];
+    expect(dayBest(stories, 38)).toEqual({
+      kind: "clear",
+      site: "Rift",
+      guard: 666,
+      paid: { resource: "essence", amount: 4_800 },
+    });
+  });
+
+  it("puts a ruin chest's LORDS before any clear", () => {
+    const stories = [
+      ...won(2, StructureType.Rift, 666, null),
+      { story: "RewardChestOpened", storyPayload: { amount: "128" }, timestampMs: at(5) },
+    ];
+    expect(dayBest(stories, 31)).toEqual({ kind: "chest", lords: 128 });
+  });
+
+  it("is the land revealed on a day with no clear", () => {
+    expect(dayBest([{ story: "ExplorationReward", storyPayload: {}, timestampMs: at(1) }], 1)).toEqual({
+      kind: "reveals",
+      count: 1,
+    });
   });
 });

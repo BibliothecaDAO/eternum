@@ -680,17 +680,19 @@ export const SHARE_WORDS = {
 /** A Frontier day's card, shared from the day-done card: the day, its fights in order, its totals and its rank. */
 export const DAY_SHARE_WORDS = {
   share: "Share your day",
-  title: "Your day",
-  /** Over the card's row of marks: each fight and find of the day, in the order it happened. */
-  trail: "The day, in order",
-  quiet: "A day of scouting",
   rank: "Season rank",
-  /** The marks past the card's row, counted after it: "+6". */
-  more: (count: number) => `+${count}`,
   /** The image's file, where it is saved rather than copied. */
   fileName: (day: number) => `frontier-day-${day}.png`,
   /** Under the card, for a friend: where it is played, and that it costs nothing. */
   playFree: "Free to play",
+  /** The day's best moment, its card's headline: a chest, a clear by its site's name, or the land revealed. */
+  best: {
+    chest: "Ruin chest opened",
+    clear: (site: string) => `${site} cleared`,
+    reveals: (count: string) => `${count} tiles revealed`,
+  },
+  /** Under a clear's headline: the guard the fight that won it beat. */
+  guardBeaten: (troops: string) => `Guard of ${troops} beaten`,
   /** What the player's shared days brought so far, once they brought anyone: "Your days brought 12 visits · 3 players". */
   brought: (visits: string, joined: string) => `Your days brought ${visits} visits · ${joined} new players`,
 } as const;

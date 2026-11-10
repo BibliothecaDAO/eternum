@@ -18,7 +18,7 @@ import { createPortal } from "react-dom";
 
 import { usePlayerDisplayName, usePlayerProfile } from "@/hooks/use-player-profile";
 import { playerPortraitUrl } from "@/services/identity/player-portrait";
-import { Icon, type IconMeaning } from "@/ui/design-system/icon";
+import { Icon } from "@/ui/design-system/icon";
 import { AppButton, AppGameName, AppPortrait } from "@/ui/design-system/kit/app-elements";
 import { OrderEmblem } from "@/ui/design-system/kit/order-emblem";
 import { paintingSources } from "@/ui/design-system/kit/paintings";
@@ -46,6 +46,7 @@ import { resultsHref } from "./results-link";
 import { CARD_CUTS, type CardCut } from "@/utils/card-image";
 
 import { FailureLine } from "../sign-in/failure-line";
+import { CardTile } from "../share/card-tile";
 import { shareHint, StepNumber, useShareSteps } from "../share/share-steps";
 
 type Entry = HeraldFrontierLeaderboardEntry;
@@ -463,7 +464,7 @@ const SitesCard = ({ own }: { own: Entry }) => (
     <span className="season-card__title">{RESULT_WORDS.sitesCleared}</span>
     <div className="season-card__tiles">
       {SITE_KINDS.map((kind) => (
-        <Tile
+        <CardTile
           key={kind}
           icon={TARGET_MARKS[kind].icon}
           value={formatShort(own.sites_cleared[SITE_COUNTS[kind]])}
@@ -484,20 +485,12 @@ const SitesCard = ({ own }: { own: Entry }) => (
 const HaulCard = ({ own }: { own: Entry }) => (
   <Card name="haul">
     <div className="season-card__tiles">
-      <Tile icon="reward-chest" value={formatShort(own.chests_earned)} label={RESULT_WORDS.chests} />
-      <Tile icon="lords" value={formatShort(wholeLords(own.rewards.lords))} label={LORDS} />
-      <Tile icon="essence" value={formatShort(earnedResource(own.rewards.essence))} label={ESSENCE} />
-      <Tile icon="labor" value={formatShort(earnedResource(own.rewards.labor))} label={LABOR} />
+      <CardTile icon="reward-chest" value={formatShort(own.chests_earned)} label={RESULT_WORDS.chests} />
+      <CardTile icon="lords" value={formatShort(wholeLords(own.rewards.lords))} label={LORDS} />
+      <CardTile icon="essence" value={formatShort(earnedResource(own.rewards.essence))} label={ESSENCE} />
+      <CardTile icon="labor" value={formatShort(earnedResource(own.rewards.labor))} label={LABOR} />
     </div>
   </Card>
-);
-
-const Tile = ({ icon, value, label }: { icon: IconMeaning; value: string; label: string }) => (
-  <span className="season-card__tile">
-    <Icon name={icon} size={72} />
-    <b>{value}</b>
-    <small>{label}</small>
-  </span>
 );
 
 /**

@@ -64,7 +64,13 @@ vi.mock("@/runtime/world/store", async (importOriginal) => ({
 
 /** Realm 7 as the HUD hands it to the day's end: its game and entity (a free home: the game has no Labor rules). */
 /** Realm 7, founded as the season opened. */
-const REALM_7 = { game_id: 1, entity_id: 7n, base: { created_at: 0 } } as never;
+const REALM_7 = {
+  game_id: 1,
+  entity_id: 7n,
+  owner: BigInt(RECORDED_DAY.player),
+  base: { created_at: 0 },
+  metadata: { order: 5 },
+} as never;
 
 vi.mock("@/hooks/context/game-context", () => ({ useGame: () => ({ setup: { store: facts } }) }));
 vi.mock("@/hooks/use-player-profile", () => ({
@@ -91,6 +97,8 @@ vi.mock("@bibliothecadao/eternum", async (importOriginal) => {
     ...(await importOriginal<typeof import("@bibliothecadao/eternum")>()),
     buildStoryEventPresentation: () => ({}),
     configManager: { getActiveGameId: () => 1 },
+    // Realm 7's name, as the card writes it.
+    getStructureName: () => ({ name: "Temtinos", originalName: "Temtinos" }),
     // The day's turn reads the game's calendar and the realm's site from the facts: realm 7's day-3 site.
     readExpeditionRules: () => ({ ...recorded.calendar, endAt: Number(herald.game.end_at), spacing: 100 }),
     isExpeditionRealm: () => true,
@@ -219,7 +227,7 @@ it("sums the player's own day 2 as prod's history holds it, not the tail of the 
   expect(host.textContent).toContain("#1 → #1");
 });
 
-it("shares day 2 as its card and a post: its trail, its totals and rank, and the player's own link for the day", async () => {
+it("shares day 2 as its card and a post: its best moment, the numbers it moved, and the player's own link", async () => {
   await openTheGame();
   const share = [...host.querySelectorAll("button")].find((button) => button.textContent === "Share your day");
   await act(async () => share!.click());
@@ -228,9 +236,17 @@ it("shares day 2 as its card and a post: its trail, its totals and rank, and the
   const shown = sheet.querySelector<HTMLElement>(".day-share__frame .day-card")!;
   expect(shown.dataset.cut).toBe("tall");
   expect(shown.querySelector(".day-card__day")?.textContent).toBe("Day 2");
-  const marks = [...shown.querySelectorAll<HTMLElement>(".day-card__mark")].map((mark) => mark.dataset.mark);
-  // Prod's day 2: five clears, two of the rifts after a fight their guard held.
-  expect(marks).toEqual(["Beasts", "Beasts", "guard-holds", "Rift", "guard-holds", "Rift", "Beasts"]);
+  expect(shown.querySelector(".day-card__realm")?.textContent).toBe("Temtinos");
+  // Prod's day 2: its strongest guard fell at a Beasts den.
+  expect(shown.querySelector(".day-card__headline")?.textContent).toBe("Beasts cleared");
+  expect(shown.querySelector(".day-card__detail")?.textContent).toBe("Guard of 483 beaten");
+  // It opened no chest and paid no LORDS: neither is on the card.
+  expect([...shown.querySelectorAll(".day-card__haul small")].map((label) => label.textContent)).toEqual([
+    "Reveals",
+    "Sites cleared",
+    "Essence",
+    "Labor",
+  ]);
   expect(shares.createShare).toHaveBeenCalledWith({ kind: "frontier-day", chainId: "0x1", gameId: 1, moment: 2 });
 
   // The link is made as the sheet opens; the post waits for nothing.
@@ -637,7 +653,15 @@ describe("a device arriving in a new day", () => {
     herald.history = [];
     // Founded a minute into day 3, after day 2 had ended.
     const founded = endedDay(RULES, herald.now)!.end + 60;
-    await openTheGameHere({ realm: { game_id: 1, entity_id: 7n, base: { created_at: founded } } as never });
+    await openTheGameHere({
+      realm: {
+        game_id: 1,
+        entity_id: 7n,
+        owner: BigInt(RECORDED_DAY.player),
+        base: { created_at: founded },
+        metadata: { order: 5 },
+      } as never,
+    });
     await seconds(DAY_END_TIMING.nightfall + DAY_END_TIMING.black + DAY_END_TIMING.dawn);
     expect(host.querySelector(SUMMARY)).toBeNull();
     expect(phase()).toBe("day");

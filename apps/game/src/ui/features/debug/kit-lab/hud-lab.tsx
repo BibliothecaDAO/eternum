@@ -321,6 +321,22 @@ const DAY_SHARE: SharedDay = {
   totals: DAY_DONE.totals,
   rank: DAY_DONE.rank,
   trail: ["Ruin", "Rift", "Rift", "army-lost", "guard-holds", "Beasts", "Camp", "chest"],
+  best: { kind: "chest", lords: 128 },
+  realm: { name: "Temtinos", order: 5 },
+};
+/**
+ * A thin day, the owner's day 1 on dev's Frontier game 3 (10 November 2026): 38 reveals and one site, a Rift whose guard
+ * of 666 fell, paying 4,800 Essence; no rank yet on a season's first day.
+ */
+const THIN_DAY_SHARE: SharedDay = {
+  player: WALLET_ADDRESS,
+  game: { chainId: "0x1", gameId: 1 },
+  day: 1,
+  totals: { reveals: 38, cleared: 1, chests: 0, essence: 5_700, labor: 1_400, lords: 0 },
+  rank: undefined,
+  trail: ["guard-holds", "Rift"],
+  best: { kind: "clear", site: "Rift", guard: 666, paid: { resource: "essence", amount: 4_800 } },
+  realm: { name: "Temtinos", order: 5 },
 };
 
 type LabTile = Parameters<typeof BuildView>[0]["tiles"][number];
@@ -917,13 +933,8 @@ const STATES = {
   "last-minutes": { clock: FINAL_MINUTES, stores: STORES, armies: ARMIES, lastHour: true },
   "day-done": { clock: NIGHT, stores: STORES, armies: [], dayDone: DAY_DONE },
   "day-share": { clock: NIGHT, stores: STORES, armies: [], dayShare: DAY_SHARE },
-  // A day of scouting alone: no fight, no find, the trail says so.
-  "day-share-quiet": {
-    clock: NIGHT,
-    stores: STORES,
-    armies: [],
-    dayShare: { ...DAY_SHARE, trail: [], totals: { ...DAY_SHARE.totals, cleared: 0, chests: 0, lords: 0 } },
-  },
+  // A thin day, the owner's day 1 on dev: one site, no chest, no rank yet.
+  "day-share-thin": { clock: NIGHT, stores: STORES, armies: [], dayShare: THIN_DAY_SHARE },
   "day-done-full": {
     clock: NIGHT,
     stores: STORES,

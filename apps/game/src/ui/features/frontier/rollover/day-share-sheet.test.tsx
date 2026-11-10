@@ -45,6 +45,8 @@ const DAY = {
   totals: { reveals: 35, cleared: 5, chests: 0, essence: 7_200, labor: 524, lords: 0 },
   rank: { from: 3, to: 1 },
   trail: ["Beasts", "Rift"] as const,
+  best: { kind: "clear", site: "Beasts", guard: 483, paid: null } as const,
+  realm: { name: "Temtinos", order: 5 },
 };
 const sharedDay = (player: string, gameId = 1) => ({ ...DAY, player, game: { chainId: "0x1", gameId } });
 

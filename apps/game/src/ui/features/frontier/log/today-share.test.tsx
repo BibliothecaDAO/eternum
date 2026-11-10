@@ -65,6 +65,7 @@ vi.mock("@bibliothecadao/eternum", async (importOriginal) => ({
   // Each story's own line is not what these tests read.
   buildStoryEventPresentation: () => ({ title: "A story" }),
   configManager: { getActiveGameId: () => 1 },
+  getStructureName: () => ({ name: "Temtinos", originalName: "Temtinos" }),
 }));
 vi.mock("@bibliothecadao/eternum/game-client", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@bibliothecadao/eternum/game-client")>()),
@@ -82,7 +83,7 @@ const { FrontierToday } = await import("./frontier-today");
 
 const RULES = RECORDED_DAY.calendar as never;
 /** The player's realm, as Today is handed it. */
-const REALM = { entity_id: 7, owner: BigInt(RECORDED_DAY.player) } as never;
+const REALM = { entity_id: 7, owner: BigInt(RECORDED_DAY.player), metadata: { order: 5 } } as never;
 const SHARE = "Share your day";
 
 let host: HTMLDivElement;

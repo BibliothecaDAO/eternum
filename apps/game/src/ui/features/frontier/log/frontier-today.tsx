@@ -49,7 +49,7 @@ export const FrontierToday = ({
   const played = usePlayerDay(player, day === undefined ? null : dayBounds(rules, now, day));
   const step = (to: number) => setChosen(to === today ? null : to);
   const ended = day !== undefined && today !== undefined && day < today;
-  const { onShare, sheet } = useDayShare(player, ended ? day : undefined, played);
+  const { onShare, sheet } = useDayShare(realm, ended ? day : undefined, played);
   const buyers = useDockArmies(onOpenArmy ? realm : null).filter(({ canSpendSkillPoint }) => canSpendSkillPoint);
   return (
     <>
