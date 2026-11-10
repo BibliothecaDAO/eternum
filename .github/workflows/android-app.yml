@@ -1,0 +1,51 @@
+name: android app
+
+# The Android app's shell (apps/android): its Play release bundle, built unsigned on every change to it. The owner signs
+# it with the upload key on their own machine (apps/android/README.md): workflows read no stored secret. The site it opens
+# deploys on its own: a store release is needed only when the shell changes.
+on:
+  pull_request:
+    paths: ["apps/android/**"]
+  push:
+    branches: [next]
+    paths: ["apps/android/**"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: android-app-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  bundle:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Check out the Android app
+        uses: actions/checkout@v4
+        with:
+          sparse-checkout: apps/android
+      # Bubblewrap writes an App Link filter for the whole host; regenerating the project drops the shared-link paths.
+      - name: Keep App Links to the shared game links
+        run: |
+          for path in /g/ /join/devcon/ /results/; do
+            grep -q "android:pathPrefix=\"$path\"" apps/android/app/src/main/AndroidManifest.xml ||
+              { echo "::error title=App Links::$path is missing from the App Link filter"; exit 1; }
+          done
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+          cache: gradle
+      - name: Build the release bundle
+        working-directory: apps/android
+        run: ./gradlew bundleRelease --no-daemon
+      - name: Upload the unsigned bundle
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-bundle-unsigned
+          path: apps/android/app/build/outputs/bundle/release/app-release.aab
+          if-no-files-found: error

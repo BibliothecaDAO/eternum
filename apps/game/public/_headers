@@ -59,3 +59,6 @@
 # Model files carry their content's hash in their name (build/hashed-models.ts): a changed model is a new URL.
 /models/*
   Cache-Control: public, max-age=31536000, immutable
+# The Android app's Digital Asset Links, built from apps/android/twa-manifest.json (build/asset-links.ts).
+/.well-known/assetlinks.json
+  Content-Type: application/json
