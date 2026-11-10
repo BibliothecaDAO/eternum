@@ -59,6 +59,12 @@ const seedAccount = (worker: Worker, realmsId: string) =>
          VALUES ('leaving-phone', ?, 'https://fcm.googleapis.com/fcm/send/leaving-phone', 'p', 'a', 'x', ?)`,
       )
       .bind(realmsId, Date.now()),
+    worker.db
+      .prepare(
+        `INSERT INTO "notification_push_subscriptions" ("id", "owner", "kind", "apnsToken", "revocationHash", "createdAt")
+         VALUES ('leaving-iphone', ?, 'apns', ?, 'y', ?)`,
+      )
+      .bind(realmsId, "ab".repeat(32), Date.now()),
     worker.db.prepare(`INSERT INTO "build_order_books" ("owner", "book") VALUES (?, '{}')`).bind(realmsId),
     worker.db.prepare(
       `INSERT INTO "campaign_codes" ("campaign", "code_hash", "tier") VALUES ('devcon-2026', 'golden-hash', 'golden')`,
@@ -90,6 +96,7 @@ it("deletes an account only with its emailed code: its old session opens nothing
   const leaving = await worker.signInWithEmailCode(LEAVING);
   const friend = await worker.signInWithEmailCode("friend@realms.test");
   await seedAccount(worker, leaving.realmsId);
+  expect(await countOf(worker, "notification_push_subscriptions", "owner", leaving.realmsId)).toBe(2);
   const threadId = await directMessage(worker, friend.cookie, leaving.realmsId);
   const inboxes = await worker.mf.getDurableObjectNamespace("CHAT_INBOX");
   // Miniflare's namespace is untyped; the inbox is the Worker's own ChatInbox.
