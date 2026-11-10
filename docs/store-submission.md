@@ -8,7 +8,7 @@ only: it is not the Epic submission, and the web and installed PWA need none of 
 
 Each answer cites the code it was read from, as it will merge: `next` at `923107caf04` merged with the five store pull
 requests it depends on, #5214 (channel, `304c091f571`), #5216 (account deletion, `9867e031c61`), #5213 (iOS shell,
-`72df80b61c8`), #5215 (APNs and the iOS client, `e90558d5c1b`) and #5217 (Android shell, `440a032afa5`). Line numbers
+`72df80b61c8`), #5215 (APNs and the iOS client, `d76fe80b3de`) and #5217 (Android shell, `440a032afa5`). Line numbers
 are from that merge (10 November 2026). This document lands after them; when a cited file changes, check its answers
 again. A store form that no longer matches the app is a policy violation, whichever way it is wrong.
 
@@ -21,8 +21,9 @@ Each item makes a form below untrue or gets the app rejected. Items 1 to 6 block
 
 1. **The store pull requests must be merged and deployed.** Deletion, the iOS channel, push and both shells live in
    #5214, #5216, #5213, #5215 and #5217. Deploy order:
-   - D1 migrations `0033_apns_devices.sql` and `0035_account_deletions.sql`;
-   - the identity Worker, with the APNs key (#5215's `inputs.json` fields);
+   - D1 migrations `0033_apns_devices.sql`, `0035_account_deletions.sql` and `0036_push_revocations.sql`;
+   - the identity Worker, with the APNs key (#5215's `inputs.json` fields). `pnpm run deploy:cloudflare` applies the
+     migrations before it publishes the Worker (`deploy/first/publish.ts:35`);
    - the client.
 
    The deploy also gives chat stored before #5216 its 30 days (`deploy/first/publish.ts:53`, `keepChatRetention`). Until
@@ -68,7 +69,10 @@ Each item makes a form below untrue or gets the app rejected. Items 1 to 6 block
      `apps/game/public/.well-known/apple-app-site-association:5` (`appIDs`) and `:11` (`webcredentials.apps`) stay empty
      until the owner adds `<owner fills: Apple Team ID>`.
    - **Push** is wired:
-     - the iOS client registers, revokes and opens alerts (`apps/game/src/pwa/ios-app-push.ts:78`, `:104`, `:114`);
+     - the iOS client registers the phone (`apps/game/src/pwa/ios-app-push.ts:89`), revokes it on sign-out, an account
+       switch or alerts turned off in iOS Settings (`:114`), and opens tapped alerts (`:128`);
+     - the server makes a revocation final, so a registration still on its way is refused
+       (`apps/realms/server/push-subscription-store.ts:83`);
      - the server sends through APNs (`apps/realms/server/apns-push.ts:61`).
 
      No TestFlight build has shown an alert yet.
@@ -121,6 +125,12 @@ Each item makes a form below untrue or gets the app rejected. Items 1 to 6 block
 | Payout and payment records                                                                                        | `pay_decisions` (0014): payouts by wallet, season and amount. Blitz entries are paid on Starknet into the ledger (`README.md`; `apps/game-docs/docs/pages/blitz/entry.mdx`)                                                                                                                                                                                                                    | Only for players who pay entries or receive payouts                                             | No          |
 | Campaign tickets and referrals                                                                                    | `campaign_tickets` (0021), `campaign_referrers`, `campaign_referrals` (0027)                                                                                                                                                                                                                                                                                                                   | Only when the player redeems a code or shares a referral link                                   | No          |
 
+A push registration is deleted when its device revokes it (turning alerts off, signing out or switching accounts) and
+with the account (`apps/realms/server/account-deletion.ts:116`). A revocation leaves only the registration's random id
+and its time in `notification_push_revocations` (`apps/realms/migrations/0036_push_revocations.sql:4`), with no token
+and no account, so a registration still on its way is refused. It goes at the first revocation a day later
+(`apps/realms/server/push-subscription-store.ts:7`, `:98`).
+
 Not collected: phone number, postal address, contacts, photos, files, precise or approximate location, health, browsing
 or search history, advertising ids, and installed apps. There are no ads and no analytics SDK: the only reporting SDK,
 `@sentry/react` in `apps/game/package.json`, is off in production (item 6 of section 1).
@@ -143,8 +153,8 @@ Opening questions:
   HTTPS only; cookies are `Secure` (`apps/realms/server/browsers.ts`).
 - Do you provide a way for users to request that their data is deleted? **Yes:** in the app, Settings, Delete account
   (`apps/game/src/shell/profile/profile-pages.tsx:89`), and on the web at `https://play.realms.party/account/delete`
-  (`apps/game/src/app.tsx:94`). What deletion removes and keeps is the table on
-  `apps/realms/server/account-deletion.ts:53` (#5216; item 1 of section 1).
+  (`apps/game/src/app.tsx:94`). What deletion removes and keeps is the table at
+  `apps/realms/server/account-deletion.ts:25`, above the handler at `:53` (#5216; item 1 of section 1).
 
 For every type below: **Shared: No** (section 2.1 lists the service providers and the data players publish themselves)
 and **Processed ephemerally: No**.
