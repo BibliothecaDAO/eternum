@@ -26,6 +26,15 @@ describe("terrain gallery verification", () => {
     expect(evaluateTerrainGalleryResults(results).performanceDeltas).toHaveLength(2);
   });
 
+  it("fails a WebGPU capture that three.js quietly drew on WebGL2", () => {
+    const results = healthyResults();
+    results[0].snapshot.activeMode = "webgl2-fallback";
+
+    expect(evaluateTerrainGalleryResults(results).reasons).toEqual([
+      "all-biomes/webgpu-auto/flat: rendered on webgl2-fallback, not webgpu",
+    ]);
+  });
+
   it("rejects duplicate wildlife regions and incomplete creature loads", () => {
     const results = healthyResults();
     results[0].snapshot.wildlife = {

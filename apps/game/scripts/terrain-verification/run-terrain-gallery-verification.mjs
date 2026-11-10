@@ -10,6 +10,8 @@ const DEFAULT_ARTIFACT_DIRECTORY = ".context/verification/procedural-terrain/gal
 const READY_TIMEOUT_MS = 20_000;
 const POLL_MS = 250;
 const RENDERER_MODES = ["webgpu-auto", "webgpu-force-webgl"];
+/** The backend each mode must render on: three.js quietly drops to WebGL2 when the browser offers no WebGPU adapter. */
+const ACTIVE_MODE_OF = { "webgpu-auto": "webgpu", "webgpu-force-webgl": "webgl2-fallback" };
 const GROUND_MODES = ["flat", "textured"];
 const SCENE_IDS = [
   "all-biomes",
@@ -83,6 +85,9 @@ export function evaluateTerrainGalleryResults(results, options = {}) {
     const label = `${result.sceneId}/${result.rendererMode}/${result.groundMode}`;
     if (!result.routeMounted) reasons.push(`${label}: route did not mount`);
     if (!result.ready) reasons.push(`${label}: route did not become ready`);
+    if (result.snapshot && result.snapshot.activeMode !== ACTIVE_MODE_OF[result.rendererMode]) {
+      reasons.push(`${label}: rendered on ${result.snapshot.activeMode}, not ${ACTIVE_MODE_OF[result.rendererMode]}`);
+    }
     if (options.gameMode && result.snapshot?.gameMode !== options.gameMode)
       reasons.push(`${label}: world mode did not match request`);
     if (result.errors.length > 0) reasons.push(`${label}: browser reported ${result.errors[0]}`);
@@ -364,22 +369,11 @@ async function runGalleryScenario({
   const session = createBrowserSession(browserName, { headed, profile });
   const url = buildTerrainGalleryUrl(baseUrl, rendererMode, groundMode, sceneId, qualityTier, revealProgress);
   try {
-    runAgentBrowser(
-      session,
-      [
-        "open",
-        "about:blank",
-        "--args",
-        "--ignore-gpu-blocklist,--enable-gpu,--use-angle=vulkan,--enable-features=Vulkan,--enable-unsafe-webgpu",
-      ],
-      headed,
-    );
     runAgentBrowser(session, ["set", "viewport", "1440", "900"], headed);
-    runAgentBrowser(session, ["open", url, "--ignore-https-errors"], headed);
+    runAgentBrowser(session, ["open", url], headed);
     let state = waitForReady(session, headed);
     if (!state.routeMounted) {
-      runAgentBrowser(session, ["open", url, "--ignore-https-errors"], headed);
-      runAgentBrowser(session, ["set", "viewport", "1440", "900"], headed);
+      runAgentBrowser(session, ["open", url], headed);
       state = waitForReady(session, headed);
     }
     if (state.status === "ready") {

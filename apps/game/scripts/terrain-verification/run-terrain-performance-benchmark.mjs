@@ -4,6 +4,7 @@ import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
+import { AGENT_BROWSER } from "../lib/agent-browser.mjs";
 import {
   TERRAIN_BENCHMARK_RENDERERS,
   TERRAIN_BENCHMARK_VARIANTS,
@@ -106,7 +107,7 @@ function readBenchmarkState(session, headed) {
 }
 
 function runAgentBrowser(session, command, headed) {
-  const args = ["-y", "agent-browser", "--session", session];
+  const args = ["-y", AGENT_BROWSER, "--session", session];
   if (headed) args.push("--headed");
   const result = spawnSync("npx", [...args, ...command], {
     cwd: process.env.RUNNER_TEMP || process.env.TMPDIR || tmpdir(),
