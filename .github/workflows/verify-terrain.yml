@@ -73,11 +73,6 @@ jobs:
           exit 1
 
       - name: Verify both renderer backends
-        env:
-          # Headless Chrome on Linux never puts a WebGPU canvas into a screenshot, so the browser runs headed on the Xvfb
-          # display agent-browser starts. The runner has no GPU: the WebGPU preset draws through SwiftShader's Vulkan.
-          AGENT_BROWSER_HEADED: "1"
-          AGENT_BROWSER_WEBGPU: "1"
         run: >-
           pnpm --dir apps/game verify:terrain:gallery --base-url http://127.0.0.1:4173 --artifact-dir terrain-artifacts
           --timing-policy informational

@@ -24,6 +24,8 @@ const arg = (name, fallback) => {
 const base = arg("--base-url", null);
 const port = arg("--port", "4199");
 const out = resolve(arg("--out", `.context/day-end-proof-${Date.now()}`));
+const GPU_FLAGS =
+  "--ignore-gpu-blocklist,--enable-gpu,--use-angle=vulkan,--enable-features=Vulkan,--enable-unsafe-webgpu";
 const SCREENS = { desktop: [1920, 1080], phone: [390, 844] };
 /** The black's longest hold and the dawn, in the game's own timing (use-day-end-store DAY_END_TIMING), plus slack. */
 const PAST_THE_HOLD_MS = (10 + 1.4 + 2) * 1000;
@@ -49,7 +51,7 @@ function open(browser, urlBase, how, screen) {
   const [width, height] = SCREENS[screen];
   const url = `${urlBase}/lab/day-end?${new URLSearchParams({ case: how, capture: "1", panel: "0" })}`;
   browser.run(["set", "viewport", String(width), String(height)]);
-  browser.run(["open", url]);
+  browser.run(["open", url, "--ignore-https-errors"]);
   waitFor(browser, "document.querySelector('[data-day-end-lab]')?.dataset.ready === 'true'", 90000);
   // The land, its spires and its realm settle, and the rollover takes its first look at the clocks.
   browser.run(["wait", "2500"]);
@@ -163,7 +165,9 @@ try {
     const profile = mkdtempSync(join(tmpdir(), "day-end-proof-"));
     const browser = createBrowserSession(`day-end-${Date.now().toString(36)}`, { profile, headed: false });
     try {
-      browser.run(["open", `${urlBase}/lab/day-end`]);
+      browser.run(["open", `${urlBase}/lab/day-end`, "--ignore-https-errors", "--args", GPU_FLAGS]);
+      // The launch above can leave the first tab blank; opening the address again lands on it.
+      browser.run(["open", `${urlBase}/lab/day-end`, "--ignore-https-errors"]);
       waitFor(browser, "document.querySelector('[data-day-end-lab]')?.dataset.ready === 'true'", 90000);
       transcript.adapter = browser.read(
         "(async()=>{const a=await navigator.gpu?.requestAdapter();return JSON.stringify(a?{vendor:a.info.vendor,architecture:a.info.architecture,isFallbackAdapter:a.info.isFallbackAdapter}:null)})()",

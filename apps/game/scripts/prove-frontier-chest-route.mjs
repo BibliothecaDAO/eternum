@@ -14,7 +14,13 @@ const check = (condition, message) => {
 
 /** Exercise the game route and mounted Frontier HUD, with local reward facts and no signed commands. */
 export async function proveFrontierChestRoute(browser, { baseUrl, backend, out }) {
-  browser.run(["open", "about:blank"]);
+  browser.run([
+    "open",
+    "about:blank",
+    "--ignore-https-errors",
+    "--args",
+    "--ignore-gpu-blocklist,--enable-gpu,--use-angle=vulkan,--enable-features=Vulkan,--enable-unsafe-webgpu",
+  ]);
   browser.run(["set", "viewport", "1920", "1080"]);
   const devtools = await openPageDevTools(browser);
   const read = async (expression) => {

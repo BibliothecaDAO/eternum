@@ -25,6 +25,8 @@ const out = resolve(arg("--out", `.context/studio-proof-${Date.now()}`));
 const [width, height] = arg("--size", "1920x1080").split("x").map(Number);
 const game = arg("--game", "blitz");
 const takes = arg("--takes", "hyperstructure-rise,battle,explore,realm-tiers").split(",");
+const GPU_FLAGS =
+  "--ignore-gpu-blocklist,--enable-gpu,--use-angle=vulkan,--enable-features=Vulkan,--enable-unsafe-webgpu";
 
 mkdirSync(out, { recursive: false });
 const transcript = { url: null, size: { width, height }, game, adapter: null, load: [], steps: [], checks: [] };
@@ -44,8 +46,10 @@ const step = (browser, name, extra = {}) => {
 
 function openStudio(browser, urlBase) {
   transcript.url = `${urlBase}/lab/studio?mode=${game}`;
+  browser.run(["open", transcript.url, "--ignore-https-errors", "--args", GPU_FLAGS]);
   browser.run(["set", "viewport", String(width), String(height)]);
-  browser.run(["open", transcript.url]);
+  // The launch above can leave the first tab blank; opening the address again lands on it.
+  browser.run(["open", transcript.url, "--ignore-https-errors"]);
   browser.run([
     "wait",
     "--fn",

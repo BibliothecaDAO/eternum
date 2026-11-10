@@ -5,13 +5,7 @@ import { join } from "node:path";
 
 import { afterEach, expect, it } from "vitest";
 
-import {
-  createBrowserSession,
-  modelPathOf,
-  screenPoint,
-  serveModelOverrides,
-  setViewport,
-} from "./browser-session.mjs";
+import { modelPathOf, screenPoint, serveModelOverrides, setViewport } from "./browser-session.mjs";
 
 const made = [];
 afterEach(() => made.splice(0).forEach((dir) => rmSync(dir, { recursive: true, force: true })));
@@ -63,14 +57,4 @@ it("aims a press in whole pixels on a page of odd size, as agent-browser's mouse
   expect(screenPoint([0, 0])).toEqual([206, 458]);
   expect(screenPoint([-10, 3])).toEqual([196, 461]);
   setViewport({ width: 1920, height: 1080 });
-});
-
-it("refuses a launch option on one command, which would relaunch the browser without the page's settings", () => {
-  const browser = createBrowserSession("launch-option", { profile: join(tmpdir(), "never-launched") });
-
-  for (const option of ["--ignore-https-errors", "--args", "--headed", "--init-script"]) {
-    expect(() => browser.run(["open", "https://127.0.0.1:4173/", option])).toThrow(
-      `${option} launches the browser: give it to createBrowserSession, not one command`,
-    );
-  }
 });

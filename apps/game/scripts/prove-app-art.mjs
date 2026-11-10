@@ -18,8 +18,8 @@ const check = (value, reason) => {
 await withDevClient({ base, port, out }, async (baseUrl) => {
   const lab = `${baseUrl}/lab/kit/app-art?capture=1`;
   try {
+    browser.run(["open", lab, "--ignore-https-errors"]);
     browser.run(["set", "viewport", "1920", "1080"]);
-    browser.run(["open", lab]);
     browser.run([
       "wait",
       "--fn",
@@ -38,7 +38,7 @@ await withDevClient({ base, port, out }, async (baseUrl) => {
       ["Season", "season-citadel"],
       ["Blitz Results", "blitz-aftermath"],
     ]) {
-      browser.run(["open", lab]);
+      browser.run(["open", lab, "--ignore-https-errors"]);
       browser.run(["find", "role", "link", "click", "--name", `Open ${title} on the real page`, "--exact"]);
       browser.run([
         "wait",
