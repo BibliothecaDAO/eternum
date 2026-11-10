@@ -14,18 +14,29 @@ import { SIGN_IN_PROVIDER_MARKS } from "./provider-marks";
  */
 export const StartStep = ({
   sending,
+  preparing,
+  opening,
   error,
   providers,
   onProvider,
   onEmail,
 }: {
   sending: boolean;
+  /** The provider whose sign-in address is on its way: its button waits for it. */
+  preparing: SocialProvider | null;
+  /** The provider whose app is coming up (a phone's Discord): its button waits until the player is back or goes on. */
+  opening: SocialProvider | null;
   error: string | null;
   providers: readonly SocialProvider[];
   onProvider: (provider: SocialProvider) => void;
   onEmail: (email: string) => void;
 }) => {
   const [email, setEmail] = useState("");
+  const busyWord = (provider: SocialProvider) => {
+    if (provider === opening) return SIGN_IN_WORDS.opening(provider);
+    if (provider === preparing) return SIGN_IN_WORDS.preparing;
+    return undefined;
+  };
   const submit = (event: FormEvent) => {
     event.preventDefault();
     onEmail(email.trim());
@@ -43,6 +54,7 @@ export const StartStep = ({
                 icon={SIGN_IN_PROVIDER_MARKS[provider]}
                 onClick={() => onProvider(provider)}
                 disabled={sending}
+                busy={busyWord(provider)}
               >
                 {SIGN_IN_WORDS.continueWith(provider)}
               </AppButton>

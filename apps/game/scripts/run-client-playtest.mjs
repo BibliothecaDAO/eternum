@@ -14,6 +14,13 @@ import {
   touchAtPhoneWidth,
   VIEWPORT,
 } from "./client-playtest/browser-session.mjs";
+import {
+  APP_STORE_PAGE_EXPRESSION,
+  appStorePageProblem,
+  CHANNELS,
+  launchUrlIn,
+  presentAsChannel,
+} from "./client-playtest/channel.mjs";
 import { clickToResultTable } from "./client-playtest/click-latency.mjs";
 import { startClient } from "./client-playtest/client-server.mjs";
 import {
@@ -121,11 +128,15 @@ export function readPlaytestOptions(argv, callerDir = process.cwd()) {
     throw new Error("--model-override serves a spectator's or a lab game's models: run it without --player");
   }
 
+  const channel = option("--channel", "web");
+  if (!CHANNELS.includes(channel)) throw new Error(`--channel takes ${CHANNELS.join(", ")}, not "${channel}"`);
+
   const viewport = /^(\d+)x(\d+)$/.exec(option("--viewport", "1920x1080"));
   if (!viewport) throw new Error(`--viewport takes <width>x<height>, not "${option("--viewport")}"`);
 
   return {
     baseUrl: option("--base-url", null),
+    channel,
     chainId: option("--chain-id", ""),
     comparePath: option("--compare", null) && resolve(callerDir, option("--compare")),
     cpuThrottle: integer("--cpu-throttle", DEFAULTS.cpuThrottle, 1),
@@ -150,10 +161,14 @@ export function readPlaytestOptions(argv, callerDir = process.cwd()) {
 }
 
 /**
- * The page a run opens: a player's home page, or the spectator's Watch link with the dev overlays only for step lists
- * that play the dev tools.
+ * The page a run opens, launched as its channel's app launches it: a player's home page, or the spectator's Watch link
+ * with the dev overlays only for step lists that play the dev tools.
  */
-export function buildRunUrl({ baseUrl, game, player, rendererMode, stepSet }) {
+export function buildRunUrl({ baseUrl, channel = "web", game, player, rendererMode, stepSet }) {
+  return launchUrlIn(channel, buildStepsUrl({ baseUrl, game, player, rendererMode, stepSet }));
+}
+
+function buildStepsUrl({ baseUrl, game, player, rendererMode, stepSet }) {
   const { devOverlays = false } = STEP_SETS[stepSet];
   if (game.lab) return buildLabGameUrl({ baseUrl, scenario: game.lab, rendererMode, devOverlays });
   if (player) return buildPlayerHomeUrl({ baseUrl, rendererMode, devOverlays });
@@ -179,6 +194,7 @@ async function main(argv) {
     options = readPlaytestOptions(argv, process.env.INIT_CWD ?? process.cwd());
     setViewport(options.viewport);
     output.viewport = options.viewport;
+    output.channel = options.channel;
     runDir = allocateRunDirectory(options.outRoot, options.player ? "player" : "spectator");
     output.source = describeSource();
     const integratedGpu = options.gpu === "low-power" ? prepareIntegratedGpu(runDir) : null;
@@ -330,6 +346,7 @@ async function playRun(context) {
     browser.run(["set", "viewport", String(VIEWPORT.width), String(VIEWPORT.height)]);
     const devTools = await openPageDevTools(browser);
     releaseDevTools = owner.adopt(`DevTools ${label}`, () => devTools.close());
+    await presentAsChannel(devTools, context.channel);
     // Each step's evidence is named by its place in the list, from `first` on.
     const playSteps = async (played, first) => {
       for (const [index, step] of played.entries()) {
@@ -353,7 +370,14 @@ async function playRun(context) {
     if (context.network) await emulateNetwork(devTools, context.network);
     record.rpcSends = await recordRpcSends(devTools);
     if (context.modelOverride) record.modelsServed = await serveModelOverrides(devTools, context.modelOverride);
-    record.url = buildRunUrl({ baseUrl: context.baseUrl, game, player, rendererMode, stepSet: context.stepSet });
+    record.url = buildRunUrl({
+      baseUrl: context.baseUrl,
+      channel: context.channel,
+      game,
+      player,
+      rendererMode,
+      stepSet: context.stepSet,
+    });
     // The trace is the boot's: from before the game page opens to the world being interactive. A longer one is not
     // kept whole (the browser records into a ring buffer, and the boot is overwritten first) and costs gigabytes.
     if (context.trace) browser.run(["trace", "start"]);
@@ -375,6 +399,7 @@ async function playRun(context) {
       summarizeStep(record.bootProbe, { name: "boot", startedOn: { t: 0, timeOrigin: record.bootProbe.timeOrigin } }),
     );
     browser.screenshot(join(runDir, `${label}-00-boot.png`));
+    if (context.channel === "app-store") assertAppStorePage(browser);
     if (player) record.daySummary = await continuePastTheDaySummary(browser, owner);
     // No order is sent before the run is proven to be in the game it was asked to play.
     record.game = assertInTargetGame(browser.observe().path, game);
@@ -555,6 +580,12 @@ function playerProfile(email) {
 }
 
 /** A profile whose session was lost signs in again, through Connect, and the run's page opens once more. */
+/** An App Store run that did not play the iOS app's page proves nothing about it: it stops before its steps. */
+function assertAppStorePage(browser) {
+  const problem = appStorePageProblem(browser.read(APP_STORE_PAGE_EXPRESSION));
+  if (problem) throw new Error(`--channel app-store: ${problem}`);
+}
+
 async function signInAsPlayer({ baseUrl, browser, owner, player, runDir, url, storageState }) {
   const signIn = await signInIfSignedOut({
     browser,

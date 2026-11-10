@@ -99,6 +99,32 @@ describe("readPlaytestOptions", () => {
   });
 });
 
+describe("the app a run plays in", () => {
+  it("plays the web unless asked for a store app's, and refuses any other", () => {
+    expect(readPlaytestOptions([]).channel).toBe("web");
+    expect(readPlaytestOptions(["--channel", "play"]).channel).toBe("play");
+    expect(readPlaytestOptions(["--channel", "app-store"]).channel).toBe("app-store");
+    expect(() => readPlaytestOptions(["--channel", "ios"])).toThrow('--channel takes web, play, app-store, not "ios"');
+  });
+
+  it("opens the run's page as the Android app launches the site, and every other channel's as it is", () => {
+    const open = (channel) =>
+      new URL(
+        buildRunUrl({
+          baseUrl: "https://127.0.0.1:4173",
+          channel,
+          game: { chainId: "0xa1", gameId: 16 },
+          player: "a@b.c",
+          rendererMode: "webgpu-auto",
+          stepSet: "player",
+        }),
+      ).searchParams;
+    expect(open("play").get("channel")).toBe("play");
+    expect(open("app-store").get("channel")).toBeNull();
+    expect(open("web").get("channel")).toBeNull();
+  });
+});
+
 describe("the page a run opens", () => {
   const game = { chainId: "0xa1", gameId: 16 };
   const devOf = (stepSet, player = null) =>

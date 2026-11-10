@@ -20,6 +20,13 @@ vi.mock("@/shell/value/wallet-actions", () => ({
   ),
 }));
 
+/** The app the client runs in; the web unless a test is about the iOS app. */
+const app = vi.hoisted(() => ({ channel: "web" as "web" | "play" | "app-store" }));
+vi.mock("@/runtime/distribution-channel", () => ({
+  distributionChannel: () => app.channel,
+  opensThirdPartySignIn: () => app.channel !== "app-store",
+}));
+
 import { identityClient, useIdentitySessionStore } from "@/hooks/context/identity-session";
 import { IdentityRequestError } from "@realms-world/identity";
 
@@ -54,6 +61,7 @@ const typeCode = async (container: HTMLElement, code: string) => {
 afterEach(async () => {
   for (const unmount of mounted.splice(0)) await unmount();
   vi.restoreAllMocks();
+  app.channel = "web";
 });
 
 it("shows a linked wallet, the co-signer's hold on a replacement, and a player with none the two ways to one: make or link", async () => {
@@ -125,3 +133,18 @@ const screenButton = (container: HTMLElement, word: string) => {
   if (!button) throw new Error(`No ${word} button yet`);
   return button;
 };
+
+it("offers no wallet to link inside the iOS app, where none can open: the Realms wallet is the way to one", async () => {
+  app.channel = "app-store";
+  useIdentitySessionStore.setState({
+    status: "signed-in",
+    session: {
+      session: { id: "s", expiresAt: "2099-01-01T00:00:00.000Z", userId: "u" },
+      user: { id: "u", realmsId: "0x7", name: "Ysolde", email: "you@mail.test" },
+    },
+  });
+  vi.spyOn(identityClient, "readDefaultWallet").mockResolvedValue(null);
+  const none = await mount(null);
+  expect(none.textContent).toContain("Create my wallet");
+  expect(none.textContent).not.toContain("I have a wallet");
+});

@@ -2,6 +2,7 @@ import * as Data from "effect/Data";
 import * as Effect from "effect/Effect";
 import * as Queue from "effect/Queue";
 import * as Schedule from "effect/Schedule";
+import { runsServiceWorker } from "./browser-capabilities";
 import { syncPushGameForeground } from "./push-notification-client";
 
 const FOREGROUND_EVENTS = [
@@ -18,7 +19,7 @@ class ForegroundSyncError extends Data.TaggedError("ForegroundSyncError")<{ caus
 
 /** One pending refresh coalesces events while the current server lease request completes. */
 export function startPushForegroundLifecycle(owner: string): () => void {
-  if (!("serviceWorker" in navigator)) return () => {};
+  if (!runsServiceWorker()) return () => {};
   return Effect.runCallback(
     Effect.scoped(
       Effect.gen(function* () {

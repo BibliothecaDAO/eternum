@@ -18,10 +18,16 @@ import { decodeIdentityEnv, type IdentityEnv } from "../env";
 import { NotificationPreferenceStore } from "../notification-preference-store";
 import { PushSubscriptionStore } from "../push-subscription-store";
 import { sendToDevice } from "../push-notifications";
-import { chatMemberOf, consumeChatBudget, readChatFrame, sendChat, type ChatMember } from "./chat-sockets";
-
-/** A conversation is kept thirty days after its last message. */
-const RETENTION_MS = 30 * 24 * 60 * 60 * 1000;
+import {
+  chatInboxOf,
+  chatMemberOf,
+  chatRoomOf,
+  consumeChatBudget,
+  readChatFrame,
+  sendChat,
+  type ChatMember,
+} from "./chat-sockets";
+import { retentionCutoff, wakeAtNextExpiry } from "./retention";
 
 interface ThreadRow extends Record<string, SqlStorageValue> {
   id: string;
@@ -50,6 +56,11 @@ const directThreadId = (a: string, b: string) => [a, b].sort().join("|");
 /**
  * One Realms account's direct messages: its threads, its copy of each message, and its own sockets. A message is
  * stored in the recipient's inbox first and then in the sender's, so a failed delivery leaves no one-sided thread.
+ * Each message is kept thirty days (retention.ts).
+ *
+ * It is also the account's chat record: the rooms its sockets joined, and whether the account was deleted. Once it
+ * was (`forgetOwner`), it holds nothing, admits no socket, stores no message from a peer and lets the account into no
+ * room: the deletion is final here, whatever a socket or a peer still sends.
  */
 export class ChatInbox extends DurableObject<Record<string, unknown>> {
   constructor(ctx: DurableObjectState, env: Record<string, unknown>) {
@@ -61,6 +72,9 @@ export class ChatInbox extends DurableObject<Record<string, unknown>> {
        CREATE TABLE IF NOT EXISTS messages (id TEXT PRIMARY KEY, threadId TEXT NOT NULL, senderId TEXT NOT NULL,
          recipientId TEXT NOT NULL, content TEXT NOT NULL, metadata TEXT, createdAt INTEGER NOT NULL);
        CREATE INDEX IF NOT EXISTS messages_thread ON messages (threadId, createdAt);
+       CREATE INDEX IF NOT EXISTS messages_created ON messages (createdAt);
+       CREATE TABLE IF NOT EXISTS rooms (room TEXT PRIMARY KEY);
+       CREATE TABLE IF NOT EXISTS deleted (deletedAt INTEGER NOT NULL);
        CREATE TABLE IF NOT EXISTS blocks (realmsId TEXT PRIMARY KEY, blockedAt INTEGER NOT NULL);
        CREATE TABLE IF NOT EXISTS block_list (version INTEGER NOT NULL);
        INSERT INTO block_list (version) SELECT 0 WHERE NOT EXISTS (SELECT 1 FROM block_list)`,
@@ -78,6 +92,8 @@ export class ChatInbox extends DurableObject<Record<string, unknown>> {
   override async fetch(request: Request): Promise<Response> {
     const member = chatMemberOf(request);
     if (!member) return new Response("chat member required", { status: 400 });
+    if (this.isDeleted()) return new Response("account deleted", { status: 410 });
+    await this.forgetExpired();
     await this.ctx.storage.put("owner", member.realmsId);
     const rooms = JSON.parse(request.headers.get("x-chat-rooms") ?? "[]") as string[];
     const [client, server] = Object.values(new WebSocketPair()) as [WebSocket, WebSocket];
@@ -95,6 +111,7 @@ export class ChatInbox extends DurableObject<Record<string, unknown>> {
 
   override async webSocketMessage(socket: WebSocket, data: string | ArrayBuffer): Promise<void> {
     const member = socket.deserializeAttachment() as ChatMember;
+    if (this.isDeleted()) return;
     const frame = readChatFrame(socket, data) as { type: string; payload?: unknown; clientMessageId?: string } | null;
     if (!frame || !consumeChatBudget(socket)) return;
     if (frame.type === "direct:message") return this.sendFrom(socket, member, frame.payload, frame.clientMessageId);
@@ -110,6 +127,8 @@ export class ChatInbox extends DurableObject<Record<string, unknown>> {
   async receive(message: DirectMessage, senderName?: string): Promise<void> {
     if (this.hasBlocked(message.senderId)) return;
     const thread = this.store(message, message.senderId, 1);
+    if (!thread) return;
+    await this.forgetExpired();
     const sockets = this.ctx.getWebSockets();
     if (sockets.length > 0) {
       for (const socket of sockets) sendChat(socket, { type: "direct:message", message, thread });
@@ -119,12 +138,12 @@ export class ChatInbox extends DurableObject<Record<string, unknown>> {
   }
 
   async typing(typing: DirectMessageTyping): Promise<void> {
-    if (this.hasBlocked(typing.playerId)) return;
+    if (this.isDeleted() || this.hasBlocked(typing.playerId)) return;
     for (const socket of this.ctx.getWebSockets()) sendChat(socket, { type: "direct:typing", typing });
   }
 
   async read(receipt: DirectMessageReadReceipt): Promise<void> {
-    if (this.hasBlocked(receipt.readerId)) return;
+    if (this.isDeleted() || this.hasBlocked(receipt.readerId)) return;
     for (const socket of this.ctx.getWebSockets()) sendChat(socket, { type: "direct:read", receipt });
   }
 
@@ -142,8 +161,12 @@ export class ChatInbox extends DurableObject<Record<string, unknown>> {
     return { blocked, version };
   }
 
-  /** Blocks an account, and answers the list as it stands after: a change, if it was not blocked, raises the version. */
+  /**
+   * Blocks an account, and answers the list as it stands after: a change, if it was not blocked, raises the version. A
+   * deleted owner's list stays empty.
+   */
   async block(realmsId: string): Promise<BlockList> {
+    if (this.isDeleted()) return this.blockList();
     const added = this.ctx.storage.sql.exec(
       "INSERT INTO blocks (realmsId, blockedAt) VALUES (?, ?) ON CONFLICT DO NOTHING",
       realmsId,
@@ -158,6 +181,38 @@ export class ChatInbox extends DurableObject<Record<string, unknown>> {
     const removed = this.ctx.storage.sql.exec("DELETE FROM blocks WHERE realmsId = ?", realmsId).rowsWritten;
     if (removed > 0) this.ctx.storage.sql.exec("UPDATE block_list SET version = version + 1");
     return this.blockList();
+  }
+
+  /**
+   * A room the owner's socket is joining: recorded, so a deletion can close it there. False once the owner is deleted:
+   * the room then closes that socket.
+   */
+  enterRoom(room: string): boolean {
+    if (this.isDeleted()) return false;
+    this.ctx.storage.sql.exec("INSERT INTO rooms (room) VALUES (?) ON CONFLICT DO NOTHING", room);
+    return true;
+  }
+
+  /**
+   * The owner, `realmsId`, deleted their account (account-deletion.ts): the inbox is marked deleted and emptied (its
+   * conversations, block list and owner), its sockets close, and so do the owner's sockets in every room it joined.
+   * Each peer's inbox keeps its own copy of their conversation, under the same retention as any other. Safe to run
+   * again: a run a failure stopped is finished by the next.
+   */
+  async forgetOwner(realmsId: string): Promise<void> {
+    const sql = this.ctx.storage.sql;
+    if (!this.isDeleted()) sql.exec("INSERT INTO deleted (deletedAt) VALUES (?)", Date.now());
+    sql.exec("DELETE FROM messages; DELETE FROM threads; DELETE FROM blocks");
+    await this.ctx.storage.delete("owner");
+    await this.ctx.storage.deleteAlarm();
+    for (const socket of this.ctx.getWebSockets()) socket.close(1008, "account_deleted");
+    const rooms = sql.exec<{ room: string }>("SELECT room FROM rooms").toArray();
+    await Promise.all(rooms.map(({ room }) => chatRoomOf(this.env, room).forgetMember(realmsId)));
+    sql.exec("DELETE FROM rooms");
+  }
+
+  override async alarm(): Promise<void> {
+    await this.forgetExpired();
   }
 
   /**
@@ -183,6 +238,7 @@ export class ChatInbox extends DurableObject<Record<string, unknown>> {
     cursor: string | undefined,
     limit: number,
   ): Promise<{ messages: DirectMessage[]; nextCursor: string | null } | null> {
+    await this.forgetExpired();
     if (!this.ctx.storage.sql.exec("SELECT 1 FROM threads WHERE id = ?", threadId).toArray().length) return null;
     const before = cursor ? Date.parse(cursor) : Number.MAX_SAFE_INTEGER;
     const rows = this.ctx.storage.sql
@@ -220,7 +276,7 @@ export class ChatInbox extends DurableObject<Record<string, unknown>> {
       createdAt: new Date().toISOString(),
     };
     try {
-      await inboxOf(this.env, recipientId).receive(message, member.displayName);
+      await chatInboxOf(this.env, recipientId).receive(message, member.displayName);
     } catch (error) {
       console.error("direct_message_delivery_failed", error);
       sendChat(socket, {
@@ -230,7 +286,10 @@ export class ChatInbox extends DurableObject<Record<string, unknown>> {
       });
       return;
     }
+    // The delivery above can wait on the recipient's push service: the owner may be deleted by the time it answers.
     const thread = this.store(message, recipientId, 0);
+    if (!thread) return;
+    await this.forgetExpired();
     for (const own of this.ctx.getWebSockets())
       sendChat(own, { type: "direct:message", message, thread, clientMessageId });
   }
@@ -239,7 +298,7 @@ export class ChatInbox extends DurableObject<Record<string, unknown>> {
     const parsed = Schema.decodeUnknownResult(directMessageTypingSchema)(payload);
     const peer = Result.isSuccess(parsed) ? this.peerOf(parsed.success.threadId) : null;
     if (Result.isFailure(parsed) || !peer || parsed.success.playerId !== member.realmsId) return;
-    await inboxOf(this.env, peer).typing(parsed.success);
+    await chatInboxOf(this.env, peer).typing(parsed.success);
   }
 
   private async relayRead(member: ChatMember, payload: unknown) {
@@ -267,7 +326,29 @@ export class ChatInbox extends DurableObject<Record<string, unknown>> {
       const thread = toDirectThread(row, member.realmsId);
       for (const own of this.ctx.getWebSockets()) sendChat(own, { type: "direct:thread", thread });
     }
-    await inboxOf(this.env, peer).read(parsed.success);
+    await chatInboxOf(this.env, peer).read(parsed.success);
+  }
+
+  private isDeleted(): boolean {
+    return this.ctx.storage.sql.exec("SELECT 1 FROM deleted").toArray().length > 0;
+  }
+
+  /**
+   * Deletes the messages past thirty days, then the threads left without one, and counts what is unread again from
+   * what stays; the alarm wakes the inbox when the next message is past (retention.ts). A thread's last message is
+   * its newest, so a thread that stays keeps it.
+   */
+  async forgetExpired() {
+    const sql = this.ctx.storage.sql;
+    if (sql.exec("DELETE FROM messages WHERE createdAt <= ?", retentionCutoff()).rowsWritten > 0) {
+      sql.exec("DELETE FROM threads WHERE NOT EXISTS (SELECT 1 FROM messages WHERE messages.threadId = threads.id)");
+      sql.exec(
+        `UPDATE threads SET unread = (SELECT COUNT(*) FROM messages WHERE messages.threadId = threads.id
+           AND messages.senderId = threads.peerId AND messages.createdAt > threads.readThroughAt)`,
+      );
+    }
+    const { oldest } = sql.exec<{ oldest: number | null }>("SELECT MIN(createdAt) AS oldest FROM messages").one();
+    await wakeAtNextExpiry(this.ctx.storage, oldest);
   }
 
   private hasBlocked(realmsId: string): boolean {
@@ -279,8 +360,13 @@ export class ChatInbox extends DurableObject<Record<string, unknown>> {
     return row?.peerId ?? null;
   }
 
-  /** This inbox's copy of a message and its thread; old threads and their messages leave as new ones arrive. */
-  private store(message: DirectMessage, peerId: string, unreadIncrement: number): DirectMessageThread {
+  /**
+   * This inbox's copy of a message and its thread, or null once the owner is deleted. Every message and thread is
+   * written here, so a send or a delivery still running when the account is deleted cannot bring back what
+   * `forgetOwner` cleared.
+   */
+  private store(message: DirectMessage, peerId: string, unreadIncrement: number): DirectMessageThread | null {
+    if (this.isDeleted()) return null;
     const createdAt = Date.parse(message.createdAt as string);
     const sql = this.ctx.storage.sql;
     sql.exec(
@@ -304,19 +390,11 @@ export class ChatInbox extends DurableObject<Record<string, unknown>> {
       message.id,
       unreadIncrement,
     );
-    const cutoff = createdAt - RETENTION_MS;
-    sql.exec("DELETE FROM messages WHERE threadId IN (SELECT id FROM threads WHERE updatedAt < ?)", cutoff);
-    sql.exec("DELETE FROM threads WHERE updatedAt < ?", cutoff);
     const thread = sql.exec<ThreadRow>("SELECT * FROM threads WHERE id = ?", message.threadId).toArray()[0]!;
     const owner = peerId === message.senderId ? message.recipientId : message.senderId;
     return toDirectThread(thread, owner);
   }
 }
-
-const inboxOf = (env: Record<string, unknown>, realmsId: string) => {
-  const inboxes = decodeIdentityEnv(env).CHAT_INBOX;
-  return inboxes.get(inboxes.idFromName(realmsId));
-};
 
 /** The owner has no socket open: a privacy-safe alert to each device that opted in to direct messages. */
 const pushDirectMessage = (env: IdentityEnv, message: DirectMessage, senderName?: string) =>

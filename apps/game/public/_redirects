@@ -20,6 +20,7 @@
 /scroll/:post https://realms.world/scroll/:post 301
 /terms / 200
 /privacy / 200
+/account/delete / 200
 /credits / 200
 /p/:address / 200
 /g/:chain/:game / 200

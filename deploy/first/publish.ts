@@ -8,6 +8,7 @@ import { clientSite, type PagesSite } from "./settings";
 import { NATIVE_RELEASE_ID } from "../release/native-release";
 import { readReleaseIdentity } from "./release-identity";
 import type { ApplyReleaseRequest, ReleaseReport } from "../../apps/launch-service/src/operator-api";
+import { CHAT_RETENTION_BATCH } from "../../apps/realms/server/chat/chat-objects";
 
 async function workerReady(platform: Platform, worker: Worker, revision: string) {
   const version = await platform.deployedVersion(worker);
@@ -49,9 +50,42 @@ export async function deployWorkers(platform: Platform, revision: string) {
  */
 export async function publishCloudflare(platform: Platform, revision: string) {
   await deployWorkers(platform, revision);
+  await keepChatRetention(platform);
   await advanceFrontierRelease(platform, revision);
   await deployClient(platform, revision);
   await deployDocs(platform, revision);
+}
+
+/**
+ * Every chat object the identity Worker holds keeps chat's thirty days (apps/realms server/chat/retention.ts): the
+ * deploy names each one to the Worker, which deletes its messages past thirty days and sets its alarm for the rest. An
+ * object written before retention existed has no alarm, and gains one here. A rerun changes nothing.
+ */
+export async function keepChatRetention(platform: Platform) {
+  if (!platform.apply) throw new PublicError("Dry run cannot reach chat");
+  deploymentStage("keep chat retention");
+  const operator = platform.store.read<Secrets>("secrets.json")?.operator;
+  if (!operator) throw new PublicError("Service credentials are missing; run setup with --apply before publishing");
+  for (const { className, ids } of await platform.chatObjects()) {
+    for (let start = 0; start < ids.length; start += CHAT_RETENTION_BATCH)
+      await callChatRetention(platform, operator, { className, ids: ids.slice(start, start + CHAT_RETENTION_BATCH) });
+    console.log(`${className}: ${ids.length} objects keep thirty days of chat.`);
+  }
+}
+
+async function callChatRetention(platform: Platform, operator: string, call: { className: string; ids: string[] }) {
+  const response = await fetch(`${platform.target.origin}/api/operator/chat-retention`, {
+    method: "POST",
+    redirect: "error",
+    headers: {
+      "User-Agent": "realms-deployment/1",
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${operator}`,
+    },
+    body: JSON.stringify(call),
+    signal: AbortSignal.timeout(60_000),
+  });
+  if (!response.ok) throw new PublicError(`Chat retention refused ${call.className}: ${response.status}`);
 }
 
 /** What the release route's refusals mean for the person running the deploy. */

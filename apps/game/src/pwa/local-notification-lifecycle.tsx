@@ -2,6 +2,7 @@ import { reconcilePushAccount } from "./push-notification-client";
 import { useEffect, useState } from "react";
 import { notificationOwnerOf, useIdentitySession, useIdentitySessionStore } from "@/hooks/context/identity-session";
 import { useNotificationPreferences } from "@/hooks/use-notification-preferences";
+import { runsServiceWorker } from "./browser-capabilities";
 import { notificationWorkerRequest, reportNotificationDeliveryError } from "./local-notification-client";
 import { startPushForegroundLifecycle } from "./push-foreground-lifecycle";
 import { iosAppBridge, listenForIosAppPushTaps, reconcileIosAppPush } from "./ios-app-push";
@@ -32,7 +33,7 @@ export function LocalNotificationLifecycle() {
   useEffect(() => {
     return useIdentitySessionStore.subscribe((next, previous) => {
       const oldOwner = notificationOwnerOf(previous.session);
-      if (!oldOwner || oldOwner === notificationOwnerOf(next.session) || !("serviceWorker" in navigator)) return;
+      if (!oldOwner || oldOwner === notificationOwnerOf(next.session) || !runsServiceWorker()) return;
       void detach(oldOwner);
     });
   }, []);

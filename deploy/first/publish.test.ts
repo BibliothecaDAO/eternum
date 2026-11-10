@@ -5,6 +5,7 @@ import { join } from "node:path";
 import * as processTools from "./process";
 import {
   advanceFrontierRelease,
+  keepChatRetention,
   clientEnvironment,
   deployClient,
   deployDocs,
@@ -273,6 +274,7 @@ test.each([
   const value = platform();
   const calls = commands();
   value.deployedVersion = async (worker) => ({ id: worker.id, revision });
+  value.chatObjects = async () => [];
   releaseRoute(value, () => Response.json({ error: code }, { status: 409 }));
   await expect(publishCloudflare(value, revision)).rejects.toThrow(`Release ${NATIVE_RELEASE_ID}: ${reason}.`);
   expect(calls.map((call) => call.argv.join(" "))).toEqual(["pnpm run build:packages"]);
@@ -282,6 +284,7 @@ test("the client and the docs go live only after the release step answered", asy
   const value = platform();
   const calls = commands();
   value.deployedVersion = async (worker) => ({ id: worker.id, revision });
+  value.chatObjects = async () => [];
   const order: string[] = [];
   releaseRoute(value, () => {
     order.push("release");
@@ -315,6 +318,83 @@ test("a deploy without setup's service credentials asks nothing of the launch Wo
   ) as unknown as typeof fetch;
   await expect(advanceFrontierRelease(value, revision)).rejects.toThrow("Service credentials are missing");
   expect(requests).toEqual([]);
+});
+
+/** Object ids as Cloudflare lists them: 64 hex characters. */
+const objectIds = (prefix: string, count: number) =>
+  Array.from({ length: count }, (_, index) => `${prefix}${index.toString(16)}`.padEnd(64, "0"));
+
+/**
+ * Cloudflare's Durable Object lists and the identity Worker's retention route, as the deploy reaches them: the room
+ * namespace lists 151 objects over two pages, one without stored data; the inbox namespace lists two.
+ */
+function chatRoutes(value: Platform, { namespaces = ["ChatRoom", "ChatInbox"], refuse = false } = {}) {
+  value.store.write("secrets.json", { operator: "operator-test" } as Secrets);
+  const script = `realms-identity${value.target.workerSuffix}`;
+  const rooms = objectIds("a", 151);
+  const inboxes = objectIds("b", 2);
+  const calls: { url: string; authorization: string | null; body: { className: string; ids: string[] } }[] = [];
+  const listed = (result: unknown, cursor = "") => Response.json({ success: true, result, result_info: { cursor } });
+  globalThis.fetch = mock(async (url: string | URL, init?: RequestInit) => {
+    const path = String(url);
+    if (path.endsWith("/api/operator/chat-retention")) {
+      const body = JSON.parse(String(init!.body)) as { className: string; ids: string[] };
+      calls.push({ url: path, authorization: new Headers(init!.headers).get("authorization"), body });
+      return refuse ? new Response(null, { status: 500 }) : Response.json({ kept: body.ids.length });
+    }
+    if (path.includes("/namespaces/rooms/objects"))
+      return path.includes("cursor=")
+        ? listed([...rooms.slice(100, 150), rooms[150]].map((id, index) => ({ id, hasStoredData: index < 50 })))
+        : listed(
+            rooms.slice(0, 100).map((id) => ({ id, hasStoredData: true })),
+            "more",
+          );
+    if (path.includes("/namespaces/inboxes/objects")) return listed(inboxes.map((id) => ({ id, hasStoredData: true })));
+    if (path.includes("/durable_objects/namespaces"))
+      return listed([
+        { id: "elsewhere", script: "realms-launch", class: "ChatRoom" },
+        ...namespaces.map((className) => ({
+          id: className === "ChatRoom" ? "rooms" : "inboxes",
+          script,
+          class: className,
+        })),
+      ]);
+    throw new Error(`unexpected request ${path}`);
+  }) as unknown as typeof fetch;
+  return { calls, rooms, inboxes };
+}
+
+test.each(["dev", "production"] as const)(
+  "%s names every chat object holding data to the identity Worker, a hundred a call, as the operator",
+  async (environment) => {
+    const value = platform(environment);
+    const { calls, rooms, inboxes } = chatRoutes(value);
+    spyOn(console, "log").mockImplementation(() => {});
+    await keepChatRetention(value);
+    expect(calls.map(({ url }) => url)).toEqual(
+      Array.from({ length: 3 }, () => `${value.target.origin}/api/operator/chat-retention`),
+    );
+    expect(calls.every(({ authorization }) => authorization === "Bearer operator-test")).toBe(true);
+    expect(calls.map(({ body }) => body)).toEqual([
+      { className: "ChatRoom", ids: rooms.slice(0, 100) },
+      { className: "ChatRoom", ids: rooms.slice(100, 150) },
+      { className: "ChatInbox", ids: inboxes },
+    ]);
+  },
+);
+
+test("a chat namespace the identity Worker lacks stops the deploy before any object is called", async () => {
+  const value = platform();
+  const { calls } = chatRoutes(value, { namespaces: ["ChatRoom"] });
+  await expect(keepChatRetention(value)).rejects.toThrow("realms-identity-staging has no ChatInbox namespace");
+  expect(calls).toEqual([]);
+});
+
+test("a retention call the Worker refuses stops the deploy", async () => {
+  const value = platform();
+  const { calls } = chatRoutes(value, { refuse: true });
+  await expect(keepChatRetention(value)).rejects.toThrow("Chat retention refused ChatRoom: 500");
+  expect(calls).toHaveLength(1);
 });
 
 test("deployment executables come from installed dependencies", () => {

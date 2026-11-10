@@ -1,11 +1,21 @@
 import { act } from "react";
 import { createRoot } from "react-dom/client";
 import { afterEach, expect, it, vi } from "vitest";
+
+/** The app the client runs in; the web unless a test is about a store app. */
+const app = vi.hoisted(() => ({ channel: "web" as "web" | "play" | "app-store" }));
+vi.mock("@/runtime/distribution-channel", () => ({ distributionChannel: () => app.channel }));
+
+import { useInstallState } from "./install-state";
 import { AppSettings } from "@/ui/modules/settings/app-settings";
 
 import { PwaInstallRuntime } from "./pwa-install-control";
 
-afterEach(() => vi.unstubAllGlobals());
+afterEach(() => {
+  vi.unstubAllGlobals();
+  app.channel = "web";
+  useInstallState.setState({ prompt: null, installed: false, steps: false });
+});
 const installButton = (container: HTMLElement) =>
   [...container.querySelectorAll("button")].find((button) => button.textContent === "Install");
 async function mount(visible = true) {
@@ -54,3 +64,24 @@ it("captures an install prompt before the control mounts and opens it only on a 
     await ui.close();
   }
 });
+
+it.each(["play", "app-store"] as const)(
+  "offers no install inside the %s app, even when the browser would",
+  async (channel) => {
+    app.channel = channel;
+    const ui = await mount();
+    try {
+      await act(async () => {
+        window.dispatchEvent(
+          Object.assign(new Event("beforeinstallprompt", { cancelable: true }), {
+            prompt: vi.fn(),
+            userChoice: Promise.resolve({ outcome: "accepted" }),
+          }),
+        );
+      });
+      expect(installButton(ui.container)).toBeUndefined();
+    } finally {
+      await ui.close();
+    }
+  },
+);

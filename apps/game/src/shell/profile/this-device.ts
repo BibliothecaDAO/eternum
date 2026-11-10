@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 
 import { identityClient } from "@/hooks/context/identity-session";
-import { isAppleMobile, isInstalledPwa } from "@/pwa/browser-capabilities";
+import { isAppleMobile, isInstalledApp, runsServiceWorker } from "@/pwa/browser-capabilities";
 import { notificationWorkerRequest, readLocalNotificationDevice } from "@/pwa/local-notification-client";
 import { disablePushNotifications, enablePushNotifications, readPushDevice } from "@/pwa/push-notification-client";
 import { disableIosAppPush, enableIosAppPush, iosAppBridge, iosAppPushState } from "@/pwa/ios-app-push";
@@ -14,9 +14,8 @@ import type { PushConfiguration } from "@bibliothecadao/notifications";
 export type ThisDeviceState = "on" | "off" | "saving" | "install" | "blocked" | "unavailable";
 
 const blockerOf = (): ThisDeviceState | null => {
-  if (isAppleMobile() && !isInstalledPwa()) return "install";
-  if (!window.isSecureContext || typeof Notification === "undefined" || !("serviceWorker" in navigator))
-    return "unavailable";
+  if (isAppleMobile() && !isInstalledApp()) return "install";
+  if (!window.isSecureContext || typeof Notification === "undefined" || !runsServiceWorker()) return "unavailable";
   if (Notification.permission === "denied") return "blocked";
   return null;
 };
