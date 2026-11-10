@@ -24,6 +24,7 @@ vi.mock("../ui/features/debug/model-lab-view", () => ({ ModelLabView: () => <Too
 vi.mock("../ui/features/debug/reward-lab-view", () => ({ RewardLabView: () => <Tool name="rewards" /> }));
 vi.mock("./relic-chest/view", () => ({ RelicChestLab: () => <Tool name="relic-chest" /> }));
 vi.mock("../ui/features/debug/terrain-prop-debug-view", () => ({ TerrainPropDebugView: () => <Tool name="props" /> }));
+vi.mock("../ui/features/debug/wildlife-lab-view", () => ({ WildlifeLabView: () => <Tool name="wildlife" /> }));
 vi.mock("./endgame-mist/view", () => ({ EndgameMistLabView: () => <Tool name="endgame" /> }));
 vi.mock("./day-end/view", () => ({ DayEndLabView: () => <Tool name="day-end" /> }));
 vi.mock("../ui/features/debug/world-fx-gym-view", () => ({ WorldFxGymView: () => <Tool name="fx" /> }));
@@ -166,6 +167,7 @@ it.each([
   ["/lab/map-labels?zoom=close&hover=28", "map-labels", "Game", "Map labels & sites"],
   ["/lab/terrain?mode=frontier", "terrain", "Art", "Terrain"],
   ["/lab/terrain-props", "props", "Art", "Terrain"],
+  ["/lab/wildlife?species=moose&view=map", "wildlife", "Art", "Terrain"],
   ["/lab/rewards", "rewards", "Art", "Chests"],
   ["/lab/chunks", "chunks", "Art", "Bench"],
   ["/lab/data?view=balance", "data", "Data", "Balance & data"],

@@ -1,19 +1,19 @@
 import { Box3, Group, Mesh, MeshStandardMaterial, Texture, Vector3 } from "three";
 import { MeshStandardNodeMaterial } from "three/webgpu";
 import { gltfLoader } from "../../utils/gltf-loader";
-import { creatureMovement } from "./biome-creature-catalog";
+import { creatureTraits, type CreatureSpecies } from "./biome-creature-catalog";
 import { createCreatureAnimator } from "./biome-creature-animator.js";
 
 /** Owned by one terrain instance; clones share GPU resources but never joint transforms. */
 export async function loadBiomeCreature(
-  species: string,
+  species: CreatureSpecies,
   reveal: (material: MeshStandardNodeMaterial) => void,
 ): Promise<Group> {
   const { scene } = await gltfLoader.loadAsync(`/models/biome-creatures/${species}.glb`);
   try {
     createCreatureAnimator(scene).reset();
-    prepareCreatureMaterials(scene, creatureMovement(species) !== "water", reveal);
-    fitCreatureToHex(scene, species);
+    prepareCreatureMaterials(scene, creatureTraits(species).movement !== "water", reveal);
+    fitCreatureToItsSize(scene, species);
     return scene;
   } catch (error) {
     disposeBiomeCreature(scene);
@@ -47,14 +47,15 @@ function prepareCreatureMaterials(
   materials.forEach((_, source) => source.dispose());
 }
 
-function fitCreatureToHex(scene: Group, species: string): void {
+function fitCreatureToItsSize(scene: Group, species: CreatureSpecies): void {
   const bounds = new Box3().setFromObject(scene);
   const size = bounds.getSize(new Vector3());
-  // Fit even a moose or spread wings inside a hex, retaining authored ground pivots.
-  const scale = 0.65 / Math.max(size.x, size.y, size.z);
+  const traits = creatureTraits(species);
+  // The species' own size, measured across its largest dimension; authored ground pivots are retained.
+  const scale = traits.size / Math.max(size.x, size.y, size.z);
   if (!Number.isFinite(scale) || scale <= 0) throw new Error(`Invalid creature bounds: ${species}`);
   scene.scale.setScalar(scale);
-  if (creatureMovement(species) === "water") {
+  if (traits.movement === "water") {
     // Aquatic assets have raised display pivots; center their bodies on the swimming depth.
     scene.position.y = -bounds.getCenter(new Vector3()).y * scale;
   }

@@ -50,7 +50,7 @@ restore their network and identity overrides when you leave them.
 | Game   | Game end                                | `/lab/endgame`                                                                                                    | `prove:endgame`                                           |
 | Game   | Chest opening                           | `/lab/relic-chest`                                                                                                | `prove:relic-chest`                                       |
 | Game   | Map labels & sites                      | `/lab/map-labels`                                                                                                 | Owner; lanes                                              |
-| Art    | Terrain                                 | Terrain & buildings `/lab/terrain`, Props `/lab/terrain-props`                                                    | Art; `verify:terrain:gallery`                             |
+| Art    | Terrain                                 | Terrain & buildings `/lab/terrain`, Props `/lab/terrain-props`, Wildlife `/lab/wildlife`                          | Art; `verify:terrain:gallery`                             |
 | Art    | Models                                  | `/lab/models` and its families (`family=`)                                                                        | Art; owner                                                |
 | Art    | Characters                              | `/lab/characters`                                                                                                 | Art; `capture:character-animation`, `smoke:character-gym` |
 | Art    | Chests                                  | `/lab/rewards`                                                                                                    | Art                                                       |
@@ -62,6 +62,14 @@ restore their network and identity overrides when you leave them.
 
 `pnpm --dir apps/game prove:lab-load --port <free> --out <fresh-dir>` opens every page twice and records what each
 fetches (the client's own modules, every script, the bytes), when its last script arrived and whether it drew 3D.
+
+### Wildlife
+
+Art → Terrain → Wildlife (`/lab/wildlife`) runs the map's own wildlife on one flat paddock per biome, so each species'
+size, gait and idle behaviour is judged before the map shows it. `species=<id>` follows one animal and names what it is
+doing; `view=map` looks from the world map's angle, with `distance` in world units (the map's zoom runs from 5 to 20),
+while the default flank view counts `distance` in the animal's own sizes. `capture=1` holds the clock:
+`window.__wildlifeLab.step(seconds)` advances the animals and draws, for stills of a known moment.
 
 ### HUD room
 

@@ -1,8 +1,16 @@
 import { BiomeType } from "@bibliothecadao/types";
-import { BoxGeometry, EventDispatcher, Group, Mesh, MeshStandardMaterial, type Object3D } from "three";
-import { describe, expect, it, vi } from "vitest";
+import { type EventDispatcher, type Group, type Mesh, type Object3D, Vector3 } from "three";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import { createCreatureAnimator } from "./creatures/biome-creature-animator.js";
+import { creatureTraits } from "./creatures/biome-creature-catalog";
 import { BiomeCreaturePopulation, wildlifeRegion } from "./creatures/biome-creature-population";
-import { findNearestTerrainHex } from "./terrain-coordinates";
+import {
+  createZebraRigFixture,
+  ZEBRA_RIG_FOOT_HEIGHT,
+  ZEBRA_RIG_LOWER_LEG,
+} from "./creatures/biome-creature-rig.fixture";
+import { setWorldOrigin } from "../world-origin";
+import { findNearestTerrainHex, terrainHexToWorld } from "./terrain-coordinates";
 import { loadBiomeCreature } from "./creatures/biome-creature-assets";
 import { TERRAIN_WATER_LEVEL } from "./terrain-water";
 import { TerrainWildlife } from "./terrain-wildlife";
@@ -10,18 +18,8 @@ import type { TerrainCellInput } from "./terrain-types";
 
 vi.mock("./creatures/biome-creature-assets", async (importOriginal) => {
   const original = await importOriginal<typeof import("./creatures/biome-creature-assets")>();
-  return {
-    ...original,
-    loadBiomeCreature: vi.fn(async () => {
-      const root = new Group();
-      root.userData = { animation_schema: "biome-creature-v1", profile: "zebra" };
-      const body = new Group();
-      body.userData.joint = "body";
-      body.add(new Mesh(new BoxGeometry(0.2, 0.2, 0.2), new MeshStandardMaterial()));
-      root.add(body);
-      return root;
-    }),
-  };
+  const { createZebraRigFixture } = await import("./creatures/biome-creature-rig.fixture");
+  return { ...original, loadBiomeCreature: vi.fn(async () => createZebraRigFixture()) };
 });
 
 function cells(size = 24): TerrainCellInput[] {
@@ -33,6 +31,12 @@ function cells(size = 24): TerrainCellInput[] {
     occupied: false,
     previewBiome: null,
   }));
+}
+
+/** A tundra, a shrubland and a grassland side by side: a fox, a tortoise and a zebra, each on ground it can cross. */
+function terrainOfEveryPace(): TerrainCellInput[] {
+  const biomes = [BiomeType.Tundra, BiomeType.Shrubland, BiomeType.Grassland];
+  return cells().map((cell) => ({ ...cell, biome: biomes[Math.floor((cell.col + 8) / 8)] }));
 }
 
 function assertDensity(population: BiomeCreaturePopulation) {
@@ -145,6 +149,118 @@ describe("biome creature population", () => {
     first.update(1000);
     second.update(0.05);
     expect([...first.creatures.values()]).toEqual([...second.creatures.values()]);
+  });
+});
+
+describe("biome creature roaming", () => {
+  afterEach(() => setWorldOrigin({ col: 0, row: 0 }));
+
+  it("keeps every animal to its own pace, with no jump where a walk ends or the next begins", () => {
+    const population = new BiomeCreaturePopulation();
+    population.sync(terrainOfEveryPace());
+    const fastest = new Map<string, number>();
+    for (let frame = 0; frame < 4000; frame++) {
+      const before = [...population.creatures.values()].map((creature) => ({ creature, x: creature.x, z: creature.z }));
+      population.update(0.05);
+      for (const { creature, x, z } of before) {
+        const speed = Math.hypot(creature.x - x, creature.z - z) / 0.05;
+        expect(speed).toBeLessThanOrEqual(creatureTraits(creature.species).pace * 1.001);
+        fastest.set(creature.species, Math.max(fastest.get(creature.species) ?? 0, speed));
+      }
+    }
+    expect(fastest.get("arctic-fox")).toBeGreaterThan(fastest.get("mediterranean-tortoise")! * 4);
+    expect(fastest.get("mediterranean-tortoise")).toBeGreaterThan(0);
+  });
+
+  it("turns to face its way before it moves off, and never travels sideways", () => {
+    const population = new BiomeCreaturePopulation();
+    population.sync(cells());
+    for (let frame = 0; frame < 2400; frame++) {
+      const before = [...population.creatures.values()].map((creature) => ({ creature, x: creature.x, z: creature.z }));
+      population.update(0.05);
+      for (const { creature, x, z } of before) {
+        const moved = Math.hypot(creature.x - x, creature.z - z);
+        if (moved < 1e-6) continue;
+        const alongHeading = (creature.x - x) * Math.sin(creature.yaw) + (creature.z - z) * Math.cos(creature.yaw);
+        expect(alongHeading / moved).toBeGreaterThan(0.999);
+      }
+    }
+  });
+
+  it("stops to do what its species does, and steps only for the ground it covers", () => {
+    const population = new BiomeCreaturePopulation();
+    population.sync(cells());
+    const seen = new Set<string>();
+    for (let frame = 0; frame < 6000; frame++) {
+      const strides = [...population.creatures.values()].map((creature) => ({ creature, stride: creature.stride }));
+      population.update(0.05);
+      for (const { creature, stride } of strides) {
+        if (creature.speed === 0 && creature.turn === 0) expect(creature.stride).toBe(stride);
+        if (!creature.target) {
+          expect(creatureTraits(creature.species).idle).toContain(creature.action);
+          seen.add(creature.action);
+        }
+      }
+    }
+    expect(seen).toEqual(new Set(["stand", "forage", "watch"]));
+  });
+
+  it("keeps its place on its tile when the map's origin moves under it", () => {
+    const population = new BiomeCreaturePopulation();
+    population.sync(cells());
+    for (let frame = 0; frame < 400; frame++) population.update(0.05);
+    const before = [...population.creatures.values()].map((creature) => ({ creature, x: creature.x, z: creature.z }));
+    const tile = terrainHexToWorld(0, 0);
+    setWorldOrigin({ col: 64, row: 64 });
+    const shift = terrainHexToWorld(0, 0);
+    population.restrictTo(cells());
+    for (const { creature, x, z } of before) {
+      expect(creature.x - x).toBeCloseTo(shift.x - tile.x, 5);
+      expect(creature.z - z).toBeCloseTo(shift.z - tile.z, 5);
+    }
+  });
+});
+
+describe("biome creature gait", () => {
+  it("leaves a planted foot where it was put down while the body walks on over it", () => {
+    const rig = createZebraRigFixture();
+    const animator = createCreatureAnimator(rig);
+    const knees: Object3D[] = [];
+    rig.traverse((joint) => {
+      if (joint.userData.joint === "knee") knees.push(joint);
+    });
+    const planted = new Map<Object3D, number>();
+    let plantedSamples = 0;
+    for (let distance = 0; distance < 6; distance += 0.01) {
+      rig.position.z = distance;
+      animator.update(distance, { distance, pace: 1 });
+      for (const knee of knees) {
+        const foot = knee.localToWorld(new Vector3(0, -ZEBRA_RIG_LOWER_LEG, 0));
+        if (foot.y > ZEBRA_RIG_FOOT_HEIGHT + 0.008) {
+          planted.delete(knee);
+          continue;
+        }
+        if (!planted.has(knee)) planted.set(knee, foot.z);
+        // Under a fiftieth of its leg: the last of its swing as it touches down, and nothing after.
+        expect(Math.abs(foot.z - planted.get(knee)!)).toBeLessThan(0.02);
+        plantedSamples++;
+      }
+    }
+    // Each foot spends most of every step on the ground, and each is lifted clear to swing forward.
+    expect(plantedSamples).toBeGreaterThan(knees.length * 600 * 0.5);
+    expect(plantedSamples).toBeLessThan(knees.length * 600 * 0.8);
+  });
+
+  it("stands a stopped animal on the ground, with no foot left in the air", () => {
+    const rig = createZebraRigFixture();
+    const animator = createCreatureAnimator(rig);
+    animator.update(0, { distance: 0.7, pace: 1 });
+    for (let time = 0.05; time < 3; time += 0.05) animator.update(time, { distance: 0.7, pace: 0, action: "forage" });
+    rig.traverse((joint) => {
+      if (joint.userData.joint !== "knee") return;
+      const foot = joint.localToWorld(new Vector3(0, -ZEBRA_RIG_LOWER_LEG, 0));
+      expect(foot.y).toBeCloseTo(ZEBRA_RIG_FOOT_HEIGHT, 2);
+    });
   });
 });
 
