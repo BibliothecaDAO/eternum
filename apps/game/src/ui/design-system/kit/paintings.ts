@@ -24,3 +24,9 @@ export const paintingSources = (painting: Painting) => ({
   src: fileOf(painting, WIDTHS[painting][0]),
   srcSet: WIDTHS[painting].map((width) => `${fileOf(painting, width)} ${width}w`).join(", "),
 });
+
+/**
+ * A painting's largest file, as one fixed source: for a node made into an image (a shared card), which draws the one
+ * file it is given, never a choice from a srcset.
+ */
+export const paintingFile = (painting: Painting) => fileOf(painting, WIDTHS[painting].at(-1)!);

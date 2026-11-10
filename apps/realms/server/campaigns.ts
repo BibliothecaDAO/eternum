@@ -8,6 +8,12 @@ import type { CampaignKey } from "@realms-world/identity";
 export const CODE_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
 export const CODE_LENGTH = 8;
 
+/** A new public code of that shape (a referral or a shared link), from the Worker's own randomness. */
+export const newPublicCode = () =>
+  [...crypto.getRandomValues(new Uint8Array(CODE_LENGTH))]
+    .map((byte) => CODE_ALPHABET[byte % CODE_ALPHABET.length])
+    .join("");
+
 /** A code as printed, read case-blind; null for anything no flyer carries. */
 export const readCampaignCode = (value: unknown): string | null => {
   if (typeof value !== "string") return null;

@@ -18,7 +18,7 @@ import { createPortal } from "react-dom";
 
 import { usePlayerDisplayName, usePlayerProfile } from "@/hooks/use-player-profile";
 import { playerPortraitUrl } from "@/services/identity/player-portrait";
-import { Icon, type IconMeaning } from "@/ui/design-system/icon";
+import { Icon } from "@/ui/design-system/icon";
 import { AppButton, AppGameName, AppPortrait } from "@/ui/design-system/kit/app-elements";
 import { OrderEmblem } from "@/ui/design-system/kit/order-emblem";
 import { paintingSources } from "@/ui/design-system/kit/paintings";
@@ -31,6 +31,7 @@ import {
   RECAP_WORDS,
   RESULT_WORDS,
   SEASON_ENDINGS,
+  SHARE_WORDS,
 } from "@/ui/design-system/kit/words";
 import { SITE_COUNTS, SITE_KINDS } from "@/ui/features/frontier/board/season-detail";
 import { type PodiumHolder, seasonPodium } from "@/ui/features/frontier/board/season-pool";
@@ -41,11 +42,12 @@ import { useLayout } from "../frame/layout";
 import type { DirectoryGame } from "../herald";
 import { ageOf } from "../play/ages";
 import { seasonEnded, seasonTitle } from "../season";
-import { FailureLine } from "../sign-in/failure-line";
 import { resultsHref } from "./results-link";
-import { openXPost } from "@/utils/x-post";
+import { CARD_CUTS, type CardCut } from "@/utils/card-image";
 
-import { canCopyCard, copySeasonCard, saveSeasonCard } from "./share-card";
+import { FailureLine } from "../sign-in/failure-line";
+import { CardTile } from "../share/card-tile";
+import { shareHint, StepNumber, useShareSteps } from "../share/share-steps";
 
 type Entry = HeraldFrontierLeaderboardEntry;
 
@@ -53,8 +55,8 @@ type Entry = HeraldFrontierLeaderboardEntry;
  * The deck's two cuts, each at the size it is exported: the four cards side by side for X's and Discord's feed (16:9),
  * two by two for a phone's feed and story (4:5).
  */
-const CUTS = { wide: { width: 1200, height: 675 }, tall: { width: 1080, height: 1350 } } as const;
-type Cut = keyof typeof CUTS;
+const CUTS = CARD_CUTS;
+type Cut = CardCut;
 
 /** The deck's cards, in the order a story steps through them. */
 const CARDS = ["place", "podium", "sites", "haul"] as const;
@@ -135,9 +137,7 @@ export const SeasonRecap = ({
           ))}
         <footer className="season-recap__foot">
           {cut === "tall" && withdraw}
-          {board && own && (
-            <p className="season-recap__hint">{canCopyCard() ? RECAP_WORDS.copyHint : RECAP_WORDS.saveHint}</p>
-          )}
+          {board && own && <p className="season-recap__hint">{shareHint()}</p>}
           <span className="season-recap__steps">
             {actions}
             {board && own && (
@@ -464,7 +464,7 @@ const SitesCard = ({ own }: { own: Entry }) => (
     <span className="season-card__title">{RESULT_WORDS.sitesCleared}</span>
     <div className="season-card__tiles">
       {SITE_KINDS.map((kind) => (
-        <Tile
+        <CardTile
           key={kind}
           icon={TARGET_MARKS[kind].icon}
           value={formatShort(own.sites_cleared[SITE_COUNTS[kind]])}
@@ -485,26 +485,17 @@ const SitesCard = ({ own }: { own: Entry }) => (
 const HaulCard = ({ own }: { own: Entry }) => (
   <Card name="haul">
     <div className="season-card__tiles">
-      <Tile icon="reward-chest" value={formatShort(own.chests_earned)} label={RESULT_WORDS.chests} />
-      <Tile icon="lords" value={formatShort(wholeLords(own.rewards.lords))} label={LORDS} />
-      <Tile icon="essence" value={formatShort(earnedResource(own.rewards.essence))} label={ESSENCE} />
-      <Tile icon="labor" value={formatShort(earnedResource(own.rewards.labor))} label={LABOR} />
+      <CardTile icon="reward-chest" value={formatShort(own.chests_earned)} label={RESULT_WORDS.chests} />
+      <CardTile icon="lords" value={formatShort(wholeLords(own.rewards.lords))} label={LORDS} />
+      <CardTile icon="essence" value={formatShort(earnedResource(own.rewards.essence))} label={ESSENCE} />
+      <CardTile icon="labor" value={formatShort(earnedResource(own.rewards.labor))} label={LABOR} />
     </div>
   </Card>
 );
 
-const Tile = ({ icon, value, label }: { icon: IconMeaning; value: string; label: string }) => (
-  <span className="season-card__tile">
-    <Icon name={icon} size={72} />
-    <b>{value}</b>
-    <small>{label}</small>
-  </span>
-);
-
 /**
- * Sharing the season, the owner's flow (4 November 2026): 1, Copy image puts the deck's image on the clipboard (Save
- * image saves it, where the clipboard takes no PNG); 2, Post on X opens a post with the season's line and its Results,
- * where the player pastes the image. The image is made on the press that asks for it; one that cannot be made says so.
+ * The season's two sharing steps: its deck's image, then a post with the season's line and its Results. A phone's row
+ * has room for the numbers alone; a desktop's buttons wear their icons too.
  */
 const ShareSeason = ({
   card,
@@ -517,47 +508,25 @@ const ShareSeason = ({
   line: string;
   gameRef: GameRef;
 }) => {
-  const [state, setState] = useState<"idle" | "making" | "taken" | "failed">("idle");
-  const copies = canCopyCard();
-  const take = async () => {
-    if (!card.current) return;
-    setState("making");
-    const taken = copies ? copySeasonCard(card.current, CUTS[cut]) : saveSeasonCard(card.current, CUTS[cut]);
-    setState(
-      await taken.then(
-        () => "taken" as const,
-        () => "failed" as const,
-      ),
-    );
-  };
-  const url = new URL(resultsHref(gameRef), window.location.origin).href;
+  const steps = useShareSteps({
+    card,
+    size: CUTS[cut],
+    fileName: RECAP_WORDS.fileName,
+    line,
+    url: new URL(resultsHref(gameRef), window.location.origin).href,
+  });
+  const icons = cut === "wide";
   return (
     <>
-      {/* A phone's row has room for the numbers alone; a desktop's buttons wear their icons too. */}
-      <AppButton
-        kind="secondary"
-        icon={cut === "wide" ? "copy" : undefined}
-        busy={state === "making" ? RECAP_WORDS.making : undefined}
-        onClick={() => void take()}
-      >
+      <AppButton kind="secondary" icon={icons ? "copy" : undefined} busy={steps.making} onClick={steps.take}>
         <StepNumber number={1} />
-        {takeWord(copies, state === "taken")}
+        {steps.word}
       </AppButton>
-      <AppButton kind="primary" icon={cut === "wide" ? "twitter" : undefined} onClick={() => openXPost(line, url)}>
+      <AppButton kind="primary" icon={icons ? "twitter" : undefined} onClick={steps.post}>
         <StepNumber number={2} />
-        {RECAP_WORDS.post}
+        {SHARE_WORDS.post}
       </AppButton>
-      {state === "failed" && <FailureLine line={RECAP_WORDS.failed} />}
+      {steps.failed && <FailureLine line={SHARE_WORDS.failed} />}
     </>
   );
 };
-
-/** The first step's word: copy or save, then copied or saved once done. */
-const takeWord = (copies: boolean, taken: boolean) =>
-  copies ? (taken ? RECAP_WORDS.copied : RECAP_WORDS.copy) : taken ? RECAP_WORDS.saved : RECAP_WORDS.save;
-
-const StepNumber = ({ number }: { number: number }) => (
-  <b className="season-recap__step-number" aria-hidden>
-    {number}
-  </b>
-);

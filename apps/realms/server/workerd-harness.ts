@@ -93,6 +93,8 @@ export const startWorker = async (options: {
       CHAT_INBOX: { className: "ChatInbox", useSQLite: true },
     },
     durableObjectsPersist: join(options.storage, "do"),
+    r2Buckets: { SHARE_CARDS: "share-cards" },
+    r2Persist: join(options.storage, "r2"),
     ratelimits: {
       DIRECTORY_RATE_LIMIT: { namespace_id: "1005", simple: { limit: 600, period: 60 } },
       PUBLIC_RATE_LIMIT: { namespace_id: "1001", simple: { limit: 1000, period: 60 } },

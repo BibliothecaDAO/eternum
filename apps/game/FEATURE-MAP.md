@@ -1133,20 +1133,50 @@ the history is still being read the summary waits for it, at most 10 s; past tha
 opens over the new day once the history answers. Space, Esc or Skip jumps the mist to the summary. Continue fades the
 screen to black; the realm's new land comes in behind it (the map re-projected once the block clock turns, the camera on
 the realm), and the screen comes back up on the new day. Opening the game after the day ended: the summary waits over
-the new land in the dark; Continue fades to black too, the camera comes onto the realm, and the screen comes back up. A
-day not played passes without the summary, but its black still brings the camera onto the realm; a visit to another
-realm passes with neither. Each device goes through each ended day's end once (its mark is in the browser's storage,
-written once the camera is on the realm, so a page booting again before then plays the end again), so the camera comes
-onto the realm on a phone too after a desktop went through it. The summary shows only until the player acts in the new
-day (owner, 2026-10-25): once their history holds a story of theirs after the day's end, from any device, a device
-arriving later goes through the black without it. Once no day's end is owed, on the player's own map while a next day is
-coming, a device that would not get the day's push gets the alerts popup over the dimmed map: a painting with the bell,
-"Know when to come back", what the Important level pushes as Settings names the kinds ("A push for each day's opening,
-rested armies, fights, results and messages."), then **Not now** and **Turn on alerts** (an iPhone's browser is told to
-put Realms on its Home Screen first, with **Add to Home Screen**). It shows at most once a week on a device, counted
-from the last time it showed, stands on its page until answered, and three Not nows end it (`useAlertsPopup`,
-`shell/profile/alerts-ask.ts`; `frontier/alerts-popup.tsx`; lab: `/lab/kit/hud/alerts-popup`, `alerts-popup-install`).
-Code: `hooks/store/use-day-end-store.ts`, `ExpeditionRollover`, `rollover/day-done.tsx` and `day-end-screen.tsx`.
+the new land in the dark; Continue fades to black too, the camera comes onto the realm, and the screen comes back up.
+The summary is for the last day the player played (`dayToRecap`): back on day 3 after playing day 1 and skipping day 2,
+they are offered day 1 ("Day 1 done · Day 3 is open", with no armies line, which tells only the day that just ended),
+unless this device went through a day's end since day 1. With no day played since, the end passes without the summary,
+but its black still brings the camera onto the realm; a visit to another realm passes with neither. Each device goes
+through each ended day's end once (its mark is in the browser's storage, written once the camera is on the realm, so a
+page booting again before then plays the end again), so the camera comes onto the realm on a phone too after a desktop
+went through it. The summary shows only until the player acts in the new day (owner, 2026-10-25): once their history
+holds a story of theirs after the day's end, from any device, a device arriving later goes through the black without it.
+Once no day's end is owed, on the player's own map while a next day is coming, a device that would not get the day's
+push gets the alerts popup over the dimmed map: a painting with the bell, "Know when to come back", what the Important
+level pushes as Settings names the kinds ("A push for each day's opening, rested armies, fights, results and
+messages."), then **Not now** and **Turn on alerts** (an iPhone's browser is told to put Realms on its Home Screen
+first, with **Add to Home Screen**). It shows at most once a week on a device, counted from the last time it showed,
+stands on its page until answered, and three Not nows end it (`useAlertsPopup`, `shell/profile/alerts-ask.ts`;
+`frontier/alerts-popup.tsx`; lab: `/lab/kit/hud/alerts-popup`, `alerts-popup-install`). Code:
+`hooks/store/use-day-end-store.ts`, `ExpeditionRollover`, `rollover/day-done.tsx` and `day-end-screen.tsx`.
+
+**Share your day**, on the day-done card, and on Today's page of an earlier day the player played (the dial opens Today,
+← steps back; a day missed at its end is shared from there), once the day's totals are whole: the day's card in the
+HUD's modal layer, then two steps, **Copy image** (Save image where the clipboard takes no PNG) and **Post on X**, in
+the HUD's buttons. The card is a poster in the season recap's pieces (`shell/share/day-card.tsx`): Frontier's painting
+under it all; the day's best moment large over its glow (a ruin chest's LORDS, else the clear of the strongest guard
+with the guard and its payout, else the land revealed: `dayBest`); the player's portrait with their realm's Order, their
+name and realm, the day and the rank it closed at; only the numbers the day moved, in the recap's tiles; and the recap's
+foot (lockup, Free to play, the site's address). The post's trail is the day in order from the player's own stories:
+each site cleared by its kind, each chest opened, and each fight that cleared nothing (army lost, guard holds), 18 marks
+and then "+N". The post's text is the day as a line of emoji (`Frontier · Day 12 · #7 ▲2`, `🧭 31 · 🚩 4 · 🎁 1`,
+`🏛️🌀🌀💀🐺👹`) and links the signed-in player's own link for that day, `/s/<code>`, made by identity as the sheet opens
+(the game's address while it is made, or when nobody is signed in); Post records the post. Nothing leaves the device
+until a way to post is pressed: Post on X (or a phone's Share) publishes the card the link unfurls as, titled "<name>
+shared Day 12 of Frontier"; closing the sheet publishes nothing. The link's landing says who shared which day and leads
+into the game, recording the visit for this browser; an account made on that browser afterwards is the link's, and
+counts as activated once it clears a site on the link's season board (`apps/realms` README, Shared links). A phone's
+sheet shows and copies the tall cut (1080 × 1350) and draws the wide cut out of sight for the unfurl. A phone whose
+share sheet takes images also gets **Share** above the two steps: the tall card's PNG, the post's line and the link, to
+any app (the season recap stays X only). Each link carries the button that made it (`?via=x`, `?via=system`), which its
+landing hands identity with the visit. What a player's shared days brought stands on You as **Your shared days** once
+they posted one: days posted, opened by friends, friends who joined, and those who cleared a site. Dev:
+`/lab/kit/hud/day-share` (a rich day), `day-share-thin`; `/lab/kit/hud/day-done` and `today-earlier` show the button;
+`/lab/app/shared-days/profile`. Code: `rollover/day-share.ts` (best moment, trail and post),
+`rollover/day-share-sheet.tsx` (the sheet, and `useDayShare`, which both places open it through) and `system-share.tsx`,
+`shell/share/` (its steps, the account's links in `own-shares.ts`, and the landing),
+`shell/profile/shared-days-panel.tsx`.
 
 Coming back to a tab the browser put away (a phone's, mostly): a lost GPU (WebGL's context, which phones take from a tab
 in the background, or WebGPU's device) boots the page again on its route once it is seen, and a Herald stream silent for
@@ -1157,15 +1187,16 @@ turned meanwhile then plays its end as above.
 and `scenario=day-later` opens it 8h40m into day 3; both over prod's recorded history of game 1's day 2
 (`rollover/recorded-day-history.ts`), the map opened on the realm's day-2 site. `day-turn-slow` holds history's answers
 until 25 s after the day's end; `day-later-short` gives the player a page of stories late in day 2, so its start is out
-of the read's reach; `day-later-quiet`'s player did not play day 2; `day-later-played-on`'s player played on in day 3,
-as on prod, before this device opened; `day-turn-asleep` opens a minute before the end for a phone's tab to sleep
-through it; `season-opens` opens 30 s before the season's first day, the player's realm founded and on no site until day
-1's turn brings it in. `pnpm --dir apps/game playtest --port <port> --steps lab-day-turn` (or `lab-day-later`,
-`lab-day-turn-slow`, `lab-day-later-short`) checks the summary's totals and its line, and that Continue brings the
-camera onto the realm's day-3 site; `lab-day-later-quiet` and `lab-day-later-played-on` that the camera gets there with
-no summary; `lab-season-opens` that the map draws before day 1 and its turn brings the camera onto the realm's first
-site; `lab-day-turn-asleep` (`--viewport 390x844`, each renderer mode) puts the tab away through the end and brings it
-back. A reload of a lab game's route (`/g/0x1ab9/...`) plays the same lab game again, its clock going on.
+of the read's reach; `day-later-quiet`'s player did not play day 2; `day-later-skipped`'s played day 1 and skipped day
+2, and is offered day 1; `day-later-played-on`'s player played on in day 3, as on prod, before this device opened;
+`day-turn-asleep` opens a minute before the end for a phone's tab to sleep through it; `season-opens` opens 30 s before
+the season's first day, the player's realm founded and on no site until day 1's turn brings it in.
+`pnpm --dir apps/game playtest --port <port> --steps lab-day-turn` (or `lab-day-later`, `lab-day-turn-slow`,
+`lab-day-later-short`) checks the summary's totals and its line, and that Continue brings the camera onto the realm's
+day-3 site; `lab-day-later-quiet` and `lab-day-later-played-on` that the camera gets there with no summary;
+`lab-season-opens` that the map draws before day 1 and its turn brings the camera onto the realm's first site;
+`lab-day-turn-asleep` (`--viewport 390x844`, each renderer mode) puts the tab away through the end and brings it back. A
+reload of a lab game's route (`/g/0x1ab9/...`) plays the same lab game again, its clock going on.
 
 `/lab/day-end` turns the day with the same rollover (`watchDayTurn`) on a lab clock over the game's Frontier day facts,
 and plays the same moment, screen and card on lab land (`case=ordinary|together|late-block|later`; a narrow window plays

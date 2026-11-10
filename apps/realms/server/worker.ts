@@ -12,13 +12,16 @@ import { routeIdentityRequest } from "./routes";
 
 /**
  * The identity Worker, served under the app's /api: better-auth owns /api/auth/*, and the rest are the account's
- * device approvals, public profiles, notification settings and our directory of shards.
+ * device approvals, public profiles, notification settings and our directory of shards. It takes the app's /s/* too,
+ * where a shared link's page unfurls as the link's own (share-cards.ts).
  */
 export default {
   fetch(request: Request, rawEnv: Record<string, unknown>): Promise<Response> {
     const env = decodeIdentityEnv(rawEnv);
     return routeIdentityRequest(request, env, identityAuthOf(rawEnv, env), {
       cache: caches.default,
+      // The route's own address reaches the host behind it: a Worker's subrequest runs no Worker of its zone again.
+      fetchPage: (page) => fetch(page),
       fetchShard: fetch,
       readLaunchDirectory: () => fetchLaunchDirectory(env.LAUNCH),
     });

@@ -1,3 +1,4 @@
+import { SHARE_PATH } from "@realms-world/identity";
 import { lazy, Suspense, type ReactNode } from "react";
 import { useKeyboardInset } from "@/hooks/use-keyboard-inset";
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
@@ -22,6 +23,7 @@ import { PlayPage } from "./shell/play/play-page";
 import { PlayerPage, ProfilePage, SettingsPage } from "./shell/profile/profile-pages";
 import { ResultsPage } from "./shell/season-tab/results-page";
 import { SeasonPage } from "./shell/season-tab/season-page";
+import { SharedLinkPage } from "./shell/share/shared-link-page";
 import { FirstFrame } from "./shell/first-frame";
 import { ConnectFlow } from "./shell/sign-in/connect-flow";
 import { LAB_GAME_ROUTE } from "./lab/game/lab-shard";
@@ -67,6 +69,7 @@ export const appRoutes = (
       <Route path="join/devcon" element={<JoinDevconPage />} />
       <Route path="join/devcon/:code" element={<JoinDevconPage />} />
       <Route path="join/devcon/r/:referral" element={<JoinDevconPage />} />
+      <Route path={`${SHARE_PATH.slice(1)}/:code`} element={<SharedLinkPage />} />
       <Route path="season" element={<SeasonPage />} />
       <Route path="results/:id" element={<ResultsPage />} />
       <Route path="profile" element={<ProfilePage />} />

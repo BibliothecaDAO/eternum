@@ -1,0 +1,68 @@
+/*
+ * Sharing a Frontier day (day-share-sheet.tsx): the sheet in the HUD's modal layer, in the HUD's controls, type and
+ * colours, around the day's card (shell/share/day-card.css) scaled to fit.
+ */
+.day-share {
+  position: absolute;
+  inset: 0;
+  overflow-y: auto;
+  padding: max(24px, env(safe-area-inset-top)) 24px max(24px, env(safe-area-inset-bottom));
+  background: color-mix(in srgb, var(--hud-night) 85%, transparent);
+  color: rgb(var(--hud-ink));
+}
+.day-share__layout {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  width: min(100%, 1200px);
+  margin: 0 auto;
+}
+.day-share__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+/* Its height is its aspect's, never the card's own size before the card is scaled to it. */
+.day-share__frame {
+  width: 100%;
+  min-height: 0;
+  overflow: clip;
+  border-radius: 16px;
+}
+.day-share__scaler {
+  width: max-content;
+  transform-origin: 0 0;
+}
+.day-share__foot,
+.day-share__steps {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+}
+.day-share__steps > .ui-notice {
+  flex-basis: 100%;
+}
+.day-share__tally {
+  flex-basis: 100%;
+  text-align: right;
+}
+/* A phone's Share, the sheet's one verb above the two steps to X, across the sheet's width. */
+.day-share__system {
+  display: grid;
+  flex-basis: 100%;
+}
+.day-share__hint {
+  flex: 1 1 16rem;
+  text-align: right;
+}
+
+/* A phone's sheet keeps the wide cut its link unfurls as out of sight: drawn, never shown, never read aloud. */
+.day-share__out-of-sight {
+  position: fixed;
+  top: 0;
+  left: -20000px;
+  pointer-events: none;
+}

@@ -1,5 +1,5 @@
 import { handlePayoutIdentity } from "./payout-identity";
-import { presentsOperatorToken, VISIT_RECORD_SECONDS } from "@realms-world/identity";
+import { presentsOperatorToken, SHARE_PATH, VISIT_RECORD_SECONDS } from "@realms-world/identity";
 
 import { handleAccountDeletion } from "./account-deletion";
 import type { IdentityAuth } from "./auth";
@@ -19,7 +19,13 @@ import { ACCOUNT_CLASS_HASH, socialProvidersOf, type IdentityEnv } from "./env";
 import { json } from "./http";
 import { keepBrowser, noteBrowser } from "./browsers";
 import { handleBuildOrders } from "./build-orders";
-import { campaignStandings, hasCampaignHomeSource, homeSourceOf, playerAccounts } from "./campaign-entry";
+import {
+  campaignStandings,
+  hasCampaignHomeSource,
+  homeSourceOf,
+  playerAccounts,
+  sitesClearedOn,
+} from "./campaign-entry";
 import {
   handleCampaignReferral,
   handleCampaignReferrer,
@@ -34,11 +40,22 @@ import { handleRatings } from "./ratings";
 import { handleRatingTop } from "./rating-top";
 import { handleAccountsHealth, handleChatHealth } from "./health";
 import { handlePushSubscriptions } from "./push-notifications";
+import { handleShareCard, handleShareCardUpload, handleSharedPage } from "./share-cards";
+import {
+  handleCreateShare,
+  handleShareReport,
+  handleSharePosted,
+  handleShareTally,
+  handleShareVisit,
+  type ShareWorld,
+} from "./shares";
 import { handleWalletCounts } from "./wallet-counts";
 
 /** What the Worker reaches outside its bindings: the colo cache and the shards' Heralds. */
 interface WorkerPlatform {
   cache: Cache;
+  /** The game's page as its host serves it, for a shared link's address (/s/<code>), which this Worker's route takes. */
+  fetchPage: (request: Request) => Promise<Response>;
   fetchShard: typeof fetch;
   readLaunchDirectory: () => Promise<{
     chains: { chainId: string; games: { gameId: number; slotId: number | null }[] }[];
@@ -56,6 +73,8 @@ export const routeIdentityRequest = async (
   platform: WorkerPlatform,
 ) => {
   const { pathname } = new URL(request.url);
+  if (pathname.startsWith(`${SHARE_PATH}/`) && request.method === "GET")
+    return handleSharedPage(request, { db: env.DB, cards: env.SHARE_CARDS, origin: env.BASE_URL }, platform.fetchPage);
   const sendsCode = pathname === "/api/auth/email-otp/send-verification-otp";
   const verifiesCode = ["/api/auth/sign-in/email-otp", "/api/auth/email-otp/check-verification-otp"].includes(pathname);
   const requestsCodeAccess = request.method === "POST" && (sendsCode || verifiesCode);
@@ -142,6 +161,8 @@ export const routeIdentityRequest = async (
     if (!(await withinPublicBudget(env, "referral", request))) return json({ error: "too_many_requests" }, 429);
     return handleCampaignReferrer(env.DB, new URL(request.url), pathname.slice("/api/campaigns/referral/".length));
   }
+  if (pathname.startsWith("/api/shares") || pathname === "/api/operator/shares")
+    return routeShares(request, env, auth, platform, pathname);
   if (pathname.startsWith("/api/notifications/push/")) return handlePushSubscriptions(request, auth, env);
   if (pathname === "/api/directory" && request.method === "GET") {
     if (!(await withinPublicBudget(env, "directory", request))) return json({ error: "too_many_requests" }, 429);
@@ -203,6 +224,43 @@ const codeAccess = async (env: IdentityEnv, request: Request, sendsCode: boolean
 };
 
 const isOperator = (env: IdentityEnv, request: Request) => presentsOperatorToken(request, env.OPERATOR_TOKEN);
+
+/**
+ * Shared links: a player's link for a moment and its post (signed in), a friend's visit (public, on the per-client
+ * budget), what the player's links brought (signed in) and every link's funnel (operator).
+ */
+const routeShares = async (
+  request: Request,
+  env: IdentityEnv,
+  auth: IdentityAuth,
+  platform: WorkerPlatform,
+  pathname: string,
+) => {
+  const [, , , code, action] = pathname.split("/");
+  if (pathname === "/api/operator/shares" && request.method === "GET") {
+    if (!(await isOperator(env, request))) return json({ error: "unauthorized" }, 401);
+    return handleShareReport(shareWorld(env, platform));
+  }
+  if (pathname === "/api/shares" && request.method === "POST") return handleCreateShare(request, auth, env.DB);
+  if (pathname === "/api/shares" && request.method === "GET")
+    return handleShareTally(request, auth, shareWorld(env, platform));
+  if (code && action === "posted" && request.method === "POST") return handleSharePosted(request, auth, env.DB, code);
+  if (code && action === "card" && request.method === "PUT")
+    return handleShareCardUpload(request, auth, env.DB, env.SHARE_CARDS, code);
+  if (code && action === "card" && request.method === "GET") return handleShareCard(env.DB, env.SHARE_CARDS, code);
+  if (code && action === "visit" && request.method === "POST") {
+    if (!(await withinPublicBudget(env, "share", request))) return json({ error: "too_many_requests" }, 429);
+    return handleShareVisit(request, env.DB, code);
+  }
+  return json({ error: "not_found" }, 404);
+};
+
+/** What share settlement reaches: each link's season board on its shard's Herald. */
+const shareWorld = (env: IdentityEnv, platform: WorkerPlatform): ShareWorld => ({
+  db: env.DB,
+  sitesCleared: (game) => sitesClearedOn(env, platform.fetchShard, game),
+  accountOf: playerAccounts(env),
+});
 
 /** What referral settlement reaches: the shards' Heralds for home sources and season boards, and the relay. */
 const referralWorld = (env: IdentityEnv, platform: WorkerPlatform): ReferralWorld => ({

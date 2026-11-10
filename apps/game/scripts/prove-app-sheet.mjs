@@ -952,7 +952,7 @@ const postSaid = `(() => {
 
 /** The two steps to post, pressed as a player presses them: 1 Copy image, then 2 Post on X. */
 const postStepChecks = async (b, cut) => {
-  const step = (kind) => `.season-recap__steps button[data-kind="${kind}"]:has(.season-recap__step-number)`;
+  const step = (kind) => `.season-recap__steps button[data-kind="${kind}"]:has(.share-steps__number)`;
   b.evaluate(POST_BOUNDARY);
   const copyRefused = clickAsPlayer(b, step("secondary"));
   await waitFor(b, "window.__proofPost.copied !== null", READY_MS);

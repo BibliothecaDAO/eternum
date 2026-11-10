@@ -17,6 +17,11 @@ export const workers = [
   { id: "status", directory: "apps/status-monitor", config: "wrangler.jsonc", name: "realms-status-monitor" },
   { id: "admin", directory: "apps/admin", config: "wrangler.jsonc", name: "realms-admin" },
 ] as const;
+/**
+ * The R2 buckets the deploy creates for an environment's Workers: the status monitor's history, and the identity
+ * Worker's shared cards (wrangler.jsonc binds each by the same name).
+ */
+const bucketsOf = (target: Target) => [target.statusBucket, target.shareCardBucket];
 /** The Workers whose D1 database the deploy creates and migrates, each bound as `DB`. */
 export const databaseWorkers = ["identity", "launch", "admin"] as const;
 const databaseName = (worker: (typeof databaseWorkers)[number], target: Target) =>
@@ -386,7 +391,7 @@ export class RelayDiagnostics extends WorkerEntrypoint {}`;
     const baseReady =
       databaseWorkers.every((worker) => databases.some((db) => db.name === databaseName(worker, this.target))) &&
       pagesSites(this.target).every((site) => pages.some((page) => page.name === site.pages)) &&
-      buckets.some((bucket) => bucket.name === this.target.statusBucket);
+      bucketsOf(this.target).every((name) => buckets.some((bucket) => bucket.name === name));
     if (!baseReady) return false;
     if (zones.length !== 1) throw new PublicError("Cloudflare zone unavailable");
     for (const site of pagesSites(this.target)) if (!(await this.sitePresent(id, zones[0]!.id, site))) return false;
@@ -400,8 +405,9 @@ export class RelayDiagnostics extends WorkerEntrypoint {}`;
       if (!databases.some((db) => db.name === databaseName(worker, this.target)))
         await this.cf(`/accounts/${id}/d1/database`, "POST", { name: databaseName(worker, this.target) });
     const buckets = await this.buckets(id);
-    if (!buckets.some((bucket) => bucket.name === this.target.statusBucket))
-      await this.cf(`/accounts/${id}/r2/buckets`, "POST", { name: this.target.statusBucket });
+    for (const name of bucketsOf(this.target))
+      if (!buckets.some((bucket) => bucket.name === name))
+        await this.cf(`/accounts/${id}/r2/buckets`, "POST", { name });
     const zones = await this.cfList<{ id: string }>(`/zones?name=${this.target.zone}`);
     if (zones.length !== 1) throw new PublicError("Cloudflare zone is not available to this token");
     for (const site of pagesSites(this.target)) await this.prepareSite(id, zones[0]!.id, site);

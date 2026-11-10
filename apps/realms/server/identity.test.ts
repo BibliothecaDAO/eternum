@@ -73,6 +73,40 @@ const fetchShard = (async (input: RequestInfo | URL, init?: RequestInit) => {
     );
   return body === undefined ? new Response("unavailable", { status: 503 }) : Response.json(body);
 }) as typeof fetch;
+/**
+ * The game's page as its host serves it at a shared link's address: its unfurl's tags as index.html writes them once
+ * built. Any other address is the host's 404.
+ */
+const GAME_PAGE = `<!doctype html><html><head><title>Realms</title>
+<meta name="description" content="Fully onchain strategy" />
+<meta property="og:title" content="Realms" />
+<meta property="og:description" content="Fully onchain strategy" />
+<meta property="og:image" content="${ORIGIN}/images/covers/link-preview.png" />
+<meta property="og:url" content="${ORIGIN}" />
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:image" content="${ORIGIN}/images/covers/link-preview.png" />
+</head><body><div id="root"></div></body></html>`;
+const fetchPage = async (request: Request) =>
+  new URL(request.url).pathname.startsWith("/s/")
+    ? new Response(GAME_PAGE, { headers: { "content-type": "text/html; charset=utf-8", "cache-control": "no-cache" } })
+    : new Response("not found", { status: 404 });
+/** R2 as the identity Worker uses it for shared cards, held in memory. */
+const memoryBucket = () => {
+  const objects = new Map<string, { bytes: Uint8Array; contentType: string | undefined }>();
+  return {
+    objects,
+    put: async (key: string, value: ArrayBuffer, options?: { httpMetadata?: { contentType?: string } }) => {
+      objects.set(key, { bytes: new Uint8Array(value), contentType: options?.httpMetadata?.contentType });
+      return {};
+    },
+    get: async (key: string) => {
+      const object = objects.get(key);
+      return object ? { body: new Blob([object.bytes]).stream() } : null;
+    },
+    head: async (key: string) => (objects.has(key) ? {} : null),
+  };
+};
+const shareCards = memoryBucket();
 /** The value relay's golden upgrade route, as identity calls it through its service binding. */
 const relay = vi.fn(async (_input: RequestInfo | URL, _init?: RequestInit) =>
   Response.json({ campaign: "devcon-2026", tier: "golden" }),
@@ -210,6 +244,7 @@ beforeAll(async () => {
     PUBLIC_RATE_LIMIT: { limit: async () => ({ success: true }) },
     SIGN_IN_CODE_RATE_LIMIT: { limit: async ({ key }) => ({ success: countSignInCode(key) <= 3 }) },
     VERSION: { id: "test", tag: "", timestamp: "" },
+    SHARE_CARDS: shareCards as unknown as IdentityEnv["SHARE_CARDS"],
   };
   auth = createIdentityAuth(env, {
     verifyWalletSignature: verifyAsWallet,
@@ -236,22 +271,27 @@ const shardManifest = (chainId: string) => ({
  */
 const createBrowser = (parentDomainCookies: string[] = []) => {
   const cookies = new Map<string, string>();
-  const request = async (path: string, init: { method?: string; body?: unknown; token?: string } = {}) => {
+  /** `file`: a body sent as itself, under its own type (an image), in place of JSON. */
+  const request = async (
+    path: string,
+    init: { method?: string; body?: unknown; token?: string; file?: { bytes: Uint8Array; type: string } } = {},
+  ) => {
     const response = await routeIdentityRequest(
       new Request(`${ORIGIN}${path}`, {
-        method: init.method ?? (init.body === undefined ? "GET" : "POST"),
+        method: init.method ?? (init.body === undefined && init.file === undefined ? "GET" : "POST"),
         headers: {
           origin: ORIGIN,
-          "content-type": "application/json",
+          "content-type": init.file?.type ?? "application/json",
           cookie: [...parentDomainCookies, ...[...cookies].map(([name, value]) => `${name}=${value}`)].join("; "),
           ...(init.token ? { authorization: `Bearer ${init.token}` } : {}),
         },
-        ...(init.body === undefined ? {} : { body: JSON.stringify(init.body) }),
+        ...(init.file ? { body: init.file.bytes } : init.body === undefined ? {} : { body: JSON.stringify(init.body) }),
       }),
       env,
       auth,
       {
         cache: noCache,
+        fetchPage,
         fetchShard,
         readLaunchDirectory: async () => launchDirectory,
       },
@@ -1045,7 +1085,7 @@ describe("identity Worker", () => {
         }),
         env,
         auth,
-        { cache: noCache, fetchShard, readLaunchDirectory: async () => launchDirectory },
+        { cache: noCache, fetchPage, fetchShard, readLaunchDirectory: async () => launchDirectory },
       );
       expect(posted.status).toBe(302);
       const followed = new URL(posted.headers.get("location")!);
@@ -3937,5 +3977,334 @@ describe("default wallet", () => {
     expect(counts.paidToDefaultWallet).toBeGreaterThan(0);
     expect(counts.accounts).toBe(counts.withoutWallet + counts.paidToDefaultWallet + counts.paidToLinkedWallet);
     expect((await createBrowser().request("/api/operator/wallets")).status).toBe(401);
+  });
+});
+
+describe("shared links", () => {
+  const shard = "https://share-season.test";
+  const chainId = "0x5348415245";
+  const gameId = 52;
+  /** The season board of the shared game: sites cleared by account. */
+  const board = new Map<string, number>();
+  const publishBoard = () =>
+    heralds.set(`${shard}/games/${gameId}/leaderboard`, {
+      game_id: String(gameId),
+      mode: "frontier",
+      prize: null,
+      entries: [...board].map(([address, sites], index) => ({
+        address,
+        structure_id: String(index + 1),
+        campaign: null,
+        rank: index + 1,
+        sites_cleared: { total: sites, camps: sites, rifts: 0, ruins: 0, beasts: 0 },
+        chests_earned: 0,
+        rewards: { lords: "0", essence: "0", labor: "0" },
+        deepest_depth: 0,
+        level: 0,
+        order: 1,
+      })),
+    });
+
+  beforeAll(async () => {
+    await env.DB.prepare(`INSERT INTO shards (url, chainId, status, addedAt) VALUES (?, ?, 'active', ?)`)
+      .bind(shard, chainId, Date.now())
+      .run();
+    publishBoard();
+  });
+  afterAll(async () => {
+    await env.DB.prepare("UPDATE shards SET status = 'retired' WHERE url = ?").bind(shard).run();
+  });
+
+  /** A player signed in on their own browser, which the app opened (so the browser is known for the account). */
+  const player = async (name: string, browser = createBrowser()) => {
+    await signInWithCode(browser, `${name}@share.test`);
+    const { realmsId } = (await browser.session())!.user;
+    const account = accountKey(realmsAccountAddress(realmsId, ACCOUNT_CLASS_HASH, await env.GUARDIAN.publicKey()));
+    return {
+      browser,
+      realmsId,
+      share: async (moment: number) => {
+        const response = await browser.request("/api/shares", {
+          body: { kind: "frontier-day", chainId, gameId, moment },
+        });
+        expect(response.status).toBe(200);
+        return ((await response.json()) as { code: string }).code;
+      },
+      tally: async () =>
+        (await (await browser.request("/api/shares")).json()) as {
+          links: number;
+          posted: number;
+          visits: number;
+          joined: number;
+          activated: number;
+        },
+      clear: (sites = 1) => {
+        board.set(account, sites);
+        publishBoard();
+      },
+    };
+  };
+  const visit = async (browser: ReturnType<typeof createBrowser>, code: string) => {
+    const response = await browser.request(`/api/shares/${code}/visit`, { method: "POST" });
+    return [response.status, await response.json()] as [number, any];
+  };
+
+  it("gives a player one link per day, and says who shared it to whoever opens it", async () => {
+    const sharer = await player("sharer-one");
+    await env.DB.prepare(`UPDATE "user" SET "name" = 'Ashwalker' WHERE "realmsId" = ?`).bind(sharer.realmsId).run();
+    const code = await sharer.share(12);
+    expect(await sharer.share(12)).toBe(code);
+    expect(await sharer.share(13)).not.toBe(code);
+    expect(await visit(createBrowser(), code)).toEqual([200, { kind: "frontier-day", moment: 12, name: "Ashwalker" }]);
+    expect((await visit(createBrowser(), "NOPE2345"))[0]).toBe(404);
+  });
+
+  it("refuses a link for anything but a moment of a game, and for a signed-out browser", async () => {
+    const sharer = await player("sharer-refused");
+    for (const body of [
+      { kind: "season", chainId, gameId, moment: 1 },
+      { kind: "frontier-day", chainId: "devnet", gameId, moment: 1 },
+      { kind: "frontier-day", chainId, gameId, moment: 0 },
+      { kind: "frontier-day", chainId, gameId: 1.5, moment: 1 },
+    ])
+      expect((await sharer.browser.request("/api/shares", { body })).status).toBe(400);
+    const signedOut = createBrowser();
+    expect(
+      (await signedOut.request("/api/shares", { body: { kind: "frontier-day", chainId, gameId, moment: 1 } })).status,
+    ).toBe(401);
+  });
+
+  it("counts a friend who opened the link, then joined, then founded and cleared a site", async () => {
+    const sharer = await player("sharer-funnel");
+    expect(await sharer.tally()).toEqual({ links: 0, posted: 0, visits: 0, joined: 0, activated: 0 });
+    const code = await sharer.share(3);
+    expect((await sharer.browser.request(`/api/shares/${code}/posted`, { method: "POST" })).status).toBe(204);
+
+    // The sharer opening their own post is no reach.
+    await visit(sharer.browser, code);
+    const friendBrowser = createBrowser();
+    await visit(friendBrowser, code);
+    await visit(friendBrowser, code);
+    expect(await sharer.tally()).toEqual({ links: 1, posted: 1, visits: 1, joined: 0, activated: 0 });
+
+    const friend = await player("friend-funnel", friendBrowser);
+    expect(await sharer.tally()).toEqual({ links: 1, posted: 1, visits: 1, joined: 1, activated: 0 });
+    friend.clear(0);
+    expect((await sharer.tally()).activated).toBe(0);
+    friend.clear(1);
+    expect(await sharer.tally()).toEqual({ links: 1, posted: 1, visits: 1, joined: 1, activated: 1 });
+  });
+
+  it("dates a join from the account's making, and counts a clear on the link's board however late it is first read", async () => {
+    const sharer = await player("sharer-late-read");
+    const friendBrowser = createBrowser();
+    await visit(friendBrowser, await sharer.share(6));
+    const friend = await player("friend-late-read", friendBrowser);
+    friend.clear(2);
+    // Nobody reads the tally until three weeks later, past any window counted from the read.
+    vi.useFakeTimers({ toFake: ["Date"], now: Date.now() + 21 * 24 * 3_600_000, shouldAdvanceTime: true });
+    onTestFinished(() => {
+      vi.useRealTimers();
+    });
+    expect(await sharer.tally()).toMatchObject({ joined: 1, activated: 1 });
+    const row = await env.DB.prepare(
+      `SELECT j."joined_at" AS "joinedAt", CAST(strftime('%s', u."createdAt") AS INTEGER) AS "madeAt"
+       FROM "share_joins" j JOIN "user" u ON u."realmsId" = j."friend" WHERE j."friend" = ?`,
+    )
+      .bind(friend.realmsId)
+      .first<{ joinedAt: number; madeAt: number }>();
+    expect(row!.joinedAt).toBe(row!.madeAt);
+  });
+
+  it("settles a join whose board stayed silent for weeks once it answers, and a sharer's read settles only their own", async () => {
+    const sharer = await player("sharer-silent-board");
+    const other = await player("sharer-other-reader");
+    const friendBrowser = createBrowser();
+    await visit(friendBrowser, await sharer.share(7));
+    const friend = await player("friend-silent-board", friendBrowser);
+    friend.clear(1);
+    const activatedAt = async () =>
+      (
+        await env.DB.prepare(`SELECT "activated_at" AS "at" FROM "share_joins" WHERE "friend" = ?`)
+          .bind(friend.realmsId)
+          .first<{ at: number | null }>()
+      )?.at ?? null;
+    // Another sharer's read leaves this join for its own sharer's read.
+    await other.tally();
+    expect(await activatedAt()).toBeNull();
+
+    heralds.delete(`${shard}/games/${gameId}/leaderboard`);
+    expect(await sharer.tally()).toMatchObject({ joined: 1, activated: 0 });
+    vi.useFakeTimers({ toFake: ["Date"], now: Date.now() + 28 * 24 * 3_600_000, shouldAdvanceTime: true });
+    onTestFinished(() => {
+      vi.useRealTimers();
+      publishBoard();
+    });
+    publishBoard();
+    expect(await sharer.tally()).toMatchObject({ joined: 1, activated: 1 });
+  });
+
+  it("gives a new account to the first link its browser opened, and never an account older than the visit", async () => {
+    const first = await player("sharer-first");
+    const second = await player("sharer-second");
+    const already = await player("already-playing");
+    const browser = createBrowser();
+    await visit(browser, await first.share(4));
+    await visit(browser, await second.share(4));
+    await signInWithCode(browser, "already-playing@share.test");
+    await browser.session();
+    await player("friend-first-touch", browser);
+    expect((await first.tally()).joined).toBe(1);
+    expect((await second.tally()).joined).toBe(0);
+    expect(already.realmsId).not.toBe("");
+  });
+
+  it("joins no one's link to the sharer's own new account on their own browser", async () => {
+    const sharer = await player("sharer-alt");
+    const code = await sharer.share(5);
+    await visit(sharer.browser, code);
+    await player("sharer-alt-second", sharer.browser);
+    expect((await sharer.tally()).joined).toBe(0);
+  });
+
+  /** A JPEG as the share sheet's browser makes it: its start marker, then the rest of its bytes. */
+  const jpeg = (size = 2_048) => {
+    const bytes = new Uint8Array(size).fill(7);
+    bytes.set([0xff, 0xd8, 0xff, 0xe0]);
+    return bytes;
+  };
+  const upload = (who: Awaited<ReturnType<typeof player>>, code: string, bytes: Uint8Array, type = "image/jpeg") =>
+    who.browser.request(`/api/shares/${code}/card`, { method: "PUT", file: { bytes, type } });
+  const page = async (code: string) => {
+    const response = await createBrowser().request(`/s/${code}`);
+    return [response.status, await response.text()] as [number, string];
+  };
+  const tag = (html: string, name: string) =>
+    new RegExp(`<meta (?:property|name)="${name}" content="([^"]*)"`).exec(html)?.[1];
+
+  it("keeps the card a sharer's browser made for their link, and serves it to anyone", async () => {
+    const sharer = await player("sharer-card");
+    const code = await sharer.share(14);
+    const card = jpeg();
+    expect((await upload(sharer, code, card)).status).toBe(204);
+    const served = await createBrowser().request(`/api/shares/${code}/card`);
+    expect(served.status).toBe(200);
+    expect(served.headers.get("content-type")).toBe("image/jpeg");
+    expect(new Uint8Array(await served.arrayBuffer())).toEqual(card);
+    expect((await createBrowser().request(`/api/shares/${await sharer.share(15)}/card`)).status).toBe(404);
+    // A link that is gone (its account's rows cascade) serves no card, whatever R2 still holds.
+    await env.DB.prepare(`DELETE FROM "share_links" WHERE "code" = ?`).bind(code).run();
+    expect(shareCards.objects.has(`cards/${code}.jpg`)).toBe(true);
+    expect((await createBrowser().request(`/api/shares/${code}/card`)).status).toBe(404);
+  });
+
+  it("takes a card only from the link's sharer, and only a JPEG of at most a megabyte", async () => {
+    const sharer = await player("sharer-card-refused");
+    const other = await player("other-card-refused");
+    const code = await sharer.share(16);
+    expect((await upload(other, code, jpeg())).status).toBe(404);
+    expect((await upload(sharer, code, jpeg(), "image/png")).status).toBe(400);
+    expect((await upload(sharer, code, new Uint8Array(2_048).fill(7))).status).toBe(400);
+    expect((await upload(sharer, code, jpeg(1_000_001))).status).toBe(400);
+    const signedOut = createBrowser();
+    expect(
+      (
+        await signedOut.request(`/api/shares/${code}/card`, {
+          method: "PUT",
+          file: { bytes: jpeg(), type: "image/jpeg" },
+        })
+      ).status,
+    ).toBe(401);
+    expect(shareCards.objects.has(`cards/${code}.jpg`)).toBe(false);
+  });
+
+  it("unfurls a shared link as its own: who shared which day, the pitch, its address, and its card once made", async () => {
+    const sharer = await player("sharer-unfurl");
+    await env.DB.prepare(`UPDATE "user" SET "name" = 'Ash "Walker" <3' WHERE "realmsId" = ?`)
+      .bind(sharer.realmsId)
+      .run();
+    const code = await sharer.share(21);
+    const [status, before] = await page(code);
+    expect(status).toBe(200);
+    expect(tag(before, "og:title")).toBe("Ash &quot;Walker&quot; &lt;3 shared Day 21 of Frontier");
+    expect(before).toContain("<title>Ash &quot;Walker&quot; &lt;3 shared Day 21 of Frontier</title>");
+    expect(tag(before, "og:description")).toBe(
+      "A new map every day. Send your armies into the fog and bring home what they find. Your realm is free.",
+    );
+    expect(tag(before, "og:url")).toBe(`${ORIGIN}/s/${code}`);
+    // Until the sharer's browser made the card, the game's own preview stands.
+    expect(tag(before, "og:image")).toBe(`${ORIGIN}/images/covers/link-preview.png`);
+
+    await upload(sharer, code, jpeg());
+    const [, after] = await page(code);
+    expect(tag(after, "og:image")).toBe(`${ORIGIN}/api/shares/${code}/card`);
+    expect(tag(after, "twitter:image")).toBe(`${ORIGIN}/api/shares/${code}/card`);
+    expect(tag(after, "twitter:card")).toBe("summary_large_image");
+  });
+
+  it("serves the game's page as the host answered for a link that leads nowhere", async () => {
+    expect(await page("NOPE2345")).toEqual([200, GAME_PAGE]);
+    expect(await page("not-a-code")).toEqual([200, GAME_PAGE]);
+  });
+
+  it("counts first visits by the tag their link carried, never the sharer's own", async () => {
+    const sharer = await player("sharer-channels");
+    const code = await sharer.share(30);
+    const via = (browser: ReturnType<typeof createBrowser>, channel: unknown) =>
+      browser.request(`/api/shares/${code}/visit`, { body: { via: channel } });
+    const tagsNow = async () =>
+      (
+        (await (await createBrowser().request("/api/operator/shares", { token: OPERATOR_TOKEN })).json()) as {
+          firstVisitsByTag: { tag: string | null; visits: number }[];
+        }
+      ).firstVisitsByTag;
+    const before = new Map((await tagsNow()).map(({ tag, visits }) => [tag, visits]));
+    await via(createBrowser(), "x");
+    await via(createBrowser(), "system");
+    await via(createBrowser(), "system");
+    await via(createBrowser(), "telegram");
+    await via(sharer.browser, "x");
+    const after = new Map((await tagsNow()).map(({ tag, visits }) => [tag, visits]));
+    const added = (tag: string | null) => (after.get(tag) ?? 0) - (before.get(tag) ?? 0);
+    expect([added("x"), added("system"), added(null)]).toEqual([1, 2, 1]);
+  });
+
+  it("reports every moment's funnel to the operator only, and leaves joins whose board cannot answer for later", async () => {
+    const sharer = await player("sharer-report");
+    const code = await sharer.share(9);
+    const friendBrowser = createBrowser();
+    await visit(friendBrowser, code);
+    await player("friend-report", friendBrowser);
+    expect((await createBrowser().request("/api/operator/shares")).status).toBe(401);
+
+    heralds.delete(`${shard}/games/${gameId}/leaderboard`);
+    const waiting = (await (
+      await createBrowser().request("/api/operator/shares", { token: OPERATOR_TOKEN })
+    ).json()) as {
+      unsettledJoins: number;
+    };
+    expect(waiting.unsettledJoins).toBeGreaterThan(0);
+    publishBoard();
+
+    const report = (await (
+      await createBrowser().request("/api/operator/shares", { token: OPERATOR_TOKEN })
+    ).json()) as {
+      unsettledJoins: number;
+      moments: Record<string, unknown>[];
+      topSharers: { realmsId: string; joined: number }[];
+    };
+    expect(report.unsettledJoins).toBe(0);
+    expect(report.moments).toContainEqual({
+      kind: "frontier-day",
+      chainId,
+      gameId,
+      moment: 9,
+      links: 1,
+      posted: 0,
+      visits: 1,
+      joined: 1,
+      activated: 0,
+    });
+    expect(report.topSharers.find((row) => row.realmsId === sharer.realmsId)?.joined).toBe(1);
   });
 });

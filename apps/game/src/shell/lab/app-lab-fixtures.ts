@@ -5,7 +5,7 @@ import { buildLedgerEconomicPreset, chestPresetFor } from "../../../../../config
 import { blitzVictoryPointConfig } from "../../../../../config/source/blitz/balance";
 import { VICTORY_POINTS_MULTIPLIER } from "../../../../../config/source/common/arena/points";
 import { realmsAccountAddress } from "@realms-world/identity/account";
-import type { CampaignReferral, CampaignTicket, Session } from "@realms-world/identity";
+import type { CampaignReferral, CampaignTicket, Session, ShareTally } from "@realms-world/identity";
 
 import { orderEmblem } from "@/ui/design-system/kit/order-emblem";
 import type { DoorwayRealm } from "@/ui/features/game-entry/doorway/doorway-screen";
@@ -279,6 +279,8 @@ export const LAB_SCREENS = {
   "invite-golden": { signedIn: true, games: [frontier(true), liveBlitz(false), eternum] },
   "invite-pending": { signedIn: true, games: [frontier(true), liveBlitz(false), eternum] },
   "invite-link": { signedIn: true, games: [frontier(true), liveBlitz(false), eternum] },
+  // Your shared days on You (/profile): what a player's posted Frontier days brought.
+  "shared-days": { signedIn: true, games: [frontier(true), liveBlitz(false), eternum] },
 } as const;
 
 /** The Devcon ticket each Devcon screen's account opens with any flyer's code, or already holds. */
@@ -327,6 +329,12 @@ const referral = (
   friends: friends(specs),
   earned: { ticket: false, golden: false, ...earned },
 });
+
+/** What a screen's account's shared days brought; a screen this names none of has shared no day. */
+export const LAB_NO_SHARES: ShareTally = { links: 0, posted: 0, visits: 0, joined: 0, activated: 0 };
+export const LAB_SHARE_TALLIES: Partial<Record<keyof typeof LAB_SCREENS, ShareTally>> = {
+  "shared-days": { links: 9, posted: 7, visits: 1_240, joined: 31, activated: 12 },
+};
 
 /** A screen's referral link on You when LAB_REFERRALS names none: a free home's, with no friend yet. */
 export const LAB_FIRST_REFERRAL = referral("free", []);

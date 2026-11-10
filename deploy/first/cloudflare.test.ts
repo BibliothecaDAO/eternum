@@ -252,7 +252,7 @@ function crowdedAccount() {
     ],
     [`/accounts/${account}/workers/scripts`]: [],
   };
-  const buckets = [...others("bucket"), { name: target.statusBucket }];
+  const buckets = [...others("bucket"), { name: target.statusBucket }, { name: target.shareCardBucket }];
   globalThis.fetch = (async (url, init) => {
     const method = init?.method ?? "GET";
     const parsed = new URL(String(url));
@@ -365,6 +365,10 @@ test("setup creates each site's project, hostname and a record to the project's 
   expect(writes.filter((write) => write.path.includes("/pages/") || write.path.includes("/dns_records"))).toEqual([
     ...site("eternum-game", "play.realms.party", "eternum-game.pages.dev"),
     ...site("realms-docs", "docs.realms.party", "realms-docs-7xq.pages.dev"),
+  ]); // The status monitor's bucket and the identity Worker's shared cards, each as its Worker binds it.
+  expect(writes.filter((write) => write.path.endsWith("/r2/buckets")).map((write) => write.body)).toEqual([
+    { name: "realms-status" },
+    { name: "realms-share-cards" },
   ]);
 });
 

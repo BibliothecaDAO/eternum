@@ -29,9 +29,28 @@ const facts = vi.hoisted(() => ({
 
 /** The alerts ask's reading of this device: no owner (no ask) unless a test signs one in. */
 const alerts = vi.hoisted(() => ({ owner: null as string | null }));
+/** Identity's shared links: the player's link for a day, and the record of its post. */
+const shares = vi.hoisted(() => ({
+  createShare: vi.fn(async () => "DAY2LINK"),
+  sharePosted: vi.fn(async () => {}),
+  shareTally: vi.fn(async () => ({ links: 4, posted: 3, visits: 12, joined: 3, activated: 1 })),
+  uploadShareCard: vi.fn(async () => {}),
+}));
+/** The card's JPEG, as the browser makes it from the drawn card (a canvas jsdom has none of). */
+const CARD_JPEG = vi.hoisted(() => new Blob(["card"], { type: "image/jpeg" }));
+vi.mock("@/utils/card-image", async (original) => ({
+  ...(await original<typeof import("@/utils/card-image")>()),
+  cardJpeg: vi.fn(async () => CARD_JPEG),
+  cardFile: vi.fn(async () => CARD_FILE),
+}));
+/** The card's PNG as a phone's share sheet takes it. */
+const CARD_FILE = vi.hoisted(() => new File(["card"], "frontier-day-2.png", { type: "image/png" }));
+/** The signed-in Realms account whose links the share sheet makes. */
+const SIGNED_IN = vi.hoisted(() => ({ session: { user: { realmsId: "0xa11ce" } } }));
 vi.mock("@/hooks/context/identity-session", () => ({
-  useIdentitySession: () => ({ session: null }),
+  useIdentitySession: () => SIGNED_IN,
   notificationOwnerOf: () => alerts.owner,
+  identityClient: shares,
 }));
 vi.mock("@/hooks/use-notification-preferences", () => ({
   useNotificationPreferences: () => ({ status: "ready", saved: { level: "off", revision: 1 }, save: vi.fn() }),
@@ -45,11 +64,20 @@ vi.mock("@/runtime/world/store", async (importOriginal) => ({
 
 /** Realm 7 as the HUD hands it to the day's end: its game and entity (a free home: the game has no Labor rules). */
 /** Realm 7, founded as the season opened. */
-const REALM_7 = { game_id: 1, entity_id: 7n, base: { created_at: 0 } } as never;
+const REALM_7 = {
+  game_id: 1,
+  entity_id: 7n,
+  owner: BigInt(RECORDED_DAY.player),
+  base: { created_at: 0 },
+  metadata: { order: 5 },
+} as never;
 
 vi.mock("@/hooks/context/game-context", () => ({ useGame: () => ({ setup: { store: facts } }) }));
 vi.mock("@/hooks/use-player-profile", () => ({
   usePlayerNames: () => ({ text: () => "", reading: () => ({ state: "waiting", text: "…" }) }),
+  usePlayerProfile: () => ({ name: null, portrait: null }),
+  usePlayerDisplayName: () => "Ashwalker",
+  usePlayerName: () => ({ state: "named", text: "Ashwalker", claimed: true }),
 }));
 vi.mock("@/runtime/world", () => ({ getActiveGame: () => ({ chainId: "0x1" }) }));
 vi.mock("@/hooks/store/use-account-store", async (importOriginal) => ({
@@ -69,6 +97,8 @@ vi.mock("@bibliothecadao/eternum", async (importOriginal) => {
     ...(await importOriginal<typeof import("@bibliothecadao/eternum")>()),
     buildStoryEventPresentation: () => ({}),
     configManager: { getActiveGameId: () => 1 },
+    // Realm 7's name, as the card writes it.
+    getStructureName: () => ({ name: "Temtinos", originalName: "Temtinos" }),
     // The day's turn reads the game's calendar and the realm's site from the facts: realm 7's day-3 site.
     readExpeditionRules: () => ({ ...recorded.calendar, endAt: Number(herald.game.end_at), spacing: 100 }),
     isExpeditionRealm: () => true,
@@ -89,6 +119,8 @@ vi.mock("@bibliothecadao/eternum/game-client", async (importOriginal) => ({
 }));
 
 const { DayDone } = await import("./day-done");
+const { cardJpeg } = await import("@/utils/card-image");
+const { setViewportWidth } = await import("@/shell/frame/test-viewport");
 const { watchDayTurn } = await import("@/ui/features/world/components/expeditions/expedition-rollover");
 
 const RULES = { ...RECORDED_DAY.calendar, spacing: 100 };
@@ -113,6 +145,7 @@ beforeEach(() => {
   herald.now = BEFORE_PLAYING_ON.now;
   herald.game = { end_at: "1793439960" };
   alerts.owner = null;
+  for (const call of Object.values(shares)) call.mockClear();
   useAskMemory.setState({ notNows: 0, shownAt: null });
   host = document.createElement("div");
   document.body.append(host);
@@ -127,6 +160,10 @@ afterEach(() => {
 });
 
 const PROD_DAY_2 = ["35Reveals", "5Sites cleared", "0Chests", "+7.2KEssence", "+524Labor", "+0LORDS"];
+/** Prod's day 1 for the same player, as their own history holds it. */
+const PROD_DAY_1 = ["37Reveals", "6Sites cleared", "0Chests", "+6KEssence", "+2.7KLabor", "+0LORDS"];
+/** Any day's summary. */
+const SUMMARY_SHOWN = "section[aria-label$=' done']";
 
 let client: QueryClient;
 /** Draws the HUD's day end at the clock as it stands. */
@@ -139,6 +176,11 @@ const draw = () =>
 const totalsShown = () =>
   [...(host.querySelector(SUMMARY)?.querySelectorAll("[data-total]") ?? [])].map((cell) => cell.textContent);
 const phase = () => useDayEndStore.getState().phase;
+/** The summary's way into the new day, under Share your day. */
+const continueButton = () =>
+  [...(host.querySelector(SUMMARY)?.querySelectorAll("button") ?? [])].find(
+    (button) => button.textContent === "Continue",
+  )!;
 
 /** Opens the game with day 2 ended overnight, before the player played on, and reads the summary's totals. */
 const openTheGame = async () => {
@@ -183,6 +225,104 @@ it("sums the player's own day 2 as prod's history holds it, not the tail of the 
   expect(host.textContent).toContain("Tomorrow lasts8h");
   expect(cells).toEqual(PROD_DAY_2);
   expect(host.textContent).toContain("#1 → #1");
+});
+
+it("shares day 2 as its card and a post: its best moment, the numbers it moved, and the player's own link", async () => {
+  await openTheGame();
+  const share = [...host.querySelectorAll("button")].find((button) => button.textContent === "Share your day");
+  await act(async () => share!.click());
+  const sheet = document.body.querySelector("section[aria-label='Share your day']")!;
+  // A phone draws the tall cut.
+  const shown = sheet.querySelector<HTMLElement>(".day-share__frame .day-card")!;
+  expect(shown.dataset.cut).toBe("tall");
+  expect(shown.querySelector(".day-card__day")?.textContent).toBe("Day 2");
+  expect(shown.querySelector(".day-card__realm")?.textContent).toBe("Temtinos");
+  // Prod's day 2: its strongest guard fell at a Beasts den.
+  expect(shown.querySelector(".day-card__headline")?.textContent).toBe("Beasts cleared");
+  expect(shown.querySelector(".day-card__detail")?.textContent).toBe("Guard of 483 beaten");
+  // It opened no chest and paid no LORDS: neither is on the card.
+  expect([...shown.querySelectorAll(".day-card__haul small")].map((label) => label.textContent)).toEqual([
+    "Reveals",
+    "Sites cleared",
+    "Essence",
+    "Labor",
+  ]);
+  expect(shares.createShare).toHaveBeenCalledWith({ kind: "frontier-day", chainId: "0x1", gameId: 1, moment: 2 });
+
+  // The link is made as the sheet opens; the post waits for nothing.
+  await act(() => new Promise((resolve) => setTimeout(resolve, 10)));
+  expect(sheet.textContent).toContain("Your days brought 12 visits · 3 new players");
+  // The link unfurls as the wide cut, which a phone's sheet draws out of sight and makes into its image at once, on the
+  // device: nothing is published before a way to post is pressed.
+  const wide = sheet.querySelector<HTMLElement>(".day-share__out-of-sight .day-card")!;
+  expect(wide.dataset.cut).toBe("wide");
+  expect(cardJpeg).toHaveBeenCalledWith(wide, { width: 1200, height: 675 });
+  expect(shares.uploadShareCard).not.toHaveBeenCalled();
+  const open = vi.spyOn(window, "open").mockImplementation(() => null);
+  const post = [...sheet.querySelectorAll("button")].find((button) => button.textContent?.endsWith("Post on X"));
+  await act(async () => post!.click());
+  const intent = new URL(String(open.mock.calls[0]![0]));
+  expect(intent.searchParams.get("url")).toBe(`${window.location.origin}/s/DAY2LINK?via=x`);
+  expect(intent.searchParams.get("text")).toBe("Frontier · Day 2 · #1\n🧭 35 · 🚩 5 · 🎁 0\n🐺🐺🛡️🌀🛡️🌀🐺");
+  expect(shares.sharePosted).toHaveBeenCalledWith("DAY2LINK");
+  // The press publishes the card the link unfurls as.
+  await act(() => new Promise((resolve) => setTimeout(resolve, 0)));
+  expect(shares.uploadShareCard).toHaveBeenCalledWith("DAY2LINK", CARD_JPEG);
+  open.mockRestore();
+});
+
+it("shares a phone's day through its own share sheet: the card, the post's line and the link it was posted from", async () => {
+  const share = vi.fn(async (_data: ShareData) => {});
+  vi.stubGlobal("navigator", Object.assign(Object.create(navigator), { canShare: () => true, share }));
+  try {
+    await openTheGame();
+    const open = [...host.querySelectorAll("button")].find((button) => button.textContent === "Share your day");
+    await act(async () => open!.click());
+    const sheet = document.body.querySelector("section[aria-label='Share your day']")!;
+    const buttons = () => [...sheet.querySelectorAll<HTMLButtonElement>("button")];
+    // The image is made before the press, while the button says so.
+    for (let tick = 0; tick < 50 && !buttons().some((button) => button.textContent === "Share"); tick += 1)
+      await act(() => new Promise((resolve) => setTimeout(resolve, 10)));
+    const system = buttons().find((button) => button.textContent === "Share")!;
+    // Share is the sheet's one verb; Post on X stands under it.
+    expect(system.dataset.kind).toBe("primary");
+    expect(buttons().find((button) => button.textContent?.endsWith("Post on X"))?.dataset.kind).toBe("secondary");
+
+    // The press publishes the card; closing the phone's sheet then records no post.
+    expect(shares.uploadShareCard).not.toHaveBeenCalled();
+    share.mockRejectedValueOnce(Object.assign(new Error("closed"), { name: "AbortError" }));
+    await act(async () => system.click());
+    expect(shares.uploadShareCard).toHaveBeenCalledWith("DAY2LINK", CARD_JPEG);
+    expect(shares.sharePosted).not.toHaveBeenCalled();
+    expect(sheet.querySelector("[role='alert']")).toBeNull();
+
+    await act(async () => system.click());
+    expect(share).toHaveBeenLastCalledWith({
+      files: [CARD_FILE],
+      text: "Frontier · Day 2 · #1\n🧭 35 · 🚩 5 · 🎁 0\n🐺🐺🛡️🌀🛡️🌀🐺",
+      url: `${window.location.origin}/s/DAY2LINK?via=system`,
+    });
+    expect(shares.sharePosted).toHaveBeenCalledWith("DAY2LINK");
+  } finally {
+    vi.unstubAllGlobals();
+  }
+});
+
+it("draws a desktop's day card in the wide cut, the one its link unfurls as, and no second copy", async () => {
+  setViewportWidth(1440);
+  try {
+    await openTheGame();
+    const share = [...host.querySelectorAll("button")].find((button) => button.textContent === "Share your day");
+    await act(async () => share!.click());
+    const sheet = document.body.querySelector("section[aria-label='Share your day']")!;
+    const cards = [...sheet.querySelectorAll<HTMLElement>(".day-card")];
+    expect(cards.map((card) => card.dataset.cut)).toEqual(["wide"]);
+    await act(() => new Promise((resolve) => setTimeout(resolve, 10)));
+    expect(cardJpeg).toHaveBeenLastCalledWith(cards[0], { width: 1200, height: 675 });
+    expect(shares.uploadShareCard).not.toHaveBeenCalled();
+  } finally {
+    vi.unstubAllGlobals();
+  }
 });
 
 it("shows a dash for each total, and says why, when the player's history no longer reaches the day's start", async () => {
@@ -298,7 +438,7 @@ describe("history answering late as the day ends in the game", () => {
     expect(phase()).toBe("summary");
     await answer();
     expect(totalsShown()).toEqual(PROD_DAY_2);
-    act(() => host.querySelector<HTMLButtonElement>(`${SUMMARY} button`)!.click());
+    act(() => continueButton().click());
     expect(phase()).toBe("nightfall");
   });
 
@@ -314,7 +454,7 @@ describe("history answering late as the day ends in the game", () => {
     await answer();
     expect(useDayEndStore.getState()).toMatchObject({ phase: "summary", arrival: "later" });
     expect(totalsShown()).toEqual(PROD_DAY_2);
-    act(() => host.querySelector<HTMLButtonElement>(`${SUMMARY} button`)!.click());
+    act(() => continueButton().click());
     await seconds(DAY_END_TIMING.nightfall);
     expect(phase()).toBe("black");
     expect(window.localStorage.getItem(`frontier.day-done.1.${RECORDED_DAY.player}`)).toBe("1");
@@ -443,6 +583,64 @@ describe("a device arriving in a new day", () => {
     expect(window.localStorage.getItem(MARK)).toBe("2");
   });
 
+  describe('a player back after a day they skipped (owner, 10 Nov 2026: "I played day 1 but not day 2, its day 3 now")', () => {
+    const DAY_1 = "section[aria-label='Day 1 done']";
+    /** The player's history without their own day-2 stories: they played day 1 and skipped day 2. */
+    const skippingDay2 = (history: typeof herald.history) => {
+      const day2 = endedDay(RULES, BEFORE_PLAYING_ON.now)!;
+      const player = BigInt(RECORDED_DAY.player).toString(16);
+      return history.filter(({ value }) => {
+        const at = Number(BigInt((value as { timestamp?: string }).timestamp ?? 0));
+        return !(JSON.stringify(value).includes(player) && at >= day2.start && at < day2.end);
+      });
+    };
+
+    it("offers the day they played, its totals and its share, then goes on into day 3 with the camera on the realm", async () => {
+      herald.history = skippingDay2(BEFORE_PLAYING_ON.history);
+      await openTheGameHere();
+      const card = host.querySelector(DAY_1)!;
+      expect(card.textContent).toContain("Realm kept · Day 3 is open");
+      expect([...card.querySelectorAll("[data-total]")].map((cell) => cell.textContent)).toEqual(PROD_DAY_1);
+      // Its armies ended with day 1, not with the day that just ended: the card says nothing of them.
+      expect(card.querySelector("[aria-label='Troops']")).toBeNull();
+
+      const share = [...card.querySelectorAll("button")].find((button) => button.textContent === "Share your day")!;
+      await act(async () => share.click());
+      const sheet = document.body.querySelector("section[aria-label='Share your day']")!;
+      expect(sheet.querySelector(".day-share__frame .day-card__day")?.textContent).toBe("Day 1");
+      expect(shares.createShare).toHaveBeenCalledWith({ kind: "frontier-day", chainId: "0x1", gameId: 1, moment: 1 });
+      act(() => sheet.querySelector<HTMLButtonElement>("button[aria-label='Close']")!.click());
+
+      act(() =>
+        [...card.querySelectorAll<HTMLButtonElement>("button")]
+          .find((button) => button.textContent === "Continue")!
+          .click(),
+      );
+      await throughTheBlack();
+      expect(phase()).toBe("day");
+      expect(navigate.mock.calls).toEqual([[NEW_SITE]]);
+      expect(window.localStorage.getItem(MARK)).toBe("2");
+    });
+
+    it("offers it no more once this device went through a day's end after it", async () => {
+      herald.history = skippingDay2(BEFORE_PLAYING_ON.history);
+      window.localStorage.setItem(MARK, "1");
+      await openTheGameHere();
+      expect(host.querySelector(SUMMARY_SHOWN)).toBeNull();
+      expect(useDayEndStore.getState()).toMatchObject({ phase: "nightfall", arrival: "later", summary: "none" });
+      await throughTheBlack();
+      expect(navigate.mock.calls).toEqual([[NEW_SITE]]);
+    });
+
+    it("offers it no more once they played on in day 3", async () => {
+      herald.history = skippingDay2(RECORDED_DAY.history);
+      herald.now = RECORDED_DAY.openedAt;
+      await openTheGameHere();
+      expect(host.querySelector(SUMMARY_SHOWN)).toBeNull();
+      expect(useDayEndStore.getState()).toMatchObject({ summary: "none" });
+    });
+  });
+
   it("does not play a day's end again on a device that went through it, summary or none", async () => {
     window.localStorage.setItem(MARK, "2");
     await openTheGameHere();
@@ -455,7 +653,15 @@ describe("a device arriving in a new day", () => {
     herald.history = [];
     // Founded a minute into day 3, after day 2 had ended.
     const founded = endedDay(RULES, herald.now)!.end + 60;
-    await openTheGameHere({ realm: { game_id: 1, entity_id: 7n, base: { created_at: founded } } as never });
+    await openTheGameHere({
+      realm: {
+        game_id: 1,
+        entity_id: 7n,
+        owner: BigInt(RECORDED_DAY.player),
+        base: { created_at: founded },
+        metadata: { order: 5 },
+      } as never,
+    });
     await seconds(DAY_END_TIMING.nightfall + DAY_END_TIMING.black + DAY_END_TIMING.dawn);
     expect(host.querySelector(SUMMARY)).toBeNull();
     expect(phase()).toBe("day");
@@ -472,7 +678,7 @@ describe("a device arriving in a new day", () => {
   it("marks the day gone through only once Continue's black has the camera on the realm's new site", async () => {
     await openTheGameHere();
     expect(totalsShown()).toEqual(PROD_DAY_2);
-    act(() => host.querySelector<HTMLButtonElement>(`${SUMMARY} button`)!.click());
+    act(() => continueButton().click());
     expect(phase()).toBe("nightfall");
     expect(window.localStorage.getItem(MARK)).toBeNull();
     await throughTheBlack();

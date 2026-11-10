@@ -5,7 +5,7 @@
  */
 import { APP_HOST } from "@/config/app-address";
 import type { ResolvedGameMode } from "@/config/game-modes/resolved-mode";
-import type { CampaignKey, SocialProvider } from "@realms-world/identity";
+import { SHARED_MOMENT_WORDS, type CampaignKey, type SocialProvider } from "@realms-world/identity";
 import type { NotificationKind, NotificationLevel } from "@bibliothecadao/notifications";
 import type { RuinChest } from "@bibliothecadao/eternum";
 import {
@@ -653,10 +653,16 @@ export const RECAP_WORDS = {
   cards: "Your season's cards",
   next: "Next card",
   previous: "Previous card",
-  /**
-   * Sharing a season is a post on X with its image (owner, 4 November 2026): copy the image (save it, where the
-   * clipboard takes none), then post, and paste it in. The two steps are numbered, and the hint says the order.
-   */
+  /** The deck's image, where it is saved rather than copied. */
+  fileName: "my-season.png",
+} as const;
+
+/**
+ * Sharing a card is a post on X with its image (owner, 4 November 2026): copy the image (save it, where the clipboard
+ * takes none), then post, and paste it in. The two steps are numbered, and the hint says the order. The season's recap
+ * and the Frontier day's card share the same steps.
+ */
+export const SHARE_WORDS = {
   copy: "Copy image",
   copied: "Image copied",
   save: "Save image",
@@ -667,6 +673,50 @@ export const RECAP_WORDS = {
   /** While the card is made into an image. */
   making: "Making the image",
   failed: "The image could not be made.",
+  /** A phone's share sheet, to any app the player picks: the card, its line and its link in one press. */
+  share: "Share",
+  shareFailed: "Sharing did not open. Copy the image and post it instead.",
+} as const;
+
+/** A Frontier day's card, shared from the day-done card: the day, its fights in order, its totals and its rank. */
+export const DAY_SHARE_WORDS = {
+  share: "Share your day",
+  rank: "Season rank",
+  /** The image's file, where it is saved rather than copied. */
+  fileName: (day: number) => `frontier-day-${day}.png`,
+  /** Under the card, for a friend: where it is played, and that it costs nothing. */
+  playFree: "Free to play",
+  /** The day's best moment, its card's headline: a chest, a clear by its site's name, or the land revealed. */
+  best: {
+    chest: "Ruin chest opened",
+    clear: (site: string) => `${site} cleared`,
+    reveals: (count: string) => `${count} tiles revealed`,
+  },
+  /** Under a clear's headline: the guard the fight that won it beat. */
+  guardBeaten: (troops: string) => `Guard of ${troops} beaten`,
+  /** What the player's shared days brought so far, once they brought anyone: "Your days brought 12 visits · 3 players". */
+  brought: (visits: string, joined: string) => `Your days brought ${visits} visits · ${joined} new players`,
+} as const;
+
+/** What the player's shared days brought, on their own page: each step a friend takes, counted. */
+export const SHARED_DAYS_WORDS = {
+  title: "Your shared days",
+  steps: {
+    posted: "Days posted",
+    visits: "Opened by friends",
+    joined: "Friends who joined",
+    activated: "Cleared a site",
+  },
+} as const;
+
+/** A shared link's landing: who shared which day, and the way into Frontier. */
+export const SHARED_LINK_WORDS = {
+  /** Its title and pitch are the link's unfurl's too (@realms-world/identity's SHARED_MOMENT_WORDS), so both say one thing. */
+  sharedDay: SHARED_MOMENT_WORDS.title,
+  pitch: SHARED_MOMENT_WORDS.pitch,
+  play: "Start your adventure",
+  opening: "Opening…",
+  unknown: "This link leads to no shared day.",
 } as const;
 /** A season's end, told one of two ways (story): the mist lifted, or it grew too strong. */
 export const SEASON_ENDINGS = { lifted: "The mist lifted", strong: "The mist grew too strong" } as const;

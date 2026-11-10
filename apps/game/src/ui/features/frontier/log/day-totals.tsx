@@ -14,22 +14,21 @@ export type DayTotals = {
   lords: number | undefined;
 };
 
-/** The day's totals in two rows: what was revealed, cleared and found, then what it paid. */
-export const DayTotalsGrid = ({ totals }: { totals: DayTotals }) => (
-  <TotalsGrid
-    cells={[
-      { icon: "explore", name: REVEALS, value: formatShort(totals.reveals) },
-      { icon: "flag", name: SITES_CLEARED, value: formatShort(totals.cleared) },
-      { icon: "chest", name: CHESTS, value: formatShort(totals.chests) },
-      { icon: "essence", name: ESSENCE, value: gained(totals.essence) },
-      { icon: "labor", name: resourceName(ResourcesIds.Labor), value: gained(totals.labor) },
-      { icon: "lords", name: LORDS, value: gained(totals.lords) },
-    ]}
-  />
-);
+/** A day's totals as every surface writes them: what was revealed, cleared and found, then what it paid. */
+export const dayTotalCells = (totals: DayTotals): TotalCell[] => [
+  { total: "reveals", icon: "explore", name: REVEALS, value: formatShort(totals.reveals) },
+  { total: "cleared", icon: "flag", name: SITES_CLEARED, value: formatShort(totals.cleared) },
+  { total: "chests", icon: "chest", name: CHESTS, value: formatShort(totals.chests) },
+  { total: "essence", icon: "essence", name: ESSENCE, value: gained(totals.essence) },
+  { total: "labor", icon: "labor", name: resourceName(ResourcesIds.Labor), value: gained(totals.labor) },
+  { total: "lords", icon: "lords", name: LORDS, value: gained(totals.lords) },
+];
 
-/** One total: its icon, the name the icon stands for, and its figure. */
-type TotalCell = { icon: IconMeaning; name: string; value: string };
+/** The day's totals in two rows: what was revealed, cleared and found, then what it paid. */
+export const DayTotalsGrid = ({ totals }: { totals: DayTotals }) => <TotalsGrid cells={dayTotalCells(totals)} />;
+
+/** One total: which it is, its icon, the name the icon stands for, and its figure. */
+type TotalCell = { total: keyof DayTotals; icon: IconMeaning; name: string; value: string };
 
 /**
  * A day's totals, three to a row. Each cell is its icon beside its figure, named in words under it
