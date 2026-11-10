@@ -218,4 +218,8 @@ for (const shot of plan.shots) {
   console.log(`${shot.name}: ${saved} frames in ${Math.round((Date.now() - started) / 1000)} s`);
 }
 
+// Asked to close, the browser ends its own processes and lets go of its profile before that is removed.
+const closed = new Promise((done) => browser.once("exit", done));
+await send("Browser.close");
+await closed;
 process.exit(0);
