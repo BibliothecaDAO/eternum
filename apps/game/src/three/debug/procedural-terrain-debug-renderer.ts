@@ -207,6 +207,8 @@ interface TerrainDebugRendererSurface extends RendererSurfaceLike {
   init(): Promise<void>;
   setAnimationLoop(callback: ((time: number) => void) | null): void;
   setOutputRenderTarget(target: RenderTarget | null): void;
+  /** WebGPU's device; absent on the WebGL2 backend. */
+  backend?: { device?: { lost: Promise<{ message: string }> } };
   readRenderTargetPixelsAsync(
     target: RenderTarget,
     x: number,
@@ -307,6 +309,7 @@ async function mountOnCanvas(
 
   try {
     const runtime = await createRuntime(input);
+    reportLostDevice(runtime.renderer, verification);
     const resizeObserver = observeCanvas(input.canvas, runtime);
     const stopAnimation = startAnimation(runtime, input);
     const stats = readStats(runtime, input.forceWebGL, input.texturedGround);
@@ -829,6 +832,20 @@ function startAnimation(runtime: TerrainDebugRuntime, input: MountProceduralTerr
     if (runtime.renderSubmissionMs.length > 240) runtime.renderSubmissionMs.shift();
   });
   return () => runtime.renderer.setAnimationLoop(null);
+}
+
+/**
+ * A lost GPU device ends the lab in an error; without this the lab stayed ready and every later frame and capture came
+ * out empty. It is read from the device itself: three skips its own onDeviceLost for a device lost as "destroyed", which
+ * is how Chrome ends the first device on a machine with no Vulkan driver.
+ */
+function reportLostDevice(
+  renderer: TerrainDebugRendererSurface,
+  verification: NonNullable<TerrainVerificationWindow["__terrainVerification"]>,
+): void {
+  void renderer.backend?.device?.lost.then((info) => {
+    Object.assign(verification, { status: "error", error: `GPU device lost: ${info.message}` });
+  });
 }
 
 /** A frame of the lab as the screen shows it: a PNG, and the share of its pixels drawn over the clear colour. */

@@ -379,7 +379,10 @@ async function runGalleryScenario({
       runAgentBrowser(session, ["wait", "1200"], headed);
       state = readRouteState(session, headed);
     }
-    const errors = parseErrorLines(runAgentBrowser(session, ["errors"], headed));
+    const errors = [
+      ...(state.error ? [state.error] : []),
+      ...parseErrorLines(runAgentBrowser(session, ["errors"], headed)),
+    ];
     const screenshotPath = join(artifactDirectory, `${sceneId}-${rendererMode}-${groundMode}.png`);
     const imageCoverage =
       state.status === "ready"
@@ -450,6 +453,7 @@ function readRouteState(session, headed) {
           routeMounted: Boolean(route),
           snapshot: debug?.getSnapshot?.() ?? null,
           status: debug?.status ?? "booting",
+          error: debug?.error ?? null,
         };
       })())`,
     ],
