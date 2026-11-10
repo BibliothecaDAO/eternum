@@ -20,20 +20,20 @@ posts bring.
 
 ## What is built
 
-| Part             | What                                                                                                                      | Proof                                                                      |
-| ---------------- | ------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------- |
-| Share your day   | A button on the day-done card, shown only when the day's totals are whole                                                 | `rollover/day-done.test.tsx` (prod's recorded day 2)                       |
-| The sheet        | In the HUD's modal layer and controls; a desktop draws the wide cut (1200 × 675), a phone the tall cut (1080 × 1350)      | `day-done.test.tsx`; `pnpm hud:check`                                      |
-| The card         | Lockup, day, player, rank and move, trail (18 marks, then +N), six totals, host, "Free to play"                           | `/lab/kit/hud/day-share`, `day-share-quiet`                                |
-| The post         | `dayPostText`: the day and rank line, three totals, the trail as emoji; the link after it                                 | `rollover/day-share.test.ts`                                               |
-| The steps        | Copy image → Post on X; one hook (`share-steps.tsx`), drawn in the HUD's buttons here and the app's in the season's recap | `season-recap.test.tsx`, `day-done.test.tsx`                               |
-| A phone's Share  | Where the share sheet takes images, Share above the two steps: the tall card's PNG, the line and the link, to any app     | `day-done.test.tsx`, `rollover/day-share-sheet.test.tsx`                   |
-| The link         | `/s/<code>`, one per account and day, made as the sheet opens, read and cached under the signed-in account only           | `identity.test.ts` "shared links"; `day-share-sheet.test.tsx`              |
-| The unfurl       | The Worker serves `/s/*` with the link's title, pitch, address and, once published, its card                              | `identity.test.ts` "shared links"                                          |
-| Publication      | The card is made on the device as the sheet opens and published only on the press of Post on X or Share                   | `day-share-sheet.test.tsx`, `day-done.test.tsx`                            |
-| The landing      | "Ashwalker shared Day 12 of Frontier", Frontier's pitch, Start your adventure; records the visit with the link's tag      | `shell/share/shared-link-page.test.tsx`                                    |
-| The funnel       | links → posted → visits (others' browsers) → joined (account made after a visit on that browser) → activated              | `identity.test.ts`; `GET /api/operator/shares`                             |
-| Your shared days | On You once a day was posted: days posted, opened by friends, friends who joined, those who cleared a site                | `shell/profile/shared-days-panel.test.tsx`; `/lab/app/shared-days/profile` |
+| Part             | What                                                                                                                         | Proof                                                                            |
+| ---------------- | ---------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------- |
+| Share your day   | A button on the day-done card, and on Today's page of an earlier day the player played; only when the day's totals are whole | `rollover/day-done.test.tsx`, `log/today-share.test.tsx` (prod's recorded day 2) |
+| The sheet        | In the HUD's modal layer and controls; a desktop draws the wide cut (1200 × 675), a phone the tall cut (1080 × 1350)         | `day-done.test.tsx`; `pnpm hud:check`                                            |
+| The card         | Lockup, day, player, rank and move, trail (18 marks, then +N), six totals, host, "Free to play"                              | `/lab/kit/hud/day-share`, `day-share-quiet`                                      |
+| The post         | `dayPostText`: the day and rank line, three totals, the trail as emoji; the link after it                                    | `rollover/day-share.test.ts`                                                     |
+| The steps        | Copy image → Post on X; one hook (`share-steps.tsx`), drawn in the HUD's buttons here and the app's in the season's recap    | `season-recap.test.tsx`, `day-done.test.tsx`                                     |
+| A phone's Share  | Where the share sheet takes images, Share above the two steps: the tall card's PNG, the line and the link, to any app        | `day-done.test.tsx`, `rollover/day-share-sheet.test.tsx`                         |
+| The link         | `/s/<code>`, one per account and day, made as the sheet opens, read and cached under the signed-in account only              | `identity.test.ts` "shared links"; `day-share-sheet.test.tsx`                    |
+| The unfurl       | The Worker serves `/s/*` with the link's title, pitch, address and, once published, its card                                 | `identity.test.ts` "shared links"                                                |
+| Publication      | The card is made on the device as the sheet opens and published only on the press of Post on X or Share                      | `day-share-sheet.test.tsx`, `day-done.test.tsx`                                  |
+| The landing      | "Ashwalker shared Day 12 of Frontier", Frontier's pitch, Start your adventure; records the visit with the link's tag         | `shell/share/shared-link-page.test.tsx`                                          |
+| The funnel       | links → posted → visits (others' browsers) → joined (account made after a visit on that browser) → activated                 | `identity.test.ts`; `GET /api/operator/shares`                                   |
+| Your shared days | On You once a day was posted: days posted, opened by friends, friends who joined, those who cleared a site                   | `shell/profile/shared-days-panel.test.tsx`; `/lab/app/shared-days/profile`       |
 
 **Activated** means the friend stands on the season board of the game the link was shared from with a site cleared. The
 season is the window: a clear there counts however late a read finds it, and a clear in another game never does. A join

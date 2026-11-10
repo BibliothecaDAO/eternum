@@ -2020,6 +2020,7 @@ const LabResults = ({
       lines={results === "today-sites" ? siteUseDayLog(NOW) : readTodayLog()}
       history={results === "today-failed" ? "failed" : "whole"}
       onRetry={noop}
+      onShare={results === "today-earlier" ? noop : undefined}
       onEarlier={noop}
       onLater={results === "today-earlier" ? noop : undefined}
       onArmies={noop}

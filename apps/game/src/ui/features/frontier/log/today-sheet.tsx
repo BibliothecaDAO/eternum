@@ -1,6 +1,7 @@
 import type { RankedWords } from "@/ui/design-system/kit/words";
 import { formatAmount, formatClockTime } from "@bibliothecadao/types";
 import {
+  HudButton,
   HudEventRow,
   HudIconButton,
   HudNotice,
@@ -10,6 +11,7 @@ import {
 } from "@/ui/design-system/kit/hud-elements";
 import {
   DAY,
+  DAY_SHARE_WORDS,
   DAY_TOTALS_UNKNOWN,
   dayOfSeason,
   dayEnds,
@@ -35,7 +37,8 @@ export type LogLine = { id: string; at: number; text: RankedWords | string };
 /**
  * Today (wireframe 12), a sheet from the day's dial: today's clock line (when it ends, the time left, how long tomorrow
  * lasts; the strip keeps only the dial), on today's page what the day's end takes and what is left to do, the day's totals, the armies with a tier to buy, the day's log newest first,
- * and the stepper to earlier days. When the log did not answer, its
+ * and the stepper to earlier days. An ended day the player played has Share your day under its totals, the day-done
+ * card's way to post it, so a day missed at its end can still be shared. When the log did not answer, its
  * card says so, with Try again; when the history no longer reaches back to the day's start, it says so above the log.
  */
 export const TodaySheet = ({
@@ -49,6 +52,7 @@ export const TodaySheet = ({
   lines,
   history,
   onRetry,
+  onShare,
   onEarlier,
   onLater,
   onArmies,
@@ -70,6 +74,8 @@ export const TodaySheet = ({
   /** How much of the day the player's history gives. */
   history: DayHistory;
   onRetry: () => void;
+  /** Opens the day's card to share; only on an ended day the player can share (useDayShare). */
+  onShare?: () => void;
   /** Absent on the season's first day. */
   onEarlier?: () => void;
   /** Absent on today. */
@@ -87,6 +93,11 @@ export const TodaySheet = ({
       {today && <DayClockLine clock={clock} />}
       {today && dayEnd}
       <DayTotalsGrid totals={totals} />
+      {onShare && (
+        <HudButton kind="secondary" icon="share" onClick={onShare}>
+          {DAY_SHARE_WORDS.share}
+        </HudButton>
+      )}
       {armiesToUpgrade !== undefined && armiesToUpgrade > 0 && (
         <HudRow lead={<Icon name="picks" size={22} />} title={formatAmount(armiesToUpgrade)} onClick={onArmies} />
       )}

@@ -1,9 +1,12 @@
 import "./day-share-sheet.css";
 
+import { configManager } from "@bibliothecadao/eternum";
 import { formatShort } from "@bibliothecadao/types";
 import { useEffect, useLayoutEffect, useRef, useState, type RefObject } from "react";
 
+import { useAccountStore } from "@/hooks/store/use-account-store";
 import { usePlayerName } from "@/hooks/use-player-profile";
+import { getActiveGame } from "@/runtime/world";
 import { useLayout } from "@/shell/frame/layout";
 import { ageOf } from "@/shell/play/ages";
 import { DayCard, type SharedDay } from "@/shell/share/day-card";
@@ -13,12 +16,14 @@ import { HudButton, HudIconButton, HudModalLayer, HudNotice } from "@/ui/design-
 import { CLOSE, DAY_SHARE_WORDS, SHARE_WORDS } from "@/ui/design-system/kit/words";
 import { CARD_CUTS, canShareCardFile, cardJpeg, type CardCut } from "@/utils/card-image";
 
-import { dayPostText } from "./day-share";
+import type { usePlayerDay } from "../log/player-day";
+import { useClosingRankChange } from "./day-ranks";
+import { dayPostText, dayTrail } from "./day-share";
 import { SystemShare } from "./system-share";
 
 /**
- * Sharing a Frontier day, from the day-done card, in the HUD's modal layer: the day's card at the size it is shared,
- * fitted to the screen, then the two steps (Copy image, Post on X). A phone whose share sheet takes images also gets
+ * Sharing a Frontier day, from the day-done card or Today's page of an ended day (useDayShare), in the HUD's modal
+ * layer: the day's card at the size it is shared, fitted to the screen, then the two steps (Copy image, Post on X). A phone whose share sheet takes images also gets
  * Share above them, to any app (owner, 7 November 2026: the day's card goes past X; the season's recap stays X only). A
  * desktop draws the wide cut, a phone the tall one, as the season's recap does; the link always unfurls as the wide
  * cut, which a phone draws out of sight for it. The post's link is the player's own for this day (identity's shared
@@ -108,6 +113,38 @@ export const DayShareSheet = ({ shared, onClose }: { shared: SharedDay; onClose:
       </section>
     </HudModalLayer>
   );
+};
+
+/** What sharing a day reads of the player's day (usePlayerDay). */
+type PlayedDay = Pick<ReturnType<typeof usePlayerDay>, "history" | "totals" | "stories">;
+
+/**
+ * Sharing an ended day, for the day-done card and for Today's page of that day: the way to open its sheet, absent when
+ * the day is not the signed-in player's to share, and the sheet while open. Only the player's own day is theirs to
+ * share (Today also shows a watched realm's), only one they played (a day with none of their own stories has nothing
+ * to share), and only whole: its card never shows a total the player's history only half gives.
+ */
+export const useDayShare = (player: string | null, endedDay: number | undefined, played: PlayedDay) => {
+  const signedIn = useAccountStore((state) => state.account?.address ?? null);
+  const own = player !== null && signedIn !== null && BigInt(player) === BigInt(signedIn);
+  const rank = useClosingRankChange(own ? endedDay : undefined);
+  const [openFor, setOpenFor] = useState<number | null>(null);
+  const chainId = getActiveGame()?.chainId;
+  const shared: SharedDay | null =
+    own && endedDay !== undefined && chainId && played.history === "whole" && played.stories.length > 0
+      ? {
+          player: signedIn,
+          game: { chainId, gameId: configManager.getActiveGameId() },
+          day: endedDay,
+          totals: played.totals,
+          rank,
+          trail: dayTrail(played.stories),
+        }
+      : null;
+  return {
+    onShare: shared ? () => setOpenFor(shared.day) : undefined,
+    sheet: shared && openFor === shared.day && <DayShareSheet shared={shared} onClose={() => setOpenFor(null)} />,
+  };
 };
 
 /**

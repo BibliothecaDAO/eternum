@@ -1,4 +1,5 @@
-import { act } from "react";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { act, type ReactNode } from "react";
 import { createRoot } from "react-dom/client";
 import { expect, it, vi } from "vitest";
 
@@ -110,6 +111,9 @@ function fightOn(site: number, id: string, tx: string, index: number, army: [num
 
 const { FrontierToday } = await import("./frontier-today");
 
+/** Today as the HUD holds it, under the game's query client. */
+const inGame = (today: ReactNode) => <QueryClientProvider client={new QueryClient()}>{today}</QueryClientProvider>;
+
 it("shows a spectator the watched realm's day, its owner's clears counted, with no armies row to open", () => {
   (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
   const host = document.createElement("div");
@@ -117,7 +121,7 @@ it("shows a spectator the watched realm's day, its owner's clears counted, with 
   const root = createRoot(host);
   const rules = { dayUnitSeconds: 100, seed: 1n, startMainAt: 0, endAt: 21 * 20 * 14_400 } as never;
   const watched = { entity_id: 7, owner: OWNER } as never;
-  act(() => root.render(<FrontierToday rules={rules} realm={watched} onClose={() => undefined} />));
+  act(() => root.render(inGame(<FrontierToday rules={rules} realm={watched} onClose={() => undefined} />)));
   try {
     expect(asked.owners.at(-1)).toBeDefined();
     expect(BigInt(asked.owners.at(-1)!)).toBe(OWNER);
@@ -144,7 +148,7 @@ it("leaves every total unknown when the history read fails, with Retry, never si
   const root = createRoot(host);
   const rules = { dayUnitSeconds: 100, seed: 1n, startMainAt: 0, endAt: 21 * 20 * 14_400 } as never;
   const watched = { entity_id: 7, owner: OWNER } as never;
-  act(() => root.render(<FrontierToday rules={rules} realm={watched} onClose={() => undefined} />));
+  act(() => root.render(inGame(<FrontierToday rules={rules} realm={watched} onClose={() => undefined} />)));
   try {
     expect(BigInt(asked.owners.at(-1)!)).toBe(OWNER);
     expect(
@@ -169,11 +173,13 @@ it("Today loads the owner's shrine and well use from history, with the exact rec
   try {
     act(() =>
       root.render(
-        <FrontierToday
-          rules={{ dayUnitSeconds: 100, seed: 1n, startMainAt: 0, endAt: 21 * 20 * 14_400 } as never}
-          realm={{ entity_id: 7, owner: OWNER } as never}
-          onClose={() => undefined}
-        />,
+        inGame(
+          <FrontierToday
+            rules={{ dayUnitSeconds: 100, seed: 1n, startMainAt: 0, endAt: 21 * 20 * 14_400 } as never}
+            realm={{ entity_id: 7, owner: OWNER } as never}
+            onClose={() => undefined}
+          />,
+        ),
       ),
     );
     expect(host.textContent).toContain("Shrine used, +200 XP");

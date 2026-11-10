@@ -8,6 +8,7 @@ import { type ReactNode, useState } from "react";
 
 import { dayBounds, dayClock, seasonDay } from "../hud/day-clock";
 import { useDockArmies } from "../hud/dock-armies";
+import { useDayShare } from "../rollover/day-share-sheet";
 import { dayLogLine } from "./day-line";
 import { usePlayerDay } from "./player-day";
 import { type LogLine, TodaySheet } from "./today-sheet";
@@ -17,7 +18,8 @@ type ExpeditionRules = NonNullable<ReturnType<typeof readExpeditionRules>>;
 /**
  * Today over the stories of the realm's owner: the player's own realm, or the one a spectator watches. Today's totals
  * (the ruin's LORDS among them) and log, stepping back through earlier days, and, for the player's own realm, today's
- * armies with a tier their XP can buy, the row opening the first of them.
+ * armies with a tier their XP can buy, the row opening the first of them, and on an earlier day they played the way to
+ * share it.
  */
 export const FrontierToday = ({
   rules,
@@ -46,24 +48,30 @@ export const FrontierToday = ({
   // Only a read that answered and reaches the day counts, an empty day as zero; otherwise every total is a dash.
   const played = usePlayerDay(player, day === undefined ? null : dayBounds(rules, now, day));
   const step = (to: number) => setChosen(to === today ? null : to);
+  const ended = day !== undefined && today !== undefined && day < today;
+  const { onShare, sheet } = useDayShare(player, ended ? day : undefined, played);
   const buyers = useDockArmies(onOpenArmy ? realm : null).filter(({ canSpendSkillPoint }) => canSpendSkillPoint);
   return (
-    <TodaySheet
-      day={day}
-      lastDay={season?.lastDay}
-      today={day === today}
-      clock={clock}
-      totals={played.totals}
-      dayEnd={dayEnd}
-      lines={logLines(played.stories, setup.store)}
-      armiesToUpgrade={onOpenArmy && day === today ? buyers.length : undefined}
-      onArmies={onOpenArmy && buyers[0] ? () => onOpenArmy(buyers[0]!.explorerId) : undefined}
-      history={played.history}
-      onRetry={played.retry}
-      onEarlier={day !== undefined && day > 1 ? () => step(day - 1) : undefined}
-      onLater={day !== undefined && today !== undefined && day < today ? () => step(day + 1) : undefined}
-      onClose={onClose}
-    />
+    <>
+      <TodaySheet
+        day={day}
+        lastDay={season?.lastDay}
+        today={day === today}
+        clock={clock}
+        totals={played.totals}
+        dayEnd={dayEnd}
+        lines={logLines(played.stories, setup.store)}
+        armiesToUpgrade={onOpenArmy && day === today ? buyers.length : undefined}
+        onArmies={onOpenArmy && buyers[0] ? () => onOpenArmy(buyers[0]!.explorerId) : undefined}
+        history={played.history}
+        onRetry={played.retry}
+        onShare={onShare}
+        onEarlier={day !== undefined && day > 1 ? () => step(day - 1) : undefined}
+        onLater={day !== undefined && today !== undefined && day < today ? () => step(day + 1) : undefined}
+        onClose={onClose}
+      />
+      {sheet}
+    </>
   );
 };
 

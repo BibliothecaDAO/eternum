@@ -21,11 +21,11 @@ export const useClosingRankChange = (endedDay: number | undefined): { from: numb
 };
 
 const useDayRank = (dayIndex: number | undefined, player: string | null): number | undefined => {
-  const shard = requireShard(getActiveGame()?.chainId);
+  const chainId = getActiveGame()?.chainId;
   const gameId = configManager.getActiveGameId();
   const ranks = useQuery({
-    queryKey: ["frontierDayRanks", shard.url, gameId, dayIndex],
-    queryFn: () => fetchHeraldDayRanks(shard, gameId, dayIndex!),
+    queryKey: ["frontierDayRanks", chainId, gameId, dayIndex],
+    queryFn: () => fetchHeraldDayRanks(requireShard(chainId), gameId, dayIndex!),
     enabled: dayIndex !== undefined,
     staleTime: CLOSED,
   });
