@@ -36,7 +36,9 @@ export const setViewport = ({ width, height }) => Object.assign(VIEWPORT, { widt
 
 /**
  * The machine's GPU through Vulkan, with WebGPU on: headless Chrome otherwise renders on SwiftShader and hides WebGPU.
- * Every session's browser starts with them.
+ * On a machine with no GPU (CI) SwiftShader is all there is, and Chrome draws on it only when allowed; agent-browser
+ * allows it for headless launches alone, so a headed browser had neither WebGL nor WebGPU. Every session's browser
+ * starts with them.
  */
 const GPU_ARGS = [
   "--ignore-gpu-blocklist",
@@ -44,6 +46,7 @@ const GPU_ARGS = [
   "--use-angle=vulkan",
   "--enable-features=Vulkan",
   "--enable-unsafe-webgpu",
+  "--enable-unsafe-swiftshader",
 ];
 
 /** agent-browser's options that launch the browser; createBrowserSession gives them, never one command. */
