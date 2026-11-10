@@ -1,5 +1,6 @@
 import { CHAT_ALERT_PRESSED, type ChatAlertPress } from "./chat-alert";
 import {
+  isChatClient,
   notificationMatchesGame,
   isNotificationGameClient,
   parseNotificationPayload,
@@ -191,16 +192,6 @@ async function openNotificationGame(worker: ServiceWorkerGlobalScope, value: unk
   } catch {
     // A notification can outlive its payload or the account that enabled it. Invalid/expired clicks do nothing.
   }
-}
-
-/**
- * A Realms window that can open a chat alert's chat itself (told by CHAT_ALERT_PRESSED): any app page, which can go to
- * the chat, or a game, whose chat opens over it, keeping the game where it is. A mention in a lobby needs the lobby's
- * page, so only an app page, which goes there.
- */
-function isChatClient(clientUrl: string, target: string, origin: string): boolean {
-  if (new URL(clientUrl).origin !== origin) return false;
-  return !target.startsWith("/blitz/") || !isNotificationGameClient(clientUrl, origin);
 }
 
 async function receivePushNotification(worker: AlertWorker, event: PushEvent): Promise<void> {

@@ -4,8 +4,13 @@ import { notificationOwnerOf, useIdentitySession, useIdentitySessionStore } from
 import { useNotificationPreferences } from "@/hooks/use-notification-preferences";
 import { notificationWorkerRequest, reportNotificationDeliveryError } from "./local-notification-client";
 import { startPushForegroundLifecycle } from "./push-foreground-lifecycle";
+import { iosAppBridge, listenForIosAppPushTaps, reconcileIosAppPush } from "./ios-app-push";
 
-/** Keeps account preferences available outside Settings and revokes local device delivery on logout/account switch. */
+/**
+ * Keeps account preferences available outside Settings and revokes local device delivery on logout/account switch. In
+ * the iOS app it also keeps the app's push registration to the signed-in account and opens the alerts the player taps,
+ * once the session is known: a tap from a cold start waits for it.
+ */
 export function LocalNotificationLifecycle() {
   const { session, status } = useIdentitySession();
   const owner = notificationOwnerOf(session);
@@ -42,6 +47,13 @@ export function LocalNotificationLifecycle() {
     if (!owner) return;
     return startPushForegroundLifecycle(owner);
   }, [owner]);
+  useEffect(() => {
+    const app = iosAppBridge();
+    if (!app || status === "loading") return;
+    void reconcileIosAppPush(app, owner ?? null).catch(reportNotificationDeliveryError);
+    const taps = listenForIosAppPushTaps(app);
+    return () => void taps.remove();
+  }, [status, owner]);
   return (
     <>
       {status !== "loading" && <LoadPreferences key={owner ?? "anonymous"} owner={owner} />}
