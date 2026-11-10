@@ -3,6 +3,7 @@
  * screen's words), each spelled once. A screen that needs one imports it from here; nothing else spells it. The rules
  * every client and core's story text share (nouns, numbers, times, names, the voice) are @bibliothecadao/types' words.
  */
+import { APP_HOST } from "@/config/app-address";
 import type { ResolvedGameMode } from "@/config/game-modes/resolved-mode";
 import type { CampaignKey, SocialProvider } from "@realms-world/identity";
 import type { NotificationKind, NotificationLevel } from "@bibliothecadao/notifications";
@@ -1213,6 +1214,42 @@ export const PROFILE_WORDS = {
   blocked: "Blocked",
   blockedLine: "Alerts are blocked in this browser",
   install: "Install",
+} as const;
+
+/**
+ * Deleting a Realms account (apps/realms/server/account-deletion.ts): what goes and what stays, read by Settings'
+ * Delete account and by the public page that explains it, so both say the same.
+ */
+export const ACCOUNT_DELETION_WORDS = {
+  title: "Delete account",
+  page: "Delete your account",
+  intro: "Deleting your Realms account is permanent and happens at once. It cannot be undone.",
+  goesTitle: "What is deleted",
+  goes: [
+    "Your sign-in: your email, every linked login and every signed-in device",
+    "Your name, portrait and payout wallet link",
+    "Your notification settings and push alerts on every device",
+    "Your direct messages and block list",
+    "Your build orders, referral link and news emails",
+  ],
+  staysTitle: "What stays",
+  stays: [
+    "Your Realms wallet stays on Starknet with everything in it: Realms cannot take or move it. Only your passkey controls it now. This app can no longer send from it, and email recovery ends, a recovery under way included. Move what you want to keep first.",
+    "Your game accounts stay on chain with their progress. No one can sign in to them or add a device to them again; a device already added keeps its key on chain.",
+    "Ratings stay on chain under the wallets that played.",
+    "Messages you sent stay with the players who got them and in chat rooms until they are 30 days old, then they are deleted.",
+    "Campaign tickets, past wallet links and payout records stay under an anonymous id, so past games and payouts still add up.",
+  ],
+  confirm: "We email you a code. Enter it to delete your account.",
+  sendCode: "Email me a code",
+  stepsTitle: "How to delete it",
+  steps: [
+    `Sign in at ${APP_HOST} and open Settings.`,
+    "Choose Delete account, at the end of Settings, and read what is deleted and what stays.",
+    "Enter the code we email you. Your account is deleted at once.",
+  ],
+  openSettings: "Open Settings",
+  cannotSignIn: "Cannot sign in to your account? Ask us on Discord to delete it.",
 } as const;
 
 /**

@@ -65,6 +65,7 @@ it("allows 100 viewers behind one IP to poll four times and read history twice e
 });
 
 it.each([
+  ["/api/account", "DELETE"],
   ["/api/devices", "POST"],
   ["/api/chat/blocks", "POST"],
   ["/api/chat/blocks/0x2", "DELETE"],

@@ -1,8 +1,13 @@
 import { nextOf, safeNextPath } from "../return-path";
 
-/** Settings, under You: the account, the payout wallet, notifications, music and devices, on one page. */
+/** Settings, under You: the account, the payout wallet, notifications, music, devices and deletion, on one page. */
 export const SETTINGS_PATH = "/profile/settings";
 export const DEVICES_PATH = `${SETTINGS_PATH}#devices`;
+/** Settings' Delete account row, which the public account deletion page links to. */
+export const DELETE_ACCOUNT_ID = "delete-account";
+export const DELETE_ACCOUNT_PATH = `${SETTINGS_PATH}#${DELETE_ACCOUNT_ID}`;
+/** The public page that explains account deletion and links to that row: the web address the stores ask for. */
+export const ACCOUNT_DELETION_PAGE = "/account/delete";
 
 /**
  * Settings opened to link the payout wallet from a page that needs one (a paid Blitz's lobby): it opens on the payout

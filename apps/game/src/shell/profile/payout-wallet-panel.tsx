@@ -3,17 +3,16 @@ import { Icon as SemanticIcon, type IconMeaning } from "@/ui/design-system/icon"
 import {
   IdentityRequestError,
   isSameStarknetAddress,
-  SIGN_IN_CODE_LENGTH,
   type NewPasskey,
   type SignInOptions,
 } from "@realms-world/identity";
 import { PAYOUT_WALLET_CHANGE_SECONDS } from "@realms-world/value-ledger/payout-wallet";
-import { lazy, Suspense, useCallback, useEffect, useState } from "react";
+import { lazy, Suspense, useState } from "react";
 
 import { noteDefaultWallet, useDefaultWallet } from "@/hooks/context/default-wallet";
 import { identityClient, identityUsername, useIdentitySessionStore } from "@/hooks/context/identity-session";
 import { shortAddress } from "@/ui/design-system/kit/address";
-import { AppButton, AppChip, AppChoice, AppCode, AppNotice } from "@/ui/design-system/kit/app-elements";
+import { AppButton, AppChip, AppChoice, AppNotice } from "@/ui/design-system/kit/app-elements";
 
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { failureSentence } from "@/ui/modules/identity/identity-failures";
@@ -22,6 +21,7 @@ import { createPasskey } from "@/ui/modules/identity/passkey";
 import { l2Provider } from "@/runtime/l2-rpc";
 
 import { Loading } from "../loading";
+import { EmailCodeBoxes, useEmailCode } from "./email-code";
 import { WalletUnread } from "@/shell/value/wallet-unread";
 import { RealmsWalletFunds } from "./realms-wallet-funds";
 import { RealmsWalletRecovery, RecoverStart } from "./realms-wallet-recovery";
@@ -234,77 +234,28 @@ const writeDefaultWallet = async (code: string, passkey: NewPasskey | undefined)
   if (realmsId) noteDefaultWallet(realmsId, wallet);
 };
 
-/**
- * The emailed code: sent when the step opens, entered in six boxes, and spent on the change the moment the sixth digit
- * lands. A link then asks the wallet for its signature.
- */
+/** The emailed code (useEmailCode), spent on the change. A link then asks the wallet for its signature. */
 const CodeStep = ({ change, email, onDone }: { change: Change; email: string; onDone: () => void }) => {
-  const [code, setCode] = useState("");
-  const [sent, setSent] = useState(false);
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  const send = useCallback(async () => {
-    setSent(false);
-    setError(null);
-    try {
-      await identityClient.sendSignInCode(email);
-      setSent(true);
-    } catch (cause) {
-      setError(failureSentence("send-code", cause));
-    }
-  }, [email]);
-  // Sent when the step opens; New code sends again.
-  useEffect(() => {
-    void send();
-  }, [send]);
-
-  const spend = async (entered: string) => {
-    setBusy(true);
-    setError(null);
-    try {
-      if (change.kind === "link") await identityClient.linkWallet({ ...change.proof, code: entered });
-      else if (change.kind === "unlink") await identityClient.unlinkWallet(entered);
-      else if (change.kind === "recover") await startRecovery(entered, change.passkey);
-      else await writeDefaultWallet(entered, change.passkey);
+  const entry = useEmailCode(
+    email,
+    async (code) => {
+      if (change.kind === "link") await identityClient.linkWallet({ ...change.proof, code });
+      else if (change.kind === "unlink") await identityClient.unlinkWallet(code);
+      else if (change.kind === "recover") await startRecovery(code, change.passkey);
+      else await writeDefaultWallet(code, change.passkey);
       onDone();
-    } catch (cause) {
-      setError(failureSentence(change.kind === "default" ? "wallet" : change.kind, cause));
-    } finally {
-      setBusy(false);
-    }
-  };
-  const type = (value: string) => {
-    const digits = value.replace(/\D/g, "").slice(0, SIGN_IN_CODE_LENGTH);
-    setCode(digits);
-    setError(null);
-    if (digits.length === SIGN_IN_CODE_LENGTH) void spend(digits);
-  };
-
+    },
+    (cause) => failureSentence(change.kind === "default" ? "wallet" : change.kind, cause),
+  );
   return (
     <>
       {change.kind === "link" && <Track at={1} />}
       {change.kind === "link" && <WalletCard address={change.proof.address} chip={null} />}
-      <AppNotice line={sent ? `${WALLET_WORDS.codeSentTo} ${email}` : WALLET_WORDS.sending} />
-      <AppCode
-        label={WALLET_WORDS.stepCode}
-        code={code}
-        length={SIGN_IN_CODE_LENGTH}
-        refused={error !== null}
-        disabled={!sent || busy}
-        onType={type}
-      />
-      {busy && change.kind === "link" && <AppNotice line={WALLET_WORDS.confirmInWallet} />}
+      <EmailCodeBoxes entry={entry} />
+      {entry.busy && change.kind === "link" && <AppNotice line={WALLET_WORDS.confirmInWallet} />}
       {change.kind === "unlink" && <AppNotice tone="warn" line={WALLET_WORDS.nothingPaysOut} />}
-      {error && <p className="text-app-body text-app-bad">{error}</p>}
-      <Step
-        icon="refresh"
-        word={WALLET_WORDS.newCode}
-        onClick={() => {
-          setCode("");
-          void send();
-        }}
-      />
+      {entry.error && <p className="text-app-body text-app-bad">{entry.error}</p>}
+      <Step icon="refresh" word={WALLET_WORDS.newCode} onClick={entry.resend} />
     </>
   );
 };

@@ -299,6 +299,17 @@ export const createIdentityClient = ({ apiUrl, fetch = globalThis.fetch }: Ident
     );
   };
 
+  /**
+   * Deletes the signed-in Realms account, confirmed by an emailed sign-in code (`sendSignInCode`). The session ends with
+   * it; what the server keeps, and why, is listed on apps/realms/server/account-deletion.ts.
+   */
+  const deleteAccount = async (code: string): Promise<void> => {
+    await readJson(
+      await request("/account", { method: "DELETE", body: JSON.stringify({ otp: code }) }),
+      decode(Schema.Struct({ deleted: Schema.Literal(true) })),
+    );
+  };
+
   /** The sign-in providers linked to the signed-in account, such as "discord". */
   const listSignInProviders = async (): Promise<string[]> =>
     (
@@ -517,6 +528,7 @@ export const createIdentityClient = ({ apiUrl, fetch = globalThis.fetch }: Ident
     signIn,
     linkWallet,
     unlinkWallet,
+    deleteAccount,
     listSignInProviders,
     /** The providers the identity service offers, in the sheet's order. */
     availableSignInProviders: async (): Promise<SocialProvider[]> => {

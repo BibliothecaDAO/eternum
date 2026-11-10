@@ -54,6 +54,8 @@
   Cache-Control: no-cache
 /privacy
   Cache-Control: no-cache
+/account/delete
+  Cache-Control: no-cache
 /credits
   Cache-Control: no-cache
 # Model files carry their content's hash in their name (build/hashed-models.ts): a changed model is a new URL.
