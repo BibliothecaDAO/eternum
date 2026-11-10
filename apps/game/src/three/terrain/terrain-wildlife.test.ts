@@ -3,7 +3,7 @@ import { type EventDispatcher, type Group, type Mesh, type Object3D, Vector3 } f
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { createCreatureAnimator } from "./creatures/biome-creature-animator.js";
 import { creatureTraits } from "./creatures/biome-creature-catalog";
-import { BiomeCreaturePopulation, wildlifeRegion } from "./creatures/biome-creature-population";
+import { BiomeCreaturePopulation, type RoamingCreature, wildlifeRegion } from "./creatures/biome-creature-population";
 import {
   createZebraRigFixture,
   ZEBRA_RIG_FOOT_HEIGHT,
@@ -39,10 +39,14 @@ function terrainOfEveryPace(): TerrainCellInput[] {
   return cells().map((cell) => ({ ...cell, biome: biomes[Math.floor((cell.col + 8) / 8)] }));
 }
 
+const leaders = (population: BiomeCreaturePopulation) =>
+  [...population.creatures.values()].filter((creature) => creature.leader === null);
+
+/** One herd to a region: its leader is the only leader there, and holds both ends of its walk alone. */
 function assertDensity(population: BiomeCreaturePopulation) {
   const occupied = new Set<string>();
   const reserved = new Map<string, number>();
-  for (const creature of population.creatures.values()) {
+  for (const creature of leaders(population)) {
     const region = wildlifeRegion(findNearestTerrainHex(creature.x, creature.z));
     expect(occupied.has(region)).toBe(false);
     occupied.add(region);
@@ -55,13 +59,15 @@ function assertDensity(population: BiomeCreaturePopulation) {
 }
 
 describe("biome creature population", () => {
-  it("spawns once per aligned 8x8 region, including negative coordinates and overlapping pages", () => {
+  it("spawns one herd per aligned 8x8 region, including negative coordinates and overlapping pages", () => {
     const first = new BiomeCreaturePopulation();
     const second = new BiomeCreaturePopulation();
     first.sync(cells());
     second.sync([...cells(), ...cells()].reverse());
     expect([...first.creatures.values()]).toEqual([...second.creatures.values()]);
-    expect(first.creatures.size).toBe(9);
+    expect(leaders(first)).toHaveLength(9);
+    // Zebra and deer keep company: every region's herd is more than its leader.
+    expect(first.creatures.size).toBeGreaterThan(9 * 2 - 1);
     expect(wildlifeRegion({ col: -1, row: -8 })).toBe("-1:-1");
     assertDensity(first);
   });
@@ -125,7 +131,7 @@ describe("biome creature population", () => {
   it("can enter a vacant neighboring region without letting a refresh double-spawn there", () => {
     const population = new BiomeCreaturePopulation();
     population.sync(cells());
-    const survivor = [...population.creatures.values()][0];
+    const survivor = leaders(population)[0];
     for (const id of population.creatures.keys()) if (id !== survivor.id) population.creatures.delete(id);
     const origin = wildlifeRegion(survivor.cell);
     let crossed = false;
@@ -145,7 +151,7 @@ describe("biome creature population", () => {
       second = new BiomeCreaturePopulation();
     first.sync(cells(64));
     second.sync(cells(64));
-    expect(first.creatures.size).toBe(32);
+    expect(first.creatures.size).toBe(48);
     first.update(1000);
     second.update(0.05);
     expect([...first.creatures.values()]).toEqual([...second.creatures.values()]);
@@ -202,7 +208,7 @@ describe("biome creature roaming", () => {
         }
       }
     }
-    expect(seen).toEqual(new Set(["stand", "forage", "watch"]));
+    expect(seen).toEqual(new Set(["stand", "forage", "watch", "rest"]));
   });
 
   it("keeps its place on its tile when the map's origin moves under it", () => {
@@ -221,7 +227,149 @@ describe("biome creature roaming", () => {
   });
 });
 
+describe("biome creature herds", () => {
+  it("keeps a herd together as it roams, its young closest to the leader", () => {
+    const population = new BiomeCreaturePopulation();
+    population.sync(cells());
+    const apart = (creature: RoamingCreature) => {
+      const leader = population.creatures.get(creature.leader!)!;
+      return Math.hypot(creature.x - leader.x, creature.z - leader.z);
+    };
+    const followers = [...population.creatures.values()].filter((creature) => creature.leader !== null);
+    expect(followers.some((creature) => creature.young)).toBe(true);
+    const furthest = new Map<number, number>();
+    for (let frame = 0; frame < 6000; frame++) {
+      population.update(0.05);
+      for (const creature of followers)
+        furthest.set(creature.id, Math.max(furthest.get(creature.id) ?? 0, apart(creature)));
+    }
+    // A hex is 1.73 across: no member is ever left more than two tiles behind, and each ends back at its station.
+    for (const creature of followers) expect(furthest.get(creature.id)).toBeLessThan(3.5);
+    for (let frame = 0; frame < 400; frame++) population.update(0.05);
+    expect(followers.filter((creature) => apart(creature) < 1.6).length).toBeGreaterThan(followers.length * 0.6);
+  });
+
+  it("follows its eldest when the leader is gone, still one herd to its region", () => {
+    const population = new BiomeCreaturePopulation();
+    population.sync(cells());
+    const [leader] = leaders(population);
+    const herd = [...population.creatures.values()].filter((creature) => creature.leader === leader.id);
+    expect(herd.length).toBeGreaterThan(0);
+    population.creatures.delete(leader.id);
+    population.restrictTo(cells());
+    expect(herd.filter((creature) => creature.leader === null)).toHaveLength(1);
+    for (const creature of herd) expect(population.creatures.has(creature.leader ?? creature.id)).toBe(true);
+    assertDensity(population);
+  });
+});
+
+describe("biome creatures and armies", () => {
+  const field = (biome: BiomeType) => cells().map((cell) => ({ ...cell, biome }));
+  const distance = (creature: RoamingCreature, army: { x: number; z: number }) =>
+    Math.hypot(creature.x - army.x, creature.z - army.z);
+
+  it("watches an army that passes at a distance, and goes back to its day when it has gone", () => {
+    const population = new BiomeCreaturePopulation();
+    population.sync(field(BiomeType.Grassland));
+    const [zebra] = leaders(population);
+    const army = { x: zebra.x + 3.4, z: zebra.z, moving: true };
+    population.setThreats([army]);
+    for (let frame = 0; frame < 40; frame++) population.update(0.05);
+    expect(zebra.mood).toBe("wary");
+    // Its eye is on the army: the way to it, from where the zebra now stands.
+    expect(zebra.gaze).toBeCloseTo(Math.atan2(army.x - zebra.x, army.z - zebra.z), 5);
+    if (!zebra.target) expect(zebra.action).toBe("watch");
+    population.setThreats([]);
+    population.update(0.05);
+    expect(zebra.mood).toBe("calm");
+    expect(zebra.gaze).toBeNull();
+  });
+
+  it("runs from an army that comes close, the whole herd with it, and never toward it", () => {
+    const population = new BiomeCreaturePopulation();
+    population.sync(field(BiomeType.Grassland));
+    const [zebra] = leaders(population);
+    const herd = [...population.creatures.values()].filter((creature) => (creature.leader ?? creature.id) === zebra.id);
+    const army = { x: zebra.x + 1.2, z: zebra.z + 0.4, moving: true };
+    const before = herd.map((creature) => distance(creature, army));
+    population.setThreats([army]);
+    let fastest = 0;
+    for (let frame = 0; frame < 200; frame++) {
+      const was = distance(zebra, army);
+      population.update(0.05);
+      fastest = Math.max(fastest, zebra.speed);
+      // A leader in flight only ever gains ground on what it flees.
+      if (zebra.haste > 1 && zebra.speed > 0.2) expect(distance(zebra, army)).toBeGreaterThan(was - 0.02);
+    }
+    expect(fastest).toBeGreaterThan(creatureTraits("plains-zebra").pace * 2);
+    herd.forEach((creature, index) => expect(distance(creature, army)).toBeGreaterThan(before[index] + 1));
+    expect(distance(zebra, army)).toBeGreaterThan(creatureTraits("plains-zebra").nerve);
+    assertDensity(population);
+  });
+
+  it("lets each species meet danger its own way: the tortoise withdraws, the tiger stands and watches", () => {
+    for (const [biome, action] of [
+      [BiomeType.Shrubland, "rest"],
+      [BiomeType.TropicalSeasonalForest, "watch"],
+    ] as const) {
+      const population = new BiomeCreaturePopulation();
+      population.sync(field(biome));
+      const [animal] = leaders(population);
+      const place = { x: animal.x, z: animal.z };
+      population.setThreats([{ x: animal.x + 0.9, z: animal.z, moving: true }]);
+      for (let frame = 0; frame < 100; frame++) population.update(0.05);
+      expect(animal.mood).toBe("alarmed");
+      expect(animal.action).toBe(action);
+      expect(Math.hypot(animal.x - place.x, animal.z - place.z)).toBeLessThan(0.2);
+    }
+  });
+
+  it("is felt from less far when the army stands still", () => {
+    const population = new BiomeCreaturePopulation();
+    population.sync(field(BiomeType.Tundra));
+    const [fox] = leaders(population);
+    const army = { x: fox.x + 2, z: fox.z, moving: false };
+    population.setThreats([army]);
+    population.update(0.05);
+    expect(fox.mood).toBe("wary");
+    army.moving = true;
+    population.update(0.05);
+    expect(fox.mood).toBe("alarmed");
+  });
+});
+
 describe("biome creature gait", () => {
+  it("gallops when it runs: a longer stride, feet still planted where they land, and all four in the air between", () => {
+    const rig = createZebraRigFixture();
+    const animator = createCreatureAnimator(rig);
+    const knees: Object3D[] = [];
+    rig.traverse((joint) => {
+      if (joint.userData.joint === "knee") knees.push(joint);
+    });
+    const feet = () => knees.map((knee) => knee.localToWorld(new Vector3(0, -ZEBRA_RIG_LOWER_LEG, 0)));
+    // Up to speed first: the gait changes over the first strides of a run.
+    let distance = 0;
+    for (; distance < 8; distance += 0.01) {
+      rig.position.z = distance;
+      animator.update(distance, { distance, pace: 3 });
+    }
+    const planted = new Map<number, number>();
+    let airborne = 0;
+    for (; distance < 16; distance += 0.01) {
+      rig.position.z = distance;
+      animator.update(distance, { distance, pace: 3 });
+      const now = feet();
+      if (now.every((foot) => foot.y > ZEBRA_RIG_FOOT_HEIGHT + 0.03)) airborne++;
+      now.forEach((foot, index) => {
+        if (foot.y > ZEBRA_RIG_FOOT_HEIGHT + 0.008) return void planted.delete(index);
+        if (!planted.has(index)) planted.set(index, foot.z);
+        // A ninth of the stride at most: the end of a fast swing as the foot touches down.
+        expect(Math.abs(foot.z - planted.get(index)!)).toBeLessThan(0.05);
+      });
+    }
+    expect(airborne).toBeGreaterThan(20);
+  });
+
   it("leaves a planted foot where it was put down while the body walks on over it", () => {
     const rig = createZebraRigFixture();
     const animator = createCreatureAnimator(rig);
@@ -300,7 +448,8 @@ describe("terrain wildlife lifecycle", () => {
     );
     wildlife.sync(cells(), []);
     await wildlife.load();
-    expect(wildlife.getStats().loaded).toBe(9);
+    expect(wildlife.getStats().loaded).toBe(wildlife.getStats().count);
+    expect(new Set(wildlife.getStats().creatures.map((creature) => creature.herd)).size).toBe(9);
     expect(wildlife.object3d.children[0].children[0]).not.toBe(wildlife.object3d.children[1].children[0]);
     const before = wildlife.getStats();
     wildlife.object3d.visible = false;

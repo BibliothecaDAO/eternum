@@ -21,11 +21,24 @@ export interface CreatureTraits {
   pause: readonly [shortest: number, longest: number];
   /** Seconds it runs, then freezes, within one walk: how small animals cross open ground. */
   bursts?: readonly [run: number, freeze: number];
+  /** How it meets danger: it runs, it hides where it is, or it holds its ground and watches. */
+  fright: "flee" | "hide" | "stand";
+  /** How near danger comes, in world units, before it acts on its fright; it is wary from further off. */
+  nerve: number;
+  /** Its speed in flight, as a multiple of its pace. */
+  sprint: number;
+  /** How many keep company, at least and at most; a species without lives alone. */
+  herd?: readonly [fewest: number, most: number];
+  /** The chance a herd has one of this year's young at foot. */
+  young?: number;
+  /** Prey fear the hunters among the animals as they fear an army. */
+  role?: "prey" | "hunter";
   /** It travels flank first, as a crab does. */
   sidles?: true;
 }
 
-const GRAZER_IDLE = ["forage", "forage", "watch", "stand"] as const;
+/** Grazers mostly graze; now and then one looks up, stands idle or lies down. */
+const GRAZER_IDLE = ["forage", "forage", "forage", "watch", "stand", "rest"] as const;
 const HUNTER_IDLE = ["watch", "watch", "rest", "forage"] as const;
 const CRAWLER_IDLE = ["stand", "watch"] as const;
 
@@ -38,6 +51,9 @@ const CREATURE_TRAITS = {
     wanderlust: 0.5,
     idle: ["stand", "watch"],
     pause: [2, 6],
+    fright: "flee",
+    nerve: 1.6,
+    sprint: 2,
   },
   "green-sea-turtle": {
     movement: "water",
@@ -47,6 +63,9 @@ const CREATURE_TRAITS = {
     wanderlust: 0.6,
     idle: ["stand", "watch"],
     pause: [2, 5],
+    fright: "flee",
+    nerve: 1.8,
+    sprint: 2,
   },
   "shore-crab": {
     movement: "land",
@@ -58,6 +77,9 @@ const CREATURE_TRAITS = {
     pause: [2, 6],
     bursts: [0.7, 0.8],
     sidles: true,
+    fright: "flee",
+    nerve: 1.6,
+    sprint: 1.6,
   },
   "fire-beetle": {
     movement: "land",
@@ -68,6 +90,9 @@ const CREATURE_TRAITS = {
     idle: CRAWLER_IDLE,
     pause: [1, 4],
     bursts: [1, 0.6],
+    fright: "flee",
+    nerve: 1.2,
+    sprint: 1.8,
   },
   "mountain-goat": {
     movement: "land",
@@ -77,6 +102,12 @@ const CREATURE_TRAITS = {
     wanderlust: 0.25,
     idle: GRAZER_IDLE,
     pause: [4, 10],
+    fright: "flee",
+    nerve: 2,
+    sprint: 2.6,
+    herd: [2, 3],
+    young: 0.6,
+    role: "prey",
   },
   "arctic-fox": {
     movement: "land",
@@ -86,6 +117,10 @@ const CREATURE_TRAITS = {
     wanderlust: 0.5,
     idle: HUNTER_IDLE,
     pause: [2, 6],
+    fright: "flee",
+    nerve: 2.2,
+    sprint: 2.8,
+    role: "hunter",
   },
   "emperor-penguin": {
     movement: "land",
@@ -95,6 +130,11 @@ const CREATURE_TRAITS = {
     wanderlust: 0.2,
     idle: ["stand", "watch", "forage", "rest"],
     pause: [3, 8],
+    fright: "flee",
+    nerve: 1.6,
+    sprint: 1.8,
+    herd: [3, 5],
+    young: 0.5,
   },
   jackrabbit: {
     movement: "land",
@@ -105,6 +145,10 @@ const CREATURE_TRAITS = {
     idle: ["forage", "watch", "watch"],
     pause: [3, 8],
     bursts: [0.9, 0.7],
+    fright: "flee",
+    nerve: 2.4,
+    sprint: 3,
+    role: "prey",
   },
   "mediterranean-tortoise": {
     movement: "land",
@@ -114,6 +158,9 @@ const CREATURE_TRAITS = {
     wanderlust: 0.1,
     idle: ["forage", "stand", "rest"],
     pause: [4, 10],
+    fright: "hide",
+    nerve: 1.6,
+    sprint: 1,
   },
   moose: {
     movement: "land",
@@ -123,6 +170,11 @@ const CREATURE_TRAITS = {
     wanderlust: 0.2,
     idle: GRAZER_IDLE,
     pause: [5, 12],
+    fright: "flee",
+    nerve: 1.8,
+    sprint: 2.4,
+    herd: [1, 2],
+    young: 1,
   },
   "plains-zebra": {
     movement: "land",
@@ -132,6 +184,12 @@ const CREATURE_TRAITS = {
     wanderlust: 0.3,
     idle: GRAZER_IDLE,
     pause: [4, 10],
+    fright: "flee",
+    nerve: 2.4,
+    sprint: 3,
+    herd: [3, 4],
+    young: 0.6,
+    role: "prey",
   },
   "red-deer": {
     movement: "land",
@@ -141,6 +199,12 @@ const CREATURE_TRAITS = {
     wanderlust: 0.3,
     idle: GRAZER_IDLE,
     pause: [4, 10],
+    fright: "flee",
+    nerve: 2.6,
+    sprint: 3.2,
+    herd: [2, 3],
+    young: 0.5,
+    role: "prey",
   },
   "red-backed-salamander": {
     movement: "land",
@@ -151,6 +215,9 @@ const CREATURE_TRAITS = {
     idle: CRAWLER_IDLE,
     pause: [3, 9],
     bursts: [1.2, 1],
+    fright: "flee",
+    nerve: 1.2,
+    sprint: 2,
   },
   "desert-scorpion": {
     movement: "land",
@@ -161,6 +228,9 @@ const CREATURE_TRAITS = {
     idle: CRAWLER_IDLE,
     pause: [2, 7],
     bursts: [1.4, 0.8],
+    fright: "stand",
+    nerve: 1.4,
+    sprint: 1,
   },
   "bengal-tiger": {
     movement: "land",
@@ -170,6 +240,10 @@ const CREATURE_TRAITS = {
     wanderlust: 0.5,
     idle: HUNTER_IDLE,
     pause: [3, 9],
+    fright: "stand",
+    nerve: 2.2,
+    sprint: 1,
+    role: "hunter",
   },
   "keel-billed-toucan": {
     movement: "air",
@@ -179,6 +253,10 @@ const CREATURE_TRAITS = {
     wanderlust: 0.35,
     idle: ["stand", "watch", "forage"],
     pause: [3, 8],
+    fright: "flee",
+    nerve: 2.2,
+    sprint: 1.3,
+    herd: [1, 2],
   },
 } as const satisfies Record<string, CreatureTraits>;
 

@@ -67,9 +67,10 @@ fetches (the client's own modules, every script, the bytes), when its last scrip
 
 Art → Terrain → Wildlife (`/lab/wildlife`) runs the map's own wildlife on one flat paddock per biome, so each species'
 size, gait and idle behaviour is judged before the map shows it. `species=<id>` follows one animal and names what it is
-doing; `view=map` looks from the world map's angle, with `distance` in world units (the map's zoom runs from 5 to 20),
-while the default flank view counts `distance` in the animal's own sizes. `capture=1` holds the clock:
-`window.__wildlifeLab.step(seconds)` advances the animals, and the next frame draws them, for stills of a known moment.
+doing; `army=1` marches a stand-in army past it, again and again, to show how it and its herd take it; `view=map` looks
+from the world map's angle, with `distance` in world units (the map's zoom runs from 5 to 20), while the default flank
+view counts `distance` in the animal's own sizes. `capture=1` holds the clock: `window.__wildlifeLab.step(seconds)`
+advances the animals, and the next frame draws them, for stills of a known moment.
 
 ### HUD room
 

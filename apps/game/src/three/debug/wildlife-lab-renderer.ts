@@ -6,6 +6,7 @@ import {
   Group,
   InstancedMesh,
   Matrix4,
+  Mesh,
   MeshStandardMaterial,
   PerspectiveCamera,
   Scene,
@@ -51,10 +52,13 @@ interface MountWildlifeLabInput {
   forceWebGL: boolean;
   /** The species the camera follows; none shows every paddock. */
   species: CreatureSpecies | null;
+  /** Marches a stand-in army past the followed animal, again and again, to show how it takes it. */
+  army: boolean;
   onReady(stats: WildlifeLabStats): void;
 }
 
 interface WildlifeLabRuntime {
+  army: LabArmy | null;
   camera: PerspectiveCamera;
   ground: Group;
   renderer: WildlifeLabRendererSurface;
@@ -102,12 +106,14 @@ export async function mountWildlifeLab(input: MountWildlifeLabInput): Promise<Wi
     const resizeObserver = new ResizeObserver(() => resizeRenderer(input.canvas, runtime));
     resizeObserver.observe(input.canvas);
     resizeRenderer(input.canvas, runtime);
-    const stopAnimation = startAnimation(runtime, draw, !input.captureMode);
+    const tick = (seconds: number) => advanceLab(runtime, input, seconds);
+    const stopAnimation = startAnimation(runtime, draw, input.captureMode ? () => {} : tick);
     labWindow.__wildlifeLab = {
       status: "ready",
       getSnapshot: () => readStats(runtime),
       step: (seconds) => {
-        advanceWildlife(runtime.wildlife, seconds);
+        for (let remaining = seconds; remaining > 1e-6; remaining -= FRAME_SECONDS)
+          tick(Math.min(FRAME_SECONDS, remaining));
         return readStats(runtime);
       },
     };
@@ -119,6 +125,7 @@ export async function mountWildlifeLab(input: MountWildlifeLabInput): Promise<Wi
         resizeObserver.disconnect();
         runtime.wildlife.dispose();
         disposeGround(runtime.ground);
+        if (runtime.army) disposeArmy(runtime.army);
         runtime.renderer.dispose();
         delete labWindow.__wildlifeLab;
       },
@@ -153,7 +160,9 @@ async function createRuntime(input: MountWildlifeLabInput): Promise<WildlifeLabR
   const scene = new Scene();
   const ground = createGround(cells);
   scene.add(ground, wildlife.object3d, createLights());
-  return { camera: new PerspectiveCamera(36, 1, 0.05, 300), ground, renderer, scene, wildlife };
+  const army = input.army && input.species ? createLabArmy() : null;
+  if (army) scene.add(army.marker);
+  return { army, camera: new PerspectiveCamera(36, 1, 0.05, 300), ground, renderer, scene, wildlife };
 }
 
 function createPaddockCells(): TerrainCellInput[] {
@@ -223,20 +232,63 @@ function createLights(): Group {
  * loop: a skinned animal's bones reach the GPU once per frame of that loop, so a draw made outside it shows a stale
  * pose.
  */
-function startAnimation(runtime: WildlifeLabRuntime, draw: () => void, clockRuns: boolean): () => void {
+function startAnimation(runtime: WildlifeLabRuntime, draw: () => void, tick: (seconds: number) => void): () => void {
   let last = performance.now();
   runtime.renderer.setAnimationLoop((now) => {
-    if (clockRuns) runtime.wildlife.update((now - last) / 1000);
+    tick((now - last) / 1000);
     last = now;
     draw();
   });
   return () => runtime.renderer.setAnimationLoop(null);
 }
 
-function advanceWildlife(wildlife: TerrainWildlife, seconds: number): void {
-  for (let remaining = seconds; remaining > 1e-6; remaining -= FRAME_SECONDS) {
-    wildlife.update(Math.min(FRAME_SECONDS, remaining));
+function advanceLab(runtime: WildlifeLabRuntime, input: MountWildlifeLabInput, seconds: number): void {
+  const followed = input.species ? findAnimal(runtime.wildlife, input.species) : undefined;
+  if (runtime.army && followed) {
+    marchPast(runtime.army, followed.position, seconds);
+    const { x, z } = runtime.army.marker.position;
+    runtime.wildlife.setArmies([{ worldX: x, worldZ: z, isMoving: true }]);
   }
+  runtime.wildlife.update(seconds);
+}
+
+/** A stand-in for an army on the march: a banner on a post, walking straight lines past whatever the lab follows. */
+interface LabArmy {
+  marker: Group;
+  heading: number;
+  /** World units left of this march; a new one starts from a new side when it runs out. */
+  remaining: number;
+}
+
+const ARMY_PACE = 0.5;
+const ARMY_MARCH = 11;
+
+function createLabArmy(): LabArmy {
+  const marker = new Group();
+  marker.name = "wildlife-lab-army";
+  const post = new Mesh(new CylinderGeometry(0.04, 0.04, 0.9, 8), new MeshStandardMaterial({ color: "#3b2f2a" }));
+  post.position.y = 0.45;
+  const banner = new Mesh(new CylinderGeometry(0.2, 0.2, 0.3, 3), new MeshStandardMaterial({ color: "#b3261e" }));
+  banner.position.y = 0.8;
+  marker.add(post, banner);
+  return { marker, heading: 0.6, remaining: 0 };
+}
+
+/** Marches on; at a march's end, starts the next half a march short of the animal, from another side. */
+function marchPast(army: LabArmy, animal: Vector3, seconds: number): void {
+  if (army.remaining <= 0) {
+    army.heading += 2.2;
+    army.remaining = ARMY_MARCH;
+    army.marker.position.set(
+      animal.x - Math.sin(army.heading) * ARMY_MARCH * 0.5,
+      0,
+      animal.z - Math.cos(army.heading) * ARMY_MARCH * 0.5,
+    );
+  }
+  const step = Math.min(ARMY_PACE * seconds, army.remaining);
+  army.marker.position.x += Math.sin(army.heading) * step;
+  army.marker.position.z += Math.cos(army.heading) * step;
+  army.remaining -= step;
 }
 
 function drawFrame(runtime: WildlifeLabRuntime, input: MountWildlifeLabInput): void {
@@ -296,6 +348,13 @@ function disposeGround(ground: Group): void {
     tiles.dispose();
   }
   ground.clear();
+}
+
+function disposeArmy(army: LabArmy): void {
+  for (const part of army.marker.children as Mesh[]) {
+    part.geometry.dispose();
+    (part.material as MeshStandardMaterial).dispose();
+  }
 }
 
 /** The species the lab can follow: each biome's native, in the paddocks' order. */

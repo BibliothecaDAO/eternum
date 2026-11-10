@@ -13,19 +13,31 @@ const smooth = (x) => x * x * (3 - 2 * x);
  * lifted to it),
  * `nod` the head's swing in step. The rest are radians: `forage` drops the neck to the ground, `sit` drops the
  * haunches, `upright` lifts the forequarters to look out, `undulation` bends the body with the step; `hop` is the
- * height of a bound and `tuck` how far the body sinks into its shell, as shares of the leg.
+ * height of a bound, `tuck` how far the body sinks into its shell and `lie` how far it sinks to lie down, as shares of
+ * the leg. One that `gallops` changes gait to run.
  */
 const QUADRUPEDS = {
-  goat: { stride: 0.46, duty: 0.64, extension: 0.94, nod: 0.05, forage: 1.0 },
-  fox: { stride: 0.5, duty: 0.58, extension: 0.92, nod: 0.03, forage: 0.75, sit: 0.5 },
+  goat: { stride: 0.46, duty: 0.64, extension: 0.94, nod: 0.05, forage: 1.0, lie: 0.6, gallops: true },
+  fox: { stride: 0.5, duty: 0.58, extension: 0.92, nod: 0.03, forage: 0.75, sit: 0.5, gallops: true },
   rabbit: { stride: 0.8, duty: 0.45, nod: 0, forage: 0.45, hop: 0.3, upright: 0.5 },
-  moose: { stride: 0.44, duty: 0.64, extension: 0.95, nod: 0.06, forage: 0.95 },
-  zebra: { stride: 0.46, duty: 0.64, extension: 0.95, nod: 0.06, forage: 1.15 },
-  deer: { stride: 0.46, duty: 0.64, extension: 0.95, nod: 0.05, forage: 1.1 },
-  tiger: { stride: 0.5, duty: 0.62, extension: 0.92, nod: 0.03, forage: 0.5, sit: 0.42 },
+  moose: { stride: 0.44, duty: 0.64, extension: 0.95, nod: 0.06, forage: 0.95, lie: 0.62, gallops: true },
+  zebra: { stride: 0.46, duty: 0.64, extension: 0.95, nod: 0.06, forage: 1.15, lie: 0.62, gallops: true },
+  deer: { stride: 0.46, duty: 0.64, extension: 0.95, nod: 0.05, forage: 1.1, lie: 0.62, gallops: true },
+  tiger: { stride: 0.5, duty: 0.62, extension: 0.92, nod: 0.03, forage: 0.5, sit: 0.42, gallops: true },
   tortoise: { stride: 0.5, duty: 0.75, nod: 0, forage: 0.3, tuck: 0.55 },
   salamander: { stride: 0.9, duty: 0.6, nod: 0, forage: 0, undulation: 0.16 },
 };
+/**
+ * The gallop: a longer stride on a foot that is planted for less of it, the body carried lower, and the feet falling
+ * hind pair then fore pair, each a moment apart, with all four off the ground between.
+ */
+const GALLOP = { stride: 0.55, duty: 0.3, crouch: 0.06, bound: 0.045 };
+const GALLOP_PHASES = { hindLeft: 0.5 * TAU, hindRight: 0.42 * TAU, foreLeft: 0.08 * TAU, foreRight: 0 };
+/** The pace, as a multiple of the walk, at which a run begins and by which it is in full stride. */
+const RUN_FROM = 1.25;
+const RUN_BY = 2.1;
+/** How far the head turns to follow what the animal watches, in radians. */
+const GAZE_REACH = 1.3;
 /** The ground one gait cycle covers for every other rig, in the model's own units. */
 const CYCLE_LENGTHS = { angler: 0.8, turtle: 2.2, crab: 0.5, beetle: 0.45, scorpion: 0.5, penguin: 0.36, toucan: 1 };
 /** How far a splayed leg reaches from its hip, in the model's units: with the cycle it sets the leg's swing. */
@@ -58,6 +70,7 @@ export function createCreatureAnimator(root, { seed = 0 } = {}) {
   if (!body) throw new Error("Creature body joint is missing.");
   const quadruped = QUADRUPEDS[profile];
   const legs = quadruped ? createLegs(hips, profile) : [];
+  for (const leg of legs) leg.toGallop = turnToGallop(leg);
   const stance = legs.length > 0 ? createStance(legs, quadruped) : null;
   const cycleLength = stance ? stance.cycleLength : CYCLE_LENGTHS[profile];
   if (!(cycleLength > 0)) throw new Error(`Creature profile has no gait: ${profile}`);
@@ -69,8 +82,12 @@ export function createCreatureAnimator(root, { seed = 0 } = {}) {
   const delta = new THREE.Quaternion();
   const turn = (node, key, angle) => node.quaternion.multiply(delta.setFromAxisAngle(axis[key], angle));
   /** How far into each behaviour the animal is, eased so no pose is ever cut to. */
-  const weights = { move: 0, forage: 0, watch: 0, rest: 0 };
+  const weights = { move: 0, run: 0, gazing: 0, forage: 0, watch: 0, rest: 0 };
   let lastTime;
+  /** Where the gait is in its cycle, advanced by the ground covered at the gait's own length of step. */
+  let phase = phaseOffset;
+  let lastDistance = 0;
+  let look = 0;
 
   function reset() {
     for (const j of joints) {
@@ -81,27 +98,35 @@ export function createCreatureAnimator(root, { seed = 0 } = {}) {
     for (const t of torsoScales) t.node.scale.copy(t.scale);
   }
 
-  function easeWeights(time, pace, action) {
+  function easeWeights(time, pace, action, gaze) {
     const dt = lastTime === undefined ? Infinity : clamp(time - lastTime, 0, 0.1);
     lastTime = time;
     weights.move += (clamp(pace * 2, 0, 1) - weights.move) * (1 - Math.exp(-8 * dt));
+    weights.run += (clamp((pace - RUN_FROM) / (RUN_BY - RUN_FROM), 0, 1) - weights.run) * (1 - Math.exp(-5 * dt));
+    weights.gazing += ((gaze === null ? 0 : 1) - weights.gazing) * (1 - Math.exp(-4 * dt));
+    if (gaze !== null) look += (clamp(gaze, -GAZE_REACH, GAZE_REACH) - look) * (1 - Math.exp(-5 * dt));
     const settle = 1 - Math.exp(-2.5 * dt);
     for (const key of IDLE_ACTIONS) weights[key] += ((pace < 0.05 && action === key ? 1 : 0) - weights[key]) * settle;
   }
 
   /**
    * @param {number} time seconds, for breathing and idle motion only
-   * @param {{distance?: number, pace?: number, turn?: number, action?: string, lift?: number}} motion `distance` is
-   * the ground the legs have covered in the model's units, `pace` the share of cruising speed, `turn` radians per
-   * second, `action` what it does when stopped, `lift` how far a flier is off its perch
+   * @param {{distance?: number, pace?: number, turn?: number, action?: string, lift?: number, gaze?: number | null}}
+   * motion `distance` is the ground the legs have covered in the model's units, `pace` its speed as a multiple of its
+   * walk, `turn` radians per second, `action` what it does when stopped, `lift` how far a flier is off its perch,
+   * `gaze` the way to what it watches, in radians from straight ahead
    */
-  function update(time, { distance = 0, pace = 0, turn: turnRate = 0, action = "stand", lift = 0 } = {}) {
-    if (![time, distance, pace, turnRate, lift].every(Number.isFinite))
+  function update(time, { distance = 0, pace = 0, turn: turnRate = 0, action = "stand", lift = 0, gaze = null } = {}) {
+    if (![time, distance, pace, turnRate, lift, gaze ?? 0].every(Number.isFinite))
       throw new Error("Animation inputs must be finite.");
     reset();
-    easeWeights(time, pace, action);
-    const { move, forage, watch, rest } = weights;
-    const phase = (TAU * distance) / cycleLength + phaseOffset;
+    easeWeights(time, pace, action, gaze);
+    const { move, run, gazing, forage, watch, rest } = weights;
+    const galloping = quadruped && quadruped.gallops ? run : 0;
+    const strideNow = stance ? mix(stance.stride, GALLOP.stride * stance.legLength, galloping) : 0;
+    const dutyNow = quadruped ? mix(quadruped.duty, GALLOP.duty, galloping) : 0;
+    phase += (TAU * (distance - lastDistance)) / (stance ? strideNow / dutyNow : cycleLength);
+    lastDistance = distance;
     const breath = Math.sin(time * 2.3 + phaseOffset);
     const idle = Math.sin(time * 0.7 + phaseOffset);
     // A slow look to one side, a hold, then the other.
@@ -121,13 +146,16 @@ export function createCreatureAnimator(root, { seed = 0 } = {}) {
     let pivotZ = 0;
     if (stance) {
       const bound = quadruped.hop ? Math.max(0, Math.sin(phase + 0.5)) : 0;
-      rise = stance.raise - 0.012 * stance.legLength * move * Math.cos(phase * 2);
+      rise = stance.raise - 0.012 * stance.legLength * move * (1 - galloping) * Math.cos(phase * 2);
       rise += (quadruped.hop || 0) * stance.legLength * move * bound;
-      rise -= (quadruped.tuck || 0) * stance.hipHeight * rest;
+      // At a gallop the body rides low and rises once a stride, as the hind feet drive it.
+      rise += stance.legLength * galloping * (GALLOP.bound * Math.sin(phase + 2.2) - GALLOP.crouch);
+      rise -= ((quadruped.tuck || 0) + (quadruped.lie || 0)) * stance.hipHeight * rest;
       // Sitting up, it settles onto its haunches.
       rise -= quadruped.upright ? 0.3 * stance.hipHeight * watch : 0;
       // Reaching for the ground, the shoulders dip with the neck.
-      pitch = 0.012 * move * Math.sin(phase * 2) + 0.07 * forage * Math.sign(quadruped.forage);
+      pitch = 0.012 * move * (1 - galloping) * Math.sin(phase * 2) + 0.07 * forage * Math.sign(quadruped.forage);
+      pitch += 0.085 * galloping * Math.sin(phase + 0.6);
       pitch -= quadruped.hop ? 0.2 * move * Math.cos(phase + 0.5) : 0;
       pitch -= (quadruped.sit || 0) * rest + (quadruped.upright || 0) * watch;
       // Haunches drop about the shoulders; forequarters lift, or dip to feed, about the hips. Each leaves the other
@@ -177,19 +205,19 @@ export function createCreatureAnimator(root, { seed = 0 } = {}) {
 
     for (const leg of legs) {
       const length = leg.upper + leg.lower;
-      const cycle = fract((phase + leg.phase) / TAU);
-      const stride = stance.stride;
+      const cycle = fract((phase + leg.phase + leg.toGallop * galloping) / TAU);
+      const stride = strideNow;
       let footZ, footLift;
-      if (cycle < quadruped.duty) {
-        footZ = stride * (0.5 - cycle / quadruped.duty);
+      if (cycle < dutyNow) {
+        footZ = stride * (0.5 - cycle / dutyNow);
         footLift = 0;
       } else {
-        const swing = (cycle - quadruped.duty) / (1 - quadruped.duty);
-        const tangent = -(1 - quadruped.duty) / quadruped.duty;
+        const swing = (cycle - dutyNow) / (1 - dutyNow);
+        const tangent = -(1 - dutyNow) / dutyNow;
         const travel = (tangent * 2 - 2) * swing ** 3 + (3 - 3 * tangent) * swing ** 2 + tangent * swing;
         footZ = stride * (-0.5 + travel);
         // A stopped animal sets its foot down where it is: the step is held, never snapped back under the hip.
-        footLift = Math.sin(swing * Math.PI) ** 2 * length * 0.17 * move;
+        footLift = Math.sin(swing * Math.PI) ** 2 * length * 0.17 * move * (1 + 0.8 * galloping);
       }
       // The foot stays on the ground under the hip's resting place while the body above it bobs, tips and sits.
       const hipY = offsetY + leg.rest.y * cos - leg.rest.z * sin;
@@ -217,9 +245,12 @@ export function createCreatureAnimator(root, { seed = 0 } = {}) {
           const reach = quadruped ? quadruped.forage : profile === "penguin" ? 0.6 : profile === "toucan" ? 0.55 : 0;
           const nibble = 1 + 0.05 * Math.sin(time * 5.5 + phaseOffset);
           const nod = quadruped ? quadruped.nod * move * Math.sin(phase * 2 + 0.6) : 0.018 * move * Math.sin(phase);
-          turn(node, "y", 0.03 * idle + 0.55 * watch * scan + clamp(turnRate * 0.12, -0.3, 0.3) * move);
-          // The head stays level while the body under it tips.
-          turn(node, "x", 0.014 * breath + nod + reach * forage * nibble - 0.1 * watch - pitch * 0.85);
+          // Watching, it scans from side to side; with something to watch, its head follows that instead.
+          const watching = mix(0.55 * watch * scan, look, gazing);
+          turn(node, "y", 0.03 * idle + watching + clamp(turnRate * 0.12, -0.3, 0.3) * move);
+          // The head stays level while the body under it tips, and reaches forward at a gallop.
+          const carriage = 0.3 * galloping - 0.1 * watch * (1 - galloping) - pitch * 0.85;
+          turn(node, "x", 0.014 * breath + nod + reach * forage * nibble + carriage);
           if (quadruped && quadruped.tuck) node.position.z -= 0.22 * rest;
           break;
         }
@@ -233,7 +264,8 @@ export function createCreatureAnimator(root, { seed = 0 } = {}) {
             const flick = Math.max(0, Math.sin(time * 0.9 + phaseOffset)) ** 6;
             const standing = Math.sin(time * 6 + phaseOffset - segment * 0.75) * (0.2 + 0.8 * flick);
             turn(node, "y", 0.07 * mix(standing, Math.sin(phase - segment * 0.75), move));
-            turn(node, "x", -0.5 * pitch * (segment === 0 ? 1 : 0));
+            // The tail streams out behind a running animal.
+            turn(node, "x", segment === 0 ? 0.9 * run - 0.5 * pitch : 0);
           }
           break;
         }
@@ -325,8 +357,16 @@ function createLegs(hips, profile) {
       bend: hip.userData.bend || 1,
       footHeight: hip.userData.footHeight ?? 0.02,
       phase: profile === "rabbit" ? (front ? Math.PI : 0) : hip.userData.phase,
+      toGallop: 0,
     };
   });
+}
+
+/** How far a leg's place in the cycle moves, the short way round, as the walk becomes a gallop. */
+function turnToGallop(leg) {
+  const end = leg.front ? "fore" : "hind";
+  const gallop = GALLOP_PHASES[`${end}${leg.rest.x < 0 ? "Left" : "Right"}`];
+  return Math.atan2(Math.sin(gallop - leg.phase), Math.cos(gallop - leg.phase));
 }
 
 /** What the legs share: how long a step is, and how high the body rides for the legs to stand as straight as asked. */

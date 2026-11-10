@@ -4,7 +4,13 @@ import type { MeshStandardNodeMaterial } from "three/webgpu";
 import { createCreatureAnimator } from "./creatures/biome-creature-animator.js";
 import { disposeBiomeCreature, loadBiomeCreature, releaseBiomeCreatureBones } from "./creatures/biome-creature-assets";
 import { creatureTraits, type CreatureSpecies } from "./creatures/biome-creature-catalog";
-import { BiomeCreaturePopulation, type RoamingCreature, wildlifeRegion } from "./creatures/biome-creature-population";
+import {
+  BiomeCreaturePopulation,
+  herdOf,
+  type RoamingCreature,
+  type WildlifeThreat,
+  wildlifeRegion,
+} from "./creatures/biome-creature-population";
 import { findNearestTerrainHex, terrainCellKey, terrainNeighborCoordinates } from "./terrain-coordinates";
 import { getTerrainPropRole } from "./terrain-prop-catalog";
 import type { TerrainCellInput, TerrainPropInstance, TerrainSurfaceSample } from "./terrain-types";
@@ -25,8 +31,9 @@ interface Point {
 
 /** How high a flier cruises over the ground, in world units: above the canopy it crosses. */
 const FLIGHT_HEIGHT = 0.8;
-/** No two animals of a species are quite the same size. */
+/** No two animals of a species are quite the same size, and this year's young are well short of grown. */
 const SIZE_VARIATION = 0.16;
+const YOUNG_SIZE = 0.62;
 
 export class TerrainWildlife {
   readonly object3d = new Group();
@@ -34,6 +41,7 @@ export class TerrainWildlife {
   private readonly templates = new Map<CreatureSpecies, Promise<Group | null>>();
   private readonly views = new Map<number, WildlifeView>();
   private readonly failures = new Set<string>();
+  private readonly threats: WildlifeThreat[] = [];
   private cells = new Map<string, TerrainCellInput>();
   private obstacles = new Map<string, TerrainPropInstance[]>();
   private time = 0;
@@ -67,6 +75,18 @@ export class TerrainWildlife {
     this.needsPopulation = true;
     this.removeReleasedViews();
     this.needsLoad = true;
+  }
+
+  /** The armies on the map this frame, where they stand in the world: animals watch them and give way. */
+  setArmies(armies: readonly { worldX: number; worldZ: number; isMoving: boolean }[]): void {
+    this.threats.length = armies.length;
+    armies.forEach((army, index) => {
+      const threat = (this.threats[index] ??= { x: 0, z: 0, moving: false });
+      threat.x = army.worldX;
+      threat.z = army.worldZ;
+      threat.moving = army.isMoving;
+    });
+    this.population.setThreats(this.threats);
   }
 
   async load(): Promise<void> {
@@ -106,10 +126,13 @@ export class TerrainWildlife {
         species: creature.species,
         x: creature.x,
         z: creature.z,
-        region: wildlifeRegion(findNearestTerrainHex(creature.x, creature.z)),
+        // A herd is counted where its leader is: the one-herd-to-a-region contract is the leaders'.
+        herd: herdOf(creature),
+        region: wildlifeRegion(this.population.creatures.get(herdOf(creature))!.cell),
         biome: this.sampleSurface(creature.x, creature.z).biome,
         moving: creature.speed > 0,
-        activity: creature.target ? "walk" : creature.action,
+        activity: creature.target ? (creature.haste > 1 ? "run" : "walk") : creature.action,
+        mood: creature.mood,
       })),
     };
   }
@@ -165,7 +188,8 @@ export class TerrainWildlife {
       const root = new Group();
       root.name = `biome-creature:${creature.species}:${creature.id}`;
       root.add(rig);
-      root.scale.setScalar(1 + SIZE_VARIATION * (((creature.id * 0.618034) % 1) - 0.5));
+      const grown = 1 + SIZE_VARIATION * (((creature.id * 0.618034) % 1) - 0.5);
+      root.scale.setScalar(creature.young ? YOUNG_SIZE : grown);
       const view = {
         root,
         animator: createCreatureAnimator(rig, { seed: creature.id }),
@@ -207,6 +231,8 @@ export class TerrainWildlife {
       turn: creature.turn,
       action: creature.action,
       lift: creature.lift,
+      gaze:
+        creature.gaze === null ? null : Math.atan2(Math.sin(creature.gaze - facing), Math.cos(creature.gaze - facing)),
     });
   }
 

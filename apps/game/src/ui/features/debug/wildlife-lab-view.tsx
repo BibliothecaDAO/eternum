@@ -27,6 +27,7 @@ export const WildlifeLabView = () => {
   const forceWebGL = searchParams.get("rendererMode") === "webgpu-force-webgl";
   const species = WILDLIFE_LAB_SPECIES.find((candidate) => candidate === searchParams.get("species")) ?? null;
   const cameraView: WildlifeLabCameraView = searchParams.get("view") === "map" ? "map" : "flank";
+  const army = searchParams.get("army") === "1";
   const cameraDistance = Number(searchParams.get("distance")) || DEFAULT_CAMERA_DISTANCE[cameraView];
 
   useEffect(() => {
@@ -44,6 +45,7 @@ export const WildlifeLabView = () => {
         captureMode: capture,
         forceWebGL,
         species,
+        army,
         onReady: () => active && setReady(true),
       })
         .then((mounted) => {
@@ -63,7 +65,7 @@ export const WildlifeLabView = () => {
       handle?.dispose();
       setReady(false);
     };
-  }, [cameraDistance, cameraView, capture, forceWebGL, species]);
+  }, [army, cameraDistance, cameraView, capture, forceWebGL, species]);
 
   const setOption = (key: string, value: string) => {
     const next = new URLSearchParams(searchParams);
@@ -94,6 +96,10 @@ export const WildlifeLabView = () => {
           <LabSelect label="Camera" value={cameraView} onChange={(value) => setOption("view", value)}>
             <option value="flank">Flank</option>
             <option value="map">World map</option>
+          </LabSelect>
+          <LabSelect label="Army" value={army ? "1" : ""} onChange={(value) => setOption("army", value)}>
+            <option value="">None</option>
+            <option value="1">Marches past</option>
           </LabSelect>
           {activity && <p className="pb-2 text-sm text-stone-300">Now: {activity}</p>}
         </div>
