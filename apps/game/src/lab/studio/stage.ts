@@ -29,23 +29,29 @@ import {
 } from "./fixture";
 
 /** The moments the studio plays on a call, each through the game's own presentation of it. */
-export const STUDIO_TRIGGERS = ["rise", "attack", "defeat", "explore", "march", "lift", "realm", "strike"] as const;
+export const STUDIO_TRIGGERS = ["rise", "attack", "defeat", "explore", "realm", "strike"] as const;
 export type StudioTrigger = (typeof STUDIO_TRIGGERS)[number];
 
 /** What the set can hold. A take puts on it only the subjects it films; between takes all of them stand. */
-const STUDIO_SUBJECTS = ["realm", "kingdoms", "hyperstructure", "battle", "host", "explorer"] as const;
+const STUDIO_SUBJECTS = ["realm", "kingdoms", "sites", "hyperstructure", "battle", "armies", "explorer"] as const;
 export type StudioSubject = (typeof STUDIO_SUBJECTS)[number];
 
 const EXPLORER = 3;
 /** A fight's two armies, by its place in the set's list. */
 const attackerOf = (battle: number) => 100 + battle * 2;
 const defenderOf = (battle: number) => 101 + battle * 2;
-const marcherOf = (place: number) => 1000 + place;
+/** An army under a standing order, and the guard a raider attacks, by the order's place in the set's list. */
+const orderedOf = (order: number) => 1000 + order;
+const guardOf = (order: number) => 5000 + order;
+/** How long a raider's strike takes to land, from its attack to the guard's fall. */
+const STRIKE_SECONDS = 1.6;
 /** The places a path frames its subjects by. */
 const STUDIO_PLACES = ["realm", "hyperstructure", "attacker", "defender", "exploreStart"] as const;
 export type StudioPlace = (typeof STUDIO_PLACES)[number];
 const HYPERSTRUCTURE_DESIGN = 17;
 const EXPLORER_TROOP: StudioTroop = { category: TroopType.Knight, tier: TroopTier.T1 };
+/** A camp's guard: the troop the map hands to the articulated figure, so it falls as one. */
+const GUARD_TROOP = EXPLORER_TROOP;
 
 /**
  * The studio's world on the lab's land: a realm whose tier is set on a call, a Hyperstructure that rises on one, two
@@ -72,8 +78,10 @@ export class StudioStage implements LabStage {
   private realmLevel = 0;
   private hyperstructureProgress = 0;
   private revealed = 0;
-  private marched = 0;
   private readonly fallen = new Set<number>();
+  private readonly sites: SettlementModel[] = [];
+  /** Where each ordered army is on its route, which way it walks, and how its raid stands. */
+  private marches: { at: number; heading: 1 | -1; wait: number; strike: number | null; struck: boolean }[] = [];
   private take: {
     path: StudioPath;
     start: StudioPose;
@@ -108,6 +116,7 @@ export class StudioStage implements LabStage {
       const kingdoms = this.set.kingdoms.filter((kingdom) => kingdom.level === asset.level).map(({ hex }) => hex);
       this.kingdoms.push(await this.standRealms(model, kingdoms, yaw, "enemy"));
     }
+    await this.standSites();
     this.hyperstructure = new HyperstructureModel(1);
     await compile(this.hyperstructure.group, scene);
     scene.add(this.hyperstructure.group);
@@ -136,7 +145,14 @@ export class StudioStage implements LabStage {
     this.resetHyperstructure();
     for (const kingdom of this.kingdoms) kingdom.group.visible = this.cast.has("kingdoms");
     this.revealed = 0;
-    this.marched = 0;
+    for (const site of this.sites) site.group.visible = this.cast.has("sites");
+    this.marches = this.set.orders.map(({ startAt, heading, wait }) => ({
+      at: startAt,
+      heading,
+      wait,
+      strike: null,
+      struck: false,
+    }));
     this.context?.terrain.cancelShroudReveals();
     this.context?.terrain.present([this.pages[0]]);
     this.fallen.clear();
@@ -148,8 +164,6 @@ export class StudioStage implements LabStage {
     else if (name === "attack") this.attack(Number(args.battle ?? 0));
     else if (name === "defeat") this.defeat(Number(args.battle ?? 0), args.skull !== false);
     else if (name === "explore") this.explore();
-    else if (name === "march") this.march();
-    else if (name === "lift") this.lift();
     else this.setRealmLevel(Number(args.level ?? this.realmLevel + 1));
   }
 
@@ -210,7 +224,8 @@ export class StudioStage implements LabStage {
       realmLevel: this.realmLevel,
       hyperstructureProgress: this.hyperstructureProgress,
       explored: this.revealed,
-      marched: this.marched,
+      marching: this.marches.filter((_, order) => this.armies?.isMarching(orderedOf(order))).length,
+      raided: this.marches.filter((march) => march.struck).length,
       walking: this.armies?.isMarching(EXPLORER) ?? false,
       defenderDown: this.fallen.has(0),
       fallen: this.fallen.size,
@@ -225,10 +240,12 @@ export class StudioStage implements LabStage {
    */
   update(delta: number): void {
     this.advanceTake(delta);
+    if (this.cast.has("armies")) this.runOrders(delta);
     this.armies?.update(delta);
     this.combat?.update(delta);
     this.hyperstructure?.updateAnimations(delta);
-    for (const realm of [...this.realms, ...this.kingdoms]) if (realm.group.visible) realm.updateAnimations(delta);
+    for (const realm of [...this.realms, ...this.kingdoms, ...this.sites])
+      if (realm.group.visible) realm.updateAnimations(delta);
   }
 
   dispose(): void {
@@ -237,7 +254,7 @@ export class StudioStage implements LabStage {
     this.combatBridge?.dispose();
     this.combat?.dispose();
     this.armies?.dispose();
-    for (const model of [...this.realms, ...this.kingdoms, this.hyperstructure]) {
+    for (const model of [...this.realms, ...this.kingdoms, ...this.sites, this.hyperstructure]) {
       model?.group.removeFromParent();
       model?.dispose();
     }
@@ -272,19 +289,7 @@ export class StudioStage implements LabStage {
   /** A fight's attacker strikes its defender as a confirmed battle replays on the world map. */
   private attack(battle: number): void {
     if (this.fallen.has(battle) || !this.set.battles[battle]) return;
-    const update: BattleEventSystemUpdate = {
-      entityId: attackerOf(battle),
-      battleData: {
-        attackerId: attackerOf(battle),
-        defenderId: defenderOf(battle),
-        attackerOwner: 1,
-        defenderOwner: 2,
-        winnerId: attackerOf(battle),
-        maxReward: [],
-        timestamp: 0,
-      },
-    };
-    this.combatBridge?.replayIndexed(update);
+    this.combatBridge?.replayIndexed(battleWonBy(attackerOf(battle), defenderOf(battle)));
   }
 
   private defeat(battle: number, skull: boolean): void {
@@ -303,11 +308,6 @@ export class StudioStage implements LabStage {
     this.armies?.march(EXPLORER, this.set.exploreRoute[this.revealed - 1]);
   }
 
-  /** The mist lifts off the next ring of the set, outwards from its realm. */
-  private lift(): void {
-    this.clearFog(this.set.realm);
-  }
-
   /** Uncovers the set's next hexes under fog, each swept clear from the side `from` lies on. */
   private clearFog(from: Hex): void {
     const { terrain } = this.requireContext();
@@ -318,13 +318,45 @@ export class StudioStage implements LabStage {
     terrain.present([this.pages[this.revealed]]);
   }
 
-  /** Every army of the host walks onto the next hex of its route. */
-  private march(): void {
-    this.marched += 1;
-    this.set.host.forEach(({ route }, place) => {
-      const to = route[this.marched];
-      if (to) this.armies?.march(marcherOf(place), to);
+  /**
+   * One tick of the map's life: every ordered army that has arrived on its hex walks on to the next, an explorer
+   * uncovering the fog ahead of it; one at the end of its route turns back, a raider after its guard has fallen.
+   */
+  private runOrders(delta: number): void {
+    const armies = this.armies;
+    if (!armies) return;
+    this.set.orders.forEach((order, index) => {
+      const march = this.marches[index];
+      march.wait -= delta;
+      if (march.wait > 0 || armies.isMarching(orderedOf(index))) return;
+      if (march.strike !== null) {
+        march.strike -= delta;
+        if (march.strike > 0) return;
+        march.strike = null;
+        armies.defeat(guardOf(index), false);
+      }
+      const ahead = order.route[march.at + march.heading];
+      if (!ahead) {
+        if (order.raids && !march.struck) return this.raid(index);
+        march.heading = march.heading === 1 ? -1 : 1;
+        return;
+      }
+      if (order.explores && this.isUnderFog(ahead)) this.clearFog(order.route[march.at]);
+      march.at += march.heading;
+      armies.march(orderedOf(index), ahead);
     });
+  }
+
+  /** A raider strikes the guard beside it, as a confirmed battle replays on the world map. */
+  private raid(order: number): void {
+    const march = this.marches[order];
+    march.struck = true;
+    march.strike = STRIKE_SECONDS;
+    this.combatBridge?.replayIndexed(battleWonBy(orderedOf(order), guardOf(order)));
+  }
+
+  private isUnderFog(hex: Hex): boolean {
+    return this.set.reveals.slice(this.revealed).some((stage) => stage.some((near) => sameHex(near, hex)));
   }
 
   private setRealmLevel(level: number): void {
@@ -332,7 +364,7 @@ export class StudioStage implements LabStage {
     this.realms.forEach((realm, index) => (realm.group.visible = this.cast.has("realm") && index === this.realmLevel));
   }
 
-  /** The armies the cast holds, where they stand now: each fight's two facing each other, the host and the explorer on their routes. */
+  /** The armies the cast holds, where they stand now: each fight's two facing each other, the ordered armies and the explorer on their routes. */
   private placeArmies(): void {
     const armies = this.armies;
     if (!armies) return;
@@ -357,12 +389,29 @@ export class StudioStage implements LabStage {
         });
       else armies.withdraw(defenderOf(battle));
     });
-    this.set.host.forEach(({ troop, route }, place) => {
-      const at = route[Math.min(this.marched, route.length - 1)];
-      const ahead = route[Math.min(this.marched + 1, route.length - 1)];
-      if (this.cast.has("host"))
-        armies.place({ entityId: marcherOf(place), ...troop, hex: at, yaw: facing(at, ahead), color: "#e1b955" });
-      else armies.withdraw(marcherOf(place));
+    this.set.orders.forEach((order, index) => {
+      const { at, heading } = this.marches[index];
+      const here = order.route[at];
+      const ahead = order.route[at + heading] ?? order.raids ?? here;
+      if (this.cast.has("armies"))
+        armies.place({
+          entityId: orderedOf(index),
+          ...order.troop,
+          hex: here,
+          yaw: facing(here, ahead),
+          color: "#e1b955",
+        });
+      else armies.withdraw(orderedOf(index));
+      if (!order.raids) return;
+      if (this.cast.has("armies"))
+        armies.place({
+          entityId: guardOf(index),
+          ...GUARD_TROOP,
+          hex: order.raids,
+          yaw: facing(order.raids, order.route.at(-1)!),
+          color: "#a33b39",
+        });
+      else armies.withdraw(guardOf(index));
     });
     const at = this.explorerHex();
     const route = this.set.exploreRoute;
@@ -396,9 +445,27 @@ export class StudioStage implements LabStage {
   }
 
   private armyHex(entityId: ID) {
-    const battle = this.set.battles[Math.floor((Number(entityId) - attackerOf(0)) / 2)];
+    const id = Number(entityId);
+    if (id >= guardOf(0)) return this.set.orders[id - guardOf(0)]?.raids;
+    if (id >= orderedOf(0)) return this.set.orders[id - orderedOf(0)]?.route[this.marches[id - orderedOf(0)].at];
+    const battle = this.set.battles[Math.floor((id - attackerOf(0)) / 2)];
     if (!battle) return undefined;
-    return Number(entityId) % 2 === attackerOf(0) % 2 ? battle.attacker : battle.defender;
+    return id % 2 === attackerOf(0) % 2 ? battle.attacker : battle.defender;
+  }
+
+  /** The set's camps, villages, ruins and beasts, each model's sites drawn from it at once, facing the map's camera. */
+  private async standSites(): Promise<void> {
+    const { scene, compile } = this.requireContext();
+    const hexesByModel = Map.groupBy(this.set.sites, (site) => site.model);
+    for (const [path, sites] of hexesByModel) {
+      const model = new SettlementModel(await gltfLoader.loadAsync(path), sites.length, "village");
+      model.setCount(sites.length);
+      sites.forEach(({ hex }, index) => model.setMatrixAt(index, this.placementMatrix(hex, facingTheMapCamera(path))));
+      await model.prepare();
+      await compile(model.group, scene);
+      scene.add(model.group);
+      this.sites.push(model);
+    }
   }
 
   /** Realms of one tier standing on their hexes, as the map draws a tier's realms from one model. */
@@ -455,6 +522,24 @@ export class StudioStage implements LabStage {
  */
 function facingTheMapCamera(modelPath: string): number {
   return resolveStructureRotationY([modelPath], 0);
+}
+
+const sameHex = (a: Hex, b: Hex) => a.col === b.col && a.row === b.row;
+
+/** A battle the attacker won, as the indexer reports one to the world map. */
+function battleWonBy(attackerId: number, defenderId: number): BattleEventSystemUpdate {
+  return {
+    entityId: attackerId,
+    battleData: {
+      attackerId,
+      defenderId,
+      attackerOwner: 1,
+      defenderOwner: 2,
+      winnerId: attackerId,
+      maxReward: [],
+      timestamp: 0,
+    },
+  };
 }
 
 /** The yaw that turns a model on hex `from` to face hex `to`. */

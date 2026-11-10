@@ -263,9 +263,12 @@ its troop-and-tier table at the map's scale (`ARMY_MODEL_SCALE`), handed to the 
 hands it (`shouldPresentArmyProcedurally`, the T1 knight). A take stands only its own subjects on the set; Reset stands
 them all. The set lives in `src/lab/studio/`; nothing in it ships to players.
 
-`set=world` builds a second set with the same subjects at scale (`fixture.ts`, `STUDIO_SETS`): a continent of 76 by 50
-hexes holding every biome the game draws, a capital and fourteen realms at every tier, a host of 27 armies that marches
-on a call, six fights along a battle line, and mist over all of it but the capital's meadow, which lifts in seven rings.
+`set=world` builds a second set (`fixture.ts`, `STUDIO_SETS`): a continent of 76 by 50 hexes holding every biome the
+game draws, a capital and fourteen realms at every tier, camps, villages, ruins and beasts, and fog standing along its
+edge. It is lived in without a call: over a hundred armies walk their routes between the realms a hex at a time and turn
+back at the end, out of step with one another; raiders walk in on the camps' guards, strike, and the guards fall;
+explorers walk into the fog and uncover it. Every army's order is a row of the set (`orders`), played by the stage's
+tick through the army model's own march and the map's combat bridge.
 
 - **Takes:** Hyperstructure rising, Battle up close, Exploration, Realm through its tiers, Wide establisher. Each resets
   the set and plays its camera path with its cues on time, so every take replays the same. `?take=<name>` plays one when
@@ -281,9 +284,8 @@ on a call, six fights along a battle line, and mist over all of it but the capit
   (`{level}`) or `strike`; `pose(partial)` reads or moves the camera (`{target, distance, tilt, turn, fov}`, tilt 0
   looks straight down, turn 0 looks north); `places()`, `troops({attacker, defender})`, `time({scale, fixedStep})`,
   `light(name)`, `weather(name)`, `clean(on)`, `reset()`, `status()`. `attack` and `defeat` take `{battle}` (which fight
-  of the set; `defeat` also `{skull: false}`, for a camera close enough that the map's skull would cover the fall),
-  `march` walks the host a hex on, `lift` clears the next ring of mist, and `at({col, row})` gives a hex's place in the
-  world for a path's target.
+  of the set; `defeat` also `{skull: false}`, for a camera close enough that the map's skull would cover the fall), and
+  `at({col, row})` gives a hex's place in the world for a path's target.
 
 Start the client, drive the camera with the keys and mouse, replay a path and roll the takes, with one recording, stills
 and a transcript of every check, in a new directory (the port must be free):

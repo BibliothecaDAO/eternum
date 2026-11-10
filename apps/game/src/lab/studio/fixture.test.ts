@@ -18,26 +18,30 @@ it.each(Object.entries(STUDIO_SETS))("stands each fight of the %s set on two hex
   for (const { attacker, defender } of set.battles) expect(areNeighbours(attacker, defender)).toBe(true);
 });
 
-it.each(Object.entries(STUDIO_SETS))(
-  "marches the %s set's host a hex at a time, no two armies on one hex",
-  (_, set) => {
-    for (const { route } of set.host)
-      for (let step = 1; step < route.length; step += 1) expect(areNeighbours(route[step - 1], route[step])).toBe(true);
-    const steps = Math.max(0, ...set.host.map(({ route }) => route.length));
-    for (let step = 0; step < steps; step += 1) {
-      const standing = set.host.map(({ route }) => key(route[step]));
-      expect(new Set(standing).size).toBe(standing.length);
-    }
-  },
-);
+it("walks every army of the world a hex at a time, each raider ending beside the guard it attacks", () => {
+  const { orders } = STUDIO_SETS.world;
+  expect(orders.length).toBeGreaterThan(100);
+  for (const { route, startAt, raids } of orders) {
+    for (let step = 1; step < route.length; step += 1) expect(areNeighbours(route[step - 1], route[step])).toBe(true);
+    expect(route[startAt]).toBeDefined();
+    if (raids) expect(areNeighbours(route.at(-1)!, raids)).toBe(true);
+  }
+});
 
-it("lifts the world's mist off every hidden hex once, and never hides its capital", () => {
-  const { reveals, realm } = STUDIO_SETS.world;
-  const lifted = reveals.flat().map(key);
-  expect(new Set(lifted).size).toBe(lifted.length);
-  expect(lifted).not.toContain(key(realm));
+it("starts the world's armies out of step with one another", () => {
+  const waits = new Set(STUDIO_SETS.world.orders.map((order) => order.wait));
+  expect(waits.size).toBeGreaterThan(8);
+});
+
+it("keeps fog standing along the world's edge, and uncovers only fog as its explorers walk into it", () => {
+  const { reveals, realm, isFogged } = STUDIO_SETS.world;
+  const uncovered = reveals.flat();
+  expect(uncovered.length).toBeGreaterThan(0);
+  expect(new Set(uncovered.map(key)).size).toBe(uncovered.length);
+  for (const hex of uncovered) expect(isFogged(hex)).toBe(true);
+  expect(isFogged(realm)).toBe(false);
   const hidden = (revealed: number) =>
     createStudioTerrainRequest("world", revealed).cells.filter((cell) => !cell.explored).length;
-  expect(hidden(0)).toBe(lifted.length);
-  expect(hidden(reveals.length)).toBe(0);
+  expect(hidden(0) - hidden(reveals.length)).toBe(uncovered.length);
+  expect(hidden(reveals.length)).toBeGreaterThan(0);
 });

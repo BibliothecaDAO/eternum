@@ -135,6 +135,14 @@ describe("the set", () => {
     const { bridge } = bridgeOver(stage);
     void bridge.take("battle");
     bridge.reset();
-    expect(stage.status().cast).toEqual(["realm", "kingdoms", "hyperstructure", "battle", "host", "explorer"]);
+    expect(stage.status().cast).toEqual([
+      "realm",
+      "kingdoms",
+      "sites",
+      "hyperstructure",
+      "battle",
+      "armies",
+      "explorer",
+    ]);
   });
 });

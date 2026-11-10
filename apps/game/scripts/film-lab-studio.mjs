@@ -178,6 +178,8 @@ for (const shot of plan.shots) {
   if (!film.adapter || film.adapter.fallback) throw new Error("The studio is not rendering on a hardware GPU");
   await read(`(() => {
     const studio = window.__studio, shot = ${JSON.stringify(shot)};
+    // The clock is held before the set is reset, so the world's first instant is the same for every shot.
+    window.__film.hold();
     studio.time({ scale: 1, fixedStep: true });
     if (shot.light !== undefined) studio.light(shot.light);
     if (shot.weather) studio.weather(shot.weather);
@@ -193,9 +195,8 @@ for (const shot of plan.shots) {
     window.__filmPath = shot.path;
     if (shot.path.keys[0]) studio.pose(shot.path.keys[0]);
   })()`);
-  // The set settles in the browser's own time (models and textures arriving), then the clock is held.
+  // Models and textures still arriving get the browser's own time to land; the world does not move meanwhile.
   await new Promise((done) => setTimeout(done, (shot.settle ?? 2) * 1000));
-  await read("window.__film.hold()");
   for (let frame = 0; frame < Math.round((shot.warm ?? 0) * 60); frame += 1) await read("window.__film.step()");
   await read("void window.__studio.path(window.__filmPath)");
   const directory = join(out, shot.name);
