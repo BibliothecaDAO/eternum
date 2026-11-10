@@ -53,6 +53,20 @@ export const usePlayerDay = (player: string | null, day: DayBounds | null, cover
   };
 };
 
+/**
+ * When the player acted, in unix seconds: each of their own stories in the same one read of their history
+ * (usePlayerDay's), newest first; none while it is being read.
+ */
+export const useOwnActs = (player: string | null): number[] => {
+  const owner = player === null ? undefined : `0x${BigInt(player).toString(16)}`;
+  const stories = useStoryEvents(OWN_STORIES, undefined, owner);
+  return player
+    ? ownStoriesOfDay(stories.data, player, { startMs: 0, endMs: Infinity }).map(({ timestampMs }) =>
+        Math.floor(timestampMs / 1_000),
+      )
+    : [];
+};
+
 const dayHistory = (
   read: { isPending: boolean; isError: boolean; holdsSince: number | undefined },
   day: DayBounds | null,

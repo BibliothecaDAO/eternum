@@ -73,6 +73,7 @@ export const LAB_SCENARIOS: Partial<Record<string, () => LabScenario>> = {
   "day-later-short": dayTurnScenario("later", "capped"),
   "day-turn-asleep": dayTurnScenario("asleep"),
   "day-later-quiet": dayTurnScenario("later", "unplayed"),
+  "day-later-skipped": dayTurnScenario("later", "skipped"),
   "day-later-played-on": dayTurnScenario("later", "played-on"),
   "season-opens": seasonOpensScenario,
   ...Object.fromEntries(

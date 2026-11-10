@@ -152,6 +152,10 @@ afterEach(() => {
 });
 
 const PROD_DAY_2 = ["35Reveals", "5Sites cleared", "0Chests", "+7.2KEssence", "+524Labor", "+0LORDS"];
+/** Prod's day 1 for the same player, as their own history holds it. */
+const PROD_DAY_1 = ["37Reveals", "6Sites cleared", "0Chests", "+6KEssence", "+2.7KLabor", "+0LORDS"];
+/** Any day's summary. */
+const SUMMARY_SHOWN = "section[aria-label$=' done']";
 
 let client: QueryClient;
 /** Draws the HUD's day end at the clock as it stands. */
@@ -561,6 +565,64 @@ describe("a device arriving in a new day", () => {
     expect(phase()).toBe("day");
     expect(navigate.mock.calls).toEqual([[NEW_SITE]]);
     expect(window.localStorage.getItem(MARK)).toBe("2");
+  });
+
+  describe('a player back after a day they skipped (owner, 10 Nov 2026: "I played day 1 but not day 2, its day 3 now")', () => {
+    const DAY_1 = "section[aria-label='Day 1 done']";
+    /** The player's history without their own day-2 stories: they played day 1 and skipped day 2. */
+    const skippingDay2 = (history: typeof herald.history) => {
+      const day2 = endedDay(RULES, BEFORE_PLAYING_ON.now)!;
+      const player = BigInt(RECORDED_DAY.player).toString(16);
+      return history.filter(({ value }) => {
+        const at = Number(BigInt((value as { timestamp?: string }).timestamp ?? 0));
+        return !(JSON.stringify(value).includes(player) && at >= day2.start && at < day2.end);
+      });
+    };
+
+    it("offers the day they played, its totals and its share, then goes on into day 3 with the camera on the realm", async () => {
+      herald.history = skippingDay2(BEFORE_PLAYING_ON.history);
+      await openTheGameHere();
+      const card = host.querySelector(DAY_1)!;
+      expect(card.textContent).toContain("Realm kept · Day 3 is open");
+      expect([...card.querySelectorAll("[data-total]")].map((cell) => cell.textContent)).toEqual(PROD_DAY_1);
+      // Its armies ended with day 1, not with the day that just ended: the card says nothing of them.
+      expect(card.querySelector("[aria-label='Troops']")).toBeNull();
+
+      const share = [...card.querySelectorAll("button")].find((button) => button.textContent === "Share your day")!;
+      await act(async () => share.click());
+      const sheet = document.body.querySelector("section[aria-label='Share your day']")!;
+      expect(sheet.querySelector(".day-share__frame .day-card__day")?.textContent).toBe("Day 1");
+      expect(shares.createShare).toHaveBeenCalledWith({ kind: "frontier-day", chainId: "0x1", gameId: 1, moment: 1 });
+      act(() => sheet.querySelector<HTMLButtonElement>("button[aria-label='Close']")!.click());
+
+      act(() =>
+        [...card.querySelectorAll<HTMLButtonElement>("button")]
+          .find((button) => button.textContent === "Continue")!
+          .click(),
+      );
+      await throughTheBlack();
+      expect(phase()).toBe("day");
+      expect(navigate.mock.calls).toEqual([[NEW_SITE]]);
+      expect(window.localStorage.getItem(MARK)).toBe("2");
+    });
+
+    it("offers it no more once this device went through a day's end after it", async () => {
+      herald.history = skippingDay2(BEFORE_PLAYING_ON.history);
+      window.localStorage.setItem(MARK, "1");
+      await openTheGameHere();
+      expect(host.querySelector(SUMMARY_SHOWN)).toBeNull();
+      expect(useDayEndStore.getState()).toMatchObject({ phase: "nightfall", arrival: "later", summary: "none" });
+      await throughTheBlack();
+      expect(navigate.mock.calls).toEqual([[NEW_SITE]]);
+    });
+
+    it("offers it no more once they played on in day 3", async () => {
+      herald.history = skippingDay2(RECORDED_DAY.history);
+      herald.now = RECORDED_DAY.openedAt;
+      await openTheGameHere();
+      expect(host.querySelector(SUMMARY_SHOWN)).toBeNull();
+      expect(useDayEndStore.getState()).toMatchObject({ summary: "none" });
+    });
   });
 
   it("does not play a day's end again on a device that went through it, summary or none", async () => {

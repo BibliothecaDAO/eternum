@@ -40,8 +40,8 @@ export const DayDoneCard = ({
   onContinue,
 }: {
   endedDay: number;
-  /** The new day: when it ends, the time left, and how long the day after lasts. */
-  clock: Pick<DayClock, "endsAt" | "secondsLeft" | "tomorrowSeconds" | "tone">;
+  /** The day now open: its number, when it ends, the time left, and how long the day after lasts. */
+  clock: Pick<DayClock, "day" | "endsAt" | "secondsLeft" | "tomorrowSeconds" | "tone">;
   totals: DayTotals;
   /** How much of the day the player's history gives; the totals are unknown unless it is the whole day. */
   history: Exclude<DayHistory, "waiting">;
@@ -66,7 +66,7 @@ export const DayDoneCard = ({
       {DAY} {endedDay} {DAY_DONE}
     </h2>
     <p className="text-hud-strong">
-      {REALM_KEPT} · {DAY} {endedDay + 1} {DAY_OPEN}
+      {REALM_KEPT} · {DAY} {clock.day} {DAY_OPEN}
     </p>
     <DayEnds endsAt={clock.endsAt} secondsLeft={clock.secondsLeft} tone={clock.tone} />
     <p className="flex items-center justify-center gap-1 text-hud-strong">
