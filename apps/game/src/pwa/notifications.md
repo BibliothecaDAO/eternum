@@ -28,11 +28,12 @@ old registration. A registration is on only once the identity service answered i
 acknowledged as revoked keeps its id and revocation token in the page's storage, and the next check revokes it, even for
 the same account and token. The service makes an acknowledged revocation final: it records the revoked id for a day and
 refuses a registration of that id still on its way (a request the page timed out on, or one sent before a restart), so
-the page drops the credentials once its revocation is acknowledged. A tapped alert opens what it names by the service
-worker's rules (`isChatClient`, `notificationMatchesGame`), only when it is the signed-in account's alert for this
-registration; a chat alert tapped from a cold start waits for the chat drawn after it. iOS shows no alert while the app
-is in front. APNs receives the alert's title and body and its envelope (owner, device id, target, tag, times) as
-readable JSON over TLS, where Web Push encrypts its payload for the device.
+the page drops the credentials once its revocation is acknowledged. It refuses a registration still on its way for a
+deleted account the same way, in the same insert (`account_deletions`, from any device). A tapped alert opens what it
+names by the service worker's rules (`isChatClient`, `notificationMatchesGame`), only when it is the signed-in account's
+alert for this registration; a chat alert tapped from a cold start waits for the chat drawn after it. iOS shows no alert
+while the app is in front. APNs receives the alert's title and body and its envelope (owner, device id, target, tag,
+times) as readable JSON over TLS, where Web Push encrypts its payload for the device.
 
 Direct-message push begins only after chat persistence. The realtime service sends the identity server message/thread
 identity, recipient, sender display name and timestamp, but never private message content. The device sees a "Message

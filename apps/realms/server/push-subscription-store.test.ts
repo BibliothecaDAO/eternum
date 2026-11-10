@@ -1,7 +1,7 @@
 import { Effect } from "effect";
 import { afterEach, expect, it } from "vitest";
 
-import { PushSubscriptionStore } from "./push-subscription-store";
+import { holdingInserts, storeOver } from "./held-push-registrations";
 import { createTestD1 } from "./test-d1";
 import { migrationStatements } from "./workerd-harness";
 
@@ -47,44 +47,6 @@ const migrated = async () => {
       .bind(realmsId)
       .run();
   return db;
-};
-
-/** The store over `db`, as one Worker request reaches it. */
-const storeOver = (db: D1Database) =>
-  Effect.runPromise(
-    Effect.gen(function* () {
-      return yield* PushSubscriptionStore;
-    }).pipe(Effect.provide(PushSubscriptionStore.layer(db))),
-  );
-
-/** `db`, with each registration's insert held just before it runs until `release` is called. */
-const holdingInserts = (db: D1Database) => {
-  let release = () => undefined as void;
-  const gate = new Promise<void>((resolve) => (release = resolve));
-  let reached = () => undefined as void;
-  const atInsert = new Promise<void>((resolve) => (reached = resolve));
-  const held = {
-    ...db,
-    prepare: (sql: string) => {
-      const statement = db.prepare(sql);
-      if (!sql.includes('INSERT INTO "notification_push_subscriptions"')) return statement;
-      return {
-        ...statement,
-        bind: (...args: unknown[]) => {
-          const bound = statement.bind(...args);
-          return {
-            ...bound,
-            first: async () => {
-              reached();
-              await gate;
-              return bound.first();
-            },
-          };
-        },
-      };
-    },
-  } as D1Database;
-  return { held, atInsert, release };
 };
 
 const run = <T>(effect: Effect.Effect<T, unknown>) => Effect.runPromise(effect);
