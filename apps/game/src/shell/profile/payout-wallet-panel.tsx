@@ -18,6 +18,7 @@ import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { failureSentence } from "@/ui/modules/identity/identity-failures";
 import { createPasskey } from "@/ui/modules/identity/passkey";
 
+import { opensThirdPartySignIn } from "@/runtime/distribution-channel";
 import { l2Provider } from "@/runtime/l2-rpc";
 
 import { Loading } from "../loading";
@@ -150,7 +151,7 @@ const Linking = ({
   }
 };
 
-/** No wallet yet: make the default wallet with a passkey, or link one the player has. */
+/** No wallet yet: make the default wallet with a passkey, or link one the player has, where a wallet can open. */
 const Choose = ({ onStep, onChanged }: { onStep: (step: Step) => void; onChanged: () => void }) => (
   <>
     <PrizesGoHere />
@@ -158,12 +159,14 @@ const Choose = ({ onStep, onChanged }: { onStep: (step: Step) => void; onChanged
       onCreated={onChanged}
       onCodeNeeded={(passkey) => onStep({ kind: "code", change: { kind: "default", passkey } })}
     />
-    <AppChoice
-      icon="backpack"
-      title={WALLET_WORDS.haveOne}
-      detail={WALLET_WORDS.haveOneLine}
-      onClick={() => onStep({ kind: "pick" })}
-    />
+    {opensThirdPartySignIn() && (
+      <AppChoice
+        icon="backpack"
+        title={WALLET_WORDS.haveOne}
+        detail={WALLET_WORDS.haveOneLine}
+        onClick={() => onStep({ kind: "pick" })}
+      />
+    )}
   </>
 );
 

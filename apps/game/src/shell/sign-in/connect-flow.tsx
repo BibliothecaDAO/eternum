@@ -10,6 +10,7 @@ import {
   useIdentitySessionStore,
 } from "@/hooks/context/identity-session";
 import { payoutAddressOf } from "@/hooks/context/payout-wallet";
+import { opensThirdPartySignIn } from "@/runtime/distribution-channel";
 import { failureSentence, type IdentityAction } from "@/ui/modules/identity/identity-failures";
 
 import { returnPathOf } from "../return-path";
@@ -231,10 +232,14 @@ const AnonymousConnect = ({
   );
 };
 
-/** The sign-in providers the identity service offers; a provider's button shows only once it does. */
+/**
+ * The sign-in providers the identity service offers; a provider's button shows only once it does. None where a sign-in
+ * may not leave for a third party (the iOS app): there the emailed code is the way in.
+ */
 const useSignInProviders = () => {
   const [providers, setProviders] = useState<SocialProvider[]>([]);
   useEffect(() => {
+    if (!opensThirdPartySignIn()) return;
     let active = true;
     void identityClient
       .availableSignInProviders()

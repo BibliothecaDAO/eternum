@@ -1,4 +1,9 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
+
+/** The app the client runs in; the web unless a test is about a store app. */
+const app = vi.hoisted(() => ({ channel: "web" as "web" | "play" | "app-store" }));
+vi.mock("@/runtime/distribution-channel", () => ({ distributionChannel: () => app.channel }));
+
 import { registerGameServiceWorker } from "./register-service-worker";
 
 const RUNNING = "release-a";
@@ -31,12 +36,34 @@ function registrationFixture(release: string | null = "release-b") {
 }
 
 afterEach(() => {
+  app.channel = "web";
   vi.unstubAllGlobals();
   vi.useRealTimers();
   vi.restoreAllMocks();
 });
 
 describe("service worker registration", () => {
+  it("registers no worker inside the iOS app, so no update is ever offered there", async () => {
+    app.channel = "app-store";
+    const { register } = registrationFixture();
+    const ready = vi.fn();
+    const cleanup = registerGameServiceWorker(RUNNING, ready);
+    await Promise.resolve();
+    expect(register).not.toHaveBeenCalled();
+    expect(ready).not.toHaveBeenCalled();
+    cleanup();
+  });
+
+  it("registers the worker inside the Play app, whose web push it delivers", async () => {
+    app.channel = "play";
+    const { register } = registrationFixture();
+    const ready = vi.fn();
+    const cleanup = registerGameServiceWorker(RUNNING, ready);
+    await vi.waitFor(() => expect(ready).toHaveBeenCalledOnce());
+    expect(register).toHaveBeenCalledWith("/sw.js", { scope: "/", updateViaCache: "none" });
+    cleanup();
+  });
+
   it("offers an existing update and activates only after explicit acceptance", async () => {
     const { worker, register } = registrationFixture();
     const ready = vi.fn();

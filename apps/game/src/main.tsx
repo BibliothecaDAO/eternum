@@ -8,6 +8,7 @@ import * as Sentry from "@sentry/react";
 import App from "./app";
 import { recoverChunkLoad } from "./utils/chunk-load-recovery";
 import { selectHasPendingTransactions, useTransactionStore } from "./hooks/store/use-transaction-store";
+import { distributionChannel } from "./runtime/distribution-channel";
 import { resolveSentryRuntimeOptions } from "./sentry-config";
 import { BootLoaderCrashFallback, markBootMilestone, setBootDocumentState } from "./ui/modules/boot-loader";
 
@@ -18,6 +19,9 @@ declare global {
 }
 
 window.Buffer = Buffer;
+
+// The launch's signs are read before anything can navigate away from its address.
+const channel = distributionChannel();
 
 window.addEventListener("vite:preloadError", (event) => {
   recoverChunkLoad(
@@ -64,7 +68,7 @@ class BootCrashBoundary extends React.Component<BootCrashBoundaryProps, BootCras
 }
 
 if (sentryEnabled) {
-  const sentryOptions = resolveSentryRuntimeOptions(import.meta.env);
+  const sentryOptions = resolveSentryRuntimeOptions(import.meta.env, channel);
 
   Sentry.init({
     dsn: sentryDsn,
@@ -77,6 +81,7 @@ if (sentryEnabled) {
     environment: sentryOptions.environment,
     release: sentryOptions.release,
     beforeSend: sentryOptions.beforeSend,
+    initialScope: sentryOptions.initialScope,
   });
 }
 
