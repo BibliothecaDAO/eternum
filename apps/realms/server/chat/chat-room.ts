@@ -177,7 +177,7 @@ export class ChatRoom extends DurableObject<Record<string, unknown>> {
   }
 
   /** Deletes the messages past thirty days, and wakes the room again when the next one is (retention.ts). */
-  private async forgetExpired() {
+  async forgetExpired() {
     const sql = this.ctx.storage.sql;
     sql.exec("DELETE FROM messages WHERE createdAt <= ?", retentionCutoff());
     const { oldest } = sql.exec<{ oldest: number | null }>("SELECT MIN(createdAt) AS oldest FROM messages").one();

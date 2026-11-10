@@ -3,6 +3,7 @@ import { presentsOperatorToken, VISIT_RECORD_SECONDS } from "@realms-world/ident
 
 import { handleAccountDeletion } from "./account-deletion";
 import type { IdentityAuth } from "./auth";
+import { handleChatRetention } from "./chat/retention";
 import { routeChat } from "./chat/routes";
 import { handleBotDeviceApproval, handleDeviceChange } from "./devices";
 import { claimSocialHandoff, returnFromProvider, startSocialSignIn } from "./social-handoff";
@@ -115,6 +116,10 @@ export const routeIdentityRequest = async (
   }
   if (pathname === "/api/health/accounts" && request.method === "GET") return handleAccountsHealth(env.DB);
   if (pathname === "/api/chat/health" && request.method === "GET") return handleChatHealth(env);
+  if (pathname === "/api/operator/chat-retention" && request.method === "POST") {
+    if (!(await isOperator(env, request))) return json({ error: "unauthorized" }, 401);
+    return handleChatRetention(request, env);
+  }
   if (pathname.startsWith("/api/chat/")) return routeChat(request, env, auth, pathname);
   if (pathname === "/api/notifications/preferences") return handleNotificationPreferences(request, auth, env.DB);
   if (pathname === "/api/build-orders") return handleBuildOrders(request, auth, env.DB);
@@ -218,6 +223,7 @@ const referralWorld = (env: IdentityEnv, platform: WorkerPlatform): ReferralWorl
 const requiresSameOrigin = (request: Request, pathname: string): boolean => {
   const operatorRoute = [
     "/api/operator/campaign-draw",
+    "/api/operator/chat-retention",
     "/api/devices/bots",
     "/api/directory/shards",
     "/api/directory/shards/status",

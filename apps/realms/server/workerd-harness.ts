@@ -102,7 +102,7 @@ export const startWorker = async (options: {
       BETTER_AUTH_SECRET: "workerd-test-secret-workerd-test-secret",
       MARKETPLACE_API_URL: "https://market.test/api/marketplace",
       L2_RPC_URL: "https://starknet-mainnet.g.alchemy.com/v2/test",
-      OPERATOR_TOKEN: "unused",
+      OPERATOR_TOKEN,
       RESEND_API_KEY: "unused",
       WEB_PUSH_VAPID_PUBLIC_KEY: options.vapid.publicKey,
       WEB_PUSH_VAPID_PRIVATE_KEY: options.vapid.privateKey,
@@ -225,6 +225,9 @@ export const deviceKeys = async () => {
 };
 
 export const pause = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+/** The operator's bearer token, as the deploy presents it. */
+export const OPERATOR_TOKEN = "workerd-operator-token";
 
 export const waitUntil = async (condition: () => boolean, timeoutMs: number) => {
   const deadline = Date.now() + timeoutMs;

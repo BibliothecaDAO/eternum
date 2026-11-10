@@ -10,6 +10,7 @@ import {
   buildWorkerBundle,
   migrationStatements,
   newStorage,
+  OPERATOR_TOKEN,
   ORIGIN,
   pause,
   startWorker,
@@ -194,6 +195,100 @@ it("deletes an inbox's old messages inside a thread that goes on, recounts its u
     expect(storedContents(readerFile)).toEqual(["this week"]);
     expect(storedContents(writerFile)).toEqual([]);
     expect(withStorage(writerFile, (db) => db.prepare("SELECT COUNT(*) AS n FROM threads").get())).toEqual({ n: 0 });
+  } finally {
+    await worker.dispose();
+  }
+}, 180_000);
+
+/** The object's alarm time, as workerd keeps it (in nanoseconds) in the object's storage; null: none set. */
+const alarmOf = (file: string) =>
+  withStorage(
+    file,
+    (db) =>
+      (db.prepare("SELECT value / 1000000 AS at FROM _cf_METADATA WHERE key = 1").get() as { at: number } | undefined)
+        ?.at ?? null,
+  );
+
+/** The object as chat kept it before retention existed: its messages, and no alarm. */
+const withoutAlarm = (file: string) =>
+  withStorage(file, (db) => db.prepare("DELETE FROM _cf_METADATA WHERE key = 1").run());
+
+/** The deploy's call for one class of chat object (deploy/first/publish.ts `keepChatRetention`). */
+const keepRetention = (worker: Worker, className: string, ids: string[], token = OPERATOR_TOKEN) =>
+  worker.mf.dispatchFetch(`${ORIGIN}/api/operator/chat-retention`, {
+    method: "POST",
+    headers: { authorization: `Bearer ${token}`, "content-type": "application/json" },
+    body: JSON.stringify({ className, ids }),
+  });
+
+it("gives chat written before retention existed its thirty days at the deploy's call, with no player opening it", async () => {
+  const storage = newStorage();
+  let worker = await startOver(storage);
+  await worker.db.batch(migrationStatements().map((statement) => worker.db.prepare(statement)));
+  const writer = await worker.signInWithEmailCode("old-writer@realms.test");
+  const reader = await worker.signInWithEmailCode("old-reader@realms.test");
+  const contents = ["past thirty days", "thirty days soon", "this week"];
+  const room = await send(
+    worker,
+    writer.cookie,
+    `/api/chat/rooms/${encodeURIComponent(GLOBAL)}`,
+    contents.map((content) =>
+      JSON.stringify({ type: "world:publish", zoneId: GLOBAL, payload: { zoneId: GLOBAL, content } }),
+    ),
+  );
+  const own = await send(
+    worker,
+    writer.cookie,
+    "/api/chat/inbox",
+    contents.map((content) =>
+      JSON.stringify({ type: "direct:message", payload: { recipientId: reader.realmsId, content } }),
+    ),
+  );
+  await waitUntil(
+    () =>
+      room.received.filter(({ type }) => type === "world:message").length === 3 &&
+      own.received.filter(({ type }) => type === "direct:message").length === 3,
+    5_000,
+  );
+  room.socket.close();
+  own.socket.close();
+  const rooms = await worker.mf.getDurableObjectNamespace("CHAT_ROOM");
+  const inboxes = await worker.mf.getDurableObjectNamespace("CHAT_INBOX");
+  const roomId = rooms.idFromName(GLOBAL).toString();
+  const inboxIds = [writer.realmsId, reader.realmsId].map((realmsId) => inboxes.idFromName(realmsId).toString());
+  await worker.dispose();
+
+  const now = Date.now();
+  const files = [
+    objectStorage(storage, "ChatRoom", roomId),
+    ...inboxIds.map((id) => objectStorage(storage, "ChatInbox", id)),
+  ];
+  for (const file of files) {
+    ageMessages(file, [now - 31 * DAY_MS, now - CHAT_RETENTION_MS + EXPIRES_IN_MS, now - 7 * DAY_MS]);
+    expect(alarmOf(file)).not.toBeNull();
+    withoutAlarm(file);
+    expect(alarmOf(file)).toBeNull();
+  }
+
+  worker = await startOver(storage);
+  try {
+    expect((await keepRetention(worker, "ChatRoom", [roomId], "not-the-operator")).status).toBe(401);
+    expect((await keepRetention(worker, "ChatRoom", ["not-an-object"])).status).toBe(400);
+    expect(files.map(storedContents)).toEqual(files.map(() => contents));
+
+    // The deploy names every object; no player reads or writes any of them.
+    expect(await (await keepRetention(worker, "ChatRoom", [roomId])).json()).toEqual({ kept: 1 });
+    expect(await (await keepRetention(worker, "ChatInbox", inboxIds)).json()).toEqual({ kept: 2 });
+    expect(files.map(storedContents)).toEqual(files.map(() => ["thirty days soon", "this week"]));
+    expect(files.map(alarmOf)).toEqual(files.map(() => now + EXPIRES_IN_MS));
+    // A second deploy changes nothing.
+    expect((await keepRetention(worker, "ChatInbox", inboxIds)).status).toBe(200);
+    expect(files.map(storedContents)).toEqual(files.map(() => ["thirty days soon", "this week"]));
+
+    // Their alarms then delete each message as it turns thirty days.
+    await pause(now + EXPIRES_IN_MS - Date.now());
+    await waitUntil(() => files.every((file) => storedContents(file).length === 1), ALARM_MS);
+    expect(files.map(storedContents)).toEqual(files.map(() => ["this week"]));
   } finally {
     await worker.dispose();
   }

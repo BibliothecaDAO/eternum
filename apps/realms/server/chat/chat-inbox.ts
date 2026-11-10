@@ -338,7 +338,7 @@ export class ChatInbox extends DurableObject<Record<string, unknown>> {
    * what stays; the alarm wakes the inbox when the next message is past (retention.ts). A thread's last message is
    * its newest, so a thread that stays keeps it.
    */
-  private async forgetExpired() {
+  async forgetExpired() {
     const sql = this.ctx.storage.sql;
     if (sql.exec("DELETE FROM messages WHERE createdAt <= ?", retentionCutoff()).rowsWritten > 0) {
       sql.exec("DELETE FROM threads WHERE NOT EXISTS (SELECT 1 FROM messages WHERE messages.threadId = threads.id)");
