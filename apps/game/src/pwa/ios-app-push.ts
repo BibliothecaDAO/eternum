@@ -9,6 +9,7 @@ import {
 
 import { CHAT_ALERT_PRESSED, type ChatAlertPress } from "./chat-alert";
 import { pressAppChatAlert } from "./chat-alert-press";
+import type { CapacitorBridge } from "./ios-app-bridge";
 
 /**
  * Push in the iOS app (apps/ios). Its web view has no service worker and no Web Push, so the app's push plugin
@@ -27,23 +28,8 @@ import { pressAppChatAlert } from "./chat-alert-press";
  * - While the app is in front iOS shows no alert: the game's own pages show what is happening.
  */
 
-/** What Capacitor's bridge puts on every page the iOS app loads (its native-bridge.js); the page bundles no Capacitor. */
-export interface CapacitorBridge {
-  isNativePlatform(): boolean;
-  nativePromise<T>(plugin: string, method: string, options?: object): Promise<T>;
-  addListener<T>(plugin: string, event: string, callback: (data: T) => void): { remove(): Promise<void> };
-}
-
 const PLUGIN = "PushNotifications";
 type Permission = "granted" | "denied" | "prompt" | "prompt-with-rationale";
-
-/** The bridge, when this page runs in the iOS app; null on the web and in the Android app. */
-export const iosAppBridge = (): CapacitorBridge | null => {
-  const bridge = (window as { Capacitor?: Partial<CapacitorBridge> }).Capacitor;
-  return bridge?.isNativePlatform?.() && bridge.nativePromise && bridge.addListener
-    ? (bridge as CapacitorBridge)
-    : null;
-};
 
 /**
  * This phone's registration with the identity service, with the alerts the player consented to, and where it stands:

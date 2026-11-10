@@ -14,6 +14,7 @@ import {
 import { statusAfterFailure, type TransactionStatus, useTransactionStore } from "@/hooks/store/use-transaction-store";
 import { recordAdmissionToVisible } from "@/observability/client-action-latency";
 import { getTxMessage } from "@/ui/components/transaction-center/types";
+import { playActionConfirmedHaptic } from "@/ui/motion/motion-settings";
 import { extractReadableErrorMessage } from "@/utils/error-message";
 
 interface TransactionSubmittedPayload extends TransactionLifecycleMeta {
@@ -109,9 +110,11 @@ export const useTransactionListener = () => {
       }
     };
 
+    // Every action this client sends ends here once Herald confirms it applied: its one confirmation haptic.
     const handleTransactionComplete = (payload: TransactionCompletePayload) => {
       const hash = payload.details.transaction_hash;
       recordAdmissionToVisible(payload.admissionToVisibleMs);
+      playActionConfirmedHaptic();
       addClientTransactionBreadcrumb({
         stage: "completed",
         message: payload.type ? getTxMessage(payload.type) : "Transaction completed",

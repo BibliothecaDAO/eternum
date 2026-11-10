@@ -47,7 +47,7 @@ const effectsCategories = Object.values(AudioCategory).filter((category) => cate
  * Player settings first; installing the app and the keys, rarely touched, then How to play (the game's guide on the
  * docs site, in a new tab, the one help Blitz's HUD offers) come last before the session. The keys are
  * one row whose Show opens their list in Settings' place, so Settings stays one short page; closing Settings closes it. A row a device cannot use
- * (Haptics where nothing vibrates, the keys on a touch-first device) is not drawn there.
+ * (Haptics where none play, the keys on a touch-first device) is not drawn there.
  */
 export const SettingsPanel = () => {
   const [shortcuts, setShortcuts] = useState(false);

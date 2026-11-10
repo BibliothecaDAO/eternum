@@ -5,7 +5,8 @@ import { useNotificationPreferences } from "@/hooks/use-notification-preferences
 import { runsServiceWorker } from "./browser-capabilities";
 import { notificationWorkerRequest, reportNotificationDeliveryError } from "./local-notification-client";
 import { startPushForegroundLifecycle } from "./push-foreground-lifecycle";
-import { iosAppBridge, listenForIosAppPushTaps, reconcileIosAppPush } from "./ios-app-push";
+import { iosAppBridge } from "./ios-app-bridge";
+import { listenForIosAppPushTaps, reconcileIosAppPush } from "./ios-app-push";
 
 /**
  * Keeps account preferences available outside Settings and revokes local device delivery on logout/account switch. In

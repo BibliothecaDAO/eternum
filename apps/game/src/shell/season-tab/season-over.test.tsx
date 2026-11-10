@@ -10,6 +10,8 @@ const facts = vi.hoisted(() => ({
   viewer: null as string | null,
   campaignHome: undefined as unknown,
 }));
+// The web: season-recap.test.tsx plays the recap in each app.
+vi.mock("@/runtime/distribution-channel", () => ({ distributionChannel: () => "web" }));
 vi.mock("@/hooks/helpers/use-block-timestamp", () => ({ useNowSeconds: () => 0 }));
 vi.mock("@/hooks/helpers/use-native-facts", () => ({ useNativeRevision: () => 0 }));
 vi.mock("@/hooks/context/game-context", () => ({

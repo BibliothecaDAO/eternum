@@ -16,7 +16,8 @@ import {
 } from "react";
 import { createPortal } from "react-dom";
 
-import { usePlayerDisplayName, usePlayerProfile } from "@/hooks/use-player-profile";
+import { usePlayerDisplayName, usePlayerNames, usePlayerProfile } from "@/hooks/use-player-profile";
+import { distributionChannel } from "@/runtime/distribution-channel";
 import { playerPortraitUrl } from "@/services/identity/player-portrait";
 import { Icon } from "@/ui/design-system/icon";
 import { AppButton, AppGameName, AppPortrait } from "@/ui/design-system/kit/app-elements";
@@ -43,11 +44,12 @@ import type { DirectoryGame } from "../herald";
 import { ageOf } from "../play/ages";
 import { seasonEnded, seasonTitle } from "../season";
 import { resultsHref } from "./results-link";
-import { CARD_CUTS, type CardCut } from "@/utils/card-image";
+import { CARD_CUTS, canShareCardFile, type CardCut } from "@/utils/card-image";
 
 import { FailureLine } from "../sign-in/failure-line";
 import { CardTile } from "../share/card-tile";
 import { shareHint, StepNumber, useShareSteps } from "../share/share-steps";
+import { useSystemShare } from "../share/system-share";
 
 type Entry = HeraldFrontierLeaderboardEntry;
 
@@ -65,11 +67,11 @@ type CardName = (typeof CARDS)[number];
 /**
  * A Frontier season's end, wherever it is read (the owner's pick B, 1 November 2026: "four cards wrapped style"): the
  * season and how it ended, the player's four cards (their place, the podium, their sites, their haul), and the page's own
- * steps with sharing last (Copy image, then Post on X). The deck is one node, at the size it is shared: a desktop shows
- * it whole, the cards flipping in one after another; a phone steps through it a card at a time, as a story over that
- * same node. The image copied is the deck as it is drawn, so the screen and the image are one drawing. In the game it
- * covers the HUD (`cover`); on Results it stands in the page. A reader with no realm on the board sees the season and
- * its podium, and nothing to share.
+ * steps with sharing last (Copy image, then Post on X; in the iOS app, Share). The deck is one node, at the size it is
+ * shared: a desktop shows it whole, the cards flipping in one after another; a phone steps through it a card at a time,
+ * as a story over that same node. The image shared is the deck as it is drawn, so the screen and the image are one
+ * drawing. In the game it covers the HUD (`cover`); on Results it stands in the page. A reader with no realm on the
+ * board sees the season and its podium, and nothing to share.
  */
 export const SeasonRecap = ({
   gameRef,
@@ -137,11 +139,17 @@ export const SeasonRecap = ({
           ))}
         <footer className="season-recap__foot">
           {cut === "tall" && withdraw}
-          {board && own && <p className="season-recap__hint">{shareHint()}</p>}
+          {board && own && !sharesThroughSheet() && <p className="season-recap__hint">{shareHint()}</p>}
           <span className="season-recap__steps">
             {actions}
             {board && own && (
-              <ShareSeason card={deck} cut={cut} line={shareLine(title, own, board.entries.length)} gameRef={gameRef} />
+              <ShareSeason
+                card={deck}
+                cut={cut}
+                line={shareLine(title, own, board.entries.length)}
+                gameRef={gameRef}
+                players={deckPlayers(board, own)}
+              />
             )}
           </span>
         </footer>
@@ -494,27 +502,44 @@ const HaulCard = ({ own }: { own: Entry }) => (
 );
 
 /**
- * The season's two sharing steps: its deck's image, then a post with the season's line and its Results. A phone's row
- * has room for the numbers alone; a desktop's buttons wear their icons too.
+ * The season's sharing. In the iOS app, one Share opens iOS's share sheet with the deck's image, the season's line and
+ * its Results (#5205: the app's own feature for App Review); its image is made once every name on the deck is read. If
+ * the sheet does not open, the two steps take its place. Elsewhere the two steps alone (the owner, 7 November 2026: the
+ * season's recap stays X only): its deck's image, then a post with the season's line and its Results. A phone's row has
+ * room for the numbers alone; a desktop's buttons wear their icons too.
  */
 const ShareSeason = ({
   card,
   cut,
   line,
   gameRef,
+  players,
 }: {
   card: RefObject<HTMLDivElement>;
   cut: Cut;
   line: string;
   gameRef: GameRef;
+  /** The players the deck names, whose names are read before its image is made for the sheet. */
+  players: string[];
 }) => {
-  const steps = useShareSteps({
+  const share = {
     card,
     size: CUTS[cut],
     fileName: RECAP_WORDS.fileName,
     line,
     url: new URL(resultsHref(gameRef), window.location.origin).href,
-  });
+  };
+  const throughSheet = sharesThroughSheet();
+  const named = useNamesRead(players);
+  const sheet = useSystemShare({ ...share, ready: throughSheet && named });
+  const steps = useShareSteps(share);
+  if (throughSheet && !sheet.failed) {
+    return (
+      <AppButton kind="primary" icon="share" busy={sheet.making} onClick={sheet.share}>
+        {SHARE_WORDS.share}
+      </AppButton>
+    );
+  }
   const icons = cut === "wide";
   return (
     <>
@@ -526,7 +551,23 @@ const ShareSeason = ({
         <StepNumber number={2} />
         {SHARE_WORDS.post}
       </AppButton>
+      {sheet.failed && <FailureLine line={SHARE_WORDS.shareFailed} />}
       {steps.failed && <FailureLine line={SHARE_WORDS.failed} />}
     </>
   );
+};
+
+/** Whether the season goes through the device's share sheet: in the iOS app, whose web view's sheet takes the image. */
+const sharesThroughSheet = () => distributionChannel() === "app-store" && canShareCardFile();
+
+/** The players the deck names: the viewer's own place and the podium's holders. */
+const deckPlayers = (board: HeraldFrontierLeaderboard, own: Entry): string[] => [
+  own.address,
+  ...podiumPlaces(board).flatMap(({ holder }) => (typeof holder === "object" ? [holder.address] : [])),
+];
+
+/** Whether identity has answered for each of these players, so no name is drawn still loading. */
+const useNamesRead = (players: string[]): boolean => {
+  const names = usePlayerNames();
+  return players.every((player) => names.reading(player).state !== "waiting");
 };

@@ -3,6 +3,8 @@ import { createRoot } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi, type MockInstance } from "vitest";
 
 vi.hoisted(() => vi.stubGlobal("fetch", async () => new Response(null, { status: 401 })));
+// Every test here is the iOS app's page; ios-app-bridge.test.ts holds that no other channel reaches the bridge.
+vi.mock("@/runtime/distribution-channel", () => ({ distributionChannel: () => "app-store" }));
 
 import { identityClient, useIdentitySessionStore } from "@/hooks/context/identity-session";
 import { useThisDevice } from "@/shell/profile/this-device";
@@ -11,10 +13,10 @@ import type { Session } from "@realms-world/identity";
 
 import { CHAT_ALERT_PRESSED, type ChatAlertPress } from "./chat-alert";
 import { useChatAlertPresses } from "./chat-alert-press";
+import { iosAppBridge } from "./ios-app-bridge";
 import {
   disableIosAppPush,
   enableIosAppPush,
-  iosAppBridge,
   listenForIosAppPushTaps,
   readIosAppPushDevice,
   reconcileIosAppPush,
@@ -96,12 +98,6 @@ const enabledDevice = async () => {
 };
 
 describe("the iOS app's push", () => {
-  it("is the app's alone: the web and the Android app have no bridge", () => {
-    expect(iosAppBridge()).toBeNull();
-    (window as { Capacitor?: unknown }).Capacitor = { isNativePlatform: () => false };
-    expect(iosAppBridge()).toBeNull();
-  });
-
   it("asks the player, then registers the phone's APNs token, in lowercase hex, for the signed-in account", async () => {
     const app = installApp();
     await enableIosAppPush(app.bridge, OWNER, CONFIGURATION);

@@ -16,13 +16,22 @@ to the `play.realms.party` hostname. The client knows it runs here from the `Rea
     `webcredentials:play.realms.party` (passkeys made in Safari sign in here, and the reverse), and push.
   - `SceneDelegate.swift` opens a universal link's page in the game; Capacitor alone only announces it.
   - `AppDelegate.swift` hands the push token to `@capacitor/push-notifications`.
-  - `PrivacyInfo.xcprivacy`: no tracking, no tracking domains, no required-reason API. Capacitor and its push plugin
-    call none; Capacitor ships its own manifest saying so, the plugin ships none. The data the site collects is declared
+  - `PrivacyInfo.xcprivacy`: no tracking, no tracking domains, no required-reason API. Capacitor and its two plugins
+    call none; Capacitor ships its own manifest saying so, the plugins ship none. The data the site collects is declared
     in App Store Connect's privacy label.
-- One plugin, `@capacitor/push-notifications`. The site calls it through the bridge Capacitor injects into its page
-  (`window.Capacitor`): Settings' **This device** asks for alerts and registers the APNs token with the identity
-  service, sign-out revokes it, and a tapped alert opens its game or chat (`apps/game/src/pwa/ios-app-push.ts`, which
-  lands with the APNs server). A plugin is installed only with the site's call to it: none sits here unused.
+- Two plugins. The site calls each through the bridge Capacitor injects into its page (`window.Capacitor`, read by
+  `apps/game/src/pwa/ios-app-bridge.ts`):
+  - `@capacitor/push-notifications`: Settings' **This device** asks for alerts and registers the APNs token with the
+    identity service, sign-out revokes it, and a tapped alert opens its game or chat
+    (`apps/game/src/pwa/ios-app-push.ts`).
+  - `@capacitor/haptics`: one light tap when Herald confirms an action the player sent, under Settings' **Haptics**
+    (`apps/game/src/ui/motion/motion-settings.ts`). An app build from before the plugin refuses the call, and the site
+    stays silent there.
+
+  A plugin is installed only with the site's call to it: none sits here unused. Sharing needs none: the web view's
+  `navigator.share` opens iOS's own share sheet, and the season's recap shares its card through it in the app
+  (`apps/game/src/shell/season-tab/season-recap.tsx`). `@capacitor/share` would add nothing but a sheet without the
+  card's image, as it shares only files already saved on the phone.
 
 Not yet: the app icon and launch image are still Capacitor's own. The icon is 1024 px with no transparency, drawn from
 the Realms Brand Kit as `apps/game/scripts/build-brand.sh` draws the install icons.

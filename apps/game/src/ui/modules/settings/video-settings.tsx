@@ -14,7 +14,7 @@ import {
   writeRenderMode,
 } from "@/three/render-profile";
 import { HudButton, HudSelect, HudSetting, HudSwitch } from "@/ui/design-system/kit/hud-elements";
-import { canVibrate } from "@/ui/motion/motion-settings";
+import { canPlayHaptics } from "@/ui/motion/motion-settings";
 import { useState } from "react";
 
 const QUALITY_OPTIONS = [
@@ -25,8 +25,8 @@ const QUALITY_OPTIONS = [
 /**
  * Video & Graphics' rows. Quality, Frame rate and Shadows are saved at once, but the game reads them when it loads: while
  * one differs from what this page loaded with, one row says so and reloads on asking. The renderer is the build's
- * (WebGPU, falling back to WebGL2 by itself), or the address's `rendererMode`. Haptics shows only where the device can
- * vibrate.
+ * (WebGPU, falling back to WebGL2 by itself), or the address's `rendererMode`. Haptics shows only where the device
+ * plays them (an Android phone, the iOS app).
  */
 export function VideoSettings() {
   const [preferences, setPreferences] = useState(() => readGraphicsPreferences(localStorage));
@@ -73,7 +73,7 @@ export function VideoSettings() {
       <HudSetting name="Reduced motion">
         <HudSwitch on={reducedMotion} label="Reduced motion" onChange={setReducedMotion} />
       </HudSetting>
-      {canVibrate() && (
+      {canPlayHaptics() && (
         <HudSetting name="Haptics">
           <HudSwitch on={haptics} label="Haptics" onChange={setHaptics} />
         </HudSetting>

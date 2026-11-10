@@ -35,13 +35,23 @@ vi.mock("@/hooks/context/identity-session", async (importOriginal) => ({
 const snapshot = vi.hoisted(() => ({
   fails: false,
   calls: [] as { node: HTMLElement; width: number; height: number }[],
+  /** What each image drew: the node's words as it was made. */
+  words: [] as string[],
 }));
 vi.mock("modern-screenshot", () => ({
   domToBlob: async (node: HTMLElement, options: { width: number; height: number }) => {
     snapshot.calls.push({ node, width: options.width, height: options.height });
+    snapshot.words.push(node.textContent ?? "");
     if (snapshot.fails) throw new Error("canvas refused");
     return new Blob(["png"], { type: "image/png" });
   },
+}));
+
+/** The app the client runs in; the web unless a test says otherwise. */
+const app = vi.hoisted(() => ({ channel: "web" as "web" | "play" | "app-store" }));
+vi.mock("@/runtime/distribution-channel", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/runtime/distribution-channel")>()),
+  distributionChannel: () => app.channel,
 }));
 
 import type { HeraldFrontierLeaderboard } from "@bibliothecadao/eternum/game-sync";
@@ -62,6 +72,8 @@ afterEach(async () => {
   await unmount?.();
   snapshot.fails = false;
   snapshot.calls = [];
+  snapshot.words = [];
+  app.channel = "web";
   vi.unstubAllGlobals();
 });
 
@@ -372,6 +384,103 @@ it("says the image could not be made when the copy fails, and keeps Copy image t
     ["Post on X", "primary"],
   ]);
 });
+
+/** A phone whose share sheet takes an image file, answering each share as `answer` does; each share it is handed. */
+const shareSheet = (answer: () => Promise<void> = async () => {}) => {
+  const shared: { files: File[]; text: string; url: string }[] = [];
+  vi.stubGlobal("navigator", {
+    ...navigator,
+    canShare: ({ files }: { files?: File[] }) => (files?.length ?? 0) > 0,
+    share: (data: { files: File[]; text: string; url: string }) => {
+      shared.push(data);
+      return answer();
+    },
+  });
+  return shared;
+};
+const refusal = (name: string) => () => Promise.reject(Object.assign(new Error(name), { name }));
+
+it("in the iOS app, shares the season in one press through iOS's sheet: the deck's image, its line and Results", async () => {
+  app.channel = "app-store";
+  const shared = shareSheet();
+  const host = await open({ width: 390 });
+  expect(steps(host)).toEqual([
+    ["Exit", "secondary"],
+    ["Share", "primary"],
+  ]);
+  expect(hint(host)).toBeNull();
+  // Made before the press, as the sheet opens only within it, and once the podium's names are read.
+  expect(snapshot.calls).toEqual([{ node: deck(host), width: 1080, height: 1350 }]);
+  expect(snapshot.words[0]).toContain("Volcanic");
+  expect(snapshot.words[0]).not.toContain("…");
+  await press(host, "Share");
+  expect(shared.map(({ files, text, url }) => [files.map((file) => [file.name, file.type]), text, url])).toEqual([
+    [[["my-season.png", "image/png"]], "Playtest · #3 of 45 realms", RESULTS],
+  ]);
+  expect(host.querySelector("[role=alert]")).toBeNull();
+});
+
+it("in the iOS app, makes the deck's image only once identity has answered for every player it names", async () => {
+  app.channel = "app-store";
+  shareSheet();
+  let answer = () => {};
+  const answered = new Promise<void>((resolve) => (answer = resolve));
+  vi.stubGlobal("fetch", () => answered.then(() => Response.json({ profiles: {} })));
+  // Players identity has not been asked for yet in this file: their names are still being read.
+  const unasked = (address: string) => `0x7${address.slice(3)}`;
+  const board = { ...BOARD, entries: BOARD.entries.map((entry) => ({ ...entry, address: unasked(entry.address) })) };
+  await open({ width: 390, board, viewer: unasked(CANZI) });
+  expect(snapshot.calls).toEqual([]);
+  await act(async () => {
+    answer();
+    for (let tick = 0; tick < 5; tick += 1) await new Promise((resolve) => setTimeout(resolve, 0));
+  });
+  expect(snapshot.calls).toHaveLength(1);
+  expect(snapshot.words[0]).not.toContain("…");
+});
+
+it("in the iOS app, keeps Share when the player closes the sheet", async () => {
+  app.channel = "app-store";
+  shareSheet(refusal("AbortError"));
+  const host = await open({ width: 390 });
+  await press(host, "Share");
+  expect(steps(host).at(-1)).toEqual(["Share", "primary"]);
+  expect(host.querySelector("[role=alert]")).toBeNull();
+});
+
+it("in the iOS app, falls back to the two steps when the sheet does not open, and says so", async () => {
+  app.channel = "app-store";
+  pngClipboard();
+  shareSheet(refusal("NotAllowedError"));
+  const host = await open({ width: 390 });
+  await press(host, "Share");
+  expect(host.querySelector("[role=alert]")?.textContent).toBe(
+    "Sharing did not open. Copy the image and post it instead.",
+  );
+  expect(steps(host)).toEqual([
+    ["Exit", "secondary"],
+    ["Copy image", "secondary"],
+    ["Post on X", "primary"],
+  ]);
+});
+
+it.each(["web", "play"] as const)(
+  "on the %s channel, keeps the two steps even where the phone's sheet takes images, and makes no image unasked",
+  async (channel) => {
+    app.channel = channel;
+    pngClipboard();
+    const shared = shareSheet();
+    const host = await open({ width: 390 });
+    expect(steps(host)).toEqual([
+      ["Exit", "secondary"],
+      ["Copy image", "secondary"],
+      ["Post on X", "primary"],
+    ]);
+    expect(hint(host)).toBe("Copy the image, then paste it in your post on X.");
+    expect(snapshot.calls).toEqual([]);
+    expect(shared).toEqual([]);
+  },
+);
 
 /**
  * jsdom has no ResizeObserver: each one records the node it watches, and a room's width is delivered, as a browser
