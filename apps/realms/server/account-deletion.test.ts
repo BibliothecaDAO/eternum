@@ -4,9 +4,11 @@ import type { ChatInbox } from "./chat/chat-inbox";
 
 import {
   buildWorkerBundle,
+  deviceKeys,
   migrationStatements,
   newStorage,
   ORIGIN,
+  pause,
   startWorker,
   vapidKeys,
   waitUntil,
@@ -248,6 +250,84 @@ it("review: another player cannot recreate the deleted account's private inbox",
     await directMessage(worker, friend.cookie, leaving.realmsId);
     expect((await inbox.threadMessages(oldThread, undefined, 10)) === null).toBe(true);
   } finally {
+    await worker.dispose();
+  }
+}, 120_000);
+
+/** The recipient's one phone, opted in to direct messages, so a delivery to it waits on its push service. */
+const seedPushDevice = async (worker: Worker, realmsId: string, endpoint: string) => {
+  const device = await deviceKeys();
+  await worker.db.batch([
+    worker.db
+      .prepare(`INSERT INTO "notification_preferences" ("owner", "level", "revision") VALUES (?, 'important', 1)`)
+      .bind(realmsId),
+    worker.db
+      .prepare(
+        `INSERT INTO "notification_push_subscriptions"
+           ("id", "owner", "endpoint", "p256dh", "auth", "revocationHash", "directMessagesEnabledAt", "createdAt")
+         VALUES ('slow-phone', ?, ?, ?, ?, 'x', ?, ?)`,
+      )
+      .bind(realmsId, endpoint, device.p256dh, device.auth, Date.now(), Date.now()),
+  ]);
+};
+
+it("review: a send still delivering when its sender is deleted does not bring the sender's inbox back", async () => {
+  const endpoint = "https://fcm.googleapis.com/fcm/send/slow-phone";
+  let pushing = false;
+  let answerPush!: () => void;
+  const pushAnswered = new Promise<void>((resolve) => (answerPush = resolve));
+  const worker = await startWorker({
+    bundle,
+    storage: newStorage(),
+    vapid: await vapidKeys(),
+    outbound: async (request) => {
+      if (request.url !== endpoint) return new Response(null, { status: 599 });
+      pushing = true;
+      await pushAnswered;
+      return new Response(null, { status: 201 });
+    },
+  });
+  try {
+    await worker.db.batch(migrationStatements().map((statement) => worker.db.prepare(statement)));
+    const leaving = await worker.signInWithEmailCode(LEAVING);
+    const friend = await worker.signInWithEmailCode("slow-recipient@realms.test");
+    await seedPushDevice(worker, friend.realmsId, endpoint);
+    const own = await openChat(worker, leaving.cookie, "/api/chat/inbox");
+    own.socket.send(
+      JSON.stringify({
+        type: "direct:message",
+        payload: { recipientId: friend.realmsId, content: "sent just before deletion" },
+      }),
+    );
+    // The friend has no socket open: the delivery waits on the friend's phone while the sender is deleted.
+    await waitUntil(() => pushing, 5_000);
+    expect(pushing).toBe(true);
+    expect((await deleteAccount(worker, leaving.cookie, await deletionCode(worker, leaving.cookie))).status).toBe(200);
+    const inboxes = await worker.mf.getDurableObjectNamespace("CHAT_INBOX");
+    const inbox = inboxes.get(inboxes.idFromName(leaving.realmsId)) as unknown as Pick<ChatInbox, "threadMessages">;
+    const thread = [leaving.realmsId, friend.realmsId].sort().join("|");
+    expect(await inbox.threadMessages(thread, undefined, 10)).toBeNull();
+
+    answerPush();
+    // Nothing tells a test when the send's last step has run, so the deleted inbox is watched for a while instead.
+    const watchUntil = Date.now() + 2_000;
+    let restored: string[] = [];
+    while (restored.length === 0 && Date.now() < watchUntil) {
+      const page = await inbox.threadMessages(thread, undefined, 10);
+      restored = page?.messages.map(({ content }) => content) ?? [];
+      await pause(100);
+    }
+    expect(restored).toEqual([]);
+    // The friend keeps the copy delivered.
+    const friendInbox = inboxes.get(inboxes.idFromName(friend.realmsId)) as unknown as Pick<
+      ChatInbox,
+      "threadMessages"
+    >;
+    expect((await friendInbox.threadMessages(thread, undefined, 10))?.messages.map(({ content }) => content)).toEqual([
+      "sent just before deletion",
+    ]);
+  } finally {
+    answerPush();
     await worker.dispose();
   }
 }, 120_000);

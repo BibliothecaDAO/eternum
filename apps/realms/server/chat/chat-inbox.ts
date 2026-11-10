@@ -125,8 +125,9 @@ export class ChatInbox extends DurableObject<Record<string, unknown>> {
    * message from an account the owner blocked is dropped here, unseen, and the sender is told nothing different.
    */
   async receive(message: DirectMessage, senderName?: string): Promise<void> {
-    if (this.isDeleted() || this.hasBlocked(message.senderId)) return;
+    if (this.hasBlocked(message.senderId)) return;
     const thread = this.store(message, message.senderId, 1);
+    if (!thread) return;
     await this.forgetExpired();
     const sockets = this.ctx.getWebSockets();
     if (sockets.length > 0) {
@@ -160,8 +161,12 @@ export class ChatInbox extends DurableObject<Record<string, unknown>> {
     return { blocked, version };
   }
 
-  /** Blocks an account, and answers the list as it stands after: a change, if it was not blocked, raises the version. */
+  /**
+   * Blocks an account, and answers the list as it stands after: a change, if it was not blocked, raises the version. A
+   * deleted owner's list stays empty.
+   */
   async block(realmsId: string): Promise<BlockList> {
+    if (this.isDeleted()) return this.blockList();
     const added = this.ctx.storage.sql.exec(
       "INSERT INTO blocks (realmsId, blockedAt) VALUES (?, ?) ON CONFLICT DO NOTHING",
       realmsId,
@@ -281,7 +286,9 @@ export class ChatInbox extends DurableObject<Record<string, unknown>> {
       });
       return;
     }
+    // The delivery above can wait on the recipient's push service: the owner may be deleted by the time it answers.
     const thread = this.store(message, recipientId, 0);
+    if (!thread) return;
     await this.forgetExpired();
     for (const own of this.ctx.getWebSockets())
       sendChat(own, { type: "direct:message", message, thread, clientMessageId });
@@ -353,8 +360,13 @@ export class ChatInbox extends DurableObject<Record<string, unknown>> {
     return row?.peerId ?? null;
   }
 
-  /** This inbox's copy of a message and its thread. */
-  private store(message: DirectMessage, peerId: string, unreadIncrement: number): DirectMessageThread {
+  /**
+   * This inbox's copy of a message and its thread, or null once the owner is deleted. Every message and thread is
+   * written here, so a send or a delivery still running when the account is deleted cannot bring back what
+   * `forgetOwner` cleared.
+   */
+  private store(message: DirectMessage, peerId: string, unreadIncrement: number): DirectMessageThread | null {
+    if (this.isDeleted()) return null;
     const createdAt = Date.parse(message.createdAt as string);
     const sql = this.ctx.storage.sql;
     sql.exec(
