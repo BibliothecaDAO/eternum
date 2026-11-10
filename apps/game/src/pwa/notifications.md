@@ -19,6 +19,21 @@ that explicitly enable game alerts. While any game window is visible, it refresh
 automatic sends; hiding or leaving the game clears the lease, and expiry covers crashes or lost connections.
 Preview-only devices retain local delivery. Both paths share logical identity and durable claims.
 
+In the iOS app (apps/ios) the web view has no service worker or Web Push, so **This device** is the app's own push
+(`ios-app-push.ts`): turning it on asks iOS, registers the APNs token the app's push plugin returns (lowercased) with
+the identity service under a new device id and revocation token kept in the page's storage, and sends the first push. At
+launch and at each sign-in, sign-out or account switch the registration is checked: another account's, or one whose
+alerts were turned off in iOS Settings, is revoked; a changed APNs token registers the phone again after revoking the
+old registration. A registration is on only once the identity service answered it. One still unanswered or not yet
+acknowledged as revoked keeps its id and revocation token in the page's storage, and the next check revokes it, even for
+the same account and token. The service makes an acknowledged revocation final: it records the revoked id for a day and
+refuses a registration of that id still on its way (a request the page timed out on, or one sent before a restart), so
+the page drops the credentials once its revocation is acknowledged. A tapped alert opens what it names by the service
+worker's rules (`isChatClient`, `notificationMatchesGame`), only when it is the signed-in account's alert for this
+registration; a chat alert tapped from a cold start waits for the chat drawn after it. iOS shows no alert while the app
+is in front. APNs receives the alert's title and body and its envelope (owner, device id, target, tag, times) as
+readable JSON over TLS, where Web Push encrypts its payload for the device.
+
 Direct-message push begins only after chat persistence. The realtime service sends the identity server message/thread
 identity, recipient, sender display name and timestamp, but never private message content. The device sees a "Message
 from …" alert, repeated messages collapse per thread, Off suppresses them, and the game foreground lease keeps them in

@@ -435,7 +435,9 @@ each closed by its cross, a tap outside, a swipe down or `Escape`. A right-click
   one shown. Each names its game by its mode as the app labels it ("Frontier", "Blitz"), never a season's number or an
   id (`packages/notifications/src/game-name.ts`, reading `GAME_MODE_NAMES`), and shows the installed app's icon, with
   the small globe as the status bar's badge. None for the player's own taps (the Feed and the Log have them). Server:
-  `apps/realms/server/shard-notifier.ts`.
+  `apps/realms/server/shard-notifier.ts`. In the iOS app, **This device** turns on the app's own push (iOS asks once;
+  APNs delivers), revoked on sign-out or another account's sign-in; a tapped alert opens its game, or chat on what it is
+  about (`src/pwa/ios-app-push.ts`).
 - **The Blitz lobby** counts down to one moment: entry closing while the slot takes players, then the games' start (the
   lobby's title names the start time).
 

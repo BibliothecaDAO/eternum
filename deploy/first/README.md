@@ -28,6 +28,12 @@ to the environment's `inputs.json` as `avnuPaymasterApiKey`, then run setup's ap
 Worker's `AVNU_PAYMASTER_API_KEY`. `deploy:cloudflare` installs no Worker secret. Without the key, wallets still send
 and receive, and recovery is refused.
 
+Setup does not ask for the APNs key either. To push alerts to the iOS app, add the App Store team's APNs signing key to
+`inputs.json` as `apnsTeamId` (the Apple Team ID), `apnsKeyId` (the key's ID) and `apnsPrivateKey` (the downloaded
+`AuthKey_<key id>.p8` file's whole PEM text), then run setup's apply: it installs them as the identity Worker's
+`APNS_TEAM_ID`, `APNS_KEY_ID` and `APNS_PRIVATE_KEY`. One set alone is refused. Without them the iOS app's devices are
+refused at registration and browsers still get Web Push.
+
 Setup asks for no other sign-in provider either. Once the owner's OAuth app for Google, Apple or X exists, add its pair
 to `inputs.json` (`googleClientId` and `googleClientSecret`, `appleClientId` and `appleClientSecret`, `twitterClientId`
 and `twitterClientSecret`; Apple's secret is the JWT `pnpm --dir apps/realms apple-client-secret` signs, good for six

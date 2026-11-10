@@ -6,13 +6,15 @@ import {
   parseNotificationPayload,
   parsePushRegistration,
   type PushConfiguration,
+  type PushEnvelope,
 } from "@bibliothecadao/notifications";
 
+import { sendApnsPush } from "./apns-push";
 import type { IdentityAuth } from "./auth";
-import { vapidKeysOf, type IdentityEnv } from "./env";
+import { apnsCredentialsOf, vapidKeysOf, type IdentityEnv } from "./env";
 import { json, readBody } from "./http";
-import { PushSubscriptionStore } from "./push-subscription-store";
-import { sendPush } from "./web-push";
+import { PushSubscriptionStore, type PushSubscriptionRow } from "./push-subscription-store";
+import { sendPush, type PushOutcome } from "./web-push";
 
 const ACTIONS = ["subscribe", "status", "foreground", "revoke", "alerts-on"];
 
@@ -58,6 +60,7 @@ function servePushRequest(request: Request, auth: IdentityAuth, env: IdentityEnv
         try: () => parsePushRegistration(input),
         catch: () => new PushRequestError({ code: "invalid_subscription", status: 400 }),
       });
+      if ("apnsToken" in registration && !apnsCredentialsOf(env)) return json({ error: "apns_unavailable" }, 503);
       const result = yield* store.register(registration);
       return result === "registered" ? json({ id: registration.id }) : json({ error: `subscription_${result}` }, 409);
     }
@@ -127,13 +130,28 @@ function sendAlertsOn(env: IdentityEnv, owner: string, id: string) {
       now,
     );
     const outcome = yield* Effect.tryPromise({
-      try: () =>
-        sendPush(vapidKeysOf(env), device, { version: 1, kind: "alerts-on", subscriptionId: id, notification }),
+      try: () => sendToDevice(env, device, { version: 1, kind: "alerts-on", subscriptionId: id, notification }),
       catch: () => new PushRequestError({ code: "push_provider_unavailable", status: 502 }),
     });
     if (outcome === "expired") yield* store.expire(owner, id);
     return outcome;
   });
+}
+
+/** Sends the envelope by the device's own transport: Web Push to a browser, APNs to the iOS app. */
+export function sendToDevice(
+  env: IdentityEnv,
+  device: PushSubscriptionRow,
+  envelope: PushEnvelope,
+): Promise<PushOutcome> {
+  if (device.kind === "web") return sendPush(vapidKeysOf(env), device, envelope);
+  const credentials = apnsCredentialsOf(env);
+  // Registration refuses the app's devices without the key, so this is a key removed after they registered.
+  if (!credentials) {
+    console.error("apns_unconfigured: an iOS device's alert is refused until APNS_* is set again");
+    return Promise.resolve("rejected");
+  }
+  return sendApnsPush(credentials, device.apnsToken, envelope);
 }
 
 class PushRequestError extends Data.TaggedError("PushRequestError")<{ code: string; status: number }> {}

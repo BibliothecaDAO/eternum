@@ -1,5 +1,6 @@
 import { dayOf } from "@bibliothecadao/eternum/expeditions";
 import type { HeraldHistoryEvent } from "@bibliothecadao/eternum/game-sync";
+import type { PushEnvelope } from "@bibliothecadao/notifications";
 import { beforeAll, describe, expect, it } from "vitest";
 
 import preset from "../../../contracts/l3/world-native/tests/fixtures/current-presets/preset-3.json";
@@ -7,6 +8,7 @@ import explorerFixture from "../../../contracts/l3/world-native/schema/fixtures/
 import recordedPages from "./fixtures/staging-story-pages.json";
 import { realmsIdOf } from "./realms-id";
 import {
+  apnsKey,
   buildWorkerBundle,
   deviceKeys,
   migrationStatements,
@@ -34,6 +36,7 @@ const NEIGHBOUR_ARMY = 8;
 /** The player's second army, in its realm's second slot, which can rest on a clock of its own. */
 const SECOND_ARMY = 10;
 const PUSH_ENDPOINT = "https://fcm.googleapis.com/fcm/send/player-device";
+const APNS_DEVICE = "https://api.push.apple.com/3/device/";
 const DEVICE_ID = "00000000-0000-4000-8000-000000000001";
 const OWNER = realmsIdOf("player-one");
 /** The notifier uses its deployed three-second interval; its retries wait 1, 2, 4, then 8 polls. */
@@ -464,16 +467,30 @@ const armyPosition = (explorerId: number, home: number, army: ArmyState, step = 
   },
 });
 
-/** The Worker in workerd over storage that survives a restart, a fake Herald, and a push service answering `status`. */
+/**
+ * The Worker in workerd over storage that survives a restart, a fake Herald, and push services answering `status`: a
+ * browser's, and APNs for the iOS app.
+ */
 const createHarness = async (level: "off" | "important" | "all") => {
   const storage = newStorage();
   const herald = createHerald();
   const device = await deviceKeys();
+  const apns = {
+    status: 200,
+    received: [] as number[],
+    tokens: [] as string[],
+    collapseIds: [] as (string | null)[],
+    bodies: [] as { envelope: PushEnvelope }[],
+    /** Each alert the app received, as the envelope beside it carries it. */
+    notifications: () => apns.bodies.map(({ envelope }) => envelope.notification),
+  };
   const push = {
     status: 201,
     received: [] as number[],
     times: [] as number[],
     endpoints: [] as string[],
+    /** The Topic each push was kept under at the push service: a newer push of the Topic replaces a waiting one. */
+    topics: [] as (string | null)[],
     bodies: [] as ArrayBuffer[],
     stalledEndpoint: null as string | null,
     /** Each push the phones received, opened: every test device shares the first one's keys. */
@@ -486,13 +503,16 @@ const createHarness = async (level: "off" | "important" | "all") => {
     words: async () => (await push.notifications()).map(({ title, body }) => `${title} / ${body}`),
     /** The tag each push carries: a newer push of the tag replaces the one the phone shows. */
     tags: async () => (await push.notifications()).map(({ tag }) => tag),
+    apns,
   };
   const vapid = await vapidKeys();
+  const { credentials } = await apnsKey();
   const start = () =>
     startWorker({
       bundle,
       storage,
       vapid,
+      apns: credentials,
       outbound: async (request) => {
         const url = new URL(request.url);
         if (url.origin === SHARD) {
@@ -504,9 +524,17 @@ const createHarness = async (level: "off" | "important" | "all") => {
           push.received.push(push.status);
           push.times.push(Date.now());
           push.endpoints.push(url.href);
+          push.topics.push(request.headers.get("topic"));
           if (url.href === push.stalledEndpoint)
             return pause(1500).then(() => new Response(null, { status: push.status }));
           return new Response(null, { status: push.status });
+        }
+        if (url.href.startsWith(APNS_DEVICE)) {
+          apns.bodies.push(await request.json());
+          apns.received.push(apns.status);
+          apns.tokens.push(url.href.slice(APNS_DEVICE.length));
+          apns.collapseIds.push(request.headers.get("apns-collapse-id"));
+          return new Response(null, { status: apns.status });
         }
         return new Response("unexpected outbound request", { status: 599 });
       },
@@ -977,6 +1005,53 @@ describe.concurrent("shard notifications", () => {
     await worker.dispose();
   }, 90_000);
 
+  it("the player's iOS app gets the same alert as their browser, replaced under the same tag, until APNs forgets its token", async () => {
+    const { herald, push, worker } = await createHarness("important");
+    const phone = { id: "00000000-0000-4000-8000-0000000000a5", token: "a5".repeat(32) };
+    const devices = () =>
+      worker.db
+        .prepare('SELECT "kind" FROM "notification_push_subscriptions" WHERE "owner" = ? ORDER BY "kind"')
+        .bind(OWNER)
+        .all<{ kind: string }>()
+        .then(({ results }) => results.map(({ kind }) => kind));
+    try {
+      await worker.db
+        .prepare(
+          `INSERT INTO "notification_push_subscriptions"
+        ("id", "owner", "kind", "apnsToken", "revocationHash", "gameAlertsEnabledAt", "createdAt")
+        SELECT ?, "owner", 'apns', ?, 'x', "gameAlertsEnabledAt", "createdAt"
+        FROM "notification_push_subscriptions" WHERE "id" = ?`,
+        )
+        .bind(phone.id, phone.token, DEVICE_ID)
+        .run();
+      herald.state.mode = "blitz"; // a fight between players pushes in Blitz
+      await worker.runCron();
+      await pause(polls(5)); // the notifier reaches the shard's head
+      for (let fight = 0; fight < 7; fight++) herald.battle();
+      await waitUntil(() => push.received.length >= 1 && push.apns.received.length >= 1, 30_000);
+      await pause(polls(10));
+      // One alert on each, never a stack: the same words, the same tag, kept under the same name for replacement.
+      expect(push.received).toEqual([201]);
+      expect(push.apns.received).toEqual([200]);
+      expect(push.apns.tokens).toEqual([phone.token]);
+      expect(push.apns.notifications()).toEqual(await push.notifications());
+      expect(await push.tags()).toEqual([`fights:/g/${CHAIN_ID}/${GAME_ID}`]);
+      expect(push.apns.collapseIds).toEqual(push.topics);
+
+      push.apns.status = 410; // the player deleted the app
+      herald.battle();
+      await waitUntil(() => push.apns.received.length >= 2, 30_000);
+      await waitUntil(() => push.received.length >= 2, 30_000);
+      await pause(1000);
+      expect(await devices()).toEqual(["web"]);
+      herald.battle();
+      await waitUntil(() => push.received.length >= 3, 30_000);
+      expect(push.apns.received).toEqual([200, 410]);
+    } finally {
+      await worker.dispose();
+    }
+  }, 120_000);
+
   it("a fight still being retried is replaced by a newer one, across a restart: the newer is the one that goes", async () => {
     const { herald, push, start, worker } = await createHarness("important");
     herald.state.mode = "blitz"; // a fight between players pushes in Blitz
@@ -1080,6 +1155,36 @@ describe.concurrent("shard notifications", () => {
       const alertsOn = await post("alerts-on", { owner, id });
       expect(await alertsOn.json()).toEqual({ status: "accepted" });
       expect(push.endpoints).toEqual([endpoint]);
+    } finally {
+      await worker.dispose();
+    }
+  }, 45_000);
+
+  it("the iOS app registers its APNs token for the signed-in account and gets Alerts are on through APNs", async () => {
+    const { push, worker } = await createHarness("important");
+    try {
+      const { cookie, realmsId: owner } = await worker.signInWithEmailCode("ios-app@x.test");
+      const post = (action: string, body: unknown, session = cookie) =>
+        worker.mf.dispatchFetch(`${ORIGIN}/api/notifications/push/${action}`, {
+          method: "POST",
+          headers: { origin: ORIGIN, "content-type": "application/json", cookie: session },
+          body: JSON.stringify(body),
+        });
+      const id = "00000000-0000-4000-8000-0000000000ba";
+      const registration = { owner, id, token: "00000000-0000-4000-8000-0000000000bb", apnsToken: "ba".repeat(32) };
+      expect((await post("subscribe", registration, "")).status).toBe(401);
+      expect((await post("subscribe", { ...registration, gameAlerts: true })).status).toBe(200);
+      expect(await (await post("status", { owner, id })).json()).toEqual({
+        registered: true,
+        gameAlerts: true,
+        directMessages: false,
+      });
+
+      const alertsOn = await post("alerts-on", { owner, id });
+      expect(await alertsOn.json()).toEqual({ status: "accepted" });
+      expect(push.apns.tokens).toEqual([registration.apnsToken]);
+      expect(push.apns.notifications().map(({ title }) => title)).toEqual(["Alerts are on"]);
+      expect(push.endpoints).toEqual([]);
     } finally {
       await worker.dispose();
     }

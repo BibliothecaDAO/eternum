@@ -14,10 +14,10 @@ import {
   type DirectMessageTyping,
 } from "@bibliothecadao/types";
 
-import { decodeIdentityEnv, vapidKeysOf, type IdentityEnv } from "../env";
+import { decodeIdentityEnv, type IdentityEnv } from "../env";
 import { NotificationPreferenceStore } from "../notification-preference-store";
 import { PushSubscriptionStore } from "../push-subscription-store";
-import { sendPush } from "../web-push";
+import { sendToDevice } from "../push-notifications";
 import {
   chatInboxOf,
   chatMemberOf,
@@ -417,7 +417,7 @@ const pushDirectMessage = (env: IdentityEnv, message: DirectMessage, senderName?
       );
       for (const device of devices) {
         const outcome = yield* Effect.promise(() =>
-          sendPush(vapidKeysOf(env), device, {
+          sendToDevice(env, device, {
             version: 1,
             kind: "direct-message",
             subscriptionId: device.id,
