@@ -72,17 +72,6 @@ jobs:
           cat terrain-vite.log
           exit 1
 
-      - name: Diagnose WebGPU capture (temporary)
-        continue-on-error: true
-        working-directory: ${{ runner.temp }}
-        run: |
-          echo "== preset, headed"
-          npx -y agent-browser@0.42.0 doctor --webgpu --headed --json || true
-          echo "== preset, headed, session GPU flags"
-          npx -y agent-browser@0.42.0 doctor --webgpu --headed --json --args "--ignore-gpu-blocklist,--enable-gpu,--use-angle=vulkan,--enable-features=Vulkan,--enable-unsafe-webgpu,--enable-unsafe-swiftshader" || true
-          echo "== preset, headless"
-          npx -y agent-browser@0.42.0 doctor --webgpu --json || true
-
       - name: Verify both renderer backends
         env:
           # Headless Chrome on Linux never puts a WebGPU canvas into a screenshot, so the browser runs headed on the Xvfb
