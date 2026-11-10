@@ -140,8 +140,9 @@ const labEmailCode = () =>
     /LAB_EMAIL_CODE = "(\d+)"/,
   )[1];
 
-/** A window open over the page, by its title. */
-const windowOpen = (title) => `document.querySelector('[role="dialog"][aria-label=${JSON.stringify(title)}]') !== null`;
+/** A window open over the page, by its title: one bracketed condition, so `!` before it means the window is closed. */
+const windowOpen = (title) =>
+  `(document.querySelector('[role="dialog"][aria-label=${JSON.stringify(title)}]') !== null)`;
 const pageSays = (words) => `document.body.innerText.includes(${JSON.stringify(words)})`;
 /** Signed out: the bar's place for the account is Connect. */
 const SIGNED_OUT = `[...document.querySelectorAll('[data-role="tab"]')].some((tab) => tab.innerText.trim() === "Connect")`;
@@ -151,7 +152,7 @@ const SIGNED_OUT = `[...document.querySelectorAll('[data-role="tab"]')].some((ta
  * each step shot: Delete account read through to its code, a wrong code refused, a new code, and the account deleted
  * with the lab's code, landing signed out on Play; then the public deletion page's way back to Settings' row.
  */
-const labFlows = (labCode = labEmailCode(), wrongCode = labCode === "222222" ? "333333" : "222222") => ({
+export const labFlows = (labCode = labEmailCode(), wrongCode = labCode === "222222" ? "333333" : "222222") => ({
   "delete-account": {
     // A player with a payout wallet: no wallet prompt opens over Settings.
     start: "/lab/app/wallet-ready/profile/settings?capture=1",

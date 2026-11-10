@@ -6,6 +6,7 @@ import { commandsOf, problemsOf } from "./prove-run.mjs";
 import {
   changingSetting,
   endVerdict,
+  labFlows,
   layoutChecks,
   missingVerdict,
   pressLead,
@@ -270,5 +271,30 @@ describe("a spectator's way back to play", () => {
         chip: "Spectating · as orderslane",
       }),
     ).toEqual(["the doorway shows, then goes", "the game played, not watched", "the chip names the player"]);
+  });
+});
+
+describe("the lab's account deletion flow", () => {
+  /** Play after the deletion, signed out (Connect in the bar), with the Delete account window still open or gone. */
+  const landed = ({ windowStays }) => {
+    const { window } = new JSDOM(
+      `<nav><a data-role="tab">Play</a><a data-role="tab">Connect</a></nav>${
+        windowStays ? '<div role="dialog" aria-label="Delete account">Delete account</div>' : ""
+      }`,
+      { url: "http://lab.test/", runScripts: "outside-only" },
+    );
+    // jsdom lays nothing out, so it has no innerText; the text stands in.
+    Object.defineProperty(window.HTMLElement.prototype, "innerText", {
+      get() {
+        return this.textContent;
+      },
+    });
+    return window;
+  };
+  const deleted = labFlows("111111")["delete-account"].steps.at(-1).shows;
+
+  it("ends only once the Delete account window has closed", () => {
+    expect(landed({ windowStays: false }).eval(deleted)).toBe(true);
+    expect(landed({ windowStays: true }).eval(deleted)).toBe(false);
   });
 });
