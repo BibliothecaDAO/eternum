@@ -3,6 +3,8 @@ import { spawnSync } from "node:child_process";
 import { tmpdir } from "node:os";
 import { fileURLToPath } from "node:url";
 
+import { AGENT_BROWSER } from "./lib/agent-browser.mjs";
+
 const DEFAULT_BASE_URL = "https://127.0.0.1:4173";
 const DEFAULT_READY_TIMEOUT_MS = 15_000;
 const DEFAULT_SCENARIOS = ["baseline", "stress"];
@@ -149,7 +151,7 @@ function readFiniteNumberOption(args, name, fallback) {
 export function runAgentBrowser(session, commandArgs, { headed = false, timeoutMs = 30_000 } = {}) {
   const configuredExecutable = process.env.AGENT_BROWSER_BIN;
   const executable = configuredExecutable || "npx";
-  const baseArgs = configuredExecutable ? ["--session", session] : ["-y", "agent-browser", "--session", session];
+  const baseArgs = configuredExecutable ? ["--session", session] : ["-y", AGENT_BROWSER, "--session", session];
   if (headed) {
     baseArgs.push("--headed");
   }

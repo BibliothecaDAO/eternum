@@ -72,6 +72,11 @@ jobs:
           cat terrain-vite.log
           exit 1
 
+      # The runner has no GPU and no Vulkan driver. Chrome then destroys the first WebGPU device about two seconds after
+      # it starts, and the terrain lab draws nothing on it. Mesa's software driver (lavapipe) keeps the device alive.
+      - name: Install a software Vulkan driver
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends libvulkan1 mesa-vulkan-drivers
+
       - name: Verify both renderer backends
         run: >-
           pnpm --dir apps/game verify:terrain:gallery --base-url http://127.0.0.1:4173 --artifact-dir terrain-artifacts

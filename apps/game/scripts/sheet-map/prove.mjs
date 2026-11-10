@@ -28,13 +28,7 @@ await withDevClient({ base, port, out }, async (baseUrl) => {
       const browser = createBrowserSession("sheet-map-" + Date.now().toString(36), { profile, headed: false });
       try {
         const url = `${baseUrl}/lab/kit?chapter=hexes&rendererMode=${backend}`;
-        browser.run([
-          "open",
-          url,
-          "--ignore-https-errors",
-          "--args",
-          "--ignore-gpu-blocklist,--enable-gpu,--use-angle=vulkan,--enable-features=Vulkan,--enable-unsafe-webgpu",
-        ]);
+        browser.run(["open", url]);
         browser.run(["set", "viewport", "1920", "1080"]);
         browser.run(["wait", "--fn", "!!document.querySelector('[data-map-context-world] button')"]);
         browser.click("Open 3D comparison");

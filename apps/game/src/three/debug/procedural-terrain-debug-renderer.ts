@@ -25,6 +25,7 @@ import {
   Matrix4,
   PerspectiveCamera,
   Quaternion,
+  RenderTarget,
   Scene,
   Vector3,
 } from "three";
@@ -205,6 +206,16 @@ interface TerrainDebugRendererSurface extends RendererSurfaceLike {
   library: GameMapMaterialLibrary;
   init(): Promise<void>;
   setAnimationLoop(callback: ((time: number) => void) | null): void;
+  setOutputRenderTarget(target: RenderTarget | null): void;
+  /** WebGPU's device; absent on the WebGL2 backend. */
+  backend?: { device?: { lost: Promise<{ message: string }> } };
+  readRenderTargetPixelsAsync(
+    target: RenderTarget,
+    x: number,
+    y: number,
+    width: number,
+    height: number,
+  ): Promise<ArrayLike<number>>;
   setClearColor(color: Color, alpha?: number): void;
   setSize(width: number, height: number, updateStyle?: boolean): void;
   /** three's renderer lets go of its GPU device asynchronously. */
@@ -249,6 +260,7 @@ type TerrainVerificationWindow = Window & {
     error?: string;
     getSnapshot?: () => ProceduralTerrainDebugStats;
     getInteraction?: () => ReturnType<TerrainLabInteraction["getState"]>;
+    captureFrame?: () => Promise<CapturedTerrainFrame>;
     status: "booting" | "error" | "ready";
     version: 1;
   };
@@ -297,12 +309,14 @@ async function mountOnCanvas(
 
   try {
     const runtime = await createRuntime(input);
+    reportLostDevice(runtime.renderer, verification);
     const resizeObserver = observeCanvas(input.canvas, runtime);
     const stopAnimation = startAnimation(runtime, input);
     const stats = readStats(runtime, input.forceWebGL, input.texturedGround);
     Object.assign(verification, {
       getSnapshot: () => readStats(runtime, input.forceWebGL, input.texturedGround),
       getInteraction: () => runtime.interaction?.getState(),
+      captureFrame: () => captureDrawnFrame(runtime, input.canvas),
       status: "ready",
       version: 1,
     });
@@ -818,6 +832,104 @@ function startAnimation(runtime: TerrainDebugRuntime, input: MountProceduralTerr
     if (runtime.renderSubmissionMs.length > 240) runtime.renderSubmissionMs.shift();
   });
   return () => runtime.renderer.setAnimationLoop(null);
+}
+
+/**
+ * A lost GPU device ends the lab in an error; without this the lab stayed ready and every later frame and capture came
+ * out empty. It is read from the device itself: three skips its own onDeviceLost for a device lost as "destroyed", which
+ * is how Chrome ends the first device on a machine with no Vulkan driver.
+ */
+function reportLostDevice(
+  renderer: TerrainDebugRendererSurface,
+  verification: NonNullable<TerrainVerificationWindow["__terrainVerification"]>,
+): void {
+  void renderer.backend?.device?.lost.then((info) => {
+    Object.assign(verification, { status: "error", error: `GPU device lost: ${info.message}` });
+  });
+}
+
+/** A frame of the lab as the screen shows it: a PNG, and the share of its pixels drawn over the clear colour. */
+interface CapturedTerrainFrame {
+  png: string;
+  coverage: number;
+}
+
+/**
+ * Draws one frame into a texture as the screen would get it (tone mapped, in the output colour space) and reads its
+ * pixels back. A screenshot cannot stand in, and nor can a copy of the canvas: headless Chrome on Linux, drawing WebGPU
+ * through SwiftShader on a machine with no GPU, puts the canvas into neither.
+ */
+async function captureDrawnFrame(
+  runtime: TerrainDebugRuntime,
+  canvas: HTMLCanvasElement,
+): Promise<CapturedTerrainFrame> {
+  const { width, height } = canvas;
+  const target = new RenderTarget(width, height);
+  try {
+    drawOnce(runtime, target);
+    const readback = await runtime.renderer.readRenderTargetPixelsAsync(target, 0, 0, width, height);
+    const topRowFirst = resolveWebGpuRendererActiveMode(runtime.renderer) === "webgpu";
+    const pixels = packRows(readback, width, height, topRowFirst);
+    return { png: encodePng(pixels, width, height), coverage: drawnShare(pixels) };
+  } finally {
+    target.dispose();
+  }
+}
+
+/** One frame into the target as the screen output, then the screen again before the animation loop's next frame. */
+function drawOnce(runtime: TerrainDebugRuntime, target: RenderTarget): void {
+  runtime.renderer.setOutputRenderTarget(target);
+  try {
+    runtime.renderer.render(runtime.scene, runtime.camera);
+  } finally {
+    runtime.renderer.setOutputRenderTarget(null);
+  }
+}
+
+/**
+ * The readback as an image's rows, top first: WebGPU pads each row to 256 bytes and starts at the top, WebGL packs its
+ * rows and starts at the bottom.
+ */
+function packRows(
+  readback: ArrayLike<number>,
+  width: number,
+  height: number,
+  topRowFirst: boolean,
+): Uint8ClampedArray<ArrayBuffer> {
+  const rowBytes = width * 4;
+  const stride = height > 1 ? (readback.length - rowBytes) / (height - 1) : rowBytes;
+  const pixels = new Uint8ClampedArray(rowBytes * height);
+  for (let row = 0; row < height; row += 1) {
+    const source = (topRowFirst ? row : height - 1 - row) * stride;
+    for (let byte = 0; byte < rowBytes; byte += 1) pixels[row * rowBytes + byte] = readback[source + byte];
+  }
+  return pixels;
+}
+
+function encodePng(pixels: Uint8ClampedArray<ArrayBuffer>, width: number, height: number): string {
+  const canvas = document.createElement("canvas");
+  canvas.width = width;
+  canvas.height = height;
+  const context = canvas.getContext("2d");
+  if (!context) throw new Error("No 2D context to encode the terrain frame");
+  context.putImageData(new ImageData(pixels, width, height), 0, 0);
+  return canvas.toDataURL("image/png");
+}
+
+/** A pixel is drawn when it is opaque and clearly apart from the clear colour (a distance of 30 in sRGB). */
+const CLEAR_SRGB = new Color(TERRAIN_DEEP_FOG_COLOR).getHex();
+const DRAWN_DISTANCE_SQUARED = 900;
+
+function drawnShare(pixels: Uint8ClampedArray): number {
+  const clear = [(CLEAR_SRGB >> 16) & 0xff, (CLEAR_SRGB >> 8) & 0xff, CLEAR_SRGB & 0xff];
+  let drawn = 0;
+  for (let offset = 0; offset < pixels.length; offset += 4) {
+    const red = pixels[offset] - clear[0];
+    const green = pixels[offset + 1] - clear[1];
+    const blue = pixels[offset + 2] - clear[2];
+    if (pixels[offset + 3] > 0 && red * red + green * green + blue * blue > DRAWN_DISTANCE_SQUARED) drawn += 1;
+  }
+  return drawn / (pixels.length / 4);
 }
 
 function readStats(
