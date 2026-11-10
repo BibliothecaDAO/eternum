@@ -14,12 +14,24 @@ const smooth = (x) => x * x * (3 - 2 * x);
  * `nod` the head's swing in step. The rest are radians: `forage` drops the neck to the ground, `sit` drops the
  * haunches, `upright` lifts the forequarters to look out, `undulation` bends the body with the step; `hop` is the
  * height of a bound, `tuck` how far the body sinks into its shell and `lie` how far it sinks to lie down, as shares of
- * the leg. One that `gallops` changes gait to run.
+ * the leg. One that `gallops` changes gait to run, with its own `gallop` if the common one does not suit it; one with
+ * a `runStride` lengthens its stride that many times instead.
  */
 const QUADRUPEDS = {
   goat: { stride: 0.46, duty: 0.64, extension: 0.94, nod: 0.05, forage: 1.0, lie: 0.6, gallops: true },
-  fox: { stride: 0.5, duty: 0.58, extension: 0.92, nod: 0.03, forage: 0.75, sit: 0.5, gallops: true },
-  rabbit: { stride: 0.8, duty: 0.45, nod: 0, forage: 0.45, hop: 0.3, upright: 0.5 },
+  fox: {
+    stride: 0.5,
+    duty: 0.58,
+    extension: 0.92,
+    nod: 0.03,
+    forage: 0.75,
+    sit: 0.5,
+    gallops: true,
+    // Small and quick: it covers ground in long bounds, not a blur of steps, and hunts mice by leaping on them.
+    gallop: { stride: 0.7, duty: 0.22 },
+    pounces: true,
+  },
+  rabbit: { stride: 0.8, duty: 0.45, nod: 0, forage: 0.45, hop: 0.3, upright: 0.5, lie: 0.45, runStride: 1.8 },
   moose: { stride: 0.44, duty: 0.64, extension: 0.95, nod: 0.06, forage: 0.95, lie: 0.62, gallops: true },
   zebra: { stride: 0.46, duty: 0.64, extension: 0.95, nod: 0.06, forage: 1.15, lie: 0.62, gallops: true },
   deer: { stride: 0.46, duty: 0.64, extension: 0.95, nod: 0.05, forage: 1.1, lie: 0.62, gallops: true },
@@ -36,6 +48,10 @@ const GALLOP_PHASES = { hindLeft: 0.5 * TAU, hindRight: 0.42 * TAU, foreLeft: 0.
 /** The pace, as a multiple of the walk, at which a run begins and by which it is in full stride. */
 const RUN_FROM = 1.25;
 const RUN_BY = 2.1;
+/** A stalking hunter carries itself this much of a leg lower, head down and level with its back. */
+const PROWL_CROUCH = 0.14;
+/** A pounce, as shares of its seconds: the crouch before the leap, and the leap itself. */
+const POUNCE = { every: 6, seconds: 1.5, crouch: 0.3, height: 1.15 };
 /** How far the head turns to follow what the animal watches, in radians. */
 const GAZE_REACH = 1.3;
 /** The ground one gait cycle covers for every other rig, in the model's own units. */
@@ -82,7 +98,7 @@ export function createCreatureAnimator(root, { seed = 0 } = {}) {
   const delta = new THREE.Quaternion();
   const turn = (node, key, angle) => node.quaternion.multiply(delta.setFromAxisAngle(axis[key], angle));
   /** How far into each behaviour the animal is, eased so no pose is ever cut to. */
-  const weights = { move: 0, run: 0, gazing: 0, forage: 0, watch: 0, rest: 0 };
+  const weights = { move: 0, run: 0, gazing: 0, prowl: 0, forage: 0, watch: 0, rest: 0 };
   let lastTime;
   /** Where the gait is in its cycle, advanced by the ground covered at the gait's own length of step. */
   let phase = phaseOffset;
@@ -98,12 +114,13 @@ export function createCreatureAnimator(root, { seed = 0 } = {}) {
     for (const t of torsoScales) t.node.scale.copy(t.scale);
   }
 
-  function easeWeights(time, pace, action, gaze) {
+  function easeWeights(time, pace, action, gaze, stealth) {
     const dt = lastTime === undefined ? Infinity : clamp(time - lastTime, 0, 0.1);
     lastTime = time;
     weights.move += (clamp(pace * 2, 0, 1) - weights.move) * (1 - Math.exp(-8 * dt));
     weights.run += (clamp((pace - RUN_FROM) / (RUN_BY - RUN_FROM), 0, 1) - weights.run) * (1 - Math.exp(-5 * dt));
     weights.gazing += ((gaze === null ? 0 : 1) - weights.gazing) * (1 - Math.exp(-4 * dt));
+    weights.prowl += ((stealth ? 1 : 0) - weights.prowl) * (1 - Math.exp(-3 * dt));
     if (gaze !== null) look += (clamp(gaze, -GAZE_REACH, GAZE_REACH) - look) * (1 - Math.exp(-5 * dt));
     const settle = 1 - Math.exp(-2.5 * dt);
     for (const key of IDLE_ACTIONS) weights[key] += ((pace < 0.05 && action === key ? 1 : 0) - weights[key]) * settle;
@@ -111,20 +128,27 @@ export function createCreatureAnimator(root, { seed = 0 } = {}) {
 
   /**
    * @param {number} time seconds, for breathing and idle motion only
-   * @param {{distance?: number, pace?: number, turn?: number, action?: string, lift?: number, gaze?: number | null}}
+   * @param {{distance?: number, pace?: number, turn?: number, action?: string, lift?: number, gaze?: number | null,
+   * stealth?: boolean}}
    * motion `distance` is the ground the legs have covered in the model's units, `pace` its speed as a multiple of its
    * walk, `turn` radians per second, `action` what it does when stopped, `lift` how far a flier is off its perch,
-   * `gaze` the way to what it watches, in radians from straight ahead
+   * `gaze` the way to what it watches, in radians from straight ahead, `stealth` whether it is stalking
    */
-  function update(time, { distance = 0, pace = 0, turn: turnRate = 0, action = "stand", lift = 0, gaze = null } = {}) {
+  function update(
+    time,
+    { distance = 0, pace = 0, turn: turnRate = 0, action = "stand", lift = 0, gaze = null, stealth = false } = {},
+  ) {
     if (![time, distance, pace, turnRate, lift, gaze ?? 0].every(Number.isFinite))
       throw new Error("Animation inputs must be finite.");
     reset();
-    easeWeights(time, pace, action, gaze);
-    const { move, run, gazing, forage, watch, rest } = weights;
+    easeWeights(time, pace, action, gaze, stealth);
+    const { move, run, gazing, prowl, forage, watch, rest } = weights;
     const galloping = quadruped && quadruped.gallops ? run : 0;
-    const strideNow = stance ? mix(stance.stride, GALLOP.stride * stance.legLength, galloping) : 0;
-    const dutyNow = quadruped ? mix(quadruped.duty, GALLOP.duty, galloping) : 0;
+    const gallop = (quadruped && quadruped.gallop) || GALLOP;
+    const walkStride = stance ? stance.stride * (1 + ((quadruped.runStride || 1) - 1) * run) : 0;
+    const strideNow = stance ? mix(walkStride, gallop.stride * stance.legLength, galloping) : 0;
+    const dutyNow = quadruped ? mix(quadruped.duty, gallop.duty, galloping) : 0;
+    const pounce = quadruped && quadruped.pounces ? pounceAt(time + phaseOffset) * forage : 0;
     phase += (TAU * (distance - lastDistance)) / (stance ? strideNow / dutyNow : cycleLength);
     lastDistance = distance;
     const breath = Math.sin(time * 2.3 + phaseOffset);
@@ -153,9 +177,13 @@ export function createCreatureAnimator(root, { seed = 0 } = {}) {
       rise -= ((quadruped.tuck || 0) + (quadruped.lie || 0)) * stance.hipHeight * rest;
       // Sitting up, it settles onto its haunches.
       rise -= quadruped.upright ? 0.3 * stance.hipHeight * watch : 0;
+      rise -= PROWL_CROUCH * stance.legLength * prowl;
+      // The pounce: it gathers itself, springs high and comes down nose first.
+      rise += stance.legLength * (pounce < 0 ? 0.12 * pounce : POUNCE.height * Math.sin(Math.PI * pounce));
       // Reaching for the ground, the shoulders dip with the neck.
       pitch = 0.012 * move * (1 - galloping) * Math.sin(phase * 2) + 0.07 * forage * Math.sign(quadruped.forage);
       pitch += 0.085 * galloping * Math.sin(phase + 0.6);
+      pitch += pounce > 0 ? 1.1 * (pounce - 0.4) * Math.sin(Math.PI * pounce) : 0;
       pitch -= quadruped.hop ? 0.2 * move * Math.cos(phase + 0.5) : 0;
       pitch -= (quadruped.sit || 0) * rest + (quadruped.upright || 0) * watch;
       // Haunches drop about the shoulders; forequarters lift, or dip to feed, about the hips. Each leaves the other
@@ -222,7 +250,9 @@ export function createCreatureAnimator(root, { seed = 0 } = {}) {
       // The foot stays on the ground under the hip's resting place while the body above it bobs, tips and sits.
       const hipY = offsetY + leg.rest.y * cos - leg.rest.z * sin;
       const hipZ = offsetZ + leg.rest.y * sin + leg.rest.z * cos;
-      const reachY = leg.footHeight + footLift - hipY;
+      // In the air of a pounce the legs are gathered up under the body.
+      const gathered = pounce > 0 ? 0.6 * length * Math.sin(Math.PI * pounce) : 0;
+      const reachY = leg.footHeight + footLift + gathered - hipY;
       const reachZ = leg.rest.z + footZ - hipZ;
       const localY = reachY * cos + reachZ * sin;
       const localZ = -reachY * sin + reachZ * cos;
@@ -249,7 +279,7 @@ export function createCreatureAnimator(root, { seed = 0 } = {}) {
           const watching = mix(0.55 * watch * scan, look, gazing);
           turn(node, "y", 0.03 * idle + watching + clamp(turnRate * 0.12, -0.3, 0.3) * move);
           // The head stays level while the body under it tips, and reaches forward at a gallop.
-          const carriage = 0.3 * galloping - 0.1 * watch * (1 - galloping) - pitch * 0.85;
+          const carriage = 0.3 * Math.max(galloping, prowl) - 0.1 * watch * (1 - galloping) - pitch * 0.85;
           turn(node, "x", 0.014 * breath + nod + reach * forage * nibble + carriage);
           if (quadruped && quadruped.tuck) node.position.z -= 0.22 * rest;
           break;
@@ -360,6 +390,19 @@ function createLegs(hips, profile) {
       toGallop: 0,
     };
   });
+}
+
+/**
+ * Where a hunter of small things is in its pounce: negative while it crouches to spring (to -1), then 0 to 1 through
+ * the leap, and 0 between pounces.
+ */
+function pounceAt(seconds) {
+  const into = (seconds % POUNCE.every) - (POUNCE.every - POUNCE.seconds);
+  if (into < 0) return 0;
+  const share = into / POUNCE.seconds;
+  return share < POUNCE.crouch
+    ? -Math.sin((Math.PI * share) / POUNCE.crouch)
+    : (share - POUNCE.crouch) / (1 - POUNCE.crouch);
 }
 
 /** How far a leg's place in the cycle moves, the short way round, as the walk becomes a gallop. */

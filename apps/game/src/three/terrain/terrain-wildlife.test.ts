@@ -40,16 +40,18 @@ function terrainOfEveryPace(): TerrainCellInput[] {
 }
 
 const leaders = (population: BiomeCreaturePopulation) =>
-  [...population.creatures.values()].filter((creature) => creature.leader === null);
+  [...population.creatures.values()].filter((creature) => creature.leader === null && creature.caughtBy === null);
 
 /** One herd to a region: its leader is the only leader there, and holds both ends of its walk alone. */
 function assertDensity(population: BiomeCreaturePopulation) {
   const occupied = new Set<string>();
   const reserved = new Map<string, number>();
   for (const creature of leaders(population)) {
-    const region = wildlifeRegion(findNearestTerrainHex(creature.x, creature.z));
+    // A hunter away on a hunt still holds the region it left, and only that one.
+    const region = wildlifeRegion(creature.hunt?.den ?? findNearestTerrainHex(creature.x, creature.z));
     expect(occupied.has(region)).toBe(false);
     occupied.add(region);
+    if (creature.hunt) continue;
     for (const end of [creature.cell, creature.target].filter(Boolean)) {
       const region = wildlifeRegion(end!);
       expect(reserved.get(region) ?? creature.id).toBe(creature.id);
@@ -335,6 +337,99 @@ describe("biome creatures and armies", () => {
     army.moving = true;
     population.update(0.05);
     expect(fox.mood).toBe("alarmed");
+  });
+});
+
+describe("biome creature hunts", () => {
+  /** Tiger country to the west of open ground: three tigers, each a few tiles from a herd of `prey`. */
+  const huntingGround = (prey: BiomeType) =>
+    cells().map((cell) => ({ ...cell, biome: cell.col < 0 ? BiomeType.TropicalSeasonalForest : prey }));
+  const tigers = (population: BiomeCreaturePopulation) =>
+    [...population.creatures.values()].filter((creature) => creature.species === "bengal-tiger");
+
+  it("stalks, charges and brings down slow game, feeds, and goes home; the herd goes on without the one it lost", () => {
+    const population = new BiomeCreaturePopulation();
+    population.sync(huntingGround(BiomeType.Bare));
+    const homes = new Map(tigers(population).map((tiger) => [tiger.id, wildlifeRegion(tiger.cell)]));
+    const goats = population.creatures.size - homes.size;
+    const phases = new Set<string>();
+    const fallen = new Map<number, { x: number; z: number }>();
+    let hunting = new Set<number>();
+    let hunts = 0;
+    for (let frame = 0; frame < 12000; frame++) {
+      population.update(0.05);
+      const nowHunting = new Set<number>();
+      for (const tiger of tigers(population)) {
+        if (!tiger.hunt) {
+          // A tiger whose hunt has just ended stands in the region it set out from.
+          if (hunting.has(tiger.id)) {
+            hunts++;
+            expect(wildlifeRegion(tiger.cell)).toBe(homes.get(tiger.id));
+          }
+          continue;
+        }
+        nowHunting.add(tiger.id);
+        phases.add(tiger.hunt.phase);
+      }
+      hunting = nowHunting;
+      for (const creature of population.creatures.values()) {
+        if (creature.caughtBy === null) continue;
+        // What is brought down stays down, where it fell.
+        const place = fallen.get(creature.id) ?? { x: creature.x, z: creature.z };
+        fallen.set(creature.id, place);
+        expect(Math.hypot(creature.x - place.x, creature.z - place.z)).toBeLessThan(0.3);
+      }
+      if (frame % 50 === 0) assertDensity(population);
+    }
+    expect(phases).toEqual(new Set(["approach", "stalk", "charge", "feed", "return"]));
+    expect(hunts).toBeGreaterThan(0);
+    expect(fallen.size).toBeGreaterThan(0);
+    // A kill is gone once its hunter has fed, and every animal left still has a herd to belong to.
+    expect(population.creatures.size - homes.size).toBeLessThan(goats);
+    for (const creature of population.creatures.values())
+      if (creature.leader !== null) expect(population.creatures.get(creature.leader)?.caughtBy).toBeNull();
+  });
+
+  it("is seen late when it stalks: game that would bolt from a tiger in the open only watches one that creeps", () => {
+    const moodBeside = (stalking: boolean) => {
+      const population = new BiomeCreaturePopulation();
+      population.sync(huntingGround(BiomeType.Grassland));
+      const [tiger] = tigers(population);
+      const zebra = leaders(population).find((creature) => creature.species === "plains-zebra")!;
+      for (const [id, creature] of population.creatures)
+        if (creature !== tiger && creature !== zebra) population.creatures.delete(id);
+      // Two world units from the zebra: inside its nerve, outside a tiger's charge.
+      tiger.cell = { ...zebra.cell };
+      tiger.offset = { x: zebra.offset.x + 2, z: zebra.offset.z };
+      tiger.goal = tiger.offset;
+      tiger.hunger = 1e6;
+      if (stalking) tiger.hunt = { phase: "stalk", quarry: zebra.id, den: { ...tiger.cell }, clock: 0, sinceAim: 0 };
+      population.restrictTo(huntingGround(BiomeType.Grassland));
+      population.update(0.05);
+      return zebra.mood;
+    };
+    expect(moodBeside(false)).toBe("alarmed");
+    expect(moodBeside(true)).toBe("wary");
+  });
+
+  it("tires in the charge after fast game and lets it go, to hunt another day", () => {
+    const population = new BiomeCreaturePopulation();
+    population.sync(huntingGround(BiomeType.Grassland));
+    const phases = new Set<string>();
+    let fastest = 0;
+    for (let frame = 0; frame < 12000; frame++) {
+      population.update(0.05);
+      for (const tiger of tigers(population)) {
+        if (!tiger.hunt) continue;
+        phases.add(tiger.hunt.phase);
+        if (tiger.hunt.phase === "charge") fastest = Math.max(fastest, tiger.speed);
+      }
+      if (frame % 50 === 0) assertDensity(population);
+    }
+    expect(phases.has("charge")).toBe(true);
+    expect(phases.has("spent")).toBe(true);
+    expect(fastest).toBeGreaterThan(creatureTraits("bengal-tiger").pace * 4);
+    for (const tiger of tigers(population)) if (!tiger.hunt) expect(tiger.hunger).toBeGreaterThan(0);
   });
 });
 

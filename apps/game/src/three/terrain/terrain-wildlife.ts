@@ -7,6 +7,7 @@ import { creatureTraits, type CreatureSpecies } from "./creatures/biome-creature
 import {
   BiomeCreaturePopulation,
   herdOf,
+  homeTile,
   type RoamingCreature,
   type WildlifeThreat,
   wildlifeRegion,
@@ -128,10 +129,10 @@ export class TerrainWildlife {
         z: creature.z,
         // A herd is counted where its leader is: the one-herd-to-a-region contract is the leaders'.
         herd: herdOf(creature),
-        region: wildlifeRegion(this.population.creatures.get(herdOf(creature))!.cell),
+        region: wildlifeRegion(homeTile(this.population.creatures.get(herdOf(creature))!)),
         biome: this.sampleSurface(creature.x, creature.z).biome,
         moving: creature.speed > 0,
-        activity: creature.target ? (creature.haste > 1 ? "run" : "walk") : creature.action,
+        activity: describeActivity(creature),
         mood: creature.mood,
       })),
     };
@@ -231,6 +232,7 @@ export class TerrainWildlife {
       turn: creature.turn,
       action: creature.action,
       lift: creature.lift,
+      stealth: creature.hunt?.phase === "stalk",
       gaze:
         creature.gaze === null ? null : Math.atan2(Math.sin(creature.gaze - facing), Math.cos(creature.gaze - facing)),
     });
@@ -269,4 +271,12 @@ export class TerrainWildlife {
     }
     return true;
   }
+}
+
+/** What an animal is doing, in a word, for the lab and the verification snapshot. */
+function describeActivity(creature: RoamingCreature): string {
+  if (creature.caughtBy !== null) return "caught";
+  if (creature.hunt) return creature.hunt.phase;
+  if (creature.target) return creature.haste > 1 ? "run" : "walk";
+  return creature.action;
 }

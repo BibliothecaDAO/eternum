@@ -9,20 +9,30 @@ import type { TerrainCellInput } from "../terrain-types";
 import { isTerrainWaterBiome } from "../terrain-water";
 import { creatureForBiome, creatureTraits, type CreatureSpecies, type CreatureTraits } from "./biome-creature-catalog";
 import {
+  beginHuntIfHungry,
+  fears,
+  FIRST_HUNGER,
+  pursueHunt,
+  stealthOf,
+  type HuntingGround,
+} from "./biome-creature-hunt";
+import {
   bearingTo,
   comeToRest,
   goalInWorld,
   moveOntoTile,
   offsetBetween,
   placeInWorld,
+  setOff,
   walk,
+  wildlifeRegion,
   type Cell,
   type CreatureMood,
   type Point,
   type RoamingCreature,
 } from "./biome-creature-motion";
 
-export type { RoamingCreature } from "./biome-creature-motion";
+export { wildlifeRegion, type RoamingCreature } from "./biome-creature-motion";
 
 /** Something animals keep clear of: an army on the map. One that stands still worries them from less far. */
 export interface WildlifeThreat extends Point {
@@ -34,8 +44,12 @@ interface Danger {
   distance: number;
   at: Point | null;
 }
+/** The nearest danger to each animal, and to each herd through whichever of its members is nearest one. */
+interface Dangers {
+  own: Map<number, Danger>;
+  herd: Map<number, Danger>;
+}
 
-const REGION_SIZE = 8;
 const MAX_CREATURES = 48;
 /** How far from its tile's centre an animal may stand: no two visits end on the same spot. */
 const STANDING_SPOT_RADIUS = 0.28;
@@ -52,13 +66,14 @@ const LOOK_BACK_SECONDS = 3;
 const RETRY_SECONDS = 1;
 const NO_DANGER: Danger = { distance: Infinity, at: null };
 
-export function wildlifeRegion(cell: Cell): string {
-  return `${Math.floor(cell.col / REGION_SIZE)}:${Math.floor(cell.row / REGION_SIZE)}`;
+/** The animal a creature's herd is counted by: its leader, or itself; a kill is counted with its hunter. */
+export function herdOf(creature: RoamingCreature): number {
+  return creature.caughtBy ?? creature.leader ?? creature.id;
 }
 
-/** The animal a creature's herd is counted by: its leader, or itself. */
-export function herdOf(creature: RoamingCreature): number {
-  return creature.leader ?? creature.id;
+/** The tile whose region a herd's leader holds: where it is, or where it set out from on a hunt. */
+export function homeTile(leader: RoamingCreature): Cell {
+  return leader.hunt?.den ?? leader.cell;
 }
 
 /**
@@ -70,6 +85,19 @@ export class BiomeCreaturePopulation {
   private cells = new Map<string, TerrainCellInput>();
   private threats: readonly WildlifeThreat[] = [];
   private nextId = 0;
+  /** The ground as a hunt sees it: a hunter goes where its kind may stand, whoever's region that is. */
+  private readonly huntingGround: HuntingGround = {
+    creatures: this.creatures,
+    canStand: (tile, species) => this.canVisit(tile, species),
+    isPathClear: (from, to, species) => this.isPathClear(from, to, species),
+    tilesBeside: (creature) =>
+      terrainNeighborCoordinates(creature.cell.col, creature.cell.row).filter((tile) =>
+        this.canVisit(tile, creature.species),
+      ),
+    spotOn: standingSpotInWorld,
+    remove: (id) => this.creatures.delete(id),
+    regroup: () => this.promoteOrphans(),
+  };
 
   constructor(private readonly isPathClear: PathCheck = () => true) {}
 
@@ -105,17 +133,28 @@ export class BiomeCreaturePopulation {
       creature.age += dt;
       creature.sinceSetOff += dt;
       creature.blockedFor = Math.max(0, creature.blockedFor - dt);
-      this.takeFright(creature, dangers.own.get(creature.id)!, dangers.herd.get(herdOf(creature))!);
-      if (creature.target) {
-        if (walk(creature, dt)) this.settle(creature);
-      } else comeToRest(creature, dt);
-      // Asked in the frame it arrives too, so an animal that walks on keeps its pace across the tile.
-      if (!creature.target) {
-        if (creature.leader === null) this.leadOn(creature, dt, reserved, dangers.herd.get(creature.id)!);
-        else this.keepStation(creature, dt);
-      }
+      creature.hunger = Math.max(0, creature.hunger - dt);
+      // A kill lies where it fell until its hunter has fed.
+      if (creature.caughtBy === null) this.live(creature, dt, reserved, dangers);
+      else comeToRest(creature, dt);
       placeInWorld(creature);
     }
+  }
+
+  /** One frame of an animal's life: it takes fright or not, moves, and decides what comes next. */
+  private live(creature: RoamingCreature, dt: number, reserved: Set<string>, dangers: Dangers): void {
+    this.takeFright(creature, dangers.own.get(creature.id)!, dangers.herd.get(herdOf(creature))!);
+    if (creature.target) {
+      if (walk(creature, dt)) this.settle(creature);
+    } else comeToRest(creature, dt);
+    placeInWorld(creature);
+    // A hunt has the hunter until it is over; only real alarm breaks into one, and nothing breaks into a meal.
+    if (creature.hunt && (creature.mood !== "alarmed" || creature.hunt.phase === "feed"))
+      return pursueHunt(creature, dt, this.huntingGround);
+    // Asked in the frame it arrives too, so an animal that walks on keeps its pace across the tile.
+    if (creature.target) return;
+    if (creature.leader === null) this.leadOn(creature, dt, reserved, dangers.herd.get(creature.id)!);
+    else this.keepStation(creature, dt);
   }
 
   // ── Who lives where ──────────────────────────────────────────────────────────────────────────────────────────────
@@ -131,11 +170,13 @@ export class BiomeCreaturePopulation {
     }
   }
 
-  /** A herd that lost its leader follows its eldest instead. */
+  /** A herd that lost its leader, gone or brought down, follows its eldest instead; a kill goes with its hunter. */
   private promoteOrphans(): void {
     const heirs = new Map<number, RoamingCreature>();
-    for (const creature of this.creatures.values()) {
-      if (creature.leader === null || this.creatures.has(creature.leader)) continue;
+    for (const [id, creature] of this.creatures) {
+      if (creature.caughtBy !== null && !this.creatures.has(creature.caughtBy)) this.creatures.delete(id);
+      if (creature.leader === null || creature.caughtBy !== null) continue;
+      if (this.creatures.get(creature.leader)?.caughtBy === null) continue;
       const heir = heirs.get(creature.leader);
       if (heir) creature.leader = heir.id;
       else {
@@ -206,9 +247,13 @@ export class BiomeCreaturePopulation {
   private reservedRegions(): Set<string> {
     const reserved = new Set<string>();
     for (const creature of this.creatures.values()) {
-      if (creature.leader !== null) continue;
-      reserved.add(wildlifeRegion(creature.cell));
-      if (creature.target) reserved.add(wildlifeRegion(creature.target));
+      if (creature.leader !== null || creature.caughtBy !== null) continue;
+      // A hunter away on a hunt holds the region it left, and none of those it crosses.
+      if (creature.hunt) reserved.add(wildlifeRegion(creature.hunt.den));
+      else {
+        reserved.add(wildlifeRegion(creature.cell));
+        if (creature.target) reserved.add(wildlifeRegion(creature.target));
+      }
     }
     return reserved;
   }
@@ -216,11 +261,13 @@ export class BiomeCreaturePopulation {
   // ── Danger ───────────────────────────────────────────────────────────────────────────────────────────────────────
 
   /** The nearest danger to each animal, and to each herd through whichever of its members is nearest one. */
-  private senseDangers(): { own: Map<number, Danger>; herd: Map<number, Danger> } {
+  private senseDangers(): Dangers {
     const own = new Map<number, Danger>();
     const herd = new Map<number, Danger>();
-    const hunters = [...this.creatures.values()].filter(isHunter);
+    const hunters = [...this.creatures.values()].filter((creature) => creatureTraits(creature.species).hunts);
     for (const creature of this.creatures.values()) {
+      // A kill fears nothing more, and is no part of what its hunter's herd feels.
+      if (creature.caughtBy !== null) continue;
       const danger = nearestDanger(creature, this.threats, hunters);
       own.set(creature.id, danger);
       const felt = herd.get(herdOf(creature));
@@ -254,6 +301,7 @@ export class BiomeCreaturePopulation {
   private leadOn(creature: RoamingCreature, dt: number, reserved: Set<string>, danger: Danger): void {
     if (creature.mood === "alarmed") return this.meetDanger(creature, reserved, danger);
     if (creature.haste > 1) return lookBack(creature);
+    if (creature.mood === "calm" && beginHuntIfHungry(creature, this.huntingGround)) return;
     // Wary, it watches for as long as it would have grazed, then moves on as it meant to.
     if (creature.mood === "wary") standWary(creature);
     if ((creature.wait -= dt) <= 0) this.chooseDestination(creature, reserved);
@@ -306,9 +354,12 @@ export class BiomeCreaturePopulation {
   /** The tiles beside it that its kind may stand on and no other herd holds. */
   private openNeighbours(creature: RoamingCreature, reserved: Set<string>): Cell[] {
     const home = wildlifeRegion(creature.cell);
+    // A hunter caught far from home by an army runs where it can: its own region is held for it.
+    const roams = creature.hunt !== null;
     return terrainNeighborCoordinates(creature.cell.col, creature.cell.row).filter(
       (cell) =>
-        (wildlifeRegion(cell) === home || !reserved.has(wildlifeRegion(cell))) && this.canVisit(cell, creature.species),
+        (roams || wildlifeRegion(cell) === home || !reserved.has(wildlifeRegion(cell))) &&
+        this.canVisit(cell, creature.species),
     );
   }
 
@@ -372,10 +423,6 @@ export class BiomeCreaturePopulation {
   }
 }
 
-function isHunter(creature: RoamingCreature): boolean {
-  return creatureTraits(creature.species).role === "hunter";
-}
-
 /** The nearest thing an animal fears: an army, or for prey a hunter. A still army is felt from less far. */
 function nearestDanger(
   creature: RoamingCreature,
@@ -388,21 +435,12 @@ function nearestDanger(
       Math.hypot(threat.x - creature.x, threat.z - creature.z) * (threat.moving ? 1 : STILL_THREAT_DISTANCE);
     if (distance < nearest.distance) nearest = { distance, at: threat };
   }
-  if (creatureTraits(creature.species).role !== "prey") return nearest;
   for (const hunter of hunters) {
-    const distance = Math.hypot(hunter.x - creature.x, hunter.z - creature.z);
+    if (!fears(creature, hunter)) continue;
+    const distance = Math.hypot(hunter.x - creature.x, hunter.z - creature.z) * stealthOf(hunter);
     if (distance < nearest.distance) nearest = { distance, at: hunter };
   }
   return nearest;
-}
-
-/** Begins a walk to `spot` on `tile`. */
-function setOff(creature: RoamingCreature, tile: Cell, spot: Point): void {
-  creature.target = { col: tile.col, row: tile.row };
-  creature.goal = offsetBetween(creature.cell, spot);
-  creature.steps++;
-  creature.sinceSetOff = 0;
-  creature.haste = 1;
 }
 
 /** While danger is near it does nothing else: withdrawn if that is its way, else watching it. */
@@ -483,6 +521,9 @@ function createRoamingCreature(id: number, species: CreatureSpecies, cell: Cell)
     leader: null,
     station: { x: 0, z: 0 },
     young: false,
+    hunt: null,
+    hunger: FIRST_HUNGER[0] + priority(cell, 12) * (FIRST_HUNGER[1] - FIRST_HUNGER[0]),
+    caughtBy: null,
   };
   placeInWorld(creature);
   return creature;

@@ -3,6 +3,9 @@ import { BiomeType } from "@bibliothecadao/types";
 /** What an animal does while it is stopped; each rig acts out the ones its anatomy allows. */
 export type CreatureIdleAction = "stand" | "forage" | "watch" | "rest";
 
+/** Game by size: a tiger takes the big, a fox the small. */
+type CreatureGame = "big" | "small";
+
 export interface CreatureTraits {
   movement: "land" | "water" | "air";
   /**
@@ -31,8 +34,17 @@ export interface CreatureTraits {
   herd?: readonly [fewest: number, most: number];
   /** The chance a herd has one of this year's young at foot. */
   young?: number;
-  /** Prey fear the hunters among the animals as they fear an army. */
-  role?: "prey" | "hunter";
+  /** What hunts it: prey fear the hunters of their kind of game as they fear an army. */
+  prey?: CreatureGame;
+  /** A hunter, and how it hunts. */
+  hunts?: {
+    game: CreatureGame;
+    /** How far off it marks its quarry, in world units. */
+    scent: number;
+    /** Its speed in the charge, as a multiple of its pace, and the seconds it can keep that up. */
+    dash: number;
+    stamina: number;
+  };
   /** It travels flank first, as a crab does. */
   sidles?: true;
 }
@@ -107,7 +119,7 @@ const CREATURE_TRAITS = {
     sprint: 2.6,
     herd: [2, 3],
     young: 0.6,
-    role: "prey",
+    prey: "big",
   },
   "arctic-fox": {
     movement: "land",
@@ -120,7 +132,7 @@ const CREATURE_TRAITS = {
     fright: "flee",
     nerve: 2.2,
     sprint: 2.8,
-    role: "hunter",
+    hunts: { game: "small", scent: 11, dash: 4.6, stamina: 6 },
   },
   "emperor-penguin": {
     movement: "land",
@@ -147,8 +159,8 @@ const CREATURE_TRAITS = {
     bursts: [0.9, 0.7],
     fright: "flee",
     nerve: 2.4,
-    sprint: 3,
-    role: "prey",
+    sprint: 2.2,
+    prey: "small",
   },
   "mediterranean-tortoise": {
     movement: "land",
@@ -189,7 +201,7 @@ const CREATURE_TRAITS = {
     sprint: 3,
     herd: [3, 4],
     young: 0.6,
-    role: "prey",
+    prey: "big",
   },
   "red-deer": {
     movement: "land",
@@ -204,7 +216,7 @@ const CREATURE_TRAITS = {
     sprint: 3.2,
     herd: [2, 3],
     young: 0.5,
-    role: "prey",
+    prey: "big",
   },
   "red-backed-salamander": {
     movement: "land",
@@ -243,7 +255,7 @@ const CREATURE_TRAITS = {
     fright: "stand",
     nerve: 2.2,
     sprint: 1,
-    role: "hunter",
+    hunts: { game: "big", scent: 13, dash: 5, stamina: 5 },
   },
   "keel-billed-toucan": {
     movement: "air",

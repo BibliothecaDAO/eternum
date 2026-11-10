@@ -14,6 +14,20 @@ export interface Point {
   x: number;
   z: number;
 }
+/**
+ * A hunt, from the hunter's side: it approaches its quarry in the open, stalks it from where it might be seen,
+ * charges it, then feeds on it or stands spent, and goes home.
+ * `den` is the tile it set out from: its herd's region stays held there until it is back.
+ */
+export interface CreatureHunt {
+  phase: "approach" | "stalk" | "charge" | "feed" | "spent" | "return";
+  quarry: number;
+  den: Cell;
+  /** Seconds in this phase, and since it last took aim. */
+  clock: number;
+  sinceAim: number;
+}
+
 /** How danger has an animal: at ease, watching it, or acting on its fright. */
 export type CreatureMood = "calm" | "wary" | "alarmed";
 
@@ -59,6 +73,18 @@ export interface RoamingCreature {
   station: Point;
   /** This year's young: smaller, and closer to its leader. */
   young: boolean;
+  /** A hunter's hunt in progress, and the seconds until it is hungry enough for the next. */
+  hunt: CreatureHunt | null;
+  hunger: number;
+  /** The hunter that brought it down; null for an animal still on its feet. */
+  caughtBy: number | null;
+}
+
+/** The side, in tiles, of the square regions the map is cut into: one herd to each. */
+const REGION_SIZE = 8;
+
+export function wildlifeRegion(cell: Cell): string {
+  return `${Math.floor(cell.col / REGION_SIZE)}:${Math.floor(cell.row / REGION_SIZE)}`;
 }
 
 /** Seconds to reach cruising speed, and to stop from it. */
@@ -105,6 +131,15 @@ export function comeToRest(creature: RoamingCreature, dt: number): void {
   creature.turn = approach(creature.turn, 0, traits.agility * 8 * dt);
   creature.lift = approach(creature.lift, 0, dt / SECONDS_TO_CLIMB);
   if (creature.speed > 0) advance(creature, creature.speed * dt, dt);
+}
+
+/** Begins a walk to `spot` on `tile`, at its ordinary pace. */
+export function setOff(creature: RoamingCreature, tile: Cell, spot: Point): void {
+  creature.target = { col: tile.col, row: tile.row };
+  creature.goal = offsetBetween(creature.cell, spot);
+  creature.steps++;
+  creature.sinceSetOff = 0;
+  creature.haste = 1;
 }
 
 /** Makes `tile` the animal's own without moving it: its place is kept, counted from the new tile's centre. */
