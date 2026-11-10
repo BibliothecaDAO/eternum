@@ -18,6 +18,8 @@ Read [`AGENTS.md`](../AGENTS.md) first. It is the coding and review standard for
 - Chain and box infrastructure (the self-hosted Madara L3): [`deploy/athanor/README.md`](../deploy/athanor/README.md)
 - Environment setup, deploy and season operations: [operator runbook](../deploy/first/README.md)
 - Alerts and what to do about each: [on-call runbook](../deploy/first/ON-CALL.md)
+- Google Play and App Store forms (data safety, privacy label, ratings, reviewer sign-in, listing copy):
+  [store submission answers](./store-submission.md)
 - Balance sources and generated presets: [`config/source`](../config/source) and
   [`config/generated`](../config/generated); regenerate with `pnpm run config:generate`
 - Herald (block folding, snapshots, ordered diffs): [`apps/herald/README.md`](../apps/herald/README.md)
