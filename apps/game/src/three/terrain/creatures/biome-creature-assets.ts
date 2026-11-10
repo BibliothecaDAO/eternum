@@ -1,4 +1,4 @@
-import { Box3, Group, Mesh, MeshStandardMaterial, Texture, Vector3 } from "three";
+import { Box3, Group, Mesh, MeshStandardMaterial, SkinnedMesh, Texture, Vector3 } from "three";
 import { MeshStandardNodeMaterial } from "three/webgpu";
 import { gltfLoader } from "../../utils/gltf-loader";
 import { creatureTraits, type CreatureSpecies } from "./biome-creature-catalog";
@@ -61,10 +61,18 @@ function fitCreatureToItsSize(scene: Group, species: CreatureSpecies): void {
   }
 }
 
+/** Frees what one animal alone holds: its bones' GPU data. Its geometry and materials are its template's. */
+export function releaseBiomeCreatureBones(animal: Group): void {
+  animal.traverse((object) => {
+    if (object instanceof SkinnedMesh) object.skeleton.dispose();
+  });
+}
+
 export function disposeBiomeCreature(root: Group): void {
   const resources = new Set<{ dispose(): void }>();
   root.traverse((object) => {
     if (!(object instanceof Mesh)) return;
+    if (object instanceof SkinnedMesh) resources.add(object.skeleton);
     resources.add(object.geometry);
     for (const material of Array.isArray(object.material) ? object.material : [object.material]) {
       resources.add(material);

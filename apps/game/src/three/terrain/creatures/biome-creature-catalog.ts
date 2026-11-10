@@ -72,7 +72,7 @@ const CREATURE_TRAITS = {
   "mountain-goat": {
     movement: "land",
     size: 0.55,
-    pace: 0.22,
+    pace: 0.14,
     agility: 2,
     wanderlust: 0.25,
     idle: GRAZER_IDLE,
@@ -81,7 +81,7 @@ const CREATURE_TRAITS = {
   "arctic-fox": {
     movement: "land",
     size: 0.46,
-    pace: 0.3,
+    pace: 0.18,
     agility: 2.8,
     wanderlust: 0.5,
     idle: HUNTER_IDLE,
@@ -117,7 +117,7 @@ const CREATURE_TRAITS = {
   },
   moose: {
     movement: "land",
-    size: 0.85,
+    size: 0.88,
     pace: 0.26,
     agility: 1.5,
     wanderlust: 0.2,
@@ -127,7 +127,7 @@ const CREATURE_TRAITS = {
   "plains-zebra": {
     movement: "land",
     size: 0.72,
-    pace: 0.28,
+    pace: 0.22,
     agility: 1.8,
     wanderlust: 0.3,
     idle: GRAZER_IDLE,
@@ -135,8 +135,8 @@ const CREATURE_TRAITS = {
   },
   "red-deer": {
     movement: "land",
-    size: 0.72,
-    pace: 0.28,
+    size: 0.77,
+    pace: 0.22,
     agility: 1.9,
     wanderlust: 0.3,
     idle: GRAZER_IDLE,
@@ -164,8 +164,8 @@ const CREATURE_TRAITS = {
   },
   "bengal-tiger": {
     movement: "land",
-    size: 0.95,
-    pace: 0.2,
+    size: 1.0,
+    pace: 0.17,
     agility: 1.8,
     wanderlust: 0.5,
     idle: HUNTER_IDLE,

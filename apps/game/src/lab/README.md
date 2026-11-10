@@ -69,7 +69,7 @@ Art → Terrain → Wildlife (`/lab/wildlife`) runs the map's own wildlife on on
 size, gait and idle behaviour is judged before the map shows it. `species=<id>` follows one animal and names what it is
 doing; `view=map` looks from the world map's angle, with `distance` in world units (the map's zoom runs from 5 to 20),
 while the default flank view counts `distance` in the animal's own sizes. `capture=1` holds the clock:
-`window.__wildlifeLab.step(seconds)` advances the animals and draws, for stills of a known moment.
+`window.__wildlifeLab.step(seconds)` advances the animals, and the next frame draws them, for stills of a known moment.
 
 ### HUD room
 

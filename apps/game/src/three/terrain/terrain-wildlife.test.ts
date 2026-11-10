@@ -168,7 +168,7 @@ describe("biome creature roaming", () => {
         fastest.set(creature.species, Math.max(fastest.get(creature.species) ?? 0, speed));
       }
     }
-    expect(fastest.get("arctic-fox")).toBeGreaterThan(fastest.get("mediterranean-tortoise")! * 4);
+    expect(fastest.get("arctic-fox")).toBeGreaterThan(fastest.get("mediterranean-tortoise")! * 2);
     expect(fastest.get("mediterranean-tortoise")).toBeGreaterThan(0);
   });
 

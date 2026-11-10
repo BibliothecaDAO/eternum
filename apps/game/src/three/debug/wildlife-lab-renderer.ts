@@ -80,7 +80,7 @@ type WildlifeLabWindow = Window & {
     status: "booting" | "error" | "ready";
     error?: string;
     getSnapshot?: () => WildlifeLabStats;
-    /** Advances the animals by `seconds` in frame-sized steps, then draws: a capture's only clock. */
+    /** Advances the animals by `seconds` in frame-sized steps, for the next frame to draw: a capture's only clock. */
     step?: (seconds: number) => WildlifeLabStats;
   };
 };
@@ -102,14 +102,12 @@ export async function mountWildlifeLab(input: MountWildlifeLabInput): Promise<Wi
     const resizeObserver = new ResizeObserver(() => resizeRenderer(input.canvas, runtime));
     resizeObserver.observe(input.canvas);
     resizeRenderer(input.canvas, runtime);
-    const stopAnimation = input.captureMode ? () => {} : startAnimation(runtime, draw);
-    draw();
+    const stopAnimation = startAnimation(runtime, draw, !input.captureMode);
     labWindow.__wildlifeLab = {
       status: "ready",
       getSnapshot: () => readStats(runtime),
       step: (seconds) => {
         advanceWildlife(runtime.wildlife, seconds);
-        draw();
         return readStats(runtime);
       },
     };
@@ -220,10 +218,15 @@ function createLights(): Group {
   return lights;
 }
 
-function startAnimation(runtime: WildlifeLabRuntime, draw: () => void): () => void {
+/**
+ * Draws every frame, and lets the clock run unless a capture holds it. A held page still draws from the renderer's own
+ * loop: a skinned animal's bones reach the GPU once per frame of that loop, so a draw made outside it shows a stale
+ * pose.
+ */
+function startAnimation(runtime: WildlifeLabRuntime, draw: () => void, clockRuns: boolean): () => void {
   let last = performance.now();
   runtime.renderer.setAnimationLoop((now) => {
-    runtime.wildlife.update((now - last) / 1000);
+    if (clockRuns) runtime.wildlife.update((now - last) / 1000);
     last = now;
     draw();
   });

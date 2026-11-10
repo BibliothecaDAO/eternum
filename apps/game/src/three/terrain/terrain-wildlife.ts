@@ -1,7 +1,8 @@
 import { Group, Matrix4, Vector3 } from "three";
+import { clone as cloneWithSkeleton } from "three/addons/utils/SkeletonUtils.js";
 import type { MeshStandardNodeMaterial } from "three/webgpu";
 import { createCreatureAnimator } from "./creatures/biome-creature-animator.js";
-import { disposeBiomeCreature, loadBiomeCreature } from "./creatures/biome-creature-assets";
+import { disposeBiomeCreature, loadBiomeCreature, releaseBiomeCreatureBones } from "./creatures/biome-creature-assets";
 import { creatureTraits, type CreatureSpecies } from "./creatures/biome-creature-catalog";
 import { BiomeCreaturePopulation, type RoamingCreature, wildlifeRegion } from "./creatures/biome-creature-population";
 import { findNearestTerrainHex, terrainCellKey, terrainNeighborCoordinates } from "./terrain-coordinates";
@@ -116,6 +117,7 @@ export class TerrainWildlife {
   dispose(): void {
     this.disposed = true;
     this.object3d.clear();
+    this.views.forEach((view) => releaseBiomeCreatureBones(view.root));
     this.views.clear();
     this.population.creatures.clear();
     this.cells.clear();
@@ -158,7 +160,8 @@ export class TerrainWildlife {
       const template = await this.loadTemplate(creature.species);
       if (this.disposed) return;
       if (!template || this.views.has(creature.id) || !this.population.creatures.has(creature.id)) continue;
-      const rig = template.clone(true);
+      // A skinned animal needs its own bones, bound to its own copy of the skin.
+      const rig = cloneWithSkeleton(template) as Group;
       const root = new Group();
       root.name = `biome-creature:${creature.species}:${creature.id}`;
       root.add(rig);
@@ -180,6 +183,7 @@ export class TerrainWildlife {
         this.object3d.remove(view.root);
         // The creature is a clone sharing its template's geometry and materials: those stay, its render objects go.
         releaseDrawnObject(view.root);
+        releaseBiomeCreatureBones(view.root);
         this.views.delete(id);
       }
   }

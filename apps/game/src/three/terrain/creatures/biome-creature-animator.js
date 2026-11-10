@@ -9,7 +9,8 @@ const smooth = (x) => x * x * (3 - 2 * x);
 /**
  * How each four-legged rig carries itself. `stride` is the ground a planted foot covers, as a share of the leg's
  * length, and `duty` the share of a step it stays planted: together they fix how far one step carries the body, so a
- * foot on the ground never slides. `extension` is how straight the standing leg is (the rigs are authored crouched),
+ * foot on the ground never slides. `extension` is how straight the standing leg is at least (a rig authored crouched is
+ * lifted to it),
  * `nod` the head's swing in step. The rest are radians: `forage` drops the neck to the ground, `sit` drops the
  * haunches, `upright` lifts the forequarters to look out, `undulation` bends the body with the step; `hop` is the
  * height of a bound and `tuck` how far the body sinks into its shell, as shares of the leg.
