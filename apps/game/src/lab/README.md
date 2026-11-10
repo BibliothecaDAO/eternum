@@ -263,12 +263,12 @@ its troop-and-tier table at the map's scale (`ARMY_MODEL_SCALE`), handed to the 
 hands it (`shouldPresentArmyProcedurally`, the T1 knight). A take stands only its own subjects on the set; Reset stands
 them all. The set lives in `src/lab/studio/`; nothing in it ships to players.
 
-`set=world` builds a second set (`fixture.ts`, `STUDIO_SETS`): a continent of 76 by 50 hexes holding every biome the
-game draws, a capital and fourteen realms at every tier, camps, villages, ruins and beasts, and fog standing along its
-edge. It is lived in without a call: over a hundred armies walk their routes between the realms a hex at a time and turn
-back at the end, out of step with one another; raiders walk in on the camps' guards, strike, and the guards fall;
-explorers walk into the fog and uncover it. Every army's order is a row of the set (`orders`), played by the stage's
-tick through the army model's own march and the map's combat bridge.
+`set=world` builds a second set (`fixture.ts`, `STUDIO_SETS`): a Blitz match of six players, laid out as the settlement
+grid deals it at its spacing of 6 (`contracts/l3/world-native/src/settlement_grid.cairo`): a Hyperstructure on the
+centre tile and six on the ring twelve hexes out, each player's three realms in a triangle between them, camps, Essence
+Rifts and a relic chest, patches of the game's biomes a few hexes across, and fog over the land past the players' reach.
+Two armies of one player walk the road from their realm to the centre's Hyperstructure, each striking the bandit that
+holds its lane, who falls. Every army's order is a row of the set (`orders`), played by the stage's tick (`runOrders`).
 
 - **Takes:** Hyperstructure rising, Battle up close, Exploration, Realm through its tiers, Wide establisher. Each resets
   the set and plays its camera path with its cues on time, so every take replays the same. `?take=<name>` plays one when

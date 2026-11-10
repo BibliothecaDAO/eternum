@@ -1,9 +1,12 @@
 import { NEUTRAL_BIOME_CLIMATE } from "@bibliothecadao/eternum";
 import { BiomeType, StructureType, TroopTier, TroopType } from "@bibliothecadao/types";
 
-import { CAMP_MODEL_PATH, VILLAGE_MODEL_PATH } from "@/three/constants/scene-constants";
-import { FALLEN_REALM_RUIN_PATH, FRONTIER_BEASTS } from "@/three/structures/frontier-beast";
-import { terrainHexToWorld, terrainNeighborCoordinates } from "@/three/terrain/terrain-coordinates";
+import { CAMP_MODEL_PATH, ChestModelPath, RiftModelPath } from "@/three/constants/scene-constants";
+import {
+  TERRAIN_HEX_HORIZONTAL_SPACING,
+  terrainHexToWorld,
+  terrainNeighborCoordinates,
+} from "@/three/terrain/terrain-coordinates";
 import type { TerrainCellInput, TerrainPageRequest } from "@/three/terrain/terrain-types";
 
 export type Hex = { col: number; row: number };
@@ -24,13 +27,15 @@ export interface StudioSet {
   /** The realm whose tier a call sets, and the Hyperstructure that rises on one. */
   realm: Hex;
   hyperstructure: Hex;
-  /** Realms that stand at one tier for the whole shoot. */
-  kingdoms: readonly { hex: Hex; level: number }[];
+  /** Hyperstructures that stand complete for the whole shoot. */
+  hyperstructures: readonly Hex[];
+  /** Realms that stand at one tier for the whole shoot, the viewer's own or another player's. */
+  kingdoms: readonly { hex: Hex; level: number; ours: boolean }[];
   /** The fights: each attacker faces the defender on the hex beside it. */
   battles: readonly { attacker: Hex; defender: Hex }[];
-  /** Camps, villages, ruins and beasts standing on the map, each drawn from its model. */
+  /** Camps, Essence Rifts and chests standing on the map, each drawn from its model. */
   sites: readonly { hex: Hex; model: string }[];
-  /** The armies that live on the map: each walks its route, a hex at a time, and turns back at its end. */
+  /** The armies that live on the map: each walks its route, a hex at a time, to its end. */
   orders: readonly StudioOrder[];
   /** Where the explorer starts, and the hexes it walks onto. */
   exploreStart: Hex;
@@ -46,14 +51,13 @@ export interface StudioOrder {
   troop: StudioTroop;
   /** The hexes it walks, each beside the last. */
   route: readonly Hex[];
-  /** The hex of its route it stands on when the set is built, and which way it is walking. */
+  /** The hex of its route it stands on when the set is built. */
   startAt: number;
-  heading: 1 | -1;
   /** Seconds it waits before its first step, so the map's armies do not all step at once. */
   wait: number;
   /** It uncovers the fog ahead of each step, as an exploring army does. */
   explores?: boolean;
-  /** The guard it attacks from the last hex of its route: the guard's hex, beside that one. */
+  /** The guard that holds this hex of its route: it strikes it from the hex before, then walks on over it. */
   raids?: Hex;
 }
 
@@ -72,6 +76,7 @@ const STAGE_SET: StudioSet = (() => {
     biomeAt: stageBiomeAt,
     realm: { col: 7, row: 5 },
     hyperstructure: { col: 17, row: 6 },
+    hyperstructures: [],
     kingdoms: [],
     // The defender stands on the hex beside the attacker, east of it on the same row.
     battles: [{ attacker: { col: 13, row: 12 }, defender: { col: 14, row: 12 } }],
@@ -95,170 +100,100 @@ function stageBiomeAt({ col, row }: Hex): BiomeType {
   return (Math.floor(x / 3) + Math.floor(y / 3)) % 3 === 0 ? BiomeType.Shrubland : BiomeType.TemperateDeciduousForest;
 }
 
-const WORLD_COLUMNS = 76;
-const WORLD_ROWS = 50;
-const WORLD_CAPITAL = { col: 38, row: 25 };
-const KNIGHT: StudioTroop = { category: TroopType.Knight, tier: TroopTier.T1 };
-const WORLD_RANKS: readonly StudioTroop[] = [
-  { category: TroopType.Paladin, tier: TroopTier.T2 },
-  { category: TroopType.Knight, tier: TroopTier.T2 },
-  { category: TroopType.Crossbowman, tier: TroopTier.T1 },
-  { category: TroopType.Paladin, tier: TroopTier.T3 },
-  { category: TroopType.Knight, tier: TroopTier.T3 },
-  { category: TroopType.Crossbowman, tier: TroopTier.T3 },
-  { category: TroopType.Paladin, tier: TroopTier.T1 },
-  { category: TroopType.Crossbowman, tier: TroopTier.T2 },
-];
+const MATCH_COLUMNS = 64;
+const MATCH_ROWS = 56;
+const MATCH_CENTRE = { col: 32, row: 28 };
+/** A Blitz match's layout, as the settlement grid deals it at its spacing of 6 (`settlement_grid.cairo`). */
+const REALM_DISTANCE = 6;
+const HYPERSTRUCTURE_DISTANCE = 12;
+/** For each of the six seats round the centre: the direction its realms lie in, and the one their triangle opens in. */
+const SEAT_DIRECTIONS = [
+  [1, 3],
+  [3, 5],
+  [5, 1],
+  [2, 4],
+  [4, 0],
+  [0, 2],
+] as const;
+/** The seat whose two armies the match follows; its realms fly the viewer's colours. */
+const OUR_SEAT = 4;
+/** The step of the road the bandits hold. */
+const AMBUSH_STEP = 6;
+const TRAVELLER: StudioTroop = { category: TroopType.Paladin, tier: TroopTier.T2 };
 
 /**
- * The world: a continent holding every biome the game draws, from a western sea to a scorched south-east, with a
- * capital in its meadow heart and fourteen realms at every tier. It is lived in: armies walk the roads between
- * realms and out to the camps, villages, ruins and beasts round them, raiders fall on the camps' guards, and
- * explorers push into the fog that stands along the world's edge.
+ * The world: a Blitz match of six players. A Hyperstructure stands on the centre tile and six more on the ring round
+ * it; each player's three realms stand in a triangle between them; camps, Essence Rifts and a relic chest lie where
+ * exploring found them, and the land not yet explored is under fog. Two armies of one player walk the road from their
+ * realm to the centre, through the two bandits that hold it by a camp.
  */
 const WORLD_SET: StudioSet = (() => {
-  const kingdoms = [
-    { hex: { col: 30, row: 21 }, level: 2 },
-    { hex: { col: 45, row: 20 }, level: 1 },
-    { hex: { col: 31, row: 30 }, level: 1 },
-    { hex: { col: 23, row: 25 }, level: 3 },
-    { hex: { col: 55, row: 19 }, level: 0 },
-    { hex: { col: 41, row: 35 }, level: 2 },
-    { hex: { col: 20, row: 13 }, level: 1 },
-    { hex: { col: 56, row: 36 }, level: 1 },
-    { hex: { col: 15, row: 34 }, level: 2 },
-    { hex: { col: 50, row: 10 }, level: 0 },
-    { hex: { col: 28, row: 41 }, level: 3 },
-    { hex: { col: 66, row: 13 }, level: 2 },
-    { hex: { col: 35, row: 8 }, level: 1 },
-    { hex: { col: 66, row: 37 }, level: 0 },
-  ];
-  const realms = [WORLD_CAPITAL, ...kingdoms.map(({ hex }) => hex)];
-  const beasts = Object.values(FRONTIER_BEASTS).map(({ path }) => path);
-  const camps = [
-    { col: 60, row: 25 },
-    { col: 49, row: 39 },
-    { col: 25, row: 16 },
-    { col: 37, row: 16 },
-  ];
-  const sites = [
-    ...camps.map((hex) => ({ hex, model: CAMP_MODEL_PATH })),
-    ...[
-      { col: 34, row: 27 },
-      { col: 43, row: 28 },
-      { col: 26, row: 33 },
-      { col: 51, row: 24 },
-      { col: 18, row: 22 },
-      { col: 60, row: 31 },
-    ].map((hex) => ({ hex, model: VILLAGE_MODEL_PATH })),
-    ...[
-      { col: 64, row: 41 },
-      { col: 59, row: 43 },
-      { col: 44, row: 9 },
-      { col: 12, row: 42 },
-    ].map((hex) => ({ hex, model: FALLEN_REALM_RUIN_PATH })),
-    ...[
-      { col: 63, row: 43 },
-      { col: 68, row: 31 },
-      { col: 47, row: 43 },
-      { col: 58, row: 9 },
-      { col: 22, row: 37 },
-      { col: 27, row: 9 },
-      { col: 53, row: 30 },
-      { col: 36, row: 40 },
-    ].map((hex, index) => ({ hex, model: beasts[index % beasts.length] })),
-  ];
-  // The roads: each is walked both ways, the way back a row to the south, with an army every few hexes.
-  const roads: [from: number, to: number][] = [
-    [0, 1],
-    [0, 2],
-    [0, 3],
-    [0, 6],
-    [0, 5],
-    [1, 4],
-    [2, 5],
-    [4, 9],
-    [5, 12],
-    [3, 7],
-    [4, 12],
-    [6, 8],
-    [8, 11],
-    [3, 9],
-    [1, 13],
-    [2, 10],
-    [6, 11],
-    [5, 10],
-    [8, 14],
-  ];
-  const orders: StudioOrder[] = [];
-  const troop = () => WORLD_RANKS[orders.length % WORLD_RANKS.length];
-  for (const [from, to] of roads) {
-    const out = hexLine(beside(realms[from], realms[to]), beside(realms[to], realms[from]));
-    const south = ({ col, row }: Hex) => ({ col, row: row + 1 });
-    const back = hexLine(south(out.at(-1)!), south(out[0]));
-    for (const route of [out, back])
-      for (let startAt = 1 + (orders.length % 3); startAt < route.length - 1; startAt += 5)
-        orders.push({ troop: troop(), route, startAt, heading: 1, wait: (orders.length % 9) * 0.23 });
-  }
-  // The raids: two guards stand before each camp, and a raider walks in on each from the nearest realm.
-  camps.forEach((camp, index) => {
-    const home = nearest(realms, camp);
-    for (const side of [0, 1]) {
-      const guard = { col: camp.col - 1, row: camp.row + side };
-      const from = { col: guard.col - 1, row: guard.row };
-      const route = hexLine(beside(home, from), from);
-      orders.push({
-        troop: KNIGHT,
-        route,
-        startAt: Math.max(0, route.length - 5),
-        heading: 1,
-        wait: 5.4 + index * 3 + side,
-        raids: guard,
-      });
-    }
+  const seats = SEAT_DIRECTIONS.map(([out, open]) => {
+    const first = stride(stride(MATCH_CENTRE, out, REALM_DISTANCE), open, REALM_DISTANCE / 2);
+    const second = stride(first, out, 3);
+    return [first, second, stride(second, open, 3)];
   });
-  // The explorers: each walks out from a border realm into the fog along the eastern and southern edges.
-  const exploring = [
-    hexLine({ col: 67, row: 20 }, { col: 73, row: 20 }),
-    hexLine({ col: 62, row: 44 }, { col: 62, row: 48 }),
+  const [near, far, home] = seats[OUR_SEAT];
+  const kingdoms = [
+    ...[near, far].map((hex, index) => ({ hex, level: 2 - index, ours: true })),
+    ...seats
+      .filter((_, seat) => seat !== OUR_SEAT)
+      .flatMap((realms, seat) => realms.map((hex, index) => ({ hex, level: (seat + index) % 4, ours: false }))),
   ];
-  const reveals: Hex[][] = [];
-  const cleared = new Set<string>();
-  const steps = Math.max(...exploring.map((route) => route.length));
-  for (let step = 1; step < steps; step += 1)
-    for (const route of exploring) {
-      const hex = route[step];
-      if (!hex) continue;
-      const uncovered = [hex, ...terrainNeighborCoordinates(hex.col, hex.row)].filter(
-        (near) => isWorldEdge(near) && !cleared.has(hexKey(near)),
-      );
-      for (const near of uncovered) cleared.add(hexKey(near));
-      if (isWorldEdge(hex)) reveals.push(uncovered);
-    }
-  exploring.forEach((route, index) =>
-    orders.push({ troop: KNIGHT, route, startAt: 0, heading: 1, wait: 0.3 + index * 1.2, explores: true }),
+  // The ring's last site is the one a call raises; the others and the centre's stand from the first frame.
+  const [unclaimed, ...ring] = SEAT_DIRECTIONS.map((_, direction) =>
+    stride(MATCH_CENTRE, (direction + 2) % 6, HYPERSTRUCTURE_DISTANCE),
   );
+  // The road: from the home realm to the foot of the centre's Hyperstructure, a lane for each army, with a bandit
+  // holding each lane where a camp stands beside it.
+  const road = hexLine(stride(stride(home, 1, 1), 0, 1), stride(MATCH_CENTRE, 0, 1));
+  const lanes = [road, road.map((hex) => stride(hex, 0, 1))];
+  const orders: StudioOrder[] = lanes.map((route, lane) => ({
+    troop: TRAVELLER,
+    route,
+    startAt: 0,
+    wait: 1 + lane * 0.4,
+    raids: route[AMBUSH_STEP],
+  }));
+  const sites = [
+    { hex: stride(lanes[1][AMBUSH_STEP], 0, 2), model: CAMP_MODEL_PATH },
+    { hex: stride(stride(MATCH_CENTRE, 3, 5), 2, 2), model: CAMP_MODEL_PATH },
+    { hex: stride(stride(MATCH_CENTRE, 1, 4), 0, 5), model: CAMP_MODEL_PATH },
+    { hex: stride(stride(MATCH_CENTRE, 0, 5), 5, 3), model: RiftModelPath },
+    { hex: stride(stride(MATCH_CENTRE, 2, 9), 3, 3), model: RiftModelPath },
+    { hex: stride(stride(MATCH_CENTRE, 3, 3), 4, 1), model: ChestModelPath },
+  ];
   return {
-    columns: WORLD_COLUMNS,
-    rows: WORLD_ROWS,
-    biomeAt: worldBiomeAt,
-    realm: WORLD_CAPITAL,
-    hyperstructure: { col: 49, row: 31 },
+    columns: MATCH_COLUMNS,
+    rows: MATCH_ROWS,
+    biomeAt: matchBiomeAt,
+    realm: home,
+    hyperstructure: unclaimed,
+    hyperstructures: [MATCH_CENTRE, ...ring],
     kingdoms,
     battles: [],
     sites,
     orders,
-    exploreStart: { col: 36, row: 28 },
+    exploreStart: stride(home, 3, 1),
     exploreRoute: [],
-    isFogged: isWorldEdge,
-    reveals,
+    isFogged: isUnexplored,
+    reveals: [],
   };
 })();
 
-/** The fog along the world's edge: a ragged band a few hexes deep on every side. */
-function isWorldEdge({ col, row }: Hex): boolean {
-  const depth = 3.5 + Math.sin(col * 0.5) * 1.2 + Math.sin(row * 0.7) * 1.2;
-  return Math.min(col, row, WORLD_COLUMNS - 1 - col, WORLD_ROWS - 1 - row) < depth;
+/** The land no army of the match has explored yet: everything past a ragged edge round the players' realms. */
+function isUnexplored(hex: Hex): boolean {
+  const reach = 16.5 + Math.sin(hex.col * 0.9) * 1.1 + Math.sin(hex.row * 0.7) * 1.1;
+  return (
+    distanceFrom(terrainHexToWorld(MATCH_CENTRE.col, MATCH_CENTRE.row), hex) / TERRAIN_HEX_HORIZONTAL_SPACING > reach
+  );
+}
+
+/** The hex `steps` away in one of the grid's six directions, counted as the game counts them. */
+function stride(hex: Hex, direction: number, steps: number): Hex {
+  let current = hex;
+  for (let step = 0; step < steps; step += 1) current = terrainNeighborCoordinates(current.col, current.row)[direction];
+  return current;
 }
 
 /** The hexes from one to another, each beside the last, as straight as the grid allows. */
@@ -276,46 +211,40 @@ function hexLine(from: Hex, to: Hex): Hex[] {
   return route;
 }
 
-/** The hex beside `hex` on the side `towards` lies. */
-function beside(hex: Hex, towards: Hex): Hex {
-  return hexLine(hex, towards)[1];
-}
-
-function nearest(hexes: readonly Hex[], to: Hex): Hex {
-  const goal = terrainHexToWorld(to.col, to.row);
-  return hexes.toSorted((a, b) => distanceFrom(goal, a) - distanceFrom(goal, b))[0];
-}
-
 function distanceFrom(point: { x: number; z: number }, hex: Hex): number {
   const at = terrainHexToWorld(hex.col, hex.row);
   return Math.hypot(at.x - point.x, at.z - point.z);
 }
 
 /**
- * The world's climate, west to east and north to south: a sea and its beach on the west coast; snow, tundra, bare rock
- * and taiga across the north; rain forest, deciduous forest, the capital's grassland, shrubland and a temperate desert
- * through the middle; tropical forests, a subtropical desert and scorched ground across the south.
+ * The match's land, in patches a few hexes across as a generated map has them: how high and how wet a hex is choose
+ * its biome, from sea and beach through forests, grassland and deserts up to bare rock and snow.
  */
-function worldBiomeAt({ col, row }: Hex): BiomeType {
-  const east = (col + Math.sin(row * 0.43) * 2.2 + Math.sin(row * 0.17 + 1.3) * 1.6) / WORLD_COLUMNS;
-  const south = (row + Math.sin(col * 0.37) * 1.8 + Math.sin(col * 0.13 + 0.7) * 1.4) / WORLD_ROWS;
-  if (east < 0.07) return BiomeType.DeepOcean;
-  if (east < 0.13) return BiomeType.Ocean;
-  if (east < 0.165) return BiomeType.Beach;
-  if (south < 0.1) return BiomeType.Snow;
-  if (south < 0.2) return east > 0.55 && east < 0.8 ? BiomeType.Bare : BiomeType.Tundra;
-  if (south < 0.32) return BiomeType.Taiga;
-  if (south < 0.68) {
-    if (east < 0.34) return BiomeType.TemperateRainForest;
-    if (east < 0.44) return BiomeType.TemperateDeciduousForest;
-    if (east < 0.64) return BiomeType.Grassland;
-    if (east < 0.8) return BiomeType.Shrubland;
-    return BiomeType.TemperateDesert;
+function matchBiomeAt({ col, row }: Hex): BiomeType {
+  const { x, z } = terrainHexToWorld(col, row);
+  const wave = (a: number, b: number, c: number) => Math.sin(x * a + z * b + c);
+  const high = 0.5 + (wave(0.21, 0.07, 3.5) + wave(-0.09, 0.24, 4.2) + wave(0.33, -0.29, 4.9) * 0.6) / 5.2;
+  const wet = 0.5 + (wave(0.11, -0.19, 1.2) + wave(0.26, 0.13, 3.3) + wave(-0.31, 0.36, 0.2) * 0.6) / 5.2;
+  if (high < 0.1) return BiomeType.DeepOcean;
+  if (high < 0.16) return BiomeType.Ocean;
+  if (high < 0.2) return BiomeType.Beach;
+  if (high > 0.78) {
+    if (wet < 0.3) return BiomeType.Scorched;
+    if (wet < 0.45) return BiomeType.Bare;
+    return wet < 0.6 ? BiomeType.Tundra : BiomeType.Snow;
   }
-  if (east < 0.38) return BiomeType.TropicalRainForest;
-  if (east < 0.56) return BiomeType.TropicalSeasonalForest;
-  if (east < 0.8) return BiomeType.SubtropicalDesert;
-  return BiomeType.Scorched;
+  if (high > 0.62) {
+    if (wet < 0.36) return BiomeType.TemperateDesert;
+    return wet < 0.6 ? BiomeType.Shrubland : BiomeType.Taiga;
+  }
+  if (high > 0.45) {
+    if (wet < 0.3) return BiomeType.TemperateDesert;
+    if (wet < 0.52) return BiomeType.Grassland;
+    return wet < 0.7 ? BiomeType.TemperateDeciduousForest : BiomeType.TemperateRainForest;
+  }
+  if (wet < 0.3) return BiomeType.SubtropicalDesert;
+  if (wet < 0.45) return BiomeType.Grassland;
+  return wet < 0.66 ? BiomeType.TropicalSeasonalForest : BiomeType.TropicalRainForest;
 }
 
 export const STUDIO_SETS = { stage: STAGE_SET, world: WORLD_SET } as const;
@@ -328,7 +257,12 @@ export function createStudioTerrainRequest(name: StudioSetName, revealed: number
   const set = STUDIO_SETS[name];
   const uncovered = new Set(set.reveals.slice(0, revealed).flat().map(hexKey));
   const realms = [{ hex: set.realm, level: 1 }, ...set.kingdoms];
-  const standing = [set.hyperstructure, ...realms.map((realm) => realm.hex), ...set.sites.map((site) => site.hex)];
+  const standing = [
+    set.hyperstructure,
+    ...set.hyperstructures,
+    ...realms.map((realm) => realm.hex),
+    ...set.sites.map((site) => site.hex),
+  ];
   const occupied = new Set(standing.map(hexKey));
   const cells: TerrainCellInput[] = Array.from({ length: set.columns * set.rows }, (_, index) => {
     const hex = { col: index % set.columns, row: Math.floor(index / set.columns) };

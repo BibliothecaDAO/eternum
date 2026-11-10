@@ -80,8 +80,8 @@ export class StudioStage implements LabStage {
   private revealed = 0;
   private readonly fallen = new Set<number>();
   private readonly sites: SettlementModel[] = [];
-  /** Where each ordered army is on its route, which way it walks, and how its raid stands. */
-  private marches: { at: number; heading: 1 | -1; wait: number; strike: number | null; struck: boolean }[] = [];
+  /** Where each ordered army is on its route, and how its raid stands. */
+  private marches: { at: number; wait: number; strike: number | null; struck: boolean }[] = [];
   private take: {
     path: StudioPath;
     start: StudioPose;
@@ -113,11 +113,14 @@ export class StudioStage implements LabStage {
       const model = await gltfLoader.loadAsync(asset.path);
       const yaw = facingTheMapCamera(asset.path);
       this.realms.push(await this.standRealms(model, [this.set.realm], yaw, "owned"));
-      const kingdoms = this.set.kingdoms.filter((kingdom) => kingdom.level === asset.level).map(({ hex }) => hex);
-      this.kingdoms.push(await this.standRealms(model, kingdoms, yaw, "enemy"));
+      for (const ours of [true, false]) {
+        const kingdoms = this.set.kingdoms.filter((kingdom) => kingdom.level === asset.level && kingdom.ours === ours);
+        const hexes = kingdoms.map(({ hex }) => hex);
+        this.kingdoms.push(await this.standRealms(model, hexes, yaw, ours ? "owned" : "enemy"));
+      }
     }
     await this.standSites();
-    this.hyperstructure = new HyperstructureModel(1);
+    this.hyperstructure = new HyperstructureModel(1 + this.set.hyperstructures.length);
     await compile(this.hyperstructure.group, scene);
     scene.add(this.hyperstructure.group);
     this.armies = new StudioArmies(scene, terrain, compile, this.set.biomeAt);
@@ -146,9 +149,8 @@ export class StudioStage implements LabStage {
     for (const kingdom of this.kingdoms) kingdom.group.visible = this.cast.has("kingdoms");
     this.revealed = 0;
     for (const site of this.sites) site.group.visible = this.cast.has("sites");
-    this.marches = this.set.orders.map(({ startAt, heading, wait }) => ({
+    this.marches = this.set.orders.map(({ startAt, wait }) => ({
       at: startAt,
-      heading,
       wait,
       strike: null,
       struck: false,
@@ -279,11 +281,20 @@ export class StudioStage implements LabStage {
     const model = this.hyperstructure;
     if (!model) return;
     this.hyperstructureProgress = 0;
+    const yaw = facingTheMapCamera(HYPERSTRUCTURE_MODEL_PATH);
     model.setCount(0);
-    model.setCount(1);
+    model.setCount(1 + this.set.hyperstructures.length);
     model.group.visible = this.cast.has("hyperstructure");
-    model.setMatrixAt(0, this.placementMatrix(this.set.hyperstructure, facingTheMapCamera(HYPERSTRUCTURE_MODEL_PATH)));
+    model.setMatrixAt(0, this.placementMatrix(this.set.hyperstructure, yaw));
     model.setConstructionAt(0, { entityId: HYPERSTRUCTURE_DESIGN, progress: 0, completed: false });
+    this.set.hyperstructures.forEach((hex, index) => {
+      model.setMatrixAt(1 + index, this.placementMatrix(hex, yaw));
+      model.setConstructionAt(1 + index, {
+        entityId: HYPERSTRUCTURE_DESIGN + 1 + index,
+        progress: 100,
+        completed: true,
+      });
+    });
   }
 
   /** A fight's attacker strikes its defender as a confirmed battle replays on the world map. */
@@ -320,7 +331,8 @@ export class StudioStage implements LabStage {
 
   /**
    * One tick of the map's life: every ordered army that has arrived on its hex walks on to the next, an explorer
-   * uncovering the fog ahead of it; one at the end of its route turns back, a raider after its guard has fallen.
+   * uncovering the fog ahead of it, a raider striking the guard that holds its next one; one at the end of its route
+   * stays there.
    */
   private runOrders(delta: number): void {
     const armies = this.armies;
@@ -335,14 +347,11 @@ export class StudioStage implements LabStage {
         march.strike = null;
         armies.defeat(guardOf(index), false);
       }
-      const ahead = order.route[march.at + march.heading];
-      if (!ahead) {
-        if (order.raids && !march.struck) return this.raid(index);
-        march.heading = march.heading === 1 ? -1 : 1;
-        return;
-      }
+      const ahead = order.route[march.at + 1];
+      if (!ahead) return;
+      if (order.raids && !march.struck && sameHex(ahead, order.raids)) return this.raid(index);
       if (order.explores && this.isUnderFog(ahead)) this.clearFog(order.route[march.at]);
-      march.at += march.heading;
+      march.at += 1;
       armies.march(orderedOf(index), ahead);
     });
   }
@@ -390,9 +399,8 @@ export class StudioStage implements LabStage {
       else armies.withdraw(defenderOf(battle));
     });
     this.set.orders.forEach((order, index) => {
-      const { at, heading } = this.marches[index];
-      const here = order.route[at];
-      const ahead = order.route[at + heading] ?? order.raids ?? here;
+      const here = order.route[this.marches[index].at];
+      const ahead = order.route[this.marches[index].at + 1] ?? here;
       if (this.cast.has("armies"))
         armies.place({
           entityId: orderedOf(index),
@@ -408,14 +416,15 @@ export class StudioStage implements LabStage {
           entityId: guardOf(index),
           ...GUARD_TROOP,
           hex: order.raids,
-          yaw: facing(order.raids, order.route.at(-1)!),
+          yaw: facing(order.raids, order.route[order.route.findIndex((hex) => sameHex(hex, order.raids!)) - 1]),
           color: "#a33b39",
         });
       else armies.withdraw(guardOf(index));
     });
     const at = this.explorerHex();
     const route = this.set.exploreRoute;
-    if (this.cast.has("explorer"))
+    // A set with nowhere to explore has no explorer.
+    if (this.cast.has("explorer") && route.length > 0)
       armies.place({
         entityId: EXPLORER,
         ...EXPLORER_TROOP,
