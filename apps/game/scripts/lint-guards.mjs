@@ -14,6 +14,17 @@ import { noBackGuardConfigs } from "./no-back-guards.mjs";
 
 const REPO = resolve(dirname(fileURLToPath(import.meta.url)), "../../..");
 const SOURCES = ["apps/game/src/**/*.{ts,tsx}", "packages/*/src/**/*.{ts,tsx}"];
+const SCRIPTS = ["apps/game/scripts/**/*.{js,mjs}"];
+
+// agent-browser runs at the one version lib/agent-browser.mjs pins. A script that names the package itself (`npx -y
+// agent-browser`) fetches the newest on every run: 0.42.0 turned the terrain gallery's captures blank overnight.
+const UNPINNED_AGENT_BROWSER = [
+  {
+    selector:
+      ":matches(Literal[value=/^agent-browser(@|$)/], Literal[value=/npx( -y)? agent-browser/], TemplateElement[value.raw=/npx( -y)? agent-browser/])",
+    message: "agent-browser runs at the version lib/agent-browser.mjs pins: spawn `npx -y ${AGENT_BROWSER}`.",
+  },
+];
 
 // An entity id is its home's namespace times 2^32 plus a serial; a bitwise operator or Math.imul keeps only the low 32
 // bits, so every home's Nth army hashed alike (one name for every player's second army). foldEntityId keeps both.
@@ -217,6 +228,12 @@ const eslint = new ESLint({
         ],
       },
     },
+    {
+      files: SCRIPTS,
+      ignores: ["apps/game/scripts/lib/agent-browser.mjs"],
+      linterOptions: { noInlineConfig: true, reportUnusedDisableDirectives: "off" },
+      rules: { "no-restricted-syntax": ["error", ...UNPINNED_AGENT_BROWSER] },
+    },
     // Only the imperative consumers reach the imperative name readers, by resolved module (name-guards.mjs).
     ...nameGuardConfigs,
     // No Back link or row arrow on any screen (no-back-guards.mjs).
@@ -226,7 +243,7 @@ const eslint = new ESLint({
   ],
 });
 
-const results = await eslint.lintFiles(SOURCES);
+const results = await eslint.lintFiles([...SOURCES, ...SCRIPTS]);
 const errors = results.flatMap((result) =>
   result.messages
     .filter((message) => message.fatal || message.severity === 2)

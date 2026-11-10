@@ -1,7 +1,7 @@
 import { assertFrontierSeason, CalendarConflict } from "../../apps/launch-service/src/calendar";
 
 import { PublicError } from "./errors";
-import { blitzPresetOf, signInClientsOf, WEI, type Inputs, type Target } from "./settings";
+import { apnsKeyOf, blitzPresetOf, signInClientsOf, WEI, type Inputs, type Target } from "./settings";
 export interface SeasonDates {
   frontierPresetId: string;
   frontierStart: string;
@@ -96,6 +96,7 @@ export function validateInputs(input: Inputs, target: Target) {
   if (!input.discordClientId || !input.discordClientSecret)
     throw new PublicError("Discord sign-in needs its client ID and secret in inputs.json");
   signInClientsOf(input);
+  apnsKeyOf(input);
   if (input.avnuPaymasterApiKey !== undefined && !input.avnuPaymasterApiKey.trim())
     throw new PublicError("Set avnuPaymasterApiKey to AVNU's paymaster key, or remove it from inputs.json");
   if (!sendsAlerts(target) && input.alertEmail !== undefined)

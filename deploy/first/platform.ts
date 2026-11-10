@@ -1,11 +1,12 @@
 import { resolve } from "node:path";
 import { randomBytes, createECDH, createHash } from "node:crypto";
 import { accountIdentity, newKey, type Keys } from "./chain";
-import { pagesSites, root, signInClientsOf, type Inputs, type PagesSite, type Target } from "./settings";
+import { apnsKeyOf, pagesSites, root, signInClientsOf, type Inputs, type PagesSite, type Target } from "./settings";
 import type { PrivateStore } from "./private-store";
 import { command } from "./process";
 import { PublicError } from "./errors";
 import type { AdminAccess } from "./admin-access";
+import { CHAT_OBJECT_CLASSES } from "../../apps/realms/server/chat/chat-objects";
 
 export const workers = [
   { id: "guardian", directory: "apps/guardian", config: "wrangler.jsonc", name: "realms-guardian" },
@@ -73,6 +74,7 @@ export function workerSecrets(
         WEB_PUSH_VAPID_PUBLIC_KEY: secrets.vapidPublic,
         WEB_PUSH_VAPID_PRIVATE_KEY: secrets.vapidPrivate,
         ...signInClientSecrets(inputs),
+        ...apnsSecrets(inputs),
         ...(inputs.avnuPaymasterApiKey ? { AVNU_PAYMASTER_API_KEY: inputs.avnuPaymasterApiKey } : {}),
       };
     case "launch":
@@ -113,8 +115,14 @@ const signInClientSecrets = (inputs: Inputs): Record<string, string> =>
       [`${provider.toUpperCase()}_CLIENT_SECRET`, clientSecret],
     ]),
   );
+/** The identity Worker's APNs key, which pushes to the iOS app, when inputs.json holds one (apps/realms server/env.ts). */
+const apnsSecrets = (inputs: Inputs): Record<string, string> => {
+  const key = apnsKeyOf(inputs);
+  return key ? { APNS_TEAM_ID: key.teamId, APNS_KEY_ID: key.keyId, APNS_PRIVATE_KEY: key.privateKey } : {};
+};
 function cloudflareFamily(path: string) {
   if (/^\/accounts\/[^/]+\/workers\/scripts(?:\/|$)/.test(path)) return "Workers scripts";
+  if (/^\/accounts\/[^/]+\/workers\/durable_objects(?:\/|$)/.test(path)) return "Durable Objects";
   if (/^\/accounts\/[^/]+\/d1(?:\/|$)/.test(path)) return "D1";
   if (/^\/accounts\/[^/]+\/r2(?:\/|$)/.test(path)) return "R2 buckets";
   if (/^\/accounts\/[^/]+\/pages(?:\/|$)/.test(path)) return "Pages";
@@ -253,6 +261,28 @@ export class Platform {
       if (!Array.isArray(buckets)) throw new PublicError("Cloudflare answered R2 buckets without a bucket list");
       return buckets;
     });
+  }
+  /**
+   * Every chat object the identity Worker holds that has stored data, by class. Both namespaces exist once the Worker
+   * is deployed, so a missing one is refused rather than read as no chat.
+   */
+  async chatObjects() {
+    const account = await this.accountId();
+    const script = workers.find((worker) => worker.id === "identity")!.name + this.target.workerSuffix;
+    const namespaces = await this.cfList<{ id: string; script: string; class: string }>(
+      `/accounts/${account}/workers/durable_objects/namespaces`,
+    );
+    return Promise.all(
+      CHAT_OBJECT_CLASSES.map(async (className) => {
+        const namespace = namespaces.find((entry) => entry.script === script && entry.class === className);
+        if (!namespace)
+          throw new PublicError(`${script} has no ${className} namespace; deploy the identity Worker first`);
+        const objects = await this.cfList<{ id: string; hasStoredData: boolean }>(
+          `/accounts/${account}/workers/durable_objects/namespaces/${namespace.id}/objects`,
+        );
+        return { className, ids: objects.filter((object) => object.hasStoredData).map((object) => object.id) };
+      }),
+    );
   }
   async scripts() {
     return this.cf<{ id: string }[]>(`/accounts/${await this.accountId()}/workers/scripts`);

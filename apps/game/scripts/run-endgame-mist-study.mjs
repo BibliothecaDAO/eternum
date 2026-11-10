@@ -36,13 +36,7 @@ const check = (condition, message) => {
 const snapshot = (browser) => browser.read("JSON.stringify(window.__terrainVerification?.getSnapshot?.() ?? null)");
 
 function openScenario(browser, url) {
-  browser.run([
-    "open",
-    url,
-    "--ignore-https-errors",
-    "--args",
-    "--ignore-gpu-blocklist,--enable-gpu,--use-angle=vulkan,--enable-features=Vulkan,--enable-unsafe-webgpu",
-  ]);
+  browser.run(["open", url]);
   browser.run(["set", "viewport", "1920", "1080"]);
   const deadline = Date.now() + 40000;
   while (!snapshot(browser)?.endgame) {

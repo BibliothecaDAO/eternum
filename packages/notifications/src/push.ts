@@ -6,14 +6,17 @@ export interface WebPushSubscription {
   endpoint: string;
   keys: { p256dh: string; auth: string };
 }
-export interface PushRegistration {
+/**
+ * A device's registration for one account. A browser registers its Web Push subscription; the iOS app, whose WKWebView
+ * has no Web Push, registers the hex device token APNs gave it. `token` is the device's own revocation capability.
+ */
+export type PushRegistration = {
   owner: string;
   id: string;
   token: string;
-  subscription: WebPushSubscription;
   gameAlerts?: boolean;
   directMessages?: boolean;
-}
+} & ({ subscription: WebPushSubscription } | { apnsToken: string });
 /** Game alerts come from the shards in our directory; a device consents to them as a whole. */
 export type PushConfiguration =
   | { enabled: false }
@@ -32,7 +35,10 @@ const registrationSchema = Schema.Struct({
   gameAlerts: Schema.optional(Schema.Boolean),
   directMessages: Schema.optional(Schema.Boolean),
   subscription: Schema.optional(Schema.Unknown),
+  apnsToken: Schema.optional(Schema.Unknown),
 });
+/** Apple's tokens are hex of a length Apple may change (32 bytes today); the bound keeps it a short URL path segment. */
+const apnsTokenSchema = Schema.String.check(Schema.isPattern(/^(?:[0-9a-f]{2}){32,100}$/));
 const endpointSchema = Schema.String.check(Schema.isMaxLength(2048));
 const providerSchema = Schema.URL.check(
   Schema.makeFilter(
@@ -70,8 +76,15 @@ export function parsePushRegistration(value: unknown): PushRegistration {
     owner: input.owner,
     id: input.id,
     token: input.token,
-    subscription: parseWebPushSubscription(input.subscription),
+    ...registeredDevice(input.subscription, input.apnsToken),
   };
+}
+
+/** Exactly one transport: a Web Push subscription or an APNs device token. */
+function registeredDevice(subscription: unknown, apnsToken: unknown) {
+  if (apnsToken === undefined) return { subscription: parseWebPushSubscription(subscription) };
+  decodeNotification(Schema.Undefined, subscription, "invalid_push_registration");
+  return { apnsToken: decodeNotification(apnsTokenSchema, apnsToken, "invalid_apns_token") };
 }
 
 export function parseWebPushSubscription(value: unknown): WebPushSubscription {

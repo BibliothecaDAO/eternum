@@ -4,6 +4,8 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 
+import { AGENT_BROWSER } from "./lib/agent-browser.mjs";
+
 const DEFAULT_BASE_URL = "https://127.0.0.1:4173";
 const DEFAULT_SCENES = ["map", "hex"];
 const REQUIRED_RENDERER_PARITY_FEATURES = new Set(["environmentIbl", "toneMappingControl", "bloom"]);
@@ -204,7 +206,7 @@ function sleep(ms) {
 function invokeAgentBrowser(session, commandArgs, { headed = false } = {}) {
   const configuredExecutable = process.env.AGENT_BROWSER_BIN;
   const executable = configuredExecutable || "npx";
-  const baseArgs = configuredExecutable ? ["--session", session] : ["-y", "agent-browser", "--session", session];
+  const baseArgs = configuredExecutable ? ["--session", session] : ["-y", AGENT_BROWSER, "--session", session];
   if (headed) {
     baseArgs.push("--headed");
   }

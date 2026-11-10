@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useState } from "react";
 
 import { identityClient } from "@/hooks/context/identity-session";
-import { isAppleMobile, isInstalledPwa } from "@/pwa/browser-capabilities";
+import { isAppleMobile, isInstalledApp, runsServiceWorker } from "@/pwa/browser-capabilities";
 import { notificationWorkerRequest, readLocalNotificationDevice } from "@/pwa/local-notification-client";
 import { disablePushNotifications, enablePushNotifications, readPushDevice } from "@/pwa/push-notification-client";
+import { disableIosAppPush, enableIosAppPush, iosAppBridge, iosAppPushState } from "@/pwa/ios-app-push";
 import type { PushConfiguration } from "@bibliothecadao/notifications";
 
 /**
@@ -13,9 +14,8 @@ import type { PushConfiguration } from "@bibliothecadao/notifications";
 export type ThisDeviceState = "on" | "off" | "saving" | "install" | "blocked" | "unavailable";
 
 const blockerOf = (): ThisDeviceState | null => {
-  if (isAppleMobile() && !isInstalledPwa()) return "install";
-  if (!window.isSecureContext || typeof Notification === "undefined" || !("serviceWorker" in navigator))
-    return "unavailable";
+  if (isAppleMobile() && !isInstalledApp()) return "install";
+  if (!window.isSecureContext || typeof Notification === "undefined" || !runsServiceWorker()) return "unavailable";
   if (Notification.permission === "denied") return "blocked";
   return null;
 };
@@ -29,14 +29,16 @@ const readOn = async (owner: string): Promise<boolean> => {
 /**
  * The device switch over the two deliveries: background alerts when the server sends them, else alerts while a game
  * page runs. Turning it on asks the browser's permission inside the tap; turning it off stops both. A failure turns
- * the switch back and is returned as the reason.
+ * the switch back and is returned as the reason. In the iOS app the switch is the app's own push (ios-app-push.ts).
  */
 export const useThisDevice = (owner: string | null) => {
-  const [state, setState] = useState<ThisDeviceState>(() => blockerOf() ?? "off");
+  const [state, setState] = useState<ThisDeviceState>(() => (iosAppBridge() ? "off" : (blockerOf() ?? "off")));
   const [config, setConfig] = useState<PushConfiguration | null>(null);
   const [failure, setFailure] = useState<string | null>(null);
 
   const refresh = useCallback(async () => {
+    const app = iosAppBridge();
+    if (app) return setState(owner ? await iosAppPushState(app, owner) : "off");
     const blocker = blockerOf();
     if (blocker || !owner) return setState(blocker ?? "off");
     setState((await readOn(owner)) ? "on" : "off");
@@ -56,7 +58,10 @@ export const useThisDevice = (owner: string | null) => {
     setState("saving");
     setFailure(null);
     try {
-      if (turningOn && config?.enabled)
+      const app = iosAppBridge();
+      if (app && turningOn) await enableIosAppPush(app, owner, config);
+      else if (app) await disableIosAppPush();
+      else if (turningOn && config?.enabled)
         await enablePushNotifications(owner, config.publicKey, config.gameAlerts, config.directMessages);
       else if (turningOn) {
         if (Notification.permission !== "granted" && (await Notification.requestPermission()) !== "granted")

@@ -54,7 +54,23 @@ export const signInClientsOf = (inputs: SignInClients) => {
   });
 };
 
-export interface Inputs extends SeasonDates, SignInClients {
+/** The APNs signing key that pushes to the iOS app: its team id, key id and the .p8 file's PEM, all three or none. */
+interface ApnsKeyInputs {
+  apnsTeamId?: string;
+  apnsKeyId?: string;
+  apnsPrivateKey?: string;
+}
+
+/** The APNs key inputs.json holds, or null; one part set or blank is refused, never skipped. */
+export const apnsKeyOf = (inputs: ApnsKeyInputs) => {
+  const { apnsTeamId: teamId, apnsKeyId: keyId, apnsPrivateKey: privateKey } = inputs;
+  if (teamId === undefined && keyId === undefined && privateKey === undefined) return null;
+  if (!teamId?.trim() || !keyId?.trim() || !privateKey?.trim())
+    throw new PublicError("Set apnsTeamId, apnsKeyId and apnsPrivateKey in inputs.json, or none of them");
+  return { teamId, keyId, privateKey };
+};
+
+export interface Inputs extends SeasonDates, SignInClients, ApnsKeyInputs {
   cloudflareToken: string;
   rpc: string;
   cosignerPublicKey: string;

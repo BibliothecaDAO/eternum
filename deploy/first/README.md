@@ -28,6 +28,12 @@ to the environment's `inputs.json` as `avnuPaymasterApiKey`, then run setup's ap
 Worker's `AVNU_PAYMASTER_API_KEY`. `deploy:cloudflare` installs no Worker secret. Without the key, wallets still send
 and receive, and recovery is refused.
 
+Setup does not ask for the APNs key either. To push alerts to the iOS app, add the App Store team's APNs signing key to
+`inputs.json` as `apnsTeamId` (the Apple Team ID), `apnsKeyId` (the key's ID) and `apnsPrivateKey` (the downloaded
+`AuthKey_<key id>.p8` file's whole PEM text), then run setup's apply: it installs them as the identity Worker's
+`APNS_TEAM_ID`, `APNS_KEY_ID` and `APNS_PRIVATE_KEY`. One set alone is refused. Without them the iOS app's devices are
+refused at registration and browsers still get Web Push.
+
 Setup asks for no other sign-in provider either. Once the owner's OAuth app for Google, Apple or X exists, add its pair
 to `inputs.json` (`googleClientId` and `googleClientSecret`, `appleClientId` and `appleClientSecret`, `twitterClientId`
 and `twitterClientSecret`; Apple's secret is the JWT `pnpm --dir apps/realms apple-client-secret` signs, good for six
@@ -166,17 +172,18 @@ commit's release only when the record is the same release and `git diff` finds n
 `RELEASE_SOURCES` (`deploy/first/release-identity.ts`: the world's contracts and Scarb path dependencies, the release
 id, and the image that compiles them); otherwise it asks for the box half at this commit first. It then exports HEAD to
 a temporary directory, installs locked dependencies, builds workspace packages, migrates D1 and publishes Workers. It
-hands that release to the launch Worker, which advances the running Frontier games to it, signed by the launcher. The
-Worker resolves each Frontier launch's game by its name on the chain, whatever the launch's state, so a launch
-interrupted after creating its game is included. It refuses, by name and before sending anything, until the shard's
-registered release has those contents and Herald maps every release a game moves through to that schema, and it sends
-nothing for games already there. Only then does it build and publish the client, then builds the docs
-(`pnpm run build:docs`, the build validation runs) and publishes them to `docs.realms.party` (dev:
-`docs.dev-realms.party`). Each run uploads both sites' builds and checks each at its own address, byte for byte, before
-the command ends, so a rerun at the same commit proves what it published. It refuses to start until setup has created
-every resource, so a site new to the deployment reaches an existing environment through `setup --apply`. Neither deploy
-command has a dry run or performs funding or calendar operations. Production, when commissioned, builds its images on
-its own box from the same source commit.
+names every chat room and inbox the identity Worker holds to that Worker, which has each delete its messages past thirty
+days and set its alarm for the rest, so chat stored before that rule existed keeps the same thirty days. It hands that
+release to the launch Worker, which advances the running Frontier games to it, signed by the launcher. The Worker
+resolves each Frontier launch's game by its name on the chain, whatever the launch's state, so a launch interrupted
+after creating its game is included. It refuses, by name and before sending anything, until the shard's registered
+release has those contents and Herald maps every release a game moves through to that schema, and it sends nothing for
+games already there. Only then does it build and publish the client, then builds the docs (`pnpm run build:docs`, the
+build validation runs) and publishes them to `docs.realms.party` (dev: `docs.dev-realms.party`). Each run uploads both
+sites' builds and checks each at its own address, byte for byte, before the command ends, so a rerun at the same commit
+proves what it published. It refuses to start until setup has created every resource, so a site new to the deployment
+reaches an existing environment through `setup --apply`. Neither deploy command has a dry run or performs funding or
+calendar operations. Production, when commissioned, builds its images on its own box from the same source commit.
 
 ## Season
 

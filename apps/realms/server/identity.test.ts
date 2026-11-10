@@ -1100,6 +1100,16 @@ describe("identity Worker", () => {
     }
   });
 
+  it("gives Discord's website its usual address: a computer signs in as before, only a phone's app link asks for consent", async () => {
+    const started = (await (
+      await createBrowser().request("/api/auth/sign-in/social", { body: { provider: "discord", callbackURL: "/" } })
+    ).json()) as { url: string };
+    const address = new URL(started.url);
+    expect(`${address.origin}${address.pathname}`).toBe("https://discord.com/api/oauth2/authorize");
+    expect(address.searchParams.get("response_type")).toBe("code");
+    expect(address.searchParams.get("prompt")).toBe("none");
+  });
+
   it("refuses a device approval without a session", async () => {
     const response = await createBrowser().request("/api/devices", { body: deviceChangeFor(realmsIdOf("anyone")) });
     expect(response.status).toBe(401);

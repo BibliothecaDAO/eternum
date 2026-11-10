@@ -66,8 +66,11 @@ const TAILWIND_COLORS = [
 const COLOR_UTILITY =
   "(?:bg|text|border(?:-[xytrblse])?|from|via|to|ring(?:-offset)?|outline|fill|stroke|decoration|divide|caret|accent|placeholder)";
 
-/** A literal colour or image: `#hex`, a colour function, `url(`. */
-const RAW_COLOR = /#[0-9a-fA-F]{3,8}\b|(?<![a-zA-Z-])(?:rgba?|hsla?|oklch)\(/g;
+/**
+ * A literal colour or image: `#hex`, a colour function, `url(`. A `#` right after a word or a slash is an issue
+ * reference (`discord-api-docs#6160`), never a colour.
+ */
+const RAW_COLOR = /(?<![\w/])#[0-9a-fA-F]{3,8}\b|(?<![a-zA-Z-])(?:rgba?|hsla?|oklch)\(/g;
 
 /**
  * Each rule, by the value it refuses and where that value belongs instead. `colors` are the colour names the Tailwind

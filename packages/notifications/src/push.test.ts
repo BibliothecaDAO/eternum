@@ -57,3 +57,18 @@ it("validates the nested notification and its expiry before push dispatch", () =
     ),
   ).toThrow();
 });
+it("registers an iOS app device by its APNs token alone, never with a Web Push subscription beside it", () => {
+  const apnsToken = "ab".repeat(32);
+  expect(parsePushRegistration({ owner: "0x1", id, token: id, apnsToken, gameAlerts: true })).toEqual({
+    owner: "0x1",
+    id,
+    token: id,
+    apnsToken,
+    gameAlerts: true,
+  });
+  expect(() => parsePushRegistration({ owner: "0x1", id, token: id, apnsToken, subscription })).toThrow(
+    "invalid_push_registration",
+  );
+  for (const bad of ["AB".repeat(32), "ab".repeat(31), `${"ab".repeat(32)}a`, "../".repeat(30), 7])
+    expect(() => parsePushRegistration({ owner: "0x1", id, token: id, apnsToken: bad })).toThrow("invalid_apns_token");
+});

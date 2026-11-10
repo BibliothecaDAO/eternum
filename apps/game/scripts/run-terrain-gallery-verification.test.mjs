@@ -26,6 +26,15 @@ describe("terrain gallery verification", () => {
     expect(evaluateTerrainGalleryResults(results).performanceDeltas).toHaveLength(2);
   });
 
+  it("fails a WebGPU capture that three.js quietly drew on WebGL2", () => {
+    const results = healthyResults();
+    results[0].snapshot.activeMode = "webgl2-fallback";
+
+    expect(evaluateTerrainGalleryResults(results).reasons).toEqual([
+      "all-biomes/webgpu-auto/flat: rendered on webgl2-fallback, not webgpu",
+    ]);
+  });
+
   it("rejects duplicate wildlife regions and incomplete creature loads", () => {
     const results = healthyResults();
     results[0].snapshot.wildlife = {
@@ -65,7 +74,7 @@ describe("terrain gallery verification", () => {
       reasons: expect.arrayContaining([
         "all-biomes/webgpu-force-webgl/textured: browser reported device lost",
         "all-biomes/webgpu-force-webgl/textured: main-thread commit exceeded 8 ms",
-        "all-biomes/webgpu-force-webgl/textured: screenshot terrain coverage was below 12%",
+        "all-biomes/webgpu-force-webgl/textured: drawn terrain coverage was below 12%",
         "all-biomes: renderer backends produced different terrain fingerprints",
       ]),
     });
@@ -236,7 +245,7 @@ describe("terrain gallery verification", () => {
     });
     results[0].imageCoverage = 0;
     expect(evaluateTerrainGalleryResults(results, { timingPolicy: "informational" }).reasons).toContain(
-      "all-biomes/webgpu-auto/flat: screenshot terrain coverage was below 12%",
+      "all-biomes/webgpu-auto/flat: drawn terrain coverage was below 12%",
     );
   });
 });

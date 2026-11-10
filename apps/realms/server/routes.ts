@@ -1,7 +1,9 @@
 import { handlePayoutIdentity } from "./payout-identity";
 import { presentsOperatorToken, SHARE_PATH, VISIT_RECORD_SECONDS } from "@realms-world/identity";
 
+import { handleAccountDeletion } from "./account-deletion";
 import type { IdentityAuth } from "./auth";
+import { handleChatRetention } from "./chat/retention";
 import { routeChat } from "./chat/routes";
 import { handleBotDeviceApproval, handleDeviceChange } from "./devices";
 import { claimSocialHandoff, returnFromProvider, startSocialSignIn } from "./social-handoff";
@@ -61,8 +63,8 @@ interface WorkerPlatform {
 }
 
 /**
- * Every /api route: identity under /api/auth, a news email's stop link, then devices, profiles, chat, notification
- * settings, build orders, campaign tickets and the directory.
+ * Every /api route: identity under /api/auth, a news email's stop link, then the account's deletion, devices, profiles,
+ * chat, notification settings, build orders, campaign tickets and the directory.
  */
 export const routeIdentityRequest = async (
   request: Request,
@@ -100,6 +102,7 @@ export const routeIdentityRequest = async (
   if (requiresSameOrigin(request, pathname) && request.headers.get("origin") !== new URL(env.BASE_URL).origin) {
     return json({ error: "invalid_origin" }, 403);
   }
+  if (pathname === "/api/account" && request.method === "DELETE") return handleAccountDeletion(request, auth, env);
   if (pathname === "/api/devices" && request.method === "POST") {
     return handleDeviceChange(request, {
       auth,
@@ -132,6 +135,10 @@ export const routeIdentityRequest = async (
   }
   if (pathname === "/api/health/accounts" && request.method === "GET") return handleAccountsHealth(env.DB);
   if (pathname === "/api/chat/health" && request.method === "GET") return handleChatHealth(env);
+  if (pathname === "/api/operator/chat-retention" && request.method === "POST") {
+    if (!(await isOperator(env, request))) return json({ error: "unauthorized" }, 401);
+    return handleChatRetention(request, env);
+  }
   if (pathname.startsWith("/api/chat/")) return routeChat(request, env, auth, pathname);
   if (pathname === "/api/notifications/preferences") return handleNotificationPreferences(request, auth, env.DB);
   if (pathname === "/api/build-orders") return handleBuildOrders(request, auth, env.DB);
@@ -274,6 +281,7 @@ const referralWorld = (env: IdentityEnv, platform: WorkerPlatform): ReferralWorl
 const requiresSameOrigin = (request: Request, pathname: string): boolean => {
   const operatorRoute = [
     "/api/operator/campaign-draw",
+    "/api/operator/chat-retention",
     "/api/devices/bots",
     "/api/directory/shards",
     "/api/directory/shards/status",

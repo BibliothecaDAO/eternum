@@ -11,22 +11,28 @@ import { SIGN_IN_PROVIDER_MARKS } from "./provider-marks";
 /**
  * After a provider: where it finished in this browser, the page has already moved on. A phone often finishes it in
  * another one (Safari's view over the home-screen app, the browser a provider's app opens), which shows a code: six
- * boxes take it here, and the provider can be tried again.
+ * boxes take it here, and the provider can be tried again. A phone whose tap went to the Discord app can also go on in
+ * the browser (`onBrowser`) when the app did not open or did not finish.
  */
 export const HandoffStep = ({
   provider,
   checking,
+  preparing,
   error,
   onCode,
   onRetry,
+  onBrowser,
   onTyping,
 }: {
   provider: SocialProvider;
   checking: boolean;
+  /** The provider's sign-in address is on its way: trying again waits for it. */
+  preparing: boolean;
   error: string | null;
   /** Signs in with the code; false when it was refused, and the boxes clear for another try. */
   onCode: (code: string) => Promise<boolean>;
   onRetry: () => void;
+  onBrowser?: (() => void) | undefined;
   onTyping: () => void;
 }) => {
   const [code, setCode] = useState("");
@@ -51,9 +57,19 @@ export const HandoffStep = ({
         onType={type}
       />
       {checking && <p className="text-app-strong text-app-muted">{SIGN_IN_WORDS.checking}</p>}
-      <AppButton kind="secondary" icon={SIGN_IN_PROVIDER_MARKS[provider]} onClick={onRetry}>
+      <AppButton
+        kind="secondary"
+        icon={SIGN_IN_PROVIDER_MARKS[provider]}
+        onClick={onRetry}
+        busy={preparing ? SIGN_IN_WORDS.preparing : undefined}
+      >
         {SIGN_IN_WORDS.tryAgain(provider)}
       </AppButton>
+      {onBrowser && (
+        <AppButton kind="secondary" icon="external-link" onClick={onBrowser}>
+          {SIGN_IN_WORDS.continueInBrowser}
+        </AppButton>
+      )}
       <FailureLine line={error} />
     </div>
   );

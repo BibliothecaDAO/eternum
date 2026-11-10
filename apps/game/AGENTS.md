@@ -6,6 +6,70 @@ Players read what changed in What's new's patch notes, one file per release unde
 patch notes' editor at each release (that folder's `AGENTS.md`). A change does not add an entry of its own: say what a
 player meets in its pull request, and the editor takes it from there.
 
+## Design rules
+
+What a player sees follows these five rules. Each says where the code holds it today and, plainly, where it does not
+yet. A change that moves a surface away from a rule is refused in review like a bug; a change that closes a gap deletes
+it from here.
+
+1. **A side keeps its colour on every surface.** To a playing viewer their own things are green, an ally's blue and
+   everyone else's red, nobody's included. Allies exist in Eternum only: there a tribe member is an ally, while in
+   Blitz, Duel and Frontier every other player is an enemy, tribe or not (`arePlayersAllied`,
+   `src/utils/entity-ownership.ts:39`). A watching viewer has no side: each player takes their seat's colour and
+   nobody's things are grey (`watchedSide`, `src/utils/entity-ownership.ts:121`; `seatSide`, `src/tokens.ts:772`). The
+   side comes from `sideOf` (`src/utils/entity-ownership.ts:57`), its colour from `SIDE_COLOURS` and `SIDE_HEX`
+   (`src/tokens.ts:763`). Today the map's labels and plates, the stamina bars on plates
+   (`src/three/map-plates/map-plates.css:75`), the minimap's borders and ownership marks
+   (`src/ui/design-system/hex-marker.tsx:9`; the paintings inside keep their own colours) and army paths
+   (`src/three/managers/army-path-colour.ts:9`) read it. The playtest's `--steps blitz-plates` and `frontier-plates`
+   check the labels only. Not yet: the guard stamina bar off the map is coloured by the stamina left
+   (`src/ui/features/military/components/guard-stamina-bar.tsx:11`), the battle screen's survival bars by the troops
+   left, for both sides (`src/ui/features/military/battle/battle-lab/outcome-strip.tsx:20`), and portraits carry no side
+   (`HudPortrait`, `src/ui/design-system/kit/hud-elements.tsx:2322`).
+2. **Map models that stand still face the camera.** The map's camera never turns (`enableRotate: false`,
+   `src/three/constants/rendering.ts:15`), so a model that stands on the map shows its front to the camera, from the
+   south, and is authored with its front on +Z. Armies are outside this rule: they take their own heading
+   (`src/three/managers/army-manager.ts:1204`). Today a structure's models are handed together to
+   `resolveStructureRotationY` (`src/three/managers/structure-manager.ts:1495`), which gives zero yaw to any set holding
+   a settlement (realm, village, camp, cleared site), a Frontier beast or a skin of one of them, and keeps the turn it
+   was given otherwise (`src/three/structures/structure-orientation.ts:12`). A ruin or a rift drawn with its beast
+   therefore faces the camera (`src/three/structures/structure-orientation.test.ts:49`). Chests take their own zero yaw
+   (`src/three/managers/chest-manager.ts:589`). Not yet: a bank is turned 120° before the resolver is asked
+   (`src/three/managers/structure-manager.ts:1483`), and every other set keeps the one-of-six turn drawn from its tile
+   (`:1488`): hyperstructures, mines, and ruin and rift landmarks standing alone
+   (`src/three/structures/structure-orientation.test.ts:60`). A zero yaw faces the camera only when the asset's front is
+   on +Z: check it on a capture of the model.
+3. **The player owns the camera and the input.** The camera moves only for a reason `CameraNavigation` names
+   (`src/three/scenes/worldmap-camera-target.ts:20`): the map's first view, an address or a link, the minimap, a
+   shortcut key, a HUD control that shows an army, a spire's view switch. A tap or a selection on the map and every
+   order (explore, move, attack, build, deploy, claim) leave the camera where the player put it;
+   `src/three/scenes/worldmap-camera-stays.test.tsx:205` holds it for Frontier's and Blitz's orders. One panel stands at
+   a time: among Frontier's HUD surfaces, the map's selection card and the deploy order, opening one puts the others
+   away (`useOnePanel`, `src/ui/features/frontier/hud/one-panel.ts:37`), and the playtest's `hud-layout` step fails a
+   HUD part drawn over another. A notice over the map stands long enough to read, then goes by itself. An army's loss is
+   one: its notice closes after 3 s, sooner by its × or a new pick on the map
+   (`src/ui/features/frontier/army/army-lost.tsx:12`, `:20`). Pages outside a match, such as Results, are left by their
+   own buttons (`src/shell/season-tab/results-page.tsx:192`). Not yet: Frontier's day turn. A summary that is shown
+   covers the map and takes every press until Continue (`src/ui/features/frontier/rollover/day-end-screen.tsx:36`,
+   `src/hooks/store/use-day-end-store.ts:115`), and the day's turn then brings the camera onto the realm's new site,
+   with or without a summary (`src/ui/features/world/components/expeditions/expedition-rollover.tsx:75`). The playtest's
+   `lab-day-*` and `lab-season-opens` steps below require both, so a change to it changes the summary's input, its
+   dismissal, the camera's move and those steps together.
+4. **The bar is a shipped commercial strategy game.** Art, models, icons, screens, video and onboarding are judged side
+   by side with what ships today and with the games this one stands beside (Age of Empires, Heroes of Might and Magic,
+   Civilization), at the sizes a player meets them: icons at HUD size, screens on a desktop and a phone. A change that
+   loses to what ships does not land. New art follows the lore, and a screen speaks through pictures (icons, paintings,
+   background art), never words alone. This is a review standard, not a check; the lab's painting comparison draws a
+   painting on its real component beside the art it replaces (`src/lab/README.md:18`). Icon delivery follows
+   `scripts/icons/AGENTS.md`.
+5. **Validate in the lab, then wire into the game.** A new screen, model, icon or flow is built and judged in the lab
+   (`/lab`, `src/lab/README.md`) before the game uses it. A lab page mounts the production components on real assets,
+   with real or recorded game data or representative native-fact fixtures, never a lab-only copy, as the chest opening
+   does (`src/lab/README.md:7`). A choice between options is made on a lab page that shows each option as stills,
+   desktop and phone, beside what ships; only the option picked is wired into the game. Stills compare options; motion
+   and interaction are proven by their temporal captures (`docs/architecture/animation-evaluation.md:103`, from the
+   repository root) and by the playtest.
+
 ## CRITICAL Git Rules for Parallel Agents CRITICAL
 
 Multiple agents may work on different files in the same worktree simultaneously. You MUST follow these rules:
@@ -124,12 +188,15 @@ pnpm --dir apps/game playtest --port 4174 --player <email>
 pnpm --dir apps/game playtest --base-url https://127.0.0.1:4174 --iterations 1   # a client you already serve
 ```
 
-Options: `--renderer-modes webgpu-auto,webgpu-force-webgl` (default both), `--iterations` (default 3),
-`--cpu-throttle 4` (Chrome's CPU slowdown of this machine; not a measured laptop), `--gpu low-power` (the page on the
-machine's integrated GPU, a phone's class of GPU: the one device `vulkaninfo --summary` calls integrated, refused when
-there is none or more than one; the browser is launched seeing only that GPU through Mesa's Vulkan device selection, and
-a run that drew on another fails), `--network 20,40` (Chrome shapes the page's link to that many Mbit/s and that round
-trip in ms, so a load is timed as a player's connection serves it), `--chain-id` and `--game-id`,
+Options: `--channel web|play|app-store` (default web: the app the client is played in, launched as that app launches the
+site, `src/runtime/distribution-channel.ts`: `play` opens the run's page with `?channel=play`, `app-store` appends
+`RealmsApp/ios` to the browser's user agent before any page opens and fails the run unless the booted page carries it
+with no service worker registered), `--renderer-modes webgpu-auto,webgpu-force-webgl` (default both), `--iterations`
+(default 3), `--cpu-throttle 4` (Chrome's CPU slowdown of this machine; not a measured laptop), `--gpu low-power` (the
+page on the machine's integrated GPU, a phone's class of GPU: the one device `vulkaninfo --summary` calls integrated,
+refused when there is none or more than one; the browser is launched seeing only that GPU through Mesa's Vulkan device
+selection, and a run that drew on another fails), `--network 20,40` (Chrome shapes the page's link to that many Mbit/s
+and that round trip in ms, so a load is timed as a player's connection serves it), `--chain-id` and `--game-id`,
 `--steps ownership-rings` (the map unselected, the player's realm selected with its owner's holdings ringed, held and
 panned, then cleared: the rings' frame cost; each phase checks the selection and ring count the page reports in
 `window.__eternumMapSelection`, and fails on a build that does not report them), `--steps blitz-orders` (a seated player

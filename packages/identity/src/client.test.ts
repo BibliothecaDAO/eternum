@@ -211,6 +211,18 @@ it("binds wallet links to the server's Realms id and carries the email code for 
   expect(JSON.parse(String(fetch.mock.calls[2]![1]!.body))).toEqual({ otp: "654321" });
 });
 
+it("deletes the account with its emailed code, and keeps a wrong code's refusal typed", async () => {
+  const fetch = vi.fn<typeof globalThis.fetch>().mockResolvedValueOnce(Response.json({ deleted: true }));
+  const client = createIdentityClient({ apiUrl: "https://realms.test/api", fetch });
+  await client.deleteAccount("123456");
+  expect(fetch.mock.calls[0]).toMatchObject([
+    "https://realms.test/api/account",
+    { credentials: "include", method: "DELETE", body: JSON.stringify({ otp: "123456" }) },
+  ]);
+  fetch.mockResolvedValueOnce(Response.json({ code: "INVALID_OTP", message: "Invalid OTP" }, { status: 400 }));
+  await expect(client.deleteAccount("654321")).rejects.toMatchObject({ status: 400, code: "INVALID_OTP" });
+});
+
 it("carries deployment data alongside the account-bound SIWS signature and email code when linking", async () => {
   const deployment = { classHash: "0x1", salt: "0x2", constructorCalldata: ["0x3"] };
   const requests: { url: string; body: unknown }[] = [];

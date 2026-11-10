@@ -2,6 +2,7 @@ import * as Data from "effect/Data";
 import * as Effect from "effect/Effect";
 import * as Schema from "effect/Schema";
 import * as Stream from "effect/Stream";
+import { runsServiceWorker } from "./browser-capabilities";
 import { workerRequest } from "./worker-request";
 
 type UpdateReady = (apply: () => Promise<void>) => void;
@@ -9,7 +10,7 @@ class UpdateError extends Data.TaggedError("UpdateError")<{ message: string; cau
 
 /** Offers each different release once. Only the accepting page chooses when to reload. */
 export function registerGameServiceWorker(runningRelease: string, onUpdateReady: UpdateReady): () => void {
-  if (!("serviceWorker" in navigator)) return () => {};
+  if (!runsServiceWorker()) return () => {};
   const lifecycle = Effect.gen(function* () {
     const registration = yield* Effect.tryPromise({
       try: () => navigator.serviceWorker.register("/sw.js", { scope: "/", updateViaCache: "none" }),

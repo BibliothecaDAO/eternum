@@ -3,6 +3,7 @@ import { readdirSync, readFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, relative } from "node:path";
 
+import { AGENT_BROWSER } from "../lib/agent-browser.mjs";
 import { DESKTOP_MIN_WIDTH, HUD_LAYOUT_EXPRESSION, MAP_SHARE_EXPRESSION } from "./hud-layout.mjs";
 
 const AGENT_BROWSER_RETRIES = 2;
@@ -34,20 +35,50 @@ export const VIEWPORT = { width: 1920, height: 1080 };
 export const setViewport = ({ width, height }) => Object.assign(VIEWPORT, { width, height });
 
 /**
- * One agent-browser session on one browser profile: commands as a player gives them, and reads of what the page shows.
- * Every command names the profile: agent-browser relaunches the browser on a temporary one for a command that does not.
+ * The machine's GPU through Vulkan, with WebGPU on: headless Chrome otherwise renders on SwiftShader and hides WebGPU.
+ * Every session's browser starts with them.
  */
-export function createBrowserSession(session, { executablePath, headed, profile }) {
+const GPU_ARGS = [
+  "--ignore-gpu-blocklist",
+  "--enable-gpu",
+  "--use-angle=vulkan",
+  "--enable-features=Vulkan",
+  "--enable-unsafe-webgpu",
+];
+
+/** agent-browser's options that launch the browser; createBrowserSession gives them, never one command. */
+const LAUNCH_OPTIONS = new Set([
+  "--args",
+  "--executable-path",
+  "--headed",
+  "--ignore-https-errors",
+  "--init-script",
+  "--profile",
+  "--webgpu",
+]);
+
+/**
+ * One agent-browser session on one browser profile: commands as a player gives them, and reads of what the page shows.
+ * Every command names the same launch settings. A command whose settings differ relaunches the browser without the
+ * page, its viewport or the flags the browser started with, so a command that names one of its own is refused.
+ * `chromeArgs` adds flags to the GPU ones; `initScript` runs before each page's own scripts.
+ */
+export function createBrowserSession(session, { chromeArgs = [], executablePath, headed, initScript, profile }) {
   const sessionArgs = [
     "--session",
     session,
     "--profile",
     profile,
+    // The dev server serves its own certificate.
+    "--ignore-https-errors",
+    "--args",
+    [...GPU_ARGS, ...chromeArgs].join(","),
+    ...(initScript ? ["--init-script", initScript] : []),
     ...(executablePath ? ["--executable-path", executablePath] : []),
     ...(headed ? ["--headed"] : []),
   ];
   const invoke = (commandArgs) =>
-    spawnSync("npx", ["-y", "agent-browser", ...sessionArgs, ...commandArgs], {
+    spawnSync("npx", ["-y", AGENT_BROWSER, ...sessionArgs, ...commandArgs], {
       cwd: process.env.RUNNER_TEMP || process.env.TMPDIR || tmpdir(),
       encoding: "utf8",
       maxBuffer: 256 * 1024 * 1024,
@@ -55,6 +86,10 @@ export function createBrowserSession(session, { executablePath, headed, profile 
     });
 
   const run = (commandArgs, { allowFailure = false } = {}) => {
+    const launchOption = commandArgs.find((arg) => LAUNCH_OPTIONS.has(arg));
+    if (launchOption) {
+      throw new Error(`${launchOption} launches the browser: give it to createBrowserSession, not one command`);
+    }
     let result = invoke(commandArgs);
     for (let retry = 1; retry <= NOT_LAUNCHED_RETRIES && neverLaunched(result); retry += 1) {
       pause(NOT_LAUNCHED_RETRY_DELAY_MS);

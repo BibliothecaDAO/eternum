@@ -6,7 +6,7 @@ import { resolveSentryRuntimeOptions } from "./sentry-config";
 
 describe("resolveSentryRuntimeOptions", () => {
   it("preserves the previous Sentry defaults when optional environment values are absent", () => {
-    const options = resolveSentryRuntimeOptions({});
+    const options = resolveSentryRuntimeOptions({}, "web");
     expect(options).toMatchObject({
       sendDefaultPii: true,
       tracesSampleRate: 1,
@@ -24,19 +24,22 @@ describe("resolveSentryRuntimeOptions", () => {
   });
 
   it("uses explicit Sentry environment values when they are present", () => {
-    const options = resolveSentryRuntimeOptions({
-      VITE_PUBLIC_GAME_VERSION: "2026.04.16",
-      VITE_PUBLIC_SENTRY_ENVIRONMENT: "preview",
-      VITE_PUBLIC_SENTRY_REPLAYS_ON_ERROR_SAMPLE_RATE: "0.75",
-      VITE_PUBLIC_SENTRY_REPLAYS_SESSION_SAMPLE_RATE: "0.25",
-      VITE_PUBLIC_SENTRY_RELEASE: "release-42",
-      VITE_PUBLIC_SENTRY_SEND_DEFAULT_PII: "false",
-      VITE_PUBLIC_SENTRY_TRACES_SAMPLE_RATE: "0.5",
-      VITE_PUBLIC_SENTRY_TX_CAPTURE_USER_REJECTIONS: "true",
-      VITE_PUBLIC_SENTRY_TX_FAILURE_SAMPLE_RATE: "0.5",
-      VITE_PUBLIC_SENTRY_TX_FAILURES_ENABLED: "false",
-      VITE_PUBLIC_SENTRY_TX_WALLET_IDENTITY: "raw",
-    });
+    const options = resolveSentryRuntimeOptions(
+      {
+        VITE_PUBLIC_GAME_VERSION: "2026.04.16",
+        VITE_PUBLIC_SENTRY_ENVIRONMENT: "preview",
+        VITE_PUBLIC_SENTRY_REPLAYS_ON_ERROR_SAMPLE_RATE: "0.75",
+        VITE_PUBLIC_SENTRY_REPLAYS_SESSION_SAMPLE_RATE: "0.25",
+        VITE_PUBLIC_SENTRY_RELEASE: "release-42",
+        VITE_PUBLIC_SENTRY_SEND_DEFAULT_PII: "false",
+        VITE_PUBLIC_SENTRY_TRACES_SAMPLE_RATE: "0.5",
+        VITE_PUBLIC_SENTRY_TX_CAPTURE_USER_REJECTIONS: "true",
+        VITE_PUBLIC_SENTRY_TX_FAILURE_SAMPLE_RATE: "0.5",
+        VITE_PUBLIC_SENTRY_TX_FAILURES_ENABLED: "false",
+        VITE_PUBLIC_SENTRY_TX_WALLET_IDENTITY: "raw",
+      },
+      "web",
+    );
     expect(options).toMatchObject({
       sendDefaultPii: false,
       tracesSampleRate: 0.5,
@@ -50,5 +53,11 @@ describe("resolveSentryRuntimeOptions", () => {
       txCaptureUserRejections: true,
       txWalletIdentity: "raw",
     });
+  });
+
+  it("tags every event with the app the client runs in", () => {
+    expect(resolveSentryRuntimeOptions({}, "web").initialScope).toEqual({ tags: { channel: "web" } });
+    expect(resolveSentryRuntimeOptions({}, "play").initialScope).toEqual({ tags: { channel: "play" } });
+    expect(resolveSentryRuntimeOptions({}, "app-store").initialScope).toEqual({ tags: { channel: "app-store" } });
   });
 });

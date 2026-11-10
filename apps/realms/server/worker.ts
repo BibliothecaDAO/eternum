@@ -1,4 +1,5 @@
 import { Effect } from "effect";
+import { finishAccountDeletions } from "./account-deletion";
 import { deliverWalletNotices } from "./wallet-changes";
 import { resendWalletNotices } from "./wallet-notices";
 import { createIdentityAuth, walletChainServicesOf, type IdentityAuth } from "./auth";
@@ -30,6 +31,7 @@ export default {
     await Effect.runPromise(deliverWalletNotices(env.DB, resendWalletNotices(env.RESEND_API_KEY, env.BASE_URL)));
     await superviseNotifiers(env.DB, env.SHARD_NOTIFIER);
     await finishWalletRecoveries(env);
+    await finishAccountDeletions(env);
   },
 };
 

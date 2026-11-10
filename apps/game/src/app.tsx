@@ -35,6 +35,9 @@ const LabGameRoute = lazy(() =>
 // Reading matter loads on demand, so the cold path carries no post or legal text.
 const TermsPage = lazy(() => import("./shell/legal").then((module) => ({ default: module.TermsPage })));
 const PrivacyPage = lazy(() => import("./shell/legal").then((module) => ({ default: module.PrivacyPage })));
+const AccountDeletionPage = lazy(() =>
+  import("./shell/legal").then((module) => ({ default: module.AccountDeletionPage })),
+);
 const CreditsPage = lazy(() => import("./shell/legal").then((module) => ({ default: module.CreditsPage })));
 const GameClientApp = lazy(() => import("./game-client-app").then((module) => ({ default: module.GameClientApp })));
 
@@ -87,6 +90,14 @@ export const appRoutes = (
         element={
           <LazyRoute>
             <PrivacyPage />
+          </LazyRoute>
+        }
+      />
+      <Route
+        path="account/delete"
+        element={
+          <LazyRoute>
+            <AccountDeletionPage />
           </LazyRoute>
         }
       />

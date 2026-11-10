@@ -2,7 +2,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { MemoryRouter } from "react-router-dom";
 import { expect, it } from "vitest";
 
-import { PrivacyPage, TermsPage } from "./legal";
+import { AccountDeletionPage, PrivacyPage, TermsPage } from "./legal";
 
 /** The document's own text, without the frame around it (the footer links realms.world, the DAO's site). */
 const textOf = (page: React.ReactElement) => {
@@ -42,4 +42,21 @@ it("says news emails may come and how to stop them, as the news email's stop lin
   expect(textOf(<PrivacyPage />)).toContain(
     "We may occasionally email you news about seasons you can play. Every such email has a link to stop them, and you can also ask us to stop them through the contacts below.",
   );
+});
+
+it("explains account deletion in public, links to Settings' row, and says what stays", () => {
+  const container = document.createElement("div");
+  container.innerHTML = renderToStaticMarkup(
+    <MemoryRouter>
+      <AccountDeletionPage />
+    </MemoryRouter>,
+  );
+  const page = container.querySelector("article")!;
+  expect(page.querySelector('a[href="/profile/settings#delete-account"]')?.textContent).toBe("Open Settings");
+  const text = page.textContent!.replace(/\s+/g, " ");
+  expect(text).toContain("Enter the code we email you.");
+  expect(text).toContain("Your notification settings and push alerts on every device");
+  expect(text).toContain("email recovery ends");
+  expect(text).toContain("Ratings stay on chain under the wallets that played.");
+  expect(textOf(<PrivacyPage />)).toContain("You can delete your Realms account yourself, in Settings.");
 });
