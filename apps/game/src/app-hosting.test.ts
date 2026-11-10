@@ -4,9 +4,9 @@ import { isValidElement } from "react";
 import { createRoutesFromChildren, matchRoutes, Navigate, type RouteObject } from "react-router-dom";
 import { describe, expect, it } from "vitest";
 
-import iosApp from "../../ios/capacitor.config";
 import { parseShellRoutes } from "../scripts/shell-routes.mjs";
 import { appRoutes, RETIRED_PATHS } from "./app";
+import iosApp from "../../ios/capacitor.config";
 
 /**
  * Cloudflare Pages answers a full page load, such as an OAuth return, with the app shell only where `_redirects`
@@ -32,12 +32,18 @@ const matchesPagesPattern = (pattern: string, path: string) => {
 /** The shell's pages as the deploy check reads them too (scripts/shell-routes.mjs): one parser, one list. */
 const shellRewrites = parseShellRoutes(readHostingFile("_redirects"));
 
-/** Each `_headers` rule: its path pattern on the first line, then its headers. */
-const headerRules = readHostingFile("_headers").split(/\n(?=\/)/);
+const headerBlocks = readHostingFile("_headers").split(/\n(?=\/)/);
 
-const pathOfRule = (rule: string) => rule.split("\n")[0].trim();
+const noCachePaths = headerBlocks
+  .filter((block) => /Cache-Control:\s*no-cache/i.test(block))
+  .map((block) => block.split("\n")[0].trim());
 
-const noCachePaths = headerRules.filter((rule) => /Cache-Control:\s*no-cache/i.test(rule)).map(pathOfRule);
+/** The headers `_headers` gives the path, from every block whose pattern matches it. */
+const headersFor = (path: string) =>
+  headerBlocks
+    .filter((block) => matchesPagesPattern(block.split("\n")[0].trim(), path))
+    .flatMap((block) => block.split("\n").slice(1))
+    .map((line) => line.trim());
 
 /** `/` is the shell's own file, first on the list; every other page reaches it only through a rewrite. */
 const servesShell = (path: string) => shellRewrites.some((pattern) => matchesPagesPattern(pattern, path));
@@ -59,14 +65,18 @@ const pagePaths = [...new Set(routerPaths(routes))].filter(
   (path) => path !== NOT_FOUND_PATH && !retired.includes(path),
 );
 
-/** Each `_redirects` rule as its source path, target and status. */
-const redirectRules = readHostingFile("_redirects")
+/** Every path pattern `_redirects` rewrites or redirects. */
+const redirectSources = readHostingFile("_redirects")
   .split("\n")
-  .map((line) => line.trim().split(/\s+/))
-  .filter(([from]) => from?.startsWith("/"));
+  .map((line) => line.trim().split(/\s+/)[0])
+  .filter((from) => from?.startsWith("/"));
 
 /** The paths `_redirects` sends permanently to Play. */
-const redirectsToPlay = redirectRules.filter(([, to, status]) => to === "/" && status === "301").map(([from]) => from);
+const redirectsToPlay = readHostingFile("_redirects")
+  .split("\n")
+  .map((line) => line.trim().split(/\s+/))
+  .filter(([from, to, status]) => from?.startsWith("/") && to === "/" && status === "301")
+  .map(([from]) => from);
 
 /** URLs a pattern matches. A router splat also matches nothing, which a Pages splat does not, so both are sampled. */
 const sampleUrls = (pattern: string) => {
@@ -121,9 +131,8 @@ const association: AppleAppSiteAssociation = JSON.parse(readHostingFile(APPLE_AP
 
 describe("the iOS app's association", () => {
   it("is served as JSON at its own address, never through a redirect or the shell", () => {
-    const rule = headerRules.find((candidate) => pathOfRule(candidate) === APPLE_APP_SITE_ASSOCIATION);
-    expect(rule).toMatch(/Content-Type:\s*application\/json/i);
-    expect(redirectRules.filter(([from]) => matchesPagesPattern(from, APPLE_APP_SITE_ASSOCIATION))).toEqual([]);
+    expect(headersFor(APPLE_APP_SITE_ASSOCIATION)).toContain("Content-Type: application/json");
+    expect(redirectSources.filter((pattern) => matchesPagesPattern(pattern, APPLE_APP_SITE_ASSOCIATION))).toEqual([]);
   });
 
   it("opens the app on the router's pages only", () => {

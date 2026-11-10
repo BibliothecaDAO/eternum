@@ -19,7 +19,7 @@ STATIC = [
     ".github/scripts/**",
     ".github/ISSUE_TEMPLATE/**",
     MEDIA_FREE_CHECKOUT,
-    # The iOS app's simulator build, which runs on its own when apps/ios changes.
+    # The iOS app's simulator build, which runs on its own when a file it reads changes (test_ios_workflow_paths.py).
     ".github/workflows/ios.yml",
 ]
 # The payout relay's, co-signer's and monitor's readers, which apps/herald/src/value-readers.test.ts drives against Herald.

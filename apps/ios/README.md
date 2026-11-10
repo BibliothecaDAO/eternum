@@ -16,11 +16,13 @@ to the `play.realms.party` hostname. The client knows it runs here from the `Rea
     `webcredentials:play.realms.party` (passkeys made in Safari sign in here, and the reverse), and push.
   - `SceneDelegate.swift` opens a universal link's page in the game; Capacitor alone only announces it.
   - `AppDelegate.swift` hands the push token to `@capacitor/push-notifications`.
-  - `PrivacyInfo.xcprivacy`: no tracking, no tracking domains, no required-reason API. Capacitor and its plugins
-    (haptics, share, push) call none; Capacitor ships its own manifest saying so, the plugins ship none. The data the
-    site collects is declared in App Store Connect's privacy label.
-- The plugins `@capacitor/haptics`, `@capacitor/share` and `@capacitor/push-notifications`: the site calls them through
-  the `window.Capacitor` bridge Capacitor injects into its page.
+  - `PrivacyInfo.xcprivacy`: no tracking, no tracking domains, no required-reason API. Capacitor and its push plugin
+    call none; Capacitor ships its own manifest saying so, the plugin ships none. The data the site collects is declared
+    in App Store Connect's privacy label.
+- One plugin, `@capacitor/push-notifications`. The site calls it through the bridge Capacitor injects into its page
+  (`window.Capacitor`): Settings' **This device** asks for alerts and registers the APNs token with the identity
+  service, sign-out revokes it, and a tapped alert opens its game or chat (`apps/game/src/pwa/ios-app-push.ts`, which
+  lands with the APNs server). A plugin is installed only with the site's call to it: none sits here unused.
 
 Not yet: the app icon and launch image are still Capacitor's own. The icon is 1024 px with no transparency, drawn from
 the Realms Brand Kit as `apps/game/scripts/build-brand.sh` draws the install icons.
@@ -39,8 +41,10 @@ pnpm --dir apps/ios exec cap sync ios   # the offline page, and the Swift packag
 open apps/ios/ios/App/App.xcodeproj     # run on a simulator or a phone from Xcode
 ```
 
-GitHub builds it for the simulator, unsigned, on every change under `apps/ios/` (`.github/workflows/ios.yml`), and fails
-when the committed native project differs from what `cap sync` writes. Commit `ios/` after adding a plugin.
+GitHub builds it for the simulator, unsigned, on every change to what the build reads: `apps/ios/`, the game's offline
+page and its icon, the lockfile and the workflow itself (`.github/workflows/ios.yml`;
+`.github/scripts/test_ios_workflow_paths.py` holds the list to the build's inputs). It fails when the committed native
+project differs from what `cap sync` writes. Commit `ios/` after adding a plugin.
 
 ## Sign and upload to TestFlight
 

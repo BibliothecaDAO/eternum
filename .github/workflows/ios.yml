@@ -3,12 +3,32 @@ name: ios
 # The iOS app's shell (apps/ios) compiles. It builds for the simulator, unsigned: signing and the TestFlight upload run on
 # the owner's Mac (apps/ios/scripts/upload-testflight.sh), because deployment credentials never enter GitHub
 # (.github/scripts/workflow-credentials.test.ts).
+#
+# It runs when anything the build reads changes: the shell, the game's offline page and its icon (copied in by
+# apps/ios/scripts/write-offline-page.mjs), the install's lockfile and workspace, and this workflow with the action it
+# uses. .github/scripts/test_ios_workflow_paths.py holds both lists to those inputs.
 on:
   pull_request:
-    paths: ["apps/ios/**"]
+    paths:
+      - "apps/ios/**"
+      - "apps/game/public/offline.html"
+      - "apps/game/public/images/game-pwa-192x192.png"
+      - "pnpm-lock.yaml"
+      - "pnpm-workspace.yaml"
+      - "package.json"
+      - ".github/workflows/ios.yml"
+      - ".github/actions/checkout-without-media/**"
   push:
     branches: [next]
-    paths: ["apps/ios/**"]
+    paths:
+      - "apps/ios/**"
+      - "apps/game/public/offline.html"
+      - "apps/game/public/images/game-pwa-192x192.png"
+      - "pnpm-lock.yaml"
+      - "pnpm-workspace.yaml"
+      - "package.json"
+      - ".github/workflows/ios.yml"
+      - ".github/actions/checkout-without-media/**"
   workflow_dispatch:
 
 permissions:
