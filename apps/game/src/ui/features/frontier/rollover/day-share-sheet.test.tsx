@@ -16,7 +16,7 @@ const identity = vi.hoisted(() => {
       // Each account's own link for the day.
       createShare: vi.fn(async () => (owner() === "0xa" ? "AAAA2222" : "BBBB2222")),
       sharePosted: vi.fn(async () => {}),
-      uploadShareCard: vi.fn(async () => {}),
+      uploadShareCard: vi.fn(async (_code: string, _card: Blob) => {}),
       shareTally: vi.fn(async () => ({ links: 0, posted: 0, visits: 0, joined: 0, activated: 0 })),
     },
   };
@@ -27,7 +27,10 @@ vi.mock("@/hooks/context/identity-session", () => ({
 }));
 /** Each player's public name, as their card says it. */
 const NAMES: Record<string, string> = { "0x1": "Ashwalker", "0x2": "Briar" };
+/** The names reader, one object until a name changes, as the real one is. */
+const NAMES_READER = vi.hoisted(() => ({}));
 vi.mock("@/hooks/use-player-profile", () => ({
+  usePlayerNames: () => NAMES_READER,
   usePlayerProfile: () => ({ name: null, portrait: null }),
   usePlayerDisplayName: (player: string) => NAMES[player],
   usePlayerName: (player: string) => ({ state: "named", text: NAMES[player], claimed: true }),
@@ -202,4 +205,75 @@ it("shares and publishes the card as it is drawn at the press, after it changed 
   expect(sent).not.toContain("Temtinos");
   const [, unfurl] = identity.client.uploadShareCard.mock.calls[0]! as unknown as [string, Blob];
   expect(await unfurl.text()).toContain("Ilmarin");
+});
+
+it("publishes the changed card on a later share after an earlier one was published", async () => {
+  const share = phoneSheet();
+  signIn("0xa");
+  await openSheet(sharedDay("0x1"));
+  await act(async () => button("Share").click());
+  await settle();
+  await openSheet({ ...sharedDay("0x1"), realm: { name: "Ilmarin", order: 5 } });
+  await act(async () => button("Share").click());
+  await settle();
+  expect(await share.mock.lastCall![0].files![0]!.text()).toContain("Ilmarin");
+  const unfurls = identity.client.uploadShareCard.mock.calls as unknown as [string, Blob][];
+  expect(await Promise.all(unfurls.map(([, card]) => card.text().then((words) => words.includes("Ilmarin"))))).toEqual([
+    false,
+    true,
+  ]);
+});
+
+it("keeps Post on X waiting while the rank loads, publishes nothing then, and the whole card on a later press", async () => {
+  setViewportWidth(1440);
+  signIn("0xa");
+  await openSheet({ ...sharedDay("0x1"), rank: undefined });
+  expect(button("Making the image")?.disabled).toBe(true);
+  const post = [...host.querySelectorAll<HTMLButtonElement>("button")].at(-1)!;
+  expect([post.disabled, post.textContent]).toEqual([true, "Making the image"]);
+  await act(async () => post.click());
+  await settle();
+  expect(identity.client.uploadShareCard).not.toHaveBeenCalled();
+  await openSheet(sharedDay("0x1"));
+  await postOnX();
+  await settle();
+  const [, unfurl] = identity.client.uploadShareCard.mock.lastCall! as unknown as [string, Blob];
+  expect(await unfurl.text()).toContain("#1 ▲2");
+});
+
+it("publishes one press after another, so an earlier slow upload never lands over the later card", async () => {
+  phoneSheet();
+  signIn("0xa");
+  const uploaded: string[] = [];
+  let finishFirst = () => {};
+  identity.client.uploadShareCard
+    .mockImplementationOnce(async (_code: string, card: Blob) => {
+      await new Promise<void>((resolve) => (finishFirst = resolve));
+      uploaded.push(await card.text());
+    })
+    .mockImplementationOnce(async (_code: string, card: Blob) => void uploaded.push(await card.text()));
+  await openSheet(sharedDay("0x1"));
+  await act(async () => button("Share").click());
+  await settle();
+  await openSheet({ ...sharedDay("0x1"), realm: { name: "Ilmarin", order: 5 } });
+  await act(async () => button("Share").click());
+  await settle();
+  // The later card waits for the earlier upload, then lands last.
+  expect(identity.client.uploadShareCard).toHaveBeenCalledTimes(1);
+  await act(async () => finishFirst());
+  await settle();
+  expect(uploaded.map((words) => words.includes("Ilmarin"))).toEqual([false, true]);
+});
+
+it("publishes a card once however often it is shared, and again on the next press after an upload failed", async () => {
+  phoneSheet();
+  signIn("0xa");
+  identity.client.uploadShareCard.mockRejectedValueOnce(new Error("offline"));
+  await openSheet(sharedDay("0x1"));
+  for (let press = 0; press < 3; press += 1) {
+    await act(async () => button("Share").click());
+    await settle();
+  }
+  // The first upload failed; the second press tried again; the third found it published.
+  expect(identity.client.uploadShareCard).toHaveBeenCalledTimes(2);
 });

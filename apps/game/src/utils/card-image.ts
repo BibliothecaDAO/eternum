@@ -12,9 +12,6 @@ export const CARD_CUTS = {
 } as const satisfies Record<string, CardSize>;
 export type CardCut = keyof typeof CARD_CUTS;
 
-/** The attribute that holds a card's motion while its image is made: it changes nothing the image shows. */
-export const CARD_STILL = "data-still";
-
 /**
  * A card node made into an image at its own size: a PNG for every way the player sends it, a JPEG where a link's
  * unfurl shows it (lighter, as an unfurl's crawler fetches it). The library is loaded only now, so it is no part of the
@@ -27,11 +24,11 @@ const cardImage = async (
 ): Promise<Blob> => {
   const { domToBlob } = await import("modern-screenshot");
   // The image is the cards as they settle, never mid-flip: their motion is held while it is made.
-  card.toggleAttribute(CARD_STILL, true);
+  card.toggleAttribute("data-still", true);
   try {
     return await domToBlob(card, { width, height, scale: 1, type, quality: 0.9 });
   } finally {
-    card.toggleAttribute(CARD_STILL, false);
+    card.toggleAttribute("data-still", false);
   }
 };
 

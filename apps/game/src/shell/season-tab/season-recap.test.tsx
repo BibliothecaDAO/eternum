@@ -473,8 +473,8 @@ it("in the iOS app, falls back to the two steps when the sheet does not open, an
 });
 
 /**
- * The recap standing in a Results page on a phone, handed its season and its viewer afresh by each `show`, as its page
- * hands them while the directory loads and accounts change.
+ * The recap standing in a Results page on a phone, handed its season, its viewer and its board afresh by each `show`, as
+ * its page hands them while the directory loads, accounts change and Herald answers.
  */
 const resultsRecap = () => {
   (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
@@ -487,7 +487,7 @@ const resultsRecap = () => {
     await act(async () => root.unmount());
     host.remove();
   };
-  const show = async (game: (typeof ARCHIVED_SEASONS)[number] | undefined, viewer: string) => {
+  const show = async (game: (typeof ARCHIVED_SEASONS)[number] | null | undefined, viewer: string, board = BOARD) => {
     await act(async () =>
       root.render(
         <QueryClientProvider client={query}>
@@ -495,7 +495,7 @@ const resultsRecap = () => {
             <SeasonRecap
               gameRef={SEASON_ONE}
               game={game}
-              board={BOARD}
+              board={board}
               viewer={viewer}
               ending="lifted"
               actions={null}
@@ -527,6 +527,16 @@ it("in the iOS app, makes no image before the season is known, then one with its
   expect(await shared[0]!.files[0]!.text()).toContain("Playtest");
 });
 
+it("in the iOS app, shares a season no list holds under Frontier's name, once the lists have answered", async () => {
+  app.channel = "app-store";
+  const shared = shareSheet();
+  const recap = resultsRecap();
+  await recap.show(null, CANZI);
+  await press(recap.host, "Share");
+  expect(shared[0]!.text).toBe("Frontier · #3 of 45 realms");
+  expect(await shared[0]!.files[0]!.text()).toContain("Frontier");
+});
+
 it("in the iOS app, shares the new viewer's deck after the viewer changes, never the one before", async () => {
   app.channel = "app-store";
   const shared = shareSheet();
@@ -536,6 +546,25 @@ it("in the iOS app, shares the new viewer's deck after the viewer changes, never
   // Both players' names are already read: only the deck itself says the viewer changed.
   await recap.show(ARCHIVED_SEASONS[0], VOLCANIC);
   expect(text(card(recap.host, "place"))).toContain("Volcanic");
+  await press(recap.host, "Share");
+  expect(shared[0]!.text).toBe("Playtest · #1 of 45 realms");
+  const image = await shared[0]!.files[0]!.text();
+  expect(image).toContain("#1");
+  expect(image).not.toContain("#3");
+});
+
+it("in the iOS app, makes the image again when the board changes under the same viewer", async () => {
+  app.channel = "app-store";
+  const shared = shareSheet();
+  const recap = resultsRecap();
+  await recap.show(ARCHIVED_SEASONS[0], CANZI);
+  expect(snapshot.calls).toHaveLength(1);
+  // Herald's board answers again with Canzi first: the same viewer, another place.
+  const ranked = {
+    ...BOARD,
+    entries: BOARD.entries.map((entry) => ({ ...entry, rank: entry.address === CANZI ? 1 : entry.rank })),
+  };
+  await recap.show(ARCHIVED_SEASONS[0], CANZI, ranked);
   await press(recap.host, "Share");
   expect(shared[0]!.text).toBe("Playtest · #1 of 45 realms");
   const image = await shared[0]!.files[0]!.text();
@@ -573,7 +602,8 @@ it("in the iOS app, makes the image again of the deck drawn anew when the window
   expect(snapshot.calls).toEqual([{ node: tall, width: 1080, height: 1350 }]);
   // A wider window draws the deck's wide cut, a new node: its image is made of it, at its size.
   await act(async () => setViewportWidth(1440));
-  await act(async () => new Promise((resolve) => setTimeout(resolve, 20)));
+  for (let tick = 0; tick < 50 && snapshot.calls.at(-1)!.node !== deck(recap.host); tick += 1)
+    await act(async () => new Promise((resolve) => setTimeout(resolve, 10)));
   expect(deck(recap.host)).not.toBe(tall);
   expect(snapshot.calls.at(-1)).toEqual({ node: deck(recap.host), width: 1200, height: 675 });
   await press(recap.host, "Share");

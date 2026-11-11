@@ -12,9 +12,10 @@ export const shareHint = () => (canCopyCard() ? SHARE_WORDS.copyHint : SHARE_WOR
 /**
  * Sharing a card, the owner's flow (4 November 2026): 1, `take` puts the card's image on the clipboard (saves it, where
  * the clipboard takes no PNG); 2, `post` opens a post on X with the card's line and its link, where the player pastes
- * the image. The image is made on the press that asks for it. `onPost` hears the post open, in the same press. Each
- * surface draws the two steps in its own kit's buttons (the season's recap in the app's, a Frontier day in the HUD's),
- * with `word` and StepNumber.
+ * the image. The image is made on the press that asks for it. Both steps wait (`making`, `posting`) until the card is
+ * `ready`, every value it draws answered, so neither copies nor posts a card half drawn. `onPost` hears the post open,
+ * in the same press. Each surface draws the two steps in its own kit's buttons (the season's recap in the app's, a
+ * Frontier day in the HUD's), with `word` and StepNumber.
  */
 export const useShareSteps = ({
   card,
@@ -22,6 +23,7 @@ export const useShareSteps = ({
   fileName,
   line,
   url,
+  ready,
   onPost,
 }: {
   card: HTMLElement | null;
@@ -29,6 +31,8 @@ export const useShareSteps = ({
   fileName: string;
   line: string;
   url: string;
+  /** Whether the card shows all it will. */
+  ready: boolean;
   onPost?: () => void;
 }) => {
   const [state, setState] = useState<"idle" | "making" | "taken" | "failed">("idle");
@@ -51,7 +55,8 @@ export const useShareSteps = ({
   return {
     take: () => void take(),
     post,
-    making: state === "making" ? SHARE_WORDS.making : undefined,
+    making: state === "making" || !ready ? SHARE_WORDS.making : undefined,
+    posting: ready ? undefined : SHARE_WORDS.making,
     failed: state === "failed",
     word: takeWord(copies, state === "taken"),
   };

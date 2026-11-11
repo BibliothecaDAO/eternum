@@ -84,8 +84,8 @@ export const SeasonRecap = ({
   cover = false,
 }: {
   gameRef: GameRef;
-  /** The season as the directory lists it; unknown while the directory loads. */
-  game: DirectoryGame | undefined;
+  /** The season as the lists hold it (useFinishedGame): undefined while they answer, null where none has it. */
+  game: DirectoryGame | null | undefined;
   /** Herald's final board; unknown while it loads. */
   board: HeraldFrontierLeaderboard | undefined;
   viewer: string | null;
@@ -148,6 +148,7 @@ export const SeasonRecap = ({
                 cut={cut}
                 line={shareLine(title, own, board.entries.length)}
                 gameRef={gameRef}
+                drawnFrom={[game, board, viewer]}
                 seasonRead={game !== undefined}
                 players={deckPlayers(board, own)}
               />
@@ -505,16 +506,17 @@ const HaulCard = ({ own }: { own: Entry }) => (
 /**
  * The season's sharing. In the iOS app, one Share opens iOS's share sheet with the deck's image, the season's line and
  * its Results, the app's own feature for App Review; its image is made once the deck shows all it will (the season's
- * title and every name read), and made again whenever the deck changes. If the sheet does not open, the two steps take
- * its place. Elsewhere the two steps alone (the owner, 7 November 2026: the
- * season's recap stays X only): its deck's image, then a post with the season's line and its Results. A phone's row has
- * room for the numbers alone; a desktop's buttons wear their icons too.
+ * title and every name read), and made again whenever a value the deck is drawn from changes. If the sheet does not
+ * open, the two steps take its place. Elsewhere the two steps alone (the owner, 7 November 2026: the season's recap
+ * stays X only): its deck's image, then a post with the season's line and its Results, both waiting for the same
+ * values. A phone's row has room for the numbers alone; a desktop's buttons wear their icons too.
  */
 const ShareSeason = ({
   card,
   cut,
   line,
   gameRef,
+  drawnFrom,
   seasonRead,
   players,
 }: {
@@ -522,7 +524,9 @@ const ShareSeason = ({
   cut: Cut;
   line: string;
   gameRef: GameRef;
-  /** Whether the directory has answered with the season, whose title the deck's foot draws. */
+  /** The recap's values the deck is drawn from: the season, the board and the viewer. */
+  drawnFrom: readonly unknown[];
+  /** Whether the lists answered for the season, whose title the deck's foot draws (Frontier's where none has it). */
   seasonRead: boolean;
   /** The players the deck names, whose names are read before its image is made for the sheet. */
   players: string[];
@@ -535,9 +539,14 @@ const ShareSeason = ({
     url: new URL(resultsHref(gameRef), window.location.origin).href,
   };
   const throughSheet = sharesThroughSheet();
-  const named = useNamesRead(players);
-  const sheet = useSystemShare({ ...share, ready: throughSheet && seasonRead && named });
-  const steps = useShareSteps(share);
+  const names = useNamesOf(players);
+  const ready = seasonRead && names.read;
+  const sheet = useSystemShare({
+    ...share,
+    drawnFrom: [...drawnFrom, cut, names.reader],
+    ready: throughSheet && ready,
+  });
+  const steps = useShareSteps({ ...share, ready });
   if (throughSheet && !sheet.failed) {
     return (
       <AppButton kind="primary" icon="share" busy={sheet.making} onClick={sheet.share}>
@@ -552,7 +561,7 @@ const ShareSeason = ({
         <StepNumber number={1} />
         {steps.word}
       </AppButton>
-      <AppButton kind="primary" icon={icons ? "twitter" : undefined} onClick={steps.post}>
+      <AppButton kind="primary" icon={icons ? "twitter" : undefined} busy={steps.posting} onClick={steps.post}>
         <StepNumber number={2} />
         {SHARE_WORDS.post}
       </AppButton>
@@ -571,8 +580,11 @@ const deckPlayers = (board: HeraldFrontierLeaderboard, own: Entry): string[] => 
   ...podiumPlaces(board).flatMap(({ holder }) => (typeof holder === "object" ? [holder.address] : [])),
 ];
 
-/** Whether identity has answered for each of these players, so no name is drawn still loading. */
-const useNamesRead = (players: string[]): boolean => {
-  const names = usePlayerNames();
-  return players.every((player) => names.reading(player).state !== "waiting");
+/**
+ * The names reader the deck draws its players with, new whenever a name or portrait may have changed, and whether
+ * identity has answered for each of these players, so no name is drawn still loading.
+ */
+const useNamesOf = (players: string[]) => {
+  const reader = usePlayerNames();
+  return { reader, read: players.every((player) => reader.reading(player).state !== "waiting") };
 };

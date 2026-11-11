@@ -1,75 +1,54 @@
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
-
-import { CARD_STILL } from "@/utils/card-image";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 
 /**
  * A card's image made before the press that sends it, as a phone opens its share sheet only within the press itself,
- * and only ever the image of the card as it is drawn now. The image belongs to one drawing of the card: its node, and
- * everything in it (the game it names, the viewer's place, every player's name and number). Any change to the card
- * drops the image at once and makes it again, and an image the card changed under while it was being made is thrown
- * away, so whatever the card shows, its image shows. `ready` holds the making until the card shows all it will.
- * `image` is for drawing the button; `take` is for the press, which also catches a change not yet heard.
+ * and only ever the image of the card as it is drawn now. The image belongs to one snapshot: the card's node and
+ * `drawnFrom`, the values the card is drawn from (its game or day, the viewer, the layout, the names reader), each
+ * compared as React compares dependencies. A changed value is a new snapshot: the old image is dropped in that render
+ * and made again, and an image whose snapshot passed while it was being made is thrown away. `ready` holds the making
+ * until every value the card draws has answered. `snapshot` names what the image shows, for a consumer that must tell
+ * one card's image from another's (a published preview).
  */
 export const usePreparedCard = <Image>(
   card: HTMLElement | null,
+  drawnFrom: readonly unknown[],
   ready: boolean,
   make: (card: HTMLElement) => Promise<Image>,
 ) => {
-  const { drawing, changedSince, drawn } = useDrawing(card);
+  const snapshot = useSnapshot(card, drawnFrom);
   const makeImage = useRef(make);
   useLayoutEffect(() => {
     makeImage.current = make;
   });
-  const [made, setMade] = useState<{ drawing: Drawing; image?: Image } | null>(null);
+  const [made, setMade] = useState<{ snapshot: Snapshot; image?: Image } | null>(null);
   useEffect(() => {
-    const node = drawing.card;
-    if (!ready || !node) return;
+    const node = snapshot.card;
+    // A node already taken off the page (the render that swaps a card for a new one) is no card the player sees.
+    if (!ready || !node?.isConnected) return;
     let current = true;
-    drawn();
     makeImage.current(node).then(
-      (image) => current && setMade({ drawing, image }),
-      () => current && setMade({ drawing }),
+      (image) => current && setMade({ snapshot, image }),
+      () => current && setMade({ snapshot }),
     );
     return () => {
       current = false;
     };
-  }, [drawing, ready, drawn]);
-  const now = ready && made?.drawing === drawing ? made : null;
-  return {
-    image: now?.image,
-    failed: now !== null && now.image === undefined,
-    take: () => (changedSince() ? undefined : now?.image),
-  };
+  }, [snapshot, ready]);
+  const now = ready && made?.snapshot === snapshot ? made : null;
+  return { snapshot, image: now?.image, failed: now !== null && now.image === undefined };
 };
 
-/** One drawing of the card: a new one whenever the card is another node or anything in it changes. */
-type Drawing = { card: HTMLElement | null };
+/** One drawing of the card: its node and the values it is drawn from. */
+type Snapshot = { card: HTMLElement | null; drawnFrom: readonly unknown[] };
 
-/**
- * The card's current drawing, watched for every change to it and what is in it, whoever renders it. `changedSince`
- * takes the changes the watch has seen but not yet told, and starts a new drawing if there are any. `drawn` lets go of
- * them as an image begins: the image is made from the card as it stands, so they are in it (the render that made the
- * card ready changed it too).
- */
-const useDrawing = (card: HTMLElement | null) => {
-  const [drawing, setDrawing] = useState<Drawing>({ card });
-  if (drawing.card !== card) setDrawing({ card });
-  const watch = useRef<MutationObserver | null>(null);
-  useEffect(() => {
-    if (!card) return;
-    const observer = new MutationObserver((changes) => changes.some(redraws) && setDrawing({ card }));
-    observer.observe(card, { subtree: true, childList: true, characterData: true, attributes: true });
-    watch.current = observer;
-    return () => observer.disconnect();
-  }, [card]);
-  const drawn = useCallback(() => void watch.current?.takeRecords(), []);
-  const changedSince = () => {
-    const changed = watch.current?.takeRecords().some(redraws) ?? false;
-    if (changed) setDrawing({ card });
-    return changed;
-  };
-  return { drawing, changedSince, drawn };
+/** The card's snapshot: the same object while its node and every value are the same, a new one when any changes. */
+const useSnapshot = (card: HTMLElement | null, drawnFrom: readonly unknown[]): Snapshot => {
+  const last = useRef<Snapshot | null>(null);
+  if (!last.current || !isSameDrawing(last.current, card, drawnFrom)) last.current = { card, drawnFrom };
+  return last.current;
 };
 
-/** A change to what the card shows; not the hold on its motion while its image is made. */
-const redraws = (change: MutationRecord) => change.attributeName !== CARD_STILL;
+const isSameDrawing = (snapshot: Snapshot, card: HTMLElement | null, drawnFrom: readonly unknown[]) =>
+  snapshot.card === card &&
+  snapshot.drawnFrom.length === drawnFrom.length &&
+  snapshot.drawnFrom.every((value, index) => Object.is(value, drawnFrom[index]));
