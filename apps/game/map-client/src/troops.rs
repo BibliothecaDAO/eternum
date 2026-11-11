@@ -11,10 +11,9 @@ pub enum Role {
     Knight,
     Crossbowman,
     Paladin,
-    Deer,
 }
 
-pub const ROLES: [Role; 4] = [Role::Knight, Role::Crossbowman, Role::Paladin, Role::Deer];
+pub const ROLES: [Role; 3] = [Role::Knight, Role::Crossbowman, Role::Paladin];
 
 impl Role {
     pub fn named(name: &str) -> Result<Role, String> {
@@ -22,7 +21,6 @@ impl Role {
             "knight" => Ok(Role::Knight),
             "crossbowman" => Ok(Role::Crossbowman),
             "paladin" => Ok(Role::Paladin),
-            "deer" => Ok(Role::Deer),
             other => Err(format!("No unit build is called {other}")),
         }
     }

@@ -106,7 +106,7 @@ const WIND = vec2f(0.8, 0.6);
 
 // The ground, by what its biome is made of: rippled sand, drifted snow, tundra with snow in its hollows, slabs of
 // rock, a crust over lava that glows in its cracks, grass the wind runs over, a forest's litter. A biome's edge
-// wanders off the hexes' edges. A river and the roads lie over it; the hex grid shows where the unknown is near.
+// wanders off the hexes' edges. The hex grid shows where the unknown is near.
 fn ground_surface(input: VertexOutput) -> Surface {
   let time = globals.eye.w;
   let at = input.world.xz;
@@ -165,24 +165,6 @@ fn ground_surface(input: VertexOutput) -> Surface {
     slope = (near.ba - 0.5) * 0.3;
   }
 
-  // A road: packed earth with two ruts, ragged at its edges. A river over it: clear at its banks, running.
-  let road = (1.0 - smoothstep(0.1, 0.17, here.road + (near.g - 0.5) * 0.1)) * top;
-  let ruts = (1.0 - smoothstep(0.012, 0.03, abs(here.road - 0.07))) * road;
-  albedo = mix(albedo, mix(base, vec3f(0.36, 0.27, 0.17), 0.7) * (0.8 + near.g * 0.3), road * 0.85);
-  albedo *= 1.0 - ruts * 0.3;
-  slope *= 1.0 - road * 0.7;
-  glow *= 1.0 - road;
-  let bank = here.river + (grain - 0.5) * 0.12;
-  let wet = (1.0 - smoothstep(0.16, 0.34, bank)) * top;
-  let river = (1.0 - smoothstep(0.12, 0.16, bank)) * top;
-  let running = (flow.rg - 0.5) * 1.6;
-  let water = mix(vec3f(0.2, 0.42, 0.36), vec3f(0.05, 0.2, 0.28), smoothstep(0.15, 0.03, bank))
-    + vec3f(0.5) * smoothstep(0.75, 0.95, flow.a) * 0.25;
-  albedo = mix(albedo * mix(1.0, 0.62, wet), water, river);
-  slope = mix(slope, running, river);
-  gloss = mix(gloss, 1.0, river);
-  glow *= 1.0 - wet;
-
   // The side of a raised hex: darker earth in bands. The shore: a dark wet band.
   let strata = 0.55 + 0.25 * sin(input.world.y * 38.0 + grain * 5.0);
   albedo = mix(base * vec3f(0.5, 0.42, 0.36) * strata, albedo, top);
@@ -190,7 +172,7 @@ fn ground_surface(input: VertexOutput) -> Surface {
   albedo *= mix(0.6, 1.0, smoothstep(0.0, 0.3, shore + (grain - 0.5) * 0.2));
   // The grid is faint over land well known, and plain where the next hex to explore is near.
   let near_unknown = smoothstep(-2.2, -0.2, here.unknown);
-  albedo = mix(albedo, albedo * 0.45, line * mix(0.16, 0.6, near_unknown) * top * (1.0 - river));
+  albedo = mix(albedo, albedo * 0.45, line * mix(0.16, 0.6, near_unknown) * top);
 
   // An order: its path in running dashes, and the picked army's hex lit along its edges.
   let marks = order_marks(at);

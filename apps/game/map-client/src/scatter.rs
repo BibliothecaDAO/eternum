@@ -69,13 +69,10 @@ fn bird() -> Shape {
     shape
 }
 
-/// Whether anything may grow at a point: on explored land, off the roads, the river's bed and the shore's wet sand.
+/// Whether anything may grow at a point: on explored land, off the shore's wet sand.
 fn grows(world: &World, at: Vec2) -> Option<Ground> {
     let hex = world.hex_at(at.x, at.y)?;
-    let open = hex.known == Known::Explored
-        && world.shore_at(at.x, at.y) > 0.2
-        && world.river_at(at.x, at.y) > 0.32
-        && world.road_at(at.x, at.y) > 0.2;
+    let open = hex.known == Known::Explored && world.shore_at(at.x, at.y) > 0.2;
     open.then_some(hex.ground)
 }
 

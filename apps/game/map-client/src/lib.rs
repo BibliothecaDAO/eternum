@@ -81,7 +81,7 @@ mod web {
             self.renderer.resize(width, height);
         }
 
-        /// Replaces the units of one build (knight, crossbowman, paladin or deer): twenty floats a unit.
+        /// Replaces the units of one build (knight, crossbowman or paladin): twenty floats a unit.
         pub fn set_troop(&mut self, role: &str, instances: &[f32]) -> Result<(), JsValue> {
             self.renderer.set_troop(Role::named(role)?, instances);
             Ok(())

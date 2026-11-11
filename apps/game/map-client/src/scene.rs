@@ -15,9 +15,6 @@ pub struct Snapshot {
     /// How many floats the buffer holds before its textures' pixels.
     pub float_count: usize,
     pub light: Light,
-    /// Where the patch's buildings stand: the roads run between them, and the river and the cast keep clear.
-    #[serde(default)]
-    pub sites: Vec<[f32; 3]>,
     /// The textures the meshes are painted with: plain RGBA pixels in the buffer.
     #[serde(default)]
     pub textures: Vec<TextureRecord>,

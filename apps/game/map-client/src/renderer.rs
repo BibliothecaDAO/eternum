@@ -445,6 +445,8 @@ impl Renderer {
                 .iter()
                 .map(|grown| upload_scattered(&device, &materials, grown)),
         );
+        // A land may hold a mesh nothing stands in, or one with nothing to draw: neither has a buffer to bind.
+        meshes.retain(|mesh| mesh.instance_count > 0 && mesh.geometry.index_count > 0);
         let units = upload_troops(&device, &materials, snapshot, buffer);
         let land_maps = [land.features, land.palette];
         let size = (surface_config.width, surface_config.height);
@@ -1364,7 +1366,6 @@ fn upload_troops(
                 Role::Knight => kit::knight(snapshot, buffer),
                 Role::Crossbowman => kit::statue(snapshot, buffer, &kit::CROSSBOWMAN),
                 Role::Paladin => kit::mounted_statue(snapshot, buffer),
-                Role::Deer => kit::creature(snapshot, buffer),
             }?;
             Some(Troop {
                 role,

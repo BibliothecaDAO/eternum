@@ -2,12 +2,11 @@
 //! shore, read off the ground mesh once, and a tile of ground detail made from noise. Shaders sample both; the cast
 //! is placed with the map.
 
-use std::collections::{HashMap, HashSet, VecDeque};
+use std::collections::HashMap;
 
 use glam::{Mat4, Vec2, Vec3};
 
 use crate::scene::{Kind, Snapshot, VERTEX_FLOATS};
-use crate::shapes::hash;
 
 pub const MAP_SIZE: usize = 512;
 pub const DETAIL_SIZE: usize = 256;
@@ -58,8 +57,6 @@ pub struct Hex {
     pub known: Known,
 }
 
-/// How far from a river or a road, in world units, the map still tells the distance.
-const WAY_REACH: f32 = 2.0;
 /// How deep into the unknown, in world units, the map still tells the distance from known land.
 const UNKNOWN_REACH: f32 = 4.0;
 
@@ -68,9 +65,6 @@ pub struct World {
     pub bounds: [f32; 4],
     pub water_level: f32,
     pub hexes: Vec<Hex>,
-    /// The river's course from its spring to the sea, and the roads between the buildings.
-    pub river: Vec<Vec2>,
-    pub roads: Vec<Vec<Vec2>>,
     height: Vec<f32>,
     /// Positive on land, negative on water: the distance to the shore.
     shore: Vec<f32>,
@@ -78,8 +72,6 @@ pub struct World {
     nearest: Vec<Option<usize>>,
     /// Positive in the unknown: the distance from known land.
     unknown: Vec<f32>,
-    river_distance: Vec<f32>,
-    road_distance: Vec<f32>,
 }
 
 impl World {
@@ -120,37 +112,15 @@ impl World {
             .map(|hex| hex.is_some_and(|hex| hexes[hex].known == Known::Explored))
             .collect();
         let unknown = signed_distance(&known, texel, UNKNOWN_REACH);
-        let mut world = World {
+        World {
             bounds,
             water_level,
             hexes,
-            river: Vec::new(),
-            roads: Vec::new(),
             height,
             shore,
             nearest,
             unknown,
-            river_distance: vec![WAY_REACH; MAP_SIZE * MAP_SIZE],
-            road_distance: vec![WAY_REACH; MAP_SIZE * MAP_SIZE],
-        };
-        let sites: Vec<Vec2> = snapshot
-            .sites
-            .iter()
-            .map(|site| Vec2::new(site[0], site[2]))
-            .collect();
-        world.river = world.river_course(&sites, hex_spacing);
-        world.roads = world.roads_between(&sites, hex_spacing);
-        world.river_distance = world.distance_to(std::slice::from_ref(&world.river));
-        world.road_distance = world.distance_to(&world.roads);
-        world
-    }
-
-    fn at(&self, cell: usize) -> Vec2 {
-        let (u, v) = (cell % MAP_SIZE, cell / MAP_SIZE);
-        Vec2::new(
-            self.bounds[0] + (u as f32 + 0.5) / MAP_SIZE as f32 * self.bounds[2],
-            self.bounds[1] + (v as f32 + 0.5) / MAP_SIZE as f32 * self.bounds[3],
-        )
+        }
     }
 
     /// The hex a point of the ground lies in.
@@ -159,168 +129,8 @@ impl World {
         self.nearest[v * MAP_SIZE + u].map(|hex| &self.hexes[hex])
     }
 
-    pub fn river_at(&self, x: f32, z: f32) -> f32 {
-        let (u, v) = self.cell(x, z);
-        self.river_distance[v * MAP_SIZE + u]
-    }
-
-    pub fn road_at(&self, x: f32, z: f32) -> f32 {
-        let (u, v) = self.cell(x, z);
-        self.road_distance[v * MAP_SIZE + u]
-    }
-
-    /// The hexes one step from `hex` that an army could walk: explored land.
-    fn walkable_neighbours(
-        &self,
-        hex: usize,
-        hex_spacing: f32,
-    ) -> impl Iterator<Item = usize> + '_ {
-        let from = self.hexes[hex].at;
-        self.hexes
-            .iter()
-            .enumerate()
-            .filter_map(move |(other, to)| {
-                let near = other != hex && (to.at - from).length() < hex_spacing * 1.2;
-                (near && to.known == Known::Explored && to.ground != Ground::Water).then_some(other)
-            })
-    }
-
-    /// A river from the explored land furthest from the sea down to it, a hex at a time, each step to the hex
-    /// nearest the shore, the lower of two as near; it keeps clear of the buildings.
-    fn river_course(&self, sites: &[Vec2], hex_spacing: f32) -> Vec<Vec2> {
-        let height = |hex: usize| self.height_at(self.hexes[hex].at.x, self.hexes[hex].at.y);
-        let clear = |hex: usize| {
-            sites
-                .iter()
-                .all(|site| (*site - self.hexes[hex].at).length() > hex_spacing * 0.9)
-        };
-        let shore = |hex: usize| self.shore_at(self.hexes[hex].at.x, self.hexes[hex].at.y);
-        // No river rises in the desert or the snow, or runs over lava.
-        let wooded = |hex: &usize| {
-            let hex = &self.hexes[*hex];
-            hex.known == Known::Explored
-                && matches!(hex.ground, Ground::Forest | Ground::Grass | Ground::Tundra)
-        };
-        // The map tells the shore's distance only so far: of the hexes at that limit, the highest is the spring.
-        let inland = |hex: usize| shore(hex) + height(hex) * 0.5;
-        let Some(spring) = (0..self.hexes.len())
-            .filter(wooded)
-            .filter(|hex| clear(*hex))
-            .max_by(|a, b| inland(*a).total_cmp(&inland(*b)))
-        else {
-            return Vec::new();
-        };
-        let mut course = vec![spring];
-        let mut seen = HashSet::from([spring]);
-        while course.len() < 40 {
-            let here = *course.last().expect("a course starts at its spring");
-            let at = self.hexes[here].at;
-            if self.shore_at(at.x, at.y) < hex_spacing * 0.8 {
-                break;
-            }
-            let cost = |hex: usize| shore(hex) + height(hex) * 0.3;
-            let Some(next) = self
-                .walkable_neighbours(here, hex_spacing)
-                .filter(|hex| !seen.contains(hex) && clear(*hex))
-                .filter(|hex| !matches!(self.hexes[*hex].ground, Ground::Lava | Ground::Snow))
-                .min_by(|a, b| cost(*a).total_cmp(&cost(*b)))
-            else {
-                break;
-            };
-            seen.insert(next);
-            course.push(next);
-        }
-        let mut points: Vec<Vec2> = course
-            .iter()
-            .map(|hex| self.wandering(*hex, hex_spacing))
-            .collect();
-        // The mouth: on into the water the way the last reach was going.
-        if let [.., before, last] = points[..] {
-            points.push(last + (last - before).normalize_or_zero() * hex_spacing * 1.5);
-        }
-        smoothed(&points)
-    }
-
-    /// A hex's middle moved a little off it, so a way through several does not run in straight lines.
-    fn wandering(&self, hex: usize, hex_spacing: f32) -> Vec2 {
-        let at = self.hexes[hex].at;
-        let lot = Vec3::new(at.x, 0.37, at.y);
-        at + Vec2::new(hash(lot * 1.3) - 0.5, hash(lot * 2.1) - 0.5) * hex_spacing * 0.45
-    }
-
-    /// A road from each building to the nearest one already on a road, over explored land.
-    fn roads_between(&self, sites: &[Vec2], hex_spacing: f32) -> Vec<Vec<Vec2>> {
-        let hex_of = |site: Vec2| {
-            (0..self.hexes.len()).min_by(|a, b| {
-                (self.hexes[*a].at - site)
-                    .length()
-                    .total_cmp(&(self.hexes[*b].at - site).length())
-            })
-        };
-        let mut joined: Vec<usize> = Vec::new();
-        let mut roads = Vec::new();
-        for site in sites {
-            let Some(hex) = hex_of(*site) else { continue };
-            if let Some(path) = self.shortest_way(hex, &joined, hex_spacing) {
-                let points: Vec<Vec2> = path
-                    .iter()
-                    .map(|step| self.wandering(*step, hex_spacing))
-                    .collect();
-                roads.push(smoothed(&points));
-            }
-            joined.push(hex);
-        }
-        roads
-    }
-
-    /// The fewest hexes from `from` to any of `to`, over land.
-    fn shortest_way(&self, from: usize, to: &[usize], hex_spacing: f32) -> Option<Vec<usize>> {
-        let mut came_from: HashMap<usize, usize> = HashMap::from([(from, from)]);
-        let mut queue = VecDeque::from([from]);
-        while let Some(here) = queue.pop_front() {
-            if to.contains(&here) {
-                let mut path = vec![here];
-                while *path.last()? != from {
-                    path.push(came_from[path.last()?]);
-                }
-                return Some(path);
-            }
-            for next in self.walkable_neighbours(here, hex_spacing) {
-                if !came_from.contains_key(&next) {
-                    came_from.insert(next, here);
-                    queue.push_back(next);
-                }
-            }
-        }
-        None
-    }
-
-    /// How far every cell is from the nearest of the ways, never told further than the reach.
-    fn distance_to(&self, ways: &[Vec<Vec2>]) -> Vec<f32> {
-        let mut distance = vec![WAY_REACH; MAP_SIZE * MAP_SIZE];
-        for stretch in ways.iter().flat_map(|way| way.windows(2)) {
-            let (from, to) = (stretch[0], stretch[1]);
-            let low = from.min(to) - Vec2::splat(WAY_REACH);
-            let high = from.max(to) + Vec2::splat(WAY_REACH);
-            let first = self.cell(low.x, low.y);
-            let last = self.cell(high.x, high.y);
-            for v in first.1..=last.1 {
-                for u in first.0..=last.0 {
-                    let cell = v * MAP_SIZE + u;
-                    let at = self.at(cell);
-                    let along = ((at - from).dot(to - from)
-                        / (to - from).length_squared().max(1e-9))
-                    .clamp(0.0, 1.0);
-                    distance[cell] = distance[cell].min((from + (to - from) * along - at).length());
-                }
-            }
-        }
-        distance
-    }
-
     /// What the shaders read of the land's features, four bytes a cell: the ground's kind with how well the hex is
-    /// known, the distance into the unknown (half way up the byte at its edge, lower over known land), and the
-    /// distances to the river and to a road.
+    /// known, and the distance into the unknown (half way up the byte at its edge, lower over known land).
     pub fn feature_texels(&self) -> Vec<u8> {
         let byte = |share: f32| (share.clamp(0.0, 1.0) * 255.0) as u8;
         (0..MAP_SIZE * MAP_SIZE)
@@ -332,8 +142,8 @@ impl World {
                 [
                     ground as u8 * 16 + known as u8,
                     byte(0.5 + self.unknown[cell] / UNKNOWN_REACH * 0.5),
-                    byte(self.river_distance[cell] / WAY_REACH),
-                    byte(self.road_distance[cell] / WAY_REACH),
+                    0,
+                    0,
                 ]
             })
             .collect()
@@ -483,24 +293,6 @@ fn nearest_hexes(hexes: &[Hex], bounds: [f32; 4], hex_spacing: f32) -> Vec<Optio
                 .map(|(hex, _)| hex)
         })
         .collect()
-}
-
-/// A way through its points with its corners cut twice: a curve.
-fn smoothed(points: &[Vec2]) -> Vec<Vec2> {
-    let mut curve = points.to_vec();
-    for _ in 0..2 {
-        if curve.len() < 3 {
-            break;
-        }
-        let mut cut = vec![curve[0]];
-        for pair in curve.windows(2) {
-            cut.push(pair[0].lerp(pair[1], 0.25));
-            cut.push(pair[0].lerp(pair[1], 0.75));
-        }
-        cut.push(*curve.last().expect("a curve of three points"));
-        curve = cut;
-    }
-    curve
 }
 
 /// Writes the triangle's height into every cell whose middle it covers, keeping the highest.

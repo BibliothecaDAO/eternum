@@ -75,19 +75,15 @@ struct Features {
   known: f32,
   // How far into the unknown, in world units: negative over known land.
   unknown: f32,
-  river: f32,
-  road: f32,
 }
 
-// `cell` is the map's own texel, which holds the kind; `blended` its neighbours' blend, which holds the distances.
+// `cell` is the map's own texel, which holds the kind; `blended` its neighbours' blend, which holds the distance.
 fn read_features(cell: vec4f, blended: vec4f) -> Features {
   let packed = round(cell.r * 255.0);
   var features: Features;
   features.ground = floor(packed / 16.0);
   features.known = packed - features.ground * 16.0;
   features.unknown = (blended.g - 0.5) * 8.0;
-  features.river = blended.b * 2.0;
-  features.road = blended.a * 2.0;
   return features;
 }
 
