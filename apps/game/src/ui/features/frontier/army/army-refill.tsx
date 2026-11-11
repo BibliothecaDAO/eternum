@@ -1,3 +1,4 @@
+import { useSpendLords } from "../value/use-spend-lords";
 import { useGame } from "@/hooks/context/game-context";
 import { useConfirmFor } from "@/hooks/helpers/use-confirm-for";
 import { sendOnce, useInFlight } from "@/hooks/store/use-actions-in-flight";
@@ -24,7 +25,10 @@ export const ArmyRefill = ({
   look?: "button" | "price" | "stamina";
 }) => {
   const { setup, account } = useGame();
-  const held = useRealmLords(realm);
+  const earned = useRealmLords(realm);
+  const purchased = useSpendLords(realm).balance?.available ?? 0n;
+  const spendOnly = Number(purchased > BigInt(Number.MAX_SAFE_INTEGER) ? BigInt(Number.MAX_SAFE_INTEGER) : purchased);
+  const held = earned === undefined ? undefined : Math.min(Number.MAX_SAFE_INTEGER, earned + spendOnly);
   const { confirming, ask, close } = useConfirmFor(army.explorerId);
   const refilling = useInFlight("refill", army.explorerId) !== undefined;
   const stamina = army.stamina;
@@ -56,6 +60,7 @@ export const ArmyRefill = ({
         <RefillConfirm
           stamina={stamina}
           held={held}
+          spendOnly={spendOnly}
           sending={refilling}
           onRefill={(amount) => void refill(amount)}
           onCancel={close}

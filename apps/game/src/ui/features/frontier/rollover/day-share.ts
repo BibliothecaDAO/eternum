@@ -88,7 +88,7 @@ export const dayPostText = ({
   game: string;
   day: number;
   totals: DayTotals;
-  rank: { from: number; to: number } | undefined;
+  rank: { from: number; to: number } | null | undefined;
   trail: readonly DayMark[];
 }) => {
   const standing = rank ? ` · #${rank.to}${rankMove(rank) ? ` ${rankMove(rank)}` : ""}` : "";

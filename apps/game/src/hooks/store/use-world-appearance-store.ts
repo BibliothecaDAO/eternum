@@ -6,7 +6,7 @@ import type { TerrainFogStyle } from "@/three/terrain/terrain-fog-style";
 interface WorldAppearanceState {
   fogStyle: TerrainFogStyle;
   reducedMotion: boolean;
-  /** Vibration on big moments where the device supports it (Android). */
+  /** Vibration on big moments where the device supports it (Android); in the iOS app, a tap on a confirmed action. */
   haptics: boolean;
   /** Next up's tips (the empire's suggestions); off, it still shows alerts and the selected realm's own step. */
   nextUpTips: boolean;

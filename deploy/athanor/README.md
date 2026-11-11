@@ -229,3 +229,98 @@ the runner keeps its containers' logs in `DIRECTORY/SHARD/shard-logs.log` and re
 and network; the images it ran stay for the next arm.
 
 Preserve the baseline image and chain data until final acceptance and the approved cutover.
+
+## LORDS deposit activation and source retirement
+
+Deposits require a new Games root and matching native schema. An existing root is immutable. Upgrade the L2 ledger with
+its additive deposit storage and keep the reward season's funding separate. Wallet ingress is `deposit_lords` on that
+ledger. The existing public Games RPC admits `configure_deposits`, `deliver_deposit` and `sweep_lords`; contract roles
+and the independent signature remain required.
+
+Prepare the owner's exact calls without signing or submitting:
+
+```sh
+pnpm deposits:operations prepare /absolute/path/deposit-deployment.json /absolute/path/deposit-owner-calls.json
+```
+
+The input contains `shard` (`chainId`, `rpcUrl`, `gamesAddress`, `firstRelease`, `heraldUrl`), `ledger` (`rpcUrl`,
+`chainId`, `address`), `gameId` and the reviewed `ledgerClassHash`. The output binds the ledger upgrade, immutable
+destination and native signer/epoch configuration. Resolve these values from the new manifests and reviewed build; never
+reuse the existing dev root or invent an address. S1's funded calendar starts no earlier than 15 November. For signer
+rotation, update the native source's signer/epoch from the ledger's `cosigner` view for every enabled game, including
+ended games with unpaid obligations. Chain and ledger binding stay immutable. Preserve co-signer wallet history and
+canonical block anchors across restart and rotation.
+
+The relay discovers receipts independently of delivery progress. A failed receipt stays pending while later receipts
+continue. Known invalid destinations require an irreversible native cancellation before refund to the original payer. At
+season end the existing `sweep_lords` debits unused principal and emits `PrincipalWithdrawal`. Its separate L2 payment
+uses the existing verified payout-wallet identity and wallet-change hold. Principal needs no reward publication and
+remains payable after reward closure or its claim deadline. A missing wallet keeps principal pending while eligible
+reward settlement continues. Spent principal remains reserved custody; reward payment and treasury settlement cannot
+consume it.
+
+`shard.py` removal, official teardown and pending-shard reinitialization call the authenticated existing relay route
+`POST /api/value/operator/deposit-retirement` before stopping or deleting state. The relay derives connections from the
+registered chain, rejects live enabled seasons, and requires terminal L2 receipts, matching confirmed native balances,
+and payment of every principal withdrawal. Outage or lag refuses retirement. The removal path records
+`deposit-retirement.json`; teardown preserves that evidence outside the removed directory. Keep the source and its
+co-signer routing available until the gate passes.
+
+### Deposit rehearsal on dev
+
+Rehearse on the existing dev test ledger, preserving its history and the running shard, including game 2 and its payout
+obligations. Start a fresh non-matrix runner named `S1_DEPOSIT_<suffix>` (measurement roles refuse a `DEV_` name), with
+the dev guardian, an unused `port_base` and HTTPS RPC and Herald routes:
+
+```sh
+python3 deploy/athanor/scripts/operator-command.py runner /absolute/path/s1-deposit.json /absolute/path/s1-deposit-run
+```
+
+Herald needs a named HTTPS hostname on the dev tunnel: its `/games/updates` stream uses Server-Sent Events, which Quick
+Tunnels do not carry. A Quick Tunnel can serve the RPC; named hostnames for both keep their manifest identities stable.
+
+After source review and the final native gate, deploy only the relay and monitor at the reviewed commit. From
+`apps/value-relay`, use the deployment's existing commands:
+
+```sh
+pnpm exec wrangler deploy --tag REVISION --config monitor.wrangler.jsonc --env staging
+pnpm exec wrangler deploy --tag REVISION --config wrangler.jsonc --env staging
+```
+
+Keep their secrets and record the previous versions for rollback. Coordinate a freeze on other dev Cloudflare
+deployments until the rehearsal ends. Move the dev co-signer to the same commit through `cosigner/install.sh`, keeping
+its key and wallet database, and add the runner's loopback RPC and Herald to `shards` while retaining existing entries.
+Give the runner's ledger-operator role back to the relay account in `gameplay-contracts.json`. Create its Frontier game
+through the harness with a preset registered on the dev ledger. Activate the runner through the existing
+`directory_status(configuration, "active")` operation; this rehearsal deliberately promotes the runner beyond its
+ordinary PENDING measurement lifecycle. Activate it after the existing launch calendar's Frontier phase ends: the launch
+cron schedules that phase on every active shard. The additive relay, monitor and co-signer updates can run beforehand;
+keep the existing shard's settlement routing available.
+
+Fund the new game with `fund:frontier dev`. Mainnet funding, including dev funding, remains an owner operation. Submit
+the calls prepared by `pnpm deposits:operations prepare`: ledger `upgrade` and `enable_deposits` through the existing
+account helpers, then `configure_deposits` signed by the runner's operator. The additive upgrade preserves old ledger
+history, and the updated relay skips deposits on roots without the deposit ABI. This path makes no production change,
+requires no alternate ledger or central services, and does not run dev setup, deploy or teardown. While both shards are
+active, launch requests that omit their chain are refused.
+
+Reuse `apps/game`'s `playtest` with
+`--steps s1-deposits --chain-id <runner-chain> --game-id <game> --player <email> --storage-state <file> --iterations 1 --renderer-modes webgpu-auto --headed`.
+Prepare the linked test wallet in that player's persistent browser profile, with 20 devLords plus its fee funding for
+both deposits: STRK for a connected wallet, real LORDS for a Realms wallet (each send holds its full fee cap until AVNU
+refunds the rest). A Realms wallet's passkey signs only at the dev client's origin, where the deployed client is next's:
+run with `--base-url https://play.dev-realms.party --client-at-origin`, so this checkout's build answers for that origin
+in the run's page alone, and pass the device's saved passkeys with `--passkeys`; each deposit then writes its fee and
+built calls to `<step>-fee-shown.json` and waits for `<step>-fee-approved.json` (or `-fee-refused.json`). A connected
+wallet's two prompts are approved by hand. Each waits ten minutes; Ctrl-C cancels. The proof deposits ten LORDS, makes
+missing stamina through ordinary Explore controls if needed, and performs one mixed partial refill that consumes all
+purchased LORDS. Its final `wallet-deposit-for-sweep` step deposits another ten LORDS through the same flow and exact
+balance check, leaving 10 unspent LORDS for the existing season-end principal return. Both deposits retain their
+response bodies, credited receipt identities and before/after purse evidence. Earned winnings from a ruin chest must
+already be present. Missing prerequisites fail explicitly. `lab-spend-lords` remains the fixture proof.
+
+Preserve the response bodies, confirmed receipt and heads, exact native and visible balances, and stamina evidence in
+the playtest transcript. Separately capture the season-end receipts and wallet deltas; exercise interrupted delivery,
+invalid-destination refund, absent-wallet retry after reward close, and retirement refusal/pass. The existing
+`operator-command.py stop` retires only the runner after the relay's retirement check passes. Keep the dev ledger
+upgrade, existing shard and payout routes. No rehearsal pass is implied before these actual transactions are exercised.

@@ -23,6 +23,7 @@ import time
 import deploy
 import shard
 from directory import directory_status
+from deposit_retirement import require_deposit_retirement
 
 
 BACKUPS = Path("/opt/athanor/backups")
@@ -127,6 +128,8 @@ def teardown(arguments, report_stage):
             report_stage("verify backup")
             require_verified_backup(environment, directory, backup)
         if directory.exists():
+            report_stage("verify deposit retirement")
+            require_deposit_retirement(config, directory)
             report_stage("stop and remove volumes")
             if (directory / "compose.yml").exists():
                 if (directory / ".env").exists():
@@ -135,6 +138,10 @@ def teardown(arguments, report_stage):
                                stdout=sys.stdout, stderr=sys.stderr)
             report_stage("keep deployment logs")
             LOGS.mkdir(mode=0o700, exist_ok=True)
+            retirement = directory / "deposit-retirement.json"
+            if retirement.exists():
+                chain = json.loads(retirement.read_text())["chainId"]
+                shutil.copyfile(retirement, LOGS / f"deposit-retirement-{chain}.json")
             for log in directory.glob("deploy-*.log"):
                 shutil.copyfile(log, LOGS / log.name)
                 (LOGS / log.name).chmod(0o600)

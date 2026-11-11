@@ -192,6 +192,8 @@ def restart_unfinished(directory, inputs, release, report_stage):
                                 "; remove the run directory yourself before retrying")
     if not is_own_pending_row(row, chain, url):
         raise DeploymentRefused("Listed shard cannot be reinitialized: " + "; ".join(differences))
+    from deposit_retirement import require_deposit_retirement
+    require_deposit_retirement(inputs, directory)
     report_stage("restart pending shard")
     subprocess.run([*compose(directory), "down", "--volumes"], check=True, stdout=sys.stdout, stderr=sys.stderr)
     for path in directory.iterdir():

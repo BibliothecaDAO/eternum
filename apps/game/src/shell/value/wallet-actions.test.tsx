@@ -215,6 +215,7 @@ it("shows the Realms wallet's fee in LORDS before its passkey confirms, and open
       JSON.stringify(CALLS),
       expect.anything(),
       expect.any(Function),
+      expect.any(AbortSignal),
     );
     expect(braavos.connections()).toEqual([]);
   } finally {
@@ -254,6 +255,7 @@ it("signs nothing whose fee rose past the one shown: a stale send is priced agai
       JSON.stringify(CALLS),
       expect.anything(),
       expect.any(Function),
+      expect.any(AbortSignal),
     );
   } finally {
     signOut();
@@ -377,6 +379,33 @@ it("on re-entry with a send still uncertain, sends nothing new, and ends it once
     expect(uncertain.uncertainSendOf(LINKED)).toBeUndefined();
   } finally {
     useIdentitySessionStore.setState({ status: "anonymous", session: null });
+    vi.restoreAllMocks();
+  }
+});
+
+it("on re-entry with a passkey still asked when its panel closed, offers only Check again: nothing signed to send again", async () => {
+  const send = await import("@/ui/modules/identity/wallet-send");
+  const uncertain = await import("@/ui/modules/identity/uncertain-sends");
+  const { signOut } = await withRealmsWallet();
+  const prepare = vi.spyOn(send, "prepareDefaultWalletSend");
+  vi.spyOn(uncertain, "standingOf").mockResolvedValue({ kind: "pending" });
+  uncertain.rememberUncertain({
+    via: "passkey",
+    owner: LINKED,
+    calls: JSON.stringify(CALLS),
+    execution: { message: { Nonce: "0x77", "Execute Before": 2_000 } } as never,
+    ownerSignature: null,
+    hash: null,
+    at: Date.now(),
+  });
+  try {
+    const { container, landed } = await openSend();
+    await settled(() => expect(container.textContent).toContain("Your last send is on its way"));
+    expect(buttonsOf(container)).toEqual(["Check again"]);
+    expect(prepare).not.toHaveBeenCalled();
+    expect(landed).not.toHaveBeenCalled();
+  } finally {
+    signOut();
     vi.restoreAllMocks();
   }
 });

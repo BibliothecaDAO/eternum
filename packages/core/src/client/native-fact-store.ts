@@ -1,6 +1,13 @@
+import {
+  decodeNativeRow,
+  compileDecoder,
+  integer,
+  nativeRowDefinitions as definitions,
+  type DeclaredAbsence,
+  type WireType,
+} from "./native-row";
 import { hasSingleTilePosition } from "./native-occupancy";
 import {
-  nativeFactModels,
   type NativeKeys,
   type NativeModelName,
   type NativeRows,
@@ -34,12 +41,6 @@ type AbsenceResult<M extends NativeModelName> =
   | NativeFactResult<NativeRows[M]>
   | (M extends "ArmySlot" ? UnusedArmySlot : never);
 
-interface DeclaredAbsence {
-  value: string;
-  parent?: NativeModelName;
-  parentKeys?: Readonly<Record<string, string>>;
-}
-
 type Fact = NativeRows[NativeModelName];
 type StoredFact = { readonly row: Fact; readonly wireId: string };
 export type NativeFactChange = {
@@ -52,36 +53,6 @@ export type NativeFactChange = {
 }[NativeModelName];
 type PendingFact = { readonly key: string; readonly current?: Fact };
 type PendingChanges = Map<NativeModelName, Map<string, PendingFact>>;
-type WireType = string | readonly [WireType] | { readonly [field: string]: WireType | readonly string[] };
-type Decoder = (value: unknown) => unknown;
-
-const definitions = nativeFactModels as Record<
-  NativeModelName,
-  {
-    keys: readonly string[];
-    scope: "game" | "deployment";
-    fields: Record<string, WireType>;
-    absence?: DeclaredAbsence;
-  }
->;
-/**
- * The contract allocates every entity id at or under 2^53 - 1, so a JavaScript number holds each one exactly. The
- * schema keeps ids as plain u64, so they are known by name: every u64 *_id, and the three fields naming an entity
- * without the suffix (a labor grant's home, an army's owning structure, a village's realm).
- */
-const MAX_ENTITY_ID = BigInt(Number.MAX_SAFE_INTEGER);
-const isEntityIdField = (path: string): boolean => {
-  const field = path.slice(path.lastIndexOf(".") + 1);
-  return field.endsWith("_id") || field === "home" || field === "owner" || field === "village_realm";
-};
-
-const decoders = new Map<NativeModelName, Decoder>(
-  Object.entries(definitions).map(([name, definition]) => [
-    name as NativeModelName,
-    compileDecoder(definition.fields, name),
-  ]),
-);
-
 /** Herald is the only writer. Subscribers see all rows from a transaction before its notification. */
 export class NativeFactStore implements GameSyncStore {
   private snapshot?: GameSyncSnapshotState;
@@ -139,10 +110,10 @@ export class NativeFactStore implements GameSyncStore {
     if (unknown) return { unknown };
     if (absence.value === "unused") return { unused: true };
     return {
-      known: decoders.get(model)!({
+      known: decodeNativeRow(model, {
         ...Object.fromEntries(Object.entries(definition.fields).map(([field, type]) => [field, zeroValue(type)])),
         ...keys,
-      }) as NativeRows[M],
+      }),
     };
   }
 
@@ -271,8 +242,7 @@ export class NativeFactStore implements GameSyncStore {
     id: string,
     value: Record<string, unknown>,
   ): void {
-    const row = decoders.get(model)!(value) as Fact;
-    if (definitions[model].scope === "game" && gameIdOf(row) === 0) throw new Error(`Reserved game id in ${model}`);
+    const row = decodeNativeRow(model, value);
     const key = factKey(model, row);
     const existingKey = this.wireKeys.get(model)?.get(id);
     const existingId = this.models.get(model)?.get(key)?.wireId;
@@ -451,81 +421,4 @@ function wireId(value: string): string {
     .split(":")
     .map((felt) => `0x${integer(felt, (1n << 251n) + 17n * (1n << 192n) + 1n, "row key").toString(16)}`)
     .join(":");
-}
-
-function integer(value: unknown, limit: bigint, path: string): bigint {
-  if (typeof value === "number" && !Number.isSafeInteger(value)) throw new Error(`Unsafe integer in ${path}`);
-  if (
-    typeof value !== "number" &&
-    typeof value !== "bigint" &&
-    !(typeof value === "string" && /^(0x[0-9a-fA-F]+|[0-9]+)$/.test(value))
-  )
-    throw new Error(`Invalid integer in ${path}`);
-  const result = BigInt(value);
-  if (result < 0n || result >= limit) throw new Error(`Integer out of range in ${path}`);
-  return result;
-}
-
-function compileDecoder(type: WireType, path: string): Decoder {
-  if (type === "boolean")
-    return (value) => {
-      if (typeof value !== "boolean") throw new Error(`Invalid boolean in ${path}`);
-      return value;
-    };
-  if (typeof type === "string") {
-    const bits = Number(type.slice(1));
-    if (type === "u64" && isEntityIdField(path))
-      return (value) => {
-        const result = integer(value, 1n << 64n, path);
-        if (result > MAX_ENTITY_ID) throw new Error(`Entity id out of range in ${path}`);
-        return result;
-      };
-    const limit = type === "felt" ? (1n << 251n) + 17n * (1n << 192n) + 1n : 1n << BigInt(bits);
-    return (value) => {
-      const result = integer(value, limit, path);
-      return type !== "felt" && bits <= 32 ? Number(result) : result;
-    };
-  }
-  if (Array.isArray(type)) {
-    const item = compileDecoder(type[0], `${path}[]`);
-    return (value) => {
-      if (!Array.isArray(value)) throw new Error(`Invalid array in ${path}`);
-      return Object.freeze(value.map(item));
-    };
-  }
-  if ("option" in type) {
-    const item = compileDecoder(type.option as WireType, path);
-    return (value) => (value === null ? null : item(value));
-  }
-  if ("enum" in type)
-    return (value) => {
-      if (typeof value !== "string" || !(type.enum as readonly string[]).includes(value))
-        throw new Error(`Invalid enum in ${path}`);
-      return value;
-    };
-  if ("variants" in type) {
-    const variants = new Map(
-      Object.entries(type.variants).map(([name, payload]) => [
-        name,
-        compileDecoder(payload as WireType, `${path}.${name}`),
-      ]),
-    );
-    return (value) => {
-      if (!value || typeof value !== "object" || Array.isArray(value) || Object.keys(value).length !== 1)
-        throw new Error(`Invalid enum in ${path}`);
-      const [name, payload] = Object.entries(value)[0];
-      const decode = variants.get(name);
-      if (!decode) throw new Error(`Invalid enum in ${path}`);
-      return Object.freeze({ [name]: decode(payload) });
-    };
-  }
-  const fields = Object.entries(type).map(
-    ([field, definition]) => [field, compileDecoder(definition as WireType, `${path}.${field}`)] as const,
-  );
-  return (value) => {
-    if (!value || typeof value !== "object" || Array.isArray(value)) throw new Error(`Invalid row in ${path}`);
-    const row = value as Record<string, unknown>;
-    if (Object.keys(row).length !== fields.length) throw new Error(`Unexpected fields in ${path}`);
-    return Object.freeze(Object.fromEntries(fields.map(([name, decode]) => [name, decode(row[name])])));
-  };
 }

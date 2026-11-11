@@ -47,7 +47,7 @@ export const DayDoneCard = ({
   history: Exclude<DayHistory, "waiting">;
   onRetry: () => void;
   /** The closing rank change, from Herald's record of the ended day. */
-  rank?: { from: number; to: number };
+  rank?: { from: number; to: number } | null;
   /** How many armies ended with the day. */
   armies: number;
   troopsLost: number;

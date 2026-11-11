@@ -73,8 +73,10 @@ const REALM_7 = {
 } as never;
 
 vi.mock("@/hooks/context/game-context", () => ({ useGame: () => ({ setup: { store: facts } }) }));
+/** The names reader, one object until a name changes, as the real one is. */
+const NAMES_READER = vi.hoisted(() => ({ text: () => "", reading: () => ({ state: "waiting", text: "…" }) }));
 vi.mock("@/hooks/use-player-profile", () => ({
-  usePlayerNames: () => ({ text: () => "", reading: () => ({ state: "waiting", text: "…" }) }),
+  usePlayerNames: () => NAMES_READER,
   usePlayerProfile: () => ({ name: null, portrait: null }),
   usePlayerDisplayName: () => "Ashwalker",
   usePlayerName: () => ({ state: "named", text: "Ashwalker", claimed: true }),

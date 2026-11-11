@@ -25,7 +25,6 @@ jobs:
       portal: ${{ steps.paths.outputs.portal }}
       native: ${{ steps.paths.outputs.native }}
       runtime: ${{ steps.paths.outputs.runtime }}
-      terrain: ${{ steps.paths.outputs.terrain }}
       amm: ${{ steps.paths.outputs.amm }}
       map_client: ${{ steps.paths.outputs.map_client }}
       collectibles: ${{ steps.paths.outputs.collectibles }}
@@ -114,11 +113,6 @@ jobs:
     if: needs.scope.outputs.runtime == 'true'
     uses: ./.github/workflows/test-agent-runtime.yml
 
-  terrain:
-    needs: scope
-    if: needs.scope.outputs.terrain == 'true'
-    uses: ./.github/workflows/verify-terrain.yml
-
   amm:
     needs: scope
     if: needs.scope.outputs.amm == 'true'
@@ -167,7 +161,6 @@ jobs:
         portal,
         native,
         runtime,
-        terrain,
         amm,
         map_client,
         collectibles,

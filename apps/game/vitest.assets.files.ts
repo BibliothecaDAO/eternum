@@ -1,6 +1,6 @@
 /**
- * Checks that decode shipped assets or run a real build: right on the deploy and terrain workflows, too slow
- * for every pull request (they were half of the suite's time).
+ * Checks that decode shipped assets or run a real build: their own step in the client workflow and in the deploy, kept
+ * out of the main suite (they were half of its time).
  */
 export const ASSET_CHECK_FILES = [
   "src/three/terrain/terrain-prop-pool-capacity.test.ts",

@@ -1,5 +1,5 @@
 {
-  "schemaIdentity": "857284f417bc948de383c42f7641277017c5c43ec61eebbb718ea7085ebeae2b",
+  "schemaIdentity": "ab3864f0631e2117d1a1faece25f2fea4228b728da8262883e1426cb94dac831",
   "commandAbi": [
     {
       "type": "interface",
@@ -1531,6 +1531,22 @@
     },
     {
       "name": "ExpeditionDiscovery",
+      "scope": "game"
+    },
+    {
+      "name": "DepositSource",
+      "scope": "game"
+    },
+    {
+      "name": "SpendLords",
+      "scope": "game"
+    },
+    {
+      "name": "PrincipalWithdrawal",
+      "scope": "game"
+    },
+    {
+      "name": "DepositReceipt",
       "scope": "game"
     },
     {

@@ -36,6 +36,12 @@ vi.mock("@/hooks/context/identity-session", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/hooks/context/identity-session")>()),
   useIdentitySession: () => ({ status: "signed-out", session: null }),
 }));
+// Identity answers for the players the recap names; nothing else on the page answers.
+vi.stubGlobal("fetch", (input: string | URL | Request) =>
+  new URL(input instanceof Request ? input.url : String(input), "http://localhost").pathname.endsWith("/api/profiles")
+    ? Promise.resolve(Response.json({ profiles: {} }))
+    : new Promise<Response>(() => {}),
+);
 vi.mock("@/ui/design-system/kit/player-name", () => ({
   PlayerName: ({ account }: { account: string }) => <span>{account}</span>,
 }));
@@ -74,6 +80,8 @@ const open = async (entry: string | typeof FROM_LIST = FROM_LIST) => {
       </MemoryRouter>,
     ),
   );
+  // Let identity's names land.
+  await act(async () => new Promise((resolve) => setTimeout(resolve, 0)));
   unmount = () => act(async () => root.unmount());
   const button = (word: string) =>
     [...container.querySelectorAll("button")].find((each) => each.textContent?.includes(word));

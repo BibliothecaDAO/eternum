@@ -4,7 +4,8 @@ import { identityClient } from "@/hooks/context/identity-session";
 import { isAppleMobile, isInstalledApp, runsServiceWorker } from "@/pwa/browser-capabilities";
 import { notificationWorkerRequest, readLocalNotificationDevice } from "@/pwa/local-notification-client";
 import { disablePushNotifications, enablePushNotifications, readPushDevice } from "@/pwa/push-notification-client";
-import { disableIosAppPush, enableIosAppPush, iosAppBridge, iosAppPushState } from "@/pwa/ios-app-push";
+import { iosAppBridge } from "@/pwa/ios-app-bridge";
+import { disableIosAppPush, enableIosAppPush, iosAppPushState } from "@/pwa/ios-app-push";
 import type { PushConfiguration } from "@bibliothecadao/notifications";
 
 /**

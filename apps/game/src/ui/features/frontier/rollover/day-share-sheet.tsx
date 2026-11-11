@@ -3,16 +3,17 @@ import "./day-share-sheet.css";
 import { configManager, getStructureName } from "@bibliothecadao/eternum";
 import type { NativeFactStore, NativeRows } from "@bibliothecadao/eternum/game-client";
 import { formatShort } from "@bibliothecadao/types";
-import { useEffect, useLayoutEffect, useRef, useState, type RefObject } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 
 import { useGame } from "@/hooks/context/game-context";
 import { useAccountStore } from "@/hooks/store/use-account-store";
-import { usePlayerName } from "@/hooks/use-player-profile";
+import { usePlayerName, usePlayerNames } from "@/hooks/use-player-profile";
 import { getActiveGame } from "@/runtime/world";
 import { useLayout } from "@/shell/frame/layout";
 import { ageOf } from "@/shell/play/ages";
 import { DayCard, type SharedDay } from "@/shell/share/day-card";
 import { useShareLink, useShareTally } from "@/shell/share/own-shares";
+import { usePreparedCard } from "@/shell/share/prepared-card";
 import { shareHint, StepNumber, useShareSteps } from "@/shell/share/share-steps";
 import { HudButton, HudIconButton, HudModalLayer, HudNotice } from "@/ui/design-system/kit/hud-elements";
 import { CLOSE, DAY_SHARE_WORDS, SHARE_WORDS } from "@/ui/design-system/kit/words";
@@ -39,13 +40,16 @@ export const DayShareSheet = ({ shared, onClose }: { shared: SharedDay; onClose:
   const cut: CardCut = phone ? "tall" : "wide";
   const systemShare = phone && canShareCardFile();
   const size = CARD_CUTS[cut];
-  const card = useRef<HTMLDivElement>(null);
-  const wideOutOfSight = useRef<HTMLDivElement>(null);
+  const [card, setCard] = useState<HTMLDivElement | null>(null);
+  const [wideOutOfSight, setWideOutOfSight] = useState<HTMLDivElement | null>(null);
   const [frame, width] = useWidth();
   const link = useShareLink({ kind: "frontier-day", ...shared.game, moment: shared.day });
-  // The card is made into an image once it says whose day it is, never with the name still being read.
-  const named = usePlayerName(shared.player)?.state !== "waiting";
-  const publish = useCardPublication(link, cut === "wide" ? card : wideOutOfSight, named);
+  // The card is made into an image once it shows all it will: whose day it is, and its closing rank once Herald answers.
+  const drawn = usePlayerName(shared.player)?.state !== "waiting" && shared.rank !== undefined;
+  // What the card is drawn from: the day as shared (plain values, compared by what they say) and the names reader.
+  const names = usePlayerNames();
+  const drawnFrom = [JSON.stringify(shared), names];
+  const publish = useCardPublication(link, cut === "wide" ? card : wideOutOfSight, drawnFrom, drawn);
   const line = dayPostText({ ...shared, game: ageOf("frontier").name });
   const fileName = DAY_SHARE_WORDS.fileName(shared.day);
   const steps = useShareSteps({
@@ -54,6 +58,7 @@ export const DayShareSheet = ({ shared, onClose }: { shared: SharedDay; onClose:
     fileName,
     line,
     url: link.url("x"),
+    ready: drawn,
     onPost: () => {
       publish();
       link.posted();
@@ -75,12 +80,12 @@ export const DayShareSheet = ({ shared, onClose }: { shared: SharedDay; onClose:
             style={{ aspectRatio: `${size.width} / ${size.height}` }}
           >
             <div className="day-share__scaler" style={{ transform: `scale(${(width ?? size.width) / size.width})` }}>
-              <DayCard cardRef={card} cut={cut} shared={shared} />
+              <DayCard cardRef={setCard} cut={cut} shared={shared} />
             </div>
           </div>
           {cut === "tall" && (
             <div data-surface="shell" className="day-share__out-of-sight" aria-hidden>
-              <DayCard cardRef={wideOutOfSight} cut="wide" shared={shared} />
+              <DayCard cardRef={setWideOutOfSight} cut="wide" shared={shared} />
             </div>
           )}
           <footer className="day-share__foot">
@@ -93,7 +98,8 @@ export const DayShareSheet = ({ shared, onClose }: { shared: SharedDay; onClose:
                   fileName={fileName}
                   line={line}
                   url={link.url("system")}
-                  ready={named && link.code !== undefined}
+                  drawnFrom={[...drawnFrom, cut]}
+                  ready={drawn && link.code !== undefined}
                   onPress={publish}
                   onShared={link.posted}
                 />
@@ -105,7 +111,12 @@ export const DayShareSheet = ({ shared, onClose }: { shared: SharedDay; onClose:
                 <StepNumber number={1} />
                 {steps.word}
               </HudButton>
-              <HudButton kind={systemShare ? "secondary" : "primary"} icon="twitter" onClick={steps.post}>
+              <HudButton
+                kind={systemShare ? "secondary" : "primary"}
+                icon="twitter"
+                busy={steps.posting}
+                onClick={steps.post}
+              >
                 <StepNumber number={2} />
                 {SHARE_WORDS.post}
               </HudButton>
@@ -162,31 +173,34 @@ const realmOnCard = (realm: NativeRows["Structure"], store: NativeFactStore): Sh
 
 /**
  * The card the link unfurls as, published by the player's press of a way to post (Post on X, Share) and by nothing
- * else: the wide card is made into a JPEG as soon as it says whose day it is, held by this sheet alone, and handed to
- * identity on the press, so the upload is under way before the post's page opens. Closing the sheet without that
- * press publishes nothing. Once per sheet; a failed upload leaves the game's own preview, and the next press tries
- * again.
+ * else, and only ever the card as drawn at that press. The wide card's JPEG is made ahead from the values it is drawn
+ * from (usePreparedCard); a press asks for that snapshot, and it is handed to identity once made, usually before the
+ * post's page has opened. A card not yet whole, or changed since the press, is not published: the link keeps the
+ * game's own preview until a press finds a whole card. One upload per snapshot, however often it is pressed; a press
+ * after the card changed publishes the new one. Uploads go one after another, so the link keeps the last press's card,
+ * and a failed one lets the next press try again. Closing the sheet without a press publishes nothing.
  */
-const useCardPublication = (link: ReturnType<typeof useShareLink>, card: RefObject<HTMLDivElement>, ready: boolean) => {
-  const jpeg = useRef<Promise<Blob> | null>(null);
-  const published = useRef(false);
+const useCardPublication = (
+  link: ReturnType<typeof useShareLink>,
+  card: HTMLDivElement | null,
+  drawnFrom: readonly unknown[],
+  ready: boolean,
+) => {
+  const prepared = usePreparedCard(card, drawnFrom, ready, (node) => cardJpeg(node, CARD_CUTS.wide));
+  const [asked, setAsked] = useState<{ snapshot: unknown } | null>(null);
+  const published = useRef<unknown>(null);
+  const uploads = useRef<Promise<void>>(Promise.resolve());
   useEffect(() => {
-    if (!ready || !card.current || jpeg.current) return;
-    jpeg.current = cardJpeg(card.current, CARD_CUTS.wide);
-    jpeg.current.catch(() => {
-      jpeg.current = null;
-    });
-  }, [ready, card]);
-  return () => {
-    const node = card.current;
-    if (!link.code || published.current || !node) return;
-    published.current = true;
-    const image = (jpeg.current ??= cardJpeg(node, CARD_CUTS.wide));
-    image.then(link.publish).catch(() => {
-      published.current = false;
-      jpeg.current = null;
-    });
-  };
+    const { snapshot, image } = prepared;
+    if (asked?.snapshot !== snapshot || !image || published.current === snapshot) return;
+    published.current = snapshot;
+    uploads.current = uploads.current
+      .then(() => link.publish(image))
+      .catch(() => {
+        if (published.current === snapshot) published.current = null;
+      });
+  }, [asked, prepared, link]);
+  return () => link.code && setAsked({ snapshot: prepared.snapshot });
 };
 
 /** What the player's shared days brought so far (identity's count), said once they brought a visit; nothing before. */

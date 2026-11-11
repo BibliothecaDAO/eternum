@@ -28,7 +28,7 @@ import { visitScenario } from "./visit-scenario";
 import { farPlaceScenario } from "./far-place-scenario";
 import { researchScenario } from "./research-scenario";
 import { settleScenario } from "./settle-scenario";
-import { upkeepScenario } from "./upkeep-scenario";
+import { upkeepScenario, spendLordsScenario } from "./upkeep-scenario";
 import { reinforceScenario } from "./reinforce-scenario";
 import { ruinChestsScenario, ruinChestsSurfaceScenario } from "./ruin-chests-scenario";
 
@@ -60,6 +60,7 @@ export const LAB_SCENARIOS: Partial<Record<string, () => LabScenario>> = {
   research: researchScenario,
   claim: claimScenario,
   upkeep: upkeepScenario,
+  "spend-lords": spendLordsScenario,
   settle: settleScenario,
   explore: exploreScenario,
   "painted-buildings": () => paintedBuildingsScenario(),

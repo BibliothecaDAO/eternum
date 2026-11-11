@@ -333,7 +333,7 @@ const THIN_DAY_SHARE: SharedDay = {
   game: { chainId: "0x1", gameId: 1 },
   day: 1,
   totals: { reveals: 38, cleared: 1, chests: 0, essence: 5_700, labor: 1_400, lords: 0 },
-  rank: undefined,
+  rank: null,
   trail: ["guard-holds", "Rift"],
   best: { kind: "clear", site: "Rift", guard: 666, paid: { resource: "essence", amount: 4_800 } },
   realm: { name: "Temtinos", order: 5 },

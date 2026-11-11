@@ -3,6 +3,10 @@ use starknet::storage::Map;
 
 #[starknet::storage_node]
 pub struct EntryAdministrationStorage {
+    pub deposit_sources: Map<u32, Option<(felt252, ContractAddress, felt252, u64)>>,
+    pub spend_lords: Map<(u32, ContractAddress), (u128, u128, u128)>,
+    pub principal_withdrawals: Map<(u32, ContractAddress), Option<u128>>,
+    pub deposit_receipts: Map<(u32, u64), Option<(felt252, ContractAddress, u128, bool)>>,
     pub operator: ContractAddress,
     pub prize_pool: Map<u32, u128>,
     pub prize_issued: Map<u32, u128>,

@@ -113,4 +113,3 @@ fn legacy_cleared_depths(key: ExpeditionDiscoveryKey) -> u8 {
     assert!(mask != 0, "missing legacy ruin clear");
     mask
 }
-

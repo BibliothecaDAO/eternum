@@ -48,6 +48,26 @@ pub mod FailingReleaseMigrationFixture {
         }
     }
 }
+#[starknet::interface]
+pub trait IChangedSweep<T> {
+    fn sweep_lords(ref self: T, game_id: u32, structure_id: u64, context: crate::commands::ActionContext);
+}
+
+#[starknet::contract]
+pub mod ChangedSweepPrizesFixture {
+    #[storage]
+    struct Storage {}
+
+    #[abi(embed_v0)]
+    impl Sweep of super::IChangedSweep<ContractState> {
+        fn sweep_lords(
+            ref self: ContractState, game_id: u32, structure_id: u64, context: crate::commands::ActionContext,
+        ) {
+            core::panic_with_felt252('sweep release 2');
+        }
+    }
+}
+
 pub fn populated_facts(
     d: super::Deployment, game_id: u32, homes: Span<ResourceKey>, armies: Span<ExplorerKey>,
 ) -> Array<felt252> {
