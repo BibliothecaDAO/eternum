@@ -1,0 +1,80 @@
+//! The builds the map's units are drawn as, and what a unit leaves on the air and the ground. Where each unit
+//! stands and what it does comes from the page, an instance a unit; its motion is `unit.wgsl`'s.
+
+use glam::Vec3;
+
+use crate::shapes::{Paint, Shape};
+
+/// Which of the game's models a unit is drawn as.
+#[derive(Clone, Copy, PartialEq)]
+pub enum Role {
+    Knight,
+    Crossbowman,
+    Paladin,
+    Deer,
+}
+
+pub const ROLES: [Role; 4] = [Role::Knight, Role::Crossbowman, Role::Paladin, Role::Deer];
+
+impl Role {
+    pub fn named(name: &str) -> Result<Role, String> {
+        match name {
+            "knight" => Ok(Role::Knight),
+            "crossbowman" => Ok(Role::Crossbowman),
+            "paladin" => Ok(Role::Paladin),
+            "deer" => Ok(Role::Deer),
+            other => Err(format!("No unit build is called {other}")),
+        }
+    }
+}
+
+fn v(x: f32, y: f32, z: f32) -> Vec3 {
+    Vec3::new(x, y, z)
+}
+
+/// What a unit leaves on the air and the ground, placed by `unit.wgsl`: a soft shadow, a blade's trail, three
+/// puffs of dust.
+pub fn effects() -> Shape {
+    let mut shape = Shape::default();
+    let quad = |shape: &mut Shape, corners: [Vec3; 4], paint: Paint| {
+        let [a, b, c, d] = corners.map(|corner| shape.point(corner, paint));
+        shape.triangle([a, b, c]);
+        shape.triangle([a, c, d]);
+    };
+    let square = |depth: f32, flat: bool| {
+        [(-1.0, -1.0), (1.0, -1.0), (1.0, 1.0), (-1.0, 1.0)].map(|(x, y)| {
+            if flat {
+                v(x, 0.0, y)
+            } else {
+                v(x, y, depth)
+            }
+        })
+    };
+    quad(
+        &mut shape,
+        square(0.0, true),
+        Paint::of([0.0; 3]).bone(28.0),
+    );
+    const SEGMENTS: usize = 6;
+    for segment in 0..SEGMENTS {
+        let (from, to) = (
+            segment as f32 / SEGMENTS as f32,
+            (segment + 1) as f32 / SEGMENTS as f32,
+        );
+        let corners = [
+            v(from, 0.0, 0.0),
+            v(to, 0.0, 0.0),
+            v(to, 1.0, 0.0),
+            v(from, 1.0, 0.0),
+        ];
+        quad(&mut shape, corners, Paint::of([1.0; 3]).bone(29.0));
+    }
+    for puff in 0..3 {
+        quad(
+            &mut shape,
+            square(puff as f32, false),
+            Paint::of([1.0; 3]).bone(30.0),
+        );
+    }
+    shape
+}

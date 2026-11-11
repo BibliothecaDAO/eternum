@@ -1,0 +1,40 @@
+[package]
+name = "map-client"
+version = "0.1.0"
+edition = "2021"
+description = "The world map's own renderer: the land, the buildings and the units drawn by wgpu on WebGPU or WebGL2"
+publish = false
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+bytemuck = { version = "1", features = ["derive"] }
+glam = { version = "0.29", features = ["bytemuck"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+wgpu = { version = "24", default-features = false, features = ["wgsl", "webgpu"] }
+
+[features]
+default = ["webgl2"]
+# Draws on WebGL2 where there is no WebGPU: it brings wgpu's own core and shader translator into the module.
+webgl2 = ["wgpu/webgl"]
+
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+console_error_panic_hook = "0.1"
+js-sys = "0.3"
+wasm-bindgen = "0.2"
+wasm-bindgen-futures = "0.4"
+web-sys = { version = "0.3", features = ["HtmlCanvasElement"] }
+
+[profile.release]
+opt-level = "s"
+lto = true
+codegen-units = 1
+panic = "abort"
+strip = true
+
+[package.metadata.wasm-pack.profile.release]
+wasm-opt = false
+
+[workspace]
