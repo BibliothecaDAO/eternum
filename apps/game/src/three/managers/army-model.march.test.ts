@@ -30,7 +30,7 @@ const marchHeights = (model: ArmyModel, frames = 600) => {
 describe("a marching army", () => {
   it("stands on its ground on every frame of its march and stops at its tile's centre", () => {
     const model = placedArmy();
-    model.startMovement(ARMY, [tile(0), tile(1), tile(2)], 0, TroopType.Knight, TroopTier.T1);
+    model.startMovement(ARMY, [tile(0), tile(1), tile(2)], 0, TroopType.Knight, TroopTier.T1, "walk");
 
     const heights = marchHeights(model);
 
@@ -43,16 +43,31 @@ describe("a marching army", () => {
 
   it("stays on its ground when a new order replaces its march halfway", () => {
     const model = placedArmy();
-    model.startMovement(ARMY, [tile(0), tile(1), tile(2)], 0, TroopType.Knight, TroopTier.T1);
+    model.startMovement(ARMY, [tile(0), tile(1), tile(2)], 0, TroopType.Knight, TroopTier.T1, "walk");
     const firstHalf = marchHeights(model, 30);
 
     // The army manager walks a replaced march on from where the army is drawn.
     const walkingFrom = model.getEntityWorldPosition(ARMY)!;
-    model.startMovement(ARMY, [walkingFrom, tile(3)], 0, TroopType.Knight, TroopTier.T1);
+    model.startMovement(ARMY, [walkingFrom, tile(3)], 0, TroopType.Knight, TroopTier.T1, "walk");
     const secondHalf = marchHeights(model);
 
     expect(model.isEntityMoving(ARMY)).toBe(false);
     expect(Math.max(...[...firstHalf, ...secondHalf].map((height) => Math.abs(height - GROUND)))).toBeLessThan(1e-6);
     expect(model.getInstanceData(ARMY)!.position.y).toBe(GROUND);
+  });
+
+  it("reaches the tile it runs to in two thirds of a walk's time", () => {
+    const framesAt = (pace: "walk" | "run") => {
+      const model = placedArmy();
+      model.startMovement(ARMY, [tile(0), tile(1), tile(2), tile(3)], 0, TroopType.Knight, TroopTier.T1, pace);
+      return marchHeights(model).length;
+    };
+
+    const [walk, run] = [framesAt("walk"), framesAt("run")];
+
+    // The squash before it sets off and the settle at its tile take the same time at either pace.
+    expect(run).toBeLessThan(walk);
+    expect(run / walk).toBeGreaterThan(0.6);
+    expect(run / walk).toBeLessThan(0.8);
   });
 });

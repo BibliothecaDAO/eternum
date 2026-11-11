@@ -50,7 +50,6 @@ describe("production Knight presentation", () => {
             category: TroopType.Knight,
             tier: TroopTier.T1,
             isNaval: false,
-            isMoving: false,
             primaryColor: "#ffffff",
             position: new Vector3(),
             distanceToCameraSquared: 400,
@@ -69,7 +68,7 @@ describe("production Knight presentation", () => {
     }
   });
 
-  it("prepares only the visible LOD, reaches reconciliation after leaving during load, and switches at close range", async () => {
+  it("prepares the map mesh, reaches reconciliation after leaving during load, and keeps it at every zoom", async () => {
     const loaded = new Set<string>();
     let finish!: () => void;
     runtime.areAssetsReady.mockImplementation((config: ProceduralUnitConfig) =>
@@ -100,7 +99,6 @@ describe("production Knight presentation", () => {
       category: TroopType.Knight,
       tier: TroopTier.T1,
       isNaval: false,
-      isMoving: false,
       primaryColor: "#ffffff",
       position: new Vector3(),
       distanceToCameraSquared: 400,
@@ -122,58 +120,12 @@ describe("production Knight presentation", () => {
       expect(runtime.createActor).toHaveBeenCalledWith(
         expect.objectContaining({ humanoid: expect.objectContaining({ renderDetail: "crowd" }) }),
       );
-      layer.sync([{ ...army, distanceToCameraSquared: 100 }], 0);
-      expect(runtime.prepareAssets).toHaveBeenCalledTimes(2);
-      expect(runtime.prepareAssets.mock.calls[1][0].humanoid.renderDetail).toBe("hero");
+      // The camera at its closest: the same mesh, nothing loaded or rebuilt.
+      layer.sync([{ ...army, distanceToCameraSquared: 4 }], 0);
+      expect(runtime.prepareAssets).toHaveBeenCalledTimes(1);
       expect(runtime.updateActorConfig).not.toHaveBeenCalled();
-      finish();
-      await new Promise((resolve) => setTimeout(resolve, 0));
-      layer.sync([{ ...army, distanceToCameraSquared: 100 }], 0);
-      expect(runtime.updateActorConfig).toHaveBeenCalledWith(
-        actor,
-        expect.objectContaining({ humanoid: expect.objectContaining({ renderDetail: "hero" }) }),
-      );
-      layer.sync([army], 0);
-      expect(runtime.updateActorConfig).toHaveBeenLastCalledWith(
-        actor,
-        expect.objectContaining({ humanoid: expect.objectContaining({ renderDetail: "crowd" }) }),
-      );
-      expect(runtime.prepareAssets).toHaveBeenCalledTimes(2);
     } finally {
       layer.dispose();
-    }
-  });
-});
-
-describe("the Knight's close-up switch", () => {
-  it("takes its near rig inside 11 units and keeps it out to 13, so a small zoom in the closest band rebuilds nothing", async () => {
-    const proof = recoveryFixture();
-    proof.loaded.add("crowd");
-    proof.loaded.add("hero");
-    const at = (distance: number) => ({ ...proof.mid, distanceToCameraSquared: distance * distance });
-    const detail = () => runtime.updateActorConfig.mock.lastCall?.[1].humanoid.renderDetail;
-    try {
-      proof.layer.sync([at(20)], 0);
-      await vi.waitFor(() => expect(proof.layer.hasActor(42)).toBe(true));
-      expect(runtime.createActor.mock.lastCall?.[0].humanoid.renderDetail).toBe("crowd");
-
-      proof.layer.sync([at(11.5)], 0);
-      expect(runtime.updateActorConfig).not.toHaveBeenCalled();
-      proof.layer.sync([at(10.5)], 0);
-      expect(detail()).toBe("hero");
-
-      // Zooming out a little, still inside the closest band, keeps the near rig.
-      proof.layer.sync([at(12.5)], 0);
-      proof.layer.sync([at(11.5)], 0);
-      proof.layer.sync([at(12.9)], 0);
-      expect(runtime.updateActorConfig).toHaveBeenCalledTimes(1);
-
-      proof.layer.sync([at(13.5)], 0);
-      expect(detail()).toBe("crowd");
-      proof.layer.sync([at(12.5)], 0);
-      expect(runtime.updateActorConfig).toHaveBeenCalledTimes(2);
-    } finally {
-      proof.layer.dispose();
     }
   });
 });
@@ -214,7 +166,7 @@ describe("visible asset request recovery", () => {
       for (let frame = 0; frame < 30; frame++) {
         proof.layer.sync(
           [
-            { ...proof.mid, isMoving: frame % 2 === 0, primaryColor: "#ff0000" },
+            { ...proof.mid, pace: frame % 2 === 0 ? "walk" : undefined, primaryColor: "#ff0000" },
             { ...proof.mid, entityId: 43 },
           ],
           0,
@@ -238,46 +190,9 @@ describe("visible asset request recovery", () => {
     }
   });
 
-  it("keeps loaded actors operational through a failed near request and completes the next LOD need", async () => {
+  it("loads another family's missing skin while the failed one stays unrequested", async () => {
     const proof = recoveryFixture();
-    proof.loaded.add("crowd");
-    try {
-      proof.layer.sync([proof.mid], 0);
-      await vi.waitFor(() => expect(proof.layer.hasActor(42)).toBe(true));
-      const actor = runtime.createActor.mock.results[0].value;
-      proof.layer.sync([proof.near], 0);
-      proof.requests[0].reject(new Error("near request failed"));
-      await flushLoads();
-      for (let frame = 0; frame < 30; frame++) proof.layer.sync([proof.near], 1 / 60);
-      expect(proof.requests).toHaveLength(1);
-      await proof.layer.applyImpulse(42);
-      await proof.layer.startRagdoll(42);
-      expect(actor.applyImpulse).toHaveBeenCalledOnce();
-      expect(actor.startRagdoll).toHaveBeenCalledOnce();
-      expect(proof.layer.playAttack(42, new Vector3(2, 0, 2))).toBe(true);
-      expect(runtime.update).toHaveBeenLastCalledWith(1 / 60);
-      proof.layer.sync([proof.near, { ...proof.mid, entityId: 43 }], 0);
-      expect(proof.layer.hasActor(43)).toBe(true);
-      expect(runtime.updateActorConfig).not.toHaveBeenCalled();
-      proof.layer.sync([proof.mid], 0);
-      proof.layer.sync([proof.near], 0);
-      expect(proof.requests).toHaveLength(2);
-      proof.requests[1].resolve();
-      await flushLoads();
-      proof.layer.sync([proof.near], 0);
-      expect(runtime.updateActorConfig).toHaveBeenCalledWith(
-        actor,
-        expect.objectContaining({ humanoid: expect.objectContaining({ renderDetail: "hero" }) }),
-      );
-      expect(proof.layer.getStats()).toMatchObject({ loadState: "ready", nearKnightCount: 1, midKnightCount: 0 });
-    } finally {
-      proof.layer.dispose();
-    }
-  });
-
-  it("loads another missing detail while the failed detail remains visible", async () => {
-    const proof = recoveryFixture();
-    const other = { ...proof.near, entityId: 43, position: new Vector3(4, 0, 0) };
+    const other = { ...proof.mid, entityId: 43, category: TroopType.Crossbowman, position: new Vector3(4, 0, 0) };
     try {
       proof.layer.sync([proof.mid], 0);
       await vi.waitFor(() => expect(proof.requests).toHaveLength(1));
@@ -285,7 +200,7 @@ describe("visible asset request recovery", () => {
       await flushLoads();
       proof.layer.sync([proof.mid, other], 0);
       expect(proof.requests).toHaveLength(2);
-      expect(runtime.prepareAssets.mock.calls[1][0].humanoid.renderDetail).toBe("hero");
+      expect(runtime.prepareAssets.mock.calls[1][0].kind).toBe("archer");
       proof.requests[1].resolve();
       await flushLoads();
       proof.layer.sync([proof.mid, other], 0);
@@ -342,7 +257,7 @@ describe("visible asset request recovery", () => {
 
   it("retries runtime startup on renewed demand and then reaches actor reconciliation", async () => {
     const proof = recoveryFixture();
-    proof.loaded.add("crowd");
+    proof.loaded.add("knight");
     createRuntime.mockRejectedValueOnce(new Error("runtime chunk unavailable"));
     try {
       proof.layer.sync([proof.mid], 0);
@@ -364,13 +279,13 @@ function recoveryFixture() {
   vi.spyOn(console, "error").mockImplementation(() => {});
   const loaded = new Set<string>();
   const requests: { resolve(): void; reject(error: Error): void }[] = [];
-  runtime.areAssetsReady.mockImplementation((config: ProceduralUnitConfig) => loaded.has(config.humanoid.renderDetail));
+  runtime.areAssetsReady.mockImplementation((config: ProceduralUnitConfig) => loaded.has(config.kind));
   runtime.prepareAssets.mockImplementation(
     (config: ProceduralUnitConfig) =>
       new Promise<void>((resolve, reject) => {
         requests.push({
           resolve: () => {
-            loaded.add(config.humanoid.renderDetail);
+            loaded.add(config.kind);
             resolve();
           },
           reject,
@@ -397,7 +312,6 @@ function recoveryFixture() {
     category: TroopType.Knight,
     tier: TroopTier.T1,
     isNaval: false,
-    isMoving: false,
     primaryColor: "#ffffff",
     position: new Vector3(),
     distanceToCameraSquared: 400,
@@ -406,7 +320,6 @@ function recoveryFixture() {
     layer: new ProceduralArmyCharacterLayer(scene),
     scene,
     mid,
-    near: { ...mid, distanceToCameraSquared: 100 },
     loaded,
     requests,
   };
