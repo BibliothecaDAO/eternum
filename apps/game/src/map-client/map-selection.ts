@@ -5,15 +5,13 @@ import type { WorldSpatialProjection } from "@bibliothecadao/eternum/game-sync";
 import { accountAddress } from "@/hooks/store/use-account-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { requireActiveGameClient } from "@/sync/active-game-client";
+import { activeMapLayer } from "@/three/map-layer";
 import { resolveWorldmapHexClickPlan } from "@/three/scenes/worldmap-selection-routing";
 import { worldHexToWorld } from "@/three/world-origin";
 
 import type { Hex } from "./land-from-facts";
 import { contractHexOf } from "./map-facts";
 import { orderStops } from "./order-stops";
-
-/** The surface layer: the map client does not draw the ethereal layer yet. */
-const SURFACE = false;
 
 /**
  * What a tap on the map picks, by the same rules as today's map: the viewer's own army or structure on the hex, else
@@ -33,8 +31,8 @@ export class MapSelection {
   tapAt(hex: Hex): void {
     if (this.pinOrderTo(hex)) return;
     const contract = contractHexOf(hex);
-    const army = this.projection.getArmiesAtHex({ alt: SURFACE, ...contract })[0];
-    const structure = this.projection.getStandingStructureAtHex({ alt: SURFACE, ...contract });
+    const army = this.projection.getArmiesAtHex({ alt: activeMapLayer(), ...contract })[0];
+    const structure = this.projection.getStandingStructureAtHex({ alt: activeMapLayer(), ...contract });
     const plan = resolveWorldmapHexClickPlan({
       hexCoords: hex,
       accountAddress: accountAddress(),
@@ -90,7 +88,7 @@ export class MapSelection {
     const client = requireActiveGameClient();
     const offered = client.actions.armyPaths({
       explorerId,
-      ...buildArmyPathIndexes(client, SURFACE),
+      ...buildArmyPathIndexes(client, activeMapLayer()),
       currentDefaultTick: getBlockTimestamp().currentDefaultTick,
       playerAddress: viewer,
     });

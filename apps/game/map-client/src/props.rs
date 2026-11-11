@@ -492,6 +492,11 @@ fn growth(biome: u8) -> &'static [(Prop, f32, [f32; 2], Colour)] {
             (Prop::Dead, 0.16, [0.8, 1.3], PLAIN),
             (Prop::Boulder, 0.2, [0.6, 1.6], [0.35, 0.3, 0.3]),
         ],
+        // The Ethereal: dark rock, and trees long dead.
+        16 => &[
+            (Prop::Boulder, 0.2, [0.7, 1.8], [0.5, 0.4, 0.75]),
+            (Prop::Dead, 0.08, [0.8, 1.4], [1.6, 1.2, 2.4]),
+        ],
         _ => &[],
     }
 }

@@ -29,6 +29,7 @@ const world = vi.hoisted(() => ({
   worldmapConverged: vi.fn(),
   hexReady: vi.fn(),
   sceneFailed: vi.fn(),
+  layerChanged: () => {},
   inputs: vi.fn(),
 }));
 
@@ -57,7 +58,15 @@ vi.mock("@/game-entry/play-route-readiness-store", () => ({
   },
 }));
 vi.mock("@/hooks/store/use-ui-store", () => ({
-  useUIStore: { getState: () => ({ setIsLoadingScreenEnabled: vi.fn(), setCameraTargetHex: vi.fn() }) },
+  useUIStore: {
+    getState: () => ({ setIsLoadingScreenEnabled: vi.fn(), setCameraTargetHex: vi.fn() }),
+    subscribe: (_layer: unknown, changed: () => void) => {
+      world.layerChanged = changed;
+      return () => {
+        world.layerChanged = () => {};
+      };
+    },
+  },
 }));
 vi.mock("@/play/navigation/play-route", () => ({
   parsePlayRoute: () => (world.scene ? { scene: world.scene, col: null, row: null } : null),
@@ -206,6 +215,19 @@ describe("the land the map draws", () => {
     await vi.advanceTimersByTimeAsync(60);
 
     expect(world.pack).toHaveBeenCalledTimes(2);
+    renderer.destroy();
+  });
+
+  it("is built again from the facts of another layer when the layer shown changes", async () => {
+    const renderer = newRenderer();
+    await renderer.initScene();
+
+    // The facts reader now answers for the Ethereal: one tile, elsewhere.
+    world.tiles = [{ col: 5, row: 0, biome: 1, occupied: false }];
+    world.layerChanged();
+    await vi.advanceTimersByTimeAsync(250);
+
+    expect(drawn().land.cells.map((cell: Hex) => cell.col)).toEqual([5]);
     renderer.destroy();
   });
 

@@ -80,8 +80,8 @@ fn coverage(ground: vec2f) -> f32 {
 fn hex_known(ground: vec2f) -> vec2f {
   let uv = land_uv(ground - from_hex_middle(ground));
   let packed = round(textureLoad(feature_map, vec2i(uv * vec2f(textureDimensions(feature_map))), 0).r * 255.0);
-  let biome = floor(packed / 16.0);
-  return vec2f(biome, packed - biome * 16.0);
+  let biome = floor(packed / 4.0);
+  return vec2f(biome, packed - biome * 4.0);
 }
 
 // The mist over unexplored ground: a dark, deep volume in two drifting layers whose top rises and falls, with veins

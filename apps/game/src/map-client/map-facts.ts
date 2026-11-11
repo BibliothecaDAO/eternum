@@ -5,6 +5,7 @@ import { TroopType } from "@bibliothecadao/types";
 import { Color } from "three";
 
 import { accountAddress } from "@/hooks/store/use-account-store";
+import { activeMapLayer } from "@/three/map-layer";
 import { worldHexToWorld } from "@/three/world-origin";
 import { SIDE_HEX } from "@/tokens";
 import { arePlayersAllied, sideOf, watchedSide } from "@/utils/entity-ownership";
@@ -20,9 +21,6 @@ const BUILD_OF_TROOP: Record<TroopType, TroopBuild> = {
   [TroopType.Paladin]: "paladin",
 };
 
-/** The surface layer: the map client does not draw the ethereal layer yet. */
-const SURFACE = false;
-
 /** A hex of the game's own, as contracts count it, from a normalized one and back. */
 export const contractHexOf = (hex: Hex): Hex => ({ col: hex.col + FELT_CENTER(), row: hex.row + FELT_CENTER() });
 const normalizedHexOf = (hex: Hex): Hex => ({ col: hex.col - FELT_CENTER(), row: hex.row - FELT_CENTER() });
@@ -33,38 +31,40 @@ interface PlacedChange {
   readonly current?: { readonly hexCoords: Hex & { readonly alt: boolean } };
 }
 
-/** The surface hexes a list of changes touches, normalized: where each thing was and where it is now. */
+/** The hexes of the layer shown that a list of changes touches, normalized: where each thing was and where it is now. */
 export function changedHexes(changes: readonly PlacedChange[]): Hex[] {
   return changes
     .flatMap((change) => [change.previous, change.current])
-    .flatMap((placed) => (placed && placed.hexCoords.alt === SURFACE ? [normalizedHexOf(placed.hexCoords)] : []));
+    .flatMap((placed) =>
+      placed && placed.hexCoords.alt === activeMapLayer() ? [normalizedHexOf(placed.hexCoords)] : [],
+    );
 }
 
-/** Every explored tile of the surface, its hex normalized. */
+/** Every explored tile of the layer shown, its hex normalized. */
 export function readTiles(projection: WorldSpatialProjection): ExploredTile[] {
-  return projection.getTiles(SURFACE).map((tile) => ({
+  return projection.getTiles(activeMapLayer()).map((tile) => ({
     ...normalizedHexOf(tile.hexCoords),
     biome: tile.biome,
     occupied: tile.occupierIsStructure,
   }));
 }
 
-/** Every structure of the surface with the hex it stands on. */
+/** Every structure of the layer shown with the hex it stands on. */
 export function readStructures(projection: WorldSpatialProjection): MapStructure[] {
-  return projection.getStructures(SURFACE).map((structure) => ({
+  return projection.getStructures(activeMapLayer()).map((structure) => ({
     entityId: structure.entityId === null ? null : Number(structure.entityId),
     hex: normalizedHexOf(structure.hexCoords),
     occupierType: structure.occupierType,
   }));
 }
 
-/** Every army of the surface where it stands on the ground, as its troop's build, in its side's colour. */
+/** Every army of the layer shown where it stands on the ground, as its troop's build, in its side's colour. */
 export function readArmies(projection: WorldSpatialProjection, store: NativeFactStore): MapArmy[] {
   const owners = new Map<number, bigint>();
   for (const explorer of store.inGame("ExplorerTroops", configManager.getActiveGameId())) {
     owners.set(Number(explorer.explorer_id), getExplorerOwner(store, explorer));
   }
-  return projection.getArmies(SURFACE).map((army) => {
+  return projection.getArmies(activeMapLayer()).map((army) => {
     const hex = normalizedHexOf(army.hexCoords);
     return {
       entityId: Number(army.entityId),

@@ -119,7 +119,7 @@ fn biome_at(point: vec2f) -> f32 {
   let ground = point - from_hex_middle(point);
   let uv = clamp((ground - globals.world_bounds.xy) / globals.world_bounds.zw, vec2f(0.0), vec2f(0.9999));
   let packed = round(textureLoad(feature_map, vec2i(uv * vec2f(textureDimensions(feature_map))), 0).r * 255.0);
-  return floor(packed / 16.0);
+  return floor(packed / 4.0);
 }
 
 // What lies round a point of ground, each as the share of six points about it: what a frontier carries across.
@@ -228,6 +228,17 @@ fn ground_surface(input: VertexOutput) -> Surface {
     albedo = base * vec3f(0.9, 0.86, 0.82) * (0.52 + middle.r * 0.5) * (0.78 + near.r * 0.3);
     albedo = mix(albedo, vec3f(0.36, 0.42, 0.2) * (0.7 + near.g * 0.5), smoothstep(0.58, 0.74, far.g * 0.55 + near.g * 0.45) * 0.4);
     slope = (middle.ba - 0.5) * 1.3 + (near.ba - 0.5) * 0.5;
+  } else if (kind == ETHEREAL) {
+    // The ground under the world: dark slate in plates, with veins of the mist's own light that brighten and fade,
+    // and crystals strewn over it that catch it.
+    let vein = 1.0 - smoothstep(0.02, 0.22, middle.r);
+    let breath = 0.5 + 0.5 * sin(time * 0.7 + far.g * 9.0 + flow.b * 6.0);
+    albedo = vec3f(0.11, 0.1, 0.15) * (0.6 + middle.r * 0.6) * (0.8 + near.r * 0.3);
+    slope = (middle.ba - 0.5) * 1.2;
+    glow = vec3f(0.9, 0.35, 1.6) * vein * vein * (0.25 + 0.75 * breath);
+    let crystal = strewn(at, 6.0, 0.14, 0.2 + 0.16 * near.g);
+    albedo = mix(albedo, vec3f(0.45, 0.3, 0.7), crystal.x * close);
+    gloss = crystal.x * close * 0.9;
   } else if (kind == LAVA) {
     // A dark crust in plates; the cracks between them glow, and the glow travels along them.
     let crack = 1.0 - smoothstep(0.02, 0.4, middle.r);

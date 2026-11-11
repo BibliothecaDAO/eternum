@@ -260,6 +260,11 @@ export class MapClientRenderer {
       if (changedHexes(changes).some((hex) => inReach(hex, this.landCentre))) this.wantLand(projection);
     };
     this.unsubscribe.push(
+      // Another layer is another land: the Surface, or the Ethereal under it.
+      useUIStore.subscribe(
+        (state) => state.mapLayer,
+        () => this.wantLand(projection),
+      ),
       projection.subscribeArmies(() => this.placeArmies(projection)),
       projection.subscribeTiles(landChanged),
       projection.subscribeStructures(landChanged),

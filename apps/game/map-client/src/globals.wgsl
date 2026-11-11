@@ -91,6 +91,7 @@ const TAIGA = 12.0;
 const TUNDRA_BIOME = 13.0;
 const SNOW_BIOME = 14.0;
 const SCORCHED = 15.0;
+const UNDERGROUND = 16.0;
 // What a biome's ground is made of.
 const WATER = 0.0;
 const SAND = 1.0;
@@ -100,6 +101,7 @@ const ROCK = 4.0;
 const LAVA = 5.0;
 const GRASS = 6.0;
 const FOREST = 7.0;
+const ETHEREAL = 8.0;
 // How well a hex is known.
 const FRONTIER = 1.0;
 
@@ -110,6 +112,7 @@ fn ground_of(biome: f32) -> f32 {
   if (biome == TUNDRA_BIOME) { return TUNDRA; }
   if (biome == BARE) { return ROCK; }
   if (biome == SCORCHED) { return LAVA; }
+  if (biome == UNDERGROUND) { return ETHEREAL; }
   if (biome == GRASSLAND || biome == SHRUBLAND) { return GRASS; }
   return FOREST;
 }
@@ -128,9 +131,9 @@ struct Features {
 fn read_features(cell: vec4f, blended: vec4f) -> Features {
   let packed = round(cell.r * 255.0);
   var features: Features;
-  features.biome = floor(packed / 16.0);
+  features.biome = floor(packed / 4.0);
   features.ground = ground_of(features.biome);
-  features.known = packed - features.biome * 16.0;
+  features.known = packed - features.biome * 4.0;
   features.unknown = (blended.g - 0.5) * 8.0;
   return features;
 }

@@ -25,6 +25,8 @@ pub enum Ground {
     Lava,
     Grass,
     Forest,
+    /// The ground of the Ethereal layers, under the surface.
+    Ethereal,
 }
 
 impl Ground {
@@ -36,6 +38,7 @@ impl Ground {
             "Tundra" => Ground::Tundra,
             "Bare" => Ground::Rock,
             "Scorched" => Ground::Lava,
+            "Underground" => Ground::Ethereal,
             "Grassland" | "Shrubland" => Ground::Grass,
             _ => Ground::Forest,
         }
@@ -51,7 +54,7 @@ pub enum Known {
 }
 
 /// The game's biomes in the order `globals.wgsl` numbers them; one it does not name is drawn as the last forest.
-const BIOMES: [&str; 16] = [
+const BIOMES: [&str; 17] = [
     "DeepOcean",
     "Ocean",
     "Beach",
@@ -68,6 +71,7 @@ const BIOMES: [&str; 16] = [
     "Tundra",
     "Snow",
     "Scorched",
+    "Underground",
 ];
 
 fn biome_number(name: &str) -> u8 {
@@ -167,7 +171,7 @@ impl World {
                     (self.hexes[hex].biome, self.hexes[hex].known)
                 });
                 [
-                    biome * 16 + known as u8,
+                    biome * 4 + known as u8,
                     byte(0.5 + self.unknown[cell] / UNKNOWN_REACH * 0.5),
                     0,
                     0,
