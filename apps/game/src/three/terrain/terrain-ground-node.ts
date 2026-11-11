@@ -53,7 +53,7 @@ const B = (biome: BiomeType) => float(biomeNumber(biome));
 const G = (ground: TerrainGround) => float(groundNumber(ground));
 
 /** Each biome's own colour, in the catalog's order: the colour a frontier wandering into a hex paints. */
-const PAINT = uniformArray(
+export const PAINT = uniformArray(
   Object.values(BiomeType).map((biome) => new Color(TERRAIN_BIOME_DESCRIPTORS[biome].primary)),
   "color",
 );
@@ -65,7 +65,7 @@ const hash3 = (p: Node<"vec3">): Node<"float"> => {
 };
 
 /** How far a point is from a hex's middle as a hex measures it. */
-const hexReach = (fromMiddle: Node<"vec2">): Node<"float"> => {
+export const hexReach = (fromMiddle: Node<"vec2">): Node<"float"> => {
   const local = abs(fromMiddle);
   return max(local.x, dot(local, vec2(0.5, Math.sqrt(3) / 2)));
 };
@@ -86,7 +86,7 @@ const strewn = (at: Node<"vec2">, fine: number, share: Node<"float"> | number, s
 };
 
 /** The texel of the biome map that holds the hex a point lies in: its render hex, wrapped as the map writes it. */
-const biomeTexelAt = (biomeMap: Texture, point: Node<"vec2">) => {
+export const biomeTexelAt = (biomeMap: Texture, point: Node<"vec2">) => {
   const middle = point.sub(nearestHexLocalPosition(point));
   const row = middle.y.div(TERRAIN_HEX_VERTICAL_SPACING).round();
   const odd = abs(row).mod(2);

@@ -1,5 +1,4 @@
 import type { EtherealSurface } from "./ethereal-depths";
-import type { GameModeId } from "@/config/game-modes";
 import { NEUTRAL_BIOME_CLIMATE, type BiomeClimateConfig } from "@bibliothecadao/eternum";
 import { BiomeType, getNeighborHexes } from "@bibliothecadao/types";
 import type { Group } from "three";
@@ -248,8 +247,8 @@ export class WorldmapProceduralTerrain {
   private surfacePresentation: "world" | "ethereal" = "world";
   private disposed = false;
 
-  constructor(gameMode: GameModeId = "blitz") {
-    this.terrain = new ProceduralTerrain({ streaming: true, gameMode });
+  constructor() {
+    this.terrain = new ProceduralTerrain({ streaming: true });
     this.object3d = this.terrain.object3d;
     this.object3d.name = "worldmap-procedural-terrain";
   }

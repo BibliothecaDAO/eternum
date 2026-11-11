@@ -1,7 +1,6 @@
 import type { EtherealLayer } from "@bibliothecadao/eternum";
 import { createDepthMaterial } from "./ethereal-depth-material";
 import { createDepthMineralResources, createDepthMinerals, writeDepthMinerals } from "./ethereal-depth-minerals";
-import type { GameModeId } from "@/config/game-modes";
 import { TerrainWildlife } from "./terrain-wildlife";
 import { useWorldAppearanceStore } from "@/hooks/store/use-world-appearance-store";
 import {
@@ -116,8 +115,8 @@ export class ProceduralTerrain {
   private isPropTileOccupied: (col: number, row: number) => boolean = () => false;
   private readonly releaseAppearance: () => void;
 
-  constructor({ streaming = false, gameMode = "blitz" }: { streaming?: boolean; gameMode?: GameModeId } = {}) {
-    this.fogField = new TerrainFogField(gameMode);
+  constructor({ streaming = false }: { streaming?: boolean } = {}) {
+    this.fogField = new TerrainFogField(this.biomeMap.texture);
     if (streaming) this.fogField.enableStreaming();
     this.object3d.name = "procedural-terrain";
     this.presentationGroup.name = "procedural-terrain-pages";
@@ -526,6 +525,7 @@ export class ProceduralTerrain {
     this.writeVisibleProps(pageKey, presented);
     this.fogField.setPage(pageKey, preparedPage.shroudInstances);
     this.biomeMap.write([...preparedPage.request.cells, ...preparedPage.request.halo]);
+    this.biomeMap.writeUnexplored(preparedPage.shroudInstances);
   }
 
   private installPageGeometry(preparedPage: PreparedTerrainPage, presented: PresentedTerrainPage): void {
