@@ -27,6 +27,19 @@ const SURFACE = false;
 export const contractHexOf = (hex: Hex): Hex => ({ col: hex.col + FELT_CENTER(), row: hex.row + FELT_CENTER() });
 const normalizedHexOf = (hex: Hex): Hex => ({ col: hex.col - FELT_CENTER(), row: hex.row - FELT_CENTER() });
 
+/** What the projection tells of a tile or a structure that changed: where it was and where it is. */
+interface PlacedChange {
+  readonly previous?: { readonly hexCoords: Hex & { readonly alt: boolean } };
+  readonly current?: { readonly hexCoords: Hex & { readonly alt: boolean } };
+}
+
+/** The surface hexes a list of changes touches, normalized: where each thing was and where it is now. */
+export function changedHexes(changes: readonly PlacedChange[]): Hex[] {
+  return changes
+    .flatMap((change) => [change.previous, change.current])
+    .flatMap((placed) => (placed && placed.hexCoords.alt === SURFACE ? [normalizedHexOf(placed.hexCoords)] : []));
+}
+
 /** Every explored tile of the surface, its hex normalized. */
 export function readTiles(projection: WorldSpatialProjection): ExploredTile[] {
   return projection.getTiles(SURFACE).map((tile) => ({

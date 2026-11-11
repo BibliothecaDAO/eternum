@@ -11,3 +11,10 @@ export function resolveMapClientFromSearch(search: string): MapClient {
   const asked = new URLSearchParams(search).get(MAP_CLIENT_QUERY_PARAM);
   return MAP_CLIENTS.find((client) => client === asked) ?? "today";
 }
+
+/** Opens the page again without the trial: the same address as today's client draws it. */
+export function openWithoutMapClient(): void {
+  const url = new URL(window.location.href);
+  url.searchParams.delete(MAP_CLIENT_QUERY_PARAM);
+  window.location.replace(url.toString());
+}

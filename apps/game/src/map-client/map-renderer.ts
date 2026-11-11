@@ -16,11 +16,13 @@ import { ArmyMarches, TROOP_BUILDS } from "./army-marches";
 import { landAround, type Hex } from "./land-from-facts";
 import { MapArt } from "./map-art";
 import { CAMERA_FAR, CAMERA_FOV, CAMERA_NEAR, cameraWorldMatrix, type GroundPoint, type MapCamera } from "./map-camera";
-import { contractHexOf, readArmies, readStructures, readTiles } from "./map-facts";
+import { openWithoutMapClient } from "./map-client-flag";
+import { changedHexes, contractHexOf, readArmies, readStructures, readTiles } from "./map-facts";
 import { MapInput } from "./map-input";
 import { MapSelection } from "./map-selection";
 import type { MapRenderer } from "./renderer/map_client";
 import { packLand } from "./scene-from-land";
+import type { PackedScene } from "./scene-pack";
 
 /**
  * The renderer's module, as `wasm-pack build --target web` builds the `apps/game/map-client` crate into `./renderer`.
@@ -32,8 +34,13 @@ const CANVAS_ID = "main-canvas";
 /** How many hexes round the camera the map holds, and how far the camera may stray before the land is taken again. */
 const LAND_REACH = 28;
 const LAND_SLACK = 12;
-/** How long the facts must be still before a changed land is built again, in milliseconds. */
-const LAND_SETTLE_MS = 600;
+/**
+ * How long after the first change to the land's facts the land is built again, in milliseconds: what one action
+ * publishes in pieces is drawn together, and later changes never push the build further off.
+ */
+const LAND_BATCH_MS = 200;
+/** The events that tell the page's address changed (`renderer-route-runtime.ts`). */
+const ROUTE_EVENTS = ["urlChanged", "popstate", "sceneAddressChanged"] as const;
 const START_DISTANCE = 22;
 /** The renderer's quality tier: the middle one, which the phone bar was measured on. */
 const QUALITY = "mid";
@@ -45,7 +52,7 @@ const QUALITY = "mid";
  * is not drawn by it.
  */
 export class MapClientRenderer {
-  private readonly canvas = document.createElement("canvas");
+  private canvas = document.createElement("canvas");
   private readonly marches = new ArmyMarches();
   private readonly startedAt = performance.now();
   private readonly unsubscribe: Array<() => void> = [];
@@ -57,24 +64,35 @@ export class MapClientRenderer {
   private camera: MapCamera = { target: { x: 0, z: 0 }, distance: START_DISTANCE };
   /** The hex the land in the renderer was taken round. */
   private landCentre: Hex = { col: 0, row: 0 };
-  /** What the facts told of the land when it was last taken. */
-  private landHeld = "";
+  /** Counts every change to what the land shows; the land drawn is as of `landBuilt`. */
+  private landWanted = 0;
+  private landBuilt = 0;
   private landTimer: number | null = null;
   private building = false;
+  /** Set once WebGPU has failed to start here: every later start draws on WebGL2. */
+  private onWebGL2 =
+    resolveRendererBuildModeFromSearch({
+      envBuildMode: env.VITE_PUBLIC_RENDERER_BUILD_MODE,
+      search: window.location.search,
+    }) === "webgpu-force-webgl" || !("gpu" in navigator);
   private frame: number | null = null;
   private destroyed = false;
 
   constructor(private readonly setup: GameClientSetup) {}
 
   async initScene(): Promise<void> {
+    // The entry that started this map is the one told it stands, whatever entry is current by then.
+    const token = getCurrentPlayRouteBootToken();
     this.mountCanvas();
     const [art, module] = await Promise.all([MapArt.load(), loadModule()]);
     if (this.destroyed) return art.dispose();
     this.art = art;
     this.module = module;
     const projection = requireActiveGameSyncRuntime().requireWorldSpatialProjection();
-    await this.takeLand(projection, this.firstHex(projection));
+    // Facts are followed before the first land is read, so nothing published while it is built is missed.
     this.followFacts(projection);
+    await this.buildLand(projection, this.firstHex(projection));
+    if (this.destroyed) return;
     this.input = new MapInput(this.canvas, {
       camera: () => this.camera,
       moveCamera: (camera) => this.lookAt(camera),
@@ -83,8 +101,9 @@ export class MapClientRenderer {
     this.selection = new MapSelection(projection, this.setup.store, (stops) => this.renderer?.show_order(stops));
     this.unsubscribe.push(bindMapSelection(projection), () => this.selection?.dispose());
     window.addEventListener("resize", this.resize);
+    for (const event of ROUTE_EVENTS) window.addEventListener(event, this.leaveForRealmView);
     this.draw();
-    this.announceReady();
+    this.announceReady(token);
   }
 
   /** Today's renderer opens its frame-time monitors here; this map has none of its own yet. */
@@ -95,14 +114,23 @@ export class MapClientRenderer {
     if (this.frame !== null) cancelAnimationFrame(this.frame);
     if (this.landTimer !== null) window.clearTimeout(this.landTimer);
     window.removeEventListener("resize", this.resize);
+    for (const event of ROUTE_EVENTS) window.removeEventListener(event, this.leaveForRealmView);
     this.input?.dispose();
-    for (const stop of this.unsubscribe) stop();
+    for (const stop of this.unsubscribe.splice(0)) stop();
     this.renderer?.free();
     this.renderer = null;
     this.art?.dispose();
     this.canvas.remove();
     forgetCameraView();
   }
+
+  /**
+   * This map draws the world map only. When the address turns to the realm view the page is opened again without
+   * the trial, so today's client draws it: this map never claims a view it does not have.
+   */
+  private readonly leaveForRealmView = (): void => {
+    if (parsePlayRoute(window.location)?.scene === "hex") openWithoutMapClient();
+  };
 
   private mountCanvas(): void {
     document.getElementById(CANVAS_ID)?.remove();
@@ -141,62 +169,100 @@ export class MapClientRenderer {
     return readStructures(projection)[0]?.hex ?? readTiles(projection)[0] ?? { col: 0, row: 0 };
   }
 
-  /** Takes the land round a hex from the facts and starts the renderer on it, keeping the camera where it looks. */
-  private async takeLand(projection: WorldSpatialProjection, centre: Hex): Promise<void> {
-    if (!this.art || !this.module || this.building) return;
+  /**
+   * Builds the land until it shows the facts as they stand: a change published while a land is being built brings
+   * another, so the last land drawn is never older than the last change.
+   */
+  private async buildLand(projection: WorldSpatialProjection, first?: Hex): Promise<void> {
+    if (this.building) return;
     this.building = true;
     try {
-      const lookedAt = this.renderer ? absoluteOf(this.camera.target) : null;
-      setWorldOrigin(centre);
-      this.landCentre = centre;
-      this.camera = { ...this.camera, target: lookedAt ? drawnOf(lookedAt) : worldHexToWorld(centre.col, centre.row) };
-      this.landHeld = landSeen(projection, centre);
-      const land = landAround(readTiles(projection), centre, LAND_REACH);
-      const structures = readStructures(projection).filter(({ hex }) => inReach(hex, centre));
-      const scene = await packLand(this.art, land, structures);
-      if (this.destroyed) return;
-      // One renderer owns the canvas at a time: the last frame stays on it while the next land starts.
-      this.renderer?.free();
-      this.renderer = null;
-      const started = await this.module.MapRenderer.start(
-        this.canvas,
-        scene.table,
-        scene.buffer,
-        TERRAIN_HEX_HORIZONTAL_SPACING,
-        TERRAIN_HEX_VERTICAL_SPACING,
-        resolveRendererBuildModeFromSearch({
-          envBuildMode: env.VITE_PUBLIC_RENDERER_BUILD_MODE,
-          search: window.location.search,
-        }) === "webgpu-force-webgl",
-        QUALITY,
-      );
-      if (this.destroyed) return started.free();
-      this.renderer = started;
-      this.marches.forget();
-      this.placeArmies(projection);
-      this.selection?.showOrder();
+      let centre = first;
+      do {
+        const wanted = this.landWanted;
+        await this.takeLand(projection, centre ?? this.hexUnder(this.camera.target));
+        this.landBuilt = wanted;
+        centre = undefined;
+      } while (!this.destroyed && this.landBuilt < this.landWanted);
     } finally {
       this.building = false;
     }
   }
 
-  /** Follows the facts: armies are placed again as they change; tiles and structures bring a new land, once still. */
+  /** Takes the land round a hex from the facts and starts the renderer on it, keeping the camera where it looks. */
+  private async takeLand(projection: WorldSpatialProjection, centre: Hex): Promise<void> {
+    if (!this.art || !this.module) return;
+    const lookedAt = this.renderer ? absoluteOf(this.camera.target) : null;
+    setWorldOrigin(centre);
+    this.landCentre = centre;
+    this.camera = { ...this.camera, target: lookedAt ? drawnOf(lookedAt) : worldHexToWorld(centre.col, centre.row) };
+    const land = landAround(readTiles(projection), centre, LAND_REACH);
+    const structures = readStructures(projection).filter(({ hex }) => inReach(hex, centre));
+    const scene = await packLand(this.art, land, structures);
+    if (this.destroyed) return;
+    // One renderer owns the canvas at a time: the last frame stays on it while the next land starts.
+    this.renderer?.free();
+    this.renderer = null;
+    const started = await this.startRenderer(scene);
+    if (this.destroyed) return started.free();
+    this.renderer = started;
+    this.marches.forget();
+    this.placeArmies(projection);
+    this.selection?.showOrder();
+  }
+
+  /**
+   * Starts the renderer on the canvas: on WebGPU where the browser has it, and on WebGL2 where it has not, where
+   * the address asks for it, or where WebGPU would not start (no adapter, no device). A canvas that was offered to
+   * WebGPU cannot be drawn on by WebGL2, so the fallback starts on a new one.
+   */
+  private async startRenderer(scene: PackedScene): Promise<MapRenderer> {
+    const start = () =>
+      this.module!.MapRenderer.start(
+        this.canvas,
+        scene.table,
+        scene.buffer,
+        TERRAIN_HEX_HORIZONTAL_SPACING,
+        TERRAIN_HEX_VERTICAL_SPACING,
+        this.onWebGL2,
+        QUALITY,
+      );
+    if (this.onWebGL2) return start();
+    try {
+      return await start();
+    } catch (reason) {
+      console.warn("The map could not start on WebGPU and starts on WebGL2:", reason);
+      this.onWebGL2 = true;
+      this.canvas.remove();
+      this.canvas = document.createElement("canvas");
+      if (!this.destroyed) this.mountCanvas();
+      return start();
+    }
+  }
+
+  /** Follows the facts: armies are placed again as they change; a change to the land held brings a new land. */
   private followFacts(projection: WorldSpatialProjection): void {
+    const landChanged = (changes: Parameters<typeof changedHexes>[0]) => {
+      if (changedHexes(changes).some((hex) => inReach(hex, this.landCentre))) this.wantLand(projection);
+    };
     this.unsubscribe.push(
       projection.subscribeArmies(() => this.placeArmies(projection)),
-      projection.subscribeTiles(() => this.landChanged(projection)),
-      projection.subscribeStructures(() => this.landChanged(projection)),
+      projection.subscribeTiles(landChanged),
+      projection.subscribeStructures(landChanged),
     );
   }
 
-  private landChanged(projection: WorldSpatialProjection): void {
-    if (this.landTimer !== null) window.clearTimeout(this.landTimer);
+  /**
+   * Asks for the land to be built again. The first ask sets the time of the build; later ones are drawn with it,
+   * and one that comes while a land is being built is caught up as that build ends.
+   */
+  private wantLand(projection: WorldSpatialProjection): void {
+    this.landWanted += 1;
+    if (this.landTimer !== null || this.building) return;
     this.landTimer = window.setTimeout(() => {
       this.landTimer = null;
-      // Facts are published for the whole world: only a change within the land held brings a new one.
-      if (this.landHeld === landSeen(projection, this.landCentre)) return;
-      void this.takeLand(projection, this.hexUnder(this.camera.target));
-    }, LAND_SETTLE_MS);
+      void this.buildLand(projection);
+    }, LAND_BATCH_MS);
   }
 
   private placeArmies(projection: WorldSpatialProjection): void {
@@ -212,7 +278,8 @@ export class MapClientRenderer {
     useUIStore.getState().setCameraTargetHex(contractHexOf(under));
     const strayed = Math.max(Math.abs(under.col - this.landCentre.col), Math.abs(under.row - this.landCentre.row));
     if (strayed > LAND_REACH - LAND_SLACK) {
-      void this.takeLand(requireActiveGameSyncRuntime().requireWorldSpatialProjection(), under);
+      this.landCentre = under;
+      this.wantLand(requireActiveGameSyncRuntime().requireWorldSpatialProjection());
     }
   }
 
@@ -231,16 +298,11 @@ export class MapClientRenderer {
     this.renderer.render(cameraWorldMatrix(this.camera), CAMERA_FOV, CAMERA_NEAR, CAMERA_FAR, this.seconds());
   };
 
-  /**
-   * Tells the game's entry that the map stands, as today's map does. The realm view is not this renderer's to draw,
-   * so an entry that waits for it is answered too: the page then shows this map under the realm's HUD.
-   */
-  private announceReady(): void {
+  /** Tells the entry that started this map that the world map stands, as today's map does. */
+  private announceReady(token: number): void {
     const readiness = usePlayRouteReadinessStore.getState();
-    const token = getCurrentPlayRouteBootToken();
     readiness.markWorldmapReady(token);
     readiness.markWorldmapConverged(token);
-    readiness.markHexReady(token);
     useUIStore.getState().setIsLoadingScreenEnabled(false);
     this.lookAt(this.camera);
   }
@@ -254,15 +316,6 @@ async function loadModule(): Promise<MapRendererModule> {
 
 const inReach = (hex: Hex, centre: Hex): boolean =>
   Math.abs(hex.col - centre.col) <= LAND_REACH && Math.abs(hex.row - centre.row) <= LAND_REACH;
-
-/** What the facts tell of the land round a hex, as one comparable line: its explored tiles and its structures. */
-function landSeen(projection: WorldSpatialProjection, centre: Hex): string {
-  const tiles = readTiles(projection).filter((tile) => inReach(tile, centre)).length;
-  const structures = readStructures(projection)
-    .filter(({ hex }) => inReach(hex, centre))
-    .map((structure) => `${structure.entityId}:${structure.occupierType}`);
-  return `${tiles}|${structures.join(",")}`;
-}
 
 /** A drawn point as a point of the whole lattice, which does not move when the map's floating origin does. */
 function absoluteOf(drawn: GroundPoint): GroundPoint {
