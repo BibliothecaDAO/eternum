@@ -12,7 +12,7 @@ export interface MapCamera {
 }
 
 /** How steeply the camera looks down, the lens, and how near and far it may stand. */
-export const CAMERA_PITCH = (52 * Math.PI) / 180;
+const CAMERA_PITCH = (52 * Math.PI) / 180;
 export const CAMERA_FOV = (40 * Math.PI) / 180;
 export const CAMERA_NEAR = 0.1;
 export const CAMERA_FAR = 300;
