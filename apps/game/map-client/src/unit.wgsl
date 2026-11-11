@@ -52,7 +52,7 @@ struct UnitOutput {
   @location(1) normal: vec3f,
   // a: the gloss, or an effect's opacity.
   @location(2) colour: vec4f,
-  // xy: where on an effect's quad. z: 1 for cloth, whose facing is read off the screen; 2 a blob, 3 a trail, 4 dust.
+  // xy: where on an effect's quad. z: 1 for cloth, whose facing is read off the screen; 2 a unit's hex plate, 4 dust.
   @location(3) mark: vec3f,
   @location(4) uv: vec2f,
 }
