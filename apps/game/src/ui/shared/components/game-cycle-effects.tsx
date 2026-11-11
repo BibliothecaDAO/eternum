@@ -1,26 +1,25 @@
 import { useEffect, useRef } from "react";
-import { configManager } from "@bibliothecadao/eternum";
-import { TickIds } from "@bibliothecadao/types";
 import { useUISound } from "@/audio";
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
-import { useCurrentArmiesTick, useCurrentBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
+import { useCurrentArmiesTick } from "@/hooks/helpers/use-block-timestamp";
 import { useUIStore } from "@/hooks/store/use-ui-store";
-import { resolveDayCycleProgress, resolveDebuggableCycleProgress } from "@/utils/cycle-progress";
+import { SURFACE_MOOD_PROGRESS } from "@/utils/cycle-progress";
 import { isWorldInteractive } from "@/game-entry/world-interactive";
 
-/** Keep atmosphere and audio running independently of the header's presentation. */
+/**
+ * The moment of the renderer's day the map, its lights and its ambience are at: the Surface's one late golden
+ * afternoon, or the moment a lab asks for (the studio's times of day); and the gong at each army tick.
+ */
 export function GameCycleEffects() {
-  const now = useCurrentBlockTimestamp();
   const tick = useCurrentArmiesTick();
   const override = useUIStore((state) => state.debugCycleProgressOverride);
   const setProgress = useUIStore((state) => state.setCycleProgress);
   const mode = useGameModeConfig();
   const playGong = useUISound(mode.audio.tickGongSound);
   const previousTick = useRef(tick);
-  const duration = configManager.getTick(TickIds.Armies);
   useEffect(() => {
-    setProgress(resolveDebuggableCycleProgress(resolveDayCycleProgress(now, duration), override));
-  }, [now, duration, override, setProgress]);
+    setProgress(override ?? SURFACE_MOOD_PROGRESS);
+  }, [override, setProgress]);
   useEffect(() => {
     // The tick jumps once as the game's data first arrives: no gong, and no gong file, before the first view is up.
     if (previousTick.current > 0 && tick > previousTick.current && isWorldInteractive()) playGong();

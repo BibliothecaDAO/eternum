@@ -11,13 +11,6 @@ export interface TimeOfDayColors {
   fogFar: number;
 }
 
-export const FRONTIER_EMBER_COLORS = {
-  skyColor: 0xa4b1cd,
-  groundColor: 0x514453,
-  sunColor: 0xffbc7f,
-  ambientColor: 0xb0a4b7,
-} as const;
-
 // The world controller and biome lab edit and read this one table.
 export const WORLD_ATMOSPHERE_PRESETS: Record<string, TimeOfDayColors> = {
   deepNight: {
@@ -74,14 +67,15 @@ export const WORLD_ATMOSPHERE_PRESETS: Record<string, TimeOfDayColors> = {
   },
   afternoon: {
     // 58.3
-    skyColor: 0xb4cee8,
-    groundColor: 0xcab89f,
-    sunColor: 0xffd8aa,
-    ambientColor: 0xecc8b0,
-    fogColor: 0xcbd2dc,
-    hemisphereIntensity: 1.8,
-    sunIntensity: 2.65,
-    ambientIntensity: 0.72,
+    // The Surface's one mood (SURFACE_MOOD_PROGRESS): a warm low-afternoon sun, shade cooled by the sky.
+    skyColor: 0x86a3d6,
+    groundColor: 0x8a6c50,
+    sunColor: 0xffae66,
+    ambientColor: 0xa7b6dc,
+    fogColor: 0xc9cfda,
+    hemisphereIntensity: 1.45,
+    sunIntensity: 3.4,
+    ambientIntensity: 0.5,
     fogNear: 28,
     fogFar: 72,
   },

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { buildDetailTileTexels } from "./terrain-detail-tile";
+import { buildDetailTileTexels, buildWaveTileTexels } from "./terrain-detail-tile";
 
 const SIZE = 64;
 const texels = buildDetailTileTexels(SIZE);
@@ -28,5 +28,21 @@ describe("the ground's detail tile", () => {
 
   it("is the same tile every time it is built", () => {
     expect(buildDetailTileTexels(SIZE)).toEqual(texels);
+  });
+});
+
+describe("the water's wave tile", () => {
+  const waves = buildWaveTileTexels(SIZE);
+  const of = (index: number) => Array.from({ length: SIZE * SIZE }, (_, texel) => waves[texel * 4 + index]);
+
+  it("holds ripples' slopes either way round the middle, a raggedness, and a net of light", () => {
+    for (const index of [0, 1]) {
+      const slopes = of(index);
+      expect(spread(slopes)).toBeGreaterThan(40);
+      expect(Math.abs(slopes.reduce((sum, value) => sum + value, 0) / slopes.length - 128)).toBeLessThan(12);
+    }
+    expect(spread(of(2))).toBeGreaterThan(80);
+    expect(Math.max(...of(3))).toBeGreaterThan(200);
+    expect(Math.min(...of(3))).toBe(0);
   });
 });

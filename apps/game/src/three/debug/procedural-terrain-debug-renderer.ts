@@ -511,7 +511,7 @@ async function createRuntime(input: MountProceduralTerrainDebugRendererInput): P
   >;
   scene.add(terrain.object3d);
   if (realmModel) scene.add(realmModel.group);
-  const { atmosphere, sun } = createGameLighting(scene, input.gameMode);
+  const { atmosphere, sun } = createGameLighting(scene);
   const weather = new WeatherLabRuntime(scene, sun, controls, (x, z) => terrain.sampleSurface(x, z).height);
   atmosphere.update(50, controls.target, { snap: true });
   terrain.setGroundTextureDetailEnabled(input.texturedGround);
@@ -723,10 +723,7 @@ function advanceRevealToProgress(terrain: ProceduralTerrain, progress: number): 
   for (let step = 0; step < steps; step += 1) terrain.update(Math.min(0.05, targetSeconds - step * 0.05));
 }
 
-function createGameLighting(
-  scene: Scene,
-  gameMode: GameModeId = "blitz",
-): { atmosphere: WorldAtmosphereController; sun: DirectionalLight } {
+function createGameLighting(scene: Scene): { atmosphere: WorldAtmosphereController; sun: DirectionalLight } {
   const ambient = new AmbientLight();
   const hemisphere = new HemisphereLight();
   const sun = new DirectionalLight();
@@ -735,14 +732,7 @@ function createGameLighting(
   // The game controller also uses this detached fog object for atmosphere colors.
   // Exploration coverage belongs to TerrainFogField, not Three.js distance fog.
   return {
-    atmosphere: new WorldAtmosphereController(
-      scene,
-      sun,
-      hemisphere,
-      ambient,
-      new Fog(TERRAIN_DEEP_FOG_COLOR),
-      gameMode,
-    ),
+    atmosphere: new WorldAtmosphereController(scene, sun, hemisphere, ambient, new Fog(TERRAIN_DEEP_FOG_COLOR)),
     sun,
   };
 }

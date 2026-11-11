@@ -2,12 +2,7 @@
 
 import { describe, expect, it } from "vitest";
 
-import {
-  resolveDayPhase,
-  clampCycleProgress,
-  resolveDebuggableCycleProgress,
-  resolveDayCycleProgress,
-} from "./cycle-progress";
+import { resolveDayPhase, clampCycleProgress, SURFACE_MOOD_PROGRESS } from "./cycle-progress";
 
 describe("cycle progress debug helpers", () => {
   it("clamps progress to the day-cycle range", () => {
@@ -20,21 +15,12 @@ describe("cycle progress debug helpers", () => {
     expect(clampCycleProgress(Number.NaN)).toBe(0);
     expect(clampCycleProgress(Number.POSITIVE_INFINITY)).toBe(0);
   });
-
-  it("uses live progress when no debug override is active", () => {
-    expect(resolveDebuggableCycleProgress(63, null)).toBe(63);
-  });
-
-  it("uses and clamps the debug override when it is active", () => {
-    expect(resolveDebuggableCycleProgress(63, 18)).toBe(18);
-    expect(resolveDebuggableCycleProgress(63, 180)).toBe(100);
-  });
 });
 
-it("preserves the six-tick atmospheric cycle independently of header phases", () => {
-  expect(resolveDayCycleProgress(180, 60)).toBe(50);
-  expect(resolveDayCycleProgress(360, 60)).toBe(0);
-  expect(() => resolveDayCycleProgress(10, 0)).toThrow("Army tick duration is unavailable");
+it("lights the Surface at one late golden afternoon, past the day's middle and before dusk", () => {
+  expect(resolveDayPhase(SURFACE_MOOD_PROGRESS).name).toBe("Day");
+  expect(SURFACE_MOOD_PROGRESS).toBeGreaterThan(50);
+  expect(resolveDayPhase(SURFACE_MOOD_PROGRESS + 100 / 12).name).toBe("Dusk");
 });
 
 it("splits the day into six tick-long phases and wraps midnight", () => {

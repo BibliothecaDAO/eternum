@@ -1,4 +1,3 @@
-import { getGameModeId } from "@/config/game-modes";
 import { RainEffect } from "@/three/effects/rain-effect";
 import { createWorldFxRuntime, type WorldFxRuntime } from "@/three/fx/world-fx-runtime";
 import { useWorldAppearanceStore } from "@/hooks/store/use-world-appearance-store";
@@ -328,7 +327,6 @@ export abstract class HexagonScene {
       this.hemisphereLight,
       this.ambientPurpleLight,
       this.fog,
-      this.sceneName === SceneName.WorldMap ? getGameModeId() : "blitz",
     );
   }
 
