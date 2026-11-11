@@ -100,29 +100,25 @@ export const biomeTexelAt = (biomeMap: Texture, point: Node<"vec2">) => {
 
 /**
  * The ground, by its biome (ported from the map client's ground shader, approved by the owner on Picks in rounds 6 to
- * 9): a beach's fine wet sand, a desert's dunes, a dry pan's cracked plates, grass with flowers the wind runs over,
- * heath with bare earth, the wet floor of a rain forest, red earth, moss, fallen leaves, needles with snow in the
- * hollows, tundra, a snowfield, slabs of rock with lichen, a crust over lava. A biome's edge wanders off the hexes'
- * edges and breaks into patches, and each ground carries something of itself over the frontier: snow dusts what lies
- * beside it, sand blows over grass, grass creeps into sand, stones roll off the rock, ash lies round the lava.
+ * 9): a beach's fine wet sand, a desert's dunes, dry baked earth, grass with flowers the wind runs over, heath with bare
+ * earth, the wet floor of a rain forest, red earth, moss, fallen leaves, needles with snow in the hollows, tundra, a
+ * snowfield, slabs of rock with lichen, a crust over lava. Each hex is its own ground; two grounds meet in a soft
+ * gradient across their shared edge, which wanders a little, never in islands of one ground in the other. Only rock and
+ * lava show the detail tile's stones: on every other ground they would draw cracks.
  */
 export function groundSurface(input: GroundSurfaceInput) {
   const { at, biomeMap, detail, time } = input;
   return Fn(() => {
-    const near = texture(detail, at.mul(0.95));
-    const middle = texture(detail, at.yx.mul(0.31).add(vec2(0.13, 0.57)));
-    const far = texture(detail, at.yx.mul(0.11).add(vec2(0.37, 0.11)));
-    const other = texture(detail, at.yx.mul(0.71).add(vec2(0.31, 0.77)));
+    // Sampled once, before the branches by biome: a texture is sampled where every pixel of a quad takes the same path.
+    const near = texture(detail, at.mul(0.95)).toVar();
+    const middle = texture(detail, at.yx.mul(0.31).add(vec2(0.13, 0.57))).toVar();
+    const far = texture(detail, at.yx.mul(0.11).add(vec2(0.37, 0.11))).toVar();
+    const other = texture(detail, at.yx.mul(0.71).add(vec2(0.31, 0.77))).toVar();
     const grain = near.g.mul(0.55).add(far.g.mul(0.45));
-    // The biome is read a little way off: by a slow noise, so its edge is not a hex's, and by a fine one, so the edge
-    // breaks into patches of either ground.
-    const wander = vec2(middle.g.sub(0.5), far.g.sub(0.5)).mul(1.1);
-    const patches = vec2(near.g.sub(0.5), other.g.sub(0.5)).mul(0.7);
-    const liesAt = at.add(wander).add(patches);
-    // A point near a page's rim may wander past the hexes the page wrote: it keeps its own hex's biome then.
-    const own = biomeTexelAt(biomeMap, at);
-    const wandered = biomeTexelAt(biomeMap, liesAt);
-    const here = wandered.a.greaterThan(0.5).select(wandered, own);
+    // A soft bump from the grain: relief without the stones' edges.
+    const bump = vec2(near.g.sub(other.g), middle.g.sub(far.g));
+    const hexMiddle = at.sub(nearestHexLocalPosition(at));
+    const here = biomeTexelAt(biomeMap, hexMiddle);
     const biome = here.r.mul(255).round().toVar();
     const kind = here.g.mul(255).round().toVar();
     // Small things are drawn only near the eye: far off they would only glitter.
@@ -164,24 +160,23 @@ export function groundSurface(input: GroundSurfaceInput) {
         gloss.assign(sparkle.mul(0.5));
       })
       .ElseIf(biome.equal(B(BiomeType.TemperateDesert)), () => {
-        // A dry pan: plates of baked earth with cracks between them, gravel, the stain of old scrub.
-        const crack = smoothstep(0.02, 0.2, middle.r).oneMinus();
+        // Dry baked earth, mottled, gravel, the stain of old scrub.
         albedo.assign(
           base
             .mul(vec3(0.96, 0.9, 0.84))
             .mul(middle.g.mul(0.3).add(0.8))
-            .mul(crack.mul(0.62).oneMinus()),
+            .mul(near.g.mul(0.16).add(0.92)),
         );
         albedo.assign(mix(albedo, base.mul(vec3(0.66, 0.7, 0.52)), smoothstep(0.6, 0.78, far.g).mul(0.5)));
         const gravel = strewn(at, 8, smoothstep(0.45, 0.7, other.g).mul(0.2), near.g.mul(0.16).add(0.12));
         albedo.assign(mix(albedo, vec3(0.5, 0.45, 0.4).mul(gravel.y.mul(0.6).add(0.7)), gravel.x.mul(close).mul(0.8)));
-        slope.assign(middle.ba.sub(0.5).mul(crack).mul(1.2).add(near.ba.sub(0.5).mul(0.2)));
+        slope.assign(bump.mul(0.2));
       })
       .ElseIf(kind.equal(G("snow")).or(kind.equal(G("tundra"))), () => {
         // Tundra keeps its snow in patches; a snowfield is all drift, blue in its hollows.
         const isTundra = kind.equal(G("tundra"));
-        const lies = isTundra.select(smoothstep(0.42, 0.56, middle.g.mul(0.6).add(far.g.mul(0.4))), float(1));
-        const bare = base.mul(vec3(0.94, 0.8, 0.7)).mul(near.r.mul(0.42).add(0.7));
+        const lies = isTundra.select(smoothstep(0.3, 0.75, middle.g.mul(0.4).add(far.g.mul(0.6))).mul(0.7), float(1));
+        const bare = base.mul(vec3(0.94, 0.8, 0.7)).mul(near.g.mul(0.42).add(0.7));
         const drift = mix(vec3(0.74, 0.82, 0.98), vec3(1), smoothstep(0.3, 0.7, middle.g));
         const snow = mix(base, vec3(0.86, 0.9, 0.96), 0.55)
           .mul(grain.mul(0.1).add(0.93))
@@ -189,13 +184,7 @@ export function groundSurface(input: GroundSurfaceInput) {
         albedo.assign(mix(bare, snow, lies));
         const combed = dot(at, WIND).mul(6).add(far.g.mul(9)).add(middle.g.mul(4));
         const smoothSnow = isTundra.select(0, 1);
-        slope.assign(
-          mix(
-            near.ba.sub(0.5).mul(0.7),
-            mix(middle.ba.sub(0.5).mul(0.45), WIND.mul(combed.cos()).mul(0.12), smoothSnow),
-            lies,
-          ),
-        );
+        slope.assign(mix(bump.mul(0.3), mix(bump.mul(0.2), WIND.mul(combed.cos()).mul(0.12), smoothSnow), lies));
         gloss.assign(lies.mul(sparkle).mul(0.9));
       })
       .ElseIf(kind.equal(G("rock")), () => {
@@ -213,7 +202,7 @@ export function groundSurface(input: GroundSurfaceInput) {
             smoothstep(0.58, 0.74, far.g.mul(0.55).add(near.g.mul(0.45))).mul(0.4),
           ),
         );
-        slope.assign(middle.ba.sub(0.5).mul(1.3).add(near.ba.sub(0.5).mul(0.5)));
+        slope.assign(middle.ba.sub(0.5).mul(0.7).add(bump.mul(0.2)));
       })
       .ElseIf(kind.equal(G("lava")), () => {
         // A dark crust in plates; the cracks between them glow, and the glow travels along them.
@@ -239,7 +228,7 @@ export function groundSurface(input: GroundSurfaceInput) {
           step(0.75, bloom.y),
         );
         albedo.assign(mix(albedo, flower, bloom.x.mul(close).mul(smoothstep(0.42, 0.6, far.g))));
-        slope.assign(near.ba.sub(0.5).mul(0.15));
+        slope.assign(bump.mul(0.1));
       })
       .ElseIf(biome.equal(B(BiomeType.Shrubland)), () => {
         // Heath: dry grass, patches of bare earth, heather.
@@ -259,7 +248,7 @@ export function groundSurface(input: GroundSurfaceInput) {
           ),
         );
         albedo.assign(mix(albedo, albedo.mul(vec3(1.25, 0.8, 1.3)), smoothstep(0.66, 0.82, far.r).mul(0.45)));
-        slope.assign(near.ba.sub(0.5).mul(0.25));
+        slope.assign(bump.mul(0.15));
       })
       .ElseIf(biome.equal(B(BiomeType.TropicalRainForest)), () => {
         // A wet floor, dark and rich, with standing water that takes the sky.
@@ -267,7 +256,7 @@ export function groundSurface(input: GroundSurfaceInput) {
         albedo.assign(mix(albedo, base.mul(vec3(0.95, 1.3, 0.6)), smoothstep(0.62, 0.72, near.g).mul(0.35)));
         gloss.assign(smoothstep(0.6, 0.76, middle.g).mul(0.7));
         albedo.mulAssign(gloss.mul(0.35).oneMinus());
-        slope.assign(near.ba.sub(0.5).mul(0.3).mul(gloss.oneMinus()));
+        slope.assign(bump.mul(0.2).mul(gloss.oneMinus()));
       })
       .ElseIf(biome.equal(B(BiomeType.TropicalSeasonalForest)), () => {
         // Dry season: yellowed growth over red earth.
@@ -277,14 +266,14 @@ export function groundSurface(input: GroundSurfaceInput) {
         albedo.assign(
           mix(albedo, vec3(0.5, 0.21, 0.11).mul(near.g.mul(0.4).add(0.8)), smoothstep(0.58, 0.72, middle.g).mul(0.65)),
         );
-        slope.assign(near.ba.sub(0.5).mul(0.3));
+        slope.assign(bump.mul(0.2));
       })
       .ElseIf(biome.equal(B(BiomeType.TemperateRainForest)), () => {
         // Moss in cushions over a damp floor.
         albedo.assign(base.mul(vec3(0.78, 0.98, 0.88)).mul(grain.mul(0.4).add(0.58)));
         albedo.assign(mix(albedo, base.mul(vec3(0.9, 1.4, 0.66)), smoothstep(0.52, 0.7, middle.g).mul(0.55)));
         gloss.assign(smoothstep(0.55, 0.85, far.g).mul(0.25));
-        slope.assign(middle.ba.sub(0.5).mul(0.5));
+        slope.assign(bump.mul(0.25));
       })
       .ElseIf(biome.equal(B(BiomeType.TemperateDeciduousForest)), () => {
         // Fallen leaves, orange and yellow, over the litter.
@@ -298,7 +287,7 @@ export function groundSurface(input: GroundSurfaceInput) {
             max(fallen.x.mul(close), smoothstep(0.5, 0.75, far.g).mul(0.3)).mul(0.85),
           ),
         );
-        slope.assign(near.ba.sub(0.5).mul(0.35));
+        slope.assign(bump.mul(0.2));
       })
       .ElseIf(biome.equal(B(BiomeType.Taiga)), () => {
         // Needles under the firs, and snow that has stayed in the hollows.
@@ -306,19 +295,19 @@ export function groundSurface(input: GroundSurfaceInput) {
         albedo.assign(
           mix(albedo, vec3(0.3, 0.2, 0.12).mul(near.g.mul(0.4).add(0.8)), smoothstep(0.5, 0.7, middle.g).mul(0.45)),
         );
-        const lies = smoothstep(0.5, 0.6, far.g.mul(0.5).add(other.g.mul(0.5)));
-        albedo.assign(mix(albedo, vec3(0.8, 0.86, 0.95), lies.mul(0.9)));
-        slope.assign(near.ba.sub(0.5).mul(0.3).mul(lies.oneMinus()));
+        const lies = smoothstep(0.5, 0.85, far.g.mul(0.7).add(middle.g.mul(0.3)));
+        albedo.assign(mix(albedo, vec3(0.8, 0.86, 0.95), lies.mul(0.5)));
+        slope.assign(bump.mul(0.2).mul(lies.oneMinus()));
         gloss.assign(lies.mul(sparkle).mul(0.7));
       })
       .ElseIf(kind.equal(G("forest")), () => {
         albedo.assign(
           base.mul(grain.mul(0.4).add(0.62)).mul(mix(vec3(1), vec3(0.8, 0.95, 0.7), smoothstep(0.4, 0.7, middle.g))),
         );
-        slope.assign(near.ba.sub(0.5).mul(0.3));
+        slope.assign(bump.mul(0.2));
       });
 
-    carryAcrossFrontiers({ biomeMap, at, liesAt, kind, near, middle, far, sparkle, albedo, gloss, glow, time });
+    meetTheNeighbours({ biomeMap, at, biome, far, middle, grain, albedo, gloss, glow });
 
     // The side of a raised hex: darker earth in bands. The shore: a dark wet band.
     const strata = input.world.y.mul(38).add(grain.mul(5)).sin().mul(0.25).add(0.55);
@@ -328,92 +317,47 @@ export function groundSurface(input: GroundSurfaceInput) {
   })();
 }
 
-/** What the grounds round a point carry over the frontier into it. */
-function carryAcrossFrontiers(input: {
+/**
+ * Grounds meet in a soft gradient across their shared edges: each of the six hexes beside a point weighs in as the point
+ * nears their shared edge, as much as the point's own ground at the edge itself and a third each at a corner, so the
+ * colour runs on across every edge and corner without a seam. A slow noise moves where the gradient starts, so the
+ * meeting wanders well off the hexes' lines. Water is met by the shore's own band instead.
+ */
+function meetTheNeighbours(input: {
   biomeMap: Texture;
   at: Node<"vec2">;
-  liesAt: Node<"vec2">;
-  kind: Node<"float">;
-  near: Node<"vec4">;
-  middle: Node<"vec4">;
+  biome: Node<"float">;
   far: Node<"vec4">;
-  sparkle: Node<"float">;
+  middle: Node<"vec4">;
+  grain: Node<"float">;
   albedo: Node<"vec3">;
   gloss: Node<"float">;
   glow: Node<"vec3">;
-  time: Node<"float">;
 }): void {
-  const { at, kind, near, middle, far, albedo, gloss, glow } = input;
-  const beside = around(input.biomeMap, input.liesAt, 0.8);
-  const ragged = near.g.mul(0.6).add(middle.g.mul(0.4));
-  If(kind.notEqual(G("snow")).and(kind.notEqual(G("lava"))), () => {
-    // Snow dusts what lies beside it, thicker toward the snow.
-    const dusted = smoothstep(0.62, 0.78, beside.snow.mul(0.9).add(ragged.mul(0.5))).mul(
-      kind.equal(G("tundra")).select(0, 1),
-    );
-    albedo.assign(mix(albedo, vec3(0.84, 0.89, 0.96), dusted.mul(0.85)));
-    gloss.assign(max(gloss, dusted.mul(input.sparkle).mul(0.7)));
-    glow.mulAssign(dusted.oneMinus());
-  });
-  If(kind.notEqual(G("lava")), () => {
-    // Ash round the lava, and the last of its heat in the cracks of the ground beside it.
-    const scorched = smoothstep(0.1, 0.7, beside.lava.add(ragged.sub(0.5).mul(0.4)));
-    albedo.assign(mix(albedo, albedo.mul(vec3(0.3, 0.26, 0.26)), scorched.mul(0.8)));
-    const ember = smoothstep(0.02, 0.1, middle.r).oneMinus().mul(scorched).mul(scorched);
-    glow.addAssign(
-      vec3(2.4, 0.5, 0.06)
-        .mul(ember)
-        .mul(input.time.mul(1.3).add(far.g.mul(9)).sin().mul(0.5).add(0.5)),
-    );
-  });
-  If(kind.equal(G("grass")).or(kind.equal(G("forest"))), () => {
-    // Sand blown in from a desert lies in streaks down the wind.
-    const streak = smoothstep(
-      0.45,
-      0.75,
-      dot(at, vec2(WIND.y.negate(), WIND.x)).mul(9).add(far.g.mul(12)).sin().mul(0.5).add(0.5),
-    );
-    const blown = smoothstep(0.25, 0.8, beside.sand.add(ragged.sub(0.5).mul(0.5))).mul(streak);
-    albedo.assign(mix(albedo, vec3(0.78, 0.62, 0.36).mul(near.g.mul(0.3).add(0.85)), blown.mul(0.6)));
-  });
-  If(kind.equal(G("sand")), () => {
-    // Grass creeps into the sand in patches, the earth under it darker.
-    const crept = smoothstep(0.5, 0.72, beside.green.mul(0.8).add(ragged.mul(0.55)));
-    albedo.assign(mix(albedo, vec3(0.3, 0.38, 0.14).mul(near.g.mul(0.5).add(0.75)), crept.mul(0.75)));
-  });
-  If(kind.notEqual(G("rock")).and(kind.notEqual(G("lava"))), () => {
-    // Stones have rolled off the rock.
-    const stone = strewn(at, 7, beside.rock.mul(0.8), 0.3);
-    albedo.assign(mix(albedo, vec3(0.44, 0.42, 0.4).mul(stone.y.mul(0.6).add(0.6)), stone.x.mul(0.9)));
-  });
-}
-
-/** What lies round a point of ground: the share of six points about it on each ground a frontier carries across. */
-function around(biomeMap: Texture, at: Node<"vec2">, reach: number) {
-  const shares: Record<"snow" | "lava" | "sand" | "green" | "rock", Node<"float">> = {
-    snow: float(0),
-    lava: float(0),
-    sand: float(0),
-    green: float(0),
-    rock: float(0),
-  };
-  for (let tap = 0; tap < 6; tap += 1) {
-    const angle = tap * (Math.PI / 3) + 0.5;
-    const ground = biomeTexelAt(biomeMap, at.add(vec2(Math.cos(angle) * reach, Math.sin(angle) * reach)))
-      .g.mul(255)
-      .round();
-    const is = (name: TerrainGround) => ground.equal(G(name)).select(1, 0);
-    shares.snow = shares.snow.add(is("snow").add(is("tundra")));
-    shares.lava = shares.lava.add(is("lava"));
-    shares.sand = shares.sand.add(is("sand"));
-    shares.green = shares.green.add(is("grass").add(is("forest")));
-    shares.rock = shares.rock.add(is("rock"));
+  const { at, far, middle, albedo, gloss, glow } = input;
+  const fromMiddle = nearestHexLocalPosition(at);
+  const middleAt = at.sub(fromMiddle);
+  const apothem = TERRAIN_HEX_HORIZONTAL_SPACING / 2;
+  const wobble = far.g.sub(0.5).mul(0.6).add(middle.g.sub(0.5).mul(0.2));
+  let weight: Node<"float"> = float(1);
+  let colour: Node<"vec3"> = albedo;
+  for (let side = 0; side < 6; side += 1) {
+    const toward = vec2(Math.cos((side * Math.PI) / 3), Math.sin((side * Math.PI) / 3));
+    const beside = biomeTexelAt(input.biomeMap, middleAt.add(toward.mul(TERRAIN_HEX_HORIZONTAL_SPACING)));
+    const besideBiome = beside.r.mul(255).round();
+    const land = beside.a
+      .greaterThan(0.5)
+      .and(beside.g.mul(255).round().notEqual(G("water")))
+      .select(1, 0);
+    const nearness = dot(fromMiddle, toward).div(apothem);
+    const share = smoothstep(0.25, 1, nearness.add(wobble)).mul(land);
+    const painted = PAINT.element(int(besideBiome)) as unknown as Node<"vec3">;
+    const theirs = besideBiome.equal(input.biome).select(albedo, painted.mul(input.grain.mul(0.3).add(0.84)));
+    weight = weight.add(share);
+    colour = colour.add(theirs.mul(share));
   }
-  return {
-    snow: shares.snow.div(6),
-    lava: shares.lava.div(6),
-    sand: shares.sand.div(6),
-    green: shares.green.div(6),
-    rock: shares.rock.div(6),
-  };
+  const ownShare = float(1).div(weight);
+  albedo.assign(colour.div(weight));
+  gloss.mulAssign(ownShare);
+  glow.mulAssign(ownShare);
 }
