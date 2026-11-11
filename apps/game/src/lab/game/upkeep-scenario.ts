@@ -3,6 +3,7 @@ import { resolveExplorerTroops, staminaAt } from "@bibliothecadao/eternum/troop-
 import { RESOURCE_PRECISION, ResourcesIds, TickIds, TileOccupier } from "@bibliothecadao/types";
 
 import type { NativeFactStore } from "@bibliothecadao/eternum/game-client";
+import { L2_CHAIN, L2_LEDGER } from "@/runtime/l2-rpc";
 import { SPIRE_ARMY } from "@/ui/features/frontier/spire-fixture";
 
 import { actionsScenario } from "./actions-scenario";
@@ -49,6 +50,30 @@ export const upkeepScenario = (): LabScenario => {
     wallet: "0x456",
     answer: (command, chain, now) => (answers[command.kind] ?? actions.answer)(command, chain, now),
   };
+};
+
+/**
+ * The same refill path with fifty purchased LORDS held separately from the five hundred earned, its deposit source on
+ * this build's own L2 ledger so the purse offers Deposit: the tab answers its pause read; its token read goes to the
+ * ledger.
+ */
+export const spendLordsScenario = (): LabScenario => {
+  const scenario = upkeepScenario();
+  const store = chainOf(scenario);
+  const realm = store.require("Structure", { game_id: 1, entity_id: 7n });
+  store.applyFacts([
+    {
+      model: "DepositSource",
+      key: "0xd001",
+      value: { game_id: 1, chain: L2_CHAIN.id, ledger: L2_LEDGER, signer: "0x1", epoch: "0" },
+    },
+    {
+      model: "SpendLords",
+      key: "0xd002",
+      value: wire({ game_id: 1, account: realm.owner, available: 50n, consumed: 0n, swept: 0n }),
+    },
+  ] as never);
+  return { ...scenario, store };
 };
 
 const lordsHeld = (store: NativeFactStore): LabFact => {
@@ -123,12 +148,26 @@ const refill = (command: LabCommand, chain: NativeFactStore, now: number): LabFa
   const explorerId = BigInt(command.fields.explorer_id);
   const bar = barOf(chain, explorerId, now);
   const [, army] = armyRow(chain, explorerId);
-  const missing = bar.maximum - bar.now;
+  const amount = BigInt(command.fields.amount);
+  if (amount <= 0n || amount > bar.maximum - bar.now) throw new Error("Invalid refill amount");
+  const owner = chain.require("Structure", { game_id: 1, entity_id: army.owner }).owner;
+  const purchased = [...chain.entries("SpendLords")].find(([, row]) => row.account === owner);
+  const available = purchased?.[1].available ?? 0n;
+  const spent = available < amount ? available : amount;
   return [
-    withStamina(chain, explorerId, bar.maximum, now),
+    withStamina(chain, explorerId, bar.now + amount, now),
     ...balancesPaid(chain, army.owner, [
-      { resource: ResourcesIds.Lords, amount: missing * BigInt(RESOURCE_PRECISION) },
+      { resource: ResourcesIds.Lords, amount: (amount - spent) * BigInt(RESOURCE_PRECISION) },
     ]),
+    ...(purchased
+      ? [
+          {
+            model: "SpendLords",
+            key: purchased[0],
+            value: wire({ ...purchased[1], available: available - spent, consumed: purchased[1].consumed + spent }),
+          },
+        ]
+      : []),
   ];
 };
 

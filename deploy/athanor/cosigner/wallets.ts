@@ -6,7 +6,8 @@ import { PAYOUT_WALLET_CHANGE_SECONDS } from "../../../packages/value-ledger/src
 /** The co-signer's wallet history on the box, owned by its systemd state directory. */
 export const COSIGNER_WALLETS = "/var/lib/payout-cosigner/wallets.sqlite";
 const SCHEMA = `CREATE TABLE IF NOT EXISTS accounts (account TEXT PRIMARY KEY, realms_id TEXT NOT NULL);
-    CREATE TABLE IF NOT EXISTS wallets (realms_id TEXT PRIMARY KEY, wallet TEXT NOT NULL, pending TEXT, since INTEGER)`;
+    CREATE TABLE IF NOT EXISTS wallets (realms_id TEXT PRIMARY KEY, wallet TEXT NOT NULL, pending TEXT, since INTEGER);
+    CREATE TABLE IF NOT EXISTS deposit_anchors (key TEXT PRIMARY KEY, number INTEGER NOT NULL, hash TEXT NOT NULL)`;
 interface Wallet {
   wallet: string;
   pending: string | null;
@@ -64,6 +65,18 @@ export function openCosignerWallets(
     return { event: "cosigner_wallet_change_accepted", account, realmsId, wallet };
   });
   return {
+    async getAnchor(key) {
+      return (
+        db
+          .query<{ number: number; hash: string }, [string]>("SELECT number,hash FROM deposit_anchors WHERE key=?")
+          .get(key) ?? undefined
+      );
+    },
+    async putAnchor(key, anchor) {
+      db.query(
+        "INSERT INTO deposit_anchors VALUES (?,?,?) ON CONFLICT(key) DO UPDATE SET number=excluded.number,hash=excluded.hash WHERE excluded.number>=deposit_anchors.number",
+      ).run(key, anchor.number, anchor.hash);
+    },
     assertWallet(account, realmsId, wallet) {
       const observation = observe(felt(account), felt(realmsId), felt(wallet));
       if (!observation) return;

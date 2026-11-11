@@ -27,6 +27,19 @@ import { proveResultOnScreen, startResultCapture } from "./result-capture.mjs";
 import { measureFrameChanges, recordFrames } from "./frames.mjs";
 import { againstTheirThings, judgePlates, PLATES_EXPRESSION } from "./plates.mjs";
 import { DESKTOP_MIN_WIDTH, judgeHudLayout, MAP_LEAST_SHARE } from "./hud-layout.mjs";
+import {
+  assertMixedRefill,
+  assertOnlyRefillAction,
+  assertRefillConservation,
+  assertRefillTransaction,
+  assertVisiblePurse,
+  liveDepositReads,
+  newActionHashes,
+  pollProof,
+  refillState,
+  visibleStaminaMatches,
+  watchDepositResponses,
+} from "./live-deposit-proof.mjs";
 
 /**
  * The playtest's steps. Each plays through the controls a player uses, then checks what a player would see, and is
@@ -852,6 +865,223 @@ const ARMY_ACTION_STEPS = [
   ),
 ];
 
+/** Keep the observed purse before the action; the final judgment can replay without a browser. */
+function purchasedRefillSteps() {
+  let before;
+  return [
+    {
+      ...ARMY_ACTION_STEPS[0],
+      play: async ({ browser }) => {
+        before = await readPurchasedPurse(browser);
+        browser.press("Escape");
+        await readUntil(
+          () => browser.read(SHEET_NAME),
+          (name) => name === null,
+          SHEET_WAIT_MS,
+        );
+        return { before };
+      },
+    },
+    clickToResultStep(
+      "refill",
+      "RefillStamina",
+      (context) => refillTheArmy({ ...context, partial: true }),
+      ({ played }) => played.watching && { watch: "refilled" },
+    ),
+    ARMY_ACTION_STEPS[2],
+    {
+      name: "purchased-refill-isolation",
+      settleMs: 0,
+      play: async ({ browser }) => ({
+        before,
+        after: await readPurchasedPurse(browser),
+        rejected: browser.read("JSON.stringify(window.__labChain?.rejected ?? [])"),
+        amounts: browser.read(`JSON.stringify((window.__labChain?.sent ?? [])
+          .filter(({ command, answered }) => command.kind === "RefillStamina" && answered?.length)
+          .map(({ command }) => command.fields.amount))`),
+      }),
+      verify: ({ played }) => {
+        const { before, after, amounts } = played;
+        const amount = Number(amounts?.[0]);
+        if (!before || !after || amounts?.length !== 1 || !Number.isSafeInteger(amount) || amount <= 0)
+          return failed("Missing purse balances or one confirmed refill amount", played);
+        const purchased = Math.min(before.purchased, amount);
+        return after.purchased === before.purchased - purchased && after.earned === before.earned - (amount - purchased)
+          ? completed(played)
+          : failed("Refill must spend purchased LORDS first and only the remainder from winnings", played);
+      },
+    },
+  ];
+}
+
+/**
+ * The purse's deposit amount as a player meets it, on the lab's spend-lords game: the HUD field read at rest, typed
+ * into with real keys after a tap on it, a deposit begun (a desktop's Tab then Enter, a phone's tap) with its payment
+ * opened on the app sheet, and the same page loaded again with that begun deposit restored as the exact, locked amount.
+ * The run's test profile holds no wallet, so nothing is handed to a wallet and nothing is uncertain: the restored
+ * deposit offers Retry payment and Edit or cancel, without the uncertain line (an uncertain send's hold is the unit
+ * tests'). A phone is Chrome's device
+ * emulation: the field's numeric input mode and real browser key events injected after a real tap; a physical OS
+ * keyboard is not exercised.
+ */
+const DEPOSIT_AMOUNT_STEPS = [
+  {
+    name: "deposit-amount-at-rest",
+    settleMs: 0,
+    play: async ({ browser }) => {
+      await openDepositPurse(browser);
+      return browser.read(DEPOSIT_FIELD);
+    },
+    verify: ({ played }) => judgeDepositField(played, { value: "10", locked: false }),
+  },
+  {
+    name: "deposit-amount-typed",
+    settleMs: 0,
+    play: async ({ browser }) => {
+      const before = browser.read(DEPOSIT_FIELD);
+      if (!before) return { field: null };
+      browser.tap(before.offset);
+      for (let index = 0; index < before.value.length; index += 1) browser.press("Backspace");
+      browser.press("2");
+      browser.press("5");
+      return { viewportBefore: before.viewport, ...browser.read(DEPOSIT_FIELD) };
+    },
+    verify: ({ played }) =>
+      played.focused === true
+        ? judgeDepositField(played, { value: "25", locked: false })
+        : failed("The tap did not focus the amount", played),
+  },
+  {
+    name: "deposit-amount-begun",
+    settleMs: 0,
+    play: async ({ browser }) => {
+      const button = browser.read(sheetButton("^Deposit LORDS$"));
+      if (!button) return { blocked: "No Deposit LORDS button" };
+      const [dx, dy] = button.offset;
+      const underTap = browser.read(
+        `JSON.stringify(document.elementFromPoint(innerWidth / 2 + ${dx}, innerHeight / 2 + ${dy})?.closest("button")?.textContent.trim() ?? null)`,
+      );
+      if (browser.read("matchMedia('(pointer: coarse)').matches")) {
+        if (underTap !== "Deposit LORDS")
+          return { blocked: `The tap point holds ${underTap}, not Deposit LORDS`, button };
+        browser.tap(button.offset);
+      } else {
+        browser.press("Tab");
+        const focused = browser.read("JSON.stringify(document.activeElement?.textContent?.trim() ?? null)");
+        if (focused !== "Deposit LORDS")
+          return { blocked: `Tab from the amount reached ${focused}, not Deposit LORDS` };
+        browser.press("Enter");
+      }
+      const field = await readUntil(
+        () => browser.read(DEPOSIT_FIELD),
+        (state) => state?.disabled === true && state.edit && state.paying !== null,
+        SHEET_WAIT_MS,
+      );
+      return field ?? { field: null };
+    },
+    verify: ({ played }) =>
+      played.blocked
+        ? failed(played.blocked, played)
+        : played.edit && played.paying === "Deposit 25 LORDS"
+          ? judgeDepositField(played, { value: "25", locked: true })
+          : failed("A begun deposit must open its payment on the app sheet and, unsent, offer Edit or cancel", played),
+  },
+  {
+    name: "deposit-amount-restored",
+    settleMs: 0,
+    play: async (context) => {
+      const reloaded = await reloadOn("Map", "map", "spend-lords")(context);
+      await openDepositPurse(context.browser);
+      return { reloaded: reloaded.reloaded, ...context.browser.read(DEPOSIT_FIELD) };
+    },
+    verify: ({ played }) =>
+      !played.reloaded
+        ? failed("The page did not load again", played)
+        : played.retry && played.edit && !played.uncertain && !played.deposit && played.paying === null
+          ? judgeDepositField(played, { value: "25", locked: true })
+          : failed(
+              "A restored deposit never handed to a wallet must offer Retry payment and Edit or cancel, not an uncertain status",
+              played,
+            ),
+  },
+];
+
+/** The amount the purse will sign: its HUD field, what it holds, how it reads against its well, and what it offers. */
+const DEPOSIT_FIELD = `JSON.stringify((() => {
+  const sheet = document.querySelector('[data-kit-sheet][aria-label="LORDS"]');
+  const input = sheet?.querySelector('input[aria-label="Whole LORDS to deposit"]');
+  if (!input) return null;
+  const field = input.closest(".ui-field");
+  const rgb = (color) => color.match(/[\\d.]+/g).slice(0, 4).map(Number);
+  const backdrop = (element) => {
+    for (let at = element; at; at = at.parentElement) {
+      const [r, g, b, a = 1] = rgb(getComputedStyle(at).backgroundColor);
+      if (a > 0) return [r, g, b];
+    }
+    return [0, 0, 0];
+  };
+  const shown = (color, under, opacity) => color.slice(0, 3).map((value, index) => value * opacity + under[index] * (1 - opacity));
+  const luminance = (color) => color.map((value) => value / 255).map((v) => (v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4)).reduce((sum, v, index) => sum + v * [0.2126, 0.7152, 0.0722][index], 0);
+  const opacity = Number(getComputedStyle(field ?? input).opacity);
+  const behind = backdrop((field ?? input).parentElement);
+  const well = shown(backdrop(field ?? input), behind, opacity);
+  const ink = shown(rgb(getComputedStyle(input).color), well, opacity);
+  const [light, dark] = [luminance(ink), luminance(well)].sort((a, b) => b - a);
+  const rect = input.getBoundingClientRect();
+  const button = (text) => [...sheet.querySelectorAll("button")].some((candidate) => candidate.textContent.trim() === text);
+  return {
+    value: input.value,
+    disabled: input.disabled,
+    focused: document.activeElement === input,
+    inputMode: input.inputMode,
+    name: input.getAttribute("aria-label"),
+    hudField: Boolean(field),
+    contrast: Math.round(((light + 0.05) / (dark + 0.05)) * 100) / 100,
+    fontPx: Number.parseFloat(getComputedStyle(input).fontSize),
+    offset: [Math.round(rect.left + rect.width / 2 - innerWidth / 2), Math.round(rect.top + rect.height / 2 - innerHeight / 2)],
+    viewport: { width: Math.round(visualViewport.width), height: Math.round(visualViewport.height) },
+    deposit: button("Deposit LORDS"),
+    edit: button("Edit or cancel deposit"),
+    retry: button("Retry payment"),
+    uncertain: [...sheet.querySelectorAll('[role="status"]')].some((line) => line.textContent.startsWith("Payment status is uncertain")),
+    paying: document.querySelector('[role="dialog"][aria-label^="Deposit "]')?.getAttribute("aria-label") ?? null,
+  };
+})())`;
+
+/** WCAG's least contrast for text: the editable amount must read at least this well against its well. */
+const AMOUNT_LEAST_CONTRAST = 4.5;
+
+function judgeDepositField(played, { value, locked }) {
+  if (!played?.hudField) return failed("The amount is not in the HUD's field", played);
+  if (played.name !== "Whole LORDS to deposit" || played.inputMode !== "numeric")
+    return failed("The amount lost its accessible name or numeric keyboard", played);
+  if (played.value !== value) return failed(`The amount reads ${played.value}, not ${value}`, played);
+  if (played.disabled !== locked)
+    return failed(locked ? "The begun amount can still be edited" : "The amount is locked", played);
+  if (!locked && played.contrast < AMOUNT_LEAST_CONTRAST)
+    return failed(`The amount's contrast ${played.contrast} is under ${AMOUNT_LEAST_CONTRAST}`, played);
+  return completed(played);
+}
+
+async function readPurchasedPurse(browser) {
+  if (browser.read(SHEET_NAME) !== null) browser.press("Escape");
+  const purse = browser.read(buttonLabelled("^LORDS "));
+  if (!purse) return null;
+  browser.tap(purse.offset);
+  const sheet = await readUntil(
+    () => browser.read(SHEET_NAME),
+    (name) => name === "LORDS",
+    SHEET_WAIT_MS,
+  );
+  if (sheet !== "LORDS") return null;
+  return browser.read(`JSON.stringify((() => {
+    const sheet = document.querySelector('[data-kit-sheet][aria-label="LORDS"]');
+    const earned = /^Winnings: ([\\d,]+) LORDS$/.exec(sheet?.querySelector('[data-earned-lords]')?.textContent ?? "");
+    const purchased = /^Spend-only: ([\\d,]+) LORDS$/.exec(sheet?.querySelector('[data-spend-lords]')?.textContent ?? "");
+    return earned && purchased ? {earned: Number(earned[1].replaceAll(",", "")), purchased: Number(purchased[1].replaceAll(",", ""))} : null;
+  })())`);
+}
+
 /**
  * Opens the readiest army's panel as a player does: its dock entry (a desktop opens it on select; a phone's details).
  * A panel already open (a phone's stands where its dock was) is used as it is.
@@ -879,9 +1109,12 @@ async function openTheArmyPanel(browser) {
   };
 }
 
-async function refillTheArmy({ browser }) {
+async function refillTheArmy({ browser, partial = false }) {
   const panel = await openTheArmyPanel(browser);
   if (panel.sheet !== panel.army) return panel;
+  const maximum = browser.read(`JSON.stringify(Number(document.querySelector('[data-kit-sheet] [data-stamina-line]')
+    ?.textContent?.match(/\\/([\\d,]+)/)?.[1]?.replaceAll(",", "")))`);
+  if (!Number.isSafeInteger(maximum) || maximum <= 0) throw new Error("Army panel has no stamina maximum");
   const refill = browser.read(sheetButton("^Refill"));
   if (!refill) return { ...panel, refill };
   browser.tap(refill.offset);
@@ -892,21 +1125,40 @@ async function refillTheArmy({ browser }) {
     SHEET_WAIT_MS,
   );
   if (!confirm) return { ...panel, refill: refill.name, confirm };
-  watchFor(browser, "refilled", panelReadsTheChainsStamina(panel.army));
+  if (partial) selectPartialRefill(browser);
+  watchFor(browser, "refilled", panelReadsTheChainsStamina(panel.army, maximum));
   browser.tap(confirm.offset);
   return { ...panel, refill: refill.name, watching: true };
+}
+
+function selectPartialRefill(browser, portion = 0.75) {
+  const slider = browser.read(`JSON.stringify((() => {
+    const input = document.querySelector('[data-kit-sheet][aria-label="Refill"] input[aria-label="Stamina to refill"]');
+    if (!input) return null;
+    const box = input.getBoundingClientRect();
+    return {offset: [box.left + box.width * ${portion} - innerWidth / 2, box.top + box.height / 2 - innerHeight / 2]};
+  })())`);
+  if (!slider) throw new Error("Refill has no stamina slider");
+  browser.tap(slider.offset);
+  const selected = browser.read(`JSON.stringify((() => {
+    const input = document.querySelector('[data-kit-sheet][aria-label="Refill"] input[aria-label="Stamina to refill"]');
+    return {amount: Number(input.value), missing: Number(input.max)};
+  })())`);
+  if (!(selected.amount > 0 && selected.amount < selected.missing))
+    throw new Error("Refill slider did not select a partial amount");
+  return selected;
 }
 
 /**
  * The army's panel reads the stamina the lab's chain refilled it to, out of the same maximum. The chain writes the bar
  * where the contract keeps it: a Frontier army's slot (ArmySlot), or the troops' own bar for an army without one.
  */
-const panelReadsTheChainsStamina = (army) => `(() => {
+const panelReadsTheChainsStamina = (army, maximum) => `(() => {
   const refill = (window.__labChain?.sent ?? []).filter(({ command }) => command.kind === "RefillStamina").at(-1);
   const answered = (model) => refill?.answered.find((fact) => fact.model === model)?.value;
   const amount = answered("ArmySlot")?.stamina.amount ?? answered("ExplorerTroops")?.troops.stamina.Inline?.amount;
   const text = document.querySelector('[data-kit-sheet][aria-label="${army}"]')?.innerText ?? "";
-  return amount !== undefined && text.includes(amount + "/" + amount);
+  return amount !== undefined && text.replaceAll(",", "").includes(amount + "/" + ${maximum});
 })()`;
 
 async function levelUpTheArmy({ browser }) {
@@ -1086,6 +1338,359 @@ const WITHDRAW_ACTION_STEPS = [
     ({ played }) => played.watching && { watch: "withdrawn" },
   ),
 ];
+
+function walletDepositStep(name) {
+  return {
+    name,
+    play: depositTenLords,
+    settleMs: 0,
+    verify: ({ played }) =>
+      played.blocked
+        ? blocked(played.blocked, played)
+        : played.credited
+          ? completed(played)
+          : failed(
+              played.error ?? "Deposit did not credit exactly ten spend-only LORDS while preserving winnings",
+              played,
+            ),
+  };
+}
+
+/** A wallet-funded ten-LORDS purchase on an isolated S1 rehearsal chain, through the real purse and wallet. */
+async function depositTenLords({ base, browser, owner, devTools }) {
+  const evidence = { responses: [] };
+  const stop = watchDepositResponses(devTools, evidence);
+  try {
+    Object.assign(evidence, await approveTenLords({ base, browser, owner, evidence }));
+  } catch (error) {
+    evidence.error = error.message;
+  } finally {
+    await stop();
+  }
+  return evidence;
+}
+
+async function approveTenLords({ base, browser, owner, evidence }) {
+  const route = browser.read("JSON.stringify(location.pathname)");
+  const chain = route.match(/\/g\/(0x[0-9a-f]+)\//i)?.[1];
+  if (!chain || !Buffer.from(chain.slice(2), "hex").toString().startsWith("S1_DEPOSIT_"))
+    throw new Error("Deposit proof requires an isolated S1_DEPOSIT_ shard");
+  const purse = browser.read(buttonLabelled("^LORDS "));
+  if (!purse) return { blocked: "No owned purse" };
+  if (browser.read(SHEET_NAME) !== "LORDS") browser.tap(purse.offset);
+  await readUntil(
+    () => browser.read(SHEET_NAME),
+    (name) => name === "LORDS",
+    SHEET_WAIT_MS,
+  );
+  const before = browser.read(DEPOSIT_BALANCES);
+  evidence.before = before;
+  if (browser.read(sheetButton("^Link a wallet to deposit$")))
+    return { blocked: "Link a funded test wallet before the headed proof; no linked wallet is available", before };
+  const button = browser.read(sheetButton("^Deposit LORDS$"));
+  if (!button || before.amount !== "10" || before.spend === null || before.earned === null)
+    return { blocked: "Deposit unavailable, balances missing, or amount is not ten", before };
+  browser.tap(button.offset);
+  const payment = await confirmPasskeyPayment({ base, browser, evidence, owner });
+  if (payment.blocked) return { ...payment, before };
+  if (!payment.pressed)
+    console.error(
+      "Confirm the ten-LORDS deposit in the linked wallet's prompt. Waiting up to ten minutes; Ctrl-C cancels.",
+    );
+  const after = await pollProof(
+    owner,
+    () => (evidence.after = browser.read(DEPOSIT_BALANCES)),
+    (state) =>
+      state.spend !== null &&
+      BigInt(state.spend) === BigInt(before.spend) + 10n &&
+      state.earned === before.earned &&
+      state.credited.some((id) => !before.credited.includes(id)),
+    10 * 60_000,
+    "No deposit credit within ten minutes: prepare the payout wallet in this persistent headed profile, confirm the payment, and check its devLords and its fee funding (LORDS for a Realms wallet, STRK for another)",
+  );
+  return {
+    before,
+    after,
+    fee: payment.fee,
+    credited:
+      after.spend !== null &&
+      BigInt(after.spend) === BigInt(before.spend) + 10n &&
+      after.earned === before.earned &&
+      after.credited.some((id) => !before.credited.includes(id)),
+  };
+}
+/** The deposit's payment on the app sheet, by its title ("Deposit 10 LORDS"). */
+const DEPOSIT_PAYMENT = '[role="dialog"][aria-label^="Deposit "]';
+const PASSKEY_CONFIRM = sheetButton("^Confirm with your passkey$", DEPOSIT_PAYMENT);
+const PAYMENT_TEXT = `JSON.stringify(document.querySelector(${JSON.stringify(DEPOSIT_PAYMENT)})?.textContent ?? null)`;
+const PRICING_WAIT_MS = 60_000;
+const FEE_DECISION_MS = 10 * 60_000;
+
+/**
+ * A Realms wallet's payment, confirmed by the run once its fee and calls are on record: the fee the payment shows and
+ * the paymaster's build (the calls the passkey signs, and their fee in LORDS wei) go to `<step>-fee-shown.json`, and
+ * Confirm is pressed only after the operator writes `<step>-fee-approved.json` beside it; `<step>-fee-refused.json`
+ * stops the step unsigned (a fee cap above what the wallet holds). A linked wallet's payment offers no passkey Confirm:
+ * its own prompt is the person's.
+ */
+async function confirmPasskeyPayment({ base, browser, evidence, owner }) {
+  const shown = `${base}-fee-shown.json`;
+  const approved = `${base}-fee-approved.json`;
+  const refused = `${base}-fee-refused.json`;
+  if ([shown, approved, refused].some((file) => existsSync(file))) throw new Error("fee evidence already exists");
+  const confirm = await readUntil(() => browser.read(PASSKEY_CONFIRM), Boolean, PRICING_WAIT_MS);
+  if (!confirm) return { pressed: false };
+  const build = await readUntil(() => evidence.responses.findLast(isWalletBuild) ?? null, Boolean, 10_000);
+  const fee = feeShownIn(browser.read(PAYMENT_TEXT));
+  writeFileSync(shown, JSON.stringify({ fee, build }, null, 2), { mode: 0o600, flag: "wx" });
+  console.error(
+    `Fee and calls on record: ${shown}. Write ${approved} to confirm with the passkey, or ${refused} to stop.`,
+  );
+  const decided = await waitUntil(() => {
+    owner.throwIfCancelled();
+    return existsSync(approved) || existsSync(refused);
+  }, FEE_DECISION_MS);
+  if (!decided) return { blocked: "No fee decision within ten minutes; nothing signed", fee };
+  if (existsSync(refused)) return { blocked: "Fee refused by the operator; nothing signed", fee };
+  const ready = browser.read(PASSKEY_CONFIRM);
+  if (!ready) return { blocked: "The payment no longer offers its passkey Confirm; nothing signed", fee };
+  browser.tap(ready.offset);
+  // A preparation gone stale is priced again on the press; a fee over the one approved is shown, and nothing signed.
+  const rose = await readUntil(() => browser.read(PAYMENT_TEXT)?.includes(FEE_ROSE) ?? false, Boolean, 5_000);
+  if (rose) return { blocked: "The fee rose past the approved one; nothing signed", fee };
+  return { pressed: true, fee };
+}
+
+const FEE_ROSE = "The network fee went up.";
+const isWalletBuild = (response) => new URL(response.url).pathname.endsWith("/auth/wallet/default/build");
+/** The payment's fee line ("Network fee about 10.71 LORDS, at most 32.11"), or null when it shows none. */
+const feeShownIn = (text) => text?.match(/Network fee about [\d.,]+ LORDS, at most [\d.,]+/)?.[0] ?? null;
+
+const DEPOSIT_BALANCES = `JSON.stringify({
+  spend:document.querySelector('[data-spend-lords]')?.getAttribute('data-spend-lords') ?? null,
+  earned:document.querySelector('[data-earned-lords]')?.getAttribute('data-earned-lords') ?? null,
+  amount:document.querySelector('[aria-label="Whole LORDS to deposit"]')?.value ?? null,
+  credited:[...document.querySelectorAll('[data-deposit-id]')].filter((row)=>/ · Credited$/.test(row.textContent)).map((row)=>row.getAttribute('data-deposit-id')),
+  text:document.querySelector('[role="dialog"]')?.textContent ?? null
+})`;
+
+const LIVE_ACTIONS = "JSON.stringify(globalThis.__clientActionLatencyMeasurements ?? [])";
+const LIVE_STAMINA = `JSON.stringify((() => {
+  const sheet = document.querySelector('[data-kit-sheet] [data-stamina-line]');
+  const reading = sheet?.textContent.replaceAll(',', '').match(/(\\d+)\\/(\\d+)/);
+  return reading ? {current: reading[1], maximum: reading[2]} : null;
+})())`;
+
+async function openDepositPurse(browser) {
+  if (browser.read(SHEET_NAME) !== "LORDS") {
+    if (browser.read(SHEET_NAME) !== null) browser.press("Escape");
+    const purse = browser.read(buttonLabelled("^LORDS "));
+    if (!purse) throw new Error("No owned LORDS purse");
+    browser.tap(purse.offset);
+    await readUntil(
+      () => browser.read(SHEET_NAME),
+      (name) => name === "LORDS",
+      SHEET_WAIT_MS,
+    );
+  }
+  const visible = browser.read(DEPOSIT_BALANCES);
+  if (visible.spend === null || visible.earned === null) throw new Error("Purse has no raw LORDS balances");
+  return visible;
+}
+
+async function depositProofDestination(browser, evidence) {
+  const route = browser.read("JSON.stringify(location.pathname)");
+  const match = /^\/g\/(0x[0-9a-f]+)\/(\d+)\//i.exec(route);
+  if (!match || !Buffer.from(match[1].slice(2), "hex").toString().startsWith("S1_DEPOSIT_"))
+    throw new Error("Live refill proof requires the selected S1_DEPOSIT_ game route");
+  const directory = browser.read(`(async () => {
+    const response = await fetch('/api/directory');
+    return JSON.stringify({status: response.status, body: await response.text()});
+  })()`);
+  evidence.responses.push({ url: "/api/directory", ...directory });
+  if (directory.status !== 200) throw new Error("The selected shard directory is unavailable");
+  const shard = JSON.parse(directory.body).shards.find((item) => BigInt(item.chainId) === BigInt(match[1]));
+  if (!shard?.manifest || !shard.games?.some((game) => Number(game.game_id) === Number(match[2])))
+    throw new Error("Selected game has no listed manifest");
+  if (BigInt(shard.manifest.chainId) !== BigInt(match[1])) throw new Error("Directory manifest chain mismatch");
+  return {
+    chainId: match[1],
+    gameId: Number(match[2]),
+    url: shard.url,
+    rpcUrl: shard.manifest.rpcUrl,
+    worldAddress: shard.manifest.contracts.games,
+  };
+}
+
+/** A bounded preparation uses the ordinary Explore control; no refill or tier purchase is sent here. */
+async function prepareMixedRefill(context, reads, evidence) {
+  const { browser, owner } = context;
+  for (let attempt = 0; attempt <= 8; attempt++) {
+    const purse = await openDepositPurse(browser);
+    if (BigInt(purse.spend) <= 0n || BigInt(purse.earned) <= 0n)
+      throw new Error(
+        `Mixed proof needs deposited LORDS and earned winnings; P=${purse.spend}, E=${purse.earned}. Earn winnings through a ruin chest before rerunning.`,
+      );
+    browser.press("Escape");
+    const panel = await openTheArmyPanel(browser);
+    const stamina = browser.read(LIVE_STAMINA);
+    const armyId = browser.observe().selection?.army?.id;
+    if (!armyId || panel.sheet !== panel.army || !stamina)
+      throw new Error("Deploy an owned army with a visible stamina panel before this proof");
+    if (BigInt(stamina.maximum) - BigInt(stamina.current) > BigInt(purse.spend) + 1n)
+      return { panel, armyId, purse, stamina };
+    if (attempt === 8)
+      throw new Error(
+        `After eight Explore attempts, Army ${armyId} still needs more than ${BigInt(purse.spend) + 1n} missing stamina for a mixed partial refill`,
+      );
+    browser.press("Escape");
+    const previous = browser.read(LIVE_ACTIONS);
+    const action = await exploreBesideArmy(context);
+    const preparation = { action };
+    evidence.preparation.push(preparation);
+    if (!action.pressedAt)
+      throw new Error(
+        "No ordinary Explore is available; provide food and a reachable unexplored tile to make missing stamina",
+      );
+    const hashes = await pollProof(
+      owner,
+      () => newActionHashes(browser.read(LIVE_ACTIONS), previous),
+      (hashes) => hashes.length > 0,
+      ORDER_OUTCOME_WAIT_MS,
+      "Preparation Explore has no action hash",
+    );
+    if (hashes.length !== 1) throw new Error("Preparation submitted more than one action");
+    preparation.receipt = await reads.receipt(hashes[0]);
+    preparation.receiptHead = await reads.receiptHead(preparation.receipt);
+    preparation.snapshot = await reads.snapshot(preparation.receipt.block_number);
+  }
+}
+
+/** One mixed partial refill, judged from its actual invocation, receipt, confirmed native facts and visible controls. */
+async function refillDepositedLords(context) {
+  const evidence = { responses: [], preparation: [] };
+  let reads;
+  try {
+    evidence.destination = await depositProofDestination(context.browser, evidence);
+    reads = liveDepositReads(context.owner, evidence, evidence.destination);
+    evidence.rpcChainId = await reads.verifyChain();
+    evidence.army = await prepareMixedRefill(context, reads, evidence);
+    evidence.before = await reads.snapshot();
+    const before = refillState(evidence.before, evidence.destination, evidence.army.armyId);
+    evidence.destination.actor = before.actor;
+    const confirm = await selectLiveRefill(context, evidence, before);
+    const previous = context.browser.read(LIVE_ACTIONS);
+    evidence.actionsBefore = previous;
+    context.browser.tap(confirm.offset);
+    await confirmLiveRefill(context, reads, evidence, before, previous);
+    const after = refillState(evidence.after, evidence.destination, evidence.army.armyId);
+    evidence.conservation = assertRefillConservation(before, after, evidence.amount, evidence.receiptHead.timestamp);
+    await reconcileVisibleRefill(context, reads, evidence, after);
+    evidence.actions = context.browser.read(LIVE_ACTIONS);
+    assertOnlyRefillAction(evidence.actions, previous, evidence.receipt.transaction_hash);
+    evidence.proven = true;
+  } catch (error) {
+    evidence.error = error.message;
+  } finally {
+    reads?.stop();
+  }
+  return evidence;
+}
+
+async function selectLiveRefill({ browser, extraScreenshot }, evidence, before) {
+  evidence.visibleBefore = await openDepositPurse(browser);
+  assertVisiblePurse(evidence.visibleBefore, before);
+  browser.press("Escape");
+  await openTheArmyPanel(browser);
+  if (browser.observe().selection?.army?.id !== evidence.army.armyId)
+    throw new Error("Army selection changed before refill");
+  const refill = browser.read(sheetButton("^Refill"));
+  if (!refill) throw new Error("Selected army offers no refill");
+  browser.tap(refill.offset);
+  await readUntil(
+    () => browser.read(SHEET_NAME),
+    (name) => name === "Refill",
+    SHEET_WAIT_MS,
+  );
+  const missing = browser.read(
+    `JSON.stringify(document.querySelector('[aria-label="Stamina to refill"]')?.max ?? null)`,
+  );
+  if (!missing) throw new Error("No visible stamina slider");
+  const purchased = BigInt(evidence.visibleBefore.spend);
+  const affordable = purchased + BigInt(evidence.visibleBefore.earned);
+  const upper = affordable < BigInt(missing) ? affordable : BigInt(missing) - 1n;
+  if (upper <= purchased) throw new Error(`Need missing stamina > ${purchased + 1n}; visible missing=${missing}`);
+  const target = purchased + (upper - purchased + 1n) / 2n;
+  selectPartialRefill(browser, Number(target) / Number(missing));
+  evidence.amount = browser.read(
+    `JSON.stringify(document.querySelector('[aria-label="Stamina to refill"]')?.value ?? null)`,
+  );
+  evidence.missing = missing;
+  assertMixedRefill(evidence.visibleBefore, evidence.amount, missing);
+  const confirm = browser.read(buttonIn('[data-kit-sheet][aria-label="Refill"]', "^Refill · "));
+  if (!confirm || confirm.name.replaceAll(",", "") !== `Refill · ${evidence.amount} LORDS`)
+    throw new Error("Refill confirm does not name the selected slider amount");
+  evidence.confirm = confirm.name;
+  evidence.beforeScreenshot = extraScreenshot("mixed-refill-before");
+  return confirm;
+}
+
+async function confirmLiveRefill({ browser, owner }, reads, evidence, before, previous) {
+  const hashes = await pollProof(
+    owner,
+    () => newActionHashes(browser.read(LIVE_ACTIONS), previous),
+    (hashes) => hashes.length > 0,
+    ORDER_OUTCOME_WAIT_MS,
+    "Refill has no normal action-record transaction hash",
+  );
+  if (hashes.length !== 1) throw new Error("Expected exactly one refill transaction");
+  evidence.receipt = await reads.receipt(hashes[0]);
+  if (evidence.receipt.block_number <= evidence.before.body.confirmed_block)
+    throw new Error("Refill receipt does not follow the before snapshot");
+  evidence.transaction = await reads.rpc("starknet_getTransactionByHash", { transaction_hash: hashes[0] });
+  assertRefillTransaction(
+    evidence.transaction,
+    evidence.receipt,
+    evidence.destination,
+    before.release,
+    evidence.army.armyId,
+    evidence.amount,
+  );
+  evidence.receiptHead = await reads.receiptHead(evidence.receipt);
+  evidence.after = await reads.snapshot(evidence.receipt.block_number);
+}
+
+async function reconcileVisibleRefill({ browser, owner, extraScreenshot }, reads, evidence, after) {
+  await pollProof(
+    owner,
+    () => browser.read(SHEET_NAME),
+    (name) => name === evidence.army.panel.army,
+    ORDER_OUTCOME_WAIT_MS,
+    "Refill did not return to the selected army panel",
+  );
+  evidence.visibleStamina = await pollProof(
+    owner,
+    async () => ({
+      panel: browser.read(LIVE_STAMINA),
+      armyId: browser.observe().selection?.army?.id,
+      head: await reads.rpc("starknet_getBlockWithTxHashes", { block_id: "latest" }),
+    }),
+    ({ panel, armyId, head }) =>
+      armyId === evidence.army.armyId &&
+      visibleStaminaMatches(panel, after, evidence.receiptHead.timestamp, head.timestamp),
+    ORDER_OUTCOME_WAIT_MS,
+    "Visible army stamina does not match confirmed refill plus regeneration",
+  );
+  evidence.afterScreenshot = extraScreenshot("mixed-refill-after");
+  evidence.visibleAfter = await pollProof(
+    owner,
+    () => openDepositPurse(browser),
+    (purse) => purse.spend === String(after.purchased.available) && purse.earned === String(after.earned),
+    ORDER_OUTCOME_WAIT_MS,
+    "Visible purse has not reconciled the confirmed refill",
+  );
+  assertVisiblePurse(evidence.visibleAfter, after);
+}
 
 async function withdrawTheLords({ browser }) {
   const purse = browser.read(buttonLabelled("^LORDS "));
@@ -4771,6 +5376,21 @@ export const STEP_SETS = {
       },
     ],
   },
+  "s1-deposits": {
+    game: FRONTIER,
+    steps: [
+      ...FRONTIER_MAP.opening,
+      walletDepositStep("wallet-deposit"),
+      {
+        name: "live-mixed-refill",
+        play: refillDepositedLords,
+        settleMs: 0,
+        verify: ({ played }) =>
+          played.proven ? completed(played) : failed(played.error ?? "Missing live refill evidence", played),
+      },
+      walletDepositStep("wallet-deposit-for-sweep"),
+    ],
+  },
   "home-claim": {
     game: FRONTIER,
     steps: [
@@ -4841,6 +5461,11 @@ export const STEP_SETS = {
   "lab-actions-research": { game: labSpireGame("research"), steps: RESEARCH_ACTION_STEPS },
   "lab-actions-claim": { game: labSpireGame("claim"), steps: CLAIM_ACTION_STEPS },
   "lab-far-place": { game: labSpireGame("far-place"), steps: FAR_PLACE_STEPS, devOverlays: true },
+  "lab-spend-lords": {
+    game: labSpireGame("spend-lords"),
+    steps: purchasedRefillSteps(),
+  },
+  "lab-deposit-amount": { game: labSpireGame("spend-lords"), steps: DEPOSIT_AMOUNT_STEPS },
   "lab-actions-army": { game: labSpireGame("upkeep"), steps: ARMY_ACTION_STEPS },
   "lab-actions-demolish": { game: labSpireGame("upkeep"), steps: DEMOLISH_ACTION_STEPS },
   "lab-actions-chest": { game: labSpireGame("upkeep"), steps: CHEST_ACTION_STEPS },

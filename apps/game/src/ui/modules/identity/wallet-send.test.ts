@@ -10,7 +10,7 @@ import { L2_CHAIN } from "@/runtime/l2-rpc";
 
 import { IdentityRequestError } from "@realms-world/identity";
 import { WALLET_GAS_TOKEN } from "@realms-world/identity/wallet";
-import { forgetUncertain, uncertainSendOf, UncertainSendNotKeptError } from "./uncertain-sends";
+import { forgetUncertain, uncertainSendOf, UncertainSendNotKeptError, type SignedPasskeySend } from "./uncertain-sends";
 import {
   FeeRoomShortError,
   prepareDefaultWalletSend,
@@ -22,10 +22,19 @@ import {
 } from "./wallet-send";
 
 const CALLS = [{ contractAddress: "0x1ed9e7", entrypoint: "register", calldata: [] }];
+/** The signal of a panel still open. */
+const OPEN = new AbortController().signal;
 
-const wallet = () => {
+const wallet = (fee = 1n) => {
   const execute = vi.fn(async () => ({ transaction_hash: "0xtx" }));
-  return { account: { address: "0x4a1", execute } as unknown as AccountInterface, execute };
+  return {
+    account: {
+      address: "0x4a1",
+      execute,
+      estimateInvokeFee: vi.fn(async () => ({ overall_fee: fee })),
+    } as unknown as AccountInterface,
+    execute,
+  };
 };
 
 const chain = (strk: bigint, receipt: Promise<object>) =>
@@ -37,11 +46,11 @@ const chain = (strk: bigint, receipt: Promise<object>) =>
 it("sends from the owner only, and offers the swap instead of sending when it holds no STRK for the fee", async () => {
   const { account, execute } = wallet();
   const landed = Promise.resolve({ isReverted: () => false });
-  await expect(sendFromWallet(account, "0x999", CALLS, chain(1n, landed), vi.fn())).rejects.toBeInstanceOf(
+  await expect(sendFromWallet(account, "0x999", CALLS, chain(1n, landed), vi.fn(), OPEN)).rejects.toBeInstanceOf(
     WrongWalletError,
   );
   const empty = chain(0n, landed);
-  await expect(sendFromWallet(account, "0x4a1", CALLS, empty, vi.fn())).resolves.toEqual({ kind: "no-strk" });
+  await expect(sendFromWallet(account, "0x4a1", CALLS, empty, vi.fn(), OPEN)).resolves.toEqual({ kind: "no-strk" });
   expect(execute).not.toHaveBeenCalled();
   // The fee balance is read on the network's own fee token, STRK, never on a token a service names.
   expect(empty.callContract).toHaveBeenCalledWith({
@@ -60,6 +69,7 @@ it("holds a sent call until its receipt lands, and answers a revert with the led
     CALLS,
     chain(1n, Promise.resolve({ isReverted: () => false })),
     signed,
+    OPEN,
   );
   await expect(landed).resolves.toEqual({ kind: "landed" });
   expect(signed).toHaveBeenCalledOnce();
@@ -68,18 +78,25 @@ it("holds a sent call until its receipt lands, and answers a revert with the led
     revert_reason:
       "Error in the called contract (0x1ed9e7):\nExecution failed. Failure reason: 'Ledger: already registered'.",
   };
-  await expect(sendFromWallet(account, "0x4a1", CALLS, chain(1n, Promise.resolve(reverted)), vi.fn())).resolves.toEqual(
-    {
-      kind: "refused",
-      reason: "Ledger: already registered",
-    },
-  );
+  await expect(
+    sendFromWallet(account, "0x4a1", CALLS, chain(1n, Promise.resolve(reverted)), vi.fn(), OPEN),
+  ).resolves.toEqual({
+    kind: "refused",
+    reason: "Ledger: already registered",
+  });
 });
 
 it("says the network did not confirm a send whose receipt could not be read, never that it was not sent", async () => {
   vi.spyOn(console, "error").mockImplementation(() => {});
   const { account } = wallet();
-  const outcome = await sendFromWallet(account, "0x4a1", CALLS, chain(1n, Promise.reject(new Error("503"))), vi.fn());
+  const outcome = await sendFromWallet(
+    account,
+    "0x4a1",
+    CALLS,
+    chain(1n, Promise.reject(new Error("503"))),
+    vi.fn(),
+    OPEN,
+  );
   // Unconfirmed, never refused: a refused send would offer Try again, a second payment.
   expect(outcome).toEqual({ kind: "unconfirmed" });
 });
@@ -215,7 +232,7 @@ it("signs the prepared execution's hash with the passkey, sends it through the p
   const signed = vi.fn();
   const provider = chain(0n, Promise.resolve({ isReverted: () => false }));
   await expect(
-    sendFromDefaultWallet(WALLET, execution as unknown as TypedData, "[]", provider, signed),
+    sendFromDefaultWallet(WALLET, execution as unknown as TypedData, "[]", provider, signed, OPEN),
   ).resolves.toEqual({ kind: "landed" });
   // Landed: nothing is left uncertain.
   expect(uncertainSendOf(WALLET.address)).toBeUndefined();
@@ -230,6 +247,65 @@ it("signs the prepared execution's hash with the passkey, sends it through the p
   expect(provider.waitForTransaction).toHaveBeenCalledWith("0xtx", expect.anything());
 });
 
+it("keeps a default wallet's send from the moment its passkey is asked, and forgets it once the passkey signs nothing", async () => {
+  forgetUncertain(WALLET.address);
+  const execution = built();
+  const execute = vi.spyOn(identityClient, "executeDefaultWalletCall").mockResolvedValue("0xtx");
+  let answer!: { sign: (signature: string[]) => void; decline: (error: Error) => void };
+  passkey.sign.mockImplementationOnce(
+    () => new Promise((sign, decline) => (answer = { sign, decline })) as Promise<string[]>,
+  );
+  const provider = chain(0n, Promise.resolve({ isReverted: () => false }));
+  const late = sendFromDefaultWallet(WALLET, execution as unknown as TypedData, '["deposit"]', provider, vi.fn(), OPEN);
+  // Asked, not answered: kept, so no other send from this wallet goes while this one may still be signed and sent.
+  expect(uncertainSendOf(WALLET.address)).toMatchObject({
+    via: "passkey",
+    calls: '["deposit"]',
+    execution,
+    ownerSignature: null,
+    hash: null,
+  });
+  answer.sign(["0x4", "0x9"]);
+  await expect(late).resolves.toEqual({ kind: "landed" });
+  expect(execute).toHaveBeenCalledWith(execution, ["0x4", "0x9"]);
+  expect(uncertainSendOf(WALLET.address)).toBeUndefined();
+
+  passkey.sign.mockImplementationOnce(
+    () => new Promise((sign, decline) => (answer = { sign, decline })) as Promise<string[]>,
+  );
+  const declined = sendFromDefaultWallet(WALLET, execution as unknown as TypedData, "[]", provider, vi.fn(), OPEN);
+  expect(uncertainSendOf(WALLET.address)).toMatchObject({ ownerSignature: null });
+  const cause = new DOMException("The operation either timed out or was not allowed.", "NotAllowedError");
+  answer.decline(cause);
+  await expect(declined).rejects.toBe(cause);
+  expect(uncertainSendOf(WALLET.address)).toBeUndefined();
+  expect(execute).toHaveBeenCalledOnce();
+  execute.mockRestore();
+});
+
+it("asks no wallet and no passkey, and keeps nothing, for a send whose panel closed while it was priced", async () => {
+  forgetUncertain(WALLET.address);
+  forgetUncertain("0x4a1");
+  const closed = new AbortController();
+  closed.abort();
+  passkey.sign.mockClear();
+  const execute = vi.spyOn(identityClient, "executeDefaultWalletCall");
+  const provider = chain(1n, Promise.resolve({ isReverted: () => false }));
+  await expect(
+    sendFromDefaultWallet(WALLET, built() as unknown as TypedData, "[]", provider, vi.fn(), closed.signal),
+  ).resolves.toEqual({ kind: "abandoned" });
+  expect(passkey.sign).not.toHaveBeenCalled();
+  expect(execute).not.toHaveBeenCalled();
+  const { account, execute: walletExecute } = wallet();
+  await expect(sendFromWallet(account, "0x4a1", CALLS, provider, vi.fn(), closed.signal)).resolves.toEqual({
+    kind: "abandoned",
+  });
+  expect(walletExecute).not.toHaveBeenCalled();
+  expect(uncertainSendOf(WALLET.address)).toBeUndefined();
+  expect(uncertainSendOf("0x4a1")).toBeUndefined();
+  execute.mockRestore();
+});
+
 it("keeps a send whose paymaster answer was lost, and sends again only the same signed execution", async () => {
   forgetUncertain(WALLET.address);
   const execution = built();
@@ -240,7 +316,7 @@ it("keeps a send whose paymaster answer was lost, and sends again only the same 
     .mockResolvedValueOnce("0xsame");
   const provider = chain(0n, Promise.resolve({ isReverted: () => false }));
   await expect(
-    sendFromDefaultWallet(WALLET, execution as unknown as TypedData, '["transfer"]', provider, vi.fn()),
+    sendFromDefaultWallet(WALLET, execution as unknown as TypedData, '["transfer"]', provider, vi.fn(), OPEN),
   ).resolves.toEqual({ kind: "unconfirmed" });
   const kept = uncertainSendOf(WALLET.address);
   expect(kept).toMatchObject({
@@ -251,9 +327,7 @@ it("keeps a send whose paymaster answer was lost, and sends again only the same 
     hash: null,
   });
   // Re-entry sends the very same execution and signature: one nonce, so at most one transfer, and no new passkey prompt.
-  await expect(
-    submitSigned(kept as Extract<typeof kept, { via: "passkey" }>, provider, vi.fn(), "again"),
-  ).resolves.toEqual({
+  await expect(submitSigned(kept as SignedPasskeySend, provider, vi.fn(), "again")).resolves.toEqual({
     kind: "landed",
   });
   expect(execute.mock.calls).toEqual([
@@ -271,7 +345,7 @@ it("forgets a send the paymaster refused, proven never sent", async () => {
     .spyOn(identityClient, "executeDefaultWalletCall")
     .mockRejectedValueOnce(new IdentityRequestError(502, "PAYMASTER_REFUSED"));
   await expect(
-    sendFromDefaultWallet(WALLET, built() as unknown as TypedData, "[]", chain(0n, Promise.resolve({})), vi.fn()),
+    sendFromDefaultWallet(WALLET, built() as unknown as TypedData, "[]", chain(0n, Promise.resolve({})), vi.fn(), OPEN),
   ).rejects.toBeInstanceOf(IdentityRequestError);
   expect(uncertainSendOf(WALLET.address)).toBeUndefined();
   execute.mockRestore();
@@ -283,11 +357,11 @@ it("never calls a send refused when its receipt cannot be read: it stays on its 
   const execute = vi.spyOn(identityClient, "executeDefaultWalletCall").mockResolvedValue("0xtx");
   const lostReceipt = () => chain(1n, Promise.reject(new Error("timeout")));
   await expect(
-    sendFromDefaultWallet(WALLET, built() as unknown as TypedData, "[]", lostReceipt(), vi.fn()),
+    sendFromDefaultWallet(WALLET, built() as unknown as TypedData, "[]", lostReceipt(), vi.fn(), OPEN),
   ).resolves.toEqual({ kind: "unconfirmed" });
   expect(uncertainSendOf(WALLET.address)).toMatchObject({ via: "passkey", hash: "0xtx" });
   const { account } = wallet();
-  await expect(sendFromWallet(account, "0x4a1", CALLS, lostReceipt(), vi.fn())).resolves.toEqual({
+  await expect(sendFromWallet(account, "0x4a1", CALLS, lostReceipt(), vi.fn(), OPEN)).resolves.toEqual({
     kind: "unconfirmed",
   });
   expect(uncertainSendOf("0x4a1")).toMatchObject({ via: "wallet", hash: "0xtx", calls: JSON.stringify(CALLS) });
@@ -301,11 +375,11 @@ it("keeps an uncertain send when its resubmission is refused: that refusal says 
     .mockRejectedValueOnce(new IdentityRequestError(503, "SEND_UNCERTAIN"))
     .mockRejectedValueOnce(new IdentityRequestError(401, "unauthorized"));
   const provider = chain(0n, Promise.resolve({ isReverted: () => false }));
-  await sendFromDefaultWallet(WALLET, built() as unknown as TypedData, "[]", provider, vi.fn());
+  await sendFromDefaultWallet(WALLET, built() as unknown as TypedData, "[]", provider, vi.fn(), OPEN);
   const kept = uncertainSendOf(WALLET.address)!;
-  await expect(
-    submitSigned(kept as Extract<typeof kept, { via: "passkey" }>, provider, vi.fn(), "again"),
-  ).rejects.toBeInstanceOf(IdentityRequestError);
+  await expect(submitSigned(kept as SignedPasskeySend, provider, vi.fn(), "again")).rejects.toBeInstanceOf(
+    IdentityRequestError,
+  );
   // Still uncertain: no new transfer is offered until the chain settles the first.
   expect(uncertainSendOf(WALLET.address)).toEqual(kept);
   execute.mockRestore();
@@ -318,34 +392,71 @@ it("sends nothing when this browser cannot keep the record, on either path", asy
     throw new DOMException("quota", "QuotaExceededError");
   });
   const execute = vi.spyOn(identityClient, "executeDefaultWalletCall");
+  passkey.sign.mockClear();
   await expect(
-    sendFromDefaultWallet(WALLET, built() as unknown as TypedData, "[]", chain(0n, Promise.resolve({})), vi.fn()),
+    sendFromDefaultWallet(WALLET, built() as unknown as TypedData, "[]", chain(0n, Promise.resolve({})), vi.fn(), OPEN),
   ).rejects.toBeInstanceOf(UncertainSendNotKeptError);
+  expect(passkey.sign).not.toHaveBeenCalled();
   expect(execute).not.toHaveBeenCalled();
   const { account, execute: walletExecute } = wallet();
   await expect(
-    sendFromWallet(account, "0x4a1", CALLS, chain(1n, Promise.resolve({ isReverted: () => false })), vi.fn()),
+    sendFromWallet(account, "0x4a1", CALLS, chain(1n, Promise.resolve({ isReverted: () => false })), vi.fn(), OPEN),
   ).rejects.toBeInstanceOf(UncertainSendNotKeptError);
   expect(walletExecute).not.toHaveBeenCalled();
   full.mockRestore();
   execute.mockRestore();
 });
 
-it("keeps a connected wallet's send whose answer was lost, and forgets only the wallet's own refusal", async () => {
+it.each([
+  new Error("connection lost"),
+  new Error("User abort: response lost"),
+  { code: 4001 },
+  { code: "113" },
+  undefined,
+])("keeps a connected wallet's send whose answer was lost or unknown: %s", async (error) => {
   forgetUncertain("0x4a1");
-  const lost = { address: "0x4a1", execute: vi.fn(async () => Promise.reject(new Error("connection lost"))) };
-  await expect(
-    sendFromWallet(lost as unknown as AccountInterface, "0x4a1", CALLS, chain(1n, Promise.resolve({})), vi.fn()),
-  ).resolves.toEqual({ kind: "unconfirmed" });
+  const { account, execute } = wallet();
+  const provider = chain(1n, Promise.resolve({}));
+  const signed = vi.fn();
+  execute.mockRejectedValueOnce(error);
+  await expect(sendFromWallet(account, "0x4a1", CALLS, provider, signed, OPEN)).resolves.toEqual({
+    kind: "unconfirmed",
+  });
   // Accepted perhaps, its hash never known: kept, so re-entry offers no new transfer.
   expect(uncertainSendOf("0x4a1")).toMatchObject({ via: "wallet", hash: null, calls: JSON.stringify(CALLS) });
+  expect(signed).not.toHaveBeenCalled();
+  expect(provider.waitForTransaction).not.toHaveBeenCalled();
+});
+
+it.each([
+  { code: 113, message: "USER_REFUSED_OP" },
+  Object.assign(new Error("User rejected"), { name: "UserRejectedRequestError" }),
+  new Error("User abort"),
+])("forgets only the supported wallet's own refusal, and passes it on: %s", async (error) => {
   forgetUncertain("0x4a1");
-  const declined = {
-    address: "0x4a1",
-    execute: vi.fn(async () => Promise.reject({ code: 113, message: "USER_REFUSED_OP" })),
-  };
-  await expect(
-    sendFromWallet(declined as unknown as AccountInterface, "0x4a1", CALLS, chain(1n, Promise.resolve({})), vi.fn()),
-  ).rejects.toMatchObject({ code: 113 });
+  const { account, execute } = wallet();
+  const provider = chain(1n, Promise.resolve({}));
+  execute.mockRejectedValueOnce(error);
+  await expect(sendFromWallet(account, "0x4a1", CALLS, provider, vi.fn(), OPEN)).rejects.toBe(error);
+  expect(uncertainSendOf("0x4a1")).toBeUndefined();
+  expect(provider.waitForTransaction).not.toHaveBeenCalled();
+});
+
+it("prices the call first: a balance below the estimated fee offers the swap, and a revert is refused unsent", async () => {
+  forgetUncertain("0x4a1");
+  const short = wallet(2n);
+  const provider = chain(1n, Promise.resolve({ isReverted: () => false }));
+  await expect(sendFromWallet(short.account, "0x4a1", CALLS, provider, vi.fn(), OPEN)).resolves.toEqual({
+    kind: "no-strk",
+  });
+  expect(short.account.estimateInvokeFee).toHaveBeenCalledWith(CALLS);
+  const reverting = wallet();
+  vi.mocked(reverting.account.estimateInvokeFee).mockRejectedValueOnce(new Error("Ledger: deposits paused"));
+  await expect(sendFromWallet(reverting.account, "0x4a1", CALLS, provider, vi.fn(), OPEN)).resolves.toEqual({
+    kind: "refused",
+    reason: "Ledger: deposits paused",
+  });
+  for (const unsent of [short, reverting]) expect(unsent.execute).not.toHaveBeenCalled();
+  // Nothing was handed to the wallet, so nothing is kept as uncertain.
   expect(uncertainSendOf("0x4a1")).toBeUndefined();
 });

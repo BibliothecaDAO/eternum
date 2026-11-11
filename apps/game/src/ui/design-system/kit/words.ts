@@ -1385,6 +1385,8 @@ export const VALUE_WORDS = {
   refused: "The ledger refused it.",
   noStrk: "No STRK for the fee",
   swapOnAvnu: "Swap on AVNU",
+  /** The purse's deposit, paid over the game from the payout wallet. */
+  depositTitle: (amount: string) => `Deposit ${amount} LORDS`,
 } as const;
 
 /** A paid Blitz's entry, in its lobby. */

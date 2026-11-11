@@ -152,8 +152,9 @@ const useUncertainSend = (owner: string, asked: string, onLanded: () => void) =>
 };
 
 /**
- * The last send's answer was lost: Check again asks the chain; a default wallet's signed execution can be sent again
- * as it is (its nonce lets it run once), and nothing new is offered until it is settled.
+ * The last send's answer was lost, or its passkey was still asked when its panel closed: Check again asks the chain; a
+ * default wallet's signed execution can be sent again as it is (its nonce lets it run once), and nothing new is offered
+ * until it is settled.
  */
 const OnItsWay = ({
   uncertain,
@@ -165,12 +166,13 @@ const OnItsWay = ({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const send = uncertain.state.kind === "pending" ? uncertain.state.send : null;
+  const ownerSignature = send?.via === "passkey" ? send.ownerSignature : null;
   const again = async () => {
-    if (send?.via !== "passkey") return;
+    if (send?.via !== "passkey" || !ownerSignature) return;
     setBusy(true);
     setError(null);
     try {
-      const sent = await submitSigned(send, l2Provider(), () => {}, "again");
+      const sent = await submitSigned({ ...send, ownerSignature }, l2Provider(), () => {}, "again");
       if (sent.kind === "landed") return onLanded();
     } catch (cause) {
       setError(failureSentence("send", cause));
@@ -186,7 +188,7 @@ const OnItsWay = ({
       <AppButton kind="secondary" icon="refresh" disabled={busy} onClick={() => void uncertain.check()}>
         {VALUE_WORDS.checkAgain}
       </AppButton>
-      {send?.via === "passkey" && (
+      {ownerSignature && (
         <AppButton
           kind="quiet"
           icon="lock"
@@ -232,6 +234,7 @@ const PasskeySend = ({
   onFeeShort?: (spendable: bigint) => void;
 }) => {
   const prepared = useRef<{ send: Promise<PreparedSend>; at: number } | null>(null);
+  const panelClosed = usePanelClosed();
   const [priced, setPriced] = useState<Priced>({ kind: "pricing" });
   const [state, setState] = useState<{ kind: "ready" | "signing" | "confirming" } | { kind: "failed"; line: string }>({
     kind: "ready",
@@ -257,13 +260,20 @@ const PasskeySend = ({
   };
   const confirm = async (shown: WalletFee | null) => {
     const stale = !prepared.current || Date.now() - prepared.current.at > PREPARED_FOR_MS;
+    const closed = panelClosed();
     setState({ kind: "signing" });
     try {
       const ready = await (stale ? prepare() : prepared.current!.send);
       if (feeRose(shown, ready.fee)) return setState({ kind: "failed", line: WALLET_WORDS.feeRose });
-      const sent = await sendFromDefaultWallet(wallet, ready.execution, asked, l2Provider(), () =>
-        setState({ kind: "confirming" }),
+      const sent = await sendFromDefaultWallet(
+        wallet,
+        ready.execution,
+        asked,
+        l2Provider(),
+        () => setState({ kind: "confirming" }),
+        closed,
       );
+      if (sent.kind === "abandoned") return;
       if (sent.kind === "landed") return onLanded();
       if (sent.kind === "unconfirmed") return onUnconfirmed();
       setState({ kind: "failed", line: sent.kind === "refused" ? sent.reason : VALUE_WORDS.refused });
@@ -329,6 +339,21 @@ const PasskeySend = ({
   );
 };
 
+/**
+ * The signal a send carries for the panel that shows it, aborted once that panel closes: a send still being priced
+ * then asks no wallet or passkey (wallet-send.ts). Made on each mount, so the development build's replayed effects
+ * leave the mounted panel's signal live.
+ */
+const usePanelClosed = () => {
+  const panel = useRef<AbortController | null>(null);
+  useEffect(() => {
+    const mounted = new AbortController();
+    panel.current = mounted;
+    return () => mounted.abort();
+  }, []);
+  return () => panel.current!.signal;
+};
+
 /** A send that could not be prepared: short of LORDS for it and its fee, or the failure's sentence. */
 const whyNotPrepared = (cause: unknown): Priced =>
   cause instanceof FeeRoomShortError
@@ -361,9 +386,18 @@ const OwnerSend = ({
   const [outcome, setOutcome] = useState<Exclude<WalletSendOutcome, { kind: "landed" }> | { kind: "confirming" }>();
   /** The connector holding `owner`: undefined while it is looked for, null when this browser has never opened it. */
   const [holder, setHolder] = useState<Connector | null>();
+  const panelClosed = usePanelClosed();
   const send: OnAccount = async (account, _connectorId, provider) => {
     setOutcome(undefined);
-    const sent = await sendFromWallet(account, owner, calls, provider, () => setOutcome({ kind: "confirming" }));
+    const sent = await sendFromWallet(
+      account,
+      owner,
+      calls,
+      provider,
+      () => setOutcome({ kind: "confirming" }),
+      panelClosed(),
+    );
+    if (sent.kind === "abandoned") return;
     if (sent.kind === "landed") onLanded();
     else if (sent.kind === "unconfirmed") onUnconfirmed();
     else setOutcome(sent);

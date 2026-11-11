@@ -26,12 +26,7 @@ export const buildDirectoryFor = (runDir) => join(BUILDS_DIR, basename(runDir));
 export async function startClient({ owner, port, runDir }) {
   await assertPortFree(port);
   const logPath = join(runDir, "client.log");
-  const distDir = buildDirectoryFor(runDir);
-  owner.adopt("client build", () => rmSync(distDir, { recursive: true, force: true }));
-  await runOwned(owner, "client build", [VITE_BIN, "build", "--outDir", distDir, "--emptyOutDir"], logPath, {
-    NODE_OPTIONS: "--max-old-space-size=8192",
-  });
-  owner.throwIfCancelled();
+  const distDir = await buildClient({ owner, runDir });
 
   const preview = spawnLogged(
     [VITE_BIN, "preview", "--outDir", distDir, "--host", "127.0.0.1", "--port", String(port), "--strictPort"],
@@ -44,6 +39,23 @@ export async function startClient({ owner, port, runDir }) {
   const baseUrl = `https://127.0.0.1:${port}`;
   await waitUntilServed({ baseUrl, owner, port, preview, logPath });
   return { baseUrl, distDir, previewPid: preview.child.pid };
+}
+
+/** Builds the client as players get it into the run's own directory, released when the owner unwinds. */
+export async function buildClient({ owner, runDir }) {
+  const distDir = buildDirectoryFor(runDir);
+  owner.adopt("client build", () => rmSync(distDir, { recursive: true, force: true }));
+  await runOwned(
+    owner,
+    "client build",
+    [VITE_BIN, "build", "--outDir", distDir, "--emptyOutDir"],
+    join(runDir, "client.log"),
+    {
+      NODE_OPTIONS: "--max-old-space-size=8192",
+    },
+  );
+  owner.throwIfCancelled();
+  return distDir;
 }
 
 /** A port is ours to use only if nothing listens on it now: binding it proves that. */

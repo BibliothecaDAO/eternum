@@ -9,6 +9,7 @@ const calls = vi.hoisted(() => ({ refill: vi.fn(async () => "0x123"), signer: { 
 vi.mock("@/hooks/context/game-context", () => ({
   useGame: () => ({ setup: { systemCalls: { refill_stamina: calls.refill } }, account: { account: calls.signer } }),
 }));
+vi.mock("../value/use-spend-lords", () => ({ useSpendLords: () => ({ balance: undefined }) }));
 vi.mock("../value/use-realm-lords", () => ({ useRealmLords: () => 40 }));
 vi.mock("@/hooks/store/use-actions-in-flight", () => ({
   useInFlight: () => undefined,

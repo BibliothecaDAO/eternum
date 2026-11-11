@@ -169,7 +169,6 @@ const withoutNpmNoise = (output) =>
     .join("\n")
     .trim();
 
-/** A point at an offset from the screen's centre, where selecting an army puts it. */
 /** A point given from the page's centre, in whole pixels: agent-browser's mouse takes no fraction (an odd size's centre). */
 export const screenPoint = ([dx, dy]) => [Math.round(VIEWPORT.width / 2 + dx), Math.round(VIEWPORT.height / 2 + dy)];
 
@@ -280,7 +279,8 @@ function isTransientFailure(commandArgs, result) {
  * request's connection. Chrome drops its overrides when the connection closes, so it stays open for the whole run.
  */
 export async function openPageDevTools(browser) {
-  const socket = new WebSocket(browser.run(["get", "cdp-url"]));
+  const cdpUrl = browser.run(["get", "cdp-url"]);
+  const socket = new WebSocket(cdpUrl);
   await new Promise((resolveOpen, reject) => {
     socket.onopen = resolveOpen;
     socket.onerror = () => reject(new Error("Could not open the browser's DevTools connection"));
@@ -312,8 +312,9 @@ export async function openPageDevTools(browser) {
     send: (method, params) => send(method, params, sessionId),
     /** A command to the browser itself (its tabs), not the driven page. */
     sendToBrowser: (method, params) => send(method, params),
-    /** The driven page's tab. */
+    /** The driven page's tab, and the browser's DevTools address, for a connection of its own. */
     targetId: page.targetId,
+    cdpUrl,
     /** Calls `listener` with every event the browser sends; the returned function stops it. */
     onEvent: (listener) => {
       listeners.push(listener);

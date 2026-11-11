@@ -54,7 +54,12 @@ const payment: PayoutTerms = {
   count: 0,
 };
 const identity = vi.fn<typeof fetch>();
-const wallets = { assertWallet: vi.fn(), pendingChanges: () => ({ count: 0, oldestSince: null }) };
+const wallets = {
+  getAnchor: async () => undefined,
+  putAnchor: async () => {},
+  assertWallet: vi.fn(),
+  pendingChanges: () => ({ count: 0, oldestSince: null }),
+};
 const run = (input: unknown = payment) => createCosigner(config, key, wallets, identity).sign(input);
 beforeEach(() => {
   vi.resetAllMocks();

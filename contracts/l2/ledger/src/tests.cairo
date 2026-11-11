@@ -6,6 +6,10 @@ use game_ledger::contract::{
     IGameLedgerDispatcher, IGameLedgerDispatcherTrait, IGameLedgerSafeDispatcher, IGameLedgerSafeDispatcherTrait,
     IMMRTokenDispatcher, IMMRTokenDispatcherTrait, result_commitment,
 };
+use game_ledger::deposits::{
+    IDepositsDispatcherTrait, IDepositsSafeDispatcher, IDepositsSafeDispatcherTrait, LORDS_UNIT, commitment,
+    principal_hash, resolution_hash,
+};
 use game_ledger::test_lords::{ITestLordsDispatcher, ITestLordsDispatcherTrait};
 use game_ledger::types::{ChestBandPreset, ChestOdds, GameKey, MmrParams, Preset, RankedPlayer, SlotKey};
 use openzeppelin::access::accesscontrol::interface::{IAccessControlDispatcher, IAccessControlDispatcherTrait};
@@ -3319,4 +3323,89 @@ fn partial_seasons_unlock_the_last_day_and_keep_the_exact_claim_deadline() {
             fixture.ledger.frontier_claim_deadline('shard', id) == end + default_preset().claim_window_seconds.into(),
         );
     }
+}
+
+fn deposit_fixture() -> (Fixture, game_ledger::deposits::IDepositsDispatcher) {
+    let fixture = funded_frontier();
+    let deposits = game_ledger::deposits::IDepositsDispatcher { contract_address: fixture.ledger_address };
+    start_cheat_caller_address(fixture.ledger_address, ADMIN());
+    deposits.enable_deposits('shard', 1, 'games'.try_into().unwrap());
+    start_cheat_block_timestamp(fixture.ledger_address, START);
+    (fixture, deposits)
+}
+
+#[test]
+#[feature("safe_dispatcher")]
+fn wallet_deposit_retries_refund_once_and_cannot_touch_reward_funding() {
+    let (fixture, deposits) = deposit_fixture();
+    let safe = IDepositsSafeDispatcher { contract_address: fixture.ledger_address };
+    fund_and_approve_player(@fixture, player(0), 20 * LORDS_UNIT);
+    start_cheat_caller_address(fixture.ledger_address, player(0));
+    let id = deposits.deposit_lords('shard', 1, player(9), 'identity', 17, 10, 'purchase');
+    assert!(deposits.deposit_lords('shard', 1, player(9), 'identity', 17, 10, 'purchase') == id);
+    assert!(safe.deposit_lords('shard', 1, player(9), 'identity', 17, 11, 'purchase').is_err());
+    assert!(fixture.lords.balance_of(player(0)) == 10 * LORDS_UNIT);
+    assert!(fixture.ledger.get_frontier('shard', 1).pool == 1000);
+    let value = deposits.get_deposit('shard', id);
+    let digest = commitment(COSIGN_CHAIN, fixture.ledger_address, 'shard', id, value);
+    let (r, s) = cosigner_key().sign(resolution_hash(COSIGN_CHAIN, fixture.ledger_address, 0, digest, true)).unwrap();
+    assert!(safe.resolve_deposit('shard', id, true, r, s).is_err());
+    start_cheat_caller_address(fixture.ledger_address, OPERATOR());
+    deposits.resolve_deposit('shard', id, true, r, s);
+    deposits.resolve_deposit('shard', id, true, r, s);
+    assert!(safe.resolve_deposit('shard', id, false, r, s).is_err());
+    assert!(fixture.lords.balance_of(player(0)) == 20 * LORDS_UNIT);
+    assert!(deposits.deposit_principal() == (10 * LORDS_UNIT, 10 * LORDS_UNIT, 0));
+    assert!(fixture.ledger.get_frontier('shard', 1).pool == 1000);
+}
+
+#[test]
+#[feature("safe_dispatcher")]
+fn unused_principal_returns_once_after_reward_close_without_expiry_or_treasury_redirect() {
+    let (fixture, deposits) = deposit_fixture();
+    let safe = IDepositsSafeDispatcher { contract_address: fixture.ledger_address };
+    fund_and_approve_player(@fixture, player(0), 100 * LORDS_UNIT);
+    start_cheat_caller_address(fixture.ledger_address, player(0));
+    let id = deposits.deposit_lords('shard', 1, player(9), 'identity', 17, 100, 'purchase');
+    let value = deposits.get_deposit('shard', id);
+    let digest = commitment(COSIGN_CHAIN, fixture.ledger_address, 'shard', id, value);
+    let (r, s) = cosigner_key().sign(resolution_hash(COSIGN_CHAIN, fixture.ledger_address, 0, digest, false)).unwrap();
+    assert!(safe.resolve_deposit('shard', id, false, r, s).is_err());
+    start_cheat_caller_address(fixture.ledger_address, OPERATOR());
+    deposits.resolve_deposit('shard', id, false, r, s);
+    let (r, s) = cosigner_key()
+        .sign(
+            principal_hash(
+                COSIGN_CHAIN,
+                fixture.ledger_address,
+                0,
+                'shard',
+                'games'.try_into().unwrap(),
+                1,
+                player(9),
+                player(2),
+                60,
+            ),
+        )
+        .unwrap();
+    assert!(safe.pay_principal('shard', 1, player(9), player(2), 60, r, s).is_err());
+    start_cheat_block_timestamp(fixture.ledger_address, fixture.ledger.frontier_claim_deadline('shard', 1) + 1000000);
+    signed_settle(fixture.ledger, 'shard', 1, 0, 0);
+    assert!(fixture.ledger.get_frontier('shard', 1).closed);
+    assert!(fixture.lords.balance_of(TREASURY()) == 1000);
+    assert!(fixture.lords.balance_of(fixture.ledger_address) == 100 * LORDS_UNIT);
+    start_cheat_caller_address(fixture.ledger_address, player(0));
+    assert!(safe.pay_principal('shard', 1, player(9), player(2), 60, r, s).is_err());
+    start_cheat_caller_address(fixture.ledger_address, OPERATOR());
+    assert!(safe.pay_principal('shard', 1, player(9), player(2), 61, r, s).is_err());
+    assert!(safe.pay_principal('shard', 1, player(9), player(3), 60, r, s).is_err());
+    deposits.pay_principal('shard', 1, player(9), player(2), 60, r, s);
+    deposits.pay_principal('shard', 1, player(9), player(2), 60, r, s);
+    assert!(deposits.principal_payment('shard', 1, player(9)) == Some((player(2), 60)));
+    assert!(fixture.lords.balance_of(player(2)) == 60 * LORDS_UNIT);
+    assert!(fixture.lords.balance_of(fixture.ledger_address) == 40 * LORDS_UNIT);
+    assert!(fixture.lords.balance_of(TREASURY()) == 1000);
+    assert!(deposits.deposit_principal() == (100 * LORDS_UNIT, 0, 60 * LORDS_UNIT));
+    let (r, s) = cosigner_key().sign(resolution_hash(COSIGN_CHAIN, fixture.ledger_address, 0, digest, true)).unwrap();
+    assert!(safe.resolve_deposit('shard', id, true, r, s).is_err());
 }

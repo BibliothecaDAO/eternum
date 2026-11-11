@@ -17,17 +17,19 @@ import { L2_CHAIN } from "@/runtime/l2-rpc";
 import { callsMatch, WALLET_GAS_TOKEN, type AskedCall } from "@realms-world/identity/wallet";
 
 import { signWithPasskey } from "./passkey";
-import { forgetUncertain, rememberUncertain, type UncertainSend } from "./uncertain-sends";
+import { forgetUncertain, rememberUncertain, type SignedPasskeySend } from "./uncertain-sends";
 
 /**
- * What a wallet's send came to: landed, refused by the ledger with its reason, not sent for lack of STRK, or unconfirmed:
- * handed over with its answer lost, kept as an uncertain send (uncertain-sends.ts) until the chain says.
+ * What a wallet's send came to: landed, refused by the ledger with its reason, not sent for lack of STRK, unconfirmed:
+ * handed over with its answer lost, kept as an uncertain send (uncertain-sends.ts) until the chain says, or abandoned:
+ * its panel closed before the wallet was asked, so nothing was asked or sent.
  */
 export type WalletSendOutcome =
   | { kind: "landed" }
   | { kind: "refused"; reason: string }
   | { kind: "no-strk" }
-  | { kind: "unconfirmed" };
+  | { kind: "unconfirmed" }
+  | { kind: "abandoned" };
 
 /** The connected wallet is not the one the call must come from. */
 export class WrongWalletError extends Error {
@@ -37,9 +39,10 @@ export class WrongWalletError extends Error {
 }
 
 /**
- * The one send every value screen makes, so none improvises its own outcome: from `owner` only; after one read of its
- * STRK for the network fee (none: not sent, the swap is offered instead); `onSigned` once the wallet has sent it; then
- * held until its receipt lands, a revert answered with the ledger's own reason.
+ * The one send every value screen makes, so none improvises its own outcome: from `owner` only; after its STRK is read
+ * and the call priced (too little for the fee: not sent, the swap is offered instead); `onSigned` once the wallet has
+ * sent it; then held until its receipt lands, a revert answered with the ledger's own reason. `closed` is its panel's:
+ * a panel closed while the send was priced asks no wallet.
  */
 export const sendFromWallet = async (
   account: AccountInterface,
@@ -47,9 +50,21 @@ export const sendFromWallet = async (
   calls: Call[],
   provider: ProviderInterface,
   onSigned: () => void,
+  closed: AbortSignal,
 ): Promise<WalletSendOutcome> => {
   if (!isSameStarknetAddress(account.address, owner)) throw new WrongWalletError(owner);
-  if ((await feeBalanceOf(provider, account.address)) === 0n) return { kind: "no-strk" };
+  const gas = await feeBalanceOf(provider, account.address);
+  if (gas === 0n) return { kind: "no-strk" };
+  // Priced before the wallet opens: a call the chain would revert is refused with its reason, and a fee above the
+  // wallet's STRK offers the swap; nothing has been sent, so nothing is kept.
+  let fee: bigint;
+  try {
+    fee = BigInt((await account.estimateInvokeFee(calls)).overall_fee);
+  } catch (error) {
+    return { kind: "refused", reason: error instanceof Error ? error.message : VALUE_WORDS.refused };
+  }
+  if (gas < fee) return { kind: "no-strk" };
+  if (closed.aborted) return { kind: "abandoned" };
   // Kept before the wallet opens: nothing is sent if this browser cannot keep it.
   const intent = { via: "wallet", owner, calls: JSON.stringify(calls), hash: null, at: Date.now() } as const;
   rememberUncertain(intent);
@@ -108,7 +123,8 @@ export class FeeRoomShortError extends Error {
  * shows, and that the wallet's LORDS cover what the calls spend and that max (nothing is spent). Send, on the player's
  * tap: their passkey signs its hash and the paymaster submits it with the guardian's signature
  * (apps/realms/server/default-wallet-plugin.ts). The wallet pays its fee in LORDS, so no STRK is read. The tap opens
- * the passkey at once, as Safari requires, with no request before it.
+ * the passkey at once, as Safari requires, with no request before it; unless its panel closed (`closed`) while a stale
+ * preparation was built again, when nothing is asked.
  */
 export const prepareDefaultWalletSend = async (
   owner: string,
@@ -152,18 +168,30 @@ export const sendFromDefaultWallet = async (
   calls: string,
   provider: ProviderInterface,
   onSigned: () => void,
+  closed: AbortSignal,
 ): Promise<WalletSendOutcome> => {
-  const ownerSignature = await signWithPasskey(wallet, typedData.getMessageHash(prepared, wallet.address));
-  const send = {
+  // Its panel closed while the send was prepared again: no passkey opens for a payment no one is looking at.
+  if (closed.aborted) return { kind: "abandoned" };
+  // Kept before the passkey opens: its signature can come back after the panel closed, and is then still sent.
+  const asked = {
     via: "passkey",
     owner: wallet.address,
     calls,
     execution: prepared,
-    ownerSignature,
+    ownerSignature: null,
     hash: null,
     at: Date.now(),
   } as const;
-  return submitSigned(send, provider, onSigned, "first");
+  rememberUncertain(asked);
+  let ownerSignature: string[];
+  try {
+    ownerSignature = await signWithPasskey(wallet, typedData.getMessageHash(prepared, wallet.address));
+  } catch (error) {
+    // No signature, nothing that can be sent.
+    forgetUncertain(wallet.address);
+    throw error;
+  }
+  return submitSigned({ ...asked, ownerSignature }, provider, onSigned, "first");
 };
 
 /**
@@ -173,7 +201,7 @@ export const sendFromDefaultWallet = async (
  * of the earlier one, which may still have run, so it stays uncertain for the chain to settle.
  */
 export const submitSigned = async (
-  send: Extract<UncertainSend, { via: "passkey" }>,
+  send: SignedPasskeySend,
   provider: ProviderInterface,
   onSigned: () => void,
   submission: "first" | "again",

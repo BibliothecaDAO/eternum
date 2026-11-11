@@ -21,6 +21,7 @@ from urllib.parse import urlparse
 
 import measures
 from directory import directory_status, wait_for_identity
+from deposit_retirement import require_deposit_retirement
 
 
 ROOT = Path(__file__).resolve().parents[3]
@@ -437,6 +438,9 @@ def remove_shard(directory):
     """A runner shard is never started again: its containers' logs stay in its directory as shard-logs.log, then its
     containers, volumes and network go. The logs are read even when stopping fails, and the shard goes even when
     reading them fails."""
+    configuration = directory / "configuration.json"
+    config = json.loads(configuration.read_text()) if configuration.exists() else {}
+    require_deposit_retirement(config, directory, runner=True)
     command = [*DOCKER, "compose", "-f", str(directory / "compose.json")]
     try:
         try:

@@ -56,7 +56,7 @@ class TeardownBoundaryTest(unittest.TestCase):
 
     def boundaries(self, root, commands, retired, copy=None):
         """Teardown's outside world: its settings, lock, directory row, logs and commands, each observed."""
-        return [patch.object(teardown.shard, "ROOT", root), patch.object(teardown, "LOGS", root / "logs"),
+        return [patch.object(teardown, "require_deposit_retirement"), patch.object(teardown.shard, "ROOT", root), patch.object(teardown, "LOGS", root / "logs"),
                 patch.object(teardown.deploy, "load_inputs", return_value={}),
                 patch.object(teardown.shard, "isolated_stack_lock", return_value=nullcontext()),
                 patch.object(teardown, "directory_status", side_effect=lambda *args: retired.append(args[1])),
@@ -256,6 +256,7 @@ class TeardownBoundaryTest(unittest.TestCase):
             with patch.object(teardown.shard, "ROOT", root), patch.object(teardown.deploy, "load_inputs", return_value={}), \
                     patch.object(teardown.shard, "isolated_stack_lock", return_value=nullcontext()), \
                     patch.object(teardown, "directory_status", side_effect=unavailable), \
+                    patch.object(teardown, "require_deposit_retirement"), \
                     patch.object(teardown.Path, "mkdir"):
                 with self.assertRaisesRegex(RuntimeError, "identity unavailable"):
                     teardown.teardown(["dev"], stages.append)

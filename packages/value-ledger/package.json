@@ -5,6 +5,7 @@
   "type": "module",
   "exports": {
     ".": "./src/index.ts",
+    "./deposits": "./src/deposits.ts",
     "./shard": "./src/shard.ts",
     "./commitment": "./src/commitment.ts",
     "./codecs": "./src/codecs.ts",
