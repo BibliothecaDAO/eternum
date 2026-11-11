@@ -1,18 +1,21 @@
 import { configManager, FELT_CENTER, getExplorerOwner } from "@bibliothecadao/eternum";
 import type { NativeFactStore } from "@bibliothecadao/eternum/game-client";
 import type { WorldSpatialProjection } from "@bibliothecadao/eternum/game-sync";
-import { TroopType } from "@bibliothecadao/types";
+import { TileOccupier, TroopType } from "@bibliothecadao/types";
 import { Color } from "three";
 
 import { accountAddress } from "@/hooks/store/use-account-store";
+import { mapSiteOf } from "@/config/map-sites";
+import { ChestModelPath, SPIRE_MODEL_PATH } from "@/three/constants/scene-constants";
 import { activeMapLayer } from "@/three/map-layer";
+import { mapSiteModelPath } from "@/three/structures/map-site-models";
 import { worldHexToWorld } from "@/three/world-origin";
 import { SIDE_HEX } from "@/tokens";
 import { arePlayersAllied, sideOf, watchedSide } from "@/utils/entity-ownership";
 
 import type { MapArmy, TroopBuild } from "./army-marches";
 import type { ExploredTile, Hex } from "./land-from-facts";
-import type { MapStructure } from "./scene-from-land";
+import type { MapLandmark, MapStructure } from "./scene-from-land";
 
 /** Which of the renderer's builds each troop is drawn as. */
 const BUILD_OF_TROOP: Record<TroopType, TroopBuild> = {
@@ -56,6 +59,28 @@ export function readStructures(projection: WorldSpatialProjection): MapStructure
     hex: normalizedHexOf(structure.hexCoords),
     occupierType: structure.occupierType,
   }));
+}
+
+/**
+ * Everything of the layer shown that stands on a hex without being a structure, with the model today's map draws it
+ * as: a spire, lit or dormant, and a shrine or a well, which the tile itself tells of; and a chest.
+ */
+export function readLandmarks(projection: WorldSpatialProjection): MapLandmark[] {
+  const layer = activeMapLayer();
+  const onTiles = projection.getTiles(layer).flatMap((tile) => {
+    const path = landmarkModelOf(tile.occupierType);
+    return path ? [{ hex: normalizedHexOf(tile.hexCoords), path }] : [];
+  });
+  const chests = projection
+    .getChests(layer)
+    .map((chest) => ({ hex: normalizedHexOf(chest.hexCoords), path: ChestModelPath }));
+  return [...onTiles, ...chests];
+}
+
+function landmarkModelOf(occupierType: number): string | null {
+  if (occupierType === TileOccupier.Spire || occupierType === TileOccupier.DormantSpire) return SPIRE_MODEL_PATH;
+  const site = mapSiteOf(occupierType);
+  return site ? mapSiteModelPath(site.kind) : null;
 }
 
 /** Every army of the layer shown where it stands on the ground, as its troop's build, in its side's colour. */

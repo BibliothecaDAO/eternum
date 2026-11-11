@@ -12,18 +12,19 @@ The map client: the world map (the Surface, and the Ethereal under it) drawn by 
 the game's current renderer and loads none of it (`pnpm --dir apps/game check:map-client-isolation` proves how a build
 splits it). An address can name either: `?mapClient=next` or `?mapClient=current` (side by side:
 `/lab/game?scenario=explore&mapClient=current`). It draws the surface's explored land (each biome its own ground, with
-trees, rocks and plants the renderer makes by rule), the mist and the hexes next to explore, structures, armies, and
-animals (seven mammals that graze, rest, move in herds, run from armies and hunt: the map's flourish, no fact of the
-game); drag pans, pinch or wheel zooms, a tap picks an army, a structure or a hex, and a tap on a hex a picked army can
-move to or explore pins that order and shows its path; the same hex tapped again, or the HUD's verb, sends it. It is the
-page's only renderer there, and what it does not draw yet is missing: the realm view (an address that turns to it is
-taken back to the map, and the HUD says the view did not open), what the Ethereal holds beyond its land, structures and
-armies, sites, beasts, chests, battles and labels; and the orders other than a move or an explore (an attack, a site, a
-chest, a spire, a new army) are not sent from it. It starts on WebGPU and falls back to WebGL2 where WebGPU is missing
-or will not start; `&rendererMode=webgpu-force-webgl` asks for WebGL2. The module the page loads
-(`src/map-client/renderer`) is built from the crate by `pnpm --dir apps/game build:map-client` (pinned Rust, wasm-pack
-0.15.0, `--locked`) and committed; CI builds it again and refuses a module its sources do not build. The client playtest
-and the scene smoke ask for the current renderer by name, so they prove it on any build.
+trees, rocks and plants the renderer makes by rule), the mist and the hexes next to explore, structures, spires,
+shrines, wells and chests where a tile or a chest's facts put them, armies, and animals (seven mammals that graze, rest,
+move in herds, run from armies and hunt: the map's flourish, no fact of the game); drag pans, pinch or wheel zooms, a
+tap picks an army, a structure or a hex, and a tap on a hex a picked army can move to or explore pins that order and
+shows its path; the same hex tapped again, or the HUD's verb, sends it. It is the page's only renderer there, and what
+it does not draw yet is missing: the realm view (an address that turns to it is taken back to the map, and the HUD says
+the view did not open), what the Ethereal holds beyond its land, structures and armies, a Frontier realm's own spire
+(which a rule places, not a tile), a site's guardian and its cleared state, battles and labels; and the orders other
+than a move or an explore (an attack, a site, a chest, a spire, a new army) are not sent from it. It starts on WebGPU
+and falls back to WebGL2 where WebGPU is missing or will not start; `&rendererMode=webgpu-force-webgl` asks for WebGL2.
+The module the page loads (`src/map-client/renderer`) is built from the crate by `pnpm --dir apps/game build:map-client`
+(pinned Rust, wasm-pack 0.15.0, `--locked`) and committed; CI builds it again and refuses a module its sources do not
+build. The client playtest and the scene smoke ask for the current renderer by name, so they prove it on any build.
 
 Frontier army management: select an army from the dock or map; on a phone tap its selected token for details. The
 panel's red trash, right after its name at the top left, is **Delete**: it asks for confirmation in the panel (troops,

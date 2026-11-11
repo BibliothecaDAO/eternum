@@ -6,11 +6,10 @@ import type { MapPlateInput, MapPlateScope } from "../map-plates/map-plate-layer
 import { PLATE_CLEARANCE } from "./structure-visible-presentation";
 import { presentResult } from "@/three/presented-results";
 import { activeMapLayer } from "@/three/map-layer";
-import { getGameModeConfig } from "@/config/game-modes";
-import { frontierPaintedPath } from "../structures/frontier-painted-buildings";
 import InstancedModel from "@/three/managers/instanced-model";
 import { FELT_CENTER } from "@/ui/config";
 import { MAP_SITES, type MapSiteKind, mapSiteOf } from "@/config/map-sites";
+import { mapSiteModelPath } from "@/three/structures/map-site-models";
 import {
   projectionChangesForLayer,
   type WorldSpatialProjection,
@@ -20,12 +19,6 @@ import { Box3, Object3D, Scene } from "three";
 import { FLAT_TERRAIN_SURFACE, placePositionOnTerrain, type TerrainSurface } from "../terrain/terrain-surface";
 import { getWorldPositionForHex } from "../utils";
 import { gltfLoader } from "../utils/utils";
-
-/** Each site of the map's catalog (MAP_SITES), as the renderer draws it outside Frontier (Frontier's own are painted). */
-const SITE_MODELS: Record<MapSiteKind, string> = {
-  Shrine: "/models/outposts/shrine.glb",
-  Well: "/models/outposts/well.glb",
-};
 
 type DrawnSite = { occupier: number; name: MapSiteKind; path: string };
 type SiteHex = { col: number; row: number };
@@ -46,7 +39,7 @@ export class MapSiteManager {
   private readonly sites: DrawnSite[] = MAP_SITES.map((site) => ({
     occupier: site.occupier,
     name: site.kind,
-    path: getGameModeConfig().id === "frontier" ? frontierPaintedPath(site.kind.toLowerCase()) : SITE_MODELS[site.kind],
+    path: mapSiteModelPath(site.kind),
   }));
 
   constructor(

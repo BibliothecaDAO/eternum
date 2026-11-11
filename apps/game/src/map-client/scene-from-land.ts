@@ -21,6 +21,12 @@ export interface MapStructure {
   occupierType: number;
 }
 
+/** Something else that stands on a hex: a spire, a site, a chest, with the model it is drawn as. */
+export interface MapLandmark {
+  hex: Hex;
+  path: string;
+}
+
 /** The key light of an afternoon, and the sky's and the ground's own, as a matt surface receives them. */
 const LIGHT: Omit<PackedLight, "centre"> = {
   toward: [-7.9, 13, 9.7],
@@ -35,9 +41,14 @@ const BUILDING_LIFT = 0.025;
 
 /**
  * The land round the camera as the map's renderer takes it: the game's own terrain for the explored tiles, each
- * structure's model on its hex, the unit models and every hex. The renderer makes the land's props itself.
+ * structure's, spire's, site's and chest's model on its hex, the unit models and every hex. The renderer makes the land's props itself.
  */
-export async function packLand(art: MapArt, land: Land, structures: readonly MapStructure[]): Promise<PackedScene> {
+export async function packLand(
+  art: MapArt,
+  land: Land,
+  structures: readonly MapStructure[],
+  landmarks: readonly MapLandmark[],
+): Promise<PackedScene> {
   const pack = new ScenePack(art.textures, art.unitFloats);
   const request = terrainRequest(land);
   const page = prepareTerrainPage(request);
@@ -46,8 +57,15 @@ export async function packLand(art: MapArt, land: Land, structures: readonly Map
   if (page.waterBuffers) {
     pack.addPlainMesh("water", { ...page.waterBuffers, colours: page.waterBuffers.colors }, stands, false);
   }
-  await addStructures(pack, art, structures, new TerrainField(request));
-  const built = new Set(structures.map(({ hex }) => `${hex.col},${hex.row}`));
+  const standing = [
+    ...structures.flatMap((structure) => {
+      const path = structureModelPath(structure);
+      return path ? [{ hex: structure.hex, path }] : [];
+    }),
+    ...landmarks,
+  ];
+  await addStanding(pack, art, standing, new TerrainField(request));
+  const built = new Set([...structures, ...landmarks].map(({ hex }) => `${hex.col},${hex.row}`));
   const middle = centreOf(land);
   return pack.finish({
     light: { ...LIGHT, centre: [middle.x, 0, middle.z] },
@@ -76,19 +94,18 @@ function terrainRequest(land: Land): TerrainPageRequest {
   };
 }
 
-/** Each structure's model on its hex, at the ground's height there. */
-async function addStructures(
+/** Each model on its hex, at the ground's height there. */
+async function addStanding(
   pack: ScenePack,
   art: MapArt,
-  structures: readonly MapStructure[],
+  standing: readonly MapLandmark[],
   ground: TerrainField,
 ): Promise<void> {
   const byModel = new Map<string, Placement[]>();
-  for (const structure of structures) {
-    const { x, z } = worldHexToWorld(structure.hex.col, structure.hex.row);
+  for (const { hex, path } of standing) {
+    const { x, z } = worldHexToWorld(hex.col, hex.row);
     const site: [number, number, number] = [x, ground.sampleSurface(x, z).height + BUILDING_LIFT, z];
-    const path = structureModelPath(structure);
-    if (path) byModel.set(path, [...(byModel.get(path) ?? []), placedAt(site, 0, 1, WHITE)]);
+    byModel.set(path, [...(byModel.get(path) ?? []), placedAt(site, 0, 1, WHITE)]);
   }
   for (const [path, placements] of byModel) {
     const model = await art.building(path);

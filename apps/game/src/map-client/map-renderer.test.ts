@@ -18,6 +18,7 @@ type Listener = (changes: Hex[]) => void;
 const world = vi.hoisted(() => ({
   tiles: [] as Tile[],
   structures: [] as Structure[],
+  landmarks: [] as Array<{ hex: Hex; path: string }>,
   listeners: new Map<string, Listener>(),
   scene: null as "map" | "hex" | null,
   bootToken: 1,
@@ -41,6 +42,7 @@ const projection = {
   subscribeArmies: subscribe("armies"),
   subscribeTiles: subscribe("tiles"),
   subscribeStructures: subscribe("structures"),
+  subscribeChests: subscribe("chests"),
 };
 
 vi.mock("@bibliothecadao/eternum/game-sync", () => ({
@@ -84,6 +86,7 @@ vi.mock("./map-facts", () => ({
   contractHexOf: (hex: Hex) => hex,
   readArmies: () => [],
   readStructures: () => world.structures,
+  readLandmarks: () => world.landmarks,
   readTiles: () => world.tiles,
 }));
 vi.mock("./map-art", () => ({ MapArt: { load: world.loadArt } }));
@@ -113,7 +116,8 @@ const packed = (land: unknown, structures: unknown) => ({
 });
 /** What the renderer was last started on: the land and the structures packed for it. */
 const drawn = () => JSON.parse(world.start.mock.calls.at(-1)![1] as string);
-const publish = (name: "tiles" | "structures", changes: Hex[] = [HERE]) => world.listeners.get(name)!(changes);
+const publish = (name: "tiles" | "structures" | "chests", changes: Hex[] = [HERE]) =>
+  world.listeners.get(name)!(changes);
 const offerWebGPU = () => Object.defineProperty(navigator, "gpu", { value: {}, configurable: true });
 
 function newRenderer() {
@@ -125,11 +129,15 @@ beforeEach(() => {
   vi.clearAllMocks();
   world.tiles = [{ ...HERE, biome: 1, occupied: false }];
   world.structures = [];
+  world.landmarks = [];
   world.listeners.clear();
   world.scene = null;
   world.bootToken = 1;
   world.loadArt.mockImplementation(async () => ({ dispose: vi.fn() }));
-  world.pack.mockImplementation(async (_art, land, structures) => packed(land, structures));
+  world.pack.mockImplementation(async (_art, land, structures, landmarks) => ({
+    ...packed(land, structures),
+    table: JSON.stringify({ land, structures, landmarks }),
+  }));
   world.start.mockReset().mockResolvedValue(world.native);
 });
 
@@ -228,6 +236,23 @@ describe("the land the map draws", () => {
     await vi.advanceTimersByTimeAsync(250);
 
     expect(drawn().land.cells.map((cell: Hex) => cell.col)).toEqual([5]);
+    renderer.destroy();
+  });
+
+  it("holds the spires, sites and chests within its reach, and is built again when a chest comes or goes", async () => {
+    world.landmarks = [
+      { hex: HERE, path: "/models/ethereal/spire.glb" },
+      { hex: { col: 500, row: 500 }, path: "/models/outposts/well.glb" },
+    ];
+    const renderer = newRenderer();
+    await renderer.initScene();
+    expect(drawn().landmarks).toEqual([{ hex: HERE, path: "/models/ethereal/spire.glb" }]);
+
+    world.landmarks = [...world.landmarks, { hex: { col: 1, row: 0 }, path: "/models/reward-tiles/chest-c2.glb" }];
+    publish("chests", [{ col: 1, row: 0 }]);
+    await vi.advanceTimersByTimeAsync(250);
+
+    expect(drawn().landmarks.map((landmark: { hex: Hex }) => landmark.hex.col)).toEqual([0, 1]);
     renderer.destroy();
   });
 

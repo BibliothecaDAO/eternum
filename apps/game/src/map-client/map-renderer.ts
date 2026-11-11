@@ -16,7 +16,7 @@ import { ArmyMarches, TROOP_BUILDS } from "./army-marches";
 import { landAround, type Hex } from "./land-from-facts";
 import { MapArt } from "./map-art";
 import { CAMERA_FAR, CAMERA_FOV, CAMERA_NEAR, cameraWorldMatrix, type GroundPoint, type MapCamera } from "./map-camera";
-import { changedHexes, contractHexOf, readArmies, readStructures, readTiles } from "./map-facts";
+import { changedHexes, contractHexOf, readArmies, readLandmarks, readStructures, readTiles } from "./map-facts";
 import { MapInput } from "./map-input";
 import { MapSelection } from "./map-selection";
 import type { MapRenderer } from "./renderer/map_client";
@@ -209,7 +209,8 @@ export class MapClientRenderer {
     this.camera = { ...this.camera, target: lookedAt ? drawnOf(lookedAt) : worldHexToWorld(centre.col, centre.row) };
     const land = landAround(readTiles(projection), centre, LAND_REACH);
     const structures = readStructures(projection).filter(({ hex }) => inReach(hex, centre));
-    const scene = await packLand(this.art, land, structures);
+    const landmarks = readLandmarks(projection).filter(({ hex }) => inReach(hex, centre));
+    const scene = await packLand(this.art, land, structures, landmarks);
     if (this.destroyed) return;
     // One renderer owns the canvas at a time: the last frame stays on it while the next land starts.
     this.renderer?.free();
@@ -268,6 +269,7 @@ export class MapClientRenderer {
       projection.subscribeArmies(() => this.placeArmies(projection)),
       projection.subscribeTiles(landChanged),
       projection.subscribeStructures(landChanged),
+      projection.subscribeChests(landChanged),
     );
   }
 
