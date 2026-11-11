@@ -26,6 +26,7 @@ jobs:
             apps/game/asset-sources/facets/masters
             apps/game/asset-sources/frontier-beasts
             apps/game/asset-sources/frontier-painted
+            apps/game/asset-sources/lab/frontier-beasts
             apps/game/asset-sources/lab/realm-level-icons
             apps/game/asset-sources/lab/rss-icons/before
             apps/game/asset-sources/lab/rss-icons/history
