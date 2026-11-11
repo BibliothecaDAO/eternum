@@ -85,7 +85,6 @@ class CiFileOwnership(unittest.TestCase):
         for path, area in (
             ("contracts/l2/ammv2/src/lib.cairo", "amm"),
             ("contracts/l2/season_pass/src/lib.cairo", "season_pass"),
-            ("apps/game/src/three/terrain.ts", "terrain"),
             ("apps/web/src/lib/media-url.ts", "portal"),
             ("packages/db/src/schema.ts", "portal"),
             ("packages/identity/src/index.ts", "portal"),

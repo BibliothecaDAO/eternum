@@ -2,7 +2,7 @@ import { defineConfig } from "vitest/config";
 import { ASSET_CHECK_FILES, CLIENT_DEPLOY_CHECK_FILES } from "./vitest.assets.files";
 import baseConfig, { CLIENT_TEST_SETUP } from "./vitest.config";
 
-/** The asset and CLI checks the PR gate skips; same environment, aliases and common setup as the main suite. */
+/** The asset and CLI checks kept out of the main suite; same environment, aliases and common setup as it. */
 export default defineConfig({
   ...baseConfig,
   test: {
