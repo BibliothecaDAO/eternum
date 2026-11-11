@@ -1520,6 +1520,8 @@ export default class WorldmapScene extends WarpTravel {
       this.syncProjectedArmyPathfinding(changes);
       this.handleProjectedArmyChanges(changes);
       this.syncArmyMarkers(changes);
+      // An army stands clear: no prop on its hex, nothing taller than it beside it.
+      this.refreshTerrainPropOccupancy();
     });
     const unsubscribeCampaigns = this.game.store.subscribe((changes) => {
       for (const change of changes) {
@@ -4521,6 +4523,7 @@ export default class WorldmapScene extends WarpTravel {
       const hex = { col: contract.x, row: contract.y };
       return (
         this.worldSpatialProjection.getStructuresAtHex({ ...hex, alt: activeMapLayer() }).length > 0 ||
+        this.worldSpatialProjection.getArmiesAtHex({ ...hex, alt: activeMapLayer() }).length > 0 ||
         this.worldSpatialProjection.getChestsAtHex({ ...hex, alt: activeMapLayer() }).length > 0 ||
         this.worldSpatialProjection.getTileAtHex({ ...hex, alt: activeMapLayer() })?.occupierType === TileOccupier.Spire
       );
