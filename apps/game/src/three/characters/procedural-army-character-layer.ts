@@ -6,6 +6,7 @@ import type {
   ProceduralUnitRuntime,
 } from "@/three/characters";
 import { T1_KNIGHT_WORLD_SCALE } from "@/three/constants/army-constants";
+import type { ArmyPace } from "@/three/types/army";
 import { beginModelPreparation } from "@/three/model-preparation";
 import type { CosmeticAttachmentTemplate } from "@/three/cosmetics/types";
 import { CombatImpactRegistry } from "@/three/combat/combat-impact-registry";
@@ -35,7 +36,8 @@ export interface ProceduralArmyCharacterPresentation {
   entityId: number;
   distanceToCameraSquared?: number;
   isNaval: boolean;
-  isMoving: boolean;
+  /** How the army travels while its walk plays; none while it stands. */
+  pace?: ArmyPace;
   isSelected?: boolean;
   position: Vector3;
   primaryColor: string;
@@ -52,7 +54,6 @@ interface ProceduralArmyActorRecord {
   attackTargetEntityId?: number;
   collisionProfile: ProceduralCollisionProfile;
   configSignature: string;
-  renderDetail: RenderDetail;
   isT1Knight: boolean;
   hitTarget: Mesh;
   lastReactionStrength: number;
@@ -73,8 +74,7 @@ interface DefeatedProceduralArmyActor {
 
 export interface ProceduralArmyCharacterLayerStats {
   actorCount: number;
-  nearKnightCount: number;
-  midKnightCount: number;
+  knightCount: number;
   meshDrawsPerPass: number;
   trianglesPerPass: number;
   collisionBodyCount: number;
@@ -315,15 +315,11 @@ export class ProceduralArmyCharacterLayer {
   }
 
   public getStats(): ProceduralArmyCharacterLayerStats {
-    let nearKnightCount = 0,
-      midKnightCount = 0,
+    let knightCount = 0,
       meshDrawsPerPass = 0,
       trianglesPerPass = 0;
-    this.actors.forEach(({ actor, renderDetail, isT1Knight }) => {
-      if (isT1Knight) {
-        if (renderDetail === "hero") nearKnightCount++;
-        else midKnightCount++;
-      }
+    this.actors.forEach(({ actor, isT1Knight }) => {
+      if (isT1Knight) knightCount++;
       actor.object.traverseVisible((object) => {
         if (!(object instanceof Mesh)) return;
         meshDrawsPerPass += Array.isArray(object.material) ? object.geometry.groups.length : 1;
@@ -333,8 +329,7 @@ export class ProceduralArmyCharacterLayer {
     const collision = this.separationSimulation.getStats();
     return {
       actorCount: this.actors.size,
-      nearKnightCount,
-      midKnightCount,
+      knightCount,
       meshDrawsPerPass,
       trianglesPerPass,
       collisionBodyCount: collision.bodyCount,
@@ -395,7 +390,7 @@ export class ProceduralArmyCharacterLayer {
   private syncAssetNeeds(presentations: readonly ProceduralArmyCharacterPresentation[]): void {
     this.desiredAssetSignatures.clear();
     presentations.forEach((presentation) => {
-      const signature = resolveAssetSignature(presentation, this.renderDetailOf(presentation));
+      const signature = resolveAssetSignature(presentation);
       this.desiredAssetSignatures.add(signature);
       if (!this.assetNeeds.has(signature)) this.assetNeeds.set(signature, { failed: false });
     });
@@ -583,12 +578,11 @@ export class ProceduralArmyCharacterLayer {
     const characterModule = this.characterModule;
     if (!runtime || !characterModule) return;
 
-    const renderDetail = this.renderDetailOf(presentation);
-    const configSignature = resolveConfigSignature(presentation, renderDetail);
+    const configSignature = resolveConfigSignature(presentation);
     let record = this.actors.get(presentation.entityId);
     if (!record || record.configSignature !== configSignature) {
-      const config = resolveUnitConfig(characterModule, presentation, renderDetail);
-      if (!this.prepareActorAssets(runtime, config, resolveAssetSignature(presentation, renderDetail))) return;
+      const config = resolveUnitConfig(characterModule, presentation);
+      if (!this.prepareActorAssets(runtime, config, resolveAssetSignature(presentation))) return;
       const desiredKind = resolveUnitKind(presentation);
       if (!record) {
         record = this.createActorRecord(runtime, presentation, config, configSignature);
@@ -600,7 +594,6 @@ export class ProceduralArmyCharacterLayer {
           resolveWorldCharacterScale(presentation.category, presentation.isNaval),
         );
         record.configSignature = configSignature;
-        record.renderDetail = config.humanoid.renderDetail;
         record.isT1Knight = isT1FootKnight(presentation);
       }
     }
@@ -617,14 +610,6 @@ export class ProceduralArmyCharacterLayer {
           : resolveWorldCharacterScale(presentation.category, presentation.isNaval),
       );
     }
-  }
-
-  /** The detail an army's actor draws at: its current one until the camera passes the far edge of the switch band. */
-  private renderDetailOf(presentation: ProceduralArmyCharacterPresentation): RenderDetail {
-    return resolveArmyRenderDetail(
-      presentation.distanceToCameraSquared,
-      this.actors.get(presentation.entityId)?.renderDetail,
-    );
   }
 
   private prepareActorAssets(runtime: ProceduralUnitRuntime, config: ProceduralUnitConfig, signature: string): boolean {
@@ -683,7 +668,6 @@ export class ProceduralArmyCharacterLayer {
         resolveWorldCharacterScale(presentation.category, presentation.isNaval),
       ),
       configSignature,
-      renderDetail: config.humanoid.renderDetail,
       isT1Knight: isT1FootKnight(presentation),
       hitTarget,
       lastReactionStrength: 0,
@@ -820,7 +804,7 @@ function compareCollisionPriority(
 ): number {
   const selectedDifference = Number(Boolean(right.isSelected)) - Number(Boolean(left.isSelected));
   if (selectedDifference !== 0) return selectedDifference;
-  const movingDifference = Number(right.isMoving) - Number(left.isMoving);
+  const movingDifference = Number(right.pace !== undefined) - Number(left.pace !== undefined);
   if (movingDifference !== 0) return movingDifference;
   const distanceDifference =
     (left.distanceToCameraSquared ?? Number.POSITIVE_INFINITY) -
@@ -867,46 +851,46 @@ function configureHitTarget(target: Mesh, category: TroopType, isNaval: boolean)
 function resolveUnitConfig(
   characterModule: CharacterModule,
   presentation: ProceduralArmyCharacterPresentation,
-  renderDetail: RenderDetail,
 ): ProceduralUnitConfig {
   const tier = resolveCharacterTier(presentation.tier);
   const kind = resolveUnitKind(presentation);
+  const moving = presentation.pace !== undefined;
   return characterModule.applyProceduralUnitConfigPatch(characterModule.createDefaultProceduralUnitConfig(), {
     kind,
     boat: {
       broadsideCannons: tier + 2,
-      motionMode: presentation.isMoving ? "sail" : "idle",
+      motionMode: moving ? "sail" : "idle",
       primaryColor: presentation.primaryColor,
       seed: resolveCharacterSeed(presentation.entityId),
       showSockets: false,
-      showWake: presentation.isMoving,
-      speed: presentation.isMoving ? 1.6 : 0,
+      showWake: moving,
+      speed: moving ? 1.6 : 0,
       tier,
     },
     dragon: {
-      locomotionMode: presentation.isMoving ? "flight" : "idle",
+      locomotionMode: moving ? "flight" : "idle",
       primaryColor: presentation.primaryColor,
       renderDetail: "crowd",
       seed: resolveCharacterSeed(presentation.entityId),
       showBones: false,
       showSockets: false,
-      speed: presentation.isMoving ? 3.2 : 0,
+      speed: moving ? 3.2 : 0,
       tier,
     },
     horse: {
-      gait: presentation.isMoving ? "walk" : "idle",
+      gait: moving ? "walk" : "idle",
       primaryColor: presentation.primaryColor,
       showBones: false,
       showHoofTargets: false,
       showSockets: false,
-      speed: presentation.isMoving ? 1.4 : 0,
+      speed: moving ? 1.4 : 0,
       tier,
     },
     humanoid: {
-      animationMode: kind === "paladin" ? "mounted" : presentation.isMoving ? "walk" : "idle",
+      animationMode: kind === "paladin" ? "mounted" : (presentation.pace ?? "idle"),
       autoRotate: false,
       primaryColor: presentation.primaryColor,
-      renderDetail,
+      renderDetail: ARMY_RENDER_DETAIL,
       seed: resolveCharacterSeed(presentation.entityId),
       tier,
     },
@@ -919,33 +903,20 @@ function resolveUnitConfig(
   });
 }
 
-type RenderDetail = "hero" | "crowd";
-
 /**
- * Near detail is reserved for close inspection; gameplay-distance armies use the mid mesh. An actor takes near detail
- * inside 11 units of the camera and keeps it out to 13, so a small zoom in the closest band never rebuilds its rig.
+ * Every army's actor draws its map mesh at every zoom (the owner: no change of model quality with the zoom). The near
+ * mesh stays the gym's and the lab's close-up.
  */
-const HERO_DETAIL_ENTER = 11;
-const HERO_DETAIL_LEAVE = 13;
+const ARMY_RENDER_DETAIL = "crowd";
 
-function resolveArmyRenderDetail(distanceSquared: number | undefined, current: RenderDetail | undefined): RenderDetail {
-  const reach = current === "hero" ? HERO_DETAIL_LEAVE : HERO_DETAIL_ENTER;
-  return (distanceSquared ?? Infinity) <= reach * reach ? "hero" : "crowd";
+function resolveConfigSignature(presentation: ProceduralArmyCharacterPresentation): string {
+  return [resolveAssetSignature(presentation), presentation.primaryColor, presentation.pace ?? "idle"].join(":");
 }
 
-function resolveConfigSignature(presentation: ProceduralArmyCharacterPresentation, renderDetail: RenderDetail): string {
-  return [
-    resolveAssetSignature(presentation, renderDetail),
-    presentation.primaryColor,
-    presentation.isMoving ? "moving" : "idle",
-  ].join(":");
-}
-
-function resolveAssetSignature(presentation: ProceduralArmyCharacterPresentation, renderDetail: RenderDetail): string {
+function resolveAssetSignature(presentation: ProceduralArmyCharacterPresentation): string {
   return [
     presentation.category,
     presentation.tier,
-    renderDetail,
     presentation.isNaval ? "naval" : "land",
     resolveAttachmentSignature(presentation.attachments),
   ].join(":");

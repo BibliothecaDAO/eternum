@@ -2358,9 +2358,8 @@ function knightPresented(onMap) {
     if (stats.visibleArmyCount === 0) return blocked("no T1 Knights in this camera's view", played);
     if (stats.fallbackRepresentationCount !== 0)
       return failed("a visible Knight is still using the replaced model", played);
-    if (stats.nearKnightCount + stats.midKnightCount !== stats.actorCount)
-      return failed("Knight LOD count does not match actors", played);
-    const triangles = stats.nearKnightCount * 14999 + stats.midKnightCount * 5998;
+    if (stats.knightCount !== stats.actorCount) return failed("Knight count does not match actors", played);
+    const triangles = stats.knightCount * 5998;
     return stats.meshDrawsPerPass === stats.actorCount * 3 && stats.trianglesPerPass === triangles
       ? completed(played)
       : failed("Knight render budget does not match the delivered meshes", played);

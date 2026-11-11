@@ -3345,10 +3345,10 @@ export default class WorldmapScene extends WarpTravel {
     if (actionPath.length > 0) {
       playUnitCommandSoundForWorldmapAction(actionType);
       if (actionType === ActionType.Move || actionType === ActionType.Explore) {
-        this.armyManager.expectOrderedRoute(
-          selectedEntityId,
-          actionPath.map(({ hex }) => Position.fromContract({ x: hex.col, y: hex.row })),
-        );
+        this.armyManager.expectOrderedRoute(selectedEntityId, {
+          hexes: actionPath.map(({ hex }) => Position.fromContract({ x: hex.col, y: hex.row })),
+          pace: actionType === ActionType.Explore ? "run" : "walk",
+        });
       }
 
       // Get the target position for the effect

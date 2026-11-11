@@ -1083,19 +1083,6 @@ export abstract class HexagonScene {
     this.weatherAtmosphereState = state ? { ...state } : undefined;
   }
 
-  protected getAnimationDistanceForView(): number {
-    switch (this.currentCameraView) {
-      case CameraView.Close:
-        return this.animationDistanceThreshold;
-      case CameraView.Medium:
-        return this.animationDistanceThreshold * 0.85;
-      case CameraView.Far:
-        return this.animationDistanceThreshold * 0.6;
-      default:
-        return this.animationDistanceThreshold;
-    }
-  }
-
   protected getAnimationVisibilityContext(): AnimationVisibilityContext | undefined {
     this.animationCameraTarget.copy(this.controls.target);
 
@@ -1103,11 +1090,11 @@ export abstract class HexagonScene {
       this.animationVisibilityContext = {
         visibilityManager: this.visibilityManager,
         cameraPosition: this.animationCameraTarget,
-        maxDistance: this.getAnimationDistanceForView(), // View-scaled threshold
+        maxDistance: this.animationDistanceThreshold,
       };
     } else {
       this.animationVisibilityContext.visibilityManager = this.visibilityManager;
-      this.animationVisibilityContext.maxDistance = this.getAnimationDistanceForView();
+      this.animationVisibilityContext.maxDistance = this.animationDistanceThreshold;
     }
 
     return this.animationVisibilityContext;

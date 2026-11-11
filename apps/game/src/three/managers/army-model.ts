@@ -1,5 +1,4 @@
 import { createInstancedMesh } from "../utils/create-instanced-mesh";
-import { CameraView } from "@/three/scenes/hexagon-scene";
 import { gltfLoader } from "@/three/utils/utils";
 import { FELT_CENTER } from "@/ui/config";
 import { SHIP_WORLD_SCALE } from "@/three/characters/ships/ship-design";
@@ -27,6 +26,7 @@ import { VERBOSE_LOGS_ENABLED } from "@/utils/dev-mode";
 import {
   ANIMATION_STATE_IDLE,
   ANIMATION_STATE_MOVING,
+  ARMY_PACE_SPEED,
   buildArmyModelAssetPath,
   MAX_INSTANCES,
   TROOP_TO_MODEL,
@@ -36,6 +36,7 @@ import {
 import {
   AnimatedInstancedMesh,
   ArmyInstanceData,
+  type ArmyPace,
   ModelData,
   ModelType,
   MovementData,
@@ -141,7 +142,6 @@ export class ArmyModel {
   private readonly movingInstances: Map<number, MovementData> = new Map();
   private readonly instanceData: Map<number, ArmyInstanceData> = new Map();
   private readonly matrixIndexOwners: Map<number, number> = new Map();
-  private currentCameraView: CameraView = CameraView.Medium;
   private movementCompleteCallbacks: Map<number, () => void> = new Map();
 
   // Cosmetic model management
@@ -223,14 +223,11 @@ export class ArmyModel {
     scene: Scene,
     /** The biome an army stands on at contract coordinates: its tile's stored biome (see ArmyManager). */
     private readonly groundBiomeAt: (col: number, row: number) => BiomeType,
-    cameraView?: CameraView,
     private readonly compilePipelines?: PipelineCompiler,
   ) {
     this.scene = scene;
     this.dummyObject = new Object3D();
     this.loadPromise = Promise.resolve();
-    this.currentCameraView = cameraView || CameraView.Medium;
-    this.contactShadowsEnabled = this.currentCameraView !== CameraView.Close;
 
     // Initialize memory monitor for army model operations
     if (MEMORY_MONITORING_ENABLED) {
@@ -1232,8 +1229,7 @@ export class ArmyModel {
       return;
     }
 
-    const updateInterval = this.getAnimationUpdateIntervalMs(modelData.animationUpdateInterval);
-    if (now - modelData.lastAnimationUpdate < updateInterval) {
+    if (now - modelData.lastAnimationUpdate < modelData.animationUpdateInterval) {
       return;
     }
 
@@ -1262,7 +1258,6 @@ export class ArmyModel {
       let needsMovingWeights = false;
       for (let i = 0; i < instanceCount; i++) {
         const state = this.animationStates[i];
-        if (this.shouldSkipAnimation(state)) continue;
         if (state === ANIMATION_STATE_IDLE) needsIdleWeights = true;
         else if (state === ANIMATION_STATE_MOVING) needsMovingWeights = true;
         if (needsIdleWeights && needsMovingWeights) break;
@@ -1331,7 +1326,6 @@ export class ArmyModel {
             const i = indices[idx];
             if (i >= instanceCount) continue;
             const state = this.animationStates[i];
-            if (this.shouldSkipAnimation(state)) continue;
 
             let sourceWeights: Float32Array | null = null;
             let sourceOffset = 0;
@@ -1364,10 +1358,6 @@ export class ArmyModel {
     }
   }
 
-  private shouldSkipAnimation(animationState: number): boolean {
-    return this.currentCameraView === CameraView.Far && animationState === ANIMATION_STATE_IDLE;
-  }
-
   private getAnimationUpdateFrequency(instanceCount: number): number {
     let updateFrequency = 1;
 
@@ -1376,34 +1366,13 @@ export class ArmyModel {
     if (instanceCount > 80) updateFrequency = 4;
     if (instanceCount > 150) updateFrequency = 5;
 
-    if (this.currentCameraView === CameraView.Medium) {
-      updateFrequency = Math.min(updateFrequency + 1, 10);
-    } else if (this.currentCameraView === CameraView.Far) {
-      updateFrequency = Math.min(updateFrequency + 2, 10);
-    }
-
     return updateFrequency;
-  }
-
-  private getAnimationUpdateIntervalMs(baseInterval: number): number {
-    if (this.currentCameraView === CameraView.Medium) {
-      return baseInterval * 1.25;
-    }
-    if (this.currentCameraView === CameraView.Far) {
-      return baseInterval * 1.6;
-    }
-    return baseInterval;
   }
 
   private getAnimationBucketStride(instanceCount: number): number {
     let stride = 1;
     if (instanceCount > 150) stride = 2;
     if (instanceCount > 300) stride = 4;
-
-    if (this.currentCameraView === CameraView.Far) {
-      stride = Math.min(stride * 2, this.ANIMATION_BUCKETS);
-    }
-
     return stride;
   }
 
@@ -1466,6 +1435,7 @@ export class ArmyModel {
     matrixIndex: number,
     category: TroopType,
     tier: TroopTier,
+    pace: ArmyPace,
   ): void {
     if (path.length < 2) return;
 
@@ -1513,6 +1483,7 @@ export class ArmyModel {
         isSettling: false,
         finalTangent: null,
         currentSpeedMultiplier: 1.0,
+        pace,
         elapsedTime: 0,
         arrivalSlamTimer: 0,
         isArrivalSlamming: false,
@@ -1692,7 +1663,7 @@ export class ArmyModel {
       (targetMultiplier - splineData.currentSpeedMultiplier) *
       Math.min(1, ArmyModel.SPEED_MULTIPLIER_LERP_RATE * deltaTime);
 
-    const currentSpeed = this.MOVEMENT_SPEED * splineData.currentSpeedMultiplier;
+    const currentSpeed = this.MOVEMENT_SPEED * splineData.currentSpeedMultiplier * ARMY_PACE_SPEED[splineData.pace];
 
     // Advance journey progress with terrain-adjusted speed
     const progressResult = resolveJourneyProgressUpdate({
@@ -1995,10 +1966,6 @@ export class ArmyModel {
     this.cosmeticModels.forEach((modelData) => (modelData.group.visible = visible));
   }
 
-  public setCurrentCameraView(view: CameraView): void {
-    this.currentCameraView = view;
-  }
-
   public hasMovingInstances(): boolean {
     return this.movingInstances.size > 0;
   }
@@ -2046,6 +2013,11 @@ export class ArmyModel {
   public rebindMovementMatrixIndex(entityId: number, newMatrixIndex: number): void {
     if (!this.movingInstances.has(entityId)) return;
     this.setAnimationState(newMatrixIndex, true);
+  }
+
+  /** The pace of an army's walk still playing; none when it stands. */
+  public getEntityPace(entityId: number): ArmyPace | undefined {
+    return this.splineMovingInstances.get(entityId)?.pace;
   }
 
   public isEntityMoving(entityId: number): boolean {

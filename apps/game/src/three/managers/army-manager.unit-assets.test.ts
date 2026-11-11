@@ -33,7 +33,7 @@ it("requests characters only for eligible units in the visible scene and uses ca
     armyModel: {
       getInstanceData: () => ({ position }),
       getAssignedModelType: () => model,
-      isEntityMoving: () => false,
+      getEntityPace: () => undefined,
       flushInstanceUploads: vi.fn(),
     },
     labelPool: { flushBatch: vi.fn() },

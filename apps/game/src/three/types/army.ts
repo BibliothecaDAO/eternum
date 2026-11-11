@@ -23,6 +23,9 @@ export interface MovementData {
   targetRotation: number;
 }
 
+/** How an army travels: it walks to a tile it was moved to and runs to one it was sent to explore. */
+export type ArmyPace = "walk" | "run";
+
 export interface SplineMovementData {
   spline: CatmullRomCurve3;
   totalLength: number;
@@ -38,6 +41,8 @@ export interface SplineMovementData {
   endpointCache: Vector3;
   // Terrain speed
   currentSpeedMultiplier: number;
+  /** A walk, or a run when the army was sent to explore: scales its speed over every ground. */
+  pace: ArmyPace;
   // Rhythmic bob + arrival slam
   elapsedTime: number;
   arrivalSlamTimer: number;
