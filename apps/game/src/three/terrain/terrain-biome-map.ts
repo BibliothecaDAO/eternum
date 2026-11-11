@@ -20,10 +20,9 @@ function biomeMapTexel(col: number, row: number): number {
 }
 
 /**
- * The biome of every hex the terrain draws, for the ground shader to read anywhere on the ground: where a frontier
- * wanders off a hex's edge, and what lies round a point; and which unexplored hexes are next to explore, for the mist to
- * draw them. One texel a hex at its render hex: red the biome's number, green its ground's, blue 255 on a hex next to
- * explore, alpha 255 once a biome is written.
+ * The biome of every hex the terrain draws, for the ground shader to read anywhere on the ground: its own hex's and the
+ * ones it meets at its edges. One texel a hex at its render hex: red the biome's number, green its ground's, alpha 255
+ * once a biome is written.
  */
 export class TerrainBiomeMap {
   readonly texture: DataTexture;
@@ -49,34 +48,16 @@ export class TerrainBiomeMap {
       const at = biomeMapTexel(col - origin.col, row - origin.row) * 4;
       this.texels[at] = biomeNumber(biome);
       this.texels[at + 1] = groundNumber(TERRAIN_BIOME_GROUNDS[biome]);
-      this.texels[at + 2] = 0;
       this.texels[at + 3] = 255;
       wrote = true;
     }
     if (wrote) this.texture.needsUpdate = true;
   }
 
-  /** Marks each unexplored cell as next to explore or not, at the hex it is drawn on round its page's `origin`. */
-  writeUnexplored(cells: Iterable<{ col: number; row: number; frontier: boolean }>, origin: HexPosition): void {
-    let wrote = false;
-    for (const { col, row, frontier } of cells) {
-      const at = biomeMapTexel(col - origin.col, row - origin.row) * 4;
-      this.texels[at + 2] = frontier ? 255 : 0;
-      this.texels[at + 3] = 0;
-      wrote = true;
-    }
-    if (wrote) this.texture.needsUpdate = true;
-  }
-
   /** What the map holds at a render hex: for tests and probes. */
-  read(col: number, row: number): { biome: number; ground: number; next: boolean; written: boolean } {
+  read(col: number, row: number): { biome: number; ground: number; written: boolean } {
     const at = biomeMapTexel(col, row) * 4;
-    return {
-      biome: this.texels[at],
-      ground: this.texels[at + 1],
-      next: this.texels[at + 2] === 255,
-      written: this.texels[at + 3] === 255,
-    };
+    return { biome: this.texels[at], ground: this.texels[at + 1], written: this.texels[at + 3] === 255 };
   }
 
   dispose(): void {
