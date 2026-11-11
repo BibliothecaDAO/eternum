@@ -28,11 +28,6 @@ vi.mock("@/three/debug/procedural-terrain-debug-renderer", () => ({
 let root: Root;
 let host: HTMLDivElement;
 const studio = () => (window as Window & { __studio?: StudioBridge }).__studio;
-const page = () => ({
-  ready: host.querySelector("[data-ready]")?.getAttribute("data-ready"),
-  take: host.querySelector("[data-take]")?.getAttribute("data-take"),
-  status: host.querySelector("[role=status]")?.textContent,
-});
 
 afterEach(async () => {
   await act(async () => root.unmount());
