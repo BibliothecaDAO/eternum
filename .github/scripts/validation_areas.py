@@ -223,6 +223,13 @@ AREAS = {
         "apps/game/asset-sources/realms/devcon/**",
         "packages/core/src/utils/biome/**"
     ],
+    # The map client's renderer: the Rust crate, the build that makes the page's module from it, and that module.
+    "map_client": [
+        ".github/workflows/test-map-client.yml",
+        "apps/game/map-client/**",
+        "apps/game/scripts/build-map-client.mjs",
+        "apps/game/src/map-client/renderer/**"
+    ],
     "amm": [
         ".github/workflows/test-ammv2.yml",
         MEDIA_FREE_CHECKOUT,
@@ -303,7 +310,7 @@ def matches(path, patterns):
 
 
 # These checks run when their own inputs change; core checks run on every landing push.
-PATH_SCOPED = {"amm", "season_pass", "terrain", "portal"}
+PATH_SCOPED = {"amm", "season_pass", "terrain", "portal", "map_client"}
 
 
 def selected_areas(files, every_area, landing=False):

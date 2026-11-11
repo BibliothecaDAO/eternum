@@ -97,6 +97,13 @@ jobs:
         run: >-
           node --test apps/game/scripts/ensure-pwa-cache-rule.test.mjs
           apps/game/scripts/verify-client-deployment.test.mjs apps/game/scripts/verify-pwa-build.test.mjs
+          apps/game/scripts/check-map-client-isolation.test.mjs
+
+      - name: Check a production build keeps the map client under trial out of a page that does not ask for it
+        env:
+          # A placeholder the build requires, shaped as the guard demands; nothing in the build calls the RPC.
+          VITE_PUBLIC_L2_RPC_URL: https://starknet-mainnet.g.alchemy.com/starknet/version/rpc/v0_9/isolation-check
+        run: pnpm --dir ./apps/game check:map-client-isolation
 
       - name: Test native store, commands and sync recovery
         run: pnpm --dir packages/core exec vitest run
