@@ -18,18 +18,21 @@ jobs:
         uses: actions/checkout@v4
         with:
           sparse-checkout: .github/actions
-      # Only the media the icon check and the client's tests read, found by tracing every file the job's steps open,
-      # stat or list. A step that starts reading anything else fails with ENOENT; add its path here.
+      # Only the media the icon check, the client's tests and the asset checks read, found by tracing every file the
+      # job's steps open, stat or list. A step that starts reading anything else fails with ENOENT; add its path here.
       - uses: ./.github/actions/checkout-without-media
         with:
           keep: |
             apps/game/asset-sources/facets/masters
             apps/game/asset-sources/frontier-beasts
+            apps/game/asset-sources/frontier-painted
             apps/game/asset-sources/lab/realm-level-icons
             apps/game/asset-sources/lab/rss-icons/before
             apps/game/asset-sources/lab/rss-icons/history
+            apps/game/asset-sources/realms/devcon
             apps/game/asset-sources/reward-chests/originals
             apps/game/asset-sources/rss-icons/selected
+            apps/game/asset-sources/workshops
             apps/game/public/icons/facets
             apps/game/public/images/blitz-chests
             apps/game/public/images/buildings/construction
@@ -43,8 +46,13 @@ jobs:
             apps/game/public/models/frontier
             apps/game/public/models/new-buildings-opt
             apps/game/public/models/outposts
+            apps/game/public/models/procedural-terrain
             apps/game/public/models/realms
             apps/game/public/models/reward-tiles
+            apps/game/public/models/ships
+            apps/game/public/models/units
+            apps/game/public/textures/realms
+            apps/game/scripts/client-playtest/fixtures
             scripts/icons/fixtures
 
       - name: Setup pnpm
@@ -92,6 +100,9 @@ jobs:
 
       - name: Run game client tests
         run: pnpm --dir ./apps/game test
+
+      - name: Verify shipped assets and verification scripts
+        run: pnpm --dir ./apps/game verify:assets
 
       - name: Test the client deploy's checks
         run: >-
