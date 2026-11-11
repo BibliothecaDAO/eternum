@@ -128,15 +128,13 @@ describe("terrain prop placement", () => {
 
   it("applies and validates a deterministic global density multiplier", () => {
     const stressed = densityContext({ elevation: 0.75, moisture: 0.25, normalY: 0.97, patchiness: 0.3 });
-    const baseline = resolveEffectiveTerrainPropDensity(
-      BiomeType.TropicalRainForest,
-      stressed.context,
-      stressed.normalY,
-    );
+    // A sparse biome, so twice its density stays under the probability's ceiling.
+    const baseline = resolveEffectiveTerrainPropDensity(BiomeType.Snow, stressed.context, stressed.normalY);
 
-    expect(
-      resolveEffectiveTerrainPropDensity(BiomeType.TropicalRainForest, stressed.context, stressed.normalY, 2),
-    ).toBeCloseTo(baseline * 2);
+    expect(baseline * 2).toBeLessThan(1);
+    expect(resolveEffectiveTerrainPropDensity(BiomeType.Snow, stressed.context, stressed.normalY, 2)).toBeCloseTo(
+      baseline * 2,
+    );
     const invalid = { ...request([cell(0, 0, BiomeType.Grassland)]), propDensityMultiplier: 3.1 };
     expect(() => prepareTerrainPropInstances(invalid, new TerrainField(invalid))).toThrow(
       "Terrain prop density multiplier must be from 0.25 to 3",

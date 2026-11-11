@@ -437,7 +437,9 @@ export class ProceduralTerrain {
       if (!occupancy.has(key)) occupancy.set(key, this.isPropTileOccupied(col, row));
       return occupancy.get(key)!;
     };
-    const visible = page.propInstances.filter((instance) => isTerrainPropFootprintClear(instance, isOccupied));
+    const visible = page.propInstances.filter((instance) =>
+      isTerrainPropFootprintClear(instance, { isBlocked: isOccupied, isOccupied }),
+    );
     if (
       page.visiblePropInstances?.length === visible.length &&
       visible.every((instance, index) => instance === page.visiblePropInstances?.[index])
