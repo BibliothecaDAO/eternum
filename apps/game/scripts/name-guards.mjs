@@ -78,12 +78,14 @@ const noImperativeNames = {
 
 /**
  * The modules that may read a name imperatively, because nothing caches what they read: the hooks module, which turns
- * the readers into the hooks; the scenes, which redraw labels through watchPlayerNames; the game client's core wiring,
- * which hands the rule to core as its resolver; the fact views; and the name service itself.
+ * the readers into the hooks; the scenes and the map client's plates, which redraw labels through watchPlayerNames;
+ * the game client's core wiring, which hands the rule to core as its resolver; the fact views; and the name service
+ * itself.
  */
 const IMPERATIVE_CONSUMERS = [
   "apps/game/src/hooks/use-player-profile.ts",
   "apps/game/src/three/**",
+  "apps/game/src/map-client/plate-facts.ts",
   "apps/game/src/services/game-client.ts",
   "apps/game/src/sync/fact-views.ts",
   "apps/game/src/services/identity/**",

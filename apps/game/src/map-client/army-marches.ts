@@ -70,9 +70,9 @@ export class ArmyMarches {
     return changed;
   }
 
-  /** Where every army is at a moment. */
-  positions(seconds: number): GroundPoint[] {
-    return [...this.standing.values()].map((unit) => whereAt(unit, seconds));
+  /** Where every army is at a moment, by its id. */
+  positions(seconds: number): Map<number, GroundPoint> {
+    return new Map([...this.standing].map(([entityId, unit]) => [entityId, whereAt(unit, seconds)]));
   }
 
   /** Forgets every army: the ground they stood on is drawn round another origin. */

@@ -1,6 +1,6 @@
 import { configManager, getStructureInfoFromTileOccupier, NEUTRAL_BIOME_CLIMATE } from "@bibliothecadao/eternum";
 import { StructureType } from "@bibliothecadao/types";
-import { Color } from "three";
+import { Box3, Color } from "three";
 
 import { getGameModeConfig } from "@/config/game-modes";
 import { realmModelIndex } from "@/three/structures/realm-design";
@@ -27,6 +27,17 @@ export interface MapLandmark {
   path: string;
 }
 
+/** A land as the renderer takes it, with what the map's labels need of it: how high its ground and its models stand. */
+export interface PackedLand {
+  scene: PackedScene;
+  /** The ground's height at a point. */
+  groundAt(x: number, z: number): number;
+  /** The top of what stands on a hex, by `hexKey`: its model's, where it has one. */
+  tops: ReadonlyMap<string, number>;
+}
+
+export const hexKey = (hex: Hex): string => `${hex.col},${hex.row}`;
+
 /** The key light of an afternoon, and the sky's and the ground's own, as a matt surface receives them. */
 const LIGHT: Omit<PackedLight, "centre"> = {
   toward: [-7.9, 13, 9.7],
@@ -48,7 +59,7 @@ export async function packLand(
   land: Land,
   structures: readonly MapStructure[],
   landmarks: readonly MapLandmark[],
-): Promise<PackedScene> {
+): Promise<PackedLand> {
   const pack = new ScenePack(art.textures, art.unitFloats);
   const request = terrainRequest(land);
   const page = prepareTerrainPage(request);
@@ -64,20 +75,22 @@ export async function packLand(
     }),
     ...landmarks,
   ];
-  await addStanding(pack, art, standing, new TerrainField(request));
-  const built = new Set([...structures, ...landmarks].map(({ hex }) => `${hex.col},${hex.row}`));
+  const ground = new TerrainField(request);
+  const tops = await addStanding(pack, art, standing, ground);
+  const built = new Set([...structures, ...landmarks].map(({ hex }) => hexKey(hex)));
   const middle = centreOf(land);
-  return pack.finish({
+  const scene = pack.finish({
     light: { ...LIGHT, centre: [middle.x, 0, middle.z] },
     hexes: land.hexes.map((hex) => ({
       ...worldHexToWorld(hex.col, hex.row),
       biome: hex.biome,
       colour: new Color(TERRAIN_BIOME_DESCRIPTORS[hex.biome].primary).toArray() as [number, number, number],
       explored: hex.explored,
-      built: built.has(`${hex.col},${hex.row}`),
+      built: built.has(hexKey(hex)),
     })),
     units: art.units,
   });
+  return { scene, groundAt: (x, z) => ground.sampleSurface(x, z).height, tops };
 }
 
 function terrainRequest(land: Land): TerrainPageRequest {
@@ -94,23 +107,32 @@ function terrainRequest(land: Land): TerrainPageRequest {
   };
 }
 
-/** Each model on its hex, at the ground's height there. */
+/** Each model on its hex, at the ground's height there. Returns how high each stands, by its hex. */
 async function addStanding(
   pack: ScenePack,
   art: MapArt,
   standing: readonly MapLandmark[],
   ground: TerrainField,
-): Promise<void> {
-  const byModel = new Map<string, Placement[]>();
+): Promise<Map<string, number>> {
+  const byModel = new Map<string, { hex: Hex; site: [number, number, number] }[]>();
   for (const { hex, path } of standing) {
     const { x, z } = worldHexToWorld(hex.col, hex.row);
     const site: [number, number, number] = [x, ground.sampleSurface(x, z).height + BUILDING_LIFT, z];
-    byModel.set(path, [...(byModel.get(path) ?? []), placedAt(site, 0, 1, WHITE)]);
+    byModel.set(path, [...(byModel.get(path) ?? []), { hex, site }]);
   }
-  for (const [path, placements] of byModel) {
+  const tops = new Map<string, number>();
+  for (const [path, stands] of byModel) {
     const model = await art.building(path);
-    if (model) await pack.addModel("solid", model, placements);
+    if (!model) continue;
+    await pack.addModel(
+      "solid",
+      model,
+      stands.map(({ site }) => placedAt(site, 0, 1, WHITE)),
+    );
+    const height = new Box3().setFromObject(model).max.y;
+    for (const { hex, site } of stands) tops.set(hexKey(hex), site[1] + height);
   }
+  return tops;
 }
 
 /**

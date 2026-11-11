@@ -3,7 +3,9 @@ import { requireActiveGameSyncRuntime, type WorldSpatialProjection } from "@bibl
 
 import { getCurrentPlayRouteBootToken, usePlayRouteReadinessStore } from "@/game-entry/play-route-readiness-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
+import { watchPlayerNames } from "@/hooks/use-player-profile";
 import { parsePlayRoute } from "@/play/navigation/play-route";
+import { activeMapLayer } from "@/three/map-layer";
 import { resolveRendererBuildModeFromSearch } from "@/three/renderer-build-mode";
 import { forgetCameraView, publishCameraView } from "@/three/scenes/worldmap-camera-view";
 import { bindMapSelection } from "@/three/scenes/worldmap-map-selection";
@@ -18,9 +20,11 @@ import { MapArt } from "./map-art";
 import { CAMERA_FAR, CAMERA_FOV, CAMERA_NEAR, cameraWorldMatrix, type GroundPoint, type MapCamera } from "./map-camera";
 import { changedHexes, contractHexOf, readArmies, readLandmarks, readStructures, readTiles } from "./map-facts";
 import { MapInput } from "./map-input";
+import { MapLabels } from "./map-labels";
 import { MapSelection } from "./map-selection";
 import type { MapRenderer } from "./renderer/map_client";
-import { packLand } from "./scene-from-land";
+import { readArmyPlates, readStructurePlates } from "./plate-facts";
+import { packLand, type PackedLand } from "./scene-from-land";
 import { animalHomes, landRoamed } from "./wildlife-homes";
 import { ANIMAL_SPECIES, Wildlife } from "./wildlife";
 import type { PackedScene } from "./scene-pack";
@@ -45,6 +49,8 @@ const ROUTE_EVENTS = ["urlChanged", "popstate", "sceneAddressChanged"] as const;
 const REALM_VIEW_NOT_DRAWN = "The realm view is not drawn by this map yet.";
 /** How often the map's animals decide what to do, in seconds. */
 const WILDLIFE_ACTS_EVERY = 0.5;
+/** How often the labels are said again, in seconds: stamina regenerates and a holding grows with no fact changing. */
+const LABELS_SAID_EVERY = 1;
 const START_DISTANCE = 22;
 /** The renderer's quality tier: the middle one, which the phone bar was measured on. */
 const QUALITY = "mid";
@@ -62,6 +68,10 @@ export class MapClientRenderer {
   /** Whether a point is ground the land's animals may walk on, and when they last acted. */
   private roams: (point: GroundPoint) => boolean = () => false;
   private wildlifeActedAt = 0;
+  private readonly labels = new MapLabels();
+  private labelsSaidAt = 0;
+  /** The land in the renderer, for the heights its labels stand on. */
+  private land: PackedLand | null = null;
   private readonly startedAt = performance.now();
   private readonly unsubscribe: Array<() => void> = [];
   private art: MapArt | null = null;
@@ -105,6 +115,7 @@ export class MapClientRenderer {
       camera: () => this.camera,
       moveCamera: (camera) => this.lookAt(camera),
       tap: (ground) => this.selection?.tapAt(this.hexUnder(ground)),
+      hover: (ground) => this.labels.hover(ground ? this.thingOn(projection, this.hexUnder(ground)) : {}),
     });
     this.selection = new MapSelection(projection, this.setup.store, (stops) => this.renderer?.show_order(stops));
     this.unsubscribe.push(bindMapSelection(projection), () => this.selection?.dispose());
@@ -128,6 +139,7 @@ export class MapClientRenderer {
     this.renderer?.free();
     this.renderer = null;
     this.art?.dispose();
+    this.labels.dispose();
     this.canvas.remove();
     forgetCameraView();
   }
@@ -210,14 +222,15 @@ export class MapClientRenderer {
     const land = landAround(readTiles(projection), centre, LAND_REACH);
     const structures = readStructures(projection).filter(({ hex }) => inReach(hex, centre));
     const landmarks = readLandmarks(projection).filter(({ hex }) => inReach(hex, centre));
-    const scene = await packLand(this.art, land, structures, landmarks);
+    const packed = await packLand(this.art, land, structures, landmarks);
     if (this.destroyed) return;
     // One renderer owns the canvas at a time: the last frame stays on it while the next land starts.
     this.renderer?.free();
     this.renderer = null;
-    const started = await this.startRenderer(scene);
+    const started = await this.startRenderer(packed.scene);
     if (this.destroyed) return started.free();
     this.renderer = started;
+    this.land = packed;
     this.marches.forget();
     this.placeArmies(projection);
     this.roams = landRoamed(land);
@@ -267,6 +280,12 @@ export class MapClientRenderer {
         () => this.wantLand(projection),
       ),
       projection.subscribeArmies(() => this.placeArmies(projection)),
+      // A player's name that lands is said by the labels at once.
+      watchPlayerNames(() => this.sayLabels(projection)),
+      useUIStore.subscribe(
+        (state) => state.mapSelection,
+        (picked) => this.labels.select(picked && picked.kind !== "hex" ? Number(picked.entityId) : null),
+      ),
       projection.subscribeTiles(landChanged),
       projection.subscribeStructures(landChanged),
       projection.subscribeChests(landChanged),
@@ -288,14 +307,40 @@ export class MapClientRenderer {
 
   private placeArmies(projection: WorldSpatialProjection): void {
     if (!this.renderer) return;
-    if (!this.marches.update(readArmies(projection, this.setup.store), this.seconds())) return;
-    for (const build of TROOP_BUILDS) this.renderer.set_troop(build, this.marches.instancesOf(build));
+    if (this.marches.update(readArmies(projection, this.setup.store), this.seconds())) {
+      for (const build of TROOP_BUILDS) this.renderer.set_troop(build, this.marches.instancesOf(build));
+    }
+    this.sayLabels(projection);
+  }
+
+  /** Says every label of the land held as the facts now have it. Unchanged words cost nothing. */
+  private sayLabels(projection: WorldSpatialProjection): void {
+    if (!this.land) return;
+    this.labelsSaidAt = this.seconds();
+    const held = ({ hex }: { hex: Hex }) => inReach(hex, this.landCentre);
+    const { store } = this.setup;
+    this.labels.showStructures(readStructurePlates(projection, store).filter(held), this.land);
+    this.labels.showArmies(
+      readArmyPlates(projection, store).filter(held),
+      this.marches.positions(this.labelsSaidAt),
+      this.land,
+    );
+  }
+
+  /** The army or the structure that stands on a hex, an army first, as a tap picks. */
+  private thingOn(projection: WorldSpatialProjection, hex: Hex): { army?: number; structure?: number } {
+    const at = { alt: activeMapLayer(), ...contractHexOf(hex) };
+    const army = projection.getArmiesAtHex(at)[0];
+    if (army) return { army: Number(army.entityId) };
+    const structure = projection.getStandingStructureAtHex(at);
+    return structure ? { structure: Number(structure.entityId) } : {};
   }
 
   /** Lets the animals act twice a second, and tells the renderer where each now walks, grazes or rests. */
   private placeWildlife(renderer: MapRenderer): void {
     this.wildlifeActedAt = this.seconds();
-    this.wildlife.update(this.wildlifeActedAt, this.marches.positions(this.wildlifeActedAt), this.roams);
+    const armies = [...this.marches.positions(this.wildlifeActedAt).values()];
+    this.wildlife.update(this.wildlifeActedAt, armies, this.roams);
     for (const species of ANIMAL_SPECIES) renderer.set_troop(species, this.wildlife.instancesOf(species));
   }
 
@@ -322,8 +367,11 @@ export class MapClientRenderer {
   private readonly draw = (): void => {
     if (this.destroyed) return;
     this.frame = requestAnimationFrame(this.draw);
-    if (!this.renderer || this.building) return;
+    if (!this.renderer || this.building || !this.land) return;
     if (this.seconds() - this.wildlifeActedAt >= WILDLIFE_ACTS_EVERY) this.placeWildlife(this.renderer);
+    if (this.seconds() - this.labelsSaidAt >= LABELS_SAID_EVERY)
+      this.sayLabels(requireActiveGameSyncRuntime().requireWorldSpatialProjection());
+    this.labels.frame(this.camera, this.marches.positions(this.seconds()), this.land);
     this.renderer.render(cameraWorldMatrix(this.camera), CAMERA_FOV, CAMERA_NEAR, CAMERA_FAR, this.seconds());
   };
 

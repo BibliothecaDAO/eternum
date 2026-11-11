@@ -16,10 +16,12 @@ trees, rocks and plants the renderer makes by rule), the mist and the hexes next
 shrines, wells and chests where a tile or a chest's facts put them, armies, and animals (seven mammals that graze, rest,
 move in herds, run from armies and hunt: the map's flourish, no fact of the game); drag pans, pinch or wheel zooms, a
 tap picks an army, a structure or a hex, and a tap on a hex a picked army can move to or explore pins that order and
-shows its path; the same hex tapped again, or the HUD's verb, sends it. It is the page's only renderer there, and what
-it does not draw yet is missing: the realm view (an address that turns to it is taken back to the map, and the HUD says
-the view did not open), what the Ethereal holds beyond its land, structures and armies, a Frontier realm's own spire
-(which a rule places, not a tile), a site's guardian and its cleared state, battles and labels; and the orders other
+shows its path; the same hex tapped again, or the HUD's verb, sends it. Every army and structure carries today's label:
+its token over it, ringed while it is picked, and its full plate while a mouse is on its hex (a finger opens none). It
+is the page's only renderer there, and what it does not draw yet is missing: the realm view (an address that turns to it
+is taken back to the map, and the HUD says the view did not open), what the Ethereal holds beyond its land, structures
+and armies, a Frontier realm's own spire (which a rule places, not a tile), a site's guardian and its cleared state,
+battles, a shrine's or a chest's label, and on a structure's plate the troops on their way to it; and the orders other
 than a move or an explore (an attack, a site, a chest, a spire, a new army) are not sent from it. It starts on WebGPU
 and falls back to WebGL2 where WebGPU is missing or will not start; `&rendererMode=webgpu-force-webgl` asks for WebGL2.
 The module the page loads (`src/map-client/renderer`) is built from the crate by `pnpm --dir apps/game build:map-client`

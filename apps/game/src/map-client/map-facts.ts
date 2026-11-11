@@ -26,7 +26,7 @@ const BUILD_OF_TROOP: Record<TroopType, TroopBuild> = {
 
 /** A hex of the game's own, as contracts count it, from a normalized one and back. */
 export const contractHexOf = (hex: Hex): Hex => ({ col: hex.col + FELT_CENTER(), row: hex.row + FELT_CENTER() });
-const normalizedHexOf = (hex: Hex): Hex => ({ col: hex.col - FELT_CENTER(), row: hex.row - FELT_CENTER() });
+export const normalizedHexOf = (hex: Hex): Hex => ({ col: hex.col - FELT_CENTER(), row: hex.row - FELT_CENTER() });
 
 /** What the projection tells of a tile or a structure that changed: where it was and where it is. */
 interface PlacedChange {

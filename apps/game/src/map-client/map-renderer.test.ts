@@ -31,6 +31,19 @@ const world = vi.hoisted(() => ({
   hexReady: vi.fn(),
   sceneFailed: vi.fn(),
   layerChanged: () => {},
+  picked: (() => {}) as (picked: unknown) => void,
+  plates: {
+    structures: [] as Array<{ entityId: number; hex: Hex }>,
+    armies: [] as Array<{ entityId: number; hex: Hex }>,
+  },
+  labels: {
+    showStructures: vi.fn(),
+    showArmies: vi.fn(),
+    frame: vi.fn(),
+    select: vi.fn(),
+    hover: vi.fn(),
+    dispose: vi.fn(),
+  },
   inputs: vi.fn(),
 }));
 
@@ -62,11 +75,11 @@ vi.mock("@/game-entry/play-route-readiness-store", () => ({
 vi.mock("@/hooks/store/use-ui-store", () => ({
   useUIStore: {
     getState: () => ({ setIsLoadingScreenEnabled: vi.fn(), setCameraTargetHex: vi.fn() }),
-    subscribe: (_layer: unknown, changed: () => void) => {
-      world.layerChanged = changed;
-      return () => {
-        world.layerChanged = () => {};
-      };
+    subscribe: (pick: (state: object) => unknown, changed: (picked: unknown) => void) => {
+      const what = pick({ mapLayer: "layer", mapSelection: "selection" }) as "layer" | "selection";
+      if (what === "layer") world.layerChanged = () => changed(undefined);
+      else world.picked = changed;
+      return () => {};
     },
   },
 }));
@@ -89,6 +102,19 @@ vi.mock("./map-facts", () => ({
   readLandmarks: () => world.landmarks,
   readTiles: () => world.tiles,
 }));
+vi.mock("./plate-facts", () => ({
+  readStructurePlates: () => world.plates.structures,
+  readArmyPlates: () => world.plates.armies,
+}));
+vi.mock("./map-labels", () => ({
+  MapLabels: class {
+    constructor() {
+      return world.labels;
+    }
+  },
+}));
+vi.mock("@/hooks/use-player-profile", () => ({ watchPlayerNames: () => () => {} }));
+vi.mock("@/three/map-layer", () => ({ activeMapLayer: () => false }));
 vi.mock("./map-art", () => ({ MapArt: { load: world.loadArt } }));
 vi.mock("./map-input", () => ({
   MapInput: class {
@@ -110,13 +136,14 @@ vi.mock("./renderer/map_client", () => ({ default: async () => {}, MapRenderer: 
 import { MapClientRenderer } from "./map-renderer";
 
 const HERE: Hex = { col: 0, row: 0 };
-const packed = (land: unknown, structures: unknown) => ({
-  table: JSON.stringify({ land, structures }),
-  buffer: new Uint8Array(),
+const packed = (land: unknown, structures: unknown, landmarks?: unknown) => ({
+  scene: { table: JSON.stringify({ land, structures, landmarks }), buffer: new Uint8Array() },
+  groundAt: () => 0,
+  tops: new Map<string, number>(),
 });
 /** What the renderer was last started on: the land and the structures packed for it. */
 const drawn = () => JSON.parse(world.start.mock.calls.at(-1)![1] as string);
-const publish = (name: "tiles" | "structures" | "chests", changes: Hex[] = [HERE]) =>
+const publish = (name: "tiles" | "structures" | "chests" | "armies", changes: Hex[] = [HERE]) =>
   world.listeners.get(name)!(changes);
 const offerWebGPU = () => Object.defineProperty(navigator, "gpu", { value: {}, configurable: true });
 
@@ -130,14 +157,12 @@ beforeEach(() => {
   world.tiles = [{ ...HERE, biome: 1, occupied: false }];
   world.structures = [];
   world.landmarks = [];
+  world.plates = { structures: [], armies: [] };
   world.listeners.clear();
   world.scene = null;
   world.bootToken = 1;
   world.loadArt.mockImplementation(async () => ({ dispose: vi.fn() }));
-  world.pack.mockImplementation(async (_art, land, structures, landmarks) => ({
-    ...packed(land, structures),
-    table: JSON.stringify({ land, structures, landmarks }),
-  }));
+  world.pack.mockImplementation(async (_art, land, structures, landmarks) => packed(land, structures, landmarks));
   world.start.mockReset().mockResolvedValue(world.native);
 });
 
@@ -436,5 +461,40 @@ describe("the backend the map starts on", () => {
 
     await expect(renderer.initScene()).rejects.toBe("No context");
     renderer.destroy();
+  });
+});
+
+describe("the labels the map says", () => {
+  const NEAR = { entityId: 1, hex: HERE };
+  const FAR = { entityId: 2, hex: { col: 500, row: 500 } };
+
+  it("are those of the land held, said again when the armies change", async () => {
+    world.plates = { structures: [NEAR, FAR], armies: [FAR] };
+    const renderer = newRenderer();
+    await renderer.initScene();
+    expect(world.labels.showStructures.mock.lastCall![0]).toEqual([NEAR]);
+    expect(world.labels.showArmies.mock.lastCall![0]).toEqual([]);
+
+    world.plates.armies = [NEAR, FAR];
+    publish("armies");
+    expect(world.labels.showArmies.mock.lastCall![0]).toEqual([NEAR]);
+    renderer.destroy();
+  });
+
+  it("ring the army or the structure picked, and none for a bare tile", async () => {
+    const renderer = newRenderer();
+    await renderer.initScene();
+    world.picked({ kind: "army", entityId: 42n, tile: "own" });
+    expect(world.labels.select).toHaveBeenLastCalledWith(42);
+    world.picked({ kind: "hex", hex: HERE });
+    expect(world.labels.select).toHaveBeenLastCalledWith(null);
+    renderer.destroy();
+  });
+
+  it("go with the map", async () => {
+    const renderer = newRenderer();
+    await renderer.initScene();
+    renderer.destroy();
+    expect(world.labels.dispose).toHaveBeenCalledOnce();
   });
 });

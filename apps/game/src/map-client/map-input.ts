@@ -7,11 +7,13 @@ interface ScreenPoint {
   y: number;
 }
 
-/** What the map's input moves and tells: the camera, and the ground a finger tapped. */
+/** What the map's input moves and tells: the camera, the ground a finger tapped, and the ground a mouse is over. */
 interface MapInputTarget {
   camera(): MapCamera;
   moveCamera(camera: MapCamera): void;
   tap(ground: GroundPoint): void;
+  /** Null once the mouse has left the map. A finger hovers over nothing. */
+  hover(ground: GroundPoint | null): void;
 }
 
 /** How much a wheel's notch zooms. */
@@ -35,6 +37,7 @@ export class MapInput {
     canvas.addEventListener("pointermove", this.move);
     canvas.addEventListener("pointerup", this.release);
     canvas.addEventListener("pointercancel", this.release);
+    canvas.addEventListener("pointerleave", this.leave);
     canvas.addEventListener("wheel", this.wheel, { passive: false });
   }
 
@@ -43,6 +46,7 @@ export class MapInput {
     this.canvas.removeEventListener("pointermove", this.move);
     this.canvas.removeEventListener("pointerup", this.release);
     this.canvas.removeEventListener("pointercancel", this.release);
+    this.canvas.removeEventListener("pointerleave", this.leave);
     this.canvas.removeEventListener("wheel", this.wheel);
   }
 
@@ -66,8 +70,12 @@ export class MapInput {
 
   private readonly move = (event: PointerEvent): void => {
     const before = this.pressed.get(event.pointerId);
-    if (!before) return;
     const now = this.onCanvas(event);
+    if (!before) {
+      if (event.pointerType === "mouse")
+        this.target.hover(groundUnder(this.target.camera(), this.viewport(), now.x, now.y));
+      return;
+    }
     if (this.pressed.size === 1) this.dragWith(before, now);
     else this.pinchWith(event.pointerId, now);
     this.pressed.set(event.pointerId, now);
@@ -99,6 +107,8 @@ export class MapInput {
     if (!at || this.moved || event.type === "pointercancel") return;
     this.target.tap(groundUnder(this.target.camera(), this.viewport(), at.x, at.y));
   };
+
+  private readonly leave = (): void => this.target.hover(null);
 
   private readonly wheel = (event: WheelEvent): void => {
     event.preventDefault();
