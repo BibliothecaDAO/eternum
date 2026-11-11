@@ -125,6 +125,8 @@ struct Features {
   known: f32,
   // How far into the unknown, in world units: negative over known land.
   unknown: f32,
+  // 1 on a realm's open plot.
+  plot: f32,
 }
 
 // `cell` is the map's own texel, which holds the biome; `blended` its neighbours' blend, which holds the distance.
@@ -135,6 +137,8 @@ fn read_features(cell: vec4f, blended: vec4f) -> Features {
   features.ground = ground_of(features.biome);
   features.known = packed - features.biome * 4.0;
   features.unknown = (blended.g - 0.5) * 8.0;
+  // Read from the blend, so the line round a plot is whole where the hex beyond it is none.
+  features.plot = smoothstep(0.02, 0.2, blended.b);
   return features;
 }
 

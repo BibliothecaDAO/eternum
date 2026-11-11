@@ -32,6 +32,14 @@ const world = vi.hoisted(() => ({
   hexReady: vi.fn(),
   sceneFailed: vi.fn(),
   layerChanged: () => {},
+  buildingPickChanged: () => {},
+  pickBuilding: vi.fn(),
+  buildingPicked: null as { structureId: number; innerCol: number; innerRow: number } | null,
+  realmHex: { col: 0, row: 0 } as Hex,
+  realm: null as { realmId: number; site: Hex; cells: unknown[]; buildings: Array<Hex & { category: string }> } | null,
+  packRealm: vi.fn(),
+  presented: vi.fn(),
+  facts: (() => {}) as (changes: unknown[]) => void,
   picked: (() => {}) as (picked: unknown) => void,
   plates: {
     structures: [] as Array<{ entityId: number; hex: Hex }>,
@@ -79,11 +87,17 @@ vi.mock("@/game-entry/play-route-readiness-store", () => ({
 }));
 vi.mock("@/hooks/store/use-ui-store", () => ({
   useUIStore: {
-    getState: () => ({ setIsLoadingScreenEnabled: vi.fn(), setCameraTargetHex: vi.fn() }),
+    getState: () => ({
+      setIsLoadingScreenEnabled: vi.fn(),
+      setCameraTargetHex: vi.fn(),
+      setSelectedBuildingHex: world.pickBuilding,
+      selectedBuildingHex: world.buildingPicked,
+    }),
     subscribe: (pick: (state: object) => unknown, changed: (picked: unknown) => void) => {
-      const what = pick({ mapLayer: "layer", mapSelection: "selection" }) as "layer" | "selection";
+      const what = pick({ mapLayer: "layer", mapSelection: "selection", selectedBuildingHex: "building" });
       if (what === "layer") world.layerChanged = () => changed(undefined);
-      else world.picked = changed;
+      else if (what === "selection") world.picked = changed;
+      else world.buildingPickChanged = () => changed(undefined);
       return () => {};
     },
   },
@@ -91,6 +105,12 @@ vi.mock("@/hooks/store/use-ui-store", () => ({
 vi.mock("@/play/navigation/play-route", () => ({
   parsePlayRoute: () => (world.scene ? { scene: world.scene, col: null, row: null } : null),
 }));
+vi.mock("@/play/navigation/play-route-target", () => ({
+  resolvePlayRouteTarget: () => ({ hexRealmPosition: world.scene === "hex" ? world.realmHex : null }),
+}));
+vi.mock("@/three/constants", () => ({ LOCAL_CAMERA_ZOOM: { defaultDistance: 14, minDistance: 5, maxDistance: 20 } }));
+vi.mock("@/three/presented-results", () => ({ presentResult: world.presented, markPresentedResults: vi.fn() }));
+vi.mock("./realm-facts", () => ({ readRealm: () => world.realm }));
 vi.mock("@/three/scenes/worldmap-camera-view", () => ({ forgetCameraView: vi.fn(), publishCameraView: vi.fn() }));
 vi.mock("@/three/scenes/worldmap-map-selection", () => ({ bindMapSelection: () => () => {} }));
 vi.mock("@/three/world-origin", () => ({
@@ -136,12 +156,17 @@ vi.mock("./map-selection", () => ({
     dispose() {}
   },
 }));
-vi.mock("./scene-from-land", () => ({ packLand: world.pack }));
+vi.mock("./scene-from-land", () => ({
+  packLand: world.pack,
+  packRealm: world.packRealm,
+  placeOf: (hex: Hex) => ({ x: hex.col, z: hex.row }),
+}));
 vi.mock("./renderer/map_client", () => ({ default: async () => {}, MapRenderer: { start: world.start } }));
 
 import { MapClientRenderer } from "./map-renderer";
 
 const HERE: Hex = { col: 0, row: 0 };
+const REALM = { realmId: 7, site: { col: 3, row: 4 }, cells: [], buildings: [{ col: 10, row: 10, category: "1" }] };
 const packed = (land: unknown, structures: unknown, landmarks?: unknown) => ({
   scene: { table: JSON.stringify({ land, structures, landmarks }), buffer: new Uint8Array() },
   groundAt: () => 0,
@@ -155,6 +180,10 @@ const offerWebGPU = () => Object.defineProperty(navigator, "gpu", { value: {}, c
 
 function newRenderer() {
   const store = {
+    subscribe: (listener: (changes: unknown[]) => void) => {
+      world.facts = listener;
+      return () => {};
+    },
     subscribeEvents: (listener: (event: unknown) => void) => {
       world.event = listener;
       return () => {};
@@ -174,6 +203,9 @@ beforeEach(() => {
   world.placed.clear();
   world.listeners.clear();
   world.scene = null;
+  world.realm = null;
+  world.buildingPicked = null;
+  world.packRealm.mockImplementation(async (_art, realm) => packed({ realm }, []));
   world.bootToken = 1;
   world.loadArt.mockImplementation(async () => ({ dispose: vi.fn() }));
   world.pack.mockImplementation(async (_art, land, structures, landmarks) => packed(land, structures, landmarks));
@@ -378,28 +410,102 @@ describe("what the map tells the game's entry", () => {
     renderer.destroy();
   });
 
-  it("tells the game the realm view did not open when the address turns to it, and never that it is ready", async () => {
-    world.scene = "map";
+  it("tells a boot that opens on the realm view that the map stands and the realm view does", async () => {
+    world.scene = "hex";
+    world.realm = REALM;
     const renderer = newRenderer();
     await renderer.initScene();
-    expect(world.sceneFailed).not.toHaveBeenCalled();
 
+    expect(world.worldmapReady).toHaveBeenCalledWith(1);
+    expect(world.hexReady).toHaveBeenCalledWith(1, REALM.site);
+    expect(world.sceneFailed).not.toHaveBeenCalled();
+    renderer.destroy();
+  });
+
+  it("tells the game the realm view did not open where no realm answers the address", async () => {
     world.scene = "hex";
-    window.dispatchEvent(new Event("urlChanged"));
+    const renderer = newRenderer();
+    await renderer.initScene();
 
     expect(world.sceneFailed).toHaveBeenCalledOnce();
     expect(world.sceneFailed.mock.calls[0].slice(0, 2)).toEqual([1, "hex"]);
     expect(world.hexReady).not.toHaveBeenCalled();
+    // The map is drawn in its place.
+    expect(drawn().land).toBeDefined();
+    renderer.destroy();
+  });
+});
+
+describe("the realm view", () => {
+  const turnTo = async (scene: "map" | "hex") => {
+    world.scene = scene;
+    window.dispatchEvent(new Event("urlChanged"));
+    await vi.advanceTimersByTimeAsync(250);
+  };
+
+  it("draws the realm the address turns to, with nothing of the map, and the map again when it turns back", async () => {
+    world.scene = "map";
+    world.armies = [{ entityId: 1, at: { x: 0, z: 0 }, build: "knight", tint: [1, 1, 1] }];
+    world.plates = { structures: [{ entityId: 4, hex: HERE }], armies: [] };
+    const renderer = newRenderer();
+    await renderer.initScene();
+    expect(world.hexReady).not.toHaveBeenCalled();
+
+    world.realm = REALM;
+    await turnTo("hex");
+    expect(drawn().land).toEqual({ realm: REALM });
+    expect(world.hexReady).toHaveBeenCalledWith(1, REALM.site);
+    expect(world.labels.showStructures.mock.lastCall![0]).toEqual([]);
+    const troopsGiven = world.native.set_troop.mock.calls.length;
+
+    await turnTo("map");
+    expect(drawn().land.cells).toBeDefined();
+    expect(world.pickBuilding).toHaveBeenLastCalledWith(null);
+    expect(world.native.set_troop.mock.calls.length).toBeGreaterThan(troopsGiven);
+    expect(world.labels.showStructures.mock.lastCall![0]).toEqual([{ entityId: 4, hex: HERE }]);
     renderer.destroy();
   });
 
-  it("tells a boot that opens on the realm view that it did not open", async () => {
+  it("is drawn again when one of its buildings or its own level changes, and not for another realm's", async () => {
     world.scene = "hex";
+    world.realm = REALM;
+    const renderer = newRenderer();
+    await renderer.initScene();
+    expect(world.packRealm).toHaveBeenCalledTimes(1);
+
+    world.facts([{ model: "Building", current: { structure_id: 99n } }]);
+    world.facts([{ model: "Structure", current: { entity_id: 99n } }]);
+    await vi.advanceTimersByTimeAsync(250);
+    expect(world.packRealm).toHaveBeenCalledTimes(1);
+
+    world.realm = { ...REALM, buildings: [...REALM.buildings, { col: 11, row: 10, category: "5" }] };
+    world.facts([{ model: "Building", current: { structure_id: 7n } }]);
+    await vi.advanceTimersByTimeAsync(250);
+    expect(world.packRealm).toHaveBeenCalledTimes(2);
+    expect(world.presented).toHaveBeenCalledWith("building:11,10:5");
+
+    world.realm = REALM;
+    world.facts([{ model: "Building", previous: { structure_id: 7n } }]);
+    await vi.advanceTimersByTimeAsync(250);
+    expect(world.presented).toHaveBeenCalledWith("building-gone:11,10");
+    renderer.destroy();
+  });
+
+  it("lights the building or the plot picked in it", async () => {
+    world.scene = "hex";
+    world.realm = REALM;
     const renderer = newRenderer();
     await renderer.initScene();
 
-    expect(world.sceneFailed).toHaveBeenCalledOnce();
-    expect(world.hexReady).not.toHaveBeenCalled();
+    world.buildingPicked = { structureId: 7, innerCol: 11, innerRow: 10 };
+    world.buildingPickChanged();
+    expect(Array.from(world.native.show_order.mock.lastCall![0] as Float32Array)).toEqual([
+      11, 10, 11, 10, 11, 10, 11, 10,
+    ]);
+
+    world.buildingPicked = null;
+    world.buildingPickChanged();
+    expect(Array.from(world.native.show_order.mock.lastCall![0] as Float32Array)).toEqual([]);
     renderer.destroy();
   });
 });

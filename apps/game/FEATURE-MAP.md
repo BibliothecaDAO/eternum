@@ -19,18 +19,23 @@ tap picks an army, a structure or a hex, and a tap on a hex a picked army can mo
 shows its path; the same hex tapped again, or the HUD's verb, sends it. A tap on a hex where the rules offer the picked
 army anything else (an attack, a site, a chest, a spire, another army) opens that hex's card with the army kept as its
 actor, and the HUD's card carries the forecast and the verb. When a battle is fought the attacker strikes at the
-defender where it stands, three blows, and a defending army strikes back: a flourish over the facts. Every army and
-structure carries today's label: its token over it, ringed while it is picked, and its full plate while a mouse is on
-its hex (a finger opens none). It is the page's only renderer there, and what it does not draw yet is missing: the realm
-view (an address that turns to it is taken back to the map, and the HUD says the view did not open), what the Ethereal
-holds beyond its land, structures and armies, a Frontier realm's own spire (which a rule places, not a tile), a site's
-guardian and its cleared state, a battle's arrows and impacts, a shrine's or a chest's label, and on a structure's plate
-the troops on their way to it; a new army is not deployed from it (the HUD's Deploy is), and an attack that today's map
-previews in its own window, outside Frontier's standing sites, has no preview. It starts on WebGPU and falls back to
-WebGL2 where WebGPU is missing or will not start; `&rendererMode=webgpu-force-webgl` asks for WebGL2. The module the
-page loads (`src/map-client/renderer`) is built from the crate by `pnpm --dir apps/game build:map-client` (pinned Rust,
-wasm-pack 0.15.0, `--locked`) and committed; CI builds it again and refuses a module its sources do not build. The
-client playtest and the scene smoke ask for the current renderer by name, so they prove it on any build.
+defender where it stands, three blows, and a defending army strikes back: a flourish over the facts. Where the address
+names the realm view (the HUD's Realm, `/hex`) it draws that realm in the map's place: its ground and the land round it,
+each building on its plot, the open plots outlined, the camera on the keep and only nearer or further; a tap picks a
+building or an open plot (lit), which opens the HUD's panel or its Build sheet; a building the facts add or take away is
+drawn at once; World brings the map back where the player left it. Every army and structure carries today's label: its
+token over it, ringed while it is picked, and its full plate while a mouse is on its hex (a finger opens none). It is
+the page's only renderer there, and what it does not draw yet is missing: in the realm view a hyperstructure's own
+model, a building's ghost before it is built, a paused building's mark, a new ring's flash and the buildings' growing in
+(an address that names a realm where none answers is taken back to the map, and the HUD says the view did not open);
+what the Ethereal holds beyond its land, structures and armies, a Frontier realm's own spire (which a rule places, not a
+tile), a site's guardian and its cleared state, a battle's arrows and impacts, a shrine's or a chest's label, and on a
+structure's plate the troops on their way to it; a new army is not deployed from it (the HUD's Deploy is), and an attack
+that today's map previews in its own window, outside Frontier's standing sites, has no preview. It starts on WebGPU and
+falls back to WebGL2 where WebGPU is missing or will not start; `&rendererMode=webgpu-force-webgl` asks for WebGL2. The
+module the page loads (`src/map-client/renderer`) is built from the crate by `pnpm --dir apps/game build:map-client`
+(pinned Rust, wasm-pack 0.15.0, `--locked`) and committed; CI builds it again and refuses a module its sources do not
+build. The client playtest and the scene smoke ask for the current renderer by name, so they prove it on any build.
 
 Frontier army management: select an army from the dock or map; on a phone tap its selected token for details. The
 panel's red trash, right after its name at the top left, is **Delete**: it asks for confirmation in the panel (troops,

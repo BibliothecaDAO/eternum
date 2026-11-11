@@ -1,4 +1,5 @@
 import { getGameModeId } from "@/config/game-modes";
+import { hashCoordinates } from "@/three/utils/hex-hash";
 import { RainEffect } from "@/three/effects/rain-effect";
 import { createWorldFxRuntime, type WorldFxRuntime } from "@/three/fx/world-fx-runtime";
 import { useWorldAppearanceStore } from "@/hooks/store/use-world-appearance-store";
@@ -824,9 +825,7 @@ export abstract class HexagonScene {
   }
 
   protected hashCoordinates(x: number, y: number): number {
-    // Simple hash function to generate a deterministic value between 0 and 1
-    const hash = Math.sin(x * 12.9898 + y * 78.233) * 43758.5453;
-    return hash - Math.floor(hash);
+    return hashCoordinates(x, y);
   }
 
   getLocationCoordinates() {

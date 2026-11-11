@@ -41,6 +41,8 @@ export interface PackedHex {
   explored: boolean;
   /** Whether a building stands on it: the renderer keeps its props off such a hex. */
   built: boolean;
+  /** Whether it is a realm's open plot: kept clear as a built hex is, and outlined. */
+  plot: boolean;
 }
 
 /** The key light and the sky's, as a matt surface receives them. */
@@ -204,7 +206,7 @@ export class ScenePack {
     const offset = this.floats.length;
     for (const hex of hexes) {
       const biome = named.findIndex(([name]) => name === hex.biome);
-      this.floats.push(hex.x, hex.z, biome, hex.explored ? (hex.built ? 2 : 1) : 0);
+      this.floats.push(hex.x, hex.z, biome, hex.explored ? (hex.plot ? 3 : hex.built ? 2 : 1) : 0);
     }
     return { offset, count: hexes.length, biomes: named.map(([name, colour]) => ({ name, colour })) };
   }

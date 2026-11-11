@@ -342,6 +342,8 @@ fn ground_surface(input: VertexOutput) -> Surface {
   // The grid is faint over land well known, and plain where the next hex to explore is near.
   let near_unknown = smoothstep(-2.2, -0.2, here.unknown);
   albedo = mix(albedo, albedo * 0.45, line * mix(0.16, 0.6, near_unknown) * top);
+  // A realm's open plot is outlined in pale stone: a building may stand there.
+  albedo = mix(albedo, vec3f(0.92, 0.9, 0.84), line * here.plot * top * 0.85);
 
   // An order: its path in running dashes, and the picked army's hex lit along its edges.
   let marks = order_marks(at);

@@ -1,8 +1,10 @@
 import { configManager, getStructureInfoFromTileOccupier, NEUTRAL_BIOME_CLIMATE } from "@bibliothecadao/eternum";
-import { StructureType } from "@bibliothecadao/types";
+import { BUILDINGS_CENTER, StructureType } from "@bibliothecadao/types";
 import { Box3, Color } from "three";
 
 import { getGameModeConfig } from "@/config/game-modes";
+import { localHexPosition } from "@/three/scenes/hexception-layout";
+import { createHexceptionTerrainRequest } from "@/three/scenes/hexception-terrain";
 import { realmModelIndex } from "@/three/structures/realm-design";
 import { TerrainField } from "@/three/terrain/terrain-field";
 import { prepareTerrainPage } from "@/three/terrain/terrain-page-builder";
@@ -12,6 +14,7 @@ import { worldHexToWorld } from "@/three/world-origin";
 
 import type { Hex, Land } from "./land-from-facts";
 import type { MapArt } from "./map-art";
+import type { RealmLand } from "./realm-facts";
 import { placedAt, ScenePack, type PackedLight, type PackedScene, type Placement } from "./scene-pack";
 
 /** A structure as the map draws it: the hex it stands on and what the tile says stands there. */
@@ -61,13 +64,7 @@ export async function packLand(
   landmarks: readonly MapLandmark[],
 ): Promise<PackedLand> {
   const pack = new ScenePack(art.textures, art.unitFloats);
-  const request = terrainRequest(land);
-  const page = prepareTerrainPage(request);
-  const stands = [STANDS_AS_IT_IS];
-  pack.addPlainMesh("ground", { ...page.buffers, colours: page.buffers.colors }, stands, false);
-  if (page.waterBuffers) {
-    pack.addPlainMesh("water", { ...page.waterBuffers, colours: page.waterBuffers.colors }, stands, false);
-  }
+  const ground = addGround(pack, terrainRequest(land));
   const standing = [
     ...structures.flatMap((structure) => {
       const path = structureModelPath(structure);
@@ -75,8 +72,12 @@ export async function packLand(
     }),
     ...landmarks,
   ];
-  const ground = new TerrainField(request);
-  const tops = await addStanding(pack, art, standing, ground);
+  const tops = await addStanding(
+    pack,
+    art,
+    standing.map(({ hex, path }) => ({ hex, path, at: worldHexToWorld(hex.col, hex.row), turn: 0 })),
+    ground,
+  );
   const built = new Set([...structures, ...landmarks].map(({ hex }) => hexKey(hex)));
   const middle = centreOf(land);
   const scene = pack.finish({
@@ -87,10 +88,75 @@ export async function packLand(
       colour: new Color(TERRAIN_BIOME_DESCRIPTORS[hex.biome].primary).toArray() as [number, number, number],
       explored: hex.explored,
       built: built.has(hexKey(hex)),
+      plot: false,
     })),
     units: art.units,
   });
   return { scene, groundAt: (x, z) => ground.sampleSurface(x, z).height, tops };
+}
+
+/**
+ * A realm as the map's renderer takes it: the ground of its plots and of the land round them, by the game's own
+ * terrain, and each building's model on its plot, on the realm's own lattice. The renderer keeps its props off the
+ * plots and makes the surrounding land's itself.
+ */
+export async function packRealm(art: MapArt, realm: RealmLand): Promise<PackedLand> {
+  const pack = new ScenePack(art.textures, art.unitFloats);
+  const built = new Set(realm.buildings.map(hexKey));
+  const ground = addGround(
+    pack,
+    createHexceptionTerrainRequest(
+      realm.cells.map(({ col, row, biome }) => ({
+        ...{ col, row, biome, previewBiome: biome },
+        explored: true,
+        occupied: built.has(hexKey({ col, row })),
+      })),
+      configManager.getBiomeClimateConfig() ?? NEUTRAL_BIOME_CLIMATE,
+      `map-client-realm:${realm.realmId}`,
+    ),
+  );
+  const tops = await addStanding(
+    pack,
+    art,
+    realm.buildings.map((building) => ({
+      hex: building,
+      path: building.path,
+      at: placeOf(building),
+      turn: building.turn,
+    })),
+    ground,
+  );
+  const keep = placeOf({ col: BUILDINGS_CENTER[0], row: BUILDINGS_CENTER[1] });
+  const scene = pack.finish({
+    light: { ...LIGHT, centre: [keep.x, 0, keep.z] },
+    hexes: realm.cells.map((cell) => ({
+      ...placeOf(cell),
+      biome: cell.biome,
+      colour: new Color(TERRAIN_BIOME_DESCRIPTORS[cell.biome].primary).toArray() as [number, number, number],
+      explored: true,
+      built: built.has(hexKey(cell)),
+      plot: cell.plot && !built.has(hexKey(cell)),
+    })),
+    units: art.units,
+  });
+  return { scene, groundAt: (x, z) => ground.sampleSurface(x, z).height, tops };
+}
+
+/** Where a hex of a realm's own lattice is drawn. */
+export function placeOf(hex: Hex): { x: number; z: number } {
+  const { x, z } = localHexPosition(hex);
+  return { x, z };
+}
+
+/** The game's own terrain for a request, as the ground and the water of the scene. Returns its heights. */
+function addGround(pack: ScenePack, request: TerrainPageRequest): TerrainField {
+  const page = prepareTerrainPage(request);
+  const stands = [STANDS_AS_IT_IS];
+  pack.addPlainMesh("ground", { ...page.buffers, colours: page.buffers.colors }, stands, false);
+  if (page.waterBuffers) {
+    pack.addPlainMesh("water", { ...page.waterBuffers, colours: page.waterBuffers.colors }, stands, false);
+  }
+  return new TerrainField(request);
 }
 
 function terrainRequest(land: Land): TerrainPageRequest {
@@ -107,18 +173,23 @@ function terrainRequest(land: Land): TerrainPageRequest {
   };
 }
 
+/** A model on a hex: where on the ground it is drawn, and how far it is turned. */
+interface Standing extends MapLandmark {
+  at: { x: number; z: number };
+  turn: number;
+}
+
 /** Each model on its hex, at the ground's height there. Returns how high each stands, by its hex. */
 async function addStanding(
   pack: ScenePack,
   art: MapArt,
-  standing: readonly MapLandmark[],
+  standing: readonly Standing[],
   ground: TerrainField,
 ): Promise<Map<string, number>> {
-  const byModel = new Map<string, { hex: Hex; site: [number, number, number] }[]>();
-  for (const { hex, path } of standing) {
-    const { x, z } = worldHexToWorld(hex.col, hex.row);
-    const site: [number, number, number] = [x, ground.sampleSurface(x, z).height + BUILDING_LIFT, z];
-    byModel.set(path, [...(byModel.get(path) ?? []), { hex, site }]);
+  const byModel = new Map<string, { hex: Hex; site: [number, number, number]; turn: number }[]>();
+  for (const { hex, path, at, turn } of standing) {
+    const site: [number, number, number] = [at.x, ground.sampleSurface(at.x, at.z).height + BUILDING_LIFT, at.z];
+    byModel.set(path, [...(byModel.get(path) ?? []), { hex, site, turn }]);
   }
   const tops = new Map<string, number>();
   for (const [path, stands] of byModel) {
@@ -127,7 +198,7 @@ async function addStanding(
     await pack.addModel(
       "solid",
       model,
-      stands.map(({ site }) => placedAt(site, 0, 1, WHITE)),
+      stands.map(({ site, turn }) => placedAt(site, turn, 1, WHITE)),
     );
     const height = new Box3().setFromObject(model).max.y;
     for (const { hex, site } of stands) tops.set(hexKey(hex), site[1] + height);

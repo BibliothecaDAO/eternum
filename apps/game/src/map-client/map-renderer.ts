@@ -1,17 +1,21 @@
 import { WorldUpdateListener } from "@bibliothecadao/eternum";
-import type { GameClientSetup } from "@bibliothecadao/eternum/game-client";
+import { BUILDINGS_CENTER } from "@bibliothecadao/types";
+import type { GameClientSetup, NativeFactChange, NativeRows } from "@bibliothecadao/eternum/game-client";
 import { requireActiveGameSyncRuntime, type WorldSpatialProjection } from "@bibliothecadao/eternum/game-sync";
 
 import { getCurrentPlayRouteBootToken, usePlayRouteReadinessStore } from "@/game-entry/play-route-readiness-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { watchPlayerNames } from "@/hooks/use-player-profile";
 import { parsePlayRoute } from "@/play/navigation/play-route";
+import { resolvePlayRouteTarget } from "@/play/navigation/play-route-target";
+import { LOCAL_CAMERA_ZOOM } from "@/three/constants";
 import { activeMapLayer } from "@/three/map-layer";
+import { markPresentedResults, presentResult } from "@/three/presented-results";
 import { resolveRendererBuildModeFromSearch } from "@/three/renderer-build-mode";
 import { forgetCameraView, publishCameraView } from "@/three/scenes/worldmap-camera-view";
 import { bindMapSelection } from "@/three/scenes/worldmap-map-selection";
 import { TERRAIN_HEX_HORIZONTAL_SPACING, TERRAIN_HEX_VERTICAL_SPACING } from "@/three/terrain/terrain-coordinates";
-import { latticeToWorld } from "@/three/utils/hex-lattice";
+import { latticeHexAt, latticeToWorld } from "@/three/utils/hex-lattice";
 import { setWorldOrigin, worldHexAt, worldHexToWorld, worldOrigin } from "@/three/world-origin";
 
 import { env } from "../../env";
@@ -31,9 +35,12 @@ import {
 import { MapInput } from "./map-input";
 import { MapLabels } from "./map-labels";
 import { MapSelection } from "./map-selection";
+import { orderStops } from "./order-stops";
 import type { MapRenderer } from "./renderer/map_client";
 import { readArmyPlates, readStructurePlates } from "./plate-facts";
-import { packLand, type PackedLand } from "./scene-from-land";
+import { readRealm, type RealmLand } from "./realm-facts";
+import { tapRealmHex } from "./realm-selection";
+import { packLand, packRealm, placeOf, type PackedLand } from "./scene-from-land";
 import { animalHomes, landRoamed } from "./wildlife-homes";
 import { ANIMAL_SPECIES, Wildlife } from "./wildlife";
 import type { PackedScene } from "./scene-pack";
@@ -55,7 +62,10 @@ const LAND_SLACK = 12;
 const LAND_BATCH_MS = 200;
 /** The events that tell the page's address changed (`renderer-route-runtime.ts`). */
 const ROUTE_EVENTS = ["urlChanged", "popstate", "sceneAddressChanged"] as const;
-const REALM_VIEW_NOT_DRAWN = "The realm view is not drawn by this map yet.";
+const NO_REALM_THERE = "No realm stands where the address points.";
+/** How far the realm view's camera stands from the keep, and how near and far it may go: today's realm view's. */
+const REALM_DISTANCE = { ...LOCAL_CAMERA_ZOOM };
+const KEEP: Hex = { col: BUILDINGS_CENTER[0], row: BUILDINGS_CENTER[1] };
 /** How often the map's animals decide what to do, in seconds. */
 const WILDLIFE_ACTS_EVERY = 0.5;
 /** How often the labels are said again, in seconds: stamina regenerates and a holding grows with no fact changing. */
@@ -67,8 +77,9 @@ const QUALITY = "mid";
 /**
  * The world map drawn by the map client's own renderer, from the game's facts: the spatial projection's tiles,
  * structures and armies. It stands where today's renderer stands in the game's renderer session, draws on the same
- * canvas id under the same HUD, and tells the same stores where the camera looks and what is picked. It is the
- * page's only renderer: what it does not draw yet is not drawn.
+ * canvas id under the same HUD, and tells the same stores where the camera looks and what is picked. Where the
+ * address names the realm view it draws that realm instead: its plots, its ground and its buildings. It is the page's
+ * only renderer: what it does not draw yet is not drawn.
  */
 export class MapClientRenderer {
   private canvas = document.createElement("canvas");
@@ -81,6 +92,13 @@ export class MapClientRenderer {
   private labelsSaidAt = 0;
   /** The land in the renderer, for the heights its labels stand on. */
   private land: PackedLand | null = null;
+  /** The realm in the renderer while the realm view is drawn, and where the map's camera stood before it. */
+  private realm: RealmLand | null = null;
+  private mapCamera: MapCamera | null = null;
+  /** The realm view's hex of the address last answered; null when it named the map. */
+  private realmAsked: Hex | null = null;
+  /** Whether the map has been drawn on this page: until then the camera has no place on it to keep. */
+  private mapStood = false;
   private readonly startedAt = performance.now();
   private readonly unsubscribe: Array<() => void> = [];
   private art: MapArt | null = null;
@@ -123,13 +141,14 @@ export class MapClientRenderer {
     this.input = new MapInput(this.canvas, {
       camera: () => this.camera,
       moveCamera: (camera) => this.lookAt(camera),
-      tap: (ground) => this.selection?.tapAt(this.hexUnder(ground)),
-      hover: (ground) => this.labels.hover(ground ? this.thingOn(projection, this.hexUnder(ground)) : {}),
+      tap: (ground) => this.tapAt(ground),
+      hover: (ground) =>
+        this.labels.hover(ground && !this.realm ? this.thingOn(projection, this.hexUnder(ground)) : {}),
     });
     this.selection = new MapSelection(projection, this.setup.store, (stops) => this.renderer?.show_order(stops));
     this.unsubscribe.push(bindMapSelection(projection), () => this.selection?.dispose());
     window.addEventListener("resize", this.resize);
-    for (const event of ROUTE_EVENTS) window.addEventListener(event, this.refuseRealmView);
+    for (const event of ROUTE_EVENTS) window.addEventListener(event, this.followRoute);
     this.draw();
     this.announceReady(token);
   }
@@ -142,7 +161,7 @@ export class MapClientRenderer {
     if (this.frame !== null) cancelAnimationFrame(this.frame);
     if (this.landTimer !== null) window.clearTimeout(this.landTimer);
     window.removeEventListener("resize", this.resize);
-    for (const event of ROUTE_EVENTS) window.removeEventListener(event, this.refuseRealmView);
+    for (const event of ROUTE_EVENTS) window.removeEventListener(event, this.followRoute);
     this.input?.dispose();
     for (const stop of this.unsubscribe.splice(0)) stop();
     this.renderer?.free();
@@ -153,16 +172,17 @@ export class MapClientRenderer {
     forgetCameraView();
   }
 
-  /**
-   * The realm view is not drawn by this map yet. An address that turns to it is told so, as a scene that did not
-   * open is: the game takes the player back to the map and the HUD says what could not be drawn.
-   */
-  private readonly refuseRealmView = (): void => {
-    if (parsePlayRoute(window.location)?.scene !== "hex") return;
-    usePlayRouteReadinessStore
-      .getState()
-      .markSceneFailed(getCurrentPlayRouteBootToken(), "hex", new Error(REALM_VIEW_NOT_DRAWN));
+  /** The address turned to the other view, or to another realm: what it names is drawn. */
+  private readonly followRoute = (): void => {
+    const asked = realmRoute();
+    if (asked === this.realmAsked || (asked && this.realmAsked && sameHex(asked, this.realmAsked))) return;
+    this.wantLand(requireActiveGameSyncRuntime().requireWorldSpatialProjection());
   };
+
+  private tapAt(ground: GroundPoint): void {
+    if (this.realm) tapRealmHex(this.realm, latticeHexAt(ground.x, ground.z));
+    else this.selection?.tapAt(this.hexUnder(ground));
+  }
 
   private mountCanvas(): void {
     document.getElementById(CANVAS_ID)?.remove();
@@ -221,10 +241,17 @@ export class MapClientRenderer {
     }
   }
 
-  /** Takes the land round a hex from the facts and starts the renderer on it, keeping the camera where it looks. */
+  /** Takes what the address names, the realm or the land round a hex, and starts the renderer on it. */
   private async takeLand(projection: WorldSpatialProjection, centre: Hex): Promise<void> {
     if (!this.art || !this.module) return;
-    const lookedAt = this.renderer ? absoluteOf(this.camera.target) : null;
+    const route = realmRoute();
+    this.realmAsked = route;
+    const realm = route && readRealm(this.setup.store, projection, route);
+    if (realm) return this.takeRealm(realm);
+    if (route) this.tellNoRealm();
+    if (this.realm) centre = this.leaveRealm();
+    const lookedAt = this.renderer && this.mapStood ? absoluteOf(this.camera.target) : null;
+    this.mapStood = true;
     const was = absoluteOf({ x: 0, z: 0 });
     setWorldOrigin(centre);
     const now = absoluteOf({ x: 0, z: 0 });
@@ -250,6 +277,84 @@ export class MapClientRenderer {
     this.wildlife.settle(animalHomes(land), this.seconds());
     this.placeWildlife(started);
     this.selection?.showOrder();
+  }
+
+  /**
+   * Takes a realm from the facts and starts the renderer on it, the camera on its keep. Nothing of the map goes
+   * with it: no army, no animal, no label. The entry that asked for the realm view is told it stands.
+   */
+  private async takeRealm(realm: RealmLand): Promise<void> {
+    const token = getCurrentPlayRouteBootToken();
+    const packed = await packRealm(this.art!, realm);
+    if (this.destroyed) return;
+    this.renderer?.free();
+    this.renderer = null;
+    const started = await this.startRenderer(packed.scene);
+    if (this.destroyed) return started.free();
+    this.renderer = started;
+    this.land = packed;
+    this.presentBuildings(this.realm, realm);
+    if (!this.realm) {
+      this.mapCamera = this.mapStood ? this.camera : null;
+      this.camera = { target: placeOf(KEEP), distance: REALM_DISTANCE.defaultDistance };
+    }
+    this.realm = realm;
+    this.labels.showStructures([], packed);
+    this.labels.showArmies([], NO_ARMIES, packed);
+    this.showRealmPick();
+    usePlayRouteReadinessStore.getState().markHexReady(token, realm.site);
+  }
+
+  /** Whether a change to the facts is to the realm drawn: one of its buildings, or its own level. */
+  private changesRealmDrawn({ model, current, previous }: NativeFactChange): boolean {
+    const id = this.realm && BigInt(this.realm.realmId);
+    const row = current ?? previous;
+    if (id === null || !row) return false;
+    if (model === "Building") return (row as NativeRows["Building"]).structure_id === id;
+    return model === "Structure" && (row as NativeRows["Structure"]).entity_id === id;
+  }
+
+  /** Lights the hex of the building or the plot picked in the realm drawn; nothing where none is. */
+  private showRealmPick(): void {
+    if (!this.realm) return;
+    const picked = useUIStore.getState().selectedBuildingHex;
+    const lit = picked?.structureId === this.realm.realmId;
+    this.renderer?.show_order(orderStops(lit ? [placeOf({ col: picked.innerCol, row: picked.innerRow })] : []));
+  }
+
+  /** Marks, as today's realm view does, each building a realm's facts added or took away since it was last drawn. */
+  private presentBuildings(before: RealmLand | null, now: RealmLand): void {
+    if (before?.realmId !== now.realmId) return;
+    const keyOf = (hex: Hex) => `${hex.col},${hex.row}`;
+    const stood = new Set(before.buildings.map(keyOf));
+    const stands = new Set(now.buildings.map(keyOf));
+    for (const building of now.buildings) {
+      if (!stood.has(keyOf(building))) presentResult(`building:${keyOf(building)}:${building.category}`);
+    }
+    for (const building of before.buildings) {
+      if (!stands.has(keyOf(building))) presentResult(`building-gone:${keyOf(building)}`);
+    }
+  }
+
+  /**
+   * Back to the map, the realm's pick put away: the camera where the player left it, or on the realm's site when
+   * the page opened on the realm view. Returns the hex the map's land is taken round.
+   */
+  private leaveRealm(): Hex {
+    const site = normalizedHexOf(this.realm!.site);
+    this.camera = this.mapCamera ?? { target: this.camera.target, distance: START_DISTANCE };
+    const centre = this.mapCamera ? this.hexUnder(this.camera.target) : site;
+    this.realm = null;
+    this.mapCamera = null;
+    useUIStore.getState().setSelectedBuildingHex(null);
+    return centre;
+  }
+
+  /** An address that names the realm view where no realm answers is told so, as a scene that did not open is. */
+  private tellNoRealm(): void {
+    usePlayRouteReadinessStore
+      .getState()
+      .markSceneFailed(getCurrentPlayRouteBootToken(), "hex", new Error(NO_REALM_THERE));
   }
 
   /**
@@ -293,6 +398,14 @@ export class MapClientRenderer {
         () => this.wantLand(projection),
       ),
       projection.subscribeArmies(() => this.placeArmies(projection)),
+      useUIStore.subscribe(
+        (state) => state.selectedBuildingHex,
+        () => this.showRealmPick(),
+      ),
+      // A realm drawn follows its buildings and its level.
+      this.setup.store.subscribe((changes) => {
+        if (changes.some((change) => this.changesRealmDrawn(change))) this.wantLand(projection);
+      }),
       // A battle is an event, not a fact: its blows are a flourish over the armies the facts place.
       new WorldUpdateListener(this.setup).BattleEvent.onBattleUpdate(({ battleData }) =>
         this.showBattle(projection, battleData.attackerId, battleData.defenderId),
@@ -323,7 +436,7 @@ export class MapClientRenderer {
   }
 
   private placeArmies(projection: WorldSpatialProjection): void {
-    if (!this.renderer) return;
+    if (!this.renderer || this.realm) return;
     if (this.marches.update(readArmies(projection, this.setup.store), this.seconds())) this.showTroops(this.renderer);
     this.sayLabels(projection);
   }
@@ -338,7 +451,7 @@ export class MapClientRenderer {
    * defending army strikes back. Nothing for an attacker or a defender the map does not hold.
    */
   private showBattle(projection: WorldSpatialProjection, attackerId: number, defenderId: number): void {
-    if (!this.renderer) return;
+    if (!this.renderer || this.realm) return;
     const now = this.seconds();
     const armies = this.marches.positions(now);
     const attacker = armies.get(attackerId);
@@ -358,7 +471,7 @@ export class MapClientRenderer {
 
   /** Says every label of the land held as the facts now have it. Unchanged words cost nothing. */
   private sayLabels(projection: WorldSpatialProjection): void {
-    if (!this.land) return;
+    if (!this.land || this.realm) return;
     this.labelsSaidAt = this.seconds();
     const held = ({ hex }: { hex: Hex }) => inReach(hex, this.landCentre);
     const { store } = this.setup;
@@ -388,6 +501,12 @@ export class MapClientRenderer {
   }
 
   private lookAt(camera: MapCamera): void {
+    if (this.realm) {
+      // The realm view's camera stays on the keep: it only comes nearer or goes further.
+      const { minDistance, maxDistance } = REALM_DISTANCE;
+      this.camera = { ...this.camera, distance: Math.min(maxDistance, Math.max(minDistance, camera.distance)) };
+      return;
+    }
     this.camera = camera;
     publishCameraView(camera.target, camera.distance);
     const under = this.hexUnder(camera.target);
@@ -411,11 +530,14 @@ export class MapClientRenderer {
     if (this.destroyed) return;
     this.frame = requestAnimationFrame(this.draw);
     if (!this.renderer || this.building || !this.land) return;
-    if (this.seconds() - this.wildlifeActedAt >= WILDLIFE_ACTS_EVERY) this.placeWildlife(this.renderer);
+    if (!this.realm && this.seconds() - this.wildlifeActedAt >= WILDLIFE_ACTS_EVERY) this.placeWildlife(this.renderer);
     if (this.seconds() - this.labelsSaidAt >= LABELS_SAID_EVERY)
       this.sayLabels(requireActiveGameSyncRuntime().requireWorldSpatialProjection());
-    this.labels.frame(this.camera, this.marches.positions(this.seconds()), this.land);
+    const armies = this.realm ? NO_ARMIES : this.marches.positions(this.seconds());
+    this.labels.frame(this.camera, armies, this.land);
     this.renderer.render(cameraWorldMatrix(this.camera), CAMERA_FOV, CAMERA_NEAR, CAMERA_FAR, this.seconds());
+    // What the frame drew of a player's action is marked now, as today's frame loop marks it.
+    markPresentedResults();
   };
 
   /** Tells the entry that started this map that the world map stands, as today's map does. */
@@ -423,10 +545,17 @@ export class MapClientRenderer {
     const readiness = usePlayRouteReadinessStore.getState();
     readiness.markWorldmapReady(token);
     readiness.markWorldmapConverged(token);
-    this.refuseRealmView();
     useUIStore.getState().setIsLoadingScreenEnabled(false);
     this.lookAt(this.camera);
   }
+}
+
+const NO_ARMIES: ReadonlyMap<number, GroundPoint> = new Map();
+const sameHex = (a: Hex, b: Hex): boolean => a.col === b.col && a.row === b.row;
+
+/** The hex the address names for the realm view, as contracts count it; null while the address names the map. */
+function realmRoute(): Hex | null {
+  return resolvePlayRouteTarget(window.location).hexRealmPosition;
 }
 
 async function loadModule(): Promise<MapRendererModule> {

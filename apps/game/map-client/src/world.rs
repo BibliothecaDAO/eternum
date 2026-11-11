@@ -83,8 +83,10 @@ pub struct Hex {
     pub ground: Ground,
     /// The biome's place in `BIOMES`.
     pub biome: u8,
-    /// Whether a building stands on it.
+    /// Whether a building stands on it, or may: the land's props keep off it.
     pub built: bool,
+    /// Whether it is a realm's open plot, which the ground outlines.
+    pub plot: bool,
     pub colour: [f32; 3],
     pub known: Known,
 }
@@ -162,18 +164,21 @@ impl World {
     }
 
     /// What the shaders read of the land's features, four bytes a cell: the biome with how well the hex is
-    /// known, and the distance into the unknown (half way up the byte at its edge, lower over known land).
+    /// known, the distance into the unknown (half way up the byte at its edge, lower over known land), and
+    /// whether the hex is a realm's open plot.
     pub fn feature_texels(&self) -> Vec<u8> {
         let byte = |share: f32| (share.clamp(0.0, 1.0) * 255.0) as u8;
         (0..MAP_SIZE * MAP_SIZE)
             .flat_map(|cell| {
-                let (biome, known) = self.nearest[cell].map_or((0, Known::Unknown), |hex| {
-                    (self.hexes[hex].biome, self.hexes[hex].known)
-                });
+                let (biome, known, plot) =
+                    self.nearest[cell].map_or((0, Known::Unknown, false), |hex| {
+                        let hex = &self.hexes[hex];
+                        (hex.biome, hex.known, hex.plot)
+                    });
                 [
                     biome * 4 + known as u8,
                     byte(0.5 + self.unknown[cell] / UNKNOWN_REACH * 0.5),
-                    0,
+                    if plot { 255 } else { 0 },
                     0,
                 ]
             })
@@ -261,6 +266,7 @@ fn read_hexes(snapshot: &Snapshot, floats: &[f32], hex_spacing: f32) -> Vec<Hex>
             ground: Ground::of(&biome.name),
             biome: biome_number(&biome.name),
             built: row[3] > 1.5,
+            plot: row[3] > 2.5,
             colour: biome.colour,
             known: if row[3] > 0.5 {
                 Known::Explored
