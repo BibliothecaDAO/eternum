@@ -1,6 +1,6 @@
 import type { EtherealSurface } from "./ethereal-depths";
 import type { BiomeClimateConfig } from "@bibliothecadao/eternum";
-import type { BiomeType, StructureType } from "@bibliothecadao/types";
+import type { BiomeType, HexPosition, StructureType } from "@bibliothecadao/types";
 import type { TerrainPropArchetypeId } from "./terrain-prop-catalog";
 
 export const PROCEDURAL_TERRAIN_STYLE_VERSION = 30;
@@ -129,6 +129,12 @@ export interface TerrainPageDiagnostics {
 }
 
 export interface PreparedTerrainPage {
+  /**
+   * The floating origin the page was built around (world-origin.ts): its geometry lies at (hex − origin), and whatever
+   * else is laid from the page (its biomes on the biome map) is laid round the same origin, even if the map's origin
+   * has moved since.
+   */
+  origin: HexPosition;
   /** Three floats per explored ethereal-layer tile: world X, world Z, depth (0 is Eternum’s original surface). */
   basaltInstances?: Float32Array | null;
   borderBuffers?: TerrainBorderBuffers | null;

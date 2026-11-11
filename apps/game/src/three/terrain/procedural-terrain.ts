@@ -525,8 +525,8 @@ export class ProceduralTerrain {
     const pageKey = preparedPage.request.pageKey;
     this.writeVisibleProps(pageKey, presented);
     this.fogField.setPage(pageKey, preparedPage.shroudInstances);
-    this.biomeMap.write([...preparedPage.request.cells, ...preparedPage.request.halo]);
-    this.biomeMap.writeUnexplored(preparedPage.shroudInstances);
+    this.biomeMap.write([...preparedPage.request.cells, ...preparedPage.request.halo], preparedPage.origin);
+    this.biomeMap.writeUnexplored(preparedPage.shroudInstances, preparedPage.origin);
   }
 
   private installPageGeometry(preparedPage: PreparedTerrainPage, presented: PresentedTerrainPage): void {

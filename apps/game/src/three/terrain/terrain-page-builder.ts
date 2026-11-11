@@ -1,4 +1,5 @@
 import { BiomeType } from "@bibliothecadao/types";
+import { worldOrigin } from "@/three/world-origin";
 
 import { BASALT_SHELL_TRIANGLES, BASALT_SHELL_VERTICES } from "./terrain-basalt";
 import { type SurfaceBasaltTransition, visitSurfaceBasaltSlabs } from "./terrain-basalt-transition";
@@ -181,6 +182,7 @@ export function prepareTerrainPage(request: TerrainPageRequest): PreparedTerrain
         (basalt.length / 3) * BASALT_SHELL_VERTICES,
     },
     fingerprint,
+    origin: worldOrigin(),
     propInstances,
     request,
     shroudInstances,
