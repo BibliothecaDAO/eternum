@@ -11,14 +11,16 @@ The map client under trial: add `?mapClient=next` to a game's world-map address 
 or `/lab/game?scenario=explore&mapClient=next`) and the world map is drawn by the renderer in `apps/game/map-client`
 (Rust) from the same facts, under the same HUD. Without the parameter nothing of it is loaded:
 `pnpm --dir apps/game check:map-client-isolation` proves that on a production build. It draws the surface's explored
-land, the mist and the hexes next to explore, structures and armies; drag pans, pinch or wheel zooms, a tap picks an
-army, a structure or a hex, and a tap on a hex a picked army is offered shows that order's path. It draws the world map
-only: an address of the realm view is drawn by today's client, and turning to the realm view from this map opens the
-page again without the parameter. Not drawn yet: sites, beasts, chests, battles, labels and the ethereal layer; orders
-are shown, not sent. It starts on WebGPU and falls back to WebGL2 where WebGPU is missing or will not start;
-`&rendererMode=webgpu-force-webgl` asks for WebGL2. The module the page loads (`src/map-client/renderer`) is built from
-the crate by `pnpm --dir apps/game build:map-client` (pinned Rust, wasm-pack 0.15.0, `--locked`) and committed; CI
-builds it again and refuses a module its sources do not build.
+land (each biome its own ground, with trees, rocks and plants the renderer makes by rule), the mist and the hexes next
+to explore, structures, armies, and animals (seven mammals that graze, rest, move in herds, run from armies and hunt:
+the map's flourish, no fact of the game); drag pans, pinch or wheel zooms, a tap picks an army, a structure or a hex,
+and a tap on a hex a picked army is offered shows that order's path. It draws the world map only: an address of the
+realm view is drawn by today's client, and turning to the realm view from this map opens the page again without the
+parameter. Not drawn yet: sites, beasts, chests, battles, labels and the ethereal layer; orders are shown, not sent. It
+starts on WebGPU and falls back to WebGL2 where WebGPU is missing or will not start; `&rendererMode=webgpu-force-webgl`
+asks for WebGL2. The module the page loads (`src/map-client/renderer`) is built from the crate by
+`pnpm --dir apps/game build:map-client` (pinned Rust, wasm-pack 0.15.0, `--locked`) and committed; CI builds it again
+and refuses a module its sources do not build.
 
 Frontier army management: select an army from the dock or map; on a phone tap its selected token for details. The
 panel's red trash, right after its name at the top left, is **Delete**: it asks for confirmation in the panel (troops,
