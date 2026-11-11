@@ -77,9 +77,14 @@ Each item makes a form below untrue or gets the app rejected. Items 1 to 6 block
 
      No TestFlight build has shown an alert yet.
 
-   - **Haptics and a native share sheet are not in the app.** The shell installs only the push plugin
-     (`apps/ios/package.json:10`–`12`). The game vibrates and shares through the web APIs
-     (`apps/game/src/ui/motion/motion-settings.ts:13`, `apps/game/src/shell/season-tab/results-page.tsx:165`).
+   - **Haptics and the native share sheet** are wired:
+     - the shell installs `@capacitor/haptics` (`apps/ios/package.json:11`), and the client taps once, lightly, when
+       Herald confirms an action the player sent (`apps/game/src/hooks/use-transaction-listener.ts:117`,
+       `apps/game/src/ui/motion/motion-settings.ts:33`);
+     - the season's recap shares its card through iOS's share sheet, which the web view's `navigator.share` opens
+       (`apps/game/src/shell/season-tab/season-recap.tsx:561`).
+
+     No TestFlight build has shown either yet.
 
    The review notes (section 5.3) name none of these. Add each to them only after a signed build proves it.
 

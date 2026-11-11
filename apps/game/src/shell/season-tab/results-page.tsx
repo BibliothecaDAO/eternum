@@ -142,7 +142,11 @@ const EndMapButton = ({ gameRef }: { gameRef: GameRef }) => (
  * What Share says: the result as this page tells it, "Blitz 02:18 · 1st of 2 · 0 points", or the game alone for a reader
  * who did not play. One story: Share sends this page's own line and its address, never another account of the game.
  */
-const shareLine = (game: DirectoryGame | undefined, own: HeraldLeaderboardEntry | undefined, field: number): string =>
+const shareLine = (
+  game: DirectoryGame | null | undefined,
+  own: HeraldLeaderboardEntry | undefined,
+  field: number,
+): string =>
   [
     game ? gameTitle(game) : WORDS.results,
     ...(own
@@ -210,7 +214,7 @@ const BlitzResult = ({
   fromList,
 }: {
   gameRef: GameRef;
-  game: DirectoryGame | undefined;
+  game: DirectoryGame | null | undefined;
   entries: HeraldLeaderboardEntry[];
   player: string | null;
   fromList: boolean;
@@ -271,7 +275,7 @@ const BlitzOutcome = ({
 }: {
   own: HeraldLeaderboardEntry;
   field: number;
-  game: DirectoryGame | undefined;
+  game: DirectoryGame | null | undefined;
   gameRef: GameRef;
 }) => (
   <div className="flex flex-wrap items-center gap-8">
@@ -331,7 +335,7 @@ const PointsBreakdown = ({ own }: { own: HeraldLeaderboardEntry }) => {
 };
 
 /** Which game it was, and when it ended; a game no list the page reads still holds, by its number. */
-const GameLine = ({ game, gameRef }: { game: DirectoryGame | undefined; gameRef: GameRef }) => {
+const GameLine = ({ game, gameRef }: { game: DirectoryGame | null | undefined; gameRef: GameRef }) => {
   const now = useNowSeconds();
   return (
     <p className="text-app-label text-app-age">
@@ -355,7 +359,7 @@ const FrontierResult = ({
   fromList,
 }: {
   gameRef: GameRef;
-  game: DirectoryGame | undefined;
+  game: DirectoryGame | null | undefined;
   board: HeraldFrontierLeaderboard;
   player: string | null;
   fromList: boolean;

@@ -10,6 +10,8 @@ const facts = vi.hoisted(() => ({
   viewer: null as string | null,
   campaignHome: undefined as unknown,
 }));
+// The web: season-recap.test.tsx plays the recap in each app.
+vi.mock("@/runtime/distribution-channel", () => ({ distributionChannel: () => "web" }));
 vi.mock("@/hooks/helpers/use-block-timestamp", () => ({ useNowSeconds: () => 0 }));
 vi.mock("@/hooks/helpers/use-native-facts", () => ({ useNativeRevision: () => 0 }));
 vi.mock("@/hooks/context/game-context", () => ({
@@ -48,7 +50,12 @@ vi.mock("./finished-game", async () => {
   const { ARCHIVED_SEASONS } = await import("./archive/archive");
   return { useFinishedGame: () => ({ ...ARCHIVED_SEASONS[0]!, preset_id: facts.presetId }) };
 });
-vi.stubGlobal("fetch", () => new Promise<Response>(() => {}));
+// Identity answers for the players the recap names; nothing else on the page answers.
+vi.stubGlobal("fetch", (input: string | URL | Request) =>
+  new URL(input instanceof Request ? input.url : String(input), "http://localhost").pathname.endsWith("/api/profiles")
+    ? Promise.resolve(Response.json({ profiles: {} }))
+    : new Promise<Response>(() => {}),
+);
 // A browser whose clipboard takes a PNG, so the recap's first step is Copy image.
 vi.stubGlobal("ClipboardItem", { supports: (type: string) => type === "image/png" });
 vi.stubGlobal("navigator", { ...navigator, clipboard: { write: async () => {} } });
@@ -96,6 +103,8 @@ const open = async ({
       </QueryClientProvider>,
     ),
   );
+  // Let identity's names land.
+  await act(async () => new Promise((resolve) => setTimeout(resolve, 0)));
   unmount = async () => {
     await act(async () => root.unmount());
     host.remove();

@@ -9,6 +9,9 @@ const provider = vi.hoisted(() => ({ emitter: null as EventEmitter | null }));
 vi.mock("@/hooks/context/game-context", () => ({
   useGame: () => ({ setup: { network: { provider: provider.emitter } } }),
 }));
+/** The app the client runs in; the web unless a test says otherwise. */
+const app = vi.hoisted(() => ({ channel: "web" as "web" | "play" | "app-store" }));
+vi.mock("@/runtime/distribution-channel", () => ({ distributionChannel: () => app.channel }));
 vi.mock("@/observability/transaction-failure-reporting", () => ({
   addClientTransactionBreadcrumb: () => {},
   reportClientTransactionFailure: async () => {},
@@ -40,6 +43,8 @@ beforeEach(async () => {
 });
 afterEach(async () => {
   await act(async () => root.unmount());
+  delete (window as { Capacitor?: unknown }).Capacitor;
+  app.channel = "web";
 });
 
 const fail = (payload: Record<string, unknown>) =>
@@ -83,4 +88,44 @@ it("says nothing of an action whose outcome is still being checked, which may ye
     error: new Error("Request timed out"),
   });
   expect(shownNotices()).toEqual([]);
+});
+
+/** The iOS app's bridge, recording each plugin call; injected on every channel, as only the channel may decide. */
+const installAppBridge = () => {
+  const calls: string[] = [];
+  (window as { Capacitor?: unknown }).Capacitor = {
+    isNativePlatform: () => true,
+    nativePromise: async (plugin: string, method: string, options?: { style?: string }) => {
+      calls.push(`${plugin}.${method}:${options?.style}`);
+    },
+    addListener: () => ({ remove: async () => {} }),
+  };
+  return calls;
+};
+
+const confirm = (hash: string) =>
+  act(async () => {
+    provider.emitter!.emit("transactionComplete", {
+      type: TransactionType.TRAVEL_HEX,
+      details: { transaction_hash: hash },
+      admissionToVisibleMs: 120,
+    });
+  });
+
+it.each([
+  ["app-store", ["Haptics.impact:LIGHT"]],
+  ["web", []],
+  ["play", []],
+] as const)("on the %s channel, a confirmed action taps %j", async (channel, taps) => {
+  app.channel = channel;
+  const calls = installAppBridge();
+  await confirm("0x4780");
+  expect(calls).toEqual(taps);
+});
+
+it("taps nothing in the iOS app for an action the game refused", async () => {
+  app.channel = "app-store";
+  const calls = installAppBridge();
+  await fail({ transactionHash: "0x4781", stage: "revert", message: "movement tile occupied" });
+  expect(calls).toEqual([]);
 });
