@@ -213,16 +213,6 @@ AREAS = {
         "contracts/l2/ledger/schema/**",
         "contracts/l2/ledger/scripts/chest-preset.js"
     ],
-    "terrain": [
-        ".github/workflows/verify-terrain.yml",
-        MEDIA_FREE_CHECKOUT,
-        "apps/game/src/three/**",
-        "apps/game/scripts/**",
-        "apps/game/public/**",
-        "apps/game/vitest.assets.*",
-        "apps/game/asset-sources/realms/devcon/**",
-        "packages/core/src/utils/biome/**"
-    ],
     "amm": [
         ".github/workflows/test-ammv2.yml",
         MEDIA_FREE_CHECKOUT,
@@ -290,7 +280,6 @@ AREAS = {
 
 # Areas the import check skips, and why.
 UNCHECKED = {
-    "terrain": "renderer captures triggered by the renderer and asset sources alone; the client area covers their imports",
     "amm": "Cairo only",
     "collectibles": "Cairo only",
     "mmr": "Cairo only",
@@ -303,7 +292,7 @@ def matches(path, patterns):
 
 
 # These checks run when their own inputs change; core checks run on every landing push.
-PATH_SCOPED = {"amm", "season_pass", "terrain", "portal"}
+PATH_SCOPED = {"amm", "season_pass", "portal"}
 
 
 def selected_areas(files, every_area, landing=False):
