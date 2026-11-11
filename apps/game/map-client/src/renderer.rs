@@ -10,7 +10,7 @@ use crate::kit;
 use crate::scatter;
 use crate::scene::{floats, Kind, MeshRecord, Snapshot, INSTANCE_FLOATS, VERTEX_FLOATS};
 use crate::shapes::{Build, RIG_FLOATS};
-use crate::troops::{self, Role, ROLES};
+use crate::troops::{self, Role, ANIMALS};
 use crate::world::{self, World};
 
 const DEPTH_FORMAT: wgpu::TextureFormat = wgpu::TextureFormat::Depth32Float;
@@ -701,7 +701,7 @@ impl Renderer {
         let in_reach = |batch: &&Batch| {
             view.sees(batch.centre, batch.radius) && view.distance_to(batch) < self.tier.effects
         };
-        for troop in &units.troops {
+        for troop in units.troops.iter().filter(|troop| troop.role.is_troop()) {
             pass.set_bind_group(1, &troop.skins[0].levels[2].1, &[]);
             for batch in troop.batches.iter().filter(in_reach) {
                 self.draw_batch(&mut pass, &units.effects, &troop.instances, batch);
@@ -1350,13 +1350,13 @@ fn upload_troops(
     snapshot: &Snapshot,
     buffer: &[u8],
 ) -> Units {
-    let troops = ROLES
-        .into_iter()
+    let troops = Role::every()
         .filter_map(|role| {
             let body = match role {
                 Role::Knight => kit::knight(snapshot, buffer),
                 Role::Crossbowman => kit::statue(snapshot, buffer, &kit::CROSSBOWMAN),
                 Role::Paladin => kit::mounted_statue(snapshot, buffer),
+                Role::Animal(animal) => kit::quadruped(snapshot, buffer, ANIMALS[animal]),
             }?;
             Some(Troop {
                 role,

@@ -16,6 +16,8 @@ import { TROOP_TO_MODEL, buildArmyModelAssetPath } from "@/three/constants/army-
 import { gltfLoader } from "@/three/utils/utils";
 import { TroopTier, TroopType } from "@bibliothecadao/types";
 
+import { ANIMAL_SPECIES } from "./wildlife";
+
 /**
  * How many triangles a model keeps at each of its three finenesses, from the closest look to a crowd seen from afar.
  * The finest keeps the model's texture, so it is cut only as far as the texture's seams allow; the other two are
@@ -24,12 +26,13 @@ import { TroopTier, TroopType } from "@bibliothecadao/types";
 const BODY_TRIANGLES = [2_400, 800, 220];
 const SWORD_TRIANGLES = [200, 60, 12];
 const SHIELD_TRIANGLES = [300, 80, 24];
+const ANIMAL_TRIANGLES = [1_800, 600, 200];
 
 /**
- * The game's own unit models the map's renderer poses by maths: the articulated T1 knight with its sword and shield,
- * and the crossbowman and the mounted paladin, which are statues.
+ * The models the map's renderer poses by maths: the articulated T1 knight with its sword and shield, the crossbowman
+ * and the mounted paladin, which are statues, and the map's animals, which stand on four straight legs.
  */
-const KIT_MODELS = {
+const KIT_MODELS: Record<string, { path: string; triangles: readonly number[] }> = {
   knight: { path: "/models/characters/t1-knight-default/mid/skin.glb", triangles: BODY_TRIANGLES },
   sword: { path: "/models/characters/t1-knight-default/near/sword.glb", triangles: SWORD_TRIANGLES },
   shield: { path: "/models/characters/t1-knight-default/near/shield.glb", triangles: SHIELD_TRIANGLES },
@@ -41,7 +44,13 @@ const KIT_MODELS = {
     path: buildArmyModelAssetPath(TROOP_TO_MODEL[TroopType.Paladin][TroopTier.T1]),
     triangles: BODY_TRIANGLES,
   },
-} as const;
+  ...Object.fromEntries(
+    ANIMAL_SPECIES.map((species) => [
+      species,
+      { path: `/models/map-client/creatures/${species}.glb`, triangles: ANIMAL_TRIANGLES },
+    ]),
+  ),
+};
 
 interface KitPart {
   /** The names of the nodes the part hangs from, outermost first, then its own. */

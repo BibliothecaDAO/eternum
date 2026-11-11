@@ -67,6 +67,9 @@ const RIDER = 2.0;
 
 const GUARD = 1.0;
 const MARCH = 4.0;
+// What an animal does where it stands: it grazes, or it lies at rest.
+const GRAZE = 6.0;
+const REST = 7.0;
 
 fn turn_x(angle: f32) -> mat3x3f {
   let c = cos(angle);
@@ -211,7 +214,9 @@ fn mount(life: Life, time: f32) -> Mount {
   let pitch = sin(stride - 0.4) * 0.1 * gallop + sin(stride * 2.0) * 0.012 * walk;
   var horse: Mount;
   horse.stride = stride;
-  horse.body.at = vec3f(0.0, build.horse.x + bob, 0.0);
+  // An animal at rest lies down: its body sinks and its legs fold under it.
+  let lying = select(0.0, 0.5 + 0.03 * breath, life.activity == REST);
+  horse.body.at = vec3f(0.0, build.horse.x * (1.0 - lying) + bob, 0.0);
   horse.body.frame = turn_x(pitch);
   horse.seat = horse.body.at + horse.body.frame * vec3f(0.0, 0.125, -0.03);
   return horse;
@@ -223,9 +228,12 @@ fn horse_pose(bone: f32, life: Life, time: f32) -> Joint {
   let gallop = step(2.5, life.pace);
   var joint = horse.body;
   if (bone == 17.0 || bone == 18.0) {
-    // The neck nods with every step and reaches out in a gallop.
+    // The neck nods with every step, reaches out in a gallop, and goes down to graze: a grazing animal lifts its
+    // head now and then to look about.
     let idle = sin(time * 0.7 + life.seed * 13.0) * 0.06 * (1.0 - life.go);
-    let neck = 0.8 + idle + sin(stride * 2.0 + 0.5) * 0.07 * life.go * (1.0 - gallop) + (0.25 + cos(stride) * 0.12) * gallop;
+    let grazing = select(0.0, smoothstep(-0.55, -0.3, sin(time * 0.31 + life.seed * 50.0)), life.activity == GRAZE);
+    let neck = 0.8 + idle + sin(stride * 2.0 + 0.5) * 0.07 * life.go * (1.0 - gallop) + (0.25 + cos(stride) * 0.12) * gallop
+      + grazing * (1.1 + sin(time * 5.0) * 0.03);
     joint.at = horse.body.at + horse.body.frame * vec3f(0.0, build.horse_legs.zw);
     joint.frame = horse.body.frame * turn_x(neck);
     if (bone == 18.0) {

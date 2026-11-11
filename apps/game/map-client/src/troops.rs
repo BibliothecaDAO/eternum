@@ -5,24 +5,49 @@ use glam::Vec3;
 
 use crate::shapes::{Paint, Shape};
 
-/// Which of the game's models a unit is drawn as.
+/// The animals of the map, by the names their models are packed under.
+pub const ANIMALS: [&str; 7] = [
+    "arctic-fox",
+    "bengal-tiger",
+    "jackrabbit",
+    "moose",
+    "mountain-goat",
+    "plains-zebra",
+    "red-deer",
+];
+
+/// Which model a unit is drawn as: one of the game's troops, or an animal by its place in `ANIMALS`.
 #[derive(Clone, Copy, PartialEq)]
 pub enum Role {
     Knight,
     Crossbowman,
     Paladin,
+    Animal(usize),
 }
 
-pub const ROLES: [Role; 3] = [Role::Knight, Role::Crossbowman, Role::Paladin];
-
 impl Role {
+    pub fn every() -> impl Iterator<Item = Role> {
+        [Role::Knight, Role::Crossbowman, Role::Paladin]
+            .into_iter()
+            .chain((0..ANIMALS.len()).map(Role::Animal))
+    }
+
     pub fn named(name: &str) -> Result<Role, String> {
         match name {
             "knight" => Ok(Role::Knight),
             "crossbowman" => Ok(Role::Crossbowman),
             "paladin" => Ok(Role::Paladin),
-            other => Err(format!("No unit build is called {other}")),
+            other => ANIMALS
+                .iter()
+                .position(|animal| *animal == other)
+                .map(Role::Animal)
+                .ok_or_else(|| format!("No unit build is called {other}")),
         }
+    }
+
+    /// Whether it is one side's: an army's unit stands on a plate of its side's colour, an animal on none.
+    pub fn is_troop(self) -> bool {
+        !matches!(self, Role::Animal(_))
     }
 }
 

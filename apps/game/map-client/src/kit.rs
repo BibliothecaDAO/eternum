@@ -2,7 +2,7 @@
 //! own weights; one built of rigid parts by its parts; a statue by where each vertex is: below the hips a leg,
 //! above the neck a head. The model keeps its shape and its paint; its motion is the shader's.
 
-use glam::{Mat3, Vec3};
+use glam::{Mat3, Vec2, Vec3};
 
 use crate::scene::{Kit, KitPart, Snapshot, VERTEX_FLOATS};
 use crate::shapes::{Build, Paint, RigVertex};
@@ -512,6 +512,76 @@ pub fn mounted_statue(snapshot: &Snapshot, buffer: &[u8]) -> Option<Body> {
         let pair = (if at.z > 0.0 { 0.0 } else { 2.0 }) + (if at.x < 0.0 { 0.0 } else { 1.0 });
         let upper_bone = 19.0 + pair * 2.0;
         let shoulder = Vec3::new(out * at.x.signum(), joint, half * at.z.signum());
+        let upper = Rest::upright(shoulder);
+        let lower = Rest::upright(shoulder - Vec3::Y * (joint - knee));
+        let on_body = past(at.y, joint, band);
+        let on_upper = past(at.y, knee, band);
+        if on_body > 0.5 {
+            Hold::on(16.0, &body, at, normal).shared(upper_bone, &upper, at, on_body)
+        } else if on_body > 0.0 {
+            Hold::on(upper_bone, &upper, at, normal).shared(16.0, &body, at, 1.0 - on_body)
+        } else if on_upper > 0.5 {
+            Hold::on(upper_bone, &upper, at, normal).shared(upper_bone + 1.0, &lower, at, on_upper)
+        } else {
+            Hold::on(upper_bone + 1.0, &lower, at, normal).shared(
+                upper_bone,
+                &upper,
+                at,
+                1.0 - on_upper,
+            )
+        }
+    });
+    Some(Body { build, skins })
+}
+
+/// How high a four-legged animal's hips stand in the rig's units: as high as the paladin's horse's.
+const HIP_TALL: f32 = 0.54;
+
+/// A four-legged animal's model on the horse's bones. The model stands with its legs hanging straight under named
+/// hip and knee joints, so its vertices are held by where they are: a leg's by the hip they hang under, above its
+/// knee or below it; the neck's and the head's beyond the neck's root, toward the head; the rest by the body.
+pub fn quadruped(snapshot: &Snapshot, buffer: &[u8], name: &str) -> Option<Body> {
+    let source = Source::of(snapshot, buffer, name)?;
+    let (low, high) = source.bounds();
+    let (fore, hind) = (source.joint("hip_FL"), source.joint("hip_BL"));
+    let between = Vec3::new(0.0, 0.0, (fore.z + hind.z) * 0.5);
+    let tall = HIP_TALL * (high.y - low.y) / (fore.y - low.y);
+    let source = source.standing(between, tall);
+    let (fore, hind) = (source.joint("hip_FL"), source.joint("hip_BL"));
+    let (joint, knee) = (fore.y, source.joint("knee_FL").y);
+    let (out, half) = (fore.x.abs(), (fore.z - hind.z).abs() * 0.5);
+    let back = joint * 1.25;
+    let (neck, head) = (source.joint("neck"), source.joint("head"));
+    let toward_head = (head - neck).normalize_or_zero();
+    let build = Build {
+        horse: [back, joint, half, out],
+        horse_legs: [joint - knee, knee, neck.y - back, neck.z],
+        horse_ends: [0.36, 0.07, -0.4, 1.0],
+        ..Build::BASE
+    };
+    let body = Rest::upright(Vec3::Y * back);
+    // The shader holds a neck 0.8 of a radian forward of upright at rest.
+    let neck_rest = Rest {
+        joint: neck,
+        frame: Mat3::from_rotation_x(0.8),
+    };
+    let band = joint * 0.05;
+    let leg_wide = joint * 0.24;
+    let skins = source.skins(|_, _, vertex| {
+        let (at, normal) = (vertex.at, vertex.normal);
+        // Fore left, fore right, hind left, hind right, as the shader numbers them.
+        let pair = (if at.z > 0.0 { 0.0 } else { 2.0 }) + (if at.x < 0.0 { 0.0 } else { 1.0 });
+        let shoulder = Vec3::new(out * at.x.signum(), joint, half * at.z.signum());
+        let under_hip = Vec2::new(at.x - shoulder.x, at.z - shoulder.z).length() < leg_wide;
+        if at.y >= joint + band || !under_hip {
+            let on_neck = past((at - neck).dot(toward_head), 0.0, band * 2.0);
+            return if on_neck > 0.5 {
+                Hold::on(17.0, &neck_rest, at, normal).shared(16.0, &body, at, on_neck)
+            } else {
+                Hold::on(16.0, &body, at, normal).shared(17.0, &neck_rest, at, 1.0 - on_neck)
+            };
+        }
+        let upper_bone = 19.0 + pair * 2.0;
         let upper = Rest::upright(shoulder);
         let lower = Rest::upright(shoulder - Vec3::Y * (joint - knee));
         let on_body = past(at.y, joint, band);
