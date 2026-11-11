@@ -107,6 +107,8 @@ export class TerrainWildlife {
     const dt = Number.isFinite(deltaSeconds) ? Math.min(0.05, Math.max(0, deltaSeconds)) : 0;
     this.time += dt;
     this.population.update(dt);
+    // An animal that left the population this frame (a meal finished) leaves the map in the same frame.
+    this.removeReleasedViews();
     // Loading is triggered once per population change, never one promise per animation frame.
     if (this.needsLoad) void this.load();
     for (const creature of this.population.creatures.values()) {

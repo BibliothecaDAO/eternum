@@ -549,6 +549,30 @@ describe("a hunt within a frame", () => {
       for (let frame = 0; frame < 12_000; frame += 1) population.update(0.05);
     }
   }, 60_000);
+
+  it("takes an eaten animal off the map in the frame its meal ends", async () => {
+    const wildlife = new TerrainWildlife(
+      () => ({ biome: BiomeType.Bare, height: 0, normal: [0, 1, 0] }),
+      () => {},
+    );
+    try {
+      wildlife.sync(huntingGround(), []);
+      await wildlife.load();
+      const initial = wildlife.getStats().count;
+      for (let frame = 0; frame < 12_000; frame += 1) {
+        wildlife.update(0.05);
+        const stats = wildlife.getStats();
+        if (stats.count < initial) {
+          expect(stats.loaded).toBe(stats.count);
+          expect(wildlife.object3d.children).toHaveLength(stats.count);
+          return;
+        }
+      }
+      throw new Error("No meal ended in a long day of hunting");
+    } finally {
+      wildlife.dispose();
+    }
+  });
 });
 
 describe("terrain wildlife lifecycle", () => {
