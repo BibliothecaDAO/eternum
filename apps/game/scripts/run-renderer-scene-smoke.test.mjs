@@ -69,7 +69,9 @@ describe("buildSceneSmokeUrl", () => {
         rendererMode: "webgpu-force-webgl",
         scene: "hex",
       }),
-    ).toBe("https://127.0.0.1:4173/g/0xa1/702/hex?col=0&row=0&spectate=true&rendererMode=webgpu-force-webgl");
+    ).toBe(
+      "https://127.0.0.1:4173/g/0xa1/702/hex?col=0&row=0&spectate=true&rendererMode=webgpu-force-webgl&mapClient=current",
+    );
   });
 
   it("requires a game instead of guessing a stale default", () => {

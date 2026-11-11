@@ -36,6 +36,8 @@ export function buildPlaytestUrl({ baseUrl, chainId, gameId, rendererMode, devOv
   url.pathname = `/g/${chainId}/${gameId}`;
   url.searchParams.set("spectate", "true");
   url.searchParams.set("rendererMode", rendererMode);
+  // The playtest plays the game's current renderer, whichever the build opens its map with.
+  url.searchParams.set("mapClient", "current");
   // Measure what players run: the dev overlays stay off even if this browser profile once enabled them, unless the
   // steps need them (they play the dev tools, or read the world the dev build reports).
   url.searchParams.set("dev", devOverlays ? "1" : "0");
@@ -51,6 +53,7 @@ export function buildLabGameUrl({ baseUrl, scenario, rendererMode, devOverlays =
   url.pathname = "/lab/game";
   url.searchParams.set("scenario", scenario);
   url.searchParams.set("rendererMode", rendererMode);
+  url.searchParams.set("mapClient", "current");
   url.searchParams.set("dev", devOverlays ? "1" : "0");
   return url.toString();
 }
