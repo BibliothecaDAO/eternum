@@ -32,7 +32,6 @@ const typedEntityId = (value: string): number | undefined =>
   /^[1-9][0-9]{0,14}$/.test(value) ? safeInteger(value) : undefined;
 
 const EMPTY_STATS: ProceduralTerrainDebugStats = {
-  gameMode: "blitz",
   preparedFrontierCells: 0,
   wildlife: { count: 0, loaded: 0, pending: 0, failed: [], visible: true, creatures: [] },
   activeMode: "webgpu",
@@ -98,7 +97,6 @@ export const ProceduralTerrainDebugView = () => {
   const localMode = searchParams.get("layout") === "settlement";
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const rendererRef = useRef<ProceduralTerrainDebugRendererHandle | null>(null);
-  const gameMode = searchParams.get("mode") === "frontier" ? "frontier" : "blitz";
   const capture = searchParams.get("capture") === "1";
   const forceWebGL = searchParams.get("rendererMode") === "webgpu-force-webgl";
   const texturedGround = searchParams.get("groundMode") !== "flat";
@@ -132,7 +130,6 @@ export const ProceduralTerrainDebugView = () => {
       void mountProceduralTerrainDebugRenderer({
         canvas,
         captureMode: capture,
-        gameMode,
         localRadius,
         forceWebGL,
         qualityTier,
@@ -167,7 +164,7 @@ export const ProceduralTerrainDebugView = () => {
       rendererRef.current?.dispose();
       rendererRef.current = null;
     };
-  }, [capture, gameMode, forceWebGL, qualityTier, revealProgress, sceneId, texturedGround, localRadius]);
+  }, [capture, forceWebGL, qualityTier, revealProgress, sceneId, texturedGround, localRadius]);
 
   useEffect(() => {
     if (!ready) return;

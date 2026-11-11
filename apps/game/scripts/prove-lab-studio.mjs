@@ -5,7 +5,7 @@
  * into a new `--out` directory. It starts its own dev client on `--port`, or drives the one `--base-url` names, and
  * closes its browser however the run ends.
  *
- *   pnpm --dir apps/game prove:studio --port 4199 --out <fresh-dir> [--size 1080x1920] [--game frontier]
+ *   pnpm --dir apps/game prove:studio --port 4199 --out <fresh-dir> [--size 1080x1920]
  *   [--takes hyperstructure-rise,battle]
  */
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
@@ -23,11 +23,10 @@ const base = arg("--base-url", null);
 const port = arg("--port", "4199");
 const out = resolve(arg("--out", `.context/studio-proof-${Date.now()}`));
 const [width, height] = arg("--size", "1920x1080").split("x").map(Number);
-const game = arg("--game", "blitz");
 const takes = arg("--takes", "hyperstructure-rise,battle,explore,realm-tiers").split(",");
 
 mkdirSync(out, { recursive: false });
-const transcript = { url: null, size: { width, height }, game, adapter: null, load: [], steps: [], checks: [] };
+const transcript = { url: null, size: { width, height }, adapter: null, load: [], steps: [], checks: [] };
 const save = (ok, error) =>
   writeFileSync(join(out, "transcript.json"), JSON.stringify({ ok, error, ...transcript }, null, 2) + "\n");
 
@@ -43,7 +42,7 @@ const step = (browser, name, extra = {}) => {
 };
 
 function openStudio(browser, urlBase) {
-  transcript.url = `${urlBase}/lab/studio?mode=${game}`;
+  transcript.url = `${urlBase}/lab/studio`;
   browser.run(["set", "viewport", String(width), String(height)]);
   browser.run(["open", transcript.url]);
   browser.run([

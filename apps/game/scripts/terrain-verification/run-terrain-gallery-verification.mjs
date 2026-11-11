@@ -53,7 +53,6 @@ export function buildTerrainGalleryUrl(
   revealProgress = 0,
 ) {
   const url = new URL(baseUrl);
-  const gameMode = url.searchParams.get("mode");
   url.pathname = "/lab/terrain";
   url.search = "";
   url.searchParams.set("capture", "1");
@@ -62,7 +61,6 @@ export function buildTerrainGalleryUrl(
   url.searchParams.set("scene", sceneId);
   url.searchParams.set("quality", qualityTier);
   if (revealProgress > 0) url.searchParams.set("reveal", String(revealProgress));
-  if (gameMode === "blitz" || gameMode === "frontier") url.searchParams.set("mode", gameMode);
   return url.toString();
 }
 
@@ -93,8 +91,6 @@ export function evaluateTerrainGalleryResults(results, options = {}) {
     if (result.snapshot && result.snapshot.activeMode !== ACTIVE_MODE_OF[result.rendererMode]) {
       reasons.push(`${label}: rendered on ${result.snapshot.activeMode}, not ${ACTIVE_MODE_OF[result.rendererMode]}`);
     }
-    if (options.gameMode && result.snapshot?.gameMode !== options.gameMode)
-      reasons.push(`${label}: world mode did not match request`);
     if (result.errors.length > 0) reasons.push(`${label}: browser reported ${result.errors[0]}`);
     if (result.sceneId === "all-biomes" && result.snapshot?.biomeCount !== 16) {
       reasons.push(`${label}: expected 16 biomes`);
@@ -545,13 +541,11 @@ async function main(args) {
       }
     }
   }
-  const gameMode = new URL(baseUrl).searchParams.get("mode") === "frontier" ? "frontier" : "blitz";
   const evaluation = evaluateTerrainGalleryResults(results, {
     groundModes,
     rendererModes,
     sceneIds,
     timingPolicy,
-    gameMode,
   });
   const summary = {
     ...evaluation,

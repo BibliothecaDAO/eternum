@@ -27,7 +27,6 @@ export function EtherealDepthLabView() {
         canvas: canvas.current!,
         stage,
         captureMode: true,
-        gameMode: "frontier",
         forceWebGL: true,
         qualityTier: "detail",
         revealProgress: 0,

@@ -371,7 +371,6 @@ export const ROOMS: LabRoom[] = [
     pages: [
       {
         title: "Terrain",
-        modes: BOTH,
         views: [
           view(
             "Terrain & buildings",
@@ -514,7 +513,6 @@ export const ROOMS: LabRoom[] = [
     pages: [
       {
         title: "Set",
-        modes: BOTH,
         views: [
           view(
             "Set",

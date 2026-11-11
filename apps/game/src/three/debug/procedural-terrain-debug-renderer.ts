@@ -3,7 +3,6 @@ import { MapSheetPresentation } from "@/lab/sheet-map/presentation";
 import { EndgameFixtureScene } from "@/lab/endgame-mist/fixture-scene";
 import { createEndgameFixture } from "@/lab/endgame-mist/fixture";
 import type { EndgameLabSettings } from "@/lab/endgame-mist/fixture";
-import type { GameModeId } from "@/config/game-modes";
 import { createPipelineCompiler, type PipelineCompiler } from "@/three/pipeline-compiler";
 import { WeatherLabRuntime } from "./weather-lab-runtime";
 import { resetGameEnd } from "@/three/effects/endgame/state";
@@ -69,7 +68,6 @@ export interface ProceduralTerrainDebugStats {
     renderSubmissionSamples: number;
     rendererTriangles: number;
   };
-  gameMode: GameModeId;
   activeMode: "webgl2-fallback" | "webgpu";
   biomeCount: number;
   buildingInstances: number;
@@ -187,7 +185,6 @@ interface MountProceduralTerrainDebugRendererInput {
   mapSheet?: { chapter: MapChapter; overlay: HTMLDivElement };
   endgame?: EndgameLabSettings;
   stage?: LabStage;
-  gameMode?: GameModeId;
   canvas: HTMLCanvasElement;
   captureMode: boolean;
   localRadius?: number;
@@ -232,7 +229,6 @@ interface TerrainDebugRuntime {
   stage: LabStage | null;
   clock: LabClock;
   renderSubmissionMs: number[];
-  gameMode: GameModeId;
   atmosphere: WorldAtmosphereController;
   weather: WeatherLabRuntime;
   cycleProgress: number;
@@ -498,7 +494,6 @@ async function createRuntime(input: MountProceduralTerrainDebugRendererInput): P
     ...ecologyTransects,
   } satisfies Omit<
     ProceduralTerrainDebugStats,
-    | "gameMode"
     | "activeMode"
     | "drawCalls"
     | "firstRenderMs"
@@ -562,7 +557,6 @@ async function createRuntime(input: MountProceduralTerrainDebugRendererInput): P
     atmosphere,
     weather,
     cycleProgress: 50,
-    gameMode: input.gameMode ?? "blitz",
     interaction,
     camera,
     cameraFrame,
@@ -939,7 +933,6 @@ function readStats(
           },
         }
       : {}),
-    gameMode: runtime.gameMode,
     wildlife: runtime.terrain.getWildlifeStats(),
     buildingInstances: runtime.interaction?.getState().buildings.length ?? 0,
     propInstances: runtime.terrain.getPropStats().instances,
