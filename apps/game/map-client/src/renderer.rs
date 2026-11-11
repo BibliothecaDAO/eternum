@@ -699,7 +699,7 @@ impl Renderer {
                 }
             }
         }
-        // What is drawn over the scene, blended: the shadow, trail and dust of every unit on two feet.
+        // What is drawn over the scene, blended: the hex plate and the dust of every unit.
         pass.set_pipeline(&self.pipelines.effect);
         let in_reach = |batch: &&Batch| {
             view.sees(batch.centre, batch.radius) && view.distance_to(batch) < self.tier.effects

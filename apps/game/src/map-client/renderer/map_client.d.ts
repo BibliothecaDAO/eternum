@@ -21,10 +21,11 @@ export class MapRenderer {
      */
     show_order(stops: Float32Array | number[]): void;
     /**
-     * Starts the renderer on a canvas with the land's table (JSON) and buffer. `force_webgl2` draws on WebGL2
-     * even where WebGPU is there. `quality` names the tier: high, mid or low.
+     * Starts the renderer on a canvas with the land's table (JSON) and buffer, on WebGPU or, with `on_webgl2`,
+     * on WebGL2: the page chooses, and starts again on WebGL2 if WebGPU fails. `quality` names the tier: high,
+     * mid or low.
      */
-    static start(canvas: HTMLCanvasElement, table: string, buffer: Uint8Array | number[], hex_horizontal: number, hex_vertical: number, force_webgl2: boolean, quality: string): Promise<MapRenderer>;
+    static start(canvas: HTMLCanvasElement, table: string, buffer: Uint8Array | number[], hex_horizontal: number, hex_vertical: number, on_webgl2: boolean, quality: string): Promise<MapRenderer>;
 }
 
 export type InitInput = RequestInfo | URL | Response | BufferSource | WebAssembly.Module;
@@ -38,8 +39,8 @@ export interface InitOutput {
     readonly maprenderer_set_troop: (a: number, b: number, c: number, d: number, e: number, f: number) => void;
     readonly maprenderer_show_order: (a: number, b: number, c: number) => void;
     readonly maprenderer_start: (a: any, b: number, c: number, d: number, e: number, f: number, g: number, h: number, i: number, j: number) => any;
-    readonly __wasm_bindgen_func_elem_7589: (a: number, b: number, c: number, d: any) => void;
-    readonly __wasm_bindgen_func_elem_7591: (a: number, b: number, c: any, d: any) => void;
+    readonly __wasm_bindgen_func_elem_7587: (a: number, b: number, c: number, d: any) => void;
+    readonly __wasm_bindgen_func_elem_7589: (a: number, b: number, c: any, d: any) => void;
     readonly __wbindgen_export: (a: number, b: number) => number;
     readonly __wbindgen_export2: (a: number, b: number, c: number, d: number) => number;
     readonly __wbindgen_export3: (a: number, b: number, c: number) => void;

@@ -110,21 +110,22 @@ export class MapRenderer {
         wasm.maprenderer_show_order(this.__wbg_ptr, ptr0, len0);
     }
     /**
-     * Starts the renderer on a canvas with the land's table (JSON) and buffer. `force_webgl2` draws on WebGL2
-     * even where WebGPU is there. `quality` names the tier: high, mid or low.
+     * Starts the renderer on a canvas with the land's table (JSON) and buffer, on WebGPU or, with `on_webgl2`,
+     * on WebGL2: the page chooses, and starts again on WebGL2 if WebGPU fails. `quality` names the tier: high,
+     * mid or low.
      * @param {HTMLCanvasElement} canvas
      * @param {string} table
      * @param {Uint8Array | number[]} buffer
      * @param {number} hex_horizontal
      * @param {number} hex_vertical
-     * @param {boolean} force_webgl2
+     * @param {boolean} on_webgl2
      * @param {string} quality
      * @returns {Promise<MapRenderer>}
      */
-    static start(canvas, table, buffer, hex_horizontal, hex_vertical, force_webgl2, quality) {
+    static start(canvas, table, buffer, hex_horizontal, hex_vertical, on_webgl2, quality) {
         const val4 = +hex_horizontal;
         const val5 = +hex_vertical;
-        const val6 = +force_webgl2;
+        const val6 = +on_webgl2;
         let ptr0, len0, ptr1, len1, ptr2, len2;
         try {
             ptr0 = passStringToWasm0(table, wasm.__wbindgen_export, wasm.__wbindgen_export2);
@@ -809,10 +810,6 @@ function __wbg_get_imports() {
             const ret = arg0[arg1 >>> 0];
             return isLikeNone(ret) ? 0 : addToExternrefTable0(ret);
         },
-        __wbg_get_2080c49015e35254: function() { return handleError(function (arg0, arg1) {
-            const ret = Reflect.get(arg0, arg1);
-            return ret;
-        }, arguments); },
         __wbg_get_unchecked_e6325ad374eff861: function(arg0, arg1) {
             const ret = arg0[arg1 >>> 0];
             return ret;
@@ -1062,7 +1059,7 @@ function __wbg_get_imports() {
                     const a = state0.a;
                     state0.a = 0;
                     try {
-                        return __wasm_bindgen_func_elem_7591(a, state0.b, arg0, arg1);
+                        return __wasm_bindgen_func_elem_7589(a, state0.b, arg0, arg1);
                     } finally {
                         state0.a = a;
                     }
@@ -1961,7 +1958,7 @@ function __wbg_get_imports() {
         }, arguments); },
         __wbindgen_generic_0000000000000001: function(arg0, arg1) {
             // Cast intrinsic for `Closure(Closure { owned: true, function: Function { arguments: [Externref], shim_idx: 1466, ret: Result(Unit), inner_ret: Some(Result(Unit)) }, mutable: true }) -> Externref`.
-            const ret = makeMutClosure(arg0, arg1, __wasm_bindgen_func_elem_7589);
+            const ret = makeMutClosure(arg0, arg1, __wasm_bindgen_func_elem_7587);
             return ret;
         },
         __wbindgen_generic_0000000000000002: function(arg0) {
@@ -2024,14 +2021,14 @@ function __wbg_get_imports() {
     };
 }
 
-function __wasm_bindgen_func_elem_7591(arg0, arg1, arg2, arg3) {
-    wasm.__wasm_bindgen_func_elem_7591(arg0, arg1, arg2, arg3);
+function __wasm_bindgen_func_elem_7589(arg0, arg1, arg2, arg3) {
+    wasm.__wasm_bindgen_func_elem_7589(arg0, arg1, arg2, arg3);
 }
 
-function __wasm_bindgen_func_elem_7589(arg0, arg1, arg2) {
+function __wasm_bindgen_func_elem_7587(arg0, arg1, arg2) {
     try {
         const retptr = wasm.__wbindgen_add_to_stack_pointer(-16) >>> 0;
-        wasm.__wasm_bindgen_func_elem_7589(retptr, arg0, arg1, arg2);
+        wasm.__wasm_bindgen_func_elem_7587(retptr, arg0, arg1, arg2);
         var r0 = getDataViewMemory0().getInt32(retptr + 4 * 0, true);
         var r1 = getDataViewMemory0().getInt32(retptr + 4 * 1, true);
         if (r1) {

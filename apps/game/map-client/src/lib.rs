@@ -21,13 +21,6 @@ mod web {
 
     use crate::{Camera, Renderer, Role, Snapshot, Tier};
 
-    fn browser_has_webgpu() -> bool {
-        js_sys::Reflect::get(&js_sys::global(), &"navigator".into())
-            .and_then(|navigator| js_sys::Reflect::get(&navigator, &"gpu".into()))
-            .map(|gpu| !gpu.is_undefined())
-            .unwrap_or(false)
-    }
-
     #[wasm_bindgen]
     pub struct MapRenderer {
         renderer: Renderer,
@@ -36,22 +29,22 @@ mod web {
 
     #[wasm_bindgen]
     impl MapRenderer {
-        /// Starts the renderer on a canvas with the land's table (JSON) and buffer. `force_webgl2` draws on WebGL2
-        /// even where WebGPU is there. `quality` names the tier: high, mid or low.
+        /// Starts the renderer on a canvas with the land's table (JSON) and buffer, on WebGPU or, with `on_webgl2`,
+        /// on WebGL2: the page chooses, and starts again on WebGL2 if WebGPU fails. `quality` names the tier: high,
+        /// mid or low.
         pub async fn start(
             canvas: web_sys::HtmlCanvasElement,
             table: String,
             buffer: Vec<u8>,
             hex_horizontal: f32,
             hex_vertical: f32,
-            force_webgl2: bool,
+            on_webgl2: bool,
             quality: String,
         ) -> Result<MapRenderer, JsValue> {
             console_error_panic_hook::set_once();
             let snapshot: Snapshot =
                 serde_json::from_str(&table).map_err(|error| error.to_string())?;
             let size = (canvas.width(), canvas.height());
-            let on_webgl2 = force_webgl2 || !browser_has_webgpu();
             let instance = wgpu::Instance::new(&wgpu::InstanceDescriptor {
                 backends: if on_webgl2 {
                     wgpu::Backends::GL

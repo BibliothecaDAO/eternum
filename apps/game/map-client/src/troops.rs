@@ -30,7 +30,7 @@ fn v(x: f32, y: f32, z: f32) -> Vec3 {
     Vec3::new(x, y, z)
 }
 
-/// What a unit leaves on the air and the ground, placed by `unit.wgsl`: a soft shadow, a blade's trail, three
+/// What a unit leaves on the air and the ground, placed by `unit.wgsl`: its hex plate and three
 /// puffs of dust.
 pub fn effects() -> Shape {
     let mut shape = Shape::default();
@@ -53,20 +53,6 @@ pub fn effects() -> Shape {
         square(0.0, true),
         Paint::of([0.0; 3]).bone(28.0),
     );
-    const SEGMENTS: usize = 6;
-    for segment in 0..SEGMENTS {
-        let (from, to) = (
-            segment as f32 / SEGMENTS as f32,
-            (segment + 1) as f32 / SEGMENTS as f32,
-        );
-        let corners = [
-            v(from, 0.0, 0.0),
-            v(to, 0.0, 0.0),
-            v(to, 1.0, 0.0),
-            v(from, 1.0, 0.0),
-        ];
-        quad(&mut shape, corners, Paint::of([1.0; 3]).bone(29.0));
-    }
     for puff in 0..3 {
         quad(
             &mut shape,

@@ -47,14 +47,31 @@ fn noise3(p: vec3f) -> f32 {
   );
 }
 
-// The distance to the nearest edge of the hex a ground position lies in, as the game's ground shader draws its grid.
-fn hex_edge_distance(ground: vec2f) -> f32 {
+// A ground position from the middle of the hex it lies in. The grid's hexes stand on a point: flat sides east and west.
+fn from_hex_middle(ground: vec2f) -> vec2f {
   let period = vec2f(globals.hex_and_screen.x, globals.hex_and_screen.y * 2.0);
   let even = ground - floor(ground / period + 0.5) * period;
   let odd_ground = ground - period * 0.5;
   let odd = odd_ground - floor(odd_ground / period + 0.5) * period;
-  let local = abs(select(odd, even, dot(even, even) < dot(odd, odd)));
-  return globals.hex_and_screen.x * 0.5 - max(local.x, dot(local, vec2f(0.5, 0.8660254)));
+  return select(odd, even, dot(even, even) < dot(odd, odd));
+}
+
+// How far a point is from a hex's middle as a hex measures it: every point of one hex outline is as far. A hex of
+// the grid ends at half the grid's horizontal spacing.
+fn hex_reach(from_middle: vec2f) -> f32 {
+  let local = abs(from_middle);
+  return max(local.x, dot(local, vec2f(0.5, 0.8660254)));
+}
+
+// The distance to the nearest edge of the hex a ground position lies in, as the game's ground shader draws its grid.
+fn hex_edge_distance(ground: vec2f) -> f32 {
+  return globals.hex_and_screen.x * 0.5 - hex_reach(from_hex_middle(ground));
+}
+
+// 1 where two ground positions lie in the same hex.
+fn same_hex(one: vec2f, other: vec2f) -> f32 {
+  let apart = (one - from_hex_middle(one)) - (other - from_hex_middle(other));
+  return step(dot(apart, apart), 0.01);
 }
 
 // The ground's kinds, as the land's feature map numbers them (world.rs).
@@ -108,9 +125,8 @@ fn order_marks(at: vec2f) -> vec3f {
   let time = globals.eye.w;
   let dashes = smoothstep(0.35, 0.5, abs(fract(nearest.y * 2.4 - time * 1.2) - 0.5) * 2.0);
   let path = (1.0 - smoothstep(0.045, 0.075, nearest.x)) * dashes;
-  let hex = globals.hex_and_screen.x;
   let edge = hex_edge_distance(at);
-  let on_picked = step(length(at - stops[0]), hex * 0.62) * (1.0 - smoothstep(0.015, 0.04, edge));
-  let on_target = step(length(at - stops[3]), hex * 0.5);
+  let on_picked = same_hex(at, stops[0]) * (1.0 - smoothstep(0.03, 0.07, edge));
+  let on_target = same_hex(at, stops[3]);
   return vec3f(path, on_picked, on_target) * globals.water.y;
 }
