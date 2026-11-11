@@ -85,7 +85,7 @@ const CANDIDATE_SPACING: Readonly<Record<TerrainPropPlacementLayer, number>> = O
 const CANOPY_BUCKET_SIZE = 1.25;
 const CANOPY_HALO_LATTICE_CELLS = 1;
 const TERRAIN_PROP_PLACEMENT_LAYERS = Object.freeze(["canopy", "understory", "debris", "groundcover"] as const);
-export const PRODUCTION_TERRAIN_PROP_DENSITY_MULTIPLIER = 1.75;
+export const PRODUCTION_TERRAIN_PROP_DENSITY_MULTIPLIER = 1;
 const GROUND_COVER_DENSITY_RATIO = 0.24;
 const BIOME_PROP_PROFILES: Readonly<Record<BiomeType, BiomePropProfile>> = {
   [BiomeType.Underground]: profile(0),

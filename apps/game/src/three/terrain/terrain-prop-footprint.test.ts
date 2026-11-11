@@ -21,4 +21,37 @@ describe("prop footprints", () => {
     expect(isTerrainPropFootprintClear(prop, (col, row) => col === adjacent.col && row === adjacent.row)).toBe(false);
     expect(isTerrainPropFootprintClear(prop, () => false)).toBe(true);
   });
+
+  it("hides a tree anywhere on a hex beside an occupied one, however far from that edge", () => {
+    const ownerCol = 3,
+      ownerRow = 3;
+    const center = terrainHexToWorld(ownerCol, ownerRow);
+    const [toward, , , away] = terrainNeighborCoordinates(ownerCol, ownerRow);
+    const farSide = terrainHexToWorld(away.col, away.row);
+    const tree = {
+      archetype: "broadleaf" as const,
+      scale: 1,
+      ownerCol,
+      ownerRow,
+      worldX: center.x + (farSide.x - center.x) * 0.3,
+      worldZ: center.z + (farSide.z - center.z) * 0.3,
+    };
+    expect(isTerrainPropFootprintClear(tree, (col, row) => col === toward.col && row === toward.row)).toBe(false);
+  });
+
+  it("keeps a low prop beside an occupied hex when it stays clear of the shared edge", () => {
+    const ownerCol = 3,
+      ownerRow = 3;
+    const center = terrainHexToWorld(ownerCol, ownerRow);
+    const [toward] = terrainNeighborCoordinates(ownerCol, ownerRow);
+    const stone = {
+      archetype: "grass-tuft" as const,
+      scale: 1,
+      ownerCol,
+      ownerRow,
+      worldX: center.x,
+      worldZ: center.z,
+    };
+    expect(isTerrainPropFootprintClear(stone, (col, row) => col === toward.col && row === toward.row)).toBe(true);
+  });
 });
