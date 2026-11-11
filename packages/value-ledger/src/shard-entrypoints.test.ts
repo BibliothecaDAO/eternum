@@ -8,6 +8,11 @@ describe("shard entrypoints", () => {
     expect(admin).toEqual(expect.arrayContaining(["publish_frontier_pool", "award_frontier_prize", "sweep_lords"]));
   });
 
+  it("names each entrypoint once, so two branches adding the same write cannot both keep it", () => {
+    const names = GAME_ENTRYPOINTS.map((entry) => entry.name);
+    expect(names.filter((name, index) => names.indexOf(name) !== index)).toEqual([]);
+  });
+
   it("refuses at compile time an administrative write the proxy does not admit", () => {
     // The typecheck (CI's packages/value-ledger typecheck) fails if this ever compiles: the proxy refuses any Games
     // entrypoint missing from GAME_ENTRYPOINTS with "RPC method is not public", as it refused sweep_lords on 11-06.

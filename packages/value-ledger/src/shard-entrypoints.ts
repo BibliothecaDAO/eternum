@@ -14,7 +14,6 @@ export const GAME_ENTRYPOINTS = [
   { name: "publish_frontier_pool", stamp: false },
   { name: "configure_deposits", stamp: false },
   { name: "deliver_deposit", stamp: false },
-  { name: "sweep_lords", stamp: false },
   { name: "post_frontier_top", stamp: false },
   { name: "award_frontier_prize", stamp: false },
   { name: "sweep_lords", stamp: false },
