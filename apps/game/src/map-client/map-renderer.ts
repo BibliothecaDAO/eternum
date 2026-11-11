@@ -40,6 +40,9 @@ const LAND_SLACK = 12;
  * publishes in pieces is drawn together, and later changes never push the build further off.
  */
 const LAND_BATCH_MS = 200;
+/** The events that tell the page's address changed (`renderer-route-runtime.ts`). */
+const ROUTE_EVENTS = ["urlChanged", "popstate", "sceneAddressChanged"] as const;
+const REALM_VIEW_NOT_DRAWN = "The realm view is not drawn by this map yet.";
 /** How often the map's animals decide what to do, in seconds. */
 const WILDLIFE_ACTS_EVERY = 0.5;
 const START_DISTANCE = 22;
@@ -49,8 +52,8 @@ const QUALITY = "mid";
 /**
  * The world map drawn by the map client's own renderer, from the game's facts: the spatial projection's tiles,
  * structures and armies. It stands where today's renderer stands in the game's renderer session, draws on the same
- * canvas id under the same HUD, and tells the same stores where the camera looks and what is picked. It draws the
- * surface only: the session swaps the game's own renderer in for the realm view and the other layers.
+ * canvas id under the same HUD, and tells the same stores where the camera looks and what is picked. It is the
+ * page's only renderer: what it does not draw yet is not drawn.
  */
 export class MapClientRenderer {
   private canvas = document.createElement("canvas");
@@ -106,6 +109,7 @@ export class MapClientRenderer {
     this.selection = new MapSelection(projection, this.setup.store, (stops) => this.renderer?.show_order(stops));
     this.unsubscribe.push(bindMapSelection(projection), () => this.selection?.dispose());
     window.addEventListener("resize", this.resize);
+    for (const event of ROUTE_EVENTS) window.addEventListener(event, this.refuseRealmView);
     this.draw();
     this.announceReady(token);
   }
@@ -118,6 +122,7 @@ export class MapClientRenderer {
     if (this.frame !== null) cancelAnimationFrame(this.frame);
     if (this.landTimer !== null) window.clearTimeout(this.landTimer);
     window.removeEventListener("resize", this.resize);
+    for (const event of ROUTE_EVENTS) window.removeEventListener(event, this.refuseRealmView);
     this.input?.dispose();
     for (const stop of this.unsubscribe.splice(0)) stop();
     this.renderer?.free();
@@ -126,6 +131,17 @@ export class MapClientRenderer {
     this.canvas.remove();
     forgetCameraView();
   }
+
+  /**
+   * The realm view is not drawn by this map yet. An address that turns to it is told so, as a scene that did not
+   * open is: the game takes the player back to the map and the HUD says what could not be drawn.
+   */
+  private readonly refuseRealmView = (): void => {
+    if (parsePlayRoute(window.location)?.scene !== "hex") return;
+    usePlayRouteReadinessStore
+      .getState()
+      .markSceneFailed(getCurrentPlayRouteBootToken(), "hex", new Error(REALM_VIEW_NOT_DRAWN));
+  };
 
   private mountCanvas(): void {
     document.getElementById(CANVAS_ID)?.remove();
@@ -309,6 +325,7 @@ export class MapClientRenderer {
     const readiness = usePlayRouteReadinessStore.getState();
     readiness.markWorldmapReady(token);
     readiness.markWorldmapConverged(token);
+    this.refuseRealmView();
     useUIStore.getState().setIsLoadingScreenEnabled(false);
     this.lookAt(this.camera);
   }

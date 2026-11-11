@@ -14,9 +14,9 @@ name either: `?mapClient=next` or `?mapClient=current` (side by side: `/lab/game
 It draws the surface's explored land (each biome its own ground, with trees, rocks and plants the renderer makes by
 rule), the mist and the hexes next to explore, structures, armies, and animals (seven mammals that graze, rest, move in
 herds, run from armies and hunt: the map's flourish, no fact of the game); drag pans, pinch or wheel zooms, a tap picks
-an army, a structure or a hex, and a tap on a hex a picked army is offered shows that order's path. It draws nothing
-else: for the realm view, the Ethereal layers and the Deep the game's own renderer takes over in the same page, and
-hands the map back when the player returns to the surface. Not drawn yet on the surface: sites, beasts, chests, battles
+an army, a structure or a hex, and a tap on a hex a picked army is offered shows that order's path. It is the page's
+only renderer there, and what it does not draw yet is missing: the realm view (an address that turns to it is taken back
+to the map, and the HUD says the view did not open), the Ethereal layers and the Deep, sites, beasts, chests, battles
 and labels; orders are shown, not sent. It starts on WebGPU and falls back to WebGL2 where WebGPU is missing or will not
 start; `&rendererMode=webgpu-force-webgl` asks for WebGL2. The module the page loads (`src/map-client/renderer`) is
 built from the crate by `pnpm --dir apps/game build:map-client` (pinned Rust, wasm-pack 0.15.0, `--locked`) and

@@ -28,6 +28,7 @@ const world = vi.hoisted(() => ({
   worldmapReady: vi.fn(),
   worldmapConverged: vi.fn(),
   hexReady: vi.fn(),
+  sceneFailed: vi.fn(),
   inputs: vi.fn(),
 }));
 
@@ -49,6 +50,7 @@ vi.mock("@/game-entry/play-route-readiness-store", () => ({
   usePlayRouteReadinessStore: {
     getState: () => ({
       markWorldmapReady: world.worldmapReady,
+      markSceneFailed: world.sceneFailed,
       markWorldmapConverged: world.worldmapConverged,
       markHexReady: world.hexReady,
     }),
@@ -286,6 +288,31 @@ describe("what the map tells the game's entry", () => {
 
     expect(world.worldmapReady).toHaveBeenCalledWith(7);
     expect(world.worldmapConverged).toHaveBeenCalledWith(7);
+    expect(world.hexReady).not.toHaveBeenCalled();
+    renderer.destroy();
+  });
+
+  it("tells the game the realm view did not open when the address turns to it, and never that it is ready", async () => {
+    world.scene = "map";
+    const renderer = newRenderer();
+    await renderer.initScene();
+    expect(world.sceneFailed).not.toHaveBeenCalled();
+
+    world.scene = "hex";
+    window.dispatchEvent(new Event("urlChanged"));
+
+    expect(world.sceneFailed).toHaveBeenCalledOnce();
+    expect(world.sceneFailed.mock.calls[0].slice(0, 2)).toEqual([1, "hex"]);
+    expect(world.hexReady).not.toHaveBeenCalled();
+    renderer.destroy();
+  });
+
+  it("tells a boot that opens on the realm view that it did not open", async () => {
+    world.scene = "hex";
+    const renderer = newRenderer();
+    await renderer.initScene();
+
+    expect(world.sceneFailed).toHaveBeenCalledOnce();
     expect(world.hexReady).not.toHaveBeenCalled();
     renderer.destroy();
   });
