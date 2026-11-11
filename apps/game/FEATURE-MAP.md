@@ -7,6 +7,14 @@ checks its unpaid claim. Then `--steps home-upgrade` starts with an unclaimed re
 marker, waits for the operator route and confirmed snapshots, then observes the golden home and claims normally. A
 separate `--steps home-golden` run checks the golden home and claimed day after a fresh load.
 
+The map client under trial: add `?mapClient=next` to a game's address (`/g/<chain>/<game>?mapClient=next`, or
+`/lab/game?scenario=explore&mapClient=next`) and the world map is drawn by the renderer in `apps/game/map-client` (Rust,
+built by `pnpm --dir apps/game build:map-client` into `src/map-client/renderer`) from the same facts, under the same
+HUD. Without the parameter nothing changes. It draws the surface's explored land, the mist and the hexes next to
+explore, structures and armies; drag pans, pinch or wheel zooms, a tap picks an army, a structure or a hex, and a tap on
+a hex a picked army is offered shows that order's path. Not drawn yet: sites, beasts, chests, battles, labels, the
+ethereal layer and the realm view; orders are shown, not sent. `&rendererMode=webgpu-force-webgl` draws it on WebGL2.
+
 Frontier army management: select an army from the dock or map; on a phone tap its selected token for details. The
 panel's red trash, right after its name at the top left, is **Delete**: it asks for confirmation in the panel (troops,
 skills, XP and carried resources are lost; the freed slot keeps its stamina), then removes the army. Reinforce is the

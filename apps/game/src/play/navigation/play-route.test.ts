@@ -18,6 +18,15 @@ describe("play-route", () => {
     );
   });
 
+  it("carries the map client under trial from a route to the next, and never invents it", () => {
+    const asked = parsePlayRoute(createLocation("/g/0xa1/3/map", "?mapClient=next"));
+    expect(asked?.mapClient).toBe("next");
+    expect(buildPlayHref({ ...asked!, scene: "hex", spectate: false })).toBe("/g/0xa1/3/hex?mapClient=next");
+    const plain = parsePlayRoute(createLocation("/g/0xa1/3/map", "?mapClient=today"));
+    expect(plain).not.toHaveProperty("mapClient");
+    expect(buildPlayHref({ ...plain!, spectate: false })).toBe("/g/0xa1/3/map");
+  });
+
   it("refuses a chain that is not a hex felt and a game id that is not a positive integer", () => {
     expect(parsePlayRoute(createLocation("/g/madara/3/map"))).toBeNull();
     expect(parseEntryRoute(createLocation("/g/0xa1/iron-age"))).toBeNull();
