@@ -1241,9 +1241,6 @@ export default class WorldmapScene extends WarpTravel {
     void this.proceduralTerrain.loadProps().catch((error) => {
       console.warn("[WorldMap] Optional procedural terrain props failed to load", error);
     });
-    void this.proceduralTerrain.loadGroundTextures().catch((error) => {
-      console.warn("[WorldMap] Procedural ground textures failed; retaining flat terrain", error);
-    });
 
     if (MEMORY_MONITORING_ENABLED) {
       this.memoryMonitor = new MemoryMonitor({

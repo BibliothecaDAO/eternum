@@ -28,7 +28,7 @@ import { TerrainField } from "./terrain-field";
 import { createEtherealBorderMaterial } from "./terrain-ethereal-border-material";
 import { createEtherealTerrainMaterial } from "./terrain-ethereal-material";
 import type { TerrainFogMask } from "./terrain-fog-mask";
-import { acquireTerrainGroundTextures, type TerrainGroundTextureHandle } from "./terrain-ground-textures";
+import { TerrainBiomeMap } from "./terrain-biome-map";
 import { createTerrainGroundMaterial, createTerrainMaterials, type TerrainMaterials } from "./terrain-material";
 import { TerrainPageWorkerClient } from "./terrain-page-worker-client";
 import { isTerrainPropFootprintClear } from "./terrain-prop-footprint";
@@ -76,12 +76,6 @@ export interface TerrainPresentationDiagnostics {
   vertices: number;
 }
 
-export interface TerrainGroundTextureStats {
-  bytes: number;
-  layerCount: number;
-  loaded: boolean;
-}
-
 /** Cumulative upload work, except `propPoolPaddingInstances`, which is the padding drawn right now. */
 export interface TerrainUploadMetrics {
   fogMaskFullRebuilds: number;
@@ -101,15 +95,15 @@ export class ProceduralTerrain {
   private readonly pages = new Map<string, PresentedTerrainPage>();
   private readonly presentationGroup = new Group();
   private groundTextureDetailEnabled = true;
-  private groundTextureMaterial: TerrainMaterials["land"] | null = null;
+  private readonly groundTextureMaterial: TerrainMaterials["land"];
   private readonly etherealMaterial = createEtherealTerrainMaterial();
   private readonly depthMaterials = new Map<EtherealLayer, MeshStandardNodeMaterial>();
   private readonly depthMinerals = new Map<EtherealLayer, ReturnType<typeof createDepthMineralResources>>();
   private basaltGeometry: BufferGeometry | null = null;
   private readonly etherealBorders = createEtherealBorderMaterial();
   private surfacePresentation: "world" | "ethereal" = "world";
-  private groundTextureHandle: TerrainGroundTextureHandle | null = null;
-  private groundTexturesPromise: Promise<TerrainGroundTextureHandle> | null = null;
+  /** The biome of every hex presented, which the detailed ground reads to paint and blend each one. */
+  private readonly biomeMap = new TerrainBiomeMap();
   private propLod: TerrainPropLod = "near";
   private qualityTier: TerrainQualityTier = "detail";
   private propPools: TerrainPropPools | null = null;
@@ -137,11 +131,14 @@ export class ProceduralTerrain {
     this.object3d.add(this.fogField.object3d);
     this.object3d.add(this.movementEffects.object3d);
     this.materials = createTerrainMaterials();
+    this.groundTextureMaterial = createTerrainGroundMaterial(this.biomeMap.texture, this.materials.groundMotion);
+    this.fogField.applyRevealToMaterial(this.groundTextureMaterial);
     this.fogField.applyRevealToMaterial(this.materials.flatLand);
     this.fogField.applyRevealToMaterial(this.materials.water);
     this.fogField.applyRevealToMaterial(this.etherealMaterial);
     this.fogField.applyRevealToMaterial(this.etherealBorders.material);
     this.setQualityTier(this.qualityTier);
+    this.refreshGroundMaterial();
     this.releaseAppearance = useWorldAppearanceStore.subscribe(() => this.applyAppearance());
   }
 
@@ -187,21 +184,6 @@ export class ProceduralTerrain {
       if (object instanceof Mesh && object.material instanceof MeshStandardNodeMaterial) materials.add(object.material);
     });
     materials.forEach((material) => this.fogField.applyRevealToMaterial(material));
-  }
-
-  async loadGroundTextures(): Promise<void> {
-    this.requireActive();
-    this.groundTexturesPromise ??= acquireTerrainGroundTextures();
-    const handle = await this.groundTexturesPromise;
-    if (this.disposed) {
-      handle.release();
-      return;
-    }
-    if (this.groundTextureHandle) return;
-    this.groundTextureHandle = handle;
-    this.groundTextureMaterial = createTerrainGroundMaterial(handle.textures, this.materials.groundMotion);
-    this.fogField.applyRevealToMaterial(this.groundTextureMaterial);
-    this.refreshGroundMaterial();
   }
 
   setPropLod(lod: TerrainPropLod): void {
@@ -268,14 +250,6 @@ export class ProceduralTerrain {
 
   arePropsLoaded(): boolean {
     return this.propPools !== null;
-  }
-
-  getGroundTextureStats(): TerrainGroundTextureStats {
-    return {
-      bytes: this.groundTextureHandle?.textures.bytes ?? 0,
-      layerCount: this.groundTextureHandle?.textures.layerCount ?? 0,
-      loaded: this.groundTextureHandle !== null,
-    };
   }
 
   getShroudStats(): TerrainFogFieldStats {
@@ -531,9 +505,7 @@ export class ProceduralTerrain {
         this.etherealBorders.material,
       ].filter(Boolean),
     ).forEach((material) => material!.dispose());
-    this.groundTextureHandle?.release();
-    this.groundTextureHandle = null;
-    this.groundTextureMaterial = null;
+    this.biomeMap.dispose();
   }
 
   private stagePresentedPages(
@@ -553,6 +525,7 @@ export class ProceduralTerrain {
     const pageKey = preparedPage.request.pageKey;
     this.writeVisibleProps(pageKey, presented);
     this.fogField.setPage(pageKey, preparedPage.shroudInstances);
+    this.biomeMap.write([...preparedPage.request.cells, ...preparedPage.request.halo]);
   }
 
   private installPageGeometry(preparedPage: PreparedTerrainPage, presented: PresentedTerrainPage): void {
@@ -784,8 +757,6 @@ function createTerrainMesh(
     geometry.setAttribute("terrainShore", new BufferAttribute(buffers.shore, 1));
     geometry.setAttribute("terrainBiomeId", new BufferAttribute(buffers.biomeIds, 1));
     geometry.setAttribute("terrainExplored", new BufferAttribute(buffers.explored, 1));
-    geometry.setAttribute("terrainGroundWeights0", new BufferAttribute(buffers.groundWeights0, 4, true));
-    geometry.setAttribute("terrainGroundWeights1", new BufferAttribute(buffers.groundWeights1, 4, true));
     geometry.setAttribute("terrainHeight", new BufferAttribute(buffers.heights, 1));
     geometry.setAttribute("terrainWaterDepth", new BufferAttribute(buffers.waterDepth, 1));
     geometry.boundingBox = new Box3(new Vector3(...buffers.bounds.boxMin), new Vector3(...buffers.bounds.boxMax));

@@ -38,7 +38,7 @@ export class ProceduralWorldGymEnvironment {
       const request = createProceduralWorldGymTerrainRequest();
       positionTerrainAtWorldOrigin(terrain, request);
       terrain.setQualityTier("balanced");
-      await Promise.all([terrain.loadProps(), terrain.loadGroundTextures()]);
+      await terrain.loadProps();
       const prepared = await terrain.preparePageAsync(request);
       const diagnostics = terrain.present([prepared]);
       return new ProceduralWorldGymEnvironment(terrain, {
