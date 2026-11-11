@@ -37,6 +37,7 @@ jobs:
             apps/game/public/images/festival
             apps/game/public/images/landscapes
             apps/game/public/images/logos
+            apps/game/public/models/biome-creatures
             apps/game/public/models/characters/quaternius
             apps/game/public/models/characters/t1-knight-default
             apps/game/public/models/ethereal
