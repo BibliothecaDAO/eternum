@@ -279,12 +279,6 @@ export class WorldmapProceduralTerrain {
     return this.terrain.loadProps();
   }
 
-  async loadGroundTextures(): Promise<void> {
-    await this.terrain.loadGroundTextures();
-    if (this.disposed) return;
-    this.terrain.setSurfacePresentation(this.surfacePresentation);
-  }
-
   setSurfacePresentation(presentation: "world" | "ethereal"): void {
     this.surfacePresentation = presentation;
     this.terrain.setSurfacePresentation(presentation);

@@ -64,8 +64,6 @@ export interface TerrainGeometryBuffers {
   bounds: TerrainGeometryBounds;
   colors: Float32Array;
   explored: Float32Array;
-  groundWeights0: Uint8Array;
-  groundWeights1: Uint8Array;
   heights: Float32Array;
   indices: Uint32Array;
   normals: Float32Array;
@@ -101,8 +99,6 @@ export function getTerrainGeometryBufferViews(
     buffers.biomeIds,
     buffers.colors,
     buffers.explored,
-    buffers.groundWeights0,
-    buffers.groundWeights1,
     buffers.heights,
     buffers.indices,
     buffers.normals,

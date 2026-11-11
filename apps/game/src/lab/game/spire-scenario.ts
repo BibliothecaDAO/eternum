@@ -28,6 +28,18 @@ const HIGH_GROUND: LabGround = ({ col, row }) =>
   [BiomeType.Snow, BiomeType.Bare, BiomeType.Tundra][(((col + 2 * row) % 3) + 3) % 3];
 /** Beach sand, where palms grow: the owner's desert realm with its palms (28 October 2026, "shadows are weird ??"). */
 export const SANDS: LabGround = () => BiomeType.Beach;
+/** How many hexes round the realm a lab game reveals, and how far for the land of every biome. */
+const REVEALED_REACH = 4;
+const BIOMES_REACH = 12;
+/** The Surface's biomes: every one the catalog names but the absence of one and the Ethereal's ground. */
+const SURFACE_BIOMES = Object.values(BiomeType).filter(
+  (biome) => biome !== BiomeType.None && biome !== BiomeType.Underground,
+);
+/** Each biome in blocks five hexes wide, four blocks to a row, so every ground meets several others at its frontiers. */
+const EVERY_BIOME: LabGround = ({ col, row }) => {
+  const block = (at: number) => ((Math.floor(at / 5) % 4) + 4) % 4;
+  return SURFACE_BIOMES[block(col) + 4 * block(row)];
+};
 
 /**
  * The fixture's rules as Frontier plays them: hour-long day units, so a day outlasts a session; Frontier's own commands
@@ -51,7 +63,7 @@ const frontierRules = (rules: NativeRows["SliceRules"]) => {
  * its 1,498-knight army beside it holding 100 stamina, the land around the realm revealed, on Frontier's rules. The chain answers EnterDepth as movement.cairo's enter_depth applies it: the army leaves
  * its tile for the one straight below it, one region down per depth, revealed, keeping its stamina.
  */
-export const spireScenario = (ground: LabGround = GRASSLAND): LabScenario => {
+export const spireScenario = (ground: LabGround = GRASSLAND, reach = REVEALED_REACH): LabScenario => {
   // The HUD's whole game (its buildings, rules and recipes) on the spire's day.
   // Frontier's own regions, a hundred tiles wide (config/source/frontier/native.ts).
   const store = installLabGame(LAB_GAME.presetId, false, () => spireDay({ spacing: 100 }));
@@ -76,7 +88,7 @@ export const spireScenario = (ground: LabGround = GRASSLAND): LabScenario => {
     { model: "Guard", key: "0x73", value: null },
     progressionRules(),
     armyProgress(PROGRESS_KEYS.spireArmy, SPIRE_ARMY, 0),
-    ...[site, ...getHexesWithinRadius(site.col, site.row, 4)]
+    ...[site, ...getHexesWithinRadius(site.col, site.row, reach)]
       .filter((hex) => !store.get("TileOpt", { game_id: 1, alt: false, col: hex.col, row: hex.row }))
       .map((hex, index) => tile(`0x1ab7${index.toString(16)}`, hex.col, hex.row)),
   ] as never);
@@ -150,6 +162,13 @@ export const balancesPaid = (
  * and its explore targets are sunken unexplored tiles inside that ground.
  */
 export const highGroundScenario = (): LabScenario => spireScenario(HIGH_GROUND);
+
+/**
+ * The spire's game on the land of every biome (/lab/game?scenario=biomes): the same realm and army, the land twelve
+ * hexes round it revealed in blocks of each Surface biome, so the map's grounds, frontiers, water and props are judged on
+ * one fixed view, before and after a change to their look.
+ */
+export const biomesScenario = (): LabScenario => spireScenario(EVERY_BIOME, BIOMES_REACH);
 
 /** A tile beside the one given, revealed and empty: where a lab game stands a second thing by the spire's army. */
 export const besideOnOpenLand = (store: NativeFactStore, beside: { col: number; row: number }) => {

@@ -1,4 +1,3 @@
-import { TERRAIN_GROUND_TEXTURE_PATHS } from "@/three/terrain/terrain-ground-catalog";
 import { markGameEntryMilestone } from "@/ui/layouts/game-entry-timeline";
 
 type GameRouteModule = typeof import("./game-route");
@@ -84,12 +83,7 @@ export const loadGameRouteForPlayEntry = createPlayRouteEntryLoader({
   primeEntry: primeWebGpuRendererModules,
 });
 
-/**
- * A way into a game pressed (Play free, Play, Resume, Enter, Watch): the game's code starts loading, and the map's
- * ground textures (3.4 MB, the largest files a first view asks for) are fetched into the browser's cache, so the minute
- * a new player spends signing in pays for them rather than the doorway's wait.
- */
+/** A way into a game pressed (Play free, Play, Resume, Enter, Watch): the game's code starts loading. */
 export const primeGameEntry = (): void => {
   void loadGameRouteForPlayEntry().catch(() => undefined);
-  for (const path of TERRAIN_GROUND_TEXTURE_PATHS) void fetch(path).catch(() => undefined);
 };

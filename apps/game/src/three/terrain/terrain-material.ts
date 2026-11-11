@@ -1,6 +1,6 @@
 import { applyEndgameFrost } from "../effects/endgame/field";
 import { mapAnimationTime as time } from "../effects/endgame/state";
-import { NormalRGPacking } from "three";
+import type { Texture } from "three";
 import type Node from "three/src/nodes/core/Node.js";
 import type UniformNode from "three/src/nodes/core/UniformNode.js";
 import {
@@ -10,28 +10,22 @@ import {
   color,
   float,
   fwidth,
-  int,
   mix,
-  normalMap,
   normalLocal,
   positionLocal,
   positionWorld,
   positionViewDirection,
   smoothstep,
-  step,
-  texture,
   transformNormalToView,
   uniform,
-  uv,
-  vec2,
   vec3,
-  vec4,
 } from "three/tsl";
 import { MeshPhysicalNodeMaterial, MeshStandardNodeMaterial } from "three/webgpu";
 
 import { createBasaltSurface } from "./terrain-ethereal-material";
 import { terrainHexEdgeDistance } from "./terrain-hex-node";
-import type { TerrainGroundTextures } from "./terrain-ground-textures";
+import { terrainDetailTile } from "./terrain-detail-tile";
+import { groundSurface } from "./terrain-ground-node";
 import {
   TERRAIN_DEEP_WATER_DEPTH,
   TERRAIN_MIN_RENDERED_WATER_DEPTH,
@@ -166,210 +160,75 @@ function createTerrainWaterFoam(
   return shore.mul(surfZone.mul(breakerBand).mul(breakup).add(shorelineWash)).clamp(0, 1);
 }
 
+/**
+ * The land's ground: each biome painted by its own rules, its frontiers wandering off the hexes' edges and carrying
+ * something of each side across (`groundSurface`), read from the biome of every hex the terrain draws.
+ */
 export function createTerrainGroundMaterial(
-  textures: TerrainGroundTextures,
+  biomeMap: Texture,
   groundMotion: UniformNode<"float", number>,
 ): MeshStandardNodeMaterial {
   const material = new MeshStandardNodeMaterial({ metalness: 0, roughness: 0.95 });
-  material.name = "terrain-land-ground-textured";
-  const absoluteWorldUv = uv();
-  const worldUv = absoluteWorldUv.mul(0.34);
-  const groundWeights0 = attribute<"vec4">("terrainGroundWeights0", "vec4");
-  const groundWeights1 = attribute<"vec4">("terrainGroundWeights1", "vec4");
-  const pair = selectStrongestGroundPair(groundWeights0, groundWeights1);
-  const primaryAlbedoHeight = texture(textures.albedoHeight, worldUv).depth(int(pair.z));
-  const secondaryAlbedoHeight = texture(textures.albedoHeight, worldUv).depth(int(pair.w));
-  const primaryNormalMaterial = texture(textures.normalMaterial, worldUv).depth(int(pair.z));
-  const secondaryNormalMaterial = texture(textures.normalMaterial, worldUv).depth(int(pair.w));
-  const primaryPriority = pair.x.add(primaryAlbedoHeight.a.sub(0.5).mul(0.18));
-  const secondaryPriority = pair.y.add(secondaryAlbedoHeight.a.sub(0.5).mul(0.18));
-  const primaryBlend = smoothstep(-0.12, 0.12, primaryPriority.sub(secondaryPriority));
-  const sampledAlbedo = mix(secondaryAlbedoHeight.rgb, primaryAlbedoHeight.rgb, primaryBlend);
-  const terrainColor = attribute<"vec3">("terrainColor", "vec3");
-  const terrainTint = terrainColor.mul(1.75);
-  const detail = createGroundSurfaceDetail(groundWeights0, groundWeights1, groundMotion);
-  // Powder buries sharp stone detail; otherwise snow reads as a pale cracked pavement.
-  const snowCover = smoothstep(0.35, 0.85, groundWeights1.z);
-  const groundColor = mix(sampledAlbedo.mul(terrainTint), terrainColor, snowCover.mul(0.22).add(0.12)).mul(
-    detail.shade,
-  );
-  const volcanic = createScorchedSurface(
-    sampledAlbedo,
-    mix(secondaryAlbedoHeight.a, primaryAlbedoHeight.a, primaryBlend),
-    groundMotion,
-  );
-  const ashCoverage = smoothstep(0.05, 0.5, groundWeights1.w);
-  material.colorNode = shadeWithSurfaceBasalt(
-    mix(groundColor, volcanic.color, ashCoverage),
-    smoothstep(0.25, 0.55, groundWeights0.w),
-  );
-  material.emissiveNode = volcanic.embers
-    .mul(ashCoverage)
-    .mul(attribute<"float">("terrainBasaltWeight", "float").oneMinus());
-  const sampledNormalMaterial = mix(secondaryNormalMaterial, primaryNormalMaterial, primaryBlend);
-  material.roughnessNode = mix(
-    sampledNormalMaterial.b.mul(attribute<"float">("terrainRoughness", "float")).clamp(0.7, 1),
-    0.94,
-    snowCover,
-  );
-  material.aoNode = mix(1, sampledNormalMaterial.a, 0.35);
-  const detailedNormal = normalMap(
-    vec3(sampledNormalMaterial.rg.add(detail.rippleNormal), sampledNormalMaterial.b),
-    vec2(snowCover.mul(-0.3).add(0.55).mul(attribute<"float">("terrainBasaltWeight", "float").oneMinus())),
-  );
-  detailedNormal.unpackNormalMode = NormalRGPacking;
-  material.normalNode = detailedNormal;
+  material.name = "terrain-land-ground";
+  const surface = groundSurface({
+    biomeMap,
+    detail: terrainDetailTile(),
+    at: positionLocal.xz,
+    world: positionWorld,
+    meshColour: attribute<"vec3">("terrainColor", "vec3"),
+    top: smoothstep(0.55, 0.9, normalLocal.y),
+    shore: attribute<"float">("terrainShore", "float"),
+    time: time.mul(groundMotion),
+  });
+  const notBasalt = attribute<"float">("terrainBasaltWeight", "float").oneMinus();
+  const albedo = surface.get("albedo") as Node<"vec3">;
+  const gloss = surface.get("gloss") as Node<"float">;
+  const glow = surface.get("glow") as Node<"vec3">;
+  const slope = (surface.get("slope") as Node<"vec2">).mul(notBasalt);
+  // The ground is painted to be read as it is: the lift that keeps flat vertex colour readable would flatten it.
+  material.colorNode = withSurfaceBasalt(drawHexGrid(albedo));
+  material.roughnessNode = mix(attribute<"float">("terrainRoughness", "float").clamp(0.7, 1), 0.35, gloss);
+  material.emissiveNode = glow.mul(notBasalt);
+  material.normalNode = transformNormalToView(normalLocal.add(vec3(slope.x.negate(), 0, slope.y.negate())).normalize());
   return material;
-}
-
-// The lava network stays fixed in world space; only heat and cooling crust travel through it.
-// Lava is a ground treatment, so it does not alter buildability or army movement space.
-function createScorchedSurface(
-  albedo: Node<"vec3">,
-  height: Node<"float">,
-  motion: UniformNode<"float", number>,
-): { color: Node<"vec3">; embers: Node<"vec3"> } {
-  const ground = positionLocal.xz;
-  const broadWarp = ground.x.mul(0.27).add(ground.y.mul(0.18)).sin().mul(1.5);
-  const veinPhase = ground.x.mul(0.85).add(ground.y.mul(0.75).sin().mul(1.2)).add(broadWarp);
-  const branchPhase = ground.y.mul(0.9).add(ground.x.mul(0.68).sin().mul(1.6)).sub(broadWarp);
-  const veinDistance = veinPhase.sin().abs();
-  const branchDistance = branchPhase.sin().abs().add(0.035);
-  const junction = float(0.08).sub(veinDistance.sub(branchDistance).abs()).max(0).div(0.08);
-  const channelDistance = veinDistance
-    .min(branchDistance)
-    .sub(junction.mul(junction).mul(0.02))
-    .add(height.sub(0.5).mul(0.07));
-  const edgeWidth = fwidth(channelDistance).max(0.01);
-  const molten = smoothstep(float(0.09).sub(edgeWidth), edgeWidth.add(0.09), channelDistance).oneMinus();
-  const bank = smoothstep(0.09, 0.24, channelDistance).oneMinus();
-  const ashDrift = ground.x.mul(0.72).add(ground.y.mul(0.41)).add(broadWarp).sin();
-  const ash = smoothstep(0.7, 0.98, ashDrift).mul(smoothstep(0.5, 0.8, height));
-  // Burnt red basalt and sparse oxidized crust keep the biome volcanic even in cool moonlight.
-  const mineral = mix(color("#452924"), color("#784536"), ash);
-  const grain = albedo
-    .dot(vec3(0.2126, 0.7152, 0.0722))
-    .mul(1.1)
-    .add(0.6);
-  const magmaTime = time.mul(4).mul(step(0.001, motion));
-  const flow = ground.x.mul(7.8).add(ground.y.mul(3.3)).add(broadWarp).add(height.mul(8)).sub(magmaTime);
-  const heat = flow.sin().mul(0.5).add(0.5);
-  const driftingCrust = smoothstep(0.25, 0.75, flow.mul(0.43).add(height.mul(8)).sin());
-  const coolingCrust = smoothstep(0.4, 0.78, height).mul(0.32).add(driftingCrust.mul(0.62));
-  const lavaColor = mix(color("#922009"), color("#ffac25"), heat);
-  const banks = mix(mineral.mul(grain), color("#63291c"), bank.mul(0.5));
-  const bankGlow = color("#ba300b").mul(bank).mul(molten.oneMinus()).mul(0.24);
-  return {
-    color: mix(banks, color("#582317"), molten),
-    embers: lavaColor.mul(molten).mul(coolingCrust.oneMinus()).mul(1.7).add(bankGlow),
-  };
-}
-
-// Wind ripples and derivative filtering adapted from James Addison’s Inkwell WebGPU Sand (MIT).
-// See inkwell-LICENSE. World-space signals stay continuous across page and biome boundaries.
-function createGroundSurfaceDetail(
-  weights0: Node<"vec4">,
-  weights1: Node<"vec4">,
-  motion: UniformNode<"float", number>,
-): { shade: Node<"float">; rippleNormal: Node<"vec2"> } {
-  const ground = positionLocal.xz;
-  const wind = vec2(0.93, 0.37).normalize();
-  const warp = ground.x.mul(0.27).sin().add(ground.y.mul(0.19).sin()).mul(0.7);
-  const phase = ground.dot(wind).mul(17).add(warp);
-  const confidence = smoothstep(0.42, 1.36, fwidth(phase)).oneMinus();
-  // Trace sand only where it forms the surface; a little sand mixed into hardpan must not give both deserts dunes.
-  const looseSand = smoothstep(0.25, 0.7, weights0.x);
-  const looseGround = looseSand.add(weights1.z.mul(0.65)).clamp(0, 1);
-  const ripples = phase.sin().mul(confidence).mul(looseGround);
-  const gust = ground.dot(vec2(0.72, 0.28)).mul(0.8).sub(time.mul(0.55));
-  const meadowShade = gust.sin().mul(0.025).mul(weights0.w).mul(motion);
-  const windblown = createWindblownGroundDetail(ground, looseSand, weights1.z, motion);
-  return {
-    shade: float(1).add(ripples.mul(0.08)).add(meadowShade).add(windblown.shade),
-    rippleNormal: wind.mul(phase.cos().mul(confidence).mul(looseGround).mul(0.045)).add(windblown.normal),
-  };
-}
-
-function createWindblownGroundDetail(
-  ground: Node<"vec2">,
-  sand: Node<"float">,
-  snow: Node<"float">,
-  motion: UniformNode<"float", number>,
-): { shade: Node<"float">; normal: Node<"vec2"> } {
-  // Stable wind-carved banks carry moving powder; the surface itself never slides under units.
-  const looseCover = sand.add(snow).clamp(0, 1);
-  const direction = vec2(0.86, 0.51);
-  const acrossWind = ground.dot(direction);
-  const bankPhase = acrossWind.mul(2.4).add(ground.y.mul(0.53).sin().mul(0.85));
-  const bankFilter = smoothstep(0.6, 2.1, fwidth(bankPhase)).oneMinus();
-  const bankShade = bankPhase
-    .sin()
-    .mul(sand.mul(0.075).add(snow.mul(0.035)))
-    .mul(bankFilter);
-  const windTime = time.mul(0.7).mul(step(0.001, motion));
-  const powderPhase = acrossWind.mul(5.2).sub(windTime).add(ground.y.mul(1.7).sin());
-  const powderFilter = smoothstep(0.5, 1.8, fwidth(powderPhase)).oneMinus();
-  const streaks = smoothstep(0.68, 0.98, powderPhase.sin());
-  const gusts = ground.x.mul(0.43).add(ground.y.mul(0.31)).sub(windTime.mul(0.3)).sin().mul(0.5).add(0.5);
-  return {
-    shade: bankShade.add(streaks.mul(gusts).mul(powderFilter).mul(looseCover).mul(0.045)),
-    normal: direction.mul(bankPhase.cos().mul(bankFilter).mul(looseCover).mul(0.024)),
-  };
 }
 
 // Two offset rectangular lattices describe the same point-up hexes as terrainHexToWorld.
 // Drawing the border in the surface shader keeps it on the actual terrain and water heights.
-function shadeTerrainSurface(baseColor: Node<"vec3">, grassContrast: Node<"float"> = float(0)): Node<"vec3"> {
-  // Lift dark albedo across land and water while retaining hue and bright snow/sand highlights.
-  // This keeps explored ground readable against unlit fog without flattening directional shadows.
+function shadeTerrainSurface(baseColor: Node<"vec3">): Node<"vec3"> {
+  return drawHexGrid(liftDarkSurface(baseColor));
+}
+
+// Lift dark albedo across land and water while retaining hue and bright snow/sand highlights.
+// This keeps explored ground readable against unlit fog without flattening directional shadows.
+function liftDarkSurface(baseColor: Node<"vec3">): Node<"vec3"> {
   const baseLuminance = baseColor.dot(vec3(0.2126, 0.7152, 0.0722)).clamp(0.001, 1);
-  const surfaceColor = baseColor.mul(baseLuminance.pow(-0.3));
+  return baseColor.mul(baseLuminance.pow(-0.3));
+}
+
+// The hex grid, drawn on the surface itself so it lies on the actual terrain and water heights.
+function drawHexGrid(surfaceColor: Node<"vec3">): Node<"vec3"> {
   const edgeDistance = terrainHexEdgeDistance(positionLocal.xz);
   const pixelWidth = fwidth(edgeDistance).max(0.001);
   const border = smoothstep(0.008, pixelWidth.mul(1.2).add(0.008), edgeDistance).oneMinus();
   const luminance = surfaceColor.dot(vec3(0.2126, 0.7152, 0.0722));
   const darkSurface = smoothstep(0.025, 0.12, luminance).oneMinus();
-  const originalBorderColor = mix(surfaceColor.mul(0.45), vec3(0.14), darkSurface);
-  // Grass needs a muted lighter edge; other surfaces retain the subtle original grid.
-  const borderColor = mix(originalBorderColor, vec3(0.22, 0.26, 0.19), grassContrast.mul(0.65));
+  const borderColor = mix(surfaceColor.mul(0.45), vec3(0.14), darkSurface);
   return applyEndgameFrost(mix(surfaceColor, borderColor, border.mul(0.42).mul(normalLocal.y.abs())));
-}
-
-function selectStrongestGroundPair(weights0: Node<"vec4">, weights1: Node<"vec4">): Node<"vec4"> {
-  return Fn(() => {
-    const primaryWeight = float(-1).toVar("groundPrimaryWeight");
-    const secondaryWeight = float(-1).toVar("groundSecondaryWeight");
-    const primaryIndex = int(0).toVar("groundPrimaryIndex");
-    const secondaryIndex = int(0).toVar("groundSecondaryIndex");
-    const weights = [weights0.x, weights0.y, weights0.z, weights0.w, weights1.x, weights1.y, weights1.z, weights1.w];
-
-    weights.forEach((weight, index) => {
-      If(weight.greaterThan(primaryWeight), () => {
-        secondaryWeight.assign(primaryWeight);
-        secondaryIndex.assign(primaryIndex);
-        primaryWeight.assign(weight);
-        primaryIndex.assign(index);
-      }).ElseIf(weight.greaterThan(secondaryWeight), () => {
-        secondaryWeight.assign(weight);
-        secondaryIndex.assign(index);
-      });
-    });
-
-    return vec4(primaryWeight, secondaryWeight.max(0), float(primaryIndex), float(secondaryIndex));
-  })();
 }
 
 function createVertexColorMaterial(name: string, fallbackRoughness: number): MeshStandardNodeMaterial {
   const material = new MeshStandardNodeMaterial({ metalness: 0, roughness: fallbackRoughness });
   material.name = name;
-  material.colorNode = shadeWithSurfaceBasalt(attribute("terrainColor", "vec3"));
+  material.colorNode = withSurfaceBasalt(shadeTerrainSurface(attribute("terrainColor", "vec3")));
   material.roughnessNode = attribute("terrainRoughness", "float");
   return material;
 }
 
-function shadeWithSurfaceBasalt(ground: Node<"vec3">, grassContrast: Node<"float"> = float(0)): Node<"vec3"> {
+/** A finished surface colour with the Ethereal's basalt laid over it where a tile carries it. */
+function withSurfaceBasalt(surface: Node<"vec3">): Node<"vec3"> {
   return Fn(() => {
-    const result = shadeTerrainSurface(ground, grassContrast).toVar();
+    const result = surface.toVar();
     const weight = attribute<"float">("terrainBasaltWeight", "float");
     If(weight.greaterThan(0), () => {
       const basalt = createBasaltSurface(positionWorld.xz);
