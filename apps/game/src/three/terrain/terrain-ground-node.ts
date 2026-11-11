@@ -53,7 +53,7 @@ const B = (biome: BiomeType) => float(biomeNumber(biome));
 const G = (ground: TerrainGround) => float(groundNumber(ground));
 
 /** Each biome's own colour, in the catalog's order: the colour a frontier wandering into a hex paints. */
-export const PAINT = uniformArray(
+const PAINT = uniformArray(
   Object.values(BiomeType).map((biome) => new Color(TERRAIN_BIOME_DESCRIPTORS[biome].primary)),
   "color",
 );
