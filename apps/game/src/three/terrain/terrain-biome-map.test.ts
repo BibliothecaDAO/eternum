@@ -18,11 +18,13 @@ describe("the terrain's biome map", () => {
     expect(map.read(3, 1)).toEqual({
       biome: biomeNumber(BiomeType.Scorched),
       ground: groundNumber("lava"),
+      next: false,
       written: true,
     });
     expect(map.read(-1, -2)).toEqual({
       biome: biomeNumber(BiomeType.Taiga),
       ground: groundNumber("forest"),
+      next: false,
       written: true,
     });
     expect(map.read(0, 0).written).toBe(false);
@@ -44,5 +46,19 @@ describe("the terrain's biome map", () => {
     const numbers = Object.values(BiomeType).map(biomeNumber);
     expect(new Set(numbers).size).toBe(numbers.length);
     expect(numbers.every((number) => number >= 0)).toBe(true);
+  });
+});
+
+describe("the hexes next to explore", () => {
+  it("are marked for the mist, and unmarked once explored", () => {
+    const map = new TerrainBiomeMap();
+    map.writeUnexplored([
+      { col: 1, row: 0, frontier: true },
+      { col: 4, row: 0, frontier: false },
+    ]);
+    expect(map.read(1, 0)).toMatchObject({ next: true, written: false });
+    expect(map.read(4, 0).next).toBe(false);
+    map.write([{ col: 1, row: 0, biome: BiomeType.Grassland }]);
+    expect(map.read(1, 0)).toMatchObject({ next: false, written: true });
   });
 });

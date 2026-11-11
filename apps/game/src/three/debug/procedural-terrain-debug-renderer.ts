@@ -426,7 +426,7 @@ async function createRuntime(input: MountProceduralTerrainDebugRendererInput): P
   const cameraFrame = createCameraFrame(camera, request.cells);
   positionCamera(camera, controls, cameraFrame);
 
-  const terrain = new ProceduralTerrain({ streaming: true, gameMode: input.gameMode });
+  const terrain = new ProceduralTerrain({ streaming: true });
   await terrain.loadProps();
   terrain.setQualityTier(input.qualityTier);
   let prepared = await terrain.preparePageAsync(request);
