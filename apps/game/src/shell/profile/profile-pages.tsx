@@ -1,5 +1,5 @@
 import { LORE_LINE, PROFILE_WORDS, SIGN_IN_WORDS, WORDS } from "@/ui/design-system/kit/words";
-import { useEffect, useRef, type ReactNode } from "react";
+import { useEffect, type ReactNode } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 
 import { isAccountStatePrompt } from "@/hooks/context/gameplay-account-sync";
@@ -16,8 +16,10 @@ import { Loading } from "../loading";
 import { NothingHere } from "../not-found";
 import { useRequestSignIn } from "../sign-in/connect";
 import { AccountCard, SignOut } from "./account-card";
+import { DeleteAccount } from "./account-deletion";
 import { DevicesCard } from "./devices-page";
 import { InvitePanel } from "./invite-panel";
+import { SharedDaysPanel } from "./shared-days-panel";
 import { NotificationsCard } from "./notifications";
 import { PlayerCard, ProfileView, RecentGames } from "./profile-view";
 import { SETTINGS_PATH } from "./settings-route";
@@ -49,7 +51,7 @@ const SignedOut = ({ card }: { card: ReactNode }) => (
 
 /**
  * Settings (spec 11, 12): every setting on one page, grouped: the account and its payout wallet, notifications, music
- * on this device, the account's devices, and Sign out last. The desktop sets them in two columns.
+ * on this device, the account's devices, then Sign out and Delete account last. The desktop sets them in two columns.
  */
 export const SettingsPage = () => (
   <PageFrame title={PROFILE_WORDS.settings}>
@@ -61,9 +63,9 @@ const Settings = () => {
   const { session } = useIdentitySession();
   const desktop = useLayout() === "desktop";
   const { hash } = useLocation();
-  const deviceList = useRef<HTMLDivElement>(null);
+  // A link to one group (#devices, #delete-account) opens Settings on it.
   useEffect(() => {
-    if (hash === "#devices") deviceList.current?.scrollIntoView({ block: "start" });
+    if (hash) document.getElementById(hash.slice(1))?.scrollIntoView({ block: "start" });
   }, [hash, session, desktop]);
   if (!session) return null;
   const account = <AccountCard session={session} />;
@@ -79,18 +81,20 @@ const Settings = () => {
     </AppPanel>
   );
   const devices = (
-    <div id="devices" ref={deviceList} className="scroll-mt-4">
+    <div id="devices" className="scroll-mt-4">
       <AppPanel title={PROFILE_WORDS.devices} icon="monitor" flush>
         <DevicesCard realmsId={session.user.realmsId} />
       </AppPanel>
     </div>
   );
+  const deletion = <DeleteAccount email={session.user.email} />;
   return desktop ? (
     <div className="grid max-w-page grid-cols-2 items-start gap-6">
       <div className="flex flex-col gap-6">
         {account}
         {devices}
         <SignOut />
+        {deletion}
       </div>
       <div className="flex flex-col gap-6">
         {notifications}
@@ -104,6 +108,7 @@ const Settings = () => {
       {music}
       {devices}
       <SignOut />
+      {deletion}
     </div>
   );
 };
@@ -170,8 +175,8 @@ const SignInCard = ({ line, verb }: { line: string | null; verb: string }) => {
 };
 
 /**
- * The player's own page: on desktop their card and the rows in the left column, their invite link and games at the
- * right.
+ * The player's own page: on desktop their card and the rows in the left column, their invite link, what their shared
+ * days brought and their games at the right.
  */
 const OwnProfile = ({ account }: { account: string }) => {
   if (useLayout() === "phone")
@@ -179,6 +184,7 @@ const OwnProfile = ({ account }: { account: string }) => {
       <div className="flex flex-col gap-4">
         <ProfileView account={account} own />
         <InvitePanel />
+        <SharedDaysPanel />
         <Rows />
       </div>
     );
@@ -190,6 +196,7 @@ const OwnProfile = ({ account }: { account: string }) => {
       </div>
       <div className="flex min-w-0 flex-col gap-5">
         <InvitePanel />
+        <SharedDaysPanel />
         <RecentGames account={account} own />
       </div>
     </div>

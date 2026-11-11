@@ -24,7 +24,8 @@ it("rounds fractional offsets once for tap, hover, right-click and both double-c
   browser.hover(offset);
   browser.rightClick(offset);
   browser.doubleClick(offset);
-  const commands = spawnSync.mock.calls.map(([, args]) => args.slice(6));
+  // Each command follows the session's launch settings, which end with the browser's flags.
+  const commands = spawnSync.mock.calls.map(([, args]) => args.slice(args.indexOf("--args") + 2));
   expect(commands).toEqual([
     ["batch", "mouse move 971 520", "mouse down", "mouse up"],
     ["mouse", "move", "971", "520"],
@@ -87,4 +88,14 @@ it("aims a press in whole pixels on a page of odd size, as agent-browser's mouse
   expect(screenPoint([0, 0])).toEqual([206, 458]);
   expect(screenPoint([-10, 3])).toEqual([196, 461]);
   setViewport({ width: 1920, height: 1080 });
+});
+
+it("refuses a launch option on one command, which would relaunch the browser without the page's settings", () => {
+  const browser = createBrowserSession("launch-option", { profile: join(tmpdir(), "never-launched") });
+
+  for (const option of ["--ignore-https-errors", "--args", "--headed", "--init-script"]) {
+    expect(() => browser.run(["open", "https://127.0.0.1:4173/", option])).toThrow(
+      `${option} launches the browser: give it to createBrowserSession, not one command`,
+    );
+  }
 });

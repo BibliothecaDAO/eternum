@@ -7,6 +7,7 @@ import { resolveGameTransactionResourceBounds } from "@bibliothecadao/eternum/sh
 import { readConfirmedLedgerHead } from "./codecs";
 import { rpcAt } from "./rpc";
 import { readShardAbi } from "./shard-abi";
+import type { AdminEntrypointName, GameEntrypointName } from "./shard-entrypoints";
 import bindings from "../../../contracts/l3/world-native/schema/bindings.json";
 
 export interface ShardTarget {
@@ -54,18 +55,18 @@ export class ShardOperator {
       value && typeof value === "object" && Object.keys(value).length === 1 && "" in value ? value[""] : value
     ) as A;
   }
-  async admin(entrypoint: string, args: Record<string, unknown>) {
+  async admin(entrypoint: AdminEntrypointName, args: Record<string, unknown>) {
     return this.invoke(entrypoint, ...(await this.adminCall(entrypoint, args)), closedBlockReceipt);
   }
   /** Sends an administrative call at this nonce and returns its hash without waiting; see `awaitClosed`. */
-  async sendAdmin(entrypoint: string, args: Record<string, unknown>, nonce: bigint): Promise<string> {
+  async sendAdmin(entrypoint: AdminEntrypointName, args: Record<string, unknown>, nonce: bigint): Promise<string> {
     return (await this.submit(entrypoint, ...(await this.adminCall(entrypoint, args)), nonce)).transaction_hash;
   }
   /** Waits until a sent transaction is in a closed block, and refuses one that reverted. */
   async awaitClosed(transactionHash: string) {
     await closedBlockReceipt(this.provider, transactionHash);
   }
-  private async adminCall(entrypoint: string, args: Record<string, unknown>): Promise<[string[], bigint]> {
+  private async adminCall(entrypoint: AdminEntrypointName, args: Record<string, unknown>): Promise<[string[], bigint]> {
     this.adminCodec ??= this.head().then(({ block_number }) => this.codec(block_number));
     const calldata = (await this.adminCodec).compile(entrypoint, args as Parameters<CallData["compile"]>[1]);
     return [calldata, await this.gasBound()];
@@ -133,14 +134,14 @@ export class ShardOperator {
   private async codec(head: BlockIdentifier) {
     return new CallData(await readShardAbi(this.provider, this.target.gamesAddress, head));
   }
-  private async invoke(entrypoint: string, calldata: string[], bound: bigint, receiptOf: ReceiptWait) {
+  private async invoke(entrypoint: GameEntrypointName, calldata: string[], bound: bigint, receiptOf: ReceiptWait) {
     const submitted = await this.submit(entrypoint, calldata, bound);
     const receipt = await receiptOf(this.provider, submitted.transaction_hash);
     const refusal = gameplayRejection(receipt.events, this.target.gamesAddress, submitted.transaction_hash);
     if (refusal) throw new Error(`gameplay_refused:${refusal.reason}`);
     return { transactionHash: submitted.transaction_hash, events: receipt.events };
   }
-  private submit(entrypoint: string, calldata: string[], bound: bigint, nonce?: bigint) {
+  private submit(entrypoint: GameEntrypointName, calldata: string[], bound: bigint, nonce?: bigint) {
     return this.account.execute(
       { contractAddress: this.target.gamesAddress, entrypoint, calldata },
       {

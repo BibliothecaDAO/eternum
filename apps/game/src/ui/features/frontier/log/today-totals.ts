@@ -71,14 +71,20 @@ export const totalToday = (stories: readonly OwnStory[], player: string, day: Da
 };
 
 const addReward = (paid: Paid, resourceType: unknown, amount: unknown): void => {
-  const scaled = BigInt(String(amount));
-  if (Number(resourceType) === ResourcesIds.Essence) paid.essence += scaled;
-  else if (Number(resourceType) === ResourcesIds.Labor) paid.labor += scaled;
-  else if (Number(resourceType) === ResourcesIds.Lords) paid.lords += scaled;
+  const resource = paidResource(resourceType);
+  if (resource) paid[resource] += BigInt(String(amount));
+};
+
+/** Which of the day's payments a reward is, by its resource: Essence, Labor, LORDS, or none the day counts. */
+export const paidResource = (resourceType: unknown): keyof Paid | null => {
+  if (Number(resourceType) === ResourcesIds.Essence) return "essence";
+  if (Number(resourceType) === ResourcesIds.Labor) return "labor";
+  if (Number(resourceType) === ResourcesIds.Lords) return "lords";
+  return null;
 };
 
 /** A payout's reward in either option form Herald writes: the value itself, {"Some": value}, or none. */
-const someReward = (reward: unknown): { resource_type: unknown; amount: unknown } | null => {
+export const someReward = (reward: unknown): { resource_type: unknown; amount: unknown } | null => {
   if (!reward || typeof reward !== "object") return null;
   const value = "Some" in reward ? (reward as { Some: unknown }).Some : reward;
   return value && typeof value === "object" && "amount" in value

@@ -13,9 +13,19 @@ export type SendWalletNotice = (
   kind: WalletNoticeKind,
 ) => Promise<void>;
 
-interface WalletChangeServices {
+/**
+ * What checking and spending an emailed code needs: the database and the auth plugin's own check, handed the auth
+ * context the code is read through.
+ */
+interface CodeServices<Context extends CodeContext = AuthContext> {
   db: D1Database;
-  checkCode(context: AuthContext, email: string, otp: string): Promise<unknown>;
+  checkCode(context: Context, email: string, otp: string): Promise<unknown>;
+}
+
+/** The part of the auth context a code is read through. */
+type CodeContext = Pick<AuthContext, "internalAdapter">;
+
+interface WalletChangeServices extends CodeServices {
   sendNotice: SendWalletNotice;
 }
 
@@ -42,10 +52,15 @@ export const changeWallet = (
   );
 
 /**
- * Spends the account's emailed code on a step that writes no wallet (a recovery's start): checked as a wallet change
- * checks it, then deleted, so it vouches for one step only.
+ * Spends the account's emailed code on a step that writes no wallet (a recovery's start, an account's deletion):
+ * checked as a wallet change checks it, then deleted, so it vouches for one step only.
  */
-export const spendSignInCode = (services: WalletChangeServices, context: AuthContext, user: User, otp: string) =>
+export const spendSignInCode = <Context extends CodeContext>(
+  services: CodeServices<Context>,
+  context: Context,
+  user: User,
+  otp: string,
+) =>
   Effect.runPromise(
     Effect.gen(function* () {
       const verification = yield* checkedCode(services, context, user, otp);
@@ -61,7 +76,12 @@ export const spendSignInCode = (services: WalletChangeServices, context: AuthCon
   );
 
 /** The account's unspent emailed code, if `otp` is it; a verified email is required. */
-const checkedCode = (services: WalletChangeServices, context: AuthContext, user: User, otp: string) =>
+const checkedCode = <Context extends CodeContext>(
+  services: CodeServices<Context>,
+  context: Context,
+  user: User,
+  otp: string,
+) =>
   Effect.gen(function* () {
     if (!user.emailVerified) return yield* Effect.fail(new APIError("FORBIDDEN", { message: "email_not_verified" }));
     const verification = yield* Effect.promise(() =>

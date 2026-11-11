@@ -18,6 +18,8 @@ Read [`AGENTS.md`](../AGENTS.md) first. It is the coding and review standard for
 - Chain and box infrastructure (the self-hosted Madara L3): [`deploy/athanor/README.md`](../deploy/athanor/README.md)
 - Environment setup, deploy and season operations: [operator runbook](../deploy/first/README.md)
 - Alerts and what to do about each: [on-call runbook](../deploy/first/ON-CALL.md)
+- Google Play and App Store forms (data safety, privacy label, ratings, reviewer sign-in, listing copy):
+  [store submission answers](./store-submission.md)
 - Balance sources and generated presets: [`config/source`](../config/source) and
   [`config/generated`](../config/generated); regenerate with `pnpm run config:generate`
 - Herald (block folding, snapshots, ordered diffs): [`apps/herald/README.md`](../apps/herald/README.md)
@@ -49,6 +51,7 @@ instructions; consult the component guides above for shipped behavior.
   [milestones](./plans/hired-agents-milestones.md)
 - [Mobile scope](./plans/mobile-client-scope.md)
 - Chat scope remains in the [retained plans directory](./plans).
+- [Frontier day share](./plans/frontier-day-share.md): the daily share card, its link and the funnel identity counts
 - [Value-plane decisions](./plans/realms-value-plane-design.md) and
   [open audit dispositions](./plans/value-plane-loop-audit-2026-08-31.md)
 - [Character source pipeline decisions](./architecture/procedural-character-model-generation-pipeline-research.md)

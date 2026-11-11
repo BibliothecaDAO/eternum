@@ -1,6 +1,6 @@
-import { BLITZ_WORDS, SIGN_IN_WORDS, WORDS } from "@/ui/design-system/kit/words";
+import { BLITZ_WORDS, SIGN_IN_PROVIDER_NAMES, SIGN_IN_WORDS, WORDS } from "@/ui/design-system/kit/words";
 import { failureSentence } from "@/ui/modules/identity/identity-failures";
-import { IdentityRequestError } from "@realms-world/identity";
+import { IdentityRequestError, SOCIAL_PROVIDERS } from "@realms-world/identity";
 import { CAMPAIGNS } from "@realms-world/identity";
 import { useState, type ReactNode } from "react";
 import { useParams } from "react-router-dom";
@@ -32,14 +32,19 @@ const labConnectStep = (step: string | undefined): { title: string; body: ReactN
   switch (step) {
     case "start":
     case "start-refused":
+    case "opening":
       return {
         title: WORDS.connect,
         body: (
           <StartStep
             sending={false}
-            // Discord refused: its email already has an account, which signs in with an email code.
-            error={step === "start-refused" ? labRefusal("discord", "account_not_linked") : null}
-            onDiscord={noop}
+            preparing={null}
+            // A phone's tap handed Discord's sign-in to its app, which is coming up.
+            opening={step === "opening" ? "discord" : null}
+            // A provider refused: its email already has an account, which signs in with an email code.
+            error={step === "start-refused" ? labRefusal("social", "account_not_linked") : null}
+            providers={SOCIAL_PROVIDERS}
+            onProvider={noop}
             onEmail={noop}
           />
         ),
@@ -63,10 +68,20 @@ const labConnectStep = (step: string | undefined): { title: string; body: ReactN
           />
         ),
       };
-    case "discord":
+    case "handoff":
       return {
-        title: SIGN_IN_WORDS.discord,
-        body: <HandoffStep checking={false} error={null} onCode={async () => false} onDiscord={noop} onTyping={noop} />,
+        title: SIGN_IN_PROVIDER_NAMES.google,
+        body: (
+          <HandoffStep
+            provider="google"
+            checking={false}
+            preparing={false}
+            error={null}
+            onCode={async () => false}
+            onRetry={noop}
+            onTyping={noop}
+          />
+        ),
       };
     case "name":
     case "name-refused":
@@ -81,7 +96,7 @@ const labConnectStep = (step: string | undefined): { title: string; body: ReactN
 };
 
 /** A sign-in refusal as the player reads it: the identity service's code through the app's own sentence for it. */
-const labRefusal = (action: "discord" | "code", code: string) =>
+const labRefusal = (action: "social" | "code", code: string) =>
   failureSentence(action, new IdentityRequestError(400, code));
 
 /**

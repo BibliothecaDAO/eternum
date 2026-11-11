@@ -45,10 +45,55 @@ not answer is a retry, not a refusal. The wallet's Realm list for the picker com
 lookup selects the environment book directly.
 
 The client and Workers share the address book through `environmentL2`. The deployment workflow does not override its
-chain or ledger. The single `L2_RPC_URL` secret serves the Worker and the browser build. Discord is offered only when
-both optional credentials are configured; email code sign-in uses the required Resend key. The deployment script
-supplies the required generated VAPID pair; the push contact, notifier interval and account class are code constants.
-Operators configure and deploy the environment.
+chain or ledger. The single `L2_RPC_URL` secret serves the Worker and the browser build. Each sign-in provider (Google,
+Apple, Discord, X) is offered only when both its credentials are configured, and one set alone fails the environment;
+email code sign-in uses the required Resend key. The deployment script supplies the required generated VAPID pair; the
+push contact, notifier interval and account class are code constants. Operators configure and deploy the environment.
+
+## Shared links
+
+A player's post of a moment (today, a Frontier day from its day-done card) carries the player's own link for that
+moment, `/s/<code>` (`@realms-world/identity`'s `SHARE_KINDS` and `sharePath`). `POST /api/shares` makes it once per
+player, kind, game and moment and hands back the same code after; `POST /api/shares/<code>/posted` records that the
+player opened the post. The landing posts `/api/shares/<code>/visit` (public, on the per-client budget), which keeps the
+browser's first visit under its browser id (the same cookie the referral check reads, given at the visit when the
+browser has none), with the tag the link carried (`{ via }`, the link's own `?via=`: `x` from Post on X, `system` from a
+phone's Share), and answers who shared which moment.
+
+Sign-up reports nothing of its own. Settlement gives each account made after one of its browsers opened another player's
+link to the first such link (first touch), never to the sharer's own accounts or any account on a browser the sharer was
+signed in on, joined when the account was made. A join counts as activated once the season board of the link's game
+shows the account with a site cleared: the season is the window, so a clear there counts however late a read finds it,
+and a clear in another game never does. A board that cannot answer leaves its joins for the next read. A sharer's tally
+read settles that sharer's joins; the operator's report settles every join. A visit from the sharer's own browsers is
+never counted. A friend who opens the link in one browser (X's in-app browser) and signs up in another is not the
+link's: the browser id is the only tie.
+
+The link unfurls as its own. The Worker also takes the app's `/s/*` route. It serves the page the host serves, with its
+title, description and address saying who shared which moment (`SHARED_MOMENT_WORDS`), and its `og:image` and
+`twitter:image` naming the link's card once the sharer published one. The share sheet makes the card into a JPEG on the
+device as it opens and publishes it (`PUT /api/shares/<code>/card`, the sharer only, at most 1 MB) only when the player
+presses Post on X or Share; a sheet closed without that press publishes nothing. The card is kept in R2 (`SHARE_CARDS`,
+the environment's `shareCardBucket`, which setup creates) and served at `GET /api/shares/<code>/card` while its link
+exists (a deleted account's links cascade, and its card is then refused whatever R2 holds), with a one-day public cache.
+Publishing again replaces it. Until the card is kept, or for a code no link has, the page's own preview stands. A
+crawler that read the link before its card landed holds the game's preview for as long as it caches the unfurl.
+
+What a link exposes to anyone holding it: the sharer's current public name and the day (page title, landing, visit
+answer), and once published the card's pixels (name, portrait, day, closing rank and move, up to 18 fight and find marks
+and the six day totals). No map position, email, wallet address, key or event time. The code is unlisted, not an access
+control.
+
+- `GET /api/shares` (signed in): the account's `{links, posted, visits, joined, activated}`, its joins settled first.
+- `GET /api/operator/shares` (operator token): every moment's funnel (`moments`: kind, chain, game, moment and the five
+  counts), first visits from others' browsers by the tag their link carried (`firstVisitsByTag`: `x`, `system`, and null
+  for none), the 20 sharers who brought the most (`topSharers`), `settledAt` and `unsettledJoins`, the joins whose board
+  could not answer. A tag names the button that made the link, not the app that carried it, and posts are not counted
+  per tag, so visits by tag are not a rate per post.
+
+```bash
+curl -s -H "authorization: Bearer $OPERATOR_TOKEN" https://<identity origin>/api/operator/shares | jq '.moments[:7]'
+```
 
 ## Campaign tickets and founded free homes
 

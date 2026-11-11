@@ -6,6 +6,7 @@ import {
   CONTINUE,
   DAY,
   DAY_DONE,
+  DAY_SHARE_WORDS,
   DAY_TOTALS_UNKNOWN,
   DAY_OPEN,
   REALM_KEPT,
@@ -22,7 +23,8 @@ import type { DayHistory } from "../log/player-day";
  * The day-done card (wireframe 11), over the map at the day's end (DayEndScreen places it): the day done and the realm
  * kept, when the new day ends and how long tomorrow lasts, the ended day's totals (and why they are unknown, when the
  * player's history cannot give them), the rank it moved to, and the troops the ended armies took with them against
- * those that came home. Continue goes on into the new day.
+ * those that came home. Share your day (once the day's totals are whole) opens the day's card to post; Continue goes on
+ * into the new day.
  */
 export const DayDoneCard = ({
   endedDay,
@@ -34,11 +36,12 @@ export const DayDoneCard = ({
   armies,
   troopsLost,
   returned,
+  onShare,
   onContinue,
 }: {
   endedDay: number;
-  /** The new day: when it ends, the time left, and how long the day after lasts. */
-  clock: Pick<DayClock, "endsAt" | "secondsLeft" | "tomorrowSeconds" | "tone">;
+  /** The day now open: its number, when it ends, the time left, and how long the day after lasts. */
+  clock: Pick<DayClock, "day" | "endsAt" | "secondsLeft" | "tomorrowSeconds" | "tone">;
   totals: DayTotals;
   /** How much of the day the player's history gives; the totals are unknown unless it is the whole day. */
   history: Exclude<DayHistory, "waiting">;
@@ -50,6 +53,8 @@ export const DayDoneCard = ({
   troopsLost: number;
   /** What Homecoming sent home, and what fitted the troop store. */
   returned?: { sent: number; fitted: number };
+  /** Opens the day's card to share; none while the day's totals are not whole. */
+  onShare?: () => void;
   onContinue: () => void;
 }) => (
   <HudPanel
@@ -61,7 +66,7 @@ export const DayDoneCard = ({
       {DAY} {endedDay} {DAY_DONE}
     </h2>
     <p className="text-hud-strong">
-      {REALM_KEPT} · {DAY} {endedDay + 1} {DAY_OPEN}
+      {REALM_KEPT} · {DAY} {clock.day} {DAY_OPEN}
     </p>
     <DayEnds endsAt={clock.endsAt} secondsLeft={clock.secondsLeft} tone={clock.tone} />
     <p className="flex items-center justify-center gap-1 text-hud-strong">
@@ -80,7 +85,12 @@ export const DayDoneCard = ({
       </p>
     )}
     {armies > 0 && <ArmiesLine armies={armies} troopsLost={troopsLost} returned={returned} />}
-    <div className="grid w-full">
+    <div className="grid w-full gap-2">
+      {onShare && (
+        <HudButton kind="secondary" icon="share" onClick={onShare}>
+          {DAY_SHARE_WORDS.share}
+        </HudButton>
+      )}
       <HudButton kind="primary" onClick={onContinue}>
         {CONTINUE}
       </HudButton>

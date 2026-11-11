@@ -211,6 +211,18 @@ it("binds wallet links to the server's Realms id and carries the email code for 
   expect(JSON.parse(String(fetch.mock.calls[2]![1]!.body))).toEqual({ otp: "654321" });
 });
 
+it("deletes the account with its emailed code, and keeps a wrong code's refusal typed", async () => {
+  const fetch = vi.fn<typeof globalThis.fetch>().mockResolvedValueOnce(Response.json({ deleted: true }));
+  const client = createIdentityClient({ apiUrl: "https://realms.test/api", fetch });
+  await client.deleteAccount("123456");
+  expect(fetch.mock.calls[0]).toMatchObject([
+    "https://realms.test/api/account",
+    { credentials: "include", method: "DELETE", body: JSON.stringify({ otp: "123456" }) },
+  ]);
+  fetch.mockResolvedValueOnce(Response.json({ code: "INVALID_OTP", message: "Invalid OTP" }, { status: 400 }));
+  await expect(client.deleteAccount("654321")).rejects.toMatchObject({ status: 400, code: "INVALID_OTP" });
+});
+
 it("carries deployment data alongside the account-bound SIWS signature and email code when linking", async () => {
   const deployment = { classHash: "0x1", salt: "0x2", constructorCalldata: ["0x3"] };
   const requests: { url: string; body: unknown }[] = [];
@@ -300,6 +312,27 @@ describe("decoded identity boundary", () => {
     ).rejects.toBeInstanceOf(IdentityInvalidResponse);
     expect(signTypedData).not.toHaveBeenCalled();
     expect(fetch).toHaveBeenCalledTimes(1);
+  });
+  it("lists the offered sign-in providers in the sheet's order, and refuses one it does not know", async () => {
+    const answering = (providers: string[]) =>
+      createIdentityClient({ apiUrl: "/api", fetch: async () => Response.json({ providers }) });
+    expect(await answering(["twitter", "discord", "google"]).availableSignInProviders()).toEqual([
+      "google",
+      "discord",
+      "twitter",
+    ]);
+    expect(await answering([]).availableSignInProviders()).toEqual([]);
+    await expect(answering(["facebook"]).availableSignInProviders()).rejects.toBeInstanceOf(IdentityInvalidResponse);
+  });
+  it("starts a provider's sign-in with that provider and the page to come back to", async () => {
+    const fetch = vi.fn(async () => Response.json({ url: "https://accounts.google.com/o/oauth2/auth?state=s" }));
+    const client = createIdentityClient({ apiUrl: "/api", fetch });
+    expect(await client.socialSignInUrl("apple", "/play")).toBe("https://accounts.google.com/o/oauth2/auth?state=s");
+    expect(JSON.parse(String((fetch.mock.calls[0] as unknown as [string, RequestInit])[1].body))).toEqual({
+      provider: "apple",
+      callbackURL: "/play",
+      errorCallbackURL: "/play",
+    });
   });
   it.each([
     "getPushConfiguration",

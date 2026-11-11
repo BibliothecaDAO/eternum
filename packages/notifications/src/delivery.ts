@@ -98,6 +98,16 @@ export function notificationMatchesGame(clientUrl: string, target: string, origi
   return client.pathname === target || notificationTargetForGameClient(clientUrl, origin) === target;
 }
 
+/**
+ * A Realms window that can open a chat alert's chat itself: any app page, which can go to the chat, or a game, whose
+ * chat opens over it, keeping the game where it is. A mention in a lobby needs the lobby's page, so only an app page,
+ * which goes there. The service worker and the iOS app both choose the window by this.
+ */
+export function isChatClient(clientUrl: string, target: string, origin: string): boolean {
+  if (new URL(clientUrl).origin !== origin) return false;
+  return !target.startsWith("/blitz/") || !isNotificationGameClient(clientUrl, origin);
+}
+
 /** True only for a same-origin game scene that can surface its own live activity. */
 export function isNotificationGameClient(clientUrl: string, origin: string): boolean {
   return notificationTargetForGameClient(clientUrl, origin) !== null;

@@ -45,6 +45,9 @@ jobs:
       - name: Test that a CI file selects only the area that owns it
         run: python3 .github/scripts/test_validation_areas.py
 
+      - name: Test that the iOS build runs when any file it reads changes
+        run: python3 .github/scripts/test_ios_workflow_paths.py
+
       - name: Test the check that refuses AI attribution in commits
         run: python3 .github/scripts/test_commit_attribution.py
 

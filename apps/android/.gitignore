@@ -1,0 +1,6 @@
+.gradle/
+build/
+local.properties
+*.keystore
+assetlinks.json
+store_icon.png

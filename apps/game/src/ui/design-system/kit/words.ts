@@ -3,8 +3,9 @@
  * screen's words), each spelled once. A screen that needs one imports it from here; nothing else spells it. The rules
  * every client and core's story text share (nouns, numbers, times, names, the voice) are @bibliothecadao/types' words.
  */
+import { APP_HOST } from "@/config/app-address";
 import type { ResolvedGameMode } from "@/config/game-modes/resolved-mode";
-import type { CampaignKey } from "@realms-world/identity";
+import { SHARED_MOMENT_WORDS, type CampaignKey, type SocialProvider } from "@realms-world/identity";
 import type { NotificationKind, NotificationLevel } from "@bibliothecadao/notifications";
 import type { RuinChest } from "@bibliothecadao/eternum";
 import {
@@ -652,10 +653,16 @@ export const RECAP_WORDS = {
   cards: "Your season's cards",
   next: "Next card",
   previous: "Previous card",
-  /**
-   * Sharing a season is a post on X with its image (owner, 4 November 2026): copy the image (save it, where the
-   * clipboard takes none), then post, and paste it in. The two steps are numbered, and the hint says the order.
-   */
+  /** The deck's image, where it is saved rather than copied. */
+  fileName: "my-season.png",
+} as const;
+
+/**
+ * Sharing a card is a post on X with its image (owner, 4 November 2026): copy the image (save it, where the clipboard
+ * takes none), then post, and paste it in. The two steps are numbered, and the hint says the order. The season's recap
+ * and the Frontier day's card share the same steps.
+ */
+export const SHARE_WORDS = {
   copy: "Copy image",
   copied: "Image copied",
   save: "Save image",
@@ -666,6 +673,50 @@ export const RECAP_WORDS = {
   /** While the card is made into an image. */
   making: "Making the image",
   failed: "The image could not be made.",
+  /** A phone's share sheet, to any app the player picks: the card, its line and its link in one press. */
+  share: "Share",
+  shareFailed: "Sharing did not open. Copy the image and post it instead.",
+} as const;
+
+/** A Frontier day's card, shared from the day-done card: the day, its fights in order, its totals and its rank. */
+export const DAY_SHARE_WORDS = {
+  share: "Share your day",
+  rank: "Season rank",
+  /** The image's file, where it is saved rather than copied. */
+  fileName: (day: number) => `frontier-day-${day}.png`,
+  /** Under the card, for a friend: where it is played, and that it costs nothing. */
+  playFree: "Free to play",
+  /** The day's best moment, its card's headline: a chest, a clear by its site's name, or the land revealed. */
+  best: {
+    chest: "Ruin chest opened",
+    clear: (site: string) => `${site} cleared`,
+    reveals: (count: string) => `${count} tiles revealed`,
+  },
+  /** Under a clear's headline: the guard the fight that won it beat. */
+  guardBeaten: (troops: string) => `Guard of ${troops} beaten`,
+  /** What the player's shared days brought so far, once they brought anyone: "Your days brought 12 visits · 3 players". */
+  brought: (visits: string, joined: string) => `Your days brought ${visits} visits · ${joined} new players`,
+} as const;
+
+/** What the player's shared days brought, on their own page: each step a friend takes, counted. */
+export const SHARED_DAYS_WORDS = {
+  title: "Your shared days",
+  steps: {
+    posted: "Days posted",
+    visits: "Opened by friends",
+    joined: "Friends who joined",
+    activated: "Cleared a site",
+  },
+} as const;
+
+/** A shared link's landing: who shared which day, and the way into Frontier. */
+export const SHARED_LINK_WORDS = {
+  /** Its title and pitch are the link's unfurl's too (@realms-world/identity's SHARED_MOMENT_WORDS), so both say one thing. */
+  sharedDay: SHARED_MOMENT_WORDS.title,
+  pitch: SHARED_MOMENT_WORDS.pitch,
+  play: "Start your adventure",
+  opening: "Opening…",
+  unknown: "This link leads to no shared day.",
 } as const;
 /** A season's end, told one of two ways (story): the mist lifted, or it grew too strong. */
 export const SEASON_ENDINGS = { lifted: "The mist lifted", strong: "The mist grew too strong" } as const;
@@ -878,9 +929,22 @@ export const LORE_LINE = "The mist forgets. Your realm remembers.";
 /** Frontier's pitch on the first visit's card. */
 export const PITCH = "A new land every day";
 
-/** The sign-in flow's words: its titles, its two ways in and the steps on its buttons. */
-export const SIGN_IN_WORDS = {
+/** The sign-in providers, as their own brand names them: the sheet's buttons, its handoff step and You's sign-in row. */
+export const SIGN_IN_PROVIDER_NAMES = {
+  google: "Google",
+  apple: "Apple",
   discord: "Discord",
+  twitter: "X",
+} as const satisfies Record<SocialProvider, string>;
+
+/** The sign-in flow's words: its titles, its ways in and the steps on its buttons. */
+export const SIGN_IN_WORDS = {
+  /** A provider's button, in the wording Google's and Apple's brand rules allow. */
+  continueWith: (provider: SocialProvider) => `Continue with ${SIGN_IN_PROVIDER_NAMES[provider]}`,
+  /** On a provider's button while its sign-in address is on its way (a phone's Discord app opens only from a tap that has it). */
+  preparing: "Preparing…",
+  /** On a phone's Discord button once its tap handed the sign-in to the app, while the app comes up. */
+  opening: (provider: SocialProvider) => `Opening ${SIGN_IN_PROVIDER_NAMES[provider]}…`,
   or: "or",
   email: "Email",
   sendCode: "Send code",
@@ -897,10 +961,16 @@ export const SIGN_IN_WORDS = {
   portrait: "Portrait",
   /** Under the ways in: most visitors from a flyer are new, and their first sign-in is their sign-up. */
   firstSignIn: "New here? Your first sign-in creates your Realms account.",
-  /** After Discord, when it finished in another browser (a phone's Safari view, the Discord app's browser). */
-  handoff: "Discord finished elsewhere? Enter its code.",
-  handoffCode: "Discord code",
-  discordAgain: "Try Discord again",
+  /**
+   * Back from a provider, which may have finished in another browser (a phone's Safari view, the browser the provider's
+   * app opens): that page shows a code to bring here.
+   */
+  handoff: (provider: SocialProvider) =>
+    `Finished with ${SIGN_IN_PROVIDER_NAMES[provider]}? Enter the code its page showed you.`,
+  handoffCode: (provider: SocialProvider) => `${SIGN_IN_PROVIDER_NAMES[provider]} code`,
+  tryAgain: (provider: SocialProvider) => `Try ${SIGN_IN_PROVIDER_NAMES[provider]} again`,
+  /** On a phone, whose tap opened the Discord app: the same sign-in on Discord's website instead. */
+  continueInBrowser: "Continue in browser",
 } as const;
 
 /** Devcon's landing and its ticket: the realm it promises, the ticket opened, and what each tier gives each day. */
@@ -1176,7 +1246,6 @@ export const PROFILE_WORDS = {
   name: "Name",
   portrait: "Portrait",
   signInMethods: "Sign-in",
-  discord: "Discord",
   email: "email",
   linkWallet: "Link wallet",
   /** The You card's holding with no wallet linked: what a wallet holds and receives (owner, 31 October 2026). */
@@ -1195,6 +1264,42 @@ export const PROFILE_WORDS = {
   blocked: "Blocked",
   blockedLine: "Alerts are blocked in this browser",
   install: "Install",
+} as const;
+
+/**
+ * Deleting a Realms account (apps/realms/server/account-deletion.ts): what goes and what stays, read by Settings'
+ * Delete account and by the public page that explains it, so both say the same.
+ */
+export const ACCOUNT_DELETION_WORDS = {
+  title: "Delete account",
+  page: "Delete your account",
+  intro: "Deleting your Realms account is permanent and happens at once. It cannot be undone.",
+  goesTitle: "What is deleted",
+  goes: [
+    "Your sign-in: your email, every linked login and every signed-in device",
+    "Your name, portrait and payout wallet link",
+    "Your notification settings and push alerts on every device",
+    "Your direct messages and block list",
+    "Your build orders, referral link and news emails",
+  ],
+  staysTitle: "What stays",
+  stays: [
+    "Your Realms wallet stays on Starknet with everything in it: Realms cannot take or move it. Only your passkey controls it now. This app can no longer send from it, and email recovery ends, a recovery under way included. Move what you want to keep first.",
+    "Your game accounts stay on chain with their progress. No one can sign in to them or add a device to them again; a device already added keeps its key on chain.",
+    "Ratings stay on chain under the wallets that played.",
+    "Messages you sent stay with the players who got them and in chat rooms until they are 30 days old, then they are deleted.",
+    "Campaign tickets, past wallet links and payout records stay under an anonymous id, so past games and payouts still add up.",
+  ],
+  confirm: "We email you a code. Enter it to delete your account.",
+  sendCode: "Email me a code",
+  stepsTitle: "How to delete it",
+  steps: [
+    `Sign in at ${APP_HOST} and open Settings.`,
+    "Choose Delete account, at the end of Settings, and read what is deleted and what stays.",
+    "Enter the code we email you. Your account is deleted at once.",
+  ],
+  openSettings: "Open Settings",
+  cannotSignIn: "Cannot sign in to your account? Ask us on Discord to delete it.",
 } as const;
 
 /**

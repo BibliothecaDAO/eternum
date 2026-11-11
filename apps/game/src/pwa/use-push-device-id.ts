@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 
+import { runsServiceWorker } from "./browser-capabilities";
 import { readPushDevice } from "./push-notification-client";
 
 /**
@@ -9,7 +10,7 @@ import { readPushDevice } from "./push-notification-client";
 export const usePushDeviceId = (owner: string | null): string | null => {
   const [device, setDevice] = useState<{ owner: string; id: string } | null>(null);
   useEffect(() => {
-    if (!owner || !("serviceWorker" in navigator)) return;
+    if (!owner || !runsServiceWorker()) return;
     let current = true;
     const read = () =>
       readPushDevice().then(

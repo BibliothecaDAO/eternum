@@ -91,6 +91,25 @@ export async function campaignStandings(
   return boards === null ? null : new Map(boards.flat());
 }
 
+/**
+ * The sites each account on one Frontier game's season board has cleared, by account; null when the game's shard is
+ * not listed or its board cannot answer now.
+ */
+export async function sitesClearedOn(
+  env: Pick<IdentityEnv, "DB">,
+  fetchShard: typeof fetch,
+  game: { chainId: string; gameId: number },
+): Promise<Map<string, number> | null> {
+  const shard = (await listedShards(env.DB)).find((listed) => BigInt(listed.chainId) === BigInt(game.chainId));
+  if (!shard) return null;
+  try {
+    const board = await seasonBoard(shard.url, game.gameId, fetchShard);
+    return new Map(board.entries.map((entry) => [accountKey(entry.address), entry.sites_cleared.total]));
+  } catch {
+    return null;
+  }
+}
+
 /** One spelling per account address, whatever its padding or case. */
 export const accountKey = (address: string) => `0x${BigInt(address).toString(16)}`;
 

@@ -1,3 +1,4 @@
+import { SHARE_PATH } from "@realms-world/identity";
 import { lazy, Suspense, type ReactNode } from "react";
 import { useKeyboardInset } from "@/hooks/use-keyboard-inset";
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
@@ -22,6 +23,7 @@ import { PlayPage } from "./shell/play/play-page";
 import { PlayerPage, ProfilePage, SettingsPage } from "./shell/profile/profile-pages";
 import { ResultsPage } from "./shell/season-tab/results-page";
 import { SeasonPage } from "./shell/season-tab/season-page";
+import { SharedLinkPage } from "./shell/share/shared-link-page";
 import { FirstFrame } from "./shell/first-frame";
 import { ConnectFlow } from "./shell/sign-in/connect-flow";
 import { LAB_GAME_ROUTE } from "./lab/game/lab-shard";
@@ -33,6 +35,9 @@ const LabGameRoute = lazy(() =>
 // Reading matter loads on demand, so the cold path carries no post or legal text.
 const TermsPage = lazy(() => import("./shell/legal").then((module) => ({ default: module.TermsPage })));
 const PrivacyPage = lazy(() => import("./shell/legal").then((module) => ({ default: module.PrivacyPage })));
+const AccountDeletionPage = lazy(() =>
+  import("./shell/legal").then((module) => ({ default: module.AccountDeletionPage })),
+);
 const CreditsPage = lazy(() => import("./shell/legal").then((module) => ({ default: module.CreditsPage })));
 const GameClientApp = lazy(() => import("./game-client-app").then((module) => ({ default: module.GameClientApp })));
 
@@ -64,6 +69,7 @@ export const appRoutes = (
       <Route path="join/devcon" element={<JoinDevconPage />} />
       <Route path="join/devcon/:code" element={<JoinDevconPage />} />
       <Route path="join/devcon/r/:referral" element={<JoinDevconPage />} />
+      <Route path={`${SHARE_PATH.slice(1)}/:code`} element={<SharedLinkPage />} />
       <Route path="season" element={<SeasonPage />} />
       <Route path="results/:id" element={<ResultsPage />} />
       <Route path="profile" element={<ProfilePage />} />
@@ -84,6 +90,14 @@ export const appRoutes = (
         element={
           <LazyRoute>
             <PrivacyPage />
+          </LazyRoute>
+        }
+      />
+      <Route
+        path="account/delete"
+        element={
+          <LazyRoute>
+            <AccountDeletionPage />
           </LazyRoute>
         }
       />

@@ -1,5 +1,5 @@
 import { hash } from "starknet";
-import { GAME_ENTRYPOINTS } from "./entrypoints";
+import { GAME_ENTRYPOINTS } from "../../../packages/value-ledger/src/shard-entrypoints";
 import { expect, test } from "bun:test";
 import { gameInvoke } from "./transaction";
 
@@ -54,6 +54,7 @@ test("only the single data-listed Games entries admit administrative invokes", (
     "sweep_lords",
     "post_frontier_top",
     "award_frontier_prize",
+    "sweep_lords",
     "register_entitlement",
     "register_village_pass",
   ]);

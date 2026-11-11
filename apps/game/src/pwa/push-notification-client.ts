@@ -3,6 +3,7 @@ import { deviceTimeZone } from "@/ui/design-system/kit/words";
 import { parseWebPushSubscription } from "@bibliothecadao/notifications";
 import type { PushNotificationDevice } from "./notification-database";
 import { notificationWorkerRequest } from "./local-notification-client";
+import { runsServiceWorker } from "./browser-capabilities";
 
 const pushLock = "realms-push-registration";
 export const readPushDevice = (signal?: AbortSignal) => notificationWorkerRequest("0x0", "push-status", {}, signal);
@@ -107,7 +108,7 @@ async function removeRevokedPushDevice(device: PushNotificationDevice): Promise<
 }
 
 export async function reconcilePushAccount(): Promise<void> {
-  if (!("serviceWorker" in navigator) || !navigator.locks) return;
+  if (!runsServiceWorker() || !navigator.locks) return;
   const registration = await navigator.serviceWorker.getRegistration("/");
   if (!registration?.active) return;
   const device = await readInstalledPushDevice(registration);

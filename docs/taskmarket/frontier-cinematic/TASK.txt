@@ -1,0 +1,10 @@
+Frontier, the cinematic: 15 seconds, made with video models
+
+Make a 15 second cinematic that makes a stranger want to play Frontier, the free daily treasure hunt in Realms (play.realms.party). Generate it with video models (text-to-video, image-to-video, any model whose output you can license commercially), then edit, grade and score it however you like.
+
+Carry at least two of Frontier's moments: the fog, the reveal, a fight you can read before you take it, the haul going home, the daily reset. The last 1.5 seconds hold a locked end card that says free to play; everything before it is yours: story, style, models, music. We pay several winners and want them to look nothing alike. Every entry is public as soon as it is submitted: go somewhere the others did not.
+
+Full brief, the end card, art, gameplay clips, fonts and a spec checker:
+https://github.com/BibliothecaDAO/eternum/tree/{REF}/docs/taskmarket/frontier-cinematic
+
+Submit frontier-16x9.mp4 (role final; a 9x16 cut is optional), plus source.zip and PROCESS.md (role source). An entry must pass the brief's check.mjs and its hard rules. Ranked on pull, clarity, craft and distinctiveness. The 100 OUSD prize, paid on Tempo, is split among the top three: 50 / 30 / 20 OUSD.

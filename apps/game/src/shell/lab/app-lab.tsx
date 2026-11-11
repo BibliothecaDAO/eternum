@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { Navigate, Route, Routes, useParams } from "react-router-dom";
 
 import { identityClient, useIdentitySessionStore } from "@/hooks/context/identity-session";
-import { IdentityRequestError } from "@realms-world/identity";
+import { IdentityRequestError, SOCIAL_PROVIDERS } from "@realms-world/identity";
 
 import { BlitzLobbyPage } from "../blitz/blitz-pages";
 import { BuildOrdersPage } from "../build-orders/build-orders-page";
@@ -32,6 +32,8 @@ import {
   LAB_FIRST_REFERRAL,
   LAB_REFERRALS,
   LAB_REFERRER,
+  LAB_NO_SHARES,
+  LAB_SHARE_TALLIES,
   LAB_GUARDIAN,
   LAB_HELD_REALMS,
   LAB_PLAYER,
@@ -207,7 +209,9 @@ function installLabFixtures(screen: LabScreen, field: number | null): () => void
     "redeemCampaignTicket",
     "campaignReferral",
     "campaignReferrer",
+    "shareTally",
     "readDefaultWallet",
+    "deleteAccount",
   ];
   const descriptors = identityMethods.map(
     (name) => [name, Object.getOwnPropertyDescriptor(identityClient, name)] as const,
@@ -268,14 +272,14 @@ const answerAppReads = (screen: LabScreen, field: number | null) => {
 };
 
 /**
- * The identity service's answers for the account page: a code is always sent, and a wallet change spends the lab's
- * one code and refuses any other, as the service refuses it. A Devcon screen's account holds its ticket, or opens it
+ * The identity service's answers for the account page: a code is always sent, and a wallet change or the account's
+ * deletion spends the lab's one code and refuses any other, as the service refuses it. A Devcon screen's account holds its ticket, or opens it
  * with any flyer's code, as the service answers a first redemption. The client holds its own fetch, so its calls are
  * answered on the client itself.
  */
 const answerIdentity = (screen: LabScreen) => {
   identityClient.listSignInProviders = async () => ["discord"];
-  identityClient.availableSignInProviders = async () => ["discord"];
+  identityClient.availableSignInProviders = async () => [...SOCIAL_PROVIDERS];
   identityClient.sendSignInCode = async () => ({ success: true, expires_at: Date.now() + 300_000 });
   const spend = async (code: unknown) => {
     if (code !== LAB_EMAIL_CODE) throw new IdentityRequestError(400, "INVALID_OTP");
@@ -289,6 +293,7 @@ const answerIdentity = (screen: LabScreen) => {
   };
   identityClient.campaignReferral = async () => LAB_REFERRALS[screen] ?? LAB_FIRST_REFERRAL;
   identityClient.campaignReferrer = async () => LAB_REFERRER;
+  identityClient.shareTally = async () => LAB_SHARE_TALLIES[screen] ?? LAB_NO_SHARES;
   // The lab's player has made no Realms wallet, so the payout window offers Create my wallet.
   identityClient.readDefaultWallet = async () => null;
   // The account's build orders, kept in the tab: each save is held, and read back, at the next revision.
@@ -302,6 +307,7 @@ const answerIdentity = (screen: LabScreen) => {
     },
     unlinkWallet: spend,
     linkWallet: async ({ code }: { code?: string }) => spend(code).then(() => LAB_PLAYER),
+    deleteAccount: spend,
   });
 };
 

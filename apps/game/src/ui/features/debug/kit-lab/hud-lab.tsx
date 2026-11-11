@@ -52,6 +52,8 @@ import { DeployView } from "@/ui/features/frontier/deploy/deploy-view";
 import { SiteCardView } from "@/ui/features/frontier/sites/site-card-view";
 import { AlertsPopupCard } from "@/ui/features/frontier/alerts-popup";
 import { DayDoneCard } from "@/ui/features/frontier/rollover/day-done-card";
+import type { SharedDay } from "@/shell/share/day-card";
+import { DayShareSheet } from "@/ui/features/frontier/rollover/day-share-sheet";
 import { DayEndScreen } from "@/ui/features/frontier/rollover/day-end-screen";
 import { RESTING, useDayEndStore } from "@/hooks/store/use-day-end-store";
 import { BuildView } from "@/ui/features/frontier/build/build-view";
@@ -304,7 +306,37 @@ const DAY_DONE = {
   armies: 3,
   troopsLost: 6_021,
   returned: { sent: 470, fitted: 470 },
+  onShare: () => undefined,
   onContinue: () => undefined,
+};
+
+/**
+ * The same day 12 as its share card tells it: the day's fights and finds in order (a ruin, two rifts, an army lost, a
+ * guard that held, the beasts, a troll camp and a wild chest), its totals and its rank, on the lab's own game.
+ */
+const DAY_SHARE: SharedDay = {
+  player: WALLET_ADDRESS,
+  game: { chainId: "0x1", gameId: 1 },
+  day: DAY_DONE.endedDay,
+  totals: DAY_DONE.totals,
+  rank: DAY_DONE.rank,
+  trail: ["Ruin", "Rift", "Rift", "army-lost", "guard-holds", "Beasts", "Camp", "chest"],
+  best: { kind: "chest", lords: 128 },
+  realm: { name: "Temtinos", order: 5 },
+};
+/**
+ * A thin day, the owner's day 1 on dev's Frontier game 3 (10 November 2026): 38 reveals and one site, a Rift whose guard
+ * of 666 fell, paying 4,800 Essence; no rank yet on a season's first day.
+ */
+const THIN_DAY_SHARE: SharedDay = {
+  player: WALLET_ADDRESS,
+  game: { chainId: "0x1", gameId: 1 },
+  day: 1,
+  totals: { reveals: 38, cleared: 1, chests: 0, essence: 5_700, labor: 1_400, lords: 0 },
+  rank: undefined,
+  trail: ["guard-holds", "Rift"],
+  best: { kind: "clear", site: "Rift", guard: 666, paid: { resource: "essence", amount: 4_800 } },
+  realm: { name: "Temtinos", order: 5 },
 };
 
 type LabTile = Parameters<typeof BuildView>[0]["tiles"][number];
@@ -900,6 +932,9 @@ const STATES = {
   // The day's last ten minutes: the day end's line turns red.
   "last-minutes": { clock: FINAL_MINUTES, stores: STORES, armies: ARMIES, lastHour: true },
   "day-done": { clock: NIGHT, stores: STORES, armies: [], dayDone: DAY_DONE },
+  "day-share": { clock: NIGHT, stores: STORES, armies: [], dayShare: DAY_SHARE },
+  // A thin day, the owner's day 1 on dev: one site, no chest, no rank yet.
+  "day-share-thin": { clock: NIGHT, stores: STORES, armies: [], dayShare: THIN_DAY_SHARE },
   "day-done-full": {
     clock: NIGHT,
     stores: STORES,
@@ -1290,6 +1325,8 @@ type LabState = {
   /** A building tapped on the realm's board: its own card. */
   building?: keyof typeof LAB_BUILDINGS;
   dayDone?: Parameters<typeof DayDoneCard>[0];
+  /** The day's card to share, as Share your day opens it. */
+  dayShare?: SharedDay;
   /** The alerts popup as this device or an iPhone's browser sees it. */
   alertsPopup?: AlertsPopupAsk["kind"];
   lastHour?: boolean;
@@ -1479,6 +1516,7 @@ export const HudLab = () => {
           <LabResults results={lab.results} clock={lab.clock} seasonLords={lab.seasonLords} noWallet={lab.noWallet} />
         )}
         {lab.dayDone && <LabDaySummary card={lab.dayDone} />}
+        {lab.dayShare && <DayShareSheet shared={lab.dayShare} onClose={noop} />}
         {lab.alertsPopup && <AlertsPopupCard ask={{ kind: lab.alertsPopup, act: noop, notNow: noop }} />}
         {lab.army && <LabArmy army={lab.army} />}
         {(lab.realmView === "build" ||
@@ -1993,6 +2031,7 @@ const LabResults = ({
       lines={results === "today-sites" ? siteUseDayLog(NOW) : readTodayLog()}
       history={results === "today-failed" ? "failed" : "whole"}
       onRetry={noop}
+      onShare={results === "today-earlier" ? noop : undefined}
       onEarlier={noop}
       onLater={results === "today-earlier" ? noop : undefined}
       onArmies={noop}

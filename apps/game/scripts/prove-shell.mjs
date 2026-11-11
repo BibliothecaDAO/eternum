@@ -7,9 +7,9 @@
  *   pnpm --dir apps/game prove:shell --base-url https://127.0.0.1:<port> --out <dir> [--state <signed-in.json>]
  *     [--watch /g/<chain>/<game>]
  *
- * Without `--state` it is a new visitor, and the run also opens the app lab's fixture pages (below); with a saved
- * signed-in browser state (agent-browser's `state save`, which keeps the device key with the session) a returning
- * player. Each flow runs at desktop (1440×900) and phone (390×844). Each press is made by the browser, scrolled to and
+ * Without `--state` it is a new visitor, and the run also opens the app lab's fixture pages and plays its flows
+ * (below); with a saved signed-in browser state (agent-browser's `state save`, which keeps the device key with the
+ * session) a returning player. Each flow runs at desktop (1440×900) and phone (390×844). Each press is made by the browser, scrolled to and
  * clicked, so a control the pointer cannot reach fails (prove-run.mjs, the proofs' one meaning of a pass).
  *
  * It changes nothing it does not put back and spends nothing: it stops at a lobby (paying is the player's), records
@@ -29,6 +29,7 @@
  * player gets. The doorway shows and then goes, the boot ends ready on the game's own scene with no spectate, the
  * chip names the player, and the page is never reloaded (writes shell-proof-watch-to-play.json).
  */
+import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -55,6 +56,10 @@ const finishedGame = () => ({ kind: "finished-game", live: true });
 const link = (word) => ({ kind: "link", word });
 /** Play's Join, on a Blitz slot the live data may not hold. */
 const joinSlot = () => ({ kind: "press", word: "Join", live: true });
+/** An emailed code typed into the code boxes, as a player types it. */
+const code = (digits) => ({ kind: "code", digits });
+/** A step that leads only once the page shows `shown` (a check in the page). */
+const showing = (step, shown) => ({ ...step, shows: shown });
 
 /** A Season board's panel, named by its title, holds `rows` or its empty line. */
 const boardShown = (title, rows) =>
@@ -127,6 +132,56 @@ const flows = (layout, persona) => {
 };
 
 /**
+ * The lab's one emailed code (shell/lab/app-lab-fixtures.ts): it confirms a step, and any other is refused. Read when
+ * the lab's flows run, so loading this module reads no file.
+ */
+const labEmailCode = () =>
+  readFileSync(new URL("../src/shell/lab/app-lab-fixtures.ts", import.meta.url), "utf8").match(
+    /LAB_EMAIL_CODE = "(\d+)"/,
+  )[1];
+
+/** A window open over the page, by its title: one bracketed condition, so `!` before it means the window is closed. */
+const windowOpen = (title) =>
+  `(document.querySelector('[role="dialog"][aria-label=${JSON.stringify(title)}]') !== null)`;
+const pageSays = (words) => `document.body.innerText.includes(${JSON.stringify(words)})`;
+/** Signed out: the bar's place for the account is Connect. */
+const SIGNED_OUT = `[...document.querySelectorAll('[data-role="tab"]')].some((tab) => tab.innerText.trim() === "Connect")`;
+
+/**
+ * Flows the live stack must not run (deleting an account), played over the lab's fixtures from their first address,
+ * each step shot: Delete account read through to its code, a wrong code refused, a new code, and the account deleted
+ * with the lab's code, landing signed out on Play; then the public deletion page's way back to Settings' row.
+ */
+export const labFlows = (labCode = labEmailCode(), wrongCode = labCode === "222222" ? "333333" : "222222") => ({
+  "delete-account": {
+    // A player with a payout wallet: no wallet prompt opens over Settings.
+    start: "/lab/app/wallet-ready/profile/settings?capture=1",
+    steps: [
+      showing(press("Delete account"), `${windowOpen("Delete account")} && ${pageSays("What stays")}`),
+      showing(
+        press("Email me a code"),
+        `${pageSays("Code sent to")} && document.querySelector(".app-code input:not(:disabled)") !== null`,
+      ),
+      showing(code(wrongCode), pageSays("That code is not right.")),
+      showing(
+        press("New code"),
+        `document.querySelector(".app-code input")?.value === "" && ${pageSays("Code sent to")}`,
+      ),
+      showing(code(labCode), `location.pathname === "/" && ${SIGNED_OUT} && !${windowOpen("Delete account")}`),
+    ],
+  },
+  "deletion-page": {
+    start: "/account/delete",
+    steps: [
+      showing(
+        press("Open Settings"),
+        `location.pathname === "/profile/settings" && location.hash === "#delete-account" && document.querySelector('[data-band="body"]') !== null`,
+      ),
+    ],
+  },
+});
+
+/**
  * The pages the live stack cannot show at will (a running Blitz season, a claim, a sealed chest, a paid entry, a
  * signed-in player without an emailed code, Connect's steps, the doorway's holds), opened in the app lab over its
  * fixtures (`?capture=1`: the lab's own header off) and measured at rest, with the reading pages and an unknown path's.
@@ -147,9 +202,10 @@ const LAB_PAGES = [
   ["first-visit", "credits"],
   ["first-visit", "connect/start"],
   ["first-visit", "connect/start-refused"],
+  ["first-visit", "connect/opening"],
   ["first-visit", "connect/code"],
   ["first-visit", "connect/code-refused"],
-  ["first-visit", "connect/discord"],
+  ["first-visit", "connect/handoff"],
   ["first-visit", "connect/name"],
   ["first-visit", "connect/name-refused"],
   ["first-visit", "connect/name-email"],
@@ -272,7 +328,7 @@ const FIND = (step, mark) => `(() => {
   const text = (el) => el.innerText.replace(/\\s+/g, " ").trim();
   const body = document.querySelector('[data-band="body"]');
   const controls = (root, css) => (root ? [...root.querySelectorAll(css)] : []);
-  const pageControls = [...controls(body, "a[href], button"), ...controls(document.querySelector('[data-band="foot"]'), "a[href], button"), ...controls(document, "[data-kit-sheet] button")];
+  const pageControls = [...controls(body, "a[href], button"), ...controls(document.querySelector('[data-band="foot"]'), "a[href], button"), ...controls(document, "[data-kit-sheet] button"), ...controls(document, '[role="dialog"] button')];
   let found;
   // A place by its name: its word, or where it shows the player ("You: Maelis"), its own word before the name.
   const nameOf = (el) => el.getAttribute("aria-label") ?? text(el);
@@ -320,6 +376,22 @@ let marks = 0;
 
 /** Presses one step as a player would; the step with its status and the address it led to. */
 export const pressStep = async (b, step) => {
+  const pressed = step.kind === "code" ? await typeCode(b, step) : await pressControl(b, step);
+  if (pressed.status !== "led" || !step.shows) return pressed;
+  if (await waitFor(b, step.shows, END_TIMEOUT_MS)) return { ...pressed, led: pathOf(b.url()) };
+  return { ...pressed, status: "failed", reason: "did not show what it leads to", body: b.evaluate(BODY_TEXT) };
+};
+
+/** Types the code into the code boxes' one field, as a keyboard types it. */
+const typeCode = async (b, step) => {
+  if (!b.evaluate(`document.querySelector(".app-code input:not(:disabled)") !== null`))
+    return { step, ...missingVerdict(step) };
+  b.run("type", ".app-code input", step.digits);
+  await sleep(SETTLE_MS);
+  return { step, status: "led", led: pathOf(b.url()) };
+};
+
+const pressControl = async (b, step) => {
   const mark = `p${(marks += 1)}`;
   const found = b.evaluate(FIND(step, mark));
   if (found === null) return { step, ...missingVerdict(step), failures: b.evaluate(FAILURE_LINES) };
@@ -471,6 +543,30 @@ const screenshot = (b, record, shot, out) => {
   record.screenshot = shot;
 };
 
+/** A lab flow from its first address, each step shot and its page held to the layout checks. */
+const runLabFlow = async (b, baseUrl, name, flow, layout, out) => {
+  const record = { name: `lab ${name}`, layout, at: new Date().toISOString(), ready: false, presses: [], pages: [] };
+  try {
+    b.run("open", `${baseUrl}${flow.start}`, "--ignore-https-errors");
+    record.ready = await waitFor(b, READY, READY_TIMEOUT_MS);
+    await sleep(SETTLE_MS);
+    screenshot(b, record, `lab-${name}-0-${layout}.png`, out);
+    for (const [index, step] of flow.steps.entries()) {
+      const pressed = await pressStep(b, step);
+      record.presses.push(pressed);
+      b.run("screenshot", join(out, `lab-${name}-${index + 1}-${layout}.png`));
+      if (pressed.status !== "led") break;
+      record.pages.push(b.evaluate(MEASURE));
+    }
+  } catch (error) {
+    record.error = String(error.message ?? error);
+  }
+  record.checks = record.pages.flatMap((page) =>
+    page.missing ? [] : layoutChecks(page, layout).map((check) => ({ path: page.path, ...check })),
+  );
+  return record;
+};
+
 /** A lab fixture page, measured at rest: ready, and its content at the top with no gutter at its left. */
 const measureLabPage = async (b, baseUrl, [screen, page], layout, out) => {
   // Play is the lab's root page.
@@ -619,7 +715,17 @@ const main = async (argv) => {
         b.run("open", "about:blank");
       }
       // The lab answers as its fixtures' player, so it runs once, with the new visitor's fresh profile.
-      if (!state) for (const labPage of LAB_PAGES) records.push(await measureLabPage(b, baseUrl, labPage, layout, dir));
+      if (!state) {
+        for (const labPage of LAB_PAGES) records.push(await measureLabPage(b, baseUrl, labPage, layout, dir));
+        for (const [name, flow] of Object.entries(labFlows())) {
+          const record = await runLabFlow(b, baseUrl, name, flow, layout, dir);
+          records.push(record);
+          console.log(
+            `lab ${layout} ${name}: ${record.presses.map((step) => step.status).join(" → ") || record.error}`,
+          );
+          b.run("open", "about:blank");
+        }
+      }
     }
   });
 };

@@ -1,3 +1,5 @@
+import { decodeIdentityEnv } from "../env";
+
 /** Who is on a chat socket: the Realms account the Worker authenticated, and the name it shows. */
 export interface ChatMember {
   realmsId: string;
@@ -10,6 +12,18 @@ export interface ChatMember {
 const MAX_FRAME_BYTES = 8 * 1024;
 const BURST = 10;
 const PER_SECOND = 5;
+
+/** An account's inbox, reached from a chat object (whose env is the Worker's, undecoded). */
+export const chatInboxOf = (env: Record<string, unknown>, realmsId: string) => {
+  const inboxes = decodeIdentityEnv(env).CHAT_INBOX;
+  return inboxes.get(inboxes.idFromName(realmsId));
+};
+
+/** A room, reached from a chat object. */
+export const chatRoomOf = (env: Record<string, unknown>, room: string) => {
+  const rooms = decodeIdentityEnv(env).CHAT_ROOM;
+  return rooms.get(rooms.idFromName(room));
+};
 
 /** The Worker admits a socket and names its member in headers; the object never sees a cookie. */
 export const chatMemberHeaders = (member: { realmsId: string; displayName?: string | null }) => ({

@@ -12,7 +12,7 @@ import {
   suggestedNameOf,
 } from "@realms-world/identity";
 
-import { socialProvidersOf, type IdentityEnv } from "./env";
+import { socialProvidersOf, type IdentityEnv, type SocialCredentials } from "./env";
 import { isNameTaken } from "./names";
 import { realmsIdOf } from "./realms-id";
 import { resendSignInCodes, type SendSignInCode } from "./sign-in-codes";
@@ -68,11 +68,14 @@ const identityServicesOf = (env: IdentityServiceEnv): IdentityServices => ({
 /**
  * A new user's id is fixed here and never changes: the Realms id derives from it and places the player's account on
  * every shard. A new user starts with its id as its name, which reads as "not chosen" until they pick one, offered
- * their Discord name as a suggestion, and with no portrait: a sign-in provider's avatar is not one of ours. Nothing is
- * suggested from an email: the name shows on every leaderboard, and an email's local part is often the player's own.
+ * the name their sign-in provider knows as a suggestion, and with no portrait: a provider's avatar is not one of ours.
+ * Nothing is suggested from an email: the name shows on every leaderboard, and an email's local part is often the
+ * player's own.
  *
- * An account is keyed by its email, and a later email-code sign-in for that address opens it, so no account is created
- * on an email its provider has not verified: an email code proves the address, and Discord passes its own verified flag.
+ * An account is keyed by its email, and a later sign-in for that address opens it, so no account is created on an email
+ * its provider has not verified: an email code proves the address, and each provider passes its own verified flag (X
+ * only when it returns a confirmed email). better-auth links a provider whose verified email matches an existing account
+ * to that account, so a second way in never makes a second account.
  */
 const assignRealmsIdentity = async (user: Record<string, unknown>) => {
   if (user.emailVerified !== true) throw new APIError("FORBIDDEN", { message: "email_not_verified" });
@@ -82,14 +85,17 @@ const assignRealmsIdentity = async (user: Record<string, unknown>) => {
 };
 
 /**
- * An account whose email is verified, by an email code or by Discord's own check. Only such an account approves a
- * device; a Discord sign-in alone proves nothing about the email the account is keyed by.
+ * An account whose email is verified, by an email code or by its provider's own check. Only such an account approves a
+ * device; a provider's sign-in alone proves nothing about the email the account is keyed by.
  */
 export const hasVerifiedSignIn = async (db: D1Database, userId: string): Promise<boolean> =>
   (await db.prepare(`SELECT 1 FROM "user" WHERE "id" = ?1 AND "emailVerified" = 1`).bind(userId).first()) !== null;
 
+/** Where Apple's sign-in posts its answer from. */
+const APPLE_ORIGIN = "https://appleid.apple.com";
+
 /**
- * The identity service: sign-in with Discord or an emailed code, the first of which creates the account, and wallets
+ * The identity service: sign-in with a provider or an emailed code, the first of which creates the account, and wallets
  * linked to an account. Name changes pass one chokepoint: the
  * update hook validates format and pre-checks uniqueness for every writer; the unique index on lower(name) is the
  * race-proof guarantee.
@@ -103,12 +109,11 @@ export const createIdentityAuth = (
     | "ENVIRONMENT"
     | "L2_RPC_URL"
     | "MARKETPLACE_API_URL"
-    | "DISCORD_CLIENT_ID"
-    | "DISCORD_CLIENT_SECRET"
     | "RESEND_API_KEY"
     | "AVNU_PAYMASTER_API_KEY"
     | "GUARDIAN"
-  >,
+  > &
+    SocialCredentials,
   services: IdentityServices = identityServicesOf(env),
 ) => {
   const sendWalletNotice = services.sendWalletNotice ?? resendWalletNotices(env.RESEND_API_KEY, env.BASE_URL);
@@ -124,6 +129,7 @@ export const createIdentityAuth = (
       await services.sendSignInCode(email, otp);
     },
   });
+  const socialProviders = socialProvidersOf(env);
   return betterAuth({
     secret: env.BETTER_AUTH_SECRET,
     baseURL: env.BASE_URL,
@@ -132,11 +138,14 @@ export const createIdentityAuth = (
     // A month, renewed by a day's use (account-rules.ts). Every session read comes from the database: a cached
     // copy of the account went stale for an hour after a wallet link or a name change made on another device.
     session: { expiresIn: SESSION_SECONDS, updateAge: SESSION_RENEWAL_SECONDS },
-    socialProviders: socialProvidersOf(env),
+    socialProviders,
+    // Apple returns by a POST from its own origin, which better-auth turns into a GET of the same callback.
+    ...(socialProviders.apple ? { trustedOrigins: [APPLE_ORIGIN] } : {}),
     // Other realms.party services set better-auth's default cookie names for the whole domain; a browser sends that
-    // older cookie first, and it would hide this service's session. Our cookies carry their own name.
-    advanced: { cookiePrefix: "realms-identity" },
-    // Discord's return is held to the browser that started it by discord-handoff.ts, which a phone's switch to another
+    // older cookie first, and it would hide this service's session. Our cookies carry their own name. better-auth would
+    // skip its origin check under a test runner; stated here, the tests meet the check production does.
+    advanced: { cookiePrefix: "realms-identity", disableOriginCheck: false },
+    // A provider's return is held to the browser that started it by social-handoff.ts, which a phone's switch to another
     // browser does not break; better-auth's own check refused that switch outright.
     account: { skipStateCookieCheck: true },
     user: {

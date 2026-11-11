@@ -2,11 +2,11 @@ import type { LocalNotificationPayload } from "@bibliothecadao/notifications";
 import * as Effect from "effect/Effect";
 import * as Schema from "effect/Schema";
 import { workerRequest, WorkerRequestError } from "./worker-request";
-import { isAppleMobile, isInstalledPwa } from "./browser-capabilities";
+import { isAppleMobile, isInstalledApp, runsServiceWorker } from "./browser-capabilities";
 
 export function localNotificationCapability(): string | null {
-  if (isAppleMobile() && !isInstalledPwa()) return "Install the game to your Home Screen.";
-  if (!window.isSecureContext || typeof Notification === "undefined" || !("serviceWorker" in navigator))
+  if (isAppleMobile() && !isInstalledApp()) return "Install the game to your Home Screen.";
+  if (!window.isSecureContext || typeof Notification === "undefined" || !runsServiceWorker())
     return "Device notifications are unavailable in this browser.";
   if (Notification.permission === "denied") return "Notifications are blocked in this browser.";
   return null;

@@ -2,10 +2,16 @@ import { reconcilePushAccount } from "./push-notification-client";
 import { useEffect, useState } from "react";
 import { notificationOwnerOf, useIdentitySession, useIdentitySessionStore } from "@/hooks/context/identity-session";
 import { useNotificationPreferences } from "@/hooks/use-notification-preferences";
+import { runsServiceWorker } from "./browser-capabilities";
 import { notificationWorkerRequest, reportNotificationDeliveryError } from "./local-notification-client";
 import { startPushForegroundLifecycle } from "./push-foreground-lifecycle";
+import { iosAppBridge, listenForIosAppPushTaps, reconcileIosAppPush } from "./ios-app-push";
 
-/** Keeps account preferences available outside Settings and revokes local device delivery on logout/account switch. */
+/**
+ * Keeps account preferences available outside Settings and revokes local device delivery on logout/account switch. In
+ * the iOS app it also keeps the app's push registration to the signed-in account and opens the alerts the player taps,
+ * once the session is known: a tap from a cold start waits for it.
+ */
 export function LocalNotificationLifecycle() {
   const { session, status } = useIdentitySession();
   const owner = notificationOwnerOf(session);
@@ -27,7 +33,7 @@ export function LocalNotificationLifecycle() {
   useEffect(() => {
     return useIdentitySessionStore.subscribe((next, previous) => {
       const oldOwner = notificationOwnerOf(previous.session);
-      if (!oldOwner || oldOwner === notificationOwnerOf(next.session) || !("serviceWorker" in navigator)) return;
+      if (!oldOwner || oldOwner === notificationOwnerOf(next.session) || !runsServiceWorker()) return;
       void detach(oldOwner);
     });
   }, []);
@@ -42,6 +48,13 @@ export function LocalNotificationLifecycle() {
     if (!owner) return;
     return startPushForegroundLifecycle(owner);
   }, [owner]);
+  useEffect(() => {
+    const app = iosAppBridge();
+    if (!app || status === "loading") return;
+    void reconcileIosAppPush(app, owner ?? null).catch(reportNotificationDeliveryError);
+    const taps = listenForIosAppPushTaps(app);
+    return () => void taps.remove();
+  }, [status, owner]);
   return (
     <>
       {status !== "loading" && <LoadPreferences key={owner ?? "anonymous"} owner={owner} />}

@@ -7,7 +7,9 @@ import {
   type NotificationPreferences,
   type PushRegistration,
 } from "@bibliothecadao/notifications";
+import { SOCIAL_PROVIDERS, type SocialProvider } from "./account-rules";
 import { TICKET_TIERS } from "./campaigns";
+import { SHARE_CARD, SHARE_KINDS, type ShareChannel, type ShareKind } from "./shares";
 import type { SiwsTypedData } from "./siws";
 import { buildSiwsMessage, payoutWalletStatement } from "./siws";
 import type { IdentityChainId, Session } from "./types";
@@ -171,6 +173,33 @@ const campaignReferralSchema = Schema.Struct({
 });
 export type CampaignReferral = typeof campaignReferralSchema.Type;
 
+/** A moment a player shares, as its link records it: its kind, the game it was played in, and which one (a day). */
+export interface ShareMoment {
+  kind: ShareKind;
+  chainId: string;
+  gameId: number;
+  moment: number;
+}
+/** A shared link as a friend who opened it sees it: what it shares and who shared it (null: no public name). */
+const openedShareSchema = Schema.Struct({
+  kind: Schema.Literals(SHARE_KINDS),
+  moment: Schema.Number,
+  name: Schema.NullOr(Schema.String),
+});
+export type OpenedShare = typeof openedShareSchema.Type;
+/**
+ * What the account's shared links brought, told to that account only: links made, posted, opened by other browsers,
+ * the new accounts they brought and how many of those founded a realm and cleared a site.
+ */
+const shareTallySchema = Schema.Struct({
+  links: Schema.Number,
+  posted: Schema.Number,
+  visits: Schema.Number,
+  joined: Schema.Number,
+  activated: Schema.Number,
+});
+export type ShareTally = typeof shareTallySchema.Type;
+
 const readJson = async <T>(response: Response, decode: (value: unknown) => T): Promise<T> => {
   if (!response.ok) throw await requestFailure(response);
   try {
@@ -298,6 +327,17 @@ export const createIdentityClient = ({ apiUrl, fetch = globalThis.fetch }: Ident
     );
   };
 
+  /**
+   * Deletes the signed-in Realms account, confirmed by an emailed sign-in code (`sendSignInCode`). The session ends with
+   * it; what the server keeps, and why, is listed on apps/realms/server/account-deletion.ts.
+   */
+  const deleteAccount = async (code: string): Promise<void> => {
+    await readJson(
+      await request("/account", { method: "DELETE", body: JSON.stringify({ otp: code }) }),
+      decode(Schema.Struct({ deleted: Schema.Literal(true) })),
+    );
+  };
+
   /** The sign-in providers linked to the signed-in account, such as "discord". */
   const listSignInProviders = async (): Promise<string[]> =>
     (
@@ -328,26 +368,26 @@ export const createIdentityClient = ({ apiUrl, fetch = globalThis.fetch }: Ident
   };
 
   /**
-   * Signs in with the code a Discord sign-in finished in another browser showed; only the browser that started it can.
+   * Signs in with the code a provider's sign-in finished in another browser showed; only the browser that started it can.
    */
-  const claimDiscordHandoff = async (code: string): Promise<Session> => {
+  const claimSocialHandoff = async (code: string): Promise<Session> => {
     await readJson(
-      await request("/auth/discord-handoff", { method: "POST", body: JSON.stringify({ code }) }),
+      await request("/auth/social-handoff", { method: "POST", body: JSON.stringify({ code }) }),
       decode(Schema.Struct({ success: Schema.Literal(true) })),
     );
     return requireSession();
   };
 
   /**
-   * Where to send the player to sign in with Discord; Discord returns them to `returnTo`, signed in, or with an
-   * `error` query parameter when sign-in did not complete. Finished in another browser, it shows a code there for
-   * `claimDiscordHandoff`.
+   * Where to send the player to sign in with a provider; it returns them to `returnTo`, signed in, or with an `error`
+   * query parameter when sign-in did not complete. Finished in another browser, it shows a code there for
+   * `claimSocialHandoff`.
    */
-  const discordSignInUrl = async (returnTo: string): Promise<string> => {
+  const socialSignInUrl = async (provider: SocialProvider, returnTo: string): Promise<string> => {
     const started = await readJson(
       await request("/auth/sign-in/social", {
         method: "POST",
-        body: JSON.stringify({ provider: "discord", callbackURL: returnTo, errorCallbackURL: returnTo }),
+        body: JSON.stringify({ provider, callbackURL: returnTo, errorCallbackURL: returnTo }),
       }),
       decode(Schema.Struct({ url: Schema.String })),
     );
@@ -495,6 +535,45 @@ export const createIdentityClient = ({ apiUrl, fetch = globalThis.fetch }: Ident
       )
     ).name;
 
+  /** The account's link for one moment, made on first ask and the same ever after. */
+  const createShare = async (moment: ShareMoment): Promise<string> =>
+    (
+      await readJson(
+        await request("/shares", { method: "POST", body: JSON.stringify(moment) }),
+        decode(Schema.Struct({ code: Schema.String })),
+      )
+    ).code;
+
+  /** Records that the account posted its link; sent as the post opens, so it outlives the page leaving. */
+  const sharePosted = async (code: string): Promise<void> => {
+    const response = await request(`/shares/${encodeURIComponent(code)}/posted`, { method: "POST", keepalive: true });
+    if (!response.ok) throw await requestFailure(response);
+  };
+
+  /** Hands identity the card the sheet drew for the account's link, which the link then unfurls as. */
+  const uploadShareCard = async (code: string, image: Blob): Promise<void> => {
+    const response = await request(`/shares/${encodeURIComponent(code)}/card`, {
+      method: "PUT",
+      headers: { "content-type": SHARE_CARD.type },
+      body: image,
+    });
+    if (!response.ok) throw await requestFailure(response);
+  };
+
+  /**
+   * A friend opens a shared link: the visit is recorded for this browser, with the channel the link was posted from
+   * (null for a link that names none), and the link says what it shares.
+   */
+  const openShare = async (code: string, via: ShareChannel | null): Promise<OpenedShare> =>
+    readJson(
+      await request(`/shares/${encodeURIComponent(code)}/visit`, { method: "POST", body: JSON.stringify({ via }) }),
+      decode(openedShareSchema),
+    );
+
+  /** What the account's shared links brought, settled as it is read. */
+  const shareTally = async (): Promise<ShareTally> =>
+    readJson(await request("/shares", { method: "GET", cache: "no-store" }), decode(shareTallySchema));
+
   const pushRequest = async <T>(
     action: string,
     decode: (value: unknown) => T,
@@ -516,18 +595,20 @@ export const createIdentityClient = ({ apiUrl, fetch = globalThis.fetch }: Ident
     signIn,
     linkWallet,
     unlinkWallet,
+    deleteAccount,
     listSignInProviders,
-    availableSignInProviders: async () =>
-      (
-        await readJson(
-          await request("/auth/providers", { method: "GET" }),
-          decode(Schema.Struct({ providers: Schema.mutable(Schema.Array(Schema.String)) })),
-        )
-      ).providers,
+    /** The providers the identity service offers, in the sheet's order. */
+    availableSignInProviders: async (): Promise<SocialProvider[]> => {
+      const { providers } = await readJson(
+        await request("/auth/providers", { method: "GET" }),
+        decode(Schema.Struct({ providers: Schema.Array(Schema.Literals(SOCIAL_PROVIDERS)) })),
+      );
+      return SOCIAL_PROVIDERS.filter((provider) => providers.includes(provider));
+    },
     sendSignInCode,
     signInWithCode,
-    claimDiscordHandoff,
-    discordSignInUrl,
+    claimSocialHandoff,
+    socialSignInUrl,
     approveDeviceChange,
     readDefaultWallet,
     createDefaultWallet,
@@ -543,6 +624,11 @@ export const createIdentityClient = ({ apiUrl, fetch = globalThis.fetch }: Ident
     redeemCampaignTicket,
     campaignReferral,
     campaignReferrer,
+    createShare,
+    sharePosted,
+    uploadShareCard,
+    openShare,
+    shareTally,
     getPushConfiguration: () => pushRequest("config", decode(pushConfigurationSchema)),
     registerPushSubscription: (input: PushRegistration) =>
       pushRequest("subscribe", decode(Schema.Struct({ id: Schema.String })), input),

@@ -11,6 +11,7 @@
 /join/devcon / 200
 /join/devcon/:code / 200
 /join/devcon/r/:referral / 200
+/s/:code / 200
 /season / 200
 /results/:id / 200
 /profile / 200
@@ -20,6 +21,7 @@
 /scroll/:post https://realms.world/scroll/:post 301
 /terms / 200
 /privacy / 200
+/account/delete / 200
 /credits / 200
 /p/:address / 200
 /g/:chain/:game / 200

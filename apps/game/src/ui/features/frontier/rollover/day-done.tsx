@@ -10,9 +10,10 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 import { AlertsPopup } from "../alerts-popup";
 import { endedHomeArmies, homecomingAtNextDeploy } from "../frontier-home";
-import { dayClock, endedDay, nextDayOf } from "../hud/day-clock";
-import { usePlayerDay } from "../log/player-day";
+import { dayClock, dayToRecap, endedDay, nextDayOf } from "../hud/day-clock";
+import { useOwnActs, usePlayerDay } from "../log/player-day";
 import { DayDoneCard } from "./day-done-card";
+import { useDayShare } from "./day-share-sheet";
 import { DayEndScreen } from "./day-end-screen";
 import { useClosingRankChange } from "./day-ranks";
 
@@ -21,17 +22,19 @@ type ExpeditionRules = NonNullable<ReturnType<typeof readExpeditionRules>>;
 const ARMY_MODELS = ["ExplorerTroops", "TileOccupancy", "ArmyProgress", "ResourceBalance"] as const;
 
 /**
- * A Frontier day's end in the HUD (use-day-end-store): the ended day's summary over the map, the black and the way past
- * them (DayEndScreen). Each device goes through each ended day's end once: the black, behind which the camera comes onto
- * the realm's new site, and the summary before it when there is one. The summary is the day-done card: the ended day's
- * totals (the player's day as Today reads it, usePlayerDay), the rank it closed at against the day before, the troops
- * its armies took and what Homecoming returns at the next deploy. It waits for the player's history to answer (the
- * moment's summary phase waits with it, for a while), and says when that history cannot give the day. A day the player
- * did not play (no army ended with it, nothing revealed or cleared) has none, and a visit to another realm shows none;
- * the moment then passes without it. Nor does a device show it once the player has played on in the new day, on this
+ * A Frontier day's end in the HUD (use-day-end-store): the summary over the map, the black and the way past them
+ * (DayEndScreen). Each device goes through each ended day's end once: the black, behind which the camera comes onto the
+ * realm's new site, and the summary before it when there is one. The summary is the day-done card for the last day the
+ * player played (dayToRecap), when this device has gone through no day's end since it: a player back after a day they
+ * skipped is offered the day before it. It gives that day's totals (the player's day as Today reads it, usePlayerDay),
+ * the rank it closed at against the day before and, when it is the day that just ended, the troops its armies took and
+ * what Homecoming returns at the next deploy. It waits for the player's history to answer (the moment's summary phase
+ * waits with it, for a while), and says when that history cannot give the day. With no day played since the last end
+ * gone through (none of their own stories, no army ended with the day), and on a visit to another realm, there is none;
+ * the moment then passes without it. Nor does a device show it once the player has played on since its day, on this
  * device or another (owner, 2026-10-25: the recap shows "until you act"): their own history says so on every device, so
- * no device keeps a "seen" for the account. In the game as the day ends, ExpeditionRollover begins the moment; opening the
- * game after it ended (owner, 2026-10-25: "it doesnt automatically move me to the new day area"), or once history
+ * no device keeps a "seen" for the account. In the game as the day ends, ExpeditionRollover begins the moment; opening
+ * the game after it ended (owner, 2026-10-25: "it doesnt automatically move me to the new day area"), or once history
  * answers after the moment went on without the summary, this does. The season's end is no day's end (endedDay): the
  * season-over card tells it. Once no day's end is owed, the map is clear for the alerts popup (AlertsPopup).
  */
@@ -52,24 +55,31 @@ export const DayDone = ({
   const gameId = configManager.getActiveGameId();
   const [seen, markSeen] = useSeenDay(gameId, player);
   const ended = endedDay(rules, now);
-  const played = usePlayerDay(player, ended);
-  const rank = useClosingRankChange(ended?.day);
+  const recap = dayToRecap(rules, now, useOwnActs(player));
+  const played = usePlayerDay(player, recap);
+  const rank = useClosingRankChange(recap?.day);
   const openedAt = useOpenedAt(now);
   const { phase, summaryMissed, landReady, begin, continueDay, showSummary } = useDayEndStore();
+  const { onShare, sheet } = useDayShare(realm, recap?.day, played);
   // A day that ended before this realm was founded is none of its player's: a new realm starts on the day it was made.
   const realmsDay = ended !== null && ended.end > Number(realm.base.created_at);
   const unseen = !visiting && player !== null && ended !== null && realmsDay && (seen === null || seen < ended.day);
+  // The recap is owed while this device has gone through no day's end since its day.
+  const recapOwed = unseen && recap !== null && (seen === null || seen < recap.day);
 
   const summary = (() => {
-    if (!unseen || !ended || played.history === "waiting" || played.playedOn) return null;
+    if (!recapOwed || !ended || played.history === "waiting" || played.playedOn) return null;
     const { totals } = played;
-    const gone = endedHomeArmies(setup.store, realm, rules, now);
-    if (gone.length === 0 && totals.reveals === 0 && totals.cleared === 0) return null;
-    const returned = homecomingAtNextDeploy(setup.store, realm, rules, now, tick);
+    // The realm's armies and Homecoming are read as they stand, so they tell only the day that just ended.
+    const justEnded = recap.day === ended.day;
+    const gone = justEnded ? endedHomeArmies(setup.store, realm, rules, now) : [];
+    // Only a whole history says the day was not played; one that failed or stops short shows the card with dashes.
+    if (played.history === "whole" && gone.length === 0 && played.stories.length === 0) return null;
+    const returned = justEnded ? homecomingAtNextDeploy(setup.store, realm, rules, now, tick) : null;
     const taken = gone.reduce((sum, army) => sum + Number(army.troops.count / BigInt(RESOURCE_PRECISION)), 0);
     return (
       <DayDoneCard
-        endedDay={ended.day}
+        endedDay={recap.day}
         clock={dayClock(rules, now)}
         totals={totals}
         history={played.history}
@@ -78,6 +88,7 @@ export const DayDone = ({
         armies={gone.length}
         troopsLost={taken - (returned?.sent ?? 0)}
         returned={returned && returned.sent > 0 ? returned : undefined}
+        onShare={onShare}
         onContinue={continueDay}
       />
     );
@@ -114,6 +125,7 @@ export const DayDone = ({
   return (
     <>
       <DayEndScreen summary={summary} />
+      {summary && sheet}
       <AlertsPopup clear={clear} />
     </>
   );

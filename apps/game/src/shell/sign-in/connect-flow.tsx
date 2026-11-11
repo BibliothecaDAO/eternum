@@ -1,6 +1,5 @@
-import { pageNavigation } from "@/utils/page-navigation";
-import { SIGN_IN_WORDS, WALLET_WORDS, WORDS } from "@/ui/design-system/kit/words";
-import { IdentityRequestError, type Session } from "@realms-world/identity";
+import { SIGN_IN_PROVIDER_NAMES, SIGN_IN_WORDS, WALLET_WORDS, WORDS } from "@/ui/design-system/kit/words";
+import { IdentityRequestError, type Session, type SocialProvider } from "@realms-world/identity";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 
@@ -11,6 +10,7 @@ import {
   useIdentitySessionStore,
 } from "@/hooks/context/identity-session";
 import { payoutAddressOf } from "@/hooks/context/payout-wallet";
+import { opensThirdPartySignIn } from "@/runtime/distribution-channel";
 import { failureSentence, type IdentityAction } from "@/ui/modules/identity/identity-failures";
 
 import { returnPathOf } from "../return-path";
@@ -18,7 +18,9 @@ import { CodeStep } from "./code-step";
 import { claimDefaultName } from "./default-name";
 import { useConnectStore } from "./connect";
 import { ShellWindow } from "../frame/shell-window";
-import { forgetDiscordStart, pendingDiscordStart, rememberDiscordStart, type DiscordPending } from "./discord-pending";
+import { opensDiscordApp } from "./discord-app";
+import { useSocialAttempt } from "./social-attempt";
+import { forgetSocialStart, pendingSocialStart, rememberSocialStart, type SocialPending } from "./social-pending";
 import { HandoffStep } from "./handoff-step";
 import { ProfileStep } from "./profile-step";
 import { PayoutWalletPanel } from "../profile/payout-wallet-panel";
@@ -26,15 +28,15 @@ import { StartStep } from "./start-step";
 
 /**
  * The one sign-in flow (spec 02), in the Connect window over whatever page the player is on, the game included; there
- * is no sign-in page. Discord or an emailed code, then straight on: a new account takes its suggested name and a
+ * is no sign-in page. A provider (Google, Apple, Discord, X) or an emailed code, then straight on: a new account takes its suggested name and a
  * portrait by itself (changed later on You), and only when no such name is free does the window ask for one. It opens
  * when a surface asks (the bar's Connect, every Sign in, Play free: useRequestSignIn) and when a sign-in comes back
  * failed (an `error` on the address); once the account carries a name it closes and the player goes on to the asker's
  * `next`, or stays where they were.
  *
- * Discord returns the player to that same page. A phone may finish Discord in another browser than the one that asked
- * (an iPhone home-screen app's Safari view, the browser the Discord app opens): that browser is not signed in, it
- * shows a one-time code instead, and the Discord step here takes it (apps/realms/server/discord-handoff.ts).
+ * A provider returns the player to that same page. A phone may finish it in another browser than the one that asked
+ * (an iPhone home-screen app's Safari view, the browser a provider's app opens): that browser is not signed in, it
+ * shows a one-time code instead, and the provider's step here takes it (apps/realms/server/social-handoff.ts).
  */
 export const ConnectFlow = () => {
   const { status, session } = useIdentitySession();
@@ -42,12 +44,12 @@ export const ConnectFlow = () => {
   const returned = useReturnedFailure();
   const refresh = useIdentitySessionStore((state) => state.refresh);
   const named = session !== null && identityUsername(session) !== null;
-  const [pending, setPending] = useState(pendingDiscordStart);
+  const [pending, setPending] = useState(pendingSocialStart);
   const endPending = useCallback(() => {
-    forgetDiscordStart();
+    forgetSocialStart();
     setPending(null);
   }, []);
-  // A Discord sign-in that came back failed is over: Connect starts again with the reason.
+  // A provider's sign-in that came back failed is over: Connect starts again with the reason.
   useEffect(() => {
     if (returned.line) endPending();
   }, [returned.line, endPending]);
@@ -72,12 +74,12 @@ export const ConnectFlow = () => {
     );
   }
   if (!request && !returned.line && !pending) return null;
-  const resumeDiscord = pending !== null && !returned.line;
+  const resumed = returned.line ? null : (pending?.provider ?? null);
   return (
     <AnonymousConnect
-      key={resumeDiscord ? "discord" : "start"}
+      key={resumed ?? "start"}
       next={request?.next ?? pending?.next ?? null}
-      resumeDiscord={resumeDiscord}
+      resumed={resumed}
       returnedFailure={returned.line}
       onClose={() => {
         returned.clear();
@@ -88,52 +90,108 @@ export const ConnectFlow = () => {
   );
 };
 
-type Step = { kind: "start" } | { kind: "code"; email: string; expiresAt: number | undefined } | { kind: "discord" };
+type Step =
+  | { kind: "start" }
+  | { kind: "code"; email: string; expiresAt: number | undefined }
+  | { kind: "inApp"; provider: SocialProvider }
+  | { kind: "handoff"; provider: SocialProvider };
 
 /**
- * Before a session: Discord, or an email and then its code; after Discord, the code another browser shows, also after
- * the page reloaded while Discord was out (`resumeDiscord`).
+ * Before a session: a provider, or an email and then its code; after a provider, the code another browser shows, also
+ * after the page reloaded while the provider was out (`resumed`). A phone's tap that hands Discord to its app leaves
+ * the screen as it was, its button busy (`inApp`): the code step shows once the page comes back from the app, when
+ * there can be a code.
  */
 const AnonymousConnect = ({
   next,
-  resumeDiscord,
+  resumed,
   returnedFailure,
   onClose,
 }: {
   next: string | null;
-  resumeDiscord: boolean;
+  resumed: SocialProvider | null;
   returnedFailure: string | null;
   onClose: () => void;
 }) => {
   const location = useLocation();
   const providers = useSignInProviders();
   const applySession = useIdentitySessionStore((state) => state.applySession);
-  const [step, setStep] = useState<Step>({ kind: resumeDiscord ? "discord" : "start" });
+  const [step, setStep] = useState<Step>(resumed ? { kind: "handoff", provider: resumed } : { kind: "start" });
   const { run, running, error, setError } = useIdentityAction(returnedFailure);
-  useRefreshOnReturn(step.kind === "discord");
+  const backFromApp = useCallback(
+    () => setStep((now) => (now.kind === "inApp" ? { kind: "handoff", provider: now.provider } : now)),
+    [],
+  );
+  useBackFromProvider(step.kind === "handoff" || step.kind === "inApp", backFromApp);
 
-  // Discord brings the player back to `next`, or to this page; a failure comes back to the same page.
-  const continueWithDiscord = () =>
-    void run("discord", async () => {
-      const url = await identityClient.discordSignInUrl(next ?? returnPathOf(location));
-      rememberDiscordStart(next);
-      setStep({ kind: "discord" });
-      pageNavigation.open(url);
+  // The provider brings the player back to `next`, or to this page; a failure comes back to the same page.
+  const returnTo = next ?? returnPathOf(location);
+  const appHere = opensDiscordApp();
+  const usesDiscordApp = (provider: SocialProvider) => provider === "discord" && appHere;
+  // The start screen, also drawn while the Discord app opens: Discord's address is kept ready under it.
+  const onStartScreen = step.kind === "start" || step.kind === "inApp";
+  const attempt = useSocialAttempt(
+    returnTo,
+    appHere && onStartScreen && providers.includes("discord") ? "discord" : null,
+  );
+
+  const startProvider = (provider: SocialProvider, out: Step, open: () => void) => {
+    rememberSocialStart(provider, next);
+    setStep(out);
+    open();
+  };
+  // A provider's website shows its code step at once: a home-screen app's Safari view may cover the page, not hide it.
+  const toWebsite = (provider: SocialProvider, address: string) =>
+    startProvider(provider, { kind: "handoff", provider }, () => attempt.inBrowser(address));
+  // A provider's website is a page load, which needs no tap: it opens once its address comes.
+  const openWebsite = (provider: SocialProvider) =>
+    void run("social", async () => {
+      const address = await attempt.fetch(provider);
+      if (address !== null) toWebsite(provider, address);
     });
+  // A phone opens the Discord app only from a tap that holds the address; a tap without one asks and opens nothing.
+  // An iPhone without the app goes on to the website the same way.
+  const openDiscordApp = () => {
+    const address = attempt.claim("discord");
+    if (address === null) return prepareDiscordApp();
+    startProvider("discord", { kind: "inApp", provider: "discord" }, () =>
+      attempt.inApp(address, () => toWebsite("discord", address)),
+    );
+  };
+  // A refused ask says why; an answer makes the next tap the one that opens the app.
+  const prepareDiscordApp = () =>
+    void run("social", async () => {
+      await attempt.fetch("discord");
+    });
+  const continueWith = (provider: SocialProvider) =>
+    usesDiscordApp(provider) ? openDiscordApp() : openWebsite(provider);
+  // Every way in on the start screen comes through here. While a provider's app is opening, the screen stays with
+  // that provider's button busy: any other way ends that sign-in first (its launch, address, saved return and step).
+  const choose = (go: () => void) => {
+    if (step.kind === "inApp") {
+      attempt.end();
+      forgetSocialStart();
+      setStep({ kind: "start" });
+    }
+    go();
+  };
 
   const emailCode = (email: string) =>
     void run("send-code", async () => {
       setStep({ kind: "code", email, expiresAt: codeExpiry(await identityClient.sendSignInCode(email)) });
     });
 
-  if (step.kind === "discord")
+  if (step.kind === "handoff")
     return (
-      <ShellWindow title={SIGN_IN_WORDS.discord} onClose={onClose}>
+      <ShellWindow title={SIGN_IN_PROVIDER_NAMES[step.provider]} onClose={onClose}>
         <HandoffStep
+          provider={step.provider}
           checking={running === "handoff"}
+          preparing={attempt.asking === step.provider}
           error={error}
-          onCode={(code) => run("handoff", async () => applySession(await identityClient.claimDiscordHandoff(code)))}
-          onDiscord={continueWithDiscord}
+          onCode={(code) => run("handoff", async () => applySession(await identityClient.claimSocialHandoff(code)))}
+          onRetry={() => continueWith(step.provider)}
+          onBrowser={usesDiscordApp(step.provider) ? () => openWebsite("discord") : undefined}
           onTyping={() => setError(null)}
         />
       </ShellWindow>
@@ -162,19 +220,26 @@ const AnonymousConnect = ({
   return (
     <ShellWindow title={WORDS.connect} onClose={onClose}>
       <StartStep
-        sending={running === "send-code" || running === "discord"}
+        sending={running === "send-code" || running === "social"}
+        preparing={attempt.asking}
+        opening={step.kind === "inApp" ? step.provider : null}
         error={error}
-        onDiscord={providers.includes("discord") ? continueWithDiscord : undefined}
-        onEmail={emailCode}
+        providers={providers}
+        onProvider={(provider) => choose(() => continueWith(provider))}
+        onEmail={(email) => choose(() => emailCode(email))}
       />
     </ShellWindow>
   );
 };
 
-/** The sign-in providers the identity service lists; Discord shows only once it does. */
+/**
+ * The sign-in providers the identity service offers; a provider's button shows only once it does. None where a sign-in
+ * may not leave for a third party (the iOS app): there the emailed code is the way in.
+ */
 const useSignInProviders = () => {
-  const [providers, setProviders] = useState<string[]>([]);
+  const [providers, setProviders] = useState<SocialProvider[]>([]);
   useEffect(() => {
+    if (!opensThirdPartySignIn()) return;
     let active = true;
     void identityClient
       .availableSignInProviders()
@@ -190,8 +255,8 @@ const useSignInProviders = () => {
 };
 
 /**
- * A sign-in that came back failed: the identity service returns Discord's refusals to the page with an `error` on its
- * address. It is read once, as the Discord step's line, and taken off the address so a reload does not show it again.
+ * A sign-in that came back failed: the identity service returns a provider's refusals to the page with an `error` on
+ * its address. It is read once, as the start step's line, and taken off the address so a reload does not show it again.
  */
 const useReturnedFailure = () => {
   const location = useLocation();
@@ -201,7 +266,7 @@ const useReturnedFailure = () => {
     const params = new URLSearchParams(location.search);
     const code = params.get("error");
     if (!code) return;
-    setLine(failureSentence("discord", new IdentityRequestError(400, code)));
+    setLine(failureSentence("social", new IdentityRequestError(400, code)));
     params.delete("error");
     params.delete("error_description");
     const search = params.toString();
@@ -214,15 +279,17 @@ const useReturnedFailure = () => {
 };
 
 /**
- * While Discord is out: back on this page, the session is read again, since Discord may have finished in another tab of
- * this same browser (the Discord app opens a new one), and that signs this page in too.
+ * While a provider is out: back on this page, the session is read again, since it may have finished in another tab of
+ * this same browser (a provider's app opens a new one), and that signs this page in too; `onBack` moves the window on.
  */
-const useRefreshOnReturn = (waiting: boolean) => {
+const useBackFromProvider = (waiting: boolean, onBack: () => void) => {
   const refresh = useIdentitySessionStore((state) => state.refresh);
   useEffect(() => {
     if (!waiting) return;
     const back = () => {
-      if (document.visibilityState === "visible") void refresh();
+      if (document.visibilityState !== "visible") return;
+      void refresh();
+      onBack();
     };
     document.addEventListener("visibilitychange", back);
     window.addEventListener("pageshow", back);
@@ -230,7 +297,7 @@ const useRefreshOnReturn = (waiting: boolean) => {
       document.removeEventListener("visibilitychange", back);
       window.removeEventListener("pageshow", back);
     };
-  }, [refresh, waiting]);
+  }, [onBack, refresh, waiting]);
 };
 
 /**
@@ -250,10 +317,10 @@ const useDefaultName = (session: Session | null, named: boolean, refresh: () => 
 };
 
 /**
- * Once the account carries a name, the request ends and the player goes on to where the asker, or the Discord sign-in
- * that brought them back, was taking them.
+ * Once the account carries a name, the request ends and the player goes on to where the asker, or the provider's
+ * sign-in that brought them back, was taking them.
  */
-const useGoOnOnceNamed = (named: boolean, pending: DiscordPending | null, endPending: () => void) => {
+const useGoOnOnceNamed = (named: boolean, pending: SocialPending | null, endPending: () => void) => {
   const navigate = useNavigate();
   const location = useLocation();
   const request = useConnectStore((state) => state.request);

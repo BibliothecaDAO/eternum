@@ -18,7 +18,11 @@ STATIC = [
     ".github/workflows/static.yml",
     ".github/scripts/**",
     ".github/ISSUE_TEMPLATE/**",
+    # Runs on its own, on changes under apps/android.
+    ".github/workflows/android-app.yml",
     MEDIA_FREE_CHECKOUT,
+    # The iOS app's simulator build, which runs on its own when a file it reads changes (test_ios_workflow_paths.py).
+    ".github/workflows/ios.yml",
 ]
 # The payout relay's, co-signer's and monitor's readers, which apps/herald/src/value-readers.test.ts drives against Herald.
 VALUE_READERS = [
@@ -41,6 +45,8 @@ AREAS = {
         ".github/workflows/test-client.yml",
         MEDIA_FREE_CHECKOUT,
         "apps/game/**",
+        # The Android app's package and signing keys, from which the client's build writes its Digital Asset Links.
+        "apps/android/twa-manifest.json",
         # The other surfaces the brand check (apps/game/src/brand/brand.test.ts) reads, and what the docs config reads.
         "README.md",
         "apps/game-docs/docs/styles.css",
@@ -54,6 +60,8 @@ AREAS = {
         "apps/game-docs/docs/utils/paths.ts",
         "apps/game-docs/vite-plugin-llm-txt.mjs",
         "apps/status/public/index.html",
+        # The iOS app's bundle id, which src/app-hosting.test.ts holds the site's apple-app-site-association to.
+        "apps/ios/capacitor.config.ts",
         # The client job's own checkers, which its workflow runs through root package.json scripts.
         "scripts/hud-sheet/**",
         "scripts/icons/**",
@@ -107,6 +115,8 @@ AREAS = {
         "apps/launch-service/**",
         "apps/admin/**",
         "apps/realms/**",
+        # The identity Worker's shared-link test serves the client's own page, whose unfurl tags it rewrites.
+        "apps/game/index.html",
         "apps/value-relay/**",
         "apps/status-monitor/**",
         "apps/indexer/**",
@@ -166,6 +176,8 @@ AREAS = {
         # The relay's Realm-entry test runs the identity Worker's holdings reader, as the IDENTITY binding serves it.
         "apps/realms/server/realm-holdings.ts",
         "apps/realms/server/l2.ts",
+        # The Cloudflare deploy names every chat object to the identity Worker by these classes (deploy/first/publish.ts).
+        "apps/realms/server/chat/chat-objects.ts",
         "deploy/release/**",
         "deploy/shard/**",
         "scripts/generate-realm-metadata.py"
@@ -193,6 +205,8 @@ AREAS = {
         # The relay's Realm-entry test runs the identity Worker's holdings reader, as the IDENTITY binding serves it.
         "apps/realms/server/realm-holdings.ts",
         "apps/realms/server/l2.ts",
+        # The Cloudflare deploy names every chat object to the identity Worker by these classes (deploy/first/publish.ts).
+        "apps/realms/server/chat/chat-objects.ts",
         # The release files this area reads: the release id (deploy/first) and the shard settings (deploy/athanor).
         "deploy/release/native-release.ts",
         "deploy/release/*.json",

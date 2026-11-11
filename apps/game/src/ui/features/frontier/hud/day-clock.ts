@@ -93,6 +93,23 @@ export const dayBounds = (
 };
 
 /**
+ * The day the day-done card recaps: the last ended day the player acted in, from the times of their own stories (unix
+ * seconds), so a day they skipped does not hide one they played (owner, 10 Nov 2026: "I played day 1 but not day 2, its
+ * day 3 now"); the day that ended last when they acted in none. Null when no day has ended.
+ */
+export const dayToRecap = (
+  calendar: SeasonCalendar,
+  now: number,
+  actedAt: readonly number[],
+): { day: number; start: number; end: number } | null => {
+  const ended = endedDay(calendar, now);
+  if (!ended) return null;
+  const lastAct = actedAt.reduce((last, at) => (at < ended.end && at > last ? at : last), Number.NEGATIVE_INFINITY);
+  const played = Number.isFinite(lastAct) ? dayOf(calendar, lastAct) : null;
+  return played ? { day: played.index + 1, start: played.start, end: played.end } : ended;
+};
+
+/**
  * The day that ended last: its number and its bounds in unix seconds, for the day-done card's totals. Null on the
  * season's first day, which follows no day, and after the season, when no new day opens.
  */

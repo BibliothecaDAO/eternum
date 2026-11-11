@@ -1,7 +1,10 @@
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
+// Type only: the owner commands start from an export of deploy/first alone (entry.test.ts), so nothing outside it loads.
+import type { SocialProvider } from "../../packages/identity/src/account-rules";
 import environments from "./environments.json";
 import type { SeasonDates } from "./dates";
+import { PublicError } from "./errors";
 
 export type Environment = "dev" | "production";
 export const root = resolve(import.meta.dir, "../..");
@@ -28,7 +31,46 @@ export const WEI = 10n ** 18n;
 export const ledgerAdmin = (target: Target, inputs: Pick<Inputs, "admin">, deployer: string) =>
   target.coldAdmin ? inputs.admin! : deployer;
 
-export interface Inputs extends SeasonDates {
+/**
+ * Each sign-in provider's OAuth client in inputs.json (`googleClientId` and `googleClientSecret`, and so on), which
+ * setup's apply installs as the identity Worker's `<PROVIDER>_CLIENT_ID` and `<PROVIDER>_CLIENT_SECRET`. Setup asks only
+ * for Discord's; the owner adds the others once their OAuth apps exist, and a provider without its pair is not offered.
+ */
+type SignInClients = { [P in SocialProvider as `${P}ClientId` | `${P}ClientSecret`]?: string };
+
+/** A provider's half of a pair in inputs.json: `googleClientId` names `google`. */
+const SIGN_IN_CLIENT_KEY = /^([a-z]+)Client(?:Id|Secret)$/;
+
+/** The providers inputs.json configures, each with its client; a pair half set or blank is refused, never skipped. */
+export const signInClientsOf = (inputs: SignInClients) => {
+  const named: Record<string, string | undefined> = inputs;
+  const providers = new Set(Object.keys(named).flatMap((key) => SIGN_IN_CLIENT_KEY.exec(key)?.[1] ?? []));
+  return [...providers].map((provider) => {
+    const clientId = named[`${provider}ClientId`];
+    const clientSecret = named[`${provider}ClientSecret`];
+    if (!clientId?.trim() || !clientSecret?.trim())
+      throw new PublicError(`Set both ${provider}ClientId and ${provider}ClientSecret in inputs.json, or neither`);
+    return { provider, clientId, clientSecret };
+  });
+};
+
+/** The APNs signing key that pushes to the iOS app: its team id, key id and the .p8 file's PEM, all three or none. */
+interface ApnsKeyInputs {
+  apnsTeamId?: string;
+  apnsKeyId?: string;
+  apnsPrivateKey?: string;
+}
+
+/** The APNs key inputs.json holds, or null; one part set or blank is refused, never skipped. */
+export const apnsKeyOf = (inputs: ApnsKeyInputs) => {
+  const { apnsTeamId: teamId, apnsKeyId: keyId, apnsPrivateKey: privateKey } = inputs;
+  if (teamId === undefined && keyId === undefined && privateKey === undefined) return null;
+  if (!teamId?.trim() || !keyId?.trim() || !privateKey?.trim())
+    throw new PublicError("Set apnsTeamId, apnsKeyId and apnsPrivateKey in inputs.json, or none of them");
+  return { teamId, keyId, privateKey };
+};
+
+export interface Inputs extends SeasonDates, SignInClients, ApnsKeyInputs {
   cloudflareToken: string;
   rpc: string;
   cosignerPublicKey: string;

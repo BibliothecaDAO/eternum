@@ -5,7 +5,7 @@ import { UncertainSendNotKeptError } from "./uncertain-sends";
 
 /** What the player asked for; each names its own failure. */
 export type IdentityAction =
-  | "discord"
+  | "social"
   | "handoff"
   | "send-code"
   | "code"
@@ -14,7 +14,8 @@ export type IdentityAction =
   | "portrait"
   | "wallet"
   | "send"
-  | "recover";
+  | "recover"
+  | "delete";
 
 export class WrongNetworkError extends Error {}
 
@@ -29,12 +30,12 @@ const NAMED_REFUSALS: Record<string, string> = {
   too_many_codes: "Too many codes. Wait a minute.",
   WALLET_NOT_DEPLOYED: `Deploy this wallet on ${L2_CHAIN.label} first.`,
   WALLET_LINKED_ELSEWHERE: "This wallet is on another account. Link another one.",
-  email_not_verified: "Verify your Discord email, or sign in with an email code.",
-  email_not_found: "Your Discord account has no email. Add one in Discord, or sign in with an email code.",
+  email_not_verified: "That account's email is not verified. Verify it there, or sign in with an email code.",
+  email_not_found: "That account has no email. Add one there, or sign in with an email code.",
   account_not_linked: "This email has an account already. Sign in with an email code.",
-  access_denied: "Discord sign-in was cancelled. Try again.",
-  please_restart_the_process: "Discord took too long. Try again.",
-  HANDOFF_NOT_STARTED: "Press Discord here first, then enter the code it shows.",
+  access_denied: "Sign-in was cancelled. Try again.",
+  please_restart_the_process: "Sign-in took too long. Try again.",
+  HANDOFF_NOT_STARTED: "Start signing in here first, then enter the code it shows.",
   WALLET_ALREADY_LINKED: "This account has a payout wallet already. Reload to see it.",
   PASSKEY_INVALID: "That passkey cannot hold a wallet. Try again on this device.",
   // Only a recovery step is sponsored; sends pay their own fee and never meet it.
@@ -47,7 +48,7 @@ const NAMED_REFUSALS: Record<string, string> = {
 };
 
 const FALLBACK: Record<IdentityAction, string> = {
-  discord: "Discord sign-in did not complete. Try again.",
+  social: "Sign-in did not complete. Try again.",
   handoff: "That code did not sign you in. Try again.",
   "send-code": "The code was not sent. Check the address and try again.",
   code: "Sign-in did not complete. Try again.",
@@ -57,6 +58,7 @@ const FALLBACK: Record<IdentityAction, string> = {
   wallet: "Your wallet was not made. Try again.",
   send: "Nothing was sent. Try again.",
   recover: "The recovery did not start. Try again.",
+  delete: "Your account was not deleted. Try again.",
 };
 
 /** One sentence per failure the player can act on; the detail goes to the console. */

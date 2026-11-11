@@ -1,3 +1,5 @@
+import type { DistributionChannel } from "./runtime/distribution-channel";
+
 type SentryEnvironment = Record<string, string | boolean | undefined>;
 type SentryEvent = {
   contexts?: unknown;
@@ -21,9 +23,14 @@ interface SentryRuntimeOptions {
   txCaptureUserRejections: boolean;
   txWalletIdentity: "hashed" | "raw" | "none";
   beforeSend: (event: any, hint?: any) => any | null;
+  /** Every event names the app it came from: the web, the Android app or the iOS app. */
+  initialScope: { tags: { channel: DistributionChannel } };
 }
 
-export function resolveSentryRuntimeOptions(env: SentryEnvironment): SentryRuntimeOptions {
+export function resolveSentryRuntimeOptions(
+  env: SentryEnvironment,
+  channel: DistributionChannel,
+): SentryRuntimeOptions {
   const txFailuresEnabled = readBooleanEnv(env, "VITE_PUBLIC_SENTRY_TX_FAILURES_ENABLED", true);
   return {
     sendDefaultPii: readBooleanEnv(env, "VITE_PUBLIC_SENTRY_SEND_DEFAULT_PII", true),
@@ -38,6 +45,7 @@ export function resolveSentryRuntimeOptions(env: SentryEnvironment): SentryRunti
     txCaptureUserRejections: readBooleanEnv(env, "VITE_PUBLIC_SENTRY_TX_CAPTURE_USER_REJECTIONS", false),
     txWalletIdentity: readWalletIdentityEnv(env, "VITE_PUBLIC_SENTRY_TX_WALLET_IDENTITY", "hashed"),
     beforeSend: (event) => sanitizeSentryEvent(event, txFailuresEnabled),
+    initialScope: { tags: { channel } },
   };
 }
 

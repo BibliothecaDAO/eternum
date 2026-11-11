@@ -1,11 +1,12 @@
 import { resolve } from "node:path";
 import { randomBytes, createECDH, createHash } from "node:crypto";
 import { accountIdentity, newKey, type Keys } from "./chain";
-import { pagesSites, root, type Inputs, type PagesSite, type Target } from "./settings";
+import { apnsKeyOf, pagesSites, root, signInClientsOf, type Inputs, type PagesSite, type Target } from "./settings";
 import type { PrivateStore } from "./private-store";
 import { command } from "./process";
 import { PublicError } from "./errors";
 import type { AdminAccess } from "./admin-access";
+import { CHAT_OBJECT_CLASSES } from "../../apps/realms/server/chat/chat-objects";
 
 export const workers = [
   { id: "guardian", directory: "apps/guardian", config: "wrangler.jsonc", name: "realms-guardian" },
@@ -16,6 +17,11 @@ export const workers = [
   { id: "status", directory: "apps/status-monitor", config: "wrangler.jsonc", name: "realms-status-monitor" },
   { id: "admin", directory: "apps/admin", config: "wrangler.jsonc", name: "realms-admin" },
 ] as const;
+/**
+ * The R2 buckets the deploy creates for an environment's Workers: the status monitor's history, and the identity
+ * Worker's shared cards (wrangler.jsonc binds each by the same name).
+ */
+const bucketsOf = (target: Target) => [target.statusBucket, target.shareCardBucket];
 /** The Workers whose D1 database the deploy creates and migrates, each bound as `DB`. */
 export const databaseWorkers = ["identity", "launch", "admin"] as const;
 const databaseName = (worker: (typeof databaseWorkers)[number], target: Target) =>
@@ -67,8 +73,8 @@ export function workerSecrets(
         OPERATOR_TOKEN: secrets.operator,
         WEB_PUSH_VAPID_PUBLIC_KEY: secrets.vapidPublic,
         WEB_PUSH_VAPID_PRIVATE_KEY: secrets.vapidPrivate,
-        DISCORD_CLIENT_ID: inputs.discordClientId,
-        DISCORD_CLIENT_SECRET: inputs.discordClientSecret,
+        ...signInClientSecrets(inputs),
+        ...apnsSecrets(inputs),
         ...(inputs.avnuPaymasterApiKey ? { AVNU_PAYMASTER_API_KEY: inputs.avnuPaymasterApiKey } : {}),
       };
     case "launch":
@@ -101,8 +107,22 @@ export function workerSecrets(
       return adminSecrets(secrets, access);
   }
 }
+/** The identity Worker's secret pair for each sign-in provider inputs.json configures (apps/realms server/env.ts). */
+const signInClientSecrets = (inputs: Inputs): Record<string, string> =>
+  Object.fromEntries(
+    signInClientsOf(inputs).flatMap(({ provider, clientId, clientSecret }) => [
+      [`${provider.toUpperCase()}_CLIENT_ID`, clientId],
+      [`${provider.toUpperCase()}_CLIENT_SECRET`, clientSecret],
+    ]),
+  );
+/** The identity Worker's APNs key, which pushes to the iOS app, when inputs.json holds one (apps/realms server/env.ts). */
+const apnsSecrets = (inputs: Inputs): Record<string, string> => {
+  const key = apnsKeyOf(inputs);
+  return key ? { APNS_TEAM_ID: key.teamId, APNS_KEY_ID: key.keyId, APNS_PRIVATE_KEY: key.privateKey } : {};
+};
 function cloudflareFamily(path: string) {
   if (/^\/accounts\/[^/]+\/workers\/scripts(?:\/|$)/.test(path)) return "Workers scripts";
+  if (/^\/accounts\/[^/]+\/workers\/durable_objects(?:\/|$)/.test(path)) return "Durable Objects";
   if (/^\/accounts\/[^/]+\/d1(?:\/|$)/.test(path)) return "D1";
   if (/^\/accounts\/[^/]+\/r2(?:\/|$)/.test(path)) return "R2 buckets";
   if (/^\/accounts\/[^/]+\/pages(?:\/|$)/.test(path)) return "Pages";
@@ -242,6 +262,28 @@ export class Platform {
       return buckets;
     });
   }
+  /**
+   * Every chat object the identity Worker holds that has stored data, by class. Both namespaces exist once the Worker
+   * is deployed, so a missing one is refused rather than read as no chat.
+   */
+  async chatObjects() {
+    const account = await this.accountId();
+    const script = workers.find((worker) => worker.id === "identity")!.name + this.target.workerSuffix;
+    const namespaces = await this.cfList<{ id: string; script: string; class: string }>(
+      `/accounts/${account}/workers/durable_objects/namespaces`,
+    );
+    return Promise.all(
+      CHAT_OBJECT_CLASSES.map(async (className) => {
+        const namespace = namespaces.find((entry) => entry.script === script && entry.class === className);
+        if (!namespace)
+          throw new PublicError(`${script} has no ${className} namespace; deploy the identity Worker first`);
+        const objects = await this.cfList<{ id: string; hasStoredData: boolean }>(
+          `/accounts/${account}/workers/durable_objects/namespaces/${namespace.id}/objects`,
+        );
+        return { className, ids: objects.filter((object) => object.hasStoredData).map((object) => object.id) };
+      }),
+    );
+  }
   async scripts() {
     return this.cf<{ id: string }[]>(`/accounts/${await this.accountId()}/workers/scripts`);
   }
@@ -349,7 +391,7 @@ export class RelayDiagnostics extends WorkerEntrypoint {}`;
     const baseReady =
       databaseWorkers.every((worker) => databases.some((db) => db.name === databaseName(worker, this.target))) &&
       pagesSites(this.target).every((site) => pages.some((page) => page.name === site.pages)) &&
-      buckets.some((bucket) => bucket.name === this.target.statusBucket);
+      bucketsOf(this.target).every((name) => buckets.some((bucket) => bucket.name === name));
     if (!baseReady) return false;
     if (zones.length !== 1) throw new PublicError("Cloudflare zone unavailable");
     for (const site of pagesSites(this.target)) if (!(await this.sitePresent(id, zones[0]!.id, site))) return false;
@@ -363,8 +405,9 @@ export class RelayDiagnostics extends WorkerEntrypoint {}`;
       if (!databases.some((db) => db.name === databaseName(worker, this.target)))
         await this.cf(`/accounts/${id}/d1/database`, "POST", { name: databaseName(worker, this.target) });
     const buckets = await this.buckets(id);
-    if (!buckets.some((bucket) => bucket.name === this.target.statusBucket))
-      await this.cf(`/accounts/${id}/r2/buckets`, "POST", { name: this.target.statusBucket });
+    for (const name of bucketsOf(this.target))
+      if (!buckets.some((bucket) => bucket.name === name))
+        await this.cf(`/accounts/${id}/r2/buckets`, "POST", { name });
     const zones = await this.cfList<{ id: string }>(`/zones?name=${this.target.zone}`);
     if (zones.length !== 1) throw new PublicError("Cloudflare zone is not available to this token");
     for (const site of pagesSites(this.target)) await this.prepareSite(id, zones[0]!.id, site);

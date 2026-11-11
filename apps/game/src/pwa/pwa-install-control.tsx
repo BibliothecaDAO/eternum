@@ -4,7 +4,7 @@ import { useEffect } from "react";
 
 import { Sheet } from "@/ui/design-system/kit/sheet";
 
-import { isAppleMobile, isInstalledPwa } from "./browser-capabilities";
+import { isAppleMobile, isInstalledApp } from "./browser-capabilities";
 import { type InstallPrompt, useInstallState } from "./install-state";
 
 /**
@@ -14,7 +14,7 @@ import { type InstallPrompt, useInstallState } from "./install-state";
 export function PwaInstallRuntime() {
   const steps = useInstallState((state) => state.steps);
   useEffect(() => {
-    useInstallState.setState({ installed: isInstalledPwa() });
+    useInstallState.setState({ installed: isInstalledApp() });
     const ready = (event: Event) => {
       if (typeof (event as InstallPrompt).prompt !== "function") return;
       event.preventDefault();

@@ -86,6 +86,15 @@ export async function signOutIdentitySession(): Promise<void> {
   useIdentitySessionStore.getState().applySession(null);
 }
 
+/**
+ * Deletes the Realms account with its emailed code; the session ends with it. The device key stays: it is this
+ * browser's, shared by every account signed in on it.
+ */
+export async function deleteIdentityAccount(code: string): Promise<void> {
+  await identityClient.deleteAccount(code);
+  useIdentitySessionStore.getState().applySession(null);
+}
+
 const loadIdentitySessionOnce = (): Promise<void> => (initialLoad ??= useIdentitySessionStore.getState().refresh());
 
 /** Subscribes to the identity session and starts its first load. */

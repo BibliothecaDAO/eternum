@@ -1,5 +1,5 @@
 import { hash } from "starknet";
-import { GAME_ENTRYPOINTS } from "./entrypoints";
+import { GAME_ENTRYPOINTS } from "../../../packages/value-ledger/src/shard-entrypoints";
 
 const FIELD = (1n << 251n) + 17n * (1n << 192n) + 1n;
 const ENTRIES = new Map(GAME_ENTRYPOINTS.map((entry) => [BigInt(hash.getSelectorFromName(entry.name)), entry]));

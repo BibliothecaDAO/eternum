@@ -40,6 +40,9 @@ test("palette, shadow and gradient tokens pass, and so do lengths and words that
     [],
   ));
 
+test("an issue reference in a comment is not a colour, a bare hex after it still is", () =>
+  assert.deepEqual(matches(`// discord/discord-api-docs#6160, owner/repo#1234: color "#abc"`), ["#abc"]));
+
 for (const [what, source, expected] of [
   ["an arbitrary text size", `className="text-[15px] lg:text-[2.5rem]"`, ["text-[15px]", "text-[2.5rem]"]],
   [

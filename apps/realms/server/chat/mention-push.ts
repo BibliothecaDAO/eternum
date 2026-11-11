@@ -4,11 +4,11 @@ import type { MentionPlace } from "@bibliothecadao/notifications";
 import { GLOBAL_CHAT_CHANNEL_ID } from "@bibliothecadao/types";
 import { mentionCandidates, profileOfIdentityUser } from "@realms-world/identity";
 
-import { decodeIdentityEnv, vapidKeysOf } from "../env";
+import { decodeIdentityEnv } from "../env";
 import type { IdentityEnv } from "../env";
 import { NotificationPreferenceStore } from "../notification-preference-store";
 import { PushSubscriptionStore } from "../push-subscription-store";
-import { sendPush } from "../web-push";
+import { sendToDevice } from "../push-notifications";
 import { slotRoomKey } from "./rooms";
 
 /** A room message, as the room stored it. */
@@ -99,7 +99,7 @@ export const pushMentions = async (
         const devices = (yield* store.chatAlertDevices(owner, Date.now())).filter((device) => !seen.has(device.id));
         for (const device of devices) {
           const outcome = yield* Effect.promise(() =>
-            sendPush(vapidKeysOf(env), device, {
+            sendToDevice(env, device, {
               version: 1,
               kind: "mention",
               subscriptionId: device.id,

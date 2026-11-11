@@ -15,7 +15,7 @@ export const DAY_END_VEIL: EndgameLabSettings = { busy: false, spires: "awaken",
 /** The ended day's card, with the figures of the owner's screenshot of today's card: 12 h left, tomorrow 20 h. */
 export const dayEndSummary = (now: number, onContinue: () => void): Parameters<typeof DayDoneCard>[0] => ({
   endedDay: 1,
-  clock: { endsAt: now + 12 * 3_600, secondsLeft: 12 * 3_600, tomorrowSeconds: 20 * 3_600, tone: "calm" },
+  clock: { day: 2, endsAt: now + 12 * 3_600, secondsLeft: 12 * 3_600, tomorrowSeconds: 20 * 3_600, tone: "calm" },
   totals: { reveals: 17, cleared: 2, chests: 0, essence: 969, labor: 2_027, lords: 0 },
   history: "whole",
   onRetry: () => undefined,
