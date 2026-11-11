@@ -20,12 +20,11 @@ const RISE_STEPS = [30, 60, 90, 100];
 /**
  * The film studio (`/lab/studio`): the game's terrain, models and effects on a set built for shooting, a camera that
  * goes anywhere, the game's moments played on a call, and camera paths that replay the same for every take. A script
- * films through `window.__studio` (bridge.ts). The address holds the world (`mode=frontier` for Frontier's light, the lab's Game switch),
- * `take=<name>` plays a take once the set is up, and `capture=1` with `clean=1` shows nothing but the world.
+ * films through `window.__studio` (bridge.ts). In the address, `take=<name>` plays a take once the set is up, and
+ * `capture=1` with `clean=1` shows nothing but the world.
  */
 export function StudioLabView() {
   const [params, setParams] = useSearchParams();
-  const gameMode = params.get("mode") === "frontier" ? "frontier" : "blitz";
   const forceWebGL = params.get("rendererMode") === "webgpu-force-webgl";
   const clean = params.get("clean") === "1";
   const canvas = useRef<HTMLCanvasElement>(null);
@@ -65,7 +64,6 @@ export function StudioLabView() {
       canvas: canvas.current!,
       captureMode: false,
       stage,
-      gameMode,
       forceWebGL,
       qualityTier: "detail",
       revealProgress: 0,
@@ -100,7 +98,7 @@ export function StudioLabView() {
       delete (window as StudioWindow).__studio;
       renderer?.dispose();
     };
-  }, [gameMode, forceWebGL]);
+  }, [forceWebGL]);
 
   useStudioKeys(studio, () => setClean(!clean));
   const bridge = ready ? studio.current?.bridge : undefined;

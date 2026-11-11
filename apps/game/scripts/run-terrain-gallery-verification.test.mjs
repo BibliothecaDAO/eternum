@@ -339,19 +339,10 @@ function result(rendererMode, activeMode, groundMode) {
   };
 }
 
-it.each(["blitz", "frontier"])("captures the requested production world mode %s", (gameMode) => {
+it("opens the terrain lab with its own settings only, whatever the base address carries", () => {
   const url = new URL(
-    buildTerrainGalleryUrl(`https://localhost:4173/?mode=${gameMode}&look=dawn&biomes=reworked`, "webgpu-auto"),
+    buildTerrainGalleryUrl("https://localhost:4173/?mode=frontier&look=dawn&biomes=reworked", "webgpu-auto"),
   );
   expect(url.pathname).toBe("/lab/terrain");
-  expect(url.searchParams.get("mode")).toBe(gameMode);
-  expect(url.searchParams.has("look")).toBe(false);
-  expect(url.searchParams.has("biomes")).toBe(false);
-  const results = healthyResults();
-  for (const result of results) result.snapshot.gameMode = gameMode;
-  expect(evaluateTerrainGalleryResults(results, { gameMode }).ok).toBe(true);
-  results[0].snapshot.gameMode = "wrong";
-  expect(evaluateTerrainGalleryResults(results, { gameMode }).reasons).toContain(
-    "all-biomes/webgpu-auto/flat: world mode did not match request",
-  );
+  expect([...url.searchParams.keys()].sort()).toEqual(["capture", "groundMode", "quality", "rendererMode", "scene"]);
 });
