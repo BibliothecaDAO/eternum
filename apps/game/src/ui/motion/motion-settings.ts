@@ -28,7 +28,7 @@ export const playHaptic = (intensity: Intensity): void => {
 
 /**
  * One light tap when the player's own action is confirmed, in the iOS app only (with the Haptics setting on): part of
- * what makes the app more than its website for App Review (#5205). The web and the Android app play none.
+ * what makes the app more than its website for App Review. The web and the Android app play none.
  */
 export const playActionConfirmedHaptic = (): void => {
   const app = iosAppBridge();

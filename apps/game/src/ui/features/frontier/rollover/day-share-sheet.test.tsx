@@ -4,6 +4,8 @@ import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 
+import type { SharedDay } from "@/shell/share/day-card";
+
 /** The signed-in Realms account as the app holds it, and identity answering as the Worker does for that account. */
 const identity = vi.hoisted(() => {
   const state = { session: null as { user: { realmsId: string } } | null };
@@ -73,7 +75,7 @@ afterEach(() => {
 
 const settle = () => act(() => new Promise((resolve) => setTimeout(resolve, 10)));
 const signIn = (realmsId: string | null) => (identity.state.session = realmsId ? { user: { realmsId } } : null);
-const openSheet = async (shared: ReturnType<typeof sharedDay>) => {
+const openSheet = async (shared: SharedDay) => {
   await act(async () =>
     root.render(
       <QueryClientProvider client={client}>
@@ -167,4 +169,37 @@ it("hands a phone's share sheet each sheet's own card: another game's day, anoth
   expect(await otherPlayer.files![0]!.text()).toContain("Briar");
   expect(await otherPlayer.files![0]!.text()).not.toContain("Ashwalker");
   expect(otherPlayer.url).toBe(`${window.location.origin}/s/BBBB2222?via=system`);
+});
+
+/** A phone whose share sheet takes images; each share it was handed. */
+const phoneSheet = () => {
+  const share = vi.fn(async (_data: ShareData) => {});
+  vi.stubGlobal("navigator", Object.assign(Object.create(navigator), { canShare: () => true, share }));
+  setViewportWidth(390);
+  return share;
+};
+
+it("makes the phone's image only once Herald's closing rank has answered, and with it", async () => {
+  const share = phoneSheet();
+  signIn("0xa");
+  await openSheet({ ...sharedDay("0x1"), rank: undefined });
+  expect(button("Making the image")?.disabled).toBe(true);
+  await openSheet(sharedDay("0x1"));
+  await act(async () => button("Share").click());
+  expect(await share.mock.lastCall![0].files![0]!.text()).toContain("#1 ▲2");
+});
+
+it("shares and publishes the card as it is drawn at the press, after it changed with the sheet open", async () => {
+  const share = phoneSheet();
+  signIn("0xa");
+  await openSheet(sharedDay("0x1"));
+  // The realm is renamed while the sheet stays open: the same sheet, a new card.
+  await openSheet({ ...sharedDay("0x1"), realm: { name: "Ilmarin", order: 5 } });
+  await act(async () => button("Share").click());
+  await settle();
+  const sent = await share.mock.lastCall![0].files![0]!.text();
+  expect(sent).toContain("Ilmarin");
+  expect(sent).not.toContain("Temtinos");
+  const [, unfurl] = identity.client.uploadShareCard.mock.calls[0]! as unknown as [string, Blob];
+  expect(await unfurl.text()).toContain("Ilmarin");
 });

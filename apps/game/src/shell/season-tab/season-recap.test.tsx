@@ -31,19 +31,26 @@ vi.mock("@/hooks/context/identity-session", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/hooks/context/identity-session")>()),
   useIdentitySession: () => ({ status: "signed-out", session: null }),
 }));
-/** The image library at its edge: the node it was handed and the size asked, answered with a PNG or a failure. */
+/**
+ * The image library at its edge: the node it was handed and the size asked, answered with a PNG or a failure. Each PNG
+ * holds the node's words as the image began, so a test reads whose deck a shared file shows.
+ */
 const snapshot = vi.hoisted(() => ({
   fails: false,
   calls: [] as { node: HTMLElement; width: number; height: number }[],
   /** What each image drew: the node's words as it was made. */
   words: [] as string[],
+  /** While set, an image is still being made until it settles. */
+  held: null as Promise<void> | null,
 }));
 vi.mock("modern-screenshot", () => ({
   domToBlob: async (node: HTMLElement, options: { width: number; height: number }) => {
+    const words = node.textContent ?? "";
     snapshot.calls.push({ node, width: options.width, height: options.height });
-    snapshot.words.push(node.textContent ?? "");
+    snapshot.words.push(words);
+    await snapshot.held;
     if (snapshot.fails) throw new Error("canvas refused");
-    return new Blob(["png"], { type: "image/png" });
+    return new Blob([words], { type: "image/png" });
   },
 }));
 
@@ -73,6 +80,7 @@ afterEach(async () => {
   snapshot.fails = false;
   snapshot.calls = [];
   snapshot.words = [];
+  snapshot.held = null;
   app.channel = "web";
   vi.unstubAllGlobals();
 });
@@ -462,6 +470,115 @@ it("in the iOS app, falls back to the two steps when the sheet does not open, an
     ["Copy image", "secondary"],
     ["Post on X", "primary"],
   ]);
+});
+
+/**
+ * The recap standing in a Results page on a phone, handed its season and its viewer afresh by each `show`, as its page
+ * hands them while the directory loads and accounts change.
+ */
+const resultsRecap = () => {
+  (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
+  setViewportWidth(390);
+  const host = document.createElement("div");
+  document.body.append(host);
+  const root = createRoot(host);
+  const query = new QueryClient();
+  unmount = async () => {
+    await act(async () => root.unmount());
+    host.remove();
+  };
+  const show = async (game: (typeof ARCHIVED_SEASONS)[number] | undefined, viewer: string) => {
+    await act(async () =>
+      root.render(
+        <QueryClientProvider client={query}>
+          <MemoryRouter>
+            <SeasonRecap
+              gameRef={SEASON_ONE}
+              game={game}
+              board={BOARD}
+              viewer={viewer}
+              ending="lifted"
+              actions={null}
+            />
+          </MemoryRouter>
+        </QueryClientProvider>,
+      ),
+    );
+    // Let identity's names land and the image be made.
+    await act(async () => new Promise((resolve) => setTimeout(resolve, 20)));
+  };
+  return { host, show };
+};
+const VOLCANIC = BOARD.entries[0]!.address;
+
+it("in the iOS app, makes no image before the season is known, then one with its title", async () => {
+  app.channel = "app-store";
+  const shared = shareSheet();
+  const recap = resultsRecap();
+  // The directory has not answered: the deck's foot reads "Frontier" for now, and Share waits.
+  await recap.show(undefined, CANZI);
+  expect(snapshot.calls).toEqual([]);
+  expect(steps(recap.host).at(-1)).toEqual(["Making the image", "primary"]);
+  await recap.show(ARCHIVED_SEASONS[0], CANZI);
+  expect(recap.host.textContent).toContain("Playtest");
+  expect(snapshot.calls).toHaveLength(1);
+  await press(recap.host, "Share");
+  expect(shared[0]!.text).toBe("Playtest · #3 of 45 realms");
+  expect(await shared[0]!.files[0]!.text()).toContain("Playtest");
+});
+
+it("in the iOS app, shares the new viewer's deck after the viewer changes, never the one before", async () => {
+  app.channel = "app-store";
+  const shared = shareSheet();
+  const recap = resultsRecap();
+  await recap.show(ARCHIVED_SEASONS[0], CANZI);
+  expect(snapshot.calls).toHaveLength(1);
+  // Both players' names are already read: only the deck itself says the viewer changed.
+  await recap.show(ARCHIVED_SEASONS[0], VOLCANIC);
+  expect(text(card(recap.host, "place"))).toContain("Volcanic");
+  await press(recap.host, "Share");
+  expect(shared[0]!.text).toBe("Playtest · #1 of 45 realms");
+  const image = await shared[0]!.files[0]!.text();
+  expect(image).toContain("#1");
+  expect(image).not.toContain("#3");
+});
+
+it("in the iOS app, throws away an image the deck changed under while it was made", async () => {
+  app.channel = "app-store";
+  const shared = shareSheet();
+  let settle = () => {};
+  snapshot.held = new Promise<void>((resolve) => (settle = resolve));
+  const recap = resultsRecap();
+  await recap.show(ARCHIVED_SEASONS[0], CANZI);
+  expect(snapshot.calls).toHaveLength(1);
+  // Canzi's image is still being made when the viewer changes; it lands after Volcanic's is begun.
+  await recap.show(ARCHIVED_SEASONS[0], VOLCANIC);
+  expect(snapshot.calls).toHaveLength(2);
+  await act(async () => {
+    settle();
+    await new Promise((resolve) => setTimeout(resolve, 0));
+  });
+  await press(recap.host, "Share");
+  expect(shared).toHaveLength(1);
+  expect(await shared[0]!.files[0]!.text()).toBe(snapshot.words[1]);
+  expect(snapshot.words[1]).toContain("Volcanic");
+});
+
+it("in the iOS app, makes the image again of the deck drawn anew when the window widens past the phone's breakpoint", async () => {
+  app.channel = "app-store";
+  const shared = shareSheet();
+  const recap = resultsRecap();
+  await recap.show(ARCHIVED_SEASONS[0], CANZI);
+  const tall = deck(recap.host);
+  expect(snapshot.calls).toEqual([{ node: tall, width: 1080, height: 1350 }]);
+  // A wider window draws the deck's wide cut, a new node: its image is made of it, at its size.
+  await act(async () => setViewportWidth(1440));
+  await act(async () => new Promise((resolve) => setTimeout(resolve, 20)));
+  expect(deck(recap.host)).not.toBe(tall);
+  expect(snapshot.calls.at(-1)).toEqual({ node: deck(recap.host), width: 1200, height: 675 });
+  await press(recap.host, "Share");
+  expect(shared).toHaveLength(1);
+  expect(await shared[0]!.files[0]!.text()).toBe(snapshot.words.at(-1));
 });
 
 it.each(["web", "play"] as const)(

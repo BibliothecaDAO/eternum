@@ -24,7 +24,8 @@ export interface SharedDay {
   game: { chainId: string; gameId: number };
   day: number;
   totals: DayTotals;
-  rank: { from: number; to: number } | undefined;
+  /** Its closing rank change: undefined while Herald's ranks are read, null where there is none (useClosingRankChange). */
+  rank: { from: number; to: number } | null | undefined;
   /** The day in order, for the post's line of emoji. */
   trail: readonly DayMark[];
   /** The day's best moment, which the card is built round. */

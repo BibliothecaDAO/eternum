@@ -1,6 +1,6 @@
 import "./share-steps.css";
 
-import { useState, type RefObject } from "react";
+import { useState } from "react";
 
 import { SHARE_WORDS } from "@/ui/design-system/kit/words";
 import { canCopyCard, copyCardImage, saveCardImage, type CardSize } from "@/utils/card-image";
@@ -24,7 +24,7 @@ export const useShareSteps = ({
   url,
   onPost,
 }: {
-  card: RefObject<HTMLElement>;
+  card: HTMLElement | null;
   size: CardSize;
   fileName: string;
   line: string;
@@ -34,9 +34,9 @@ export const useShareSteps = ({
   const [state, setState] = useState<"idle" | "making" | "taken" | "failed">("idle");
   const copies = canCopyCard();
   const take = async () => {
-    if (!card.current) return;
+    if (!card) return;
     setState("making");
-    const taken = copies ? copyCardImage(card.current, size) : saveCardImage(card.current, size, fileName);
+    const taken = copies ? copyCardImage(card, size) : saveCardImage(card, size, fileName);
     setState(
       await taken.then(
         () => "taken" as const,

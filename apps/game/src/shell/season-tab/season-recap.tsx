@@ -12,7 +12,7 @@ import {
   type CSSProperties,
   type MouseEvent,
   type ReactNode,
-  type RefObject,
+  type Ref,
 } from "react";
 import { createPortal } from "react-dom";
 
@@ -97,7 +97,7 @@ export const SeasonRecap = ({
   cover?: boolean;
 }) => {
   const cut: Cut = useLayout() === "phone" ? "tall" : "wide";
-  const deck = useRef<HTMLDivElement>(null);
+  const [deck, setDeck] = useState<HTMLDivElement | null>(null);
   const { room, deckWidth, layoutStyle, roomStyle } = useDeckFit(cut, cover);
   const own = board && findOwnEntry(board.entries, viewer);
   const title = game ? seasonTitle(game) : ageOf("frontier").name;
@@ -124,7 +124,7 @@ export const SeasonRecap = ({
           (own ? (
             <div ref={room} className="season-recap__room" style={roomStyle}>
               <DeckFrame cut={cut} width={deckWidth}>
-                <Deck deckRef={deck} cut={cut} title={title}>
+                <Deck deckRef={setDeck} cut={cut} title={title}>
                   <PlaceCard own={own} field={board.entries.length} prize={prizeOf(board, own)} />
                   <PodiumCard board={board} viewer={viewer} />
                   <SitesCard own={own} />
@@ -148,6 +148,7 @@ export const SeasonRecap = ({
                 cut={cut}
                 line={shareLine(title, own, board.entries.length)}
                 gameRef={gameRef}
+                seasonRead={game !== undefined}
                 players={deckPlayers(board, own)}
               />
             )}
@@ -334,7 +335,7 @@ const Deck = ({
   title,
   children,
 }: {
-  deckRef: RefObject<HTMLDivElement>;
+  deckRef: Ref<HTMLDivElement>;
   cut: Cut;
   title: string;
   children: ReactNode;
@@ -503,8 +504,9 @@ const HaulCard = ({ own }: { own: Entry }) => (
 
 /**
  * The season's sharing. In the iOS app, one Share opens iOS's share sheet with the deck's image, the season's line and
- * its Results (#5205: the app's own feature for App Review); its image is made once every name on the deck is read. If
- * the sheet does not open, the two steps take its place. Elsewhere the two steps alone (the owner, 7 November 2026: the
+ * its Results, the app's own feature for App Review; its image is made once the deck shows all it will (the season's
+ * title and every name read), and made again whenever the deck changes. If the sheet does not open, the two steps take
+ * its place. Elsewhere the two steps alone (the owner, 7 November 2026: the
  * season's recap stays X only): its deck's image, then a post with the season's line and its Results. A phone's row has
  * room for the numbers alone; a desktop's buttons wear their icons too.
  */
@@ -513,12 +515,15 @@ const ShareSeason = ({
   cut,
   line,
   gameRef,
+  seasonRead,
   players,
 }: {
-  card: RefObject<HTMLDivElement>;
+  card: HTMLDivElement | null;
   cut: Cut;
   line: string;
   gameRef: GameRef;
+  /** Whether the directory has answered with the season, whose title the deck's foot draws. */
+  seasonRead: boolean;
   /** The players the deck names, whose names are read before its image is made for the sheet. */
   players: string[];
 }) => {
@@ -531,7 +536,7 @@ const ShareSeason = ({
   };
   const throughSheet = sharesThroughSheet();
   const named = useNamesRead(players);
-  const sheet = useSystemShare({ ...share, ready: throughSheet && named });
+  const sheet = useSystemShare({ ...share, ready: throughSheet && seasonRead && named });
   const steps = useShareSteps(share);
   if (throughSheet && !sheet.failed) {
     return (
