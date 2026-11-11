@@ -2,10 +2,9 @@ import { useUIStore } from "@/hooks/store/use-ui-store";
 import { AmbienceManager } from "@/three/managers/ambience-manager";
 import { WeatherManager, type WeatherState } from "@/three/managers/weather-manager";
 import { SceneManager } from "@/three/scene-manager";
-import { AmbientParticleSystem } from "@/three/systems/ambient-particle-system";
 import { GRAPHICS_DEV_GUI_ENABLED, createGuiFolder } from "@/three/utils/gui-manager";
 import { clampCycleProgress } from "@/utils/cycle-progress";
-import { AmbientLight, HemisphereLight, OrthographicCamera, Scene, Vector3 } from "three";
+import { AmbientLight, HemisphereLight, OrthographicCamera, Scene } from "three";
 
 type GUIController = {
   updateDisplay?: () => void;
@@ -22,9 +21,7 @@ export default class HUDScene {
   private hemisphereLight!: HemisphereLight;
   private weatherManager!: WeatherManager;
   private ambienceManager!: AmbienceManager;
-  private ambientParticles?: AmbientParticleSystem;
   private cycleProgress: number = 0;
-  private particleSpawnCenter: Vector3 = new Vector3();
   private readonly debugTimeControls = {
     overrideTime: false,
     dayProgress: 0,
@@ -47,8 +44,6 @@ export default class HUDScene {
 
     this.ambienceManager = new AmbienceManager();
     this.setupGraphicsDevEffectControls();
-
-    this.ambientParticles = new AmbientParticleSystem(this.scene);
   }
 
   private setupGraphicsDevControls(): void {
@@ -216,24 +211,6 @@ export default class HUDScene {
       weatherState.rainIntensity,
       weatherState.stormIntensity,
     );
-
-    // Update ambient particles (dust motes, fireflies) when the scene owns them.
-    if (this.ambientParticles) {
-      if (cycleProgress !== undefined) {
-        this.ambientParticles.setTimeProgress(cycleProgress);
-      }
-
-      // Pass wind to ambient particles
-      const windState = this.weatherManager.getWindState();
-      this.ambientParticles.setWind(windState.direction, windState.effectiveSpeed);
-
-      // Fade out ambient particles during weather
-      this.ambientParticles.setWeatherIntensity(weatherState.intensity);
-
-      // Update particle positions (follow camera)
-      this.particleSpawnCenter.set(this.camera.position.x, this.camera.position.y - 5, this.camera.position.z);
-      this.ambientParticles.update(deltaTime, this.particleSpawnCenter);
-    }
   }
 
   onWindowResize(width: number, height: number) {
@@ -257,11 +234,6 @@ export default class HUDScene {
     // Clean up ambience manager
     if (this.ambienceManager) {
       this.ambienceManager.dispose();
-    }
-
-    // Clean up ambient particles
-    if (this.ambientParticles) {
-      this.ambientParticles.dispose();
     }
 
     // Clean up lights
