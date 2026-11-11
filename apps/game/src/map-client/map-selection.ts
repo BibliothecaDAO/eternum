@@ -56,6 +56,7 @@ export class MapSelection {
   tapAt(hex: Hex): void {
     if (this.isPinnedTo(hex)) return this.sendOrderTo(hex);
     if (this.pinOrderTo(hex)) return;
+    if (this.openTargetCardAt(hex)) return;
     const contract = contractHexOf(hex);
     const army = this.projection.getArmiesAtHex({ alt: activeMapLayer(), ...contract })[0];
     const structure = this.projection.getStandingStructureAtHex({ alt: activeMapLayer(), ...contract });
@@ -130,6 +131,20 @@ export class MapSelection {
     // The HUD reads the pinned tile as the map's scene names it: its bar shows the order and carries its verb.
     ui.updateEntityActionHoveredHex(hex);
     this.showOrder();
+    return true;
+  }
+
+  /**
+   * Opens the card of a hex where the rules offer the picked army something other than a walk (an attack, a site,
+   * a chest, a spire, troops to another army), with the army kept as its actor: the HUD's card there carries the
+   * forecast and the verb. False when the hex is offered nothing.
+   */
+  private openTargetCardAt(hex: Hex): boolean {
+    const ui = useUIStore.getState();
+    const { selectedEntityId, actionPaths } = ui.entityActions;
+    if (selectedEntityId == null || !actionPaths.has(pathKeyOf(hex))) return false;
+    this.unpinOrder();
+    ui.selectOnMap({ kind: "army", entityId: selectedEntityId, tile: contractHexOf(hex) });
     return true;
   }
 

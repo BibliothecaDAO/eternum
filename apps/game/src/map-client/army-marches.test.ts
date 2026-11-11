@@ -55,3 +55,57 @@ describe("ArmyMarches", () => {
     expect(marches.instancesOf("knight")).toHaveLength(INSTANCE_FLOATS);
   });
 });
+
+describe("an army that strikes", () => {
+  it("faces what it strikes and strikes from that moment, where it stands", () => {
+    const marches = new ArmyMarches();
+    marches.update([army(7, 3, 4)], 0);
+    expect(marches.strike(7, { x: 3, z: 9 }, 12)).toBe(true);
+    const unit = Array.from(marches.instancesOf("knight"));
+    // It strikes (2) from its own hex, facing south, with no way to go, from second 12.
+    expect([unit[0], unit[2]]).toEqual([3, 4]);
+    expect(unit[6]).toBe(2);
+    expect(unit[7]).toBeCloseTo(0, 5);
+    expect(unit[8]).toBe(0);
+    expect(unit[11]).toBe(12);
+  });
+
+  it("strikes once its march has ended, and not while it still walks", () => {
+    const marches = new ArmyMarches();
+    marches.update([army(7, 0, 0)], 0);
+    marches.update([army(7, 9, 0)], 0);
+    expect(marches.strike(7, { x: 10, z: 0 }, 5)).toBe(false);
+    expect(Array.from(marches.instancesOf("knight"))[6]).toBe(4);
+    expect(marches.strike(7, { x: 10, z: 0 }, 11)).toBe(true);
+    const unit = Array.from(marches.instancesOf("knight"));
+    expect([unit[0], unit[6]]).toEqual([9, 2]);
+  });
+
+  it("walks on when the facts move it, its strike forgotten", () => {
+    const marches = new ArmyMarches();
+    marches.update([army(7, 0, 0)], 0);
+    marches.strike(7, { x: 1, z: 0 }, 1);
+    marches.update([army(7, 3, 0)], 2);
+    expect(Array.from(marches.instancesOf("knight"))[6]).toBe(4);
+    marches.update([army(7, 3, 0)], 30);
+    expect(marches.strike(7, { x: 4, z: 0 }, 31)).toBe(true);
+  });
+
+  it("is no strike for an army the map does not hold", () => {
+    expect(new ArmyMarches().strike(7, { x: 1, z: 0 }, 1)).toBe(false);
+  });
+});
+
+describe("a land drawn round another origin", () => {
+  it("keeps an army's march where it was on the land", () => {
+    const marches = new ArmyMarches();
+    marches.update([army(7, 0, 0)], 0);
+    marches.update([army(7, 9, 0)], 0);
+    marches.shift({ x: 100, z: -50 });
+    // The facts read from the new origin place it on the same hex: nothing changed, and it walks on.
+    expect(marches.update([army(7, 109, -50)], 5)).toBe(false);
+    const unit = Array.from(marches.instancesOf("knight"));
+    expect([unit[0], unit[2], unit[6], unit[8], unit[11]]).toEqual([100, -50, 4, 9, 0]);
+    expect(marches.positions(5).get(7)).toEqual({ x: 104.5, z: -50 });
+  });
+});

@@ -16,17 +16,21 @@ trees, rocks and plants the renderer makes by rule), the mist and the hexes next
 shrines, wells and chests where a tile or a chest's facts put them, armies, and animals (seven mammals that graze, rest,
 move in herds, run from armies and hunt: the map's flourish, no fact of the game); drag pans, pinch or wheel zooms, a
 tap picks an army, a structure or a hex, and a tap on a hex a picked army can move to or explore pins that order and
-shows its path; the same hex tapped again, or the HUD's verb, sends it. Every army and structure carries today's label:
-its token over it, ringed while it is picked, and its full plate while a mouse is on its hex (a finger opens none). It
-is the page's only renderer there, and what it does not draw yet is missing: the realm view (an address that turns to it
-is taken back to the map, and the HUD says the view did not open), what the Ethereal holds beyond its land, structures
-and armies, a Frontier realm's own spire (which a rule places, not a tile), a site's guardian and its cleared state,
-battles, a shrine's or a chest's label, and on a structure's plate the troops on their way to it; and the orders other
-than a move or an explore (an attack, a site, a chest, a spire, a new army) are not sent from it. It starts on WebGPU
-and falls back to WebGL2 where WebGPU is missing or will not start; `&rendererMode=webgpu-force-webgl` asks for WebGL2.
-The module the page loads (`src/map-client/renderer`) is built from the crate by `pnpm --dir apps/game build:map-client`
-(pinned Rust, wasm-pack 0.15.0, `--locked`) and committed; CI builds it again and refuses a module its sources do not
-build. The client playtest and the scene smoke ask for the current renderer by name, so they prove it on any build.
+shows its path; the same hex tapped again, or the HUD's verb, sends it. A tap on a hex where the rules offer the picked
+army anything else (an attack, a site, a chest, a spire, another army) opens that hex's card with the army kept as its
+actor, and the HUD's card carries the forecast and the verb. When a battle is fought the attacker strikes at the
+defender where it stands, three blows, and a defending army strikes back: a flourish over the facts. Every army and
+structure carries today's label: its token over it, ringed while it is picked, and its full plate while a mouse is on
+its hex (a finger opens none). It is the page's only renderer there, and what it does not draw yet is missing: the realm
+view (an address that turns to it is taken back to the map, and the HUD says the view did not open), what the Ethereal
+holds beyond its land, structures and armies, a Frontier realm's own spire (which a rule places, not a tile), a site's
+guardian and its cleared state, a battle's arrows and impacts, a shrine's or a chest's label, and on a structure's plate
+the troops on their way to it; a new army is not deployed from it (the HUD's Deploy is), and an attack that today's map
+previews in its own window, outside Frontier's standing sites, has no preview. It starts on WebGPU and falls back to
+WebGL2 where WebGPU is missing or will not start; `&rendererMode=webgpu-force-webgl` asks for WebGL2. The module the
+page loads (`src/map-client/renderer`) is built from the crate by `pnpm --dir apps/game build:map-client` (pinned Rust,
+wasm-pack 0.15.0, `--locked`) and committed; CI builds it again and refuses a module its sources do not build. The
+client playtest and the scene smoke ask for the current renderer by name, so they prove it on any build.
 
 Frontier army management: select an army from the dock or map; on a phone tap its selected token for details. The
 panel's red trash, right after its name at the top left, is **Delete**: it asks for confirmation in the panel (troops,

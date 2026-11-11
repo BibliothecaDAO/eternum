@@ -1,3 +1,4 @@
+import { WorldUpdateListener } from "@bibliothecadao/eternum";
 import type { GameClientSetup } from "@bibliothecadao/eternum/game-client";
 import { requireActiveGameSyncRuntime, type WorldSpatialProjection } from "@bibliothecadao/eternum/game-sync";
 
@@ -18,7 +19,15 @@ import { ArmyMarches, TROOP_BUILDS } from "./army-marches";
 import { landAround, type Hex } from "./land-from-facts";
 import { MapArt } from "./map-art";
 import { CAMERA_FAR, CAMERA_FOV, CAMERA_NEAR, cameraWorldMatrix, type GroundPoint, type MapCamera } from "./map-camera";
-import { changedHexes, contractHexOf, readArmies, readLandmarks, readStructures, readTiles } from "./map-facts";
+import {
+  changedHexes,
+  contractHexOf,
+  normalizedHexOf,
+  readArmies,
+  readLandmarks,
+  readStructures,
+  readTiles,
+} from "./map-facts";
 import { MapInput } from "./map-input";
 import { MapLabels } from "./map-labels";
 import { MapSelection } from "./map-selection";
@@ -216,7 +225,10 @@ export class MapClientRenderer {
   private async takeLand(projection: WorldSpatialProjection, centre: Hex): Promise<void> {
     if (!this.art || !this.module) return;
     const lookedAt = this.renderer ? absoluteOf(this.camera.target) : null;
+    const was = absoluteOf({ x: 0, z: 0 });
     setWorldOrigin(centre);
+    const now = absoluteOf({ x: 0, z: 0 });
+    this.marches.shift({ x: was.x - now.x, z: was.z - now.z });
     this.landCentre = centre;
     this.camera = { ...this.camera, target: lookedAt ? drawnOf(lookedAt) : worldHexToWorld(centre.col, centre.row) };
     const land = landAround(readTiles(projection), centre, LAND_REACH);
@@ -231,8 +243,9 @@ export class MapClientRenderer {
     if (this.destroyed) return started.free();
     this.renderer = started;
     this.land = packed;
-    this.marches.forget();
-    this.placeArmies(projection);
+    this.marches.update(readArmies(projection, this.setup.store), this.seconds());
+    this.showTroops(started);
+    this.sayLabels(projection);
     this.roams = landRoamed(land);
     this.wildlife.settle(animalHomes(land), this.seconds());
     this.placeWildlife(started);
@@ -280,6 +293,10 @@ export class MapClientRenderer {
         () => this.wantLand(projection),
       ),
       projection.subscribeArmies(() => this.placeArmies(projection)),
+      // A battle is an event, not a fact: its blows are a flourish over the armies the facts place.
+      new WorldUpdateListener(this.setup).BattleEvent.onBattleUpdate(({ battleData }) =>
+        this.showBattle(projection, battleData.attackerId, battleData.defenderId),
+      ),
       // A player's name that lands is said by the labels at once.
       watchPlayerNames(() => this.sayLabels(projection)),
       useUIStore.subscribe(
@@ -307,10 +324,36 @@ export class MapClientRenderer {
 
   private placeArmies(projection: WorldSpatialProjection): void {
     if (!this.renderer) return;
-    if (this.marches.update(readArmies(projection, this.setup.store), this.seconds())) {
-      for (const build of TROOP_BUILDS) this.renderer.set_troop(build, this.marches.instancesOf(build));
-    }
+    if (this.marches.update(readArmies(projection, this.setup.store), this.seconds())) this.showTroops(this.renderer);
     this.sayLabels(projection);
+  }
+
+  /** Gives the renderer every army as the marches now have it. */
+  private showTroops(renderer: MapRenderer): void {
+    for (const build of TROOP_BUILDS) renderer.set_troop(build, this.marches.instancesOf(build));
+  }
+
+  /**
+   * A battle was fought: the attacker strikes at the defender where it stands, an army or a structure, and a
+   * defending army strikes back. Nothing for an attacker or a defender the map does not hold.
+   */
+  private showBattle(projection: WorldSpatialProjection, attackerId: number, defenderId: number): void {
+    if (!this.renderer) return;
+    const now = this.seconds();
+    const armies = this.marches.positions(now);
+    const attacker = armies.get(attackerId);
+    const defender = armies.get(defenderId) ?? this.structurePlace(projection, defenderId);
+    if (!attacker || !defender) return;
+    const struck = [this.marches.strike(attackerId, defender, now), this.marches.strike(defenderId, attacker, now)];
+    if (struck.includes(true)) this.showTroops(this.renderer);
+  }
+
+  /** Where a structure of the layer shown stands on the ground. */
+  private structurePlace(projection: WorldSpatialProjection, entityId: number): GroundPoint | undefined {
+    const structure = projection.getStructure(entityId);
+    if (!structure || structure.hexCoords.alt !== activeMapLayer()) return undefined;
+    const hex = normalizedHexOf(structure.hexCoords);
+    return worldHexToWorld(hex.col, hex.row);
   }
 
   /** Says every label of the land held as the facts now have it. Unchanged words cost nothing. */

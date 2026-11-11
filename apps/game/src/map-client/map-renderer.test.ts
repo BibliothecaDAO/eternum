@@ -1,3 +1,4 @@
+import { configManager } from "@bibliothecadao/eternum";
 import type { GameClientSetup } from "@bibliothecadao/eternum/game-client";
 import { BiomeIdToType } from "@bibliothecadao/types";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -45,6 +46,9 @@ const world = vi.hoisted(() => ({
     dispose: vi.fn(),
   },
   inputs: vi.fn(),
+  armies: [] as Array<{ entityId: number; at: { x: number; z: number }; build: string; tint: number[] }>,
+  event: (() => {}) as (event: unknown) => void,
+  placed: new Map<number, { hexCoords: Hex & { alt: boolean } }>(),
 }));
 
 const subscribe = (name: string) => (listener: Listener) => {
@@ -56,6 +60,7 @@ const projection = {
   subscribeTiles: subscribe("tiles"),
   subscribeStructures: subscribe("structures"),
   subscribeChests: subscribe("chests"),
+  getStructure: (entityId: number) => world.placed.get(entityId),
 };
 
 vi.mock("@bibliothecadao/eternum/game-sync", () => ({
@@ -97,7 +102,8 @@ vi.mock("@/three/world-origin", () => ({
 vi.mock("./map-facts", () => ({
   changedHexes: (changes: Hex[]) => changes,
   contractHexOf: (hex: Hex) => hex,
-  readArmies: () => [],
+  normalizedHexOf: (hex: Hex) => hex,
+  readArmies: () => world.armies,
   readStructures: () => world.structures,
   readLandmarks: () => world.landmarks,
   readTiles: () => world.tiles,
@@ -148,7 +154,13 @@ const publish = (name: "tiles" | "structures" | "chests" | "armies", changes: He
 const offerWebGPU = () => Object.defineProperty(navigator, "gpu", { value: {}, configurable: true });
 
 function newRenderer() {
-  return new MapClientRenderer({ store: {} } as unknown as GameClientSetup);
+  const store = {
+    subscribeEvents: (listener: (event: unknown) => void) => {
+      world.event = listener;
+      return () => {};
+    },
+  };
+  return new MapClientRenderer({ store } as unknown as GameClientSetup);
 }
 
 beforeEach(() => {
@@ -158,6 +170,8 @@ beforeEach(() => {
   world.structures = [];
   world.landmarks = [];
   world.plates = { structures: [], armies: [] };
+  world.armies = [];
+  world.placed.clear();
   world.listeners.clear();
   world.scene = null;
   world.bootToken = 1;
@@ -496,5 +510,62 @@ describe("the labels the map says", () => {
     await renderer.initScene();
     renderer.destroy();
     expect(world.labels.dispose).toHaveBeenCalledOnce();
+  });
+});
+
+describe("a battle on the map", () => {
+  const knight = (entityId: number, x: number) => ({ entityId, at: { x, z: 0 }, build: "knight", tint: [1, 1, 1] });
+  const battle = (attacker: number, defender: number) =>
+    world.event({
+      model: "BattleEvent",
+      value: {
+        game_id: 1,
+        attacker_id: attacker,
+        defender_id: defender,
+        attacker_owner: 7,
+        defender_owner: 8,
+        winner_id: 7,
+        max_reward: [],
+        timestamp: 0,
+      },
+    });
+  /** What each knight does, in the order the renderer was last given them: 1 guards, 2 strikes. */
+  const knightsDo = () => {
+    const given = world.native.set_troop.mock.calls.findLast(([build]) => build === "knight")![1] as Float32Array;
+    return Array.from({ length: given.length / 20 }, (_, unit) => given[unit * 20 + 6]);
+  };
+
+  beforeEach(() => {
+    vi.spyOn(configManager, "getActiveGameId").mockReturnValue(1);
+  });
+
+  it("has both armies strike at each other", async () => {
+    world.armies = [knight(1, 0), knight(2, 1), knight(3, 5)];
+    const renderer = newRenderer();
+    await renderer.initScene();
+    expect(knightsDo()).toEqual([1, 1, 1]);
+    battle(1, 2);
+    expect(knightsDo()).toEqual([2, 2, 1]);
+    renderer.destroy();
+  });
+
+  it("has an army strike at a structure it attacks", async () => {
+    world.armies = [knight(1, 0)];
+    world.placed.set(9, { hexCoords: { col: 1, row: 0, alt: false } });
+    const renderer = newRenderer();
+    await renderer.initScene();
+    battle(1, 9);
+    expect(knightsDo()).toEqual([2]);
+    renderer.destroy();
+  });
+
+  it("shows nothing for a battle whose attacker the map does not hold", async () => {
+    world.armies = [knight(2, 1)];
+    const renderer = newRenderer();
+    await renderer.initScene();
+    const given = world.native.set_troop.mock.calls.length;
+    battle(1, 2);
+    expect(world.native.set_troop).toHaveBeenCalledTimes(given);
+    renderer.destroy();
   });
 });

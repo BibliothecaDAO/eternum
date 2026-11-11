@@ -21,6 +21,7 @@ const MARCH_SPEED = 0.9;
 /** What a unit is and does, as `unit.wgsl` numbers them. */
 const KIND: Record<TroopBuild, number> = { knight: 0, crossbowman: 1, paladin: 3 };
 const GUARD = 1;
+const STRIKE = 2;
 const MARCH = 4;
 
 interface Standing {
@@ -29,6 +30,8 @@ interface Standing {
   from: GroundPoint;
   setOff: number;
   heading: number;
+  /** Set while it strikes where it faces, from `setOff`: the shader plays its blows and then stands it on guard. */
+  strikes?: true;
 }
 
 const distance = (from: GroundPoint, to: GroundPoint) => Math.hypot(to.x - from.x, to.z - from.z);
@@ -75,9 +78,28 @@ export class ArmyMarches {
     return new Map([...this.standing].map(([entityId, unit]) => [entityId, whereAt(unit, seconds)]));
   }
 
-  /** Forgets every army: the ground they stood on is drawn round another origin. */
-  forget(): void {
-    this.standing.clear();
+  /**
+   * An army strikes at a point from where it stands, from this moment. False for an army the map does not hold and
+   * for one still on its march, whose walk is not broken.
+   */
+  strike(entityId: number, toward: GroundPoint, seconds: number): boolean {
+    const known = this.standing.get(entityId);
+    if (!known || distance(whereAt(known, seconds), known.army.at) > 1e-3) return false;
+    const { army } = known;
+    const heading = Math.atan2(toward.x - army.at.x, toward.z - army.at.z);
+    this.standing.set(entityId, { army, from: army.at, setOff: seconds, heading, strikes: true });
+    return true;
+  }
+
+  /**
+   * The ground is drawn round another origin, every point of it moved by `by`: each army is where it was on the
+   * land, its march and its blows unbroken.
+   */
+  shift(by: GroundPoint): void {
+    const moved = (point: GroundPoint) => ({ x: point.x + by.x, z: point.z + by.z });
+    for (const [entityId, unit] of this.standing) {
+      this.standing.set(entityId, { ...unit, from: moved(unit.from), army: { ...unit.army, at: moved(unit.army.at) } });
+    }
   }
 
   /** Every army of one build as the renderer's instances. */
@@ -97,14 +119,15 @@ function whereAt({ army, from, setOff }: Standing, seconds: number): GroundPoint
   return { x: from.x + (army.at.x - from.x) * gone, z: from.z + (army.at.z - from.z) * gone };
 }
 
-function instanceOf({ army, from, setOff, heading }: Standing): number[] {
+function instanceOf({ army, from, setOff, heading, strikes }: Standing): number[] {
   const length = distance(from, army.at);
   const marches = length > 1e-3;
+  const does = marches ? MARCH : strikes ? STRIKE : GUARD;
   // A number of its own between 0 and 1, the same every frame, by which the shader varies a unit's stance.
   const seed = (Math.sin(army.entityId * 12.9898) * 43758.5453) % 1;
   return [
     ...[from.x, 0, from.z, Math.abs(seed)],
-    ...[ARMY_HEIGHT, KIND[army.build], marches ? MARCH : GUARD, heading],
+    ...[ARMY_HEIGHT, KIND[army.build], does, heading],
     ...[marches ? length : 0, 0, marches ? MARCH_SPEED : 0, setOff],
     ...[1, 0, 0, 0],
     ...[army.tint[0], army.tint[1], army.tint[2], 1],

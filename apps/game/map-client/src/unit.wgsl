@@ -66,7 +66,11 @@ const SPEARMAN = 1.0;
 const RIDER = 2.0;
 
 const GUARD = 1.0;
+// It strikes at what stands where it faces: three blows from the moment `path.w` names, then it stands on guard.
+const STRIKE = 2.0;
 const MARCH = 4.0;
+const BLOW_SECONDS = 0.9;
+const BLOWS = 3.0;
 // What an animal does where it stands: it grazes, or it lies at rest.
 const GRAZE = 6.0;
 const REST = 7.0;
@@ -99,6 +103,11 @@ fn ease(value: f32) -> f32 {
   return x * x * (3.0 - 2.0 * x);
 }
 
+// How far `value` has come from `low` to `high`, eased.
+fn between(value: f32, low: f32, high: f32) -> f32 {
+  return ease((value - low) / (high - low));
+}
+
 // What a unit is doing and where: all read from its instance and the clock.
 struct Life {
   origin: vec3f,
@@ -115,6 +124,11 @@ struct Life {
   seed: f32,
   kind: f32,
   height: f32,
+  // A blow: how far wound up, and how far through. Both 0 while it does not strike.
+  wound: f32,
+  through: f32,
+  // How far ahead of where it stands its body goes into a blow, in world units: its hex stays where it stands.
+  lunge: f32,
 }
 
 fn live(input: UnitInput, time: f32) -> Life {
@@ -141,6 +155,20 @@ fn live(input: UnitInput, time: f32) -> Life {
     let travelled = select(min(gone, input.path.x), gone, endless);
     life.origin = input.stand.xyz + vec3f(sin(life.heading), 0.0, cos(life.heading)) * travelled;
     life.go = select(smoothstep(0.0, 0.3, input.path.x - gone), 1.0, endless) * step(0.0001, gone);
+  }
+  life.wound = 0.0;
+  life.through = 0.0;
+  life.lunge = 0.0;
+  if (life.activity == STRIKE) {
+    // A blow: wound up slowly with the weight going back, let go fast with a step into it, and recovered.
+    let blows = (time - input.path.w) / BLOW_SECONDS;
+    let striking = step(0.0, blows) * step(blows, BLOWS);
+    let moment = fract(blows);
+    let hit = between(moment, 0.34, 0.43);
+    life.wound = ease(moment / 0.34) * (1.0 - hit) * striking;
+    life.through = hit * (1.0 - between(moment, 0.58, 0.95)) * striking;
+    // Every body goes into its blow, a statue too.
+    life.lunge = (0.22 * life.through - 0.06 * life.wound) * height;
   }
   life.pace *= step(0.01, life.go);
   life.stride = speed * period / height * life.go;
@@ -304,6 +332,11 @@ fn trunk(life: Life, time: f32) -> Trunk {
   var bend = mix(0.03 + breath * 0.008, 0.07 + run * 0.17, go);
   var twist = -hips_turn * 1.5;
 
+  pelvis.z += -0.05 * life.wound + 0.14 * life.through;
+  pelvis.y -= 0.05 * life.through + 0.012 * life.wound;
+  twist += -0.6 * life.wound + 0.5 * life.through;
+  bend += -0.1 * life.wound + 0.3 * life.through;
+
   // At rest each stands his own way: turned a little, the weight on the foot he favours.
   let favours = (fract(life.seed * 3.9) - 0.5) * (1.0 - go) * step(life.activity, GUARD);
   twist += favours * 0.5;
@@ -397,16 +430,23 @@ fn arm(side: f32, part: f32, life: Life, body: Trunk, time: f32) -> Joint {
     elbow = 1.0 + sin(stride * 2.0) * 0.06 * go;
   }
   if (weapon_arm && spear) {
-    // A spear is carried upright, its hand at the hip.
+    // A spear is carried upright, its hand at the hip; for a blow it is drawn back level and thrust.
     raise = raise * 0.25 + 0.3;
     elbow = 1.27;
     wrist = 0.0;
+    let level = max(life.wound, life.through);
+    let thrust = -0.75 * life.wound + 0.95 * life.through;
+    let drawn = 1.5 * life.wound + 0.25;
+    raise = mix(raise, thrust, level);
+    elbow = mix(elbow, drawn, level);
+    wrist = mix(wrist, PI * 0.5 - thrust - drawn + 0.1, level);
   }
   if (weapon_arm && !spear) {
-    // A sword hangs point down as he walks.
-    raise = raise * 0.55 + 0.12;
-    elbow = elbow * 0.6 + 0.3;
-    wrist = 0.35;
+    // A sword hangs point down as he walks, goes up and back for a blow, and snaps through it.
+    raise = raise * 0.55 + 0.12 + 2.5 * life.wound - 0.35 * life.through;
+    elbow = elbow * 0.6 + 0.3 + 1.0 * life.wound - 0.2 * life.through;
+    out += 0.4 * life.wound;
+    wrist = 0.35 - 1.5 * life.wound + 0.55 * life.through;
   }
   // A shield is carried across the body, its face to the front.
   let across = select(0.0, -side * 0.95, shield_arm);
@@ -522,7 +562,7 @@ fn place_unit(input: UnitInput) -> UnitOutput {
   }
   var output: UnitOutput;
   output.uv = input.uv;
-  output.world = life.origin + facing * posed * life.height;
+  output.world = life.origin + facing * (posed * life.height + vec3f(0.0, 0.0, life.lunge));
   if (cloth > 0.0) {
     output.world.y = max(output.world.y, life.origin.y + 0.012);
   }

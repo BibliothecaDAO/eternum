@@ -136,13 +136,28 @@ describe("a tap on the map", () => {
     expect(shown.at(-1)).toEqual([]);
   });
 
-  it("does not send an attack: only a move or an explore is sent from this map", () => {
+  it("opens the target's card for an attack, the army kept as its actor, and sends nothing itself", () => {
     pickTheArmy();
 
     selection.tapAt({ col: 3, row: 0 });
+
+    expect(world.ui.selectOnMap).toHaveBeenLastCalledWith({
+      kind: "army",
+      entityId: ARMY,
+      tile: { col: CENTRE + 3, row: CENTRE },
+    });
+    selection.tapAt({ col: 3, row: 0 });
+    expect(world.moveArmy).not.toHaveBeenCalled();
+  });
+
+  it("puts a pinned order away when the army's target card opens", () => {
+    pickTheArmy();
+    selection.tapAt({ col: 2, row: 0 });
+
     selection.tapAt({ col: 3, row: 0 });
 
-    expect(world.moveArmy).not.toHaveBeenCalled();
+    expect(shown.at(-1)).toEqual([]);
+    expect(world.ui.updateEntityActionHoveredHex).toHaveBeenLastCalledWith(null);
   });
 });
 
