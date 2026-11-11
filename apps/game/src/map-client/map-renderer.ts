@@ -22,6 +22,8 @@ import { MapInput } from "./map-input";
 import { MapSelection } from "./map-selection";
 import type { MapRenderer } from "./renderer/map_client";
 import { packLand } from "./scene-from-land";
+import { animalHomes, landRoamed } from "./wildlife-homes";
+import { ANIMAL_SPECIES, Wildlife } from "./wildlife";
 import type { PackedScene } from "./scene-pack";
 
 /**
@@ -39,6 +41,8 @@ const LAND_SLACK = 12;
  * publishes in pieces is drawn together, and later changes never push the build further off.
  */
 const LAND_BATCH_MS = 200;
+/** How often the map's animals decide what to do, in seconds. */
+const WILDLIFE_ACTS_EVERY = 0.5;
 /** The events that tell the page's address changed (`renderer-route-runtime.ts`). */
 const ROUTE_EVENTS = ["urlChanged", "popstate", "sceneAddressChanged"] as const;
 const START_DISTANCE = 22;
@@ -54,6 +58,10 @@ const QUALITY = "mid";
 export class MapClientRenderer {
   private canvas = document.createElement("canvas");
   private readonly marches = new ArmyMarches();
+  private readonly wildlife = new Wildlife();
+  /** Whether a point is ground the land's animals may walk on, and when they last acted. */
+  private roams: (point: GroundPoint) => boolean = () => false;
+  private wildlifeActedAt = 0;
   private readonly startedAt = performance.now();
   private readonly unsubscribe: Array<() => void> = [];
   private art: MapArt | null = null;
@@ -208,6 +216,9 @@ export class MapClientRenderer {
     this.renderer = started;
     this.marches.forget();
     this.placeArmies(projection);
+    this.roams = landRoamed(land);
+    this.wildlife.settle(animalHomes(land), this.seconds());
+    this.placeWildlife(started);
     this.selection?.showOrder();
   }
 
@@ -271,6 +282,13 @@ export class MapClientRenderer {
     for (const build of TROOP_BUILDS) this.renderer.set_troop(build, this.marches.instancesOf(build));
   }
 
+  /** Lets the animals act twice a second, and tells the renderer where each now walks, grazes or rests. */
+  private placeWildlife(renderer: MapRenderer): void {
+    this.wildlifeActedAt = this.seconds();
+    this.wildlife.update(this.wildlifeActedAt, this.marches.positions(this.wildlifeActedAt), this.roams);
+    for (const species of ANIMAL_SPECIES) renderer.set_troop(species, this.wildlife.instancesOf(species));
+  }
+
   private lookAt(camera: MapCamera): void {
     this.camera = camera;
     publishCameraView(camera.target, camera.distance);
@@ -295,6 +313,7 @@ export class MapClientRenderer {
     if (this.destroyed) return;
     this.frame = requestAnimationFrame(this.draw);
     if (!this.renderer || this.building) return;
+    if (this.seconds() - this.wildlifeActedAt >= WILDLIFE_ACTS_EVERY) this.placeWildlife(this.renderer);
     this.renderer.render(cameraWorldMatrix(this.camera), CAMERA_FOV, CAMERA_NEAR, CAMERA_FAR, this.seconds());
   };
 

@@ -70,6 +70,11 @@ export class ArmyMarches {
     return changed;
   }
 
+  /** Where every army is at a moment. */
+  positions(seconds: number): GroundPoint[] {
+    return [...this.standing.values()].map((unit) => whereAt(unit, seconds));
+  }
+
   /** Forgets every army: the ground they stood on is drawn round another origin. */
   forget(): void {
     this.standing.clear();
