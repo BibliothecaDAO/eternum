@@ -326,17 +326,32 @@ describe("biome creatures and armies", () => {
     }
   });
 
-  it("is felt from less far when the army stands still", () => {
+  it("pays a camped army no mind, and takes fright once it moves", () => {
     const population = new BiomeCreaturePopulation();
     population.sync(field(BiomeType.Tundra));
     const [fox] = leaders(population);
     const army = { x: fox.x + 2, z: fox.z, moving: false };
     population.setThreats([army]);
     population.update(0.05);
-    expect(fox.mood).toBe("wary");
+    expect(fox.mood).toBe("calm");
     army.moving = true;
     population.update(0.05);
     expect(fox.mood).toBe("alarmed");
+  });
+
+  it("goes on grazing and walking with an army camped beside every herd", () => {
+    const population = new BiomeCreaturePopulation();
+    population.sync(field(BiomeType.Grassland));
+    const animals = [...population.creatures.values()];
+    population.setThreats(animals.map((animal) => ({ x: animal.x + 1, z: animal.z, moving: false })));
+    const start = new Map(animals.map((animal) => [animal.id, { x: animal.x, z: animal.z }]));
+    for (let frame = 0; frame < 1_200; frame++) population.update(0.05);
+    const walked = animals.filter((animal) => {
+      const from = start.get(animal.id)!;
+      return Math.hypot(animal.x - from.x, animal.z - from.z) > 0.5;
+    });
+    expect(walked.length).toBeGreaterThan(animals.length / 2);
+    expect(animals.every((animal) => animal.mood === "calm")).toBe(true);
   });
 });
 

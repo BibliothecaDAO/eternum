@@ -34,7 +34,10 @@ import {
 
 export { wildlifeRegion, type RoamingCreature } from "./biome-creature-motion";
 
-/** Something animals keep clear of: an army on the map. One that stands still worries them from less far. */
+/**
+ * Something animals keep clear of: an army on the map, while it moves. One camped on their ground is part of the land to
+ * them: on a small Frontier site an army always stands near, and animals that feared it would only ever stand and watch.
+ */
 export interface WildlifeThreat extends Point {
   moving: boolean;
 }
@@ -55,8 +58,6 @@ const MAX_CREATURES = 48;
 const STANDING_SPOT_RADIUS = 0.28;
 /** An animal is wary of danger this many times further off than the distance at which it acts. */
 const WARY_REACH = 1.7;
-/** A threat that stands still is felt as if it were this much further away. */
-const STILL_THREAT_DISTANCE = 1.6;
 /** How far from its leader a herd member keeps, in its own sizes, and how far it may drift before it closes up. */
 const STATION_DISTANCE = 1.15;
 const STATION_SLACK = 0.6;
@@ -434,7 +435,7 @@ export class BiomeCreaturePopulation {
   }
 }
 
-/** The nearest thing an animal fears: an army, or for prey a hunter. A still army is felt from less far. */
+/** The nearest thing an animal fears: an army on the move, or for prey a hunter. */
 function nearestDanger(
   creature: RoamingCreature,
   threats: readonly WildlifeThreat[],
@@ -442,8 +443,8 @@ function nearestDanger(
 ): Danger {
   let nearest = NO_DANGER;
   for (const threat of threats) {
-    const distance =
-      Math.hypot(threat.x - creature.x, threat.z - creature.z) * (threat.moving ? 1 : STILL_THREAT_DISTANCE);
+    if (!threat.moving) continue;
+    const distance = Math.hypot(threat.x - creature.x, threat.z - creature.z);
     if (distance < nearest.distance) nearest = { distance, at: threat };
   }
   for (const hunter of hunters) {
