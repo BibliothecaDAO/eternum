@@ -9,7 +9,6 @@ import {
   PerspectiveCamera,
   PlaneGeometry,
   RedFormat,
-  type Texture,
   UnsignedByteType,
   Vector3,
   Vector4,
@@ -109,9 +108,8 @@ export class TerrainFogField {
   private mask: TerrainFogMask | null = null;
   private frontierInstances = 0;
 
-  /** `biomeMap` tells the mist which unexplored hexes are next to explore, and the land round them. */
-  constructor(biomeMap: Texture) {
-    this.materials = createFogMaterial(this.maskTexture, biomeMap);
+  constructor() {
+    this.materials = createFogMaterial(this.maskTexture);
     this.fogMesh = createFogMesh(this.materials.material);
     this.object3d.name = "terrain-exploration-fog-field";
     this.object3d.add(this.fogMesh);
@@ -343,7 +341,7 @@ function createFogBounds() {
   return uniform(new Vector4(0, 0, 1, 1));
 }
 
-function createFogMaterial(maskTexture: DataTexture, biomeMap: Texture): FogMaterialSet {
+function createFogMaterial(maskTexture: DataTexture): FogMaterialSet {
   const bounds = createFogBounds();
   const streaming = uniform(0, "float");
   const clarity = uniform(1, "float");
@@ -399,7 +397,7 @@ function createFogMaterial(maskTexture: DataTexture, biomeMap: Texture): FogMate
   const slab = smoothstep(0.025, 0.12, slabDistance).mul(0.003).mul(mistNoise.mul(0.6).add(0.4));
   const basaltFog = color("#111318").add(slab).add(mistLight.mul(0.065));
   material.colorNode = mix(
-    mistColour({ covered: mask, biomeMap, time: drift }),
+    mistColour({ covered: mask, time: drift }),
     shadeFogHexBoundary(basaltFog, fogGround.xz),
     ethereal,
   );

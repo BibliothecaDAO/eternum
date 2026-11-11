@@ -116,7 +116,7 @@ export class ProceduralTerrain {
   private readonly releaseAppearance: () => void;
 
   constructor({ streaming = false }: { streaming?: boolean } = {}) {
-    this.fogField = new TerrainFogField(this.biomeMap.texture);
+    this.fogField = new TerrainFogField();
     if (streaming) this.fogField.enableStreaming();
     this.object3d.name = "procedural-terrain";
     this.presentationGroup.name = "procedural-terrain-pages";
@@ -528,7 +528,6 @@ export class ProceduralTerrain {
     this.writeVisibleProps(pageKey, presented);
     this.fogField.setPage(pageKey, preparedPage.shroudInstances);
     this.biomeMap.write([...preparedPage.request.cells, ...preparedPage.request.halo], preparedPage.origin);
-    this.biomeMap.writeUnexplored(preparedPage.shroudInstances, preparedPage.origin);
   }
 
   private installPageGeometry(preparedPage: PreparedTerrainPage, presented: PresentedTerrainPage): void {
