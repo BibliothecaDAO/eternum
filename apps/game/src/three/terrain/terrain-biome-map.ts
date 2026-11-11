@@ -1,7 +1,7 @@
 import { BiomeType } from "@bibliothecadao/types/terrain";
 import { DataTexture, NearestFilter, RGBAFormat, UnsignedByteType } from "three";
 
-import { toRenderHex } from "@/three/world-origin";
+import type { HexPosition } from "@bibliothecadao/types";
 
 import { TERRAIN_BIOME_GROUNDS, TERRAIN_GROUNDS, type TerrainGround } from "./terrain-palette";
 
@@ -38,13 +38,15 @@ export class TerrainBiomeMap {
     this.texture.needsUpdate = true;
   }
 
-  /** Writes each cell that has a biome, normalized as the terrain's cells are, at the hex it is drawn on. */
-  write(cells: Iterable<{ col: number; row: number; biome: BiomeType | null }>): void {
+  /**
+   * Writes each cell that has a biome, normalized as the terrain's cells are, at the hex it is drawn on: round `origin`,
+   * the floating origin its page was built around (PreparedTerrainPage.origin), so it lies under its own geometry.
+   */
+  write(cells: Iterable<{ col: number; row: number; biome: BiomeType | null }>, origin: HexPosition): void {
     let wrote = false;
     for (const { col, row, biome } of cells) {
       if (biome === null) continue;
-      const render = toRenderHex(col, row);
-      const at = biomeMapTexel(render.col, render.row) * 4;
+      const at = biomeMapTexel(col - origin.col, row - origin.row) * 4;
       this.texels[at] = biomeNumber(biome);
       this.texels[at + 1] = groundNumber(TERRAIN_BIOME_GROUNDS[biome]);
       this.texels[at + 2] = 0;
@@ -54,12 +56,11 @@ export class TerrainBiomeMap {
     if (wrote) this.texture.needsUpdate = true;
   }
 
-  /** Marks each unexplored cell as next to explore or not, at the hex it is drawn on. */
-  writeUnexplored(cells: Iterable<{ col: number; row: number; frontier: boolean }>): void {
+  /** Marks each unexplored cell as next to explore or not, at the hex it is drawn on round its page's `origin`. */
+  writeUnexplored(cells: Iterable<{ col: number; row: number; frontier: boolean }>, origin: HexPosition): void {
     let wrote = false;
     for (const { col, row, frontier } of cells) {
-      const render = toRenderHex(col, row);
-      const at = biomeMapTexel(render.col, render.row) * 4;
+      const at = biomeMapTexel(col - origin.col, row - origin.row) * 4;
       this.texels[at + 2] = frontier ? 255 : 0;
       this.texels[at + 3] = 0;
       wrote = true;

@@ -1824,9 +1824,13 @@ export default class HexceptionScene extends HexagonScene {
    * The ground of the local-view hex that shows this map hex: the tile's stored biome, or the realm's own where a
    * neighbour is not revealed yet. A view opened before the realm's tile row arrives shows grassland until it is rebuilt.
    */
+  /** A hex's biome on the map, else the realm's own; the realm's own tile without one is a missing fact. */
   private localBiome(col: number, row: number): BiomeType {
     const stored = (hexCol: number, hexRow: number) => storedBiomeAt(this.game.store, false, hexCol, hexRow);
-    return stored(col, row) ?? stored(this.centerColRow[0], this.centerColRow[1]) ?? BiomeType.Grassland;
+    const biome = stored(col, row) ?? stored(this.centerColRow[0], this.centerColRow[1]);
+    if (biome) return biome;
+    if (import.meta.env.DEV) console.error("[Hexception] the realm's tile has no biome", this.centerColRow);
+    return BiomeType.Grassland;
   }
 
   /**

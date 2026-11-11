@@ -119,7 +119,10 @@ export function groundSurface(input: GroundSurfaceInput) {
     const wander = vec2(middle.g.sub(0.5), far.g.sub(0.5)).mul(1.1);
     const patches = vec2(near.g.sub(0.5), other.g.sub(0.5)).mul(0.7);
     const liesAt = at.add(wander).add(patches);
-    const here = biomeTexelAt(biomeMap, liesAt);
+    // A point near a page's rim may wander past the hexes the page wrote: it keeps its own hex's biome then.
+    const own = biomeTexelAt(biomeMap, at);
+    const wandered = biomeTexelAt(biomeMap, liesAt);
+    const here = wandered.a.greaterThan(0.5).select(wandered, own);
     const biome = here.r.mul(255).round().toVar();
     const kind = here.g.mul(255).round().toVar();
     // Small things are drawn only near the eye: far off they would only glitter.
