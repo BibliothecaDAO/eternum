@@ -310,7 +310,10 @@ export class ArmyManager {
     this.subscribeToGuildMembership();
     // Whose an army is may read otherwise (the seats arrive, the viewer starts watching): every plate says it again.
     this.unsubscribeSides = onSidesChanged(() =>
-      this.armyPresentations.forEach((army) => this.refreshArmyCompactLabel(army)),
+      this.armyPresentations.forEach((army) => {
+        this.refreshArmyCompactLabel(army);
+        this.armyModel.setEntitySide(this.toNumericId(army.entityId), this.pathColourOf(army));
+      }),
     );
 
     // Initialize memory monitor for tracking army operations
@@ -1185,6 +1188,7 @@ export class ArmyManager {
     const position = this.resolveArmyPlacement(army);
 
     this.armyModel.assignModelToEntity(numericId, modelType);
+    this.armyModel.setEntitySide(numericId, this.pathColourOf(army));
 
     const cosmeticPresentation = resolveArmyCosmeticPresentation({
       army,
@@ -2845,10 +2849,9 @@ export class ArmyManager {
 
   private handleCameraViewChange = (view: CameraView) => {
     // The scene also calls this when it reapplies its visual profile. Shadows follow the quality setting only, never
-    // the zoom: an army casts the same shadow wherever the camera is, and gets the flat blob only when shadows are off.
+    // the zoom: an army casts the same shadow wherever the camera is. Its hex plate grounds it either way.
     const shadowsEnabled = this.hexagonScene?.getShadowsEnabled() ?? true;
     this.armyModel.setShadowsEnabled(shadowsEnabled);
-    this.armyModel.setContactShadowsEnabled(!shadowsEnabled);
     this.proceduralArmyCharacterLayer.setShadowsEnabled(shadowsEnabled);
 
     if (this.currentCameraView === view) {
