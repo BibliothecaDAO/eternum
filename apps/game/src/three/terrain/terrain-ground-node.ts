@@ -86,7 +86,7 @@ const strewn = (at: Node<"vec2">, fine: number, share: Node<"float"> | number, s
 };
 
 /** The texel of the biome map that holds the hex a point lies in: its render hex, wrapped as the map writes it. */
-export const biomeTexelAt = (biomeMap: Texture, point: Node<"vec2">) => {
+const biomeTexelAt = (biomeMap: Texture, point: Node<"vec2">) => {
   const middle = point.sub(nearestHexLocalPosition(point));
   const row = middle.y.div(TERRAIN_HEX_VERTICAL_SPACING).round();
   const odd = abs(row).mod(2);
