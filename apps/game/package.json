@@ -43,6 +43,7 @@
     "lint:fix": "eslint . --ext .ts,.tsx --fix",
     "lint:guards": "node ./scripts/lint-guards.mjs",
     "playtest": "node ./scripts/run-client-playtest.mjs",
+    "build:map-client": "wasm-pack build map-client --target web --no-pack --out-dir ../src/map-client/renderer && rm -f src/map-client/renderer/.gitignore",
     "styles:inventory": "node ./scripts/style-inventory.mjs",
     "preview": "vite preview",
     "smoke:character-gym": "node ./scripts/run-character-gym-smoke.mjs",
