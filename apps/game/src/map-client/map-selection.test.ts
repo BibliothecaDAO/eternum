@@ -23,7 +23,7 @@ const world = vi.hoisted(() => ({
   canIssueOrders: true,
   beforePlay: false,
   failed: vi.fn(),
-  offerAtOutcome: (_explorerId: number) => {},
+  offerAtOutcome: (() => {}) as (explorerId: number) => void,
 }));
 
 vi.mock("@bibliothecadao/eternum", async (original) => ({
