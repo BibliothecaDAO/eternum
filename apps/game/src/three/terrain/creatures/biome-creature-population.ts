@@ -96,8 +96,13 @@ export class BiomeCreaturePopulation {
       ),
     spotOn: standingSpotInWorld,
     remove: (id) => this.creatures.delete(id),
-    regroup: () => this.promoteOrphans(),
+    // A herd that loses its leader in a frame is regrouped once the frame is over (`update`).
+    regroup: () => {
+      this.herdsChanged = true;
+    },
   };
+  /** Set when a herd lost its leader during this frame's update. */
+  private herdsChanged = false;
 
   constructor(private readonly isPathClear: PathCheck = () => true) {}
 
@@ -138,6 +143,12 @@ export class BiomeCreaturePopulation {
       if (creature.caughtBy === null) this.live(creature, dt, reserved, dangers);
       else comeToRest(creature, dt);
       placeInWorld(creature);
+    }
+    // Every animal of a frame reads the herds the frame began with; a herd that lost its leader follows its heir from
+    // the next frame, never halfway through this one.
+    if (this.herdsChanged) {
+      this.herdsChanged = false;
+      this.promoteOrphans();
     }
   }
 

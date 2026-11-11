@@ -507,6 +507,50 @@ describe("biome creature gait", () => {
   });
 });
 
+describe("a hunt within a frame", () => {
+  /** Forest beside bare rock: tigers on one side, goats on the other. */
+  const huntingGround = () =>
+    cells().map((cell) => ({
+      ...cell,
+      biome: cell.col < 0 ? BiomeType.TropicalSeasonalForest : BiomeType.Bare,
+    }));
+
+  it("leaves the rest of a herd to carry on when its leader is caught, in the same frame", () => {
+    const ground = huntingGround();
+    const population = new BiomeCreaturePopulation();
+    population.sync(ground);
+    const tiger = [...population.creatures.values()].find((creature) => creature.species === "bengal-tiger")!;
+    const leader = [...population.creatures.values()].find(
+      (creature) => creature.species === "mountain-goat" && creature.leader === null,
+    )!;
+    const herd = [...population.creatures.values()].filter((creature) => creature.leader === leader.id);
+    expect(herd.length).toBeGreaterThan(0);
+    population.creatures.clear();
+    for (const creature of [tiger, leader, ...herd]) population.creatures.set(creature.id, creature);
+    tiger.cell = { ...leader.cell };
+    tiger.offset = { ...leader.offset };
+    tiger.goal = { ...leader.offset };
+    tiger.hunt = { phase: "charge", quarry: leader.id, den: { ...tiger.cell }, clock: 0, sinceAim: 0 };
+    population.restrictTo(ground);
+
+    expect(() => population.update(0.05)).not.toThrow();
+    expect(leader.caughtBy).toBe(tiger.id);
+    // From the next frame the herd follows one of its own.
+    population.update(0.05);
+    const heirs = herd.filter((creature) => creature.leader === null);
+    expect(heirs).toHaveLength(1);
+    expect(herd.every((creature) => creature === heirs[0] || creature.leader === heirs[0].id)).toBe(true);
+  });
+
+  it("hunts wherever the map lies, through long days, without a frame that throws", () => {
+    for (let offset = 1; offset <= 16; offset += 1) {
+      const population = new BiomeCreaturePopulation();
+      population.sync(huntingGround().map((cell) => ({ ...cell, col: cell.col + offset, row: cell.row + offset })));
+      for (let frame = 0; frame < 12_000; frame += 1) population.update(0.05);
+    }
+  }, 60_000);
+});
+
 describe("terrain wildlife lifecycle", () => {
   it("disposes a model that finishes loading after its terrain has been released", async () => {
     const template = await loadBiomeCreature("plains-zebra", () => {});
