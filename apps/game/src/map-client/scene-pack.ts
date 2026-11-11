@@ -15,8 +15,8 @@ import { configureGltfTextureSupport } from "@/three/utils/utils";
 
 import { appendModelVertices, type KitModel, type KitTexture } from "./unit-models";
 
-/** How a mesh is shaded: plainly, as ground with the hex grid, as water, or as a plant the wind moves. */
-export type MeshKind = "solid" | "ground" | "water" | "plant";
+/** How a mesh is shaded: plainly, as ground with the hex grid, or as water. */
+export type MeshKind = "solid" | "ground" | "water";
 
 interface MeshRecord {
   kind: MeshKind;
@@ -39,6 +39,8 @@ export interface PackedHex {
   /** The biome's ground colour, linear red, green and blue. */
   colour: readonly [number, number, number];
   explored: boolean;
+  /** Whether a building stands on it: the renderer keeps its props off such a hex. */
+  built: boolean;
 }
 
 /** The key light and the sky's, as a matt surface receives them. */
@@ -193,13 +195,16 @@ export class ScenePack {
     });
   }
 
-  /** Four floats a hex: its middle, its biome's place among the biomes named, and 1 where it is explored. */
+  /**
+   * Four floats a hex: its middle, its biome's place among the biomes named, and how it stands: 0 unexplored, 1
+   * explored, 2 explored with a building on it.
+   */
   private appendHexes(hexes: readonly PackedHex[]) {
     const named = [...new Map(hexes.map((hex) => [hex.biome, hex.colour])).entries()];
     const offset = this.floats.length;
     for (const hex of hexes) {
       const biome = named.findIndex(([name]) => name === hex.biome);
-      this.floats.push(hex.x, hex.z, biome, hex.explored ? 1 : 0);
+      this.floats.push(hex.x, hex.z, biome, hex.explored ? (hex.built ? 2 : 1) : 0);
     }
     return { offset, count: hexes.length, biomes: named.map(([name, colour]) => ({ name, colour })) };
   }

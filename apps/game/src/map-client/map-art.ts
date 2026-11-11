@@ -1,6 +1,5 @@
 import type { Object3D } from "three";
 
-import { loadTerrainPropCatalog } from "@/three/terrain/terrain-prop-asset-cache";
 import { gltfLoader } from "@/three/utils/utils";
 
 import { TexturePixels } from "./scene-pack";
@@ -12,7 +11,7 @@ const UNIT_TEXTURE_SIZE = 512;
 
 /**
  * The game's models as the map's renderer takes them, loaded once and kept: the unit models cut to their three
- * finenesses, the terrain's props, and each building's model as it is first asked for.
+ * finenesses, and each building's model as it is first asked for.
  */
 export class MapArt {
   private readonly buildings = new Map<string, Promise<Object3D | null>>();
@@ -22,8 +21,6 @@ export class MapArt {
     /** The unit models' vertices, and the records that say where each model's parts are in them. */
     readonly unitFloats: readonly number[],
     readonly units: readonly KitModel[],
-    /** The terrain's props, every mesh by its catalogue name. */
-    readonly props: Object3D,
   ) {}
 
   static async load(): Promise<MapArt> {
@@ -31,8 +28,7 @@ export class MapArt {
     const textures = await TexturePixels.open(BUILDING_TEXTURE_SIZE);
     const unitFloats: number[] = [];
     const units = await appendUnitModels(unitFloats, (map) => textures.read(map, UNIT_TEXTURE_SIZE));
-    const props = await loadTerrainPropCatalog();
-    return new MapArt(textures, unitFloats, units, props.scene);
+    return new MapArt(textures, unitFloats, units);
   }
 
   /** A building's model; null, said once, for one that cannot be loaded. */

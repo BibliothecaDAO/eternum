@@ -121,7 +121,7 @@ struct Vertex {
     paint: Paint,
 }
 
-/// A small mesh built in code, a vertex and a triangle at a time: a tuft, a bird, an effect's quads.
+/// A small mesh built in code: a tuft, a bird, an effect's quads, a prop turned and squashed from a few solids.
 #[derive(Default)]
 pub struct Shape {
     vertices: Vec<Vertex>,
@@ -190,6 +190,104 @@ impl Shape {
 
     pub fn triangle(&mut self, corners: [u32; 3]) {
         self.indices.extend_from_slice(&corners);
+    }
+
+    fn push(&mut self, at: Vec3, normal: Vec3, paint: Paint) {
+        self.vertices.push(Vertex { at, normal, paint });
+    }
+
+    /// A flat quad.
+    pub fn face(&mut self, corners: [Vec3; 4], paint: Paint) {
+        let normal = (corners[1] - corners[0])
+            .cross(corners[2] - corners[0])
+            .normalize_or_zero();
+        let first = self.vertices.len() as u32;
+        for corner in corners {
+            self.push(corner, normal, paint);
+        }
+        self.indices
+            .extend_from_slice(&[first, first + 1, first + 2, first, first + 2, first + 3]);
+    }
+
+    /// A shape turned on a lathe from `from` towards `to`: rings of `sides` at each `(along, radius)` of the
+    /// profile, `along` in the same units as the points, smooth all round. A radius of 0 closes an end.
+    pub fn lathe(
+        &mut self,
+        from: Vec3,
+        to: Vec3,
+        profile: &[(f32, f32)],
+        sides: u32,
+        paint: Paint,
+    ) {
+        let axis = (to - from).normalize_or_zero();
+        let across = axis.any_orthonormal_vector();
+        let other = axis.cross(across);
+        let first = self.vertices.len() as u32;
+        for (ring, &(along, radius)) in profile.iter().enumerate() {
+            let before = profile[ring.saturating_sub(1)];
+            let after = profile[(ring + 1).min(profile.len() - 1)];
+            let (run, rise) = (after.0 - before.0, after.1 - before.1);
+            for side in 0..sides {
+                let angle = side as f32 / sides as f32 * std::f32::consts::TAU;
+                let outward = across * angle.cos() + other * angle.sin();
+                let normal = (outward * run - axis * rise).normalize_or_zero();
+                // A closed end faces along the axis.
+                let normal = if radius == 0.0 {
+                    axis * if ring == 0 { -1.0 } else { 1.0 }
+                } else {
+                    normal
+                };
+                self.push(from + axis * along + outward * radius, normal, paint);
+            }
+        }
+        for ring in 0..profile.len() as u32 - 1 {
+            for side in 0..sides {
+                let next = (side + 1) % sides;
+                let (a, b) = (first + ring * sides + side, first + ring * sides + next);
+                let (c, d) = (a + sides, b + sides);
+                self.indices.extend_from_slice(&[a, c, b, b, c, d]);
+            }
+        }
+    }
+
+    /// A limb: a rounded rod from `from` to `to`, `start` thick at one end and `end` at the other.
+    pub fn limb(&mut self, from: Vec3, to: Vec3, start: f32, end: f32, sides: u32, paint: Paint) {
+        let length = (to - from).length();
+        self.lathe(
+            from,
+            to,
+            &[
+                (-start, 0.0),
+                (-start * 0.6, start * 0.8),
+                (0.0, start),
+                (length, end),
+                (length + end * 0.6, end * 0.8),
+                (length + end, 0.0),
+            ],
+            sides,
+            paint,
+        );
+    }
+
+    /// A ball squashed to `radii`.
+    pub fn ball(&mut self, centre: Vec3, radii: Vec3, sides: u32, paint: Paint) {
+        let first = self.vertices.len();
+        let rings = (sides / 2).max(3);
+        let profile: Vec<(f32, f32)> = (0..=rings)
+            .map(|ring| {
+                let angle = ring as f32 / rings as f32 * std::f32::consts::PI;
+                (
+                    -angle.cos(),
+                    if ring % rings == 0 { 0.0 } else { angle.sin() },
+                )
+            })
+            .collect();
+        self.lathe(Vec3::ZERO, Vec3::Y, &profile, sides, paint);
+        for vertex in &mut self.vertices[first..] {
+            let on_ball = vertex.at;
+            vertex.at = centre + on_ball * radii;
+            vertex.normal = (on_ball / radii).normalize_or_zero();
+        }
     }
 }
 

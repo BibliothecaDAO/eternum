@@ -50,9 +50,37 @@ pub enum Known {
     Unknown,
 }
 
+/// The game's biomes in the order `globals.wgsl` numbers them; one it does not name is drawn as the last forest.
+const BIOMES: [&str; 16] = [
+    "DeepOcean",
+    "Ocean",
+    "Beach",
+    "SubtropicalDesert",
+    "TropicalRainForest",
+    "TropicalSeasonalForest",
+    "Grassland",
+    "TemperateDesert",
+    "TemperateRainForest",
+    "TemperateDeciduousForest",
+    "Shrubland",
+    "Bare",
+    "Taiga",
+    "Tundra",
+    "Snow",
+    "Scorched",
+];
+
+fn biome_number(name: &str) -> u8 {
+    BIOMES.iter().position(|biome| *biome == name).unwrap_or(9) as u8
+}
+
 pub struct Hex {
     pub at: Vec2,
     pub ground: Ground,
+    /// The biome's place in `BIOMES`.
+    pub biome: u8,
+    /// Whether a building stands on it.
+    pub built: bool,
     pub colour: [f32; 3],
     pub known: Known,
 }
@@ -129,18 +157,17 @@ impl World {
         self.nearest[v * MAP_SIZE + u].map(|hex| &self.hexes[hex])
     }
 
-    /// What the shaders read of the land's features, four bytes a cell: the ground's kind with how well the hex is
+    /// What the shaders read of the land's features, four bytes a cell: the biome with how well the hex is
     /// known, and the distance into the unknown (half way up the byte at its edge, lower over known land).
     pub fn feature_texels(&self) -> Vec<u8> {
         let byte = |share: f32| (share.clamp(0.0, 1.0) * 255.0) as u8;
         (0..MAP_SIZE * MAP_SIZE)
             .flat_map(|cell| {
-                let (ground, known) = self.nearest[cell]
-                    .map_or((Ground::Water, Known::Unknown), |hex| {
-                        (self.hexes[hex].ground, self.hexes[hex].known)
-                    });
+                let (biome, known) = self.nearest[cell].map_or((0, Known::Unknown), |hex| {
+                    (self.hexes[hex].biome, self.hexes[hex].known)
+                });
                 [
-                    ground as u8 * 16 + known as u8,
+                    biome * 16 + known as u8,
                     byte(0.5 + self.unknown[cell] / UNKNOWN_REACH * 0.5),
                     0,
                     0,
@@ -228,6 +255,8 @@ fn read_hexes(snapshot: &Snapshot, floats: &[f32], hex_spacing: f32) -> Vec<Hex>
         Hex {
             at,
             ground: Ground::of(&biome.name),
+            biome: biome_number(&biome.name),
+            built: row[3] > 1.5,
             colour: biome.colour,
             known: if row[3] > 0.5 {
                 Known::Explored
@@ -288,7 +317,8 @@ fn nearest_hexes(hexes: &[Hex], bounds: [f32; 4], hex_spacing: f32) -> Vec<Optio
                 .filter_map(|key| buckets.get(&key))
                 .flatten()
                 .map(|hex| (*hex, (hexes[*hex].at - at).length()))
-                .filter(|(_, distance)| *distance < hex_spacing)
+                // The nearest middle within a hex's own corners: beyond the hexes named there is no hex.
+                .filter(|(_, distance)| *distance < hex_spacing * 0.58)
                 .min_by(|a, b| a.1.total_cmp(&b.1))
                 .map(|(hex, _)| hex)
         })

@@ -74,7 +74,25 @@ fn same_hex(one: vec2f, other: vec2f) -> f32 {
   return step(dot(apart, apart), 0.01);
 }
 
-// The ground's kinds, as the land's feature map numbers them (world.rs).
+// The game's biomes, as the land's feature map numbers them (world.rs).
+const DEEP_OCEAN = 0.0;
+const OCEAN = 1.0;
+const BEACH = 2.0;
+const SUBTROPICAL_DESERT = 3.0;
+const TROPICAL_RAIN_FOREST = 4.0;
+const TROPICAL_SEASONAL_FOREST = 5.0;
+const GRASSLAND = 6.0;
+const TEMPERATE_DESERT = 7.0;
+const TEMPERATE_RAIN_FOREST = 8.0;
+const TEMPERATE_DECIDUOUS_FOREST = 9.0;
+const SHRUBLAND = 10.0;
+const BARE = 11.0;
+const TAIGA = 12.0;
+const TUNDRA_BIOME = 13.0;
+const SNOW_BIOME = 14.0;
+const SCORCHED = 15.0;
+// What a biome's ground is made of.
+const WATER = 0.0;
 const SAND = 1.0;
 const SNOW = 2.0;
 const TUNDRA = 3.0;
@@ -85,21 +103,34 @@ const FOREST = 7.0;
 // How well a hex is known.
 const FRONTIER = 1.0;
 
+fn ground_of(biome: f32) -> f32 {
+  if (biome <= OCEAN) { return WATER; }
+  if (biome == BEACH || biome == SUBTROPICAL_DESERT || biome == TEMPERATE_DESERT) { return SAND; }
+  if (biome == SNOW_BIOME) { return SNOW; }
+  if (biome == TUNDRA_BIOME) { return TUNDRA; }
+  if (biome == BARE) { return ROCK; }
+  if (biome == SCORCHED) { return LAVA; }
+  if (biome == GRASSLAND || biome == SHRUBLAND) { return GRASS; }
+  return FOREST;
+}
+
 // What the land's feature map tells of a point.
 struct Features {
-  // The ground's kind, and how well its hex is known: 0 explored, 1 the next to explore, 2 unknown.
+  // The biome, what its ground is made of, and how well its hex is known: 0 explored, 1 the next to explore, 2 unknown.
+  biome: f32,
   ground: f32,
   known: f32,
   // How far into the unknown, in world units: negative over known land.
   unknown: f32,
 }
 
-// `cell` is the map's own texel, which holds the kind; `blended` its neighbours' blend, which holds the distance.
+// `cell` is the map's own texel, which holds the biome; `blended` its neighbours' blend, which holds the distance.
 fn read_features(cell: vec4f, blended: vec4f) -> Features {
   let packed = round(cell.r * 255.0);
   var features: Features;
-  features.ground = floor(packed / 16.0);
-  features.known = packed - features.ground * 16.0;
+  features.biome = floor(packed / 16.0);
+  features.ground = ground_of(features.biome);
+  features.known = packed - features.biome * 16.0;
   features.unknown = (blended.g - 0.5) * 8.0;
   return features;
 }
@@ -129,4 +160,9 @@ fn order_marks(at: vec2f) -> vec3f {
   let on_picked = same_hex(at, stops[0]) * (1.0 - smoothstep(0.03, 0.07, edge));
   let on_target = same_hex(at, stops[3]);
   return vec3f(path, on_picked, on_target) * globals.water.y;
+}
+
+// 1 within `width` of where `value` equals `at`, falling off to either side.
+fn band(value: f32, at: f32, width: f32) -> f32 {
+  return 1.0 - smoothstep(0.0, width, abs(value - at));
 }

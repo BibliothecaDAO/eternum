@@ -1,14 +1,13 @@
 import { configManager, getStructureInfoFromTileOccupier, NEUTRAL_BIOME_CLIMATE } from "@bibliothecadao/eternum";
 import { StructureType } from "@bibliothecadao/types";
-import { Color, Mesh } from "three";
+import { Color } from "three";
 
 import { getGameModeConfig } from "@/config/game-modes";
 import { realmModelIndex } from "@/three/structures/realm-design";
 import { TerrainField } from "@/three/terrain/terrain-field";
 import { prepareTerrainPage } from "@/three/terrain/terrain-page-builder";
 import { TERRAIN_BIOME_DESCRIPTORS } from "@/three/terrain/terrain-palette";
-import { getTerrainPropMeshName, getTerrainPropRole } from "@/three/terrain/terrain-prop-catalog";
-import type { TerrainPageRequest, TerrainPropInstance } from "@/three/terrain/terrain-types";
+import type { TerrainPageRequest } from "@/three/terrain/terrain-types";
 import { worldHexToWorld } from "@/three/world-origin";
 
 import type { Hex, Land } from "./land-from-facts";
@@ -35,8 +34,8 @@ const STANDS_AS_IT_IS: Placement = placedAt([0, 0, 0], 0, 1, WHITE);
 const BUILDING_LIFT = 0.025;
 
 /**
- * The land round the camera as the map's renderer takes it: the game's own terrain for the explored tiles, its props
- * where the terrain's rules put them, each structure's model on its hex, the unit models and every hex.
+ * The land round the camera as the map's renderer takes it: the game's own terrain for the explored tiles, each
+ * structure's model on its hex, the unit models and every hex. The renderer makes the land's props itself.
  */
 export async function packLand(art: MapArt, land: Land, structures: readonly MapStructure[]): Promise<PackedScene> {
   const pack = new ScenePack(art.textures, art.unitFloats);
@@ -47,8 +46,8 @@ export async function packLand(art: MapArt, land: Land, structures: readonly Map
   if (page.waterBuffers) {
     pack.addPlainMesh("water", { ...page.waterBuffers, colours: page.waterBuffers.colors }, stands, false);
   }
-  await addProps(pack, art, page.propInstances);
   await addStructures(pack, art, structures, new TerrainField(request));
+  const built = new Set(structures.map(({ hex }) => `${hex.col},${hex.row}`));
   const middle = centreOf(land);
   return pack.finish({
     light: { ...LIGHT, centre: [middle.x, 0, middle.z] },
@@ -57,6 +56,7 @@ export async function packLand(art: MapArt, land: Land, structures: readonly Map
       biome: hex.biome,
       colour: new Color(TERRAIN_BIOME_DESCRIPTORS[hex.biome].primary).toArray() as [number, number, number],
       explored: hex.explored,
+      built: built.has(`${hex.col},${hex.row}`),
     })),
     units: art.units,
   });
@@ -74,26 +74,6 @@ function terrainRequest(land: Land): TerrainPageRequest {
     strictBiomeParity: false,
     subdivisions: 2,
   };
-}
-
-/** Every prop the terrain's rules placed, each kind of prop drawn once with all its placements. */
-async function addProps(pack: ScenePack, art: MapArt, instances: readonly TerrainPropInstance[]): Promise<void> {
-  const byArchetype = Map.groupBy(instances, (instance) => instance.archetype);
-  for (const [archetype, placed] of byArchetype) {
-    const catalogued = art.props.getObjectByName(getTerrainPropMeshName(archetype, "near"));
-    if (!(catalogued instanceof Mesh)) throw new Error(`The terrain's props hold no mesh for ${archetype}`);
-    // The catalogue lays its meshes out side by side: a prop is its geometry alone, placed where the rules say.
-    const prop = new Mesh(catalogued.geometry, catalogued.material);
-    const placements = placed.map((instance) =>
-      placedAt(
-        [instance.worldX, instance.worldY, instance.worldZ],
-        instance.yaw,
-        instance.scale,
-        instance.appearance.tint,
-      ),
-    );
-    await pack.addModel(getTerrainPropRole(archetype) === "rigid" ? "solid" : "plant", prop, placements);
-  }
 }
 
 /** Each structure's model on its hex, at the ground's height there. */

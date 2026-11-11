@@ -62,8 +62,8 @@ pub struct KitJoint {
     pub at: [f32; 3],
 }
 
-/// The land's hexes: four floats each in the buffer (its middle's x and z, its biome's place among `biomes`, and 1
-/// where it is explored).
+/// The land's hexes: four floats each in the buffer (its middle's x and z, its biome's place among `biomes`, and how
+/// it stands: 0 unexplored, 1 explored, 2 explored with a building on it).
 #[derive(Deserialize)]
 pub struct Hexes {
     pub offset: usize,

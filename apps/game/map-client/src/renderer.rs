@@ -434,12 +434,9 @@ impl Renderer {
         let mut meshes: Vec<Mesh> = snapshot
             .meshes
             .iter()
-            .map(|record| {
-                let companions = scatter::companions(snapshot, buffer, &world, record);
-                upload_mesh(&device, &materials, record, buffer, &companions)
-            })
+            .map(|record| upload_mesh(&device, &materials, record, buffer))
             .collect();
-        let scattered = scatter::scatter(&world);
+        let scattered = scatter::scatter(&world, hex_spacing[0]);
         meshes.extend(
             scattered
                 .iter()
@@ -1305,8 +1302,6 @@ fn upload_mesh(
     materials: &Materials,
     record: &MeshRecord,
     buffer: &[u8],
-    // More instances of the mesh than the scene held.
-    companions: &[f32],
 ) -> Mesh {
     let vertices = floats(
         buffer,
@@ -1314,19 +1309,15 @@ fn upload_mesh(
         record.vertex_count * VERTEX_FLOATS,
     );
     let indices = floats(buffer, record.index_offset, record.index_count);
-    let instances = [
-        floats(
-            buffer,
-            record.instance_offset,
-            record.instance_count * INSTANCE_FLOATS,
-        ),
-        bytemuck::cast_slice(companions),
-    ]
-    .concat();
+    let instances = floats(
+        buffer,
+        record.instance_offset,
+        record.instance_count * INSTANCE_FLOATS,
+    );
     Mesh {
         material: materials.of(device, record.kind, record.texture),
         geometry: upload_geometry(device, vertices, indices),
-        instances: upload_instances(device, &instances),
+        instances: upload_instances(device, instances),
         instance_count: (instances.len() / (INSTANCE_FLOATS * 4)) as u32,
         casts_shadow: record.casts_shadow,
         within: None,
@@ -1347,7 +1338,7 @@ fn upload_scattered(
         ),
         instances: upload_instances(device, bytemuck::cast_slice(&grown.instances)),
         instance_count: (grown.instances.len() / INSTANCE_FLOATS) as u32,
-        casts_shadow: false,
+        casts_shadow: grown.casts_shadow,
         within: Some((grown.centre, grown.radius, grown.reach)),
     }
 }

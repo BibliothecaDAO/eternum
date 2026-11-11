@@ -1,11 +1,10 @@
-//! What grows and flies over the land by rule, beyond what the game's scene held: tufts of grass thick on grassland
-//! and thin under trees, companions round every tree of a forest so it stands as a wood, and birds wheeling over
-//! the woods and the shore.
+//! What grows and flies over the land by rule: tufts of grass thick on grassland and thin under trees, the props of
+//! every biome (`props.rs`), and birds wheeling over the woods and the shore.
 
 use glam::{Mat4, Quat, Vec2, Vec3};
 use std::f32::consts::TAU;
 
-use crate::scene::{Kind, MeshRecord, Snapshot, INSTANCE_FLOATS, VERTEX_FLOATS};
+use crate::scene::{Kind, INSTANCE_FLOATS};
 use crate::shapes::{hash, Colour, Paint, Shape};
 use crate::world::{Ground, Known, World};
 
@@ -24,9 +23,16 @@ pub struct Scattered {
     pub centre: Vec3,
     pub radius: f32,
     pub reach: f32,
+    pub casts_shadow: bool,
 }
 
-fn instance(at: Vec3, turn: f32, scale: Vec3, tint: Colour, lot: f32) -> [f32; INSTANCE_FLOATS] {
+pub fn instance(
+    at: Vec3,
+    turn: f32,
+    scale: Vec3,
+    tint: Colour,
+    lot: f32,
+) -> [f32; INSTANCE_FLOATS] {
     let placed = Mat4::from_scale_rotation_translation(scale, Quat::from_rotation_y(turn), at);
     let mut floats = [0.0; INSTANCE_FLOATS];
     floats[..16].copy_from_slice(&placed.to_cols_array());
@@ -90,25 +96,43 @@ fn tufts(world: &World) -> Vec<Scattered> {
         let at = Vec2::new(west, north)
             + on_grid
             + Vec2::new(hash(lot * 3.3), hash(lot * 5.9)) * TUFT_SPACING;
-        let share = match grows(world, at) {
-            Some(Ground::Grass) => 0.85,
-            Some(Ground::Forest) => 0.4,
-            Some(Ground::Tundra) => 0.12,
-            Some(Ground::Sand) => 0.025,
-            _ => 0.0,
+        if matches!(grows(world, at), None | Some(Ground::Lava)) {
+            continue;
+        }
+        // A tuft is of the ground a little way off, so growth spills over a frontier and thins out beyond it.
+        let spill = Vec2::new(hash(lot * 11.3) - 0.5, hash(lot * 13.7) - 0.5) * 1.5;
+        let Some(hex) = world
+            .hex_at(at.x + spill.x, at.y + spill.y)
+            .filter(|hex| hex.known == Known::Explored)
+        else {
+            continue;
+        };
+        // How thick each biome grows, and how dry its growth is.
+        let (share, dry) = match hex.biome {
+            6 => (0.85, 0.0),
+            10 => (0.5, 0.7),
+            4 => (0.6, 0.0),
+            5 => (0.42, 0.6),
+            8 => (0.5, 0.0),
+            9 => (0.32, 0.3),
+            12 => (0.2, 0.2),
+            13 => (0.12, 0.5),
+            3 | 7 => (0.03, 1.0),
+            2 => (0.02, 0.6),
+            _ => (0.0, 0.0),
         };
         // Tufts stand in drifts: thick here, thin there.
         let drift = 0.45 + hash(Vec3::new((at.x * 0.7).floor(), 1.9, (at.y * 0.7).floor())) * 0.9;
         if hash(lot * 7.7) >= share * drift {
             continue;
         }
-        let hex = world
-            .hex_at(at.x, at.y)
-            .expect("a point where something grows is in a hex");
         let shade = 0.75 + hash(lot * 9.1) * 0.6;
-        // A tuft is the ground's own colour, greener and brighter.
+        // A tuft is the ground's own colour, greener and brighter; a dry one is straw.
         let [red, green, blue] = hex.colour;
-        let tint = [red * 1.5 * shade, green * 1.9 * shade, blue * 1.2 * shade];
+        let fresh = [red * 1.5, green * 1.9, blue * 1.2];
+        let straw = [0.62, 0.5, 0.2];
+        let tint =
+            [0, 1, 2].map(|channel| (fresh[channel] * (1.0 - dry) + straw[channel] * dry) * shade);
         let size = 0.7 + hash(lot * 4.3) * 0.8;
         let ground = Vec3::new(at.x, world.height_at(at.x, at.y), at.y);
         let cell = ((at.x / CELL).floor() as i32, (at.y / CELL).floor() as i32);
@@ -129,6 +153,7 @@ fn tufts(world: &World) -> Vec<Scattered> {
             centre: Vec3::new((column as f32 + 0.5) * CELL, 0.0, (row as f32 + 0.5) * CELL),
             radius: CELL,
             reach: TUFT_REACH,
+            casts_shadow: false,
         })
         .collect()
 }
@@ -172,70 +197,14 @@ fn birds(world: &World) -> Scattered {
         centre: Vec3::new(west + width / 2.0, 0.0, north + depth / 2.0),
         radius: width.max(depth),
         reach: f32::MAX,
+        casts_shadow: false,
     }
 }
 
-pub fn scatter(world: &World) -> Vec<Scattered> {
+pub fn scatter(world: &World, hex_spacing: f32) -> Vec<Scattered> {
     let mut all = tufts(world);
     all.push(birds(world));
+    all.extend(crate::props::props(world, hex_spacing));
     all.retain(|scattered| !scattered.instances.is_empty());
     all
-}
-
-/// The companions a mesh of the game's scene gains: round every tree that stands in a forest, two or three more of
-/// it, smaller, so the forest's hexes read as a wood and not as a tree each.
-pub fn companions(
-    snapshot: &Snapshot,
-    buffer: &[u8],
-    world: &World,
-    record: &MeshRecord,
-) -> Vec<f32> {
-    let floats: &[f32] = snapshot.floats(buffer);
-    let vertices =
-        &floats[record.vertex_offset..record.vertex_offset + record.vertex_count * VERTEX_FLOATS];
-    let tall = vertices
-        .chunks_exact(VERTEX_FLOATS)
-        .map(|vertex| vertex[1])
-        .fold(0.0, f32::max);
-    // Trees only: a shrub, a log or a rock stands alone.
-    if record.kind != Kind::Plant || tall < 0.45 {
-        return Vec::new();
-    }
-    let instances = &floats
-        [record.instance_offset..record.instance_offset + record.instance_count * INSTANCE_FLOATS];
-    let mut added = Vec::new();
-    for placed in instances.chunks_exact(INSTANCE_FLOATS) {
-        let tree = Mat4::from_cols_slice(&placed[..16]);
-        let foot = tree.w_axis.truncate();
-        let in_forest = world
-            .hex_at(foot.x, foot.z)
-            .is_some_and(|hex| hex.ground == Ground::Forest);
-        if !in_forest {
-            continue;
-        }
-        let lot = Vec3::new(foot.x, 3.1, foot.z);
-        for companion in 0..2 + (hash(lot * 1.3) * 2.0) as usize {
-            let own = lot + Vec3::splat(companion as f32 * 1.7);
-            let turn = hash(own * 2.1) * TAU;
-            let away = Vec2::new(turn.cos(), turn.sin()) * (0.32 + hash(own * 3.3) * 0.38);
-            let at = Vec2::new(foot.x, foot.z) + away;
-            if grows(world, at) != Some(Ground::Forest) {
-                continue;
-            }
-            let moved = Mat4::from_translation(Vec3::new(at.x, world.height_at(at.x, at.y), at.y))
-                * Mat4::from_rotation_y(hash(own * 4.7) * TAU)
-                * Mat4::from_scale(Vec3::splat(0.62 + hash(own * 6.1) * 0.3))
-                * Mat4::from_translation(-foot)
-                * tree;
-            let mut companion = [0.0; INSTANCE_FLOATS];
-            companion[..16].copy_from_slice(&moved.to_cols_array());
-            let shade = 0.82 + hash(own * 8.3) * 0.3;
-            for channel in 0..3 {
-                companion[16 + channel] = placed[16 + channel] * shade;
-            }
-            companion[19] = placed[19];
-            added.extend_from_slice(&companion);
-        }
-    }
-    added
 }

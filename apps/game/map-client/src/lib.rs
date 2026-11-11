@@ -3,6 +3,7 @@
 //! change; it draws the map on WebGPU, or on WebGL2 where the browser has no WebGPU or the page asks for it.
 
 mod kit;
+mod props;
 mod renderer;
 mod scatter;
 mod scene;
