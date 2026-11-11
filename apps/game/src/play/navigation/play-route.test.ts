@@ -22,7 +22,9 @@ describe("play-route", () => {
     const asked = parsePlayRoute(createLocation("/g/0xa1/3/map", "?mapClient=next"));
     expect(asked?.mapClient).toBe("next");
     expect(buildPlayHref({ ...asked!, scene: "hex", spectate: false })).toBe("/g/0xa1/3/hex?mapClient=next");
-    const plain = parsePlayRoute(createLocation("/g/0xa1/3/map", "?mapClient=today"));
+    const current = parsePlayRoute(createLocation("/g/0xa1/3/map", "?mapClient=current"));
+    expect(buildPlayHref({ ...current!, spectate: false })).toBe("/g/0xa1/3/map?mapClient=current");
+    const plain = parsePlayRoute(createLocation("/g/0xa1/3/map", "?mapClient=anything"));
     expect(plain).not.toHaveProperty("mapClient");
     expect(buildPlayHref({ ...plain!, spectate: false })).toBe("/g/0xa1/3/map");
   });

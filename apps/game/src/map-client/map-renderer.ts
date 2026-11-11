@@ -16,7 +16,6 @@ import { ArmyMarches, TROOP_BUILDS } from "./army-marches";
 import { landAround, type Hex } from "./land-from-facts";
 import { MapArt } from "./map-art";
 import { CAMERA_FAR, CAMERA_FOV, CAMERA_NEAR, cameraWorldMatrix, type GroundPoint, type MapCamera } from "./map-camera";
-import { openWithoutMapClient } from "./map-client-flag";
 import { changedHexes, contractHexOf, readArmies, readStructures, readTiles } from "./map-facts";
 import { MapInput } from "./map-input";
 import { MapSelection } from "./map-selection";
@@ -43,8 +42,6 @@ const LAND_SLACK = 12;
 const LAND_BATCH_MS = 200;
 /** How often the map's animals decide what to do, in seconds. */
 const WILDLIFE_ACTS_EVERY = 0.5;
-/** The events that tell the page's address changed (`renderer-route-runtime.ts`). */
-const ROUTE_EVENTS = ["urlChanged", "popstate", "sceneAddressChanged"] as const;
 const START_DISTANCE = 22;
 /** The renderer's quality tier: the middle one, which the phone bar was measured on. */
 const QUALITY = "mid";
@@ -52,8 +49,8 @@ const QUALITY = "mid";
 /**
  * The world map drawn by the map client's own renderer, from the game's facts: the spatial projection's tiles,
  * structures and armies. It stands where today's renderer stands in the game's renderer session, draws on the same
- * canvas id under the same HUD, and tells the same stores where the camera looks and what is picked. The realm view
- * is not drawn by it.
+ * canvas id under the same HUD, and tells the same stores where the camera looks and what is picked. It draws the
+ * surface only: the session swaps the game's own renderer in for the realm view and the other layers.
  */
 export class MapClientRenderer {
   private canvas = document.createElement("canvas");
@@ -109,7 +106,6 @@ export class MapClientRenderer {
     this.selection = new MapSelection(projection, this.setup.store, (stops) => this.renderer?.show_order(stops));
     this.unsubscribe.push(bindMapSelection(projection), () => this.selection?.dispose());
     window.addEventListener("resize", this.resize);
-    for (const event of ROUTE_EVENTS) window.addEventListener(event, this.leaveForRealmView);
     this.draw();
     this.announceReady(token);
   }
@@ -122,7 +118,6 @@ export class MapClientRenderer {
     if (this.frame !== null) cancelAnimationFrame(this.frame);
     if (this.landTimer !== null) window.clearTimeout(this.landTimer);
     window.removeEventListener("resize", this.resize);
-    for (const event of ROUTE_EVENTS) window.removeEventListener(event, this.leaveForRealmView);
     this.input?.dispose();
     for (const stop of this.unsubscribe.splice(0)) stop();
     this.renderer?.free();
@@ -131,14 +126,6 @@ export class MapClientRenderer {
     this.canvas.remove();
     forgetCameraView();
   }
-
-  /**
-   * This map draws the world map only. When the address turns to the realm view the page is opened again without
-   * the trial, so today's client draws it: this map never claims a view it does not have.
-   */
-  private readonly leaveForRealmView = (): void => {
-    if (parsePlayRoute(window.location)?.scene === "hex") openWithoutMapClient();
-  };
 
   private mountCanvas(): void {
     document.getElementById(CANVAS_ID)?.remove();

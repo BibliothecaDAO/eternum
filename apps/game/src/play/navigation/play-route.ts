@@ -1,4 +1,4 @@
-import { MAP_CLIENT_QUERY_PARAM, resolveMapClientFromSearch, type MapClient } from "@/map-client/map-client-flag";
+import { MAP_CLIENT_QUERY_PARAM, mapClientAsked, type MapClient } from "@/map-client/map-client-flag";
 import { resolveRendererBuildMode, type RendererBuildMode } from "@/three/renderer-build-mode";
 import type { GameRef } from "@bibliothecadao/eternum/game-client";
 import { gamePath } from "@bibliothecadao/notifications";
@@ -15,8 +15,8 @@ export interface PlayRouteDescriptor extends GameRef {
   col: number | null;
   row: number | null;
   rendererMode?: RendererBuildMode;
-  /** The map client under trial, when the address asks for it. */
-  mapClient?: Exclude<MapClient, "today">;
+  /** The renderer of the world map the address asks for by name, when it names one. */
+  mapClient?: MapClient;
   verboseLogs?: boolean;
   bootMode?: PlayBootMode;
   resumeScene?: PlayScene | null;
@@ -72,17 +72,17 @@ const buildSearch = (searchParams: URLSearchParams): string => {
 export const requestsDiagnostics = (searchParams: URLSearchParams): boolean => searchParams.get("logs") === "1";
 
 /**
- * What an address asks of the renderer: a backend (`rendererMode`), the map client under trial (`mapClient=next`) and
+ * What an address asks of the renderer: a backend (`rendererMode`), the renderer of the world map it names (`mapClient`) and
  * diagnostics (`logs=1`), carried route to route.
  */
 export function parseRendererOptions(
   searchParams: URLSearchParams,
 ): Pick<PlayRouteDescriptor, "rendererMode" | "mapClient" | "verboseLogs"> {
   const rendererMode = searchParams.get("rendererMode");
-  const mapClient = resolveMapClientFromSearch(searchParams.toString());
+  const mapClient = mapClientAsked(searchParams.toString());
   return {
     ...(rendererMode ? { rendererMode: resolveRendererBuildMode(rendererMode) } : {}),
-    ...(mapClient === "today" ? {} : { mapClient }),
+    ...(mapClient ? { mapClient } : {}),
     ...(requestsDiagnostics(searchParams) ? { verboseLogs: true } : {}),
   };
 }

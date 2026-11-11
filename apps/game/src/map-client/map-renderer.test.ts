@@ -29,7 +29,6 @@ const world = vi.hoisted(() => ({
   worldmapConverged: vi.fn(),
   hexReady: vi.fn(),
   inputs: vi.fn(),
-  openWithoutMapClient: vi.fn(),
 }));
 
 const subscribe = (name: string) => (listener: Listener) => {
@@ -69,7 +68,6 @@ vi.mock("@/three/world-origin", () => ({
   worldHexToWorld: (col: number, row: number) => ({ x: col, z: row }),
   worldOrigin: () => ({ col: 0, row: 0 }),
 }));
-vi.mock("./map-client-flag", () => ({ openWithoutMapClient: world.openWithoutMapClient }));
 vi.mock("./map-facts", () => ({
   changedHexes: (changes: Hex[]) => changes,
   contractHexOf: (hex: Hex) => hex,
@@ -289,20 +287,6 @@ describe("what the map tells the game's entry", () => {
     expect(world.worldmapReady).toHaveBeenCalledWith(7);
     expect(world.worldmapConverged).toHaveBeenCalledWith(7);
     expect(world.hexReady).not.toHaveBeenCalled();
-    renderer.destroy();
-  });
-
-  it("opens the page without the trial when the address turns to the realm view", async () => {
-    const renderer = newRenderer();
-    await renderer.initScene();
-
-    world.scene = "map";
-    window.dispatchEvent(new Event("urlChanged"));
-    expect(world.openWithoutMapClient).not.toHaveBeenCalled();
-    world.scene = "hex";
-    window.dispatchEvent(new Event("urlChanged"));
-
-    expect(world.openWithoutMapClient).toHaveBeenCalledOnce();
     renderer.destroy();
   });
 });
