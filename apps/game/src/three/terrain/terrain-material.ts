@@ -16,15 +16,17 @@ import {
   positionWorld,
   positionViewDirection,
   smoothstep,
+  texture,
   transformNormalToView,
   uniform,
+  vec2,
   vec3,
 } from "three/tsl";
 import { MeshPhysicalNodeMaterial, MeshStandardNodeMaterial } from "three/webgpu";
 
 import { createBasaltSurface } from "./terrain-ethereal-material";
 import { terrainHexEdgeDistance } from "./terrain-hex-node";
-import { terrainDetailTile } from "./terrain-detail-tile";
+import { terrainDetailTile, terrainWaveTile } from "./terrain-detail-tile";
 import { groundSurface } from "./terrain-ground-node";
 import {
   TERRAIN_DEEP_WATER_DEPTH,
@@ -65,8 +67,9 @@ function createTerrainWaterMaterial(waterMotion: UniformNode<"float", number>): 
     .add(0.25);
   const waves = createTerrainWaterWaves(waterDepth, depthMotion, waterMotion);
   material.positionNode = positionLocal.add(vec3(0, waves.height, 0));
-  // Analytic slopes are in terrain object space, independent of the water mesh UV tangent basis.
-  const waveNormalView = transformNormalToView(waves.normal);
+  // Analytic slopes are in terrain object space, independent of the water mesh UV tangent basis; ripples from the
+  // detail tile ride on them, so the sea catches the light in small facets as the approved water does.
+  const waveNormalView = transformNormalToView(waves.normal.add(createRippleSlope(waterMotion)).normalize());
   material.normalNode = waveNormalView;
 
   // Emerald shelf water and blue offshore water remain identifiable without relying on sun glare.
@@ -76,7 +79,8 @@ function createTerrainWaterMaterial(waterMotion: UniformNode<"float", number>): 
   const fresnel = waveNormalView.dot(positionViewDirection).clamp(0, 1).oneMinus().pow(4).mul(depthMotion);
   const reflectiveColor = mix(shorelineColor, color("#b6d8e2"), fresnel.mul(0.14));
   const foam = createTerrainWaterFoam(shore, waterDepth, waterMotion);
-  material.colorNode = shadeTerrainSurface(mix(reflectiveColor, color("#dce8de"), foam.mul(0.7)));
+  const lit = reflectiveColor.add(createShallowBedLight(waterDepth, waterMotion));
+  material.colorNode = shadeTerrainSurface(mix(lit, color("#dce8de"), foam.mul(0.7)));
   const waterRoughness = mix(0.5, 0.42, depthBlend).add(shore.mul(shallowEdge).mul(0.08));
   material.roughnessNode = mix(waterRoughness, 0.78, foam).clamp(0.18, 0.78);
   return material;
@@ -135,6 +139,31 @@ function createTerrainWaterWaves(
     .add(capillarySlope.mul(5.3))
     .add(crossRippleSlope.mul(8.9));
   return { height, normal: vec3(slopeX.negate(), 1, slopeZ.negate()).normalize() };
+}
+
+/** Small ripples drifting two ways, as a slope to add to the waves' normal, from the wave tile. */
+function createRippleSlope(waterMotion: UniformNode<"float", number>): Node<"vec3"> {
+  const drift = time.mul(waterMotion);
+  const at = positionLocal.xz;
+  const one = texture(terrainWaveTile(), at.mul(0.23).add(vec2(drift.mul(0.021), drift.mul(0.013)))).rg.sub(0.5);
+  const two = texture(terrainWaveTile(), at.yx.mul(0.37).sub(vec2(drift.mul(0.017), drift.mul(-0.024)))).rg.sub(0.5);
+  const ripple = one.add(two).mul(waterMotion.mul(0.5).add(0.5));
+  return vec3(ripple.x.mul(-0.5), 0, ripple.y.mul(-0.5));
+}
+
+/**
+ * The bright net light casts on a shallow bed (the approved water's): two nets of the wave tile drifting apart,
+ * bright only where both cross, fading out as the water deepens.
+ */
+function createShallowBedLight(waterDepth: Node<"float">, waterMotion: UniformNode<"float", number>): Node<"vec3"> {
+  const drift = time.mul(waterMotion);
+  const net = (scale: number, flow: Node<"vec2">) =>
+    texture(terrainWaveTile(), positionLocal.xz.mul(scale).add(flow)).a;
+  const crossing = net(0.23, vec2(drift.mul(0.021), drift.mul(0.013))).mul(
+    net(0.37, vec2(drift.mul(-0.017), drift.mul(0.024))),
+  );
+  const shallow = smoothstep(TERRAIN_DEEP_WATER_DEPTH, TERRAIN_MIN_RENDERED_WATER_DEPTH, waterDepth);
+  return vec3(0.3, 0.38, 0.26).mul(crossing).mul(shallow.mul(shallow)).mul(1.4);
 }
 
 function createTerrainWaterFoam(

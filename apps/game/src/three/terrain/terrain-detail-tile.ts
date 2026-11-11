@@ -41,21 +41,58 @@ export function buildDetailTileTexels(size = DETAIL_TILE_SIZE): Uint8Array {
   return texels;
 }
 
-let shared: DataTexture | null = null;
+/**
+ * The water's detail as a tile that repeats, four bytes a texel. Red and green: the slope of its ripples east and
+ * south, round 0.5. Blue: a raggedness for its foam. Alpha: the bright net light casts on a shallow bed.
+ */
+export function buildWaveTileTexels(size = DETAIL_TILE_SIZE): Uint8Array {
+  const ripples = (u: number, v: number) =>
+    tilingNoise(u * 6, v * 6, 6, 21) * 0.55 +
+    tilingNoise(u * 13, v * 13, 13, 23) * 0.3 +
+    tilingNoise(u * 29, v * 29, 29, 27) * 0.15;
+  const texels = new Uint8Array(size * size * 4);
+  const step = 1 / size;
+  for (let y = 0; y < size; y += 1) {
+    for (let x = 0; x < size; x += 1) {
+      const [u, v] = [x * step, y * step];
+      const ragged = tilingNoise(u * 10, v * 10, 10, 31) * 0.6 + tilingNoise(u * 37, v * 37, 37, 33) * 0.4;
+      const [edge] = tilingStones(u * 7 + ripples(u, v) * 0.6, v * 7, 7, 37);
+      const at = (y * size + x) * 4;
+      texels[at] = toByte(0.5 + (ripples(u + step, v) - ripples(u - step, v)) * 9);
+      texels[at + 1] = toByte(0.5 + (ripples(u, v + step) - ripples(u, v - step)) * 9);
+      texels[at + 2] = toByte(ragged);
+      texels[at + 3] = toByte(Math.pow(clamp(1 - edge * 5), 3));
+    }
+  }
+  return texels;
+}
+
+let detail: DataTexture | null = null;
+let wave: DataTexture | null = null;
 
 /** The one detail tile every ground material reads, built on first use. */
 export function terrainDetailTile(): DataTexture {
-  if (shared) return shared;
-  shared = new DataTexture(buildDetailTileTexels(), DETAIL_TILE_SIZE, DETAIL_TILE_SIZE, RGBAFormat, UnsignedByteType);
-  shared.name = "terrain-detail-tile";
-  shared.wrapS = RepeatWrapping;
-  shared.wrapT = RepeatWrapping;
-  shared.magFilter = LinearFilter;
-  shared.minFilter = LinearMipmapLinearFilter;
-  shared.generateMipmaps = true;
-  shared.anisotropy = 4;
-  shared.needsUpdate = true;
-  return shared;
+  detail ??= repeatingTile(buildDetailTileTexels(), "terrain-detail-tile");
+  return detail;
+}
+
+/** The one wave tile the water reads, built on first use. */
+export function terrainWaveTile(): DataTexture {
+  wave ??= repeatingTile(buildWaveTileTexels(), "terrain-wave-tile");
+  return wave;
+}
+
+function repeatingTile(texels: Uint8Array, name: string): DataTexture {
+  const tile = new DataTexture(texels, DETAIL_TILE_SIZE, DETAIL_TILE_SIZE, RGBAFormat, UnsignedByteType);
+  tile.name = name;
+  tile.wrapS = RepeatWrapping;
+  tile.wrapT = RepeatWrapping;
+  tile.magFilter = LinearFilter;
+  tile.minFilter = LinearMipmapLinearFilter;
+  tile.generateMipmaps = true;
+  tile.anisotropy = 4;
+  tile.needsUpdate = true;
+  return tile;
 }
 
 /** Two numbers in [0, 1] for a cell of a lattice that repeats every `period` cells. */

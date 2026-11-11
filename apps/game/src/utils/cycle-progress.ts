@@ -11,18 +11,6 @@ export const clampCycleProgress = (progress: number): number => {
   return Math.min(Math.max(progress, MIN_CYCLE_PROGRESS), MAX_CYCLE_PROGRESS);
 };
 
-export const resolveDebuggableCycleProgress = (
-  liveProgress: number,
-  debugOverride: DebugCycleProgressOverride,
-): number => clampCycleProgress(debugOverride ?? liveProgress);
-
-/** Six army ticks remain the renderer's day/night cycle; they are not HUD phases. */
-export function resolveDayCycleProgress(timestamp: number, armyTickSeconds: number): number {
-  if (!Number.isFinite(armyTickSeconds) || armyTickSeconds <= 0) throw new Error("Army tick duration is unavailable");
-  const daySeconds = armyTickSeconds * 6;
-  return ((timestamp % daySeconds) / daySeconds) * 100;
-}
-
 export const DAY_PHASE_PROGRESS = {
   dawn: 100 / 6,
   morning: 100 / 3,
@@ -31,6 +19,12 @@ export const DAY_PHASE_PROGRESS = {
   dusk: (100 / 6) * 4,
   evening: (100 / 6) * 5,
 } as const;
+
+/**
+ * The Surface's one mood: the map is always lit at a late golden afternoon (owner's pick of the painted diorama, one
+ * fixed mood per layer, no day and night).
+ */
+export const SURFACE_MOOD_PROGRESS = DAY_PHASE_PROGRESS.lateAfternoon;
 
 /** The renderer's day: six phases, one per army tick, so a phase's length is the tick length. */
 const DAY_PHASES = [
