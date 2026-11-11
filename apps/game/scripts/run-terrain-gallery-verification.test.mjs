@@ -35,16 +35,25 @@ describe("terrain gallery verification", () => {
     ]);
   });
 
-  it("rejects duplicate wildlife regions and incomplete creature loads", () => {
+  it("rejects two herds in one wildlife region and incomplete creature loads, and accepts one herd of several", () => {
     const results = healthyResults();
-    results[0].snapshot.wildlife = {
-      count: 2,
-      loaded: 2,
+    const wildlifeOf = (creatures) => ({
+      count: creatures.length,
+      loaded: creatures.length,
       pending: 0,
       failed: [],
       visible: true,
-      creatures: [{ region: "0:0" }, { region: "0:0" }],
-    };
+      creatures,
+    });
+    results[0].snapshot.wildlife = wildlifeOf([
+      { herd: 0, region: "0:0" },
+      { herd: 0, region: "0:0" },
+    ]);
+    expect(evaluateTerrainGalleryResults(results).ok).toBe(true);
+    results[0].snapshot.wildlife = wildlifeOf([
+      { herd: 0, region: "0:0" },
+      { herd: 1, region: "0:0" },
+    ]);
     expect(evaluateTerrainGalleryResults(results).reasons).toContain(
       "all-biomes/webgpu-auto/flat: wildlife loading or 8x8 density contract failed",
     );
@@ -54,7 +63,7 @@ describe("terrain gallery verification", () => {
       pending: 1,
       failed: [],
       visible: true,
-      creatures: [{ region: "0:0" }],
+      creatures: [{ herd: 0, region: "0:0" }],
     };
     expect(evaluateTerrainGalleryResults(results).ok).toBe(false);
   });

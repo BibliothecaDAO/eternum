@@ -272,6 +272,7 @@ export class ProceduralTerrain {
   setMovementInteractions(interactions: readonly TerrainMovementInteraction[]): void {
     this.requireActive();
     this.movementEffects.sync(interactions);
+    this.wildlife.setArmies(interactions);
   }
 
   getMovementInteractionStats(): TerrainMovementEffectStats {

@@ -44,18 +44,20 @@
       "biome": "bare",
       "profile": "goat",
       "file": "mountain-goat.glb",
-      "triangles": 4916,
-      "bytes": 721544,
-      "sha256": "004ddc19152a87ee9c683a67760296ffbec5a900d88cf4554d1b9b86bd083b40"
+      "builder": "scripts/biome-creatures/build-creatures.mjs",
+      "triangles": 6000,
+      "bytes": 268220,
+      "sha256": "7009d9d311d184afe8ddfc48b7448c8ea4214c0b1e2dc0cd0f18d580c762123a"
     },
     {
       "id": "arctic-fox",
       "biome": "tundra",
       "profile": "fox",
       "file": "arctic-fox.glb",
-      "triangles": 5275,
-      "bytes": 717796,
-      "sha256": "bb0f07e8a30e3a63b00b88a46791de822a8a7be52ba1625538e6d0d1e15faa4e"
+      "builder": "scripts/biome-creatures/build-creatures.mjs",
+      "triangles": 6000,
+      "bytes": 268772,
+      "sha256": "c26c26271c87b27b08466d03ac360a1375ae7afe8bbd1a1492832ad73d52f226"
     },
     {
       "id": "emperor-penguin",
@@ -71,9 +73,10 @@
       "biome": "temperate-desert",
       "profile": "rabbit",
       "file": "jackrabbit.glb",
-      "triangles": 5070,
-      "bytes": 671016,
-      "sha256": "c7556d31082f715a77ab38ff34a981dfe1c416280b8ab2b9cf94f5893476d89c"
+      "builder": "scripts/biome-creatures/build-creatures.mjs",
+      "triangles": 6000,
+      "bytes": 268152,
+      "sha256": "1a3db9e1471c5c713e25b9f054a2c3a06aff98855f9e76ae68e0157cb773ffe6"
     },
     {
       "id": "mediterranean-tortoise",
@@ -89,27 +92,30 @@
       "biome": "taiga",
       "profile": "moose",
       "file": "moose.glb",
-      "triangles": 4577,
-      "bytes": 664392,
-      "sha256": "0dbe96486d36fa6f9aed67160e8eafd954fb5351a393fda3c58fdac9eb84478c"
+      "builder": "scripts/biome-creatures/build-creatures.mjs",
+      "triangles": 6000,
+      "bytes": 269068,
+      "sha256": "9bfd6aa61340438ba959efd8ea4dc92981460da93ea1a46c7060c296a5d6f993"
     },
     {
       "id": "plains-zebra",
       "biome": "grassland",
       "profile": "zebra",
       "file": "plains-zebra.glb",
-      "triangles": 5185,
-      "bytes": 640032,
-      "sha256": "98bb1fed400bd6c80ad2537db8462ead886a81d4183cf50af304e3bd85c00925"
+      "builder": "scripts/biome-creatures/build-creatures.mjs",
+      "triangles": 6000,
+      "bytes": 306192,
+      "sha256": "973d00b77abf6cdba18d116de9916ad697e0244ea24e820d60624ee146589563"
     },
     {
       "id": "red-deer",
       "biome": "temperate-deciduous-forest",
       "profile": "deer",
       "file": "red-deer.glb",
-      "triangles": 4443,
-      "bytes": 641884,
-      "sha256": "13b7910c77448e41448f84be8bf211c589933e2b830cb6bfc35273eafddaf66a"
+      "builder": "scripts/biome-creatures/build-creatures.mjs",
+      "triangles": 6000,
+      "bytes": 268352,
+      "sha256": "bb9168a4ff87a227ea3a8d669dac6a84a9254d8e84e18f8615ffb41cc2f5104c"
     },
     {
       "id": "red-backed-salamander",
@@ -134,9 +140,10 @@
       "biome": "tropical-seasonal-forest",
       "profile": "tiger",
       "file": "bengal-tiger.glb",
-      "triangles": 5595,
-      "bytes": 683024,
-      "sha256": "68b17a6d2da173699881e00b7646bdecfd45a5dd38d9814e72863c714f3b09c1"
+      "builder": "scripts/biome-creatures/build-creatures.mjs",
+      "triangles": 6000,
+      "bytes": 304436,
+      "sha256": "d2a2b741df7a4f9cdabf7ad8cae0c58ae95cbba56a418cf864b71f83186b3447"
     },
     {
       "id": "keel-billed-toucan",
