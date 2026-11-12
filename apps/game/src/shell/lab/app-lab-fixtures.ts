@@ -1,5 +1,5 @@
 import type { HeraldFrontierLeaderboard, HeraldLeaderboard } from "@bibliothecadao/eternum/game-sync";
-import { StructureType } from "@bibliothecadao/types";
+import { Aspect, StructureType } from "@bibliothecadao/types";
 import { uint256 } from "starknet";
 import { buildLedgerEconomicPreset, chestPresetFor } from "../../../../../config/deployer/clean/ledger/economics";
 import { blitzVictoryPointConfig } from "../../../../../config/source/blitz/balance";
@@ -1050,4 +1050,21 @@ export const LAB_DOORWAYS = {
     view: doorwayView({ source: "entry", phase: "settlement", audience: "player", signedIn: true }),
     realm: null,
   },
+  // The Aspect step: a campaign home joins one with a tap; a held Realm's home is shown its Order's.
+  aspect: {
+    view: doorwayView({ source: "entry", phase: "settlement", audience: "player", signedIn: true }),
+    realm: null,
+  },
+  "aspect-realm": {
+    view: doorwayView({ source: "entry", phase: "settlement", audience: "player", signedIn: true }),
+    realm: null,
+  },
 } satisfies Record<string, { view: DoorwayView; realm: DoorwayRealm | null }>;
+
+/** Each Aspect's members at the Aspect step: a free choice's uneven crowd, as the design's model drew it (91, 49, 35, 25). */
+export const LAB_ASPECT_MEMBERS = {
+  [Aspect.Might]: 91,
+  [Aspect.Harmony]: 49,
+  [Aspect.Chaos]: 35,
+  [Aspect.Guile]: 25,
+} satisfies Record<Aspect, number>;

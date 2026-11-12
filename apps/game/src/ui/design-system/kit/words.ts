@@ -862,6 +862,19 @@ export const HOME_STEP_WORDS = {
       .join(" · "),
 } as const;
 
+/** The Aspect step: the team a new home plays for all season, chosen once at founding. */
+export const ASPECT_STEP_WORDS = {
+  title: "Choose your Aspect",
+  /** The title where nothing is chosen: a held Realm's home already plays for its Order's Aspect. */
+  yours: "Your Aspect",
+  line: "Your team for the season. Members of one Aspect never fight each other. You can't switch later.",
+  members: (count: number) => formatCount(count, "member"),
+  join: (aspect: string) => `Join ${aspect}`,
+  joining: (aspect: string) => `Joining ${aspect}…`,
+  /** A held Realm's home: its Aspect is its Order's, so the step shows it and asks nothing. */
+  realmsAspect: (order: string, aspect: string) => `Your Realm's ${order} plays for ${aspect}`,
+} as const;
+
 /** The Season chip's tip: what a common chest pays today, and the pool the season pays chests from. */
 export const commonChestPays = (lords: string) => `A Common chest pays ${lords} LORDS today`;
 export const seasonPool = (lords: string, today: string | undefined) =>

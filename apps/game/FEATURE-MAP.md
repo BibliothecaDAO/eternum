@@ -468,6 +468,12 @@ each closed by its cross, a tap outside, a swipe down or `Escape`. A right-click
   the castle is lit for its first build, the Barracks: tap it, then **Build**. The relay checks the holder live on
   Starknet, so a Realm just bought counts and one just sold does not; when Starknet does not answer it says **Realm
   check unavailable. Try again.**
+- Season 1's Aspect step (the lab only until founding takes an Aspect): **Choose your Aspect**, four cards (Might,
+  Harmony, Chaos, Guile), each with its four Orders' crests and its members; one tap on a card joins it, the card
+  spinning while the home is founded. A held Realm's home sees **Your Aspect**, "Your Realm's <Order> plays for
+  <Aspect>", that card chosen and the others faint, and keeps **Create your realm**. The Orders of each Aspect come from
+  `ASPECT_ORDERS` (`packages/types/src/constants/aspects.ts`). Dev: `/lab/app/<screen>/doorway/aspect` and
+  `doorway/aspect-realm`.
 - Entering a game (the doorway, `ui/features/game-entry/doorway/`, one screen from the entry to play, the lazy game
   code's wait included): the realm under its Order's emblem, one bar with what runs (**Signing in**, **Preparing your
   realm**, **Loading the map**, **Entering the world**), its percent (the steps' spans, the map's following the opening

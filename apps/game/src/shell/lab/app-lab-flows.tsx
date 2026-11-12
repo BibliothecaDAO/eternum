@@ -9,6 +9,8 @@ import { Pill } from "@/ui/design-system/kit/pill";
 import { DoorwayScreen } from "@/ui/features/game-entry/doorway/doorway-screen";
 import { FoundButton, PlaysAs } from "@/ui/features/game-entry/game-entry-modal";
 import { HomeSourcePicker } from "@/ui/features/game-entry/home-source-picker";
+import { AspectPicker } from "@/ui/features/game-entry/aspect-picker";
+import { Aspect, ASPECT_ORDERS, Giver } from "@bibliothecadao/types";
 
 import { ClockChip } from "@/ui/design-system/kit/clock-chip";
 
@@ -22,7 +24,14 @@ import { CodeStep } from "../sign-in/code-step";
 import { ProfileStep } from "../sign-in/profile-step";
 import { StartStep } from "../sign-in/start-step";
 import { useNowSeconds } from "../use-now";
-import { LAB_DOORWAYS, LAB_NEW_ACCOUNTS, LAB_SIGN_IN_EMAIL, LAB_SEASON_WAIT, labCodeExpiry } from "./app-lab-fixtures";
+import {
+  LAB_ASPECT_MEMBERS,
+  LAB_DOORWAYS,
+  LAB_NEW_ACCOUNTS,
+  LAB_SIGN_IN_EMAIL,
+  LAB_SEASON_WAIT,
+  labCodeExpiry,
+} from "./app-lab-fixtures";
 
 const noop = () => undefined;
 
@@ -139,13 +148,24 @@ export const LabDoorway = () => {
       onSignIn={noop}
       onSpectate={noop}
       results="/lab/app/reward-sealed/results/0x5245414c4d53-7"
-      asking={state === "home"}
-      verb={state === "home" ? <FoundButton founding={false} ready onFound={noop} /> : undefined}
+      asking={state === "home" || state === "aspect" || state === "aspect-realm"}
+      verb={
+        state === "home" || state === "aspect-realm" ? <FoundButton founding={false} ready onFound={noop} /> : undefined
+      }
     >
       {/* The entry's own chips at the realm step, as game-entry-modal passes them. */}
       {state === "waiting" && <ClockChip prefix="starts" at={now + LAB_SEASON_WAIT} now={now} />}
       {state === "preparing" && <Pill icon="hourglass">{`${BLITZ_WORDS.preparing} 17/24`}</Pill>}
       {state === "home" && <LabHomeStep />}
+      {state === "aspect" && <LabAspectStep />}
+      {state === "aspect-realm" && (
+        <AspectPicker
+          members={LAB_ASPECT_MEMBERS}
+          realmOrder={ASPECT_ORDERS[Aspect.Guile][Giver.Spoils]}
+          joining={null}
+          onJoin={noop}
+        />
+      )}
     </DoorwayScreen>
   );
 };
@@ -163,6 +183,17 @@ const LabHomeStep = () => {
         onSettled={noop}
         disabled={false}
       />
+      <PlaysAs />
+    </>
+  );
+};
+
+/** A campaign home's Aspect step: a tap joins, and the card spins as founding would, until the lab resets it. */
+const LabAspectStep = () => {
+  const [joining, setJoining] = useState<Aspect | null>(null);
+  return (
+    <>
+      <AspectPicker members={LAB_ASPECT_MEMBERS} realmOrder={null} joining={joining} onJoin={setJoining} />
       <PlaysAs />
     </>
   );
