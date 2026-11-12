@@ -2,6 +2,8 @@ pub mod army_days;
 pub mod army_slot_storage;
 pub mod army_slots;
 pub mod arrivals;
+
+pub mod aspect_activity;
 pub mod bitcoin;
 pub mod blitz_results;
 pub mod bridge;

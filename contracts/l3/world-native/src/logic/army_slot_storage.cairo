@@ -77,6 +77,9 @@ pub fn allocate(
     };
     stamina.clamp(maximum);
     crate::logic::army_days::create(key, epoch);
+    crate::logic::aspect_activity::record_first_allocation(
+        crate::resources::ResourceKey { game_id: key.game_id, entity_id: home }, epoch, allowance,
+    );
     write(slot_key, ArmySlot { explorer_id: key.explorer_id, stamina });
     StaminaSource::Slot(slot)
 }

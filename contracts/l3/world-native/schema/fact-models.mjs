@@ -774,6 +774,12 @@ export function defineFactModels({ struct, model: declare }) {
         value: "zero",
         meaning: "No empty player reveals in this expedition yet.",
       };
+    if (row.name === "AspectActivity")
+      row.absence = {
+        parent: "GameRegistry",
+        value: "zero",
+        meaning: "No home in this Aspect allocated an army on this day.",
+      };
     if (row.name === "ArmySlot")
       row.absence = {
         parent: "Structure",
@@ -1055,6 +1061,16 @@ export function defineFactModels({ struct, model: declare }) {
     model("TileOpt", "game", struct("map::TileKey"), struct("map::TileOpt")),
     model("TileOccupancy", "game", struct("map::TileKey"), struct("map::TileOccupancy")),
     model("ArmyProgress", "game", struct("troops::ExplorerKey"), struct("progression::ArmyProgress")),
+    model(
+      "AspectActivity",
+      "game",
+      [
+        { name: "game_id", type: "core::integer::u32" },
+        { name: "aspect", type: "core::integer::u8" },
+        { name: "day", type: "core::integer::u64" },
+      ],
+      [{ name: "members", type: "core::integer::u32" }],
+    ),
     model("ArmyDay", "game", struct("troops::ExplorerKey"), [{ name: "day", type: "core::integer::u64" }]),
     model("ArmySlot", "game", struct("troops::ArmySlotKey"), struct("troops::ArmySlot")),
     model("ExplorerTroops", "game", struct("troops::ExplorerKey"), struct("troops::ExplorerRecord")),
@@ -1469,6 +1485,7 @@ export const syncScopes = {
   ShrineReward: { entities: ["entity_id"] },
   // A relic chest's pack is public: anyone may open the chest, so every player sees what it holds.
   RelicChest: shared,
+  AspectActivity: "shared",
   ArmyDay: { entities: ["explorer_id"] },
   ArmyProgress: { entities: ["explorer_id"] },
   ExpeditionDiscovery: { realms: ["structure_id"], epoch: "epoch" },

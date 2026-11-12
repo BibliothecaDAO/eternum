@@ -1,5 +1,5 @@
 {
-  "schemaIdentity": "20586184ba74e10af07a59ff8a5e4f5ba4f018c7e717d4cb6dda094dc3dc3345",
+  "schemaIdentity": "3e8740496096c86e9f10aea0c164f27b57a34450c83b6ee24ce49a8e17ed6e11",
   "commandAbi": [
     {
       "type": "interface",
@@ -1727,6 +1727,10 @@
     },
     {
       "name": "ArmyProgress",
+      "scope": "game"
+    },
+    {
+      "name": "AspectActivity",
       "scope": "game"
     },
     {

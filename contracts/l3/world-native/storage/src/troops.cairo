@@ -2,6 +2,7 @@ use starknet::storage::Map;
 
 #[starknet::storage_node]
 pub struct TroopStateStorage<TExplorerTroops, TArmySlot, TArmyProgress> {
+    pub aspect_activity: Map<(u32, u8, u64), u32>,
     pub army_days: Map<(u32, u64), Option<u64>>,
     pub explorers: Map<(u32, u64), TExplorerTroops>,
     pub slots: Map<(u32, u64, u64, u8), TArmySlot>,

@@ -765,3 +765,57 @@ fn preset_cooldown_keeps_blitz_at_sixty_seconds_and_allows_frontier_back_to_back
         }
     }
 }
+
+#[test]
+fn frontier_armies_fight_only_in_the_deep_and_never_their_aspect() {
+    use starknet::storage::{
+        StorageMapReadAccess, StorageMapWriteAccess, StoragePathEntry, StoragePointerReadAccess,
+        StoragePointerWriteAccess,
+    };
+    let (d, home, target, attacker, defender) = setup(false);
+    let center = crate::deep::center(100);
+    snforge_std::interact_with_state(
+        d.games,
+        || {
+            let state = crate::state::write();
+            let preset_id = state.games.games.entry(3).preset_id.read();
+            let commitment = state.registrar.presets.read(preset_id);
+            let mut rules = state.presets.entry(commitment).rules.read();
+            rules.day_unit_seconds = 60;
+            rules.troop_stamina_config.stamina_defense_req = 0;
+            state.presets.entry(commitment).rules.write(rules);
+            state.presets.entry(commitment).settlement_spacing.write(100);
+            state.settlements.home_aspects.write((3, home.entity_id), 1);
+            state.settlements.home_aspects.write((3, target.entity_id), 2);
+            let context = crate::tests::context(d.games, 3);
+            let day = crate::days::day_of(context.game.unbox(), 60, 80).index;
+            crate::logic::army_days::create(ExplorerKey { game_id: 3, explorer_id: attacker }, day);
+            crate::logic::army_days::create(ExplorerKey { game_id: 3, explorer_id: defender }, day);
+        },
+    );
+    let command = Command::Battle(
+        AttackExplorer { attacker_id: attacker, defender_id: defender, steal_resources: array![].span() },
+    );
+    let before_attacker = troop(d, attacker).unwrap();
+    let before_defender = troop(d, defender).unwrap();
+    assert_terminal_rejection(d, command, 80);
+    assert_eq!(troop(d, attacker).unwrap(), before_attacker);
+    assert_eq!(troop(d, defender).unwrap(), before_defender);
+    move_to(d, attacker, center);
+    assert_terminal_rejection(d, command, 80);
+    move_to(d, defender, crate::geometry::neighbor(center, 0));
+    snforge_std::interact_with_state(
+        d.games, || crate::state::write().settlements.home_aspects.write((3, target.entity_id), 1),
+    );
+    let allied_attacker = troop(d, attacker).unwrap();
+    let allied_defender = troop(d, defender).unwrap();
+    assert_terminal_rejection(d, command, 80);
+    assert_eq!(troop(d, attacker).unwrap(), allied_attacker);
+    assert_eq!(troop(d, defender).unwrap(), allied_defender);
+    snforge_std::interact_with_state(
+        d.games, || crate::state::write().settlements.home_aspects.write((3, target.entity_id), 2),
+    );
+    assert!(execute(d, command, 80));
+    assert!(troop(d, defender).is_none());
+    assert!(troop(d, attacker).unwrap().troops.count > 0);
+}

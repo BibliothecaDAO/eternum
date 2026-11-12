@@ -1,5 +1,5 @@
 // Generated from native fact models and contract ABIs. Run the native schema generator to update.
-export const nativeFactSchemaIdentity = "20586184ba74e10af07a59ff8a5e4f5ba4f018c7e717d4cb6dda094dc3dc3345";
+export const nativeFactSchemaIdentity = "3e8740496096c86e9f10aea0c164f27b57a34450c83b6ee24ce49a8e17ed6e11";
 export const nativeReleaseConstants = {
   "RUIN_DEPTH_LIMIT_RELEASE": 9
 } as const;
@@ -248,6 +248,7 @@ export interface NativeRows {
   TileOpt: { readonly game_id: number; readonly alt: boolean; readonly col: number; readonly row: number; readonly data: bigint };
   TileOccupancy: { readonly game_id: number; readonly alt: boolean; readonly col: number; readonly row: number; readonly entity_id: bigint; readonly category: number; readonly is_structure: boolean };
   ArmyProgress: { readonly game_id: number; readonly explorer_id: bigint; readonly xp: number; readonly common_points: number; readonly uncommon_points: number; readonly rare_points: number; readonly epic_points: number; readonly legendary_points: number; readonly battle: number; readonly logistics: number; readonly scouting: number; readonly homecoming: number; readonly scouting_kinds: number };
+  AspectActivity: { readonly game_id: number; readonly aspect: number; readonly day: bigint; readonly members: number };
   ArmyDay: { readonly game_id: number; readonly explorer_id: bigint; readonly day: bigint };
   ArmySlot: { readonly game_id: number; readonly structure_id: bigint; readonly epoch: bigint; readonly slot: number; readonly explorer_id: bigint; readonly stamina: { readonly amount: bigint; readonly settled_at: number; readonly remainder: number } };
   ExplorerTroops: { readonly game_id: number; readonly explorer_id: bigint; readonly owner: bigint; readonly troops: { readonly category: "Knight" | "Paladin" | "Crossbowman"; readonly tier: "T1" | "T2" | "T3"; readonly count: bigint; readonly stamina: { readonly Inline: { readonly amount: bigint; readonly settled_at: number; readonly remainder: number } } | { readonly Slot: number }; readonly boosts: { readonly incr_damage_dealt_percent_num: number; readonly incr_damage_dealt_end_at: number; readonly decr_damage_gotten_percent_num: number; readonly decr_damage_gotten_end_at: number; readonly incr_stamina_regen_percent_num: number; readonly incr_stamina_regen_seconds_left: number; readonly incr_explore_reward_percent_num: number; readonly incr_explore_reward_end_at: number }; readonly battle_cooldown_end: number } };
@@ -349,6 +350,7 @@ export interface NativeKeys {
   TileOpt: { readonly game_id: number; readonly alt: boolean; readonly col: number; readonly row: number };
   TileOccupancy: { readonly game_id: number; readonly alt: boolean; readonly col: number; readonly row: number };
   ArmyProgress: { readonly game_id: number; readonly explorer_id: bigint };
+  AspectActivity: { readonly game_id: number; readonly aspect: number; readonly day: bigint };
   ArmyDay: { readonly game_id: number; readonly explorer_id: bigint };
   ArmySlot: { readonly game_id: number; readonly structure_id: bigint; readonly epoch: bigint; readonly slot: number };
   ExplorerTroops: { readonly game_id: number; readonly explorer_id: bigint };
@@ -1421,6 +1423,28 @@ export const nativeFactModels = {
       "scouting_kinds": "u16"
     }
   },
+  "AspectActivity": {
+    "keys": [
+      "game_id",
+      "aspect",
+      "day"
+    ],
+    "scope": "game",
+    "fields": {
+      "game_id": "u32",
+      "aspect": "u8",
+      "day": "u64",
+      "members": "u32"
+    },
+    "absence": {
+      "parent": "GameRegistry",
+      "value": "zero",
+      "meaning": "No home in this Aspect allocated an army on this day.",
+      "parentKeys": {
+        "game_id": "game_id"
+      }
+    }
+  },
   "ArmyDay": {
     "keys": [
       "game_id",
@@ -2480,6 +2504,7 @@ export const nativeSyncScopes = {
     ]
   },
   "RelicChest": "shared",
+  "AspectActivity": "shared",
   "ArmyDay": {
     "entities": [
       "explorer_id"

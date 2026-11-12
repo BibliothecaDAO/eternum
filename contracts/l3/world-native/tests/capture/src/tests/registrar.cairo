@@ -2466,3 +2466,54 @@ fn deep_has_one_fifty_by_fifty_map_and_no_private_depth_three_region() {
         assert!(!crate::deep::contains(crate::expeditions::site(spacing, 1, day, 3), spacing));
     }
 }
+
+#[test]
+fn aspect_activity_counts_homes_once_across_slot_order_reuse_and_rollover() {
+    use starknet::storage::{
+        StorageMapReadAccess, StorageMapWriteAccess, StoragePathEntry, StoragePointerReadAccess,
+        StoragePointerWriteAccess,
+    };
+    let d = setup();
+    let (game_id, _, category) = expedition_home(d);
+    snforge_std::interact_with_state(
+        d.games,
+        || {
+            let state = crate::state::write();
+            let commitment = state.registrar.presets.read(state.games.games.entry(game_id).preset_id.read());
+            state
+                .presets
+                .entry(commitment)
+                .order_aspects
+                .write(crate::aspects::pack(array![1, 1, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3, 4, 4, 4, 4].span()));
+            state.settlements.home_aspects.write((game_id, 1), 1);
+        },
+    );
+    let count = |
+        game, aspect, day,
+    | snforge_std::interact_with_state(
+        d.games, || crate::state::read().troops.aspect_activity.read((game, aspect, day)),
+    );
+    assert_eq!(count(game_id, 1, 0), 0);
+    // Slot 1 is the first allocation, so counting slot 0 would miss this home.
+    assert!(execute_in_game(d, game_id, muster_slot_command(category, 0, 1), 351));
+    assert_eq!(count(game_id, 1, 0), 1);
+    assert!(!execute_in_game(d, game_id, muster_slot_command(category, 1, 1), 351));
+    assert_eq!(count(game_id, 1, 0), 1);
+    let armies = IStructureOperationsDispatcher { contract_address: d.games };
+    let home = ResourceKey { game_id, entity_id: 1 };
+    let first = *armies.home_armies(home).at(0);
+    assert!(
+        execute_in_game(
+            d, game_id, Command::ManageTroops(crate::troop_management::ManageTroops::RemoveExplorer(first)), 352,
+        ),
+    );
+    assert!(execute_in_game(d, game_id, muster_slot_command(category, 0, 1), 353));
+    assert!(execute_in_game(d, game_id, muster_slot_command(category, 1, 0), 353));
+    assert_eq!(count(game_id, 1, 0), 1);
+    assert_eq!(count(game_id, 2, 0), 0);
+    let tomorrow = day_start(d, game_id, 1);
+    assert!(execute_in_game(d, game_id, muster_slot_command(category, 0, 0), tomorrow + 1));
+    assert_eq!(count(game_id, 1, 0), 1);
+    assert_eq!(count(game_id, 1, 1), 1);
+    assert_eq!(count(game_id + 1, 1, 1), 0);
+}
