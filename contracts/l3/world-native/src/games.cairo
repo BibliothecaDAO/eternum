@@ -170,11 +170,14 @@ pub mod Games {
                 rank,
             )
         }
+    }
+    #[abi(embed_v0)]
+    impl HomeGrants of crate::entry::IHomeGrants<ContractState> {
         fn grant_labor(
             ref self: ContractState, home: crate::entry::LaborHome, day: u64, account: ContractAddress,
         ) -> crate::entry::LaborGrant {
-            crate::entry::ILedgerOperatorDispatcherTrait::grant_labor(
-                crate::entry::ILedgerOperatorLibraryDispatcher { class_hash: self.release.current_classes().bridge },
+            crate::entry::IHomeGrantsDispatcherTrait::grant_labor(
+                crate::entry::IHomeGrantsLibraryDispatcher { class_hash: self.release.current_classes().prizes },
                 home,
                 day,
                 account,
@@ -183,8 +186,8 @@ pub mod Games {
         fn labor_grant(
             self: @ContractState, home: crate::entry::LaborHome, day: u64,
         ) -> Option<crate::entry::LaborGrant> {
-            crate::entry::ILedgerOperatorDispatcherTrait::labor_grant(
-                crate::entry::ILedgerOperatorLibraryDispatcher { class_hash: self.release.current_classes().bridge },
+            crate::entry::IHomeGrantsDispatcherTrait::labor_grant(
+                crate::entry::IHomeGrantsLibraryDispatcher { class_hash: self.release.current_classes().prizes },
                 home,
                 day,
             )

@@ -101,6 +101,25 @@ function abi(contract, type) {
   ];
 }
 
+test("home grants belong to Prizes and leave no claim entrypoint in Bridge", async () => {
+  const entrypoints = async (contract) => {
+    const { abi } = JSON.parse(
+      await readFile(new URL(`../target/dev/world_native_${contract}.contract_class.json`, import.meta.url), "utf8"),
+    );
+    return abi.flatMap((entry) => (entry.type === "interface" ? entry.items : [entry])).map(({ name }) => name);
+  };
+  const [games, prizes, bridge] = await Promise.all([
+    entrypoints("Games"),
+    entrypoints("PrizesLogic"),
+    entrypoints("BridgeLogic"),
+  ]);
+  for (const name of ["grant_labor", "labor_grant"]) {
+    assert.equal(games.filter((entry) => entry === name).length, 1);
+    assert.equal(prizes.filter((entry) => entry === name).length, 1);
+    assert.equal(bridge.includes(name), false, `${name} must move out of Bridge`);
+  }
+});
+
 test("libraries sharing a Games selector must agree on every wire member", () => {
   const first = eventLayouts(abi("MapLogic", "core::felt252"));
   const same = eventLayouts(abi("TroopsLogic", "core::felt252"));

@@ -31,3 +31,16 @@ Setup requires the normal harness identity/launcher environment. `--fixture <mod
 checked once, assigned to its own worker group and reads its own Herald store. Duplicate accounts, duplicate bot IDs,
 missing participants and mismatched game assignments fail before workers start. Prepared credential files remain
 private; public result files contain neither device keys nor signed bodies.
+
+## Season 1 groundwork
+
+Run the existing Frontier path with `--game-type frontier --functional --preset <preset id>` against a shard carrying
+the matching release and registered preset. Resolve the Season 1 id from
+[`FRONTIER_S1_PRESET_ID`](../../../config/source/common/native-preset-modes.ts); its starting stock and calendar live in
+[`season-one.ts`](../../../config/source/frontier/season-one.ts). The earlier presets retain their own definitions. The
+harness records the player actions and resulting Herald facts in its existing reports. This preset currently provides
+the starting stock and calendar; the Aspect, quest and bane paths arrive with their contract changes.
+
+The home reward administration path is `Games.grant_labor`, with `Games.labor_grant` reading the recorded result. Both
+dispatch to the existing Prizes class. `bash contracts/l3/check-native.sh` checks their compiled routing and runs the
+lifecycle claim regressions; the integration fold owns this gate before further reward rules are added.

@@ -403,14 +403,14 @@ pub mod SettlementState {
                 if self.data.entry.home_labor_grants.read((key.game_id, home, day)).is_some() {
                     continue;
                 }
-                let (amount, essence) = crate::logic::entry::grant_home_amounts(
+                let (amount, essence) = crate::logic::home_grants::grant_home_amounts(
                     crate::entry::LaborHome { game_id: key.game_id, home },
                     Some(entitlement.metadata_2.try_into().unwrap()),
                     rules,
                     resource_context,
                     resources,
                 );
-                crate::logic::entry::record_labor_grant(
+                crate::logic::home_grants::record_labor_grant(
                     day, crate::entry::LaborGrant { game_id: key.game_id, account: key.owner, home, amount, essence },
                 );
             }

@@ -17,6 +17,7 @@ pub mod faith;
 pub mod game;
 pub mod guards;
 pub mod guilds;
+pub mod home_grants;
 pub mod hyperstructures;
 pub mod lords;
 pub mod lords_budget;
