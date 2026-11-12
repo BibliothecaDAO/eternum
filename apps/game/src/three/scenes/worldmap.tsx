@@ -192,6 +192,7 @@ import { playerColorManager } from "@/three/systems/player-colors";
 import { resolveWorldmapContentLadder, type WorldmapContentLadder } from "./worldmap-content-ladder";
 import type { TerrainUploadMetrics } from "@/three/terrain/procedural-terrain";
 import type { TerrainRoadAnchor, TerrainSettlementAnchor } from "@/three/terrain/terrain-types";
+import type { GroundLights } from "@/three/terrain/ground-lights";
 import type { TerrainSurface } from "@/three/terrain/terrain-surface";
 import type { TerrainMovementInteraction } from "@/three/terrain/terrain-movement-effects";
 import { env } from "../../../env";
@@ -1205,6 +1206,10 @@ export default class WorldmapScene extends WarpTravel {
     return this.proceduralTerrain;
   }
 
+  public override getGroundLights(): GroundLights {
+    return this.proceduralTerrain.groundLights;
+  }
+
   private registerWorldmapRecoveryHandle(): void {
     this.unregisterWorldmapRecoveryHandle = registerActiveWorldmapRecoveryHandle({
       refreshAfterReconnect: () => this.refreshAfterReconnect(),
@@ -1370,6 +1375,7 @@ export default class WorldmapScene extends WarpTravel {
       this.markLabelsDirty,
       this.createRuleSpires(),
       this.compilePipelines,
+      this.getGroundLights(),
     );
     this.mapSiteManager = new MapSiteManager(
       this.scene,
