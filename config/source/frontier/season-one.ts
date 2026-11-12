@@ -15,6 +15,10 @@ const race = {
   gloryPerTick: 5,
   heightPerTick: 5,
   stageHeight: 2_000,
+  clearMistPercent: 200,
+  secondWindPercent: 200,
+  paleMoonPercent: 50,
+  spoilsPercent: 200,
   positions: [
     [10, 10],
     [40, 10],

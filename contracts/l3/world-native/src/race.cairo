@@ -6,6 +6,10 @@ pub struct RaceRules {
     pub glory_per_tick: u128,
     pub height_per_tick: u32,
     pub stage_height: u32,
+    pub clear_mist_percent: u16,
+    pub second_wind_percent: u16,
+    pub pale_moon_percent: u16,
+    pub spoils_percent: u16,
     pub first: Coord,
     pub second: Coord,
     pub third: Coord,
@@ -73,6 +77,10 @@ pub fn validate(rules: RaceRules) {
     assert!(rules.glory_per_tick != 0, "zero Glory payment");
     assert!(rules.height_per_tick != 0 && rules.stage_height != 0, "zero height payment or stage");
     assert!(rules.stage_height % rules.height_per_tick == 0, "height must fill a stage exactly");
+    assert!(rules.clear_mist_percent >= 100 && rules.clear_mist_percent <= 200, "invalid Clear Mist rate");
+    assert!(rules.second_wind_percent >= 100 && rules.second_wind_percent <= 200, "invalid Second Wind rate");
+    assert!(rules.pale_moon_percent > 0 && rules.pale_moon_percent <= 100, "invalid Pale Moon rate");
+    assert!(rules.spoils_percent >= 100 && rules.spoils_percent <= 200, "invalid Spoils rate");
     let _ = rules.stage_height * 5;
     let _ = rules.glory_per_tick * crate::rules::RESOURCE_PRECISION;
     for aspect in 1..5 {

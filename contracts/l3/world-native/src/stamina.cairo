@@ -46,6 +46,18 @@ pub impl StaminaImpl of StaminaTrait {
         tick_seconds: u64,
         timestamp: u64,
     ) {
+        self.refill_at_rate(ref troop_boosts, maximum, troop_stamina_config, tick_seconds, timestamp, 100);
+    }
+
+    fn refill_at_rate(
+        ref self: Stamina,
+        ref troop_boosts: TroopBoosts,
+        maximum: u64,
+        troop_stamina_config: TroopStaminaConfig,
+        tick_seconds: u64,
+        timestamp: u64,
+        percent: u16,
+    ) {
         let now: u32 = timestamp.try_into().unwrap();
         // Slot resolution already used the army's Logistics maximum at this second.
         if now == self.settled_at {
@@ -63,8 +75,11 @@ pub impl StaminaImpl of StaminaTrait {
             // including across boost activation and expiry. The same denominator carries both rates.
             let numerator = Into::<u32, u64>::into(self.remainder)
                 + gain
-                    * (elapsed * PercentageValueImpl::_100()
-                        + boosted * Into::<u16, u64>::into(troop_boosts.incr_stamina_regen_percent_num));
+                    * (elapsed * Into::<u16, u64>::into(percent) * 100
+                        + boosted
+                            * Into::<u16, u64>::into(troop_boosts.incr_stamina_regen_percent_num)
+                            * percent.into()
+                            / 100);
             self.amount += numerator / denominator;
             self.remainder = (numerator % denominator).try_into().unwrap();
             troop_boosts.incr_stamina_regen_seconds_left -= boosted.try_into().unwrap();

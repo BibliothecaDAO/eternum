@@ -68,7 +68,7 @@ fn initialize(game_id: u32) {
     };
     assert!(crate::logic::aspects::rules(game_id).is_some(), "race requires Aspects");
     let game = crate::logic::game::game(game_id);
-    let unit: u64 = crate::logic::game::rules(game_id).day_unit_seconds.into();
+    let unit: u64 = crate::logic::preset_record::for_game(game_id).rules.day_unit_seconds.read().into();
     let duration = rules.season_days / crate::days::DAYS_PER_BAG * crate::days::UNITS_PER_BAG * unit;
     assert!(game.end_at - game.start_main_at <= duration, "race exceeds season day limit");
     let spacing = crate::logic::settlement::rules(game_id).spacing;
@@ -126,7 +126,7 @@ fn validate_tick(game_id: u32, kind: u8, aspect: u8, shares: Span<crate::deep::D
     let game = crate::logic::game::game(game_id);
     assert!(timestamp > game.start_main_at && timestamp <= game.end_at, "reward outside season");
     assert!(
-        timestamp % crate::logic::game::rules(game_id).tick_config.armies_tick_in_seconds == 0,
+        timestamp % crate::logic::preset_record::for_game(game_id).rules.tick_config.armies_tick_in_seconds.read() == 0,
         "reward outside army tick",
     );
     for share in shares {
@@ -170,7 +170,9 @@ fn schedule_triumph(key: AspectKey, rules: RaceRules, before: u32, height: u32, 
         return;
     }
     let game = crate::logic::game::game(key.game_id);
-    let day = crate::days::day_of(game, crate::logic::game::rules(key.game_id).day_unit_seconds, timestamp - 1);
+    let day = crate::days::day_of(
+        game, crate::logic::preset_record::for_game(key.game_id).rules.day_unit_seconds.read(), timestamp - 1,
+    );
     let key = TriumphKey { game_id: key.game_id, aspect: key.aspect, stage };
     assert!(triumph_day(key).is_none(), "Triumph already scheduled");
     crate::state::write().season.triumph_days.write((key.game_id, key.aspect, key.stage), Some(day.index + 1));

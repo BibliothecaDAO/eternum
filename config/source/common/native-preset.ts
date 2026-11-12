@@ -85,6 +85,10 @@ export interface NativePreset {
     gloryPerTick: number;
     heightPerTick: number;
     stageHeight: number;
+    clearMistPercent: number;
+    secondWindPercent: number;
+    paleMoonPercent: number;
+    spoilsPercent: number;
     positions: readonly [
       readonly [number, number],
       readonly [number, number],

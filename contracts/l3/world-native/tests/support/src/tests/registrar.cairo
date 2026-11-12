@@ -363,7 +363,7 @@ fn discovery_root(
         let mut root = raw_root;
         let seed = crate::random::game_root(ref root, game_id);
         if crate::discovery::frontier(
-            rules, 0, 0, 0, empty_reveals, chest.map(|value| crate::army_relics::RuinReward::Chest(value)), seed,
+            rules, 0, 0, 0, 100, empty_reveals, chest.map(|value| crate::army_relics::RuinReward::Chest(value)), seed,
         ) == expected {
             return raw_root;
         }

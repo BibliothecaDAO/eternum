@@ -79,6 +79,21 @@ pub fn validate_frontier(rules: crate::expeditions::FrontierDiscoveryRules) {
     );
 }
 
+pub fn maximum_race_chance(rules: crate::expeditions::FrontierDiscoveryRules, find_percent: u16) -> u128 {
+    let sites = crate::rules::BOON_MAX_STEPS * crate::rules::PATHS_SITE_STEP_BPS;
+    let sanctuaries = crate::rules::BOON_MAX_STEPS * crate::rules::PATHS_SANCTUARY_STEP_BPS;
+    modified_weight(rules.beasts_bps, 0, find_percent)
+        + modified_weight(rules.camp_bps, sites, find_percent)
+        + modified_weight(rules.rift_bps, sites, find_percent)
+        + modified_weight(rules.ruin_bps, 0, find_percent)
+        + modified_weight(rules.shrine_bps, sanctuaries, find_percent)
+        + modified_weight(rules.well_bps, sanctuaries, find_percent)
+}
+
+fn modified_weight(base: u16, bonus_bps: u32, percent: u16) -> u128 {
+    Into::<u16, u128>::into(base) * (10000 + Into::<u32, u128>::into(bonus_bps)) * percent.into() / 1000000
+}
+
 // One categorical draw per reveal. After `empty_reveal_limit` empty reveals in a row the draw covers only the kinds
 // still allowed. Ruins remain eligible until the realm clears one at that depth today; discovery never reserves their
 // payout.
@@ -87,26 +102,28 @@ pub fn frontier(
     camp_bonus_bps: u32,
     rift_bonus_bps: u32,
     sanctuaries_bonus_bps: u32,
+    find_percent: u16,
     empty_reveals: u8,
     ruin: Option<crate::army_relics::RuinReward>,
     seed: u256,
 ) -> Discovery {
-    let camp = Into::<u16, u128>::into(rules.camp_bps) * (10000 + camp_bonus_bps.into()) / 10000;
-    let rift = Into::<u16, u128>::into(rules.rift_bps) * (10000 + rift_bonus_bps.into()) / 10000;
-    let shrine = Into::<u16, u128>::into(rules.shrine_bps) * (10000 + sanctuaries_bonus_bps.into()) / 10000;
-    let well = Into::<u16, u128>::into(rules.well_bps) * (10000 + sanctuaries_bonus_bps.into()) / 10000;
+    let camp = modified_weight(rules.camp_bps, camp_bonus_bps, find_percent);
+    let rift = modified_weight(rules.rift_bps, rift_bonus_bps, find_percent);
+    let shrine = modified_weight(rules.shrine_bps, sanctuaries_bonus_bps, find_percent);
+    let well = modified_weight(rules.well_bps, sanctuaries_bonus_bps, find_percent);
     let (ruin_kind, ruin_weight): (Discovery, u128) = match ruin {
-        Some(reward) => (Discovery::Ruin(reward), rules.ruin_bps.into()),
+        Some(reward) => (Discovery::Ruin(reward), modified_weight(rules.ruin_bps, 0, find_percent)),
         None => (Discovery::None, 0),
     };
     let kinds = array![
-        (Discovery::Beasts, rules.beasts_bps.into()), (Discovery::Camp, camp), (Discovery::Rift, rift),
-        (ruin_kind, ruin_weight), (Discovery::Shrine, shrine), (Discovery::Well, well),
+        (Discovery::Beasts, modified_weight(rules.beasts_bps, 0, find_percent)), (Discovery::Camp, camp),
+        (Discovery::Rift, rift), (ruin_kind, ruin_weight), (Discovery::Shrine, shrine), (Discovery::Well, well),
     ];
     let mut total: u128 = 0;
     for (_, weight) in kinds.span() {
         total += *weight;
     }
+    assert!(total <= 10000, "discovery odds exceed 100 percent");
     let floor = empty_reveals >= rules.empty_reveal_limit;
     let mut draw = crate::random::range(seed, 29, if floor {
         total

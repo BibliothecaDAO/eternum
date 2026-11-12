@@ -51,13 +51,18 @@ pub fn resolve(key: ExplorerKey, mut explorer: ExplorerTroops, refill: Option<St
         if let Some(refill) = refill {
             let progress = crate::logic::progression::require(key);
             let maximum = crate::progression::stamina_max(progress, explorer.troops.category, refill.stamina_config);
+            let home = crate::resources::ResourceKey { game_id: key.game_id, entity_id: explorer.owner };
+            let rate = crate::logic::triumphs::percent(
+                home, explorer.coord, crate::rules::SECOND_WIND_STAGE, refill.timestamp,
+            );
             stamina
-                .refill_to_max(
+                .refill_at_rate(
                     ref explorer.troops.boosts,
                     maximum,
                     refill.stamina_config,
                     refill.armies_tick_in_seconds,
                     refill.timestamp,
+                    rate,
                 );
             stamina.clamp(maximum);
         }

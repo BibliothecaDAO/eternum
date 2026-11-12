@@ -1,5 +1,5 @@
 // Generated from native fact models and contract ABIs. Run the native schema generator to update.
-export const nativeFactSchemaIdentity = "b31000ea98d314020d9f845d0d67010c5b64ef1c5ee70003d469508db6205f8a";
+export const nativeFactSchemaIdentity = "91dd5fafcd23e8f4ef1cc4f7db2a5a6de210198afc1bcfa3bee7a1e760d15118";
 export const nativeReleaseConstants = {
   "RUIN_DEPTH_LIMIT_RELEASE": 9
 } as const;
@@ -64,7 +64,14 @@ export const nativeRuleConstants = {
   "HYPERSTRUCTURE_MULTIPLIERS": 32768,
   "PRODUCTION_START": 131072,
   "WELL_STAMINA_DIVISOR": 2,
-  "FRONTIER_REPORT_GRACE_SECONDS": 3600
+  "FRONTIER_REPORT_GRACE_SECONDS": 3600,
+  "CLEAR_MIST_STAGE": 1,
+  "SECOND_WIND_STAGE": 2,
+  "PALE_MOON_STAGE": 3,
+  "SPOILS_STAGE": 4,
+  "BOON_MAX_STEPS": 5,
+  "PATHS_SITE_STEP_BPS": 2500,
+  "PATHS_SANCTUARY_STEP_BPS": 1500
 } as const;
 export const nativeResearchConstants = {
   "ROW_FARM": 0,
@@ -205,7 +212,7 @@ export interface NativeRows {
   ArmyProgressionRules: { readonly game_id: number; readonly reveal_xp: number; readonly reveal_xp_per_depth: number; readonly common_xp: number; readonly uncommon_xp: number; readonly rare_xp: number; readonly epic_xp: number; readonly legendary_xp: number };
   FrontierDiscoveryRules: { readonly game_id: number; readonly beasts_bps: number; readonly camp_bps: number; readonly rift_bps: number; readonly ruin_bps: number; readonly shrine_bps: number; readonly well_bps: number; readonly empty_reveal_limit: number };
   ExpeditionDiscovery: { readonly game_id: number; readonly structure_id: bigint; readonly epoch: bigint; readonly empty_reveals: number; readonly ruin_cleared: boolean };
-  RaceRules: { readonly game_id: number; readonly season_days: bigint; readonly glory_per_tick: bigint; readonly height_per_tick: number; readonly stage_height: number; readonly first: { readonly alt: boolean; readonly x: number; readonly y: number }; readonly second: { readonly alt: boolean; readonly x: number; readonly y: number }; readonly third: { readonly alt: boolean; readonly x: number; readonly y: number }; readonly fourth: { readonly alt: boolean; readonly x: number; readonly y: number } };
+  RaceRules: { readonly game_id: number; readonly season_days: bigint; readonly glory_per_tick: bigint; readonly height_per_tick: number; readonly stage_height: number; readonly clear_mist_percent: number; readonly second_wind_percent: number; readonly pale_moon_percent: number; readonly spoils_percent: number; readonly first: { readonly alt: boolean; readonly x: number; readonly y: number }; readonly second: { readonly alt: boolean; readonly x: number; readonly y: number }; readonly third: { readonly alt: boolean; readonly x: number; readonly y: number }; readonly fourth: { readonly alt: boolean; readonly x: number; readonly y: number } };
   RaceMember: { readonly game_id: number; readonly entity_id: bigint; readonly glory: bigint; readonly contribution: bigint };
   AspectHyperstructure: { readonly game_id: number; readonly aspect: number; readonly entity_id: bigint; readonly height: number };
   TriumphDay: { readonly game_id: number; readonly aspect: number; readonly stage: number; readonly day: bigint };
@@ -639,6 +646,10 @@ export const nativeFactModels = {
       "glory_per_tick": "u128",
       "height_per_tick": "u32",
       "stage_height": "u32",
+      "clear_mist_percent": "u16",
+      "second_wind_percent": "u16",
+      "pale_moon_percent": "u16",
+      "spoils_percent": "u16",
       "first": {
         "alt": "boolean",
         "x": "u32",

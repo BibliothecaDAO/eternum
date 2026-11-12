@@ -81,6 +81,12 @@ pub fn validate(preset: PresetDefinition) {
     assert!(preset.economy.discovery.is_some() == (rules.day_unit_seconds != 0), "discovery requires expedition");
     if let Some(discovery) = preset.economy.discovery {
         crate::discovery::validate_frontier(discovery);
+        if let Some(race) = preset.economy.race {
+            assert!(
+                crate::discovery::maximum_race_chance(discovery, race.clear_mist_percent) <= 10000,
+                "Triumph and boon discovery odds exceed 100 percent",
+            );
+        }
         assert!(
             rules.map_config.camp_win_probability == 0 && rules.map_config.shards_mines_win_probability == 0,
             "expedition uses categorical odds",

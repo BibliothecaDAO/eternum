@@ -47,7 +47,10 @@ pub fn roll(
     }
     let ruin = ruin_reward(key.game_id, counter, depth, seed, context);
     let (camp, rift, sanctuaries) = crate::progression::scouting_bonus(progress);
-    let result = crate::discovery::frontier(rules, camp, rift, sanctuaries, day.empty_reveals, ruin, seed);
+    let rate = crate::logic::triumphs::percent(
+        home_key, Coord { alt: key.alt, x: key.col, y: key.row }, crate::rules::CLEAR_MIST_STAGE, context.timestamp,
+    );
+    let result = crate::discovery::frontier(rules, camp, rift, sanctuaries, rate, day.empty_reveals, ruin, seed);
     crate::logic::expeditions::record_discovery(counter, result);
     occupy_discovery(key, home, result, seed);
     result

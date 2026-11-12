@@ -74,7 +74,15 @@ pub mod ResourcesLogic {
                 crate::expeditions::site_reward(category, site, depth)
             };
             let home = ResourceKey { game_id: key.game_id, entity_id: home_id };
+            let spoils: u128 = crate::logic::triumphs::percent(
+                home,
+                crate::troops::Coord { alt: site.alt, x: site.col, y: site.row },
+                crate::rules::SPOILS_STAGE,
+                context.timestamp,
+            )
+                .into();
             let reward = if let Some(reward) = reward {
+                let reward = crate::resources::ResourceAmount { amount: reward.amount * spoils / 100, ..reward };
                 let reward = crate::logic::army_relics::site_reward(explorer, reward, context.timestamp);
                 let amount = self
                     .grant_resource(
@@ -97,7 +105,13 @@ pub mod ResourcesLogic {
                     class_hash: self.release.classes(key.game_id).relics.read(),
                 },
                 explorer,
-                crate::progression::XpAward::Clear(crate::progression::clear_xp(site.initial_guard_count, depth)),
+                crate::progression::XpAward::Clear(
+                    (Into::<u32, u128>::into(crate::progression::clear_xp(site.initial_guard_count, depth))
+                        * spoils
+                        / 100)
+                        .try_into()
+                        .unwrap(),
+                ),
                 context.timestamp,
             );
             let actor = crate::logic::structures::structure(home).expect('missing home structure').owner;

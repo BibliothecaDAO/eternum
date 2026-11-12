@@ -56,6 +56,7 @@ pub mod structures;
 
 pub mod terrain;
 pub mod trade;
+pub mod triumphs;
 pub mod troops;
 pub mod upgrades;
 pub mod village;

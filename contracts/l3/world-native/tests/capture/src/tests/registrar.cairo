@@ -1686,7 +1686,7 @@ fn frontier_site_discovery_reads_home_knowledge_and_stores_the_shrine_reward() {
         for sample in 0_u64..10000 {
             let seed: u256 = sample.into();
             if crate::discovery::frontier(
-                enabled, 0, 0, 0, 0, Some(crate::army_relics::RuinReward::Chest(any_chest())), seed,
+                enabled, 0, 0, 0, 100, 0, Some(crate::army_relics::RuinReward::Chest(any_chest())), seed,
             ) == expected {
                 chosen = Some(seed);
                 break;

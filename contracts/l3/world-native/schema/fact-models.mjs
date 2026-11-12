@@ -5,7 +5,10 @@ export const factWireTypes = [
     type: "struct",
     name: "world_native::race::RaceRules",
     members: [
-      { name: "season_days", type: "core::integer::u64" },
+      {
+        name: "season_days",
+        type: "core::integer::u64",
+      },
       {
         name: "glory_per_tick",
         type: "core::integer::u128",
@@ -17,6 +20,22 @@ export const factWireTypes = [
       {
         name: "stage_height",
         type: "core::integer::u32",
+      },
+      {
+        name: "clear_mist_percent",
+        type: "core::integer::u16",
+      },
+      {
+        name: "second_wind_percent",
+        type: "core::integer::u16",
+      },
+      {
+        name: "pale_moon_percent",
+        type: "core::integer::u16",
+      },
+      {
+        name: "spoils_percent",
+        type: "core::integer::u16",
       },
       {
         name: "first",
