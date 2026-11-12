@@ -114,6 +114,8 @@ function deriveStructures(emit: EmitRule, structures: PresetRecord) {
 
 function deriveSettlement(emit: EmitRule, settlement: PresetRecord) {
   emit("RealmGrants", record(settlement.realms));
+  if (Array.isArray(settlement.order_aspects) && settlement.order_aspects.length > 0)
+    emit("AspectRules", { orders: settlement.order_aspects });
   emit("VillageRules", record(settlement.villages));
   records(settlement.depths).forEach((rules, depth) => emit("DepthRules", rules, { depth }));
   const spires = some(settlement.spires);

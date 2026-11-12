@@ -28,6 +28,9 @@ pub mod RealmState {
             for packed in packed_traits {
                 let traits = decode_traits(*packed);
                 self.data.realms.traits.write(realm_id, *packed);
+                let count = self.data.realms.order_count.read(traits.order);
+                self.data.realms.order_realms.write((traits.order, count), realm_id);
+                self.data.realms.order_count.write(traits.order, count + 1);
                 digest = core::poseidon::poseidon_hash_span(array![digest, realm_id.into(), (*packed).into()].span());
                 let mut values = array![];
                 traits.serialize(ref values);

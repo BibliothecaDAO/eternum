@@ -403,14 +403,14 @@ pub mod SettlementState {
                 if self.data.entry.home_labor_grants.read((key.game_id, home, day)).is_some() {
                     continue;
                 }
-                let (amount, essence) = crate::logic::entry::grant_home_amounts(
+                let (amount, essence) = crate::logic::home_grants::grant_home_amounts(
                     crate::entry::LaborHome { game_id: key.game_id, home },
                     Some(entitlement.metadata_2.try_into().unwrap()),
                     rules,
                     resource_context,
                     resources,
                 );
-                crate::logic::entry::record_labor_grant(
+                crate::logic::home_grants::record_labor_grant(
                     day, crate::entry::LaborGrant { game_id: key.game_id, account: key.owner, home, amount, essence },
                 );
             }
@@ -484,6 +484,14 @@ pub mod SettlementState {
         }
         fn claim_held_realm(ref self: ComponentState<TContractState>, key: EntryKey, realm_id: u32, home: u64) {
             let game_id = key.game_id;
+            let joined = self.data.settlements.home_aspects.read((game_id, home));
+            if joined != 0 {
+                let orders = crate::logic::aspects::rules(game_id).expect('missing Aspect rules');
+                let traits = crate::realms::decode_traits(self.data.realms.traits.read(realm_id));
+                assert!(
+                    crate::aspects::order_aspect(orders, traits.order) == joined, "Realm belongs to another Aspect",
+                );
+            }
             assert!(
                 self.data.settlements.held_realm_owners.read((game_id, realm_id)) == key.owner,
                 "Realm reserved for another owner",

@@ -179,7 +179,10 @@ export interface Position {
   y: number;
 }
 
+export type AspectId = 1 | 2 | 3 | 4;
+
 export interface IOrder {
+  aspect: AspectId | null;
   orderId: number;
   orderName: string;
   fullOrderName: string;
