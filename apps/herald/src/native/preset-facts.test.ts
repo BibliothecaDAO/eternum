@@ -98,6 +98,18 @@ describe("verified preset configuration facts", () => {
       bonus_percent: 150,
     });
     expect(world.fold.gameRows("LaborRules", "1")).toHaveLength(0);
+    store.applyFacts(
+      world.fold.gameRows("BaneRules", "1").map(({ key, value }) => ({ model: "BaneRules", key, value })),
+    );
+    expect(store.require("BaneRules", { game_id: 1 })).toEqual({
+      game_id: 1,
+      chance_step: 20,
+      quorum_percent: 25,
+      beast_percent: 150,
+      stamina_percent: 50,
+      production_percent: 50,
+      quest_counts: [3n, 6n, 9n, 12n, 20n, 40n, 60n, 80n, 2500n, 6000n, 10000n, 15000n],
+    });
   });
   it("publishes the S1 Order mapping and leaves earlier presets without Aspect rules", () => {
     for (const presetId of [5, 7]) {

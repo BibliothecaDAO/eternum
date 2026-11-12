@@ -35,6 +35,7 @@ pub struct WithdrawalPreset {
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]
 pub struct EconomyPreset {
     pub quests: Option<crate::quests::QuestRules>,
+    pub banes: Option<crate::banes::BaneRules>,
     pub labor: Option<crate::entry::LaborRules>,
     pub trade: crate::trade::TradeRules,
     pub banks: crate::market::BankRules,
@@ -59,6 +60,16 @@ pub struct PresetDefinition {
 
 pub fn validate(preset: PresetDefinition) {
     let rules = preset.rules;
+    if let Some(banes) = preset.economy.banes {
+        assert!(preset.economy.quests.is_some(), "banes require quests");
+        crate::banes::validate(banes);
+        for relic in preset.economy.relics {
+            assert!(
+                Into::<u16, u32>::into(*relic.rate_bps) * Into::<u16, u32>::into(banes.stamina_percent) % 100 == 0,
+                "bane boost rate loses precision",
+            );
+        }
+    }
     if let Some(quests) = preset.economy.quests {
         crate::quests::validate(quests);
         assert!(

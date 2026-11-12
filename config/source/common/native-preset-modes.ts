@@ -8,6 +8,8 @@ export const FRONTIER_PRESET_ID = 5;
 export const FRONTIER_DEVCON_PRESET_ID = 6;
 /** Season 1's rules; registered separately from the earlier Frontier seasons. */
 export const FRONTIER_S1_PRESET_ID = 7;
+/** Slice 1 playtests cap upper-level bane quests at City until Scouts are available. */
+export const FRONTIER_S1_DEV_PRESET_ID = 106;
 /** Immutable Frontier preset used by the committed contract fixtures. */
 export const FRONTIER_FIXTURE_PRESET_ID = 104;
 /**
@@ -27,6 +29,7 @@ const NATIVE_PRESET_MODES: Readonly<Record<number, GameType>> = {
   [FRONTIER_PRESET_ID]: "frontier",
   [FRONTIER_DEVCON_PRESET_ID]: "frontier",
   [FRONTIER_S1_PRESET_ID]: "frontier",
+  [FRONTIER_S1_DEV_PRESET_ID]: "frontier",
   [FRONTIER_ACCELERATED_PRESET_ID]: "frontier",
   // The first playtest's preset; registered on shard A and still played by the game created from it.
   102: "frontier",

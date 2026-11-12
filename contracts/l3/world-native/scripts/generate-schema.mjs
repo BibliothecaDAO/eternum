@@ -164,6 +164,13 @@ const researchConstants = Object.fromEntries(
   ]),
 );
 
+const baneSource = await readFile(new URL("src/banes.cairo", root), "utf8");
+const baneConstants = Object.fromEntries(
+  [...baneSource.matchAll(/^pub const ([A-Z][A-Z0-9_]*): u8 = ([0-9]+);$/gm)].map(([, name, value]) => [
+    name,
+    Number(value),
+  ]),
+);
 const questSource = await readFile(new URL("src/quests.cairo", root), "utf8");
 const questConstants = Object.fromEntries(
   [...questSource.matchAll(/^pub const ([A-Z][A-Z0-9_]*): u8 = ([0-9]+);$/gm)].map(([, name, value]) => [
@@ -201,6 +208,7 @@ const schema = {
   ruleConstants,
   researchConstants,
   questConstants,
+  baneConstants,
   tileOccupierConstants,
   tilePackingConstants,
   logicClasses,
@@ -453,6 +461,7 @@ const declarations = [
   `export const nativeReleaseConstants = ${JSON.stringify(releaseConstants, null, 2)} as const;`,
   `export const nativeRuleConstants = ${JSON.stringify(ruleConstants, null, 2)} as const;`,
   `export const nativeResearchConstants = ${JSON.stringify(researchConstants, null, 2)} as const;`,
+  `export const nativeBaneConstants = ${JSON.stringify(baneConstants, null, 2)} as const;`,
   `export const nativeQuestConstants = ${JSON.stringify(questConstants, null, 2)} as const;`,
   typeScriptEnum(
     "NativeStructureCategory",

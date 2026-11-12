@@ -39,9 +39,14 @@ pub mod PrizesLogic {
     impl DailyQuest = crate::logic::quests::QuestState::DailyQuestImpl<ContractState>;
     #[abi(embed_v0)]
     impl QuestProgress = crate::logic::quests::QuestState::ProgressImpl<ContractState>;
+    component!(path: crate::logic::banes::BaneState, storage: banes, event: BaneEvent);
+    #[abi(embed_v0)]
+    impl AspectActivity = crate::logic::banes::BaneState::ActivityImpl<ContractState>;
     #[storage]
     #[allow(starknet::colliding_storage_paths)]
     struct Storage {
+        #[substorage(v0)]
+        banes: crate::logic::banes::BaneState::Storage,
         #[substorage(v0)]
         quests: crate::logic::quests::QuestState::Storage,
         #[substorage(v0)]
@@ -60,6 +65,7 @@ pub mod PrizesLogic {
     #[event]
     #[derive(Drop, starknet::Event)]
     enum Event {
+        BaneEvent: crate::logic::banes::BaneState::Event,
         QuestEvent: crate::logic::quests::QuestState::Event,
         AdministrationEvent: crate::logic::home_grants::HomeGrantState::Event,
         RelicEvent: LordsState::Event,

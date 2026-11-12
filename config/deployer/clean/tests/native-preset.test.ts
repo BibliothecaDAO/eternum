@@ -635,7 +635,8 @@ describe("native presets", () => {
     expect(nativeGameModeOf(103)).toBe("eternum");
     expect(nativeGameModeOf(104)).toBe("frontier");
     expect(nativeGameModeOf(105)).toBe("frontier");
-    expect(() => nativeGameModeOf(106)).toThrow("Unknown native preset 106");
+    expect(nativeGameModeOf(106)).toBe("frontier");
+    expect(() => nativeGameModeOf(107)).toThrow("Unknown native preset 107");
   });
 
   test("native balances and mine ladders come only from the selected sheet", () => {
@@ -1098,7 +1099,7 @@ test("only Season 1 enables Aspects and its packed Order mapping follows the can
     FRONTIER_S1_PRESET_ID,
   );
   expect(season.settlement.order_aspects).toEqual([1, 2, 3, 4, 4, 3, 4, 4, 1, 2, 2, 1, 1, 3, 3, 2]);
-  for (const preset of Object.values(nativePresets).filter(({ id }) => id !== FRONTIER_S1_PRESET_ID))
+  for (const preset of Object.values(nativePresets).filter(({ dailyQuest }) => dailyQuest === null))
     expect(preset.orderAspects).toEqual([]);
 });
 
@@ -1122,6 +1123,24 @@ test("Season 1 replaces the operator claim with the seven-quest player reward", 
     bonus_percent: 150,
   });
   expect(preset.rules.command_mask & BigInt(nativeCommandBits.ClaimDailyQuest)).not.toBe(0n);
-  for (const source of Object.values(nativePresets).filter(({ id }) => id !== FRONTIER_S1_PRESET_ID))
+  for (const source of Object.values(nativePresets).filter(({ dailyQuest }) => dailyQuest === null))
     expect(source.dailyQuest).toBeNull();
+});
+
+test("the S1 dev preset caps Kingdom and Empire bane quests at City without changing production rules", () => {
+  const normal = nativePresets[7]!;
+  const dev = nativePresets[106]!;
+  expect(dev.worldBanes?.questCounts).toEqual([3, 6, 6, 6, 20, 40, 40, 40, 2500, 6000, 6000, 6000]);
+  expect(normal.worldBanes?.questCounts).toEqual([3, 6, 9, 12, 20, 40, 60, 80, 2500, 6000, 10000, 15000]);
+  const { questCounts: _, ...normalRules } = normal.worldBanes!;
+  const { questCounts: __, ...devRules } = dev.worldBanes!;
+  expect(devRules).toEqual(normalRules);
+  expect(buildNativePreset(loadNativePresetConfiguration("madara.frontier", 106), 106).economy.banes.unwrap()).toEqual({
+    chance_step: 20,
+    quorum_percent: 25,
+    beast_percent: 150,
+    stamina_percent: 50,
+    production_percent: 50,
+    quest_counts: dev.worldBanes!.questCounts,
+  });
 });

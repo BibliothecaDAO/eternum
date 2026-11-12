@@ -34,6 +34,24 @@ pub fn store(commitment: felt252, definition: crate::presets::PresetDefinition) 
         definition.rules.day_unit_seconds,
     );
     write_economy(preset, commitment, definition.rules, definition.economy);
+    if let Some(banes) = definition.economy.banes {
+        preset
+            .bane_rules
+            .write(
+                Some(
+                    (
+                        banes.chance_step,
+                        banes.quorum_percent,
+                        banes.beast_percent,
+                        banes.stamina_percent,
+                        banes.production_percent,
+                    ),
+                ),
+            );
+        for index in 0..banes.quest_counts.len() {
+            preset.bane_quest_counts.write(index.try_into().unwrap(), *banes.quest_counts.at(index));
+        }
+    }
     if let Some(quests) = definition.economy.quests {
         preset.quest_rewards.write(Some((quests.labor, quests.essence, quests.bonus_percent)));
         for index in 0..quests.base_counts.len() {

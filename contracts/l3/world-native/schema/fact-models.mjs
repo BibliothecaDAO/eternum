@@ -572,6 +572,7 @@ export const factWireTypes = [
         name: "last_settled_at",
         type: "core::integer::u32",
       },
+      { name: "remainder", type: "core::integer::u8" },
     ],
   },
   {
@@ -730,6 +731,7 @@ const presetDerivedModels = new Set([
   "SettlementRules",
   "AspectRules",
   "QuestRules",
+  "BaneRules",
   "ResourceRule",
   "ProductionRecipe",
   "MineKindConfig",
@@ -800,6 +802,18 @@ export function defineFactModels({ struct, model: declare }) {
       };
     if (row.name === "AspectMembers")
       row.absence = { parent: "AspectRules", value: "zero", meaning: "No home has joined this Aspect in this game." };
+    if (["AspectActivity", "BaneProgress", "FirstTeamBane"].includes(row.name))
+      row.absence = {
+        parent: "BaneRules",
+        value: "zero",
+        meaning: "No activity, completion or team bane has been recorded for this key.",
+      };
+    if (row.name === "ProductionCarry")
+      row.absence = {
+        parent: "ResourceWeight",
+        value: "zero",
+        meaning: "This producer has no fractional output carried forward.",
+      };
     if (row.name === "QuestProgress")
       row.absence = {
         parent: "Structure",
@@ -1077,6 +1091,52 @@ export function defineFactModels({ struct, model: declare }) {
       [{ name: "game_id", type: "core::integer::u32" }],
       [{ name: "orders", type: "core::array::Span::<core::integer::u8>" }],
     ),
+    model("BaneRules", "game", [{ name: "game_id", type: "core::integer::u32" }], struct("banes::BaneRules")),
+    model(
+      "AspectActivity",
+      "game",
+      [
+        { name: "game_id", type: "core::integer::u32" },
+        { name: "aspect", type: "core::integer::u8" },
+        { name: "day", type: "core::integer::u64" },
+      ],
+      [{ name: "active", type: "core::integer::u32" }],
+    ),
+    model(
+      "BaneProgress",
+      "game",
+      [
+        { name: "game_id", type: "core::integer::u32" },
+        { name: "aspect", type: "core::integer::u8" },
+        { name: "day", type: "core::integer::u64" },
+      ],
+      [
+        { name: "completed", type: "core::integer::u32" },
+        { name: "ended_at", type: "core::integer::u64" },
+      ],
+    ),
+    model(
+      "FirstTeamBane",
+      "game",
+      [{ name: "game_id", type: "core::integer::u32" }],
+      [{ name: "day", type: "core::option::Option::<core::integer::u64>" }],
+    ),
+    model(
+      "BaneGrant",
+      "game",
+      [
+        { name: "game_id", type: "core::integer::u32" },
+        { name: "home", type: "core::integer::u64" },
+        { name: "day", type: "core::integer::u64" },
+      ],
+      [
+        { name: "account", type: "core::starknet::contract_address::ContractAddress" },
+        ...[
+          { name: "amount", type: "core::integer::u128" },
+          { name: "essence", type: "core::integer::u128" },
+        ],
+      ],
+    ),
     model("QuestRules", "game", [{ name: "game_id", type: "core::integer::u32" }], struct("quests::QuestRules")),
     model(
       "QuestProgress",
@@ -1116,7 +1176,18 @@ export function defineFactModels({ struct, model: declare }) {
     model("ResourceBalance", "game", struct("resources::ResourceSlot"), [
       { name: "balance", type: "core::integer::u128" },
     ]),
-    model("ResourceProduction", "game", struct("resources::ResourceSlot"), struct("resources::Production")),
+    model(
+      "ResourceProduction",
+      "game",
+      struct("resources::ResourceSlot"),
+      struct("resources::Production").filter(({ name }) => name !== "remainder"),
+    ),
+    model(
+      "ProductionCarry",
+      "game",
+      struct("resources::ResourceSlot"),
+      struct("resources::Production").filter(({ name }) => name === "remainder"),
+    ),
     model("ProductionBonus", "game", struct("resources::ResourceKey"), struct("production::ProductionBonus")),
     model("ProductionRecipe", "game", struct("production::RecipeKey"), struct("production::ProductionRecipe")),
     model("ResourceWeight", "game", struct("resources::ResourceKey"), struct("resources::Weight")),
@@ -1499,6 +1570,11 @@ export const syncScopes = {
   PlayerEntry: byOwner,
   AspectRules: "shared",
   QuestRules: "shared",
+  BaneRules: "shared",
+  AspectActivity: "shared",
+  BaneProgress: "shared",
+  FirstTeamBane: "shared",
+  BaneGrant: { entities: ["home"] },
   QuestProgress: { entities: ["home"] },
   HomeAspect: "shared",
   AspectMembers: "shared",
@@ -1536,6 +1612,7 @@ export const syncScopes = {
   BitcoinClaim: { entities: ["mine_id"] },
   TradeOrder: { entities: ["maker_id", "taker_id"] },
   BattleEvent: { entities: ["attacker_id", "defender_id"] },
+  ProductionCarry: { entities: ["entity_id"] },
   ResourceProduction: { entities: ["entity_id"] },
   Structure: byEntity,
   BankName: byEntity,

@@ -1,5 +1,6 @@
 use snforge_std::{interact_with_state, start_cheat_caller_address, stop_cheat_caller_address};
 use starknet::storage::StorageMapReadAccess;
+use world_test_support::tests::entry::{EntryEntitlement, EntryKey, ISettlementEntrySafeDispatcherTrait, ledger};
 use world_test_support::tests::registrar::{CreateGameParams, IRegistrarDispatcherTrait, params, registry, setup};
 use world_test_support::tests::{Deployment, authority};
 use crate::commands::Command;
@@ -18,12 +19,17 @@ pub fn setup_aspects(seed: felt252) -> (Deployment, u32) {
                 start_main_at: 360, duration_seconds: 288000, end_grace_seconds: 0, seed, ..params(false),
             },
         );
-    let mut traits = array![];
-    for index in 0_u32..8000 {
-        traits.append(0x4000001 + (index % 16) * 0x400000);
-    }
     start_cheat_caller_address(d.games, authority());
-    ISeasonRealmsDispatcher { contract_address: d.games }.initialize_realm_traits(1, traits.span());
+    let mut first = 0_u32;
+    while first < 8000 {
+        let end = core::cmp::min(first + 128, 8000);
+        let mut traits = array![];
+        for index in first..end {
+            traits.append(0x4000001 + (index % 16) * 0x400000);
+        }
+        ISeasonRealmsDispatcher { contract_address: d.games }.initialize_realm_traits(first + 1, traits.span());
+        first = end;
+    }
     stop_cheat_caller_address(d.games);
     (d, game_id)
 }
@@ -84,7 +90,6 @@ fn free_home_requires_a_valid_choice_and_a_failed_choice_reserves_nothing() {
 #[test]
 #[feature("safe_dispatcher")]
 fn held_realm_inherits_its_order_and_refuses_a_different_aspect() {
-    use world_test_support::tests::entry::{EntryEntitlement, EntryKey, ISettlementEntrySafeDispatcherTrait, ledger};
     let (d, game_id) = setup_aspects(42);
     start_cheat_caller_address(d.games, authority());
     ledger(d)
@@ -113,7 +118,7 @@ fn held_realm_inherits_its_order_and_refuses_a_different_aspect() {
 fn orders_round_trip_without_loot_suffix_order() {
     let (_, preset) = world_test_support::tests::preset_projection::current_definition("season-one");
     let packed = crate::aspects::pack(preset.settlement.order_aspects).unwrap();
-    for index in 0..16 {
+    for index in 0_u32..16 {
         assert_eq!(
             crate::aspects::order_aspect(packed, (index + 1).try_into().unwrap()),
             *preset.settlement.order_aspects.at(index),

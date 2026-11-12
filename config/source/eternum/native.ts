@@ -11,6 +11,7 @@ export const eternumPreset: NativePreset = {
   orderAspects: [],
   startingArmyCount: 0,
   dailyQuest: null,
+  worldBanes: null,
   bitcoinEnabled: true,
   startingTroops: startingTroopsByBiome,
   realmResources: realmResourcePool,

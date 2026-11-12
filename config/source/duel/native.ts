@@ -12,6 +12,7 @@ export const duelPreset: NativePreset = {
   orderAspects: [],
   startingArmyCount: 0,
   dailyQuest: null,
+  worldBanes: null,
   bitcoinEnabled: false,
   startingTroops: [],
   realmResources: realmResourcePool,

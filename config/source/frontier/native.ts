@@ -33,6 +33,7 @@ export const frontierPreset = {
   orderAspects: [],
   startingArmyCount: 0,
   dailyQuest: null,
+  worldBanes: null,
   bitcoinEnabled: false,
   startingTroops: Array.from({ length: 17 }, () => "Knight" as const),
   realmResources: [],

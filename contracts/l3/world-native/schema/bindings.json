@@ -1,5 +1,5 @@
 {
-  "schemaIdentity": "135505bb02d3f6933da9c0887b839f5519e48afa594fc8bf95374cb91cf21370",
+  "schemaIdentity": "900835e646c7a731ff71e46c2659ffd04ba66df7f21c18edf7229651769e1265",
   "commandAbi": [
     {
       "type": "interface",
@@ -1758,6 +1758,26 @@
       "scope": "game"
     },
     {
+      "name": "BaneRules",
+      "scope": "game"
+    },
+    {
+      "name": "AspectActivity",
+      "scope": "game"
+    },
+    {
+      "name": "BaneProgress",
+      "scope": "game"
+    },
+    {
+      "name": "FirstTeamBane",
+      "scope": "game"
+    },
+    {
+      "name": "BaneGrant",
+      "scope": "game"
+    },
+    {
       "name": "QuestRules",
       "scope": "game"
     },
@@ -1807,6 +1827,10 @@
     },
     {
       "name": "ResourceProduction",
+      "scope": "game"
+    },
+    {
+      "name": "ProductionCarry",
       "scope": "game"
     },
     {

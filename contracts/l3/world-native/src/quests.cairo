@@ -8,6 +8,9 @@ pub const VETERANS: u8 = 4;
 pub const FINDS: u8 = 5;
 pub const REVEALS: u8 = 6;
 pub const QUEST_COUNT: u8 = 7;
+pub const STAND: u8 = 7;
+pub const LIGHTS: u8 = 8;
+pub const CULL: u8 = 9;
 
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]
 pub struct QuestRules {

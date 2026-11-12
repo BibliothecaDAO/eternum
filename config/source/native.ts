@@ -1,6 +1,6 @@
 import { buildingIds, frontierPreset } from "./frontier/native";
 import { frontierDevconPreset } from "./frontier/devcon";
-import { frontierSeasonOnePreset } from "./frontier/season-one";
+import { frontierSeasonOnePreset, frontierSeasonOneDevPreset } from "./frontier/season-one";
 import { blitzPreset } from "./blitz/native";
 import { eternumPreset } from "./eternum/native";
 import { duelPreset } from "./duel/native";
@@ -69,6 +69,7 @@ export const nativePresets: Record<number, NativePreset> = Object.fromEntries(
     ...Object.values(modes),
     frontierDevconPreset,
     frontierSeasonOnePreset,
+    frontierSeasonOneDevPreset,
     frontierAcceleratedPreset,
     frontierFixturePreset,
     frontierPlaygroundPreset,

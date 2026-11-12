@@ -1,5 +1,5 @@
 use starknet::Event;
-use starknet::storage::StorageMapWriteAccess;
+use starknet::storage::{StorageMapWriteAccess, StoragePointerReadAccess};
 use crate::resources::{IResourceOperationsDispatcherTrait, IResourceOperationsLibraryDispatcher, ResourceKey};
 
 #[starknet::component]
@@ -170,7 +170,6 @@ pub fn record_labor_grant(day: u64, grant: crate::entry::LaborGrant) {
 }
 
 fn grant_resource_context(game_id: u32, game: crate::game::GameRegistry) -> crate::commands::ResourceContext {
-    use starknet::storage::StoragePointerReadAccess;
     let rules = crate::logic::preset_record::for_game(game_id).rules;
     crate::commands::ResourceContext {
         production_start: if rules.mode_rules.read() & crate::rules::PRODUCTION_START != 0 {

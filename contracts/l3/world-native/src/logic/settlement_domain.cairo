@@ -31,13 +31,10 @@ pub mod SettlementLogic {
     impl VillageInternal = VillageState::InternalImpl<ContractState>;
     component!(path: UpgradeState, storage: upgrades, event: UpgradeEvent);
     impl UpgradeInternal = UpgradeState::InternalImpl<ContractState>;
-    component!(path: crate::logic::aspects::AspectState, storage: aspects, event: AspectEvent);
-    impl AspectInternal = crate::logic::aspects::AspectState::InternalImpl<ContractState>;
+    use crate::aspects::IAspectsDispatcherTrait;
     #[storage]
     #[allow(starknet::colliding_storage_paths)]
     struct Storage {
-        #[substorage(v0)]
-        aspects: crate::logic::aspects::AspectState::Storage,
         #[flat]
         pub data: crate::state::Storage,
         #[substorage(v0)]
@@ -54,7 +51,6 @@ pub mod SettlementLogic {
     #[event]
     #[derive(Drop, starknet::Event)]
     enum Event {
-        AspectEvent: crate::logic::aspects::AspectState::Event,
         UpgradeEvent: UpgradeState::Event,
         RowSet: crate::events::RowSet,
         ReleaseEvent: ReleaseState::Event,
@@ -368,7 +364,8 @@ pub mod SettlementLogic {
             };
             let realm_id = self.resolve_open_realm(home, selected_realm, command.aspect, context);
             let traits = self.realms.traits(realm_id);
-            self.aspects.join(crate::resources::ResourceKey { game_id, entity_id: home }, traits.order, command.aspect);
+            crate::logic::aspects::dispatcher(game_id)
+                .join(crate::resources::ResourceKey { game_id, entity_id: home }, traits.order, command.aspect);
             ISettlementCreationLibraryDispatcher { class_hash: self.release.classes(game_id).structures.read() }
                 .create_settlement(
                     game_id,
@@ -395,7 +392,8 @@ pub mod SettlementLogic {
             if let Some(orders) = crate::logic::aspects::rules(context.game_id) {
                 let mut root = context.raw_root;
                 let seed = crate::random::game_root(ref root, context.game_id);
-                return self.aspects.draw_realm(orders, aspect.expect('choose an Aspect'), seed);
+                return crate::logic::aspects::dispatcher(context.game_id)
+                    .draw_realm(orders, aspect.expect('choose an Aspect'), seed);
             }
             assert!(aspect.is_none(), "Aspects are disabled");
             crate::entity_ids::namespace(home) % crate::realms::CANONICAL_REALM_COUNT + 1

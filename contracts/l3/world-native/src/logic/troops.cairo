@@ -202,6 +202,7 @@ pub mod TroopState {
 #[starknet::contract]
 pub mod TroopsLogic {
     use starknet::ContractAddress;
+    use starknet::storage::StoragePointerReadAccess;
     use crate::commands::CreateExplorer;
     use crate::game::assert_playing;
     use crate::geometry::{neighbor, tile_key};
@@ -291,7 +292,9 @@ pub mod TroopsLogic {
                 let depth = crate::logic::expeditions::depth_rules_at(
                     key.game_id, crate::structures::structure_coord(key),
                 );
-                array![crate::troops::frontier_guard(category, depth, seed, rules, timestamp)].span()
+                let mut guard = crate::troops::frontier_guard(category, depth, seed, rules, timestamp);
+                guard.count = guard.count * crate::logic::banes::beast_percent(key, timestamp).into() / 100;
+                array![guard].span()
             } else {
                 crate::troops::discovery_guards(category, seed, rules, timestamp)
             };

@@ -1,5 +1,5 @@
 // Generated from native fact models and contract ABIs. Run the native schema generator to update.
-export const nativeFactSchemaIdentity = "135505bb02d3f6933da9c0887b839f5519e48afa594fc8bf95374cb91cf21370";
+export const nativeFactSchemaIdentity = "900835e646c7a731ff71e46c2659ffd04ba66df7f21c18edf7229651769e1265";
 export const nativeReleaseConstants = {
   "RUIN_DEPTH_LIMIT_RELEASE": 9
 } as const;
@@ -88,6 +88,11 @@ export const nativeResearchConstants = {
   "SCOUTS_LODGE": 43,
   "HEARTH": 44
 } as const;
+export const nativeBaneConstants = {
+  "BLOOD_MOON": 1,
+  "MIST_TIDE": 2,
+  "ASH_FALL": 3
+} as const;
 export const nativeQuestConstants = {
   "HUNT": 0,
   "CAMPS": 1,
@@ -96,7 +101,10 @@ export const nativeQuestConstants = {
   "VETERANS": 4,
   "FINDS": 5,
   "REVEALS": 6,
-  "QUEST_COUNT": 7
+  "QUEST_COUNT": 7,
+  "STAND": 7,
+  "LIGHTS": 8,
+  "CULL": 9
 } as const;
 /** Structure categories named in src/taxonomy.cairo. */
 export enum NativeStructureCategory {
@@ -255,6 +263,11 @@ export interface NativeRows {
   EntryEntitlement: { readonly game_id: number; readonly owner: bigint; readonly realm_id: bigint; readonly metadata_1: bigint; readonly metadata_2: bigint; readonly metadata_3: bigint; readonly pass_kind: number };
   PlayerEntry: { readonly game_id: number; readonly owner: bigint; readonly player: bigint };
   AspectRules: { readonly game_id: number; readonly orders: readonly (number)[] };
+  BaneRules: { readonly game_id: number; readonly chance_step: number; readonly quorum_percent: number; readonly beast_percent: number; readonly stamina_percent: number; readonly production_percent: number; readonly quest_counts: readonly (bigint)[] };
+  AspectActivity: { readonly game_id: number; readonly aspect: number; readonly day: bigint; readonly active: number };
+  BaneProgress: { readonly game_id: number; readonly aspect: number; readonly day: bigint; readonly completed: number; readonly ended_at: bigint };
+  FirstTeamBane: { readonly game_id: number; readonly day: (bigint) | null };
+  BaneGrant: { readonly game_id: number; readonly home: bigint; readonly day: bigint; readonly account: bigint; readonly amount: bigint; readonly essence: bigint };
   QuestRules: { readonly game_id: number; readonly base_counts: readonly (number)[]; readonly labor: bigint; readonly essence: bigint; readonly bonus_percent: number };
   QuestProgress: { readonly game_id: number; readonly home: bigint; readonly day: bigint; readonly progress: bigint; readonly completed_level: number };
   HomeAspect: { readonly game_id: number; readonly home: bigint; readonly aspect: number };
@@ -268,6 +281,7 @@ export interface NativeRows {
   Structure: { readonly game_id: number; readonly entity_id: bigint; readonly owner: bigint; readonly base: { readonly troop_max_guard_count: number; readonly troop_max_explorer_count: number; readonly created_at: number; readonly category: number; readonly level: number; readonly starting_troops_granted: boolean }; readonly resources_packed: bigint; readonly metadata: { readonly realm_id: number; readonly order: number; readonly has_wonder: boolean; readonly village_realm: bigint; readonly mine_kind: number; readonly deepest_depth: number } };
   ResourceBalance: { readonly game_id: number; readonly entity_id: bigint; readonly resource_type: number; readonly balance: bigint };
   ResourceProduction: { readonly game_id: number; readonly entity_id: bigint; readonly resource_type: number; readonly building_count: number; readonly production_rate: bigint; readonly output_amount_left: bigint; readonly last_settled_at: number };
+  ProductionCarry: { readonly game_id: number; readonly entity_id: bigint; readonly resource_type: number; readonly remainder: number };
   ProductionBonus: { readonly game_id: number; readonly entity_id: bigint; readonly incr_resource_rate_percent_num: number; readonly incr_labor_rate_percent_num: number; readonly incr_troop_rate_percent_num: number; readonly incr_resource_rate_end_at: number; readonly incr_labor_rate_end_at: number; readonly incr_troop_rate_end_at: number };
   ProductionRecipe: { readonly game_id: number; readonly resource_type: number; readonly simple_output: bigint; readonly complex_output: bigint; readonly simple_inputs: readonly ({ readonly resource_type: number; readonly amount: bigint })[]; readonly complex_inputs: readonly ({ readonly resource_type: number; readonly amount: bigint })[] };
   ResourceWeight: { readonly game_id: number; readonly entity_id: bigint; readonly capacity: bigint; readonly weight: bigint };
@@ -360,6 +374,11 @@ export interface NativeKeys {
   EntryEntitlement: { readonly game_id: number; readonly owner: bigint };
   PlayerEntry: { readonly game_id: number; readonly owner: bigint };
   AspectRules: { readonly game_id: number };
+  BaneRules: { readonly game_id: number };
+  AspectActivity: { readonly game_id: number; readonly aspect: number; readonly day: bigint };
+  BaneProgress: { readonly game_id: number; readonly aspect: number; readonly day: bigint };
+  FirstTeamBane: { readonly game_id: number };
+  BaneGrant: { readonly game_id: number; readonly home: bigint; readonly day: bigint };
   QuestRules: { readonly game_id: number };
   QuestProgress: { readonly game_id: number; readonly home: bigint; readonly day: bigint };
   HomeAspect: { readonly game_id: number; readonly home: bigint };
@@ -373,6 +392,7 @@ export interface NativeKeys {
   Structure: { readonly game_id: number; readonly entity_id: bigint };
   ResourceBalance: { readonly game_id: number; readonly entity_id: bigint; readonly resource_type: number };
   ResourceProduction: { readonly game_id: number; readonly entity_id: bigint; readonly resource_type: number };
+  ProductionCarry: { readonly game_id: number; readonly entity_id: bigint; readonly resource_type: number };
   ProductionBonus: { readonly game_id: number; readonly entity_id: bigint };
   ProductionRecipe: { readonly game_id: number; readonly resource_type: number };
   ResourceWeight: { readonly game_id: number; readonly entity_id: bigint };
@@ -1394,6 +1414,104 @@ export const nativeFactModels = {
       ]
     }
   },
+  "BaneRules": {
+    "keys": [
+      "game_id"
+    ],
+    "scope": "game",
+    "fields": {
+      "game_id": "u32",
+      "chance_step": "u16",
+      "quorum_percent": "u16",
+      "beast_percent": "u16",
+      "stamina_percent": "u16",
+      "production_percent": "u16",
+      "quest_counts": [
+        "u128"
+      ]
+    }
+  },
+  "AspectActivity": {
+    "keys": [
+      "game_id",
+      "aspect",
+      "day"
+    ],
+    "scope": "game",
+    "fields": {
+      "game_id": "u32",
+      "aspect": "u8",
+      "day": "u64",
+      "active": "u32"
+    },
+    "absence": {
+      "parent": "BaneRules",
+      "value": "zero",
+      "meaning": "No activity, completion or team bane has been recorded for this key.",
+      "parentKeys": {
+        "game_id": "game_id"
+      }
+    }
+  },
+  "BaneProgress": {
+    "keys": [
+      "game_id",
+      "aspect",
+      "day"
+    ],
+    "scope": "game",
+    "fields": {
+      "game_id": "u32",
+      "aspect": "u8",
+      "day": "u64",
+      "completed": "u32",
+      "ended_at": "u64"
+    },
+    "absence": {
+      "parent": "BaneRules",
+      "value": "zero",
+      "meaning": "No activity, completion or team bane has been recorded for this key.",
+      "parentKeys": {
+        "game_id": "game_id"
+      }
+    }
+  },
+  "FirstTeamBane": {
+    "keys": [
+      "game_id"
+    ],
+    "scope": "game",
+    "fields": {
+      "game_id": "u32",
+      "day": {
+        "option": "u64"
+      }
+    },
+    "absence": {
+      "parent": "BaneRules",
+      "value": "zero",
+      "meaning": "No activity, completion or team bane has been recorded for this key.",
+      "parentKeys": {
+        "game_id": "game_id"
+      }
+    }
+  },
+  "BaneGrant": {
+    "keys": [
+      "game_id",
+      "home",
+      "day"
+    ],
+    "scope": "game",
+    "fields": {
+      "game_id": "u32",
+      "home": "u64",
+      "day": "u64",
+      "account": "felt",
+      "amount": "u128",
+      "essence": "u128"
+    }
+  },
   "QuestRules": {
     "keys": [
       "game_id"
@@ -1701,6 +1819,29 @@ export const nativeFactModels = {
       "parent": "ResourceWeight",
       "value": "zero",
       "meaning": "Zero balance or inactive production while the resource owner exists; no resource owner after its weight row is deleted.",
+      "parentKeys": {
+        "game_id": "game_id",
+        "entity_id": "entity_id"
+      }
+    }
+  },
+  "ProductionCarry": {
+    "keys": [
+      "game_id",
+      "entity_id",
+      "resource_type"
+    ],
+    "scope": "game",
+    "fields": {
+      "game_id": "u32",
+      "entity_id": "u64",
+      "resource_type": "u8",
+      "remainder": "u8"
+    },
+    "absence": {
+      "parent": "ResourceWeight",
+      "value": "zero",
+      "meaning": "This producer has no fractional output carried forward.",
       "parentKeys": {
         "game_id": "game_id",
         "entity_id": "entity_id"
@@ -2435,6 +2576,15 @@ export const nativeSyncScopes = {
   },
   "AspectRules": "shared",
   "QuestRules": "shared",
+  "BaneRules": "shared",
+  "AspectActivity": "shared",
+  "BaneProgress": "shared",
+  "FirstTeamBane": "shared",
+  "BaneGrant": {
+    "entities": [
+      "home"
+    ]
+  },
   "QuestProgress": {
     "entities": [
       "home"
@@ -2624,6 +2774,11 @@ export const nativeSyncScopes = {
     "entities": [
       "attacker_id",
       "defender_id"
+    ]
+  },
+  "ProductionCarry": {
+    "entities": [
+      "entity_id"
     ]
   },
   "ResourceProduction": {

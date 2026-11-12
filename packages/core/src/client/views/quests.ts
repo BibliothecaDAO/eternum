@@ -1,4 +1,6 @@
-import { dailyQuests, StructureType } from "@bibliothecadao/types";
+import { baneQuest, readWorldBane } from "../../utils/world-banes";
+import { nativeQuestConstants as quests } from "../../../../../contracts/l3/world-native/schema/client.gen";
+import { baneQuests, RESOURCE_PRECISION, dailyQuests, StructureType } from "@bibliothecadao/types";
 import type { NativeFactStore } from "../native-fact-store";
 import { dayOf } from "../../utils/days";
 import { dailyQuest } from "../../utils/daily-quest";
@@ -21,16 +23,22 @@ export function readDailyQuest(store: NativeFactStore, gameId: number, home: num
   if (!day) return undefined;
   const structure = store.require("Structure", { game_id, entity_id: home });
   if (structure.base.category !== StructureType.Realm) throw new Error("A daily quest belongs to a Realm");
-  const kind = dailyQuest(game.seed, day.index);
-  const quest = dailyQuests.find(({ id }) => id === kind);
-  if (!quest || !rules.base_counts[kind]) throw new Error(`Missing daily quest ${kind}`);
+  const bane = readWorldBane(store, game_id, home, day.index);
+  const kind = bane ? baneQuest(bane.kind) : dailyQuest(game.seed, day.index);
+  const quest = [...dailyQuests, ...baneQuests].find(({ id }) => id === kind);
+  if (!quest) throw new Error(`Missing daily quest ${kind}`);
   const progress = store.get("QuestProgress", { game_id, home, day: day.index });
   const level = progress?.completed_level || structure.base.level + 1;
+  const countUnit = kind === quests.CULL ? BigInt(RESOURCE_PRECISION) : 1n;
   return {
     ...quest,
     day: day.index,
-    target: BigInt(rules.base_counts[kind] * level),
-    progress: progress?.progress ?? 0n,
+    target: bane
+      ? store.require("BaneRules", { game_id }).quest_counts[(kind - quests.STAND) * 4 + level - 1]
+      : BigInt(rules.base_counts[kind] * level),
+    bane,
+    bonusClaimed: store.get("BaneGrant", { game_id, home, day: day.index }) !== undefined,
+    progress: (progress?.progress ?? 0n) / countUnit,
     completed: Boolean(progress?.completed_level),
     claimed: store.get("LaborGrant", { game_id, home, day: day.index }) !== undefined,
   };

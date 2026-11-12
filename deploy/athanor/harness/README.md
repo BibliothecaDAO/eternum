@@ -48,7 +48,13 @@ For the daily quest, `client.views.dailyQuest(home, timestamp)` reads the curren
 completion and collection from native facts. Collect a finished quest with
 `client.setup.systemCalls.claim_daily_quest({ signer, home, day })`. The persisted receipt is `LaborGrant`; repeating
 collection cannot pay twice. `QuestRules` replaces the old `LaborRules` in S1. The lifecycle quest regression drives
-settlement, reveals and collection through player commands. World banes arrive with their contract changes.
+settlement, reveals and collection through player commands. On a world bane day this view returns the replacement quest
+and the Aspect's completion count. `BaneProgress.ended_at` closes the effect interval; the quest remains for the day.
+Collect again after the Aspect succeeds: `BaneGrant` records the second payment and prevents a third. Production and
+stamina readers split accrual at both interval edges. The lifecycle world-bane regression settles homes, completes the
+Lights and collects through the same player commands. The resource regression and client tests share the boundary and
+remainder vectors. The Slice 1 dev preset is `FRONTIER_S1_DEV_PRESET_ID`; its Kingdom and Empire bane targets are capped
+at City. Team issuance must record `FirstTeamBane` in the same transaction as the issued bane.
 
 The home reward administration path is `Games.grant_labor`, with `Games.labor_grant` reading the recorded result. Both
 dispatch to the existing Prizes class. `bash contracts/l3/check-native.sh` checks their compiled routing and runs the

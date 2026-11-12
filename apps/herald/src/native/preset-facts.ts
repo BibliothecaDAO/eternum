@@ -123,8 +123,14 @@ function deriveSettlement(emit: EmitRule, settlement: PresetRecord) {
 }
 
 function deriveEconomy(emit: EmitRule, economy: PresetRecord) {
-  const quests = some(economy.quests);
-  if (quests) emit("QuestRules", quests);
+  if ("banes" in economy) {
+    const banes = some(economy.banes);
+    if (banes) emit("BaneRules", banes);
+  }
+  if ("quests" in economy) {
+    const quests = some(economy.quests);
+    if (quests) emit("QuestRules", quests);
+  }
   emit("TradeRules", record(economy.trade));
   emit("BankRules", record(economy.banks));
   emit("HyperstructureRules", record(economy.hyperstructures));

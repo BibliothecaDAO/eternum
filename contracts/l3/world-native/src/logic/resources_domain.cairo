@@ -70,6 +70,7 @@ pub mod ResourcesLogic {
                 crate::expeditions::site_reward(category, site, depth)
             };
             let home = ResourceKey { game_id: key.game_id, entity_id: home_id };
+            crate::logic::quests::record(home, crate::quests::STAND, 1, context.timestamp);
             let quest = match category {
                 crate::taxonomy::BEASTS_CATEGORY => Some(crate::quests::HUNT),
                 crate::taxonomy::CAMP_CATEGORY => Some(crate::quests::CAMPS),

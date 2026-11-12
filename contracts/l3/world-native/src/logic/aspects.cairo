@@ -1,4 +1,4 @@
-use starknet::storage::{StorageMapReadAccess, StoragePointerReadAccess};
+use starknet::storage::{StorageMapReadAccess, StoragePathEntry, StoragePointerReadAccess};
 use crate::resources::ResourceKey;
 
 pub fn rules(game_id: u32) -> Option<u128> {
@@ -28,8 +28,10 @@ pub mod AspectState {
     pub enum Event {
         RowSet: RowSet,
     }
-    #[generate_trait]
-    pub impl InternalImpl<TContractState, +HasComponent<TContractState>> of InternalTrait<TContractState> {
+    #[embeddable_as(AspectsImpl)]
+    pub impl Aspects<
+        TContractState, +HasComponent<TContractState>, +Drop<TContractState>,
+    > of crate::aspects::IAspects<ComponentState<TContractState>> {
         fn draw_realm(self: @ComponentState<TContractState>, orders: u128, aspect: u8, seed: u256) -> u32 {
             assert!(aspect >= 1 && aspect <= 4, "choose an Aspect");
             assert!(
@@ -91,4 +93,10 @@ pub mod AspectState {
                 );
         }
     }
+}
+
+pub fn dispatcher(game_id: u32) -> crate::aspects::IAspectsLibraryDispatcher {
+    let state = crate::state::read();
+    let release = state.game_releases.read(game_id);
+    crate::aspects::IAspectsLibraryDispatcher { class_hash: state.releases.entry(release).classes.registry.read() }
 }

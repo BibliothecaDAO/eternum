@@ -2,6 +2,7 @@ pub mod approved_frontier_extension;
 pub mod arrivals;
 pub mod artificer;
 pub mod aspects;
+pub mod banes;
 pub mod biome;
 pub mod bitcoin;
 pub mod blitz_results;

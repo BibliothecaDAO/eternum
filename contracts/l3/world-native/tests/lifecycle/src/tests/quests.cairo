@@ -1,7 +1,9 @@
-use snforge_std::interact_with_state;
+use snforge_std::{interact_with_state, start_cheat_caller_address, stop_cheat_caller_address};
+use starknet::storage::StorageMapReadAccess;
 use world_test_support::tests::Deployment;
 use world_test_support::tests::resource_commands::execute_in_game;
 use crate::commands::Command;
+use crate::entry::{IHomeGrantsSafeDispatcher, IHomeGrantsSafeDispatcherTrait, LaborHome};
 use crate::resources::ResourceKey;
 
 #[test]
@@ -41,7 +43,9 @@ fn a_free_home_reveals_then_collects_once_through_the_player_command() {
             360,
         ),
     );
-    let home = ResourceKey { game_id, entity_id: crate::entity_ids::home_for_actor(game_id, d.actor) };
+    let home = ResourceKey {
+        game_id, entity_id: interact_with_state(d.games, || crate::entity_ids::home_for_actor(game_id, d.actor)),
+    };
     let claim = Command::ClaimDailyQuest(crate::quests::ClaimDailyQuest { home: home.entity_id, day: 0 });
     assert!(!execute_in_game(d, game_id, claim, 360));
     let mut timestamp = 360;
@@ -68,7 +72,7 @@ fn a_free_home_reveals_then_collects_once_through_the_player_command() {
                 crate::logic::resources::balance(home, crate::resources::ESSENCE),
                 1500 * crate::rules::RESOURCE_PRECISION,
             );
-            use starknet::storage::StorageMapReadAccess;
+
             let grant = crate::state::read().entry.home_labor_grants.read((game_id, home.entity_id, 0)).unwrap();
             assert_eq!(
                 grant, (d.actor, 1000 * crate::rules::RESOURCE_PRECISION, 1500 * crate::rules::RESOURCE_PRECISION),
@@ -87,7 +91,7 @@ fn a_free_home_reveals_then_collects_once_through_the_player_command() {
     );
 }
 
-fn next_reveal_action(home: ResourceKey, index: u8) -> Command {
+pub fn next_reveal_action(home: ResourceKey, index: u8) -> Command {
     let id = *crate::logic::troops::home_armies(home).at(index.into());
     let explorer = crate::logic::troops::explorer(crate::troops::ExplorerKey { game_id: home.game_id, explorer_id: id })
         .unwrap();
@@ -120,8 +124,6 @@ fn each_realm_level_doubles_both_rewards_and_the_bonus_changes_only_labor() {
 #[test]
 #[feature("safe_dispatcher")]
 fn the_operator_cannot_bypass_the_quest() {
-    use crate::entry::{IHomeGrantsSafeDispatcher, IHomeGrantsSafeDispatcherTrait, LaborHome};
-    use snforge_std::{start_cheat_caller_address, stop_cheat_caller_address};
     let (d, game_id) = super::aspects::setup_aspects(5);
     assert!(
         execute_in_game(
@@ -134,7 +136,13 @@ fn the_operator_cannot_bypass_the_quest() {
     start_cheat_caller_address(d.games, world_test_support::tests::authority());
     assert!(
         IHomeGrantsSafeDispatcher { contract_address: d.games }
-            .grant_labor(LaborHome { game_id, home: crate::entity_ids::home_for_actor(game_id, d.actor) }, 0, d.actor)
+            .grant_labor(
+                LaborHome {
+                    game_id, home: interact_with_state(d.games, || crate::entity_ids::home_for_actor(game_id, d.actor)),
+                },
+                0,
+                d.actor,
+            )
             .is_err(),
     );
     stop_cheat_caller_address(d.games);
