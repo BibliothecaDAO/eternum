@@ -138,6 +138,63 @@ it("collects a finished quest once, then says it was collected", async () => {
   expect(button("Collect")).toBeUndefined();
 });
 
+/** The lab's player's snapshot, complete or still loading, at the chain's clock. */
+const snapshot = (store: NativeFactStore, complete: boolean) =>
+  act(async () =>
+    store.setSnapshot({
+      gameId: 1,
+      complete,
+      actor: "0x111",
+      timestamp: Math.floor(useChainTimeStore.getState().nowMs! / 1000),
+    }),
+  );
+const finished = (day: number, target: number) => ({
+  model: "QuestProgress",
+  key: "0x9e2",
+  value: { game_id: 1, home: 7, day, progress: BigInt(target), completed_level: 1 },
+});
+const receipt = (day: number) => ({
+  model: "LaborGrant",
+  key: "0x9e3",
+  value: { game_id: 1, home: 7, day, account: 0x111n, amount: 1000n, essence: 1500n },
+});
+const campaignHome = { model: "CampaignHome", key: "0x9e4", value: { game_id: 1, home: 7n, campaign_id: 1n, tier: 1 } };
+
+it("says it is reading while the snapshot loads, never zero progress, and offers no Collect before the receipt is known", async () => {
+  const store = await renderBanner([questRules()]);
+  const { day, target, id } = today(store);
+  await snapshot(store, false);
+  expect(banner()!.textContent).toContain(dailyQuests.find((quest) => quest.id === id)!.name);
+  expect(banner()!.textContent).toContain("Reading your progress");
+  expect(banner()!.textContent).not.toContain(`0 of ${target}`);
+
+  // A collected quest recovering: its finished progress arrives before its receipt.
+  await act(async () => store.applyFacts([finished(day, target)] as never));
+  expect(button("Collect")).toBeUndefined();
+  expect(banner()!.textContent).toContain("Reading your progress");
+
+  await act(async () => store.applyFacts([receipt(day)] as never));
+  await snapshot(store, true);
+  expect(banner()!.querySelector("[aria-label='Collected']")).not.toBeNull();
+  expect(button("Collect")).toBeUndefined();
+});
+
+it("shows a campaign home's 150% labor once its bonus is known, and nothing guessed before", async () => {
+  const store = await renderBanner([questRules()]);
+  const { day, target } = today(store);
+  await snapshot(store, false);
+  await act(async () => store.applyFacts([finished(day, target), campaignHome] as never));
+  // The bonus is known (its row is here), the receipt is not: still reading, nothing to press.
+  expect(banner()!.textContent).toContain("Reading your progress");
+  expect(button("Collect")).toBeUndefined();
+
+  await snapshot(store, true);
+  expect(banner()!.textContent).toContain("1,500");
+  expect(banner()!.textContent).not.toContain("1,000");
+  // The quest's action is offered (an earlier test's send, held in flight on purpose, may still name it Collecting).
+  expect(banner()!.querySelector("button")).not.toBeNull();
+});
+
 it("stands in the realm's column of a new player's HUD (/lab/kit/unified/frontier-new)", async () => {
   await act(async () =>
     root.render(
@@ -157,5 +214,5 @@ it("stands in the realm's column of a new player's HUD (/lab/kit/unified/frontie
 function today(store: NativeFactStore) {
   const now = Math.floor(useChainTimeStore.getState().nowMs! / 1000);
   const quest = readDailyQuest(store, 1, 7, now)!;
-  return { day: quest.day, id: quest.id, target: Number(quest.target) };
+  return { day: quest.day, id: quest.id, target: Number(quest.reading.known!.target) };
 }

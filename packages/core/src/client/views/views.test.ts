@@ -18,79 +18,56 @@ describe("game views", () => {
   it("reads the day's quest, completion and collection only from native facts", () => {
     const { store, views } = createHarness();
     expect(views.dailyQuest(12, 100)).toBeUndefined();
-    seedFrontierRules(store, { startMainAt: 100, spacing: 10, seed: "5" });
-    seedStructure(store, { entityId: 12, owner: PLAYER, category: StructureType.Realm, x: 1, y: 1 });
-    store.applyFacts([
-      {
-        model: "QuestRules",
-        key: "0x201",
-        value: {
-          game_id: GAME_ID,
-          base_counts: dailyQuests.map(({ baseCount }) => baseCount),
-          labor: 1000n,
-          essence: 1500n,
-          bonus_percent: 150,
-        },
-      },
-    ]);
+    seedQuestGame(store);
     expect(views.dailyQuest(12, 99)).toBeUndefined();
     expect(views.dailyQuest(12, 100)).toMatchObject({
       id: 6,
       day: 0,
-      target: 15n,
-      progress: 0n,
-      completed: false,
-      claimed: false,
+      reading: { known: { target: 15n, progress: 0n, completed: false, claimed: false } },
     });
+    store.applyFacts([questProgress(15n, 1)]);
+    expect(reading(views)).toMatchObject({ target: 15n, progress: 15n, completed: true, claimed: false });
+    store.applyFacts([laborGrant()]);
+    expect(reading(views)?.claimed).toBe(true);
+  });
+
+  it("keeps the reading unknown while the snapshot loads: no zero progress, no missing receipt, no missing bonus", () => {
+    const { store, views } = createHarness();
+    seedQuestGame(store, { complete: false });
+    expect(views.dailyQuest(12, 100)?.reading.unknown).toBe("INCOMPLETE_SNAPSHOT: QuestProgress");
+    // The finished progress arrives first: its receipt is not known yet, so nothing may offer collection.
+    store.applyFacts([questProgress(15n, 1)]);
+    expect(views.dailyQuest(12, 100)?.reading.unknown).toBe("INCOMPLETE_SNAPSHOT: LaborGrant");
+    // The receipt arrives: whether the home has the labor bonus is not known yet, so no reward is shown.
+    store.applyFacts([laborGrant()]);
+    expect(views.dailyQuest(12, 100)?.reading.unknown).toBe("INCOMPLETE_SNAPSHOT: CampaignHome");
+    // A campaign home's row settles the bonus at once.
     store.applyFacts([
-      {
-        model: "QuestProgress",
-        key: "0x202",
-        value: { game_id: GAME_ID, home: 12, day: 0, progress: 15n, completed_level: 1 },
-      },
+      { model: "CampaignHome", key: "0x205", value: { game_id: GAME_ID, home: 12n, campaign_id: 1, tier: 1 } },
     ]);
-    expect(views.dailyQuest(12, 100)).toMatchObject({ target: 15n, progress: 15n, completed: true, claimed: false });
-    store.applyFacts([
-      {
-        model: "LaborGrant",
-        key: "0x203",
-        value: { game_id: GAME_ID, home: 12, day: 0, account: PLAYER, amount: 1000n, essence: 1500n },
-      },
-    ]);
-    expect(views.dailyQuest(12, 100)?.claimed).toBe(true);
+    expect(reading(views)).toMatchObject({ claimed: true, reward: { labor: 1500n, essence: 1500n } });
+  });
+
+  it("knows a free home has no bonus only once the snapshot is complete", () => {
+    const { store, views } = createHarness();
+    seedQuestGame(store, { complete: false });
+    store.applyFacts([questProgress(15n, 1), laborGrant()]);
+    expect(views.dailyQuest(12, 100)?.reading.unknown).toBe("INCOMPLETE_SNAPSHOT: CampaignHome");
+    completeSnapshot(store);
+    expect(reading(views)).toMatchObject({ claimed: true, reward: { labor: 1000n, essence: 1500n } });
   });
 
   it("pays the quest as the contract does: doubled at each level, the labor at 150% for a held Realm's home", () => {
     const { store, views } = createHarness();
-    seedFrontierRules(store, { startMainAt: 100, spacing: 10, seed: "5" });
-    seedStructure(store, { entityId: 12, owner: PLAYER, category: StructureType.Realm, x: 1, y: 1 });
-    store.applyFacts([
-      {
-        model: "QuestRules",
-        key: "0x201",
-        value: {
-          game_id: GAME_ID,
-          base_counts: dailyQuests.map(({ baseCount }) => baseCount),
-          labor: 1000n,
-          essence: 1500n,
-          bonus_percent: 150,
-        },
-      },
-    ]);
+    seedQuestGame(store);
     // A free Settlement: 1,000 labor and 1,500 Essence.
-    expect(views.dailyQuest(12, 100)?.reward).toEqual({ labor: 1000n, essence: 1500n });
+    expect(reading(views)?.reward).toEqual({ labor: 1000n, essence: 1500n });
     // Finished as a Kingdom (level 3): ×4 both.
-    store.applyFacts([
-      {
-        model: "QuestProgress",
-        key: "0x202",
-        value: { game_id: GAME_ID, home: 12, day: 0, progress: 45n, completed_level: 3 },
-      },
-    ]);
-    expect(views.dailyQuest(12, 100)?.reward).toEqual({ labor: 4000n, essence: 6000n });
+    store.applyFacts([questProgress(45n, 3)]);
+    expect(reading(views)?.reward).toEqual({ labor: 4000n, essence: 6000n });
     // The home of a held Realm: 150% of the labor, the Essence unchanged.
     store.applyFacts([{ model: "SettledRealm", key: "0x204", value: { game_id: GAME_ID, realm_id: 77, home: 12n } }]);
-    expect(views.dailyQuest(12, 100)?.reward).toEqual({ labor: 6000n, essence: 6000n });
+    expect(reading(views)?.reward).toEqual({ labor: 6000n, essence: 6000n });
   });
 
   it("lists a player's structures by category then entity id, seen as theirs", () => {
@@ -280,3 +257,37 @@ const seedExplorer = (
       },
     },
   ]);
+
+/** Season 1's quest rules over a Frontier game on day 0, the player's Realm 12, and the player's snapshot. */
+const seedQuestGame = (store: NativeFactStore, snapshot: { complete: boolean } = { complete: true }) => {
+  seedFrontierRules(store, { startMainAt: 100, spacing: 10, seed: "5" });
+  seedStructure(store, { entityId: 12, owner: PLAYER, category: StructureType.Realm, x: 1, y: 1 });
+  store.applyFacts([
+    {
+      model: "QuestRules",
+      key: "0x201",
+      value: {
+        game_id: GAME_ID,
+        base_counts: dailyQuests.map(({ baseCount }) => baseCount),
+        labor: 1000n,
+        essence: 1500n,
+        bonus_percent: 150,
+      },
+    },
+  ]);
+  if (snapshot.complete) completeSnapshot(store);
+  else store.setSnapshot({ gameId: GAME_ID, complete: false, actor: PLAYER.toString(), timestamp: 100 });
+};
+const completeSnapshot = (store: NativeFactStore) =>
+  store.setSnapshot({ gameId: GAME_ID, complete: true, actor: PLAYER.toString(), timestamp: 100 });
+const questProgress = (progress: bigint, completedLevel: number) => ({
+  model: "QuestProgress",
+  key: "0x202",
+  value: { game_id: GAME_ID, home: 12, day: 0, progress, completed_level: completedLevel },
+});
+const laborGrant = () => ({
+  model: "LaborGrant",
+  key: "0x203",
+  value: { game_id: GAME_ID, home: 12, day: 0, account: PLAYER, amount: 1000n, essence: 1500n },
+});
+const reading = (views: GameViews) => views.dailyQuest(12, 100)?.reading.known;
