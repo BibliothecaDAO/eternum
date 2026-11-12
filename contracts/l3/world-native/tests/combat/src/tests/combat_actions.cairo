@@ -278,6 +278,7 @@ fn blitz_ethereal_battle_uses_both_root_d20_rolls_in_damage_and_history() {
             ref expected_defender,
             crate::combat::CombatContext {
                 timestamp: 80,
+                day_unit_seconds: rules.day_unit_seconds,
                 attacker_roll,
                 defender_roll,
                 attacker_biome: crate::biome::Biome::Underground,
@@ -393,6 +394,7 @@ fn a_dice_game_rolls_both_root_d20s_on_the_surface_too() {
             ref expected_defender,
             crate::combat::CombatContext {
                 timestamp: 80,
+                day_unit_seconds: rules.day_unit_seconds,
                 attacker_roll,
                 defender_roll,
                 attacker_biome: surface,
