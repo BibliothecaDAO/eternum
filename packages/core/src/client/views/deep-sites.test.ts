@@ -1,4 +1,6 @@
-import { expect, it } from "vitest";
+import { setBlockTimestampSource } from "../../utils/timestamp";
+afterEach(() => setBlockTimestampSource(null));
+import { afterEach, expect, it } from "vitest";
 import { deepSites, TileOccupier } from "@bibliothecadao/types";
 import { NativeFactStore } from "../native-fact-store";
 import { configManager } from "../../managers/config-manager";
@@ -132,6 +134,7 @@ it("refuses incomplete or duplicate site facts instead of hiding a missing catal
 
 it("moves an army into a shared site slot atomically without copying its troop balance", () => {
   const store = fixture();
+  setBlockTimestampSource(() => 350);
   const beast = store.require("Guard", { game_id: 1, structure_id: 1, slot: 0 });
   const fieldTile = {
     game_id: 1,
@@ -149,6 +152,7 @@ it("moves an army into a shared site slot atomically without copying its troop b
       key: "100",
       value: { game_id: 1, explorer_id: 100, owner: 10, troops: { ...beast.troops, count: 3000n } },
     },
+    { model: "ArmyDay", key: "100", value: { game_id: 1, explorer_id: 100, day: 0 } },
     { model: "TileOccupancy", key: "100", value: fieldTile },
   ]);
   const projection = new WorldSpatialProjection({ store });

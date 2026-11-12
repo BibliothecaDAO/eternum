@@ -1,5 +1,9 @@
 import { deepTerrain } from "./deep";
-import { activeTileOccupancy } from "./ruins";
+import { ruinDisappeared } from "./ruins";
+import { isArmyCurrent } from "./expeditions";
+import { isTileOccupierArmy } from "./map/hex";
+import { TileOccupier } from "@bibliothecadao/types";
+import type { NativeKeys, NativeRows } from "../../../../contracts/l3/world-native/schema/client.gen";
 import { BiomeIdToType, type BiomeType, type Tile } from "@bibliothecadao/types";
 import type { NativeFactStore } from "../client/native-fact-store";
 import { configManager } from "../managers/config-manager";
@@ -51,4 +55,17 @@ export function storedBiomeAt(
 ): BiomeType | undefined {
   const tile = getTileAt(store, alt, col, row, gameId);
   return tile && tile.biome !== 0 ? biomeTypeOf(tile.biome) : undefined;
+}
+
+/** Occupancy as commands see it: expired armies and vanished ruins leave walkable terrain without erasing the raw facts. */
+export function activeTileOccupancy(
+  store: Pick<NativeFactStore, "get" | "inGame">,
+  key: NativeKeys["TileOccupancy"],
+): NativeRows["TileOccupancy"] | undefined {
+  const occupancy = store.get("TileOccupancy", key);
+  if (occupancy && isTileOccupierArmy(occupancy.category) && !isArmyCurrent(store, key.game_id, occupancy.entity_id))
+    return undefined;
+  if (occupancy?.category !== TileOccupier.Ruin) return occupancy;
+  const site = store.get("ExpeditionSite", { game_id: key.game_id, entity_id: occupancy.entity_id });
+  return site && ruinDisappeared(store, site) ? undefined : occupancy;
 }

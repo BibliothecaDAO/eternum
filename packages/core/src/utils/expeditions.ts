@@ -146,6 +146,21 @@ export const isCurrentExpeditionArmy = (rules: ExpeditionRules, day: bigint | nu
   return today !== null && BigInt(day) === BigInt(today);
 };
 
+/** Every surface uses the recorded day, never the shared map coordinate, to decide whether an army still lives. */
+export function isArmyCurrent(
+  store: Pick<NativeFactStore, "get">,
+  gameId: number,
+  explorerId: bigint,
+  timestamp?: number,
+): boolean {
+  const slice = store.get("SliceRules", { game_id: gameId });
+  if (!slice || slice.day_unit_seconds === 0) return true;
+  const rules = readExpeditionRules(store, gameId)!;
+  const army = store.get("ArmyDay", { game_id: gameId, explorer_id: explorerId });
+  if (!army) throw new Error(`Missing expedition day for army ${gameId}:${explorerId}`);
+  return isCurrentExpeditionArmy(rules, army.day, timestamp ?? getBlockTimestamp().currentDefaultTick);
+}
+
 /** Personal expedition sites retain the day encoded by their map region. */
 export const isCurrentExpeditionRegion = (
   rules: ExpeditionRules,
@@ -167,16 +182,7 @@ export const liveHomeArmies = (
   floorSeconds?: number,
 ): NativeRows["ExplorerTroops"][] => {
   const armies = [...store.armiesAtHome(gameId, structureId)].filter((army) => army.troops.count > 0n);
-  const rules = readExpeditionRules(store, gameId);
-  if (!rules) return armies;
-  const floor = floorSeconds ?? getBlockTimestamp().currentDefaultTick;
-  return armies.filter((army) =>
-    isCurrentExpeditionArmy(
-      rules,
-      store.require("ArmyDay", { game_id: gameId, explorer_id: army.explorer_id }).day,
-      floor,
-    ),
-  );
+  return armies.filter((army) => isArmyCurrent(store, gameId, army.explorer_id, floorSeconds));
 };
 
 /**

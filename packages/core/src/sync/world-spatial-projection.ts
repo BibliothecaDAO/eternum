@@ -1,3 +1,4 @@
+import { getBlockTimestamp } from "../utils/timestamp";
 import { deepTiles } from "../utils/deep";
 import { safeInteger } from "../utils/safe-integer";
 import type { ID, Tile, TroopTier, TroopType } from "@bibliothecadao/types";
@@ -5,7 +6,14 @@ import { TileOccupier } from "@bibliothecadao/types";
 import type { NativeFactChange, NativeFactStore } from "../client/native-fact-store";
 import { notifyEach } from "../utils/notify-each";
 import type { NativeKeys, NativeRows } from "../../../../contracts/l3/world-native/schema/client.gen";
-import { isExpeditionRealm, siteKindOf, structureMapPosition } from "../utils/expeditions";
+import {
+  isArmyCurrent,
+  readExpeditionRules,
+  expeditionDayEndsAt,
+  isExpeditionRealm,
+  siteKindOf,
+  structureMapPosition,
+} from "../utils/expeditions";
 import { isTileOccupierStructure } from "../utils/map/hex";
 import { entityMapPosition, getTileAt } from "../utils/tile";
 
@@ -305,6 +313,7 @@ const resolveArmyRenderable = (
   explorerTroops: NativeRows["ExplorerTroops"] | undefined,
 ): ArmySpatialRenderable | undefined => {
   if (!explorerTroops || explorerTroops.troops.count <= 0n) return undefined;
+  if (!isArmyCurrent(store, explorerTroops.game_id, explorerTroops.explorer_id)) return undefined;
   if (store.get("DeepGuard", { game_id: explorerTroops.game_id, explorer_id: explorerTroops.explorer_id }))
     return undefined;
 
@@ -555,6 +564,7 @@ export class WorldSpatialProjection {
   private readonly armyListeners = new Set<ArmyProjectionListener>();
   private readonly tileListeners = new Set<TileProjectionListener>();
   private unsubscribe: (() => void) | null = null;
+  private nextCalendarBoundary = Infinity;
 
   constructor({ store, bucketSize = DEFAULT_SPATIAL_BUCKET_SIZE }: WorldSpatialProjectionOptions) {
     if (!Number.isFinite(bucketSize) || bucketSize <= 0) {
@@ -589,7 +599,12 @@ export class WorldSpatialProjection {
   }
 
   private applyChanges(changes: readonly NativeFactChange[]): void {
-    if (changes.some((change) => change.model === "SliceRules" || change.model === "SettlementRules")) {
+    if (
+      changes.some(
+        (change) =>
+          change.model === "SliceRules" || change.model === "SettlementRules" || change.model === "GameRegistry",
+      )
+    ) {
       this.rebuild();
       return;
     }
@@ -618,11 +633,13 @@ export class WorldSpatialProjection {
         }
       }
       if (change.model === "ExplorerTroops") this.applyExplorerTroopsUpdate([change.current, change.previous]);
-      if (change.model === "DeepGuard") {
+      if (change.model === "DeepGuard" || change.model === "ArmyDay") {
         const key = change.current ?? change.previous;
         if (key) {
           const army = this.store.get("ExplorerTroops", { game_id: key.game_id, explorer_id: key.explorer_id });
           this.armyIndex.update(safeInteger(key.explorer_id), resolveArmyRenderable(this.store, army));
+          const tile = this.store.entityOccupancy(key.game_id, key.explorer_id);
+          if (tile) this.applyTileUpdate(tile);
         }
       }
     }
@@ -633,6 +650,21 @@ export class WorldSpatialProjection {
         }
       }
     }
+  }
+
+  /** Called by confirmed heads, including empty blocks, so calendar expiry needs no gameplay transaction. */
+  public refreshTime(): void {
+    if (this.nextCalendarBoundary !== Infinity && getBlockTimestamp().currentDefaultTick >= this.nextCalendarBoundary)
+      this.rebuild();
+  }
+
+  private nextDayBoundary(): number {
+    let boundary = Infinity;
+    for (const [, game] of this.store.entries("GameRegistry")) {
+      const rules = readExpeditionRules(this.store, game.game_id);
+      if (rules) boundary = Math.min(boundary, expeditionDayEndsAt(rules, getBlockTimestamp().currentDefaultTick));
+    }
+    return boundary;
   }
 
   /**
@@ -696,6 +728,7 @@ export class WorldSpatialProjection {
       if (marker) nextStructures.set(marker.spatialId, marker);
     }
 
+    this.nextCalendarBoundary = this.nextDayBoundary();
     this.chestIndex.replace(nextChests);
     this.structureIndex.replace(nextStructures);
     this.armyIndex.replace(nextArmies);

@@ -370,7 +370,10 @@ export class GameSyncRuntime {
       onHead: (head) => {
         if (!current()) return;
         session.onHead?.(head);
-        if (!head.preconfirmed) this.confirmedHead.resolve();
+        if (!head.preconfirmed) {
+          this.confirmedHead.resolve();
+          this.worldSpatialProjection?.refreshTime();
+        }
       },
       onTransaction: (transaction) => {
         if (!current()) return;

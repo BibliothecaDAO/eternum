@@ -1,4 +1,8 @@
-import { expect, it } from "vitest";
+import { setBlockTimestampSource } from "./timestamp";
+import { dayOf, readExpeditionRules } from "./expeditions";
+import explorerFixture from "../../../../contracts/l3/world-native/schema/fixtures/row-set.json";
+afterEach(() => setBlockTimestampSource(null));
+import { afterEach, expect, it } from "vitest";
 import { BiomeType, BiomeTypeToId, TileOccupier } from "@bibliothecadao/types";
 import preset from "../../../../contracts/l3/world-native/tests/fixtures/current-presets/preset-3.json";
 import { NativeFactStore } from "../client/native-fact-store";
@@ -7,8 +11,26 @@ import { getTileAt } from "./tile";
 import { deepCenter, deepTiles } from "./deep";
 
 function map() {
+  setBlockTimestampSource(() => 350);
   const store = new NativeFactStore();
   store.applyFacts([
+    {
+      model: "GameRegistry",
+      key: "1",
+      value: {
+        game_id: 1,
+        name: 1,
+        preset_id: 3,
+        settled: false,
+        ready: true,
+        dev_mode_on: false,
+        start_settling_at: 0,
+        start_main_at: 300,
+        end_at: 100000,
+        end_grace_seconds: 0,
+        seed: 1,
+      },
+    },
     { model: "SliceRules", key: "1", value: { ...preset.rules, game_id: 1, day_unit_seconds: 100 } },
     {
       model: "SettlementRules",
@@ -48,6 +70,7 @@ it("projects the full fixed map and keeps one tile when an occupant arrives and 
     const bounds = { alt: false, minCol: 0, maxCol: 1024, minRow: 3072, maxRow: 4095 };
     expect(projection.getTilesInBounds(bounds)).toHaveLength(2500);
     store.applyFacts([
+      { model: "ArmyDay", key: "7", value: { game_id: 1, explorer_id: 7, day: 0 } },
       {
         model: "TileOccupancy",
         key: "1",
@@ -68,6 +91,66 @@ it("projects the full fixed map and keeps one tile when an occupant arrives and 
     expect(getTileAt(store, false, center.col, center.row, 1)?.occupier_id).toBe(0);
     store.applyFacts([{ model: "SliceRules", key: "1", value: { ...preset.rules, game_id: 1, day_unit_seconds: 0 } }]);
     expect(projection.getTilesInBounds(bounds)).toEqual([]);
+  } finally {
+    projection.dispose();
+  }
+});
+
+it("expires another home's shared army on the confirmed clock without deleting its facts", () => {
+  const store = map();
+  let now = 350;
+  setBlockTimestampSource(() => now);
+  const tomorrow = dayOf(readExpeditionRules(store, 1)!, now)!.end;
+  const center = deepCenter(1024);
+  const army = (id: number, day: number, col: number) => [
+    { model: "ArmyDay", key: String(id), value: { game_id: 1, explorer_id: id, day } },
+    {
+      model: "ExplorerTroops",
+      key: String(id),
+      value: {
+        ...explorerFixture.expected.value,
+        game_id: 1,
+        explorer_id: id,
+        owner: 2,
+        troops: { ...explorerFixture.expected.value.troops, count: 3000n },
+      },
+    },
+    {
+      model: "TileOccupancy",
+      key: String(id),
+      value: {
+        game_id: 1,
+        alt: false,
+        col,
+        row: center.row,
+        entity_id: id,
+        category: TileOccupier.ExplorerKnightT1,
+        is_structure: false,
+      },
+    },
+  ];
+  store.applyFacts(army(81, 0, center.col));
+  const projection = new WorldSpatialProjection({ store });
+  projection.start();
+  const changes: number[] = [];
+  projection.subscribeArmies((batch) => changes.push(batch.length));
+  try {
+    expect(getTileAt(store, false, center.col, center.row, 1)?.occupier_id).toBe(81);
+    expect(projection.getArmy(81)?.entityId).toBe(81);
+    now = tomorrow;
+    projection.refreshTime();
+    expect(getTileAt(store, false, center.col, center.row, 1)?.occupier_id).toBe(0);
+    expect(projection.getArmy(81)).toBeUndefined();
+    expect(changes).toEqual([1]);
+    projection.refreshTime();
+    expect(changes).toEqual([1]);
+    expect(store.require("ArmyDay", { game_id: 1, explorer_id: 81 }).day).toBe(0n);
+    expect(store.require("TileOccupancy", { game_id: 1, alt: false, ...center }).entity_id).toBe(81n);
+    store.applyFacts(army(82, 1, center.col + 1));
+    expect(getTileAt(store, false, center.col + 1, center.row, 1)?.occupier_id).toBe(82);
+    expect(projection.getArmy(82)?.entityId).toBe(82);
+    projection.flush();
+    expect(changes).toEqual([1, 1]);
   } finally {
     projection.dispose();
   }

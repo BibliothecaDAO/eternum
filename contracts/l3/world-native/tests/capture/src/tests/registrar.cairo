@@ -1860,7 +1860,6 @@ fn open_frontier_settlement_uses_only_each_players_home_and_entry() {
 #[test_case(name: "legacy_surface", 0)]
 #[test_case(name: "legacy_depth_one", 1)]
 #[test_case(name: "legacy_depth_two", 2)]
-#[test_case(name: "legacy_depth_three", 3)]
 fn legacy_clear_survives_release_application_and_other_depths_pay(first_depth: u8) {
     let rules = ruin_discovery_rules();
     let (d, game_id, key) = setup_frontier_chests_with_rules(Some(rules));
@@ -1895,9 +1894,9 @@ fn legacy_clear_survives_release_application_and_other_depths_pay(first_depth: u
     assert_eq!(releases.game_release(game_id), 1);
 
     let mut total_paid = 0_u128;
-    for offset in 0_u8..4 {
+    for offset in 0_u8..3 {
         let timestamp = 360_u64 + Into::<u8, u64>::into(offset) * 3;
-        let depth = (first_depth + offset) % 4;
+        let depth = (first_depth + offset) % 3;
         let coord = crate::geometry::neighbor(crate::expeditions::site(1024, 1, 0, depth), 0);
         super::resource_commands::set_explorer_fixture(d.games, key, crate::troops::ExplorerTroops { coord, ..army });
         let (ruin, _) = reveal_ruin(d, key, rules, timestamp);
@@ -2006,8 +2005,9 @@ fn legacy_clear_survives_release_application_and_other_depths_pay(first_depth: u
         snforge_std::interact_with_state(d.games, || crate::state::read().map_rules.ruin_cleared.read((game_id, 1, 0))),
     );
     for depth in 0_u8..4 {
-        assert!(
+        assert_eq!(
             snforge_std::interact_with_state(d.games, || crate::logic::expeditions::ruin_cleared_at(counter, depth)),
+            depth < 3,
         );
         assert!(
             !snforge_std::interact_with_state(

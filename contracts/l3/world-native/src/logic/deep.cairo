@@ -4,12 +4,12 @@ use crate::geometry::tile_key;
 use crate::troops::{Coord, ExplorerKey};
 
 pub fn contains(game_id: u32, coord: Coord) -> bool {
-    crate::logic::preset_record::for_game(game_id).rules.day_unit_seconds.read() != 0
-        && crate::deep::contains(coord, crate::logic::settlement::rules(game_id).spacing)
+    let preset = crate::logic::preset_record::for_game(game_id);
+    preset.rules.day_unit_seconds.read() != 0 && crate::deep::contains(coord, preset.settlement_spacing.read())
 }
 
 pub fn arrival(game_id: u32, context: ExecutionContext) -> Coord {
-    let spacing = crate::logic::settlement::rules(game_id).spacing;
+    let spacing = crate::logic::preset_record::for_game(game_id).settlement_spacing.read();
     let origin = crate::deep::arrival(spacing);
     clear_expired_occupant(game_id, origin, context);
     if crate::logic::map::occupancy(tile_key(game_id, origin)).is_none() {
