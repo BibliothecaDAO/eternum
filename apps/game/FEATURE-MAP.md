@@ -483,9 +483,11 @@ each closed by its cross, a tap outside, a swipe down or `Escape`. A right-click
 - Returning to a Frontier home with no daily-claim source (Play → **Resume**): when you hold a ticket or linked-wallet
   Realms, entry reuses the picker as **Choose a daily claim**. Select one ticket or Realm, then **Add this daily
   claim**; nothing is submitted before confirmation. Realms already backing a home in this game are marked **Taken** and
-  cannot be selected. **Continue with my free home** enters without attaching a source; with no sources to offer, entry
-  resumes normally. A home can gain only one source, which cannot be replaced, except a regular Devcon home's golden
-  upgrade from a golden friend or a golden link. Its identity and existing traits stay unchanged.
+  cannot be selected. In a Season 1 game only Realms of the home's own Aspect are offered (its Realm's Order sets it,
+  read from Herald's directory row); a Realm of another Aspect is not shown, since the chain refuses it. **Continue with
+  my free home** enters without attaching a source; with no sources to offer, entry resumes normally. A home can gain
+  only one source, which cannot be replaced, except a regular Devcon home's golden upgrade from a golden friend or a
+  golden link. Its identity and existing traits stay unchanged.
 - A Blitz lobby, signed out, asks to **Sign in** and returns to it. With no payout wallet, **Link wallet** opens
   Settings on the wallet (`/profile/settings?next=…`) and returns to the lobby once one is linked. The lobby keeps the
   places, Play lit. Sign-in from You or Settings returns to the page it was asked from.

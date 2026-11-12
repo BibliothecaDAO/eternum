@@ -12,10 +12,10 @@ import { useNavigate } from "react-router-dom";
 
 import { resolveEntryContextFromLandingSelection } from "@/game-entry/context";
 import { HomeSourcePicker, useNothingToChoose } from "./home-source-picker";
-import { AspectPicker } from "./aspect-picker";
+import { AspectPicker, aspectOfOrder } from "./aspect-picker";
 import { presetHasAspects } from "@/services/home-claim-rules";
 import { canonicalRealm } from "@bibliothecadao/eternum";
-import type { AspectId } from "@bibliothecadao/types";
+import { StructureType, type AspectId } from "@bibliothecadao/types";
 import { RealmNumberPicker } from "./realm-number-picker";
 import { createAutoSettleEntryKey, useAutoSettleStore } from "@/hooks/store/use-auto-settle-store";
 import { useAccountStore } from "@/hooks/store/use-account-store";
@@ -644,6 +644,13 @@ export const GameEntryModal = ({
     phase === "settlement" &&
     isSeasonMode &&
     ((!foundsOnItsOwn && settleStage === "idle") || (isFrontierMode && settleStage === "error"));
+  // A founded home's Aspect, before the game opens: its Realm's Order's (Herald's directory row names the Realm). Only
+  // Realms of that Aspect can attach to it as a daily claim (settlement.cairo's claim_held_realm refuses the others).
+  const foundedRealm = worldMeta?.player_state?.structures.find(
+    (structure) => structure.category === StructureType.Realm,
+  )?.realm_id;
+  const homeAspect =
+    choosesAspect && foundedRealm !== undefined ? aspectOfOrder(canonicalRealm(foundedRealm).order) : null;
   // The held Realm the home is founded from, whose Order sets its Aspect; none for a campaign home, which taps one.
   const homeRealm = registeredRealmId ?? (heldRealmNumber !== "" && validHeldRealm ? Number(heldRealmNumber) : null);
   const realmOrder = homeRealm === null ? null : canonicalRealm(homeRealm).order;
@@ -703,6 +710,7 @@ export const GameEntryModal = ({
               title={choosingSource ? HOME_STEP_WORDS.attachTitle : undefined}
               takenRealmIds={takenRealmIds}
               requireSource={choosingSource}
+              aspect={choosingSource ? homeAspect : null}
               onSourceAvailable={setSourceAvailable}
               registered={registeredRealmId}
               value={heldRealmNumber}

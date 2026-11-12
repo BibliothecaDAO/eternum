@@ -105,7 +105,7 @@ const orderOf = (orderId: number) => {
 };
 
 /** A held Realm's Aspect is its Order's; an Order in no Aspect (the Order of Gods) throws. */
-const aspectOfOrder = (orderId: number): AspectId => {
+export const aspectOfOrder = (orderId: number): AspectId => {
   const aspect = orderOf(orderId).aspect;
   if (aspect === null) throw new Error(`Order ${orderId} belongs to no Aspect`);
   return aspect;
