@@ -44,7 +44,7 @@ pub fn result(game_id: u32) -> Option<RaceResult> {
 
 pub fn aspect_order(game_id: u32) -> Span<u8> {
     let mut ranked = array![];
-    for rank in 0..4 {
+    for rank in 0_u8..4 {
         for aspect in 1_u8..5 {
             let height = hyperstructure(AspectKey { game_id, aspect }).height;
             let mut ahead = 0;
@@ -72,7 +72,7 @@ fn initialize(game_id: u32) {
     let duration = rules.season_days / crate::days::DAYS_PER_BAG * crate::days::UNITS_PER_BAG * unit;
     assert!(game.end_at - game.start_main_at <= duration, "race exceeds season day limit");
     let spacing = crate::logic::settlement::rules(game_id).spacing;
-    for aspect in 1..5 {
+    for aspect in 1_u8..5 {
         initialize_hyperstructure(AspectKey { game_id, aspect }, rules, spacing);
     }
 }

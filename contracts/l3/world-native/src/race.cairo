@@ -83,7 +83,7 @@ pub fn validate(rules: RaceRules) {
     assert!(rules.spoils_percent >= 100 && rules.spoils_percent <= 200, "invalid Spoils rate");
     let _ = rules.stage_height * 5;
     let _ = rules.glory_per_tick * crate::rules::RESOURCE_PRECISION;
-    for aspect in 1..5 {
+    for aspect in 1_u8..5 {
         let coord = local_coord(rules, aspect);
         assert!(
             !coord.alt && coord.x < crate::rules::DEEP_MAP_SIZE && coord.y < crate::rules::DEEP_MAP_SIZE,

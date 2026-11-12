@@ -21,12 +21,16 @@ pub fn percent(home: ResourceKey, coord: Coord, stage: u8, timestamp: u64) -> u1
     if crate::logic::race::triumph_day(TriumphKey { game_id: home.game_id, aspect, stage }) != Some(day.index) {
         return 100;
     }
-    match stage {
-        crate::rules::CLEAR_MIST_STAGE => rules.clear_mist_percent,
-        crate::rules::SECOND_WIND_STAGE => rules.second_wind_percent,
-        crate::rules::PALE_MOON_STAGE => rules.pale_moon_percent,
-        crate::rules::SPOILS_STAGE => rules.spoils_percent,
-        _ => panic!("invalid Triumph stage"),
+    if stage == crate::rules::CLEAR_MIST_STAGE {
+        rules.clear_mist_percent
+    } else if stage == crate::rules::SECOND_WIND_STAGE {
+        rules.second_wind_percent
+    } else if stage == crate::rules::PALE_MOON_STAGE {
+        rules.pale_moon_percent
+    } else if stage == crate::rules::SPOILS_STAGE {
+        rules.spoils_percent
+    } else {
+        panic!("invalid Triumph stage")
     }
 }
 
