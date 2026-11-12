@@ -60,6 +60,25 @@ function configuration(preset: number) {
 }
 
 describe("native presets", () => {
+  test("Season 1 replaces reward chests with army relics and uses round depth odds", () => {
+    const preset = buildNativePreset(
+      loadNativePresetConfiguration("madara.frontier", FRONTIER_S1_PRESET_ID),
+      FRONTIER_S1_PRESET_ID,
+    );
+    expect(preset.economy.chests.isNone()).toBe(true);
+    expect(preset.economy.relics).toEqual([]);
+    expect(Number(preset.rules.mode_rules) & nativeRuleConstants.DISCOVER_CHESTS).toBe(0);
+    expect(BigInt(preset.rules.command_mask) & BigInt(nativeCommandBits.ApplyRelic)).toBe(
+      BigInt(nativeCommandBits.ApplyRelic),
+    );
+    expect(preset.settlement.depths[1].chest).toEqual({
+      common: 0,
+      uncommon: 5000,
+      rare: 2800,
+      epic: 1500,
+      legendary: 700,
+    });
+  });
   test("Season 1 enables found spires and prices Spire lore once without changing earlier presets", () => {
     const season = buildNativePreset(
       loadNativePresetConfiguration("madara.frontier", FRONTIER_S1_PRESET_ID),
@@ -118,14 +137,14 @@ describe("native presets", () => {
     }
   });
 
-  test("progression presets cannot grant or import relics into an army", () => {
+  test("progression presets cannot grant or import resource relics into an army", () => {
     const progressionPresets = Object.values(nativePresets).filter(({ progression }) => progression !== null);
     expect(progressionPresets.length).toBeGreaterThan(0);
     for (const source of progressionPresets) {
       expect(source.gameType).toBe("frontier");
       const preset = buildNativePreset(loadNativePresetConfiguration("madara.frontier", source.id), source.id);
       expect(preset.economy.progression.isSome()).toBe(true);
-      expect(preset.economy.chests.isSome()).toBe(true);
+      expect(preset.economy.chests.isSome()).toBe(source.chests !== null);
       expect(preset.rules.day_unit_seconds).toBeGreaterThan(0);
       expect(preset.economy.relics).toEqual([]);
       expect(preset.exploration).toEqual([]);

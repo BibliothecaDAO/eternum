@@ -61,7 +61,7 @@ fn reveals_share_one_spire_only_within_the_same_home_day_and_layer() {
 }
 
 #[test]
-#[should_panic(expected: "spire has not been found")]
+#[should_panic(expected: ('spire has not been found',))]
 fn lore_without_a_discovered_spire_cannot_descend() {
     world_native::logic::spires::descent_origin(
         ExpeditionSpireKey { game_id: 1, structure_id: 17, epoch: 0, depth: 0 }, HERE, 1,

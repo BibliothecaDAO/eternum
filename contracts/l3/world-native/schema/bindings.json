@@ -1,5 +1,5 @@
 {
-  "schemaIdentity": "ab3864f0631e2117d1a1faece25f2fea4228b728da8262883e1426cb94dac831",
+  "schemaIdentity": "2bf2a429a224b6dafd2fcc2726ff18b9ff39f3ace1dfcc038d9427307816dda8",
   "commandAbi": [
     {
       "type": "interface",
@@ -692,6 +692,24 @@
         {
           "name": "defender_id",
           "type": "core::integer::u64"
+        },
+        {
+          "name": "relic_slot",
+          "type": "core::option::Option::<core::integer::u8>"
+        }
+      ]
+    },
+    {
+      "type": "enum",
+      "name": "core::option::Option::<core::integer::u8>",
+      "variants": [
+        {
+          "name": "Some",
+          "type": "core::integer::u8"
+        },
+        {
+          "name": "None",
+          "type": "()"
         }
       ]
     },
@@ -980,6 +998,10 @@
         {
           "name": "StructureGuard",
           "type": "()"
+        },
+        {
+          "name": "ArmySlot",
+          "type": "core::integer::u8"
         }
       ]
     },
@@ -1534,6 +1556,10 @@
       "scope": "game"
     },
     {
+      "name": "ExpeditionSpire",
+      "scope": "game"
+    },
+    {
       "name": "DepositSource",
       "scope": "game"
     },
@@ -1723,6 +1749,18 @@
     },
     {
       "name": "TileOccupancy",
+      "scope": "game"
+    },
+    {
+      "name": "ArmyRelics",
+      "scope": "game"
+    },
+    {
+      "name": "ArmyRelicEffect",
+      "scope": "game"
+    },
+    {
+      "name": "RuinRelic",
       "scope": "game"
     },
     {

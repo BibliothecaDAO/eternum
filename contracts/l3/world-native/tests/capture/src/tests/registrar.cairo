@@ -513,7 +513,7 @@ fn frontier_ruin_clear_pays_its_stored_chest_into_the_realm_and_leaves_no_chest(
     assert_eq!(structures.structure(site_key).unwrap().base.category, crate::taxonomy::RUIN_CATEGORY);
     // The card and the clear read the one row stored at discovery.
     let relics = IRelicsDispatcher { contract_address: d.games };
-    assert_eq!(relics.site_chest(site_key), Some(CHEST));
+    assert_eq!(relics.site_chest(site_key), Some(crate::army_relics::RuinReward::Chest(CHEST)));
     let initial = snforge_std::interact_with_state(
         d.games, || crate::logic::expeditions::expedition_site(site_key).unwrap(),
     );
@@ -530,7 +530,9 @@ fn frontier_ruin_clear_pays_its_stored_chest_into_the_realm_and_leaves_no_chest(
     let captured = execute_in_game(
         d,
         game_id,
-        Command::BattleGuard(crate::commands::Battle { attacker_id: key.explorer_id, defender_id: site }),
+        Command::BattleGuard(
+            crate::commands::Battle { attacker_id: key.explorer_id, defender_id: site, relic_slot: None },
+        ),
         361,
     );
     assert!(captured, "chest capture failed");
@@ -540,7 +542,7 @@ fn frontier_ruin_clear_pays_its_stored_chest_into_the_realm_and_leaves_no_chest(
     let tile = crate::geometry::tile_key(game_id, coord);
     assert!(snforge_std::interact_with_state(d.games, || crate::logic::map::occupancy(tile)).is_none());
     assert_site_removed(d, site_key);
-    assert_eq!(relics.site_chest(site_key), Some(CHEST));
+    assert_eq!(relics.site_chest(site_key), Some(crate::army_relics::RuinReward::Chest(CHEST)));
     let receipt = snforge_std::interact_with_state(
         d.games, || crate::logic::expeditions::expedition_site(site_key).unwrap().clear.unwrap(),
     );
@@ -628,7 +630,9 @@ fn beast_clear_payout(full: bool) {
         assert!(before + 250 * RESOURCE_PRECISION <= cap);
     }
     let xp = snforge_std::interact_with_state(d.games, || crate::logic::progression::require(key).xp);
-    let attack = Command::BattleGuard(crate::commands::Battle { attacker_id: key.explorer_id, defender_id: id });
+    let attack = Command::BattleGuard(
+        crate::commands::Battle { attacker_id: key.explorer_id, defender_id: id, relic_slot: None },
+    );
     assert!(execute_in_game(d, game_id, attack, 361));
     let site = snforge_std::interact_with_state(
         d.games, || crate::logic::expeditions::expedition_site(site_key).unwrap(),
@@ -676,7 +680,13 @@ fn an_exhausted_budget_never_funds_a_ruin_or_payout() {
     let (d, game_id, key) = setup_frontier_chests_with_rules(Some(rules));
     apply_ruin_depth_release(d, game_id);
     let context = crate::tests::context(d.games, game_id);
-    let raw_root = discovery_root(game_id, rules, 0, Some(any_chest()), crate::discovery::Discovery::Ruin(any_chest()));
+    let raw_root = discovery_root(
+        game_id,
+        rules,
+        0,
+        Some(any_chest()),
+        crate::discovery::Discovery::Ruin(crate::army_relics::RuinReward::Chest(any_chest())),
+    );
     let army = strong_frontier_army(d, game_id, key);
     let time = 360_u64;
     snforge_std::interact_with_state(
@@ -706,7 +716,9 @@ fn an_exhausted_budget_never_funds_a_ruin_or_payout() {
         !execute_in_game(
             d,
             game_id,
-            Command::BattleGuard(crate::commands::Battle { attacker_id: key.explorer_id, defender_id: site }),
+            Command::BattleGuard(
+                crate::commands::Battle { attacker_id: key.explorer_id, defender_id: site, relic_slot: None },
+            ),
             time + 1,
         ),
     );
@@ -768,7 +780,9 @@ fn frontier_closes_only_the_cleared_depth_and_starts_fresh_the_next_day() {
             d,
             game_id,
             Command::BattleGuard(
-                crate::commands::Battle { attacker_id: key.explorer_id, defender_id: first.entity_id },
+                crate::commands::Battle {
+                    attacker_id: key.explorer_id, defender_id: first.entity_id, relic_slot: None,
+                },
             ),
             362,
         ),
@@ -793,7 +807,9 @@ fn frontier_closes_only_the_cleared_depth_and_starts_fresh_the_next_day() {
             d,
             game_id,
             Command::BattleGuard(
-                crate::commands::Battle { attacker_id: key.explorer_id, defender_id: second.entity_id },
+                crate::commands::Battle {
+                    attacker_id: key.explorer_id, defender_id: second.entity_id, relic_slot: None,
+                },
             ),
             363,
         ),
@@ -815,7 +831,9 @@ fn frontier_closes_only_the_cleared_depth_and_starts_fresh_the_next_day() {
             d,
             game_id,
             Command::BattleGuard(
-                crate::commands::Battle { attacker_id: key.explorer_id, defender_id: second.entity_id },
+                crate::commands::Battle {
+                    attacker_id: key.explorer_id, defender_id: second.entity_id, relic_slot: None,
+                },
             ),
             364,
         ),
@@ -837,14 +855,22 @@ fn frontier_closes_only_the_cleared_depth_and_starts_fresh_the_next_day() {
             d,
             game_id,
             Command::BattleGuard(
-                crate::commands::Battle { attacker_id: key.explorer_id, defender_id: second.entity_id },
+                crate::commands::Battle {
+                    attacker_id: key.explorer_id, defender_id: second.entity_id, relic_slot: None,
+                },
             ),
             364,
         ),
     );
     assert_eq!(resources.resource_balance(lords) - before, chest.amount * RESOURCE_PRECISION);
     let moved = GameState { contract_address: d.games }.resolved_explorer(key).unwrap();
-    let root = discovery_root(game_id, rules, 0, Some(any_chest()), crate::discovery::Discovery::Ruin(any_chest()));
+    let root = discovery_root(
+        game_id,
+        rules,
+        0,
+        Some(any_chest()),
+        crate::discovery::Discovery::Ruin(crate::army_relics::RuinReward::Chest(any_chest())),
+    );
     let mut explored = false;
     for direction in 0_u8..6 {
         let tile = crate::geometry::tile_key(game_id, crate::geometry::neighbor(moved.coord, direction));
@@ -886,7 +912,9 @@ fn frontier_closes_only_the_cleared_depth_and_starts_fresh_the_next_day() {
             d,
             game_id,
             Command::BattleGuard(
-                crate::commands::Battle { attacker_id: fresh.explorer_id, defender_id: next.entity_id },
+                crate::commands::Battle {
+                    attacker_id: fresh.explorer_id, defender_id: next.entity_id, relic_slot: None,
+                },
             ),
             tomorrow + 2,
         ),
@@ -1444,7 +1472,11 @@ fn frontier_sites_persist_the_seeded_guard_and_initial_count() {
         for (discovery, category, offset) in array![
             (crate::discovery::Discovery::Camp, crate::taxonomy::CAMP_CATEGORY, 0_u32),
             (crate::discovery::Discovery::Rift, crate::taxonomy::RIFT_CATEGORY, 1),
-            (crate::discovery::Discovery::Ruin(any_chest()), crate::taxonomy::RUIN_CATEGORY, 2),
+            (
+                crate::discovery::Discovery::Ruin(crate::army_relics::RuinReward::Chest(any_chest())),
+                crate::taxonomy::RUIN_CATEGORY,
+                2,
+            ),
             (crate::discovery::Discovery::Beasts, crate::taxonomy::BEASTS_CATEGORY, 3),
         ] {
             let coord = crate::troops::Coord {
@@ -1653,7 +1685,9 @@ fn frontier_site_discovery_reads_home_knowledge_and_stores_the_shrine_reward() {
         let mut chosen = None;
         for sample in 0_u64..10000 {
             let seed: u256 = sample.into();
-            if crate::discovery::frontier(enabled, 0, 0, 0, 0, Some(any_chest()), seed) == expected {
+            if crate::discovery::frontier(
+                enabled, 0, 0, 0, 0, Some(crate::army_relics::RuinReward::Chest(any_chest())), seed,
+            ) == expected {
                 chosen = Some(seed);
                 break;
             }
@@ -1810,7 +1844,9 @@ fn legacy_clear_survives_release_application_and_other_depths_pay(first_depth: u
                 d,
                 game_id,
                 Command::BattleGuard(
-                    crate::commands::Battle { attacker_id: key.explorer_id, defender_id: ruin.entity_id },
+                    crate::commands::Battle {
+                        attacker_id: key.explorer_id, defender_id: ruin.entity_id, relic_slot: None,
+                    },
                 ),
                 timestamp + 2,
             ),
@@ -1851,7 +1887,9 @@ fn legacy_clear_survives_release_application_and_other_depths_pay(first_depth: u
                 d,
                 game_id,
                 Command::BattleGuard(
-                    crate::commands::Battle { attacker_id: key.explorer_id, defender_id: sibling.entity_id },
+                    crate::commands::Battle {
+                        attacker_id: key.explorer_id, defender_id: sibling.entity_id, relic_slot: None,
+                    },
                 ),
                 timestamp + 2,
             ),
@@ -2057,7 +2095,9 @@ fn legacy_recovery_fixture(allocated: u32) -> LegacyRecoveryFixture {
         execute_in_game(
             d,
             game_id,
-            Command::BattleGuard(crate::commands::Battle { attacker_id: key.explorer_id, defender_id: paid.entity_id }),
+            Command::BattleGuard(
+                crate::commands::Battle { attacker_id: key.explorer_id, defender_id: paid.entity_id, relic_slot: None },
+            ),
             361,
         ),
     );
@@ -2155,7 +2195,9 @@ fn legacy_recovery_command_cost_and_refusal_atomicity(allocated: u32, kind: u8) 
         Command::Move(crate::commands::Move { explorer_id: key.explorer_id, directions: array![2].span() })
     } else {
         Command::BattleGuard(
-            crate::commands::Battle { attacker_id: key.explorer_id, defender_id: fixture.cold.entity_id },
+            crate::commands::Battle {
+                attacker_id: key.explorer_id, defender_id: fixture.cold.entity_id, relic_slot: None,
+            },
         )
     };
     if kind == 2 {
@@ -2237,7 +2279,9 @@ fn legacy_recovery_command_cost_and_refusal_atomicity(allocated: u32, kind: u8) 
         command
     } else {
         Command::BattleGuard(
-            crate::commands::Battle { attacker_id: key.explorer_id, defender_id: fixture.warm.entity_id },
+            crate::commands::Battle {
+                attacker_id: key.explorer_id, defender_id: fixture.warm.entity_id, relic_slot: None,
+            },
         )
     };
     let (warm_applied, warm_gas) = measured_ruin_command(d, game_id, warm_command);

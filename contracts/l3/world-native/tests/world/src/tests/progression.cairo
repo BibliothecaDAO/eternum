@@ -206,9 +206,9 @@ fn reveals_and_clears_pay_their_xp() {
         d.games,
         || {
             crate::logic::progression::award_xp(
-                key, crate::progression::XpAward::Reveal(crate::troops::Coord { alt: false, x: 1, y: 1 }),
+                key, crate::progression::XpAward::Reveal(crate::troops::Coord { alt: false, x: 1, y: 1 }), 0,
             );
-            crate::logic::progression::award_xp(key, crate::progression::XpAward::Clear(90));
+            crate::logic::progression::award_xp(key, crate::progression::XpAward::Clear(90), 0);
         },
     );
     assert_eq!(read_progress(d, key).xp, 2 + 90);

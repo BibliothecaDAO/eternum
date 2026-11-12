@@ -447,6 +447,9 @@ pub fn store_relics(
             "invalid chest shares",
         );
         assert!(rules.is_empty(), "ruin chests replace timed relics");
+    } else if day_unit_seconds != 0 {
+        assert!(rules.is_empty(), "army relic loadouts replace resource relics");
+        assert!(mode_rules & crate::rules::DISCOVER_CHESTS == 0, "army relics have no LORDS chests");
     } else {
         assert!(rules.len() == 18, "all eighteen relic rules required");
         let mut total: u128 = 0;

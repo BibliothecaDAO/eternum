@@ -3,6 +3,7 @@ import type { NativePreset } from "../common/native-preset";
 import { FRONTIER_S1_PRESET_ID } from "../common/native-preset-modes";
 import { FRONTIER_DAY_UNIT_SECONDS } from "./clock";
 import { frontierPreset } from "./native";
+import { nativeCommandBits } from "../../../contracts/l3/world-native/schema/commands.gen";
 import {
   nativeResearchConstants as research,
   nativeRuleConstants as rules,
@@ -11,7 +12,12 @@ import {
 export const frontierSeasonOnePreset = {
   ...frontierPreset,
   id: FRONTIER_S1_PRESET_ID,
-  modeRules: frontierPreset.modeRules | rules.DISCOVER_SPIRES,
+  modeRules: (frontierPreset.modeRules | rules.DISCOVER_SPIRES) & ~rules.DISCOVER_CHESTS,
+  chests: null,
+  commandMask: frontierPreset.commandMask | BigInt(nativeCommandBits.ApplyRelic),
+  depths: frontierPreset.depths.map((depth, index) =>
+    index === 1 ? { ...depth, chest: { common: 0, uncommon: 5_000, rare: 2_800, epic: 1_500, legendary: 700 } } : depth,
+  ),
   research: [
     ...frontierPreset.research.filter(({ row }) => row !== research.ROW_DEPTH),
     { row: research.ROW_DEPTH, tier: 1, essenceCost: 10_000, laborCost: 0 },

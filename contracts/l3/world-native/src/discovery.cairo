@@ -10,7 +10,7 @@ pub enum Discovery {
     BitcoinMine,
     Camp,
     Rift,
-    Ruin: crate::relics::SiteChest,
+    Ruin: crate::army_relics::RuinReward,
     Beasts,
     Shrine,
     Well,
@@ -88,20 +88,20 @@ pub fn frontier(
     rift_bonus_bps: u32,
     sanctuaries_bonus_bps: u32,
     empty_reveals: u8,
-    ruin: Option<crate::relics::SiteChest>,
+    ruin: Option<crate::army_relics::RuinReward>,
     seed: u256,
 ) -> Discovery {
     let camp = Into::<u16, u128>::into(rules.camp_bps) * (10000 + camp_bonus_bps.into()) / 10000;
     let rift = Into::<u16, u128>::into(rules.rift_bps) * (10000 + rift_bonus_bps.into()) / 10000;
     let shrine = Into::<u16, u128>::into(rules.shrine_bps) * (10000 + sanctuaries_bonus_bps.into()) / 10000;
     let well = Into::<u16, u128>::into(rules.well_bps) * (10000 + sanctuaries_bonus_bps.into()) / 10000;
-    let (chest, ruin_weight): (crate::relics::SiteChest, u128) = match ruin {
-        Some(chest) => (chest, rules.ruin_bps.into()),
-        None => (crate::relics::SiteChest { tier: 0, amount: 0, reservation_day: 0 }, 0),
+    let (ruin_kind, ruin_weight): (Discovery, u128) = match ruin {
+        Some(reward) => (Discovery::Ruin(reward), rules.ruin_bps.into()),
+        None => (Discovery::None, 0),
     };
     let kinds = array![
         (Discovery::Beasts, rules.beasts_bps.into()), (Discovery::Camp, camp), (Discovery::Rift, rift),
-        (Discovery::Ruin(chest), ruin_weight), (Discovery::Shrine, shrine), (Discovery::Well, well),
+        (ruin_kind, ruin_weight), (Discovery::Shrine, shrine), (Discovery::Well, well),
     ];
     let mut total: u128 = 0;
     for (_, weight) in kinds.span() {
@@ -130,4 +130,11 @@ pub fn tile_occupier(discovery: Discovery) -> Option<u8> {
         Discovery::Chest => Some(crate::taxonomy::CHEST_OCCUPIER),
         _ => None,
     }
+}
+
+#[starknet::interface]
+pub trait IDiscoveryRoll<T> {
+    fn roll_expedition_discovery(
+        ref self: T, key: crate::map::TileKey, explorer_id: u64, seed: u256, context: crate::commands::ActionContext,
+    ) -> Discovery;
 }
