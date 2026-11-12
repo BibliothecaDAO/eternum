@@ -2469,10 +2469,6 @@ fn deep_has_one_fifty_by_fifty_map_and_no_private_depth_three_region() {
 
 #[test]
 fn aspect_activity_counts_homes_once_across_slot_order_reuse_and_rollover() {
-    use starknet::storage::{
-        StorageMapReadAccess, StorageMapWriteAccess, StoragePathEntry, StoragePointerReadAccess,
-        StoragePointerWriteAccess,
-    };
     let d = setup();
     let (game_id, _, category) = expedition_home(d);
     snforge_std::interact_with_state(
@@ -2583,6 +2579,7 @@ fn defeating_a_deep_beast_keeps_its_site_and_the_next_day_restores_the_same_guar
             let state = crate::state::write();
             let commitment = state.registrar.presets.read(state.games.games.entry(game_id).preset_id.read());
             state.presets.entry(commitment).deep_rules.write(Some(deep_rules_fixture()));
+            state.settlements.home_aspects.write((game_id, 1), 1);
             crate::logic::deep_sites::dispatcher(game_id).initialize_deep(game_id);
         },
     );
@@ -2618,6 +2615,11 @@ fn defeating_a_deep_beast_keeps_its_site_and_the_next_day_restores_the_same_guar
     let guards = IGuardsDispatcher { contract_address: d.games };
     let guard_key = GuardKey { game_id, structure_id: site_id, slot: 0 };
     assert_eq!(guards.guard(guard_key).troops.count, 0);
+    assert_eq!(
+        snforge_std::interact_with_state(d.games, || crate::logic::deep_guards::guard(key)),
+        Some(crate::deep::DeepGuard { site_id, slot: 0 }),
+    );
+    assert_eq!(troops.resolved_explorer(key).unwrap().coord, coord);
     assert!(!execute_in_game(d, game_id, command, 361));
     let occupied = snforge_std::interact_with_state(
         d.games, || crate::logic::map::occupancy(crate::geometry::tile_key(game_id, coord)),
@@ -2635,6 +2637,189 @@ fn defeating_a_deep_beast_keeps_its_site_and_the_next_day_restores_the_same_guar
             .unwrap()
             .day,
         1,
+    );
+    assert_eq!(
+        snforge_std::interact_with_state(
+            d.games, || crate::logic::map::occupancy(crate::geometry::tile_key(game_id, coord)),
+        )
+            .unwrap()
+            .entity_id,
+        site_id,
+    );
+}
+
+fn deep_joiner_fixture(
+    d: super::Deployment,
+    game_id: u32,
+    home: u64,
+    actor: starknet::ContractAddress,
+    coord: crate::troops::Coord,
+    aspect: u8,
+) -> ExplorerKey {
+    let explorer_id = snforge_std::interact_with_state(
+        d.games,
+        || {
+            let original = crate::logic::structures::record(ResourceKey { game_id, entity_id: 1 });
+            crate::logic::structures::StructureState::create(
+                ResourceKey { game_id, entity_id: home },
+                crate::structures::StructureRecord { owner: actor, ..original },
+            );
+            crate::state::write().settlements.home_aspects.write((game_id, home), aspect);
+            crate::entity_ids::allocate_home(game_id, home)
+        },
+    );
+    let key = ExplorerKey { game_id, explorer_id };
+    super::resource_commands::set_explorer_fixture(
+        d.games,
+        key,
+        crate::troops::ExplorerTroops {
+            owner: home,
+            coord,
+            troops: crate::troops::Troops { count: 3000 * RESOURCE_PRECISION, ..Default::default() },
+        },
+    );
+    snforge_std::interact_with_state(d.games, || crate::logic::army_days::create(key, 0));
+    start_cheat_caller_address(d.games, d.games);
+    IResourceOperationsDispatcher { contract_address: d.games }
+        .initialize_explorer_resources(
+            ResourceKey { game_id, entity_id: explorer_id },
+            3000 * RESOURCE_PRECISION,
+            crate::commands::resource_context(crate::tests::context(d.games, game_id)),
+        );
+    stop_cheat_caller_address(d.games);
+    key
+}
+
+#[test]
+fn deep_slots_accept_four_allied_players_refuse_duplicates_and_release_on_death_and_day_end() {
+    use crate::deep::IDeepSitesDispatcherTrait;
+    let d = setup();
+    let (game_id, preset, category) = expedition_home(d);
+    snforge_std::interact_with_state(
+        d.games,
+        || {
+            let state = crate::state::write();
+            let commitment = state.registrar.presets.read(state.games.games.entry(game_id).preset_id.read());
+            state.presets.entry(commitment).deep_rules.write(Some(deep_rules_fixture()));
+            crate::logic::deep_sites::dispatcher(game_id).initialize_deep(game_id);
+        },
+    );
+    let coord = crate::deep::site_coord(deep_rules_fixture(), crate::rules::DEEP_FOUNDATION, preset.settlement.spacing);
+    let site_id = snforge_std::interact_with_state(
+        d.games, || crate::state::read().deep.site_ids.read((game_id, crate::rules::DEEP_FOUNDATION)),
+    );
+    let beast_key = GuardKey { game_id, structure_id: site_id, slot: 0 };
+    snforge_std::interact_with_state(
+        d.games,
+        || {
+            let mut beast = crate::logic::guards::guard(beast_key);
+            beast.troops.count = 0;
+            crate::logic::guards::GuardState::save(beast_key, beast);
+        },
+    );
+    let mut armies = array![];
+    let mut players = array![];
+    for slot in 0_u8..4 {
+        let (actor, _) = super::deploy_player(100 + Into::<u8, felt252>::into(slot), super::GUARDIAN);
+        let key = deep_joiner_fixture(d, game_id, 100 + slot.into(), actor, crate::geometry::neighbor(coord, 0), 1);
+        let player = super::Deployment { actor, ..d };
+        assert!(
+            execute_in_game(
+                player,
+                game_id,
+                Command::InteractSite(crate::relics::InteractSite { explorer_id: key.explorer_id, coord }),
+                360 + 2 * slot.into(),
+            ),
+        );
+        assert_eq!(
+            snforge_std::interact_with_state(d.games, || crate::logic::deep_guards::guard(key)),
+            Some(crate::deep::DeepGuard { site_id, slot }),
+        );
+        assert_eq!(
+            GameState { contract_address: d.games }.resolved_explorer(key).unwrap().troops.count,
+            3000 * RESOURCE_PRECISION,
+        );
+        assert_eq!(GameState { contract_address: d.games }.resolved_explorer(key).unwrap().coord, coord);
+        assert!(
+            snforge_std::interact_with_state(
+                d.games,
+                || crate::logic::map::occupancy(
+                    crate::geometry::tile_key(game_id, crate::geometry::neighbor(coord, 0)),
+                ),
+            )
+                .is_none(),
+        );
+        assert!(
+            !execute_in_game(
+                player,
+                game_id,
+                Command::Move(crate::commands::Move { explorer_id: key.explorer_id, directions: array![0].span() }),
+                361 + 2 * slot.into(),
+            ),
+        );
+        armies.append(key);
+        players.append(player);
+    }
+    let (fifth_actor, _) = super::deploy_player(104, super::GUARDIAN);
+    let fifth = deep_joiner_fixture(d, game_id, 104, fifth_actor, crate::geometry::neighbor(coord, 0), 1);
+    let fifth_player = super::Deployment { actor: fifth_actor, ..d };
+    let join_fifth = Command::InteractSite(crate::relics::InteractSite { explorer_id: fifth.explorer_id, coord });
+    assert!(!execute_in_game(fifth_player, game_id, join_fifth, 368));
+    let first_player = *players.at(0);
+    let first = *armies.at(0);
+    assert!(
+        execute_in_game(
+            first_player,
+            game_id,
+            Command::ManageTroops(crate::troop_management::ManageTroops::RemoveExplorer(first.explorer_id)),
+            369,
+        ),
+    );
+    assert!(snforge_std::interact_with_state(d.games, || crate::logic::deep_guards::guard(first)).is_none());
+    assert!(GameState { contract_address: d.games }.resolved_explorer(first).is_none());
+    let duplicate_player = *players.at(1);
+    let duplicate = deep_joiner_fixture(
+        d, game_id, 200, duplicate_player.actor, crate::geometry::neighbor(coord, 1), 1,
+    );
+    assert!(
+        !execute_in_game(
+            duplicate_player,
+            game_id,
+            Command::InteractSite(crate::relics::InteractSite { explorer_id: duplicate.explorer_id, coord }),
+            370,
+        ),
+    );
+    let (rival, _) = super::deploy_player(999, super::GUARDIAN);
+    let enemy = deep_joiner_fixture(d, game_id, 201, rival, crate::geometry::neighbor(coord, 2), 2);
+    assert!(
+        !execute_in_game(
+            super::Deployment { actor: rival, ..d },
+            game_id,
+            Command::InteractSite(crate::relics::InteractSite { explorer_id: enemy.explorer_id, coord }),
+            371,
+        ),
+    );
+    for key in array![fifth, duplicate, enemy] {
+        assert!(snforge_std::interact_with_state(d.games, || crate::logic::deep_guards::guard(*key)).is_none());
+        assert_eq!(
+            GameState { contract_address: d.games }.resolved_explorer(*key).unwrap().troops.count,
+            3000 * RESOURCE_PRECISION,
+        );
+    }
+    assert!(execute_in_game(fifth_player, game_id, join_fifth, 372));
+    assert_eq!(
+        snforge_std::interact_with_state(d.games, || crate::logic::deep_guards::guard(fifth)),
+        Some(crate::deep::DeepGuard { site_id, slot: 0 }),
+    );
+    let tomorrow = day_start(d, game_id, 1);
+    assert!(execute_in_game(d, game_id, muster_command(category, 0), tomorrow + 1));
+    for key in armies.span() {
+        assert!(snforge_std::interact_with_state(d.games, || crate::logic::deep_guards::guard(*key)).is_none());
+        assert!(GameState { contract_address: d.games }.resolved_explorer(*key).is_none());
+    }
+    assert!(GameState { contract_address: d.games }.resolved_explorer(fifth).is_none());
+    assert_eq!(
+        IGuardsDispatcher { contract_address: d.games }.guard(beast_key).troops.count, 10000 * RESOURCE_PRECISION,
     );
     assert_eq!(
         snforge_std::interact_with_state(

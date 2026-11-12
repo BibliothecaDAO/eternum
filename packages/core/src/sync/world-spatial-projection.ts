@@ -301,10 +301,12 @@ const resolveStructureRenderable = (tile: Tile | undefined): StructureSpatialRen
 };
 
 const resolveArmyRenderable = (
-  store: Pick<NativeFactStore, "entityOccupancy">,
+  store: Pick<NativeFactStore, "entityOccupancy" | "get">,
   explorerTroops: NativeRows["ExplorerTroops"] | undefined,
 ): ArmySpatialRenderable | undefined => {
   if (!explorerTroops || explorerTroops.troops.count <= 0n) return undefined;
+  if (store.get("DeepGuard", { game_id: explorerTroops.game_id, explorer_id: explorerTroops.explorer_id }))
+    return undefined;
 
   const position = entityMapPosition(store, explorerTroops.game_id, explorerTroops.explorer_id);
   const { x: col, y: row, alt } = position;
@@ -616,6 +618,13 @@ export class WorldSpatialProjection {
         }
       }
       if (change.model === "ExplorerTroops") this.applyExplorerTroopsUpdate([change.current, change.previous]);
+      if (change.model === "DeepGuard") {
+        const key = change.current ?? change.previous;
+        if (key) {
+          const army = this.store.get("ExplorerTroops", { game_id: key.game_id, explorer_id: key.explorer_id });
+          this.armyIndex.update(safeInteger(key.explorer_id), resolveArmyRenderable(this.store, army));
+        }
+      }
     }
     for (const change of changes) {
       if (change.model === "Structure" || change.model === "ExpeditionSite" || change.model === "TileOccupancy") {

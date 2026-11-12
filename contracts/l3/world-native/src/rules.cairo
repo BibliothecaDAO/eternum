@@ -616,3 +616,5 @@ pub const DEEP_ALTAR: u8 = 2;
 pub const DEEP_SITE_COUNT: u8 = 3;
 
 pub const DEEP_ARRIVAL_Y: u32 = 5;
+
+pub const DEEP_GUARD_SLOTS: u8 = 4;

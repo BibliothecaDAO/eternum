@@ -1,6 +1,7 @@
 use starknet::ContractAddress;
-use crate::resources::ResourceKey;
+use crate::resources::{IResourceOperationsDispatcherTrait, IResourceOperationsLibraryDispatcher, ResourceKey};
 use crate::structures::Structure;
+use crate::troops::{IBattleResolutionDispatcherTrait, IBattleResolutionLibraryDispatcher};
 
 pub fn active_explorer(
     key: ExplorerKey, timestamp: u64, game_context: crate::commands::ExecutionContext,
@@ -38,6 +39,12 @@ pub fn authorized_explorer(
         );
     }
     explorer
+}
+pub fn field_explorer(
+    key: ExplorerKey, actor: ContractAddress, timestamp: u64, context: crate::commands::ExecutionContext,
+) -> ExplorerTroops {
+    crate::logic::deep_guards::assert_field(key);
+    authorized_explorer(key, actor, timestamp, context)
 }
 use starknet::storage::{StorageMapReadAccess, StoragePathEntry, StoragePointerReadAccess};
 use crate::troops::{ExplorerKey, ExplorerTroops};
@@ -143,6 +150,7 @@ pub mod TroopState {
         let previous = state.troops.explorers.entry((key.game_id, key.explorer_id)).owner.read();
         assert!(previous != 0, "missing explorer");
         write_home_membership(key, previous, 0);
+        crate::logic::deep_guards::remove(key);
         crate::logic::army_days::remove(key);
 
         // Owner zero marks absence; recreation overwrites the complete explorer.
@@ -1068,7 +1076,9 @@ pub mod troop_helpers {
             self
                 .resources_dispatcher(key.game_id)
                 .destroy_resources(ResourceKey { game_id: key.game_id, entity_id: key.explorer_id });
-            crate::logic::map::MapState::vacate(tile_key(key.game_id, explorer.coord), key.explorer_id);
+            if crate::logic::deep_guards::guard(key).is_none() {
+                crate::logic::map::MapState::vacate(tile_key(key.game_id, explorer.coord), key.explorer_id);
+            }
             crate::logic::troops::TroopState::destroy(key);
         }
     }
@@ -1093,7 +1103,6 @@ pub fn command_explorer(
 
 
 pub fn expire_explorer(key: ExplorerKey, mut explorer: ExplorerTroops, context: crate::commands::ExecutionContext) {
-    use crate::troops::{IBattleResolutionDispatcherTrait, IBattleResolutionLibraryDispatcher};
     let today = crate::days::day_of(context.game.unbox(), context.rules.unbox().day_unit_seconds, context.timestamp)
         .index;
     assert!(crate::logic::army_days::require(key) < today, "army has not expired");
@@ -1107,7 +1116,6 @@ pub fn expire_explorer(key: ExplorerKey, mut explorer: ExplorerTroops, context: 
 }
 
 fn return_homecoming(key: ExplorerKey, explorer: ExplorerTroops, context: crate::commands::ExecutionContext) {
-    use crate::resources::{IResourceOperationsDispatcherTrait, IResourceOperationsLibraryDispatcher};
     let Some(progress) = crate::logic::progression::read(key) else {
         return;
     };

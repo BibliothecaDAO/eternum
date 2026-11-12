@@ -1,3 +1,6 @@
+use starknet::storage::{
+    StorageMapReadAccess, StorageMapWriteAccess, StoragePathEntry, StoragePointerReadAccess, StoragePointerWriteAccess,
+};
 pub use world_test_support::tests::combat_actions::*;
 
 
@@ -768,10 +771,6 @@ fn preset_cooldown_keeps_blitz_at_sixty_seconds_and_allows_frontier_back_to_back
 
 #[test]
 fn frontier_armies_fight_only_in_the_deep_and_never_their_aspect() {
-    use starknet::storage::{
-        StorageMapReadAccess, StorageMapWriteAccess, StoragePathEntry, StoragePointerReadAccess,
-        StoragePointerWriteAccess,
-    };
     let (d, home, target, attacker, defender) = setup(false);
     let center = crate::deep::center(100);
     snforge_std::interact_with_state(

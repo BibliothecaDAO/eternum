@@ -204,6 +204,20 @@ pub mod RelicState {
             let context = crate::commands::execution_context(game_id, context);
             self.assert_command(game_id, context.timestamp, context);
             assert!(context.rules.unbox().day_unit_seconds != 0, "site requires expedition");
+            let deep_site = match crate::logic::map::occupancy(crate::geometry::tile_key(game_id, command.coord)) {
+                Some(occupied) => occupied.category == crate::taxonomy::DEEP_SITE_OCCUPIER,
+                None => false,
+            };
+            if deep_site {
+                crate::deep::IDeepSitesDispatcherTrait::join_deep_site(
+                    crate::logic::deep_sites::dispatcher(game_id),
+                    game_id,
+                    actor,
+                    command,
+                    crate::commands::action_context(context),
+                );
+                return;
+            }
             let key = ExplorerKey { game_id, explorer_id: command.explorer_id };
             let explorer = crate::logic::troops::command_explorer(key, Some(actor), context.timestamp, context);
             assert!(explorer.troops.count != 0, "explorer is dead");

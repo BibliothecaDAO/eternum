@@ -13,7 +13,14 @@ import { isTileOccupierUsableSite } from "../utils/map/hex";
 import { hasSingleTilePosition } from "../client/native-occupancy";
 import { gameSyncRegion, syncScalar, type GameSyncScope } from "./model-manifest";
 
-type ScopeInputModel = "ArmyDay" | "PlayerEntry" | "Structure" | "ExplorerTroops" | "TileOccupancy" | "ExpeditionSite";
+type ScopeInputModel =
+  | "DeepGuard"
+  | "ArmyDay"
+  | "PlayerEntry"
+  | "Structure"
+  | "ExplorerTroops"
+  | "TileOccupancy"
+  | "ExpeditionSite";
 export type ScopeRowReader = (
   model: ScopeInputModel,
   spacing: number,
@@ -30,7 +37,11 @@ export function deriveGameSyncScope(
 ): GameSyncScope {
   const position = (entity: unknown) => {
     if (!expedition) throw new Error("Position requires expedition rules");
-    const positions = read("TileOccupancy", expedition.spacing, [scopeLookup.occupancyOf(entity)]);
+    const guards = read("DeepGuard", expedition.spacing, [scopeLookup.guard(entity)]);
+    if (guards.length > 1) throw new Error("Multiple Deep memberships for army");
+    const positions = read("TileOccupancy", expedition.spacing, [
+      scopeLookup.occupancyOf(guards[0]?.value.site_id ?? entity),
+    ]);
     if (positions.length !== 1) throw new Error(`Expected one position for scope entity ${syncScalar(entity)}`);
     const row = positions[0].value;
     return { x: Number(row.col), y: Number(row.row), alt: row.alt === true };
@@ -87,6 +98,9 @@ export function deriveGameSyncScope(
     )
       entities.add(syncScalar(value.entity_id));
   }
+  for (const { value } of read("DeepGuard", spacing, [...entities].map(scopeLookup.guardsAt))) {
+    entities.add(syncScalar(value.explorer_id));
+  }
   for (const { value } of read("ExplorerTroops", spacing, [...entities].map(scopeLookup.army))) {
     entities.add(syncScalar(value.owner));
   }
@@ -122,12 +136,15 @@ export const scopeLookup = {
   occupancyIn: (region: string) => `TileOccupancy.region:${region}`,
   occupancyOf: (entity: unknown) => `TileOccupancy.entity:${syncScalar(entity)}`,
   armiesOf: (home: unknown) => `ExplorerTroops.owner:${syncScalar(home)}`,
+  guard: (entity: unknown) => `DeepGuard.entity:${syncScalar(entity)}`,
+  guardsAt: (entity: unknown) => `DeepGuard.site:${syncScalar(entity)}`,
   armyDay: (entity: unknown) => `ArmyDay.entity:${syncScalar(entity)}`,
   army: (entity: unknown) => `ExplorerTroops.entity:${syncScalar(entity)}`,
 };
 
 /** The lookups that can find this row; a region key needs the expedition spacing, and without one there is none. */
 export function scopeInputKeys(model: string, row: Record<string, unknown>, spacing: number | undefined): string[] {
+  if (model === "DeepGuard") return [scopeLookup.guard(row.explorer_id), scopeLookup.guardsAt(row.site_id)];
   if (model === "ArmyDay") return [scopeLookup.armyDay(row.explorer_id)];
   if (model === "PlayerEntry") return [scopeLookup.entryOf(row.player)];
   if (model === "ExplorerTroops") return [scopeLookup.armiesOf(row.owner), scopeLookup.army(row.explorer_id)];

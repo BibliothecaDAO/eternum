@@ -47,7 +47,11 @@ pub fn entity_coord(key: crate::resources::ResourceKey) -> Option<crate::troops:
         return None;
     }
     let state = crate::state::read();
-    crate::map::position_from_bits(state.map.entity_tiles.read((key.game_id, key.entity_id)))
+    let entity_id = match state.deep.guards.read((key.game_id, key.entity_id)) {
+        Some(guard) => guard.site_id,
+        None => key.entity_id,
+    };
+    crate::map::position_from_bits(state.map.entity_tiles.read((key.game_id, entity_id)))
 }
 
 pub fn tile(key: TileKey) -> Option<TileOpt> {

@@ -25,6 +25,7 @@ pub fn battle_beast(game_id: u32, actor: starknet::ContractAddress, command: Bat
     let target = ResourceKey { game_id, entity_id: command.defender_id };
     let site = site(target).expect('missing Deep site');
     let key = ExplorerKey { game_id, explorer_id: command.attacker_id };
+    crate::logic::deep_guards::assert_field(key);
     let mut attacker = crate::logic::troops::command_explorer(key, Some(actor), context.timestamp, context);
     let destination = crate::logic::map::entity_coord(target).expect('missing Deep site position');
     assert!(crate::geometry::adjacent(attacker.coord, destination), "Deep site requires adjacency");
@@ -53,6 +54,9 @@ pub fn battle_beast(game_id: u32, actor: starknet::ContractAddress, command: Bat
     crate::logic::guards::GuardState::save(guard_key, guard);
     crate::logic::combat::combat_troops(game_id)
         .finish_battle(key, attacker, attacker_before, crate::commands::action_context(context));
+    if attacker.troops.count != 0 && guard.troops.count == 0 {
+        crate::logic::deep_guards::join(key, attacker, target);
+    }
     emit_beast_battle(
         game_id,
         actor,
@@ -135,6 +139,7 @@ fn settle(game_id: u32, context: ExecutionContext) {
         let key = ResourceKey { game_id, entity_id: state.deep.site_ids.read((game_id, kind)) };
         let previous = site(key).expect('missing initialized Deep site');
         if previous.day != day.index {
+            crate::logic::deep_guards::expire(key, context);
             reset_beast(key, kind, day.index, rules.beast_count, day.start);
         }
     }
@@ -177,6 +182,23 @@ pub mod DeepSites {
     pub impl Sites<
         TContractState, +HasComponent<TContractState>, +Drop<TContractState>,
     > of crate::deep::IDeepSites<ComponentState<TContractState>> {
+        fn join_deep_site(
+            ref self: ComponentState<TContractState>,
+            game_id: u32,
+            actor: starknet::ContractAddress,
+            command: crate::relics::InteractSite,
+            context: crate::commands::ActionContext,
+        ) {
+            let context = crate::commands::execution_context(game_id, context);
+            crate::logic::combat::authorize(game_id, context);
+            let key = crate::troops::ExplorerKey { game_id, explorer_id: command.explorer_id };
+            let explorer = crate::logic::troops::command_explorer(key, Some(actor), context.timestamp, context);
+            let occupied = crate::logic::map::occupancy(crate::geometry::tile_key(game_id, command.coord))
+                .expect('missing Deep site tile');
+            crate::logic::deep_guards::join(
+                key, explorer, crate::resources::ResourceKey { game_id, entity_id: occupied.entity_id },
+            );
+        }
         fn initialize_deep(ref self: ComponentState<TContractState>, game_id: u32) {
             super::initialize(game_id);
         }

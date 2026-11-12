@@ -4,7 +4,8 @@ import { NativeFactStore } from "../native-fact-store";
 import { configManager } from "../../managers/config-manager";
 import { readDeepSites } from "./deep-sites";
 import { dayOf, readExpeditionRules } from "../../utils/expeditions";
-import { getTileAt } from "../../utils/tile";
+import { WorldSpatialProjection } from "../../sync/world-spatial-projection";
+import { entityMapPosition, getTileAt } from "../../utils/tile";
 import preset from "../../../../../contracts/l3/world-native/tests/fixtures/current-presets/preset-3.json";
 
 function fixture() {
@@ -127,4 +128,71 @@ it("refuses incomplete or duplicate site facts instead of hiding a missing catal
     { model: "DeepSite", key: "2", value: { game_id: 1, entity_id: 2, kind: deepSites[0].id, day: 0 } },
   ]);
   expect(() => readDeepSites(store, 350)).toThrow("Expected one Foundation site");
+});
+
+it("moves an army into a shared site slot atomically without copying its troop balance", () => {
+  const store = fixture();
+  const beast = store.require("Guard", { game_id: 1, structure_id: 1, slot: 0 });
+  const fieldTile = {
+    game_id: 1,
+    entity_id: 100,
+    category: TileOccupier.ExplorerKnightT1,
+    is_structure: false,
+    alt: false,
+    col: 49,
+    row: 360,
+  };
+  store.applyFacts([
+    { model: "Guard", key: "1", value: { ...beast, troops: { ...beast.troops, count: 0n } } },
+    {
+      model: "ExplorerTroops",
+      key: "100",
+      value: { game_id: 1, explorer_id: 100, owner: 10, troops: { ...beast.troops, count: 3000n } },
+    },
+    { model: "TileOccupancy", key: "100", value: fieldTile },
+  ]);
+  const projection = new WorldSpatialProjection({ store });
+  projection.start();
+  try {
+    expect(projection.getArmy(100)?.hexCoords).toEqual({ alt: false, col: 49, row: 360 });
+    store.applyFacts([
+      { model: "DeepGuard", key: "100", value: { game_id: 1, explorer_id: 100, site_id: 1, slot: 0 } },
+      { model: "TileOccupancy", key: "100", value: null },
+    ]);
+    projection.flush();
+    expect(projection.getArmy(100)).toBeUndefined();
+    expect(store.entityOccupancy(1, 100)).toBeUndefined();
+    expect(entityMapPosition(store, 1, 100)).toEqual({ alt: false, x: 50, y: 360 });
+    expect(
+      readDeepSites(store, 350)[0]?.guards.map(({ slot, army }) => ({
+        slot,
+        id: army.explorer_id,
+        count: army.troops.count,
+      })),
+    ).toEqual([{ slot: 0, id: 100n, count: 3000n }]);
+    store.applyFacts([
+      { model: "DeepGuard", key: "100", value: null },
+      { model: "TileOccupancy", key: "100", value: fieldTile },
+    ]);
+    projection.flush();
+    expect(projection.getArmy(100)?.hexCoords).toEqual({ alt: false, col: 49, row: 360 });
+    expect(readDeepSites(store, 350)[0]?.guards).toEqual([]);
+  } finally {
+    projection.dispose();
+  }
+});
+
+it("rejects duplicated guard slots rather than dropping an army from the site view", () => {
+  const store = fixture();
+  const troops = store.require("Guard", { game_id: 1, structure_id: 1, slot: 0 }).troops;
+  for (const explorer_id of [100, 101])
+    store.applyFacts([
+      {
+        model: "ExplorerTroops",
+        key: String(explorer_id),
+        value: { game_id: 1, explorer_id, owner: explorer_id, troops },
+      },
+      { model: "DeepGuard", key: String(explorer_id), value: { game_id: 1, explorer_id, site_id: 1, slot: 0 } },
+    ]);
+  expect(() => readDeepSites(store, 350)).toThrow("Invalid Deep guard slots");
 });

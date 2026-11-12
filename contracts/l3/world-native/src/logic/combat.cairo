@@ -668,10 +668,12 @@ pub fn resolve_battle(
 
 // Troops owns explorer authorisation; Combat calls it rather than inlining it, to keep its class small.
 fn authorized_explorer(key: ExplorerKey, actor: ContractAddress, context: ExecutionContext) -> ExplorerTroops {
+    crate::logic::deep_guards::assert_field(key);
     combat_troops(key.game_id).command_explorer(key, Some(actor), crate::commands::action_context(context))
 }
 
 fn active_explorer(key: ExplorerKey, context: ExecutionContext) -> ExplorerTroops {
+    crate::logic::deep_guards::assert_field(key);
     combat_troops(key.game_id).command_explorer(key, None, crate::commands::action_context(context))
 }
 

@@ -19,13 +19,14 @@ export function getTileAt(
   return tileFactsToTile(key, deepTerrain(store, key) ?? store.get("TileOpt", key), activeTileOccupancy(store, key));
 }
 
-/** The canonical tile occupied by a live entity; a missing position is an incomplete fact set. */
+/** The canonical map position, including an army garrisoned in a Deep site; a missing position is an incomplete fact set. */
 export function entityMapPosition(
-  store: Pick<NativeFactStore, "entityOccupancy">,
+  store: Pick<NativeFactStore, "entityOccupancy" | "get">,
   gameId: number,
   entityId: number | bigint,
 ): { x: number; y: number; alt: boolean } {
-  const tile = store.entityOccupancy(gameId, entityId);
+  const guard = store.get("DeepGuard", { game_id: gameId, explorer_id: BigInt(entityId) });
+  const tile = store.entityOccupancy(gameId, guard?.site_id ?? entityId);
   if (!tile) throw new Error(`Missing native position for entity ${gameId}:${entityId}`);
   return { x: tile.col, y: tile.row, alt: tile.alt };
 }

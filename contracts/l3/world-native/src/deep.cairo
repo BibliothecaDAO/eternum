@@ -67,8 +67,21 @@ pub fn validate(rules: DeepRules, spacing: u32) {
     }
 }
 
+#[derive(Copy, Drop, Serde, Debug, PartialEq, starknet::Store)]
+pub struct DeepGuard {
+    pub site_id: u64,
+    pub slot: u8,
+}
+
 #[starknet::interface]
 pub trait IDeepSites<T> {
+    fn join_deep_site(
+        ref self: T,
+        game_id: u32,
+        actor: starknet::ContractAddress,
+        command: crate::relics::InteractSite,
+        context: crate::commands::ActionContext,
+    );
     fn initialize_deep(ref self: T, game_id: u32);
     fn settle_deep(ref self: T, game_id: u32, context: crate::commands::ActionContext);
 }

@@ -1353,8 +1353,11 @@ against the visible army panel and purse. The live proof buys no tier. Season-en
 separate rehearsal steps in [the runbook](../../deploy/athanor/README.md#deposit-rehearsal-on-dev).
 
 Deep site contract/read path: a preset with `DeepRules` creates the Foundation, Quarry and Altar in the fixed Deep.
-`views.deepSites(timestamp)` reads their persistent IDs, positions, daily beast counts and Guard records. The existing
-`BattleGuard` command accepts their IDs; beating the beast leaves its site on the map. A new day restores its beast. The
-dedicated site selection and four-slot holding surface belongs to the S1 screen work; it is not available in the current
-playtest flow. Native regressions cover creation and battle/day rollover, while the core view tests cover the same-day
-losses and next-day read. Run the existing `pnpm --dir apps/game playtest` when that surface is wired.
+`views.deepSites(timestamp)` reads their persistent IDs, positions, daily beast counts and four guard slots. The
+existing `BattleGuard` command accepts their IDs; beating the beast puts the surviving winner into the first slot. An
+adjacent allied army joins through `InteractSite`. Each player may hold one slot per site; four allied players may hold
+it together. Held armies leave their field tiles and take the site's position. Death releases a slot, and a new day
+expires the guards and restores the beast. The dedicated selection and holding screen is not wired yet; combined guard
+combat, attrition and tick payouts are also pending. Native regressions cover creation, joins, refusals, death and day
+rollover. Core view and scope tests cover guard membership and rollback. Run the existing
+`pnpm --dir apps/game playtest` when the screen is wired.

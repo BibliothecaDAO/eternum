@@ -13,12 +13,16 @@ export interface DeepSiteView {
   day: number;
   beastTroops: bigint;
   guard: NativeRows["Guard"] | undefined;
+  guards: { slot: number; army: NativeRows["ExplorerTroops"] }[];
 }
 
 export function readDeepSites(store: NativeFactStore, timestamp: number): DeepSiteView[] {
   const gameId = configManager.getActiveGameId();
   const rules = store.get("DeepRules", { game_id: gameId });
-  if (!rules) return [];
+  if (!rules) {
+    if ([...store.inGame("DeepSite", gameId)].length) throw new Error("Deep sites are missing their preset rules");
+    return [];
+  }
   const calendar = readExpeditionRules(store, gameId);
   if (!calendar) throw new Error("Deep sites require expedition rules");
   const day = dayOf(calendar, timestamp);
@@ -42,6 +46,19 @@ export function readDeepSites(store: NativeFactStore, timestamp: number): DeepSi
       day: day.index,
       beastTroops: guard ? guard.troops.count : rules.beast_count,
       guard,
+      guards: current ? readGuards(store, gameId, site.entity_id) : [],
     };
+  });
+}
+
+function readGuards(store: NativeFactStore, gameId: number, siteId: bigint): DeepSiteView["guards"] {
+  const guards = [...store.inGame("DeepGuard", gameId)]
+    .filter((guard) => guard.site_id === siteId)
+    .sort((left, right) => left.slot - right.slot);
+  const slots = new Set<number>();
+  return guards.map(({ slot, explorer_id }) => {
+    if (slot >= nativeRuleConstants.DEEP_GUARD_SLOTS || slots.has(slot)) throw new Error("Invalid Deep guard slots");
+    slots.add(slot);
+    return { slot, army: store.require("ExplorerTroops", { game_id: gameId, explorer_id }) };
   });
 }

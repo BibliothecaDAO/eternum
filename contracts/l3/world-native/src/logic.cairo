@@ -13,6 +13,7 @@ pub mod combat;
 pub mod combat_domain;
 pub mod construction;
 pub mod deep;
+pub mod deep_guards;
 pub mod deep_sites;
 pub mod deposits;
 pub mod economy;

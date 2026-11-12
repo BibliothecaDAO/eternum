@@ -191,3 +191,27 @@ it("includes every Deep site and its beast guard while the player is still above
     expect(rowInGameSyncScope("Guard", { structure_id: site.value.entity_id, slot: 0 }, scope)).toBe(true);
   }
 });
+
+it("follows a garrison's site position and includes allied or enemy guard armies without their private maps", () => {
+  const held = [
+    ...rows.filter((row) => row.model !== "TileOccupancy"),
+    {
+      model: "TileOccupancy",
+      value: { entity_id: "900", category: TileOccupier.DeepSite, alt: false, col: 512, row: 3584 },
+    },
+    { model: "DeepGuard", value: { explorer_id: "101", site_id: "900", slot: 0 } },
+    { model: "DeepGuard", value: { explorer_id: "102", site_id: "900", slot: 1 } },
+  ];
+  const shared: ScopeRowReader = (model, spacing, keys) =>
+    held.filter(
+      (row) => row.model === model && scopeInputKeys(model, row.value, spacing).some((key) => keys.includes(key)),
+    );
+  const scope = deriveGameSyncScope("0xa", 350, expedition, shared);
+  expect(scope.expedition?.entities).toEqual(new Set(["1", "101", "900", "102", "2"]));
+  expect(scope.expedition?.regions).toEqual(new Set(["0:3", "0:0"]));
+  expect(scope.expedition?.realms).toEqual(new Set(["1"]));
+  expect(rowInGameSyncScope("ExplorerTroops", { explorer_id: "102", owner: "2" }, scope)).toBe(true);
+  expect(rowInGameSyncScope("ArmySlot", { structure_id: "2", epoch: 0 }, scope)).toBe(true);
+  expect(rowInGameSyncScope("TileOccupancy", { alt: false, col: 1600, row: 2700, entity_id: "102" }, scope)).toBe(true);
+  expect(rowInGameSyncScope("TileOpt", { alt: false, col: 1600, row: 2700 }, scope)).toBe(false);
+});

@@ -151,6 +151,7 @@ export function rowInGameSyncScope(model: string, row: Record<string, unknown>, 
 export const SCOPE_RULE_MODELS = ["SliceRules", "GameRegistry", "SettlementRules"] as const;
 /** Every model an expedition scope is derived from: a change to any other model never moves a scope. */
 export const SCOPE_INPUT_MODELS = [
+  "DeepGuard",
   "ArmyDay",
   ...SCOPE_RULE_MODELS,
   "PlayerEntry",
