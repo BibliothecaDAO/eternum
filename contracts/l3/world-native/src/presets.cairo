@@ -18,6 +18,7 @@ pub struct StructurePreset {
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]
 pub struct SettlementPreset {
     pub order_aspects: Span<u8>,
+    pub starting_armies: u8,
     pub mode: crate::settlement::SettlementMode,
     pub spacing: u32,
     pub depths: Span<crate::expeditions::DepthRules>,
@@ -33,6 +34,7 @@ pub struct WithdrawalPreset {
 }
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]
 pub struct EconomyPreset {
+    pub quests: Option<crate::quests::QuestRules>,
     pub labor: Option<crate::entry::LaborRules>,
     pub trade: crate::trade::TradeRules,
     pub banks: crate::market::BankRules,
@@ -57,13 +59,37 @@ pub struct PresetDefinition {
 
 pub fn validate(preset: PresetDefinition) {
     let rules = preset.rules;
+    if let Some(quests) = preset.economy.quests {
+        crate::quests::validate(quests);
+        assert!(
+            rules.day_unit_seconds != 0 && !preset.settlement.order_aspects.is_empty(),
+            "quests require Aspect expeditions",
+        );
+    }
     crate::aspects::validate(preset.settlement.order_aspects);
+    if preset.settlement.starting_armies != 0 {
+        assert!(
+            rules.entry_rule == crate::rules::ENTRY_OPEN && rules.day_unit_seconds != 0,
+            "starting armies require open expeditions",
+        );
+        assert!(
+            preset.settlement.starting_armies <= 6
+                && Into::<u8, u16>::into(preset.settlement.starting_armies) <= rules
+                    .troop_limit_config
+                    .settlement_armies,
+            "starting armies exceed deployment slots",
+        );
+    }
     assert!(
         preset.settlement.order_aspects.is_empty()
             || (rules.entry_rule == crate::rules::ENTRY_OPEN && rules.day_unit_seconds != 0),
         "Aspects require open expeditions",
     );
-    assert!(preset.economy.labor.is_some() == (rules.day_unit_seconds != 0), "labor rules require expeditions");
+    assert!(
+        (preset.economy.labor.is_some() || preset.economy.quests.is_some()) == (rules.day_unit_seconds != 0),
+        "home rewards require expeditions",
+    );
+    assert!(!(preset.economy.labor.is_some() && preset.economy.quests.is_some()), "choose one home reward rule");
     if let Some(labor) = preset.economy.labor {
         assert!(labor.amount != 0, "zero daily labor grant");
         assert!(labor.golden_amount != 0, "zero golden labor grant");

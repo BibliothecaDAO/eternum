@@ -94,6 +94,7 @@ pub fn definition(blitz: bool) -> PresetDefinition {
         },
         settlement: SettlementPreset {
             order_aspects: array![].span(),
+            starting_armies: 0,
             mode: if blitz {
                 SettlementMode::Triple
             } else {
@@ -116,6 +117,7 @@ pub fn definition(blitz: bool) -> PresetDefinition {
             },
         },
         economy: EconomyPreset {
+            quests: None,
             labor: None,
             progression: None,
             discovery: None,

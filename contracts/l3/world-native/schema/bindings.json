@@ -1,5 +1,5 @@
 {
-  "schemaIdentity": "121a8160e425a9569a9aea6fe720371d10753b503f6500a8c5ba4befa0c7dc38",
+  "schemaIdentity": "135505bb02d3f6933da9c0887b839f5519e48afa594fc8bf95374cb91cf21370",
   "commandAbi": [
     {
       "type": "interface",
@@ -310,6 +310,10 @@
         {
           "name": "WithdrawLords",
           "type": "world_native::relics::WithdrawLords"
+        },
+        {
+          "name": "ClaimDailyQuest",
+          "type": "world_native::quests::ClaimDailyQuest"
         }
       ]
     },
@@ -1462,6 +1466,20 @@
           "type": "core::integer::u128"
         }
       ]
+    },
+    {
+      "type": "struct",
+      "name": "world_native::quests::ClaimDailyQuest",
+      "members": [
+        {
+          "name": "home",
+          "type": "core::integer::u64"
+        },
+        {
+          "name": "day",
+          "type": "core::integer::u64"
+        }
+      ]
     }
   ],
   "events": [
@@ -1737,6 +1755,14 @@
     },
     {
       "name": "AspectRules",
+      "scope": "game"
+    },
+    {
+      "name": "QuestRules",
+      "scope": "game"
+    },
+    {
+      "name": "QuestProgress",
       "scope": "game"
     },
     {

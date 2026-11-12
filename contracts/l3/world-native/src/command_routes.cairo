@@ -11,7 +11,9 @@ pub struct CommandRoute {
 
 pub const SETTLE_BLITZ_ROSTER: u32 = 7;
 
-pub const COMMAND_ROUTES: [CommandRoute; 72] = [
+pub const COMMAND_COUNT: u32 = 73;
+
+pub const COMMAND_ROUTES: [CommandRoute; COMMAND_COUNT] = [
     CommandRoute { logic: 6, selector: selector!("create_explorer"), items_offset: None, batch: false },
     CommandRoute { logic: 16, selector: selector!("explore"), items_offset: None, batch: false },
     CommandRoute { logic: 12, selector: selector!("battle"), items_offset: Some(2), batch: false },
@@ -94,6 +96,7 @@ pub const COMMAND_ROUTES: [CommandRoute; 72] = [
     CommandRoute { logic: 15, selector: selector!("interact_site"), items_offset: None, batch: false },
     CommandRoute { logic: 10, selector: selector!("refill_stamina"), items_offset: None, batch: false },
     CommandRoute { logic: 10, selector: selector!("withdraw_lords"), items_offset: None, batch: false },
+    CommandRoute { logic: 10, selector: selector!("claim_daily_quest"), items_offset: None, batch: false },
 ];
 
 pub fn logic_class(
@@ -196,4 +199,5 @@ pub enum Command {
     InteractSite: crate::relics::InteractSite,
     RefillStamina: crate::relics::RefillStamina,
     WithdrawLords: crate::relics::WithdrawLords,
+    ClaimDailyQuest: crate::quests::ClaimDailyQuest,
 }

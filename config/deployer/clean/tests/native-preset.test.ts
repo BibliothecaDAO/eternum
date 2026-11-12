@@ -1101,3 +1101,27 @@ test("only Season 1 enables Aspects and its packed Order mapping follows the can
   for (const preset of Object.values(nativePresets).filter(({ id }) => id !== FRONTIER_S1_PRESET_ID))
     expect(preset.orderAspects).toEqual([]);
 });
+
+test("only Season 1 fields its starting troops in two armies", () => {
+  for (const presetId of [FRONTIER_PRESET_ID, FRONTIER_FIXTURE_PRESET_ID, FRONTIER_S1_PRESET_ID]) {
+    const preset = buildNativePreset(loadNativePresetConfiguration("madara.frontier", presetId), presetId);
+    expect(preset.settlement.starting_armies).toBe(presetId === FRONTIER_S1_PRESET_ID ? 2 : 0);
+  }
+});
+
+test("Season 1 replaces the operator claim with the seven-quest player reward", () => {
+  const preset = buildNativePreset(
+    loadNativePresetConfiguration("madara.frontier", FRONTIER_S1_PRESET_ID),
+    FRONTIER_S1_PRESET_ID,
+  );
+  expect(preset.economy.labor.isNone()).toBe(true);
+  expect(preset.economy.quests.unwrap()).toEqual({
+    base_counts: [1, 1, 1, 1, 1, 2, 15],
+    labor: 1000,
+    essence: 1500,
+    bonus_percent: 150,
+  });
+  expect(preset.rules.command_mask & BigInt(nativeCommandBits.ClaimDailyQuest)).not.toBe(0n);
+  for (const source of Object.values(nativePresets).filter(({ id }) => id !== FRONTIER_S1_PRESET_ID))
+    expect(source.dailyQuest).toBeNull();
+});

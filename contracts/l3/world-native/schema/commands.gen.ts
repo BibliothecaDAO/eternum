@@ -72,7 +72,8 @@ export const nativeCommandBits = {
   "SpendSkillPoint": "295147905179352825856",
   "InteractSite": "590295810358705651712",
   "RefillStamina": "1180591620717411303424",
-  "WithdrawLords": "2361183241434822606848"
+  "WithdrawLords": "2361183241434822606848",
+  "ClaimDailyQuest": "4722366482869645213696"
 } as const;
 export interface NativeCommandPayloads {
   CreateExplorer: { readonly slot: BigNumberish; readonly structure_id: BigNumberish; readonly category: BigNumberish; readonly tier: BigNumberish; readonly amount: BigNumberish; readonly direction: BigNumberish };
@@ -147,5 +148,6 @@ export interface NativeCommandPayloads {
   InteractSite: { readonly explorer_id: BigNumberish; readonly coord: { readonly alt: boolean; readonly x: BigNumberish; readonly y: BigNumberish } };
   RefillStamina: { readonly explorer_id: BigNumberish; readonly amount: BigNumberish };
   WithdrawLords: { readonly structure_id: BigNumberish; readonly amount: BigNumberish };
+  ClaimDailyQuest: { readonly home: BigNumberish; readonly day: BigNumberish };
 }
 export type NativeCommand = { [K in keyof NativeCommandPayloads]: { kind: K; value: NativeCommandPayloads[K] } }[keyof NativeCommandPayloads];

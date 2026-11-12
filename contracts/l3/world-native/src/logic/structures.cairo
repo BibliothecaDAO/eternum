@@ -981,6 +981,17 @@ pub mod StructuresLogic {
                         .grant_resource(
                             key, kind, amount + guards, timestamp, crate::commands::resource_context(game_context),
                         );
+                    if record.base.category == crate::taxonomy::REALM_CATEGORY {
+                        crate::troops::IStartingArmiesDispatcherTrait::deploy_starting_armies(
+                            crate::troops::IStartingArmiesLibraryDispatcher {
+                                class_hash: self.release.classes(key.game_id).troops.read(),
+                            },
+                            key,
+                            category,
+                            amount,
+                            crate::commands::action_context(game_context),
+                        );
+                    }
                     if guards != 0 {
                         self.spend(key, kind, guards, timestamp, crate::commands::resource_context(game_context));
                         crate::guards::IGuardsDispatcherTrait::add_starting_guard(

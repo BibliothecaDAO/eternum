@@ -248,6 +248,7 @@ function buildSettlement(config: Config, preset: ReturnType<typeof nativePresetF
     mode: new CairoCustomEnum({ [preset.settlementMode]: {} }),
     spacing: preset.spacing,
     order_aspects: [...preset.orderAspects],
+    starting_armies: preset.startingArmyCount,
     depths: preset.depths.map((depth) => ({
       reveal_percent: depth.revealPercent,
       site_guard_lower: depth.siteGuardLower,
@@ -333,7 +334,8 @@ function buildEconomy(
     throw new Error("Depth reveal XP exceeds u32");
   const labor = preset.labor;
   if (
-    (labor !== null) !== (preset.dayUnitSeconds !== 0) ||
+    (labor !== null || preset.dailyQuest !== null) !== (preset.dayUnitSeconds !== 0) ||
+    (labor !== null && preset.dailyQuest !== null) ||
     (labor !== null &&
       (!Number.isSafeInteger(labor.amount) ||
         labor.amount <= 0 ||
@@ -343,6 +345,15 @@ function buildEconomy(
   )
     throw new Error("Invalid Realm labor rules");
   return {
+    quests:
+      preset.dailyQuest === null
+        ? new CairoOption(CairoOptionVariant.None)
+        : new CairoOption(CairoOptionVariant.Some, {
+            base_counts: [...preset.dailyQuest.baseCounts],
+            labor: preset.dailyQuest.labor,
+            essence: preset.dailyQuest.essence,
+            bonus_percent: preset.dailyQuest.bonusPercent,
+          }),
     labor:
       preset.labor === null
         ? new CairoOption(CairoOptionVariant.None)

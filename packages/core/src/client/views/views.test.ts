@@ -1,4 +1,4 @@
-import { ContractAddress, getNeighborHexes, StructureType } from "@bibliothecadao/types";
+import { ContractAddress, dailyQuests, getNeighborHexes, StructureType } from "@bibliothecadao/types";
 import { hash } from "starknet";
 import { afterEach, describe, expect, it } from "vitest";
 import { ClientConfigManager, createGameViews, type GameViews } from "../../index";
@@ -14,6 +14,51 @@ const RIVAL = ContractAddress(0xdef);
 
 describe("game views", () => {
   afterEach(() => setBlockTimestampSource(null));
+
+  it("reads the day's quest, completion and collection only from native facts", () => {
+    const { store, views } = createHarness();
+    expect(views.dailyQuest(12, 100)).toBeUndefined();
+    seedFrontierRules(store, { startMainAt: 100, spacing: 10, seed: "5" });
+    seedStructure(store, { entityId: 12, owner: PLAYER, category: StructureType.Realm, x: 1, y: 1 });
+    store.applyFacts([
+      {
+        model: "QuestRules",
+        key: "0x201",
+        value: {
+          game_id: GAME_ID,
+          base_counts: dailyQuests.map(({ baseCount }) => baseCount),
+          labor: 1000n,
+          essence: 1500n,
+          bonus_percent: 150,
+        },
+      },
+    ]);
+    expect(views.dailyQuest(12, 99)).toBeUndefined();
+    expect(views.dailyQuest(12, 100)).toMatchObject({
+      id: 6,
+      day: 0,
+      target: 15n,
+      progress: 0n,
+      completed: false,
+      claimed: false,
+    });
+    store.applyFacts([
+      {
+        model: "QuestProgress",
+        key: "0x202",
+        value: { game_id: GAME_ID, home: 12, day: 0, progress: 15n, completed_level: 1 },
+      },
+    ]);
+    expect(views.dailyQuest(12, 100)).toMatchObject({ target: 15n, progress: 15n, completed: true, claimed: false });
+    store.applyFacts([
+      {
+        model: "LaborGrant",
+        key: "0x203",
+        value: { game_id: GAME_ID, home: 12, day: 0, account: PLAYER, amount: 1000n, essence: 1500n },
+      },
+    ]);
+    expect(views.dailyQuest(12, 100)?.claimed).toBe(true);
+  });
 
   it("lists a player's structures by category then entity id, seen as theirs", () => {
     const { store, views } = createHarness();
@@ -91,7 +136,7 @@ const createHarness = (): { store: NativeFactStore; views: GameViews } => {
   return { store, views: createGameViews(fakeClient(store), PLAYER, () => null) };
 };
 
-const fakeClient = (store: NativeFactStore): GameClient => ({ setup: { store } }) as GameClient;
+const fakeClient = (store: NativeFactStore): GameClient => ({ gameId: GAME_ID, setup: { store } }) as GameClient;
 
 const seedStructure = (
   store: NativeFactStore,
@@ -140,7 +185,7 @@ const seedStructure = (
   ]);
 
 /** A Frontier game's rules: hour-long day units from `startMainAt`, regions `spacing` tiles wide. */
-const seedFrontierRules = (store: NativeFactStore, input: { startMainAt: number; spacing: number }) =>
+const seedFrontierRules = (store: NativeFactStore, input: { startMainAt: number; spacing: number; seed?: string }) =>
   store.applyFacts([
     { model: "SliceRules", key: "0x100", value: { ...preset.rules, game_id: GAME_ID, day_unit_seconds: 3600 } },
     {
@@ -162,7 +207,7 @@ const seedFrontierRules = (store: NativeFactStore, input: { startMainAt: number;
         ready: true,
         dev_mode_on: false,
         end_grace_seconds: 0,
-        seed: "1",
+        seed: input.seed ?? "1",
       },
     },
   ] as never);

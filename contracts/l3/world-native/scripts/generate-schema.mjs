@@ -164,6 +164,14 @@ const researchConstants = Object.fromEntries(
   ]),
 );
 
+const questSource = await readFile(new URL("src/quests.cairo", root), "utf8");
+const questConstants = Object.fromEntries(
+  [...questSource.matchAll(/^pub const ([A-Z][A-Z0-9_]*): u8 = ([0-9]+);$/gm)].map(([, name, value]) => [
+    name,
+    Number(value),
+  ]),
+);
+
 const taxonomy = await readCheckedTaxonomy(fileURLToPath(new URL("src/", root)));
 // The schema identity hashes these four, and every shard release pins that identity. They leave the schema at its next
 // declared shape change; readers take the full taxonomy from the generated enums.
@@ -192,6 +200,7 @@ const productionAbi = Object.values(artifacts).flat();
 const schema = {
   ruleConstants,
   researchConstants,
+  questConstants,
   tileOccupierConstants,
   tilePackingConstants,
   logicClasses,
@@ -444,6 +453,7 @@ const declarations = [
   `export const nativeReleaseConstants = ${JSON.stringify(releaseConstants, null, 2)} as const;`,
   `export const nativeRuleConstants = ${JSON.stringify(ruleConstants, null, 2)} as const;`,
   `export const nativeResearchConstants = ${JSON.stringify(researchConstants, null, 2)} as const;`,
+  `export const nativeQuestConstants = ${JSON.stringify(questConstants, null, 2)} as const;`,
   typeScriptEnum(
     "NativeStructureCategory",
     "Structure categories named in src/taxonomy.cairo.",

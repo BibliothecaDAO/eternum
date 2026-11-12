@@ -7,6 +7,8 @@ mod entry;
 
 mod frontier_extension;
 mod hyperstructures;
+
+mod quests;
 mod realms;
 mod releases;
 mod season_lifecycle;

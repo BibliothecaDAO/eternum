@@ -80,7 +80,9 @@ pub struct CommandRoute {
 
 pub const SETTLE_BLITZ_ROSTER: u32 = ${routes.findIndex(({ name }) => name === "SettleBlitzRoster")};
 
-pub const COMMAND_ROUTES: [CommandRoute; ${routes.length}] = [
+pub const COMMAND_COUNT: u32 = ${routes.length};
+
+pub const COMMAND_ROUTES: [CommandRoute; COMMAND_COUNT] = [
 ${definitions.join("\n")}
 ];
 
