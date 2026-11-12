@@ -207,6 +207,35 @@ export interface HeraldFrontierDayRanks {
   entries: { address: string; structure_id: string; rank: number }[];
 }
 
+/** One Aspect on a Season 1 board: its hyperstructure, its Triumphs and its members. */
+export interface HeraldRaceAspect {
+  aspect: AspectId;
+  /** 1 for the finished hyperstructure, then by height, ties by Aspect. */
+  rank: number;
+  /** Its hyperstructure's height, in whole units. */
+  height: number;
+  /** Stages built, 0 to 5; the fifth finishes it. */
+  stage: number;
+  /** The game day each of the first four stages' Triumph falls on, stage 1 first; null for one not built. */
+  triumph_days: (number | null)[];
+  /** The homes that joined it, by Glory (most first), Glory in whole units. */
+  members: { address: string; structure_id: string; glory: number }[];
+}
+
+/**
+ * GET /games/:id/race, for a game that races its Aspects' hyperstructures (its preset has RaceRules): the four Aspects
+ * ranked. It stands beside the game's leaderboard, which keeps Season 0's board until H6 replaces its payout.
+ */
+export interface HeraldRaceBoard {
+  game_id: string;
+  mode: "race";
+  /** The height of one stage. */
+  stage_height: number;
+  /** The Aspect whose hyperstructure finished; null while the race runs or when the mist won. */
+  winner: AspectId | null;
+  aspects: HeraldRaceAspect[];
+}
+
 export type HeraldGameLeaderboard = HeraldLeaderboard | HeraldFrontierLeaderboard;
 
 /** Herald closes a game stream with this code when the game is finalized; the stream will never serve it again. */

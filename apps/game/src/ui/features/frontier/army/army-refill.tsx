@@ -7,12 +7,15 @@ import type { NativeRows } from "@bibliothecadao/eternum/game-client";
 
 import type { DockArmy } from "../hud/dock-armies";
 import { useRealmLords } from "../value/use-realm-lords";
+import { StaminaReading } from "../hud/army-token";
+import { lordsInGame } from "../value/lords-in-game";
 import { RefillButton, RefillConfirm, RefillPrice, StaminaRefill } from "./refill";
 
 /**
  * An army's Refill over the game's facts, priced at its missing points from the realm's LORDS: the order bar's button,
  * the army panel's priced refill or a phone's picked army's stamina; its confirm, and refill_stamina. Nothing for a bar
- * not known yet; for a full one, only the stamina.
+ * not known yet; for a full one only the stamina. In a game without LORDS in play there is no refill: the stamina is a
+ * reading, never a button, and the order bar and panel show none.
  */
 export const ArmyRefill = ({
   army,
@@ -33,6 +36,7 @@ export const ArmyRefill = ({
   const refilling = useInFlight("refill", army.explorerId) !== undefined;
   const stamina = army.stamina;
   if (!stamina) return null;
+  if (!lordsInGame()) return look === "stamina" ? <StaminaReading stamina={stamina} /> : null;
   const price = Math.ceil(stamina.max - stamina.current);
   const control = { held, refilling, onRefill: ask };
 

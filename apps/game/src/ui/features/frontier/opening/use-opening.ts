@@ -83,7 +83,9 @@ export const useOpeningInterface = (realm: NativeRows["Structure"] | null) => {
     if (met.length === 0) return;
     void keepMoments(owner, met, record.showAll || isReturning(record, reachedNow) ? [] : met);
   }, [owner, record, reachedNow]);
-  useEffect(() => () => useOpeningStore.setState({ opened: "all", lines: [] }), []);
+  useEffect(() => {
+    return () => useOpeningStore.setState({ opened: "all", lines: [] });
+  }, []);
 };
 
 /** The moments the player's own realm shows now; none while watching or visiting. */

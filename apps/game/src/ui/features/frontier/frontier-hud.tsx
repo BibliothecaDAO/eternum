@@ -58,6 +58,7 @@ import { FrontierRealms } from "./value/frontier-realms";
 import { FrontierPurse } from "./value/frontier-purse";
 import { useSpendLords } from "./value/use-spend-lords";
 import { useLinkWalletPrompt, useOwedLords } from "./value/link-wallet";
+import { lordsInGame } from "./value/lords-in-game";
 import { SeasonPayout } from "./value/season-payout";
 import { LordsPurse, PurseRow, RealmsChip } from "./value/lords-purse";
 import { useHomeKind } from "@/hooks/helpers/use-home-kind";
@@ -266,7 +267,10 @@ export const FrontierHud = ({
       )}
       {/* The card covers the HUD: Withdraw opens in its place; a board open as the season ends stays till closed. */}
       {surface !== "season" && surface !== "withdraw" && (
-        <SeasonOver realm={visit ? null : realm} withdraw={realm && !visit && <SeasonPayout realm={realm} />} />
+        <SeasonOver
+          realm={visit ? null : realm}
+          withdraw={realm && !visit && lordsInGame() && <SeasonPayout realm={realm} />}
+        />
       )}
       {realm && <DayDone rules={rules} realm={realm} visiting={Boolean(visit)} />}
       <BuildingsInFlight />
@@ -583,20 +587,18 @@ const FrontierRealmPanel = ({
       stores={stores}
       onHome={() => goToPlace(true)}
       {...(own && {
-        lords,
-        linkWalletLine,
         waiting,
         storeCards,
-        onWithdraw: () => onSurface("withdraw"),
         onRealms: () => onSurface("realms"),
+        ...(lordsInGame() && { lords, linkWalletLine, onWithdraw: () => onSurface("withdraw") }),
       })}
     />
   );
 };
 
 /**
- * Under the strip: the realm's LORDS, which open Withdraw, and beside them the Realms chip while the home's daily claim
- * has Labor or Essence waiting today.
+ * Under the strip: the realm's LORDS, which open Withdraw (in a game with LORDS in play), and beside them the Realms
+ * chip while the home's daily claim has Labor or Essence waiting today. Nothing when neither stands.
  */
 const RealmPurse = ({
   realm,
@@ -608,12 +610,16 @@ const RealmPurse = ({
   waiting: DailyClaimWaiting | null;
   onWithdraw: () => void;
   onRealms: () => void;
-}) => (
-  <PurseRow>
-    {waiting && <RealmsChip waiting={waiting} narrow onOpen={onRealms} />}
-    <OwnLordsPurse realm={realm} onOpen={onWithdraw} />
-  </PurseRow>
-);
+}) => {
+  const lords = lordsInGame();
+  if (!waiting && !lords) return null;
+  return (
+    <PurseRow>
+      {waiting && <RealmsChip waiting={waiting} narrow onOpen={onRealms} />}
+      {lords && <OwnLordsPurse realm={realm} onOpen={onWithdraw} />}
+    </PurseRow>
+  );
+};
 
 /** The player's own realm's LORDS, marked while the account has no linked wallet to receive them. */
 const OwnLordsPurse = ({ realm, onOpen }: { realm: NativeRows["Structure"]; onOpen: () => void }) => {
