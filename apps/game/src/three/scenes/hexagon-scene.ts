@@ -3,7 +3,7 @@ import { createWorldFxRuntime, type WorldFxRuntime } from "@/three/fx/world-fx-r
 import { useWorldAppearanceStore } from "@/hooks/store/use-world-appearance-store";
 import { burstParticles, momentSpeed, type Intensity } from "@/ui/motion/motion-scale";
 import { placeKeyLight } from "@/three/effects/key-light";
-import { configureWorldSunShadows } from "@/three/effects/world-sun-shadows";
+import { configureWorldSunShadows, fitSunShadowToView } from "@/three/effects/world-sun-shadows";
 import { useUIStore, type AppStore } from "@/hooks/store/use-ui-store";
 import { TERRAIN_DEEP_FOG_COLOR } from "@/three/terrain/terrain-fog-style";
 import { CAMERA_CONFIG, FOG_CONFIG } from "@/three/constants";
@@ -1019,7 +1019,8 @@ export abstract class HexagonScene {
       return;
     }
 
-    const { position, target } = this.mainDirectionalLight;
+    fitSunShadowToView(this.mainDirectionalLight, this.camera);
+    const { position, target, shadow } = this.mainDirectionalLight;
     this.shadowRefreshPolicy.observeSun([
       position.x,
       position.y,
@@ -1027,6 +1028,10 @@ export abstract class HexagonScene {
       target.position.x,
       target.position.y,
       target.position.z,
+      shadow.camera.left,
+      shadow.camera.right,
+      shadow.camera.top,
+      shadow.camera.bottom,
     ]);
     if (this.shadowRefreshPolicy.consumeRefresh(deltaTime * 1000)) {
       this.mainDirectionalLight.shadow.needsUpdate = true;
