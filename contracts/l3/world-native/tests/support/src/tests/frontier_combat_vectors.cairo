@@ -97,6 +97,7 @@ pub fn resolve_exchange(
             ref defender,
             CombatContext {
                 timestamp: exchange.timestamp,
+                day_unit_seconds: 0,
                 attacker_roll: 0,
                 defender_roll: 0,
                 attacker_biome: exchange.biome.into(),

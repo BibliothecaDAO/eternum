@@ -34,6 +34,7 @@ pub fn resolve(
     assert!(portion.count >= RESOURCE_PRECISION, "not enough troops to pillage");
     let context = CombatContext {
         timestamp,
+        day_unit_seconds: rules.day_unit_seconds,
         attacker_roll: 0,
         defender_roll: 0,
         attacker_biome: biome,

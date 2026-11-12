@@ -1,5 +1,39 @@
 pub use world_test_support::tests::combat_formula::*;
 
+#[test]
+fn expedition_knights_use_the_same_damage_against_armies_and_site_guards() {
+    let mut stamina = stamina_config();
+    stamina.stamina_attack_req = 30;
+    stamina.stamina_defense_req = 0;
+    let mut damage = damage_config();
+    damage.damage_scaling_factor = 36893488147419103232;
+    damage.damage_biome_bonus_num = 0;
+    for attacker_is_structure_guard in array![false, true] {
+        for defender_is_structure_guard in array![false, true] {
+            for defender_stamina in array![0_u64, 120] {
+                let mut attacker = test_troops(TroopType::Knight, TroopTier::T1, 1500, 120);
+                let mut defender = test_troops(TroopType::Knight, TroopTier::T1, 1000, defender_stamina);
+                attacker
+                    .attack_with_context(
+                        ref defender,
+                        CombatContext {
+                            day_unit_seconds: 14400,
+                            attacker_is_structure_guard,
+                            defender_is_structure_guard,
+                            ..context(Biome::Underground),
+                        },
+                        stamina,
+                        damage,
+                        120,
+                        0,
+                    );
+                assert_eq!(attacker.count, 1082 * RESOURCE_PRECISION);
+                assert_eq!(defender.count, 373 * RESOURCE_PRECISION);
+            }
+        }
+    }
+}
+
 
 #[test]
 fn ethereal_d20_adds_each_sides_roll_as_a_positive_damage_percentage() {

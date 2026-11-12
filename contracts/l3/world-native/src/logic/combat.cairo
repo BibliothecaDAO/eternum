@@ -587,6 +587,7 @@ pub fn combat_context(
     };
     CombatContext {
         timestamp: context.timestamp,
+        day_unit_seconds: context.rules.unbox().day_unit_seconds,
         attacker_roll,
         defender_roll,
         attacker_biome: biome,
