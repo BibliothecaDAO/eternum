@@ -21,6 +21,7 @@ import {
   FRONTIER_DEVCON_PRESET_ID,
   FRONTIER_FIXTURE_PRESET_ID,
   FRONTIER_PLAYGROUND_PRESET_ID,
+  FRONTIER_S1_PRESET_ID,
   nativeGameModeOf,
 } from "../../../source/common/native-preset-modes";
 import { orderLengths, seasonSeconds } from "../../../../packages/core/src/utils/days";
@@ -59,6 +60,23 @@ function configuration(preset: number) {
 }
 
 describe("native presets", () => {
+  test("Season 1 enables found spires and prices Spire lore once without changing earlier presets", () => {
+    const season = buildNativePreset(
+      loadNativePresetConfiguration("madara.frontier", FRONTIER_S1_PRESET_ID),
+      FRONTIER_S1_PRESET_ID,
+    );
+    expect(Number(season.rules.mode_rules) & nativeRuleConstants.DISCOVER_SPIRES).toBe(
+      nativeRuleConstants.DISCOVER_SPIRES,
+    );
+    expect(season.structures.research.filter(({ row }) => row === research.ROW_DEPTH)).toEqual([
+      { row: research.ROW_DEPTH, tier: 1, price: { essence: 10_000n * BigInt(RESOURCE_PRECISION), labor: 0n } },
+    ]);
+    for (const id of [FRONTIER_PRESET_ID, FRONTIER_DEVCON_PRESET_ID]) {
+      const previous = buildNativePreset(loadNativePresetConfiguration("madara.frontier", id), id);
+      expect(Number(previous.rules.mode_rules) & nativeRuleConstants.DISCOVER_SPIRES).toBe(0);
+      expect(previous.structures.research.filter(({ row }) => row === research.ROW_DEPTH)).toHaveLength(3);
+    }
+  });
   test("the mainnet deployment plan registers only the selected economic preset", async () => {
     const log = spyOn(console, "log").mockImplementation(() => {});
     try {

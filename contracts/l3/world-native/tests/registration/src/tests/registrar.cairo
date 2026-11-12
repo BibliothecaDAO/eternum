@@ -1,6 +1,31 @@
 pub use world_test_support::tests::registrar::*;
 use crate::tests::army_merge::{progress, slot, timers, write_progress};
 
+#[test]
+fn a_preset_can_price_spire_lore_once_without_three_depth_purchases() {
+    let d = setup();
+    let (preset_id, preset) = super::preset_projection::current_definition("frontier-s1");
+    registry(d).register_preset(preset_id, preset);
+    assert_eq!(registry(d).preset_commitment(preset_id), crate::presets::commitment(preset));
+}
+
+#[test_case(name: "missing_first_tier", 1)]
+#[test_case(name: "missing_middle_tier", 2)]
+#[feature("safe_dispatcher")]
+fn shortened_research_rows_still_require_a_contiguous_ladder(missing_tier: u8) {
+    let d = setup();
+    let (preset_id, mut preset) = super::preset_projection::current_definition("frontier-s1");
+    let mut prices = array![];
+    for entry in preset.structures.research {
+        if *entry.row != crate::research::ROW_FARM || *entry.tier != missing_tier {
+            prices.append(*entry);
+        }
+    }
+    preset.structures.research = prices.span();
+    assert!(safe(d, super::authority()).register_preset(preset_id, preset).is_err());
+    assert_eq!(registry(d).preset_commitment(preset_id), 0);
+}
+
 
 #[test]
 #[feature("safe_dispatcher")]

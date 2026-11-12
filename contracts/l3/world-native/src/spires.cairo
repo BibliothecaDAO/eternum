@@ -1,4 +1,33 @@
+use crate::rules::SPIRE_REVEAL_LIMIT;
 use crate::troops::Coord;
+
+#[derive(Copy, Drop, Serde, Debug, PartialEq)]
+pub struct ExpeditionSpireKey {
+    pub game_id: u32,
+    pub structure_id: u64,
+    pub epoch: u64,
+    pub depth: u8,
+}
+
+#[derive(Copy, Drop, Serde, Debug, PartialEq)]
+pub struct ExpeditionSpire {
+    pub reveals: u8,
+    pub location: Option<Coord>,
+}
+
+pub fn discover(previous: ExpeditionSpire, coord: Coord, seed: u256) -> ExpeditionSpire {
+    if previous.location.is_some() {
+        return previous;
+    }
+    let reveals = previous.reveals + 1;
+    assert!(reveals <= SPIRE_REVEAL_LIMIT, "spire discovery exhausted");
+    let found = crate::random::range(seed, 0x5350495245, SPIRE_REVEAL_LIMIT.into()) < reveals.into();
+    ExpeditionSpire { reveals, location: if found {
+        Some(coord)
+    } else {
+        None
+    } }
+}
 
 #[derive(Copy, Drop, Serde, Debug, PartialEq, starknet::Store)]
 pub struct SpireLayout {

@@ -47,6 +47,7 @@ pub mod season;
 pub mod settlement;
 pub mod settlement_domain;
 pub mod shrines;
+pub mod spires;
 pub mod stories;
 pub mod structures;
 

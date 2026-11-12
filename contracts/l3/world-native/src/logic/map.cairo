@@ -361,6 +361,11 @@ pub mod MapLogic {
     }
     #[abi(embed_v0)]
     impl FrontierDiscovery of crate::expeditions::IFrontierDiscovery<ContractState> {
+        fn expedition_spire(
+            self: @ContractState, key: crate::spires::ExpeditionSpireKey,
+        ) -> Option<crate::spires::ExpeditionSpire> {
+            crate::logic::spires::read(key)
+        }
         fn frontier_discovery_rules(
             self: @ContractState, game_id: u32,
         ) -> Option<crate::expeditions::FrontierDiscoveryRules> {
@@ -427,6 +432,20 @@ pub mod MapLogic {
                     crate::logic::settlement::rules(key.game_id).spacing,
                 ),
             };
+            let depth = crate::logic::expeditions::depth_at(
+                key.game_id, Coord { alt: key.alt, x: key.col, y: key.row },
+            );
+            if crate::logic::spires::discover_on_reveal(
+                crate::spires::ExpeditionSpireKey {
+                    game_id: key.game_id, structure_id: home, epoch: counter.epoch, depth,
+                },
+                Coord { alt: key.alt, x: key.col, y: key.row },
+                learned,
+                context.rules.unbox().mode_rules,
+                seed,
+            ) {
+                return crate::discovery::Discovery::Spire;
+            }
             let day = crate::logic::expeditions::discovery(counter)
                 .unwrap_or(crate::expeditions::ExpeditionDiscovery { empty_reveals: 0, ruin_cleared: false });
             if !key.alt
@@ -447,9 +466,6 @@ pub mod MapLogic {
                     return crate::discovery::Discovery::Chest;
                 }
             }
-            let depth = crate::logic::expeditions::depth_at(
-                key.game_id, Coord { alt: key.alt, x: key.col, y: key.row },
-            );
             let ruin = if crate::logic::expeditions::ruin_cleared_at(counter, depth) {
                 None
             } else {

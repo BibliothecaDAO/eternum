@@ -3,6 +3,24 @@
 export const factWireTypes = [
   {
     type: "struct",
+    name: "world_native::spires::ExpeditionSpireKey",
+    members: [
+      { name: "game_id", type: "core::integer::u32" },
+      { name: "structure_id", type: "core::integer::u64" },
+      { name: "epoch", type: "core::integer::u64" },
+      { name: "depth", type: "core::integer::u8" },
+    ],
+  },
+  {
+    type: "struct",
+    name: "world_native::spires::ExpeditionSpire",
+    members: [
+      { name: "reveals", type: "core::integer::u8" },
+      { name: "location", type: "core::option::Option::<world_native::troops::Coord>" },
+    ],
+  },
+  {
+    type: "struct",
     name: "world_native::settlement::SettlementPool",
     members: [
       { name: "opened", type: "core::integer::u32" },
@@ -774,6 +792,13 @@ export function defineFactModels({ struct, model: declare }) {
         value: "zero",
         meaning: "No empty player reveals in this expedition yet.",
       };
+    if (row.name === "ExpeditionSpire")
+      row.absence = {
+        parent: "Structure",
+        parentKeys: { entity_id: "structure_id" },
+        value: "zero",
+        meaning: "No reveal with Spire lore on this layer of this day's expedition yet.",
+      };
     if (row.name === "ArmySlot")
       row.absence = {
         parent: "Structure",
@@ -887,6 +912,7 @@ export function defineFactModels({ struct, model: declare }) {
       struct("expeditions::ExpeditionDiscoveryKey"),
       struct("expeditions::ExpeditionDiscovery"),
     ),
+    model("ExpeditionSpire", "game", struct("spires::ExpeditionSpireKey"), struct("spires::ExpeditionSpire")),
     model(
       "DepositSource",
       "game",
@@ -1470,6 +1496,7 @@ export const syncScopes = {
   RelicChest: shared,
   ArmyProgress: { entities: ["explorer_id"] },
   ExpeditionDiscovery: { realms: ["structure_id"], epoch: "epoch" },
+  ExpeditionSpire: { realms: ["structure_id"], epoch: "epoch" },
   ArmySlot: { realms: ["structure_id"], epoch: "epoch" },
   ExplorerTroops: { entities: ["explorer_id"] },
   Guard: { entities: ["structure_id"] },

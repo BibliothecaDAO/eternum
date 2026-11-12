@@ -6,6 +6,8 @@ export const FRONTIER_ACCELERATED_PRESET_ID = 101;
 export const FRONTIER_PRESET_ID = 5;
 /** Frontier's three-times-speed Devcon season; registered separately from normal-speed seasons. */
 export const FRONTIER_DEVCON_PRESET_ID = 6;
+/** Season 1's rules; registered separately from the earlier Frontier seasons. */
+export const FRONTIER_S1_PRESET_ID = 7;
 /** Immutable Frontier preset used by the committed contract fixtures. */
 export const FRONTIER_FIXTURE_PRESET_ID = 104;
 /**
@@ -24,6 +26,7 @@ const NATIVE_PRESET_MODES: Readonly<Record<number, GameType>> = {
   4: "duel",
   [FRONTIER_PRESET_ID]: "frontier",
   [FRONTIER_DEVCON_PRESET_ID]: "frontier",
+  [FRONTIER_S1_PRESET_ID]: "frontier",
   [FRONTIER_ACCELERATED_PRESET_ID]: "frontier",
   // The first playtest's preset; registered on shard A and still played by the game created from it.
   102: "frontier",
