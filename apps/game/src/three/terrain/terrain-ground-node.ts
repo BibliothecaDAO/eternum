@@ -72,7 +72,8 @@ export const hexReach = (fromMiddle: Node<"vec2">): Node<"float"> => {
 
 /**
  * Small things strewn on the ground, each a hex of `size` in one cell of a grid `fine` cells to a unit, a `share` of
- * the cells holding one. x: 1 inside one. y: a number of its own.
+ * the cells holding one. x: 1 inside one. y: a number of its own inside one, 0 outside, so the grid of cells never
+ * shows where nothing is strewn.
  */
 const strewn = (at: Node<"vec2">, fine: number, share: Node<"float"> | number, size: Node<"float"> | number) => {
   const cell = at.mul(fine).floor();
@@ -82,7 +83,7 @@ const strewn = (at: Node<"vec2">, fine: number, share: Node<"float"> | number, s
     .add(vec2(hash3(lot.mul(1.3)), hash3(lot.mul(2.9))).mul(0.5))
     .div(fine);
   const inside = step(hexReach(at.sub(middle)).mul(fine), size).mul(step(hash3(lot.mul(5.1)), share));
-  return vec2(inside, hash3(lot.mul(7.7)));
+  return vec2(inside, hash3(lot.mul(7.7)).mul(inside));
 };
 
 /** The texel of the biome map that holds the hex a point lies in: its render hex, wrapped as the map writes it. */
