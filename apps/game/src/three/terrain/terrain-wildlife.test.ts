@@ -557,11 +557,37 @@ describe("a hunt within a frame", () => {
     expect(herd.every((creature) => creature === heirs[0] || creature.leader === heirs[0].id)).toBe(true);
   });
 
-  it("hunts wherever the map lies, through long days, without a frame that throws", () => {
+  it("hunts wherever the map lies, through long days: a hunt ends in a catch, animals walk, herds keep a leader", () => {
     for (let offset = 1; offset <= 16; offset += 1) {
       const population = new BiomeCreaturePopulation();
       population.sync(huntingGround().map((cell) => ({ ...cell, col: cell.col + offset, row: cell.row + offset })));
-      for (let frame = 0; frame < 12_000; frame += 1) population.update(0.05);
+      const species = new Set([...population.creatures.values()].map((creature) => creature.species));
+      expect(species).toContain("bengal-tiger");
+      expect(species).toContain("mountain-goat");
+      let hunted = false;
+      let caught = false;
+      for (let frame = 0; frame < 12_000; frame += 1) {
+        population.update(0.05);
+        if (hunted && caught) continue;
+        for (const creature of population.creatures.values()) {
+          hunted ||= creature.hunt !== null;
+          caught ||= creature.caughtBy !== null;
+        }
+      }
+      expect({ offset, hunted, caught }).toEqual({ offset, hunted: true, caught: true });
+      const survivors = [...population.creatures.values()];
+      expect(survivors.length).toBeGreaterThan(0);
+      for (const creature of survivors) {
+        const leader = creature.leader === null ? null : population.creatures.get(creature.leader);
+        expect({
+          offset,
+          id: creature.id,
+          placed: Number.isFinite(creature.x) && Number.isFinite(creature.z),
+          // It walked, or, boxed in by other herds' ground, its herd's leader kept looking for a way.
+          walkedOrLooked: creature.stride > 0 || (leader ?? creature).steps > 0,
+          followsALeaderOfItsKind: leader === null || (leader?.leader === null && leader.species === creature.species),
+        }).toEqual({ offset, id: creature.id, placed: true, walkedOrLooked: true, followsALeaderOfItsKind: true });
+      }
     }
   }, 60_000);
 
