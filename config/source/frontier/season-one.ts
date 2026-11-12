@@ -14,7 +14,13 @@ export const frontierSeasonOnePreset = {
   id: FRONTIER_S1_PRESET_ID,
   modeRules: (frontierPreset.modeRules | rules.DISCOVER_SPIRES) & ~rules.DISCOVER_CHESTS,
   chests: null,
-  commandMask: frontierPreset.commandMask | BigInt(nativeCommandBits.ApplyRelic),
+  commandMask:
+    (frontierPreset.commandMask | BigInt(nativeCommandBits.ApplyRelic)) &
+    ~(
+      BigInt(nativeCommandBits.OpenRelicChest) |
+      BigInt(nativeCommandBits.RefillStamina) |
+      BigInt(nativeCommandBits.WithdrawLords)
+    ),
   depths: frontierPreset.depths.map((depth, index) =>
     index === 1 ? { ...depth, chest: { common: 0, uncommon: 5_000, rare: 2_800, epic: 1_500, legendary: 700 } } : depth,
   ),

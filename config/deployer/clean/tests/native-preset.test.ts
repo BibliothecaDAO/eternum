@@ -96,6 +96,16 @@ describe("native presets", () => {
       expect(previous.structures.research.filter(({ row }) => row === research.ROW_DEPTH)).toHaveLength(3);
     }
   });
+  test("Season 1 has no in-game LORDS commands while earlier presets retain them", () => {
+    const lordsCommands = ["OpenRelicChest", "RefillStamina", "WithdrawLords"] as const;
+    for (const id of [FRONTIER_S1_PRESET_ID, FRONTIER_PRESET_ID, FRONTIER_DEVCON_PRESET_ID]) {
+      const preset = buildNativePreset(loadNativePresetConfiguration("madara.frontier", id), id);
+      for (const command of lordsCommands)
+        expect((preset.rules.command_mask & BigInt(nativeCommandBits[command])) !== 0n).toBe(
+          id !== FRONTIER_S1_PRESET_ID,
+        );
+    }
+  });
   test("the mainnet deployment plan registers only the selected economic preset", async () => {
     const log = spyOn(console, "log").mockImplementation(() => {});
     try {
