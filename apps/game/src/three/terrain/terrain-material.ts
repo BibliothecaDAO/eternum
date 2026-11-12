@@ -13,6 +13,7 @@ import {
   fwidth,
   mix,
   normalLocal,
+  output,
   positionLocal,
   positionWorld,
   positionViewDirection,
@@ -22,6 +23,7 @@ import {
   uniform,
   vec2,
   vec3,
+  vec4,
 } from "three/tsl";
 import { MeshPhysicalNodeMaterial, MeshStandardNodeMaterial } from "three/webgpu";
 
@@ -190,6 +192,17 @@ function createTerrainWaterFoam(
   return shore.mul(surfZone.mul(breakerBand).mul(breakup).add(shorelineWash)).clamp(0, 1);
 }
 
+/** A pool of light keeps something of its own hue on any ground: on yellow grass a pink light would read orange. */
+const LIGHT_HUE_KEPT = 0.15;
+
+/**
+ * The light a fire or an orb throws on the ground, added to the lit ground as it is drawn. It stays out of the glow the
+ * finish blooms: a pool lies on the ground instead of spreading into a haze over everything round it.
+ */
+function groundLightPool(albedo: Node<"vec3">, light: Node<"vec3">): Node<"vec3"> {
+  return albedo.add(LIGHT_HUE_KEPT).mul(light);
+}
+
 /**
  * The land's ground: each biome painted by its own rules, its frontiers wandering off the hexes' edges and carrying
  * something of each side across (`groundSurface`), read from the biome of every hex the terrain draws.
@@ -219,7 +232,8 @@ export function createTerrainGroundMaterial(
   // The ground is painted to be read as it is: the lift that keeps flat vertex colour readable would flatten it.
   material.colorNode = withSurfaceBasalt(drawHexGrid(albedo));
   material.roughnessNode = mix(attribute<"float">("terrainRoughness", "float").clamp(0.7, 1), 0.35, gloss);
-  material.emissiveNode = glow.mul(notBasalt).add(albedo.mul(groundLights.at(positionWorld)));
+  material.emissiveNode = glow.mul(notBasalt);
+  material.outputNode = output.add(vec4(groundLightPool(albedo, groundLights.at(positionWorld)), 0));
   material.normalNode = transformNormalToView(normalLocal.add(vec3(slope.x.negate(), 0, slope.y.negate())).normalize());
   return material;
 }
