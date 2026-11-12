@@ -1,5 +1,5 @@
 import { getBlockTimestamp } from "../utils/timestamp";
-import { deepTiles } from "../utils/deep";
+import { currentArmy, deepTiles } from "../utils/deep";
 import { safeInteger } from "../utils/safe-integer";
 import type { ID, Tile, TroopTier, TroopType } from "@bibliothecadao/types";
 import { TileOccupier } from "@bibliothecadao/types";
@@ -312,7 +312,7 @@ const resolveArmyRenderable = (
   store: Pick<NativeFactStore, "entityOccupancy" | "get">,
   explorerTroops: NativeRows["ExplorerTroops"] | undefined,
 ): ArmySpatialRenderable | undefined => {
-  if (!explorerTroops || explorerTroops.troops.count <= 0n) return undefined;
+  if (!explorerTroops || currentArmy(store, explorerTroops).troops.count <= 0n) return undefined;
   if (!isArmyCurrent(store, explorerTroops.game_id, explorerTroops.explorer_id)) return undefined;
   if (store.get("DeepGuard", { game_id: explorerTroops.game_id, explorer_id: explorerTroops.explorer_id }))
     return undefined;
@@ -564,7 +564,7 @@ export class WorldSpatialProjection {
   private readonly armyListeners = new Set<ArmyProjectionListener>();
   private readonly tileListeners = new Set<TileProjectionListener>();
   private unsubscribe: (() => void) | null = null;
-  private nextCalendarBoundary = Infinity;
+  private nextTimeRefresh = Infinity;
 
   constructor({ store, bucketSize = DEFAULT_SPATIAL_BUCKET_SIZE }: WorldSpatialProjectionOptions) {
     if (!Number.isFinite(bucketSize) || bucketSize <= 0) {
@@ -633,7 +633,7 @@ export class WorldSpatialProjection {
         }
       }
       if (change.model === "ExplorerTroops") this.applyExplorerTroopsUpdate([change.current, change.previous]);
-      if (change.model === "DeepGuard" || change.model === "ArmyDay") {
+      if (change.model === "DeepGuard" || change.model === "ArmyDay" || change.model === "DeepArmy") {
         const key = change.current ?? change.previous;
         if (key) {
           const army = this.store.get("ExplorerTroops", { game_id: key.game_id, explorer_id: key.explorer_id });
@@ -643,6 +643,7 @@ export class WorldSpatialProjection {
         }
       }
     }
+    if (changes.some((change) => change.model === "DeepArmy")) this.nextTimeRefresh = this.nextTimedChangeAt();
     for (const change of changes) {
       if (change.model === "Structure" || change.model === "ExpeditionSite" || change.model === "TileOccupancy") {
         for (const source of [change.previous, change.current]) {
@@ -654,15 +655,28 @@ export class WorldSpatialProjection {
 
   /** Called by confirmed heads, including empty blocks, so calendar expiry needs no gameplay transaction. */
   public refreshTime(): void {
-    if (this.nextCalendarBoundary !== Infinity && getBlockTimestamp().currentDefaultTick >= this.nextCalendarBoundary)
+    if (this.nextTimeRefresh !== Infinity && getBlockTimestamp().currentDefaultTick >= this.nextTimeRefresh)
       this.rebuild();
   }
 
-  private nextDayBoundary(): number {
+  private nextTimedChangeAt(): number {
     let boundary = Infinity;
     for (const [, game] of this.store.entries("GameRegistry")) {
       const rules = readExpeditionRules(this.store, game.game_id);
       if (rules) boundary = Math.min(boundary, expeditionDayEndsAt(rules, getBlockTimestamp().currentDefaultTick));
+    }
+    for (const [, army] of this.store.entries("DeepArmy")) {
+      const row = this.store.get("ExplorerTroops", { game_id: army.game_id, explorer_id: army.explorer_id });
+      if (
+        !row ||
+        !isArmyCurrent(this.store, army.game_id, army.explorer_id) ||
+        currentArmy(this.store, row).troops.count === 0n
+      )
+        continue;
+      const slice = this.store.require("SliceRules", { game_id: army.game_id });
+      const interval = Number(slice.tick_config.armies_tick_in_seconds);
+      const now = getBlockTimestamp().currentDefaultTick;
+      boundary = Math.min(boundary, (Math.floor(now / interval) + 1) * interval);
     }
     return boundary;
   }
@@ -728,7 +742,7 @@ export class WorldSpatialProjection {
       if (marker) nextStructures.set(marker.spatialId, marker);
     }
 
-    this.nextCalendarBoundary = this.nextDayBoundary();
+    this.nextTimeRefresh = this.nextTimedChangeAt();
     this.chestIndex.replace(nextChests);
     this.structureIndex.replace(nextStructures);
     this.armyIndex.replace(nextArmies);

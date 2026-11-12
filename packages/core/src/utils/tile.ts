@@ -1,4 +1,4 @@
-import { deepTerrain } from "./deep";
+import { currentArmy, deepTerrain } from "./deep";
 import { ruinDisappeared } from "./ruins";
 import { isArmyCurrent } from "./expeditions";
 import { isTileOccupierArmy } from "./map/hex";
@@ -65,6 +65,10 @@ export function activeTileOccupancy(
   const occupancy = store.get("TileOccupancy", key);
   if (occupancy && isTileOccupierArmy(occupancy.category) && !isArmyCurrent(store, key.game_id, occupancy.entity_id))
     return undefined;
+  if (occupancy && isTileOccupierArmy(occupancy.category)) {
+    const army = store.get("ExplorerTroops", { game_id: key.game_id, explorer_id: occupancy.entity_id });
+    if (army && currentArmy(store, army).troops.count === 0n) return undefined;
+  }
   if (occupancy?.category !== TileOccupier.Ruin) return occupancy;
   const site = store.get("ExpeditionSite", { game_id: key.game_id, entity_id: occupancy.entity_id });
   return site && ruinDisappeared(store, site) ? undefined : occupancy;

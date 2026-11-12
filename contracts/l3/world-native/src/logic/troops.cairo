@@ -17,7 +17,8 @@ pub fn active_explorer(
         stamina_config: rules.troop_stamina_config,
         armies_tick_in_seconds: rules.tick_config.armies_tick_in_seconds,
     };
-    crate::logic::army_slots::resolve(key, explorer, Some(refill))
+    let explorer = crate::logic::army_slots::resolve(key, explorer, Some(refill));
+    crate::logic::deep_armies::settle(key, explorer, game_context)
 }
 
 pub fn owned_structure(game_id: u32, entity_id: u64, actor: ContractAddress) -> Structure {
@@ -151,6 +152,7 @@ pub mod TroopState {
         assert!(previous != 0, "missing explorer");
         write_home_membership(key, previous, 0);
         crate::logic::deep_guards::remove(key);
+        crate::logic::deep_armies::remove(key);
         crate::logic::army_days::remove(key);
 
         // Owner zero marks absence; recreation overwrites the complete explorer.
@@ -1106,6 +1108,11 @@ pub fn expire_explorer(key: ExplorerKey, mut explorer: ExplorerTroops, context: 
     let today = crate::days::day_of(context.game.unbox(), context.rules.unbox().day_unit_seconds, context.timestamp)
         .index;
     assert!(crate::logic::army_days::require(key) < today, "army has not expired");
+    explorer = crate::logic::army_slots::resolve(key, explorer, None);
+    explorer = crate::logic::deep_armies::settle(key, explorer, context);
+    if explorer.troops.count == 0 {
+        return;
+    }
     return_homecoming(key, explorer, context);
     let state = crate::state::read();
     let release = state.releases.entry(state.game_releases.read(key.game_id)).classes;

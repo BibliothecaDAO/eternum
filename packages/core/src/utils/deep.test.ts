@@ -8,7 +8,7 @@ import preset from "../../../../contracts/l3/world-native/tests/fixtures/current
 import { NativeFactStore } from "../client/native-fact-store";
 import { WorldSpatialProjection } from "../sync/world-spatial-projection";
 import { getTileAt } from "./tile";
-import { deepCenter, deepTiles } from "./deep";
+import { currentArmy, currentResourceWeight, deepCenter, deepTiles } from "./deep";
 
 function map() {
   setBlockTimestampSource(() => 350);
@@ -151,6 +151,109 @@ it("expires another home's shared army on the confirmed clock without deleting i
     expect(projection.getArmy(82)?.entityId).toBe(82);
     projection.flush();
     expect(changes).toEqual([1, 1]);
+  } finally {
+    projection.dispose();
+  }
+});
+
+it("charges each Deep tick once, clamps at death and uses the primary count when given a derived army", () => {
+  const store = map();
+  let now = 350;
+  setBlockTimestampSource(() => now);
+  const center = deepCenter(1024);
+  store.applyFacts([
+    {
+      model: "SliceRules",
+      key: "1",
+      value: {
+        ...store.require("SliceRules", { game_id: 1 }),
+        tick_config: { ...preset.rules.tick_config, armies_tick_in_seconds: 120 },
+      },
+    },
+    {
+      model: "DeepRules",
+      key: "1",
+      value: {
+        game_id: 1,
+        foundation: { alt: false, x: 25, y: 35 },
+        quarry: { alt: false, x: 12, y: 20 },
+        altar: { alt: false, x: 38, y: 20 },
+        beast_count: 10000n,
+        loss_per_tick: 200n,
+      },
+    },
+    {
+      model: "ResourceWeight",
+      key: "81",
+      value: {
+        game_id: 1,
+        entity_id: 81,
+        capacity: 500n * BigInt(preset.rules.capacity_config.troop_capacity),
+        weight: 0n,
+      },
+    },
+    { model: "ArmyDay", key: "81", value: { game_id: 1, explorer_id: 81, day: 0 } },
+    { model: "DeepArmy", key: "81", value: { game_id: 1, explorer_id: 81, last_tick: 2 } },
+    {
+      model: "ExplorerTroops",
+      key: "81",
+      value: {
+        ...explorerFixture.expected.value,
+        game_id: 1,
+        explorer_id: 81,
+        troops: { ...explorerFixture.expected.value.troops, count: 500n },
+      },
+    },
+    {
+      model: "TileOccupancy",
+      key: "81",
+      value: {
+        game_id: 1,
+        ...center,
+        alt: false,
+        entity_id: 81,
+        category: TileOccupier.ExplorerKnightT1,
+        is_structure: false,
+      },
+    },
+  ]);
+  const read = () => store.require("ExplorerTroops", { game_id: 1, explorer_id: 81 });
+  const projection = new WorldSpatialProjection({ store });
+  projection.start();
+  try {
+    expect(currentArmy(store, read()).troops.count).toBe(500n);
+    now = 360;
+    expect(currentArmy(store, read()).troops.count).toBe(300n);
+    expect(currentResourceWeight(store, store.require("ResourceWeight", { game_id: 1, entity_id: 81 })).capacity).toBe(
+      300n * BigInt(preset.rules.capacity_config.troop_capacity),
+    );
+    expect(currentArmy(store, currentArmy(store, read())).troops.count).toBe(300n);
+    expect(read().troops.count).toBe(500n);
+    store.applyFacts([
+      { model: "ExplorerTroops", key: "81", value: { ...read(), troops: { ...read().troops, count: 300n } } },
+      {
+        model: "ResourceWeight",
+        key: "81",
+        value: {
+          game_id: 1,
+          entity_id: 81,
+          capacity: 300n * BigInt(preset.rules.capacity_config.troop_capacity),
+          weight: 0n,
+        },
+      },
+      { model: "DeepArmy", key: "81", value: { game_id: 1, explorer_id: 81, last_tick: 3 } },
+    ]);
+    expect(currentArmy(store, read()).troops.count).toBe(300n);
+    now = 480;
+    projection.refreshTime();
+    expect(currentArmy(store, read()).troops.count).toBe(100n);
+    expect(projection.getArmy(81)?.entityId).toBe(81);
+    now = 600;
+    projection.refreshTime();
+    expect(currentArmy(store, read()).troops.count).toBe(0n);
+    expect(projection.getArmy(81)).toBeUndefined();
+    expect(getTileAt(store, false, center.col, center.row, 1)?.occupier_id).toBe(0);
+    expect(read().troops.count).toBe(300n);
   } finally {
     projection.dispose();
   }

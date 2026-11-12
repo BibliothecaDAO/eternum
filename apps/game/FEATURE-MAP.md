@@ -1365,3 +1365,11 @@ rollover. Core view and scope tests cover guard membership and rollback. Run the
 Shared Deep rollover: tile occupancy, field models and army action gates use `ArmyDay` with the confirmed execution
 clock. An empty confirmed head at day rollover removes yesterday's army from the map and opens its tile, while its raw
 facts remain until the contract deletes them. The core Deep regression drives this clock path and checks both views.
+
+Deep troop loss: entering through `EnterDepth` records `DeepArmy.last_tick`. Each completed army tick removes the
+preset's loss from both field armies and held guards. The ordinary army command settles that loss once and reduces
+carrying capacity; a dead field army no longer blocks movement or arrival. `currentArmy`, `currentResourceWeight` and
+the existing troop resolver read the same native facts at the confirmed clock. The dock, transfer inputs, previews and
+map labels use those readers. The focused core count test and `use-armies.deep` test advance 500 → 300 → 100 → 0 without
+writing a troop row. Site payouts and the Altar bar are still pending; this attrition checkpoint does not enable the
+finished holding loop.

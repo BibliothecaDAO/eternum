@@ -1,4 +1,4 @@
-import { deepCenter } from "./deep";
+import { currentArmy, deepCenter } from "./deep";
 import { entityHomeNamespace } from "./entity-home";
 import { researchedDepth } from "./realm-research";
 import { MAX_U32, ResourcesIds } from "@bibliothecadao/types";
@@ -181,7 +181,9 @@ export const liveHomeArmies = (
   gameId: number,
   floorSeconds?: number,
 ): NativeRows["ExplorerTroops"][] => {
-  const armies = [...store.armiesAtHome(gameId, structureId)].filter((army) => army.troops.count > 0n);
+  const armies = [...store.armiesAtHome(gameId, structureId)]
+    .map((army) => currentArmy(store, army, floorSeconds))
+    .filter((army) => army.troops.count > 0n);
   return armies.filter((army) => isArmyCurrent(store, gameId, army.explorer_id, floorSeconds));
 };
 

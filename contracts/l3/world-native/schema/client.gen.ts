@@ -1,5 +1,5 @@
 // Generated from native fact models and contract ABIs. Run the native schema generator to update.
-export const nativeFactSchemaIdentity = "23f5638037983d8bbbbcc8ed8f6a3e2e58e988796b246ef72b6831c3f3be90ca";
+export const nativeFactSchemaIdentity = "2ac481f6d150df26d52fc8aafa376976f0bde513761be1ebe3f93b386dbb0a00";
 export const nativeReleaseConstants = {
   "RUIN_DEPTH_LIMIT_RELEASE": 9
 } as const;
@@ -256,9 +256,10 @@ export interface NativeRows {
   TileOccupancy: { readonly game_id: number; readonly alt: boolean; readonly col: number; readonly row: number; readonly entity_id: bigint; readonly category: number; readonly is_structure: boolean };
   ArmyProgress: { readonly game_id: number; readonly explorer_id: bigint; readonly xp: number; readonly common_points: number; readonly uncommon_points: number; readonly rare_points: number; readonly epic_points: number; readonly legendary_points: number; readonly battle: number; readonly logistics: number; readonly scouting: number; readonly homecoming: number; readonly scouting_kinds: number };
   AspectActivity: { readonly game_id: number; readonly aspect: number; readonly day: bigint; readonly members: number };
+  DeepArmy: { readonly game_id: number; readonly explorer_id: bigint; readonly last_tick: bigint };
   DeepGuard: { readonly game_id: number; readonly explorer_id: bigint; readonly site_id: bigint; readonly slot: number };
   DeepSite: { readonly game_id: number; readonly entity_id: bigint; readonly kind: number; readonly day: bigint };
-  DeepRules: { readonly game_id: number; readonly foundation: { readonly alt: boolean; readonly x: number; readonly y: number }; readonly quarry: { readonly alt: boolean; readonly x: number; readonly y: number }; readonly altar: { readonly alt: boolean; readonly x: number; readonly y: number }; readonly beast_count: bigint };
+  DeepRules: { readonly game_id: number; readonly foundation: { readonly alt: boolean; readonly x: number; readonly y: number }; readonly quarry: { readonly alt: boolean; readonly x: number; readonly y: number }; readonly altar: { readonly alt: boolean; readonly x: number; readonly y: number }; readonly beast_count: bigint; readonly loss_per_tick: bigint };
   ArmyDay: { readonly game_id: number; readonly explorer_id: bigint; readonly day: bigint };
   ArmySlot: { readonly game_id: number; readonly structure_id: bigint; readonly epoch: bigint; readonly slot: number; readonly explorer_id: bigint; readonly stamina: { readonly amount: bigint; readonly settled_at: number; readonly remainder: number } };
   ExplorerTroops: { readonly game_id: number; readonly explorer_id: bigint; readonly owner: bigint; readonly troops: { readonly category: "Knight" | "Paladin" | "Crossbowman"; readonly tier: "T1" | "T2" | "T3"; readonly count: bigint; readonly stamina: { readonly Inline: { readonly amount: bigint; readonly settled_at: number; readonly remainder: number } } | { readonly Slot: number }; readonly boosts: { readonly incr_damage_dealt_percent_num: number; readonly incr_damage_dealt_end_at: number; readonly decr_damage_gotten_percent_num: number; readonly decr_damage_gotten_end_at: number; readonly incr_stamina_regen_percent_num: number; readonly incr_stamina_regen_seconds_left: number; readonly incr_explore_reward_percent_num: number; readonly incr_explore_reward_end_at: number }; readonly battle_cooldown_end: number } };
@@ -361,6 +362,7 @@ export interface NativeKeys {
   TileOccupancy: { readonly game_id: number; readonly alt: boolean; readonly col: number; readonly row: number };
   ArmyProgress: { readonly game_id: number; readonly explorer_id: bigint };
   AspectActivity: { readonly game_id: number; readonly aspect: number; readonly day: bigint };
+  DeepArmy: { readonly game_id: number; readonly explorer_id: bigint };
   DeepGuard: { readonly game_id: number; readonly explorer_id: bigint };
   DeepSite: { readonly game_id: number; readonly entity_id: bigint };
   DeepRules: { readonly game_id: number };
@@ -1458,6 +1460,18 @@ export const nativeFactModels = {
       }
     }
   },
+  "DeepArmy": {
+    "keys": [
+      "game_id",
+      "explorer_id"
+    ],
+    "scope": "game",
+    "fields": {
+      "game_id": "u32",
+      "explorer_id": "u64",
+      "last_tick": "u64"
+    }
+  },
   "DeepGuard": {
     "keys": [
       "game_id",
@@ -1506,7 +1520,8 @@ export const nativeFactModels = {
         "x": "u32",
         "y": "u32"
       },
-      "beast_count": "u128"
+      "beast_count": "u128",
+      "loss_per_tick": "u128"
     }
   },
   "ArmyDay": {
@@ -2572,6 +2587,7 @@ export const nativeSyncScopes = {
   "AspectActivity": "shared",
   "DeepSite": "shared",
   "DeepGuard": "shared",
+  "DeepArmy": "shared",
   "ArmyDay": {
     "entities": [
       "explorer_id"

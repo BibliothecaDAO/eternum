@@ -1,3 +1,4 @@
+import { currentArmy } from "../utils/deep";
 import { troopTierIndex, TroopTier, TroopType, type Troops } from "@bibliothecadao/types";
 import type { NativeFactStore } from "../client/native-fact-store";
 import { battleBonusBps, logisticsStamina } from "../utils/attribute-tiers";
@@ -91,6 +92,7 @@ export function resolveExplorerTroops(
   store: NativeFactStore,
   explorer: NativeRows["ExplorerTroops"],
 ): Troops | undefined {
+  explorer = currentArmy(store, explorer);
   const source = explorer.troops.stamina;
   if ("Inline" in source) return inlineTroops(explorer.troops);
   const day = store.get("ArmyDay", { game_id: explorer.game_id, explorer_id: explorer.explorer_id });

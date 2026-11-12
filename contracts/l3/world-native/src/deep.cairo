@@ -26,6 +26,7 @@ pub struct DeepRules {
     pub quarry: Coord,
     pub altar: Coord,
     pub beast_count: u128,
+    pub loss_per_tick: u128,
 }
 
 #[derive(Copy, Drop, Serde, Debug, PartialEq, starknet::Store)]
@@ -52,6 +53,10 @@ fn local_coord(rules: DeepRules, kind: u8) -> Coord {
 
 pub fn validate(rules: DeepRules, spacing: u32) {
     assert!(rules.beast_count != 0, "empty Deep beast");
+    assert!(
+        rules.loss_per_tick != 0 && rules.loss_per_tick % crate::rules::RESOURCE_PRECISION == 0,
+        "invalid Deep troop loss",
+    );
     assert!(rules.beast_count % crate::rules::RESOURCE_PRECISION == 0, "fractional Deep beast");
     for kind in 0..crate::rules::DEEP_SITE_COUNT {
         let local = local_coord(rules, kind);
@@ -84,4 +89,19 @@ pub trait IDeepSites<T> {
     );
     fn initialize_deep(ref self: T, game_id: u32);
     fn settle_deep(ref self: T, game_id: u32, context: crate::commands::ActionContext);
+}
+
+#[derive(Copy, Drop, Serde, Debug, PartialEq)]
+pub struct DeepArmy {
+    pub last_tick: u64,
+}
+
+pub fn troops_after_ticks(count: u128, last_tick: u64, tick: u64, loss_per_tick: u128) -> u128 {
+    let elapsed = tick - core::cmp::min(tick, last_tick);
+    let loss: u256 = Into::<u64, u256>::into(elapsed) * Into::<u128, u256>::into(loss_per_tick);
+    if loss >= count.into() {
+        0
+    } else {
+        count - loss.try_into().unwrap()
+    }
 }

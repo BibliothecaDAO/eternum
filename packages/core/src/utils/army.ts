@@ -1,3 +1,4 @@
+import { currentResourceWeight } from "./deep";
 import { safeInteger } from "./safe-integer";
 import { inlineTroops, resolveExplorerTroops } from "../managers/troop-stamina";
 import { entityMapPosition } from "./tile";
@@ -32,7 +33,7 @@ export const formatArmies = (
 ): ArmyInfo[] =>
   [...armies].flatMap((explorer) => {
     const troops = resolveExplorerTroops(store, explorer);
-    if (!troops) return [];
+    if (!troops || troops.count === 0n) return [];
     const keys = { game_id: explorer.game_id, entity_id: explorer.explorer_id };
     const weight = store.get("ResourceWeight", keys);
     const structure = store.get("Structure", { ...keys, entity_id: explorer.owner });
@@ -43,7 +44,7 @@ export const formatArmies = (
       {
         entityId: safeInteger(explorer.explorer_id),
         troops,
-        totalCapacity: weight ? getArmyTotalCapacityInKg(weight) : 0,
+        totalCapacity: weight ? getArmyTotalCapacityInKg(currentResourceWeight(store, weight)) : 0,
         weight: weight ? gramToKg(divideByPrecision(Number(weight.weight))) : 0,
         position,
         entity_owner_id: safeInteger(explorer.owner),

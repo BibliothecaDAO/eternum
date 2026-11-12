@@ -2521,6 +2521,7 @@ fn deep_rules_fixture() -> crate::deep::DeepRules {
         quarry: crate::troops::Coord { alt: false, x: 12, y: 20 },
         altar: crate::troops::Coord { alt: false, x: 38, y: 20 },
         beast_count: 10000 * RESOURCE_PRECISION,
+        loss_per_tick: 200 * RESOURCE_PRECISION,
     }
 }
 
@@ -2594,6 +2595,12 @@ fn defeating_a_deep_beast_keeps_its_site_and_the_next_day_restores_the_same_guar
     army.coord = crate::geometry::neighbor(coord, 0);
     army.troops.count = 100000 * RESOURCE_PRECISION;
     super::resource_commands::set_explorer_fixture(d.games, key, army);
+    snforge_std::interact_with_state(
+        d.games,
+        || crate::logic::deep_armies::enter(
+            key, crate::commands::ExecutionContext { timestamp: 360, ..crate::tests::context(d.games, game_id) },
+        ),
+    );
     snforge_std::interact_with_state(
         d.games,
         || {
@@ -2687,6 +2694,12 @@ fn deep_joiner_fixture(
             crate::commands::resource_context(crate::tests::context(d.games, game_id)),
         );
     stop_cheat_caller_address(d.games);
+    snforge_std::interact_with_state(
+        d.games,
+        || crate::logic::deep_armies::enter(
+            key, crate::commands::ExecutionContext { timestamp: 360, ..crate::tests::context(d.games, game_id) },
+        ),
+    );
     key
 }
 
@@ -2828,5 +2841,95 @@ fn deep_slots_accept_four_allied_players_refuse_duplicates_and_release_on_death_
             .unwrap()
             .entity_id,
         site_id,
+    );
+}
+
+#[test]
+fn deep_descent_charges_new_ticks_once_and_dead_field_armies_free_the_arrival() {
+    let d = setup();
+    let (game_id, preset, category) = expedition_home(d);
+    let home = ResourceKey { game_id, entity_id: 1 };
+    snforge_std::interact_with_state(
+        d.games,
+        || {
+            let state = crate::state::write();
+            let commitment = state.registrar.presets.read(state.games.games.entry(game_id).preset_id.read());
+            let mut rules = state.presets.entry(commitment).rules.read();
+            rules.day_unit_seconds = 600;
+            rules.tick_config.armies_tick_in_seconds = 120;
+            state.presets.entry(commitment).rules.write(rules);
+            state.presets.entry(commitment).deep_rules.write(Some(deep_rules_fixture()));
+            let mut learned = 0;
+            for _ in 0_u8..3 {
+                learned = crate::research::learn(learned, crate::research::ROW_DEPTH, 0);
+            }
+            crate::logic::research::write(home, crate::research::RealmKnowledge { learned });
+            crate::deep::IDeepSitesDispatcherTrait::initialize_deep(
+                crate::logic::deep_sites::dispatcher(game_id), game_id,
+            );
+        },
+    );
+    assert!(execute_in_game(d, game_id, muster_command(category, 0), 351));
+    let structures = IStructureOperationsDispatcher { contract_address: d.games };
+    let key = ExplorerKey { game_id, explorer_id: *structures.home_armies(home).at(0) };
+    let troops = GameState { contract_address: d.games };
+    let mut army = troops.resolved_explorer(key).unwrap();
+    army.troops.count = 500 * RESOURCE_PRECISION;
+    super::resource_commands::set_explorer_fixture(d.games, key, army);
+    snforge_std::interact_with_state(
+        d.games,
+        || {
+            let state = crate::state::write();
+            let before = state.resources.weights.read((game_id, key.explorer_id));
+            state
+                .resources
+                .weights
+                .write(
+                    (game_id, key.explorer_id),
+                    crate::resources::ResourceWeight { capacity: before.capacity * 500, ..before },
+                );
+        },
+    );
+    let enter = Command::EnterDepth(crate::commands::EnterDepth { explorer_id: key.explorer_id, depth: 3 });
+    assert!(execute_in_game(d, game_id, enter, 351));
+    assert_eq!(
+        snforge_std::interact_with_state(
+            d.games, || crate::state::read().deep.army_ticks.read((game_id, key.explorer_id)),
+        ),
+        Some(2),
+    );
+    for (timestamp, direction, count) in array![
+        (360_u64, 0_u8, 300_u128), (361, 3, 300), (480, 0, 100), (481, 3, 100),
+    ] {
+        assert!(
+            execute_in_game(
+                d,
+                game_id,
+                Command::Move(
+                    crate::commands::Move { explorer_id: key.explorer_id, directions: array![direction].span() },
+                ),
+                timestamp,
+            ),
+        );
+        assert_eq!(troops.resolved_explorer(key).unwrap().troops.count, count * RESOURCE_PRECISION);
+    }
+    assert_eq!(troops.resolved_explorer(key).unwrap().coord, crate::deep::arrival(preset.settlement.spacing));
+    assert!(execute_in_game(d, game_id, muster_slot_command(category, 0, 1), 590));
+    let second = *structures.home_armies(home).at(1);
+    assert!(
+        execute_in_game(
+            d, game_id, Command::EnterDepth(crate::commands::EnterDepth { explorer_id: second, depth: 3 }), 600,
+        ),
+    );
+    assert!(troops.resolved_explorer(key).is_none());
+    assert!(
+        snforge_std::interact_with_state(
+            d.games, || crate::state::read().deep.army_ticks.read((game_id, key.explorer_id)),
+        )
+            .is_none(),
+    );
+    assert_eq!(
+        troops.resolved_explorer(ExplorerKey { game_id, explorer_id: second }).unwrap().coord,
+        crate::deep::arrival(preset.settlement.spacing),
     );
 }

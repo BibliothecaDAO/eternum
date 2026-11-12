@@ -252,6 +252,9 @@ pub mod MovementLogic {
             crate::logic::structures::StructureState::record_depth(home_key, command.depth);
             explorer.coord = destination;
             crate::logic::troops::TroopState::save(key, crate::troops::ExplorerRecordTrait::into_record(explorer));
+            if command.depth == 3 {
+                crate::logic::deep_armies::enter(key, context);
+            }
         }
         fn move_explorer(
             ref self: ContractState,

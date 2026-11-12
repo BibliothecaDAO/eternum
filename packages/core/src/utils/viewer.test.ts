@@ -57,6 +57,7 @@ const buildStore = () => {
     });
     write("ExplorerTroops", 10 + id, {
       ...explorerFixture.expected.value,
+      troops: { ...explorerFixture.expected.value.troops, count: 1n },
       game_id: 1,
       explorer_id: 10 + id,
       owner: id,

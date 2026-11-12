@@ -1,5 +1,5 @@
 {
-  "schemaIdentity": "23f5638037983d8bbbbcc8ed8f6a3e2e58e988796b246ef72b6831c3f3be90ca",
+  "schemaIdentity": "2ac481f6d150df26d52fc8aafa376976f0bde513761be1ebe3f93b386dbb0a00",
   "commandAbi": [
     {
       "type": "interface",
@@ -1731,6 +1731,10 @@
     },
     {
       "name": "AspectActivity",
+      "scope": "game"
+    },
+    {
+      "name": "DeepArmy",
       "scope": "game"
     },
     {

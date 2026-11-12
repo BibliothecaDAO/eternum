@@ -104,3 +104,16 @@ pub fn expire(site: ResourceKey, context: crate::commands::ExecutionContext) {
         crate::logic::troops::expire_explorer(key, army, context);
     }
 }
+
+pub fn settle(site: ResourceKey, context: crate::commands::ExecutionContext) {
+    let state = crate::state::read();
+    for slot in 0..crate::rules::DEEP_GUARD_SLOTS {
+        let explorer_id = state.deep.slots.read((site.game_id, site.entity_id, slot));
+        if explorer_id == 0 {
+            continue;
+        }
+        let _ = crate::logic::troops::command_explorer(
+            ExplorerKey { game_id: site.game_id, explorer_id }, None, context.timestamp, context,
+        );
+    }
+}

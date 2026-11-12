@@ -1,5 +1,5 @@
 import { readRealmSkin } from "@/three/structures/realm-skins";
-import { configManager, getExplorerOwner } from "@bibliothecadao/eternum";
+import { configManager, currentArmy, getExplorerOwner } from "@bibliothecadao/eternum";
 import { RESOURCE_PRECISION, StructureType } from "@bibliothecadao/types";
 import type { FactView } from "@/sync/fact-views";
 import { arePlayersAllied, sideOf, watchedSide } from "@/utils/entity-ownership";
@@ -16,6 +16,9 @@ export const minimapMarkersView: FactView<Map<string, MinimapMarker>> = {
     "Structure",
     "CampaignHome",
     "ExplorerTroops",
+    "DeepArmy",
+    "DeepRules",
+    "ArmyDay",
     "GuildMember",
     "PlayerEntry",
     "BlitzRoster",
@@ -55,7 +58,8 @@ export const minimapMarkersView: FactView<Map<string, MinimapMarker>> = {
       });
     }
     for (const row of store.inGame("ExplorerTroops", game)) {
-      const count = Number(row.troops.count) / RESOURCE_PRECISION;
+      const count = Number(currentArmy(store, row).troops.count) / RESOURCE_PRECISION;
+      if (count <= 0) continue;
       markers.set(String(row.explorer_id), {
         name: "map-army",
         owner: ownership(getExplorerOwner(store, row)),

@@ -12,6 +12,7 @@ import {
   divideByPrecision,
   getArmy,
   getRemainingCapacityInKg,
+  currentResourceWeight,
   RaidSimulator,
   StaminaManager,
 } from "@bibliothecadao/eternum";
@@ -69,7 +70,7 @@ export const RaidContainer = ({
       systemCalls: { raid_explorer_vs_guard },
     },
   } = useGame();
-  const facts = useNativeFacts(["ExplorerTroops", "Structure", "TileOccupancy"]);
+  const facts = useNativeFacts(["ExplorerTroops", "DeepArmy", "DeepRules", "ArmyDay", "Structure", "TileOccupancy"]);
   const resourceWeight = useNativeRow("ResourceWeight", {
     game_id: configManager.getActiveGameId(),
     entity_id: attackerEntityId,
@@ -192,7 +193,9 @@ export const RaidContainer = ({
   ]);
 
   const remainingCapacity = useMemo(() => {
-    const remainingCapacity = resourceWeight ? getRemainingCapacityInKg(resourceWeight) : 0;
+    const remainingCapacity = resourceWeight
+      ? getRemainingCapacityInKg(currentResourceWeight(facts.store, resourceWeight))
+      : 0;
     const remainingCapacityAfterRaid =
       remainingCapacity -
       (raidSimulation?.raiderDamageTaken || 0) * configManager.getCapacityConfigKg(CapacityConfig.Army);

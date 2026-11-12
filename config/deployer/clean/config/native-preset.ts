@@ -50,7 +50,9 @@ function buildDeep(preset: ReturnType<typeof nativePresetForId>) {
     ) ||
     new Set(sites.map(({ x, y }) => `${x}:${y}`)).size !== presetRule.DEEP_SITE_COUNT ||
     !Number.isSafeInteger(deep.beastCount) ||
-    deep.beastCount <= 0
+    deep.beastCount <= 0 ||
+    !Number.isSafeInteger(deep.lossPerTick) ||
+    deep.lossPerTick <= 0
   )
     throw new Error("Invalid Deep sites");
   return new CairoOption(CairoOptionVariant.Some, {
@@ -58,6 +60,7 @@ function buildDeep(preset: ReturnType<typeof nativePresetForId>) {
     quarry: { alt: false, x: deep.quarry.x, y: deep.quarry.y },
     altar: { alt: false, x: deep.altar.x, y: deep.altar.y },
     beast_count: scaled(deep.beastCount),
+    loss_per_tick: scaled(deep.lossPerTick),
   });
 }
 

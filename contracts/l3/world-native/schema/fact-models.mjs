@@ -3,6 +3,11 @@
 export const factWireTypes = [
   {
     type: "struct",
+    name: "world_native::deep::DeepArmy",
+    members: [{ name: "last_tick", type: "core::integer::u64" }],
+  },
+  {
+    type: "struct",
     name: "world_native::deep::DeepGuard",
     members: [
       { name: "site_id", type: "core::integer::u64" },
@@ -1088,6 +1093,7 @@ export function defineFactModels({ struct, model: declare }) {
       ],
       [{ name: "members", type: "core::integer::u32" }],
     ),
+    model("DeepArmy", "game", struct("troops::ExplorerKey"), struct("deep::DeepArmy")),
     model("DeepGuard", "game", struct("troops::ExplorerKey"), struct("deep::DeepGuard")),
     model("DeepSite", "game", struct("resources::ResourceKey"), struct("deep::DeepSite")),
     model("DeepRules", "game", [{ name: "game_id", type: "core::integer::u32" }], struct("deep::DeepRules")),
@@ -1509,6 +1515,7 @@ export const syncScopes = {
   AspectActivity: "shared",
   DeepSite: "shared",
   DeepGuard: "shared",
+  DeepArmy: "shared",
   ArmyDay: { entities: ["explorer_id"] },
   ArmyProgress: { entities: ["explorer_id"] },
   ExpeditionDiscovery: { realms: ["structure_id"], epoch: "epoch" },

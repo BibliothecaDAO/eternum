@@ -1,3 +1,4 @@
+import { currentArmy } from "../utils/deep";
 import { safeInteger } from "../utils/safe-integer";
 import { entityMapPosition } from "../utils/tile";
 import {
@@ -74,7 +75,7 @@ export class ArmyActionManager {
       explorer_id: this.entityId,
     });
     const exploreFoodCosts = entityArmy
-      ? computeExploreFoodCosts(entityArmy?.troops)
+      ? computeExploreFoodCosts(currentArmy(this.store, entityArmy, currentDefaultTick).troops)
       : {
           wheatPayAmount: 0,
           fishPayAmount: 0,
@@ -103,7 +104,7 @@ export class ArmyActionManager {
       explorer_id: this.entityId,
     });
     const travelFoodCosts = entityArmy
-      ? computeTravelFoodCosts(entityArmy.troops)
+      ? computeTravelFoodCosts(currentArmy(this.store, entityArmy, currentDefaultTick).troops)
       : {
           wheatPayAmount: 0,
           fishPayAmount: 0,
@@ -303,8 +304,11 @@ export class ArmyActionManager {
 
     const troopType = this._getTroopType();
     const alive =
-      this.store.require("ExplorerTroops", { game_id: configManager.getActiveGameId(), explorer_id: this.entityId })
-        .troops.count > 0n;
+      currentArmy(
+        this.store,
+        this.store.require("ExplorerTroops", { game_id: configManager.getActiveGameId(), explorer_id: this.entityId }),
+        currentDefaultTick,
+      ).troops.count > 0n;
     // One truth: paths plan from the same ExplorerTroops coord the submit
     // freshness guard checks. Callers must not substitute a visual position.
     const startPos = this._getCurrentPosition();

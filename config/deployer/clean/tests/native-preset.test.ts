@@ -71,12 +71,14 @@ describe("native presets", () => {
         quarry: { x: 12, y: 20 },
         altar: { x: 38, y: 20 },
         beastCount: 10_000,
+        lossPerTick: 200,
       };
       expect(build().economy.deep.unwrap()).toEqual({
         foundation: { alt: false, x: 25, y: 35 },
         quarry: { alt: false, x: 12, y: 20 },
         altar: { alt: false, x: 38, y: 20 },
         beast_count: 10_000n * BigInt(RESOURCE_PRECISION),
+        loss_per_tick: 200n * BigInt(RESOURCE_PRECISION),
       });
       for (const position of [
         { x: 12, y: 20 },
@@ -91,6 +93,11 @@ describe("native presets", () => {
       preset.deep.foundation = { x: 25, y: 35 };
       for (const count of [0, -1, 10.5]) {
         preset.deep.beastCount = count;
+        expect(build).toThrow("Invalid Deep sites");
+      }
+      preset.deep.beastCount = 10_000;
+      for (const loss of [0, -1, 0.5]) {
+        preset.deep.lossPerTick = loss;
         expect(build).toThrow("Invalid Deep sites");
       }
     } finally {

@@ -141,6 +141,8 @@ fn settle(game_id: u32, context: ExecutionContext) {
         if previous.day != day.index {
             crate::logic::deep_guards::expire(key, context);
             reset_beast(key, kind, day.index, rules.beast_count, day.start);
+        } else {
+            crate::logic::deep_guards::settle(key, context);
         }
     }
 }

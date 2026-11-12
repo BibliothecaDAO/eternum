@@ -65,6 +65,7 @@ export interface NativePreset {
     quarry: { x: number; y: number };
     altar: { x: number; y: number };
     beastCount: number;
+    lossPerTick: number;
   };
   discovery: null | {
     beastsBps: number;

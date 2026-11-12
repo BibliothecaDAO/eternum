@@ -46,6 +46,7 @@ function fixture() {
         quarry: { alt: false, x: 12, y: 20 },
         altar: { alt: false, x: 38, y: 20 },
         beast_count: 10000n,
+        loss_per_tick: 200n,
       },
     },
   ]);

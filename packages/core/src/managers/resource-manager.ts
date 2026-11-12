@@ -1,3 +1,4 @@
+import { currentResourceWeight } from "../utils/deep";
 import { researchPicks } from "../utils/realm-research";
 import { nativeResearchConstants as research } from "../../../../contracts/l3/world-native/schema/client.gen";
 import { productionOutput } from "../utils/production-output";
@@ -111,7 +112,8 @@ export class ResourceManager {
   }
 
   private weight() {
-    return this.store.get("ResourceWeight", { game_id: this.gameId, entity_id: this.entityId });
+    const row = this.store.get("ResourceWeight", { game_id: this.gameId, entity_id: this.entityId });
+    return row && currentResourceWeight(this.store, row);
   }
 
   /**

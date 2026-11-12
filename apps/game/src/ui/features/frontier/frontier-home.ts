@@ -4,6 +4,7 @@ import { useGoToStructure } from "@/hooks/helpers/use-navigate";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import {
   configManager,
+  currentArmy,
   divideByPrecision,
   type ExpeditionRules,
   getBalance,
@@ -72,15 +73,17 @@ export const endedHomeArmies = (
   rules: ExpeditionRules,
   now: number,
 ): NativeRows["ExplorerTroops"][] =>
-  [...store.armiesAtHome(realm.game_id, realm.entity_id)].filter(
-    (army) =>
-      army.troops.count > 0n &&
-      !isCurrentExpeditionArmy(
-        rules,
-        store.require("ArmyDay", { game_id: realm.game_id, explorer_id: army.explorer_id }).day,
-        now,
-      ),
-  );
+  [...store.armiesAtHome(realm.game_id, realm.entity_id)]
+    .map((army) => currentArmy(store, army, now))
+    .filter(
+      (army) =>
+        army.troops.count > 0n &&
+        !isCurrentExpeditionArmy(
+          rules,
+          store.require("ArmyDay", { game_id: realm.game_id, explorer_id: army.explorer_id }).day,
+          now,
+        ),
+    );
 
 /** One troop stock as the realm's next deploy finds it, in whole troops. */
 type StockAtDeploy = { held: number; returning: number; fits: number };

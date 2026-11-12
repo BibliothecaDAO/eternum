@@ -75,6 +75,9 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
     "Structure",
     "Guard",
     "ExplorerTroops",
+    "DeepArmy",
+    "DeepRules",
+    "ArmyDay",
     "TileOccupancy",
     "ResourceBalance",
     "ResourceProduction",
@@ -149,7 +152,7 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
     });
     const troops = army ? resolveExplorerTroops(facts.store, army) : undefined;
     return troops ? { troops } : null;
-  }, [facts, attacker.id, attackerType, activeGuard]);
+  }, [facts, attacker.id, attackerType, activeGuard, executionSecond]);
   const attackerStamina = attackerArmyData
     ? StaminaManager.getStamina(attackerArmyData.troops, executionSecond).amount
     : undefined;

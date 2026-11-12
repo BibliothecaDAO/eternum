@@ -1,3 +1,4 @@
+import { currentArmy } from "../../utils/deep";
 import { deepSites } from "@bibliothecadao/types";
 import { nativeRuleConstants, type NativeRows } from "../../../../../contracts/l3/world-native/schema/client.gen";
 import type { NativeFactStore } from "../native-fact-store";
@@ -46,19 +47,24 @@ export function readDeepSites(store: NativeFactStore, timestamp: number): DeepSi
       day: day.index,
       beastTroops: guard ? guard.troops.count : rules.beast_count,
       guard,
-      guards: current ? readGuards(store, gameId, site.entity_id) : [],
+      guards: current ? readGuards(store, gameId, site.entity_id, timestamp) : [],
     };
   });
 }
 
-function readGuards(store: NativeFactStore, gameId: number, siteId: bigint): DeepSiteView["guards"] {
+function readGuards(store: NativeFactStore, gameId: number, siteId: bigint, timestamp: number): DeepSiteView["guards"] {
   const guards = [...store.inGame("DeepGuard", gameId)]
     .filter((guard) => guard.site_id === siteId)
     .sort((left, right) => left.slot - right.slot);
   const slots = new Set<number>();
-  return guards.map(({ slot, explorer_id }) => {
-    if (slot >= nativeRuleConstants.DEEP_GUARD_SLOTS || slots.has(slot)) throw new Error("Invalid Deep guard slots");
-    slots.add(slot);
-    return { slot, army: store.require("ExplorerTroops", { game_id: gameId, explorer_id }) };
-  });
+  return guards
+    .map(({ slot, explorer_id }) => {
+      if (slot >= nativeRuleConstants.DEEP_GUARD_SLOTS || slots.has(slot)) throw new Error("Invalid Deep guard slots");
+      slots.add(slot);
+      return {
+        slot,
+        army: currentArmy(store, store.require("ExplorerTroops", { game_id: gameId, explorer_id }), timestamp),
+      };
+    })
+    .filter(({ army }) => army.troops.count > 0n);
 }
