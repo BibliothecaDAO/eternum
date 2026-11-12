@@ -60,6 +60,29 @@ function configuration(preset: number) {
 }
 
 describe("native presets", () => {
+  test("Season 1 registers one height race and earlier presets retain their scoring", () => {
+    const preset = buildNativePreset(
+      loadNativePresetConfiguration("madara.frontier", FRONTIER_S1_PRESET_ID),
+      FRONTIER_S1_PRESET_ID,
+    );
+    expect(preset.economy.race.unwrap()).toEqual({
+      season_days: 50n,
+      glory_per_tick: 5n,
+      height_per_tick: 5,
+      stage_height: 2000,
+      first: { alt: false, x: 10, y: 10 },
+      second: { alt: false, x: 40, y: 10 },
+      third: { alt: false, x: 10, y: 40 },
+      fourth: { alt: false, x: 40, y: 40 },
+    });
+    expect(BigInt(preset.season_win_points)).toBe(0n);
+    expect(Number(preset.rules.mode_rules) & nativeRuleConstants.SEASON_CLOSE).toBe(0);
+    for (const id of [FRONTIER_PRESET_ID, FRONTIER_DEVCON_PRESET_ID]) {
+      expect(buildNativePreset(loadNativePresetConfiguration("madara.frontier", id), id).economy.race.isNone()).toBe(
+        true,
+      );
+    }
+  });
   test("Season 1 replaces reward chests with army relics and uses round depth odds", () => {
     const preset = buildNativePreset(
       loadNativePresetConfiguration("madara.frontier", FRONTIER_S1_PRESET_ID),

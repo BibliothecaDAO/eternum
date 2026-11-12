@@ -81,6 +81,23 @@ function applyRegistration(world: ReturnType<typeof setup>, preset: ReturnType<t
 }
 
 describe("verified preset configuration facts", () => {
+  it("projects the registered race into the native fact store for Season 1 only", () => {
+    const world = setup();
+    const preset = registration(7);
+    applyRegistration(world, preset);
+    world.native.applyReceipt(world.fold, receipt(launch(preset)), 11, 0);
+    const store = new NativeFactStore();
+    store.applyFacts(
+      world.fold.gameRows("RaceRules", "1").map(({ key, value }) => ({ model: "RaceRules", key, value })),
+    );
+    const { game_id, ...race } = store.require("RaceRules", { game_id: 1 });
+    expect(game_id).toBe(1);
+    expect(race).toEqual(preset.definition.economy.race.unwrap());
+    const earlier = registration(5);
+    applyRegistration(world, earlier);
+    world.native.applyReceipt(world.fold, receipt(launch(earlier, 2)), 12, 0);
+    expect(world.fold.gameRows("RaceRules", "2")).toEqual([]);
+  });
   it("projects both beast strength ranges and renamed discovery odds into client facts", () => {
     const world = setup();
     const preset = registration();

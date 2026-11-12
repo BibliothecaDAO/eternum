@@ -1917,6 +1917,35 @@
             "kind": "data"
           }
         ]
+      },
+      {
+        "name": "RowSet",
+        "prefix": [
+          "0x2eed4fdb67fc0650061d610829a128039051bf4542d9a96d13f1dbe4958c829",
+          "0x1381128f2a0228389d1eba9d3aa09f8ed24da656b884a49eea09a5ed2e87724"
+        ],
+        "members": [
+          {
+            "name": "version",
+            "type": "core::integer::u8",
+            "kind": "key"
+          },
+          {
+            "name": "model",
+            "type": "core::felt252",
+            "kind": "key"
+          },
+          {
+            "name": "keys",
+            "type": "core::array::Span::<core::felt252>",
+            "kind": "data"
+          },
+          {
+            "name": "values",
+            "type": "core::array::Span::<core::felt252>",
+            "kind": "data"
+          }
+        ]
       }
     ],
     "entrypoints": [
@@ -3164,6 +3193,211 @@
         "value": "zero",
         "meaning": "No empty player reveals in this expedition yet."
       }
+    },
+    {
+      "name": "RaceRules",
+      "identity": "0x5261636552756c6573",
+      "scope": "game",
+      "keys": [
+        {
+          "name": "game_id",
+          "type": "core::integer::u32",
+          "feltLength": 1
+        }
+      ],
+      "members": [
+        {
+          "name": "season_days",
+          "type": "core::integer::u64",
+          "id": "0x736561736f6e5f64617973",
+          "feltLength": 1
+        },
+        {
+          "name": "glory_per_tick",
+          "type": "core::integer::u128",
+          "id": "0x676c6f72795f7065725f7469636b",
+          "feltLength": 1
+        },
+        {
+          "name": "height_per_tick",
+          "type": "core::integer::u32",
+          "id": "0x6865696768745f7065725f7469636b",
+          "feltLength": 1
+        },
+        {
+          "name": "stage_height",
+          "type": "core::integer::u32",
+          "id": "0x73746167655f686569676874",
+          "feltLength": 1
+        },
+        {
+          "name": "first",
+          "type": "world_native::troops::Coord",
+          "id": "0x6669727374",
+          "feltLength": 3
+        },
+        {
+          "name": "second",
+          "type": "world_native::troops::Coord",
+          "id": "0x7365636f6e64",
+          "feltLength": 3
+        },
+        {
+          "name": "third",
+          "type": "world_native::troops::Coord",
+          "id": "0x7468697264",
+          "feltLength": 3
+        },
+        {
+          "name": "fourth",
+          "type": "world_native::troops::Coord",
+          "id": "0x666f75727468",
+          "feltLength": 3
+        }
+      ],
+      "keyLength": 1,
+      "valueLength": 16
+    },
+    {
+      "name": "RaceMember",
+      "identity": "0x526163654d656d626572",
+      "scope": "game",
+      "keys": [
+        {
+          "name": "game_id",
+          "type": "core::integer::u32",
+          "feltLength": 1
+        },
+        {
+          "name": "entity_id",
+          "type": "core::integer::u64",
+          "feltLength": 1
+        }
+      ],
+      "members": [
+        {
+          "name": "glory",
+          "type": "core::integer::u128",
+          "id": "0x676c6f7279",
+          "feltLength": 1
+        },
+        {
+          "name": "contribution",
+          "type": "core::integer::u128",
+          "id": "0x636f6e747269627574696f6e",
+          "feltLength": 1
+        }
+      ],
+      "keyLength": 2,
+      "valueLength": 2,
+      "absence": {
+        "parent": "Structure",
+        "value": "zero",
+        "meaning": "No Glory or height contribution before this home holds a Deep site.",
+        "parentKeys": {
+          "game_id": "game_id",
+          "entity_id": "entity_id"
+        }
+      }
+    },
+    {
+      "name": "AspectHyperstructure",
+      "identity": "0x4173706563744879706572737472756374757265",
+      "scope": "game",
+      "keys": [
+        {
+          "name": "game_id",
+          "type": "core::integer::u32",
+          "feltLength": 1
+        },
+        {
+          "name": "aspect",
+          "type": "core::integer::u8",
+          "feltLength": 1
+        }
+      ],
+      "members": [
+        {
+          "name": "entity_id",
+          "type": "core::integer::u64",
+          "id": "0x656e746974795f6964",
+          "feltLength": 1
+        },
+        {
+          "name": "height",
+          "type": "core::integer::u32",
+          "id": "0x686569676874",
+          "feltLength": 1
+        }
+      ],
+      "keyLength": 2,
+      "valueLength": 2
+    },
+    {
+      "name": "TriumphDay",
+      "identity": "0x547269756d7068446179",
+      "scope": "game",
+      "keys": [
+        {
+          "name": "game_id",
+          "type": "core::integer::u32",
+          "feltLength": 1
+        },
+        {
+          "name": "aspect",
+          "type": "core::integer::u8",
+          "feltLength": 1
+        },
+        {
+          "name": "stage",
+          "type": "core::integer::u8",
+          "feltLength": 1
+        }
+      ],
+      "members": [
+        {
+          "name": "day",
+          "type": "core::integer::u64",
+          "id": "0x646179",
+          "feltLength": 1
+        }
+      ],
+      "keyLength": 3,
+      "valueLength": 1
+    },
+    {
+      "name": "RaceResult",
+      "identity": "0x52616365526573756c74",
+      "scope": "game",
+      "keys": [
+        {
+          "name": "game_id",
+          "type": "core::integer::u32",
+          "feltLength": 1
+        }
+      ],
+      "members": [
+        {
+          "name": "winner",
+          "type": "core::option::Option::<core::integer::u8>",
+          "id": "0x77696e6e6572",
+          "feltLength": null
+        },
+        {
+          "name": "ended_at",
+          "type": "core::integer::u64",
+          "id": "0x656e6465645f6174",
+          "feltLength": 1
+        },
+        {
+          "name": "scheduled_end_at",
+          "type": "core::integer::u64",
+          "id": "0x7363686564756c65645f656e645f6174",
+          "feltLength": 1
+        }
+      ],
+      "keyLength": 1,
+      "valueLength": null
     },
     {
       "name": "ExpeditionSpire",
@@ -8154,6 +8388,34 @@
         }
       ]
     },
+    "core::option::Option::<world_native::race::RaceResult>": {
+      "type": "enum",
+      "name": "core::option::Option::<world_native::race::RaceResult>",
+      "variants": [
+        {
+          "name": "Some",
+          "type": "world_native::race::RaceResult"
+        },
+        {
+          "name": "None",
+          "type": "()"
+        }
+      ]
+    },
+    "core::option::Option::<world_native::race::RaceRules>": {
+      "type": "enum",
+      "name": "core::option::Option::<world_native::race::RaceRules>",
+      "variants": [
+        {
+          "name": "Some",
+          "type": "world_native::race::RaceRules"
+        },
+        {
+          "name": "None",
+          "type": "()"
+        }
+      ]
+    },
     "core::option::Option::<world_native::relics::ChestRules>": {
       "type": "enum",
       "name": "core::option::Option::<world_native::relics::ChestRules>",
@@ -11573,6 +11835,10 @@
       "name": "world_native::presets::EconomyPreset",
       "members": [
         {
+          "name": "race",
+          "type": "core::option::Option::<world_native::race::RaceRules>"
+        },
+        {
           "name": "labor",
           "type": "core::option::Option::<world_native::entry::LaborRules>"
         },
@@ -12077,6 +12343,122 @@
         {
           "name": "Clear",
           "type": "core::integer::u32"
+        }
+      ]
+    },
+    "world_native::race::AspectHyperstructure": {
+      "type": "struct",
+      "name": "world_native::race::AspectHyperstructure",
+      "members": [
+        {
+          "name": "entity_id",
+          "type": "core::integer::u64"
+        },
+        {
+          "name": "height",
+          "type": "core::integer::u32"
+        }
+      ]
+    },
+    "world_native::race::AspectKey": {
+      "type": "struct",
+      "name": "world_native::race::AspectKey",
+      "members": [
+        {
+          "name": "game_id",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "aspect",
+          "type": "core::integer::u8"
+        }
+      ]
+    },
+    "world_native::race::RaceMember": {
+      "type": "struct",
+      "name": "world_native::race::RaceMember",
+      "members": [
+        {
+          "name": "glory",
+          "type": "core::integer::u128"
+        },
+        {
+          "name": "contribution",
+          "type": "core::integer::u128"
+        }
+      ]
+    },
+    "world_native::race::RaceResult": {
+      "type": "struct",
+      "name": "world_native::race::RaceResult",
+      "members": [
+        {
+          "name": "winner",
+          "type": "core::option::Option::<core::integer::u8>"
+        },
+        {
+          "name": "ended_at",
+          "type": "core::integer::u64"
+        },
+        {
+          "name": "scheduled_end_at",
+          "type": "core::integer::u64"
+        }
+      ]
+    },
+    "world_native::race::RaceRules": {
+      "type": "struct",
+      "name": "world_native::race::RaceRules",
+      "members": [
+        {
+          "name": "season_days",
+          "type": "core::integer::u64"
+        },
+        {
+          "name": "glory_per_tick",
+          "type": "core::integer::u128"
+        },
+        {
+          "name": "height_per_tick",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "stage_height",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "first",
+          "type": "world_native::troops::Coord"
+        },
+        {
+          "name": "second",
+          "type": "world_native::troops::Coord"
+        },
+        {
+          "name": "third",
+          "type": "world_native::troops::Coord"
+        },
+        {
+          "name": "fourth",
+          "type": "world_native::troops::Coord"
+        }
+      ]
+    },
+    "world_native::race::TriumphKey": {
+      "type": "struct",
+      "name": "world_native::race::TriumphKey",
+      "members": [
+        {
+          "name": "game_id",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "aspect",
+          "type": "core::integer::u8"
+        },
+        {
+          "name": "stage",
+          "type": "core::integer::u8"
         }
       ]
     },
@@ -14503,5 +14885,5 @@
       ]
     }
   },
-  "identity": "2bf2a429a224b6dafd2fcc2726ff18b9ff39f3ace1dfcc038d9427307816dda8"
+  "identity": "b31000ea98d314020d9f845d0d67010c5b64ef1c5ee70003d469508db6205f8a"
 }

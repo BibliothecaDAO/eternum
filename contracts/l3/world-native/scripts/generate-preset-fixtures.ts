@@ -61,7 +61,17 @@ function conformancePreset(definition: Awaited<ReturnType<typeof currentPresetFi
 function presetFixtureSchema(): NativeSchema {
   const schema = structuredClone(compiledSchema);
   for (const type of factWireTypes) schema.types[type.name] = type;
-  for (const module of ["rules", "entry", "presets", "relics", "registrar", "blitz_results", "progression", "spires"])
+  for (const module of [
+    "rules",
+    "entry",
+    "race",
+    "presets",
+    "relics",
+    "registrar",
+    "blitz_results",
+    "progression",
+    "spires",
+  ])
     readStructs(schema, module);
   schema.models = defineFactModels({
     struct: (name: string) => {

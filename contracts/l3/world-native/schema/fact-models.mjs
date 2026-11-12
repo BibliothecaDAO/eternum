@@ -2,6 +2,116 @@
 // Production definitions, when present, must agree exactly with these fields.
 export const factWireTypes = [
   {
+    type: "struct",
+    name: "world_native::race::RaceRules",
+    members: [
+      { name: "season_days", type: "core::integer::u64" },
+      {
+        name: "glory_per_tick",
+        type: "core::integer::u128",
+      },
+      {
+        name: "height_per_tick",
+        type: "core::integer::u32",
+      },
+      {
+        name: "stage_height",
+        type: "core::integer::u32",
+      },
+      {
+        name: "first",
+        type: "world_native::troops::Coord",
+      },
+      {
+        name: "second",
+        type: "world_native::troops::Coord",
+      },
+      {
+        name: "third",
+        type: "world_native::troops::Coord",
+      },
+      {
+        name: "fourth",
+        type: "world_native::troops::Coord",
+      },
+    ],
+  },
+  {
+    type: "struct",
+    name: "world_native::race::AspectKey",
+    members: [
+      {
+        name: "game_id",
+        type: "core::integer::u32",
+      },
+      {
+        name: "aspect",
+        type: "core::integer::u8",
+      },
+    ],
+  },
+  {
+    type: "struct",
+    name: "world_native::race::AspectHyperstructure",
+    members: [
+      {
+        name: "entity_id",
+        type: "core::integer::u64",
+      },
+      {
+        name: "height",
+        type: "core::integer::u32",
+      },
+    ],
+  },
+  {
+    type: "struct",
+    name: "world_native::race::RaceMember",
+    members: [
+      {
+        name: "glory",
+        type: "core::integer::u128",
+      },
+      {
+        name: "contribution",
+        type: "core::integer::u128",
+      },
+    ],
+  },
+  {
+    type: "struct",
+    name: "world_native::race::TriumphKey",
+    members: [
+      {
+        name: "game_id",
+        type: "core::integer::u32",
+      },
+      {
+        name: "aspect",
+        type: "core::integer::u8",
+      },
+      {
+        name: "stage",
+        type: "core::integer::u8",
+      },
+    ],
+  },
+  {
+    type: "struct",
+    name: "world_native::race::RaceResult",
+    members: [
+      {
+        name: "winner",
+        type: "core::option::Option::<core::integer::u8>",
+      },
+      {
+        name: "ended_at",
+        type: "core::integer::u64",
+      },
+      { name: "scheduled_end_at", type: "core::integer::u64" },
+    ],
+  },
+  {
     type: "enum",
     name: "world_native::army_relics::RelicKind",
     variants: [
@@ -903,6 +1013,12 @@ export function defineFactModels({ struct, model: declare }) {
         value: "zero",
         meaning: "No reveal with Spire lore on this layer of this day's expedition yet.",
       };
+    if (row.name === "RaceMember")
+      row.absence = {
+        parent: "Structure",
+        value: "zero",
+        meaning: "No Glory or height contribution before this home holds a Deep site.",
+      };
     if (row.name === "ArmyRelics" || row.name === "ArmyRelicEffect")
       row.absence = {
         parent: "ExplorerTroops",
@@ -1022,6 +1138,11 @@ export function defineFactModels({ struct, model: declare }) {
       struct("expeditions::ExpeditionDiscoveryKey"),
       struct("expeditions::ExpeditionDiscovery"),
     ),
+    model("RaceRules", "game", [{ name: "game_id", type: "core::integer::u32" }], struct("race::RaceRules")),
+    model("RaceMember", "game", struct("resources::ResourceKey"), struct("race::RaceMember")),
+    model("AspectHyperstructure", "game", struct("race::AspectKey"), struct("race::AspectHyperstructure")),
+    model("TriumphDay", "game", struct("race::TriumphKey"), [{ name: "day", type: "core::integer::u64" }]),
+    model("RaceResult", "game", [{ name: "game_id", type: "core::integer::u32" }], struct("race::RaceResult")),
     model("ExpeditionSpire", "game", struct("spires::ExpeditionSpireKey"), struct("spires::ExpeditionSpire")),
     model(
       "DepositSource",
@@ -1521,6 +1642,11 @@ const byEntity = { entities: ["entity_id"] };
 const byOwner = { owners: ["owner"] };
 const byPlayer = { owners: ["player"] };
 export const syncScopes = {
+  RaceRules: shared,
+  RaceMember: shared,
+  AspectHyperstructure: shared,
+  TriumphDay: shared,
+  RaceResult: shared,
   GameOverrides: "internal",
   GameplayRejected: "actor",
   BatchProgress: "actor",

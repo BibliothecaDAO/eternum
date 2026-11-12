@@ -1,5 +1,5 @@
 // Generated from native fact models and contract ABIs. Run the native schema generator to update.
-export const nativeFactSchemaIdentity = "2bf2a429a224b6dafd2fcc2726ff18b9ff39f3ace1dfcc038d9427307816dda8";
+export const nativeFactSchemaIdentity = "b31000ea98d314020d9f845d0d67010c5b64ef1c5ee70003d469508db6205f8a";
 export const nativeReleaseConstants = {
   "RUIN_DEPTH_LIMIT_RELEASE": 9
 } as const;
@@ -205,6 +205,11 @@ export interface NativeRows {
   ArmyProgressionRules: { readonly game_id: number; readonly reveal_xp: number; readonly reveal_xp_per_depth: number; readonly common_xp: number; readonly uncommon_xp: number; readonly rare_xp: number; readonly epic_xp: number; readonly legendary_xp: number };
   FrontierDiscoveryRules: { readonly game_id: number; readonly beasts_bps: number; readonly camp_bps: number; readonly rift_bps: number; readonly ruin_bps: number; readonly shrine_bps: number; readonly well_bps: number; readonly empty_reveal_limit: number };
   ExpeditionDiscovery: { readonly game_id: number; readonly structure_id: bigint; readonly epoch: bigint; readonly empty_reveals: number; readonly ruin_cleared: boolean };
+  RaceRules: { readonly game_id: number; readonly season_days: bigint; readonly glory_per_tick: bigint; readonly height_per_tick: number; readonly stage_height: number; readonly first: { readonly alt: boolean; readonly x: number; readonly y: number }; readonly second: { readonly alt: boolean; readonly x: number; readonly y: number }; readonly third: { readonly alt: boolean; readonly x: number; readonly y: number }; readonly fourth: { readonly alt: boolean; readonly x: number; readonly y: number } };
+  RaceMember: { readonly game_id: number; readonly entity_id: bigint; readonly glory: bigint; readonly contribution: bigint };
+  AspectHyperstructure: { readonly game_id: number; readonly aspect: number; readonly entity_id: bigint; readonly height: number };
+  TriumphDay: { readonly game_id: number; readonly aspect: number; readonly stage: number; readonly day: bigint };
+  RaceResult: { readonly game_id: number; readonly winner: (number) | null; readonly ended_at: bigint; readonly scheduled_end_at: bigint };
   ExpeditionSpire: { readonly game_id: number; readonly structure_id: bigint; readonly epoch: bigint; readonly depth: number; readonly reveals: number; readonly location: ({ readonly alt: boolean; readonly x: number; readonly y: number }) | null };
   DepositSource: { readonly game_id: number; readonly chain: bigint; readonly ledger: bigint; readonly signer: bigint; readonly epoch: bigint };
   SpendLords: { readonly game_id: number; readonly account: bigint; readonly available: bigint; readonly consumed: bigint; readonly swept: bigint };
@@ -309,6 +314,11 @@ export interface NativeKeys {
   ArmyProgressionRules: { readonly game_id: number };
   FrontierDiscoveryRules: { readonly game_id: number };
   ExpeditionDiscovery: { readonly game_id: number; readonly structure_id: bigint; readonly epoch: bigint };
+  RaceRules: { readonly game_id: number };
+  RaceMember: { readonly game_id: number; readonly entity_id: bigint };
+  AspectHyperstructure: { readonly game_id: number; readonly aspect: number };
+  TriumphDay: { readonly game_id: number; readonly aspect: number; readonly stage: number };
+  RaceResult: { readonly game_id: number };
   ExpeditionSpire: { readonly game_id: number; readonly structure_id: bigint; readonly epoch: bigint; readonly depth: number };
   DepositSource: { readonly game_id: number };
   SpendLords: { readonly game_id: number; readonly account: bigint };
@@ -616,6 +626,102 @@ export const nativeFactModels = {
       },
       "value": "zero",
       "meaning": "No empty player reveals in this expedition yet."
+    }
+  },
+  "RaceRules": {
+    "keys": [
+      "game_id"
+    ],
+    "scope": "game",
+    "fields": {
+      "game_id": "u32",
+      "season_days": "u64",
+      "glory_per_tick": "u128",
+      "height_per_tick": "u32",
+      "stage_height": "u32",
+      "first": {
+        "alt": "boolean",
+        "x": "u32",
+        "y": "u32"
+      },
+      "second": {
+        "alt": "boolean",
+        "x": "u32",
+        "y": "u32"
+      },
+      "third": {
+        "alt": "boolean",
+        "x": "u32",
+        "y": "u32"
+      },
+      "fourth": {
+        "alt": "boolean",
+        "x": "u32",
+        "y": "u32"
+      }
+    }
+  },
+  "RaceMember": {
+    "keys": [
+      "game_id",
+      "entity_id"
+    ],
+    "scope": "game",
+    "fields": {
+      "game_id": "u32",
+      "entity_id": "u64",
+      "glory": "u128",
+      "contribution": "u128"
+    },
+    "absence": {
+      "parent": "Structure",
+      "value": "zero",
+      "meaning": "No Glory or height contribution before this home holds a Deep site.",
+      "parentKeys": {
+        "game_id": "game_id",
+        "entity_id": "entity_id"
+      }
+    }
+  },
+  "AspectHyperstructure": {
+    "keys": [
+      "game_id",
+      "aspect"
+    ],
+    "scope": "game",
+    "fields": {
+      "game_id": "u32",
+      "aspect": "u8",
+      "entity_id": "u64",
+      "height": "u32"
+    }
+  },
+  "TriumphDay": {
+    "keys": [
+      "game_id",
+      "aspect",
+      "stage"
+    ],
+    "scope": "game",
+    "fields": {
+      "game_id": "u32",
+      "aspect": "u8",
+      "stage": "u8",
+      "day": "u64"
+    }
+  },
+  "RaceResult": {
+    "keys": [
+      "game_id"
+    ],
+    "scope": "game",
+    "fields": {
+      "game_id": "u32",
+      "winner": {
+        "option": "u8"
+      },
+      "ended_at": "u64",
+      "scheduled_end_at": "u64"
     }
   },
   "ExpeditionSpire": {
@@ -2411,6 +2517,11 @@ export const nativeFactModels = {
   }
 } as const;
 export const nativeSyncScopes = {
+  "RaceRules": "shared",
+  "RaceMember": "shared",
+  "AspectHyperstructure": "shared",
+  "TriumphDay": "shared",
+  "RaceResult": "shared",
   "GameOverrides": "internal",
   "GameplayRejected": "actor",
   "BatchProgress": "actor",

@@ -32,6 +32,7 @@ pub struct WithdrawalPreset {
 }
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]
 pub struct EconomyPreset {
+    pub race: Option<crate::race::RaceRules>,
     pub labor: Option<crate::entry::LaborRules>,
     pub trade: crate::trade::TradeRules,
     pub banks: crate::market::BankRules,
@@ -56,6 +57,11 @@ pub struct PresetDefinition {
 
 pub fn validate(preset: PresetDefinition) {
     let rules = preset.rules;
+    if let Some(race) = preset.economy.race {
+        crate::race::validate(race);
+        assert!(rules.day_unit_seconds != 0 && preset.economy.chests.is_none(), "race requires days without LORDS");
+        assert!(preset.season_win_points == 0, "race cannot use victory points");
+    }
     assert!(preset.economy.labor.is_some() == (rules.day_unit_seconds != 0), "labor rules require expeditions");
     if let Some(labor) = preset.economy.labor {
         assert!(labor.amount != 0, "zero daily labor grant");

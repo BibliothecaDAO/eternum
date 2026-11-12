@@ -1,5 +1,5 @@
 {
-  "schemaIdentity": "2bf2a429a224b6dafd2fcc2726ff18b9ff39f3ace1dfcc038d9427307816dda8",
+  "schemaIdentity": "b31000ea98d314020d9f845d0d67010c5b64ef1c5ee70003d469508db6205f8a",
   "commandAbi": [
     {
       "type": "interface",
@@ -1553,6 +1553,26 @@
     },
     {
       "name": "ExpeditionDiscovery",
+      "scope": "game"
+    },
+    {
+      "name": "RaceRules",
+      "scope": "game"
+    },
+    {
+      "name": "RaceMember",
+      "scope": "game"
+    },
+    {
+      "name": "AspectHyperstructure",
+      "scope": "game"
+    },
+    {
+      "name": "TriumphDay",
+      "scope": "game"
+    },
+    {
+      "name": "RaceResult",
       "scope": "game"
     },
     {

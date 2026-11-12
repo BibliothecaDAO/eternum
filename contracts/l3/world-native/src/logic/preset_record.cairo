@@ -117,6 +117,7 @@ fn write_economy(
     preset: PresetWrite, commitment: felt252, rules: crate::rules::SliceRules, economy: crate::presets::EconomyPreset,
 ) {
     preset.labor_rules.write(economy.labor);
+    preset.race_rules.write(economy.race);
     preset.trade_rules.write(economy.trade);
     write_banks(preset, economy.banks);
     write_hyperstructures(preset, rules, economy.hyperstructures);
