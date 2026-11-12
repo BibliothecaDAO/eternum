@@ -1,4 +1,4 @@
-import { etherealDepthsScenario } from "./ethereal-depths-scenario";
+import { ETHEREAL_DEPTH_SCENARIOS } from "./ethereal-depths-scenario";
 import { REALM_SKIN_MODELS } from "@/three/structures/realm-skins";
 import { campaignScenario, devconSeasonScenario, fullLaborCampaignScenario } from "./campaign-scenario";
 import { dayEndScenario } from "./day-end-scenario";
@@ -35,7 +35,7 @@ import { ruinChestsScenario, ruinChestsSurfaceScenario } from "./ruin-chests-sce
 /** The games the lab plays, by name: each a fixture and the chain's answers to the commands it proves. */
 export const LAB_SCENARIOS: Partial<Record<string, () => LabScenario>> = {
   spire: spireScenario,
-  "ethereal-depths": etherealDepthsScenario,
+  ...ETHEREAL_DEPTH_SCENARIOS,
   /** The spire's game opened on the home page, entered by its card's Resume: a way back home there is the app's own. */
   "from-home": () => ({ ...spireScenario(), entersFromHome: true }),
   actions: actionsScenario,

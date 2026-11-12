@@ -325,8 +325,8 @@ const ACTION_STEPS = [
 ];
 
 /**
- * Ethereal II entered through the spire (the lab's spire game): the army selected, the spire beside it tapped for its
- * card, then Enter on Ethereal II; the result is the view switched there with the army standing at its arrival, seen
+ * Ethereal I entered through the spire the realm found today (the lab's spire game): the army selected, the spire
+ * beside it tapped for its card, then Enter on Ethereal I; the result is the view switched there with the army standing at its arrival, seen
  * on its figure (no walk crosses the void).
  */
 const SPIRE_ACTION_STEPS = [
@@ -336,14 +336,14 @@ const SPIRE_ACTION_STEPS = [
   clickToResultStep(
     "enter-depth",
     "EnterDepth",
-    enterEtherealIIFromItsCard,
+    enterEtherealIFromItsCard,
     ({ played }) => played.armyId && { presented: `army-shown:${played.armyId}` },
   ),
 ];
 
-async function enterEtherealIIFromItsCard({ browser }) {
+async function enterEtherealIFromItsCard({ browser }) {
   const armyId = browser.observe().selection?.army?.id ?? null;
-  browser.click("Enter Ethereal II");
+  browser.click("Enter Ethereal I");
   // The view switches to the arrival, so the army's place on screen is read once it stands there.
   const locate = () => {
     const armyAt = armyOnScreen(browser, armyId);
@@ -3014,16 +3014,16 @@ const LAB_SPIRE = { mode: "frontier", lab: "spire", chainId: "0x1ab9", gameId: 1
 
 /**
  * A realm's spire as a player uses it, at either size: the army selected from the dock, the spire found beside it by
- * its hover, tapped for its card (the army kept as its actor, each researched depth with its stamina and Enter, the next
- * one's research, and what entering commits the army to), then Enter on Ethereal II: the command the game signs, and
- * the view switched with the army into Ethereal II.
+ * its hover, tapped for its card (the army kept as its actor, the one layer below with Enter, and what entering commits
+ * the army to), then Enter on Ethereal I: the command the game signs, and the view switched with the army into
+ * Ethereal I.
  */
 const LAB_SPIRE_STEPS = [
   { name: "enter-on-map", settleMs: 3_000, verify: inScene("map") },
   { name: "pick-army", play: pickTheSpireArmy, settleMs: 1_500, verify: spireArmyPicked },
   { name: "army-panel", play: readTheArmyPanel, settleMs: 0, verify: armyPanelOffersSpire },
   { name: "spire-card", play: pressSpire, settleMs: 0, verify: spireCardOffersDepths },
-  { name: "enter-depth", play: enterEtherealII, settleMs: 0, verify: armyEnteredEtherealII },
+  { name: "enter-depth", play: enterEtherealI, settleMs: 0, verify: armyEnteredEtherealI },
 ];
 
 /**
@@ -3133,7 +3133,7 @@ async function openASiteCard(browser) {
   return { card: null, offered };
 }
 
-/** Each proof starts on the surface and uses the same Spire entry as a Frontier player. */
+/** Each proof starts beside the spire found on the layer above its depth and enters as a Frontier player does. */
 function etherealDepthSteps(depth) {
   const label = `Ethereal ${"I".repeat(depth)}`;
   return [
@@ -3143,10 +3143,12 @@ function etherealDepthSteps(depth) {
       play: pressSpire,
       settleMs: 0,
       verify: ({ played }) =>
-        played.state.depths.every((row) => row.button === "Enter" && row.enabled) &&
-        played.state.depths.length === Object.keys(depthLooks).length
+        played.state.depths.length === 1 &&
+        played.state.depths[0].depth === label &&
+        played.state.depths[0].button === "Enter" &&
+        played.state.depths[0].enabled
           ? completed(played)
-          : failed("The Spire does not offer all researched depths", played),
+          : failed(`The Spire does not offer ${label}, the layer below it`, played),
     },
     {
       name: `ethereal-${depth}`,
@@ -3202,8 +3204,8 @@ function etherealDepthSteps(depth) {
           return failed("The Spire did not sign the chosen depth entry", played);
         if (
           after.army?.id !== before.army.id ||
-          after.army.hex.col !== before.army.hex.col ||
-          after.army.hex.row - before.army.hex.row !== depth * 100 ||
+          // The nearest free tile about one region of Frontier's hundred rows below the spire beside it.
+          Math.abs(after.army.hex.row - before.army.hex.row - 100) > 5 ||
           !camera ||
           hexesApart(camera, after.army.hex) > FRAMED_WITHIN_HEXES
         )
@@ -3284,11 +3286,7 @@ function spireCardOffersDepths({ played, seen }) {
   if (shown.sheet !== "Spire") return failed(`Spire opened ${shown.sheet ?? "no card"}, not the spire's`, shown);
   if (!shown.army) return failed("Spire dropped the army", shown);
   const offered = shown.depths.map(({ depth, line, button, enabled }) => `${depth}|${line}|${button}|${enabled}`);
-  const expected = [
-    "Ethereal I|null|Enter|true",
-    "Ethereal II|null|Enter|true",
-    "Ethereal III|Research it to open it|Research|true",
-  ];
+  const expected = ["Ethereal I|null|Enter|true"];
   if (JSON.stringify(offered) !== JSON.stringify(expected))
     return failed(`the card offers ${offered.join(", ")}`, shown);
   if (!/^.+ stays until the day ends \(.+\)$/.test(shown.commitment ?? ""))
@@ -3296,10 +3294,10 @@ function spireCardOffersDepths({ played, seen }) {
   return completed(shown);
 }
 
-/** Presses Enter on Ethereal II, then reads the card and the army once the command's answer has moved the army. */
-async function enterEtherealII({ browser }) {
+/** Presses Enter on Ethereal I, then reads the card and the army once the command's answer has moved the army. */
+async function enterEtherealI({ browser }) {
   const before = browser.read(SPIRE_STATE);
-  browser.click("Enter Ethereal II");
+  browser.click("Enter Ethereal I");
   const moved = (shown) => shown.sent.length > before.sent.length && shown.army?.hex.row !== before.army?.hex.row;
   const after = await readUntil(() => browser.read(SPIRE_STATE), moved, ORDER_OUTCOME_WAIT_MS);
   const framed = (camera) => camera !== null && hexesApart(camera, after.army.hex) <= FRAMED_WITHIN_HEXES;
@@ -3311,24 +3309,24 @@ async function enterEtherealII({ browser }) {
 const MAP_CAMERA = `JSON.stringify(window.__eternumMapSelection?.camera ?? null)`;
 
 /**
- * The command the game signed for the press, and the army it moved into Ethereal II, the view switched with it: the
- * camera looks at the army's arrival, two regions from the spire, and the army is still selected (owner, 2026-11-04:
+ * The command the game signed for the press, and the army it moved into Ethereal I, the view switched with it: the
+ * camera looks at the army's arrival, one region below the spire, and the army is still selected (owner, 2026-11-04:
  * "spire entering lmao we should just switch view like realm/world/ethereal no ?").
  */
-function armyEnteredEtherealII({ played }) {
+function armyEnteredEtherealI({ played }) {
   const { before, after } = played;
   const command = after.sent.at(-1);
   if (after.sent.length !== before.sent.length + 1 || command?.kind !== "EnterDepth")
     return failed("Enter sent no EnterDepth command", { before, after });
-  if (Number(command.fields.explorer_id) !== before.army?.id || command.fields.depth !== "2")
+  if (Number(command.fields.explorer_id) !== before.army?.id || command.fields.depth !== "1")
     return failed(`EnterDepth was sent for ${JSON.stringify(command.fields)}`, { before, after });
-  // Two regions of Frontier's hundred rows straight below where it stood.
-  if (after.army?.hex.col !== before.army.hex.col || after.army.hex.row - before.army.hex.row !== 200)
-    return failed("the army did not land in Ethereal II", { before, after });
+  // About one region of Frontier's hundred rows below the spire beside it: the nearest free tile there.
+  const rows = after.army ? after.army.hex.row - before.army.hex.row : 0;
+  if (rows < 95 || rows > 105) return failed("the army did not land in Ethereal I", { before, after });
   if (played.camera === null || hexesApart(played.camera, after.army.hex) > FRAMED_WITHIN_HEXES)
-    return failed("the view did not switch to the army in Ethereal II", { before, after, camera: played.camera });
+    return failed("the view did not switch to the army in Ethereal I", { before, after, camera: played.camera });
   if (after.army?.id !== before.army.id)
-    return failed("the army is no longer selected in Ethereal II", { before, after });
+    return failed("the army is no longer selected in Ethereal I", { before, after });
   return completed({ command, before: before.army, after: after.army, camera: played.camera });
 }
 
@@ -5443,7 +5441,7 @@ export const STEP_SETS = {
   ...Object.fromEntries(
     Object.keys(depthLooks).map((depth) => [
       `lab-ethereal-${depth}`,
-      { game: { ...LAB_SPIRE, lab: "ethereal-depths" }, steps: etherealDepthSteps(Number(depth)) },
+      { game: { ...LAB_SPIRE, lab: `ethereal-depths-${depth}` }, steps: etherealDepthSteps(Number(depth)) },
     ]),
   ),
   "lab-merge-loses-xp": {

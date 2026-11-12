@@ -445,7 +445,6 @@ export const TRAINING_BUILDINGS = [
   buildingName(BuildingType.ScoutsLodge, true),
   buildingName(BuildingType.Hearth, true),
 ] as const;
-/** The castle rows that unlock the three depths beyond the spire. */
 /** The layer a realm's spire is the portal to (owner, 4 November 2026: "its a portal to the ethereal layer bro"). */
 export const ETHEREAL = "Ethereal";
 export const DEPTH_NUMERALS = ["I", "II", "III"] as const;
@@ -457,7 +456,7 @@ const LAYER_CHEST = {
   open: "chest to take today",
   claimed: "chest taken today",
   unknown: "chest not known without an army there",
-  locked: "not researched",
+  locked: "not reached yet",
 } as const satisfies Record<RuinChest, string>;
 /** The day's own layer, as a site's card names its depth (the layer switch calls it World). */
 const SURFACE = "Surface";
@@ -475,14 +474,14 @@ export const siteDepthName = (depth: number): string => {
 export const SPIRE_WORDS = {
   title: "Spire",
   enter: "Enter",
-  /** The order on the spire's tile; its card then picks the Ethereal layer to enter. */
+  /** The order on the spire's tile; its card then offers the layer below. */
   order: "Enter the Spire",
   foreign: "Another realm's spire",
   pickArmy: "Select an army beside the spire",
   away: (army: string) => `${army} must be beside the spire`,
-  inDepth: (army: string, depth: string) => `${army} is in ${depth} today`,
-  landingTaken: "Its landing is taken",
-  locked: "Research it to open it",
+  elsewhere: (army: string) => `${army} is on another layer`,
+  /** The odds the realm's next reveal on a layer finds its spire there today. */
+  odds: (percent: number) => `Spire: ${percent}% on the next reveal`,
   commits: (army: string, left: string) => `${army} stays until the day ends (${left})`,
 } as const;
 export const RESEARCHING = "Researching…";
@@ -1844,7 +1843,8 @@ export const RESEARCH_TREE = {
   nouns: { essence: ESSENCE, labor: LABOR },
   armiesFind: (site: string) => `Armies find ${site}s`,
   each: (gain: string) => `${gain} each`,
-  enters: (depth: string) => `Armies enter ${depth} at the spire`,
+  /** The castle's lore whose reveals find the day's spires. */
+  spireLore: "Spire lore",
   opens: "Open",
   build: (building: string) => `Build a ${building}`,
   stands: (building: string) => `${building} stands`,

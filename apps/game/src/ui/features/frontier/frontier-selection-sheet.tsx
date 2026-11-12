@@ -92,9 +92,9 @@ export const useSelectionCard = ({
         />
       </HudSheet>,
     );
+  // A spire a Frontier realm found occupies its tile too: its realm's card, not the layer-switch card Eternum's spires use.
+  if (spire && !armyWhereItStands) return card("realm-spire", <RealmSpireSheet spire={spire} onClose={close} />);
   if (tileObject?.kind === "spire") return card("spire", <SpireCard onClose={close} />);
-  if (spire && !armyWhereItStands)
-    return card("realm-spire", <RealmSpireSheet spire={spire} onResearch={onResearch} onClose={close} />);
   if (realm && keep) return card("keep", <CastleUpgrade realm={realm} onResearchPage={onResearch} onClose={close} />);
   if (realm && building)
     return card(

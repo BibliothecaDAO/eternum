@@ -78,7 +78,7 @@ vi.mock("../hud/dock-armies", () => ({ useDockArmies: () => [army] }));
 vi.mock("./army-refill", () => ({ ArmyRefill: () => null }));
 vi.mock("../frontier-reveal-yield", () => ({ useArmyRevealYield: () => 75 }));
 // The army stands away from its spire: its panel has no Spire (spire-card.test.tsx plays the spire).
-vi.mock("../spire-card", () => ({ useArmyAtItsSpire: () => null, SpireButton: () => null }));
+vi.mock("../spire-card", () => ({ useArmyAtItsSpire: () => null, SpireButton: () => null, SpireOdds: () => null }));
 
 const { FrontierArmy } = await import("./frontier-army");
 const { ArmyDock } = await import("../hud/army-dock");

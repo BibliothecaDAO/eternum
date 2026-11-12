@@ -9,7 +9,6 @@ import { StructureType, TileOccupier } from "@bibliothecadao/types";
 import { entityHomeNamespace } from "./entity-home";
 import { type ExpeditionRules, expeditionRealmSite, seasonDay } from "./expeditions";
 import { regionInGameSyncScope } from "../sync/model-manifest";
-import { researchedDepth } from "./realm-research";
 
 type RuinReader = Pick<NativeFactStore, "get" | "inGame">;
 
@@ -80,7 +79,7 @@ const NO_HISTORY: RuinHistory = { cleared: new Set(), complete: false };
 export function ruinChestsToday(
   store: ChestReader,
   rules: ExpeditionRules,
-  realm: Pick<NativeRows["Structure"], "game_id" | "entity_id">,
+  realm: Pick<NativeRows["Structure"], "game_id" | "entity_id" | "metadata">,
   nowSeconds: number,
   history: RuinHistory = NO_HISTORY,
 ): RuinChests | null {
@@ -101,7 +100,7 @@ export function ruinChestsToday(
   // A history that shows no clear while the discovery row has one lags the facts: it proves nothing.
   const historyProves = history.complete && !(discovery?.ruin_cleared === true && history.cleared.size === 0);
   const held = depthRegionHeld(store, rules, home, nowSeconds);
-  const deepest = researchedDepth(store, realm.game_id, realm.entity_id) ?? 0;
+  const deepest = realm.metadata.deepest_depth;
   const chest = (depth: number): RuinChest => {
     if (depth > deepest) return "locked";
     if (claimed.has(depth) || history.cleared.has(depth)) return "claimed";

@@ -1,5 +1,5 @@
 import { SPIRE_ARMY } from "@/ui/features/frontier/spire-fixture";
-import { expeditionSpireTile, readExpeditionRules } from "@bibliothecadao/eternum";
+import { expeditionSpires } from "@bibliothecadao/eternum";
 import type { NativeFactStore } from "@bibliothecadao/eternum/game-client";
 import { getHexDistance, getHexesWithinRadius } from "@bibliothecadao/types";
 
@@ -40,7 +40,7 @@ export const clearedCampScenario = (): LabScenario => {
  */
 const campTiles = (store: NativeFactStore, site: { col: number; row: number }, now: number) => {
   const realm = store.require("Structure", { game_id: 1, entity_id: 7 });
-  const spireTile = expeditionSpireTile(readExpeditionRules(store, 1)!, realm, now)!;
+  const [spireTile] = expeditionSpires(store, realm.game_id, now);
   const taken = [...store.entries("TileOccupancy")].map(([, row]) => ({ col: row.col, row: row.row }));
   const open = getHexesWithinRadius(site.col, site.row, 4).filter(
     (hex) =>
