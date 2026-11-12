@@ -1,3 +1,4 @@
+import type { GroundLights } from "./ground-lights";
 import type { EtherealSurface } from "./ethereal-depths";
 import { NEUTRAL_BIOME_CLIMATE, type BiomeClimateConfig } from "@bibliothecadao/eternum";
 import { BiomeType, getNeighborHexes } from "@bibliothecadao/types";
@@ -226,6 +227,10 @@ class SupersededPresentationError extends Error {
 export class WorldmapProceduralTerrain {
   readonly object3d: Group;
   private readonly terrain: ProceduralTerrain;
+
+  get groundLights(): GroundLights {
+    return this.terrain.groundLights;
+  }
   /** The latest prepared version of each page, by page key, with the signature it was prepared for. */
   private readonly preparedByPageKey = new Map<string, { signature: string; page: PreparedTerrainPage }>();
   private readonly pendingBySignature = new Map<string, Promise<PreparedTerrainPage>>();

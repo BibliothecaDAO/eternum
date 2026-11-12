@@ -28,6 +28,7 @@ import { createEtherealBorderMaterial } from "./terrain-ethereal-border-material
 import { createEtherealTerrainMaterial } from "./terrain-ethereal-material";
 import type { TerrainFogMask } from "./terrain-fog-mask";
 import { TerrainBiomeMap } from "./terrain-biome-map";
+import { GroundLights } from "./ground-lights";
 import { createTerrainGroundMaterial, createTerrainMaterials, type TerrainMaterials } from "./terrain-material";
 import { TerrainPageWorkerClient } from "./terrain-page-worker-client";
 import { isTerrainPropFootprintClear } from "./terrain-prop-footprint";
@@ -103,6 +104,8 @@ export class ProceduralTerrain {
   private surfacePresentation: "world" | "ethereal" = "world";
   /** The biome of every hex presented, which the detailed ground reads to paint and blend each one. */
   private readonly biomeMap = new TerrainBiomeMap();
+  /** What glows on this terrain lights the ground round it. */
+  readonly groundLights = new GroundLights();
   private propLod: TerrainPropLod = "near";
   private qualityTier: TerrainQualityTier = "detail";
   private propPools: TerrainPropPools | null = null;
@@ -130,7 +133,11 @@ export class ProceduralTerrain {
     this.object3d.add(this.fogField.object3d);
     this.object3d.add(this.movementEffects.object3d);
     this.materials = createTerrainMaterials();
-    this.groundTextureMaterial = createTerrainGroundMaterial(this.biomeMap.texture, this.materials.groundMotion);
+    this.groundTextureMaterial = createTerrainGroundMaterial(
+      this.biomeMap.texture,
+      this.groundLights,
+      this.materials.groundMotion,
+    );
     this.fogField.applyRevealToMaterial(this.groundTextureMaterial);
     this.fogField.applyRevealToMaterial(this.materials.flatLand);
     this.fogField.applyRevealToMaterial(this.materials.water);
@@ -508,6 +515,7 @@ export class ProceduralTerrain {
       ].filter(Boolean),
     ).forEach((material) => material!.dispose());
     this.biomeMap.dispose();
+    this.groundLights.dispose();
   }
 
   private stagePresentedPages(

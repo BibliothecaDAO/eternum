@@ -1,3 +1,4 @@
+import type { GroundLights } from "./ground-lights";
 import { applyEndgameFrost } from "../effects/endgame/field";
 import { mapAnimationTime as time } from "../effects/endgame/state";
 import type { Texture } from "three";
@@ -195,6 +196,7 @@ function createTerrainWaterFoam(
  */
 export function createTerrainGroundMaterial(
   biomeMap: Texture,
+  groundLights: GroundLights,
   groundMotion: UniformNode<"float", number>,
 ): MeshStandardNodeMaterial {
   const material = new MeshStandardNodeMaterial({ metalness: 0, roughness: 0.95 });
@@ -217,7 +219,7 @@ export function createTerrainGroundMaterial(
   // The ground is painted to be read as it is: the lift that keeps flat vertex colour readable would flatten it.
   material.colorNode = withSurfaceBasalt(drawHexGrid(albedo));
   material.roughnessNode = mix(attribute<"float">("terrainRoughness", "float").clamp(0.7, 1), 0.35, gloss);
-  material.emissiveNode = glow.mul(notBasalt);
+  material.emissiveNode = glow.mul(notBasalt).add(albedo.mul(groundLights.at(positionWorld)));
   material.normalNode = transformNormalToView(normalLocal.add(vec3(slope.x.negate(), 0, slope.y.negate())).normalize());
   return material;
 }

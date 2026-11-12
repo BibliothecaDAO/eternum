@@ -1,3 +1,5 @@
+import type { GroundLights } from "../terrain/ground-lights";
+import { SPIRE_GROUND_LIGHT } from "../structures/structure-ground-lights";
 import { isWithinWorldOriginReach, subscribeWorldOrigin, worldOrigin } from "../world-origin";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { SPIRE_MODEL_PATH } from "@/three/constants/scene-constants";
@@ -56,6 +58,7 @@ export class SpireManager {
     private readonly markLabelsDirty: () => void = () => {},
     private readonly ruleSpires?: RuleSpires,
     private readonly compilePipelines: PipelineCompiler = async () => {},
+    private readonly groundLights: GroundLights | null = null,
   ) {
     this.subscriptions = [
       projection.subscribeTiles((changes) => {
@@ -223,6 +226,7 @@ export class SpireManager {
     this.dummy.updateMatrix();
     this.model!.placeSpire(index, this.dummy.matrix, hex.dormant);
     this.placements.push({ hex, y: position.y, label: hex.dormant ? null : this.addLabel(position) });
+    if (!hex.dormant) this.groundLights?.set(spireLightKey(index), position.x, position.z, SPIRE_GROUND_LIGHT);
   }
 
   private addLabel(position: Vector3): CSS2DObject {
@@ -319,6 +323,7 @@ export class SpireManager {
 
   private clearLabels(): void {
     this.markLabelsDirty();
+    this.placements.forEach((_, index) => this.groundLights?.remove(spireLightKey(index)));
     this.placements = [];
     for (const child of [...this.labels.children]) {
       if (child instanceof CSS2DObject) child.element.remove();
@@ -326,3 +331,5 @@ export class SpireManager {
     }
   }
 }
+
+const spireLightKey = (index: number) => `spire:${index}`;

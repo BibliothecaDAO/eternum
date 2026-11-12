@@ -64,6 +64,7 @@ import type {
   WorldSpatialProjection,
 } from "@bibliothecadao/eternum/game-sync";
 import { BuildingType, ID, StructureType } from "@bibliothecadao/types";
+import { STRUCTURE_GROUND_LIGHTS } from "../structures/structure-ground-lights";
 import { Box3, Euler, Object3D, Scene, Sphere, Vector3 } from "three";
 import type { AttachmentTransform, CosmeticAttachmentTemplate } from "../cosmetics";
 import {
@@ -1622,6 +1623,7 @@ export class StructureManager {
   ): void {
     const rotationY = this.resolveVisibleStructureRotationY(structure);
     this.syncVisibleStructurePresentation(structure, rotationY, attachmentRetain);
+    this.lightGroundAround(structure, this.scratchPosition);
 
     const bindings = this.hasCosmeticSkin(structure)
       ? this.addVisibleCosmeticStructureInstances(structure, dirtyModels)
@@ -1767,7 +1769,15 @@ export class StructureManager {
     return freeSlot;
   }
 
+  /** A structure that glows lights the ground round it, where it stands. */
+  private lightGroundAround(structure: StructureInfo, position: Vector3): void {
+    const light = STRUCTURE_GROUND_LIGHTS[structure.structureType];
+    if (light)
+      this.hexagonScene?.getGroundLights()?.set(groundLightKey(structure.entityId), position.x, position.z, light);
+  }
+
   private removeVisibleStructureInstance(entityId: ID, dirtyModels: Set<StructureModel>): void {
+    this.hexagonScene?.getGroundLights()?.remove(groundLightKey(entityId));
     const bindings = this.structureInstanceBindings.get(entityId);
     if (!bindings) {
       return;
@@ -2195,3 +2205,5 @@ export class StructureManager {
     }
   }
 }
+
+const groundLightKey = (entityId: ID) => `structure:${entityId}`;
