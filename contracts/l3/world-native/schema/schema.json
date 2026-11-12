@@ -29,7 +29,6 @@
     "HOMECOMING_EPIC_BPS": 2100,
     "HOMECOMING_LEGENDARY_BPS": 3000,
     "MAX_BLITZ_ROSTER_PLAYERS": 24,
-    "DUEL_ROSTER_PLAYERS": 2,
     "ENTRY_ENTITLEMENT": 0,
     "ENTRY_OPEN": 1,
     "ENTRY_ROSTER": 2,
@@ -13077,10 +13076,6 @@
         {
           "name": "Triple",
           "type": "()"
-        },
-        {
-          "name": "Duel",
-          "type": "()"
         }
       ]
     },
@@ -14073,5 +14068,5 @@
       ]
     }
   },
-  "identity": "ab3864f0631e2117d1a1faece25f2fea4228b728da8262883e1426cb94dac831"
+  "identity": "3493d53c3001e75f9dfd42df0786e4b9f617814715c05e7a363078fdfab714ee"
 }

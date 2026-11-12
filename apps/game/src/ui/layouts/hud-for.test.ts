@@ -9,10 +9,9 @@ describe("a game's HUD", () => {
     expect(hudFor("eternum", true)).toBe("shared");
   });
 
-  it("wears its game's age: Frontier's and Eternum's own, Blitz's for a Blitz game and a duel", () => {
+  it("wears its game's age: Frontier's and Eternum's own, Blitz's for a Blitz game", () => {
     expect(hudModeOf("frontier")).toBe("frontier");
     expect(hudModeOf("eternum")).toBe("eternum");
     expect(hudModeOf("blitz")).toBe("blitz");
-    expect(hudModeOf("duel")).toBe("blitz");
   });
 });

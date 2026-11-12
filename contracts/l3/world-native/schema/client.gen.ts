@@ -1,5 +1,5 @@
 // Generated from native fact models and contract ABIs. Run the native schema generator to update.
-export const nativeFactSchemaIdentity = "ab3864f0631e2117d1a1faece25f2fea4228b728da8262883e1426cb94dac831";
+export const nativeFactSchemaIdentity = "3493d53c3001e75f9dfd42df0786e4b9f617814715c05e7a363078fdfab714ee";
 export const nativeReleaseConstants = {
   "RUIN_DEPTH_LIMIT_RELEASE": 9
 } as const;
@@ -33,7 +33,6 @@ export const nativeRuleConstants = {
   "HOMECOMING_EPIC_BPS": 2100,
   "HOMECOMING_LEGENDARY_BPS": 3000,
   "MAX_BLITZ_ROSTER_PLAYERS": 24,
-  "DUEL_ROSTER_PLAYERS": 2,
   "ENTRY_ENTITLEMENT": 0,
   "ENTRY_OPEN": 1,
   "ENTRY_ROSTER": 2,
@@ -234,7 +233,7 @@ export interface NativeRows {
   BlitzRoster: { readonly game_id: number; readonly players: readonly ({ readonly account: bigint; readonly wallet: bigint })[] };
   RealmGrants: { readonly game_id: number; readonly resources: readonly ({ readonly resource_type: number; readonly amount: bigint })[]; readonly starting_troops: readonly ("Knight" | "Paladin" | "Crossbowman")[]; readonly realm_resources: readonly (number)[] };
   HyperstructureReservations: { readonly game_id: number; readonly placed: number };
-  SettlementRules: { readonly game_id: number; readonly registration_start: number; readonly registration_limit: number; readonly mode: "Single" | "Triple" | "Duel"; readonly spacing: number };
+  SettlementRules: { readonly game_id: number; readonly registration_start: number; readonly registration_limit: number; readonly mode: "Single" | "Triple"; readonly spacing: number };
   SettlementProgress: { readonly game_id: number; readonly registered: number; readonly realm_count: number };
   SettlementPool: { readonly game_id: number; readonly opened: number; readonly available: readonly ({ readonly coords: readonly ({ readonly alt: boolean; readonly x: number; readonly y: number })[] })[] };
   VillageRules: { readonly game_id: number; readonly troop_delay_ticks: number; readonly resources: readonly ({ readonly resource_type: number; readonly amount: bigint })[]; readonly resource_pool: readonly ({ readonly resource_type: number; readonly weight: bigint })[] };
@@ -1206,8 +1205,7 @@ export const nativeFactModels = {
       "mode": {
         "enum": [
           "Single",
-          "Triple",
-          "Duel"
+          "Triple"
         ]
       },
       "spacing": "u32"

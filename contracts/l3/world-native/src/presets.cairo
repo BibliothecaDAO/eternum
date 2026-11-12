@@ -115,11 +115,6 @@ pub fn validate(preset: PresetDefinition) {
     }
     assert!(rules.bitcoin_mine_config.owner_cut_bps <= 10000, "invalid Bitcoin owner cut");
 
-    assert!(
-        rules.entry_rule == crate::rules::ENTRY_ROSTER
-            || preset.settlement.mode != crate::settlement::SettlementMode::Duel,
-        "Eternum does not use Duel settlement",
-    );
     let map = preset.rules.map_config;
     assert!(
         map.shards_mines_win_probability == 0 || !preset.resources.surface_mines.is_empty(), "empty enabled mine pool",

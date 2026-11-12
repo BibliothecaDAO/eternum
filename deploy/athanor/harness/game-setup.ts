@@ -48,7 +48,6 @@ export async function launchHarnessGame(input: {
       durationSeconds: harnessSeasonSeconds(preset.rules.tick_config.armies_tick_in_seconds, input.minutes),
       devModeOn: false,
       singleRealmMode: config.settlement.single_realm_mode,
-      twoPlayerMode: nativePresetForId(input.presetId).settlementMode === "Duel",
       useMapOverride: false,
     });
     const gameId = input.gameId ?? (await createRegistrarGame(account, params, manifest, preset)).gameId;

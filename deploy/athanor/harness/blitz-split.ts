@@ -1,7 +1,8 @@
 import { parseArgs } from "node:util";
-import { hash } from "starknet";
+import { CallData, hash } from "starknet";
 import { deviceKeyOf, joinBotAccount } from "@bibliothecadao/eternum";
 import { openShard } from "@bibliothecadao/eternum/game-client";
+import schema from "../../../contracts/l3/world-native/schema/schema.json";
 import bindings from "../../../contracts/l3/world-native/schema/bindings.json";
 import type { NativeWorldManifest } from "../../../config/deployer/clean/world/native/types";
 import { nativePresetIdFor } from "../../../config/source/native";
@@ -9,7 +10,7 @@ import { readShardManifest } from "../../../packages/chain/shard-manifest.js";
 import { splitPlaytestRoster } from "../../../packages/value-ledger/src/blitz-roster";
 import { BLITZ_SLOT_PREPARATION_SECONDS } from "../../../packages/value-ledger/src/blitz-timetable";
 import { seaterLabels } from "../../../packages/value-ledger/src/shard-accounts";
-import { LaunchShard, type BlitzLaunch } from "../../../apps/launch-service/src/shard-client";
+import { buildLaunchGameParams, LaunchShard, type BlitzLaunch } from "../../../apps/launch-service/src/shard-client";
 import { RegistrationOpen } from "../../../apps/launch-service/src/blitz-roster";
 import { createHarnessAdminProvider } from "./game-setup";
 import { now, percentile, save } from "./burst-evidence";
@@ -27,9 +28,15 @@ import { now, percentile, save } from "./burst-evidence";
 const GAME_SECONDS = 3_600;
 
 async function main(): Promise<void> {
-  const { values } = parseArgs({ options: { players: { type: "string" }, out: { type: "string" } } });
+  const { values } = parseArgs({
+    options: { players: { type: "string" }, out: { type: "string" }, "dry-run": { type: "boolean" } },
+  });
   const players = Number(values.players);
   if (!Number.isInteger(players) || players < 1 || !values.out) throw new Error("Usage: --players N --out FILE");
+  if (values["dry-run"]) {
+    writeDryRun(players, values.out);
+    return;
+  }
   const manifest = readShardManifest<NativeWorldManifest>(required("NATIVE_WORLD_MANIFEST"));
   const shard = await openShard(required("HERALD_URL"), bindings.schemaIdentity);
   const operator = {
@@ -68,6 +75,26 @@ async function main(): Promise<void> {
     save(values.out, failedSplitReport({ players, startedAt, endedAt: new Date().toISOString(), error }));
     throw error;
   }
+}
+
+/** Compile the launcher's actual game payloads without joining accounts or contacting a shard. */
+function writeDryRun(players: number, out: string): void {
+  const seaters = seaterLabels.map((_, index) => `0x${(index + 1).toString(16)}`);
+  const launches = slotLaunches(players, seaters, Date.now());
+  const codec = new CallData([...Object.values(schema.types), ...schema.games.entrypoints]);
+  save(out, {
+    dryRun: true,
+    players,
+    games: launches.map(({ request, createdAt, players, seater }) => {
+      const params = buildLaunchGameParams(request, createdAt, players, seater);
+      return {
+        name: request.gameName,
+        presetId: params.preset_id,
+        players: players.length,
+        calldata: codec.compile("create_game", { params }),
+      };
+    }),
+  });
 }
 
 /**

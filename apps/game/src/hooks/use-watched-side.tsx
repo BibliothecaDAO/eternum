@@ -72,7 +72,7 @@ const fetchRealmsCreated = async (chainId: string, game: number): Promise<Herald
 
 /**
  * Keeps an open game's seats while the viewer watches it (`setOpenGameSeats`), for that game alone: its shard's chain id
- * and its id. A Blitz or Duel game seats by its roster, on the chain. Mounted once, beside whichever HUD draws.
+ * and its id. A Blitz game seats by its roster, on the chain. Mounted once, beside whichever HUD draws.
  */
 export const useOpenGameSeats = (): void => {
   const watching = useIsWatching();

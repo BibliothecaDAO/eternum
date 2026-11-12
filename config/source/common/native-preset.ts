@@ -37,7 +37,7 @@ export interface NativePreset {
   modeRules: number;
   entryRule: number;
   commandMask: bigint;
-  settlementMode: "Single" | "Triple" | "Duel";
+  settlementMode: "Single" | "Triple";
   spacing: number;
   /** The unit a season's days are counted in (Frontier rules §9): a day lasts 2 to 6 units; 0 in modes without days. */
   dayUnitSeconds: number;

@@ -566,7 +566,7 @@ fn automatic_blitz_settlement_holds_play_for_its_last_seat_and_never_moves_the_s
         realms
             .append(
                 crate::settlement_grid::reservation_location(
-                    crate::troops::Coord { alt: false, x: map_center, y: map_center }, SettlementMode::Triple, 6, index,
+                    crate::troops::Coord { alt: false, x: map_center, y: map_center }, 6, index,
                 ),
             );
     }

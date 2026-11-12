@@ -79,7 +79,6 @@ function resolveLaunchConfig(runtime: LaunchRuntime, request: LaunchGameRequest)
     factoryAddress: "",
     devModeOn: request.devModeOn,
     singleRealmMode: request.singleRealmMode,
-    twoPlayerMode: request.twoPlayerMode,
     durationSeconds: request.durationSeconds,
 
     mapConfigOverrides: request.mapConfigOverrides,
@@ -167,7 +166,6 @@ async function buildRegistrarGameParams(launch: PreparedLaunch) {
     durationSeconds: launch.config.season.durationSeconds,
     devModeOn: launch.config.dev.mode.on,
     singleRealmMode: launch.config.settlement.single_realm_mode,
-    twoPlayerMode: launch.config.settlement.two_player_mode ?? false,
     useMapOverride: Boolean(
       launch.request.mapConfigOverrides && Object.keys(launch.request.mapConfigOverrides).length > 0,
     ),

@@ -115,7 +115,7 @@ pub mod SettlementPoolState {
             registered: u16,
             seed: u256,
         ) -> Span<Coord> {
-            let target = target_pool_size(registered, rules.registration_limit, rules.mode);
+            let target = target_pool_size(registered, rules.registration_limit);
             assert!(target != 0, "no open settlements");
             self.prepare_pool(game_id, false, center, rules, target);
             self.take_candidate(game_id, false, center, rules, seed)
@@ -132,7 +132,7 @@ pub mod SettlementPoolState {
             let target = if rules.mode == SettlementMode::Triple {
                 0
             } else {
-                target_pool_size(registered, rules.registration_limit, rules.mode)
+                target_pool_size(registered, rules.registration_limit)
             };
             if self.prepare_pool(game_id, false, center, rules, target) {
                 self.emit_pool(game_id, false, center, rules);

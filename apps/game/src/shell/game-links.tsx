@@ -10,21 +10,19 @@ export const modeLabel = (game: Pick<DirectoryGame, "mode" | "preset_id">): stri
     case "frontier":
     case "blitz":
     case "eternum":
-    case "duel":
       return GAME_MODE_NAMES[game.mode];
     default:
       return `Preset ${game.preset_id}`;
   }
 };
 
-/** The age painting a game's doorway stands on; a Duel is a Blitz match (its config is Blitz's), an unknown mode has none. */
+/** The age painting a game's doorway stands on; an unknown mode has none. */
 export const gamePainting = (game: Pick<DirectoryGame, "mode">): Painting | undefined => {
   switch (game.mode) {
     case "frontier":
     case "blitz":
     case "eternum":
       return ageOf(game.mode).painting;
-    case "duel":
       return ageOf("blitz").painting;
     default:
       return undefined;

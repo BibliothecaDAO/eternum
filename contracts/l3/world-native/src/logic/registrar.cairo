@@ -76,7 +76,6 @@ pub mod RegistrarState {
                 day_unit_seconds: preset.rules.day_unit_seconds.read(),
                 armies_tick_seconds: preset.rules.tick_config.armies_tick_in_seconds.read(),
                 entry_rule: preset.rules.entry_rule.read(),
-                settlement_mode: preset.settlement_mode.read(),
                 spacing: preset.settlement_spacing.read(),
             };
             crate::registrar::validate_params(params, rules);

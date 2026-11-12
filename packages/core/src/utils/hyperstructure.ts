@@ -17,8 +17,8 @@ export interface HyperstructureRate {
 /**
  * The one rate every surface shows for a Hyperstructure. A held one pays the game's rate times the multiplier its share
  * allocation was struck at when it was taken, zero included, and has no rate until that allocation is known; an
- * untaken one shows what taking it now would pay: the game's rate times 1, or, where the multiplier rule is on, 2 in a
- * Duel or the realms the contract's scan counts around it.
+ * untaken one shows what taking it now would pay: the game's rate times 1, or, where the multiplier rule is on,
+ * the realms the contract's scan counts around it.
  */
 export const getHyperstructureRates = (store: NativeFactStore): Map<ID, HyperstructureRate> => {
   const game_id = configManager.getActiveGameId();
@@ -51,8 +51,7 @@ export const hyperstructureRate = (
       ? null
       : { pointsPerSecond: grants.hyperstructurePerSecond * struckMultiplier, taken };
   }
-  const multiplier =
-    grants.hyperstructureScale === "flat" ? 1 : grants.hyperstructureScale === "double" ? 2 : realmsInScan;
+  const multiplier = grants.hyperstructureScale === "flat" ? 1 : realmsInScan;
   return { pointsPerSecond: grants.hyperstructurePerSecond * multiplier, taken };
 };
 

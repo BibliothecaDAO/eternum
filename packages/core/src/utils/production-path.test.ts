@@ -2,7 +2,6 @@ import { describe, expect, it } from "vitest";
 import { ResourcesIds } from "@bibliothecadao/types";
 
 import blitz from "../../../../config/generated/blitz.madara.json";
-import duel from "../../../../config/generated/duel.madara.json";
 import eternum from "../../../../config/generated/eternum.madara.json";
 import frontier from "../../../../config/generated/frontier.madara.json";
 import { nativePresetForId, nativePresetIdFor } from "../../../../config/source/native";
@@ -15,7 +14,7 @@ type GeneratedPreset = {
   };
 };
 
-const games = { frontier, blitz, duel, eternum } as const;
+const games = { frontier, blitz, eternum } as const;
 
 /** A resource's production path as the game's generated recipes and its registered command mask give it. */
 const canRefill = (game: keyof typeof games, resource: ResourcesIds) => {
@@ -38,7 +37,6 @@ describe("production path", () => {
 
   it("keeps a resource whose recipe is on an enabled path, and drops it where the mask disables every path", () => {
     expect(canRefill("blitz", ResourcesIds.Wood)).toBe(true);
-    expect(canRefill("duel", ResourcesIds.Wood)).toBe(true);
     expect(canRefill("eternum", ResourcesIds.Wood)).toBe(true);
     expect(canRefill("frontier", ResourcesIds.Knight)).toBe(false);
   });

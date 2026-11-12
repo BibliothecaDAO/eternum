@@ -58,7 +58,7 @@ describe("native ownership", () => {
 });
 
 /** The registered presets of each mode (native-preset-modes.ts): the game's mode is its preset's. */
-const PRESETS = { eternum: 3, blitz: 2, duel: 4, frontier: 5 } as const;
+const PRESETS = { eternum: 3, blitz: 2, frontier: 5 } as const;
 
 describe("allies (owner, 2026-10-21: tribe members, in Eternum only)", () => {
   afterEach(() => vi.restoreAllMocks());
@@ -95,8 +95,8 @@ describe("allies (owner, 2026-10-21: tribe members, in Eternum only)", () => {
     expect(arePlayersAllied(store, 1n, 2n)).toBe(false);
   });
 
-  it("makes no allies in Blitz, Duel or Frontier, though the chain lets a tribe form there", () => {
-    for (const preset of [PRESETS.blitz, PRESETS.duel, PRESETS.frontier]) {
+  it("makes no allies in Blitz or Frontier, though the chain lets a tribe form there", () => {
+    for (const preset of [PRESETS.blitz, PRESETS.frontier]) {
       expect(arePlayersAllied(game(preset, { 1: 99, 2: 99 }).store, 1n, 2n)).toBe(false);
       expect(arePlayersAllied(game(preset, { 1: 99, 2: 88 }).store, 1n, 2n)).toBe(false);
       expect(arePlayersAllied(game(preset, { 1: 99 }).store, 1n, 2n)).toBe(false);
