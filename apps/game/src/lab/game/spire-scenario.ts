@@ -164,9 +164,9 @@ export const balancesPaid = (
 export const highGroundScenario = (): LabScenario => spireScenario(HIGH_GROUND);
 
 /**
- * The spire's game on the land of every biome (/lab/game?scenario=biomes): the same realm and army, the land twelve
- * hexes round it revealed in blocks of each Surface biome, so the map's grounds, frontiers, water and props are judged on
- * one fixed view, before and after a change to their look.
+ * The spire's game on the land of every biome: the same realm and army, the land twelve hexes round it revealed in
+ * blocks of each Surface biome, so the map's grounds, frontiers, water and props are judged on fixed views before and
+ * after a change to their look (the board's game, lab-games.ts).
  */
 export const biomesScenario = (): LabScenario => spireScenario(EVERY_BIOME, BIOMES_REACH);
 

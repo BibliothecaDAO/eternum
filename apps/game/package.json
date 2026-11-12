@@ -46,6 +46,7 @@
     "playtest": "node ./scripts/run-client-playtest.mjs",
     "build:map-client": "node ./scripts/build-map-client.mjs",
     "check:map-client-isolation": "vite build --outDir .context/map-client-isolation && node ./scripts/check-map-client-isolation.mjs .context/map-client-isolation",
+    "board": "node ./scripts/client-playtest/board.mjs",
     "styles:inventory": "node ./scripts/style-inventory.mjs",
     "preview": "vite preview",
     "smoke:character-gym": "node ./scripts/run-character-gym-smoke.mjs",

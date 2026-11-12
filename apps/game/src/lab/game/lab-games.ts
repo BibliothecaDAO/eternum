@@ -40,7 +40,8 @@ export const LAB_SCENARIOS: Partial<Record<string, () => LabScenario>> = {
   "from-home": () => ({ ...spireScenario(), entersFromHome: true }),
   actions: actionsScenario,
   "high-ground": highGroundScenario,
-  biomes: biomesScenario,
+  // The board (playtest --steps board): every Surface biome round the realm, and every depth researched.
+  board: () => etherealDepthsScenario(biomesScenario()),
   "day-end": dayEndScenario,
   realm: realmScenario,
   "realm-height": realmHeightScenario,
