@@ -8,6 +8,7 @@ export const eternumPreset: NativePreset = {
     protocolCutBps: 0,
     mmrEnabled: false,
   },
+  orderAspects: [],
   bitcoinEnabled: true,
   startingTroops: startingTroopsByBiome,
   realmResources: realmResourcePool,

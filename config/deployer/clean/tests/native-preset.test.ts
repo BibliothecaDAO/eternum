@@ -21,6 +21,7 @@ import {
   FRONTIER_DEVCON_PRESET_ID,
   FRONTIER_FIXTURE_PRESET_ID,
   FRONTIER_PLAYGROUND_PRESET_ID,
+  FRONTIER_S1_PRESET_ID,
   nativeGameModeOf,
 } from "../../../source/common/native-preset-modes";
 import { orderLengths, seasonSeconds } from "../../../../packages/core/src/utils/days";
@@ -67,6 +68,7 @@ describe("native presets", () => {
         [3, "madara.eternum"],
         [5, "madara.frontier"],
         [FRONTIER_DEVCON_PRESET_ID, "madara.frontier"],
+        [FRONTIER_S1_PRESET_ID, "madara.frontier"],
       ] as const) {
         log.mockClear();
         await registerEnvironmentPreset({ presetId, environmentId, dryRun: true, nativeManifest: manifestPath });
@@ -1035,4 +1037,67 @@ test("Frontier discoveries use the approved narrow guard ranges at every depth",
       expect(upper / lower).toBeLessThanOrEqual(1.25);
     }
   }
+});
+
+describe("the Season 1 Frontier preset", () => {
+  const load = (id: number) => loadNativePresetConfiguration("madara.frontier", id);
+  const definition = (id: number) => buildNativePreset(load(id), id);
+
+  test("registers separately and preserves the earlier season's starting stock", () => {
+    const season = definition(FRONTIER_S1_PRESET_ID);
+    const earlier = definition(FRONTIER_PRESET_ID);
+    const start = (preset: typeof season) =>
+      preset.settlement.realms.resources.map(({ resource_type, amount }) => [
+        resource_type,
+        Number(amount / BigInt(RESOURCE_PRECISION)),
+      ]);
+    expect(nativeGameModeOf(FRONTIER_S1_PRESET_ID)).toBe("frontier");
+    expect(start(season)).toEqual([
+      [ResourcesIds.Knight, 3_000],
+      [ResourcesIds.Wheat, 6_000],
+      [ResourcesIds.Labor, 2_000],
+    ]);
+    expect(start(earlier)).toEqual([
+      [ResourcesIds.Knight, 1_500],
+      [ResourcesIds.Wheat, 4_500],
+      [ResourcesIds.Labor, 2_000],
+    ]);
+    const registration = buildNativePresetRegistration(season, FRONTIER_S1_PRESET_ID, manifestPath);
+    expect(registration.calldata[0]).toBe(String(FRONTIER_S1_PRESET_ID));
+    expect(registration.commitment).not.toBe(
+      buildNativePresetRegistration(earlier, FRONTIER_PRESET_ID, manifestPath).commitment,
+    );
+  });
+
+  test("launches fifty shuffled days at the production clock", () => {
+    const config = load(FRONTIER_S1_PRESET_ID);
+    const preset = definition(FRONTIER_S1_PRESET_ID);
+    expect(config.season.durationSeconds).toBe(2_880_000);
+    expect(preset.rules.day_unit_seconds).toBe(14_400);
+    expect(preset.rules.tick_config.armies_tick_in_seconds).toBe(120);
+    expect(config.season.durationSeconds / (20 * preset.rules.day_unit_seconds)).toBe(10);
+    const params = buildNativeGameParams(config, {
+      gameName: "frontier-season-1",
+      presetId: FRONTIER_S1_PRESET_ID,
+      startMainAt: 1_800_000_000,
+      chainTimestamp: 1_799_999_000,
+      durationSeconds: config.season.durationSeconds,
+      devModeOn: false,
+      singleRealmMode: false,
+      twoPlayerMode: false,
+      useMapOverride: false,
+    });
+    expect(params.preset_id).toBe(FRONTIER_S1_PRESET_ID);
+    expect(params.duration_seconds).toBe(2_880_000);
+  });
+});
+
+test("only Season 1 enables Aspects and its packed Order mapping follows the canonical catalog", () => {
+  const season = buildNativePreset(
+    loadNativePresetConfiguration("madara.frontier", FRONTIER_S1_PRESET_ID),
+    FRONTIER_S1_PRESET_ID,
+  );
+  expect(season.settlement.order_aspects).toEqual([1, 2, 3, 4, 4, 3, 4, 4, 1, 2, 2, 1, 1, 3, 3, 2]);
+  for (const preset of Object.values(nativePresets).filter(({ id }) => id !== FRONTIER_S1_PRESET_ID))
+    expect(preset.orderAspects).toEqual([]);
 });

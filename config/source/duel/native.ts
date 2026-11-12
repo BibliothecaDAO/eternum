@@ -9,6 +9,7 @@ export const duelPreset: NativePreset = {
     protocolCutBps: 2000,
     mmrEnabled: true,
   },
+  orderAspects: [],
   bitcoinEnabled: false,
   startingTroops: [],
   realmResources: realmResourcePool,

@@ -39,6 +39,8 @@ export interface NativePreset {
   commandMask: bigint;
   settlementMode: "Single" | "Triple" | "Duel";
   spacing: number;
+  /** One Aspect per canonical Order, in Order-id order; empty disables teams. */
+  orderAspects: readonly number[];
   /** The unit a season's days are counted in (Frontier rules §9): a day lasts 2 to 6 units; 0 in modes without days. */
   dayUnitSeconds: number;
   board: null | {

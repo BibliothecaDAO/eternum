@@ -1,5 +1,5 @@
 // Generated from native fact models and contract ABIs. Run the native schema generator to update.
-export const nativeFactSchemaIdentity = "ab3864f0631e2117d1a1faece25f2fea4228b728da8262883e1426cb94dac831";
+export const nativeFactSchemaIdentity = "121a8160e425a9569a9aea6fe720371d10753b503f6500a8c5ba4befa0c7dc38";
 export const nativeReleaseConstants = {
   "RUIN_DEPTH_LIMIT_RELEASE": 9
 } as const;
@@ -244,6 +244,9 @@ export interface NativeRows {
   CampaignHome: { readonly game_id: number; readonly home: bigint; readonly campaign_id: bigint; readonly tier: number };
   EntryEntitlement: { readonly game_id: number; readonly owner: bigint; readonly realm_id: bigint; readonly metadata_1: bigint; readonly metadata_2: bigint; readonly metadata_3: bigint; readonly pass_kind: number };
   PlayerEntry: { readonly game_id: number; readonly owner: bigint; readonly player: bigint };
+  AspectRules: { readonly game_id: number; readonly orders: readonly (number)[] };
+  HomeAspect: { readonly game_id: number; readonly home: bigint; readonly aspect: number };
+  AspectMembers: { readonly game_id: number; readonly aspect: number; readonly members: number };
   TileOpt: { readonly game_id: number; readonly alt: boolean; readonly col: number; readonly row: number; readonly data: bigint };
   TileOccupancy: { readonly game_id: number; readonly alt: boolean; readonly col: number; readonly row: number; readonly entity_id: bigint; readonly category: number; readonly is_structure: boolean };
   ArmyProgress: { readonly game_id: number; readonly explorer_id: bigint; readonly xp: number; readonly common_points: number; readonly uncommon_points: number; readonly rare_points: number; readonly epic_points: number; readonly legendary_points: number; readonly battle: number; readonly logistics: number; readonly scouting: number; readonly homecoming: number; readonly scouting_kinds: number };
@@ -344,6 +347,9 @@ export interface NativeKeys {
   CampaignHome: { readonly game_id: number; readonly home: bigint };
   EntryEntitlement: { readonly game_id: number; readonly owner: bigint };
   PlayerEntry: { readonly game_id: number; readonly owner: bigint };
+  AspectRules: { readonly game_id: number };
+  HomeAspect: { readonly game_id: number; readonly home: bigint };
+  AspectMembers: { readonly game_id: number; readonly aspect: number };
   TileOpt: { readonly game_id: number; readonly alt: boolean; readonly col: number; readonly row: number };
   TileOccupancy: { readonly game_id: number; readonly alt: boolean; readonly col: number; readonly row: number };
   ArmyProgress: { readonly game_id: number; readonly explorer_id: bigint };
@@ -1362,6 +1368,50 @@ export const nativeFactModels = {
       "player": "felt"
     }
   },
+  "AspectRules": {
+    "keys": [
+      "game_id"
+    ],
+    "scope": "game",
+    "fields": {
+      "game_id": "u32",
+      "orders": [
+        "u8"
+      ]
+    }
+  },
+  "HomeAspect": {
+    "keys": [
+      "game_id",
+      "home"
+    ],
+    "scope": "game",
+    "fields": {
+      "game_id": "u32",
+      "home": "u64",
+      "aspect": "u8"
+    }
+  },
+  "AspectMembers": {
+    "keys": [
+      "game_id",
+      "aspect"
+    ],
+    "scope": "game",
+    "fields": {
+      "game_id": "u32",
+      "aspect": "u8",
+      "members": "u32"
+    },
+    "absence": {
+      "parent": "AspectRules",
+      "value": "zero",
+      "meaning": "No home has joined this Aspect in this game.",
+      "parentKeys": {
+        "game_id": "game_id"
+      }
+    }
+  },
   "TileOpt": {
     "keys": [
       "game_id",
@@ -2330,6 +2380,9 @@ export const nativeSyncScopes = {
       "owner"
     ]
   },
+  "AspectRules": "shared",
+  "HomeAspect": "shared",
+  "AspectMembers": "shared",
   "VillagePass": {
     "owners": [
       "owner"

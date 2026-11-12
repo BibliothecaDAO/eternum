@@ -54,6 +54,7 @@ pub struct PresetStorage<
     pub upgrade_costs: Map<(u8, u32), TResourceAmount>,
     pub settlement_mode: TSettlementMode,
     pub settlement_spacing: u32,
+    pub order_aspects: Option<u128>,
     pub depth_count: u32,
     pub depth_rules: Map<u8, Option<TDepthRules>>,
     pub realm_grant_count: u32,
