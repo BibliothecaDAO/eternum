@@ -235,9 +235,11 @@ pub mod MovementLogic {
                 explorer.coord,
                 command.depth,
             );
-            let destination = crate::logic::spires::nearest_free_arrival(
-                game_id, Coord { y: spire.y + spacing, ..spire }, spacing,
-            );
+            let destination = if command.depth == 3 {
+                crate::logic::deep::arrival(game_id, context)
+            } else {
+                crate::logic::spires::nearest_free_arrival(game_id, Coord { y: spire.y + spacing, ..spire }, spacing)
+            };
             let location = tile_key(game_id, destination);
             self.reveal_depth_arrival(game_id, destination, context);
             crate::logic::map::MapState::vacate(tile_key(game_id, explorer.coord), command.explorer_id);

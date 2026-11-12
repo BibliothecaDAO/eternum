@@ -463,7 +463,12 @@ fn discovered_spires_take_armies_one_layer_down_without_spending_stamina() {
             ),
         );
         let inside = troops.resolved_explorer(key).unwrap();
-        assert_eq!(inside.coord, crate::troops::Coord { y: spire.y + preset.settlement.spacing, ..spire });
+        let expected = if depth == 2 {
+            crate::deep::arrival(preset.settlement.spacing)
+        } else {
+            crate::troops::Coord { y: spire.y + preset.settlement.spacing, ..spire }
+        };
+        assert_eq!(inside.coord, expected);
         assert_eq!(inside.troops.stamina, at_spire.troops.stamina);
         assert_eq!(structures.structure(home).unwrap().metadata.deepest_depth, depth + 1);
         assert!(map.tile(crate::geometry::tile_key(game_id, inside.coord)).is_some());

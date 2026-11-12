@@ -1099,6 +1099,10 @@ pub fn create_open_frontier(preset: PresetDefinition, duration: u64) -> (super::
         .create_game(
             CreateGameParams { start_main_at: 360, end_grace_seconds: 0, duration_seconds: duration, ..params(false) },
         );
+    if preset.economy.race.is_some() {
+        initialize_race_catalogue(d);
+        return (d, game_id);
+    }
     snforge_std::interact_with_state(
         d.games,
         || {
@@ -1110,6 +1114,23 @@ pub fn create_open_frontier(preset: PresetDefinition, duration: u64) -> (super::
         },
     );
     (d, game_id)
+}
+
+fn initialize_race_catalogue(d: super::Deployment) {
+    start_cheat_caller_address(d.games, super::authority());
+    let mut first = 0_u32;
+    while first < crate::realms::CANONICAL_REALM_COUNT {
+        let end = core::cmp::min(first + 128, crate::realms::CANONICAL_REALM_COUNT);
+        let mut traits = array![];
+        for index in first..end {
+            traits.append(0x4000001 + (index % 16) * 0x400000);
+        }
+        crate::realms::ISeasonRealmsDispatcherTrait::initialize_realm_traits(
+            crate::realms::ISeasonRealmsDispatcher { contract_address: d.games }, first + 1, traits.span(),
+        );
+        first = end;
+    }
+    stop_cheat_caller_address(d.games);
 }
 
 
