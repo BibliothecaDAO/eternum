@@ -103,6 +103,7 @@ export const frontierPreset = {
       laborCost: 0,
     })),
   ],
+  deep: null,
   discovery: {
     beastsBps: 600,
     campBps: 400,

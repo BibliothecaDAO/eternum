@@ -15,6 +15,10 @@ use crate::troops::{
 };
 
 pub fn battle_guard(game_id: u32, actor: ContractAddress, command: Battle, context: ExecutionContext) {
+    if crate::logic::deep_sites::site(ResourceKey { game_id, entity_id: command.defender_id }).is_some() {
+        crate::logic::deep_sites::battle_beast(game_id, actor, command, context);
+        return;
+    }
     let rules = authorize(game_id, context);
     let key = ExplorerKey { game_id, explorer_id: command.attacker_id };
     let mut attacker = authorized_explorer(key, actor, context);
@@ -680,7 +684,7 @@ fn classes(game_id: u32) -> starknet::storage::StoragePointer<games_storage::rel
     assert!(release_id != 0, "game has no release");
     state.releases.entry(release_id).classes
 }
-fn emit<T, +starknet::event::Event<T>, +Into<T, crate::logic::combat_domain::CombatLogic::Event>>(event: T) {
+pub fn emit<T, +starknet::event::Event<T>, +Into<T, crate::logic::combat_domain::CombatLogic::Event>>(event: T) {
     let event: crate::logic::combat_domain::CombatLogic::Event = event.into();
     let mut keys = array![];
     let mut data = array![];

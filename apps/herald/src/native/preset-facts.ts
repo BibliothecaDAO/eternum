@@ -125,6 +125,10 @@ function deriveEconomy(emit: EmitRule, economy: PresetRecord) {
   emit("BankRules", record(economy.banks));
   emit("HyperstructureRules", record(economy.hyperstructures));
   emit("RelicRules", { rules: economy.relics });
+  if ("deep" in economy) {
+    const deep = some(economy.deep);
+    if (deep) emit("DeepRules", deep);
+  }
   if ("labor" in economy) {
     const labor = some(economy.labor);
     if (labor) emit("LaborRules", labor);

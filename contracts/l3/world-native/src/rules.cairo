@@ -609,3 +609,10 @@ pub const WELL_STAMINA_DIVISOR: u8 = 2;
 pub const FRONTIER_REPORT_GRACE_SECONDS: u32 = crate::days::FRONTIER_REPORT_GRACE_SECONDS;
 
 pub const DEEP_MAP_SIZE: u32 = 50;
+
+pub const DEEP_FOUNDATION: u8 = 0;
+pub const DEEP_QUARRY: u8 = 1;
+pub const DEEP_ALTAR: u8 = 2;
+pub const DEEP_SITE_COUNT: u8 = 3;
+
+pub const DEEP_ARRIVAL_Y: u32 = 5;

@@ -15,9 +15,10 @@ import { presetPreimageCommitment } from "./preset-preimages";
 
 const codec = new CallData([...Object.values(schema.types), ...schema.games.entrypoints] as Abi);
 
-function registration(presetId = 5) {
+function registration(presetId = 5, deep?: ReturnType<typeof buildNativePreset>["economy"]["deep"]) {
   const environment = presetId === 2 ? "madara.blitz" : "madara.frontier";
   const definition = buildNativePreset(loadNativePresetConfiguration(environment, presetId), presetId);
+  if (deep) definition.economy.deep = deep;
   const calldata = codec.compile("register_preset", { preset_id: presetId, definition });
   const commitment = presetPreimageCommitment(calldata.slice(1));
   const accountCalldata = [
@@ -81,6 +82,28 @@ function applyRegistration(world: ReturnType<typeof setup>, preset: ReturnType<t
 }
 
 describe("verified preset configuration facts", () => {
+  it("projects Deep sites from the verified immutable preset and leaves earlier presets disabled", () => {
+    const world = setup();
+    const deep = {
+      foundation: { alt: false, x: 25, y: 35 },
+      quarry: { alt: false, x: 12, y: 20 },
+      altar: { alt: false, x: 38, y: 20 },
+      beast_count: 10_000n,
+    };
+    const preset = registration(5, new CairoOption(CairoOptionVariant.Some, deep));
+    applyRegistration(world, preset);
+    world.native.applyReceipt(world.fold, receipt(launch(preset)), 11, 0);
+    const store = new NativeFactStore();
+    store.applyFacts(
+      world.fold.gameRows("DeepRules", "1").map(({ key, value }) => ({ model: "DeepRules", key, value })),
+    );
+    expect(store.require("DeepRules", { game_id: 1 })).toEqual({ game_id: 1, ...deep });
+    const earlier = registration(2);
+    applyRegistration(world, earlier);
+    world.native.applyReceipt(world.fold, receipt(launch(earlier, 2)), 12, 0);
+    expect(world.fold.gameRows("DeepRules", "2")).toEqual([]);
+  });
+
   it("projects both beast strength ranges and renamed discovery odds into client facts", () => {
     const world = setup();
     const preset = registration();

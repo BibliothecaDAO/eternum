@@ -32,6 +32,7 @@ pub struct WithdrawalPreset {
 }
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]
 pub struct EconomyPreset {
+    pub deep: Option<crate::deep::DeepRules>,
     pub labor: Option<crate::entry::LaborRules>,
     pub trade: crate::trade::TradeRules,
     pub banks: crate::market::BankRules,
@@ -56,6 +57,10 @@ pub struct PresetDefinition {
 
 pub fn validate(preset: PresetDefinition) {
     let rules = preset.rules;
+    if let Some(deep) = preset.economy.deep {
+        assert!(rules.day_unit_seconds != 0, "Deep needs expedition days");
+        crate::deep::validate(deep, preset.settlement.spacing);
+    }
     assert!(preset.economy.labor.is_some() == (rules.day_unit_seconds != 0), "labor rules require expeditions");
     if let Some(labor) = preset.economy.labor {
         assert!(labor.amount != 0, "zero daily labor grant");

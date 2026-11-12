@@ -1351,3 +1351,10 @@ without `GameplayRejected`, and Herald snapshots covering its block. It checks e
 principal, earned-only pool return, unchanged swept balance and withdrawals, and native stamina plus regeneration
 against the visible army panel and purse. The live proof buys no tier. Season-end sweep and wallet-return evidence are
 separate rehearsal steps in [the runbook](../../deploy/athanor/README.md#deposit-rehearsal-on-dev).
+
+Deep site contract/read path: a preset with `DeepRules` creates the Foundation, Quarry and Altar in the fixed Deep.
+`views.deepSites(timestamp)` reads their persistent IDs, positions, daily beast counts and Guard records. The existing
+`BattleGuard` command accepts their IDs; beating the beast leaves its site on the map. A new day restores its beast. The
+dedicated site selection and four-slot holding surface belongs to the S1 screen work; it is not available in the current
+playtest flow. Native regressions cover creation and battle/day rollover, while the core view tests cover the same-day
+losses and next-day read. Run the existing `pnpm --dir apps/game playtest` when that surface is wired.

@@ -3,6 +3,14 @@
 export const factWireTypes = [
   {
     type: "struct",
+    name: "world_native::deep::DeepSite",
+    members: [
+      { name: "kind", type: "core::integer::u8" },
+      { name: "day", type: "core::integer::u64" },
+    ],
+  },
+  {
+    type: "struct",
     name: "world_native::settlement::SettlementPool",
     members: [
       { name: "opened", type: "core::integer::u32" },
@@ -740,6 +748,7 @@ const presetDerivedModels = new Set([
   "HyperstructureRules",
   "RelicRules",
   "ChestRules",
+  "DeepRules",
   "LaborRules",
   "ArmyProgressionRules",
   "FrontierDiscoveryRules",
@@ -1071,6 +1080,8 @@ export function defineFactModels({ struct, model: declare }) {
       ],
       [{ name: "members", type: "core::integer::u32" }],
     ),
+    model("DeepSite", "game", struct("resources::ResourceKey"), struct("deep::DeepSite")),
+    model("DeepRules", "game", [{ name: "game_id", type: "core::integer::u32" }], struct("deep::DeepRules")),
     model("ArmyDay", "game", struct("troops::ExplorerKey"), [{ name: "day", type: "core::integer::u64" }]),
     model("ArmySlot", "game", struct("troops::ArmySlotKey"), struct("troops::ArmySlot")),
     model("ExplorerTroops", "game", struct("troops::ExplorerKey"), struct("troops::ExplorerRecord")),
@@ -1414,6 +1425,7 @@ export const syncScopes = {
       "ExtractionRewards",
       "RelicRules",
       "ChestRules",
+      "DeepRules",
       "LaborRules",
       "ArmyProgressionRules",
       "LordsBudget",
@@ -1486,6 +1498,7 @@ export const syncScopes = {
   // A relic chest's pack is public: anyone may open the chest, so every player sees what it holds.
   RelicChest: shared,
   AspectActivity: "shared",
+  DeepSite: "shared",
   ArmyDay: { entities: ["explorer_id"] },
   ArmyProgress: { entities: ["explorer_id"] },
   ExpeditionDiscovery: { realms: ["structure_id"], epoch: "epoch" },

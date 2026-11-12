@@ -1,5 +1,5 @@
 import { dayOf } from "../utils/days";
-import { TileOccupier } from "@bibliothecadao/types";
+import { deepSites, TileOccupier } from "@bibliothecadao/types";
 import { describe, expect, it } from "vitest";
 import { rowInGameSyncScope } from "./model-manifest";
 import { deriveGameSyncScope, scopeInputKeys, type ScopeRowReader } from "./subscription-scope";
@@ -166,4 +166,28 @@ it("shares the fixed Deep and the visible enemy army's day and slot without its 
   expect(rowInGameSyncScope("ArmySlot", { structure_id: "2", epoch: 0 }, scope)).toBe(true);
   expect(rowInGameSyncScope("ArmySlot", { structure_id: "2", epoch: 1 }, scope)).toBe(false);
   expect(rowInGameSyncScope("TileOpt", { alt: false, col: 1600, row: 512 }, scope)).toBe(false);
+});
+
+it("includes every Deep site and its beast guard while the player is still above the Deep", () => {
+  const sites = deepSites.map((site, index) => ({
+    model: "TileOccupancy",
+    value: {
+      entity_id: String(900 + index),
+      category: TileOccupier.DeepSite,
+      alt: false,
+      col: 500 + site.id,
+      row: 3584,
+    },
+  }));
+  const shared: ScopeRowReader = (model, spacing, keys) =>
+    [...rows, ...sites].filter(
+      (row) => row.model === model && scopeInputKeys(model, row.value, spacing).some((key) => keys.includes(key)),
+    );
+  const scope = deriveGameSyncScope("0xa", 350, expedition, shared);
+  for (const site of sites) {
+    expect(scope.expedition?.entities.has(site.value.entity_id)).toBe(true);
+    expect(rowInGameSyncScope("TileOccupancy", site.value, scope)).toBe(true);
+    expect(rowInGameSyncScope("DeepSite", { entity_id: site.value.entity_id }, scope)).toBe(true);
+    expect(rowInGameSyncScope("Guard", { structure_id: site.value.entity_id, slot: 0 }, scope)).toBe(true);
+  }
 });

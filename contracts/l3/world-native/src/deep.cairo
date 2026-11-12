@@ -16,5 +16,59 @@ pub fn contains(coord: Coord, spacing: u32) -> bool {
 
 pub fn arrival(spacing: u32) -> Coord {
     let center = center(spacing);
-    Coord { y: center.y - crate::rules::DEEP_MAP_SIZE / 2 + 5, ..center }
+    Coord { y: center.y - crate::rules::DEEP_MAP_SIZE / 2 + crate::rules::DEEP_ARRIVAL_Y, ..center }
+}
+
+
+#[derive(Copy, Drop, Serde, Debug, PartialEq, starknet::Store)]
+pub struct DeepRules {
+    pub foundation: Coord,
+    pub quarry: Coord,
+    pub altar: Coord,
+    pub beast_count: u128,
+}
+
+#[derive(Copy, Drop, Serde, Debug, PartialEq, starknet::Store)]
+pub struct DeepSite {
+    pub kind: u8,
+    pub day: u64,
+}
+
+pub fn site_coord(rules: DeepRules, kind: u8, spacing: u32) -> Coord {
+    let local = local_coord(rules, kind);
+    let center = center(spacing);
+    let half = crate::rules::DEEP_MAP_SIZE / 2;
+    Coord { alt: false, x: center.x - half + local.x, y: center.y - half + local.y }
+}
+
+fn local_coord(rules: DeepRules, kind: u8) -> Coord {
+    match kind {
+        crate::rules::DEEP_FOUNDATION => rules.foundation,
+        crate::rules::DEEP_QUARRY => rules.quarry,
+        crate::rules::DEEP_ALTAR => rules.altar,
+        _ => panic!("invalid Deep site"),
+    }
+}
+
+pub fn validate(rules: DeepRules, spacing: u32) {
+    assert!(rules.beast_count != 0, "empty Deep beast");
+    assert!(rules.beast_count % crate::rules::RESOURCE_PRECISION == 0, "fractional Deep beast");
+    for kind in 0..crate::rules::DEEP_SITE_COUNT {
+        let local = local_coord(rules, kind);
+        assert!(
+            !local.alt && local.x < crate::rules::DEEP_MAP_SIZE && local.y < crate::rules::DEEP_MAP_SIZE,
+            "Deep site outside map",
+        );
+        let coord = site_coord(rules, kind, spacing);
+        assert!(coord != arrival(spacing), "Deep site blocks arrival");
+        for other in 0..kind {
+            assert!(coord != site_coord(rules, other, spacing), "duplicate Deep site");
+        }
+    }
+}
+
+#[starknet::interface]
+pub trait IDeepSites<T> {
+    fn initialize_deep(ref self: T, game_id: u32);
+    fn settle_deep(ref self: T, game_id: u32, context: crate::commands::ActionContext);
 }

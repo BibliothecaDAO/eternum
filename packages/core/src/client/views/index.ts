@@ -1,3 +1,4 @@
+import { readDeepSites, type DeepSiteView } from "./deep-sites";
 import type {
   ArmyInfo,
   Building,
@@ -30,6 +31,7 @@ import {
   readStructures,
 } from "./structures";
 export * from "./armies";
+export * from "./deep-sites";
 export * from "./guilds";
 export * from "./market";
 export * from "./resources";
@@ -37,6 +39,7 @@ export * from "./structures";
 
 /** One-shot reads of the game facts the React hooks subscribe to, for a caller with no render loop. */
 export interface GameViews {
+  deepSites(timestamp: number): DeepSiteView[];
   explorers(structureEntityId: ID): ArmyInfo[];
   stamina(armyEntityId: ID): StaminaManager;
   structures(owner: ContractAddress): Structure[];
@@ -63,6 +66,7 @@ export const createGameViews = (
 ): GameViews => {
   const { store, systemCalls } = client.setup;
   return {
+    deepSites: (timestamp) => readDeepSites(store, timestamp),
     explorers: (id) => readExplorers(store, id, viewer, playerName),
     stamina: (id) => readStaminaManager(store, id),
     structures: (owner) => readStructures(store, owner, viewer, playerName),

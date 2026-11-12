@@ -115,6 +115,7 @@ pub fn definition(blitz: bool) -> PresetDefinition {
             },
         },
         economy: EconomyPreset {
+            deep: None,
             labor: None,
             progression: None,
             discovery: None,
@@ -220,8 +221,8 @@ pub /// Open entry draws starting troops from the biome table, which a fixed-ros
     preset.rules.entry_rule = crate::rules::ENTRY_OPEN;
     preset.settlement.realms = super::settlement::grants_for(crate::rules::ENTRY_OPEN);
 }
-pub // The expedition preset uses seeded day bags.
- fn expedition_preset() -> PresetDefinition {
+// The expedition preset uses seeded day bags.
+pub fn expedition_preset() -> PresetDefinition {
     let mut preset = definition(true);
     open_entry(ref preset);
     preset.rules.command_mask = preset.rules.command_mask

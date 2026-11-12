@@ -54,7 +54,12 @@
     "PRODUCTION_START": 131072,
     "WELL_STAMINA_DIVISOR": 2,
     "FRONTIER_REPORT_GRACE_SECONDS": 3600,
-    "DEEP_MAP_SIZE": 50
+    "DEEP_MAP_SIZE": 50,
+    "DEEP_FOUNDATION": 0,
+    "DEEP_QUARRY": 1,
+    "DEEP_ALTAR": 2,
+    "DEEP_SITE_COUNT": 3,
+    "DEEP_ARRIVAL_Y": 5
   },
   "researchConstants": {
     "ROW_FARM": 0,
@@ -5197,6 +5202,80 @@
       }
     },
     {
+      "name": "DeepSite",
+      "identity": "0x4465657053697465",
+      "scope": "game",
+      "keys": [
+        {
+          "name": "game_id",
+          "type": "core::integer::u32",
+          "feltLength": 1
+        },
+        {
+          "name": "entity_id",
+          "type": "core::integer::u64",
+          "feltLength": 1
+        }
+      ],
+      "members": [
+        {
+          "name": "kind",
+          "type": "core::integer::u8",
+          "id": "0x6b696e64",
+          "feltLength": 1
+        },
+        {
+          "name": "day",
+          "type": "core::integer::u64",
+          "id": "0x646179",
+          "feltLength": 1
+        }
+      ],
+      "keyLength": 2,
+      "valueLength": 2
+    },
+    {
+      "name": "DeepRules",
+      "identity": "0x4465657052756c6573",
+      "scope": "game",
+      "keys": [
+        {
+          "name": "game_id",
+          "type": "core::integer::u32",
+          "feltLength": 1
+        }
+      ],
+      "members": [
+        {
+          "name": "foundation",
+          "type": "world_native::troops::Coord",
+          "id": "0x666f756e646174696f6e",
+          "feltLength": 3
+        },
+        {
+          "name": "quarry",
+          "type": "world_native::troops::Coord",
+          "id": "0x717561727279",
+          "feltLength": 3
+        },
+        {
+          "name": "altar",
+          "type": "world_native::troops::Coord",
+          "id": "0x616c746172",
+          "feltLength": 3
+        },
+        {
+          "name": "beast_count",
+          "type": "core::integer::u128",
+          "id": "0x62656173745f636f756e74",
+          "feltLength": 1
+        }
+      ],
+      "keyLength": 1,
+      "valueLength": 10,
+      "derivedFrom": "preset"
+    },
+    {
       "name": "ArmyDay",
       "identity": "0x41726d79446179",
       "scope": "game",
@@ -7744,6 +7823,20 @@
         }
       ]
     },
+    "core::option::Option::<world_native::deep::DeepRules>": {
+      "type": "enum",
+      "name": "core::option::Option::<world_native::deep::DeepRules>",
+      "variants": [
+        {
+          "name": "Some",
+          "type": "world_native::deep::DeepRules"
+        },
+        {
+          "name": "None",
+          "type": "()"
+        }
+      ]
+    },
     "core::option::Option::<world_native::deposits::DepositReceipt>": {
       "type": "enum",
       "name": "core::option::Option::<world_native::deposits::DepositReceipt>",
@@ -9361,6 +9454,42 @@
         {
           "name": "spire_direction",
           "type": "core::integer::u8"
+        }
+      ]
+    },
+    "world_native::deep::DeepRules": {
+      "type": "struct",
+      "name": "world_native::deep::DeepRules",
+      "members": [
+        {
+          "name": "foundation",
+          "type": "world_native::troops::Coord"
+        },
+        {
+          "name": "quarry",
+          "type": "world_native::troops::Coord"
+        },
+        {
+          "name": "altar",
+          "type": "world_native::troops::Coord"
+        },
+        {
+          "name": "beast_count",
+          "type": "core::integer::u128"
+        }
+      ]
+    },
+    "world_native::deep::DeepSite": {
+      "type": "struct",
+      "name": "world_native::deep::DeepSite",
+      "members": [
+        {
+          "name": "kind",
+          "type": "core::integer::u8"
+        },
+        {
+          "name": "day",
+          "type": "core::integer::u64"
         }
       ]
     },
@@ -11250,6 +11379,10 @@
       "type": "struct",
       "name": "world_native::presets::EconomyPreset",
       "members": [
+        {
+          "name": "deep",
+          "type": "core::option::Option::<world_native::deep::DeepRules>"
+        },
         {
           "name": "labor",
           "type": "core::option::Option::<world_native::entry::LaborRules>"
@@ -14141,5 +14274,5 @@
       ]
     }
   },
-  "identity": "3e8740496096c86e9f10aea0c164f27b57a34450c83b6ee24ce49a8e17ed6e11"
+  "identity": "c73f77e835dde56f34aab95f79dbde57f6c96f718f11255863e31c5a211b10c1"
 }

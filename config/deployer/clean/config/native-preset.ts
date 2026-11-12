@@ -31,6 +31,36 @@ function scaled(value: number, precision = RESOURCE_PRECISION): bigint {
   return BigInt(amount);
 }
 
+function buildDeep(preset: ReturnType<typeof nativePresetForId>) {
+  const deep = preset.deep;
+  if (deep === null) return new CairoOption(CairoOptionVariant.None);
+  if (!deep || preset.dayUnitSeconds === 0) throw new Error("Deep requires explicit expedition rules");
+  const sites = [deep.foundation, deep.quarry, deep.altar];
+  if (
+    preset.spacing < presetRule.DEEP_MAP_SIZE * 2 ||
+    sites.some(
+      ({ x, y }) =>
+        !Number.isSafeInteger(x) ||
+        !Number.isSafeInteger(y) ||
+        x < 0 ||
+        y < 0 ||
+        x >= presetRule.DEEP_MAP_SIZE ||
+        y >= presetRule.DEEP_MAP_SIZE ||
+        (x === presetRule.DEEP_MAP_SIZE / 2 && y === presetRule.DEEP_ARRIVAL_Y),
+    ) ||
+    new Set(sites.map(({ x, y }) => `${x}:${y}`)).size !== presetRule.DEEP_SITE_COUNT ||
+    !Number.isSafeInteger(deep.beastCount) ||
+    deep.beastCount <= 0
+  )
+    throw new Error("Invalid Deep sites");
+  return new CairoOption(CairoOptionVariant.Some, {
+    foundation: { alt: false, x: deep.foundation.x, y: deep.foundation.y },
+    quarry: { alt: false, x: deep.quarry.x, y: deep.quarry.y },
+    altar: { alt: false, x: deep.altar.x, y: deep.altar.y },
+    beast_count: scaled(deep.beastCount),
+  });
+}
+
 function amounts(resources: Array<{ resource: number; amount: number }>, precision: number) {
   return resources.map(({ resource, amount }) => ({ resource_type: resource, amount: scaled(amount, precision) }));
 }
@@ -351,6 +381,7 @@ function buildEconomy(
             golden_amount: BigInt(preset.labor.goldenAmount),
             golden_essence: BigInt(preset.labor.goldenEssence),
           }),
+    deep: buildDeep(preset),
     discovery: buildDiscovery(preset),
     progression:
       progression === null

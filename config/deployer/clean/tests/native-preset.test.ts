@@ -59,6 +59,45 @@ function configuration(preset: number) {
 }
 
 describe("native presets", () => {
+  test("Deep sites are explicit preset values and reject overlaps, blocked arrivals and out-of-map coordinates", () => {
+    const preset = nativePresets[FRONTIER_PRESET_ID]!;
+    const previous = preset.deep;
+    const build = () =>
+      buildNativePreset(loadNativePresetConfiguration("madara.frontier", FRONTIER_PRESET_ID), FRONTIER_PRESET_ID);
+    try {
+      expect(build().economy.deep.isNone()).toBe(true);
+      preset.deep = {
+        foundation: { x: 25, y: 35 },
+        quarry: { x: 12, y: 20 },
+        altar: { x: 38, y: 20 },
+        beastCount: 10_000,
+      };
+      expect(build().economy.deep.unwrap()).toEqual({
+        foundation: { alt: false, x: 25, y: 35 },
+        quarry: { alt: false, x: 12, y: 20 },
+        altar: { alt: false, x: 38, y: 20 },
+        beast_count: 10_000n * BigInt(RESOURCE_PRECISION),
+      });
+      for (const position of [
+        { x: 12, y: 20 },
+        { x: 25, y: 5 },
+        { x: 50, y: 20 },
+        { x: -1, y: 20 },
+        { x: 25.5, y: 20 },
+      ]) {
+        preset.deep.foundation = position;
+        expect(build).toThrow("Invalid Deep sites");
+      }
+      preset.deep.foundation = { x: 25, y: 35 };
+      for (const count of [0, -1, 10.5]) {
+        preset.deep.beastCount = count;
+        expect(build).toThrow("Invalid Deep sites");
+      }
+    } finally {
+      preset.deep = previous;
+    }
+  });
+
   test("the mainnet deployment plan registers only the selected economic preset", async () => {
     const log = spyOn(console, "log").mockImplementation(() => {});
     try {

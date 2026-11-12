@@ -2,15 +2,22 @@
 pub mod CombatLogic {
     use starknet::ContractAddress;
     use crate::commands::Battle;
+    use crate::logic::deep_sites::DeepSites;
+    component!(path: DeepSites, storage: deep_sites, event: DeepSiteEvent);
+    #[abi(embed_v0)]
+    impl DeepSitesImpl = DeepSites::DeepSitesImpl<ContractState>;
 
     #[storage]
     struct Storage {
+        #[substorage(v0)]
+        deep_sites: DeepSites::Storage,
         #[flat]
         data: crate::state::Storage,
     }
     #[event]
     #[derive(Drop, starknet::Event)]
     pub enum Event {
+        DeepSiteEvent: DeepSites::Event,
         BattleEvent: crate::troops::BattleEvent,
         RaidEvent: crate::combat_actions::RaidEvent,
         OwnershipRow: crate::events::RowSet,

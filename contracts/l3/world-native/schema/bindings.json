@@ -1,5 +1,5 @@
 {
-  "schemaIdentity": "3e8740496096c86e9f10aea0c164f27b57a34450c83b6ee24ce49a8e17ed6e11",
+  "schemaIdentity": "c73f77e835dde56f34aab95f79dbde57f6c96f718f11255863e31c5a211b10c1",
   "commandAbi": [
     {
       "type": "interface",
@@ -1731,6 +1731,14 @@
     },
     {
       "name": "AspectActivity",
+      "scope": "game"
+    },
+    {
+      "name": "DeepSite",
+      "scope": "game"
+    },
+    {
+      "name": "DeepRules",
       "scope": "game"
     },
     {
