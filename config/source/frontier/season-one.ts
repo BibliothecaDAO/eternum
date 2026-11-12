@@ -1,4 +1,4 @@
-import { ResourcesIds } from "../../../packages/types/src/constants";
+import { ResourcesIds, orders } from "../../../packages/types/src/constants";
 import type { NativePreset } from "../common/native-preset";
 import { FRONTIER_S1_PRESET_ID } from "../common/native-preset-modes";
 import { FRONTIER_DAY_UNIT_SECONDS } from "./clock";
@@ -7,6 +7,7 @@ import { frontierPreset } from "./native";
 export const frontierSeasonOnePreset = {
   ...frontierPreset,
   id: FRONTIER_S1_PRESET_ID,
+  orderAspects: orders.filter(({ aspect }) => aspect !== null).map(({ aspect }) => aspect!),
   balance: {
     // Ten bags of five days; every bag has 2 + 3 + 4 + 5 + 6 day units.
     season: { durationSeconds: 10 * 20 * FRONTIER_DAY_UNIT_SECONDS },

@@ -1091,3 +1091,13 @@ describe("the Season 1 Frontier preset", () => {
     expect(params.duration_seconds).toBe(2_880_000);
   });
 });
+
+test("only Season 1 enables Aspects and its packed Order mapping follows the canonical catalog", () => {
+  const season = buildNativePreset(
+    loadNativePresetConfiguration("madara.frontier", FRONTIER_S1_PRESET_ID),
+    FRONTIER_S1_PRESET_ID,
+  );
+  expect(season.settlement.order_aspects).toEqual([1, 2, 3, 4, 4, 3, 4, 4, 1, 2, 2, 1, 1, 3, 3, 2]);
+  for (const preset of Object.values(nativePresets).filter(({ id }) => id !== FRONTIER_S1_PRESET_ID))
+    expect(preset.orderAspects).toEqual([]);
+});

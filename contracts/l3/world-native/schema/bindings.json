@@ -1,5 +1,5 @@
 {
-  "schemaIdentity": "ab3864f0631e2117d1a1faece25f2fea4228b728da8262883e1426cb94dac831",
+  "schemaIdentity": "121a8160e425a9569a9aea6fe720371d10753b503f6500a8c5ba4befa0c7dc38",
   "commandAbi": [
     {
       "type": "interface",
@@ -490,6 +490,10 @@
         {
           "name": "selected_realm",
           "type": "core::option::Option::<core::integer::u32>"
+        },
+        {
+          "name": "aspect",
+          "type": "core::option::Option::<core::integer::u8>"
         }
       ]
     },
@@ -500,6 +504,20 @@
         {
           "name": "Some",
           "type": "core::integer::u32"
+        },
+        {
+          "name": "None",
+          "type": "()"
+        }
+      ]
+    },
+    {
+      "type": "enum",
+      "name": "core::option::Option::<core::integer::u8>",
+      "variants": [
+        {
+          "name": "Some",
+          "type": "core::integer::u8"
         },
         {
           "name": "None",
@@ -1715,6 +1733,18 @@
     },
     {
       "name": "PlayerEntry",
+      "scope": "game"
+    },
+    {
+      "name": "AspectRules",
+      "scope": "game"
+    },
+    {
+      "name": "HomeAspect",
+      "scope": "game"
+    },
+    {
+      "name": "AspectMembers",
       "scope": "game"
     },
     {

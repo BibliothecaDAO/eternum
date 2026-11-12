@@ -17,6 +17,7 @@ pub struct StructurePreset {
 }
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]
 pub struct SettlementPreset {
+    pub order_aspects: Span<u8>,
     pub mode: crate::settlement::SettlementMode,
     pub spacing: u32,
     pub depths: Span<crate::expeditions::DepthRules>,
@@ -56,6 +57,12 @@ pub struct PresetDefinition {
 
 pub fn validate(preset: PresetDefinition) {
     let rules = preset.rules;
+    crate::aspects::validate(preset.settlement.order_aspects);
+    assert!(
+        preset.settlement.order_aspects.is_empty()
+            || (rules.entry_rule == crate::rules::ENTRY_OPEN && rules.day_unit_seconds != 0),
+        "Aspects require open expeditions",
+    );
     assert!(preset.economy.labor.is_some() == (rules.day_unit_seconds != 0), "labor rules require expeditions");
     if let Some(labor) = preset.economy.labor {
         assert!(labor.amount != 0, "zero daily labor grant");

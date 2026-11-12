@@ -993,6 +993,35 @@
       {
         "name": "RowSet",
         "prefix": [
+          "0x1802590aa0d0014b09ee2fa499bc79af325f29b5060b277105bd4c749e5e9ad",
+          "0x1381128f2a0228389d1eba9d3aa09f8ed24da656b884a49eea09a5ed2e87724"
+        ],
+        "members": [
+          {
+            "name": "version",
+            "type": "core::integer::u8",
+            "kind": "key"
+          },
+          {
+            "name": "model",
+            "type": "core::felt252",
+            "kind": "key"
+          },
+          {
+            "name": "keys",
+            "type": "core::array::Span::<core::felt252>",
+            "kind": "data"
+          },
+          {
+            "name": "values",
+            "type": "core::array::Span::<core::felt252>",
+            "kind": "data"
+          }
+        ]
+      },
+      {
+        "name": "RowSet",
+        "prefix": [
           "0x226dcd383f367cb01aff84f158ff21525009015e05d21053c2800b647b91d93",
           "0x1381128f2a0228389d1eba9d3aa09f8ed24da656b884a49eea09a5ed2e87724"
         ],
@@ -4965,6 +4994,91 @@
         "domain": "realm/blitz",
         "fields": {
           "player": "player"
+        }
+      }
+    },
+    {
+      "name": "AspectRules",
+      "identity": "0x41737065637452756c6573",
+      "scope": "game",
+      "keys": [
+        {
+          "name": "game_id",
+          "type": "core::integer::u32",
+          "feltLength": 1
+        }
+      ],
+      "members": [
+        {
+          "name": "orders",
+          "type": "core::array::Span::<core::integer::u8>",
+          "id": "0x6f7264657273",
+          "feltLength": null
+        }
+      ],
+      "keyLength": 1,
+      "valueLength": null,
+      "derivedFrom": "preset"
+    },
+    {
+      "name": "HomeAspect",
+      "identity": "0x486f6d65417370656374",
+      "scope": "game",
+      "keys": [
+        {
+          "name": "game_id",
+          "type": "core::integer::u32",
+          "feltLength": 1
+        },
+        {
+          "name": "home",
+          "type": "core::integer::u64",
+          "feltLength": 1
+        }
+      ],
+      "members": [
+        {
+          "name": "aspect",
+          "type": "core::integer::u8",
+          "id": "0x617370656374",
+          "feltLength": 1
+        }
+      ],
+      "keyLength": 2,
+      "valueLength": 1
+    },
+    {
+      "name": "AspectMembers",
+      "identity": "0x4173706563744d656d62657273",
+      "scope": "game",
+      "keys": [
+        {
+          "name": "game_id",
+          "type": "core::integer::u32",
+          "feltLength": 1
+        },
+        {
+          "name": "aspect",
+          "type": "core::integer::u8",
+          "feltLength": 1
+        }
+      ],
+      "members": [
+        {
+          "name": "members",
+          "type": "core::integer::u32",
+          "id": "0x6d656d62657273",
+          "feltLength": 1
+        }
+      ],
+      "keyLength": 2,
+      "valueLength": 1,
+      "absence": {
+        "parent": "AspectRules",
+        "value": "zero",
+        "meaning": "No home has joined this Aspect in this game.",
+        "parentKeys": {
+          "game_id": "game_id"
         }
       }
     },
@@ -11285,6 +11399,10 @@
       "name": "world_native::presets::SettlementPreset",
       "members": [
         {
+          "name": "order_aspects",
+          "type": "core::array::Span::<core::integer::u8>"
+        },
+        {
           "name": "mode",
           "type": "world_native::settlement::SettlementMode"
         },
@@ -11729,6 +11847,10 @@
         {
           "name": "selected_realm",
           "type": "core::option::Option::<core::integer::u32>"
+        },
+        {
+          "name": "aspect",
+          "type": "core::option::Option::<core::integer::u8>"
         }
       ]
     },
@@ -14073,5 +14195,5 @@
       ]
     }
   },
-  "identity": "ab3864f0631e2117d1a1faece25f2fea4228b728da8262883e1426cb94dac831"
+  "identity": "121a8160e425a9569a9aea6fe720371d10753b503f6500a8c5ba4befa0c7dc38"
 }

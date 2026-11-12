@@ -44,7 +44,9 @@ fn credit_cancel_rotation_and_season_sweep_have_one_irreversible_outcome() {
         super::registrar::execute_in_game(
             d,
             other_game,
-            crate::commands::Command::SettleSeason(crate::realms::SettleSeason { selected_realm: Some(1) }),
+            crate::commands::Command::SettleSeason(
+                crate::realms::SettleSeason { selected_realm: Some(1), aspect: None },
+            ),
             350,
         ),
     );

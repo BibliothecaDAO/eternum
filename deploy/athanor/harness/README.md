@@ -38,8 +38,10 @@ Run the existing Frontier path with `--game-type frontier --functional --preset 
 the matching release and registered preset. Resolve the Season 1 id from
 [`FRONTIER_S1_PRESET_ID`](../../../config/source/common/native-preset-modes.ts); its starting stock and calendar live in
 [`season-one.ts`](../../../config/source/frontier/season-one.ts). The earlier presets retain their own definitions. The
-harness records the player actions and resulting Herald facts in its existing reports. This preset currently provides
-the starting stock and calendar; the Aspect, quest and bane paths arrive with their contract changes.
+harness records the player actions and resulting Herald facts in its existing reports. It distributes free homes across
+the Aspect catalog when `AspectRules` exists. Settlement sends the chosen `aspect`; held Realms may omit it and inherit
+their Order's Aspect. Read `HomeAspect` and `AspectMembers` from the shared native store. Starting army entities, quests
+and banes arrive with their contract changes.
 
 The home reward administration path is `Games.grant_labor`, with `Games.labor_grant` reading the recorded result. Both
 dispatch to the existing Prizes class. `bash contracts/l3/check-native.sh` checks their compiled routing and runs the

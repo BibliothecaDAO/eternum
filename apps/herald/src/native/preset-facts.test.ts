@@ -81,6 +81,22 @@ function applyRegistration(world: ReturnType<typeof setup>, preset: ReturnType<t
 }
 
 describe("verified preset configuration facts", () => {
+  it("publishes the S1 Order mapping and leaves earlier presets without Aspect rules", () => {
+    for (const presetId of [5, 7]) {
+      const world = setup();
+      const preset = registration(presetId);
+      applyRegistration(world, preset);
+      world.native.applyReceipt(world.fold, receipt(launch(preset)), 11, 0);
+      const store = new NativeFactStore();
+      store.applyFacts(
+        world.fold.gameRows("AspectRules", "1").map(({ key, value }) => ({ model: "AspectRules", key, value })),
+      );
+      expect(store.get("AspectRules", { game_id: 1 })).toEqual(
+        presetId === 7 ? { game_id: 1, orders: preset.definition.settlement.order_aspects } : undefined,
+      );
+    }
+  });
+
   it("projects both beast strength ranges and renamed discovery odds into client facts", () => {
     const world = setup();
     const preset = registration();
