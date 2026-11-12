@@ -3527,30 +3527,34 @@ function boardGoTo(dx, dy) {
   };
 }
 
-/** A view reached, then the wheel turned to the zoom it shoots at. */
+/** A view reached, then the wheel turned to the zoom it shoots at, and the camera read again once it has come to rest. */
 function boardZoom(reach, zoom) {
   return async (context) => {
     const reached = await reach(context);
-    const zoomed = await zoom(context);
-    return { ...reached, ...zoomed };
+    await zoom(context);
+    return { ...reached, camera: await cameraAtRest(context.browser) };
   };
 }
 
-/** On the map in `layer` (the Surface by default) at `distance`, when one is named. */
+/**
+ * On the map in `layer` (the Surface by default) at `distance`, when one is named, as the map reports its camera: a view
+ * whose camera was not observed, or whose distance the map did not report, is not that view.
+ */
 function boardView({ layer = 0, distance } = {}) {
   return ({ played, seen }) => {
     const scene = inScene("map")({ seen });
     if (scene.status !== "completed") return failed(scene.reason, played);
     const camera = played.after ?? played.camera ?? null;
-    if (played.expected && !(camera && hexesApart(camera, played.expected) === 0))
+    if (!camera) return failed("the map reported no camera", played);
+    if (played.expected && hexesApart(camera, played.expected) !== 0)
       return failed(`the camera stands at ${JSON.stringify(camera)}, not ${JSON.stringify(played.expected)}`, played);
-    if (camera && Math.floor(camera.row / REGION_ROWS) % 4 !== layer)
+    if (Math.floor(camera.row / REGION_ROWS) % 4 !== layer)
       return failed(`the camera stands in layer ${Math.floor(camera.row / REGION_ROWS) % 4}, not ${layer}`, played);
-    // The map reports a distance only once the wheel has turned: before that it stands at its opening one.
-    const shown = seen.worldmapDistance ?? BOARD_OPENING_DISTANCE;
-    if (distance !== undefined && Math.abs(shown - distance) > CLOSEST_DISTANCE_TOLERANCE)
-      return failed(`the camera stands ${shown} away, not ${distance}`, played);
-    return completed({ ...played, distance: shown });
+    if (distance === undefined) return completed(played);
+    if (typeof camera.distance !== "number") return failed("the map reported no camera distance", played);
+    if (Math.abs(camera.distance - distance) > CLOSEST_DISTANCE_TOLERANCE)
+      return failed(`the camera stands ${camera.distance} away, not ${distance}`, played);
+    return completed({ ...played, distance: camera.distance });
   };
 }
 
@@ -3570,13 +3574,13 @@ function chooseLayer(word) {
   };
 }
 
-/** The camera's tile once two reads a dive's frame apart agree, within SPIRE_WAIT_MS. */
+/** The camera's tile and distance once two reads a dive's frame apart agree, within SPIRE_WAIT_MS. */
 async function cameraAtRest(browser) {
   let last = browser.read(MAP_CAMERA);
   for (const until = Date.now() + SPIRE_WAIT_MS; Date.now() < until; ) {
     await sleep(LIST_SETTLE_MS);
     const now = browser.read(MAP_CAMERA);
-    if (now && last && hexesApart(now, last) === 0) return now;
+    if (now && last && hexesApart(now, last) === 0 && now.distance === last.distance) return now;
     last = now;
   }
   return last;

@@ -952,7 +952,10 @@ export default class WorldmapScene extends WarpTravel {
     const contractHex = Position.fromNormalized({ x: normalizedHex.col, y: normalizedHex.row }).getContract();
     const camera = { col: Number(contractHex.x), row: Number(contractHex.y) };
     useUIStore.getState().setCameraTargetHex(camera);
-    publishMapSelection({ camera, layer: useUIStore.getState().mapLayer });
+    publishMapSelection({
+      camera: { ...camera, distance: Math.round(this.getCurrentCameraDistance() * 100) / 100 },
+      layer: useUIStore.getState().mapLayer,
+    });
     this.publishSelectedHexOnScreen();
   };
 
