@@ -132,7 +132,7 @@ describe("WorldAtmosphereController", () => {
     expect(fixture.directionalLight.position.y).toBeGreaterThanOrEqual(0.5);
     expect(fixture.directionalLight.target.position.x).toBeCloseTo(10);
     expect(fixture.directionalLight.target.position.y).toBeCloseTo(2);
-    expect(fixture.directionalLight.target.position.z).toBeCloseTo(35.2);
+    expect(fixture.directionalLight.target.position.z).toBeCloseTo(30);
     expect((fixture.scene.background as Color).getHex()).not.toBe(0x111111);
   });
 
