@@ -4,7 +4,7 @@ import { useNativeFacts } from "@/hooks/helpers/use-native-facts";
 import {
   configManager,
   getGuardsByStructure,
-  isCurrentExpeditionArmy,
+  isCurrentExpeditionRegion,
   liveHomeArmies,
   StaminaManager,
   structureMapPosition,
@@ -24,7 +24,7 @@ export interface DayEndFacts {
   armyCanExplore: boolean;
 }
 
-const DAY_END_MODELS = ["Structure", "ArmySlot", "ExplorerTroops", "TileOccupancy", "Guard"] as const;
+const DAY_END_MODELS = ["ArmyDay", "Structure", "ArmySlot", "ExplorerTroops", "TileOccupancy", "Guard"] as const;
 
 /** The player's day-end facts, recomputed as the store changes and the clock moves. */
 export const useDayEndFacts = (rules: ExpeditionRules, realm: NativeRows["Structure"] | null): DayEndFacts => {
@@ -68,7 +68,7 @@ const guardedCampToday = (
     if (structure.base.category !== StructureType.Camp || structure.owner === realm.owner) continue;
     const position = structureMapPosition(store, structure);
     if (!position) continue;
-    if (isCurrentExpeditionArmy(rules, position, now) && isGuarded(structure, store)) return position;
+    if (isCurrentExpeditionRegion(rules, position, now) && isGuarded(structure, store)) return position;
   }
   return null;
 };

@@ -1,4 +1,7 @@
 pub fn biome(key: TileKey, game_context: crate::commands::BiomeContext) -> u8 {
+    if crate::logic::deep::contains(key.game_id, crate::troops::Coord { alt: key.alt, x: key.col, y: key.row }) {
+        return crate::biome::Biome::Underground.into();
+    }
     // Every reveal stores the biome derived here; deriving it again is the costliest step of a move or a battle. The
     // byte lives in the stored tile word alone, so one read answers revealed and unrevealed tiles alike.
     let terrain_word = crate::state::read().map.tiles.read((key.game_id, key.alt, key.col, key.row));
@@ -51,7 +54,13 @@ pub fn tile(key: TileKey) -> Option<TileOpt> {
     let state = crate::state::read();
     let storage_key = (key.game_id, key.alt, key.col, key.row);
     let occupier = occupancy(key);
-    let terrain = state.map.tiles.read(storage_key);
+    let terrain = if crate::logic::deep::contains(
+        key.game_id, crate::troops::Coord { alt: key.alt, x: key.col, y: key.row },
+    ) {
+        Into::<u8, u128>::into(crate::biome::Biome::Underground.into()) * crate::map::BIOME_SCALE
+    } else {
+        state.map.tiles.read(storage_key)
+    };
     if terrain / crate::map::BIOME_SCALE % crate::map::BYTE_RANGE != 0 || occupier.is_some() {
         Some(TileOpt { data: crate::map::coordinate_bits(key) + terrain })
     } else {

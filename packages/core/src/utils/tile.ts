@@ -1,3 +1,4 @@
+import { deepTerrain } from "./deep";
 import { activeTileOccupancy } from "./ruins";
 import { BiomeIdToType, type BiomeType, type Tile } from "@bibliothecadao/types";
 import type { NativeFactStore } from "../client/native-fact-store";
@@ -8,14 +9,14 @@ export { tileFactsToTile } from "./tile-facts";
 export const DEFAULT_COORD_ALT = false;
 
 export function getTileAt(
-  store: NativeFactStore,
+  store: Pick<NativeFactStore, "get" | "inGame">,
   alt: boolean,
   col: number,
   row: number,
   gameId = configManager.getActiveGameId(),
 ): Tile | undefined {
   const key = { game_id: gameId, alt, col, row };
-  return tileFactsToTile(key, store.get("TileOpt", key), activeTileOccupancy(store, key));
+  return tileFactsToTile(key, deepTerrain(store, key) ?? store.get("TileOpt", key), activeTileOccupancy(store, key));
 }
 
 /** The canonical tile occupied by a live entity; a missing position is an incomplete fact set. */

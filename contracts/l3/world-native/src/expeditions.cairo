@@ -117,12 +117,11 @@ pub fn spire(spacing: u32, region_id: u32, day: u64) -> Coord {
     crate::geometry::neighbor(site(spacing, region_id, day, 0), (day % 6).try_into().unwrap())
 }
 
-/// An army lives only on its own day's map: on any later day it is gone.
-pub fn is_current(coord: Coord, spacing: u32, day: u64) -> bool {
-    !coord.alt && region_day(coord, spacing) == day
-}
-
 pub fn assert_same_region(origin: Coord, destination: Coord, spacing: u32) {
+    if crate::deep::contains(origin, spacing) {
+        assert!(crate::deep::contains(destination, spacing), "outside Deep");
+        return;
+    }
     let same_region = origin.x / spacing == destination.x / spacing && origin.y / spacing == destination.y / spacing;
     let local_x = destination.x % spacing;
     let local_y = destination.y % spacing;

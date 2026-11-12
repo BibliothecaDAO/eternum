@@ -53,7 +53,8 @@
     "HYPERSTRUCTURE_MULTIPLIERS": 32768,
     "PRODUCTION_START": 131072,
     "WELL_STAMINA_DIVISOR": 2,
-    "FRONTIER_REPORT_GRACE_SECONDS": 3600
+    "FRONTIER_REPORT_GRACE_SECONDS": 3600,
+    "DEEP_MAP_SIZE": 50
   },
   "researchConstants": {
     "ROW_FARM": 0,
@@ -5154,6 +5155,33 @@
       ],
       "keyLength": 2,
       "valueLength": 11
+    },
+    {
+      "name": "ArmyDay",
+      "identity": "0x41726d79446179",
+      "scope": "game",
+      "keys": [
+        {
+          "name": "game_id",
+          "type": "core::integer::u32",
+          "feltLength": 1
+        },
+        {
+          "name": "explorer_id",
+          "type": "core::integer::u64",
+          "feltLength": 1
+        }
+      ],
+      "members": [
+        {
+          "name": "day",
+          "type": "core::integer::u64",
+          "id": "0x646179",
+          "feltLength": 1
+        }
+      ],
+      "keyLength": 2,
+      "valueLength": 1
     },
     {
       "name": "ArmySlot",
@@ -14073,5 +14101,5 @@
       ]
     }
   },
-  "identity": "ab3864f0631e2117d1a1faece25f2fea4228b728da8262883e1426cb94dac831"
+  "identity": "20586184ba74e10af07a59ff8a5e4f5ba4f018c7e717d4cb6dda094dc3dc3345"
 }

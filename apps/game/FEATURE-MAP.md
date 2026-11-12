@@ -1286,8 +1286,10 @@ same home badge.
 ## Ethereal depths
 
 Frontier: select an army beside its realm’s Spire → **Spire** → **Enter Ethereal I, II or III**. The army and camera
-move into the chosen band. `src/three/terrain/ethereal-depths.json` owns Violet descent’s material and mineral values;
-the renderer selects them from each tile’s contract depth. Eternum’s alternate layer retains its original basalt.
+move into the chosen depth. Ethereal III centers on the fixed shared 50 × 50 Deep for every Realm and day; its terrain
+is visible without exploration. Army lifetime follows its native ArmyDay fact rather than its map band.
+`src/three/terrain/ethereal-depths.json` owns Violet descent’s material and mineral values; the renderer selects them
+from each tile’s contract depth. Eternum’s alternate layer retains its original basalt.
 
 Art → Terrain → Ethereal depths (`/lab/ethereal-depths`) previews the approved depths and the original material through
 the same terrain renderer. `/lab/game?scenario=ethereal-depths` opens the real Frontier client with fixture facts: all

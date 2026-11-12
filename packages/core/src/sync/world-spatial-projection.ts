@@ -1,4 +1,4 @@
-import { activeTileOccupancy } from "../utils/ruins";
+import { deepTiles } from "../utils/deep";
 import { safeInteger } from "../utils/safe-integer";
 import type { ID, Tile, TroopTier, TroopType } from "@bibliothecadao/types";
 import { TileOccupier } from "@bibliothecadao/types";
@@ -7,8 +7,7 @@ import { notifyEach } from "../utils/notify-each";
 import type { NativeKeys, NativeRows } from "../../../../contracts/l3/world-native/schema/client.gen";
 import { isExpeditionRealm, siteKindOf, structureMapPosition } from "../utils/expeditions";
 import { isTileOccupierStructure } from "../utils/map/hex";
-import { tileFactsToTile } from "../utils/tile-facts";
-import { entityMapPosition } from "../utils/tile";
+import { entityMapPosition, getTileAt } from "../utils/tile";
 
 /** A map hex on one layer: `alt` is false on the surface and true on the ethereal layer, as in TileOpt. */
 export interface WorldSpatialHex {
@@ -588,6 +587,10 @@ export class WorldSpatialProjection {
   }
 
   private applyChanges(changes: readonly NativeFactChange[]): void {
+    if (changes.some((change) => change.model === "SliceRules" || change.model === "SettlementRules")) {
+      this.rebuild();
+      return;
+    }
     if (
       changes.some(
         (change) =>
@@ -596,14 +599,14 @@ export class WorldSpatialProjection {
           (change.model === "GameRelease" && change.current?.release_id !== change.previous?.release_id),
       )
     ) {
-      for (const [key, occupancy] of this.store.entries("TileOccupancy")) {
-        if (occupancy.category === TileOccupier.Ruin) this.applyTileUpdate(key, occupancy);
+      for (const [, occupancy] of this.store.entries("TileOccupancy")) {
+        if (occupancy.category === TileOccupier.Ruin) this.applyTileUpdate(occupancy);
       }
     }
     for (const change of changes) {
       if (change.model === "TileOpt" || change.model === "TileOccupancy") {
         const tile = change.current ?? change.previous;
-        if (tile) this.applyTileUpdate(change.key, tile);
+        if (tile) this.applyTileUpdate(tile);
       }
       if (change.model === "TileOccupancy") {
         for (const tile of [change.previous, change.current]) {
@@ -636,8 +639,10 @@ export class WorldSpatialProjection {
     this.chestsByTileEntity.clear();
     this.structuresByTileEntity.clear();
 
-    const tiles = new Map<string, NativeKeys["TileOccupancy"]>(this.store.entries("TileOpt"));
-    for (const [key, occupancy] of this.store.entries("TileOccupancy")) tiles.set(key, occupancy);
+    const tiles = new Map<string, NativeKeys["TileOccupancy"]>();
+    for (const key of deepTiles(this.store)) tiles.set(tileSourceKey(key), key);
+    for (const [, key] of this.store.entries("TileOpt")) tiles.set(tileSourceKey(key), key);
+    for (const [, key] of this.store.entries("TileOccupancy")) tiles.set(tileSourceKey(key), key);
     for (const [entity, key] of tiles) {
       const projected = projectedRow("tile", () => {
         const source = this.tileAt(key);
@@ -691,10 +696,11 @@ export class WorldSpatialProjection {
   }
 
   private tileAt(key: NativeKeys["TileOccupancy"]): Tile | undefined {
-    return tileFactsToTile(key, this.store.get("TileOpt", key), activeTileOccupancy(this.store, key));
+    return getTileAt(this.store, key.alt, key.col, key.row, key.game_id);
   }
 
-  private applyTileUpdate(tileEntity: string, key: NativeKeys["TileOccupancy"]): void {
+  private applyTileUpdate(key: NativeKeys["TileOccupancy"]): void {
+    const tileEntity = tileSourceKey(key);
     const source = this.tileAt(key);
     const previousTile = this.tilesByTileEntity.get(tileEntity);
     const currentTile = resolveTileRenderable(source);
@@ -928,4 +934,8 @@ export class WorldSpatialProjection {
     this.chestsByTileEntity.clear();
     this.structuresByTileEntity.clear();
   }
+}
+
+function tileSourceKey(key: NativeKeys["TileOccupancy"]): string {
+  return `${key.game_id}:${Number(key.alt)}:${key.col}:${key.row}`;
 }

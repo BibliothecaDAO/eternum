@@ -607,3 +607,5 @@ pub struct SpeedConfig {
 pub const WELL_STAMINA_DIVISOR: u8 = 2;
 
 pub const FRONTIER_REPORT_GRACE_SECONDS: u32 = crate::days::FRONTIER_REPORT_GRACE_SECONDS;
+
+pub const DEEP_MAP_SIZE: u32 = 50;

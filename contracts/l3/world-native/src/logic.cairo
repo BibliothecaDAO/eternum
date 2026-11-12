@@ -1,3 +1,4 @@
+pub mod army_days;
 pub mod army_slot_storage;
 pub mod army_slots;
 pub mod arrivals;
@@ -9,6 +10,7 @@ pub mod buildings;
 pub mod combat;
 pub mod combat_domain;
 pub mod construction;
+pub mod deep;
 pub mod deposits;
 pub mod economy;
 pub mod entry;

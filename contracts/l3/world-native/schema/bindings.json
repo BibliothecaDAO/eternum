@@ -1,5 +1,5 @@
 {
-  "schemaIdentity": "ab3864f0631e2117d1a1faece25f2fea4228b728da8262883e1426cb94dac831",
+  "schemaIdentity": "20586184ba74e10af07a59ff8a5e4f5ba4f018c7e717d4cb6dda094dc3dc3345",
   "commandAbi": [
     {
       "type": "interface",
@@ -1727,6 +1727,10 @@
     },
     {
       "name": "ArmyProgress",
+      "scope": "game"
+    },
+    {
+      "name": "ArmyDay",
       "scope": "game"
     },
     {

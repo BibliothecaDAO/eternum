@@ -52,6 +52,7 @@ pub mod MovementLogic {
             if rules.day_unit_seconds != 0 {
                 crate::expeditions::assert_same_region(explorer.coord, destination, self.expedition_spacing(game_id));
             }
+            crate::logic::deep::clear_expired_occupant(game_id, destination, context);
             let tile = tile_key(game_id, destination);
             let data = self
                 .map_dispatcher(game_id)
@@ -185,6 +186,7 @@ pub mod MovementLogic {
             let origin = tile_key(game_id, explorer.coord);
             for direction in 0_u8..6 {
                 let destination = neighbor(explorer.coord, direction);
+                crate::logic::deep::clear_expired_occupant(game_id, destination, game_context);
                 let tile = tile_key(game_id, destination);
                 let data = crate::logic::map::tile(tile).map(|tile| tile.data).unwrap_or(0);
                 if crate::logic::map::occupancy(tile).is_some() {
@@ -236,8 +238,10 @@ pub mod MovementLogic {
                 explorer.coord == spire || crate::geometry::adjacent(explorer.coord, spire),
                 "army must be at its realm's spire",
             );
-            let destination = Coord {
-                y: explorer.coord.y + Into::<u8, u32>::into(command.depth) * spacing, ..explorer.coord,
+            let destination = if command.depth == 3 {
+                crate::logic::deep::arrival(game_id, context)
+            } else {
+                Coord { y: explorer.coord.y + Into::<u8, u32>::into(command.depth) * spacing, ..explorer.coord }
             };
             let location = tile_key(game_id, destination);
             self.reveal_depth_arrival(game_id, destination, context);
@@ -271,6 +275,7 @@ pub mod MovementLogic {
                         explorer.coord, destination, self.expedition_spacing(game_id),
                     );
                 }
+                crate::logic::deep::clear_expired_occupant(game_id, destination, context);
                 let tile = tile_key(game_id, destination);
                 let data = self
                     .map_dispatcher(game_id)

@@ -80,7 +80,7 @@ fn expedition_rollover_expires_armies_and_preserves_the_home_economy() {
 fn expedition_regions_remain_disjoint_for_every_depth_through_a_season() {
     let mut regions: core::dict::Felt252Dict<u32> = Default::default();
     for day in 0_u64..105 {
-        for depth in 0_u8..4 {
+        for depth in 0_u8..3 {
             for realm in array![1_u16, 2, 8000] {
                 let site = crate::expeditions::site(1024, realm.into(), day, depth);
                 let region: felt252 = Into::<u32, felt252>::into(site.x / 1024) * 0x100000000
@@ -88,8 +88,6 @@ fn expedition_regions_remain_disjoint_for_every_depth_through_a_season() {
                 assert_eq!(regions.get(region), 0);
                 regions.insert(region, 1);
                 assert_eq!(crate::expeditions::region_day(site, 1024), day);
-                assert!(crate::expeditions::is_current(site, 1024, day));
-                assert!(!crate::expeditions::is_current(site, 1024, day + 1));
             }
         }
     }
@@ -463,8 +461,12 @@ fn depth_entry_requires_research_and_keeps_stamina_at_every_depth() {
         let landing = map.tile(crate::geometry::tile_key(game_id, inside.coord)).unwrap().data;
         assert_ne!(landing / 0x20000000000 % 256, 0);
         assert!(!map.occupancy(crate::geometry::tile_key(game_id, inside.coord)).unwrap().is_structure);
-        assert_eq!(inside.coord.x, before.coord.x);
-        assert_eq!(inside.coord.y, before.coord.y + Into::<u8, u32>::into(depth) * preset.settlement.spacing);
+        if depth == 3 {
+            assert_eq!(inside.coord, crate::deep::arrival(preset.settlement.spacing));
+        } else {
+            assert_eq!(inside.coord.x, before.coord.x);
+            assert_eq!(inside.coord.y, before.coord.y + Into::<u8, u32>::into(depth) * preset.settlement.spacing);
+        }
         assert_eq!(inside.troops.stamina.inline().amount, 0);
         assert_eq!(resources.resource_balance(essence), after_purchase);
         assert!(!execute_in_game(d, game_id, enter, 351));
@@ -492,6 +494,51 @@ fn depth_entry_requires_research_and_keeps_stamina_at_every_depth() {
             assert_eq!(structures.structure(home).unwrap().metadata.deepest_depth, 2);
         }
     }
+    // A later day's army still uses the same Deep, while its slot belongs to that later day.
+    let tomorrow = day_start(d, game_id, 1);
+    for slot in 0_u8..2 {
+        assert!(
+            execute_in_game(
+                d,
+                game_id,
+                Command::CreateExplorer(
+                    CreateExplorer {
+                        slot, structure_id: 1, category: 0, tier: 0, amount: RESOURCE_PRECISION, direction: slot + 1,
+                    },
+                ),
+                tomorrow + 1,
+            ),
+        );
+        let explorer_id = *structures.home_armies(home).at(slot.into());
+        assert!(
+            execute_in_game(
+                d, game_id, Command::EnterDepth(crate::commands::EnterDepth { explorer_id, depth: 3 }), tomorrow + 1,
+            ),
+        );
+        let key = ExplorerKey { game_id, explorer_id };
+        let army = troops.resolved_explorer(key).unwrap();
+        assert!(crate::deep::contains(army.coord, preset.settlement.spacing));
+        assert_eq!(snforge_std::interact_with_state(d.games, || crate::logic::army_days::require(key)), 1);
+        if slot == 0 {
+            assert_eq!(army.coord, crate::deep::arrival(preset.settlement.spacing));
+        } else {
+            assert_ne!(army.coord, crate::deep::arrival(preset.settlement.spacing));
+            assert!(crate::geometry::adjacent(army.coord, crate::deep::arrival(preset.settlement.spacing)));
+        }
+    }
+    let first = *structures.home_armies(home).at(0);
+    let key = ExplorerKey { game_id, explorer_id: first };
+    let origin = troops.resolved_explorer(key).unwrap().coord;
+    // Direction 3 points away from the nearest-free arrival, which takes direction 0 first.
+    assert!(
+        execute_in_game(
+            d,
+            game_id,
+            Command::Move(crate::commands::Move { explorer_id: first, directions: array![3].span() }),
+            tomorrow + 2,
+        ),
+    );
+    assert_eq!(troops.resolved_explorer(key).unwrap().coord, crate::geometry::neighbor(origin, 3));
     // Ethereal III is the depth row's last tier.
     let balance = resources.resource_balance(essence);
     assert!(
@@ -2397,4 +2444,25 @@ fn broken_legacy_clear_refuses_without_guessing_a_depth(defect: u8) {
     assert!(
         snforge_std::interact_with_state(d.games, || crate::state::read().map_rules.ruin_cleared.read((game_id, 1, 0))),
     );
+}
+
+#[test]
+fn deep_has_one_fifty_by_fifty_map_and_no_private_depth_three_region() {
+    let spacing = 1024;
+    let center = crate::deep::center(spacing);
+    assert_eq!(crate::deep::arrival(spacing).y, center.y - 20);
+    let mut tiles = 0;
+    for x in center.x - 26..center.x + 26 {
+        for y in center.y - 26..center.y + 26 {
+            let coord = crate::troops::Coord { alt: false, x, y };
+            if crate::deep::contains(coord, spacing) {
+                tiles += 1;
+            }
+        }
+    }
+    assert_eq!(tiles, 2500);
+    assert!(!crate::deep::contains(crate::troops::Coord { alt: true, ..center }, spacing));
+    for day in 1_u64..50 {
+        assert!(!crate::deep::contains(crate::expeditions::site(spacing, 1, day, 3), spacing));
+    }
 }

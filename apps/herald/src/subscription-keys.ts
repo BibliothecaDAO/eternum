@@ -32,6 +32,7 @@ export function scopeInputInterest(scope: GameSyncScope): Set<string> {
     ...[...expedition.entities].flatMap((entity) => [
       scopeLookup.structure(entity),
       scopeLookup.army(entity),
+      scopeLookup.armyDay(entity),
       scopeLookup.occupancyOf(entity),
     ]),
   ]);

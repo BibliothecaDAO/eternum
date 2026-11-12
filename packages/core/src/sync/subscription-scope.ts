@@ -1,3 +1,5 @@
+import { nativeRuleConstants } from "../../../../contracts/l3/world-native/schema/client.gen";
+import { deepCenter } from "../utils/deep";
 import { TileOccupier } from "@bibliothecadao/types";
 import {
   expeditionRealmSite,
@@ -11,7 +13,7 @@ import { isTileOccupierUsableSite } from "../utils/map/hex";
 import { hasSingleTilePosition } from "../client/native-occupancy";
 import { gameSyncRegion, syncScalar, type GameSyncScope } from "./model-manifest";
 
-type ScopeInputModel = "PlayerEntry" | "Structure" | "ExplorerTroops" | "TileOccupancy" | "ExpeditionSite";
+type ScopeInputModel = "ArmyDay" | "PlayerEntry" | "Structure" | "ExplorerTroops" | "TileOccupancy" | "ExpeditionSite";
 export type ScopeRowReader = (
   model: ScopeInputModel,
   spacing: number,
@@ -54,14 +56,15 @@ export function deriveGameSyncScope(
     homes.map(({ value }) => syncScalar((value.metadata as Record<string, unknown>).realm_id)),
   );
   const regions = new Set<string>();
+  if (spacing >= nativeRuleConstants.DEEP_MAP_SIZE * 2) {
+    const deep = deepCenter(spacing);
+    regions.add(gameSyncRegion({ alt: false, x: deep.col, y: deep.row }, spacing)!);
+  }
   const armies = read("ExplorerTroops", spacing, [...realms].map(scopeLookup.armiesOf)).filter(({ value }) => {
     if (BigInt((value.troops as Record<string, unknown>).count as string) <= 0n) return false;
-    const coord = position(value.explorer_id);
-    return isCurrentExpeditionArmy(
-      expedition,
-      { x: Number(coord.x), y: Number(coord.y), alt: coord.alt === true },
-      timestamp,
-    );
+    const days = read("ArmyDay", spacing, [scopeLookup.armyDay(value.explorer_id)]);
+    if (days.length !== 1) throw new Error(`Missing expedition day for army ${syncScalar(value.explorer_id)}`);
+    return isCurrentExpeditionArmy(expedition, BigInt(days[0].value.day as string), timestamp);
   });
   // The home's surface region today, where the contract raises the realm and Deploy steps out, whatever layer its
   // armies stand in: a realm whose every army went into an Ethereal layer still sees its home and deploys from it.
@@ -80,10 +83,12 @@ export function deriveGameSyncScope(
     if (
       Number(value.category) === TileOccupier.Chest ||
       isTileOccupierUsableSite(Number(value.category)) ||
-      (value.is_structure === true &&
-        hasSingleTilePosition({ entity_id: syncScalar(value.entity_id), category: syncScalar(value.category) }))
+      hasSingleTilePosition({ entity_id: syncScalar(value.entity_id), category: syncScalar(value.category) })
     )
       entities.add(syncScalar(value.entity_id));
+  }
+  for (const { value } of read("ExplorerTroops", spacing, [...entities].map(scopeLookup.army))) {
+    entities.add(syncScalar(value.owner));
   }
   for (const { value } of read("ExpeditionSite", spacing, [...regions].map(scopeLookup.sitesIn))) {
     entities.add(syncScalar(value.entity_id));
@@ -117,11 +122,13 @@ export const scopeLookup = {
   occupancyIn: (region: string) => `TileOccupancy.region:${region}`,
   occupancyOf: (entity: unknown) => `TileOccupancy.entity:${syncScalar(entity)}`,
   armiesOf: (home: unknown) => `ExplorerTroops.owner:${syncScalar(home)}`,
+  armyDay: (entity: unknown) => `ArmyDay.entity:${syncScalar(entity)}`,
   army: (entity: unknown) => `ExplorerTroops.entity:${syncScalar(entity)}`,
 };
 
 /** The lookups that can find this row; a region key needs the expedition spacing, and without one there is none. */
 export function scopeInputKeys(model: string, row: Record<string, unknown>, spacing: number | undefined): string[] {
+  if (model === "ArmyDay") return [scopeLookup.armyDay(row.explorer_id)];
   if (model === "PlayerEntry") return [scopeLookup.entryOf(row.player)];
   if (model === "ExplorerTroops") return [scopeLookup.armiesOf(row.owner), scopeLookup.army(row.explorer_id)];
   if (model === "Structure") return [scopeLookup.structuresOf(row.owner), scopeLookup.structure(row.entity_id)];

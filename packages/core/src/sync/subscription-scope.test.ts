@@ -14,6 +14,8 @@ const rows = [
   { model: "ExplorerTroops", value: { explorer_id: "102", owner: "2", troops: { count: "1000000000" } } },
   { model: "TileOccupancy", value: { entity_id: "101", category: "26", alt: false, col: 512, row: 1600 } },
   { model: "TileOccupancy", value: { entity_id: "102", category: "26", alt: false, col: 1600, row: 2700 } },
+  { model: "ArmyDay", value: { explorer_id: "101", day: "0" } },
+  { model: "ArmyDay", value: { explorer_id: "102", day: "0" } },
 ];
 const read: ScopeRowReader = (model, spacing, keys) =>
   rows.filter(
@@ -27,7 +29,7 @@ describe("visited realm scope", () => {
     const scope = visit();
     expect(scope.expedition?.owners).toEqual(new Set(["10", "11", "3003"]));
     expect(scope.expedition?.realms).toEqual(new Set(["1", "2"]));
-    expect(scope.expedition?.regions).toEqual(new Set(["0:0", "0:1"]));
+    expect(scope.expedition?.regions).toEqual(new Set(["0:3", "0:0", "0:1"]));
     expect(scope.expedition?.entities).toEqual(new Set(["1", "2", "101", "102"]));
     for (const model of ["Building", "RealmKnowledge", "ArmySlot"])
       expect(rowInGameSyncScope(model, { structure_id: "2", epoch: 0 }, scope)).toBe(true);
@@ -40,7 +42,7 @@ describe("visited realm scope", () => {
     const withoutActingArmy: ScopeRowReader = (model, spacing, keys) =>
       read(model, spacing, keys).filter(({ value }) => model !== "ExplorerTroops" || value.owner !== "1");
     const scope = deriveGameSyncScope("0xa", 350, expedition, withoutActingArmy, "0xbbb");
-    expect(scope.expedition?.regions).toEqual(new Set(["0:0"]));
+    expect(scope.expedition?.regions).toEqual(new Set(["0:3", "0:0"]));
   });
 
   it("drops visit-only rows on leaving and retains overlapping ownership", () => {
@@ -53,13 +55,13 @@ describe("visited realm scope", () => {
   it("gives a spectator the watched realm's tiles without its actor-only events", () => {
     const scope = deriveGameSyncScope(undefined, 350, expedition, read, "0xbbb");
     expect(scope.actor).toBeUndefined();
-    expect(scope.expedition?.regions).toEqual(new Set(["1:0", "1:2"]));
+    expect(scope.expedition?.regions).toEqual(new Set(["0:3", "1:0", "1:2"]));
     expect(rowInGameSyncScope("TileOpt", { alt: false, col: 1600, row: 2700 }, scope)).toBe(true);
     expect(rowInGameSyncScope("TileOpt", { alt: false, col: 512, row: 1600 }, scope)).toBe(false);
     expect(rowInGameSyncScope("GameplayRejected", { actor: "11" }, scope)).toBe(false);
-    expect(deriveGameSyncScope(undefined, 350, expedition, read).expedition?.regions).toEqual(new Set());
+    expect(deriveGameSyncScope(undefined, 350, expedition, read).expedition?.regions).toEqual(new Set(["0:3"]));
     expect(deriveGameSyncScope(undefined, 350, expedition, read, "0xa").expedition?.regions).toEqual(
-      new Set(["0:0", "0:1"]),
+      new Set(["0:3", "0:0", "0:1"]),
     );
   });
 
@@ -73,7 +75,7 @@ it("keeps the home's surface and its ring while every army stands in an Ethereal
   // Realm 1's only army stands at row 1600, Ethereal I (band 1) below day 0's surface region 0:0, where the realm stands
   // at (512, 512); the owner's production stream lost exactly that surface (reports: prod deploy bug, 4 November).
   const scope = deriveGameSyncScope("0xa", 350, expedition, read);
-  expect(scope.expedition?.regions).toEqual(new Set(["0:0", "0:1"]));
+  expect(scope.expedition?.regions).toEqual(new Set(["0:3", "0:0", "0:1"]));
   const ring = [
     [513, 512],
     [511, 512],
@@ -88,7 +90,7 @@ it("keeps the home's surface and its ring while every army stands in an Ethereal
   }
   // Day 1's surface is four bands down; yesterday's home region leaves the scope with the day.
   const tomorrow = deriveGameSyncScope("0xa", dayOf(expedition, 350)!.end, expedition, read);
-  expect(tomorrow.expedition?.regions).toEqual(new Set(["0:4"]));
+  expect(tomorrow.expedition?.regions).toEqual(new Set(["0:3", "0:4"]));
 });
 
 it("retains the cleared site's facts by its own coordinate, then drops yesterday's region", () => {
@@ -144,4 +146,24 @@ it.each([
       deriveGameSyncScope(undefined, 350, expedition, withChest, "0xbbb"),
     ),
   ).toBe(false);
+});
+
+it("shares the fixed Deep and the visible enemy army's day and slot without its home map", () => {
+  const deepRows = rows.map((row) =>
+    row.model === "TileOccupancy" && row.value.entity_id === "102"
+      ? { ...row, value: { ...row.value, col: 512, row: 3584 } }
+      : row,
+  );
+  const shared: ScopeRowReader = (model, spacing, keys) =>
+    deepRows.filter(
+      (row) => row.model === model && scopeInputKeys(model, row.value, spacing).some((key) => keys.includes(key)),
+    );
+  const scope = deriveGameSyncScope("0xa", 350, expedition, shared);
+  expect(scope.expedition?.entities).toEqual(new Set(["1", "101", "102", "2"]));
+  expect(scope.expedition?.realms).toEqual(new Set(["1"]));
+  expect(scope.expedition?.regions).toEqual(new Set(["0:3", "0:0", "0:1"]));
+  expect(rowInGameSyncScope("ArmyDay", { explorer_id: "102", day: 0 }, scope)).toBe(true);
+  expect(rowInGameSyncScope("ArmySlot", { structure_id: "2", epoch: 0 }, scope)).toBe(true);
+  expect(rowInGameSyncScope("ArmySlot", { structure_id: "2", epoch: 1 }, scope)).toBe(false);
+  expect(rowInGameSyncScope("TileOpt", { alt: false, col: 1600, row: 512 }, scope)).toBe(false);
 });
