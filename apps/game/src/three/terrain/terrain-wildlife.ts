@@ -6,6 +6,7 @@ import { disposeBiomeCreature, loadBiomeCreature, releaseBiomeCreatureBones } fr
 import { creatureTraits, type CreatureSpecies } from "./creatures/biome-creature-catalog";
 import {
   BiomeCreaturePopulation,
+  MAX_CREATURES,
   herdOf,
   homeTile,
   type RoamingCreature,
@@ -120,6 +121,7 @@ export class TerrainWildlife {
   getStats() {
     return {
       count: this.population.creatures.size,
+      cap: MAX_CREATURES,
       loaded: this.views.size,
       pending: this.pending,
       failed: [...this.failures],

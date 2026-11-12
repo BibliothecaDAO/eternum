@@ -234,6 +234,7 @@ const OBSERVE_EXPRESSION = `JSON.stringify({
     .map((panel) => panel.getAttribute("aria-label")),
   pressed: [...document.querySelectorAll('button[aria-pressed="true"]')].map((button) => button.getAttribute("aria-label")),
   worldmapDistance: JSON.parse(localStorage.getItem("eternum-camera-zoom") ?? "null")?.state?.worldmapDistance ?? null,
+  terrainLoad: window.getTerrainLoad?.() ?? null,
   playable: (window.__eternumGameEntryTimeline ?? []).some((milestone) => milestone.name === "world-interactive"),
   timeOrigin: performance.timeOrigin,
   now: performance.now(),

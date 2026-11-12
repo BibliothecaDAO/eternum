@@ -53,7 +53,7 @@ interface Dangers {
   herd: Map<number, Danger>;
 }
 
-const MAX_CREATURES = 48;
+export const MAX_CREATURES = 48;
 /** How far from its tile's centre an animal may stand: no two visits end on the same spot. */
 const STANDING_SPOT_RADIUS = 0.28;
 /** An animal is wary of danger this many times further off than the distance at which it acts. */

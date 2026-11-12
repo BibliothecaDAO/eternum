@@ -33,7 +33,7 @@ const typedEntityId = (value: string): number | undefined =>
 
 const EMPTY_STATS: ProceduralTerrainDebugStats = {
   preparedFrontierCells: 0,
-  wildlife: { count: 0, loaded: 0, pending: 0, failed: [], visible: true, creatures: [] },
+  wildlife: { count: 0, cap: 0, loaded: 0, pending: 0, failed: [], visible: true, creatures: [] },
   activeMode: "webgpu",
   biomeCount: 0,
   buildingInstances: 0,

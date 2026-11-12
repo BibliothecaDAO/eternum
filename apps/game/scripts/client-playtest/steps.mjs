@@ -3478,6 +3478,72 @@ const BOARD_STEPS = [
   })),
 ];
 
+/**
+ * The map at its heaviest, timed as a phone meets it (`/lab/game?scenario=full-load`, opened with the dev overlays for the
+ * map's load report): the vegetation at full density across its pages and the wildlife at its cap, held still, with the
+ * army walking through it, panned far across new pages, and at the widest zoom. Every step fails unless the map reports
+ * its wildlife at the cap with every animal drawn. Run it on the phone stand-in: `--gpu low-power --cpu-throttle 4
+ * --viewport 390x844`.
+ */
+const FULL_LOAD_STEPS = [
+  { name: "full-load-still", settleMs: 8_000, verify: atFullLoad(nothingElse) },
+  { name: "full-load-army", play: walkTheArmy, settleMs: 6_000, verify: atFullLoad(armyWalked) },
+  { name: "full-load-pan", play: panFarAcross, settleMs: 20_000, verify: atFullLoad(newPagesPresented) },
+  { name: "full-load-widest", play: zoomAllTheWayOut, settleMs: 6_000, verify: atFullLoad(nothingElse) },
+];
+
+function nothingElse() {
+  return null;
+}
+
+/** The army sent on three moves in a row, each to a tile beside it, as a player orders them (the lab's wallet offer closed). */
+async function walkTheArmy(context) {
+  context.browser.run(["eval", `document.querySelector('[role=dialog] button[aria-label*="lose" i]')?.click()`]);
+  const moves = [];
+  for (let move = 0; move < 3; move += 1) {
+    moves.push(await orderBesideArmy(context, "Move"));
+    await sleep(1_500);
+  }
+  return { moves };
+}
+
+function armyWalked({ actionLatency }) {
+  const sent = (actionLatency?.chainAnswers ?? []).filter(({ kind }) => kind === "Move").length;
+  return sent > 0 ? null : "no move reached the chain";
+}
+
+/**
+ * A pan twice round a loop across the revealed land, a second and a half a key, back where it began: new pages come and
+ * go under it, and its wildlife refills before the step is judged. From the load the map reported before it.
+ */
+async function panFarAcross({ browser }) {
+  const before = browser.observe().terrainLoad;
+  const loop = ["KeyD", "KeyS", "KeyA", "KeyW"];
+  browser.run(["eval", `void window.__playtest.pan(${JSON.stringify([...loop, ...loop])}, 1500)`]);
+  return { before };
+}
+
+function newPagesPresented({ played, seen }) {
+  return seen.terrainLoad.pagesPresented > (played.before?.pagesPresented ?? Infinity)
+    ? null
+    : `no new terrain page was presented (${played.before?.pagesPresented} before, ${seen.terrainLoad.pagesPresented} after)`;
+}
+
+/** On the map with its wildlife at the cap and every animal drawn, and whatever else `alsoWrong` finds wrong. */
+function atFullLoad(alsoWrong) {
+  return (context) => {
+    const { seen, played } = context;
+    const scene = inScene("map")({ seen });
+    if (scene.status !== "completed") return failed(scene.reason, played);
+    const load = seen.terrainLoad;
+    if (!load) return failed("the map reported no terrain load (open it with the dev overlays)", played);
+    if (load.animals !== load.animalCap || load.animalsLoaded !== load.animals)
+      return failed(`the wildlife is not at its cap, every animal drawn: ${JSON.stringify(load)}`, played);
+    const wrong = alsoWrong(context);
+    return wrong ? failed(wrong, { ...played, load }) : completed({ ...played, load });
+  };
+}
+
 /** The board's views, as its stills are named: every step but the moves between them. */
 const BOARD_PASSAGES = new Set(["back-to-world", "open-map", "world-again"]);
 export const BOARD_SHOTS = BOARD_STEPS.map(({ name }) => name).filter((name) => !BOARD_PASSAGES.has(name));
@@ -5599,6 +5665,7 @@ export const STEP_SETS = {
   "lab-spire": { game: LAB_SPIRE, steps: LAB_SPIRE_STEPS },
   "lab-layers": { game: LAB_SPIRE, steps: LAB_LAYERS_STEPS },
   board: { game: { ...LAB_SPIRE, lab: "board" }, steps: BOARD_STEPS },
+  "full-load": { game: labSpireGame("full-load"), steps: FULL_LOAD_STEPS, devOverlays: true },
   ...Object.fromEntries(
     Object.keys(depthLooks).map((depth) => [
       `lab-ethereal-${depth}`,

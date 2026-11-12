@@ -224,6 +224,17 @@ class SupersededPresentationError extends Error {
   }
 }
 
+interface TerrainLoad {
+  animals: number;
+  animalsLoaded: number;
+  animalCap: number;
+  props: number;
+  propTriangles: number;
+  pages: number;
+  /** Page presentations since the map opened: how much terrain a pan has brought in. */
+  pagesPresented: number;
+}
+
 export class WorldmapProceduralTerrain {
   readonly object3d: Group;
   private readonly terrain: ProceduralTerrain;
@@ -342,6 +353,21 @@ export class WorldmapProceduralTerrain {
 
   getPresentedPageKeys(): string[] {
     return [...this.presentedPages.keys()];
+  }
+
+  /** What the map's terrain carries now: its animals against their cap, its props and its pages, for load proofs. */
+  getLoad(): TerrainLoad {
+    const wildlife = this.terrain.getWildlifeStats();
+    const props = this.terrain.getPropStats();
+    return {
+      animals: wildlife.count,
+      animalsLoaded: wildlife.loaded,
+      animalCap: wildlife.cap,
+      props: props.instances,
+      propTriangles: props.triangles,
+      pages: this.presentedPages.size,
+      pagesPresented: this.presentMetrics.presentTasks,
+    };
   }
 
   /** Cells on screen, explored or fog: an unexplored region is presented terrain, not missing terrain. */

@@ -617,6 +617,7 @@ type WorldmapChunkDiagnosticsDebugWindow = Window & {
   getStrategicMarkers?: () => StrategicMarkerLayer;
   getTerrainUploadMetrics?: () => TerrainUploadMetrics;
   getTerrainPresentMetrics?: () => TerrainPresentMetrics;
+  getTerrainLoad?: () => ReturnType<WorldmapProceduralTerrain["getLoad"]>;
   getWorldmapTerrainCoverage?: () => {
     groundBounds: ReturnType<typeof resolveWorldmapCameraGroundBounds>;
     camera: number[];
@@ -8731,6 +8732,7 @@ export default class WorldmapScene extends WarpTravel {
     debugWindow.getStrategicMarkers = () => this.strategicMarkers;
     debugWindow.getTerrainUploadMetrics = () => this.proceduralTerrain.getUploadMetrics();
     debugWindow.getTerrainPresentMetrics = () => this.proceduralTerrain.getPresentMetrics();
+    debugWindow.getTerrainLoad = () => this.proceduralTerrain.getLoad();
     debugWindow.getWorldmapTerrainCoverage = () => {
       const presentedPageKeys = this.proceduralTerrain.getPresentedPageKeys();
       const criticalPageKeys = this.visualTerrainWindow?.criticalPageKeys ?? [];
@@ -8773,6 +8775,7 @@ export default class WorldmapScene extends WarpTravel {
     debugWindow.getStrategicMarkers = undefined;
     debugWindow.getTerrainUploadMetrics = undefined;
     debugWindow.getTerrainPresentMetrics = undefined;
+    debugWindow.getTerrainLoad = undefined;
     debugWindow.getWorldmapTerrainCoverage = undefined;
     debugWindow.resetWorldmapRenderDiagnostics = undefined;
     debugWindow.captureWorldmapChunkBaseline = undefined;

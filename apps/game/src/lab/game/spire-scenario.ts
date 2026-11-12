@@ -31,6 +31,8 @@ export const SANDS: LabGround = () => BiomeType.Beach;
 /** How many hexes round the realm a lab game reveals, and how far for the land of every biome. */
 const REVEALED_REACH = 4;
 const BIOMES_REACH = 12;
+/** Land revealed far enough round the realm for the map's wildlife to fill its cap. */
+const FULL_LOAD_REACH = 24;
 /** The Surface's biomes: every one the catalog names but the absence of one and the Ethereal's ground. */
 const SURFACE_BIOMES = Object.values(BiomeType).filter(
   (biome) => biome !== BiomeType.None && biome !== BiomeType.Underground,
@@ -169,6 +171,12 @@ export const highGroundScenario = (): LabScenario => spireScenario(HIGH_GROUND);
  * after a change to their look (the board's game, lab-games.ts).
  */
 export const biomesScenario = (): LabScenario => spireScenario(EVERY_BIOME, BIOMES_REACH);
+
+/**
+ * The map at its heaviest (/lab/game?scenario=full-load): the land of every biome revealed twice as far round the realm,
+ * so its vegetation is at full density across many pages and its wildlife at its cap, for timing the whole load.
+ */
+export const fullLoadScenario = (): LabScenario => spireScenario(EVERY_BIOME, FULL_LOAD_REACH);
 
 /** A tile beside the one given, revealed and empty: where a lab game stands a second thing by the spire's army. */
 export const besideOnOpenLand = (store: NativeFactStore, beside: { col: number; row: number }) => {
