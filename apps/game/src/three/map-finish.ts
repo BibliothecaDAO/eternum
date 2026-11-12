@@ -33,27 +33,33 @@ const VIGNETTE = 0.18;
  * camera it has drawn; the overlay passes still draw over it afterwards.
  */
 export class MapFinish {
-  private readonly pipelines = new Map<Object3D, { camera: Camera; pipeline: RenderPipeline }>();
+  private readonly finishes = new Map<Object3D, { camera: Camera; finish: Finish }>();
 
   constructor(private readonly renderer: WebGPURenderer) {}
 
   render(scene: Object3D, camera: Camera): void {
-    let entry = this.pipelines.get(scene);
+    let entry = this.finishes.get(scene);
     if (!entry || entry.camera !== camera) {
-      entry?.pipeline.dispose();
-      entry = { camera, pipeline: createFinish(this.renderer, scene, camera) };
-      this.pipelines.set(scene, entry);
+      entry?.finish.dispose();
+      entry = { camera, finish: createFinish(this.renderer, scene, camera) };
+      this.finishes.set(scene, entry);
     }
-    entry.pipeline.render();
+    entry.finish.render();
   }
 
   dispose(): void {
-    this.pipelines.forEach(({ pipeline }) => pipeline.dispose());
-    this.pipelines.clear();
+    this.finishes.forEach(({ finish }) => finish.dispose());
+    this.finishes.clear();
   }
 }
 
-function createFinish(renderer: WebGPURenderer, scene: Object3D, camera: Camera): RenderPipeline {
+/** One scene's finish: drawn each frame, and released whole, its offscreen passes with it. */
+interface Finish {
+  render(): void;
+  dispose(): void;
+}
+
+function createFinish(renderer: WebGPURenderer, scene: Object3D, camera: Camera): Finish {
   const scenePass = pass(scene, camera);
   scenePass.setMRT(mrt({ output, emissive }));
   const colour = scenePass.getTextureNode("output");
@@ -66,11 +72,16 @@ function createFinish(renderer: WebGPURenderer, scene: Object3D, camera: Camera)
   const pipeline = new RenderPipeline(renderer as unknown as ConstructorParameters<typeof RenderPipeline>[0]);
   pipeline.outputColorTransform = false;
   pipeline.outputNode = asColour(smoothed).add(vec4(dither, dither, dither, 0));
-  return pipeline;
+  return {
+    render: () => pipeline.render(),
+    // The pipeline frees only its own quad: the scene pass, the bloom and SMAA each hold their own targets.
+    dispose: () => [pipeline, scenePass, glow, smoothed].forEach((owned) => releasable(owned).dispose()),
+  };
 }
 
 /** The display addons' nodes, typed against an older three than the core's nodes: the same nodes at run time. */
 const asColour = (node: object) => node as unknown as Node<"vec4">;
+const releasable = (node: object) => node as unknown as { dispose(): void };
 
 /** The grade, on linear light before the tone curve. */
 function afternoon(colour: Node<"vec3">): Node<"vec3"> {
