@@ -1,4 +1,6 @@
 import { configureRendererColorOutput } from "./renderer-color-output";
+import { MapFinish } from "./map-finish";
+import type { WebGPURenderer } from "three/webgpu";
 import { GameMapMaterialLibrary } from "./effects/game-map-material-library";
 import { VERBOSE_LOGS_ENABLED, verboseLog } from "@/utils/dev-mode";
 
@@ -62,8 +64,12 @@ interface WebGPURendererBackendDependencies {
     pixelRatio: number;
     signal: AbortSignal;
   }): Promise<CreatedWebGPURenderer>;
+  /** What draws the main scene to the screen: the map's finish (map-finish.ts). */
+  createFinish(renderer: RendererSurfaceLike): SceneFinish;
   now(): number;
 }
+
+type SceneFinish = Pick<MapFinish, "render" | "dispose">;
 
 interface WebGpuRendererModules {
   threeWebGPUModule: typeof import("three/webgpu");
@@ -121,6 +127,7 @@ function instrumentWebGpuBackendHotPaths(renderer: WebGPURendererSurface): void 
 
 const defaultDependencies: WebGPURendererBackendDependencies = {
   createRenderer: createDefaultWebGPURenderer,
+  createFinish: (renderer) => new MapFinish(renderer as unknown as WebGPURenderer),
   now: () => performance.now(),
 };
 
@@ -134,12 +141,12 @@ let webGpuFrameRecoveryWarned = false;
 let webGpuRendererModulesPromise: Promise<WebGpuRendererModules> | null = null;
 
 const WEBGPU_RENDERER_BACKEND_CAPABILITIES = createRendererBackendCapabilities({
-  supportsBloom: false,
+  supportsBloom: true,
   supportsChromaticAberration: false,
-  supportsColorGrade: false,
+  supportsColorGrade: true,
   supportsEnvironmentIbl: false,
   supportsToneMappingControl: true,
-  supportsVignette: false,
+  supportsVignette: true,
   supportsWideLines: false,
 });
 
@@ -325,11 +332,15 @@ async function waitForWebGpuBackendStartup(input: {
   }
 }
 
-function renderMainFrameWithRecovery(renderer: RendererSurfaceLike, pipeline: RendererFramePipeline): void {
+function renderMainFrameWithRecovery(
+  renderer: RendererSurfaceLike,
+  finish: SceneFinish,
+  pipeline: RendererFramePipeline,
+): void {
   renderer.info.reset();
 
   try {
-    renderClearedMainScene(renderer, pipeline);
+    renderClearedMainScene(renderer, finish, pipeline);
     return;
   } catch (error) {
     if (!isRecoverableWebGpuFrameError(error)) {
@@ -341,20 +352,24 @@ function renderMainFrameWithRecovery(renderer: RendererSurfaceLike, pipeline: Re
     renderer.setSize(window.innerWidth, window.innerHeight);
 
     try {
-      renderClearedMainScene(renderer, pipeline);
+      renderClearedMainScene(renderer, finish, pipeline);
     } catch (retryError) {
       recordRendererDiagnosticUncapturedError(retryError instanceof Error ? retryError.message : String(retryError));
     }
   }
 }
 
-function renderClearedMainScene(renderer: RendererSurfaceLike, pipeline: RendererFramePipeline): void {
+function renderClearedMainScene(
+  renderer: RendererSurfaceLike,
+  finish: SceneFinish,
+  pipeline: RendererFramePipeline,
+): void {
   const previousAutoClear = renderer.autoClear;
   // A manual clear also presents Three.js's output target. Clear inside the main
   // render pass instead, then restore the overlay policy even when rendering fails.
   renderer.autoClear = true;
   try {
-    renderer.render(pipeline.mainScene, pipeline.mainCamera);
+    finish.render(pipeline.mainScene, pipeline.mainCamera);
   } finally {
     renderer.autoClear = previousAutoClear;
   }
@@ -374,6 +389,7 @@ export function createWebGPURendererBackend(
     ...dependencies,
   } satisfies WebGPURendererBackendDependencies;
   let renderer: RendererSurfaceLike | undefined;
+  let finish: SceneFinish | undefined;
   let cleanupDeviceDiagnostics: (() => void) | undefined;
 
   const startRendererLane = async (forceWebGL: boolean): Promise<InitializedRendererLane> => {
@@ -486,6 +502,8 @@ export function createWebGPURendererBackend(
     dispose() {
       cleanupDeviceDiagnostics?.();
       cleanupDeviceDiagnostics = undefined;
+      finish?.dispose();
+      finish = undefined;
       renderer?.dispose();
       renderer = undefined;
     },
@@ -497,6 +515,7 @@ export function createWebGPURendererBackend(
         cleanupDeviceDiagnostics?.();
         cleanupDeviceDiagnostics = lane.releaseDeviceDiagnostics;
         renderer = lane.renderer;
+        finish = resolvedDependencies.createFinish(lane.renderer);
 
         return createRendererInitDiagnostics({
           activeMode: lane.activeMode,
@@ -512,8 +531,8 @@ export function createWebGPURendererBackend(
       }
     },
     renderFrame(pipeline: RendererFramePipeline) {
-      if (!renderer) return;
-      renderMainFrameWithRecovery(renderer, pipeline);
+      if (!renderer || !finish) return;
+      renderMainFrameWithRecovery(renderer, finish, pipeline);
       renderRendererOverlayPasses(renderer, pipeline);
     },
     resize(width: number, height: number) {
