@@ -71,7 +71,7 @@ pub fn validate(preset: PresetDefinition) {
             "LORDS claim window needs reporting grace",
         );
     }
-    assert!(preset.economy.chests.is_some() == (rules.day_unit_seconds != 0), "chest rules require expedition");
+    assert!(preset.economy.chests.is_none() || rules.day_unit_seconds != 0, "chest rules require expedition");
     assert!(preset.economy.discovery.is_some() == (rules.day_unit_seconds != 0), "discovery requires expedition");
     if let Some(discovery) = preset.economy.discovery {
         crate::discovery::validate_frontier(discovery);
