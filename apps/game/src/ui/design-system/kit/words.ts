@@ -8,6 +8,8 @@ import type { ResolvedGameMode } from "@/config/game-modes/resolved-mode";
 import { SHARED_MOMENT_WORDS, type CampaignKey, type OpeningMoment, type SocialProvider } from "@realms-world/identity";
 import type { NotificationKind, NotificationLevel } from "@bibliothecadao/notifications";
 import type { RuinChest } from "@bibliothecadao/eternum";
+import type { DailyQuestId } from "@/ui/design-system/domain-icon-meaning";
+import { nativeQuestConstants as quest } from "../../../../../../contracts/l3/world-native/schema/client.gen";
 import {
   BuildingType,
   XP,
@@ -1513,6 +1515,28 @@ export const levelLine = (kinds: readonly NotificationKind[], below: Notificatio
     ? `${list.charAt(0).toUpperCase()}${list.slice(1)}`
     : `${LEVEL_WORDS[below]}, plus ${list}`;
 };
+
+/** What a daily quest counts, as its count line names it: one, and more than one. */
+const QUEST_COUNTED = {
+  [quest.HUNT]: ["herd or band", "herds or bands"],
+  [quest.CAMPS]: ["camp", "camps"],
+  [quest.RIFTS]: ["rift", "rifts"],
+  [quest.RELICS]: ["ruin", "ruins"],
+  [quest.VETERANS]: ["skill point", "skill points"],
+  [quest.FINDS]: ["find", "finds"],
+  [quest.REVEALS]: ["tile", "tiles"],
+} as const satisfies Record<DailyQuestId, readonly [string, string]>;
+
+/** The day's banner: today's quest, how far the home is ("1 of 2 camps"), its reward and collecting it. */
+export const QUEST_WORDS = {
+  today: "Today's quest",
+  count: (quest: DailyQuestId, progress: bigint, target: bigint) =>
+    `${formatExact(Number(progress))} of ${formatExact(Number(target))} ${QUEST_COUNTED[quest][target === 1n ? 0 : 1]}`,
+  collect: "Collect",
+  collecting: "Collecting",
+  collected: "Collected",
+  notCollected: "The quest's reward could not be collected.",
+} as const;
 
 /**
  * The interface that opens as you play (the frozen design's table, word for word): the one line each moment brings,

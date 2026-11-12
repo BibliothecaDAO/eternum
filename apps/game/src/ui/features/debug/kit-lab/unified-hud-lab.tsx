@@ -26,6 +26,7 @@ import { useEffect } from "react";
 import { useParams } from "react-router-dom";
 
 import ROW_SET from "../../../../../../../contracts/l3/world-native/schema/fixtures/row-set.json";
+import { frontierSeasonOnePreset } from "../../../../../../../config/source/frontier/season-one";
 import { PLAYER } from "./fixture-game";
 import { LabGame } from "./lab-game";
 
@@ -113,18 +114,19 @@ const ViewLab = ({ view }: { view: View }) => {
         preset={preset}
         spectating={spectating}
         finished={finished}
-        facts={
-          army
-            ? (store) => [
+        facts={(store) => [
+          ...(frontier ? seasonOneQuestRules() : []),
+          ...(army
+            ? [
                 ...labArmyOut(store, tired ? TIRED_STAMINA : LAB_ARMY_STAMINA),
                 ...(attack ? enemyArmyBeside(store) : []),
               ]
             : stocked
-              ? stockedRealm
+              ? stockedRealm()
               : out
-                ? lastRealmLost
-                : undefined
-        }
+                ? lastRealmLost(store)
+                : []),
+        ]}
         systemCalls={army ? () => ({ spend_skill_point: recordSkillPointSpent }) : undefined}
       >
         {(store) => {
@@ -336,4 +338,22 @@ const recordSkillPointSpent = (call: { explorerId: number; choice: SkillPointCho
   const target = window as unknown as { __labSkillPointSpent?: unknown[] };
   target.__labSkillPointSpent = [...(target.__labSkillPointSpent ?? []), sent];
   return Promise.resolve();
+};
+
+/** Season 1's quest rules as its preset writes them, so a Frontier view draws the day's banner. */
+const seasonOneQuestRules = (): unknown[] => {
+  const { baseCounts, labor, essence, bonusPercent } = frontierSeasonOnePreset.dailyQuest;
+  return [
+    {
+      model: "QuestRules",
+      key: "0x9e1",
+      value: {
+        game_id: 1,
+        base_counts: baseCounts,
+        labor: BigInt(labor),
+        essence: BigInt(essence),
+        bonus_percent: bonusPercent,
+      },
+    },
+  ];
 };

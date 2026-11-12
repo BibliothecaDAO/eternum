@@ -46,6 +46,7 @@ import { useOnePanel, useOrderSettledReturnsToTheArmy } from "./hud/one-panel";
 import { FrontierDayClock } from "./hud/day-pill";
 import { DayEndBlock, DayEndNotice, useDayEnd } from "./day-end/day-end";
 import { useFirstBuild, useMarkFirstBuild } from "./build/first-build";
+import { FrontierDayBanner } from "./day/day-banner";
 import { OpeningLine } from "./opening/opening-line";
 import { useOpeningInterface, useOpens } from "./opening/use-opening";
 import { FrontierStrip, useStoreReadings } from "./hud/frontier-strip";
@@ -190,10 +191,13 @@ export const FrontierHud = ({
       }
     : undefined;
 
+  // The day's banner: the player's own realm's quest, under the strip on a phone and the realm panel on a desktop.
+  const dayBanner = own && <FrontierDayBanner realm={own} />;
   const strip = (
     <>
       <FrontierStrip rules={rules} realm={shown} onOpenDay={openToday} storeCards={storeCards} />
       {storeCards?.open && storeCards.card}
+      {dayBanner}
     </>
   );
   // A phone's purse: the player's realm's LORDS; a spectator sees there what the desktop's top bar says of them.
@@ -276,14 +280,17 @@ export const FrontierHud = ({
       worldTab={layers ? layerTab(layers) : undefined}
       realm={
         shown && (
-          <FrontierRealmPanel
-            rules={rules}
-            realm={shown}
-            own={own}
-            waiting={claimWaiting}
-            storeCards={storeCards}
-            onSurface={setSurface}
-          />
+          <>
+            <FrontierRealmPanel
+              rules={rules}
+              realm={shown}
+              own={own}
+              waiting={claimWaiting}
+              storeCards={storeCards}
+              onSurface={setSurface}
+            />
+            {dayBanner}
+          </>
         )
       }
       armies={dock}

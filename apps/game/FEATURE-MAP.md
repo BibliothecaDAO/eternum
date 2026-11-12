@@ -611,6 +611,12 @@ signed-out fixture count as a played match.
 
 ## Frontier in a match
 
+**The day's banner** (`src/ui/features/frontier/day/day-banner.tsx`), in a game whose preset has the daily quest
+(`QuestRules`): under the realm panel on a desktop, under the strip on a phone. It shows today's quest with its painting
+and name, its count ("0 of 2 finds") over a meter, and its reward in labor and Essence for the home's level (150% of the
+labor for a held Realm's or a campaign's home). **Collect** sends the reward once the quest is done; a check then says
+it was collected. Lab: `/lab/kit/unified/frontier` and `frontier-new`.
+
 **The interface opens as you play** (`src/ui/features/frontier/opening/opening.ts`, the frozen design's table). A new
 account's first session shows its realm and level, labor and wheat, the lit plot, its armies with their stamina, the
 map, the day's quest and the day's clock. Troops at home and the rest of the Build sheet open with the first Barracks;

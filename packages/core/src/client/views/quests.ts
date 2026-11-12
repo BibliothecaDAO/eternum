@@ -2,6 +2,7 @@ import { dailyQuests, StructureType } from "@bibliothecadao/types";
 import type { NativeFactStore } from "../native-fact-store";
 import { dayOf } from "../../utils/days";
 import { dailyQuest } from "../../utils/daily-quest";
+import { heldRealmForHome } from "../../utils/home-claim";
 
 export function readDailyQuest(store: NativeFactStore, gameId: number, home: number, timestamp: number) {
   const game_id = gameId;
@@ -27,6 +28,7 @@ export function readDailyQuest(store: NativeFactStore, gameId: number, home: num
   const progress = store.get("QuestProgress", { game_id, home, day: day.index });
   const level = progress?.completed_level || structure.base.level + 1;
   return {
+    reward: questReward(rules, level, hasLaborBonus(store, game_id, home)),
     ...quest,
     day: day.index,
     target: BigInt(rules.base_counts[kind] * level),
@@ -34,4 +36,26 @@ export function readDailyQuest(store: NativeFactStore, gameId: number, home: num
     completed: Boolean(progress?.completed_level),
     claimed: store.get("LaborGrant", { game_id, home, day: day.index }) !== undefined,
   };
+}
+
+/**
+ * What the quest pays at a Realm level (1 to 4), in whole units, as quests.cairo's reward computes it: the base labor
+ * and Essence doubled at each level above the first, the labor at the bonus percent for a home that has it.
+ */
+function questReward(
+  rules: { labor: bigint; essence: bigint; bonus_percent: number },
+  level: number,
+  bonus: boolean,
+): { labor: bigint; essence: bigint } {
+  const multiplier = 1n << BigInt(level - 1);
+  const percent = BigInt(bonus ? rules.bonus_percent : 100);
+  return { labor: (rules.labor * multiplier * percent) / 100n, essence: rules.essence * multiplier };
+}
+
+/** The labor bonus as quests.cairo's labor_bonus grants it: a campaign home, or the home of a held Realm. */
+function hasLaborBonus(store: NativeFactStore, gameId: number, home: number): boolean {
+  return (
+    store.get("CampaignHome", { game_id: gameId, home }) !== undefined ||
+    heldRealmForHome(store, { gameId, entityId: home }) !== null
+  );
 }

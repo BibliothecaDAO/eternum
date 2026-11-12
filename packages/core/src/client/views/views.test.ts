@@ -60,6 +60,39 @@ describe("game views", () => {
     expect(views.dailyQuest(12, 100)?.claimed).toBe(true);
   });
 
+  it("pays the quest as the contract does: doubled at each level, the labor at 150% for a held Realm's home", () => {
+    const { store, views } = createHarness();
+    seedFrontierRules(store, { startMainAt: 100, spacing: 10, seed: "5" });
+    seedStructure(store, { entityId: 12, owner: PLAYER, category: StructureType.Realm, x: 1, y: 1 });
+    store.applyFacts([
+      {
+        model: "QuestRules",
+        key: "0x201",
+        value: {
+          game_id: GAME_ID,
+          base_counts: dailyQuests.map(({ baseCount }) => baseCount),
+          labor: 1000n,
+          essence: 1500n,
+          bonus_percent: 150,
+        },
+      },
+    ]);
+    // A free Settlement: 1,000 labor and 1,500 Essence.
+    expect(views.dailyQuest(12, 100)?.reward).toEqual({ labor: 1000n, essence: 1500n });
+    // Finished as a Kingdom (level 3): ×4 both.
+    store.applyFacts([
+      {
+        model: "QuestProgress",
+        key: "0x202",
+        value: { game_id: GAME_ID, home: 12, day: 0, progress: 45n, completed_level: 3 },
+      },
+    ]);
+    expect(views.dailyQuest(12, 100)?.reward).toEqual({ labor: 4000n, essence: 6000n });
+    // The home of a held Realm: 150% of the labor, the Essence unchanged.
+    store.applyFacts([{ model: "SettledRealm", key: "0x204", value: { game_id: GAME_ID, realm_id: 77, home: 12n } }]);
+    expect(views.dailyQuest(12, 100)?.reward).toEqual({ labor: 6000n, essence: 6000n });
+  });
+
   it("lists a player's structures by category then entity id, seen as theirs", () => {
     const { store, views } = createHarness();
     seedStructure(store, { entityId: 30, owner: PLAYER, category: StructureType.Hyperstructure, x: 5, y: 5 });
