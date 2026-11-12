@@ -56,6 +56,8 @@ pub struct PresetStorage<
     pub settlement_spacing: u32,
     pub order_aspects: Option<u128>,
     pub starting_armies: u8,
+    pub quest_rewards: Option<(u128, u128, u16)>,
+    pub quest_counts: Map<u8, u32>,
     pub depth_count: u32,
     pub depth_rules: Map<u8, Option<TDepthRules>>,
     pub realm_grant_count: u32,

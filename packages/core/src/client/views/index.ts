@@ -17,6 +17,7 @@ import { readExplorers, readStaminaManager } from "./armies";
 import { readGuildMembers, readGuildWhitelist } from "./guilds";
 import { type MarketView, readMarket, readOpenTrades } from "./market";
 import { readResourceArrivals, readResourceManager } from "./resources";
+import { readDailyQuest } from "./quests";
 import {
   type BuildingTiles,
   type HyperstructureRow,
@@ -33,10 +34,12 @@ export * from "./armies";
 export * from "./guilds";
 export * from "./market";
 export * from "./resources";
+export * from "./quests";
 export * from "./structures";
 
 /** One-shot reads of the game facts the React hooks subscribe to, for a caller with no render loop. */
 export interface GameViews {
+  dailyQuest(home: ID, timestamp: number): ReturnType<typeof readDailyQuest>;
   explorers(structureEntityId: ID): ArmyInfo[];
   stamina(armyEntityId: ID): StaminaManager;
   structures(owner: ContractAddress): Structure[];
@@ -63,6 +66,7 @@ export const createGameViews = (
 ): GameViews => {
   const { store, systemCalls } = client.setup;
   return {
+    dailyQuest: (home, timestamp) => readDailyQuest(store, client.gameId, home, timestamp),
     explorers: (id) => readExplorers(store, id, viewer, playerName),
     stamina: (id) => readStaminaManager(store, id),
     structures: (owner) => readStructures(store, owner, viewer, playerName),

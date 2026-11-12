@@ -42,7 +42,13 @@ harness records the player actions and resulting Herald facts in its existing re
 the Aspect catalog when `AspectRules` exists. Settlement sends the chosen `aspect`; held Realms may omit it and inherit
 their Order's Aspect. Read `HomeAspect` and `AspectMembers` from the shared native store. Settlement also fields the
 preset's starting armies. The harness reads the existing `ExplorerTroops` and `ArmySlot` facts and uses these armies
-without raising replacements. Quests and banes arrive with their contract changes.
+without raising replacements.
+
+For the daily quest, `client.views.dailyQuest(home, timestamp)` reads the current objective, target, progress,
+completion and collection from native facts. Collect a finished quest with
+`client.setup.systemCalls.claim_daily_quest({ signer, home, day })`. The persisted receipt is `LaborGrant`; repeating
+collection cannot pay twice. `QuestRules` replaces the old `LaborRules` in S1. The lifecycle quest regression drives
+settlement, reveals and collection through player commands. World banes arrive with their contract changes.
 
 The home reward administration path is `Games.grant_labor`, with `Games.labor_grant` reading the recorded result. Both
 dispatch to the existing Prizes class. `bash contracts/l3/check-native.sh` checks their compiled routing and runs the

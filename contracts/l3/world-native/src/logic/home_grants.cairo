@@ -41,6 +41,7 @@ pub mod HomeGrantState {
             ref self: ComponentState<TContractState>, home: LaborHome, day: u64, account: ContractAddress,
         ) -> LaborGrant {
             crate::logic::entry::assert_ledger_operator();
+            assert!(!crate::logic::quests::enabled(home.game_id), "collect the daily quest");
             self.grant_home_resources(home, day, account)
         }
     }

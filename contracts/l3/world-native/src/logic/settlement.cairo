@@ -369,7 +369,7 @@ pub mod SettlementState {
             } else {
                 assert!(entitlement.pass_kind == crate::settlement::CAMPAIGN_KIND, "invalid home source");
                 self.claim_campaign_home(key, home, entitlement);
-                if entitlement.metadata_3 == 'devcon-recovery' {
+                if entitlement.metadata_3 == 'devcon-recovery' && !crate::logic::quests::enabled(key.game_id) {
                     self.recover_flyer_days(key, home, entitlement);
                 }
             }

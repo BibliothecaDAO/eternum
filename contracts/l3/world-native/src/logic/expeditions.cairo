@@ -146,6 +146,13 @@ pub fn cache_ruin_depths(key: ExpeditionDiscoveryKey) {
 }
 
 pub fn record_discovery(key: ExpeditionDiscoveryKey, result: crate::discovery::Discovery) {
+    if result != crate::discovery::Discovery::None {
+        let home = crate::resources::ResourceKey { game_id: key.game_id, entity_id: key.structure_id };
+        crate::logic::quests::record(home, crate::quests::FINDS, 1, starknet::get_block_timestamp());
+        if let crate::discovery::Discovery::Ruin(_) = result {
+            crate::logic::quests::record(home, crate::quests::RELICS, 1, starknet::get_block_timestamp());
+        }
+    }
     let previous = discovery(key).unwrap_or(ExpeditionDiscovery { empty_reveals: 0, ruin_cleared: false });
     cache_ruin_depths(key);
     let next = ExpeditionDiscovery {

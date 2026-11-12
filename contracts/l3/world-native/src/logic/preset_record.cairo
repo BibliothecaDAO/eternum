@@ -34,6 +34,12 @@ pub fn store(commitment: felt252, definition: crate::presets::PresetDefinition) 
         definition.rules.day_unit_seconds,
     );
     write_economy(preset, commitment, definition.rules, definition.economy);
+    if let Some(quests) = definition.economy.quests {
+        preset.quest_rewards.write(Some((quests.labor, quests.essence, quests.bonus_percent)));
+        for index in 0..quests.base_counts.len() {
+            preset.quest_counts.write(index.try_into().unwrap(), *quests.base_counts.at(index));
+        }
+    }
     preset.season_win_points.write(definition.season_win_points);
 }
 

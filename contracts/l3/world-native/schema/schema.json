@@ -125,6 +125,35 @@
       {
         "name": "RowSet",
         "prefix": [
+          "0x10245ffef63341a85fc6e76af6af54820573c96e61662cca60c1855a0f20e90",
+          "0x1381128f2a0228389d1eba9d3aa09f8ed24da656b884a49eea09a5ed2e87724"
+        ],
+        "members": [
+          {
+            "name": "version",
+            "type": "core::integer::u8",
+            "kind": "key"
+          },
+          {
+            "name": "model",
+            "type": "core::felt252",
+            "kind": "key"
+          },
+          {
+            "name": "keys",
+            "type": "core::array::Span::<core::felt252>",
+            "kind": "data"
+          },
+          {
+            "name": "values",
+            "type": "core::array::Span::<core::felt252>",
+            "kind": "data"
+          }
+        ]
+      },
+      {
+        "name": "RowSet",
+        "prefix": [
           "0x36f16904f7734350d822ada38a59fed0c639e5205b723a7c3491c7973938c0b",
           "0x1381128f2a0228389d1eba9d3aa09f8ed24da656b884a49eea09a5ed2e87724"
         ],
@@ -5021,6 +5050,94 @@
       "derivedFrom": "preset"
     },
     {
+      "name": "QuestRules",
+      "identity": "0x517565737452756c6573",
+      "scope": "game",
+      "keys": [
+        {
+          "name": "game_id",
+          "type": "core::integer::u32",
+          "feltLength": 1
+        }
+      ],
+      "members": [
+        {
+          "name": "base_counts",
+          "type": "core::array::Span::<core::integer::u32>",
+          "id": "0x626173655f636f756e7473",
+          "feltLength": null
+        },
+        {
+          "name": "labor",
+          "type": "core::integer::u128",
+          "id": "0x6c61626f72",
+          "feltLength": 1
+        },
+        {
+          "name": "essence",
+          "type": "core::integer::u128",
+          "id": "0x657373656e6365",
+          "feltLength": 1
+        },
+        {
+          "name": "bonus_percent",
+          "type": "core::integer::u16",
+          "id": "0x626f6e75735f70657263656e74",
+          "feltLength": 1
+        }
+      ],
+      "keyLength": 1,
+      "valueLength": null,
+      "derivedFrom": "preset"
+    },
+    {
+      "name": "QuestProgress",
+      "identity": "0x517565737450726f6772657373",
+      "scope": "game",
+      "keys": [
+        {
+          "name": "game_id",
+          "type": "core::integer::u32",
+          "feltLength": 1
+        },
+        {
+          "name": "home",
+          "type": "core::integer::u64",
+          "feltLength": 1
+        },
+        {
+          "name": "day",
+          "type": "core::integer::u64",
+          "feltLength": 1
+        }
+      ],
+      "members": [
+        {
+          "name": "progress",
+          "type": "core::integer::u128",
+          "id": "0x70726f6772657373",
+          "feltLength": 1
+        },
+        {
+          "name": "completed_level",
+          "type": "core::integer::u8",
+          "id": "0x636f6d706c657465645f6c6576656c",
+          "feltLength": 1
+        }
+      ],
+      "keyLength": 3,
+      "valueLength": 2,
+      "absence": {
+        "parent": "Structure",
+        "parentKeys": {
+          "game_id": "game_id",
+          "entity_id": "home"
+        },
+        "value": "zero",
+        "meaning": "This home has made no daily quest progress on this day."
+      }
+    },
+    {
       "name": "HomeAspect",
       "identity": "0x486f6d65417370656374",
       "scope": "game",
@@ -8000,6 +8117,20 @@
         }
       ]
     },
+    "core::option::Option::<world_native::quests::QuestRules>": {
+      "type": "enum",
+      "name": "core::option::Option::<world_native::quests::QuestRules>",
+      "variants": [
+        {
+          "name": "Some",
+          "type": "world_native::quests::QuestRules"
+        },
+        {
+          "name": "None",
+          "type": "()"
+        }
+      ]
+    },
     "core::option::Option::<world_native::relics::ChestRules>": {
       "type": "enum",
       "name": "core::option::Option::<world_native::relics::ChestRules>",
@@ -9285,6 +9416,10 @@
         {
           "name": "WithdrawLords",
           "type": "world_native::relics::WithdrawLords"
+        },
+        {
+          "name": "ClaimDailyQuest",
+          "type": "world_native::quests::ClaimDailyQuest"
         }
       ]
     },
@@ -11297,6 +11432,10 @@
       "name": "world_native::presets::EconomyPreset",
       "members": [
         {
+          "name": "quests",
+          "type": "core::option::Option::<world_native::quests::QuestRules>"
+        },
+        {
           "name": "labor",
           "type": "core::option::Option::<world_native::entry::LaborRules>"
         },
@@ -11809,6 +11948,56 @@
         {
           "name": "Clear",
           "type": "core::integer::u32"
+        }
+      ]
+    },
+    "world_native::quests::ClaimDailyQuest": {
+      "type": "struct",
+      "name": "world_native::quests::ClaimDailyQuest",
+      "members": [
+        {
+          "name": "home",
+          "type": "core::integer::u64"
+        },
+        {
+          "name": "day",
+          "type": "core::integer::u64"
+        }
+      ]
+    },
+    "world_native::quests::QuestProgress": {
+      "type": "struct",
+      "name": "world_native::quests::QuestProgress",
+      "members": [
+        {
+          "name": "progress",
+          "type": "core::integer::u128"
+        },
+        {
+          "name": "completed_level",
+          "type": "core::integer::u8"
+        }
+      ]
+    },
+    "world_native::quests::QuestRules": {
+      "type": "struct",
+      "name": "world_native::quests::QuestRules",
+      "members": [
+        {
+          "name": "base_counts",
+          "type": "core::array::Span::<core::integer::u32>"
+        },
+        {
+          "name": "labor",
+          "type": "core::integer::u128"
+        },
+        {
+          "name": "essence",
+          "type": "core::integer::u128"
+        },
+        {
+          "name": "bonus_percent",
+          "type": "core::integer::u16"
         }
       ]
     },
@@ -14199,5 +14388,15 @@
       ]
     }
   },
-  "identity": "2cde041bf31f202cdf0e65c3ded4a4874147217cbab26459e4cddaf2186d526d"
+  "questConstants": {
+    "HUNT": 0,
+    "CAMPS": 1,
+    "RIFTS": 2,
+    "RELICS": 3,
+    "VETERANS": 4,
+    "FINDS": 5,
+    "REVEALS": 6,
+    "QUEST_COUNT": 7
+  },
+  "identity": "135505bb02d3f6933da9c0887b839f5519e48afa594fc8bf95374cb91cf21370"
 }

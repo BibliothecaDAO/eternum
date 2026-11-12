@@ -34,6 +34,7 @@ pub struct WithdrawalPreset {
 }
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]
 pub struct EconomyPreset {
+    pub quests: Option<crate::quests::QuestRules>,
     pub labor: Option<crate::entry::LaborRules>,
     pub trade: crate::trade::TradeRules,
     pub banks: crate::market::BankRules,
@@ -58,6 +59,13 @@ pub struct PresetDefinition {
 
 pub fn validate(preset: PresetDefinition) {
     let rules = preset.rules;
+    if let Some(quests) = preset.economy.quests {
+        crate::quests::validate(quests);
+        assert!(
+            rules.day_unit_seconds != 0 && !preset.settlement.order_aspects.is_empty(),
+            "quests require Aspect expeditions",
+        );
+    }
     crate::aspects::validate(preset.settlement.order_aspects);
     if preset.settlement.starting_armies != 0 {
         assert!(
@@ -77,7 +85,11 @@ pub fn validate(preset: PresetDefinition) {
             || (rules.entry_rule == crate::rules::ENTRY_OPEN && rules.day_unit_seconds != 0),
         "Aspects require open expeditions",
     );
-    assert!(preset.economy.labor.is_some() == (rules.day_unit_seconds != 0), "labor rules require expeditions");
+    assert!(
+        (preset.economy.labor.is_some() || preset.economy.quests.is_some()) == (rules.day_unit_seconds != 0),
+        "home rewards require expeditions",
+    );
+    assert!(!(preset.economy.labor.is_some() && preset.economy.quests.is_some()), "choose one home reward rule");
     if let Some(labor) = preset.economy.labor {
         assert!(labor.amount != 0, "zero daily labor grant");
         assert!(labor.golden_amount != 0, "zero golden labor grant");

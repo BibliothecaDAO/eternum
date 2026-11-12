@@ -7,14 +7,16 @@ use crate::realms::{ISeasonRealmsDispatcher, ISeasonRealmsDispatcherTrait, Settl
 use crate::resources::ResourceKey;
 use crate::stamina::StaminaSourceTrait;
 
-fn setup_aspects() -> (Deployment, u32) {
+pub fn setup_aspects(seed: felt252) -> (Deployment, u32) {
     let d = setup();
     world_test_support::tests::entry::set_operator(d, authority());
     let (_, preset) = world_test_support::tests::preset_projection::current_definition("season-one");
     registry(d).register_preset(1, preset);
     let game_id = registry(d)
         .create_game(
-            CreateGameParams { start_main_at: 360, duration_seconds: 288000, end_grace_seconds: 0, ..params(false) },
+            CreateGameParams {
+                start_main_at: 360, duration_seconds: 288000, end_grace_seconds: 0, seed, ..params(false),
+            },
         );
     let mut traits = array![];
     for index in 0_u32..8000 {
@@ -34,7 +36,7 @@ fn settle(d: Deployment, game_id: u32, aspect: Option<u8>) -> bool {
 
 #[test]
 fn all_four_free_choices_draw_their_orders_and_join_once() {
-    let (d, game_id) = setup_aspects();
+    let (d, game_id) = setup_aspects(42);
     for aspect in 1_u8..5 {
         let player = Deployment { actor: (1000 + Into::<u8, felt252>::into(aspect)).try_into().unwrap(), ..d };
         assert!(settle(player, game_id, Some(aspect)));
@@ -67,7 +69,7 @@ fn all_four_free_choices_draw_their_orders_and_join_once() {
 
 #[test]
 fn free_home_requires_a_valid_choice_and_a_failed_choice_reserves_nothing() {
-    let (d, game_id) = setup_aspects();
+    let (d, game_id) = setup_aspects(42);
     assert!(!settle(d, game_id, None));
     assert!(!settle(d, game_id, Some(0)));
     assert!(!settle(d, game_id, Some(5)));
@@ -83,7 +85,7 @@ fn free_home_requires_a_valid_choice_and_a_failed_choice_reserves_nothing() {
 #[feature("safe_dispatcher")]
 fn held_realm_inherits_its_order_and_refuses_a_different_aspect() {
     use world_test_support::tests::entry::{EntryEntitlement, EntryKey, ISettlementEntrySafeDispatcherTrait, ledger};
-    let (d, game_id) = setup_aspects();
+    let (d, game_id) = setup_aspects(42);
     start_cheat_caller_address(d.games, authority());
     ledger(d)
         .register_entitlement(
@@ -125,7 +127,7 @@ fn orders_round_trip_without_loot_suffix_order() {
 
 #[test]
 fn settlement_fields_two_knight_armies_without_spending_the_starting_wheat() {
-    let (d, game_id) = setup_aspects();
+    let (d, game_id) = setup_aspects(42);
     assert!(settle(d, game_id, Some(1)));
     assert!(!settle(d, game_id, Some(1)));
     interact_with_state(
@@ -175,7 +177,7 @@ fn settlement_fields_two_knight_armies_without_spending_the_starting_wheat() {
 
 #[test]
 fn a_home_settled_before_opening_has_both_armies_on_the_first_day() {
-    let (d, game_id) = setup_aspects();
+    let (d, game_id) = setup_aspects(42);
     assert!(
         world_test_support::tests::resource_commands::execute_in_game(
             d, game_id, Command::SettleSeason(SettleSeason { selected_realm: None, aspect: Some(1) }), 200,

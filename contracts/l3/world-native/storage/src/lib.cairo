@@ -15,6 +15,7 @@ pub mod map;
 pub mod market;
 pub mod presets;
 pub mod production;
+pub mod quests;
 pub mod realms;
 pub mod registrar;
 pub mod release;

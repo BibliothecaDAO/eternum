@@ -11,6 +11,7 @@ export const blitzPreset: NativePreset = {
   },
   orderAspects: [],
   startingArmyCount: 0,
+  dailyQuest: null,
   bitcoinEnabled: false,
   startingTroops: [],
   realmResources: realmResourcePool,

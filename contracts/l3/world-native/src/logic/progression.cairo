@@ -70,12 +70,32 @@ pub fn award_xp(key: ExplorerKey, award: XpAward) {
         },
         XpAward::Clear(amount) => amount,
     };
+    let before = progress;
     crate::progression::earn_xp(ref progress, rules, amount);
+    let mut earned = 0_u32;
+    for rank in 1_u8..6 {
+        earned += crate::progression::points(progress, rank) - crate::progression::points(before, rank);
+    }
+    record_earned_points(key, earned);
     write(key, progress);
 }
 
 pub fn grant_point(key: ExplorerKey, rank: u8) {
     let mut progress = require(key);
     crate::progression::earn_point(ref progress, rank);
+    record_earned_points(key, 1);
     write(key, progress);
+}
+
+fn record_earned_points(key: ExplorerKey, earned: u32) {
+    if earned == 0 || !crate::logic::quests::enabled(key.game_id) {
+        return;
+    }
+    let explorer = crate::logic::troops::explorer(key).expect('missing progressing army');
+    crate::logic::quests::record(
+        crate::resources::ResourceKey { game_id: key.game_id, entity_id: explorer.owner },
+        crate::quests::VETERANS,
+        earned.into(),
+        starknet::get_block_timestamp(),
+    );
 }

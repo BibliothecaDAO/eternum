@@ -1,5 +1,5 @@
 // Generated from native fact models and contract ABIs. Run the native schema generator to update.
-export const nativeFactSchemaIdentity = "2cde041bf31f202cdf0e65c3ded4a4874147217cbab26459e4cddaf2186d526d";
+export const nativeFactSchemaIdentity = "135505bb02d3f6933da9c0887b839f5519e48afa594fc8bf95374cb91cf21370";
 export const nativeReleaseConstants = {
   "RUIN_DEPTH_LIMIT_RELEASE": 9
 } as const;
@@ -87,6 +87,16 @@ export const nativeResearchConstants = {
   "SUPPLY_YARD": 42,
   "SCOUTS_LODGE": 43,
   "HEARTH": 44
+} as const;
+export const nativeQuestConstants = {
+  "HUNT": 0,
+  "CAMPS": 1,
+  "RIFTS": 2,
+  "RELICS": 3,
+  "VETERANS": 4,
+  "FINDS": 5,
+  "REVEALS": 6,
+  "QUEST_COUNT": 7
 } as const;
 /** Structure categories named in src/taxonomy.cairo. */
 export enum NativeStructureCategory {
@@ -245,6 +255,8 @@ export interface NativeRows {
   EntryEntitlement: { readonly game_id: number; readonly owner: bigint; readonly realm_id: bigint; readonly metadata_1: bigint; readonly metadata_2: bigint; readonly metadata_3: bigint; readonly pass_kind: number };
   PlayerEntry: { readonly game_id: number; readonly owner: bigint; readonly player: bigint };
   AspectRules: { readonly game_id: number; readonly orders: readonly (number)[] };
+  QuestRules: { readonly game_id: number; readonly base_counts: readonly (number)[]; readonly labor: bigint; readonly essence: bigint; readonly bonus_percent: number };
+  QuestProgress: { readonly game_id: number; readonly home: bigint; readonly day: bigint; readonly progress: bigint; readonly completed_level: number };
   HomeAspect: { readonly game_id: number; readonly home: bigint; readonly aspect: number };
   AspectMembers: { readonly game_id: number; readonly aspect: number; readonly members: number };
   TileOpt: { readonly game_id: number; readonly alt: boolean; readonly col: number; readonly row: number; readonly data: bigint };
@@ -348,6 +360,8 @@ export interface NativeKeys {
   EntryEntitlement: { readonly game_id: number; readonly owner: bigint };
   PlayerEntry: { readonly game_id: number; readonly owner: bigint };
   AspectRules: { readonly game_id: number };
+  QuestRules: { readonly game_id: number };
+  QuestProgress: { readonly game_id: number; readonly home: bigint; readonly day: bigint };
   HomeAspect: { readonly game_id: number; readonly home: bigint };
   AspectMembers: { readonly game_id: number; readonly aspect: number };
   TileOpt: { readonly game_id: number; readonly alt: boolean; readonly col: number; readonly row: number };
@@ -1380,6 +1394,45 @@ export const nativeFactModels = {
       ]
     }
   },
+  "QuestRules": {
+    "keys": [
+      "game_id"
+    ],
+    "scope": "game",
+    "fields": {
+      "game_id": "u32",
+      "base_counts": [
+        "u32"
+      ],
+      "labor": "u128",
+      "essence": "u128",
+      "bonus_percent": "u16"
+    }
+  },
+  "QuestProgress": {
+    "keys": [
+      "game_id",
+      "home",
+      "day"
+    ],
+    "scope": "game",
+    "fields": {
+      "game_id": "u32",
+      "home": "u64",
+      "day": "u64",
+      "progress": "u128",
+      "completed_level": "u8"
+    },
+    "absence": {
+      "parent": "Structure",
+      "parentKeys": {
+        "game_id": "game_id",
+        "entity_id": "home"
+      },
+      "value": "zero",
+      "meaning": "This home has made no daily quest progress on this day."
+    }
+  },
   "HomeAspect": {
     "keys": [
       "game_id",
@@ -2381,6 +2434,12 @@ export const nativeSyncScopes = {
     ]
   },
   "AspectRules": "shared",
+  "QuestRules": "shared",
+  "QuestProgress": {
+    "entities": [
+      "home"
+    ]
+  },
   "HomeAspect": "shared",
   "AspectMembers": "shared",
   "VillagePass": {
