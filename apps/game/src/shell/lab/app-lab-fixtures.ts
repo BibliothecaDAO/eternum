@@ -1,5 +1,5 @@
 import type { HeraldFrontierLeaderboard, HeraldLeaderboard } from "@bibliothecadao/eternum/game-sync";
-import { Aspect, StructureType } from "@bibliothecadao/types";
+import { StructureType, type AspectId } from "@bibliothecadao/types";
 import { uint256 } from "starknet";
 import { buildLedgerEconomicPreset, chestPresetFor } from "../../../../../config/deployer/clean/ledger/economics";
 import { blitzVictoryPointConfig } from "../../../../../config/source/blitz/balance";
@@ -1061,10 +1061,7 @@ export const LAB_DOORWAYS = {
   },
 } satisfies Record<string, { view: DoorwayView; realm: DoorwayRealm | null }>;
 
+/** A held Realm of the Order of the Fox, whose home plays for Guile. */
+export const LAB_FOX_ORDER = 4;
 /** Each Aspect's members at the Aspect step: a free choice's uneven crowd, as the design's model drew it (91, 49, 35, 25). */
-export const LAB_ASPECT_MEMBERS = {
-  [Aspect.Might]: 91,
-  [Aspect.Harmony]: 49,
-  [Aspect.Chaos]: 35,
-  [Aspect.Guile]: 25,
-} satisfies Record<Aspect, number>;
+export const LAB_ASPECT_MEMBERS = { 1: 91, 2: 49, 3: 35, 4: 25 } satisfies Record<AspectId, number>;

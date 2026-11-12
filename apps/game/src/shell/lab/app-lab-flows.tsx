@@ -10,7 +10,7 @@ import { DoorwayScreen } from "@/ui/features/game-entry/doorway/doorway-screen";
 import { FoundButton, PlaysAs } from "@/ui/features/game-entry/game-entry-modal";
 import { HomeSourcePicker } from "@/ui/features/game-entry/home-source-picker";
 import { AspectPicker } from "@/ui/features/game-entry/aspect-picker";
-import { Aspect, ASPECT_ORDERS, Giver } from "@bibliothecadao/types";
+import type { AspectId } from "@bibliothecadao/types";
 
 import { ClockChip } from "@/ui/design-system/kit/clock-chip";
 
@@ -27,6 +27,7 @@ import { useNowSeconds } from "../use-now";
 import {
   LAB_ASPECT_MEMBERS,
   LAB_DOORWAYS,
+  LAB_FOX_ORDER,
   LAB_NEW_ACCOUNTS,
   LAB_SIGN_IN_EMAIL,
   LAB_SEASON_WAIT,
@@ -159,12 +160,7 @@ export const LabDoorway = () => {
       {state === "home" && <LabHomeStep />}
       {state === "aspect" && <LabAspectStep />}
       {state === "aspect-realm" && (
-        <AspectPicker
-          members={LAB_ASPECT_MEMBERS}
-          realmOrder={ASPECT_ORDERS[Aspect.Guile][Giver.Spoils]}
-          joining={null}
-          onJoin={noop}
-        />
+        <AspectPicker members={LAB_ASPECT_MEMBERS} realmOrder={LAB_FOX_ORDER} joining={null} onJoin={noop} />
       )}
     </DoorwayScreen>
   );
@@ -190,7 +186,7 @@ const LabHomeStep = () => {
 
 /** A campaign home's Aspect step: a tap joins, and the card spins as founding would, until the lab resets it. */
 const LabAspectStep = () => {
-  const [joining, setJoining] = useState<Aspect | null>(null);
+  const [joining, setJoining] = useState<AspectId | null>(null);
   return (
     <>
       <AspectPicker members={LAB_ASPECT_MEMBERS} realmOrder={null} joining={joining} onJoin={setJoining} />

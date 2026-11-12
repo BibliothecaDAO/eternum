@@ -5,7 +5,15 @@ import {
   nativeResearchConstants as research,
   nativeRuleConstants as rule,
 } from "../../../../contracts/l3/world-native/schema/client.gen";
-import { BEAST_NAMES, FALLEN_REALM_DEPTHS, ROAMING_BEASTS, SITE_GUARDS, resourceName } from "@bibliothecadao/types";
+import {
+  BEAST_NAMES,
+  FALLEN_REALM_DEPTHS,
+  ROAMING_BEASTS,
+  SITE_GUARDS,
+  aspects,
+  orders,
+  resourceName,
+} from "@bibliothecadao/types";
 import { ETERNUM_CONFIG } from "./config";
 import { CONTRACT } from "./contract-constants";
 
@@ -208,6 +216,14 @@ export const FRONTIER = {
     days: n(Math.floor(frontierPreset.chests.claimWindowSeconds / 86400)),
   },
   labor: { perRealm: n(frontierPreset.labor.amount) },
+  /** Season 1's teams, as the Order catalog groups them: each Aspect's name and its four Orders. */
+  aspects: aspects.map(({ id, name }) => ({
+    name,
+    orders: orders
+      .filter(({ aspect }) => aspect === id)
+      .map(({ fullOrderName }) => fullOrderName)
+      .join(", "),
+  })),
   homecoming: [
     rule.HOMECOMING_COMMON_BPS,
     rule.HOMECOMING_UNCOMMON_BPS,

@@ -30,3 +30,13 @@ export const campaignOfPreset = (presetId: number): CampaignKey | null =>
   (Object.keys(CAMPAIGNS) as CampaignKey[]).find((campaign) =>
     CAMPAIGNS[campaign].presets.some((preset) => preset === presetId),
   ) ?? null;
+
+/** Whether this preset's homes choose an Aspect: its Order-to-Aspect table is set (empty disables teams). */
+export const presetHasAspects = (presetId: number): boolean => {
+  const preset = nativePresets[presetId];
+  if (!preset) {
+    console.error(`No native preset ${presetId} in this client: whether its homes choose an Aspect cannot be told.`);
+    return false;
+  }
+  return preset.orderAspects.length > 0;
+};

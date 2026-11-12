@@ -1,18 +1,14 @@
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { Aspect, ASPECT_ORDERS, Giver } from "@bibliothecadao/types";
 
 import { AspectPicker, type AspectMembers } from "./aspect-picker";
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
-const MEMBERS: AspectMembers = {
-  [Aspect.Might]: 38,
-  [Aspect.Harmony]: 21,
-  [Aspect.Chaos]: 1,
-  [Aspect.Guile]: 0,
-};
+const MEMBERS: AspectMembers = { 1: 38, 2: 21, 3: 1, 4: 0 };
+/** The Order of the Fox, a Guile Order (orders.ts). */
+const FOX = 4;
 
 let root: Root | null = null;
 let host: HTMLDivElement | null = null;
@@ -57,11 +53,11 @@ describe("AspectPicker", () => {
     const { onJoin, cards } = draw();
     act(() => cards[2]!.click());
     expect(onJoin).toHaveBeenCalledTimes(1);
-    expect(onJoin).toHaveBeenCalledWith(Aspect.Chaos);
+    expect(onJoin).toHaveBeenCalledWith(3);
   });
 
   it("spins the Aspect being joined and lets no other card be tapped", () => {
-    const { onJoin, cards } = draw({ joining: Aspect.Harmony });
+    const { onJoin, cards } = draw({ joining: 2 });
     expect(cards[1]!.getAttribute("aria-label")).toBe("Joining Harmony…");
     expect(cards[1]!.getAttribute("aria-busy")).toBe("true");
     expect(cards.every((card) => card.disabled)).toBe(true);
@@ -70,7 +66,7 @@ describe("AspectPicker", () => {
   });
 
   it("shows a held Realm's home the Aspect of its Order, chosen, and asks nothing", () => {
-    const { cards } = draw({ realmOrder: ASPECT_ORDERS[Aspect.Guile][Giver.Spoils] });
+    const { cards } = draw({ realmOrder: FOX });
     expect(host!.querySelector(".aspect-picker__head h2")?.textContent).toBe("Your Aspect");
     expect(host!.querySelector(".aspect-picker__head p")?.textContent).toBe(
       "Your Realm's Order of the Fox plays for Guile",

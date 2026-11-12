@@ -21,8 +21,6 @@ const CATALOGS = new Set([
   "RealmLevels",
   "GuardSlot",
   "BiomeType",
-  "Aspect",
-  "Giver",
 ]);
 
 /** The member of a catalog an expression names (`StructureType.Realm` names StructureType), else undefined. */
