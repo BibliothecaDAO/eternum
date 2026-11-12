@@ -307,6 +307,7 @@ export function groundSurface(input: GroundSurfaceInput) {
         slope.assign(bump.mul(0.2));
       });
 
+    strewPebbles({ kind, at, close, albedo });
     meetTheNeighbours({ biomeMap, at, biome, far, middle, grain, albedo, gloss, glow });
 
     // The side of a raised hex: darker earth in bands. The shore: a dark wet band.
@@ -315,6 +316,25 @@ export function groundSurface(input: GroundSurfaceInput) {
     albedo.mulAssign(mix(1, 0.72, smoothstep(0.55, 1, input.shore.add(grain.sub(0.5).mul(0.2)))));
     return GroundSurface(albedo, slope.mul(input.top), gloss, glow.mul(input.top));
   })();
+}
+
+/**
+ * Pebbles, fading in as the camera comes down: many on sand and rock, a few on every other ground, each a few pixels
+ * across. Grain finer than that is averaged away by the GPU's mip levels at every zoom the map has.
+ */
+function strewPebbles(input: {
+  kind: Node<"float">;
+  at: Node<"vec2">;
+  close: Node<"float">;
+  albedo: Node<"vec3">;
+}): void {
+  const { kind, at, close, albedo } = input;
+  const stony = kind
+    .equal(G("sand"))
+    .or(kind.equal(G("rock")))
+    .select(1, 0.25);
+  const pebble = strewn(at, 14, float(0.16).mul(stony), 0.2);
+  albedo.assign(mix(albedo, albedo.mul(pebble.y.mul(0.35).add(0.5)), pebble.x.mul(close).mul(0.8)));
 }
 
 /**
