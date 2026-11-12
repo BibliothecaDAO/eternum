@@ -390,12 +390,12 @@ Each invocation writes to a new directory, `<root>/<time>-<role>`, and never int
 - `<role>-<mode>-<run>-transcript.json`: the game entered, the boot's milestones and every request with its span, the
   cache state, each step's numbers (frame intervals, long animation frames with their scripts, input-to-paint latency,
   every press with its time, draw calls, retained heap, each Herald message to the frame after it), what it saw and its
-  verdict, the vertices each frame drew, its script time in frame callbacks and its GPU time from first submit to the
-  GPU's work done (headless Chrome holds frames to 60 Hz, so these, not the interval, show a frame's cost under 16.7
-  ms), the WebGPU memory held at each step's end (textures and buffers, from their creation to their destroy), the
-  client's own action timelines, every JSON-RPC POST to a node (by host: the shard's, the L2's) and each CORS preflight
-  sent before one, with whether its connection was reused and how it was answered (HTTP status, the node's JSON-RPC
-  error), the machine's load average sampled every 5 s, and the raw probe data (the boot's included).
+  verdict, the vertices and triangles each frame drew, its script time in frame callbacks and its GPU time from first
+  submit to the GPU's work done (headless Chrome holds frames to 60 Hz, so these, not the interval, show a frame's cost
+  under 16.7 ms), the WebGPU memory held at each step's end (textures and buffers, from their creation to their
+  destroy), the client's own action timelines, every JSON-RPC POST to a node (by host: the shard's, the L2's) and each
+  CORS preflight sent before one, with whether its connection was reused and how it was answered (HTTP status, the
+  node's JSON-RPC error), the machine's load average sampled every 5 s, and the raw probe data (the boot's included).
 - `<role>-<mode>-<run>-NN-<step>.png` after every step (plus `-before.png` where a step compares views),
   `<role>-<mode>-<run>-failed.png` where a run stopped, `<role>-<mode>-<run>-console.log`, and `client.log` (the build
   and the preview).
