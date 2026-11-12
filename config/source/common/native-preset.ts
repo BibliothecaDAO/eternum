@@ -41,6 +41,7 @@ export interface NativePreset {
   spacing: number;
   /** One Aspect per canonical Order, in Order-id order; empty disables teams. */
   orderAspects: readonly number[];
+  startingArmyCount: number;
   /** The unit a season's days are counted in (Frontier rules §9): a day lasts 2 to 6 units; 0 in modes without days. */
   dayUnitSeconds: number;
   board: null | {

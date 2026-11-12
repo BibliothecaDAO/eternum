@@ -31,6 +31,7 @@ export const frontierPreset = {
     mmrEnabled: false,
   },
   orderAspects: [],
+  startingArmyCount: 0,
   bitcoinEnabled: false,
   startingTroops: Array.from({ length: 17 }, () => "Knight" as const),
   realmResources: [],

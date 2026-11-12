@@ -108,6 +108,7 @@ pub fn store_settlement(
         );
     preset.settlement_spacing.write(settlement.spacing);
     preset.order_aspects.write(crate::aspects::pack(settlement.order_aspects));
+    preset.starting_armies.write(settlement.starting_armies);
     write_depths(preset, mode_rules, day_unit_seconds, settlement.depths);
     write_realm_grants(preset, settlement.realms, entry_rule);
     write_villages(preset, settlement.villages);

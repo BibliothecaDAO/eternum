@@ -248,6 +248,7 @@ function buildSettlement(config: Config, preset: ReturnType<typeof nativePresetF
     mode: new CairoCustomEnum({ [preset.settlementMode]: {} }),
     spacing: preset.spacing,
     order_aspects: [...preset.orderAspects],
+    starting_armies: preset.startingArmyCount,
     depths: preset.depths.map((depth) => ({
       reveal_percent: depth.revealPercent,
       site_guard_lower: depth.siteGuardLower,

@@ -11403,6 +11403,10 @@
           "type": "core::array::Span::<core::integer::u8>"
         },
         {
+          "name": "starting_armies",
+          "type": "core::integer::u8"
+        },
+        {
           "name": "mode",
           "type": "world_native::settlement::SettlementMode"
         },
@@ -14195,5 +14199,5 @@
       ]
     }
   },
-  "identity": "121a8160e425a9569a9aea6fe720371d10753b503f6500a8c5ba4befa0c7dc38"
+  "identity": "2cde041bf31f202cdf0e65c3ded4a4874147217cbab26459e4cddaf2186d526d"
 }

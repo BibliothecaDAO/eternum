@@ -18,6 +18,7 @@ pub struct StructurePreset {
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]
 pub struct SettlementPreset {
     pub order_aspects: Span<u8>,
+    pub starting_armies: u8,
     pub mode: crate::settlement::SettlementMode,
     pub spacing: u32,
     pub depths: Span<crate::expeditions::DepthRules>,
@@ -58,6 +59,19 @@ pub struct PresetDefinition {
 pub fn validate(preset: PresetDefinition) {
     let rules = preset.rules;
     crate::aspects::validate(preset.settlement.order_aspects);
+    if preset.settlement.starting_armies != 0 {
+        assert!(
+            rules.entry_rule == crate::rules::ENTRY_OPEN && rules.day_unit_seconds != 0,
+            "starting armies require open expeditions",
+        );
+        assert!(
+            preset.settlement.starting_armies <= 6
+                && Into::<u8, u16>::into(preset.settlement.starting_armies) <= rules
+                    .troop_limit_config
+                    .settlement_armies,
+            "starting armies exceed deployment slots",
+        );
+    }
     assert!(
         preset.settlement.order_aspects.is_empty()
             || (rules.entry_rule == crate::rules::ENTRY_OPEN && rules.day_unit_seconds != 0),

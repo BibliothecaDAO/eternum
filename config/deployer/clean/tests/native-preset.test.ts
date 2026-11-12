@@ -1101,3 +1101,10 @@ test("only Season 1 enables Aspects and its packed Order mapping follows the can
   for (const preset of Object.values(nativePresets).filter(({ id }) => id !== FRONTIER_S1_PRESET_ID))
     expect(preset.orderAspects).toEqual([]);
 });
+
+test("only Season 1 fields its starting troops in two armies", () => {
+  for (const presetId of [FRONTIER_PRESET_ID, FRONTIER_FIXTURE_PRESET_ID, FRONTIER_S1_PRESET_ID]) {
+    const preset = buildNativePreset(loadNativePresetConfiguration("madara.frontier", presetId), presetId);
+    expect(preset.settlement.starting_armies).toBe(presetId === FRONTIER_S1_PRESET_ID ? 2 : 0);
+  }
+});

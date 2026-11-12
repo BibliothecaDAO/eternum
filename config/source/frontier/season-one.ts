@@ -7,6 +7,7 @@ import { frontierPreset } from "./native";
 export const frontierSeasonOnePreset = {
   ...frontierPreset,
   id: FRONTIER_S1_PRESET_ID,
+  startingArmyCount: 2,
   orderAspects: orders.filter(({ aspect }) => aspect !== null).map(({ aspect }) => aspect!),
   balance: {
     // Ten bags of five days; every bag has 2 + 3 + 4 + 5 + 6 day units.

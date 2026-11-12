@@ -10,6 +10,7 @@ export const blitzPreset: NativePreset = {
     mmrEnabled: true,
   },
   orderAspects: [],
+  startingArmyCount: 0,
   bitcoinEnabled: false,
   startingTroops: [],
   realmResources: realmResourcePool,

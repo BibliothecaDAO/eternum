@@ -1,6 +1,17 @@
 use crate::combat::TroopsTrait;
 use crate::stamina::StaminaSourceTrait;
 
+#[starknet::interface]
+pub trait IStartingArmies<T> {
+    fn deploy_starting_armies(
+        ref self: T,
+        key: crate::resources::ResourceKey,
+        category: TroopType,
+        amount: u128,
+        context: crate::commands::ActionContext,
+    );
+}
+
 #[derive(Copy, Drop, Serde, Default, Debug, PartialEq, starknet::Store)]
 pub struct Coord {
     pub alt: bool,

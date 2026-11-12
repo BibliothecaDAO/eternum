@@ -40,8 +40,9 @@ the matching release and registered preset. Resolve the Season 1 id from
 [`season-one.ts`](../../../config/source/frontier/season-one.ts). The earlier presets retain their own definitions. The
 harness records the player actions and resulting Herald facts in its existing reports. It distributes free homes across
 the Aspect catalog when `AspectRules` exists. Settlement sends the chosen `aspect`; held Realms may omit it and inherit
-their Order's Aspect. Read `HomeAspect` and `AspectMembers` from the shared native store. Starting army entities, quests
-and banes arrive with their contract changes.
+their Order's Aspect. Read `HomeAspect` and `AspectMembers` from the shared native store. Settlement also fields the
+preset's starting armies. The harness reads the existing `ExplorerTroops` and `ArmySlot` facts and uses these armies
+without raising replacements. Quests and banes arrive with their contract changes.
 
 The home reward administration path is `Games.grant_labor`, with `Games.labor_grant` reading the recorded result. Both
 dispatch to the existing Prizes class. `bash contracts/l3/check-native.sh` checks their compiled routing and runs the

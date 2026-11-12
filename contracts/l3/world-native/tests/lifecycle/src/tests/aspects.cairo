@@ -5,6 +5,7 @@ use world_test_support::tests::{Deployment, authority};
 use crate::commands::Command;
 use crate::realms::{ISeasonRealmsDispatcher, ISeasonRealmsDispatcherTrait, SettleSeason};
 use crate::resources::ResourceKey;
+use crate::stamina::StaminaSourceTrait;
 
 fn setup_aspects() -> (Deployment, u32) {
     let d = setup();
@@ -120,4 +121,80 @@ fn orders_round_trip_without_loot_suffix_order() {
     assert_eq!(crate::aspects::order_aspect(packed, 16), 2);
     assert_eq!(crate::aspects::order_aspect(packed, 14), 3);
     assert_eq!(crate::aspects::order_aspect(packed, 4), 4);
+}
+
+#[test]
+fn settlement_fields_two_knight_armies_without_spending_the_starting_wheat() {
+    let (d, game_id) = setup_aspects();
+    assert!(settle(d, game_id, Some(1)));
+    assert!(!settle(d, game_id, Some(1)));
+    interact_with_state(
+        d.games,
+        || {
+            let home = ResourceKey { game_id, entity_id: crate::entity_ids::home_for_actor(game_id, d.actor) };
+            let armies = crate::logic::troops::home_armies(home);
+            assert_eq!(armies.len(), 2);
+            let first = crate::logic::troops::explorer(
+                crate::troops::ExplorerKey { game_id, explorer_id: *armies.at(0) },
+            )
+                .unwrap();
+            let second = crate::logic::troops::explorer(
+                crate::troops::ExplorerKey { game_id, explorer_id: *armies.at(1) },
+            )
+                .unwrap();
+            assert_eq!(first.owner, home.entity_id);
+            assert_eq!(second.owner, home.entity_id);
+            assert!(first.coord != second.coord);
+            for id in armies {
+                let army = crate::logic::troops::explorer(crate::troops::ExplorerKey { game_id, explorer_id: *id })
+                    .unwrap();
+                assert_eq!(army.troops.category, crate::troops::TroopType::Knight);
+                assert_eq!(army.troops.tier, crate::troops::TroopTier::T1);
+                assert_eq!(army.troops.count, 1500 * crate::rules::RESOURCE_PRECISION);
+            }
+            assert_eq!(first.troops.stamina, crate::troops::StaminaSource::Slot(0));
+            assert_eq!(second.troops.stamina, crate::troops::StaminaSource::Slot(1));
+            assert_eq!(
+                crate::logic::resources::balance(home, crate::resources::WHEAT),
+                6000 * crate::rules::RESOURCE_PRECISION,
+            );
+            assert_eq!(
+                crate::logic::resources::balance(home, crate::resources::LABOR),
+                2000 * crate::rules::RESOURCE_PRECISION,
+            );
+            assert_eq!(crate::logic::resources::balance(home, crate::resources::ESSENCE), 0);
+            assert_eq!(
+                crate::logic::resources::balance(
+                    home, crate::troops::stock_resource(crate::troops::TroopType::Knight, crate::troops::TroopTier::T1),
+                ),
+                0,
+            );
+        },
+    );
+}
+
+#[test]
+fn a_home_settled_before_opening_has_both_armies_on_the_first_day() {
+    let (d, game_id) = setup_aspects();
+    assert!(
+        world_test_support::tests::resource_commands::execute_in_game(
+            d, game_id, Command::SettleSeason(SettleSeason { selected_realm: None, aspect: Some(1) }), 200,
+        ),
+    );
+    interact_with_state(
+        d.games,
+        || {
+            let home = ResourceKey { game_id, entity_id: crate::entity_ids::home_for_actor(game_id, d.actor) };
+            let armies = crate::logic::troops::home_armies(home);
+            assert_eq!(armies.len(), 2);
+            let context = crate::commands::load_context(game_id, 0, 360);
+            for id in armies {
+                let army = crate::logic::troops::active_explorer(
+                    crate::troops::ExplorerKey { game_id, explorer_id: *id }, 360, context,
+                );
+                assert_eq!(army.troops.count, 1500 * crate::rules::RESOURCE_PRECISION);
+                assert_eq!(army.troops.stamina.inline().amount, 120);
+            }
+        },
+    );
 }
