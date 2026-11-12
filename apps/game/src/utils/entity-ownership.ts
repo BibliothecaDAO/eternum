@@ -1,6 +1,6 @@
 import { ContractAddress } from "@bibliothecadao/types";
 import { configManager, isViewerOwner, nativeGameModeOf } from "@bibliothecadao/eternum";
-import type { GameRef, NativeFactStore } from "@bibliothecadao/eternum/game-client";
+import type { GameRef, NativeFactChange, NativeFactStore, NativeModelName } from "@bibliothecadao/eternum/game-client";
 import { gameKey, getActiveGame } from "@/runtime/world/store";
 import { seatSide, type SeatSide, type Side } from "@/tokens";
 import { useUIStore } from "@/hooks/store/use-ui-store";
@@ -56,6 +56,24 @@ export function arePlayersAllied(
   if (!playerGuild) return false;
   return store.get("GuildMember", { game_id: gameId, actor: owner })?.guild_id === playerGuild;
 }
+
+/**
+ * The facts `arePlayersAllied` reads. A change to any of them in the active game may turn an ally into an enemy or back,
+ * so every surface coloured by side redraws on them (`isAllianceChange`): the map's armies and structures, the minimap.
+ */
+export const ALLIANCE_MODELS = [
+  "GuildMember",
+  "AspectRules",
+  "HomeAspect",
+] as const satisfies readonly NativeModelName[];
+
+/** Whether a fact change in the active game may change who is allied with whom. */
+export const isAllianceChange = (change: NativeFactChange): boolean => {
+  if (!(ALLIANCE_MODELS as readonly string[]).includes(change.model)) return false;
+  // Every alliance model is keyed by its game.
+  const row = (change.current ?? change.previous) as { game_id: number } | undefined;
+  return row?.game_id === configManager.getActiveGameId();
+};
 
 /** The Aspect a player's home joined (HomeAspect); null while no home of theirs is known to have joined one. */
 const aspectOfPlayer = (store: NativeFactStore, gameId: number, player: bigint): number | null => {
