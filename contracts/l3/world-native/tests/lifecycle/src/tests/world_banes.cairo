@@ -25,7 +25,7 @@ fn world_rolls_match_the_client_and_stop_after_the_first_team_issue() {
 fn two_homes_end_the_lights_and_collect_the_second_grant_once() {
     let (d, game_id) = super::aspects::setup_aspects(15);
     for index in 0_u32..5 {
-        let player = Deployment { actor: (1000 + index).try_into().unwrap(), ..d };
+        let player = Deployment { actor: (1000 + Into::<u32, felt252>::into(index)).try_into().unwrap(), ..d };
         settle(player, game_id, 360);
     }
     let next = interact_with_state(

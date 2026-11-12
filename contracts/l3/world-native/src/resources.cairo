@@ -172,7 +172,11 @@ pub fn settle_at_rate(
             production.remainder = 0;
         }
     }
-    if weight.capacity == weight.weight || limit.map(|cap| balance >= cap).unwrap_or(false) {
+    let at_limit = match limit {
+        Some(cap) => balance >= cap,
+        None => false,
+    };
+    if weight.capacity == weight.weight || at_limit {
         production.remainder = 0;
     }
 }

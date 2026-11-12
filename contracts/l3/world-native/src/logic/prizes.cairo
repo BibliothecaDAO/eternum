@@ -30,15 +30,6 @@ pub mod PrizesLogic {
     #[abi(embed_v0)]
     impl Lords = LordsState::LordsImpl<ContractState>;
     impl LordsInternal = LordsState::InternalImpl<ContractState>;
-    component!(path: crate::logic::home_grants::HomeGrantState, storage: home_grants, event: AdministrationEvent);
-    #[abi(embed_v0)]
-    impl HomeGrants = crate::logic::home_grants::HomeGrantState::HomeGrantsImpl<ContractState>;
-    impl HomeGrantsInternal = crate::logic::home_grants::HomeGrantState::InternalImpl<ContractState>;
-    component!(path: crate::logic::quests::QuestState, storage: quests, event: QuestEvent);
-    #[abi(embed_v0)]
-    impl DailyQuest = crate::logic::quests::QuestState::DailyQuestImpl<ContractState>;
-    #[abi(embed_v0)]
-    impl QuestProgress = crate::logic::quests::QuestState::ProgressImpl<ContractState>;
     component!(path: crate::logic::banes::BaneState, storage: banes, event: BaneEvent);
     #[abi(embed_v0)]
     impl AspectActivity = crate::logic::banes::BaneState::ActivityImpl<ContractState>;
@@ -47,10 +38,6 @@ pub mod PrizesLogic {
     struct Storage {
         #[substorage(v0)]
         banes: crate::logic::banes::BaneState::Storage,
-        #[substorage(v0)]
-        quests: crate::logic::quests::QuestState::Storage,
-        #[substorage(v0)]
-        home_grants: crate::logic::home_grants::HomeGrantState::Storage,
         #[substorage(v0)]
         relics: LordsState::Storage,
         #[substorage(v0)]
@@ -66,8 +53,6 @@ pub mod PrizesLogic {
     #[derive(Drop, starknet::Event)]
     enum Event {
         BaneEvent: crate::logic::banes::BaneState::Event,
-        QuestEvent: crate::logic::quests::QuestState::Event,
-        AdministrationEvent: crate::logic::home_grants::HomeGrantState::Event,
         RelicEvent: LordsState::Event,
         ReleaseEvent: ReleaseState::Event,
         BlitzEvent: BlitzResultState::Event,

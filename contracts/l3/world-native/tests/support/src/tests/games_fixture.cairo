@@ -2219,7 +2219,7 @@ pub mod GamesFixture {
         let release_id = state.current_release.read();
         assert!(release_id != 0, "shard has no release");
         crate::entry::IHomeGrantsLibraryDispatcher {
-            class_hash: state.releases.entry(release_id).classes.prizes.read(),
+            class_hash: state.releases.entry(release_id).classes.production.read(),
         }
     }
 

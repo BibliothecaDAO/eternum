@@ -67,7 +67,8 @@ pub fn daily_quest(seed: felt252, day: u64) -> u8 {
             return *bag.at(1 - index);
         }
     }
-        * bag.at(index)
+    let selected = *bag.at(index);
+    selected
 }
 
 fn shuffled_bag(seed: felt252, week: u64) -> Array<u8> {
@@ -78,7 +79,7 @@ fn shuffled_bag(seed: felt252, week: u64) -> Array<u8> {
         let chosen: u32 = crate::random::range(seed, remaining.into(), remaining.into()).try_into().unwrap();
         let last = remaining - 1;
         let mut next = array![];
-        for index in 0..QUEST_COUNT.into() {
+        for index in 0_u32..QUEST_COUNT.into() {
             next.append(*bag.at(if index == chosen {
                 last
             } else if index == last {

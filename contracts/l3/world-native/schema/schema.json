@@ -84,6 +84,24 @@
     "SCOUTS_LODGE": 43,
     "HEARTH": 44
   },
+  "questConstants": {
+    "HUNT": 0,
+    "CAMPS": 1,
+    "RIFTS": 2,
+    "RELICS": 3,
+    "VETERANS": 4,
+    "FINDS": 5,
+    "REVEALS": 6,
+    "QUEST_COUNT": 7,
+    "STAND": 7,
+    "LIGHTS": 8,
+    "CULL": 9
+  },
+  "baneConstants": {
+    "BLOOD_MOON": 1,
+    "MIST_TIDE": 2,
+    "ASH_FALL": 3
+  },
   "tileOccupierConstants": {
     "CHEST_OCCUPIER": 34,
     "SPIRE_OCCUPIER": 35,
@@ -122,35 +140,6 @@
   "games": {
     "contract": "Games",
     "events": [
-      {
-        "name": "RowSet",
-        "prefix": [
-          "0x10245ffef63341a85fc6e76af6af54820573c96e61662cca60c1855a0f20e90",
-          "0x1381128f2a0228389d1eba9d3aa09f8ed24da656b884a49eea09a5ed2e87724"
-        ],
-        "members": [
-          {
-            "name": "version",
-            "type": "core::integer::u8",
-            "kind": "key"
-          },
-          {
-            "name": "model",
-            "type": "core::felt252",
-            "kind": "key"
-          },
-          {
-            "name": "keys",
-            "type": "core::array::Span::<core::felt252>",
-            "kind": "data"
-          },
-          {
-            "name": "values",
-            "type": "core::array::Span::<core::felt252>",
-            "kind": "data"
-          }
-        ]
-      },
       {
         "name": "RowSet",
         "prefix": [
@@ -577,6 +566,35 @@
           },
           {
             "name": "keys",
+            "type": "core::array::Span::<core::felt252>",
+            "kind": "data"
+          }
+        ]
+      },
+      {
+        "name": "RowSet",
+        "prefix": [
+          "0x10245ffef63341a85fc6e76af6af54820573c96e61662cca60c1855a0f20e90",
+          "0x1381128f2a0228389d1eba9d3aa09f8ed24da656b884a49eea09a5ed2e87724"
+        ],
+        "members": [
+          {
+            "name": "version",
+            "type": "core::integer::u8",
+            "kind": "key"
+          },
+          {
+            "name": "model",
+            "type": "core::felt252",
+            "kind": "key"
+          },
+          {
+            "name": "keys",
+            "type": "core::array::Span::<core::felt252>",
+            "kind": "data"
+          },
+          {
+            "name": "values",
             "type": "core::array::Span::<core::felt252>",
             "kind": "data"
           }
@@ -1022,35 +1040,6 @@
       {
         "name": "RowSet",
         "prefix": [
-          "0x1802590aa0d0014b09ee2fa499bc79af325f29b5060b277105bd4c749e5e9ad",
-          "0x1381128f2a0228389d1eba9d3aa09f8ed24da656b884a49eea09a5ed2e87724"
-        ],
-        "members": [
-          {
-            "name": "version",
-            "type": "core::integer::u8",
-            "kind": "key"
-          },
-          {
-            "name": "model",
-            "type": "core::felt252",
-            "kind": "key"
-          },
-          {
-            "name": "keys",
-            "type": "core::array::Span::<core::felt252>",
-            "kind": "data"
-          },
-          {
-            "name": "values",
-            "type": "core::array::Span::<core::felt252>",
-            "kind": "data"
-          }
-        ]
-      },
-      {
-        "name": "RowSet",
-        "prefix": [
           "0x226dcd383f367cb01aff84f158ff21525009015e05d21053c2800b647b91d93",
           "0x1381128f2a0228389d1eba9d3aa09f8ed24da656b884a49eea09a5ed2e87724"
         ],
@@ -1356,6 +1345,35 @@
       {
         "name": "RowSet",
         "prefix": [
+          "0x108086be942fea9c1dc00998eff8d0b42b2bf14c62afc372d32857f47956cd2",
+          "0x1381128f2a0228389d1eba9d3aa09f8ed24da656b884a49eea09a5ed2e87724"
+        ],
+        "members": [
+          {
+            "name": "version",
+            "type": "core::integer::u8",
+            "kind": "key"
+          },
+          {
+            "name": "model",
+            "type": "core::felt252",
+            "kind": "key"
+          },
+          {
+            "name": "keys",
+            "type": "core::array::Span::<core::felt252>",
+            "kind": "data"
+          },
+          {
+            "name": "values",
+            "type": "core::array::Span::<core::felt252>",
+            "kind": "data"
+          }
+        ]
+      },
+      {
+        "name": "RowSet",
+        "prefix": [
           "0x290a08c6ab68498a377b8f273bd5f696816ceb60f3cf345badb48f949797e6c",
           "0x1381128f2a0228389d1eba9d3aa09f8ed24da656b884a49eea09a5ed2e87724"
         ],
@@ -1600,6 +1618,35 @@
         "name": "RowSet",
         "prefix": [
           "0x2ee4180742549f953a9645d6fa6ae6f280bda1bf24df98d232139c12dbe228e",
+          "0x1381128f2a0228389d1eba9d3aa09f8ed24da656b884a49eea09a5ed2e87724"
+        ],
+        "members": [
+          {
+            "name": "version",
+            "type": "core::integer::u8",
+            "kind": "key"
+          },
+          {
+            "name": "model",
+            "type": "core::felt252",
+            "kind": "key"
+          },
+          {
+            "name": "keys",
+            "type": "core::array::Span::<core::felt252>",
+            "kind": "data"
+          },
+          {
+            "name": "values",
+            "type": "core::array::Span::<core::felt252>",
+            "kind": "data"
+          }
+        ]
+      },
+      {
+        "name": "RowSet",
+        "prefix": [
+          "0x1802590aa0d0014b09ee2fa499bc79af325f29b5060b277105bd4c749e5e9ad",
           "0x1381128f2a0228389d1eba9d3aa09f8ed24da656b884a49eea09a5ed2e87724"
         ],
         "members": [
@@ -1912,35 +1959,6 @@
           {
             "name": "timestamp",
             "type": "core::integer::u64",
-            "kind": "data"
-          }
-        ]
-      },
-      {
-        "name": "RowSet",
-        "prefix": [
-          "0x108086be942fea9c1dc00998eff8d0b42b2bf14c62afc372d32857f47956cd2",
-          "0x1381128f2a0228389d1eba9d3aa09f8ed24da656b884a49eea09a5ed2e87724"
-        ],
-        "members": [
-          {
-            "name": "version",
-            "type": "core::integer::u8",
-            "kind": "key"
-          },
-          {
-            "name": "model",
-            "type": "core::felt252",
-            "kind": "key"
-          },
-          {
-            "name": "keys",
-            "type": "core::array::Span::<core::felt252>",
-            "kind": "data"
-          },
-          {
-            "name": "values",
-            "type": "core::array::Span::<core::felt252>",
             "kind": "data"
           }
         ]
@@ -8106,20 +8124,6 @@
         }
       ]
     },
-    "core::option::Option::<core::integer::u128>": {
-      "type": "enum",
-      "name": "core::option::Option::<core::integer::u128>",
-      "variants": [
-        {
-          "name": "Some",
-          "type": "core::integer::u128"
-        },
-        {
-          "name": "None",
-          "type": "()"
-        }
-      ]
-    },
     "core::option::Option::<core::integer::u16>": {
       "type": "enum",
       "name": "core::option::Option::<core::integer::u16>",
@@ -8766,20 +8770,6 @@
         }
       ]
     },
-    "world_native::banes::BaneProgress": {
-      "type": "struct",
-      "name": "world_native::banes::BaneProgress",
-      "members": [
-        {
-          "name": "completed",
-          "type": "core::integer::u32"
-        },
-        {
-          "name": "ended_at",
-          "type": "core::integer::u64"
-        }
-      ]
-    },
     "world_native::banes::BaneRules": {
       "type": "struct",
       "name": "world_native::banes::BaneRules",
@@ -8807,24 +8797,6 @@
         {
           "name": "quest_counts",
           "type": "core::array::Span::<core::integer::u128>"
-        }
-      ]
-    },
-    "world_native::banes::BaneWindow": {
-      "type": "struct",
-      "name": "world_native::banes::BaneWindow",
-      "members": [
-        {
-          "name": "kind",
-          "type": "core::integer::u8"
-        },
-        {
-          "name": "start",
-          "type": "core::integer::u64"
-        },
-        {
-          "name": "end",
-          "type": "core::integer::u64"
         }
       ]
     },
@@ -13086,28 +13058,6 @@
         }
       ]
     },
-    "world_native::resources::SettledResource": {
-      "type": "struct",
-      "name": "world_native::resources::SettledResource",
-      "members": [
-        {
-          "name": "balance",
-          "type": "core::integer::u128"
-        },
-        {
-          "name": "production",
-          "type": "world_native::resources::Production"
-        },
-        {
-          "name": "weight",
-          "type": "world_native::resources::Weight"
-        },
-        {
-          "name": "limit",
-          "type": "core::option::Option::<core::integer::u128>"
-        }
-      ]
-    },
     "world_native::resources::Weight": {
       "type": "struct",
       "name": "world_native::resources::Weight",
@@ -14791,23 +14741,5 @@
       ]
     }
   },
-  "questConstants": {
-    "HUNT": 0,
-    "CAMPS": 1,
-    "RIFTS": 2,
-    "RELICS": 3,
-    "VETERANS": 4,
-    "FINDS": 5,
-    "REVEALS": 6,
-    "QUEST_COUNT": 7,
-    "STAND": 7,
-    "LIGHTS": 8,
-    "CULL": 9
-  },
-  "baneConstants": {
-    "BLOOD_MOON": 1,
-    "MIST_TIDE": 2,
-    "ASH_FALL": 3
-  },
-  "identity": "900835e646c7a731ff71e46c2659ffd04ba66df7f21c18edf7229651769e1265"
+  "identity": "c0131a8efa1ecabc06251991853a7d3a317dcf6f65d3c03a81de9dd0e1c48111"
 }

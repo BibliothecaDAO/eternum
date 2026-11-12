@@ -80,10 +80,13 @@ pub fn required(active: u32, percent: u16) -> u32 {
 }
 
 pub fn quest_kind(kind: u8) -> u8 {
-    match kind {
-        BLOOD_MOON => crate::quests::STAND,
-        MIST_TIDE => crate::quests::LIGHTS,
-        ASH_FALL => crate::quests::CULL,
-        _ => panic!("invalid world bane"),
+    if kind == BLOOD_MOON {
+        crate::quests::STAND
+    } else if kind == MIST_TIDE {
+        crate::quests::LIGHTS
+    } else if kind == ASH_FALL {
+        crate::quests::CULL
+    } else {
+        panic!("invalid world bane")
     }
 }
