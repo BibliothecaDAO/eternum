@@ -1,3 +1,4 @@
+import type { AspectId } from "@bibliothecadao/types";
 import type { PlayerLeaderboardActivityEntry } from "./leaderboard-activity";
 
 export type HeraldGameStatus = "Created" | "Registration" | "Live" | "Ended" | "Settled";
@@ -68,6 +69,12 @@ export interface HeraldGameDirectoryEntry {
   mode: "blitz" | "eternum" | "frontier" | "duel" | null;
   name: string;
   player_count: number;
+  /**
+   * The homes in each Aspect, every Aspect named (0 before its first home), for the founding step, which reads this row
+   * before the game opens; null in a game without Aspects (no AspectRules); absent from an older Herald or an archived
+   * season.
+   */
+  aspect_members?: Record<AspectId, number> | null;
   player_state: HeraldPlayerGameState | null;
   /** Players on a Blitz game's fixed roster; 0 for open-entry games. */
   roster_count: number;
