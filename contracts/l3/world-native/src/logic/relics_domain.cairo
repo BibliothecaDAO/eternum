@@ -23,19 +23,6 @@ pub mod RelicsLogic {
     impl Artificer = RelicState::ArtificerImpl<ContractState>;
 
     #[abi(embed_v0)]
-    impl DiscoveryRoll of crate::discovery::IDiscoveryRoll<ContractState> {
-        fn roll_expedition_discovery(
-            ref self: ContractState,
-            key: crate::map::TileKey,
-            explorer_id: u64,
-            seed: u256,
-            context: crate::commands::ActionContext,
-        ) -> crate::discovery::Discovery {
-            crate::logic::discovery::roll(key, explorer_id, seed, context)
-        }
-    }
-
-    #[abi(embed_v0)]
     impl PresetRelics of crate::presets::IPresetRelics<ContractState> {
         fn store_relic_preset(
             ref self: ContractState,

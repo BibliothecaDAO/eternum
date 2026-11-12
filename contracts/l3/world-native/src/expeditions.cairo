@@ -197,9 +197,6 @@ pub trait IFrontierDiscovery<T> {
     fn shrine_reward(self: @T, key: crate::resources::ResourceKey) -> Option<crate::relics::ShrineReward>;
     fn frontier_discovery_rules(self: @T, game_id: u32) -> Option<FrontierDiscoveryRules>;
     fn expedition_discovery(self: @T, key: ExpeditionDiscoveryKey) -> Option<ExpeditionDiscovery>;
-    fn discover_frontier_tile(
-        ref self: T, key: crate::map::TileKey, explorer_id: u64, seed: u256, context: crate::commands::ActionContext,
-    ) -> crate::discovery::Discovery;
 }
 
 #[starknet::interface]

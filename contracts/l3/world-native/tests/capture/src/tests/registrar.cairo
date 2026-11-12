@@ -1669,7 +1669,9 @@ fn frontier_site_discovery_reads_home_knowledge_and_stores_the_shrine_reward() {
     let army = GameState { contract_address: d.games }.resolved_explorer(key).unwrap();
     let home = ResourceKey { game_id, entity_id: army.owner };
     let rules = super::preset_projection::frontier_discovery_rules();
-    let map = crate::expeditions::IFrontierDiscoveryLibraryDispatcher { class_hash: super::declare_logic("MapLogic") };
+    let discovery = crate::discovery::IDiscoveryRollLibraryDispatcher {
+        class_hash: super::declare_logic("MovementLogic"),
+    };
     for (expected, row, category) in array![
         (crate::discovery::Discovery::Shrine, crate::research::ROW_SHRINE, crate::taxonomy::SHRINE_OCCUPIER),
         (crate::discovery::Discovery::Well, crate::research::ROW_WELL, crate::taxonomy::WELL_OCCUPIER),
@@ -1708,8 +1710,8 @@ fn frontier_site_discovery_reads_home_knowledge_and_stores_the_shrine_reward() {
         start_cheat_caller_address(d.games, d.games);
         let locked = snforge_std::interact_with_state(
             d.games,
-            || crate::expeditions::IFrontierDiscoveryDispatcherTrait::discover_frontier_tile(
-                map, tile, key.explorer_id, seed, context,
+            || crate::discovery::IDiscoveryRollDispatcherTrait::roll_expedition_discovery(
+                discovery, tile, key.explorer_id, seed, context,
             ),
         );
         assert!(locked != crate::discovery::Discovery::Shrine && locked != crate::discovery::Discovery::Well);
@@ -1727,8 +1729,8 @@ fn frontier_site_discovery_reads_home_knowledge_and_stores_the_shrine_reward() {
         );
         let found = snforge_std::interact_with_state(
             d.games,
-            || crate::expeditions::IFrontierDiscoveryDispatcherTrait::discover_frontier_tile(
-                map, tile, key.explorer_id, seed, context,
+            || crate::discovery::IDiscoveryRollDispatcherTrait::roll_expedition_discovery(
+                discovery, tile, key.explorer_id, seed, context,
             ),
         );
         assert_eq!(found, expected);

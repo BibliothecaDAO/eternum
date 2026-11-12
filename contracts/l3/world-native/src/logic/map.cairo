@@ -239,7 +239,7 @@ pub mod MapState {
 #[starknet::contract]
 pub mod MapLogic {
     use starknet::ContractAddress;
-    use starknet::storage::{StorageMapReadAccess, StorageMapWriteAccess, StoragePathEntry, StoragePointerReadAccess};
+    use starknet::storage::{StorageMapReadAccess, StorageMapWriteAccess, StoragePointerReadAccess};
     use crate::geometry::{distance, spire_neighbor, tile_key};
     use crate::logic::map::MapState;
     use crate::logic::release::ReleaseState;
@@ -402,23 +402,6 @@ pub mod MapLogic {
             self: @ContractState, key: crate::expeditions::ExpeditionDiscoveryKey,
         ) -> Option<crate::expeditions::ExpeditionDiscovery> {
             crate::logic::expeditions::discovery(key)
-        }
-        fn discover_frontier_tile(
-            ref self: ContractState,
-            key: TileKey,
-            explorer_id: u64,
-            seed: u256,
-            context: crate::commands::ActionContext,
-        ) -> crate::discovery::Discovery {
-            crate::discovery::IDiscoveryRollDispatcherTrait::roll_expedition_discovery(
-                crate::discovery::IDiscoveryRollLibraryDispatcher {
-                    class_hash: self.release.classes(key.game_id).relics.read(),
-                },
-                key,
-                explorer_id,
-                seed,
-                context,
-            )
         }
     }
     #[abi(embed_v0)]
