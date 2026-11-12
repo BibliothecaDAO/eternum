@@ -146,6 +146,8 @@ describe("the page a run opens", () => {
       "lab-visit",
       // Its Leave is judged as the visit's is: the player's own realm board, read off the drawn world.
       "lab-far-place",
+      // Each step reads the map's terrain load (window.getTerrainLoad), a dev hook.
+      "full-load",
     ].map((name) => STEP_SETS[name].steps),
   );
   const worldLists = Object.keys(STEP_SETS).filter((name) => worldSteps.has(STEP_SETS[name].steps));

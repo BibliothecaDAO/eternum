@@ -3486,15 +3486,34 @@ const BOARD_STEPS = [
  * --viewport 390x844`.
  */
 const FULL_LOAD_STEPS = [
-  { name: "full-load-still", settleMs: 8_000, verify: atFullLoad(nothingElse) },
-  { name: "full-load-army", play: walkTheArmy, settleMs: 6_000, verify: atFullLoad(armyWalked) },
-  { name: "full-load-pan", play: panFarAcross, settleMs: 20_000, verify: atFullLoad(newPagesPresented) },
-  { name: "full-load-widest", play: zoomAllTheWayOut, settleMs: 6_000, verify: atFullLoad(nothingElse) },
+  { name: "full-load-still", settleMs: 8_000, verify: atFullLoad(BOARD_OPENING_DISTANCE) },
+  {
+    name: "full-load-army",
+    play: walkTheArmy,
+    settleMs: 6_000,
+    verify: atFullLoad(BOARD_OPENING_DISTANCE, armyWalked),
+  },
+  {
+    name: "full-load-pan",
+    play: panFarAcross,
+    settleMs: 20_000,
+    verify: atFullLoad(BOARD_OPENING_DISTANCE, newPagesPresented),
+  },
+  { name: "full-load-widest", play: zoomAllTheWayOut, settleMs: 6_000, verify: atFullLoad(FARTHEST_CAMERA_DISTANCE) },
 ];
 
-function nothingElse() {
-  return null;
-}
+/** What the map's load report must hold, each a count: the wildlife, its cap and how many are drawn, props, pages. */
+const TERRAIN_LOAD_FIELDS = [
+  "animals",
+  "animalsLoaded",
+  "animalCap",
+  "props",
+  "propTriangles",
+  "pages",
+  "pagesPresented",
+];
+/** The pages the full-load land presents round the camera: fewer, and the vegetation timed is not the fixture's. */
+const FULL_LOAD_PAGES = 4;
 
 /** The army sent on three moves in a row, each to a tile beside it, as a player orders them (the lab's wallet offer closed). */
 async function walkTheArmy(context) {
@@ -3529,19 +3548,41 @@ function newPagesPresented({ played, seen }) {
     : `no new terrain page was presented (${played.before?.pagesPresented} before, ${seen.terrainLoad.pagesPresented} after)`;
 }
 
-/** On the map with its wildlife at the cap and every animal drawn, and whatever else `alsoWrong` finds wrong. */
-function atFullLoad(alsoWrong) {
+/**
+ * On the map at `distance`, as the map reports its camera at the step's end, carrying the full load: every field of its
+ * load report a count, its wildlife at a cap above none with every animal drawn, its vegetation drawn across the
+ * fixture's pages; and whatever else `alsoWrong` finds wrong. Any of them missing fails the step.
+ */
+function atFullLoad(distance, alsoWrong = () => null) {
   return (context) => {
     const { seen, played } = context;
     const scene = inScene("map")({ seen });
     if (scene.status !== "completed") return failed(scene.reason, played);
+    const shown = seen.selection?.camera?.distance;
+    if (typeof shown !== "number") return failed("the map reported no camera distance", played);
+    if (Math.abs(shown - distance) > CLOSEST_DISTANCE_TOLERANCE)
+      return failed(`the camera stands ${shown} away, not ${distance}`, played);
+    const wrongLoad = fullLoadWrong(seen.terrainLoad);
+    if (wrongLoad) return failed(wrongLoad, { ...played, load: seen.terrainLoad ?? null });
     const load = seen.terrainLoad;
-    if (!load) return failed("the map reported no terrain load (open it with the dev overlays)", played);
-    if (load.animals !== load.animalCap || load.animalsLoaded !== load.animals)
-      return failed(`the wildlife is not at its cap, every animal drawn: ${JSON.stringify(load)}`, played);
     const wrong = alsoWrong(context);
-    return wrong ? failed(wrong, { ...played, load }) : completed({ ...played, load });
+    return wrong
+      ? failed(wrong, { ...played, distance: shown, load })
+      : completed({ ...played, distance: shown, load });
   };
+}
+
+/** What keeps a load report from being the full load, or null when it is. */
+function fullLoadWrong(load) {
+  if (!load) return "the map reported no terrain load (open it with the dev overlays)";
+  const missing = TERRAIN_LOAD_FIELDS.filter((field) => !Number.isInteger(load[field]) || load[field] < 0);
+  if (missing.length > 0) return `the map's load report has no count for ${missing.join(", ")}`;
+  if (load.animalCap === 0) return "the map's wildlife has no cap";
+  if (load.animals !== load.animalCap || load.animalsLoaded !== load.animals)
+    return `the wildlife is not at its cap, every animal drawn: ${JSON.stringify(load)}`;
+  if (load.props === 0 || load.propTriangles === 0) return "no vegetation is drawn";
+  if (load.pages < FULL_LOAD_PAGES) return `the map presents ${load.pages} pages, not the fixture's ${FULL_LOAD_PAGES}`;
+  return null;
 }
 
 /** The board's views, as its stills are named: every step but the moves between them. */
