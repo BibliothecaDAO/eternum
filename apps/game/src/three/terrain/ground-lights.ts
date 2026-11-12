@@ -12,7 +12,7 @@ export interface GroundLight {
 const COVERS = 48;
 const TEXELS = 128;
 /** The brightest a texel holds; the map's bytes store a light divided by it. */
-const BRIGHTEST = 4;
+const BRIGHTEST = 8;
 /** The map follows the camera in these steps, so it is written again only when the camera has moved this far. */
 const FOLLOW_STEP = 4;
 

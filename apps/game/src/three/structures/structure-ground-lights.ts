@@ -8,7 +8,7 @@ const glow = (hex: number, strength: number, reach: number): GroundLight => ({
   reach,
 });
 
-const HEARTH = glow(0xffa055, 1.5, 2.2);
+const HEARTH = glow(0xffa055, 6, 3);
 
 /**
  * The light each kind of structure casts on the ground round it: the hearths of settlements, the glow of a
@@ -16,10 +16,10 @@ const HEARTH = glow(0xffa055, 1.5, 2.2);
  */
 export const STRUCTURE_GROUND_LIGHTS: Record<StructureType, GroundLight | null> = {
   [StructureType.Realm]: HEARTH,
-  [StructureType.Village]: glow(0xffa055, 1.2, 1.8),
+  [StructureType.Village]: glow(0xffa055, 5, 2.5),
   [StructureType.Camp]: HEARTH,
-  [StructureType.Hyperstructure]: glow(0x9b5cff, 1.8, 3),
-  [StructureType.Rift]: glow(0xb070ff, 1.5, 2.2),
+  [StructureType.Hyperstructure]: glow(0x9b5cff, 7.5, 4.5),
+  [StructureType.Rift]: glow(0xb070ff, 6, 3),
   [StructureType.Bank]: null,
   [StructureType.Mine]: null,
   [StructureType.BitcoinMine]: null,
@@ -28,4 +28,4 @@ export const STRUCTURE_GROUND_LIGHTS: Record<StructureType, GroundLight | null> 
 };
 
 /** The Spire's orb: a deep pink pool round its foot. */
-export const SPIRE_GROUND_LIGHT = glow(0xff4fb0, 1.8, 3);
+export const SPIRE_GROUND_LIGHT = glow(0xff4fb0, 6.5, 3);
