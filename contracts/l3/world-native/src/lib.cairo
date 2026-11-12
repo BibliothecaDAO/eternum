@@ -1,4 +1,5 @@
 pub mod approved_frontier_extension;
+pub mod army_relics;
 pub mod arrivals;
 pub mod artificer;
 pub mod aspects;

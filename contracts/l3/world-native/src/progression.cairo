@@ -150,7 +150,7 @@ pub enum XpAward {
 pub trait IArmyProgression<T> {
     fn army_progress(self: @T, key: ExplorerKey) -> Option<ArmyProgress>;
     fn army_progression_rules(self: @T, game_id: u32) -> Option<ArmyProgressionRules>;
-    fn grant_army_xp(ref self: T, key: ExplorerKey, award: XpAward);
+    fn grant_army_xp(ref self: T, key: ExplorerKey, award: XpAward, timestamp: u64);
     fn spend_skill_point(
         ref self: T,
         game_id: u32,

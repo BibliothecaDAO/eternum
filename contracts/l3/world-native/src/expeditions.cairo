@@ -111,18 +111,16 @@ pub fn home_ring_center(coord: Coord, spacing: u32) -> Coord {
     Coord { alt: false, x: coord.x / spacing * spacing + spacing / 2, y: coord.y / spacing * spacing + spacing / 2 }
 }
 
-// The day's spire, which depth research lights: one of the home ring's six tiles, turning one step each day so the
-// first march from home differs daily. It is a rule, not a stored structure.
-pub fn spire(spacing: u32, region_id: u32, day: u64) -> Coord {
-    crate::geometry::neighbor(site(spacing, region_id, day, 0), (day % 6).try_into().unwrap())
-}
-
 /// An army lives only on its own day's map: on any later day it is gone.
 pub fn is_current(coord: Coord, spacing: u32, day: u64) -> bool {
     !coord.alt && region_day(coord, spacing) == day
 }
 
 pub fn assert_same_region(origin: Coord, destination: Coord, spacing: u32) {
+    assert!(inside_region(origin, destination, spacing), "outside expedition region");
+}
+
+pub fn inside_region(origin: Coord, destination: Coord, spacing: u32) -> bool {
     let same_region = origin.x / spacing == destination.x / spacing && origin.y / spacing == destination.y / spacing;
     let local_x = destination.x % spacing;
     let local_y = destination.y % spacing;
@@ -130,7 +128,7 @@ pub fn assert_same_region(origin: Coord, destination: Coord, spacing: u32) {
     let inside_region = local_x >= margin && local_x < spacing
         - margin && local_y >= margin && local_y < spacing
         - margin;
-    assert!(!destination.alt && same_region && inside_region, "outside expedition region");
+    !destination.alt && same_region && inside_region
 }
 
 // Each day's map draws its own terrain: the climate seeds move by the day, counted in units from absolute time so
@@ -194,6 +192,7 @@ pub struct ExpeditionDiscovery {
 }
 #[starknet::interface]
 pub trait IFrontierDiscovery<T> {
+    fn expedition_spire(self: @T, key: crate::spires::ExpeditionSpireKey) -> Option<crate::spires::ExpeditionSpire>;
     fn consume_frontier_site(ref self: T, key: crate::map::TileKey, explorer_id: u64) -> Option<u8>;
     fn shrine_reward(self: @T, key: crate::resources::ResourceKey) -> Option<crate::relics::ShrineReward>;
     fn frontier_discovery_rules(self: @T, game_id: u32) -> Option<FrontierDiscoveryRules>;

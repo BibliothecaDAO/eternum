@@ -145,7 +145,7 @@ pub mod MovementLogic {
             let extraction = crate::exploration_rewards::IExtractionLibraryDispatcher {
                 class_hash: self.release.classes(game_id).map.read(),
             };
-            if discovery == crate::discovery::Discovery::Spire {
+            if discovery == crate::discovery::Discovery::Spire && rules.day_unit_seconds == 0 {
                 crate::exploration_rewards::IExtractionDispatcherTrait::raise_dormant_spire(
                     extraction,
                     game_id,
@@ -221,24 +221,23 @@ pub mod MovementLogic {
             assert!(explorer.troops.count != 0, "explorer is dead");
             let _home = crate::logic::troops::owned_structure(game_id, explorer.owner, actor);
             let home_key = crate::resources::ResourceKey { game_id, entity_id: explorer.owner };
-            assert!(command.depth > 0 && command.depth < 4, "invalid expedition depth");
             assert!(
                 crate::research::tier(
                     crate::logic::research::require(home_key).learned, crate::research::ROW_DEPTH,
-                ) >= command
-                    .depth,
-                "depth is not unlocked",
+                ) != 0,
+                "spire lore is not unlocked",
             );
             let spacing = self.expedition_spacing(game_id);
             let today = crate::days::day_of(context.game.unbox(), rules.day_unit_seconds, context.timestamp).index;
-            let spire = crate::expeditions::spire(spacing, crate::entity_ids::namespace(explorer.owner), today);
-            assert!(
-                explorer.coord == spire || crate::geometry::adjacent(explorer.coord, spire),
-                "army must be at its realm's spire",
+            let depth = crate::logic::expeditions::depth_at(game_id, explorer.coord);
+            let spire = crate::logic::spires::descent_origin(
+                crate::spires::ExpeditionSpireKey { game_id, structure_id: explorer.owner, epoch: today, depth },
+                explorer.coord,
+                command.depth,
             );
-            let destination = Coord {
-                y: explorer.coord.y + Into::<u8, u32>::into(command.depth) * spacing, ..explorer.coord,
-            };
+            let destination = crate::logic::spires::nearest_free_arrival(
+                game_id, Coord { y: spire.y + spacing, ..spire }, spacing,
+            );
             let location = tile_key(game_id, destination);
             self.reveal_depth_arrival(game_id, destination, context);
             crate::logic::map::MapState::vacate(tile_key(game_id, explorer.coord), command.explorer_id);

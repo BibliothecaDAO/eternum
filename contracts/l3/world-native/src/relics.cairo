@@ -23,6 +23,7 @@ pub enum Recipient {
     Explorer,
     StructureProduction,
     StructureGuard,
+    ArmySlot: u8,
 }
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]
 pub struct ApplyRelic {
@@ -227,7 +228,13 @@ pub trait ILords<T> {
 
 #[starknet::interface]
 pub trait ICaptureRewards<T> {
-    fn grant_capture_rewards(ref self: T, site: ResourceKey, explorer_id: u64, context: crate::commands::ActionContext);
+    fn grant_capture_rewards(
+        ref self: T,
+        site: ResourceKey,
+        explorer_id: u64,
+        relic_slot: Option<u8>,
+        context: crate::commands::ActionContext,
+    );
 }
 
 #[starknet::interface]
@@ -258,6 +265,9 @@ pub trait IRelicMap<T> {
         game_context: crate::commands::ActionContext,
     );
     fn consume_relic_chest(ref self: T, game_id: u32, coord: Coord) -> u64;
+    fn reveal_relic_tiles(
+        ref self: T, game_id: u32, coord: Coord, count: u8, game_context: crate::commands::BiomeContext,
+    );
     fn reveal_relic_ring(
         ref self: T, game_id: u32, coord: Coord, radius: u8, game_context: crate::commands::BiomeContext,
     );

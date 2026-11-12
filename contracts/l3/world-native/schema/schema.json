@@ -6,6 +6,13 @@
     "SHRINE_EPIC_BPS": 400,
     "SHRINE_LEGENDARY_BPS": 100,
     "ATTRIBUTE_CAP": 5,
+    "SPIRE_REVEAL_LIMIT": 10,
+    "RELIC_BLADE_BPS": 1000,
+    "RELIC_WARD_BPS": 500,
+    "RELIC_PLUNDER_BPS": 2000,
+    "RELIC_TOME_BPS": 4000,
+    "RELIC_SECONDS_PER_RANK": 1800,
+    "RELIC_TILES_PER_RANK": 6,
     "SKILL_POINT_REFILL_BASE": 10,
     "SKILL_POINT_REFILL_STEP": 10,
     "BATTLE_COMMON_BPS": 1000,
@@ -1393,6 +1400,59 @@
           {
             "name": "timestamp",
             "type": "core::integer::u64",
+            "kind": "data"
+          }
+        ]
+      },
+      {
+        "name": "RowSet",
+        "prefix": [
+          "0x2a921933cc5cea2b53bb8bf4895528b1f1e94153fcf3495af25550d773f7717",
+          "0x1381128f2a0228389d1eba9d3aa09f8ed24da656b884a49eea09a5ed2e87724"
+        ],
+        "members": [
+          {
+            "name": "version",
+            "type": "core::integer::u8",
+            "kind": "key"
+          },
+          {
+            "name": "model",
+            "type": "core::felt252",
+            "kind": "key"
+          },
+          {
+            "name": "keys",
+            "type": "core::array::Span::<core::felt252>",
+            "kind": "data"
+          },
+          {
+            "name": "values",
+            "type": "core::array::Span::<core::felt252>",
+            "kind": "data"
+          }
+        ]
+      },
+      {
+        "name": "RowDeleted",
+        "prefix": [
+          "0x2a921933cc5cea2b53bb8bf4895528b1f1e94153fcf3495af25550d773f7717",
+          "0x34ee03e4825cf92d0335b5828e3389af6c145ecff05fce078c3753d871cc7f5"
+        ],
+        "members": [
+          {
+            "name": "version",
+            "type": "core::integer::u8",
+            "kind": "key"
+          },
+          {
+            "name": "model",
+            "type": "core::felt252",
+            "kind": "key"
+          },
+          {
+            "name": "keys",
+            "type": "core::array::Span::<core::felt252>",
             "kind": "data"
           }
         ]
@@ -3132,6 +3192,58 @@
         },
         "value": "zero",
         "meaning": "No empty player reveals in this expedition yet."
+      }
+    },
+    {
+      "name": "ExpeditionSpire",
+      "identity": "0x45787065646974696f6e5370697265",
+      "scope": "game",
+      "keys": [
+        {
+          "name": "game_id",
+          "type": "core::integer::u32",
+          "feltLength": 1
+        },
+        {
+          "name": "structure_id",
+          "type": "core::integer::u64",
+          "feltLength": 1
+        },
+        {
+          "name": "epoch",
+          "type": "core::integer::u64",
+          "feltLength": 1
+        },
+        {
+          "name": "depth",
+          "type": "core::integer::u8",
+          "feltLength": 1
+        }
+      ],
+      "members": [
+        {
+          "name": "reveals",
+          "type": "core::integer::u8",
+          "id": "0x72657665616c73",
+          "feltLength": 1
+        },
+        {
+          "name": "location",
+          "type": "core::option::Option::<world_native::troops::Coord>",
+          "id": "0x6c6f636174696f6e",
+          "feltLength": null
+        }
+      ],
+      "keyLength": 4,
+      "valueLength": null,
+      "absence": {
+        "parent": "Structure",
+        "parentKeys": {
+          "game_id": "game_id",
+          "entity_id": "structure_id"
+        },
+        "value": "zero",
+        "meaning": "No reveal with Spire lore on this layer of this day's expedition yet."
       }
     },
     {
@@ -5181,6 +5293,134 @@
           "isStructure": "is_structure"
         }
       }
+    },
+    {
+      "name": "ArmyRelics",
+      "identity": "0x41726d7952656c696373",
+      "scope": "game",
+      "keys": [
+        {
+          "name": "game_id",
+          "type": "core::integer::u32",
+          "feltLength": 1
+        },
+        {
+          "name": "explorer_id",
+          "type": "core::integer::u64",
+          "feltLength": 1
+        }
+      ],
+      "members": [
+        {
+          "name": "first",
+          "type": "core::option::Option::<world_native::army_relics::ArmyRelic>",
+          "id": "0x6669727374",
+          "feltLength": null
+        },
+        {
+          "name": "second",
+          "type": "core::option::Option::<world_native::army_relics::ArmyRelic>",
+          "id": "0x7365636f6e64",
+          "feltLength": null
+        },
+        {
+          "name": "third",
+          "type": "core::option::Option::<world_native::army_relics::ArmyRelic>",
+          "id": "0x7468697264",
+          "feltLength": null
+        }
+      ],
+      "keyLength": 2,
+      "valueLength": null,
+      "absence": {
+        "parent": "ExplorerTroops",
+        "value": "zero",
+        "meaning": "No carried relics or running relic of this kind while the army exists.",
+        "parentKeys": {
+          "game_id": "game_id",
+          "explorer_id": "explorer_id"
+        }
+      }
+    },
+    {
+      "name": "ArmyRelicEffect",
+      "identity": "0x41726d7952656c6963456666656374",
+      "scope": "game",
+      "keys": [
+        {
+          "name": "game_id",
+          "type": "core::integer::u32",
+          "feltLength": 1
+        },
+        {
+          "name": "explorer_id",
+          "type": "core::integer::u64",
+          "feltLength": 1
+        },
+        {
+          "name": "kind",
+          "type": "world_native::army_relics::RelicKind",
+          "feltLength": 1
+        }
+      ],
+      "members": [
+        {
+          "name": "rank",
+          "type": "core::integer::u8",
+          "id": "0x72616e6b",
+          "feltLength": 1
+        },
+        {
+          "name": "expires_at",
+          "type": "core::integer::u64",
+          "id": "0x657870697265735f6174",
+          "feltLength": 1
+        }
+      ],
+      "keyLength": 3,
+      "valueLength": 2,
+      "absence": {
+        "parent": "ExplorerTroops",
+        "value": "zero",
+        "meaning": "No carried relics or running relic of this kind while the army exists.",
+        "parentKeys": {
+          "game_id": "game_id",
+          "explorer_id": "explorer_id"
+        }
+      }
+    },
+    {
+      "name": "RuinRelic",
+      "identity": "0x5275696e52656c6963",
+      "scope": "game",
+      "keys": [
+        {
+          "name": "game_id",
+          "type": "core::integer::u32",
+          "feltLength": 1
+        },
+        {
+          "name": "entity_id",
+          "type": "core::integer::u64",
+          "feltLength": 1
+        }
+      ],
+      "members": [
+        {
+          "name": "kind",
+          "type": "world_native::army_relics::RelicKind",
+          "id": "0x6b696e64",
+          "feltLength": 1
+        },
+        {
+          "name": "rank",
+          "type": "core::integer::u8",
+          "id": "0x72616e6b",
+          "feltLength": 1
+        }
+      ],
+      "keyLength": 2,
+      "valueLength": 2
     },
     {
       "name": "ArmyProgress",
@@ -7776,6 +8016,34 @@
         }
       ]
     },
+    "core::option::Option::<world_native::army_relics::ArmyRelic>": {
+      "type": "enum",
+      "name": "core::option::Option::<world_native::army_relics::ArmyRelic>",
+      "variants": [
+        {
+          "name": "Some",
+          "type": "world_native::army_relics::ArmyRelic"
+        },
+        {
+          "name": "None",
+          "type": "()"
+        }
+      ]
+    },
+    "core::option::Option::<world_native::army_relics::ArmyRelicEffect>": {
+      "type": "enum",
+      "name": "core::option::Option::<world_native::army_relics::ArmyRelicEffect>",
+      "variants": [
+        {
+          "name": "Some",
+          "type": "world_native::army_relics::ArmyRelicEffect"
+        },
+        {
+          "name": "None",
+          "type": "()"
+        }
+      ]
+    },
     "core::option::Option::<world_native::buildings::BoardRules>": {
       "type": "enum",
       "name": "core::option::Option::<world_native::buildings::BoardRules>",
@@ -8112,6 +8380,20 @@
         }
       ]
     },
+    "core::option::Option::<world_native::spires::ExpeditionSpire>": {
+      "type": "enum",
+      "name": "core::option::Option::<world_native::spires::ExpeditionSpire>",
+      "variants": [
+        {
+          "name": "Some",
+          "type": "world_native::spires::ExpeditionSpire"
+        },
+        {
+          "name": "None",
+          "type": "()"
+        }
+      ]
+    },
     "core::option::Option::<world_native::spires::SpireLayout>": {
       "type": "enum",
       "name": "core::option::Option::<world_native::spires::SpireLayout>",
@@ -8267,6 +8549,110 @@
         {
           "name": "y",
           "type": "core::felt252"
+        }
+      ]
+    },
+    "world_native::army_relics::ArmyRelic": {
+      "type": "struct",
+      "name": "world_native::army_relics::ArmyRelic",
+      "members": [
+        {
+          "name": "kind",
+          "type": "world_native::army_relics::RelicKind"
+        },
+        {
+          "name": "rank",
+          "type": "core::integer::u8"
+        }
+      ]
+    },
+    "world_native::army_relics::ArmyRelicEffect": {
+      "type": "struct",
+      "name": "world_native::army_relics::ArmyRelicEffect",
+      "members": [
+        {
+          "name": "rank",
+          "type": "core::integer::u8"
+        },
+        {
+          "name": "expires_at",
+          "type": "core::integer::u64"
+        }
+      ]
+    },
+    "world_native::army_relics::ArmyRelicEffectKey": {
+      "type": "struct",
+      "name": "world_native::army_relics::ArmyRelicEffectKey",
+      "members": [
+        {
+          "name": "game_id",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "explorer_id",
+          "type": "core::integer::u64"
+        },
+        {
+          "name": "kind",
+          "type": "world_native::army_relics::RelicKind"
+        }
+      ]
+    },
+    "world_native::army_relics::ArmyRelics": {
+      "type": "struct",
+      "name": "world_native::army_relics::ArmyRelics",
+      "members": [
+        {
+          "name": "first",
+          "type": "core::option::Option::<world_native::army_relics::ArmyRelic>"
+        },
+        {
+          "name": "second",
+          "type": "core::option::Option::<world_native::army_relics::ArmyRelic>"
+        },
+        {
+          "name": "third",
+          "type": "core::option::Option::<world_native::army_relics::ArmyRelic>"
+        }
+      ]
+    },
+    "world_native::army_relics::RelicKind": {
+      "type": "enum",
+      "name": "world_native::army_relics::RelicKind",
+      "variants": [
+        {
+          "name": "Blade",
+          "type": "()"
+        },
+        {
+          "name": "Ward",
+          "type": "()"
+        },
+        {
+          "name": "Plunder",
+          "type": "()"
+        },
+        {
+          "name": "FarEye",
+          "type": "()"
+        },
+        {
+          "name": "Tome",
+          "type": "()"
+        }
+      ]
+    },
+    "world_native::army_relics::RuinReward": {
+      "type": "enum",
+      "name": "world_native::army_relics::RuinReward",
+      "variants": [
+        {
+          "name": "Chest",
+          "type": "world_native::relics::SiteChest"
+        },
+        {
+          "name": "Relic",
+          "type": "world_native::army_relics::ArmyRelic"
         }
       ]
     },
@@ -8973,6 +9359,10 @@
         {
           "name": "defender_id",
           "type": "core::integer::u64"
+        },
+        {
+          "name": "relic_slot",
+          "type": "core::option::Option::<core::integer::u8>"
         }
       ]
     },
@@ -9546,7 +9936,7 @@
         },
         {
           "name": "Ruin",
-          "type": "world_native::relics::SiteChest"
+          "type": "world_native::army_relics::RuinReward"
         },
         {
           "name": "Beasts",
@@ -12125,6 +12515,10 @@
         {
           "name": "StructureGuard",
           "type": "()"
+        },
+        {
+          "name": "ArmySlot",
+          "type": "core::integer::u8"
         }
       ]
     },
@@ -13288,6 +13682,42 @@
         }
       ]
     },
+    "world_native::spires::ExpeditionSpire": {
+      "type": "struct",
+      "name": "world_native::spires::ExpeditionSpire",
+      "members": [
+        {
+          "name": "reveals",
+          "type": "core::integer::u8"
+        },
+        {
+          "name": "location",
+          "type": "core::option::Option::<world_native::troops::Coord>"
+        }
+      ]
+    },
+    "world_native::spires::ExpeditionSpireKey": {
+      "type": "struct",
+      "name": "world_native::spires::ExpeditionSpireKey",
+      "members": [
+        {
+          "name": "game_id",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "structure_id",
+          "type": "core::integer::u64"
+        },
+        {
+          "name": "epoch",
+          "type": "core::integer::u64"
+        },
+        {
+          "name": "depth",
+          "type": "core::integer::u8"
+        }
+      ]
+    },
     "world_native::spires::SpireLayout": {
       "type": "struct",
       "name": "world_native::spires::SpireLayout",
@@ -14195,5 +14625,5 @@
       ]
     }
   },
-  "identity": "121a8160e425a9569a9aea6fe720371d10753b503f6500a8c5ba4befa0c7dc38"
+  "identity": "2bf2a429a224b6dafd2fcc2726ff18b9ff39f3ace1dfcc038d9427307816dda8"
 }

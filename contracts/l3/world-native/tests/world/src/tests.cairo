@@ -558,6 +558,7 @@ fn constructor_vrf_configuration_is_immutable_and_refuses_invalid_inputs() {
         assert!(declare("Games").unwrap().contract_class().deploy(@args).is_err());
     }
 }
+mod army_relics;
 mod bridge;
 mod days;
 mod entity_ids;

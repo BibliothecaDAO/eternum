@@ -1,3 +1,4 @@
+pub mod army_relics;
 pub mod army_slot_storage;
 pub mod army_slots;
 pub mod arrivals;
@@ -11,6 +12,7 @@ pub mod combat;
 pub mod combat_domain;
 pub mod construction;
 pub mod deposits;
+pub mod discovery;
 pub mod economy;
 pub mod entry;
 pub mod expeditions;
@@ -49,6 +51,7 @@ pub mod season;
 pub mod settlement;
 pub mod settlement_domain;
 pub mod shrines;
+pub mod spires;
 pub mod stories;
 pub mod structures;
 

@@ -268,6 +268,22 @@ pub mod GamesFixture {
                 crate::relics::IRelicMapLibraryDispatcher { class_hash: classes.map.read() }, game_id, coord,
             )
         }
+        fn reveal_relic_tiles(
+            ref self: TContractState,
+            game_id: u32,
+            coord: crate::troops::Coord,
+            count: u8,
+            game_context: crate::commands::BiomeContext,
+        ) {
+            let classes = fixture_classes(game_id);
+            crate::relics::IRelicMapDispatcherTrait::reveal_relic_tiles(
+                crate::relics::IRelicMapLibraryDispatcher { class_hash: classes.map.read() },
+                game_id,
+                coord,
+                count,
+                game_context,
+            )
+        }
         fn reveal_relic_ring(
             ref self: TContractState,
             game_id: u32,

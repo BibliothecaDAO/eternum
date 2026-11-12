@@ -65,12 +65,17 @@ pub mod ResourcesLogic {
                 key.game_id, crate::troops::Coord { alt: site.alt, x: site.col, y: site.row },
             );
             let reward = if category == crate::taxonomy::RUIN_CATEGORY {
-                Some(crate::logic::lords_budget::pay_ruin(key, home_id, context))
+                if crate::logic::army_relics::enabled(key.game_id) {
+                    None
+                } else {
+                    Some(crate::logic::lords_budget::pay_ruin(key, home_id, context))
+                }
             } else {
                 crate::expeditions::site_reward(category, site, depth)
             };
             let home = ResourceKey { game_id: key.game_id, entity_id: home_id };
             let reward = if let Some(reward) = reward {
+                let reward = crate::logic::army_relics::site_reward(explorer, reward, context.timestamp);
                 let amount = self
                     .grant_resource(
                         home,
@@ -93,6 +98,7 @@ pub mod ResourcesLogic {
                 },
                 explorer,
                 crate::progression::XpAward::Clear(crate::progression::clear_xp(site.initial_guard_count, depth)),
+                context.timestamp,
             );
             let actor = crate::logic::structures::structure(home).expect('missing home structure').owner;
             crate::logic::stories::emit_entity_story(

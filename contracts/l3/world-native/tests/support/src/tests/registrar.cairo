@@ -365,7 +365,9 @@ fn discovery_root(
         let raw_root: u256 = sample.into();
         let mut root = raw_root;
         let seed = crate::random::game_root(ref root, game_id);
-        if crate::discovery::frontier(rules, 0, 0, 0, empty_reveals, chest, seed) == expected {
+        if crate::discovery::frontier(
+            rules, 0, 0, 0, empty_reveals, chest.map(|value| crate::army_relics::RuinReward::Chest(value)), seed,
+        ) == expected {
             return raw_root;
         }
     }
@@ -633,7 +635,9 @@ fn assert_capture_at(
     let camp_reward = Some(
         crate::resources::ResourceAmount { resource_type: crate::resources::LABOR, amount: camp_credit },
     );
-    let attack = Command::BattleGuard(crate::commands::Battle { attacker_id: explorer_id, defender_id: camp_id });
+    let attack = Command::BattleGuard(
+        crate::commands::Battle { attacker_id: explorer_id, defender_id: camp_id, relic_slot: None },
+    );
     let mut payout_events = snforge_std::spy_events();
     assert!(execute_in_game(d, game_id, attack, capture_at));
     assert_site_removed(d, camp);
@@ -705,7 +709,9 @@ fn assert_capture_at(
         execute_in_game(
             d,
             game_id,
-            Command::BattleGuard(crate::commands::Battle { attacker_id: explorer_id, defender_id: mine_id }),
+            Command::BattleGuard(
+                crate::commands::Battle { attacker_id: explorer_id, defender_id: mine_id, relic_slot: None },
+            ),
             capture_at + 1,
         ),
     );
@@ -969,7 +975,9 @@ pub fn assert_zero_pool_never_funds_a_ruin_or_payout_over_a_day() {
         !execute_in_game(
             d,
             game_id,
-            Command::BattleGuard(crate::commands::Battle { attacker_id: key.explorer_id, defender_id: ruin.entity_id }),
+            Command::BattleGuard(
+                crate::commands::Battle { attacker_id: key.explorer_id, defender_id: ruin.entity_id, relic_slot: None },
+            ),
             361,
         ),
     );
@@ -1010,7 +1018,7 @@ pub fn place_ruin(d: super::Deployment, game_id: u32, coord: crate::troops::Coor
             game_id,
             1,
             coord,
-            crate::discovery::Discovery::Ruin(chest),
+            crate::discovery::Discovery::Ruin(crate::army_relics::RuinReward::Chest(chest)),
             123,
             360,
             crate::commands::action_context(context),
@@ -1027,7 +1035,13 @@ pub fn reveal_ruin(
     d: super::Deployment, key: ExplorerKey, rules: crate::expeditions::FrontierDiscoveryRules, timestamp: u64,
 ) -> (ResourceKey, u8) {
     let army = GameState { contract_address: d.games }.resolved_explorer(key).unwrap();
-    let root = discovery_root(key.game_id, rules, 0, Some(any_chest()), crate::discovery::Discovery::Ruin(any_chest()));
+    let root = discovery_root(
+        key.game_id,
+        rules,
+        0,
+        Some(any_chest()),
+        crate::discovery::Discovery::Ruin(crate::army_relics::RuinReward::Chest(any_chest())),
+    );
     for direction in 0_u8..6 {
         let tile = crate::geometry::tile_key(key.game_id, crate::geometry::neighbor(army.coord, direction));
         let unseen = snforge_std::interact_with_state(d.games, || crate::logic::map::tile(tile).is_none());
@@ -1087,7 +1101,7 @@ pub fn setup_open_frontier_duration(name: ByteArray, duration: u64) -> (super::D
     create_open_frontier(preset, duration)
 }
 
-fn create_open_frontier(preset: PresetDefinition, duration: u64) -> (super::Deployment, u32) {
+pub fn create_open_frontier(preset: PresetDefinition, duration: u64) -> (super::Deployment, u32) {
     let d = setup();
     registry(d).register_preset(1, preset);
     let game_id = registry(d)

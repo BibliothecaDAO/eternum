@@ -2,6 +2,128 @@
 // Production definitions, when present, must agree exactly with these fields.
 export const factWireTypes = [
   {
+    type: "enum",
+    name: "world_native::army_relics::RelicKind",
+    variants: [
+      {
+        name: "Blade",
+        type: "()",
+      },
+      {
+        name: "Ward",
+        type: "()",
+      },
+      {
+        name: "Plunder",
+        type: "()",
+      },
+      {
+        name: "FarEye",
+        type: "()",
+      },
+      {
+        name: "Tome",
+        type: "()",
+      },
+    ],
+  },
+  {
+    type: "struct",
+    name: "world_native::army_relics::ArmyRelic",
+    members: [
+      {
+        name: "kind",
+        type: "world_native::army_relics::RelicKind",
+      },
+      {
+        name: "rank",
+        type: "core::integer::u8",
+      },
+    ],
+  },
+  {
+    type: "enum",
+    name: "core::option::Option::<world_native::army_relics::ArmyRelic>",
+    variants: [
+      {
+        name: "Some",
+        type: "world_native::army_relics::ArmyRelic",
+      },
+      {
+        name: "None",
+        type: "()",
+      },
+    ],
+  },
+  {
+    type: "struct",
+    name: "world_native::army_relics::ArmyRelics",
+    members: [
+      {
+        name: "first",
+        type: "core::option::Option::<world_native::army_relics::ArmyRelic>",
+      },
+      {
+        name: "second",
+        type: "core::option::Option::<world_native::army_relics::ArmyRelic>",
+      },
+      {
+        name: "third",
+        type: "core::option::Option::<world_native::army_relics::ArmyRelic>",
+      },
+    ],
+  },
+  {
+    type: "struct",
+    name: "world_native::army_relics::ArmyRelicEffectKey",
+    members: [
+      {
+        name: "game_id",
+        type: "core::integer::u32",
+      },
+      {
+        name: "explorer_id",
+        type: "core::integer::u64",
+      },
+      {
+        name: "kind",
+        type: "world_native::army_relics::RelicKind",
+      },
+    ],
+  },
+  {
+    type: "struct",
+    name: "world_native::army_relics::ArmyRelicEffect",
+    members: [
+      {
+        name: "rank",
+        type: "core::integer::u8",
+      },
+      {
+        name: "expires_at",
+        type: "core::integer::u64",
+      },
+    ],
+  },
+  {
+    type: "struct",
+    name: "world_native::spires::ExpeditionSpireKey",
+    members: [
+      { name: "game_id", type: "core::integer::u32" },
+      { name: "structure_id", type: "core::integer::u64" },
+      { name: "epoch", type: "core::integer::u64" },
+      { name: "depth", type: "core::integer::u8" },
+    ],
+  },
+  {
+    type: "struct",
+    name: "world_native::spires::ExpeditionSpire",
+    members: [
+      { name: "reveals", type: "core::integer::u8" },
+      { name: "location", type: "core::option::Option::<world_native::troops::Coord>" },
+    ],
+  },
+  {
     type: "struct",
     name: "world_native::settlement::SettlementPool",
     members: [
@@ -775,6 +897,19 @@ export function defineFactModels({ struct, model: declare }) {
         value: "zero",
         meaning: "No empty player reveals in this expedition yet.",
       };
+    if (row.name === "ExpeditionSpire")
+      row.absence = {
+        parent: "Structure",
+        parentKeys: { entity_id: "structure_id" },
+        value: "zero",
+        meaning: "No reveal with Spire lore on this layer of this day's expedition yet.",
+      };
+    if (row.name === "ArmyRelics" || row.name === "ArmyRelicEffect")
+      row.absence = {
+        parent: "ExplorerTroops",
+        value: "zero",
+        meaning: "No carried relics or running relic of this kind while the army exists.",
+      };
     if (row.name === "ArmySlot")
       row.absence = {
         parent: "Structure",
@@ -890,6 +1025,7 @@ export function defineFactModels({ struct, model: declare }) {
       struct("expeditions::ExpeditionDiscoveryKey"),
       struct("expeditions::ExpeditionDiscovery"),
     ),
+    model("ExpeditionSpire", "game", struct("spires::ExpeditionSpireKey"), struct("spires::ExpeditionSpire")),
     model(
       "DepositSource",
       "game",
@@ -1081,6 +1217,9 @@ export function defineFactModels({ struct, model: declare }) {
     ),
     model("TileOpt", "game", struct("map::TileKey"), struct("map::TileOpt")),
     model("TileOccupancy", "game", struct("map::TileKey"), struct("map::TileOccupancy")),
+    model("ArmyRelics", "game", struct("troops::ExplorerKey"), struct("army_relics::ArmyRelics")),
+    model("ArmyRelicEffect", "game", struct("army_relics::ArmyRelicEffectKey"), struct("army_relics::ArmyRelicEffect")),
+    model("RuinRelic", "game", struct("resources::ResourceKey"), struct("army_relics::ArmyRelic")),
     model("ArmyProgress", "game", struct("troops::ExplorerKey"), struct("progression::ArmyProgress")),
     model("ArmySlot", "game", struct("troops::ArmySlotKey"), struct("troops::ArmySlot")),
     model("ExplorerTroops", "game", struct("troops::ExplorerKey"), struct("troops::ExplorerRecord")),
@@ -1499,7 +1638,11 @@ export const syncScopes = {
   // A relic chest's pack is public: anyone may open the chest, so every player sees what it holds.
   RelicChest: shared,
   ArmyProgress: { entities: ["explorer_id"] },
+  ArmyRelics: { entities: ["explorer_id"] },
+  ArmyRelicEffect: { entities: ["explorer_id"] },
+  RuinRelic: { entities: ["entity_id"] },
   ExpeditionDiscovery: { realms: ["structure_id"], epoch: "epoch" },
+  ExpeditionSpire: { realms: ["structure_id"], epoch: "epoch" },
   ArmySlot: { realms: ["structure_id"], epoch: "epoch" },
   ExplorerTroops: { entities: ["explorer_id"] },
   Guard: { entities: ["structure_id"] },

@@ -23,7 +23,7 @@ pub fn create_site(key: crate::resources::ResourceKey, guards: Span<crate::troop
 }
 
 pub fn clear_rewarded_site(key: crate::resources::ResourceKey, site: ExpeditionSite, result: SiteClear, depth: u8) {
-    if site.category != crate::taxonomy::RUIN_CATEGORY {
+    if site.category != crate::taxonomy::RUIN_CATEGORY || crate::logic::army_relics::enabled(key.game_id) {
         clear_site(key, result);
         return;
     }

@@ -12,7 +12,7 @@ fn frontier_draws_the_ruled_odds_over_100k_reveals() {
     let mut counts: Felt252Dict<u32> = Default::default();
     for sample in 0_u64..100000 {
         let seed = 0x46524f4e54494552 + Into::<u64, u256>::into(sample);
-        let key = bucket(frontier(preset, 0, 0, 0, 0, Some(CHEST), seed));
+        let key = bucket(frontier(preset, 0, 0, 0, 0, Some(crate::army_relics::RuinReward::Chest(CHEST)), seed));
         let count = counts.get(key);
         counts.insert(key, count + 1);
     }
@@ -28,8 +28,24 @@ fn frontier_draws_the_ruled_odds_over_100k_reveals() {
 fn scouting_raises_its_chosen_kind_without_changing_beasts() {
     let rules = rules();
     for sample in 0_u64..20000 {
-        let base = frontier(rules, 0, 0, 0, 0, Some(CHEST), 0x53434f5554 + Into::<u64, u256>::into(sample));
-        let boosted = frontier(rules, 0, 10000, 0, 0, Some(CHEST), 0x53434f5554 + Into::<u64, u256>::into(sample));
+        let base = frontier(
+            rules,
+            0,
+            0,
+            0,
+            0,
+            Some(crate::army_relics::RuinReward::Chest(CHEST)),
+            0x53434f5554 + Into::<u64, u256>::into(sample),
+        );
+        let boosted = frontier(
+            rules,
+            0,
+            10000,
+            0,
+            0,
+            Some(crate::army_relics::RuinReward::Chest(CHEST)),
+            0x53434f5554 + Into::<u64, u256>::into(sample),
+        );
         // The table is ordered beasts first, so Scouting never moves a beast draw.
         assert_eq!(base == Discovery::Beasts, boosted == Discovery::Beasts);
     }
@@ -41,10 +57,18 @@ fn a_day_without_a_chest_never_draws_a_ruin_and_its_share_stays_empty() {
     let mut empties_free = 0_u32;
     let mut empties_taken = 0_u32;
     for sample in 0_u64..20000 {
-        let free = frontier(rules, 0, 0, 0, 0, Some(CHEST), 0x5255494e + Into::<u64, u256>::into(sample));
+        let free = frontier(
+            rules,
+            0,
+            0,
+            0,
+            0,
+            Some(crate::army_relics::RuinReward::Chest(CHEST)),
+            0x5255494e + Into::<u64, u256>::into(sample),
+        );
         let taken = frontier(rules, 0, 0, 0, 0, None, 0x5255494e + Into::<u64, u256>::into(sample));
         assert!(bucket(taken) != 3);
-        if free == Discovery::Ruin(CHEST) {
+        if free == Discovery::Ruin(crate::army_relics::RuinReward::Chest(CHEST)) {
             assert_eq!(taken, Discovery::None);
         } else {
             assert_eq!(taken, free);
@@ -77,7 +101,15 @@ fn the_floor_draws_only_kinds_still_allowed() {
         } else {
             0
         };
-        let floored = frontier(unlocked, 0, 0, 0, 7, Some(CHEST), 0x464c4f4f52 + Into::<u64, u256>::into(sample));
+        let floored = frontier(
+            unlocked,
+            0,
+            0,
+            0,
+            7,
+            Some(crate::army_relics::RuinReward::Chest(CHEST)),
+            0x464c4f4f52 + Into::<u64, u256>::into(sample),
+        );
         assert!(floored != Discovery::None);
     }
 }
@@ -91,7 +123,7 @@ fn frontier_floor_is_home_day_scoped_and_ruin_clears_preserve_it() {
         crate::logic::expeditions::record_discovery(key, Discovery::None);
     }
     assert_eq!(crate::logic::expeditions::discovery(key).unwrap().empty_reveals, 7);
-    crate::logic::expeditions::record_discovery(key, Discovery::Ruin(CHEST));
+    crate::logic::expeditions::record_discovery(key, Discovery::Ruin(crate::army_relics::RuinReward::Chest(CHEST)));
     let row = crate::logic::expeditions::discovery(key).unwrap();
     assert_eq!((row.empty_reveals, row.ruin_cleared), (0, false));
     crate::logic::expeditions::record_discovery(key, Discovery::None);
@@ -109,9 +141,25 @@ fn shrine_and_well_appear_only_once_researched() {
     let unlocked = super::preset_projection::frontier_discovery_rules();
     let locked = rules();
     for sample in 0_u64..20000 {
-        let without = frontier(locked, 0, 0, 0, 0, Some(CHEST), 0x5349544553 + Into::<u64, u256>::into(sample));
+        let without = frontier(
+            locked,
+            0,
+            0,
+            0,
+            0,
+            Some(crate::army_relics::RuinReward::Chest(CHEST)),
+            0x5349544553 + Into::<u64, u256>::into(sample),
+        );
         assert!(without != Discovery::Shrine && without != Discovery::Well);
-        let draw = frontier(unlocked, 0, 0, 0, 0, Some(CHEST), 0x5349544553 + Into::<u64, u256>::into(sample));
+        let draw = frontier(
+            unlocked,
+            0,
+            0,
+            0,
+            0,
+            Some(crate::army_relics::RuinReward::Chest(CHEST)),
+            0x5349544553 + Into::<u64, u256>::into(sample),
+        );
         if draw != Discovery::Shrine && draw != Discovery::Well {
             assert_eq!(draw, without);
         }
@@ -125,8 +173,8 @@ fn sanctuaries_double_both_unlocked_sites_and_leave_beasts_unchanged() {
     let mut wells = 0_u32;
     for sample in 0_u64..100000 {
         let seed = 0x5354524147474c455253 + Into::<u64, u256>::into(sample);
-        let base = frontier(rules, 0, 0, 0, 0, Some(CHEST), seed);
-        let boosted = frontier(rules, 0, 0, 10000, 0, Some(CHEST), seed);
+        let base = frontier(rules, 0, 0, 0, 0, Some(crate::army_relics::RuinReward::Chest(CHEST)), seed);
+        let boosted = frontier(rules, 0, 0, 10000, 0, Some(crate::army_relics::RuinReward::Chest(CHEST)), seed);
         assert_eq!(base == Discovery::Beasts, boosted == Discovery::Beasts);
         if boosted == Discovery::Shrine {
             shrines += 1;
