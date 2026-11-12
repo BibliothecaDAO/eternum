@@ -5,7 +5,7 @@
  */
 import { APP_HOST } from "@/config/app-address";
 import type { ResolvedGameMode } from "@/config/game-modes/resolved-mode";
-import { SHARED_MOMENT_WORDS, type CampaignKey, type SocialProvider } from "@realms-world/identity";
+import { SHARED_MOMENT_WORDS, type CampaignKey, type OpeningMoment, type SocialProvider } from "@realms-world/identity";
 import type { NotificationKind, NotificationLevel } from "@bibliothecadao/notifications";
 import type { RuinChest } from "@bibliothecadao/eternum";
 import {
@@ -1513,6 +1513,28 @@ export const levelLine = (kinds: readonly NotificationKind[], below: Notificatio
     ? `${list.charAt(0).toUpperCase()}${list.slice(1)}`
     : `${LEVEL_WORDS[below]}, plus ${list}`;
 };
+
+/**
+ * The interface that opens as you play (the frozen design's table, word for word): the one line each moment brings,
+ * shown once per account, and Settings' switch that opens everything at once. A Barracks' Knights an hour come from
+ * the game's rules.
+ */
+export const OPENING_WORDS = {
+  lines: {
+    launch: () => "This is your Realm. Build on the lit plot, then send an army into the mist.",
+    barracks: (knightsAnHour: number) =>
+      `A Barracks raises ${formatAmount(knightsAnHour)} Knights an hour. Knights fill your armies.`,
+    guard: () => "Send 150% of the guard's troops to win.",
+    fight: () => "Armies earn XP by fighting. Enough XP gives a skill point.",
+    essence: () => "Essence buys research and lores.",
+    "well-lore": () => "Your armies can now find wells.",
+    "shrine-lore": () => "Your armies can now find shrines.",
+  } satisfies Record<OpeningMoment, (knightsAnHour: number) => string>,
+  gotIt: "Got it",
+  interface: "Interface",
+  showEverything: "Show everything",
+  notSaved: "Show everything could not be saved.",
+} as const;
 
 /** What's new: its patch notes, and the legal pages' date. */
 export const NEWS_WORDS = {

@@ -1396,6 +1396,43 @@ describe("identity Worker", () => {
     expect((await createBrowser().request("/api/build-orders")).status).toBe(401);
   });
 
+  it("keeps the opening interface's moments an account reached, adding and never removing, and Show everything when named", async () => {
+    const browser = createBrowser();
+    await signInWithCode(browser, "opening@realms.test");
+    const owner = (await browser.session())!.user.realmsId;
+    const save = (change: object) => browser.request("/api/interface/opening", { body: { owner, ...change } });
+    const kept = async () => (await browser.request("/api/interface/opening")).json();
+    const sorted = (record: unknown) => {
+      const { reached, ...rest } = record as { reached: string[] };
+      return { ...rest, reached: [...reached].sort() };
+    };
+
+    expect(await kept()).toEqual({ owner, reached: [], showAll: false });
+    expect(sorted(await (await save({ reach: ["launch", "barracks"] })).json())).toEqual({
+      owner,
+      reached: ["barracks", "launch"],
+      showAll: false,
+    });
+    // Two devices saving at once keep both; a moment saved again is kept once; a save without Show everything keeps it.
+    await Promise.all([save({ reach: ["fight"], showAll: true }), save({ reach: ["essence", "barracks"] })]);
+    expect(sorted(await kept())).toEqual({
+      owner,
+      reached: ["barracks", "essence", "fight", "launch"],
+      showAll: true,
+    });
+    expect(sorted(await (await save({ reach: [], showAll: false })).json())).toEqual({
+      owner,
+      reached: ["barracks", "essence", "fight", "launch"],
+      showAll: false,
+    });
+
+    expect((await save({ reach: ["tutorial"] })).status).toBe(400);
+    expect(
+      (await browser.request("/api/interface/opening", { body: { owner: "someone-else", reach: [] } })).status,
+    ).toBe(403);
+    expect((await createBrowser().request("/api/interface/opening")).status).toBe(401);
+  });
+
   /** A running Devcon season game in a shard's directory, as Herald answers it for one player. */
   const devconGame = (entered: boolean) => ({
     game_id: 41,

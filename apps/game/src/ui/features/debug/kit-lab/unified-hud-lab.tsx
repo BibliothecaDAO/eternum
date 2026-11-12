@@ -1,4 +1,5 @@
 import { SeasonOver } from "@/shell/season-tab/season-over";
+import { answerLabOpening } from "@/lab/lab-opening";
 import { frontierArmyRules } from "../../frontier/army/progression-rules-fixture";
 import { useIdentitySessionStore } from "@/hooks/context/identity-session";
 import { LAB_SESSION } from "@/shell/lab/app-lab-fixtures";
@@ -53,6 +54,8 @@ const VIEWS = {
   // Eternum's player on the same HUD as Blitz's, in Eternum's own age colours.
   eternum: { preset: 3, spectating: false, finished: false, army: false, attack: false },
   "frontier-army": { preset: 5, spectating: false, finished: false, army: true, attack: false },
+  // A new player's first minute: a fresh account on the fresh realm, the HUD as it opens, with its first line.
+  "frontier-new": { preset: 5, spectating: false, finished: false, army: false, attack: false, fresh: true },
   "blitz-spectator": { preset: 2, spectating: true, finished: false, army: false, attack: false },
   "blitz-finished": { preset: 2, spectating: true, finished: true, army: false, attack: false },
   "blitz-out": { preset: 2, spectating: false, finished: false, army: false, attack: false, out: true },
@@ -68,7 +71,7 @@ export const UNIFIED_VIEWS = (Object.keys(VIEWS) as View[]).map((name) => ({
 
 /**
  * Dev only: the in-game HUD as the game mounts it (a desktop's columns, a phone's compact HUD), every mode's, on the
- * lab's game, at /lab/kit/unified/<view>: blitz, blitz-attack, blitz-attack-short, blitz-build, blitz-start, eternum, frontier, frontier-army,
+ * lab's game, at /lab/kit/unified/<view>: blitz, blitz-attack, blitz-attack-short, blitz-build, blitz-start, eternum, frontier, frontier-army, frontier-new,
  * blitz-spectator, blitz-finished, blitz-out, blitz-out-watching. Frontier's states on the same HUD are the Frontier HUD
  * lab's, /lab/kit/hud/<state>.
  */
@@ -84,16 +87,21 @@ const ViewLab = ({ view }: { view: View }) => {
   const start = "start" in VIEWS[view];
   const out = "out" in VIEWS[view];
   const tired = "tired" in VIEWS[view];
+  const fresh = "fresh" in VIEWS[view];
   const mode = nativeGameModeOf(preset);
   const frontier = mode === "frontier";
   useDocumentClass(frontier ? "frontier-hud" : "classic-hud");
   useHudMode(mode === "eternum" ? "eternum" : frontier ? "frontier" : "blitz");
   // The lab's player is signed in, as a player in a game is, and chat connects to the lab's chat server, in the tab.
   useEffect(() => {
-    const restore = answerLabChat({});
+    const restoreChat = answerLabChat({});
+    const restoreOpening = answerLabOpening(LAB_SESSION.user.realmsId, fresh ? [] : undefined);
     useIdentitySessionStore.getState().applySession(LAB_SESSION);
-    return restore;
-  }, []);
+    return () => {
+      restoreChat();
+      restoreOpening();
+    };
+  }, [fresh]);
   return (
     <>
       <div

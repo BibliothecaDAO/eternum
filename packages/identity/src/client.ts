@@ -9,6 +9,7 @@ import {
 } from "@bibliothecadao/notifications";
 import { SOCIAL_PROVIDERS, type SocialProvider } from "./account-rules";
 import { TICKET_TIERS } from "./campaigns";
+import { parseOpeningRecord, type OpeningChange, type OpeningRecord } from "./opening";
 import { SHARE_CARD, SHARE_KINDS, type ShareChannel, type ShareKind } from "./shares";
 import type { SiwsTypedData } from "./siws";
 import { buildSiwsMessage, payoutWalletStatement } from "./siws";
@@ -488,6 +489,13 @@ export const createIdentityClient = ({ apiUrl, fetch = globalThis.fetch }: Ident
     return readJson(response, parseNotificationPreferences);
   };
 
+  /** The moments of Frontier's opening interface the account reached, and its Show everything. */
+  const getInterfaceOpening = async (): Promise<OpeningRecord> =>
+    readJson(await request("/interface/opening", { method: "GET", cache: "no-store" }), parseOpeningRecord);
+  /** Adds moments to those kept (and sets Show everything when named); answers with everything kept. */
+  const saveInterfaceOpening = async (change: OpeningChange): Promise<OpeningRecord> =>
+    readJson(await request("/interface/opening", { method: "POST", body: JSON.stringify(change) }), parseOpeningRecord);
+
   const getBuildOrders = async (): Promise<SavedBuildOrders> =>
     readJson(await request("/build-orders", { method: "GET", cache: "no-store" }), decode(savedBuildOrdersSchema));
   /** Saves over the revision it read; a refused order comes back with the game's reason, in the player's words. */
@@ -621,6 +629,8 @@ export const createIdentityClient = ({ apiUrl, fetch = globalThis.fetch }: Ident
     saveNotificationPreferences,
     getBuildOrders,
     saveBuildOrders,
+    getInterfaceOpening,
+    saveInterfaceOpening,
     redeemCampaignTicket,
     campaignReferral,
     campaignReferrer,

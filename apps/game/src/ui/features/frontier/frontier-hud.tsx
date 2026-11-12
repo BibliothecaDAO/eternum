@@ -46,6 +46,8 @@ import { useOnePanel, useOrderSettledReturnsToTheArmy } from "./hud/one-panel";
 import { FrontierDayClock } from "./hud/day-pill";
 import { DayEndBlock, DayEndNotice, useDayEnd } from "./day-end/day-end";
 import { useFirstBuild, useMarkFirstBuild } from "./build/first-build";
+import { OpeningLine } from "./opening/opening-line";
+import { useOpeningInterface, useOpens } from "./opening/use-opening";
 import { FrontierStrip, useStoreReadings } from "./hud/frontier-strip";
 import { RealmPanel } from "./hud/realm-panel";
 import { HudBands } from "./hud/hud-bands";
@@ -120,6 +122,8 @@ export const FrontierHud = ({
   const [researchPick, setResearchPick] = useState<string | undefined>();
   // The realm's first build: its board lights a plot for it and the build sheet opens on it; a visit marks none.
   useMarkFirstBuild(useFirstBuild(visit ? null : realm));
+  // The HUD opens as the player's own realm plays; watching or visiting, it shows everything.
+  useOpeningInterface(visit || spectating ? null : realm);
   const card = useSelectionCard({
     realm: shown,
     onResearch: (node) => {
@@ -129,6 +133,8 @@ export const FrontierHud = ({
   });
   const desktop = useLayout() === "desktop";
   const { surface, openSurface: setSurface, showsCard } = useOnePanel(card?.key ?? null, !desktop);
+  const showsResearch = useOpens("research");
+  const openToday = useOpens("today") ? () => setSurface("today") : undefined;
   const realmLabor = useRealmLabor(rules, realm);
   const claimWaiting = dailyClaimWaiting(realmLabor?.plan);
   const research = useResearchTree(realm);
@@ -186,7 +192,7 @@ export const FrontierHud = ({
 
   const strip = (
     <>
-      <FrontierStrip rules={rules} realm={shown} onOpenDay={() => setSurface("today")} storeCards={storeCards} />
+      <FrontierStrip rules={rules} realm={shown} onOpenDay={openToday} storeCards={storeCards} />
       {storeCards?.open && storeCards.card}
     </>
   );
@@ -221,6 +227,7 @@ export const FrontierHud = ({
       <OfflineNotice />
       <SceneFailureNotice />
       {own && <DayEndNotice dayEnd={dayEnd} onOpen={() => setSurface("today")} />}
+      {own && <OpeningLine realm={own} />}
     </>
   );
   const action = (
@@ -265,7 +272,7 @@ export const FrontierHud = ({
   return desktop ? (
     <FrontierDesktop
       season={{ rank: seasonRank, onOpen: () => setSurface("season") }}
-      clock={<FrontierDayClock rules={rules} onOpenToday={() => setSurface("today")} />}
+      clock={<FrontierDayClock rules={rules} onOpenToday={openToday} />}
       worldTab={layers ? layerTab(layers) : undefined}
       realm={
         shown && (
@@ -292,7 +299,7 @@ export const FrontierHud = ({
           <FrontierPlaces
             surface={surface}
             onSurface={setSurface}
-            research={realm ? canResearchNow(research?.nodes) : undefined}
+            research={realm && showsResearch ? canResearchNow(research?.nodes) : undefined}
           />
         )
       }

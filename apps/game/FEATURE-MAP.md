@@ -611,6 +611,16 @@ signed-out fixture count as a played match.
 
 ## Frontier in a match
 
+**The interface opens as you play** (`src/ui/features/frontier/opening/opening.ts`, the frozen design's table). A new
+account's first session shows its realm and level, labor and wheat, the lit plot, its armies with their stamina, the
+map, the day's quest and the day's clock. Troops at home and the rest of the Build sheet open with the first Barracks;
+an army's XP (its token, row and panel) with its first fight won; Essence, **Research** and **Today** (the day's clock
+pressed) with the first Essence. Each moment's one line stands over the map once per account, for 8 s or until **Got
+it**; the account keeps the moments it reached (`/api/interface/opening`), so a part an army earned stays after the day
+ends it. Settings → Interface → **Show everything** opens everything at once, with no lines. Watching, visiting or
+signed out, everything shows. Lab: `/lab/kit/unified/frontier-new` (a new account's first minute) beside
+`/lab/kit/unified/frontier` (a seasoned account).
+
 On a desktop, Frontier plays on the HUD every mode shares (`src/ui/features/frontier/hud/frontier-desktop.tsx`, issue
 5067): the top bar (your name chip with your place on the season's board, which opens it; Realm / World; the day's
 clock, its one day timer, which opens **Today**), the left column (one panel for the realm, whose whole header takes the
