@@ -5,9 +5,11 @@ import { SPIRE_ARMY } from "@/ui/features/frontier/spire-fixture";
 import { spireScenario, revealedTile } from "./spire-scenario";
 import { wire, type LabFact, type LabScenario } from "./lab-chain";
 
-/** Frontier's real Spire flow with all depths researched and previously explored land at each arrival. */
-export function etherealDepthsScenario(): LabScenario {
-  const scenario = spireScenario();
+/**
+ * Frontier's real Spire flow with all depths researched and previously explored land at each arrival, on the land of
+ * `scenario` (the spire's game on grass unless another is given).
+ */
+export function etherealDepthsScenario(scenario: LabScenario = spireScenario()): LabScenario {
   const { store } = scenario;
   const rules = readExpeditionRules(store, 1)!;
   const army = [...store.entries("TileOccupancy")].find(([, tile]) => tile.entity_id === BigInt(SPIRE_ARMY))![1];

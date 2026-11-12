@@ -3399,6 +3399,161 @@ const LAB_LAYERS_STEPS = [
   { name: "open-map", play: goTo("Map", "map"), settleMs: 3_000, verify: inScene("map") },
 ];
 
+/**
+ * The board: the fixed views every look change is judged on (renderer-aaa-2, step 0), the same in any client that has the
+ * board's lab game. Twelve on the Surface (the realm at the map's opening zoom, closest and widest; six places round it,
+ * whatever ground lies there; the edge of the known land; the ground up close; the realm view) and three on each depth
+ * (opening zoom, closest, widest), each still kept by the run. The camera goes by the address, as a link takes it, and
+ * by the wheel; every opening-zoom view is shot before the wheel turns. Run it with `pnpm --dir apps/game board`.
+ */
+const BOARD_PLACES = [
+  ["north", 0, -8],
+  ["south", 0, 8],
+  ["east", 8, 0],
+  ["west", -8, 0],
+  ["north-east", 5, -6],
+  ["south-west", -5, 6],
+  ["known-edge", 11, 0],
+];
+const BOARD_SETTLE_MS = 3_000;
+const BOARD_OPENING_DISTANCE = 20;
+const BOARD_DEPTHS = Object.keys(depthLooks).map(Number);
+const BOARD_LAYER_WORD = (depth) => `Ethereal ${"I".repeat(depth)}`;
+/** The realm's address as the board's game opens on it, and its army's offset from it: every view is reached from them. */
+let boardRealm = null;
+let boardArmy = null;
+
+const BOARD_STEPS = [
+  {
+    name: "realm",
+    play: readTheBoardRealm,
+    settleMs: BOARD_SETTLE_MS,
+    verify: boardView({ distance: BOARD_OPENING_DISTANCE }),
+  },
+  ...BOARD_PLACES.map(([name, dx, dy]) => ({
+    name,
+    play: boardGoTo(dx, dy),
+    settleMs: BOARD_SETTLE_MS,
+    verify: boardView({ distance: BOARD_OPENING_DISTANCE }),
+  })),
+  ...BOARD_DEPTHS.map((depth) => ({
+    name: `ethereal-${depth}`,
+    play: boardDive(depth),
+    settleMs: BOARD_SETTLE_MS,
+    verify: boardView({ layer: depth, distance: BOARD_OPENING_DISTANCE }),
+  })),
+  { name: "back-to-world", play: chooseLayer("World"), settleMs: 0, verify: boardView({ layer: 0 }) },
+  { name: "realm-view", play: goTo("Realm", "hex"), settleMs: BOARD_SETTLE_MS, verify: inScene("hex") },
+  { name: "open-map", play: goTo("Map", "map"), settleMs: 0, verify: inScene("map") },
+  {
+    name: "realm-closest",
+    play: boardZoom(boardGoTo(0, 0), zoomAllTheWayIn),
+    settleMs: BOARD_SETTLE_MS,
+    verify: boardView({ distance: CLOSEST_CAMERA_DISTANCE }),
+  },
+  {
+    name: "east-closest",
+    play: boardGoTo(8, 0),
+    settleMs: BOARD_SETTLE_MS,
+    verify: boardView({ distance: CLOSEST_CAMERA_DISTANCE }),
+  },
+  ...BOARD_DEPTHS.map((depth) => ({
+    name: `ethereal-${depth}-closest`,
+    play: boardDive(depth),
+    settleMs: BOARD_SETTLE_MS,
+    verify: boardView({ layer: depth, distance: CLOSEST_CAMERA_DISTANCE }),
+  })),
+  { name: "world-again", play: chooseLayer("World"), settleMs: 0, verify: boardView({ layer: 0 }) },
+  {
+    name: "realm-widest",
+    play: boardZoom(boardGoTo(0, 0), zoomAllTheWayOut),
+    settleMs: BOARD_SETTLE_MS,
+    verify: boardView({ distance: FARTHEST_CAMERA_DISTANCE }),
+  },
+  ...BOARD_DEPTHS.map((depth) => ({
+    name: `ethereal-${depth}-widest`,
+    play: boardDive(depth),
+    settleMs: BOARD_SETTLE_MS,
+    verify: boardView({ layer: depth, distance: FARTHEST_CAMERA_DISTANCE }),
+  })),
+];
+
+/** The board's views, as its stills are named: every step but the moves between them. */
+const BOARD_PASSAGES = new Set(["back-to-world", "open-map", "world-again"]);
+export const BOARD_SHOTS = BOARD_STEPS.map(({ name }) => name).filter((name) => !BOARD_PASSAGES.has(name));
+
+/**
+ * The realm's address as the game opened on it, and where its army stands (Tab picks it, as a player does; Escape lets it
+ * go): each depth's land lies under the army. The lab's wallet offer is closed, never answered. Ends on the realm.
+ */
+async function readTheBoardRealm(context) {
+  const { browser } = context;
+  const url = new URL(browser.run(["get", "url"]));
+  const camera = browser.read(MAP_CAMERA);
+  boardRealm = { col: Number(url.searchParams.get("col")), row: Number(url.searchParams.get("row")), camera };
+  browser.run(["eval", `document.querySelector('[role=dialog] button[aria-label*="lose" i]')?.click()`]);
+  const { army } = await selectTheArmyByTab(context);
+  for (let press = 0; press < ESCAPES_TO_DESELECT; press += 1) browser.press("Escape");
+  boardArmy = army && camera && { dx: army.hex.col - camera.col, dy: army.hex.row - camera.row };
+  // Tab moved the camera, not the address: the map follows an address only when it changes.
+  await boardGoTo(boardArmy?.dx ?? 1, boardArmy?.dy ?? 0)(context);
+  const back = await boardGoTo(0, 0)(context);
+  return { ...back, army: boardArmy };
+}
+
+/** The army's tile on the Surface, then the layer switch onto `depth`: the camera keeps its spot, on that depth's land. */
+function boardDive(depth) {
+  return async (context) => {
+    await boardGoTo(boardArmy?.dx ?? 0, boardArmy?.dy ?? 0)(context);
+    return chooseLayer(BOARD_LAYER_WORD(depth))(context);
+  };
+}
+
+/** The camera taken to the realm's address moved by `dx`, `dy` hexes, as a link to that tile takes it, in the page. */
+function boardGoTo(dx, dy) {
+  return async ({ browser }) => {
+    const to = { col: boardRealm.col + dx, row: boardRealm.row + dy };
+    const expected = { col: boardRealm.camera.col + dx, row: boardRealm.camera.row + dy };
+    browser.run([
+      "eval",
+      `(() => { const url = new URL(location.href); url.searchParams.set("col", "${to.col}"); url.searchParams.set("row", "${to.row}"); history.pushState(history.state, "", url); dispatchEvent(new PopStateEvent("popstate", { state: history.state })); })()`,
+    ]);
+    const camera = await readUntil(
+      () => browser.read(MAP_CAMERA),
+      (seen) => seen && hexesApart(seen, expected) === 0,
+      SCENE_WAIT_MS,
+    );
+    return { address: to, camera, expected, distance: browser.observe().worldmapDistance };
+  };
+}
+
+/** A view reached, then the wheel turned to the zoom it shoots at. */
+function boardZoom(reach, zoom) {
+  return async (context) => {
+    const reached = await reach(context);
+    const zoomed = await zoom(context);
+    return { ...reached, ...zoomed };
+  };
+}
+
+/** On the map in `layer` (the Surface by default) at `distance`, when one is named. */
+function boardView({ layer = 0, distance } = {}) {
+  return ({ played, seen }) => {
+    const scene = inScene("map")({ seen });
+    if (scene.status !== "completed") return failed(scene.reason, played);
+    const camera = played.after ?? played.camera ?? null;
+    if (played.expected && !(camera && hexesApart(camera, played.expected) === 0))
+      return failed(`the camera stands at ${JSON.stringify(camera)}, not ${JSON.stringify(played.expected)}`, played);
+    if (camera && Math.floor(camera.row / REGION_ROWS) % 4 !== layer)
+      return failed(`the camera stands in layer ${Math.floor(camera.row / REGION_ROWS) % 4}, not ${layer}`, played);
+    // The map reports a distance only once the wheel has turned: before that it stands at its opening one.
+    const shown = seen.worldmapDistance ?? BOARD_OPENING_DISTANCE;
+    if (distance !== undefined && Math.abs(shown - distance) > CLOSEST_DISTANCE_TOLERANCE)
+      return failed(`the camera stands ${shown} away, not ${distance}`, played);
+    return completed({ ...played, distance: shown });
+  };
+}
+
 /** Opens the list of views, reads its choices and the switch's word, chooses `word`, and reads where the camera goes. */
 function chooseLayer(word) {
   return async ({ browser }) => {
@@ -5439,6 +5594,7 @@ export const STEP_SETS = {
   "lab-devcon-season": { game: { ...LAB_SPIRE, lab: "devcon-season" }, steps: [devconSeasonStep] },
   "lab-spire": { game: LAB_SPIRE, steps: LAB_SPIRE_STEPS },
   "lab-layers": { game: LAB_SPIRE, steps: LAB_LAYERS_STEPS },
+  board: { game: { ...LAB_SPIRE, lab: "board" }, steps: BOARD_STEPS },
   ...Object.fromEntries(
     Object.keys(depthLooks).map((depth) => [
       `lab-ethereal-${depth}`,
