@@ -1,5 +1,7 @@
 // @vitest-environment jsdom
 import { expect, it, vi } from "vitest";
+import { identityClient } from "@/hooks/context/identity-session";
+import { LAB_SESSION } from "@/shell/lab/app-lab-fixtures";
 
 import { installLabChain, LAB_GAME } from "./lab-chain";
 import { LAB_SCENARIOS } from "./lab-games";
@@ -31,4 +33,9 @@ it("lets no route open the game before the tab answers the lab's directory, howe
     ["903", null, false],
     ["904", null, true],
   ]);
+  const saved = await identityClient.getBuildOrders();
+  expect(saved).toMatchObject({ owner: LAB_SESSION.user.realmsId, revision: 3, book: { active: "coal-rush" } });
+  const book = { orders: [], active: null };
+  expect(await identityClient.saveBuildOrders({ ...saved, book })).toEqual({ ...saved, book, revision: 4 });
+  expect(await identityClient.getBuildOrders()).toEqual({ ...saved, book, revision: 4 });
 });

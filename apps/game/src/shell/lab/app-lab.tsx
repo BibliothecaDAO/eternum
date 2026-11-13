@@ -4,6 +4,7 @@ import { Navigate, Route, Routes, useParams } from "react-router-dom";
 
 import { identityClient, useIdentitySessionStore } from "@/hooks/context/identity-session";
 import { IdentityRequestError, SOCIAL_PROVIDERS } from "@realms-world/identity";
+import { answerLabBuildOrders } from "./lab-build-orders";
 
 import { BlitzLobbyPage } from "../blitz/blitz-pages";
 import { BuildOrdersPage } from "../build-orders/build-orders-page";
@@ -296,15 +297,8 @@ const answerIdentity = (screen: LabScreen) => {
   identityClient.shareTally = async () => LAB_SHARE_TALLIES[screen] ?? LAB_NO_SHARES;
   // The lab's player has made no Realms wallet, so the payout window offers Create my wallet.
   identityClient.readDefaultWallet = async () => null;
-  // The account's build orders, kept in the tab: each save is held, and read back, at the next revision.
-  let orders = { revision: 3, book: LAB_BUILD_ORDERS as unknown };
-  const buildOrders = () => ({ owner: useIdentitySessionStore.getState().session?.user.realmsId ?? "", ...orders });
+  answerLabBuildOrders();
   Object.assign(identityClient, {
-    getBuildOrders: async () => buildOrders(),
-    saveBuildOrders: async ({ book }: { book: unknown }) => {
-      orders = { revision: orders.revision + 1, book };
-      return buildOrders();
-    },
     unlinkWallet: spend,
     linkWallet: async ({ code }: { code?: string }) => spend(code).then(() => LAB_PLAYER),
     deleteAccount: spend,
@@ -324,50 +318,6 @@ const answerChat = (screen: LabScreen) => {
     lobbyWrites: canWrite,
     history: (zoneId) => (zoneId.startsWith("slot:") ? LAB_CHAT : LAB_GLOBAL_CHAT),
   });
-};
-
-/** Three orders a player saved, Coal rush the one followed. */
-const LAB_BUILD_ORDERS = {
-  active: "coal-rush",
-  orders: [
-    {
-      id: "coal-rush",
-      order: {
-        name: "Coal rush",
-        steps: [
-          { rank: "Settlement", goal: "farm", count: 2 },
-          { rank: "Settlement", goal: "levelUp" },
-          { rank: "City", goal: "coal", count: 2 },
-          { rank: "City", goal: "copper", count: 2 },
-          { rank: "City", goal: "barracks", count: 1 },
-          { rank: "City", goal: "levelUp" },
-          { rank: "Kingdom", goal: "army", count: 1 },
-          { rank: "Kingdom", goal: "farm", count: 4 },
-          { rank: "Empire", goal: "army", count: 3 },
-        ],
-      },
-    },
-    {
-      id: "wood-first",
-      order: {
-        name: "Wood first",
-        steps: [
-          { rank: "Settlement", goal: "wood", count: 2 },
-          { rank: "City", goal: "farm", count: 4 },
-        ],
-      },
-    },
-    {
-      id: "early-army",
-      order: {
-        name: "Early army",
-        steps: [
-          { rank: "Settlement", goal: "barracks", count: 1 },
-          { rank: "Settlement", goal: "army", count: 1 },
-        ],
-      },
-    },
-  ],
 };
 
 /** The screen's player by name: the one their session carries and the one identity answers for them. */

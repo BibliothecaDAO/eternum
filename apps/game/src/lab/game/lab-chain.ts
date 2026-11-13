@@ -2,6 +2,7 @@ import { identityClient, useIdentitySessionStore } from "@/hooks/context/identit
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { LAB_GUARDIAN, LAB_SESSION } from "@/shell/lab/app-lab-fixtures";
 import { answerLabChat } from "@/shell/lab/lab-chat";
+import { answerLabBuildOrders } from "@/shell/lab/lab-build-orders";
 import { gameChatZoneId } from "@/ui/features/world/containers/hud-chat-window";
 import { L2_LEDGER, l2Provider } from "@/runtime/l2-rpc";
 import { getShardRpcProvider } from "@/utils/shard-rpc-provider";
@@ -351,6 +352,7 @@ const signInLabPlayer = (wallet: string | undefined) => {
   const session = wallet ? { ...LAB_SESSION, user: { ...LAB_SESSION.user, address: wallet } } : LAB_SESSION;
   identityClient.getSession = async () => session;
   identityClient.readDefaultWallet = async () => null;
+  answerLabBuildOrders();
   useIdentitySessionStore.getState().applySession(session);
 };
 
