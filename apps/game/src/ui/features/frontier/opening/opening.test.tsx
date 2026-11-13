@@ -192,6 +192,36 @@ describe("the interface that opens as you play", () => {
     expect(line()).toBe("Essence buys research and lores.Got it");
   });
 
+  it("opens the realm's Glory once it earned in the Deep, and says what each tick there costs an army", async () => {
+    const store = await renderOpening(["launch", "barracks", "essence"], [barracks(), essence(1_500)]);
+    await act(async () =>
+      store.applyFacts([
+        {
+          model: "DeepRules",
+          key: "0xd1",
+          value: {
+            game_id: 1,
+            foundation: { alt: false, x: 25, y: 35 },
+            quarry: { alt: false, x: 12, y: 20 },
+            altar: { alt: false, x: 38, y: 20 },
+            beast_count: 10_000n * BigInt(RESOURCE_PRECISION),
+            loss_per_tick: 200n * BigInt(RESOURCE_PRECISION),
+            quarry_per_tick: 500n,
+            altar_per_tick: 5,
+            altar_threshold: 1500,
+          },
+        },
+        { model: "RaceMember", key: "0xd2", value: { game_id: 1, entity_id: 7, glory: 0n, contribution: 0n } },
+      ] as never),
+    );
+    const tick = store.require("SliceRules", { game_id: 1 }).tick_config.armies_tick_in_seconds;
+    expect(parts()).toEqual(["troops-store", "building-list", "essence-store", "research", "today", "glory"]);
+    expect(line()).toBe(
+      `Every tick (${formatAmount(Number(tick))} seconds) here, each army loses 200 troops. Hold a site to earn.Got it`,
+    );
+    expect((await kept()).reached).toEqual(["barracks", "deep", "essence", "launch"]);
+  });
+
   it("keeps without a line what a player's realm already showed before the interface opened", async () => {
     await renderOpening([], [barracks(), essence(1_500)]);
     expect(parts()).toEqual(["troops-store", "building-list", "essence-store", "research", "today"]);

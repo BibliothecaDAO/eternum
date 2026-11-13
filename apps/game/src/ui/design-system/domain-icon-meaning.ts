@@ -8,10 +8,17 @@ import {
   StructureType,
   type StructureNamingMode,
 } from "@bibliothecadao/types";
-import { frontierBeast, isGuardedSite, nativeGameModeOf, readFrontierBeast } from "@bibliothecadao/eternum";
+import {
+  frontierBeast,
+  isGuardedSite,
+  nativeGameModeOf,
+  readFrontierBeast,
+  type TriumphStage,
+} from "@bibliothecadao/eternum";
 import { safeInteger, type NativeFactStore } from "@bibliothecadao/eternum/game-client";
 import {
   nativeQuestConstants as quest,
+  nativeRuleConstants as rule,
   type NativeRows,
   type NativeStoryVariant,
 } from "../../../../../contracts/l3/world-native/schema/client.gen";
@@ -185,3 +192,15 @@ const questMeanings = {
   [quest.REVEALS]: "map",
 } satisfies Record<DailyQuestId, IconMeaning>;
 export const questMeaning = (quest: DailyQuestId): IconMeaning => questMeanings[quest];
+
+/** Glory, the race's one score a member reads (Season 1): the score's painting. */
+export const GLORY_MEANING: IconMeaning = "victory";
+
+/** Each Triumph's painting: the reveal, the stamina bolt, the moon over the beasts, the chest a site pays. */
+const triumphMeanings = {
+  [rule.CLEAR_MIST_STAGE]: "explore",
+  [rule.SECOND_WIND_STAGE]: "stamina",
+  [rule.PALE_MOON_STAGE]: "moon",
+  [rule.SPOILS_STAGE]: "chest",
+} satisfies Record<TriumphStage, IconMeaning>;
+export const triumphMeaning = (stage: TriumphStage): IconMeaning => triumphMeanings[stage];

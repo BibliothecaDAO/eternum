@@ -195,6 +195,62 @@ it("shows a campaign home's 150% labor once its bonus is known, and nothing gues
   expect(banner()!.querySelector("button")).not.toBeNull();
 });
 
+/** Season 1's race rules, as its preset writes them, and the lab realm's home in Harmony. */
+const raceRules = () => {
+  const { race } = frontierSeasonOnePreset;
+  if (!race) throw new Error("Season 1's preset races no hyperstructures");
+  const at = (index: number) => ({ alt: false, x: race.positions[index]![0]!, y: race.positions[index]![1]! });
+  return [
+    {
+      model: "RaceRules",
+      key: "0x9f1",
+      value: {
+        game_id: 1,
+        season_days: BigInt(race.seasonDays),
+        glory_per_tick: BigInt(race.gloryPerTick),
+        height_per_tick: race.heightPerTick,
+        stage_height: race.stageHeight,
+        clear_mist_percent: race.clearMistPercent,
+        second_wind_percent: race.secondWindPercent,
+        pale_moon_percent: race.paleMoonPercent,
+        spoils_percent: race.spoilsPercent,
+        first: at(0),
+        second: at(1),
+        third: at(2),
+        fourth: at(3),
+      },
+    },
+    { model: "HomeAspect", key: "0x9f2", value: { game_id: 1, home: 7, aspect: 2 } },
+  ];
+};
+const triumphOn = (stage: number, day: number) => ({
+  model: "TriumphDay",
+  key: `0x9f${stage + 2}`,
+  value: { game_id: 1, aspect: 2, stage, day: BigInt(day) },
+});
+
+it("names the Aspect's Triumph today under the quest, and nothing on a day without one", async () => {
+  const store = await renderBanner([questRules(), ...raceRules()]);
+  const { day } = today(store);
+  await snapshot(store, true);
+  expect(banner()!.textContent).not.toContain("Second Wind");
+  expect(banner()!.textContent).not.toContain("Reading your Aspect's day");
+
+  await act(async () => store.applyFacts([triumphOn(2, day)] as never));
+  expect(banner()!.textContent).toContain("Second Wind");
+  expect(banner()!.textContent).toContain("Stamina refills 2 times as fast today");
+
+  await act(async () => store.applyFacts([{ ...triumphOn(2, day), value: null }, triumphOn(3, day)] as never));
+  expect(banner()!.textContent).toContain("Pale Moon");
+  expect(banner()!.textContent).toContain("Beasts fight at 50% of their strength today");
+});
+
+it("says it is reading the Aspect's day while the snapshot cannot tell a Triumph, never none", async () => {
+  const store = await renderBanner([questRules(), ...raceRules()]);
+  await snapshot(store, false);
+  expect(banner()!.textContent).toContain("Reading your Aspect's day");
+});
+
 it("stands in the realm's column of a new player's HUD (/lab/kit/unified/frontier-new)", async () => {
   await act(async () =>
     root.render(

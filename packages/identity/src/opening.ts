@@ -5,7 +5,16 @@ import * as Schema from "effect/Schema";
  * as you play"). Each shows its parts of the screen and its one line; the account keeps the moments it reached, so a
  * part earned on an earlier day stays shown after the army that earned it is gone.
  */
-export const OPENING_MOMENTS = ["launch", "barracks", "guard", "fight", "essence", "well-lore", "shrine-lore"] as const;
+export const OPENING_MOMENTS = [
+  "launch",
+  "barracks",
+  "guard",
+  "fight",
+  "essence",
+  "well-lore",
+  "shrine-lore",
+  "deep",
+] as const;
 export type OpeningMoment = (typeof OPENING_MOMENTS)[number];
 
 /** What an account keeps of the opening interface: the moments it reached, and whether it shows everything. */

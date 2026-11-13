@@ -2,13 +2,13 @@ import { useGame } from "@/hooks/context/game-context";
 import { useNowSeconds } from "@/hooks/helpers/use-block-timestamp";
 import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
 import { sendOnce, useInFlight } from "@/hooks/store/use-actions-in-flight";
-import { questMeaning } from "@/ui/design-system/domain-icon-meaning";
+import { questMeaning, triumphMeaning } from "@/ui/design-system/domain-icon-meaning";
 import { Icon } from "@/ui/design-system/icon";
 import { resourceMeaning } from "@/ui/design-system/icon-meaning";
 import { HudButton, HudLoading, HudMeter, HudPanel } from "@/ui/design-system/kit/hud-elements";
-import { QUEST_WORDS } from "@/ui/design-system/kit/words";
+import { QUEST_WORDS, TRIUMPH_WORDS } from "@/ui/design-system/kit/words";
 import { toast } from "@/ui/features/event-feed/notify";
-import { readDailyQuest } from "@bibliothecadao/eternum";
+import { readDailyQuest, readTodaysTriumph } from "@bibliothecadao/eternum";
 import { safeInteger, type NativeRows } from "@bibliothecadao/eternum/game-client";
 import { formatAmount, ResourcesIds } from "@bibliothecadao/types";
 
@@ -27,6 +27,23 @@ export const QUEST_MODELS = [
 type DayQuest = NonNullable<ReturnType<typeof readDailyQuest>>;
 type QuestReading = NonNullable<DayQuest["reading"]["known"]>;
 
+/** The models the Triumph's reading stands on: the race's rules and days, the home's Aspect and the season's calendar. */
+const TRIUMPH_MODELS = [
+  "RaceRules",
+  "TriumphDay",
+  "HomeAspect",
+  "GameRegistry",
+  "SliceRules",
+  "SettlementRules",
+] as const;
+
+/** The home's Aspect's Triumph today; none in a game without the race. */
+const useTodaysTriumph = (realm: NativeRows["Structure"]) => {
+  const { setup } = useGame();
+  useNativeRevision(TRIUMPH_MODELS);
+  return readTodaysTriumph(setup.store, realm.game_id, safeInteger(realm.entity_id), useNowSeconds());
+};
+
 /** The home's quest today, from the native facts; none in a game without quests or outside its days. */
 const useDayQuest = (realm: NativeRows["Structure"]): DayQuest | undefined => {
   const { setup } = useGame();
@@ -38,11 +55,13 @@ const useDayQuest = (realm: NativeRows["Structure"]): DayQuest | undefined => {
  * The day's banner (U1) over the player's own realm: today's quest with its painting and name, its count ("1 of 2
  * camps") over a meter, and its reward. Collect sends the reward once the quest is done; the banner then says it was
  * collected. While the snapshot has not settled the home's progress, receipt or bonus, the banner says it is reading
- * them and offers nothing to press. Nothing in a game without quests.
+ * them and offers nothing to press. On a day the home's Aspect has a Triumph, its painting, name and what it does today
+ * stand under the quest. Nothing in a game without quests.
  */
 export const FrontierDayBanner = ({ realm }: { realm: NativeRows["Structure"] }) => {
   const { setup, account } = useGame();
   const quest = useDayQuest(realm);
+  const triumph = useTodaysTriumph(realm);
   const home = safeInteger(realm.entity_id);
   const collecting = useInFlight("quest", home) !== undefined;
   if (!quest) return null;
@@ -55,16 +74,18 @@ export const FrontierDayBanner = ({ realm }: { realm: NativeRows["Structure"] })
       toast.failed(error, QUEST_WORDS.notCollected);
     }
   };
-  return <DayQuestBanner quest={quest} collecting={collecting} onCollect={collect} />;
+  return <DayQuestBanner quest={quest} triumph={triumph} collecting={collecting} onCollect={collect} />;
 };
 
 /** The banner's drawing, from its reading. */
 const DayQuestBanner = ({
   quest,
+  triumph,
   collecting,
   onCollect,
 }: {
   quest: DayQuest;
+  triumph: TriumphReading | undefined;
   collecting: boolean;
   onCollect: () => unknown;
 }) => {
@@ -74,21 +95,42 @@ const DayQuestBanner = ({
       label={QUEST_WORDS.today}
       collapsible={false}
       className="pointer-events-auto"
-      bodyClassName="flex items-center gap-3"
+      bodyClassName="flex flex-col gap-2"
     >
-      <Icon name={questMeaning(quest.id)} size={44} />
-      {reading ? (
-        <>
-          <QuestProgress quest={quest} reading={reading} />
-          <QuestEnd reading={reading} collecting={collecting} onCollect={onCollect} />
-        </>
-      ) : (
-        <span className="flex min-w-0 flex-1 flex-col gap-1">
-          <span className="truncate text-hud-strong text-hud-ink">{quest.name}</span>
-          <HudLoading line={QUEST_WORDS.reading} />
-        </span>
-      )}
+      <span className="flex items-center gap-3">
+        <Icon name={questMeaning(quest.id)} size={44} />
+        {reading ? (
+          <>
+            <QuestProgress quest={quest} reading={reading} />
+            <QuestEnd reading={reading} collecting={collecting} onCollect={onCollect} />
+          </>
+        ) : (
+          <span className="flex min-w-0 flex-1 flex-col gap-1">
+            <span className="truncate text-hud-strong text-hud-ink">{quest.name}</span>
+            <HudLoading line={QUEST_WORDS.reading} />
+          </span>
+        )}
+      </span>
+      {triumph && <TriumphRow triumph={triumph} />}
     </HudPanel>
+  );
+};
+
+type TriumphReading = NonNullable<ReturnType<typeof readTodaysTriumph>>;
+
+/** Today's Triumph, by name, with what it does; nothing on a day without one, a reading line while it is not known. */
+const TriumphRow = ({ triumph }: { triumph: TriumphReading }) => {
+  if (triumph.unknown !== undefined) return <HudLoading line={TRIUMPH_WORDS.reading} />;
+  if (triumph.known === null) return null;
+  const { stage, percent } = triumph.known;
+  return (
+    <span className="flex items-center gap-3 border-t border-hud-line pt-2" data-tip={TRIUMPH_WORDS.where}>
+      <Icon name={triumphMeaning(stage)} size={32} />
+      <span className="flex min-w-0 flex-col">
+        <span className="text-hud-strong text-hud-gold">{TRIUMPH_WORDS.names[stage]}</span>
+        <span className="text-hud-label text-hud-ink">{TRIUMPH_WORDS.effects[stage](percent)}</span>
+      </span>
+    </span>
   );
 };
 

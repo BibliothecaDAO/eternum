@@ -33,6 +33,7 @@ import { useEffect } from "react";
 import { useParams } from "react-router-dom";
 
 import ROW_SET from "../../../../../../../contracts/l3/world-native/schema/fixtures/row-set.json";
+import { nativeRuleConstants } from "../../../../../../../contracts/l3/world-native/schema/client.gen";
 import { frontierSeasonOnePreset } from "../../../../../../../config/source/frontier/season-one";
 import { PLAYER } from "./fixture-game";
 import { LabGame } from "./lab-game";
@@ -64,6 +65,8 @@ const VIEWS = {
   "frontier-army": { preset: 5, spectating: false, finished: false, army: true, attack: false },
   // A new player's first minute: a fresh account on the fresh realm, the HUD as it opens, with its first line.
   "frontier-new": { preset: 5, spectating: false, finished: false, army: false, attack: false, fresh: true },
+  // A Season 1 member back from the Deep: its Glory where LORDS stand elsewhere, and its Aspect's Triumph today.
+  "season-one-deep": { preset: 7, spectating: false, finished: false, army: false, attack: false, deep: true },
   "blitz-spectator": { preset: 2, spectating: true, finished: false, army: false, attack: false },
   "blitz-finished": { preset: 2, spectating: true, finished: true, army: false, attack: false },
   "blitz-out": { preset: 2, spectating: false, finished: false, army: false, attack: false, out: true },
@@ -79,7 +82,7 @@ export const UNIFIED_VIEWS = (Object.keys(VIEWS) as View[]).map((name) => ({
 
 /**
  * Dev only: the in-game HUD as the game mounts it (a desktop's columns, a phone's compact HUD), every mode's, on the
- * lab's game, at /lab/kit/unified/<view>: blitz, blitz-attack, blitz-attack-short, blitz-build, blitz-start, eternum, frontier, frontier-army, frontier-new,
+ * lab's game, at /lab/kit/unified/<view>: blitz, blitz-attack, blitz-attack-short, blitz-build, blitz-start, eternum, frontier, frontier-army, frontier-new, season-one-deep,
  * blitz-spectator, blitz-finished, blitz-out, blitz-out-watching. Frontier's states on the same HUD are the Frontier HUD
  * lab's, /lab/kit/hud/<state>.
  */
@@ -96,6 +99,7 @@ const ViewLab = ({ view }: { view: View }) => {
   const out = "out" in VIEWS[view];
   const tired = "tired" in VIEWS[view];
   const fresh = "fresh" in VIEWS[view];
+  const deep = "deep" in VIEWS[view];
   const mode = nativeGameModeOf(preset);
   const frontier = mode === "frontier";
   useDocumentClass(frontier ? "frontier-hud" : "classic-hud");
@@ -127,6 +131,7 @@ const ViewLab = ({ view }: { view: View }) => {
         finished={finished}
         facts={(store) => [
           ...(frontier ? seasonOneFacts() : []),
+          ...(deep ? backFromTheDeep() : []),
           ...(army
             ? [
                 ...labArmyOut(store, tired ? TIRED_STAMINA : LAB_ARMY_STAMINA),
@@ -376,6 +381,47 @@ const seasonOneFacts = (): unknown[] => {
       },
     },
     { model: "HomeAspect", key: "0x9e2", value: { game_id: 1, home: 7n, aspect: aspects[1].id } },
+  ];
+};
+
+/**
+ * The lab realm back from the Deep in a race game: Season 1's race rules as its preset writes them, 145 Glory earned
+ * holding a site, and Harmony's Second Wind on the lab's day (0).
+ */
+const backFromTheDeep = (): unknown[] => {
+  const { race } = frontierSeasonOnePreset;
+  if (!race) throw new Error("Season 1's preset races no hyperstructures");
+  const at = (index: number) => ({ alt: false, x: race.positions[index]![0]!, y: race.positions[index]![1]! });
+  return [
+    {
+      model: "RaceRules",
+      key: "0x9e3",
+      value: {
+        game_id: 1,
+        season_days: BigInt(race.seasonDays),
+        glory_per_tick: BigInt(race.gloryPerTick),
+        height_per_tick: race.heightPerTick,
+        stage_height: race.stageHeight,
+        clear_mist_percent: race.clearMistPercent,
+        second_wind_percent: race.secondWindPercent,
+        pale_moon_percent: race.paleMoonPercent,
+        spoils_percent: race.spoilsPercent,
+        first: at(0),
+        second: at(1),
+        third: at(2),
+        fourth: at(3),
+      },
+    },
+    {
+      model: "RaceMember",
+      key: "0x9e4",
+      value: { game_id: 1, entity_id: 7n, glory: BigInt(145 * RESOURCE_PRECISION), contribution: 0n },
+    },
+    {
+      model: "TriumphDay",
+      key: "0x9e5",
+      value: { game_id: 1, aspect: aspects[1].id, stage: nativeRuleConstants.SECOND_WIND_STAGE, day: 0n },
+    },
   ];
 };
 

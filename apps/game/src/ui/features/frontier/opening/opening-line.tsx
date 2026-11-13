@@ -1,9 +1,9 @@
 import { useGame } from "@/hooks/context/game-context";
 import { HudNotice } from "@/ui/design-system/kit/hud-elements";
-import { OPENING_WORDS } from "@/ui/design-system/kit/words";
+import { OPENING_WORDS, type OpeningRules } from "@/ui/design-system/kit/words";
 import { buildingOutput } from "@/ui/shared/lib/building-output";
-import type { NativeRows } from "@bibliothecadao/eternum/game-client";
-import { BuildingType } from "@bibliothecadao/types";
+import type { NativeFactStore, NativeRows } from "@bibliothecadao/eternum/game-client";
+import { BuildingType, RESOURCE_PRECISION } from "@bibliothecadao/types";
 import { useEffect, useRef } from "react";
 
 import { OPENING } from "./opening";
@@ -30,12 +30,21 @@ export const OpeningLine = ({ realm }: { realm: NativeRows["Structure"] }) => {
     return () => clearTimeout(goes);
   }, [moment]);
   if (!line) return null;
-  const knightsAnHour = buildingOutput(setup.store, realm, BuildingType.ResourceKnightT1, 0).base * 3600;
+  const rules: OpeningRules = {
+    knightsAnHour: () => buildingOutput(setup.store, realm, BuildingType.ResourceKnightT1, 0).base * 3600,
+    deepTick: () => deepTick(setup.store, realm.game_id),
+  };
   return (
     <HudNotice
       icon={OPENING[line.moment].icon}
-      line={OPENING_WORDS.lines[line.moment](knightsAnHour)}
+      line={OPENING_WORDS.lines[line.moment](rules)}
       fix={{ label: OPENING_WORDS.gotIt, onClick: line.putAway }}
     />
   );
 };
+
+/** The Deep's army tick and what each army loses on it, in troops (SliceRules, DeepRules). */
+const deepTick = (store: NativeFactStore, game_id: number) => ({
+  tickSeconds: Number(store.require("SliceRules", { game_id }).tick_config.armies_tick_in_seconds),
+  lossPerTick: Number(store.require("DeepRules", { game_id }).loss_per_tick) / RESOURCE_PRECISION,
+});

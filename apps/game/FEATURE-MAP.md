@@ -634,7 +634,16 @@ labor for a held Realm's or a campaign's home). **Collect** sends the reward onc
 it was collected. While the snapshot has not settled the home's progress, receipt or labor bonus, it names the quest and
 says it is reading, with nothing to press. **Today** (the day's clock), on today's page, lists **This week's quests**:
 each day of the week's bag up to the season's last day, its painting and quest, and whether it was collected, done,
-missed, is today or is coming. Lab: `/lab/kit/unified/frontier` and `frontier-new`.
+missed, is today or is coming. In a race game (`RaceRules`), on a day the home's Aspect has a Triumph (`TriumphDay`, the
+day after one of its hyperstructure's first four stages), its painting, name and what it does today stand under the
+quest: **Clear Mist** (a reveal finds something 2 times as often), **Second Wind** (stamina refills 2 times as fast),
+**Pale Moon** (beasts at 50% of their strength), **Spoils** (a cleared site pays 2 times), each rate RaceRules'; while
+the snapshot cannot tell, it says it is reading the Aspect's day. Lab: `/lab/kit/unified/frontier`, `frontier-new` and
+`season-one-deep` (a Season 1 member with 145 Glory on Second Wind).
+
+**Glory** (`src/ui/features/frontier/race/glory.tsx`), a race game member's one score (`RaceMember`), once the realm
+went into the Deep: beside its rank on the desktop's realm panel, and in a phone's purse row under the strip, with what
+it is for on hover. A dash while the snapshot cannot tell. Lab: `/lab/kit/unified/season-one-deep`.
 
 **Invite a friend to your Aspect** (`src/ui/features/frontier/invite/aspect-invite.tsx`), for a home that joined an
 Aspect (`HomeAspect`): at the top of **Season** (a desktop's Season bubble; a phone's Menu, then Season), where the
@@ -646,9 +655,10 @@ for the player; its landing says "<name> invites you to <Aspect> in Frontier". L
 account's first session shows its realm and level, labor and wheat, the lit plot, its armies with their stamina, the
 map, the day's quest and the day's clock. Troops at home and the rest of the Build sheet open with the first Barracks;
 an army's XP (its token, row and panel) with its first fight won; Essence, **Research** and **Today** (the day's clock
-pressed) with the first quest reward collected or the first Essence. Each moment's one line stands over the map once per
-account, for 8 s or until **Got it**; the account keeps the moments it reached (`/api/interface/opening`), so a part an
-army earned stays after the day ends it. Settings → Interface → **Show everything** opens everything at once, with no
+pressed) with the first quest reward collected or the first Essence; Glory once an army stood in the Deep (or the realm
+earned there), whose line says what each army tick there costs an army. Each moment's one line stands over the map once
+per account, for 8 s or until **Got it**; the account keeps the moments it reached (`/api/interface/opening`), so a part
+an army earned stays after the day ends it. Settings → Interface → **Show everything** opens everything at once, with no
 lines. Watching, visiting or signed out, everything shows. Lab: `/lab/kit/unified/frontier-new` (a new account's first
 minute) beside `/lab/kit/unified/frontier` (a seasoned account).
 

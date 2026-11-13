@@ -7,9 +7,12 @@ import { APP_HOST } from "@/config/app-address";
 import type { ResolvedGameMode } from "@/config/game-modes/resolved-mode";
 import { SHARED_MOMENT_WORDS, type CampaignKey, type OpeningMoment, type SocialProvider } from "@realms-world/identity";
 import type { NotificationKind, NotificationLevel } from "@bibliothecadao/notifications";
-import type { RuinChest } from "@bibliothecadao/eternum";
+import type { RuinChest, TriumphStage } from "@bibliothecadao/eternum";
 import type { DailyQuestId } from "@/ui/design-system/domain-icon-meaning";
-import { nativeQuestConstants as quest } from "../../../../../../contracts/l3/world-native/schema/client.gen";
+import {
+  nativeQuestConstants as quest,
+  nativeRuleConstants,
+} from "../../../../../../contracts/l3/world-native/schema/client.gen";
 import {
   BuildingType,
   XP,
@@ -1598,21 +1601,64 @@ export const QUEST_WORDS = {
 } as const;
 
 /**
+ * The Aspect's Triumph on the day after a stage of its hyperstructure (the frozen design's four): its name, and what it
+ * does today above the Deep, from the percentage RaceRules holds.
+ */
+export const TRIUMPH_WORDS = {
+  names: {
+    [nativeRuleConstants.CLEAR_MIST_STAGE]: "Clear Mist",
+    [nativeRuleConstants.SECOND_WIND_STAGE]: "Second Wind",
+    [nativeRuleConstants.PALE_MOON_STAGE]: "Pale Moon",
+    [nativeRuleConstants.SPOILS_STAGE]: "Spoils",
+  } satisfies Record<TriumphStage, string>,
+  effects: {
+    [nativeRuleConstants.CLEAR_MIST_STAGE]: (percent: number) =>
+      `A reveal finds something ${formatTimes(percent)} as often today`,
+    [nativeRuleConstants.SECOND_WIND_STAGE]: (percent: number) =>
+      `Stamina refills ${formatTimes(percent)} as fast today`,
+    [nativeRuleConstants.PALE_MOON_STAGE]: (percent: number) => `Beasts fight at ${percent}% of their strength today`,
+    [nativeRuleConstants.SPOILS_STAGE]: (percent: number) => `A cleared site pays ${formatTimes(percent)} today`,
+  } satisfies Record<TriumphStage, (percent: number) => string>,
+  /** The banner's tip on a Triumph: where it applies. */
+  where: "Your Aspect's Triumph, for today, everywhere above the Deep.",
+  reading: "Reading your Aspect's day",
+} as const;
+
+/** A percentage as a multiple: 200 reads "2 times". */
+const formatTimes = (percent: number) => `${formatExact(percent / 100)} times`;
+
+/** Glory, the one score a member reads: its line (a dash while it is read) and what it is for. */
+export const GLORY_WORDS = {
+  line: (glory: number | null) => `Glory ${glory === null ? "—" : formatExact(glory)}`,
+  tip: "Glory sets your share of your Aspect's reward. Hold the Foundation or the Altar to earn it.",
+} as const;
+
+/** The game's numbers an opening line names, each read when its line is shown. */
+export interface OpeningRules {
+  knightsAnHour: () => number;
+  deepTick: () => { tickSeconds: number; lossPerTick: number };
+}
+
+/**
  * The interface that opens as you play (the frozen design's table, word for word): the one line each moment brings,
- * shown once per account, and Settings' switch that opens everything at once. A Barracks' Knights an hour come from
- * the game's rules.
+ * shown once per account, and Settings' switch that opens everything at once. A Barracks' Knights an hour, the army
+ * tick and the Deep's loss per tick come from the game's rules, read only for the line that names them.
  */
 export const OPENING_WORDS = {
   lines: {
     launch: () => "This is your Realm. Build on the lit plot, then send an army into the mist.",
-    barracks: (knightsAnHour: number) =>
-      `A Barracks raises ${formatAmount(knightsAnHour)} Knights an hour. Knights fill your armies.`,
+    barracks: (rules: OpeningRules) =>
+      `A Barracks raises ${formatAmount(rules.knightsAnHour())} Knights an hour. Knights fill your armies.`,
     guard: () => "Send 150% of the guard's troops to win.",
     fight: () => "Armies earn XP by fighting. Enough XP gives a skill point.",
     essence: () => "Essence buys research and lores.",
     "well-lore": () => "Your armies can now find wells.",
     "shrine-lore": () => "Your armies can now find shrines.",
-  } satisfies Record<OpeningMoment, (knightsAnHour: number) => string>,
+    deep: (rules: OpeningRules) => {
+      const { tickSeconds, lossPerTick } = rules.deepTick();
+      return `Every tick (${formatAmount(tickSeconds)} seconds) here, each army loses ${formatAmount(lossPerTick)} troops. Hold a site to earn.`;
+    },
+  } satisfies Record<OpeningMoment, (rules: OpeningRules) => string>,
   gotIt: "Got it",
   interface: "Interface",
   showEverything: "Show everything",

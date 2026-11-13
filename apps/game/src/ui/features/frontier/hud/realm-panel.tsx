@@ -9,7 +9,8 @@ import {
 import { homeIcon, HOME_KINDS, type HomeKind } from "@/ui/design-system/home-icons";
 import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import { HudPanel, HudRing } from "@/ui/design-system/kit/hud-elements";
-import { REALM, SHOW_MY_REALM } from "@/ui/design-system/kit/words";
+import { GLORY_WORDS, REALM, SHOW_MY_REALM } from "@/ui/design-system/kit/words";
+import { GLORY_MEANING } from "@/ui/design-system/domain-icon-meaning";
 import { useLandedValue } from "@/ui/motion/landing-hold";
 import { TickNumber } from "@/ui/motion/tick-number";
 import type { ReactNode } from "react";
@@ -27,8 +28,8 @@ import { LandingDelta, STORE_TONES, type StoreReading, storeLine } from "./statu
  * rank's steps in a header that takes the map home to it (it never folds), its rank and population (used of all it can
  * hold) with the way to Realms (the labor they hold today on it), then a ring per store (Essence, Labor, Wheat, Troops),
  * each filling toward its limit with the time until full on its rim, and a ring for its LORDS. A tap on a store with a
- * card opens it under the rings, on the LORDS Withdraw; a realm watched or visited shows its stores alone. The day's
- * clock is the top bar's.
+ * card opens it under the rings, on the LORDS Withdraw; in a race game, the realm's Glory stands beside its rank once the
+ * Deep opened it. A realm watched or visited shows its stores alone. The day's clock is the top bar's.
  */
 export const RealmPanel = ({
   name,
@@ -37,6 +38,7 @@ export const RealmPanel = ({
   population,
   stores,
   lords,
+  glory,
   linkWalletLine = null,
   waiting = null,
   onHome,
@@ -56,6 +58,8 @@ export const RealmPanel = ({
   stores: StoreReading[];
   /** The realm's LORDS; absent for a realm not the player's. */
   lords?: number;
+  /** The realm's Glory (null while it is read); absent outside a race game, before the Deep, or for another's realm. */
+  glory?: number | null;
   /** What an account with no linked wallet is told about its LORDS (useLinkWalletPrompt): their ring's mark and tip. */
   linkWalletLine?: string | null;
   /** What the home's daily claim has waiting today, which the Realms chip wears. */
@@ -104,6 +108,7 @@ export const RealmPanel = ({
         </span>
       )}
       {population && <PopulationReading population={population} />}
+      {glory !== undefined && <GloryReading glory={glory} />}
       {onRealms && (
         <span className="ml-auto">
           <RealmsChip waiting={waiting} onOpen={onRealms} />
@@ -134,6 +139,19 @@ export const RealmPanel = ({
     </ul>
     {storeCards?.open && storeCards.card}
   </HudPanel>
+);
+
+/** The realm's Glory beside its rank: a score, not a store, so it reads as the population does; a dash while read. */
+const GloryReading = ({ glory }: { glory: number | null }) => (
+  <span
+    className="flex items-center gap-1.5 tabular-nums"
+    role="img"
+    aria-label={GLORY_WORDS.line(glory)}
+    data-tip={GLORY_WORDS.tip}
+  >
+    <SemanticIcon name={GLORY_MEANING} size={16} />
+    {glory === null ? "—" : formatAmount(glory)}
+  </span>
 );
 
 /** The realm's population as Blitz's realm card reads a holding's: used of all it can hold, the whole line on hover. */

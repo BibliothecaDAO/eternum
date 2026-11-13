@@ -19,6 +19,8 @@ const OPENING_MODELS = [
   "ResourceProduction",
   "RealmKnowledge",
   "LaborGrant",
+  "DeepArmy",
+  "RaceMember",
 ] as const;
 
 interface OpeningState {

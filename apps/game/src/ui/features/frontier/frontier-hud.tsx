@@ -59,6 +59,7 @@ import { FrontierPurse } from "./value/frontier-purse";
 import { useSpendLords } from "./value/use-spend-lords";
 import { useLinkWalletPrompt, useOwedLords } from "./value/link-wallet";
 import { lordsInGame } from "./value/lords-in-game";
+import { GloryPill, useOwnGlory } from "./race/glory";
 import { SeasonPayout } from "./value/season-payout";
 import { LordsPurse, PurseRow, RealmsChip } from "./value/lords-purse";
 import { useHomeKind } from "@/hooks/helpers/use-home-kind";
@@ -570,6 +571,7 @@ const FrontierRealmPanel = ({
   const name = useGameModeConfig().structure.getName(realm).name;
   const stores = useStoreReadings(realm, rules);
   const lords = useRealmLords(own ?? realm);
+  const glory = useOwnGlory(own);
   const owed = useOwedLords(own ?? realm);
   const linkWalletLine = useLinkWalletPrompt(own ? owed : undefined);
   const population = useRealmPopulation(realm);
@@ -590,6 +592,7 @@ const FrontierRealmPanel = ({
         waiting,
         storeCards,
         onRealms: () => onSurface("realms"),
+        glory,
         ...(lordsInGame() && { lords, linkWalletLine, onWithdraw: () => onSurface("withdraw") }),
       })}
     />
@@ -597,8 +600,9 @@ const FrontierRealmPanel = ({
 };
 
 /**
- * Under the strip: the realm's LORDS, which open Withdraw (in a game with LORDS in play), and beside them the Realms
- * chip while the home's daily claim has Labor or Essence waiting today. Nothing when neither stands.
+ * Under the strip: the realm's LORDS, which open Withdraw (in a game with LORDS in play), or its Glory (in a race game,
+ * once the Deep opened it), and beside them the Realms chip while the home's daily claim has Labor or Essence waiting
+ * today. Nothing when none stands.
  */
 const RealmPurse = ({
   realm,
@@ -612,11 +616,13 @@ const RealmPurse = ({
   onRealms: () => void;
 }) => {
   const lords = lordsInGame();
-  if (!waiting && !lords) return null;
+  const glory = useOwnGlory(realm);
+  if (!waiting && !lords && glory === undefined) return null;
   return (
     <PurseRow>
       {waiting && <RealmsChip waiting={waiting} narrow onOpen={onRealms} />}
       {lords && <OwnLordsPurse realm={realm} onOpen={onWithdraw} />}
+      {glory !== undefined && <GloryPill glory={glory} />}
     </PurseRow>
   );
 };
