@@ -36,6 +36,7 @@ pub mod days;
 pub mod discovery_guards;
 pub mod entity_ids;
 pub mod entry;
+pub mod event_transactions;
 pub mod explore_rewards;
 pub mod fact_wire;
 pub mod faith;

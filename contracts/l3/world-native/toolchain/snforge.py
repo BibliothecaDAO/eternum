@@ -18,7 +18,7 @@ WORLD = Path(__file__).resolve().parent.parent
 SOURCE = "ab78eeeb51a991ffd4b65e7be30b8791009066d5"
 TAG = "v0.64.0"
 RUST = "1.94.1"
-PATCHES = ("library-call-rollback.patch", "test-memory.patch")
+PATCHES = ("library-call-rollback.patch", "test-memory.patch", "transaction-events.patch")
 BUILD_ENV = {
     "OPENSSL_NO_VENDOR": "1",
     "CARGO_PROFILE_RELEASE_LTO": "false",

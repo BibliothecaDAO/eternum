@@ -213,6 +213,9 @@ Native player fixtures use `world_test_support::tests::bind_player` to bind a de
 `defineFactModels` rejects duplicates and `scripts/fact-models.test.mjs` checks the shared AspectActivity wire shape and
 absence rule. Both checks run in the native gate.
 
+Native test-level contract calls have separate event budgets; nested calls retain the same transaction limit, and
+every emitted row remains observable. The native gate runs `toolchain/check_transaction_events.py` to enforce this.
+
 | Rule                                                                                                                                                                                                      | Enforcement                                                                                                                                               |
 | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | The existing season-end LORDS sweep owns earned and deposited balances. Principal returns require no reward publication, closure state or claim deadline, and cannot block independent reward settlement. | `apps/value-relay/src/frontier-sweep.test.ts`; `contracts/l3/world-native/tests/economy/src/tests/deposits.cairo`; `contracts/l2/ledger/src/tests.cairo`. |

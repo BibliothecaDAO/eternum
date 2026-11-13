@@ -4,6 +4,7 @@ mod blitz_results;
 mod campaign;
 mod camps;
 mod entry;
+mod event_transactions;
 
 mod frontier_extension;
 mod hyperstructures;
