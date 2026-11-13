@@ -121,7 +121,7 @@ describe("the lead: the one gold verb, first match wins", () => {
       "blitz join",
     ],
     ["no season and no slot: a Blitz to watch", facts({ blitz: [gameRow(7, "spectate")] }), "blitz watch"],
-    ["nothing live: Eternum's opening", facts({ games: [game("eternum", { status: "Registration" })] }), "eternum —"],
+    ["a retired mode never offers entry", facts({ games: [game("eternum", { status: "Registration" })] }), "none"],
     ["nothing live or scheduled: no lead", facts({}), "none"],
   ])("%s", (_case, input, lead) => {
     expect(leadOf(input)).toBe(lead);
@@ -164,7 +164,7 @@ describe("everything else, each game once", () => {
     ]);
     expect(keys(board.ages.blitz)).toEqual(["game:0xa:8", "slot:next", "game:0xa:10", gameKey(finishedBlitz)]);
     expect(board.ages.frontier.map((item) => `${item.when} ${item.verb}`)).toEqual(["now resume"]);
-    expect(keys(board.ages.eternum)).toEqual(["0xa:5"]);
+    expect(keys(board.ages.eternum)).toEqual([]);
   });
 
   it("never shows a game twice", () => {

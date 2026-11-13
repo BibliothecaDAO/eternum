@@ -272,92 +272,21 @@ it("keeps Blitz on Play once an ended Blitz's results were seen, idle and saying
   expect(page.text()).not.toContain("No Blitz scheduled");
 });
 
-it("dims Eternum's column while its game is still to open, saying when it opens; lit once the player can enter", async () => {
-  const opening = game({
+it.each(["Registration", "Live"] as const)("offers no entry for a retired Eternum game in %s", async (status) => {
+  const retired = game({
     game_id: 9,
     mode: "eternum",
-    name: "eternum-1",
-    status: "Registration",
-    ready: false,
-    clock: {
-      start_settling_at: 3_900_000_000,
-      start_main_at: 3_900_000_000,
-      end_at: 4_000_000_000,
-      end_grace_seconds: 0,
-    },
+    status,
+    ready: true,
+    player_state: { ...ownSeason.player_state, registered: true },
   } as Partial<DirectoryGame>);
-  reads.directory = answered({ games: [ownSeason, opening] });
+  reads.directory = answered({ games: [ownSeason, retired] });
   reads.slots = answered({ slots: [] });
   reads.history = answered({ games: [], next: null, failures: [] });
   const page = await mount();
-  const eternum = () => page.container.querySelector<HTMLElement>('section[aria-label="Eternum"]')!;
-  // Frontier's day leads; Eternum stands beside it with its opening alone, idle, nothing in it to press.
-  const resume = page.container.querySelector<HTMLButtonElement>('[data-play-item] button[data-play-verb="resume"]');
-  expect(resume?.textContent).toBe("Resume");
-  expect(eternum().textContent).toMatch(/^EternumOpens \d{1,2} \w{3} 2093, \d\d:\d\d$/);
-  expect(eternum().hasAttribute("data-idle")).toBe(true);
-  expect(eternum().querySelector("a, button")).toBeNull();
-
-  // Open, with the player on its roster: Enter, and the column is live.
-  reads.directory = answered({
-    games: [
-      ownSeason,
-      {
-        ...opening,
-        status: "Live",
-        ready: true,
-        player_state: { ...opening.player_state, registered: true },
-      } as DirectoryGame,
-    ],
-  });
-  await page.render();
-  expect(eternum().textContent).toContain("Enter");
-  expect(eternum().hasAttribute("data-idle")).toBe(false);
-});
-
-it("dims Eternum leading Play while its game is still to open, as its column would be; lit once it can be entered", async () => {
-  const opening = game({
-    game_id: 9,
-    mode: "eternum",
-    name: "eternum-1",
-    status: "Registration",
-    ready: false,
-    clock: {
-      start_settling_at: 3_900_000_000,
-      start_main_at: 3_900_000_000,
-      end_at: 4_000_000_000,
-      end_grace_seconds: 0,
-    },
-  } as Partial<DirectoryGame>);
-  reads.directory = answered({ games: [opening] });
-  reads.slots = answered({ slots: [] });
-  reads.history = answered({ games: [], next: null, failures: [] });
-  const page = await mount();
-  const lead = () => page.container.querySelector<HTMLElement>('[data-play-item="0xa:9"] .app-game-card')!;
-  // Nothing else running: the unopened Eternum leads, idle, saying when it opens, nothing on it to press.
-  expect(lead().dataset.size).toBe("lead");
-  expect(lead().textContent).toMatch(/Opens \d{1,2} \w{3} 2093, \d\d:\d\d/);
-  expect(lead().hasAttribute("data-idle")).toBe(true);
-  expect(lead().querySelector("a, button")).toBeNull();
-
-  expect(lead().querySelector("[data-play-verb]")).toBeNull();
-
-  // Open, with the player on its roster: the lead's Enter, and it is lit.
-  reads.directory = answered({
-    games: [
-      {
-        ...opening,
-        status: "Live",
-        ready: true,
-        player_state: { ...opening.player_state, registered: true },
-      } as DirectoryGame,
-    ],
-  });
-  await page.render();
-  expect(lead().textContent).toContain("Enter");
-  expect(lead().hasAttribute("data-idle")).toBe(false);
-  // The lead's call to action by its verb's name, whatever its word: what the playtest runner presses to enter.
-  expect(lead().querySelector<HTMLButtonElement>("button[data-play-verb]")!.dataset.playVerb).toBe("enter");
+  expect(page.container.querySelector('[data-play-item="0xa:9"]')).toBeNull();
+  expect(page.container.querySelector('section[aria-label="Eternum"]')).toBeNull();
+  expect(page.container.querySelector('[data-play-verb="resume"]')?.textContent).toBe("Resume");
 });
 
 it("keeps the way to the build orders when the player's ended Blitz leads Play", async () => {

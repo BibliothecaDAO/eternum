@@ -49,7 +49,10 @@ export const isGameOver = (game: HeraldGameDirectoryEntry): boolean =>
 
 /** Whether the player can enter the game now: ready, not over, and theirs to play; a Frontier season is open to all. */
 export const canEnterGame = (game: DirectoryEntry): boolean =>
-  !game.error && game.ready && !isGameOver(game) && (isMember(game) || game.mode === "frontier");
+  !game.error &&
+  game.ready &&
+  !isGameOver(game) &&
+  (game.mode === "frontier" || (game.mode === "blitz" && isMember(game)));
 
 /** The shards the directory still serves: retired ones are history. */
 export const listedShards = (shards: readonly DirectoryShard[]): DirectoryShard[] =>
