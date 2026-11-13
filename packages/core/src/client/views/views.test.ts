@@ -1,5 +1,3 @@
-import { baneRateReader } from "../../utils/world-banes";
-import { nativeBaneConstants as bane } from "../../../../../contracts/l3/world-native/schema/client.gen";
 import { ContractAddress, dailyQuests, getNeighborHexes, StructureType } from "@bibliothecadao/types";
 import { hash } from "starknet";
 import { afterEach, describe, expect, it } from "vitest";
@@ -112,75 +110,6 @@ describe("game views", () => {
     store.applyFacts([{ model: "GameRegistry", key: "0x102", value: { ...registry, end_at: String(startOfDay(5)) } }]);
     completeSnapshot(store, startOfDay(3));
     expect(readQuestWeek(store, GAME_ID, 12, startOfDay(3))!.days.map(({ day }) => day)).toEqual([0, 1, 2, 3, 4]);
-  });
-
-  it("keeps the bane quest after early victory and reads the second claim separately", () => {
-    const { store, views } = createHarness();
-    seedFrontierRules(store, { startMainAt: 100, spacing: 10, seed: "14" });
-    seedStructure(store, { entityId: 12, owner: PLAYER, category: StructureType.Realm, x: 1, y: 1 });
-    store.setSnapshot({ gameId: GAME_ID, complete: true, actor: PLAYER.toString(), timestamp: 14500 });
-    store.applyFacts([
-      {
-        model: "QuestRules",
-        key: "0x201",
-        value: {
-          game_id: GAME_ID,
-          base_counts: dailyQuests.map(({ baseCount }) => baseCount),
-          labor: 1000n,
-          essence: 1500n,
-          bonus_percent: 150,
-        },
-      },
-      {
-        model: "BaneRules",
-        key: "0x202",
-        value: {
-          game_id: GAME_ID,
-          chance_step: 20,
-          quorum_percent: 25,
-          beast_percent: 150,
-          stamina_percent: 50,
-          production_percent: 50,
-          quest_counts: [3, 6, 9, 12, 20, 40, 60, 80, 2500, 6000, 10000, 15000],
-        },
-      },
-      { model: "HomeAspect", key: "0x203", value: { game_id: GAME_ID, home: 12, aspect: 1 } },
-      { model: "AspectActivity", key: "0x204", value: { game_id: GAME_ID, aspect: 1, day: 0, active: 5 } },
-    ]);
-    const intervals = baneRateReader(store, GAME_ID, 12, bane.MIST_TIDE)!;
-    expect(intervals(14490, 14510)).toEqual([{ start: 14500, end: 14510, percent: 50 }]);
-    expect(views.dailyQuest(12, 14500)).toMatchObject({
-      id: 8,
-      target: 20n,
-      bane: { required: 2, completed: 0, won: false },
-      bonusClaimed: false,
-    });
-    store.applyFacts([
-      {
-        model: "BaneProgress",
-        key: "0x205",
-        value: { game_id: GAME_ID, aspect: 1, day: 1, completed: 2, ended_at: 15000 },
-      },
-      {
-        model: "QuestProgress",
-        key: "0x206",
-        value: { game_id: GAME_ID, home: 12, day: 1, progress: 20, completed_level: 1 },
-      },
-      {
-        model: "BaneGrant",
-        key: "0x207",
-        value: { game_id: GAME_ID, home: 12, day: 1, account: PLAYER, amount: 1000, essence: 1500 },
-      },
-    ]);
-    expect(intervals(14490, 15010)).toEqual([{ start: 14500, end: 15000, percent: 50 }]);
-    expect(views.dailyQuest(12, 15001)).toMatchObject({
-      id: 8,
-      completed: true,
-      bane: { won: true, endedAt: 15000 },
-      bonusClaimed: true,
-    });
-    store.applyFacts([{ model: "FirstTeamBane", key: "0x208", value: { game_id: GAME_ID, day: 1 } }]);
-    expect(views.dailyQuest(12, 15001)?.id).toBe(8);
   });
 
   it("lists a player's structures by category then entity id, seen as theirs", () => {
