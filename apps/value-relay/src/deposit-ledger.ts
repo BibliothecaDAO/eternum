@@ -93,11 +93,17 @@ async function finalPrincipal(
   request: Extract<DepositMutation, { kind: "principal" }>,
   previous: { wallet: string; amount: string },
 ): Promise<FinalEvidence | null> {
-  const final = await reader.final();
-  const settled = await final.principal(request.shard, request.season, request.account);
-  return settled &&
-    BigInt(settled.amount) === BigInt(previous.amount) &&
-    BigInt(settled.wallet) === BigInt(previous.wallet)
-    ? { block: final.block.number, hash: final.block.hash }
-    : null;
+  try {
+    const final = await reader.final();
+    const settled = await final.principal(request.shard, request.season, request.account);
+    return settled &&
+      BigInt(settled.amount) === BigInt(previous.amount) &&
+      BigInt(settled.wallet) === BigInt(previous.wallet)
+      ? { block: final.block.number, hash: final.block.hash }
+      : null;
+  } catch (error) {
+    // The payment is already recognized; without final evidence it is simply not kept, and read again next tick.
+    console.error("final_evidence_unavailable", { error: error instanceof Error ? error.message : String(error) });
+    return null;
+  }
 }
