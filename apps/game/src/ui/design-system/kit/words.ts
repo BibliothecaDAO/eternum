@@ -1537,6 +1537,7 @@ export const LEVEL_WORDS = { off: "Off", important: "Important", all: "All" } as
 export const NOTIFICATION_KIND_WORDS = {
   "day-open": "each day's opening",
   "army-rested": "rested armies",
+  "deep-sites": "Deep sites you can take",
   fights: "fights",
   results: "results",
   messages: "messages",

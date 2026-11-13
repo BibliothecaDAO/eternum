@@ -431,7 +431,10 @@ each closed by its cross, a tap outside, a swipe down or `Escape`. A right-click
 - **Notifications** (Settings, You or in game): Off, Important or All, and **This device**; under the levels, one line
   says what the chosen one brings. Important sends one push as each Frontier game day opens ("Day 2 is open / Frontier:
   claim 1,000 Labor before 20:00."), "Your armies are rested" each time the armies the player left spent are all full
-  again (the next only after they play again), the season's or a Blitz's end, fights between players outside Frontier,
+  again (the next only after they play again), "The Foundation can be taken" once a game day per Deep site another
+  Aspect holds, when its guard (all slots, draining each army tick) is down to where the player's largest army outside
+  the Deep is 150% of it, for a realm that knows Spire lore (`apps/realms/server/site-alert.ts`, read again when the
+  player acts or the race board's sites change), the season's or a Blitz's end, fights between players outside Frontier,
   and messages; All adds deliveries and trades, Bitcoin payouts and Hyperstructure points. Each kind, its level and how
   long it lives come from one table (`packages/notifications/src/notification-kinds.ts`). The phone's own night setting
   decides when one sounds; the game keeps no quiet hours and no daily cap: a newer push of a kind in a game replaces the
@@ -1195,12 +1198,12 @@ went through it. The summary shows only until the player acts in the new day (ow
 holds a story of theirs after the day's end, from any device, a device arriving later goes through the black without it.
 Once no day's end is owed, on the player's own map while a next day is coming, a device that would not get the day's
 push gets the alerts popup over the dimmed map: a painting with the bell, "Know when to come back", what the Important
-level pushes as Settings names the kinds ("A push for each day's opening, rested armies, fights, results and
-messages."), then **Not now** and **Turn on alerts** (an iPhone's browser is told to put Realms on its Home Screen
-first, with **Add to Home Screen**). It shows at most once a week on a device, counted from the last time it showed,
-stands on its page until answered, and three Not nows end it (`useAlertsPopup`, `shell/profile/alerts-ask.ts`;
-`frontier/alerts-popup.tsx`; lab: `/lab/kit/hud/alerts-popup`, `alerts-popup-install`). Code:
-`hooks/store/use-day-end-store.ts`, `ExpeditionRollover`, `rollover/day-done.tsx` and `day-end-screen.tsx`.
+level pushes as Settings names the kinds ("A push for each day's opening, rested armies, Deep sites you can take,
+fights, results and messages."), then **Not now** and **Turn on alerts** (an iPhone's browser is told to put Realms on
+its Home Screen first, with **Add to Home Screen**). It shows at most once a week on a device, counted from the last
+time it showed, stands on its page until answered, and three Not nows end it (`useAlertsPopup`,
+`shell/profile/alerts-ask.ts`; `frontier/alerts-popup.tsx`; lab: `/lab/kit/hud/alerts-popup`, `alerts-popup-install`).
+Code: `hooks/store/use-day-end-store.ts`, `ExpeditionRollover`, `rollover/day-done.tsx` and `day-end-screen.tsx`.
 
 **Share your day**, on the day-done card, and on Today's page of an earlier day the player played (the dial opens Today,
 ← steps back; a day missed at its end is shared from there), once the day's totals are whole: the day's card in the
