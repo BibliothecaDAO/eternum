@@ -540,6 +540,7 @@ mod entity_ids;
 mod guilds;
 mod preset_projection;
 mod progression;
+mod race;
 mod rule_storage;
 mod shared_storage;
 mod spires;
