@@ -8662,6 +8662,16 @@
         }
       ]
     },
+    "core::array::Span::<world_native::banes::BaneWindow>": {
+      "type": "struct",
+      "name": "core::array::Span::<world_native::banes::BaneWindow>",
+      "members": [
+        {
+          "name": "snapshot",
+          "type": "@core::array::Array::<world_native::banes::BaneWindow>"
+        }
+      ]
+    },
     "core::array::Span::<world_native::blitz_results::RankedPlayer>": {
       "type": "struct",
       "name": "core::array::Span::<world_native::blitz_results::RankedPlayer>",
@@ -9772,6 +9782,28 @@
         }
       ]
     },
+    "world_native::banes::BaneEffects": {
+      "type": "struct",
+      "name": "world_native::banes::BaneEffects",
+      "members": [
+        {
+          "name": "windows",
+          "type": "core::array::Span::<world_native::banes::BaneWindow>"
+        },
+        {
+          "name": "beast_percent",
+          "type": "core::integer::u16"
+        },
+        {
+          "name": "stamina_percent",
+          "type": "core::integer::u16"
+        },
+        {
+          "name": "production_percent",
+          "type": "core::integer::u16"
+        }
+      ]
+    },
     "world_native::banes::BaneRules": {
       "type": "struct",
       "name": "world_native::banes::BaneRules",
@@ -9799,6 +9831,24 @@
         {
           "name": "quest_counts",
           "type": "core::array::Span::<core::integer::u128>"
+        }
+      ]
+    },
+    "world_native::banes::BaneWindow": {
+      "type": "struct",
+      "name": "world_native::banes::BaneWindow",
+      "members": [
+        {
+          "name": "kind",
+          "type": "core::integer::u8"
+        },
+        {
+          "name": "start",
+          "type": "core::integer::u64"
+        },
+        {
+          "name": "end",
+          "type": "core::integer::u64"
         }
       ]
     },
@@ -16059,5 +16109,5 @@
       ]
     }
   },
-  "identity": "24111d7539bf9ad1c9b19c989409b7d0de33d839c98e868e74f066ae77afc42f"
+  "identity": "9e1ef4517cb65a69b5189b7859db98ffcd556ad04e9dedfe24ac596c92657283"
 }

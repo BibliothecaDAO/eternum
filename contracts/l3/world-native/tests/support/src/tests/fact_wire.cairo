@@ -2,6 +2,12 @@
 // Production schema generation never loads this test class.
 #[derive(Drop, Serde)]
 pub struct FactWire {
+    pub altar_bar: crate::deep::AltarBar,
+    pub team_bane_key: crate::deep::TeamBaneKey,
+    pub team_bane: crate::deep::TeamBane,
+    pub deep_army: crate::deep::DeepArmy,
+    pub deep_guard: crate::deep::DeepGuard,
+    pub deep_site: crate::deep::DeepSite,
     pub quest_progress: crate::quests::QuestProgress,
     pub settlement_rules: crate::settlement::SettlementRules,
     pub wonder_faith: crate::faith::WonderFaith,

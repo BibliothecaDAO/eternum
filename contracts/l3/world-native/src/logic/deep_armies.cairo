@@ -1,9 +1,9 @@
-use starknet::storage::{StorageMapReadAccess, StorageMapWriteAccess};
+use starknet::storage::{StorageMapReadAccess, StorageMapWriteAccess, StoragePointerReadAccess};
 use crate::commands::ExecutionContext;
 use crate::troops::{ExplorerKey, ExplorerTroops, IBattleResolutionDispatcherTrait};
 
 pub fn enter(key: ExplorerKey, context: ExecutionContext) {
-    if crate::logic::deep_sites::rules(key.game_id).is_none() {
+    if crate::logic::deep_sites::rules_entry(key.game_id).is_none() {
         return;
     }
     let state = crate::state::read();
@@ -12,7 +12,7 @@ pub fn enter(key: ExplorerKey, context: ExecutionContext) {
 }
 
 pub fn settle(key: ExplorerKey, mut army: ExplorerTroops, context: ExecutionContext) -> ExplorerTroops {
-    let Some(rules) = crate::logic::deep_sites::rules(key.game_id) else {
+    let Some(rules) = crate::logic::deep_sites::rules_entry(key.game_id) else {
         return army;
     };
     let Some(last_tick) = crate::state::read().deep.army_ticks.read((key.game_id, key.explorer_id)) else {
@@ -29,7 +29,7 @@ pub fn settle(key: ExplorerKey, mut army: ExplorerTroops, context: ExecutionCont
         return army;
     }
     let before = army.troops.count;
-    army.troops.count = crate::deep::troops_after_ticks(before, last_tick, tick, rules.loss_per_tick);
+    army.troops.count = crate::deep::troops_after_ticks(before, last_tick, tick, rules.loss_per_tick.read());
     write_tick(key, tick);
     crate::logic::combat::combat_troops(key.game_id)
         .finish_battle(key, army, before, crate::commands::action_context(context));

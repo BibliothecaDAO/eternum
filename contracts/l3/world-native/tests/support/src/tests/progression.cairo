@@ -41,7 +41,7 @@ pub fn bar(d: super::Deployment, key: crate::troops::ExplorerKey, game_id: u32) 
         d.games,
         || {
             let context = crate::commands::load_context(game_id, 123, 360);
-            crate::logic::troops::active_explorer(key, 360, context).troops.stamina.inline().amount
+            crate::logic::troops::command_explorer(key, None, 360, context).troops.stamina.inline().amount
         },
     )
 }
@@ -117,7 +117,8 @@ pub fn deploy(d: super::Deployment, game_id: u32, category: u8, direction: u8) -
 }
 
 
-pub fn place_army_at_depth(d: super::Deployment, key: crate::troops::ExplorerKey, depth: u8) {
+pub fn place_army_on_private_layer(d: super::Deployment, key: crate::troops::ExplorerKey, depth: u8) {
+    assert!(depth < 3, "use the fixed Deep for depth three");
     if depth == 0 {
         return;
     }

@@ -237,10 +237,10 @@ fn a_nonadjacent_army_cannot_consume_the_reservation_and_rollover_cannot_pay_an_
 }
 
 #[test]
-fn explored_chests_use_each_layers_odds_and_reserve_the_rolled_amount() {
-    for depth in 0_u8..4 {
+fn explored_chests_use_each_private_layers_odds_and_reserve_the_rolled_amount() {
+    for depth in 0_u8..3 {
         let (d, game_id, key) = super::registrar::setup_frontier_chests();
-        world_test_support::tests::progression::place_army_at_depth(d, key, depth);
+        world_test_support::tests::progression::place_army_on_private_layer(d, key, depth);
         let coord = destination(d, key);
         let rolled = expected(d, game_id, coord, HIT_ROOT);
         explore(d, key, HIT_ROOT, 360);

@@ -141,7 +141,7 @@ fn stand_completion_ends_the_aspect_bane_and_records_both_capped_rewards_once() 
                 crate::logic::banes::progress(home.game_id, 1, 1),
                 crate::banes::BaneProgress { completed: 1, ended_at: completed_at },
             );
-            assert!(crate::logic::banes::windows(home, completed_at, observed_at + 1).is_empty());
+            assert!(crate::logic::banes::effects(home, completed_at, observed_at + 1).windows.is_empty());
         },
     );
 }
@@ -237,7 +237,7 @@ fn complete_combat_quest(d: Deployment, home: ResourceKey, mut army: ExplorerKey
                 interact_with_state(
                     d.games,
                     || {
-                        let windows = crate::logic::banes::windows(home, start - 1, timestamp + 1);
+                        let windows = crate::logic::banes::effects(home, start - 1, timestamp + 1).windows;
                         assert_eq!(windows.len(), 1);
                         assert_eq!(
                             *windows.at(0),
@@ -325,7 +325,7 @@ fn prepare_bane_army(seed: felt252, kind: u8, troops: u128) -> (Deployment, Reso
         .discovery =
             Some(
                 crate::expeditions::FrontierDiscoveryRules {
-                    camp_bps: 5000,
+                    camp_bps: 2000,
                     beasts_bps: 0,
                     rift_bps: 0,
                     ruin_bps: 0,
@@ -334,6 +334,12 @@ fn prepare_bane_army(seed: felt252, kind: u8, troops: u128) -> (Deployment, Reso
                     empty_reveal_limit: 1,
                 },
             );
+    assert_eq!(
+        crate::discovery::maximum_race_chance(
+            preset.economy.discovery.unwrap(), preset.economy.race.unwrap().clear_mist_percent,
+        ),
+        9000,
+    );
     let (d, game_id) = super::aspects::setup_aspect_preset(seed, preset);
     assert!(
         execute_in_game(
@@ -439,5 +445,5 @@ fn guard_count(target: ResourceKey) -> u128 {
 }
 
 fn attack(army: ExplorerKey, target: ResourceKey) -> Command {
-    Command::BattleGuard(Battle { attacker_id: army.explorer_id, defender_id: target.entity_id })
+    Command::BattleGuard(Battle { attacker_id: army.explorer_id, defender_id: target.entity_id, relic_slot: None })
 }

@@ -194,18 +194,9 @@ pub mod EntryAdministration {
             let first = crate::days::day_of(game, unit, founded).index;
             let today = crate::days::day_of(game, unit, timestamp).index;
             let rules = preset.labor_rules.read().expect('labor is disabled');
-            let resource_context = crate::commands::ResourceContext {
-                production_start: if preset.rules.mode_rules.read() & crate::rules::PRODUCTION_START != 0 {
-                    game.start_main_at.try_into().unwrap()
-                } else {
-                    0
-                },
-                troop_capacity: preset.rules.capacity_config.read().troop_capacity,
-                spire_fee: preset.rules.spire_travel_essence_cost.read(),
-                delivery_tick: preset.rules.tick_config.read().delivery_tick_in_seconds,
-            };
+            let resource_context = crate::logic::home_grants::grant_resource_context(key.game_id, game);
             let release_id = self.data.game_releases.read(key.game_id);
-            let resources = self.data.releases.read(release_id).classes.resources;
+            let resources = self.data.releases.entry(release_id).classes.resources.read();
             for day in first..today {
                 if self.data.entry.home_labor_grants.read((key.game_id, home, day)).is_some() {
                     continue;

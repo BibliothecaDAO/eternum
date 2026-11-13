@@ -1590,8 +1590,8 @@ fn frontier_shrine_and_well_persist_once_and_use_the_public_progress_and_slot() 
         || {
             crate::logic::map::MapState::occupy(tile, 902, crate::taxonomy::WELL_OCCUPIER, false);
             crate::logic::progression::write(key, crate::progression::ArmyProgress { logistics: 3, ..progress });
-            let mut army = crate::logic::troops::active_explorer(
-                key, 360, crate::commands::load_context(game_id, 0, 360),
+            let mut army = crate::logic::troops::command_explorer(
+                key, None, 360, crate::commands::load_context(game_id, 0, 360),
             );
             army.troops.stamina.set_amount(10);
             crate::logic::troops::TroopState::save(key, army.into_record());
@@ -1607,8 +1607,8 @@ fn frontier_shrine_and_well_persist_once_and_use_the_public_progress_and_slot() 
         d.games,
         || {
             crate::logic::map::MapState::occupy(tile, 903, crate::taxonomy::WELL_OCCUPIER, false);
-            let mut army = crate::logic::troops::active_explorer(
-                key, 360, crate::commands::load_context(game_id, 0, 360),
+            let mut army = crate::logic::troops::command_explorer(
+                key, None, 360, crate::commands::load_context(game_id, 0, 360),
             );
             let maximum = crate::progression::stamina_max(
                 crate::logic::progression::require(key),
@@ -2719,7 +2719,7 @@ fn defeating_a_deep_beast_keeps_its_site_and_the_next_day_restores_the_same_guar
     let guard_key = GuardKey { game_id, structure_id: site_id, slot: 0 };
     assert_eq!(guards.guard(guard_key).troops.count, 0);
     assert_eq!(
-        snforge_std::interact_with_state(d.games, || crate::logic::deep_guards::guard(key)),
+        snforge_std::interact_with_state(d.games, || crate::logic::deep_guards::entry(key).map(|value| value.read())),
         Some(crate::deep::DeepGuard { site_id, slot: 0 }),
     );
     assert_eq!(troops.resolved_explorer(key).unwrap().coord, coord);
@@ -2847,7 +2847,9 @@ fn deep_slots_accept_four_allied_players_refuse_duplicates_and_release_on_death_
             ),
         );
         assert_eq!(
-            snforge_std::interact_with_state(d.games, || crate::logic::deep_guards::guard(key)),
+            snforge_std::interact_with_state(
+                d.games, || crate::logic::deep_guards::entry(key).map(|value| value.read()),
+            ),
             Some(crate::deep::DeepGuard { site_id, slot }),
         );
         assert_eq!(
@@ -2890,7 +2892,10 @@ fn deep_slots_accept_four_allied_players_refuse_duplicates_and_release_on_death_
             369,
         ),
     );
-    assert!(snforge_std::interact_with_state(d.games, || crate::logic::deep_guards::guard(first)).is_none());
+    assert!(
+        snforge_std::interact_with_state(d.games, || crate::logic::deep_guards::entry(first).map(|value| value.read()))
+            .is_none(),
+    );
     assert!(GameState { contract_address: d.games }.resolved_explorer(first).is_none());
     let duplicate_player = *players.at(1);
     let duplicate = deep_joiner_fixture(
@@ -2916,7 +2921,7 @@ fn deep_slots_accept_four_allied_players_refuse_duplicates_and_release_on_death_
     );
     for key in array![fifth, duplicate, enemy] {
         let guard: Option<crate::deep::DeepGuard> = snforge_std::interact_with_state(
-            d.games, || crate::logic::deep_guards::guard(key),
+            d.games, || crate::logic::deep_guards::entry(key).map(|value| value.read()),
         );
         assert!(guard.is_none());
         assert_eq!(
@@ -2926,7 +2931,7 @@ fn deep_slots_accept_four_allied_players_refuse_duplicates_and_release_on_death_
     }
     assert!(execute_in_game(fifth_player, game_id, join_fifth, 372));
     assert_eq!(
-        snforge_std::interact_with_state(d.games, || crate::logic::deep_guards::guard(fifth)),
+        snforge_std::interact_with_state(d.games, || crate::logic::deep_guards::entry(fifth).map(|value| value.read())),
         Some(crate::deep::DeepGuard { site_id, slot: 0 }),
     );
     let tomorrow = day_start(d, game_id, 1);
@@ -2934,7 +2939,7 @@ fn deep_slots_accept_four_allied_players_refuse_duplicates_and_release_on_death_
     for key in armies.span() {
         let key: ExplorerKey = *key;
         let guard: Option<crate::deep::DeepGuard> = snforge_std::interact_with_state(
-            d.games, || crate::logic::deep_guards::guard(key),
+            d.games, || crate::logic::deep_guards::entry(key).map(|value| value.read()),
         );
         assert!(guard.is_none());
         assert!(GameState { contract_address: d.games }.resolved_explorer(key).is_none());
@@ -3107,7 +3112,10 @@ fn join_deep_tick_fixture(d: super::Deployment, game_id: u32, kind: u8, home: u6
         ),
     );
     assert_eq!(
-        snforge_std::interact_with_state(d.games, || crate::logic::deep_guards::guard(key)).unwrap().site_id, site_id,
+        snforge_std::interact_with_state(d.games, || crate::logic::deep_guards::entry(key).map(|value| value.read()))
+            .unwrap()
+            .site_id,
+        site_id,
     );
     key
 }
@@ -3141,7 +3149,7 @@ fn deep_ticks_pay_pre_loss_weights_once_and_stop_paying_dead_guards() {
                 500 * RESOURCE_PRECISION,
             );
             assert!(crate::logic::troops::explorer(first).is_none());
-            assert!(crate::logic::deep_guards::guard(first).is_none());
+            assert!(crate::logic::deep_guards::entry(first).map(|value| value.read()).is_none());
             assert_eq!(crate::logic::troops::explorer(second).unwrap().troops.count, 400 * RESOURCE_PRECISION);
         },
     );
@@ -3173,7 +3181,7 @@ fn deep_ticks_pay_pre_loss_weights_once_and_stop_paying_dead_guards() {
             assert_eq!(crate::state::read().deep.altar_bars.read((game_id, 1)), 15);
             for key in array![second, quarry, altar] {
                 assert!(crate::logic::troops::explorer(key).is_none());
-                assert!(crate::logic::deep_guards::guard(key).is_none());
+                assert!(crate::logic::deep_guards::entry(key).map(|value| value.read()).is_none());
             }
             assert_eq!(crate::state::read().deep.paid_tick.read(game_id), Some(7));
         },
@@ -3200,7 +3208,7 @@ fn quarry_splits_four_slots_by_troops_and_excludes_dead_or_removed_members_next_
                 }
             }
             assert!(crate::logic::troops::explorer(first).is_none());
-            assert!(crate::logic::deep_guards::guard(first).is_none());
+            assert!(crate::logic::deep_guards::entry(first).map(|value| value.read()).is_none());
             assert_eq!(crate::logic::troops::explorer(second).unwrap().troops.count, 200 * RESOURCE_PRECISION);
             assert_eq!(crate::logic::troops::explorer(third).unwrap().troops.count, 400 * RESOURCE_PRECISION);
             assert_eq!(crate::logic::troops::explorer(fourth).unwrap().troops.count, 600 * RESOURCE_PRECISION);
@@ -3232,11 +3240,11 @@ fn quarry_splits_four_slots_by_troops_and_excludes_dead_or_removed_members_next_
                 }
             }
             assert!(crate::logic::troops::explorer(second).is_none());
-            assert!(crate::logic::deep_guards::guard(second).is_none());
+            assert!(crate::logic::deep_guards::entry(second).map(|value| value.read()).is_none());
             assert_eq!(crate::logic::troops::explorer(third).unwrap().troops.count, 200 * RESOURCE_PRECISION);
             assert_eq!(crate::logic::troops::explorer(fourth).unwrap().troops.count, 400 * RESOURCE_PRECISION);
-            assert_eq!(crate::logic::deep_guards::guard(third).unwrap().slot, 2);
-            assert_eq!(crate::logic::deep_guards::guard(fourth).unwrap().slot, 3);
+            assert_eq!(crate::logic::deep_guards::entry(third).map(|value| value.read()).unwrap().slot, 2);
+            assert_eq!(crate::logic::deep_guards::entry(fourth).map(|value| value.read()).unwrap().slot, 3);
             assert_eq!(crate::state::read().deep.paid_tick.read(game_id), Some(5));
         },
     );
@@ -3369,6 +3377,54 @@ fn altar_issues_next_day_banes_in_board_order_and_stops_world_rolls() {
             assert!(!crate::logic::deep_banes::height_blocked(game_id, 2, tomorrow.end));
             for day in 1_u64..10 {
                 assert!(crate::logic::banes::kind(game_id, day).is_none());
+            }
+        },
+    );
+}
+
+#[test]
+fn triumph_readers_use_the_games_pinned_economy_and_preserve_all_four_windows() {
+    let (d, game_id, _) = deep_tick_fixture();
+    let releases = IReleasesDispatcher { contract_address: d.games };
+    let original = releases.release(1);
+    start_cheat_caller_address(d.games, super::authority());
+    releases
+        .register_release(
+            2,
+            Release {
+                classes: games_storage::release::LogicClasses {
+                    economy: super::declare_logic("TroopFixture"), ..original.classes,
+                },
+                ..original,
+            },
+        );
+    stop_cheat_caller_address(d.games);
+    assert_eq!(releases.game_release(game_id), 1);
+    assert_eq!(releases.current_release(), 2);
+    snforge_std::interact_with_state(
+        d.games,
+        || {
+            let state = crate::state::write();
+            let game = crate::logic::game::game(game_id);
+            let preset = crate::logic::preset_record::for_game(game_id);
+            let spacing = preset.settlement_spacing.read();
+            let coord = crate::expeditions::site(spacing, 1, 0, 0);
+            let home = ResourceKey { game_id, entity_id: 1 };
+            let today = crate::days::day_of(game, preset.rules.day_unit_seconds.read(), game.start_main_at);
+            for (stage, expected) in array![
+                (crate::rules::CLEAR_MIST_STAGE, 200_u16), (crate::rules::SECOND_WIND_STAGE, 200),
+                (crate::rules::PALE_MOON_STAGE, 50), (crate::rules::SPOILS_STAGE, 200),
+            ] {
+                assert_eq!(crate::logic::triumphs::percent(home, coord, stage, today.start), 100);
+                state.season.triumph_days.write((game_id, 1, stage), Some(today.index));
+                assert_eq!(crate::logic::triumphs::percent(home, coord, stage, today.start), expected);
+                assert_eq!(crate::logic::triumphs::percent(home, coord, stage, today.end - 1), expected);
+                assert_eq!(crate::logic::triumphs::percent(home, coord, stage, today.end), 100);
+                assert_eq!(crate::logic::triumphs::percent(home, coord, stage, game.start_main_at - 1), 100);
+                assert_eq!(crate::logic::triumphs::percent(home, coord, stage, game.end_at), 100);
+                assert_eq!(
+                    crate::logic::triumphs::percent(home, crate::deep::center(spacing), stage, today.start), 100,
+                );
             }
         },
     );
