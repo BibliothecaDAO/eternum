@@ -28,6 +28,7 @@ import {
 import { processSeasonTops } from "./season-tops";
 import { seasonLedgerReads, postSeasonTop } from "./season-ledger";
 import { ledgerBatches } from "./ledger-batches";
+import { isLedgerReadTick } from "@realms-world/chain";
 import { onIdentityChain } from "./ledger-chain";
 import { openSlotOnLedger, refundSlotOnLedger, markSlotRefundable } from "./blitz-launch";
 import { currentLaborDay, writeLaborGrant } from "./shard-labor";
@@ -810,12 +811,14 @@ export default {
     const health = await healthOf(env);
     return Response.json(health, { status: health.success ? 200 : 503, headers: { "cache-control": "no-store" } });
   },
-  async scheduled(_controller: ScheduledController, raw: RelayEnv): Promise<void> {
+  async scheduled(controller: ScheduledController, raw: RelayEnv): Promise<void> {
     const env = { ...raw, ...decodeRelaySettings(raw) };
-    try {
-      await ledgerOf(env).ledgerTick();
-    } catch {
-      console.error("ledger_tick_unavailable");
+    if (isLedgerReadTick(controller.scheduledTime)) {
+      try {
+        await ledgerOf(env).ledgerTick();
+      } catch {
+        console.error("ledger_tick_unavailable");
+      }
     }
     for (const shard of await activeShards(env.IDENTITY)) {
       try {

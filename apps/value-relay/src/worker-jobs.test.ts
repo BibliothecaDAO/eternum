@@ -134,7 +134,7 @@ it("records unavailable ledger work while shard ingestion and owned Realm labor 
   expect(shard.grant).toHaveBeenCalledWith(expect.anything(), claim);
   const tick = vi.fn();
   await worker.scheduled(
-    {} as ScheduledController,
+    { scheduledTime: 0 } as ScheduledController,
     {
       ENVIRONMENT: "staging",
       BASE_URL: "https://app.test",
@@ -150,6 +150,29 @@ it("records unavailable ledger work while shard ingestion and owned Realm labor 
     } as never,
   );
   expect(tick).toHaveBeenCalledWith("0x1");
+});
+
+it("reads the ledger once every five minutes while shards tick every minute", async () => {
+  const ledgerTick = vi.fn();
+  const tick = vi.fn();
+  const env = {
+    ENVIRONMENT: "staging",
+    BASE_URL: "https://app.test",
+    L2_RPC_URL: "https://ledger.test",
+    OPERATOR_TOKEN: "test",
+    SHARD_LEDGER_OPERATOR_PRIVATE_KEY: "0x1",
+    COSIGNER_URL: "https://cosigner.test",
+    COSIGNER_TOKEN: "test-cosigner-token",
+    LEDGER_OPERATOR_ADDRESS: "0x2",
+    LEDGER_OPERATOR_PRIVATE_KEY: "0x3",
+    RELAY: { idFromName: (id: string) => id, get: () => ({ ledgerTick, tick }) },
+    IDENTITY: {},
+  } as never;
+  const minute = 60_000;
+  for (let elapsed = 0; elapsed < 10; elapsed++)
+    await worker.scheduled({ scheduledTime: elapsed * minute } as ScheduledController, env);
+  expect(ledgerTick).toHaveBeenCalledTimes(2);
+  expect(tick).toHaveBeenCalledTimes(10);
 });
 
 it("continues a full confirmed page through its alarm and stops when caught up", async () => {

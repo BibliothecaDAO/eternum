@@ -15,7 +15,7 @@ it.each(Object.keys(settings))("rejects missing %s before health or scheduled wo
   await expect(worker.fetch(new Request("https://play.test/api/operator/monitor/health"), env)).rejects.toThrow(
     "monitor_environment_invalid",
   );
-  await expect(worker.scheduled({} as ScheduledController, env)).rejects.toThrow("monitor_environment_invalid");
+  await expect(worker.scheduled({ scheduledTime: 0 } as ScheduledController, env)).rejects.toThrow("monitor_environment_invalid");
   expect(get).not.toHaveBeenCalled();
 });
 it("requires the canonical HTTPS RPC without exposing configuration values", () => {
@@ -38,4 +38,11 @@ it.each([true, false])("serves health under the existing monitor route (healthy:
   expect(await reply.json()).toEqual({ service: "value-monitor", ...health });
   expect(reply.headers.get("cache-control")).toBe("no-store");
   expect((await worker.fetch(new Request("https://play.test/health"), env)).status).toBe(404);
+});
+it("audits the ledger once every five minutes", async () => {
+  const tick = vi.fn();
+  const env = { ...settings, MONITOR: { idFromName: (name: string) => name, get: () => ({ tick }) } } as never;
+  for (let minute = 0; minute < 10; minute++)
+    await worker.scheduled({ scheduledTime: minute * 60_000 } as ScheduledController, env);
+  expect(tick).toHaveBeenCalledTimes(2);
 });

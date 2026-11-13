@@ -7,6 +7,7 @@ import { bindLedgerState, ledgerOrNull, ledgerStateName } from "./ledger-state";
 import { activeShards, isDevShardChain, readRegisteredShard, type ShardDirectory } from "@realms-world/value-ledger";
 import { processSeasonTops } from "./season-tops";
 import { seasonLedgerReads, challengeSeason } from "./season-ledger";
+import { isLedgerReadTick, LEDGER_READ_STALE_SECONDS } from "@realms-world/chain";
 import { onIdentityChain } from "./ledger-chain";
 import { presentsOperatorToken } from "@realms-world/identity";
 import { DurableObject, WorkerEntrypoint } from "cloudflare:workers";
@@ -239,7 +240,7 @@ export class ValueMonitor extends DurableObject<MonitorEnv> {
       ...observation,
       success:
         age >= 0 &&
-        age <= 300 &&
+        age <= LEDGER_READ_STALE_SECONDS &&
         observation?.value !== null &&
         observation?.value !== undefined &&
         observation.season_error === null &&
@@ -447,9 +448,9 @@ export default {
       { status: health.success ? 200 : 503, headers: { "cache-control": "no-store" } },
     );
   },
-  async scheduled(_controller: ScheduledController, raw: MonitorEnv): Promise<void> {
+  async scheduled(controller: ScheduledController, raw: MonitorEnv): Promise<void> {
     const env = { ...raw, ...decodeMonitorSettings(raw) };
-    await monitorOf(env).tick();
+    if (isLedgerReadTick(controller.scheduledTime)) await monitorOf(env).tick();
   },
 };
 

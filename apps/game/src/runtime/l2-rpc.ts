@@ -1,9 +1,7 @@
-import { environmentL2, resolveEndpoint } from "@realms-world/chain";
+import { environmentL2, PUBLIC_L2_RPC_URL } from "@realms-world/chain";
 import { constants, RpcProvider } from "starknet";
 
 import { valueEnvironmentOf } from "@/shell/frame/environment";
-
-import { env } from "../../env";
 
 /** STRK, the token every Starknet network fee is paid in. */
 const STRK = "0x04718f5a0fc34cc1af16a1cdee98ffb20c31f5cd61d6ab07201858f4287c938d";
@@ -48,11 +46,8 @@ export const l2TransactionUrl = (hash: string): string => `${L2_CHAIN.explorer}/
 /** Whether a chain id, as a wallet or a payload gives it, is this build's L2. */
 export const isL2Chain = (chainId: bigint | string): boolean => BigInt(chainId) === BigInt(L2_CHAIN.id);
 
-/** This build's L2 through our Alchemy RPC, from the build's L2 RPC variable; there is no public fallback. */
-export const L2_RPC_URL = resolveEndpoint(env.VITE_PUBLIC_L2_RPC_URL, {
-  name: "VITE_PUBLIC_L2_RPC_URL",
-  browserFacing: true,
-});
+/** This build's L2 through the free public endpoint: the paid Alchemy URL is never in a browser. */
+export const L2_RPC_URL = PUBLIC_L2_RPC_URL;
 
 let provider: RpcProvider | null = null;
 

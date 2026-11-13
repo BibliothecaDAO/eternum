@@ -128,7 +128,7 @@ const env = {
 const tick = async () => {
   chain.reads = [];
   instances = new Map();
-  await worker.scheduled({} as ScheduledController, env as never);
+  await worker.scheduled({ scheduledTime: 0 } as ScheduledController, env as never);
 };
 const chestReads = () => chain.reads.filter((read) => read.keys.includes(hash.getSelectorFromName("ChestRequested")));
 const seasonReads = () => chain.reads.filter((read) => read.keys.includes(hash.getSelectorFromName("SeasonOpened")));

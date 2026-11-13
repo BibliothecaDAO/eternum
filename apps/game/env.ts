@@ -20,7 +20,6 @@ const numberFromString = Schema.String.pipe(
 const optionalUrlOrEmpty = Schema.optional(Schema.Union([url, Schema.Literal("")]));
 
 const envSchema = Schema.Struct({
-  VITE_PUBLIC_L2_RPC_URL: url,
   VITE_PUBLIC_RENDERER_BUILD_MODE: Schema.String.pipe(
     Schema.decodeTo(
       Schema.declare(

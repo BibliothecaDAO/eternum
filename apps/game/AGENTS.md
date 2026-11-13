@@ -121,8 +121,7 @@ Resolve conflicts in YOUR files only If conflict is in a file you didn't modify,
 `.context/playtest-builds/<run>` directory), serves it with `vite preview` on that port, plays the newest live game of
 its steps' mode (Frontier by default) in a browser on the machine's GPU (Vulkan; headless Chrome would otherwise render
 on SwiftShader), and releases everything it started. Run it from a stopped client and reuse it; extend its steps in
-`scripts/client-playtest/steps.mjs` rather than writing another runner. The build needs `VITE_PUBLIC_L2_RPC_URL` in
-`apps/game/.env.local`, as the dev server does.
+`scripts/client-playtest/steps.mjs` rather than writing another runner. The build needs no RPC key.
 
 - **What it owns.** One owner holds the build, the preview, each browser with its DevTools connection and temporary
   profile, and releases them last-acquired first, each awaited, on every exit. A port already in use fails the start

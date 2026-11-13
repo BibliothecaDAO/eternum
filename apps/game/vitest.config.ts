@@ -18,7 +18,6 @@ export default defineConfig({
     // they check are produced; the PR gate stays a behaviour suite.
     exclude: ["**/node_modules/**", "**/dist/**", ...ASSET_CHECK_FILES],
     env: {
-      VITE_PUBLIC_L2_RPC_URL: "https://identity-rpc.realms.test",
     },
     globals: true,
     // The shared machine caps test workers with VITEST_MAX_WORKERS, which vitest 2 does not read (only

@@ -1,3 +1,4 @@
+import { LEDGER_READ_STALE_SECONDS } from "@realms-world/chain";
 const address = vi.hoisted(() => vi.fn(() => "0x10"));
 vi.mock("./environment", async (original) => ({
   ...(await original<typeof import("./environment")>()),
@@ -85,7 +86,9 @@ it("reports a fresh completed audit as healthy, and refuses stale or paused prog
   f.data.set("progress", { halted: "lords_conservation:7:10" });
   expect((await f.monitor.health()).success).toBe(false);
   f.data.set("progress", { halted: null });
-  f.data.set("observation", { ...observation, checked_at: checked_at - 301 });
+  f.data.set("observation", { ...observation, checked_at: checked_at - (LEDGER_READ_STALE_SECONDS - 1) });
+  expect((await f.monitor.health()).success).toBe(true);
+  f.data.set("observation", { ...observation, checked_at: checked_at - (LEDGER_READ_STALE_SECONDS + 1) });
   expect((await f.monitor.health()).success).toBe(false);
 });
 
