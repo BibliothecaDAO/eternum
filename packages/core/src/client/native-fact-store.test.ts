@@ -256,15 +256,15 @@ describe("native fact store", () => {
 
   it("indexes native keys by game and rejects reserved games", () => {
     const store = new NativeFactStore();
-    store.applyFacts([set("0x1", "VillageRaid", { game_id: 2, entity_id: 4, last_tick: "300" })]);
-    expect(store.get("VillageRaid", { game_id: 2, entity_id: 4 })?.last_tick).toBe(300n);
-    expect([...store.inGame("VillageRaid", 2)]).toHaveLength(1);
-    expect([...store.inGame("VillageRaid", 1)]).toHaveLength(0);
-    expect(() => store.applyFacts([set("0x2", "VillageRaid", { game_id: 0, entity_id: 4, last_tick: "300" })])).toThrow(
+    store.applyFacts([set("0x1", "ResourceBalance", { game_id: 2, entity_id: 4, resource_type: 1, balance: "300" })]);
+    expect(store.get("ResourceBalance", { game_id: 2, entity_id: 4, resource_type: 1 })?.balance).toBe(300n);
+    expect([...store.inGame("ResourceBalance", 2)]).toHaveLength(1);
+    expect([...store.inGame("ResourceBalance", 1)]).toHaveLength(0);
+    expect(() => store.applyFacts([set("0x2", "ResourceBalance", { game_id: 0, entity_id: 4, resource_type: 1, balance: "300" })])).toThrow(
       "Reserved game id",
     );
-    store.applyFacts([remove("0x1", "VillageRaid")]);
-    expect([...store.inGame("VillageRaid", 2)]).toHaveLength(0);
+    store.applyFacts([remove("0x1", "ResourceBalance")]);
+    expect([...store.inGame("ResourceBalance", 2)]).toHaveLength(0);
   });
 
   it("reads the generated explorer fixture as immutable typed facts", () => {
@@ -454,7 +454,6 @@ describe("declared fact absence", () => {
     complete = true;
     update();
     expect(store.requireOrAbsent("ProductionBonus", key).known?.incr_labor_rate_percent_num).toBe(0);
-    expect(store.requireOrAbsent("VillageRaid", key).known?.last_tick).toBe(0n);
     const guard = store.requireOrAbsent("Guard", { game_id: 1, structure_id: 7, slot: 1 });
     expect(guard.known?.troops.count).toBe(0n);
     expect(guard.known?.destroyed_tick).toBe(0);
@@ -462,7 +461,7 @@ describe("declared fact absence", () => {
     // A remote production row does not prove the presence of its resource owner.
     expect(store.requireOrAbsent("ResourceBalance", { ...key, resource_type: 1 }).unknown).toContain("UNKNOWN_PARENT");
     store.applyFacts([remove("0x7", "Structure")]);
-    expect(store.requireOrAbsent("VillageRaid", key).unknown).toContain("UNKNOWN_PARENT");
+    expect(store.requireOrAbsent("ProductionBonus", key).unknown).toContain("UNKNOWN_PARENT");
   });
   it("uses the declared resource, hyperstructure and settlement parents", () => {
     const store = new NativeFactStore();
