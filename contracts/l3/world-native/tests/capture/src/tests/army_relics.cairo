@@ -10,6 +10,8 @@ fn ruins_fill_replace_and_activate_an_armys_relics_through_commands() {
     preset.economy.discovery = Some(discovery);
     preset.rules.battle_config.cooldown_seconds = 0;
     preset.rules.battle_config.regular_immunity_ticks = 0;
+    preset.rules.troop_stamina_config.stamina_initial = 360;
+    preset.rules.troop_stamina_config.stamina_knight_max = 360;
     let mut depths = array![];
     for depth in preset.settlement.depths {
         depths
@@ -173,7 +175,7 @@ fn discover_relic(
     let site = IMapLogicDispatcher { contract_address: d.games }
         .occupancy(crate::geometry::tile_key(key.game_id, destination))
         .unwrap();
-    assert_eq!(site.category, crate::taxonomy::RUIN_CATEGORY);
+    assert_eq!(site.category, crate::taxonomy::RUIN_OCCUPIER);
     ResourceKey { game_id: key.game_id, entity_id: site.entity_id }
 }
 
@@ -222,10 +224,11 @@ fn beast_clears_pay_wheat_or_triple_xp_through_explore_and_battle() {
                 .append(
                     crate::resources::ResourceAmount {
                         amount: if grant.resource_type == crate::resources::WHEAT {
-                            0
+                            1000 * RESOURCE_PRECISION
                         } else {
                             grant.amount
-                        }, ..grant,
+                        },
+                        ..grant,
                     },
                 );
         }
@@ -311,7 +314,7 @@ fn beast_clears_pay_wheat_or_triple_xp_through_explore_and_battle() {
 fn a_cleared_troll_camp_reinforces_from_home_stock_away_from_home() {
     let (_, mut preset) = super::preset_projection::current_definition("frontier-s1");
     let discovery = crate::expeditions::FrontierDiscoveryRules {
-        beasts_bps: 0, camp_bps: 100, rift_bps: 0, ruin_bps: 100, shrine_bps: 0, well_bps: 0, empty_reveal_limit: 7,
+        beasts_bps: 0, camp_bps: 100, rift_bps: 0, ruin_bps: 0, shrine_bps: 0, well_bps: 0, empty_reveal_limit: 7,
     };
     preset.economy.discovery = Some(discovery);
     preset.rules.battle_config.cooldown_seconds = 0;
@@ -378,11 +381,20 @@ fn a_cleared_troll_camp_reinforces_from_home_stock_away_from_home() {
         d.games, || crate::logic::expeditions::expedition_site(camp).unwrap(),
     );
     assert_eq!(receipt.clear.unwrap().home_id, home_id);
+    let before_move = GameState { contract_address: d.games }.resolved_explorer(key).unwrap();
     assert!(
-        execute_in_game(
+        !execute_in_game(
             d, game_id, Command::Move(crate::commands::Move { explorer_id, directions: array![0, 0].span() }), 410,
         ),
     );
+    assert_eq!(GameState { contract_address: d.games }.resolved_explorer(key).unwrap(), before_move);
+    assert!(
+        execute_in_game(
+            d, game_id, Command::Move(crate::commands::Move { explorer_id, directions: array![0].span() }), 410,
+        ),
+    );
+    let empty_root = discovery_root(game_id, discovery, 0, None, crate::discovery::Discovery::None);
+    assert!(explore_with_root(d, game_id, explorer_id, empty_root, 411));
     let army = GameState { contract_address: d.games }.resolved_explorer(key).unwrap();
     let origin = crate::expeditions::site(preset.settlement.spacing, crate::entity_ids::namespace(home_id), 0, 0);
     assert!(!crate::geometry::adjacent(army.coord, origin));
@@ -399,7 +411,7 @@ fn a_cleared_troll_camp_reinforces_from_home_stock_away_from_home() {
                     crate::troop_management::RecruitExplorer { explorer_id, amount: RESOURCE_PRECISION },
                 ),
             ),
-            411,
+            412,
         ),
     );
     assert_eq!(
