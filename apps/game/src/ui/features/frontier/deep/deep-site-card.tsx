@@ -7,22 +7,14 @@ import { sendOnce, useInFlight } from "@/hooks/store/use-actions-in-flight";
 import { requestOrderAt } from "@/three/scenes/worldmap-order-request";
 import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import type { IconMeaning } from "@/ui/design-system/icon-meaning";
-import {
-  HudButton,
-  HudChip,
-  HudCost,
-  HudMeter,
-  HudRow,
-  HudSheet,
-  HudWindowFoot,
-} from "@/ui/design-system/kit/hud-elements";
+import { HudButton, HudChip, HudCost, HudRow, HudSheet, HudWindowFoot } from "@/ui/design-system/kit/hud-elements";
 import { costLine } from "@/ui/design-system/kit/price-faces";
 import { ATTACKING, DEEP_WORDS, MOVE, USING } from "@/ui/design-system/kit/words";
 import { toast } from "@/ui/features/event-feed/notify";
 import { configManager } from "@bibliothecadao/eternum";
 import { safeInteger } from "@bibliothecadao/eternum/game-client";
 import type { TileSpatialRenderable } from "@bibliothecadao/eternum/game-sync";
-import { aspectName, type deepSites, formatExact } from "@bibliothecadao/types";
+import { aspectName, type deepSites, formatDuration, formatExact } from "@bibliothecadao/types";
 
 import { useOrderAt } from "../hud/army-order";
 import { useApproachTile } from "../sites/approach";
@@ -156,7 +148,7 @@ type DeepOrder =
 
 /**
  * A Deep site's card: who it serves and what a tick held pays, who guards it (its beast, or its four slots with each
- * army's troops, draining bar and share), then the selected army's order or why it has none.
+ * army's troops, how long they last and its share), then the selected army's order or why it has none.
  */
 const DeepSiteCardView = ({
   plan,
@@ -230,23 +222,16 @@ const GuardRows = ({ guard }: { guard: DeepGuardState }) => {
   );
 };
 
-/** A filled slot: its player's realm, its troops, its share of each tick, and its draining bar with the ticks left. */
+/**
+ * A filled slot: its player's realm, its troops, how long they last (ticks, and the time that is) and its share of each
+ * tick. A hold lasts as long as its troops; the facts hold no count of what the army came with, so no bar of it.
+ */
 const SlotRow = ({ slot }: { slot: DeepSlot }) => (
   <HudRow
     lead={<SemanticIcon name="troops" size={32} />}
     title={slot.realm}
     selected={slot.mine}
-    detail={
-      <span className="flex flex-col gap-0.5">
-        <span>
-          {DEEP_WORDS.ticksLeft(slot.ticks.left)} · {DEEP_WORDS.share(slot.share)}
-        </span>
-        <HudMeter
-          label={DEEP_WORDS.ticksLeft(slot.ticks.left)}
-          share={slot.ticks.ofDay > 0 ? slot.ticks.left / slot.ticks.ofDay : 0}
-        />
-      </span>
-    }
+    detail={`${DEEP_WORDS.lasts(slot.ticks.left, formatDuration(slot.ticks.seconds, { days: false }))} · ${DEEP_WORDS.share(slot.share)}`}
     trail={formatExact(slot.troops)}
   />
 );

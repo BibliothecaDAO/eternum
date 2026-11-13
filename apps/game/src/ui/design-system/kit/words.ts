@@ -500,7 +500,8 @@ export const DEEP_WORDS = {
   open: "No guard: the next army takes it",
   heldBy: (aspect: string) => `Held by ${aspect}`,
   freeSlot: "Free slot",
-  ticksLeft: (left: number) => `${formatExact(left)} ticks left`,
+  /** How long a guard's troops last: its army ticks, and the time until the last of them. */
+  lasts: (ticks: number, time: string) => `${formatExact(ticks)} ticks left (${time})`,
   share: (percent: number) => `${percent}% of each tick`,
   attack: "Attack",
   take: "Take",

@@ -15,8 +15,8 @@ export type DeepSlot = {
   realm: string;
   /** Its troops now, the Deep's losses taken. */
   troops: number;
-  /** The army ticks it has left, and the ticks a whole day holds (a full bar). */
-  ticks: { left: number; ofDay: number };
+  /** The army ticks it has left, and the seconds until the last of them. */
+  ticks: { left: number; seconds: number };
   /** Its share of each tick, out of 100: its troops over the guard's. */
   share: number;
   /** The slot is the viewer's own army. */

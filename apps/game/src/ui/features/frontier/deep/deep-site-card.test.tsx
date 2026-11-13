@@ -264,7 +264,7 @@ describe("a Deep site's card", () => {
     );
     expect(host.textContent).toContain("For your Aspect");
     expect(host.textContent).toContain("Held by Might");
-    expect(host.textContent).toContain("15 ticks left · 100% of each tick");
+    expect(host.textContent).toContain("15 ticks left (1m) · 100% of each tick");
     expect(host.querySelectorAll("[data-deep-slots] .ui-row")).toHaveLength(4);
     expect(
       [...host.querySelectorAll("[data-deep-slots] .ui-row")].filter((row) => row.textContent?.includes("Free slot")),
