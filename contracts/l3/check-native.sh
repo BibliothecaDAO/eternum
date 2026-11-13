@@ -7,6 +7,7 @@ verifier=contracts/l3/vrf-verifier
 account=contracts/l3/player-account
 
 prelude() {
+  python3 "$world/toolchain/snforge.py" resolve > /dev/null
   node "$world/scripts/generate-extension.mjs" --check
   node --test contracts/l3/check-native-plan.test.mjs "$world/scripts/fixture-actors.test.mjs" "$world/scripts/fact-models.test.mjs"
   python3 -m unittest discover -s "$world/toolchain" -p test_snforge.py
