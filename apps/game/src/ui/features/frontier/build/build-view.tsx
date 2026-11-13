@@ -1,3 +1,4 @@
+import { needsRealmLevel } from "@/ui/design-system/kit/words";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { availableScoutingChoices, type ScoutingSide } from "../progression-choices";
 import { researchTier } from "@bibliothecadao/eternum";
@@ -73,6 +74,7 @@ export type BuildTile = {
         /** The missing resource and its wait (unknown when nothing fills it), or population. */
         short?: { of: Price["of"]; wait: number | undefined } | { of: "population" };
       }
+    | { kind: "level"; level: number }
     | { kind: "built" }
     | { kind: "locked"; gate: number; bought: number };
 };
@@ -340,6 +342,12 @@ const Band = ({ standing }: { standing: BuildTile["standing"] }) => (
         <>
           <SemanticIcon name="lock" size={14} />
           {purchasesOfGate(standing.bought, standing.gate)} research
+        </>
+      )}
+      {standing.kind === "level" && (
+        <>
+          <SemanticIcon name="lock" size={14} />
+          {needsRealmLevel(standing.level)}
         </>
       )}
       {standing.kind === "price" && <Price standing={standing} />}

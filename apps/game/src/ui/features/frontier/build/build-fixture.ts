@@ -1,3 +1,6 @@
+import { buildNativePreset } from "../../../../../../../config/deployer/clean/config/native-preset";
+import { loadNativePresetConfiguration } from "../../../../../../../config/deployer/clean/registrar/native-preset";
+import { FRONTIER_S1_PRESET_ID } from "../../../../../../../config/source/common/native-preset-modes";
 import { configManager, setBlockTimestampSource } from "@bibliothecadao/eternum";
 import { NativeFactStore } from "@bibliothecadao/eternum/game-client";
 import {
@@ -132,4 +135,40 @@ export const buildingCounts = (category: BuildingType, count: number) => {
   const packed = BigInt(count) << BigInt((category - 1) * 8);
   const word = (index: number) => String((packed >> BigInt(128 * index)) & ((1n << 128n) - 1n));
   return { packed_counts_1: word(0), packed_counts_2: word(1), packed_counts_3: word(2) };
+};
+
+/** The real Season 1 prices and output on the same playable board fixture. */
+export const seasonBoard = () => {
+  const { store, realm } = realmBoard();
+  const season = buildNativePreset(
+    loadNativePresetConfiguration("madara.frontier", FRONTIER_S1_PRESET_ID),
+    FRONTIER_S1_PRESET_ID,
+  );
+  const board = season.structures.board.unwrap();
+  if (!board || typeof board !== "object") throw new Error("Season 1 requires board rules");
+  store.applyFacts([
+    set("0x100", "SliceRules", { ...season.rules, game_id: 1 }),
+    set("0x2", "SettlementRules", {
+      game_id: 1,
+      mode: season.settlement.mode.activeVariant(),
+      spacing: season.settlement.spacing,
+      registration_start: 1,
+      registration_limit: 2,
+    }),
+    set("0x70", "BoardRules", { ...board, game_id: 1 }),
+    ...season.resources.resources.map((rule) =>
+      set(`0x5${rule.resource_type}`, "ResourceRule", { ...rule, game_id: 1 }),
+    ),
+    ...season.structures.buildings.map(({ category, rule }) =>
+      set(`0x6${category}`, "BuildingRule", { ...rule, category, game_id: 1 }),
+    ),
+    {
+      model: "GameRegistry",
+      key: "0x3",
+      value: { ...store.require("GameRegistry", { game_id: 1 }), preset_id: FRONTIER_S1_PRESET_ID },
+    },
+  ] as never);
+  configManager.setActiveGame(1, FRONTIER_S1_PRESET_ID);
+  configManager.setStore(store);
+  return { store, realm };
 };

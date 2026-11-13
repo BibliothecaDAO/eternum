@@ -15,7 +15,7 @@ import { configManager, type GameClient, setBlockTimestampSource, learnResearch 
 import { nativeResearchConstants as research, type GameClientSetup } from "@bibliothecadao/eternum/game-client";
 import { BuildingType, RESOURCE_PRECISION, ResourcesIds } from "@bibliothecadao/types";
 import preset from "../../../../../../../contracts/l3/world-native/tests/fixtures/current-presets/preset-3.json";
-import { buildingCounts, realmBoard } from "./build-fixture";
+import { buildingCounts, realmBoard, seasonBoard } from "./build-fixture";
 import { BuildingsInFlight, BuildSheet } from "./build-sheet";
 
 afterEach(() => {
@@ -632,7 +632,9 @@ it.each(["retained", "withdrawn", "withdrawn before render"] as const)(
   "submits only an available Scouts kind when its unlock is %s",
   async (unlock) => {
     (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
-    const { store, realm } = realmBoard();
+    const { store, realm: settlement } = realmBoard();
+    const realm = { ...settlement, base: { ...settlement.base, level: 1 } };
+    store.applyFacts([{ model: "Structure", key: "0x7", value: realm }]);
     store.applyFacts([
       {
         model: "RealmKnowledge",
@@ -763,7 +765,9 @@ it.each(["retained", "withdrawn", "withdrawn before render"] as const)(
 
 it("reds only the price lines the realm holds less of, so a training building short of Essence keeps its Labor white", () => {
   (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
-  const { store, realm } = realmBoard();
+  const { store, realm: settlement } = realmBoard();
+  const realm = { ...settlement, base: { ...settlement.base, level: 1 } };
+  store.applyFacts([{ model: "Structure", key: "0x7", value: realm }]);
   const balance = (resource: number, amount: bigint) => ({
     model: "ResourceBalance",
     // The fixture's own row keys: one per resource balance of the realm.
@@ -850,4 +854,69 @@ it("reds only the price lines the realm holds less of, so a training building sh
     labor: { short: true, color: "red" },
     band: "bad",
   });
+});
+
+it.each([0, 2])("builds a Scout producer in a City with %i Lodges and no Barracks research", async (copies) => {
+  (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
+  const { store, realm: settlement } = seasonBoard();
+  const realm = { ...settlement, base: { ...settlement.base, level: 1 } };
+  store.applyFacts([
+    {
+      model: "ResourceBalance",
+      key: "0x75",
+      value: {
+        game_id: 1,
+        entity_id: 7n,
+        resource_type: ResourcesIds.Labor,
+        balance: 10000n * BigInt(RESOURCE_PRECISION),
+      },
+    },
+    { model: "Structure", key: "0x7", value: realm },
+    {
+      model: "StructureBuildings",
+      key: "0x72",
+      value: {
+        ...store.require("StructureBuildings", { game_id: 1, entity_id: 7 }),
+        ...buildingCounts(BuildingType.ScoutsLodge, copies),
+      },
+    },
+  ]);
+  const placeBuilding = vi.fn(() => Promise.resolve({ transaction_hash: "0x1" }));
+  installActiveGameClient({
+    connect() {},
+    disconnect() {},
+    dispose() {},
+    actions: { placeBuilding },
+    waitForAction: () => Promise.resolve({ hash: "0x1", block: 9, status: "SUCCEEDED" }),
+  } as unknown as GameClient);
+  const host = document.createElement("div");
+  document.body.append(host);
+  const root = createRoot(host);
+  try {
+    act(() =>
+      root.render(
+        <GameProvider value={{ store } as unknown as GameClientSetup} account={{ address: "0x111" } as never}>
+          <BuildSheet realm={realm} plot={{ col: 11, row: 10 }} onClose={() => {}} />
+        </GameProvider>,
+      ),
+    );
+    const lodge = [...host.querySelectorAll<HTMLButtonElement>(".ui-card__choose")].find((card) =>
+      card.textContent?.includes("Scouts"),
+    )!;
+    act(() => lodge.click());
+    expect(lodge.textContent).not.toContain("research");
+    expect(lodge.closest("[data-tip]")?.getAttribute("data-tip")).toContain("Scouts");
+    const build = [...host.querySelectorAll<HTMLButtonElement>("button")].find(
+      (button) => button.textContent === "Build",
+    )!;
+    expect(build?.disabled, host.textContent ?? "").toBe(false);
+    await act(async () => build.click());
+    expect(placeBuilding).toHaveBeenCalledOnce();
+    expect(placeBuilding).toHaveBeenCalledWith(
+      expect.objectContaining({ buildingType: BuildingType.ScoutsLodge, structureId: 7 }),
+    );
+  } finally {
+    act(() => root.unmount());
+    host.remove();
+  }
 });

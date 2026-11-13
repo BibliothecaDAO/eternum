@@ -128,16 +128,17 @@ const homecomingByStock = (
   return returning;
 };
 
-/** Whole troops at home across every stock as the next deploy finds them; unknown while any stock is. */
+/** One troop stock at home as the next deploy finds it, including its fitting Homecoming return. */
 export const troopsAtHome = (
   store: NativeFactStore,
   realm: NativeRows["Structure"],
   rules: ExpeditionRules,
   now: number,
   tick: number,
+  resource: ResourcesIds,
 ): number | undefined => {
-  const stocks = stocksAtNextDeploy(store, realm, rules, now, tick);
-  return stocks && [...stocks.values()].reduce((sum, stock) => sum + stock.held + stock.fits, 0);
+  const stock = stocksAtNextDeploy(store, realm, rules, now, tick)?.get(resource);
+  return stock && stock.held + stock.fits;
 };
 
 /**

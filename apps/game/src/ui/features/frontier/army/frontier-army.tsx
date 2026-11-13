@@ -62,6 +62,7 @@ const ArmyPanel = ({
   const learned = realmLearned(setup.store, realm.game_id, realm.entity_id);
   if (learned === undefined) return null;
   const facts: ArmyDetailFacts = {
+    category: army.troopsFact.category,
     learned,
     name: army.label,
     art: army.art,

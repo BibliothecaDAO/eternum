@@ -33,10 +33,17 @@ beforeEach(() => {
 
 describe("an army's progress", () => {
   it("offers only attributes for which a fitting point is held", () => {
-    expect(availableRankUps({ ...ARMY, xp: 5000 })).toEqual([]);
-    expect(availableRankUps({ ...ARMY, common_points: 1, battle: 1 })).toEqual(["Logistics", "Scouting", "Homecoming"]);
+    expect(availableRankUps({ ...ARMY, xp: 5000 }, "Paladin")).toEqual([]);
+    expect(availableRankUps({ ...ARMY, common_points: 1, battle: 1 }, "Paladin")).toEqual([
+      "Logistics",
+      "Scouting",
+      "Homecoming",
+    ]);
     expect(
-      availableRankUps({ ...ARMY, legendary_points: 1, battle: 5, logistics: 5, scouting: 5, homecoming: 5 }),
+      availableRankUps(
+        { ...ARMY, legendary_points: 1, battle: 5, logistics: 5, scouting: 5, homecoming: 5 },
+        "Paladin",
+      ),
     ).toEqual([]);
   });
 
@@ -66,4 +73,11 @@ describe("the progress flourish", () => {
     playArmyProgress({ xp: 0, at: null });
     expect(plays).toEqual(["xp.tick"]);
   });
+});
+
+it("does not advertise a rank-up when only ineligible Scouting would take the held point", () => {
+  const trained = { ...ARMY, common_points: 1, battle: 1, logistics: 1, homecoming: 1 };
+  expect(availableRankUps(trained, "Knight")).toEqual([]);
+  expect(availableRankUps(trained, "Crossbowman")).toEqual([]);
+  expect(availableRankUps(trained, "Paladin")).toEqual(["Scouting"]);
 });

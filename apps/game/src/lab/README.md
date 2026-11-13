@@ -91,6 +91,10 @@ From the repository root, start the real client:
 pnpm --dir apps/game dev --host 127.0.0.1 --port 4179
 ```
 
+The `lab-actions-army` playtest opens the Knight panel from its dock, checks that Scouting is absent, buys Battle, and
+records the resulting tier. Scout choices and the City Lodge build path also run through the native-fact component cases
+in `frontier-army.test.tsx` and `build-sheet.test.tsx`.
+
 The existing runners drive controls and write evidence. For example:
 
 ```sh

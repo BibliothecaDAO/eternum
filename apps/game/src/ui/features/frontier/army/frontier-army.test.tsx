@@ -37,6 +37,7 @@ const game = vi.hoisted(() => ({
   },
 }));
 const army = {
+  troopsFact: { category: "Knight" },
   explorerId: 12,
   number: 1,
   label: "Army 1",
@@ -92,6 +93,7 @@ beforeEach(() => {
   root = createRoot(host);
   vi.clearAllMocks();
   game.learned = 0n;
+  army.troopsFact.category = "Knight";
   game.progress.xp = 12;
   game.progress.common_points = 0;
 });
@@ -115,6 +117,7 @@ it("opens the army's panel from its row on a desktop, whether it holds a point",
 });
 
 it("shows the army's figures, then its level-ups one step on, and buys the chosen level with spend_skill_point", async () => {
+  army.troopsFact.category = "Paladin";
   game.progress.xp = 260;
   game.progress.common_points = 1;
   useUIStore.setState((state) => ({ entityActions: { ...state.entityActions, selectedEntityId: 12 } }));
@@ -268,4 +271,43 @@ it.each([
   expect(host.textContent).toContain(readout);
   act(() => button(/Level[ -]up/)!.click());
   expect(host.textContent).toContain(readout);
+});
+
+it.each(["Knight", "Crossbowman"])("offers only eligible point uses for %s and submits Battle", async (category) => {
+  army.troopsFact.category = category;
+  game.progress.common_points = 1;
+  useUIStore.setState((state) => ({ entityActions: { ...state.entityActions, selectedEntityId: 12 } }));
+  act(() => root.render(<FrontierArmy realm={{ game_id: 1 } as never} choosing onClose={vi.fn()} />));
+  expect([...host.querySelectorAll("[data-attribute]")].map((node) => node.getAttribute("data-attribute"))).toEqual([
+    "battle",
+    "logistics",
+    "homecoming",
+    "stamina",
+  ]);
+  await act(async () => button(/^Level up$/)!.click());
+  expect(game.spendPoint).toHaveBeenCalledWith({
+    signer: game.signer,
+    explorerId: 12,
+    choice: { kind: "Battle", value: undefined },
+  });
+});
+
+it("drops a selected Scouting use when the army category changes", async () => {
+  army.troopsFact.category = "Paladin";
+  game.progress.common_points = 1;
+  useUIStore.setState((state) => ({ entityActions: { ...state.entityActions, selectedEntityId: 12 } }));
+  const draw = () =>
+    act(() => root.render(<FrontierArmy realm={{ game_id: 1 } as never} choosing onClose={vi.fn()} />));
+  draw();
+  act(() => host.querySelector<HTMLButtonElement>('[data-attribute="scouting"]')!.click());
+  army.troopsFact.category = "Knight";
+  draw();
+  expect(host.querySelector('[data-attribute="scouting"]')).toBeNull();
+  expect(host.querySelector('[data-attribute="battle"]')?.getAttribute("aria-pressed")).toBe("true");
+  await act(async () => button(/^Level up$/)!.click());
+  expect(game.spendPoint).toHaveBeenCalledWith({
+    signer: game.signer,
+    explorerId: 12,
+    choice: { kind: "Battle", value: undefined },
+  });
 });

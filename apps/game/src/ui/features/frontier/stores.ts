@@ -1,5 +1,5 @@
 import { type IconMeaning, resourceMeaning } from "@/ui/design-system/icon-meaning";
-import { ESSENCE, LABOR, TROOPS, WHEAT } from "@/ui/design-system/kit/words";
+import { ESSENCE, LABOR, SCOUTS, TROOPS, WHEAT } from "@/ui/design-system/kit/words";
 import { researchRowCategory } from "@bibliothecadao/eternum";
 import { nativeResearchConstants as research } from "@bibliothecadao/eternum/game-client";
 import { type BuildingType, ResourcesIds } from "@bibliothecadao/types";
@@ -18,7 +18,7 @@ type Store = {
 /**
  * Frontier's stores, in the strip's order: the one table every surface reads (the strip, the realm panel, the store
  * cards, the build sheet and the makers' lines). Each holds a resource, drawn and named as that resource; the
- * three a building makes name its research row and where they are spent when full. Essence has no building and no
+ * stores a building makes name its research row and where they are spent when full. Essence has no building and no
  * limit.
  */
 export const FRONTIER_STORES = {
@@ -35,12 +35,17 @@ export const FRONTIER_STORES = {
     word: WHEAT,
     made: { row: research.ROW_FARM, spentAt: "deploy" },
   },
-  // One troop type: the barracks train the realm's troops, drawn as troops rather than one tier's painting.
   troops: {
     resource: ResourcesIds.Knight,
     icon: "troops",
     word: TROOPS,
     made: { row: research.ROW_BARRACKS, spentAt: "deploy" },
+  },
+  scouts: {
+    resource: ResourcesIds.Paladin,
+    icon: resourceMeaning(ResourcesIds.Paladin),
+    word: SCOUTS,
+    made: { row: research.ROW_SCOUTS_LODGE, spentAt: "deploy" },
   },
 } as const satisfies Record<string, Store>;
 

@@ -1,5 +1,6 @@
 import {
   buildingCostRise,
+  buildingResearchTier,
   getBuildingCosts,
   getBuildingQuantity,
   realmLearned,
@@ -15,7 +16,7 @@ import {
   type NativeFactStore,
   type NativeRows,
 } from "@bibliothecadao/eternum/game-client";
-import { BuildingType, getProducedResource, ResourcesIds } from "@bibliothecadao/types";
+import { BuildingType, getProducedResource, RealmLevels, ResourcesIds } from "@bibliothecadao/types";
 
 import { type BuildingOutput, buildingOutput } from "@/ui/shared/lib/building-output";
 
@@ -33,10 +34,9 @@ import { type SidePick, sidePicks } from "../research/sides-taken";
 const FRONTIER_BUILDINGS = Object.values(researchRowCategory) as BuildingType[];
 
 /** Each training building and the attribute it trains every new army in. */
-const TRAINS: Partial<Record<BuildingType, "Battle" | "Logistics" | "Scouting" | "Homecoming">> = {
+const TRAINS: Partial<Record<BuildingType, "Battle" | "Logistics" | "Homecoming">> = {
   [BuildingType.WarHall]: "Battle",
   [BuildingType.SupplyYard]: "Logistics",
-  [BuildingType.ScoutsLodge]: "Scouting",
   [BuildingType.Hearth]: "Homecoming",
 };
 
@@ -48,7 +48,7 @@ const isProduct = (resource: ResourcesIds | undefined): resource is Product => m
 export type BuildEffect =
   | { kind: "produces"; resource: Product; perHour: number; output: BuildingOutput }
   | { kind: "population"; amount: number }
-  | { kind: "trains"; attribute: "Battle" | "Logistics" | "Scouting" | "Homecoming" };
+  | { kind: "trains"; attribute: "Battle" | "Logistics" | "Homecoming" };
 
 export interface BuildOption {
   category: BuildingType;
@@ -65,7 +65,7 @@ export interface BuildOption {
    * Whether it can rise now: a training building is unique on the board and opens when purchases across both
    * Barracks sides reach the board's gate (the contract's assert_board_category).
    */
-  standing: "open" | "built" | { gate: number; bought: number };
+  standing: "open" | "built" | { gate: number; bought: number } | { level: RealmLevels };
   /** What it adds to the realm's wheat an hour, and the realm's wheat an hour once it stands (unknown while that is). */
   wheat: { change: number; after: number | undefined };
 }
@@ -91,25 +91,31 @@ export const readBuildOptions = (
     const row = researchRowOf(category);
     options.push({
       category,
-      tier: (row === undefined
-        ? 1
-        : Math.max(TRAINS[category] ? 1 : 0, researchTier(learned, row))) as BuildOption["tier"],
+      tier: Math.max(TRAINS[category] ? 1 : 0, buildingResearchTier(learned, category)) as BuildOption["tier"],
       sides: row === undefined ? undefined : sidePicks(learned, row),
       cost,
       rise: buildingCostRise(safeInteger(realm.entity_id), category, store),
       effect,
       populationCost: rule.population_cost,
-      standing: !TRAINS[category]
-        ? "open"
-        : getBuildingQuantity(safeInteger(realm.entity_id), category, store) > 0
-          ? "built"
-          : barracksPurchases < board.training_gate_tier
-            ? { gate: board.training_gate_tier, bought: barracksPurchases }
-            : "open",
+      standing: buildingStanding(store, realm, category, barracksPurchases, board.training_gate_tier),
       wheat: { change, after: wheat === undefined ? undefined : wheat + change },
     });
   }
   return options;
+};
+
+/** The board's placement gates; producer copies remain repeatable. */
+const buildingStanding = (
+  store: NativeFactStore,
+  realm: NativeRows["Structure"],
+  category: BuildingType,
+  purchases: number,
+  gate: number,
+): BuildOption["standing"] => {
+  if (category === BuildingType.ScoutsLodge && realm.base.level < RealmLevels.City) return { level: RealmLevels.City };
+  if (!TRAINS[category]) return "open";
+  if (getBuildingQuantity(safeInteger(realm.entity_id), category, store) > 0) return "built";
+  return purchases < gate ? { gate, bought: purchases } : "open";
 };
 
 /**

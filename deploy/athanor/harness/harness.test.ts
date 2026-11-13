@@ -1,3 +1,4 @@
+import { nativePresetIdFor } from "../../../config/source/native";
 import bindings from "../../../contracts/l3/world-native/schema/bindings.json";
 import { retainBoundaryEvidence } from "./worker-boundary";
 import { mkdtempSync, rmSync } from "node:fs";
@@ -239,7 +240,7 @@ describe("Madara harness workload", () => {
     });
     expect(() => parseHarnessArgs(["--preset", "9"])).toThrow("Unsupported native preset 9");
     expect(parseHarnessArgs(["--game-type", "frontier", "--bots", "1"])).toMatchObject({
-      presetId: 5,
+      presetId: nativePresetIdFor("frontier"),
       functional: false,
     });
     // The design run plays the accelerated fixture preset; it never edits Frontier's own preset.

@@ -135,9 +135,14 @@ export function buildingTypeTier(
   structureId: number | bigint,
   category: number,
 ): number {
-  const row = researchRowOf(category);
   const learned = realmLearned(store, gameId, structureId);
-  return row === undefined || learned === undefined ? 1 : Math.max(1, researchTier(learned, row));
+  return learned === undefined ? 1 : Math.max(1, buildingResearchTier(learned, category));
+}
+
+/** Scout production remains Common; Scouting research raises discovery, not its producer. */
+export function buildingResearchTier(learned: bigint, category: number): number {
+  const row = researchRowOf(category);
+  return category === research.SCOUTS_LODGE || row === undefined ? 1 : researchTier(learned, row);
 }
 
 /** The research row whose tiers apply to a building type, if it has one. */

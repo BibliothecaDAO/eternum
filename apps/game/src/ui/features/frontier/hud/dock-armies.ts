@@ -99,7 +99,7 @@ export const useDockArmies = (realm: NativeRows["Structure"] | null): DockArmy[]
       troops: Number(army.troops.count / BigInt(RESOURCE_PRECISION)),
       canSpendSkillPoint:
         progress !== undefined &&
-        (availableRankUps(progress).length > 0 ||
+        (availableRankUps(progress, army.troops.category).length > 0 ||
           (heldSkillPoints(progress).some((count) => count > 0) &&
             stamina !== null &&
             stamina.committedCurrent < stamina.committedMax)),

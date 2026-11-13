@@ -133,6 +133,7 @@ fn tests_crossbowman_ranged_field_attack_uses_reduced_damage() {
         .attack_with_context(
             ref adjacent_bravo,
             CombatContext {
+                day_unit_seconds: 0,
                 timestamp: 1,
                 attacker_roll: 0,
                 defender_roll: 0,
@@ -151,6 +152,7 @@ fn tests_crossbowman_ranged_field_attack_uses_reduced_damage() {
         .attack_with_context(
             ref ranged_bravo,
             CombatContext {
+                day_unit_seconds: 0,
                 timestamp: 1,
                 attacker_roll: 0,
                 defender_roll: 0,
@@ -189,6 +191,7 @@ fn tests_crossbowman_ranged_structure_attack_uses_heavy_reduction() {
         .attack_with_context(
             ref field_bravo,
             CombatContext {
+                day_unit_seconds: 0,
                 timestamp: 1,
                 attacker_roll: 0,
                 defender_roll: 0,
@@ -207,6 +210,7 @@ fn tests_crossbowman_ranged_structure_attack_uses_heavy_reduction() {
         .attack_with_context(
             ref structure_bravo,
             CombatContext {
+                day_unit_seconds: 0,
                 timestamp: 1,
                 attacker_roll: 0,
                 defender_roll: 0,
@@ -244,6 +248,7 @@ fn tests_knight_assault_increases_adjacent_structure_guard_damage() {
         .attack_with_context(
             ref guard_bravo,
             CombatContext {
+                day_unit_seconds: 0,
                 timestamp: 1,
                 attacker_roll: 0,
                 defender_roll: 0,
@@ -281,6 +286,7 @@ fn tests_knight_bulwark_reduces_guard_incoming_damage() {
         .attack_with_context(
             ref guard_bravo,
             CombatContext {
+                day_unit_seconds: 0,
                 timestamp: 1,
                 attacker_roll: 0,
                 defender_roll: 0,
@@ -296,7 +302,9 @@ fn tests_knight_bulwark_reduces_guard_incoming_damage() {
             1,
         );
 
-    assert!(guard_bravo._incoming_damage_multiplier(true) == FixedTrait::new(85, false) / FixedTrait::new(100, false));
+    assert!(
+        guard_bravo._incoming_damage_multiplier(true, 0) == FixedTrait::new(85, false) / FixedTrait::new(100, false),
+    );
     assert!(guard_bravo.count > field_bravo.count, "Knight guard should receive reduced incoming damage");
 }
 

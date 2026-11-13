@@ -10,6 +10,7 @@ import type { NotificationKind, NotificationLevel } from "@bibliothecadao/notifi
 import type { RuinChest } from "@bibliothecadao/eternum";
 import {
   BuildingType,
+  rankName,
   XP,
   buildingName,
   formatAmount,
@@ -134,6 +135,8 @@ export const LABOR = resourceName(ResourcesIds.Labor);
 export const WHEAT = resourceName(ResourcesIds.Wheat);
 /** The realm's troops, as a store and an army's figure are named. */
 export const TROOPS = "Troops";
+export const SCOUTS = "Scouts";
+export const needsRealmLevel = (level: number) => `Requires ${rankName(level)}`;
 export const STAMINA = "stamina";
 /** The explores a Well's stamina buys the army it refills: "+3 explores". */
 export const exploresBought = (count: number) => `+${count} ${count === 1 ? "explore" : "explores"}`;

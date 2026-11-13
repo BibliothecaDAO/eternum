@@ -877,11 +877,15 @@ async function levelUpTheArmy({ browser }) {
   browser.tap(choose.offset);
   const battle = await readUntil(() => browser.read(sheetButton("^Battle")), Boolean, SHEET_WAIT_MS);
   if (!battle) return { ...panel, battle };
+  const scoutingOffered = browser.read(
+    `Boolean(document.querySelector('[data-army-step="choose"] [data-attribute="scouting"]'))`,
+  );
+  if (scoutingOffered !== false) return { ...panel, scoutingOffered };
   const buy = browser.read(sheetButton("^Level up$"));
   if (!buy) return { ...panel, buy };
   watchFor(browser, "tier-bought", panelShowsTheChainsTier(panel.army));
   browser.tap(buy.offset);
-  return { ...panel, watching: true };
+  return { ...panel, scoutingOffered, watching: true };
 }
 
 /**

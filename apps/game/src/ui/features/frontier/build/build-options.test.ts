@@ -3,7 +3,7 @@ import { nativeResearchConstants } from "@bibliothecadao/eternum/game-client";
 import { BuildingType, ResourcesIds } from "@bibliothecadao/types";
 import { afterEach, describe, expect, it } from "vitest";
 import preset from "../../../../../../../contracts/l3/world-native/tests/fixtures/current-presets/preset-3.json";
-import { HOUR, realmBoard } from "./build-fixture";
+import { HOUR, realmBoard, buildingCounts, seasonBoard } from "./build-fixture";
 import { readBuildOptions } from "./build-options";
 
 afterEach(() => setBlockTimestampSource(null));
@@ -117,3 +117,64 @@ describe("Frontier's build options", () => {
     expect(warHall().standing).toBe("open");
   });
 });
+
+it("opens repeatable Common Scout production in a City without Barracks research", () => {
+  const { store, realm } = seasonBoard();
+  const city = { ...realm, base: { ...realm.base, level: 1 } };
+  store.applyFacts([{ model: "Structure", key: "0x7", value: city }]);
+  const lodge = () =>
+    readBuildOptions(store, city, true, 350)!.find(({ category }) => category === BuildingType.ScoutsLodge)!;
+  expect(lodge().standing).toBe("open");
+  expect(lodge().tier).toBe(1);
+  expect(lodge().effect).toMatchObject({ kind: "produces", resource: ResourcesIds.Paladin });
+  expect(lodge().cost).toEqual([{ resource: ResourcesIds.Labor, amount: 500 }]);
+  expect((lodge().effect as { perHour: number }).perHour).toBeCloseTo(100, 5);
+  const before = lodge().effect;
+  store.applyFacts([
+    {
+      model: "StructureBuildings",
+      key: "0x72",
+      value: {
+        ...store.require("StructureBuildings", { game_id: 1, entity_id: 7 }),
+        ...buildingCounts(BuildingType.ScoutsLodge, 1),
+      },
+    },
+    { model: "RealmKnowledge", key: "0x77", value: { game_id: 1, structure_id: 7n, learned: 3n << 30n } },
+  ]);
+  expect(lodge().standing).toBe("open");
+  expect(lodge().tier).toBe(1);
+  expect(lodge().effect).toEqual(before);
+});
+
+it("names the City requirement for a Settlement's Lodge", () => {
+  const { store, realm } = seasonBoard();
+  expect(
+    readBuildOptions(store, realm, true, 350)!.find(({ category }) => category === BuildingType.ScoutsLodge)!.standing,
+  ).toEqual({ level: 1 });
+});
+
+it.each([BuildingType.WarHall, BuildingType.SupplyYard, BuildingType.Hearth])(
+  "preserves training gates and uniqueness for %i",
+  (category) => {
+    const { store, realm } = realmBoard();
+    const option = () => readBuildOptions(store, realm, true, 350)!.find((option) => option.category === category)!;
+    expect(option().standing).toEqual({ gate: 2, bought: 0 });
+    store.applyFacts([
+      {
+        model: "RealmKnowledge",
+        key: "0x77",
+        value: { game_id: 1, structure_id: 7n, learned: (1n << 14n) | (1n << 17n) },
+      },
+    ]);
+    expect(option().standing).toBe("open");
+    expect(option().effect.kind).toBe("trains");
+    store.applyFacts([
+      {
+        model: "StructureBuildings",
+        key: "0x72",
+        value: { ...store.require("StructureBuildings", { game_id: 1, entity_id: 7 }), ...buildingCounts(category, 1) },
+      },
+    ]);
+    expect(option().standing).toBe("built");
+  },
+);

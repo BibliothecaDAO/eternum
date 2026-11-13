@@ -68,7 +68,11 @@ export const ArmyDetail = ({
   onLevelUp: (choice: SkillPointChoice) => unknown;
 }) => {
   const { choosing: open, choose: setOpen } = step;
-  const [chosen, setChosen] = useState<AttributeKey | "stamina">(() => firstChoice(army));
+  const [selected, setChosen] = useState<AttributeKey | "stamina">(() => firstChoice(army));
+  const choices = pointChoices.filter(
+    ({ key }) => key === "stamina" || army.attributes.some((attribute) => attribute.key === key),
+  );
+  const chosen = choices.some(({ key }) => key === selected) ? selected : firstChoice(army);
   const [kind, setKind] = useState<ScoutKind>("camp");
   const [staminaRank, setStaminaRank] = useState<SkillPointRank>(army.staminaPoints[0]?.rank ?? 1);
   const pick = army.attributes.find(({ key }) => key === chosen);
@@ -90,7 +94,7 @@ export const ArmyDetail = ({
         <div className="flex items-center justify-end gap-2">
           <XpLine army={army} />
         </div>
-        {pointChoices.map((option) =>
+        {choices.map((option) =>
           option.key === "stamina" ? (
             <button
               key={option.key}

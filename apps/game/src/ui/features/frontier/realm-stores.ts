@@ -3,7 +3,7 @@ import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
 import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
 import type { Tone } from "@/ui/design-system/kit/tone";
 import { knownAmount } from "@/ui/utils/utils";
-import { type ExpeditionRules, getBalance, ResourceManager } from "@bibliothecadao/eternum";
+import { type ExpeditionRules, getBalance, isMilitaryResource, ResourceManager } from "@bibliothecadao/eternum";
 import { safeInteger, type NativeFactStore, type NativeRows } from "@bibliothecadao/eternum/game-client";
 import { RESOURCE_PRECISION, type ResourcesIds } from "@bibliothecadao/types";
 
@@ -39,12 +39,10 @@ export const readRealmStore = (
   kind: StoreKind,
   clock: { now: number },
 ): RealmStore => {
-  // The one troop type's stock: the barracks train it, and its limit is every troop stock's.
   const stock = FRONTIER_STORES[kind].resource;
-  const amount =
-    kind === "troops"
-      ? troopsAtHome(store, realm, rules, clock.now, clock.now)
-      : wholeBalance(store, safeInteger(realm.entity_id), stock, clock.now);
+  const amount = isMilitaryResource(stock)
+    ? troopsAtHome(store, realm, rules, clock.now, clock.now, stock)
+    : wholeBalance(store, safeInteger(realm.entity_id), stock, clock.now);
   const rawLimit = new ResourceManager(store, safeInteger(realm.entity_id), realm.game_id).storeLimit(stock);
   const limit = rawLimit === undefined ? undefined : Number(rawLimit / BigInt(RESOURCE_PRECISION));
   const perHour = realmPerHour(store, safeInteger(realm.entity_id), stock, clock.now);
@@ -104,7 +102,7 @@ const STORE_MODELS = [
   "TileOccupancy",
 ] as const;
 
-/** The realm's four stores, as the strip, the Realm dot and Production read them; none without a realm. */
+/** The realm's stores, as the strip, the Realm dot and Production read them; none without a realm. */
 export const useRealmStores = (
   realm: NativeRows["Structure"] | null,
   rules: ExpeditionRules,
