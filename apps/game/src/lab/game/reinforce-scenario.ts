@@ -1,10 +1,5 @@
 import { SPIRE_ARMY, SPIRE_ARMY_TILE_KEY, SPIRE_DAY_NOW } from "@/ui/features/frontier/spire-fixture";
-import {
-  expeditionSpireTile,
-  getTroopResourceId,
-  readExpeditionRules,
-  readTroopRaiseCost,
-} from "@bibliothecadao/eternum";
+import { expeditionSpires, getTroopResourceId, readTroopRaiseCost } from "@bibliothecadao/eternum";
 import type { NativeFactStore } from "@bibliothecadao/eternum/game-client";
 import { getNeighborHexes, RESOURCE_PRECISION, type TroopTier, type TroopType } from "@bibliothecadao/types";
 
@@ -22,12 +17,8 @@ export const reinforceScenario = (): LabScenario => {
   const game = spireScenario();
   const { store, opensOn: home } = game;
   const occupancy = store.entityOccupancy(1, SPIRE_ARMY)!;
-  // Beside home and off the spire's tile, which the home ring also holds.
-  const spire = expeditionSpireTile(
-    readExpeditionRules(store, 1)!,
-    store.require("Structure", { game_id: 1, entity_id: 7 }),
-    SPIRE_DAY_NOW,
-  )!;
+  // Beside home and off the spire's tile, which the realm found beside its site.
+  const [spire] = expeditionSpires(store, 1, SPIRE_DAY_NOW);
   const beside = getNeighborHexes(home.col, home.row).find(
     (hex) =>
       (hex.col !== spire.col || hex.row !== spire.row) &&

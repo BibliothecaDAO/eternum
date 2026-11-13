@@ -1,5 +1,6 @@
 import type { NodeHealth } from "./node-health";
 import { buildFrontierLeaderboard } from "./native/frontier-leaderboard";
+import { buildRaceBoard, isRaceGame } from "./native/race-board";
 import type { HeraldGameLeaderboard } from "@bibliothecadao/eternum/game-sync";
 import { required, number } from "./native/values";
 import { parseStoryHistoryCursor } from "@bibliothecadao/eternum/game-sync";
@@ -124,6 +125,7 @@ export const createHeraldRequestHandler = (state: HeraldHttpState): ((request: R
   const reviewSnapshotPath = /^\/games\/([0-9]+)\/review\/snapshot$/;
   const dayRanksPath = /^\/games\/([0-9]+)\/days\/([0-9]+)\/ranks$/;
   const leaderboardPath = /^\/games\/([0-9]+)\/leaderboard$/;
+  const racePath = /^\/games\/([0-9]+)\/race$/;
   const sitePath = /^\/games\/([0-9]+)\/sites\/([0-9]+)$/;
 
   // Browsers hide a cross-origin request's connect, TLS and wait timings unless the response allows it. Only a dev chain
@@ -214,6 +216,9 @@ export const createHeraldRequestHandler = (state: HeraldHttpState): ((request: R
       }
     }
 
+    const raceMatch = request.method === "GET" ? racePath.exec(url.pathname) : null;
+    if (raceMatch) return raceResponse(state, BigInt(raceMatch[1]).toString());
+
     if (request.method === "GET" && url.pathname === "/history/story-events") {
       if (!state.history || state.undecodableEventCount() > 0)
         return jsonResponse({ error: "story_history_unavailable" }, 503);
@@ -276,6 +281,19 @@ export const createHeraldRequestHandler = (state: HeraldHttpState): ((request: R
     return response;
   };
 };
+
+/** A race game's board at the confirmed head (race-board.ts); 404 for a game that does not race. */
+function raceResponse(state: HeraldHttpState, gameId: string): Response {
+  const head = state.confirmedBlock();
+  if (!isRaceGame(state.fold.modelRows, gameId)) return jsonResponse({ error: "not_a_race" }, 404);
+  try {
+    const response = jsonResponse(buildRaceBoard(state.fold.modelRows, gameId));
+    response.headers.set("X-Confirmed-Block", String(head));
+    return response;
+  } catch (error) {
+    return jsonResponse({ error: error instanceof Error ? error.message : String(error) }, 503);
+  }
+}
 
 /** Only successful known-game results enter the cache; the next head replaces the entire generation. */
 function cachedLeaderboard(state: HeraldHttpState, build: WorldReadModels["leaderboard"]) {

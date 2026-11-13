@@ -1,4 +1,12 @@
-import { SHARE_CARD, SHARE_PATH, SHARED_MOMENT_WORDS, shareCardPath, sharePath } from "@realms-world/identity";
+import { aspectName } from "@bibliothecadao/types";
+import {
+  SHARE_CARD,
+  SHARE_PATH,
+  SHARED_MOMENT_WORDS,
+  shareCardPath,
+  sharedMomentOf,
+  sharePath,
+} from "@realms-world/identity";
 
 import type { IdentityAuth } from "./auth";
 import { readCampaignCode } from "./campaigns";
@@ -68,7 +76,7 @@ export async function handleSharedPage(
   if (!link || !shared || !page.ok || !page.headers.get("content-type")?.includes("text/html")) return page;
   const card = await cards.head(cardKey(link));
   const html = withShareUnfurl(await page.text(), {
-    title: SHARED_MOMENT_WORDS.title(shared.name, shared.moment),
+    title: SHARED_MOMENT_WORDS.title(shared.name, sharedMomentOf(shared, aspectName)),
     description: SHARED_MOMENT_WORDS.pitch,
     url: `${origin}${sharePath(link)}`,
     image: card ? `${origin}${shareCardPath(link)}` : null,

@@ -27,7 +27,10 @@ const race = {
   ],
 } satisfies NonNullable<NativePreset["race"]>;
 
-export const frontierSeasonOnePreset: NativePreset & { worldBanes: NonNullable<NativePreset["worldBanes"]> } = {
+export const frontierSeasonOnePreset: NativePreset & {
+  worldBanes: NonNullable<NativePreset["worldBanes"]>;
+  dailyQuest: NonNullable<NativePreset["dailyQuest"]>;
+} = {
   ...frontierPreset,
   id: FRONTIER_S1_PRESET_ID,
   startingArmyCount: 2,
