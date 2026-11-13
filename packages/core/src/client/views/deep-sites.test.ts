@@ -204,3 +204,35 @@ it("rejects duplicated guard slots rather than dropping an army from the site vi
     ]);
   expect(() => readDeepSites(store, 350)).toThrow("Invalid Deep guard slots");
 });
+
+it("faces the highest live defensive slot next and skips gaps after a guard dies", () => {
+  const store = fixture();
+  const beast = store.require("Guard", { game_id: 1, structure_id: 1, slot: 0 });
+  store.applyFacts([{ model: "Guard", key: "1", value: { ...beast, troops: { ...beast.troops, count: 0n } } }]);
+  for (const [slot, count] of [
+    [0, 3000n],
+    [1, 0n],
+    [3, 6000n],
+  ] as const) {
+    const explorer_id = 100 + slot;
+    store.applyFacts([
+      {
+        model: "ExplorerTroops",
+        key: String(explorer_id),
+        value: { game_id: 1, explorer_id, owner: explorer_id, troops: { ...beast.troops, count } },
+      },
+      { model: "DeepGuard", key: String(explorer_id), value: { game_id: 1, explorer_id, site_id: 1, slot } },
+    ]);
+  }
+  const order = () =>
+    readDeepSites(store, 350)[0]!.guards.map(({ slot, army }) => [slot, army.explorer_id, army.troops.count]);
+  expect(order()).toEqual([
+    [3, 103n, 6000n],
+    [0, 100n, 3000n],
+  ]);
+  store.applyFacts([
+    { model: "ExplorerTroops", key: "103", value: null },
+    { model: "DeepGuard", key: "103", value: null },
+  ]);
+  expect(order()).toEqual([[0, 100n, 3000n]]);
+});

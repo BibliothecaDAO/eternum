@@ -108,3 +108,30 @@ pub fn expire(site: ResourceKey, context: crate::commands::ExecutionContext) {
             .expire_explorer(key, army, crate::commands::action_context(context));
     }
 }
+
+
+pub fn next(site: ResourceKey) -> Option<ExplorerKey> {
+    let state = crate::state::read();
+    let mut counts = array![];
+    for slot in 0..crate::rules::DEEP_GUARD_SLOTS {
+        let explorer_id = state.deep.slots.read((site.game_id, site.entity_id, slot));
+        counts
+            .append(
+                if explorer_id == 0 {
+                    0
+                } else {
+                    let army = state.troops.explorers.entry((site.game_id, explorer_id));
+                    assert!(army.owner.read() != 0, "missing Deep guard army");
+                    army.troops.read().count
+                },
+            );
+    }
+    crate::logic::guards::GuardState::next_slot(counts.span())
+        .map(
+            |
+                slot,
+            | ExplorerKey {
+                game_id: site.game_id, explorer_id: state.deep.slots.read((site.game_id, site.entity_id, slot)),
+            },
+        )
+}

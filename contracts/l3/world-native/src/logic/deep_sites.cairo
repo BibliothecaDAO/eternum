@@ -2,11 +2,11 @@ use starknet::storage::{
     StorageMapReadAccess, StorageMapWriteAccess, StoragePathEntry, StoragePointer, StoragePointerReadAccess,
     SubPointersForward,
 };
-use crate::commands::{Battle, ExecutionContext};
+use crate::commands::ExecutionContext;
 use crate::deep::{DeepRules, DeepSite};
 use crate::guards::{Guard, GuardKey};
 use crate::resources::ResourceKey;
-use crate::troops::{ExplorerKey, ExplorerTroops, IBattleResolutionDispatcherTrait};
+use crate::troops::ExplorerKey;
 
 pub fn rules_entry(game_id: u32) -> Option<StoragePointer<DeepRules>> {
     crate::logic::preset_record::for_game(game_id).deep_rules.sub_pointers()
@@ -23,62 +23,7 @@ pub fn dispatcher(game_id: u32) -> crate::deep::IDeepSitesLibraryDispatcher {
     crate::deep::IDeepSitesLibraryDispatcher { class_hash: state.releases.entry(release).classes.combat.read() }
 }
 
-pub fn battle_beast(game_id: u32, actor: starknet::ContractAddress, command: Battle, context: ExecutionContext) {
-    crate::logic::combat::authorize(game_id, context);
-    let target = ResourceKey { game_id, entity_id: command.defender_id };
-    let site = site(target).expect('missing Deep site');
-    let key = ExplorerKey { game_id, explorer_id: command.attacker_id };
-    crate::logic::deep_guards::assert_field(key);
-    let mut attacker = crate::logic::troops::command_explorer(key, Some(actor), context.timestamp, context);
-    let destination = crate::logic::map::entity_coord(target).expect('missing Deep site position');
-    assert!(crate::geometry::adjacent(attacker.coord, destination), "Deep site requires adjacency");
-    let day = crate::days::day_of(context.game.unbox(), context.rules.unbox().day_unit_seconds, context.timestamp);
-    assert!(site.day == day.index, "Deep day not settled");
-    let guard_key = GuardKey { game_id, structure_id: target.entity_id, slot: 0 };
-    let mut guard = crate::logic::guards::guard(guard_key);
-    assert!(guard.troops.count != 0, "Deep beast already defeated");
-    let defender = ExplorerTroops { owner: 0, coord: destination, troops: guard.troops };
-    let combat = crate::combat::CombatContext {
-        defender_is_structure_guard: true, ..crate::logic::combat::combat_context(game_id, attacker, defender, context),
-    };
-    let attacker_before = attacker.troops.count;
-    let defender_before = guard.troops.count;
-    let (attacker_after, defender_after) = crate::logic::combat::resolve_battle(
-        game_id, attacker.troops, guard.troops, combat, context,
-    );
-    attacker.troops = attacker_after;
-    guard.troops = defender_after;
-    crate::logic::quests::record(
-        ResourceKey { game_id, entity_id: attacker.owner },
-        crate::quests::CULL,
-        defender_before - guard.troops.count,
-        context.timestamp,
-    );
-    if guard.troops.count == 0 {
-        guard
-            .destroyed_tick = (context.timestamp / context.rules.unbox().tick_config.armies_tick_in_seconds)
-            .try_into()
-            .unwrap();
-    }
-    crate::logic::guards::GuardState::save(guard_key, guard);
-    crate::logic::combat::combat_troops(game_id)
-        .finish_battle(key, attacker, attacker_before, crate::commands::action_context(context));
-    if attacker.troops.count != 0 && guard.troops.count == 0 {
-        crate::logic::deep_guards::join(key, attacker, target);
-        grant_beast_xp(key, destination, context.timestamp);
-    }
-    emit_beast_battle(
-        game_id,
-        actor,
-        command,
-        attacker,
-        ExplorerTroops { troops: guard.troops, ..defender },
-        (attacker_before, defender_before),
-        combat,
-    );
-}
-
-fn grant_beast_xp(key: ExplorerKey, coord: crate::troops::Coord, timestamp: u64) {
+pub fn grant_beast_xp(key: ExplorerKey, coord: crate::troops::Coord, timestamp: u64) {
     let count = rules_entry(key.game_id).expect('missing Deep rules').beast_count.read();
     let depth = crate::logic::expeditions::depth_at(key.game_id, coord);
     let state = crate::state::read();
@@ -88,40 +33,6 @@ fn grant_beast_xp(key: ExplorerKey, coord: crate::troops::Coord, timestamp: u64)
         key,
         crate::progression::XpAward::Clear(crate::progression::clear_xp(count, depth)),
         timestamp,
-    );
-}
-
-fn emit_beast_battle(
-    game_id: u32,
-    actor: starknet::ContractAddress,
-    command: Battle,
-    attacker: ExplorerTroops,
-    defender: ExplorerTroops,
-    before: (u128, u128),
-    combat: crate::combat::CombatContext,
-) {
-    let (attacker_before, defender_before) = before;
-    crate::logic::combat::emit(
-        crate::troops::BattleEvent {
-            version: 2,
-            game_id,
-            attacker_id: command.attacker_id,
-            defender_id: command.defender_id,
-            attacker_owner: attacker.owner,
-            defender_owner: 0,
-            winner_id: if defender.troops.count == 0 && attacker.troops.count != 0 {
-                attacker.owner
-            } else {
-                0
-            },
-            coord: defender.coord,
-            max_reward: array![].span(),
-            attacker: crate::combat_actions::battle_side(actor, attacker_before, attacker.troops, combat.attacker_roll),
-            defender: crate::combat_actions::battle_side(
-                0.try_into().unwrap(), defender_before, defender.troops, combat.defender_roll,
-            ),
-            timestamp: combat.timestamp,
-        },
     );
 }
 
