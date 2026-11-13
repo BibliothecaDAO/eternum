@@ -31,7 +31,7 @@ const u256 = (fields: readonly string[]) => {
  * What a later audit need not read again: a deposit that was delivered or cancelled, and a principal that was paid, can
  * never change on a confirmed ledger. Pending deposits and unpaid principals are read every time.
  */
-export interface DepositMemory {
+interface DepositMemory {
   deposits: Map<string, LordsDeposit>;
   principals: Map<string, { wallet: string; amount: string }>;
 }
