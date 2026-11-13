@@ -11,7 +11,6 @@ use crate::entry::{
 };
 use crate::registrar::{CreateGameParams, IRegistrarDispatcherTrait};
 use crate::resources::{IResourceOperationsDispatcher, IResourceOperationsDispatcherTrait, ResourceKey, ResourceSlot};
-use crate::stamina::StaminaSourceTrait;
 use super::play_fixture::IPlayFixtureSafeDispatcherTrait;
 use super::{GameState, IReleasesDispatcher, IReleasesDispatcherTrait, TroopObservationTrait};
 

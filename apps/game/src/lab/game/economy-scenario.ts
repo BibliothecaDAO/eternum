@@ -29,15 +29,7 @@ export const economyScenario = (): LabScenario => {
       command_mask: blitzPreset.commandMask,
     }),
     row("Structure", "0xe08", { ...home, entity_id: DESTINATION, metadata: { ...home.metadata, realm_id: 2 } }),
-    row("TileOccupancy", "0xe09", {
-      game_id: 1,
-      alt: false,
-      col: at.col + 2,
-      row: at.row,
-      entity_id: DESTINATION,
-      category: home.base.category,
-      is_structure: true,
-    }),
+    row("TileOccupancy", "0xe09", { ...at, col: at.col + 2, entity_id: DESTINATION }),
     row("ResourceWeight", "0xe0a", { game_id: 1, entity_id: DESTINATION, capacity: 100_000n * PRECISION, weight: 0n }),
     balance(HOME, ResourcesIds.Wheat, 1_000n * PRECISION),
     balance(HOME, ResourcesIds.Donkey, 100n * PRECISION),
@@ -112,6 +104,7 @@ const transfer = (command: LabCommand, chain: NativeFactStore, now: number): Lab
   const capacity = BigInt(rules.capacity_config.donkey_capacity) * PRECISION;
   const donkeys = ((weight + capacity - 1n) / capacity) * PRECISION;
   const travel = shipmentTravelSeconds(Number(from), Number(to), chain, false);
+  if (travel === undefined) throw new Error("The delivery requires both realms on the map");
   const tick = Math.floor((now + travel) / Number(rules.tick_config.delivery_tick_in_seconds));
   const arrival: NativeRows["ResourceArrival"] = {
     game_id: 1,
