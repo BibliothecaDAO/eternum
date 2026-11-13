@@ -1,7 +1,7 @@
 use starknet::storage::{StorageMapReadAccess, StorageMapWriteAccess};
 use crate::deep::DeepGuard;
 use crate::resources::ResourceKey;
-use crate::troops::{ExplorerKey, ExplorerTroops};
+use crate::troops::{ExplorerKey, ExplorerTroops, IBattleResolutionDispatcherTrait};
 
 pub fn guard(key: ExplorerKey) -> Option<DeepGuard> {
     crate::state::read().deep.guards.read((key.game_id, key.explorer_id))
@@ -101,6 +101,7 @@ pub fn expire(site: ResourceKey, context: crate::commands::ExecutionContext) {
         }
         let key = ExplorerKey { game_id: site.game_id, explorer_id };
         let army = crate::logic::troops::explorer(key).expect('missing expired Deep guard');
-        crate::logic::troops::expire_explorer(key, army, context);
+        crate::logic::combat::combat_troops(key.game_id)
+            .expire_explorer(key, army, crate::commands::action_context(context));
     }
 }

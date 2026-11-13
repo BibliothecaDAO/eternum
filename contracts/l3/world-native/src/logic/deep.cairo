@@ -1,7 +1,7 @@
 use starknet::storage::{StoragePathEntry, StoragePointerReadAccess};
 use crate::commands::ExecutionContext;
 use crate::geometry::tile_key;
-use crate::troops::{Coord, ExplorerKey};
+use crate::troops::{Coord, ExplorerKey, IBattleResolutionDispatcherTrait};
 
 pub fn contains(game_id: u32, coord: Coord) -> bool {
     let preset = crate::logic::preset_record::for_game(game_id);
@@ -51,7 +51,8 @@ pub fn clear_expired_occupant(game_id: u32, coord: Coord, context: ExecutionCont
     let today = crate::days::day_of(context.game.unbox(), context.rules.unbox().day_unit_seconds, context.timestamp)
         .index;
     if crate::logic::army_days::require(key) != today {
-        crate::logic::troops::expire_explorer(key, explorer, context);
+        crate::logic::combat::combat_troops(game_id)
+            .expire_explorer(key, explorer, crate::commands::action_context(context));
     } else {
         let _ = crate::logic::troops::command_explorer(key, None, context.timestamp, context);
     }
