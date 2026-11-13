@@ -33,21 +33,7 @@ pub mod MovementLogic {
     }
 
     #[abi(embed_v0)]
-    impl TerrainDerivation of crate::settlement::ITerrainDerivation<ContractState> {
-        fn raise_expedition_home(
-            ref self: ContractState, key: crate::map::TileKey, context: crate::commands::BiomeContext,
-        ) {
-            crate::logic::terrain::raise_expedition_home(key, context);
-        }
-        fn biome(self: @ContractState, key: crate::map::TileKey, context: crate::commands::BiomeContext) -> u8 {
-            crate::logic::terrain::biome(key, context)
-        }
-        fn expedition_home_ring(
-            self: @ContractState, game_id: u32, region_id: u32, timestamp: u64,
-        ) -> Span<(crate::troops::Coord, u8)> {
-            crate::logic::terrain::expedition_home_ring(game_id, region_id, timestamp)
-        }
-    }
+    impl TerrainDerivation = crate::logic::terrain::TerrainDerivation<ContractState>;
 
     #[abi(embed_v0)]
     impl Exploration of crate::commands::IExplore<ContractState> {

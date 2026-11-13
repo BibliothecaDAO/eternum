@@ -3,6 +3,21 @@ use crate::geometry::tile_key;
 use crate::map::TileKey;
 use crate::troops::Coord;
 
+#[starknet::embeddable]
+pub impl TerrainDerivation<
+    TContractState, +Drop<TContractState>,
+> of crate::settlement::ITerrainDerivation<TContractState> {
+    fn raise_expedition_home(ref self: TContractState, key: TileKey, context: crate::commands::BiomeContext) {
+        crate::logic::terrain::raise_expedition_home(key, context);
+    }
+    fn biome(self: @TContractState, key: TileKey, context: crate::commands::BiomeContext) -> u8 {
+        crate::logic::terrain::biome(key, context)
+    }
+    fn expedition_home_ring(self: @TContractState, game_id: u32, region_id: u32, timestamp: u64) -> Span<(Coord, u8)> {
+        crate::logic::terrain::expedition_home_ring(game_id, region_id, timestamp)
+    }
+}
+
 pub fn biome(key: TileKey, game_context: crate::commands::BiomeContext) -> u8 {
     let climate = if game_context.day_unit_seconds == 0 {
         game_context.climate
