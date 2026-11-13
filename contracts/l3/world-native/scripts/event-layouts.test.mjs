@@ -178,33 +178,22 @@ test("Race eligibility reads only its preset fields", async () => {
 });
 
 test("Race settlement and Triumph evaluation have one Economy library owner", async () => {
-  for (const name of [
-    "Bridge",
-    "Combat",
-    "Construction",
-    "Economy",
-    "Map",
-    "Movement",
-    "Placement",
-    "Prizes",
-    "Production",
-    "Raid",
-    "Registry",
-    "Relics",
-    "Resources",
-    "Season",
-    "Settlement",
-    "Structures",
-    "Troops",
-  ]) {
+  const { contracts } = JSON.parse(
+    await readFile(new URL("../target/dev/world_native.starknet_artifacts.json", import.meta.url), "utf8"),
+  );
+  for (const { contract_name } of contracts) {
+    if (!contract_name.endsWith("Logic")) continue;
     const { abi } = JSON.parse(
-      await readFile(new URL(`../target/dev/world_native_${name}Logic.contract_class.json`, import.meta.url), "utf8"),
+      await readFile(
+        new URL(`../target/dev/world_native_${contract_name}.contract_class.json`, import.meta.url),
+        "utf8",
+      ),
     );
     const methods = abi.flatMap((entry) => (entry.type === "interface" ? entry.items : [entry]));
-    for (const method of ["finalize_race", "triumph_percent"]) {
+    for (const method of ["finalize_race", "triumph_percent", "race_enabled"]) {
       assert.equal(
         methods.filter((entry) => entry.name === method).length,
-        name === "Economy" ? 1 : 0,
+        contract_name === "EconomyLogic" ? 1 : 0,
         `${method} belongs to the existing Race component in Economy`,
       );
     }
@@ -214,7 +203,7 @@ test("Race settlement and Triumph evaluation have one Economy library owner", as
 test("Triumph callers use the pinned library instead of compiling another reader", async () => {
   const directory = new URL("../src/logic/", import.meta.url);
   const source = await readFile(new URL("triumphs.cairo", directory), "utf8");
-  const wrapper = source.slice(source.indexOf("pub fn percent("), source.indexOf("pub fn read_percent("));
+  const wrapper = source.slice(source.indexOf("pub fn percent("), source.indexOf("pub fn beast_percent("));
   assert.match(
     wrapper,
     /IRaceDispatcherTrait::triumph_percent/,
@@ -227,9 +216,63 @@ test("Triumph callers use the pinned library instead of compiling another reader
     const text = await readFile(new URL(file, directory), "utf8");
     if (/\bread_percent\b/.test(text)) callers.push(file);
   }
+  assert.deepEqual(callers, [], "Use triumphs::percent; the storage reader is private to Economy's Race component");
+});
+
+test("whole rule reads stay private to command loading and Race's Economy implementation", async () => {
+  const directory = new URL("../src/", import.meta.url);
+  for (const file of await readdir(directory, { recursive: true })) {
+    if (!file.endsWith(".cairo")) continue;
+    const source = await readFile(new URL(file, directory), "utf8");
+    assert.doesNotMatch(
+      source,
+      /logic::game::rules\b/,
+      `${file}: use the command context or read the required preset field`,
+    );
+    if (file !== "commands.cairo") {
+      assert.doesNotMatch(
+        source,
+        /\brules\s*\.\s*read\s*\(/,
+        `${file}: only commands::load_context may load the whole rule set`,
+      );
+    }
+    if (file !== "logic/race.cairo") {
+      assert.doesNotMatch(source, /\brace_rules\s*\.\s*read\s*\(/, `${file}: query the pinned Economy Race library`);
+      assert.doesNotMatch(
+        source,
+        /logic::race::(?:rules|hyperstructure)\b/,
+        `${file}: query the pinned Economy Race library`,
+      );
+    }
+  }
+  const commands = await readFile(new URL("commands.cairo", directory), "utf8");
+  assert.match(commands, /\nfn read_rules\(/, "Keep the full rule reader private to commands");
+  assert.equal((commands.match(/\bread_rules\(/g) ?? []).length, 2, "Only load_context calls the full rule reader");
+  const race = await readFile(new URL("logic/race.cairo", directory), "utf8");
+  for (const name of ["rules", "hyperstructure", "triumph_percent"]) {
+    assert.match(race, new RegExp(`\\nfn ${name}\\(`), `${name} must remain private to Economy's Race implementation`);
+  }
+});
+
+test("compiled RaceRules storage reader has exactly one Economy owner", async () => {
+  const directory = new URL("../target/dev/", import.meta.url);
+  const { contracts } = JSON.parse(await readFile(new URL("world_native.starknet_artifacts.json", directory), "utf8"));
+  const owners = [];
+  for (const { contract_name } of contracts) {
+    if (!contract_name.endsWith("Logic")) continue;
+    const { sierra_program_debug_info } = JSON.parse(
+      await readFile(new URL(`world_native_${contract_name}.contract_class.json`, directory), "utf8"),
+    );
+    if (
+      sierra_program_debug_info.user_func_names.some(
+        ([, name]) => name === "world_native::race::RaceRulesStore::read_at_offset",
+      )
+    )
+      owners.push(contract_name);
+  }
   assert.deepEqual(
-    callers,
-    ["race.cairo"],
-    "Use triumphs::percent; only Economy's Race component reads Triumph storage",
+    owners,
+    ["EconomyLogic"],
+    "Read scalar Race facts through the pinned Economy library; do not compile another RaceRules reader",
   );
 });

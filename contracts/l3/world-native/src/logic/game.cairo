@@ -2,7 +2,6 @@ use starknet::Event as EventTrait;
 use starknet::storage::{StorageMapReadAccess, StorageMapWriteAccess, StoragePathEntry, StoragePointerReadAccess};
 use crate::events::RowSet;
 use crate::game::{GameOverrides, GameRegistry};
-use crate::rules::SliceRules;
 
 #[derive(Drop, starknet::Event)]
 pub enum Event {
@@ -14,16 +13,6 @@ pub fn game(game_id: u32) -> GameRegistry {
     let game = state.games.games.read(game_id);
     assert!(game.preset_id != 0, "game does not exist");
     game
-}
-pub fn rules(game_id: u32) -> SliceRules {
-    let preset = crate::logic::preset_record::for_game(game_id).rules.read();
-    let overrides = crate::state::read().games.overrides.read(game_id);
-    SliceRules {
-        biome_climate_config: overrides.biome_climate,
-        map_config: overrides.map.unwrap_or(preset.map_config),
-        map_center_offset: overrides.map_center_offset,
-        ..preset,
-    }
 }
 pub fn create(game_id: u32, game: GameRegistry, overrides: GameOverrides) {
     let state = crate::state::write();
