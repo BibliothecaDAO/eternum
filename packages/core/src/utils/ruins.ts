@@ -1,4 +1,5 @@
 import { dayOf } from "./days";
+import { armyRelicsEnabled } from "./army-relics";
 import type { NativeFactStore } from "../client/native-fact-store";
 import { nativeReleaseConstants, type NativeRows } from "../../../../contracts/l3/world-native/schema/client.gen";
 import { StructureType } from "@bibliothecadao/types";
@@ -6,19 +7,20 @@ import { entityHomeNamespace } from "./entity-home";
 import { type ExpeditionRules, expeditionRealmSite, seasonDay } from "./expeditions";
 import { regionInGameSyncScope } from "../sync/model-manifest";
 
-type RuinReader = Pick<NativeFactStore, "get" | "inGame">;
+type RuinReader = Pick<NativeFactStore, "get" | "inGame" | "subscriptionScope">;
 
-export function ruinLimitPerDepth(store: Pick<RuinReader, "get">, gameId: number): boolean {
-  const perDepth = perDepthRuins(store, gameId);
-  if (perDepth === undefined) throw new Error("A ruin requires its game release");
-  return perDepth;
-}
-
-/** Whether a home clears one ruin per depth a day (release 9 on); unknown while the game's release is. */
-const perDepthRuins = (store: Pick<RuinReader, "get">, gameId: number): boolean | undefined => {
+/** A cash ruin's daily entitlement; relic ruins have none. Unknown until the preset is authoritative. */
+export function ruinLimit(
+  store: Pick<RuinReader, "get" | "subscriptionScope">,
+  gameId: number,
+): "none" | "home" | "depth" | undefined {
+  const relics = armyRelicsEnabled(store, gameId);
+  if (relics === undefined) return undefined;
+  if (relics || store.get("SliceRules", { game_id: gameId })?.day_unit_seconds === 0) return "none";
   const release = store.get("GameRelease", { game_id: gameId });
-  return release && release.release_id >= nativeReleaseConstants.RUIN_DEPTH_LIMIT_RELEASE;
-};
+  if (!release) return undefined;
+  return release.release_id >= nativeReleaseConstants.RUIN_DEPTH_LIMIT_RELEASE ? "depth" : "home";
+}
 
 /** The band (day × 4 + depth) of a ruin the home has cleared, from its clear receipt; none for any other site. */
 const homeClearBand = (row: NativeRows["ExpeditionSite"], home: number, spacing: number): number | null =>
@@ -27,13 +29,16 @@ const homeClearBand = (row: NativeRows["ExpeditionSite"], home: number, spacing:
     : null;
 
 /** A clear closes other ruins at the same depth in its home namespace and map day; stored receipts remain visible. */
-export function ruinDisappeared(store: RuinReader, site: NativeRows["ExpeditionSite"]): boolean {
+export function ruinDisappeared(store: RuinReader, site: NativeRows["ExpeditionSite"]): boolean | undefined {
   if (site.category !== StructureType.Ruin || site.clear) return false;
+  const limit = ruinLimit(store, site.game_id);
+  if (limit === undefined) return undefined;
+  if (limit === "none") return false;
   const spacing = store.get("SettlementRules", { game_id: site.game_id })?.spacing;
   if (!spacing) throw new Error("A ruin requires its expedition spacing");
   const region = Math.floor(site.row / spacing);
   const home = entityHomeNamespace(site.entity_id);
-  if (!ruinLimitPerDepth(store, site.game_id)) {
+  if (limit === "home") {
     const day = BigInt(Math.floor(region / 4));
     return [...store.inGame("ExpeditionDiscovery", site.game_id)].some(
       (row) => row.epoch === day && entityHomeNamespace(row.structure_id) === home && row.ruin_cleared,
@@ -80,7 +85,7 @@ export function ruinChestsToday(
   history: RuinHistory = NO_HISTORY,
 ): RuinChests | null {
   const today = seasonDay(rules, nowSeconds);
-  if (today === null || !perDepthRuins(store, realm.game_id)) return null;
+  if (today === null || ruinLimit(store, realm.game_id) !== "depth") return null;
   const home = entityHomeNamespace(realm.entity_id);
   const claimed = new Set<number>();
   for (const row of store.inGame("ExpeditionSite", realm.game_id)) {

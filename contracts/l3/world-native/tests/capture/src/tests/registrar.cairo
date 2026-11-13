@@ -1,5 +1,6 @@
 pub use world_test_support::tests::registrar::*;
 use crate::logic::release::{IReleasesDispatcher, IReleasesDispatcherTrait, Release};
+use crate::race::IRaceDispatcherTrait;
 
 #[test]
 fn expedition_rollover_expires_armies_and_preserves_the_home_economy() {
@@ -3169,7 +3170,12 @@ fn deep_ticks_pay_pre_loss_weights_once_and_stop_paying_dead_guards() {
             assert_eq!(
                 crate::logic::race::member(ResourceKey { game_id, entity_id: 104 }).glory, 15 * RESOURCE_PRECISION,
             );
-            assert_eq!(crate::logic::race::hyperstructure(crate::race::AspectKey { game_id, aspect: 1 }).height, 15);
+            assert_eq!(
+                crate::logic::race::dispatcher(game_id)
+                    .aspect_hyperstructure(crate::race::AspectKey { game_id, aspect: 1 })
+                    .height,
+                15,
+            );
             assert_eq!(
                 crate::logic::resources::balance(ResourceKey { game_id, entity_id: 103 }, crate::resources::LABOR),
                 1500 * RESOURCE_PRECISION,
@@ -3273,7 +3279,12 @@ fn winning_tick_finishes_all_three_sites_and_rejects_the_waiting_command() {
                 crate::logic::race::result(game_id),
                 Some(crate::race::RaceResult { winner: Some(1), ended_at: 480, scheduled_end_at: scheduled_end }),
             );
-            assert_eq!(crate::logic::race::hyperstructure(crate::race::AspectKey { game_id, aspect: 1 }).height, 10000);
+            assert_eq!(
+                crate::logic::race::dispatcher(game_id)
+                    .aspect_hyperstructure(crate::race::AspectKey { game_id, aspect: 1 })
+                    .height,
+                10000,
+            );
             assert_eq!(
                 crate::logic::race::member(ResourceKey { game_id, entity_id: 101 }).glory, 5 * RESOURCE_PRECISION,
             );
@@ -3319,7 +3330,10 @@ fn scheduled_end_pays_the_final_boundary_once() {
                     crate::logic::race::member(ResourceKey { game_id, entity_id: 101 }).glory, 15 * RESOURCE_PRECISION,
                 );
                 assert_eq!(
-                    crate::logic::race::hyperstructure(crate::race::AspectKey { game_id, aspect: 1 }).height, 15,
+                    crate::logic::race::dispatcher(game_id)
+                        .aspect_hyperstructure(crate::race::AspectKey { game_id, aspect: 1 })
+                        .height,
+                    15,
                 );
                 assert_eq!(crate::state::read().deep.paid_tick.read(game_id), Some(6));
                 assert!(crate::logic::troops::explorer(guard).is_none());
@@ -3405,6 +3419,13 @@ fn triumph_readers_use_the_games_pinned_economy_and_preserve_all_four_windows() 
         d.games,
         || {
             let state = crate::state::write();
+            assert!(crate::logic::race::enabled(game_id));
+            assert_eq!(crate::logic::race::aspect_order(game_id), array![1_u8, 2, 3, 4].span());
+            state.season.aspect_heights.write((game_id, 1), 50);
+            state.season.aspect_heights.write((game_id, 2), 100);
+            state.season.aspect_heights.write((game_id, 3), 50);
+            state.season.aspect_heights.write((game_id, 4), 100);
+            assert_eq!(crate::logic::race::aspect_order(game_id), array![2_u8, 4, 1, 3].span());
             let game = crate::logic::game::game(game_id);
             let preset = crate::logic::preset_record::for_game(game_id);
             let spacing = preset.settlement_spacing.read();

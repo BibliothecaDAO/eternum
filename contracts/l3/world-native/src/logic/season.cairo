@@ -120,7 +120,7 @@ pub mod SeasonLogic {
                 game.end_grace_seconds == 0 || context.timestamp > game.end_at + game.end_grace_seconds.into(),
                 "game settlement grace period is active",
             );
-            let remaining = if crate::logic::race::rules(game_id).is_some() {
+            let remaining = if crate::logic::race::enabled(game_id) {
                 crate::deep::IDeepSitesDispatcherTrait::settle_deep(
                     crate::deep::IDeepSitesLibraryDispatcher {
                         class_hash: self.release.classes(game_id).combat.read(),
@@ -240,7 +240,7 @@ pub mod SeasonLogic {
             if amount == 0 {
                 return;
             }
-            assert!(crate::logic::race::rules(game_id).is_none(), "race earns Glory only from holding");
+            assert!(!crate::logic::race::enabled(game_id), "race earns Glory only from holding");
             let points = self.data.season.player_points.read((game_id, actor)) + amount;
             let total = self.data.season.season_points.read(game_id) + amount;
             self.data.season.player_points.write((game_id, actor), points);

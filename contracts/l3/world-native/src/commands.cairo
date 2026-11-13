@@ -1,4 +1,6 @@
 use starknet::ContractAddress;
+use starknet::storage::{StorageMapReadAccess, StoragePointerReadAccess};
+use crate::rules::SliceRules;
 
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]
 pub struct CreateExplorer {
@@ -99,7 +101,18 @@ pub fn load_context(game_id: u32, raw_root: u256, timestamp: u64) -> ExecutionCo
         timestamp,
         game_id,
         game: BoxTrait::new(crate::logic::game::game(game_id)),
-        rules: BoxTrait::new(crate::logic::game::rules(game_id)),
+        rules: BoxTrait::new(read_rules(game_id)),
+    }
+}
+
+fn read_rules(game_id: u32) -> SliceRules {
+    let preset = crate::logic::preset_record::for_game(game_id).rules.read();
+    let overrides = crate::state::read().games.overrides.read(game_id);
+    SliceRules {
+        biome_climate_config: overrides.biome_climate,
+        map_config: overrides.map.unwrap_or(preset.map_config),
+        map_center_offset: overrides.map_center_offset,
+        ..preset,
     }
 }
 

@@ -38,6 +38,7 @@ import { TileCard } from "./tile-card";
 const APPLIED = { hash: "0x1", block: 9, status: "SUCCEEDED" };
 
 beforeEach(() => {
+  setBlockTimestampSource(() => 350);
   waitForAction.mockReset();
   waitForAction.mockResolvedValue(APPLIED);
 });

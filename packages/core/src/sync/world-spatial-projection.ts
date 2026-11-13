@@ -148,7 +148,10 @@ export type WorldSpatialProjectionChange =
   | ArmySpatialProjectionChange;
 
 export interface WorldSpatialProjectionOptions {
-  store: Pick<NativeFactStore, "entries" | "subscribe" | "get" | "require" | "entityOccupancy" | "inGame">;
+  store: Pick<
+    NativeFactStore,
+    "entries" | "subscribe" | "get" | "require" | "entityOccupancy" | "inGame" | "subscriptionScope"
+  >;
   bucketSize?: number;
 }
 
@@ -549,7 +552,7 @@ const toArmyChange = ({
 export class WorldSpatialProjection {
   private readonly store: Pick<
     NativeFactStore,
-    "entries" | "subscribe" | "get" | "require" | "entityOccupancy" | "inGame"
+    "entries" | "subscribe" | "get" | "require" | "entityOccupancy" | "inGame" | "subscriptionScope"
   >;
   private readonly chestIndex: SpatialIndex<ID, ChestSpatialRenderable>;
   private readonly structureIndex: SpatialIndex<StructureSpatialRenderable["spatialId"], StructureSpatialRenderable>;
@@ -565,6 +568,7 @@ export class WorldSpatialProjection {
   private readonly tileListeners = new Set<TileProjectionListener>();
   private unsubscribe: (() => void) | null = null;
   private nextTimeRefresh = Infinity;
+  private scopeKnown = false;
 
   constructor({ store, bucketSize = DEFAULT_SPATIAL_BUCKET_SIZE }: WorldSpatialProjectionOptions) {
     if (!Number.isFinite(bucketSize) || bucketSize <= 0) {
@@ -600,9 +604,13 @@ export class WorldSpatialProjection {
 
   private applyChanges(changes: readonly NativeFactChange[]): void {
     if (
+      Boolean(this.store.subscriptionScope().known) !== this.scopeKnown ||
       changes.some(
         (change) =>
-          change.model === "SliceRules" || change.model === "SettlementRules" || change.model === "GameRegistry",
+          change.model === "SliceRules" ||
+          change.model === "SettlementRules" ||
+          change.model === "GameRegistry" ||
+          change.model === "ChestRules",
       )
     ) {
       this.rebuild();
@@ -686,6 +694,7 @@ export class WorldSpatialProjection {
    * out, so a rebuild always ends whole.
    */
   public rebuild(): void {
+    this.scopeKnown = Boolean(this.store.subscriptionScope().known);
     const nextChests = new Map<ID, ChestSpatialRenderable>();
     const nextStructures = new Map<StructureSpatialRenderable["spatialId"], StructureSpatialRenderable>();
     const nextArmies = new Map<ID, ArmySpatialRenderable>();
