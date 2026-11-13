@@ -5150,46 +5150,6 @@
       "derivedFrom": "preset"
     },
     {
-      "name": "AspectActivity",
-      "identity": "0x4173706563744163746976697479",
-      "scope": "game",
-      "keys": [
-        {
-          "name": "game_id",
-          "type": "core::integer::u32",
-          "feltLength": 1
-        },
-        {
-          "name": "aspect",
-          "type": "core::integer::u8",
-          "feltLength": 1
-        },
-        {
-          "name": "day",
-          "type": "core::integer::u64",
-          "feltLength": 1
-        }
-      ],
-      "members": [
-        {
-          "name": "active",
-          "type": "core::integer::u32",
-          "id": "0x616374697665",
-          "feltLength": 1
-        }
-      ],
-      "keyLength": 3,
-      "valueLength": 1,
-      "absence": {
-        "parent": "GameRegistry",
-        "value": "zero",
-        "meaning": "No home in this Aspect allocated an army on this day.",
-        "parentKeys": {
-          "game_id": "game_id"
-        }
-      }
-    },
-    {
       "name": "BaneProgress",
       "identity": "0x42616e6550726f6772657373",
       "scope": "game",
@@ -5645,6 +5605,46 @@
       ],
       "keyLength": 2,
       "valueLength": 11
+    },
+    {
+      "name": "AspectActivity",
+      "identity": "0x4173706563744163746976697479",
+      "scope": "game",
+      "keys": [
+        {
+          "name": "game_id",
+          "type": "core::integer::u32",
+          "feltLength": 1
+        },
+        {
+          "name": "aspect",
+          "type": "core::integer::u8",
+          "feltLength": 1
+        },
+        {
+          "name": "day",
+          "type": "core::integer::u64",
+          "feltLength": 1
+        }
+      ],
+      "members": [
+        {
+          "name": "active",
+          "type": "core::integer::u32",
+          "id": "0x616374697665",
+          "feltLength": 1
+        }
+      ],
+      "keyLength": 3,
+      "valueLength": 1,
+      "absence": {
+        "parent": "GameRegistry",
+        "value": "zero",
+        "meaning": "No home in this Aspect allocated an army on this day.",
+        "parentKeys": {
+          "game_id": "game_id"
+        }
+      }
     },
     {
       "name": "ArmySlot",
@@ -14741,5 +14741,5 @@
       ]
     }
   },
-  "identity": "903d3e0839d538ed6721eb791b687226db9118247a7a042ef82bda362d6da742"
+  "identity": "d2a16d1ff004eea19e67a0cbd98a081034aadbf32ea4fbb5f923293c2f1a32e7"
 }

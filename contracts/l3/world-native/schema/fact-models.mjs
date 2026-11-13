@@ -1104,16 +1104,6 @@ export function defineFactModels({ struct, model: declare }) {
     ),
     model("BaneRules", "game", [{ name: "game_id", type: "core::integer::u32" }], struct("banes::BaneRules")),
     model(
-      "AspectActivity",
-      "game",
-      [
-        { name: "game_id", type: "core::integer::u32" },
-        { name: "aspect", type: "core::integer::u8" },
-        { name: "day", type: "core::integer::u64" },
-      ],
-      [{ name: "active", type: "core::integer::u32" }],
-    ),
-    model(
       "BaneProgress",
       "game",
       [
@@ -1180,6 +1170,16 @@ export function defineFactModels({ struct, model: declare }) {
     model("TileOpt", "game", struct("map::TileKey"), struct("map::TileOpt")),
     model("TileOccupancy", "game", struct("map::TileKey"), struct("map::TileOccupancy")),
     model("ArmyProgress", "game", struct("troops::ExplorerKey"), struct("progression::ArmyProgress")),
+    model(
+      "AspectActivity",
+      "game",
+      [
+        { name: "game_id", type: "core::integer::u32" },
+        { name: "aspect", type: "core::integer::u8" },
+        { name: "day", type: "core::integer::u64" },
+      ],
+      [{ name: "active", type: "core::integer::u32" }],
+    ),
     model("ArmySlot", "game", struct("troops::ArmySlotKey"), struct("troops::ArmySlot")),
     model("ExplorerTroops", "game", struct("troops::ExplorerKey"), struct("troops::ExplorerRecord")),
     model("ExpeditionSite", "game", struct("resources::ResourceKey"), struct("expeditions::ExpeditionSite")),

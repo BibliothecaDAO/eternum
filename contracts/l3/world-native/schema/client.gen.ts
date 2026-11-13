@@ -1,5 +1,5 @@
 // Generated from native fact models and contract ABIs. Run the native schema generator to update.
-export const nativeFactSchemaIdentity = "903d3e0839d538ed6721eb791b687226db9118247a7a042ef82bda362d6da742";
+export const nativeFactSchemaIdentity = "d2a16d1ff004eea19e67a0cbd98a081034aadbf32ea4fbb5f923293c2f1a32e7";
 export const nativeReleaseConstants = {
   "RUIN_DEPTH_LIMIT_RELEASE": 9
 } as const;
@@ -264,7 +264,6 @@ export interface NativeRows {
   PlayerEntry: { readonly game_id: number; readonly owner: bigint; readonly player: bigint };
   AspectRules: { readonly game_id: number; readonly orders: readonly (number)[] };
   BaneRules: { readonly game_id: number; readonly chance_step: number; readonly quorum_percent: number; readonly beast_percent: number; readonly stamina_percent: number; readonly production_percent: number; readonly quest_counts: readonly (bigint)[] };
-  AspectActivity: { readonly game_id: number; readonly aspect: number; readonly day: bigint; readonly active: number };
   BaneProgress: { readonly game_id: number; readonly aspect: number; readonly day: bigint; readonly completed: number; readonly ended_at: bigint };
   FirstTeamBane: { readonly game_id: number; readonly day: (bigint) | null };
   BaneGrant: { readonly game_id: number; readonly home: bigint; readonly day: bigint; readonly account: bigint; readonly amount: bigint; readonly essence: bigint };
@@ -275,6 +274,7 @@ export interface NativeRows {
   TileOpt: { readonly game_id: number; readonly alt: boolean; readonly col: number; readonly row: number; readonly data: bigint };
   TileOccupancy: { readonly game_id: number; readonly alt: boolean; readonly col: number; readonly row: number; readonly entity_id: bigint; readonly category: number; readonly is_structure: boolean };
   ArmyProgress: { readonly game_id: number; readonly explorer_id: bigint; readonly xp: number; readonly common_points: number; readonly uncommon_points: number; readonly rare_points: number; readonly epic_points: number; readonly legendary_points: number; readonly battle: number; readonly logistics: number; readonly scouting: number; readonly homecoming: number; readonly scouting_kinds: number };
+  AspectActivity: { readonly game_id: number; readonly aspect: number; readonly day: bigint; readonly active: number };
   ArmySlot: { readonly game_id: number; readonly structure_id: bigint; readonly epoch: bigint; readonly slot: number; readonly explorer_id: bigint; readonly stamina: { readonly amount: bigint; readonly settled_at: number; readonly remainder: number } };
   ExplorerTroops: { readonly game_id: number; readonly explorer_id: bigint; readonly owner: bigint; readonly troops: { readonly category: "Knight" | "Paladin" | "Crossbowman"; readonly tier: "T1" | "T2" | "T3"; readonly count: bigint; readonly stamina: { readonly Inline: { readonly amount: bigint; readonly settled_at: number; readonly remainder: number } } | { readonly Slot: number }; readonly boosts: { readonly incr_damage_dealt_percent_num: number; readonly incr_damage_dealt_end_at: number; readonly decr_damage_gotten_percent_num: number; readonly decr_damage_gotten_end_at: number; readonly incr_stamina_regen_percent_num: number; readonly incr_stamina_regen_seconds_left: number; readonly incr_explore_reward_percent_num: number; readonly incr_explore_reward_end_at: number }; readonly battle_cooldown_end: number } };
   ExpeditionSite: { readonly game_id: number; readonly entity_id: bigint; readonly category: number; readonly initial_guard_count: bigint; readonly alt: boolean; readonly col: number; readonly row: number; readonly clear: ({ readonly explorer_id: bigint; readonly home_id: bigint; readonly reward: ({ readonly resource_type: number; readonly amount: bigint }) | null }) | null };
@@ -375,7 +375,6 @@ export interface NativeKeys {
   PlayerEntry: { readonly game_id: number; readonly owner: bigint };
   AspectRules: { readonly game_id: number };
   BaneRules: { readonly game_id: number };
-  AspectActivity: { readonly game_id: number; readonly aspect: number; readonly day: bigint };
   BaneProgress: { readonly game_id: number; readonly aspect: number; readonly day: bigint };
   FirstTeamBane: { readonly game_id: number };
   BaneGrant: { readonly game_id: number; readonly home: bigint; readonly day: bigint };
@@ -386,6 +385,7 @@ export interface NativeKeys {
   TileOpt: { readonly game_id: number; readonly alt: boolean; readonly col: number; readonly row: number };
   TileOccupancy: { readonly game_id: number; readonly alt: boolean; readonly col: number; readonly row: number };
   ArmyProgress: { readonly game_id: number; readonly explorer_id: bigint };
+  AspectActivity: { readonly game_id: number; readonly aspect: number; readonly day: bigint };
   ArmySlot: { readonly game_id: number; readonly structure_id: bigint; readonly epoch: bigint; readonly slot: number };
   ExplorerTroops: { readonly game_id: number; readonly explorer_id: bigint };
   ExpeditionSite: { readonly game_id: number; readonly entity_id: bigint };
@@ -1431,28 +1431,6 @@ export const nativeFactModels = {
       ]
     }
   },
-  "AspectActivity": {
-    "keys": [
-      "game_id",
-      "aspect",
-      "day"
-    ],
-    "scope": "game",
-    "fields": {
-      "game_id": "u32",
-      "aspect": "u8",
-      "day": "u64",
-      "active": "u32"
-    },
-    "absence": {
-      "parent": "GameRegistry",
-      "value": "zero",
-      "meaning": "No home in this Aspect allocated an army on this day.",
-      "parentKeys": {
-        "game_id": "game_id"
-      }
-    }
-  },
   "BaneProgress": {
     "keys": [
       "game_id",
@@ -1637,6 +1615,28 @@ export const nativeFactModels = {
       "scouting": "u8",
       "homecoming": "u8",
       "scouting_kinds": "u16"
+    }
+  },
+  "AspectActivity": {
+    "keys": [
+      "game_id",
+      "aspect",
+      "day"
+    ],
+    "scope": "game",
+    "fields": {
+      "game_id": "u32",
+      "aspect": "u8",
+      "day": "u64",
+      "active": "u32"
+    },
+    "absence": {
+      "parent": "GameRegistry",
+      "value": "zero",
+      "meaning": "No home in this Aspect allocated an army on this day.",
+      "parentKeys": {
+        "game_id": "game_id"
+      }
     }
   },
   "ArmySlot": {

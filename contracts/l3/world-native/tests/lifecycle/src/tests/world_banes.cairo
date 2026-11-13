@@ -103,6 +103,12 @@ fn activity_counts_a_home_once_through_slot_reuse_rejection_and_rollover() {
             ),
         );
     }
+    world_test_support::tests::resource_commands::grant(
+        d,
+        home,
+        crate::troops::stock_resource(crate::troops::TroopType::Knight, crate::troops::TroopTier::T1),
+        10 * crate::rules::RESOURCE_PRECISION,
+    );
     let first = Command::CreateExplorer(
         crate::commands::CreateExplorer {
             structure_id: home.entity_id,
