@@ -1,0 +1,139 @@
+[project]
+name = "eternum"
+repo = "/home/djizus/projects/eternum"
+branch = "feat/frontier-s1"
+machine = "tower"
+slots = 2
+env = "SCARB_CACHE=/home/djizus/.local/state/flow/eternum/scarb-cache"
+budget_gb = 16
+reserve_gb = 1
+setup = "pnpm install --frozen-lockfile --prefer-offline"
+
+[kind.build]
+cmd = "bash contracts/l3/check-native.sh build"
+estimate_gb = 9
+
+[kind.sizes]
+cmd = "bash contracts/l3/check-native.sh sizes"
+measure = 'cd contracts/l3/world-native && node scripts/check-class-sizes.mjs | jq -r ".headroomLimit as \$l | [.classes[] | .name + \" \" + (.felts | tostring) + \" of \" + (\$l | tostring)] | join(\", \")"'
+paths = "contracts/ .tool-versions flow.toml"
+estimate_gb = 9
+
+[kind.gate-prelude]
+paths = "contracts/ .tool-versions flow.toml"
+cmd = "bash contracts/l3/check-native.sh prelude"
+estimate_gb = 5
+
+[kind.gate-vrf]
+paths = "contracts/ .tool-versions flow.toml"
+cmd = "bash contracts/l3/check-native.sh vrf"
+estimate_gb = 9
+
+[kind.gate-world]
+paths = "contracts/ .tool-versions flow.toml"
+cmd = "bash contracts/l3/check-native.sh world"
+estimate_gb = 9
+
+[kind.gate-drift]
+cmd = "bash contracts/l3/check-native.sh drift"
+paths = "contracts/ .tool-versions flow.toml"
+estimate_gb = 9
+
+[kind.gate-events]
+paths = "contracts/ .tool-versions flow.toml"
+cmd = "bash contracts/l3/check-native.sh events"
+estimate_gb = 9
+
+[kind.test-capture]
+cmd = "bash contracts/l3/check-native.sh test-capture"
+measure = 'grep -oE "Tests: [0-9]+ passed" "$FLOW_LOG" | tail -n 1'
+paths = "contracts/ .tool-versions flow.toml !contracts/l3/world-native/tests/combat/ !contracts/l3/world-native/tests/discovery/ !contracts/l3/world-native/tests/economy/ !contracts/l3/world-native/tests/lifecycle/ !contracts/l3/world-native/tests/registration/ !contracts/l3/world-native/tests/resources/ !contracts/l3/world-native/tests/world/"
+estimate_gb = 9
+
+[kind.test-combat]
+cmd = "bash contracts/l3/check-native.sh test-combat"
+measure = 'grep -oE "Tests: [0-9]+ passed" "$FLOW_LOG" | tail -n 1'
+paths = "contracts/ .tool-versions flow.toml !contracts/l3/world-native/tests/capture/ !contracts/l3/world-native/tests/discovery/ !contracts/l3/world-native/tests/economy/ !contracts/l3/world-native/tests/lifecycle/ !contracts/l3/world-native/tests/registration/ !contracts/l3/world-native/tests/resources/ !contracts/l3/world-native/tests/world/"
+estimate_gb = 9
+
+[kind.test-discovery]
+cmd = "bash contracts/l3/check-native.sh test-discovery"
+measure = 'grep -oE "Tests: [0-9]+ passed" "$FLOW_LOG" | tail -n 1'
+paths = "contracts/ .tool-versions flow.toml !contracts/l3/world-native/tests/capture/ !contracts/l3/world-native/tests/combat/ !contracts/l3/world-native/tests/economy/ !contracts/l3/world-native/tests/lifecycle/ !contracts/l3/world-native/tests/registration/ !contracts/l3/world-native/tests/resources/ !contracts/l3/world-native/tests/world/"
+estimate_gb = 16
+
+[kind.test-economy]
+cmd = "bash contracts/l3/check-native.sh test-economy"
+measure = 'grep -oE "Tests: [0-9]+ passed" "$FLOW_LOG" | tail -n 1'
+paths = "contracts/ .tool-versions flow.toml !contracts/l3/world-native/tests/capture/ !contracts/l3/world-native/tests/combat/ !contracts/l3/world-native/tests/discovery/ !contracts/l3/world-native/tests/lifecycle/ !contracts/l3/world-native/tests/registration/ !contracts/l3/world-native/tests/resources/ !contracts/l3/world-native/tests/world/"
+estimate_gb = 9
+
+[kind.test-lifecycle]
+cmd = "bash contracts/l3/check-native.sh test-lifecycle"
+measure = 'grep -oE "Tests: [0-9]+ passed" "$FLOW_LOG" | tail -n 1'
+paths = "contracts/ .tool-versions flow.toml !contracts/l3/world-native/tests/capture/ !contracts/l3/world-native/tests/combat/ !contracts/l3/world-native/tests/discovery/ !contracts/l3/world-native/tests/economy/ !contracts/l3/world-native/tests/registration/ !contracts/l3/world-native/tests/resources/ !contracts/l3/world-native/tests/world/"
+estimate_gb = 9
+
+[kind.test-registration]
+cmd = "bash contracts/l3/check-native.sh test-registration"
+measure = 'grep -oE "Tests: [0-9]+ passed" "$FLOW_LOG" | tail -n 1'
+paths = "contracts/ .tool-versions flow.toml !contracts/l3/world-native/tests/capture/ !contracts/l3/world-native/tests/combat/ !contracts/l3/world-native/tests/discovery/ !contracts/l3/world-native/tests/economy/ !contracts/l3/world-native/tests/lifecycle/ !contracts/l3/world-native/tests/resources/ !contracts/l3/world-native/tests/world/"
+estimate_gb = 9
+
+[kind.test-resources]
+cmd = "bash contracts/l3/check-native.sh test-resources"
+measure = 'grep -oE "Tests: [0-9]+ passed" "$FLOW_LOG" | tail -n 1'
+paths = "contracts/ .tool-versions flow.toml !contracts/l3/world-native/tests/capture/ !contracts/l3/world-native/tests/combat/ !contracts/l3/world-native/tests/discovery/ !contracts/l3/world-native/tests/economy/ !contracts/l3/world-native/tests/lifecycle/ !contracts/l3/world-native/tests/registration/ !contracts/l3/world-native/tests/world/"
+estimate_gb = 9
+
+[kind.test-world]
+cmd = "bash contracts/l3/check-native.sh test-world"
+measure = 'grep -oE "Tests: [0-9]+ passed" "$FLOW_LOG" | tail -n 1'
+paths = "contracts/ .tool-versions flow.toml !contracts/l3/world-native/tests/capture/ !contracts/l3/world-native/tests/combat/ !contracts/l3/world-native/tests/discovery/ !contracts/l3/world-native/tests/economy/ !contracts/l3/world-native/tests/lifecycle/ !contracts/l3/world-native/tests/registration/ !contracts/l3/world-native/tests/resources/"
+estimate_gb = 9
+
+[kind.format]
+cmd = "pnpm prettier --check ."
+estimate_gb = 4
+
+[kind.knip]
+cmd = "pnpm run knip"
+paths = "flow.toml apps packages common knip.config.ts package.json pnpm-lock.yaml .tool-versions"
+estimate_gb = 5
+
+[kind.typecheck]
+cmd = "pnpm run build:packages && pnpm run typecheck && pnpm --dir apps/agent-runner typecheck && pnpm exec tsc -p deploy/athanor/tsconfig.json && pnpm exec tsc -p config/tsconfig.json --noEmit"
+paths = "flow.toml apps packages common deploy config package.json pnpm-lock.yaml .tool-versions contracts/l3/world-native/schema"
+estimate_gb = 5
+
+[gate]
+source = "contracts/l3/check-native-plan.sh"
+kinds = "gate-prelude gate-vrf gate-world gate-drift gate-events test-capture test-combat test-discovery test-economy test-lifecycle test-registration test-resources test-world"
+
+[land]
+kinds = "sizes gate-prelude gate-vrf gate-world gate-events gate-drift test-capture test-combat test-discovery test-economy test-lifecycle test-registration test-resources test-world format knip typecheck"
+forbid = "co-authored-by|claude|anthropic|codex|openai|generated with|session"
+
+[kind.test-client-retirement]
+cmd = "pnpm run build:packages && pnpm --dir packages/notifications test && pnpm --dir packages/provider test && pnpm --dir packages/core test && pnpm --dir apps/game test src/utils/automation-presets.test.ts src/utils/automation-signature.test.ts src/hooks/store/use-automation-store.test.ts src/ui/features/settlement/production/production-controls.test.tsx src/ui/features/economy/transfers/transfer-window.test.tsx src/ui/features/world/containers/left-facets/use-structure-actions.test.ts src/ui/lib/structure-capabilities.test.ts src/ui/features/military/battle/battle-lab/battle-share-names.test.tsx src/shell/play/play-board.test.ts src/shell/play/play-page.test.tsx src/utils/entity-ownership.test.ts src/ui/design-system/domain-icon-meaning.test.ts src/sync/chain-time-binding.test.ts src/three/effects/endgame/renderer.test.ts src/three/managers/structure-manager.guard-stamina.test.ts src/ui/features/frontier/build/build-options.test.ts src/ui/features/frontier/build/build-sheet.test.tsx src/ui/features/frontier/sites/site-card-plan.test.ts src/ui/features/social/components/player-id-hyperstructures.test.tsx src/ui/features/social/player/hs-held-points.test.tsx && pnpm --dir apps/agent-runner test"
+estimate_gb = 5
+
+[kind.format-write]
+cmd = 'pnpm run format && git diff --binary > "$FLOW_TMP/format.patch"'
+estimate_gb = 4
+
+[kind.playtest-client-retirement]
+cmd = 'cp /home/djizus/projects/eternum-lanes/showcase/apps/game/.env.local apps/game/.env.local && pnpm run build:packages && pnpm --dir apps/game playtest --port 4184 --steps lab-actions --iterations 1 --renderer-modes webgpu-force-webgl --out "$FLOW_TMP/playtest"'
+estimate_gb = 6
+
+[kind.test-map-retirement]
+cmd = "pnpm run build:packages && pnpm --dir apps/game test src/ui/features/world/containers/left-facets/use-structure-actions.test.ts src/ui/features/world/components/bottom-right-panel/minimap-markers.test.ts"
+estimate_gb = 5
+
+[kind.test-playtest-entry]
+cmd = "pnpm --dir apps/game verify:assets scripts/client-playtest/player-entry.test.mjs scripts/client-playtest/browser-session.test.mjs"
+estimate_gb = 4
+
+[kind.test-native-plan]
+cmd = "node --test contracts/l3/check-native-plan.test.mjs"
+estimate_gb = 1

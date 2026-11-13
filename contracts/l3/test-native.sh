@@ -6,4 +6,9 @@ native=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)
 runner=$(python3 "$native/world-native/toolchain/snforge.py" resolve)
 unset SCARB_MANIFEST_PATH SCARB_TARGET_DIR
 cd "$native/world-native/tests"
-exec "$runner" test --package 'world_tests_*' --max-threads 1 "$@"
+package="world_tests_*"
+if [[ "${1:-}" == "--package" ]]; then
+  package=$2
+  shift 2
+fi
+exec "$runner" test --package "$package" --max-threads 1 "$@"
