@@ -1,7 +1,7 @@
 import { completed, failed } from "./evidence.mjs";
 
-const PRODUCTION = '[data-kit-frame][aria-label="Production"]';
-const TRANSFER = '[data-kit-frame][aria-label="Transfer"]';
+const PRODUCTION = '[role="dialog"][aria-label="Production"]';
+const TRANSFER = '[role="dialog"][aria-label="Transfer"]';
 
 /** The existing production and delivery windows, driven through their controls and checked against their recorded commands and replies. */
 export const ECONOMY_STEPS = [
@@ -17,16 +17,13 @@ export const ECONOMY_STEPS = [
         )
       )
         browser.run(["find", "role", "tab", "click", "--name", "Manual Production"]);
-      await until(owner, () =>
-        browser.read(`Boolean(document.querySelector('${PRODUCTION} button[aria-label^="Knight"]'))`),
-      );
-      browser.run(["click", `${PRODUCTION} button[aria-label^="Knight"]`]);
+      await clickButton(browser, owner, `${PRODUCTION} button.ui-row__choose`, "Knight");
       await until(owner, () =>
         browser.read(`Boolean(document.querySelector('${PRODUCTION} input[aria-label^="Amount of Knight"]'))`),
       );
       browser.run(["fill", `${PRODUCTION} input[aria-label^="Amount of Knight"]`, "30"]);
       const preview = textOf(browser, PRODUCTION);
-      browser.click("Start Production");
+      await clickButton(browser, owner, `${PRODUCTION} button`, "Start production");
       const sent = await until(owner, () => command(browser, "BurnResourceForResourceProduction"));
       return { preview, sent, shown: textOf(browser, PRODUCTION) };
     },
@@ -39,7 +36,7 @@ export const ECONOMY_STEPS = [
         wheat?.balance === "994000000000" &&
         /30/.test(played.preview) &&
         /Wheat/.test(played.preview) &&
-        /Start Production/.test(played.shown)
+        /Start production/i.test(played.shown)
         ? completed({ cycles: 3, output: 30, wheatSpent: 6 })
         : failed("production must submit three cycles, queue thirty knights and spend six wheat", played);
     },
@@ -58,7 +55,7 @@ export const ECONOMY_STEPS = [
       browser.run(["click", `${TRANSFER} section[aria-label="Send to"] [role="tabpanel"] button`]);
       browser.run(["fill", `${TRANSFER} input[aria-label="Wheat: total to send"]`, "50"]);
       const preview = textOf(browser, TRANSFER);
-      browser.run(["find", "role", "button", "click", "--name", "Send 50 goods"]);
+      await clickButton(browser, owner, `${TRANSFER} button`, "Send 50 goods");
       const sent = await until(owner, () => command(browser, "SendResources"));
       browser.run(["find", "role", "tab", "click", "--name", "Arrivals"]);
       const shown = await until(owner, () => {
@@ -91,6 +88,17 @@ const textOf = (browser, selector) =>
   browser.read(
     `(() => { const element = document.querySelector(${JSON.stringify(selector)}); return element ? [element.innerText, ...[...element.querySelectorAll('img[alt]')].map(image => image.alt)].join(' ') : ''; })()`,
   );
+
+async function clickButton(browser, owner, selector, words) {
+  const at = await until(owner, () => browser.read(`(() => {
+    const button = [...document.querySelectorAll(${JSON.stringify(selector)})].find(element =>
+      !element.disabled && element.textContent.trim().toLowerCase().startsWith(${JSON.stringify(words.toLowerCase())}) &&
+      element.getBoundingClientRect().height > 0);
+    const rect = button?.getBoundingClientRect();
+    return rect ? { x: Math.round(rect.left + rect.width / 2), y: Math.round(rect.top + rect.height / 2) } : null;
+  })()`));
+  browser.run(["batch", `mouse move ${at.x} ${at.y}`, "mouse down", "mouse up"]);
+}
 
 async function until(owner, read) {
   for (let attempt = 0; attempt < 60; attempt += 1) {

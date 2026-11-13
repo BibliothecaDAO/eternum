@@ -495,7 +495,13 @@ async function playStep({ browser, captureResults, devTools, owner, step, base, 
     const verdict = failed(`${error instanceof Cancelled ? "cut short" : "the step threw"}: ${error.message}`);
     return {
       probe,
-      summary: { ...summary, played: attempt.played, verdict },
+      summary: {
+        ...summary,
+        played: attempt.played,
+        seen: readSafely(() => browser.observe()),
+        screenshot: readSafely(() => takeScreenshot(browser, screenshot)),
+        verdict,
+      },
       cancelled: error instanceof Cancelled ? error : null,
     };
   }
