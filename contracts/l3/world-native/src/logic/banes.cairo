@@ -1,11 +1,14 @@
 use starknet::Event;
 use starknet::storage::{StorageMapReadAccess, StorageMapWriteAccess, StoragePathEntry, StoragePointerReadAccess};
-use crate::banes::{BaneProgress, BaneWindow};
+use crate::banes::{BaneEffects, BaneProgress, BaneWindow, IBaneEffectsDispatcherTrait, IBaneEffectsLibraryDispatcher};
 use crate::deep::{IDeepBanesDispatcherTrait, IDeepBanesLibraryDispatcher};
 use crate::resources::ResourceKey;
 
-pub fn enabled(game_id: u32) -> bool {
-    crate::logic::preset_record::for_game(game_id).bane_rules.read().is_some()
+pub fn effects(home: ResourceKey, from: u64, until: u64) -> BaneEffects {
+    let state = crate::state::read();
+    let release = state.game_releases.read(home.game_id);
+    IBaneEffectsLibraryDispatcher { class_hash: state.releases.entry(release).classes.bridge.read() }
+        .bane_effects(home, from, until)
 }
 
 pub fn kind(game_id: u32, day: u64) -> Option<u8> {
@@ -31,7 +34,7 @@ pub fn quest_kind(home: ResourceKey, day: u64) -> u8 {
 }
 
 fn team_quest(home: ResourceKey, day: u64) -> Option<u8> {
-    if !enabled(home.game_id) {
+    if crate::logic::preset_record::for_game(home.game_id).bane_rules.read().is_none() {
         return None;
     }
     let state = crate::state::read();
@@ -102,27 +105,48 @@ pub fn complete(home: ResourceKey, day: u64, timestamp: u64) {
     );
 }
 
-pub fn windows(home: ResourceKey, from: u64, until: u64) -> Span<BaneWindow> {
-    let mut windows = array![];
-    if !enabled(home.game_id) || from >= until {
-        return windows.span();
+pub fn read_effects(home: ResourceKey, from: u64, until: u64) -> BaneEffects {
+    let preset = crate::logic::preset_record::for_game(home.game_id);
+    let Some((step, quorum, beast_percent, stamina_percent, production_percent)) = preset.bane_rules.read() else {
+        return BaneEffects {
+            windows: array![].span(), beast_percent: 100, stamina_percent: 100, production_percent: 100,
+        };
+    };
+    let effects = BaneEffects { windows: array![].span(), beast_percent, stamina_percent, production_percent };
+    if from >= until {
+        return effects;
     }
-    if crate::logic::structures::record(home).base.category != crate::taxonomy::REALM_CATEGORY {
-        return windows.span();
+    let state = crate::state::read();
+    assert!(crate::logic::structures::exists(home), "missing structure");
+    if state
+        .structures
+        .structures
+        .entry((home.game_id, home.entity_id))
+        .base
+        .read()
+        .category != crate::taxonomy::REALM_CATEGORY {
+        return effects;
     }
     let aspect = crate::logic::aspects::home_aspect(home);
-    let game = crate::state::read().games.games.entry(home.game_id);
+    let game = state.games.games.entry(home.game_id);
     let seed = game.seed.read();
     let start = game.start_main_at.read();
     let end = game.end_at.read();
-    let unit = crate::logic::preset_record::for_game(home.game_id).rules.day_unit_seconds.read();
+    let first_team_day = state.banes.first_team_day.read(home.game_id);
+    let unit = preset.rules.day_unit_seconds.read();
     let mut cursor = core::cmp::max(from, start);
     let until = core::cmp::min(until, end);
+    let mut windows = array![];
     while cursor < until {
         let day = crate::days::calendar_day(seed, start, end, unit, cursor);
-        if let Some(kind) = kind(home.game_id, day.index) {
+        if let Some(kind) = crate::banes::world_kind(seed, day.index, first_team_day, step) {
             let ended = progress(home.game_id, aspect, day.index).ended_at;
-            let end = if required(home.game_id, aspect, day.index) == 0 {
+            let active = if day.index == 0 {
+                0
+            } else {
+                state.troops.aspect_activity.read((home.game_id, aspect, day.index - 1))
+            };
+            let end = if crate::banes::required(active, quorum) == 0 {
                 day.start
             } else if ended != 0 {
                 core::cmp::min(ended, day.end)
@@ -137,7 +161,7 @@ pub fn windows(home: ResourceKey, from: u64, until: u64) -> Span<BaneWindow> {
         }
         cursor = day.end;
     }
-    windows.span()
+    BaneEffects { windows: windows.span(), ..effects }
 }
 
 fn emit(row: crate::events::RowSet) {
@@ -163,29 +187,15 @@ pub mod BaneState {
     }
 }
 
-pub fn production_percent(game_id: u32) -> u16 {
-    match crate::logic::preset_record::for_game(game_id).bane_rules.read() {
-        Some((_, _, _, _, rate)) => rate,
-        None => 100,
-    }
-}
-pub fn stamina_percent(game_id: u32) -> u16 {
-    match crate::logic::preset_record::for_game(game_id).bane_rules.read() {
-        Some((_, _, _, rate, _)) => rate,
-        None => 100,
-    }
-}
 pub fn beast_percent(site: ResourceKey, timestamp: u64) -> u16 {
-    let Some((_, _, rate, _, _)) = crate::logic::preset_record::for_game(site.game_id).bane_rules.read() else {
-        return 100;
-    };
     let home = ResourceKey {
         game_id: site.game_id,
         entity_id: Into::<u32, u64>::into(crate::entity_ids::namespace(site.entity_id)) * 0x100000000 + 1,
     };
-    for window in windows(home, timestamp, timestamp + 1) {
+    let effects = effects(home, timestamp, timestamp + 1);
+    for window in effects.windows {
         if *window.kind == crate::banes::BLOOD_MOON {
-            return rate;
+            return effects.beast_percent;
         }
     }
     100
