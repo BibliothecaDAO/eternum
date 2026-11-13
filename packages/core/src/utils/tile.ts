@@ -13,14 +13,16 @@ export { tileFactsToTile } from "./tile-facts";
 export const DEFAULT_COORD_ALT = false;
 
 export function getTileAt(
-  store: Pick<NativeFactStore, "get" | "inGame">,
+  store: Pick<NativeFactStore, "get" | "inGame" | "subscriptionScope">,
   alt: boolean,
   col: number,
   row: number,
   gameId = configManager.getActiveGameId(),
 ): Tile | undefined {
   const key = { game_id: gameId, alt, col, row };
-  return tileFactsToTile(key, deepTerrain(store, key) ?? store.get("TileOpt", key), activeTileOccupancy(store, key));
+  const occupancy = activeTileOccupancy(store, key);
+  if (occupancy === null) return undefined;
+  return tileFactsToTile(key, deepTerrain(store, key) ?? store.get("TileOpt", key), occupancy);
 }
 
 /** The canonical map position, including an army garrisoned in a Deep site; a missing position is an incomplete fact set. */
@@ -57,11 +59,11 @@ export function storedBiomeAt(
   return tile && tile.biome !== 0 ? biomeTypeOf(tile.biome) : undefined;
 }
 
-/** Occupancy as commands see it: expired armies and vanished ruins leave walkable terrain without erasing the raw facts. */
+/** Occupancy as commands see it: expired armies and vanished ruins leave terrain; null means ruin eligibility is unknown. */
 export function activeTileOccupancy(
-  store: Pick<NativeFactStore, "get" | "inGame">,
+  store: Pick<NativeFactStore, "get" | "inGame" | "subscriptionScope">,
   key: NativeKeys["TileOccupancy"],
-): NativeRows["TileOccupancy"] | undefined {
+): NativeRows["TileOccupancy"] | undefined | null {
   const occupancy = store.get("TileOccupancy", key);
   if (occupancy && isTileOccupierArmy(occupancy.category) && !isArmyCurrent(store, key.game_id, occupancy.entity_id))
     return undefined;
@@ -71,5 +73,8 @@ export function activeTileOccupancy(
   }
   if (occupancy?.category !== TileOccupier.Ruin) return occupancy;
   const site = store.get("ExpeditionSite", { game_id: key.game_id, entity_id: occupancy.entity_id });
-  return site && ruinDisappeared(store, site) ? undefined : occupancy;
+  if (!site) return occupancy;
+  const disappeared = ruinDisappeared(store, site);
+  if (disappeared === undefined) return null;
+  return disappeared ? undefined : occupancy;
 }

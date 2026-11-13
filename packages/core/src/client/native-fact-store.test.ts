@@ -47,6 +47,24 @@ const structure = (owner: string, game = 1) => ({
 });
 
 describe("native fact store", () => {
+  it("retains the original wire identity through reads, updates and deletion", () => {
+    const store = new NativeFactStore();
+    const keys = { game_id: 1, entity_id: 7, resource_type: 1 };
+    expect(store.wireKeyOf("ResourceBalance", keys)).toBeUndefined();
+    store.applyFacts([set("0xabc", "ResourceBalance", balance(7, "12"))]);
+    const key = store.wireKeyOf("ResourceBalance", keys)!;
+    expect(key).toBe("0xabc");
+    store.applyFacts([set(key, "ResourceBalance", balance(7, "30"))]);
+    expect(store.require("ResourceBalance", keys).balance).toBe(30n);
+    expect(() => store.applyFacts([set("0xdef", "ResourceBalance", balance(7, "40"))])).toThrow(
+      "Conflicting native keys",
+    );
+    expect(store.require("ResourceBalance", keys).balance).toBe(30n);
+    store.applyFacts([remove(key, "ResourceBalance")]);
+    expect(store.wireKeyOf("ResourceBalance", keys)).toBeUndefined();
+    expect(store.get("ResourceBalance", keys)).toBeUndefined();
+  });
+
   it("normalizes tuple wire keys through writes, retention and deletion", () => {
     const store = new NativeFactStore();
     store.applyFacts([

@@ -146,7 +146,13 @@ export const layerTab = (layers: MapLayers): WorldTab => ({
 });
 
 /** What a layer's chest is read from: the receipts and today's discovery, and what the client's scope is derived from. */
-const CHEST_MODELS = ["ExpeditionDiscovery", "RealmKnowledge", "GameRelease", ...SCOPE_INPUT_MODELS] as const;
+const CHEST_MODELS = [
+  "ExpeditionDiscovery",
+  "RealmKnowledge",
+  "GameRelease",
+  "ChestRules",
+  ...SCOPE_INPUT_MODELS,
+] as const;
 
 /**
  * The player's ruin chest on each layer today, the World then Ethereal I to III (ruinChestsToday): today's clears from

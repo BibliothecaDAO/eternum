@@ -1,10 +1,4 @@
-import {
-  configManager,
-  WorldUpdateListener,
-  ruinLimitPerDepth,
-  dayOf,
-  readExpeditionRules,
-} from "@bibliothecadao/eternum";
+import { configManager, WorldUpdateListener, ruinLimit, dayOf, readExpeditionRules } from "@bibliothecadao/eternum";
 import { NativeFactStore, type GameClientSetup } from "@bibliothecadao/eternum/game-client";
 import { BiomeType, ResourcesIds } from "@bibliothecadao/types";
 import { afterEach, expect, it, vi } from "vitest";
@@ -36,7 +30,7 @@ it.each([ruinFightScenario, ruinFarScenario])(
     );
     expect(plan.chest).toEqual({ tier: 1, amount: 100, depth: "Surface", funded: true });
     expect(plan.payout).toEqual({ resourceId: ResourcesIds.Lords, amount: 100, fits: 100 });
-    expect(ruinLimitPerDepth(store, 1)).toBe(true);
+    expect(ruinLimit(store, 1)).toBe("depth");
     expect(site.clear).toBeNull();
     const rules = readExpeditionRules(store, 1)!;
     const day = dayOf(rules, startsAt)!;
@@ -52,7 +46,7 @@ it.each([ruinFightScenario, ruinFarScenario])(
 it("answers the attack on the ruin as the chain clears it, and its payout story pairs with its winning battle", () => {
   vi.spyOn(configManager, "getActiveGameId").mockReturnValue(1);
   const scenario = ruinFightScenario();
-  expect(ruinLimitPerDepth(scenario.store, 1)).toBe(true);
+  expect(ruinLimit(scenario.store, 1)).toBe("depth");
   const chain = new NativeFactStore();
   chain.applyFacts(rowsOf(scenario.store) as never);
   const army = chain.require("ExplorerTroops", { game_id: 1, explorer_id: BigInt(SPIRE_ARMY) });

@@ -159,12 +159,6 @@ const twoTilesFrom = (store: NativeFactStore, army: { col: number; row: number }
   return { col: tile.col, row: tile.row };
 };
 
-/** The key the chain holds a row under, found by the row. */
-const keyOf = <Row>(rows: Iterable<readonly [string, Row]>, matches: (row: Row) => boolean): string => {
-  for (const [key, row] of rows) if (matches(row)) return key;
-  throw new Error("The lab's chain holds no row for the ruin's fight");
-};
-
 const clearTheRuin = (chain: NativeFactStore, explorerId: bigint, player: string, now: number): LabFact[] => {
   const army = chain.require("ExplorerTroops", { game_id: 1, explorer_id: explorerId });
   const guard = chain.require("Guard", { game_id: 1, structure_id: BigInt(SITE), slot: 0 });
@@ -197,23 +191,27 @@ const clearTheRuin = (chain: NativeFactStore, explorerId: bigint, player: string
   return [
     {
       model: "Structure",
-      key: keyOf(chain.entries("Structure"), (row) => Number(row.entity_id) === SITE),
+      key: chain.wireKeyOf("Structure", { game_id: 1, entity_id: BigInt(SITE) })!,
       value: null,
     },
-    { model: "Guard", key: keyOf(chain.entries("Guard"), (row) => Number(row.structure_id) === SITE), value: null },
+    {
+      model: "Guard",
+      key: chain.wireKeyOf("Guard", { game_id: 1, structure_id: BigInt(SITE), slot: 0 })!,
+      value: null,
+    },
     {
       model: "TileOccupancy",
-      key: keyOf(chain.entries("TileOccupancy"), (row) => Number(row.entity_id) === SITE),
+      key: chain.wireKeyOf("TileOccupancy", chain.entityOccupancy(1, SITE)!)!,
       value: null,
     },
     {
       model: "ExpeditionSite",
-      key: keyOf(chain.entries("ExpeditionSite"), (row) => Number(row.entity_id) === SITE),
+      key: chain.wireKeyOf("ExpeditionSite", { game_id: 1, entity_id: BigInt(SITE) })!,
       value: wire({ ...site, clear: { explorer_id: explorerId, home_id: HOME, reward } }),
     },
     {
       model: "LordsBudget",
-      key: keyOf(chain.entries("LordsBudget"), (row) => row.game_id === 1),
+      key: chain.wireKeyOf("LordsBudget", { game_id: 1 })!,
       value: wire({
         ...budget,
         pool_left: budget.pool_left - chest.amount,
@@ -222,20 +220,21 @@ const clearTheRuin = (chain: NativeFactStore, explorerId: bigint, player: string
     },
     {
       model: "ResourceBalance",
-      key: keyOf(
-        chain.entries("ResourceBalance"),
-        (row) => row.entity_id === BigInt(HOME) && row.resource_type === ResourcesIds.Lords,
-      ),
+      key: chain.wireKeyOf("ResourceBalance", {
+        game_id: 1,
+        entity_id: BigInt(HOME),
+        resource_type: ResourcesIds.Lords,
+      })!,
       value: wire({ ...held, balance: held.balance + reward.amount }),
     },
     {
       model: "ExpeditionDiscovery",
-      key: discovery
-        ? keyOf(
-            chain.entries("ExpeditionDiscovery"),
-            (row) => row.structure_id === BigInt(HOME) && row.epoch === chest.reservation_day,
-          )
-        : "0x1ab9f",
+      key:
+        chain.wireKeyOf("ExpeditionDiscovery", {
+          game_id: 1,
+          structure_id: BigInt(HOME),
+          epoch: chest.reservation_day,
+        }) ?? "0x1ab9f",
       value: wire({
         game_id: 1,
         structure_id: BigInt(HOME),
@@ -246,7 +245,7 @@ const clearTheRuin = (chain: NativeFactStore, explorerId: bigint, player: string
     },
     {
       model: "ExplorerTroops",
-      key: keyOf(chain.entries("ExplorerTroops"), (row) => row.explorer_id === explorerId),
+      key: chain.wireKeyOf("ExplorerTroops", { game_id: 1, explorer_id: explorerId })!,
       value: wire({
         ...army,
         troops: {
@@ -258,7 +257,7 @@ const clearTheRuin = (chain: NativeFactStore, explorerId: bigint, player: string
     },
     {
       model: "ArmyProgress",
-      key: keyOf(chain.entries("ArmyProgress"), (row) => row.explorer_id === explorerId),
+      key: chain.wireKeyOf("ArmyProgress", { game_id: 1, explorer_id: explorerId })!,
       value: wire({ ...progress, xp: progress.xp + siteClearXp(chain, site) }),
     },
     {

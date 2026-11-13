@@ -1334,6 +1334,11 @@ each relic with what it does and **Switch on** (free, anywhere; one of its kind 
 durations come from the contract's rule constants (`relics/relic-catalog.ts`). Dev: `/lab/game?scenario=relics` (three
 carried, a Ward running, a ruin guarding an Epic Blade; the lab chain answers ApplyRelic as `army_relics.cairo` does).
 
+In relic games, clearing one ruin leaves the other ruins available. Cash games retain their release's daily home or
+depth limit. During snapshot recovery, unconfirmed ruin eligibility stays hidden until the preset rows or completed
+scope establish it; stored clear receipts stay visible. The card and layer chests read the same entitlement
+(`ruinLimit`); cash-only daily-limit copy does not appear in a relic game.
+
 ## Ethereal depths
 
 Frontier: a realm that knows Spire lore finds each layer's spire for the day by revealing on it (`ExpeditionSpire`: 10%

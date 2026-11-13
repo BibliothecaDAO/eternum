@@ -90,6 +90,11 @@ export class NativeFactStore implements GameSyncStore {
     return this.models.get(model)?.get(factKey(model, keys))?.row as NativeRows[M] | undefined;
   }
 
+  /** The wire key assigned to a held row; updates and deletions must retain that identity. */
+  wireKeyOf<M extends NativeModelName>(model: M, keys: ReadKeys<M>): string | undefined {
+    return this.models.get(model)?.get(factKey(model, keys))?.wireId;
+  }
+
   require<M extends NativeModelName>(model: M, keys: ReadKeys<M>): NativeRows[M] {
     const row = this.get(model, keys);
     if (!row) throw new Error(`Native ${model} is not synchronized`);
