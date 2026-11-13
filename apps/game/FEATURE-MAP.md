@@ -637,20 +637,21 @@ labor for a held Realm's or a campaign's home). **Collect** sends the reward onc
 it was collected. While the snapshot has not settled the home's progress, receipt or labor bonus, it names the quest and
 says it is reading, with nothing to press. On a bane day the quest is the bane quest, as the contract picks it (a
 rival's team bane, `TeamBane`, first; else the mist's world bane): **The Stand** (guarded sites cleared), **The Lights**
-(tiles revealed) or **The Cull** (guard troops beaten), sized by `BaneRules` for the Realm's level. Under it the bane
-stands: the mist's by name (Blood Moon, Mist Tide, Ash Fall) or a rival's ("Chaos's bane"), with how far the Aspect is
-at ending it ("4 of 6 finished": 25% of its members out the day before, rounded up), then "Ended: the quest pays twice"
-or "Ended: your hyperstructure grows again". Once the Aspect ended a world bane, **Collect again** pays the quest's
-reward a second time (`BaneGrant`). The bane row's look waits on the owner's pick (`eternum/s1-banner`). **Today** (the
-day's clock), on today's page, lists **This week's quests**: each day of the week's bag up to the season's last day, its
-painting and quest, and whether it was collected, done, missed, is today or is coming (a day gone shows its bane quest;
-a coming day the bag's quest, since nobody knows a bane's day before it comes). In a race game (`RaceRules`), on a day
-the home's Aspect has a Triumph (`TriumphDay`, the day after one of its hyperstructure's first four stages), its
-painting, name and what it does today stand under the quest: **Clear Mist** (a reveal finds something 2 times as often),
-**Second Wind** (stamina refills 2 times as fast), **Pale Moon** (beasts at 50% of their strength), **Spoils** (a
-cleared site pays 2 times the wheat, labor, Essence and XP; a ruin's relic is unchanged), each rate RaceRules'; while
-the snapshot cannot tell, it says it is reading the Aspect's day. Lab: `/lab/kit/unified/frontier`, `frontier-new` and
-`season-one-deep` (a Season 1 member with 145 Glory on Second Wind).
+(tiles revealed) or **The Cull** (guard troops beaten), sized by `BaneRules` for the Realm's level. The bane heads the
+panel, as the owner picked (A): the mist's ("World bane", Blood Moon, Mist Tide or Ash Fall, with its rate: beasts +50%,
+stamina at 50%, production at 50%) or a rival's ("Team bane, from Chaos", "Bane of Chaos" with the sender's four Order
+crests, "Your hyperstructure does not grow"); under the quest, "4 of 6 members" over a meter (25% of its members out the
+day before, rounded up), then "Ended: the quest pays twice" or "Ended: your hyperstructure grows again". Once the Aspect
+ended a world bane, **Collect again** pays the quest's reward a second time (`BaneGrant`). A Triumph heads the panel the
+same way, in green. **Today** (the day's clock), on today's page, lists **This week's quests**: each day of the week's
+bag up to the season's last day, its painting and quest, and whether it was collected, done, missed, is today or is
+coming (a day gone shows its bane quest; a coming day the bag's quest, since nobody knows a bane's day before it comes).
+In a race game (`RaceRules`), on a day the home's Aspect has a Triumph (`TriumphDay`, the day after one of its
+hyperstructure's first four stages), its painting, name and what it does today head the panel: **Clear Mist** (a reveal
+finds something 2 times as often), **Second Wind** (stamina refills 2 times as fast), **Pale Moon** (beasts at 50% of
+their strength), **Spoils** (a cleared site pays 2 times the wheat, labor, Essence and XP; a ruin's relic is unchanged),
+each rate RaceRules'; while the snapshot cannot tell, it says it is reading the Aspect's day. Lab:
+`/lab/kit/unified/frontier`, `frontier-new` and `season-one-deep` (a Season 1 member with 145 Glory on Second Wind).
 
 **Glory** (`src/ui/features/frontier/race/glory.tsx`), a race game member's one score (`RaceMember`), once the realm
 went into the Deep: beside its rank on the desktop's realm panel, and in a phone's purse row under the strip, with what

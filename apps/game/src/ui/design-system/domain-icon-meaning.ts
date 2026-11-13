@@ -8,6 +8,7 @@ import {
   getProducedResource,
   StructureType,
   type StructureNamingMode,
+  worldBanes,
 } from "@bibliothecadao/types";
 import {
   frontierBeast,
@@ -18,6 +19,7 @@ import {
 } from "@bibliothecadao/eternum";
 import { safeInteger, type NativeFactStore } from "@bibliothecadao/eternum/game-client";
 import {
+  nativeBaneConstants as bane,
   nativeQuestConstants as quest,
   nativeRuleConstants as rule,
   type NativeRows,
@@ -191,21 +193,24 @@ const questMeanings = {
   [quest.VETERANS]: "upgrade",
   [quest.FINDS]: "explore",
   [quest.REVEALS]: "map",
-  [quest.STAND]: "attack",
+  [quest.STAND]: "defend",
   [quest.LIGHTS]: "sun",
   [quest.CULL]: "skull",
 } satisfies Record<QuestId, IconMeaning>;
 export const questMeaning = (quest: QuestId): IconMeaning => questMeanings[quest];
 
-/** A bane over the Aspect's day, the mist's or a rival's: one painting until the banner's look is picked. */
-export const BANE_MEANING: IconMeaning = "flame";
+/** Each bane's painting: Blood Moon the moon, Mist Tide the waves, Ash Fall the flame; a rival's the hyperstructure. */
+export const BANE_MEANING = {
+  world: { [bane.BLOOD_MOON]: "moon", [bane.MIST_TIDE]: "waves", [bane.ASH_FALL]: "flame" },
+  team: "hyperstructure",
+} as const satisfies { world: Record<(typeof worldBanes)[number]["id"], IconMeaning>; team: IconMeaning };
 
 /** Glory, the race's one score a member reads (Season 1): the score's painting. */
 export const GLORY_MEANING: IconMeaning = "victory";
 
 /** Each Triumph's painting: the reveal, the stamina bolt, the moon over the beasts, the chest a site pays. */
 const triumphMeanings = {
-  [rule.CLEAR_MIST_STAGE]: "explore",
+  [rule.CLEAR_MIST_STAGE]: "eye",
   [rule.SECOND_WIND_STAGE]: "stamina",
   [rule.PALE_MOON_STAGE]: "moon",
   [rule.SPOILS_STAGE]: "chest",

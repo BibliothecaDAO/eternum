@@ -310,9 +310,13 @@ it("puts a rival's team bane's quest in place of the day's quest, with the bane 
   await moveToDay(store, day);
   expect(banner()!.textContent).toContain("The Stand");
   expect(banner()!.textContent).toContain("0 of 3 guarded sites");
-  expect(banner()!.textContent).toContain("Chaos's bane");
+  expect(banner()!.textContent).toContain("Team bane, from Chaos");
+  expect(banner()!.textContent).toContain("Bane of Chaos");
+  expect(banner()!.textContent).toContain("Your hyperstructure does not grow");
+  // The sender's four Order crests stand beside the name.
+  expect(banner()!.querySelectorAll("[data-tip] img, .border-b img").length).toBeGreaterThanOrEqual(5);
   // 25% of the 24 Harmony homes out the day before end it: 4 of 6.
-  expect(banner()!.textContent).toContain("4 of 6 finished");
+  expect(banner()!.textContent).toContain("4 of 6 members");
 });
 
 it("offers Collect again once the Aspect ends a world bane, for the reward a second time", async () => {
@@ -335,8 +339,10 @@ it("offers Collect again once the Aspect ends a world bane, for the reward a sec
   );
   await moveToDay(store, day);
   expect(banner()!.querySelector("[aria-label='Collected']")).not.toBeNull();
-  expect(banner()!.textContent).toContain("0 of 1 finished");
+  expect(banner()!.textContent).toContain("0 of 1 members");
   await act(async () => store.applyFacts([baneProgress(day, 1, 1)] as never));
+  expect(banner()!.textContent).toContain("World bane");
+  expect(banner()!.textContent).toMatch(/Beasts \+50%|Stamina regenerates at 50%|Production at 50%/);
   expect(banner()!.textContent).toContain("Ended: the quest pays twice");
   // The quest's action is offered again (an earlier test's send, held in flight on purpose, may still name it Collecting).
   expect(["Collect again", "Collecting"]).toContain(banner()!.querySelector("button")?.textContent);

@@ -3,15 +3,16 @@ import { useNowSeconds } from "@/hooks/helpers/use-block-timestamp";
 import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
 import { sendOnce, useInFlight } from "@/hooks/store/use-actions-in-flight";
 import { BANE_MEANING, questMeaning, triumphMeaning } from "@/ui/design-system/domain-icon-meaning";
+import type { IconMeaning } from "@/ui/design-system/icon";
 import { Icon } from "@/ui/design-system/icon";
-import { resourceMeaning } from "@/ui/design-system/icon-meaning";
+import { orderMeaning, resourceMeaning } from "@/ui/design-system/icon-meaning";
 import { HudButton, HudLoading, HudMeter, HudPanel } from "@/ui/design-system/kit/hud-elements";
 import { BANE_WORDS, QUEST_WORDS, TRIUMPH_WORDS } from "@/ui/design-system/kit/words";
 import { toast } from "@/ui/features/event-feed/notify";
 import { useOpens } from "../opening/use-opening";
-import { readDailyQuest, readTodaysTriumph } from "@bibliothecadao/eternum";
+import { readDailyQuest, readTodaysTriumph, type TriumphStage } from "@bibliothecadao/eternum";
 import { safeInteger, type NativeRows } from "@bibliothecadao/eternum/game-client";
-import { aspectName, formatAmount, ResourcesIds, worldBanes } from "@bibliothecadao/types";
+import { aspectName, formatAmount, orders, ResourcesIds, worldBanes } from "@bibliothecadao/types";
 
 export const QUEST_MODELS = [
   "QuestRules",
@@ -62,11 +63,11 @@ const useDayQuest = (realm: NativeRows["Structure"]): DayQuest | undefined => {
 
 /**
  * The day's banner (U1) over the player's own realm: today's quest with its painting and name, its count ("1 of 2
- * camps") over a meter, and its reward. On a bane day the quest is the bane quest, and the bane stands under it with
- * how far the Aspect is at ending it ("4 of 6 finished"). Collect sends the reward once the quest is done; once the
+ * camps") over a meter, and its reward. On a bane day the quest is the bane quest, the bane heads the panel and how far
+ * the Aspect is at ending it ("4 of 6 members") closes it. Collect sends the reward once the quest is done; once the
  * Aspect ended a world bane it is offered again, for the second reward. While the snapshot has not settled a row the
  * day rests on, the banner says it is reading and offers nothing to press. On a day the home's Aspect has a Triumph,
- * its painting, name and what it does today stand under the quest. Nothing in a game without quests.
+ * it heads the panel with its name and what it does today. Nothing in a game without quests.
  */
 export const FrontierDayBanner = ({ realm }: { realm: NativeRows["Structure"] }) => {
   const { setup, account } = useGame();
@@ -84,23 +85,40 @@ export const FrontierDayBanner = ({ realm }: { realm: NativeRows["Structure"] })
       toast.failed(error, QUEST_WORDS.notCollected);
     }
   };
-  return <DayQuestBanner quest={quest} triumph={triumph} collecting={collecting} onCollect={collect} />;
+  return (
+    <DayQuestBanner
+      gameId={realm.game_id}
+      quest={quest}
+      triumph={triumph}
+      collecting={collecting}
+      onCollect={collect}
+    />
+  );
 };
 
-/** The banner's drawing, from its reading. */
+type TriumphReading = NonNullable<ReturnType<typeof readTodaysTriumph>>;
+
+/** The banner's drawing (the owner's pick A): the day's news heads the panel, the quest and its members follow. */
 const DayQuestBanner = ({
+  gameId,
   quest,
   triumph,
   collecting,
   onCollect,
 }: {
+  gameId: number;
   quest: DayQuest;
   triumph: TriumphReading | undefined;
   collecting: boolean;
   onCollect: () => unknown;
 }) => {
+  const { setup } = useGame();
   const reading = quest.reading.known;
   const showsBane = useOpens("bane-row");
+  const heads = [
+    ...(reading?.bane && showsBane ? [baneHead(reading.bane, setup.store.get("BaneRules", { game_id: gameId }))] : []),
+    ...(triumph?.known ? [triumphHead(triumph.known)] : []),
+  ];
   return (
     <HudPanel
       label={QUEST_WORDS.today}
@@ -108,6 +126,10 @@ const DayQuestBanner = ({
       className="pointer-events-auto"
       bodyClassName="flex flex-col gap-2"
     >
+      {heads.map((head) => (
+        <DayHead key={head.eyebrow} head={head} />
+      ))}
+      {triumph?.unknown !== undefined && <HudLoading line={TRIUMPH_WORDS.reading} />}
       {quest.quest ? (
         <span className="flex items-center gap-3">
           <Icon name={questMeaning(quest.quest.id)} size={44} />
@@ -126,55 +148,100 @@ const DayQuestBanner = ({
       ) : (
         <HudLoading line={QUEST_WORDS.reading} />
       )}
-      {reading?.bane && showsBane && <BaneRow bane={reading.bane} />}
-      {triumph && <TriumphRow triumph={triumph} />}
+      {reading?.bane && showsBane && <Members bane={reading.bane} />}
     </HudPanel>
   );
 };
 
-type TriumphReading = NonNullable<ReturnType<typeof readTodaysTriumph>>;
+/** What heads the panel: the bane or the Triumph in its tone, its eyebrow, name and what it does. */
+interface Head {
+  tone: "good" | "bad" | "warn";
+  icon: IconMeaning;
+  eyebrow: string;
+  name: string;
+  /** The sender's four Order crests, for a team bane. */
+  crests?: readonly IconMeaning[];
+  rule: string;
+  tip?: string;
+}
 
-/** Today's Triumph, by name, with what it does; nothing on a day without one, a reading line while it is not known. */
-const TriumphRow = ({ triumph }: { triumph: TriumphReading }) => {
-  if (triumph.unknown !== undefined) return <HudLoading line={TRIUMPH_WORDS.reading} />;
-  if (triumph.known === null) return null;
-  const { stage, percent } = triumph.known;
-  return (
-    <span className="flex items-center gap-3 border-t border-hud-line pt-2" data-tip={TRIUMPH_WORDS.where}>
-      <Icon name={triumphMeaning(stage)} size={32} />
-      <span className="flex min-w-0 flex-col">
-        <span className="text-hud-strong text-hud-gold">{TRIUMPH_WORDS.names[stage]}</span>
-        <span className="text-hud-label text-hud-ink">{TRIUMPH_WORDS.effects[stage](percent)}</span>
-      </span>
-    </span>
-  );
+const TONE_TEXT = { good: "text-hud-good", bad: "text-hud-bad", warn: "text-hud-warn" } as const;
+
+const triumphHead = ({ stage, percent }: { stage: TriumphStage; percent: number }): Head => ({
+  tone: "good",
+  icon: triumphMeaning(stage),
+  eyebrow: TRIUMPH_WORDS.eyebrow,
+  name: TRIUMPH_WORDS.names[stage],
+  rule: TRIUMPH_WORDS.effects[stage](percent),
+  tip: TRIUMPH_WORDS.where,
+});
+
+/** The mist's bane by its kind and what it does (BaneRules' rates), or a rival's by its sender and its crests. */
+const baneHead = (bane: BaneReading, rules: NativeRows["BaneRules"] | undefined): Head => {
+  if (bane.source === "team") {
+    const sender = bane.sender!;
+    return {
+      tone: "bad",
+      icon: BANE_MEANING.team,
+      eyebrow: BANE_WORDS.teamFrom(aspectName(sender)),
+      name: BANE_WORDS.teamName(aspectName(sender)),
+      crests: orders.filter(({ aspect }) => aspect === sender).map(({ orderId }) => orderMeaning(orderId)),
+      rule: BANE_WORDS.teamRule,
+    };
+  }
+  const world = worldBanes.find(({ id }) => id === bane.kind);
+  if (!world || !rules) throw new Error(`World bane ${bane.kind} has no rules`);
+  return {
+    tone: "warn",
+    icon: BANE_MEANING.world[world.id],
+    eyebrow: BANE_WORDS.worldEyebrow,
+    name: world.name,
+    rule: BANE_WORDS.worldRules[world.id](rules),
+  };
 };
 
-/**
- * The bane over the Aspect's day: the mist's by name or a rival's by its sender, and how far the Aspect is at ending it
- * ("4 of 6 finished") or what ending it brought. Its look waits on the owner's pick (eternum/s1-banner).
- */
-const BaneRow = ({ bane }: { bane: BaneReading }) => (
-  <span className="flex items-center gap-3 border-t border-hud-line pt-2">
-    <Icon name={BANE_MEANING} size={32} />
-    <span className="flex min-w-0 flex-col">
-      <span className="text-hud-strong text-hud-ink">{baneName(bane)}</span>
-      <span className="text-hud-label text-hud-muted">
-        {bane.won
-          ? bane.source === "world"
-            ? BANE_WORDS.worldEnded
-            : BANE_WORDS.teamEnded
-          : BANE_WORDS.finished(bane.completed, bane.required)}
+const DayHead = ({ head }: { head: Head }) => (
+  <span
+    className={`flex items-center gap-2 border-b border-hud-divider pb-2 ${TONE_TEXT[head.tone]}`}
+    data-tip={head.tip}
+  >
+    <Icon name={head.icon} size={32} />
+    <span className="flex min-w-0 flex-1 flex-col">
+      <span className="text-hud-label">{head.eyebrow}</span>
+      <span className="flex items-center gap-2">
+        <span className="text-hud-strong">{head.name}</span>
+        {head.crests && (
+          <span className="flex items-center gap-0.5">
+            {head.crests.map((crest) => (
+              <Icon key={crest} name={crest} size={18} />
+            ))}
+          </span>
+        )}
       </span>
+      <span className="text-hud-label text-hud-muted">{head.rule}</span>
     </span>
   </span>
 );
 
-const baneName = (bane: BaneReading): string => {
-  if (bane.source === "team") return BANE_WORDS.team(aspectName(bane.sender!));
-  const world = worldBanes.find(({ id }) => id === bane.kind);
-  if (!world) throw new Error(`Unknown world bane ${bane.kind}`);
-  return world.name;
+/** How far the Aspect is at ending the bane ("4 of 6 members" over a meter), or what ending it brought. */
+const Members = ({ bane }: { bane: BaneReading }) => {
+  if (bane.won)
+    return (
+      <span className="flex items-center gap-2 text-hud-label text-hud-good">
+        <Icon name="people" size={20} />
+        {bane.source === "world" ? BANE_WORDS.worldEnded : BANE_WORDS.teamEnded}
+      </span>
+    );
+  const count = BANE_WORDS.members(bane.completed, bane.required);
+  return (
+    <span className="flex items-center gap-2 text-hud-label tabular-nums text-hud-ink">
+      <Icon name="people" size={20} />
+      <span className="shrink-0">{count}</span>
+      <span className="min-w-0 flex-1">
+        <HudMeter share={Math.min(1, bane.completed / bane.required)} label={count} />
+      </span>
+    </span>
+  );
 };
 
 /** The quest's name, its count over a meter, and its reward. */

@@ -10,6 +10,7 @@ import type { NotificationKind, NotificationLevel } from "@bibliothecadao/notifi
 import type { RuinChest, TriumphStage } from "@bibliothecadao/eternum";
 import type { QuestId } from "@/ui/design-system/domain-icon-meaning";
 import {
+  nativeBaneConstants,
   nativeQuestConstants as quest,
   nativeRuleConstants,
 } from "../../../../../../contracts/l3/world-native/schema/client.gen";
@@ -1608,12 +1609,23 @@ export const QUEST_WORDS = {
 } as const;
 
 /**
- * A bane over the Aspect's day, as the banner says it until its look is picked: the mist's by name, a rival's by its
- * sender, and how far the Aspect is at ending it ("4 of 6 finished") or what ending it brought.
+ * A bane over the Aspect's day, as the banner's head says it (the owner's pick A): the mist's by name and rates, a
+ * rival's by its sender and crests, and how far the Aspect is at ending it ("4 of 6 members") or what ending it brought.
  */
 export const BANE_WORDS = {
-  team: (sender: string) => `${sender}'s bane`,
-  finished: (completed: number, required: number) => `${formatExact(completed)} of ${formatExact(required)} finished`,
+  worldEyebrow: "World bane",
+  /** What each world bane does, from BaneRules' rates: beasts +50%, stamina at 50%, production at 50%. */
+  worldRules: {
+    [nativeBaneConstants.BLOOD_MOON]: (rules: { beast_percent: number }) => `Beasts +${rules.beast_percent - 100}%`,
+    [nativeBaneConstants.MIST_TIDE]: (rules: { stamina_percent: number }) =>
+      `Stamina regenerates at ${rules.stamina_percent}%`,
+    [nativeBaneConstants.ASH_FALL]: (rules: { production_percent: number }) =>
+      `Production at ${rules.production_percent}%`,
+  },
+  teamFrom: (sender: string) => `Team bane, from ${sender}`,
+  teamName: (sender: string) => `Bane of ${sender}`,
+  teamRule: "Your hyperstructure does not grow",
+  members: (completed: number, required: number) => `${formatExact(completed)} of ${formatExact(required)} members`,
   worldEnded: "Ended: the quest pays twice",
   teamEnded: "Ended: your hyperstructure grows again",
 } as const;
@@ -1638,6 +1650,7 @@ export const TRIUMPH_WORDS = {
     [nativeRuleConstants.SPOILS_STAGE]: (percent: number) =>
       `A cleared site pays ${formatTimes(percent)} the wheat, labor, Essence and XP today. A ruin's relic stays the same`,
   } satisfies Record<TriumphStage, (percent: number) => string>,
+  eyebrow: "Triumph",
   /** The banner's tip on a Triumph: where it applies. */
   where: "Your Aspect's Triumph, for today, everywhere above the Deep.",
   reading: "Reading your Aspect's day",

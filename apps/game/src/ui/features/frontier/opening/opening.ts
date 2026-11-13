@@ -1,4 +1,3 @@
-import { BANE_MEANING } from "@/ui/design-system/domain-icon-meaning";
 import type { IconMeaning } from "@/ui/design-system/icon";
 import { knownAmount } from "@/ui/utils/utils";
 import {
@@ -42,7 +41,7 @@ export const OPENING = {
     reached: (store, realm) => hasLore(store, realm, nativeResearchConstants.ROW_SHRINE),
   },
   deep: { icon: "depth-3", reached: (store, realm, timestamp) => wentIntoTheDeep(store, realm, timestamp) },
-  bane: { icon: BANE_MEANING, reached: (store, realm, timestamp) => underABane(store, realm, timestamp) },
+  bane: { icon: "flame", reached: (store, realm, timestamp) => underABane(store, realm, timestamp) },
 } as const satisfies Record<
   OpeningMoment,
   {
