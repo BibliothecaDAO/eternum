@@ -1487,7 +1487,7 @@ export const NOTIFICATION_KIND_WORDS = {
   fights: "fights",
   results: "results",
   messages: "messages",
-  deliveries: "deliveries and trades",
+  deliveries: "deliveries",
   bitcoin: "Bitcoin payouts",
   points: "Hyperstructure points",
 } as const satisfies Record<NotificationKind, string>;
@@ -1500,7 +1500,7 @@ const kindsList = (kinds: readonly NotificationKind[]): string => {
 
 /**
  * What a level brings, in one line under the levels: the kinds it carries beyond the level below it, as the kinds table
- * gives them ("Important, plus deliveries and trades, …").
+ * gives them ("Important, plus deliveries, …").
  */
 export const levelLine = (kinds: readonly NotificationKind[], below: NotificationLevel | null): string => {
   if (kinds.length === 0) return "No alerts";

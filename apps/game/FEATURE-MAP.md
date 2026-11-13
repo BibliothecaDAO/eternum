@@ -431,7 +431,7 @@ each closed by its cross, a tap outside, a swipe down or `Escape`. A right-click
   says what the chosen one brings. Important sends one push as each Frontier game day opens ("Day 2 is open / Frontier:
   claim 1,000 Labor before 20:00."), "Your armies are rested" each time the armies the player left spent are all full
   again (the next only after they play again), the season's or a Blitz's end, fights between players outside Frontier,
-  and messages; All adds deliveries and trades, Bitcoin payouts and Hyperstructure points. Each kind, its level and how
+  and messages; All adds deliveries, Bitcoin payouts and Hyperstructure points. Each kind, its level and how
   long it lives come from one table (`packages/notifications/src/notification-kinds.ts`). The phone's own night setting
   decides when one sounds; the game keeps no quiet hours and no daily cap: a newer push of a kind in a game replaces the
   one shown. Each names its game by its mode as the app labels it ("Frontier", "Blitz"), never a season's number or an
