@@ -2,7 +2,13 @@ import { homeIcon, homeKind } from "./home-icons";
 import { readRealmSkin, type RealmSkin } from "@/three/structures/realm-skins";
 import type { FrontierSpecies } from "@/three/structures/frontier-beast";
 import { BuildingType, getProducedResource, StructureType, type StructureNamingMode } from "@bibliothecadao/types";
-import { frontierBeast, isGuardedSite, nativeGameModeOf, readFrontierBeast, type ArchivedStoryVariant } from "@bibliothecadao/eternum";
+import {
+  frontierBeast,
+  isGuardedSite,
+  nativeGameModeOf,
+  readFrontierBeast,
+  type ArchivedStoryVariant,
+} from "@bibliothecadao/eternum";
 import { safeInteger, type NativeFactStore } from "@bibliothecadao/eternum/game-client";
 import type { NativeRows, NativeStoryVariant } from "../../../../../contracts/l3/world-native/schema/client.gen";
 import { iconDefinition, type IconMeaning, resourceMeaning } from "./icon-meaning";
