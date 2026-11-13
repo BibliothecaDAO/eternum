@@ -384,18 +384,15 @@ pub mod ResourceState {
             let since = core::cmp::max(resource.production.last_settled_at, core::cmp::min(now, start_at));
             resource.production.last_settled_at = since;
             if since != now {
-                let windows = if resource.production.building_count == 0 {
-                    array![].span()
-                } else {
-                    crate::logic::banes::windows(key, since.into(), now.into())
-                };
+                let effects = crate::logic::banes::effects(
+                    key, if resource.production.building_count == 0 {
+                        now.into()
+                    } else {
+                        since.into()
+                    }, now.into(),
+                );
                 crate::resources::settle_windows(
-                    resource_type,
-                    ref resource,
-                    unit_weight,
-                    now,
-                    windows,
-                    crate::logic::banes::production_percent(key.game_id),
+                    resource_type, ref resource, unit_weight, now, effects.windows, effects.production_percent,
                 );
             }
             (previous, resource)

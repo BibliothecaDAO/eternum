@@ -37,6 +37,8 @@ pub mod ProductionLogic {
     #[abi(embed_v0)]
     impl DailyQuest = crate::logic::quests::QuestState::DailyQuestImpl<ContractState>;
     #[abi(embed_v0)]
+    impl BaneEffects = crate::logic::quests::QuestState::BaneEffectsImpl<ContractState>;
+    #[abi(embed_v0)]
     impl QuestProgress = crate::logic::quests::QuestState::ProgressImpl<ContractState>;
 
     #[abi(embed_v0)]

@@ -7864,6 +7864,16 @@
         }
       ]
     },
+    "core::array::Span::<world_native::banes::BaneWindow>": {
+      "type": "struct",
+      "name": "core::array::Span::<world_native::banes::BaneWindow>",
+      "members": [
+        {
+          "name": "snapshot",
+          "type": "@core::array::Array::<world_native::banes::BaneWindow>"
+        }
+      ]
+    },
     "core::array::Span::<world_native::blitz_results::RankedPlayer>": {
       "type": "struct",
       "name": "core::array::Span::<world_native::blitz_results::RankedPlayer>",
@@ -8790,6 +8800,28 @@
         }
       ]
     },
+    "world_native::banes::BaneEffects": {
+      "type": "struct",
+      "name": "world_native::banes::BaneEffects",
+      "members": [
+        {
+          "name": "windows",
+          "type": "core::array::Span::<world_native::banes::BaneWindow>"
+        },
+        {
+          "name": "beast_percent",
+          "type": "core::integer::u16"
+        },
+        {
+          "name": "stamina_percent",
+          "type": "core::integer::u16"
+        },
+        {
+          "name": "production_percent",
+          "type": "core::integer::u16"
+        }
+      ]
+    },
     "world_native::banes::BaneRules": {
       "type": "struct",
       "name": "world_native::banes::BaneRules",
@@ -8817,6 +8849,24 @@
         {
           "name": "quest_counts",
           "type": "core::array::Span::<core::integer::u128>"
+        }
+      ]
+    },
+    "world_native::banes::BaneWindow": {
+      "type": "struct",
+      "name": "world_native::banes::BaneWindow",
+      "members": [
+        {
+          "name": "kind",
+          "type": "core::integer::u8"
+        },
+        {
+          "name": "start",
+          "type": "core::integer::u64"
+        },
+        {
+          "name": "end",
+          "type": "core::integer::u64"
         }
       ]
     },
@@ -14783,5 +14833,5 @@
       ]
     }
   },
-  "identity": "51a97ad53b1504ebfe7c707c989afdc5bff4200a07a88ffab17a3c7c57fdeb55"
+  "identity": "fa1ac6b4a849a9f6b6d8f31b93d2b7ada379a35e3212ae6f2fba4b69f0771f3f"
 }

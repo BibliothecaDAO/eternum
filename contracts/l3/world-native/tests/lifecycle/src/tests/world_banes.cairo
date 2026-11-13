@@ -92,7 +92,7 @@ fn two_homes_end_the_lights_and_collect_the_second_grant_once() {
                 crate::state::read().entry.home_labor_grants.read((game_id, first_home.entity_id, 1)),
                 Some((first.actor, 1000 * precision, 1500 * precision)),
             );
-            let windows = crate::logic::banes::windows(first_home, next - 1, now + 1);
+            let windows = crate::logic::banes::effects(first_home, next - 1, now + 1).windows;
             assert_eq!(windows.len(), 1);
             assert_eq!(
                 *windows.at(0),
@@ -163,7 +163,7 @@ fn ending_the_lights_restores_another_armys_stamina_from_the_clear_timestamp() {
             assert_eq!(crate::logic::quests::read(waiting_home, 1).progress, 3);
             assert_eq!(crate::logic::banes::progress(game_id, 1, 1).completed, 1);
             assert_eq!(
-                crate::logic::banes::windows(waiting_home, before_clear, cleared_at + 240),
+                crate::logic::banes::effects(waiting_home, before_clear, cleared_at + 240).windows,
                 array![crate::banes::BaneWindow { kind: crate::banes::MIST_TIDE, start: before_clear, end: cleared_at }]
                     .span(),
             );

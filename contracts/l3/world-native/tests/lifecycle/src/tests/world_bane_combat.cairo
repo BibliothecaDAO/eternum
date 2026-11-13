@@ -141,7 +141,7 @@ fn stand_completion_ends_the_aspect_bane_and_records_both_capped_rewards_once() 
                 crate::logic::banes::progress(home.game_id, 1, 1),
                 crate::banes::BaneProgress { completed: 1, ended_at: completed_at },
             );
-            assert!(crate::logic::banes::windows(home, completed_at, observed_at + 1).is_empty());
+            assert!(crate::logic::banes::effects(home, completed_at, observed_at + 1).windows.is_empty());
         },
     );
 }
@@ -237,7 +237,7 @@ fn complete_combat_quest(d: Deployment, home: ResourceKey, mut army: ExplorerKey
                 interact_with_state(
                     d.games,
                     || {
-                        let windows = crate::logic::banes::windows(home, start - 1, timestamp + 1);
+                        let windows = crate::logic::banes::effects(home, start - 1, timestamp + 1).windows;
                         assert_eq!(windows.len(), 1);
                         assert_eq!(
                             *windows.at(0),

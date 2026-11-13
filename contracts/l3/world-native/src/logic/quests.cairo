@@ -7,7 +7,7 @@ pub fn enabled(game_id: u32) -> bool {
 }
 
 pub fn record(home: ResourceKey, kind: u8, amount: u128, timestamp: u64) {
-    if amount == 0 || !enabled(home.game_id) {
+    if amount == 0 {
         return;
     }
     let state = crate::state::read();
@@ -61,17 +61,19 @@ pub mod QuestState {
         fn record_quest_progress(
             ref self: ComponentState<TContractState>, home: ResourceKey, kind: u8, amount: u128, timestamp: u64,
         ) {
-            assert!(super::enabled(home.game_id), "daily quests are disabled");
+            if amount == 0 || !super::enabled(home.game_id) {
+                return;
+            }
             let game = crate::logic::game::game(home.game_id);
             let preset = crate::logic::preset_record::for_game(home.game_id);
             let day = crate::days::day_of(game, preset.rules.day_unit_seconds.read(), timestamp).index;
-            let kind = if kind == crate::quests::REVEALS
-                && crate::logic::banes::quest_kind(home, day) == crate::quests::LIGHTS {
+            let selected = crate::logic::banes::quest_kind(home, day);
+            let kind = if kind == crate::quests::REVEALS && selected == crate::quests::LIGHTS {
                 crate::quests::LIGHTS
             } else {
                 kind
             };
-            if crate::logic::banes::quest_kind(home, day) != kind {
+            if selected != kind {
                 return;
             }
             let mut progress = super::read(home, day);
@@ -91,6 +93,17 @@ pub mod QuestState {
             if progress.completed_level != 0 {
                 crate::logic::banes::complete(home, day, timestamp);
             }
+        }
+    }
+
+    #[embeddable_as(BaneEffectsImpl)]
+    pub impl BaneEffects<
+        TContractState, +HasComponent<TContractState>, +Drop<TContractState>,
+    > of crate::banes::IBaneEffects<ComponentState<TContractState>> {
+        fn bane_effects(
+            self: @ComponentState<TContractState>, home: ResourceKey, from: u64, until: u64,
+        ) -> crate::banes::BaneEffects {
+            crate::logic::banes::read_effects(home, from, until)
         }
     }
 

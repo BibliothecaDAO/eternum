@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { readFile } from "node:fs/promises";
+import { readFile, readdir } from "node:fs/promises";
 import { eventLayouts, uniqueEventLayouts } from "./event-layouts.mjs";
 
 test("Games exposes the published player frame, roles and frozen roster ABI", async () => {
@@ -117,7 +117,7 @@ test("home rewards have one production implementation and no former-class entryp
       .map(async ({ contract_name }) => [contract_name, await entrypoints(contract_name)]),
   );
   const games = await entrypoints("Games");
-  for (const name of ["grant_labor", "labor_grant", "claim_daily_quest", "record_quest_progress"]) {
+  for (const name of ["grant_labor", "labor_grant", "claim_daily_quest", "record_quest_progress", "bane_effects"]) {
     const implementations = libraries.flatMap(([contract, entries]) =>
       entries.filter((entry) => entry === name).map(() => contract),
     );
@@ -163,5 +163,27 @@ test("libraries sharing a Games selector must agree on every wire member", () =>
   assert.throws(
     () => eventLayouts([...abi("MapLogic", "core::felt252"), ...abi("MapLogic", "core::integer::u256")]),
     /Conflicting event definition/,
+  );
+});
+
+test("bane effects are read only beside quest progress; callers use the pinned library", async () => {
+  const root = new URL("../src/logic/", import.meta.url);
+  const readers = [];
+  for (const file of await readdir(root)) {
+    if (!file.endsWith(".cairo")) continue;
+    const source = await readFile(new URL(file, root), "utf8");
+    assert.doesNotMatch(
+      source,
+      /banes::(?:windows|stamina_percent|production_percent)\s*\(/,
+      `${file}: use banes::effects so the interval and its rates compile once beside QuestState`,
+    );
+    if (/banes::read_effects\s*\(/.test(source)) readers.push(file);
+  }
+  assert.deepEqual(readers, ["quests.cairo"], "only QuestState may compile the bane effect reader");
+  const banes = await readFile(new URL("banes.cairo", root), "utf8");
+  assert.doesNotMatch(
+    banes,
+    /logic::game::(?:game|rules)\s*\(|commands::load_context\s*\(/,
+    "bane effects must read the seed and calendar fields directly, without a full game context",
   );
 });
