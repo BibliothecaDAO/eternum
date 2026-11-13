@@ -16,6 +16,20 @@ pub mod BridgeLogic {
     #[abi(embed_v0)]
     impl BankWithdrawal = BridgeState::BankWithdrawalImpl<ContractState>;
     #[abi(embed_v0)]
+    impl DeepBanes of crate::deep::IDeepBanes<ContractState> {
+        fn credit_altar(ref self: ContractState, game_id: u32, source: u8, boundary: u64) {
+            crate::logic::deep_banes::credit(game_id, source, boundary);
+        }
+        fn team_quest(self: @ContractState, home: crate::resources::ResourceKey, day: u64) -> Option<u8> {
+            crate::logic::deep_banes::bane(
+                crate::deep::TeamBaneKey {
+                    game_id: home.game_id, aspect: crate::logic::aspects::home_aspect(home), day,
+                },
+            )
+                .map(|bane| bane.quest)
+        }
+    }
+    #[abi(embed_v0)]
     impl PresetWithdrawals of crate::presets::IPresetWithdrawals<ContractState> {
         fn store_withdrawal_preset(
             ref self: ContractState, commitment: felt252, withdrawals: crate::presets::WithdrawalPreset,

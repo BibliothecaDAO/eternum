@@ -1,6 +1,6 @@
 use starknet::storage::{StorageMapReadAccess, StorageMapWriteAccess, StoragePathEntry, StoragePointerReadAccess};
 use crate::commands::ExecutionContext;
-use crate::deep::{DeepShare, IDeepRewardsDispatcherTrait};
+use crate::deep::{DeepShare, IDeepBanesDispatcherTrait, IDeepRewardsDispatcherTrait};
 use crate::resources::{IResourceOperationsDispatcherTrait, IResourceOperationsLibraryDispatcher, ResourceKey};
 use crate::troops::{ExplorerKey, ExplorerTroops};
 
@@ -9,7 +9,7 @@ pub fn initialize(game_id: u32) {
     if state.deep.paid_tick.read(game_id).is_some() {
         return;
     }
-    let tick = crate::logic::game::game(game_id).start_main_at
+    let tick = state.games.games.entry(game_id).start_main_at.read()
         / crate::logic::preset_record::for_game(game_id).rules.tick_config.armies_tick_in_seconds.read();
     save_cursor(game_id, tick);
 }
@@ -18,7 +18,7 @@ pub fn settle(game_id: u32, context: ExecutionContext) {
     if crate::logic::deep_sites::rules(game_id).is_none() {
         return;
     }
-    let game = crate::logic::game::game(game_id);
+    let game = context.game.unbox();
     if context.timestamp < game.start_main_at {
         return;
     }
@@ -32,21 +32,21 @@ pub fn settle(game_id: u32, context: ExecutionContext) {
         }
         let boundary = (cursor + 1) * interval;
         let historical = ExecutionContext {
-            timestamp: boundary - 1, game: BoxTrait::new(crate::logic::deep::calendar_game(game_id)), ..context,
+            timestamp: boundary - 1, game: BoxTrait::new(crate::logic::deep::calendar_game(game_id, game)), ..context,
         };
         crate::logic::deep_sites::rollover(game_id, historical);
         for kind in 0..crate::rules::DEEP_SITE_COUNT {
             settle_site(game_id, kind, boundary, historical);
         }
         cursor += 1;
-        if boundary >= crate::logic::game::game(game_id).end_at {
+        if boundary >= crate::state::read().games.games.entry(game_id).end_at.read() {
             break;
         }
     }
     if crate::state::read().deep.paid_tick.read(game_id) != Some(cursor) {
         save_cursor(game_id, cursor);
     }
-    if context.timestamp < crate::logic::game::game(game_id).end_at {
+    if context.timestamp < crate::state::read().games.games.entry(game_id).end_at.read() {
         crate::logic::deep_sites::rollover(game_id, context);
     }
 }
@@ -114,7 +114,8 @@ fn pay_site(game_id: u32, kind: u8, shares: Span<DeepShare>, boundary: u64, cont
     crate::deep::IDeepRewardsLibraryDispatcher { class_hash: release.economy.read() }
         .pay_deep_tick(game_id, kind, aspect, shares, boundary);
     if kind == crate::rules::DEEP_ALTAR {
-        crate::logic::deep_banes::credit(game_id, aspect, boundary);
+        crate::deep::IDeepBanesLibraryDispatcher { class_hash: release.bridge.read() }
+            .credit_altar(game_id, aspect, boundary);
     }
 }
 

@@ -3085,6 +3085,68 @@ fn deep_ticks_pay_pre_loss_weights_once_and_stop_paying_dead_guards() {
 }
 
 #[test]
+fn quarry_splits_four_slots_by_troops_and_excludes_dead_or_removed_members_next_tick() {
+    let (d, game_id, category) = deep_tick_fixture();
+    let first = join_deep_tick_fixture(d, game_id, crate::rules::DEEP_QUARRY, 101, 200);
+    let second = join_deep_tick_fixture(d, game_id, crate::rules::DEEP_QUARRY, 102, 400);
+    let third = join_deep_tick_fixture(d, game_id, crate::rules::DEEP_QUARRY, 103, 600);
+    let fourth = join_deep_tick_fixture(d, game_id, crate::rules::DEEP_QUARRY, 104, 800);
+    assert!(execute_in_game(d, game_id, muster_command(category, 0), 480));
+    snforge_std::interact_with_state(
+        d.games,
+        || {
+            for (home, amount) in array![(101_u64, 50_u128), (102, 100), (103, 150), (104, 200)] {
+                for resource in array![crate::resources::LABOR, crate::resources::ESSENCE] {
+                    assert_eq!(
+                        crate::logic::resources::balance(ResourceKey { game_id, entity_id: home }, resource),
+                        amount * RESOURCE_PRECISION,
+                    );
+                }
+            }
+            assert!(crate::logic::troops::explorer(first).is_none());
+            assert!(crate::logic::deep_guards::guard(first).is_none());
+            assert_eq!(crate::logic::troops::explorer(second).unwrap().troops.count, 200 * RESOURCE_PRECISION);
+            assert_eq!(crate::logic::troops::explorer(third).unwrap().troops.count, 400 * RESOURCE_PRECISION);
+            assert_eq!(crate::logic::troops::explorer(fourth).unwrap().troops.count, 600 * RESOURCE_PRECISION);
+        },
+    );
+    let actor = IStructureOperationsDispatcher { contract_address: d.games }
+        .structure(ResourceKey { game_id, entity_id: 102 })
+        .unwrap()
+        .owner;
+    assert!(
+        execute_in_game(
+            super::Deployment { actor, ..d },
+            game_id,
+            Command::ManageTroops(crate::troop_management::ManageTroops::RemoveExplorer(second.explorer_id)),
+            481,
+        ),
+    );
+    assert!(!execute_in_game(d, game_id, muster_command(category, 0), 600));
+    assert!(!execute_in_game(d, game_id, muster_command(category, 0), 601));
+    snforge_std::interact_with_state(
+        d.games,
+        || {
+            for (home, amount) in array![(101_u64, 50_u128), (102, 100), (103, 350), (104, 500)] {
+                for resource in array![crate::resources::LABOR, crate::resources::ESSENCE] {
+                    assert_eq!(
+                        crate::logic::resources::balance(ResourceKey { game_id, entity_id: home }, resource),
+                        amount * RESOURCE_PRECISION,
+                    );
+                }
+            }
+            assert!(crate::logic::troops::explorer(second).is_none());
+            assert!(crate::logic::deep_guards::guard(second).is_none());
+            assert_eq!(crate::logic::troops::explorer(third).unwrap().troops.count, 200 * RESOURCE_PRECISION);
+            assert_eq!(crate::logic::troops::explorer(fourth).unwrap().troops.count, 400 * RESOURCE_PRECISION);
+            assert_eq!(crate::logic::deep_guards::guard(third).unwrap().slot, 2);
+            assert_eq!(crate::logic::deep_guards::guard(fourth).unwrap().slot, 3);
+            assert_eq!(crate::state::read().deep.paid_tick.read(game_id), Some(5));
+        },
+    );
+}
+
+#[test]
 fn winning_tick_finishes_all_three_sites_and_rejects_the_waiting_command() {
     let (d, game_id, category) = deep_tick_fixture();
     let foundation = join_deep_tick_fixture(d, game_id, crate::rules::DEEP_FOUNDATION, 101, 600);

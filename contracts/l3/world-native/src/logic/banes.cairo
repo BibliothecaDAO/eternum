@@ -1,20 +1,11 @@
 use starknet::Event;
 use starknet::storage::{StorageMapReadAccess, StorageMapWriteAccess, StoragePathEntry, StoragePointerReadAccess};
-use crate::banes::{BaneProgress, BaneWindow, IAspectActivityDispatcherTrait, IAspectActivityLibraryDispatcher};
+use crate::banes::{BaneProgress, BaneWindow};
+use crate::deep::{IDeepBanesDispatcherTrait, IDeepBanesLibraryDispatcher};
 use crate::resources::ResourceKey;
 
 pub fn enabled(game_id: u32) -> bool {
     crate::logic::preset_record::for_game(game_id).bane_rules.read().is_some()
-}
-
-pub fn record_activity(home: ResourceKey, day: u64) {
-    if !enabled(home.game_id) {
-        return;
-    }
-    let state = crate::state::read();
-    let release = state.game_releases.read(home.game_id);
-    IAspectActivityLibraryDispatcher { class_hash: state.releases.entry(release).classes.prizes.read() }
-        .record_aspect_activity(home, day);
 }
 
 pub fn kind(game_id: u32, day: u64) -> Option<u8> {
@@ -22,15 +13,30 @@ pub fn kind(game_id: u32, day: u64) -> Option<u8> {
         return None;
     };
     crate::banes::world_kind(
-        crate::logic::game::game(game_id).seed, day, crate::state::read().banes.first_team_day.read(game_id), step,
+        crate::state::read().games.games.entry(game_id).seed.read(),
+        day,
+        crate::state::read().banes.first_team_day.read(game_id),
+        step,
     )
 }
 
 pub fn quest_kind(home: ResourceKey, day: u64) -> u8 {
+    if let Some(quest) = team_quest(home, day) {
+        return quest;
+    }
     if let Some(kind) = kind(home.game_id, day) {
         return crate::banes::quest_kind(kind);
     }
-    crate::quests::daily_quest(crate::logic::game::game(home.game_id).seed, day)
+    crate::quests::daily_quest(crate::state::read().games.games.entry(home.game_id).seed.read(), day)
+}
+
+fn team_quest(home: ResourceKey, day: u64) -> Option<u8> {
+    if !enabled(home.game_id) {
+        return None;
+    }
+    let state = crate::state::read();
+    let release = state.releases.entry(state.game_releases.read(home.game_id)).classes;
+    IDeepBanesLibraryDispatcher { class_hash: release.bridge.read() }.team_quest(home, day)
 }
 
 pub fn target(home: ResourceKey, kind: u8, level: u8) -> u128 {
@@ -52,7 +58,7 @@ pub fn required(game_id: u32, aspect: u8, day: u64) -> u32 {
     let active = if day == 0 {
         0
     } else {
-        crate::state::read().banes.activity.read((game_id, aspect, day - 1))
+        crate::state::read().troops.aspect_activity.read((game_id, aspect, day - 1))
     };
     crate::banes::required(active, percent)
 }
@@ -71,7 +77,7 @@ pub fn won(home: ResourceKey, day: u64) -> bool {
 }
 
 pub fn complete(home: ResourceKey, day: u64, timestamp: u64) {
-    if kind(home.game_id, day).is_none() {
+    if kind(home.game_id, day).is_none() && team_quest(home, day).is_none() {
         return;
     }
     let aspect = crate::logic::aspects::home_aspect(home);
@@ -105,12 +111,15 @@ pub fn windows(home: ResourceKey, from: u64, until: u64) -> Span<BaneWindow> {
         return windows.span();
     }
     let aspect = crate::logic::aspects::home_aspect(home);
-    let game = crate::logic::game::game(home.game_id);
+    let game = crate::state::read().games.games.entry(home.game_id);
+    let seed = game.seed.read();
+    let start = game.start_main_at.read();
+    let end = game.end_at.read();
     let unit = crate::logic::preset_record::for_game(home.game_id).rules.day_unit_seconds.read();
-    let mut cursor = core::cmp::max(from, game.start_main_at);
-    let until = core::cmp::min(until, game.end_at);
+    let mut cursor = core::cmp::max(from, start);
+    let until = core::cmp::min(until, end);
     while cursor < until {
-        let day = crate::days::day_of(game, unit, cursor);
+        let day = crate::days::calendar_day(seed, start, end, unit, cursor);
         if let Some(kind) = kind(home.game_id, day.index) {
             let ended = progress(home.game_id, aspect, day.index).ended_at;
             let end = if required(home.game_id, aspect, day.index) == 0 {
@@ -141,7 +150,6 @@ fn emit(row: crate::events::RowSet) {
 
 #[starknet::component]
 pub mod BaneState {
-    use starknet::storage::{StorageMapReadAccess, StorageMapWriteAccess};
     #[storage]
     #[allow(starknet::colliding_storage_paths)]
     pub struct Storage {
@@ -152,32 +160,6 @@ pub mod BaneState {
     #[derive(Drop, starknet::Event)]
     pub enum Event {
         RowSet: crate::events::RowSet,
-    }
-    #[embeddable_as(ActivityImpl)]
-    pub impl Activity<
-        TContractState, +HasComponent<TContractState>, +Drop<TContractState>,
-    > of crate::banes::IAspectActivity<ComponentState<TContractState>> {
-        fn record_aspect_activity(
-            ref self: ComponentState<TContractState>, home: crate::resources::ResourceKey, day: u64,
-        ) {
-            let key = (home.game_id, home.entity_id, day);
-            if self.data.banes.active_homes.read(key) {
-                return;
-            }
-            let aspect = crate::logic::aspects::home_aspect(home);
-            self.data.banes.active_homes.write(key, true);
-            let active = self.data.banes.activity.read((home.game_id, aspect, day)) + 1;
-            self.data.banes.activity.write((home.game_id, aspect, day), active);
-            self
-                .emit(
-                    crate::events::RowSet {
-                        version: 1,
-                        model: 'AspectActivity',
-                        keys: array![home.game_id.into(), aspect.into(), day.into()].span(),
-                        values: array![active.into()].span(),
-                    },
-                );
-        }
     }
 }
 

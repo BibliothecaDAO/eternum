@@ -69,8 +69,7 @@ pub fn emit<K, V, +Serde<K>, +Serde<V>, +Drop<K>, +Drop<V>>(model: felt252, key:
     );
 }
 
-pub fn calendar_game(game_id: u32) -> crate::game::GameRegistry {
-    let game = crate::logic::game::game(game_id);
+pub fn calendar_game(game_id: u32, game: crate::game::GameRegistry) -> crate::game::GameRegistry {
     match crate::logic::race::result(game_id) {
         Some(result) => crate::game::GameRegistry { end_at: result.scheduled_end_at, ..game },
         None => game,

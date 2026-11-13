@@ -107,8 +107,8 @@ fn initialize(game_id: u32) {
         return;
     };
     let state = crate::state::write();
-    let game = crate::logic::game::game(game_id);
-    let spacing = crate::logic::settlement::rules(game_id).spacing;
+    let start = state.games.games.entry(game_id).start_main_at.read();
+    let spacing = crate::logic::preset_record::for_game(game_id).settlement_spacing.read();
     for kind in 0..crate::rules::DEEP_SITE_COUNT {
         if state.deep.site_ids.read((game_id, kind)) != 0 {
             continue;
@@ -122,7 +122,7 @@ fn initialize(game_id: u32) {
             crate::taxonomy::DEEP_SITE_OCCUPIER,
             false,
         );
-        reset_beast(key, kind, 0, rules.beast_count, game.start_main_at);
+        reset_beast(key, kind, 0, rules.beast_count, start);
     }
     crate::logic::deep_ticks::initialize(game_id);
 }

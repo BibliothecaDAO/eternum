@@ -146,3 +146,9 @@ pub struct TeamBane {
 pub trait IDeepRewards<T> {
     fn pay_deep_tick(ref self: T, game_id: u32, kind: u8, aspect: u8, shares: Span<DeepShare>, timestamp: u64);
 }
+
+#[starknet::interface]
+pub trait IDeepBanes<T> {
+    fn credit_altar(ref self: T, game_id: u32, source: u8, boundary: u64);
+    fn team_quest(self: @T, home: crate::resources::ResourceKey, day: u64) -> Option<u8>;
+}
