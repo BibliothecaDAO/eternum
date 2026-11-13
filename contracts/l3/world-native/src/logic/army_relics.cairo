@@ -4,8 +4,8 @@ use crate::resources::ResourceKey;
 use crate::troops::ExplorerKey;
 
 pub fn enabled(game_id: u32) -> bool {
-    crate::logic::game::rules(game_id).day_unit_seconds != 0
-        && crate::logic::preset_record::for_game(game_id).rollover_chest_rules.read().is_none()
+    let preset = crate::logic::preset_record::for_game(game_id);
+    preset.rules.day_unit_seconds.read() != 0 && preset.rollover_chest_rules.read().is_none()
 }
 
 pub fn read(key: ExplorerKey) -> ArmyRelics {
@@ -158,7 +158,7 @@ pub fn site_reward(
 
 pub fn reveal_tiles(game_id: u32, origin: crate::troops::Coord, count: u8, context: crate::commands::BiomeContext) {
     assert!(count > 0 && count <= 5 * crate::rules::RELIC_TILES_PER_RANK, "invalid relic tile count");
-    let spacing = crate::logic::settlement::rules(game_id).spacing;
+    let spacing = crate::logic::preset_record::for_game(game_id).settlement_spacing.read();
     assert!(!crate::deep::contains(origin, spacing), "Deep terrain is already visible");
     let mut revealed = 0;
     for radius in 1..spacing {

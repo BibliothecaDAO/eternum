@@ -47,10 +47,10 @@ pub mod RelicState {
             crate::logic::lords_budget::site_chest(key)
         }
         fn relic_rules(self: @ComponentState<TContractState>, game_id: u32) -> Span<RelicRule> {
-            if crate::logic::game::rules(game_id).day_unit_seconds != 0 {
+            let preset = crate::logic::preset_record::for_game(game_id);
+            if preset.rules.day_unit_seconds.read() != 0 {
                 return array![].span();
             }
-            let preset = crate::logic::preset_record::for_game(game_id);
             let mut rules = array![];
             for id in crate::relics::FIRST_RELIC..crate::relics::LAST_RELIC + 1 {
                 rules.append(preset.relic_rules.read(id));
@@ -231,7 +231,7 @@ pub mod RelicState {
             let explorer = crate::logic::troops::command_explorer(key, Some(actor), context.timestamp, context);
             assert!(explorer.troops.count != 0, "explorer is dead");
             crate::expeditions::assert_same_region(
-                explorer.coord, command.coord, crate::logic::settlement::rules(game_id).spacing,
+                explorer.coord, command.coord, crate::logic::preset_record::for_game(game_id).settlement_spacing.read(),
             );
             assert!(crate::geometry::adjacent(explorer.coord, command.coord), "explorer is not adjacent to site");
             let point = crate::expeditions::IFrontierDiscoveryDispatcherTrait::consume_frontier_site(

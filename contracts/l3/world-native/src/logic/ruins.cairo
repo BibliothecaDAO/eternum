@@ -88,7 +88,7 @@ fn legacy_cleared_depths(key: ExpeditionDiscoveryKey) -> u8 {
     let state = crate::state::read();
     let home = crate::entity_ids::namespace(key.structure_id);
     let allocated = state.games.home_entities.read((key.game_id, home));
-    let spacing = crate::logic::settlement::rules(key.game_id).spacing;
+    let spacing = crate::logic::preset_record::for_game(key.game_id).settlement_spacing.read();
     let mut mask = 0;
     for local in 1_u64..Into::<u32, u64>::into(allocated) + 1 {
         let entity_id = Into::<u32, u64>::into(home) * 0x100000000 + local;
