@@ -16,8 +16,6 @@ pub mod RelicsLogic {
     impl ArmySlotStamina = RelicState::ArmySlotStaminaImpl<ContractState>;
     #[abi(embed_v0)]
     impl ArmyProgression = RelicState::ArmyProgressionImpl<ContractState>;
-    #[abi(embed_v0)]
-    impl Artificer = RelicState::ArtificerImpl<ContractState>;
 
     #[abi(embed_v0)]
     impl PresetRelics of crate::presets::IPresetRelics<ContractState> {

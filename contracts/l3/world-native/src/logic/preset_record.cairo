@@ -134,7 +134,9 @@ fn write_economy(
     preset.artificer_cost.write(economy.research_cost);
     if let Some(withdrawals) = economy.withdrawals {
         crate::presets::IPresetWithdrawalsDispatcherTrait::store_withdrawal_preset(
-            crate::presets::IPresetWithdrawalsLibraryDispatcher { class_hash: classes.bridge }, commitment, withdrawals,
+            crate::presets::IPresetWithdrawalsLibraryDispatcher { class_hash: classes.production },
+            commitment,
+            withdrawals,
         );
     }
 }

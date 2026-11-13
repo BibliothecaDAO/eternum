@@ -48,6 +48,8 @@ pub mod settlement;
 pub mod settlement_domain;
 pub mod shrines;
 pub mod stories;
+
+pub mod structure_actions;
 pub mod structures;
 
 pub mod terrain;

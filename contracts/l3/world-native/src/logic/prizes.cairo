@@ -1,22 +1,19 @@
 #[starknet::contract]
 pub mod PrizesLogic {
-    use starknet::storage::StoragePointerReadAccess;
-    const MAX_PHASES_PER_CLAIM: u32 = 8;
     use starknet::ContractAddress;
-    #[cfg(feature: "test_support")]
-    use starknet::storage::StorageMapReadAccess;
+    use starknet::storage::{StorageMapReadAccess, StoragePointerReadAccess};
     use crate::events::RowSet;
     #[cfg(feature: "test_support")]
     use crate::faith::{FaithfulStructure, PlayerFaithKey, PlayerFaithPoints, WonderFaith, WonderFaithWinners};
-    use crate::game::assert_playing;
+    use crate::geometry::tile_key;
     use crate::logic::blitz_results::BlitzResultState;
     use crate::logic::faith::FaithState;
     use crate::logic::lords::LordsState;
     use crate::logic::release::ReleaseState;
-    use crate::resources::{IResourceOperationsDispatcherTrait, IResourceOperationsLibraryDispatcher, ResourceKey};
+    use crate::map::{BIOME_SCALE, BYTE_RANGE};
+    use crate::resources::ResourceKey;
+    use crate::troops::Coord;
 
-    component!(path: crate::logic::bitcoin::BitcoinState, storage: bitcoin, event: BitcoinEvent);
-    impl BitcoinInternal = crate::logic::bitcoin::BitcoinState::InternalImpl<ContractState>;
     component!(path: FaithState, storage: faith, event: FaithEvent);
     impl FaithInternal = FaithState::InternalImpl<ContractState>;
     #[abi(embed_v0)]
@@ -41,8 +38,6 @@ pub mod PrizesLogic {
         blitz: BlitzResultState::Storage,
         #[substorage(v0)]
         faith: FaithState::Storage,
-        #[substorage(v0)]
-        bitcoin: crate::logic::bitcoin::BitcoinState::Storage,
     }
     #[event]
     #[derive(Drop, starknet::Event)]
@@ -51,7 +46,7 @@ pub mod PrizesLogic {
         ReleaseEvent: ReleaseState::Event,
         BlitzEvent: BlitzResultState::Event,
         FaithEvent: FaithState::Event,
-        BitcoinEvent: crate::logic::bitcoin::BitcoinState::Event,
+        MapEvent: crate::logic::map::MapState::Event,
         StoryEvent: crate::ownership::StoryEvent,
         RowSet: RowSet,
     }
@@ -91,323 +86,177 @@ pub mod PrizesLogic {
         }
     }
     #[abi(embed_v0)]
-    impl BitcoinViews of crate::bitcoin::IBitcoinViews<ContractState> {
-        #[cfg(feature: "test_support")]
-        fn bitcoin_mine(self: @ContractState, key: ResourceKey) -> crate::bitcoin::MineFunding {
-            self.bitcoin.mine(key)
-        }
-        #[cfg(feature: "test_support")]
-        fn bitcoin_claimed(self: @ContractState, key: crate::bitcoin::ClaimKey) -> bool {
-            self.bitcoin.was_claimed(key)
-        }
-        #[cfg(feature: "test_support")]
-        fn bitcoin_phase(self: @ContractState, key: crate::bitcoin::PhaseKey) -> crate::bitcoin::Phase {
-            self.bitcoin.phase(key)
-        }
-        #[cfg(feature: "test_support")]
-        fn bitcoin_contribution(
-            self: @ContractState, key: crate::bitcoin::ContributionKey,
-        ) -> crate::bitcoin::Contribution {
-            self.bitcoin.contribution(key)
-        }
-        #[cfg(feature: "test_support")]
-        fn bitcoin_contributor(self: @ContractState, key: crate::bitcoin::PhaseKey, index: u32) -> ContractAddress {
-            self.bitcoin.contributor(key, index)
-        }
-    }
-    #[abi(embed_v0)]
-    impl BitcoinFunding of crate::bitcoin::IBitcoinFunding<ContractState> {
-        fn register_bitcoin_structure(
-            ref self: ContractState,
-            key: ResourceKey,
-            category: u8,
-            timestamp: u64,
-            game_context: crate::commands::ActionContext,
-        ) {
-            let game_context = crate::commands::execution_context(key.game_id, game_context);
-
-            assert!(category == crate::taxonomy::BITCOIN_MINE_CATEGORY, "not a Bitcoin mine");
-            let interval = game_context.rules.unbox().tick_config.bitcoin_phase_in_seconds;
-            assert!(interval != 0, "zero Bitcoin phase duration");
-            self.bitcoin.register_mine(key, timestamp / interval + 1);
-        }
-        fn bitcoin_mine_captured(
-            ref self: ContractState, key: ResourceKey, timestamp: u64, game_context: crate::commands::ActionContext,
-        ) {
-            let game_context = crate::commands::execution_context(key.game_id, game_context);
-
-            let rules = game_context.rules.unbox();
-            let mine = crate::logic::structures::structure(key).expect('missing Bitcoin mine');
-            let prize = if mine.owner == 0.try_into().unwrap() {
-                0
-            } else {
-                rules.bitcoin_mine_config.prize_per_phase
-            };
-            let interval = rules.tick_config.bitcoin_phase_in_seconds;
-            let phase = timestamp / interval;
-            let closed_before = if timestamp % interval == interval - 1 {
-                phase + 1
-            } else {
-                phase
-            };
-            self.bitcoin.capture_mine(key, phase + 1, closed_before, prize);
-        }
-    }
-    #[abi(embed_v0)]
-    impl BitcoinCommands of crate::bitcoin::IBitcoinCommands<ContractState> {
-        fn claim_bitcoin_phase(
-            ref self: ContractState,
-            game_id: u32,
-            actor: ContractAddress,
-            command: crate::bitcoin::ClaimPhase,
-            context: crate::commands::ActionContext,
-        ) -> u64 {
-            let context = crate::commands::execution_context(game_id, context);
-
-            self.assert_bitcoin_phase_closed(game_id, command.phase, context.timestamp, context);
-            assert!(!command.mine_ids.is_empty(), "empty Bitcoin claim batch");
-            assert!(command.mine_ids.len() <= crate::commands::MAX_COMMAND_ITEMS, "too many Bitcoin mines");
-            crate::commands::assert_unique_entity_ids(command.mine_ids);
-            let limit = core::cmp::min(
-                MAX_PHASES_PER_CLAIM, crate::commands::MAX_COMMAND_ITEMS / command.mine_ids.len(),
-            );
-            let mut remaining = 0;
-            for mine_id in command.mine_ids {
-                remaining += self
-                    .claim_bound_phases(
-                        ResourceKey { game_id, entity_id: *mine_id }, command.phase, limit, context.timestamp, context,
-                    );
+    impl Extraction of crate::exploration_rewards::IExtraction<ContractState> {
+        fn extraction_rewards(
+            self: @ContractState, game_id: u32,
+        ) -> Span<crate::exploration_rewards::ExplorationReward> {
+            let preset = crate::logic::preset_record::for_game(game_id);
+            let count = preset.exploration_reward_count.read();
+            let mut rewards = array![];
+            for index in 0..count {
+                rewards.append(preset.exploration_rewards.read(index));
             }
-            (remaining)
+            rewards.span()
         }
-
-        fn contribute_bitcoin_labor(
+        fn extract_exploration_reward(
             ref self: ContractState,
             game_id: u32,
             actor: ContractAddress,
-            command: crate::bitcoin::ContributeLabor,
+            explorer_id: u64,
+            revealed: Option<Coord>,
             context: crate::commands::ActionContext,
-        ) {
+        ) -> () {
             let context = crate::commands::execution_context(game_id, context);
-
-            self.assert_bitcoin_command(game_id, context.timestamp, context);
-            let game = context.game.unbox();
-            assert_playing(game, context.timestamp);
+            let explorer = self.revealing_explorer(game_id, actor, explorer_id, context);
             let rules = context.rules.unbox();
-            let phase = context.timestamp / rules.tick_config.bitcoin_phase_in_seconds;
-            let end = self.bitcoin_phase_end_in_game(phase, context);
-            assert!(context.timestamp < end, "Bitcoin contribution window is closed");
-            assert!(
-                command.amount != 0 && command.amount >= rules.bitcoin_mine_config.min_labor_per_contribution,
-                "Bitcoin labor below minimum",
-            );
-            let key = ResourceKey { game_id, entity_id: command.structure_id };
-            assert!(crate::logic::structures::owner(key) == actor, "actor does not own labor source");
-            self
-                .resources(game_id)
-                .spend_resource(key, 23, command.amount, context.timestamp, crate::commands::resource_context(context));
-            self
-                .bitcoin
-                .contribute(
-                    crate::bitcoin::ContributionKey { game_id, phase, player: actor },
-                    command.structure_id,
-                    command.amount,
+            let coord = if crate::rules::rule_enabled(rules, crate::rules::REVEAL_SUPPLIES) {
+                match revealed {
+                    Some(coord) => coord,
+                    None => { return (); },
+                }
+            } else {
+                explorer.coord
+            };
+            let key = tile_key(game_id, coord);
+            let tile = crate::logic::map::tile(key).expect('unrevealed extraction tile');
+            assert!(tile.data / BIOME_SCALE % BYTE_RANGE != 0, "tile must be revealed");
+            let mut root = context.raw_root;
+            let seed = crate::random::game_root(ref root, game_id);
+            if tile.data / crate::map::REWARD_EXTRACTED_FLAG % 2 == 1 {
+                return ();
+            }
+            let reward = if crate::rules::rule_enabled(rules, crate::rules::REVEAL_SUPPLIES) {
+                crate::exploration_rewards::reveal_reward(
+                    explorer.troops,
+                    rules.troop_limit_config,
+                    crate::logic::expeditions::depth_rules_at(game_id, coord).reveal_percent,
+                    seed,
+                )
+            } else {
+                crate::exploration_rewards::pool_reward(
+                    self.extraction_rewards(game_id),
+                    explorer.troops,
+                    rules.troop_limit_config,
+                    context.timestamp,
+                    seed,
+                )
+            };
+            let paid = self.pay_reveal(game_id, explorer_id, explorer, coord, reward, context);
+            crate::logic::map::MapState::mark_reward_extracted(key);
+            if rules.day_unit_seconds != 0 {
+                crate::progression::IArmyProgressionDispatcherTrait::grant_army_xp(
+                    crate::progression::IArmyProgressionLibraryDispatcher {
+                        class_hash: self.release.classes(game_id).relics.read(),
+                    },
+                    crate::troops::ExplorerKey { game_id, explorer_id },
+                    crate::progression::XpAward::Reveal(coord),
                 );
+            }
+            self
+                .record_story(
+                    game_id, actor, context.timestamp, paid, crate::ownership::Story::ExplorationReward(paid),
+                );
+            ()
         }
-        fn close_bitcoin_phase(
+        fn raise_dormant_spire(
             ref self: ContractState,
             game_id: u32,
             actor: ContractAddress,
-            phase: u64,
+            explorer_id: u64,
+            coord: Coord,
             context: crate::commands::ActionContext,
         ) {
             let context = crate::commands::execution_context(game_id, context);
-
-            self.assert_bitcoin_phase_closed(game_id, phase, context.timestamp, context);
-            self.bitcoin.close(crate::bitcoin::PhaseKey { game_id, phase });
-        }
-        fn bind_bitcoin_phase(
-            ref self: ContractState,
-            game_id: u32,
-            actor: ContractAddress,
-            phase: u64,
-            context: crate::commands::ActionContext,
-        ) {
-            let context = crate::commands::execution_context(game_id, context);
-
-            self.assert_bitcoin_phase_closed(game_id, phase, context.timestamp, context);
-            self.bitcoin.bind(crate::bitcoin::PhaseKey { game_id, phase }, context.raw_root);
+            assert!(
+                crate::rules::rule_enabled(context.rules.unbox(), crate::rules::DISCOVER_SPIRES),
+                "spire discovery is disabled",
+            );
+            let explorer = self.revealing_explorer(game_id, actor, explorer_id, context);
+            crate::logic::map::MapState::occupy(
+                tile_key(game_id, coord),
+                crate::entity_ids::allocate_home(game_id, explorer.owner),
+                crate::taxonomy::DORMANT_SPIRE_OCCUPIER,
+                false,
+            );
+            let reward = crate::exploration_rewards::spire_reward(explorer.troops.boosts, context.timestamp);
+            let paid = self.pay_reveal(game_id, explorer_id, explorer, coord, reward, context);
+            self.record_story(game_id, actor, context.timestamp, paid, crate::ownership::Story::SpireDiscovered(paid));
         }
     }
     #[generate_trait]
-    impl Internal of InternalTrait {
-        fn resources(self: @ContractState, game_id: u32) -> IResourceOperationsLibraryDispatcher {
-            IResourceOperationsLibraryDispatcher { class_hash: self.release.classes(game_id).resources.read() }
+    impl ExtractionInternal of ExtractionInternalTrait {
+        /// The surface army standing on its own tile that a reveal pays.
+        fn revealing_explorer(
+            self: @ContractState,
+            game_id: u32,
+            actor: ContractAddress,
+            explorer_id: u64,
+            context: crate::commands::ExecutionContext,
+        ) -> crate::troops::ExplorerTroops {
+            crate::game::assert_playing(context.game.unbox(), context.timestamp);
+            let explorer = crate::logic::troops::command_explorer(
+                crate::troops::ExplorerKey { game_id, explorer_id }, Some(actor), context.timestamp, context,
+            );
+            assert!(!explorer.coord.alt, "extraction requires surface");
+            assert!(explorer.troops.count != 0, "explorer is dead");
+            let occupied = crate::logic::map::occupancy(tile_key(game_id, explorer.coord))
+                .expect('missing army occupancy');
+            assert!(occupied.entity_id == explorer_id, "explorer does not occupy tile");
+            explorer
         }
-        fn claim_bound_phases(
+
+        /// Grants a reveal's reward to the army or, under home rewards, to its realm.
+        fn pay_reveal(
             ref self: ContractState,
-            mine: ResourceKey,
-            through: u64,
-            limit: u32,
-            timestamp: u64,
-            game_context: crate::commands::ExecutionContext,
-        ) -> u64 {
-            let mut phase_id = self.bitcoin.mine(mine).next_phase;
-            for _ in 0..limit {
-                if phase_id > through {
-                    break;
-                }
-                let phase = self.bitcoin.phase(crate::bitcoin::PhaseKey { game_id: mine.game_id, phase: phase_id });
-                if phase.state == crate::bitcoin::PhaseStatus::Open
-                    || (phase.total_labor != 0 && phase.state != crate::bitcoin::PhaseStatus::Bound) {
-                    break;
-                }
-                self
-                    .claim_bitcoin_mine(
-                        crate::bitcoin::ClaimKey { game_id: mine.game_id, phase: phase_id, mine_id: mine.entity_id },
-                        phase,
-                        timestamp,
-                        game_context,
-                    );
-                phase_id += 1;
-            }
-            if phase_id > through {
-                0
-            } else {
-                through - phase_id + 1
+            game_id: u32,
+            explorer_id: u64,
+            explorer: crate::troops::ExplorerTroops,
+            coord: Coord,
+            reward: crate::resources::ResourceAmount,
+            context: crate::commands::ExecutionContext,
+        ) -> crate::exploration_rewards::ExtractedReward {
+            let receiver = crate::exploration_rewards::receiver(
+                crate::rules::rule_enabled(context.rules.unbox(), crate::rules::HOME_REWARDS),
+                explorer_id,
+                explorer.owner,
+                reward.resource_type,
+            );
+            crate::exploration_rewards::IExplorationGrantDispatcherTrait::grant_exploration_reward(
+                crate::exploration_rewards::IExplorationGrantLibraryDispatcher {
+                    class_hash: self.release.classes(game_id).resources.read(),
+                },
+                crate::resources::ResourceKey { game_id, entity_id: receiver },
+                reward.resource_type,
+                reward.amount,
+                context.timestamp,
+                crate::commands::resource_context(context),
+            );
+            crate::exploration_rewards::ExtractedReward {
+                explorer_id, receiver, coord, resource_type: reward.resource_type, amount: reward.amount,
             }
         }
-        fn claim_bitcoin_mine(
+
+        /// A reveal's payout story, told once for the army that revealed it.
+        fn record_story(
             ref self: ContractState,
-            key: crate::bitcoin::ClaimKey,
-            phase: crate::bitcoin::Phase,
+            game_id: u32,
+            actor: ContractAddress,
             timestamp: u64,
-            game_context: crate::commands::ExecutionContext,
-        ) {
-            if self.bitcoin.was_claimed(key) {
-                return;
-            }
-            let resource_key = ResourceKey { game_id: key.game_id, entity_id: key.mine_id };
-            let mut funding = self.bitcoin.mine(resource_key);
-            assert!(funding.next_phase == key.phase, "claim earlier Bitcoin phase first");
-            let mine = crate::logic::structures::structure(resource_key).expect('missing Bitcoin mine');
-            assert!(mine.base.category == crate::taxonomy::BITCOIN_MINE_CATEGORY, "not a Bitcoin mine");
-            if mine.owner != 0.try_into().unwrap() && key.phase >= funding.eligible_from {
-                let config = game_context.rules.unbox().bitcoin_mine_config;
-                if phase.total_labor == 0 {
-                    funding.unsplit_carry += config.prize_per_phase;
-                } else {
-                    let winner = self.bitcoin.winner(key);
-                    let (winner_share, owner_share) = crate::bitcoin::split_prize(
-                        config.prize_per_phase + funding.unsplit_carry, config.owner_cut_bps,
-                    );
-                    let winner_share = winner_share + funding.winner_carry;
-                    let (winner_destination, winner_paid) = self
-                        .pay_bitcoin_winner(key, winner, winner_share, timestamp, game_context);
-                    let owner_destination = key.mine_id;
-                    let owner_paid = self.pay_bitcoin_share(resource_key, owner_share, timestamp, game_context);
-                    funding.unsplit_carry = 0;
-                    funding.winner_carry = winner_share - winner_paid;
-                    self
-                        .emit_bitcoin_award(
-                            key.game_id,
-                            timestamp,
-                            crate::bitcoin::BitcoinAwardStory {
-                                phase: key.phase,
-                                mine_id: key.mine_id,
-                                winner,
-                                owner: mine.owner,
-                                winner_destination,
-                                owner_destination,
-                                winner_paid,
-                                owner_paid,
-                            },
-                        );
-                }
-            }
-            self.bitcoin.complete_claim(key, funding);
-        }
-        fn pay_bitcoin_winner(
-            ref self: ContractState,
-            key: crate::bitcoin::ClaimKey,
-            winner: ContractAddress,
-            amount: u128,
-            timestamp: u64,
-            game_context: crate::commands::ExecutionContext,
-        ) -> (u64, u128) {
-            let contribution = self
-                .bitcoin
-                .contribution(
-                    crate::bitcoin::ContributionKey { game_id: key.game_id, phase: key.phase, player: winner },
-                );
-            let destination = ResourceKey { game_id: key.game_id, entity_id: contribution.structure_id };
-            if crate::logic::structures::owner(destination) != winner || amount == 0 {
-                return (0, 0);
-            }
-            (destination.entity_id, self.pay_bitcoin_share(destination, amount, timestamp, game_context))
-        }
-        fn emit_bitcoin_award(
-            ref self: ContractState, game_id: u32, timestamp: u64, award: crate::bitcoin::BitcoinAwardStory,
+            paid: crate::exploration_rewards::ExtractedReward,
+            story: crate::ownership::Story,
         ) {
             self
                 .emit(
                     crate::ownership::StoryEvent {
                         version: 2,
                         game_id,
-                        owner: Some(award.winner),
-                        entity_id: Some(award.mine_id),
-                        tx_hash: starknet::get_tx_info().unbox().transaction_hash,
+                        entity_id: Some(paid.explorer_id),
+                        owner: Some(actor),
                         timestamp,
-                        story: crate::ownership::Story::BitcoinAwardStory(award),
+                        tx_hash: starknet::get_tx_info().unbox().transaction_hash,
+                        story,
                     },
                 );
-        }
-        fn pay_bitcoin_share(
-            ref self: ContractState,
-            destination: ResourceKey,
-            amount: u128,
-            timestamp: u64,
-            game_context: crate::commands::ExecutionContext,
-        ) -> u128 {
-            if amount == 0 {
-                return 0;
-            }
-            let rule = crate::logic::resources::rule(destination.game_id, 58);
-            assert!(rule.unit_weight == 0, "SAT must be weightless");
-            let paid = self
-                .resources(destination.game_id)
-                .grant_resource(destination, 58, amount, timestamp, crate::commands::resource_context(game_context));
-            assert!(paid == amount, "incomplete Bitcoin award");
-            paid
-        }
-        fn assert_bitcoin_command(
-            self: @ContractState, game_id: u32, timestamp: u64, game_context: crate::commands::ExecutionContext,
-        ) {
-            assert!(game_context.rules.unbox().bitcoin_mine_config.enabled, "Bitcoin mining disabled");
-        }
-        fn bitcoin_phase_end_in_game(
-            self: @ContractState, phase: u64, game_context: crate::commands::ExecutionContext,
-        ) -> u64 {
-            let interval = game_context.rules.unbox().tick_config.bitcoin_phase_in_seconds;
-            let end = crate::bitcoin::phase_end(phase, interval);
-            let game = game_context.game.unbox();
-            // A phase that started before season closure keeps its original settlement window.
-            assert!(
-                end >= game.start_main_at && (game.end_at == 0 || phase * interval < game.end_at),
-                "Bitcoin phase outside game",
-            );
-            end
-        }
-        fn assert_bitcoin_phase_closed(
-            self: @ContractState,
-            game_id: u32,
-            phase: u64,
-            timestamp: u64,
-            game_context: crate::commands::ExecutionContext,
-        ) {
-            self.assert_bitcoin_command(game_id, timestamp, game_context);
-            let end = self.bitcoin_phase_end_in_game(phase, game_context);
-            assert!(timestamp >= end, "Bitcoin phase is still open");
         }
     }
 }

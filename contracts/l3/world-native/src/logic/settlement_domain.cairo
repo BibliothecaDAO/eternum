@@ -7,28 +7,21 @@ pub mod SettlementLogic {
     use crate::logic::release::ReleaseState;
     use crate::logic::settlement::SettlementState;
     use crate::logic::upgrades::UpgradeState;
-    use crate::logic::village::VillageState;
     use crate::realms::{ISeasonPlacementDispatcherTrait, ISeasonPlacementLibraryDispatcher};
     use crate::settlement::{
-        EntryKey, ISettlementCreationDispatcherTrait, ISettlementCreationLibraryDispatcher,
-        ISettlementPoolDispatcherTrait, ISettlementPoolLibraryDispatcher, RealmCreation, SettlementCreation,
-        VillageCreation,
+        EntryKey, ISettlementCreationDispatcherTrait, ISettlementCreationLibraryDispatcher, RealmCreation,
+        SettlementCreation,
     };
     #[cfg(feature: "test_support")]
     use crate::settlement::{PlayerEntry, RealmGrants, SettlementProgress, SettlementRules};
     #[cfg(feature: "test_support")]
     use crate::upgrades::{UpgradeLimits, UpgradeRecipe};
-    use crate::village::{SettleVillage, VillagePassKey};
-    #[cfg(feature: "test_support")]
-    use crate::village::{VillagePass, VillageRules};
     component!(path: ReleaseState, storage: release, event: ReleaseEvent);
     impl LifeInternal = ReleaseState::InternalImpl<ContractState>;
     component!(path: crate::logic::realms::RealmState, storage: realms, event: RealmEvent);
     impl RealmInternal = crate::logic::realms::RealmState::InternalImpl<ContractState>;
     component!(path: SettlementState, storage: settlements, event: SettlementEvent);
     impl SettlementInternal = SettlementState::InternalImpl<ContractState>;
-    component!(path: VillageState, storage: villages, event: VillageEvent);
-    impl VillageInternal = VillageState::InternalImpl<ContractState>;
     component!(path: UpgradeState, storage: upgrades, event: UpgradeEvent);
     impl UpgradeInternal = UpgradeState::InternalImpl<ContractState>;
     #[storage]
@@ -44,8 +37,6 @@ pub mod SettlementLogic {
         realms: crate::logic::realms::RealmState::Storage,
         #[substorage(v0)]
         settlements: SettlementState::Storage,
-        #[substorage(v0)]
-        villages: VillageState::Storage,
     }
     #[event]
     #[derive(Drop, starknet::Event)]
@@ -55,7 +46,6 @@ pub mod SettlementLogic {
         ReleaseEvent: ReleaseState::Event,
         RealmEvent: crate::logic::realms::RealmState::Event,
         SettlementEvent: SettlementState::Event,
-        VillageEvent: VillageState::Event,
     }
     #[abi(embed_v0)]
     impl TerrainDerivation of crate::settlement::ITerrainDerivation<ContractState> {
@@ -181,70 +171,6 @@ pub mod SettlementLogic {
         }
     }
 
-    #[abi(embed_v0)]
-    impl Villages of crate::village::IVillages<ContractState> {
-        #[cfg(feature: "test_support")]
-        fn village_rules(self: @ContractState, game_id: u32) -> VillageRules {
-            self.villages.rules(game_id)
-        }
-        #[cfg(feature: "test_support")]
-        fn village_pass(self: @ContractState, key: VillagePassKey) -> Option<VillagePass> {
-            self.villages.pass(key)
-        }
-        fn register_village_pass(ref self: ContractState, key: VillagePassKey, owner: ContractAddress) {
-            assert!(key.game_id != 0, "game id zero is reserved");
-            crate::logic::entry::assert_ledger_operator();
-            self.villages.register(key, owner);
-            crate::entity_ids::reserve_homes(key.game_id, owner);
-        }
-        fn settle_village(
-            ref self: ContractState,
-            game_id: u32,
-            actor: ContractAddress,
-            command: SettleVillage,
-            context: crate::commands::ActionContext,
-        ) -> () {
-            let context = crate::commands::execution_context(game_id, context);
-
-            let classes = self.release.classes(game_id);
-            let owner = actor;
-            let game = context.game.unbox();
-            let rules = context.rules.unbox();
-            assert!(game.dev_mode_on || context.timestamp >= game.start_settling_at, "settling not started");
-            assert!(game.end_at == 0 || context.timestamp < game.end_at, "game ended");
-            let dev_entry = game.dev_mode_on && crate::rules::rule_enabled(rules, crate::rules::DEV_VILLAGE_ENTRY);
-            let pass = VillagePassKey { game_id, pass_id: command.pass_id };
-            if !dev_entry {
-                self.villages.require_pass(pass, owner);
-            }
-            let mut raw_root = context.raw_root;
-            let seed = crate::random::game_root(ref raw_root, game_id);
-            let village_rules = self.villages.rules(game_id);
-            let resource = crate::village::select_resource(village_rules.resource_pool, seed);
-            let progress = self.settlements.data.settlements.progress.read(game_id);
-            let coord = ISettlementPoolLibraryDispatcher { class_hash: classes.placement.read() }
-                .claim_village(
-                    game_id,
-                    progress.registered,
-                    seed,
-                    crate::settlement_grid::map_center(context.rules.unbox().map_center_offset),
-                );
-            let village_id = ISettlementCreationLibraryDispatcher { class_hash: classes.structures.read() }
-                .create_settlement(
-                    game_id,
-                    actor,
-                    coord,
-                    SettlementCreation::Village(
-                        VillageCreation { connected_realm: command.connected_realm_entity_id, resource },
-                    ),
-                    crate::commands::action_context(context),
-                );
-            if !dev_entry {
-                self.villages.consume(pass, owner, village_id);
-            }
-            ()
-        }
-    }
     #[abi(embed_v0)]
     impl SettlementViews of crate::settlement::ISettlementViews<ContractState> {
         #[cfg(feature: "test_support")]

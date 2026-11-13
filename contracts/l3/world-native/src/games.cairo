@@ -258,7 +258,7 @@ pub mod Games {
     fn register_village_pass(ref self: ContractState, key: crate::village::VillagePassKey, owner: ContractAddress) {
         let classes = self.release.classes(key.game_id);
         crate::village::IVillagesDispatcherTrait::register_village_pass(
-            crate::village::IVillagesLibraryDispatcher { class_hash: classes.settlement.read() }, key, owner,
+            crate::village::IVillagesLibraryDispatcher { class_hash: classes.season.read() }, key, owner,
         );
     }
     #[external(v0)]
