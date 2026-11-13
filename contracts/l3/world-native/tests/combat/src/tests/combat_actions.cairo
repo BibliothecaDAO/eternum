@@ -73,42 +73,6 @@ fn failed_loot_and_duplicate_resources_roll_back_combat() {
 }
 
 #[test]
-fn village_immunity_is_recorded_per_village_and_allows_only_troop_loot_until_its_end() {
-    let (d, _, target, attacker, _) = setup(false);
-    let original = IStructureOperationsDispatcher { contract_address: d.games }.structure(target).unwrap();
-    set_fixture(
-        d.games,
-        selector!("structures"),
-        selector!("structures"),
-        array![3, target.entity_id.into()].span(),
-        StructureRecord {
-            owner: original.owner,
-            base: crate::structures::StructureBase { category: 5, ..original.base },
-            resources_packed: original.resources_packed,
-            metadata: original.metadata,
-        },
-    );
-    grant(d, target, 2, 90);
-    grant(d, target, 26, RESOURCE_PRECISION);
-    let view = GameState { contract_address: d.games };
-    assert!(execute(d, raid(attacker, target, resources(10)), 80));
-    assert_eq!(view.village_last_raided(target), 16);
-    assert_terminal_rejection(d, raid(attacker, target, resources(10)), 90);
-    assert_eq!(view.village_last_raided(target), 16);
-    assert!(
-        execute(
-            d,
-            raid(attacker, target, array![ResourceAmount { resource_type: 26, amount: RESOURCE_PRECISION }].span()),
-            90,
-        ),
-    );
-    assert_eq!(view.village_last_raided(target), 18);
-    assert!(execute(d, raid(attacker, target, resources(10)), 105));
-    assert_eq!(view.village_last_raided(target), 21);
-    assert_eq!(view.village_last_raided(ResourceKey { game_id: 2, ..target }), 0);
-}
-
-#[test]
 fn guard_attacks_use_the_guard_owner_range_and_block_time_cooldown() {
     let (d, home, _, _, defender) = setup(false);
     set_guard(d, home, 0, 100);

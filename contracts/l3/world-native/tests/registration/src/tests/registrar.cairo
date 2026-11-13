@@ -180,7 +180,7 @@ fn invalid_schedules_modes_and_registration_limits_never_allocate() {
 fn a_late_preset_validation_failure_rolls_back_the_record_and_allows_retry() {
     let d = setup();
     let mut preset = definition(true);
-    preset.economy.banks.lp_fee_denom = 0;
+    preset.structures.upgrade_limits.realm_max = 4;
     let commitment = crate::presets::commitment(preset);
     start_cheat_caller_address(d.games, super::authority());
     let (caller, _) = super::deploy("RollbackFixture", @array![]);
