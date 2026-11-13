@@ -36,6 +36,11 @@ vi.mock("@realms-world/value-ledger", async (importOriginal) => ({
     releaseSchemas: { "1": "0xs" },
   }),
 }));
+const deposits = vi.hoisted(() => vi.fn());
+vi.mock("./deposits", async (original) => ({
+  ...(await original<typeof import("./deposits")>()),
+  relayDeposits: deposits,
+}));
 const finish = vi.hoisted(() => vi.fn());
 vi.mock("./chests", () => ({ DurableChestStore: class {}, finishRequestedChests: finish }));
 it("runs ledger-wide chest work independently of any configured shard", async () => {
@@ -152,6 +157,75 @@ it("records unavailable ledger work while shard ingestion and owned Realm labor 
   expect(tick).toHaveBeenCalledWith("0x1", true);
 });
 
+const settledDeposits = { enabled: true, processed: 0, next: "1", total: "0", pending: 0, more: false, error: null };
+const shardRelay = () => {
+  const data = new Map<string, unknown>();
+  const storage = {
+    get: async (key: string) => data.get(key),
+    put: async (key: string, value: unknown) => {
+      data.set(key, value);
+    },
+    setAlarm: async () => {},
+    list: async ({ prefix, end }: { prefix: string; end?: string }) =>
+      new Map([...data].filter(([key]) => key.startsWith(prefix) && (!end || key < end))),
+    delete: async (key: string) => data.delete(key),
+    transaction: async (run: (tx: unknown) => Promise<unknown>): Promise<unknown> => run(storage),
+  };
+  shard.head.mockResolvedValue(0);
+  shard.page.mockResolvedValue({
+    block: { block_number: 0, block_hash: "0x1", status: "ACCEPTED_ON_L2" },
+    first: { parent_hash: "0x0" },
+    anchors: [{ number: 0, hash: "0x1" }],
+    rows: [],
+    next: null,
+  });
+  return new ValueRelay(
+    { storage } as unknown as DurableObjectState,
+    {
+      ENVIRONMENT: "staging",
+      L2_RPC_URL: "https://ledger.test",
+      SHARD_LEDGER_OPERATOR_PRIVATE_KEY: "0x1",
+      COSIGNER_URL: "https://cosigner.test",
+      COSIGNER_TOKEN: "test-cosigner-token",
+      IDENTITY: {
+        l2ChainId: async () => "0x1",
+        accountForRealmsId: async () => "0x3",
+        linkedWallet: async () => "0x4",
+        holdsRealm: async () => true,
+      },
+    } as never,
+  );
+};
+it("looks for deposits on the hour, and between hours only while one is pending", async () => {
+  deposits.mockResolvedValue(settledDeposits);
+  const relay = shardRelay();
+  await relay.tick("0x1");
+  expect(deposits).toHaveBeenCalledTimes(1);
+  for (let minute = 0; minute < 5; minute++) await relay.tick("0x1");
+  expect(deposits).toHaveBeenCalledTimes(1);
+  await relay.tick("0x1", true);
+  expect(deposits).toHaveBeenCalledTimes(2);
+  deposits.mockResolvedValue({ ...settledDeposits, pending: 1, more: true });
+  await relay.tick("0x1", true);
+  await relay.tick("0x1");
+  await relay.tick("0x1");
+  expect(deposits).toHaveBeenCalledTimes(5);
+  deposits.mockResolvedValue({ ...settledDeposits, error: [{ obligation: "deposit:1", error: "offline" }] });
+  await relay.tick("0x1");
+  deposits.mockResolvedValue(settledDeposits);
+  await relay.tick("0x1");
+  await relay.tick("0x1");
+  expect(deposits).toHaveBeenCalledTimes(7);
+});
+it("delivers a landed deposit at once, and shares one answer inside the throttle", async () => {
+  deposits.mockResolvedValue({ ...settledDeposits, processed: 1 });
+  const relay = shardRelay();
+  await relay.tick("0x1");
+  deposits.mockClear();
+  expect((await relay.deliverDeposits("0x1")).processed).toBe(1);
+  expect((await relay.deliverDeposits("0x1")).processed).toBe(1);
+  expect(deposits).toHaveBeenCalledTimes(1);
+});
 it("asks the ledger side to read once an hour while shards tick every minute", async () => {
   const ledgerTickIfDue = vi.fn();
   const tick = vi.fn();

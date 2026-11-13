@@ -125,3 +125,8 @@ write calls `ledgerWritten` on the relay's ledger actor and on the monitor (`Ros
 minute's tick consumes, so a burst of writes is one read. A lost notice costs at most the hour. A fact that can never
 change again (a closed season, a paid principal, a published or matched pool) is read once and kept (`final-facts.ts`);
 `read-budget.test.ts` fails if a later tick reads it again.
+
+Deposits follow the same rule. The ledger emits no event for a deposit, so the relay finds one by reading
+`deposit_count`; it does that on the hour, while a deposit is pending or failed, and when the player's page reports that
+its payment landed (`POST /api/value/deposits/deliver?chainId=`, same-origin and signed in, one pass per ten seconds per
+shard). A deposit nobody reported waits for the hour.

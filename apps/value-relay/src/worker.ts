@@ -79,6 +79,15 @@ interface RelayEnv extends RelaySettings {
 }
 
 const LEDGER_TICK_DUE = "ledgerTick:due";
+const DELIVERY_THROTTLE_MS = 10_000;
+
+interface ShardObservation {
+  deposits?: { error?: unknown; pending?: number; more?: boolean };
+  [field: string]: unknown;
+}
+/** A shard's deposits need no minute-by-minute look while the last pass left nothing pending and no error. */
+const depositsSettled = (deposits: NonNullable<ShardObservation["deposits"]>) =>
+  !deposits.error && !deposits.pending && !deposits.more;
 
 /** A single transaction stream per official chain, isolated from the shard host. */
 export class ValueRelay extends DurableObject<RelayEnv> {
@@ -87,6 +96,7 @@ export class ValueRelay extends DurableObject<RelayEnv> {
   private readonly ingesting = Semaphore.makeUnsafe(1);
   private readonly store = new DurableRelayStore(this.ctx.storage);
   private readonly chests = new DurableChestStore(this.ctx.storage);
+  private lastDelivery: { at: number; result: Awaited<ReturnType<typeof relayDeposits>> } | null = null;
 
   private ledgerPermit<A, E>(operation: Effect.Effect<A, E>, chains: readonly string[] = []) {
     return this.ledgerSigning.withPermit(
@@ -224,13 +234,11 @@ export class ValueRelay extends DurableObject<RelayEnv> {
                 ),
               ),
             );
-            const deposits = await Effect.runPromise(
-              Effect.result(
-                relay.shardSigning.withPermit(
-                  relayOperation("relay LORDS deposits", async () => relayDeposits(await relay.depositPorts(chain))),
-                ),
-              ),
-            );
+            const lastTick = await relay.ctx.storage.get<ShardObservation>("shardTick");
+            const deposits =
+              lastTick?.deposits && !reconcile && depositsSettled(lastTick.deposits)
+                ? Result.succeed(lastTick.deposits)
+                : await Effect.runPromise(Effect.result(relay.relayDepositsNow(chain)));
             const observation = {
               checked_at: Math.floor(Date.now() / 1000),
               deposits: Result.isSuccess(deposits) ? deposits.success : { error: deposits.failure.operation },
@@ -254,6 +262,25 @@ export class ValueRelay extends DurableObject<RelayEnv> {
     };
     await this.ctx.storage.put("shardTick", observation);
     return observation;
+  }
+  private relayDepositsNow(chainId: string) {
+    return this.shardSigning.withPermit(
+      relayOperation("relay LORDS deposits", async () => relayDeposits(await this.depositPorts(chainId))),
+    );
+  }
+  /**
+   * A player's deposit, delivered now: the page asks once its payment landed, so a deposit is not found by reading the
+   * ledger's count every minute. Asks inside the throttle share the last answer.
+   */
+  async deliverDeposits(chainId: string) {
+    await requireActiveChain(this.env.IDENTITY, chainId);
+    const now = Date.now();
+    if (this.lastDelivery && now - this.lastDelivery.at < DELIVERY_THROTTLE_MS) return this.lastDelivery.result;
+    const result = await Effect.runPromise(this.relayDepositsNow(chainId));
+    this.lastDelivery = { at: now, result };
+    const previous = await this.ctx.storage.get<ShardObservation>("shardTick");
+    if (previous) await this.ctx.storage.put("shardTick", { ...previous, deposits: result });
+    return result;
   }
   private async depositPorts(chainId: string) {
     const shard = await readRegisteredShard(this.env.IDENTITY, chainId);
@@ -861,6 +888,8 @@ export default {
         return Response.json({ error: "deposit_status_unavailable" }, { status: 503 });
       }
     }
+    if (new URL(request.url).pathname === "/api/value/deposits/deliver" && request.method === "POST")
+      return deliverDepositsResponse(request, env);
     if (new URL(request.url).pathname !== "/api/value/health" || request.method !== "GET")
       return new Response(null, { status: 404 });
     const health = await healthOf(env);
@@ -902,6 +931,24 @@ const finishChestResponse = async (request: Request, env: RelayEnv) => {
   } catch {
     console.error("chest_finish_unavailable", { tokenId });
     return Response.json({ error: "chest_finish_unavailable" }, { status: 503 });
+  }
+};
+
+/** POST /api/value/deposits/deliver?chainId=0x…, from a signed-in player's page on our origin once its deposit landed. */
+const deliverDepositsResponse = async (request: Request, env: RelayEnv) => {
+  if (request.headers.get("origin") !== new URL(env.BASE_URL).origin)
+    return Response.json({ error: "invalid_origin" }, { status: 403 });
+  if (!(await env.IDENTITY.authenticate(request.headers.get("cookie") ?? "")))
+    return Response.json({ error: "unauthenticated" }, { status: 401 });
+  const chain = new URL(request.url).searchParams.get("chainId");
+  if (!chain || !/^0x[0-9a-f]+$/i.test(chain)) return Response.json({ error: "invalid_chain" }, { status: 400 });
+  try {
+    return Response.json(await relayOf(env, chain).deliverDeposits(chain), {
+      headers: { "cache-control": "no-store" },
+    });
+  } catch {
+    console.error("deposit_delivery_unavailable");
+    return Response.json({ error: "deposit_delivery_unavailable" }, { status: 503 });
   }
 };
 
