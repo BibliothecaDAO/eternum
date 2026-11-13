@@ -482,6 +482,33 @@ export const SPIRE_WORDS = {
   odds: (percent: number) => `Spire: ${percent}% on the next reveal`,
   commits: (army: string, left: string) => `${army} stays until the day ends (${left})`,
 } as const;
+/** The boon sheet (docs/plans/frontier-season-1.md, Army boons and XP): a point's three boons, or rest. */
+export const BOON_WORDS = {
+  title: "Skill point",
+  choose: "Take one boon for the day, or rest",
+  names: {
+    battle: "Battle",
+    charge: "Charge",
+    guard: "Guard",
+    vigour: "Vigour",
+    plunder: "Plunder",
+    lore: "Lore",
+    camps: "Camps",
+    rifts: "Rifts",
+    shrines: "Shrines",
+  },
+  percent: (percent: number, of: string) => `+${percent}% ${of}`,
+  less: (percent: number, of: string) => `−${percent}% ${of}`,
+  charge: (percent: number) => `${percent}% of the opening hit lands first`,
+  steps: (from: number, to: number) => `${from} → ${to} of 5 steps`,
+  giveBack: (stamina: number) => `+${stamina} stamina for the steps past 5`,
+  take: "Take",
+  rest: "Rest",
+  restGives: (stamina: number) => `+${stamina} stamina now`,
+  waiting: (points: number) => (points === 1 ? "1 more point after this one" : `${points} more points after this one`),
+  boons: "Boons",
+} as const;
+
 /** An army's ring of XP toward its next skill point, for whoever reads the map without seeing it. */
 export const XP_RING = {
   label: (percent: number) => `${XP}: ${percent}% of the way to the next skill point`,

@@ -1424,6 +1424,13 @@ Hovering a site opens its plate: who holds it ("Held by Might") or "Every Aspect
 pays (the Foundation's: "+5 height a tick to the holder's hyperstructure"). The four Aspects' hyperstructures stand
 apart, each a fifth higher for each stage built (the pick eternum/s1-hs-stages).
 
+Army boons (U16, in a lab with fixture facts until the contracts land): `/lab/boons`. A skill point opens one sheet: its
+rank, then three cards, one from each of the army's givers in the same places every time (a Knight's War, Ward, Spoils;
+a Scout's Paths, Ward, Spoils), each with the giver's Order crest and name, the boon, its five steps (held, added by
+this point, open), what it then does ("+50% damage"), and the stamina that comes back for steps past five. A tap takes a
+boon for the day; **Rest** takes 20 stamina a rank now. Further points wait and open on the same sheet, one pick after
+the other. The army's boons for the day stand on its line as chips. Nothing in the game opens it yet.
+
 Deep site card: with an army in the Deep selected, hover a Deep site beside it ("Open the site") and right-click it (a
 phone's tap), or tap the site with no army for its card alone. It names who the site serves, what a tick held pays (the
 Foundation's Glory and height, the Quarry's labor and Essence, the Altar's Glory and bane bar), split by troops, then
