@@ -63,7 +63,7 @@ pub fn launch(address: ContractAddress, name: ByteArray) -> u32 {
 }
 
 #[feature("safe_dispatcher")]
-pub fn assert_all_zero_chest_rules_refuse_registration() {
+pub fn assert_unfunded_cash_rules_refuse_registration() {
     let d = super::registrar::setup();
     start_cheat_caller_address(d.games, super::authority());
     let (preset_id, mut definition) = current_definition("frontier-check");

@@ -13,11 +13,12 @@ fn current_frontier_launch_readers_match_herald_projection() {
 
 #[test]
 #[feature("safe_dispatcher")]
-fn current_frontier_check_launch_starts_unfunded_and_matches_herald_projection() {
-    let (preset_id, _) = current_definition("frontier-check");
+fn current_frontier_check_launch_has_no_cash_rules_and_matches_herald_projection() {
+    let (preset_id, preset) = current_definition("frontier-check");
     assert_eq!(preset_id, 104);
+    assert!(preset.economy.chests.is_none());
     compare_current_launch("frontier-check");
-    assert_all_zero_chest_rules_refuse_registration();
+    assert_unfunded_cash_rules_refuse_registration();
 }
 
 #[test]
