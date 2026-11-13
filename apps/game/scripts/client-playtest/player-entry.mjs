@@ -116,8 +116,11 @@ export async function continueWithoutWallet(browser, owner) {
   const prompt = '[role="dialog"][aria-label="Your wallet"]';
   if (!browser.read(`Boolean(document.querySelector(${JSON.stringify(prompt)}))`)) return false;
   browser.run(["click", `${prompt} button[aria-label="Close"]`]);
-  await waitUntil(owner, () => !browser.read(`Boolean(document.querySelector(${JSON.stringify(prompt)}))`),
-    "the wallet invitation did not close");
+  await waitUntil(
+    owner,
+    () => !browser.read(`Boolean(document.querySelector(${JSON.stringify(prompt)}))`),
+    "the wallet invitation did not close",
+  );
   return true;
 }
 

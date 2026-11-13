@@ -48,7 +48,12 @@ import {
   resolveBrowserExecutable,
   writeIntegratedGpuLauncher,
 } from "./client-playtest/integrated-gpu.mjs";
-import { continuePastTheDaySummary, continueWithoutWallet, enterAsPlayer, signInIfSignedOut } from "./client-playtest/player-entry.mjs";
+import {
+  continuePastTheDaySummary,
+  continueWithoutWallet,
+  enterAsPlayer,
+  signInIfSignedOut,
+} from "./client-playtest/player-entry.mjs";
 import { restorePasskeys } from "./client-playtest/passkeys.mjs";
 import { Cancelled, createRunOwner } from "./client-playtest/run-owner.mjs";
 import { STEP_SETS } from "./client-playtest/steps.mjs";
