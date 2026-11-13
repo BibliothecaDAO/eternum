@@ -47,7 +47,7 @@ pub mod RelicState {
             crate::logic::lords_budget::site_chest(key)
         }
         fn relic_rules(self: @ComponentState<TContractState>, game_id: u32) -> Span<RelicRule> {
-            if crate::logic::game::rules(game_id).day_unit_seconds != 0 {
+            if crate::logic::preset_record::for_game(game_id).rules.day_unit_seconds.read() != 0 {
                 return array![].span();
             }
             let preset = crate::logic::preset_record::for_game(game_id);

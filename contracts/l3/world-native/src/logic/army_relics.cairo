@@ -4,7 +4,7 @@ use crate::resources::ResourceKey;
 use crate::troops::ExplorerKey;
 
 pub fn enabled(game_id: u32) -> bool {
-    crate::logic::game::rules(game_id).day_unit_seconds != 0
+    crate::logic::preset_record::for_game(game_id).rules.day_unit_seconds.read() != 0
         && crate::logic::preset_record::for_game(game_id).rollover_chest_rules.read().is_none()
 }
 
