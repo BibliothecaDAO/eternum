@@ -89,7 +89,7 @@ pub fn validate(rules: RaceRules) {
             !coord.alt && coord.x < crate::rules::DEEP_MAP_SIZE && coord.y < crate::rules::DEEP_MAP_SIZE,
             "hyperstructure outside Deep",
         );
-        for other in 1..aspect {
+        for other in 1_u8..aspect {
             assert!(coord != local_coord(rules, other), "duplicate hyperstructure position");
         }
     }

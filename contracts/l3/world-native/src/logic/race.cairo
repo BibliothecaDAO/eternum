@@ -47,7 +47,7 @@ pub fn aspect_order(game_id: u32) -> Span<u8> {
     for rank in 0_u8..4 {
         for aspect in 1_u8..5 {
             let height = hyperstructure(AspectKey { game_id, aspect }).height;
-            let mut ahead = 0;
+            let mut ahead = 0_u8;
             for other in 1_u8..5 {
                 let other_height = hyperstructure(AspectKey { game_id, aspect: other }).height;
                 if other_height > height || (other_height == height && other < aspect) {
