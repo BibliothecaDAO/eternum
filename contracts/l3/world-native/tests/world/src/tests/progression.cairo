@@ -4,7 +4,7 @@ pub use world_test_support::tests::progression::*;
 fn exploring_at_each_depth_awards_exact_xp_once() {
     for (depth, xp) in array![(0_u8, 2_u32), (1, 3), (2, 4), (3, 5)] {
         let discovery = crate::expeditions::FrontierDiscoveryRules {
-            camp_bps: 10000,
+            camp_bps: 5000,
             rift_bps: 0,
             ruin_bps: 0,
             beasts_bps: 0,
@@ -18,7 +18,8 @@ fn exploring_at_each_depth_awards_exact_xp_once() {
 
         let before = read_progress(d, key);
         let target = exploration_destination(d, key);
-        explore(d, key, 19635, 360);
+        let root = super::registrar::discovery_root(game_id, discovery, 0, None, crate::discovery::Discovery::Camp);
+        explore(d, key, root, 360);
         let after = read_progress(d, key);
         assert_eq!(after, ArmyProgress { xp: before.xp + xp, ..before });
         assert!(map.tile(crate::geometry::tile_key(game_id, target)).is_some());
