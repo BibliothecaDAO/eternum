@@ -89,9 +89,6 @@ pub fn allocate(
         crate::resources::ResourceKey { game_id: key.game_id, entity_id: home }, epoch, allowance,
     );
     write(slot_key, ArmySlot { explorer_id: key.explorer_id, stamina });
-    crate::logic::banes::record_activity(
-        crate::resources::ResourceKey { game_id: key.game_id, entity_id: home }, epoch,
-    );
     StaminaSource::Slot(slot)
 }
 

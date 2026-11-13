@@ -27,7 +27,7 @@ fn production_splits_at_start_and_early_end_and_carries_fractional_output() {
 
 #[test]
 fn stamina_splits_at_start_and_early_end_with_the_client_remainder() {
-    let config = crate::rules::TroopStaminaConfig { stamina_gain_per_tick: 20, ..Default::default() };
+    let config = world_test_support::tests::stamina::rules(20);
     let initial = crate::troops::Stamina { amount: 0, settled_at: 100, remainder: 0 };
     let window = BaneWindow { kind: MIST_TIDE, start: 110, end: 131 };
     let mut once = initial;

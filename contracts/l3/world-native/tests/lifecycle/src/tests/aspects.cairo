@@ -44,7 +44,10 @@ fn settle(d: Deployment, game_id: u32, aspect: Option<u8>) -> bool {
 fn all_four_free_choices_draw_their_orders_and_join_once() {
     let (d, game_id) = setup_aspects(42);
     for aspect in 1_u8..5 {
-        let player = Deployment { actor: (1000 + Into::<u8, felt252>::into(aspect)).try_into().unwrap(), ..d };
+        let (actor, _) = world_test_support::tests::deploy_player(
+            1000 + Into::<u8, felt252>::into(aspect), world_test_support::tests::GUARDIAN,
+        );
+        let player = world_test_support::tests::bind_player(d, actor);
         assert!(settle(player, game_id, Some(aspect)));
         interact_with_state(
             d.games,

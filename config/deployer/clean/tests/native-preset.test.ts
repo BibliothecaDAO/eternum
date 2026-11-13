@@ -22,6 +22,7 @@ import {
   FRONTIER_FIXTURE_PRESET_ID,
   FRONTIER_PLAYGROUND_PRESET_ID,
   FRONTIER_S1_PRESET_ID,
+  FRONTIER_S1_DEV_PRESET_ID,
   nativeGameModeOf,
 } from "../../../source/common/native-preset-modes";
 import { orderLengths, seasonSeconds } from "../../../../packages/core/src/utils/days";
@@ -1178,6 +1179,38 @@ describe("the Season 1 Frontier preset", () => {
   const load = (id: number) => loadNativePresetConfiguration("madara.frontier", id);
   const definition = (id: number) => buildNativePreset(load(id), id);
 
+  test("enables the fixed Deep and its tick rules in both Season 1 presets", () => {
+    for (const id of [FRONTIER_S1_PRESET_ID, FRONTIER_S1_DEV_PRESET_ID]) {
+      const season = definition(id);
+      expect(season.economy.deep.unwrap()).toEqual({
+        foundation: { alt: false, x: 25, y: 35 },
+        quarry: { alt: false, x: 12, y: 20 },
+        altar: { alt: false, x: 38, y: 20 },
+        beast_count: 10_000n * BigInt(RESOURCE_PRECISION),
+        loss_per_tick: 200n * BigInt(RESOURCE_PRECISION),
+        quarry_per_tick: 500n * BigInt(RESOURCE_PRECISION),
+        altar_per_tick: 5,
+        altar_threshold: 1_500,
+      });
+      expect(season.rules.command_mask & BigInt(nativeCommandBits.Battle)).not.toBe(0n);
+      expect(season.rules.tick_config.armies_tick_in_seconds).toBe(120);
+      expect(season.rules.troop_stamina_config).toMatchObject({
+        stamina_initial: 180,
+        stamina_knight_max: 180,
+        stamina_crossbowman_max: 180,
+        stamina_paladin_max: 180,
+        stamina_gain_per_tick: 1,
+        stamina_attack_req: 30,
+        stamina_defense_req: 0,
+      });
+    }
+    for (const id of [FRONTIER_PRESET_ID, FRONTIER_DEVCON_PRESET_ID]) {
+      expect(definition(id).economy.deep.isNone()).toBe(true);
+      expect(definition(id).rules.troop_stamina_config.stamina_initial).toBe(120);
+      expect(definition(id).rules.command_mask & BigInt(nativeCommandBits.Battle)).toBe(0n);
+    }
+  });
+
   test("registers separately and preserves the earlier season's starting stock", () => {
     const season = definition(FRONTIER_S1_PRESET_ID);
     const earlier = definition(FRONTIER_PRESET_ID);
@@ -1219,7 +1252,6 @@ describe("the Season 1 Frontier preset", () => {
       durationSeconds: config.season.durationSeconds,
       devModeOn: false,
       singleRealmMode: false,
-      twoPlayerMode: false,
       useMapOverride: false,
     });
     expect(params.preset_id).toBe(FRONTIER_S1_PRESET_ID);

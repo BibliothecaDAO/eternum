@@ -6,6 +6,13 @@
     "SHRINE_EPIC_BPS": 400,
     "SHRINE_LEGENDARY_BPS": 100,
     "ATTRIBUTE_CAP": 5,
+    "SPIRE_REVEAL_LIMIT": 10,
+    "RELIC_BLADE_BPS": 1000,
+    "RELIC_WARD_BPS": 500,
+    "RELIC_PLUNDER_BPS": 2000,
+    "RELIC_TOME_BPS": 4000,
+    "RELIC_SECONDS_PER_RANK": 1800,
+    "RELIC_TILES_PER_RANK": 6,
     "SKILL_POINT_REFILL_BASE": 10,
     "SKILL_POINT_REFILL_STEP": 10,
     "BATTLE_COMMON_BPS": 1000,
@@ -52,7 +59,21 @@
     "HYPERSTRUCTURE_MULTIPLIERS": 32768,
     "PRODUCTION_START": 131072,
     "WELL_STAMINA_DIVISOR": 2,
-    "FRONTIER_REPORT_GRACE_SECONDS": 3600
+    "FRONTIER_REPORT_GRACE_SECONDS": 3600,
+    "CLEAR_MIST_STAGE": 1,
+    "SECOND_WIND_STAGE": 2,
+    "PALE_MOON_STAGE": 3,
+    "SPOILS_STAGE": 4,
+    "BOON_MAX_STEPS": 5,
+    "PATHS_SITE_STEP_BPS": 2500,
+    "PATHS_SANCTUARY_STEP_BPS": 1500,
+    "DEEP_MAP_SIZE": 50,
+    "DEEP_FOUNDATION": 0,
+    "DEEP_QUARRY": 1,
+    "DEEP_ALTAR": 2,
+    "DEEP_SITE_COUNT": 3,
+    "DEEP_ARRIVAL_Y": 5,
+    "DEEP_GUARD_SLOTS": 4
   },
   "researchConstants": {
     "ROW_FARM": 0,
@@ -82,6 +103,24 @@
     "SUPPLY_YARD": 42,
     "SCOUTS_LODGE": 43,
     "HEARTH": 44
+  },
+  "questConstants": {
+    "HUNT": 0,
+    "CAMPS": 1,
+    "RIFTS": 2,
+    "RELICS": 3,
+    "VETERANS": 4,
+    "FINDS": 5,
+    "REVEALS": 6,
+    "QUEST_COUNT": 7,
+    "STAND": 7,
+    "LIGHTS": 8,
+    "CULL": 9
+  },
+  "baneConstants": {
+    "BLOOD_MOON": 1,
+    "MIST_TIDE": 2,
+    "ASH_FALL": 3
   },
   "tileOccupierConstants": {
     "CHEST_OCCUPIER": 34,
@@ -547,6 +586,35 @@
           },
           {
             "name": "keys",
+            "type": "core::array::Span::<core::felt252>",
+            "kind": "data"
+          }
+        ]
+      },
+      {
+        "name": "RowSet",
+        "prefix": [
+          "0x10245ffef63341a85fc6e76af6af54820573c96e61662cca60c1855a0f20e90",
+          "0x1381128f2a0228389d1eba9d3aa09f8ed24da656b884a49eea09a5ed2e87724"
+        ],
+        "members": [
+          {
+            "name": "version",
+            "type": "core::integer::u8",
+            "kind": "key"
+          },
+          {
+            "name": "model",
+            "type": "core::felt252",
+            "kind": "key"
+          },
+          {
+            "name": "keys",
+            "type": "core::array::Span::<core::felt252>",
+            "kind": "data"
+          },
+          {
+            "name": "values",
             "type": "core::array::Span::<core::felt252>",
             "kind": "data"
           }
@@ -1050,6 +1118,35 @@
       {
         "name": "RowSet",
         "prefix": [
+          "0x2eed4fdb67fc0650061d610829a128039051bf4542d9a96d13f1dbe4958c829",
+          "0x1381128f2a0228389d1eba9d3aa09f8ed24da656b884a49eea09a5ed2e87724"
+        ],
+        "members": [
+          {
+            "name": "version",
+            "type": "core::integer::u8",
+            "kind": "key"
+          },
+          {
+            "name": "model",
+            "type": "core::felt252",
+            "kind": "key"
+          },
+          {
+            "name": "keys",
+            "type": "core::array::Span::<core::felt252>",
+            "kind": "data"
+          },
+          {
+            "name": "values",
+            "type": "core::array::Span::<core::felt252>",
+            "kind": "data"
+          }
+        ]
+      },
+      {
+        "name": "RowSet",
+        "prefix": [
           "0x61d4b9617fb1ccccaeb638efd7a0e8ff6e8828044372a3067db727c753c2da",
           "0x1381128f2a0228389d1eba9d3aa09f8ed24da656b884a49eea09a5ed2e87724"
         ],
@@ -1289,6 +1386,35 @@
           },
           {
             "name": "keys",
+            "type": "core::array::Span::<core::felt252>",
+            "kind": "data"
+          }
+        ]
+      },
+      {
+        "name": "RowSet",
+        "prefix": [
+          "0x108086be942fea9c1dc00998eff8d0b42b2bf14c62afc372d32857f47956cd2",
+          "0x1381128f2a0228389d1eba9d3aa09f8ed24da656b884a49eea09a5ed2e87724"
+        ],
+        "members": [
+          {
+            "name": "version",
+            "type": "core::integer::u8",
+            "kind": "key"
+          },
+          {
+            "name": "model",
+            "type": "core::felt252",
+            "kind": "key"
+          },
+          {
+            "name": "keys",
+            "type": "core::array::Span::<core::felt252>",
+            "kind": "data"
+          },
+          {
+            "name": "values",
             "type": "core::array::Span::<core::felt252>",
             "kind": "data"
           }
@@ -1541,6 +1667,35 @@
         "name": "RowSet",
         "prefix": [
           "0x2ee4180742549f953a9645d6fa6ae6f280bda1bf24df98d232139c12dbe228e",
+          "0x1381128f2a0228389d1eba9d3aa09f8ed24da656b884a49eea09a5ed2e87724"
+        ],
+        "members": [
+          {
+            "name": "version",
+            "type": "core::integer::u8",
+            "kind": "key"
+          },
+          {
+            "name": "model",
+            "type": "core::felt252",
+            "kind": "key"
+          },
+          {
+            "name": "keys",
+            "type": "core::array::Span::<core::felt252>",
+            "kind": "data"
+          },
+          {
+            "name": "values",
+            "type": "core::array::Span::<core::felt252>",
+            "kind": "data"
+          }
+        ]
+      },
+      {
+        "name": "RowSet",
+        "prefix": [
+          "0x1802590aa0d0014b09ee2fa499bc79af325f29b5060b277105bd4c749e5e9ad",
           "0x1381128f2a0228389d1eba9d3aa09f8ed24da656b884a49eea09a5ed2e87724"
         ],
         "members": [
@@ -1853,6 +2008,59 @@
           {
             "name": "timestamp",
             "type": "core::integer::u64",
+            "kind": "data"
+          }
+        ]
+      },
+      {
+        "name": "RowSet",
+        "prefix": [
+          "0x2a921933cc5cea2b53bb8bf4895528b1f1e94153fcf3495af25550d773f7717",
+          "0x1381128f2a0228389d1eba9d3aa09f8ed24da656b884a49eea09a5ed2e87724"
+        ],
+        "members": [
+          {
+            "name": "version",
+            "type": "core::integer::u8",
+            "kind": "key"
+          },
+          {
+            "name": "model",
+            "type": "core::felt252",
+            "kind": "key"
+          },
+          {
+            "name": "keys",
+            "type": "core::array::Span::<core::felt252>",
+            "kind": "data"
+          },
+          {
+            "name": "values",
+            "type": "core::array::Span::<core::felt252>",
+            "kind": "data"
+          }
+        ]
+      },
+      {
+        "name": "RowDeleted",
+        "prefix": [
+          "0x2a921933cc5cea2b53bb8bf4895528b1f1e94153fcf3495af25550d773f7717",
+          "0x34ee03e4825cf92d0335b5828e3389af6c145ecff05fce078c3753d871cc7f5"
+        ],
+        "members": [
+          {
+            "name": "version",
+            "type": "core::integer::u8",
+            "kind": "key"
+          },
+          {
+            "name": "model",
+            "type": "core::felt252",
+            "kind": "key"
+          },
+          {
+            "name": "keys",
+            "type": "core::array::Span::<core::felt252>",
             "kind": "data"
           }
         ]
@@ -3102,6 +3310,287 @@
         },
         "value": "zero",
         "meaning": "No empty player reveals in this expedition yet."
+      }
+    },
+    {
+      "name": "RaceRules",
+      "identity": "0x5261636552756c6573",
+      "scope": "game",
+      "keys": [
+        {
+          "name": "game_id",
+          "type": "core::integer::u32",
+          "feltLength": 1
+        }
+      ],
+      "members": [
+        {
+          "name": "season_days",
+          "type": "core::integer::u64",
+          "id": "0x736561736f6e5f64617973",
+          "feltLength": 1
+        },
+        {
+          "name": "glory_per_tick",
+          "type": "core::integer::u128",
+          "id": "0x676c6f72795f7065725f7469636b",
+          "feltLength": 1
+        },
+        {
+          "name": "height_per_tick",
+          "type": "core::integer::u32",
+          "id": "0x6865696768745f7065725f7469636b",
+          "feltLength": 1
+        },
+        {
+          "name": "stage_height",
+          "type": "core::integer::u32",
+          "id": "0x73746167655f686569676874",
+          "feltLength": 1
+        },
+        {
+          "name": "clear_mist_percent",
+          "type": "core::integer::u16",
+          "id": "0x636c6561725f6d6973745f70657263656e74",
+          "feltLength": 1
+        },
+        {
+          "name": "second_wind_percent",
+          "type": "core::integer::u16",
+          "id": "0x7365636f6e645f77696e645f70657263656e74",
+          "feltLength": 1
+        },
+        {
+          "name": "pale_moon_percent",
+          "type": "core::integer::u16",
+          "id": "0x70616c655f6d6f6f6e5f70657263656e74",
+          "feltLength": 1
+        },
+        {
+          "name": "spoils_percent",
+          "type": "core::integer::u16",
+          "id": "0x73706f696c735f70657263656e74",
+          "feltLength": 1
+        },
+        {
+          "name": "first",
+          "type": "world_native::troops::Coord",
+          "id": "0x6669727374",
+          "feltLength": 3
+        },
+        {
+          "name": "second",
+          "type": "world_native::troops::Coord",
+          "id": "0x7365636f6e64",
+          "feltLength": 3
+        },
+        {
+          "name": "third",
+          "type": "world_native::troops::Coord",
+          "id": "0x7468697264",
+          "feltLength": 3
+        },
+        {
+          "name": "fourth",
+          "type": "world_native::troops::Coord",
+          "id": "0x666f75727468",
+          "feltLength": 3
+        }
+      ],
+      "keyLength": 1,
+      "valueLength": 20
+    },
+    {
+      "name": "RaceMember",
+      "identity": "0x526163654d656d626572",
+      "scope": "game",
+      "keys": [
+        {
+          "name": "game_id",
+          "type": "core::integer::u32",
+          "feltLength": 1
+        },
+        {
+          "name": "entity_id",
+          "type": "core::integer::u64",
+          "feltLength": 1
+        }
+      ],
+      "members": [
+        {
+          "name": "glory",
+          "type": "core::integer::u128",
+          "id": "0x676c6f7279",
+          "feltLength": 1
+        },
+        {
+          "name": "contribution",
+          "type": "core::integer::u128",
+          "id": "0x636f6e747269627574696f6e",
+          "feltLength": 1
+        }
+      ],
+      "keyLength": 2,
+      "valueLength": 2,
+      "absence": {
+        "parent": "Structure",
+        "value": "zero",
+        "meaning": "No Glory or height contribution before this home holds a Deep site.",
+        "parentKeys": {
+          "game_id": "game_id",
+          "entity_id": "entity_id"
+        }
+      }
+    },
+    {
+      "name": "AspectHyperstructure",
+      "identity": "0x4173706563744879706572737472756374757265",
+      "scope": "game",
+      "keys": [
+        {
+          "name": "game_id",
+          "type": "core::integer::u32",
+          "feltLength": 1
+        },
+        {
+          "name": "aspect",
+          "type": "core::integer::u8",
+          "feltLength": 1
+        }
+      ],
+      "members": [
+        {
+          "name": "entity_id",
+          "type": "core::integer::u64",
+          "id": "0x656e746974795f6964",
+          "feltLength": 1
+        },
+        {
+          "name": "height",
+          "type": "core::integer::u32",
+          "id": "0x686569676874",
+          "feltLength": 1
+        }
+      ],
+      "keyLength": 2,
+      "valueLength": 2
+    },
+    {
+      "name": "TriumphDay",
+      "identity": "0x547269756d7068446179",
+      "scope": "game",
+      "keys": [
+        {
+          "name": "game_id",
+          "type": "core::integer::u32",
+          "feltLength": 1
+        },
+        {
+          "name": "aspect",
+          "type": "core::integer::u8",
+          "feltLength": 1
+        },
+        {
+          "name": "stage",
+          "type": "core::integer::u8",
+          "feltLength": 1
+        }
+      ],
+      "members": [
+        {
+          "name": "day",
+          "type": "core::integer::u64",
+          "id": "0x646179",
+          "feltLength": 1
+        }
+      ],
+      "keyLength": 3,
+      "valueLength": 1
+    },
+    {
+      "name": "RaceResult",
+      "identity": "0x52616365526573756c74",
+      "scope": "game",
+      "keys": [
+        {
+          "name": "game_id",
+          "type": "core::integer::u32",
+          "feltLength": 1
+        }
+      ],
+      "members": [
+        {
+          "name": "winner",
+          "type": "core::option::Option::<core::integer::u8>",
+          "id": "0x77696e6e6572",
+          "feltLength": null
+        },
+        {
+          "name": "ended_at",
+          "type": "core::integer::u64",
+          "id": "0x656e6465645f6174",
+          "feltLength": 1
+        },
+        {
+          "name": "scheduled_end_at",
+          "type": "core::integer::u64",
+          "id": "0x7363686564756c65645f656e645f6174",
+          "feltLength": 1
+        }
+      ],
+      "keyLength": 1,
+      "valueLength": null
+    },
+    {
+      "name": "ExpeditionSpire",
+      "identity": "0x45787065646974696f6e5370697265",
+      "scope": "game",
+      "keys": [
+        {
+          "name": "game_id",
+          "type": "core::integer::u32",
+          "feltLength": 1
+        },
+        {
+          "name": "structure_id",
+          "type": "core::integer::u64",
+          "feltLength": 1
+        },
+        {
+          "name": "epoch",
+          "type": "core::integer::u64",
+          "feltLength": 1
+        },
+        {
+          "name": "depth",
+          "type": "core::integer::u8",
+          "feltLength": 1
+        }
+      ],
+      "members": [
+        {
+          "name": "reveals",
+          "type": "core::integer::u8",
+          "id": "0x72657665616c73",
+          "feltLength": 1
+        },
+        {
+          "name": "location",
+          "type": "core::option::Option::<world_native::troops::Coord>",
+          "id": "0x6c6f636174696f6e",
+          "feltLength": null
+        }
+      ],
+      "keyLength": 4,
+      "valueLength": null,
+      "absence": {
+        "parent": "Structure",
+        "parentKeys": {
+          "game_id": "game_id",
+          "entity_id": "structure_id"
+        },
+        "value": "zero",
+        "meaning": "No reveal with Spire lore on this layer of this day's expedition yet."
       }
     },
     {
@@ -4968,6 +5457,352 @@
       }
     },
     {
+      "name": "AspectRules",
+      "identity": "0x41737065637452756c6573",
+      "scope": "game",
+      "keys": [
+        {
+          "name": "game_id",
+          "type": "core::integer::u32",
+          "feltLength": 1
+        }
+      ],
+      "members": [
+        {
+          "name": "orders",
+          "type": "core::array::Span::<core::integer::u8>",
+          "id": "0x6f7264657273",
+          "feltLength": null
+        }
+      ],
+      "keyLength": 1,
+      "valueLength": null,
+      "derivedFrom": "preset"
+    },
+    {
+      "name": "BaneRules",
+      "identity": "0x42616e6552756c6573",
+      "scope": "game",
+      "keys": [
+        {
+          "name": "game_id",
+          "type": "core::integer::u32",
+          "feltLength": 1
+        }
+      ],
+      "members": [
+        {
+          "name": "chance_step",
+          "type": "core::integer::u16",
+          "id": "0x6368616e63655f73746570",
+          "feltLength": 1
+        },
+        {
+          "name": "quorum_percent",
+          "type": "core::integer::u16",
+          "id": "0x71756f72756d5f70657263656e74",
+          "feltLength": 1
+        },
+        {
+          "name": "beast_percent",
+          "type": "core::integer::u16",
+          "id": "0x62656173745f70657263656e74",
+          "feltLength": 1
+        },
+        {
+          "name": "stamina_percent",
+          "type": "core::integer::u16",
+          "id": "0x7374616d696e615f70657263656e74",
+          "feltLength": 1
+        },
+        {
+          "name": "production_percent",
+          "type": "core::integer::u16",
+          "id": "0x70726f64756374696f6e5f70657263656e74",
+          "feltLength": 1
+        },
+        {
+          "name": "quest_counts",
+          "type": "core::array::Span::<core::integer::u128>",
+          "id": "0x71756573745f636f756e7473",
+          "feltLength": null
+        }
+      ],
+      "keyLength": 1,
+      "valueLength": null,
+      "derivedFrom": "preset"
+    },
+    {
+      "name": "BaneProgress",
+      "identity": "0x42616e6550726f6772657373",
+      "scope": "game",
+      "keys": [
+        {
+          "name": "game_id",
+          "type": "core::integer::u32",
+          "feltLength": 1
+        },
+        {
+          "name": "aspect",
+          "type": "core::integer::u8",
+          "feltLength": 1
+        },
+        {
+          "name": "day",
+          "type": "core::integer::u64",
+          "feltLength": 1
+        }
+      ],
+      "members": [
+        {
+          "name": "completed",
+          "type": "core::integer::u32",
+          "id": "0x636f6d706c65746564",
+          "feltLength": 1
+        },
+        {
+          "name": "ended_at",
+          "type": "core::integer::u64",
+          "id": "0x656e6465645f6174",
+          "feltLength": 1
+        }
+      ],
+      "keyLength": 3,
+      "valueLength": 2,
+      "absence": {
+        "parent": "BaneRules",
+        "value": "zero",
+        "meaning": "No activity, completion or team bane has been recorded for this key.",
+        "parentKeys": {
+          "game_id": "game_id"
+        }
+      }
+    },
+    {
+      "name": "FirstTeamBane",
+      "identity": "0x46697273745465616d42616e65",
+      "scope": "game",
+      "keys": [
+        {
+          "name": "game_id",
+          "type": "core::integer::u32",
+          "feltLength": 1
+        }
+      ],
+      "members": [
+        {
+          "name": "day",
+          "type": "core::option::Option::<core::integer::u64>",
+          "id": "0x646179",
+          "feltLength": null
+        }
+      ],
+      "keyLength": 1,
+      "valueLength": null,
+      "absence": {
+        "parent": "BaneRules",
+        "value": "zero",
+        "meaning": "No activity, completion or team bane has been recorded for this key.",
+        "parentKeys": {
+          "game_id": "game_id"
+        }
+      }
+    },
+    {
+      "name": "BaneGrant",
+      "identity": "0x42616e654772616e74",
+      "scope": "game",
+      "keys": [
+        {
+          "name": "game_id",
+          "type": "core::integer::u32",
+          "feltLength": 1
+        },
+        {
+          "name": "home",
+          "type": "core::integer::u64",
+          "feltLength": 1
+        },
+        {
+          "name": "day",
+          "type": "core::integer::u64",
+          "feltLength": 1
+        }
+      ],
+      "members": [
+        {
+          "name": "account",
+          "type": "core::starknet::contract_address::ContractAddress",
+          "id": "0x6163636f756e74",
+          "feltLength": 1
+        },
+        {
+          "name": "amount",
+          "type": "core::integer::u128",
+          "id": "0x616d6f756e74",
+          "feltLength": 1
+        },
+        {
+          "name": "essence",
+          "type": "core::integer::u128",
+          "id": "0x657373656e6365",
+          "feltLength": 1
+        }
+      ],
+      "keyLength": 3,
+      "valueLength": 3
+    },
+    {
+      "name": "QuestRules",
+      "identity": "0x517565737452756c6573",
+      "scope": "game",
+      "keys": [
+        {
+          "name": "game_id",
+          "type": "core::integer::u32",
+          "feltLength": 1
+        }
+      ],
+      "members": [
+        {
+          "name": "base_counts",
+          "type": "core::array::Span::<core::integer::u32>",
+          "id": "0x626173655f636f756e7473",
+          "feltLength": null
+        },
+        {
+          "name": "labor",
+          "type": "core::integer::u128",
+          "id": "0x6c61626f72",
+          "feltLength": 1
+        },
+        {
+          "name": "essence",
+          "type": "core::integer::u128",
+          "id": "0x657373656e6365",
+          "feltLength": 1
+        },
+        {
+          "name": "bonus_percent",
+          "type": "core::integer::u16",
+          "id": "0x626f6e75735f70657263656e74",
+          "feltLength": 1
+        }
+      ],
+      "keyLength": 1,
+      "valueLength": null,
+      "derivedFrom": "preset"
+    },
+    {
+      "name": "QuestProgress",
+      "identity": "0x517565737450726f6772657373",
+      "scope": "game",
+      "keys": [
+        {
+          "name": "game_id",
+          "type": "core::integer::u32",
+          "feltLength": 1
+        },
+        {
+          "name": "home",
+          "type": "core::integer::u64",
+          "feltLength": 1
+        },
+        {
+          "name": "day",
+          "type": "core::integer::u64",
+          "feltLength": 1
+        }
+      ],
+      "members": [
+        {
+          "name": "progress",
+          "type": "core::integer::u128",
+          "id": "0x70726f6772657373",
+          "feltLength": 1
+        },
+        {
+          "name": "completed_level",
+          "type": "core::integer::u8",
+          "id": "0x636f6d706c657465645f6c6576656c",
+          "feltLength": 1
+        }
+      ],
+      "keyLength": 3,
+      "valueLength": 2,
+      "absence": {
+        "parent": "Structure",
+        "parentKeys": {
+          "game_id": "game_id",
+          "entity_id": "home"
+        },
+        "value": "zero",
+        "meaning": "This home has made no daily quest progress on this day."
+      }
+    },
+    {
+      "name": "HomeAspect",
+      "identity": "0x486f6d65417370656374",
+      "scope": "game",
+      "keys": [
+        {
+          "name": "game_id",
+          "type": "core::integer::u32",
+          "feltLength": 1
+        },
+        {
+          "name": "home",
+          "type": "core::integer::u64",
+          "feltLength": 1
+        }
+      ],
+      "members": [
+        {
+          "name": "aspect",
+          "type": "core::integer::u8",
+          "id": "0x617370656374",
+          "feltLength": 1
+        }
+      ],
+      "keyLength": 2,
+      "valueLength": 1
+    },
+    {
+      "name": "AspectMembers",
+      "identity": "0x4173706563744d656d62657273",
+      "scope": "game",
+      "keys": [
+        {
+          "name": "game_id",
+          "type": "core::integer::u32",
+          "feltLength": 1
+        },
+        {
+          "name": "aspect",
+          "type": "core::integer::u8",
+          "feltLength": 1
+        }
+      ],
+      "members": [
+        {
+          "name": "members",
+          "type": "core::integer::u32",
+          "id": "0x6d656d62657273",
+          "feltLength": 1
+        }
+      ],
+      "keyLength": 2,
+      "valueLength": 1,
+      "absence": {
+        "parent": "AspectRules",
+        "value": "zero",
+        "meaning": "No home has joined this Aspect in this game.",
+        "parentKeys": {
+          "game_id": "game_id"
+        }
+      }
+    },
+    {
       "name": "TileOpt",
       "identity": "0x54696c654f7074",
       "scope": "game",
@@ -5068,6 +5903,134 @@
       }
     },
     {
+      "name": "ArmyRelics",
+      "identity": "0x41726d7952656c696373",
+      "scope": "game",
+      "keys": [
+        {
+          "name": "game_id",
+          "type": "core::integer::u32",
+          "feltLength": 1
+        },
+        {
+          "name": "explorer_id",
+          "type": "core::integer::u64",
+          "feltLength": 1
+        }
+      ],
+      "members": [
+        {
+          "name": "first",
+          "type": "core::option::Option::<world_native::army_relics::ArmyRelic>",
+          "id": "0x6669727374",
+          "feltLength": null
+        },
+        {
+          "name": "second",
+          "type": "core::option::Option::<world_native::army_relics::ArmyRelic>",
+          "id": "0x7365636f6e64",
+          "feltLength": null
+        },
+        {
+          "name": "third",
+          "type": "core::option::Option::<world_native::army_relics::ArmyRelic>",
+          "id": "0x7468697264",
+          "feltLength": null
+        }
+      ],
+      "keyLength": 2,
+      "valueLength": null,
+      "absence": {
+        "parent": "ExplorerTroops",
+        "value": "zero",
+        "meaning": "No carried relics or running relic of this kind while the army exists.",
+        "parentKeys": {
+          "game_id": "game_id",
+          "explorer_id": "explorer_id"
+        }
+      }
+    },
+    {
+      "name": "ArmyRelicEffect",
+      "identity": "0x41726d7952656c6963456666656374",
+      "scope": "game",
+      "keys": [
+        {
+          "name": "game_id",
+          "type": "core::integer::u32",
+          "feltLength": 1
+        },
+        {
+          "name": "explorer_id",
+          "type": "core::integer::u64",
+          "feltLength": 1
+        },
+        {
+          "name": "kind",
+          "type": "world_native::army_relics::RelicKind",
+          "feltLength": 1
+        }
+      ],
+      "members": [
+        {
+          "name": "rank",
+          "type": "core::integer::u8",
+          "id": "0x72616e6b",
+          "feltLength": 1
+        },
+        {
+          "name": "expires_at",
+          "type": "core::integer::u64",
+          "id": "0x657870697265735f6174",
+          "feltLength": 1
+        }
+      ],
+      "keyLength": 3,
+      "valueLength": 2,
+      "absence": {
+        "parent": "ExplorerTroops",
+        "value": "zero",
+        "meaning": "No carried relics or running relic of this kind while the army exists.",
+        "parentKeys": {
+          "game_id": "game_id",
+          "explorer_id": "explorer_id"
+        }
+      }
+    },
+    {
+      "name": "RuinRelic",
+      "identity": "0x5275696e52656c6963",
+      "scope": "game",
+      "keys": [
+        {
+          "name": "game_id",
+          "type": "core::integer::u32",
+          "feltLength": 1
+        },
+        {
+          "name": "entity_id",
+          "type": "core::integer::u64",
+          "feltLength": 1
+        }
+      ],
+      "members": [
+        {
+          "name": "kind",
+          "type": "world_native::army_relics::RelicKind",
+          "id": "0x6b696e64",
+          "feltLength": 1
+        },
+        {
+          "name": "rank",
+          "type": "core::integer::u8",
+          "id": "0x72616e6b",
+          "feltLength": 1
+        }
+      ],
+      "keyLength": 2,
+      "valueLength": 2
+    },
+    {
       "name": "ArmyProgress",
       "identity": "0x41726d7950726f6772657373",
       "scope": "game",
@@ -5153,6 +6116,310 @@
       ],
       "keyLength": 2,
       "valueLength": 11
+    },
+    {
+      "name": "AspectActivity",
+      "identity": "0x4173706563744163746976697479",
+      "scope": "game",
+      "keys": [
+        {
+          "name": "game_id",
+          "type": "core::integer::u32",
+          "feltLength": 1
+        },
+        {
+          "name": "aspect",
+          "type": "core::integer::u8",
+          "feltLength": 1
+        },
+        {
+          "name": "day",
+          "type": "core::integer::u64",
+          "feltLength": 1
+        }
+      ],
+      "members": [
+        {
+          "name": "active",
+          "type": "core::integer::u32",
+          "id": "0x616374697665",
+          "feltLength": 1
+        }
+      ],
+      "keyLength": 3,
+      "valueLength": 1,
+      "absence": {
+        "parent": "GameRegistry",
+        "value": "zero",
+        "meaning": "No home in this Aspect allocated an army on this day.",
+        "parentKeys": {
+          "game_id": "game_id"
+        }
+      }
+    },
+    {
+      "name": "AltarBar",
+      "identity": "0x416c746172426172",
+      "scope": "game",
+      "keys": [
+        {
+          "name": "game_id",
+          "type": "core::integer::u32",
+          "feltLength": 1
+        },
+        {
+          "name": "aspect",
+          "type": "core::integer::u8",
+          "feltLength": 1
+        }
+      ],
+      "members": [
+        {
+          "name": "charge",
+          "type": "core::integer::u32",
+          "id": "0x636861726765",
+          "feltLength": 1
+        }
+      ],
+      "keyLength": 2,
+      "valueLength": 1,
+      "absence": {
+        "parent": "DeepRules",
+        "value": "zero",
+        "meaning": "This Aspect has not held the Altar yet.",
+        "parentKeys": {
+          "game_id": "game_id"
+        }
+      }
+    },
+    {
+      "name": "TeamBane",
+      "identity": "0x5465616d42616e65",
+      "scope": "game",
+      "keys": [
+        {
+          "name": "game_id",
+          "type": "core::integer::u32",
+          "feltLength": 1
+        },
+        {
+          "name": "aspect",
+          "type": "core::integer::u8",
+          "feltLength": 1
+        },
+        {
+          "name": "day",
+          "type": "core::integer::u64",
+          "feltLength": 1
+        }
+      ],
+      "members": [
+        {
+          "name": "source",
+          "type": "core::integer::u8",
+          "id": "0x736f75726365",
+          "feltLength": 1
+        },
+        {
+          "name": "issued_day",
+          "type": "core::integer::u64",
+          "id": "0x6973737565645f646179",
+          "feltLength": 1
+        },
+        {
+          "name": "quest",
+          "type": "core::integer::u8",
+          "id": "0x7175657374",
+          "feltLength": 1
+        }
+      ],
+      "keyLength": 3,
+      "valueLength": 3
+    },
+    {
+      "name": "DeepArmy",
+      "identity": "0x4465657041726d79",
+      "scope": "game",
+      "keys": [
+        {
+          "name": "game_id",
+          "type": "core::integer::u32",
+          "feltLength": 1
+        },
+        {
+          "name": "explorer_id",
+          "type": "core::integer::u64",
+          "feltLength": 1
+        }
+      ],
+      "members": [
+        {
+          "name": "last_tick",
+          "type": "core::integer::u64",
+          "id": "0x6c6173745f7469636b",
+          "feltLength": 1
+        }
+      ],
+      "keyLength": 2,
+      "valueLength": 1
+    },
+    {
+      "name": "DeepGuard",
+      "identity": "0x446565704775617264",
+      "scope": "game",
+      "keys": [
+        {
+          "name": "game_id",
+          "type": "core::integer::u32",
+          "feltLength": 1
+        },
+        {
+          "name": "explorer_id",
+          "type": "core::integer::u64",
+          "feltLength": 1
+        }
+      ],
+      "members": [
+        {
+          "name": "site_id",
+          "type": "core::integer::u64",
+          "id": "0x736974655f6964",
+          "feltLength": 1
+        },
+        {
+          "name": "slot",
+          "type": "core::integer::u8",
+          "id": "0x736c6f74",
+          "feltLength": 1
+        }
+      ],
+      "keyLength": 2,
+      "valueLength": 2
+    },
+    {
+      "name": "DeepSite",
+      "identity": "0x4465657053697465",
+      "scope": "game",
+      "keys": [
+        {
+          "name": "game_id",
+          "type": "core::integer::u32",
+          "feltLength": 1
+        },
+        {
+          "name": "entity_id",
+          "type": "core::integer::u64",
+          "feltLength": 1
+        }
+      ],
+      "members": [
+        {
+          "name": "kind",
+          "type": "core::integer::u8",
+          "id": "0x6b696e64",
+          "feltLength": 1
+        },
+        {
+          "name": "day",
+          "type": "core::integer::u64",
+          "id": "0x646179",
+          "feltLength": 1
+        }
+      ],
+      "keyLength": 2,
+      "valueLength": 2
+    },
+    {
+      "name": "DeepRules",
+      "identity": "0x4465657052756c6573",
+      "scope": "game",
+      "keys": [
+        {
+          "name": "game_id",
+          "type": "core::integer::u32",
+          "feltLength": 1
+        }
+      ],
+      "members": [
+        {
+          "name": "foundation",
+          "type": "world_native::troops::Coord",
+          "id": "0x666f756e646174696f6e",
+          "feltLength": 3
+        },
+        {
+          "name": "quarry",
+          "type": "world_native::troops::Coord",
+          "id": "0x717561727279",
+          "feltLength": 3
+        },
+        {
+          "name": "altar",
+          "type": "world_native::troops::Coord",
+          "id": "0x616c746172",
+          "feltLength": 3
+        },
+        {
+          "name": "beast_count",
+          "type": "core::integer::u128",
+          "id": "0x62656173745f636f756e74",
+          "feltLength": 1
+        },
+        {
+          "name": "loss_per_tick",
+          "type": "core::integer::u128",
+          "id": "0x6c6f73735f7065725f7469636b",
+          "feltLength": 1
+        },
+        {
+          "name": "quarry_per_tick",
+          "type": "core::integer::u128",
+          "id": "0x7175617272795f7065725f7469636b",
+          "feltLength": 1
+        },
+        {
+          "name": "altar_per_tick",
+          "type": "core::integer::u32",
+          "id": "0x616c7461725f7065725f7469636b",
+          "feltLength": 1
+        },
+        {
+          "name": "altar_threshold",
+          "type": "core::integer::u32",
+          "id": "0x616c7461725f7468726573686f6c64",
+          "feltLength": 1
+        }
+      ],
+      "keyLength": 1,
+      "valueLength": 14,
+      "derivedFrom": "preset"
+    },
+    {
+      "name": "ArmyDay",
+      "identity": "0x41726d79446179",
+      "scope": "game",
+      "keys": [
+        {
+          "name": "game_id",
+          "type": "core::integer::u32",
+          "feltLength": 1
+        },
+        {
+          "name": "explorer_id",
+          "type": "core::integer::u64",
+          "feltLength": 1
+        }
+      ],
+      "members": [
+        {
+          "name": "day",
+          "type": "core::integer::u64",
+          "id": "0x646179",
+          "feltLength": 1
+        }
+      ],
+      "keyLength": 2,
+      "valueLength": 1
     },
     {
       "name": "ArmySlot",
@@ -5480,6 +6747,47 @@
           "rate": "production_rate",
           "outputRemaining": "output_amount_left",
           "settledAt": "last_settled_at"
+        }
+      }
+    },
+    {
+      "name": "ProductionCarry",
+      "identity": "0x50726f64756374696f6e4361727279",
+      "scope": "game",
+      "keys": [
+        {
+          "name": "game_id",
+          "type": "core::integer::u32",
+          "feltLength": 1
+        },
+        {
+          "name": "entity_id",
+          "type": "core::integer::u64",
+          "feltLength": 1
+        },
+        {
+          "name": "resource_type",
+          "type": "core::integer::u8",
+          "feltLength": 1
+        }
+      ],
+      "members": [
+        {
+          "name": "remainder",
+          "type": "core::integer::u8",
+          "id": "0x72656d61696e646572",
+          "feltLength": 1
+        }
+      ],
+      "keyLength": 3,
+      "valueLength": 1,
+      "absence": {
+        "parent": "ResourceWeight",
+        "value": "zero",
+        "meaning": "This producer has no fractional output carried forward.",
+        "parentKeys": {
+          "game_id": "game_id",
+          "entity_id": "entity_id"
         }
       }
     },
@@ -7345,6 +8653,16 @@
         }
       ]
     },
+    "core::array::Span::<world_native::deep::DeepShare>": {
+      "type": "struct",
+      "name": "core::array::Span::<world_native::deep::DeepShare>",
+      "members": [
+        {
+          "name": "snapshot",
+          "type": "@core::array::Array::<world_native::deep::DeepShare>"
+        }
+      ]
+    },
     "core::array::Span::<world_native::expeditions::DepthRules>": {
       "type": "struct",
       "name": "core::array::Span::<world_native::expeditions::DepthRules>",
@@ -7661,6 +8979,48 @@
         }
       ]
     },
+    "core::option::Option::<world_native::army_relics::ArmyRelic>": {
+      "type": "enum",
+      "name": "core::option::Option::<world_native::army_relics::ArmyRelic>",
+      "variants": [
+        {
+          "name": "Some",
+          "type": "world_native::army_relics::ArmyRelic"
+        },
+        {
+          "name": "None",
+          "type": "()"
+        }
+      ]
+    },
+    "core::option::Option::<world_native::army_relics::ArmyRelicEffect>": {
+      "type": "enum",
+      "name": "core::option::Option::<world_native::army_relics::ArmyRelicEffect>",
+      "variants": [
+        {
+          "name": "Some",
+          "type": "world_native::army_relics::ArmyRelicEffect"
+        },
+        {
+          "name": "None",
+          "type": "()"
+        }
+      ]
+    },
+    "core::option::Option::<world_native::banes::BaneRules>": {
+      "type": "enum",
+      "name": "core::option::Option::<world_native::banes::BaneRules>",
+      "variants": [
+        {
+          "name": "Some",
+          "type": "world_native::banes::BaneRules"
+        },
+        {
+          "name": "None",
+          "type": "()"
+        }
+      ]
+    },
     "core::option::Option::<world_native::buildings::BoardRules>": {
       "type": "enum",
       "name": "core::option::Option::<world_native::buildings::BoardRules>",
@@ -7668,6 +9028,20 @@
         {
           "name": "Some",
           "type": "world_native::buildings::BoardRules"
+        },
+        {
+          "name": "None",
+          "type": "()"
+        }
+      ]
+    },
+    "core::option::Option::<world_native::deep::DeepRules>": {
+      "type": "enum",
+      "name": "core::option::Option::<world_native::deep::DeepRules>",
+      "variants": [
+        {
+          "name": "Some",
+          "type": "world_native::deep::DeepRules"
         },
         {
           "name": "None",
@@ -7885,6 +9259,48 @@
         }
       ]
     },
+    "core::option::Option::<world_native::quests::QuestRules>": {
+      "type": "enum",
+      "name": "core::option::Option::<world_native::quests::QuestRules>",
+      "variants": [
+        {
+          "name": "Some",
+          "type": "world_native::quests::QuestRules"
+        },
+        {
+          "name": "None",
+          "type": "()"
+        }
+      ]
+    },
+    "core::option::Option::<world_native::race::RaceResult>": {
+      "type": "enum",
+      "name": "core::option::Option::<world_native::race::RaceResult>",
+      "variants": [
+        {
+          "name": "Some",
+          "type": "world_native::race::RaceResult"
+        },
+        {
+          "name": "None",
+          "type": "()"
+        }
+      ]
+    },
+    "core::option::Option::<world_native::race::RaceRules>": {
+      "type": "enum",
+      "name": "core::option::Option::<world_native::race::RaceRules>",
+      "variants": [
+        {
+          "name": "Some",
+          "type": "world_native::race::RaceRules"
+        },
+        {
+          "name": "None",
+          "type": "()"
+        }
+      ]
+    },
     "core::option::Option::<world_native::relics::ChestRules>": {
       "type": "enum",
       "name": "core::option::Option::<world_native::relics::ChestRules>",
@@ -7990,6 +9406,20 @@
         {
           "name": "Some",
           "type": "world_native::settlement::EntryEntitlement"
+        },
+        {
+          "name": "None",
+          "type": "()"
+        }
+      ]
+    },
+    "core::option::Option::<world_native::spires::ExpeditionSpire>": {
+      "type": "enum",
+      "name": "core::option::Option::<world_native::spires::ExpeditionSpire>",
+      "variants": [
+        {
+          "name": "Some",
+          "type": "world_native::spires::ExpeditionSpire"
         },
         {
           "name": "None",
@@ -8155,6 +9585,110 @@
         }
       ]
     },
+    "world_native::army_relics::ArmyRelic": {
+      "type": "struct",
+      "name": "world_native::army_relics::ArmyRelic",
+      "members": [
+        {
+          "name": "kind",
+          "type": "world_native::army_relics::RelicKind"
+        },
+        {
+          "name": "rank",
+          "type": "core::integer::u8"
+        }
+      ]
+    },
+    "world_native::army_relics::ArmyRelicEffect": {
+      "type": "struct",
+      "name": "world_native::army_relics::ArmyRelicEffect",
+      "members": [
+        {
+          "name": "rank",
+          "type": "core::integer::u8"
+        },
+        {
+          "name": "expires_at",
+          "type": "core::integer::u64"
+        }
+      ]
+    },
+    "world_native::army_relics::ArmyRelicEffectKey": {
+      "type": "struct",
+      "name": "world_native::army_relics::ArmyRelicEffectKey",
+      "members": [
+        {
+          "name": "game_id",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "explorer_id",
+          "type": "core::integer::u64"
+        },
+        {
+          "name": "kind",
+          "type": "world_native::army_relics::RelicKind"
+        }
+      ]
+    },
+    "world_native::army_relics::ArmyRelics": {
+      "type": "struct",
+      "name": "world_native::army_relics::ArmyRelics",
+      "members": [
+        {
+          "name": "first",
+          "type": "core::option::Option::<world_native::army_relics::ArmyRelic>"
+        },
+        {
+          "name": "second",
+          "type": "core::option::Option::<world_native::army_relics::ArmyRelic>"
+        },
+        {
+          "name": "third",
+          "type": "core::option::Option::<world_native::army_relics::ArmyRelic>"
+        }
+      ]
+    },
+    "world_native::army_relics::RelicKind": {
+      "type": "enum",
+      "name": "world_native::army_relics::RelicKind",
+      "variants": [
+        {
+          "name": "Blade",
+          "type": "()"
+        },
+        {
+          "name": "Ward",
+          "type": "()"
+        },
+        {
+          "name": "Plunder",
+          "type": "()"
+        },
+        {
+          "name": "FarEye",
+          "type": "()"
+        },
+        {
+          "name": "Tome",
+          "type": "()"
+        }
+      ]
+    },
+    "world_native::army_relics::RuinReward": {
+      "type": "enum",
+      "name": "world_native::army_relics::RuinReward",
+      "variants": [
+        {
+          "name": "Chest",
+          "type": "world_native::relics::SiteChest"
+        },
+        {
+          "name": "Relic",
+          "type": "world_native::army_relics::ArmyRelic"
+        }
+      ]
+    },
     "world_native::arrivals::Arrival": {
       "type": "struct",
       "name": "world_native::arrivals::Arrival",
@@ -8206,6 +9740,36 @@
         {
           "name": "resource_count",
           "type": "core::integer::u8"
+        }
+      ]
+    },
+    "world_native::banes::BaneRules": {
+      "type": "struct",
+      "name": "world_native::banes::BaneRules",
+      "members": [
+        {
+          "name": "chance_step",
+          "type": "core::integer::u16"
+        },
+        {
+          "name": "quorum_percent",
+          "type": "core::integer::u16"
+        },
+        {
+          "name": "beast_percent",
+          "type": "core::integer::u16"
+        },
+        {
+          "name": "stamina_percent",
+          "type": "core::integer::u16"
+        },
+        {
+          "name": "production_percent",
+          "type": "core::integer::u16"
+        },
+        {
+          "name": "quest_counts",
+          "type": "core::array::Span::<core::integer::u128>"
         }
       ]
     },
@@ -8858,6 +10422,10 @@
         {
           "name": "defender_id",
           "type": "core::integer::u64"
+        },
+        {
+          "name": "relic_slot",
+          "type": "core::option::Option::<core::integer::u8>"
         }
       ]
     },
@@ -9170,6 +10738,10 @@
         {
           "name": "WithdrawLords",
           "type": "world_native::relics::WithdrawLords"
+        },
+        {
+          "name": "ClaimDailyQuest",
+          "type": "world_native::quests::ClaimDailyQuest"
         }
       ]
     },
@@ -9292,6 +10864,142 @@
         {
           "name": "spire_direction",
           "type": "core::integer::u8"
+        }
+      ]
+    },
+    "world_native::deep::AltarBar": {
+      "type": "struct",
+      "name": "world_native::deep::AltarBar",
+      "members": [
+        {
+          "name": "charge",
+          "type": "core::integer::u32"
+        }
+      ]
+    },
+    "world_native::deep::DeepArmy": {
+      "type": "struct",
+      "name": "world_native::deep::DeepArmy",
+      "members": [
+        {
+          "name": "last_tick",
+          "type": "core::integer::u64"
+        }
+      ]
+    },
+    "world_native::deep::DeepGuard": {
+      "type": "struct",
+      "name": "world_native::deep::DeepGuard",
+      "members": [
+        {
+          "name": "site_id",
+          "type": "core::integer::u64"
+        },
+        {
+          "name": "slot",
+          "type": "core::integer::u8"
+        }
+      ]
+    },
+    "world_native::deep::DeepRules": {
+      "type": "struct",
+      "name": "world_native::deep::DeepRules",
+      "members": [
+        {
+          "name": "foundation",
+          "type": "world_native::troops::Coord"
+        },
+        {
+          "name": "quarry",
+          "type": "world_native::troops::Coord"
+        },
+        {
+          "name": "altar",
+          "type": "world_native::troops::Coord"
+        },
+        {
+          "name": "beast_count",
+          "type": "core::integer::u128"
+        },
+        {
+          "name": "loss_per_tick",
+          "type": "core::integer::u128"
+        },
+        {
+          "name": "quarry_per_tick",
+          "type": "core::integer::u128"
+        },
+        {
+          "name": "altar_per_tick",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "altar_threshold",
+          "type": "core::integer::u32"
+        }
+      ]
+    },
+    "world_native::deep::DeepShare": {
+      "type": "struct",
+      "name": "world_native::deep::DeepShare",
+      "members": [
+        {
+          "name": "home",
+          "type": "core::integer::u64"
+        },
+        {
+          "name": "troops",
+          "type": "core::integer::u128"
+        }
+      ]
+    },
+    "world_native::deep::DeepSite": {
+      "type": "struct",
+      "name": "world_native::deep::DeepSite",
+      "members": [
+        {
+          "name": "kind",
+          "type": "core::integer::u8"
+        },
+        {
+          "name": "day",
+          "type": "core::integer::u64"
+        }
+      ]
+    },
+    "world_native::deep::TeamBane": {
+      "type": "struct",
+      "name": "world_native::deep::TeamBane",
+      "members": [
+        {
+          "name": "source",
+          "type": "core::integer::u8"
+        },
+        {
+          "name": "issued_day",
+          "type": "core::integer::u64"
+        },
+        {
+          "name": "quest",
+          "type": "core::integer::u8"
+        }
+      ]
+    },
+    "world_native::deep::TeamBaneKey": {
+      "type": "struct",
+      "name": "world_native::deep::TeamBaneKey",
+      "members": [
+        {
+          "name": "game_id",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "aspect",
+          "type": "core::integer::u8"
+        },
+        {
+          "name": "day",
+          "type": "core::integer::u64"
         }
       ]
     },
@@ -9431,7 +11139,7 @@
         },
         {
           "name": "Ruin",
-          "type": "world_native::relics::SiteChest"
+          "type": "world_native::army_relics::RuinReward"
         },
         {
           "name": "Beasts",
@@ -11182,6 +12890,22 @@
       "name": "world_native::presets::EconomyPreset",
       "members": [
         {
+          "name": "quests",
+          "type": "core::option::Option::<world_native::quests::QuestRules>"
+        },
+        {
+          "name": "banes",
+          "type": "core::option::Option::<world_native::banes::BaneRules>"
+        },
+        {
+          "name": "race",
+          "type": "core::option::Option::<world_native::race::RaceRules>"
+        },
+        {
+          "name": "deep",
+          "type": "core::option::Option::<world_native::deep::DeepRules>"
+        },
+        {
           "name": "labor",
           "type": "core::option::Option::<world_native::entry::LaborRules>"
         },
@@ -11283,6 +13007,14 @@
       "type": "struct",
       "name": "world_native::presets::SettlementPreset",
       "members": [
+        {
+          "name": "order_aspects",
+          "type": "core::array::Span::<core::integer::u8>"
+        },
+        {
+          "name": "starting_armies",
+          "type": "core::integer::u8"
+        },
         {
           "name": "mode",
           "type": "world_native::settlement::SettlementMode"
@@ -11689,6 +13421,188 @@
         }
       ]
     },
+    "world_native::quests::ClaimDailyQuest": {
+      "type": "struct",
+      "name": "world_native::quests::ClaimDailyQuest",
+      "members": [
+        {
+          "name": "home",
+          "type": "core::integer::u64"
+        },
+        {
+          "name": "day",
+          "type": "core::integer::u64"
+        }
+      ]
+    },
+    "world_native::quests::QuestProgress": {
+      "type": "struct",
+      "name": "world_native::quests::QuestProgress",
+      "members": [
+        {
+          "name": "progress",
+          "type": "core::integer::u128"
+        },
+        {
+          "name": "completed_level",
+          "type": "core::integer::u8"
+        }
+      ]
+    },
+    "world_native::quests::QuestRules": {
+      "type": "struct",
+      "name": "world_native::quests::QuestRules",
+      "members": [
+        {
+          "name": "base_counts",
+          "type": "core::array::Span::<core::integer::u32>"
+        },
+        {
+          "name": "labor",
+          "type": "core::integer::u128"
+        },
+        {
+          "name": "essence",
+          "type": "core::integer::u128"
+        },
+        {
+          "name": "bonus_percent",
+          "type": "core::integer::u16"
+        }
+      ]
+    },
+    "world_native::race::AspectHyperstructure": {
+      "type": "struct",
+      "name": "world_native::race::AspectHyperstructure",
+      "members": [
+        {
+          "name": "entity_id",
+          "type": "core::integer::u64"
+        },
+        {
+          "name": "height",
+          "type": "core::integer::u32"
+        }
+      ]
+    },
+    "world_native::race::AspectKey": {
+      "type": "struct",
+      "name": "world_native::race::AspectKey",
+      "members": [
+        {
+          "name": "game_id",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "aspect",
+          "type": "core::integer::u8"
+        }
+      ]
+    },
+    "world_native::race::RaceMember": {
+      "type": "struct",
+      "name": "world_native::race::RaceMember",
+      "members": [
+        {
+          "name": "glory",
+          "type": "core::integer::u128"
+        },
+        {
+          "name": "contribution",
+          "type": "core::integer::u128"
+        }
+      ]
+    },
+    "world_native::race::RaceResult": {
+      "type": "struct",
+      "name": "world_native::race::RaceResult",
+      "members": [
+        {
+          "name": "winner",
+          "type": "core::option::Option::<core::integer::u8>"
+        },
+        {
+          "name": "ended_at",
+          "type": "core::integer::u64"
+        },
+        {
+          "name": "scheduled_end_at",
+          "type": "core::integer::u64"
+        }
+      ]
+    },
+    "world_native::race::RaceRules": {
+      "type": "struct",
+      "name": "world_native::race::RaceRules",
+      "members": [
+        {
+          "name": "season_days",
+          "type": "core::integer::u64"
+        },
+        {
+          "name": "glory_per_tick",
+          "type": "core::integer::u128"
+        },
+        {
+          "name": "height_per_tick",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "stage_height",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "clear_mist_percent",
+          "type": "core::integer::u16"
+        },
+        {
+          "name": "second_wind_percent",
+          "type": "core::integer::u16"
+        },
+        {
+          "name": "pale_moon_percent",
+          "type": "core::integer::u16"
+        },
+        {
+          "name": "spoils_percent",
+          "type": "core::integer::u16"
+        },
+        {
+          "name": "first",
+          "type": "world_native::troops::Coord"
+        },
+        {
+          "name": "second",
+          "type": "world_native::troops::Coord"
+        },
+        {
+          "name": "third",
+          "type": "world_native::troops::Coord"
+        },
+        {
+          "name": "fourth",
+          "type": "world_native::troops::Coord"
+        }
+      ]
+    },
+    "world_native::race::TriumphKey": {
+      "type": "struct",
+      "name": "world_native::race::TriumphKey",
+      "members": [
+        {
+          "name": "game_id",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "aspect",
+          "type": "core::integer::u8"
+        },
+        {
+          "name": "stage",
+          "type": "core::integer::u8"
+        }
+      ]
+    },
     "world_native::realms::RealmCatalogue": {
       "type": "struct",
       "name": "world_native::realms::RealmCatalogue",
@@ -11728,6 +13642,10 @@
         {
           "name": "selected_realm",
           "type": "core::option::Option::<core::integer::u32>"
+        },
+        {
+          "name": "aspect",
+          "type": "core::option::Option::<core::integer::u8>"
         }
       ]
     },
@@ -12002,6 +13920,10 @@
         {
           "name": "StructureGuard",
           "type": "()"
+        },
+        {
+          "name": "ArmySlot",
+          "type": "core::integer::u8"
         }
       ]
     },
@@ -12286,6 +14208,10 @@
         {
           "name": "last_settled_at",
           "type": "core::integer::u32"
+        },
+        {
+          "name": "remainder",
+          "type": "core::integer::u8"
         }
       ]
     },
@@ -13157,6 +15083,42 @@
         },
         {
           "name": "resource",
+          "type": "core::integer::u8"
+        }
+      ]
+    },
+    "world_native::spires::ExpeditionSpire": {
+      "type": "struct",
+      "name": "world_native::spires::ExpeditionSpire",
+      "members": [
+        {
+          "name": "reveals",
+          "type": "core::integer::u8"
+        },
+        {
+          "name": "location",
+          "type": "core::option::Option::<world_native::troops::Coord>"
+        }
+      ]
+    },
+    "world_native::spires::ExpeditionSpireKey": {
+      "type": "struct",
+      "name": "world_native::spires::ExpeditionSpireKey",
+      "members": [
+        {
+          "name": "game_id",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "structure_id",
+          "type": "core::integer::u64"
+        },
+        {
+          "name": "epoch",
+          "type": "core::integer::u64"
+        },
+        {
+          "name": "depth",
           "type": "core::integer::u8"
         }
       ]
@@ -14068,5 +16030,5 @@
       ]
     }
   },
-  "identity": "3493d53c3001e75f9dfd42df0786e4b9f617814715c05e7a363078fdfab714ee"
+  "identity": "98f66e7b65d07f9932fc03c6458e0777bf6a081daacefd17bdcb00b35dbd396d"
 }

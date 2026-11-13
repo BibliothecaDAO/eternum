@@ -314,7 +314,8 @@ fn discovered_spires_take_armies_one_layer_down_without_spending_stamina() {
     preset.rules.day_unit_seconds = DAY_UNIT;
     preset.rules.tick_config.armies_tick_in_seconds = 60;
     preset.economy.discovery = Some(super::preset_projection::frontier_discovery_rules());
-    let (_, frontier) = super::preset_projection::current_definition("season-one");
+    let (_, frontier) = super::preset_projection::current_definition("frontier");
+    let (_, spire_rules) = super::preset_projection::current_definition("season-one");
     preset.economy.chests = frontier.economy.chests;
     preset.economy.labor = frontier.economy.labor;
     preset.economy.relics = array![].span();
@@ -353,7 +354,7 @@ fn discovered_spires_take_armies_one_layer_down_without_spending_stamina() {
     }
     preset.settlement.depths = depths.span();
     preset.structures.board = frontier.structures.board;
-    preset.structures.research = frontier.structures.research;
+    preset.structures.research = spire_rules.structures.research;
     registry(d).register_preset(1, preset);
     let game_id = registry(d)
         .create_game(
@@ -380,7 +381,7 @@ fn discovered_spires_take_armies_one_layer_down_without_spending_stamina() {
     let resources = IResourceOperationsDispatcher { contract_address: d.games };
     let essence = ResourceSlot { game_id, entity_id: 1, resource_type: 38 };
     let mut depth_budget = 0;
-    for price in frontier.structures.research {
+    for price in preset.structures.research {
         if *price.row == crate::research::ROW_DEPTH {
             depth_budget += (*price.price).essence;
         }
@@ -522,7 +523,7 @@ fn frontier_ruin_clear_pays_its_stored_chest_into_the_realm_and_leaves_no_chest(
     assert_eq!(structures.structure(site_key).unwrap().base.category, crate::taxonomy::RUIN_CATEGORY);
     // The card and the clear read the one row stored at discovery.
     let relics = IRelicsDispatcher { contract_address: d.games };
-    assert_eq!(relics.site_chest(site_key), Some(crate::army_relics::RuinReward::Chest(CHEST)));
+    assert_eq!(relics.site_chest(site_key), Some(CHEST));
     let initial = snforge_std::interact_with_state(
         d.games, || crate::logic::expeditions::expedition_site(site_key).unwrap(),
     );
@@ -551,7 +552,7 @@ fn frontier_ruin_clear_pays_its_stored_chest_into_the_realm_and_leaves_no_chest(
     let tile = crate::geometry::tile_key(game_id, coord);
     assert!(snforge_std::interact_with_state(d.games, || crate::logic::map::occupancy(tile)).is_none());
     assert_site_removed(d, site_key);
-    assert_eq!(relics.site_chest(site_key), Some(crate::army_relics::RuinReward::Chest(CHEST)));
+    assert_eq!(relics.site_chest(site_key), Some(CHEST));
     let receipt = snforge_std::interact_with_state(
         d.games, || crate::logic::expeditions::expedition_site(site_key).unwrap().clear.unwrap(),
     );
@@ -1118,7 +1119,7 @@ fn creation_emits_release_and_overrides_without_per_game_configuration_rows() {
 fn launcher_rotation_preserves_roster_batch_settlements() {
     let first_run = setup();
     let (helper_account, _) = super::deploy_player(3, super::GUARDIAN);
-    let helper_run = super::Deployment { actor: helper_account, ..setup() };
+    let helper_run = super::bind_player(setup(), helper_account);
     let preset = definition(true);
     let request = CreateGameParams { roster: roster(1), ..params(true) };
     registry(first_run).register_preset(1, preset);
@@ -1387,7 +1388,7 @@ fn frontier_floor_counts_seven_player_reveals_across_armies_and_depths_then_rese
             second
         };
         let mut army = GameState { contract_address: d.games }.resolved_explorer(key).unwrap();
-        let centre = crate::expeditions::site(1024, 1, 0, index % 4);
+        let centre = crate::expeditions::site(1024, 1, 0, index % 3);
         army.coord = crate::troops::Coord { x: centre.x + 20 + Into::<u8, u32>::into(index) * 3, ..centre };
         let location = crate::geometry::tile_key(game_id, army.coord);
         snforge_std::interact_with_state(d.games, || crate::logic::map::MapState::reveal(location, 1));
@@ -1988,7 +1989,7 @@ fn place_legacy_depth_three_ruins(d: super::Deployment, game_id: u32) -> (Resour
 }
 
 #[test]
-fn fixed_deep_refuses_exploration_without_changing_the_army_or_visible_tile() {
+fn fixed_deep_walks_visible_terrain_without_discovery_xp_or_reveal_rewards() {
     let (d, game_id, key) = setup_frontier_chests_with_rules(Some(ruin_discovery_rules()));
     let army = crate::troops::ExplorerTroops {
         coord: crate::deep::center(1024), ..strong_frontier_army(d, game_id, key),
@@ -1997,11 +1998,49 @@ fn fixed_deep_refuses_exploration_without_changing_the_army_or_visible_tile() {
     let tile = crate::geometry::tile_key(game_id, crate::geometry::neighbor(army.coord, 0));
     let before = snforge_std::interact_with_state(d.games, || crate::logic::map::tile(tile));
     assert!(before.is_some());
+    snforge_std::interact_with_state(
+        d.games, || crate::logic::map::MapState::occupy(tile, 99, crate::taxonomy::SPIRE_OCCUPIER, false),
+    );
     assert!(
         !execute_in_game(d, game_id, Command::Explore(Explore { explorer_id: key.explorer_id, direction: 0 }), 360),
     );
     assert_eq!(GameState { contract_address: d.games }.resolved_explorer(key).unwrap(), army);
     assert_eq!(snforge_std::interact_with_state(d.games, || crate::logic::map::tile(tile)), before);
+    let home = ResourceKey { game_id, entity_id: army.owner };
+    let (progress, discovery, labor, essence) = snforge_std::interact_with_state(
+        d.games,
+        || {
+            crate::logic::map::MapState::vacate(tile, 99);
+            (
+                crate::logic::progression::require(key),
+                crate::logic::expeditions::discovery(
+                    crate::expeditions::ExpeditionDiscoveryKey { game_id, structure_id: army.owner, epoch: 0 },
+                ),
+                crate::logic::resources::balance(home, crate::resources::LABOR),
+                crate::logic::resources::balance(home, crate::resources::ESSENCE),
+            )
+        },
+    );
+    assert!(execute_in_game(d, game_id, Command::Explore(Explore { explorer_id: key.explorer_id, direction: 0 }), 360));
+    let moved = GameState { contract_address: d.games }.resolved_explorer(key).unwrap();
+    assert_eq!(moved.coord, crate::geometry::neighbor(army.coord, 0));
+    assert_eq!(moved.troops.count, army.troops.count);
+    snforge_std::interact_with_state(
+        d.games,
+        || {
+            assert_eq!(crate::logic::progression::require(key), progress);
+            assert_eq!(
+                crate::logic::expeditions::discovery(
+                    crate::expeditions::ExpeditionDiscoveryKey { game_id, structure_id: army.owner, epoch: 0 },
+                ),
+                discovery,
+            );
+            assert_eq!(crate::logic::resources::balance(home, crate::resources::LABOR), labor);
+            assert_eq!(crate::logic::resources::balance(home, crate::resources::ESSENCE), essence);
+            assert_eq!(crate::logic::map::tile(tile), before);
+            assert_eq!(crate::state::read().map.tiles.read((game_id, tile.alt, tile.col, tile.row)), 0);
+        },
+    );
 }
 
 #[starknet::interface]
@@ -2753,7 +2792,7 @@ fn deep_slots_accept_four_allied_players_refuse_duplicates_and_release_on_death_
     for slot in 0_u8..4 {
         let (actor, _) = super::deploy_player(100 + Into::<u8, felt252>::into(slot), super::GUARDIAN);
         let key = deep_joiner_fixture(d, game_id, 100 + slot.into(), actor, crate::geometry::neighbor(coord, 0), 1);
-        let player = super::Deployment { actor, ..d };
+        let player = super::bind_player(d, actor);
         assert!(
             execute_in_game(
                 player,
@@ -2793,7 +2832,7 @@ fn deep_slots_accept_four_allied_players_refuse_duplicates_and_release_on_death_
     }
     let (fifth_actor, _) = super::deploy_player(104, super::GUARDIAN);
     let fifth = deep_joiner_fixture(d, game_id, 104, fifth_actor, crate::geometry::neighbor(coord, 0), 1);
-    let fifth_player = super::Deployment { actor: fifth_actor, ..d };
+    let fifth_player = super::bind_player(d, fifth_actor);
     let join_fifth = Command::InteractSite(crate::relics::InteractSite { explorer_id: fifth.explorer_id, coord });
     assert!(!execute_in_game(fifth_player, game_id, join_fifth, 368));
     let first_player = *players.at(0);
@@ -2824,7 +2863,7 @@ fn deep_slots_accept_four_allied_players_refuse_duplicates_and_release_on_death_
     let enemy = deep_joiner_fixture(d, game_id, 201, rival, crate::geometry::neighbor(coord, 2), 2);
     assert!(
         !execute_in_game(
-            super::Deployment { actor: rival, ..d },
+            super::bind_player(d, rival),
             game_id,
             Command::InteractSite(crate::relics::InteractSite { explorer_id: enemy.explorer_id, coord }),
             371,
@@ -2880,10 +2919,7 @@ fn deep_descent_charges_new_ticks_once_and_dead_field_armies_free_the_arrival() 
             rules.tick_config.armies_tick_in_seconds = 120;
             state.presets.entry(commitment).rules.write(rules);
             state.presets.entry(commitment).deep_rules.write(Some(deep_rules_fixture()));
-            let mut learned = 0;
-            for _ in 0_u8..3 {
-                learned = crate::research::learn(learned, crate::research::ROW_DEPTH, 0);
-            }
+            let learned = crate::research::learn(0, crate::research::ROW_DEPTH, 0);
             crate::logic::research::write(home, crate::research::RealmKnowledge { learned });
             crate::deep::IDeepSitesDispatcherTrait::initialize_deep(
                 crate::logic::deep_sites::dispatcher(game_id), game_id,
@@ -2896,11 +2932,21 @@ fn deep_descent_charges_new_ticks_once_and_dead_field_armies_free_the_arrival() 
     let troops = GameState { contract_address: d.games };
     let mut army = troops.resolved_explorer(key).unwrap();
     army.troops.count = 500 * RESOURCE_PRECISION;
+    let origin = crate::expeditions::site(preset.settlement.spacing, home.entity_id.try_into().unwrap(), 0, 2);
+    army.coord = origin;
     super::resource_commands::set_explorer_fixture(d.games, key, army);
     snforge_std::interact_with_state(
         d.games,
         || {
             let state = crate::state::write();
+            let spire_key = crate::spires::ExpeditionSpireKey {
+                game_id, structure_id: home.entity_id, epoch: 0, depth: 2,
+            };
+            loop {
+                if crate::logic::spires::discover(spire_key, crate::geometry::neighbor(origin, 0), 1) {
+                    break;
+                }
+            }
             let before = state.resources.weights.read((game_id, key.explorer_id));
             state
                 .resources
@@ -2936,6 +2982,11 @@ fn deep_descent_charges_new_ticks_once_and_dead_field_armies_free_the_arrival() 
     assert_eq!(troops.resolved_explorer(key).unwrap().coord, crate::deep::arrival(preset.settlement.spacing));
     assert!(execute_in_game(d, game_id, muster_slot_command(category, 0, 1), 590));
     let second = *structures.home_armies(home).at(1);
+    let second_key = ExplorerKey { game_id, explorer_id: second };
+    let follower = troops.resolved_explorer(second_key).unwrap();
+    super::resource_commands::set_explorer_fixture(
+        d.games, second_key, crate::troops::ExplorerTroops { coord: origin, ..follower },
+    );
     assert!(
         execute_in_game(
             d, game_id, Command::EnterDepth(crate::commands::EnterDepth { explorer_id: second, depth: 3 }), 600,
@@ -3004,7 +3055,7 @@ fn join_deep_tick_fixture(d: super::Deployment, game_id: u32, kind: u8, home: u6
     stop_cheat_caller_address(d.games);
     assert!(
         execute_in_game(
-            super::Deployment { actor, ..d },
+            super::bind_player(d, actor),
             game_id,
             Command::InteractSite(crate::relics::InteractSite { explorer_id: key.explorer_id, coord }),
             360,
@@ -3116,7 +3167,7 @@ fn quarry_splits_four_slots_by_troops_and_excludes_dead_or_removed_members_next_
         .owner;
     assert!(
         execute_in_game(
-            super::Deployment { actor, ..d },
+            super::bind_player(d, actor),
             game_id,
             Command::ManageTroops(crate::troop_management::ManageTroops::RemoveExplorer(second.explorer_id)),
             481,

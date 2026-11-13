@@ -9,6 +9,7 @@ world=contracts/l3/world-native
 verifier=contracts/l3/vrf-verifier
 account=contracts/l3/player-account
 node "$world/scripts/generate-extension.mjs" --check
+node --test "$world/scripts/fixture-actors.test.mjs" "$world/scripts/fact-models.test.mjs"
 runner=$(python3 "$world/toolchain/snforge.py" resolve)
 python3 -m unittest discover -s "$world/toolchain" -p "test_snforge.py"
 

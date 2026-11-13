@@ -208,6 +208,11 @@ If a required command fails or is unavailable, say so explicitly in the final ha
 
 ### Enforced runtime rules
 
+Native player fixtures use `world_test_support::tests::bind_player` to bind a deployed account;
+`scripts/fixture-actors.test.mjs` rejects inline Deployment literals. Fact models have one declaration per name;
+`defineFactModels` rejects duplicates and `scripts/fact-models.test.mjs` checks the shared AspectActivity wire shape and
+absence rule. Both checks run in the native gate.
+
 | Rule                                                                                                                                                                                                      | Enforcement                                                                                                                                               |
 | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | The existing season-end LORDS sweep owns earned and deposited balances. Principal returns require no reward publication, closure state or claim deadline, and cannot block independent reward settlement. | `apps/value-relay/src/frontier-sweep.test.ts`; `contracts/l3/world-native/tests/economy/src/tests/deposits.cairo`; `contracts/l2/ledger/src/tests.cairo`. |

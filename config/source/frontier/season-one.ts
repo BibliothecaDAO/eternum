@@ -27,7 +27,7 @@ const race = {
   ],
 } satisfies NonNullable<NativePreset["race"]>;
 
-export const frontierSeasonOnePreset = {
+export const frontierSeasonOnePreset: NativePreset & { worldBanes: NonNullable<NativePreset["worldBanes"]> } = {
   ...frontierPreset,
   id: FRONTIER_S1_PRESET_ID,
   startingArmyCount: 2,
@@ -50,8 +50,21 @@ export const frontierSeasonOnePreset = {
   modeRules: (frontierPreset.modeRules | rules.DISCOVER_SPIRES) & ~(rules.DISCOVER_CHESTS | rules.SEASON_CLOSE),
   chests: null,
   race,
+  deep: {
+    foundation: { x: 25, y: 35 },
+    quarry: { x: 12, y: 20 },
+    altar: { x: 38, y: 20 },
+    beastCount: 10_000,
+    lossPerTick: 200,
+    quarryPerTick: 500,
+    altarPerTick: 5,
+    altarThreshold: 1_500,
+  },
   commandMask:
-    (frontierPreset.commandMask | BigInt(nativeCommandBits.ApplyRelic) | BigInt(nativeCommandBits.ClaimDailyQuest)) &
+    (frontierPreset.commandMask |
+      BigInt(nativeCommandBits.Battle) |
+      BigInt(nativeCommandBits.ApplyRelic) |
+      BigInt(nativeCommandBits.ClaimDailyQuest)) &
     ~(
       BigInt(nativeCommandBits.OpenRelicChest) |
       BigInt(nativeCommandBits.RefillStamina) |
@@ -66,13 +79,22 @@ export const frontierSeasonOnePreset = {
   ],
   balance: {
     season: { durationSeconds: (race.seasonDays / DAYS_PER_BAG) * DAY_UNITS_PER_BAG * FRONTIER_DAY_UNIT_SECONDS },
+    troop: {
+      stamina: {
+        staminaInitial: 180,
+        staminaKnightMax: 180,
+        staminaCrossbowmanMax: 180,
+        staminaPaladinMax: 180,
+        staminaDefenseReq: 0,
+      },
+    },
     startingResources: [
       { resource: ResourcesIds.Knight, amount: 3_000 },
       { resource: ResourcesIds.Wheat, amount: 6_000 },
       { resource: ResourcesIds.Labor, amount: 2_000 },
     ],
   },
-} satisfies NativePreset;
+};
 
 export const frontierSeasonOneDevPreset: NativePreset = {
   ...frontierSeasonOnePreset,
