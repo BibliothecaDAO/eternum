@@ -739,6 +739,87 @@ async function playFromTheHomeCard({ browser, owner }) {
 }
 
 /**
+ * A Season 1 founding by an account a friend's Aspect invite brought (the lab's settle-invited game, whose identity
+ * answers the account's joined link as Linden's Harmony invite): the Frontier card's Play opens the Aspect step with
+ * Harmony first, naming Linden, every card open; tapping it signs SettleSeason with that Aspect, and the game opens in
+ * the founded realm, as a created realm's player arrives to build. The founding is the entering step, as a home-entered game's first step must be.
+ */
+const SETTLE_INVITED_STEPS = [
+  { name: "found-invited", play: foundFromTheInvite, settleMs: 0, verify: foundedIntoTheInvitedAspect },
+  { name: "enter-on-realm", settleMs: 3_000, verify: inScene("hex") },
+];
+
+/** The Aspect step's cards in the order drawn: each one's label, invite line and whether it can be tapped. */
+const ASPECT_CARDS = `JSON.stringify([...document.querySelectorAll(".aspect-picker__card")].map((card) => ({
+  label: card.getAttribute("aria-label"),
+  invite: card.querySelector(".aspect-picker__invite")?.textContent ?? null,
+  open: !card.disabled,
+})))`;
+/** The step's line naming the invite, if it shows one. */
+const ASPECT_INVITE_LINE = `JSON.stringify(document.querySelector(".aspect-picker__invited")?.textContent ?? null)`;
+/** Every SettleSeason the game signed, each as its command's span after the variant (its Options' felts). */
+const SETTLES_SIGNED = `JSON.stringify((window.__labChain?.sent ?? [])
+  .filter(({ command }) => command.kind === "SettleSeason")
+  .map(({ command }) => command.calldata.slice(5).map((felt) => BigInt(felt).toString())))`;
+const INVITED_CARD = '.aspect-picker__card[aria-label="Join Harmony"]';
+
+async function foundFromTheInvite(context) {
+  const step = await openTheAspectStep(context);
+  const aspectStep = context.extraScreenshot("aspect-step");
+  if (!step.cards.every(({ open }) => open)) return { ...step, aspectStep };
+  return { ...step, aspectStep, ...(await joinTheInvitedAspect(context)) };
+}
+
+async function openTheAspectStep({ browser, owner }) {
+  const entry = await findHomeCardEntry(browser, owner, SHEET_WAIT_MS * 6, {
+    card: LAB_SETTLE_INVITED.card,
+    game: LAB_SETTLE_INVITED,
+  });
+  browser.run(["click", ENTRY_BUTTON]);
+  const cards = await readUntil(
+    () => browser.read(ASPECT_CARDS),
+    (shown) => shown.length === 4 && shown.every(({ open }) => open),
+    SHEET_WAIT_MS * 6,
+  );
+  return { entry: entry.entry, cards, inviteLine: browser.read(ASPECT_INVITE_LINE) };
+}
+
+/** The cards as the invited player meets them, then one SettleSeason, no held Realm (None: 1), Harmony (Some: 0, 2). */
+function foundedIntoTheInvitedAspect({ played }) {
+  const expected = [
+    { label: "Join Harmony", invite: "Invited", open: true },
+    { label: "Join Might", invite: null, open: true },
+    { label: "Join Chaos", invite: null, open: true },
+    { label: "Join Guile", invite: null, open: true },
+  ];
+  if (JSON.stringify(played.cards) !== JSON.stringify(expected))
+    return failed("the Aspect step does not offer the invited Aspect first, every card open", played);
+  if (played.inviteLine !== "Linden invited you to Harmony")
+    return failed(`the Aspect step says ${JSON.stringify(played.inviteLine)} of the invite`, played);
+  const settles = played.settles ?? [];
+  if (settles.length !== 1) return failed(`${settles.length} SettleSeason commands signed`, played);
+  if (JSON.stringify(settles[0]) !== JSON.stringify(["1", "0", "2"]))
+    return failed(`SettleSeason was signed with ${settles[0].join(", ")}`, played);
+  return completed({
+    entry: played.entry,
+    cards: played.cards,
+    inviteLine: played.inviteLine,
+    settle: settles[0],
+    aspectStep: played.aspectStep,
+  });
+}
+
+async function joinTheInvitedAspect({ browser }) {
+  browser.run(["click", INVITED_CARD]);
+  const settles = await readUntil(
+    () => browser.read(SETTLES_SIGNED),
+    (signed) => signed.length > 0,
+    ORDER_OUTCOME_WAIT_MS,
+  );
+  return { settles };
+}
+
+/**
  * A research bought (the lab's research game): Research opened, the Shrine's node picked, then its Research; the result
  * is that node showing the Shrine researched once the chain has answered it learned.
  */
@@ -3854,6 +3935,8 @@ function eachCardIsItsHover({ played }) {
 const labSpireGame = (scenario) => ({ ...LAB_SPIRE, lab: scenario });
 /** The spire's game before its player settled: the run opens on the home page, and its first step enters the game. */
 const LAB_SETTLE = { ...labSpireGame("settle"), entersFromHome: true };
+/** The same founding in a Season 1 game, by an account a friend's Aspect invite brought. */
+const LAB_SETTLE_INVITED = { ...labSpireGame("settle-invited"), entersFromHome: true };
 /** The spire's game opened on the home page: the run's first step enters it by the card's Resume. */
 const LAB_FROM_HOME = { ...labSpireGame("from-home"), entersFromHome: true };
 /** The spire's army, the one a player picks first: the fixture's SPIRE_ARMY. */
@@ -5478,6 +5561,7 @@ export const STEP_SETS = {
   "lab-actions-demolish": { game: labSpireGame("upkeep"), steps: DEMOLISH_ACTION_STEPS },
   "lab-actions-chest": { game: labSpireGame("upkeep"), steps: CHEST_ACTION_STEPS },
   "lab-actions-settle": { game: LAB_SETTLE, steps: SETTLE_ACTION_STEPS },
+  "lab-settle-invited": { game: LAB_SETTLE_INVITED, steps: SETTLE_INVITED_STEPS },
   "lab-actions-withdraw": { game: labSpireGame("upkeep"), steps: WITHDRAW_ACTION_STEPS },
   "lab-actions-fight": { game: labSpireGame("fight"), steps: FIGHT_ACTION_STEPS },
   "lab-actions-fight-lost": { game: labSpireGame("fight-lost"), steps: FIGHT_LOST_STEPS },

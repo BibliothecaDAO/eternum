@@ -29,7 +29,7 @@ import { highGroundScenario, SANDS, spireScenario } from "./spire-scenario";
 import { visitScenario } from "./visit-scenario";
 import { farPlaceScenario } from "./far-place-scenario";
 import { researchScenario } from "./research-scenario";
-import { settleScenario } from "./settle-scenario";
+import { settleInvitedScenario, settleScenario } from "./settle-scenario";
 import { upkeepScenario, spendLordsScenario } from "./upkeep-scenario";
 import { reinforceScenario } from "./reinforce-scenario";
 import { ruinChestsScenario, ruinChestsSurfaceScenario } from "./ruin-chests-scenario";
@@ -67,6 +67,7 @@ export const LAB_SCENARIOS: Partial<Record<string, () => LabScenario>> = {
   upkeep: upkeepScenario,
   "spend-lords": spendLordsScenario,
   settle: settleScenario,
+  "settle-invited": settleInvitedScenario,
   explore: exploreScenario,
   "painted-buildings": () => paintedBuildingsScenario(),
   "painted-buildings-sands": () => paintedBuildingsScenario(SANDS),

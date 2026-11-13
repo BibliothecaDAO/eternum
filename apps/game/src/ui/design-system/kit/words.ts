@@ -902,6 +902,10 @@ export const ASPECT_STEP_WORDS = {
   joining: (aspect: string) => `Joining ${aspect}…`,
   /** A held Realm's home: its Aspect is its Order's, so the step shows it and asks nothing. */
   realmsAspect: (order: string, aspect: string) => `Your Realm's ${order} plays for ${aspect}`,
+  /** The step's line for a friend's invite, and the invited card's tag; a sender with no name yet is not named. */
+  invitedTo: (sender: string | null, aspect: string) =>
+    sender === null ? `You were invited to ${aspect}` : `${sender} invited you to ${aspect}`,
+  invited: "Invited",
 } as const;
 
 /** The Season chip's tip: what a common chest pays today, and the pool the season pays chests from. */

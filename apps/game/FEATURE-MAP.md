@@ -476,8 +476,12 @@ each closed by its cross, a tap outside, a swipe down or `Escape`. A right-click
   once Herald's directory publishes them); one tap on a card founds the home into it (`settle_season` with its
   `aspect`), the card spinning, and nothing founds without that tap. A held Realm's home sees **Your Aspect**, "Your
   Realm's <Order> plays for <Aspect>", that card chosen and the others faint, and keeps **Create your realm**. Aspects
-  and their Orders come from the Order catalog (`aspects`, `orders[].aspect` in `packages/types`). Dev:
-  `/lab/app/<screen>/doorway/aspect` and `doorway/aspect-realm`.
+  and their Orders come from the Order catalog (`aspects`, `orders[].aspect` in `packages/types`). An account a friend's
+  Aspect invite brought (identity's joined link, an `aspect` link for this chain and game) reads "<Friend> invited you
+  to <Aspect>" (or "You were invited to <Aspect>" when the friend has no name yet), that card first and tagged
+  **Invited**, every card still open; a held Realm's home keeps its Order's Aspect. Dev:
+  `/lab/app/<screen>/doorway/aspect`, `doorway/aspect-invited` and `doorway/aspect-realm`; the founding itself, invited,
+  in the lab game `/lab/game?scenario=settle-invited` (`playtest --steps lab-settle-invited`).
 - Entering a game (the doorway, `ui/features/game-entry/doorway/`, one screen from the entry to play, the lazy game
   code's wait included): the realm under its Order's emblem, one bar with what runs (**Signing in**, **Preparing your
   realm**, **Loading the map**, **Entering the world**), its percent (the steps' spans, the map's following the opening

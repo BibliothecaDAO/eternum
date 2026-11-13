@@ -340,35 +340,39 @@ offering Open crate; a phone's tap, then Open), and `--steps lab-actions-withdra
 (Maximum, then Withdraw; the tab answers the L2 ledger's pause and payment reads); and `--steps lab-actions-settle`, a
 season entered by a player not yet settled (`scenario=settle`, which opens on the home page: the run's first step is the
 Frontier card's Play, timed through the doorway's SettleSeason to the game on the founded realm, and the boot is waited
-for after it). Each step declares the game command it sends (`sends`) and fails in the lab when its press sent another;
-`src/lab/game/action-coverage.test.ts` fails a command of the catalog Frontier enables that no step sends and
-`UNMEASURED_COMMANDS` does not name with its reason. Each names its exact result: the renderer's mark once the frame
-drawing it was rendered (`presented:<result>`, `src/three/presented-results.ts`: the explored tile's ground, once half
-its fog has swept away, the army's walk, the deployed army drawn, the merged army leaving the map, that building on that
-plot or leaving it, that Shrine or Well leaving its tile, that chest's opening started; or, for a scene drawn under a
-cover, once the paint without the cover: the game uncovered as its doorway leaves), or a page condition: the Castle
-sheet naming exactly the next level, each army a fight or transfer changed showing exactly the count the chain answered,
-the Shrine's node researched, the Realms sheet listing the home claimed today, the army's panel reading the stamina
-refilled to or naming the tier bought, the purse reading the LORDS left; another target's result is not the action's.
-Each is cut where the client records its way: handled (the press to the command), sent (signed and answered by the RPC),
-confirmed (the chain and Herald, to the pre-confirmed diff), applied (the diff's facts in the store) and drawn (to the
-result); a claim, which the relay signs, has no sent segment, and its confirmed runs from the request. A step completes
-only with every mark reached and every frame from the press to the result observed. `--capture-results` also records the
-page's frames and fails a step unless, in its result's region of the screen, the pixels that show it appear at its mark
-(not a frame before, not absent three frames after, counting the page's own frames, so a slow frame is one frame; the
-screen at a moment is the last frame sent by then); an explore names its tile's ground as its target instead, which must
-read explored (its mean grey past half the way from its fog to its last look) within that window, whatever changed round
-it; a chest names its body where the map drew it (a phone's from the selected hex the page reports,
-`window.__eternumMapSelection.hexOnScreen`), which must start to change (its grey 16 levels from before) in the window,
-as the chest sinks away seconds later; a season's entry names the screen's lower third, below the doorway's steps, which
-turns from the doorway's painting to the map; a demolished building's proof is open (the Build sheet's ghost fills its
-plot next, and the proof reads the plot's last look), so a capture run fails it. A result's place past the screen's edge
-fails the step. The frames around it are kept. Each run writes `click-to-result.md`, each action's segments and total as
-median (min–max) over its quiet runs), `--compare <summary.json>` (fails when boot regresses, when an action the
-baseline timed has no timed run or a renderer mode it timed is missing, or when an action's press-to-result median is
-past the slowest run of that baseline by more than a frame; actions the baseline never timed are listed as new;
-`scripts/client-playtest/baselines/` keeps the lab's, one per step list and device, measured on the lanes' machine),
-`--headed`.
+for after it). `--steps lab-settle-invited` founds the same realm in a Season 1 game by an account a friend's Aspect
+invite brought (`scenario=settle-invited`, whose identity answers the joined link as Linden's Harmony invite): the
+Frontier card's Play must open the Aspect step saying "Linden invited you to Harmony" with Harmony first, tagged
+Invited, every card open (`<step>-aspect-step.png`); tapping it must sign one SettleSeason with no held Realm and
+Harmony, and the game must open in the founded realm. Each step declares the game command it sends (`sends`) and fails
+in the lab when its press sent another; `src/lab/game/action-coverage.test.ts` fails a command of the catalog Frontier
+enables that no step sends and `UNMEASURED_COMMANDS` does not name with its reason. Each names its exact result: the
+renderer's mark once the frame drawing it was rendered (`presented:<result>`, `src/three/presented-results.ts`: the
+explored tile's ground, once half its fog has swept away, the army's walk, the deployed army drawn, the merged army
+leaving the map, that building on that plot or leaving it, that Shrine or Well leaving its tile, that chest's opening
+started; or, for a scene drawn under a cover, once the paint without the cover: the game uncovered as its doorway
+leaves), or a page condition: the Castle sheet naming exactly the next level, each army a fight or transfer changed
+showing exactly the count the chain answered, the Shrine's node researched, the Realms sheet listing the home claimed
+today, the army's panel reading the stamina refilled to or naming the tier bought, the purse reading the LORDS left;
+another target's result is not the action's. Each is cut where the client records its way: handled (the press to the
+command), sent (signed and answered by the RPC), confirmed (the chain and Herald, to the pre-confirmed diff), applied
+(the diff's facts in the store) and drawn (to the result); a claim, which the relay signs, has no sent segment, and its
+confirmed runs from the request. A step completes only with every mark reached and every frame from the press to the
+result observed. `--capture-results` also records the page's frames and fails a step unless, in its result's region of
+the screen, the pixels that show it appear at its mark (not a frame before, not absent three frames after, counting the
+page's own frames, so a slow frame is one frame; the screen at a moment is the last frame sent by then); an explore
+names its tile's ground as its target instead, which must read explored (its mean grey past half the way from its fog to
+its last look) within that window, whatever changed round it; a chest names its body where the map drew it (a phone's
+from the selected hex the page reports, `window.__eternumMapSelection.hexOnScreen`), which must start to change (its
+grey 16 levels from before) in the window, as the chest sinks away seconds later; a season's entry names the screen's
+lower third, below the doorway's steps, which turns from the doorway's painting to the map; a demolished building's
+proof is open (the Build sheet's ghost fills its plot next, and the proof reads the plot's last look), so a capture run
+fails it. A result's place past the screen's edge fails the step. The frames around it are kept. Each run writes
+`click-to-result.md`, each action's segments and total as median (min–max) over its quiet runs),
+`--compare <summary.json>` (fails when boot regresses, when an action the baseline timed has no timed run or a renderer
+mode it timed is missing, or when an action's press-to-result median is past the slowest run of that baseline by more
+than a frame; actions the baseline never timed are listed as new; `scripts/client-playtest/baselines/` keeps the lab's,
+one per step list and device, measured on the lanes' machine), `--headed`.
 
 Each invocation writes to a new directory, `<root>/<time>-<role>`, and never into an existing one:
 

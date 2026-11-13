@@ -463,7 +463,7 @@ interface HomeSources {
  * Whether the account has nothing to choose at the Realm step: every read answered and no Realm held, so its home is
  * its ticket or a free one. Entry then creates the realm without asking (the owner's flow F3, 4 November 2026).
  */
-export function useNothingToChoose(presetId: number): boolean {
+export function useNothingToChoose(presetId: number | null): boolean {
   const sources = useHomeSources(presetId);
   return sources.ready && sources.realms.length === 0 && !sources.realmsUnreadable && !sources.ticketUnreadable;
 }
@@ -473,17 +473,17 @@ export function useNothingToChoose(presetId: number): boolean {
  * once both have answered: a failed read (Realms or ticket) is not an answer, so the step waits on its Try again rather
  * than offering a free home or a lesser default without it.
  */
-function useHomeSources(presetId: number): HomeSources {
+function useHomeSources(presetId: number | null): HomeSources {
   const { session, wallet, held } = useHeldRealms();
-  const campaign = campaignOfPreset(presetId);
+  const campaign = presetId === null ? null : campaignOfPreset(presetId);
   const ticket = useHeldTicket(campaign);
-  const rules = useMemo(() => presetLaborRules(presetId), [presetId]);
+  const rules = useMemo(() => (presetId === null ? null : presetLaborRules(presetId)), [presetId]);
   const heldKnown = wallet === null || held.data !== undefined;
   return {
     wallet,
     ticket: ticketChoice(campaign, ticket),
     realms: held.data ?? [],
-    ready: session !== null && heldKnown && (ticket.state === "none" || ticket.state === "held"),
+    ready: presetId !== null && session !== null && heldKnown && (ticket.state === "none" || ticket.state === "held"),
     realmsUnreadable: held.isError ? () => void held.refetch() : null,
     ticketUnreadable: ticket.state === "unreadable" ? ticket.retry : null,
     rules,

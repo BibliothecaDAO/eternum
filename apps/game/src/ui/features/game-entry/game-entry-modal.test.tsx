@@ -783,3 +783,107 @@ it("resumes a home with an existing campaign source without offering or submitti
     await entry.close();
   }
 });
+
+describe("a friend's Aspect invite at a Season 1 campaign home's founding", () => {
+  /** The link identity says the account came by: an Aspect invite into Harmony (2) from Linden, for `game`. */
+  const invite = (game: { chainId: string; gameId: number }, kind: "aspect" | "frontier-day" = "aspect") => ({
+    kind,
+    chainId: game.chainId,
+    gameId: game.gameId,
+    moment: 2,
+    name: "Linden",
+  });
+  const campaignHome = (joined: ReturnType<typeof invite> | null) => {
+    (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
+    settlement.presetId = FRONTIER_S1_PRESET_ID;
+    signIn(null);
+    noTicket();
+    relay(() => held());
+    return vi.spyOn(identityClient, "joinedShare").mockResolvedValue(joined);
+  };
+  const cards = (host: HTMLElement) =>
+    [...host.querySelectorAll<HTMLButtonElement>(".aspect-picker__card")].map((card) => ({
+      label: card.getAttribute("aria-label"),
+      invite: card.querySelector(".aspect-picker__invite")?.textContent ?? null,
+    }));
+  /** Taps an Aspect's card once a player could: drawn and open. */
+  const join = async (host: HTMLElement, aspect: string) => {
+    const card = await vi.waitFor(() => {
+      const found = host.querySelector<HTMLButtonElement>(`.aspect-picker__card[aria-label="Join ${aspect}"]`);
+      expect(found?.disabled).toBe(false);
+      return found!;
+    });
+    await act(async () => card.click());
+  };
+  const plainOrder = [
+    { label: "Join Might", invite: null },
+    { label: "Join Harmony", invite: null },
+    { label: "Join Chaos", invite: null },
+    { label: "Join Guile", invite: null },
+  ];
+
+  it("offers the invited Aspect first, naming its sender, and founds into the Aspect tapped", async () => {
+    const joined = campaignHome(invite(GAME));
+    const entry = await openEntry();
+    try {
+      await vi.waitFor(() =>
+        expect(cards(entry.host)).toEqual([
+          { label: "Join Harmony", invite: "Invited" },
+          { label: "Join Might", invite: null },
+          { label: "Join Chaos", invite: null },
+          { label: "Join Guile", invite: null },
+        ]),
+      );
+      expect(entry.host.querySelector(".aspect-picker__invited")?.textContent).toBe("Linden invited you to Harmony");
+      await join(entry.host, "Harmony");
+      await vi.waitFor(() => expect(settlement.calls).toEqual([expect.objectContaining({ aspect: 2 })]));
+      expect(joined).toHaveBeenCalledTimes(1);
+    } finally {
+      await entry.close();
+    }
+  });
+
+  it("leaves every other Aspect open to an invited player", async () => {
+    campaignHome(invite(GAME));
+    const entry = await openEntry();
+    try {
+      await vi.waitFor(() => expect(cards(entry.host)[0]?.invite).toBe("Invited"));
+      await join(entry.host, "Guile");
+      await vi.waitFor(() => expect(settlement.calls).toEqual([expect.objectContaining({ aspect: 4 })]));
+    } finally {
+      await entry.close();
+    }
+  });
+
+  it("drops the offer when another account signs in on the same app", async () => {
+    const joined = campaignHome(invite(GAME));
+    joined.mockResolvedValueOnce(invite(GAME)).mockResolvedValueOnce(null);
+    const entry = await openEntry();
+    try {
+      await vi.waitFor(() => expect(cards(entry.host)[0]?.invite).toBe("Invited"));
+      await act(async () => useIdentitySessionStore.setState({ status: "signed-in", session: signedIn("0x3", null) }));
+      await vi.waitFor(() => expect(cards(entry.host)).toEqual(plainOrder));
+      expect(joined).toHaveBeenCalledTimes(2);
+    } finally {
+      await entry.close();
+    }
+  });
+
+  it.each([
+    ["an invite to another game", invite({ chainId: GAME.chainId, gameId: GAME.gameId + 1 })],
+    ["an invite on another chain", invite({ chainId: "0x534e5f5345504f4c4941", gameId: GAME.gameId })],
+    ["a link of another kind", invite(GAME, "frontier-day")],
+    ["no link at all", null],
+  ])("keeps the plain order for %s, and founds into the Aspect tapped", async (_case, joined) => {
+    campaignHome(joined);
+    const entry = await openEntry();
+    try {
+      await vi.waitFor(() => expect(cards(entry.host)).toEqual(plainOrder));
+      expect(entry.host.querySelector(".aspect-picker__invited")).toBeNull();
+      await join(entry.host, "Chaos");
+      await vi.waitFor(() => expect(settlement.calls).toEqual([expect.objectContaining({ aspect: 3 })]));
+    } finally {
+      await entry.close();
+    }
+  });
+});

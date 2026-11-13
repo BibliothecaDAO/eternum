@@ -1,4 +1,10 @@
-import { sharePathVia, type ShareChannel, type ShareMoment, type ShareTally } from "@realms-world/identity";
+import {
+  sharePathVia,
+  type JoinedShare,
+  type ShareChannel,
+  type ShareMoment,
+  type ShareTally,
+} from "@realms-world/identity";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect } from "react";
 
@@ -56,4 +62,20 @@ export const useShareTally = (): ShareTally | null => {
     retry: false,
   });
   return owner !== null && tally.status === "success" ? tally.data : null;
+};
+
+/**
+ * The link the signed-in account came by, read once per account: undefined until identity answers (or without an account,
+ * or when identity cannot say), null when no link brought it. Another account's answer is never reused.
+ */
+export const useJoinedShare = (): JoinedShare | undefined => {
+  const owner = useShareOwner();
+  const joined = useQuery({
+    queryKey: [OWN_SHARES, owner, "joined"],
+    queryFn: () => identityClient.joinedShare(),
+    enabled: owner !== null,
+    staleTime: Number.POSITIVE_INFINITY,
+    retry: 1,
+  });
+  return owner !== null && joined.status === "success" ? joined.data : undefined;
 };
