@@ -128,7 +128,11 @@ pub mod SeasonLogic {
                     game_id,
                     crate::commands::action_context(context),
                 );
-                crate::logic::race::finalize(game_id, context.timestamp);
+                crate::race::IRaceDispatcherTrait::finalize_race(
+                    crate::race::IRaceLibraryDispatcher { class_hash: self.release.classes(game_id).economy.read() },
+                    game_id,
+                    context.timestamp,
+                );
                 game = crate::logic::game::game(game_id);
                 0
             } else {

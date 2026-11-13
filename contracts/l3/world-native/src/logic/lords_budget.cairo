@@ -26,17 +26,16 @@ pub fn budget(game_id: u32) -> Option<LordsBudget> {
 /// The ledger operator publishes confirmed custody once; zero budgets before funding are not publications.
 pub fn publish_pool(game_id: u32, amount: u128) {
     let game = crate::logic::game::game(game_id);
-    let rules = crate::logic::game::rules(game_id);
+    let preset = crate::logic::preset_record::for_game(game_id);
+    let day_unit_seconds = preset.rules.day_unit_seconds.read();
     assert!(
-        rules.day_unit_seconds != 0
-            && crate::logic::preset_record::for_game(game_id).rollover_chest_rules.read().is_some(),
-        "Frontier pool requires chest rules",
+        day_unit_seconds != 0 && preset.rollover_chest_rules.read().is_some(), "Frontier pool requires chest rules",
     );
     assert!(amount > 0, "empty Frontier pool");
     assert!(budget(game_id).map(|value| value.pool).unwrap_or(0) == 0, "Frontier pool already published");
     let timestamp = starknet::get_block_timestamp();
     assert!(timestamp < game.end_at, "Frontier season ended");
-    let day = crate::days::day_of(game, rules.day_unit_seconds, core::cmp::max(timestamp, game.start_main_at)).index;
+    let day = crate::days::day_of(game, day_unit_seconds, core::cmp::max(timestamp, game.start_main_at)).index;
     write(game_id, first_day(chest_rules(game_id), amount, day));
 }
 

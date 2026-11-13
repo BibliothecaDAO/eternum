@@ -1001,18 +1001,10 @@ pub // Any chest a draw can carry; its tier and amount never change the draw.
 }
 pub const CHEST: SiteChest = SiteChest { tier: 3, amount: 500, reservation_day: 0 };
 pub fn strong_frontier_army(d: super::Deployment, game_id: u32, key: ExplorerKey) -> crate::troops::ExplorerTroops {
+    assert_eq!(key.game_id, game_id);
     let mut army = GameState { contract_address: d.games }.resolved_explorer(key).unwrap();
     army.troops.count = 100000 * RESOURCE_PRECISION;
     super::resource_commands::set_explorer_fixture(d.games, key, army);
-    start_cheat_caller_address(d.games, d.games);
-    IResourceOperationsDispatcher { contract_address: d.games }
-        .change_explorer_capacity(
-            ResourceKey { game_id, entity_id: key.explorer_id },
-            99999 * RESOURCE_PRECISION,
-            true,
-            crate::commands::resource_context(crate::tests::context(d.games, game_id)),
-        );
-    stop_cheat_caller_address(d.games);
     army
 }
 pub fn place_ruin(d: super::Deployment, game_id: u32, coord: crate::troops::Coord, chest: SiteChest) -> ResourceKey {

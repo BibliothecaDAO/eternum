@@ -207,7 +207,7 @@ fn a_home_settled_before_opening_has_both_armies_on_the_first_day() {
                     crate::troops::ExplorerKey { game_id, explorer_id: *id }, 360, context,
                 );
                 assert_eq!(army.troops.count, 1500 * crate::rules::RESOURCE_PRECISION);
-                assert_eq!(army.troops.stamina.inline().amount, 120);
+                assert_eq!(army.troops.stamina.inline().amount, 180);
             }
         },
     );

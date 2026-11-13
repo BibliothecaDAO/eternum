@@ -71,7 +71,7 @@ fn initialize(game_id: u32) {
     let unit: u64 = crate::logic::preset_record::for_game(game_id).rules.day_unit_seconds.read().into();
     let duration = rules.season_days / crate::days::DAYS_PER_BAG * crate::days::UNITS_PER_BAG * unit;
     assert!(game.end_at - game.start_main_at <= duration, "race exceeds season day limit");
-    let spacing = crate::logic::settlement::rules(game_id).spacing;
+    let spacing = crate::logic::preset_record::for_game(game_id).settlement_spacing.read();
     for aspect in 1_u8..5 {
         initialize_hyperstructure(AspectKey { game_id, aspect }, rules, spacing);
     }
@@ -190,7 +190,7 @@ fn finish(game_id: u32, winner: Option<u8>, timestamp: u64) {
     emit('RaceResult', game_id, RaceResult { winner, ended_at: timestamp, scheduled_end_at });
 }
 
-pub fn finalize(game_id: u32, timestamp: u64) {
+fn finalize(game_id: u32, timestamp: u64) {
     if result(game_id).is_some() {
         return;
     }
@@ -231,6 +231,18 @@ pub mod RaceState {
     > of crate::race::IRace<ComponentState<TContractState>> {
         fn initialize_race(ref self: ComponentState<TContractState>, game_id: u32) {
             super::initialize(game_id);
+        }
+        fn finalize_race(ref self: ComponentState<TContractState>, game_id: u32, timestamp: u64) {
+            super::finalize(game_id, timestamp);
+        }
+        fn triumph_percent(
+            self: @ComponentState<TContractState>,
+            home: crate::resources::ResourceKey,
+            coord: crate::troops::Coord,
+            stage: u8,
+            timestamp: u64,
+        ) -> u16 {
+            crate::logic::triumphs::read_percent(home, coord, stage, timestamp)
         }
         fn race_rules(self: @ComponentState<TContractState>, game_id: u32) -> Option<crate::race::RaceRules> {
             super::rules(game_id)

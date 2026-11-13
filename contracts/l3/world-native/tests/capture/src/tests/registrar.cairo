@@ -3373,3 +3373,51 @@ fn altar_issues_next_day_banes_in_board_order_and_stops_world_rolls() {
         },
     );
 }
+
+#[test]
+fn triumph_readers_use_the_games_pinned_economy_and_preserve_all_four_windows() {
+    let (d, game_id, _) = deep_tick_fixture();
+    let releases = IReleasesDispatcher { contract_address: d.games };
+    let original = releases.release(1);
+    start_cheat_caller_address(d.games, super::authority());
+    releases
+        .register_release(
+            2,
+            Release {
+                classes: games_storage::release::LogicClasses {
+                    economy: super::declare_logic("TroopFixture"), ..original.classes,
+                },
+                ..original,
+            },
+        );
+    stop_cheat_caller_address(d.games);
+    assert_eq!(releases.game_release(game_id), 1);
+    assert_eq!(releases.current_release(), 2);
+    snforge_std::interact_with_state(
+        d.games,
+        || {
+            let state = crate::state::write();
+            let game = crate::logic::game::game(game_id);
+            let preset = crate::logic::preset_record::for_game(game_id);
+            let spacing = preset.settlement_spacing.read();
+            let coord = crate::expeditions::site(spacing, 1, 0, 0);
+            let home = ResourceKey { game_id, entity_id: 1 };
+            let today = crate::days::day_of(game, preset.rules.day_unit_seconds.read(), game.start_main_at);
+            for (stage, expected) in array![
+                (crate::rules::CLEAR_MIST_STAGE, 200_u16), (crate::rules::SECOND_WIND_STAGE, 200),
+                (crate::rules::PALE_MOON_STAGE, 50), (crate::rules::SPOILS_STAGE, 200),
+            ] {
+                assert_eq!(crate::logic::triumphs::percent(home, coord, stage, today.start), 100);
+                state.season.triumph_days.write((game_id, 1, stage), Some(today.index));
+                assert_eq!(crate::logic::triumphs::percent(home, coord, stage, today.start), expected);
+                assert_eq!(crate::logic::triumphs::percent(home, coord, stage, today.end - 1), expected);
+                assert_eq!(crate::logic::triumphs::percent(home, coord, stage, today.end), 100);
+                assert_eq!(crate::logic::triumphs::percent(home, coord, stage, game.start_main_at - 1), 100);
+                assert_eq!(crate::logic::triumphs::percent(home, coord, stage, game.end_at), 100);
+                assert_eq!(
+                    crate::logic::triumphs::percent(home, crate::deep::center(spacing), stage, today.start), 100,
+                );
+            }
+        },
+    );
+}
