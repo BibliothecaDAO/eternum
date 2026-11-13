@@ -1,5 +1,5 @@
 // Generated from native fact models and contract ABIs. Run the native schema generator to update.
-export const nativeFactSchemaIdentity = "c0131a8efa1ecabc06251991853a7d3a317dcf6f65d3c03a81de9dd0e1c48111";
+export const nativeFactSchemaIdentity = "903d3e0839d538ed6721eb791b687226db9118247a7a042ef82bda362d6da742";
 export const nativeReleaseConstants = {
   "RUIN_DEPTH_LIMIT_RELEASE": 9
 } as const;
@@ -1445,9 +1445,9 @@ export const nativeFactModels = {
       "active": "u32"
     },
     "absence": {
-      "parent": "BaneRules",
+      "parent": "GameRegistry",
       "value": "zero",
-      "meaning": "No activity, completion or team bane has been recorded for this key.",
+      "meaning": "No home in this Aspect allocated an army on this day.",
       "parentKeys": {
         "game_id": "game_id"
       }
