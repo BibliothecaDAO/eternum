@@ -41,3 +41,4 @@ pnpm run schema:native
 git diff --exit-code -- "$world/schema" "$world/src" "$world/storage" "$world/tests"
 
 (cd "$world" && scarb test)
+python3 "$world/toolchain/check_transaction_events.py"

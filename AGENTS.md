@@ -213,6 +213,7 @@ If a required command fails or is unavailable, say so explicitly in the final ha
 | The existing season-end LORDS sweep owns earned and deposited balances. Principal returns require no reward publication, closure state or claim deadline, and cannot block independent reward settlement. | `apps/value-relay/src/frontier-sweep.test.ts`; `contracts/l3/world-native/tests/economy/src/tests/deposits.cairo`; `contracts/l2/ledger/src/tests.cairo`. |
 | Worker fetches use `redirect: "manual"` and reject non-success responses when redirects must be refused.                                                                                                  | `pnpm check:worker-fetch` in static CI; workerd co-signer and relay regressions. The guard scans Wrangler apps and shared package sources.                |
 | Co-signer loopback configuration must work through its real RPC, receipt, funding and Herald readers.                                                                                                     | `bun test deploy/athanor/cosigner/loopback.test.ts` in native CI; IPv4/IPv6 signing, funding mismatch and redirect refusal.                               |
+| Native test-level contract calls have separate event budgets; nested calls retain the same transaction limit, and every emitted row remains observable.                                                   | `contracts/l3/world-native/toolchain/check_transaction_events.py`, run by the native gate; lifecycle event-order regression and two over-limit probes.    |
 
 ### Running Tests
 
