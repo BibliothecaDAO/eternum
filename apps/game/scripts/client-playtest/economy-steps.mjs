@@ -55,7 +55,7 @@ export const ECONOMY_STEPS = [
       browser.run(["click", `${TRANSFER} section[aria-label="Send to"] [role="tabpanel"] button`]);
       browser.run(["fill", `${TRANSFER} input[aria-label="Wheat: total to send"]`, "50"]);
       const preview = textOf(browser, TRANSFER);
-      await clickButton(browser, owner, `${TRANSFER} button`, "Send 50 goods");
+      await clickButton(browser, owner, `${TRANSFER} button`, "Send 1 good");
       const sent = await until(owner, () => command(browser, "SendResources"));
       browser.run(["find", "role", "tab", "click", "--name", "Arrivals"]);
       const shown = await until(owner, () => {
