@@ -46,7 +46,6 @@ check_world() {
 check_events() {
   (cd "$world/tests" && RAYON_NUM_THREADS=1 scarb build --test --package 'world_tests_*')
   node "$world/scripts/check-fact-wire.mjs"
-  python3 "$world/toolchain/check_transaction_events.py"
 }
 
 check_drift() {

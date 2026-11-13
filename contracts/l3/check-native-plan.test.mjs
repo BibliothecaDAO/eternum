@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { spawnSync } from "node:child_process";
@@ -54,4 +54,16 @@ test("an unknown stage refuses without running any checks", () => {
   const result = spawnSync("bash", ["contracts/l3/check-native.sh", "missing-stage"], { cwd: root, encoding: "utf8" });
   assert.equal(result.status, 2);
   assert.match(result.stderr, /Unknown native gate stage: missing-stage/);
+});
+
+
+test("every native gate script exists in the committed tree", () => {
+  const gate = readFileSync(new URL("contracts/l3/check-native.sh", root), "utf8");
+  const directories = { world: "world-native", verifier: "vrf-verifier", account: "player-account" };
+  const scripts = [...gate.matchAll(/"\$(world|verifier|account)\/([^"\n]+\.(?:mjs|py|sh|ts))"/g)];
+  assert.ok(scripts.length > 0, "The gate must invoke its script checks");
+  for (const [, directory, script] of scripts) {
+    const path = `contracts/l3/${directories[directory]}/${script}`;
+    assert.ok(existsSync(new URL(path, root)), `Native gate references a missing script: ${path}`);
+  }
 });
