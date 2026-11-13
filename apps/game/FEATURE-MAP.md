@@ -620,6 +620,12 @@ says it is reading, with nothing to press. **Today** (the day's clock), on today
 each day of the week's bag up to the season's last day, its painting and quest, and whether it was collected, done,
 missed, is today or is coming. Lab: `/lab/kit/unified/frontier` and `frontier-new`.
 
+**Invite a friend to your Aspect** (`src/ui/features/frontier/invite/aspect-invite.tsx`), for a home that joined an
+Aspect (`HomeAspect`): at the top of **Season** (a desktop's Season bubble; a phone's Menu, then Season), where the
+Aspect page will stand. It shows the Aspect's four Order crests and its name, with **Post on X** and **Copy link**
+carrying the player's own invite link, `/s/<code>`. Identity makes it only for the Aspect the game's race board names
+for the player; its landing says "<name> invites you to <Aspect> in Frontier". Lab: `/lab/kit/unified/frontier`, Season.
+
 **The interface opens as you play** (`src/ui/features/frontier/opening/opening.ts`, the frozen design's table). A new
 account's first session shows its realm and level, labor and wheat, the lit plot, its armies with their stamina, the
 map, the day's quest and the day's clock. Troops at home and the rest of the Build sheet open with the first Barracks;
@@ -1183,19 +1189,19 @@ and then "+N". The post's text is the day as a line of emoji (`Frontier · Day 1
 `🏛️🌀🌀💀🐺👹`) and links the signed-in player's own link for that day, `/s/<code>`, made by identity as the sheet opens
 (the game's address while it is made, or when nobody is signed in); Post records the post. Nothing leaves the device
 until a way to post is pressed: Post on X (or a phone's Share) publishes the card the link unfurls as, titled "<name>
-shared Day 12 of Frontier"; closing the sheet publishes nothing. The link's landing says who shared which day and leads
-into the game, recording the visit for this browser; an account made on that browser afterwards is the link's, and
-counts as activated once it clears a site on the link's season board (`apps/realms` README, Shared links). A phone's
-sheet shows and copies the tall cut (1080 × 1350) and draws the wide cut out of sight for the unfurl. A phone whose
-share sheet takes images also gets **Share** above the two steps: the tall card's PNG, the post's line and the link, to
-any app (the season recap stays X only). Each link carries the button that made it (`?via=x`, `?via=system`), which its
-landing hands identity with the visit. What a player's shared days brought stands on You as **Your shared days** once
-they posted one: days posted, opened by friends, friends who joined, and those who cleared a site. Dev:
-`/lab/kit/hud/day-share` (a rich day), `day-share-thin`; `/lab/kit/hud/day-done` and `today-earlier` show the button;
-`/lab/app/shared-days/profile`. Code: `rollover/day-share.ts` (best moment, trail and post),
-`rollover/day-share-sheet.tsx` (the sheet, and `useDayShare`, which both places open it through) and `system-share.tsx`,
-`shell/share/` (its steps, the account's links in `own-shares.ts`, and the landing),
-`shell/profile/shared-days-panel.tsx`.
+shared Day 12 of Frontier"; closing the sheet publishes nothing. The link's landing says who shared which day (or, for
+an invite, "<name> invites you to <Aspect> in Frontier") and leads into the game, recording the visit for this browser;
+an account made on that browser afterwards is the link's, and counts as activated once it clears a site on the link's
+season board (`apps/realms` README, Shared links). A phone's sheet shows and copies the tall cut (1080 × 1350) and draws
+the wide cut out of sight for the unfurl. A phone whose share sheet takes images also gets **Share** above the two
+steps: the tall card's PNG, the post's line and the link, to any app (the season recap stays X only). Each link carries
+the button that made it (`?via=x`, `?via=system`), which its landing hands identity with the visit. What a player's
+shared days brought stands on You as **Your shared days** once they posted one: days posted, opened by friends, friends
+who joined, and those who cleared a site. Dev: `/lab/kit/hud/day-share` (a rich day), `day-share-thin`;
+`/lab/kit/hud/day-done` and `today-earlier` show the button; `/lab/app/shared-days/profile`. Code:
+`rollover/day-share.ts` (best moment, trail and post), `rollover/day-share-sheet.tsx` (the sheet, and `useDayShare`,
+which both places open it through) and `system-share.tsx`, `shell/share/` (its steps, the account's links in
+`own-shares.ts`, and the landing), `shell/profile/shared-days-panel.tsx`.
 
 Coming back to a tab the browser put away (a phone's, mostly): a lost GPU (WebGL's context, which phones take from a tab
 in the background, or WebGPU's device) boots the page again on its route once it is seen, and a Herald stream silent for

@@ -714,7 +714,7 @@ export const SHARED_DAYS_WORDS = {
 /** A shared link's landing: who shared which day, and the way into Frontier. */
 export const SHARED_LINK_WORDS = {
   /** Its title and pitch are the link's unfurl's too (@realms-world/identity's SHARED_MOMENT_WORDS), so both say one thing. */
-  sharedDay: SHARED_MOMENT_WORDS.title,
+  title: SHARED_MOMENT_WORDS.title,
   pitch: SHARED_MOMENT_WORDS.pitch,
   play: "Start your adventure",
   opening: "Opening…",
@@ -1526,6 +1526,18 @@ const QUEST_COUNTED = {
   [quest.FINDS]: ["find", "finds"],
   [quest.REVEALS]: ["tile", "tiles"],
 } as const satisfies Record<DailyQuestId, readonly [string, string]>;
+
+/** Invite a friend to the player's Aspect (U13): the panel, its two ways to post the link, and what can go wrong. */
+export const INVITE_WORDS = {
+  title: (aspect: string) => `Invite a friend to ${aspect}`,
+  line: (aspect: string) => `Join me in ${aspect} in Frontier.`,
+  post: "Post on X",
+  copy: "Copy link",
+  copied: "Link copied",
+  making: "Making your link",
+  failed: "Your invite link could not be made.",
+  copyFailed: "The link could not be copied.",
+} as const;
 
 /** The day's banner: today's quest, how far the home is ("1 of 2 camps"), its reward and collecting it. */
 export const QUEST_WORDS = {

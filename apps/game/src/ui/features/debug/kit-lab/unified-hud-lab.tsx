@@ -1,7 +1,7 @@
 import { SeasonOver } from "@/shell/season-tab/season-over";
 import { answerLabOpening } from "@/lab/lab-opening";
 import { frontierArmyRules } from "../../frontier/army/progression-rules-fixture";
-import { useIdentitySessionStore } from "@/hooks/context/identity-session";
+import { identityClient, useIdentitySessionStore } from "@/hooks/context/identity-session";
 import { LAB_SESSION } from "@/shell/lab/app-lab-fixtures";
 import { answerLabChat } from "@/shell/lab/lab-chat";
 import { usePopoverStore } from "@/hooks/store/use-popover-store";
@@ -21,7 +21,14 @@ import {
   type SkillPointChoice,
 } from "@bibliothecadao/eternum";
 import type { NativeFactStore } from "@bibliothecadao/eternum/game-client";
-import { ActorType, RESOURCE_PRECISION, ResourcesIds, StructureType, TileOccupier } from "@bibliothecadao/types";
+import {
+  ActorType,
+  aspects,
+  RESOURCE_PRECISION,
+  ResourcesIds,
+  StructureType,
+  TileOccupier,
+} from "@bibliothecadao/types";
 import { useEffect } from "react";
 import { useParams } from "react-router-dom";
 
@@ -94,13 +101,17 @@ const ViewLab = ({ view }: { view: View }) => {
   useDocumentClass(frontier ? "frontier-hud" : "classic-hud");
   useHudMode(mode === "eternum" ? "eternum" : frontier ? "frontier" : "blitz");
   // The lab's player is signed in, as a player in a game is, and chat connects to the lab's chat server, in the tab.
+  // Identity makes the lab player's shared links in the tab: one code for every link.
   useEffect(() => {
     const restoreChat = answerLabChat({});
     const restoreOpening = answerLabOpening(LAB_SESSION.user.realmsId, fresh ? [] : undefined);
+    const { createShare } = identityClient;
+    identityClient.createShare = async () => LAB_SHARE_CODE;
     useIdentitySessionStore.getState().applySession(LAB_SESSION);
     return () => {
       restoreChat();
       restoreOpening();
+      identityClient.createShare = createShare;
     };
   }, [fresh]);
   return (
@@ -115,7 +126,7 @@ const ViewLab = ({ view }: { view: View }) => {
         spectating={spectating}
         finished={finished}
         facts={(store) => [
-          ...(frontier ? seasonOneQuestRules() : []),
+          ...(frontier ? seasonOneFacts() : []),
           ...(army
             ? [
                 ...labArmyOut(store, tired ? TIRED_STAMINA : LAB_ARMY_STAMINA),
@@ -340,8 +351,11 @@ const recordSkillPointSpent = (call: { explorerId: number; choice: SkillPointCho
   return Promise.resolve();
 };
 
-/** Season 1's quest rules as its preset writes them, so a Frontier view draws the day's banner. */
-const seasonOneQuestRules = (): unknown[] => {
+/**
+ * Season 1's quest rules as its preset writes them, and the lab realm a member of Harmony, so a Frontier view draws the
+ * day's banner and the invite to its Aspect.
+ */
+const seasonOneFacts = (): unknown[] => {
   const { baseCounts, labor, essence, bonusPercent } = frontierSeasonOnePreset.dailyQuest;
   return [
     {
@@ -355,5 +369,9 @@ const seasonOneQuestRules = (): unknown[] => {
         bonus_percent: bonusPercent,
       },
     },
+    { model: "HomeAspect", key: "0x9e2", value: { game_id: 1, home: 7n, aspect: aspects[1].id } },
   ];
 };
+
+/** The code identity gives every link the lab player makes, as a link's code is spelled. */
+const LAB_SHARE_CODE = "LABSHARE";
