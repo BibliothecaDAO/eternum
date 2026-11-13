@@ -1,7 +1,7 @@
 pub const RUIN_DEPTH_LIMIT_RELEASE: u32 = 9;
 
 pub use games_storage::release::Release;
-use starknet::storage::StoragePointerReadAccess;
+use starknet::storage::{StorageMapReadAccess, StoragePathEntry, StoragePointerReadAccess};
 
 #[starknet::interface]
 pub trait IReleases<T> {
@@ -31,8 +31,7 @@ pub mod ReleaseState {
     use games_storage::release::LogicClasses;
     use starknet::ContractAddress;
     use starknet::storage::{
-        StorageMapReadAccess, StorageMapWriteAccess, StoragePathEntry, StoragePointerReadAccess,
-        StoragePointerWriteAccess,
+        StorageMapReadAccess, StorageMapWriteAccess, StoragePointerReadAccess, StoragePointerWriteAccess,
     };
     use super::{IReleaseMigrationDispatcherTrait, IReleaseMigrationLibraryDispatcher, Release};
 
@@ -118,9 +117,14 @@ pub mod ReleaseState {
         fn classes(
             self: @ComponentState<TContractState>, game_id: u32,
         ) -> starknet::storage::StoragePointer<LogicClasses> {
-            let release_id = self.data.game_releases.read(game_id);
-            assert!(release_id != 0, "game has no release");
-            self.data.releases.entry(release_id).classes
+            super::classes(game_id)
         }
     }
+}
+
+pub fn classes(game_id: u32) -> starknet::storage::StoragePointer<games_storage::release::LogicClasses> {
+    let state = crate::state::read();
+    let release_id = state.game_releases.read(game_id);
+    assert!(release_id != 0, "game has no release");
+    state.releases.entry(release_id).classes
 }

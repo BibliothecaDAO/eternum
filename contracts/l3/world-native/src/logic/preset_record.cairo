@@ -21,7 +21,7 @@ pub fn store(commitment: felt252, definition: crate::presets::PresetDefinition) 
         definition.rules.mode_rules,
     );
     crate::presets::IPresetStructuresDispatcherTrait::store_structure_preset(
-        crate::presets::IPresetStructuresLibraryDispatcher { class_hash: classes.construction },
+        crate::presets::IPresetStructuresLibraryDispatcher { class_hash: classes.map },
         commitment,
         definition.structures,
     );
@@ -162,7 +162,9 @@ fn write_economy(
     preset.artificer_cost.write(economy.research_cost);
     if let Some(withdrawals) = economy.withdrawals {
         crate::presets::IPresetWithdrawalsDispatcherTrait::store_withdrawal_preset(
-            crate::presets::IPresetWithdrawalsLibraryDispatcher { class_hash: classes.bridge }, commitment, withdrawals,
+            crate::presets::IPresetWithdrawalsLibraryDispatcher { class_hash: classes.production },
+            commitment,
+            withdrawals,
         );
     }
 }

@@ -177,7 +177,7 @@ pub mod Games {
             ref self: ContractState, home: crate::entry::LaborHome, day: u64, account: ContractAddress,
         ) -> crate::entry::LaborGrant {
             crate::entry::IHomeGrantsDispatcherTrait::grant_labor(
-                crate::entry::IHomeGrantsLibraryDispatcher { class_hash: self.release.current_classes().production },
+                crate::entry::IHomeGrantsLibraryDispatcher { class_hash: self.release.current_classes().bridge },
                 home,
                 day,
                 account,
@@ -187,7 +187,7 @@ pub mod Games {
             self: @ContractState, home: crate::entry::LaborHome, day: u64,
         ) -> Option<crate::entry::LaborGrant> {
             crate::entry::IHomeGrantsDispatcherTrait::labor_grant(
-                crate::entry::IHomeGrantsLibraryDispatcher { class_hash: self.release.current_classes().production },
+                crate::entry::IHomeGrantsLibraryDispatcher { class_hash: self.release.current_classes().bridge },
                 home,
                 day,
             )
@@ -260,8 +260,8 @@ pub mod Games {
     #[external(v0)]
     fn register_village_pass(ref self: ContractState, key: crate::village::VillagePassKey, owner: ContractAddress) {
         let classes = self.release.classes(key.game_id);
-        crate::village::IVillagesDispatcherTrait::register_village_pass(
-            crate::village::IVillagesLibraryDispatcher { class_hash: classes.settlement.read() }, key, owner,
+        crate::village::IVillagePassesDispatcherTrait::register_village_pass(
+            crate::village::IVillagePassesLibraryDispatcher { class_hash: classes.settlement.read() }, key, owner,
         );
     }
     #[external(v0)]

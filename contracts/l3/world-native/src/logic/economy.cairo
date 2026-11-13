@@ -295,7 +295,7 @@ pub mod EconomyLogic {
             self.markets.write_shares(liquidity, owned - command.shares);
             if command.structure_id == 0 {
                 crate::bridge::IBankWithdrawalLibraryDispatcher {
-                    class_hash: self.release.classes(game_id).bridge.read(),
+                    class_hash: self.release.classes(game_id).production.read(),
                 }
                     .withdraw_bank_resources(
                         game_id,
@@ -307,7 +307,7 @@ pub mod EconomyLogic {
                         crate::commands::action_context(context),
                     );
                 crate::bridge::IBankWithdrawalLibraryDispatcher {
-                    class_hash: self.release.classes(game_id).bridge.read(),
+                    class_hash: self.release.classes(game_id).production.read(),
                 }
                     .withdraw_bank_resources(
                         game_id,

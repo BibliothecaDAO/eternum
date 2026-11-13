@@ -12,7 +12,7 @@ pub fn record(home: ResourceKey, kind: u8, amount: u128, timestamp: u64) {
     }
     let state = crate::state::read();
     let release = state.game_releases.read(home.game_id);
-    IQuestProgressLibraryDispatcher { class_hash: state.releases.entry(release).classes.production.read() }
+    IQuestProgressLibraryDispatcher { class_hash: state.releases.entry(release).classes.bridge.read() }
         .record_quest_progress(home, kind, amount, timestamp);
 }
 
