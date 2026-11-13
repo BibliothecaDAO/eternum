@@ -1954,19 +1954,30 @@ pub mod GamesFixture {
                 ledger_operator_dispatcher(game_id), game_id, structure_id,
             )
         }
-
+    }
+    #[starknet::embeddable]
+    pub impl HomeGrantsFixture<TContractState, +Drop<TContractState>> of crate::entry::IHomeGrants<TContractState> {
         fn grant_labor(
             ref self: TContractState, home: crate::entry::LaborHome, day: u64, account: starknet::ContractAddress,
         ) -> crate::entry::LaborGrant {
-            crate::entry::ILedgerOperatorDispatcherTrait::grant_labor(
-                ledger_operator_dispatcher(home.game_id), home, day, account,
+            crate::entry::IHomeGrantsDispatcherTrait::grant_labor(
+                crate::entry::IHomeGrantsLibraryDispatcher {
+                    class_hash: crate::logic::release::classes(home.game_id).bridge.read(),
+                },
+                home,
+                day,
+                account,
             )
         }
         fn labor_grant(
             self: @TContractState, home: crate::entry::LaborHome, day: u64,
         ) -> Option<crate::entry::LaborGrant> {
-            crate::entry::ILedgerOperatorDispatcherTrait::labor_grant(
-                ledger_operator_dispatcher(home.game_id), home, day,
+            crate::entry::IHomeGrantsDispatcherTrait::labor_grant(
+                crate::entry::IHomeGrantsLibraryDispatcher {
+                    class_hash: crate::logic::release::classes(home.game_id).bridge.read(),
+                },
+                home,
+                day,
             )
         }
     }

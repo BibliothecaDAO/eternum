@@ -92,14 +92,6 @@ pub mod EntryAdministration {
             get_dep_component!(@self, Life).assert_authority();
             self.data.entry.operator.write(operator);
         }
-        fn labor_grant(self: @ComponentState<TContractState>, home: LaborHome, day: u64) -> Option<LaborGrant> {
-            match self.data.entry.home_labor_grants.read((home.game_id, home.home, day)) {
-                Some((
-                    account, amount, essence,
-                )) => Some(LaborGrant { game_id: home.game_id, account, home: home.home, amount, essence }),
-                None => None,
-            }
-        }
 
         fn frontier_prize(self: @ComponentState<TContractState>, game_id: u32) -> crate::entry::FrontierPrize {
             crate::entry::FrontierPrize {
@@ -119,12 +111,27 @@ pub mod EntryAdministration {
                 structure_id,
             );
         }
-
+    }
+    #[embeddable_as(HomeGrantsImpl)]
+    pub impl HomeGrants<
+        TContractState,
+        +HasComponent<TContractState>,
+        impl Life: ReleaseState::HasComponent<TContractState>,
+        +Drop<TContractState>,
+    > of crate::entry::IHomeGrants<ComponentState<TContractState>> {
         fn grant_labor(
             ref self: ComponentState<TContractState>, home: LaborHome, day: u64, account: ContractAddress,
         ) -> LaborGrant {
             super::assert_ledger_operator();
             self.grant_home_resources(home, day, account)
+        }
+        fn labor_grant(self: @ComponentState<TContractState>, home: LaborHome, day: u64) -> Option<LaborGrant> {
+            match self.data.entry.home_labor_grants.read((home.game_id, home.home, day)) {
+                Some((
+                    account, amount, essence,
+                )) => Some(LaborGrant { game_id: home.game_id, account, home: home.home, amount, essence }),
+                None => None,
+            }
         }
     }
     #[embeddable_as(CampaignRecoveryImpl)]
@@ -183,7 +190,7 @@ pub mod EntryAdministration {
         fn grant_home_resources(
             ref self: ComponentState<TContractState>, target: LaborHome, day: u64, account: ContractAddress,
         ) -> LaborGrant {
-            if let Some(previous) = crate::entry::ILedgerOperator::labor_grant(@self, target, day) {
+            if let Some(previous) = crate::entry::IHomeGrants::labor_grant(@self, target, day) {
                 assert!(
                     previous.game_id == target.game_id && previous.account == account && previous.home == target.home,
                     "labor already claimed",

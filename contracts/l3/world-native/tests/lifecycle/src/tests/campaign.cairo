@@ -57,7 +57,7 @@ fn balance(d: Deployment, home: LaborHome, resource: u8) -> u128 {
 #[feature("safe_dispatcher")]
 fn claims_each_game_day(tier: u8, expected_amount: u128, expected_essence: u128) {
     let (d, home) = campaign_home("devcon", tier);
-    let operator = ILedgerOperatorSafeDispatcher { contract_address: d.games };
+    let operator = IHomeGrantsSafeDispatcher { contract_address: d.games };
     let labor_before = balance(d, home, LABOR);
     let essence_before = balance(d, home, ESSENCE);
     assert!(operator.grant_labor(home, 1, d.actor).is_err());
@@ -209,7 +209,7 @@ fn refuses_a_second_source(held_first: bool) {
     ledger(d).register_entitlement(key, first).unwrap();
     assert_eq!(ledger(d).entry_entitlement(key).unwrap(), Some(first));
     start_cheat_block_timestamp(d.games, 360);
-    let grant = ILedgerOperatorSafeDispatcher { contract_address: d.games }.grant_labor(home, 0, d.actor).unwrap();
+    let grant = IHomeGrantsSafeDispatcher { contract_address: d.games }.grant_labor(home, 0, d.actor).unwrap();
     assert_eq!(grant.amount, if held_first {
         1000 * RESOURCE_PRECISION
     } else {
@@ -265,7 +265,7 @@ fn founded_free_homes_gain_one_campaign_source_without_changing_existing_claims(
         (crate::settlement::CAMPAIGN_NORMAL, 1000_u128), (crate::settlement::CAMPAIGN_GOLDEN, 2000_u128),
     ] {
         let (d, home) = campaign_home("devcon", crate::settlement::CAMPAIGN_NORMAL);
-        let operator = ILedgerOperatorSafeDispatcher { contract_address: d.games };
+        let operator = IHomeGrantsSafeDispatcher { contract_address: d.games };
         let previous = operator.grant_labor(home, 0, d.actor).unwrap();
         let other = super::bind_authority(d);
         let free = found(other, home.game_id);
@@ -322,7 +322,7 @@ fn full_labor_store_still_claims_essence(tier: u8, expected_essence: u128) {
         },
     );
     let before = balance(d, home, ESSENCE);
-    let operator = ILedgerOperatorSafeDispatcher { contract_address: d.games };
+    let operator = IHomeGrantsSafeDispatcher { contract_address: d.games };
     let grant = operator.grant_labor(home, 0, d.actor).unwrap();
     assert_eq!(grant.amount, 0);
     assert_eq!(grant.essence, expected_essence * RESOURCE_PRECISION);
@@ -347,7 +347,7 @@ fn a_golden_claim_records_essence_even_when_the_labor_store_is_full() {
 #[feature("safe_dispatcher")]
 fn the_normal_speed_preset_does_not_pay_devcon_essence() {
     let (d, home) = campaign_home("frontier", crate::settlement::CAMPAIGN_GOLDEN);
-    let grant = ILedgerOperatorSafeDispatcher { contract_address: d.games }.grant_labor(home, 0, d.actor).unwrap();
+    let grant = IHomeGrantsSafeDispatcher { contract_address: d.games }.grant_labor(home, 0, d.actor).unwrap();
     assert_eq!(grant.amount, 1000 * RESOURCE_PRECISION);
     assert_eq!(grant.essence, 0);
 }
@@ -371,7 +371,7 @@ fn partial_seasons_grant_once_per_actual_day_and_stop_at_the_end() {
         set_operator(d, authority());
         register(d, game_id, ticket(crate::settlement::CAMPAIGN_NORMAL));
         let home = found(d, game_id);
-        let operator = ILedgerOperatorSafeDispatcher { contract_address: d.games };
+        let operator = IHomeGrantsSafeDispatcher { contract_address: d.games };
         let game = crate::game::IGameDispatcherTrait::game(
             crate::game::IGameDispatcher { contract_address: d.games }, game_id,
         );
@@ -427,7 +427,7 @@ fn a_late_held_realm_keeps_the_home_and_grants_only_today_without_essence() {
     register(d, game_id, held);
     assert_eq!(ledger(d).settled_realm(game_id, realm_id.try_into().unwrap()).unwrap(), home.home);
     assert_eq!(interact_with_state(d.games, || crate::logic::structures::record(key)), before);
-    let operator = ILedgerOperatorSafeDispatcher { contract_address: d.games };
+    let operator = IHomeGrantsSafeDispatcher { contract_address: d.games };
     assert!(operator.labor_grant(home, 0).unwrap().is_none());
     assert_eq!(balance(d, home, LABOR), labor);
     assert_eq!(balance(d, home, ESSENCE), essence);
@@ -463,7 +463,7 @@ fn flyer_recovery_grants_missed_days_once_and_leaves_today_to_the_normal_claim()
         start_cheat_block_timestamp(d.games, boundary);
         let recovery = EntryEntitlement { metadata_3: 'devcon-recovery', ..ticket(tier) };
         register(d, game_id, recovery);
-        let operator = ILedgerOperatorSafeDispatcher { contract_address: d.games };
+        let operator = IHomeGrantsSafeDispatcher { contract_address: d.games };
         let grant = operator.labor_grant(home, 0).unwrap().unwrap();
         assert_eq!(grant.amount, amount * RESOURCE_PRECISION);
         assert_eq!(grant.essence, amount * RESOURCE_PRECISION);
@@ -487,7 +487,7 @@ fn recovery_resumes_a_drawn_ticket_without_repaying_claimed_days_and_obeys_stora
     set_operator(d, authority());
     let home = found(d, game_id);
     register(d, game_id, ticket(2));
-    let operator = ILedgerOperatorSafeDispatcher { contract_address: d.games };
+    let operator = IHomeGrantsSafeDispatcher { contract_address: d.games };
     let original = operator.grant_labor(home, 0, d.actor).unwrap();
     let game = crate::game::IGameDispatcherTrait::game(
         crate::game::IGameDispatcher { contract_address: d.games }, game_id,
@@ -523,7 +523,7 @@ fn recovery_requires_a_founded_devcon_home_and_pays_nothing_for_today() {
     register(d, game_id, recovery);
     assert_eq!(balance(d, home, LABOR), labor);
     assert_eq!(balance(d, home, ESSENCE), essence);
-    assert!(ILedgerOperatorSafeDispatcher { contract_address: d.games }.labor_grant(home, 0).unwrap().is_none());
+    assert!(IHomeGrantsSafeDispatcher { contract_address: d.games }.labor_grant(home, 0).unwrap().is_none());
 }
 
 #[test]
@@ -539,7 +539,7 @@ fn an_ordinary_late_ticket_does_not_compensate_previous_days() {
     let labor = balance(d, home, LABOR);
     let essence = balance(d, home, ESSENCE);
     register(d, game_id, ticket(2));
-    let operator = ILedgerOperatorSafeDispatcher { contract_address: d.games };
+    let operator = IHomeGrantsSafeDispatcher { contract_address: d.games };
     assert!(operator.labor_grant(home, 0).unwrap().is_none());
     assert!(operator.labor_grant(home, 1).unwrap().is_none());
     assert_eq!(balance(d, home, LABOR), labor);
@@ -558,7 +558,7 @@ fn golden_upgrade_preserves_home_and_paid_claims_then_grants_prospectively(recov
     if recovered {
         register(d, home.game_id, EntryEntitlement { metadata_3: 'devcon-recovery', ..ticket(1) });
     }
-    let operator = ILedgerOperatorSafeDispatcher { contract_address: d.games };
+    let operator = IHomeGrantsSafeDispatcher { contract_address: d.games };
     let paid = operator.grant_labor(home, 0, d.actor).unwrap();
     assert_eq!(paid.amount, 1000 * RESOURCE_PRECISION);
     assert_eq!(paid.essence, 1000 * RESOURCE_PRECISION);
@@ -621,7 +621,7 @@ fn golden_upgrade_changes_an_unclaimed_day_without_recovering_missed_days() {
     register(d, home.game_id, golden_upgrade());
     assert_eq!(balance(d, home, LABOR), labor);
     assert_eq!(balance(d, home, ESSENCE), essence);
-    let operator = ILedgerOperatorSafeDispatcher { contract_address: d.games };
+    let operator = IHomeGrantsSafeDispatcher { contract_address: d.games };
     assert!(operator.labor_grant(home, 0).unwrap().is_none());
     assert!(
         ledger(d)
@@ -647,7 +647,7 @@ fn separate_regular_homes_can_both_upgrade_to_golden_and_claim_the_unpaid_day() 
         register(player, game_id, ticket(1));
         let home = found(player, game_id);
         register(player, game_id, golden_upgrade());
-        let operator = ILedgerOperatorSafeDispatcher { contract_address: d.games };
+        let operator = IHomeGrantsSafeDispatcher { contract_address: d.games };
         let grant = operator.grant_labor(home, 0, player.actor).unwrap();
         assert_eq!(grant.amount, 2000 * RESOURCE_PRECISION);
         assert_eq!(grant.essence, 2000 * RESOURCE_PRECISION);

@@ -8,6 +8,8 @@ pub mod BridgeLogic {
     component!(path: EntryAdministration, storage: administration, event: AdministrationEvent);
     #[abi(embed_v0)]
     impl LedgerOperator = EntryAdministration::LedgerOperatorImpl<ContractState>;
+    #[abi(embed_v0)]
+    impl HomeGrants = EntryAdministration::HomeGrantsImpl<ContractState>;
     impl AdministrationInternal = EntryAdministration::InternalImpl<ContractState>;
     #[abi(embed_v0)]
     impl CampaignRecovery = EntryAdministration::CampaignRecoveryImpl<ContractState>;

@@ -4,8 +4,8 @@ pub use snforge_std::{
 pub use starknet::ContractAddress;
 pub use starknet::storage::{StorageMapReadAccess, StorageMapWriteAccess, StoragePathEntry, StoragePointerWriteAccess};
 pub use crate::entry::{
-    ILedgerOperatorDispatcher, ILedgerOperatorDispatcherTrait, ILedgerOperatorSafeDispatcher,
-    ILedgerOperatorSafeDispatcherTrait,
+    IHomeGrantsSafeDispatcher, IHomeGrantsSafeDispatcherTrait, ILedgerOperatorDispatcher,
+    ILedgerOperatorDispatcherTrait, ILedgerOperatorSafeDispatcher, ILedgerOperatorSafeDispatcherTrait,
 };
 pub use crate::settlement::{
     EntryEntitlement, EntryKey, ISettlementEntrySafeDispatcher, ISettlementEntrySafeDispatcherTrait,

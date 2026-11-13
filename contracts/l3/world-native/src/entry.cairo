@@ -16,6 +16,10 @@ pub trait ILedgerOperator<T> {
     fn set_ledger_operator(ref self: T, operator: ContractAddress);
     fn sweep_lords(ref self: T, game_id: u32, structure_id: u64);
     fn frontier_prize(self: @T, game_id: u32) -> FrontierPrize;
+}
+
+#[starknet::interface]
+pub trait IHomeGrants<T> {
     fn grant_labor(ref self: T, home: LaborHome, day: u64, account: ContractAddress) -> LaborGrant;
     fn labor_grant(self: @T, home: LaborHome, day: u64) -> Option<LaborGrant>;
 }

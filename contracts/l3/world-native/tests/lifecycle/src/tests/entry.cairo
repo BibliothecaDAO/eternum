@@ -223,7 +223,7 @@ fn settle_labor_home(held: bool) -> (Deployment, crate::entry::LaborHome) {
 #[feature("safe_dispatcher")]
 fn a_held_settlement_receives_one_thousand_labor_per_day_and_retries_are_exact() {
     let (d, home) = settle_labor_home(true);
-    let operator = ILedgerOperatorSafeDispatcher { contract_address: d.games };
+    let operator = IHomeGrantsSafeDispatcher { contract_address: d.games };
     assert!(operator.grant_labor(home, 1, d.actor).is_err());
     assert!(operator.grant_labor(home, 0, authority()).is_err());
     let grant = operator.grant_labor(home, 0, d.actor).unwrap();
@@ -267,7 +267,7 @@ fn a_held_settlement_receives_one_thousand_labor_per_day_and_retries_are_exact()
 #[feature("safe_dispatcher")]
 fn a_free_settlement_has_no_daily_labor_claim() {
     let (d, home) = settle_labor_home(false);
-    let operator = ILedgerOperatorSafeDispatcher { contract_address: d.games };
+    let operator = IHomeGrantsSafeDispatcher { contract_address: d.games };
     assert!(operator.grant_labor(home, 0, d.actor).is_err());
     assert_eq!(operator.labor_grant(home, 0).unwrap(), None);
 }
@@ -285,7 +285,7 @@ fn a_full_store_consumes_only_that_homes_daily_claim() {
                 .write((home.game_id, home.home), crate::resources::Weight { capacity: 0, weight: 0 });
         },
     );
-    let operator = ILedgerOperatorSafeDispatcher { contract_address: d.games };
+    let operator = IHomeGrantsSafeDispatcher { contract_address: d.games };
     let result = operator.grant_labor(home, 0, d.actor);
     assert!(result.is_ok(), "full-store claim failed: {:?}", result);
     let grant = result.unwrap();
@@ -316,7 +316,7 @@ fn midnight_is_not_a_frontier_labor_reset() {
     let preset = super::registrar::labor_home_definition("devcon");
     let day = crate::days::day_of(game, preset.rules.day_unit_seconds, 86400);
     assert!(day.start < 86400 && day.end > 86400);
-    let operator = ILedgerOperatorSafeDispatcher { contract_address: d.games };
+    let operator = IHomeGrantsSafeDispatcher { contract_address: d.games };
     snforge_std::start_cheat_block_timestamp(d.games, 86399);
     let grant = operator.grant_labor(home, day.index, d.actor).unwrap();
     snforge_std::start_cheat_block_timestamp(d.games, 86400);
