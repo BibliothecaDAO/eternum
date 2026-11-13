@@ -1,7 +1,5 @@
 use snforge_std::{start_cheat_block_timestamp, start_cheat_chain_id};
-use starknet::storage::{
-    StoragePathEntry, StoragePointerReadAccess, StoragePointerWriteAccess,
-};
+use starknet::storage::{StoragePathEntry, StoragePointerReadAccess, StoragePointerWriteAccess};
 use world_test_support::tests::releases::*;
 use crate::approved_frontier_extension as approved;
 
