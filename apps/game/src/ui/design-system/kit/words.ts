@@ -1627,6 +1627,8 @@ export const BANE_WORDS = {
   teamRule: "Your hyperstructure does not grow",
   members: (completed: number, required: number) => `${formatExact(completed)} of ${formatExact(required)} members`,
   worldEnded: "Ended: the quest pays twice",
+  worldEndedShort: "Ended, pays twice",
+  teamEndedShort: "Ended, grows again",
   teamEnded: "Ended: your hyperstructure grows again",
 } as const;
 

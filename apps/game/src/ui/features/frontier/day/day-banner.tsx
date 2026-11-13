@@ -6,13 +6,17 @@ import { BANE_MEANING, questMeaning, triumphMeaning } from "@/ui/design-system/d
 import type { IconMeaning } from "@/ui/design-system/icon";
 import { Icon } from "@/ui/design-system/icon";
 import { orderMeaning, resourceMeaning } from "@/ui/design-system/icon-meaning";
-import { HudButton, HudLoading, HudMeter, HudPanel } from "@/ui/design-system/kit/hud-elements";
+import { HudButton, HudChip, HudLoading, HudMeter, HudPanel } from "@/ui/design-system/kit/hud-elements";
+import { useLayout } from "@/shell/frame/layout";
+import { useState } from "react";
+import { RealmsChip } from "../value/lords-purse";
+import type { DailyClaimWaiting } from "../value/realm-labor";
 import { BANE_WORDS, QUEST_WORDS, TRIUMPH_WORDS } from "@/ui/design-system/kit/words";
 import { toast } from "@/ui/features/event-feed/notify";
 import { useOpens } from "../opening/use-opening";
 import { readDailyQuest, readTodaysTriumph, type TriumphStage } from "@bibliothecadao/eternum";
 import { safeInteger, type NativeRows } from "@bibliothecadao/eternum/game-client";
-import { aspectName, formatAmount, orders, ResourcesIds, worldBanes } from "@bibliothecadao/types";
+import { aspectName, formatAmount, formatExact, orders, ResourcesIds, worldBanes } from "@bibliothecadao/types";
 
 export const QUEST_MODELS = [
   "QuestRules",
@@ -61,15 +65,31 @@ const useDayQuest = (realm: NativeRows["Structure"]): DayQuest | undefined => {
   return readDailyQuest(setup.store, realm.game_id, safeInteger(realm.entity_id), useNowSeconds());
 };
 
+/** Whether the day's banner stands for the realm (a game with quests, inside its days): it then holds the daily claim. */
+export const useDayBannerStands = (realm: NativeRows["Structure"] | null): boolean => {
+  const { setup } = useGame();
+  useNativeRevision(QUEST_MODELS);
+  const now = useNowSeconds();
+  return realm !== null && readDailyQuest(setup.store, realm.game_id, safeInteger(realm.entity_id), now) !== undefined;
+};
+
+/** The home's daily claim as the banner holds it: what waits today, and the press that opens Realms. */
+interface DayClaim {
+  waiting: DailyClaimWaiting | null;
+  onOpen: () => void;
+}
+
 /**
  * The day's banner (U1) over the player's own realm: today's quest with its painting and name, its count ("1 of 2
  * camps") over a meter, and its reward. On a bane day the quest is the bane quest, the bane heads the panel and how far
  * the Aspect is at ending it ("4 of 6 members") closes it. Collect sends the reward once the quest is done; once the
  * Aspect ended a world bane it is offered again, for the second reward. While the snapshot has not settled a row the
  * day rests on, the banner says it is reading and offers nothing to press. On a day the home's Aspect has a Triumph,
- * it heads the panel with its name and what it does today. Nothing in a game without quests.
+ * it heads the panel with its name and what it does today. The home's daily claim (the Labor and Essence waiting
+ * today, which opens Realms) sits in the panel's foot. A phone gets the lighter panel (PhoneDay). Nothing in a game
+ * without quests.
  */
-export const FrontierDayBanner = ({ realm }: { realm: NativeRows["Structure"] }) => {
+export const FrontierDayBanner = ({ realm, claim }: { realm: NativeRows["Structure"]; claim: DayClaim }) => {
   const { setup, account } = useGame();
   const quest = useDayQuest(realm);
   const triumph = useTodaysTriumph(realm);
@@ -92,6 +112,7 @@ export const FrontierDayBanner = ({ realm }: { realm: NativeRows["Structure"] })
       triumph={triumph}
       collecting={collecting}
       onCollect={collect}
+      claim={claim}
     />
   );
 };
@@ -105,20 +126,36 @@ const DayQuestBanner = ({
   triumph,
   collecting,
   onCollect,
+  claim,
 }: {
   gameId: number;
   quest: DayQuest;
   triumph: TriumphReading | undefined;
   collecting: boolean;
   onCollect: () => unknown;
+  claim: DayClaim;
 }) => {
   const { setup } = useGame();
+  const phone = useLayout() === "phone";
   const reading = quest.reading.known;
   const showsBane = useOpens("bane-row");
   const heads = [
     ...(reading?.bane && showsBane ? [baneHead(reading.bane, setup.store.get("BaneRules", { game_id: gameId }))] : []),
     ...(triumph?.known ? [triumphHead(triumph.known)] : []),
   ];
+  if (phone)
+    return (
+      <PhoneDay
+        quest={quest}
+        heads={heads}
+        reading={reading}
+        triumphReading={triumph?.unknown !== undefined}
+        showsBane={showsBane}
+        collecting={collecting}
+        onCollect={onCollect}
+        claim={claim}
+      />
+    );
   return (
     <HudPanel
       label={QUEST_WORDS.today}
@@ -148,7 +185,84 @@ const DayQuestBanner = ({
       ) : (
         <HudLoading line={QUEST_WORDS.reading} />
       )}
-      {reading?.bane && showsBane && <Members bane={reading.bane} />}
+      <span className="flex items-center justify-between gap-2">
+        <span className="min-w-0 flex-1">{reading?.bane && showsBane && <Members bane={reading.bane} />}</span>
+        <RealmsChip waiting={claim.waiting} onOpen={claim.onOpen} />
+      </span>
+    </HudPanel>
+  );
+};
+
+/**
+ * A phone's panel, lighter than the desktop's (the owner: it overloads the screen): the quest on one row with its meter,
+ * one foot row (the rewards, how many members, the claim waiting), and the day's news as chips: the bane and the
+ * Triumph by name, each opening its line on a press. Nothing in the head blocks the desktop panel draws.
+ */
+const PhoneDay = ({
+  quest,
+  heads,
+  reading,
+  triumphReading,
+  showsBane,
+  collecting,
+  onCollect,
+  claim,
+}: {
+  quest: DayQuest;
+  heads: Head[];
+  reading: QuestReading | undefined;
+  triumphReading: boolean;
+  showsBane: boolean;
+  collecting: boolean;
+  onCollect: () => unknown;
+  claim: DayClaim;
+}) => {
+  const [open, setOpen] = useState<string | null>(null);
+  const opened = heads.find((head) => head.eyebrow === open);
+  const count = quest.quest && reading ? QUEST_WORDS.count(quest.quest.id, reading.progress, reading.target) : null;
+  return (
+    <HudPanel
+      label={QUEST_WORDS.today}
+      collapsible={false}
+      className="pointer-events-auto"
+      bodyClassName="flex flex-col gap-1.5"
+    >
+      <span className="flex items-center gap-2">
+        {quest.quest && <Icon name={questMeaning(quest.quest.id)} size={32} />}
+        <span className="flex min-w-0 flex-1 flex-col">
+          <span className="flex items-baseline justify-between gap-2">
+            <span className="truncate text-hud-strong text-hud-ink">{quest.quest?.name ?? QUEST_WORDS.reading}</span>
+            {count && <span className="shrink-0 text-hud-label tabular-nums text-hud-muted">{count}</span>}
+          </span>
+          {reading ? (
+            <HudMeter share={Math.min(1, Number(reading.progress) / Number(reading.target))} label={count ?? ""} />
+          ) : (
+            <HudLoading line={QUEST_WORDS.reading} />
+          )}
+        </span>
+        {reading && <QuestEnd reading={reading} collecting={collecting} onCollect={onCollect} />}
+      </span>
+      <span className="flex items-center justify-between gap-2 text-hud-label tabular-nums text-hud-ink">
+        {reading ? <Rewards reading={reading} /> : <span />}
+        {reading?.bane && showsBane && <MembersCount bane={reading.bane} />}
+        <RealmsChip waiting={claim.waiting} narrow onOpen={claim.onOpen} />
+      </span>
+      {(heads.length > 0 || triumphReading) && (
+        <span className="flex flex-wrap items-center gap-1.5">
+          {heads.map((head) => (
+            <HudChip
+              key={head.eyebrow}
+              icons={[head.icon]}
+              tone={head.tone}
+              onPress={() => setOpen(open === head.eyebrow ? null : head.eyebrow)}
+            >
+              {head.name}
+            </HudChip>
+          ))}
+          {triumphReading && <HudLoading line={TRIUMPH_WORDS.reading} />}
+        </span>
+      )}
+      {opened && <span className="text-hud-label text-hud-muted">{opened.rule}</span>}
     </HudPanel>
   );
 };
@@ -254,13 +368,33 @@ const QuestProgress = ({ quest, reading }: { quest: NonNullable<DayQuest["quest"
         <span className="shrink-0 text-hud-label tabular-nums text-hud-muted">{count}</span>
       </span>
       <HudMeter share={Math.min(1, Number(reading.progress) / Number(reading.target))} label={count} />
-      <span className="flex items-center gap-3 text-hud-label tabular-nums text-hud-ink">
-        <Reward resource={ResourcesIds.Labor} amount={reading.reward.labor} />
-        <Reward resource={ResourcesIds.Essence} amount={reading.reward.essence} />
-      </span>
+      <Rewards reading={reading} />
     </span>
   );
 };
+
+/** What the quest pays: the Labor and the Essence. */
+const Rewards = ({ reading }: { reading: QuestReading }) => (
+  <span className="flex items-center gap-3 text-hud-label tabular-nums text-hud-ink">
+    <Reward resource={ResourcesIds.Labor} amount={reading.reward.labor} />
+    <Reward resource={ResourcesIds.Essence} amount={reading.reward.essence} />
+  </span>
+);
+
+/** A phone's count of the members who finished the bane ("4 of 6"), or "Ended" with what that brought. */
+const MembersCount = ({ bane }: { bane: BaneReading }) => (
+  <span
+    className={`flex items-center gap-1 ${bane.won ? "text-hud-good" : ""}`}
+    data-tip={BANE_WORDS.members(bane.completed, bane.required)}
+  >
+    <Icon name="people" size={20} />
+    {bane.won
+      ? bane.source === "world"
+        ? BANE_WORDS.worldEndedShort
+        : BANE_WORDS.teamEndedShort
+      : `${formatExact(bane.completed)} of ${formatExact(bane.required)}`}
+  </span>
+);
 
 const Reward = ({ resource, amount }: { resource: ResourcesIds; amount: bigint }) => (
   <span className="flex items-center gap-1">

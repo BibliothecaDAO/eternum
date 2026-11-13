@@ -15,6 +15,7 @@ import { useGoalLine } from "@/ui/features/world/hud/points-goal";
 import { gameStartHeadline } from "@/ui/features/news-headlines/news-headline-bridge";
 import { NewsHeadlineBanner } from "@/ui/features/news-headlines/news-headline-banner";
 import {
+  dayOf,
   nativeGameModeOf,
   readExpeditionRules,
   structureMapPosition,
@@ -29,11 +30,15 @@ import {
   StructureType,
   TileOccupier,
 } from "@bibliothecadao/types";
+import { useChainTimeStore } from "@/hooks/store/use-chain-time-store";
 import { useEffect } from "react";
 import { useParams } from "react-router-dom";
 
 import ROW_SET from "../../../../../../../contracts/l3/world-native/schema/fixtures/row-set.json";
-import { nativeRuleConstants } from "../../../../../../../contracts/l3/world-native/schema/client.gen";
+import {
+  nativeQuestConstants as quests,
+  nativeRuleConstants,
+} from "../../../../../../../contracts/l3/world-native/schema/client.gen";
 import { frontierSeasonOnePreset } from "../../../../../../../config/source/frontier/season-one";
 import { PLAYER } from "./fixture-game";
 import { LabGame } from "./lab-game";
@@ -67,6 +72,8 @@ const VIEWS = {
   "frontier-new": { preset: 5, spectating: false, finished: false, army: false, attack: false, fresh: true },
   // A Season 1 member back from the Deep: its Glory where LORDS stand elsewhere, and its Aspect's Triumph today.
   "season-one-deep": { preset: 7, spectating: false, finished: false, army: false, attack: false, deep: true },
+  // A Season 1 member on a team-bane day that is also her Aspect's Triumph: the busiest the day's panel gets.
+  "season-one-bane": { preset: 7, spectating: false, finished: false, army: false, attack: false, bane: true },
   "blitz-spectator": { preset: 2, spectating: true, finished: false, army: false, attack: false },
   "blitz-finished": { preset: 2, spectating: true, finished: true, army: false, attack: false },
   "blitz-out": { preset: 2, spectating: false, finished: false, army: false, attack: false, out: true },
@@ -82,7 +89,7 @@ export const UNIFIED_VIEWS = (Object.keys(VIEWS) as View[]).map((name) => ({
 
 /**
  * Dev only: the in-game HUD as the game mounts it (a desktop's columns, a phone's compact HUD), every mode's, on the
- * lab's game, at /lab/kit/unified/<view>: blitz, blitz-attack, blitz-attack-short, blitz-build, blitz-start, eternum, frontier, frontier-army, frontier-new, season-one-deep,
+ * lab's game, at /lab/kit/unified/<view>: blitz, blitz-attack, blitz-attack-short, blitz-build, blitz-start, eternum, frontier, frontier-army, frontier-new, season-one-deep, season-one-bane,
  * blitz-spectator, blitz-finished, blitz-out, blitz-out-watching. Frontier's states on the same HUD are the Frontier HUD
  * lab's, /lab/kit/hud/<state>.
  */
@@ -100,6 +107,8 @@ const ViewLab = ({ view }: { view: View }) => {
   const tired = "tired" in VIEWS[view];
   const fresh = "fresh" in VIEWS[view];
   const deep = "deep" in VIEWS[view];
+  const bane = "bane" in VIEWS[view];
+  const seasonOne = preset === frontierSeasonOnePreset.id;
   const mode = nativeGameModeOf(preset);
   const frontier = mode === "frontier";
   useDocumentClass(frontier ? "frontier-hud" : "classic-hud");
@@ -131,7 +140,9 @@ const ViewLab = ({ view }: { view: View }) => {
         finished={finished}
         facts={(store) => [
           ...(frontier ? seasonOneFacts() : []),
-          ...(deep ? backFromTheDeep() : []),
+          ...(seasonOne ? withoutLords(store) : []),
+          ...(deep || bane ? backFromTheDeep(bane ? BANE_DAY : 0) : []),
+          ...(bane ? underChaossBane() : []),
           ...(army
             ? [
                 ...labArmyOut(store, tired ? TIRED_STAMINA : LAB_ARMY_STAMINA),
@@ -149,6 +160,7 @@ const ViewLab = ({ view }: { view: View }) => {
           const rules = frontier ? readExpeditionRules(store, 1) : null;
           return (
             <>
+              {bane && <ClockOnDay store={store} day={BANE_DAY} />}
               {frontier ? (
                 rules && <FrontierHud seasonOver={SeasonOver} rules={rules} />
               ) : (
@@ -388,7 +400,7 @@ const seasonOneFacts = (): unknown[] => {
  * The lab realm back from the Deep in a race game: Season 1's race rules as its preset writes them, 145 Glory earned
  * holding a site, and Harmony's Second Wind on the lab's day (0).
  */
-const backFromTheDeep = (): unknown[] => {
+const backFromTheDeep = (triumphDay = 0): unknown[] => {
   const { race } = frontierSeasonOnePreset;
   if (!race) throw new Error("Season 1's preset races no hyperstructures");
   const at = (index: number) => ({ alt: false, x: race.positions[index]![0]!, y: race.positions[index]![1]! });
@@ -420,7 +432,95 @@ const backFromTheDeep = (): unknown[] => {
     {
       model: "TriumphDay",
       key: "0x9e5",
-      value: { game_id: 1, aspect: aspects[1].id, stage: nativeRuleConstants.SECOND_WIND_STAGE, day: 0n },
+      value: {
+        game_id: 1,
+        aspect: aspects[1].id,
+        stage: nativeRuleConstants.SECOND_WIND_STAGE,
+        day: BigInt(triumphDay),
+      },
+    },
+  ];
+};
+
+/** Season 1's preset leaves WithdrawLords and RefillStamina out: the lab's game takes them out as the preset does. */
+const withoutLords = (store: NativeFactStore): unknown[] => [
+  {
+    model: "SliceRules",
+    key: "0x100",
+    value: {
+      ...store.require("SliceRules", { game_id: 1 }),
+      command_mask: String(frontierSeasonOnePreset.commandMask),
+    },
+  },
+];
+
+/** The lab's day for the bane view: day 0 has no bane, and nobody was out the day before it. */
+const BANE_DAY = 2;
+
+/** Moves the lab's chain clock into a season day; this view holds no army, so none expires with the day. */
+const ClockOnDay = ({ store, day }: { store: NativeFactStore; day: number }) => {
+  useEffect(() => {
+    const rules = readExpeditionRules(store, 1)!;
+    let at = rules.startMainAt;
+    while (dayOf(rules, at)!.index < day) at = dayOf(rules, at)!.end;
+    useChainTimeStore.getState().anchor({ timestamp: (at + 60) * 1000 });
+  }, [store, day]);
+  return null;
+};
+
+/**
+ * Harmony on day 2 under Chaos's team bane, whose quest is the Cull: 24 Harmony homes were out the day before, so 6 end
+ * it and 4 have; the Cull is part done. It is also Harmony's Second Wind day (backFromTheDeep): both heads show.
+ */
+const underChaossBane = (): unknown[] => {
+  const rules = frontierSeasonOnePreset.worldBanes;
+  const harmony = aspects[1].id;
+  return [
+    {
+      model: "BaneRules",
+      key: "0x9e6",
+      value: {
+        game_id: 1,
+        chance_step: rules.chanceStep,
+        quorum_percent: rules.quorumPercent,
+        beast_percent: rules.beastPercent,
+        stamina_percent: rules.staminaPercent,
+        production_percent: rules.productionPercent,
+        quest_counts: rules.questCounts.map(BigInt),
+      },
+    },
+    {
+      model: "TeamBane",
+      key: "0x9e7",
+      value: {
+        game_id: 1,
+        aspect: harmony,
+        day: BigInt(BANE_DAY),
+        source: aspects[2].id,
+        issued_day: 1n,
+        quest: quests.CULL,
+      },
+    },
+    {
+      model: "AspectActivity",
+      key: "0x9e9",
+      value: { game_id: 1, aspect: harmony, day: BigInt(BANE_DAY - 1), active: 24 },
+    },
+    {
+      model: "BaneProgress",
+      key: "0x9e8",
+      value: { game_id: 1, aspect: harmony, day: BigInt(BANE_DAY), completed: 4, ended_at: 0n },
+    },
+    {
+      model: "QuestProgress",
+      key: "0x9ea",
+      value: {
+        game_id: 1,
+        home: 7n,
+        day: BigInt(BANE_DAY),
+        progress: BigInt(1_200 * RESOURCE_PRECISION),
+        completed_level: 0,
+      },
     },
   ];
 };

@@ -3,7 +3,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
-import { afterEach, beforeEach, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { NativeFactStore } from "@bibliothecadao/eternum/game-client";
 
 // The day's banner on the lab's game, its quest read from native facts as the HUD reads them; only the network and
@@ -61,6 +61,9 @@ const questRules = () => {
 };
 
 const claims: { home: number; day: number }[] = [];
+const opened: string[] = [];
+/** What the home's daily claim has waiting; a test sets it before it draws. */
+let claimWaiting: { labor: number; essence: number } | null = null;
 
 /** The lab realm's banner; `facts` the game holds before it draws. */
 const renderBanner = async (facts: unknown[]) => {
@@ -82,7 +85,12 @@ const renderBanner = async (facts: unknown[]) => {
           >
             {(store) => {
               shown = store;
-              return <FrontierDayBanner realm={store.require("Structure", { game_id: 1, entity_id: 7 })} />;
+              return (
+                <FrontierDayBanner
+                  realm={store.require("Structure", { game_id: 1, entity_id: 7 })}
+                  claim={{ waiting: claimWaiting, onOpen: () => void opened.push("realms") }}
+                />
+              );
             }}
           </LabGame>
         </QueryClientProvider>
@@ -93,6 +101,9 @@ const renderBanner = async (facts: unknown[]) => {
 };
 
 const banner = () => host.querySelector('[aria-label="Today\'s quest"]');
+/** The quest's own action (not the claim chip, which is a button too). */
+const collectButton = () =>
+  [...banner()!.querySelectorAll("button")].find((each) => /Collect/.test(each.textContent ?? ""));
 const button = (word: string) => [...host.querySelectorAll("button")].find((each) => each.textContent === word);
 
 it("draws nothing in a game without quests", async () => {
@@ -195,7 +206,7 @@ it("shows a campaign home's 150% labor once its bonus is known, and nothing gues
   expect(banner()!.textContent).toContain("1,500");
   expect(banner()!.textContent).not.toContain("1,000");
   // The quest's action is offered (an earlier test's send, held in flight on purpose, may still name it Collecting).
-  expect(banner()!.querySelector("button")).not.toBeNull();
+  expect(collectButton()).toBeDefined();
 });
 
 /** Season 1's race rules, as its preset writes them, and the lab realm's home in Harmony. */
@@ -345,7 +356,7 @@ it("offers Collect again once the Aspect ends a world bane, for the reward a sec
   expect(banner()!.textContent).toMatch(/Beasts \+50%|Stamina regenerates at 50%|Production at 50%/);
   expect(banner()!.textContent).toContain("Ended: the quest pays twice");
   // The quest's action is offered again (an earlier test's send, held in flight on purpose, may still name it Collecting).
-  expect(["Collect again", "Collecting"]).toContain(banner()!.querySelector("button")?.textContent);
+  expect(["Collect again", "Collecting"]).toContain(collectButton()?.textContent);
   await act(async () =>
     store.applyFacts([
       {
@@ -355,7 +366,7 @@ it("offers Collect again once the Aspect ends a world bane, for the reward a sec
       },
     ] as never),
   );
-  expect(banner()!.querySelector("button")).toBeNull();
+  expect(collectButton()).toBeUndefined();
   expect(banner()!.querySelector("[aria-label='Collected']")).not.toBeNull();
 });
 
@@ -390,4 +401,64 @@ it("says Spoils doubles a cleared site's numeric rewards and leaves a ruin's rel
   expect(banner()!.textContent).toContain(
     "A cleared site pays 2 times the wheat, labor, Essence and XP today. A ruin's relic stays the same",
   );
+});
+
+it("holds the home's daily claim in its foot, opening Realms, and names no LORDS, credit or pass", async () => {
+  claimWaiting = { labor: 1_000, essence: 0 };
+  opened.length = 0;
+  await renderBanner([questRules()]);
+  const chip = [...banner()!.querySelectorAll("button")].find((each) => each.textContent?.includes("1K"));
+  expect(chip).toBeDefined();
+  await act(async () => chip!.click());
+  expect(opened).toEqual(["realms"]);
+  expect(banner()!.textContent).not.toMatch(/LORDS|credit|pass/i);
+  claimWaiting = null;
+});
+
+describe("on a phone", () => {
+  const phone = () =>
+    vi.stubGlobal("matchMedia", (query: string) => ({
+      matches: false,
+      media: query,
+      addEventListener() {},
+      removeEventListener() {},
+    }));
+  /** Harmony on day 2 under Chaos's team bane, on its Second Wind day: the busiest the panel gets. */
+  const busiestDay = async () => {
+    phone();
+    const store = await renderBanner([questRules(), ...baneRules(), ...raceRules()]);
+    await act(async () =>
+      store.applyFacts([
+        {
+          model: "TeamBane",
+          key: "0x9fa",
+          value: { game_id: 1, aspect: 2, day: 2, source: 3, issued_day: 1, quest: quests.STAND },
+        },
+        activeYesterday(2, 24),
+        baneProgress(2, 4, 0),
+        triumphOn(2, 2),
+      ] as never),
+    );
+    await moveToDay(store, 2);
+    return store;
+  };
+
+  it("keeps the quest on one row and the day's news as chips, each opening its line on a press", async () => {
+    await busiestDay();
+    expect(banner()!.textContent).toContain("The Stand");
+    expect(banner()!.textContent).toContain("4 of 6");
+    // The panel is the quest, one foot row and one row of chips: no head blocks and no meter for the members.
+    expect(banner()!.querySelectorAll("[role='meter']").length).toBe(1);
+    const chips = [...banner()!.querySelectorAll("button")].filter((each) =>
+      ["Bane of Chaos", "Second Wind"].some((name) => each.textContent?.includes(name)),
+    );
+    expect(chips.map((chip) => chip.textContent)).toEqual(["Bane of Chaos", "Second Wind"]);
+    expect(banner()!.textContent).not.toContain("Your hyperstructure does not grow");
+    await act(async () => chips[0]!.click());
+    expect(banner()!.textContent).toContain("Your hyperstructure does not grow");
+    await act(async () => chips[0]!.click());
+    expect(banner()!.textContent).not.toContain("Your hyperstructure does not grow");
+    await act(async () => chips[1]!.click());
+    expect(banner()!.textContent).toContain("Stamina refills 2 times as fast today");
+  });
 });

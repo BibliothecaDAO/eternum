@@ -643,15 +643,20 @@ stamina at 50%, production at 50%) or a rival's ("Team bane, from Chaos", "Bane 
 crests, "Your hyperstructure does not grow"); under the quest, "4 of 6 members" over a meter (25% of its members out the
 day before, rounded up), then "Ended: the quest pays twice" or "Ended: your hyperstructure grows again". Once the Aspect
 ended a world bane, **Collect again** pays the quest's reward a second time (`BaneGrant`). A Triumph heads the panel the
-same way, in green. **Today** (the day's clock), on today's page, lists **This week's quests**: each day of the week's
-bag up to the season's last day, its painting and quest, and whether it was collected, done, missed, is today or is
-coming (a day gone shows its bane quest; a coming day the bag's quest, since nobody knows a bane's day before it comes).
-In a race game (`RaceRules`), on a day the home's Aspect has a Triumph (`TriumphDay`, the day after one of its
-hyperstructure's first four stages), its painting, name and what it does today head the panel: **Clear Mist** (a reveal
-finds something 2 times as often), **Second Wind** (stamina refills 2 times as fast), **Pale Moon** (beasts at 50% of
-their strength), **Spoils** (a cleared site pays 2 times the wheat, labor, Essence and XP; a ruin's relic is unchanged),
-each rate RaceRules'; while the snapshot cannot tell, it says it is reading the Aspect's day. Lab:
-`/lab/kit/unified/frontier`, `frontier-new` and `season-one-deep` (a Season 1 member with 145 Glory on Second Wind).
+same way, in green. The panel's foot holds the home's daily claim (the Labor and Essence waiting today, which opens
+Realms), so the realm card's header and a phone's purse row no longer carry that chip while the banner stands. The panel
+names no LORDS, credit or pass. On a phone the panel is lighter: the quest and its meter on one row, one foot row (the
+rewards, "4 of 6", the claim), and the bane and the Triumph as chips that open their line on a press (120 px against 235
+px on the busiest day). Lab: `/lab/kit/unified/season-one-bane`. **Today** (the day's clock), on today's page, lists
+**This week's quests**: each day of the week's bag up to the season's last day, its painting and quest, and whether it
+was collected, done, missed, is today or is coming (a day gone shows its bane quest; a coming day the bag's quest, since
+nobody knows a bane's day before it comes). In a race game (`RaceRules`), on a day the home's Aspect has a Triumph
+(`TriumphDay`, the day after one of its hyperstructure's first four stages), its painting, name and what it does today
+head the panel: **Clear Mist** (a reveal finds something 2 times as often), **Second Wind** (stamina refills 2 times as
+fast), **Pale Moon** (beasts at 50% of their strength), **Spoils** (a cleared site pays 2 times the wheat, labor,
+Essence and XP; a ruin's relic is unchanged), each rate RaceRules'; while the snapshot cannot tell, it says it is
+reading the Aspect's day. Lab: `/lab/kit/unified/frontier`, `frontier-new` and `season-one-deep` (a Season 1 member with
+145 Glory on Second Wind).
 
 **Glory** (`src/ui/features/frontier/race/glory.tsx`), a race game member's one score (`RaceMember`), once the realm
 went into the Deep: beside its rank on the desktop's realm panel, and in a phone's purse row under the strip, with what
