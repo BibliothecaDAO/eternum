@@ -37,6 +37,7 @@ pub struct EconomyPreset {
     pub quests: Option<crate::quests::QuestRules>,
     pub banes: Option<crate::banes::BaneRules>,
     pub race: Option<crate::race::RaceRules>,
+    pub deep: Option<crate::deep::DeepRules>,
     pub labor: Option<crate::entry::LaborRules>,
     pub trade: crate::trade::TradeRules,
     pub banks: crate::market::BankRules,
@@ -106,6 +107,10 @@ pub fn validate(preset: PresetDefinition) {
         crate::race::validate(race);
         assert!(rules.day_unit_seconds != 0 && preset.economy.chests.is_none(), "race requires days without LORDS");
         assert!(preset.season_win_points == 0, "race cannot use victory points");
+    }
+    if let Some(deep) = preset.economy.deep {
+        assert!(rules.day_unit_seconds != 0, "Deep needs expedition days");
+        crate::deep::validate(deep, preset.settlement.spacing);
     }
     if let Some(labor) = preset.economy.labor {
         assert!(labor.amount != 0, "zero daily labor grant");

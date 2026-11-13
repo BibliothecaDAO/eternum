@@ -14,6 +14,7 @@ export const transferArmies = (pickedXp = 0, tappedXp = 99) => {
       value: frontierArmyRules(),
     },
     ...[201, 202].flatMap((id, slot) => [
+      { model: "ArmyDay", key: slot === 0 ? "0xad" : "0xad2", value: { game_id: 1, explorer_id: id, day: 0 } },
       {
         model: "ExplorerTroops",
         key: slot === 0 ? "0x74" : "0x92",

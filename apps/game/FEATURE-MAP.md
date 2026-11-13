@@ -1289,8 +1289,10 @@ same home badge.
 ## Ethereal depths
 
 Frontier: select an army beside its realm’s Spire → **Spire** → **Enter Ethereal I, II or III**. The army and camera
-move into the chosen band. `src/three/terrain/ethereal-depths.json` owns Violet descent’s material and mineral values;
-the renderer selects them from each tile’s contract depth. Eternum’s alternate layer retains its original basalt.
+move into the chosen depth. Ethereal III centers on the fixed shared 50 × 50 Deep for every Realm and day; its terrain
+is visible without exploration. Army lifetime follows its native ArmyDay fact rather than its map band.
+`src/three/terrain/ethereal-depths.json` owns Violet descent’s material and mineral values; the renderer selects them
+from each tile’s contract depth. Eternum’s alternate layer retains its original basalt.
 
 Art → Terrain → Ethereal depths (`/lab/ethereal-depths`) previews the approved depths and the original material through
 the same terrain renderer. `/lab/game?scenario=ethereal-depths` opens the real Frontier client with fixture facts: all
@@ -1352,3 +1354,25 @@ without `GameplayRejected`, and Herald snapshots covering its block. It checks e
 principal, earned-only pool return, unchanged swept balance and withdrawals, and native stamina plus regeneration
 against the visible army panel and purse. The live proof buys no tier. Season-end sweep and wallet-return evidence are
 separate rehearsal steps in [the runbook](../../deploy/athanor/README.md#deposit-rehearsal-on-dev).
+
+Deep site contract/read path: a preset with `DeepRules` creates the Foundation, Quarry and Altar in the fixed Deep.
+`views.deepSites(timestamp)` reads their persistent IDs, positions, daily beast counts and four guard slots. The
+existing `BattleGuard` command accepts their IDs; beating the beast puts the surviving winner into the first slot. An
+adjacent allied army joins through `InteractSite`. Each player may hold one slot per site; four allied players may hold
+it together. Held armies leave their field tiles and take the site's position. Death releases a slot, and a new day
+expires the guards and restores the beast. The dedicated selection and holding screen is not wired yet; combined guard
+combat, attrition and tick payouts are also pending. Native regressions cover creation, joins, refusals, death and day
+rollover. Core view and scope tests cover guard membership and rollback. Run the existing
+`pnpm --dir apps/game playtest` when the screen is wired.
+
+Shared Deep rollover: tile occupancy, field models and army action gates use `ArmyDay` with the confirmed execution
+clock. An empty confirmed head at day rollover removes yesterday's army from the map and opens its tile, while its raw
+facts remain until the contract deletes them. The core Deep regression drives this clock path and checks both views.
+
+Deep troop loss: entering through `EnterDepth` records `DeepArmy.last_tick`. Each completed army tick removes the
+preset's loss from both field armies and held guards. The ordinary army command settles that loss once and reduces
+carrying capacity; a dead field army no longer blocks movement or arrival. `currentArmy`, `currentResourceWeight` and
+the existing troop resolver read the same native facts at the confirmed clock. The dock, transfer inputs, previews and
+map labels use those readers. The focused core count test and `use-armies.deep` test advance 500 → 300 → 100 → 0 without
+writing a troop row. Site payouts and the Altar bar are still pending; this attrition checkpoint does not enable the
+finished holding loop.

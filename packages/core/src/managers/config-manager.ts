@@ -384,6 +384,7 @@ export class ClientConfigManager {
   getCombatRules(): CombatRules {
     const rules = this.rules();
     return {
+      dayUnitSeconds: rules.day_unit_seconds,
       cooldownSeconds: rules.battle_config.cooldown_seconds,
       tickSeconds: this.getTick(TickIds.Armies),
       damage: rules.troop_damage_config,
@@ -423,6 +424,7 @@ export class ClientConfigManager {
     const rules = this.rules();
     return {
       ...rules.troop_damage_config,
+      day_unit_seconds: rules.day_unit_seconds,
       stamina_bonus_value: rules.troop_stamina_config.stamina_bonus_value,
       stamina_attack_req: rules.troop_stamina_config.stamina_attack_req,
       stamina_defense_req: rules.troop_stamina_config.stamina_defense_req,

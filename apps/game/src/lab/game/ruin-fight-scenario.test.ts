@@ -44,7 +44,7 @@ it.each([ruinFightScenario, ruinFarScenario])(
     expect(store.require("SiteChest", { game_id: 1, entity_id: BigInt(SITE) }).reservation_day).toBe(BigInt(day.index));
     expect(store.require("LordsBudget", { game_id: 1 }).day).toBe(BigInt(day.index));
     expect(plan.fight).toEqual(
-      makeScenario === ruinFightScenario ? { troopsLost: 364, guardLeft: 0 } : { troopsLost: 1_109, guardLeft: 2_412 },
+      makeScenario === ruinFightScenario ? { troopsLost: 364, guardLeft: 0 } : { troopsLost: 1_109, guardLeft: 2_399 },
     );
   },
 );
@@ -140,5 +140,5 @@ it("stands the far ruin's army out of an attack's reach, and the card forecasts 
   expect(plan.inReach).toBe(false);
   // The attack from beside it: this one costs 1,109 of the 1,626 and leaves the guard 2,412. A second would lose the
   // army; the card speaks only of this one, so it warns of no loss (the owner's Blightglow Rift, 3 November 2026).
-  expect(plan.fight).toEqual({ troopsLost: 1_109, guardLeft: 2_412 });
+  expect(plan.fight).toEqual({ troopsLost: 1_109, guardLeft: 2_399 });
 });

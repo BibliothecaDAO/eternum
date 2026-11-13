@@ -15,6 +15,7 @@ pub mod combat_actions;
 pub mod command_routes;
 pub mod commands;
 pub mod days;
+pub mod deep;
 pub mod deposits;
 pub mod discovery;
 pub mod entity_ids;

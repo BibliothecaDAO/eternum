@@ -19,25 +19,33 @@ const root = new URL("../", import.meta.url);
 const { CallData } = await import(
   Bun.resolveSync("starknet", fileURLToPath(new URL("../../../../apps/herald/src/", import.meta.url)))
 );
-const gamesAbi = await readContractAbi("Games");
-const logicClasses = Object.fromEntries(
-  gamesAbi
-    .find((item) => item.name === "games_storage::release::LogicClasses")
-    .members.map(({ name }) => [name, `${name[0].toUpperCase()}${name.slice(1)}Logic`]),
-);
-const artifacts = {
-  games: gamesAbi,
-  ...Object.fromEntries(
-    await Promise.all(Object.entries(logicClasses).map(async ([logic, name]) => [logic, await readContractAbi(name)])),
-  ),
-};
+const factsOnly = process.argv.includes("--facts-only");
+const recordedSchema = factsOnly ? JSON.parse(await readFile(new URL("schema/schema.json", root), "utf8")) : null;
+const gamesAbi = factsOnly ? [] : await readContractAbi("Games");
+const logicClasses =
+  recordedSchema?.logicClasses ??
+  Object.fromEntries(
+    gamesAbi
+      .find((item) => item.name === "games_storage::release::LogicClasses")
+      .members.map(({ name }) => [name, `${name[0].toUpperCase()}${name.slice(1)}Logic`]),
+  );
+const artifacts = factsOnly
+  ? {}
+  : {
+      games: gamesAbi,
+      ...Object.fromEntries(
+        await Promise.all(
+          Object.entries(logicClasses).map(async ([logic, name]) => [logic, await readContractAbi(name)]),
+        ),
+      ),
+    };
 
 async function readContractAbi(name) {
   const artifact = JSON.parse(await readFile(new URL(`target/dev/world_native_${name}.contract_class.json`, root)));
   return artifact.abi;
 }
 
-const types = new Map();
+const types = new Map(Object.entries(recordedSchema?.types ?? {}));
 for (const abi of [...Object.values(artifacts), factWireTypes]) {
   for (const item of abi) {
     if (item.type === "struct" || item.type === "enum") {
@@ -49,9 +57,11 @@ for (const abi of [...Object.values(artifacts), factWireTypes]) {
   }
 }
 
-const routes = compileCommandRoutes(artifacts, types, feltLength);
-types.set(routes.command.name, routes.command);
-await writeCairo("src/command_routes.cairo", routes.cairo);
+if (!factsOnly) {
+  const routes = compileCommandRoutes(artifacts, types, feltLength);
+  types.set(routes.command.name, routes.command);
+  await writeCairo("src/command_routes.cairo", routes.cairo);
+}
 
 // Serialization projections use the types carried by the production gameplay and preset ABIs.
 // These bindings do not add entrypoints to Games.
@@ -201,8 +211,10 @@ const tilePackingConstants = Object.fromEntries(
 );
 
 // Every library emits in Games' context. A prefix must identify exactly one layout.
-const gamesEvents = uniqueEventLayouts(Object.values(artifacts).flatMap(eventLayouts));
-const productionAbi = Object.values(artifacts).flat();
+const gamesEvents = recordedSchema?.games.events ?? uniqueEventLayouts(Object.values(artifacts).flatMap(eventLayouts));
+const productionAbi = recordedSchema
+  ? recordedSchema.events.map(({ event }) => event)
+  : Object.values(artifacts).flat();
 
 const schema = {
   ruleConstants,
@@ -220,9 +232,9 @@ const schema = {
   games: {
     contract: "Games",
     events: gamesEvents,
-    entrypoints: gamesAbi.flatMap((item) =>
-      item.type === "interface" ? item.items : item.type === "function" ? [item] : [],
-    ),
+    entrypoints:
+      recordedSchema?.games.entrypoints ??
+      gamesAbi.flatMap((item) => (item.type === "interface" ? item.items : item.type === "function" ? [item] : [])),
   },
   models,
   events: [

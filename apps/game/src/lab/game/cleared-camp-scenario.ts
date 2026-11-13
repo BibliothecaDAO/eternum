@@ -25,6 +25,7 @@ export const clearedCampScenario = (): LabScenario => {
   const [, occupancy] = [...store.entries("TileOccupancy")].find(([, row]) => row.entity_id === BigInt(SPIRE_ARMY))!;
   const [held, empty] = campTiles(store, spire.opensOn, spire.startsAt);
   store.applyFacts([
+    { model: "ArmyDay", key: "0xad2", value: { game_id: 1, explorer_id: SECOND_ARMY, day: 0 } },
     { model: "ExplorerTroops", key: "0x1ab97", value: wire({ ...first, explorer_id: SECOND_ARMY }) },
     { model: "TileOccupancy", key: "0x1ab98", value: wire({ ...occupancy, ...held, entity_id: SECOND_ARMY }) },
     armyProgress("0x1ab9a", SECOND_ARMY, 0),

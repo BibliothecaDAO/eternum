@@ -158,6 +158,7 @@ fn write_economy(
     );
     preset.progression_rules.write(economy.progression);
     preset.discovery_rules.write(economy.discovery);
+    preset.deep_rules.write(economy.deep);
     preset.artificer_cost.write(economy.research_cost);
     if let Some(withdrawals) = economy.withdrawals {
         crate::presets::IPresetWithdrawalsDispatcherTrait::store_withdrawal_preset(

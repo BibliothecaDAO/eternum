@@ -75,6 +75,7 @@ function presetFixtureSchema(): NativeSchema {
     "blitz_results",
     "progression",
     "spires",
+    "deep",
   ])
     readStructs(schema, module);
   schema.models = defineFactModels({

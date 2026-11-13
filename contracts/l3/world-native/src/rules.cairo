@@ -621,3 +621,13 @@ pub const SPOILS_STAGE: u8 = 4;
 pub const BOON_MAX_STEPS: u32 = 5;
 pub const PATHS_SITE_STEP_BPS: u32 = 2500;
 pub const PATHS_SANCTUARY_STEP_BPS: u32 = 1500;
+pub const DEEP_MAP_SIZE: u32 = 50;
+
+pub const DEEP_FOUNDATION: u8 = 0;
+pub const DEEP_QUARRY: u8 = 1;
+pub const DEEP_ALTAR: u8 = 2;
+pub const DEEP_SITE_COUNT: u8 = 3;
+
+pub const DEEP_ARRIVAL_Y: u32 = 5;
+
+pub const DEEP_GUARD_SLOTS: u8 = 4;

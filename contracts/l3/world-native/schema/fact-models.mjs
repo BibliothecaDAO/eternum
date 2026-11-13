@@ -3,6 +3,27 @@
 export const factWireTypes = [
   {
     type: "struct",
+    name: "world_native::deep::DeepArmy",
+    members: [{ name: "last_tick", type: "core::integer::u64" }],
+  },
+  {
+    type: "struct",
+    name: "world_native::deep::DeepGuard",
+    members: [
+      { name: "site_id", type: "core::integer::u64" },
+      { name: "slot", type: "core::integer::u8" },
+    ],
+  },
+  {
+    type: "struct",
+    name: "world_native::deep::DeepSite",
+    members: [
+      { name: "kind", type: "core::integer::u8" },
+      { name: "day", type: "core::integer::u64" },
+    ],
+  },
+  {
+    type: "struct",
     name: "world_native::race::RaceRules",
     members: [
       {
@@ -1003,6 +1024,7 @@ const presetDerivedModels = new Set([
   "HyperstructureRules",
   "RelicRules",
   "ChestRules",
+  "DeepRules",
   "LaborRules",
   "ArmyProgressionRules",
   "FrontierDiscoveryRules",
@@ -1055,6 +1077,12 @@ export function defineFactModels({ struct, model: declare }) {
         parent: "ExplorerTroops",
         value: "zero",
         meaning: "No carried relics or running relic of this kind while the army exists.",
+      };
+    if (row.name === "AspectActivity")
+      row.absence = {
+        parent: "GameRegistry",
+        value: "zero",
+        meaning: "No home in this Aspect allocated an army on this day.",
       };
     if (row.name === "ArmySlot")
       row.absence = {
@@ -1448,6 +1476,21 @@ export function defineFactModels({ struct, model: declare }) {
     model("ArmyRelicEffect", "game", struct("army_relics::ArmyRelicEffectKey"), struct("army_relics::ArmyRelicEffect")),
     model("RuinRelic", "game", struct("resources::ResourceKey"), struct("army_relics::ArmyRelic")),
     model("ArmyProgress", "game", struct("troops::ExplorerKey"), struct("progression::ArmyProgress")),
+    model(
+      "AspectActivity",
+      "game",
+      [
+        { name: "game_id", type: "core::integer::u32" },
+        { name: "aspect", type: "core::integer::u8" },
+        { name: "day", type: "core::integer::u64" },
+      ],
+      [{ name: "members", type: "core::integer::u32" }],
+    ),
+    model("DeepArmy", "game", struct("troops::ExplorerKey"), struct("deep::DeepArmy")),
+    model("DeepGuard", "game", struct("troops::ExplorerKey"), struct("deep::DeepGuard")),
+    model("DeepSite", "game", struct("resources::ResourceKey"), struct("deep::DeepSite")),
+    model("DeepRules", "game", [{ name: "game_id", type: "core::integer::u32" }], struct("deep::DeepRules")),
+    model("ArmyDay", "game", struct("troops::ExplorerKey"), [{ name: "day", type: "core::integer::u64" }]),
     model("ArmySlot", "game", struct("troops::ArmySlotKey"), struct("troops::ArmySlot")),
     model("ExplorerTroops", "game", struct("troops::ExplorerKey"), struct("troops::ExplorerRecord")),
     model("ExpeditionSite", "game", struct("resources::ResourceKey"), struct("expeditions::ExpeditionSite")),
@@ -1806,6 +1849,7 @@ export const syncScopes = {
       "ExtractionRewards",
       "RelicRules",
       "ChestRules",
+      "DeepRules",
       "LaborRules",
       "ArmyProgressionRules",
       "LordsBudget",
@@ -1887,13 +1931,18 @@ export const syncScopes = {
   ShrineReward: { entities: ["entity_id"] },
   // A relic chest's pack is public: anyone may open the chest, so every player sees what it holds.
   RelicChest: shared,
+  AspectActivity: "shared",
+  DeepSite: "shared",
+  DeepGuard: "shared",
+  DeepArmy: "shared",
+  ArmyDay: { entities: ["explorer_id"] },
   ArmyProgress: { entities: ["explorer_id"] },
   ArmyRelics: { entities: ["explorer_id"] },
   ArmyRelicEffect: { entities: ["explorer_id"] },
   RuinRelic: { entities: ["entity_id"] },
   ExpeditionDiscovery: { realms: ["structure_id"], epoch: "epoch" },
   ExpeditionSpire: { realms: ["structure_id"], epoch: "epoch" },
-  ArmySlot: { realms: ["structure_id"], epoch: "epoch" },
+  ArmySlot: { realms: ["structure_id"], entities: ["structure_id"], epoch: "epoch" },
   ExplorerTroops: { entities: ["explorer_id"] },
   Guard: { entities: ["structure_id"] },
   FaithfulStructure: { entities: ["structure_id"] },

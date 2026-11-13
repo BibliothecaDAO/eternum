@@ -58,13 +58,14 @@ pub mod MovementLogic {
 
             let rules = self.authorize(game_id, context);
             let key = ExplorerKey { game_id, explorer_id: command.explorer_id };
-            let mut explorer = crate::logic::troops::authorized_explorer(key, actor, context.timestamp, context);
+            let mut explorer = crate::logic::troops::field_explorer(key, actor, context.timestamp, context);
             assert!(explorer.troops.count != 0, "explorer is dead");
             crate::logic::map::MapState::vacate(tile_key(game_id, explorer.coord), command.explorer_id);
             let destination = neighbor(explorer.coord, command.direction);
             if rules.day_unit_seconds != 0 {
                 crate::expeditions::assert_same_region(explorer.coord, destination, self.expedition_spacing(game_id));
             }
+            crate::logic::deep::clear_expired_occupant(game_id, destination, context);
             let tile = tile_key(game_id, destination);
             let data = self
                 .map_dispatcher(game_id)
@@ -192,6 +193,7 @@ pub mod MovementLogic {
             let origin = tile_key(game_id, explorer.coord);
             for direction in 0_u8..6 {
                 let destination = neighbor(explorer.coord, direction);
+                crate::logic::deep::clear_expired_occupant(game_id, destination, game_context);
                 let tile = tile_key(game_id, destination);
                 let data = crate::logic::map::tile(tile).map(|tile| tile.data).unwrap_or(0);
                 if crate::logic::map::occupancy(tile).is_some() {
@@ -224,7 +226,7 @@ pub mod MovementLogic {
             let rules = self.authorize(game_id, context);
             assert!(rules.day_unit_seconds != 0, "depth entry requires expeditions");
             let key = ExplorerKey { game_id, explorer_id: command.explorer_id };
-            let mut explorer = crate::logic::troops::authorized_explorer(key, actor, context.timestamp, context);
+            let mut explorer = crate::logic::troops::field_explorer(key, actor, context.timestamp, context);
             assert!(explorer.troops.count != 0, "explorer is dead");
             let _home = crate::logic::troops::owned_structure(game_id, explorer.owner, actor);
             let home_key = crate::resources::ResourceKey { game_id, entity_id: explorer.owner };
@@ -256,6 +258,9 @@ pub mod MovementLogic {
             crate::logic::structures::StructureState::record_depth(home_key, command.depth);
             explorer.coord = destination;
             crate::logic::troops::TroopState::save(key, crate::troops::ExplorerRecordTrait::into_record(explorer));
+            if command.depth == 3 {
+                crate::logic::deep_armies::enter(key, context);
+            }
         }
         fn move_explorer(
             ref self: ContractState,
@@ -269,7 +274,7 @@ pub mod MovementLogic {
             let rules = self.authorize(game_id, context);
             assert!(!command.directions.is_empty(), "empty movement path");
             let key = ExplorerKey { game_id, explorer_id: command.explorer_id };
-            let mut explorer = crate::logic::troops::authorized_explorer(key, actor, context.timestamp, context);
+            let mut explorer = crate::logic::troops::field_explorer(key, actor, context.timestamp, context);
             assert!(explorer.troops.count != 0, "explorer is dead");
             crate::logic::map::MapState::vacate(tile_key(game_id, explorer.coord), command.explorer_id);
             for direction in command.directions {
@@ -279,6 +284,7 @@ pub mod MovementLogic {
                         explorer.coord, destination, self.expedition_spacing(game_id),
                     );
                 }
+                crate::logic::deep::clear_expired_occupant(game_id, destination, context);
                 let tile = tile_key(game_id, destination);
                 let data = self
                     .map_dispatcher(game_id)
@@ -311,7 +317,7 @@ pub mod MovementLogic {
 
             self.authorize(game_id, context);
             let key = ExplorerKey { game_id, explorer_id: command.explorer_id };
-            let mut explorer = crate::logic::troops::authorized_explorer(key, actor, context.timestamp, context);
+            let mut explorer = crate::logic::troops::field_explorer(key, actor, context.timestamp, context);
             assert!(explorer.troops.count != 0, "explorer is dead");
             let spire = crate::logic::map::occupancy(
                 tile_key(game_id, spire_neighbor(explorer.coord, command.spire_direction)),

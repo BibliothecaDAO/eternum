@@ -111,16 +111,14 @@ pub fn home_ring_center(coord: Coord, spacing: u32) -> Coord {
     Coord { alt: false, x: coord.x / spacing * spacing + spacing / 2, y: coord.y / spacing * spacing + spacing / 2 }
 }
 
-/// An army lives only on its own day's map: on any later day it is gone.
-pub fn is_current(coord: Coord, spacing: u32, day: u64) -> bool {
-    !coord.alt && region_day(coord, spacing) == day
-}
-
 pub fn assert_same_region(origin: Coord, destination: Coord, spacing: u32) {
     assert!(inside_region(origin, destination, spacing), "outside expedition region");
 }
 
 pub fn inside_region(origin: Coord, destination: Coord, spacing: u32) -> bool {
+    if crate::deep::contains(origin, spacing) {
+        return crate::deep::contains(destination, spacing);
+    }
     let same_region = origin.x / spacing == destination.x / spacing && origin.y / spacing == destination.y / spacing;
     let local_x = destination.x % spacing;
     let local_y = destination.y % spacing;

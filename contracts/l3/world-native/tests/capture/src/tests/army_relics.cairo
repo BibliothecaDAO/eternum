@@ -3,7 +3,7 @@ use super::registrar::*;
 
 #[test]
 fn ruins_fill_replace_and_activate_an_armys_relics_through_commands() {
-    let (_, mut preset) = super::preset_projection::current_definition("frontier-s1");
+    let (_, mut preset) = super::preset_projection::current_definition("season-one");
     let discovery = crate::expeditions::FrontierDiscoveryRules {
         beasts_bps: 100, camp_bps: 0, rift_bps: 0, ruin_bps: 4500, shrine_bps: 0, well_bps: 0, empty_reveal_limit: 7,
     };

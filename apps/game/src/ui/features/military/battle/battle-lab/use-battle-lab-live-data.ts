@@ -47,7 +47,16 @@ export const useBattleLabLiveData = (
   targetHex: { x: number; y: number },
   alt = false,
 ): BattleLabLiveData => {
-  const facts = useNativeFacts(["ArmySlot", "Structure", "Guard", "ExplorerTroops", "TileOccupancy"]);
+  const facts = useNativeFacts([
+    "ArmySlot",
+    "Structure",
+    "Guard",
+    "ExplorerTroops",
+    "DeepArmy",
+    "DeepRules",
+    "ArmyDay",
+    "TileOccupancy",
+  ]);
   const staminaTimestamp = useCurrentDefaultTick();
 
   const { attackerRelicEffects, targetRelicEffects, target, targetResources, isLoading } = useAttackTargetData(
@@ -111,7 +120,7 @@ export const useBattleLabLiveData = (
             troops.tier as TroopTier,
             troops.staminaMax,
           ),
-          troopCount: divideByPrecision(Number(army.troops.count)),
+          troopCount: divideByPrecision(Number(troops.count)),
           troopType: army.troops.category as TroopType,
           tier: army.troops.tier as TroopTier,
           battle_cooldown_end: Number(army.troops.battle_cooldown_end),

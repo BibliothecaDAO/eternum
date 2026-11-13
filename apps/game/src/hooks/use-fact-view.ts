@@ -1,3 +1,4 @@
+import { useChainTimeStore } from "@/hooks/store/use-chain-time-store";
 import { useAccountAddress } from "@/hooks/store/use-account-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { type FactView, readFactView } from "@/sync/fact-views";
@@ -14,9 +15,12 @@ export const useFactView = <T>(view: FactView<T>): T => {
   // The spectate intent is latched outside any store; the HUD's spectating flag flips with it and re-renders here.
   const spectating = useUIStore((state) => state.isSpectating);
   const facts = useNativeFacts(view.models);
+  const executionFloor = useChainTimeStore((state) =>
+    view.models.includes("DeepArmy") ? state.executionFloorMs : null,
+  );
   const seats = useSyncExternalStore(subscribeSeats, readSeatsRevision, readSeatsRevision);
   return useMemo(
     () => readFactView(facts.store, view, viewer, { seats, spectating }),
-    [view, viewer, spectating, facts, seats],
+    [view, viewer, spectating, facts, seats, executionFloor],
   );
 };

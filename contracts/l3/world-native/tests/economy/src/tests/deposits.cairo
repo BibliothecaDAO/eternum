@@ -350,7 +350,7 @@ fn mixed_sweep_keeps_both_balances_game_pinned_until_applied() {
 #[test]
 #[feature("safe_dispatcher")]
 fn season_one_rejects_lords_commands_and_cannot_configure_deposits() {
-    let (d, game_id) = super::registrar::setup_open_frontier_preset("frontier-s1", 1);
+    let (d, game_id) = super::registrar::setup_open_frontier_preset("season-one", 1);
     let (release, preset) = super::play_fixture::pins(d.games, game_id);
     super::play_fixture::caller(d.games, d.actor, 360);
     for command in array![

@@ -65,3 +65,14 @@ python3 -m unittest discover -s contracts/l3/world-native/toolchain -p 'test_snf
 
 When a released Foundry version includes both fixes, remove the patches and custom build/resolution together, migrate
 the entrypoints, and update `.tool-versions`. Keep the rollback and memory regressions.
+
+## Fact declarations during development
+
+When only fact declarations or rule constants change, refresh client projections without compiling Cairo:
+
+```bash
+bun contracts/l3/world-native/scripts/generate-schema.mjs --facts-only
+```
+
+This reads the committed ABI and the current fact declarations. It does not update commands or prove the ABI matches
+Cairo. The landing gate still builds the contracts and regenerates the complete schema to check that boundary.

@@ -28,6 +28,7 @@ pub type Preset =
         crate::exploration_rewards::ExplorationReward,
         crate::entry::LaborRules,
         crate::race::RaceRules,
+        crate::deep::DeepRules,
     >;
 
 pub type Storage =
@@ -68,6 +69,8 @@ pub type Storage =
         crate::troops::ArmySlotRecord,
         crate::progression::ArmyProgress,
         crate::village::VillagePass,
+        crate::deep::DeepSite,
+        crate::deep::DeepGuard,
     >;
 
 pub fn read() -> starknet::storage::FlattenedStorage<Storage> {
