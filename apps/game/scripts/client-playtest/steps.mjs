@@ -27,19 +27,6 @@ import { proveResultOnScreen, startResultCapture } from "./result-capture.mjs";
 import { measureFrameChanges, recordFrames } from "./frames.mjs";
 import { againstTheirThings, judgePlates, PLATES_EXPRESSION } from "./plates.mjs";
 import { DESKTOP_MIN_WIDTH, judgeHudLayout, MAP_LEAST_SHARE } from "./hud-layout.mjs";
-import {
-  assertMixedRefill,
-  assertOnlyRefillAction,
-  assertRefillConservation,
-  assertRefillTransaction,
-  assertVisiblePurse,
-  liveDepositReads,
-  newActionHashes,
-  pollProof,
-  refillState,
-  visibleStaminaMatches,
-  watchDepositResponses,
-} from "./live-deposit-proof.mjs";
 
 /**
  * The playtest's steps. Each plays through the controls a player uses, then checks what a player would see, and is
@@ -107,7 +94,6 @@ export const HUD_WORDS = {
   close: "Close",
   chat: "Chat",
   realmLabor: "Realm Labor",
-  ruinRule: "One ruin per depth a day · others here vanish",
 };
 
 // A game's card on Play takes its step by the verb's name (`data-play-verb`, src/shell/play/play-item.tsx).
@@ -325,8 +311,8 @@ const ACTION_STEPS = [
 ];
 
 /**
- * Ethereal II entered through the spire (the lab's spire game): the army selected, the spire beside it tapped for its
- * card, then Enter on Ethereal II; the result is the view switched there with the army standing at its arrival, seen
+ * Ethereal I entered through the spire the realm found today (the lab's spire game): the army selected, the spire
+ * beside it tapped for its card, then Enter on Ethereal I; the result is the view switched there with the army standing at its arrival, seen
  * on its figure (no walk crosses the void).
  */
 const SPIRE_ACTION_STEPS = [
@@ -336,14 +322,14 @@ const SPIRE_ACTION_STEPS = [
   clickToResultStep(
     "enter-depth",
     "EnterDepth",
-    enterEtherealIIFromItsCard,
+    enterEtherealIFromItsCard,
     ({ played }) => played.armyId && { presented: `army-shown:${played.armyId}` },
   ),
 ];
 
-async function enterEtherealIIFromItsCard({ browser }) {
+async function enterEtherealIFromItsCard({ browser }) {
   const armyId = browser.observe().selection?.army?.id ?? null;
-  browser.click("Enter Ethereal II");
+  browser.click("Enter Ethereal I");
   // The view switches to the arrival, so the army's place on screen is read once it stands there.
   const locate = () => {
     const armyAt = armyOnScreen(browser, armyId);
@@ -739,6 +725,87 @@ async function playFromTheHomeCard({ browser, owner }) {
 }
 
 /**
+ * A Season 1 founding by an account a friend's Aspect invite brought (the lab's settle-invited game, whose identity
+ * answers the account's joined link as Linden's Harmony invite): the Frontier card's Play opens the Aspect step with
+ * Harmony first, naming Linden, every card open; tapping it signs SettleSeason with that Aspect, and the game opens in
+ * the founded realm, as a created realm's player arrives to build. The founding is the entering step, as a home-entered game's first step must be.
+ */
+const SETTLE_INVITED_STEPS = [
+  { name: "found-invited", play: foundFromTheInvite, settleMs: 0, verify: foundedIntoTheInvitedAspect },
+  { name: "enter-on-realm", settleMs: 3_000, verify: inScene("hex") },
+];
+
+/** The Aspect step's cards in the order drawn: each one's label, invite line and whether it can be tapped. */
+const ASPECT_CARDS = `JSON.stringify([...document.querySelectorAll(".aspect-picker__card")].map((card) => ({
+  label: card.getAttribute("aria-label"),
+  invite: card.querySelector(".aspect-picker__invite")?.textContent ?? null,
+  open: !card.disabled,
+})))`;
+/** The step's line naming the invite, if it shows one. */
+const ASPECT_INVITE_LINE = `JSON.stringify(document.querySelector(".aspect-picker__invited")?.textContent ?? null)`;
+/** Every SettleSeason the game signed, each as its command's span after the variant (its Options' felts). */
+const SETTLES_SIGNED = `JSON.stringify((window.__labChain?.sent ?? [])
+  .filter(({ command }) => command.kind === "SettleSeason")
+  .map(({ command }) => command.calldata.slice(5).map((felt) => BigInt(felt).toString())))`;
+const INVITED_CARD = '.aspect-picker__card[aria-label="Join Harmony"]';
+
+async function foundFromTheInvite(context) {
+  const step = await openTheAspectStep(context);
+  const aspectStep = context.extraScreenshot("aspect-step");
+  if (!step.cards.every(({ open }) => open)) return { ...step, aspectStep };
+  return { ...step, aspectStep, ...(await joinTheInvitedAspect(context)) };
+}
+
+async function openTheAspectStep({ browser, owner }) {
+  const entry = await findHomeCardEntry(browser, owner, SHEET_WAIT_MS * 6, {
+    card: LAB_SETTLE_INVITED.card,
+    game: LAB_SETTLE_INVITED,
+  });
+  browser.run(["click", ENTRY_BUTTON]);
+  const cards = await readUntil(
+    () => browser.read(ASPECT_CARDS),
+    (shown) => shown.length === 4 && shown.every(({ open }) => open),
+    SHEET_WAIT_MS * 6,
+  );
+  return { entry: entry.entry, cards, inviteLine: browser.read(ASPECT_INVITE_LINE) };
+}
+
+/** The cards as the invited player meets them, then one SettleSeason, no held Realm (None: 1), Harmony (Some: 0, 2). */
+function foundedIntoTheInvitedAspect({ played }) {
+  const expected = [
+    { label: "Join Harmony", invite: "Invited", open: true },
+    { label: "Join Might", invite: null, open: true },
+    { label: "Join Chaos", invite: null, open: true },
+    { label: "Join Guile", invite: null, open: true },
+  ];
+  if (JSON.stringify(played.cards) !== JSON.stringify(expected))
+    return failed("the Aspect step does not offer the invited Aspect first, every card open", played);
+  if (played.inviteLine !== "Linden invited you to Harmony")
+    return failed(`the Aspect step says ${JSON.stringify(played.inviteLine)} of the invite`, played);
+  const settles = played.settles ?? [];
+  if (settles.length !== 1) return failed(`${settles.length} SettleSeason commands signed`, played);
+  if (JSON.stringify(settles[0]) !== JSON.stringify(["1", "0", "2"]))
+    return failed(`SettleSeason was signed with ${settles[0].join(", ")}`, played);
+  return completed({
+    entry: played.entry,
+    cards: played.cards,
+    inviteLine: played.inviteLine,
+    settle: settles[0],
+    aspectStep: played.aspectStep,
+  });
+}
+
+async function joinTheInvitedAspect({ browser }) {
+  browser.run(["click", INVITED_CARD]);
+  const settles = await readUntil(
+    () => browser.read(SETTLES_SIGNED),
+    (signed) => signed.length > 0,
+    ORDER_OUTCOME_WAIT_MS,
+  );
+  return { settles };
+}
+
+/**
  * A research bought (the lab's research game): Research opened, the Shrine's node picked, then its Research; the result
  * is that node showing the Shrine researched once the chain has answered it learned.
  */
@@ -849,14 +916,9 @@ const realmClaimed = `(() => {
   return String(grant?.value.home) === "7" && today?.getAttribute("data-state") === "claimed";
 })()`;
 
-/**
- * An army's upkeep (the lab's upkeep game): its panel opened from the dock, then Refill and its confirm (the result: the
- * panel reading the stamina the chain refilled it to), then Level up and Level up again on Battle (the result: the
- * panel naming the tier the chain bought).
- */
+/** Open an army's panel, spend a Battle skill point, and read the tier the command changed. */
 const ARMY_ACTION_STEPS = [
   { name: "enter-on-map", settleMs: 3_000, verify: inScene("map") },
-  clickToResultStep("refill", "RefillStamina", refillTheArmy, ({ played }) => played.watching && { watch: "refilled" }),
   clickToResultStep(
     "tier",
     "SpendSkillPoint",
@@ -865,227 +927,6 @@ const ARMY_ACTION_STEPS = [
   ),
 ];
 
-/** Keep the observed purse before the action; the final judgment can replay without a browser. */
-function purchasedRefillSteps() {
-  let before;
-  return [
-    {
-      ...ARMY_ACTION_STEPS[0],
-      play: async ({ browser }) => {
-        before = await readPurchasedPurse(browser);
-        browser.press("Escape");
-        await readUntil(
-          () => browser.read(SHEET_NAME),
-          (name) => name === null,
-          SHEET_WAIT_MS,
-        );
-        return { before };
-      },
-    },
-    clickToResultStep(
-      "refill",
-      "RefillStamina",
-      (context) => refillTheArmy({ ...context, partial: true }),
-      ({ played }) => played.watching && { watch: "refilled" },
-    ),
-    ARMY_ACTION_STEPS[2],
-    {
-      name: "purchased-refill-isolation",
-      settleMs: 0,
-      play: async ({ browser }) => ({
-        before,
-        after: await readPurchasedPurse(browser),
-        rejected: browser.read("JSON.stringify(window.__labChain?.rejected ?? [])"),
-        amounts: browser.read(`JSON.stringify((window.__labChain?.sent ?? [])
-          .filter(({ command, answered }) => command.kind === "RefillStamina" && answered?.length)
-          .map(({ command }) => command.fields.amount))`),
-      }),
-      verify: ({ played }) => {
-        const { before, after, amounts } = played;
-        const amount = Number(amounts?.[0]);
-        if (!before || !after || amounts?.length !== 1 || !Number.isSafeInteger(amount) || amount <= 0)
-          return failed("Missing purse balances or one confirmed refill amount", played);
-        const purchased = Math.min(before.purchased, amount);
-        return after.purchased === before.purchased - purchased && after.earned === before.earned - (amount - purchased)
-          ? completed(played)
-          : failed("Refill must spend purchased LORDS first and only the remainder from winnings", played);
-      },
-    },
-  ];
-}
-
-/**
- * The purse's deposit amount as a player meets it, on the lab's spend-lords game: the HUD field read at rest, typed
- * into with real keys after a tap on it, a deposit begun (a desktop's Tab then Enter, a phone's tap) with its payment
- * opened on the app sheet, and the same page loaded again with that begun deposit restored as the exact, locked amount.
- * The run's test profile holds no wallet, so nothing is handed to a wallet and nothing is uncertain: the restored
- * deposit offers Retry payment and Edit or cancel, without the uncertain line (an uncertain send's hold is the unit
- * tests'). A phone is Chrome's device
- * emulation: the field's numeric input mode and real browser key events injected after a real tap; a physical OS
- * keyboard is not exercised.
- */
-const DEPOSIT_AMOUNT_STEPS = [
-  {
-    name: "deposit-amount-at-rest",
-    settleMs: 0,
-    play: async ({ browser }) => {
-      await openDepositPurse(browser);
-      return browser.read(DEPOSIT_FIELD);
-    },
-    verify: ({ played }) => judgeDepositField(played, { value: "10", locked: false }),
-  },
-  {
-    name: "deposit-amount-typed",
-    settleMs: 0,
-    play: async ({ browser }) => {
-      const before = browser.read(DEPOSIT_FIELD);
-      if (!before) return { field: null };
-      browser.tap(before.offset);
-      for (let index = 0; index < before.value.length; index += 1) browser.press("Backspace");
-      browser.press("2");
-      browser.press("5");
-      return { viewportBefore: before.viewport, ...browser.read(DEPOSIT_FIELD) };
-    },
-    verify: ({ played }) =>
-      played.focused === true
-        ? judgeDepositField(played, { value: "25", locked: false })
-        : failed("The tap did not focus the amount", played),
-  },
-  {
-    name: "deposit-amount-begun",
-    settleMs: 0,
-    play: async ({ browser }) => {
-      const button = browser.read(sheetButton("^Deposit LORDS$"));
-      if (!button) return { blocked: "No Deposit LORDS button" };
-      const [dx, dy] = button.offset;
-      const underTap = browser.read(
-        `JSON.stringify(document.elementFromPoint(innerWidth / 2 + ${dx}, innerHeight / 2 + ${dy})?.closest("button")?.textContent.trim() ?? null)`,
-      );
-      if (browser.read("matchMedia('(pointer: coarse)').matches")) {
-        if (underTap !== "Deposit LORDS")
-          return { blocked: `The tap point holds ${underTap}, not Deposit LORDS`, button };
-        browser.tap(button.offset);
-      } else {
-        browser.press("Tab");
-        const focused = browser.read("JSON.stringify(document.activeElement?.textContent?.trim() ?? null)");
-        if (focused !== "Deposit LORDS")
-          return { blocked: `Tab from the amount reached ${focused}, not Deposit LORDS` };
-        browser.press("Enter");
-      }
-      const field = await readUntil(
-        () => browser.read(DEPOSIT_FIELD),
-        (state) => state?.disabled === true && state.edit && state.paying !== null,
-        SHEET_WAIT_MS,
-      );
-      return field ?? { field: null };
-    },
-    verify: ({ played }) =>
-      played.blocked
-        ? failed(played.blocked, played)
-        : played.edit && played.paying === "Deposit 25 LORDS"
-          ? judgeDepositField(played, { value: "25", locked: true })
-          : failed("A begun deposit must open its payment on the app sheet and, unsent, offer Edit or cancel", played),
-  },
-  {
-    name: "deposit-amount-restored",
-    settleMs: 0,
-    play: async (context) => {
-      const reloaded = await reloadOn("Map", "map", "spend-lords")(context);
-      await openDepositPurse(context.browser);
-      return { reloaded: reloaded.reloaded, ...context.browser.read(DEPOSIT_FIELD) };
-    },
-    verify: ({ played }) =>
-      !played.reloaded
-        ? failed("The page did not load again", played)
-        : played.retry && played.edit && !played.uncertain && !played.deposit && played.paying === null
-          ? judgeDepositField(played, { value: "25", locked: true })
-          : failed(
-              "A restored deposit never handed to a wallet must offer Retry payment and Edit or cancel, not an uncertain status",
-              played,
-            ),
-  },
-];
-
-/** The amount the purse will sign: its HUD field, what it holds, how it reads against its well, and what it offers. */
-const DEPOSIT_FIELD = `JSON.stringify((() => {
-  const sheet = document.querySelector('[data-kit-sheet][aria-label="LORDS"]');
-  const input = sheet?.querySelector('input[aria-label="Whole LORDS to deposit"]');
-  if (!input) return null;
-  const field = input.closest(".ui-field");
-  const rgb = (color) => color.match(/[\\d.]+/g).slice(0, 4).map(Number);
-  const backdrop = (element) => {
-    for (let at = element; at; at = at.parentElement) {
-      const [r, g, b, a = 1] = rgb(getComputedStyle(at).backgroundColor);
-      if (a > 0) return [r, g, b];
-    }
-    return [0, 0, 0];
-  };
-  const shown = (color, under, opacity) => color.slice(0, 3).map((value, index) => value * opacity + under[index] * (1 - opacity));
-  const luminance = (color) => color.map((value) => value / 255).map((v) => (v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4)).reduce((sum, v, index) => sum + v * [0.2126, 0.7152, 0.0722][index], 0);
-  const opacity = Number(getComputedStyle(field ?? input).opacity);
-  const behind = backdrop((field ?? input).parentElement);
-  const well = shown(backdrop(field ?? input), behind, opacity);
-  const ink = shown(rgb(getComputedStyle(input).color), well, opacity);
-  const [light, dark] = [luminance(ink), luminance(well)].sort((a, b) => b - a);
-  const rect = input.getBoundingClientRect();
-  const button = (text) => [...sheet.querySelectorAll("button")].some((candidate) => candidate.textContent.trim() === text);
-  return {
-    value: input.value,
-    disabled: input.disabled,
-    focused: document.activeElement === input,
-    inputMode: input.inputMode,
-    name: input.getAttribute("aria-label"),
-    hudField: Boolean(field),
-    contrast: Math.round(((light + 0.05) / (dark + 0.05)) * 100) / 100,
-    fontPx: Number.parseFloat(getComputedStyle(input).fontSize),
-    offset: [Math.round(rect.left + rect.width / 2 - innerWidth / 2), Math.round(rect.top + rect.height / 2 - innerHeight / 2)],
-    viewport: { width: Math.round(visualViewport.width), height: Math.round(visualViewport.height) },
-    deposit: button("Deposit LORDS"),
-    edit: button("Edit or cancel deposit"),
-    retry: button("Retry payment"),
-    uncertain: [...sheet.querySelectorAll('[role="status"]')].some((line) => line.textContent.startsWith("Payment status is uncertain")),
-    paying: document.querySelector('[role="dialog"][aria-label^="Deposit "]')?.getAttribute("aria-label") ?? null,
-  };
-})())`;
-
-/** WCAG's least contrast for text: the editable amount must read at least this well against its well. */
-const AMOUNT_LEAST_CONTRAST = 4.5;
-
-function judgeDepositField(played, { value, locked }) {
-  if (!played?.hudField) return failed("The amount is not in the HUD's field", played);
-  if (played.name !== "Whole LORDS to deposit" || played.inputMode !== "numeric")
-    return failed("The amount lost its accessible name or numeric keyboard", played);
-  if (played.value !== value) return failed(`The amount reads ${played.value}, not ${value}`, played);
-  if (played.disabled !== locked)
-    return failed(locked ? "The begun amount can still be edited" : "The amount is locked", played);
-  if (!locked && played.contrast < AMOUNT_LEAST_CONTRAST)
-    return failed(`The amount's contrast ${played.contrast} is under ${AMOUNT_LEAST_CONTRAST}`, played);
-  return completed(played);
-}
-
-async function readPurchasedPurse(browser) {
-  if (browser.read(SHEET_NAME) !== null) browser.press("Escape");
-  const purse = browser.read(buttonLabelled("^LORDS "));
-  if (!purse) return null;
-  browser.tap(purse.offset);
-  const sheet = await readUntil(
-    () => browser.read(SHEET_NAME),
-    (name) => name === "LORDS",
-    SHEET_WAIT_MS,
-  );
-  if (sheet !== "LORDS") return null;
-  return browser.read(`JSON.stringify((() => {
-    const sheet = document.querySelector('[data-kit-sheet][aria-label="LORDS"]');
-    const earned = /^Winnings: ([\\d,]+) LORDS$/.exec(sheet?.querySelector('[data-earned-lords]')?.textContent ?? "");
-    const purchased = /^Spend-only: ([\\d,]+) LORDS$/.exec(sheet?.querySelector('[data-spend-lords]')?.textContent ?? "");
-    return earned && purchased ? {earned: Number(earned[1].replaceAll(",", "")), purchased: Number(purchased[1].replaceAll(",", ""))} : null;
-  })())`);
-}
-
-/**
- * Opens the readiest army's panel as a player does: its dock entry (a desktop opens it on select; a phone's details).
- * A panel already open (a phone's stands where its dock was) is used as it is.
- */
 async function openTheArmyPanel(browser) {
   const open = browser.read(SHEET_NAME);
   if (/^Army \d+$/.test(open ?? "")) {
@@ -1109,58 +950,6 @@ async function openTheArmyPanel(browser) {
   };
 }
 
-async function refillTheArmy({ browser, partial = false }) {
-  const panel = await openTheArmyPanel(browser);
-  if (panel.sheet !== panel.army) return panel;
-  const maximum = browser.read(`JSON.stringify(Number(document.querySelector('[data-kit-sheet] [data-stamina-line]')
-    ?.textContent?.match(/\\/([\\d,]+)/)?.[1]?.replaceAll(",", "")))`);
-  if (!Number.isSafeInteger(maximum) || maximum <= 0) throw new Error("Army panel has no stamina maximum");
-  const refill = browser.read(sheetButton("^Refill"));
-  if (!refill) return { ...panel, refill };
-  browser.tap(refill.offset);
-  const confirm = await readUntil(
-    // The confirm's verb names what it buys: "Refill · 72 LORDS".
-    () => browser.read(buttonIn('[data-kit-sheet][aria-label="Refill"]', "^Refill · ")),
-    Boolean,
-    SHEET_WAIT_MS,
-  );
-  if (!confirm) return { ...panel, refill: refill.name, confirm };
-  if (partial) selectPartialRefill(browser);
-  watchFor(browser, "refilled", panelReadsTheChainsStamina(panel.army, maximum));
-  browser.tap(confirm.offset);
-  return { ...panel, refill: refill.name, watching: true };
-}
-
-function selectPartialRefill(browser, portion = 0.75) {
-  const slider = browser.read(`JSON.stringify((() => {
-    const input = document.querySelector('[data-kit-sheet][aria-label="Refill"] input[aria-label="Stamina to refill"]');
-    if (!input) return null;
-    const box = input.getBoundingClientRect();
-    return {offset: [box.left + box.width * ${portion} - innerWidth / 2, box.top + box.height / 2 - innerHeight / 2]};
-  })())`);
-  if (!slider) throw new Error("Refill has no stamina slider");
-  browser.tap(slider.offset);
-  const selected = browser.read(`JSON.stringify((() => {
-    const input = document.querySelector('[data-kit-sheet][aria-label="Refill"] input[aria-label="Stamina to refill"]');
-    return {amount: Number(input.value), missing: Number(input.max)};
-  })())`);
-  if (!(selected.amount > 0 && selected.amount < selected.missing))
-    throw new Error("Refill slider did not select a partial amount");
-  return selected;
-}
-
-/**
- * The army's panel reads the stamina the lab's chain refilled it to, out of the same maximum. The chain writes the bar
- * where the contract keeps it: a Frontier army's slot (ArmySlot), or the troops' own bar for an army without one.
- */
-const panelReadsTheChainsStamina = (army, maximum) => `(() => {
-  const refill = (window.__labChain?.sent ?? []).filter(({ command }) => command.kind === "RefillStamina").at(-1);
-  const answered = (model) => refill?.answered.find((fact) => fact.model === model)?.value;
-  const amount = answered("ArmySlot")?.stamina.amount ?? answered("ExplorerTroops")?.troops.stamina.Inline?.amount;
-  const text = document.querySelector('[data-kit-sheet][aria-label="${army}"]')?.innerText ?? "";
-  return amount !== undefined && text.replaceAll(",", "").includes(amount + "/" + ${maximum});
-})()`;
-
 async function levelUpTheArmy({ browser }) {
   const panel = await openTheArmyPanel(browser);
   if (panel.sheet !== panel.army) return panel;
@@ -1169,11 +958,15 @@ async function levelUpTheArmy({ browser }) {
   browser.tap(choose.offset);
   const battle = await readUntil(() => browser.read(sheetButton("^Battle")), Boolean, SHEET_WAIT_MS);
   if (!battle) return { ...panel, battle };
+  const scoutingOffered = browser.read(
+    `Boolean(document.querySelector('[data-army-step="choose"] [data-attribute="scouting"]'))`,
+  );
+  if (scoutingOffered !== false) return { ...panel, scoutingOffered };
   const buy = browser.read(sheetButton("^Level up$"));
   if (!buy) return { ...panel, buy };
   watchFor(browser, "tier-bought", panelShowsTheChainsTier(panel.army));
   browser.tap(buy.offset);
-  return { ...panel, watching: true };
+  return { ...panel, scoutingOffered, watching: true };
 }
 
 /**
@@ -1251,47 +1044,6 @@ function buildingDemolished({ actionLatency }) {
  * does (a desktop's right-click on the tile whose hover offers Open crate; a phone's tap, then its card's Open); the
  * result is that chest consumed off its tile.
  */
-const CHEST_ACTION_STEPS = [
-  { name: "enter-on-map", settleMs: 3_000, verify: inScene("map") },
-  { name: "select-army", play: selectTheReadiestArmy, settleMs: 1_500, verify: armySelected },
-  clickToResultStep("chest", "OpenRelicChest", openTheChest, chestOpened),
-];
-
-async function openTheChest({ browser }) {
-  await focusTheArmyFromItsDock(browser);
-  const armyAt = armyOnScreen(browser, browser.observe().selection?.army?.id);
-  if (!armyAt) return { offered: [] };
-  const offered = [];
-  for (const [dx, dy] of NEIGHBOUR_RING) {
-    const offset = [armyAt[0] + dx, armyAt[1] + dy];
-    if (onADesktop()) {
-      browser.hover(offset);
-      await sleep(HOVER_SETTLE_MS);
-      const tip = browser.read(TOOLTIP_TEXT);
-      offered.push(tip);
-      if (/^Open crate\b/.test(tip ?? "")) {
-        // A desktop's camera stays where it was: the chest stands where it was aimed.
-        browser.rightClick(offset);
-        return { offered, target: offset, chest: chestBody(screenPoint(offset)) };
-      }
-      continue;
-    }
-    browser.tap(offset);
-    const open = await readUntil(() => browser.read(sheetButton("^Open")), Boolean, SHEET_WAIT_MS);
-    offered.push(browser.read(SHEET_NAME));
-    if (open) {
-      // A phone frames the tapped tile above its card: the chest is found where the map now draws it.
-      const at = await settledHexOnScreen(browser);
-      browser.tap(open.offset);
-      return { offered, target: offset, chest: at && chestBody(at) };
-    }
-    if (browser.read(SHEET_NAME) !== null) browser.press("Escape");
-    if (!browser.observe().selection?.army) await focusTheArmyFromItsDock(browser);
-  }
-  return { offered };
-}
-
-// Where the screen draws the selected hex (page px), as the map reports it.
 const HEX_ON_SCREEN = `JSON.stringify(window.__eternumMapSelection?.hexOnScreen ?? null)`;
 
 /** The selected hex's place once the camera has stopped framing it: two readings a frame apart that agree. */
@@ -1310,416 +1062,6 @@ const screenPoint = ([dx, dy]) => ({ x: VIEWPORT.width / 2 + dx, y: VIEWPORT.hei
 
 /** A chest's body on its tile (page px): what its lid lifting changes, not the tile round it. */
 const chestBody = ({ x, y }) => ({ left: Math.round(x - 25), top: Math.round(y - 35), width: 50, height: 40 });
-
-/**
- * The chest the lab's chain consumed for the step's OpenRelicChest: its opening starting on its tile (the chest sinks
- * away seconds later), seen on the chest's own body where the map drew it.
- */
-function chestOpened({ played, actionLatency }) {
-  const vacated = (actionLatency.chainAnswers ?? [])
-    .filter(({ kind }) => kind === "OpenRelicChest")
-    .at(-1)
-    ?.answered.find(({ model, value }) => model === "TileOccupancy" && value === null);
-  const [, , col, row] = vacated?.key.split(":") ?? [];
-  return col && played.chest && { presented: `chest-opened:${col},${row}`, target: played.chest, onset: true };
-}
-
-/**
- * LORDS withdrawn (the lab's upkeep game, whose L2 ledger reads the tab answers): the purse's LORDS opened for Withdraw,
- * its Maximum, then Withdraw; the result is the purse reading the LORDS the chain debited the realm to (the ledger's
- * payment on L2 comes later, the relay's doing).
- */
-const WITHDRAW_ACTION_STEPS = [
-  { name: "enter-on-map", settleMs: 3_000, verify: inScene("map") },
-  clickToResultStep(
-    "withdraw",
-    "WithdrawLords",
-    withdrawTheLords,
-    ({ played }) => played.watching && { watch: "withdrawn" },
-  ),
-];
-
-function walletDepositStep(name) {
-  return {
-    name,
-    play: depositTenLords,
-    settleMs: 0,
-    verify: ({ played }) =>
-      played.blocked
-        ? blocked(played.blocked, played)
-        : played.credited
-          ? completed(played)
-          : failed(
-              played.error ?? "Deposit did not credit exactly ten spend-only LORDS while preserving winnings",
-              played,
-            ),
-  };
-}
-
-/** A wallet-funded ten-LORDS purchase on an isolated S1 rehearsal chain, through the real purse and wallet. */
-async function depositTenLords({ base, browser, owner, devTools }) {
-  const evidence = { responses: [] };
-  const stop = watchDepositResponses(devTools, evidence);
-  try {
-    Object.assign(evidence, await approveTenLords({ base, browser, owner, evidence }));
-  } catch (error) {
-    evidence.error = error.message;
-  } finally {
-    await stop();
-  }
-  return evidence;
-}
-
-async function approveTenLords({ base, browser, owner, evidence }) {
-  const route = browser.read("JSON.stringify(location.pathname)");
-  const chain = route.match(/\/g\/(0x[0-9a-f]+)\//i)?.[1];
-  if (!chain || !Buffer.from(chain.slice(2), "hex").toString().startsWith("S1_DEPOSIT_"))
-    throw new Error("Deposit proof requires an isolated S1_DEPOSIT_ shard");
-  const purse = browser.read(buttonLabelled("^LORDS "));
-  if (!purse) return { blocked: "No owned purse" };
-  if (browser.read(SHEET_NAME) !== "LORDS") browser.tap(purse.offset);
-  await readUntil(
-    () => browser.read(SHEET_NAME),
-    (name) => name === "LORDS",
-    SHEET_WAIT_MS,
-  );
-  const before = browser.read(DEPOSIT_BALANCES);
-  evidence.before = before;
-  if (browser.read(sheetButton("^Link a wallet to deposit$")))
-    return { blocked: "Link a funded test wallet before the headed proof; no linked wallet is available", before };
-  const button = browser.read(sheetButton("^Deposit LORDS$"));
-  if (!button || before.amount !== "10" || before.spend === null || before.earned === null)
-    return { blocked: "Deposit unavailable, balances missing, or amount is not ten", before };
-  browser.tap(button.offset);
-  const payment = await confirmPasskeyPayment({ base, browser, evidence, owner });
-  if (payment.blocked) return { ...payment, before };
-  if (!payment.pressed)
-    console.error(
-      "Confirm the ten-LORDS deposit in the linked wallet's prompt. Waiting up to ten minutes; Ctrl-C cancels.",
-    );
-  const after = await pollProof(
-    owner,
-    () => (evidence.after = browser.read(DEPOSIT_BALANCES)),
-    (state) =>
-      state.spend !== null &&
-      BigInt(state.spend) === BigInt(before.spend) + 10n &&
-      state.earned === before.earned &&
-      state.credited.some((id) => !before.credited.includes(id)),
-    10 * 60_000,
-    "No deposit credit within ten minutes: prepare the payout wallet in this persistent headed profile, confirm the payment, and check its devLords and its fee funding (LORDS for a Realms wallet, STRK for another)",
-  );
-  return {
-    before,
-    after,
-    fee: payment.fee,
-    credited:
-      after.spend !== null &&
-      BigInt(after.spend) === BigInt(before.spend) + 10n &&
-      after.earned === before.earned &&
-      after.credited.some((id) => !before.credited.includes(id)),
-  };
-}
-/** The deposit's payment on the app sheet, by its title ("Deposit 10 LORDS"). */
-const DEPOSIT_PAYMENT = '[role="dialog"][aria-label^="Deposit "]';
-const PASSKEY_CONFIRM = sheetButton("^Confirm with your passkey$", DEPOSIT_PAYMENT);
-const PAYMENT_TEXT = `JSON.stringify(document.querySelector(${JSON.stringify(DEPOSIT_PAYMENT)})?.textContent ?? null)`;
-const PRICING_WAIT_MS = 60_000;
-const FEE_DECISION_MS = 10 * 60_000;
-
-/**
- * A Realms wallet's payment, confirmed by the run once its fee and calls are on record: the fee the payment shows and
- * the paymaster's build (the calls the passkey signs, and their fee in LORDS wei) go to `<step>-fee-shown.json`, and
- * Confirm is pressed only after the operator writes `<step>-fee-approved.json` beside it; `<step>-fee-refused.json`
- * stops the step unsigned (a fee cap above what the wallet holds). A linked wallet's payment offers no passkey Confirm:
- * its own prompt is the person's.
- */
-async function confirmPasskeyPayment({ base, browser, evidence, owner }) {
-  const shown = `${base}-fee-shown.json`;
-  const approved = `${base}-fee-approved.json`;
-  const refused = `${base}-fee-refused.json`;
-  if ([shown, approved, refused].some((file) => existsSync(file))) throw new Error("fee evidence already exists");
-  const confirm = await readUntil(() => browser.read(PASSKEY_CONFIRM), Boolean, PRICING_WAIT_MS);
-  if (!confirm) return { pressed: false };
-  const build = await readUntil(() => evidence.responses.findLast(isWalletBuild) ?? null, Boolean, 10_000);
-  const fee = feeShownIn(browser.read(PAYMENT_TEXT));
-  writeFileSync(shown, JSON.stringify({ fee, build }, null, 2), { mode: 0o600, flag: "wx" });
-  console.error(
-    `Fee and calls on record: ${shown}. Write ${approved} to confirm with the passkey, or ${refused} to stop.`,
-  );
-  const decided = await waitUntil(() => {
-    owner.throwIfCancelled();
-    return existsSync(approved) || existsSync(refused);
-  }, FEE_DECISION_MS);
-  if (!decided) return { blocked: "No fee decision within ten minutes; nothing signed", fee };
-  if (existsSync(refused)) return { blocked: "Fee refused by the operator; nothing signed", fee };
-  const ready = browser.read(PASSKEY_CONFIRM);
-  if (!ready) return { blocked: "The payment no longer offers its passkey Confirm; nothing signed", fee };
-  browser.tap(ready.offset);
-  // A preparation gone stale is priced again on the press; a fee over the one approved is shown, and nothing signed.
-  const rose = await readUntil(() => browser.read(PAYMENT_TEXT)?.includes(FEE_ROSE) ?? false, Boolean, 5_000);
-  if (rose) return { blocked: "The fee rose past the approved one; nothing signed", fee };
-  return { pressed: true, fee };
-}
-
-const FEE_ROSE = "The network fee went up.";
-const isWalletBuild = (response) => new URL(response.url).pathname.endsWith("/auth/wallet/default/build");
-/** The payment's fee line ("Network fee about 10.71 LORDS, at most 32.11"), or null when it shows none. */
-const feeShownIn = (text) => text?.match(/Network fee about [\d.,]+ LORDS, at most [\d.,]+/)?.[0] ?? null;
-
-const DEPOSIT_BALANCES = `JSON.stringify({
-  spend:document.querySelector('[data-spend-lords]')?.getAttribute('data-spend-lords') ?? null,
-  earned:document.querySelector('[data-earned-lords]')?.getAttribute('data-earned-lords') ?? null,
-  amount:document.querySelector('[aria-label="Whole LORDS to deposit"]')?.value ?? null,
-  credited:[...document.querySelectorAll('[data-deposit-id]')].filter((row)=>/ · Credited$/.test(row.textContent)).map((row)=>row.getAttribute('data-deposit-id')),
-  text:document.querySelector('[role="dialog"]')?.textContent ?? null
-})`;
-
-const LIVE_ACTIONS = "JSON.stringify(globalThis.__clientActionLatencyMeasurements ?? [])";
-const LIVE_STAMINA = `JSON.stringify((() => {
-  const sheet = document.querySelector('[data-kit-sheet] [data-stamina-line]');
-  const reading = sheet?.textContent.replaceAll(',', '').match(/(\\d+)\\/(\\d+)/);
-  return reading ? {current: reading[1], maximum: reading[2]} : null;
-})())`;
-
-async function openDepositPurse(browser) {
-  if (browser.read(SHEET_NAME) !== "LORDS") {
-    if (browser.read(SHEET_NAME) !== null) browser.press("Escape");
-    const purse = browser.read(buttonLabelled("^LORDS "));
-    if (!purse) throw new Error("No owned LORDS purse");
-    browser.tap(purse.offset);
-    await readUntil(
-      () => browser.read(SHEET_NAME),
-      (name) => name === "LORDS",
-      SHEET_WAIT_MS,
-    );
-  }
-  const visible = browser.read(DEPOSIT_BALANCES);
-  if (visible.spend === null || visible.earned === null) throw new Error("Purse has no raw LORDS balances");
-  return visible;
-}
-
-async function depositProofDestination(browser, evidence) {
-  const route = browser.read("JSON.stringify(location.pathname)");
-  const match = /^\/g\/(0x[0-9a-f]+)\/(\d+)\//i.exec(route);
-  if (!match || !Buffer.from(match[1].slice(2), "hex").toString().startsWith("S1_DEPOSIT_"))
-    throw new Error("Live refill proof requires the selected S1_DEPOSIT_ game route");
-  const directory = browser.read(`(async () => {
-    const response = await fetch('/api/directory');
-    return JSON.stringify({status: response.status, body: await response.text()});
-  })()`);
-  evidence.responses.push({ url: "/api/directory", ...directory });
-  if (directory.status !== 200) throw new Error("The selected shard directory is unavailable");
-  const shard = JSON.parse(directory.body).shards.find((item) => BigInt(item.chainId) === BigInt(match[1]));
-  if (!shard?.manifest || !shard.games?.some((game) => Number(game.game_id) === Number(match[2])))
-    throw new Error("Selected game has no listed manifest");
-  if (BigInt(shard.manifest.chainId) !== BigInt(match[1])) throw new Error("Directory manifest chain mismatch");
-  return {
-    chainId: match[1],
-    gameId: Number(match[2]),
-    url: shard.url,
-    rpcUrl: shard.manifest.rpcUrl,
-    worldAddress: shard.manifest.contracts.games,
-  };
-}
-
-/** A bounded preparation uses the ordinary Explore control; no refill or tier purchase is sent here. */
-async function prepareMixedRefill(context, reads, evidence) {
-  const { browser, owner } = context;
-  for (let attempt = 0; attempt <= 8; attempt++) {
-    const purse = await openDepositPurse(browser);
-    if (BigInt(purse.spend) <= 0n || BigInt(purse.earned) <= 0n)
-      throw new Error(
-        `Mixed proof needs deposited LORDS and earned winnings; P=${purse.spend}, E=${purse.earned}. Earn winnings through a ruin chest before rerunning.`,
-      );
-    browser.press("Escape");
-    const panel = await openTheArmyPanel(browser);
-    const stamina = browser.read(LIVE_STAMINA);
-    const armyId = browser.observe().selection?.army?.id;
-    if (!armyId || panel.sheet !== panel.army || !stamina)
-      throw new Error("Deploy an owned army with a visible stamina panel before this proof");
-    if (BigInt(stamina.maximum) - BigInt(stamina.current) > BigInt(purse.spend) + 1n)
-      return { panel, armyId, purse, stamina };
-    if (attempt === 8)
-      throw new Error(
-        `After eight Explore attempts, Army ${armyId} still needs more than ${BigInt(purse.spend) + 1n} missing stamina for a mixed partial refill`,
-      );
-    browser.press("Escape");
-    const previous = browser.read(LIVE_ACTIONS);
-    const action = await exploreBesideArmy(context);
-    const preparation = { action };
-    evidence.preparation.push(preparation);
-    if (!action.pressedAt)
-      throw new Error(
-        "No ordinary Explore is available; provide food and a reachable unexplored tile to make missing stamina",
-      );
-    const hashes = await pollProof(
-      owner,
-      () => newActionHashes(browser.read(LIVE_ACTIONS), previous),
-      (hashes) => hashes.length > 0,
-      ORDER_OUTCOME_WAIT_MS,
-      "Preparation Explore has no action hash",
-    );
-    if (hashes.length !== 1) throw new Error("Preparation submitted more than one action");
-    preparation.receipt = await reads.receipt(hashes[0]);
-    preparation.receiptHead = await reads.receiptHead(preparation.receipt);
-    preparation.snapshot = await reads.snapshot(preparation.receipt.block_number);
-  }
-}
-
-/** One mixed partial refill, judged from its actual invocation, receipt, confirmed native facts and visible controls. */
-async function refillDepositedLords(context) {
-  const evidence = { responses: [], preparation: [] };
-  let reads;
-  try {
-    evidence.destination = await depositProofDestination(context.browser, evidence);
-    reads = liveDepositReads(context.owner, evidence, evidence.destination);
-    evidence.rpcChainId = await reads.verifyChain();
-    evidence.army = await prepareMixedRefill(context, reads, evidence);
-    evidence.before = await reads.snapshot();
-    const before = refillState(evidence.before, evidence.destination, evidence.army.armyId);
-    evidence.destination.actor = before.actor;
-    const confirm = await selectLiveRefill(context, evidence, before);
-    const previous = context.browser.read(LIVE_ACTIONS);
-    evidence.actionsBefore = previous;
-    context.browser.tap(confirm.offset);
-    await confirmLiveRefill(context, reads, evidence, before, previous);
-    const after = refillState(evidence.after, evidence.destination, evidence.army.armyId);
-    evidence.conservation = assertRefillConservation(before, after, evidence.amount, evidence.receiptHead.timestamp);
-    await reconcileVisibleRefill(context, reads, evidence, after);
-    evidence.actions = context.browser.read(LIVE_ACTIONS);
-    assertOnlyRefillAction(evidence.actions, previous, evidence.receipt.transaction_hash);
-    evidence.proven = true;
-  } catch (error) {
-    evidence.error = error.message;
-  } finally {
-    reads?.stop();
-  }
-  return evidence;
-}
-
-async function selectLiveRefill({ browser, extraScreenshot }, evidence, before) {
-  evidence.visibleBefore = await openDepositPurse(browser);
-  assertVisiblePurse(evidence.visibleBefore, before);
-  browser.press("Escape");
-  await openTheArmyPanel(browser);
-  if (browser.observe().selection?.army?.id !== evidence.army.armyId)
-    throw new Error("Army selection changed before refill");
-  const refill = browser.read(sheetButton("^Refill"));
-  if (!refill) throw new Error("Selected army offers no refill");
-  browser.tap(refill.offset);
-  await readUntil(
-    () => browser.read(SHEET_NAME),
-    (name) => name === "Refill",
-    SHEET_WAIT_MS,
-  );
-  const missing = browser.read(
-    `JSON.stringify(document.querySelector('[aria-label="Stamina to refill"]')?.max ?? null)`,
-  );
-  if (!missing) throw new Error("No visible stamina slider");
-  const purchased = BigInt(evidence.visibleBefore.spend);
-  const affordable = purchased + BigInt(evidence.visibleBefore.earned);
-  const upper = affordable < BigInt(missing) ? affordable : BigInt(missing) - 1n;
-  if (upper <= purchased) throw new Error(`Need missing stamina > ${purchased + 1n}; visible missing=${missing}`);
-  const target = purchased + (upper - purchased + 1n) / 2n;
-  selectPartialRefill(browser, Number(target) / Number(missing));
-  evidence.amount = browser.read(
-    `JSON.stringify(document.querySelector('[aria-label="Stamina to refill"]')?.value ?? null)`,
-  );
-  evidence.missing = missing;
-  assertMixedRefill(evidence.visibleBefore, evidence.amount, missing);
-  const confirm = browser.read(buttonIn('[data-kit-sheet][aria-label="Refill"]', "^Refill · "));
-  if (!confirm || confirm.name.replaceAll(",", "") !== `Refill · ${evidence.amount} LORDS`)
-    throw new Error("Refill confirm does not name the selected slider amount");
-  evidence.confirm = confirm.name;
-  evidence.beforeScreenshot = extraScreenshot("mixed-refill-before");
-  return confirm;
-}
-
-async function confirmLiveRefill({ browser, owner }, reads, evidence, before, previous) {
-  const hashes = await pollProof(
-    owner,
-    () => newActionHashes(browser.read(LIVE_ACTIONS), previous),
-    (hashes) => hashes.length > 0,
-    ORDER_OUTCOME_WAIT_MS,
-    "Refill has no normal action-record transaction hash",
-  );
-  if (hashes.length !== 1) throw new Error("Expected exactly one refill transaction");
-  evidence.receipt = await reads.receipt(hashes[0]);
-  if (evidence.receipt.block_number <= evidence.before.body.confirmed_block)
-    throw new Error("Refill receipt does not follow the before snapshot");
-  evidence.transaction = await reads.rpc("starknet_getTransactionByHash", { transaction_hash: hashes[0] });
-  assertRefillTransaction(
-    evidence.transaction,
-    evidence.receipt,
-    evidence.destination,
-    before.release,
-    evidence.army.armyId,
-    evidence.amount,
-  );
-  evidence.receiptHead = await reads.receiptHead(evidence.receipt);
-  evidence.after = await reads.snapshot(evidence.receipt.block_number);
-}
-
-async function reconcileVisibleRefill({ browser, owner, extraScreenshot }, reads, evidence, after) {
-  await pollProof(
-    owner,
-    () => browser.read(SHEET_NAME),
-    (name) => name === evidence.army.panel.army,
-    ORDER_OUTCOME_WAIT_MS,
-    "Refill did not return to the selected army panel",
-  );
-  evidence.visibleStamina = await pollProof(
-    owner,
-    async () => ({
-      panel: browser.read(LIVE_STAMINA),
-      armyId: browser.observe().selection?.army?.id,
-      head: await reads.rpc("starknet_getBlockWithTxHashes", { block_id: "latest" }),
-    }),
-    ({ panel, armyId, head }) =>
-      armyId === evidence.army.armyId &&
-      visibleStaminaMatches(panel, after, evidence.receiptHead.timestamp, head.timestamp),
-    ORDER_OUTCOME_WAIT_MS,
-    "Visible army stamina does not match confirmed refill plus regeneration",
-  );
-  evidence.afterScreenshot = extraScreenshot("mixed-refill-after");
-  evidence.visibleAfter = await pollProof(
-    owner,
-    () => openDepositPurse(browser),
-    (purse) => purse.spend === String(after.purchased.available) && purse.earned === String(after.earned),
-    ORDER_OUTCOME_WAIT_MS,
-    "Visible purse has not reconciled the confirmed refill",
-  );
-  assertVisiblePurse(evidence.visibleAfter, after);
-}
-
-async function withdrawTheLords({ browser }) {
-  const purse = browser.read(buttonLabelled("^LORDS "));
-  if (!purse) return { purse };
-  browser.tap(purse.offset);
-  const sheet = await readUntil(
-    () => browser.read(SHEET_NAME),
-    (name) => name === "Withdraw",
-    SHEET_WAIT_MS,
-  );
-  if (sheet !== "Withdraw") return { purse: purse.name, sheet };
-  const most = browser.read(sheetButton("^Maximum"));
-  if (!most) return { purse: purse.name, sheet, most };
-  browser.tap(most.offset);
-  const withdraw = await readUntil(() => browser.read(sheetButton("^Withdraw$")), Boolean, SHEET_WAIT_MS);
-  if (!withdraw) return { purse: purse.name, sheet, withdraw };
-  watchFor(browser, "withdrawn", purseReadsTheChainsLords);
-  browser.tap(withdraw.offset);
-  return { purse: purse.name, sheet, watching: true, region: purse.region };
-}
-
-/** The purse reads the LORDS the lab's chain debited the realm to for the step's WithdrawLords. */
-const purseReadsTheChainsLords = `(() => {
-  const withdrawal = (window.__labChain?.sent ?? []).filter(({ command }) => command.kind === "WithdrawLords").at(-1);
-  const balance = withdrawal?.answered.find(({ model }) => model === "ResourceBalance")?.value.balance;
-  if (balance === undefined) return false;
-  const lords = (BigInt(balance) / 1000000000n).toLocaleString("en-US");
-  return [...document.querySelectorAll("button")].some((button) => button.getAttribute("aria-label") === "LORDS " + lords);
-})()`;
 
 /** A button on the page whose label (or text) matches `pattern`: its name and where it is from the screen's centre. */
 const buttonLabelled = (pattern) => `JSON.stringify((() => {
@@ -3014,16 +2356,16 @@ const LAB_SPIRE = { mode: "frontier", lab: "spire", chainId: "0x1ab9", gameId: 1
 
 /**
  * A realm's spire as a player uses it, at either size: the army selected from the dock, the spire found beside it by
- * its hover, tapped for its card (the army kept as its actor, each researched depth with its stamina and Enter, the next
- * one's research, and what entering commits the army to), then Enter on Ethereal II: the command the game signs, and
- * the view switched with the army into Ethereal II.
+ * its hover, tapped for its card (the army kept as its actor, the one layer below with Enter, and what entering commits
+ * the army to), then Enter on Ethereal I: the command the game signs, and the view switched with the army into
+ * Ethereal I.
  */
 const LAB_SPIRE_STEPS = [
   { name: "enter-on-map", settleMs: 3_000, verify: inScene("map") },
   { name: "pick-army", play: pickTheSpireArmy, settleMs: 1_500, verify: spireArmyPicked },
   { name: "army-panel", play: readTheArmyPanel, settleMs: 0, verify: armyPanelOffersSpire },
   { name: "spire-card", play: pressSpire, settleMs: 0, verify: spireCardOffersDepths },
-  { name: "enter-depth", play: enterEtherealII, settleMs: 0, verify: armyEnteredEtherealII },
+  { name: "enter-depth", play: enterEtherealI, settleMs: 0, verify: armyEnteredEtherealI },
 ];
 
 /**
@@ -3133,7 +2475,13 @@ async function openASiteCard(browser) {
   return { card: null, offered };
 }
 
-/** Each proof starts on the surface and uses the same Spire entry as a Frontier player. */
+/**
+ * The plate of the hyperstructure the Deep's still shows for scale, which has no spire (ethereal-depths-scenario.ts,
+ * DEEP_SCALE_HYPERSTRUCTURE): the shallower depths show a spire found there.
+ */
+const DEEP_SCALE_PLATE = "structure:903";
+
+/** Each proof starts beside the spire found on the layer above its depth and enters as a Frontier player does. */
 function etherealDepthSteps(depth) {
   const label = `Ethereal ${"I".repeat(depth)}`;
   return [
@@ -3143,10 +2491,12 @@ function etherealDepthSteps(depth) {
       play: pressSpire,
       settleMs: 0,
       verify: ({ played }) =>
-        played.state.depths.every((row) => row.button === "Enter" && row.enabled) &&
-        played.state.depths.length === Object.keys(depthLooks).length
+        played.state.depths.length === 1 &&
+        played.state.depths[0].depth === label &&
+        played.state.depths[0].button === "Enter" &&
+        played.state.depths[0].enabled
           ? completed(played)
-          : failed("The Spire does not offer all researched depths", played),
+          : failed(`The Spire does not offer ${label}, the layer below it`, played),
     },
     {
       name: `ethereal-${depth}`,
@@ -3182,7 +2532,11 @@ function etherealDepthSteps(depth) {
           };
           return {
             army: framed(document.querySelector('.mp-at[data-key="army:${before.army.id}"] .mp-token')),
-            spire: [...document.querySelectorAll('div')].some(element => element.children.length === 0 && element.textContent === "Spire" && framed(element)),
+            scale: ${
+              depth === 3
+                ? `framed(document.querySelector('.mp-at[data-key="${DEEP_SCALE_PLATE}"] .mp-token'))`
+                : `[...document.querySelectorAll('div')].some(element => element.children.length === 0 && element.textContent === "Spire" && framed(element))`
+            },
             alternateLayer: window.__eternumMapSelection?.layer,
           };
         })())`);
@@ -3190,8 +2544,8 @@ function etherealDepthSteps(depth) {
       },
       verify: ({ played }) => {
         const { before, after, camera, terrain, subjects } = played;
-        if (!subjects.army || !subjects.spire || subjects.alternateLayer !== false)
-          return failed("The Frontier still does not frame both the army and Spire", played);
+        if (!subjects.army || !subjects.scale || subjects.alternateLayer !== false)
+          return failed("The Frontier still does not frame both the army and its scale reference", played);
         const command = after.sent.at(-1);
         if (
           after.sent.length !== before.sent.length + 1 ||
@@ -3202,8 +2556,8 @@ function etherealDepthSteps(depth) {
           return failed("The Spire did not sign the chosen depth entry", played);
         if (
           after.army?.id !== before.army.id ||
-          after.army.hex.col !== before.army.hex.col ||
-          after.army.hex.row - before.army.hex.row !== depth * 100 ||
+          // The nearest free tile about one region of Frontier's hundred rows below the spire beside it.
+          Math.abs(after.army.hex.row - before.army.hex.row - 100) > 5 ||
           !camera ||
           hexesApart(camera, after.army.hex) > FRAMED_WITHIN_HEXES
         )
@@ -3284,11 +2638,7 @@ function spireCardOffersDepths({ played, seen }) {
   if (shown.sheet !== "Spire") return failed(`Spire opened ${shown.sheet ?? "no card"}, not the spire's`, shown);
   if (!shown.army) return failed("Spire dropped the army", shown);
   const offered = shown.depths.map(({ depth, line, button, enabled }) => `${depth}|${line}|${button}|${enabled}`);
-  const expected = [
-    "Ethereal I|null|Enter|true",
-    "Ethereal II|null|Enter|true",
-    "Ethereal III|Research it to open it|Research|true",
-  ];
+  const expected = ["Ethereal I|null|Enter|true"];
   if (JSON.stringify(offered) !== JSON.stringify(expected))
     return failed(`the card offers ${offered.join(", ")}`, shown);
   if (!/^.+ stays until the day ends \(.+\)$/.test(shown.commitment ?? ""))
@@ -3296,10 +2646,10 @@ function spireCardOffersDepths({ played, seen }) {
   return completed(shown);
 }
 
-/** Presses Enter on Ethereal II, then reads the card and the army once the command's answer has moved the army. */
-async function enterEtherealII({ browser }) {
+/** Presses Enter on Ethereal I, then reads the card and the army once the command's answer has moved the army. */
+async function enterEtherealI({ browser }) {
   const before = browser.read(SPIRE_STATE);
-  browser.click("Enter Ethereal II");
+  browser.click("Enter Ethereal I");
   const moved = (shown) => shown.sent.length > before.sent.length && shown.army?.hex.row !== before.army?.hex.row;
   const after = await readUntil(() => browser.read(SPIRE_STATE), moved, ORDER_OUTCOME_WAIT_MS);
   const framed = (camera) => camera !== null && hexesApart(camera, after.army.hex) <= FRAMED_WITHIN_HEXES;
@@ -3311,24 +2661,24 @@ async function enterEtherealII({ browser }) {
 const MAP_CAMERA = `JSON.stringify(window.__eternumMapSelection?.camera ?? null)`;
 
 /**
- * The command the game signed for the press, and the army it moved into Ethereal II, the view switched with it: the
- * camera looks at the army's arrival, two regions from the spire, and the army is still selected (owner, 2026-11-04:
+ * The command the game signed for the press, and the army it moved into Ethereal I, the view switched with it: the
+ * camera looks at the army's arrival, one region below the spire, and the army is still selected (owner, 2026-11-04:
  * "spire entering lmao we should just switch view like realm/world/ethereal no ?").
  */
-function armyEnteredEtherealII({ played }) {
+function armyEnteredEtherealI({ played }) {
   const { before, after } = played;
   const command = after.sent.at(-1);
   if (after.sent.length !== before.sent.length + 1 || command?.kind !== "EnterDepth")
     return failed("Enter sent no EnterDepth command", { before, after });
-  if (Number(command.fields.explorer_id) !== before.army?.id || command.fields.depth !== "2")
+  if (Number(command.fields.explorer_id) !== before.army?.id || command.fields.depth !== "1")
     return failed(`EnterDepth was sent for ${JSON.stringify(command.fields)}`, { before, after });
-  // Two regions of Frontier's hundred rows straight below where it stood.
-  if (after.army?.hex.col !== before.army.hex.col || after.army.hex.row - before.army.hex.row !== 200)
-    return failed("the army did not land in Ethereal II", { before, after });
+  // About one region of Frontier's hundred rows below the spire beside it: the nearest free tile there.
+  const rows = after.army ? after.army.hex.row - before.army.hex.row : 0;
+  if (rows < 95 || rows > 105) return failed("the army did not land in Ethereal I", { before, after });
   if (played.camera === null || hexesApart(played.camera, after.army.hex) > FRAMED_WITHIN_HEXES)
-    return failed("the view did not switch to the army in Ethereal II", { before, after, camera: played.camera });
+    return failed("the view did not switch to the army in Ethereal I", { before, after, camera: played.camera });
   if (after.army?.id !== before.army.id)
-    return failed("the army is no longer selected in Ethereal II", { before, after });
+    return failed("the army is no longer selected in Ethereal I", { before, after });
   return completed({ command, before: before.army, after: after.army, camera: played.camera });
 }
 
@@ -3846,6 +3196,8 @@ function eachCardIsItsHover({ played }) {
 const labSpireGame = (scenario) => ({ ...LAB_SPIRE, lab: scenario });
 /** The spire's game before its player settled: the run opens on the home page, and its first step enters the game. */
 const LAB_SETTLE = { ...labSpireGame("settle"), entersFromHome: true };
+/** The same founding in a Season 1 game, by an account a friend's Aspect invite brought. */
+const LAB_SETTLE_INVITED = { ...labSpireGame("settle-invited"), entersFromHome: true };
 /** The spire's game opened on the home page: the run's first step enters it by the card's Resume. */
 const LAB_FROM_HOME = { ...labSpireGame("from-home"), entersFromHome: true };
 /** The spire's army, the one a player picks first: the fixture's SPIRE_ARMY. */
@@ -4024,7 +3376,7 @@ const LAB_AFTER_BATTLE_STEPS = [
  * attacked on prod (src/lab/game/ruin-fight-scenario.ts). Picking the army in the HUD is a request to look at it, so the
  * camera goes to it; from there the fight leaves the camera where it was: the ruin's card opened from the map (a
  * desktop's right-click, a phone's tap), then Attack, its BattleGuard answered by the lab's chain, the ruin cleared, the
- * army's troops down by its losses and the ruin's chest shown.
+ * army's troops down by its losses, without a cash chest.
  */
 const LAB_RUIN_FIGHT_STEPS = [
   { name: "enter-on-map", settleMs: 3_000, verify: inScene("map") },
@@ -4048,6 +3400,147 @@ const LAB_RUIN_FAR_STEPS = [
   { name: "pick-army", play: pickTheArmyAndReadTheCamera, settleMs: 0, verify: cameraWentToTheArmy },
   { name: "open-the-far-card", play: openTheRuinsCardUntil(showsBothSides), settleMs: 0, verify: farCardForecasts },
 ];
+/**
+ * The Deep's sites, played (s1-screens-16 to 25; review 18): the army in the Deep beside the Foundation, which a mate of
+ * its Aspect holds, and beside the Altar, which a rival Aspect holds (/lab/game?scenario=deep-sites). The army picked
+ * from the HUD brings the camera onto it; from there each site's card opens from the map (a desktop's right-click, a
+ * phone's tap) and leaves the camera where it was: the Altar's names its rival holder and offers no order; the
+ * Foundation's offers Join, and Join sends InteractSite, the chain answering as deep_guards.cairo does, so the army leaves
+ * its tile for the Foundation's slot, the card then listing it there.
+ */
+const LAB_DEEP_SITES_STEPS = [
+  { name: "enter-on-map", settleMs: 3_000, verify: inScene("map") },
+  { name: "pick-army", play: pickTheArmyAndReadTheCamera, settleMs: 0, verify: cameraWentToTheArmy },
+  {
+    name: "open-the-rival-altar",
+    play: openTheDeepSite("altar", (shown) => shown.sheet === "Altar"),
+    settleMs: 0,
+    verify: rivalSiteRefused,
+  },
+  {
+    name: "open-the-foundation",
+    play: openTheDeepSite("foundation", (shown) => shown.buttons.includes("Join")),
+    settleMs: 0,
+    verify: foundationOffersJoin,
+  },
+  { name: "join-the-foundation", play: joinTheFoundation, settleMs: 0, verify: joinedTheFoundation },
+];
+/** The lab's Deep sites by the catalog's key (deep-sites-scenario.ts SITE_IDS): their plates are `shrine:<id>`. */
+const LAB_DEEP_SITES = { foundation: 0x1ac01, altar: 0x1ac03 };
+/** What a player sees of a Deep site's card: the camera, the army, the card's name, words and buttons, the site's token. */
+const deepState = (site) => `JSON.stringify({
+  camera: window.__eternumMapSelection?.camera ?? null,
+  army: window.__eternumMapSelection?.army ?? null,
+  sheet: document.querySelector("[data-kit-sheet]")?.getAttribute("aria-label") ?? null,
+  text: document.querySelector("[data-kit-sheet]")?.textContent ?? null,
+  buttons: [...(document.querySelector("[data-kit-sheet]")?.querySelectorAll("button") ?? [])].map((button) => button.textContent.trim()),
+  sent: (window.__labChain?.sent ?? []).map(({ command }) => command.kind),
+  armyToken: document.querySelector('.mp-at[data-key="army:${PICKED_ARMY}"]')?.textContent ?? null,
+  siteToken: (() => {
+    const slot = document.querySelector('.mp-at[data-key="shrine:${site}"]');
+    if (!slot || getComputedStyle(slot).display === "none" || !slot.firstElementChild) return null;
+    const token = slot.firstElementChild.getBoundingClientRect();
+    return [Math.round(token.left + token.width / 2 - innerWidth / 2), Math.round(token.top + token.height / 2 - innerHeight / 2)];
+  })(),
+})`;
+/** How far below its token a press tries for the site's tile: the token floats over the model by its height. */
+const BELOW_THE_TOKEN_PX = [24, 40, 56, 72];
+
+/**
+ * Opens a Deep site's card from the map with the army selected, as a player does: a desktop's right-click, a phone's tap,
+ * just below the site's token, lower each try, until the card shows what `ready` waits for. A press that missed and
+ * left the army is followed by the army picked again from the HUD, as a player would.
+ */
+function openTheDeepSite(key, ready) {
+  return async ({ browser, extraScreenshot }) => {
+    const site = LAB_DEEP_SITES[key];
+    const before = browser.read(deepState(site));
+    if (!before.siteToken) return { before, after: before };
+    let after = before;
+    for (const below of BELOW_THE_TOKEN_PX) {
+      const at = [before.siteToken[0], before.siteToken[1] + below];
+      if (onADesktop()) browser.rightClick(at);
+      else browser.tap(at);
+      after = await readUntil(() => browser.read(deepState(site)), ready, 2_000);
+      if (ready(after)) break;
+      if (after.sheet) browser.press("Escape");
+      if (!browser.read(deepState(site)).army) await pickTheSpireArmy({ browser });
+    }
+    extraScreenshot(`${key}-card`);
+    return { before, after };
+  };
+}
+
+/** The card opened from the map kept the camera, and the army selected, where the player put them. */
+const cardKeptTheView = ({ before, after }) =>
+  !before.camera
+    ? "the page reports no camera"
+    : !sameHex(before.camera, after.camera)
+      ? `opening the card moved the camera from ${JSON.stringify(before.camera)}`
+      : after.army?.id !== PICKED_ARMY
+        ? "the card left the army unselected"
+        : null;
+
+/** The rival's Altar names its holder and offers no order: the contract refuses another Aspect's site. */
+function rivalSiteRefused({ played }) {
+  const { before, after } = played;
+  if (!before.siteToken) return failed("the map draws no token for the Altar", played);
+  if (after.sheet !== "Altar") return failed("the Altar's card did not open from the map", played);
+  const view = cardKeptTheView(played);
+  if (view) return failed(view, played);
+  if (!after.text?.includes("Held by Chaos")) return failed("the Altar's card names no rival holder", played);
+  if (!after.text?.includes("Another Aspect holds it")) return failed("the Altar's card gives no reason", played);
+  if (after.buttons.some((text) => text === "Join" || text === "Attack" || text === "Take"))
+    return failed("the card offers an order on a rival's site", played);
+  return completed({ camera: after.camera, buttons: after.buttons });
+}
+
+/** The Foundation's card offers Join to a mate of its holder, the camera and the army left where they were. */
+function foundationOffersJoin({ played }) {
+  const { before, after } = played;
+  if (!before.siteToken) return failed("the map draws no token for the Foundation", played);
+  if (after.sheet !== "Foundation") return failed("the Foundation's card did not open from the map", played);
+  const view = cardKeptTheView(played);
+  if (view) return failed(view, played);
+  if (!after.text?.includes("One site every Aspect fights for"))
+    return failed("the card does not say the Foundation is shared", played);
+  if (!after.buttons.includes("Join")) return failed("the Foundation's card offers no Join", played);
+  return completed({ camera: after.camera, buttons: after.buttons });
+}
+
+/** Presses Join, waits for the chain's answer, then opens the Foundation's card again from its token. */
+async function joinTheFoundation({ browser, extraScreenshot }) {
+  const site = LAB_DEEP_SITES.foundation;
+  const before = browser.read(deepState(site));
+  if (before.buttons.includes("Join")) browser.click("Join");
+  const answered = await readUntil(
+    () => browser.read(deepState(site)),
+    (shown) => shown.sent.includes("InteractSite") && shown.armyToken === null,
+    MERGE_WAIT_MS,
+  );
+  if (answered.sheet) browser.press("Escape");
+  const token = browser.read(deepState(site)).siteToken;
+  if (token) browser.tap([token[0], token[1] + BELOW_THE_TOKEN_PX[0]]);
+  const reopened = await readUntil(
+    () => browser.read(deepState(site)),
+    (shown) => shown.sheet === "Foundation",
+    MERGE_WAIT_MS,
+  );
+  extraScreenshot("foundation-joined");
+  return { before, answered, reopened };
+}
+
+/** The chain answered Join: the army left its tile for the Foundation's slot, and the card lists it there. */
+function joinedTheFoundation({ played }) {
+  const { answered, reopened } = played;
+  if (!answered.sent.includes("InteractSite")) return failed("Join sent no InteractSite", played);
+  if (answered.armyToken !== null) return failed("the army still stands on its tile after joining", played);
+  if (reopened.sheet !== "Foundation") return failed("the Foundation's card did not open again", played);
+  if (!/Temtinos/.test(reopened.text ?? ""))
+    return failed("the Foundation's slots do not list the player's army", played);
+  return completed({ sent: answered.sent, slots: reopened.text });
+}
+
 /** The ruin beside the army (site-fixture.ts) and how near a framed army stands to the camera's target, in hexes. */
 const LAB_RUIN = 710;
 const FRAMED_WITHIN_HEXES = 6;
@@ -4071,7 +3564,7 @@ const FIGHT_STATE = `JSON.stringify({
       Math.round(token.top + token.height / 2 + ${TOKEN_ABOVE_TILE_PX} - innerHeight / 2),
     ];
   })(),
-  // The chest with the LORDS it paid: the clear's moment at the centre of the screen, its LORDS shown once the lid opens.
+  // Cash-chest presentation must remain absent after a ruin clear.
   chest: Boolean(document.querySelector('[data-chest-moment] [aria-label$=" LORDS"]')),
 })`;
 
@@ -4103,10 +3596,30 @@ const UNDER_THE_CARD_PX = [70, 160];
 /** How far from the middle a ruin may stand across a phone and still be tapped whole: a far ruin is panned within. */
 const ACROSS_THE_PHONE_PX = [-120, 120];
 const PAN_BURSTS = 16;
+const SETTLE_READS = 6;
 const underTheCard = (token) => token && token[1] >= UNDER_THE_CARD_PX[0] && token[1] <= UNDER_THE_CARD_PX[1];
+/** Pans the ruin under the card and waits for the pan to come to rest; what the map showed then and at rest. */
 async function panTheRuinUnderTheCard(browser) {
   await panTheRuinInto(browser, 0, ACROSS_THE_PHONE_PX, ["KeyA", "KeyD"]);
   await panTheRuinInto(browser, 1, UNDER_THE_CARD_PX, ["KeyW", "KeyS"]);
+  const panned = browser.read(FIGHT_STATE);
+  return { panned, atRest: await panAtRest(browser, panned) };
+}
+
+/**
+ * Reads the map until a keyboard pan has stopped gliding. The map's controls damp a pan (CONTROL_CONFIG.dampingFactor),
+ * so about 5% of it is still to come a second after the key: a camera judged against a target still moving under it
+ * reads as moved. At rest is the camera's hex and the ruin's token where they stood one report earlier.
+ */
+async function panAtRest(browser, from) {
+  let last = from;
+  for (let read = 0; read < SETTLE_READS; read += 1) {
+    await sleep(CAMERA_REPORT_MS);
+    const now = browser.read(FIGHT_STATE);
+    if (sameHex(now.camera, last.camera) && String(now.ruinToken) === String(last.ruinToken)) return now;
+    last = now;
+  }
+  return last;
 }
 
 /**
@@ -4140,15 +3653,15 @@ function showsBothSides(shown) {
  */
 function openTheRuinsCardUntil(ready) {
   return async ({ browser, extraScreenshot }) => {
-    if (!onADesktop()) await panTheRuinUnderTheCard(browser);
+    const pan = onADesktop() ? null : await panTheRuinUnderTheCard(browser);
     const before = browser.read(FIGHT_STATE);
-    if (!before.ruinToken) return { before, after: before };
+    if (!before.ruinToken) return { pan, before, after: before };
     extraScreenshot("before-fight");
     if (onADesktop()) browser.rightClick(before.ruinToken);
     else browser.tap(before.ruinToken);
     const after = await readUntil(() => browser.read(FIGHT_STATE), ready, MERGE_WAIT_MS);
     extraScreenshot("fight-card");
-    return { before, after };
+    return { pan, before, after };
   };
 }
 
@@ -4164,7 +3677,7 @@ function farCardForecasts({ played }) {
 
 function fightCardOpenedCameraStill({ played }) {
   const { before, after } = played;
-  if (after.ruinRule !== HUD_WORDS.ruinRule) return failed("the ruin card shows another daily rule", played);
+  if (after.ruinRule !== null) return failed("a relic ruin must not show a daily entitlement", played);
   if (!before.ruinToken) return failed("the map draws no token for the ruin", played);
   if (!onADesktop() && !underTheCard(before.ruinToken))
     return failed("the ruin could not be panned under where its card opens", played);
@@ -4176,17 +3689,17 @@ function fightCardOpenedCameraStill({ played }) {
   return completed({ camera: after.camera, sheet: after.sheet, buttons: after.buttons });
 }
 
-/** Presses Attack, then waits for the chain's answer: the ruin gone from the map and its chest shown. */
+/** Presses Attack, then waits for the chain's answer: the ruin gone and the surviving troops shown. */
 async function attackTheRuin({ browser, extraScreenshot }) {
   const before = browser.read(FIGHT_STATE);
   const attack = before.buttons.find((text) => text.startsWith("Attack"));
   if (attack) browser.click(attack);
   const after = await readUntil(
     () => browser.read(FIGHT_STATE),
-    (shown) => shown.sent.includes("BattleGuard") && shown.ruinToken === null && shown.chest,
+    (shown) => shown.sent.includes("BattleGuard") && shown.ruinToken === null && shown.armyToken?.includes("4,011"),
     MERGE_WAIT_MS,
   );
-  extraScreenshot("chest");
+  extraScreenshot("cleared-ruin");
   await sleep(CAMERA_REPORT_MS);
   return { attack, before, after, settled: browser.read(FIGHT_STATE) };
 }
@@ -4230,7 +3743,7 @@ function ruinClearedCameraStill({ played }) {
   if (!played.attack) return failed("no Attack to press", played);
   if (!after.sent.includes("BattleGuard")) return failed("Attack sent no BattleGuard", played);
   if (after.ruinToken !== null) return failed("the ruin still stands on the map", played);
-  if (!after.chest) return failed("the ruin's chest never showed", played);
+  if (after.chest || settled.chest) return failed("a retired cash chest showed", played);
   if (!settled.armyToken?.includes("4,011")) return failed(`the army's token reads ${settled.armyToken}`, played);
   if (!before.camera) return failed("the page reports no camera", played);
   if (!sameHex(before.camera, settled.camera))
@@ -5090,6 +4603,9 @@ const DISMISSED_AT_EXPRESSION = `JSON.stringify(
  * fails a command that is neither.
  */
 export const UNMEASURED_COMMANDS = {
+  Battle: "Season 1 field battles have no paired-army lab timing; the measured ruin fight sends BattleGuard",
+  ClaimDailyQuest: "the daily quest claim has no desktop and phone timing baseline in the action lab yet",
+  ApplyRelic: "army relic activation has no client control yet; its click-to-result timing needs that control",
   MarkGameSettled:
     "sent by the value relay's operator once a season's game has ended (apps/value-relay), never by a player",
   SetEntityName: "no control in the game sends it: only the provider's set_entity_name, which nothing calls",
@@ -5376,21 +4892,6 @@ export const STEP_SETS = {
       },
     ],
   },
-  "s1-deposits": {
-    game: FRONTIER,
-    steps: [
-      ...FRONTIER_MAP.opening,
-      walletDepositStep("wallet-deposit"),
-      {
-        name: "live-mixed-refill",
-        play: refillDepositedLords,
-        settleMs: 0,
-        verify: ({ played }) =>
-          played.proven ? completed(played) : failed(played.error ?? "Missing live refill evidence", played),
-      },
-      walletDepositStep("wallet-deposit-for-sweep"),
-    ],
-  },
   "home-claim": {
     game: FRONTIER,
     steps: [
@@ -5443,7 +4944,7 @@ export const STEP_SETS = {
   ...Object.fromEntries(
     Object.keys(depthLooks).map((depth) => [
       `lab-ethereal-${depth}`,
-      { game: { ...LAB_SPIRE, lab: "ethereal-depths" }, steps: etherealDepthSteps(Number(depth)) },
+      { game: { ...LAB_SPIRE, lab: `ethereal-depths-${depth}` }, steps: etherealDepthSteps(Number(depth)) },
     ]),
   ),
   "lab-merge-loses-xp": {
@@ -5461,15 +4962,31 @@ export const STEP_SETS = {
   "lab-actions-research": { game: labSpireGame("research"), steps: RESEARCH_ACTION_STEPS },
   "lab-actions-claim": { game: labSpireGame("claim"), steps: CLAIM_ACTION_STEPS },
   "lab-far-place": { game: labSpireGame("far-place"), steps: FAR_PLACE_STEPS, devOverlays: true },
-  "lab-spend-lords": {
-    game: labSpireGame("spend-lords"),
-    steps: purchasedRefillSteps(),
+  "lab-no-lords": {
+    game: labSpireGame("upkeep"),
+    steps: [
+      ARMY_ACTION_STEPS[0],
+      {
+        name: "no-lords-controls",
+        play: async ({ browser }) => {
+          const panel = await openTheArmyPanel(browser);
+          const controls = browser.read(
+            `JSON.stringify([...document.querySelectorAll("button")].map(button => button.getAttribute("aria-label") ?? button.textContent.trim()).filter(label => /^(Refill|Withdraw|Deposit LORDS|LORDS )/.test(label)))`,
+          );
+          return { panel, controls };
+        },
+        settleMs: 0,
+        verify: ({ played }) =>
+          played.panel?.sheet === played.panel?.army && played.controls?.length === 0
+            ? completed(played)
+            : failed("Army panel missing or retired LORDS controls present", played),
+      },
+    ],
   },
-  "lab-deposit-amount": { game: labSpireGame("spend-lords"), steps: DEPOSIT_AMOUNT_STEPS },
   "lab-actions-army": { game: labSpireGame("upkeep"), steps: ARMY_ACTION_STEPS },
   "lab-actions-demolish": { game: labSpireGame("upkeep"), steps: DEMOLISH_ACTION_STEPS },
-  "lab-actions-chest": { game: labSpireGame("upkeep"), steps: CHEST_ACTION_STEPS },
   "lab-actions-settle": { game: LAB_SETTLE, steps: SETTLE_ACTION_STEPS },
+  "lab-settle-invited": { game: LAB_SETTLE_INVITED, steps: SETTLE_INVITED_STEPS },
   "lab-actions-withdraw": { game: labSpireGame("upkeep"), steps: WITHDRAW_ACTION_STEPS },
   "lab-actions-fight": { game: labSpireGame("fight"), steps: FIGHT_ACTION_STEPS },
   "lab-actions-fight-lost": { game: labSpireGame("fight-lost"), steps: FIGHT_LOST_STEPS },
@@ -5480,6 +4997,7 @@ export const STEP_SETS = {
   "lab-reenter": { game: LAB_FROM_HOME, steps: labReenterSteps() },
   "lab-ruin-fight": { game: labSpireGame("ruin-fight"), steps: LAB_RUIN_FIGHT_STEPS },
   "lab-ruin-far": { game: labSpireGame("ruin-far"), steps: LAB_RUIN_FAR_STEPS },
+  "lab-deep-sites": { game: labSpireGame("deep-sites"), steps: LAB_DEEP_SITES_STEPS },
   "lab-hover-zoom": { game: labSpireGame("after-battle"), steps: LAB_HOVER_ZOOM_STEPS, devOverlays: true },
   "lab-hover-zoom-pair": { game: labSpireGame("merge-loses-xp"), steps: LAB_HOVER_ZOOM_STEPS, devOverlays: true },
   "lab-high-ground": { game: labSpireGame("high-ground"), steps: LAB_HIGH_GROUND_STEPS, devOverlays: true },

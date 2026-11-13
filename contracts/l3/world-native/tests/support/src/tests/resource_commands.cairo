@@ -1,4 +1,5 @@
 pub use snforge_std::{start_cheat_caller_address, stop_cheat_caller_address};
+use starknet::storage::StorageMapReadAccess;
 pub use crate::arrivals::{ArrivalKey, has_arrived};
 pub use crate::commands::{Command, ExecutionContext};
 pub use crate::game::{IGameDispatcher, IGameDispatcherTrait};
@@ -155,7 +156,28 @@ pub fn set_explorer_fixture(
         address,
         || {
             let position = ResourceKey { game_id: key.game_id, entity_id: key.explorer_id };
-            let exists = crate::logic::troops::explorer(key).is_some();
+            let previous = crate::logic::troops::explorer(key);
+            let exists = previous.is_some();
+            if let Some(previous) = previous {
+                let before = previous.troops.count;
+                let after = explorer.troops.count;
+                if before != after
+                    && crate::state::read().resources.resource_exists.read((key.game_id, key.explorer_id)) {
+                    let increase = after > before;
+                    let amount = if increase {
+                        after - before
+                    } else {
+                        before - after
+                    };
+                    IResourceOperationsDispatcher { contract_address: address }
+                        .change_explorer_capacity(
+                            position,
+                            amount,
+                            increase,
+                            crate::commands::resource_context(context(address, key.game_id)),
+                        );
+                }
+            }
             crate::logic::map::MapState::relocate_fixture(
                 position, explorer.coord, crate::troops::troop_occupier(explorer.troops), false,
             );
@@ -265,7 +287,9 @@ pub fn assert_terminal_rejection(deployment: Deployment, command: Command, times
         play_fixture::assert_preflight_rejection(deployment.games, action, timestamp);
         return;
     };
-    let rules = snforge_std::interact_with_state(deployment.games, || crate::logic::game::rules(3));
+    let rules = snforge_std::interact_with_state(
+        deployment.games, || crate::commands::load_context(3, 0, 0).rules.unbox(),
+    );
     if !crate::rules::command_enabled(rules.command_mask, index.into()) {
         play_fixture::assert_preflight_rejection(deployment.games, action, timestamp);
         return;
@@ -284,12 +308,12 @@ pub fn troop_deposit_ownership(blitz_mode_on: bool, category: u8) {
             mode_rules: if blitz_mode_on {
                 super::play_fixture::BLITZ_RULES
             } else {
-                super::play_fixture::ETERNUM_RULES
+                super::play_fixture::TEST_RULES
             },
             command_mask: if blitz_mode_on {
                 super::play_fixture::BLITZ_COMMAND_MASK
             } else {
-                super::play_fixture::ETERNUM_COMMAND_MASK
+                super::play_fixture::BLITZ_COMMAND_MASK
             },
             entry_rule: if blitz_mode_on {
                 crate::rules::ENTRY_ROSTER

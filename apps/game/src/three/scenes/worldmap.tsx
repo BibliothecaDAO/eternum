@@ -10,7 +10,7 @@ import { forgetCameraView, publishCameraView } from "./worldmap-camera-view";
 import { followArmyCrossing } from "./worldmap-layer-follow";
 import { SelectedArmyOrders } from "./worldmap-selected-army-orders";
 import { TileOccupier } from "@bibliothecadao/types";
-import { SpireManager, type RuleSpires } from "../managers/spire-manager";
+import { SpireManager } from "../managers/spire-manager";
 import { MapSiteManager } from "../managers/map-site-manager";
 import { activeMapLayer } from "@/three/map-layer";
 import type { ReactNode } from "react";
@@ -30,7 +30,6 @@ import { publishMapSelection } from "@/observability/map-selection";
 import { resolveSpawnActionPath, showArmyDeploymentTooltip } from "./worldmap-army-deployment";
 import { whenModelPreparationSettles } from "@/three/model-preparation";
 import type { PipelineCompiler } from "@/three/pipeline-compiler";
-import type { RendererOverlayPass } from "@/three/renderer-backend";
 import { playUnitCommandSound, playUnitCommandSoundForWorldmapAction } from "@/audio/unit-command-audio";
 import { usePopoverStore } from "@/hooks/store/use-popover-store";
 import { runWithFrameWorkOwner } from "@/three/frame-work-owner";
@@ -319,8 +318,6 @@ import { staminaShortfall } from "@/ui/design-system/kit/reasons";
 import { type PlacedOrderTip, PointerOrderTip } from "./worldmap-order-tip";
 import { getGameModeId } from "@/config/game-modes";
 import { onChestOpenRequest } from "./worldmap-chest-open-request";
-import { announcedRewardChestBeats, onRewardChestRequest } from "./worldmap-reward-chest-request";
-import { chestRarityGlow } from "../rewards/chest-rarity-glow";
 import { shouldQueueArmySelectionRecovery } from "./worldmap-army-tab-selection";
 import { shouldPlayArmyMovementFx } from "./worldmap-movement-fx-policy";
 import {
@@ -971,7 +968,6 @@ export default class WorldmapScene extends WarpTravel {
     this.minimapCameraMoveThrottled?.();
   };
   private stopChestOpenRequests?: () => void;
-  private stopRewardChestRequests?: () => void;
   private armySelectRequestHandler = () => {
     if (this.sceneManager.getCurrentScene() === SceneName.WorldMap) this.selectAwaitedArmy();
   };
@@ -1371,7 +1367,6 @@ export default class WorldmapScene extends WarpTravel {
       this.spireLabelsGroup,
       this.getTerrainSurface(),
       this.markLabelsDirty,
-      this.createRuleSpires(),
       this.compilePipelines,
     );
     this.mapSiteManager = new MapSiteManager(
@@ -1464,26 +1459,6 @@ export default class WorldmapScene extends WarpTravel {
       isSwitchedOff: () => this.isSwitchedOff,
       reconcileHexHover: (hex) => this.hoverLabelManager.reconcileHexHover(hex),
     });
-  }
-
-  /** Frontier's spires stand by rule on each researched realm's ring; they move when knowledge or the day changes. */
-  private createRuleSpires(): RuleSpires {
-    const store = this.game.store;
-    const projection = this.worldSpatialProjection;
-    return {
-      hexes: () => expeditionSpires(store, configManager.getActiveGameId(), getBlockTimestamp().currentBlockTimestamp),
-      subscribe: (onChange) => {
-        const unsubscribeFacts = store.subscribe((changes) => {
-          if (changes.some((change) => ["Structure", "RealmKnowledge"].includes(change.model))) onChange();
-        });
-        // The day turning over re-projects every realm onto its new site.
-        const unsubscribeStructures = projection.subscribeStructures(() => onChange());
-        return () => {
-          unsubscribeFacts();
-          unsubscribeStructures();
-        };
-      },
-    };
   }
 
   private bindWorldSpatialProjectionLifecycle(): void {
@@ -1883,7 +1858,6 @@ export default class WorldmapScene extends WarpTravel {
         letGoOfClearedSite(payout.coord);
         playSiteClear({
           clear: payout,
-          troopsLost: payout.troopsLost,
           at: projectHexToScreen(hex, this.camera),
           burst: () => {
             const world = getWorldPositionForHex(hex);
@@ -1972,10 +1946,6 @@ export default class WorldmapScene extends WarpTravel {
     window.addEventListener(DEPLOY_ON_MAP_EVENT, this.deployOnMapHandler);
     this.stopChestOpenRequests = onChestOpenRequest(({ explorerId, hex }) => {
       if (this.sceneManager.getCurrentScene() === SceneName.WorldMap) void this.openChest(explorerId, hex);
-    });
-    this.stopRewardChestRequests = onRewardChestRequest((request) => {
-      if (this.sceneManager.getCurrentScene() !== SceneName.WorldMap) return;
-      void this.chestManager.presentAtScreenCentre(announcedRewardChestBeats(request), chestRarityGlow(request.rarity));
     });
     this.controls.addEventListener("change", this.handleWorldmapControlsChange);
     window.addEventListener("resize", this.handleTerrainViewportResize);
@@ -2559,7 +2529,7 @@ export default class WorldmapScene extends WarpTravel {
     const short = refusal?.reason === "stamina" ? this.selectedArmyShortOf(refusal.need) : undefined;
     return orderTip({
       path,
-      exploreStamina: configManager.getExploreStaminaCost(),
+      exploreStamina: armyTroops ? configManager.getExploreStaminaCost(armyTroops.category) : 0,
       food: armyTroops ? orderFood(path, armyTroops) : { wheat: 0, fish: 0 },
       explored: this.exploredTiles.get(hexCoords.col)?.has(hexCoords.row) === true,
       refusal,
@@ -2617,7 +2587,7 @@ export default class WorldmapScene extends WarpTravel {
     return standing ? { kind: "structure", category: standing.base.category } : { kind: "other" };
   }
 
-  /** Frontier's lit spire on a hex (normalized), with its realm; a game without expeditions lights none. */
+  /** The spire a Frontier realm found today on a hex (normalized), with its realm; none in a game without expeditions. */
   private litSpireAt(hexCoords: HexPosition) {
     const gameId = configManager.getActiveGameId();
     if (!readExpeditionRules(this.game.store, gameId)) return undefined;
@@ -2635,7 +2605,7 @@ export default class WorldmapScene extends WarpTravel {
 
   /**
    * The view through a spire, as an army passing it switches it (followArmyCrossing): Eternum's other layer, or the
-   * Ethereal layer below Frontier's lit spire.
+   * layer below a spire a Frontier realm found.
    */
   private lookThroughSpire(hexCoords: HexPosition): void {
     const spire = this.litSpireAt(hexCoords);
@@ -2952,6 +2922,7 @@ export default class WorldmapScene extends WarpTravel {
     return (
       action === ActionType.UseSite ||
       action === ActionType.EnterDepth ||
+      action === ActionType.DeepSite ||
       action === ActionType.CreateArmy ||
       action === ActionType.Help
     );
@@ -3038,7 +3009,8 @@ export default class WorldmapScene extends WarpTravel {
       armySelected: this.worldSpatialProjection.getArmy(selectedEntityId) !== undefined,
       site:
         (structure !== undefined && this.isStandingExpeditionSite(structure.id)) ||
-        this.usableSiteAt(hexCoords) !== null,
+        this.usableSiteAt(hexCoords) !== null ||
+        (path !== undefined && ActionPaths.getActionType(path) === ActionType.DeepSite),
       // An army of the player's standing on the spire is selected by the tap, as on any site.
       ownSpire: this.isArmysSpire(selectedEntityId, hexCoords) && !this.holdsOwnSelectable(hexCoords),
       onPhone: layoutNow() === "phone",
@@ -3254,8 +3226,8 @@ export default class WorldmapScene extends WarpTravel {
           this.onSiteUse(actionPath, selectedEntityId);
         } else if (actionType === ActionType.CreateArmy) {
           this.onArmyCreate(actionPath, selectedEntityId);
-        } else if (actionType === ActionType.EnterDepth) {
-          // The depth is the player's choice: the spire's card, with this army, offers each one.
+        } else if (actionType === ActionType.EnterDepth || actionType === ActionType.DeepSite) {
+          // The player's choice is the card's: the spire's offers each depth, a Deep site's its Attack, Take or Join.
           this.openTargetCardForSelectedArmy(actionPath[actionPath.length - 1].hex);
         }
         this.logInteractionDebug("action_executed_from_right_click", {
@@ -3783,7 +3755,11 @@ export default class WorldmapScene extends WarpTravel {
       this.openTargetCardForSelectedArmy(targetHex);
       return;
     }
-    if (this.isFrontierHud() && selected.structure && target.army) {
+    if (
+      this.isFrontierHud() &&
+      target.army &&
+      this.game.store.get("Structure", { game_id: configManager.getActiveGameId(), entity_id: selectedEntityId })
+    ) {
       this.state.selectOnMap({ kind: "structure", entityId: selectedEntityId, tile: targetHex });
       this.state.updateEntityActionHoveredHex(null);
       return;
@@ -4886,11 +4862,6 @@ export default class WorldmapScene extends WarpTravel {
     this.resetZoomHardeningRuntimeState();
   }
 
-  /** A reward's chest staged over the map, drawn after it in passes of its own (RewardStage). */
-  public override getRewardStagePasses(): RendererOverlayPass[] {
-    return this.chestManager.getRewardStagePasses();
-  }
-
   onSwitchOff(nextSceneName?: SceneName) {
     this.logInteractionDebug("switch_off_invoked", {
       nextSceneName,
@@ -4900,7 +4871,6 @@ export default class WorldmapScene extends WarpTravel {
     this.applyWorldmapSceneExitProjection(nextSceneName);
     this.mapPlates.setVisible(false);
     // A reward's chest staged mid-moment ends with the map, and the moment beside it with it.
-    this.chestManager.endScreenCentrePresentation();
     this.invalidateWorldmapSwitchOffTransitions();
     // A dive through a spire ends with the map: it writes the shared camera and canvas no more.
     this.spireDive?.cancel();
@@ -8849,7 +8819,6 @@ export default class WorldmapScene extends WarpTravel {
     window.removeEventListener(ORDER_REQUEST_EVENT, this.orderRequestHandler);
     window.removeEventListener(DEPLOY_ON_MAP_EVENT, this.deployOnMapHandler);
     this.stopChestOpenRequests?.();
-    this.stopRewardChestRequests?.();
     this.clearCache();
 
     this.hoverLabelManager.dispose();

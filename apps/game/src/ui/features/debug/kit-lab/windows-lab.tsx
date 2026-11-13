@@ -7,7 +7,6 @@ import { SurfaceHost } from "@/ui/design-system/molecules/popover";
 import { Tooltip } from "@/ui/design-system/molecules/tooltip";
 import { CraftRelicPopup } from "@/ui/features/economy/resources/craft-relic-popup";
 import { RelicActivationPopup } from "@/ui/features/economy/resources/relic-activation-popup";
-import { MarketModal } from "@/ui/features/economy/trading/market-modal";
 import { TransferAutomationAdvancedModal } from "@/ui/features/economy/transfers/transfer-automation-modal";
 import { openTransfer } from "@/ui/features/economy/transfers/transfer-window";
 import { RealmNumberPicker } from "@/ui/features/game-entry/realm-number-picker";
@@ -20,7 +19,6 @@ import { ConstructionModal } from "@/ui/features/world/containers/construction-m
 import { buildingCounts } from "@/ui/features/frontier/build/build-fixture";
 import { BuildSheet } from "@/ui/features/frontier/build/build-sheet";
 import { HelpModal } from "@/ui/features/military/components/help-modal";
-import { ResourceSwap } from "@/ui/features/economy/banking/swap";
 import { SettingsPanel } from "@/ui/modules/settings/settings";
 import { createGameViews, type GameClient, structureMapPosition } from "@bibliothecadao/eternum";
 import type { GameClientSetup, NativeFactStore } from "@bibliothecadao/eternum/game-client";
@@ -190,64 +188,6 @@ const secondArmyAndRelics = (store: NativeFactStore): unknown[] => {
   ];
 };
 
-/** A bank three tiles from the lab realm, its fees, a Wood market, and the realm's LORDS and donkeys to trade with. */
-const BANK_ID = 60;
-const bankBeside = (store: NativeFactStore): unknown[] => {
-  const realm = store.require("Structure", { game_id: 1, entity_id: REALM });
-  const site = structureMapPosition(store, realm)!;
-  const precision = 1_000_000_000n;
-  const held = (resource: number, amount: bigint) => ({
-    model: "ResourceBalance",
-    key: `0x9f${resource}`,
-    value: { game_id: 1, entity_id: REALM, resource_type: resource, balance: String(amount * precision) },
-  });
-  return [
-    {
-      model: "Structure",
-      key: "0x9f0",
-      value: { ...realm, entity_id: BANK_ID, base: { ...realm.base, category: StructureType.Bank } },
-    },
-    {
-      model: "TileOccupancy",
-      key: "0x9f1",
-      value: {
-        game_id: 1,
-        alt: false,
-        col: site.x + 3,
-        row: site.y,
-        entity_id: BANK_ID,
-        category: TileOccupier.Bank,
-        is_structure: true,
-      },
-    },
-    {
-      model: "BankRules",
-      key: "0x9f2",
-      value: { game_id: 1, lp_fee_num: 3, lp_fee_denom: 100, owner_fee_num: 1, owner_fee_denom: 100 },
-    },
-    {
-      model: "Market",
-      key: "0x9f3",
-      value: {
-        game_id: 1,
-        resource_type: ResourcesIds.Wood,
-        lords: String(30_000n * precision),
-        resource: String(1_000_000n * precision),
-        shares: "1",
-      },
-    },
-    held(ResourcesIds.Lords, 5_000n),
-    held(ResourcesIds.Donkey, 40n),
-  ];
-};
-
-/** The bank's swap, as the Market's AMM tab draws it, on the lab realm. */
-const BankSwap = () => (
-  <div className="mx-auto w-[32rem] p-3">
-    <ResourceSwap entityId={REALM} listResourceId={ResourcesIds.Wood} />
-  </div>
-);
-
 /** The transfer between the lab army, out beside the realm's site, and the realm (or, `toArmy`, the army beside it). */
 const ArmyTransfer = ({ toArmy = false }: { toArmy?: boolean }) => {
   const {
@@ -310,8 +250,6 @@ const SURFACES: Record<string, { name: string; draw: () => ReactNode }> = {
   "army-transfer": { name: "Army transfer", draw: () => <ArmyTransfer /> },
   // The same window between two of the realm's armies, relics in the first: the receiving army's load bar draws.
   "army-to-army": { name: "Army to army", draw: () => <ArmyTransfer toArmy /> },
-  // The bank's swap on the lab realm, a bank beside it and a Wood market: its price and the donkeys a pickup takes.
-  "bank-swap": { name: "Bank swap", draw: () => <BankSwap /> },
   // Frontier's build sheet on its own realm, two farms standing, so a farm's price is raised above its first.
   "frontier-build": { name: "Frontier build", draw: () => <FrontierBuild /> },
   "structure-edit": {
@@ -376,7 +314,6 @@ const SURFACES: Record<string, { name: string; draw: () => ReactNode }> = {
       />
     ),
   },
-  market: { name: "Market", draw: () => <Opened open={() => openWindow("market", <MarketModal />)} /> },
   // The header's Settings, at the width and in the look of the popover it opens in.
   settings: {
     name: "Settings",
@@ -424,7 +361,6 @@ export const WindowsLab = () => {
     if (surface === "frontier-build") fixture.applyFacts(twoFarms() as never);
     if (surface === "army-to-army")
       fixture.applyFacts([...labArmyOut(fixture), ...secondArmyAndRelics(fixture)] as never);
-    if (surface === "bank-swap") fixture.applyFacts(bankBeside(fixture) as never);
     if (surface === "army-transfer") fixture.applyFacts([...labArmyOut(fixture), ...armyRelics()] as never);
     installLabGameClient(fixture);
     return fixture;

@@ -1,10 +1,11 @@
 /**
- * The release step of a deployment: a shard's running Frontier games advance to the release the deployed commit ships,
+ * The release step of a deployment: running Frontier games on supported presets advance to the deployed release,
  * signed by the launcher, which alone may apply a release. The box half registers the release and has Herald publish
  * it; this step refuses until the shard's registered release is the commit's, contents included, and Herald maps every
  * release a game moves through to the commit's schema. Then it advances each game one release at a time.
  */
 
+import { nativeReleasePresets } from "../../../config/source/native";
 import type { ShardManifest } from "@bibliothecadao/eternum/game-sync";
 
 /** What advancing reads and writes on the shard, as the launcher. */
@@ -15,7 +16,7 @@ export interface ReleaseChain {
   /** The game the launcher created under `name`, or 0 when none exists. */
   gameId(name: string): Promise<number>;
   gameRelease(gameId: number): Promise<number>;
-  isSettled(gameId: number): Promise<boolean>;
+  game(gameId: number): Promise<{ settled: boolean; preset_id: bigint }>;
   /** Applies `releaseId` to the game, waits for its receipt, and returns the transaction hash. */
   applyRelease(gameId: number, releaseId: number): Promise<string>;
 }
@@ -87,7 +88,7 @@ export const isReleaseIdentity = (value: unknown): value is ReleaseIdentity => {
 };
 
 /**
- * Advances every running game among `gameNames` (the Frontier games the launch service created or may have created,
+ * Advances supported running games among `gameNames` (the Frontier games the launch service created or may have created,
  * whatever their launch run's state) to `release`. Every check reads before anything is sent.
  */
 export async function advanceGames(
@@ -127,13 +128,16 @@ const sameFelt = (left: string | undefined, right: string | undefined) =>
 
 /**
  * A launch run names its game before creating it, and a launch interrupted after creating it may not have recorded it
- * yet, so each name is resolved on the chain: a game that exists is advanced, a name never created is skipped.
+ * yet, so each name is resolved on the chain. Games on retired presets keep their original release.
  */
 async function runningGamePins(chain: ReleaseChain, gameNames: readonly string[]) {
   const pins: { gameId: number; releaseId: number }[] = [];
   for (const name of gameNames) {
     const gameId = await chain.gameId(name);
-    if (gameId && !(await chain.isSettled(gameId))) pins.push({ gameId, releaseId: await chain.gameRelease(gameId) });
+    if (!gameId) continue;
+    const game = await chain.game(gameId);
+    if (!game.settled && nativeReleasePresets[Number(game.preset_id)])
+      pins.push({ gameId, releaseId: await chain.gameRelease(gameId) });
   }
   return pins;
 }

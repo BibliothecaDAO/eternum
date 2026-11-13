@@ -14,8 +14,6 @@ type TemplateVariables = {
   url: string;
   // player name
   addressName: string;
-  // 300 diamonds, 100 donkeys, 2000 gold
-  raidResources: string;
   // tribe name
   tribeName: string;
 };
@@ -33,7 +31,6 @@ const tweetFooter = tweetFooterLines.join("\n");
 
 export const twitterTemplates = {
   combat: `⚔️ BATTLE DECLARED! ⚔️\n\n{attackerNameText} with {attackerTroopsText}\n\n🗡️ VS 🛡️\n\n{defenderNameText} with {defenderTroopsText}\n\n${tweetFooter}`,
-  raid: `🔥 SUCCESSFUL RAID! 🔥\n\n{attackerNameText}\n\n🗡️ VS 🛡️\n\n{defenderNameText} \n\nSpoils of war: {raidResources} 💰\n\n${tweetFooter}`,
   joinedTribe: `⚔️ NEW ALLIANCE FORGED! ⚔️\n\nI, {addressName}, have pledged allegiance to the mighty {tribeName} tribe!\n\n${tweetFooter}`,
   createdTribe: `⚔️ A NEW POWER RISES! ⚔️\n\nI, {addressName}, have founded the {tribeName} tribe!\n\n${tweetFooter}`,
 };

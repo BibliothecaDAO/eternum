@@ -19,6 +19,7 @@ const createHarness = () => {
   const rules = new Map<string, object>();
   const source = {
     entries: facts.entries.bind(facts),
+    subscriptionScope: facts.subscriptionScope.bind(facts),
     inGame: facts.inGame.bind(facts),
     entityOccupancy: facts.entityOccupancy.bind(facts),
     get: ((model: string, keys: object) => rules.get(model) ?? facts.get(model as "TileOpt", keys as never)) as never,
@@ -208,6 +209,7 @@ const createHarness = () => {
         game_id: 13,
         entity_id: entityId,
         category: StructureType.Camp,
+        beast_kind: "None" as const,
         initial_guard_count: 1_600n,
         alt: false,
         col: input.col,

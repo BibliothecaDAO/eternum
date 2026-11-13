@@ -1,4 +1,39 @@
 pub use world_test_support::tests::resources::*;
+use world_test_support::tests::{authority, declare_logic, start_cheat_caller_address};
+use crate::logic::release::{IReleasesDispatcher, IReleasesDispatcherTrait, Release};
+
+#[test]
+fn resource_fixture_settles_through_each_games_pin_after_a_new_release() {
+    let resources = fixture();
+    let releases = IReleasesDispatcher { contract_address: resources.contract_address };
+    let original = releases.release(1);
+    assert_eq!(original.classes.bridge, declare_logic("BridgeLogic"));
+    let replacement = Release {
+        classes: games_storage::release::LogicClasses { bridge: declare_logic("ResourcesLogic"), ..original.classes },
+        ..original,
+    };
+    start_cheat_caller_address(resources.contract_address, authority());
+    releases.register_release(2, replacement);
+    assert_eq!(releases.current_release(), 2);
+    for game_id in array![1, 2] {
+        assert_eq!(releases.game_release(game_id), 1);
+        let key = ResourceKey { game_id, entity_id: 7 };
+        resources.initialize(key, 100);
+        resources.start_at(key, 2, 2, 100, 10);
+        resources.spend_at(key, 2, 0, 1, 20);
+        assert_eq!(
+            resources.read_slot(key, 2),
+            (
+                20,
+                Production {
+                    remainder: 0, building_count: 1, production_rate: 2, output_amount_left: 80, last_settled_at: 20,
+                },
+                Weight { capacity: 100, weight: 20 },
+            ),
+        );
+        assert_eq!(releases.game_release(game_id), 1);
+    }
+}
 
 
 #[test]
@@ -63,6 +98,7 @@ fn resource_deletion_clears_production_without_affecting_another_game() {
 fn production_storage_round_trips_empty_and_maximum_values() {
     assert_eq!(ProductionPacking::unpack(ProductionPacking::pack(Default::default())), Default::default());
     let maximum = Production {
+        remainder: 99,
         building_count: 0xff,
         production_rate: 0xffffffffffffffff,
         output_amount_left: 0xffffffffffffffffffffffffffffffff,
@@ -73,9 +109,13 @@ fn production_storage_round_trips_empty_and_maximum_values() {
 
 #[test]
 #[fuzzer(runs: 256)]
-fn packed_production_fields_do_not_overlap(buildings: u8, rate: u64, cap: u128, time: u32) {
+fn packed_production_fields_do_not_overlap(buildings: u8, rate: u64, cap: u128, time: u32, carry: u8) {
     let production = Production {
-        building_count: buildings, production_rate: rate, output_amount_left: cap, last_settled_at: time,
+        remainder: carry % 100,
+        building_count: buildings,
+        production_rate: rate,
+        output_amount_left: cap,
+        last_settled_at: time,
     };
     assert_eq!(ProductionPacking::unpack(ProductionPacking::pack(production)), production);
 }
@@ -98,7 +138,7 @@ fn spending_settles_once_and_emits_only_the_final_resource_facts() {
     assert_eq!(resources.weight(key), Weight { capacity: 100, weight: 15 });
     assert_eq!(
         resources.production(key),
-        Production { building_count: 1, production_rate: 2, output_amount_left: 80, last_settled_at: 20 },
+        Production { remainder: 0, building_count: 1, production_rate: 2, output_amount_left: 80, last_settled_at: 20 },
     );
     let mut spy = spy_events();
     resources.grant_at(key, 23, 10, 1, 25);
@@ -180,7 +220,10 @@ fn inactive_resources_have_no_clock_and_activation_starts_at_block_time() {
     let (balance, production, _) = resources.read_slot(key, 1);
     assert_eq!(balance, 8);
     assert_eq!(
-        production, Production { building_count: 1, production_rate: 2, output_amount_left: 100, last_settled_at: 200 },
+        production,
+        Production {
+            remainder: 0, building_count: 1, production_rate: 2, output_amount_left: 100, last_settled_at: 200,
+        },
     );
     resources.spend_at(key, 1, 0, 1, 205);
     let (balance, production, weight) = resources.read_slot(key, 1);
@@ -218,7 +261,7 @@ fn elapsed_seconds_pay_exactly_however_often_production_settles() {
     // The exact Frontier farm rate pays for every second, including between armies ticks.
     let rate = 84000000_u64;
     let mut production = Production {
-        building_count: 1, production_rate: rate, output_amount_left: 0, last_settled_at: 0,
+        remainder: 0, building_count: 1, production_rate: rate, output_amount_left: 0, last_settled_at: 0,
     };
     let mut balance = 0_u128;
     let mut weight = Weight { capacity: core::num::traits::Bounded::MAX, weight: 0 };
@@ -241,6 +284,7 @@ fn frontier_rates_keep_the_same_total_at_every_output_tier() {
         for picks in 0_u128..5 {
             let tier_rate = Into::<u64, u128>::into(rate) * (10000 + picks * 2500) / 10000;
             let mut production = Production {
+                remainder: 0,
                 building_count: 1,
                 production_rate: tier_rate.try_into().unwrap(),
                 output_amount_left: crate::resources::UNLIMITED_OUTPUT,

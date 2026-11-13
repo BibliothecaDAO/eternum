@@ -31,6 +31,7 @@ export const ownerDayLog = (now: number) => {
         game_id: 1,
         entity_id: id,
         category: StructureType.Beasts,
+        beast_kind: "Cyclops" as const,
         initial_guard_count: troops(guard),
         alt: false,
         col: 44 + index,

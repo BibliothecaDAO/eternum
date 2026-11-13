@@ -19,6 +19,10 @@ pub fn namespace(home: EntityId) -> u32 {
     namespace.try_into().unwrap()
 }
 
+pub fn open_home(entity: EntityId) -> EntityId {
+    Into::<u32, u64>::into(namespace(entity)) * LOCAL_RANGE + 1
+}
+
 pub fn allocate_home(game_id: u32, home: EntityId) -> EntityId {
     let home = namespace(home);
     assert!(home <= MAX_HOME_NAMESPACE, "home namespace exceeds safe entity ids");
@@ -42,7 +46,7 @@ pub fn reserve_homes(game_id: u32, owner: ContractAddress) {
     if state.games.home_reservations.read((game_id, owner)) != 0 {
         return;
     }
-    let count: u8 = match crate::logic::settlement::rules(game_id).mode {
+    let count: u8 = match crate::logic::preset_record::for_game(game_id).settlement_mode.read() {
         crate::settlement::SettlementMode::Triple => 3,
         _ => 1,
     };
@@ -68,7 +72,7 @@ pub fn assign_open_home(game_id: u32, owner: ContractAddress) -> EntityId {
         return previous;
     }
     let digest: u256 = core::poseidon::poseidon_hash_span(array![game_id.into(), owner.into()].span()).into();
-    let spacing = crate::logic::settlement::rules(game_id).spacing;
+    let spacing = crate::logic::preset_record::for_game(game_id).settlement_spacing.read();
     let regions = core::cmp::min(0x7fffffff_u32 / spacing, MAX_HOME_NAMESPACE);
     assert!(regions != 0, "no expedition home regions");
     let first: u32 = (digest % regions.into()).try_into().unwrap();
@@ -76,7 +80,7 @@ pub fn assign_open_home(game_id: u32, owner: ContractAddress) -> EntityId {
         let namespace = 1 + (Into::<u32, u64>::into(first) + probe.into()) % Into::<u32, u64>::into(regions);
         let namespace: u32 = namespace.try_into().unwrap();
         if state.games.namespace_owners.read((game_id, namespace)).is_zero() {
-            let home = Into::<u32, u64>::into(namespace) * LOCAL_RANGE + 1;
+            let home = open_home(namespace.into());
             state.games.namespace_owners.write((game_id, namespace), owner);
             state.games.open_homes.write((game_id, owner), home);
             state.games.home_entities.write((game_id, namespace), 1);

@@ -12,7 +12,6 @@ export interface CreateGamePayloadInput {
   durationSeconds: number;
   devModeOn: boolean;
   singleRealmMode: boolean;
-  twoPlayerMode: boolean;
   useMapOverride: boolean;
 }
 
@@ -39,7 +38,6 @@ export function buildMapConfig(config: Config) {
 
 export function buildTroopDamageConfig(config: Config) {
   return {
-    damage_raid_percent_num: config.troop.damage.damageRaidPercentNum,
     damage_biome_bonus_num: config.troop.damage.damageBiomeBonusNum,
     damage_scaling_factor: config.troop.damage.damageScalingFactor,
     t1_damage_value: config.troop.damage.t1DamageValue,
@@ -142,15 +140,12 @@ function resolveRegistrationSchedule(startMainAt: number, chainTimestamp: number
   return { registrationStartAt: startSettlingAt - 1, startSettlingAt };
 }
 
-function resolveRegistrationCountMax(config: Config, presetId: number, twoPlayerMode: boolean): number {
+function resolveRegistrationCountMax(config: Config, presetId: number): number {
   if (nativePresetForId(presetId).entryRule !== nativeRuleConstants.ENTRY_ROSTER) {
-    if (twoPlayerMode) {
-      throw new Error("Eternum seasons do not support two-player mode");
-    }
     return 0;
   }
 
-  const registrationCountMax = twoPlayerMode ? 2 : config.blitz.registration.registration_count_max;
+  const registrationCountMax = config.blitz.registration.registration_count_max;
   if (registrationCountMax < 1 || registrationCountMax > BLITZ_REGISTRATION_COUNT_CAP) {
     throw new Error(`Blitz registration_count_max must be between 1 and ${BLITZ_REGISTRATION_COUNT_CAP}`);
   }
@@ -179,7 +174,7 @@ export function buildCreateGameParams(config: Config, input: CreateGamePayloadIn
   if (!Number.isSafeInteger(input.durationSeconds) || input.durationSeconds <= 0)
     throw new Error("Game duration must be supplied explicitly and be positive");
   const { registrationStartAt, startSettlingAt } = resolveRegistrationSchedule(input.startMainAt, input.chainTimestamp);
-  const registrationCountMax = resolveRegistrationCountMax(config, input.presetId, input.twoPlayerMode);
+  const registrationCountMax = resolveRegistrationCountMax(config, input.presetId);
 
   return {
     name: shortString.encodeShortString(input.gameName),
@@ -191,7 +186,6 @@ export function buildCreateGameParams(config: Config, input: CreateGamePayloadIn
 
     dev_mode_on: input.devModeOn,
     single_realm_mode: nativePresetForId(input.presetId).settlementMode === "Single" || input.singleRealmMode,
-    two_player_mode: input.twoPlayerMode,
     registration_count_max: registrationCountMax,
     registration_start_at: registrationStartAt,
     biome_climate_config: buildBiomeClimateConfig(config),

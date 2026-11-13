@@ -1,6 +1,13 @@
+import { baneRateReader } from "../utils/world-banes";
+import {
+  nativeBaneConstants as bane,
+  nativeRuleConstants as rules,
+} from "../../../../contracts/l3/world-native/schema/client.gen";
+import type { AccrualRates } from "@bibliothecadao/types";
+import { currentResourceWeight } from "../utils/deep";
 import { researchPicks } from "../utils/realm-research";
 import { nativeResearchConstants as research } from "../../../../contracts/l3/world-native/schema/client.gen";
-import { productionOutput } from "../utils/production-output";
+import { productionOutput, productionEndsAt } from "../utils/production-output";
 import { isModeRuleEnabled } from "../utils/mode-rules";
 import {
   BuildingType,
@@ -15,10 +22,11 @@ import type { NativeRows } from "../../../../contracts/l3/world-native/schema/cl
 import { divideByPrecision, getBuildingCount, gramToKg } from "../utils";
 import { configManager } from "./config-manager";
 
-type Production = Pick<
+type ProductionClock = Pick<
   NativeRows["ResourceProduction"],
   "building_count" | "production_rate" | "output_amount_left" | "last_settled_at"
 >;
+type Production = ProductionClock & { remainder: number; rates?: AccrualRates };
 interface ResourceState {
   balance: bigint;
   production: Production;
@@ -61,14 +69,24 @@ export class ResourceManager {
       if (
         changes.length === 0 ||
         changes.some((change) => {
-          if (change.model === "GameRegistry") return (change.current ?? change.previous)?.game_id === this.gameId;
+          if (
+            change.model === "BaneProgress" ||
+            change.model === "FirstTeamBane" ||
+            change.model === "AspectActivity" ||
+            change.model === "BaneRules"
+          )
+            return (change.current ?? change.previous)?.game_id === this.gameId;
+          if (change.model === "GameRegistry" || change.model === "BoardRules" || change.model === "SliceRules")
+            return (change.current ?? change.previous)?.game_id === this.gameId;
           // A realm's level sets its stores' limits.
           if (
             change.model !== "ResourceBalance" &&
             change.model !== "ResourceProduction" &&
+            change.model !== "ProductionCarry" &&
             change.model !== "ResourceWeight" &&
             change.model !== "Structure" &&
-            change.model !== "RealmKnowledge"
+            change.model !== "RealmKnowledge" &&
+            change.model !== "StructureBuildings"
           )
             return false;
           const row = change.current ?? change.previous;
@@ -94,15 +112,18 @@ export class ResourceManager {
     const keys = { game_id: this.gameId, entity_id: this.entityId, resource_type: resourceId };
     const production = this.store.requireOrAbsent("ResourceProduction", keys);
     const balance = this.store.requireOrAbsent("ResourceBalance", keys);
-    if (!production.known || !balance.known) return undefined;
-    const adjusted = this.productionForGameClock(production.known);
+    const carry = this.store.requireOrAbsent("ProductionCarry", keys);
+    if (!production.known || !balance.known || !carry.known) return undefined;
+    const adjusted: Production = { ...this.productionForGameClock(production.known), remainder: carry.known.remainder };
+    if (adjusted.building_count > 0)
+      adjusted.rates = baneRateReader(this.store, this.gameId, this.entityId, bane.ASH_FALL);
     return { balance: balance.known.balance, production: adjusted };
   }
 
-  private productionForGameClock(production: Production): Production {
-    if (production.building_count === 0) return production;
+  private productionForGameClock(production: ProductionClock): ProductionClock {
+    if (production.building_count === 0) return { ...production };
     const rules = this.store.require("SliceRules", { game_id: this.gameId });
-    if (!isModeRuleEnabled(rules, "PRODUCTION_START")) return production;
+    if (!isModeRuleEnabled(rules, "PRODUCTION_START")) return { ...production };
     const game = this.store.require("GameRegistry", { game_id: this.gameId });
     return {
       ...production,
@@ -111,7 +132,8 @@ export class ResourceManager {
   }
 
   private weight() {
-    return this.store.get("ResourceWeight", { game_id: this.gameId, entity_id: this.entityId });
+    const row = this.store.get("ResourceWeight", { game_id: this.gameId, entity_id: this.entityId });
+    return row && currentResourceWeight(this.store, row);
   }
 
   /**
@@ -153,13 +175,13 @@ export class ResourceManager {
   }
 
   /** Production that never runs out: continuous food, or a producer written with the unlimited output sentinel. */
-  private static neverRunsOut(production: Production, resourceId: ResourcesIds): boolean {
+  private static neverRunsOut(production: ProductionClock, resourceId: ResourcesIds): boolean {
     return (
       ResourceManager.isContinuousProductionResource(resourceId) || isUnlimitedOutput(production.output_amount_left)
     );
   }
 
-  private static hasActiveProduction(production: Production | undefined, resourceId: ResourcesIds) {
+  private static hasActiveProduction(production: ProductionClock | undefined, resourceId: ResourcesIds) {
     if (!production) return false;
 
     const isContinuousProductionResource = ResourceManager.isContinuousProductionResource(resourceId);
@@ -181,67 +203,89 @@ export class ResourceManager {
     const { balance, production } = resource;
     if (!production)
       return { balance: Number(balance), hasReachedMaxCapacity: false, amountProduced: 0n, amountProducedLimited: 0n };
-    const amountProduced = ResourceManager._amountProducedStatic(resource, currentTick, resourceId);
-    // A store keeps nothing past its own limit, as the contract adds production to it.
     const limit = this.storeLimit(resourceId);
-    const room = limit === undefined ? undefined : limit > balance ? limit - balance : 0n;
+    if (limit === undefined) return undefined;
+    const amountProduced = ResourceManager._amountProducedStatic(resource, currentTick, resourceId);
+    const room = limit === null ? undefined : limit > balance ? limit - balance : 0n;
     const fitting = this._limitProductionByStoreCapacity(amountProduced, resourceId);
     const amountProducedLimited = room === undefined || fitting < room ? fitting : room;
     const kept = balance + amountProducedLimited;
     return {
       balance: Number(kept),
-      hasReachedMaxCapacity: amountProducedLimited < amountProduced || (limit !== undefined && kept >= limit),
+      hasReachedMaxCapacity: amountProducedLimited < amountProduced || (limit !== null && kept >= limit),
       amountProduced,
       amountProducedLimited,
     };
   }
 
-  /**
-   * A board realm's base wheat/labor capacity before Granary and Storeroom research. Undefined in a game without a realm board.
-   */
-  public static castleStoreLimit(store: NativeFactStore, gameId: number, level: number): bigint | undefined {
-    const board = store.get("BoardRules", { game_id: gameId });
-    if (!board) return undefined;
-    const cap = [
-      board.settlement_resource_cap,
-      board.city_resource_cap,
-      board.kingdom_resource_cap,
-      board.empire_resource_cap,
-    ][level];
-    if (cap === undefined) throw new Error(`Unknown castle level ${level}`);
-    return BigInt(cap) * BigInt(RESOURCE_PRECISION);
+  /** A known cap, null for no independent cap, or undefined while a cap input is unknown. */
+  public storeLimit(resourceId: ResourcesIds): bigint | null | undefined {
+    if (!hasCastleLimit(resourceId)) return null;
+    const keys = { game_id: this.gameId, entity_id: this.entityId };
+    const structure = this.store.get("Structure", keys);
+    if (!structure) {
+      if (this.store.get("ExplorerTroops", { game_id: this.gameId, explorer_id: this.entityId })) return null;
+      return this.store.absenceKnown("Structure", keys).known ? null : undefined;
+    }
+    if (structure.base.category !== StructureType.Realm) return null;
+    return this.storeLimitAtLevel(resourceId, structure.base.level);
   }
 
-  /**
-   * A board realm's resource limit: troops use deployment capacity; Granary and Storeroom increase the separate
-   * wheat/labor base. Undefined for every other
-   * store, which only the shared weight bounds.
-   */
-  public storeLimit(resourceId: ResourcesIds): bigint | undefined {
-    if (!hasCastleLimit(resourceId)) return undefined;
+  /** The same store after a castle upgrade, with the realm's standing buildings and research. */
+  public storeLimitAtLevel(resourceId: ResourcesIds, level: number): bigint | null | undefined {
+    if (!hasCastleLimit(resourceId)) return null;
     const board = this.store.get("BoardRules", { game_id: this.gameId });
-    if (!board) return undefined;
-    const structure = this.store.get("Structure", { game_id: this.gameId, entity_id: this.entityId });
-    if (structure?.base.category !== StructureType.Realm) return undefined;
-    const base = ResourceManager.castleStoreLimit(this.store, this.gameId, structure.base.level)!;
-    const row =
-      resourceId === ResourcesIds.Wheat
-        ? research.ROW_FARM
-        : resourceId === ResourcesIds.Labor
-          ? research.ROW_WORKSHOP
-          : undefined;
-    if (row === undefined) {
-      const limits = this.store.require("SliceRules", { game_id: this.gameId }).troop_limit_config;
-      const cap = [
+    if (!board) return this.store.absenceKnown("BoardRules", { game_id: this.gameId }).known ? null : undefined;
+    const storedResource = resourceId === ResourcesIds.Wheat || resourceId === ResourcesIds.Labor;
+    let caps: readonly number[];
+    let multiplier = 1;
+    if (!storedResource) {
+      const rules = this.store.get("SliceRules", { game_id: this.gameId });
+      if (!rules) return undefined;
+      const limits = rules.troop_limit_config;
+      caps = [
         limits.settlement_deployment_cap,
         limits.city_deployment_cap,
         limits.kingdom_deployment_cap,
         limits.empire_deployment_cap,
-      ][structure.base.level];
-      if (cap === undefined) throw new Error(`Unknown castle level ${structure.base.level}`);
-      return BigInt(cap) * BigInt(board.troop_store_deploys) * BigInt(RESOURCE_PRECISION);
+      ];
+      multiplier = board.troop_store_deploys;
+    } else if (resourceId === ResourcesIds.Labor && board.town !== null) {
+      caps = [
+        board.town.settlement_labor_cap,
+        board.town.city_labor_cap,
+        board.town.kingdom_labor_cap,
+        board.town.empire_labor_cap,
+      ];
+    } else {
+      caps = [
+        board.settlement_resource_cap,
+        board.city_resource_cap,
+        board.kingdom_resource_cap,
+        board.empire_resource_cap,
+      ];
     }
-    const learned = this.store.require("RealmKnowledge", { game_id: this.gameId, structure_id: this.entityId }).learned;
+    const cap = caps[level];
+    if (cap === undefined) throw new Error(`Unknown castle level ${level}`);
+    const base = BigInt(cap) * BigInt(multiplier) * BigInt(RESOURCE_PRECISION);
+    if (!storedResource) return base;
+    if (board.town !== null) {
+      const counts = this.store.get("StructureBuildings", { game_id: this.gameId, entity_id: this.entityId });
+      if (!counts) return undefined;
+      const storerooms = getBuildingCount(BuildingType.Storehouse, [
+        counts.packed_counts_1,
+        counts.packed_counts_2,
+        counts.packed_counts_3,
+      ]);
+      return base * (storerooms > 0 ? BigInt(rules.TOWN_STOREHOUSE_MULTIPLIER) : 1n);
+    }
+    const knowledge = this.store.requireOrAbsent("RealmKnowledge", {
+      game_id: this.gameId,
+      structure_id: this.entityId,
+    });
+    if (!knowledge.known) return undefined;
+    const learned = knowledge.known.learned;
+    const row = resourceId === ResourcesIds.Wheat ? research.ROW_FARM : research.ROW_WORKSHOP;
     const stores = researchPicks(learned, row, research.CHOICE_STORE);
     return (base * BigInt(10_000 + stores * board.storage_step_bps)) / 10_000n;
   }
@@ -265,9 +309,7 @@ export class ResourceManager {
     const { production } = resource;
     if (production.building_count === 0 || production.production_rate === 0n) return 0;
     if (ResourceManager.neverRunsOut(production, resourceId)) return Number.MAX_SAFE_INTEGER;
-    const produced = productionOutput(production, timestamp);
-    const remaining = production.output_amount_left > produced ? production.output_amount_left - produced : 0n;
-    return secondsUntilPaid(remaining, production.production_rate);
+    return Math.max(0, productionEndsAt(production, production.output_amount_left) - timestamp);
   }
 
   /** The timestamp at which a producer with a finite budget pays its last; 0 when it has none. */
@@ -279,7 +321,7 @@ export class ResourceManager {
     const settledAt = production.last_settled_at;
     if (production.production_rate === 0n || production.output_amount_left === 0n) return settledAt;
     if (ResourceManager.neverRunsOut(production, resourceId)) return Number.MAX_SAFE_INTEGER;
-    return settledAt + secondsUntilPaid(production.output_amount_left, production.production_rate);
+    return productionEndsAt(production, production.output_amount_left);
   }
 
   /** The store's capacity and use; undefined when this client holds no resource owner for the entity. */
@@ -368,7 +410,8 @@ export class ResourceManager {
   ): ResourceProductionData {
     const { production } = productionInfo;
     const produced = productionOutput(production, timestamp);
-    const productionPerSecond = divideByPrecision(Number(production.production_rate), false);
+    const percent = production.rates?.(timestamp, timestamp + 1)[0]?.percent ?? 100;
+    const productionPerSecond = divideByPrecision((Number(production.production_rate) * percent) / 100, false);
 
     const isProducing = production.building_count > 0 && production.production_rate !== 0n;
     // Production that never runs out has no remaining output or time: both are infinite, never the sentinel's value.
@@ -386,13 +429,7 @@ export class ResourceManager {
       productionPerSecond,
       isProducing: isProducing && remainingOutput > 0n,
       outputRemaining: Number(remainingOutput) / RESOURCE_PRECISION,
-      timeRemainingSeconds: secondsUntilPaid(remainingOutput, production.production_rate),
+      timeRemainingSeconds: Math.max(0, productionEndsAt(production, production.output_amount_left) - timestamp),
     };
   }
 }
-
-/** The last partial second consumes the rest of a finite output budget. */
-const secondsUntilPaid = (remaining: bigint, ratePerSecond: bigint): number => {
-  if (remaining <= 0n || ratePerSecond <= 0n) return 0;
-  return Number((remaining + ratePerSecond - 1n) / ratePerSecond);
-};

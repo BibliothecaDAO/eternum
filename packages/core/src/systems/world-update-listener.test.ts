@@ -302,7 +302,7 @@ describe("native scene updates", () => {
           game_id: 1,
           owner: "0xa",
           timestamp: 100,
-          story: { FaithPointsClaimedStory: { wonder_id: 3, new_points: 1, total_points: 2 } },
+          story: { StructureLevelUpStory: { new_level: 2 } },
           ...at(tx, 5),
         },
       });

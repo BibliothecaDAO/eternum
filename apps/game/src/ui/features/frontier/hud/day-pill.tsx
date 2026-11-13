@@ -12,12 +12,14 @@ import { STORE_TONES } from "./status-strip";
 
 /**
  * Frontier's clock in the top bar, its one day timer: today on the season's calendar, which opens Today, the day's
- * report (the owner, 22 October: "The day opening up the report is great"), or the finished game's pill.
+ * report (the owner, 22 October: "The day opening up the report is great"), or the finished game's pill. Before
+ * Today opens (opening.ts) the clock is read, never pressed.
  */
-export const FrontierDayClock = ({ rules, onOpenToday }: { rules: ExpeditionRules; onOpenToday: () => void }) => {
+export const FrontierDayClock = ({ rules, onOpenToday }: { rules: ExpeditionRules; onOpenToday?: () => void }) => {
   const clock = dayClock(rules, useNowSeconds());
   const finished = useGameFinished();
   if (finished) return <GameFinishedPill />;
+  if (!onOpenToday) return <DayPill clock={clock} />;
   return (
     <button type="button" aria-label={TODAY} onClick={onOpenToday} className="pointer-events-auto rounded-full">
       <DayPill clock={clock} />

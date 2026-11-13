@@ -50,19 +50,17 @@ pub mod FailingReleaseMigrationFixture {
 }
 #[starknet::interface]
 pub trait IChangedSweep<T> {
-    fn sweep_lords(ref self: T, game_id: u32, structure_id: u64, context: crate::commands::ActionContext);
+    fn sweep_lords(ref self: T, game_id: u32, structure_id: u64);
 }
 
 #[starknet::contract]
-pub mod ChangedSweepPrizesFixture {
+pub mod ChangedSweepFixture {
     #[storage]
     struct Storage {}
 
     #[abi(embed_v0)]
     impl Sweep of super::IChangedSweep<ContractState> {
-        fn sweep_lords(
-            ref self: ContractState, game_id: u32, structure_id: u64, context: crate::commands::ActionContext,
-        ) {
+        fn sweep_lords(ref self: ContractState, game_id: u32, structure_id: u64) {
             core::panic_with_felt252('sweep release 2');
         }
     }
@@ -132,7 +130,7 @@ pub fn gameplay_facts(address: starknet::ContractAddress) -> Array<felt252> {
             let state = crate::state::read();
             let mut facts = array![];
             state.games.games.read(1).serialize(ref facts);
-            crate::logic::game::rules(1).serialize(ref facts);
+            crate::commands::load_context(1, 0, 0).rules.unbox().serialize(ref facts);
             state.games.next_entity.read(1).serialize(ref facts);
             for explorer_id in array![7, 8] {
                 crate::logic::troops::explorer(ExplorerKey { game_id: 1, explorer_id }).serialize(ref facts);

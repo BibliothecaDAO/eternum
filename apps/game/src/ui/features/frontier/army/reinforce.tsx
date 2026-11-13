@@ -24,10 +24,12 @@ import { useState } from "react";
 
 import { wheatStopsAt } from "../deploy/deploy-plan";
 import { type DockArmy, useDockArmies } from "../hud/dock-armies";
-import { homeDirectionOf, readReinforcePlan, type ReinforcePlan, reinforceRange } from "./reinforce-plan";
+import { readReinforcePlan, type ReinforcePlan, reinforceRange } from "./reinforce-plan";
+import { reinforcementDirectionOf } from "@bibliothecadao/eternum";
 
 const REINFORCE_MODELS = [
   "ExplorerTroops",
+  "ExpeditionSite",
   "TileOccupancy",
   "Structure",
   "ResourceBalance",
@@ -37,11 +39,11 @@ const REINFORCE_MODELS = [
 
 /**
  * The reinforcement the map has selected: the player's realm acting on the tile of one of its armies standing beside
- * it, as Blitz reinforces (the realm selected, the army right-clicked or, on a phone, held). Null for anything else, an
- * army that has left the realm's side, and a viewer, who orders no army.
+ * a home or supply post: select the realm, then right-click the army (hold on a phone). A viewer cannot issue the order.
  */
 export const useSelectedReinforcement = (realm: NativeRows["Structure"] | null): DockArmy | null => {
   const { setup } = useGame();
+  useNativeRevision(REINFORCE_MODELS);
   const armies = useDockArmies(realm);
   const selection = useUIStore((state) => state.mapSelection);
   const ordersAllowed = useUIStore(canIssueOrders);
@@ -53,7 +55,9 @@ export const useSelectedReinforcement = (realm: NativeRows["Structure"] | null):
     return at !== undefined && !at.alt && at.col === tile.col && at.row === tile.row;
   };
   return (
-    armies.find((army) => standsThere(army) && homeDirectionOf(setup.store, realm, army.explorerId) !== null) ?? null
+    armies.find(
+      (army) => standsThere(army) && reinforcementDirectionOf(setup.store, realm, army.explorerId) !== null,
+    ) ?? null
   );
 };
 
@@ -89,8 +93,8 @@ export const ReinforceSheet = ({
    */
   const reinforce = async () => {
     const signer = account.account;
-    // Where the army stands is read again as it is sent: one that has moved off the realm's side sends nothing.
-    const home_direction = homeDirectionOf(setup.store, realm, army.explorerId);
+    // Recheck the current position and clear receipt when the order is sent.
+    const home_direction = reinforcementDirectionOf(setup.store, realm, army.explorerId);
     if (!signer || home_direction === null || shown <= 0) return;
     try {
       await sendOnce("army", army.explorerId, { order: "use" }, () =>

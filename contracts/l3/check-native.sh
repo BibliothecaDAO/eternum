@@ -9,6 +9,7 @@ world=contracts/l3/world-native
 verifier=contracts/l3/vrf-verifier
 account=contracts/l3/player-account
 node "$world/scripts/generate-extension.mjs" --check
+node --test "$world/scripts/fixture-actors.test.mjs" "$world/scripts/fact-models.test.mjs"
 runner=$(python3 "$world/toolchain/snforge.py" resolve)
 python3 -m unittest discover -s "$world/toolchain" -p "test_snforge.py"
 
@@ -41,3 +42,4 @@ pnpm run schema:native
 git diff --exit-code -- "$world/schema" "$world/src" "$world/storage" "$world/tests"
 
 (cd "$world" && scarb test)
+python3 "$world/toolchain/check_transaction_events.py"

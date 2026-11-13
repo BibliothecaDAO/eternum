@@ -1,4 +1,5 @@
-import { BuildingType, ID, ResourcesIds } from "@bibliothecadao/types";
+import { nativeRuleConstants, type NativeRows } from "../../../../contracts/l3/world-native/schema/client.gen";
+import { BuildingType, ID, ResourcesIds, StructureType } from "@bibliothecadao/types";
 import type { NativeFactStore } from "../client/native-fact-store";
 import { configManager, getBuildingCount } from "..";
 
@@ -67,4 +68,26 @@ const countedBuildingsStanding = (realmEntityId: ID, buildingCategory: BuildingT
   const standing = getBuildingQuantity(realmEntityId, buildingCategory, store);
   const hasBoard = store.get("BoardRules", { game_id: configManager.getActiveGameId() }) !== undefined;
   return hasBoard && buildingCategory === BuildingType.ResourceLabor ? Math.max(0, standing - 1) : standing;
+};
+
+export type StorehouseAvailability = "open" | "built" | { level: number } | { unavailable: true };
+
+/** The contract's town Storehouse gate, shared by the picker and every construction entrypoint. */
+export const storehouseAvailability = (
+  store: NativeFactStore,
+  realm: NativeRows["Structure"],
+): StorehouseAvailability | undefined => {
+  const board = store.get("BoardRules", { game_id: realm.game_id });
+  const counts = store.get("StructureBuildings", { game_id: realm.game_id, entity_id: realm.entity_id });
+  if (!board || !counts) return undefined;
+  if (board.town === null || realm.base.category !== StructureType.Realm) return { unavailable: true };
+  const standing = getBuildingCount(BuildingType.Storehouse, [
+    counts.packed_counts_1,
+    counts.packed_counts_2,
+    counts.packed_counts_3,
+  ]);
+  if (standing > 0) return "built";
+  return realm.base.level < nativeRuleConstants.TOWN_STOREHOUSE_LEVEL
+    ? { level: nativeRuleConstants.TOWN_STOREHOUSE_LEVEL }
+    : "open";
 };

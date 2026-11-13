@@ -6,8 +6,6 @@ import { mergeConfigPatches } from "../../../source/common/merge-config";
 import { nativePresetForId } from "../../../source/native";
 import { configurationOf, type StoredConfiguration } from "../config/config-loader";
 import blitz from "../../../generated/blitz.madara.json";
-import duel from "../../../generated/duel.madara.json";
-import eternum from "../../../generated/eternum.madara.json";
 import frontier from "../../../generated/frontier.madara.json";
 import type { DeploymentEnvironmentId } from "../types";
 import { readFileSync } from "node:fs";
@@ -126,7 +124,7 @@ function nativeSeasonStart(config: Config, input: Pick<CreateGamePayloadInput, "
 
 // Imported rather than read from disk, so the launch Worker carries the same preset configurations as the CLIs. Each
 // load is a copy, as a file read was: launches apply their overrides to the configuration they get.
-const NATIVE_CONFIGURATIONS = { blitz, duel, eternum, frontier } as unknown as Record<string, StoredConfiguration>;
+const NATIVE_CONFIGURATIONS = { blitz, frontier } as unknown as Record<string, StoredConfiguration>;
 
 export function loadNativePresetConfiguration(environment: DeploymentEnvironmentId, presetId: number): Config {
   const target = resolveDeploymentEnvironment(environment);

@@ -1,3 +1,4 @@
+import type { BuildingType } from "@bibliothecadao/types";
 import type { NativeFactStore } from "../client/native-fact-store";
 import { nativeResearchConstants as research } from "../../../../contracts/l3/world-native/schema/client.gen";
 
@@ -106,14 +107,14 @@ export function realmLearned(
   return store.get("RealmKnowledge", { game_id: gameId, structure_id: structureId })?.learned;
 }
 
-/** The deepest Ethereal layer a realm has researched, 0 for none. */
-export function researchedDepth(
+/** Whether a realm knows Spire lore (the depth row's first tier), so its armies' reveals can find the day's spires. */
+export function knowsSpireLore(
   store: Pick<NativeFactStore, "get">,
   gameId: number,
   structureId: number | bigint,
-): number | undefined {
+): boolean {
   const learned = realmLearned(store, gameId, structureId);
-  return learned === undefined ? undefined : researchTier(learned, research.ROW_DEPTH);
+  return learned !== undefined && researchTier(learned, research.ROW_DEPTH) > 0;
 }
 
 /** The building type a building row's tiers apply to, as research.cairo's row_category; castle rows have none. */
@@ -135,9 +136,14 @@ export function buildingTypeTier(
   structureId: number | bigint,
   category: number,
 ): number {
-  const row = researchRowOf(category);
   const learned = realmLearned(store, gameId, structureId);
-  return row === undefined || learned === undefined ? 1 : Math.max(1, researchTier(learned, row));
+  return learned === undefined ? 1 : Math.max(1, buildingResearchTier(learned, category));
+}
+
+/** Scout production remains Common; Scouting research raises discovery, not its producer. */
+export function buildingResearchTier(learned: bigint, category: number): number {
+  const row = researchRowOf(category);
+  return category === research.SCOUTS_LODGE || row === undefined ? 1 : researchTier(learned, row);
 }
 
 /** The research row whose tiers apply to a building type, if it has one. */
@@ -145,3 +151,9 @@ export function researchRowOf(category: number): number | undefined {
   const row = Object.entries(researchRowCategory).find(([, rowCategory]) => rowCategory === category)?.[0];
   return row === undefined ? undefined : Number(row);
 }
+
+/** Every board building named by the contract, including buildings with no research row. */
+export const boardBuildingCategories: readonly BuildingType[] = Object.entries(research)
+  .filter(([name]) => !/^(ROW_|CHOICE_|KIND_)/.test(name))
+  .map(([, category]) => category)
+  .sort((a, b) => (researchRowOf(a) ?? research.ROW_COUNT) - (researchRowOf(b) ?? research.ROW_COUNT));

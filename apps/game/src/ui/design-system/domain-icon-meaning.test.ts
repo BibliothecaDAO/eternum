@@ -13,7 +13,7 @@ import { iconDefinition, resourceMeaning } from "./icon-meaning";
 
 describe("story icon meanings", () => {
   it("paints every story the game can emit, and refuses one it cannot", () => {
-    for (const story of [...nativeStoryVariants, "BattleEvent", "RaidEvent"])
+    for (const story of [...nativeStoryVariants, "BattleEvent"])
       expect(iconDefinition(storyMeaning(story)).label, story).toBeTruthy();
     expect(() => storyMeaning("Unknown")).toThrow("Unknown story icon: Unknown");
   });
@@ -71,7 +71,12 @@ describe("guard and site icon meanings", () => {
         {
           model: "ExpeditionSite",
           key: "0x72",
-          value: { ...site, row: 2, initial_guard_count: BigInt(count) * BigInt(RESOURCE_PRECISION) },
+          value: {
+            ...site,
+            row: 2,
+            beast_kind: expected === "beast-cyclops" ? "Cyclops" : "Wraith",
+            initial_guard_count: BigInt(count) * BigInt(RESOURCE_PRECISION),
+          },
         },
       ]);
       expect(readStructureMeaning(store, structure)).toBe(expected);

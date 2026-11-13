@@ -1,11 +1,28 @@
-import { describe, expect, it, vi } from "vitest";
+import { buildNativePreset } from "../../../../config/deployer/clean/config/native-preset";
+import { loadNativePresetConfiguration } from "../../../../config/deployer/clean/registrar/native-preset";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { StructureType, TileOccupier } from "@bibliothecadao/types";
 import { NativeFactStore } from "../client/native-fact-store";
 import { WorldSpatialProjection } from "../sync/world-spatial-projection";
 import { getTileAt } from "./tile";
-import { availableRuinLords, ruinChestsToday, ruinDisappeared } from "./ruins";
+import { availableRuinLords, ruinChestsToday, ruinDisappeared, ruinLimit } from "./ruins";
 import { nativeReleaseConstants } from "../../../../contracts/l3/world-native/schema/client.gen";
 import { dayOf } from "./days";
+import { setBlockTimestampSource } from "./timestamp";
+
+beforeEach(() => setBlockTimestampSource(() => 350));
+afterEach(() => setBlockTimestampSource(null));
+
+const legacyPreset = buildNativePreset(loadNativePresetConfiguration("madara.frontier", 5), 5);
+const seasonPreset = buildNativePreset(loadNativePresetConfiguration("madara.frontier", 7), 7);
+const presetFacts = (preset = legacyPreset) => [
+  { model: "SliceRules", key: "0xaa", value: { game_id: 1, ...preset.rules } },
+  {
+    model: "ChestRules",
+    key: "0xab",
+    value: preset.economy.chests.isSome() ? { game_id: 1, ...preset.economy.chests.unwrap() } : null,
+  },
+];
 
 const home = 7n * 0x100000000n + 1n;
 const first = home + 1n;
@@ -28,11 +45,12 @@ const release = (release_id = nativeReleaseConstants.RUIN_DEPTH_LIMIT_RELEASE) =
   value: { game_id: 1, release_id, created_release_id: 1, preset_commitment: 0n },
 });
 
-const setup = () => {
+const setup = (preset = legacyPreset) => {
   const store = new NativeFactStore();
   store.setSnapshot({ gameId: 1, complete: true, timestamp: 350 });
   store.applyFacts([
     release(),
+    ...presetFacts(preset),
     {
       model: "SettlementRules",
       key: "0x1",
@@ -216,7 +234,8 @@ it("keeps the final day's ruin reservation held through an absorbed bag boundary
 
 describe("each depth's ruin chest today", () => {
   const rules = { dayUnitSeconds: 100, spacing: 100, startMainAt: 0, endAt: 100_000, seed: 1n };
-  const realm = { game_id: 1, entity_id: 7 };
+  // Realm 7 has gone down to Ethereal I (enter_depth records the deepest layer reached).
+  const realm = { game_id: 1, entity_id: 7, metadata: { deepest_depth: 1 } } as never;
   const discovery = (ruin_cleared: boolean) => ({
     model: "ExpeditionDiscovery",
     key: "0x71",
@@ -227,7 +246,7 @@ describe("each depth's ruin chest today", () => {
     store.setSnapshot({ gameId: 1, complete: true, timestamp: 1 });
     store.applyFacts([
       release(releaseId),
-      { model: "RealmKnowledge", key: "0xd", value: { game_id: 1, structure_id: 7, learned: 1n << 48n } },
+      ...presetFacts(),
       // Another realm cleared today's Ethereal I: its receipt is not realm 7's.
       {
         model: "ExpeditionSite",
@@ -244,7 +263,7 @@ describe("each depth's ruin chest today", () => {
     value: { ...site(home + 1n, 40), clear: { explorer_id: 1n, home_id: 7n, reward: null } },
   };
 
-  it("opens every researched depth while today's discovery says nothing was cleared, and locks the rest", () => {
+  it("opens every depth the realm has reached while today's discovery says nothing was cleared, and locks the rest", () => {
     expect(dayOf(rules, 1)?.index).toBe(0);
     expect(chests(nativeReleaseConstants.RUIN_DEPTH_LIMIT_RELEASE, [discovery(false)])).toEqual([
       "open",
@@ -267,4 +286,85 @@ describe("each depth's ruin chest today", () => {
   it("says nothing before a home clears one ruin per depth", () => {
     expect(chests(nativeReleaseConstants.RUIN_DEPTH_LIMIT_RELEASE - 1, [discovery(false)])).toBeNull();
   });
+});
+
+/** A complete spectator snapshot still carries the shared calendar and preset rows. */
+const recoveryStore = () => {
+  const store = setup(seasonPreset);
+  store.setSnapshot({ gameId: 1, complete: false, actor: null, timestamp: 350 });
+  store.applyFacts([
+    {
+      model: "GameRegistry",
+      key: "0xac",
+      value: {
+        game_id: 1,
+        name: 0n,
+        preset_id: 7,
+        settled: false,
+        ready: true,
+        dev_mode_on: false,
+        start_settling_at: 0n,
+        start_main_at: 0n,
+        end_at: 100_000n,
+        end_grace_seconds: 0,
+        seed: 1n,
+      },
+    },
+    close(true),
+    {
+      model: "ExpeditionSite",
+      key: "0x20",
+      value: { ...site(first, 40), clear: { explorer_id: home + 4n, home_id: home, reward: null } },
+    },
+  ]);
+  return store;
+};
+
+describe("ruin entitlement during snapshot recovery", () => {
+  it("keeps missing cash rules unknown until they arrive, preserving the sibling's closure", () => {
+    const store = recoveryStore();
+    const map = new WorldSpatialProjection({ store });
+    map.start();
+    expect(ruinLimit(store, 1)).toBeUndefined();
+    expect(ruinDisappeared(store, site(second, 41))).toBeUndefined();
+    expect(map.getStructure(Number(second))).toBeUndefined();
+    expect(getTileAt(store, false, 40, 41, 1)).toBeUndefined();
+    store.applyFacts(presetFacts());
+    expect(ruinLimit(store, 1)).toBe("depth");
+    expect(ruinDisappeared(store, site(second, 41))).toBe(true);
+    expect(map.getStructure(Number(second))).toBeUndefined();
+    expect(map.getStructure(Number(home + 5n))).toBeDefined();
+    map.dispose();
+  });
+
+  it.each([nativeReleaseConstants.RUIN_DEPTH_LIMIT_RELEASE - 1, nativeReleaseConstants.RUIN_DEPTH_LIMIT_RELEASE])(
+    "opens relic siblings only on authoritative absence, through snapshot recovery and rollback (release %i)",
+    (releaseId) => {
+      const store = recoveryStore();
+      store.applyFacts([release(releaseId)]);
+      const map = new WorldSpatialProjection({ store });
+      map.start();
+      expect(ruinLimit(store, 1)).toBeUndefined();
+      expect(map.getStructure(Number(second))).toBeUndefined();
+      store.setSnapshot({ gameId: 1, complete: true, actor: null, timestamp: 350 });
+      expect(ruinLimit(store, 1)).toBe("none");
+      expect(map.getStructure(Number(second))).toBeDefined();
+      expect(getTileAt(store, false, 40, 41, 1)?.occupier_id).toBe(Number(second));
+      map.rebuild();
+      expect(map.getStructure(Number(second))).toBeDefined();
+      store.applyFacts([
+        {
+          model: "ExpeditionSite",
+          key: "0x21",
+          value: { ...site(second, 41), clear: { explorer_id: home + 4n, home_id: home, reward: null } },
+        },
+      ]);
+      expect(map.getStructure(Number(home + 5n))).toBeDefined();
+      store.setSnapshot({ gameId: 1, complete: false, actor: null, timestamp: 350 });
+      expect(ruinLimit(store, 1)).toBeUndefined();
+      expect(map.getStructure(Number(home + 5n))).toBeUndefined();
+      expect(map.getStructure(Number(first))?.clearedSite).toBe(true);
+      map.dispose();
+    },
+  );
 });

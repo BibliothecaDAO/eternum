@@ -15,8 +15,8 @@ pub use crate::structures::IStructureOperationsDispatcher;
 pub use crate::tests::state::{MapObservationTrait, ResourceObservationTrait, StructureObservationTrait};
 pub use crate::troops::Coord;
 pub use crate::village::{
-    IVillagesDispatcher, IVillagesDispatcherTrait, IVillagesSafeDispatcher, IVillagesSafeDispatcherTrait, SettleVillage,
-    VillagePassKey, VillageRules,
+    IVillagePassesDispatcher, IVillagePassesDispatcherTrait, IVillagePassesSafeDispatcher,
+    IVillagePassesSafeDispatcherTrait, SettleVillage, VillagePassKey, VillageRules,
 };
 pub use super::{Deployment, authority, context, play_fixture};
 pub fn village_rules() -> VillageRules {
@@ -35,7 +35,7 @@ pub fn village_preset(mode: SettlementMode, game_rules: crate::rules::SliceRules
     preset.settlement.spacing = 6;
     preset.settlement.realms = super::settlement::grants_for(preset.rules.entry_rule);
     preset.settlement.villages = VillageRules { troop_delay_ticks: 2, ..village_rules() };
-    let data = read_txt(@FileTrait::new("../fixtures/current-presets/preset-3.txt"));
+    let data = read_txt(@FileTrait::new("../fixtures/current-presets/conformance.txt"));
     let mut fields = data.span();
     let _: crate::rules::SliceRules = Serde::deserialize(ref fields).unwrap();
     preset.resources.resources = Serde::deserialize(ref fields).unwrap();
@@ -96,7 +96,7 @@ pub fn settle(realm: u64, pass_id: u16) -> Command {
 pub fn register_pass(deployment: Deployment, pass_id: u16) -> VillagePassKey {
     let key = VillagePassKey { game_id: 3, pass_id };
     start_cheat_caller_address(deployment.games, authority());
-    IVillagesDispatcher { contract_address: deployment.games }.register_village_pass(key, deployment.actor);
+    IVillagePassesDispatcher { contract_address: deployment.games }.register_village_pass(key, deployment.actor);
     stop_cheat_caller_address(deployment.games);
     key
 }
@@ -113,7 +113,7 @@ pub fn assert_blitz_village(mode: SettlementMode) {
     );
     let pass = register_pass(deployment, 1);
     assert!(run(deployment, settle(realm, 1), 100));
-    let ledger = IVillagesDispatcher { contract_address: deployment.games };
+    let ledger = IVillagePassesDispatcher { contract_address: deployment.games };
     assert!(ledger.village_pass(pass).unwrap().village_id != 0);
     assert!(!run(deployment, settle(realm, 1), 100));
     let progress = crate::settlement::ISettlementViewsDispatcherTrait::settlement_progress(
@@ -147,7 +147,13 @@ fn settle_season_realm(deployment: Deployment) -> u64 {
         deployment.games, selector!("realms"), selector!("traits"), array![3492].span(), 0x9000002_u32,
     );
     let mut spy = spy_events();
-    assert!(run(deployment, Command::SettleSeason(crate::realms::SettleSeason { selected_realm: Option::None }), 100));
+    assert!(
+        run(
+            deployment,
+            Command::SettleSeason(crate::realms::SettleSeason { selected_realm: Option::None, aspect: None }),
+            100,
+        ),
+    );
     created_realm(ref spy, deployment)
 }
 pub fn assert_season_entitlement_mode(dev: bool, has_operator: bool, has_entitlement: bool) {
@@ -180,7 +186,7 @@ pub fn assert_season_entitlement_mode(dev: bool, has_operator: bool, has_entitle
     );
     let mut spy = spy_events();
     assert_eq!(
-        run(d, Command::SettleSeason(crate::realms::SettleSeason { selected_realm: Option::None }), 100),
+        run(d, Command::SettleSeason(crate::realms::SettleSeason { selected_realm: Option::None, aspect: None }), 100),
         dev || has_entitlement,
     );
     let mut created = false;

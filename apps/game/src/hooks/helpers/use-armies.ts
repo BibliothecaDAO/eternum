@@ -1,4 +1,6 @@
-import { readExplorers } from "@bibliothecadao/eternum";
+import type { ReadKeys } from "@bibliothecadao/eternum/game-client";
+import { useCurrentDefaultTick } from "./use-block-timestamp";
+import { currentArmy, readExplorers } from "@bibliothecadao/eternum";
 import type { ID } from "@bibliothecadao/types";
 import { useMemo } from "react";
 import { useGame } from "@/hooks/context/game-context";
@@ -11,6 +13,9 @@ export const useExplorersByStructure = ({ structureEntityId }: { structureEntity
   } = useGame();
   const facts = useNativeFacts([
     "ArmySlot",
+    "DeepArmy",
+    "ArmyDay",
+    "DeepRules",
     "ExplorerTroops",
     "Structure",
     "ResourceWeight",
@@ -18,8 +23,29 @@ export const useExplorersByStructure = ({ structureEntityId }: { structureEntity
     "TileOccupancy",
   ]);
   const names = usePlayerNames();
-  return useMemo(
-    () => readExplorers(facts.store, structureEntityId, BigInt(account.address), names.text),
-    [facts, structureEntityId, account.address, names],
-  );
+  useCurrentDefaultTick();
+  return readExplorers(facts.store, structureEntityId, BigInt(account.address), names.text);
 };
+
+/** Army counts change on the confirmed tick even when no row is written. */
+export function useCurrentArmy(key: ReadKeys<"ExplorerTroops"> | undefined) {
+  const facts = useNativeFacts([
+    "ExplorerTroops",
+    "DeepArmy",
+    "DeepRules",
+    "ArmyDay",
+    "SliceRules",
+    "GameRegistry",
+    "SettlementRules",
+  ]);
+  const timestamp = useCurrentDefaultTick();
+  const game = key?.game_id;
+  const explorer = key?.explorer_id;
+  return useMemo(() => {
+    const row =
+      game === undefined || explorer === undefined
+        ? undefined
+        : facts.store.get("ExplorerTroops", { game_id: game, explorer_id: explorer });
+    return row && currentArmy(facts.store, row, timestamp);
+  }, [facts, game, explorer, timestamp]);
+}

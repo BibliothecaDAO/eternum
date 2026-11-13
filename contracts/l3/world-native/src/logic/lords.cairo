@@ -2,13 +2,11 @@
 pub mod LordsState {
     use games_storage::release::LogicClasses;
     use starknet::ContractAddress;
-    use starknet::storage::{StorageMapReadAccess, StorageMapWriteAccess, StoragePointerReadAccess};
-    use crate::commands::ExecutionContext;
+    use starknet::storage::{StorageMapReadAccess, StorageMapWriteAccess, StoragePathEntry, StoragePointerReadAccess};
+    use crate::commands::ResourceContext;
     use crate::logic::release::ReleaseState;
     use crate::logic::release::ReleaseState::InternalTrait as LifeInternalTrait;
     use crate::resources::{IResourceOperationsDispatcherTrait, IResourceOperationsLibraryDispatcher, ResourceKey};
-    use crate::stamina::{StaminaSourceTrait, StaminaTrait};
-    use crate::troops::ExplorerKey;
 
     #[storage]
     #[allow(starknet::colliding_storage_paths)]
@@ -29,94 +27,37 @@ pub mod LordsState {
         impl Life: ReleaseState::HasComponent<TContractState>,
         +Drop<TContractState>,
     > of crate::relics::ILords<ComponentState<TContractState>> {
-        fn sweep_lords(
-            ref self: ComponentState<TContractState>,
-            game_id: u32,
-            structure_id: u64,
-            context: crate::commands::ActionContext,
-        ) {
+        fn sweep_lords(ref self: ComponentState<TContractState>, game_id: u32, structure_id: u64) {
             crate::logic::entry::assert_ledger_operator();
-            let context = crate::commands::execution_context(game_id, context);
+            let timestamp = starknet::get_block_timestamp();
+            let game = self.data.games.games.entry(game_id);
+            assert!(game.preset_id.read() != 0, "game does not exist");
+            assert!(timestamp >= game.end_at.read(), "season has not ended");
             let realm = ResourceKey { game_id, entity_id: structure_id };
-            let record = crate::logic::structures::record(realm);
+            let record = self.data.structures.structures.entry((game_id, structure_id));
+            let owner = record.owner.read();
             assert!(
-                record.base.category == crate::taxonomy::REALM_CATEGORY && record.owner != 0.try_into().unwrap(),
+                record.base.read().category == crate::taxonomy::REALM_CATEGORY && owner != 0.try_into().unwrap(),
                 "sweep requires an owned realm",
             );
             let balance = crate::logic::resources::balance(realm, crate::resources::LORDS);
             assert!(balance % crate::rules::RESOURCE_PRECISION == 0, "fractional realm LORDS");
-            crate::logic::deposits::sweep(game_id, record.owner);
+            crate::logic::deposits::sweep(game_id, owner);
             if balance == 0 {
                 return;
             }
-            assert!(crate::logic::lords_budget::budget(game_id).is_some(), "Frontier pool not published");
-            self.withdraw_realm_lords(realm, record.owner, balance / crate::rules::RESOURCE_PRECISION, context);
-        }
-
-        fn refill_stamina(
-            ref self: ComponentState<TContractState>,
-            game_id: u32,
-            actor: ContractAddress,
-            command: crate::relics::RefillStamina,
-            context: crate::commands::ActionContext,
-        ) -> () {
-            let context = crate::commands::execution_context(game_id, context);
-            crate::game::assert_playing(context.game.unbox(), context.timestamp);
-            let key = ExplorerKey { game_id, explorer_id: command.explorer_id };
-            let explorer = crate::logic::troops::command_explorer(key, Some(actor), context.timestamp, context);
-            assert!(explorer.troops.count != 0, "explorer is dead");
-            let maximum = crate::progression::stamina_max(
-                crate::logic::progression::require(key),
-                explorer.troops.category,
-                context.rules.unbox().troop_stamina_config,
-            );
-            let mut stamina = explorer.troops.stamina.inline();
-            assert!(stamina.amount < maximum, "stamina is already full");
-            assert!(command.amount > 0 && command.amount <= maximum - stamina.amount, "invalid refill amount");
-            let earned = crate::logic::deposits::spend(game_id, actor, command.amount.into());
-            if earned != 0 {
-                self
-                    .resources(game_id)
-                    .spend_resource(
-                        ResourceKey { game_id, entity_id: explorer.owner },
-                        crate::resources::LORDS,
-                        earned * crate::rules::RESOURCE_PRECISION,
-                        context.timestamp,
-                        crate::commands::resource_context(context),
-                    );
-                crate::logic::lords_budget::return_to_pool(game_id, earned, context);
-            }
-            stamina.amount += command.amount;
-            stamina.clamp(maximum);
-            crate::troops::IArmySlotStaminaDispatcherTrait::army_slot_stamina(
-                crate::troops::IArmySlotStaminaLibraryDispatcher {
-                    class_hash: self.logic_classes(game_id).relics.read(),
+            let rules = crate::logic::preset_record::for_game(game_id).rules;
+            let context = ResourceContext {
+                production_start: if rules.mode_rules.read() & crate::rules::PRODUCTION_START != 0 {
+                    game.start_main_at.read().try_into().unwrap()
+                } else {
+                    0
                 },
-                key,
-                crate::troops::ArmySlotAction::Persist(crate::troops::StaminaSource::Inline(stamina)),
-            );
-            ()
-        }
-
-        // Whole LORDS leave the realm and are recorded for fulfilment on L2.
-        fn withdraw_lords(
-            ref self: ComponentState<TContractState>,
-            game_id: u32,
-            actor: ContractAddress,
-            command: crate::relics::WithdrawLords,
-            context: crate::commands::ActionContext,
-        ) -> () {
-            let context = crate::commands::execution_context(game_id, context);
-            crate::relics::assert_claim_window(
-                context.game.unbox(), crate::logic::lords_budget::chest_rules(game_id), context.timestamp,
-            );
-            assert!(command.amount != 0, "zero LORDS withdrawal");
-            let realm = ResourceKey { game_id, entity_id: command.structure_id };
-            let record = crate::logic::structures::record(realm);
-            assert!(record.base.category == crate::taxonomy::REALM_CATEGORY, "withdrawal requires a realm");
-            assert!(record.owner == actor, "actor does not own structure");
-            self.withdraw_realm_lords(realm, actor, command.amount, context);
-            ()
+                troop_capacity: rules.capacity_config.troop_capacity.read(),
+                spire_fee: rules.spire_travel_essence_cost.read(),
+                delivery_tick: rules.tick_config.delivery_tick_in_seconds.read(),
+            };
+            self.withdraw_realm_lords(realm, owner, balance / crate::rules::RESOURCE_PRECISION, timestamp, context);
         }
     }
 
@@ -132,23 +73,18 @@ pub mod LordsState {
             realm: ResourceKey,
             account: ContractAddress,
             amount: u128,
-            context: ExecutionContext,
+            timestamp: u64,
+            context: ResourceContext,
         ) {
             assert!(account != 0.try_into().unwrap(), "withdrawal owner missing");
             self
                 .resources(realm.game_id)
                 .spend_resource(
-                    realm,
-                    crate::resources::LORDS,
-                    amount * crate::rules::RESOURCE_PRECISION,
-                    context.timestamp,
-                    crate::commands::resource_context(context),
+                    realm, crate::resources::LORDS, amount * crate::rules::RESOURCE_PRECISION, timestamp, context,
                 );
             self
                 .record_lords_withdrawal(
-                    realm,
-                    crate::relics::LordsWithdrawal { account, amount, prize_rank: 0, prize_count: 0 },
-                    context.timestamp,
+                    realm, crate::relics::LordsWithdrawal { account, amount, prize_rank: 0, prize_count: 0 }, timestamp,
                 );
         }
 

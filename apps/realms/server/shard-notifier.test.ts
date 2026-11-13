@@ -1,10 +1,13 @@
 import { dayOf } from "@bibliothecadao/eternum/expeditions";
+import { learnResearch } from "@bibliothecadao/eternum/realm-research";
+import { RESOURCE_PRECISION } from "@bibliothecadao/types";
 import type { HeraldHistoryEvent } from "@bibliothecadao/eternum/game-sync";
 import type { PushEnvelope } from "@bibliothecadao/notifications";
 import { beforeAll, describe, expect, it } from "vitest";
 
 import preset from "../../../contracts/l3/world-native/tests/fixtures/current-presets/preset-3.json";
 import explorerFixture from "../../../contracts/l3/world-native/schema/fixtures/row-set.json";
+import { nativeResearchConstants as research } from "../../../contracts/l3/world-native/schema/client.gen";
 import recordedPages from "./fixtures/staging-story-pages.json";
 import { realmsIdOf } from "./realms-id";
 import {
@@ -107,6 +110,11 @@ const createHerald = () => {
     homeSource: "golden" as "realm" | "campaign" | "golden" | null,
     /** The accounts snapshot reads were narrowed to, in order. */
     ownerReads: [] as string[],
+    /** The player's army's troops, when a test sets them; else the fixture's. */
+    armyTroops: null as number | null,
+    /** The Deep's Foundation, when a test opens it: its one guard (the neighbour's army), that home's Aspect, and the
+     * tick its troops were last settled at. */
+    deep: null as null | DeepState,
   };
   const answer = (url: URL): unknown => {
     if (url.pathname === "/manifest") return { version: 1, chainId: state.chain, contracts: { games: "0x5e45" } };
@@ -140,14 +148,20 @@ const createHerald = () => {
         { status: 409 },
       );
     if (url.pathname === `/games/${GAME_ID}/snapshot`)
-      return snapshot(
-        state.army,
-        state.neighbourArmy,
-        url.searchParams.get("owner"),
-        state.members,
-        state.homeSource,
-        state.secondArmy,
+      return withTheDeep(
+        snapshot(
+          state.army,
+          state.neighbourArmy,
+          url.searchParams.get("owner"),
+          state.members,
+          state.homeSource,
+          state.secondArmy,
+          state.armyTroops,
+        ),
+        state.deep,
       );
+    // The race board's sites, which the notifier reads to see the Deep change.
+    if (url.pathname === `/games/${GAME_ID}/race`) return { sites: state.deep ? [state.deep] : [] };
     const page = { chain: state.chain, world_address: "0x5e45", complete_through_block: 10 + log.length };
     const after = url.searchParams.get("after");
     if (!after) return { ...page, next_cursor: { block: 10, transaction: 2147483647, event: 2147483647 }, items: [] };
@@ -237,6 +251,7 @@ const snapshot = (
   members: string[],
   homeSource: "realm" | "campaign" | "golden" | null,
   second: ArmyState | null,
+  armyTroops: number | null = null,
 ) => ({
   confirmed_block: 10,
   game_id: String(GAME_ID),
@@ -371,15 +386,94 @@ const snapshot = (
         .map(({ home: _home, ...row }) => row),
     },
     {
+      model: "ArmyDay",
+      rows: [
+        ...(army ? [armyDayRow(ARMY, HOME, army)] : []),
+        ...(second ? [armyDayRow(SECOND_ARMY, HOME, second)] : []),
+        ...(neighbour ? [armyDayRow(NEIGHBOUR_ARMY, NEIGHBOUR_HOME, neighbour)] : []),
+      ]
+        .filter(({ home }) => owner === null || BigInt(STRUCTURE_OWNERS.get(home)!) === BigInt(owner))
+        .map(({ home: _home, ...row }) => row),
+    },
+    {
       model: "ExplorerTroops",
       rows: [
-        ...(army ? [armyRow(ARMY, HOME, army)] : []),
+        ...(army ? [armyRow(ARMY, HOME, army, 0, armyTroops)] : []),
         ...(second ? [armyRow(SECOND_ARMY, HOME, second, 1)] : []),
         ...(neighbour ? [armyRow(NEIGHBOUR_ARMY, NEIGHBOUR_HOME, neighbour)] : []),
       ].filter(({ value }) => owner === null || BigInt(STRUCTURE_OWNERS.get(value.owner)!) === BigInt(owner)),
     },
   ],
 });
+
+/** The Deep's Foundation as a test opens it: its guard's troops, the Aspect of the guard's home, its settled tick. */
+type DeepState = { guard: number; aspect: number; lastTick: number };
+const HARMONY = 2;
+const CHAOS = 3;
+const FOUNDATION_SITE = 300;
+/** The neighbour's army standing guard at the Foundation. */
+const GUARD_ARMY = 12;
+const DEEP_LOSS_PER_TICK = 200;
+/** A count of troops as the chain holds it, in resource precision. */
+const precise = (troops: number) => `0x${(BigInt(troops) * BigInt(RESOURCE_PRECISION)).toString(16)}`;
+/** The player's realm knows Spire lore (the depth row's first tier): the site alert is for such a realm. */
+const SPIRE_LORE = `0x${learnResearch(0n, research.ROW_DEPTH, 0).toString(16)}`;
+
+/**
+ * What every player's snapshot carries of a Season 1 game beside their own facts: their home in Harmony knowing Spire
+ * lore, and, once a test opens the Deep, the Foundation with its guard, which every player sees whoever owns it.
+ */
+const withTheDeep = (read: ReturnType<typeof snapshot>, deep: DeepState | null) => {
+  const rows = (model: string, entries: { key: string; value: Record<string, unknown> }[]) => ({
+    model,
+    rows: entries,
+  });
+  const today = (value: Record<string, unknown>) => ({ game_id: GAME_ID, ...value });
+  const models = [
+    ...read.models,
+    rows("HomeAspect", [
+      { key: "0x5a", value: today({ home: HOME, aspect: HARMONY }) },
+      ...(deep ? [{ key: "0x6a", value: today({ home: NEIGHBOUR_HOME, aspect: deep.aspect }) }] : []),
+    ]),
+    rows("RealmKnowledge", [{ key: "0x5b", value: today({ structure_id: HOME, learned: SPIRE_LORE }) }]),
+  ];
+  if (!deep) return { ...read, models };
+  const guard = armyRow(GUARD_ARMY, NEIGHBOUR_HOME, { amount: 0, settledAt: 0, day: TODAY }, 0, deep.guard);
+  return {
+    ...read,
+    models: [
+      ...models.map((model) =>
+        model.model === "ExplorerTroops"
+          ? { ...model, rows: [...model.rows, guard] }
+          : model.model === "ArmyDay"
+            ? { ...model, rows: [...model.rows, { key: "0xc", value: today({ explorer_id: GUARD_ARMY, day: TODAY }) }] }
+            : model.model === "Structure" && !model.rows.some(({ value }) => value.entity_id === NEIGHBOUR_HOME)
+              ? { ...model, rows: [...model.rows, { key: "0x6", value: realmRow(NEIGHBOUR_HOME) }] }
+              : model,
+      ),
+      rows("DeepRules", [
+        {
+          key: "0xd1",
+          value: today({
+            foundation: { alt: false, x: 25, y: 35 },
+            quarry: { alt: false, x: 12, y: 20 },
+            altar: { alt: false, x: 38, y: 20 },
+            beast_count: precise(10_000),
+            loss_per_tick: precise(DEEP_LOSS_PER_TICK),
+            quarry_per_tick: 500,
+            altar_per_tick: 5,
+            altar_threshold: 1_500,
+          }),
+        },
+      ]),
+      rows("DeepSite", [{ key: "0xd2", value: today({ entity_id: FOUNDATION_SITE, kind: 0, day: TODAY }) }]),
+      rows("DeepGuard", [
+        { key: "0xd3", value: today({ explorer_id: GUARD_ARMY, site_id: FOUNDATION_SITE, slot: 0 }) },
+      ]),
+      rows("DeepArmy", [{ key: "0xd4", value: today({ explorer_id: GUARD_ARMY, last_tick: deep.lastTick }) }]),
+    ],
+  };
+};
 
 /** A realm as the contract writes it: the player's home holds Realm 711. */
 const realmRow = (home: number) => ({
@@ -405,7 +499,14 @@ const realmRow = (home: number) => ({
   },
 });
 
-const armyRow = (explorerId: number, home: number, _army: ArmyState, slot = 0) => ({
+/** The expedition day an army was raised for, which decides whether it is still an army (ArmyDay). */
+const armyDayRow = (explorerId: number, home: number, army: ArmyState) => ({
+  home,
+  key: `0x${explorerId.toString(16)}`,
+  value: { game_id: GAME_ID, explorer_id: explorerId, day: army.day },
+});
+
+const armyRow = (explorerId: number, home: number, _army: ArmyState, slot = 0, troops: number | null = null) => ({
   key: `0x${explorerId.toString(16)}`,
   value: {
     ...explorerFixture.expected.value,
@@ -414,7 +515,7 @@ const armyRow = (explorerId: number, home: number, _army: ArmyState, slot = 0) =
     owner: home,
     troops: {
       ...explorerFixture.expected.value.troops,
-      count: "0x64",
+      count: troops === null ? "0x64" : precise(troops),
       stamina: { Slot: slot },
     },
   },
@@ -1291,4 +1392,31 @@ describe.concurrent("shard notifications", () => {
     },
     45_000,
   );
+  it("tells a player once a game day when another Aspect's Deep site drains within reach of their largest army", async () => {
+    const { herald, push, worker } = await createHarness("important");
+    await worker.runCron();
+    await pause(polls(5)); // the notifier reaches the shard's head
+
+    // The player's own Aspect holds the Foundation: nothing to take. Acting makes them a watcher of the game's sites.
+    herald.state.armyTroops = 1_500;
+    herald.state.deep = { guard: 1_000, aspect: HARMONY, lastTick: armiesTick() };
+    herald.act(120); // a rested army: no rested alert to wait for
+    await pause(polls(10));
+    expect(push.received).toEqual([]);
+
+    // Chaos takes it with 1,400 troops, settled now: two ticks of 200 bring it to 1,000, two thirds of 1,500.
+    herald.state.deep = { guard: 1_400, aspect: CHAOS, lastTick: armiesTick() };
+    await pause(ticks(1));
+    expect(push.received).toEqual([]);
+    await waitUntil(() => push.received.length >= 1, ticks(3) + polls(10));
+    const [words] = await push.words();
+    expect(words).toMatch(
+      /^The Foundation can be taken \/ Frontier: its guard is down to (1,000|800) troops\. Your army has 1,500\.$/,
+    );
+
+    // The player acts again the same day: they were told of this site today, so no second alert.
+    herald.act(120);
+    await pause(ticks(2) + polls(10));
+    expect(push.received).toEqual([201]);
+  }, 150_000);
 });

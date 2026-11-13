@@ -1,3 +1,4 @@
+import { boardBuildingCategories } from "@bibliothecadao/eternum";
 import { expect, it } from "vitest";
 import { BuildingType, StructureType, BUILDINGS_CENTER } from "@bibliothecadao/types";
 import { getGameModeConfig } from "./index";
@@ -79,4 +80,14 @@ it("selects all five painted tiers while retaining the central keep and the exis
   expect(getGameModeConfig(5).assets.buildingModelPaths[BUILDINGS_GROUPS.REALMS].Kingdom).toBe(
     buildingModelPaths()[BUILDINGS_GROUPS.REALMS].Kingdom,
   );
+});
+
+it("allows exactly the contract's board building catalog, including buildings without research", () => {
+  const mode = getGameModeConfig(5);
+  const allowed = Object.entries(BuildingType)
+    .filter(([, category]) => typeof category === "number")
+    .filter(([key]) => mode.rules.isBuildingTypeAllowed(key))
+    .map(([, category]) => category)
+    .sort((a, b) => Number(a) - Number(b));
+  expect(allowed).toEqual([...boardBuildingCategories].sort((a, b) => a - b));
 });

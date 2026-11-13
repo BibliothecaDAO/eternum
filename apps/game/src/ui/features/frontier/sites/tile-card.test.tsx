@@ -38,6 +38,7 @@ import { TileCard } from "./tile-card";
 const APPLIED = { hash: "0x1", block: 9, status: "SUCCEEDED" };
 
 beforeEach(() => {
+  setBlockTimestampSource(() => 350);
   waitForAction.mockReset();
   waitForAction.mockResolvedValue(APPLIED);
 });
@@ -162,7 +163,7 @@ const fightSides = (host: HTMLElement) =>
     .map((side) => side.getAttribute("aria-label"))
     .filter((l) => l?.includes("→"));
 /** The fixture army's attack on the camp from beside it: what the card shows near or far. */
-const FORECAST = ["Army 1,498 → 1,178, −320 · 21% lost", "Troll 1,100 → 492, −608 · 55% lost"];
+const FORECAST = ["Army 1,498 → 1,178, −320 · 21% lost", "Troll 1,100 → 478, −622 · 57% lost"];
 
 describe("the tile card", () => {
   it("titles the site by its map name over its kind, names the guard, offers no Attack until an army is chosen, then attacks with the same tap", async () => {

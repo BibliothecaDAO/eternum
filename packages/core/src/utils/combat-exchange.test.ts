@@ -4,11 +4,11 @@ import { describe, expect, it } from "vitest";
 import { type CombatRules, type ExchangeTroops, forecastFight, resolveExchange } from "./combat-exchange";
 
 /**
- * The contract's own record of 200 exchanges (frontier-combat-v1.txt, written by its snforge producer): every loss and
+ * The contract's own record of 200 exchanges (frontier-combat-v2.txt, written by its snforge producer): every loss and
  * stamina value must come out of resolveExchange as the same integer.
  */
-const FIXTURE = new URL("../../../../contracts/l3/world-native/tests/fixtures/frontier-combat-v1.txt", import.meta.url);
-const HEADER_FELTS = 25;
+const FIXTURE = new URL("../../../../contracts/l3/world-native/tests/fixtures/frontier-combat-v2.txt", import.meta.url);
+const HEADER_FELTS = 24;
 const RECORD_FELTS = 24;
 const CATEGORIES = ["Knight", "Paladin", "Crossbowman"] as const;
 const TIERS = ["T1", "T2", "T3"] as const;
@@ -24,7 +24,7 @@ const readFixture = () => {
   };
   const header = Array.from({ length: HEADER_FELTS }, next);
   const [version, caseCount] = header;
-  if (version !== 1n) throw new Error(`Combat fixture version ${version}`);
+  if (version !== 2n) throw new Error(`Combat fixture version ${version}`);
   if (felts.length !== HEADER_FELTS + Number(caseCount) * RECORD_FELTS) throw new Error("Combat fixture length");
   const rules = readRules(header.slice(2));
   const cases = Array.from({ length: Number(caseCount) }, () => readCase(next, rules.tickSeconds));
@@ -32,13 +32,13 @@ const readFixture = () => {
 };
 
 const readRules = (felts: bigint[]): CombatRules => {
-  const [raid, biomeBonus, scaling, t1, t2, t3, ...stamina] = felts;
+  const [biomeBonus, scaling, t1, t2, t3, ...stamina] = felts;
   const flags = stamina.map(Number);
   return {
+    dayUnitSeconds: 0,
     cooldownSeconds: 0,
     tickSeconds: flags[16]!,
     damage: {
-      damage_raid_percent_num: Number(raid),
       damage_biome_bonus_num: Number(biomeBonus),
       damage_scaling_factor: scaling!,
       t1_damage_value: t1!,
@@ -198,6 +198,46 @@ describe("an exchange resolves as the contract resolves it", () => {
   });
 });
 
+it("uses the same expedition damage for Knights attacking armies and site guards", () => {
+  const { rules, cases } = readFixture();
+  const recorded = cases[0]!;
+  const expeditionRules: CombatRules = {
+    ...rules,
+    dayUnitSeconds: 14_400,
+    stamina: { ...rules.stamina, stamina_defense_req: 0 },
+  };
+  const army: ExchangeTroops = {
+    ...recorded.attacker,
+    category: "Knight",
+    tier: "T1",
+    count: 1_500n * 1_000_000_000n,
+    stamina: { amount: 180n, settled_at: recorded.context.timestamp, remainder: 0 },
+  };
+  const defender: ExchangeTroops = { ...army, count: 1_000n * 1_000_000_000n };
+  const context = { ...recorded.context, attackerIsStructureGuard: false, defenderIsStructureGuard: false };
+  const field = resolveExchange(army, defender, context, expeditionRules);
+  if (!field.ok) throw new Error(field.refusal);
+  expect(field.attackerLoss).toBe(418n * 1_000_000_000n);
+  expect(field.defenderLoss).toBe(627n * 1_000_000_000n);
+  for (const attackerIsStructureGuard of [false, true]) {
+    for (const defenderIsStructureGuard of [false, true]) {
+      expect(
+        resolveExchange(
+          army,
+          defender,
+          { ...context, attackerIsStructureGuard, defenderIsStructureGuard },
+          expeditionRules,
+        ),
+      ).toEqual(field);
+    }
+  }
+  const exhausted = { ...defender, stamina: { ...defender.stamina, amount: 0n } };
+  const result = resolveExchange(army, exhausted, context, expeditionRules);
+  if (!result.ok) throw new Error(result.refusal);
+  expect(result.attackerLoss).toBe(field.attackerLoss);
+  expect(result.defenderLoss).toBe(field.defenderLoss);
+});
+
 it("stops a Blitz forecast at the cooldown after this attack", () => {
   const { rules, cases } = readFixture();
   const recorded = cases.find(
@@ -226,4 +266,36 @@ it("stops a Blitz forecast at the cooldown after this attack", () => {
     blitz,
   );
   expect(ranged.ok && ranged.attacker.battle_cooldown_end).toBe(recorded.context.timestamp + 30);
+});
+
+it("applies Scout damage before rounding for attackers and defenders against armies and guards", () => {
+  const { rules, cases } = readFixture();
+  const recorded = cases[0]!;
+  const expeditionRules: CombatRules = {
+    ...rules,
+    dayUnitSeconds: 14_400,
+    stamina: { ...rules.stamina, stamina_defense_req: 0 },
+  };
+  const army: ExchangeTroops = {
+    ...recorded.attacker,
+    category: "Knight",
+    tier: "T1",
+    count: 1_500n * 1_000_000_000n,
+    stamina: { amount: 180n, settled_at: recorded.context.timestamp, remainder: 0 },
+  };
+  for (const attackerCategory of ["Knight", "Paladin"] as const) {
+    for (const defenderCategory of ["Knight", "Paladin"] as const) {
+      for (const defenderIsStructureGuard of [false, true]) {
+        const result = resolveExchange(
+          { ...army, category: attackerCategory },
+          { ...army, category: defenderCategory, count: 1_000n * 1_000_000_000n },
+          { ...recorded.context, attackerIsStructureGuard: false, defenderIsStructureGuard },
+          expeditionRules,
+        );
+        if (!result.ok) throw new Error(result.refusal);
+        expect(result.defenderLoss).toBe((attackerCategory === "Paladin" ? 471n : 627n) * 1_000_000_000n);
+        expect(result.attackerLoss).toBe((defenderCategory === "Paladin" ? 314n : 418n) * 1_000_000_000n);
+      }
+    }
+  }
 });

@@ -9,7 +9,6 @@ import { resolveFiniteSeasonEndAt, resolveSeasonStartTimestamp } from "@/ui/feat
 import {
   ClientConfigManager,
   configManager,
-  getStructureName,
   formatArmies,
   formatArrivals,
   formatGuilds,
@@ -48,6 +47,7 @@ interface ViewReading {
   viewer: ContractAddress | null;
   sides: Sides;
   revision: number;
+  executionFloor: number | null;
   value: unknown;
 }
 
@@ -64,17 +64,19 @@ export const readFactView = <T>(
   sides = currentSides(),
 ): T => {
   const revision = store.getRevision();
+  const executionFloor = view.models.includes("DeepArmy") ? useChainTimeStore.getState().executionFloorMs : null;
   const last = lastReadings.get(view);
   if (
     last?.store === store &&
     last.viewer === viewer &&
     last.revision === revision &&
+    last.executionFloor === executionFloor &&
     last.sides.seats === sides.seats &&
     last.sides.spectating === sides.spectating
   )
     return last.value as T;
   const value = view.read(store, viewer);
-  lastReadings.set(view, { store, viewer, sides, revision, value });
+  lastReadings.set(view, { store, viewer, sides, revision, executionFloor, value });
   return value;
 };
 
@@ -91,7 +93,11 @@ export const watchFactView = <T>(
   const stopAccount = useAccountStore.subscribe((state, previous) => {
     if (state.account?.address !== previous.account?.address) publish();
   });
+  const stopTime = useChainTimeStore.subscribe((state, previous) => {
+    if (view.models.includes("DeepArmy") && state.executionFloorMs !== previous.executionFloorMs) publish();
+  });
   return () => {
+    stopTime();
     stopFacts();
     stopAccount();
   };
@@ -138,7 +144,16 @@ export const readActivePlayerStructures = (): Structure[] => {
 };
 
 export const selectableArmiesView: FactView<Array<{ entityId: number }>> = {
-  models: ["ExplorerTroops", "Structure", "TileOccupancy", "ResourceWeight", "EntityName"],
+  models: [
+    "ExplorerTroops",
+    "DeepArmy",
+    "DeepRules",
+    "ArmyDay",
+    "Structure",
+    "TileOccupancy",
+    "ResourceWeight",
+    "EntityName",
+  ],
   read: readSelectableArmies,
 };
 
@@ -185,22 +200,6 @@ export const incomingTroopArrivalsView: FactView<ReturnType<typeof summarizeInco
 export const settlementPlayersView: FactView<bigint[]> = {
   models: ["PlayerEntry"],
   read: readBlitzSettlementPlayerAddresses,
-};
-
-export const faithFactsView: FactView<{
-  structures: (NativeRows["Structure"] & { display_name: string })[];
-  wonderFaith: NativeRows["WonderFaith"][];
-  faithfulStructures: NativeRows["FaithfulStructure"][];
-}> = {
-  models: ["Structure", "WonderFaith", "FaithfulStructure", "SettledRealm", "GameRelease"],
-  read: (store) => ({
-    structures: inActiveGame("Structure")(store).map((structure) => ({
-      ...structure,
-      display_name: getStructureName(structure, store).name,
-    })),
-    wonderFaith: inActiveGame("WonderFaith")(store),
-    faithfulStructures: inActiveGame("FaithfulStructure")(store),
-  }),
 };
 
 /** The game's clock and dev-mode gate, as its registry row states them. */

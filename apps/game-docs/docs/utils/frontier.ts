@@ -1,11 +1,20 @@
 import { frontierPreset } from "../../../../config/source/frontier/native";
+import { frontierSeasonOnePreset } from "../../../../config/source/frontier/season-one";
 import { FRONTIER_DAY_UNIT_SECONDS } from "../../../../config/source/frontier/clock";
 import { previewRiftGuardBound } from "../../../../contracts/l3/world-native/schema/site-previews.gen";
 import {
   nativeResearchConstants as research,
   nativeRuleConstants as rule,
 } from "../../../../contracts/l3/world-native/schema/client.gen";
-import { BEAST_NAMES, FALLEN_REALM_DEPTHS, ROAMING_BEASTS, SITE_GUARDS, resourceName } from "@bibliothecadao/types";
+import {
+  BEAST_NAMES,
+  FALLEN_REALM_DEPTHS,
+  ROAMING_BEASTS,
+  SITE_GUARDS,
+  aspects,
+  orders,
+  resourceName,
+} from "@bibliothecadao/types";
 import { ETERNUM_CONFIG } from "./config";
 import { CONTRACT } from "./contract-constants";
 
@@ -178,7 +187,10 @@ export const FRONTIER = {
     training: researchRow(research.ROW_WAR_HALL),
     shrine: researchRow(research.ROW_SHRINE)[0],
     well: researchRow(research.ROW_WELL)[0],
-    depths: researchRow(research.ROW_DEPTH),
+    /** Spire lore, the depth row's one tier in Season 1: its armies' reveals find the day's spires. */
+    spireLore: n(
+      frontierSeasonOnePreset.research.find((step) => step.row === research.ROW_DEPTH && step.tier === 1)!.essenceCost,
+    ),
     trainingGate: frontierPreset.board.trainingGateTier,
     outputStep: pct(frontierPreset.board.outputStepBps),
     storageStep: pct(frontierPreset.board.storageStepBps),
@@ -208,6 +220,25 @@ export const FRONTIER = {
     days: n(Math.floor(frontierPreset.chests.claimWindowSeconds / 86400)),
   },
   labor: { perRealm: n(frontierPreset.labor.amount) },
+  /** Season 1's army relics: one step a tier, 30 minutes a tier, from the contract's rule constants. */
+  relics: {
+    blade: pct(rule.RELIC_BLADE_BPS),
+    ward: pct(rule.RELIC_WARD_BPS),
+    plunder: pct(rule.RELIC_PLUNDER_BPS),
+    tome: pct(rule.RELIC_TOME_BPS),
+    farEyeTiles: n(rule.RELIC_TILES_PER_RANK),
+    minutes: n(rule.RELIC_SECONDS_PER_RANK / 60),
+  },
+  /** The day's spire on a layer: the odds a reveal adds, and the reveal that finds it at the latest (spires.cairo). */
+  spire: { firstOdds: pct(10_000 / rule.SPIRE_REVEAL_LIMIT), reveals: n(rule.SPIRE_REVEAL_LIMIT) },
+  /** Season 1's teams, as the Order catalog groups them: each Aspect's name and its four Orders. */
+  aspects: aspects.map(({ id, name }) => ({
+    name,
+    orders: orders
+      .filter(({ aspect }) => aspect === id)
+      .map(({ fullOrderName }) => fullOrderName)
+      .join(", "),
+  })),
   homecoming: [
     rule.HOMECOMING_COMMON_BPS,
     rule.HOMECOMING_UNCOMMON_BPS,

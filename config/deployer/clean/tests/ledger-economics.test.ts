@@ -47,7 +47,6 @@ describe("ledger economics", () => {
     const chest = buildMysteryChestPreset();
     for (const [gameType, presetId] of [
       ["blitz", 2],
-      ["eternum", 3],
       ["frontier", 5],
       ["frontier", 6],
     ] as const) {
@@ -56,16 +55,6 @@ describe("ledger economics", () => {
         codec.compile("register_preset", { preset_id: presetId, preset, bands: chest.bands, items: chest.items }),
       );
     }
-  });
-
-  it("disables fees and MMR for Eternum without creating an invalid payout preset", () => {
-    const preset = buildLedgerEconomicPreset("eternum");
-
-    expect(BigInt(preset.entry_fee.low)).toBe(0n);
-    expect(preset.protocol_cut_bps).toBe(0);
-    expect(preset.mmr.enabled).toBe(false);
-    expect(preset.paid_fraction_bps).toBeGreaterThan(0);
-    expect(preset.decay_bps).toBeGreaterThan(0);
   });
 
   it("keeps the Frontier preset free of treasury cuts", () => {
@@ -122,12 +111,6 @@ describe("mystery chest economics", () => {
       );
     });
   });
-});
-
-it("keeps the existing duel price outside the first-deployment environment change", () => {
-  const preset = buildLedgerEconomicPreset("duel");
-  expect(BigInt(preset.entry_fee.low)).toBe(500n * 10n ** 18n);
-  expect(preset.protocol_cut_bps).toBe(2000);
 });
 
 it("funds Frontier chests at 70 percent and reserves the remainder for the top ten", () => {

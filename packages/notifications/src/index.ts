@@ -6,6 +6,7 @@ export * from "./story-notification";
 export * from "./direct-message-notification";
 export * from "./mention-notification";
 export * from "./army-rested";
+export * from "./deep-site";
 export * from "./day-open";
 export * from "./clock";
 export * from "./game-name";

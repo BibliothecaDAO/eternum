@@ -101,8 +101,6 @@ pub mod GamesTest {
     #[abi(embed_v0)]
     impl CampRulesFixture = GamesFixture::CampRulesFixture<ContractState>;
     #[abi(embed_v0)]
-    impl BankCreationFixture = GamesFixture::BankCreationFixture<ContractState>;
-    #[abi(embed_v0)]
     impl BuildingRulesFixture = GamesFixture::BuildingRulesFixture<ContractState>;
     #[abi(embed_v0)]
     impl StructuresFixture = GamesFixture::StructuresFixture<ContractState>;
@@ -121,6 +119,8 @@ pub mod GamesTest {
     #[abi(embed_v0)]
     impl VillagesFixture = GamesFixture::VillagesFixture<ContractState>;
     #[abi(embed_v0)]
+    impl VillagePassesFixture = GamesFixture::VillagePassesFixture<ContractState>;
+    #[abi(embed_v0)]
     impl SettlementViewsFixture = GamesFixture::SettlementViewsFixture<ContractState>;
     #[abi(embed_v0)]
     impl SettlementEntryFixture = GamesFixture::SettlementEntryFixture<ContractState>;
@@ -129,7 +129,7 @@ pub mod GamesTest {
     #[abi(embed_v0)]
     impl ResourcesFixture = GamesFixture::ResourcesFixture<ContractState>;
     #[abi(embed_v0)]
-    impl EconomyDeliveryFixture = GamesFixture::EconomyDeliveryFixture<ContractState>;
+    impl ResourceDeliveryFixture = GamesFixture::ResourceDeliveryFixture<ContractState>;
     #[abi(embed_v0)]
     impl MineRulesFixture = GamesFixture::MineRulesFixture<ContractState>;
     #[abi(embed_v0)]
@@ -142,12 +142,6 @@ pub mod GamesTest {
     impl ProductionCommandsFixture = GamesFixture::ProductionCommandsFixture<ContractState>;
     #[abi(embed_v0)]
     impl ResourceCommandsFixture = GamesFixture::ResourceCommandsFixture<ContractState>;
-    #[abi(embed_v0)]
-    impl TradeFixture = GamesFixture::TradeFixture<ContractState>;
-    #[abi(embed_v0)]
-    impl BankFixture = GamesFixture::BankFixture<ContractState>;
-    #[abi(embed_v0)]
-    impl FaithOwnershipViewsFixture = GamesFixture::FaithOwnershipViewsFixture<ContractState>;
     #[abi(embed_v0)]
     impl BitcoinViewsFixture = GamesFixture::BitcoinViewsFixture<ContractState>;
     #[abi(embed_v0)]
@@ -171,13 +165,11 @@ pub mod GamesTest {
     #[abi(embed_v0)]
     impl BridgeFixture = GamesFixture::BridgeFixture<ContractState>;
     #[abi(embed_v0)]
-    impl BankWithdrawalFixture = GamesFixture::BankWithdrawalFixture<ContractState>;
-    #[abi(embed_v0)]
     impl LedgerOperatorFixture = GamesFixture::LedgerOperatorFixture<ContractState>;
     #[abi(embed_v0)]
-    impl BlitzResultsFixture = GamesFixture::BlitzResultsFixture<ContractState>;
+    impl HomeGrantsFixture = GamesFixture::HomeGrantsFixture<ContractState>;
     #[abi(embed_v0)]
-    impl FaithFixture = GamesFixture::FaithFixture<ContractState>;
+    impl BlitzResultsFixture = GamesFixture::BlitzResultsFixture<ContractState>;
     #[abi(embed_v0)]
     impl RelicsFixture = GamesFixture::RelicsFixture<ContractState>;
     #[abi(embed_v0)]

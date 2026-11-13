@@ -23,9 +23,9 @@ describe("applyDurableLaunchDefaults", () => {
   });
 });
 
-it("selects the Eternum preset and rejects cross-mode presets", () => {
-  const request: CreateGameRequest = { environment: "madara.eternum", gameName: "eternum-test", devModeOn: false };
-  expect(applyDurableLaunchDefaults("game", request).version).toBe("3");
+it("selects the Frontier preset and rejects cross-mode presets", () => {
+  const request: CreateGameRequest = { environment: "madara.frontier", gameName: "frontier-test", devModeOn: false };
+  expect(applyDurableLaunchDefaults("game", request).version).toBe("5");
   expect(() => applyDurableLaunchDefaults("game", { ...request, version: "2" })).toThrow();
   expect(() => applyDurableLaunchDefaults("game", { ...gameRequest(), version: "5" })).toThrow();
 });

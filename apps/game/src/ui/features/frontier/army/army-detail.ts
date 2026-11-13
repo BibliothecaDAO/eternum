@@ -20,6 +20,7 @@ export type { AttributeKey, ScoutKind } from "../progression-choices";
 
 /** What the detail reads of an army and its game. */
 export interface ArmyDetailFacts {
+  category: NativeRows["ExplorerTroops"]["troops"]["category"];
   learned: bigint;
   name: string;
   art: IconMeaning;
@@ -35,6 +36,8 @@ export interface ArmyDetailFacts {
   rules: NativeRows["ArmyProgressionRules"];
   /** The Ethereal layer it stands in (armyEtherealLayer); none on the surface. */
   ethereal?: EtherealLayer;
+  /** In the Deep, the army ticks its troops last and the seconds until the last of them (deepTicksLeft); none elsewhere. */
+  deep?: { left: number; seconds: number };
 }
 
 export interface AttributeView {
@@ -54,6 +57,7 @@ export interface ArmyView {
   art: IconMeaning;
   ethereal?: EtherealLayer;
   troops: number;
+  deep?: { left: number; seconds: number };
   xp: number;
   stamina: StaminaBar;
   secondsToFull: number | undefined;
@@ -74,8 +78,11 @@ export const ATTRIBUTE_LIST = pointChoices
 /** An attribute's mark, as its tile on the army's panel and its line in the Feed draw it. */
 export const attributeMark = (key: AttributeKey): IconMeaning => ATTRIBUTE_LIST.find((row) => row.key === key)!.mark;
 
+export const armyAttributes = (category: ArmyDetailFacts["category"]) =>
+  ATTRIBUTE_LIST.filter(({ key }) => key !== "scouting" || category === "Paladin");
+
 export const readArmyDetail = (army: ArmyDetailFacts): ArmyView => {
-  const attributes = ATTRIBUTE_LIST.map(({ key, mark, name }): AttributeView => {
+  const attributes = armyAttributes(army.category).map(({ key, mark, name }): AttributeView => {
     const level = army.progress[key];
     const point = SKILL_POINT_RANKS.find((rank) => rank >= level + 1 && army.points[rank - 1]! > 0);
     const figure = (at: number) =>
@@ -112,11 +119,14 @@ export const readArmyDetail = (army: ArmyDetailFacts): ArmyView => {
     };
   });
   return {
-    scoutingKinds: availableScoutingChoices((row) => researchTier(army.learned, row)).map((choice) => choice.key),
+    scoutingKinds: attributes.some(({ key }) => key === "scouting")
+      ? availableScoutingChoices((row) => researchTier(army.learned, row)).map((choice) => choice.key)
+      : [],
     name: army.name,
     art: army.art,
     ethereal: army.ethereal,
     troops: army.troops,
+    deep: army.deep,
     xp: army.xp,
     stamina: army.stamina,
     secondsToFull: army.secondsToFull,

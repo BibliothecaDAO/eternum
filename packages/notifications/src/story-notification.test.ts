@@ -33,7 +33,6 @@ it.each([
   ["SeasonEnded", {}, "The season is over"],
   ["BlitzFinalized", {}, "Your Blitz is settled"],
   ["ResourceReceiveArrivalStory", {}, "Your caravan arrived"],
-  ["TradeAccepted", {}, "A trade was filled"],
   ["ResourceTransferStory", { to_entity_id: 11, travel_time: 0 }, "Resources received"],
 ] as const)("gives %s its own words", (story, payload, title) => {
   expect(storyNotificationCopy(story, payload).title).toBe(title);
@@ -79,13 +78,12 @@ const PAYLOADS: Record<string, Record<string, unknown>> = {
     attacker: { player: "0x1" },
     defender: { player: "0x2" },
   },
-  RaidEvent: { player: "0x1", target_owner: "0x2", success: true },
   StructureCapturedStory: { previous_owner: "0x2", new_owner: "0x1" },
   ResourceTransferStory: { to_entity_id: 11, travel_time: 0 },
   HyperstructurePoints: { points: 40_000_000 },
   BitcoinAwardStory: { winner_paid: 5 },
 };
-const DELIVERED = [...nativeStoryVariants, "BattleEvent", "RaidEvent"].filter((story) =>
+const DELIVERED = [...nativeStoryVariants, "BattleEvent"].filter((story) =>
   includesStoryNotification("all", story, "blitz"),
 );
 
@@ -94,7 +92,7 @@ it("puts every delivered story into its own words, in production as in developme
   process.env.NODE_ENV = "production";
   try {
     const titles = DELIVERED.map((story) => {
-      const model = story === "BattleEvent" || story === "RaidEvent" ? story : "StoryEvent";
+      const model = story === "BattleEvent" ? story : "StoryEvent";
       const payload = PAYLOADS[story] ?? {};
       const value =
         model === "StoryEvent" ? { timestamp: "0x1", story: { [story]: payload } } : { timestamp: "0x1", ...payload };
@@ -109,12 +107,10 @@ it("puts every delivered story into its own words, in production as in developme
         "BitcoinAwardStory",
         "BlitzFinalized",
         "HyperstructurePoints",
-        "RaidEvent",
         "ResourceReceiveArrivalStory",
         "ResourceTransferStory",
         "SeasonEnded",
         "StructureCapturedStory",
-        "TradeAccepted",
       ].sort(),
     );
     // No story borrows another's words.

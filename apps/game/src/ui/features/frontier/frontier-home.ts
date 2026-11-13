@@ -4,8 +4,8 @@ import { useGoToStructure } from "@/hooks/helpers/use-navigate";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import {
   configManager,
+  currentArmy,
   divideByPrecision,
-  entityMapPosition,
   type ExpeditionRules,
   getBalance,
   getTroopResourceId,
@@ -73,11 +73,17 @@ export const endedHomeArmies = (
   rules: ExpeditionRules,
   now: number,
 ): NativeRows["ExplorerTroops"][] =>
-  [...store.armiesAtHome(realm.game_id, realm.entity_id)].filter(
-    (army) =>
-      army.troops.count > 0n &&
-      !isCurrentExpeditionArmy(rules, entityMapPosition(store, realm.game_id, army.explorer_id), now),
-  );
+  [...store.armiesAtHome(realm.game_id, realm.entity_id)]
+    .map((army) => currentArmy(store, army, now))
+    .filter(
+      (army) =>
+        army.troops.count > 0n &&
+        !isCurrentExpeditionArmy(
+          rules,
+          store.require("ArmyDay", { game_id: realm.game_id, explorer_id: army.explorer_id }).day,
+          now,
+        ),
+    );
 
 /** One troop stock as the realm's next deploy finds it, in whole troops. */
 type StockAtDeploy = { held: number; returning: number; fits: number };
@@ -104,7 +110,8 @@ export const stocksAtNextDeploy = (
     const held = divideByPrecision(Number(balance));
     const back = returning.get(resourceId) ?? 0;
     const limit = manager.storeLimit(resourceId);
-    const room = limit === undefined ? back : Math.max(0, Number(limit / BigInt(RESOURCE_PRECISION)) - held);
+    if (limit === undefined) return undefined;
+    const room = limit === null ? back : Math.max(0, Number(limit / BigInt(RESOURCE_PRECISION)) - held);
     stocks.set(resourceId, { held, returning: back, fits: Math.min(back, room) });
   }
   return stocks;
@@ -128,16 +135,17 @@ const homecomingByStock = (
   return returning;
 };
 
-/** Whole troops at home across every stock as the next deploy finds them; unknown while any stock is. */
+/** One troop stock at home as the next deploy finds it, including its fitting Homecoming return. */
 export const troopsAtHome = (
   store: NativeFactStore,
   realm: NativeRows["Structure"],
   rules: ExpeditionRules,
   now: number,
   tick: number,
+  resource: ResourcesIds,
 ): number | undefined => {
-  const stocks = stocksAtNextDeploy(store, realm, rules, now, tick);
-  return stocks && [...stocks.values()].reduce((sum, stock) => sum + stock.held + stock.fits, 0);
+  const stock = stocksAtNextDeploy(store, realm, rules, now, tick)?.get(resource);
+  return stock && stock.held + stock.fits;
 };
 
 /**

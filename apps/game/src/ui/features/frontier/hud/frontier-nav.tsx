@@ -5,6 +5,7 @@ import type { ExpeditionRules } from "@bibliothecadao/eternum";
 import type { NativeRows } from "@bibliothecadao/eternum/game-client";
 
 import { useGoToFrontierPlace } from "../frontier-home";
+import { useOpens } from "../opening/use-opening";
 import { realmDot, useRealmStores } from "../realm-stores";
 import { useResearchTree } from "../research/research-facts";
 import { canResearchNow } from "../research/research-tree";
@@ -22,7 +23,6 @@ export type HudSurface =
   | "season"
   | "army"
   | "army-lost"
-  | "withdraw"
   | "realms";
 
 /**
@@ -30,7 +30,7 @@ export type HudSurface =
  * the world from the board, putting any page away; each other slot opens its place over the map and a second tap
  * closes it. The Realm slot carries a dot
  * while a store the realm spends is full or fills within the hour. A spectator, with no realm of their own, opens the
- * realm they watch, and has no Research. Once the realm has an Ethereal layer, the switch on the map names the layer
+ * realm they watch, and has no Research; a player has it from their first Essence (opening.ts). Once the realm has an Ethereal layer, the switch on the map names the layer
  * shown and opens the list of views: Realm, the world and each Ethereal layer (owner, 4 November 2026: "yeah B is pretty
  * good on mobile").
  */
@@ -67,6 +67,7 @@ export const FrontierNav = ({
         : null;
   const goToPlace = useGoToFrontierPlace(board);
   const researchDot = canResearchNow(useResearchTree(realm)?.nodes);
+  const showsResearch = useOpens("research");
   const stores = useRealmStores(realm, rules);
   // A view choice shows its view, the Realm / World switch's and a layer's alike: the open page goes.
   const putPageAway = () => onSurface(null);
@@ -87,7 +88,7 @@ export const FrontierNav = ({
       onRealm={!isMapView}
       onGo={go}
       realmDot={stores ? realmDot([stores.wheat, stores.labor, stores.troops]) : undefined}
-      researchDot={realm ? researchDot : undefined}
+      researchDot={realm && showsResearch ? researchDot : undefined}
       events={events}
       unread={unread}
     />

@@ -21,7 +21,7 @@ pub fn store(commitment: felt252, definition: crate::presets::PresetDefinition) 
         definition.rules.mode_rules,
     );
     crate::presets::IPresetStructuresDispatcherTrait::store_structure_preset(
-        crate::presets::IPresetStructuresLibraryDispatcher { class_hash: classes.construction },
+        crate::presets::IPresetStructuresLibraryDispatcher { class_hash: classes.map },
         commitment,
         definition.structures,
     );
@@ -34,6 +34,30 @@ pub fn store(commitment: felt252, definition: crate::presets::PresetDefinition) 
         definition.rules.day_unit_seconds,
     );
     write_economy(preset, commitment, definition.rules, definition.economy);
+    if let Some(banes) = definition.economy.banes {
+        preset
+            .bane_rules
+            .write(
+                Some(
+                    (
+                        banes.chance_step,
+                        banes.quorum_percent,
+                        banes.beast_percent,
+                        banes.stamina_percent,
+                        banes.production_percent,
+                    ),
+                ),
+            );
+        for index in 0..banes.quest_counts.len() {
+            preset.bane_quest_counts.write(index.try_into().unwrap(), *banes.quest_counts.at(index));
+        }
+    }
+    if let Some(quests) = definition.economy.quests {
+        preset.quest_rewards.write(Some((quests.labor, quests.essence, quests.bonus_percent)));
+        for index in 0..quests.base_counts.len() {
+            preset.quest_counts.write(index.try_into().unwrap(), *quests.base_counts.at(index));
+        }
+    }
     preset.season_win_points.write(definition.season_win_points);
 }
 
@@ -83,8 +107,6 @@ fn write_structures(preset: PresetWrite, structures: crate::presets::StructurePr
     }
     preset.camp_resource_count.write(camps.resources.len());
     preset.camp_labor_rate.write(camps.labor_rate);
-    assert!(structures.faith.owner_share_bps <= 10000, "invalid faith owner share");
-    preset.faith_rules.write(structures.faith);
     write_upgrades(preset, structures.upgrade_limits, structures.upgrades);
 }
 
@@ -107,6 +129,8 @@ pub fn store_settlement(
             },
         );
     preset.settlement_spacing.write(settlement.spacing);
+    preset.order_aspects.write(crate::aspects::pack(settlement.order_aspects));
+    preset.starting_armies.write(settlement.starting_armies);
     write_depths(preset, mode_rules, day_unit_seconds, settlement.depths);
     write_realm_grants(preset, settlement.realms, entry_rule);
     write_villages(preset, settlement.villages);
@@ -117,8 +141,7 @@ fn write_economy(
     preset: PresetWrite, commitment: felt252, rules: crate::rules::SliceRules, economy: crate::presets::EconomyPreset,
 ) {
     preset.labor_rules.write(economy.labor);
-    preset.trade_rules.write(economy.trade);
-    write_banks(preset, economy.banks);
+    preset.race_rules.write(economy.race);
     write_hyperstructures(preset, rules, economy.hyperstructures);
     let classes = crate::state::read().releases.read(crate::state::read().current_release.read()).classes;
     crate::presets::IPresetRelicsDispatcherTrait::store_relic_preset(
@@ -131,10 +154,13 @@ fn write_economy(
     );
     preset.progression_rules.write(economy.progression);
     preset.discovery_rules.write(economy.discovery);
+    preset.deep_rules.write(economy.deep);
     preset.artificer_cost.write(economy.research_cost);
     if let Some(withdrawals) = economy.withdrawals {
         crate::presets::IPresetWithdrawalsDispatcherTrait::store_withdrawal_preset(
-            crate::presets::IPresetWithdrawalsLibraryDispatcher { class_hash: classes.bridge }, commitment, withdrawals,
+            crate::presets::IPresetWithdrawalsLibraryDispatcher { class_hash: classes.production },
+            commitment,
+            withdrawals,
         );
     }
 }
@@ -222,16 +248,6 @@ fn write_mines(preset: PresetWrite, kinds: Span<crate::mines::MineKindEntry>, su
     preset.mine_pool_count.write(count);
 }
 
-fn write_banks(preset: PresetWrite, rules: crate::market::BankRules) {
-    assert!(
-        rules.lp_fee_num < rules.lp_fee_denom
-            && rules.owner_fee_num <= rules.owner_fee_denom
-            && rules.owner_fee_denom != 0,
-        "invalid bank fee ratio",
-    );
-    preset.bank_rules.write(rules);
-}
-
 fn write_buildings(
     preset: PresetWrite, rules: Span<crate::buildings::BuildingRuleConfig>, board: Option<crate::buildings::BoardRules>,
 ) {
@@ -267,6 +283,15 @@ fn write_buildings(
                 && board.empire_resource_cap > 0,
             "zero resource store",
         );
+        if let Some(town) = board.town {
+            assert!(
+                town.settlement_labor_cap > 0
+                    && town.city_labor_cap > 0
+                    && town.kingdom_labor_cap > 0
+                    && town.empire_labor_cap > 0,
+                "zero labor store",
+            );
+        }
         preset.board_terms.write(Some(board));
     }
 }
@@ -390,7 +415,7 @@ fn write_depths(
 fn validate_beast_guards(depth: crate::expeditions::DepthRules) {
     assert!(depth.beast_weak_lower > 0 && depth.beast_weak_lower <= depth.beast_weak_upper, "invalid weak beast range");
     assert!(depth.beast_strong_lower <= depth.beast_strong_upper, "invalid strong beast range");
-    assert!(depth.beast_weak_upper < depth.beast_strong_lower, "beast ranges overlap");
+    assert!(depth.beast_weak_upper <= depth.beast_strong_lower, "beast ranges overlap");
     assert!(depth.beast_strong_upper < depth.site_guard_lower, "beasts must be weaker than sites");
     assert!(
         Into::<u16, u32>::into(depth.beast_strong_upper) < depth.ruin_guard_lower, "beasts must be weaker than ruins",
@@ -428,25 +453,10 @@ pub fn store_relics(
 ) {
     crate::logic::release::assert_authority();
     let preset = crate::state::write().presets.entry(commitment);
-    if let Some(value) = chests {
-        assert!(
-            day_unit_seconds != 0 && mode_rules & crate::rules::DEPTH_CONTENTS != 0, "chest tables require depth rules",
-        );
-        assert!(value.price_ceiling != 0, "empty chest rules");
-        assert!(
-            value.pool_bps > 0 && value.pool_bps < 10000 && value.top_n > 0 && value.top_n <= 100,
-            "invalid Frontier prize split",
-        );
-        let shares = value.shares;
-        assert!(
-            shares.common != 0
-                && shares.common <= shares.uncommon
-                && shares.uncommon <= shares.rare
-                && shares.rare <= shares.epic
-                && shares.epic <= shares.legendary,
-            "invalid chest shares",
-        );
-        assert!(rules.is_empty(), "ruin chests replace timed relics");
+    assert!(chests.is_none(), "LORDS presets are retired");
+    if day_unit_seconds != 0 {
+        assert!(rules.is_empty(), "army relic loadouts replace resource relics");
+        assert!(mode_rules & crate::rules::DISCOVER_CHESTS == 0, "army relics have no LORDS chests");
     } else {
         assert!(rules.len() == 18, "all eighteen relic rules required");
         let mut total: u128 = 0;
@@ -539,17 +549,17 @@ fn write_research(preset: PresetWrite, structures: crate::presets::StructurePres
         assert!(structures.research.is_empty(), "research needs a board");
         return;
     }
-    // Every row's tiers are priced exactly once, from the first tier above common to the row's last.
-    let mut expected = 0_u32;
-    for row in 0..crate::research::ROW_COUNT {
-        expected += crate::research::max_tier(row).into();
-    }
-    assert!(structures.research.len() == expected, "incomplete research prices");
+    // A priced row is a contiguous prefix; an omitted tier cannot be purchased.
     for entry in structures.research {
         let key = (*entry.row, *entry.tier);
         assert!(*entry.tier > 0 && *entry.tier <= crate::research::max_tier(*entry.row), "invalid research tier");
         assert!(preset.research_prices.read(key).is_none(), "duplicate research price");
         assert!((*entry.price).essence != 0, "empty research price");
         preset.research_prices.write(key, Some(*entry.price));
+    }
+    for entry in structures.research {
+        if *entry.tier > 1 {
+            assert!(preset.research_prices.read((*entry.row, *entry.tier - 1)).is_some(), "research price gap");
+        }
     }
 }

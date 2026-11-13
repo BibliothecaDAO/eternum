@@ -6,7 +6,4 @@ export { SecondaryMenuItems } from "./containers/secondary-menu-items";
 
 // Hyperstructures - Exports used externally
 
-// Biome System - Exports used externally
-export { BiomeInfoPanel } from "./components/biome-info-panel";
-
 // Hyperstructures - Exports used externally

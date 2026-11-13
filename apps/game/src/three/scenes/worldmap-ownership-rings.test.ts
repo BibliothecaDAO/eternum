@@ -1,6 +1,12 @@
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
-import { configManager, setBlockTimestampSource } from "@bibliothecadao/eternum";
+import {
+  configManager,
+  setBlockTimestampSource,
+  getBlockTimestamp,
+  readExpeditionRules,
+  seasonDay,
+} from "@bibliothecadao/eternum";
 import { NativeFactStore } from "@bibliothecadao/eternum/game-client";
 import { WorldSpatialProjection } from "@bibliothecadao/eternum/game-sync";
 import { TileOccupier, type HexPosition } from "@bibliothecadao/types";
@@ -135,14 +141,18 @@ describe("ownership rings", () => {
     setBlockTimestampSource(() => DAY * 11 + 100);
     world.projection.rebuild();
     expect(useUIStore.getState().selectedHex).toEqual(hex(328, 72));
-    expect(rings.shown()).toEqual([hex(328, 72), hex(330, 10), hex(344, 72)]);
+    expect(rings.shown()).toEqual([hex(328, 72), hex(344, 72)]);
+    expect(world.projection.getArmy(101)).toBeUndefined();
+    world.army({ id: 102, home: 21, at: [330, 74] });
+    world.projection.flush();
+    expect(rings.shown()).toEqual([hex(328, 72), hex(330, 74), hex(344, 72)]);
 
     world.click(328, 8);
     expect(rings.shown()).toEqual([]);
     world.click(328, 8);
     expect(rings.shown()).toEqual([]);
     world.click(344, 72);
-    expect(rings.shown()).toEqual([hex(328, 72), hex(330, 10), hex(344, 72)]);
+    expect(rings.shown()).toEqual([hex(328, 72), hex(330, 74), hex(344, 72)]);
   });
 
   it("name whatever structure stands on the selected hex now, as the tile panel does", () => {
@@ -282,6 +292,7 @@ function createWorld(options: { expedition?: { dayUnitSeconds: number; spacing: 
   }
   const store = {
     entries: facts.entries.bind(facts),
+    subscriptionScope: facts.subscriptionScope.bind(facts),
     inGame: facts.inGame.bind(facts),
     entityOccupancy: facts.entityOccupancy.bind(facts),
     structuresOwnedBy: facts.structuresOwnedBy.bind(facts),
@@ -292,7 +303,15 @@ function createWorld(options: { expedition?: { dayUnitSeconds: number; spacing: 
       rules.get(model) ?? facts.require(model as "TileOpt", keys as never)) as never,
   } as Pick<
     NativeFactStore,
-    "entries" | "inGame" | "entityOccupancy" | "structuresOwnedBy" | "armiesAtHome" | "subscribe" | "get" | "require"
+    | "entries"
+    | "inGame"
+    | "entityOccupancy"
+    | "structuresOwnedBy"
+    | "armiesAtHome"
+    | "subscribe"
+    | "get"
+    | "require"
+    | "subscriptionScope"
   >;
   const projection = new WorldSpatialProjection({ store });
   projection.start();
@@ -373,6 +392,19 @@ function createWorld(options: { expedition?: { dayUnitSeconds: number; spacing: 
       count?: bigint;
     }) =>
       facts.applyFacts([
+        ...(options.expedition
+          ? [
+              {
+                model: "ArmyDay",
+                key: key(GAME, id),
+                value: {
+                  game_id: GAME,
+                  explorer_id: id,
+                  day: seasonDay(readExpeditionRules(store, GAME)!, getBlockTimestamp().currentDefaultTick)!,
+                },
+              },
+            ]
+          : []),
         {
           model: "ExplorerTroops",
           key: key(GAME, id),

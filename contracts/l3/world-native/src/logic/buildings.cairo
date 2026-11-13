@@ -1,4 +1,4 @@
-use starknet::storage::StorageMapReadAccess;
+use starknet::storage::{StorageMapReadAccess, StoragePointerReadAccess};
 use crate::buildings::Building;
 
 pub fn building(key: BuildingKey) -> Option<Building> {
@@ -15,6 +15,20 @@ use crate::troops::Coord;
 
 pub fn building_key(key: crate::resources::ResourceKey, coord: Coord) -> BuildingKey {
     BuildingKey { game_id: key.game_id, structure_id: key.entity_id, inner_col: coord.x, inner_row: coord.y }
+}
+
+pub fn castle_labor_rate(game_id: u32, level: u8) -> u64 {
+    let rate = crate::logic::resources::rule(game_id, crate::resources::LABOR).realm_rate;
+    let board = crate::logic::preset_record::for_game(game_id).board_terms.read();
+    if board.is_none() || board.unwrap().town.is_none() {
+        return rate;
+    }
+    assert!(level <= 3, "invalid castle level");
+    let mut multiplier = 1;
+    for _ in 0..level {
+        multiplier *= 2;
+    }
+    rate * multiplier
 }
 
 #[starknet::component]

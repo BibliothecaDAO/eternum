@@ -1,5 +1,5 @@
 {
-  "schemaIdentity": "ab3864f0631e2117d1a1faece25f2fea4228b728da8262883e1426cb94dac831",
+  "schemaIdentity": "5b265193e4b08a23649b97df78516d67231940841aab11111f14bfec71e04867",
   "commandAbi": [
     {
       "type": "interface",
@@ -44,10 +44,6 @@
           "type": "world_native::commands::ToggleAlternate"
         },
         {
-          "name": "TransferStructureOwnership",
-          "type": "world_native::ownership::TransferOwnership"
-        },
-        {
           "name": "LevelUp",
           "type": "core::integer::u64"
         },
@@ -84,10 +80,6 @@
           "type": "world_native::resources::ResourceTransfer"
         },
         {
-          "name": "TransferStructureResourcesToExplorer",
-          "type": "world_native::resources::ResourceTransfer"
-        },
-        {
           "name": "OffloadArrival",
           "type": "world_native::arrivals::OffloadArrival"
         },
@@ -98,10 +90,6 @@
         {
           "name": "TransferExplorerResourcesToStructure",
           "type": "world_native::resources::ResourceTransfer"
-        },
-        {
-          "name": "BurnLaborForResourceProduction",
-          "type": "world_native::production::RefillProduction"
         },
         {
           "name": "BurnResourceForResourceProduction",
@@ -144,38 +132,6 @@
           "type": "world_native::commands::Battle"
         },
         {
-          "name": "CreateTradeOrder",
-          "type": "world_native::trade::CreateOrder"
-        },
-        {
-          "name": "AcceptTradeOrder",
-          "type": "world_native::trade::AcceptOrder"
-        },
-        {
-          "name": "CancelTradeOrder",
-          "type": "core::integer::u64"
-        },
-        {
-          "name": "CreateBanks",
-          "type": "core::array::Span::<world_native::market::BankPlacement>"
-        },
-        {
-          "name": "BuyFromBank",
-          "type": "world_native::market::Swap"
-        },
-        {
-          "name": "SellToBank",
-          "type": "world_native::market::Swap"
-        },
-        {
-          "name": "AddBankLiquidity",
-          "type": "world_native::market::AddLiquidity"
-        },
-        {
-          "name": "RemoveBankLiquidity",
-          "type": "world_native::market::RemoveLiquidity"
-        },
-        {
           "name": "InitializeHyperstructure",
           "type": "core::integer::u64"
         },
@@ -202,30 +158,6 @@
         {
           "name": "CloseSeason",
           "type": "()"
-        },
-        {
-          "name": "PledgeFaith",
-          "type": "world_native::faith::Pledge"
-        },
-        {
-          "name": "RemoveFaith",
-          "type": "core::integer::u64"
-        },
-        {
-          "name": "UpdateWonderOwnership",
-          "type": "core::integer::u64"
-        },
-        {
-          "name": "UpdateFaithfulOwnership",
-          "type": "core::integer::u64"
-        },
-        {
-          "name": "ClaimWonderPoints",
-          "type": "core::integer::u64"
-        },
-        {
-          "name": "ClaimPlayerFaithPoints",
-          "type": "world_native::faith::ClaimPlayer"
         },
         {
           "name": "RecordBlitzResults",
@@ -266,10 +198,6 @@
         {
           "name": "GuardAttack",
           "type": "world_native::combat_actions::GuardAttack"
-        },
-        {
-          "name": "Raid",
-          "type": "world_native::combat_actions::Raid"
         },
         {
           "name": "DepositResource",
@@ -434,20 +362,6 @@
         {
           "name": "spire_direction",
           "type": "core::integer::u8"
-        }
-      ]
-    },
-    {
-      "type": "struct",
-      "name": "world_native::ownership::TransferOwnership",
-      "members": [
-        {
-          "name": "entity_id",
-          "type": "core::integer::u64"
-        },
-        {
-          "name": "new_owner",
-          "type": "core::starknet::contract_address::ContractAddress"
         }
       ]
     },
@@ -697,156 +611,6 @@
     },
     {
       "type": "struct",
-      "name": "world_native::trade::CreateOrder",
-      "members": [
-        {
-          "name": "maker_id",
-          "type": "core::integer::u64"
-        },
-        {
-          "name": "taker_id",
-          "type": "core::integer::u64"
-        },
-        {
-          "name": "offered_resource",
-          "type": "core::integer::u8"
-        },
-        {
-          "name": "requested_resource",
-          "type": "core::integer::u8"
-        },
-        {
-          "name": "offered_per_lot",
-          "type": "core::integer::u64"
-        },
-        {
-          "name": "requested_per_lot",
-          "type": "core::integer::u64"
-        },
-        {
-          "name": "lots",
-          "type": "core::integer::u64"
-        },
-        {
-          "name": "expires_at",
-          "type": "core::integer::u32"
-        }
-      ]
-    },
-    {
-      "type": "struct",
-      "name": "world_native::trade::AcceptOrder",
-      "members": [
-        {
-          "name": "trade_id",
-          "type": "core::integer::u64"
-        },
-        {
-          "name": "taker_id",
-          "type": "core::integer::u64"
-        },
-        {
-          "name": "lots",
-          "type": "core::integer::u64"
-        }
-      ]
-    },
-    {
-      "type": "struct",
-      "name": "core::array::Span::<world_native::market::BankPlacement>",
-      "members": [
-        {
-          "name": "snapshot",
-          "type": "@core::array::Array::<world_native::market::BankPlacement>"
-        }
-      ]
-    },
-    {
-      "type": "struct",
-      "name": "world_native::market::BankPlacement",
-      "members": [
-        {
-          "name": "name",
-          "type": "core::felt252"
-        },
-        {
-          "name": "coord",
-          "type": "world_native::troops::Coord"
-        }
-      ]
-    },
-    {
-      "type": "struct",
-      "name": "world_native::market::Swap",
-      "members": [
-        {
-          "name": "bank_id",
-          "type": "core::integer::u64"
-        },
-        {
-          "name": "structure_id",
-          "type": "core::integer::u64"
-        },
-        {
-          "name": "resource_type",
-          "type": "core::integer::u8"
-        },
-        {
-          "name": "amount",
-          "type": "core::integer::u128"
-        }
-      ]
-    },
-    {
-      "type": "struct",
-      "name": "world_native::market::AddLiquidity",
-      "members": [
-        {
-          "name": "bank_id",
-          "type": "core::integer::u64"
-        },
-        {
-          "name": "structure_id",
-          "type": "core::integer::u64"
-        },
-        {
-          "name": "resource_type",
-          "type": "core::integer::u8"
-        },
-        {
-          "name": "resource_amount",
-          "type": "core::integer::u128"
-        },
-        {
-          "name": "lords_amount",
-          "type": "core::integer::u128"
-        }
-      ]
-    },
-    {
-      "type": "struct",
-      "name": "world_native::market::RemoveLiquidity",
-      "members": [
-        {
-          "name": "bank_id",
-          "type": "core::integer::u64"
-        },
-        {
-          "name": "structure_id",
-          "type": "core::integer::u64"
-        },
-        {
-          "name": "resource_type",
-          "type": "core::integer::u8"
-        },
-        {
-          "name": "shares",
-          "type": "core::integer::u128"
-        }
-      ]
-    },
-    {
-      "type": "struct",
       "name": "world_native::hyperstructures::Contribution",
       "members": [
         {
@@ -980,34 +744,6 @@
         {
           "name": "StructureGuard",
           "type": "()"
-        }
-      ]
-    },
-    {
-      "type": "struct",
-      "name": "world_native::faith::Pledge",
-      "members": [
-        {
-          "name": "structure_id",
-          "type": "core::integer::u64"
-        },
-        {
-          "name": "wonder_id",
-          "type": "core::integer::u64"
-        }
-      ]
-    },
-    {
-      "type": "struct",
-      "name": "world_native::faith::ClaimPlayer",
-      "members": [
-        {
-          "name": "player",
-          "type": "core::starknet::contract_address::ContractAddress"
-        },
-        {
-          "name": "wonder_id",
-          "type": "core::integer::u64"
         }
       ]
     },
@@ -1216,24 +952,6 @@
         {
           "name": "explorer_id",
           "type": "core::integer::u64"
-        }
-      ]
-    },
-    {
-      "type": "struct",
-      "name": "world_native::combat_actions::Raid",
-      "members": [
-        {
-          "name": "explorer_id",
-          "type": "core::integer::u64"
-        },
-        {
-          "name": "structure_id",
-          "type": "core::integer::u64"
-        },
-        {
-          "name": "steal_resources",
-          "type": "core::array::Span::<world_native::resources::ResourceAmount>"
         }
       ]
     },
@@ -1466,10 +1184,6 @@
     {
       "name": "BattleEvent",
       "scope": "game"
-    },
-    {
-      "name": "RaidEvent",
-      "scope": "game"
     }
   ],
   "models": [
@@ -1503,10 +1217,6 @@
     },
     {
       "name": "BlitzResult",
-      "scope": "game"
-    },
-    {
-      "name": "FaithRules",
       "scope": "game"
     },
     {
@@ -1602,35 +1312,7 @@
       "scope": "game"
     },
     {
-      "name": "BankRules",
-      "scope": "game"
-    },
-    {
-      "name": "BankName",
-      "scope": "game"
-    },
-    {
-      "name": "Market",
-      "scope": "game"
-    },
-    {
-      "name": "Liquidity",
-      "scope": "game"
-    },
-    {
-      "name": "TradeOrder",
-      "scope": "game"
-    },
-    {
-      "name": "TradeRules",
-      "scope": "game"
-    },
-    {
       "name": "Guard",
-      "scope": "game"
-    },
-    {
-      "name": "VillageRaid",
       "scope": "game"
     },
     {
@@ -1811,18 +1493,6 @@
     },
     {
       "name": "EntityName",
-      "scope": "game"
-    },
-    {
-      "name": "WonderFaith",
-      "scope": "game"
-    },
-    {
-      "name": "FaithfulStructure",
-      "scope": "game"
-    },
-    {
-      "name": "PlayerFaithPoints",
       "scope": "game"
     },
     {

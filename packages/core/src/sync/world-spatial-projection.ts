@@ -1,14 +1,21 @@
-import { activeTileOccupancy } from "../utils/ruins";
+import { getBlockTimestamp } from "../utils/timestamp";
+import { currentArmy, deepTiles } from "../utils/deep";
 import { safeInteger } from "../utils/safe-integer";
 import type { ID, Tile, TroopTier, TroopType } from "@bibliothecadao/types";
 import { TileOccupier } from "@bibliothecadao/types";
 import type { NativeFactChange, NativeFactStore } from "../client/native-fact-store";
 import { notifyEach } from "../utils/notify-each";
 import type { NativeKeys, NativeRows } from "../../../../contracts/l3/world-native/schema/client.gen";
-import { isExpeditionRealm, siteKindOf, structureMapPosition } from "../utils/expeditions";
+import {
+  isArmyCurrent,
+  readExpeditionRules,
+  expeditionDayEndsAt,
+  isExpeditionRealm,
+  siteKindOf,
+  structureMapPosition,
+} from "../utils/expeditions";
 import { isTileOccupierStructure } from "../utils/map/hex";
-import { tileFactsToTile } from "../utils/tile-facts";
-import { entityMapPosition } from "../utils/tile";
+import { entityMapPosition, getTileAt } from "../utils/tile";
 
 /** A map hex on one layer: `alt` is false on the surface and true on the ethereal layer, as in TileOpt. */
 export interface WorldSpatialHex {
@@ -141,7 +148,10 @@ export type WorldSpatialProjectionChange =
   | ArmySpatialProjectionChange;
 
 export interface WorldSpatialProjectionOptions {
-  store: Pick<NativeFactStore, "entries" | "subscribe" | "get" | "require" | "entityOccupancy" | "inGame">;
+  store: Pick<
+    NativeFactStore,
+    "entries" | "subscribe" | "get" | "require" | "entityOccupancy" | "inGame" | "subscriptionScope"
+  >;
   bucketSize?: number;
 }
 
@@ -302,10 +312,13 @@ const resolveStructureRenderable = (tile: Tile | undefined): StructureSpatialRen
 };
 
 const resolveArmyRenderable = (
-  store: Pick<NativeFactStore, "entityOccupancy">,
+  store: Pick<NativeFactStore, "entityOccupancy" | "get">,
   explorerTroops: NativeRows["ExplorerTroops"] | undefined,
 ): ArmySpatialRenderable | undefined => {
-  if (!explorerTroops || explorerTroops.troops.count <= 0n) return undefined;
+  if (!explorerTroops || currentArmy(store, explorerTroops).troops.count <= 0n) return undefined;
+  if (!isArmyCurrent(store, explorerTroops.game_id, explorerTroops.explorer_id)) return undefined;
+  if (store.get("DeepGuard", { game_id: explorerTroops.game_id, explorer_id: explorerTroops.explorer_id }))
+    return undefined;
 
   const position = entityMapPosition(store, explorerTroops.game_id, explorerTroops.explorer_id);
   const { x: col, y: row, alt } = position;
@@ -539,7 +552,7 @@ const toArmyChange = ({
 export class WorldSpatialProjection {
   private readonly store: Pick<
     NativeFactStore,
-    "entries" | "subscribe" | "get" | "require" | "entityOccupancy" | "inGame"
+    "entries" | "subscribe" | "get" | "require" | "entityOccupancy" | "inGame" | "subscriptionScope"
   >;
   private readonly chestIndex: SpatialIndex<ID, ChestSpatialRenderable>;
   private readonly structureIndex: SpatialIndex<StructureSpatialRenderable["spatialId"], StructureSpatialRenderable>;
@@ -554,6 +567,8 @@ export class WorldSpatialProjection {
   private readonly armyListeners = new Set<ArmyProjectionListener>();
   private readonly tileListeners = new Set<TileProjectionListener>();
   private unsubscribe: (() => void) | null = null;
+  private nextTimeRefresh = Infinity;
+  private scopeKnown = false;
 
   constructor({ store, bucketSize = DEFAULT_SPATIAL_BUCKET_SIZE }: WorldSpatialProjectionOptions) {
     if (!Number.isFinite(bucketSize) || bucketSize <= 0) {
@@ -589,21 +604,36 @@ export class WorldSpatialProjection {
 
   private applyChanges(changes: readonly NativeFactChange[]): void {
     if (
+      Boolean(this.store.subscriptionScope().known) !== this.scopeKnown ||
+      changes.some(
+        (change) =>
+          change.model === "SliceRules" ||
+          change.model === "SettlementRules" ||
+          change.model === "GameRegistry" ||
+          change.model === "ChestRules",
+      )
+    ) {
+      this.rebuild();
+      return;
+    }
+    if (
       changes.some(
         (change) =>
           (change.model === "ExpeditionSite" && change.current?.clear !== change.previous?.clear) ||
           (change.model === "ExpeditionDiscovery" && change.current?.ruin_cleared !== change.previous?.ruin_cleared) ||
-          (change.model === "GameRelease" && change.current?.release_id !== change.previous?.release_id),
+          (change.model === "GameRelease" && change.current?.release_id !== change.previous?.release_id) ||
+          change.model === "SliceRules" ||
+          change.model === "ChestRules",
       )
     ) {
-      for (const [key, occupancy] of this.store.entries("TileOccupancy")) {
-        if (occupancy.category === TileOccupier.Ruin) this.applyTileUpdate(key, occupancy);
+      for (const [, occupancy] of this.store.entries("TileOccupancy")) {
+        if (occupancy.category === TileOccupier.Ruin) this.applyTileUpdate(occupancy);
       }
     }
     for (const change of changes) {
       if (change.model === "TileOpt" || change.model === "TileOccupancy") {
         const tile = change.current ?? change.previous;
-        if (tile) this.applyTileUpdate(change.key, tile);
+        if (tile) this.applyTileUpdate(tile);
       }
       if (change.model === "TileOccupancy") {
         for (const tile of [change.previous, change.current]) {
@@ -613,7 +643,17 @@ export class WorldSpatialProjection {
         }
       }
       if (change.model === "ExplorerTroops") this.applyExplorerTroopsUpdate([change.current, change.previous]);
+      if (change.model === "DeepGuard" || change.model === "ArmyDay" || change.model === "DeepArmy") {
+        const key = change.current ?? change.previous;
+        if (key) {
+          const army = this.store.get("ExplorerTroops", { game_id: key.game_id, explorer_id: key.explorer_id });
+          this.armyIndex.update(safeInteger(key.explorer_id), resolveArmyRenderable(this.store, army));
+          const tile = this.store.entityOccupancy(key.game_id, key.explorer_id);
+          if (tile) this.applyTileUpdate(tile);
+        }
+      }
     }
+    if (changes.some((change) => change.model === "DeepArmy")) this.nextTimeRefresh = this.nextTimedChangeAt();
     for (const change of changes) {
       if (change.model === "Structure" || change.model === "ExpeditionSite" || change.model === "TileOccupancy") {
         for (const source of [change.previous, change.current]) {
@@ -623,11 +663,40 @@ export class WorldSpatialProjection {
     }
   }
 
+  /** Called by confirmed heads, including empty blocks, so calendar expiry needs no gameplay transaction. */
+  public refreshTime(): void {
+    if (this.nextTimeRefresh !== Infinity && getBlockTimestamp().currentDefaultTick >= this.nextTimeRefresh)
+      this.rebuild();
+  }
+
+  private nextTimedChangeAt(): number {
+    let boundary = Infinity;
+    for (const [, game] of this.store.entries("GameRegistry")) {
+      const rules = readExpeditionRules(this.store, game.game_id);
+      if (rules) boundary = Math.min(boundary, expeditionDayEndsAt(rules, getBlockTimestamp().currentDefaultTick));
+    }
+    for (const [, army] of this.store.entries("DeepArmy")) {
+      const row = this.store.get("ExplorerTroops", { game_id: army.game_id, explorer_id: army.explorer_id });
+      if (
+        !row ||
+        !isArmyCurrent(this.store, army.game_id, army.explorer_id) ||
+        currentArmy(this.store, row).troops.count === 0n
+      )
+        continue;
+      const slice = this.store.require("SliceRules", { game_id: army.game_id });
+      const interval = Number(slice.tick_config.armies_tick_in_seconds);
+      const now = getBlockTimestamp().currentDefaultTick;
+      boundary = Math.min(boundary, (Math.floor(now / interval) + 1) * interval);
+    }
+    return boundary;
+  }
+
   /**
    * Every index from the store at once, each row on its own: a row that cannot be projected is reported and left
    * out, so a rebuild always ends whole.
    */
   public rebuild(): void {
+    this.scopeKnown = Boolean(this.store.subscriptionScope().known);
     const nextChests = new Map<ID, ChestSpatialRenderable>();
     const nextStructures = new Map<StructureSpatialRenderable["spatialId"], StructureSpatialRenderable>();
     const nextArmies = new Map<ID, ArmySpatialRenderable>();
@@ -636,8 +705,10 @@ export class WorldSpatialProjection {
     this.chestsByTileEntity.clear();
     this.structuresByTileEntity.clear();
 
-    const tiles = new Map<string, NativeKeys["TileOccupancy"]>(this.store.entries("TileOpt"));
-    for (const [key, occupancy] of this.store.entries("TileOccupancy")) tiles.set(key, occupancy);
+    const tiles = new Map<string, NativeKeys["TileOccupancy"]>();
+    for (const key of deepTiles(this.store)) tiles.set(tileSourceKey(key), key);
+    for (const [, key] of this.store.entries("TileOpt")) tiles.set(tileSourceKey(key), key);
+    for (const [, key] of this.store.entries("TileOccupancy")) tiles.set(tileSourceKey(key), key);
     for (const [entity, key] of tiles) {
       const projected = projectedRow("tile", () => {
         const source = this.tileAt(key);
@@ -682,6 +753,7 @@ export class WorldSpatialProjection {
       if (marker) nextStructures.set(marker.spatialId, marker);
     }
 
+    this.nextTimeRefresh = this.nextTimedChangeAt();
     this.chestIndex.replace(nextChests);
     this.structureIndex.replace(nextStructures);
     this.armyIndex.replace(nextArmies);
@@ -691,10 +763,11 @@ export class WorldSpatialProjection {
   }
 
   private tileAt(key: NativeKeys["TileOccupancy"]): Tile | undefined {
-    return tileFactsToTile(key, this.store.get("TileOpt", key), activeTileOccupancy(this.store, key));
+    return getTileAt(this.store, key.alt, key.col, key.row, key.game_id);
   }
 
-  private applyTileUpdate(tileEntity: string, key: NativeKeys["TileOccupancy"]): void {
+  private applyTileUpdate(key: NativeKeys["TileOccupancy"]): void {
+    const tileEntity = tileSourceKey(key);
     const source = this.tileAt(key);
     const previousTile = this.tilesByTileEntity.get(tileEntity);
     const currentTile = resolveTileRenderable(source);
@@ -928,4 +1001,8 @@ export class WorldSpatialProjection {
     this.chestsByTileEntity.clear();
     this.structuresByTileEntity.clear();
   }
+}
+
+function tileSourceKey(key: NativeKeys["TileOccupancy"]): string {
+  return `${key.game_id}:${Number(key.alt)}:${key.col}:${key.row}`;
 }

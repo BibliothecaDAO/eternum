@@ -24,15 +24,12 @@ describe("the castle's tree as the contract rules it", () => {
       ["row-7", "locked"],
       ["shrine", "short"],
       ["well", "short"],
-      ["reach-1", "short"],
-      ["reach-2", "locked"],
-      ["reach-3", "locked"],
+      ["spire-lore", "short"],
     ]);
     expect(why(EARLY_REALM, "row-0")).toBe("Essence 300 / 500");
     expect(why(EARLY_REALM, "row-1")).toBe("Build a Workshop");
     // A training building can only stand once the Barracks row is rare.
     expect(why(EARLY_REALM, "row-4")).toBe("Barracks 0/2 purchases first");
-    expect(why(EARLY_REALM, "reach-2")).toBe("Ethereal I first");
     expect(canResearchNow(readResearchTree(EARLY_REALM))).toBe(true);
   });
 
@@ -109,15 +106,19 @@ describe("Frontier's camp is its Troll on the progression views (the shared stru
   });
 
   it("names the army's Scouting kind by the Troll", () => {
-    const army = readArmyDetail({ ...VETERAN_ARMY, progress: { ...VETERAN_ARMY.progress, scoutingKinds: ["camp"] } });
+    const army = readArmyDetail({
+      ...VETERAN_ARMY,
+      category: "Paladin",
+      progress: { ...VETERAN_ARMY.progress, scoutingKinds: ["camp"] },
+    });
     expect(army.attributes.find(({ key }) => key === "scouting")?.now).toBe("+10% discovery on Trolls");
     expect(JSON.stringify(army)).not.toMatch(/Camp/);
   });
 });
 
 describe("an army's detail as progression rules it", () => {
-  it("reads the owner's army: 12 of the 75 XP its first point needs, nothing to buy yet", () => {
-    const army = readArmyDetail(EARLY_ARMY);
+  it("reads a Scout army: 12 of the 75 XP its first point needs, nothing to buy yet", () => {
+    const army = readArmyDetail({ ...EARLY_ARMY, category: "Paladin" });
     expect([army.goal, army.available]).toEqual([{ rank: 1, at: 75, from: 0, share: 0.16 }, 0]);
     expect(army.attributes.map(({ name, now, next }) => [name, now, next?.change])).toEqual([
       ["Battle", "0% damage", "0% → +10% damage"],
@@ -128,7 +129,7 @@ describe("an army's detail as progression rules it", () => {
   });
 
   it("prices each attribute's next level by its own level, and counts what the XP buys now", () => {
-    const army = readArmyDetail(VETERAN_ARMY);
+    const army = readArmyDetail({ ...VETERAN_ARMY, category: "Paladin" });
     expect(army.attributes.map(({ name, next }) => [name, next?.point])).toEqual([
       ["Battle", 3],
       ["Logistics", 1],
@@ -174,4 +175,36 @@ it("keeps every research line short enough for one line on a phone", () => {
       if (each.gate) expect(each.gate.line.length, each.gate.line).toBeLessThanOrEqual(30);
     }
   }
+});
+
+it("town lore asks only for Well, Shrine and one Spire price, and storage sides are gone", () => {
+  const realm = { ...EARLY_REALM, board: { ...EARLY_REALM.board, town: true }, essence: 17500, labor: 5000 };
+  const prices: number[] = [];
+  realm.price = (row, tier) => {
+    if (row === research.ROW_DEPTH) prices.push(tier);
+    if (row === research.ROW_DEPTH && tier !== 1) throw new Error("Unpriced lore tier");
+    const lore = new Map<number, number>([
+      [research.ROW_WELL, 2500],
+      [research.ROW_SHRINE, 5000],
+      [research.ROW_DEPTH, 10000],
+    ]);
+    return lore.has(row) ? { essence: lore.get(row)!, labor: 0 } : EARLY_REALM.price(row, tier);
+  };
+  const nodes = readResearchTree(realm);
+  expect(prices).toEqual([1]);
+  expect(nodes.filter(({ row }) => row === research.ROW_DEPTH)).toHaveLength(1);
+  expect(nodes.find(({ row }) => row === research.ROW_SHRINE)?.state).toBe("locked");
+  expect(nodes.find(({ row }) => row === research.ROW_DEPTH)?.state).toBe("locked");
+  for (const row of [research.ROW_FARM, research.ROW_WORKSHOP]) {
+    expect(nodes.find((node) => node.row === row)?.sides?.map(({ choice }) => choice)).toEqual([0]);
+  }
+  const unlocked = readResearchTree({
+    ...realm,
+    learned: {
+      ...realm.learned,
+      [research.ROW_WELL]: { tier: 1, sides: [] },
+      [research.ROW_SHRINE]: { tier: 1, sides: [] },
+    },
+  });
+  expect(unlocked.find(({ row }) => row === research.ROW_DEPTH)?.state).toBe("ready");
 });

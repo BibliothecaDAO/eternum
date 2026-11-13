@@ -15,9 +15,10 @@ import { presetPreimageCommitment } from "./preset-preimages";
 
 const codec = new CallData([...Object.values(schema.types), ...schema.games.entrypoints] as Abi);
 
-function registration(presetId = 5) {
+function registration(presetId = 5, deep?: ReturnType<typeof buildNativePreset>["economy"]["deep"]) {
   const environment = presetId === 2 ? "madara.blitz" : "madara.frontier";
   const definition = buildNativePreset(loadNativePresetConfiguration(environment, presetId), presetId);
+  if (deep) definition.economy.deep = deep;
   const calldata = codec.compile("register_preset", { preset_id: presetId, definition });
   const commitment = presetPreimageCommitment(calldata.slice(1));
   const accountCalldata = [
@@ -81,6 +82,95 @@ function applyRegistration(world: ReturnType<typeof setup>, preset: ReturnType<t
 }
 
 describe("verified preset configuration facts", () => {
+  it("projects the quest reward rules instead of the old labor claim for Season 1", () => {
+    const world = setup();
+    const preset = registration(7);
+    applyRegistration(world, preset);
+    world.native.applyReceipt(world.fold, receipt(launch(preset)), 11, 0);
+    const store = new NativeFactStore();
+    store.applyFacts(
+      world.fold.gameRows("QuestRules", "1").map(({ key, value }) => ({ model: "QuestRules", key, value })),
+    );
+    expect(store.require("QuestRules", { game_id: 1 })).toEqual({
+      game_id: 1,
+      base_counts: [1, 1, 1, 1, 1, 2, 15],
+      labor: 1000n,
+      essence: 1500n,
+      bonus_percent: 150,
+    });
+    expect(world.fold.gameRows("LaborRules", "1")).toHaveLength(0);
+    store.applyFacts(
+      world.fold.gameRows("BaneRules", "1").map(({ key, value }) => ({ model: "BaneRules", key, value })),
+    );
+    expect(store.require("BaneRules", { game_id: 1 })).toEqual({
+      game_id: 1,
+      chance_step: 20,
+      quorum_percent: 25,
+      beast_percent: 150,
+      stamina_percent: 50,
+      production_percent: 50,
+      quest_counts: [3n, 6n, 9n, 12n, 20n, 40n, 60n, 80n, 2500n, 6000n, 10000n, 15000n],
+    });
+  });
+  it("publishes the S1 Order mapping and leaves earlier presets without Aspect rules", () => {
+    for (const presetId of [5, 7]) {
+      const world = setup();
+      const preset = registration(presetId);
+      applyRegistration(world, preset);
+      world.native.applyReceipt(world.fold, receipt(launch(preset)), 11, 0);
+      const store = new NativeFactStore();
+      store.applyFacts(
+        world.fold.gameRows("AspectRules", "1").map(({ key, value }) => ({ model: "AspectRules", key, value })),
+      );
+      expect(store.get("AspectRules", { game_id: 1 })).toEqual(
+        presetId === 7 ? { game_id: 1, orders: preset.definition.settlement.order_aspects } : undefined,
+      );
+    }
+  });
+
+  it("projects the registered race into the native fact store for Season 1 only", () => {
+    const world = setup();
+    const preset = registration(7);
+    applyRegistration(world, preset);
+    world.native.applyReceipt(world.fold, receipt(launch(preset)), 11, 0);
+    const store = new NativeFactStore();
+    store.applyFacts(
+      world.fold.gameRows("RaceRules", "1").map(({ key, value }) => ({ model: "RaceRules", key, value })),
+    );
+    const { game_id, ...race } = store.require("RaceRules", { game_id: 1 });
+    expect(game_id).toBe(1);
+    expect(race).toEqual(preset.definition.economy.race.unwrap());
+    const earlier = registration(5);
+    applyRegistration(world, earlier);
+    world.native.applyReceipt(world.fold, receipt(launch(earlier, 2)), 12, 0);
+    expect(world.fold.gameRows("RaceRules", "2")).toEqual([]);
+  });
+  it("projects Deep sites from the verified immutable preset and leaves earlier presets disabled", () => {
+    const world = setup();
+    const deep = {
+      foundation: { alt: false, x: 25, y: 35 },
+      quarry: { alt: false, x: 12, y: 20 },
+      altar: { alt: false, x: 38, y: 20 },
+      beast_count: 10_000n,
+      loss_per_tick: 200n,
+      quarry_per_tick: 500n,
+      altar_per_tick: 5,
+      altar_threshold: 1500,
+    };
+    const preset = registration(5, new CairoOption(CairoOptionVariant.Some, deep));
+    applyRegistration(world, preset);
+    world.native.applyReceipt(world.fold, receipt(launch(preset)), 11, 0);
+    const store = new NativeFactStore();
+    store.applyFacts(
+      world.fold.gameRows("DeepRules", "1").map(({ key, value }) => ({ model: "DeepRules", key, value })),
+    );
+    expect(store.require("DeepRules", { game_id: 1 })).toEqual({ game_id: 1, ...deep });
+    const earlier = registration(2);
+    applyRegistration(world, earlier);
+    world.native.applyReceipt(world.fold, receipt(launch(earlier, 2)), 12, 0);
+    expect(world.fold.gameRows("DeepRules", "2")).toEqual([]);
+  });
+
   it("projects both beast strength ranges and renamed discovery odds into client facts", () => {
     const world = setup();
     const preset = registration();
@@ -118,7 +208,7 @@ describe("verified preset configuration facts", () => {
     const rules = store.require("SliceRules", { game_id: 1 });
     const stamina = rules.troop_stamina_config;
     const tick = Number(rules.tick_config.armies_tick_in_seconds);
-    expect(manager.getExploreStaminaCost()).toBe(20);
+    expect(manager.getExploreStaminaCost(TroopType.Knight)).toBe(20);
     expect(manager.getCombatConfig().stamina_attack_req).toBe(30);
     const troop = { category: TroopType.Knight, tier: TroopTier.T1 };
     const empty: Troops = {
@@ -138,7 +228,7 @@ describe("verified preset configuration facts", () => {
       battle_cooldown_end: 0,
     };
     expect(staminaAt(empty, 3700, stamina, tick).amount).toBe(30n);
-    expect(affordableAt(empty, 100, stamina, tick, manager.getExploreStaminaCost())).toBe(2500);
+    expect(affordableAt(empty, 100, stamina, tick, manager.getExploreStaminaCost(TroopType.Knight))).toBe(2500);
     expect(affordableAt(empty, 100, stamina, tick, manager.getCombatConfig().stamina_attack_req)).toBe(3700);
     for (const [trained, maximum, explores, attacks] of [
       [0, 120, 6, 4],
@@ -150,7 +240,7 @@ describe("verified preset configuration facts", () => {
     ] as const) {
       const bar = musterStamina({ slot: 0, inherited: null }, troop, 100, stamina, trained, tick);
       expect(bar).toEqual({ amount: maximum, max: maximum });
-      expect(Math.floor(bar.amount / manager.getExploreStaminaCost())).toBe(explores);
+      expect(Math.floor(bar.amount / manager.getExploreStaminaCost(TroopType.Knight))).toBe(explores);
       expect(Math.floor(bar.amount / manager.getCombatConfig().stamina_attack_req)).toBe(attacks);
     }
   });

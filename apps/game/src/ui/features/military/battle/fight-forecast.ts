@@ -24,7 +24,7 @@ export const describeFightCost = (forecast: FightForecast): string | null => {
 };
 
 /**
- * A combat panel's title: the two sides, as the battle lab and raid results name them, the target by its owner's
+ * A combat panel's title: the two sides, as the battle lab names them, the target by its owner's
  * display name (the Vanguard when no player holds it); before the target is known, the attacker alone.
  */
 export const combatTitle = (attacker: string | null, targetOwner: string | null): string => {

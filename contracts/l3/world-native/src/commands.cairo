@@ -1,4 +1,6 @@
 use starknet::ContractAddress;
+use starknet::storage::{StorageMapReadAccess, StoragePointerReadAccess};
+use crate::rules::SliceRules;
 
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]
 pub struct CreateExplorer {
@@ -20,6 +22,7 @@ pub struct Explore {
 pub struct Battle {
     pub attacker_id: u64,
     pub defender_id: u64,
+    pub relic_slot: Option<u8>,
 }
 
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]
@@ -70,9 +73,8 @@ impl ExecutionContextSerde of Serde<ExecutionContext> {
     }
 }
 
-// A play reads its game and rules once, in the season class, and carries them through every library call it makes.
-// Rules never change after a game is created; the game record changes only as the last step of the play that changes
-// it (a season's close, its settlement, a full roster's readiness), so no later call in that play can see a stale copy.
+// Rules are immutable. The season refreshes the game after periodic settlement, which can end the race,
+// before dispatching the waiting command.
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]
 pub struct ActionContext {
     pub raw_root: u256,
@@ -99,7 +101,18 @@ pub fn load_context(game_id: u32, raw_root: u256, timestamp: u64) -> ExecutionCo
         timestamp,
         game_id,
         game: BoxTrait::new(crate::logic::game::game(game_id)),
-        rules: BoxTrait::new(crate::logic::game::rules(game_id)),
+        rules: BoxTrait::new(read_rules(game_id)),
+    }
+}
+
+fn read_rules(game_id: u32) -> SliceRules {
+    let preset = crate::logic::preset_record::for_game(game_id).rules.read();
+    let overrides = crate::state::read().games.overrides.read(game_id);
+    SliceRules {
+        biome_climate_config: overrides.biome_climate,
+        map_config: overrides.map.unwrap_or(preset.map_config),
+        map_center_offset: overrides.map_center_offset,
+        ..preset,
     }
 }
 
@@ -229,13 +242,6 @@ pub trait IResourceCommands<T> {
         context: crate::commands::ActionContext,
     );
     fn transfer_explorer_resources(
-        ref self: T,
-        game_id: u32,
-        actor: ContractAddress,
-        command: crate::resources::ResourceTransfer,
-        context: crate::commands::ActionContext,
-    );
-    fn transfer_structure_resources_to_explorer(
         ref self: T,
         game_id: u32,
         actor: ContractAddress,

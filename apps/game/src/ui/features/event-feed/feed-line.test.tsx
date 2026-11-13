@@ -57,6 +57,7 @@ beforeEach(() => {
         game_id: 1,
         entity_id: CAMP,
         category: StructureType.Camp,
+        beast_kind: "None" as const,
         initial_guard_count: "1400000000000",
         alt: false,
         col: 2147483660,
@@ -260,7 +261,13 @@ it("draws the guard a fight was against as the map draws it, for every kind of s
       {
         model: "ExpeditionSite",
         key: "0x1:0x2329",
-        value: { ...site, category, initial_guard_count: scaled(guard) },
+        value: {
+          ...site,
+          category,
+          beast_kind:
+            category === StructureType.Beasts ? (painting === "beast-cyclops" ? "Cyclops" : "Wraith") : "None",
+          initial_guard_count: scaled(guard),
+        },
       },
     ] as never);
     await draw(fightAt(CAMP));
@@ -277,6 +284,7 @@ it("draws the guard of a fight far from the player's armies from Herald's row of
       game_id: "0x1",
       entity_id: hex(far),
       category: hex(category),
+      beast_kind: category === StructureType.Beasts ? (painting === "beast-cyclops" ? "Cyclops" : "Wraith") : "None",
       initial_guard_count: hex(scaled(guard)),
       alt: false,
       col: hex(site.col + 40),
@@ -295,6 +303,7 @@ it("keeps a site's guard once the player's map lets the site go, as when their a
     game_id: "0x1",
     entity_id: hex(CAMP),
     category: hex(site.category),
+    beast_kind: "None" as const,
     initial_guard_count: hex(site.initial_guard_count),
     alt: false,
     col: hex(site.col),
@@ -330,6 +339,7 @@ it("says a clear's XP at the row's end beside what it paid, as the site's receip
     game_id: "0x1",
     entity_id: hex(far),
     category: hex(StructureType.Rift),
+    beast_kind: "None" as const,
     initial_guard_count: hex(scaled(1_200)),
     alt: false,
     col: hex(near.col + 40),

@@ -2,8 +2,14 @@ import { act } from "react";
 import { createRoot } from "react-dom/client";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-// The world's tiles: none hold anything here, as a rule-drawn spire's tile holds nothing.
-vi.mock("@/hooks/use-world-spatial-tiles", () => ({ useWorldSpatialTiles: () => [] }));
+// The world's tiles: the spire the realm found occupies its own tile as a spire, as the map's projection shows it.
+const world = vi.hoisted(() => ({ spire: null as { col: number; row: number } | null }));
+vi.mock("@/hooks/use-world-spatial-tiles", () => ({
+  useWorldSpatialTiles: (hexes: readonly { col: number; row: number }[]) =>
+    hexes
+      .filter((hex) => hex.col === world.spire?.col && hex.row === world.spire?.row)
+      .map((hex) => ({ hexCoords: hex, occupierType: TileOccupier.Spire, occupierId: 0, occupierIsStructure: false })),
+}));
 vi.mock("@/hooks/helpers/use-query", () => ({ useQuery: () => ({ isMapView: true }) }));
 vi.mock("./build/build-sheet", () => ({ BuildSheet: () => null, useOpenPlot: () => null }));
 vi.mock("./upgrade/castle-upgrade", () => ({ CastleUpgrade: () => null, useKeepSelected: () => null }));
@@ -31,7 +37,7 @@ import {
 import { StructureType, TileOccupier } from "@bibliothecadao/types";
 import { attachMapSelectionPositions } from "@/hooks/store/map-selection";
 import { useArmyPanelOpens } from "./army/army-opens";
-import { SpireButton, useArmyAtItsSpire } from "./spire-card";
+import { SpireButton, SpireOdds, useArmyAtItsSpire } from "./spire-card";
 import { useSelectionCard } from "./frontier-selection-sheet";
 import { useOnePanel } from "./hud/one-panel";
 import { SPIRE_ARMY, SPIRE_DAY_NOW, spireDay as spireFixture } from "./spire-fixture";
@@ -42,6 +48,7 @@ const NOW = SPIRE_DAY_NOW;
 /** The fixture's day, read at its second as the HUD reads the clock. */
 const spireDay = (options?: Parameters<typeof spireFixture>[0]) => {
   const day = spireFixture(options);
+  world.spire = day.spire;
   setBlockTimestampSource(() => NOW);
   useBlockTimestampStore.setState({ currentBlockTimestamp: NOW, currentDefaultTick: NOW });
   return day;
@@ -96,30 +103,25 @@ afterEach(() => {
 });
 
 describe("a realm's spire, from the player's path", () => {
-  it("offers the selected army each researched depth without an entry cost, enters the one picked, and shows it there", async () => {
+  it("offers the army beside it the one layer below without an entry cost, enters it, and says the army is there", async () => {
     const { store, rules, spire, armyTile } = spireDay();
     const hud = renderHud(store);
     try {
       tapSpireWithArmy(spire);
       expect(hud.sheet()?.getAttribute("aria-label")).toBe("Spire");
       expect(hud.sheet()!.textContent).toContain("Army");
-      expect(hud.depths()).toEqual([
-        { depth: "Ethereal I", line: undefined, button: "Enter", enabled: true },
-        { depth: "Ethereal II", line: undefined, button: "Enter", enabled: true },
-        // The next depth is its research's, through Research.
-        { depth: "Ethereal III", line: "Research it to open it", button: "Research", enabled: true },
-      ]);
+      expect(hud.depths()).toEqual([{ depth: "Ethereal I", line: undefined, button: "Enter", enabled: true }]);
       // What entering commits the army to, before it goes: the rest of the day, with no way back up.
       expect(hud.host.querySelector("[data-spire-commitment]")?.textContent).toMatch(
         /^Army( \d+)? stays until the day ends \(.+\)$/,
       );
 
-      await hud.press("Enter Ethereal II");
+      await hud.press("Enter Ethereal I");
       expect(hud.enter).toHaveBeenCalledTimes(1);
-      expect(hud.enter).toHaveBeenCalledWith(expect.objectContaining({ explorerId: ARMY, depth: 2 }));
+      expect(hud.enter).toHaveBeenCalledWith(expect.objectContaining({ explorerId: ARMY, depth: 1 }));
 
-      // The chain's answer: the army lands straight below, two regions down.
-      const landing = { col: armyTile.col, row: armyTile.row + 2 * rules.spacing };
+      // The chain's answer: the army lands on the nearest free tile below the spire, one region down.
+      const landing = { col: spire.col, row: spire.row + rules.spacing };
       act(() =>
         store.applyFacts([
           { model: "TileOccupancy", key: "0x904", value: null },
@@ -130,18 +132,17 @@ describe("a realm's spire, from the player's path", () => {
           },
         ] as never),
       );
-      const at = store.entityOccupancy(1, ARMY)!;
-      expect(expeditionDepth(rules, { y: at.row })).toBe(2);
-      expect(hud.sheet()!.textContent).toMatch(/Army( \d+)? is in Ethereal II today/);
-      expect(hud.depths()).toEqual([]);
+      expect(expeditionDepth(rules, { y: store.entityOccupancy(1, ARMY)!.row })).toBe(1);
+      expect(armyTile.row).toBeLessThan(landing.row);
+      expect(hud.sheet()!.textContent).toMatch(/Army( \d+)? is on another layer/);
+      expect(hud.depths().map(({ enabled }) => enabled)).toEqual([false]);
     } finally {
       hud.unmount();
     }
   });
 
-  it("allows an exhausted army to enter a free landing", () => {
-    const { store, rules, spire, armyTile } = spireDay({ stamina: 0n });
-    // Something already stands where the army would land in Ethereal I.
+  it("lets an exhausted army enter, whatever stands below the spire: the chain picks the nearest free tile", () => {
+    const { store, rules, spire } = spireDay({ stamina: 0n });
     store.applyFacts([
       {
         model: "TileOccupancy",
@@ -149,8 +150,8 @@ describe("a realm's spire, from the player's path", () => {
         value: {
           game_id: 1,
           alt: false,
-          col: armyTile.col,
-          row: armyTile.row + rules.spacing,
+          col: spire.col,
+          row: spire.row + rules.spacing,
           entity_id: 990,
           category: TileOccupier.Camp,
           is_structure: true,
@@ -160,11 +161,7 @@ describe("a realm's spire, from the player's path", () => {
     const hud = renderHud(store);
     try {
       tapSpireWithArmy(spire);
-      const [first, second] = hud.depths();
-      expect(first).toEqual({ depth: "Ethereal I", line: "Its landing is taken", button: "Enter", enabled: false });
-      expect(second.depth).toBe("Ethereal II");
-      expect(second.line).toBeUndefined();
-      expect(second.enabled).toBe(true);
+      expect(hud.depths()).toEqual([{ depth: "Ethereal I", line: undefined, button: "Enter", enabled: true }]);
     } finally {
       hud.unmount();
     }
@@ -177,12 +174,7 @@ describe("a realm's spire, from the player's path", () => {
       // No army selected, one beside the spire: the card acts for it, named.
       act(() => useUIStore.getState().selectOnMap({ kind: "hex", hex: beside.spire }));
       expect(hud.sheet()?.getAttribute("aria-label")).toBe("Spire");
-      expect(
-        hud
-          .depths()
-          .slice(0, 2)
-          .every((depth) => depth.enabled),
-      ).toBe(true);
+      expect(hud.depths().map(({ enabled }) => enabled)).toEqual([true]);
     } finally {
       hud.unmount();
     }
@@ -190,24 +182,17 @@ describe("a realm's spire, from the player's path", () => {
     const away = spireDay({ standing: "away" });
     hud = renderHud(away.store);
     try {
-      // No army selected and none beside: what to do, and every researched depth is listed.
+      // No army selected and none beside: what to do, and the layer below listed, closed.
       act(() => useUIStore.getState().selectOnMap({ kind: "hex", hex: away.spire }));
       expect(hud.sheet()!.textContent).toContain("Select an army beside the spire");
-      expect(hud.depths().map(({ line, enabled }) => ({ line, enabled }))).toEqual([
-        { line: undefined, enabled: false },
-        { line: undefined, enabled: false },
-        { line: "Research it to open it", enabled: true },
+      expect(hud.depths().map(({ depth, enabled }) => ({ depth, enabled }))).toEqual([
+        { depth: "Ethereal I", enabled: false },
       ]);
       // The army selected away from the spire: it must stand beside it, and nothing commits it yet.
       tapSpireWithArmy(away.spire);
       expect(hud.sheet()!.textContent).toMatch(/Army( \d+)? must be beside the spire/);
       expect(hud.host.querySelector("[data-spire-commitment]")).toBeNull();
-      expect(
-        hud
-          .depths()
-          .slice(0, 2)
-          .some((depth) => depth.enabled),
-      ).toBe(false);
+      expect(hud.depths().map(({ enabled }) => enabled)).toEqual([false]);
     } finally {
       hud.unmount();
     }
@@ -294,6 +279,7 @@ describe("a realm's spire, from the player's path", () => {
           game_id: 1,
           entity_id: 711,
           category: StructureType.Camp,
+          beast_kind: "None" as const,
           initial_guard_count: 1_600n * 1_000_000_000n,
           alt: false,
           ...tile,
@@ -308,7 +294,6 @@ describe("a realm's spire, from the player's path", () => {
     "the selection matrix on a %s: the army's panel, whatever site is under it",
     (layout) => {
       const cells = [
-        { under: "its spire", standing: "on" as const, cleared: false },
         { under: "the ground beside its spire", standing: "beside" as const, cleared: false },
         { under: "a cleared site", standing: "away" as const, cleared: true },
       ];
@@ -331,7 +316,8 @@ describe("a realm's spire, from the player's path", () => {
           }
         });
 
-      it.each(["on", "beside"] as const)(
+      // A found spire occupies its tile, so an army stands beside it, never on it.
+      it.each(["beside"] as const)(
         "opens the spire's card from Spire on the army's panel, standing %s it",
         (standing) => {
           const { store } = spireDay({ standing });
@@ -340,7 +326,7 @@ describe("a realm's spire, from the player's path", () => {
             act(() => useUIStore.getState().selectOnMap({ kind: "army", entityId: ARMY, tile: "own" }));
             hud.press("Spire");
             expect(hud.sheets()).toEqual(["Spire"]);
-            expect(hud.enterButtons()).toEqual([true, true]);
+            expect(hud.enterButtons()).toEqual([true]);
             // Closed, the card hands back the army, still selected.
             hud.press("Close");
             expect(hud.sheets()).not.toContain("Spire");
@@ -364,6 +350,54 @@ describe("a realm's spire, from the player's path", () => {
       });
     },
   );
+
+  it("shows the next reveal's rising odds while the spire is still being looked for, and none once found or without lore", () => {
+    const { store } = spireDay({ standing: "away" });
+    const record = (reveals: number) =>
+      store.applyFacts([
+        {
+          model: "ExpeditionSpire",
+          key: "0x5b0",
+          value: {
+            ...store.require("ExpeditionSpire", { game_id: 1, structure_id: 7, epoch: 0, depth: 0 }),
+            reveals,
+            location: null,
+          },
+        },
+        { model: "TileOccupancy", key: "0x5c0", value: null },
+      ] as never);
+    const host = document.createElement("div");
+    const root = createRoot(host);
+    const draw = () =>
+      act(() =>
+        root.render(
+          <GameProvider value={{ store, systemCalls: {} } as never} account={{ address: "0x111" } as never}>
+            <SpireOdds explorerId={ARMY} />
+          </GameProvider>,
+        ),
+      );
+    try {
+      // Found today: no odds (the army's panel offers Spire once beside it).
+      draw();
+      expect(host.textContent).toBe("");
+      record(3);
+      draw();
+      expect(host.textContent).toContain("Spire: 40% on the next reveal");
+      record(9);
+      draw();
+      expect(host.textContent).toContain("Spire: 100% on the next reveal");
+      // Without Spire lore, reveals find no spire, so no odds are shown.
+      act(() =>
+        store.applyFacts([
+          { model: "RealmKnowledge", key: "0xd", value: { game_id: 1, structure_id: 7, learned: "0" } },
+        ] as never),
+      );
+      draw();
+      expect(host.textContent).toBe("");
+    } finally {
+      act(() => root.unmount());
+    }
+  });
 
   it("tells another player whose spire it is, and offers them nothing", () => {
     const { store, spire } = spireDay();

@@ -1,12 +1,17 @@
+import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { shortString } from "starknet";
+import { toJsonValue } from "../../../../apps/herald/src/model-registry";
+import { currentPresetFixture, serializePresetRows } from "../../../../apps/herald/src/native/current-preset-fixture";
 import { schema as compiledSchema } from "../../../../apps/herald/src/native/fixtures";
 import { schemaIdentity, type NativeMember, type NativeSchema } from "../../../../apps/herald/src/native/schema";
-import { defineFactModels } from "../schema/fact-models.mjs";
-import { toJsonValue } from "../../../../apps/herald/src/model-registry";
-import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { encodeMembers } from "../../../../apps/herald/src/native/serde";
-import { currentPresetFixture, serializePresetRows } from "../../../../apps/herald/src/native/current-preset-fixture";
-import { FRONTIER_FIXTURE_PRESET_ID } from "../../../../config/source/common/native-preset-modes";
+import {
+  FRONTIER_ACCELERATED_PRESET_ID,
+  FRONTIER_FIXTURE_PRESET_ID,
+  FRONTIER_S1_PRESET_ID,
+  FRONTIER_S1_DEV_PRESET_ID,
+} from "../../../../config/source/common/native-preset-modes";
+import { defineFactModels, factWireTypes } from "../schema/fact-models.mjs";
 
 const schema = presetFixtureSchema();
 
@@ -15,48 +20,58 @@ mkdirSync(directory, { recursive: true });
 const write = (name: string, felts: string[]) => writeFileSync(new URL(name, directory), felts.join("\n") + "\n");
 for (const [name, id] of [
   ["blitz", 2],
-  ["eternum", 3],
   ["frontier", 5],
   ["devcon", 6],
+  ["season-one", FRONTIER_S1_PRESET_ID],
+  ["season-one-dev", FRONTIER_S1_DEV_PRESET_ID],
+  ["accelerated", FRONTIER_ACCELERATED_PRESET_ID],
   ["frontier-check", FRONTIER_FIXTURE_PRESET_ID],
 ] as const) {
   const fixture = await currentPresetFixture(id, schema);
   write(`${name}-register.txt`, fixture.registration);
   write(`${name}-create.txt`, fixture.creation);
   write(`${name}-rows.txt`, serializePresetRows(fixture.rows, schema));
-  if (id === 5) {
+  if (id === FRONTIER_FIXTURE_PRESET_ID) {
     writeFileSync(new URL("../frontier-command-mask.txt", directory), `${fixture.definition.rules.command_mask}\n`);
   }
-  if (id === 3) {
-    const current = conformancePreset(fixture.definition);
-    write("preset-3.txt", current.felts);
-    writeFileSync(new URL("preset-3.json", directory), JSON.stringify(toJsonValue(current.value), null, 2) + "\n");
-  }
 }
-console.log("Generated current Blitz, Eternum, Frontier and Frontier check preset inputs and Herald projections");
+console.log("Generated current Blitz, Frontier and Frontier check preset inputs and Herald projections");
 
-function conformancePreset(definition: Awaited<ReturnType<typeof currentPresetFixture>>["definition"]) {
-  const value = {
-    rules: { ...definition.rules, map_center_offset: 20 },
-    resources: definition.resources.resources,
-    buildings: definition.structures.buildings,
-  };
-  const felts = encodeMembers(
+// Shared conformance conditions are independent of the playable preset catalog.
+const conformance = JSON.parse(readFileSync(new URL("conformance.json", directory), "utf8"));
+write(
+  "conformance.txt",
+  encodeMembers(
     schema,
     [
       { name: "rules", type: "world_native::rules::SliceRules" },
       { name: "resources", type: "core::array::Span::<world_native::resources::ResourceRule>" },
       { name: "buildings", type: "core::array::Span::<world_native::buildings::BuildingRuleConfig>" },
     ],
-    value,
-  );
-  return { value, felts };
-}
+    conformance,
+  ),
+);
 
 /** Fixture encoding can follow source edits before the single landing compile; production bindings still require ABI. */
 function presetFixtureSchema(): NativeSchema {
   const schema = structuredClone(compiledSchema);
-  for (const module of ["rules", "entry", "presets", "relics", "registrar", "blitz_results", "progression"])
+  for (const type of factWireTypes) schema.types[type.name] = type;
+  for (const module of [
+    "buildings",
+    "rules",
+    "entry",
+    "quests",
+    "race",
+    "banes",
+    "presets",
+    "relics",
+    "registrar",
+    "blitz_results",
+    "progression",
+    "withdrawals",
+    "spires",
+    "deep",
+  ])
     readStructs(schema, module);
   schema.models = defineFactModels({
     struct: (name: string) => {

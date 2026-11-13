@@ -3,7 +3,7 @@ import type { Structure, ID } from "@bibliothecadao/types";
 import { getBattleTimerLeft } from "@/three/utils/combat-directions";
 
 /**
- * One action on a structure's guards that can set their battle cooldown (a battle, a raid, troops moved into a guard):
+ * One action on a structure's guards that can set their battle cooldown (a battle, troops moved into a guard):
  * where it sits on the chain, whose army acted, who held the structure then, and whether it came over the live stream.
  */
 export interface GuardAction {
@@ -106,7 +106,7 @@ interface ActionStory {
 
 /**
  * The actions on structures' guards that stories record. A battle hits the defender's guards and, when a structure's
- * guards strike out, the attacker's own; a raid hits the raided structure's; troops moved into a guard merge their
+ * guards strike out, the attacker's own; troops moved into a guard merge their
  * cooldown into it, the player's own act.
  */
 export function guardActions(stories: readonly ActionStory[], streamGeneration: number): GuardAction[] {
@@ -115,7 +115,6 @@ export function guardActions(stories: readonly ActionStory[], streamGeneration: 
     const live = isLive(event, streamGeneration);
     const on = (structureId: unknown, striker: unknown, holder: unknown) =>
       actionOn(event, live, structureId, striker, holder);
-    if (event.story === "RaidEvent") return [on(value.structure_id, value.player, value.target_owner)];
     if (event.story === "TroopsTransferred") {
       const guard = (value.target as { Guard?: { structure_id?: unknown } } | undefined)?.Guard;
       return guard ? [on(guard.structure_id, event.owner, event.owner)] : [];

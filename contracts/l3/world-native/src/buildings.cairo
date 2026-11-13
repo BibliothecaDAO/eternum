@@ -123,6 +123,14 @@ pub struct BuildingTerms {
     pub complex_count: u8,
 }
 #[derive(Copy, Drop, Serde, Debug, PartialEq, starknet::Store)]
+pub struct TownRules {
+    pub settlement_labor_cap: u32,
+    pub city_labor_cap: u32,
+    pub kingdom_labor_cap: u32,
+    pub empire_labor_cap: u32,
+}
+
+#[derive(Copy, Drop, Serde, Debug, PartialEq, starknet::Store)]
 pub struct BoardRules {
     pub demolition_refund_bps: u16,
     pub workshop_rate: u64,
@@ -141,6 +149,7 @@ pub struct BoardRules {
     pub city_resource_cap: u32,
     pub kingdom_resource_cap: u32,
     pub empire_resource_cap: u32,
+    pub town: Option<TownRules>,
 }
 
 #[derive(Copy, Drop, Default, Debug, PartialEq)]
@@ -203,7 +212,8 @@ pub trait IBuildingCommands<T> {
 
 pub fn produced_resource(category: u8) -> u8 {
     match category {
-        1 | 2 | 41 | 42 | 43 | 44 => 0,
+        1 | 2 | 41 | 42 | 44 => 0,
+        43 => crate::troops::stock_resource(crate::troops::TroopType::Paladin, crate::troops::TroopTier::T1),
         39 => 38,
         40 => 57,
         _ => {

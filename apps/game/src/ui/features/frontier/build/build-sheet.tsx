@@ -13,6 +13,9 @@ import type { PriceKind } from "@/ui/design-system/kit/price-faces";
 import type { Refusal } from "@/ui/design-system/kit/refusal";
 import {
   BARRACKS,
+  BUILDING_UNAVAILABLE,
+  needsCastleLevel,
+  storesMultiplied,
   BUILD,
   makes,
   needsResearchPurchases,
@@ -43,6 +46,7 @@ import { resolveConstructionBuildability } from "@bibliothecadao/eternum/automat
 import { safeInteger, nativeResearchConstants, type NativeRows } from "@bibliothecadao/eternum/game-client";
 import {
   BUILDINGS_CENTER,
+  rankName,
   BuildingType,
   formatAmount,
   formatCharge,
@@ -57,6 +61,7 @@ import { readRealmPopulation } from "../realm/realm-population";
 import { realmPerHour, secondsUntilHeld } from "../hud/army-order";
 import { ATTRIBUTE_MARKS } from "../research/research-tree";
 import { FRONTIER_STORES, madeStore, STORE_KINDS } from "../stores";
+import { useOpens } from "../opening/use-opening";
 import { type BuildOption, readBuildOptions } from "./build-options";
 import { type BuildTile, BuildView, type RoomAskChoices } from "./build-view";
 import { buildingIcon, buildingName } from "./building-names";
@@ -100,7 +105,8 @@ export const useOpenPlot = (realm: NativeRows["Structure"] | null): HexPosition 
 /**
  * The build sheet over the game's facts: the buildings the plot can hold at the realm's researched tier, the chosen
  * one standing on the plot as a ghost, its gains, and Build, or the price the realm cannot pay yet with its wait. It
- * opens on the realm's first build while it has none (first-build.ts), else on the first building, and keeps the
+ * opens on the realm's first build while it has none (first-build.ts), offering it alone until the list of buildings
+ * opens (opening.ts), else on the first building, and keeps the
  * player's pick: with no free population, Build asks (RoomAsk) and offers the
  * Hut on this plot, never picking it for the player.
  */
@@ -122,17 +128,19 @@ export const BuildSheet = ({
   const useSimpleCost = resolveUseSimpleCost(configManager.buildingCostMode, requestedSimpleCost);
   const facts = useNativeFacts(BUILD_MODELS);
   const tick = useCurrentDefaultTick();
-  const options = useMemo(
-    () => readBuildOptions(facts.store, realm, useSimpleCost, tick),
-    [realm, facts, tick, useSimpleCost],
-  );
+  const firstBuild = useUIStore((state) => state.firstBuild);
+  // Before the list of buildings opens (opening.ts), the sheet offers the lit plot's first build alone.
+  const showsList = useOpens("building-list");
+  const options = useMemo(() => {
+    const all = readBuildOptions(facts.store, realm, useSimpleCost, tick);
+    return showsList || firstBuild === null ? all : all?.filter(({ category }) => category === firstBuild);
+  }, [realm, facts, tick, useSimpleCost, showsList, firstBuild]);
   const [picked, setPicked] = useState<BuildingType | null>(null);
   // Build pressed on the pick with no free population: the ask stands until the player answers or picks again.
   const [asking, setAsking] = useState(false);
   const [scoutingKind, setScoutingKind] = useState<ScoutingSide>(nativeResearchConstants.KIND_RIFTS);
   const indexOf = (category: BuildingType | null) =>
     options?.findIndex((candidate) => candidate.category === category) ?? -1;
-  const firstBuild = useUIStore((state) => state.firstBuild);
   const chosen = Math.max(indexOf(picked ?? firstBuild), 0);
   const option = options?.[chosen];
   const sending = useInFlight("plot", plotKey(realmId, plot)) !== undefined;
@@ -189,7 +197,10 @@ export const BuildSheet = ({
   /** Where the chosen building stands: open, refused with its reason, or open but for free population. */
   const standing = (): { refusal?: Refusal; noRoom?: true } => {
     if (option.standing === "built") return { refusal: { reason: { kind: "failed", line: ONE_A_REALM } } };
-    if (option.standing !== "open") return { refusal: gateRefusal(option.standing) };
+    if (option.standing !== "open") {
+      if ("gate" in option.standing) return { refusal: gateRefusal(option.standing) };
+      return { refusal: { reason: { kind: "failed", line: buildingRequirement(option.standing) } } };
+    }
     const shortCost = option.cost.find(({ resource, amount }) => (held(resource) ?? 0) < amount);
     if (shortCost) {
       const have = held(shortCost.resource);
@@ -317,7 +328,10 @@ const buildTile = (option: BuildOption, holdings: Holdings): BuildTile => ({
 const standingOf = (option: BuildOption, { held, perHour, free }: Holdings): BuildTile["standing"] => {
   if (option.standing === "built") return { kind: "built" };
   // Training counts purchases across both Barracks sides.
-  if (option.standing !== "open") return { kind: "locked", ...option.standing };
+  if (option.standing !== "open")
+    return "gate" in option.standing
+      ? { kind: "locked", ...option.standing }
+      : { kind: "unavailable", reason: buildingRequirement(option.standing) };
   const missing = option.cost.find(({ resource, amount }) => (held(resource) ?? 0) < amount);
   const short: Extract<BuildTile["standing"], { kind: "price" }>["short"] = missing
     ? {
@@ -346,11 +360,13 @@ const standingOf = (option: BuildOption, { held, perHour, free }: Holdings): Bui
 const buildingLine = (option: BuildOption): RankedWords => {
   const { effect } = option;
   const does: RankedWords =
-    effect.kind === "produces"
-      ? [makes(FRONTIER_STORES[madeStore(effect.resource)].word, formatRate(effect.output.total))]
-      : effect.kind === "trains"
-        ? startsNewArmies(effect.attribute, option.tier)
-        : [`${formatGain(effect.amount)} ${POPULATION}`];
+    effect.kind === "storage"
+      ? [effect.multiplier === null ? BUILDING_UNAVAILABLE : storesMultiplied(effect.multiplier)]
+      : effect.kind === "produces"
+        ? [makes(FRONTIER_STORES[madeStore(effect.resource)].word, formatRate(effect.output.total))]
+        : effect.kind === "trains"
+          ? startsNewArmies(effect.attribute, option.tier)
+          : [`${formatGain(effect.amount)} ${POPULATION}`];
   const takes = option.populationCost > 0 ? `, ${takesPopulation(formatCharge(option.populationCost))}` : "";
   return [`${buildingName(option.category)}: `, ...does, ...(takes ? [takes] : [])];
 };
@@ -365,11 +381,13 @@ const gemsOf = ({ sides, tier }: BuildOption): BuildTile["gems"] =>
 
 /** What one more gives: what it makes a minute, the population room it adds, or the attribute new armies start in. */
 const givesOf = ({ effect }: BuildOption): BuildTile["gives"] =>
-  effect.kind === "produces"
-    ? { icon: FRONTIER_STORES[madeStore(effect.resource)].icon, value: formatRate(effect.output.total) }
-    : effect.kind === "trains"
-      ? { icon: ATTRIBUTE_MARKS[effect.attribute] }
-      : { icon: "person", value: formatGain(effect.amount) };
+  effect.kind === "storage"
+    ? { icon: "storehouse", value: effect.multiplier === null ? "—" : `x${effect.multiplier}` }
+    : effect.kind === "produces"
+      ? { icon: FRONTIER_STORES[madeStore(effect.resource)].icon, value: formatRate(effect.output.total) }
+      : effect.kind === "trains"
+        ? { icon: ATTRIBUTE_MARKS[effect.attribute] }
+        : { icon: "person", value: formatGain(effect.amount) };
 
 /** A realm's plot, as the actions in flight name it. */
 
@@ -402,3 +420,6 @@ const useBuildingGhost = (category: BuildingType | undefined, plot: HexPosition)
     return () => setPreviewBuilding(null);
   }, [category, plot.col, plot.row, setPreviewBuilding]);
 };
+
+const buildingRequirement = (standing: { level: number } | { unavailable: true }): string =>
+  "level" in standing ? needsCastleLevel(rankName(standing.level)) : BUILDING_UNAVAILABLE;

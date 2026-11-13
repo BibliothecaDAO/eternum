@@ -53,12 +53,37 @@ pub fn store_limit(key: ResourceKey, resource_type: u8) -> Option<u128> {
             3 => board.empire_resource_cap,
             _ => panic!("invalid structure level"),
         };
-        cap.into()
+        if resource_type == crate::resources::LABOR {
+            if let Some(town) = board.town {
+                match base.level {
+                    0 => town.settlement_labor_cap,
+                    1 => town.city_labor_cap,
+                    2 => town.kingdom_labor_cap,
+                    _ => town.empire_labor_cap,
+                }.into()
+            } else {
+                cap.into()
+            }
+        } else {
+            cap.into()
+        }
     } else {
         Into::<u32, u128>::into(crate::troops::deployment_cap(preset.rules.troop_limit_config.read(), base.level))
             * Into::<u8, u128>::into(board.troop_store_deploys)
     };
     let castle_base = cap * crate::rules::RESOURCE_PRECISION;
+    if board.town.is_some() {
+        if resource_type != crate::resources::WHEAT && resource_type != crate::resources::LABOR {
+            return Some(castle_base);
+        }
+        let counts = crate::state::read().buildings.structure_buildings.read((key.game_id, key.entity_id));
+        let multiplier = if crate::buildings::category_count(counts, crate::research::STOREHOUSE) != 0 {
+            Into::<u8, u128>::into(crate::rules::TOWN_STOREHOUSE_MULTIPLIER)
+        } else {
+            1
+        };
+        return Some(castle_base * multiplier);
+    }
     let stores = if resource_type == crate::resources::WHEAT {
         crate::research::picks(
             crate::logic::research::learned(key), crate::research::ROW_FARM, crate::research::CHOICE_STORE,
@@ -99,7 +124,7 @@ pub mod ResourceState {
     use starknet::storage::{StorageMapReadAccess, StorageMapWriteAccess, StoragePathEntry, StoragePointerWriteAccess};
     use crate::events::{RowDeleted, RowSet};
     use crate::resources::{
-        Production, ResourceKey, SettledResource, Weight, add, assert_production, has_production, settle, spend,
+        Production, ResourceKey, SettledResource, Weight, add, assert_production, has_production, spend,
     };
 
     #[storage]
@@ -359,14 +384,15 @@ pub mod ResourceState {
             let since = core::cmp::max(resource.production.last_settled_at, core::cmp::min(now, start_at));
             resource.production.last_settled_at = since;
             if since != now {
-                settle(
-                    resource_type,
-                    ref resource.balance,
-                    ref resource.production,
-                    ref resource.weight,
-                    unit_weight,
-                    resource.limit,
-                    now,
+                let effects = crate::logic::banes::effects(
+                    key, if resource.production.building_count == 0 {
+                        now.into()
+                    } else {
+                        since.into()
+                    }, now.into(),
+                );
+                crate::resources::settle_windows(
+                    resource_type, ref resource, unit_weight, now, effects.windows, effects.production_percent,
                 );
             }
             (previous, resource)
@@ -415,7 +441,7 @@ pub mod ResourceState {
                 return;
             }
             let production = if production.building_count == 0 {
-                Production { last_settled_at: 0, ..production }
+                Production { last_settled_at: 0, remainder: 0, ..production }
             } else {
                 production
             };
@@ -425,11 +451,28 @@ pub mod ResourceState {
             }
             self.data.resources.productions.write(storage_key, production);
             let keys = array![key.game_id.into(), key.entity_id.into(), resource_type.into()].span();
+            if previous.remainder != production.remainder {
+                if production.remainder == 0 {
+                    self.emit(RowDeleted { version: 1, model: 'ProductionCarry', keys });
+                } else {
+                    self
+                        .emit(
+                            RowSet {
+                                version: 1,
+                                model: 'ProductionCarry',
+                                keys,
+                                values: array![production.remainder.into()].span(),
+                            },
+                        );
+                }
+            }
             if production == Default::default() {
                 self.emit(RowDeleted { version: 1, model: 'ResourceProduction', keys });
             } else {
-                let mut values = array![];
-                production.serialize(ref values);
+                let values = array![
+                    production.building_count.into(), production.production_rate.into(),
+                    production.output_amount_left.into(), production.last_settled_at.into(),
+                ];
                 self.emit(RowSet { version: 1, model: 'ResourceProduction', keys, values: values.span() });
             }
         }

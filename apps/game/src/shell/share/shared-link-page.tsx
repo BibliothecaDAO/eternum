@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import type { ReactNode } from "react";
-import { isShareChannel } from "@realms-world/identity";
+import { aspectName } from "@bibliothecadao/types";
+import { isShareChannel, sharedMomentOf } from "@realms-world/identity";
 import { useParams, useSearchParams } from "react-router-dom";
 
 import { identityClient } from "@/hooks/context/identity-session";
@@ -16,8 +17,8 @@ import { ageOf } from "../play/ages";
 const SHARE_CODE = /^[A-Za-z0-9]{8}$/;
 
 /**
- * A shared link's landing (`/s/<code>`), where a friend lands from a player's post: who shared which day, what Frontier
- * is, and the way in. Opening it records this browser's visit with identity, with the channel the link was posted from
+ * A shared link's landing (`/s/<code>`), where a friend lands from a player's post: who shared which day, or invites
+ * them to which Aspect, what Frontier is, and the way in. Opening it records this browser's visit with identity, with the channel the link was posted from
  * (`?via=`), the one record that later ties an account made here to the post (apps/realms/server/shares.ts); the page asks nothing else of the visitor. A link that leads
  * nowhere still leads into the game.
  */
@@ -39,7 +40,7 @@ export const SharedLinkPage = () => {
       <img src={AGE_LOCKUP.frontier} alt={ageOf("frontier").name} className="h-28 w-auto" />
       {opened.data && (
         <h1 className="text-app-title text-app-ink">
-          {SHARED_LINK_WORDS.sharedDay(opened.data.name, opened.data.moment)}
+          {SHARED_LINK_WORDS.title(opened.data.name, sharedMomentOf(opened.data, aspectName))}
         </h1>
       )}
       <p className="text-app-body text-app-muted">{SHARED_LINK_WORDS.pitch}</p>

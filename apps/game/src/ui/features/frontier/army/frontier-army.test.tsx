@@ -37,6 +37,7 @@ const game = vi.hoisted(() => ({
   },
 }));
 const army = {
+  troopsFact: { category: "Knight" },
   explorerId: 12,
   number: 1,
   label: "Army 1",
@@ -57,7 +58,9 @@ vi.mock("@/hooks/context/game-context", () => ({
             ? game.progress
             : model === "RealmKnowledge"
               ? { learned: game.learned }
-              : game.rules,
+              : model === "ArmyProgressionRules"
+                ? game.rules
+                : undefined,
       },
       systemCalls: { spend_skill_point: game.spendPoint },
     },
@@ -66,6 +69,10 @@ vi.mock("@/hooks/context/game-context", () => ({
 }));
 vi.mock("@/sync/action-outcome", () => ({ untilApplied: async (sent: Promise<unknown>) => (await sent, "0x7") }));
 vi.mock("@/hooks/helpers/use-native-facts", () => ({ useNativeRevision: () => 0 }));
+vi.mock("@/hooks/helpers/use-block-timestamp", async (original) => ({
+  ...(await original<typeof import("@/hooks/helpers/use-block-timestamp")>()),
+  useCurrentBlockTimestamp: () => 350,
+}));
 vi.mock("@/hooks/helpers/use-navigate", () => ({ useSelectArmyOnMap: () => game.select }));
 vi.mock("@/hooks/store/use-account-store", () => ({
   useAccountStore: (pick: (state: unknown) => unknown) => pick({ account: { address: "0x111" } }),
@@ -75,10 +82,10 @@ vi.mock("@/utils/can-issue-orders", () => ({ canIssueOrders: () => true }));
 vi.mock("../deploy/use-deploy-plan", () => ({ useDeployPlan: () => ({ open: [] }) }));
 vi.mock("../sites/well-refill", () => ({ useWellRefill: (_id: number, ratio: number) => ({ shown: ratio }) }));
 vi.mock("../hud/dock-armies", () => ({ useDockArmies: () => [army] }));
-vi.mock("./army-refill", () => ({ ArmyRefill: () => null }));
 vi.mock("../frontier-reveal-yield", () => ({ useArmyRevealYield: () => 75 }));
 // The army stands away from its spire: its panel has no Spire (spire-card.test.tsx plays the spire).
-vi.mock("../spire-card", () => ({ useArmyAtItsSpire: () => null, SpireButton: () => null }));
+vi.mock("../spire-card", () => ({ useArmyAtItsSpire: () => null, SpireButton: () => null, SpireOdds: () => null }));
+vi.mock("../relics/army-relic-slots", () => ({ ArmyRelicSlots: () => null }));
 
 const { FrontierArmy } = await import("./frontier-army");
 const { ArmyDock } = await import("../hud/army-dock");
@@ -93,6 +100,7 @@ beforeEach(() => {
   root = createRoot(host);
   vi.clearAllMocks();
   game.learned = 0n;
+  army.troopsFact.category = "Knight";
   game.progress.xp = 12;
   game.progress.common_points = 0;
 });
@@ -116,6 +124,7 @@ it("opens the army's panel from its row on a desktop, whether it holds a point",
 });
 
 it("shows the army's figures, then its level-ups one step on, and buys the chosen level with spend_skill_point", async () => {
+  army.troopsFact.category = "Paladin";
   game.progress.xp = 260;
   game.progress.common_points = 1;
   useUIStore.setState((state) => ({ entityActions: { ...state.entityActions, selectedEntityId: 12 } }));
@@ -260,13 +269,53 @@ it.each([
   [1500, "1,575"],
   [1575, "1,700"],
   [3000, "3,075"],
-])("shows the real next-point readout at %s XP, including in Level up", (xp, next) => {
+])("rings the portrait with the real way to the next point at %s XP, and writes no XP number", (xp, next) => {
   game.progress.xp = xp;
   game.progress.common_points = Number(xp >= game.rules.common_xp);
   useUIStore.setState((state) => ({ entityActions: { ...state.entityActions, selectedEntityId: 12 } }));
   act(() => root.render(<FrontierArmy realm={{ game_id: 1 } as never} choosing={false} onClose={vi.fn()} />));
   const readout = `${xp.toLocaleString("en-US")} / ${next} XP`;
-  expect(host.textContent).toContain(readout);
+  expect(host.querySelector(`[data-tip^="XP ${xp.toLocaleString("en-US")} of ${next} · next"]`)).not.toBeNull();
+  expect(host.textContent).not.toContain(readout);
   act(() => button(/Level[ -]up/)!.click());
-  expect(host.textContent).toContain(readout);
+  expect(host.textContent).not.toContain(readout);
+});
+
+it.each(["Knight", "Crossbowman"])("offers only eligible point uses for %s and submits Battle", async (category) => {
+  army.troopsFact.category = category;
+  game.progress.common_points = 1;
+  useUIStore.setState((state) => ({ entityActions: { ...state.entityActions, selectedEntityId: 12 } }));
+  act(() => root.render(<FrontierArmy realm={{ game_id: 1 } as never} choosing onClose={vi.fn()} />));
+  expect([...host.querySelectorAll("[data-attribute]")].map((node) => node.getAttribute("data-attribute"))).toEqual([
+    "battle",
+    "logistics",
+    "homecoming",
+    "stamina",
+  ]);
+  await act(async () => button(/^Level up$/)!.click());
+  expect(game.spendPoint).toHaveBeenCalledWith({
+    signer: game.signer,
+    explorerId: 12,
+    choice: { kind: "Battle", value: undefined },
+  });
+});
+
+it("drops a selected Scouting use when the army category changes", async () => {
+  army.troopsFact.category = "Paladin";
+  game.progress.common_points = 1;
+  useUIStore.setState((state) => ({ entityActions: { ...state.entityActions, selectedEntityId: 12 } }));
+  const draw = () =>
+    act(() => root.render(<FrontierArmy realm={{ game_id: 1 } as never} choosing onClose={vi.fn()} />));
+  draw();
+  act(() => host.querySelector<HTMLButtonElement>('[data-attribute="scouting"]')!.click());
+  army.troopsFact.category = "Knight";
+  draw();
+  expect(host.querySelector('[data-attribute="scouting"]')).toBeNull();
+  expect(host.querySelector('[data-attribute="battle"]')?.getAttribute("aria-pressed")).toBe("true");
+  await act(async () => button(/^Level up$/)!.click());
+  expect(game.spendPoint).toHaveBeenCalledWith({
+    signer: game.signer,
+    explorerId: 12,
+    choice: { kind: "Battle", value: undefined },
+  });
 });

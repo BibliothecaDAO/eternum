@@ -1,6 +1,17 @@
 use crate::combat::TroopsTrait;
 use crate::stamina::StaminaSourceTrait;
 
+#[starknet::interface]
+pub trait IStartingArmies<T> {
+    fn deploy_starting_armies(
+        ref self: T,
+        key: crate::resources::ResourceKey,
+        category: TroopType,
+        amount: u128,
+        context: crate::commands::ActionContext,
+    );
+}
+
 #[derive(Copy, Drop, Serde, Default, Debug, PartialEq, starknet::Store)]
 pub struct Coord {
     pub alt: bool,
@@ -312,7 +323,12 @@ pub fn spend_stamina(
 ) {
     let stamina = rules.troop_stamina_config;
     let cost: u64 = if exploring {
-        stamina.stamina_explore_stamina_cost.into()
+        let base: u64 = stamina.stamina_explore_stamina_cost.into();
+        if rules.day_unit_seconds != 0 && explorer.troops.category == TroopType::Paladin {
+            base / 2
+        } else {
+            base
+        }
     } else {
         let (increase, bonus) = explorer.troops.stamina_travel_bonus(biome, stamina);
         let base: u64 = stamina.stamina_travel_stamina_cost.into();
@@ -338,7 +354,6 @@ pub fn spend_stamina(
 }
 
 pub fn discovery_guards(category: u8, seed: u256, rules: crate::rules::SliceRules, timestamp: u64) -> Span<Troops> {
-    use crate::troops::{TroopTier, TroopType};
     let light_guard = category == crate::taxonomy::MINE_CATEGORY || category == crate::taxonomy::CAMP_CATEGORY;
     let limits = rules.troop_limit_config;
     let (lower, upper) = if light_guard {
@@ -406,7 +421,9 @@ pub fn frontier_guard(
     let lower: u128 = lower.into();
     let upper: u128 = upper.into();
     let count = if category == crate::taxonomy::BEASTS_CATEGORY {
-        let (lower, upper) = if crate::random::range(seed, 2, 2) == 0 {
+        let (lower, upper) = if crate::expeditions::beast_kind(
+            category, seed,
+        ) == crate::expeditions::BeastKind::Cyclops {
             (depth.beast_weak_lower, depth.beast_weak_upper)
         } else {
             (depth.beast_strong_lower, depth.beast_strong_upper)
@@ -443,6 +460,13 @@ fn discovered_guard(
 
 #[starknet::interface]
 pub trait IBattleResolution<T> {
+    fn destroy_explorer(ref self: T, key: ExplorerKey, explorer: ExplorerTroops);
+    fn expire_explorer(
+        ref self: T, key: ExplorerKey, explorer: ExplorerTroops, context: crate::commands::ActionContext,
+    );
+    fn settle_deep_army(
+        ref self: T, key: ExplorerKey, explorer: ExplorerTroops, context: crate::commands::ActionContext,
+    );
     // The explorer a command acts with: active this day, and owned by the actor when one is given.
     fn command_explorer(
         self: @T,

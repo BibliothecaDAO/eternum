@@ -53,12 +53,11 @@ function resourceRewards(source) {
     "category:u8,site:ExpeditionSite,depth:u8",
     "Option<crate::resources::ResourceAmount>",
   );
-  const imports = body.match(/^usecrate::resources::\{([A-Z_a-z,]+)\};/);
+  const imports = source.expeditions.match(/^use crate::resources::\{([A-Z_a-z,\s]+)\};$/m);
   if (!imports) throw new Error("Unsupported site_reward imports");
-  body = body.slice(imports[0].length);
   if (!body.startsWith("letreward=")) throw new Error("Unsupported site_reward premium");
   body = body.slice("letreward=".length);
-  const names = imports[1].split(",");
+  const names = imports[1].replace(/\s+/g, "").split(",");
   const rules = [];
   while (body.startsWith(rules.length === 0 ? "if" : "elseif")) {
     const branch = body.match(

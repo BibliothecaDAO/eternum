@@ -32,7 +32,7 @@ pub fn day_of(game: GameRegistry, unit_seconds: u32, timestamp: u64) -> Day {
 
 // Keep one calendar calculation per class without passing the game's unrelated launch fields to every call.
 #[inline(never)]
-fn calendar_day(seed: felt252, season_start: u64, season_end: u64, unit_seconds: u32, timestamp: u64) -> Day {
+pub fn calendar_day(seed: felt252, season_start: u64, season_end: u64, unit_seconds: u32, timestamp: u64) -> Day {
     assert!(timestamp >= season_start && timestamp < season_end, "timestamp outside season");
     let unit: u64 = unit_seconds.into();
     let season_units = (season_end - season_start) / unit;
@@ -67,6 +67,20 @@ fn calendar_day(seed: felt252, season_start: u64, season_end: u64, unit_seconds:
 pub fn bag_lengths(seed: felt252, bag: u64) -> u64 {
     let draw: u256 = poseidon_hash_span(array![seed, 'day bag', bag.into()].span()).into();
     order_lengths((draw % BAG_ORDERS).try_into().unwrap())
+}
+
+/// Resolve a recorded army day through the same calendar used by current-day commands.
+pub fn day_at_index(game: GameRegistry, unit_seconds: u32, index: u64) -> Day {
+    let bag = index / DAYS_PER_BAG;
+    let mut lengths = bag_lengths(game.seed, bag);
+    let mut units = bag * UNITS_PER_BAG;
+    for _ in 0..index % DAYS_PER_BAG {
+        units += lengths % DIGIT;
+        lengths /= DIGIT;
+    }
+    let day = day_of(game, unit_seconds, game.start_main_at + units * Into::<u32, u64>::into(unit_seconds));
+    assert!(day.index == index, "army day outside calendar");
+    day
 }
 
 /// A bag order in [0, 96) builds the bag by inserting the lengths one at a time: 4 beside 3, then 5, then 6 anywhere,

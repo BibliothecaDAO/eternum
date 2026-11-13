@@ -98,7 +98,7 @@ export const resourceName = (id: ResourcesIds | number | undefined): string => {
   return troop ? troopName(troop[1], troop[2] ?? "T1") : name;
 };
 
-export type StructureNamingMode = "frontier" | "blitz" | "eternum" | "duel";
+export type StructureNamingMode = "frontier" | "blitz" | "eternum";
 
 /** A structure in its game: Frontier replaces the camp category with a Troll; other modes keep their own names. */
 export const structureName = (type: StructureType, mineKind?: number, mode?: StructureNamingMode): string =>
@@ -117,6 +117,7 @@ export const structurePlural = (type: StructureType, mineKind?: number, mode?: S
 
 /** The buildings Frontier raises, by Frontier's names: its barracks trains knights, its hut houses workers. */
 const FRONTIER_BUILDINGS: Partial<Record<BuildingType, string>> = {
+  [BuildingType.Storehouse]: "Storeroom",
   [BuildingType.ResourceWheat]: "Farm",
   [BuildingType.ResourceLabor]: "Workshop",
   [BuildingType.ResourceKnightT1]: "Barracks",

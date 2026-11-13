@@ -31,6 +31,50 @@ function scaled(value: number, precision = RESOURCE_PRECISION): bigint {
   return BigInt(amount);
 }
 
+function buildDeep(preset: ReturnType<typeof nativePresetForId>) {
+  const deep = preset.deep;
+  if (deep === null) return new CairoOption(CairoOptionVariant.None);
+  if (!deep || preset.dayUnitSeconds === 0) throw new Error("Deep requires explicit expedition rules");
+  const sites = [deep.foundation, deep.quarry, deep.altar];
+  if (
+    preset.spacing < presetRule.DEEP_MAP_SIZE * 2 ||
+    sites.some(
+      ({ x, y }) =>
+        !Number.isSafeInteger(x) ||
+        !Number.isSafeInteger(y) ||
+        x < 0 ||
+        y < 0 ||
+        x >= presetRule.DEEP_MAP_SIZE ||
+        y >= presetRule.DEEP_MAP_SIZE ||
+        (x === presetRule.DEEP_MAP_SIZE / 2 && y === presetRule.DEEP_ARRIVAL_Y),
+    ) ||
+    new Set(sites.map(({ x, y }) => `${x}:${y}`)).size !== presetRule.DEEP_SITE_COUNT ||
+    !Number.isSafeInteger(deep.beastCount) ||
+    deep.beastCount <= 0 ||
+    !Number.isSafeInteger(deep.lossPerTick) ||
+    deep.lossPerTick <= 0 ||
+    !Number.isSafeInteger(deep.quarryPerTick) ||
+    deep.quarryPerTick <= 0 ||
+    !Number.isSafeInteger(deep.altarPerTick) ||
+    deep.altarPerTick <= 0 ||
+    !Number.isSafeInteger(deep.altarThreshold) ||
+    deep.altarThreshold <= 0 ||
+    deep.altarThreshold > 0xffff_ffff ||
+    deep.altarThreshold % deep.altarPerTick !== 0
+  )
+    throw new Error("Invalid Deep sites");
+  return new CairoOption(CairoOptionVariant.Some, {
+    foundation: { alt: false, x: deep.foundation.x, y: deep.foundation.y },
+    quarry: { alt: false, x: deep.quarry.x, y: deep.quarry.y },
+    altar: { alt: false, x: deep.altar.x, y: deep.altar.y },
+    beast_count: scaled(deep.beastCount),
+    loss_per_tick: scaled(deep.lossPerTick),
+    quarry_per_tick: scaled(deep.quarryPerTick),
+    altar_per_tick: deep.altarPerTick,
+    altar_threshold: deep.altarThreshold,
+  });
+}
+
 function amounts(resources: Array<{ resource: number; amount: number }>, precision: number) {
   return resources.map(({ resource, amount }) => ({ resource_type: resource, amount: scaled(amount, precision) }));
 }
@@ -40,8 +84,6 @@ function hasNoProduction(resource: number) {
 }
 
 function buildRules(config: Config, preset: ReturnType<typeof nativePresetForId>) {
-  const faith = config.faith;
-  if (!faith) throw new Error("Native faith config is required");
   const cooldownSeconds = config.battle.cooldownSeconds;
   if (!Number.isSafeInteger(cooldownSeconds) || cooldownSeconds < 0 || cooldownSeconds > 0xffff_ffff)
     throw new Error("Native battle cooldownSeconds must be an explicit u32");
@@ -50,7 +92,6 @@ function buildRules(config: Config, preset: ReturnType<typeof nativePresetForId>
     battle_config: {
       regular_immunity_ticks: config.battle.regularImmunityTicks,
       village_immunity_ticks: config.battle.villageImmunityTicks,
-      village_raid_immunity_ticks: config.battle.villageRaidImmunityTicks,
       cooldown_seconds: cooldownSeconds,
     },
     map_config: buildMapConfig(config),
@@ -88,7 +129,6 @@ function buildRules(config: Config, preset: ReturnType<typeof nativePresetForId>
     day_unit_seconds: seasonDayUnitSeconds(preset),
     mode_rules: preset.modeRules,
     entry_rule: preset.entryRule,
-    faith_enabled: faith.enabled,
     speed_config: {
       donkey_sec_per_km: config.speed.donkey_for_resources,
       donkey_sec_per_km_troops: config.speed.donkey_for_troops,
@@ -175,8 +215,6 @@ function buildMines(config: Config) {
 const buildingCategoryCount = nativeResearchConstants.HEARTH;
 
 function buildStructures(config: Config, preset: ReturnType<typeof nativePresetForId>) {
-  const faith = config.faith;
-  if (!faith) throw new Error("Native faith config is required");
   const precision = config.resources.resourcePrecision;
   const board = preset.board;
   return {
@@ -184,6 +222,15 @@ function buildStructures(config: Config, preset: ReturnType<typeof nativePresetF
       board === null
         ? new CairoOption(CairoOptionVariant.None)
         : new CairoOption(CairoOptionVariant.Some, {
+            town:
+              board.town === null
+                ? new CairoOption(CairoOptionVariant.None)
+                : new CairoOption(CairoOptionVariant.Some, {
+                    settlement_labor_cap: board.town.laborStoreCaps[0],
+                    city_labor_cap: board.town.laborStoreCaps[1],
+                    kingdom_labor_cap: board.town.laborStoreCaps[2],
+                    empire_labor_cap: board.town.laborStoreCaps[3],
+                  }),
             demolition_refund_bps: board.demolitionRefundBps,
             workshop_rate: scaled(board.workshopRate, precision),
             output_step_bps: board.outputStepBps,
@@ -230,12 +277,6 @@ function buildStructures(config: Config, preset: ReturnType<typeof nativePresetF
       }),
       labor_rate: scaled(config.campLaborPerSecond, precision),
     },
-    faith: {
-      wonder_rate: faith.wonder_base_fp_per_sec,
-      realm_rate: faith.realm_fp_per_sec,
-      village_rate: faith.village_fp_per_sec,
-      owner_share_bps: faith.owner_share_percent * 100,
-    },
     upgrade_limits: { realm_max: config.realmMaxLevel - 1, village_max: config.villageMaxLevel - 1 },
     upgrades: Array.from({ length: Math.max(config.realmMaxLevel, config.villageMaxLevel) - 1 }, (_, index) => ({
       costs: amounts(required(config.realmUpgradeCosts, index + 1, "upgrade cost"), precision),
@@ -247,6 +288,8 @@ function buildSettlement(config: Config, preset: ReturnType<typeof nativePresetF
   return {
     mode: new CairoCustomEnum({ [preset.settlementMode]: {} }),
     spacing: preset.spacing,
+    order_aspects: [...preset.orderAspects],
+    starting_armies: preset.startingArmyCount,
     depths: preset.depths.map((depth) => ({
       reveal_percent: depth.revealPercent,
       site_guard_lower: depth.siteGuardLower,
@@ -288,8 +331,8 @@ function buildEconomy(
   tokens: Array<{ resource_type: number; token: string }>,
 ) {
   const chests = preset.chests;
-  if (chests === undefined || (chests !== null) !== (preset.dayUnitSeconds !== 0))
-    throw new Error("Explicit chest rules are required for expedition presets only");
+  if (chests === undefined || (chests !== null && preset.dayUnitSeconds === 0))
+    throw new Error("Chest rules must be explicit and require expedition days");
   if (chests !== null) {
     if (
       !Number.isInteger(chests.poolBps) ||
@@ -330,9 +373,25 @@ function buildEconomy(
     throw new Error("Progression XP values must be positive u32 integers");
   if (progression && progression.revealXp + 3 * progression.revealXpPerDepth > 0xffff_ffff)
     throw new Error("Depth reveal XP exceeds u32");
+  const banes = preset.worldBanes;
+  if (
+    banes &&
+    (preset.dailyQuest === null ||
+      [banes.chanceStep, banes.quorumPercent, banes.staminaPercent, banes.productionPercent].some(
+        (value) => !Number.isInteger(value) || value <= 0 || value > 100,
+      ) ||
+      !Number.isInteger(banes.beastPercent) ||
+      banes.beastPercent < 100 ||
+      banes.beastPercent > 65_535 ||
+      banes.questCounts.length !== 12 ||
+      banes.questCounts.some((value) => !Number.isSafeInteger(value) || value <= 0) ||
+      preset.relics.some((relic) => (relic.rate_bps * banes.staminaPercent) % 100 !== 0))
+  )
+    throw new Error("Invalid world bane rules");
   const labor = preset.labor;
   if (
-    (labor !== null) !== (preset.dayUnitSeconds !== 0) ||
+    (labor !== null || preset.dailyQuest !== null) !== (preset.dayUnitSeconds !== 0) ||
+    (labor !== null && preset.dailyQuest !== null) ||
     (labor !== null &&
       (!Number.isSafeInteger(labor.amount) ||
         labor.amount <= 0 ||
@@ -342,6 +401,26 @@ function buildEconomy(
   )
     throw new Error("Invalid Realm labor rules");
   return {
+    banes:
+      preset.worldBanes === null
+        ? new CairoOption(CairoOptionVariant.None)
+        : new CairoOption(CairoOptionVariant.Some, {
+            chance_step: preset.worldBanes.chanceStep,
+            quorum_percent: preset.worldBanes.quorumPercent,
+            beast_percent: preset.worldBanes.beastPercent,
+            stamina_percent: preset.worldBanes.staminaPercent,
+            production_percent: preset.worldBanes.productionPercent,
+            quest_counts: [...preset.worldBanes.questCounts],
+          }),
+    quests:
+      preset.dailyQuest === null
+        ? new CairoOption(CairoOptionVariant.None)
+        : new CairoOption(CairoOptionVariant.Some, {
+            base_counts: [...preset.dailyQuest.baseCounts],
+            labor: preset.dailyQuest.labor,
+            essence: preset.dailyQuest.essence,
+            bonus_percent: preset.dailyQuest.bonusPercent,
+          }),
     labor:
       preset.labor === null
         ? new CairoOption(CairoOptionVariant.None)
@@ -351,6 +430,8 @@ function buildEconomy(
             golden_amount: BigInt(preset.labor.goldenAmount),
             golden_essence: BigInt(preset.labor.goldenEssence),
           }),
+    race: buildRace(preset),
+    deep: buildDeep(preset),
     discovery: buildDiscovery(preset),
     progression:
       progression === null
@@ -366,13 +447,6 @@ function buildEconomy(
             pool_bps: chests.poolBps,
             top_n: chests.topN,
           }),
-    trade: { max_count: config.trade.maxCount },
-    banks: {
-      lp_fee_num: config.banks.lpFeesNumerator,
-      lp_fee_denom: config.banks.lpFeesDenominator,
-      owner_fee_num: config.banks.ownerFeesNumerator,
-      owner_fee_denom: config.banks.ownerFeesDenominator,
-    },
     hyperstructures: {
       initialize_shards: scaled(config.hyperstructures.hyperstructureInitializationShardsCost.amount),
       resources: config.hyperstructures.hyperstructureConstructionCost.map((resource) => ({
@@ -496,16 +570,6 @@ function validateRequiredNativeConfig(config: Config): void {
       throw new Error(`Invalid Bitcoin ${field}`);
   }
   if (config.bitcoin.ownerCutBps > 10000) throw new Error("Invalid Bitcoin owner cut");
-  if (!config.faith || typeof config.faith.enabled !== "boolean") throw new Error("Native faith config is required");
-  for (const field of [
-    "wonder_base_fp_per_sec",
-    "realm_fp_per_sec",
-    "village_fp_per_sec",
-    "owner_share_percent",
-  ] as const) {
-    if (!Number.isSafeInteger(config.faith[field]) || config.faith[field] < 0)
-      throw new Error(`Native faith ${field} is required and must be nonnegative`);
-  }
   if (!Number.isSafeInteger(config.artificer?.research_cost_for_relic) || config.artificer!.research_cost_for_relic < 0)
     throw new Error("Native research cost is required and must be nonnegative");
 }
@@ -515,7 +579,7 @@ function resolveBridgeTokens(config: Config, resources: readonly number[]) {
   const addresses = config.setup?.addresses;
   const configured = addresses?.resources;
   if (!configured || typeof configured !== "object" || Array.isArray(configured))
-    throw new Error("Eternum bridge resource tokens are required");
+    throw new Error("Bridge resource tokens are required");
   const tokens = [
     ...Object.values(configured!).map(([resource, token]) => ({
       resource_type: Number(resource),
@@ -523,7 +587,7 @@ function resolveBridgeTokens(config: Config, resources: readonly number[]) {
     })),
     { resource_type: ResourcesIds.Lords, token: addresses!.lords },
   ];
-  if (!tokens.length) throw new Error("Eternum bridge resource tokens are required");
+  if (!tokens.length) throw new Error("Bridge resource tokens are required");
   const seen = new Set<number>();
   for (const { resource_type, token } of tokens) {
     if (!Number.isSafeInteger(resource_type) || resource_type < 1 || resource_type > 58 || seen.has(resource_type))
@@ -570,5 +634,25 @@ function buildDiscovery(preset: ReturnType<typeof nativePresetForId>) {
     shrine_bps: rules.shrineBps,
     well_bps: rules.wellBps,
     empty_reveal_limit: rules.emptyRevealLimit,
+  });
+}
+
+function buildRace(preset: ReturnType<typeof nativePresetForId>) {
+  const race = preset.race;
+  if (!race) return new CairoOption(CairoOptionVariant.None);
+  const coord = ([x, y]: readonly [number, number]) => ({ alt: false, x, y });
+  return new CairoOption(CairoOptionVariant.Some, {
+    season_days: BigInt(race.seasonDays),
+    glory_per_tick: BigInt(race.gloryPerTick),
+    height_per_tick: race.heightPerTick,
+    stage_height: race.stageHeight,
+    clear_mist_percent: race.clearMistPercent,
+    second_wind_percent: race.secondWindPercent,
+    pale_moon_percent: race.paleMoonPercent,
+    spoils_percent: race.spoilsPercent,
+    first: coord(race.positions[0]),
+    second: coord(race.positions[1]),
+    third: coord(race.positions[2]),
+    fourth: coord(race.positions[3]),
   });
 }

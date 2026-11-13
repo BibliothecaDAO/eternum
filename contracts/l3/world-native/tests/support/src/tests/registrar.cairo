@@ -19,7 +19,7 @@ pub use crate::registrar::{
     CreateGameParams, IRegistrarDispatcher, IRegistrarDispatcherTrait, IRegistrarSafeDispatcher,
     IRegistrarSafeDispatcherTrait, RosterPlayer,
 };
-pub use crate::relics::{ChestTiers, IRelicsDispatcher, IRelicsDispatcherTrait, SiteChest};
+pub use crate::relics::{ChestTiers, IRelicsDispatcher, IRelicsDispatcherTrait};
 pub use crate::resources::{
     IResourceOperationsDispatcher, IResourceOperationsDispatcherTrait, ResourceKey, ResourceRule, ResourceSlot,
 };
@@ -61,12 +61,12 @@ pub fn definition(blitz: bool) -> PresetDefinition {
             mode_rules: if blitz {
                 super::play_fixture::BLITZ_RULES
             } else {
-                super::play_fixture::ETERNUM_RULES
+                super::play_fixture::TEST_RULES
             },
             command_mask: if blitz {
                 super::play_fixture::BLITZ_COMMAND_MASK
             } else {
-                super::play_fixture::ETERNUM_COMMAND_MASK
+                super::play_fixture::BLITZ_COMMAND_MASK
             },
             entry_rule: if blitz {
                 crate::rules::ENTRY_ROSTER
@@ -86,13 +86,12 @@ pub fn definition(blitz: bool) -> PresetDefinition {
             board: None,
             buildings: super::building_commands::rules(),
             camps: crate::camps::CampRules { resources: array![].span(), labor_rate: 5 },
-            faith: crate::faith::FaithRules {
-                wonder_rate: 500, realm_rate: 100, village_rate: 10, owner_share_bps: 3000,
-            },
             upgrade_limits: crate::upgrades::UpgradeLimits { realm_max: 1, village_max: 1 },
             upgrades: array![crate::upgrades::UpgradeRecipe { costs: array![].span() }].span(),
         },
         settlement: SettlementPreset {
+            order_aspects: array![].span(),
+            starting_armies: 0,
             mode: if blitz {
                 SettlementMode::Triple
             } else {
@@ -115,13 +114,13 @@ pub fn definition(blitz: bool) -> PresetDefinition {
             },
         },
         economy: EconomyPreset {
+            quests: None,
+            banes: None,
+            race: None,
+            deep: None,
             labor: None,
             progression: None,
             discovery: None,
-            trade: crate::trade::TradeRules { max_count: 2 },
-            banks: crate::market::BankRules {
-                lp_fee_num: 3, lp_fee_denom: 1000, owner_fee_num: 1, owner_fee_denom: 100,
-            },
             hyperstructures: if blitz {
                 crate::hyperstructures::HyperstructureRules { initialize_shards: 0, resources: array![].span() }
             } else {
@@ -215,13 +214,13 @@ pub fn day_start(d: super::Deployment, game_id: u32, index: u64) -> u64 {
     }
     day.start
 }
-pub /// Open entry draws starting troops from the biome table, which a fixed-roster definition leaves empty.
- fn open_entry(ref preset: PresetDefinition) {
+/// Open entry draws starting troops from the biome table, which a fixed-roster definition leaves empty.
+pub fn open_entry(ref preset: PresetDefinition) {
     preset.rules.entry_rule = crate::rules::ENTRY_OPEN;
     preset.settlement.realms = super::settlement::grants_for(crate::rules::ENTRY_OPEN);
 }
-pub // The expedition preset uses seeded day bags.
- fn expedition_preset() -> PresetDefinition {
+// The expedition preset uses seeded day bags.
+pub fn expedition_preset() -> PresetDefinition {
     let mut preset = definition(true);
     open_entry(ref preset);
     preset.rules.command_mask = preset.rules.command_mask
@@ -229,7 +228,7 @@ pub // The expedition preset uses seeded day bags.
     preset.rules.day_unit_seconds = DAY_UNIT;
     preset.rules.tick_config.armies_tick_in_seconds = 60;
     preset.economy.discovery = Some(super::preset_projection::frontier_discovery_rules());
-    let (_, frontier) = super::preset_projection::current_definition("frontier");
+    let (_, frontier) = super::preset_projection::current_definition("frontier-check");
     preset.economy.chests = frontier.economy.chests;
     preset.economy.labor = frontier.economy.labor;
     preset.economy.relics = array![].span();
@@ -266,7 +265,10 @@ pub fn expedition_home(d: super::Deployment) -> (u32, PresetDefinition, u8) {
     );
     assert!(
         execute_in_game(
-            d, game_id, Command::SettleSeason(crate::realms::SettleSeason { selected_realm: Some(1) }), 350,
+            d,
+            game_id,
+            Command::SettleSeason(crate::realms::SettleSeason { selected_realm: Some(1), aspect: None }),
+            350,
         ),
     );
     let guards = IGuardsDispatcher { contract_address: d.games };
@@ -321,8 +323,8 @@ pub fn transfer(source: ExplorerKey, target: ExplorerKey, troops: u128) -> Comma
         ),
     )
 }
-pub // A free home-ring neighbour and the direction to it.
-fn free_ring_neighbor(
+// A free home-ring neighbour and the direction to it.
+pub fn free_ring_neighbor(
     map: IMapLogicDispatcher, game_id: u32, from: crate::troops::Coord, site: crate::troops::Coord, spacing: u32,
 ) -> (u8, crate::troops::Coord) {
     let mut found = Option::None;
@@ -349,19 +351,19 @@ pub fn assert_expedition_capture(depth: u8) {
 pub fn assert_capture_with_reveal(depth: u8, count: u128, tier: crate::troops::TroopTier, reveal_amount: u128) {
     assert_capture_at(depth, count, tier, reveal_amount, false, None);
 }
-pub // Search roll inputs, never the gameplay clock. Every chosen input is passed to the action unchanged.
-fn discovery_root(
+// Search roll inputs, never the gameplay clock. Every chosen input is passed to the action unchanged.
+pub fn discovery_root(
     game_id: u32,
     rules: crate::expeditions::FrontierDiscoveryRules,
     empty_reveals: u8,
-    chest: Option<SiteChest>,
+    relic: Option<crate::army_relics::ArmyRelic>,
     expected: crate::discovery::Discovery,
 ) -> u256 {
     for sample in 0_u64..10000 {
         let raw_root: u256 = sample.into();
         let mut root = raw_root;
         let seed = crate::random::game_root(ref root, game_id);
-        if crate::discovery::frontier(rules, 0, 0, 0, empty_reveals, chest, seed) == expected {
+        if crate::discovery::frontier(rules, 0, 0, 0, 100, empty_reveals, relic, seed) == expected {
             return raw_root;
         }
     }
@@ -377,8 +379,8 @@ pub fn explore_with_root(d: super::Deployment, game_id: u32, explorer_id: u64, r
         timestamp,
     )
 }
-pub // Settles on day 1's first second and captures in its first minute, or with `late` in its last.
-fn assert_capture_at(
+// Settles on day 1's first second and captures in its first minute, or with `late` in its last.
+pub fn assert_capture_at(
     depth: u8, count: u128, tier: crate::troops::TroopTier, reveal_amount: u128, late: bool, labor_room: Option<u128>,
 ) {
     let d = setup();
@@ -403,7 +405,7 @@ fn assert_capture_at(
     open_entry(ref preset);
     preset.rules.day_unit_seconds = FRONTIER_DAY_UNIT;
     preset.economy.discovery = Some(super::preset_projection::frontier_discovery_rules());
-    let (_, frontier) = super::preset_projection::current_definition("frontier");
+    let (_, frontier) = super::preset_projection::current_definition("frontier-check");
     if labor_room.is_some() {
         preset.structures.board = frontier.structures.board;
         preset.structures.research = frontier.structures.research;
@@ -503,7 +505,10 @@ fn assert_capture_at(
     super::play_fixture::reserve_fixture_homes(d.games, game_id, d.actor);
     assert!(
         execute_in_game(
-            d, game_id, Command::SettleSeason(crate::realms::SettleSeason { selected_realm: Some(1) }), opening,
+            d,
+            game_id,
+            Command::SettleSeason(crate::realms::SettleSeason { selected_realm: Some(1), aspect: None }),
+            opening,
         ),
     );
     let home = ResourceKey { game_id, entity_id: 1 };
@@ -626,7 +631,9 @@ fn assert_capture_at(
     let camp_reward = Some(
         crate::resources::ResourceAmount { resource_type: crate::resources::LABOR, amount: camp_credit },
     );
-    let attack = Command::BattleGuard(crate::commands::Battle { attacker_id: explorer_id, defender_id: camp_id });
+    let attack = Command::BattleGuard(
+        crate::commands::Battle { attacker_id: explorer_id, defender_id: camp_id, relic_slot: None },
+    );
     let mut payout_events = snforge_std::spy_events();
     assert!(execute_in_game(d, game_id, attack, capture_at));
     assert_site_removed(d, camp);
@@ -698,7 +705,9 @@ fn assert_capture_at(
         execute_in_game(
             d,
             game_id,
-            Command::BattleGuard(crate::commands::Battle { attacker_id: explorer_id, defender_id: mine_id }),
+            Command::BattleGuard(
+                crate::commands::Battle { attacker_id: explorer_id, defender_id: mine_id, relic_slot: None },
+            ),
             capture_at + 1,
         ),
     );
@@ -761,7 +770,9 @@ fn assert_capture_at(
                     if payout.site_id == camp_id {
                         camp_reward
                     } else {
-                        crate::expeditions::site_reward(category, expected, depth)
+                        crate::expeditions::site_reward(
+                            crate::expeditions::ExpeditionSite { category: category, ..expected }, depth,
+                        )
                     },
                 );
             }
@@ -792,38 +803,21 @@ fn assert_capture_at(
         assert_eq!(retained, Some(site_after));
     }
 }
-pub fn setup_frontier_chests() -> (super::Deployment, u32, ExplorerKey) {
-    setup_frontier_chests_with_rules(None)
+pub fn setup_frontier_relics() -> (super::Deployment, u32, ExplorerKey) {
+    setup_frontier_relics_with_rules(None)
 }
-pub fn setup_frontier_chests_with_rules(
+pub fn setup_frontier_relics_with_rules(
     discovery: Option<crate::expeditions::FrontierDiscoveryRules>,
 ) -> (super::Deployment, u32, ExplorerKey) {
-    let (_, frontier) = super::preset_projection::current_definition("frontier");
-    let result = setup_frontier_chests_with_preset(discovery, frontier, None);
-    let (d, game_id, _) = result;
-    publish_test_pool(d, game_id, 1000000, 350);
+    let (_, frontier) = super::preset_projection::current_definition("frontier-check");
+    let result = setup_frontier_relics_with_preset(discovery, frontier, None);
     result
 }
-pub fn setup_unfunded_frontier_chests() -> (super::Deployment, u32, ExplorerKey) {
-    let (_, frontier) = super::preset_projection::current_definition("frontier");
-    setup_frontier_chests_with_preset(None, frontier, None)
-}
-pub fn publish_test_pool(d: super::Deployment, game_id: u32, amount: u128, timestamp: u64) {
-    super::entry::set_operator(d, super::authority());
-    start_cheat_caller_address(d.games, super::authority());
-    snforge_std::start_cheat_block_timestamp(d.games, timestamp);
-    crate::entry::ILedgerOperatorDispatcherTrait::publish_frontier_pool(
-        crate::entry::ILedgerOperatorDispatcher { contract_address: d.games }, game_id, amount, 0,
-    );
-    snforge_std::stop_cheat_block_timestamp(d.games);
-    stop_cheat_caller_address(d.games);
-}
-pub fn setup_frontier_chests_with_preset(
+pub fn setup_frontier_relics_with_preset(
     discovery: Option<crate::expeditions::FrontierDiscoveryRules>,
     frontier: PresetDefinition,
     board: Option<crate::buildings::BoardRules>,
 ) -> (super::Deployment, u32, ExplorerKey) {
-    let chests = frontier.economy.chests.unwrap();
     let d = setup();
     let mut preset = definition(true);
     preset.structures.board = board;
@@ -858,7 +852,6 @@ pub fn setup_frontier_chests_with_preset(
     preset.rules.mode_rules = DISCOVER_CAMPS
         | crate::rules::UNOWNED_TARGETS
         | HOME_REWARDS
-        | DISCOVER_CHESTS
         | crate::rules::REVEAL_SUPPLIES
         | crate::rules::DEPTH_CONTENTS;
     preset.exploration = array![].span();
@@ -898,7 +891,7 @@ pub fn setup_frontier_chests_with_preset(
             );
     }
     preset.settlement.depths = depths.span();
-    preset.economy.chests = Some(chests);
+    preset.economy.chests = None;
     preset.economy.labor = frontier.economy.labor;
     preset.economy.relics = array![].span();
     if let Some(discovery) = discovery {
@@ -920,7 +913,10 @@ pub fn setup_frontier_chests_with_preset(
     super::play_fixture::reserve_fixture_homes(d.games, game_id, d.actor);
     assert!(
         execute_in_game(
-            d, game_id, Command::SettleSeason(crate::realms::SettleSeason { selected_realm: Some(1) }), 350,
+            d,
+            game_id,
+            Command::SettleSeason(crate::realms::SettleSeason { selected_realm: Some(1), aspect: None }),
+            350,
         ),
     );
     let home = ResourceKey { game_id, entity_id: 1 };
@@ -945,54 +941,22 @@ pub fn setup_frontier_chests_with_preset(
     let explorer_id = *structures.home_armies(home).at(0);
     (d, game_id, ExplorerKey { game_id, explorer_id })
 }
-pub fn assert_zero_pool_never_funds_a_ruin_or_payout_over_a_day() {
-    let (_, frontier) = super::preset_projection::current_definition("frontier");
-    let rules = ruin_discovery_rules();
-    let (d, game_id, key) = setup_frontier_chests_with_preset(Some(rules), frontier, None);
-    let army = strong_frontier_army(d, game_id, key);
-    let (ruin, _) = reveal_ruin(d, key, rules, 360);
-    let budget = IRelicsDispatcher { contract_address: d.games }.lords_budget(game_id).unwrap();
-    assert_eq!((budget.pool, budget.pool_left, budget.open), (0, 0, 0));
-    let before = GameState { contract_address: d.games }.resolved_explorer(key).unwrap();
-    let mut refused = snforge_std::spy_events();
-    assert!(
-        !execute_in_game(
-            d,
-            game_id,
-            Command::BattleGuard(crate::commands::Battle { attacker_id: key.explorer_id, defender_id: ruin.entity_id }),
-            361,
-        ),
-    );
-    assert_eq!(super::play_fixture::rejection(ref refused, d.games).reason, "day's LORDS budget cannot fund this ruin");
-    assert_eq!(GameState { contract_address: d.games }.resolved_explorer(key).unwrap(), before);
-    assert!(IStructureOperationsDispatcher { contract_address: d.games }.structure(ruin).is_some());
-    assert_eq!(
-        IResourceOperationsDispatcher { contract_address: d.games }
-            .resource_balance(ResourceSlot { game_id, entity_id: army.owner, resource_type: crate::resources::LORDS }),
-        0,
-    );
+pub fn any_relic() -> crate::army_relics::ArmyRelic {
+    RELIC
 }
-pub // Any chest a draw can carry; its tier and amount never change the draw.
- fn any_chest() -> SiteChest {
-    SiteChest { tier: 0, amount: 50, reservation_day: 0 }
-}
-pub const CHEST: SiteChest = SiteChest { tier: 3, amount: 500, reservation_day: 0 };
+pub const RELIC: crate::army_relics::ArmyRelic = crate::army_relics::ArmyRelic {
+    kind: crate::army_relics::RelicKind::Blade, rank: 1,
+};
 pub fn strong_frontier_army(d: super::Deployment, game_id: u32, key: ExplorerKey) -> crate::troops::ExplorerTroops {
+    assert_eq!(key.game_id, game_id);
     let mut army = GameState { contract_address: d.games }.resolved_explorer(key).unwrap();
     army.troops.count = 100000 * RESOURCE_PRECISION;
     super::resource_commands::set_explorer_fixture(d.games, key, army);
-    start_cheat_caller_address(d.games, d.games);
-    IResourceOperationsDispatcher { contract_address: d.games }
-        .change_explorer_capacity(
-            ResourceKey { game_id, entity_id: key.explorer_id },
-            99999 * RESOURCE_PRECISION,
-            true,
-            crate::commands::resource_context(crate::tests::context(d.games, game_id)),
-        );
-    stop_cheat_caller_address(d.games);
     army
 }
-pub fn place_ruin(d: super::Deployment, game_id: u32, coord: crate::troops::Coord, chest: SiteChest) -> ResourceKey {
+pub fn place_ruin(
+    d: super::Deployment, game_id: u32, coord: crate::troops::Coord, relic: crate::army_relics::ArmyRelic,
+) -> ResourceKey {
     let context = crate::commands::ExecutionContext { timestamp: 360, ..crate::tests::context(d.games, game_id) };
     start_cheat_caller_address(d.games, d.games);
     let site = IStructureOperationsDispatcher { contract_address: d.games }
@@ -1000,7 +964,7 @@ pub fn place_ruin(d: super::Deployment, game_id: u32, coord: crate::troops::Coor
             game_id,
             1,
             coord,
-            crate::discovery::Discovery::Ruin(chest),
+            crate::discovery::Discovery::Ruin(relic),
             123,
             360,
             crate::commands::action_context(context),
@@ -1017,7 +981,7 @@ pub fn reveal_ruin(
     d: super::Deployment, key: ExplorerKey, rules: crate::expeditions::FrontierDiscoveryRules, timestamp: u64,
 ) -> (ResourceKey, u8) {
     let army = GameState { contract_address: d.games }.resolved_explorer(key).unwrap();
-    let root = discovery_root(key.game_id, rules, 0, Some(any_chest()), crate::discovery::Discovery::Ruin(any_chest()));
+    let root = discovery_root(key.game_id, rules, 0, Some(any_relic()), crate::discovery::Discovery::Ruin(any_relic()));
     for direction in 0_u8..6 {
         let tile = crate::geometry::tile_key(key.game_id, crate::geometry::neighbor(army.coord, direction));
         let unseen = snforge_std::interact_with_state(d.games, || crate::logic::map::tile(tile).is_none());
@@ -1064,7 +1028,7 @@ pub fn assert_site_removed(d: super::Deployment, key: ResourceKey) {
 }
 
 pub fn setup_open_frontier() -> (super::Deployment, u32) {
-    setup_open_frontier_preset("frontier", 1)
+    setup_open_frontier_preset("frontier-check", 1)
 }
 
 pub fn setup_open_frontier_preset(name: ByteArray, bags: u64) -> (super::Deployment, u32) {
@@ -1072,18 +1036,33 @@ pub fn setup_open_frontier_preset(name: ByteArray, bags: u64) -> (super::Deploym
     create_open_frontier(preset, Into::<u32, u64>::into(preset.rules.day_unit_seconds) * 20 * bags)
 }
 
-pub fn setup_open_frontier_duration(name: ByteArray, duration: u64) -> (super::Deployment, u32) {
-    let (_, preset) = super::preset_projection::current_definition(name);
-    create_open_frontier(preset, duration)
+pub fn labor_home_definition(name: ByteArray) -> PresetDefinition {
+    let (_, mut preset) = super::preset_projection::current_definition(name);
+    preset.economy.chests = None;
+    preset.rules.mode_rules = preset.rules.mode_rules & (0xffffffff - crate::rules::DISCOVER_CHESTS);
+    preset
 }
 
-fn create_open_frontier(preset: PresetDefinition, duration: u64) -> (super::Deployment, u32) {
+pub fn setup_labor_home_game(name: ByteArray, bags: u64) -> (super::Deployment, u32) {
+    let preset = labor_home_definition(name);
+    create_open_frontier(preset, Into::<u32, u64>::into(preset.rules.day_unit_seconds) * 20 * bags)
+}
+
+pub fn setup_labor_home_duration(name: ByteArray, duration: u64) -> (super::Deployment, u32) {
+    create_open_frontier(labor_home_definition(name), duration)
+}
+
+pub fn create_open_frontier(preset: PresetDefinition, duration: u64) -> (super::Deployment, u32) {
     let d = setup();
     registry(d).register_preset(1, preset);
     let game_id = registry(d)
         .create_game(
             CreateGameParams { start_main_at: 360, end_grace_seconds: 0, duration_seconds: duration, ..params(false) },
         );
+    if preset.economy.race.is_some() {
+        initialize_race_catalogue(d);
+        return (d, game_id);
+    }
     snforge_std::interact_with_state(
         d.games,
         || {
@@ -1095,6 +1074,23 @@ fn create_open_frontier(preset: PresetDefinition, duration: u64) -> (super::Depl
         },
     );
     (d, game_id)
+}
+
+fn initialize_race_catalogue(d: super::Deployment) {
+    start_cheat_caller_address(d.games, super::authority());
+    let mut first = 0_u32;
+    while first < crate::realms::CANONICAL_REALM_COUNT {
+        let end = core::cmp::min(first + 128, crate::realms::CANONICAL_REALM_COUNT);
+        let mut traits = array![];
+        for index in first..end {
+            traits.append(0x4000001 + (index % 16) * 0x400000);
+        }
+        crate::realms::ISeasonRealmsDispatcherTrait::initialize_realm_traits(
+            crate::realms::ISeasonRealmsDispatcher { contract_address: d.games }, first + 1, traits.span(),
+        );
+        first = end;
+    }
+    stop_cheat_caller_address(d.games);
 }
 
 

@@ -16,7 +16,6 @@ it.each([
   [{ ...devcon, season_number: null }, "Frontier"],
   [blitz, "Blitz"],
   [{ mode: "eternum" }, "Eternum"],
-  [{ mode: "duel" }, "Duel"],
   [{ mode: null }, "Realms"],
   [undefined, "Realms"],
 ] as const)("names %o as players do: %s", (game, name) => {

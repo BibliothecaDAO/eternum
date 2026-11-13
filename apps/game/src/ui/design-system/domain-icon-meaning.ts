@@ -1,19 +1,35 @@
 import { homeIcon, homeKind } from "./home-icons";
 import { readRealmSkin, type RealmSkin } from "@/three/structures/realm-skins";
 import type { FrontierSpecies } from "@/three/structures/frontier-beast";
-import { BuildingType, getProducedResource, StructureType, type StructureNamingMode } from "@bibliothecadao/types";
-import { frontierBeast, isGuardedSite, nativeGameModeOf, readFrontierBeast } from "@bibliothecadao/eternum";
+import {
+  baneQuests,
+  BuildingType,
+  dailyQuests,
+  getProducedResource,
+  StructureType,
+  type StructureNamingMode,
+  worldBanes,
+} from "@bibliothecadao/types";
+import {
+  frontierBeast,
+  isGuardedSite,
+  nativeGameModeOf,
+  readFrontierBeast,
+  type TriumphStage,
+} from "@bibliothecadao/eternum";
 import { safeInteger, type NativeFactStore } from "@bibliothecadao/eternum/game-client";
-import type { NativeRows, NativeStoryVariant } from "../../../../../contracts/l3/world-native/schema/client.gen";
+import {
+  nativeBaneConstants as bane,
+  nativeQuestConstants as quest,
+  nativeRuleConstants as rule,
+  type NativeRows,
+  type NativeStoryVariant,
+} from "../../../../../contracts/l3/world-native/schema/client.gen";
 import { iconDefinition, type IconMeaning, resourceMeaning } from "./icon-meaning";
 
-/** Every story the game can emit (the schema's story variants, a fight and a raid), by the act it tells. */
+/** Every story the game can emit (the schema's story variants and a fight), by the act it tells. */
 const storyMeanings = {
   BattleEvent: "attack",
-  RaidEvent: "raid",
-  FaithPointsClaimedStory: "shrine",
-  FaithPledged: "shrine",
-  FaithRemoved: "shrine",
   StructureLevelUpStory: "upgrade",
   RealmCreatedStory: "realm",
   StructureCapturedStory: "flag",
@@ -26,11 +42,6 @@ const storyMeanings = {
   BuildingPlacementStory: "build",
   BuildingPaymentStory: "build",
   BitcoinAwardStory: "bitcoin-mine",
-  TradeCreated: "trade",
-  TradeAccepted: "trade",
-  TradeCancelled: "trade",
-  BankSwap: "swap",
-  BankLiquidity: "bank",
   HyperstructurePoints: "hyperstructure",
   RelicChestOpened: "relics",
   RelicCrafted: "relics",
@@ -49,7 +60,7 @@ const storyMeanings = {
   TierBought: "research",
   SkillPointSpent: "research",
   SiteUsed: "claim",
-} satisfies Record<NativeStoryVariant | "BattleEvent" | "RaidEvent" | "TierBought", IconMeaning>;
+} satisfies Record<NativeStoryVariant | "BattleEvent" | "TierBought", IconMeaning>;
 
 /** A story's painting, by its kind: the one table every Feed, Events and Log row reads. */
 export function storyMeaning(story: string): IconMeaning {
@@ -160,3 +171,39 @@ export function rewardChestMeaning(band?: number, opened = false): IconMeaning {
   if (!Number.isInteger(band) || band < 0 || band > 4) throw new Error(`Unknown reward chest band: ${band}`);
   return `reward-chest-${band}${opened ? "-opened" : ""}` as IconMeaning;
 }
+
+/** A quest's id, as the quest catalog numbers it: a daily quest, or a bane quest that replaces it. */
+export type QuestId = (typeof dailyQuests)[number]["id"] | (typeof baneQuests)[number]["id"];
+
+/** Each quest by what it asks: the beast it hunts, the site it finds, the act it counts, the fight a bane calls for. */
+const questMeanings = {
+  [quest.HUNT]: "beast-cyclops",
+  [quest.CAMPS]: "beast-troll",
+  [quest.RIFTS]: "beast-dark-fey",
+  [quest.RELICS]: "ruin",
+  [quest.VETERANS]: "upgrade",
+  [quest.FINDS]: "explore",
+  [quest.REVEALS]: "map",
+  [quest.STAND]: "defend",
+  [quest.LIGHTS]: "sun",
+  [quest.CULL]: "skull",
+} satisfies Record<QuestId, IconMeaning>;
+export const questMeaning = (quest: QuestId): IconMeaning => questMeanings[quest];
+
+/** Each bane's painting: Blood Moon the moon, Mist Tide the waves, Ash Fall the flame; a rival's the hyperstructure. */
+export const BANE_MEANING = {
+  world: { [bane.BLOOD_MOON]: "moon", [bane.MIST_TIDE]: "waves", [bane.ASH_FALL]: "flame" },
+  team: "hyperstructure",
+} as const satisfies { world: Record<(typeof worldBanes)[number]["id"], IconMeaning>; team: IconMeaning };
+
+/** Glory, the race's one score a member reads (Season 1): the score's painting. */
+export const GLORY_MEANING: IconMeaning = "victory";
+
+/** Each Triumph's painting: the reveal, the stamina bolt, the moon over the beasts, the chest a site pays. */
+const triumphMeanings = {
+  [rule.CLEAR_MIST_STAGE]: "eye",
+  [rule.SECOND_WIND_STAGE]: "stamina",
+  [rule.PALE_MOON_STAGE]: "moon",
+  [rule.SPOILS_STAGE]: "chest",
+} satisfies Record<TriumphStage, IconMeaning>;
+export const triumphMeaning = (stage: TriumphStage): IconMeaning => triumphMeanings[stage];

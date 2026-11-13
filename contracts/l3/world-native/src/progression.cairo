@@ -150,7 +150,7 @@ pub enum XpAward {
 pub trait IArmyProgression<T> {
     fn army_progress(self: @T, key: ExplorerKey) -> Option<ArmyProgress>;
     fn army_progression_rules(self: @T, game_id: u32) -> Option<ArmyProgressionRules>;
-    fn grant_army_xp(ref self: T, key: ExplorerKey, award: XpAward);
+    fn grant_army_xp(ref self: T, key: ExplorerKey, award: XpAward, timestamp: u64);
     fn spend_skill_point(
         ref self: T,
         game_id: u32,
@@ -164,8 +164,12 @@ pub fn initial() -> ArmyProgress {
     Default::default()
 }
 
-pub fn trained(learned: u64) -> ArmyProgress {
-    let scouting = crate::research::tier(learned, crate::research::ROW_SCOUTS_LODGE);
+pub fn trained(learned: u64, category: crate::troops::TroopType) -> ArmyProgress {
+    let scouting = if category == crate::troops::TroopType::Paladin {
+        crate::research::tier(learned, crate::research::ROW_SCOUTS_LODGE)
+    } else {
+        0
+    };
     let mut scouting_kinds: u16 = 0;
     for at in 1_u8..scouting + 1 {
         let kind: u16 = (crate::research::choice(learned, crate::research::ROW_SCOUTS_LODGE, at) + 1).into();
@@ -322,7 +326,10 @@ fn scouting_kind_shift(tier: u8) -> u16 {
     }
 }
 
-pub fn scouting_bonus(progress: ArmyProgress) -> (u32, u32, u32) {
+pub fn scouting_bonus(progress: ArmyProgress, category: crate::troops::TroopType) -> (u32, u32, u32) {
+    if category != crate::troops::TroopType::Paladin {
+        return (0, 0, 0);
+    }
     let mut camp = 0;
     let mut rift = 0;
     let mut sanctuaries = 0;

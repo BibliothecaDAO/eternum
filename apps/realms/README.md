@@ -52,8 +52,11 @@ push contact, notifier interval and account class are code constants. Operators 
 
 ## Shared links
 
-A player's post of a moment (today, a Frontier day from its day-done card) carries the player's own link for that
-moment, `/s/<code>` (`@realms-world/identity`'s `SHARE_KINDS` and `sharePath`). `POST /api/shares` makes it once per
+A player's post of a moment (a Frontier day from its day-done card, or an invite to their Aspect) carries the player's
+own link for that moment, `/s/<code>` (`@realms-world/identity`'s `SHARE_KINDS` and `sharePath`). An invite's moment is
+the Aspect it names, and it is made only for the Aspect its sharer plays for in that game: the Worker reads the game's
+race board on its shard's Herald (`/games/<id>/race`, `server/race-standing.ts`) and refuses another Aspect
+(`not_in_aspect`, 403) or a board that cannot answer (`aspect_unavailable`, 503). `POST /api/shares` makes it once per
 player, kind, game and moment and hands back the same code after; `POST /api/shares/<code>/posted` records that the
 player opened the post. The landing posts `/api/shares/<code>/visit` (public, on the per-client budget), which keeps the
 browser's first visit under its browser id (the same cookie the referral check reads, given at the visit when the
@@ -85,6 +88,9 @@ and the six day totals). No map position, email, wallet address, key or event ti
 control.
 
 - `GET /api/shares` (signed in): the account's `{links, posted, visits, joined, activated}`, its joins settled first.
+- `GET /api/shares/joined` (signed in): the link the account came by (`{kind, chainId, gameId, moment, name}`), its
+  joins settled first; null for an account no link brought. It is for the founding Aspect step to offer an invite's
+  Aspect first; no game screen reads it yet.
 - `GET /api/operator/shares` (operator token): every moment's funnel (`moments`: kind, chain, game, moment and the five
   counts), first visits from others' browsers by the tag their link carried (`firstVisitsByTag`: `x`, `system`, and null
   for none), the 20 sharers who brought the most (`topSharers`), `settledAt` and `unsettledJoins`, the joins whose board

@@ -21,7 +21,6 @@
   "apps/game/src/ui/features/frontier/log/day-line.ts": 1,
   "apps/game/src/ui/features/news-headlines/capture-headline.ts": 1,
   "apps/game/src/ui/features/settlement/construction/building-thumbnail.tsx": 1,
-  "apps/game/src/ui/features/world/components/biome-info-panel.tsx": 1,
   "apps/game/src/ui/features/world/hud/holdings-model.ts": 1,
   "apps/game/src/ui/features/world/hud/use-coach-steps.ts": 1,
   "packages/core/src/automation/build-order.ts": 1,

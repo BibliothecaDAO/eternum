@@ -257,6 +257,18 @@ export const ROOMS: LabRoom[] = [
         inside: Object.values(HUD_INSIDE),
       },
       {
+        title: "Army boons",
+        modes: FRONTIER,
+        views: [
+          view(
+            "Boon sheet",
+            "/lab/boons",
+            "boons",
+            load(() => import("./boons/view"), "BoonSheetLab"),
+          ),
+        ],
+      },
+      {
         title: "App pages",
         views: [
           view(

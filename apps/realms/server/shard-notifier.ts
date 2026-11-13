@@ -5,6 +5,7 @@ import {
   storyEventIdentity,
   type HeraldGameDirectory,
   type HeraldHistoryEvent,
+  type HeraldRaceBoard,
   type HeraldStoryHistoryPage,
   type ShardManifest,
   type StoryEventScope,
@@ -13,27 +14,42 @@ import { dayOf } from "@bibliothecadao/eternum/expeditions";
 import {
   buildArmyRestedNotification,
   buildDayOpen,
+  buildDeepSiteNotification,
   buildStoryNotification,
   type DayOpenPush,
   gamePath,
   includesArmyRestedNotification,
+  includesDeepSiteNotification,
   includesStoryNotification,
   kindTag,
   readHistoryStory,
   storyRecipients,
   type LocalNotificationPayload,
+  type NotificationLevel,
   type PushEnvelope,
 } from "@bibliothecadao/notifications";
 
 import {
+  actorArmies,
   actorsWhoActed,
   partitionByRunningGame,
-  readActorArmies,
+  readActorGame,
   restWatchesOf,
   restWatchKey,
   type RestingActor,
   type RestWatch,
 } from "./army-rest";
+import {
+  hasTheDeep,
+  siteAlertedKey,
+  siteChances,
+  siteWatcherKey,
+  siteWatchesOf,
+  siteWatchKey,
+  type SiteChance,
+  type SiteWatch,
+  type SiteWatcher,
+} from "./site-alert";
 import { decodeIdentityEnv, type IdentityEnv } from "./env";
 import { planDayOpenings, readEnrolledAccounts, readHomeClaim, type DayOpening } from "./day-open";
 import { NotificationPreferenceStore } from "./notification-preference-store";
@@ -104,6 +120,8 @@ export class ShardNotifier extends DurableObject<Record<string, unknown>> {
     if (watched) {
       dayOpenWake = (await runStage(shard, "day-open", () => this.prepareDayOpens(env, watched))) ?? null;
       await runStage(shard, "wake", () => this.wakeRestedArmies(env, watched));
+      await runStage(shard, "sites", () => this.rearmOnSiteChanges(watched));
+      await runStage(shard, "site-wake", () => this.wakeSiteWatches(env, watched));
       await runStage(shard, "deliver", () => this.deliverDue(env, shard));
       morePages = (await runStage(shard, "stories", () => this.readStories(env, watched))) ?? false;
     }
@@ -166,10 +184,10 @@ export class ShardNotifier extends DurableObject<Record<string, unknown>> {
     );
     if (BigInt(page.chain) !== BigInt(shard.chainId)) throw new Error(`${shard.url} served chain ${page.chain}`);
     let entries: OutboxEntry[] = [];
-    let resting: { actor: RestingActor; watches: RestWatch[] }[] = [];
+    let watched: ActorWatches = { resting: [], sites: [] };
     try {
       entries = cursor ? await planAlerts(env, shard, page) : [];
-      resting = cursor ? await watchRestingArmies(env, shard, page) : [];
+      watched = cursor ? await watchActors(env, shard, page) : watched;
     } catch (error) {
       if (!(await this.givesUpPage(shard, cursor!, page, error))) return false;
     }
@@ -177,11 +195,13 @@ export class ShardNotifier extends DurableObject<Record<string, unknown>> {
       for (const entry of entries) await putNewest(txn, entry);
       // A player's action replaces every wake time of theirs (a moved army gets a new one, a gone army none) and ends a
       // rested alert still waiting to go: its armies are no longer resting.
-      for (const { actor, watches } of resting) {
+      for (const { actor, watches } of watched.resting) {
         await txn.delete([...(await txn.list({ prefix: restWatchKey(actor) })).keys()]);
         await txn.delete([...(await txn.list({ prefix: restedOutboxPrefix(shard, actor) })).keys()]);
         for (const watch of watches) await txn.put(restWatchKey(watch), watch);
       }
+      // A player's action changes the army they would take a Deep site with: their site watches start again.
+      for (const { watcher, chances } of watched.sites) await replaceSiteWatches(txn, watcher, chances);
       await txn.put("cursor", encodeStoryHistoryCursor(page.next_cursor));
       await txn.delete("pageAttempts");
     });
@@ -237,14 +257,14 @@ export class ShardNotifier extends DurableObject<Record<string, unknown>> {
       try {
         await this.wakeActor(env, shard, watches, now);
       } catch (error) {
-        await this.retryWatches(shard, watches, now, error);
+        await this.retryWatches(shard, watches, restWatchKey, error);
       }
     }
   }
 
   private async wakeActor(env: IdentityEnv, shard: Required<WatchedShard>, watches: RestWatch[], now: number) {
     const { gameId, actor } = watches[0]!;
-    const armies = await readActorArmies(shard.url, gameId, actor, now);
+    const armies = actorArmies(await readActorGame(shard.url, gameId, actor, now), gameId, actor, now);
     const rested = watches.filter((watch) => armies.find((army) => army.armyId === watch.armyId)?.full);
     const renewed = watches.flatMap((watch) => {
       const army = armies.find((candidate) => candidate.armyId === watch.armyId);
@@ -266,7 +286,12 @@ export class ShardNotifier extends DurableObject<Record<string, unknown>> {
   }
 
   /** Watches a wake could not read wait and are tried again, then are dropped loudly: never retried forever. */
-  private async retryWatches(shard: WatchedShard, watches: RestWatch[], now: number, error: unknown) {
+  private async retryWatches<Watch extends { gameId: number; actor: string; attempts: number }>(
+    shard: WatchedShard,
+    watches: Watch[],
+    keyOf: (watch: Watch) => string,
+    error: unknown,
+  ) {
     const { gameId, actor, attempts } = watches[0]!;
     const exhausted = attempts + 1 >= MAX_ATTEMPTS;
     console.error(
@@ -274,15 +299,109 @@ export class ShardNotifier extends DurableObject<Record<string, unknown>> {
       shard.url,
       `game ${gameId}`,
       `actor ${actor}`,
-      `armies ${watches.map(({ armyId }) => armyId).join(",")}`,
+      `watches ${watches.map(keyOf).join(",")}`,
       `attempt ${attempts + 1}`,
       error,
     );
     await this.ctx.storage.transaction(async (txn) => {
       for (const watch of watches) {
-        if (exhausted) await txn.delete(restWatchKey(watch));
-        else await txn.put(restWatchKey(watch), { ...watch, attempts: watch.attempts + 1 });
+        if (exhausted) await txn.delete(keyOf(watch));
+        else await txn.put(keyOf(watch), { ...watch, attempts: watch.attempts + 1 });
       }
+    });
+  }
+
+  /**
+   * The Deep's sites changed (a site taken, a guard joined or left, a guard's troops settled): every player watching
+   * that game is read again, their chances against the sites as they now stand. The race board's sites are the signal,
+   * one read per game; a game whose sites are as last seen costs nothing more.
+   */
+  private async rearmOnSiteChanges(shard: Required<WatchedShard>): Promise<void> {
+    const watchers = [...(await this.ctx.storage.list<SiteWatcher>({ prefix: "site-watcher:" })).values()];
+    const { running, ended } = await partitionByRunningGame(shard.url, watchers);
+    await this.ctx.storage.transaction(async (txn) => {
+      for (const watcher of ended) {
+        await txn.delete(siteWatcherKey(watcher));
+        await txn.delete([...(await txn.list({ prefix: siteWatchKey(watcher) })).keys()]);
+      }
+      for (const [key, dayEndsAt] of await txn.list<number>({ prefix: "site-alerted:" }))
+        if (dayEndsAt <= Date.now()) await txn.delete(key);
+    });
+    for (const gameId of new Set(running.map((watcher) => watcher.gameId))) {
+      const board = await readShard<HeraldRaceBoard>(shard.url, `/games/${gameId}/race`);
+      const signature = JSON.stringify(board.sites);
+      if ((await this.ctx.storage.get<string>(`site-signature:${gameId}`)) === signature) continue;
+      const now = Date.now();
+      const replanned = await Promise.all(
+        running
+          .filter((watcher) => watcher.gameId === gameId)
+          .map(async (watcher) => {
+            try {
+              const store = await readActorGame(shard.url, gameId, watcher.actor, now);
+              return [{ watcher, chances: siteChances(store, gameId, watcher.actor, now) }];
+            } catch (error) {
+              console.error(
+                "shard_notifier_sites_unread",
+                shard.url,
+                `game ${gameId}`,
+                `actor ${watcher.actor}`,
+                error,
+              );
+              return [];
+            }
+          }),
+      );
+      await this.ctx.storage.transaction(async (txn) => {
+        for (const { watcher, chances } of replanned.flat()) await replaceSiteWatches(txn, watcher, chances);
+        await txn.put(`site-signature:${gameId}`, signature);
+      });
+    }
+  }
+
+  /**
+   * Each site watch whose time has come is read again: the site within the player's reach now, they get its one alert
+   * of the day; still out of reach but coming, a new wake time; out of reach for the rest of the day, nothing.
+   */
+  private async wakeSiteWatches(env: IdentityEnv, shard: Required<WatchedShard>): Promise<void> {
+    const now = Date.now();
+    const due = [...(await this.ctx.storage.list<SiteWatch>({ prefix: "site:" })).values()].filter(
+      (watch) => siteWakeAt(watch, POLL_MS) <= now,
+    );
+    const byActor = new Map<string, SiteWatch[]>();
+    for (const watch of due) {
+      const key = siteWatchKey({ gameId: watch.gameId, actor: watch.actor });
+      byActor.set(key, [...(byActor.get(key) ?? []), watch]);
+    }
+    for (const watches of byActor.values()) {
+      try {
+        await this.wakeSiteActor(env, shard, watches, now);
+      } catch (error) {
+        await this.retryWatches(shard, watches, siteWatchKey, error);
+      }
+    }
+  }
+
+  private async wakeSiteActor(env: IdentityEnv, shard: Required<WatchedShard>, watches: SiteWatch[], now: number) {
+    const { gameId, actor } = watches[0]!;
+    const chances = siteChances(await readActorGame(shard.url, gameId, actor, now), gameId, actor, now);
+    const read = watches.map((watch) => ({
+      watch,
+      chance: chances.find((chance) => chance.siteId === watch.siteId && chance.day === watch.day),
+    }));
+    const takeable = read.flatMap(({ watch, chance }) =>
+      chance && isWithinReach(chance, now) ? [{ watch, chance }] : [],
+    );
+    const alerts = (
+      await Promise.all(takeable.map(({ watch, chance }) => deepSiteAlerts(env, shard, watch, chance, now)))
+    ).flat();
+    await this.ctx.storage.transaction(async (txn) => {
+      for (const { watch, chance } of read) {
+        await txn.delete(siteWatchKey(watch));
+        if (chance && isWithinReach(chance, now)) await txn.put(siteAlertedKey(watch), chance.dayEndsAt);
+        else if (chance?.takeableAt != null)
+          await txn.put(siteWatchKey(watch), { ...watch, wakeAt: chance.takeableAt, attempts: 0 });
+      }
+      for (const entry of alerts) await putNewest(txn, entry);
     });
   }
 
@@ -578,8 +697,21 @@ const dayOpenAlerts = async (env: IdentityEnv, shard: Required<WatchedShard>, op
   return entries;
 };
 
-/** Players who acted in this page and want rested-army alerts, each with fresh wake times for their armies. */
-const watchRestingArmies = (env: IdentityEnv, shard: Required<WatchedShard>, page: HeraldStoryHistoryPage) =>
+/** What a page's players left to watch: fresh wake times for their recovering armies, and their Deep site chances. */
+interface ActorWatches {
+  resting: { actor: RestingActor; watches: RestWatch[] }[];
+  sites: { watcher: SiteWatcher; chances: SiteChance[] }[];
+}
+
+/**
+ * Players who acted in this page and want rested-army or Deep site alerts: one read of each player's game gives both,
+ * fresh wake times for their armies and their chances at the Deep's sites.
+ */
+const watchActors = (
+  env: IdentityEnv,
+  shard: Required<WatchedShard>,
+  page: HeraldStoryHistoryPage,
+): Promise<ActorWatches> =>
   Effect.runPromise(
     Effect.gen(function* () {
       const { running: acted } = yield* Effect.promise(() => partitionByRunningGame(shard.url, actorsWhoActed(page)));
@@ -592,41 +724,96 @@ const watchRestingArmies = (env: IdentityEnv, shard: Required<WatchedShard>, pag
       const owners = [...new Set(realmsIds.values())];
       const levels = yield* (yield* NotificationPreferenceStore).levels(owners);
       const devices = yield* (yield* PushSubscriptionStore).gameAlertDevices(owners);
-      const wanted = new Set(
-        owners.filter(
-          (owner) =>
-            includesArmyRestedNotification(levels.get(owner) ?? "off") &&
-            devices.some((device) => device.owner === owner),
-        ),
-      );
+      const wants = (owner: string, includes: (level: NotificationLevel) => boolean) =>
+        includes(levels.get(owner) ?? "off") && devices.some((device) => device.owner === owner);
       const now = Date.now();
-      const resting = acted.flatMap(({ gameId, actor }): RestingActor[] => {
-        const owner = realmsIds.get(actor);
-        return owner && wanted.has(owner) ? [{ gameId, actor, owner }] : [];
-      });
-      // A player whose armies cannot be read keeps the watches they had; the rest of the page goes on.
-      const watched = yield* Effect.forEach(resting, (actor) =>
-        Effect.promise(async () => {
+      // A player whose game cannot be read keeps the watches they had; the rest of the page goes on.
+      const watched = yield* Effect.forEach(acted, ({ gameId, actor }) =>
+        Effect.promise(async (): Promise<ActorWatches> => {
+          const owner = realmsIds.get(actor);
+          const rests = owner !== undefined && wants(owner, includesArmyRestedNotification);
+          const sites = owner !== undefined && wants(owner, includesDeepSiteNotification);
+          if (!owner || (!rests && !sites)) return { resting: [], sites: [] };
+          const player = { gameId, actor, owner };
           try {
-            return [
-              {
-                actor,
-                watches: restWatchesOf(actor, await readActorArmies(shard.url, actor.gameId, actor.actor, now)),
-              },
-            ];
+            const store = await readActorGame(shard.url, gameId, actor, now);
+            return {
+              resting: rests
+                ? [{ actor: player, watches: restWatchesOf(player, actorArmies(store, gameId, actor, now)) }]
+                : [],
+              sites:
+                sites && hasTheDeep(store, gameId)
+                  ? [{ watcher: player, chances: siteChances(store, gameId, actor, now) }]
+                  : [],
+            };
           } catch (error) {
-            console.error(
-              "shard_notifier_armies_unread",
-              shard.url,
-              `game ${actor.gameId}`,
-              `actor ${actor.actor}`,
-              error,
-            );
-            return [];
+            console.error("shard_notifier_armies_unread", shard.url, `game ${gameId}`, `actor ${actor}`, error);
+            return { resting: [], sites: [] };
           }
         }),
       );
-      return watched.flat();
+      return {
+        resting: watched.flatMap((entry) => entry.resting),
+        sites: watched.flatMap((entry) => entry.sites),
+      };
+    }).pipe(
+      Effect.provide(NotificationPreferenceStore.layer(env.DB)),
+      Effect.provide(PushSubscriptionStore.layer(env.DB)),
+    ),
+  );
+
+/**
+ * A player's site watches start again from their chances as they now stand: one per site within reach today and not
+ * yet told; the player stays a watcher of the game, so a change at the sites reads them again.
+ */
+const replaceSiteWatches = async (txn: DurableObjectTransaction, watcher: SiteWatcher, chances: SiteChance[]) => {
+  await txn.delete([...(await txn.list({ prefix: siteWatchKey(watcher) })).keys()]);
+  await txn.put(siteWatcherKey(watcher), watcher);
+  const told = new Set<string>();
+  for (const chance of chances) {
+    const key = siteAlertedKey({ ...watcher, siteId: chance.siteId, day: chance.day });
+    if ((await txn.get(key)) !== undefined) told.add(key);
+  }
+  for (const watch of siteWatchesOf(watcher, chances, (watch) => told.has(siteAlertedKey(watch))))
+    await txn.put(siteWatchKey(watch), watch);
+};
+
+/** Whether the site's guard is within the player's reach at this moment. */
+const isWithinReach = (chance: SiteChance, now: number): boolean =>
+  chance.takeableAt !== null && chance.takeableAt <= now;
+
+/** A site watch wakes when its guard comes within reach; after each failed read later, by the delivery backoff. */
+const siteWakeAt = (watch: SiteWatch, pollMs: number) =>
+  watch.wakeAt + (watch.attempts === 0 ? 0 : backoffMs(watch.attempts - 1, pollMs));
+
+/** The Deep site push for the player of one watch, if they still want it, to each of their opted-in devices. */
+const deepSiteAlerts = (
+  env: IdentityEnv,
+  shard: Required<WatchedShard>,
+  watch: SiteWatch,
+  chance: SiteChance,
+  now: number,
+): Promise<OutboxEntry[]> =>
+  Effect.runPromise(
+    Effect.gen(function* () {
+      const levels = yield* (yield* NotificationPreferenceStore).levels([watch.owner]);
+      if (!includesDeepSiteNotification(levels.get(watch.owner) ?? "off")) return [];
+      const devices = yield* (yield* PushSubscriptionStore).gameAlertDevices([watch.owner]);
+      const game = (yield* Effect.promise(() => gameDirectory(shard.url))).get(watch.gameId);
+      const notification = buildDeepSiteNotification({
+        chainId: shard.chainId,
+        gameId: watch.gameId,
+        site: { id: chance.siteId, name: chance.name },
+        day: chance.day,
+        at: chance.takeableAt!,
+        until: chance.dayEndsAt,
+        guard: chance.guard,
+        army: chance.army,
+        owner: watch.owner,
+        game,
+        now,
+      });
+      return notification ? alertsForDevices(watch.owner, devices, notification, now) : [];
     }).pipe(
       Effect.provide(NotificationPreferenceStore.layer(env.DB)),
       Effect.provide(PushSubscriptionStore.layer(env.DB)),

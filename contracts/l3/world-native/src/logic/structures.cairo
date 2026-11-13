@@ -11,7 +11,7 @@ pub fn owner(key: ResourceKey) -> ContractAddress {
 pub fn exists(key: ResourceKey) -> bool {
     let state = crate::state::read();
     let category = state.structures.structures.entry((key.game_id, key.entity_id)).base.read().category;
-    category != 0 && (category != crate::taxonomy::RUIN_CATEGORY || !crate::logic::expeditions::ruin_disappeared(key))
+    category != 0
 }
 
 pub fn record(key: ResourceKey) -> StructureRecord {
@@ -190,13 +190,13 @@ pub mod StructuresLogic {
     use crate::game::{IPointsDispatcherTrait, IPointsLibraryDispatcher, assert_playing};
     use crate::geometry::tile_key;
     use crate::logic::buildings::BuildingState;
-    use crate::logic::guilds::GuildState;
     use crate::logic::release::ReleaseState;
+    use crate::logic::relics::RelicState;
     use crate::logic::structures::StructureState;
-    use crate::map::{IMapLogicDispatcherTrait, IMapLogicLibraryDispatcher};
+    use crate::map::IMapLogicDispatcherTrait;
     use crate::mines::{IMineRulesDispatcherTrait, IMineRulesLibraryDispatcher, MinePoolKey};
-    use crate::ownership::{Story, StoryEvent, TransferOwnership};
-    use crate::resources::{IResourceOperationsDispatcherTrait, IResourceOperationsLibraryDispatcher, ResourceKey};
+    use crate::ownership::{Story, StoryEvent};
+    use crate::resources::{IResourceOperationsDispatcherTrait, ResourceKey};
     use crate::rules::RESOURCE_PRECISION;
     use crate::settlement::{ISettlementDisplacementDispatcherTrait, ISettlementDisplacementLibraryDispatcher};
     use crate::structures::{StructureBase, StructureRecord};
@@ -205,28 +205,28 @@ pub mod StructuresLogic {
     impl BuildingInternal = BuildingState::InternalImpl<ContractState>;
     component!(path: ReleaseState, storage: release, event: ReleaseEvent);
     impl LifeInternal = ReleaseState::InternalImpl<ContractState>;
-    component!(path: GuildState, storage: guilds, event: GuildEvent);
+    component!(path: RelicState, storage: relics, event: RelicEvent);
     #[abi(embed_v0)]
-    impl Guilds = GuildState::GuildsImpl<ContractState>;
+    impl Artificer = RelicState::ArtificerImpl<ContractState>;
     #[storage]
     #[allow(starknet::colliding_storage_paths)]
     struct Storage {
+        #[substorage(v0)]
+        relics: RelicState::Storage,
         #[flat]
         pub data: crate::state::Storage,
         #[substorage(v0)]
         release: ReleaseState::Storage,
         #[substorage(v0)]
         buildings: BuildingState::Storage,
-        #[substorage(v0)]
-        guilds: GuildState::Storage,
     }
     #[event]
     #[derive(Drop, starknet::Event)]
     enum Event {
+        RelicEvent: RelicState::Event,
         ReleaseEvent: ReleaseState::Event,
         StructureEvent: StructureState::Event,
         BuildingEvent: BuildingState::Event,
-        GuildEvent: GuildState::Event,
         StoryEvent: StoryEvent,
         RowSet: RowSet,
     }
@@ -242,107 +242,7 @@ pub mod StructuresLogic {
             crate::camps::CampRules { resources: resources.span(), labor_rate: preset.camp_labor_rate.read() }
         }
     }
-    #[abi(embed_v0)]
-    impl BankCreation of crate::market::IBankCreation<ContractState> {
-        fn create_bank(
-            ref self: ContractState,
-            key: ResourceKey,
-            owner: ContractAddress,
-            coord: Coord,
-            timestamp: u64,
-            game_context: crate::commands::ActionContext,
-        ) {
-            let game_context = crate::commands::execution_context(key.game_id, game_context);
 
-            assert!(key.entity_id >= 0xfffffff9 && key.entity_id <= 0xfffffffe, "invalid regional bank id");
-            assert!(!coord.alt && owner != 0.try_into().unwrap(), "invalid bank placement");
-            let rules = game_context.rules.unbox();
-            assert!(!crate::logic::structures::exists(key), "bank already exists");
-            self.reveal_structure_tile(key.game_id, coord, game_context);
-            self
-                .map_dispatcher(key.game_id)
-                .reveal_structure_surroundings(key.game_id, coord, crate::commands::biome_context(game_context));
-            let record = StructureRecord {
-                owner,
-                base: StructureBase {
-                    category: crate::taxonomy::BANK_CATEGORY,
-                    level: 3,
-                    troop_max_guard_count: 4,
-                    troop_max_explorer_count: 0,
-                    created_at: timestamp.try_into().unwrap(),
-                    ..Default::default(),
-                },
-                resources_packed: 0,
-                metadata: Default::default(),
-            };
-            crate::logic::structures::StructureState::create(key, record);
-            crate::logic::map::MapState::occupy(
-                tile_key(key.game_id, coord), key.entity_id, crate::taxonomy::BANK_OCCUPIER, true,
-            );
-            self
-                .resources_dispatcher(key.game_id)
-                .initialize_resources(
-                    key,
-                    rules.structure_capacity_config.bank_structure_capacity.into() * RESOURCE_PRECISION,
-                    crate::taxonomy::BANK_CATEGORY,
-                    timestamp,
-                    crate::commands::action_context(game_context),
-                );
-            let seed: u256 = Into::<felt252, u256>::into('what could possibly go wrong') - key.entity_id.into();
-            crate::guards::IGuardsDispatcherTrait::initialize_structure_guards(
-                crate::guards::IGuardsLibraryDispatcher { class_hash: self.release.classes(key.game_id).troops.read() },
-                key,
-                seed,
-                timestamp,
-                crate::commands::action_context(game_context),
-            );
-        }
-    }
-
-    #[abi(embed_v0)]
-    impl Structures of crate::structures::IStructureOperations<ContractState> {
-        fn create_discovery(
-            ref self: ContractState,
-            game_id: u32,
-            home_id: u64,
-            coord: Coord,
-            discovery: Discovery,
-            seed: u256,
-            timestamp: u64,
-            game_context: crate::commands::ActionContext,
-        ) -> u64 {
-            let game_context = crate::commands::execution_context(game_id, game_context);
-
-            self.place_discovery(game_id, home_id, coord, discovery, seed, timestamp, false, game_context)
-        }
-
-        #[cfg(feature: "test_support")]
-        fn provision_realm(
-            ref self: ContractState, game_id: u32, actor: ContractAddress, coord: Coord, grants: Span<(u8, u128)>,
-        ) -> u64 {
-            let game_context = crate::commands::load_context(game_id, 0, starknet::get_block_timestamp());
-
-            self.assert_authority();
-            let game = game_context.game.unbox();
-            assert!(game.dev_mode_on, "fixture provisioning requires development game");
-            assert!(!coord.alt && actor != 0.try_into().unwrap(), "invalid realm owner or layer");
-            let record = realm_record(actor, get_block_timestamp(), game_context.rules.unbox().troop_limit_config);
-            let key = self.place_settlement(game_id, coord, record, game_context);
-            for grant in grants {
-                let (resource_type, amount) = *grant;
-                self
-                    .resources_dispatcher(game_id)
-                    .grant_resource(
-                        key,
-                        resource_type,
-                        amount,
-                        get_block_timestamp(),
-                        crate::commands::resource_context(game_context),
-                    );
-            }
-            key.entity_id
-        }
-    }
     #[abi(embed_v0)]
     impl BlitzHyperstructures of crate::settlement::IBlitzHyperstructures<ContractState> {
         fn create_reserved_hyperstructure(
@@ -379,6 +279,66 @@ pub mod StructuresLogic {
                 );
         }
     }
+    #[abi(embed_v0)]
+    impl StartingTroops of crate::structures::IStartingTroops<ContractState> {
+        fn grant_village_troops(ref self: ContractState, key: ResourceKey, context: crate::commands::ActionContext) {
+            let context = crate::commands::execution_context(key.game_id, context);
+            self
+                .apply_starting_troops(
+                    key,
+                    crate::settlement::StartingTroops::Biome,
+                    crate::logic::village::rules(key.game_id).resources,
+                    10 * RESOURCE_PRECISION,
+                    context.timestamp,
+                    context,
+                );
+        }
+    }
+
+    #[abi(embed_v0)]
+    impl Structures of crate::structures::IStructureOperations<ContractState> {
+        fn create_discovery(
+            ref self: ContractState,
+            game_id: u32,
+            home_id: u64,
+            coord: Coord,
+            discovery: Discovery,
+            seed: u256,
+            timestamp: u64,
+            game_context: crate::commands::ActionContext,
+        ) -> u64 {
+            let game_context = crate::commands::execution_context(game_id, game_context);
+
+            self.place_discovery(game_id, home_id, coord, discovery, seed, timestamp, false, game_context)
+        }
+
+        #[cfg(feature: "test_support")]
+        fn provision_realm(
+            ref self: ContractState, game_id: u32, actor: ContractAddress, coord: Coord, grants: Span<(u8, u128)>,
+        ) -> u64 {
+            let game_context = crate::commands::load_context(game_id, 0, starknet::get_block_timestamp());
+
+            self.assert_authority();
+            let game = game_context.game.unbox();
+            assert!(game.dev_mode_on, "fixture provisioning requires development game");
+            assert!(!coord.alt && actor != 0.try_into().unwrap(), "invalid realm owner or layer");
+            let record = realm_record(actor, get_block_timestamp(), game_context.rules.unbox().troop_limit_config);
+            let key = self.place_settlement(game_id, coord, record, game_context);
+            for grant in grants {
+                let (resource_type, amount) = *grant;
+                crate::logic::structure_actions::resources_dispatcher(game_id)
+                    .grant_resource(
+                        key,
+                        resource_type,
+                        amount,
+                        get_block_timestamp(),
+                        crate::commands::resource_context(game_context),
+                    );
+            }
+            key.entity_id
+        }
+    }
+
     #[abi(embed_v0)]
     impl SettlementCreation of crate::settlement::ISettlementCreation<ContractState> {
         fn create_settlement(
@@ -436,7 +396,7 @@ pub mod StructuresLogic {
                 crate::settlement::SettlementCreation::Village(_) => {
                     self
                         .grant_non_troop_resources(
-                            key, self.village_rules(game_id).resources, context.timestamp, context,
+                            key, crate::logic::village::rules(game_id).resources, context.timestamp, context,
                         );
                     let rules = context.rules.unbox();
                     self
@@ -455,35 +415,7 @@ pub mod StructuresLogic {
             (key.entity_id)
         }
     }
-    #[abi(embed_v0)]
-    impl Villages of crate::village::IVillageArmy<ContractState> {
-        fn receive_village_army(
-            ref self: ContractState,
-            game_id: u32,
-            actor: ContractAddress,
-            village_id: u64,
-            context: crate::commands::ActionContext,
-        ) -> () {
-            let context = crate::commands::execution_context(game_id, context);
 
-            assert_playing(context.game.unbox(), context.timestamp);
-            let key = ResourceKey { game_id, entity_id: village_id };
-            let record = crate::logic::structures::record(key);
-            assert!(record.owner == actor, "actor does not own village");
-            assert!(record.base.category == crate::taxonomy::VILLAGE_CATEGORY, "structure is not a village");
-            assert!(!record.base.starting_troops_granted, "army grant already claimed");
-            let grants = self.village_rules(game_id);
-            let interval = context.rules.unbox().tick_config.armies_tick_in_seconds;
-            let claimable_at: u64 = record.base.created_at.into() / interval + grants.troop_delay_ticks.into();
-            assert!(context.timestamp / interval >= claimable_at, "army grant cannot be claimed yet");
-            let category = self.biome_troop(key, context);
-            self
-                .grant_starting_troops(
-                    key, category, grants.resources, 10 * RESOURCE_PRECISION, context.timestamp, context,
-                );
-            ()
-        }
-    }
     #[abi(embed_v0)]
     impl RealmCreation of crate::settlement::IRealmCreation<ContractState> {
         fn provision_and_upgrade_realm(
@@ -549,8 +481,8 @@ pub mod StructuresLogic {
             let home = match crate::logic::structures::structure(key) {
                 Option::Some(_) => key,
                 Option::None => {
-                    let explorer = crate::logic::troops::active_explorer(
-                        ExplorerKey { game_id, explorer_id: command.entity_id }, context.timestamp, context,
+                    let explorer = crate::logic::troops::command_explorer(
+                        ExplorerKey { game_id, explorer_id: command.entity_id }, None, context.timestamp, context,
                     );
                     ResourceKey { game_id, entity_id: explorer.owner }
                 },
@@ -566,32 +498,6 @@ pub mod StructuresLogic {
                         values: array![command.name].span(),
                     },
                 );
-        }
-    }
-    #[abi(embed_v0)]
-    impl Ownership of crate::ownership::IStructureOwnership<ContractState> {
-        fn transfer_structure_ownership(
-            ref self: ContractState,
-            game_id: u32,
-            actor: ContractAddress,
-            command: TransferOwnership,
-            context: crate::commands::ActionContext,
-        ) -> () {
-            let context = crate::commands::execution_context(game_id, context);
-
-            let game = context.game.unbox();
-            assert_playing(game, context.timestamp);
-            let key = ResourceKey { game_id, entity_id: command.entity_id };
-            let record = crate::logic::structures::record(key);
-            assert!(record.owner == actor, "actor does not own structure");
-            assert!(crate::logic::game::game_exists(game_id), "ownership rules require initialized game");
-            assert!(command.new_owner != 0.try_into().unwrap(), "new owner is zero");
-            assert!(record.base.category != crate::taxonomy::VILLAGE_CATEGORY, "cannot transfer ownership of village");
-            if record.owner == command.new_owner {
-                return ();
-            }
-            self.change_owner(key, command.new_owner, context.timestamp, context);
-            ()
         }
     }
     #[abi(embed_v0)]
@@ -621,7 +527,7 @@ pub mod StructuresLogic {
             if record.base.category == crate::taxonomy::BITCOIN_MINE_CATEGORY {
                 crate::bitcoin::IBitcoinFundingDispatcherTrait::bitcoin_mine_captured(
                     crate::bitcoin::IBitcoinFundingLibraryDispatcher {
-                        class_hash: self.release.classes(key.game_id).prizes.read(),
+                        class_hash: self.release.classes(key.game_id).season.read(),
                     },
                     key,
                     timestamp,
@@ -674,6 +580,61 @@ pub mod StructuresLogic {
     }
     #[generate_trait]
     impl Internal of InternalTrait {
+        fn reveal_structure_tile(
+            ref self: ContractState, game_id: u32, coord: Coord, game_context: crate::commands::ExecutionContext,
+        ) {
+            let key = tile_key(game_id, coord);
+            let tile = crate::logic::map::tile(key);
+            let data = tile.map(|tile| tile.data).unwrap_or(0);
+            assert!(crate::logic::map::occupancy(key).is_none(), "occupied structure tile");
+            if (data / 0x20000000000) % 0x100 == 0 {
+                crate::logic::map::MapState::reveal(
+                    key,
+                    crate::logic::structure_actions::map_dispatcher(game_id)
+                        .biome(key, crate::commands::biome_context(game_context)),
+                );
+            }
+        }
+        fn create_hyperstructure(ref self: ContractState, key: ResourceKey, seed: u256, completed: bool) {
+            crate::hyperstructures::IHyperstructuresDispatcherTrait::record_hyperstructure(
+                crate::hyperstructures::IHyperstructuresLibraryDispatcher {
+                    class_hash: self.release.classes(key.game_id).economy.read(),
+                },
+                key,
+                seed.try_into().unwrap(),
+                completed,
+            );
+        }
+        fn create_producer(
+            ref self: ContractState,
+            key: ResourceKey,
+            cap: u128,
+            rate: u64,
+            resource_type: u8,
+            building_category: u8,
+            base_population: u32,
+            timestamp: u64,
+            game_context: crate::commands::ExecutionContext,
+        ) {
+            let building_rule = self
+                .buildings
+                .rule(crate::buildings::BuildingRuleKey { game_id: key.game_id, category: building_category });
+            crate::logic::structure_actions::resources_dispatcher(key.game_id)
+                .start_production(
+                    key, resource_type, rate, cap, timestamp, crate::commands::resource_context(game_context),
+                );
+            self
+                .buildings
+                .create(
+                    BuildingKey { game_id: key.game_id, structure_id: key.entity_id, inner_col: 10, inner_row: 10 },
+                    Building { category: building_category, paused: false, labor_paid: 0 },
+                    // A producer the world places at a structure's centre costs no population: only a player's
+                    // building does. The centre labor producer cannot be destroyed, so nothing refunds this.
+                    0,
+                    building_rule.capacity_grant,
+                    base_population,
+                );
+        }
         fn place_discovery(
             ref self: ContractState,
             game_id: u32,
@@ -702,12 +663,10 @@ pub mod StructuresLogic {
                 None => discovery != Discovery::Mine,
             };
             if reveal_neighbors {
-                self
-                    .map_dispatcher(game_id)
+                crate::logic::structure_actions::map_dispatcher(game_id)
                     .reveal_structure_surroundings(game_id, coord, crate::commands::biome_context(game_context));
             }
-            self
-                .resources_dispatcher(game_id)
+            crate::logic::structure_actions::resources_dispatcher(game_id)
                 .initialize_resources(
                     key,
                     capacity * RESOURCE_PRECISION,
@@ -746,8 +705,7 @@ pub mod StructuresLogic {
                         );
                         let camp = self.camp_rules(game_id);
                         for resource in camp.resources {
-                            self
-                                .resources_dispatcher(game_id)
+                            crate::logic::structure_actions::resources_dispatcher(game_id)
                                 .grant_resource(
                                     key,
                                     *resource.resource_type,
@@ -771,9 +729,9 @@ pub mod StructuresLogic {
                 },
                 Discovery::Rift |
                 Discovery::Beasts => { assert!(rules.day_unit_seconds != 0, "site requires expeditions"); },
-                Discovery::Ruin(chest) => {
+                Discovery::Ruin(reward) => {
                     assert!(rules.day_unit_seconds != 0, "site requires expeditions");
-                    crate::logic::lords_budget::store_site_chest(key, chest);
+                    crate::logic::army_relics::store_ruin(key, reward);
                 },
                 Discovery::None | Discovery::Shrine | Discovery::Well | Discovery::Spire |
                 Discovery::Chest => panic!("discovery is not a structure"),
@@ -789,7 +747,6 @@ pub mod StructuresLogic {
             );
             id
         }
-
         fn place_settlement(
             ref self: ContractState,
             game_id: u32,
@@ -829,8 +786,7 @@ pub mod StructuresLogic {
             } else {
                 rules.structure_capacity_config.realm_capacity.into() * RESOURCE_PRECISION
             };
-            self
-                .resources_dispatcher(game_id)
+            crate::logic::structure_actions::resources_dispatcher(game_id)
                 .initialize_resources(
                     key,
                     capacity,
@@ -850,7 +806,9 @@ pub mod StructuresLogic {
                 context.game.unbox(), context.rules.unbox().day_unit_seconds, context.timestamp,
             )
                 .index;
-            let origin = crate::expeditions::site(crate::logic::settlement::rules(game_id).spacing, realm_id, today, 0);
+            let origin = crate::expeditions::site(
+                crate::logic::preset_record::for_game(game_id).settlement_spacing.read(), realm_id, today, 0,
+            );
             crate::logic::map::raise_expedition_home(
                 tile_key(game_id, origin), crate::commands::biome_context(context),
             );
@@ -865,8 +823,7 @@ pub mod StructuresLogic {
                     .displace_explorer(game_id, occupancy.entity_id, crate::commands::action_context(game_context));
             }
             self.reveal_structure_tile(game_id, coord, game_context);
-            self
-                .map_dispatcher(game_id)
+            crate::logic::structure_actions::map_dispatcher(game_id)
                 .reveal_structure_surroundings(game_id, coord, crate::commands::biome_context(game_context));
         }
 
@@ -888,7 +845,7 @@ pub mod StructuresLogic {
                 .create_producer(
                     key,
                     crate::resources::UNLIMITED_OUTPUT,
-                    crate::logic::resources::rule(key.game_id, 23).realm_rate,
+                    crate::logic::buildings::castle_labor_rate(key.game_id, 0),
                     23,
                     25,
                     rules.building_config.base_population,
@@ -896,9 +853,7 @@ pub mod StructuresLogic {
                     game_context,
                 );
         }
-        fn village_rules(self: @ContractState, game_id: u32) -> crate::village::VillageRules {
-            crate::logic::village::rules(game_id)
-        }
+
         fn grant_non_troop_resources(
             ref self: ContractState,
             key: ResourceKey,
@@ -910,8 +865,7 @@ pub mod StructuresLogic {
                 let resource_type = *grant.resource_type;
                 assert!(resource_type != crate::resources::LORDS, "invalid start resource");
                 if resource_type < 26 || resource_type > 34 {
-                    self
-                        .resources_dispatcher(key.game_id)
+                    crate::logic::structure_actions::resources_dispatcher(key.game_id)
                         .grant_resource(
                             key,
                             resource_type,
@@ -930,17 +884,13 @@ pub mod StructuresLogic {
             timestamp: u64,
             game_context: crate::commands::ExecutionContext,
         ) {
-            let category = match troops {
-                crate::settlement::StartingTroops::None => { return; },
-                crate::settlement::StartingTroops::Biome => self.biome_troop(key, game_context),
-                crate::settlement::StartingTroops::Dealt(category) => category,
-            };
             let guards = game_context.rules.unbox().troop_limit_config.starting_guard;
             self
-                .grant_starting_troops(
-                    key, category, resources, guards.into() * RESOURCE_PRECISION, timestamp, game_context,
+                .apply_starting_troops(
+                    key, troops, resources, guards.into() * RESOURCE_PRECISION, timestamp, game_context,
                 );
         }
+
         fn biome_troop(
             self: @ContractState, key: ResourceKey, game_context: crate::commands::ExecutionContext,
         ) -> crate::troops::TroopType {
@@ -951,21 +901,26 @@ pub mod StructuresLogic {
             } else {
                 crate::structures::structure_coord(key)
             };
-            let biome = self
-                .map_dispatcher(key.game_id)
+            let biome = crate::logic::structure_actions::map_dispatcher(key.game_id)
                 .biome(tile_key(key.game_id, coord), crate::commands::biome_context(game_context));
             assert!(biome > 0 && biome <= 17, "starting troops require a biome");
             crate::logic::settlement::biome_troop(key.game_id, biome)
         }
-        fn grant_starting_troops(
+
+        fn apply_starting_troops(
             ref self: ContractState,
             key: ResourceKey,
-            category: crate::troops::TroopType,
+            troops: crate::settlement::StartingTroops,
             resources: Span<crate::resources::ResourceAmount>,
             guards: u128,
             timestamp: u64,
             game_context: crate::commands::ExecutionContext,
         ) {
+            let category = match troops {
+                crate::settlement::StartingTroops::None => { return; },
+                crate::settlement::StartingTroops::Biome => self.biome_troop(key, game_context),
+                crate::settlement::StartingTroops::Dealt(category) => category,
+            };
             let record = crate::logic::structures::record(key);
             if record.base.starting_troops_granted {
                 return;
@@ -976,16 +931,28 @@ pub mod StructuresLogic {
                 let kind = *grant.resource_type;
                 let amount = *grant.amount;
                 if kind == resource_type {
-                    self
-                        .resources_dispatcher(key.game_id)
+                    crate::logic::structure_actions::resources_dispatcher(key.game_id)
                         .grant_resource(
                             key, kind, amount + guards, timestamp, crate::commands::resource_context(game_context),
                         );
+                    if record.base.category == crate::taxonomy::REALM_CATEGORY {
+                        crate::troops::IStartingArmiesDispatcherTrait::deploy_starting_armies(
+                            crate::troops::IStartingArmiesLibraryDispatcher {
+                                class_hash: crate::logic::release::classes(key.game_id).troops.read(),
+                            },
+                            key,
+                            category,
+                            amount,
+                            crate::commands::action_context(game_context),
+                        );
+                    }
                     if guards != 0 {
-                        self.spend(key, kind, guards, timestamp, crate::commands::resource_context(game_context));
+                        crate::logic::structure_actions::spend(
+                            key, kind, guards, timestamp, crate::commands::resource_context(game_context),
+                        );
                         crate::guards::IGuardsDispatcherTrait::add_starting_guard(
                             crate::guards::IGuardsLibraryDispatcher {
-                                class_hash: self.release.classes(key.game_id).troops.read(),
+                                class_hash: crate::logic::release::classes(key.game_id).troops.read(),
                             },
                             key,
                             category,
@@ -1012,6 +979,7 @@ pub mod StructuresLogic {
             }
         }
 
+
         fn change_owner(
             ref self: ContractState,
             key: ResourceKey,
@@ -1020,18 +988,6 @@ pub mod StructuresLogic {
             game_context: crate::commands::ExecutionContext,
         ) {
             let record = crate::logic::structures::record(key);
-            let rules = game_context.rules.unbox();
-            if record.owner != 0.try_into().unwrap() && rules.faith_enabled {
-                crate::faith::IFaithOwnershipDispatcherTrait::transfer_faith_ownership(
-                    crate::faith::IFaithOwnershipLibraryDispatcher {
-                        class_hash: self.release.classes(key.game_id).prizes.read(),
-                    },
-                    key,
-                    owner,
-                    timestamp,
-                    crate::commands::action_context(game_context),
-                );
-            }
             crate::logic::structures::StructureState::transfer_owner(key, owner);
             if record.base.category == crate::taxonomy::HYPERSTRUCTURE_CATEGORY {
                 crate::hyperstructures::IHyperstructuresDispatcherTrait::transfer_hyperstructure_shares(
@@ -1045,79 +1001,8 @@ pub mod StructuresLogic {
             }
         }
 
-        fn create_producer(
-            ref self: ContractState,
-            key: ResourceKey,
-            cap: u128,
-            rate: u64,
-            resource_type: u8,
-            building_category: u8,
-            base_population: u32,
-            timestamp: u64,
-            game_context: crate::commands::ExecutionContext,
-        ) {
-            let building_rule = self
-                .buildings
-                .rule(crate::buildings::BuildingRuleKey { game_id: key.game_id, category: building_category });
-            self
-                .resources_dispatcher(key.game_id)
-                .start_production(
-                    key, resource_type, rate, cap, timestamp, crate::commands::resource_context(game_context),
-                );
-            self
-                .buildings
-                .create(
-                    BuildingKey { game_id: key.game_id, structure_id: key.entity_id, inner_col: 10, inner_row: 10 },
-                    Building { category: building_category, paused: false, labor_paid: 0 },
-                    // A producer the world places at a structure's centre costs no population: only a player's
-                    // building does. The centre labor producer cannot be destroyed, so nothing refunds this.
-                    0,
-                    building_rule.capacity_grant,
-                    base_population,
-                );
-        }
-        fn create_hyperstructure(ref self: ContractState, key: ResourceKey, seed: u256, completed: bool) {
-            crate::hyperstructures::IHyperstructuresDispatcherTrait::record_hyperstructure(
-                crate::hyperstructures::IHyperstructuresLibraryDispatcher {
-                    class_hash: self.release.classes(key.game_id).economy.read(),
-                },
-                key,
-                seed.try_into().unwrap(),
-                completed,
-            );
-        }
         fn assert_authority(self: @ContractState) {
             assert!(get_caller_address() == self.release.authority(), "only domain authority");
-        }
-
-        fn map_dispatcher(self: @ContractState, game_id: u32) -> IMapLogicLibraryDispatcher {
-            IMapLogicLibraryDispatcher { class_hash: self.release.classes(game_id).map.read() }
-        }
-        fn resources_dispatcher(self: @ContractState, game_id: u32) -> IResourceOperationsLibraryDispatcher {
-            IResourceOperationsLibraryDispatcher { class_hash: self.release.classes(game_id).resources.read() }
-        }
-        fn spend(
-            ref self: ContractState,
-            key: ResourceKey,
-            resource_type: u8,
-            amount: u128,
-            timestamp: u64,
-            game_context: crate::commands::ResourceContext,
-        ) {
-            self.resources_dispatcher(key.game_id).spend_resource(key, resource_type, amount, timestamp, game_context);
-        }
-        fn reveal_structure_tile(
-            ref self: ContractState, game_id: u32, coord: Coord, game_context: crate::commands::ExecutionContext,
-        ) {
-            let key = tile_key(game_id, coord);
-            let tile = crate::logic::map::tile(key);
-            let data = tile.map(|tile| tile.data).unwrap_or(0);
-            assert!(crate::logic::map::occupancy(key).is_none(), "occupied structure tile");
-            if (data / 0x20000000000) % 0x100 == 0 {
-                crate::logic::map::MapState::reveal(
-                    key, self.map_dispatcher(game_id).biome(key, crate::commands::biome_context(game_context)),
-                );
-            }
         }
     }
 }

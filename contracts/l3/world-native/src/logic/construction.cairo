@@ -8,6 +8,7 @@ pub mod ConstructionLogic {
     use crate::logic::buildings::BuildingState;
     use crate::logic::release::ReleaseState;
     use crate::logic::structures::StructureState;
+    use crate::map::TileKey;
     use crate::ownership::{Story, StoryEvent};
     use crate::resources::{IResourceOperationsDispatcherTrait, IResourceOperationsLibraryDispatcher, ResourceKey};
     use crate::rules::RESOURCE_PRECISION;
@@ -17,14 +18,7 @@ pub mod ConstructionLogic {
     impl BuildingInternal = BuildingState::InternalImpl<ContractState>;
     component!(path: ReleaseState, storage: release, event: ReleaseEvent);
     impl LifeInternal = ReleaseState::InternalImpl<ContractState>;
-    #[abi(embed_v0)]
-    impl PresetStructures of crate::presets::IPresetStructures<ContractState> {
-        fn store_structure_preset(
-            ref self: ContractState, commitment: felt252, structures: crate::presets::StructurePreset,
-        ) {
-            crate::logic::preset_record::store_structures(commitment, structures);
-        }
-    }
+
     #[storage]
     #[allow(starknet::colliding_storage_paths)]
     struct Storage {
@@ -61,6 +55,64 @@ pub mod ConstructionLogic {
     }
 
     #[abi(embed_v0)]
+    impl DiscoveryRoll of crate::discovery::IDiscoveryRoll<ContractState> {
+        fn roll_expedition_discovery(
+            ref self: ContractState,
+            key: crate::map::TileKey,
+            explorer_id: u64,
+            seed: u256,
+            context: crate::commands::ActionContext,
+        ) -> crate::discovery::Discovery {
+            crate::logic::discovery::roll(key, explorer_id, seed, context)
+        }
+    }
+
+    #[abi(embed_v0)]
+    impl FrontierDiscovery of crate::expeditions::IFrontierDiscovery<ContractState> {
+        fn expedition_spire(
+            self: @ContractState, key: crate::spires::ExpeditionSpireKey,
+        ) -> Option<crate::spires::ExpeditionSpire> {
+            crate::logic::spires::read(key)
+        }
+        fn frontier_discovery_rules(
+            self: @ContractState, game_id: u32,
+        ) -> Option<crate::expeditions::FrontierDiscoveryRules> {
+            crate::logic::preset_record::for_game(game_id).discovery_rules.read()
+        }
+        fn shrine_reward(
+            self: @ContractState, key: crate::resources::ResourceKey,
+        ) -> Option<crate::relics::ShrineReward> {
+            crate::logic::shrines::read(key)
+        }
+
+        fn consume_frontier_site(ref self: ContractState, key: TileKey, explorer_id: u64) -> Option<u8> {
+            let occupied = crate::logic::map::occupancy(key).expect('missing site');
+            assert!(
+                !occupied.is_structure
+                    && (occupied.category == crate::taxonomy::SHRINE_OCCUPIER
+                        || occupied.category == crate::taxonomy::WELL_OCCUPIER),
+                "tile is not a shrine or well",
+            );
+            let point = if occupied.category == crate::taxonomy::SHRINE_OCCUPIER {
+                Some(
+                    crate::logic::shrines::claim(
+                        crate::resources::ResourceKey { game_id: key.game_id, entity_id: occupied.entity_id },
+                        crate::troops::ExplorerKey { game_id: key.game_id, explorer_id },
+                    ),
+                )
+            } else {
+                None
+            };
+            crate::logic::map::MapState::vacate(key, occupied.entity_id);
+            point
+        }
+        fn expedition_discovery(
+            self: @ContractState, key: crate::expeditions::ExpeditionDiscoveryKey,
+        ) -> Option<crate::expeditions::ExpeditionDiscovery> {
+            crate::logic::expeditions::discovery(key)
+        }
+    }
+    #[abi(embed_v0)]
     impl BuildingCommands of crate::buildings::IBuildingCommands<ContractState> {
         fn create_building(
             ref self: ContractState,
@@ -85,7 +137,8 @@ pub mod ConstructionLogic {
                 "invalid construction scouting kind",
             );
             if let Some(board) = board {
-                self.assert_board_category(key, command.category, board);
+                self.assert_board_category(key, base, command.category, board);
+                self.settle_storehouse(key, command.category, board, context);
             }
             self.erect_building(key, actor, base, location, coord, command.category, rule, context.timestamp, context);
             if let Some(board) = board {
@@ -148,6 +201,9 @@ pub mod ConstructionLogic {
             }
             if board.is_none() {
                 self.change_building_capacity(key, building.category, false, context);
+            }
+            if let Some(board) = board {
+                self.settle_storehouse(key, building.category, board, context);
             }
             let rule = self.buildings.rule(crate::buildings::BuildingRuleKey { game_id, category: building.category });
             self.buildings.remove(location, building, rule, context.rules.unbox().building_config.base_population);
@@ -212,6 +268,12 @@ pub mod ConstructionLogic {
                 base.category == crate::taxonomy::REALM_CATEGORY && board.is_some(), "research requires a realm board",
             );
             let before = crate::logic::research::require(key).learned;
+            if board.unwrap().town.is_some() {
+                self.assert_town_lore(before, command.row);
+                if command.row <= crate::research::ROW_WORKSHOP {
+                    assert!(command.choice == crate::research::CHOICE_MAKE, "town stores use the Storeroom");
+                }
+            }
             let learned = crate::research::learn(before, command.row, command.choice);
             self.assert_row_open(key, command.row);
             self
@@ -291,6 +353,14 @@ pub mod ConstructionLogic {
                     record.metadata.has_wonder,
                     next_level,
                 );
+            }
+            if record.base.category == crate::taxonomy::REALM_CATEGORY {
+                let old_rate = crate::logic::buildings::castle_labor_rate(game_id, record.base.level);
+                let new_rate = crate::logic::buildings::castle_labor_rate(game_id, next_level);
+                if old_rate != new_rate {
+                    self.change_board_output(key, crate::resources::LABOR, old_rate, false, context);
+                    self.change_board_output(key, crate::resources::LABOR, new_rate, true, context);
+                }
             }
             self.emit_structure_upgrade(key, actor, next_level, context.timestamp);
             ()
@@ -414,10 +484,48 @@ pub mod ConstructionLogic {
             );
         }
 
-        // A training building is unique and needs two Barracks purchases.
-        fn assert_board_category(
-            self: @ContractState, key: ResourceKey, category: u8, board: crate::buildings::BoardRules,
+        fn assert_town_lore(self: @ContractState, learned: u64, row: u8) {
+            if row == crate::research::ROW_SHRINE {
+                assert!(crate::research::tier(learned, crate::research::ROW_WELL) == 1, "learn Well lore first");
+            } else if row == crate::research::ROW_DEPTH {
+                assert!(crate::research::tier(learned, crate::research::ROW_SHRINE) == 1, "learn Shrine lore first");
+                assert!(crate::research::tier(learned, row) == 0, "Spire lore already learned");
+            }
+        }
+
+        fn settle_storehouse(
+            ref self: ContractState,
+            key: ResourceKey,
+            category: u8,
+            board: crate::buildings::BoardRules,
+            context: crate::commands::ExecutionContext,
         ) {
+            if board.town.is_some() && category == crate::research::STOREHOUSE {
+                self
+                    .resources_dispatcher(key.game_id)
+                    .settle_production(key, context.timestamp, crate::commands::resource_context(context));
+            }
+        }
+
+        // Town buildings open by castle level; older boards use their Barracks gate.
+        fn assert_board_category(
+            self: @ContractState,
+            key: ResourceKey,
+            base: StructureBase,
+            category: u8,
+            board: crate::buildings::BoardRules,
+        ) {
+            if board.town.is_some() {
+                if category == crate::research::STOREHOUSE {
+                    assert!(base.category == crate::taxonomy::REALM_CATEGORY, "Storeroom needs a Realm");
+                    assert!(base.level >= crate::rules::TOWN_STOREHOUSE_LEVEL, "Storeroom needs City");
+                    assert!(self.standing(key, category) == 0, "one Storeroom per Realm");
+                } else if category == crate::research::SCOUTS_LODGE {
+                    assert!(base.level >= 1, "Scouts Lodge needs City");
+                } else if category == crate::research::WAR_HALL || category == crate::research::SUPPLY_YARD {
+                    assert!(base.level >= 2, "hall needs Kingdom");
+                }
+            }
             if !crate::research::is_training(category) {
                 return;
             }

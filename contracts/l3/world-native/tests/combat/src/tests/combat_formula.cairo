@@ -1,5 +1,39 @@
 pub use world_test_support::tests::combat_formula::*;
 
+#[test]
+fn expedition_knights_use_the_same_damage_against_armies_and_site_guards() {
+    let mut stamina = stamina_config();
+    stamina.stamina_attack_req = 30;
+    stamina.stamina_defense_req = 0;
+    let mut damage = damage_config();
+    damage.damage_scaling_factor = 36893488147419103232;
+    damage.damage_biome_bonus_num = 0;
+    for attacker_is_structure_guard in array![false, true] {
+        for defender_is_structure_guard in array![false, true] {
+            for defender_stamina in array![0_u64, 120] {
+                let mut attacker = test_troops(TroopType::Knight, TroopTier::T1, 1500, 120);
+                let mut defender = test_troops(TroopType::Knight, TroopTier::T1, 1000, defender_stamina);
+                attacker
+                    .attack_with_context(
+                        ref defender,
+                        CombatContext {
+                            day_unit_seconds: 14400,
+                            attacker_is_structure_guard,
+                            defender_is_structure_guard,
+                            ..context(Biome::Underground),
+                        },
+                        stamina,
+                        damage,
+                        120,
+                        0,
+                    );
+                assert_eq!(attacker.count, 1082 * RESOURCE_PRECISION);
+                assert_eq!(defender.count, 373 * RESOURCE_PRECISION);
+            }
+        }
+    }
+}
+
 
 #[test]
 fn ethereal_d20_adds_each_sides_roll_as_a_positive_damage_percentage() {
@@ -99,6 +133,7 @@ fn tests_crossbowman_ranged_field_attack_uses_reduced_damage() {
         .attack_with_context(
             ref adjacent_bravo,
             CombatContext {
+                day_unit_seconds: 0,
                 timestamp: 1,
                 attacker_roll: 0,
                 defender_roll: 0,
@@ -117,6 +152,7 @@ fn tests_crossbowman_ranged_field_attack_uses_reduced_damage() {
         .attack_with_context(
             ref ranged_bravo,
             CombatContext {
+                day_unit_seconds: 0,
                 timestamp: 1,
                 attacker_roll: 0,
                 defender_roll: 0,
@@ -155,6 +191,7 @@ fn tests_crossbowman_ranged_structure_attack_uses_heavy_reduction() {
         .attack_with_context(
             ref field_bravo,
             CombatContext {
+                day_unit_seconds: 0,
                 timestamp: 1,
                 attacker_roll: 0,
                 defender_roll: 0,
@@ -173,6 +210,7 @@ fn tests_crossbowman_ranged_structure_attack_uses_heavy_reduction() {
         .attack_with_context(
             ref structure_bravo,
             CombatContext {
+                day_unit_seconds: 0,
                 timestamp: 1,
                 attacker_roll: 0,
                 defender_roll: 0,
@@ -210,6 +248,7 @@ fn tests_knight_assault_increases_adjacent_structure_guard_damage() {
         .attack_with_context(
             ref guard_bravo,
             CombatContext {
+                day_unit_seconds: 0,
                 timestamp: 1,
                 attacker_roll: 0,
                 defender_roll: 0,
@@ -247,6 +286,7 @@ fn tests_knight_bulwark_reduces_guard_incoming_damage() {
         .attack_with_context(
             ref guard_bravo,
             CombatContext {
+                day_unit_seconds: 0,
                 timestamp: 1,
                 attacker_roll: 0,
                 defender_roll: 0,
@@ -262,7 +302,9 @@ fn tests_knight_bulwark_reduces_guard_incoming_damage() {
             1,
         );
 
-    assert!(guard_bravo._incoming_damage_multiplier(true) == FixedTrait::new(85, false) / FixedTrait::new(100, false));
+    assert!(
+        guard_bravo._incoming_damage_multiplier(true, 0) == FixedTrait::new(85, false) / FixedTrait::new(100, false),
+    );
     assert!(guard_bravo.count > field_bravo.count, "Knight guard should receive reduced incoming damage");
 }
 
@@ -323,6 +365,77 @@ fn combat_relics_change_casualties_for_their_full_window_and_replace_on_reapplic
                 } else {
                     assert!(defender.count > plain_defender.count, "active defence relic must reduce casualties");
                 }
+            }
+        }
+    }
+}
+
+#[test]
+fn scouts_deal_three_quarters_before_rounding_on_either_side_of_every_fight() {
+    let mut stamina = stamina_config();
+    stamina.stamina_attack_req = 30;
+    stamina.stamina_defense_req = 0;
+    stamina.damage_stamina_refund = false;
+    let mut damage = damage_config();
+    damage.damage_scaling_factor = 36893488147419103232;
+    damage.damage_biome_bonus_num = 0;
+    for attacker_category in array![TroopType::Knight, TroopType::Paladin] {
+        for defender_category in array![TroopType::Knight, TroopType::Paladin] {
+            for defender_is_structure_guard in array![false, true] {
+                let mut attacker = test_troops(attacker_category, TroopTier::T1, 1500, 120);
+                let mut defender = test_troops(defender_category, TroopTier::T1, 1000, 120);
+                attacker
+                    .attack_with_context(
+                        ref defender,
+                        CombatContext {
+                            day_unit_seconds: 14400, defender_is_structure_guard, ..context(Biome::Underground),
+                        },
+                        stamina,
+                        damage,
+                        120,
+                        0,
+                    );
+                let outgoing = if attacker_category == TroopType::Paladin {
+                    471
+                } else {
+                    627
+                };
+                let incoming = if defender_category == TroopType::Paladin {
+                    314
+                } else {
+                    418
+                };
+                assert_eq!(attacker.count, (1500 - incoming) * RESOURCE_PRECISION);
+                assert_eq!(defender.count, (1000 - outgoing) * RESOURCE_PRECISION);
+                assert_eq!(attacker.stamina.inline().amount, 90);
+                assert_eq!(defender.stamina.inline().amount, 120);
+            }
+        }
+    }
+}
+
+#[test]
+fn scouts_reveal_for_half_cost_and_walk_for_the_same_cost() {
+    let mut rules = crate::tests::play_fixture::rules();
+    rules.troop_stamina_config.stamina_explore_stamina_cost = 20;
+    rules.troop_stamina_config.stamina_travel_stamina_cost = 10;
+    rules.troop_stamina_config.stamina_bonus_value = 0;
+    for day_unit_seconds in array![0_u32, 14400] {
+        rules.day_unit_seconds = day_unit_seconds;
+        for category in array![TroopType::Knight, TroopType::Paladin] {
+            for exploring in array![false, true] {
+                let mut explorer = crate::troops::ExplorerTroops {
+                    owner: 1,
+                    coord: crate::troops::Coord { alt: false, x: 10, y: 10 },
+                    troops: test_troops(category, TroopTier::T1, 1000, 100),
+                };
+                crate::troops::spend_stamina(ref explorer, rules, Biome::Underground, exploring, 1);
+                let cost = if exploring && (day_unit_seconds == 0 || category == TroopType::Knight) {
+                    20
+                } else {
+                    10
+                };
+                assert_eq!(explorer.troops.stamina.inline().amount, 100 - cost);
             }
         }
     }

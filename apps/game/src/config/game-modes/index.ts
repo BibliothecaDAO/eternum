@@ -1,5 +1,11 @@
 import type { NativeFactStore } from "@bibliothecadao/eternum/game-client";
-import { configManager, getEntityInfo, getStructureName, nativeGameModeOf } from "@bibliothecadao/eternum";
+import {
+  boardBuildingCategories,
+  configManager,
+  getEntityInfo,
+  getStructureName,
+  nativeGameModeOf,
+} from "@bibliothecadao/eternum";
 import {
   BuildingType,
   type ContractAddress,
@@ -12,7 +18,7 @@ import {
 import { BUILDINGS_GROUPS, buildingModelPaths, getStructureModelPaths } from "@/three/constants/scene-constants";
 import { frontierPaintedBuildingPath, frontierPaintedPath } from "@/three/structures/frontier-painted-buildings";
 
-export type GameModeId = "frontier" | "blitz" | "eternum" | "duel";
+export type GameModeId = "frontier" | "blitz" | "eternum";
 
 export interface GameModeConfig {
   id: GameModeId;
@@ -27,7 +33,6 @@ export interface GameModeConfig {
     tickGongSound: string;
   };
   ui: {
-    showAttackTypeSelector: boolean;
     showEndSeasonButton: boolean;
     showExplorerCapacity: boolean;
     showGuildsTab: boolean;
@@ -114,7 +119,6 @@ const blitzConfig: GameModeConfig = {
     tickGongSound: "event.blitz_gong",
   },
   ui: {
-    showAttackTypeSelector: false,
     showEndSeasonButton: false,
     showExplorerCapacity: false,
     showGuildsTab: false,
@@ -147,7 +151,6 @@ const eternumConfig: GameModeConfig = {
     tickGongSound: "event.gong",
   },
   ui: {
-    showAttackTypeSelector: true,
     showEndSeasonButton: true,
     showExplorerCapacity: true,
     showGuildsTab: true,
@@ -191,17 +194,7 @@ const frontierConfig: GameModeConfig = {
     getTiers: blitzConfig.resources.getTiers,
   },
   rules: {
-    isBuildingTypeAllowed: (key) =>
-      [
-        "WorkersHut",
-        "ResourceWheat",
-        "ResourceKnightT1",
-        "ResourceLabor",
-        "WarHall",
-        "SupplyYard",
-        "ScoutsLodge",
-        "Hearth",
-      ].includes(key),
+    isBuildingTypeAllowed: (key) => boardBuildingCategories.some((category) => BuildingType[category] === key),
   },
 };
 
@@ -222,16 +215,10 @@ function frontierStructureModels() {
   paths[StructureType.Ruin] = [frontierPaintedPath("fallen-realm-ruin"), ...paths[StructureType.Ruin].slice(1)];
   return paths;
 }
-const duelConfig: GameModeConfig = {
-  ...blitzConfig,
-  id: "duel",
-  displayName: "Duel",
-};
 const GAME_MODE_CONFIGS: Record<GameModeId, GameModeConfig> = {
   frontier: frontierConfig,
   blitz: blitzConfig,
   eternum: eternumConfig,
-  duel: duelConfig,
 };
 
 export function getGameModeConfig(presetId = configManager.getPresetId()): GameModeConfig {

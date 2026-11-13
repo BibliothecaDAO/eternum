@@ -14,7 +14,9 @@ import type { HeraldFrontierLeaderboard, HeraldFrontierLeaderboardEntry } from "
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 
+import { useFrontierRealm } from "../frontier-home";
 import { seasonDay } from "../hud/day-clock";
+import { AspectInvite } from "../invite/aspect-invite";
 import { type SeasonDetail, SeasonDetailSheet } from "./season-detail";
 import { SeasonList, type SeasonListRow, type SeasonPodiumPlace } from "./season-list";
 import { type SeasonLords, seasonLordsOf, seasonPodium } from "./season-pool";
@@ -91,6 +93,8 @@ export const FrontierSeason = ({
 }) => {
   const board = useSeasonBoard();
   const viewer = useSeasonViewer();
+  // The player's own realm; a spectator has none, and no Aspect to invite to.
+  const realm = useFrontierRealm();
   const { pool, chest } = useSeasonLords(rules);
   const [opened, setOpened] = useState<string | null>(null);
   const now = useNowSeconds();
@@ -124,6 +128,7 @@ export const FrontierSeason = ({
       onOpen={setOpened}
       onClose={onClose}
       ends={{ at: rules.endAt, ...seasonDay(rules, now) }}
+      invite={realm && <AspectInvite realm={realm} />}
     />
   );
 };

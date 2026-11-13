@@ -1,13 +1,16 @@
 pub use snforge_std::{EventSpyTrait, EventsFilterTrait};
 pub use starknet::storage::{StorageMapReadAccess, StorageMapWriteAccess, StoragePathEntry, StoragePointerWriteAccess};
+pub use crate::command_routes::COMMAND_COUNT as ROUTES;
 pub use crate::commands::Command;
 pub use crate::tests::play_fixture::{IPlayFixtureSafeDispatcher, IPlayFixtureSafeDispatcherTrait, TestAction};
 pub use crate::tests::{Deployment, play_fixture};
-pub const ROUTES: u32 = 72;
+pub fn routes() -> u32 {
+    crate::command_routes::COMMAND_ROUTES.span().len()
+}
 pub const ROOTS: u64 = 32;
-pub // Every value is a fully typed command. Missing entities and unavailable lifecycle transitions exercise domain
+// Every value is a fully typed command. Missing entities and unavailable lifecycle transitions exercise domain
 // refusals.
-fn typed_commands() -> Array<Command> {
+pub fn typed_commands() -> Array<Command> {
     array![
         Command::CreateExplorer(
             crate::commands::CreateExplorer {
@@ -24,12 +27,9 @@ fn typed_commands() -> Array<Command> {
         ),
         Command::Move(crate::commands::Move { explorer_id: 999999, directions: array![0_u8].span() }),
         Command::ToggleAlternate(crate::commands::ToggleAlternate { explorer_id: 999999, spire_direction: 0 }),
-        Command::TransferStructureOwnership(
-            crate::ownership::TransferOwnership { entity_id: 999999, new_owner: 999.try_into().unwrap() },
-        ),
         Command::LevelUp(999999), Command::SettleBlitzRoster, Command::ProvisionRealm(999999),
         Command::CreateReservedHyperstructure(crate::troops::Coord { alt: false, x: 2000000, y: 2000000 }),
-        Command::SettleSeason(crate::realms::SettleSeason { selected_realm: None }),
+        Command::SettleSeason(crate::realms::SettleSeason { selected_realm: None, aspect: None }),
         Command::SettleVillage(crate::village::SettleVillage { pass_id: 1, connected_realm_entity_id: 999999 }),
         Command::ReceiveVillageArmy(999999),
         Command::BurnStructureResources(
@@ -39,13 +39,6 @@ fn typed_commands() -> Array<Command> {
             },
         ),
         Command::TransferExplorerResources(
-            crate::resources::ResourceTransfer {
-                from_entity_id: 999999,
-                to_entity_id: 999999,
-                resources: array![crate::resources::ResourceAmount { resource_type: 1, amount: 1 }].span(),
-            },
-        ),
-        Command::TransferStructureResourcesToExplorer(
             crate::resources::ResourceTransfer {
                 from_entity_id: 999999,
                 to_entity_id: 999999,
@@ -67,11 +60,6 @@ fn typed_commands() -> Array<Command> {
                 from_entity_id: 999999,
                 to_entity_id: 999999,
                 resources: array![crate::resources::ResourceAmount { resource_type: 1, amount: 1 }].span(),
-            },
-        ),
-        Command::BurnLaborForResourceProduction(
-            crate::production::RefillProduction {
-                structure_id: 999999, resource_types: array![1_u8].span(), amounts: array![1_u128].span(),
             },
         ),
         Command::BurnResourceForResourceProduction(
@@ -102,56 +90,7 @@ fn typed_commands() -> Array<Command> {
         Command::ContributeBitcoinLabor(crate::bitcoin::ContributeLabor { structure_id: 999999, amount: 1 }),
         Command::CloseBitcoinPhase(999999), Command::BindBitcoinPhase(999999),
         Command::ClaimBitcoinPhase(crate::bitcoin::ClaimPhase { phase: 0, mine_ids: array![999999_u64].span() }),
-        Command::BattleGuard(crate::commands::Battle { attacker_id: 999999, defender_id: 999999 }),
-        Command::CreateTradeOrder(
-            crate::trade::CreateOrder {
-                maker_id: 999999,
-                taker_id: 999999,
-                offered_resource: 1,
-                requested_resource: 2,
-                offered_per_lot: 1,
-                requested_per_lot: 1,
-                lots: 1,
-                expires_at: 0,
-            },
-        ),
-        Command::AcceptTradeOrder(crate::trade::AcceptOrder { trade_id: 999999, taker_id: 999999, lots: 1 }),
-        Command::CancelTradeOrder(999999),
-        Command::CreateBanks(
-            array![
-                crate::market::BankPlacement {
-                    name: 'bank', coord: crate::troops::Coord { alt: false, x: 2000000, y: 2000000 },
-                },
-                crate::market::BankPlacement {
-                    name: 'bank', coord: crate::troops::Coord { alt: false, x: 2000010, y: 2000000 },
-                },
-                crate::market::BankPlacement {
-                    name: 'bank', coord: crate::troops::Coord { alt: false, x: 2000020, y: 2000000 },
-                },
-                crate::market::BankPlacement {
-                    name: 'bank', coord: crate::troops::Coord { alt: false, x: 2000030, y: 2000000 },
-                },
-                crate::market::BankPlacement {
-                    name: 'bank', coord: crate::troops::Coord { alt: false, x: 2000040, y: 2000000 },
-                },
-                crate::market::BankPlacement {
-                    name: 'bank', coord: crate::troops::Coord { alt: false, x: 2000050, y: 2000000 },
-                },
-            ]
-                .span(),
-        ),
-        Command::BuyFromBank(
-            crate::market::Swap { bank_id: 999999, structure_id: 999999, resource_type: 1, amount: 1 },
-        ),
-        Command::SellToBank(crate::market::Swap { bank_id: 999999, structure_id: 999999, resource_type: 1, amount: 1 }),
-        Command::AddBankLiquidity(
-            crate::market::AddLiquidity {
-                bank_id: 999999, structure_id: 999999, resource_type: 1, resource_amount: 1, lords_amount: 1,
-            },
-        ),
-        Command::RemoveBankLiquidity(
-            crate::market::RemoveLiquidity { bank_id: 999999, structure_id: 999999, resource_type: 1, shares: 1 },
-        ),
+        Command::BattleGuard(crate::commands::Battle { attacker_id: 999999, defender_id: 999999, relic_slot: None }),
         Command::InitializeHyperstructure(999999),
         Command::ContributeHyperstructure(
             crate::hyperstructures::Contribution {
@@ -182,13 +121,7 @@ fn typed_commands() -> Array<Command> {
                 entity_id: 999999, relic_id: 39, recipient: crate::relics::Recipient::Explorer,
             },
         ),
-        Command::CloseSeason, Command::PledgeFaith(crate::faith::Pledge { structure_id: 999999, wonder_id: 999999 }),
-        Command::RemoveFaith(999999), Command::UpdateWonderOwnership(999999), Command::UpdateFaithfulOwnership(999999),
-        Command::ClaimWonderPoints(999999),
-        Command::ClaimPlayerFaithPoints(
-            crate::faith::ClaimPlayer { player: 999.try_into().unwrap(), wonder_id: 999999 },
-        ),
-        Command::RecordBlitzResults, Command::CraftRelic(999999),
+        Command::CloseSeason, Command::RecordBlitzResults, Command::CraftRelic(999999),
         Command::CreateGuild(crate::guilds::CreateGuild { owned_structure_id: 999999, public: false, name: 'route' }),
         Command::JoinGuild(crate::guilds::JoinGuild { owned_structure_id: 999999, guild_id: 999.try_into().unwrap() }),
         Command::LeaveGuild,
@@ -209,13 +142,6 @@ fn typed_commands() -> Array<Command> {
         Command::GuardAttack(
             crate::combat_actions::GuardAttack {
                 guard: crate::troop_management::GuardSlot { structure_id: 999999, slot: 0 }, explorer_id: 999999,
-            },
-        ),
-        Command::Raid(
-            crate::combat_actions::Raid {
-                explorer_id: 999999,
-                structure_id: 999999,
-                steal_resources: array![crate::resources::ResourceAmount { resource_type: 1, amount: 1 }].span(),
             },
         ),
         Command::DepositResource(
@@ -246,15 +172,16 @@ fn typed_commands() -> Array<Command> {
                 explorer_id: 999999, coord: crate::troops::Coord { alt: false, x: 2000000, y: 2000000 },
             },
         ),
-        Command::RefillStamina(crate::relics::RefillStamina { explorer_id: 999999, amount: 1 }),
-        Command::WithdrawLords(crate::relics::WithdrawLords { structure_id: 999999, amount: 1 }),
+        Command::ClaimDailyQuest(crate::quests::ClaimDailyQuest { home: 999999, day: 0 }),
     ]
 }
 pub fn fresh_world(ready: bool) -> Deployment {
     let d = super::setup_with_domains(true, "StructuresLogic", "TroopsLogic");
     let game = crate::game::IGameDispatcherTrait::game(crate::game::IGameDispatcher { contract_address: d.games }, 1);
     let rules = crate::rules::SliceRules {
-        command_mask: 0xffffffffffffffffff, entry_rule: crate::rules::ENTRY_ENTITLEMENT, ..play_fixture::rules(),
+        command_mask: 0xffffffffffffffffffffffffffffffff,
+        entry_rule: crate::rules::ENTRY_ENTITLEMENT,
+        ..play_fixture::rules(),
     };
     play_fixture::seed_game(
         d.games,
@@ -266,18 +193,11 @@ pub fn fresh_world(ready: bool) -> Deployment {
     );
     if ready {
         super::set_launcher(d, d.actor);
-        // This all-routes synthetic world enables WithdrawLords too; give its pre-roll deadline a real preset value.
-        let (_, frontier) = super::preset_projection::current_definition("frontier");
         snforge_std::interact_with_state(
             d.games,
             || {
                 crate::state::write().registrar.roster_sizes.write(1, 1);
                 crate::state::write().registrar.seaters.write(1, d.actor);
-                crate::state::write()
-                    .presets
-                    .entry(crate::logic::game::preset_commitment(crate::logic::game::game(1)))
-                    .rollover_chest_rules
-                    .write(frontier.economy.chests);
             },
         );
     }
@@ -337,7 +257,7 @@ pub fn explorer_case(explore: bool) -> (Deployment, TestAction, u64) {
 }
 pub fn battle_case() -> (Deployment, TestAction, u64) {
     let (d, _, _, attacker, defender) = super::combat_actions::setup_with_cooldown(
-        false, 0, super::play_fixture::ETERNUM_RULES | crate::rules::COMBAT_DICE, 0, (1000, 1000),
+        false, 0, super::play_fixture::TEST_RULES | crate::rules::COMBAT_DICE, 0, (1000, 1000),
     );
     let command = Command::Battle(
         crate::combat_actions::AttackExplorer {
@@ -361,22 +281,14 @@ pub fn season_case() -> (Deployment, TestAction, u64) {
     super::resource_commands::set_fixture(
         d.games, selector!("realms"), selector!("traits"), array![1].span(), 0x4000001_u32,
     );
-    let command = Command::SettleSeason(crate::realms::SettleSeason { selected_realm: Some(1) });
+    let command = Command::SettleSeason(crate::realms::SettleSeason { selected_realm: Some(1), aspect: None });
     (d, TestAction { game_id, actor: d.actor, command }, 350)
 }
-pub fn live_loot_case(raid: bool, insufficient: bool, full: bool) -> (Deployment, TestAction) {
-    let (d, _, target, attacker, defender) = super::combat_actions::setup_with_cooldown(
-        false, 0, super::play_fixture::ETERNUM_RULES | crate::rules::COMBAT_DICE, 0, (1000, 1000),
+pub fn live_loot_case(insufficient: bool, full: bool) -> (Deployment, TestAction) {
+    let (d, _, _, attacker, defender) = super::combat_actions::setup_with_cooldown(
+        false, 0, super::play_fixture::TEST_RULES | crate::rules::COMBAT_DICE, 0, (1000, 1000),
     );
-    let from = if raid {
-        target.entity_id
-    } else {
-        defender
-    };
-    super::resource_commands::grant(d, crate::resources::ResourceKey { game_id: 3, entity_id: from }, 2, 90);
-    if raid {
-        super::combat_actions::set_guard(d, target, 0, 1000);
-    }
+    super::resource_commands::grant(d, crate::resources::ResourceKey { game_id: 3, entity_id: defender }, 2, 90);
     if full {
         let key = crate::resources::ResourceKey { game_id: 3, entity_id: attacker };
         let free = snforge_std::interact_with_state(
@@ -395,13 +307,7 @@ pub fn live_loot_case(raid: bool, insufficient: bool, full: bool) -> (Deployment
         70
     } }]
         .span();
-    let command = if raid {
-        Command::Raid(
-            crate::combat_actions::Raid {
-                explorer_id: attacker, structure_id: target.entity_id, steal_resources: loot,
-            },
-        )
-    } else {
+    let command = {
         Command::Battle(
             crate::combat_actions::AttackExplorer {
                 attacker_id: attacker, defender_id: defender, steal_resources: loot,

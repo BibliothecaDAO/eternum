@@ -1,4 +1,5 @@
 import { handlePayoutIdentity } from "./payout-identity";
+import { aspectOn } from "./race-standing";
 import { presentsOperatorToken, SHARE_PATH, VISIT_RECORD_SECONDS } from "@realms-world/identity";
 
 import { handleAccountDeletion } from "./account-deletion";
@@ -19,6 +20,7 @@ import { ACCOUNT_CLASS_HASH, socialProvidersOf, type IdentityEnv } from "./env";
 import { json } from "./http";
 import { keepBrowser, noteBrowser } from "./browsers";
 import { handleBuildOrders } from "./build-orders";
+import { handleInterfaceOpening } from "./interface-opening";
 import {
   campaignStandings,
   hasCampaignHomeSource,
@@ -43,6 +45,7 @@ import { handlePushSubscriptions } from "./push-notifications";
 import { handleShareCard, handleShareCardUpload, handleSharedPage } from "./share-cards";
 import {
   handleCreateShare,
+  handleJoinedShare,
   handleShareReport,
   handleSharePosted,
   handleShareTally,
@@ -142,6 +145,7 @@ export const routeIdentityRequest = async (
   if (pathname.startsWith("/api/chat/")) return routeChat(request, env, auth, pathname);
   if (pathname === "/api/notifications/preferences") return handleNotificationPreferences(request, auth, env.DB);
   if (pathname === "/api/build-orders") return handleBuildOrders(request, auth, env.DB);
+  if (pathname === "/api/interface/opening") return handleInterfaceOpening(request, auth, env.DB);
   if (pathname === "/api/operator/campaign-draw" && request.method === "POST") {
     if (!(await isOperator(env, request))) return json({ error: "unauthorized" }, 401);
     return handleCampaignDraw(request, env.DB, (realmsId, presets) =>
@@ -241,7 +245,9 @@ const routeShares = async (
     if (!(await isOperator(env, request))) return json({ error: "unauthorized" }, 401);
     return handleShareReport(shareWorld(env, platform));
   }
-  if (pathname === "/api/shares" && request.method === "POST") return handleCreateShare(request, auth, env.DB);
+  if (pathname === "/api/shares" && request.method === "POST")
+    return handleCreateShare(request, auth, shareWorld(env, platform));
+  if (pathname === "/api/shares/joined" && request.method === "GET") return handleJoinedShare(request, auth, env.DB);
   if (pathname === "/api/shares" && request.method === "GET")
     return handleShareTally(request, auth, shareWorld(env, platform));
   if (code && action === "posted" && request.method === "POST") return handleSharePosted(request, auth, env.DB, code);
@@ -259,6 +265,7 @@ const routeShares = async (
 const shareWorld = (env: IdentityEnv, platform: WorkerPlatform): ShareWorld => ({
   db: env.DB,
   sitesCleared: (game) => sitesClearedOn(env, platform.fetchShard, game),
+  aspectOf: (game, account) => aspectOn(env, platform.fetchShard, game, account),
   accountOf: playerAccounts(env),
 });
 

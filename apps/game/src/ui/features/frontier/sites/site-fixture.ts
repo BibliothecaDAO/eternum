@@ -1,3 +1,4 @@
+import { frontierPreset } from "../../../../../../../config/source/frontier/native";
 import { frontierArmyRules } from "../army/progression-rules-fixture";
 import { BiomeType, BiomeTypeToId, getNeighborHexes, StructureType, TileOccupier } from "@bibliothecadao/types";
 import type { SiteKind } from "@bibliothecadao/eternum";
@@ -15,8 +16,23 @@ import frontierConfig from "../../../../../../../config/generated/frontier.madar
 import { frontierDay } from "../deploy/deploy-fixture";
 import type { SiteAttack } from "./site-card-plan";
 
+/** Retained cash-ruin fixtures use the historical preset's actual entitlement. */
+export const legacyRuinRules = () => {
+  const chests = frontierPreset.chests;
+  return {
+    game_id: 1,
+    price_ceiling: BigInt(chests.priceCeiling),
+    shares: chests.shares,
+    claim_window_seconds: chests.claimWindowSeconds,
+    pool_bps: chests.poolBps,
+    top_n: chests.topN,
+  };
+};
+
 const PRECISION = 1_000_000_000n;
 export const SITE = 710;
+/** The wire key army 201's ArmyDay is held under: a lab game that moves the army to another day replaces it there. */
+export const ARMY_DAY_KEY = "0xad";
 export const SITE_TILE = { col: 40, row: 12, alt: false };
 const set = (key: string, model: string, value: Record<string, unknown>) => ({ model, key, value });
 const troops = (count: bigint, stamina: bigint) => ({
@@ -105,12 +121,16 @@ export const campBeside = (kind: SiteKind = "Camp", guardKnown = true, armyStami
       game_id: 1,
       entity_id: SITE,
       category: SITE_CATEGORY[kind],
+      beast_kind: kind === "Beasts" ? "Cyclops" : "None",
       initial_guard_count: String(guardCount * PRECISION),
       ...SITE_TILE,
       clear: null,
     }),
     ...(kind === "Ruin"
-      ? [set("0x76", "SiteChest", { game_id: 1, entity_id: SITE, tier: 3, amount: "500", reservation_day: "0" })]
+      ? [
+          set("0x1ca", "ChestRules", legacyRuinRules()),
+          set("0x76", "SiteChest", { game_id: 1, entity_id: SITE, tier: 3, amount: "500", reservation_day: "0" }),
+        ]
       : []),
     ...(guardKnown
       ? [
@@ -123,6 +143,7 @@ export const campBeside = (kind: SiteKind = "Camp", guardKnown = true, armyStami
           }),
         ]
       : []),
+    set(ARMY_DAY_KEY, "ArmyDay", { game_id: 1, explorer_id: 201, day: 0 }),
     set("0x74", "ExplorerTroops", { game_id: 1, explorer_id: 201, owner: 7, troops: troops(1_498n, armyStamina) }),
     set("0x75", "TileOccupancy", {
       game_id: 1,
@@ -324,6 +345,7 @@ export const sitesBeside = (stamina: bigint, layout: SitesLayout = SITES_LAYOUT)
     ...revealed.map((tile, index) =>
       set(`0x20${index}`, "TileOpt", { game_id: 1, alt: false, col: tile.col, row: tile.row, data: grass }),
     ),
+    set(ARMY_DAY_KEY, "ArmyDay", { game_id: 1, explorer_id: 201, day: 0 }),
     set("0x74", "ExplorerTroops", { game_id: 1, explorer_id: 201, owner: 7, troops: troops(1_498n, stamina) }),
     site("0x75", layout.army, 201, TileOccupier.ExplorerKnightT1),
     ...sites.map(([key, tile, entity, category]) => site(key, tile, entity, category)),

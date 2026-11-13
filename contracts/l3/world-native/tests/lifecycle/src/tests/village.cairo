@@ -1,11 +1,12 @@
 pub use world_test_support::tests::village::*;
+use crate::logic::release::{IReleasesDispatcher, IReleasesDispatcherTrait, Release};
 
-
-#[test]
+#[test_case(false)]
+#[test_case(true)]
 #[feature("safe_dispatcher")]
-fn production_pass_is_atomic_single_use_and_army_grant_uses_block_time() {
+fn production_pass_is_atomic_single_use_and_army_grant_uses_block_time(new_release: bool) {
     let (deployment, realm) = setup(false);
-    let ledger = IVillagesSafeDispatcher { contract_address: deployment.games };
+    let ledger = IVillagePassesSafeDispatcher { contract_address: deployment.games };
     let pass = VillagePassKey { game_id: 3, pass_id: 7 };
     assert!(!run(deployment, settle(realm, 7), 100));
     assert!(ledger.village_pass(pass).unwrap().is_none());
@@ -58,6 +59,24 @@ fn production_pass_is_atomic_single_use_and_army_grant_uses_block_time() {
     assert!(!run(deployment, Command::ReceiveVillageArmy(village_id), 100));
     let interval = play_fixture::rules().tick_config.armies_tick_in_seconds;
     let claimable_at = (100 / interval + 2) * interval;
+    if new_release {
+        let releases = IReleasesDispatcher { contract_address: deployment.games };
+        let original = releases.release(1);
+        start_cheat_caller_address(deployment.games, authority());
+        releases
+            .register_release(
+                2,
+                Release {
+                    classes: games_storage::release::LogicClasses {
+                        structures: original.classes.map, ..original.classes,
+                    },
+                    ..original,
+                },
+            );
+        stop_cheat_caller_address(deployment.games);
+        assert_eq!(releases.current_release(), 2);
+        assert_eq!(releases.game_release(3), 1);
+    }
     let mut spy = spy_events();
     assert!(run(deployment, Command::ReceiveVillageArmy(village_id), claimable_at));
     let mut guard_stories = 0;
@@ -94,18 +113,13 @@ fn development_villages_skip_passes_and_have_no_six_per_realm_limit() {
     for _ in 0..7_u8 {
         assert!(run(deployment, settle(realm, 0), 100));
     }
-    let ledger = IVillagesDispatcher { contract_address: deployment.games };
+    let ledger = IVillagePassesDispatcher { contract_address: deployment.games };
     assert!(ledger.village_pass(VillagePassKey { game_id: 3, pass_id: 0 }).is_none());
 }
 
 #[test]
 fn triple_village_consumes_one_pass_and_leaves_both_entries_available() {
     assert_blitz_village(SettlementMode::Triple);
-}
-
-#[test]
-fn duel_village_consumes_one_pass_and_leaves_both_entries_available() {
-    assert_blitz_village(SettlementMode::Duel);
 }
 
 #[test]
@@ -118,7 +132,7 @@ fn exhausted_geometry_records_rejection_and_keeps_the_pass() {
     let pass = register_pass(deployment, 9);
     let mut rejection_spy = spy_events();
     assert!(!run(deployment, settle(realm, 9), 100));
-    let ledger = IVillagesDispatcher { contract_address: deployment.games };
+    let ledger = IVillagePassesDispatcher { contract_address: deployment.games };
     assert!(ledger.village_pass(pass).unwrap().village_id == 0);
     let pool = ISettlementPoolDispatcher { contract_address: deployment.games };
     assert!(

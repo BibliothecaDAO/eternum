@@ -19,7 +19,7 @@ import {
   getStructureName,
   isViewerOwner,
   ruinDisappeared,
-  ruinLimitPerDepth,
+  ruinLimit,
 } from "@bibliothecadao/eternum";
 import {
   safeInteger,
@@ -39,11 +39,15 @@ import { fightIsSent, fightWasNotSent, useFightRefusal } from "./fight-refusal";
 import { useSelectedOwnArmy } from "./selected-army";
 import { readArmyCard, readSiteCard, type SiteAttack, type SiteCardPlan } from "./site-card-plan";
 import { SiteCardView, type SiteVerb } from "./site-card-view";
+import { useRuinRelicChoice } from "../relics/ruin-relic-choice";
+import { RelicReplacement } from "../relics/relic-replacement";
 
 const SITE_MODELS = [
   "ExpeditionSite",
   "ExpeditionDiscovery",
   "GameRelease",
+  "SliceRules",
+  "ChestRules",
   "LordsBudget",
   "SiteChest",
   "ExplorerTroops",
@@ -90,7 +94,7 @@ export const useSelectedTarget = (): AttackTarget | null => {
 const standingSite = (store: NativeFactStore, tile: TileSpatialRenderable): AttackTarget | null => {
   const key = { game_id: configManager.getActiveGameId(), entity_id: tile.occupierId };
   const site = store.get("ExpeditionSite", key);
-  if (!site || site.clear || ruinDisappeared(store, site)) return null;
+  if (!site || site.clear || ruinDisappeared(store, site) !== false) return null;
   return { kind: "site", site, structure: store.require("Structure", key), tile };
 };
 
@@ -145,21 +149,28 @@ export const TileCard = ({
   const armyId = actor ? safeInteger(actor.army.explorer_id) : null;
   const inFlight = useInFlight("army", armyId)?.order;
   const refused = useFightRefusal(armyId, targetId(selected));
+  const relics = useRuinRelicChoice(selected.kind === "site" ? selected.site : null, armyId);
 
   const attackSite = async () => {
     if (!attack || !account.account || armyId === null) return;
     const signer = account.account;
     let sent = false;
     try {
-      if (selected.kind === "site" && ruinDisappeared(setup.store, selected.site))
-        throw new Error("This ruin has disappeared.");
+      if (selected.kind === "site") {
+        const disappeared = ruinDisappeared(setup.store, selected.site);
+        if (disappeared === undefined) throw new Error("The ruin's rules are still loading.");
+        if (disappeared) throw new Error("This ruin has disappeared.");
+      }
       if (readTarget(setup.store, selected, attack).chest?.funded === false)
         throw new Error("Today's LORDS budget cannot fund this ruin.");
+      // The relic slot read from the facts as Attack goes: a choice the slot no longer bears, or relics not yet known,
+      // keep the order home with the card's own reason.
+      const relicSlot = relics?.dispatchSlot();
       await sendOnce("army", armyId, { order: "attack" }, () => {
         sent = true;
         fightIsSent();
         playUnitCommandSound("attack");
-        return sendAttack(setup.systemCalls, signer, armyId, selected);
+        return sendAttack(setup.systemCalls, signer, armyId, selected, relicSlot);
       });
     } catch (error) {
       fightWasNotSent({
@@ -176,14 +187,17 @@ export const TileCard = ({
   const verb: SiteVerb | null =
     plan.chest?.funded === false
       ? { kind: "blocked", reason: "Today's LORDS budget cannot fund this ruin." }
-      : siteVerb({
-          hasArmy: actor !== null,
-          inReach: plan.inReach,
-          approach,
-          stamina,
-          attack: { stamina: plan.attackStamina, inFlight, refused, onAttack: () => void attackSite() },
-        });
+      : relics?.hold && actor !== null
+        ? { kind: "blocked", reason: relics.hold }
+        : siteVerb({
+            hasArmy: actor !== null,
+            inReach: plan.inReach,
+            approach,
+            stamina,
+            attack: { stamina: plan.attackStamina, inFlight, refused, onAttack: () => void attackSite() },
+          });
 
+  const limit = ruinLimit(facts.store, configManager.getActiveGameId());
   return (
     <SiteCardView
       receipt={receipt}
@@ -195,9 +209,15 @@ export const TileCard = ({
       fight={plan.fight}
       pay={sitePay(plan)}
       chest={plan.chest ? { tier: (plan.chest.tier + 1) as Tier, lords: plan.chest.amount } : undefined}
+      relic={(relics && relics.state.kind !== "none" && relics.state.relic) || undefined}
+      replacement={
+        relics?.state.kind === "full" && (
+          <RelicReplacement carried={relics.state.carried} chosen={relics.state.chosen} onChoose={relics.replace} />
+        )
+      }
       ruinChoice={
-        plan.chest
-          ? { depth: plan.chest.depth, perDepth: ruinLimitPerDepth(facts.store, configManager.getActiveGameId()) }
+        plan.ruinDepth !== undefined && (limit === "home" || limit === "depth")
+          ? { depth: plan.ruinDepth, perDepth: limit === "depth" }
           : undefined
       }
       xp={plan.xp}
@@ -217,9 +237,15 @@ const sendAttack = (
   signer: NonNullable<ReturnType<typeof useGame>["account"]["account"]>,
   explorerId: number,
   target: AttackTarget,
+  relicSlot: 0 | 1 | 2 | undefined,
 ) =>
   target.kind === "site"
-    ? systemCalls.attack_explorer_vs_guard({ signer, explorer_id: explorerId, structure_id: targetId(target) })
+    ? systemCalls.attack_explorer_vs_guard({
+        signer,
+        explorer_id: explorerId,
+        structure_id: targetId(target),
+        relic_slot: relicSlot,
+      })
     : systemCalls.attack_explorer_vs_explorer({
         signer,
         aggressor_id: explorerId,

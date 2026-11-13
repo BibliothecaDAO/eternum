@@ -1,4 +1,5 @@
 import { configManager, setBlockTimestampSource } from "@bibliothecadao/eternum";
+import { frontierPreset } from "../../../../../../../config/source/frontier/native";
 import { NativeFactStore } from "@bibliothecadao/eternum/game-client";
 import { RESOURCE_PRECISION, StructureType } from "@bibliothecadao/types";
 import preset from "../../../../../../../contracts/l3/world-native/tests/fixtures/current-presets/preset-3.json";
@@ -39,6 +40,8 @@ export const frontierDay = () => {
     set("0x100", "SliceRules", {
       ...preset.rules,
       game_id: 1,
+      // Frontier's own commands, as its preset registers them: the game a Frontier player plays.
+      command_mask: String(frontierPreset.commandMask),
       day_unit_seconds: 100,
       troop_stamina_config: {
         ...preset.rules.troop_stamina_config,
@@ -90,6 +93,7 @@ export const frontierDay = () => {
       storage_step_bps: 5000,
       population_step_bps: 2500,
       ration_step: "0",
+      town: null,
       training_gate_tier: 2,
       troop_store_deploys: 2,
       settlement_resource_cap: 6000,

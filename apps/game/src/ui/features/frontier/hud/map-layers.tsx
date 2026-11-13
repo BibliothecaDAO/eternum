@@ -15,7 +15,6 @@ import {
   type ExpeditionRules,
   expeditionDepth,
   Position,
-  researchedDepth,
   type RuinChest,
   type RuinChests,
   dayOf,
@@ -37,7 +36,7 @@ const MAP_LAYERS = [0, 1, 2, 3] as const satisfies readonly MapLayer[];
 
 /** The layers a realm can look into, the one the map shows, and the way to each. */
 export type MapLayers = {
-  /** The world, then each Ethereal layer the realm has researched, in order down. */
+  /** The world, then each Ethereal layer the realm has reached, in order down. */
   layers: readonly MapLayer[];
   /** The layer the camera looks at; none in the realm's view, where no layer is shown. */
   shown: MapLayer | null;
@@ -46,11 +45,11 @@ export type MapLayers = {
   chests?: RuinChests | null;
 };
 
-const LAYER_MODELS = ["RealmKnowledge", "Structure"] as const;
+const LAYER_MODELS = ["Structure"] as const;
 
 /**
- * The map's layers once the realm has researched Ethereal I, its spire a portal into them (owner, 4 November 2026: "its
- * a portal to the ethereal layer bro"): the world and each Ethereal layer it opens. Before Ethereal I only the world,
+ * The map's layers once the realm has gone down a spire, the spire a portal into them (owner, 4 November 2026: "its a
+ * portal to the ethereal layer bro"): the world and each Ethereal layer it has reached. Before that only the world,
  * so the view switch stays Realm / World and carries the chests' marks alone, with no list. On the map, going to a layer keeps the camera's spot and moves it that many regions
  * down the map (viewInLayer), as a spire's portal does. In the realm's view too (owner, 6 November 2026: "can I get the
  * dropdown even in realms view?"): no layer is shown there, and a layer opens the map at the realm's site in it. The
@@ -67,7 +66,8 @@ export const useMapLayers = (
   const chests = useRuinChests(rules, player);
   const camera = useUIStore((state) => state.cameraTargetHex);
   const { isMapView } = useQuery();
-  const deepest = realm ? (researchedDepth(facts.store, realm.game_id, realm.entity_id) ?? 0) : 0;
+  // The layers the realm has reached (enter_depth records the deepest), each a view of the map.
+  const deepest = realm?.metadata.deepest_depth ?? 0;
   if (!realm) return null;
   const site = realmSite(facts.store, realm);
   const from = isMapView ? (camera ?? site) : site;
@@ -76,7 +76,9 @@ export const useMapLayers = (
     shown: !isMapView ? null : from ? (expeditionDepth(rules, { y: from.row }) as MapLayer) : 0,
     go: (layer) => {
       if (!from) return;
-      const to = viewInLayer(rules, from, layer);
+      const origin = expeditionDepth(rules, { y: from.row }) === 3 ? site : from;
+      if (!origin) return;
+      const to = viewInLayer(rules, origin, layer);
       if (isMapView) requestLayerView(to);
       else openPlace("map", Position.fromContract({ x: to.col, y: to.row }));
     },
@@ -144,7 +146,13 @@ export const layerTab = (layers: MapLayers): WorldTab => ({
 });
 
 /** What a layer's chest is read from: the receipts and today's discovery, and what the client's scope is derived from. */
-const CHEST_MODELS = ["ExpeditionDiscovery", "RealmKnowledge", "GameRelease", ...SCOPE_INPUT_MODELS] as const;
+const CHEST_MODELS = [
+  "ExpeditionDiscovery",
+  "RealmKnowledge",
+  "GameRelease",
+  "ChestRules",
+  ...SCOPE_INPUT_MODELS,
+] as const;
 
 /**
  * The player's ruin chest on each layer today, the World then Ethereal I to III (ruinChestsToday): today's clears from

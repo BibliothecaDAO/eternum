@@ -82,15 +82,12 @@ export class LaunchShard extends ShardOperator implements ReleaseChain {
   async gameRelease(gameId: number) {
     return Number(await this.view<bigint>("game_release", [gameId]));
   }
-  async isSettled(gameId: number) {
-    return (await this.game(gameId)).settled;
-  }
   async applyRelease(gameId: number, releaseId: number) {
     return (await this.admin("apply_release", { game_id: gameId, release_id: releaseId })).transactionHash;
   }
   /** Creates one open-entry game; a fixed roster launches with its whole slot through `launchBlitz`. */
   async create(request: CreateGameRequest, createdAt: number): Promise<LaunchGameSummary> {
-    const params = await this.creationParams(request, createdAt, [], "0x0");
+    const params = buildLaunchGameParams(request, createdAt, [], "0x0");
     const { transactionHash } = await this.admin("create_game", { params });
     const gameId = await this.gameId(request.gameName);
     if (!gameId) throw new Error("created_game_not_readable");
@@ -104,10 +101,8 @@ export class LaunchShard extends ShardOperator implements ReleaseChain {
    * Returns each game's summary in the order given.
    */
   async launchBlitz(launches: readonly BlitzLaunch[]): Promise<LaunchGameSummary[]> {
-    const params = await Promise.all(
-      launches.map(({ request, createdAt, players, seater }) =>
-        this.creationParams(request, createdAt, players, seater),
-      ),
+    const params = launches.map(({ request, createdAt, players, seater }) =>
+      buildLaunchGameParams(request, createdAt, players, seater),
     );
     const settlingAt = Math.min(...params.map((game) => game.start_settling_at));
     const now = (await this.head()).timestamp;
@@ -201,53 +196,53 @@ export class LaunchShard extends ShardOperator implements ReleaseChain {
       dryRun: false,
     };
   }
-  private async creationParams(
-    request: CreateGameRequest,
-    createdAt: number,
-    players: readonly RosterSeat[],
-    seater: string,
-  ): Promise<CreationParams> {
-    if (!request.gameStartTime || !request.version) throw new Error("durable_launch_parameters_missing");
-    const presetId = Number(request.version);
-    const preset = nativePresetForId(presetId);
-    const config = applyDeploymentConfigOverrides(loadNativePresetConfiguration(request.environment, presetId), {
-      startMainAt: Math.floor(Date.parse(request.gameStartTime) / 1000),
-      factoryAddress: "",
-      durationSeconds: request.durationSeconds,
-      mapConfigOverrides: request.mapConfigOverrides,
-      biomeClimateOverrides: request.biomeClimateOverrides,
-      blitzRegistrationOverrides: request.blitzRegistrationOverrides,
-    });
-    const startMainAt = Math.floor(Date.parse(request.gameStartTime) / 1000);
-    const startSettlingAt = startMainAt - (request.environment === "madara.blitz" ? BLITZ_SLOT_PREPARATION_SECONDS : 0);
-    const common = buildCreateGameParams(config, {
-      gameName: request.gameName,
-      presetId,
-      startMainAt,
-      chainTimestamp: startMainAt,
-      durationSeconds: request.durationSeconds ?? config.season.durationSeconds,
-      devModeOn: request.devModeOn ?? false,
-      singleRealmMode: false,
-      twoPlayerMode: preset.settlementMode === "Duel",
-      useMapOverride: !!request.mapConfigOverrides,
-    });
-    return {
-      name: common.name,
-      preset_id: presetId,
-      start_settling_at: startSettlingAt,
-      start_main_at: startMainAt,
-      duration_seconds: common.duration_seconds,
-      end_grace_seconds: common.end_grace_seconds,
-      dev_mode_on: common.dev_mode_on,
-      roster: players,
-      seater,
-      registration_start: Math.min(Math.floor(createdAt / 1000), startSettlingAt - 1),
-      biome_climate: common.biome_climate_config,
-      map_override: new CairoOption(
-        request.mapConfigOverrides ? CairoOptionVariant.Some : CairoOptionVariant.None,
-        common.map_override,
-      ),
-      seed: common.seed,
-    };
-  }
+}
+
+/** The immutable game payload shared by live launches and the offline rehearsal. */
+export function buildLaunchGameParams(
+  request: CreateGameRequest,
+  createdAt: number,
+  players: readonly RosterSeat[],
+  seater: string,
+) {
+  if (!request.gameStartTime || !request.version) throw new Error("durable_launch_parameters_missing");
+  const presetId = Number(request.version);
+  const config = applyDeploymentConfigOverrides(loadNativePresetConfiguration(request.environment, presetId), {
+    startMainAt: Math.floor(Date.parse(request.gameStartTime) / 1000),
+    factoryAddress: "",
+    durationSeconds: request.durationSeconds,
+    mapConfigOverrides: request.mapConfigOverrides,
+    biomeClimateOverrides: request.biomeClimateOverrides,
+    blitzRegistrationOverrides: request.blitzRegistrationOverrides,
+  });
+  const startMainAt = Math.floor(Date.parse(request.gameStartTime) / 1000);
+  const startSettlingAt = startMainAt - (request.environment === "madara.blitz" ? BLITZ_SLOT_PREPARATION_SECONDS : 0);
+  const common = buildCreateGameParams(config, {
+    gameName: request.gameName,
+    presetId,
+    startMainAt,
+    chainTimestamp: startMainAt,
+    durationSeconds: request.durationSeconds ?? config.season.durationSeconds,
+    devModeOn: request.devModeOn ?? false,
+    singleRealmMode: false,
+    useMapOverride: !!request.mapConfigOverrides,
+  });
+  return {
+    name: common.name,
+    preset_id: presetId,
+    start_settling_at: startSettlingAt,
+    start_main_at: startMainAt,
+    duration_seconds: common.duration_seconds,
+    end_grace_seconds: common.end_grace_seconds,
+    dev_mode_on: common.dev_mode_on,
+    roster: players,
+    seater,
+    registration_start: Math.min(Math.floor(createdAt / 1000), startSettlingAt - 1),
+    biome_climate: common.biome_climate_config,
+    map_override: new CairoOption(
+      request.mapConfigOverrides ? CairoOptionVariant.Some : CairoOptionVariant.None,
+      common.map_override,
+    ),
+    seed: common.seed,
+  };
 }

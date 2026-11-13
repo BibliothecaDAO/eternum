@@ -1,3 +1,4 @@
+import { storyTag } from "./fixtures";
 import { presetRegistration, presetLaunch } from "./preset-fixtures";
 import { createNativeWorldIngestion } from "./world-ingestion";
 import { loadNativeWorld } from "./load";
@@ -338,7 +339,7 @@ it("keeps two story identities from overlay through confirmation, each its trans
   const story = (index: number): RpcEvent => ({
     from_address: decoder.registry.worldAddress,
     keys: [...layout.prefix, "2", "1", "0", "0x111", "0", "3", "0x55"],
-    data: ["1", String(index + 1), "2160"],
+    data: [storyTag("StructureLevelUpStory"), String(index + 1), "2160"],
   });
   const points = pointsAward("1", "0x111", "100", "100", "100");
   const pending = receipt([story(0), points, story(1)]);

@@ -1,0 +1,36 @@
+--- a/crates/cheatnet/src/runtime_extensions/outer_call_runtime_extension/rpc.rs
++++ b/crates/cheatnet/src/runtime_extensions/outer_call_runtime_extension/rpc.rs
+@@ -122,6 +122,33 @@
+ pub fn call_entry_point(
+     syscall_handler: &mut SyscallHintProcessor,
+     cheatnet_state: &mut CheatnetState,
++    entry_point: CallEntryPoint,
++    remaining_gas: &mut u64,
++) -> CallEntryPointResult {
++    let previous_events = std::mem::take(&mut syscall_handler.base.context.n_emitted_events);
++    let previous_calls = syscall_handler.base.inner_calls.len();
++    let result = call_transaction_entry_point(
++        syscall_handler, cheatnet_state, entry_point, remaining_gas,
++    );
++    syscall_handler.base.context.n_emitted_events += previous_events;
++    for call in &mut syscall_handler.base.inner_calls[previous_calls..] {
++        offset_event_order(call, previous_events);
++    }
++    result
++}
++
++fn offset_event_order(call: &mut CallInfo, offset: usize) {
++    for event in &mut call.execution.events {
++        event.order += offset;
++    }
++    for inner in &mut call.inner_calls {
++        offset_event_order(inner, offset);
++    }
++}
++
++fn call_transaction_entry_point(
++    syscall_handler: &mut SyscallHintProcessor,
++    cheatnet_state: &mut CheatnetState,
+     mut entry_point: CallEntryPoint,
+     remaining_gas: &mut u64,
+ ) -> CallEntryPointResult {

@@ -12,7 +12,7 @@ fn frontier_draws_the_ruled_odds_over_100k_reveals() {
     let mut counts: Felt252Dict<u32> = Default::default();
     for sample in 0_u64..100000 {
         let seed = 0x46524f4e54494552 + Into::<u64, u256>::into(sample);
-        let key = bucket(frontier(preset, 0, 0, 0, 0, Some(CHEST), seed));
+        let key = bucket(frontier(preset, 0, 0, 0, 100, 0, Some(RELIC), seed));
         let count = counts.get(key);
         counts.insert(key, count + 1);
     }
@@ -28,8 +28,8 @@ fn frontier_draws_the_ruled_odds_over_100k_reveals() {
 fn scouting_raises_its_chosen_kind_without_changing_beasts() {
     let rules = rules();
     for sample in 0_u64..20000 {
-        let base = frontier(rules, 0, 0, 0, 0, Some(CHEST), 0x53434f5554 + Into::<u64, u256>::into(sample));
-        let boosted = frontier(rules, 0, 10000, 0, 0, Some(CHEST), 0x53434f5554 + Into::<u64, u256>::into(sample));
+        let base = frontier(rules, 0, 0, 0, 100, 0, Some(RELIC), 0x53434f5554 + Into::<u64, u256>::into(sample));
+        let boosted = frontier(rules, 0, 10000, 0, 100, 0, Some(RELIC), 0x53434f5554 + Into::<u64, u256>::into(sample));
         // The table is ordered beasts first, so Scouting never moves a beast draw.
         assert_eq!(base == Discovery::Beasts, boosted == Discovery::Beasts);
     }
@@ -41,10 +41,10 @@ fn a_day_without_a_chest_never_draws_a_ruin_and_its_share_stays_empty() {
     let mut empties_free = 0_u32;
     let mut empties_taken = 0_u32;
     for sample in 0_u64..20000 {
-        let free = frontier(rules, 0, 0, 0, 0, Some(CHEST), 0x5255494e + Into::<u64, u256>::into(sample));
-        let taken = frontier(rules, 0, 0, 0, 0, None, 0x5255494e + Into::<u64, u256>::into(sample));
+        let free = frontier(rules, 0, 0, 0, 100, 0, Some(RELIC), 0x5255494e + Into::<u64, u256>::into(sample));
+        let taken = frontier(rules, 0, 0, 0, 100, 0, None, 0x5255494e + Into::<u64, u256>::into(sample));
         assert!(bucket(taken) != 3);
-        if free == Discovery::Ruin(CHEST) {
+        if free == Discovery::Ruin(RELIC) {
             assert_eq!(taken, Discovery::None);
         } else {
             assert_eq!(taken, free);
@@ -65,7 +65,7 @@ fn the_floor_draws_only_kinds_still_allowed() {
     let locked = rules();
     let mut empty = 0_u8;
     for sample in 0_u64..20000 {
-        let session = frontier(locked, 0, 0, 0, empty, None, 0x464c4f4f52 + Into::<u64, u256>::into(sample));
+        let session = frontier(locked, 0, 0, 0, 100, empty, None, 0x464c4f4f52 + Into::<u64, u256>::into(sample));
         if empty == 7 {
             assert!(
                 session == Discovery::Camp || session == Discovery::Rift || session == Discovery::Beasts,
@@ -77,31 +77,36 @@ fn the_floor_draws_only_kinds_still_allowed() {
         } else {
             0
         };
-        let floored = frontier(unlocked, 0, 0, 0, 7, Some(CHEST), 0x464c4f4f52 + Into::<u64, u256>::into(sample));
+        let floored = frontier(unlocked, 0, 0, 0, 100, 7, Some(RELIC), 0x464c4f4f52 + Into::<u64, u256>::into(sample));
         assert!(floored != Discovery::None);
     }
 }
 
 #[test]
-fn frontier_floor_is_home_day_scoped_and_ruin_clears_preserve_it() {
-    let key = ExpeditionDiscoveryKey { game_id: 1, structure_id: 17, epoch: 300 };
-    assert!(crate::logic::expeditions::discovery(key).is_none());
-    // The empty-reveal floor is shared across armies and depths.
-    for _ in 0_u8..7 {
-        crate::logic::expeditions::record_discovery(key, Discovery::None);
-    }
-    assert_eq!(crate::logic::expeditions::discovery(key).unwrap().empty_reveals, 7);
-    crate::logic::expeditions::record_discovery(key, Discovery::Ruin(CHEST));
-    let row = crate::logic::expeditions::discovery(key).unwrap();
-    assert_eq!((row.empty_reveals, row.ruin_cleared), (0, false));
-    crate::logic::expeditions::record_discovery(key, Discovery::None);
-    crate::logic::expeditions::record_discovery(key, Discovery::Camp);
-    let row = crate::logic::expeditions::discovery(key).unwrap();
-    assert_eq!((row.empty_reveals, row.ruin_cleared), (0, false));
-    crate::logic::expeditions::close_ruins(key, 0);
-    assert!(crate::logic::expeditions::discovery(key).unwrap().ruin_cleared);
-    assert!(crate::logic::expeditions::discovery(ExpeditionDiscoveryKey { epoch: 301, ..key }).is_none());
-    assert!(crate::logic::expeditions::discovery(ExpeditionDiscoveryKey { structure_id: 18, ..key }).is_none());
+fn frontier_floor_is_home_day_scoped_and_relic_finds_reset_it() {
+    let d = super::setup(true);
+    snforge_std::interact_with_state(
+        d.games,
+        || {
+            let key = ExpeditionDiscoveryKey { game_id, structure_id: 17, epoch: 300 };
+            assert!(crate::logic::expeditions::discovery(key).is_none());
+            // The empty-reveal floor is shared across armies and depths.
+            for _ in 0_u8..7 {
+                crate::logic::expeditions::record_discovery(key, Discovery::None);
+            }
+            assert_eq!(crate::logic::expeditions::discovery(key).unwrap().empty_reveals, 7);
+            crate::logic::expeditions::record_discovery(key, Discovery::Ruin(RELIC));
+            let row = crate::logic::expeditions::discovery(key).unwrap();
+            assert_eq!((row.empty_reveals, row.ruin_cleared), (0, false));
+            crate::logic::expeditions::record_discovery(key, Discovery::None);
+            crate::logic::expeditions::record_discovery(key, Discovery::Camp);
+            let row = crate::logic::expeditions::discovery(key).unwrap();
+            assert_eq!((row.empty_reveals, row.ruin_cleared), (0, false));
+            assert!(!crate::logic::expeditions::discovery(key).unwrap().ruin_cleared);
+            assert!(crate::logic::expeditions::discovery(ExpeditionDiscoveryKey { epoch: 301, ..key }).is_none());
+            assert!(crate::logic::expeditions::discovery(ExpeditionDiscoveryKey { structure_id: 18, ..key }).is_none());
+        },
+    );
 }
 
 #[test]
@@ -109,9 +114,9 @@ fn shrine_and_well_appear_only_once_researched() {
     let unlocked = super::preset_projection::frontier_discovery_rules();
     let locked = rules();
     for sample in 0_u64..20000 {
-        let without = frontier(locked, 0, 0, 0, 0, Some(CHEST), 0x5349544553 + Into::<u64, u256>::into(sample));
+        let without = frontier(locked, 0, 0, 0, 100, 0, Some(RELIC), 0x5349544553 + Into::<u64, u256>::into(sample));
         assert!(without != Discovery::Shrine && without != Discovery::Well);
-        let draw = frontier(unlocked, 0, 0, 0, 0, Some(CHEST), 0x5349544553 + Into::<u64, u256>::into(sample));
+        let draw = frontier(unlocked, 0, 0, 0, 100, 0, Some(RELIC), 0x5349544553 + Into::<u64, u256>::into(sample));
         if draw != Discovery::Shrine && draw != Discovery::Well {
             assert_eq!(draw, without);
         }
@@ -125,8 +130,8 @@ fn sanctuaries_double_both_unlocked_sites_and_leave_beasts_unchanged() {
     let mut wells = 0_u32;
     for sample in 0_u64..100000 {
         let seed = 0x5354524147474c455253 + Into::<u64, u256>::into(sample);
-        let base = frontier(rules, 0, 0, 0, 0, Some(CHEST), seed);
-        let boosted = frontier(rules, 0, 0, 10000, 0, Some(CHEST), seed);
+        let base = frontier(rules, 0, 0, 0, 100, 0, Some(RELIC), seed);
+        let boosted = frontier(rules, 0, 0, 10000, 100, 0, Some(RELIC), seed);
         assert_eq!(base == Discovery::Beasts, boosted == Discovery::Beasts);
         if boosted == Discovery::Shrine {
             shrines += 1;
@@ -147,10 +152,11 @@ fn sanctuaries_cannot_find_a_site_that_is_still_locked_even_at_the_floor() {
         for empty in array![0_u8, 7] {
             let shrine_only = FrontierDiscoveryRules { well_bps: 0, ..preset };
             let well_only = FrontierDiscoveryRules { shrine_bps: 0, ..preset };
-            assert!(frontier(shrine_only, 0, 0, 10000, empty, None, seed) != Discovery::Well);
-            assert!(frontier(well_only, 0, 0, 10000, empty, None, seed) != Discovery::Shrine);
+            assert!(frontier(shrine_only, 0, 0, 10000, 100, empty, None, seed) != Discovery::Well);
+            assert!(frontier(well_only, 0, 0, 10000, 100, empty, None, seed) != Discovery::Shrine);
             assert_eq!(
-                frontier(rules(), 0, 0, 10000, empty, None, seed), frontier(rules(), 0, 0, 0, empty, None, seed),
+                frontier(rules(), 0, 0, 10000, 100, empty, None, seed),
+                frontier(rules(), 0, 0, 0, 100, empty, None, seed),
             );
         }
     }
@@ -173,26 +179,29 @@ fn discovery_reserves_the_combined_sanctuary_increase() {
 }
 
 #[test]
-fn depth_entitlement_isolated_by_home_game_day_and_preserves_legacy_bool() {
-    let key = ExpeditionDiscoveryKey { game_id: 1, structure_id: 17, epoch: 300 };
-    for depth in 0_u8..4 {
-        assert!(!crate::logic::ruins::cleared_at(key, depth));
-        crate::logic::ruins::close(key, depth);
-        assert!(crate::logic::ruins::cleared_at(key, depth));
-        assert!(crate::state::read().map_rules.ruin_cleared.read((1, 17, 300)));
-        assert!(!crate::logic::ruins::cleared_at(ExpeditionDiscoveryKey { epoch: 301, ..key }, depth));
-        assert!(!crate::logic::ruins::cleared_at(ExpeditionDiscoveryKey { structure_id: 18, ..key }, depth));
-        assert!(!crate::logic::ruins::cleared_at(ExpeditionDiscoveryKey { game_id: 2, ..key }, depth));
+fn clear_mist_and_all_five_paths_steps_fit_exactly_7500_of_10000() {
+    let rules = super::preset_projection::frontier_discovery_rules();
+    assert_eq!(crate::discovery::maximum_race_chance(rules, 200), 7500);
+    assert_eq!(crate::discovery::maximum_race_chance(rules, 100), 3750);
+    for sample in 0_u64..1000 {
+        let seed = 0x545249554d5048 + Into::<u64, u256>::into(sample);
+        let draw = frontier(rules, 12500, 12500, 7500, 200, 0, Some(RELIC), seed);
+        let rolled = crate::random::range(seed, 29, 10000);
+        let expected = if rolled < 1200 {
+            Discovery::Beasts
+        } else if rolled < 3000 {
+            Discovery::Camp
+        } else if rolled < 4800 {
+            Discovery::Rift
+        } else if rolled < 5400 {
+            Discovery::Ruin(RELIC)
+        } else if rolled < 6450 {
+            Discovery::Shrine
+        } else if rolled < 7500 {
+            Discovery::Well
+        } else {
+            Discovery::None
+        };
+        assert_eq!(draw, expected);
     }
-}
-
-#[test_case(name: "surface_twice", 0)]
-#[test_case(name: "depth_one_twice", 1)]
-#[test_case(name: "depth_two_twice", 2)]
-#[test_case(name: "depth_three_twice", 3)]
-#[should_panic(expected: "realm already cleared this depth today")]
-fn same_depth_cannot_clear_twice(depth: u8) {
-    let key = ExpeditionDiscoveryKey { game_id: 1, structure_id: 17, epoch: 300 };
-    crate::logic::ruins::close(key, depth);
-    crate::logic::ruins::close(key, depth);
 }

@@ -7,6 +7,7 @@ pub use crate::troops::{Stamina, TroopBoosts, TroopTier, TroopType, Troops};
 pub fn context(biome: Biome) -> CombatContext {
     CombatContext {
         timestamp: 1,
+        day_unit_seconds: 0,
         attacker_roll: 0,
         defender_roll: 0,
         attacker_biome: biome,
@@ -25,8 +26,7 @@ pub fn damage_config() -> TroopDamageConfig {
         t2_damage_multiplier: 46116860184273879040, // 2.5
         t3_damage_multiplier: 129127208515966861312, // 7
         damage_biome_bonus_num: 3_000, // 30%
-        damage_scaling_factor: 55340232221128654848, // 3
-        damage_raid_percent_num: 5,
+        damage_scaling_factor: 55340232221128654848 // 3
     }
 }
 pub fn stamina_config() -> TroopStaminaConfig {
@@ -69,6 +69,7 @@ pub fn dice_damage(attacker_roll: u8, defender_roll: u8) -> (u128, u128) {
             ref defender,
             CombatContext {
                 timestamp: 1,
+                day_unit_seconds: 0,
                 attacker_roll,
                 defender_roll,
                 attacker_biome: Biome::Underground,

@@ -1,11 +1,11 @@
-import { FRONTIER_DAY_UNIT_SECONDS } from "./clock";
-import type { NativePreset } from "../common/native-preset";
 import {
   nativeResearchConstants as research,
   nativeRuleConstants as rule,
 } from "../../../contracts/l3/world-native/schema/client.gen";
 import { nativeCommandBits } from "../../../contracts/l3/world-native/schema/commands.gen";
+import type { NativePreset } from "../common/native-preset";
 import { FRONTIER_PRESET_ID } from "../common/native-preset-modes";
+import { FRONTIER_DAY_UNIT_SECONDS } from "./clock";
 
 /** Every building a Frontier board can raise, by its category id. */
 export const buildingIds = Array.from({ length: research.HEARTH }, (_, index) => index + 1);
@@ -30,6 +30,10 @@ export const frontierPreset = {
     protocolCutBps: 0,
     mmrEnabled: false,
   },
+  orderAspects: [],
+  startingArmyCount: 0,
+  dailyQuest: null,
+  worldBanes: null,
   bitcoinEnabled: false,
   startingTroops: Array.from({ length: 17 }, () => "Knight" as const),
   realmResources: [],
@@ -64,8 +68,6 @@ export const frontierPreset = {
       "SpendSkillPoint",
       "InteractSite",
       "OpenRelicChest",
-      "RefillStamina",
-      "WithdrawLords",
       "SetEntityName",
       "MarkGameSettled",
     ] satisfies Array<keyof typeof nativeCommandBits>
@@ -74,6 +76,7 @@ export const frontierPreset = {
   // Four-hour units: days of 8 to 24 hours, bags of 80 hours, a season of 21 bags in ten weeks.
   dayUnitSeconds: FRONTIER_DAY_UNIT_SECONDS,
   board: {
+    town: null,
     demolitionRefundBps: 5000,
     workshopRate: 0.056,
     outputStepBps: 2000,
@@ -103,6 +106,7 @@ export const frontierPreset = {
       laborCost: 0,
     })),
   ],
+  deep: null,
   discovery: {
     beastsBps: 600,
     campBps: 400,

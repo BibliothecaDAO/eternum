@@ -1,5 +1,5 @@
 use starknet::ContractAddress;
-use starknet::storage::{StorageMapReadAccess, StorageMapWriteAccess, StoragePathEntry, StoragePointerReadAccess};
+use starknet::storage::{StorageMapReadAccess, StoragePathEntry, StoragePointerReadAccess};
 use crate::combat::{CombatContext, TroopsTrait};
 use crate::combat_actions::battle_side;
 use crate::commands::{Battle, ExecutionContext};
@@ -19,53 +19,97 @@ pub fn battle_guard(game_id: u32, actor: ContractAddress, command: Battle, conte
     let key = ExplorerKey { game_id, explorer_id: command.attacker_id };
     let mut attacker = authorized_explorer(key, actor, context);
     let target_key = ResourceKey { game_id, entity_id: command.defender_id };
-    let target = crate::logic::structures::structure(target_key).expect('missing guarded structure');
-    if crate::rules::rule_enabled(rules, crate::rules::UNOWNED_TARGETS) {
-        assert!(target.owner == 0.try_into().unwrap(), "target must be unowned");
-    }
-    assert!(target.owner != actor, "actor owns defender");
+    let deep = crate::logic::deep_sites::site(target_key);
+    let target = if deep.is_some() {
+        None
+    } else {
+        Some(crate::logic::structures::structure(target_key).expect('missing guarded structure'))
+    };
+    let (destination, target_owner, maximum) = if let Some(target) = target {
+        if crate::rules::rule_enabled(rules, crate::rules::UNOWNED_TARGETS) {
+            assert!(target.owner == 0.try_into().unwrap(), "target must be unowned");
+        }
+        assert!(target.owner != actor, "actor owns defender");
+        assert_battle_immunity(game_id, command.defender_id, rules, context.timestamp, context);
+        (crate::structures::structure_coord(target_key), target.owner, target.base.troop_max_guard_count)
+    } else {
+        let day = crate::days::day_of(context.game.unbox(), rules.day_unit_seconds, context.timestamp);
+        assert!(deep.unwrap().day == day.index, "Deep day not settled");
+        let destination = crate::logic::map::entity_coord(target_key).expect('missing Deep site position');
+        assert!(crate::geometry::adjacent(attacker.coord, destination), "Deep site requires adjacency");
+        (destination, 0.try_into().unwrap(), 1_u8)
+    };
     assert!(attacker.troops.count != 0, "aggressor has no troops");
     assert_battle_immunity(game_id, attacker.owner, rules, context.timestamp, context);
-    assert_battle_immunity(game_id, command.defender_id, rules, context.timestamp, context);
-    let destination = crate::structures::structure_coord(target_key);
-    let stride: u128 = if destination.alt {
-        15
+    assert_structure_range(attacker.coord, destination, attacker.troops.attack_range());
+    let adjacent = crate::geometry::adjacent(attacker.coord, destination);
+    let army_key = if deep.is_some() {
+        crate::logic::deep_guards::next(target_key)
     } else {
-        1
+        None
     };
-    let separation = distance(attacker.coord, destination);
-    assert!(
-        attacker.coord.alt == destination.alt && separation > 0 && separation <= attacker.troops.attack_range().into()
-            * stride,
-        "structure is out of range",
-    );
-    let adjacent = separation == stride;
-    let slot = crate::logic::guards::GuardState::next(target_key, target.base.troop_max_guard_count);
-    let tick = context.timestamp / rules.tick_config.armies_tick_in_seconds;
-    let mut guard: Troops = Default::default();
+    let slot = if army_key.is_some() {
+        None
+    } else {
+        crate::logic::guards::GuardState::next(target_key, maximum)
+    };
+    let (mut defender, defender_actor) = if let Some(army_key) = army_key {
+        let army = combat_troops(game_id).command_explorer(army_key, None, crate::commands::action_context(context));
+        let defender = ExplorerTroops { coord: destination, ..army };
+        assert_army_opponents(game_id, attacker, defender, rules);
+        let owner = explorer_owner(army_key, army);
+        assert!(owner != actor, "actor owns defender");
+        assert_battle_immunity(game_id, army.owner, rules, context.timestamp, context);
+        (defender, owner)
+    } else {
+        let troops = if let Some(slot) = slot {
+            crate::logic::guards::guard(slot).troops
+        } else {
+            Default::default()
+        };
+        (ExplorerTroops { owner: command.defender_id, coord: destination, troops }, target_owner)
+    };
     let attacker_before = attacker.troops.count;
-    let mut defender_before = 0;
+    let defender_before = defender.troops.count;
     let mut rolls = (0_u8, 0_u8);
-    if let Some(slot) = slot {
-        guard = crate::logic::guards::guard(slot).troops;
-        defender_before = guard.count;
-        let before = attacker.troops.count;
-        let defender = ExplorerTroops { owner: command.defender_id, coord: destination, troops: guard };
+    let fought = army_key.is_some() || slot.is_some();
+    if fought {
         let combat = CombatContext {
             defender_is_structure_guard: true, ..combat_context(game_id, attacker, defender, context),
         };
         rolls = (combat.attacker_roll, combat.defender_roll);
-        let (attacker_after, guard_after) = resolve_battle(game_id, attacker.troops, guard, combat, context);
+        let (attacker_after, guard_after) = resolve_battle(game_id, attacker.troops, defender.troops, combat, context);
         attacker.troops = attacker_after;
-        guard = guard_after;
-        combat_troops(game_id).finish_battle(key, attacker, before, crate::commands::action_context(context));
-        let mut row = crate::logic::guards::guard(slot);
-        if guard.count == 0 {
-            guard.stamina.reset();
-            row.destroyed_tick = tick.try_into().unwrap();
+        defender.troops = guard_after;
+        if (deep.is_some() && army_key.is_none()) || crate::logic::expeditions::expedition_site(target_key).is_some() {
+            crate::logic::quests::record(
+                ResourceKey { game_id, entity_id: attacker.owner },
+                crate::quests::CULL,
+                defender_before - defender.troops.count,
+                context.timestamp,
+            );
         }
-        row.troops = guard;
-        crate::logic::guards::GuardState::save(slot, row);
+        let troops = combat_troops(game_id);
+        troops.finish_battle(key, attacker, attacker_before, crate::commands::action_context(context));
+        if let Some(army_key) = army_key {
+            let army = crate::logic::troops::explorer(army_key).expect('missing Deep guard army');
+            troops
+                .finish_battle(
+                    army_key,
+                    ExplorerTroops { troops: defender.troops, ..army },
+                    defender_before,
+                    crate::commands::action_context(context),
+                );
+        } else {
+            let slot = slot.unwrap();
+            let mut row = crate::logic::guards::guard(slot);
+            if defender.troops.count == 0 {
+                defender.troops.stamina.reset();
+                row.destroyed_tick = (context.timestamp / rules.tick_config.armies_tick_in_seconds).try_into().unwrap();
+            }
+            row.troops = defender.troops;
+            crate::logic::guards::GuardState::save(slot, row);
+        }
     } else {
         assert!(adjacent, "structure claim requires adjacency");
         attacker
@@ -83,12 +127,21 @@ pub fn battle_guard(game_id: u32, actor: ContractAddress, command: Battle, conte
             );
         crate::logic::troops::TroopState::save(key, crate::troops::ExplorerRecordTrait::into_record(attacker));
     }
-    try_capture(key, attacker, target_key, target, rules, context);
-    if slot.is_some() {
+    if let Some(target) = target {
+        try_capture(key, attacker, target_key, target, rules, command.relic_slot, context);
+    } else if attacker.troops.count != 0
+        && defender.troops.count == 0
+        && crate::logic::deep_guards::next(target_key).is_none() {
+        crate::logic::deep_guards::join(key, attacker, target_key);
+        if slot.is_some() {
+            crate::logic::deep_sites::grant_beast_xp(key, destination, context.timestamp);
+        }
+    }
+    if fought {
         let (attacker_roll, defender_roll) = rolls;
-        let winner = if attacker.troops.count == 0 && guard.count != 0 {
+        let winner = if attacker.troops.count == 0 && defender.troops.count != 0 {
             command.defender_id
-        } else if guard.count == 0 && attacker.troops.count != 0 {
+        } else if defender.troops.count == 0 && attacker.troops.count != 0 {
             attacker.owner
         } else {
             0
@@ -100,12 +153,16 @@ pub fn battle_guard(game_id: u32, actor: ContractAddress, command: Battle, conte
                 attacker_id: command.attacker_id,
                 defender_id: command.defender_id,
                 attacker_owner: attacker.owner,
-                defender_owner: 0,
+                defender_owner: if army_key.is_some() {
+                    defender.owner
+                } else {
+                    0
+                },
                 winner_id: winner,
                 coord: destination,
                 max_reward: array![].span(),
                 attacker: battle_side(actor, attacker_before, attacker.troops, attacker_roll),
-                defender: battle_side(target.owner, defender_before, guard, defender_roll),
+                defender: battle_side(defender_actor, defender_before, defender.troops, defender_roll),
                 timestamp: context.timestamp,
             },
         );
@@ -121,6 +178,7 @@ pub fn battle(
     let defender_key = ExplorerKey { game_id, explorer_id: command.defender_id };
     let mut attacker = authorized_explorer(attacker_key, actor, context);
     let mut defender = active_explorer(defender_key, context);
+    assert_army_opponents(game_id, attacker, defender, rules);
     let defender_owner = explorer_owner(defender_key, defender);
     assert!(defender_owner != actor, "actor owns defender");
     assert_battle_immunity(game_id, attacker.owner, rules, context.timestamp, context);
@@ -167,8 +225,17 @@ pub fn battle(
     );
 }
 
-pub fn village_last_raided(key: ResourceKey) -> u64 {
-    crate::state::write().combat_domain.village_raids.read((key.game_id, key.entity_id))
+fn assert_army_opponents(game_id: u32, attacker: ExplorerTroops, defender: ExplorerTroops, rules: SliceRules) {
+    if rules.day_unit_seconds == 0 {
+        return;
+    }
+    assert!(
+        crate::logic::deep::contains(game_id, attacker.coord) && crate::logic::deep::contains(game_id, defender.coord),
+        "army combat requires Deep",
+    );
+    let attacker_aspect = crate::logic::aspects::home_aspect(ResourceKey { game_id, entity_id: attacker.owner });
+    let defender_aspect = crate::logic::aspects::home_aspect(ResourceKey { game_id, entity_id: defender.owner });
+    assert!(attacker_aspect != defender_aspect, "cannot attack an allied army");
 }
 
 pub fn guard_attack(
@@ -204,7 +271,13 @@ pub fn guard_attack(
     }
     crate::logic::guards::GuardState::save(guard_key, guard);
     try_capture(
-        defender_key, defender, ResourceKey { game_id, entity_id: command.guard.structure_id }, home, rules, context,
+        defender_key,
+        defender,
+        ResourceKey { game_id, entity_id: command.guard.structure_id },
+        home,
+        rules,
+        None,
+        context,
     );
     emit(
         crate::troops::BattleEvent {
@@ -224,107 +297,8 @@ pub fn guard_attack(
     );
 }
 
-pub fn raid(game_id: u32, actor: ContractAddress, command: crate::combat_actions::Raid, context: ExecutionContext) {
-    let rules = authorize(game_id, context);
-    crate::resources::assert_unique_resources(command.steal_resources);
-    let key = ExplorerKey { game_id, explorer_id: command.explorer_id };
-    let explorer = authorized_explorer(key, actor, context);
-    let target_key = ResourceKey { game_id, entity_id: command.structure_id };
-    let target = crate::logic::structures::structure(target_key).expect('missing raid target');
-    assert!(target.owner != actor, "actor owns defender");
-    assert!(explorer.troops.count != 0, "aggressor has no troops");
-    let destination = crate::structures::structure_coord(target_key);
-    assert!(crate::geometry::adjacent(explorer.coord, destination), "raid requires adjacency");
-    assert_battle_immunity(game_id, explorer.owner, rules, context.timestamp, context);
-    assert_battle_immunity(game_id, command.structure_id, rules, context.timestamp, context);
-    assert_loot_available(game_id, command.structure_id, command.steal_resources, context);
-    assert_raid_loot_immunity(game_id, command, target, rules, context.timestamp);
-    let result = resolve_raid(game_id, explorer, target_key, target.base.troop_max_guard_count, destination, context);
-    let troops_before = explorer.troops.count;
-    apply_raid_losses(key, explorer, target_key, result, context);
-    let success = raid_success(game_id, result, context);
-    if success && result.explorer.count != 0 {
-        collect_raid_loot(game_id, command, target, rules, context.timestamp, context);
-    }
-    emit(
-        crate::combat_actions::RaidEvent {
-            version: 2,
-            game_id,
-            explorer_id: command.explorer_id,
-            structure_id: command.structure_id,
-            success,
-            player: actor,
-            target_owner: target.owner,
-            troops_before,
-            troops_after: result.explorer.count,
-            requested_loot: command.steal_resources,
-            timestamp: context.timestamp,
-        },
-    );
-}
-
-pub fn apply_raid_losses(
-    key: ExplorerKey,
-    explorer: ExplorerTroops,
-    target: ResourceKey,
-    result: crate::raid::RaidResolution,
-    game_context: crate::commands::ExecutionContext,
-) {
-    if !result.guarded {
-        return;
-    }
-    combat_troops(key.game_id)
-        .finish_battle(
-            key,
-            ExplorerTroops { troops: result.explorer, ..explorer },
-            explorer.troops.count,
-            crate::commands::action_context(game_context),
-        );
-    for index in 0..result.guards.len() {
-        crate::logic::guards::GuardState::save(
-            crate::guards::GuardKey {
-                game_id: key.game_id,
-                structure_id: target.entity_id,
-                slot: (result.guards.len() - 1 - index).try_into().unwrap(),
-            },
-            *result.guards.at(index),
-        );
-    }
-}
-
 pub fn explorer_owner(key: ExplorerKey, explorer: ExplorerTroops) -> ContractAddress {
     crate::logic::structures::owner(ResourceKey { game_id: key.game_id, entity_id: explorer.owner })
-}
-
-pub fn resolve_raid(
-    game_id: u32,
-    explorer: ExplorerTroops,
-    target: ResourceKey,
-    maximum: u8,
-    destination: Coord,
-    context: ExecutionContext,
-) -> crate::raid::RaidResolution {
-    let mut guards = array![];
-    // Resolve outer guards first, preserving damage and cooldown evaluation order.
-    assert!(maximum <= 4, "invalid guard slot limit");
-    let mut slot = maximum;
-    while slot != 0 {
-        slot -= 1;
-        guards
-            .append(
-                crate::logic::guards::guard(crate::guards::GuardKey { game_id, structure_id: target.entity_id, slot }),
-            );
-    }
-    let biome = map_dispatcher(game_id)
-        .biome(tile_key(game_id, destination), crate::commands::biome_context(context))
-        .into();
-    calculate_raid(game_id, explorer.troops, guards.span(), biome, context.timestamp, context)
-}
-
-pub fn raid_success(game_id: u32, result: crate::raid::RaidResolution, context: ExecutionContext) -> bool {
-    let mut raw_root = context.raw_root;
-    let seed = crate::random::game_root(ref raw_root, game_id);
-    crate::raid::success(result, seed)
 }
 
 // Requested loot is a deterministic refusal, independent of whether the combat roll wins.
@@ -340,47 +314,6 @@ fn assert_loot_available(
         assert!(
             crate::logic::resources::balance(key, *resource.resource_type) >= *resource.amount,
             "insufficient requested loot",
-        );
-    }
-}
-
-fn assert_raid_loot_immunity(
-    game_id: u32, command: crate::combat_actions::Raid, target: Structure, rules: SliceRules, timestamp: u64,
-) {
-    let village = target.base.category == crate::taxonomy::VILLAGE_CATEGORY;
-    let tick = timestamp / rules.tick_config.armies_tick_in_seconds;
-    if village {
-        let last = crate::state::write().combat_domain.village_raids.read((game_id, command.structure_id));
-        if last != 0 && tick < last + rules.battle_config.village_raid_immunity_ticks.into() {
-            for resource in command.steal_resources {
-                assert!(crate::resources::is_troop_resource(*resource.resource_type), "village raid resource immunity");
-            }
-        }
-    }
-}
-
-pub fn collect_raid_loot(
-    game_id: u32,
-    command: crate::combat_actions::Raid,
-    target: Structure,
-    rules: SliceRules,
-    timestamp: u64,
-    game_context: crate::commands::ExecutionContext,
-) {
-    let village = target.base.category == crate::taxonomy::VILLAGE_CATEGORY;
-    let tick = timestamp / rules.tick_config.armies_tick_in_seconds;
-    take_loot(
-        game_id, command.structure_id, command.explorer_id, command.steal_resources, true, timestamp, game_context,
-    );
-    if village {
-        crate::state::write().combat_domain.village_raids.write((game_id, command.structure_id), tick);
-        emit(
-            crate::events::RowSet {
-                version: 1,
-                model: 'VillageRaid',
-                keys: array![game_id.into(), command.structure_id.into()].span(),
-                values: array![tick.into()].span(),
-            },
         );
     }
 }
@@ -426,6 +359,7 @@ pub fn try_capture(
     key: ResourceKey,
     target: Structure,
     rules: SliceRules,
+    relic_slot: Option<u8>,
     context: ExecutionContext,
 ) {
     if explorer.troops.count == 0
@@ -453,6 +387,7 @@ pub fn try_capture(
             crate::relics::ICaptureRewardsLibraryDispatcher { class_hash: classes(key.game_id).relics.read() },
             key,
             explorer_key.explorer_id,
+            relic_slot,
             crate::commands::action_context(context),
         );
     }
@@ -579,6 +514,7 @@ pub fn combat_context(
     };
     CombatContext {
         timestamp: context.timestamp,
+        day_unit_seconds: context.rules.unbox().day_unit_seconds,
         attacker_roll,
         defender_roll,
         attacker_biome: biome,
@@ -587,18 +523,6 @@ pub fn combat_context(
         attacker_is_structure_guard: false,
         defender_is_structure_guard: false,
     }
-}
-
-pub fn calculate_raid(
-    game_id: u32,
-    explorer: Troops,
-    guards: Span<crate::guards::Guard>,
-    biome: crate::biome::Biome,
-    timestamp: u64,
-    game_context: crate::commands::ExecutionContext,
-) -> crate::raid::RaidResolution {
-    let rules = game_context.rules.unbox();
-    crate::raid::resolve(explorer, guards, biome, rules, timestamp)
 }
 
 pub fn resolve_battle(
@@ -649,10 +573,12 @@ pub fn resolve_battle(
 
 // Troops owns explorer authorisation; Combat calls it rather than inlining it, to keep its class small.
 fn authorized_explorer(key: ExplorerKey, actor: ContractAddress, context: ExecutionContext) -> ExplorerTroops {
+    crate::logic::deep_guards::assert_field(key);
     combat_troops(key.game_id).command_explorer(key, Some(actor), crate::commands::action_context(context))
 }
 
 fn active_explorer(key: ExplorerKey, context: ExecutionContext) -> ExplorerTroops {
+    crate::logic::deep_guards::assert_field(key);
     combat_troops(key.game_id).command_explorer(key, None, crate::commands::action_context(context))
 }
 
@@ -665,7 +591,7 @@ fn classes(game_id: u32) -> starknet::storage::StoragePointer<games_storage::rel
     assert!(release_id != 0, "game has no release");
     state.releases.entry(release_id).classes
 }
-fn emit<T, +starknet::event::Event<T>, +Into<T, crate::logic::combat_domain::CombatLogic::Event>>(event: T) {
+pub fn emit<T, +starknet::event::Event<T>, +Into<T, crate::logic::combat_domain::CombatLogic::Event>>(event: T) {
     let event: crate::logic::combat_domain::CombatLogic::Event = event.into();
     let mut keys = array![];
     let mut data = array![];

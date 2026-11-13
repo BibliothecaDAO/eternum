@@ -73,8 +73,8 @@ describe("native immutable configuration", () => {
     });
   });
 
-  it("says a held hyperstructure's rate counts each realm around it where the multiplier rule is on, and doubles in a Duel", () => {
-    const scale = (mode: "Single" | "Duel") => {
+  it("says a held hyperstructure's rate counts each realm around it where the multiplier rule is on", () => {
+    const scale = (mode: "Single" | "Triple") => {
       const { manager, write } = fixture();
       write("SliceRules", [54], {
         ...preset.rules,
@@ -85,7 +85,7 @@ describe("native immutable configuration", () => {
       return manager.getVictoryPointGrants().hyperstructureScale;
     };
     expect(scale("Single")).toBe("per-realm");
-    expect(scale("Duel")).toBe("double");
+    expect(scale("Triple")).toBe("per-realm");
   });
 
   it("throws for absent building rules instead of granting zero-cost population", () => {
@@ -223,4 +223,19 @@ describe("native immutable configuration", () => {
     expect(manager.hasBiomeCombatEffects()).toBe(false);
     expect(manager.getBiomeCombatBonus(TroopType.Knight, BiomeType.Beach)).toBe(1);
   });
+});
+
+it("reads Scout exploration cost by category without changing non-day Paladins", () => {
+  const { manager, write } = fixture();
+  for (const day_unit_seconds of [0, 14_400]) {
+    write("SliceRules", [54], {
+      ...preset.rules,
+      game_id: 54,
+      day_unit_seconds,
+      troop_stamina_config: { ...preset.rules.troop_stamina_config, stamina_explore_stamina_cost: 20 },
+    });
+    expect(manager.getExploreStaminaCost(TroopType.Knight)).toBe(20);
+    expect(manager.getExploreStaminaCost(TroopType.Paladin)).toBe(day_unit_seconds === 0 ? 20 : 10);
+    expect(manager.getExploreStaminaCost(TroopType.Crossbowman)).toBe(20);
+  }
 });

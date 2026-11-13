@@ -1,10 +1,11 @@
+import { currentArmy, nextSkillPoint } from "@bibliothecadao/eternum";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { nextFrameOrTimeout } from "@/utils/frame-or-timeout";
 import { armyNumber, resolveExplorerTroops } from "@bibliothecadao/eternum/troop-stamina";
 import { projectionChangesForLayer } from "@bibliothecadao/eternum/game-sync";
 import { markShadowCastersChanged } from "@/three/shadow-refresh-policy";
 import { activeMapLayer } from "@/three/map-layer";
-import { arePlayersAllied, onSidesChanged, watchedSide } from "@/utils/entity-ownership";
+import { arePlayersAllied, isAllianceChange, onSidesChanged, watchedSide } from "@/utils/entity-ownership";
 import { accountAddress, useAccountStore } from "@/hooks/store/use-account-store";
 import { useChainTimeStore } from "@/hooks/store/use-chain-time-store";
 import { watchPlayerNames } from "@/hooks/use-player-profile";
@@ -224,7 +225,7 @@ export class ArmyManager {
   private readonly unsubscribeArmyProjection: () => void;
   private unsubscribeExplorerTroopsPresentation?: () => void;
   private unsubscribeStructureOwnership?: () => void;
-  private unsubscribeGuildMembership?: () => void;
+  private unsubscribeAlliances?: () => void;
   private unsubscribeSides?: () => void;
   private readonly armyProjectionSyncs = new Map<ID, Promise<void>>();
   private attachmentManager: CosmeticAttachmentManager;
@@ -307,7 +308,7 @@ export class ArmyManager {
     });
     this.subscribeToExplorerTroopsPresentation();
     this.subscribeToStructureOwnership();
-    this.subscribeToGuildMembership();
+    this.subscribeToAlliances();
     // Whose an army is may read otherwise (the seats arrive, the viewer starts watching): every plate says it again.
     this.unsubscribeSides = onSidesChanged(() =>
       this.armyPresentations.forEach((army) => this.refreshArmyCompactLabel(army)),
@@ -363,16 +364,10 @@ export class ArmyManager {
     });
   }
 
-  private subscribeToGuildMembership(): void {
-    this.unsubscribeGuildMembership = this.store?.subscribe((changes) => {
-      if (
-        changes.some(
-          (change) =>
-            change.model === "GuildMember" &&
-            (change.current ?? change.previous)?.game_id === configManager.getActiveGameId(),
-        )
-      )
-        this.recheckOwnership();
+  /** Redraws every army's side when who is allied may have changed: a tribe's membership, or an Aspect's. */
+  private subscribeToAlliances(): void {
+    this.unsubscribeAlliances = this.store?.subscribe((changes) => {
+      if (changes.some(isAllianceChange)) this.recheckOwnership();
     });
   }
 
@@ -524,7 +519,8 @@ export class ArmyManager {
 
   private resolveLiveExplorerTroopsComponent(entityId: ID): ExplorerTroopsComponentValue | undefined {
     if (!this.store) return undefined;
-    return this.store.get("ExplorerTroops", { game_id: configManager.getActiveGameId(), explorer_id: entityId });
+    const row = this.store.get("ExplorerTroops", { game_id: configManager.getActiveGameId(), explorer_id: entityId });
+    return row && currentArmy(this.store, row);
   }
 
   private isProjectedArmyInCurrentChunk(renderable: ArmySpatialRenderable): boolean {
@@ -1280,6 +1276,14 @@ export class ArmyManager {
     return slot;
   }
 
+  /** The viewer's army's way to its next skill point, from its progress and the game's thresholds; none while unknown. */
+  private xpShareOf(entityId: ID): number | undefined {
+    const gameId = configManager.getActiveGameId();
+    const progress = this.store?.get("ArmyProgress", { game_id: gameId, explorer_id: entityId });
+    const rules = this.store?.get("ArmyProgressionRules", { game_id: gameId });
+    return progress && rules ? nextSkillPoint(progress.xp, rules).share : undefined;
+  }
+
   private updateArmyCompactLabel(army: ArmyData, position: Vector3): void {
     if (!this.shouldShowArmyCompactLabel(army)) {
       this.plates.removeLabel(army.entityId);
@@ -1295,9 +1299,10 @@ export class ArmyManager {
           ...army,
           isAlly: arePlayersAllied(this.store, accountAddress(), army.owner.address),
           watched: watchedSide(this.store, army.owner.address),
+          xpShare: army.isMine ? this.xpShareOf(army.entityId) : undefined,
         },
         this.resolveHomeRealmName(army),
-        configManager.getExploreStaminaCost(),
+        configManager.getExploreStaminaCost(army.category),
       ),
     });
   }
@@ -2976,7 +2981,11 @@ ${
    * Recompute stamina for all armies and update visible labels when the execution floor advances
    */
   private recomputeStaminaForAllArmies(timestamp: number): void {
-    this.armyPresentations.forEach((_army, entityId) => this.refreshArmyStamina(entityId, timestamp));
+    this.armyPresentations.forEach((_army, entityId) => {
+      const row = this.resolveLiveExplorerTroopsComponent(entityId);
+      if (row) this.applyExplorerTroopsPresentationUpdate(row);
+      this.refreshArmyStamina(entityId, timestamp);
+    });
   }
 
   /** Reads the second-based stamina for one army into its record and label; a miss leaves it for the next advance. */
@@ -3041,6 +3050,7 @@ ${
   }
 
   private applyExplorerTroopsPresentationUpdate(explorerTroops: ExplorerTroopsComponentValue): void {
+    explorerTroops = currentArmy(this.store!, explorerTroops);
     const entityId = safeInteger(explorerTroops.explorer_id);
     const army = this.armyPresentations.get(entityId);
     if (!army) return;
@@ -3131,8 +3141,8 @@ ${
     this.unsubscribeArmyProjection();
     this.unsubscribeExplorerTroopsPresentation?.();
     this.unsubscribeExplorerTroopsPresentation = undefined;
-    this.unsubscribeGuildMembership?.();
-    this.unsubscribeGuildMembership = undefined;
+    this.unsubscribeAlliances?.();
+    this.unsubscribeAlliances = undefined;
     this.unsubscribeSides?.();
     this.unsubscribeSides = undefined;
     this.unsubscribeStructureOwnership?.();

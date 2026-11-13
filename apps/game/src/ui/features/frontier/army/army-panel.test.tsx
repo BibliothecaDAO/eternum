@@ -96,11 +96,14 @@ it("spends the selected point on Stamina, doubles its refill and prevents wastin
   );
 });
 
-it("shows empty sockets and the XP milestone, and no point while none is held", () => {
+it("shows empty sockets, the way to the next point as the portrait's ring, and no point while none is held", () => {
   act(() => root.render(<Detail army={readArmyDetail(EARLY_ARMY)} sending={false} onLevelUp={vi.fn()} />));
   expect(host.querySelectorAll('.ui-tier[data-tier="0"]')).toHaveLength(4);
   expect(host.querySelector('[aria-label="Skill points"]')!.textContent).toBe("");
-  expect(host.textContent).toContain("12 / 75 XP");
+  // No XP number (the owner, 13 November 2026): 12 of 75 is a ring 16% filled, its tip the same words as before.
+  expect(host.textContent).not.toContain("12 / 75");
+  expect(host.querySelector('[aria-label="XP: 16% of the way to the next skill point"]')).not.toBeNull();
+  expect(host.querySelector('[data-tip="XP 12 of 75 · next I point"]')).not.toBeNull();
 });
 
 it("shows only the ranks of the points held, beside Level up", () => {
@@ -236,3 +239,19 @@ it.each([0n, learnResearch(0n, research.ROW_SHRINE, 0), learnResearch(0n, resear
     expect(spent).toHaveBeenCalledWith({ kind: "Scouting", value: { kind: "Sanctuaries", value: undefined } });
   },
 );
+
+it("tells an army in the Deep how long its troops last, beside them, and no such chip elsewhere", () => {
+  act(() =>
+    root.render(
+      <Detail
+        army={readArmyDetail({ ...EARLY_ARMY, deep: { left: 15, seconds: 1_790 } })}
+        sending={false}
+        onLevelUp={vi.fn()}
+      />,
+    ),
+  );
+  const chip = host.querySelector('[aria-label^="In the Deep"]');
+  expect(chip?.textContent).toBe("15 ticks left (30m)");
+  act(() => root.render(<Detail army={readArmyDetail(EARLY_ARMY)} sending={false} onLevelUp={vi.fn()} />));
+  expect(host.querySelector('[aria-label^="In the Deep"]')).toBeNull();
+});

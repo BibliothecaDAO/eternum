@@ -7,14 +7,10 @@ pub use super::resource_commands::{execute, setup_with_rules};
 pub fn setup() -> (super::Deployment, ResourceKey, ResourceKey, ContractAddress) {
     let (d, home, second) = setup_with_rules(super::play_fixture::rules());
     let (friend, _) = super::deploy_player(3, super::GUARDIAN);
-    assert!(
-        execute(
-            d,
-            Command::TransferStructureOwnership(
-                crate::ownership::TransferOwnership { entity_id: second.entity_id, new_owner: friend },
-            ),
-            30,
-        ),
+    snforge_std::interact_with_state(
+        d.games, || {
+            crate::logic::structures::StructureState::transfer_owner(second, friend);
+        },
     );
     (d, home, second, friend)
 }
@@ -37,5 +33,5 @@ pub fn act(d: super::Deployment, actor: ContractAddress, command: Command) -> bo
     act_at(d, actor, command, 40)
 }
 pub fn act_at(d: super::Deployment, actor: ContractAddress, command: Command, timestamp: u64) -> bool {
-    execute(super::Deployment { actor, ..d }, command, timestamp)
+    execute(super::bind_player(d, actor), command, timestamp)
 }

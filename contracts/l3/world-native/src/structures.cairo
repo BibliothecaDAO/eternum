@@ -111,6 +111,11 @@ pub struct StructureRecord {
 }
 
 #[starknet::interface]
+pub trait IStartingTroops<T> {
+    fn grant_village_troops(ref self: T, key: ResourceKey, context: crate::commands::ActionContext);
+}
+
+#[starknet::interface]
 pub trait IStructureOperations<T> {
     fn create_discovery(
         ref self: T,

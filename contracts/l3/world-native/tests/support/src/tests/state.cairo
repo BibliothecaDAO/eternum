@@ -168,22 +168,14 @@ pub impl TroopObservation of TroopObservationTrait {
         interact_with_state(
             self.contract_address,
             || {
-                crate::logic::troops::authorized_explorer(
-                    key, actor, timestamp, crate::commands::load_context(key.game_id, 0, timestamp),
+                crate::logic::troops::command_explorer(
+                    key, Some(actor), timestamp, crate::commands::load_context(key.game_id, 0, timestamp),
                 )
             },
         )
     }
 }
 
-#[generate_trait]
-pub impl CombatObservation of CombatObservationTrait {
-    fn village_last_raided(self: GameState, key: crate::resources::ResourceKey) -> u64 {
-        interact_with_state(self.contract_address, || {
-            crate::logic::combat::village_last_raided(key)
-        })
-    }
-}
 pub fn assert_spatial_indexes(
     address: ContractAddress, game_id: u32, entities: Span<u64>, tiles: Span<crate::troops::Coord>,
 ) {

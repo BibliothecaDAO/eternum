@@ -9,7 +9,7 @@ import { getHyperstructureRates, hyperstructureRate, hyperstructureRateWords } f
 
 vi.stubGlobal("localStorage", { getItem: () => null });
 
-const grants = (hyperstructureScale: "flat" | "double" | "per-realm") => ({
+const grants = (hyperstructureScale: "flat" | "per-realm") => ({
   hyperstructurePerSecond: 1,
   hyperstructureScale,
 });
@@ -23,10 +23,9 @@ describe("a Hyperstructure's one rate", () => {
     expect(held(null)).toBeNull();
   });
 
-  it("shows an untaken one at what taking it now would pay: the realms the scan counts, two in a Duel, else one", () => {
+  it("shows an untaken one at what taking it now would pay: the realms the scan counts, or one without the rule", () => {
     const untaken = { taken: false, struckMultiplier: null, realmsInScan: 2 };
     expect(hyperstructureRate(grants("per-realm"), untaken)?.pointsPerSecond).toBe(2);
-    expect(hyperstructureRate(grants("double"), { ...untaken, realmsInScan: 5 })?.pointsPerSecond).toBe(2);
     expect(hyperstructureRate(grants("flat"), untaken)?.pointsPerSecond).toBe(1);
   });
 

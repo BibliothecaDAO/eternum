@@ -1,6 +1,5 @@
 import { env } from "@/../env";
 import { playUnitCommandSound } from "@/audio/unit-command-audio";
-import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { usePlayerName, usePlayerNames } from "@/hooks/use-player-profile";
 import { LoadingAnimation } from "@/ui/design-system/molecules/loading-animation";
 import { usePopoverStore } from "@/hooks/store/use-popover-store";
@@ -22,7 +21,6 @@ import { useLatest } from "@/hooks/use-latest";
 import { staminaShortfall } from "@/ui/design-system/kit/reasons";
 import { resolveAttackStaminaState } from "../attack-stamina-state";
 import { attackerSideRange, defenderSideRange } from "../battle-range";
-import { RaidContainer } from "../raid-container";
 import { TargetType } from "../types";
 import { ActionFooter } from "./action-footer";
 import { ArmyColumn } from "./army-column";
@@ -78,7 +76,6 @@ export const BattleLab = ({
     },
   } = useGame();
 
-  const gameMode = useGameModeConfig();
   const names = usePlayerNames();
   const closeSurface = usePopoverStore((s) => s.closeSurface);
 
@@ -86,7 +83,7 @@ export const BattleLab = ({
   const targetHex = targetRef?.hex ?? { x: 0, y: 0 };
 
   const { state, dispatch, isEdited } = useBattleLabState(mode, initialBiome);
-  const { snapshot, target, targetResources, attackerRelicEffects, targetRelicEffects, isLoading } =
+  const { snapshot, target, targetResources, isLoading } =
     // Sim mode has no target: the live read is disabled, so its placeholder hex and layer are never read.
     useBattleLabLiveData(mode === "live", attackerEntityId, targetHex, targetRef?.alt ?? false);
 
@@ -252,12 +249,6 @@ export const BattleLab = ({
       ? staminaShortfall(attackStaminaState.currentStamina, attackStaminaState.requiredStamina)
       : undefined;
 
-  // Raid is available for an explorer attacker vs a structure target.
-  const isExplorerAttacker = mode === "live" && snapshot?.attackerType === "army";
-  const isStructureTarget = target?.targetType === TargetType.Structure;
-  const showRaidToggle = Boolean(isExplorerAttacker && isStructureTarget && gameMode.ui.showAttackTypeSelector);
-  const raidActive = state.attackType === "raid" && showRaidToggle;
-
   const onAttack = async () => {
     if (mode !== "live" || !selected || !targetRef || !target || actionDisabled || !snapshot) return;
     try {
@@ -320,15 +311,6 @@ export const BattleLab = ({
 
         {mode === "live" && isLoading ? (
           <LoadingAnimation />
-        ) : raidActive ? (
-          <RaidContainer
-            attackerEntityId={attackerEntityId}
-            attackerHex={{ col: selected!.hex.x, row: selected!.hex.y }}
-            target={target!}
-            targetResources={targetResources}
-            attackerActiveRelicEffects={attackerRelicEffects}
-            targetActiveRelicEffects={targetRelicEffects}
-          />
         ) : (
           <div className="mx-auto flex max-w-5xl flex-col gap-4 p-4">
             <label className="flex items-center gap-2 text-hud-body text-hud-muted">
@@ -403,9 +385,6 @@ export const BattleLab = ({
 
             <ActionFooter
               mode={mode}
-              attackType={state.attackType}
-              showRaidToggle={showRaidToggle}
-              onSetAttackType={(attackType) => dispatch({ type: "SET_ATTACK_TYPE", attackType })}
               isEdited={isEdited || nonDefaultParams}
               onResetToLive={handleResetToLive}
               actionLabel={actionLabel}

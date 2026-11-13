@@ -1,3 +1,4 @@
+import { useCurrentArmy } from "@/hooks/helpers/use-armies";
 import { MAX_ARMY_SIZE } from "@/ui/design-system/kit/words";
 import { useBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
 
@@ -136,7 +137,7 @@ export const TransferTroopsContainer = ({
     entity_id: selectedEntityId,
   });
   const selectedResourceState = useResourceManager(selectedEntityId);
-  const selectedExplorerTroops = useNativeRow("ExplorerTroops", {
+  const selectedExplorerTroops = useCurrentArmy({
     game_id: configManager.getActiveGameId(),
     explorer_id: selectedEntityId,
   });
@@ -144,7 +145,7 @@ export const TransferTroopsContainer = ({
     game_id: configManager.getActiveGameId(),
     entity_id: targetEntityId,
   });
-  const targetExplorerTroops = useNativeRow("ExplorerTroops", {
+  const targetExplorerTroops = useCurrentArmy({
     game_id: configManager.getActiveGameId(),
     explorer_id: targetEntityId,
   });

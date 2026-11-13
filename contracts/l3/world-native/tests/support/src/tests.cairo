@@ -36,6 +36,7 @@ pub mod days;
 pub mod discovery_guards;
 pub mod entity_ids;
 pub mod entry;
+pub mod event_transactions;
 pub mod explore_rewards;
 pub mod fact_wire;
 pub mod faith;
@@ -43,14 +44,12 @@ pub mod fixtures;
 pub mod frontier_combat_vectors;
 pub mod frontier_discovery;
 pub mod frontier_economy;
-pub mod frontier_explore_chest;
 pub mod frontier_guards;
 pub mod frontier_reveal;
 pub mod games_fixture;
 pub mod games_host;
 pub mod guilds;
 pub mod hyperstructures;
-pub mod lords_budget;
 pub mod market;
 pub mod mines;
 pub mod play_fixture;
@@ -126,8 +125,12 @@ pub fn setup_with_structures(seed_games: bool, structures_class: ByteArray) -> D
     setup_with_domains(seed_games, structures_class, "TroopFixture")
 }
 pub fn bind_authority(d: Deployment) -> Deployment {
-    deploy_player(2, GUARDIAN);
-    Deployment { actor: authority(), ..d }
+    let (actor, _) = deploy_player(2, GUARDIAN);
+    bind_player(d, actor)
+}
+pub fn bind_player(d: Deployment, actor: ContractAddress) -> Deployment {
+    assert_eq!(starknet::syscalls::get_class_hash_at_syscall(actor).unwrap(), d.account_class);
+    Deployment { actor, ..d }
 }
 pub fn declare_logic(name: ByteArray) -> ClassHash {
     *declare(name).unwrap().contract_class().class_hash
@@ -187,14 +190,7 @@ pub fn context(games: ContractAddress, game_id: u32) -> ExecutionContext {
     }
 }
 pub fn read_context(game_id: u32) -> ExecutionContext {
-    let state = crate::state::read();
-    ExecutionContext {
-        raw_root: 987654321,
-        timestamp: 100,
-        game_id,
-        game: BoxTrait::new(state.games.games.read(game_id)),
-        rules: BoxTrait::new(crate::logic::game::rules(game_id)),
-    }
+    crate::commands::load_context(game_id, 987654321, 100)
 }
 pub fn map_center(games: ContractAddress, game_id: u32) -> crate::troops::Coord {
     crate::settlement_grid::map_center(context(games, game_id).rules.unbox().map_center_offset)

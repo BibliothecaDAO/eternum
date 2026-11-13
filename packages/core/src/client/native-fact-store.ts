@@ -90,6 +90,11 @@ export class NativeFactStore implements GameSyncStore {
     return this.models.get(model)?.get(factKey(model, keys))?.row as NativeRows[M] | undefined;
   }
 
+  /** The wire key assigned to a held row; updates and deletions must retain that identity. */
+  wireKeyOf<M extends NativeModelName>(model: M, keys: ReadKeys<M>): string | undefined {
+    return this.models.get(model)?.get(factKey(model, keys))?.wireId;
+  }
+
   require<M extends NativeModelName>(model: M, keys: ReadKeys<M>): NativeRows[M] {
     const row = this.get(model, keys);
     if (!row) throw new Error(`Native ${model} is not synchronized`);
@@ -151,17 +156,33 @@ export class NativeFactStore implements GameSyncStore {
     }
   }
 
-  private absenceUnknown(model: NativeModelName, keys: object, absence: DeclaredAbsence): string | undefined {
-    const key = keys as Record<string, number | bigint>;
+  /**
+   * Whether a row this store lacks is known not to exist: the snapshot is complete for its game and a row with these
+   * fields (its keys and the fields its sync rule reads) lies in that snapshot's scope. Unknown, with the reason,
+   * otherwise. A reader that treats a missing row as none asks here first, or through requireOrAbsent.
+   */
+  absenceKnown(model: NativeModelName, row: Record<string, unknown>): NativeFactResult<true> {
+    const unknown = this.scopeUnknown(model, row);
+    return unknown ? { unknown } : { known: true };
+  }
+
+  private scopeUnknown(model: NativeModelName, row: Record<string, unknown>): string | undefined {
     const snapshot = this.snapshot;
-    if (!snapshot?.complete || snapshot.gameId !== key.game_id) return `INCOMPLETE_SNAPSHOT: ${model}`;
+    if (!snapshot?.complete || snapshot.gameId !== Number(row.game_id)) return `INCOMPLETE_SNAPSHOT: ${model}`;
     if (snapshot.actor === undefined) return `INCOMPLETE_ACTOR_SNAPSHOT: ${model}`;
     // Actor/shared scopes do not use expedition time or facts.
     const result = isExpeditionScopedModel(model)
       ? this.subscriptionScope()
       : { known: { actor: snapshot.actor ?? undefined } };
     if (!result.known) return result.unknown;
-    if (!rowInGameSyncScope(model, key, result.known)) return `OUTSIDE_SNAPSHOT_SCOPE: ${model}`;
+    if (!rowInGameSyncScope(model, row, result.known)) return `OUTSIDE_SNAPSHOT_SCOPE: ${model}`;
+    return undefined;
+  }
+
+  private absenceUnknown(model: NativeModelName, keys: object, absence: DeclaredAbsence): string | undefined {
+    const key = keys as Record<string, number | bigint>;
+    const outside = this.scopeUnknown(model, key);
+    if (outside) return outside;
     if (absence.parent) {
       const parentKeys = Object.fromEntries(
         Object.entries(absence.parentKeys!).map(([parent, child]) => [parent, key[child]]),
@@ -406,6 +427,8 @@ function zeroValue(type: WireType): unknown {
 }
 
 function keyParts(value: unknown, type: WireType, path: string): string[] {
+  // An enum key (an army's running relic is keyed by its kind) is its variant's name, checked against the variants.
+  if (typeof type === "object" && "enum" in type) return [String(compileDecoder(type, path)(value))];
   if (typeof type !== "string") {
     if (!value || typeof value !== "object") throw new Error(`Invalid native key ${path}`);
     return Object.entries(type).flatMap(([field, member]) =>

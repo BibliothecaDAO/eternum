@@ -1,3 +1,6 @@
+import { baneRateReader } from "../utils/world-banes";
+import { nativeBaneConstants as bane } from "../../../../contracts/l3/world-native/schema/client.gen";
+import { currentArmy } from "../utils/deep";
 import { troopTierIndex, TroopTier, TroopType, type Troops } from "@bibliothecadao/types";
 import type { NativeFactStore } from "../client/native-fact-store";
 import { battleBonusBps, logisticsStamina } from "../utils/attribute-tiers";
@@ -35,10 +38,17 @@ export function staminaAt(troops: Troops, timestamp: number, rules: TroopStamina
   const elapsed = bar.settled_at === 0 ? 0 : now - bar.settled_at;
   const boosted = Math.min(elapsed, secondsLeft);
   const denominator = BigInt(tickSeconds) * 10_000n;
-  const numerator =
-    BigInt(bar.remainder) +
-    BigInt(rules.stamina_gain_per_tick) *
-      (BigInt(elapsed) * 10_000n + BigInt(boosted) * BigInt(troops.boosts.incr_stamina_regen_percent_num));
+  let weighted = BigInt(elapsed) * 10_000n + BigInt(boosted) * BigInt(troops.boosts.incr_stamina_regen_percent_num);
+  if (bar.settled_at !== 0)
+    for (const window of troops.staminaRates?.(bar.settled_at, now) ?? []) {
+      const seconds = window.end - window.start;
+      const boostSeconds = Math.max(0, Math.min(window.end, bar.settled_at + secondsLeft) - window.start);
+      weighted -=
+        BigInt(seconds * (100 - window.percent) * 100) +
+        (BigInt(boostSeconds) * BigInt(troops.boosts.incr_stamina_regen_percent_num) * BigInt(100 - window.percent)) /
+          100n;
+    }
+  const numerator = BigInt(bar.remainder) + BigInt(rules.stamina_gain_per_tick) * weighted;
   const total = bar.settled_at === 0 ? BigInt(staminaInitial) : bar.amount + numerator / denominator;
   return {
     amount: total >= maximum ? maximum : total,
@@ -64,6 +74,7 @@ export function affordableAt(
   if (cost > maximum || gain <= 0) return null;
   let low = now;
   let high = Math.max(now, troops.stamina.settled_at) + Math.ceil((cost * tickSeconds) / gain) + 1;
+  while (!canAfford(high)) high = now + (high - now) * 2;
   while (high - low > 1) {
     const middle = Math.floor((low + high) / 2);
     if (canAfford(middle)) high = middle;
@@ -91,10 +102,12 @@ export function resolveExplorerTroops(
   store: NativeFactStore,
   explorer: NativeRows["ExplorerTroops"],
 ): Troops | undefined {
+  explorer = currentArmy(store, explorer);
   const source = explorer.troops.stamina;
   if ("Inline" in source) return inlineTroops(explorer.troops);
-  const epoch = slotEpoch(store);
-  if (epoch === undefined) return undefined;
+  const day = store.get("ArmyDay", { game_id: explorer.game_id, explorer_id: explorer.explorer_id });
+  if (!day) return undefined;
+  const epoch = day.day;
   const result = store.requireOrAbsent("ArmySlot", {
     game_id: explorer.game_id,
     structure_id: explorer.owner,
@@ -111,6 +124,7 @@ export function resolveExplorerTroops(
   return {
     ...explorer.troops,
     stamina: result.known.stamina,
+    staminaRates: baneRateReader(store, explorer.game_id, explorer.owner, bane.MIST_TIDE),
     staminaMax: base + logisticsStamina(progress.logistics),
     boosts: {
       ...explorer.troops.boosts,
@@ -131,6 +145,7 @@ export const armyNumber = (explorer: NativeRows["ExplorerTroops"]): number | und
 export interface OpenArmySlot {
   slot: number;
   inherited: Troops["stamina"] | null;
+  staminaRates?: Troops["staminaRates"];
 }
 
 /**
@@ -156,7 +171,12 @@ export function openArmySlots(
     });
     if (result.unknown) return undefined;
     if (!result.known) open.push({ slot, inherited: null });
-    else if (result.known.explorer_id === 0n) open.push({ slot, inherited: result.known.stamina });
+    else if (result.known.explorer_id === 0n)
+      open.push({
+        slot,
+        inherited: result.known.stamina,
+        staminaRates: baneRateReader(store, home.game_id, home.entity_id, bane.MIST_TIDE),
+      });
   }
   return open;
 }
@@ -190,6 +210,7 @@ export function musterStamina(
     count: 0n,
     stamina: { ...slot.inherited, amount: BigInt(Math.min(Number(slot.inherited.amount), staminaMax)) },
     staminaMax,
+    staminaRates: slot.staminaRates,
     boosts: NO_BOOSTS,
     battle_cooldown_end: 0,
   };

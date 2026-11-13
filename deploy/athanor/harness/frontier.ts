@@ -10,7 +10,10 @@ import {
   ArmyActionManager,
   canPayTroopRaise,
   realmLearned,
-  researchedDepth,
+  armyAtItsSpire,
+  armyRealmSpire,
+  DEEPEST_LAYER,
+  isAtExpeditionSpire,
   researchRowCategory,
   researchTier,
   createGameActions,
@@ -925,24 +928,13 @@ function planExpedition(client: GameClient, game: HarnessGame, player: Player): 
     const coord = entityMapPosition(client.setup.store, client.gameId, army.explorer_id);
     const neighbors = getNeighborHexes(coord.x, coord.y);
     const spacing = client.setup.store.require("SettlementRules", { game_id: client.gameId }).spacing;
-    const realm = home(client, player);
-    const depth = known(
-      researchedDepth(client.setup.store, client.gameId, player.realmId),
-      player.realmId,
-      "researched depth",
-    );
-    const atEntrance =
-      Math.floor(coord.y / spacing) % 4 === 0 &&
-      neighbors.some(
-        (spot) =>
-          spot.col === (entityHomeNamespace(realm.entity_id) - 1) * spacing + spacing / 2 &&
-          spot.row === day.epoch * 4 * spacing + spacing / 2,
-      );
-    if (depth > 0 && atEntrance) {
+    // The way down is the realm's spire found today on the army's layer, as the spire's card offers it.
+    const spire = armyAtItsSpire(client.setup.store, client.gameId, army.explorer_id, now());
+    if (spire && spire.depth < DEEPEST_LAYER) {
       return command(
         client,
         player,
-        { kind: "EnterDepth", value: { explorer_id: army.explorer_id, depth } },
+        { kind: "EnterDepth", value: { explorer_id: army.explorer_id, depth: spire.depth + 1 } },
         TransactionType.ENTER_DEPTH,
       );
     }
@@ -965,7 +957,11 @@ function planExpedition(client: GameClient, game: HarnessGame, player: Player): 
         player,
         {
           kind: "BattleGuard",
-          value: { attacker_id: army.explorer_id, defender_id: target.entity_id },
+          value: {
+            attacker_id: army.explorer_id,
+            defender_id: target.entity_id,
+            relic_slot: { kind: "None", value: undefined },
+          },
         },
         TransactionType.ATTACK_EXPLORER_VS_GUARD,
       );
@@ -1003,6 +999,44 @@ function planExpedition(client: GameClient, game: HarnessGame, player: Player): 
       };
       return attack;
     }
+    // The game's own checks, as the player's army panel makes them: stamina, and the food the realm pays per troop.
+    const armyActions = new ArmyActionManager(
+      client.setup.store,
+      client.setup.systemCalls,
+      safeInteger(army.explorer_id),
+    );
+    const ticks = game.currentTicks();
+    const travel = (direction: number) => {
+      const move = {
+        ...command(
+          client,
+          player,
+          { kind: "Move", value: { explorer_id: army.explorer_id, directions: [direction] } },
+          TransactionType.TRAVEL_HEX,
+        ),
+        charge: { kind: "Move" as const, troops: army.troops.count / precision },
+      };
+      move.after = () => {
+        day.otherStamina += stamina.stamina_travel_stamina_cost;
+      };
+      return move;
+    };
+    // A spire found today on the army's layer is where it goes: the walk over explored ground comes before any more
+    // exploring, and waits for stamina rather than explore away. With no explored way there yet, it explores on.
+    const found = armyRealmSpire(client.setup.store, client.gameId, army.explorer_id, now());
+    const spireStep =
+      found && found.depth < DEEPEST_LAYER
+        ? firstStepTo(
+            coord,
+            tileAt(client),
+            sameRegion(coord, spacing),
+            (spot, tile) => isOpenGround(tile) && isAtExpeditionSpire(found, { x: spot.col, y: spot.row }),
+          )
+        : undefined;
+    if (spireStep !== undefined) {
+      if (armyActions.maxTravelSteps(ticks.default) >= 1) return travel(spireStep);
+      continue;
+    }
     const limit = player.profile === "check-in" ? 6 : 5;
     const currentSession = session(client, player);
     if ((day.sessionExplores[currentSession] ?? 0) >= limit) continue;
@@ -1015,13 +1049,6 @@ function planExpedition(client: GameClient, game: HarnessGame, player: Player): 
           spot.row % spacing < (spacing * 3) / 4,
       )
       .find((spot) => !getTileAt(client.setup.store, false, spot.col, spot.row, client.gameId)?.biome);
-    // The game's own checks, as the player's army panel makes them: stamina, and the food the realm pays per troop.
-    const armyActions = new ArmyActionManager(
-      client.setup.store,
-      client.setup.systemCalls,
-      safeInteger(army.explorer_id),
-    );
-    const ticks = game.currentTicks();
     if (frontier && armyActions.canExplore(ticks.default)) {
       const explore = {
         ...command(
@@ -1043,25 +1070,9 @@ function planExpedition(client: GameClient, game: HarnessGame, player: Player): 
       return explore;
     }
     if (!frontier && armyActions.maxTravelSteps(ticks.default) >= 1) {
-      const direction = pathToUnexplored(client, army);
-      if (direction !== undefined) {
-        const move = {
-          ...command(
-            client,
-            player,
-            {
-              kind: "Move",
-              value: { explorer_id: army.explorer_id, directions: [direction] },
-            },
-            TransactionType.TRAVEL_HEX,
-          ),
-          charge: { kind: "Move" as const, troops: army.troops.count / precision },
-        };
-        move.after = () => {
-          day.otherStamina += stamina.stamina_travel_stamina_cost;
-        };
-        return move;
-      }
+      // The nearest unexplored tile of the region's centre, over its explored free ground.
+      const direction = firstStepTo(coord, tileAt(client), regionCentre(spacing), (_, tile) => !tile?.biome);
+      if (direction !== undefined) return travel(direction);
     }
   }
 }
@@ -1085,26 +1096,54 @@ function affordableUpgrade(client: GameClient, explorerId: number) {
 export function holdsForSite(stamina: number, attackRequirement: number): boolean {
   return stamina < attackRequirement;
 }
-function pathToUnexplored(client: GameClient, army: Army): number | undefined {
-  const spacing = client.setup.store.require("SettlementRules", { game_id: client.gameId }).spacing;
-  const coord = entityMapPosition(client.setup.store, client.gameId, army.explorer_id);
-  const queue = [{ x: coord.x, y: coord.y, direction: undefined as number | undefined }];
-  const visited = new Set([`${coord.x},${coord.y}`]);
+/** A map tile as the walk reads it: explored once it has a biome, free while nothing occupies it. */
+type WalkTile = { biome?: unknown; occupier_id?: unknown } | undefined;
+
+const isOpenGround = (tile: WalkTile) => Boolean(tile?.biome) && !tile?.occupier_id;
+
+const tileAt =
+  (client: GameClient) =>
+  (col: number, row: number): WalkTile =>
+    getTileAt(client.setup.store, false, col, row, client.gameId);
+
+/** The centre half of a region on each axis, where the harness's armies explore. */
+const regionCentre =
+  (spacing: number) =>
+  (spot: { col: number; row: number }): boolean =>
+    spot.col % spacing >= spacing / 4 &&
+    spot.col % spacing < (spacing * 3) / 4 &&
+    spot.row % spacing >= spacing / 4 &&
+    spot.row % spacing < (spacing * 3) / 4;
+
+/** The region the army stands in, where its realm's spire on this layer was found. */
+const sameRegion =
+  (from: { x: number; y: number }, spacing: number) =>
+  (spot: { col: number; row: number }): boolean =>
+    Math.floor(spot.col / spacing) === Math.floor(from.x / spacing) &&
+    Math.floor(spot.row / spacing) === Math.floor(from.y / spacing);
+
+/**
+ * The first step of the shortest walk from `from` over explored free tiles `within` bounds to the nearest tile that
+ * `arrives`; none when no such walk exists. A tile that does not arrive and is not open ground ends no walk and passes
+ * none on: an unexplored tile is neither the destination nor a way there unless `arrives` names it.
+ */
+export function firstStepTo(
+  from: { x: number; y: number },
+  readTile: (col: number, row: number) => WalkTile,
+  within: (spot: { col: number; row: number }) => boolean,
+  arrives: (spot: { col: number; row: number }, tile: WalkTile) => boolean,
+): number | undefined {
+  const queue = [{ x: from.x, y: from.y, direction: undefined as number | undefined }];
+  const visited = new Set([`${from.x},${from.y}`]);
   for (const current of queue)
     for (const spot of getNeighborHexes(current.x, current.y)) {
-      if (
-        spot.col % spacing < spacing / 4 ||
-        spot.col % spacing >= (spacing * 3) / 4 ||
-        spot.row % spacing < spacing / 4 ||
-        spot.row % spacing >= (spacing * 3) / 4
-      )
-        continue;
       const key = `${spot.col},${spot.row}`;
-      if (visited.has(key)) continue;
+      if (!within(spot) || visited.has(key)) continue;
       visited.add(key);
-      const tile = getTileAt(client.setup.store, false, spot.col, spot.row, client.gameId);
-      if (!tile?.biome) return current.direction;
-      if (!tile.occupier_id) queue.push({ x: spot.col, y: spot.row, direction: current.direction ?? spot.direction });
+      const tile = readTile(spot.col, spot.row);
+      const step = current.direction ?? spot.direction;
+      if (arrives(spot, tile)) return step;
+      if (isOpenGround(tile)) queue.push({ x: spot.col, y: spot.row, direction: step });
     }
 }
 function observeProgress(client: GameClient, game: HarnessGame, player: Player) {
@@ -1118,10 +1157,7 @@ function observeProgress(client: GameClient, game: HarnessGame, player: Player) 
         research.ROW_BARRACKS,
       ),
     ],
-    [
-      "depth",
-      known(researchedDepth(client.setup.store, client.gameId, player.realmId), player.realmId, "researched depth"),
-    ],
+    ["depth", realm.metadata.deepest_depth],
   ] as const) {
     if (level > 0 && !player.rungs.some((rung) => rung.lane === lane && rung.level === level))
       player.rungs.push({ lane, level, at: now() });

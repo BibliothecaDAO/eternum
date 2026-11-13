@@ -16,10 +16,10 @@ pub fn require(key: ExplorerKey) -> ArmyProgress {
     read(key).expect('missing army progress')
 }
 
-pub fn create(key: ExplorerKey, learned: u64) -> ArmyProgress {
+pub fn create(key: ExplorerKey, learned: u64, category: crate::troops::TroopType) -> ArmyProgress {
     assert!(read(key).is_none(), "army progress already exists");
     rules(key.game_id).expect('missing progression rules');
-    let progress = crate::progression::trained(learned);
+    let progress = crate::progression::trained(learned, category);
     write(key, progress);
     progress
 }
@@ -60,7 +60,7 @@ pub fn own_stamina_max(
     }
 }
 
-pub fn award_xp(key: ExplorerKey, award: XpAward) {
+pub fn award_xp(key: ExplorerKey, award: XpAward, timestamp: u64) {
     let rules = rules(key.game_id).expect('missing progression rules');
     let mut progress = require(key);
     let amount = match award {
@@ -70,12 +70,36 @@ pub fn award_xp(key: ExplorerKey, award: XpAward) {
         },
         XpAward::Clear(amount) => amount,
     };
+    let before = progress;
+    let tome = crate::logic::army_relics::bonus(key, crate::army_relics::RelicKind::Tome, timestamp);
+    let amount = (Into::<u32, u64>::into(amount) * (10_000 + Into::<u32, u64>::into(tome)) / 10_000)
+        .try_into()
+        .unwrap();
     crate::progression::earn_xp(ref progress, rules, amount);
+    let mut earned = 0_u32;
+    for rank in 1_u8..6 {
+        earned += crate::progression::points(progress, rank) - crate::progression::points(before, rank);
+    }
+    record_earned_points(key, earned);
     write(key, progress);
 }
 
 pub fn grant_point(key: ExplorerKey, rank: u8) {
     let mut progress = require(key);
     crate::progression::earn_point(ref progress, rank);
+    record_earned_points(key, 1);
     write(key, progress);
+}
+
+fn record_earned_points(key: ExplorerKey, earned: u32) {
+    if earned == 0 || !crate::logic::quests::enabled(key.game_id) {
+        return;
+    }
+    let explorer = crate::logic::troops::explorer(key).expect('missing progressing army');
+    crate::logic::quests::record(
+        crate::resources::ResourceKey { game_id: key.game_id, entity_id: explorer.owner },
+        crate::quests::VETERANS,
+        earned.into(),
+        starknet::get_block_timestamp(),
+    );
 }

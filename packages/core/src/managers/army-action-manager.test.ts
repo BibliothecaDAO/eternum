@@ -155,6 +155,19 @@ describe("ArmyActionManager.findActionPaths origin precedence", () => {
     vi.restoreAllMocks();
   });
 
+  it("lets a Scout explore with ten stamina while a Knight still needs twenty", () => {
+    const { manager, components } = createTestSetup();
+    vi.mocked(configManager.getExploreStaminaCost).mockImplementation((category) =>
+      category === TroopType.Paladin ? 10 : 20,
+    );
+    vi.mocked(StaminaManager.prototype.getStamina).mockReturnValue({ amount: 10n, settled_at: 0, remainder: 0 });
+    const army = components.ExplorerTroops.get(String(TEST_ENTITY_ID));
+    army.troops.category = TroopType.Paladin;
+    expect(manager.canExplore(0)).toBe(true);
+    army.troops.category = TroopType.Knight;
+    expect(manager.canExplore(0)).toBe(false);
+  });
+
   it("anchors first-hop highlights to the TileOccupancy — the same coord the submit freshness guard checks", () => {
     const { manager, structureHexes, armyHexes, exploredHexes, chestHexes, oldFeltStart } = createTestSetup();
 
@@ -221,6 +234,28 @@ describe("ArmyActionManager.findActionPaths origin precedence", () => {
     expect(actionPaths.get(ActionPaths.posKey(dormantHex))).toBeUndefined();
     expect(actionPaths.getRefusals().get(ActionPaths.posKey(dormantHex))).toEqual({ reason: "occupied" });
     expect(actionPaths.getRefusals().get(ActionPaths.posKey(openHex))).toEqual({ reason: "stamina", need: 1 });
+  });
+
+  it("offers a Deep site beside the army as its order there, costing no stamina, and tells one further off to come beside it", () => {
+    const { manager, components, structureHexes, armyHexes, exploredHexes, chestHexes, oldFeltStart } =
+      createTestSetup();
+    const [siteHex] = getNeighborHexes(oldFeltStart.col, oldFeltStart.row);
+    const farSite = { col: oldFeltStart.col + 9, row: oldFeltStart.row };
+    for (const hex of [siteHex, farSite]) {
+      setNestedMapValue(exploredHexes, hex.col - TEST_FELT_CENTER, hex.row - TEST_FELT_CENTER, 1 as BiomeType);
+      components.TileOpt.set(
+        toTileEntityKey(false, hex.col, hex.row),
+        buildTileOptData({ ...hex, biome: 1, occupierType: TileOccupier.DeepSite, occupierId: 901 }),
+      );
+    }
+    const actionPaths = manager.findActionPaths(structureHexes, armyHexes, exploredHexes, chestHexes, 0, 0x123n as any);
+
+    expect(actionPaths.get(ActionPaths.posKey(siteHex))).toEqual([
+      { hex: oldFeltStart, actionType: ActionType.Move },
+      { hex: { col: siteHex.col, row: siteHex.row }, actionType: ActionType.DeepSite, staminaCost: 0 },
+    ]);
+    expect(actionPaths.get(ActionPaths.posKey(farSite))).toBeUndefined();
+    expect(actionPaths.getRefusals().get(ActionPaths.posKey(farSite))).toEqual({ reason: "too-far" });
   });
 
   it("tells a shrine or a well beyond the army's step to move next to it, near its routes or far off", () => {

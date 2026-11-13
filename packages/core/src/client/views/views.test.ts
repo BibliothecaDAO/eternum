@@ -1,12 +1,22 @@
-import { ContractAddress, getNeighborHexes, StructureType } from "@bibliothecadao/types";
+import {
+  ContractAddress,
+  dailyQuests,
+  getNeighborHexes,
+  RESOURCE_PRECISION,
+  StructureType,
+} from "@bibliothecadao/types";
 import { hash } from "starknet";
 import { afterEach, describe, expect, it } from "vitest";
-import { ClientConfigManager, createGameViews, type GameViews } from "../../index";
+import { ClientConfigManager, createGameViews, dailyQuest, dayOf, readQuestWeek, type GameViews } from "../../index";
 import { setBlockTimestampSource } from "../../utils/timestamp";
 import { NativeFactStore } from "../native-fact-store";
 import type { GameClient } from "../game-client";
 import explorerFixture from "../../../../../contracts/l3/world-native/schema/fixtures/row-set.json";
 import preset from "../../../../../contracts/l3/world-native/tests/fixtures/current-presets/preset-3.json";
+import {
+  nativeBaneConstants as bane,
+  nativeQuestConstants as quests,
+} from "../../../../../contracts/l3/world-native/schema/client.gen";
 
 const GAME_ID = 28;
 const PLAYER = ContractAddress(0xabc);
@@ -14,6 +24,103 @@ const RIVAL = ContractAddress(0xdef);
 
 describe("game views", () => {
   afterEach(() => setBlockTimestampSource(null));
+
+  it("reads the day's quest, completion and collection only from native facts", () => {
+    const { store, views } = createHarness();
+    expect(views.dailyQuest(12, 100)).toBeUndefined();
+    seedQuestGame(store);
+    expect(views.dailyQuest(12, 99)).toBeUndefined();
+    expect(views.dailyQuest(12, 100)).toMatchObject({
+      quest: { id: 6 },
+      day: 0,
+      reading: { known: { target: 15n, progress: 0n, completed: false, claimed: false } },
+    });
+    store.applyFacts([questProgress(15n, 1)]);
+    expect(reading(views)).toMatchObject({ target: 15n, progress: 15n, completed: true, claimed: false });
+    store.applyFacts([laborGrant()]);
+    expect(reading(views)?.claimed).toBe(true);
+  });
+
+  it("keeps the reading unknown while the snapshot loads: no zero progress, no missing receipt, no missing bonus", () => {
+    const { store, views } = createHarness();
+    seedQuestGame(store, { complete: false });
+    expect(views.dailyQuest(12, 100)?.reading.unknown).toBe("INCOMPLETE_SNAPSHOT: QuestProgress");
+    // The finished progress arrives first: its receipt is not known yet, so nothing may offer collection.
+    store.applyFacts([questProgress(15n, 1)]);
+    expect(views.dailyQuest(12, 100)?.reading.unknown).toBe("INCOMPLETE_SNAPSHOT: LaborGrant");
+    // The receipt arrives: whether the home has the labor bonus is not known yet, so no reward is shown.
+    store.applyFacts([laborGrant()]);
+    expect(views.dailyQuest(12, 100)?.reading.unknown).toBe("INCOMPLETE_SNAPSHOT: CampaignHome");
+    // A campaign home's row settles the bonus at once.
+    store.applyFacts([
+      { model: "CampaignHome", key: "0x205", value: { game_id: GAME_ID, home: 12n, campaign_id: 1, tier: 1 } },
+    ]);
+    expect(reading(views)).toMatchObject({ claimed: true, reward: { labor: 1500n, essence: 1500n } });
+  });
+
+  it("knows a free home has no bonus only once the snapshot is complete", () => {
+    const { store, views } = createHarness();
+    seedQuestGame(store, { complete: false });
+    store.applyFacts([questProgress(15n, 1), laborGrant()]);
+    expect(views.dailyQuest(12, 100)?.reading.unknown).toBe("INCOMPLETE_SNAPSHOT: CampaignHome");
+    completeSnapshot(store);
+    expect(reading(views)).toMatchObject({ claimed: true, reward: { labor: 1000n, essence: 1500n } });
+  });
+
+  it("pays the quest as the contract does: doubled at each level, the labor at 150% for a held Realm's home", () => {
+    const { store, views } = createHarness();
+    seedQuestGame(store);
+    // A free Settlement: 1,000 labor and 1,500 Essence.
+    expect(reading(views)?.reward).toEqual({ labor: 1000n, essence: 1500n });
+    // Finished as a Kingdom (level 3): ×4 both.
+    store.applyFacts([questProgress(45n, 3)]);
+    expect(reading(views)?.reward).toEqual({ labor: 4000n, essence: 6000n });
+    // The home of a held Realm: 150% of the labor, the Essence unchanged.
+    store.applyFacts([{ model: "SettledRealm", key: "0x204", value: { game_id: GAME_ID, realm_id: 77, home: 12n } }]);
+    expect(reading(views)?.reward).toEqual({ labor: 6000n, essence: 6000n });
+  });
+
+  it("deals the week's seven quests in the bag's order, each past day collected, done or missed as its rows say", () => {
+    const { store } = createHarness();
+    seedQuestGame(store);
+    const day3 = startOfDay(3);
+    completeSnapshot(store, day3);
+    // Day 0 collected, day 1 done but not collected, day 2 missed.
+    store.applyFacts([
+      questProgress(15n, 1),
+      laborGrant(),
+      {
+        model: "QuestProgress",
+        key: "0x212",
+        value: { game_id: GAME_ID, home: 12, day: 1, progress: 2n, completed_level: 1 },
+      },
+    ]);
+    const week = readQuestWeek(store, GAME_ID, 12, day3)!;
+    expect(week.today).toBe(3);
+    // The season runs far past this week: all seven of its days.
+    expect(week.days.map(({ day, quest }) => ({ day, id: quest?.id }))).toEqual(
+      Array.from({ length: 7 }, (_, day) => ({ day, id: dailyQuest(5n, day) })),
+    );
+    expect(
+      week.days
+        .slice(0, 3)
+        .map(({ reading }) => reading.known && { completed: reading.known.completed, claimed: reading.known.claimed }),
+    ).toEqual([
+      { completed: true, claimed: true },
+      { completed: true, claimed: false },
+      { completed: false, claimed: false },
+    ]);
+  });
+
+  it("stops the week at the season's last day", () => {
+    const { store } = createHarness();
+    seedQuestGame(store);
+    // The season ends where day 5 (zero-based) would begin: its last day is day 4.
+    const registry = store.require("GameRegistry", { game_id: GAME_ID });
+    store.applyFacts([{ model: "GameRegistry", key: "0x102", value: { ...registry, end_at: String(startOfDay(5)) } }]);
+    completeSnapshot(store, startOfDay(3));
+    expect(readQuestWeek(store, GAME_ID, 12, startOfDay(3))!.days.map(({ day }) => day)).toEqual([0, 1, 2, 3, 4]);
+  });
 
   it("lists a player's structures by category then entity id, seen as theirs", () => {
     const { store, views } = createHarness();
@@ -91,7 +198,7 @@ const createHarness = (): { store: NativeFactStore; views: GameViews } => {
   return { store, views: createGameViews(fakeClient(store), PLAYER, () => null) };
 };
 
-const fakeClient = (store: NativeFactStore): GameClient => ({ setup: { store } }) as GameClient;
+const fakeClient = (store: NativeFactStore): GameClient => ({ gameId: GAME_ID, setup: { store } }) as GameClient;
 
 const seedStructure = (
   store: NativeFactStore,
@@ -140,7 +247,7 @@ const seedStructure = (
   ]);
 
 /** A Frontier game's rules: hour-long day units from `startMainAt`, regions `spacing` tiles wide. */
-const seedFrontierRules = (store: NativeFactStore, input: { startMainAt: number; spacing: number }) =>
+const seedFrontierRules = (store: NativeFactStore, input: { startMainAt: number; spacing: number; seed?: string }) =>
   store.applyFacts([
     { model: "SliceRules", key: "0x100", value: { ...preset.rules, game_id: GAME_ID, day_unit_seconds: 3600 } },
     {
@@ -162,7 +269,7 @@ const seedFrontierRules = (store: NativeFactStore, input: { startMainAt: number;
         ready: true,
         dev_mode_on: false,
         end_grace_seconds: 0,
-        seed: "1",
+        seed: input.seed ?? "1",
       },
     },
   ] as never);
@@ -202,3 +309,156 @@ const seedExplorer = (
       },
     },
   ]);
+
+/** Season 1's quest rules over a Frontier game on day 0, the player's Realm 12, and the player's snapshot. */
+const seedQuestGame = (store: NativeFactStore, snapshot: { complete: boolean } = { complete: true }) => {
+  seedFrontierRules(store, { startMainAt: 100, spacing: 10, seed: "5" });
+  seedStructure(store, { entityId: 12, owner: PLAYER, category: StructureType.Realm, x: 1, y: 1 });
+  store.applyFacts([
+    {
+      model: "QuestRules",
+      key: "0x201",
+      value: {
+        game_id: GAME_ID,
+        base_counts: dailyQuests.map(({ baseCount }) => baseCount),
+        labor: 1000n,
+        essence: 1500n,
+        bonus_percent: 150,
+      },
+    },
+  ]);
+  if (snapshot.complete) completeSnapshot(store);
+  else store.setSnapshot({ gameId: GAME_ID, complete: false, actor: PLAYER.toString(), timestamp: 100 });
+};
+const completeSnapshot = (store: NativeFactStore, timestamp = 100) =>
+  store.setSnapshot({ gameId: GAME_ID, complete: true, actor: PLAYER.toString(), timestamp });
+/** The first second of a season day (zero-based) on the quest game's calendar: seed 5, from 100, hour-long units. */
+const startOfDay = (index: number): number => {
+  const calendar = { seed: 5n, startMainAt: 100, endAt: 1_000_000, dayUnitSeconds: 3600 };
+  let at = 100;
+  while (dayOf(calendar, at)!.index < index) at = dayOf(calendar, at)!.end;
+  return at;
+};
+const questProgress = (progress: bigint, completedLevel: number) => ({
+  model: "QuestProgress",
+  key: "0x202",
+  value: { game_id: GAME_ID, home: 12, day: 0, progress, completed_level: completedLevel },
+});
+const laborGrant = () => ({
+  model: "LaborGrant",
+  key: "0x203",
+  value: { game_id: GAME_ID, home: 12, day: 0, account: PLAYER, amount: 1000n, essence: 1500n },
+});
+const reading = (views: GameViews) => views.dailyQuest(12, 100)?.reading.known;
+
+describe("the day's quest under a bane", () => {
+  /** Season 1's bane rules over the quest game, the player's home in Harmony, and ten Harmony homes out on day 1. */
+  const seedBaneGame = (snapshot: { complete: boolean } = { complete: true }) => {
+    const { store, views } = createHarness();
+    seedQuestGame(store, snapshot);
+    store.applyFacts([
+      {
+        model: "BaneRules",
+        key: "0x301",
+        value: {
+          game_id: GAME_ID,
+          chance_step: 20,
+          quorum_percent: 25,
+          beast_percent: 150,
+          stamina_percent: 50,
+          production_percent: 50,
+          quest_counts: [3n, 6n, 9n, 12n, 20n, 40n, 60n, 80n, 2500n, 6000n, 10000n, 15000n],
+        },
+      },
+      { model: "HomeAspect", key: "0x302", value: { game_id: GAME_ID, home: 12n, aspect: HARMONY } },
+      { model: "AspectActivity", key: "0x303", value: { game_id: GAME_ID, aspect: HARMONY, day: 1, active: 10 } },
+    ]);
+    if (snapshot.complete) completeSnapshot(store, ASH_FALL_DAY_AT);
+    return { store, views };
+  };
+  const HARMONY = 2;
+  const CHAOS = 3;
+  /** Seed 5's mist rolls Ash Fall on day 2 (world-banes.test.ts's vector): its bane quest is the Cull. */
+  const ASH_FALL_DAY = 2;
+  const ASH_FALL_DAY_AT = startOfDay(ASH_FALL_DAY);
+  const onDay = (model: string, key: string, value: Record<string, unknown>) => ({
+    model,
+    key,
+    value: { game_id: GAME_ID, home: 12, day: ASH_FALL_DAY, ...value },
+  });
+  const progress = (completed: number, endedAt = 0) => ({
+    model: "BaneProgress",
+    key: "0x304",
+    value: { game_id: GAME_ID, aspect: HARMONY, day: ASH_FALL_DAY, completed, ended_at: endedAt },
+  });
+  const today = (views: GameViews) => views.dailyQuest(12, ASH_FALL_DAY_AT)!;
+
+  it("replaces the daily quest with the world bane's quest, sized by BaneRules and counted in troops", () => {
+    const { store, views } = seedBaneGame();
+    store.applyFacts([
+      onDay("QuestProgress", "0x305", { progress: 1200n * BigInt(RESOURCE_PRECISION), completed_level: 0 }),
+      progress(1),
+    ]);
+    expect(today(views).quest).toMatchObject({ id: quests.CULL, name: "The Cull" });
+    expect(today(views).reading.known).toMatchObject({
+      target: 2500n,
+      progress: 1200n,
+      completed: false,
+      // 25% of the ten Harmony homes out on day 1, rounded up: 3 end it; 1 has finished.
+      bane: { source: "world", kind: bane.ASH_FALL, sender: null, quest: quests.CULL, required: 3, completed: 1 },
+    });
+    expect(today(views).reading.known?.bane).toMatchObject({ won: false, secondClaimed: false });
+  });
+
+  it("owes the daily reward a second time once the Aspect ends a world bane, until its second grant is recorded", () => {
+    const { store, views } = seedBaneGame();
+    store.applyFacts([
+      onDay("QuestProgress", "0x305", { progress: 2500n * BigInt(RESOURCE_PRECISION), completed_level: 1 }),
+      onDay("LaborGrant", "0x306", { account: PLAYER, amount: 1000n, essence: 1500n }),
+      progress(3, ASH_FALL_DAY_AT + 60),
+    ]);
+    expect(today(views).reading.known).toMatchObject({ completed: true, claimed: true });
+    expect(today(views).reading.known?.bane).toMatchObject({ won: true, secondClaimed: false });
+    store.applyFacts([onDay("BaneGrant", "0x307", { account: PLAYER, amount: 1000n, essence: 1500n })]);
+    expect(today(views).reading.known?.bane).toMatchObject({ won: true, secondClaimed: true });
+  });
+
+  it("gives a rival's team bane first, with its sender and its quest, and no second reward", () => {
+    const { store, views } = seedBaneGame();
+    store.applyFacts([
+      {
+        model: "TeamBane",
+        key: "0x308",
+        value: {
+          game_id: GAME_ID,
+          aspect: HARMONY,
+          day: ASH_FALL_DAY,
+          source: CHAOS,
+          issued_day: 1,
+          quest: quests.STAND,
+        },
+      },
+      // The fourth finisher ended it: the contract records the moment the count was reached.
+      progress(4, ASH_FALL_DAY_AT + 60),
+    ]);
+    expect(today(views).quest).toMatchObject({ id: quests.STAND, name: "The Stand" });
+    expect(today(views).reading.known).toMatchObject({
+      target: 3n,
+      bane: { source: "team", kind: null, sender: CHAOS, quest: quests.STAND, required: 3, completed: 4, won: true },
+    });
+    expect(today(views).reading.known?.bane?.secondClaimed).toBeNull();
+  });
+
+  it("names no quest while it cannot tell whether a team bane stands over the day", () => {
+    const { store, views } = seedBaneGame({ complete: false });
+    expect(store.get("TeamBane", { game_id: GAME_ID, aspect: HARMONY, day: ASH_FALL_DAY })).toBeUndefined();
+    expect(today(views)).toMatchObject({ quest: null, reading: { unknown: "INCOMPLETE_SNAPSHOT: TeamBane" } });
+  });
+
+  it("shows a coming day's quest as the bag deals it: nobody knows a bane's day before it comes", () => {
+    const { views, store } = seedBaneGame();
+    const week = readQuestWeek(store, GAME_ID, 12, startOfDay(1))!;
+    expect(week.days.find(({ day }) => day === ASH_FALL_DAY)?.quest?.id).toBe(dailyQuest(5n, ASH_FALL_DAY));
+    expect(today(views).quest?.id).toBe(quests.CULL);
+  });
+});

@@ -81,9 +81,10 @@ async function expeditionWorld() {
       metadata: { ...structureValue.metadata, realm_id: id },
     }),
   );
-  const armies = [1, 2].map((id) =>
+  const armies = [1, 2].flatMap((id) => [
+    rowEvent("ArmyDay", ["1", String(id * 10)], { day: dayZero.index }),
     rowEvent("ExplorerTroops", ["1", String(id * 10)], explorerValue(String(id), 1000n, 120n, 1n)),
-  );
+  ]);
   const positions = [1, 2].map((id) =>
     rowEvent("TileOccupancy", ["1", "0", String(id * 100 - 50), "50"], {
       entity_id: String(id * 10),
@@ -294,43 +295,33 @@ describe("native live publication", () => {
       live.detach(session);
       return replica(stream);
     };
-    const faith = (owner: bigint) =>
-      rowEvent("WonderFaith", ["1", "5"], {
-        last_recorded_owner: owner,
-        claimed_points: 0n,
-        claim_per_sec: 1,
-        claim_last_at: 0,
-        owner_claim_per_sec: 1,
-        num_structures_pledged: 0,
-      });
+    const pass = (owner: bigint) => rowEvent("VillagePass", ["1", "5"], { owner, village_id: 0 });
     const confirm = async (block: number, owner?: bigint) => {
       confirmed.block_number = block;
       pending.block_number = block + 1;
       confirmed.transactions =
-        owner === undefined
-          ? []
-          : [{ receipt: receipt([faith(owner)], `0x${block}`), transaction: { type: "INVOKE" } }];
+        owner === undefined ? [] : [{ receipt: receipt([pass(owner)], `0x${block}`), transaction: { type: "INVOKE" } }];
       await live.acceptSubscribedHead({ block_number: block, timestamp: beforeMidnight });
     };
     const expectFresh = () =>
       ["0xa", "0xb"].forEach((actor, index) => expect(replica(messages[index]), actor).toEqual(fresh(actor)));
-    const wonder = (rows: Map<string, unknown>) => [...rows.keys()].filter((key) => key.startsWith("WonderFaith:"));
+    const heldPass = (rows: Map<string, unknown>) => [...rows.keys()].filter((key) => key.startsWith("VillagePass:"));
 
-    // The wonder's faith is 0xa's, held by its owner; then it passes to 0xb. Its keys no longer meet 0xa's scope.
+    // The pass moves from 0xa to 0xb; its keys no longer meet 0xa's scope.
     await confirm(11, 10n);
-    expect(wonder(replica(messages[0]))).toHaveLength(1);
-    expect(wonder(replica(messages[1]))).toEqual([]);
+    expect(heldPass(replica(messages[0]))).toHaveLength(1);
+    expect(heldPass(replica(messages[1]))).toEqual([]);
     await confirm(12, 11n);
-    expect(wonder(replica(messages[0]))).toEqual([]);
-    expect(wonder(replica(messages[1]))).toHaveLength(1);
+    expect(heldPass(replica(messages[0]))).toEqual([]);
+    expect(heldPass(replica(messages[1]))).toHaveLength(1);
     expectFresh();
 
     // A pending transfer back to 0xa that the next block drops: 0xa is shown it, then loses it to the revert.
-    live.acceptReceipt({ ...receipt([faith(10n)], "0x99"), finality_status: "PRE_CONFIRMED" });
-    expect(wonder(replica(messages[0]))).toHaveLength(1);
-    expect(wonder(replica(messages[1]))).toEqual([]);
+    live.acceptReceipt({ ...receipt([pass(10n)], "0x99"), finality_status: "PRE_CONFIRMED" });
+    expect(heldPass(replica(messages[0]))).toHaveLength(1);
+    expect(heldPass(replica(messages[1]))).toEqual([]);
     await confirm(13);
-    expect(wonder(replica(messages[0]))).toEqual([]);
+    expect(heldPass(replica(messages[0]))).toEqual([]);
     expectFresh();
   });
 

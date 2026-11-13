@@ -1,11 +1,15 @@
 import type { GameType } from "./types";
 
-/** The fixture preset for accelerated Frontier: fixtures and harness design runs create from it, the launcher never does. */
+/** Historical accelerated Frontier; retired from new Season 1 games. */
 export const FRONTIER_ACCELERATED_PRESET_ID = 101;
-/** Frontier's own preset: the design the launcher's seasons create from. */
+/** Historical Frontier; existing games keep their release and preset. */
 export const FRONTIER_PRESET_ID = 5;
-/** Frontier's three-times-speed Devcon season; registered separately from normal-speed seasons. */
+/** Historical three-times-speed Devcon season; retired from new Season 1 games. */
 export const FRONTIER_DEVCON_PRESET_ID = 6;
+/** Season 1's rules; registered separately from the earlier Frontier seasons. */
+export const FRONTIER_S1_PRESET_ID = 7;
+/** Slice 1 playtests cap upper-level bane quests at City until Scouts are available. */
+export const FRONTIER_S1_DEV_PRESET_ID = 106;
 /** Immutable Frontier preset used by the committed contract fixtures. */
 export const FRONTIER_FIXTURE_PRESET_ID = 104;
 /**
@@ -20,14 +24,12 @@ const NATIVE_PRESET_MODES: Readonly<Record<number, GameType>> = {
   // Frontier's first design; registered on the shards and still played by the games created from it.
   1: "frontier",
   2: "blitz",
-  3: "eternum",
-  4: "duel",
   [FRONTIER_PRESET_ID]: "frontier",
   [FRONTIER_DEVCON_PRESET_ID]: "frontier",
+  [FRONTIER_S1_PRESET_ID]: "frontier",
+  [FRONTIER_S1_DEV_PRESET_ID]: "frontier",
   [FRONTIER_ACCELERATED_PRESET_ID]: "frontier",
-  // The first playtest's preset; registered on shard A and still played by the game created from it.
   102: "frontier",
-  103: "eternum",
   [FRONTIER_FIXTURE_PRESET_ID]: "frontier",
   [FRONTIER_PLAYGROUND_PRESET_ID]: "frontier",
 };

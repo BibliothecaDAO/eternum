@@ -51,3 +51,22 @@ describe("compiled native commands", () => {
     ).toThrow("Fields do not match");
   });
 });
+
+describe("Aspect settlement", () => {
+  it("puts the chosen Aspect after the optional canonical Realm", () => {
+    const command = {
+      kind: "SettleSeason",
+      value: {
+        selected_realm: { kind: "None", value: undefined },
+        aspect: { kind: "Some", value: 3 },
+      },
+    } as const;
+    expect(encodeNativeCommand(abi, command)).toEqual(["10", "1", "0", "3"]);
+    expect(
+      encodeNativeCommand(abi, {
+        ...command,
+        value: { selected_realm: { kind: "Some", value: 711 }, aspect: { kind: "None", value: undefined } },
+      }),
+    ).toEqual(["10", "0", "711", "1"]);
+  });
+});

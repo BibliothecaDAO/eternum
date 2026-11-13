@@ -2,7 +2,7 @@ pub use snforge_std::{
     EventSpyTrait, EventsFilterTrait, spy_events, start_cheat_caller_address, stop_cheat_caller_address,
 };
 pub use crate::combat::TroopsTrait;
-pub use crate::combat_actions::{AttackExplorer, GuardAttack, Raid};
+pub use crate::combat_actions::{AttackExplorer, GuardAttack};
 pub use crate::commands::{Command, CreateExplorer};
 pub use crate::guards::{Guard, GuardKey, IGuardsDispatcher, IGuardsDispatcherTrait};
 pub use crate::map::{IMapLogicDispatcher, IMapLogicDispatcherTrait};
@@ -10,8 +10,7 @@ pub use crate::resources::{IResourceOperationsDispatcher, ResourceAmount, Resour
 pub use crate::rules::RESOURCE_PRECISION;
 pub use crate::structures::{IStructureOperationsDispatcher, StructureRecord};
 pub use crate::tests::state::{
-    CombatObservationTrait, GameState, MapObservationTrait, ResourceObservationTrait, StructureObservationTrait,
-    TroopObservationTrait,
+    GameState, MapObservationTrait, ResourceObservationTrait, StructureObservationTrait, TroopObservationTrait,
 };
 pub use crate::troops::{Coord, ExplorerKey, ExplorerTroops, Stamina, Troops};
 pub use super::resource_commands::{assert_terminal_rejection, execute, grant, set_fixture};
@@ -28,7 +27,7 @@ pub fn setup_with_mode(
         + if blitz {
             super::play_fixture::BLITZ_RULES
         } else {
-            super::play_fixture::ETERNUM_RULES
+            super::play_fixture::TEST_RULES
         };
     setup_with_rule_mask(blitz, immunity, mode_rules)
 }
@@ -47,7 +46,7 @@ pub fn setup_with_cooldown(
             if blitz {
                 super::play_fixture::BLITZ_COMMAND_MASK
             } else {
-                super::play_fixture::ETERNUM_COMMAND_MASK
+                super::play_fixture::BLITZ_COMMAND_MASK
             };
     rules.entry_rule = if blitz {
         crate::rules::ENTRY_ROSTER
@@ -56,7 +55,6 @@ pub fn setup_with_cooldown(
     };
     rules.battle_config.regular_immunity_ticks = immunity;
     rules.battle_config.village_immunity_ticks = 0;
-    rules.battle_config.village_raid_immunity_ticks = 3;
     rules.tick_config.armies_tick_in_seconds = 5;
     rules.battle_config.cooldown_seconds = cooldown_seconds;
     rules.troop_stamina_config.stamina_initial = 120;
@@ -126,9 +124,6 @@ pub fn balance(d: super::Deployment, id: u64, resource_type: u8) -> u128 {
 }
 pub fn resources(amount: u128) -> Span<ResourceAmount> {
     array![ResourceAmount { resource_type: 2, amount }].span()
-}
-pub fn raid(attacker: u64, target: ResourceKey, amounts: Span<ResourceAmount>) -> Command {
-    Command::Raid(Raid { explorer_id: attacker, structure_id: target.entity_id, steal_resources: amounts })
 }
 pub fn set_guard(d: super::Deployment, key: ResourceKey, slot: u8, count: u128) {
     set_fixture(

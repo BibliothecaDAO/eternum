@@ -1,7 +1,7 @@
 import { gamesAbi } from "../../../packages/value-ledger/test-support/abi";
 import { CallData, shortString } from "starknet";
 import { expect, it, vi } from "vitest";
-import { LaunchShard } from "./shard-client";
+import { buildLaunchGameParams, LaunchShard } from "./shard-client";
 
 it("launches a Blitz from its closed slot: creation parameters, settling time, one create, seats and its summary", async () => {
   const native = new LaunchShard({
@@ -130,9 +130,7 @@ const releasedShard = (existing: Record<string, number>, currentRelease: number)
     async seedExisting() {
       for (const launch of launches) {
         if (existing[launch.request.gameName] === undefined) continue;
-        const params = await (
-          native as unknown as { creationParams: (...args: unknown[]) => Promise<unknown> }
-        ).creationParams(launch.request, launch.createdAt, launch.players);
+        const params = buildLaunchGameParams(launch.request, launch.createdAt, launch.players, launch.seater);
         const id = games.size + 1;
         games.set(launch.request.gameName, {
           id,

@@ -6,13 +6,14 @@ const HOUR = 60 * MINUTE;
 /**
  * Every kind of alert the game pushes, the level that first carries it and how long an alert of it may live: while it
  * is still true. The server, the live page and Settings all read this table; nothing names a kind's level elsewhere.
- * - Day open lives until an hour before its day ends, an army rested until its day ends: each alert carries its own
- *   end, and the bound here is longer than any game day.
+ * - Day open lives until an hour before its day ends, an army rested and a Deep site to take until their day ends:
+ *   each alert carries its own end, and the bound here is longer than any game day.
  * - A repeat of a kind in one game replaces the alert still shown (one tag per game and kind) instead of stacking.
  */
 export const NOTIFICATION_KIND_RULES = {
   "day-open": { level: "important", lifetimeMs: 48 * HOUR },
   "army-rested": { level: "important", lifetimeMs: 48 * HOUR },
+  "deep-sites": { level: "important", lifetimeMs: 48 * HOUR },
   fights: { level: "important", lifetimeMs: HOUR },
   results: { level: "important", lifetimeMs: 24 * HOUR },
   messages: { level: "important", lifetimeMs: HOUR },

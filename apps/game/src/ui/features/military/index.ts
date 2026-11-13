@@ -1,4 +1,4 @@
-// Military Feature - Army management, combat, defense, raids
+// Military Feature - Army management, combat, defense
 // This feature consolidates all military operations from components and modules
 
 // Defense Components - Used externally
@@ -8,4 +8,4 @@ export { CompactDefenseDisplay } from "./components/compact-defense-display";
 export { HelpModal } from "./components/help-modal";
 
 // Utils - Used by other features
-export { biomeBonusText, formatBiomeBonus } from "./battle/combat-utils";
+export { formatBiomeBonus } from "./battle/combat-utils";

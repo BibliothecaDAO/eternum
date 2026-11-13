@@ -1,5 +1,32 @@
+use starknet::storage::{StoragePathEntry, StoragePointerWriteAccess};
 pub use world_test_support::tests::registrar::*;
+use crate::logic::release::{IReleasesDispatcher, IReleasesDispatcherTrait};
 use crate::tests::army_merge::{progress, slot, timers, write_progress};
+
+#[test]
+fn a_preset_can_price_spire_lore_once_without_three_depth_purchases() {
+    let d = setup();
+    let (preset_id, preset) = super::preset_projection::current_definition("season-one");
+    registry(d).register_preset(preset_id, preset);
+    assert_eq!(registry(d).preset_commitment(preset_id), crate::presets::commitment(preset));
+}
+
+#[test_case(name: "missing_first_tier", 1)]
+#[test_case(name: "missing_middle_tier", 2)]
+#[feature("safe_dispatcher")]
+fn shortened_research_rows_still_require_a_contiguous_ladder(missing_tier: u8) {
+    let d = setup();
+    let (preset_id, mut preset) = super::preset_projection::current_definition("season-one");
+    let mut prices = array![];
+    for entry in preset.structures.research {
+        if *entry.row != crate::research::ROW_FARM || *entry.tier != missing_tier {
+            prices.append(*entry);
+        }
+    }
+    preset.structures.research = prices.span();
+    assert!(safe(d, super::authority()).register_preset(preset_id, preset).is_err());
+    assert_eq!(registry(d).preset_commitment(preset_id), 0);
+}
 
 
 #[test]
@@ -180,7 +207,7 @@ fn invalid_schedules_modes_and_registration_limits_never_allocate() {
 fn a_late_preset_validation_failure_rolls_back_the_record_and_allows_retry() {
     let d = setup();
     let mut preset = definition(true);
-    preset.economy.banks.lp_fee_denom = 0;
+    preset.structures.upgrade_limits.realm_max = 4;
     let commitment = crate::presets::commitment(preset);
     start_cheat_caller_address(d.games, super::authority());
     let (caller, _) = super::deploy("RollbackFixture", @array![]);
@@ -566,7 +593,7 @@ fn automatic_blitz_settlement_holds_play_for_its_last_seat_and_never_moves_the_s
         realms
             .append(
                 crate::settlement_grid::reservation_location(
-                    crate::troops::Coord { alt: false, x: map_center, y: map_center }, SettlementMode::Triple, 6, index,
+                    crate::troops::Coord { alt: false, x: map_center, y: map_center }, 6, index,
                 ),
             );
     }
@@ -720,8 +747,9 @@ fn launcher_roster_batches_block_early_play_and_report_transaction_progress() {
     assert_eq!(status_at(games.game(game_id), end_at), GameStatus::Settled);
 }
 
-#[test]
-fn roster_settlement_displaces_an_army_without_a_stale_position_or_home_entry() {
+#[test_case(name: "space_available", false)]
+#[test_case(name: "surrounded", true)]
+fn roster_settlement_displaces_an_army_without_a_stale_position_or_home_entry(surrounded: bool) {
     let d = setup();
     let preset = definition(true);
     registry(d).register_preset(1, preset);
@@ -766,16 +794,64 @@ fn roster_settlement_displaces_an_army_without_a_stale_position_or_home_entry() 
             },
         },
     );
+    if surrounded {
+        snforge_std::interact_with_state(
+            d.games,
+            || {
+                for direction in 0_u8..6 {
+                    let tile = crate::geometry::tile_key(game_id, crate::geometry::neighbor(origin, direction));
+                    crate::logic::map::MapState::reveal(tile, 1);
+                    crate::logic::map::MapState::reserve_hyperstructure(tile);
+                }
+            },
+        );
+    }
+    let resources = IResourceOperationsDispatcher { contract_address: d.games };
+    let army_resources = ResourceKey { game_id, entity_id: army.explorer_id };
+    let army_capacity: u128 = rules.capacity_config.troop_capacity.into() * RESOURCE_PRECISION;
+    let context = crate::commands::action_context(crate::tests::context(d.games, game_id));
+    snforge_std::interact_with_state(
+        d.games,
+        || {
+            crate::logic::combat::resources_dispatcher(game_id)
+                .initialize_resources(army_resources, army_capacity, 0, 205, context);
+        },
+    );
+    assert_eq!(resources.resource_weight(army_resources).capacity, army_capacity);
     crate::tests::state::assert_spatial_indexes(d.games, game_id, array![10000, 10001].span(), array![origin].span());
     super::season_lifecycle::execute_batch_in_game(
         super::bind_authority(d), game_id, Command::SettleBlitzRoster, 205, 0,
     );
-    let moved = GameState { contract_address: d.games }.resolved_explorer(army).unwrap();
-    assert!(moved.coord != origin);
-    assert_eq!(moved.owner, home.entity_id);
-    crate::tests::state::assert_spatial_indexes(
-        d.games, game_id, array![1, 10000, 10001].span(), array![origin, moved.coord].span(),
-    );
+    let moved = GameState { contract_address: d.games }.resolved_explorer(army);
+    if surrounded {
+        assert!(moved.is_none());
+        assert!(IStructureOperationsDispatcher { contract_address: d.games }.home_armies(home).is_empty());
+        assert!(IStructureOperationsDispatcher { contract_address: d.games }.position(army_resources).is_none());
+        crate::tests::state::assert_spatial_indexes(
+            d.games, game_id, array![1, 10000, 10001].span(), array![origin].span(),
+        );
+        snforge_std::interact_with_state(
+            d.games,
+            || {
+                let state = crate::state::read();
+                assert!(!state.resources.resource_exists.read((game_id, army.explorer_id)));
+                assert_eq!(state.resources.weights.read((game_id, army.explorer_id)).capacity, 0);
+                for direction in 0_u8..6 {
+                    let tile = crate::geometry::tile_key(game_id, crate::geometry::neighbor(origin, direction));
+                    let held = crate::logic::map::occupancy(tile).unwrap();
+                    assert_eq!(held.category, crate::taxonomy::RESERVED_HYPERSTRUCTURE_OCCUPIER);
+                    assert_eq!(held.entity_id, 0);
+                }
+            },
+        );
+    } else {
+        let moved = moved.unwrap();
+        assert!(moved.coord != origin);
+        assert_eq!(moved.owner, home.entity_id);
+        crate::tests::state::assert_spatial_indexes(
+            d.games, game_id, array![1, 10000, 10001].span(), array![origin, moved.coord].span(),
+        );
+    }
     assert_eq!(
         IStructureOperationsDispatcher { contract_address: d.games }.position(ResourceKey { game_id, entity_id: 1 }),
         Some(origin),
@@ -1210,5 +1286,77 @@ fn a_materialized_home_ring_moves_and_explores_without_a_roll() {
     // The home ring, the moved-to and the explored tiles keep the biome the terrain derives for them.
     assert!(
         super::terrain::assert_biomes_match_terrain(d, game_id, array![site, spawn, ring_tile, target].span()) != 0,
+    );
+}
+
+#[test_case("frontier")]
+#[test_case("devcon")]
+#[test_case("accelerated")]
+#[feature("safe_dispatcher")]
+fn paying_presets_cannot_register_on_the_new_release(name: ByteArray) {
+    let d = setup();
+    let (id, preset) = super::preset_projection::current_definition(name);
+    assert!(preset.economy.chests.is_some());
+    assert!(safe(d, super::authority()).register_preset(id, preset).is_err());
+    assert_eq!(registry(d).preset_commitment(id), 0);
+    assert_eq!(registry(d).next_game_id(), 1);
+}
+
+#[test]
+#[feature("safe_dispatcher")]
+fn an_already_registered_paying_preset_cannot_create_a_new_game() {
+    let d = setup();
+    let (id, preset) = super::preset_projection::current_definition("frontier-check");
+    registry(d).register_preset(id, preset);
+    let commitment = registry(d).preset_commitment(id);
+    let (_, historical) = super::preset_projection::current_definition("frontier");
+    snforge_std::interact_with_state(
+        d.games,
+        || {
+            crate::state::write().presets.entry(commitment).rollover_chest_rules.write(historical.economy.chests);
+        },
+    );
+    let next = registry(d).next_game_id();
+    let params = CreateGameParams { preset_id: id, ..params(false) };
+    assert!(safe(d, super::authority()).create_game(params).is_err());
+    assert_eq!(registry(d).next_game_id(), next);
+    assert_eq!(registry(d).game_id_by_name(params.name), 0);
+}
+
+#[test]
+#[feature("safe_dispatcher")]
+fn retirement_preserves_an_existing_games_pin_and_idempotent_launch() {
+    let d = setup();
+    let (id, preset) = super::preset_projection::current_definition("frontier-check");
+    registry(d).register_preset(id, preset);
+    let launch = CreateGameParams { preset_id: id, start_main_at: 360, duration_seconds: 3600, ..params(false) };
+    let game_id = registry(d).create_game(launch);
+    let before = snforge_std::interact_with_state(d.games, || crate::logic::game::game(game_id));
+    let (_, historical) = super::preset_projection::current_definition("frontier");
+    let commitment = registry(d).preset_commitment(id);
+    snforge_std::interact_with_state(
+        d.games,
+        || {
+            crate::state::write().presets.entry(commitment).rollover_chest_rules.write(historical.economy.chests);
+        },
+    );
+    let releases = IReleasesDispatcher { contract_address: d.games };
+    let original = releases.release(1);
+    start_cheat_caller_address(d.games, super::authority());
+    releases.register_release(2, original);
+    stop_cheat_caller_address(d.games);
+    assert_eq!(releases.current_release(), 2);
+    assert_eq!(releases.game_release(game_id), 1);
+    assert_eq!(registry(d).create_game(launch), game_id);
+    assert!(safe(d, super::authority()).create_game(CreateGameParams { name: 'retired-new-game', ..launch }).is_err());
+    assert_eq!(registry(d).next_game_id(), game_id + 1);
+    assert_eq!(registry(d).game_id_by_name('retired-new-game'), 0);
+    assert_eq!(releases.game_release(game_id), 1);
+    snforge_std::interact_with_state(
+        d.games,
+        || {
+            assert_eq!(crate::state::read().game_creation_releases.read(game_id), 1);
+            assert_eq!(crate::logic::game::game(game_id), before);
+        },
     );
 }

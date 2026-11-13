@@ -41,12 +41,19 @@ it.each([0n, 1n, 10_000_000_000n, 550_000_000_000n])(
   },
 );
 
-it("shows only XP when a beast clear has no credited labor, and no receipt for a standing site", () => {
+it("shows a Wraith receipt with triple clear XP and no resource, and no receipt for a standing site", () => {
   const { store } = campBeside("Beasts");
+  const site = store.require("ExpeditionSite", { game_id: 1, entity_id: SITE });
+  store.applyFacts([{ model: "ExpeditionSite", key: "0x72", value: { ...site, beast_kind: "Wraith" } }]);
   expect(readClearedSite(store, 1, SITE_TILE)).toBeNull();
   clear(store, null);
+  const receipt = readClearedSite(store, 1, SITE_TILE)!;
+  expect(receipt.site.clear?.reward).toBeNull();
+  expect(receipt.xp).toBe(354);
   const markup = renderToStaticMarkup(<SiteReceipt selected={readClearedSite(store, 1, SITE_TILE)!} />);
-  expect(markup).toContain("118");
+  expect(markup).toContain("354");
+  expect(receipt.site.beast_kind).toBe("Wraith");
+  expect(markup).not.toContain("Wheat");
   expect(markup).toContain("XP");
   expect(markup).not.toContain("Labor");
 });

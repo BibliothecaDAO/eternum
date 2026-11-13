@@ -115,7 +115,7 @@ pub mod SettlementPoolState {
             registered: u16,
             seed: u256,
         ) -> Span<Coord> {
-            let target = target_pool_size(registered, rules.registration_limit, rules.mode);
+            let target = target_pool_size(registered, rules.registration_limit);
             assert!(target != 0, "no open settlements");
             self.prepare_pool(game_id, false, center, rules, target);
             self.take_candidate(game_id, false, center, rules, seed)
@@ -132,7 +132,7 @@ pub mod SettlementPoolState {
             let target = if rules.mode == SettlementMode::Triple {
                 0
             } else {
-                target_pool_size(registered, rules.registration_limit, rules.mode)
+                target_pool_size(registered, rules.registration_limit)
             };
             if self.prepare_pool(game_id, false, center, rules, target) {
                 self.emit_pool(game_id, false, center, rules);
@@ -349,7 +349,7 @@ pub mod SettlementState {
                     ) == Some((entitlement.metadata_1, entitlement.metadata_2.try_into().unwrap())),
                 "home source differs",
             );
-            self.recover_flyer_days(key, home, entitlement);
+            crate::logic::entry::recover_flyer_days(key, home, entitlement);
         }
         fn owned_open_home(self: @ComponentState<TContractState>, key: EntryKey) -> u64 {
             let home = self.data.games.open_homes.read((key.game_id, key.owner));
@@ -369,52 +369,12 @@ pub mod SettlementState {
             } else {
                 assert!(entitlement.pass_kind == crate::settlement::CAMPAIGN_KIND, "invalid home source");
                 self.claim_campaign_home(key, home, entitlement);
-                if entitlement.metadata_3 == 'devcon-recovery' {
-                    self.recover_flyer_days(key, home, entitlement);
+                if entitlement.metadata_3 == 'devcon-recovery' && !crate::logic::quests::enabled(key.game_id) {
+                    crate::logic::entry::recover_flyer_days(key, home, entitlement);
                 }
             }
         }
-        fn recover_flyer_days(
-            ref self: ComponentState<TContractState>, key: EntryKey, home: u64, entitlement: EntryEntitlement,
-        ) {
-            let timestamp = starknet::get_block_timestamp();
-            let game = crate::logic::game::game(key.game_id);
-            let preset = crate::logic::preset_record::for_game(key.game_id);
-            crate::game::assert_playing(game, timestamp);
-            let created_at = self.data.structures.structures.entry((key.game_id, home)).base.read().created_at;
-            let unit = preset.rules.day_unit_seconds.read();
-            let founded = core::cmp::max(created_at.into(), game.start_main_at);
-            let first = crate::days::day_of(game, unit, founded).index;
-            let today = crate::days::day_of(game, unit, timestamp).index;
-            let rules = preset.labor_rules.read().expect('labor is disabled');
-            let resource_context = crate::commands::ResourceContext {
-                production_start: if preset.rules.mode_rules.read() & crate::rules::PRODUCTION_START != 0 {
-                    game.start_main_at.try_into().unwrap()
-                } else {
-                    0
-                },
-                troop_capacity: preset.rules.capacity_config.read().troop_capacity,
-                spire_fee: preset.rules.spire_travel_essence_cost.read(),
-                delivery_tick: preset.rules.tick_config.read().delivery_tick_in_seconds,
-            };
-            let release_id = self.data.game_releases.read(key.game_id);
-            let resources = self.data.releases.read(release_id).classes.resources;
-            for day in first..today {
-                if self.data.entry.home_labor_grants.read((key.game_id, home, day)).is_some() {
-                    continue;
-                }
-                let (amount, essence) = crate::logic::entry::grant_home_amounts(
-                    crate::entry::LaborHome { game_id: key.game_id, home },
-                    Some(entitlement.metadata_2.try_into().unwrap()),
-                    rules,
-                    resource_context,
-                    resources,
-                );
-                crate::logic::entry::record_labor_grant(
-                    day, crate::entry::LaborGrant { game_id: key.game_id, account: key.owner, home, amount, essence },
-                );
-            }
-        }
+
         fn validate_campaign_entry(
             self: @ComponentState<TContractState>, key: EntryKey, entitlement: EntryEntitlement,
         ) {
@@ -484,6 +444,14 @@ pub mod SettlementState {
         }
         fn claim_held_realm(ref self: ComponentState<TContractState>, key: EntryKey, realm_id: u32, home: u64) {
             let game_id = key.game_id;
+            let joined = self.data.settlements.home_aspects.read((game_id, home));
+            if joined != 0 {
+                let orders = crate::logic::aspects::rules(game_id).expect('missing Aspect rules');
+                let traits = crate::realms::decode_traits(self.data.realms.traits.read(realm_id));
+                assert!(
+                    crate::aspects::order_aspect(orders, traits.order) == joined, "Realm belongs to another Aspect",
+                );
+            }
             assert!(
                 self.data.settlements.held_realm_owners.read((game_id, realm_id)) == key.owner,
                 "Realm reserved for another owner",

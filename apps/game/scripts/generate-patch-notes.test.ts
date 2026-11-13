@@ -114,7 +114,7 @@ it("writes a campaign's season dates from the campaign, in its event's clock", (
 it.each([
   ["a file not named for a real day", "2026-02-30.md", RELEASE, "named for its day"],
   ["a missing summary", "2026-10-29.md", '---\ntitle: "T"\n---\n', "summary"],
-  ["an unknown mode", "2026-10-29.md", RELEASE.replace("## Blitz", "## Duel"), 'unknown mode "Duel"'],
+  ["an unknown mode", "2026-10-29.md", RELEASE.replace("## Blitz", "## Unknown"), 'unknown mode "Unknown"'],
   [
     "modes out of order",
     "2026-10-29.md",

@@ -48,7 +48,6 @@ pub struct LaunchRules {
     pub day_unit_seconds: u32,
     pub armies_tick_seconds: u64,
     pub entry_rule: u8,
-    pub settlement_mode: crate::settlement::SettlementMode,
     pub spacing: u32,
 }
 
@@ -66,7 +65,7 @@ pub fn validate_params(params: CreateGameParams, rules: LaunchRules) {
         assert!(params.end_grace_seconds == 0, "result finalisation has no grace period");
     }
     if rules.entry_rule == crate::rules::ENTRY_ROSTER {
-        validate_roster_size(params.roster.len(), rules.settlement_mode);
+        validate_roster_size(params.roster.len());
         assert!(!params.dev_mode_on, "Blitz does not use development mode");
         assert!(params.seater.is_non_zero(), "a fixed roster needs its seater");
     } else {
@@ -74,11 +73,8 @@ pub fn validate_params(params: CreateGameParams, rules: LaunchRules) {
         assert!(params.seater.is_zero(), "an open game has no seater");
     }
 }
-pub fn validate_roster_size(count: u32, mode: crate::settlement::SettlementMode) {
+pub fn validate_roster_size(count: u32) {
     assert!(count > 0 && count <= crate::rules::MAX_BLITZ_ROSTER_PLAYERS, "invalid Blitz roster size");
-    if mode == crate::settlement::SettlementMode::Duel {
-        assert!(count == crate::rules::DUEL_ROSTER_PLAYERS, "Duel requires two players");
-    }
 }
 
 pub fn map_center_offset(game_id: u32, seed: felt252) -> u32 {

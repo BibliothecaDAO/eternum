@@ -195,3 +195,11 @@ export function battleEvent(attacker = "7", defender = "8", timestamp = "1920"):
     ],
   };
 }
+
+export function storyTag(name: string): string {
+  const type = schema.types["world_native::ownership::Story"];
+  if (type.type !== "enum") throw new Error("Missing compiled story enum");
+  const index = type.variants.findIndex((variant) => variant.name === name);
+  if (index < 0) throw new Error(`Unknown story ${name}`);
+  return String(index);
+}

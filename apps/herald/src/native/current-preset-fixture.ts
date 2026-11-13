@@ -1,5 +1,6 @@
 import { CallData, CairoOption, CairoOptionVariant, shortString, type Abi } from "starknet";
 import { buildNativePreset } from "../../../../config/deployer/clean/config/native-preset";
+import { mergeConfigPatches } from "../../../../config/source/common/merge-config";
 import { buildConfig } from "../../../../config/source/build-config";
 import { nativePresetForId } from "../../../../config/source/native";
 import { applyBiomeClimateDefaults } from "../../../../config/deployer/biome-climate-defaults";
@@ -15,7 +16,9 @@ import { seasonSeconds } from "../../../../packages/core/src/utils/days";
 /** Generated inputs for current contract validation, separate from immutable launch recordings. */
 export async function currentPresetFixture(presetId: number, fixtureSchema: NativeSchema = schema) {
   const gameType = nativePresetForId(presetId).gameType;
-  const config = applyBiomeClimateDefaults(await buildConfig({ chain: "madara", gameType }));
+  const base = applyBiomeClimateDefaults(await buildConfig({ chain: "madara", gameType }));
+  const balance = nativePresetForId(presetId).balance;
+  const config = balance ? mergeConfigPatches<typeof base>(base, balance) : base;
   const definition = buildNativePreset(config, presetId);
   const params = fixtureLaunchParams(presetId, definition);
   const codec = new CallData([...Object.values(fixtureSchema.types), ...fixtureSchema.games.entrypoints] as Abi);
@@ -42,7 +45,7 @@ function fixtureLaunchParams(presetId: number, definition: ReturnType<typeof bui
     seater: presetId === 2 ? "0x333" : "0x0",
     registration_start: 1700,
     biome_climate: definition.rules.biome_climate_config,
-    map_override: new CairoOption(presetId === 3 ? CairoOptionVariant.Some : CairoOptionVariant.None, {
+    map_override: new CairoOption(CairoOptionVariant.None, {
       ...definition.rules.map_config,
       shards_mines_win_probability: 987,
     }),

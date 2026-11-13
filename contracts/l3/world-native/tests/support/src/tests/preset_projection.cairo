@@ -9,12 +9,10 @@ pub use crate::buildings::{IBuildingRulesDispatcher, IBuildingRulesDispatcherTra
 pub use crate::camps::{ICampRulesDispatcher, ICampRulesDispatcherTrait};
 pub use crate::expeditions::{IExpeditionRulesDispatcher, IExpeditionRulesDispatcherTrait};
 pub use crate::exploration_rewards::{IExtractionDispatcher, IExtractionDispatcherTrait};
-pub use crate::faith::{IFaithDispatcher, IFaithDispatcherTrait};
 pub use crate::game::{
     IGameDispatcher, IGameDispatcherTrait, ISeasonLifecycleDispatcher, ISeasonLifecycleDispatcherTrait,
 };
 pub use crate::hyperstructures::{IHyperstructuresDispatcher, IHyperstructuresDispatcherTrait};
-pub use crate::market::{IBankDispatcher, IBankDispatcherTrait};
 pub use crate::mines::{IMineRulesDispatcher, IMineRulesDispatcherTrait};
 pub use crate::production::{IProductionRulesDispatcher, IProductionRulesDispatcherTrait};
 pub use crate::registrar::{
@@ -23,9 +21,8 @@ pub use crate::registrar::{
 pub use crate::relics::{IRelicsDispatcher, IRelicsDispatcherTrait};
 pub use crate::settlement::{ISettlementViewsDispatcher, ISettlementViewsDispatcherTrait};
 pub use crate::spires::{ISpiresDispatcher, ISpiresDispatcherTrait};
-pub use crate::trade::{ITradeDispatcher, ITradeDispatcherTrait};
 pub use crate::upgrades::{IUpgradeRulesDispatcher, IUpgradeRulesDispatcherTrait};
-pub use crate::village::{IVillagesDispatcher, IVillagesDispatcherTrait};
+pub use crate::village::{IVillagePassesDispatcher, IVillagePassesDispatcherTrait};
 pub use crate::withdrawals::{IWithdrawalsDispatcher, IWithdrawalsDispatcherTrait};
 
 #[derive(Drop, Serde, Debug, PartialEq)]
@@ -48,11 +45,11 @@ pub fn current_definition(name: ByteArray) -> (u32, crate::presets::PresetDefini
     (preset_id, definition)
 }
 pub fn frontier_discovery_rules() -> crate::expeditions::FrontierDiscoveryRules {
-    let (_, definition) = current_definition("frontier");
+    let (_, definition) = current_definition("frontier-check");
     definition.economy.discovery.unwrap()
 }
 pub fn frontier_progression_rules() -> crate::progression::ArmyProgressionRules {
-    let (_, definition) = current_definition("frontier");
+    let (_, definition) = current_definition("frontier-check");
     definition.economy.progression.unwrap()
 }
 pub fn launch(address: ContractAddress, name: ByteArray) -> u32 {
@@ -69,7 +66,7 @@ pub fn launch(address: ContractAddress, name: ByteArray) -> u32 {
 pub fn assert_all_zero_chest_rules_refuse_registration() {
     let d = super::registrar::setup();
     start_cheat_caller_address(d.games, super::authority());
-    let (preset_id, mut definition) = current_definition("frontier");
+    let (preset_id, mut definition) = current_definition("frontier-check");
     definition
         .economy
         .chests =
@@ -167,7 +164,6 @@ pub fn observe_structures(ref rows: Array<ObservedRow>, address: ContractAddress
     let key = array![game_id.into()].span();
     let building_rules = IBuildingRulesDispatcher { contract_address: address };
     let camp_rules = ICampRulesDispatcher { contract_address: address };
-    let faith = IFaithDispatcher { contract_address: address };
     let upgrade_rules = IUpgradeRulesDispatcher { contract_address: address };
     for category in 1_u8..crate::buildings::BUILDING_CATEGORY_COUNT + 1 {
         row(
@@ -192,7 +188,6 @@ pub fn observe_structures(ref rows: Array<ObservedRow>, address: ContractAddress
         }
     }
     row(ref rows, 'CampRules', key, camp_rules.camp_rules(game_id));
-    row(ref rows, 'FaithRules', key, faith.faith_rules(game_id));
     let limits = upgrade_rules.upgrade_limits(game_id);
     row(ref rows, 'UpgradeLimits', key, limits);
     for level in 1..core::cmp::max(limits.realm_max, limits.village_max) + 1 {
@@ -207,7 +202,7 @@ pub fn observe_structures(ref rows: Array<ObservedRow>, address: ContractAddress
 pub fn observe_settlement(ref rows: Array<ObservedRow>, address: ContractAddress, game_id: u32) {
     let key = array![game_id.into()].span();
     let settlement_views = ISettlementViewsDispatcher { contract_address: address };
-    let villages = IVillagesDispatcher { contract_address: address };
+    let villages = IVillagePassesDispatcher { contract_address: address };
     let expedition_rules = IExpeditionRulesDispatcher { contract_address: address };
     let spires = ISpiresDispatcher { contract_address: address };
     row(ref rows, 'RealmGrants', key, settlement_views.realm_grants(game_id));
@@ -227,15 +222,11 @@ pub fn observe_settlement(ref rows: Array<ObservedRow>, address: ContractAddress
 }
 pub fn observe_economy(ref rows: Array<ObservedRow>, address: ContractAddress, game_id: u32) {
     let key = array![game_id.into()].span();
-    let trade = ITradeDispatcher { contract_address: address };
-    let bank = IBankDispatcher { contract_address: address };
     let hyperstructures = IHyperstructuresDispatcher { contract_address: address };
     let relics = IRelicsDispatcher { contract_address: address };
     let artificer = IArtificerDispatcher { contract_address: address };
     let bridge = IBridgeDispatcher { contract_address: address };
     let withdrawals = IWithdrawalsDispatcher { contract_address: address };
-    row(ref rows, 'TradeRules', key, trade.trade_rules(game_id));
-    row(ref rows, 'BankRules', key, bank.bank_rules(game_id));
     row(ref rows, 'HyperstructureRules', key, hyperstructures.hyperstructure_rules(game_id));
     row(ref rows, 'RelicRules', key, relics.relic_rules(game_id));
     if let Some(labor) =
@@ -266,7 +257,7 @@ pub fn observe_economy(ref rows: Array<ObservedRow>, address: ContractAddress, g
                     ref rows,
                     'ResourceToken',
                     array![game_id.into(), resource_type.into()].span(),
-                    withdrawals.resource_token(crate::market::MarketKey { game_id, resource_type }),
+                    withdrawals.resource_token(crate::withdrawals::ResourceTokenKey { game_id, resource_type }),
                 );
             }
         }

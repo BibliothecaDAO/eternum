@@ -1,6 +1,7 @@
 import { NativeFactStore } from "@bibliothecadao/eternum/game-client";
 
-import { rowsOf, type LabFact, type LabScenario } from "./lab-chain";
+import { FRONTIER_S1_PRESET_ID } from "../../../../../config/source/common/native-preset-modes";
+import { LAB_GAME, rowsOf, type LabFact, type LabScenario } from "./lab-chain";
 import { spireScenario } from "./spire-scenario";
 
 /** The realm the player founds, as the spire's day holds it. */
@@ -30,6 +31,18 @@ export const settleScenario = (): LabScenario => {
     answer: (command, chain, now) => (command.kind === "SettleSeason" ? founded : spire.answer(command, chain, now)),
   };
 };
+
+/**
+ * The same founding in a Season 1 game (/lab/game?scenario=settle-invited), by an account a friend's Aspect invite
+ * brought: identity answers its joined link as it answers a new account that opened Linden's Harmony link
+ * (apps/realms/server/identity.test.ts), so the Aspect step offers Harmony first and the founding carries the Aspect
+ * tapped.
+ */
+export const settleInvitedScenario = (): LabScenario => ({
+  ...settleScenario(),
+  presetId: FRONTIER_S1_PRESET_ID,
+  joined: { kind: "aspect", chainId: LAB_GAME.chainId, gameId: LAB_GAME.gameId, moment: 2, name: "Linden" },
+});
 
 const idOf = (value: unknown, field: string): bigint | null => {
   const id = (value as Record<string, unknown> | null)?.[field];

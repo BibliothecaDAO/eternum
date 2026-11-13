@@ -146,13 +146,14 @@ pub mod PlacementLogic {
                 "reserved hyperstructures disabled",
             );
             assert!(game.end_at == 0 || timestamp < game.end_at, "game ended");
-            let rules = crate::logic::settlement::rules(game_id);
-            let required = crate::settlement_grid::reservation_count(rules.registration_limit, rules.mode);
+            let limit: u16 = crate::state::read().registrar.roster_sizes.read(game_id).try_into().unwrap();
+            let spacing = crate::logic::preset_record::for_game(game_id).settlement_spacing.read();
+            let required = crate::settlement_grid::reservation_count(limit);
             let center = self.map_center(game_id, game_context);
             let mut placed = self.settlements.data.settlement_pool.reserved_hyperstructures.read(game_id);
             let last = core::cmp::min(required, placed + count.into());
             while placed < last {
-                let coord = crate::settlement_grid::reservation_location(center, rules.mode, rules.spacing, placed);
+                let coord = crate::settlement_grid::reservation_location(center, spacing, placed);
                 let key = tile_key(game_id, coord);
                 let previous = crate::logic::map::tile(key).map(|tile| tile.data).unwrap_or(0);
                 if previous / BIOME_SCALE % BYTE_RANGE == 0 {

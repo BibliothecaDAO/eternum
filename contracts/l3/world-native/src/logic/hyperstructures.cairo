@@ -31,7 +31,6 @@ pub mod HyperstructureState {
     use crate::resources::{
         IResourceOperationsDispatcherTrait, IResourceOperationsLibraryDispatcher, ResourceKey, ResourceSlot,
     };
-    use crate::settlement::SettlementMode;
     use crate::structures::Structure;
 
     #[storage]
@@ -547,11 +546,10 @@ pub mod HyperstructureState {
             if !crate::rules::rule_enabled(game_context.rules.unbox(), crate::rules::HYPERSTRUCTURE_MULTIPLIERS) {
                 return 1;
             }
-            let rules = crate::logic::settlement::rules(key.game_id);
-            if rules.mode == SettlementMode::Duel {
-                return 2;
-            }
-            let distance = crate::settlement_grid::hyperstructure_scan_distance(rules.spacing, rules.mode);
+            let preset = crate::logic::preset_record::for_game(key.game_id);
+            let distance = crate::settlement_grid::hyperstructure_scan_distance(
+                preset.settlement_spacing.read(), preset.settlement_mode.read(),
+            );
             let origin = crate::structures::structure_coord(key);
             let mut count = 0;
             for direction in array![(0, 4), (1, 5), (2, 0), (3, 1), (4, 2), (5, 3)] {
