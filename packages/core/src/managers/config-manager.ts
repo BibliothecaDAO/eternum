@@ -435,9 +435,6 @@ export class ClientConfigManager {
   getVillageSettlementImmunityTickCount() {
     return this.rules().battle_config.village_immunity_ticks;
   }
-  getVillagePostRaidImmunityTickCount() {
-    return this.rules().battle_config.village_raid_immunity_ticks;
-  }
   getMinTravelStaminaCost() {
     const config = this.rules().troop_stamina_config;
     return Math.max(config.stamina_travel_stamina_cost - config.stamina_bonus_value, 10);
@@ -464,18 +461,6 @@ export class ClientConfigManager {
     if (tickId === TickIds.Armies) return Number(config.armies_tick_in_seconds);
     if (tickId === TickIds.Delivery) return Number(config.delivery_tick_in_seconds);
     throw new Error("Unknown tick id");
-  }
-  getBankConfig() {
-    const rule = this.facts().require("BankRules", { game_id: this.gameId });
-    return { lpFeesNumerator: rule.lp_fee_num, lpFeesDenominator: rule.lp_fee_denom };
-  }
-  getAdminBankOwnerFee() {
-    const rule = this.facts().require("BankRules", { game_id: this.gameId });
-    return rule.owner_fee_num / rule.owner_fee_denom;
-  }
-  getAdminBankLpFee() {
-    const rule = this.getBankConfig();
-    return rule.lpFeesNumerator / rule.lpFeesDenominator;
   }
   getCapacityConfigKg(category: CapacityConfig) {
     if (category === CapacityConfig.None) return 0;

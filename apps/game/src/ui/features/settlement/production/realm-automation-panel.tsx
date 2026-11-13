@@ -356,7 +356,6 @@ export const RealmAutomationPanel = ({
   const handleSliderChange = useCallback(
     (resourceId: ResourcesIds, value: number) => {
       setDraftPercentages((prev) => {
-        const existing = prev[resourceId] ?? resolveDraftPercentages(resourceId);
         const next: ResourceAutomationPercentages = {
           resourceToResource: value,
         };
