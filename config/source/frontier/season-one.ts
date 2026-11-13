@@ -31,6 +31,7 @@ export const frontierSeasonOnePreset: NativePreset & { worldBanes: NonNullable<N
   ...frontierPreset,
   id: FRONTIER_S1_PRESET_ID,
   startingArmyCount: 2,
+  progression: { ...frontierPreset.progression, commonXp: 60 },
   labor: null,
   dailyQuest: {
     baseCounts: dailyQuests.map(({ baseCount }) => baseCount),
