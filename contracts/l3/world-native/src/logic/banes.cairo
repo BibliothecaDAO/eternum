@@ -1,20 +1,10 @@
 use starknet::Event;
-use starknet::storage::{StorageMapReadAccess, StorageMapWriteAccess, StoragePathEntry, StoragePointerReadAccess};
-use crate::banes::{BaneProgress, BaneWindow, IAspectActivityDispatcherTrait, IAspectActivityLibraryDispatcher};
+use starknet::storage::{StorageMapReadAccess, StorageMapWriteAccess, StoragePointerReadAccess};
+use crate::banes::{BaneProgress, BaneWindow};
 use crate::resources::ResourceKey;
 
 pub fn enabled(game_id: u32) -> bool {
     crate::logic::preset_record::for_game(game_id).bane_rules.read().is_some()
-}
-
-pub fn record_activity(home: ResourceKey, day: u64) {
-    if !enabled(home.game_id) {
-        return;
-    }
-    let state = crate::state::read();
-    let release = state.game_releases.read(home.game_id);
-    IAspectActivityLibraryDispatcher { class_hash: state.releases.entry(release).classes.prizes.read() }
-        .record_aspect_activity(home, day);
 }
 
 pub fn kind(game_id: u32, day: u64) -> Option<u8> {
@@ -52,7 +42,7 @@ pub fn required(game_id: u32, aspect: u8, day: u64) -> u32 {
     let active = if day == 0 {
         0
     } else {
-        crate::state::read().banes.activity.read((game_id, aspect, day - 1))
+        crate::state::read().troops.aspect_activity.read((game_id, aspect, day - 1))
     };
     crate::banes::required(active, percent)
 }
@@ -141,7 +131,6 @@ fn emit(row: crate::events::RowSet) {
 
 #[starknet::component]
 pub mod BaneState {
-    use starknet::storage::{StorageMapReadAccess, StorageMapWriteAccess};
     #[storage]
     #[allow(starknet::colliding_storage_paths)]
     pub struct Storage {
@@ -152,32 +141,6 @@ pub mod BaneState {
     #[derive(Drop, starknet::Event)]
     pub enum Event {
         RowSet: crate::events::RowSet,
-    }
-    #[embeddable_as(ActivityImpl)]
-    pub impl Activity<
-        TContractState, +HasComponent<TContractState>, +Drop<TContractState>,
-    > of crate::banes::IAspectActivity<ComponentState<TContractState>> {
-        fn record_aspect_activity(
-            ref self: ComponentState<TContractState>, home: crate::resources::ResourceKey, day: u64,
-        ) {
-            let key = (home.game_id, home.entity_id, day);
-            if self.data.banes.active_homes.read(key) {
-                return;
-            }
-            let aspect = crate::logic::aspects::home_aspect(home);
-            self.data.banes.active_homes.write(key, true);
-            let active = self.data.banes.activity.read((home.game_id, aspect, day)) + 1;
-            self.data.banes.activity.write((home.game_id, aspect, day), active);
-            self
-                .emit(
-                    crate::events::RowSet {
-                        version: 1,
-                        model: 'AspectActivity',
-                        keys: array![home.game_id.into(), aspect.into(), day.into()].span(),
-                        values: array![active.into()].span(),
-                    },
-                );
-        }
     }
 }
 

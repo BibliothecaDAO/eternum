@@ -27,11 +27,6 @@ pub struct BaneProgress {
     pub ended_at: u64,
 }
 
-#[starknet::interface]
-pub trait IAspectActivity<T> {
-    fn record_aspect_activity(ref self: T, home: crate::resources::ResourceKey, day: u64);
-}
-
 pub fn validate(rules: BaneRules) {
     assert!(rules.chance_step > 0 && rules.chance_step <= 100, "invalid world bane chance");
     assert!(rules.quorum_percent > 0 && rules.quorum_percent <= 100, "invalid bane quorum");

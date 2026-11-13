@@ -34,7 +34,7 @@ fn two_homes_end_the_lights_and_collect_the_second_grant_once() {
     let next = interact_with_state(
         d.games,
         || {
-            assert_eq!(crate::state::read().banes.activity.read((game_id, 1, 0)), 5);
+            assert_eq!(crate::state::read().troops.aspect_activity.read((game_id, 1, 0)), 5);
             assert_eq!(crate::logic::banes::required(game_id, 1, 1), 2);
             let game = crate::logic::game::game(game_id);
             let unit = crate::logic::preset_record::for_game(game_id).rules.day_unit_seconds.read();
@@ -71,7 +71,7 @@ fn two_homes_end_the_lights_and_collect_the_second_grant_once() {
             assert_eq!(progress.completed, 2);
             assert_eq!(progress.ended_at, second_done);
             assert_eq!(crate::logic::banes::quest_kind(first_home, 1), crate::quests::LIGHTS);
-            assert_eq!(crate::state::read().banes.activity.read((game_id, 1, 1)), 2);
+            assert_eq!(crate::state::read().troops.aspect_activity.read((game_id, 1, 1)), 2);
             assert_eq!(
                 crate::logic::resources::balance(first_home, crate::resources::ESSENCE),
                 essence_before_claim + 3000 * crate::rules::RESOURCE_PRECISION,
@@ -86,6 +86,65 @@ fn two_homes_end_the_lights_and_collect_the_second_grant_once() {
                 *windows.at(0),
                 crate::banes::BaneWindow { kind: crate::banes::MIST_TIDE, start: next, end: second_done },
             );
+        },
+    );
+}
+
+#[test]
+fn activity_counts_a_home_once_through_slot_reuse_rejection_and_rollover() {
+    let (d, game_id) = super::aspects::setup_aspects(15);
+    let home = settle(d, game_id, 360);
+    let armies = interact_with_state(d.games, || crate::logic::troops::home_armies(home));
+    assert_eq!(armies.len(), 2);
+    for id in armies {
+        assert!(
+            execute_in_game(
+                d, game_id, Command::ManageTroops(crate::troop_management::ManageTroops::RemoveExplorer(*id)), 361,
+            ),
+        );
+    }
+    let first = Command::CreateExplorer(
+        crate::commands::CreateExplorer {
+            structure_id: home.entity_id,
+            category: crate::troops::TroopType::Knight.into(),
+            tier: 0,
+            amount: crate::rules::RESOURCE_PRECISION,
+            direction: 0,
+            slot: 1,
+        },
+    );
+    let second = Command::CreateExplorer(
+        crate::commands::CreateExplorer {
+            structure_id: home.entity_id,
+            category: crate::troops::TroopType::Knight.into(),
+            tier: 0,
+            amount: crate::rules::RESOURCE_PRECISION,
+            direction: 1,
+            slot: 0,
+        },
+    );
+    assert!(execute_in_game(d, game_id, first, 362));
+    assert!(!execute_in_game(d, game_id, first, 362));
+    assert!(execute_in_game(d, game_id, second, 363));
+    let next = interact_with_state(
+        d.games,
+        || {
+            assert_eq!(crate::state::read().troops.aspect_activity.read((game_id, 1, 0)), 1);
+            assert_eq!(crate::state::read().troops.aspect_activity.read((game_id, 2, 0)), 0);
+            assert_eq!(crate::logic::banes::required(game_id, 1, 1), 1);
+            let game = crate::logic::game::game(game_id);
+            let unit = crate::logic::preset_record::for_game(game_id).rules.day_unit_seconds.read();
+            crate::days::day_of(game, unit, 360).end
+        },
+    );
+    assert!(execute_in_game(d, game_id, first, next + 1));
+    assert!(execute_in_game(d, game_id, second, next + 2));
+    interact_with_state(
+        d.games,
+        || {
+            assert_eq!(crate::state::read().troops.aspect_activity.read((game_id, 1, 0)), 1);
+            assert_eq!(crate::state::read().troops.aspect_activity.read((game_id, 1, 1)), 1);
+            assert_eq!(crate::state::read().troops.aspect_activity.read((game_id + 1, 1, 1)), 0);
         },
     );
 }

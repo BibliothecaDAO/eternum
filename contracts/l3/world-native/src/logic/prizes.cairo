@@ -31,8 +31,6 @@ pub mod PrizesLogic {
     impl Lords = LordsState::LordsImpl<ContractState>;
     impl LordsInternal = LordsState::InternalImpl<ContractState>;
     component!(path: crate::logic::banes::BaneState, storage: banes, event: BaneEvent);
-    #[abi(embed_v0)]
-    impl AspectActivity = crate::logic::banes::BaneState::ActivityImpl<ContractState>;
     #[storage]
     #[allow(starknet::colliding_storage_paths)]
     struct Storage {
