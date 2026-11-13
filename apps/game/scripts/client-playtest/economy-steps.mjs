@@ -68,7 +68,7 @@ export const ECONOMY_STEPS = [
 const facts = (sent, model) => sent?.answered?.filter((row) => row.model === model).map((row) => row.value) ?? [];
 const fact = (sent, model) => facts(sent, model)[0];
 const command = (browser, kind) => browser.read(`window.__labChain?.sent.find(row => row.command.kind === ${JSON.stringify(kind)}) ?? null`);
-const textOf = (browser, selector) => browser.read(`document.querySelector(${JSON.stringify(selector)})?.innerText ?? ''`);
+const textOf = (browser, selector) => browser.read(`(() => { const element = document.querySelector(${JSON.stringify(selector)}); return element ? [element.innerText, ...[...element.querySelectorAll('img[alt]')].map(image => image.alt)].join(' ') : ''; })()`);
 
 async function until(owner, read) {
   for (let attempt = 0; attempt < 60; attempt += 1) {
