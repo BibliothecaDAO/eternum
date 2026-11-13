@@ -260,9 +260,9 @@ describe("native fact store", () => {
     expect(store.get("ResourceBalance", { game_id: 2, entity_id: 4, resource_type: 1 })?.balance).toBe(300n);
     expect([...store.inGame("ResourceBalance", 2)]).toHaveLength(1);
     expect([...store.inGame("ResourceBalance", 1)]).toHaveLength(0);
-    expect(() => store.applyFacts([set("0x2", "ResourceBalance", { game_id: 0, entity_id: 4, resource_type: 1, balance: "300" })])).toThrow(
-      "Reserved game id",
-    );
+    expect(() =>
+      store.applyFacts([set("0x2", "ResourceBalance", { game_id: 0, entity_id: 4, resource_type: 1, balance: "300" })]),
+    ).toThrow("Reserved game id");
     store.applyFacts([remove("0x1", "ResourceBalance")]);
     expect([...store.inGame("ResourceBalance", 2)]).toHaveLength(0);
   });
