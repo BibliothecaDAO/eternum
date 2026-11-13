@@ -15,7 +15,7 @@ import { ClientConfigManager } from "@bibliothecadao/eternum";
 import { NativeFactStore } from "@bibliothecadao/eternum/game-client";
 import { WorldSpatialProjection } from "@bibliothecadao/eternum/game-sync";
 import { TileOccupier } from "@bibliothecadao/types";
-import preset from "../../../../../../contracts/l3/world-native/tests/fixtures/current-presets/preset-2.json";
+import preset from "../../../../../../contracts/l3/world-native/tests/fixtures/current-presets/conformance.json";
 import { runRendererFrame } from "../../renderer-frame-runtime";
 import { SpireManager } from "../../managers/spire-manager";
 import { SceneName } from "../../types";

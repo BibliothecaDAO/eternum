@@ -183,7 +183,7 @@ it("keeps missing army facts unavailable, reports them in development, and resum
       {
         model: "GameRegistry",
         key: "0x3",
-        value: { ...state.store.require("GameRegistry", { game_id: 1 }), preset_id: 3 },
+        value: { ...state.store.require("GameRegistry", { game_id: 1 }), preset_id: 2 },
       },
       {
         model: "ArmySlot",

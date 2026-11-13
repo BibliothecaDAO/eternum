@@ -10,7 +10,7 @@ import {
 } from "../../../../../../../contracts/l3/world-native/schema/client.gen";
 import rowFixture from "../../../../../../../contracts/l3/world-native/schema/fixtures/row-set.json";
 import { nativeCommandBits } from "../../../../../../../contracts/l3/world-native/schema/commands.gen";
-import preset from "../../../../../../../contracts/l3/world-native/tests/fixtures/current-presets/preset-2.json";
+import preset from "../../../../../../../contracts/l3/world-native/tests/fixtures/current-presets/conformance.json";
 import frontierConfig from "../../../../../../../config/generated/frontier.madara.json";
 import { frontierDay } from "../deploy/deploy-fixture";
 import type { SiteAttack } from "./site-card-plan";

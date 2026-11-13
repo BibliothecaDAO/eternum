@@ -7,7 +7,7 @@ import { NativeFactStore } from "@bibliothecadao/eternum/game-client";
 import type { PlayerInfo } from "@bibliothecadao/types";
 import { hash } from "starknet";
 
-import preset from "../../../../../../../contracts/l3/world-native/tests/fixtures/current-presets/preset-2.json";
+import preset from "../../../../../../../contracts/l3/world-native/tests/fixtures/current-presets/conformance.json";
 import type { PlayerActivityBreakdown } from "@/services/leaderboard/player-activity-breakdown-service";
 
 const held = vi.hoisted(() => ({

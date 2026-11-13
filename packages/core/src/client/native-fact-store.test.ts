@@ -6,7 +6,7 @@ import rowFixture from "../../../../contracts/l3/world-native/schema/fixtures/ro
 import type { NativeRows } from "../../../../contracts/l3/world-native/schema/client.gen";
 import type { GameSyncFact } from "../sync/game-sync-types";
 import { NativeFactStore } from "./native-fact-store";
-import preset from "../../../../contracts/l3/world-native/tests/fixtures/current-presets/preset-2.json";
+import preset from "../../../../contracts/l3/world-native/tests/fixtures/current-presets/conformance.json";
 import { setBlockTimestampSource } from "../utils/timestamp";
 
 afterEach(() => {

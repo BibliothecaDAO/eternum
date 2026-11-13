@@ -9,7 +9,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { setBlockTimestampSource } from "../../../../../../../packages/core/src/utils/timestamp";
-import preset from "../../../../../../../contracts/l3/world-native/tests/fixtures/current-presets/preset-2.json";
+import preset from "../../../../../../../contracts/l3/world-native/tests/fixtures/current-presets/conformance.json";
 
 const fixture = vi.hoisted(() => ({ store: null as unknown as NativeFactStore, now: 150 }));
 vi.mock("@/hooks/context/game-context", () => ({ useGame: () => ({ setup: { store: fixture.store } }) }));

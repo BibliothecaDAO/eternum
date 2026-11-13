@@ -123,8 +123,8 @@ local time (`nextBlitz` from the launch service's `/api/factory/calendar`, the s
 and says none is scheduled only when the season has no next game (`/lab/app/no-blitz`), and otherwise ends on **Build
 orders**, naming the order the player's games follow; a mode's card with nothing to do now (no game on it with a verb;
 for Blitz's column, none on or to come), the lead or a column, is idle, dimmed with nothing to press and its one line
-saying when it opens or that none is scheduled (Eternum before it opens, in its column on the `/lab/app` screens and
-leading on `/lab/app/eternum-lead`, then open on `/lab/app/eternum-open`; Blitz on `/lab/app/no-blitz`); Build orders
+saying when it opens or that none is scheduled (Blitz on `/lab/app/no-blitz`); retired Eternum games offer no entry,
+while their finished results retain their names and paintings; Build orders
 (`/blitz/build-orders`, `/lab/app/home/blitz/build-orders` on three fixture orders whose saves the tab keeps) the
 account's orders, and on a desktop the followed one's steps beside them; a Blitz lobby (`/blitz/:id`) who is in, the
 entry and the chat side by side; Season (`/season`) the player's figures over Frontier's and Blitz's boards, Frontier's
@@ -139,7 +139,7 @@ in-game HUD every mode shares (a phone's width draws the compact HUD), as the ga
 realm stocked to build, as the game begins: its news over the HUD, every control under it still taking its clicks),
 `blitz-attack` (the lab army's attack forecast on an enemy army beside it, opened as the map opens it), `frontier`,
 `frontier-army` (an army out holding skill points; its panel's Level up sends spend_skill_point, recorded on the page as
-`window.__labSkillPointSpent`), `eternum` (Eternum's player on the same HUD, in Eternum's colours), `blitz-spectator`,
+`window.__labSkillPointSpent`), `blitz-spectator`,
 `blitz-finished`, `blitz-out` and `blitz-out-watching` (the lab player's last realm lost, a Hyperstructure still held,
 playing then watching); `pnpm --dir apps/game capture:hud-lab --hud-layout --base-url <url> --out <dir>` holds it and
 Frontier's states at 1024, 1280, 1440 and 1920 px (every part whole on the page, none over another, none with content

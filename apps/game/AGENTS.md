@@ -13,8 +13,8 @@ yet. A change that moves a surface away from a rule is refused in review like a 
 it from here.
 
 1. **A side keeps its colour on every surface.** To a playing viewer their own things are green, an ally's blue and
-   everyone else's red, nobody's included. Allies exist in Eternum only: there a tribe member is an ally, while in Blitz
-   and Frontier every other player is an enemy, tribe or not (`arePlayersAllied`, `src/utils/entity-ownership.ts:39`). A
+   everyone else's red, nobody's included. Blitz and Frontier treat every other player as an enemy, tribe or not
+   (`src/ui/features/world/components/bottom-right-panel/minimap-markers.test.ts`). A
    watching viewer has no side: each player takes their seat's colour and nobody's things are grey (`watchedSide`,
    `src/utils/entity-ownership.ts:121`; `seatSide`, `src/tokens.ts:772`). The side comes from `sideOf`
    (`src/utils/entity-ownership.ts:57`), its colour from `SIDE_COLOURS` and `SIDE_HEX` (`src/tokens.ts:763`). Today the

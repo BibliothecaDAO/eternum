@@ -80,7 +80,7 @@ export class EndgameFixtureScene {
         key: "1",
         value: {
           game_id: 1,
-          preset_id: 3,
+          preset_id: 2,
           name: "1",
           start_settling_at: "1",
           start_main_at: "1",

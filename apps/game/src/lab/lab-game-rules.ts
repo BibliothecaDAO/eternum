@@ -1,7 +1,7 @@
 import { configManager } from "@bibliothecadao/eternum";
 import type { NativeFactStore } from "@bibliothecadao/eternum/game-client";
 
-import preset from "../../../../contracts/l3/world-native/tests/fixtures/current-presets/preset-2.json";
+import preset from "../../../../contracts/l3/world-native/tests/fixtures/current-presets/conformance.json";
 
 /**
  * Makes a lab's offline store the game the client reads its rules from (a preset's rules, as game 1): what the world's

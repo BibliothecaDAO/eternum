@@ -1,4 +1,4 @@
-import preset from "../../../../contracts/l3/world-native/tests/fixtures/current-presets/preset-2.json";
+import preset from "../../../../contracts/l3/world-native/tests/fixtures/current-presets/conformance.json";
 import { ResourcesIds } from "@bibliothecadao/types";
 import { describe, expect, it } from "vitest";
 import { NativeFactStore } from "../client/native-fact-store";

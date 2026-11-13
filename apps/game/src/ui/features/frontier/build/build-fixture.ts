@@ -7,7 +7,7 @@ import {
   StructureType,
   TileOccupier,
 } from "@bibliothecadao/types";
-import preset from "../../../../../../../contracts/l3/world-native/tests/fixtures/current-presets/preset-2.json";
+import preset from "../../../../../../../contracts/l3/world-native/tests/fixtures/current-presets/conformance.json";
 
 const set = (key: string, model: string, value: Record<string, unknown>) => ({ model, key, value });
 export const HOUR = 3600;

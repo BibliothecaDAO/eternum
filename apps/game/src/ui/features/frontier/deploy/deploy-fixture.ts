@@ -1,7 +1,7 @@
 import { configManager, setBlockTimestampSource } from "@bibliothecadao/eternum";
 import { NativeFactStore } from "@bibliothecadao/eternum/game-client";
 import { RESOURCE_PRECISION, StructureType } from "@bibliothecadao/types";
-import preset from "../../../../../../../contracts/l3/world-native/tests/fixtures/current-presets/preset-2.json";
+import preset from "../../../../../../../contracts/l3/world-native/tests/fixtures/current-presets/conformance.json";
 
 export const DEPLOY_SLOT_KEY = "0x9";
 

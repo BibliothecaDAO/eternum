@@ -3,7 +3,7 @@ import { NativeFactStore } from "../client/native-fact-store";
 import { configManager } from "./config-manager";
 import { LeaderboardManager } from "./leaderboard-manager";
 import { setBlockTimestampSource } from "../utils/timestamp";
-import preset from "../../../../contracts/l3/world-native/tests/fixtures/current-presets/preset-2.json";
+import preset from "../../../../contracts/l3/world-native/tests/fixtures/current-presets/conformance.json";
 import { hash } from "starknet";
 
 const PLAYER = 0x3e1a40b7n;

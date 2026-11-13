@@ -1,7 +1,7 @@
 import { configManager, dayOf, readExpeditionRules } from "@bibliothecadao/eternum";
 import { NativeFactStore } from "@bibliothecadao/eternum/game-client";
 import { relicChestRelics } from "@bibliothecadao/types";
-import preset from "../../../../../contracts/l3/world-native/tests/fixtures/current-presets/preset-2.json";
+import preset from "../../../../../contracts/l3/world-native/tests/fixtures/current-presets/conformance.json";
 import { blitzBalance } from "../../../../../config/source/blitz/balance";
 import { blitzPreset } from "../../../../../config/source/blitz/native";
 

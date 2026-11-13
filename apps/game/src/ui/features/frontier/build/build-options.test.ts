@@ -2,7 +2,7 @@ import { setBlockTimestampSource } from "@bibliothecadao/eternum";
 import { nativeResearchConstants } from "@bibliothecadao/eternum/game-client";
 import { BuildingType, ResourcesIds } from "@bibliothecadao/types";
 import { afterEach, describe, expect, it } from "vitest";
-import preset from "../../../../../../../contracts/l3/world-native/tests/fixtures/current-presets/preset-2.json";
+import preset from "../../../../../../../contracts/l3/world-native/tests/fixtures/current-presets/conformance.json";
 import { HOUR, realmBoard } from "./build-fixture";
 import { readBuildOptions } from "./build-options";
 

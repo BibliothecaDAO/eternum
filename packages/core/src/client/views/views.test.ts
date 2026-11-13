@@ -6,7 +6,7 @@ import { setBlockTimestampSource } from "../../utils/timestamp";
 import { NativeFactStore } from "../native-fact-store";
 import type { GameClient } from "../game-client";
 import explorerFixture from "../../../../../contracts/l3/world-native/schema/fixtures/row-set.json";
-import preset from "../../../../../contracts/l3/world-native/tests/fixtures/current-presets/preset-2.json";
+import preset from "../../../../../contracts/l3/world-native/tests/fixtures/current-presets/conformance.json";
 
 const GAME_ID = 28;
 const PLAYER = ContractAddress(0xabc);
