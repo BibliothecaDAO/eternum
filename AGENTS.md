@@ -213,8 +213,8 @@ Native player fixtures use `world_test_support::tests::bind_player` to bind a de
 `defineFactModels` rejects duplicates and `scripts/fact-models.test.mjs` checks the shared AspectActivity wire shape and
 absence rule. Both checks run in the native gate.
 
-Native test-level contract calls have separate event budgets; nested calls retain the same transaction limit, and
-every emitted row remains observable. The native gate runs `toolchain/check_transaction_events.py` to enforce this.
+Native test-level contract calls have separate event budgets; nested calls retain the same transaction limit, and every
+emitted row remains observable. The native gate runs `toolchain/check_transaction_events.py` to enforce this.
 
 | Rule                                                                                                                                                                                                      | Enforcement                                                                                                                                               |
 | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
