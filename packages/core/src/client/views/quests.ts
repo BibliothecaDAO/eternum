@@ -20,30 +20,59 @@ interface DailyQuestReading {
  * unknown, with the reason). None in a game without quests, before its first day or after its last.
  */
 export function readDailyQuest(store: NativeFactStore, gameId: number, home: number, timestamp: number) {
+  const today = questCalendar(store, gameId, home, timestamp);
+  return today && readQuestOnDay(store, today, today.day);
+}
+
+/**
+ * The week of quests around today, as the quest bag deals them (one of each quest a week, days 1 to 7 of the season's
+ * week), up to the season's last day: each day's quest and reading, today's among them, so a player sees what came and
+ * what comes. None where readDailyQuest has none.
+ */
+export function readQuestWeek(store: NativeFactStore, gameId: number, home: number, timestamp: number) {
+  const today = questCalendar(store, gameId, home, timestamp);
+  if (!today) return undefined;
+  const first = today.day - (today.day % QUEST_WEEK);
+  const days = Math.min(QUEST_WEEK, today.lastDay - first + 1);
+  return {
+    today: today.day,
+    days: Array.from({ length: days }, (_, index) => readQuestOnDay(store, today, first + index)),
+  };
+}
+
+/** The quests a week holds: the bag deals each of the seven once. */
+const QUEST_WEEK = dailyQuests.length;
+
+/** The game's quest rules, today's index and the home, once the game has quests and the season has a today. */
+function questCalendar(store: NativeFactStore, gameId: number, home: number, timestamp: number) {
   const game_id = gameId;
   const rules = store.get("QuestRules", { game_id });
   if (!rules) return undefined;
   const game = store.require("GameRegistry", { game_id });
   const clock = store.require("SliceRules", { game_id });
-  const day = dayOf(
-    {
-      seed: game.seed,
-      startMainAt: Number(game.start_main_at),
-      endAt: Number(game.end_at),
-      dayUnitSeconds: clock.day_unit_seconds,
-    },
-    timestamp,
-  );
+  const calendar = {
+    seed: game.seed,
+    startMainAt: Number(game.start_main_at),
+    endAt: Number(game.end_at),
+    dayUnitSeconds: clock.day_unit_seconds,
+  };
+  const day = dayOf(calendar, timestamp);
   if (!day) return undefined;
   const structure = store.require("Structure", { game_id, entity_id: home });
   if (structure.base.category !== StructureType.Realm) throw new Error("A daily quest belongs to a Realm");
-  const kind = dailyQuest(game.seed, day.index);
+  const lastDay = dayOf(calendar, calendar.endAt - 1)!.index;
+  return { game_id, home, seed: game.seed, rules, structure, day: day.index, lastDay };
+}
+
+/** One day's quest for the home: the bag's quest for that day and its reading. */
+function readQuestOnDay(store: NativeFactStore, at: NonNullable<ReturnType<typeof questCalendar>>, day: number) {
+  const kind = dailyQuest(at.seed, day);
   const quest = dailyQuests.find(({ id }) => id === kind);
-  if (!quest || !rules.base_counts[kind]) throw new Error(`Missing daily quest ${kind}`);
+  if (!quest || !at.rules.base_counts[kind]) throw new Error(`Missing daily quest ${kind}`);
   return {
     ...quest,
-    day: day.index,
-    reading: readQuestFacts(store, { game_id, home, day: day.index, structure }, rules, rules.base_counts[kind]),
+    day,
+    reading: readQuestFacts(store, { ...at, day }, at.rules, at.rules.base_counts[kind]),
   };
 }
 

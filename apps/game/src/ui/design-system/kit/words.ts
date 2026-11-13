@@ -1536,6 +1536,8 @@ export const QUEST_WORDS = {
   collecting: "Collecting",
   collected: "Collected",
   reading: "Reading your progress",
+  week: "This week's quests",
+  state: { collected: "Collected", done: "Done", missed: "Missed", today: "Today", coming: "Coming" },
   notCollected: "The quest's reward could not be collected.",
 } as const;
 

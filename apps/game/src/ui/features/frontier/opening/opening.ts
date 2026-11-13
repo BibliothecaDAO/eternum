@@ -33,11 +33,7 @@ export const OPENING = {
   },
   guard: { icon: "camp", reached: (store, realm) => foundAGuard(store, realm) },
   fight: { icon: "attack", reached: (store, realm, timestamp) => anArmyFought(store, realm, timestamp) },
-  essence: {
-    icon: "essence",
-    reached: (store, realm, timestamp) =>
-      (knownAmount(getBalance(realmIdOf(realm), ResourcesIds.Essence, timestamp, store).balance) ?? 0) > 0,
-  },
+  essence: { icon: "essence", reached: (store, realm, timestamp) => earnedEssence(store, realm, timestamp) },
   "well-lore": { icon: "well", reached: (store, realm) => hasLore(store, realm, nativeResearchConstants.ROW_WELL) },
   "shrine-lore": {
     icon: "shrine",
@@ -88,6 +84,12 @@ const anArmyFought = (store: NativeFactStore, realm: NativeRows["Structure"], ti
   liveHomeArmies(store, realmIdOf(realm), configManager.getActiveGameId(), timestamp).some(
     (army) => (store.get("ArmyProgress", { game_id: army.game_id, explorer_id: army.explorer_id })?.xp ?? 0) > 0,
   );
+
+/** The design's moment: a quest reward collected (its receipt), or Essence held. */
+const earnedEssence = (store: NativeFactStore, realm: NativeRows["Structure"], timestamp: number) => {
+  for (const grant of store.inGame("LaborGrant", realm.game_id)) if (grant.home === realm.entity_id) return true;
+  return (knownAmount(getBalance(realmIdOf(realm), ResourcesIds.Essence, timestamp, store).balance) ?? 0) > 0;
+};
 
 const hasLore = (store: NativeFactStore, realm: NativeRows["Structure"], row: number) => {
   const learned = realmLearned(store, realm.game_id, realm.entity_id);

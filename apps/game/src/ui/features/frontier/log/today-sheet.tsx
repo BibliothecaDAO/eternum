@@ -48,6 +48,7 @@ export const TodaySheet = ({
   clock,
   totals,
   dayEnd,
+  week,
   armiesToUpgrade,
   lines,
   history,
@@ -68,6 +69,8 @@ export const TodaySheet = ({
   totals: DayTotals;
   /** What the day's end takes and what is left to do (DayEndBlock), shown on today's page only. */
   dayEnd?: ReactNode;
+  /** The week's quests (QuestWeek), shown on today's page only. */
+  week?: ReactNode;
   /** Armies with an attribute tier their XP can buy; absent until the army's XP is read. */
   armiesToUpgrade?: number;
   lines: readonly LogLine[];
@@ -92,6 +95,7 @@ export const TodaySheet = ({
       <span className="text-hud-title">{title}</span>
       {today && <DayClockLine clock={clock} />}
       {today && dayEnd}
+      {today && week}
       <DayTotalsGrid totals={totals} />
       {onShare && (
         <HudButton kind="secondary" icon="share" onClick={onShare}>

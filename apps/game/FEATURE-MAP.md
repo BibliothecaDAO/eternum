@@ -615,17 +615,20 @@ signed-out fixture count as a played match.
 (`QuestRules`): under the realm panel on a desktop, under the strip on a phone. It shows today's quest with its painting
 and name, its count ("0 of 2 finds") over a meter, and its reward in labor and Essence for the home's level (150% of the
 labor for a held Realm's or a campaign's home). **Collect** sends the reward once the quest is done; a check then says
-it was collected. Lab: `/lab/kit/unified/frontier` and `frontier-new`.
+it was collected. While the snapshot has not settled the home's progress, receipt or labor bonus, it names the quest and
+says it is reading, with nothing to press. **Today** (the day's clock), on today's page, lists **This week's quests**:
+each day of the week's bag up to the season's last day, its painting and quest, and whether it was collected, done,
+missed, is today or is coming. Lab: `/lab/kit/unified/frontier` and `frontier-new`.
 
 **The interface opens as you play** (`src/ui/features/frontier/opening/opening.ts`, the frozen design's table). A new
 account's first session shows its realm and level, labor and wheat, the lit plot, its armies with their stamina, the
 map, the day's quest and the day's clock. Troops at home and the rest of the Build sheet open with the first Barracks;
 an army's XP (its token, row and panel) with its first fight won; Essence, **Research** and **Today** (the day's clock
-pressed) with the first Essence. Each moment's one line stands over the map once per account, for 8 s or until **Got
-it**; the account keeps the moments it reached (`/api/interface/opening`), so a part an army earned stays after the day
-ends it. Settings → Interface → **Show everything** opens everything at once, with no lines. Watching, visiting or
-signed out, everything shows. Lab: `/lab/kit/unified/frontier-new` (a new account's first minute) beside
-`/lab/kit/unified/frontier` (a seasoned account).
+pressed) with the first quest reward collected or the first Essence. Each moment's one line stands over the map once per
+account, for 8 s or until **Got it**; the account keeps the moments it reached (`/api/interface/opening`), so a part an
+army earned stays after the day ends it. Settings → Interface → **Show everything** opens everything at once, with no
+lines. Watching, visiting or signed out, everything shows. Lab: `/lab/kit/unified/frontier-new` (a new account's first
+minute) beside `/lab/kit/unified/frontier` (a seasoned account).
 
 On a desktop, Frontier plays on the HUD every mode shares (`src/ui/features/frontier/hud/frontier-desktop.tsx`, issue
 5067): the top bar (your name chip with your place on the season's board, which opens it; Realm / World; the day's

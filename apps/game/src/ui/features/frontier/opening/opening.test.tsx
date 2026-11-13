@@ -177,6 +177,21 @@ describe("the interface that opens as you play", () => {
     expect(line()).toBe("Essence buys research and lores.Got it");
   });
 
+  it("opens Essence, Research and Today with the first quest reward collected, before any Essence is held", async () => {
+    const store = await renderOpening(["launch", "barracks"]);
+    await act(async () =>
+      store.applyFacts([
+        {
+          model: "LaborGrant",
+          key: "0x9f1",
+          value: { game_id: 1, home: 7, day: 0, account: 0x111n, amount: 1000n, essence: 0n },
+        },
+      ] as never),
+    );
+    expect(parts()).toEqual(["troops-store", "building-list", "essence-store", "research", "today"]);
+    expect(line()).toBe("Essence buys research and lores.Got it");
+  });
+
   it("keeps without a line what a player's realm already showed before the interface opened", async () => {
     await renderOpening([], [barracks(), essence(1_500)]);
     expect(parts()).toEqual(["troops-store", "building-list", "essence-store", "research", "today"]);

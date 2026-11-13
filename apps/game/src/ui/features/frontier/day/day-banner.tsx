@@ -12,7 +12,7 @@ import { readDailyQuest } from "@bibliothecadao/eternum";
 import { safeInteger, type NativeRows } from "@bibliothecadao/eternum/game-client";
 import { formatAmount, ResourcesIds } from "@bibliothecadao/types";
 
-const QUEST_MODELS = [
+export const QUEST_MODELS = [
   "QuestRules",
   "QuestProgress",
   "LaborGrant",

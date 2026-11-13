@@ -18,6 +18,7 @@ const OPENING_MODELS = [
   "ResourceBalance",
   "ResourceProduction",
   "RealmKnowledge",
+  "LaborGrant",
 ] as const;
 
 interface OpeningState {

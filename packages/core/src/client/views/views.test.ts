@@ -1,7 +1,7 @@
 import { ContractAddress, dailyQuests, getNeighborHexes, StructureType } from "@bibliothecadao/types";
 import { hash } from "starknet";
 import { afterEach, describe, expect, it } from "vitest";
-import { ClientConfigManager, createGameViews, type GameViews } from "../../index";
+import { ClientConfigManager, createGameViews, dailyQuest, dayOf, readQuestWeek, type GameViews } from "../../index";
 import { setBlockTimestampSource } from "../../utils/timestamp";
 import { NativeFactStore } from "../native-fact-store";
 import type { GameClient } from "../game-client";
@@ -68,6 +68,48 @@ describe("game views", () => {
     // The home of a held Realm: 150% of the labor, the Essence unchanged.
     store.applyFacts([{ model: "SettledRealm", key: "0x204", value: { game_id: GAME_ID, realm_id: 77, home: 12n } }]);
     expect(reading(views)?.reward).toEqual({ labor: 6000n, essence: 6000n });
+  });
+
+  it("deals the week's seven quests in the bag's order, each past day collected, done or missed as its rows say", () => {
+    const { store } = createHarness();
+    seedQuestGame(store);
+    const day3 = startOfDay(3);
+    completeSnapshot(store, day3);
+    // Day 0 collected, day 1 done but not collected, day 2 missed.
+    store.applyFacts([
+      questProgress(15n, 1),
+      laborGrant(),
+      {
+        model: "QuestProgress",
+        key: "0x212",
+        value: { game_id: GAME_ID, home: 12, day: 1, progress: 2n, completed_level: 1 },
+      },
+    ]);
+    const week = readQuestWeek(store, GAME_ID, 12, day3)!;
+    expect(week.today).toBe(3);
+    // The season runs far past this week: all seven of its days.
+    expect(week.days.map(({ day, id }) => ({ day, id }))).toEqual(
+      Array.from({ length: 7 }, (_, day) => ({ day, id: dailyQuest(5n, day) })),
+    );
+    expect(
+      week.days
+        .slice(0, 3)
+        .map(({ reading }) => reading.known && { completed: reading.known.completed, claimed: reading.known.claimed }),
+    ).toEqual([
+      { completed: true, claimed: true },
+      { completed: true, claimed: false },
+      { completed: false, claimed: false },
+    ]);
+  });
+
+  it("stops the week at the season's last day", () => {
+    const { store } = createHarness();
+    seedQuestGame(store);
+    // The season ends where day 5 (zero-based) would begin: its last day is day 4.
+    const registry = store.require("GameRegistry", { game_id: GAME_ID });
+    store.applyFacts([{ model: "GameRegistry", key: "0x102", value: { ...registry, end_at: String(startOfDay(5)) } }]);
+    completeSnapshot(store, startOfDay(3));
+    expect(readQuestWeek(store, GAME_ID, 12, startOfDay(3))!.days.map(({ day }) => day)).toEqual([0, 1, 2, 3, 4]);
   });
 
   it("lists a player's structures by category then entity id, seen as theirs", () => {
@@ -278,8 +320,15 @@ const seedQuestGame = (store: NativeFactStore, snapshot: { complete: boolean } =
   if (snapshot.complete) completeSnapshot(store);
   else store.setSnapshot({ gameId: GAME_ID, complete: false, actor: PLAYER.toString(), timestamp: 100 });
 };
-const completeSnapshot = (store: NativeFactStore) =>
-  store.setSnapshot({ gameId: GAME_ID, complete: true, actor: PLAYER.toString(), timestamp: 100 });
+const completeSnapshot = (store: NativeFactStore, timestamp = 100) =>
+  store.setSnapshot({ gameId: GAME_ID, complete: true, actor: PLAYER.toString(), timestamp });
+/** The first second of a season day (zero-based) on the quest game's calendar: seed 5, from 100, hour-long units. */
+const startOfDay = (index: number): number => {
+  const calendar = { seed: 5n, startMainAt: 100, endAt: 1_000_000, dayUnitSeconds: 3600 };
+  let at = 100;
+  while (dayOf(calendar, at)!.index < index) at = dayOf(calendar, at)!.end;
+  return at;
+};
 const questProgress = (progress: bigint, completedLevel: number) => ({
   model: "QuestProgress",
   key: "0x202",
