@@ -355,6 +355,11 @@ async function playRun(context) {
     browser.run(["set", "viewport", String(VIEWPORT.width), String(VIEWPORT.height)]);
     const devTools = await openPageDevTools(browser);
     releaseDevTools = owner.adopt(`DevTools ${label}`, () => devTools.close());
+    record.workerErrors = [];
+    devTools.onEvent(({ method, params }) => {
+      if (method === "ServiceWorker.workerErrorReported") record.workerErrors.push(params.errorMessage);
+    });
+    await devTools.send("ServiceWorker.enable");
     await presentAsChannel(devTools, context.channel);
     if (context.clientAtOrigin) {
       const { cdpUrl, targetId } = devTools;

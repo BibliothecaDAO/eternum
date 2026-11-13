@@ -72,7 +72,7 @@ export function createBrowserSession(session, { chromeArgs = [], executablePath,
     // The dev server serves its own certificate.
     "--ignore-https-errors",
     "--args",
-    ["--allow-insecure-localhost", ...GPU_ARGS, ...chromeArgs].join(","),
+    [...GPU_ARGS, ...chromeArgs].join(","),
     ...(initScript ? ["--init-script", initScript] : []),
     ...(executablePath ? ["--executable-path", executablePath] : []),
     ...(headed ? ["--headed"] : []),
