@@ -6,7 +6,6 @@ import { useAccountAddress } from "@/hooks/store/use-account-store";
 import { sendOnce, useInFlight } from "@/hooks/store/use-actions-in-flight";
 import { requestOrderAt } from "@/three/scenes/worldmap-order-request";
 import { Icon as SemanticIcon } from "@/ui/design-system/icon";
-import type { IconMeaning } from "@/ui/design-system/icon-meaning";
 import { HudButton, HudChip, HudCost, HudRow, HudSheet, HudWindowFoot } from "@/ui/design-system/kit/hud-elements";
 import { costLine } from "@/ui/design-system/kit/price-faces";
 import { ATTACKING, DEEP_WORDS, MOVE, USING } from "@/ui/design-system/kit/words";
@@ -14,12 +13,13 @@ import { toast } from "@/ui/features/event-feed/notify";
 import { configManager } from "@bibliothecadao/eternum";
 import { safeInteger } from "@bibliothecadao/eternum/game-client";
 import type { TileSpatialRenderable } from "@bibliothecadao/eternum/game-sync";
-import { aspectName, type deepSites, formatDuration, formatExact } from "@bibliothecadao/types";
+import { aspectName, formatDuration, formatExact } from "@bibliothecadao/types";
 
 import { useOrderAt } from "../hud/army-order";
 import { useApproachTile } from "../sites/approach";
 import { useSelectedOwnArmy } from "../sites/selected-army";
 import { inFlightWord } from "../sites/site-card-view";
+import { DEEP_SITE_FACES } from "./deep-site-faces";
 import {
   type DeepGuardState,
   type DeepSiteCardPlan,
@@ -29,13 +29,6 @@ import {
   readDeepSiteCard,
   siteOf,
 } from "./deep-site-plan";
-
-/** Each site's painting and who it serves, keyed by the Deep's catalog: a site the game adds has no card until it has its row. */
-const DEEP_SITE_FACES = {
-  foundation: { icon: "hyperstructure", purpose: DEEP_WORDS.purpose.foundation },
-  quarry: { icon: "pickaxe", purpose: DEEP_WORDS.purpose.quarry },
-  altar: { icon: "flame", purpose: DEEP_WORDS.purpose.altar },
-} as const satisfies Record<(typeof deepSites)[number]["position"], { icon: IconMeaning; purpose: string }>;
 
 /** What the card reads: the sites, their beasts and guards, the guards' armies and homes, the rules a tick pays by. */
 const DEEP_SITE_MODELS = [
@@ -53,7 +46,8 @@ const DEEP_SITE_MODELS = [
   "TileOccupancy",
 ] as const;
 
-const SLOTS = 4;
+/** The four slots in the order an attacker fights them: the highest first, as a structure's guards are fought. */
+const FIGHT_ORDER = [3, 2, 1, 0] as const;
 
 /** A Deep site's card, read from the facts, with the selected army's order: Attack, Take, Join, or Move beside it. */
 export const DeepSiteCard = ({ tile, onClose }: { tile: TileSpatialRenderable; onClose: () => void }) => {
@@ -201,23 +195,25 @@ const TickPay = ({ pay }: { pay: DeepTickPay }) => (
   </span>
 );
 
-/** The site's guard: today's beast, nobody, or the holder's four slots, each filled or free. */
+/** The site's guard: today's beast, nobody, or the holder's four slots in the order they are fought, each filled or free. */
 const GuardRows = ({ guard }: { guard: DeepGuardState }) => {
   if (guard.kind === "beast")
     return (
       <HudRow lead={<SemanticIcon name="beasts" size={32} />} title={DEEP_WORDS.beast(guard.troops)} state="beast" />
     );
   if (guard.kind === "open") return <HudRow lead={<SemanticIcon name="flag" size={32} />} title={DEEP_WORDS.open} />;
-  const free = SLOTS - guard.slots.length;
   return (
     <div data-deep-slots className="flex flex-col gap-1">
       <span className="text-hud-strong text-hud-ink">{DEEP_WORDS.heldBy(aspectName(guard.aspect))}</span>
-      {guard.slots.map((slot) => (
-        <SlotRow key={slot.slot} slot={slot} />
-      ))}
-      {Array.from({ length: free }, (_, index) => (
-        <HudRow key={`free-${index}`} lead={<SemanticIcon name="plus" size={32} />} title={DEEP_WORDS.freeSlot} />
-      ))}
+      <span className="text-hud-label text-hud-muted">{DEEP_WORDS.foughtInOrder}</span>
+      {FIGHT_ORDER.map((slot) => {
+        const held = guard.slots.find((each) => each.slot === slot);
+        return held ? (
+          <SlotRow key={slot} slot={held} next={held.armyId === guard.next} />
+        ) : (
+          <HudRow key={slot} lead={<SemanticIcon name="plus" size={32} />} title={DEEP_WORDS.freeSlot} />
+        );
+      })}
     </div>
   );
 };
@@ -226,10 +222,10 @@ const GuardRows = ({ guard }: { guard: DeepGuardState }) => {
  * A filled slot: its player's realm, its troops, how long they last (ticks, and the time that is) and its share of each
  * tick. A hold lasts as long as its troops; the facts hold no count of what the army came with, so no bar of it.
  */
-const SlotRow = ({ slot }: { slot: DeepSlot }) => (
+const SlotRow = ({ slot, next }: { slot: DeepSlot; next: boolean }) => (
   <HudRow
     lead={<SemanticIcon name="troops" size={32} />}
-    title={slot.realm}
+    title={next ? `${slot.realm} · ${DEEP_WORDS.facesNext}` : slot.realm}
     selected={slot.mine}
     detail={`${DEEP_WORDS.lasts(slot.ticks.left, formatDuration(slot.ticks.seconds, { days: false }))} · ${DEEP_WORDS.share(slot.share)}`}
     trail={formatExact(slot.troops)}

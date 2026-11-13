@@ -3,8 +3,8 @@ import type { NativeFactStore } from "@bibliothecadao/eternum/game-client";
 import type { HyperstructureConstruction } from "./hyperstructure-design";
 
 /**
- * How much of its tower a Season 1 hyperstructure stands, out of 100, at each stage built (the owner's pick
- * eternum/s1-hs-stages, option 1: a fifth more at each stage). The finished one is complete and wakes.
+ * How much of its tower a Season 1 hyperstructure stands, out of 100, at each stage built: a fifth more at each stage
+ * (the owner's pick eternum/s1-hs-stages, 13 November 2026). The finished one is complete and wakes.
  */
 const STAGE_TOWER = { 0: 0, 1: 20, 2: 40, 3: 60, 4: 80, 5: 100 } as const satisfies Record<
   0 | 1 | 2 | 3 | 4 | 5,

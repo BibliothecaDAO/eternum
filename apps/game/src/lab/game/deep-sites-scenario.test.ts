@@ -46,9 +46,10 @@ it("stands the Deep's three sites and answers Join as deep_guards.cairo writes i
   expect(chain.entityOccupancy(1, SPIRE_ARMY)).toBeUndefined();
   const joined = card(foundation);
   if (joined?.kind !== "site" || joined.guard.kind !== "held") throw new Error("the Foundation is not held");
+  // Fought from the highest slot: the player's new army in slot 1 first, then the mate's in slot 0.
   expect(joined.guard.slots.map(({ slot, mine }) => ({ slot, mine }))).toEqual([
-    { slot: 0, mine: false },
     { slot: 1, mine: true },
+    { slot: 0, mine: false },
   ]);
   expect(joined.step).toEqual({ kind: "guarding" });
   // Another Aspect's site, or a second army of a player: the chain refuses the Join as the contract does.

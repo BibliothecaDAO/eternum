@@ -36,10 +36,13 @@ export type DeepTickPay = {
   bar: { perTick: number; charge: number; threshold: number } | null;
 };
 
-/** Who stands on the site today: its beast, its guards with their Aspect, or nobody once the guards are gone. */
+/**
+ * Who stands on the site today: its beast; its guards with their Aspect, in the order an attacker fights them (the
+ * highest slot first, as guards.cairo `next` takes a structure's) and the one it meets next; or nobody once they are gone.
+ */
 export type DeepGuardState =
   | { kind: "beast"; troops: number }
-  | { kind: "held"; aspect: number; slots: DeepSlot[] }
+  | { kind: "held"; aspect: number; slots: DeepSlot[]; next: bigint }
   | { kind: "open" };
 
 /**
@@ -125,7 +128,8 @@ const readGuard = (store: NativeFactStore, site: DeepSiteView, viewer: Viewer, t
       mine: isViewerOwner(home.owner, viewer),
     };
   });
-  return { kind: "held", aspect: homeAspect(store, site.guards[0]!.army), slots };
+  const fought = slots.toSorted((a, b) => b.slot - a.slot);
+  return { kind: "held", aspect: homeAspect(store, site.guards[0]!.army), slots: fought, next: fought[0]!.armyId };
 };
 
 const readTickPay = (

@@ -11,6 +11,12 @@ import { type LabCommand, type LabFact, type LabScenario, wire } from "./lab-cha
 import { besideOnOpenLand } from "./spire-scenario";
 
 const PRECISION = 1_000_000_000n;
+/** The depth proof's scale hyperstructure's rows (ethereal-depths-scenario.ts), which this game removes. */
+const DEEP_SCALE_KEYS = [
+  ["Structure", "0xef3"],
+  ["Hyperstructure", "0xef4"],
+  ["TileOccupancy", "0xef5"],
+] as const;
 const ARMY = BigInt(SPIRE_ARMY);
 /** The Deep's three sites, by the catalog's key: their entity ids in this game. */
 const SITE_IDS = { foundation: 0x1ac01n, quarry: 0x1ac02n, altar: 0x1ac03n } as const;
@@ -48,6 +54,9 @@ export const deepSitesScenario = (): LabScenario => {
   const hyperstructure = store.entityOccupancy(1, DEEP_SCALE_HYPERSTRUCTURE)!;
   const arrival = { col: hyperstructure.col + 1, row: hyperstructure.row + 1 };
   const tick = BigInt(Math.floor(SPIRE_DAY_NOW / tickSeconds(store)));
+  // The depth proof's lone hyperstructure stood for scale; here the four Aspects' towers do, and a fifth bare
+  // foundation beside the Foundation would read as another site.
+  store.applyFacts(DEEP_SCALE_KEYS.map(([model, key]) => ({ model, key, value: null })) as never);
   store.applyFacts([
     ...armyInTheDeep(store, arrival, day, tick),
     ...deepRules(),

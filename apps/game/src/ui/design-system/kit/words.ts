@@ -513,7 +513,16 @@ export const ASPECT_PAGE_WORDS = {
 
 /** The Deep's three sites (docs/plans/frontier-season-1.md, the Deep): who they serve, who guards them, what a tick pays. */
 export const DEEP_WORDS = {
-  purpose: { foundation: "For your Aspect", quarry: "For you", altar: "Against a rival" },
+  purpose: {
+    foundation: "One site every Aspect fights for: holding it raises your Aspect's hyperstructure",
+    quarry: "For you",
+    altar: "Against a rival",
+  },
+  /** A Deep site's plate on the map: nobody holds it, and what a tick held pays. */
+  shared: "Every Aspect fights for it",
+  foundationPlate: (height: number) => `+${formatExact(height)} height a tick to the holder's hyperstructure`,
+  quarryPlate: "Labor and Essence a tick to its holders",
+  altarPlate: "Fills the holder's bane bar",
   tickPays: "Each tick held pays",
   splitByTroops: "split by troops",
   glory: (amount: number) => `${formatExact(amount)} Glory`,
@@ -525,6 +534,8 @@ export const DEEP_WORDS = {
   open: "No guard: the next army takes it",
   heldBy: (aspect: string) => `Held by ${aspect}`,
   freeSlot: "Free slot",
+  foughtInOrder: "An attacker fights them one after the other, from the top",
+  facesNext: "fought next",
   /** How long a guard's troops last: its army ticks, and the time until the last of them. */
   lasts: (ticks: number, time: string) => `${formatExact(ticks)} ticks left (${time})`,
   /** What the army panel's chip of those ticks counts. */

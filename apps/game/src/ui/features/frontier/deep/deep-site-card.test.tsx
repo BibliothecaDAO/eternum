@@ -198,13 +198,15 @@ describe("a Deep site's card", () => {
     const plan = read(store, TILES.foundation, actor);
     if (plan.guard.kind !== "held") throw new Error("not held");
     expect(plan.guard.aspect).toBe(1);
-    // 3,000 at 200 a tick lasts 15 ticks, 1,000 lasts 5; they share each tick 75 to 25.
+    // 3,000 at 200 a tick lasts 15 ticks, 1,000 lasts 5; they share each tick 75 to 25. An attacker fights the highest
+    // slot first, as a structure's guards are fought: slot 2's army, then slot 0's.
     expect(
       plan.guard.slots.map(({ slot, troops, ticks, share, mine }) => ({ slot, troops, left: ticks.left, share, mine })),
     ).toEqual([
-      { slot: 0, troops: 3_000, left: 15, share: 75, mine: false },
       { slot: 2, troops: 1_000, left: 5, share: 25, mine: false },
+      { slot: 0, troops: 3_000, left: 15, share: 75, mine: false },
     ]);
+    expect(plan.guard.next).toBe(302n);
     expect(plan.step).toEqual({ kind: "join" });
   });
 
@@ -262,7 +264,13 @@ describe("a Deep site's card", () => {
         </GameProvider>,
       ),
     );
-    expect(host.textContent).toContain("For your Aspect");
+    expect(host.textContent).toContain(
+      "One site every Aspect fights for: holding it raises your Aspect's hyperstructure",
+    );
+    // The four slots top to bottom in the order they are fought: free 3, 2 and 1, then slot 0's army, fought next.
+    const rows = [...host.querySelectorAll("[data-deep-slots] .ui-row")].map((row) => row.textContent ?? "");
+    expect(rows.slice(0, 3).every((row) => row.includes("Free slot"))).toBe(true);
+    expect(rows[3]).toContain("fought next");
     expect(host.textContent).toContain("Held by Might");
     expect(host.textContent).toContain("15 ticks left (1m) · 100% of each tick");
     expect(host.querySelectorAll("[data-deep-slots] .ui-row")).toHaveLength(4);
