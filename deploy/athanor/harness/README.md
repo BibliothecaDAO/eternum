@@ -18,6 +18,11 @@ checkout's command bindings rather than another checkout's built packages. Run c
 
 ## Ops timing commands
 
+`pnpm lab:harness:split --dry-run --out <launches.json>` splits the roster and compiles each game's `create_game`
+calldata through the launch service's payload builder. It needs no credentials and sends no requests. The output keeps
+the preset ID, player count and calldata for each game; omit `--dry-run` only on a measurement shard prepared for a live
+run. This checks launch encoding, not execution or seating.
+
 `pnpm lab:harness:burst --out <public-result.json> --receipt-checkpoint <checkpoint.json>` releases 2,000 ordinary
 signed invokes with the spike's warmed worker barrier. The built-in `wave-fixture.ts` creates an independent real game,
 approved accounts, each player's Herald client, generated command and domain assertions. `heraldConfirmations` comes

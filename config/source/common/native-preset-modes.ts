@@ -23,7 +23,6 @@ const NATIVE_PRESET_MODES: Readonly<Record<number, GameType>> = {
   1: "frontier",
   2: "blitz",
   3: "eternum",
-  4: "duel",
   [FRONTIER_PRESET_ID]: "frontier",
   [FRONTIER_DEVCON_PRESET_ID]: "frontier",
   [FRONTIER_S1_PRESET_ID]: "frontier",

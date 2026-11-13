@@ -54,7 +54,7 @@ function world() {
         rowEvent("SettlementRules", ["2"], {
           registration_start: 5n,
           registration_limit: 2n,
-          mode: new CairoCustomEnum({ Duel: {} }),
+          mode: new CairoCustomEnum({ Triple: {} }),
           spacing: 8n,
         }),
         rowEvent("SettlementProgress", ["1"], { registered: 2n, realm_count: 1n }),

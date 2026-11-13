@@ -25,7 +25,6 @@ export interface HeraldGameSettlementConfig {
   spires_layer_distance: number;
   spires_max_count: number;
   spires_settled_count: number;
-  two_player_mode: boolean;
 }
 
 /** One structure the requesting player owns in the game. */
@@ -65,7 +64,7 @@ export interface HeraldGameDirectoryEntry {
   /** One-based Frontier registry ordinal on this world, retained across finalization. */
   season_number?: number | null;
   game_id: number;
-  mode: "blitz" | "eternum" | "frontier" | "duel" | null;
+  mode: "blitz" | "eternum" | "frontier" | null;
   name: string;
   player_count: number;
   player_state: HeraldPlayerGameState | null;

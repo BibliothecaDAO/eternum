@@ -438,7 +438,7 @@ it.each(cycleSamples)("keeps shipped lighting outside Frontier at cycle %s", (pr
   const shipped = createFixture();
   shipped.manager.update(progress);
   shipped.manager.applyWeatherModulation(0.7, 0.3, 0.5, 0.1);
-  for (const mode of ["blitz", "eternum", "duel"] as const) {
+  for (const mode of ["blitz", "eternum"] as const) {
     const fixture = createFixture(mode);
     fixture.manager.update(progress);
     fixture.manager.applyWeatherModulation(0.7, 0.3, 0.5, 0.1);

@@ -376,7 +376,6 @@ export interface Config {
     spires_max_count: number;
     spires_settled_count: number;
     single_realm_mode: boolean;
-    two_player_mode: boolean;
   };
   biomeClimate: {
     elevationScaleBps: number;

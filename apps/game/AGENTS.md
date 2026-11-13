@@ -13,16 +13,15 @@ yet. A change that moves a surface away from a rule is refused in review like a 
 it from here.
 
 1. **A side keeps its colour on every surface.** To a playing viewer their own things are green, an ally's blue and
-   everyone else's red, nobody's included. Allies exist in Eternum only: there a tribe member is an ally, while in
-   Blitz, Duel and Frontier every other player is an enemy, tribe or not (`arePlayersAllied`,
-   `src/utils/entity-ownership.ts:39`). A watching viewer has no side: each player takes their seat's colour and
-   nobody's things are grey (`watchedSide`, `src/utils/entity-ownership.ts:121`; `seatSide`, `src/tokens.ts:772`). The
-   side comes from `sideOf` (`src/utils/entity-ownership.ts:57`), its colour from `SIDE_COLOURS` and `SIDE_HEX`
-   (`src/tokens.ts:763`). Today the map's labels and plates, the stamina bars on plates
-   (`src/three/map-plates/map-plates.css:75`), the minimap's borders and ownership marks
-   (`src/ui/design-system/hex-marker.tsx:9`; the paintings inside keep their own colours) and army paths
-   (`src/three/managers/army-path-colour.ts:9`) read it. The playtest's `--steps blitz-plates` and `frontier-plates`
-   check the labels only. Not yet: the guard stamina bar off the map is coloured by the stamina left
+   everyone else's red, nobody's included. Allies exist in Eternum only: there a tribe member is an ally, while in Blitz
+   and Frontier every other player is an enemy, tribe or not (`arePlayersAllied`, `src/utils/entity-ownership.ts:39`). A
+   watching viewer has no side: each player takes their seat's colour and nobody's things are grey (`watchedSide`,
+   `src/utils/entity-ownership.ts:121`; `seatSide`, `src/tokens.ts:772`). The side comes from `sideOf`
+   (`src/utils/entity-ownership.ts:57`), its colour from `SIDE_COLOURS` and `SIDE_HEX` (`src/tokens.ts:763`). Today the
+   map's labels and plates, the stamina bars on plates (`src/three/map-plates/map-plates.css:75`), the minimap's borders
+   and ownership marks (`src/ui/design-system/hex-marker.tsx:9`; the paintings inside keep their own colours) and army
+   paths (`src/three/managers/army-path-colour.ts:9`) read it. The playtest's `--steps blitz-plates` and
+   `frontier-plates` check the labels only. Not yet: the guard stamina bar off the map is coloured by the stamina left
    (`src/ui/features/military/components/guard-stamina-bar.tsx:11`), the battle screen's survival bars by the troops
    left, for both sides (`src/ui/features/military/battle/battle-lab/outcome-strip.tsx:20`), and portraits carry no side
    (`HudPortrait`, `src/ui/design-system/kit/hud-elements.tsx:2322`).

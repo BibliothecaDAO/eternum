@@ -165,8 +165,8 @@ const resultItems = ({ signedIn, games, finished, seenResults }: PlayBoardFacts)
   });
 };
 
-/** A finished game's mode on Play: a Duel is a Blitz match; anything else unknown stays out. */
+/** A finished game's mode on Play: unknown modes stay out. */
 const modeOf = (game: DirectoryGame): PlayMode | null => {
   if (game.mode === "frontier" || game.mode === "eternum" || game.mode === "blitz") return game.mode;
-  return game.mode === "duel" ? "blitz" : null;
+  return null;
 };

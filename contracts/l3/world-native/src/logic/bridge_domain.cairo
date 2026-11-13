@@ -1,32 +1,16 @@
 #[starknet::contract]
 pub mod BridgeLogic {
-    #[cfg(feature: "test_support")]
-    use starknet::ContractAddress;
-    use crate::logic::bridge::BridgeState;
     use crate::logic::entry::EntryAdministration;
     use crate::logic::release::ReleaseState;
-    use crate::logic::withdrawals::WithdrawalState;
     component!(path: ReleaseState, storage: release, event: ReleaseEvent);
-    component!(path: WithdrawalState, storage: withdrawals, event: WithdrawalEvent);
-    component!(path: BridgeState, storage: bridge, event: BridgeEvent);
     impl LifeInternal = ReleaseState::InternalImpl<ContractState>;
-    impl WithdrawalInternal = WithdrawalState::InternalImpl<ContractState>;
-    #[abi(embed_v0)]
-    impl Bridge = BridgeState::BridgeImpl<ContractState>;
-    #[abi(embed_v0)]
-    impl BankWithdrawal = BridgeState::BankWithdrawalImpl<ContractState>;
-    #[abi(embed_v0)]
-    impl PresetWithdrawals of crate::presets::IPresetWithdrawals<ContractState> {
-        fn store_withdrawal_preset(
-            ref self: ContractState, commitment: felt252, withdrawals: crate::presets::WithdrawalPreset,
-        ) {
-            crate::logic::preset_record::store_withdrawals(commitment, withdrawals);
-        }
-    }
+
     component!(path: EntryAdministration, storage: administration, event: AdministrationEvent);
     #[abi(embed_v0)]
     impl LedgerOperator = EntryAdministration::LedgerOperatorImpl<ContractState>;
     impl AdministrationInternal = EntryAdministration::InternalImpl<ContractState>;
+    #[abi(embed_v0)]
+    impl CampaignRecovery = EntryAdministration::CampaignRecoveryImpl<ContractState>;
     #[storage]
     #[allow(starknet::colliding_storage_paths)]
     struct Storage {
@@ -34,28 +18,11 @@ pub mod BridgeLogic {
         administration: EntryAdministration::Storage,
         #[substorage(v0)]
         release: ReleaseState::Storage,
-        #[substorage(v0)]
-        withdrawals: WithdrawalState::Storage,
-        #[substorage(v0)]
-        bridge: BridgeState::Storage,
     }
     #[event]
     #[derive(Drop, starknet::Event)]
     enum Event {
         AdministrationEvent: EntryAdministration::Event,
         ReleaseEvent: ReleaseState::Event,
-        WithdrawalEvent: WithdrawalState::Event,
-        BridgeEvent: BridgeState::Event,
-    }
-    #[abi(embed_v0)]
-    impl Withdrawals of crate::withdrawals::IWithdrawals<ContractState> {
-        #[cfg(feature: "test_support")]
-        fn withdrawal_rules(self: @ContractState, game_id: u32) -> crate::withdrawals::WithdrawalRules {
-            self.withdrawals.rules(game_id)
-        }
-        #[cfg(feature: "test_support")]
-        fn resource_token(self: @ContractState, key: crate::market::MarketKey) -> ContractAddress {
-            self.withdrawals.token(key)
-        }
     }
 }

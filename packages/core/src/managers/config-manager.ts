@@ -539,17 +539,15 @@ export class ClientConfigManager {
   }
   /**
    * What each scoring action grants in this game, in whole victory points. A held hyperstructure earns its rate every
-   * second, times what the contract's multiplier counts (hyperstructures.cairo): 1 without the multiplier rule, 2 in a
-   * Duel, else each realm settled on the six sites around it.
+   * second, times what the contract's multiplier counts (hyperstructures.cairo): 1 without the multiplier rule,
+   * otherwise each realm settled on the six sites around it.
    */
   getVictoryPointGrants() {
     const rules = this.rules();
     const grants = rules.victory_points_grant_config;
-    const hyperstructureScale: "flat" | "double" | "per-realm" = !isModeRuleEnabled(rules, "HYPERSTRUCTURE_MULTIPLIERS")
+    const hyperstructureScale: "flat" | "per-realm" = !isModeRuleEnabled(rules, "HYPERSTRUCTURE_MULTIPLIERS")
       ? "flat"
-      : this.getSettlementConfig().mode === "Duel"
-        ? "double"
-        : "per-realm";
+      : "per-realm";
     return {
       exploreTile: wholePoints(grants.explore_tiles_points),
       claimCampFromBandits: wholePoints(grants.claim_otherstructure_points),

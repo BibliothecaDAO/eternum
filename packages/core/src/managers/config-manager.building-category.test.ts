@@ -73,8 +73,8 @@ describe("native immutable configuration", () => {
     });
   });
 
-  it("says a held hyperstructure's rate counts each realm around it where the multiplier rule is on, and doubles in a Duel", () => {
-    const scale = (mode: "Single" | "Duel") => {
+  it("says a held hyperstructure's rate counts each realm around it where the multiplier rule is on", () => {
+    const scale = (mode: "Single" | "Triple") => {
       const { manager, write } = fixture();
       write("SliceRules", [54], {
         ...preset.rules,
@@ -85,7 +85,7 @@ describe("native immutable configuration", () => {
       return manager.getVictoryPointGrants().hyperstructureScale;
     };
     expect(scale("Single")).toBe("per-realm");
-    expect(scale("Duel")).toBe("double");
+    expect(scale("Triple")).toBe("per-realm");
   });
 
   it("throws for absent building rules instead of granting zero-cost population", () => {

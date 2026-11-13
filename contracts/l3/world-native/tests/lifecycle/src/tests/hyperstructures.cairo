@@ -300,12 +300,13 @@ fn construction_requirements_preserve_per_resource_seed_division_and_exclusive_m
 }
 
 #[test]
-fn blitz_duel_multiplier_and_owner_only_shares_match_entry_rules() {
+fn blitz_owner_only_shares_match_entry_rules() {
     let (deployment, hyper, from, _) = setup_mode_with_threshold(
-        true, 0, Some(crate::settlement::SettlementMode::Duel),
+        true, 0, Some(crate::settlement::SettlementMode::Single),
     );
+    settle_neighbor(deployment, hyper, 35);
     complete(deployment, hyper, from);
-    assert_eq!(view(deployment).hyperstructure_shares(hyper).multiplier, 2);
+    assert_eq!(view(deployment).hyperstructure_shares(hyper).multiplier, 1);
     let before = points(deployment, deployment.actor);
     assert_terminal_rejection(
         deployment, allocate(hyper, array![Share { player: 987.try_into().unwrap(), bps: 10000 }].span()), 60,
@@ -319,7 +320,7 @@ fn blitz_duel_multiplier_and_owner_only_shares_match_entry_rules() {
         60,
     );
     assert!(execute(deployment, allocate(hyper, array![Share { player: deployment.actor, bps: 10000 }].span()), 60));
-    assert_eq!(points(deployment, deployment.actor) - before, 20000);
+    assert_eq!(points(deployment, deployment.actor) - before, 10000);
 }
 #[test]
 fn blitz_multiplier_counts_realms_in_the_configured_geometry_and_preserves_old_rate() {
@@ -328,32 +329,7 @@ fn blitz_multiplier_counts_realms_in_the_configured_geometry_and_preserves_old_r
     );
     complete(deployment, hyper, from);
     assert_eq!(view(deployment).hyperstructure_shares(hyper).multiplier, 0);
-    let coord = crate::geometry::checked_neighbor_at_distance(
-        crate::geometry::checked_neighbor_at_distance(crate::troops::Coord { alt: false, x: 2000100, y: 2000000 }, 0, 8)
-            .unwrap(),
-        4,
-        4,
-    )
-        .unwrap();
-    let (new_owner, _) = super::deploy_player(3, super::GUARDIAN);
-    super::play_fixture::reserve_fixture_homes(deployment.games, 3, new_owner);
-    start_cheat_caller_address(deployment.games, deployment.games);
-    crate::settlement::ISettlementCreationDispatcherTrait::create_settlement(
-        crate::settlement::ISettlementCreationDispatcher { contract_address: deployment.games },
-        3,
-        new_owner,
-        coord,
-        crate::settlement::SettlementCreation::Realm(
-            crate::settlement::RealmCreation {
-                realm_id: 3,
-                traits: crate::realms::RealmTraits { wonder: 0, order: 0, resources: array![].span() },
-                troops: crate::settlement::StartingTroops::None,
-                activate_economy: false,
-            },
-        ),
-        crate::commands::action_context(ExecutionContext { timestamp: 55, ..super::context(deployment.games, 3) }),
-    );
-    stop_cheat_caller_address(deployment.games);
+    settle_neighbor(deployment, hyper, 55);
     let before = points(deployment, deployment.actor);
     assert!(execute(deployment, allocate(hyper, array![Share { player: deployment.actor, bps: 10000 }].span()), 60));
     assert_eq!(points(deployment, deployment.actor), before);
@@ -433,29 +409,33 @@ fn reserved_complete_hyperstructures_have_no_seed_and_discoveries_keep_their_see
 #[test]
 fn capture_pays_the_outgoing_owner_and_moves_owner_only_shares_to_the_captor() {
     let (deployment, hyper, from, second) = setup_mode_with_threshold(
-        true, 0, Some(crate::settlement::SettlementMode::Duel),
+        true, 0, Some(crate::settlement::SettlementMode::Single),
     );
+    settle_neighbor(deployment, hyper, 35);
     complete(deployment, hyper, from);
     let captor: starknet::ContractAddress = 987.try_into().unwrap();
     owner(deployment, second, captor);
     let before = points(deployment, deployment.actor);
     capture(deployment, hyper, second, 100);
-    assert_eq!(points(deployment, deployment.actor) - before, 100000);
+    assert_eq!(points(deployment, deployment.actor) - before, 50000);
     assert_eq!(
         view(deployment).hyperstructure_shares(hyper),
         ShareAllocation {
-            start_at: 100, multiplier: 2, shareholders: array![Share { player: captor, bps: 10000 }].span(),
+            start_at: 100, multiplier: 1, shareholders: array![Share { player: captor, bps: 10000 }].span(),
         },
     );
     checkpoint(deployment, 150);
-    assert_eq!(points(deployment, deployment.actor) - before, 100000);
-    assert_eq!(points(deployment, captor), 100000);
+    assert_eq!(points(deployment, deployment.actor) - before, 50000);
+    assert_eq!(points(deployment, captor), 50000);
 }
 
 #[test]
 fn reserved_hyperstructures_hold_an_empty_shares_row_and_earn_nothing_until_their_first_claim() {
-    let (deployment, _, _, second) = setup_mode_with_threshold(true, 0, Some(crate::settlement::SettlementMode::Duel));
+    let (deployment, _, _, second) = setup_mode_with_threshold(
+        true, 0, Some(crate::settlement::SettlementMode::Single),
+    );
     let reserved = create_reserved(deployment, 31);
+    settle_neighbor(deployment, reserved, 35);
     let mut events = snforge_std::spy_events();
     assert_eq!(
         view(deployment).hyperstructure_shares(reserved),
@@ -471,11 +451,11 @@ fn reserved_hyperstructures_hold_an_empty_shares_row_and_earn_nothing_until_thei
     assert_eq!(
         view(deployment).hyperstructure_shares(reserved),
         ShareAllocation {
-            start_at: 100, multiplier: 2, shareholders: array![Share { player: captor, bps: 10000 }].span(),
+            start_at: 100, multiplier: 1, shareholders: array![Share { player: captor, bps: 10000 }].span(),
         },
     );
     checkpoint(deployment, 150);
-    assert_eq!(points(deployment, captor) - claimed, 100000);
+    assert_eq!(points(deployment, captor) - claimed, 50000);
     assert_eq!(points(deployment, deployment.actor), actor);
     // The row exists from creation; the claim checkpoints the empty allocation before writing the captor's.
     assert_eq!(share_writes(ref events, deployment, reserved), array!['start_at', 'start_at', 'set', 'start_at']);

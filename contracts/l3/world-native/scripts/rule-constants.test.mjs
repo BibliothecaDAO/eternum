@@ -13,11 +13,9 @@ test("native roster constants preserve the published rule values and their schem
   const rules = await readRuleConstants(root);
   assert.equal(JSON.stringify(rules), JSON.stringify(schema.ruleConstants));
   const shared = await readFile(new URL("src/roster_limits.cairo", root), "utf8");
-  for (const name of ["MAX_BLITZ_ROSTER_PLAYERS", "DUEL_ROSTER_PLAYERS"]) {
-    const value = shared.match(new RegExp(`^pub const ${name}: u32 = ([0-9]+);$`, "m"));
-    assert.ok(value, `missing shared ${name}`);
-    assert.equal(rules[name], Number(value[1]));
-  }
+  const value = shared.match(/^pub const MAX_BLITZ_ROSTER_PLAYERS: u32 = ([0-9]+);$/m);
+  assert.ok(value, "missing shared MAX_BLITZ_ROSTER_PLAYERS");
+  assert.equal(rules.MAX_BLITZ_ROSTER_PLAYERS, Number(value[1]));
 });
 
 test("a missing shared rule refuses schema generation instead of becoming a silent zero", async () => {

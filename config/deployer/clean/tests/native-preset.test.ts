@@ -232,7 +232,7 @@ describe("native presets", () => {
         golden_essence: 0n,
       });
     }
-    for (const id of [2, 3, 4]) expect(buildNativePreset(configuration(id), id).economy.labor.isNone()).toBe(true);
+    for (const id of [2, 3]) expect(buildNativePreset(configuration(id), id).economy.labor.isNone()).toBe(true);
   });
   test.each([-1, 0.5, Number.NaN])("refuses invalid daily home grants (%s)", (invalid) => {
     const labor = nativePresets[FRONTIER_DEVCON_PRESET_ID]!.labor!;
@@ -251,7 +251,7 @@ describe("native presets", () => {
       }
     }
   });
-  test.each([2, 4])(
+  test.each([2])(
     "a fixed-roster realm (preset %i) starts with 1,000 T1 troops garrisoned and 1,000 in reserve, its type dealt",
     (id) => {
       const preset = buildNativePreset(configuration(id), id);
@@ -303,7 +303,6 @@ describe("native presets", () => {
       ["madara.frontier", 5, 0],
       ["madara.blitz", 2, 60],
       ["madara.eternum", 3, 60],
-      ["madara.blitz", 4, 60],
     ] as const) {
       const config = loadNativePresetConfiguration(network, id);
       expect(buildNativePreset(config, id).rules.battle_config.cooldown_seconds).toBe(expected);
@@ -382,7 +381,7 @@ describe("native presets", () => {
       expect(preset.exploration).toEqual([]);
       expect(preset.settlement.depths.map(({ reveal_percent }) => reveal_percent)).toEqual([10, 15, 20, 25]);
     }
-    for (const id of [2, 3, 4]) expect(buildNativePreset(configuration(id), id).exploration.length).toBeGreaterThan(0);
+    for (const id of [2, 3]) expect(buildNativePreset(configuration(id), id).exploration.length).toBeGreaterThan(0);
   });
 
   test("Frontier sites carry no flat camp reward or rift-production table", () => {
@@ -460,7 +459,7 @@ describe("native presets", () => {
   });
 
   test("A camp's labor rate is its own rule, at the rate it read from the village before", () => {
-    for (const id of [2, 3, 4]) {
+    for (const id of [2, 3]) {
       const preset = buildNativePreset(configuration(id), id);
       const labor = preset.resources.resources.find(({ resource_type }) => resource_type === 23)!;
       expect(preset.structures.camps.labor_rate).toBe(labor.realm_rate / 2n);
@@ -533,14 +532,13 @@ describe("native presets", () => {
     }
   });
 
-  test("Blitz and Duel carry no labor-paid production, while Frontier trains troops and Eternum keeps its labor path", () => {
+  test("Blitz carries no labor-paid production, while Frontier trains troops and Eternum keeps its labor path", () => {
     const laborPaid = (environment: Parameters<typeof loadNativePresetConfiguration>[0], presetId: number) =>
       buildNativePreset(loadNativePresetConfiguration(environment, presetId), presetId)
         .resources.production.filter(({ recipe }) => recipe.simple_inputs.length > 0)
         .map(({ resource_type }) => resource_type);
 
     expect(laborPaid("madara.blitz", 2)).toEqual([]);
-    expect(laborPaid("madara.blitz", 4)).toEqual([]);
     expect(laborPaid("madara.frontier", FRONTIER_PRESET_ID)).toEqual([26]);
     expect(laborPaid("madara.eternum", 3).length).toBeGreaterThan(0);
   });
@@ -582,7 +580,7 @@ describe("native presets", () => {
     ]).toEqual([0, 0, 0, 0]);
   });
 
-  test("Frontier disables both dice rules while Blitz, Eternum and Duel preserve Ethereal dice", () => {
+  test("Frontier disables both dice rules while Blitz and Eternum preserve Ethereal dice", () => {
     const diceRules = (environment: Parameters<typeof loadNativePresetConfiguration>[0], presetId: number) => {
       const mask = buildNativePreset(loadNativePresetConfiguration(environment, presetId), presetId).rules.mode_rules;
       return [(mask & nativeRuleConstants.COMBAT_DICE) !== 0, (mask & nativeRuleConstants.COMBAT_DICE_ETHEREAL) !== 0];
@@ -591,7 +589,6 @@ describe("native presets", () => {
     expect(diceRules("madara.frontier", FRONTIER_PRESET_ID)).toEqual([false, false]);
     expect(diceRules("madara.blitz", 2)).toEqual([false, true]);
     expect(diceRules("madara.eternum", 3)).toEqual([false, true]);
-    expect(diceRules("madara.blitz", 4)).toEqual([false, true]);
   });
 
   // The HS held rule says a realm settled later counts from the next capture: a capture recounts the realms only where
@@ -695,15 +692,16 @@ describe("native presets", () => {
   });
 
   test("every preset id names the mode it plays, and an unknown id fails by name", () => {
-    expect([1, 2, 3, 4, FRONTIER_PRESET_ID, FRONTIER_ACCELERATED_PRESET_ID, 102].map(nativeGameModeOf)).toEqual([
+    expect([1, 2, 3, FRONTIER_PRESET_ID, FRONTIER_ACCELERATED_PRESET_ID, 102].map(nativeGameModeOf)).toEqual([
       "frontier",
       "blitz",
       "eternum",
-      "duel",
       "frontier",
       "frontier",
       "frontier",
     ]);
+    expect(() => nativeGameModeOf(4)).toThrow("Unknown native preset 4");
+    expect(() => loadNativePresetConfiguration("madara.blitz", 4)).toThrow("Unsupported native preset 4");
     expect(() => nativeGameModeOf(9)).toThrow("Unknown native preset 9");
     expect(nativeGameModeOf(103)).toBe("eternum");
     expect(nativeGameModeOf(104)).toBe("frontier");
@@ -863,7 +861,6 @@ describe("fixed Regular Blitz rosters", () => {
     durationSeconds: 3600,
     devModeOn: false,
     singleRealmMode: false,
-    twoPlayerMode: false,
     useMapOverride: false,
   };
   test("a fixed-roster game is never created outside its closed slot", () => {
@@ -1014,7 +1011,6 @@ describe("Devcon's fast Frontier preset", () => {
       durationSeconds,
       devModeOn: false,
       singleRealmMode: false,
-      twoPlayerMode: false,
       useMapOverride: false,
     });
     expect(params.preset_id).toBe(6);

@@ -25,7 +25,7 @@ pub use crate::settlement::{ISettlementViewsDispatcher, ISettlementViewsDispatch
 pub use crate::spires::{ISpiresDispatcher, ISpiresDispatcherTrait};
 pub use crate::trade::{ITradeDispatcher, ITradeDispatcherTrait};
 pub use crate::upgrades::{IUpgradeRulesDispatcher, IUpgradeRulesDispatcherTrait};
-pub use crate::village::{IVillagesDispatcher, IVillagesDispatcherTrait};
+pub use crate::village::{IVillagePassesDispatcher, IVillagePassesDispatcherTrait};
 pub use crate::withdrawals::{IWithdrawalsDispatcher, IWithdrawalsDispatcherTrait};
 
 #[derive(Drop, Serde, Debug, PartialEq)]
@@ -207,7 +207,7 @@ pub fn observe_structures(ref rows: Array<ObservedRow>, address: ContractAddress
 pub fn observe_settlement(ref rows: Array<ObservedRow>, address: ContractAddress, game_id: u32) {
     let key = array![game_id.into()].span();
     let settlement_views = ISettlementViewsDispatcher { contract_address: address };
-    let villages = IVillagesDispatcher { contract_address: address };
+    let villages = IVillagePassesDispatcher { contract_address: address };
     let expedition_rules = IExpeditionRulesDispatcher { contract_address: address };
     let spires = ISpiresDispatcher { contract_address: address };
     row(ref rows, 'RealmGrants', key, settlement_views.realm_grants(game_id));

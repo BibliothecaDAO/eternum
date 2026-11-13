@@ -146,7 +146,7 @@ it("notifies both owners for player capture, excluding the zero bandit owner", (
 it("pushes fights between players only where players fight: never in Frontier, whatever the level", () => {
   for (const story of ["BattleEvent", "RaidEvent", "StructureCapturedStory"]) {
     for (const level of NOTIFICATION_LEVELS) expect(includesStoryNotification(level, story, "frontier")).toBe(false);
-    for (const mode of ["blitz", "eternum", "duel"] as const)
+    for (const mode of ["blitz", "eternum"] as const)
       expect(includesStoryNotification("important", story, mode), `${story} in ${mode}`).toBe(true);
   }
   // Everything else a Frontier player is pushed is the same as anywhere.

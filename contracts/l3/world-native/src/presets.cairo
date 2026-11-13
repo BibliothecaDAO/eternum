@@ -121,11 +121,6 @@ pub fn validate(preset: PresetDefinition) {
     }
     assert!(rules.bitcoin_mine_config.owner_cut_bps <= 10000, "invalid Bitcoin owner cut");
 
-    assert!(
-        rules.entry_rule == crate::rules::ENTRY_ROSTER
-            || preset.settlement.mode != crate::settlement::SettlementMode::Duel,
-        "Eternum does not use Duel settlement",
-    );
     let map = preset.rules.map_config;
     assert!(
         map.shards_mines_win_probability == 0 || !preset.resources.surface_mines.is_empty(), "empty enabled mine pool",
@@ -154,12 +149,6 @@ pub fn commitment(preset: PresetDefinition) -> felt252 {
     core::poseidon::poseidon_hash_span(values.span())
 }
 
-// Registration shares the season domain's code budget; Games and Registry keep their existing public ABI.
-#[starknet::interface]
-pub trait IPresetRegistration<T> {
-    fn register_preset(ref self: T, preset_id: u32, definition: PresetDefinition);
-}
-
 #[starknet::interface]
 pub trait IPresetResources<T> {
     fn store_resource_preset(
@@ -169,11 +158,6 @@ pub trait IPresetResources<T> {
         exploration: Span<crate::exploration_rewards::ExplorationReward>,
         mode_rules: u32,
     );
-}
-
-#[starknet::interface]
-pub trait IPresetValidation<T> {
-    fn validated_preset_commitment(self: @T, definition: PresetDefinition) -> felt252;
 }
 
 #[starknet::interface]

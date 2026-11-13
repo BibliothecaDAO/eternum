@@ -19,7 +19,6 @@ pub mod RegistrarState {
     use crate::events::RowSet;
     use crate::logic::release::ReleaseState;
     use crate::logic::release::ReleaseState::InternalTrait as LifeInternal;
-    use crate::presets::PresetDefinition;
     use crate::registrar::{CreateGameParams, RosterPlayer, build_game, game_overrides};
 
     #[storage]
@@ -40,14 +39,30 @@ pub mod RegistrarState {
         impl Life: ReleaseState::HasComponent<TContractState>,
         +Drop<TContractState>,
     > of crate::registrar::IRegistrar<ComponentState<TContractState>> {
-        fn register_preset(ref self: ComponentState<TContractState>, preset_id: u32, definition: PresetDefinition) {
-            crate::presets::IPresetRegistrationDispatcherTrait::register_preset(
-                crate::presets::IPresetRegistrationLibraryDispatcher {
-                    class_hash: get_dep_component!(@self, Life).current_classes().season,
-                },
-                preset_id,
-                definition,
-            );
+        fn register_preset(
+            ref self: ComponentState<TContractState>, preset_id: u32, definition: crate::presets::PresetDefinition,
+        ) {
+            crate::logic::release::assert_authority();
+            assert!(preset_id != 0, "preset id zero is reserved");
+            assert!(self.data.registrar.presets.read(preset_id) == 0, "preset id already registered");
+            crate::presets::validate(definition);
+            crate::settlement_grid::validate_spacing(definition.settlement.spacing);
+            if crate::rules::rule_enabled(definition.rules, crate::rules::SPIRES) {
+                crate::spires::validate(definition.settlement.spires.expect('missing season spires'));
+            } else {
+                assert!(definition.settlement.spires.is_none(), "spires are disabled");
+            }
+            let commitment = crate::presets::commitment(definition);
+            assert!(commitment != 0, "empty preset commitment");
+            crate::logic::preset_record::store(commitment, definition);
+            self.data.registrar.presets.write(preset_id, commitment);
+            let values = array![commitment];
+            self
+                .emit(
+                    RowSet {
+                        version: 1, model: 'Preset', keys: array![preset_id.into()].span(), values: values.span(),
+                    },
+                );
         }
         fn preset_commitment(self: @ComponentState<TContractState>, preset_id: u32) -> felt252 {
             self.data.registrar.presets.read(preset_id)
@@ -76,7 +91,6 @@ pub mod RegistrarState {
                 day_unit_seconds: preset.rules.day_unit_seconds.read(),
                 armies_tick_seconds: preset.rules.tick_config.armies_tick_in_seconds.read(),
                 entry_rule: preset.rules.entry_rule.read(),
-                settlement_mode: preset.settlement_mode.read(),
                 spacing: preset.settlement_spacing.read(),
             };
             assert!(preset.rollover_chest_rules.read().is_none(), "LORDS presets are retired");

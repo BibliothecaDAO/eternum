@@ -124,12 +124,6 @@ describe("mystery chest economics", () => {
   });
 });
 
-it("keeps the existing duel price outside the first-deployment environment change", () => {
-  const preset = buildLedgerEconomicPreset("duel");
-  expect(BigInt(preset.entry_fee.low)).toBe(500n * 10n ** 18n);
-  expect(preset.protocol_cut_bps).toBe(2000);
-});
-
 it("funds Frontier chests at 70 percent and reserves the remainder for the top ten", () => {
   const preset = buildLedgerEconomicPreset("frontier");
   expect(preset.frontier_chest_bps).toBe(7000);

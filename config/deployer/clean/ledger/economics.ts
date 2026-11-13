@@ -53,8 +53,7 @@ export function buildLedgerEconomicPreset(
   const native = nativePresetForId(options.presetId ?? nativePresetIdFor(gameType));
   if (native.gameType !== gameType) throw new Error("Ledger preset game type differs from shard preset");
   const balance = native.ledger;
-  const price =
-    gameType === "blitz" ? environments[options.environment ?? "production"].blitzPrice : gameType === "duel" ? 500 : 0;
+  const price = gameType === "blitz" ? environments[options.environment ?? "production"].blitzPrice : 0;
   return {
     entry_fee: lords(BigInt(price)),
     protocol_cut_bps: gameType === "frontier" ? 0 : balance.protocolCutBps,

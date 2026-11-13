@@ -1,6 +1,5 @@
 pub use world_test_support::tests::entry::*;
 
-
 #[test]
 #[feature("safe_dispatcher")]
 fn only_authority_rotates_the_deployment_operator_without_emitting_metadata() {
@@ -67,7 +66,7 @@ fn ledger_rejects_zero_game_and_owner_and_requires_a_prepared_game() {
 #[feature("safe_dispatcher")]
 fn village_passes_share_operator_rotation_without_sharing_realm_entitlements() {
     let d = setup(true);
-    let villages = IVillagesSafeDispatcher { contract_address: d.games };
+    let villages = IVillagePassesSafeDispatcher { contract_address: d.games };
     let key = VillagePassKey { game_id: 1, pass_id: 7 };
     set_operator(d, 123.try_into().unwrap());
     start_cheat_caller_address(d.games, d.actor);

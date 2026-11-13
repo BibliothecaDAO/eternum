@@ -12,15 +12,11 @@ pub mod RelicsLogic {
     #[abi(embed_v0)]
     impl Relics = RelicState::RelicsImpl<ContractState>;
     #[abi(embed_v0)]
-    impl FrontierSites = RelicState::FrontierSitesImpl<ContractState>;
-    #[abi(embed_v0)]
     impl CaptureRewards = RelicState::CaptureRewardsImpl<ContractState>;
     #[abi(embed_v0)]
     impl ArmySlotStamina = RelicState::ArmySlotStaminaImpl<ContractState>;
     #[abi(embed_v0)]
     impl ArmyProgression = RelicState::ArmyProgressionImpl<ContractState>;
-    #[abi(embed_v0)]
-    impl Artificer = RelicState::ArtificerImpl<ContractState>;
 
     #[abi(embed_v0)]
     impl PresetRelics of crate::presets::IPresetRelics<ContractState> {
