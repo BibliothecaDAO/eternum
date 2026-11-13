@@ -48,7 +48,7 @@ const etherealDepthScenario = (depth: 1 | 2 | 3) => (): LabScenario => {
 };
 
 /** The entity of the Deep's hyperstructure that stands for scale beside the arrival there (steps.mjs reads its plate). */
-const DEEP_SCALE_HYPERSTRUCTURE = 903;
+export const DEEP_SCALE_HYPERSTRUCTURE = 903;
 
 /**
  * What stands beside the arrival for scale, as a player meets it there: a spire the realm found on that Ethereal layer,
