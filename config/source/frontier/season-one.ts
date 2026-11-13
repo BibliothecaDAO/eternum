@@ -5,7 +5,7 @@ import { FRONTIER_DAY_UNIT_SECONDS } from "./clock";
 import { frontierPreset } from "./native";
 import { nativeCommandBits } from "../../../contracts/l3/world-native/schema/commands.gen";
 
-export const frontierSeasonOnePreset = {
+export const frontierSeasonOnePreset: NativePreset & { worldBanes: NonNullable<NativePreset["worldBanes"]> } = {
   ...frontierPreset,
   id: FRONTIER_S1_PRESET_ID,
   commandMask: frontierPreset.commandMask | BigInt(nativeCommandBits.ClaimDailyQuest),
@@ -35,7 +35,7 @@ export const frontierSeasonOnePreset = {
       { resource: ResourcesIds.Labor, amount: 2_000 },
     ],
   },
-} satisfies NativePreset;
+};
 
 export const frontierSeasonOneDevPreset: NativePreset = {
   ...frontierSeasonOnePreset,
