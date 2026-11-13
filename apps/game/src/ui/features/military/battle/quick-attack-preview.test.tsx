@@ -49,19 +49,6 @@ const preview = (armyStamina: bigint, aimAt: typeof target = target) => {
       value: { game_id: 1, ...SITE_TILE, entity_id: SITE, category: 0, is_structure: true },
     },
   ] as never);
-  // The other army's realm, another player's.
-  const realm = store.require("Structure", { game_id: 1, entity_id: 7 });
-  store.applyFacts([
-    {
-      model: "Structure",
-      key: "0x92",
-      value: JSON.parse(
-        JSON.stringify({ ...realm, entity_id: 9, owner: "0x999" }, (_, v) =>
-          typeof v === "bigint" ? v.toString() : v,
-        ),
-      ),
-    },
-  ] as never);
   const attack = vi.fn(() => Promise.resolve({ transaction_hash: "0x1" }));
   useUIStore.getState().selectOnMap({ kind: "army", entityId: ARMY, tile: { col: 30, row: 5 } });
   usePopoverStore.getState().openSurface({

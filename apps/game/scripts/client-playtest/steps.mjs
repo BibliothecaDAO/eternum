@@ -339,11 +339,6 @@ async function enterEtherealIIFromItsCard({ browser }) {
   return { armyId, locate };
 }
 
-/**
- * A fight (the lab's fight game): the army selected, the ruin beside it opened for its card from the tile that offers
- * Attack (a desktop's right-click, a phone's two taps), then the card's Attack; the result is the army's token showing
- * exactly the troops the chain left it.
- */
 const RELIC_FORECAST_STEPS = [
   { name: "enter-on-map", settleMs: 3_000, verify: inScene("map") },
   {
@@ -403,6 +398,11 @@ const RELIC_FORECAST_STEPS = [
   },
 ];
 
+/**
+ * A fight (the lab's fight game): the army selected, the ruin beside it opened for its card from the tile that offers
+ * Attack (a desktop's right-click, a phone's two taps), then the card's Attack; the result is the army's token showing
+ * exactly the troops the chain left it.
+ */
 const FIGHT_ACTION_STEPS = [
   { name: "enter-on-map", settleMs: 3_000, verify: inScene("map") },
   { name: "select-army", play: selectTheReadiestArmy, settleMs: 1_500, verify: armySelected },

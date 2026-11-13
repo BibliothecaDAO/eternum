@@ -269,7 +269,7 @@ export const otherArmyAt = (store: ReturnType<typeof campBeside>["store"], col: 
       value: wire({
         ...store.require("Structure", { game_id: 1, entity_id: mine.owner }),
         entity_id: 9,
-        owner: "0x222",
+        owner: "0x999",
       }),
     },
     {
@@ -283,7 +283,7 @@ export const otherArmyAt = (store: ReturnType<typeof campBeside>["store"], col: 
       value: { game_id: 1, alt: false, col, row, entity_id: 301, category: 15, is_structure: false },
     },
   ] as never);
-  store.setSnapshot({ gameId: 1, complete: true, actor: "0x111", visit: "0x222", timestamp: 350 });
+  store.setSnapshot({ gameId: 1, complete: true, actor: "0x111", visit: "0x999", timestamp: 350 });
   return store.require("ExplorerTroops", { game_id: 1, explorer_id: 301 });
 };
 
