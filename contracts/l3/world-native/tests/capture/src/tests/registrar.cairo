@@ -2655,7 +2655,6 @@ fn game_creation_places_three_persistent_deep_sites_without_reveals() {
 
 #[test]
 fn defeating_a_deep_beast_keeps_its_site_and_the_next_day_restores_the_same_guard() {
-    use starknet::storage::StoragePointerWriteAccess;
     let d = setup();
     let (game_id, preset, category) = expedition_home(d);
     initialize_deep_fixture(d, game_id);
