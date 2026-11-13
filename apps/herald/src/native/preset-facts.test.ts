@@ -89,6 +89,10 @@ describe("verified preset configuration facts", () => {
       quarry: { alt: false, x: 12, y: 20 },
       altar: { alt: false, x: 38, y: 20 },
       beast_count: 10_000n,
+      loss_per_tick: 200n,
+      quarry_per_tick: 500n,
+      altar_per_tick: 5,
+      altar_threshold: 1500,
     };
     const preset = registration(5, new CairoOption(CairoOptionVariant.Some, deep));
     applyRegistration(world, preset);

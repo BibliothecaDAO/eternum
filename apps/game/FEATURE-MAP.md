@@ -1358,9 +1358,8 @@ existing `BattleGuard` command accepts their IDs; beating the beast puts the sur
 adjacent allied army joins through `InteractSite`. Each player may hold one slot per site; four allied players may hold
 it together. Held armies leave their field tiles and take the site's position. Death releases a slot, and a new day
 expires the guards and restores the beast. The dedicated selection and holding screen is not wired yet; combined guard
-combat, attrition and tick payouts are also pending. Native regressions cover creation, joins, refusals, death and day
-rollover. Core view and scope tests cover guard membership and rollback. Run the existing
-`pnpm --dir apps/game playtest` when the screen is wired.
+combat is pending. Native regressions cover creation, joins, refusals, death and day rollover. Core view and scope tests
+cover guard membership and rollback. Run the existing `pnpm --dir apps/game playtest` when the screen is wired.
 
 Shared Deep rollover: tile occupancy, field models and army action gates use `ArmyDay` with the confirmed execution
 clock. An empty confirmed head at day rollover removes yesterday's army from the map and opens its tile, while its raw
@@ -1371,5 +1370,12 @@ preset's loss from both field armies and held guards. The ordinary army command 
 carrying capacity; a dead field army no longer blocks movement or arrival. `currentArmy`, `currentResourceWeight` and
 the existing troop resolver read the same native facts at the confirmed clock. The dock, transfer inputs, previews and
 map labels use those readers. The focused core count test and `use-armies.deep` test advance 500 → 300 → 100 → 0 without
-writing a troop row. Site payouts and the Altar bar are still pending; this attrition checkpoint does not enable the
-finished holding loop.
+writing a troop row.
+
+Deep payments: the gameplay prefix settles Foundation, Quarry and Altar in completed army-tick order, pays the pre-loss
+troop weights, then removes troops. A winning Foundation tick still pays the other two sites at that boundary; later
+ticks stop, and the waiting action reads the updated game end. Quarry grants labor and Essence to each guard's home.
+`AltarBar` and day-keyed `TeamBane` rows are shared facts. Native command regressions cover repeated settlement, the
+last troops' payment, the final season boundary, winning mid-backlog and next-day bane issuance. Run these through
+`bash contracts/l3/check-native.sh` after the shared Race and Day sources are folded; their screen and live-playtest
+coverage remains pending.

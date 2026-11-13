@@ -123,9 +123,10 @@ fn initialize(game_id: u32) {
         );
         reset_beast(key, kind, 0, rules.beast_count, game.start_main_at);
     }
+    crate::logic::deep_ticks::initialize(game_id);
 }
 
-fn settle(game_id: u32, context: ExecutionContext) {
+pub fn rollover(game_id: u32, context: ExecutionContext) {
     let Some(rules) = rules(game_id) else {
         return;
     };
@@ -141,8 +142,6 @@ fn settle(game_id: u32, context: ExecutionContext) {
         if previous.day != day.index {
             crate::logic::deep_guards::expire(key, context);
             reset_beast(key, kind, day.index, rules.beast_count, day.start);
-        } else {
-            crate::logic::deep_guards::settle(key, context);
         }
     }
 }
@@ -207,7 +206,15 @@ pub mod DeepSites {
         fn settle_deep(
             ref self: ComponentState<TContractState>, game_id: u32, context: crate::commands::ActionContext,
         ) {
-            super::settle(game_id, crate::commands::execution_context(game_id, context));
+            crate::logic::deep_ticks::settle(game_id, crate::commands::execution_context(game_id, context));
+        }
+    }
+    #[embeddable_as(HeightBaneImpl)]
+    pub impl HeightBane<
+        TContractState, +HasComponent<TContractState>, +Drop<TContractState>,
+    > of crate::race::IHeightBane<ComponentState<TContractState>> {
+        fn height_blocked(self: @ComponentState<TContractState>, game_id: u32, aspect: u8, timestamp: u64) -> bool {
+            crate::logic::deep_banes::height_blocked(game_id, aspect, timestamp)
         }
     }
 }

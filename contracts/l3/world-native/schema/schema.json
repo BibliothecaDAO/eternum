@@ -5185,9 +5185,9 @@
       ],
       "members": [
         {
-          "name": "members",
+          "name": "active",
           "type": "core::integer::u32",
-          "id": "0x6d656d62657273",
+          "id": "0x616374697665",
           "feltLength": 1
         }
       ],
@@ -5201,6 +5201,85 @@
           "game_id": "game_id"
         }
       }
+    },
+    {
+      "name": "AltarBar",
+      "identity": "0x416c746172426172",
+      "scope": "game",
+      "keys": [
+        {
+          "name": "game_id",
+          "type": "core::integer::u32",
+          "feltLength": 1
+        },
+        {
+          "name": "aspect",
+          "type": "core::integer::u8",
+          "feltLength": 1
+        }
+      ],
+      "members": [
+        {
+          "name": "charge",
+          "type": "core::integer::u32",
+          "id": "0x636861726765",
+          "feltLength": 1
+        }
+      ],
+      "keyLength": 2,
+      "valueLength": 1,
+      "absence": {
+        "parent": "DeepRules",
+        "value": "zero",
+        "meaning": "This Aspect has not held the Altar yet.",
+        "parentKeys": {
+          "game_id": "game_id"
+        }
+      }
+    },
+    {
+      "name": "TeamBane",
+      "identity": "0x5465616d42616e65",
+      "scope": "game",
+      "keys": [
+        {
+          "name": "game_id",
+          "type": "core::integer::u32",
+          "feltLength": 1
+        },
+        {
+          "name": "aspect",
+          "type": "core::integer::u8",
+          "feltLength": 1
+        },
+        {
+          "name": "day",
+          "type": "core::integer::u64",
+          "feltLength": 1
+        }
+      ],
+      "members": [
+        {
+          "name": "source",
+          "type": "core::integer::u8",
+          "id": "0x736f75726365",
+          "feltLength": 1
+        },
+        {
+          "name": "issued_day",
+          "type": "core::integer::u64",
+          "id": "0x6973737565645f646179",
+          "feltLength": 1
+        },
+        {
+          "name": "quest",
+          "type": "core::integer::u8",
+          "id": "0x7175657374",
+          "feltLength": 1
+        }
+      ],
+      "keyLength": 3,
+      "valueLength": 3
     },
     {
       "name": "DeepArmy",
@@ -5336,10 +5415,28 @@
           "type": "core::integer::u128",
           "id": "0x6c6f73735f7065725f7469636b",
           "feltLength": 1
+        },
+        {
+          "name": "quarry_per_tick",
+          "type": "core::integer::u128",
+          "id": "0x7175617272795f7065725f7469636b",
+          "feltLength": 1
+        },
+        {
+          "name": "altar_per_tick",
+          "type": "core::integer::u32",
+          "id": "0x616c7461725f7065725f7469636b",
+          "feltLength": 1
+        },
+        {
+          "name": "altar_threshold",
+          "type": "core::integer::u32",
+          "id": "0x616c7461725f7468726573686f6c64",
+          "feltLength": 1
         }
       ],
       "keyLength": 1,
-      "valueLength": 11,
+      "valueLength": 14,
       "derivedFrom": "preset"
     },
     {
@@ -9524,6 +9621,16 @@
         }
       ]
     },
+    "world_native::deep::AltarBar": {
+      "type": "struct",
+      "name": "world_native::deep::AltarBar",
+      "members": [
+        {
+          "name": "charge",
+          "type": "core::integer::u32"
+        }
+      ]
+    },
     "world_native::deep::DeepArmy": {
       "type": "struct",
       "name": "world_native::deep::DeepArmy",
@@ -9571,6 +9678,32 @@
         {
           "name": "loss_per_tick",
           "type": "core::integer::u128"
+        },
+        {
+          "name": "quarry_per_tick",
+          "type": "core::integer::u128"
+        },
+        {
+          "name": "altar_per_tick",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "altar_threshold",
+          "type": "core::integer::u32"
+        }
+      ]
+    },
+    "world_native::deep::DeepShare": {
+      "type": "struct",
+      "name": "world_native::deep::DeepShare",
+      "members": [
+        {
+          "name": "home",
+          "type": "core::integer::u64"
+        },
+        {
+          "name": "troops",
+          "type": "core::integer::u128"
         }
       ]
     },
@@ -9580,6 +9713,42 @@
       "members": [
         {
           "name": "kind",
+          "type": "core::integer::u8"
+        },
+        {
+          "name": "day",
+          "type": "core::integer::u64"
+        }
+      ]
+    },
+    "world_native::deep::TeamBane": {
+      "type": "struct",
+      "name": "world_native::deep::TeamBane",
+      "members": [
+        {
+          "name": "source",
+          "type": "core::integer::u8"
+        },
+        {
+          "name": "issued_day",
+          "type": "core::integer::u64"
+        },
+        {
+          "name": "quest",
+          "type": "core::integer::u8"
+        }
+      ]
+    },
+    "world_native::deep::TeamBaneKey": {
+      "type": "struct",
+      "name": "world_native::deep::TeamBaneKey",
+      "members": [
+        {
+          "name": "game_id",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "aspect",
           "type": "core::integer::u8"
         },
         {
@@ -14369,5 +14538,5 @@
       ]
     }
   },
-  "identity": "2ac481f6d150df26d52fc8aafa376976f0bde513761be1ebe3f93b386dbb0a00"
+  "identity": "0b47f4a46509b2dbac80264a68b0537e13fb6155c42256c3d58bd1ba88afa8b9"
 }
