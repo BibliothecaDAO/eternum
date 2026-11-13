@@ -6,16 +6,26 @@ import { useAccountAddress } from "@/hooks/store/use-account-store";
 import { sendOnce, useInFlight } from "@/hooks/store/use-actions-in-flight";
 import { requestOrderAt } from "@/three/scenes/worldmap-order-request";
 import { Icon as SemanticIcon } from "@/ui/design-system/icon";
-import { HudButton, HudChip, HudCost, HudRow, HudSheet, HudWindowFoot } from "@/ui/design-system/kit/hud-elements";
+import {
+  HudButton,
+  HudChip,
+  HudCost,
+  HudNotice,
+  HudRow,
+  HudSheet,
+  HudWindowFoot,
+} from "@/ui/design-system/kit/hud-elements";
 import { costLine } from "@/ui/design-system/kit/price-faces";
+import { reasonLine } from "@/ui/design-system/kit/reasons";
 import { ATTACKING, DEEP_WORDS, MOVE, USING } from "@/ui/design-system/kit/words";
 import { toast } from "@/ui/features/event-feed/notify";
 import { configManager } from "@bibliothecadao/eternum";
+import { nativeRuleConstants } from "../../../../../../../contracts/l3/world-native/schema/client.gen";
 import { safeInteger } from "@bibliothecadao/eternum/game-client";
 import type { TileSpatialRenderable } from "@bibliothecadao/eternum/game-sync";
 import { aspectName, formatDuration, formatExact } from "@bibliothecadao/types";
 
-import { useOrderAt } from "../hud/army-order";
+import { type Cost, isCovered, useArmyStamina, useOrderAt } from "../hud/army-order";
 import { useApproachTile } from "../sites/approach";
 import { useSelectedOwnArmy } from "../sites/selected-army";
 import { inFlightWord } from "../sites/site-card-view";
@@ -46,8 +56,11 @@ const DEEP_SITE_MODELS = [
   "TileOccupancy",
 ] as const;
 
-/** The four slots in the order an attacker fights them: the highest first, as a structure's guards are fought. */
-const FIGHT_ORDER = [3, 2, 1, 0] as const;
+/** The slots in the order an attacker fights them: the highest first, as a structure's guards are fought. */
+const FIGHT_ORDER = Array.from(
+  { length: nativeRuleConstants.DEEP_GUARD_SLOTS },
+  (_, index) => nativeRuleConstants.DEEP_GUARD_SLOTS - 1 - index,
+);
 
 /** A Deep site's card, read from the facts, with the selected army's order: Attack, Take, Join, or Move beside it. */
 export const DeepSiteCard = ({ tile, onClose }: { tile: TileSpatialRenderable; onClose: () => void }) => {
@@ -69,6 +82,9 @@ export const DeepSiteCard = ({ tile, onClose }: { tile: TileSpatialRenderable; o
   const approach = useOrderAt(useApproachTile(siteTile, wantsApproach));
   const armyId = actor ? safeInteger(actor.army.explorer_id) : null;
   const inFlight = useInFlight("army", armyId)?.order;
+  // The attack's stamina against what the army holds now, as every attack card reads it (useArmyStamina).
+  const attackNeed = plan?.kind === "site" && plan.step?.kind === "attack" ? plan.step.stamina : 0;
+  const stamina = useArmyStamina(armyId, attackNeed);
   if (!plan) return null;
   if (plan.kind === "reading")
     return (
@@ -77,8 +93,10 @@ export const DeepSiteCard = ({ tile, onClose }: { tile: TileSpatialRenderable; o
       </HudSheet>
     );
 
+  // An attack waits for the stamina it needs, and for the army's stamina to be known at all: unknown is never enough.
+  const short = plan.step?.kind === "attack" && (stamina === undefined || !isCovered(stamina));
   const send = async () => {
-    if (armyId === null || !account.account || !isOrder(plan.step)) return;
+    if (armyId === null || !account.account || !isOrder(plan.step) || short) return;
     const signer = account.account;
     const attack = plan.step.kind === "attack";
     try {
@@ -108,27 +126,29 @@ export const DeepSiteCard = ({ tile, onClose }: { tile: TileSpatialRenderable; o
       order={
         !isOrder(plan.step)
           ? null
-          : plan.inReach
-            ? {
-                kind: "act",
-                verb: verbOf(plan.step),
-                busy: inFlightWord(
-                  inFlight,
-                  plan.step.kind === "attack" ? "attack" : "use",
-                  plan.step.kind === "attack" ? ATTACKING : USING,
-                ),
-                onAct: () => void send(),
-              }
-            : approach
+          : plan.inReach && short
+            ? { kind: "short", verb: verbOf(plan.step), stamina }
+            : plan.inReach
               ? {
-                  kind: "move",
-                  cost: costLine([
-                    { of: "stamina", amount: approach.stamina.cost },
-                    { of: "wheat", amount: approach.wheat.cost },
-                  ]),
-                  onMove: () => requestOrderAt(approach.target),
+                  kind: "act",
+                  verb: verbOf(plan.step),
+                  busy: inFlightWord(
+                    inFlight,
+                    plan.step.kind === "attack" ? "attack" : "use",
+                    plan.step.kind === "attack" ? ATTACKING : USING,
+                  ),
+                  onAct: () => void send(),
                 }
-              : null
+              : approach
+                ? {
+                    kind: "move",
+                    cost: costLine([
+                      { of: "stamina", amount: approach.stamina.cost },
+                      { of: "wheat", amount: approach.wheat.cost },
+                    ]),
+                    onMove: () => requestOrderAt(approach.target),
+                  }
+                : null
       }
       onClose={onClose}
     />
@@ -138,6 +158,7 @@ export const DeepSiteCard = ({ tile, onClose }: { tile: TileSpatialRenderable; o
 /** The card's order: the site's own verb beside it, or the Move that brings the army there. */
 type DeepOrder =
   | { kind: "act"; verb: string; busy: string | undefined; onAct: () => void }
+  | { kind: "short"; verb: string; stamina: Cost | undefined }
   | { kind: "move"; cost: string; onMove: () => void };
 
 /**
@@ -170,12 +191,33 @@ const DeepSiteCardView = ({
             {order.verb}
           </HudButton>
         )}
+        {order?.kind === "short" && (
+          <HudButton kind="primary" disabled>
+            {order.verb}
+          </HudButton>
+        )}
         {order?.kind === "move" && (
           <HudButton kind="primary" icon="move" onClick={order.onMove}>
             {MOVE}
           </HudButton>
         )}
       </HudWindowFoot>
+      {order?.kind === "short" && (
+        <HudNotice
+          tone="warn"
+          line={
+            order.stamina
+              ? reasonLine({
+                  kind: "short",
+                  of: "stamina",
+                  held: order.stamina.held,
+                  need: order.stamina.cost,
+                  wait: order.stamina.wait,
+                })
+              : DEEP_WORDS.readingStamina
+          }
+        />
+      )}
     </HudSheet>
   );
 };
@@ -242,6 +284,7 @@ const stepNote = (step: DeepStep | null, order: DeepOrder | null) => {
     full: DEEP_WORDS.full,
     rival: DEEP_WORDS.rival,
     "other-day": DEEP_WORDS.otherDay,
+    "no-troops": DEEP_WORDS.noTroops,
   };
   return isOrder(step) ? undefined : reasons[step.kind];
 };

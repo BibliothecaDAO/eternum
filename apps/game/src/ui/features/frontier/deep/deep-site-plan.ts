@@ -1,4 +1,5 @@
 import {
+  currentArmy,
   deepTicksLeft,
   getStructureName,
   isViewerOwner,
@@ -7,6 +8,7 @@ import {
 } from "@bibliothecadao/eternum";
 import type { NativeFactStore, NativeRows } from "@bibliothecadao/eternum/game-client";
 import { deepSites, getNeighborHexes, RESOURCE_PRECISION } from "@bibliothecadao/types";
+import { nativeRuleConstants } from "../../../../../../../contracts/l3/world-native/schema/client.gen";
 
 import { altarCharge } from "../aspect/aspect-page-plan";
 
@@ -51,13 +53,14 @@ export type DeepGuardState =
  * it cannot. In reach or not is the card's: away, the same step is Move.
  */
 export type DeepStep =
-  | { kind: "attack" }
+  | { kind: "attack"; stamina: number }
   | { kind: "take" }
   | { kind: "join" }
   | { kind: "guarding" }
   | { kind: "full" }
   | { kind: "rival" }
-  | { kind: "other-day" };
+  | { kind: "other-day" }
+  | { kind: "no-troops" };
 
 export type DeepSiteCardPlan =
   | { kind: "reading" }
@@ -74,8 +77,6 @@ export type DeepSiteCardPlan =
 
 /** The army the card acts with: the player's selected army, as the store holds it, and its tile. */
 export type DeepActor = { army: NativeRows["ExplorerTroops"]; tile: { col: number; row: number } };
-
-const SLOTS = 4;
 
 /** The player reading the card, as isViewerOwner takes it. */
 type Viewer = Parameters<typeof isViewerOwner>[1];
@@ -104,7 +105,7 @@ export const readDeepSiteCard = (
     site,
     pay: readTickPay(store, gameId, site, guard),
     guard,
-    step: actor ? deepStep(store, site, guard, actor) : null,
+    step: actor ? deepStep(store, site, guard, actor, timestamp) : null,
     inReach: actor !== null && besideSite(actor.tile, tile),
   };
 };
@@ -112,7 +113,7 @@ export const readDeepSiteCard = (
 const readGuard = (store: NativeFactStore, site: DeepSiteView, viewer: Viewer, timestamp: number): DeepGuardState => {
   if (site.beastTroops > 0n) return { kind: "beast", troops: troopsOf(site.beastTroops) };
   if (site.guards.length === 0) return { kind: "open" };
-  const total = site.guards.reduce((sum, { army }) => sum + army.troops.count, 0n);
+  const shares = sharesOfTick(site.guards.map(({ army }) => army));
   const slots = site.guards.map(({ slot, army }) => {
     const home = store.require("Structure", { game_id: army.game_id, entity_id: army.owner });
     const stored = store.require("ExplorerTroops", { game_id: army.game_id, explorer_id: army.explorer_id });
@@ -124,7 +125,7 @@ const readGuard = (store: NativeFactStore, site: DeepSiteView, viewer: Viewer, t
       realm: getStructureName(home, store).name,
       troops: troopsOf(army.troops.count),
       ticks,
-      share: Math.round((Number(army.troops.count) * 100) / Number(total)),
+      share: shares.get(army.explorer_id)!,
       mine: isViewerOwner(home.owner, viewer),
     };
   });
@@ -166,10 +167,22 @@ export const siteOf = (site: Pick<DeepSiteView, "kind">) => {
 };
 
 /** What the actor can do here, by the contract's own checks in its order. */
-const deepStep = (store: NativeFactStore, site: DeepSiteView, guard: DeepGuardState, actor: DeepActor): DeepStep => {
+const deepStep = (
+  store: NativeFactStore,
+  site: DeepSiteView,
+  guard: DeepGuardState,
+  actor: DeepActor,
+  timestamp: number,
+): DeepStep => {
   const day = store.get("ArmyDay", { game_id: actor.army.game_id, explorer_id: actor.army.explorer_id });
   if (!day || Number(day.day) !== site.day) return { kind: "other-day" };
-  if (guard.kind === "beast") return { kind: "attack" };
+  // Its troops now, the Deep's losses taken: an army the ticks have emptied can do nothing here.
+  if (currentArmy(store, actor.army, timestamp).troops.count === 0n) return { kind: "no-troops" };
+  if (guard.kind === "beast")
+    return {
+      kind: "attack",
+      stamina: store.require("SliceRules", { game_id: actor.army.game_id }).troop_stamina_config.stamina_attack_req,
+    };
   if (guard.kind === "open") return { kind: "take" };
   if (homeAspect(store, actor.army) !== guard.aspect) return { kind: "rival" };
   const player = store.require("Structure", { game_id: actor.army.game_id, entity_id: actor.army.owner }).owner;
@@ -177,11 +190,28 @@ const deepStep = (store: NativeFactStore, site: DeepSiteView, guard: DeepGuardSt
     ({ army }) => store.require("Structure", { game_id: army.game_id, entity_id: army.owner }).owner === player,
   );
   if (guarding) return { kind: "guarding" };
-  return guard.slots.length >= SLOTS ? { kind: "full" } : { kind: "join" };
+  return guard.slots.length >= nativeRuleConstants.DEEP_GUARD_SLOTS ? { kind: "full" } : { kind: "join" };
 };
 
 const homeAspect = (store: NativeFactStore, army: NativeRows["ExplorerTroops"]): number =>
   store.require("HomeAspect", { game_id: army.game_id, home: army.owner }).aspect;
+
+/**
+ * Each guard's share of a tick, out of 100, rounded so the shares make 100: each takes its whole percent, and the
+ * percents left go to the largest remainders, ties to the lower slot (the contract splits the exact amount itself).
+ */
+const sharesOfTick = (armies: { explorer_id: bigint; troops: { count: bigint } }[]): Map<bigint, number> => {
+  const total = armies.reduce((sum, army) => sum + army.troops.count, 0n);
+  const exact = armies.map((army) => ({ id: army.explorer_id, tenths: (army.troops.count * 100_000n) / total }));
+  const whole = exact.map(({ id, tenths }) => ({ id, share: Number(tenths / 1000n), rest: tenths % 1000n }));
+  let left = 100 - whole.reduce((sum, { share }) => sum + share, 0);
+  for (const each of whole.toSorted((a, b) => (a.rest === b.rest ? 0 : a.rest > b.rest ? -1 : 1))) {
+    if (left <= 0) break;
+    each.share += 1;
+    left -= 1;
+  }
+  return new Map(whole.map(({ id, share }) => [id, share]));
+};
 
 const besideSite = (from: { col: number; row: number }, site: { col: number; row: number }): boolean =>
   getNeighborHexes(site.col, site.row).some(({ col, row }) => col === from.col && row === from.row);

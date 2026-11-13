@@ -3018,7 +3018,8 @@ export default class WorldmapScene extends WarpTravel {
       armySelected: this.worldSpatialProjection.getArmy(selectedEntityId) !== undefined,
       site:
         (structure !== undefined && this.isStandingExpeditionSite(structure.id)) ||
-        this.usableSiteAt(hexCoords) !== null,
+        this.usableSiteAt(hexCoords) !== null ||
+        (path !== undefined && ActionPaths.getActionType(path) === ActionType.DeepSite),
       // An army of the player's standing on the spire is selected by the tap, as on any site.
       ownSpire: this.isArmysSpire(selectedEntityId, hexCoords) && !this.holdsOwnSelectable(hexCoords),
       onPhone: layoutNow() === "phone",

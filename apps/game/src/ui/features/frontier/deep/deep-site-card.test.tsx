@@ -182,7 +182,9 @@ describe("a Deep site's card", () => {
     const { store, actor } = deepDay({ foundation: 10_000n * PRECISION, quarry: 7_500n * PRECISION, altar: 0n });
     const beside = read(store, TILES.foundation, actor);
     expect(beside.guard).toEqual({ kind: "beast", troops: 10_000 });
-    expect(beside.step).toEqual({ kind: "attack" });
+    // The attack's stamina, the game's own rule, which the card holds against what the army has.
+    const need = store.require("SliceRules", { game_id: 1 }).troop_stamina_config.stamina_attack_req;
+    expect(beside.step).toEqual({ kind: "attack", stamina: need });
     expect(beside.inReach).toBe(true);
     const away = read(store, TILES.quarry, actor);
     expect(away.guard).toEqual({ kind: "beast", troops: 7_500 });
@@ -286,5 +288,127 @@ describe("a Deep site's card", () => {
       }),
     );
     act(() => root.unmount());
+  });
+
+  it("holds Attack for an army short of the attack's stamina, says why, and sends nothing (review 18)", async () => {
+    (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
+    vi.spyOn(configManager, "getActiveGameId").mockReturnValue(1);
+    const { store } = deepDay({ foundation: 10_000n * PRECISION, quarry: 0n, altar: 0n });
+    const army = store.require("ExplorerTroops", { game_id: 1, explorer_id: 201 });
+    store.applyFacts([
+      { model: "ExplorerTroops", key: "0x74", value: { ...army, troops: { ...army.troops, stamina: { Slot: 0 } } } },
+      {
+        model: "ArmySlot",
+        key: "0x9",
+        value: {
+          game_id: 1,
+          structure_id: 7,
+          epoch: 0n,
+          slot: 0,
+          explorer_id: 201n,
+          stamina: { amount: 0n, settled_at: BigInt(NOW), remainder: 0 },
+        },
+      },
+    ] as never);
+    expect(store.require("ArmySlot", { game_id: 1, structure_id: 7, epoch: 0n, slot: 0 }).stamina.amount).toBe(0n);
+    useAccountStore.setState({ account: { address: "0x111" } as never });
+    const attack = vi.fn(() => Promise.resolve({ transaction_hash: "0x1" }));
+    const tile = {
+      hexCoords: { ...TILES.foundation, alt: false },
+      occupierType: TileOccupier.DeepSite,
+    } as unknown as TileSpatialRenderable;
+    const host = document.createElement("div");
+    const root = createRoot(host);
+    try {
+      act(() => useUIStore.getState().selectOnMap({ kind: "army", entityId: 201, tile: null }));
+      act(() =>
+        root.render(
+          <GameProvider
+            value={{ store, systemCalls: { attack_explorer_vs_guard: attack } } as unknown as GameClientSetup}
+            account={{ address: "0x111", account: { address: "0x111" } } as never}
+          >
+            <DeepSiteCard tile={tile} onClose={() => {}} />
+          </GameProvider>,
+        ),
+      );
+      const button = [...host.querySelectorAll("button")].find((button) => button.textContent === "Attack");
+      expect(button?.disabled).toBe(true);
+      await act(async () => button?.click());
+      expect(attack).not.toHaveBeenCalled();
+    } finally {
+      act(() => root.unmount());
+    }
+  });
+
+  it("sends Attack for an army that holds the attack's stamina, and holds it with the reason for one that does not", async () => {
+    (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
+    vi.spyOn(configManager, "getActiveGameId").mockReturnValue(1);
+    const render = async (stamina: bigint) => {
+      const { store } = deepDay({ foundation: 10_000n * PRECISION, quarry: 0n, altar: 0n });
+      const army = store.require("ExplorerTroops", { game_id: 1, explorer_id: 201 });
+      const troops = army.troops as unknown as { stamina: { Inline: { amount: bigint } } };
+      store.applyFacts([
+        {
+          model: "ExplorerTroops",
+          key: "0x74",
+          value: {
+            ...army,
+            troops: { ...army.troops, stamina: { Inline: { ...troops.stamina.Inline, amount: stamina } } },
+          },
+        },
+      ] as never);
+      useAccountStore.setState({ account: { address: "0x111" } as never });
+      const attack = vi.fn(() => Promise.resolve({ transaction_hash: "0x1" }));
+      const tile = {
+        hexCoords: { ...TILES.foundation, alt: false },
+        occupierType: TileOccupier.DeepSite,
+      } as unknown as TileSpatialRenderable;
+      const host = document.createElement("div");
+      const root = createRoot(host);
+      act(() => useUIStore.getState().selectOnMap({ kind: "army", entityId: 201, tile: null }));
+      act(() =>
+        root.render(
+          <GameProvider
+            value={{ store, systemCalls: { attack_explorer_vs_guard: attack } } as unknown as GameClientSetup}
+            account={{ address: "0x111", account: { address: "0x111" } } as never}
+          >
+            <DeepSiteCard tile={tile} onClose={() => {}} />
+          </GameProvider>,
+        ),
+      );
+      const button = [...host.querySelectorAll("button")].find((each) => each.textContent === "Attack");
+      await act(async () => button?.click());
+      const text = host.textContent ?? "";
+      act(() => root.unmount());
+      return { disabled: button?.disabled, attack, text };
+    };
+    // 100 stamina against the attack's 50: Attack goes, for army 201 on the Foundation.
+    const able = await render(100n);
+    expect(able.disabled).toBe(false);
+    expect(able.attack).toHaveBeenCalledWith(
+      expect.objectContaining({ explorer_id: 201, structure_id: SITE_ID.foundation }),
+    );
+    // 10 of the 50: Attack is held, and the card says the stamina it needs.
+    const short = await render(10n);
+    expect(short.disabled).toBe(true);
+    expect(short.attack).not.toHaveBeenCalled();
+    expect(short.text).toMatch(/stamina/i);
+  });
+
+  it("rounds the guards' shares of a tick so they always make 100, on unequal splits too (review 18)", () => {
+    const shares = (troops: bigint[]) => {
+      const { store, guard, actor } = deepDay({ foundation: 0n, quarry: 0n, altar: 0n });
+      troops.forEach((count, slot) =>
+        guard(8 + slot, `0x${8 + slot}00`, 1, 301 + slot, SITE_ID.foundation, slot, count),
+      );
+      const plan = read(store, TILES.foundation, actor);
+      if (plan.guard.kind !== "held") throw new Error("not held");
+      return plan.guard.slots.toSorted((a, b) => a.slot - b.slot).map(({ share }) => share);
+    };
+    // 1 and 199: 0.5% and 99.5%, the percent left to the first, never 1% and 100%.
+    expect(shares([1n, 199n])).toEqual([1, 99]);
+    // Three equal guards: 33.3% each, the percent left to the first.
+    expect(shares([1_000n, 1_000n, 1_000n])).toEqual([34, 33, 33]);
+    expect(shares([3_000n, 1_000n])).toEqual([75, 25]);
   });
 });

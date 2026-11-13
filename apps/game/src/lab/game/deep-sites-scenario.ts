@@ -1,6 +1,6 @@
 import { readExpeditionRules, seasonDay } from "@bibliothecadao/eternum";
 import type { NativeFactStore } from "@bibliothecadao/eternum/game-client";
-import { aspects, deepSites, StructureType, TileOccupier } from "@bibliothecadao/types";
+import { aspects, deepSites, getNeighborHexes, StructureType, TileOccupier } from "@bibliothecadao/types";
 import { nativeRuleConstants } from "../../../../../contracts/l3/world-native/schema/client.gen";
 import { frontierSeasonOnePreset } from "../../../../../config/source/frontier/season-one";
 import { ARMY_DAY_KEY } from "@/ui/features/frontier/sites/site-fixture";
@@ -8,7 +8,6 @@ import { SPIRE_ARMY, SPIRE_DAY_NOW } from "@/ui/features/frontier/spire-fixture"
 
 import { DEEP_SCALE_HYPERSTRUCTURE, ETHEREAL_DEPTH_SCENARIOS, etherealArmyTileKey } from "./ethereal-depths-scenario";
 import { type LabCommand, type LabFact, type LabScenario, wire } from "./lab-chain";
-import { besideOnOpenLand } from "./spire-scenario";
 
 const PRECISION = 1_000_000_000n;
 /** The depth proof's scale hyperstructure's rows (ethereal-depths-scenario.ts), which this game removes. */
@@ -146,12 +145,24 @@ const deepRules = (): LabFact[] => {
   ];
 };
 
-/** The Foundation beside the army; the Quarry and the Altar a few tiles off on the Deep's explored ground. */
-const siteTiles = (store: NativeFactStore, arrival: { col: number; row: number }) => ({
-  foundation: besideOnOpenLand(store, arrival),
-  quarry: { col: arrival.col + 4, row: arrival.row },
-  altar: { col: arrival.col - 4, row: arrival.row },
-});
+/**
+ * The Foundation and the Altar beside the army, so a tap reaches each from where it stands (the Altar's a rival's, which
+ * the card refuses); the Quarry a few tiles off on the Deep's explored ground.
+ */
+const siteTiles = (store: NativeFactStore, arrival: { col: number; row: number }) => {
+  const taken = new Set([...store.entries("TileOccupancy")].map(([, row]) => `${row.col},${row.row}`));
+  const [foundation, altar] = getNeighborHexes(arrival.col, arrival.row).filter(
+    (hex) =>
+      !taken.has(`${hex.col},${hex.row}`) &&
+      store.get("TileOpt", { game_id: 1, alt: false, col: hex.col, row: hex.row }),
+  );
+  if (!foundation || !altar) throw new Error("The lab finds no two open tiles beside the army");
+  return {
+    foundation: { col: foundation.col, row: foundation.row },
+    quarry: { col: arrival.col + 4, row: arrival.row },
+    altar: { col: altar.col, row: altar.row },
+  };
+};
 
 /** A site today: its row, its tile, and its beast: 10,000 at the Quarry, beaten at the two held sites. */
 const siteFacts = (

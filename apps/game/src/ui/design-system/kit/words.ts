@@ -554,6 +554,8 @@ export const DEEP_WORDS = {
   full: "All 4 slots are taken",
   rival: "Another Aspect holds it",
   otherDay: "Only today's armies can fight here",
+  noTroops: "This army has no troops left",
+  readingStamina: "Reading the army's stamina…",
   reading: "Reading the site…",
   /** The map's order on a Deep site beside the army: its card then offers the site's own verb. */
   order: "Open the site",
