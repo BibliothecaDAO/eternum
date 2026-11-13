@@ -71,7 +71,7 @@ const chestsScenario = ({ researched, claimed }: { researched: bigint; claimed: 
     ...claimed.map(receipt),
     {
       model: "ExpeditionDiscovery",
-      key: "0x1c9",
+      key: store.wireKeyOf("ExpeditionDiscovery", { game_id: 1, structure_id: HOME, epoch: BigInt(today) })!,
       value: wire({
         game_id: 1,
         structure_id: HOME,

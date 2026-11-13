@@ -1,6 +1,6 @@
 import { shipmentTravelSeconds } from "@bibliothecadao/eternum";
 import type { NativeFactStore, NativeRows } from "@bibliothecadao/eternum/game-client";
-import { RESOURCE_PRECISION, ResourcesIds } from "@bibliothecadao/types";
+import { RESOURCE_PRECISION, ResourcesIds, TileOccupier } from "@bibliothecadao/types";
 
 import { nativeArrivalConstants } from "../../../../../contracts/l3/world-native/schema/client.gen";
 import { blitzPreset } from "../../../../../config/source/blitz/native";
@@ -19,7 +19,14 @@ export const economyScenario = (): LabScenario => {
   const registry = store.require("GameRegistry", { game_id: 1 });
   const rules = store.require("SliceRules", { game_id: 1 });
   const home = store.require("Structure", { game_id: 1, entity_id: HOME });
-  const at = store.entityOccupancy(1, Number(HOME))!;
+  const at = {
+    game_id: 1,
+    ...scenario.opensOn,
+    alt: false,
+    entity_id: HOME,
+    category: TileOccupier.RealmRegularLevel1,
+    is_structure: true,
+  };
   store.applyFacts([
     row("GameRegistry", store.wireKeyOf("GameRegistry", { game_id: 1 })!, { ...registry, preset_id: blitzPreset.id }),
     row("SliceRules", store.wireKeyOf("SliceRules", { game_id: 1 })!, {
@@ -28,6 +35,7 @@ export const economyScenario = (): LabScenario => {
       mode_rules: blitzPreset.modeRules,
       command_mask: blitzPreset.commandMask,
     }),
+    row("TileOccupancy", "0xe07", at),
     row("Structure", "0xe08", { ...home, entity_id: DESTINATION, metadata: { ...home.metadata, realm_id: 2 } }),
     row("TileOccupancy", "0xe09", { ...at, col: at.col + 2, entity_id: DESTINATION }),
     row("ResourceWeight", "0xe0a", { game_id: 1, entity_id: DESTINATION, capacity: 100_000n * PRECISION, weight: 0n }),
