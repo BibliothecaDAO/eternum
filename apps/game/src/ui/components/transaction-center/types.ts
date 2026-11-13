@@ -16,6 +16,7 @@ const TX_MESSAGES: Record<TransactionType, string> = {
   [TransactionType.ENTER_DEPTH]: "Army went deeper",
   [TransactionType.RESEARCH]: "Research started",
   [TransactionType.SPEND_SKILL_POINT]: "Upgrade bought",
+  [TransactionType.CLAIM_DAILY_QUEST]: "Quest reward collected",
   [TransactionType.REFILL_STAMINA]: "Stamina refilled",
   [TransactionType.WITHDRAW_LORDS]: "LORDS withdrawn",
   [TransactionType.EXPLORER_CREATE]: "Army raised",

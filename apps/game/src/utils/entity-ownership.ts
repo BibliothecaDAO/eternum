@@ -1,6 +1,6 @@
 import { ContractAddress } from "@bibliothecadao/types";
 import { configManager, isViewerOwner, nativeGameModeOf } from "@bibliothecadao/eternum";
-import type { GameRef, NativeFactStore } from "@bibliothecadao/eternum/game-client";
+import type { GameRef, NativeFactChange, NativeFactStore, NativeModelName } from "@bibliothecadao/eternum/game-client";
 import { gameKey, getActiveGame } from "@/runtime/world/store";
 import { seatSide, type SeatSide, type Side } from "@/tokens";
 import { useUIStore } from "@/hooks/store/use-ui-store";
@@ -32,9 +32,11 @@ export const isEntityOwnedByAccount = (
 };
 
 /**
- * Whether two players are allies: tribe members, in Eternum only (owner, 2026-10-21: "no allies in frontier/blitz but in
- * eternum yes, tribe members"). The chain lets a tribe form in any mode (guilds.cairo checks no mode), so the mode is read
- * here, in the one rule every map label, token and minimap mark takes its side from; elsewhere a tribe makes no ally.
+ * Whether two players are allies, the one rule every map label, token and minimap mark takes its side from: members of
+ * one Aspect, in a game whose preset groups the Orders into Aspects (its AspectRules row, docs/plans/frontier-season-1.md:
+ * "allies can't attack each other"); tribe members, in Eternum only (owner, 2026-10-21: "no allies in frontier/blitz but
+ * in eternum yes, tribe members"). The chain lets a tribe form in any mode (guilds.cairo checks no mode), so the mode is
+ * read here; elsewhere a tribe makes no ally.
  */
 export function arePlayersAllied(
   store: NativeFactStore | null | undefined,
@@ -44,15 +46,47 @@ export function arePlayersAllied(
   const player = toAddress(playerAddress);
   const owner = toAddress(ownerAddress);
   if (!store || !player || !owner || player === owner) return false;
+  const gameId = configManager.getActiveGameId();
+  if (store.get("AspectRules", { game_id: gameId })) {
+    const playerAspect = aspectOfPlayer(store, gameId, player);
+    return playerAspect !== null && aspectOfPlayer(store, gameId, owner) === playerAspect;
+  }
   if (nativeGameModeOf(configManager.getPresetId()) !== "eternum") return false;
-  const playerGuild = store.get("GuildMember", { game_id: configManager.getActiveGameId(), actor: player })?.guild_id;
+  const playerGuild = store.get("GuildMember", { game_id: gameId, actor: player })?.guild_id;
   if (!playerGuild) return false;
-  return store.get("GuildMember", { game_id: configManager.getActiveGameId(), actor: owner })?.guild_id === playerGuild;
+  return store.get("GuildMember", { game_id: gameId, actor: owner })?.guild_id === playerGuild;
 }
 
 /**
- * How a playing viewer stands to a thing, the one rule the map's labels and the minimap take its side from: theirs, a
- * tribe member's (`arePlayersAllied`), nobody's (owner zero) or another player's.
+ * The facts `arePlayersAllied` reads. A change to any of them in the active game may turn an ally into an enemy or back,
+ * so every surface coloured by side redraws on them (`isAllianceChange`): the map's armies and structures, the minimap.
+ */
+export const ALLIANCE_MODELS = [
+  "GuildMember",
+  "AspectRules",
+  "HomeAspect",
+] as const satisfies readonly NativeModelName[];
+
+/** Whether a fact change in the active game may change who is allied with whom. */
+export const isAllianceChange = (change: NativeFactChange): boolean => {
+  if (!(ALLIANCE_MODELS as readonly string[]).includes(change.model)) return false;
+  // Every alliance model is keyed by its game.
+  const row = (change.current ?? change.previous) as { game_id: number } | undefined;
+  return row?.game_id === configManager.getActiveGameId();
+};
+
+/** The Aspect a player's home joined (HomeAspect); null while no home of theirs is known to have joined one. */
+const aspectOfPlayer = (store: NativeFactStore, gameId: number, player: bigint): number | null => {
+  for (const structure of store.structuresOwnedBy(gameId, player)) {
+    const joined = store.get("HomeAspect", { game_id: gameId, home: structure.entity_id });
+    if (joined) return joined.aspect;
+  }
+  return null;
+};
+
+/**
+ * How a playing viewer stands to a thing, the one rule the map's labels and the minimap take its side from: theirs, an
+ * ally's (`arePlayersAllied`: an Aspect mate's or a tribe member's), nobody's (owner zero) or another player's.
  */
 export const sideOf = (thing: { isMine: boolean; isAlly?: boolean; owner: { address: bigint } }): Side =>
   thing.isMine ? "own" : thing.isAlly ? "ally" : thing.owner.address === 0n ? "neutral" : "enemy";

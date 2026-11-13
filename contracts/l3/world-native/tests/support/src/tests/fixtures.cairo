@@ -30,6 +30,9 @@ pub mod TroopFixture {
         TroopEvent: TroopState::Event,
     }
     #[abi(embed_v0)]
+    impl TerrainDerivation = crate::logic::terrain::TerrainDerivation<ContractState>;
+
+    #[abi(embed_v0)]
     impl Fixture of super::IFixture<ContractState> {
         fn destroy(ref self: ContractState, key: ExplorerKey) {
             let coord = crate::logic::map::entity_coord(

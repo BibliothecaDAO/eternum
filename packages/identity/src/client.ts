@@ -9,6 +9,7 @@ import {
 } from "@bibliothecadao/notifications";
 import { SOCIAL_PROVIDERS, type SocialProvider } from "./account-rules";
 import { TICKET_TIERS } from "./campaigns";
+import { parseOpeningRecord, type OpeningChange, type OpeningRecord } from "./opening";
 import { SHARE_CARD, SHARE_KINDS, type ShareChannel, type ShareKind } from "./shares";
 import type { SiwsTypedData } from "./siws";
 import { buildSiwsMessage, payoutWalletStatement } from "./siws";
@@ -173,7 +174,10 @@ const campaignReferralSchema = Schema.Struct({
 });
 export type CampaignReferral = typeof campaignReferralSchema.Type;
 
-/** A moment a player shares, as its link records it: its kind, the game it was played in, and which one (a day). */
+/**
+ * A moment a player shares, as its link records it: its kind, the game it was played in, and which one (the day, or
+ * the Aspect an invite names).
+ */
 export interface ShareMoment {
   kind: ShareKind;
   chainId: string;
@@ -187,6 +191,17 @@ const openedShareSchema = Schema.Struct({
   name: Schema.NullOr(Schema.String),
 });
 export type OpenedShare = typeof openedShareSchema.Type;
+/** The link a new account came by, as that account reads it: its kind, its game and its moment; null for none. */
+const joinedShareSchema = Schema.NullOr(
+  Schema.Struct({
+    kind: Schema.Literals(SHARE_KINDS),
+    chainId: Schema.String,
+    gameId: Schema.Number,
+    moment: Schema.Number,
+    name: Schema.NullOr(Schema.String),
+  }),
+);
+export type JoinedShare = typeof joinedShareSchema.Type;
 /**
  * What the account's shared links brought, told to that account only: links made, posted, opened by other browsers,
  * the new accounts they brought and how many of those founded a realm and cleared a site.
@@ -488,6 +503,13 @@ export const createIdentityClient = ({ apiUrl, fetch = globalThis.fetch }: Ident
     return readJson(response, parseNotificationPreferences);
   };
 
+  /** The moments of Frontier's opening interface the account reached, and its Show everything. */
+  const getInterfaceOpening = async (): Promise<OpeningRecord> =>
+    readJson(await request("/interface/opening", { method: "GET", cache: "no-store" }), parseOpeningRecord);
+  /** Adds moments to those kept (and sets Show everything when named); answers with everything kept. */
+  const saveInterfaceOpening = async (change: OpeningChange): Promise<OpeningRecord> =>
+    readJson(await request("/interface/opening", { method: "POST", body: JSON.stringify(change) }), parseOpeningRecord);
+
   const getBuildOrders = async (): Promise<SavedBuildOrders> =>
     readJson(await request("/build-orders", { method: "GET", cache: "no-store" }), decode(savedBuildOrdersSchema));
   /** Saves over the revision it read; a refused order comes back with the game's reason, in the player's words. */
@@ -570,6 +592,10 @@ export const createIdentityClient = ({ apiUrl, fetch = globalThis.fetch }: Ident
       decode(openedShareSchema),
     );
 
+  /** The link this account came by (the first another player's that its browser opened before it was made); null for none. */
+  const joinedShare = async (): Promise<JoinedShare> =>
+    readJson(await request("/shares/joined", { method: "GET", cache: "no-store" }), decode(joinedShareSchema));
+
   /** What the account's shared links brought, settled as it is read. */
   const shareTally = async (): Promise<ShareTally> =>
     readJson(await request("/shares", { method: "GET", cache: "no-store" }), decode(shareTallySchema));
@@ -621,6 +647,8 @@ export const createIdentityClient = ({ apiUrl, fetch = globalThis.fetch }: Ident
     saveNotificationPreferences,
     getBuildOrders,
     saveBuildOrders,
+    getInterfaceOpening,
+    saveInterfaceOpening,
     redeemCampaignTicket,
     campaignReferral,
     campaignReferrer,
@@ -628,6 +656,7 @@ export const createIdentityClient = ({ apiUrl, fetch = globalThis.fetch }: Ident
     sharePosted,
     uploadShareCard,
     openShare,
+    joinedShare,
     shareTally,
     getPushConfiguration: () => pushRequest("config", decode(pushConfigurationSchema)),
     registerPushSubscription: (input: PushRegistration) =>

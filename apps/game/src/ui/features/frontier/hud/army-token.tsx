@@ -15,6 +15,7 @@ import {
 import type { EtherealLayer } from "@bibliothecadao/eternum";
 
 import { reachMark } from "../depth-art";
+import { useOpens } from "../opening/use-opening";
 
 // A token grows past its height only for the last hour's Homecoming line. Its parts stack from the top, so every
 // token's portrait or ring, and the stamina bar under it, stand at one height along the dock.
@@ -129,18 +130,21 @@ export const ArmyToken = ({
   /** Absent on a visit: the token is shown, never picked. */
   onPick?: () => void;
 }) => {
+  const showsXp = useOpens("army-xp");
   const body = (
     <>
       <span data-fly-target={flyTarget} className="relative size-10 shrink-0">
         <Portrait art={art} />
-        <span
-          role="img"
-          aria-label={`${XP} ${formatAmount(xp)}`}
-          {...rankedTip(xpLine(xp, xpGoal))}
-          className="absolute -bottom-1 -right-2.5 flex h-5 min-w-5 items-center justify-center rounded-full border border-hud-line bg-hud-dark px-1 text-hud-body leading-none text-hud-gold tabular-nums"
-        >
-          {formatAmount(xp)}
-        </span>
+        {showsXp && (
+          <span
+            role="img"
+            aria-label={`${XP} ${formatAmount(xp)}`}
+            {...rankedTip(xpLine(xp, xpGoal))}
+            className="absolute -bottom-1 -right-2.5 flex h-5 min-w-5 items-center justify-center rounded-full border border-hud-line bg-hud-dark px-1 text-hud-body leading-none text-hud-gold tabular-nums"
+          >
+            {formatAmount(xp)}
+          </span>
+        )}
         {number !== undefined && (
           <span className="absolute -left-2.5 -top-1.5 flex h-5 min-w-5 items-center justify-center rounded-full border border-hud-line-strong bg-hud-dark px-1 text-hud-strong leading-none text-hud-ink tabular-nums">
             {number}

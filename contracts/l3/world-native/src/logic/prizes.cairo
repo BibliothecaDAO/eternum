@@ -27,12 +27,9 @@ pub mod PrizesLogic {
     #[abi(embed_v0)]
     impl Lords = LordsState::LordsImpl<ContractState>;
     impl LordsInternal = LordsState::InternalImpl<ContractState>;
-    component!(path: crate::logic::banes::BaneState, storage: banes, event: BaneEvent);
     #[storage]
     #[allow(starknet::colliding_storage_paths)]
     struct Storage {
-        #[substorage(v0)]
-        banes: crate::logic::banes::BaneState::Storage,
         #[substorage(v0)]
         relics: LordsState::Storage,
         #[substorage(v0)]
@@ -45,7 +42,6 @@ pub mod PrizesLogic {
     #[event]
     #[derive(Drop, starknet::Event)]
     enum Event {
-        BaneEvent: crate::logic::banes::BaneState::Event,
         RelicEvent: LordsState::Event,
         ReleaseEvent: ReleaseState::Event,
         BlitzEvent: BlitzResultState::Event,

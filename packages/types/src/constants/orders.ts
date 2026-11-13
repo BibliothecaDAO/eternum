@@ -128,3 +128,10 @@ export const aspects = [
   { id: 3, name: "Chaos" },
   { id: 4, name: "Guile" },
 ] as const satisfies readonly { id: AspectId; name: string }[];
+
+/** An Aspect's name by its id; an id outside the catalog is a fault, never a blank. */
+export const aspectName = (aspect: number): string => {
+  const named = aspects.find(({ id }) => id === aspect);
+  if (!named) throw new Error(`Unknown Aspect ${aspect}`);
+  return named.name;
+};

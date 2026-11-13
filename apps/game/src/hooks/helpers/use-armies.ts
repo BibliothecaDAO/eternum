@@ -23,11 +23,8 @@ export const useExplorersByStructure = ({ structureEntityId }: { structureEntity
     "TileOccupancy",
   ]);
   const names = usePlayerNames();
-  const timestamp = useCurrentDefaultTick();
-  return useMemo(
-    () => readExplorers(facts.store, structureEntityId, BigInt(account.address), names.text),
-    [facts, structureEntityId, account.address, names, timestamp],
-  );
+  useCurrentDefaultTick();
+  return readExplorers(facts.store, structureEntityId, BigInt(account.address), names.text);
 };
 
 /** Army counts change on the confirmed tick even when no row is written. */

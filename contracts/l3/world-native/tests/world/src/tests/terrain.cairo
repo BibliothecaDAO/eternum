@@ -99,7 +99,7 @@ fn home_ring_materializes_once_each_day_and_all_six_deployments_work() {
         interact_with_state(
             d.games,
             || {
-                crate::logic::terrain::raise_expedition_home(crate::geometry::tile_key(game_id, center), context);
+                crate::logic::map::raise_expedition_home(crate::geometry::tile_key(game_id, center), context);
             },
         );
         assert_eq!(before, ring_reward_balances(resources, game_id));
@@ -124,7 +124,7 @@ fn home_ring_materializes_once_each_day_and_all_six_deployments_work() {
         interact_with_state(
             d.games,
             || {
-                crate::logic::terrain::raise_expedition_home(crate::geometry::tile_key(game_id, center), context);
+                crate::logic::map::raise_expedition_home(crate::geometry::tile_key(game_id, center), context);
             },
         );
         assert_eq!(repeated.get_events().emitted_by(d.games).events.len(), 0);

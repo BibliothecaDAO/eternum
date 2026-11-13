@@ -31,7 +31,7 @@ import { spendSignInCode } from "./wallet-changes";
  * | `notification_preferences`, `notification_push_subscriptions`      | deleted                                        |
  * | `realms_accounts`, `device_sessions`, `revoked_devices`,           | deleted: no device can be approved again       |
  * | `account_browsers`                                                 |                                                |
- * | `build_order_books`, `news_email_sends`                            | deleted                                        |
+ * | `build_order_books`, `news_email_sends`, `interface_openings`      | deleted                                        |
  * | `campaign_referrers`, `campaign_referrals` (as friend or referrer) | deleted; an inviter keeps what it earned       |
  * | `default_wallets`, `wallet_recoveries`, `sponsored_executions`     | deleted: the wallet stays on chain, owned by   |
  * |                                                                    | the player's passkey; email recovery ends      |
@@ -119,6 +119,7 @@ const DELETED_BY_REALMS_ID = [
   ["revoked_devices", "realmsId"],
   ["account_browsers", "realmsId"],
   ["build_order_books", "owner"],
+  ["interface_openings", "owner"],
   ["news_email_sends", "realmsId"],
   ["campaign_referrers", "referrer"],
   ["campaign_referrals", "friend"],

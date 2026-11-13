@@ -1,17 +1,28 @@
-import { configManager, setBlockTimestampSource } from "@bibliothecadao/eternum";
+import { configManager, currentArmy, setBlockTimestampSource } from "@bibliothecadao/eternum";
 import { act } from "react";
 import { createRoot } from "react-dom/client";
 import { afterEach, expect, it, vi } from "vitest";
 import { NativeFactStore } from "@bibliothecadao/eternum/game-client";
 import { useBlockTimestampStore } from "@/hooks/store/use-block-timestamp-store";
 import { useCurrentArmy } from "./use-armies";
+import { useFactView } from "@/hooks/use-fact-view";
+import { useChainTimeStore } from "@/hooks/store/use-chain-time-store";
+import type { FactView } from "@/sync/fact-views";
 import preset from "../../../../../contracts/l3/world-native/tests/fixtures/current-presets/preset-3.json";
 import explorer from "../../../../../contracts/l3/world-native/schema/fixtures/row-set.json";
 
 const context = vi.hoisted(() => ({ store: null as unknown }));
 vi.mock("@/hooks/context/game-context", () => ({ useGame: () => ({ setup: { store: context.store } }) }));
 vi.mock("@/hooks/use-player-profile", () => ({ usePlayerNames: () => ({ text: () => undefined }) }));
-afterEach(() => setBlockTimestampSource(null));
+afterEach(() => {
+  setBlockTimestampSource(null);
+  useChainTimeStore.setState({ executionFloorMs: null });
+});
+
+const deepArmyCount: FactView<bigint> = {
+  models: ["ExplorerTroops", "DeepArmy", "DeepRules", "ArmyDay", "SliceRules", "GameRegistry", "SettlementRules"],
+  read: (store) => currentArmy(store, store.require("ExplorerTroops", { game_id: 1, explorer_id: 81 })).troops.count,
+};
 
 it("shows 500, 300, 100 and zero troops on confirmed ticks without writing a troop row", async () => {
   const store = new NativeFactStore();
@@ -82,14 +93,21 @@ it("shows 500, 300, 100 and zero troops on confirmed ticks without writing a tro
   configManager.setStore(store);
   setBlockTimestampSource(() => timestamp);
   useBlockTimestampStore.getState().tick();
+  useChainTimeStore.setState({ executionFloorMs: timestamp * 1000 });
   (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
   const container = document.createElement("div");
   const root = createRoot(container);
   function Army() {
-    return <span>{String(useCurrentArmy({ game_id: 1, explorer_id: 81 })?.troops.count)}</span>;
+    const army = useCurrentArmy({ game_id: 1, explorer_id: 81 });
+    const viewedCount = useFactView(deepArmyCount);
+    return (
+      <span>
+        {String(army?.troops.count)}:{String(viewedCount)}
+      </span>
+    );
   }
   await act(async () => root.render(<Army />));
-  expect(container.textContent).toBe("500");
+  expect(container.textContent).toBe("500:500");
   try {
     for (const [time, count] of [
       [360, 300n],
@@ -99,8 +117,9 @@ it("shows 500, 300, 100 and zero troops on confirmed ticks without writing a tro
       await act(async () => {
         timestamp = time;
         useBlockTimestampStore.getState().tick();
+        useChainTimeStore.setState({ executionFloorMs: timestamp * 1000 });
       });
-      expect(container.textContent).toBe(String(count));
+      expect(container.textContent).toBe(`${count}:${count}`);
       expect(store.require("ExplorerTroops", { game_id: 1, explorer_id: 81 }).troops.count).toBe(500n);
     }
   } finally {

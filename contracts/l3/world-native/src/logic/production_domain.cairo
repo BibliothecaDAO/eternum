@@ -29,16 +29,6 @@ pub mod ProductionLogic {
     impl ArrivalInternal = ArrivalState::InternalImpl<ContractState>;
     impl ProductionInternal = ProductionState::InternalImpl<ContractState>;
 
-    component!(path: crate::logic::home_grants::HomeGrantState, storage: home_grants, event: AdministrationEvent);
-    #[abi(embed_v0)]
-    impl HomeGrants = crate::logic::home_grants::HomeGrantState::HomeGrantsImpl<ContractState>;
-    impl HomeGrantsInternal = crate::logic::home_grants::HomeGrantState::InternalImpl<ContractState>;
-    component!(path: crate::logic::quests::QuestState, storage: quests, event: QuestEvent);
-    #[abi(embed_v0)]
-    impl DailyQuest = crate::logic::quests::QuestState::DailyQuestImpl<ContractState>;
-    #[abi(embed_v0)]
-    impl QuestProgress = crate::logic::quests::QuestState::ProgressImpl<ContractState>;
-
     #[abi(embed_v0)]
     impl PresetResources of crate::presets::IPresetResources<ContractState> {
         fn store_resource_preset(
@@ -60,10 +50,6 @@ pub mod ProductionLogic {
     #[allow(starknet::colliding_storage_paths)]
     struct Storage {
         #[substorage(v0)]
-        home_grants: crate::logic::home_grants::HomeGrantState::Storage,
-        #[substorage(v0)]
-        quests: crate::logic::quests::QuestState::Storage,
-        #[substorage(v0)]
         withdrawals: WithdrawalState::Storage,
         #[substorage(v0)]
         bridge: BridgeState::Storage,
@@ -81,8 +67,6 @@ pub mod ProductionLogic {
     #[event]
     #[derive(Drop, starknet::Event)]
     enum Event {
-        AdministrationEvent: crate::logic::home_grants::HomeGrantState::Event,
-        QuestEvent: crate::logic::quests::QuestState::Event,
         WithdrawalEvent: WithdrawalState::Event,
         BridgeEvent: BridgeState::Event,
         MineEvent: crate::logic::mines::MineState::Event,

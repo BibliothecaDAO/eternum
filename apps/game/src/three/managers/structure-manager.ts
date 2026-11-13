@@ -28,7 +28,7 @@ import { resolveStructureRotationY } from "../structures/structure-orientation";
 import { SettlementModel } from "../structures/settlement-model";
 import { resolveSettlementRelationship } from "../structures/settlement-appearance";
 import { RiftModelPath, isRealmModelPath, isSettlementModelPath } from "../constants/scene-constants";
-import { arePlayersAllied, onSidesChanged, watchedSide } from "@/utils/entity-ownership";
+import { arePlayersAllied, isAllianceChange, onSidesChanged, watchedSide } from "@/utils/entity-ownership";
 import { accountAddress, useAccountStore } from "@/hooks/store/use-account-store";
 import { useChainTimeStore } from "@/hooks/store/use-chain-time-store";
 import { getGameModeConfig } from "@/config/game-modes";
@@ -438,8 +438,21 @@ export class StructureManager {
     return touchedEntityIds;
   }
 
+  /** Redraws every structure's side when who is allied may have changed: a tribe's membership, or an Aspect's. */
+  private subscribeToAlliances(): void {
+    if (!this.store) return;
+    this.storeUnsubscribes.push(
+      this.store.subscribe((changes) => {
+        if (!changes.some(isAllianceChange)) return;
+        this.structureInfoCache.clear();
+        this.requestVisibleStructuresRefresh({ refreshExisting: true });
+      }),
+    );
+  }
+
   private subscribeToStructurePresentationComponents(): void {
     if (!this.store) return;
+    this.subscribeToAlliances();
     // Whose a structure is may read otherwise (the seats arrive, the viewer starts watching): every plate says it again.
     this.storeUnsubscribes.push(
       onSidesChanged(() => {
@@ -454,10 +467,6 @@ export class StructureManager {
         const touched = new Set<number>();
         let refreshAll = changes.length === 0;
         for (const change of changes) {
-          if (change.model === "GuildMember") {
-            if ((change.current ?? change.previous)?.game_id === configManager.getActiveGameId()) refreshAll = true;
-            continue;
-          }
           if (change.model === "CampaignHome") {
             const home = change.current ?? change.previous;
             if (home?.game_id === configManager.getActiveGameId()) touched.add(safeInteger(home.home));

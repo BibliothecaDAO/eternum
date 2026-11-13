@@ -4,6 +4,7 @@ import type { ExpeditionRules } from "@bibliothecadao/eternum";
 import type { NativeRows } from "@bibliothecadao/eternum/game-client";
 import type { ComponentProps } from "react";
 
+import { useOpens } from "../opening/use-opening";
 import { useRealmStores } from "../realm-stores";
 import { FRONTIER_STORES, STORE_KINDS, type StoreKind } from "../stores";
 import { dayClock } from "./day-clock";
@@ -22,8 +23,8 @@ export const FrontierStrip = ({
 }: {
   rules: ExpeditionRules;
   realm: NativeRows["Structure"] | null;
-  /** Today, the day's report, from a tap on the day's dial. */
-  onOpenDay: () => void;
+  /** Today, the day's report, from a tap on the day's dial; none before Today opens. */
+  onOpenDay?: () => void;
   /** The stores whose plate opens their card; absent while visiting. */
   storeCards?: ComponentProps<typeof StatusStrip>["storeCards"];
 }) => {
@@ -33,10 +34,16 @@ export const FrontierStrip = ({
   );
 };
 
-/** Each store of the realm (the strip's plates, the realm panel's rings): its reading and where a payout of it lands. */
+/**
+ * Each store of the realm the HUD shows (the strip's plates, the realm panel's rings): its reading and where a payout of
+ * it lands. Troops wait on the first Barracks and Essence on the first Essence (opening.ts).
+ */
 export const useStoreReadings = (realm: NativeRows["Structure"] | null, rules: ExpeditionRules): StoreReading[] => {
   const stores = useRealmStores(realm, rules);
-  return STORE_KINDS.map((kind) => {
+  const showsTroops = useOpens("troops-store");
+  const showsEssence = useOpens("essence-store");
+  const shown = (kind: StoreKind) => (kind !== "troops" || showsTroops) && (kind !== "essence" || showsEssence);
+  return STORE_KINDS.filter(shown).map((kind) => {
     const store = stores?.[kind];
     return {
       kind,

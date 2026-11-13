@@ -24,9 +24,26 @@ pub mod BridgeLogic {
     impl AdministrationInternal = EntryAdministration::InternalImpl<ContractState>;
     #[abi(embed_v0)]
     impl CampaignRecovery = EntryAdministration::CampaignRecoveryImpl<ContractState>;
+    component!(path: crate::logic::home_grants::HomeGrantState, storage: home_grants, event: HomeGrantEvent);
+    #[abi(embed_v0)]
+    impl HomeGrants = crate::logic::home_grants::HomeGrantState::HomeGrantsImpl<ContractState>;
+    impl HomeGrantsInternal = crate::logic::home_grants::HomeGrantState::InternalImpl<ContractState>;
+    component!(path: crate::logic::quests::QuestState, storage: quests, event: QuestEvent);
+    #[abi(embed_v0)]
+    impl DailyQuest = crate::logic::quests::QuestState::DailyQuestImpl<ContractState>;
+    #[abi(embed_v0)]
+    impl QuestProgress = crate::logic::quests::QuestState::ProgressImpl<ContractState>;
+
+    component!(path: crate::logic::banes::BaneState, storage: banes, event: BaneEvent);
     #[storage]
     #[allow(starknet::colliding_storage_paths)]
     struct Storage {
+        #[substorage(v0)]
+        banes: crate::logic::banes::BaneState::Storage,
+        #[substorage(v0)]
+        home_grants: crate::logic::home_grants::HomeGrantState::Storage,
+        #[substorage(v0)]
+        quests: crate::logic::quests::QuestState::Storage,
         #[substorage(v0)]
         administration: EntryAdministration::Storage,
         #[substorage(v0)]
@@ -35,6 +52,9 @@ pub mod BridgeLogic {
     #[event]
     #[derive(Drop, starknet::Event)]
     enum Event {
+        BaneEvent: crate::logic::banes::BaneState::Event,
+        HomeGrantEvent: crate::logic::home_grants::HomeGrantState::Event,
+        QuestEvent: crate::logic::quests::QuestState::Event,
         AdministrationEvent: EntryAdministration::Event,
         ReleaseEvent: ReleaseState::Event,
     }

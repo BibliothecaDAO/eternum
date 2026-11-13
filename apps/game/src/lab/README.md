@@ -66,11 +66,12 @@ fetches (the client's own modules, every script, the bytes), when its last scrip
 ### HUD room
 
 HUD → In game lists every state and part the lab draws for the game switched to: Frontier's HUD as the game mounts it
-(`/lab/kit/unified/frontier`, `frontier-army`), the Frontier HUD lab's states by moment (`/lab/kit/hud/<state>`), then
-its parts; Blitz's HUD as mounted (`/lab/kit/unified/<view>`) and its parts (guidance, build order, building on a plot,
-construction cards, deploy, panels, area D, windows, chat). The picked one (`show`) is drawn in a desktop frame (1440
-× 900) and a phone frame (390 × 844) side by side, or one of them (`device`). Each frame is the state's own address with
-`capture=1` at that size, so the phone's layout and CSS are the game's own; "open alone" opens it in the lab.
+(`/lab/kit/unified/frontier`, `frontier-army`; `frontier-new`, a new account's first minute as the interface opens), the
+Frontier HUD lab's states by moment (`/lab/kit/hud/<state>`), then its parts; Blitz's HUD as mounted
+(`/lab/kit/unified/<view>`) and its parts (guidance, build order, building on a plot, construction cards, deploy,
+panels, area D, windows, chat). The picked one (`show`) is drawn in a desktop frame (1440 × 900) and a phone frame (390
+× 844) side by side, or one of them (`device`). Each frame is the state's own address with `capture=1` at that size, so
+the phone's layout and CSS are the game's own; "open alone" opens it in the lab.
 
 ### Balance & data
 

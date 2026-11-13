@@ -5,9 +5,11 @@
  */
 import { APP_HOST } from "@/config/app-address";
 import type { ResolvedGameMode } from "@/config/game-modes/resolved-mode";
-import { SHARED_MOMENT_WORDS, type CampaignKey, type SocialProvider } from "@realms-world/identity";
+import { SHARED_MOMENT_WORDS, type CampaignKey, type OpeningMoment, type SocialProvider } from "@realms-world/identity";
 import type { NotificationKind, NotificationLevel } from "@bibliothecadao/notifications";
 import type { RuinChest } from "@bibliothecadao/eternum";
+import type { DailyQuestId } from "@/ui/design-system/domain-icon-meaning";
+import { nativeQuestConstants as quest } from "../../../../../../contracts/l3/world-native/schema/client.gen";
 import {
   BuildingType,
   XP,
@@ -445,7 +447,6 @@ export const TRAINING_BUILDINGS = [
   buildingName(BuildingType.ScoutsLodge, true),
   buildingName(BuildingType.Hearth, true),
 ] as const;
-/** The castle rows that unlock the three depths beyond the spire. */
 /** The layer a realm's spire is the portal to (owner, 4 November 2026: "its a portal to the ethereal layer bro"). */
 export const ETHEREAL = "Ethereal";
 export const DEPTH_NUMERALS = ["I", "II", "III"] as const;
@@ -457,7 +458,7 @@ const LAYER_CHEST = {
   open: "chest to take today",
   claimed: "chest taken today",
   unknown: "chest not known without an army there",
-  locked: "not researched",
+  locked: "not reached yet",
 } as const satisfies Record<RuinChest, string>;
 /** The day's own layer, as a site's card names its depth (the layer switch calls it World). */
 const SURFACE = "Surface";
@@ -475,15 +476,43 @@ export const siteDepthName = (depth: number): string => {
 export const SPIRE_WORDS = {
   title: "Spire",
   enter: "Enter",
-  /** The order on the spire's tile; its card then picks the Ethereal layer to enter. */
+  /** The order on the spire's tile; its card then offers the layer below. */
   order: "Enter the Spire",
   foreign: "Another realm's spire",
   pickArmy: "Select an army beside the spire",
   away: (army: string) => `${army} must be beside the spire`,
-  inDepth: (army: string, depth: string) => `${army} is in ${depth} today`,
-  landingTaken: "Its landing is taken",
-  locked: "Research it to open it",
+  elsewhere: (army: string) => `${army} is on another layer`,
+  /** The odds the realm's next reveal on a layer finds its spire there today. */
+  odds: (percent: number) => `Spire: ${percent}% on the next reveal`,
   commits: (army: string, left: string) => `${army} stays until the day ends (${left})`,
+} as const;
+/** An army's relics (docs/plans/frontier-season-1.md, relics): its three slots, switching one on, and its timer. */
+export const RELIC_WORDS = {
+  title: "Relics",
+  kinds: { Blade: "Blade", Ward: "Ward", Plunder: "Plunder", FarEye: "Far-Eye", Tome: "Tome" },
+  blade: (amount: string) => `+${amount} damage dealt`,
+  ward: (amount: string) => `−${amount} damage taken`,
+  plunder: (amount: string) => `+${amount} labor and Essence from a cleared site`,
+  farEye: (tiles: number) => `Reveals the ${tiles} nearest tiles at once`,
+  tome: (amount: string) => `+${amount} XP`,
+  empty: "Empty slot",
+  switchOn: "Switch on",
+  switching: "Switching on…",
+  /** A running relic and its time left: "Rare Ward · 20m left". */
+  runs: (relic: string, left: string) => `${relic} · ${left} left`,
+  /** Switching on a relic whose kind already runs: the new one takes its place. */
+  replacesRunning: "Replaces the one running",
+  /** A ruin's relic, before the fight: the beast is as big as the relic is rare. */
+  guards: (relic: string) => `Pays a relic: ${relic}`,
+  /** Choosing which of three carried relics the ruin's relic replaces, before the attack. */
+  full: "Your army carries 3 relics. Choose the one this relic replaces.",
+  replace: (relic: string) => `Replace ${relic}`,
+  /** The held attack's step while the army's relics are not known yet: whether it must choose cannot be told. */
+  reading: "Reading the army's relics…",
+  /** The held attack's step while what the ruin pays is not known yet: whether a relic comes cannot be told. */
+  readingRuin: "Reading the ruin's relic…",
+  /** The held attack's step while no relic is chosen: the choice itself is said just above it. */
+  chooseFirst: "Choose the relic to replace first",
 } as const;
 export const RESEARCHING = "Researching…";
 export const BUILDING = "Building…";
@@ -712,7 +741,7 @@ export const SHARED_DAYS_WORDS = {
 /** A shared link's landing: who shared which day, and the way into Frontier. */
 export const SHARED_LINK_WORDS = {
   /** Its title and pitch are the link's unfurl's too (@realms-world/identity's SHARED_MOMENT_WORDS), so both say one thing. */
-  sharedDay: SHARED_MOMENT_WORDS.title,
+  title: SHARED_MOMENT_WORDS.title,
   pitch: SHARED_MOMENT_WORDS.pitch,
   play: "Start your adventure",
   opening: "Opening…",
@@ -860,6 +889,19 @@ export const HOME_STEP_WORDS = {
     [tickets ? formatCount(tickets, "ticket") : null, realms ? formatCount(realms, "Realm") : null]
       .filter(Boolean)
       .join(" · "),
+} as const;
+
+/** The Aspect step: the team a new home plays for all season, chosen once at founding. */
+export const ASPECT_STEP_WORDS = {
+  title: "Choose your Aspect",
+  /** The title where nothing is chosen: a held Realm's home already plays for its Order's Aspect. */
+  yours: "Your Aspect",
+  line: "Your team for the season. Members of one Aspect never fight each other. You can't switch later.",
+  members: (count: number) => formatCount(count, "member"),
+  join: (aspect: string) => `Join ${aspect}`,
+  joining: (aspect: string) => `Joining ${aspect}…`,
+  /** A held Realm's home: its Aspect is its Order's, so the step shows it and asks nothing. */
+  realmsAspect: (order: string, aspect: string) => `Your Realm's ${order} plays for ${aspect}`,
 } as const;
 
 /** The Season chip's tip: what a common chest pays today, and the pool the season pays chests from. */
@@ -1514,6 +1556,65 @@ export const levelLine = (kinds: readonly NotificationKind[], below: Notificatio
     : `${LEVEL_WORDS[below]}, plus ${list}`;
 };
 
+/** What a daily quest counts, as its count line names it: one, and more than one. */
+const QUEST_COUNTED = {
+  [quest.HUNT]: ["herd or band", "herds or bands"],
+  [quest.CAMPS]: ["camp", "camps"],
+  [quest.RIFTS]: ["rift", "rifts"],
+  [quest.RELICS]: ["ruin", "ruins"],
+  [quest.VETERANS]: ["skill point", "skill points"],
+  [quest.FINDS]: ["find", "finds"],
+  [quest.REVEALS]: ["tile", "tiles"],
+} as const satisfies Record<DailyQuestId, readonly [string, string]>;
+
+/** Invite a friend to the player's Aspect (U13): the panel, its two ways to post the link, and what can go wrong. */
+export const INVITE_WORDS = {
+  title: (aspect: string) => `Invite a friend to ${aspect}`,
+  line: (aspect: string) => `Join me in ${aspect} in Frontier.`,
+  post: "Post on X",
+  copy: "Copy link",
+  copied: "Link copied",
+  making: "Making your link",
+  failed: "Your invite link could not be made.",
+  copyFailed: "The link could not be copied.",
+} as const;
+
+/** The day's banner: today's quest, how far the home is ("1 of 2 camps"), its reward and collecting it. */
+export const QUEST_WORDS = {
+  today: "Today's quest",
+  count: (quest: DailyQuestId, progress: bigint, target: bigint) =>
+    `${formatExact(Number(progress))} of ${formatExact(Number(target))} ${QUEST_COUNTED[quest][target === 1n ? 0 : 1]}`,
+  collect: "Collect",
+  collecting: "Collecting",
+  collected: "Collected",
+  reading: "Reading your progress",
+  week: "This week's quests",
+  state: { collected: "Collected", done: "Done", missed: "Missed", today: "Today", coming: "Coming" },
+  notCollected: "The quest's reward could not be collected.",
+} as const;
+
+/**
+ * The interface that opens as you play (the frozen design's table, word for word): the one line each moment brings,
+ * shown once per account, and Settings' switch that opens everything at once. A Barracks' Knights an hour come from
+ * the game's rules.
+ */
+export const OPENING_WORDS = {
+  lines: {
+    launch: () => "This is your Realm. Build on the lit plot, then send an army into the mist.",
+    barracks: (knightsAnHour: number) =>
+      `A Barracks raises ${formatAmount(knightsAnHour)} Knights an hour. Knights fill your armies.`,
+    guard: () => "Send 150% of the guard's troops to win.",
+    fight: () => "Armies earn XP by fighting. Enough XP gives a skill point.",
+    essence: () => "Essence buys research and lores.",
+    "well-lore": () => "Your armies can now find wells.",
+    "shrine-lore": () => "Your armies can now find shrines.",
+  } satisfies Record<OpeningMoment, (knightsAnHour: number) => string>,
+  gotIt: "Got it",
+  interface: "Interface",
+  showEverything: "Show everything",
+  notSaved: "Show everything could not be saved.",
+} as const;
+
 /** What's new: its patch notes, and the legal pages' date. */
 export const NEWS_WORDS = {
   updated: "Updated",
@@ -1831,7 +1932,8 @@ export const RESEARCH_TREE = {
   nouns: { essence: ESSENCE, labor: LABOR },
   armiesFind: (site: string) => `Armies find ${site}s`,
   each: (gain: string) => `${gain} each`,
-  enters: (depth: string) => `Armies enter ${depth} at the spire`,
+  /** The castle's lore whose reveals find the day's spires. */
+  spireLore: "Spire lore",
   opens: "Open",
   build: (building: string) => `Build a ${building}`,
   stands: (building: string) => `${building} stands`,

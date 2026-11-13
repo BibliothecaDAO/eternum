@@ -1,10 +1,11 @@
-import { mkdtempSync, readdirSync, rmSync, writeFileSync } from "node:fs";
+import { spawnSync } from "node:child_process";
+import { mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
 import { STEP_SETS } from "./client-playtest/steps.mjs";
-import { allocateRunDirectory, buildRunUrl, readPlaytestOptions } from "./run-client-playtest.mjs";
+import { allocateRunDirectory, buildRunUrl, PLAYTEST_GC, readPlaytestOptions } from "./run-client-playtest.mjs";
 
 describe("allocateRunDirectory", () => {
   it("gives every invocation a new directory and never writes into an existing one", () => {
@@ -197,5 +198,26 @@ describe("the page a run opens", () => {
       "spire",
       "webgpu-auto",
     ]);
+  });
+});
+
+describe("the collector the run's browser exposes for heap reads", () => {
+  /** A classic script run by V8 with the given flag, declaring a top-level `gc` as the client's service worker does. */
+  const evaluate = (flag) =>
+    spawnSync(process.execPath, [flag, "-e", `const gc = () => 0; globalThis.${PLAYTEST_GC}?.(); console.log("ran")`], {
+      encoding: "utf8",
+    });
+
+  it("leaves a script's own top-level gc free, where plain --expose-gc made it fail to evaluate", () => {
+    expect(evaluate("--expose-gc").stderr).toContain("Identifier 'gc' has already been declared");
+    const run = evaluate(`--expose-gc-as=${PLAYTEST_GC}`);
+    expect(run.stderr).toBe("");
+    expect(run.stdout.trim()).toBe("ran");
+  });
+
+  it("is the one the probe calls before each heap read", () => {
+    const probe = readFileSync(new URL("./client-playtest/probe.js", import.meta.url), "utf8");
+    expect(probe).toContain(`window.${PLAYTEST_GC}();`);
+    expect(probe).not.toMatch(/window\.gc\b/);
   });
 });

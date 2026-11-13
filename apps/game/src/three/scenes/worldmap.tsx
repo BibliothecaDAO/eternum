@@ -10,7 +10,7 @@ import { forgetCameraView, publishCameraView } from "./worldmap-camera-view";
 import { followArmyCrossing } from "./worldmap-layer-follow";
 import { SelectedArmyOrders } from "./worldmap-selected-army-orders";
 import { TileOccupier } from "@bibliothecadao/types";
-import { SpireManager, type RuleSpires } from "../managers/spire-manager";
+import { SpireManager } from "../managers/spire-manager";
 import { MapSiteManager } from "../managers/map-site-manager";
 import { activeMapLayer } from "@/three/map-layer";
 import type { ReactNode } from "react";
@@ -1371,7 +1371,6 @@ export default class WorldmapScene extends WarpTravel {
       this.spireLabelsGroup,
       this.getTerrainSurface(),
       this.markLabelsDirty,
-      this.createRuleSpires(),
       this.compilePipelines,
     );
     this.mapSiteManager = new MapSiteManager(
@@ -1464,26 +1463,6 @@ export default class WorldmapScene extends WarpTravel {
       isSwitchedOff: () => this.isSwitchedOff,
       reconcileHexHover: (hex) => this.hoverLabelManager.reconcileHexHover(hex),
     });
-  }
-
-  /** Frontier's spires stand by rule on each researched realm's ring; they move when knowledge or the day changes. */
-  private createRuleSpires(): RuleSpires {
-    const store = this.game.store;
-    const projection = this.worldSpatialProjection;
-    return {
-      hexes: () => expeditionSpires(store, configManager.getActiveGameId(), getBlockTimestamp().currentBlockTimestamp),
-      subscribe: (onChange) => {
-        const unsubscribeFacts = store.subscribe((changes) => {
-          if (changes.some((change) => ["Structure", "RealmKnowledge"].includes(change.model))) onChange();
-        });
-        // The day turning over re-projects every realm onto its new site.
-        const unsubscribeStructures = projection.subscribeStructures(() => onChange());
-        return () => {
-          unsubscribeFacts();
-          unsubscribeStructures();
-        };
-      },
-    };
   }
 
   private bindWorldSpatialProjectionLifecycle(): void {
@@ -2617,7 +2596,7 @@ export default class WorldmapScene extends WarpTravel {
     return standing ? { kind: "structure", category: standing.base.category } : { kind: "other" };
   }
 
-  /** Frontier's lit spire on a hex (normalized), with its realm; a game without expeditions lights none. */
+  /** The spire a Frontier realm found today on a hex (normalized), with its realm; none in a game without expeditions. */
   private litSpireAt(hexCoords: HexPosition) {
     const gameId = configManager.getActiveGameId();
     if (!readExpeditionRules(this.game.store, gameId)) return undefined;
@@ -2635,7 +2614,7 @@ export default class WorldmapScene extends WarpTravel {
 
   /**
    * The view through a spire, as an army passing it switches it (followArmyCrossing): Eternum's other layer, or the
-   * Ethereal layer below Frontier's lit spire.
+   * layer below a spire a Frontier realm found.
    */
   private lookThroughSpire(hexCoords: HexPosition): void {
     const spire = this.litSpireAt(hexCoords);

@@ -121,11 +121,37 @@ test("home rewards have one production implementation and no former-class entryp
     const implementations = libraries.flatMap(([contract, entries]) =>
       entries.filter((entry) => entry === name).map(() => contract),
     );
-    assert.deepEqual(implementations, ["ProductionLogic"], `${name} must have exactly one production implementation`);
+    assert.deepEqual(implementations, ["BridgeLogic"], `${name} must have exactly one production implementation`);
   }
   for (const name of ["grant_labor", "labor_grant"]) {
     assert.equal(games.filter((entry) => entry === name).length, 1);
   }
+});
+
+test("terrain derivation has one implementation in MovementLogic", async () => {
+  const { contracts } = JSON.parse(
+    await readFile(new URL("../target/dev/world_native.starknet_artifacts.json", import.meta.url), "utf8"),
+  );
+  const implementations = [];
+  for (const { contract_name } of contracts) {
+    if (!contract_name.endsWith("Logic")) continue;
+    const { abi } = JSON.parse(
+      await readFile(
+        new URL(`../target/dev/world_native_${contract_name}.contract_class.json`, import.meta.url),
+        "utf8",
+      ),
+    );
+    for (const entry of abi) {
+      if (entry.type === "interface" && entry.name === "world_native::settlement::ITerrainDerivation") {
+        implementations.push(contract_name);
+        assert.deepEqual(
+          entry.items.map(({ name }) => name),
+          ["raise_expedition_home", "biome", "expedition_home_ring"],
+        );
+      }
+    }
+  }
+  assert.deepEqual(implementations, ["MovementLogic"], "Route terrain through the single MovementLogic implementation");
 });
 
 test("libraries sharing a Games selector must agree on every wire member", () => {

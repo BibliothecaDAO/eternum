@@ -41,6 +41,9 @@ pub mod MovementLogic {
 
 
     #[abi(embed_v0)]
+    impl TerrainDerivation = crate::logic::terrain::TerrainDerivation<ContractState>;
+
+    #[abi(embed_v0)]
     impl Exploration of crate::commands::IExplore<ContractState> {
         fn explore(
             ref self: ContractState,

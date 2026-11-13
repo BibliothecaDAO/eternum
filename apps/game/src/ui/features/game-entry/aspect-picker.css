@@ -1,0 +1,72 @@
+/* The Aspect step: four cards, two by two on a phone, in a row on a desktop. */
+.aspect-picker {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+.aspect-picker__head {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  color: var(--hud-muted);
+}
+.aspect-picker__head h2 {
+  color: rgb(var(--hud-ink));
+  font-family: var(--font-heading, "IM Fell English SC", serif);
+  font-size: var(--hud-text-display);
+  line-height: var(--hud-leading-display);
+  font-weight: var(--hud-weight-display);
+}
+.aspect-picker__cards {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.6rem;
+}
+@media (min-width: 720px) {
+  .aspect-picker__cards {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+.aspect-picker__card {
+  display: flex;
+  width: 100%;
+  min-height: 9rem;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  padding: 0.75rem 0.5rem;
+  border: 2px solid var(--hud-line);
+  border-radius: var(--hud-radius-panel);
+  background: var(--hud-hover);
+  transition: border-color var(--hud-fast) var(--hud-ease);
+}
+.aspect-picker__card:not(:disabled):hover,
+.aspect-picker__card[data-chosen] {
+  border-color: rgb(var(--hud-gold));
+  background: var(--hud-chosen);
+}
+.aspect-picker__card:disabled:not([data-chosen]) {
+  opacity: 0.45;
+}
+.aspect-picker__card:focus-visible {
+  box-shadow: var(--hud-focus);
+}
+.aspect-picker__crests {
+  display: grid;
+  grid-template-columns: repeat(2, auto);
+  gap: 0.25rem;
+}
+.aspect-picker__name {
+  color: rgb(var(--hud-ink));
+  font-family: var(--font-display, "Cinzel", serif);
+  font-size: var(--hud-text-display);
+  line-height: var(--hud-leading-display);
+  font-weight: var(--hud-weight-display);
+}
+.aspect-picker__members {
+  color: var(--hud-muted);
+  font-size: var(--hud-text-label);
+  line-height: var(--hud-leading-label);
+}
