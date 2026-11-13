@@ -66,8 +66,14 @@ const PROBE_PATH = join(SCRIPTS_DIR, "client-playtest/probe.js");
 const DEFAULTS = { port: 4173, iterations: 3, rendererModes: RENDERER_MODES, timeoutMs: 30_000, cpuThrottle: 1 };
 const POLL_INTERVAL_MS = 500;
 const LOAD_SAMPLE_MS = 5_000;
-// Beside the session's GPU flags: a callable gc for retained-heap reads, and unrounded heap sizes.
-const MEMORY_ARGS = ["--js-flags=--expose-gc", "--enable-precise-memory-info"];
+/**
+ * The collector the probe calls before each retained-heap read (probe.js `step`), under a name of the harness's own:
+ * V8's plain `--expose-gc` defines a global `gc` in every context, the client's service worker included, whose bundle
+ * declares a top-level `gc` of its own and so failed to evaluate, and the worker never registered.
+ */
+export const PLAYTEST_GC = "__playtestGc";
+// Beside the session's GPU flags: the collector for retained-heap reads, and unrounded heap sizes.
+const MEMORY_ARGS = [`--js-flags=--expose-gc-as=${PLAYTEST_GC}`, "--enable-precise-memory-info"];
 /** The GPU the page draws on: the machine's default, or its integrated one (`--gpu low-power`, integrated-gpu.mjs). */
 const GPUS = ["default", "low-power"];
 
