@@ -10,7 +10,7 @@ type ProductionControlsProps = { selectedResource: number; realm: RealmInfo; com
 /**
  * A realm's production form for one output. What it holds (the recipe chosen, the output or input budget typed) belongs
  * to that realm and output: choosing another resource or realm starts a fresh form, so a budget typed for one recipe's
- * input never sizes another recipe that does not burn it. Every caller gets that scope from here.
+ * input never sizes another that does not burn it. Every caller gets that scope from here.
  */
 export const ProductionControls = (props: ProductionControlsProps) => (
   <ProductionForm key={`${props.realm.entityId}:${props.selectedResource}`} {...props} />
@@ -18,7 +18,6 @@ export const ProductionControls = (props: ProductionControlsProps) => (
 
 const ProductionForm = ({ selectedResource, realm, compact = false }: ProductionControlsProps) => {
   const bonuses = useProductionBonuses(realm.entityId);
-  const [useRawResources, setUseRawResources] = useState(true);
   const [sizing, setSizing] = useState<RunSizing>({ by: "output", amount: 1 });
 
   if (!bonuses) return <p>Loading production…</p>;
@@ -34,8 +33,6 @@ const ProductionForm = ({ selectedResource, realm, compact = false }: Production
     <ResourceProductionControls
       compact={compact}
       selectedResource={selectedResource}
-      useRawResources={useRawResources}
-      setUseRawResources={setUseRawResources}
       sizing={sizing}
       setSizing={setSizing}
       realm={realm}

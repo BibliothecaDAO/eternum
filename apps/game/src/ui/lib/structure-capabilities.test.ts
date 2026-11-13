@@ -168,8 +168,7 @@ describe("Eternum military transfer rules", () => {
     expect(categoriesThatCan("builds").sort()).toEqual(
       [StructureType.Realm, StructureType.Village, StructureType.Camp].sort(),
     );
-    // faith.cairo's build_pledge and relics.cairo's craft_relic take a realm or a village.
-    expect(categoriesThatCan("pledgesFaith").sort()).toEqual([StructureType.Realm, StructureType.Village].sort());
+    // relics.cairo's craft_relic takes a realm or a village.
     expect(categoriesThatCan("craftsRelics").sort()).toEqual([StructureType.Realm, StructureType.Village].sort());
     expect(categoryCan(BigInt(StructureType.Village), "craftsRelics")).toBe(true);
     expect(categoryCan(undefined, "builds")).toBe(false);

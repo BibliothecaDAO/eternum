@@ -2,7 +2,6 @@ import { categoryCan } from "@/ui/lib/structure-capabilities";
 import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 
 import { IncomingCaravans } from "./incoming-caravans";
-import { StructureOwnershipTransfer } from "./structure-ownership-transfer";
 import { memo, useCallback } from "react";
 
 import { cn } from "@/ui/design-system/atoms/lib/utils";
@@ -25,14 +24,12 @@ import { useStructureEntityDetail } from "../hooks/use-structure-entity-detail";
 import { useStructureProductionSummary } from "../structure-production-summary";
 import { MergedResourcePanel } from "@/ui/features/world/containers/left-facets/merged-resource-panel";
 import { BitcoinMiningActionPanel } from "../../actions/bitcoin-mining-action-panel";
-import { FaithDevotionActionPanel } from "../../actions/faith-devotion-action-panel";
 
 interface StructureBannerEntityDetailProps {
   structureEntityId: ID;
   className?: string;
   /**
-   * Skip the owner bubble (avatar / player name / structure name / transfer
-   * shortcut). Used on the LeftStructureColumn where the picker pill already
+   * Skip the owner bubble (avatar / player name / structure name). Used on the LeftStructureColumn where the picker pill already
    * names the active structure — the owner header would otherwise duplicate
    * it.
    */
@@ -123,17 +120,6 @@ export const StructureBannerEntityDetail = memo(
         ? formatWait(villageTimerSummary.militiaUnlockRemainingSeconds)
         : "Ready"
       : "—";
-    const settlementImmunityLabel = villageTimerSummary
-      ? villageTimerSummary.settlementImmunityRemainingSeconds > 0
-        ? formatWait(villageTimerSummary.settlementImmunityRemainingSeconds)
-        : "Expired"
-      : "—";
-    const postRaidWindowLabel = villageTimerSummary
-      ? villageTimerSummary.postRaidImmunityWindowSeconds > 0
-        ? formatWait(villageTimerSummary.postRaidImmunityWindowSeconds)
-        : "Unavailable"
-      : "—";
-    const showFaithTab = isEternumMode && categoryCan(rawCategory, "pledgesFaith");
     const canOpenTransferPanel =
       isMine &&
       configManager.isCommandEnabled("SendResources") &&
@@ -170,7 +156,6 @@ export const StructureBannerEntityDetail = memo(
                 </div>
               </div>
             </div>
-            <StructureOwnershipTransfer key={structureEntityId} structureId={structureEntityId} />
             {showHyperstructureVP && (
               <div className="mt-2 border-t border-hud-divider pt-2">
                 <HyperstructureVPDisplay rate={hyperstructureRate} className="w-full" />
@@ -193,16 +178,6 @@ export const StructureBannerEntityDetail = memo(
           <HudPanel kind="section" title="Village Intel">
             <div className="grid grid-cols-3 gap-1">
               <VillageTimerChip label="Militia" value={militiaUnlockLabel} title="Militia unlock timer" />
-              <VillageTimerChip
-                label="Raid immunity"
-                value={settlementImmunityLabel}
-                title="Settlement raid immunity timer"
-              />
-              <VillageTimerChip
-                label="Post-raid"
-                value={postRaidWindowLabel}
-                title="Post-raid resource immunity window"
-              />
             </div>
           </HudPanel>
         )}
@@ -257,12 +232,6 @@ export const StructureBannerEntityDetail = memo(
         </HudPanel>
 
         <BitcoinMiningActionPanel structureEntityId={structureEntityId} />
-
-        {showFaithTab && (
-          <HudPanel kind="section" title="Faith" icon={"relics" as const}>
-            <FaithDevotionActionPanel structureEntityId={structureEntityId} />
-          </HudPanel>
-        )}
       </HudPanel>
     );
   },
