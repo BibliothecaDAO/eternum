@@ -14,7 +14,7 @@ import { disposeGameSyncSession, installActiveGameClient } from "@/sync/active-g
 import { configManager, type GameClient, setBlockTimestampSource, learnResearch } from "@bibliothecadao/eternum";
 import { nativeResearchConstants as research, type GameClientSetup } from "@bibliothecadao/eternum/game-client";
 import { BuildingType, RESOURCE_PRECISION, ResourcesIds } from "@bibliothecadao/types";
-import preset from "../../../../../../../contracts/l3/world-native/tests/fixtures/current-presets/preset-3.json";
+import preset from "../../../../../../../contracts/l3/world-native/tests/fixtures/current-presets/preset-2.json";
 import { buildingCounts, realmBoard } from "./build-fixture";
 import { BuildingsInFlight, BuildSheet } from "./build-sheet";
 

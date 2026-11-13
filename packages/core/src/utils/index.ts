@@ -25,7 +25,6 @@ export * from "./leaderboard";
 export * from "./packed-data";
 export * from "./players";
 export * from "./viewer";
-export * from "./raid-simulator";
 export * from "./realm";
 export * from "./relic";
 export * from "./resources";

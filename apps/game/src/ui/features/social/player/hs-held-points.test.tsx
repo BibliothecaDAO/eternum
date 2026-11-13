@@ -7,7 +7,7 @@ import { NativeFactStore } from "@bibliothecadao/eternum/game-client";
 import type { PlayerInfo } from "@bibliothecadao/types";
 import { hash } from "starknet";
 
-import preset from "../../../../../../../contracts/l3/world-native/tests/fixtures/current-presets/preset-3.json";
+import preset from "../../../../../../../contracts/l3/world-native/tests/fixtures/current-presets/preset-2.json";
 import type { PlayerActivityBreakdown } from "@/services/leaderboard/player-activity-breakdown-service";
 
 const held = vi.hoisted(() => ({
@@ -64,7 +64,7 @@ const ownersGame = () => {
   });
   write(store, [GAME], "GameRegistry", {
     game_id: GAME,
-    preset_id: 3,
+    preset_id: 2,
     name: 1n,
     start_settling_at: 1n,
     start_main_at: 1n,

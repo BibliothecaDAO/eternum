@@ -7,7 +7,7 @@ import {
   StructureType,
   TileOccupier,
 } from "@bibliothecadao/types";
-import preset from "../../../../../../../contracts/l3/world-native/tests/fixtures/current-presets/preset-3.json";
+import preset from "../../../../../../../contracts/l3/world-native/tests/fixtures/current-presets/preset-2.json";
 
 const set = (key: string, model: string, value: Record<string, unknown>) => ({ model, key, value });
 export const HOUR = 3600;
@@ -24,7 +24,7 @@ export const realmBoard = () => {
   store.applyFacts([
     set("0x3", "GameRegistry", {
       game_id: 1,
-      preset_id: 3,
+      preset_id: 2,
       name: "1",
       start_settling_at: "1",
       start_main_at: "100",
@@ -122,7 +122,7 @@ export const realmBoard = () => {
     }),
   ] as never);
   setBlockTimestampSource(() => 350);
-  configManager.setActiveGame(1, 3);
+  configManager.setActiveGame(1, 2);
   configManager.setStore(store);
   return { store, realm: store.require("Structure", { game_id: 1, entity_id: 7 }) };
 };

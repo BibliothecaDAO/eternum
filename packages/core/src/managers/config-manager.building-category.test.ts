@@ -4,7 +4,7 @@ import { hash } from "starknet";
 import { NativeFactStore } from "../client/native-fact-store";
 import { nativePresetForId, nativePresetIdFor } from "../../../../config/source/native";
 import { ClientConfigManager } from "./config-manager";
-import preset from "../../../../contracts/l3/world-native/tests/fixtures/current-presets/preset-3.json";
+import preset from "../../../../contracts/l3/world-native/tests/fixtures/current-presets/preset-2.json";
 import { nativeRuleConstants } from "../../../../contracts/l3/world-native/schema/client.gen";
 
 function fixture(gameId = 54) {

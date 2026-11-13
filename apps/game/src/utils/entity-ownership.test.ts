@@ -5,7 +5,7 @@ import { hash } from "starknet";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { SEAT_COLOURS, seatSide } from "@/tokens";
 import { overrideSpectateIntent } from "./spectator-session";
-import { arePlayersAllied, isEntityOwnedByAccount, seatOrder, watchedSide } from "./entity-ownership";
+import { isEntityOwnedByAccount, seatOrder, watchedSide } from "./entity-ownership";
 
 const fixture = () => {
   configManager.setActiveGame(1, 1);
@@ -54,56 +54,6 @@ describe("native ownership", () => {
     const { store } = fixture();
     configManager.setActiveGame(2, 1);
     expect(isEntityOwnedByAccount(store, 1, "0xabc")).toBe(false);
-  });
-});
-
-/** The registered presets of each mode (native-preset-modes.ts): the game's mode is its preset's. */
-const PRESETS = { eternum: 3, blitz: 2, frontier: 5 } as const;
-
-describe("allies (owner, 2026-10-21: tribe members, in Eternum only)", () => {
-  afterEach(() => vi.restoreAllMocks());
-  /** A game of the given mode where players 1 and 2 hold the given tribe memberships (none where undefined). */
-  const game = (preset: number, guilds: { 1?: number; 2?: number }) => {
-    const { store, write } = fixture();
-    // The game's registry row names its preset; the real preset table (native-preset-modes.ts) gives its mode.
-    vi.spyOn(configManager, "getPresetId").mockReturnValue(preset);
-    const member = (actor: 1 | 2, guild: number) =>
-      write("GuildMember", [1, actor], { game_id: 1, actor, guild_id: guild });
-    if (guilds[1] !== undefined) member(1, guilds[1]);
-    if (guilds[2] !== undefined) member(2, guilds[2]);
-    return { store, member };
-  };
-
-  it("makes members of one tribe allies in Eternum, and no one else", () => {
-    expect(arePlayersAllied(game(PRESETS.eternum, { 1: 99, 2: 99 }).store, "0x01", 2n)).toBe(true);
-    expect(arePlayersAllied(game(PRESETS.eternum, { 1: 99, 2: 88 }).store, 1n, 2n)).toBe(false);
-    expect(arePlayersAllied(game(PRESETS.eternum, { 1: 99 }).store, 1n, 2n)).toBe(false);
-    expect(arePlayersAllied(game(PRESETS.eternum, {}).store, 1n, 2n)).toBe(false);
-    const { store } = game(PRESETS.eternum, { 1: 99, 2: 99 });
-    expect(arePlayersAllied(store, 1n, 1n)).toBe(false);
-    expect(arePlayersAllied(store, undefined, 2n)).toBe(false);
-  });
-
-  it("follows membership changes and deletion in Eternum without an army update", () => {
-    const { store, member } = game(PRESETS.eternum, { 1: 99, 2: 99 });
-    expect(arePlayersAllied(store, 1n, 2n)).toBe(true);
-    member(2, 88);
-    expect(arePlayersAllied(store, 1n, 2n)).toBe(false);
-    member(2, 99);
-    expect(arePlayersAllied(store, 1n, 2n)).toBe(true);
-    store.applyFacts([{ model: "GuildMember", key: hash.computePoseidonHashOnElements([1, 2]), value: null }]);
-    expect(arePlayersAllied(store, 1n, 2n)).toBe(false);
-  });
-
-  it("makes no allies in Blitz or Frontier, though the chain lets a tribe form there", () => {
-    for (const preset of [PRESETS.blitz, PRESETS.frontier]) {
-      expect(arePlayersAllied(game(preset, { 1: 99, 2: 99 }).store, 1n, 2n)).toBe(false);
-      expect(arePlayersAllied(game(preset, { 1: 99, 2: 88 }).store, 1n, 2n)).toBe(false);
-      expect(arePlayersAllied(game(preset, { 1: 99 }).store, 1n, 2n)).toBe(false);
-      const { store } = game(preset, { 1: 99, 2: 99 });
-      store.applyFacts([{ model: "GuildMember", key: hash.computePoseidonHashOnElements([1, 2]), value: null }]);
-      expect(arePlayersAllied(store, 1n, 2n)).toBe(false);
-    }
   });
 });
 

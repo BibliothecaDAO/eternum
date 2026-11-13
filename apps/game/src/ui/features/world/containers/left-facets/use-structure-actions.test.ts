@@ -8,7 +8,7 @@ const { isStructureActionEnabled } = await import("./use-structure-actions");
 
 const ACTIONS = ["build", "production", "military", "transfer"] as const;
 
-const offeredIn = (mode: "frontier" | "blitz" | "eternum") => {
+const offeredIn = (mode: "frontier" | "blitz") => {
   const mask = nativePresetForId(nativePresetIdFor(mode)).commandMask;
   return ACTIONS.filter((id) =>
     isStructureActionEnabled(id, (command) => (mask & BigInt(nativeCommandBits[command])) !== 0n),
@@ -24,7 +24,4 @@ describe("realm actions follow the game's command mask", () => {
     expect(offeredIn("blitz")).toEqual(["build", "production", "military", "transfer"]);
   });
 
-  it("offers Eternum the same four: the game has no market to open", () => {
-    expect(offeredIn("eternum")).toEqual(["build", "production", "military", "transfer"]);
-  });
 });

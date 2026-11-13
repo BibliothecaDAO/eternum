@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it } from "vitest";
 import { setBlockTimestampSource } from "@bibliothecadao/eternum";
 import { ResourcesIds, TroopTier, TroopType } from "@bibliothecadao/types";
-import preset from "../../../../../../../contracts/l3/world-native/tests/fixtures/current-presets/preset-3.json";
+import preset from "../../../../../../../contracts/l3/world-native/tests/fixtures/current-presets/preset-2.json";
 import { readArmyCard, readSiteCard } from "./site-card-plan";
 import { blightglowRift, campBeside, otherArmyAt, SITE_TILE } from "./site-fixture";
 

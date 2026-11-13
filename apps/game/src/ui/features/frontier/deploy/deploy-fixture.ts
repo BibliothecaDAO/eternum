@@ -1,7 +1,7 @@
 import { configManager, setBlockTimestampSource } from "@bibliothecadao/eternum";
 import { NativeFactStore } from "@bibliothecadao/eternum/game-client";
 import { RESOURCE_PRECISION, StructureType } from "@bibliothecadao/types";
-import preset from "../../../../../../../contracts/l3/world-native/tests/fixtures/current-presets/preset-3.json";
+import preset from "../../../../../../../contracts/l3/world-native/tests/fixtures/current-presets/preset-2.json";
 
 export const DEPLOY_SLOT_KEY = "0x9";
 
@@ -61,7 +61,7 @@ export const frontierDay = () => {
     set("0x9", "UpgradeLimits", { game_id: 1, realm_max: 3, village_max: 3 }),
     set("0x3", "GameRegistry", {
       game_id: 1,
-      preset_id: 3,
+      preset_id: 2,
       name: "1",
       start_settling_at: "1",
       start_main_at: "100",
@@ -123,7 +123,7 @@ export const frontierDay = () => {
     }),
   ] as never);
   setBlockTimestampSource(() => 350);
-  configManager.setActiveGame(1, 3);
+  configManager.setActiveGame(1, 2);
   configManager.setStore(store);
   return { store, row: store.require("Structure", { game_id: 1, entity_id: 7 }) };
 };

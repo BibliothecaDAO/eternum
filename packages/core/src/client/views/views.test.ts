@@ -6,7 +6,7 @@ import { setBlockTimestampSource } from "../../utils/timestamp";
 import { NativeFactStore } from "../native-fact-store";
 import type { GameClient } from "../game-client";
 import explorerFixture from "../../../../../contracts/l3/world-native/schema/fixtures/row-set.json";
-import preset from "../../../../../contracts/l3/world-native/tests/fixtures/current-presets/preset-3.json";
+import preset from "../../../../../contracts/l3/world-native/tests/fixtures/current-presets/preset-2.json";
 
 const GAME_ID = 28;
 const PLAYER = ContractAddress(0xabc);
@@ -153,7 +153,7 @@ const seedFrontierRules = (store: NativeFactStore, input: { startMainAt: number;
       key: "0x102",
       value: {
         game_id: GAME_ID,
-        preset_id: 3,
+        preset_id: 2,
         name: "1",
         start_settling_at: "1",
         start_main_at: String(input.startMainAt),

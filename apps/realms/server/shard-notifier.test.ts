@@ -3,7 +3,7 @@ import type { HeraldHistoryEvent } from "@bibliothecadao/eternum/game-sync";
 import type { PushEnvelope } from "@bibliothecadao/notifications";
 import { beforeAll, describe, expect, it } from "vitest";
 
-import preset from "../../../contracts/l3/world-native/tests/fixtures/current-presets/preset-3.json";
+import preset from "../../../contracts/l3/world-native/tests/fixtures/current-presets/preset-2.json";
 import explorerFixture from "../../../contracts/l3/world-native/schema/fixtures/row-set.json";
 import recordedPages from "./fixtures/staging-story-pages.json";
 import { realmsIdOf } from "./realms-id";

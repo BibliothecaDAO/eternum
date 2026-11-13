@@ -7,13 +7,23 @@ import { safeInteger, type NativeFactStore } from "@bibliothecadao/eternum/game-
 import type { NativeRows, NativeStoryVariant } from "../../../../../contracts/l3/world-native/schema/client.gen";
 import { iconDefinition, type IconMeaning, resourceMeaning } from "./icon-meaning";
 
-/** Every story the game can emit (the schema's story variants, a fight and a raid), by the act it tells. */
-const storyMeanings = {
-  BattleEvent: "attack",
-  RaidEvent: "raid",
+const archivedStoryMeanings = {
   FaithPointsClaimedStory: "shrine",
   FaithPledged: "shrine",
   FaithRemoved: "shrine",
+  TradeCreated: "trade",
+  TradeAccepted: "trade",
+  TradeCancelled: "trade",
+  BankSwap: "swap",
+  BankLiquidity: "bank",
+  TierBought: "research",
+} satisfies Record<string, IconMeaning>;
+
+/** Every story the game can emit (the schema's story variants, a fight and a raid), by the act it tells. */
+const storyMeanings = {
+  ...archivedStoryMeanings,
+  BattleEvent: "attack",
+  RaidEvent: "raid",
   StructureLevelUpStory: "upgrade",
   RealmCreatedStory: "realm",
   StructureCapturedStory: "flag",
@@ -26,11 +36,6 @@ const storyMeanings = {
   BuildingPlacementStory: "build",
   BuildingPaymentStory: "build",
   BitcoinAwardStory: "bitcoin-mine",
-  TradeCreated: "trade",
-  TradeAccepted: "trade",
-  TradeCancelled: "trade",
-  BankSwap: "swap",
-  BankLiquidity: "bank",
   HyperstructurePoints: "hyperstructure",
   RelicChestOpened: "relics",
   RelicCrafted: "relics",
@@ -46,10 +51,9 @@ const storyMeanings = {
   ExplorerDeleteStory: "military",
   TroopsTransferred: "military",
   LordsWithdrawn: "lords",
-  TierBought: "research",
   SkillPointSpent: "research",
   SiteUsed: "claim",
-} satisfies Record<NativeStoryVariant | "BattleEvent" | "RaidEvent" | "TierBought", IconMeaning>;
+} satisfies Record<NativeStoryVariant | "BattleEvent" | "RaidEvent" | keyof typeof archivedStoryMeanings, IconMeaning>;
 
 /** A story's painting, by its kind: the one table every Feed, Events and Log row reads. */
 export function storyMeaning(story: string): IconMeaning {

@@ -3,7 +3,7 @@ import { NativeFactStore } from "../client/native-fact-store";
 import { configManager } from "./config-manager";
 import { LeaderboardManager } from "./leaderboard-manager";
 import { setBlockTimestampSource } from "../utils/timestamp";
-import preset from "../../../../contracts/l3/world-native/tests/fixtures/current-presets/preset-3.json";
+import preset from "../../../../contracts/l3/world-native/tests/fixtures/current-presets/preset-2.json";
 import { hash } from "starknet";
 
 const PLAYER = 0x3e1a40b7n;
@@ -55,7 +55,7 @@ describe("native leaderboard", () => {
     });
     upsert(store, [23], "GameRegistry", {
       game_id: 23,
-      preset_id: 3,
+      preset_id: 2,
       name: 1n,
 
       start_settling_at: 1n,
@@ -121,7 +121,7 @@ describe("native leaderboard", () => {
     });
     upsert(store, [23], "GameRegistry", {
       game_id: 23,
-      preset_id: 3,
+      preset_id: 2,
       name: 1n,
 
       start_settling_at: 1n,
@@ -133,7 +133,7 @@ describe("native leaderboard", () => {
       end_grace_seconds: 0,
       seed: 1n,
     });
-    configManager.setActiveGame(23, 3);
+    configManager.setActiveGame(23, 2);
     const manager = new LeaderboardManager(store);
     expect(manager.getPlayerRegisteredPoints(PLAYER)).toBe(0);
     expect(manager.getPlayerRegisteredPoints(0x222n)).toBeNull();
@@ -171,7 +171,7 @@ describe("native leaderboard", () => {
       });
       upsert(store, [23], "GameRegistry", {
         game_id: 23,
-        preset_id: 3,
+        preset_id: 2,
         name: 1n,
         start_settling_at: 1n,
         start_main_at: 1n,

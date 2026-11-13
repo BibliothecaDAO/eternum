@@ -13,7 +13,7 @@ import {
   ResourcesIds,
 } from "@bibliothecadao/types";
 
-import preset from "../../../../../../../contracts/l3/world-native/tests/fixtures/current-presets/preset-3.json";
+import preset from "../../../../../../../contracts/l3/world-native/tests/fixtures/current-presets/preset-2.json";
 
 /** The panels lab's and the style sheet's fixture game: the deploy fixture's realm, its player, and Events rows. */
 

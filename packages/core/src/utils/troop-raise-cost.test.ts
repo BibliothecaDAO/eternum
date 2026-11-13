@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { NativeFactStore } from "../client/native-fact-store";
 import type { GameSyncFact } from "../sync/game-sync-types";
-import preset from "../../../../contracts/l3/world-native/tests/fixtures/current-presets/preset-3.json";
+import preset from "../../../../contracts/l3/world-native/tests/fixtures/current-presets/preset-2.json";
 import { canPayTroopRaise, readTroopRaiseCost } from "./troop-raise-cost";
 
 const PRECISION = 1_000_000_000n;

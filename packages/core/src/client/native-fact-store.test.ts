@@ -6,7 +6,7 @@ import rowFixture from "../../../../contracts/l3/world-native/schema/fixtures/ro
 import type { NativeRows } from "../../../../contracts/l3/world-native/schema/client.gen";
 import type { GameSyncFact } from "../sync/game-sync-types";
 import { NativeFactStore } from "./native-fact-store";
-import preset from "../../../../contracts/l3/world-native/tests/fixtures/current-presets/preset-3.json";
+import preset from "../../../../contracts/l3/world-native/tests/fixtures/current-presets/preset-2.json";
 import { setBlockTimestampSource } from "../utils/timestamp";
 
 afterEach(() => {
@@ -516,7 +516,7 @@ describe("declared fact absence", () => {
       }),
       set("0x3", "GameRegistry", {
         game_id: 1,
-        preset_id: 3,
+        preset_id: 2,
         name: "1",
 
         start_settling_at: "1",
@@ -620,7 +620,7 @@ describe("declared fact absence", () => {
       }),
       set("0x3", "GameRegistry", {
         game_id: 1,
-        preset_id: 3,
+        preset_id: 2,
         name: "1",
 
         start_settling_at: "1",
@@ -688,7 +688,7 @@ describe("declared fact absence", () => {
       }),
       set("0x3", "GameRegistry", {
         game_id: 1,
-        preset_id: 3,
+        preset_id: 2,
         name: "1",
 
         start_settling_at: "1",
@@ -741,7 +741,7 @@ describe("declared fact absence", () => {
       }),
       set("0x3", "GameRegistry", {
         game_id: 1,
-        preset_id: 3,
+        preset_id: 2,
         name: "1",
 
         start_settling_at: "1",

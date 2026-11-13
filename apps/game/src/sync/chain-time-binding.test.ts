@@ -3,7 +3,7 @@ import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { configManager, getBlockTimestamp, ResourceManager, setBlockTimestampSource } from "@bibliothecadao/eternum";
 import { NativeFactStore } from "@bibliothecadao/eternum/game-client";
 import { nativeRuleConstants } from "../../../../contracts/l3/world-native/schema/client.gen";
-import preset from "../../../../contracts/l3/world-native/tests/fixtures/current-presets/preset-3.json";
+import preset from "../../../../contracts/l3/world-native/tests/fixtures/current-presets/preset-2.json";
 import { useChainTimeStore } from "@/hooks/store/use-chain-time-store";
 import { bindChainTime } from "./chain-time-binding";
 import { createGameSyncObserver } from "./game-sync-observer";

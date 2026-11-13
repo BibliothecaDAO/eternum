@@ -50,8 +50,6 @@ const VIEWS = {
   // The same attack with the army at 5 stamina: no forecast, the sides with a dash and the shortfall under them.
   "blitz-attack-short": { preset: 2, spectating: false, finished: false, army: true, attack: true, tired: true },
   frontier: { preset: 5, spectating: false, finished: false, army: false, attack: false },
-  // Eternum's player on the same HUD as Blitz's, in Eternum's own age colours.
-  eternum: { preset: 3, spectating: false, finished: false, army: false, attack: false },
   "frontier-army": { preset: 5, spectating: false, finished: false, army: true, attack: false },
   "blitz-spectator": { preset: 2, spectating: true, finished: false, army: false, attack: false },
   "blitz-finished": { preset: 2, spectating: true, finished: true, army: false, attack: false },
@@ -68,7 +66,7 @@ export const UNIFIED_VIEWS = (Object.keys(VIEWS) as View[]).map((name) => ({
 
 /**
  * Dev only: the in-game HUD as the game mounts it (a desktop's columns, a phone's compact HUD), every mode's, on the
- * lab's game, at /lab/kit/unified/<view>: blitz, blitz-attack, blitz-attack-short, blitz-build, blitz-start, eternum, frontier, frontier-army,
+ * lab's game, at /lab/kit/unified/<view>: blitz, blitz-attack, blitz-attack-short, blitz-build, blitz-start, frontier, frontier-army,
  * blitz-spectator, blitz-finished, blitz-out, blitz-out-watching. Frontier's states on the same HUD are the Frontier HUD
  * lab's, /lab/kit/hud/<state>.
  */
@@ -87,7 +85,7 @@ const ViewLab = ({ view }: { view: View }) => {
   const mode = nativeGameModeOf(preset);
   const frontier = mode === "frontier";
   useDocumentClass(frontier ? "frontier-hud" : "classic-hud");
-  useHudMode(mode === "eternum" ? "eternum" : frontier ? "frontier" : "blitz");
+  useHudMode(mode);
   // The lab's player is signed in, as a player in a game is, and chat connects to the lab's chat server, in the tab.
   useEffect(() => {
     const restore = answerLabChat({});

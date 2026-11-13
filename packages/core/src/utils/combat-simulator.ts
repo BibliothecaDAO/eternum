@@ -42,7 +42,6 @@ export interface BattleRange {
 }
 
 export interface CombatParameters {
-  damage_raid_percent_num: number;
   damage_biome_bonus_num: number;
   damage_scaling_factor: bigint;
   t1_damage_value: bigint;
@@ -382,7 +381,6 @@ export class CombatSimulator {
 
   public static getDefaultParameters(): CombatParameters {
     return {
-      damage_raid_percent_num: 1000, //10%
       damage_biome_bonus_num: 3000,
       damage_scaling_factor: 36893488147419103232n, // 2
       t1_damage_value: 1844674407370955161600n, // 100

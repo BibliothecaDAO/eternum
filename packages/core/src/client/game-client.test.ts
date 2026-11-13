@@ -3,7 +3,7 @@
 import { TransactionType } from "@bibliothecadao/provider";
 import type { NativeWorldBindings } from "@bibliothecadao/types";
 import bindings from "../../../../contracts/l3/world-native/schema/bindings.json";
-import preset from "../../../../contracts/l3/world-native/tests/fixtures/current-presets/preset-3.json";
+import preset from "../../../../contracts/l3/world-native/tests/fixtures/current-presets/preset-2.json";
 import { EDAMode, hash, transaction, type AccountInterface, type InvocationsSignerDetails } from "starknet";
 import { afterEach, describe, expect, it, vi } from "vitest";
 

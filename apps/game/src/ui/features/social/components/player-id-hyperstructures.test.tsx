@@ -9,7 +9,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { setBlockTimestampSource } from "../../../../../../../packages/core/src/utils/timestamp";
-import preset from "../../../../../../../contracts/l3/world-native/tests/fixtures/current-presets/preset-3.json";
+import preset from "../../../../../../../contracts/l3/world-native/tests/fixtures/current-presets/preset-2.json";
 
 const fixture = vi.hoisted(() => ({ store: null as unknown as NativeFactStore, now: 150 }));
 vi.mock("@/hooks/context/game-context", () => ({ useGame: () => ({ setup: { store: fixture.store } }) }));
@@ -56,7 +56,7 @@ beforeEach(() => {
   fixture.now = 150;
   fixture.store = new NativeFactStore();
   fixture.store.setSnapshot({ gameId: 23, complete: true, actor: String(PLAYER), timestamp: 150 });
-  configManager.setActiveGame(23, 3);
+  configManager.setActiveGame(23, 2);
   setBlockTimestampSource(() => fixture.now);
   put("SliceRules", [23], {
     ...preset.rules,
@@ -65,7 +65,7 @@ beforeEach(() => {
   });
   put("GameRegistry", [23], {
     game_id: 23,
-    preset_id: 3,
+    preset_id: 2,
     name: 1n,
     start_settling_at: 1n,
     start_main_at: 1n,

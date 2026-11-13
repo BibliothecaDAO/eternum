@@ -10,7 +10,7 @@ import {
 } from "../../../../../../../contracts/l3/world-native/schema/client.gen";
 import rowFixture from "../../../../../../../contracts/l3/world-native/schema/fixtures/row-set.json";
 import { nativeCommandBits } from "../../../../../../../contracts/l3/world-native/schema/commands.gen";
-import preset from "../../../../../../../contracts/l3/world-native/tests/fixtures/current-presets/preset-3.json";
+import preset from "../../../../../../../contracts/l3/world-native/tests/fixtures/current-presets/preset-2.json";
 import frontierConfig from "../../../../../../../config/generated/frontier.madara.json";
 import { frontierDay } from "../deploy/deploy-fixture";
 import type { SiteAttack } from "./site-card-plan";
@@ -159,7 +159,6 @@ const frontierCombatRules = () => {
   const units = (amount: number) => String(Math.round(amount * Number(PRECISION)));
   return {
     troop_damage_config: {
-      damage_raid_percent_num: damage.damageRaidPercentNum,
       damage_biome_bonus_num: damage.damageBiomeBonusNum,
       damage_scaling_factor: damage.damageScalingFactor,
       t1_damage_value: damage.t1DamageValue,

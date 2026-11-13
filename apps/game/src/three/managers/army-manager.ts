@@ -4,7 +4,7 @@ import { armyNumber, resolveExplorerTroops } from "@bibliothecadao/eternum/troop
 import { projectionChangesForLayer } from "@bibliothecadao/eternum/game-sync";
 import { markShadowCastersChanged } from "@/three/shadow-refresh-policy";
 import { activeMapLayer } from "@/three/map-layer";
-import { arePlayersAllied, onSidesChanged, watchedSide } from "@/utils/entity-ownership";
+import { onSidesChanged, watchedSide } from "@/utils/entity-ownership";
 import { accountAddress, useAccountStore } from "@/hooks/store/use-account-store";
 import { useChainTimeStore } from "@/hooks/store/use-chain-time-store";
 import { watchPlayerNames } from "@/hooks/use-player-profile";
@@ -224,7 +224,6 @@ export class ArmyManager {
   private readonly unsubscribeArmyProjection: () => void;
   private unsubscribeExplorerTroopsPresentation?: () => void;
   private unsubscribeStructureOwnership?: () => void;
-  private unsubscribeGuildMembership?: () => void;
   private unsubscribeSides?: () => void;
   private readonly armyProjectionSyncs = new Map<ID, Promise<void>>();
   private attachmentManager: CosmeticAttachmentManager;
@@ -307,7 +306,6 @@ export class ArmyManager {
     });
     this.subscribeToExplorerTroopsPresentation();
     this.subscribeToStructureOwnership();
-    this.subscribeToGuildMembership();
     // Whose an army is may read otherwise (the seats arrive, the viewer starts watching): every plate says it again.
     this.unsubscribeSides = onSidesChanged(() =>
       this.armyPresentations.forEach((army) => this.refreshArmyCompactLabel(army)),
@@ -360,19 +358,6 @@ export class ArmyManager {
         if (!explorer || explorer.game_id !== configManager.getActiveGameId() || explorer.troops.count <= 0n) continue;
         this.applyExplorerTroopsPresentationUpdate(explorer);
       }
-    });
-  }
-
-  private subscribeToGuildMembership(): void {
-    this.unsubscribeGuildMembership = this.store?.subscribe((changes) => {
-      if (
-        changes.some(
-          (change) =>
-            change.model === "GuildMember" &&
-            (change.current ?? change.previous)?.game_id === configManager.getActiveGameId(),
-        )
-      )
-        this.recheckOwnership();
     });
   }
 
@@ -1293,7 +1278,7 @@ export class ArmyManager {
       plate: buildArmyPlate(
         {
           ...army,
-          isAlly: arePlayersAllied(this.store, accountAddress(), army.owner.address),
+          isAlly: false,
           watched: watchedSide(this.store, army.owner.address),
         },
         this.resolveHomeRealmName(army),
@@ -2753,7 +2738,7 @@ export class ArmyManager {
   private pathColourOf(army: ArmyData): Color {
     const owner = army.owner.address;
     return armyPathColour(
-      { isMine: army.isMine, isAlly: arePlayersAllied(this.store, accountAddress(), owner), owner: army.owner },
+      { isMine: army.isMine, isAlly: false, owner: army.owner },
       watchedSide(this.store, owner),
     );
   }
@@ -2765,7 +2750,7 @@ export class ArmyManager {
   }): PlayerColorProfile {
     return playerColorManager.getProfileForUnit(
       army.isMine,
-      army.isAlly ?? arePlayersAllied(this.store, accountAddress(), army.owner?.address),
+      army.isAlly ?? false,
       army.owner?.address,
     );
   }
@@ -3131,8 +3116,6 @@ ${
     this.unsubscribeArmyProjection();
     this.unsubscribeExplorerTroopsPresentation?.();
     this.unsubscribeExplorerTroopsPresentation = undefined;
-    this.unsubscribeGuildMembership?.();
-    this.unsubscribeGuildMembership = undefined;
     this.unsubscribeSides?.();
     this.unsubscribeSides = undefined;
     this.unsubscribeStructureOwnership?.();

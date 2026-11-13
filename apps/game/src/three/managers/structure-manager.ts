@@ -28,7 +28,7 @@ import { resolveStructureRotationY } from "../structures/structure-orientation";
 import { SettlementModel } from "../structures/settlement-model";
 import { resolveSettlementRelationship } from "../structures/settlement-appearance";
 import { RiftModelPath, isRealmModelPath, isSettlementModelPath } from "../constants/scene-constants";
-import { arePlayersAllied, onSidesChanged, watchedSide } from "@/utils/entity-ownership";
+import { onSidesChanged, watchedSide } from "@/utils/entity-ownership";
 import { accountAddress, useAccountStore } from "@/hooks/store/use-account-store";
 import { useChainTimeStore } from "@/hooks/store/use-chain-time-store";
 import { getGameModeConfig } from "@/config/game-modes";
@@ -452,12 +452,8 @@ export class StructureManager {
     this.storeUnsubscribes.push(
       this.store.subscribe((changes) => {
         const touched = new Set<number>();
-        let refreshAll = changes.length === 0;
+        const refreshAll = changes.length === 0;
         for (const change of changes) {
-          if (change.model === "GuildMember") {
-            if ((change.current ?? change.previous)?.game_id === configManager.getActiveGameId()) refreshAll = true;
-            continue;
-          }
           if (change.model === "CampaignHome") {
             const home = change.current ?? change.previous;
             if (home?.game_id === configManager.getActiveGameId()) touched.add(safeInteger(home.home));
@@ -625,7 +621,7 @@ export class StructureManager {
       initialized: this.resolveHyperstructureInitialized(renderable.entityId, renderInfo.type),
       level: renderInfo.level,
       isMine: isAddressEqualToAccount(ownerAddress),
-      isAlly: arePlayersAllied(this.store, accountAddress(), ownerAddress),
+      isAlly: false,
       owner: { address: ownerAddress, ownerName, guildName: "" },
       structureType: renderInfo.type,
       mineKind: structureComponent ? presentedMineKind(structureComponent) : undefined,

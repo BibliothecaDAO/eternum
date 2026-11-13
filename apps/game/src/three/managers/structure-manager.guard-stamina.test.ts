@@ -5,7 +5,7 @@ import { Vector3 } from "three";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import rowFixture from "../../../../../contracts/l3/world-native/schema/fixtures/row-set.json";
-import preset from "../../../../../contracts/l3/world-native/tests/fixtures/current-presets/preset-3.json";
+import preset from "../../../../../contracts/l3/world-native/tests/fixtures/current-presets/preset-2.json";
 import { useChainTimeStore } from "@/hooks/store/use-chain-time-store";
 import { frontierDay } from "@/ui/features/frontier/deploy/deploy-fixture";
 import type { StructurePlate } from "../map-plates/map-plate-model";

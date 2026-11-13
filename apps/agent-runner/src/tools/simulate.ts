@@ -5,7 +5,6 @@ import {
   divideByPrecision,
   getBuildingCosts,
   getGuardsByStructure,
-  RaidSimulator,
   storedBiomeAt,
   entityMapPosition,
   structureMapPosition,
@@ -30,18 +29,18 @@ import { StringEnum } from "./schema";
 
 const EntityId = (description: string) => Type.Integer({ minimum: 1, description });
 
-const SIMULATION_KINDS = ["combat", "raid", "building_cost"] as const;
+const SIMULATION_KINDS = ["combat", "building_cost"] as const;
 type SimulationKind = (typeof SIMULATION_KINDS)[number];
 
 /** One flat object: tool schemas must be objects at the root, so the per-kind requirements are checked in execute. */
 const SimulateParams = Type.Object({
   kind: StringEnum(
     SIMULATION_KINDS,
-    "combat: attackerId vs defenderId. raid: attackerId on structureId. building_cost: structureId + buildingType.",
+    "combat: attackerId vs defenderId. building_cost: structureId + buildingType.",
   ),
-  attackerId: Type.Optional(EntityId("My attacking or raiding explorer army.")),
+  attackerId: Type.Optional(EntityId("My attacking explorer army.")),
   defenderId: Type.Optional(EntityId("The defending explorer army or structure (combat).")),
-  structureId: Type.Optional(EntityId("The structure to raid, or the realm that would build.")),
+  structureId: Type.Optional(EntityId("The realm that would build.")),
   buildingType: Type.Optional(
     Type.Enum(BuildingType, { description: "Building category id, as list_actions documents." }),
   ),
@@ -63,7 +62,7 @@ export const createSimulateTool = (game: RunnerGame): AgentTool<typeof SimulateP
   name: "simulate",
   label: "Simulate",
   description:
-    "Preview an outcome with the game's own math before acting: a battle between two armies, a raid on a structure, or what a building would cost.",
+    "Preview an outcome with the game's own math before acting: a battle between two armies, or what a building would cost.",
   parameters: SimulateParams,
   execute: async (_id, input) => {
     const text = simulate(game.client, input);
@@ -77,8 +76,6 @@ const simulate = (client: GameClient, input: SimulateInput): string => {
   switch (input.kind) {
     case "combat":
       return simulateCombat(client, input.attackerId!, input.defenderId!);
-    case "raid":
-      return simulateRaid(client, input.attackerId!, input.structureId!);
     case "building_cost":
       return simulateBuildingCost(client, input.structureId!, input.buildingType!, input.useSimpleCost ?? false);
   }
@@ -86,7 +83,6 @@ const simulate = (client: GameClient, input: SimulateInput): string => {
 
 const REQUIRED_INPUTS: Record<SimulationKind, (keyof SimulateInput)[]> = {
   combat: ["attackerId", "defenderId"],
-  raid: ["attackerId", "structureId"],
   building_cost: ["structureId", "buildingType"],
 };
 
@@ -114,29 +110,6 @@ const simulateCombat = (client: GameClient, attackerId: ID, defenderId: ID): str
     `Combat on ${biome}: ${describeArmy(attacker.army)} vs ${describeArmy(defenders.army)}${defenders.isStructureGuard ? " (structure guard)" : ""}`,
     `Attacker deals ${Math.floor(result.attackerDamage)} damage, defender deals ${Math.floor(result.defenderDamage)}.`,
     `Survivors: attacker ${Math.max(0, attacker.army.troopCount - Math.floor(result.defenderDamage))}, defender ${Math.max(0, defenders.army.troopCount - Math.floor(result.attackerDamage))}.`,
-  ].join("\n");
-};
-
-// Raid
-
-const simulateRaid = (client: GameClient, attackerId: ID, structureId: ID): string => {
-  const raider = explorerCombatant(client, attackerId);
-  if (!raider) return `Explorer ${attackerId} is not in the native store.`;
-  const structure = client.setup.store.get("Structure", { game_id: client.gameId, entity_id: structureId });
-  if (!structure) return `Structure ${structureId} is not in the native store.`;
-  const knownGuards = getGuardsByStructure(structure, client.setup.store);
-  if (!knownGuards) return `Guards for structure ${structureId} are not synchronized.`;
-  const guards = knownGuards
-    .filter((guard) => Number(guard.troops.count) > 0)
-    .map((guard) => troopsToArmy(guard.troops));
-  const site = structureMapPosition(client.setup.store, structure);
-  if (!site) return `Structure ${structureId} has no map site yet.`;
-  const biome = biomeAt(client, site);
-  const result = new RaidSimulator(configManager.getCombatConfig()).simulateRaid(raider.army, guards, biome);
-  return [
-    `Raid on structure #${structureId} (${biome}) by ${describeArmy(raider.army)} against ${guards.length} guard slot(s).`,
-    `Outcome ${result.outcomeType} with ${Math.round(result.successChance)}% success chance.`,
-    `Raider loses ${result.raiderDamageTaken} troops; guards lose ${result.defenderDamageTaken}.`,
   ].join("\n");
 };
 
