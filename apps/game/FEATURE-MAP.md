@@ -431,12 +431,12 @@ each closed by its cross, a tap outside, a swipe down or `Escape`. A right-click
   says what the chosen one brings. Important sends one push as each Frontier game day opens ("Day 2 is open / Frontier:
   claim 1,000 Labor before 20:00."), "Your armies are rested" each time the armies the player left spent are all full
   again (the next only after they play again), the season's or a Blitz's end, fights between players outside Frontier,
-  and messages; All adds deliveries, Bitcoin payouts and Hyperstructure points. Each kind, its level and how
-  long it lives come from one table (`packages/notifications/src/notification-kinds.ts`). The phone's own night setting
-  decides when one sounds; the game keeps no quiet hours and no daily cap: a newer push of a kind in a game replaces the
-  one shown. Each names its game by its mode as the app labels it ("Frontier", "Blitz"), never a season's number or an
-  id (`packages/notifications/src/game-name.ts`, reading `GAME_MODE_NAMES`), and shows the installed app's icon, with
-  the small globe as the status bar's badge. None for the player's own taps (the Feed and the Log have them). Server:
+  and messages; All adds deliveries, Bitcoin payouts and Hyperstructure points. Each kind, its level and how long it
+  lives come from one table (`packages/notifications/src/notification-kinds.ts`). The phone's own night setting decides
+  when one sounds; the game keeps no quiet hours and no daily cap: a newer push of a kind in a game replaces the one
+  shown. Each names its game by its mode as the app labels it ("Frontier", "Blitz"), never a season's number or an id
+  (`packages/notifications/src/game-name.ts`, reading `GAME_MODE_NAMES`), and shows the installed app's icon, with the
+  small globe as the status bar's badge. None for the player's own taps (the Feed and the Log have them). Server:
   `apps/realms/server/shard-notifier.ts`. In the iOS app, **This device** turns on the app's own push (iOS asks once;
   APNs delivers), revoked on sign-out or another account's sign-in; a tapped alert opens its game, or chat on what it is
   about (`src/pwa/ios-app-push.ts`).
