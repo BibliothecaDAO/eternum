@@ -36,7 +36,16 @@ export const frontierSeasonOnePreset = {
   commandMask:
     (frontierPreset.commandMask | BigInt(nativeCommandBits.ApplyRelic)) & ~BigInt(nativeCommandBits.OpenRelicChest),
   depths: frontierPreset.depths.map((depth, index) =>
-    index === 1 ? { ...depth, chest: { common: 0, uncommon: 5_000, rare: 2_800, epic: 1_500, legendary: 700 } } : depth,
+    index < 3
+      ? {
+          ...depth,
+          beastWeakLower: 300 * 2 ** index,
+          beastWeakUpper: 400 * 2 ** index,
+          beastStrongLower: 400 * 2 ** index,
+          beastStrongUpper: 500 * 2 ** index,
+          chest: index === 1 ? { common: 0, uncommon: 5_000, rare: 2_800, epic: 1_500, legendary: 700 } : depth.chest,
+        }
+      : depth,
   ),
   research: [
     ...frontierPreset.research.filter(({ row }) => row !== research.ROW_DEPTH),

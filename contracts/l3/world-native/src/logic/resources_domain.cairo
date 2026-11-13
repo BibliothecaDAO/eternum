@@ -64,11 +64,13 @@ pub mod ResourcesLogic {
             let depth = crate::logic::expeditions::depth_at(
                 key.game_id, crate::troops::Coord { alt: site.alt, x: site.col, y: site.row },
             );
-            let reward = if category == crate::taxonomy::RUIN_CATEGORY {
-                None
-            } else {
-                crate::expeditions::site_reward(category, site, depth)
-            };
+            let (reward, clear_xp) = crate::expeditions::ISitePayoutDispatcherTrait::site_payout(
+                crate::expeditions::ISitePayoutLibraryDispatcher {
+                    class_hash: self.release.classes(key.game_id).construction.read(),
+                },
+                site,
+                depth,
+            );
             let home = ResourceKey { game_id: key.game_id, entity_id: home_id };
             let spoils: u128 = crate::logic::triumphs::percent(
                 home,
@@ -102,11 +104,7 @@ pub mod ResourcesLogic {
                 },
                 explorer,
                 crate::progression::XpAward::Clear(
-                    (Into::<u32, u128>::into(crate::progression::clear_xp(site.initial_guard_count, depth))
-                        * spoils
-                        / 100)
-                        .try_into()
-                        .unwrap(),
+                    (Into::<u32, u128>::into(clear_xp) * spoils / 100).try_into().unwrap(),
                 ),
                 context.timestamp,
             );

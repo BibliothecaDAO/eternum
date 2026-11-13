@@ -310,7 +310,7 @@ pub mod TroopsLogic {
                 crate::logic::guards::GuardState::save(guard_key, crate::guards::Guard { troops, destroyed_tick: 0 });
             }
             if site {
-                crate::logic::expeditions::create_site(key, guards);
+                crate::logic::expeditions::create_site(key, guards, seed);
             }
         }
         fn add_starting_guard(

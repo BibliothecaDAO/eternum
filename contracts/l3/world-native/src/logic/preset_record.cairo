@@ -391,7 +391,7 @@ fn write_depths(
 fn validate_beast_guards(depth: crate::expeditions::DepthRules) {
     assert!(depth.beast_weak_lower > 0 && depth.beast_weak_lower <= depth.beast_weak_upper, "invalid weak beast range");
     assert!(depth.beast_strong_lower <= depth.beast_strong_upper, "invalid strong beast range");
-    assert!(depth.beast_weak_upper < depth.beast_strong_lower, "beast ranges overlap");
+    assert!(depth.beast_weak_upper <= depth.beast_strong_lower, "beast ranges overlap");
     assert!(depth.beast_strong_upper < depth.site_guard_lower, "beasts must be weaker than sites");
     assert!(
         Into::<u16, u32>::into(depth.beast_strong_upper) < depth.ruin_guard_lower, "beasts must be weaker than ruins",

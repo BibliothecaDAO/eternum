@@ -49,31 +49,45 @@ fn site_payout_keeps_initial_scaled_guard_count_and_has_no_clock_factor() {
     let initial = 1001 * RESOURCE_PRECISION + 1;
     let camp_category = crate::taxonomy::CAMP_CATEGORY;
     let site = ExpeditionSite {
-        category: camp_category, initial_guard_count: initial, alt: false, col: 1, row: 1, clear: None,
+        beast_kind: crate::expeditions::BeastKind::None,
+        category: camp_category,
+        initial_guard_count: initial,
+        alt: false,
+        col: 1,
+        row: 1,
+        clear: None,
     };
     assert_eq!(
-        site_reward(camp_category, site, 0).unwrap(),
+        site_reward(crate::expeditions::ExpeditionSite { category: camp_category, ..site }, 0).unwrap(),
         crate::resources::ResourceAmount { resource_type: LABOR, amount: initial / 2 },
     );
     assert_eq!(
         site_reward(
-            camp_category,
-            ExpeditionSite {
-                clear: Some(crate::expeditions::SiteClear { explorer_id: 7, home_id: 1, reward: None }), ..site,
+            crate::expeditions::ExpeditionSite {
+                category: camp_category,
+                ..ExpeditionSite {
+                    clear: Some(crate::expeditions::SiteClear { explorer_id: 7, home_id: 1, reward: None }), ..site,
+                },
             },
             0,
         ),
-        site_reward(camp_category, site, 0),
+        site_reward(crate::expeditions::ExpeditionSite { category: camp_category, ..site }, 0),
     );
     assert_eq!(
-        site_reward(RIFT_CATEGORY, site, 0).unwrap(),
+        site_reward(crate::expeditions::ExpeditionSite { category: RIFT_CATEGORY, ..site }, 0).unwrap(),
         crate::resources::ResourceAmount { resource_type: ESSENCE, amount: initial * 3 },
     );
     assert_eq!(
-        site_reward(BEASTS_CATEGORY, site, 0).unwrap(),
-        crate::resources::ResourceAmount { resource_type: LABOR, amount: initial / 4 },
+        site_reward(
+            crate::expeditions::ExpeditionSite {
+                beast_kind: crate::expeditions::BeastKind::Cyclops, category: BEASTS_CATEGORY, ..site,
+            },
+            0,
+        )
+            .unwrap(),
+        crate::resources::ResourceAmount { resource_type: crate::resources::WHEAT, amount: initial * 4 },
     );
-    assert!(site_reward(RUIN_CATEGORY, site, 0).is_none());
+    assert!(site_reward(crate::expeditions::ExpeditionSite { category: RUIN_CATEGORY, ..site }, 0).is_none());
 }
 
 #[test]
@@ -93,10 +107,15 @@ fn site_payout_counts_all_initial_guard_troops_without_tier_weighting() {
         let tile = crate::geometry::tile_key(key.game_id, coord);
         crate::logic::map::MapState::occupy(tile, entity_id, crate::taxonomy::CAMP_OCCUPIER, true);
         create_site_structure(key, crate::taxonomy::CAMP_CATEGORY);
-        crate::logic::expeditions::create_site(key, guards.span());
+        crate::logic::expeditions::create_site(key, guards.span(), 0);
         let site = crate::logic::expeditions::expedition_site(key).unwrap();
         assert_eq!(site.initial_guard_count, 1100 * RESOURCE_PRECISION);
-        assert_eq!(site_reward(crate::taxonomy::CAMP_CATEGORY, site, 0).unwrap().amount, 550 * RESOURCE_PRECISION);
+        assert_eq!(
+            site_reward(crate::expeditions::ExpeditionSite { category: crate::taxonomy::CAMP_CATEGORY, ..site }, 0)
+                .unwrap()
+                .amount,
+            550 * RESOURCE_PRECISION,
+        );
         let receipt = crate::expeditions::SiteClear { explorer_id: 7, home_id: 1, reward: None };
         crate::logic::expeditions::clear_site(key, receipt);
         let cleared = crate::logic::expeditions::expedition_site(key).unwrap();
@@ -107,7 +126,10 @@ fn site_payout_counts_all_initial_guard_troops_without_tier_weighting() {
         crate::logic::map::MapState::vacate(tile, 100);
         assert_eq!(crate::logic::expeditions::expedition_site(key), Some(cleared));
         assert_eq!(cleared.initial_guard_count, site.initial_guard_count);
-        assert_eq!(site_reward(RIFT_CATEGORY, cleared, 0).unwrap().amount, 3300 * RESOURCE_PRECISION);
+        assert_eq!(
+            site_reward(crate::expeditions::ExpeditionSite { category: RIFT_CATEGORY, ..cleared }, 0).unwrap().amount,
+            3300 * RESOURCE_PRECISION,
+        );
     }
 }
 
@@ -137,7 +159,7 @@ fn every_guarded_site_keeps_terrain_and_receipt_and_removes_structure_and_guards
                     );
                 }
                 crate::logic::expeditions::create_site(
-                    key, array![Troops { count: 100 * RESOURCE_PRECISION, ..Default::default() }].span(),
+                    key, array![Troops { count: 100 * RESOURCE_PRECISION, ..Default::default() }].span(), 0,
                 );
                 let result = crate::expeditions::SiteClear { explorer_id: 20, home_id: 30, reward: None };
                 crate::logic::expeditions::clear_site(key, result);
@@ -173,7 +195,7 @@ fn a_site_cannot_clear_again_after_an_army_enters_its_tile() {
     crate::logic::map::MapState::occupy(tile, 1, crate::taxonomy::CAMP_OCCUPIER, true);
     create_site_structure(key, crate::taxonomy::CAMP_CATEGORY);
     crate::logic::expeditions::create_site(
-        key, array![Troops { count: RESOURCE_PRECISION, ..Default::default() }].span(),
+        key, array![Troops { count: RESOURCE_PRECISION, ..Default::default() }].span(), 0,
     );
     let result = crate::expeditions::SiteClear { explorer_id: 2, home_id: 3, reward: None };
     crate::logic::expeditions::clear_site(key, result);
@@ -182,12 +204,14 @@ fn a_site_cannot_clear_again_after_an_army_enters_its_tile() {
 }
 
 #[test]
-fn beast_labor_matches_recorded_surface_guards() {
-    for (guards, labor) in array![
-        (309_u128, 77250000000_u128), (537, 134250000000), (300, 75000000000), (350, 87500000000), (900, 225000000000),
-        (1050, 262500000000), (2400, 600000000000), (2800, 700000000000), (6000, 1500000000000), (7000, 1750000000000),
+fn cyclops_wheat_matches_recorded_surface_guards() {
+    for (guards, wheat) in array![
+        (309_u128, 1236000000000_u128), (537, 2148000000000), (300, 1200000000000), (350, 1400000000000),
+        (900, 3600000000000), (1050, 4200000000000), (2400, 9600000000000), (2800, 11200000000000),
+        (6000, 24000000000000), (7000, 28000000000000),
     ] {
         let site = ExpeditionSite {
+            beast_kind: crate::expeditions::BeastKind::Cyclops,
             category: BEASTS_CATEGORY,
             alt: false,
             col: 0,
@@ -196,8 +220,14 @@ fn beast_labor_matches_recorded_surface_guards() {
             clear: None,
         };
         assert_eq!(
-            site_reward(BEASTS_CATEGORY, site, 0).unwrap(),
-            crate::resources::ResourceAmount { resource_type: LABOR, amount: labor },
+            site_reward(
+                crate::expeditions::ExpeditionSite {
+                    beast_kind: crate::expeditions::BeastKind::Cyclops, category: BEASTS_CATEGORY, ..site,
+                },
+                0,
+            )
+                .unwrap(),
+            crate::resources::ResourceAmount { resource_type: crate::resources::WHEAT, amount: wheat },
         );
     }
 }
@@ -205,11 +235,60 @@ fn beast_labor_matches_recorded_surface_guards() {
 #[test]
 fn site_resources_scale_by_depth_after_the_base_integer_payout() {
     let site = ExpeditionSite {
-        category: BEASTS_CATEGORY, alt: false, col: 0, row: 0, initial_guard_count: 1001, clear: None,
+        beast_kind: crate::expeditions::BeastKind::Cyclops,
+        category: BEASTS_CATEGORY,
+        alt: false,
+        col: 0,
+        row: 0,
+        initial_guard_count: 1001,
+        clear: None,
     };
-    for (depth, labor, essence) in array![(0_u8, 250_u128, 3003_u128), (1, 375, 4504), (2, 500, 6006), (3, 625, 7507)] {
-        assert_eq!(site_reward(BEASTS_CATEGORY, site, depth).unwrap().amount, labor);
-        assert_eq!(site_reward(RIFT_CATEGORY, site, depth).unwrap().amount, essence);
-        assert!(site_reward(RUIN_CATEGORY, site, depth).is_none());
+    for (depth, labor, essence) in array![
+        (0_u8, 4004_u128, 3003_u128), (1, 4004, 4504), (2, 4004, 6006), (3, 4004, 7507),
+    ] {
+        assert_eq!(
+            site_reward(
+                crate::expeditions::ExpeditionSite {
+                    beast_kind: crate::expeditions::BeastKind::Cyclops, category: BEASTS_CATEGORY, ..site,
+                },
+                depth,
+            )
+                .unwrap()
+                .amount,
+            labor,
+        );
+        assert_eq!(
+            site_reward(crate::expeditions::ExpeditionSite { category: RIFT_CATEGORY, ..site }, depth).unwrap().amount,
+            essence,
+        );
+        assert!(site_reward(crate::expeditions::ExpeditionSite { category: RUIN_CATEGORY, ..site }, depth).is_none());
+    }
+}
+
+#[test]
+fn beast_kind_keeps_wheat_and_triple_xp_distinct_at_equal_strength() {
+    for depth in 0_u8..3 {
+        for count in array![200_u128, 350, 400, 450, 800] {
+            let cyclops = ExpeditionSite {
+                category: BEASTS_CATEGORY,
+                beast_kind: crate::expeditions::BeastKind::Cyclops,
+                initial_guard_count: count * RESOURCE_PRECISION,
+                alt: false,
+                col: 1,
+                row: 1,
+                clear: None,
+            };
+            let wraith = ExpeditionSite { beast_kind: crate::expeditions::BeastKind::Wraith, ..cyclops };
+            assert_eq!(
+                site_reward(cyclops, depth).unwrap(),
+                crate::resources::ResourceAmount {
+                    resource_type: crate::resources::WHEAT, amount: count * RESOURCE_PRECISION * 4,
+                },
+            );
+            assert!(site_reward(wraith, depth).is_none());
+            assert_eq!(
+                crate::expeditions::site_clear_xp(wraith, depth), crate::expeditions::site_clear_xp(cyclops, depth) * 3,
+            );
+        }
     }
 }

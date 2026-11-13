@@ -64,15 +64,20 @@ export const siteKindOf = (category: number): SiteKind => {
 /** A standing site's reward from the generated Cairo formula; a clear's actual credit lives in its receipt. */
 export const siteReward = (
   store: Pick<NativeFactStore, "require">,
-  site: Pick<NativeRows["ExpeditionSite"], "category" | "initial_guard_count" | "clear" | "game_id" | "row">,
+  site: Pick<
+    NativeRows["ExpeditionSite"],
+    "category" | "beast_kind" | "initial_guard_count" | "clear" | "game_id" | "row"
+  >,
 ): { resourceType: ResourcesIds; amount: bigint } | null =>
-  site.clear ? null : previewSiteReward(site.category, site.initial_guard_count, siteDepth(store, site));
+  site.clear
+    ? null
+    : previewSiteReward(site.category, site.beast_kind, site.initial_guard_count, siteDepth(store, site));
 
 /** The contract's integer XP formula, shared by the preview, receipt and local replay. */
 export const siteClearXp = (
   store: Pick<NativeFactStore, "require">,
-  site: Pick<NativeRows["ExpeditionSite"], "initial_guard_count" | "game_id" | "row">,
-): number => previewSiteClearXp(site.initial_guard_count, siteDepth(store, site));
+  site: Pick<NativeRows["ExpeditionSite"], "beast_kind" | "initial_guard_count" | "game_id" | "row">,
+): number => previewSiteClearXp(site.initial_guard_count, siteDepth(store, site), site.beast_kind);
 
 const siteDepth = (
   store: Pick<NativeFactStore, "require">,

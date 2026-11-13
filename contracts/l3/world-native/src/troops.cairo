@@ -411,7 +411,9 @@ pub fn frontier_guard(
     let lower: u128 = lower.into();
     let upper: u128 = upper.into();
     let count = if category == crate::taxonomy::BEASTS_CATEGORY {
-        let (lower, upper) = if crate::random::range(seed, 2, 2) == 0 {
+        let (lower, upper) = if crate::expeditions::beast_kind(
+            category, seed,
+        ) == crate::expeditions::BeastKind::Cyclops {
             (depth.beast_weak_lower, depth.beast_weak_upper)
         } else {
             (depth.beast_strong_lower, depth.beast_strong_upper)

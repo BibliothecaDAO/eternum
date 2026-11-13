@@ -51,6 +51,15 @@ pub mod ConstructionLogic {
     }
 
     #[abi(embed_v0)]
+    impl SitePayout of crate::expeditions::ISitePayout<ContractState> {
+        fn site_payout(
+            self: @ContractState, site: crate::expeditions::ExpeditionSite, depth: u8,
+        ) -> (Option<crate::resources::ResourceAmount>, u32) {
+            (crate::expeditions::site_reward(site, depth), crate::expeditions::site_clear_xp(site, depth))
+        }
+    }
+
+    #[abi(embed_v0)]
     impl BuildingRules of crate::buildings::IBuildingRules<ContractState> {
         #[cfg(feature: "test_support")]
         fn building_rule(

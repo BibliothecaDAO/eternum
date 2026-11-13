@@ -22,38 +22,56 @@ test("a new category or a changed resource, ratio or XP rule comes from Cairo", 
   const changed = {
     ...source,
     expeditions: source.expeditions
-      .replace("site.initial_guard_count / 4", "site.initial_guard_count / 8")
+      .replace("site.initial_guard_count * 4", "site.initial_guard_count * 8")
       .replace(
         "else {\n        None\n    }",
-        "else if category == crate::taxonomy::RUIN_CATEGORY {\n        Some(ResourceAmount { resource_type: ESSENCE, amount: site.initial_guard_count * 7 })\n    } else {\n        None\n    }",
+        "else if site.category == crate::taxonomy::RUIN_CATEGORY {\n        Some(ResourceAmount { resource_type: ESSENCE, amount: site.initial_guard_count * 7 })\n    } else {\n        None\n    }",
       ),
     progression: source.progression
       .replace("RESOURCE_PRECISION * 25", "RESOURCE_PRECISION * 36")
       .replace("(root / 2)", "(root / 3)"),
-    resources: source.resources.replace("LABOR: u8 = 23", "LABOR: u8 = 22"),
+    resources: source.resources.replace("WHEAT: u8 = 35", "WHEAT: u8 = 34"),
     taxonomy: source.taxonomy.replace("BEASTS_CATEGORY: u8 = 11", "BEASTS_CATEGORY: u8 = 12"),
   };
   const output = compileSitePreviews(changed);
-  assert.match(output, /category === 12\) return \{ resourceType: 22, amount: depthReward\(initialGuardCount \/ 8n/);
+  assert.match(output, /category === 12/);
+  assert.match(output, /resourceType: 34, amount: initialGuardCount \* 8n/);
   assert.match(output, /category === 10\) return \{ resourceType: 38, amount: depthReward\(initialGuardCount \* 7n/);
   assert.match(output, /integerSqrt\(initialGuardCount \/ 1000000000n \* 36n\) \/ 3n/);
 });
 
-test("the old XP-only Beasts rule cannot match today's generated payout", () => {
+test("the former beast labor formula is rejected rather than left in the preview", () => {
   const old = {
     ...source,
     expeditions: source.expeditions.replace(
-      / else if category == crate::taxonomy::BEASTS_CATEGORY \{[^]*?\n    \}/,
-      "",
+      "resource_type: WHEAT, amount: site.initial_guard_count * 4",
+      "resource_type: LABOR, amount: site.initial_guard_count / 4",
     ),
   };
-  assert.notEqual(compileSitePreviews(old), compileSitePreviews(source));
-  assert.doesNotMatch(compileSitePreviews(old), /category === 11/);
+  assert.throws(() => compileSitePreviews(old), /Unsupported beast payout/);
+});
+
+test("both beast kinds keep their exact reward at equal or changed guard strength", async () => {
+  const { outputText } = ts.transpileModule(compileSitePreviews(source), {
+    compilerOptions: { target: ts.ScriptTarget.ES2020, module: ts.ModuleKind.ESNext },
+  });
+  const { previewSiteReward, previewSiteClearXp } = await import(
+    `data:text/javascript;base64,${Buffer.from(outputText).toString("base64")}`
+  );
+  for (const count of [200n, 350n, 400n, 450n, 800n]) {
+    for (const depth of [0, 1, 2]) {
+      const guard = count * 1000000000n;
+      assert.deepEqual(previewSiteReward(11, "Cyclops", guard, depth), { resourceType: 35, amount: guard * 4n });
+      assert.equal(previewSiteReward(11, "Wraith", guard, depth), null);
+      assert.equal(previewSiteClearXp(guard, depth, "Wraith"), 3 * previewSiteClearXp(guard, depth, "Cyclops"));
+    }
+  }
+  assert.throws(() => previewSiteReward(11, "None", 400n, 0), /no kind/);
 });
 
 test("unsupported formulas, missing constants and changed signatures refuse generation", () => {
   for (const changed of [
-    { expeditions: source.expeditions.replace("site.initial_guard_count / 4", "site.initial_guard_count / 4 + 1") },
+    { expeditions: source.expeditions.replace("site.initial_guard_count * 4", "site.initial_guard_count * 4 + 1") },
     { expeditions: source.expeditions.replace("else {\n        None\n    }", 'else { panic!("missing") }') },
     { resources: source.resources.replace("pub const LABOR: u8 = 23;", "") },
     { progression: source.progression.replace("(root / 2)", "(root / 2 + 1)") },

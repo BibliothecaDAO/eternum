@@ -34,6 +34,7 @@ const chestsScenario = ({ researched, claimed }: { researched: bigint; claimed: 
       game_id: 1,
       entity_id: 9_100 + depth,
       category: StructureType.Ruin,
+      beast_kind: "None" as const,
       initial_guard_count: 999n * 1_000_000_000n,
       alt: false,
       col: ruin.col,

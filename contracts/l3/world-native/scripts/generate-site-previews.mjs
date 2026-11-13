@@ -7,7 +7,8 @@ const sources = ["expeditions", "progression", "taxonomy", "resources", "rules",
 
 /** Compile the pure site formulas. Unrecognized Cairo must fail, never leave a partial preview. */
 export function compileSitePreviews(source) {
-  const rewards = resourceRewards(source);
+  const { rewards, beast } = resourceRewards(source);
+  const wraithXp = wraithXpRule(source.expeditions);
   const xp = clearXpRule(source.progression);
   const premium = depthRewardRule(source.expeditions);
   const precision = constant(source.rules, "RESOURCE_PRECISION");
@@ -17,13 +18,18 @@ export function previewRiftGuardBound(camp: number, step: number): number {
   return Math.floor((camp * ${rift.percent} + step * ${rift.rounding}) / (step * ${rift.divisor})) * step;
 }
 
-export function previewSiteReward(category: number, initialGuardCount: bigint, depth: number): { resourceType: number; amount: bigint } | null {
+export function previewSiteReward(category: number, beastKind: string, initialGuardCount: bigint, depth: number): { resourceType: number; amount: bigint } | null {
+  if (category === ${beast.category}) {
+    if (beastKind === "Cyclops") return { resourceType: ${beast.resource}, amount: initialGuardCount * ${beast.factor}n };
+    if (beastKind === "Wraith") return null;
+    throw new Error("Beast site has no kind");
+  }
 ${rewards.map(({ category, resource, operator, operand }) => `  if (category === ${category}) return { resourceType: ${resource}, amount: depthReward(initialGuardCount ${operator} ${operand}n, depth) };`).join("\n")}
   return null;
 }
 
-export function previewSiteClearXp(initialGuardCount: bigint, depth: number): number {
-  const xp = depthReward(integerSqrt(initialGuardCount / ${precision}n * ${xp.multiplier}n) / ${xp.divisor}n, depth);
+export function previewSiteClearXp(initialGuardCount: bigint, depth: number, beastKind: string): number {
+  const xp = depthReward(integerSqrt(initialGuardCount / ${precision}n * ${xp.multiplier}n) / ${xp.divisor}n, depth) * (beastKind === "Wraith" ? ${wraithXp}n : 1n);
   if (xp > 0xffff_ffffn) throw new Error("Site clear XP exceeds u32");
   return Number(xp);
 }
@@ -47,22 +53,26 @@ function integerSqrt(value: bigint): bigint {
 }
 
 function resourceRewards(source) {
-  let body = functionBody(
-    source.expeditions,
-    "site_reward",
-    "category:u8,site:ExpeditionSite,depth:u8",
-    "Option<crate::resources::ResourceAmount>",
-  );
-  const imports = body.match(/^usecrate::resources::\{([A-Z_a-z,]+)\};/);
+  let body = functionBody(source.expeditions, "site_reward", "site:ExpeditionSite,depth:u8", "Option<ResourceAmount>");
+  const imports = source.expeditions.match(/^use crate::resources::\{([^}]+)\};/m);
   if (!imports) throw new Error("Unsupported site_reward imports");
-  body = body.slice(imports[0].length);
+  const branch = body.match(
+    /^ifsite.category==crate::taxonomy::([A-Z_]+)\{returnmatchsite.beast_kind\{BeastKind::Cyclops=>Some\(ResourceAmount\{resource_type:([A-Z_]+),amount:site.initial_guard_count\*([0-9_]+),?\}\),BeastKind::Wraith=>None,BeastKind::None=>panic!\("beastsitehasnokind"\),?\};\}/,
+  );
+  if (!branch) throw new Error("Unsupported beast payout; update the preview compiler");
+  const beast = {
+    category: constant(source.taxonomy, branch[1]),
+    resource: constant(source.resources, branch[2]),
+    factor: positiveInteger(branch[3]),
+  };
+  body = body.slice(branch[0].length);
   if (!body.startsWith("letreward=")) throw new Error("Unsupported site_reward premium");
   body = body.slice("letreward=".length);
-  const names = imports[1].split(",");
+  const names = imports[1].replace(/\s+/g, "").split(",");
   const rules = [];
   while (body.startsWith(rules.length === 0 ? "if" : "elseif")) {
     const branch = body.match(
-      /^(?:else)?ifcategory==crate::taxonomy::([A-Z_]+)\{Some\(ResourceAmount\{resource_type:([A-Z_]+),amount:site.initial_guard_count([*/])([0-9_]+),?\}\)\}/,
+      /^(?:else)?ifsite.category==crate::taxonomy::([A-Z_]+)\{Some\(ResourceAmount\{resource_type:([A-Z_]+),amount:site.initial_guard_count([*/])([0-9_]+),?\}\)\}/,
     );
     if (!branch || !names.includes("ResourceAmount") || !names.includes(branch[2]))
       throw new Error("Unsupported site_reward branch; update the preview compiler");
@@ -83,7 +93,16 @@ function resourceRewards(source) {
     throw new Error("Unsupported site_reward fallback or premium");
   if (new Set(rules.map(({ category }) => category)).size !== rules.length)
     throw new Error("Duplicate site reward category");
-  return rules;
+  return { rewards: rules, beast };
+}
+
+function wraithXpRule(source) {
+  const body = functionBody(source, "site_clear_xp", "site:ExpeditionSite,depth:u8", "u32");
+  const rule = body.match(
+    /^letbase=crate::progression::clear_xp\(site.initial_guard_count,depth\);ifsite.beast_kind==BeastKind::Wraith\{base\*([0-9_]+)\}else\{base\}$/,
+  );
+  if (!rule) throw new Error("Unsupported Wraith XP formula; update the preview compiler");
+  return positiveInteger(rule[1]);
 }
 
 function clearXpRule(source) {

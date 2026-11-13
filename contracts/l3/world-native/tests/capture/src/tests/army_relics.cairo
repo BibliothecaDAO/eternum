@@ -200,3 +200,94 @@ fn read_loadout(d: super::Deployment, key: ExplorerKey) -> crate::army_relics::A
 fn read_ruin(d: super::Deployment, key: ResourceKey) -> Option<ArmyRelic> {
     snforge_std::interact_with_state(d.games, || crate::logic::army_relics::ruin(key))
 }
+
+#[test]
+fn beast_clears_pay_wheat_or_triple_xp_through_explore_and_battle() {
+    for kind in array![crate::expeditions::BeastKind::Cyclops, crate::expeditions::BeastKind::Wraith] {
+        let (_, mut preset) = super::preset_projection::current_definition("frontier-s1");
+        let discovery = crate::expeditions::FrontierDiscoveryRules {
+            beasts_bps: 3000,
+            camp_bps: 0,
+            rift_bps: 0,
+            ruin_bps: 100,
+            shrine_bps: 0,
+            well_bps: 0,
+            empty_reveal_limit: 7,
+        };
+        preset.economy.discovery = Some(discovery);
+        let (d, game_id) = create_open_frontier(preset, BAG_SECONDS);
+        assert!(
+            execute_in_game(
+                d,
+                game_id,
+                Command::SettleSeason(crate::realms::SettleSeason { selected_realm: None, aspect: Some(1) }),
+                360,
+            ),
+        );
+        let home_id = snforge_std::interact_with_state(d.games, || crate::entity_ids::home_for_actor(game_id, d.actor));
+        let home = ResourceKey { game_id, entity_id: home_id };
+        let explorer_id = *IStructureOperationsDispatcher { contract_address: d.games }.home_armies(home).at(0);
+        let key = ExplorerKey { game_id, explorer_id };
+        let army = GameState { contract_address: d.games }.resolved_explorer(key).unwrap();
+        let destination = crate::geometry::neighbor(army.coord, 0);
+        let mut chosen = None;
+        for candidate in 0_u32..1000 {
+            let mut root: u256 = candidate.into();
+            let seed = crate::random::game_root(ref root, game_id);
+            if crate::expeditions::beast_kind(crate::taxonomy::BEASTS_CATEGORY, seed) == kind
+                && crate::discovery::frontier(
+                    discovery, 0, 0, 0, 100, 0, Some(any_relic()), seed,
+                ) == crate::discovery::Discovery::Beasts {
+                chosen = Some(Into::<u32, u256>::into(candidate));
+                break;
+            }
+        }
+        assert!(explore_with_root(d, game_id, explorer_id, chosen.expect('no beast root'), 400));
+        let occupied = IMapLogicDispatcher { contract_address: d.games }
+            .occupancy(crate::geometry::tile_key(game_id, destination))
+            .unwrap();
+        let site_key = ResourceKey { game_id, entity_id: occupied.entity_id };
+        let site = snforge_std::interact_with_state(
+            d.games, || crate::logic::expeditions::expedition_site(site_key).unwrap(),
+        );
+        assert_eq!(site.beast_kind, kind);
+        let resources = IResourceOperationsDispatcher { contract_address: d.games };
+        let wheat = ResourceSlot { game_id, entity_id: home_id, resource_type: crate::resources::WHEAT };
+        let labor = ResourceSlot { resource_type: crate::resources::LABOR, ..wheat };
+        let before_wheat = resources.resource_balance(wheat);
+        let before_labor = resources.resource_balance(labor);
+        let before_xp = snforge_std::interact_with_state(d.games, || crate::logic::progression::require(key).xp);
+        assert!(
+            execute_in_game(
+                d,
+                game_id,
+                Command::BattleGuard(
+                    crate::commands::Battle {
+                        attacker_id: explorer_id, defender_id: site_key.entity_id, relic_slot: None,
+                    },
+                ),
+                401,
+            ),
+        );
+        let cleared = snforge_std::interact_with_state(
+            d.games, || crate::logic::expeditions::expedition_site(site_key).unwrap(),
+        );
+        assert_eq!(cleared.beast_kind, kind);
+        assert!(cleared.clear.is_some());
+        let expected_wheat = if kind == crate::expeditions::BeastKind::Cyclops {
+            site.initial_guard_count * 4
+        } else {
+            0
+        };
+        assert_eq!(resources.resource_balance(wheat) - before_wheat, expected_wheat);
+        assert_eq!(resources.resource_balance(labor), before_labor);
+        let xp = snforge_std::interact_with_state(d.games, || crate::logic::progression::require(key).xp);
+        let base = crate::progression::clear_xp(site.initial_guard_count, 0);
+        let expected_xp = if kind == crate::expeditions::BeastKind::Wraith {
+            base * 3
+        } else {
+            base
+        };
+        assert_eq!(xp - before_xp, expected_xp);
+    }
+}

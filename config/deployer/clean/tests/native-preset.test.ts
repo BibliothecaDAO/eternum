@@ -1134,3 +1134,19 @@ test("Season 1 funds Scouts at a hundred per hour and two wheat per troop", () =
     { resource_type: ResourcesIds.Labor, amount: 500n * BigInt(RESOURCE_PRECISION) },
   ]);
 });
+
+test("Season 1 keeps the Cyclops and Wraith ranges drawn at each upper depth", () => {
+  const preset = buildNativePreset(
+    loadNativePresetConfiguration("madara.frontier", FRONTIER_S1_PRESET_ID),
+    FRONTIER_S1_PRESET_ID,
+  );
+  expect(
+    preset.settlement.depths
+      .slice(0, 3)
+      .map((row) => [row.beast_weak_lower, row.beast_weak_upper, row.beast_strong_lower, row.beast_strong_upper]),
+  ).toEqual([
+    [300, 400, 400, 500],
+    [600, 800, 800, 1000],
+    [1200, 1600, 1600, 2000],
+  ]);
+});

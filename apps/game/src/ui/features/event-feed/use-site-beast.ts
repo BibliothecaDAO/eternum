@@ -10,7 +10,10 @@ import { useQuery } from "@tanstack/react-query";
 const SITES = ["ExpeditionSite"] as const;
 
 /** What a site always is: its kind, its place and its starting guard. */
-type SiteFacts = Pick<NativeRows["ExpeditionSite"], "category" | "row" | "initial_guard_count" | "game_id">;
+type SiteFacts = Pick<
+  NativeRows["ExpeditionSite"],
+  "category" | "row" | "initial_guard_count" | "beast_kind" | "game_id"
+>;
 
 /**
  * A site's lasting facts: from its row when the player's map holds it, else from Herald's row for that site, for a
@@ -32,14 +35,7 @@ const useSiteFacts = (siteId: number): SiteFacts | undefined => {
     staleTime: Infinity,
   });
   if (held) return held;
-  return far.data
-    ? {
-        game_id: gameId,
-        category: Number(far.data.category),
-        row: Number(far.data.row),
-        initial_guard_count: BigInt(String(far.data.initial_guard_count)),
-      }
-    : undefined;
+  return far.data ?? undefined;
 };
 
 /** A site's guard painting, as the map and the site's card draw it (siteFrontierBeast → beastMeaning). */

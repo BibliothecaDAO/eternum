@@ -5730,6 +5730,12 @@
           "feltLength": 1
         },
         {
+          "name": "beast_kind",
+          "type": "world_native::expeditions::BeastKind",
+          "id": "0x62656173745f6b696e64",
+          "feltLength": 1
+        },
+        {
           "name": "alt",
           "type": "core::bool",
           "id": "0x616c74",
@@ -10145,6 +10151,24 @@
         }
       ]
     },
+    "world_native::expeditions::BeastKind": {
+      "type": "enum",
+      "name": "world_native::expeditions::BeastKind",
+      "variants": [
+        {
+          "name": "None",
+          "type": "()"
+        },
+        {
+          "name": "Cyclops",
+          "type": "()"
+        },
+        {
+          "name": "Wraith",
+          "type": "()"
+        }
+      ]
+    },
     "world_native::expeditions::DepthRules": {
       "type": "struct",
       "name": "world_native::expeditions::DepthRules",
@@ -10242,6 +10266,10 @@
         {
           "name": "initial_guard_count",
           "type": "core::integer::u128"
+        },
+        {
+          "name": "beast_kind",
+          "type": "world_native::expeditions::BeastKind"
         },
         {
           "name": "alt",
@@ -14830,5 +14858,5 @@
       ]
     }
   },
-  "identity": "b60a448f5b75fc1c8e0dfd1a6146314f4d2d80924d6317524108cc0946aba0d6"
+  "identity": "20a0927509cc0febcc2b05b9227b428f43b5950124a5bc4ec33ddc3eefb224f6"
 }

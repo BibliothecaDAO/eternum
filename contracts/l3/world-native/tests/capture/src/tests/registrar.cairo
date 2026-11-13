@@ -1108,6 +1108,7 @@ fn frontier_sites_persist_the_seeded_guard_and_initial_count() {
                 },
             );
             assert_eq!(site.initial_guard_count, expected.count);
+            assert_eq!(site.beast_kind, crate::expeditions::beast_kind(category, seed));
             let structure = IStructureOperationsDispatcher { contract_address: d.games }
                 .structure(ResourceKey { game_id, entity_id: id })
                 .unwrap();

@@ -1,3 +1,4 @@
+use crate::resources::{ESSENCE, LABOR, ResourceAmount, WHEAT};
 use crate::rules::BiomeClimateConfig;
 use crate::troops::Coord;
 
@@ -14,6 +15,7 @@ pub fn is_site_category(category: u8) -> bool {
 pub struct ExpeditionSite {
     pub category: u8,
     pub initial_guard_count: u128,
+    pub beast_kind: BeastKind,
     pub alt: bool,
     pub col: u32,
     pub row: u32,
@@ -41,19 +43,53 @@ pub struct SitePayout {
     pub reward: Option<crate::resources::ResourceAmount>,
 }
 
-// Camps and beasts pay labor on clear; a ruin pays the chest stored with it (crate::relics::SiteChest).
-pub fn site_reward(category: u8, site: ExpeditionSite, depth: u8) -> Option<crate::resources::ResourceAmount> {
-    use crate::resources::{ESSENCE, LABOR, ResourceAmount};
-    let reward = if category == crate::taxonomy::CAMP_CATEGORY {
+#[derive(Copy, Drop, Serde, Debug, PartialEq, starknet::Store)]
+pub enum BeastKind {
+    None,
+    Cyclops,
+    Wraith,
+}
+
+pub fn beast_kind(category: u8, seed: u256) -> BeastKind {
+    if category != crate::taxonomy::BEASTS_CATEGORY {
+        BeastKind::None
+    } else if crate::random::range(seed, 2, 2) == 0 {
+        BeastKind::Cyclops
+    } else {
+        BeastKind::Wraith
+    }
+}
+
+#[starknet::interface]
+pub trait ISitePayout<T> {
+    fn site_payout(self: @T, site: ExpeditionSite, depth: u8) -> (Option<ResourceAmount>, u32);
+}
+
+pub fn site_reward(site: ExpeditionSite, depth: u8) -> Option<ResourceAmount> {
+    if site.category == crate::taxonomy::BEASTS_CATEGORY {
+        return match site.beast_kind {
+            BeastKind::Cyclops => Some(ResourceAmount { resource_type: WHEAT, amount: site.initial_guard_count * 4 }),
+            BeastKind::Wraith => None,
+            BeastKind::None => panic!("beast site has no kind"),
+        };
+    }
+    let reward = if site.category == crate::taxonomy::CAMP_CATEGORY {
         Some(ResourceAmount { resource_type: LABOR, amount: site.initial_guard_count / 2 })
-    } else if category == crate::taxonomy::BEASTS_CATEGORY {
-        Some(ResourceAmount { resource_type: LABOR, amount: site.initial_guard_count / 4 })
-    } else if category == crate::taxonomy::RIFT_CATEGORY {
+    } else if site.category == crate::taxonomy::RIFT_CATEGORY {
         Some(ResourceAmount { resource_type: ESSENCE, amount: site.initial_guard_count * 3 })
     } else {
         None
     };
     reward.map(|reward| ResourceAmount { amount: depth_reward(reward.amount, depth), ..reward })
+}
+
+pub fn site_clear_xp(site: ExpeditionSite, depth: u8) -> u32 {
+    let base = crate::progression::clear_xp(site.initial_guard_count, depth);
+    if site.beast_kind == BeastKind::Wraith {
+        base * 3
+    } else {
+        base
+    }
 }
 
 pub fn depth_reward(amount: u128, depth: u8) -> u128 {

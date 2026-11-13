@@ -766,7 +766,9 @@ fn assert_capture_at(
                     if payout.site_id == camp_id {
                         camp_reward
                     } else {
-                        crate::expeditions::site_reward(category, expected, depth)
+                        crate::expeditions::site_reward(
+                            crate::expeditions::ExpeditionSite { category: category, ..expected }, depth,
+                        )
                     },
                 );
             }

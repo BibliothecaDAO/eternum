@@ -2,7 +2,7 @@ import { readFrontierBeast } from "@bibliothecadao/eternum";
 import type { NativeFactStore } from "@bibliothecadao/eternum/game-client";
 import { StructureType } from "@bibliothecadao/types";
 import type { FrontierSpecies, FrontierBeast } from "@bibliothecadao/eternum";
-export { beastBand, frontierBeast, type FrontierSpecies, type FrontierBeast } from "@bibliothecadao/eternum";
+export { frontierBeast, type FrontierSpecies, type FrontierBeast } from "@bibliothecadao/eternum";
 export { FALLEN_REALM_DEPTHS } from "@bibliothecadao/types";
 
 export const FALLEN_REALM_RUIN_PATH = "/models/outposts/ruin.glb";

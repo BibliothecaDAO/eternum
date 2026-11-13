@@ -146,7 +146,7 @@ fn frontier_registration_refuses_invalid_site_and_beast_guard_ranges() {
                 depth.beast_strong_lower = depth.beast_strong_upper + 1;
             }
             if invalid == 9 {
-                depth.beast_weak_upper = depth.beast_strong_lower;
+                depth.beast_weak_upper = depth.beast_strong_lower + 1;
             }
             if invalid == 10 {
                 depth.beast_strong_upper = depth.site_guard_lower;

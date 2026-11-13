@@ -105,6 +105,7 @@ export const campBeside = (kind: SiteKind = "Camp", guardKnown = true, armyStami
       game_id: 1,
       entity_id: SITE,
       category: SITE_CATEGORY[kind],
+      beast_kind: kind === "Beasts" ? "Cyclops" : "None",
       initial_guard_count: String(guardCount * PRECISION),
       ...SITE_TILE,
       clear: null,

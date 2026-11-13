@@ -214,6 +214,7 @@ const receipt = (rules: ExpeditionRules, home: number, day: number, depth: numbe
     game_id: 1,
     entity_id: BigInt(9_000 + home * 100 + day * 10 + depth),
     category: StructureType.Ruin,
+    beast_kind: "None" as const,
     initial_guard_count: 999n,
     alt: false,
     col: (home - 1) * rules.spacing + 1,

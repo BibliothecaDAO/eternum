@@ -15,7 +15,6 @@ import { resolveStructureRotationY } from "./structure-orientation";
 import {
   FRONTIER_BEASTS,
   FALLEN_REALM_DEPTHS,
-  beastBand,
   frontierBeast,
   frontierBeastModelIndex,
   readStandingFrontierBeast,
@@ -29,7 +28,14 @@ const DEPTH_BOUNDS = [
   { beast_weak_lower: 6000, beast_weak_upper: 7000, beast_strong_lower: 9000, beast_strong_upper: 11000 },
 ];
 const scaled = (count: number) => BigInt(count) * BigInt(RESOURCE_PRECISION);
-const facts = (category: StructureType, depth = 0, initialCount = 325, remaining = 1, cleared = false) => {
+const facts = (
+  category: StructureType,
+  depth = 0,
+  initialCount = 325,
+  remaining = 1,
+  cleared = false,
+  beastKind: "None" | "Cyclops" | "Wraith" = "Cyclops",
+) => {
   const rows = {
     SliceRules: { day_unit_seconds: 86400 },
     GameRegistry: { start_main_at: 0, seed: 1 },
@@ -40,6 +46,7 @@ const facts = (category: StructureType, depth = 0, initialCount = 325, remaining
       game_id: 1,
       entity_id: 9,
       category,
+      beast_kind: beastKind,
       initial_guard_count: scaled(initialCount),
       row: depth * 10 + 5,
       clear: cleared ? { explorer_id: 1n, home_id: 7n, reward: null } : null,
@@ -164,7 +171,7 @@ describe("Frontier guard identity", () => {
       ] as const) {
         for (const initial of [low, Math.floor((low + high) / 2), high]) {
           const read = (remaining: number, cleared = false) =>
-            readStandingFrontierBeast(facts(StructureType.Beasts, depth, initial, remaining, cleared), 1, 9);
+            readStandingFrontierBeast(facts(StructureType.Beasts, depth, initial, remaining, cleared, name), 1, 9);
           const identity = read(initial)!;
           expect(identity).toEqual({ beast: species, name, scale: 1 });
           expect(getStructureModelPaths()[StructureType.Beasts][frontierBeastModelIndex(identity.beast)]).toBe(
@@ -178,25 +185,18 @@ describe("Frontier guard identity", () => {
       }
     },
   );
-  it.each([299, 351, 449, 551])("rejects initial count %s outside both preset bands", (count) => {
-    expect(() => readStandingFrontierBeast(facts(StructureType.Beasts, 0, count), 1, 9)).toThrow(
-      "outside its depth ranges",
+  it.each([299, 351, 400, 449, 551])("keeps the drawn kind at changed guard strength %s", (count) => {
+    for (const name of ["Cyclops", "Wraith"] as const) {
+      expect(readStandingFrontierBeast(facts(StructureType.Beasts, 0, count, 1, false, name), 1, 9)?.name).toBe(name);
+    }
+  });
+  it("rejects a beast receipt without its drawn kind", () => {
+    expect(() => readStandingFrontierBeast(facts(StructureType.Beasts, 0, 400, 1, false, "None"), 1, 9)).toThrow(
+      "no drawn kind",
     );
   });
-  it.each([
-    { beast_weak_lower: 0 },
-    { beast_weak_upper: 299 },
-    { beast_strong_lower: 350 },
-    { beast_strong_upper: 449 },
-  ])("rejects invalid preset bands %j", (invalid) => {
-    expect(() => beastBand(scaled(325), { ...DEPTH_BOUNDS[0], ...invalid })).toThrow(
-      "positive, separate strength ranges",
-    );
-  });
-  it("requires the depth preset to resolve a beast", () => {
-    expect(() => readStandingFrontierBeast(without(facts(StructureType.Beasts), "DepthRules"), 1, 9)).toThrow(
-      "without depth rules",
-    );
+  it("reads the drawn kind without a depth strength range", () => {
+    expect(readStandingFrontierBeast(without(facts(StructureType.Beasts), "DepthRules"), 1, 9)?.name).toBe("Cyclops");
   });
   it("has exactly eight active species with distinct model and portrait deliveries", () => {
     expect(Object.keys(FRONTIER_BEASTS)).toEqual([

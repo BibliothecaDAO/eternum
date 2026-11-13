@@ -15,6 +15,7 @@ const site = (entity_id: bigint, row: number) => ({
   game_id: 1,
   entity_id,
   category: StructureType.Ruin,
+  beast_kind: "None" as const,
   initial_guard_count: 2000n,
   alt: false,
   col: 40,
