@@ -46,11 +46,14 @@ pub fn site_coord(rules: DeepRules, kind: u8, spacing: u32) -> Coord {
 }
 
 fn local_coord(rules: DeepRules, kind: u8) -> Coord {
-    match kind {
-        crate::rules::DEEP_FOUNDATION => rules.foundation,
-        crate::rules::DEEP_QUARRY => rules.quarry,
-        crate::rules::DEEP_ALTAR => rules.altar,
-        _ => panic!("invalid Deep site"),
+    if kind == crate::rules::DEEP_FOUNDATION {
+        rules.foundation
+    } else if kind == crate::rules::DEEP_QUARRY {
+        rules.quarry
+    } else if kind == crate::rules::DEEP_ALTAR {
+        rules.altar
+    } else {
+        panic!("invalid Deep site")
     }
 }
 

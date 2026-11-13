@@ -2691,7 +2691,9 @@ fn defeating_a_deep_beast_keeps_its_site_and_the_next_day_restores_the_same_guar
     let site_id = snforge_std::interact_with_state(
         d.games, || crate::state::read().deep.site_ids.read((game_id, crate::rules::DEEP_FOUNDATION)),
     );
-    let command = Command::BattleGuard(crate::commands::Battle { attacker_id: id, defender_id: site_id });
+    let command = Command::BattleGuard(
+        crate::commands::Battle { attacker_id: id, defender_id: site_id, relic_slot: None },
+    );
     assert!(execute_in_game(d, game_id, command, 360));
     let guards = IGuardsDispatcher { contract_address: d.games };
     let guard_key = GuardKey { game_id, structure_id: site_id, slot: 0 };
@@ -2878,9 +2880,12 @@ fn deep_slots_accept_four_allied_players_refuse_duplicates_and_release_on_death_
         ),
     );
     for key in array![fifth, duplicate, enemy] {
-        assert!(snforge_std::interact_with_state(d.games, || crate::logic::deep_guards::guard(*key)).is_none());
+        let guard: Option<crate::deep::DeepGuard> = snforge_std::interact_with_state(
+            d.games, || crate::logic::deep_guards::guard(key),
+        );
+        assert!(guard.is_none());
         assert_eq!(
-            GameState { contract_address: d.games }.resolved_explorer(*key).unwrap().troops.count,
+            GameState { contract_address: d.games }.resolved_explorer(key).unwrap().troops.count,
             3000 * RESOURCE_PRECISION,
         );
     }
@@ -2892,21 +2897,21 @@ fn deep_slots_accept_four_allied_players_refuse_duplicates_and_release_on_death_
     let tomorrow = day_start(d, game_id, 1);
     assert!(execute_in_game(d, game_id, muster_command(category, 0), tomorrow + 1));
     for key in armies.span() {
-        assert!(snforge_std::interact_with_state(d.games, || crate::logic::deep_guards::guard(*key)).is_none());
-        assert!(GameState { contract_address: d.games }.resolved_explorer(*key).is_none());
+        let key: ExplorerKey = *key;
+        let guard: Option<crate::deep::DeepGuard> = snforge_std::interact_with_state(
+            d.games, || crate::logic::deep_guards::guard(key),
+        );
+        assert!(guard.is_none());
+        assert!(GameState { contract_address: d.games }.resolved_explorer(key).is_none());
     }
     assert!(GameState { contract_address: d.games }.resolved_explorer(fifth).is_none());
     assert_eq!(
         IGuardsDispatcher { contract_address: d.games }.guard(beast_key).troops.count, 10000 * RESOURCE_PRECISION,
     );
-    assert_eq!(
-        snforge_std::interact_with_state(
-            d.games, || crate::logic::map::occupancy(crate::geometry::tile_key(game_id, coord)),
-        )
-            .unwrap()
-            .entity_id,
-        site_id,
+    let occupied: Option<crate::map::TileOccupancy> = snforge_std::interact_with_state(
+        d.games, || crate::logic::map::occupancy(crate::geometry::tile_key(game_id, coord)),
     );
+    assert_eq!(occupied.unwrap().entity_id, site_id);
 }
 
 #[test]
@@ -2950,8 +2955,7 @@ fn deep_descent_charges_new_ticks_once_and_dead_field_armies_free_the_arrival() 
                 .resources
                 .weights
                 .write(
-                    (game_id, key.explorer_id),
-                    crate::resources::ResourceWeight { capacity: before.capacity * 500, ..before },
+                    (game_id, key.explorer_id), crate::resources::Weight { capacity: before.capacity * 500, ..before },
                 );
         },
     );
@@ -3096,7 +3100,7 @@ fn deep_ticks_pay_pre_loss_weights_once_and_stop_paying_dead_guards() {
     );
     // The occupied home slot rejects the player command; periodic settlement remains committed.
     for timestamp in array![480_u64, 481, 720, 840] {
-        assert!(!execute_in_game(d, game_id, muster_command(category, 0), *timestamp));
+        assert!(!execute_in_game(d, game_id, muster_command(category, 0), timestamp));
     }
     snforge_std::interact_with_state(
         d.games,
@@ -3121,8 +3125,8 @@ fn deep_ticks_pay_pre_loss_weights_once_and_stop_paying_dead_guards() {
             );
             assert_eq!(crate::state::read().deep.altar_bars.read((game_id, 1)), 15);
             for key in array![second, quarry, altar] {
-                assert!(crate::logic::troops::explorer(*key).is_none());
-                assert!(crate::logic::deep_guards::guard(*key).is_none());
+                assert!(crate::logic::troops::explorer(key).is_none());
+                assert!(crate::logic::deep_guards::guard(key).is_none());
             }
             assert_eq!(crate::state::read().deep.paid_tick.read(game_id), Some(7));
         },
@@ -3169,7 +3173,7 @@ fn winning_tick_finishes_all_three_sites_and_rejects_the_waiting_command() {
             );
             assert_eq!(crate::state::read().deep.altar_bars.read((game_id, 1)), 5);
             for key in array![foundation, quarry, altar] {
-                assert_eq!(crate::logic::troops::explorer(*key).unwrap().troops.count, 400 * RESOURCE_PRECISION);
+                assert_eq!(crate::logic::troops::explorer(key).unwrap().troops.count, 400 * RESOURCE_PRECISION);
             }
             assert_eq!(crate::state::read().deep.paid_tick.read(game_id), Some(4));
             assert!(crate::logic::troops::home_armies(ResourceKey { game_id, entity_id: 1 }).is_empty());
@@ -3190,7 +3194,7 @@ fn scheduled_end_pays_the_final_boundary_once() {
     );
     let guard = join_deep_tick_fixture(d, game_id, crate::rules::DEEP_FOUNDATION, 101, 600);
     for now in array![720_u64, 840] {
-        assert!(!execute_in_game(d, game_id, muster_command(category, 0), *now));
+        assert!(!execute_in_game(d, game_id, muster_command(category, 0), now));
         snforge_std::interact_with_state(
             d.games,
             || {

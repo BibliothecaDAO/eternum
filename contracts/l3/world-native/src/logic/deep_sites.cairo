@@ -77,6 +77,7 @@ fn emit_beast_battle(
     before: (u128, u128),
     combat: crate::combat::CombatContext,
 ) {
+    let (attacker_before, defender_before) = before;
     crate::logic::combat::emit(
         crate::troops::BattleEvent {
             version: 2,
@@ -92,9 +93,9 @@ fn emit_beast_battle(
             },
             coord: defender.coord,
             max_reward: array![].span(),
-            attacker: crate::combat_actions::battle_side(actor, before.0, attacker.troops, combat.attacker_roll),
+            attacker: crate::combat_actions::battle_side(actor, attacker_before, attacker.troops, combat.attacker_roll),
             defender: crate::combat_actions::battle_side(
-                0.try_into().unwrap(), before.1, defender.troops, combat.defender_roll,
+                0.try_into().unwrap(), defender_before, defender.troops, combat.defender_roll,
             ),
             timestamp: combat.timestamp,
         },
