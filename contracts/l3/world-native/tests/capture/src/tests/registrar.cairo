@@ -2687,7 +2687,9 @@ fn defeating_a_deep_beast_keeps_its_site_and_the_next_day_restores_the_same_guar
     snforge_std::interact_with_state(
         d.games,
         || {
-            let preset = crate::logic::preset_record::for_game(game_id);
+            let state = crate::state::write();
+            let commitment = state.registrar.presets.read(state.games.games.entry(game_id).preset_id.read());
+            let preset = state.presets.entry(commitment);
             preset.quest_rewards.write(Some((quests.labor, quests.essence, quests.bonus_percent)));
             preset
                 .bane_rules
