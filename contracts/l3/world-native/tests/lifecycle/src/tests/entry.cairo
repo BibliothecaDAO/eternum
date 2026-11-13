@@ -286,7 +286,9 @@ fn a_full_store_consumes_only_that_homes_daily_claim() {
         },
     );
     let operator = ILedgerOperatorSafeDispatcher { contract_address: d.games };
-    let grant = operator.grant_labor(home, 0, d.actor).unwrap();
+    let result = operator.grant_labor(home, 0, d.actor);
+    assert!(result.is_ok(), "full-store claim failed: {:?}", result);
+    let grant = result.unwrap();
     assert_eq!(grant.amount, 0);
     assert_eq!(operator.grant_labor(home, 0, d.actor).unwrap(), grant);
     assert_eq!(operator.labor_grant(crate::entry::LaborHome { game_id: home.game_id + 1, ..home }, 0).unwrap(), None);
