@@ -13,7 +13,7 @@ fn production_splits_at_start_and_early_end_and_carries_fractional_output() {
     };
     let window = BaneWindow { kind: ASH_FALL, start: 50, end: 71 };
     let mut once = resource;
-    settle_windows(23, ref once, 1, 80, array![window].span(), 100, 50);
+    settle_windows(23, ref once, 1, 80, array![window].span(), 50);
     assert_eq!(once.balance, 206);
     assert_eq!(once.production.remainder, 50);
     settle_windows(23, ref resource, 1, 51, array![BaneWindow { end: 51, ..window }].span(), 50);
