@@ -50,7 +50,7 @@ pub mod FailingReleaseMigrationFixture {
 }
 #[starknet::interface]
 pub trait IChangedSweep<T> {
-    fn sweep_lords(ref self: T, game_id: u32, structure_id: u64, context: crate::commands::ActionContext);
+    fn sweep_lords(ref self: T, game_id: u32, structure_id: u64);
 }
 
 #[starknet::contract]
@@ -60,9 +60,7 @@ pub mod ChangedSweepPrizesFixture {
 
     #[abi(embed_v0)]
     impl Sweep of super::IChangedSweep<ContractState> {
-        fn sweep_lords(
-            ref self: ContractState, game_id: u32, structure_id: u64, context: crate::commands::ActionContext,
-        ) {
+        fn sweep_lords(ref self: ContractState, game_id: u32, structure_id: u64) {
             core::panic_with_felt252('sweep release 2');
         }
     }

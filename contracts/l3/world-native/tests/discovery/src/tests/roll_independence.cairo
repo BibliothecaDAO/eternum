@@ -282,16 +282,8 @@ pub use world_test_support::tests::roll_independence::*;
 #[test_case(name: "route_69_roots_08_15", 69, 8)]
 #[test_case(name: "route_69_roots_16_23", 69, 16)]
 #[test_case(name: "route_69_roots_24_31", 69, 24)]
-#[test_case(name: "route_70_roots_00_07", 70, 0)]
-#[test_case(name: "route_70_roots_08_15", 70, 8)]
-#[test_case(name: "route_70_roots_16_23", 70, 16)]
-#[test_case(name: "route_70_roots_24_31", 70, 24)]
-#[test_case(name: "route_71_roots_00_07", 71, 0)]
-#[test_case(name: "route_71_roots_08_15", 71, 8)]
-#[test_case(name: "route_71_roots_16_23", 71, 16)]
-#[test_case(name: "route_71_roots_24_31", 71, 24)]
 #[feature("safe_dispatcher")]
-fn all_72_typed_entry_refusals_are_root_independent(index: u32, start: u64) {
+fn all_supported_typed_entry_refusals_are_root_independent(index: u32, start: u64) {
     let commands = typed_commands();
     assert_eq!(commands.len(), ROUTES);
     assert_eq!(crate::command_routes::COMMAND_ROUTES.span().len(), ROUTES);
@@ -306,9 +298,7 @@ fn all_72_typed_entry_refusals_are_root_independent(index: u32, start: u64) {
             start + sample - 1
         };
         let d = fresh_world(false);
-        if let Command::WithdrawLords(_) = command {
-            snforge_std::start_cheat_transaction_hash(d.games, (100000_u64 + root).into());
-        }
+
         let before = play_fixture::gameplay_snapshot(d.games);
         let (release, preset) = play_fixture::pins(d.games, 1);
         play_fixture::caller(d.games, d.actor, 100);
@@ -605,15 +595,7 @@ fn all_72_typed_entry_refusals_are_root_independent(index: u32, start: u64) {
 #[test_case(name: "route_69_roots_08_15", 69, 8)]
 #[test_case(name: "route_69_roots_16_23", 69, 16)]
 #[test_case(name: "route_69_roots_24_31", 69, 24)]
-#[test_case(name: "route_70_roots_00_07", 70, 0)]
-#[test_case(name: "route_70_roots_08_15", 70, 8)]
-#[test_case(name: "route_70_roots_16_23", 70, 16)]
-#[test_case(name: "route_70_roots_24_31", 70, 24)]
-#[test_case(name: "route_71_roots_00_07", 71, 0)]
-#[test_case(name: "route_71_roots_08_15", 71, 8)]
-#[test_case(name: "route_71_roots_16_23", 71, 16)]
-#[test_case(name: "route_71_roots_24_31", 71, 24)]
-fn all_72_real_domain_verdicts_are_root_independent(index: u32, start: u64) {
+fn all_supported_real_domain_verdicts_are_root_independent(index: u32, start: u64) {
     let commands = typed_commands();
     assert_eq!(commands.len(), ROUTES);
     let command = *commands.at(index);
@@ -627,9 +609,7 @@ fn all_72_real_domain_verdicts_are_root_independent(index: u32, start: u64) {
             start + sample - 1
         };
         let d = fresh_world(true);
-        if let Command::WithdrawLords(_) = command {
-            snforge_std::start_cheat_transaction_hash(d.games, (200000_u64 + root).into());
-        }
+
         let mut spy = snforge_std::spy_events();
         let applied = play_fixture::play(d.games, TestAction { game_id: 1, actor: d.actor, command }, root.into(), 100);
         if let Some(previous) = expected {

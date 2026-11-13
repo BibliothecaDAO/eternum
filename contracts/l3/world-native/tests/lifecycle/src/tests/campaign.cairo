@@ -91,7 +91,9 @@ fn claims_each_game_day(tier: u8, expected_amount: u128, expected_essence: u128)
     let game = crate::game::IGameDispatcherTrait::game(
         crate::game::IGameDispatcher { contract_address: d.games }, home.game_id,
     );
-    let (_, preset) = super::preset_projection::current_definition("devcon");
+    let (_, mut preset) = super::preset_projection::current_definition("devcon");
+    preset.economy.chests = None;
+    preset.rules.mode_rules = preset.rules.mode_rules & (0xffffffff - crate::rules::DISCOVER_CHESTS);
     let unit = preset.rules.day_unit_seconds;
     assert_eq!(unit, 7200);
     assert_eq!(crate::days::day_of(game, unit, game.end_at - 1).index + 1, 10);

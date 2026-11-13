@@ -429,26 +429,8 @@ pub fn store_relics(
 ) {
     crate::logic::release::assert_authority();
     let preset = crate::state::write().presets.entry(commitment);
-    if let Some(value) = chests {
-        assert!(
-            day_unit_seconds != 0 && mode_rules & crate::rules::DEPTH_CONTENTS != 0, "chest tables require depth rules",
-        );
-        assert!(value.price_ceiling != 0, "empty chest rules");
-        assert!(
-            value.pool_bps > 0 && value.pool_bps < 10000 && value.top_n > 0 && value.top_n <= 100,
-            "invalid Frontier prize split",
-        );
-        let shares = value.shares;
-        assert!(
-            shares.common != 0
-                && shares.common <= shares.uncommon
-                && shares.uncommon <= shares.rare
-                && shares.rare <= shares.epic
-                && shares.epic <= shares.legendary,
-            "invalid chest shares",
-        );
-        assert!(rules.is_empty(), "ruin chests replace timed relics");
-    } else if day_unit_seconds != 0 {
+    assert!(chests.is_none(), "LORDS presets are retired");
+    if day_unit_seconds != 0 {
         assert!(rules.is_empty(), "army relic loadouts replace resource relics");
         assert!(mode_rules & crate::rules::DISCOVER_CHESTS == 0, "army relics have no LORDS chests");
     } else {

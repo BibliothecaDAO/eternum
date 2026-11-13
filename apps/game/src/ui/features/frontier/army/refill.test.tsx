@@ -2,21 +2,6 @@ import { act } from "react";
 import { createRoot } from "react-dom/client";
 import { describe, expect, it, vi } from "vitest";
 import { RefillButton, RefillConfirm, RefillPrice } from "./refill";
-import { ArmyRefill } from "./army-refill";
-import type { DockArmy } from "../hud/dock-armies";
-import type { NativeRows } from "@bibliothecadao/eternum/game-client";
-const calls = vi.hoisted(() => ({ refill: vi.fn(async () => "0x123"), signer: { address: "0x1" } }));
-vi.mock("@/hooks/context/game-context", () => ({
-  useGame: () => ({ setup: { systemCalls: { refill_stamina: calls.refill } }, account: { account: calls.signer } }),
-}));
-vi.mock("../value/use-spend-lords", () => ({ useSpendLords: () => ({ balance: undefined }) }));
-vi.mock("../value/use-realm-lords", () => ({ useRealmLords: () => 40 }));
-vi.mock("@/hooks/store/use-actions-in-flight", () => ({
-  useInFlight: () => undefined,
-  sendOnce: async (_kind: string, _id: number, _wait: boolean, send: () => Promise<unknown>) => send(),
-}));
-vi.mock("@/ui/features/event-feed/notify", () => ({ toast: { failed: vi.fn() } }));
-
 const render = (node: React.ReactNode) => {
   (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
   const host = document.createElement("div");
@@ -124,30 +109,3 @@ describe("partial stamina refills", () => {
     unmount();
   });
 });
-
-it.each(["button", "price", "stamina"] as const)(
-  "sends a partial refill through the army's real %s control",
-  async (look) => {
-    calls.refill.mockClear();
-    const { host, unmount } = render(
-      <ArmyRefill
-        look={look}
-        army={{ explorerId: 7, stamina: { current: 20, max: 150 } } as DockArmy}
-        realm={{ entity_id: 1n } as NativeRows["Structure"]}
-      />,
-    );
-    act(() => host.querySelector("button")!.click());
-    const slider = host.querySelector("input")!;
-    act(() => {
-      Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")!.set!.call(slider, "15");
-      slider.dispatchEvent(new Event("change", { bubbles: true }));
-    });
-    await act(async () =>
-      [...host.querySelectorAll("button")].find((b) => b.textContent === "Refill · 15 LORDS")!.click(),
-    );
-    expect(calls.refill).toHaveBeenCalledOnce();
-    expect(calls.refill).toHaveBeenCalledWith({ signer: calls.signer, explorerId: 7, amount: 15 });
-    expect(host.querySelector("input")).toBeNull();
-    unmount();
-  },
-);

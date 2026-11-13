@@ -239,7 +239,9 @@ fn a_held_settlement_receives_one_thousand_labor_per_day_and_retries_are_exact()
     let game = crate::game::IGameDispatcherTrait::game(
         crate::game::IGameDispatcher { contract_address: d.games }, home.game_id,
     );
-    let (_, preset) = super::preset_projection::current_definition("devcon");
+    let (_, mut preset) = super::preset_projection::current_definition("devcon");
+    preset.economy.chests = None;
+    preset.rules.mode_rules = preset.rules.mode_rules & (0xffffffff - crate::rules::DISCOVER_CHESTS);
     let unit = preset.rules.day_unit_seconds;
     let mut today = crate::days::day_of(game, unit, 362);
     // All ten seeded days reset at their own boundary, including multiple claims within one UTC date.
@@ -300,7 +302,9 @@ fn midnight_is_not_a_frontier_labor_reset() {
     let game = crate::game::IGameDispatcherTrait::game(
         crate::game::IGameDispatcher { contract_address: d.games }, home.game_id,
     );
-    let (_, preset) = super::preset_projection::current_definition("devcon");
+    let (_, mut preset) = super::preset_projection::current_definition("devcon");
+    preset.economy.chests = None;
+    preset.rules.mode_rules = preset.rules.mode_rules & (0xffffffff - crate::rules::DISCOVER_CHESTS);
     let day = crate::days::day_of(game, preset.rules.day_unit_seconds, 86400);
     assert!(day.start < 86400 && day.end > 86400);
     let operator = ILedgerOperatorSafeDispatcher { contract_address: d.games };

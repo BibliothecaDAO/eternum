@@ -2101,42 +2101,6 @@
       },
       {
         "type": "function",
-        "name": "publish_frontier_pool",
-        "inputs": [
-          {
-            "name": "game_id",
-            "type": "core::integer::u32"
-          },
-          {
-            "name": "amount",
-            "type": "core::integer::u128"
-          },
-          {
-            "name": "prize_pool",
-            "type": "core::integer::u128"
-          }
-        ],
-        "outputs": [],
-        "state_mutability": "external"
-      },
-      {
-        "type": "function",
-        "name": "post_frontier_top",
-        "inputs": [
-          {
-            "name": "game_id",
-            "type": "core::integer::u32"
-          },
-          {
-            "name": "winners",
-            "type": "core::array::Array::<core::starknet::contract_address::ContractAddress>"
-          }
-        ],
-        "outputs": [],
-        "state_mutability": "external"
-      },
-      {
-        "type": "function",
         "name": "sweep_lords",
         "inputs": [
           {
@@ -2146,22 +2110,6 @@
           {
             "name": "structure_id",
             "type": "core::integer::u64"
-          }
-        ],
-        "outputs": [],
-        "state_mutability": "external"
-      },
-      {
-        "type": "function",
-        "name": "award_frontier_prize",
-        "inputs": [
-          {
-            "name": "game_id",
-            "type": "core::integer::u32"
-          },
-          {
-            "name": "rank",
-            "type": "core::integer::u16"
           }
         ],
         "outputs": [],
@@ -8821,20 +8769,6 @@
         }
       ]
     },
-    "world_native::army_relics::RuinReward": {
-      "type": "enum",
-      "name": "world_native::army_relics::RuinReward",
-      "variants": [
-        {
-          "name": "Chest",
-          "type": "world_native::relics::SiteChest"
-        },
-        {
-          "name": "Relic",
-          "type": "world_native::army_relics::ArmyRelic"
-        }
-      ]
-    },
     "world_native::arrivals::Arrival": {
       "type": "struct",
       "name": "world_native::arrivals::Arrival",
@@ -9846,14 +9780,6 @@
         {
           "name": "InteractSite",
           "type": "world_native::relics::InteractSite"
-        },
-        {
-          "name": "RefillStamina",
-          "type": "world_native::relics::RefillStamina"
-        },
-        {
-          "name": "WithdrawLords",
-          "type": "world_native::relics::WithdrawLords"
         }
       ]
     },
@@ -10115,7 +10041,7 @@
         },
         {
           "name": "Ruin",
-          "type": "world_native::army_relics::RuinReward"
+          "type": "world_native::army_relics::ArmyRelic"
         },
         {
           "name": "Beasts",
@@ -12829,20 +12755,6 @@
         }
       ]
     },
-    "world_native::relics::RefillStamina": {
-      "type": "struct",
-      "name": "world_native::relics::RefillStamina",
-      "members": [
-        {
-          "name": "explorer_id",
-          "type": "core::integer::u64"
-        },
-        {
-          "name": "amount",
-          "type": "core::integer::u64"
-        }
-      ]
-    },
     "world_native::relics::RelicActivated": {
       "type": "struct",
       "name": "world_native::relics::RelicActivated",
@@ -13014,20 +12926,6 @@
         {
           "name": "benefit",
           "type": "world_native::relics::SiteBenefit"
-        }
-      ]
-    },
-    "world_native::relics::WithdrawLords": {
-      "type": "struct",
-      "name": "world_native::relics::WithdrawLords",
-      "members": [
-        {
-          "name": "structure_id",
-          "type": "core::integer::u64"
-        },
-        {
-          "name": "amount",
-          "type": "core::integer::u128"
         }
       ]
     },
@@ -14932,5 +14830,5 @@
       ]
     }
   },
-  "identity": "91dd5fafcd23e8f4ef1cc4f7db2a5a6de210198afc1bcfa3bee7a1e760d15118"
+  "identity": "b60a448f5b75fc1c8e0dfd1a6146314f4d2d80924d6317524108cc0946aba0d6"
 }

@@ -183,8 +183,8 @@ fn relic_root(
     for candidate in 0_u32..10_000 {
         let mut root: u256 = candidate.into();
         let seed = crate::random::game_root(ref root, game_id);
-        let reward = crate::army_relics::RuinReward::Relic(crate::army_relics::draw(odds, seed));
-        if reward == crate::army_relics::RuinReward::Relic(expected)
+        let reward = crate::army_relics::draw(odds, seed);
+        if reward == expected
             && crate::discovery::frontier(
                 rules, 0, 0, 0, 100, 0, Some(reward), seed,
             ) == crate::discovery::Discovery::Ruin(reward) {

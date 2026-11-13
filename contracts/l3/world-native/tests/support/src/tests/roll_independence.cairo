@@ -3,7 +3,7 @@ pub use starknet::storage::{StorageMapReadAccess, StorageMapWriteAccess, Storage
 pub use crate::commands::Command;
 pub use crate::tests::play_fixture::{IPlayFixtureSafeDispatcher, IPlayFixtureSafeDispatcherTrait, TestAction};
 pub use crate::tests::{Deployment, play_fixture};
-pub const ROUTES: u32 = 72;
+pub const ROUTES: u32 = 70;
 pub const ROOTS: u64 = 32;
 pub // Every value is a fully typed command. Missing entities and unavailable lifecycle transitions exercise domain
 // refusals.
@@ -246,8 +246,6 @@ fn typed_commands() -> Array<Command> {
                 explorer_id: 999999, coord: crate::troops::Coord { alt: false, x: 2000000, y: 2000000 },
             },
         ),
-        Command::RefillStamina(crate::relics::RefillStamina { explorer_id: 999999, amount: 1 }),
-        Command::WithdrawLords(crate::relics::WithdrawLords { structure_id: 999999, amount: 1 }),
     ]
 }
 pub fn fresh_world(ready: bool) -> Deployment {
@@ -266,18 +264,11 @@ pub fn fresh_world(ready: bool) -> Deployment {
     );
     if ready {
         super::set_launcher(d, d.actor);
-        // This all-routes synthetic world enables WithdrawLords too; give its pre-roll deadline a real preset value.
-        let (_, frontier) = super::preset_projection::current_definition("frontier");
         snforge_std::interact_with_state(
             d.games,
             || {
                 crate::state::write().registrar.roster_sizes.write(1, 1);
                 crate::state::write().registrar.seaters.write(1, d.actor);
-                crate::state::write()
-                    .presets
-                    .entry(crate::logic::game::preset_commitment(crate::logic::game::game(1)))
-                    .rollover_chest_rules
-                    .write(frontier.economy.chests);
             },
         );
     }

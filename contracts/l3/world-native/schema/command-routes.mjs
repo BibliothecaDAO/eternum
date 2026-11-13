@@ -2,7 +2,7 @@
 export const commandRoutes = [
   { name: "CreateExplorer", logic: "troops", entrypoint: "create_explorer" },
   { name: "Explore", logic: "movement", entrypoint: "explore" },
-  { name: "Battle", logic: "combat", entrypoint: "battle", items: "steal_resources" },
+  { name: "Battle", logic: "combat", entrypoint: "battle" },
   { name: "Move", logic: "movement", entrypoint: "move_explorer", items: "directions" },
   { name: "ToggleAlternate", logic: "movement", entrypoint: "toggle_alternate" },
   { name: "TransferStructureOwnership", logic: "structures", entrypoint: "transfer_structure_ownership" },
@@ -94,6 +94,4 @@ export const commandRoutes = [
   { name: "Research", logic: "construction", entrypoint: "research" },
   { name: "SpendSkillPoint", logic: "relics", entrypoint: "spend_skill_point" },
   { name: "InteractSite", logic: "relics", entrypoint: "interact_site" },
-  { name: "RefillStamina", logic: "prizes", entrypoint: "refill_stamina" },
-  { name: "WithdrawLords", logic: "prizes", entrypoint: "withdraw_lords" },
 ];

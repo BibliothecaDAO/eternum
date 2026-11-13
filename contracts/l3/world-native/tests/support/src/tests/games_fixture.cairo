@@ -2206,27 +2206,12 @@ pub mod GamesFixture {
         fn set_ledger_operator(ref self: TContractState, operator: starknet::ContractAddress) {
             crate::entry::ILedgerOperatorDispatcherTrait::set_ledger_operator(ledger_operator_dispatcher(), operator);
         }
-        fn publish_frontier_pool(ref self: TContractState, game_id: u32, amount: u128, prize_pool: u128) {
-            crate::entry::ILedgerOperatorDispatcherTrait::publish_frontier_pool(
-                ledger_operator_dispatcher(), game_id, amount, prize_pool,
-            );
-        }
         fn frontier_prize(self: @TContractState, game_id: u32) -> crate::entry::FrontierPrize {
             crate::entry::ILedgerOperatorDispatcherTrait::frontier_prize(ledger_operator_dispatcher(), game_id)
-        }
-        fn post_frontier_top(ref self: TContractState, game_id: u32, winners: Array<starknet::ContractAddress>) {
-            crate::entry::ILedgerOperatorDispatcherTrait::post_frontier_top(
-                ledger_operator_dispatcher(), game_id, winners,
-            )
         }
         fn sweep_lords(ref self: TContractState, game_id: u32, structure_id: u64) {
             crate::entry::ILedgerOperatorDispatcherTrait::sweep_lords(
                 ledger_operator_dispatcher(), game_id, structure_id,
-            )
-        }
-        fn award_frontier_prize(ref self: TContractState, game_id: u32, rank: u16) {
-            crate::entry::ILedgerOperatorDispatcherTrait::award_frontier_prize(
-                ledger_operator_dispatcher(), game_id, rank,
             )
         }
         fn grant_labor(

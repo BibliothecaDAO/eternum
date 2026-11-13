@@ -65,11 +65,7 @@ pub mod ResourcesLogic {
                 key.game_id, crate::troops::Coord { alt: site.alt, x: site.col, y: site.row },
             );
             let reward = if category == crate::taxonomy::RUIN_CATEGORY {
-                if crate::logic::army_relics::enabled(key.game_id) {
-                    None
-                } else {
-                    Some(crate::logic::lords_budget::pay_ruin(key, home_id, context))
-                }
+                None
             } else {
                 crate::expeditions::site_reward(category, site, depth)
             };

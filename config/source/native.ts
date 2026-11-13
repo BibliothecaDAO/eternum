@@ -1,9 +1,7 @@
-import { buildingIds, frontierPreset } from "./frontier/native";
-import { frontierDevconPreset } from "./frontier/devcon";
-import { frontierSeasonOnePreset } from "./frontier/season-one";
+import { nativeRuleConstants as rule } from "../../contracts/l3/world-native/schema/client.gen";
+import { nativeCommandBits } from "../../contracts/l3/world-native/schema/commands.gen";
+import { ResourcesIds } from "../../packages/types/src/constants";
 import { blitzPreset } from "./blitz/native";
-import { eternumPreset } from "./eternum/native";
-import { duelPreset } from "./duel/native";
 import type { NativePreset } from "./common/native-preset";
 import {
   FRONTIER_ACCELERATED_PRESET_ID,
@@ -11,11 +9,15 @@ import {
   FRONTIER_PLAYGROUND_PRESET_ID,
   nativeGameModeOf,
 } from "./common/native-preset-modes";
-import { ResourcesIds } from "../../packages/types/src/constants";
 import type { GameType } from "./common/types";
+import { duelPreset } from "./duel/native";
+import { eternumPreset } from "./eternum/native";
+import { frontierDevconPreset } from "./frontier/devcon";
+import { buildingIds, frontierPreset } from "./frontier/native";
+import { frontierSeasonOnePreset } from "./frontier/season-one";
 
 const modes: Record<GameType, NativePreset> = {
-  frontier: frontierPreset,
+  frontier: frontierSeasonOnePreset,
   blitz: blitzPreset,
   eternum: eternumPreset,
   duel: duelPreset,
@@ -33,6 +35,10 @@ const frontierAcceleratedPreset: NativePreset = {
 const frontierFixturePreset: NativePreset = {
   ...frontierPreset,
   id: FRONTIER_FIXTURE_PRESET_ID,
+  chests: null,
+  modeRules: frontierPreset.modeRules & ~rule.DISCOVER_CHESTS,
+  commandMask:
+    (frontierPreset.commandMask | BigInt(nativeCommandBits.ApplyRelic)) & ~BigInt(nativeCommandBits.OpenRelicChest),
 };
 
 /** Labor, wheat and troops a Settlement's castle stores: two full deploys of its level. A grant above it is lost. */
@@ -67,6 +73,7 @@ const frontierPlaygroundPreset: NativePreset = {
 export const nativePresets: Record<number, NativePreset> = Object.fromEntries(
   [
     ...Object.values(modes),
+    frontierPreset,
     frontierDevconPreset,
     frontierSeasonOnePreset,
     frontierAcceleratedPreset,

@@ -1,20 +1,19 @@
-export { completeNativeBatches } from "./native-batch";
-export { batchRemaining, gameplayRejection } from "./native-receipt";
-export type { GameplayRejection } from "./native-receipt";
 export type { BatchTransactionReceipt } from "@bibliothecadao/types";
-import { requireBatchReceipt } from "./native-batch";
+export { completeNativeBatches } from "./native-batch";
 export { encodeNativeCommand } from "./native-command";
 export type { NativeCommand, NativeCommandPayloads } from "./native-command";
+export { batchRemaining, gameplayRejection } from "./native-receipt";
+export type { GameplayRejection } from "./native-receipt";
+import { requireBatchReceipt } from "./native-batch";
 /**
  * Provider class for interacting with the Eternum game contracts
  *
  * @param contracts - The shard's command entrypoint and bridge addresses
  * @param url - Optional RPC URL for the provider
  */
-import { encodeNativeCommand, type NativeCommand, type NativeCommandPayloads } from "./native-command";
-import type { Abi } from "starknet";
 import * as SystemProps from "@bibliothecadao/types";
 import EventEmitter from "eventemitter3";
+import type { Abi } from "starknet";
 import {
   Account,
   AccountInterface,
@@ -24,10 +23,11 @@ import {
   CallData,
   GetTransactionReceiptResponse,
   RpcProvider,
-  uint256,
   shortString,
+  uint256,
 } from "starknet";
-import { classifyTransactionError, TransactionFailure, extractErrorMessage } from "./classify-transaction-error";
+import { classifyTransactionError, extractErrorMessage, TransactionFailure } from "./classify-transaction-error";
+import { encodeNativeCommand, type NativeCommand, type NativeCommandPayloads } from "./native-command";
 import { ACTION_CHECKING_AFTER_MS, TransactionNotSentError } from "./transaction-not-sent";
 import {
   TransactionFailedPayload,
@@ -35,10 +35,10 @@ import {
   TransactionLifecycleMeta,
   TransactionProviderState,
   TransactionRetrySafety,
+  TransactionStreamWaiter,
   TransactionSubmitFailureKind,
   TransactionSubmitGuard,
   TransactionSubmitGuardContext,
-  TransactionStreamWaiter,
   TransactionType,
 } from "./types";
 /** Sends one game command as the signer's own transaction; resolves with its hash as soon as the send returns. */
@@ -61,13 +61,13 @@ export const createShardRpcProvider = (nodeUrl?: string): RpcProvider =>
 
 export {
   classifyTransactionError,
-  TransactionFailure,
   extractErrorMessage,
   formatErrorForConsole,
+  TransactionFailure,
 } from "./classify-transaction-error";
 export type { ClassifiedTransactionError } from "./classify-transaction-error";
+export { PLAY_REFUSALS, playRefusalReasonOf, PLAYS_IN_FLIGHT, type PlayRefusalReason } from "./play-refusal";
 export { ACTION_CHECKING_AFTER_MS, TransactionNotSentError } from "./transaction-not-sent";
-export { PLAY_REFUSALS, PLAYS_IN_FLIGHT, playRefusalReasonOf, type PlayRefusalReason } from "./play-refusal";
 export { TransactionType } from "./types";
 export type {
   TransactionFailedPayload,
@@ -75,10 +75,10 @@ export type {
   TransactionLifecycleMeta,
   TransactionProviderState,
   TransactionRetrySafety,
+  TransactionStreamWaiter,
   TransactionSubmitFailureKind,
   TransactionSubmitGuard,
   TransactionSubmitGuardContext,
-  TransactionStreamWaiter,
 } from "./types";
 
 const classifySubmitFailure = (
@@ -567,27 +567,6 @@ export class EternumProvider extends EventEmitter {
       props.signer,
       { kind: "SpendSkillPoint", value: { explorer_id: props.explorerId, choice: props.choice } },
       TransactionType.SPEND_SKILL_POINT,
-    );
-  }
-
-  /** Buys the chosen whole stamina points for one LORDS each from the army's realm. */
-  public async refill_stamina(props: SystemProps.SystemSigner & { explorerId: number; amount: number }) {
-    return this.submitCommand(
-      props.signer,
-      { kind: "RefillStamina", value: { explorer_id: props.explorerId, amount: props.amount } },
-      TransactionType.REFILL_STAMINA,
-    );
-  }
-
-  /**
-   * Takes whole LORDS out of a realm for the owner's payout wallet on Starknet: the shard debits the realm and records
-   * the withdrawal, which the relay pays; the receipt's transaction hash is the claim the ledger keys the payment by.
-   */
-  public async withdraw_lords(props: SystemProps.SystemSigner & { structureId: number; amount: number }) {
-    return this.submitCommand(
-      props.signer,
-      { kind: "WithdrawLords", value: { structure_id: props.structureId, amount: props.amount } },
-      TransactionType.WITHDRAW_LORDS,
     );
   }
 

@@ -3,7 +3,7 @@ pub use world_test_support::tests::frontier_guards::*;
 
 #[test]
 fn seeded_site_guards_are_knights_on_the_inclusive_preset_grid() {
-    let (_, preset) = super::preset_projection::current_definition("frontier");
+    let (_, preset) = super::preset_projection::current_definition("frontier-check");
     let rifts = array![(1400_u32, 1600_u32), (2800, 3200), (5400, 6600), (10700, 13200)];
     for depth_index in 0_u32..4 {
         let depth = *preset.settlement.depths.at(depth_index);
@@ -37,7 +37,7 @@ fn seeded_site_guards_are_knights_on_the_inclusive_preset_grid() {
 
 #[test]
 fn beasts_draw_two_depth_scaled_ranges_below_every_other_site_guard() {
-    let (_, preset) = super::preset_projection::current_definition("frontier");
+    let (_, preset) = super::preset_projection::current_definition("frontier-check");
     let expected = array![
         (380_u128, 420_u128, 430_u128, 470_u128), (760, 840, 860, 940), (1520, 1680, 1720, 1880),
         (3040, 3360, 3440, 3760),
@@ -84,7 +84,7 @@ fn beasts_draw_two_depth_scaled_ranges_below_every_other_site_guard() {
 
 #[test]
 fn beast_ranges_include_both_endpoints_at_every_depth() {
-    let (_, preset) = super::preset_projection::current_definition("frontier");
+    let (_, preset) = super::preset_projection::current_definition("frontier-check");
     for (depth, seed, count) in array![
         (0_u32, 8_u32, 380_u128), (0, 20, 430), (0, 25, 470), (0, 34, 420), (1, 21, 760), (1, 80, 860), (1, 102, 840),
         (1, 1052, 940), (2, 15, 1680), (2, 191, 1720), (2, 247, 1520), (2, 477, 1880), (3, 216, 3760), (3, 218, 3040),
@@ -99,7 +99,7 @@ fn beast_ranges_include_both_endpoints_at_every_depth() {
 
 #[test]
 fn ruin_beasts_are_sized_by_layer_in_one_troop_type() {
-    let (_, preset) = super::preset_projection::current_definition("frontier");
+    let (_, preset) = super::preset_projection::current_definition("frontier-check");
     let mut bounds = array![];
     for depth in preset.settlement.depths {
         bounds.append((*depth.ruin_guard_lower, *depth.ruin_guard_upper));
@@ -114,7 +114,7 @@ fn frontier_registration_refuses_invalid_site_and_beast_guard_ranges() {
     let d = super::registrar::setup();
     snforge_std::start_cheat_caller_address(d.games, super::authority());
     for invalid in 0_u8..12 {
-        let (id, mut preset) = super::preset_projection::current_definition("frontier");
+        let (id, mut preset) = super::preset_projection::current_definition("frontier-check");
         if invalid == 5 {
             preset.rules.troop_limit_config.t1_tier_strength = 2;
         }

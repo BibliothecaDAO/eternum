@@ -651,7 +651,7 @@ fn granary_settles_overflow_under_the_old_limit_before_enlarging_it() {
 
 #[test]
 fn frontier_storage_grants_clip_at_each_exact_s2_cap_without_changing_troops() {
-    let (_, frontier) = super::preset_projection::current_definition("frontier");
+    let (_, frontier) = super::preset_projection::current_definition("frontier-check");
     let mut preset = building_preset(frontier.structures.board);
     preset.rules.troop_limit_config = frontier.rules.troop_limit_config;
     let preset = preset;

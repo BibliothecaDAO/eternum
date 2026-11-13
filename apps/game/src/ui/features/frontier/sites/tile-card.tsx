@@ -196,8 +196,8 @@ export const TileCard = ({
       pay={sitePay(plan)}
       chest={plan.chest ? { tier: (plan.chest.tier + 1) as Tier, lords: plan.chest.amount } : undefined}
       ruinChoice={
-        plan.chest
-          ? { depth: plan.chest.depth, perDepth: ruinLimitPerDepth(facts.store, configManager.getActiveGameId()) }
+        plan.ruinDepth !== undefined
+          ? { depth: plan.ruinDepth, perDepth: ruinLimitPerDepth(facts.store, configManager.getActiveGameId()) }
           : undefined
       }
       xp={plan.xp}

@@ -68,18 +68,6 @@ export const sitesScenario = (): LabScenario => {
   };
 };
 
-/** What stands on a tile with no structure (a Shrine, a Well, a chest), as its occupancy row. */
-export const siteAt = (
-  key: string,
-  tile: { col: number; row: number },
-  entity: number,
-  category: TileOccupier,
-): LabFact => ({
-  model: "TileOccupancy",
-  key,
-  value: { game_id: 1, alt: false, col: tile.col, row: tile.row, entity_id: entity, category, is_structure: false },
-});
-
 /** InteractSite: [explorer, coord.alt, coord.x, coord.y]. */
 const answerSiteUse = (command: LabCommand, chain: NativeFactStore, now: number): LabFact[] => {
   const [explorerId, , x, y] = command.calldata.slice(5).map((felt) => BigInt(felt));

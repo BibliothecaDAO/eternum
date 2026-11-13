@@ -1,7 +1,5 @@
-import { etherealDepthsScenario } from "./ethereal-depths-scenario";
 import { REALM_SKIN_MODELS } from "@/three/structures/realm-skins";
-import { campaignScenario, devconSeasonScenario, fullLaborCampaignScenario } from "./campaign-scenario";
-import { dayEndScenario } from "./day-end-scenario";
+import { actionsScenario } from "./actions-scenario";
 import {
   afterBattleScenario,
   fightLostScenario,
@@ -10,27 +8,29 @@ import {
   pointSpentScenario,
 } from "./after-battle-scenario";
 import { campScenario } from "./camp-scenario";
-import { clearedCampScenario } from "./cleared-camp-scenario";
-import { actionsScenario } from "./actions-scenario";
+import { campaignScenario, devconSeasonScenario, fullLaborCampaignScenario } from "./campaign-scenario";
 import { claimScenario } from "./claim-scenario";
-import { exploreScenario } from "./explore-scenario";
-import { mergeScenario } from "./merge-scenario";
+import { clearedCampScenario } from "./cleared-camp-scenario";
+import { dayEndScenario } from "./day-end-scenario";
 import { dayTurnScenario } from "./day-turn-scenario";
+import { etherealDepthsScenario } from "./ethereal-depths-scenario";
+import { exploreScenario } from "./explore-scenario";
+import { farPlaceScenario } from "./far-place-scenario";
 import type { LabScenario } from "./lab-chain";
+import { mergeScenario } from "./merge-scenario";
 import { paintedBuildingsScenario } from "./painted-buildings-scenario";
-import { realmScenario } from "./realm-scenario";
 import { realmHeightScenario } from "./realm-height-scenario";
+import { realmScenario } from "./realm-scenario";
+import { reinforceScenario } from "./reinforce-scenario";
+import { researchScenario } from "./research-scenario";
+import { ruinChestsScenario, ruinChestsSurfaceScenario } from "./ruin-chests-scenario";
 import { ruinFarScenario, ruinFightScenario } from "./ruin-fight-scenario";
 import { seasonOpensScenario } from "./season-opens-scenario";
+import { settleScenario } from "./settle-scenario";
 import { sitesScenario } from "./sites-scenario";
 import { highGroundScenario, SANDS, spireScenario } from "./spire-scenario";
+import { upkeepScenario } from "./upkeep-scenario";
 import { visitScenario } from "./visit-scenario";
-import { farPlaceScenario } from "./far-place-scenario";
-import { researchScenario } from "./research-scenario";
-import { settleScenario } from "./settle-scenario";
-import { upkeepScenario, spendLordsScenario } from "./upkeep-scenario";
-import { reinforceScenario } from "./reinforce-scenario";
-import { ruinChestsScenario, ruinChestsSurfaceScenario } from "./ruin-chests-scenario";
 
 /** The games the lab plays, by name: each a fixture and the chain's answers to the commands it proves. */
 export const LAB_SCENARIOS: Partial<Record<string, () => LabScenario>> = {
@@ -60,7 +60,6 @@ export const LAB_SCENARIOS: Partial<Record<string, () => LabScenario>> = {
   research: researchScenario,
   claim: claimScenario,
   upkeep: upkeepScenario,
-  "spend-lords": spendLordsScenario,
   settle: settleScenario,
   explore: exploreScenario,
   "painted-buildings": () => paintedBuildingsScenario(),

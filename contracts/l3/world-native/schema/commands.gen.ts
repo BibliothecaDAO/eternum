@@ -70,9 +70,7 @@ export const nativeCommandBits = {
   "EnterDepth": "73786976294838206464",
   "Research": "147573952589676412928",
   "SpendSkillPoint": "295147905179352825856",
-  "InteractSite": "590295810358705651712",
-  "RefillStamina": "1180591620717411303424",
-  "WithdrawLords": "2361183241434822606848"
+  "InteractSite": "590295810358705651712"
 } as const;
 export interface NativeCommandPayloads {
   CreateExplorer: { readonly slot: BigNumberish; readonly structure_id: BigNumberish; readonly category: BigNumberish; readonly tier: BigNumberish; readonly amount: BigNumberish; readonly direction: BigNumberish };
@@ -145,7 +143,5 @@ export interface NativeCommandPayloads {
   Research: { readonly structure_id: BigNumberish; readonly row: BigNumberish; readonly choice: BigNumberish };
   SpendSkillPoint: { readonly explorer_id: BigNumberish; readonly choice: { readonly kind: "Battle"; readonly value: undefined } | { readonly kind: "Logistics"; readonly value: undefined } | { readonly kind: "Scouting"; readonly value: { readonly kind: "Camp"; readonly value: undefined } | { readonly kind: "Rift"; readonly value: undefined } | { readonly kind: "Sanctuaries"; readonly value: undefined } } | { readonly kind: "Homecoming"; readonly value: undefined } | { readonly kind: "Stamina"; readonly value: BigNumberish } };
   InteractSite: { readonly explorer_id: BigNumberish; readonly coord: { readonly alt: boolean; readonly x: BigNumberish; readonly y: BigNumberish } };
-  RefillStamina: { readonly explorer_id: BigNumberish; readonly amount: BigNumberish };
-  WithdrawLords: { readonly structure_id: BigNumberish; readonly amount: BigNumberish };
 }
 export type NativeCommand = { [K in keyof NativeCommandPayloads]: { kind: K; value: NativeCommandPayloads[K] } }[keyof NativeCommandPayloads];

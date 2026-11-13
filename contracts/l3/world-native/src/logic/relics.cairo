@@ -37,16 +37,16 @@ pub mod RelicState {
         +Drop<TContractState>,
     > of crate::relics::IRelics<ComponentState<TContractState>> {
         fn lords_budget(self: @ComponentState<TContractState>, game_id: u32) -> Option<crate::relics::LordsBudget> {
-            crate::logic::lords_budget::budget(game_id)
+            self.data.relics.rollover_budget.read(game_id)
         }
         fn chest_rules(self: @ComponentState<TContractState>, game_id: u32) -> Option<crate::relics::ChestRules> {
             crate::logic::preset_record::for_game(game_id).rollover_chest_rules.read()
         }
         fn site_chest(self: @ComponentState<TContractState>, key: ResourceKey) -> Option<crate::relics::SiteChest> {
-            crate::logic::lords_budget::site_chest(key)
+            self.data.structures.site_chests.read((key.game_id, key.entity_id))
         }
         fn relic_rules(self: @ComponentState<TContractState>, game_id: u32) -> Span<RelicRule> {
-            if crate::logic::game::rules(game_id).day_unit_seconds != 0 {
+            if crate::logic::preset_record::for_game(game_id).rules.day_unit_seconds.read() != 0 {
                 return array![].span();
             }
             let preset = crate::logic::preset_record::for_game(game_id);
@@ -74,11 +74,8 @@ pub mod RelicState {
             assert!(crate::geometry::adjacent(explorer.coord, command.coord), "explorer is not adjacent to chest");
             let chest_id = IRelicMapLibraryDispatcher { class_hash: classes.map.read() }
                 .consume_relic_chest(game_id, command.coord);
-            if context.rules.unbox().day_unit_seconds != 0 {
-                self.pay_reward_chest(game_id, actor, command, chest_id, explorer.owner, context);
-            } else {
-                self.pay_chest(game_id, actor, command, chest_id, explorer.owner, context);
-            }
+            assert!(context.rules.unbox().day_unit_seconds == 0, "day games have no resource chests");
+            self.pay_chest(game_id, actor, command, chest_id, explorer.owner, context);
             ()
         }
         fn apply_relic(
@@ -475,40 +472,6 @@ pub mod RelicState {
                     context.timestamp,
                 );
             crate::logic::troops::TroopState::save(key, crate::troops::ExplorerRecordTrait::into_record(explorer));
-        }
-
-        fn pay_reward_chest(
-            ref self: ComponentState<TContractState>,
-            game_id: u32,
-            actor: ContractAddress,
-            command: OpenChest,
-            chest_id: u64,
-            home: u64,
-            context: ExecutionContext,
-        ) {
-            let reward = crate::logic::lords_budget::pay(ResourceKey { game_id, entity_id: chest_id }, context);
-            self
-                .resources(game_id)
-                .grant_resource(
-                    ResourceKey { game_id, entity_id: home },
-                    reward.resource_type,
-                    reward.amount,
-                    context.timestamp,
-                    crate::commands::resource_context(context),
-                );
-            crate::logic::stories::emit_entity_story(
-                ResourceKey { game_id, entity_id: command.explorer_id },
-                actor,
-                crate::ownership::Story::RewardChestOpened(
-                    crate::relics::RewardChestOpened {
-                        explorer_id: command.explorer_id,
-                        structure_id: home,
-                        coord: command.coord,
-                        amount: reward.amount / crate::rules::RESOURCE_PRECISION,
-                    },
-                ),
-                context.timestamp,
-            );
         }
 
         fn pay_chest(

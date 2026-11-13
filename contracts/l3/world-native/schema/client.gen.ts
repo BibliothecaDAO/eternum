@@ -1,5 +1,5 @@
 // Generated from native fact models and contract ABIs. Run the native schema generator to update.
-export const nativeFactSchemaIdentity = "91dd5fafcd23e8f4ef1cc4f7db2a5a6de210198afc1bcfa3bee7a1e760d15118";
+export const nativeFactSchemaIdentity = "b60a448f5b75fc1c8e0dfd1a6146314f4d2d80924d6317524108cc0946aba0d6";
 export const nativeReleaseConstants = {
   "RUIN_DEPTH_LIMIT_RELEASE": 9
 } as const;

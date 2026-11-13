@@ -135,25 +135,10 @@ pub mod Games {
                 operator,
             );
         }
-        fn publish_frontier_pool(ref self: ContractState, game_id: u32, amount: u128, prize_pool: u128) {
-            crate::entry::ILedgerOperatorDispatcherTrait::publish_frontier_pool(
-                crate::entry::ILedgerOperatorLibraryDispatcher { class_hash: self.release.current_classes().bridge },
-                game_id,
-                amount,
-                prize_pool,
-            );
-        }
         fn frontier_prize(self: @ContractState, game_id: u32) -> crate::entry::FrontierPrize {
             crate::entry::ILedgerOperatorDispatcherTrait::frontier_prize(
                 crate::entry::ILedgerOperatorLibraryDispatcher { class_hash: self.release.current_classes().bridge },
                 game_id,
-            )
-        }
-        fn post_frontier_top(ref self: ContractState, game_id: u32, winners: Array<starknet::ContractAddress>) {
-            crate::entry::ILedgerOperatorDispatcherTrait::post_frontier_top(
-                crate::entry::ILedgerOperatorLibraryDispatcher { class_hash: self.release.current_classes().bridge },
-                game_id,
-                winners,
             )
         }
         fn sweep_lords(ref self: ContractState, game_id: u32, structure_id: u64) {
@@ -161,13 +146,6 @@ pub mod Games {
                 crate::entry::ILedgerOperatorLibraryDispatcher { class_hash: self.release.current_classes().bridge },
                 game_id,
                 structure_id,
-            )
-        }
-        fn award_frontier_prize(ref self: ContractState, game_id: u32, rank: u16) {
-            crate::entry::ILedgerOperatorDispatcherTrait::award_frontier_prize(
-                crate::entry::ILedgerOperatorLibraryDispatcher { class_hash: self.release.current_classes().bridge },
-                game_id,
-                rank,
             )
         }
         fn grant_labor(

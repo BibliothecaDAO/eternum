@@ -1,9 +1,9 @@
 import { nativeReleaseConstants } from "../../../../../contracts/l3/world-native/schema/client.gen";
 import { SITE } from "@/ui/features/frontier/sites/site-fixture";
-import { dayOf, readExpeditionRules, siteClearXp } from "@bibliothecadao/eternum";
+import { siteClearXp } from "@bibliothecadao/eternum";
 import { SPIRE_ARMY } from "@/ui/features/frontier/spire-fixture";
 import type { NativeFactStore, NativeRows } from "@bibliothecadao/eternum/game-client";
-import { getNeighborHexes, ResourcesIds, StructureType } from "@bibliothecadao/types";
+import { getNeighborHexes, StructureType } from "@bibliothecadao/types";
 
 import { siteAt } from "./after-battle-scenario";
 import { type LabFact, type LabScenario, wire } from "./lab-chain";
@@ -15,9 +15,9 @@ const HOME = 7;
 /** The owner's fight on prod (10-25): 4,015 knights against a ruin's 999. */
 const ARMY_TROOPS = 4_015n;
 const GUARD_TROOPS = 999n;
-/** What the clear cost and paid in the owner's screenshot of 10-28: 4 troops lost, an Uncommon chest of 100 LORDS. */
+/** The fixture keeps the recorded troop loss; ruins now award the discovered relic. */
 const TROOPS_LOST = 4n;
-const CHEST = { tier: 1, lords: 100n };
+const RELIC = { kind: "Blade", rank: 2 } as const;
 /** An attack's stamina, as the map's order line names it for this army. */
 const ATTACK_STAMINA = 50n;
 
@@ -58,7 +58,12 @@ const ruinScenario = (
       value: wire({ ...army, troops: { ...army.troops, count: armyTroops * PRECISION } }),
     },
     ...siteAt(store, ruinTile, { ...army.troops, count: guardTroops * PRECISION }, StructureType.Ruin),
-    ...fundedRuin(store, ruinTile, spire.startsAt),
+    { model: "RuinRelic", key: "0x1ab9c", value: wire({ game_id: 1, entity_id: BigInt(SITE), ...RELIC }) },
+    {
+      model: "ArmyRelics",
+      key: "0x1ab9d",
+      value: wire({ game_id: 1, explorer_id: BigInt(SPIRE_ARMY), first: null, second: null, third: null }),
+    },
   ] as never);
   return {
     ...spire,
@@ -68,64 +73,6 @@ const ruinScenario = (
         ? clearTheRuin(chain, BigInt(command.fields.attacker_id), spire.player, now)
         : spire.answer(command, chain, now),
   };
-};
-
-/** Discovery fixes the chest in whole LORDS; funding unlocks enough for this day's attack. */
-const fundedRuin = (store: NativeFactStore, tile: { row: number }, now: number): LabFact[] => {
-  const rules = readExpeditionRules(store, 1);
-  if (!rules) throw new Error("The ruin fixture needs its expedition calendar");
-  const day = dayOf(rules, now);
-  if (!day || day.index !== Math.floor(tile.row / rules.spacing / 4))
-    throw new Error("The ruin fixture must stand on today's map");
-  const elapsed = BigInt(day.end - rules.startMainAt);
-  const duration = BigInt(rules.endAt - rules.startMainAt);
-  const pool = (CHEST.lords * duration + elapsed - 1n) / elapsed;
-  const budget = store.require("LordsBudget", { game_id: 1 });
-  const held = [...store.entries("ResourceBalance")].find(
-    ([, row]) => row.entity_id === BigInt(HOME) && row.resource_type === ResourcesIds.Lords,
-  );
-  return [
-    {
-      model: "SiteChest",
-      key: "0x1ab9c",
-      value: wire({
-        game_id: 1,
-        entity_id: BigInt(SITE),
-        tier: CHEST.tier,
-        amount: CHEST.lords,
-        reservation_day: BigInt(day.index),
-      } satisfies NativeRows["SiteChest"]),
-    },
-    {
-      model: "LordsBudget",
-      key: "0x101",
-      value: wire({
-        game_id: 1,
-        pool,
-        pool_left: pool,
-        open: 0n,
-        day: BigInt(day.index),
-        price: budget.price,
-        rolled_shares: 0n,
-        yesterday_shares: 0n,
-        yesterday_ticks: 0n,
-      } satisfies NativeRows["LordsBudget"]),
-    },
-    ...(held
-      ? []
-      : [
-          {
-            model: "ResourceBalance",
-            key: "0x1ab9e",
-            value: wire({
-              game_id: 1,
-              entity_id: BigInt(HOME),
-              resource_type: ResourcesIds.Lords,
-              balance: 0n,
-            } satisfies NativeRows["ResourceBalance"]),
-          },
-        ]),
-  ];
 };
 
 /** An open, revealed tile two steps from the army: beside a tile beside it, and not beside the army itself. */
@@ -155,22 +102,17 @@ const clearTheRuin = (chain: NativeFactStore, explorerId: bigint, player: string
   const guard = chain.require("Guard", { game_id: 1, structure_id: BigInt(SITE), slot: 0 });
   const site = chain.require("ExpeditionSite", { game_id: 1, entity_id: BigInt(SITE) });
   const progress = chain.require("ArmyProgress", { game_id: 1, explorer_id: explorerId });
-  const chest = chain.require("SiteChest", { game_id: 1, entity_id: BigInt(SITE) });
-  const budget = chain.require("LordsBudget", { game_id: 1 });
-  const held = chain.require("ResourceBalance", {
-    game_id: 1,
-    entity_id: BigInt(HOME),
-    resource_type: ResourcesIds.Lords,
-  });
+  const relic = chain.require("RuinRelic", { game_id: 1, entity_id: BigInt(SITE) });
+  const epoch = BigInt(Math.floor(site.row / chain.require("SettlementRules", { game_id: 1 }).spacing / 4));
   const discovery = chain.get("ExpeditionDiscovery", {
     game_id: 1,
     structure_id: BigInt(HOME),
-    epoch: chest.reservation_day,
+    epoch: epoch,
   });
   const stamina = army.troops.stamina as { Inline: { amount: bigint } };
   const before = army.troops.count;
   const after = before - TROOPS_LOST * PRECISION;
-  const reward = { resource_type: ResourcesIds.Lords, amount: chest.amount * PRECISION };
+  const reward = null;
   const side = (owner: string, troops: typeof army.troops, from: bigint, to: bigint) => ({
     player: owner,
     category: troops.category,
@@ -197,34 +139,25 @@ const clearTheRuin = (chain: NativeFactStore, explorerId: bigint, player: string
       value: wire({ ...site, clear: { explorer_id: explorerId, home_id: HOME, reward } }),
     },
     {
-      model: "LordsBudget",
-      key: keyOf(chain.entries("LordsBudget"), (row) => row.game_id === 1),
+      model: "ArmyRelics",
+      key: keyOf(chain.entries("ArmyRelics"), (row) => row.explorer_id === explorerId),
       value: wire({
-        ...budget,
-        pool_left: budget.pool_left - chest.amount,
-        rolled_shares: budget.rolled_shares + chest.amount / budget.price,
+        game_id: 1,
+        explorer_id: explorerId,
+        first: { kind: relic.kind, rank: relic.rank },
+        second: null,
+        third: null,
       }),
-    },
-    {
-      model: "ResourceBalance",
-      key: keyOf(
-        chain.entries("ResourceBalance"),
-        (row) => row.entity_id === BigInt(HOME) && row.resource_type === ResourcesIds.Lords,
-      ),
-      value: wire({ ...held, balance: held.balance + reward.amount }),
     },
     {
       model: "ExpeditionDiscovery",
       key: discovery
-        ? keyOf(
-            chain.entries("ExpeditionDiscovery"),
-            (row) => row.structure_id === BigInt(HOME) && row.epoch === chest.reservation_day,
-          )
+        ? keyOf(chain.entries("ExpeditionDiscovery"), (row) => row.structure_id === BigInt(HOME) && row.epoch === epoch)
         : "0x1ab9f",
       value: wire({
         game_id: 1,
         structure_id: BigInt(HOME),
-        epoch: chest.reservation_day,
+        epoch: epoch,
         empty_reveals: discovery?.empty_reveals ?? 0,
         ruin_cleared: true,
       } satisfies NativeRows["ExpeditionDiscovery"]),

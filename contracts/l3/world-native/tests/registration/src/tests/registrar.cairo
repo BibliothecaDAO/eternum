@@ -1237,3 +1237,38 @@ fn a_materialized_home_ring_moves_and_explores_without_a_roll() {
         super::terrain::assert_biomes_match_terrain(d, game_id, array![site, spawn, ring_tile, target].span()) != 0,
     );
 }
+
+#[test_case("frontier")]
+#[test_case("devcon")]
+#[test_case("accelerated")]
+#[feature("safe_dispatcher")]
+fn paying_presets_cannot_register_on_the_new_release(name: ByteArray) {
+    let d = setup();
+    let (id, preset) = super::preset_projection::current_definition(name);
+    assert!(preset.economy.chests.is_some());
+    assert!(safe(d, super::authority()).register_preset(id, preset).is_err());
+    assert_eq!(registry(d).preset_commitment(id), 0);
+    assert_eq!(registry(d).next_game_id(), 1);
+}
+
+#[test]
+#[feature("safe_dispatcher")]
+fn an_already_registered_paying_preset_cannot_create_a_new_game() {
+    use starknet::storage::{StoragePathEntry, StoragePointerWriteAccess};
+    let d = setup();
+    let (id, preset) = super::preset_projection::current_definition("frontier-check");
+    registry(d).register_preset(id, preset);
+    let commitment = registry(d).preset_commitment(id);
+    let (_, historical) = super::preset_projection::current_definition("frontier");
+    snforge_std::interact_with_state(
+        d.games,
+        || {
+            crate::state::write().presets.entry(commitment).rollover_chest_rules.write(historical.economy.chests);
+        },
+    );
+    let next = registry(d).next_game_id();
+    let params = CreateGameParams { preset_id: id, ..params(false) };
+    assert!(safe(d, super::authority()).create_game(params).is_err());
+    assert_eq!(registry(d).next_game_id(), next);
+    assert_eq!(registry(d).game_id_by_name(params.name), 0);
+}

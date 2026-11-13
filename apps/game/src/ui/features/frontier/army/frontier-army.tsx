@@ -1,21 +1,20 @@
 import { useGame } from "@/hooks/context/game-context";
-import { sendOnce, useInFlight } from "@/hooks/store/use-actions-in-flight";
 import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
-import { useState } from "react";
+import { sendOnce, useInFlight } from "@/hooks/store/use-actions-in-flight";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { HudSheet, HudWindowFoot } from "@/ui/design-system/kit/hud-elements";
 import { toast } from "@/ui/features/event-feed/notify";
-import { realmLearned, scoutingKindsOf, heldSkillPoints, type SkillPointChoice } from "@bibliothecadao/eternum";
+import { heldSkillPoints, realmLearned, scoutingKindsOf, type SkillPointChoice } from "@bibliothecadao/eternum";
 import { type NativeRows } from "@bibliothecadao/eternum/game-client";
+import { useState } from "react";
 
 import { useArmyRevealYield } from "../frontier-reveal-yield";
-import { SpireButton, useArmyAtItsSpire } from "../spire-card";
 import { type DockArmy, useDockArmies } from "../hud/dock-armies";
-import { type ArmyDetailFacts, type ArmyView, readArmyDetail } from "./army-detail";
 import { SCOUTING_CHOICES } from "../progression-choices";
-import { ArmyDetail, useArmyStep } from "./army-panel";
-import { ArmyRefill } from "./army-refill";
+import { SpireButton, useArmyAtItsSpire } from "../spire-card";
 import { ArmyDeleteButton, ArmyDeleteConfirm } from "./army-delete";
+import { type ArmyDetailFacts, type ArmyView, readArmyDetail } from "./army-detail";
+import { ArmyDetail, useArmyStep } from "./army-panel";
 
 const PROGRESS_MODELS = ["RealmKnowledge", "ArmyProgress", "ArmyProgressionRules"] as const;
 
@@ -146,13 +145,7 @@ const ArmySheet = ({
       beside={!step.choosing && <ArmyDeleteButton army={army} onPress={() => setDeleting(true)} />}
       onClose={onClose}
     >
-      <ArmyDetail
-        army={view}
-        refill={<ArmyRefill army={army} realm={realm} look="price" />}
-        sending={sending}
-        step={step}
-        onLevelUp={onLevelUp}
-      />
+      <ArmyDetail army={view} sending={sending} step={step} onLevelUp={onLevelUp} />
       {deleting && !step.choosing && (
         <ArmyDeleteConfirm army={army} onCancel={() => setDeleting(false)} onDeleted={onClose} />
       )}
