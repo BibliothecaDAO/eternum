@@ -289,7 +289,7 @@ export class ValueRelay extends DurableObject<RelayEnv> {
     });
   }
   async depositMutation(request: DepositMutation) {
-    await Effect.runPromise(
+    const outcome = await Effect.runPromise(
       this.ledgerPermit(
         relayOperation("resolve deposit custody", async () =>
           mutateDeposit(
@@ -307,7 +307,8 @@ export class ValueRelay extends DurableObject<RelayEnv> {
         [request.shard],
       ),
     );
-    await this.ledgerWritten();
+    if (outcome.wrote) await this.ledgerWritten();
+    return outcome.final;
   }
   private async publishPools(chainId: string) {
     const shard = await readRegisteredShard(this.env.IDENTITY, chainId);
@@ -349,9 +350,17 @@ export class ValueRelay extends DurableObject<RelayEnv> {
     if (!wallet) throw new Error("principal_wallet_unavailable");
     return wallet;
   }
+  /**
+   * Identity answers for free, so a principal never tried and with no linked wallet costs the ledger nothing. Once a
+   * payment was tried, the ledger decides: a reply that was lost recognizes the payment even after the wallet unlinks.
+   */
   private async payPrincipal(claim: PrincipalSweep) {
-    await this.principalWallet(claim.account);
-    await ledgerOf(this.env).depositMutation({
+    const tried = `principal-tried:${BigInt(claim.chainId)}:${claim.gameId}:${BigInt(claim.account)}`;
+    if ((await this.ctx.storage.get(tried)) === undefined) {
+      await this.principalWallet(claim.account);
+      await this.ctx.storage.put(tried, true);
+    }
+    return ledgerOf(this.env).depositMutation({
       kind: "principal",
       shard: claim.chainId,
       season: claim.gameId,

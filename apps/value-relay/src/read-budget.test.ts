@@ -22,6 +22,7 @@ vi.mock("@realms-world/value-ledger", async (original) => ({
   rpcAt: vi.fn(),
   readFrontierFunding: reads.funding,
   readConfirmedLedgerHead: reads.ledgerHead,
+  readFinalLedgerHead: async () => ({ number: 9, hash: "0xf", time: 90 }),
 }));
 vi.mock("@realms-world/value-ledger/shard", () => ({
   ShardOperator: class {
@@ -98,7 +99,7 @@ beforeEach(() => {
   vi.clearAllMocks();
   reads.ledgerHead.mockResolvedValue({ number: 10, time: 1_000_000 });
   reads.funding.mockResolvedValue({ closed: true, pool: wei(700), prizePool: wei(300), claimDeadline: 101 });
-  reads.pay.mockResolvedValue(undefined);
+  reads.pay.mockResolvedValue({ block: 9, hash: "0xf" });
 });
 
 it.each([1, 4, 20])(
@@ -108,8 +109,9 @@ it.each([1, 4, 20])(
     const ledger = { rpcUrl: "https://ledger.test", address: "0x30", finals: memoryFinalFacts() };
 
     const first = await tick(ledger);
-    // The prize job reads each game's season once and learns it is closed; the sweep then has nothing to ask.
-    expect(first).toEqual({ funding: games, head: 0, paid: games * PRINCIPALS_PER_GAME });
+    // The prize job reads each game's season at the head and at the accepted block, and keeps it closed; the sweep
+    // then has nothing to ask.
+    expect(first).toEqual({ funding: 2 * games, head: 0, paid: games * PRINCIPALS_PER_GAME });
 
     for (const later of [await tick(ledger), await tick(ledger)]) {
       expect(later).toEqual({ funding: 0, head: 0, paid: 0 });
@@ -130,7 +132,7 @@ it("a principal whose payment failed is asked again, and only that one", async (
 const page = { rows: [], next: null, head: 10, anchor: { number: 10, hash: "0xa" }, rewind: false, fromBlock: 1 };
 
 /** One audit of the monitor over funded games, and how many pools it asked the ledger about. */
-function auditPoolReads(games: number, audits: number) {
+function auditPoolReads(games: number, audits: number, finalAt: { block: number; hash: string } | null) {
   const poolReads = vi.fn(() => Effect.succeed(String(100n * 10n ** 18n)));
   const ports: MonitorPorts = {
     identity: { matchesPayDecision: () => Effect.succeed(true) },
@@ -152,6 +154,7 @@ function auditPoolReads(games: number, audits: number) {
     },
     ledger: {
       frontierPool: poolReads,
+      finalFrontierPool: () => Effect.succeed(finalAt && { pool: String(100n * 10n ** 18n), ...finalAt }),
       reportedClaims: () => Effect.succeed(page),
       paidClaims: () => Effect.succeed(page),
       postedResults: () => Effect.succeed(page),
@@ -176,6 +179,12 @@ function auditPoolReads(games: number, audits: number) {
   })();
 }
 
-it.each([1, 5, 30])("with %i funded games, the monitor matches each pool once and never again", async (games) => {
-  expect(await auditPoolReads(games, 3)).toEqual([games, 0, 0]);
+it.each([1, 5, 30])(
+  "with %i funded games, the monitor matches each pool once the accepted block holds it and never again",
+  async (games) => {
+    expect(await auditPoolReads(games, 3, { block: 9, hash: "0xf" })).toEqual([games, 0, 0]);
+  },
+);
+it("keeps reading a pool that Ethereum has not accepted yet", async () => {
+  expect(await auditPoolReads(3, 3, null)).toEqual([3, 3, 3]);
 });

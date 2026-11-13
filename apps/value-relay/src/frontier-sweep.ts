@@ -18,7 +18,15 @@ import {
   type ConfirmedSnapshot,
 } from "./shard-snapshot";
 import { ShardReader, type ShardConnection } from "./shard-rpc";
-import { closedSeason, paidPrincipal, type FinalFacts, type FrontierLedger } from "./final-facts";
+import {
+  closedSeason,
+  fundingAt,
+  keepIfFinal,
+  paidPrincipal,
+  type FinalEvidence,
+  type FinalFacts,
+  type FrontierLedger,
+} from "./final-facts";
 
 export interface PrincipalSweep {
   chainId: string;
@@ -26,7 +34,8 @@ export interface PrincipalSweep {
   account: string;
   amount: string;
 }
-type PayPrincipal = (claim: PrincipalSweep) => Promise<void>;
+/** Resolves with the evidence that the payment is final, or null while it is only on the head. */
+type PayPrincipal = (claim: PrincipalSweep) => Promise<FinalEvidence | null>;
 
 export interface FrontierSettlement {
   chainId: string;
@@ -124,7 +133,10 @@ async function readOpenSeason(
   const head = await readConfirmedLedgerHead(provider);
   const funding = await readFrontierFunding(provider, ledger.address, { chainId, gameId }, terms, head.number);
   if (funding.closed) {
-    await ledger.finals.mark(fact);
+    await keepIfFinal(ledger.finals, fact, provider, async (block) => {
+      const settled = await fundingAt(provider, ledger.address, { chainId, gameId }, terms, block);
+      return !!settled?.closed;
+    });
     return null;
   }
   return { funding, time: head.time };
@@ -237,13 +249,13 @@ async function sweepBalancesAndPayPrincipal(
       const paid = paidPrincipal(target.chainId, gameId, String(receipt.account));
       if (await finals.has(paid)) continue;
       if (!payPrincipal) throw new Error("principal_payment_unavailable");
-      await payPrincipal({
+      const final = await payPrincipal({
         chainId: target.chainId,
         gameId,
         account: String(receipt.account),
         amount: String(receipt.amount),
       });
-      await finals.mark(paid);
+      if (final) await finals.mark(paid, final);
     } catch (error) {
       unavailable ??= error;
     }

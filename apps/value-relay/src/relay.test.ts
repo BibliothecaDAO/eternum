@@ -100,7 +100,10 @@ const fixture = () => {
   const ports: RelayPorts & {
     identity: MonitorPorts["identity"] & RelayPorts["identity"];
     ledger: RelayPorts["ledger"] &
-      Pick<MonitorPorts["ledger"], "reportedClaims" | "paidClaims" | "postedResults" | "frontierPool">;
+      Pick<
+        MonitorPorts["ledger"],
+        "reportedClaims" | "paidClaims" | "postedResults" | "frontierPool" | "finalFrontierPool"
+      >;
     shard: RelayPorts["shard"] & Pick<MonitorPorts["shard"], "withdrawalReceipt" | "conservation" | "result">;
   } = {
     shard: {
@@ -129,6 +132,7 @@ const fixture = () => {
     },
     ledger: {
       frontierPool: () => Effect.succeed(String(100n * 10n ** 18n)),
+      finalFrontierPool: () => Effect.succeed(null),
       voided: () => Effect.succeed(false),
       payment: () => Effect.succeed(null),
       reportMany: vi.fn((rows: readonly Withdrawal[]) =>

@@ -7,8 +7,13 @@ const calls = vi.hoisted(() => ({
   header: vi.fn(),
   snapshot: vi.fn(),
   games: vi.fn(),
+  finalHead: vi.fn(),
 }));
-vi.mock("@realms-world/value-ledger", () => ({ rpcAt: vi.fn(), readFrontierFunding: calls.funding }));
+vi.mock("@realms-world/value-ledger", () => ({
+  rpcAt: vi.fn(),
+  readFrontierFunding: calls.funding,
+  readFinalLedgerHead: calls.finalHead,
+}));
 vi.mock("@realms-world/value-ledger/shard", () => ({
   ShardOperator: class {
     admin = calls.admin;
@@ -73,6 +78,7 @@ beforeEach(() => {
   calls.snapshot.mockResolvedValue(snapshot());
   calls.funding.mockResolvedValue({ closed: false, claimDeadline: 604900, prizePool: String(300n * 10n ** 18n) });
   calls.admin.mockResolvedValue(undefined);
+  calls.finalHead.mockResolvedValue({ number: 9, hash: "0xf", time: 1 });
   vi.stubGlobal(
     "fetch",
     vi.fn(async () => board()),
@@ -92,6 +98,25 @@ it("sends nothing before the season ends or after all awards were issued", async
   await run();
   calls.snapshot.mockResolvedValue(snapshot("300"));
   await run();
+  expect(calls.admin).not.toHaveBeenCalled();
+});
+it("keeps a closed season only once the Ethereum-accepted block shows it closed", async () => {
+  const closedAt = (final: boolean) => (_p: unknown, _a: unknown, _k: unknown, _t: unknown, block?: number) =>
+    Promise.resolve({
+      closed: block === undefined || final,
+      claimDeadline: 604900,
+      prizePool: String(300n * 10n ** 18n),
+    });
+  calls.funding.mockImplementation(closedAt(false));
+  for (let tick = 0; tick < 3; tick++) await run();
+  expect(calls.funding).toHaveBeenCalledTimes(6);
+  calls.funding.mockReset();
+  calls.funding.mockImplementation(closedAt(true));
+  await run();
+  calls.funding.mockClear();
+  await run();
+  await run();
+  expect(calls.funding).not.toHaveBeenCalled();
   expect(calls.admin).not.toHaveBeenCalled();
 });
 /**

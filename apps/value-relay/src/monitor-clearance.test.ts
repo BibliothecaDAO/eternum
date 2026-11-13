@@ -65,6 +65,7 @@ const auditedRow = (stream: Stream) => {
     },
     ledger: {
       frontierPool: () => Effect.succeed("0"),
+      finalFrontierPool: () => Effect.succeed(null),
       reportedClaims: () =>
         Effect.succeed({
           rows: [],

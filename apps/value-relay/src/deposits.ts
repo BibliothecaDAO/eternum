@@ -23,7 +23,7 @@ export interface DepositRelayPorts {
   ledger: { rpcUrl: string; address: string; chainId: string };
   storage: { get<T>(key: string): Promise<T | undefined>; put(key: string, value: unknown): Promise<unknown> };
   sign(request: DepositSigningRequest): Promise<Cosignature>;
-  mutate(request: DepositMutation): Promise<void>;
+  mutate(request: DepositMutation): Promise<unknown>;
 }
 
 interface DepositProgress {
