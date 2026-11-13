@@ -1,14 +1,16 @@
 import { commandRoutes } from "../schema/command-routes.mjs";
+import { assignWireIds, renderWireSerde, wireIds } from "./wire-ids.mjs";
 
 // Replaces separately maintained command payload types, discriminants and the dispatch match.
 export function compileCommandRoutes(artifacts, types, feltLength) {
   const logic = types.get("games_storage::release::LogicClasses").members.map(({ name }) => name);
-  const routes = commandRoutes.map((route) => compileRoute(route, artifacts, types, logic, feltLength));
-  if (new Set(routes.map(({ name }) => name)).size !== routes.length) throw new Error("Duplicate command name");
+  const routes = assignWireIds("commands", commandRoutes).map((route) =>
+    compileRoute(route, artifacts, types, logic, feltLength),
+  );
   const command = {
     type: "enum",
     name: "world_native::commands::Command",
-    variants: routes.map(({ name, payload }) => ({ name, type: payload })),
+    variants: routes.map(({ name, payload, wireId }) => ({ name, type: payload, wireId })),
   };
   return { command, cairo: renderRoutes(routes, logic) };
 }
@@ -58,10 +60,12 @@ function itemOffset(route, payload, types, feltLength) {
 const isSpan = (type) => /^core::array::(?:Span|Array)::</.test(type);
 
 function renderRoutes(routes, logic) {
-  const definitions = routes.map(
-    ({ classIndex, entrypoint, itemsOffset, batch }) =>
-      `    CommandRoute { logic: ${classIndex}, selector: selector!("${entrypoint}"), items_offset: ${itemsOffset === null ? "None" : `Some(${itemsOffset})`}, batch: ${Boolean(batch)} },`,
-  );
+  const definitions = wireIds.commands.map(({ id }) => {
+    const route = routes.find(({ wireId }) => wireId === id);
+    if (!route) return "    None,";
+    const { classIndex, entrypoint, itemsOffset, batch } = route;
+    return `    Some(CommandRoute { logic: ${classIndex}, selector: selector!("${entrypoint}"), items_offset: ${itemsOffset === null ? "None" : `Some(${itemsOffset})`}, batch: ${Boolean(batch)} }),`;
+  });
   const variants = routes.map(({ name, payload }) =>
     payload === "()"
       ? `    ${name},`
@@ -78,9 +82,10 @@ pub struct CommandRoute {
     pub batch: bool,
 }
 
-pub const SETTLE_BLITZ_ROSTER: u32 = ${routes.findIndex(({ name }) => name === "SettleBlitzRoster")};
+pub const SETTLE_BLITZ_ROSTER: u32 = ${routes.find(({ name }) => name === "SettleBlitzRoster").wireId};
 
-pub const COMMAND_ROUTES: [CommandRoute; ${routes.length}] = [
+pub const COMMAND_IDS: [u32; ${routes.length}] = [${routes.map(({ wireId }) => wireId).join(", ")}];
+pub const COMMAND_ROUTES: [Option<CommandRoute>; ${definitions.length}] = [
 ${definitions.join("\n")}
 ];
 
@@ -92,9 +97,13 @@ ${logic.map((name, index) => `        ${index} => classes.${name}.read(),`).join
 }
 
 // Decode the complete command before reading a roll; routes retain the same wire discriminants.
-#[derive(Copy, Drop, Serde, Debug, PartialEq)]
+#[derive(Copy, Drop, Debug, PartialEq)]
 pub enum Command {
 ${variants.join("\n")}
 }
-`;
+
+${renderWireSerde(
+  "Command",
+  routes.map(({ name, payload, wireId }) => ({ name, type: payload, wireId })),
+)}`;
 }

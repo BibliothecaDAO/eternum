@@ -161,7 +161,7 @@ pub fn route_command(
     }
     let index: u32 = (*arguments.pop_front().ok_or('INVALID_COMMAND')?).try_into().ok_or('INVALID_COMMAND')?;
     let routes = crate::command_routes::COMMAND_ROUTES.span();
-    let route = **routes.get(index).ok_or('INVALID_COMMAND')?;
+    let route = (**routes.get(index).ok_or('INVALID_COMMAND')?).ok_or('INVALID_COMMAND')?;
     if let Some(offset) = route.items_offset {
         let items: u32 = (**arguments.get(offset).ok_or('INVALID_COMMAND')?).try_into().ok_or('INVALID_COMMAND')?;
         if items > MAX_COMMAND_ITEMS {

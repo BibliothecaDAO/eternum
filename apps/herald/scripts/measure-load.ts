@@ -74,7 +74,8 @@ function values(type: string, overrides: Record<string, string | string[]> = {},
     return definition.members.flatMap((member) =>
       values(member.type, overrides, path ? `${path}.${member.name}` : member.name),
     );
-  if (definition?.type === "enum") return ["0", ...values(definition.variants[0].type)];
+  if (definition?.type === "enum")
+    return [String(definition.variants[0].wireId ?? 0), ...values(definition.variants[0].type)];
   if (type === "()") return [];
   if (type === "core::bool") return ["1"];
   if (type.includes("core::array::")) return ["0"];

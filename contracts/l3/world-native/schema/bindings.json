@@ -1,5 +1,5 @@
 {
-  "schemaIdentity": "e6b8e05ea788e407a7f3297adce2964cf20f96ad6a6847d56cca70575522ecef",
+  "schemaIdentity": "d1656fed73004bf0b66c05fcb3950c46a6abb9af61f423c73c30c241682af1b6",
   "commandAbi": [
     {
       "type": "interface",
@@ -25,211 +25,263 @@
       "variants": [
         {
           "name": "CreateExplorer",
-          "type": "world_native::commands::CreateExplorer"
+          "type": "world_native::commands::CreateExplorer",
+          "wireId": 0
         },
         {
           "name": "Explore",
-          "type": "world_native::commands::Explore"
+          "type": "world_native::commands::Explore",
+          "wireId": 1
         },
         {
           "name": "Battle",
-          "type": "world_native::combat_actions::AttackExplorer"
+          "type": "world_native::combat_actions::AttackExplorer",
+          "wireId": 2
         },
         {
           "name": "Move",
-          "type": "world_native::commands::Move"
+          "type": "world_native::commands::Move",
+          "wireId": 3
         },
         {
           "name": "ToggleAlternate",
-          "type": "world_native::commands::ToggleAlternate"
+          "type": "world_native::commands::ToggleAlternate",
+          "wireId": 4
         },
         {
           "name": "LevelUp",
-          "type": "core::integer::u64"
+          "type": "core::integer::u64",
+          "wireId": 6
         },
         {
           "name": "SettleBlitzRoster",
-          "type": "()"
+          "type": "()",
+          "wireId": 7
         },
         {
           "name": "ProvisionRealm",
-          "type": "core::integer::u64"
+          "type": "core::integer::u64",
+          "wireId": 8
         },
         {
           "name": "CreateReservedHyperstructure",
-          "type": "world_native::troops::Coord"
+          "type": "world_native::troops::Coord",
+          "wireId": 9
         },
         {
           "name": "SettleSeason",
-          "type": "world_native::realms::SettleSeason"
+          "type": "world_native::realms::SettleSeason",
+          "wireId": 10
         },
         {
           "name": "SettleVillage",
-          "type": "world_native::village::SettleVillage"
+          "type": "world_native::village::SettleVillage",
+          "wireId": 11
         },
         {
           "name": "ReceiveVillageArmy",
-          "type": "core::integer::u64"
+          "type": "core::integer::u64",
+          "wireId": 12
         },
         {
           "name": "BurnStructureResources",
-          "type": "world_native::resources::ResourceBurn"
+          "type": "world_native::resources::ResourceBurn",
+          "wireId": 13
         },
         {
           "name": "TransferExplorerResources",
-          "type": "world_native::resources::ResourceTransfer"
+          "type": "world_native::resources::ResourceTransfer",
+          "wireId": 14
         },
         {
           "name": "OffloadArrival",
-          "type": "world_native::arrivals::OffloadArrival"
+          "type": "world_native::arrivals::OffloadArrival",
+          "wireId": 16
         },
         {
           "name": "SendResources",
-          "type": "world_native::resources::ResourceTransfer"
+          "type": "world_native::resources::ResourceTransfer",
+          "wireId": 17
         },
         {
           "name": "TransferExplorerResourcesToStructure",
-          "type": "world_native::resources::ResourceTransfer"
+          "type": "world_native::resources::ResourceTransfer",
+          "wireId": 18
         },
         {
           "name": "BurnResourceForResourceProduction",
-          "type": "world_native::production::RefillProduction"
+          "type": "world_native::production::RefillProduction",
+          "wireId": 20
         },
         {
           "name": "CreateBuilding",
-          "type": "world_native::buildings::CreateBuilding"
+          "type": "world_native::buildings::CreateBuilding",
+          "wireId": 21
         },
         {
           "name": "DestroyBuilding",
-          "type": "world_native::buildings::ChangeBuilding"
+          "type": "world_native::buildings::ChangeBuilding",
+          "wireId": 22
         },
         {
           "name": "PauseBuildingProduction",
-          "type": "world_native::buildings::ChangeBuilding"
+          "type": "world_native::buildings::ChangeBuilding",
+          "wireId": 23
         },
         {
           "name": "ResumeBuildingProduction",
-          "type": "world_native::buildings::ChangeBuilding"
+          "type": "world_native::buildings::ChangeBuilding",
+          "wireId": 24
         },
         {
           "name": "ContributeBitcoinLabor",
-          "type": "world_native::bitcoin::ContributeLabor"
+          "type": "world_native::bitcoin::ContributeLabor",
+          "wireId": 25
         },
         {
           "name": "CloseBitcoinPhase",
-          "type": "core::integer::u64"
+          "type": "core::integer::u64",
+          "wireId": 26
         },
         {
           "name": "BindBitcoinPhase",
-          "type": "core::integer::u64"
+          "type": "core::integer::u64",
+          "wireId": 27
         },
         {
           "name": "ClaimBitcoinPhase",
-          "type": "world_native::bitcoin::ClaimPhase"
+          "type": "world_native::bitcoin::ClaimPhase",
+          "wireId": 28
         },
         {
           "name": "BattleGuard",
-          "type": "world_native::commands::Battle"
+          "type": "world_native::commands::Battle",
+          "wireId": 29
         },
         {
           "name": "InitializeHyperstructure",
-          "type": "core::integer::u64"
+          "type": "core::integer::u64",
+          "wireId": 38
         },
         {
           "name": "ContributeHyperstructure",
-          "type": "world_native::hyperstructures::Contribution"
+          "type": "world_native::hyperstructures::Contribution",
+          "wireId": 39
         },
         {
           "name": "AllocateHyperstructureShares",
-          "type": "world_native::hyperstructures::AllocateShares"
+          "type": "world_native::hyperstructures::AllocateShares",
+          "wireId": 40
         },
         {
           "name": "SetConstructionAccess",
-          "type": "world_native::hyperstructures::SetConstructionAccess"
+          "type": "world_native::hyperstructures::SetConstructionAccess",
+          "wireId": 41
         },
         {
           "name": "OpenRelicChest",
-          "type": "world_native::relics::OpenChest"
+          "type": "world_native::relics::OpenChest",
+          "wireId": 42
         },
         {
           "name": "ApplyRelic",
-          "type": "world_native::relics::ApplyRelic"
+          "type": "world_native::relics::ApplyRelic",
+          "wireId": 43
         },
         {
           "name": "CloseSeason",
-          "type": "()"
+          "type": "()",
+          "wireId": 44
         },
         {
           "name": "RecordBlitzResults",
-          "type": "()"
+          "type": "()",
+          "wireId": 51
         },
         {
           "name": "CraftRelic",
-          "type": "core::integer::u64"
+          "type": "core::integer::u64",
+          "wireId": 52
         },
         {
           "name": "CreateGuild",
-          "type": "world_native::guilds::CreateGuild"
+          "type": "world_native::guilds::CreateGuild",
+          "wireId": 53
         },
         {
           "name": "JoinGuild",
-          "type": "world_native::guilds::JoinGuild"
+          "type": "world_native::guilds::JoinGuild",
+          "wireId": 54
         },
         {
           "name": "LeaveGuild",
-          "type": "()"
+          "type": "()",
+          "wireId": 55
         },
         {
           "name": "SetGuildWhitelist",
-          "type": "world_native::guilds::SetWhitelist"
+          "type": "world_native::guilds::SetWhitelist",
+          "wireId": 56
         },
         {
           "name": "RemoveGuildMember",
-          "type": "core::starknet::contract_address::ContractAddress"
+          "type": "core::starknet::contract_address::ContractAddress",
+          "wireId": 57
         },
         {
           "name": "MarkGameSettled",
-          "type": "()"
+          "type": "()",
+          "wireId": 58
         },
         {
           "name": "ManageTroops",
-          "type": "world_native::troop_management::ManageTroops"
+          "type": "world_native::troop_management::ManageTroops",
+          "wireId": 59
         },
         {
           "name": "GuardAttack",
-          "type": "world_native::combat_actions::GuardAttack"
+          "type": "world_native::combat_actions::GuardAttack",
+          "wireId": 60
         },
         {
           "name": "DepositResource",
-          "type": "world_native::bridge::Deposit"
+          "type": "world_native::bridge::Deposit",
+          "wireId": 62
         },
         {
           "name": "WithdrawResource",
-          "type": "world_native::bridge::Withdraw"
+          "type": "world_native::bridge::Withdraw",
+          "wireId": 63
         },
         {
           "name": "ProvisionAndUpgradeRealm",
-          "type": "core::integer::u64"
+          "type": "core::integer::u64",
+          "wireId": 64
         },
         {
           "name": "SetEntityName",
-          "type": "world_native::names::SetEntityName"
+          "type": "world_native::names::SetEntityName",
+          "wireId": 65
         },
         {
           "name": "EnterDepth",
-          "type": "world_native::commands::EnterDepth"
+          "type": "world_native::commands::EnterDepth",
+          "wireId": 66
         },
         {
           "name": "Research",
-          "type": "world_native::research::Research"
+          "type": "world_native::research::Research",
+          "wireId": 67
         },
         {
           "name": "SpendSkillPoint",
-          "type": "world_native::progression::SpendSkillPoint"
+          "type": "world_native::progression::SpendSkillPoint",
+          "wireId": 68
         },
         {
           "name": "InteractSite",
-          "type": "world_native::relics::InteractSite"
+          "type": "world_native::relics::InteractSite",
+          "wireId": 69
         }
       ]
     },

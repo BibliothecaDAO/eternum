@@ -229,7 +229,8 @@ it("decodes every declared row and member shape from Games", () => {
     if (/^core::array::(?:Span|Array)::</.test(type)) return ["0"];
     const definition = schema.types[type];
     if (definition?.type === "struct") return definition.members.flatMap((member) => value(member.type));
-    if (definition?.type === "enum") return ["0", ...value(definition.variants[0].type)];
+    if (definition?.type === "enum")
+      return [String(definition.variants[0].wireId ?? 0), ...value(definition.variants[0].type)];
     return ["1"];
   };
   for (const model of schema.models) {

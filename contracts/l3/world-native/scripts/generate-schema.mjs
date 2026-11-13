@@ -1,5 +1,6 @@
 import { tupleTypes } from "../../../../apps/herald/src/native/serde.ts";
 import { compileCommandRoutes } from "./command-routes.mjs";
+import { assignWireIds, renderWireSerde } from "./wire-ids.mjs";
 import { readRuleConstants, readReleaseConstants } from "./rule-constants.mjs";
 import { generateSitePreviews } from "./generate-site-previews.mjs";
 import { execFileSync } from "node:child_process";
@@ -52,6 +53,12 @@ for (const abi of [...Object.values(artifacts), factWireTypes]) {
 const routes = compileCommandRoutes(artifacts, types, feltLength);
 types.set(routes.command.name, routes.command);
 await writeCairo("src/command_routes.cairo", routes.cairo);
+const story = types.get("world_native::ownership::Story");
+story.variants = assignWireIds("stories", story.variants);
+await writeCairo(
+  "src/story_serde.cairo",
+  `// Generated from the permanent wire registry and production Story ABI.\nuse crate::ownership::Story;\n\n${renderWireSerde("Story", story.variants)}`,
+);
 
 // Serialization projections use the types carried by the production gameplay and preset ABIs.
 // These bindings do not add entrypoints to Games.
@@ -505,7 +512,7 @@ function commandType(type) {
 }
 const command = types.get("world_native::commands::Command");
 const commandBits = Object.fromEntries(
-  command.variants.map(({ name }, index) => [name, (1n << BigInt(index)).toString()]),
+  command.variants.map(({ name, wireId }) => [name, (1n << BigInt(wireId)).toString()]),
 );
 await writeText(
   "schema/commands.gen.ts",

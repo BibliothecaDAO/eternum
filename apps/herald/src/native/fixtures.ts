@@ -148,7 +148,8 @@ export function rulesEvent(gameId = "1", dayUnitSeconds = "0", modeRules = 0n) {
   const defaults = (type: string): string[] => {
     const definition = schema.types[type];
     if (definition?.type === "struct") return definition.members.flatMap(({ type }) => defaults(type));
-    if (definition?.type === "enum") return ["0", ...defaults(definition.variants[0].type)];
+    if (definition?.type === "enum")
+      return [String(definition.variants[0].wireId ?? 0), ...defaults(definition.variants[0].type)];
     if (type === "()") return [];
     return ["0"];
   };
@@ -199,7 +200,7 @@ export function battleEvent(attacker = "7", defender = "8", timestamp = "1920"):
 export function storyTag(name: string): string {
   const type = schema.types["world_native::ownership::Story"];
   if (type.type !== "enum") throw new Error("Missing compiled story enum");
-  const index = type.variants.findIndex((variant) => variant.name === name);
-  if (index < 0) throw new Error(`Unknown story ${name}`);
-  return String(index);
+  const variant = type.variants.find((variant) => variant.name === name);
+  if (variant?.wireId === undefined) throw new Error(`Unknown story wire ID ${name}`);
+  return String(variant.wireId);
 }

@@ -1,4 +1,4 @@
-// Ordered routes define the command encoding for this release. Payload types come from production ABIs.
+// Live routes define dispatch; permanent wire IDs live in wire-ids.json. Payload types come from production ABIs.
 export const commandRoutes = [
   {
     name: "CreateExplorer",

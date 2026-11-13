@@ -1,0 +1,551 @@
+{
+  "commands": [
+    {
+      "id": 0,
+      "name": "CreateExplorer",
+      "retired": false
+    },
+    {
+      "id": 1,
+      "name": "Explore",
+      "retired": false
+    },
+    {
+      "id": 2,
+      "name": "Battle",
+      "retired": false
+    },
+    {
+      "id": 3,
+      "name": "Move",
+      "retired": false
+    },
+    {
+      "id": 4,
+      "name": "ToggleAlternate",
+      "retired": false
+    },
+    {
+      "id": 5,
+      "name": "TransferStructureOwnership",
+      "retired": true
+    },
+    {
+      "id": 6,
+      "name": "LevelUp",
+      "retired": false
+    },
+    {
+      "id": 7,
+      "name": "SettleBlitzRoster",
+      "retired": false
+    },
+    {
+      "id": 8,
+      "name": "ProvisionRealm",
+      "retired": false
+    },
+    {
+      "id": 9,
+      "name": "CreateReservedHyperstructure",
+      "retired": false
+    },
+    {
+      "id": 10,
+      "name": "SettleSeason",
+      "retired": false
+    },
+    {
+      "id": 11,
+      "name": "SettleVillage",
+      "retired": false
+    },
+    {
+      "id": 12,
+      "name": "ReceiveVillageArmy",
+      "retired": false
+    },
+    {
+      "id": 13,
+      "name": "BurnStructureResources",
+      "retired": false
+    },
+    {
+      "id": 14,
+      "name": "TransferExplorerResources",
+      "retired": false
+    },
+    {
+      "id": 15,
+      "name": "TransferStructureResourcesToExplorer",
+      "retired": true
+    },
+    {
+      "id": 16,
+      "name": "OffloadArrival",
+      "retired": false
+    },
+    {
+      "id": 17,
+      "name": "SendResources",
+      "retired": false
+    },
+    {
+      "id": 18,
+      "name": "TransferExplorerResourcesToStructure",
+      "retired": false
+    },
+    {
+      "id": 19,
+      "name": "BurnLaborForResourceProduction",
+      "retired": true
+    },
+    {
+      "id": 20,
+      "name": "BurnResourceForResourceProduction",
+      "retired": false
+    },
+    {
+      "id": 21,
+      "name": "CreateBuilding",
+      "retired": false
+    },
+    {
+      "id": 22,
+      "name": "DestroyBuilding",
+      "retired": false
+    },
+    {
+      "id": 23,
+      "name": "PauseBuildingProduction",
+      "retired": false
+    },
+    {
+      "id": 24,
+      "name": "ResumeBuildingProduction",
+      "retired": false
+    },
+    {
+      "id": 25,
+      "name": "ContributeBitcoinLabor",
+      "retired": false
+    },
+    {
+      "id": 26,
+      "name": "CloseBitcoinPhase",
+      "retired": false
+    },
+    {
+      "id": 27,
+      "name": "BindBitcoinPhase",
+      "retired": false
+    },
+    {
+      "id": 28,
+      "name": "ClaimBitcoinPhase",
+      "retired": false
+    },
+    {
+      "id": 29,
+      "name": "BattleGuard",
+      "retired": false
+    },
+    {
+      "id": 30,
+      "name": "CreateTradeOrder",
+      "retired": true
+    },
+    {
+      "id": 31,
+      "name": "AcceptTradeOrder",
+      "retired": true
+    },
+    {
+      "id": 32,
+      "name": "CancelTradeOrder",
+      "retired": true
+    },
+    {
+      "id": 33,
+      "name": "CreateBanks",
+      "retired": true
+    },
+    {
+      "id": 34,
+      "name": "BuyFromBank",
+      "retired": true
+    },
+    {
+      "id": 35,
+      "name": "SellToBank",
+      "retired": true
+    },
+    {
+      "id": 36,
+      "name": "AddBankLiquidity",
+      "retired": true
+    },
+    {
+      "id": 37,
+      "name": "RemoveBankLiquidity",
+      "retired": true
+    },
+    {
+      "id": 38,
+      "name": "InitializeHyperstructure",
+      "retired": false
+    },
+    {
+      "id": 39,
+      "name": "ContributeHyperstructure",
+      "retired": false
+    },
+    {
+      "id": 40,
+      "name": "AllocateHyperstructureShares",
+      "retired": false
+    },
+    {
+      "id": 41,
+      "name": "SetConstructionAccess",
+      "retired": false
+    },
+    {
+      "id": 42,
+      "name": "OpenRelicChest",
+      "retired": false
+    },
+    {
+      "id": 43,
+      "name": "ApplyRelic",
+      "retired": false
+    },
+    {
+      "id": 44,
+      "name": "CloseSeason",
+      "retired": false
+    },
+    {
+      "id": 45,
+      "name": "PledgeFaith",
+      "retired": true
+    },
+    {
+      "id": 46,
+      "name": "RemoveFaith",
+      "retired": true
+    },
+    {
+      "id": 47,
+      "name": "UpdateWonderOwnership",
+      "retired": true
+    },
+    {
+      "id": 48,
+      "name": "UpdateFaithfulOwnership",
+      "retired": true
+    },
+    {
+      "id": 49,
+      "name": "ClaimWonderPoints",
+      "retired": true
+    },
+    {
+      "id": 50,
+      "name": "ClaimPlayerFaithPoints",
+      "retired": true
+    },
+    {
+      "id": 51,
+      "name": "RecordBlitzResults",
+      "retired": false
+    },
+    {
+      "id": 52,
+      "name": "CraftRelic",
+      "retired": false
+    },
+    {
+      "id": 53,
+      "name": "CreateGuild",
+      "retired": false
+    },
+    {
+      "id": 54,
+      "name": "JoinGuild",
+      "retired": false
+    },
+    {
+      "id": 55,
+      "name": "LeaveGuild",
+      "retired": false
+    },
+    {
+      "id": 56,
+      "name": "SetGuildWhitelist",
+      "retired": false
+    },
+    {
+      "id": 57,
+      "name": "RemoveGuildMember",
+      "retired": false
+    },
+    {
+      "id": 58,
+      "name": "MarkGameSettled",
+      "retired": false
+    },
+    {
+      "id": 59,
+      "name": "ManageTroops",
+      "retired": false
+    },
+    {
+      "id": 60,
+      "name": "GuardAttack",
+      "retired": false
+    },
+    {
+      "id": 61,
+      "name": "Raid",
+      "retired": true
+    },
+    {
+      "id": 62,
+      "name": "DepositResource",
+      "retired": false
+    },
+    {
+      "id": 63,
+      "name": "WithdrawResource",
+      "retired": false
+    },
+    {
+      "id": 64,
+      "name": "ProvisionAndUpgradeRealm",
+      "retired": false
+    },
+    {
+      "id": 65,
+      "name": "SetEntityName",
+      "retired": false
+    },
+    {
+      "id": 66,
+      "name": "EnterDepth",
+      "retired": false
+    },
+    {
+      "id": 67,
+      "name": "Research",
+      "retired": false
+    },
+    {
+      "id": 68,
+      "name": "SpendSkillPoint",
+      "retired": false
+    },
+    {
+      "id": 69,
+      "name": "InteractSite",
+      "retired": false
+    },
+    {
+      "id": 70,
+      "name": "RefillStamina",
+      "retired": true
+    },
+    {
+      "id": 71,
+      "name": "WithdrawLords",
+      "retired": true
+    }
+  ],
+  "stories": [
+    {
+      "id": 0,
+      "name": "FaithPointsClaimedStory",
+      "retired": true
+    },
+    {
+      "id": 1,
+      "name": "StructureLevelUpStory",
+      "retired": false
+    },
+    {
+      "id": 2,
+      "name": "RealmCreatedStory",
+      "retired": false
+    },
+    {
+      "id": 3,
+      "name": "GuardAddStory",
+      "retired": false
+    },
+    {
+      "id": 4,
+      "name": "ResourceBurnStory",
+      "retired": false
+    },
+    {
+      "id": 5,
+      "name": "ResourceTransferStory",
+      "retired": false
+    },
+    {
+      "id": 6,
+      "name": "ResourceReceiveArrivalStory",
+      "retired": false
+    },
+    {
+      "id": 7,
+      "name": "ProductionStory",
+      "retired": false
+    },
+    {
+      "id": 8,
+      "name": "BuildingPlacementStory",
+      "retired": false
+    },
+    {
+      "id": 9,
+      "name": "BuildingPaymentStory",
+      "retired": false
+    },
+    {
+      "id": 10,
+      "name": "BitcoinAwardStory",
+      "retired": false
+    },
+    {
+      "id": 11,
+      "name": "StructureCapturedStory",
+      "retired": false
+    },
+    {
+      "id": 12,
+      "name": "TradeCreated",
+      "retired": true
+    },
+    {
+      "id": 13,
+      "name": "TradeAccepted",
+      "retired": true
+    },
+    {
+      "id": 14,
+      "name": "TradeCancelled",
+      "retired": true
+    },
+    {
+      "id": 15,
+      "name": "BankSwap",
+      "retired": true
+    },
+    {
+      "id": 16,
+      "name": "BankLiquidity",
+      "retired": true
+    },
+    {
+      "id": 17,
+      "name": "HyperstructurePoints",
+      "retired": false
+    },
+    {
+      "id": 18,
+      "name": "RelicChestOpened",
+      "retired": false
+    },
+    {
+      "id": 19,
+      "name": "ExplorationReward",
+      "retired": false
+    },
+    {
+      "id": 20,
+      "name": "SeasonEnded",
+      "retired": false
+    },
+    {
+      "id": 21,
+      "name": "FaithPledged",
+      "retired": true
+    },
+    {
+      "id": 22,
+      "name": "FaithRemoved",
+      "retired": true
+    },
+    {
+      "id": 23,
+      "name": "BlitzFinalized",
+      "retired": false
+    },
+    {
+      "id": 24,
+      "name": "RelicCrafted",
+      "retired": false
+    },
+    {
+      "id": 25,
+      "name": "ExplorerCreateStory",
+      "retired": false
+    },
+    {
+      "id": 26,
+      "name": "ExplorerAddStory",
+      "retired": false
+    },
+    {
+      "id": 27,
+      "name": "ExplorerDeleteStory",
+      "retired": false
+    },
+    {
+      "id": 28,
+      "name": "GuardDeleteStory",
+      "retired": false
+    },
+    {
+      "id": 29,
+      "name": "TroopsTransferred",
+      "retired": false
+    },
+    {
+      "id": 30,
+      "name": "LordsWithdrawn",
+      "retired": false
+    },
+    {
+      "id": 31,
+      "name": "SkillPointSpent",
+      "retired": false
+    },
+    {
+      "id": 32,
+      "name": "SitePayout",
+      "retired": false
+    },
+    {
+      "id": 33,
+      "name": "SpireDiscovered",
+      "retired": false
+    },
+    {
+      "id": 34,
+      "name": "RewardChestOpened",
+      "retired": false
+    },
+    {
+      "id": 35,
+      "name": "RelicActivated",
+      "retired": false
+    },
+    {
+      "id": 36,
+      "name": "SiteUsed",
+      "retired": false
+    }
+  ]
+}

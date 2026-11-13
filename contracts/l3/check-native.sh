@@ -38,8 +38,9 @@ check_sizes() {
 }
 
 check_world() {
+  node "$world/scripts/check-wire-ids.mjs"
   build_world
-  node --test "$world/scripts/check-class-sizes.test.mjs" "$world/scripts/check-fact-wire.test.mjs" "$world/scripts/event-layouts.test.mjs" "$world/scripts/taxonomy.test.mjs" "$world/scripts/rule-constants.test.mjs"
+  node --test "$world/scripts/check-class-sizes.test.mjs" "$world/scripts/check-fact-wire.test.mjs" "$world/scripts/event-layouts.test.mjs" "$world/scripts/taxonomy.test.mjs" "$world/scripts/rule-constants.test.mjs" "$world/scripts/wire-ids.test.mjs"
   node "$world/scripts/check-class-sizes.mjs"
 }
 

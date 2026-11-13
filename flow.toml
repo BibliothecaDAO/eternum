@@ -131,7 +131,7 @@ cmd = "node --test contracts/l3/check-native-plan.test.mjs"
 estimate_gb = 1
 
 [kind.generate-native-retirement]
-cmd = 'bash contracts/l3/check-native.sh build && pnpm run schema:native && pnpm run fixtures:native-presets && (cd contracts/l3/world-native && scarb fmt) && (cd contracts/l3/world-native/tests && scarb fmt) && pnpm run format && git add -N -- contracts/l3/world-native/tests/fixtures/current-presets && git diff --binary > "$FLOW_TMP/generated.patch"'
+cmd = 'node contracts/l3/world-native/scripts/generate-story-serde.mjs && bash contracts/l3/check-native.sh build && pnpm run schema:native && pnpm run fixtures:native-presets && (cd contracts/l3/world-native && scarb fmt) && (cd contracts/l3/world-native/tests && scarb fmt) && pnpm run format && git add -N -- contracts/l3/world-native/tests/fixtures/current-presets && git diff --binary > "$FLOW_TMP/generated.patch"'
 estimate_gb = 9
 
 [kind.playtest-economy]
@@ -153,3 +153,7 @@ estimate_gb = 6
 [kind.test-relic-forecasts]
 cmd = "pnpm run build:packages && pnpm --dir apps/game test src/ui/features/frontier/sites/site-card-plan.test.ts src/ui/features/frontier/sites/tile-card.test.tsx src/ui/features/military/battle/quick-attack-preview.test.tsx src/ui/features/frontier/relics/ruin-relic-attack.test.tsx src/ui/features/frontier/frontier-selection-sheet.test.tsx"
 estimate_gb = 4
+
+[kind.test-native-wire]
+cmd = "pnpm run build:packages && pnpm --dir packages/provider test && pnpm --dir packages/core test && pnpm --dir apps/herald exec vitest run src/native && bun test config/deployer/clean/tests/native-preset.test.ts"
+estimate_gb = 5

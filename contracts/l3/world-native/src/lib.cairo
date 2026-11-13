@@ -54,6 +54,7 @@ pub mod settlement_grid;
 pub mod spires;
 pub mod stamina;
 pub mod state;
+pub mod story_serde;
 pub mod structures;
 pub mod taxonomy;
 

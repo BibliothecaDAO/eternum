@@ -548,3 +548,4 @@ mod stamina;
 mod structure_rules;
 mod structure_storage;
 mod terrain;
+mod wire_ids;

@@ -5,8 +5,9 @@ pub struct StructureLevelUpStory {
     pub new_level: u8,
 }
 
-// Native history variants append independently of the legacy wire discriminants.
-#[derive(Copy, Drop, Serde, Debug, PartialEq)]
+pub use crate::story_serde::StorySerde;
+
+#[derive(Copy, Drop, Debug, PartialEq)]
 pub enum Story {
     StructureLevelUpStory: StructureLevelUpStory,
     RealmCreatedStory: RealmCreatedStory,

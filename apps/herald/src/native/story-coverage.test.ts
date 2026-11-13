@@ -1,7 +1,7 @@
 import { shortString } from "starknet";
 import { describe, expect, it } from "vitest";
 import { toJsonValue } from "../model-registry";
-import { battleEvent, manifest, raw, schema, setup } from "./fixtures";
+import { battleEvent, manifest, raw, schema, setup, storyTag } from "./fixtures";
 
 // Wire payloads follow the Cairo story declarations, independently of the decoder.
 const resources = [{ resource_type: 1n, amount: 100n }];
@@ -163,7 +163,7 @@ describe("compiled native history coverage", () => {
     [2, "Beasts"],
     [3, "Sanctuaries"],
   ] as const)("keeps Scouting history code %i as %s", (kind, name) => {
-    const variant = storyVariants().findIndex((variant) => variant.name === "SkillPointSpent");
+    const variant = Number(storyTag("SkillPointSpent"));
     for (const layout of schema.games.events.filter(({ name }) => name === "StoryEvent")) {
       assertDecoded(
         raw({
@@ -183,7 +183,7 @@ describe("compiled native history coverage", () => {
   });
   for (const [name, { fields, expected }] of Object.entries(stories)) {
     it(`decodes ${name} from every Games event prefix`, () => {
-      const variant = storyVariants().findIndex((variant) => variant.name === name);
+      const variant = Number(storyTag(name));
       for (const layout of schema.games.events.filter(({ name }) => name === "StoryEvent")) {
         assertDecoded(
           raw({
@@ -231,7 +231,7 @@ describe("compiled native history coverage", () => {
 });
 
 it.each([60, 5, 0])("decodes the actual capped well gain %s from every story prefix", (gain) => {
-  const variant = storyVariants().findIndex((v) => v.name === "SiteUsed");
+  const variant = Number(storyTag("SiteUsed"));
   expect(variant).toBeGreaterThanOrEqual(0);
   for (const layout of schema.games.events.filter(({ name }) => name === "StoryEvent")) {
     assertDecoded(
@@ -247,7 +247,7 @@ it.each([60, 5, 0])("decodes the actual capped well gain %s from every story pre
 });
 
 it.each([1, 2, 3, 4, 5])("decodes the granted Shrine rank %s from every story prefix", (rank) => {
-  const variant = storyVariants().findIndex((v) => v.name === "SiteUsed");
+  const variant = Number(storyTag("SiteUsed"));
   expect(variant).toBeGreaterThanOrEqual(0);
   for (const layout of schema.games.events.filter(({ name }) => name === "StoryEvent")) {
     assertDecoded(

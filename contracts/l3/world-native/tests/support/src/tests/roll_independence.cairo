@@ -4,7 +4,7 @@ pub use crate::commands::Command;
 pub use crate::tests::play_fixture::{IPlayFixtureSafeDispatcher, IPlayFixtureSafeDispatcherTrait, TestAction};
 pub use crate::tests::{Deployment, play_fixture};
 pub fn routes() -> u32 {
-    crate::command_routes::COMMAND_ROUTES.span().len()
+    crate::command_routes::COMMAND_IDS.span().len()
 }
 pub const ROOTS: u64 = 32;
 // Every value is a fully typed command. Missing entities and unavailable lifecycle transitions exercise domain
@@ -202,7 +202,7 @@ pub fn fresh_world(ready: bool) -> Deployment {
 pub fn assert_route(command: Command, index: u32) {
     let encoded = play_fixture::encode(command);
     let (actual, _, _) = crate::commands::validated_command(encoded).expect('INVALID_TYPED_VECTOR');
-    assert_eq!(actual, index);
+    assert_eq!(actual, *crate::command_routes::COMMAND_IDS.span().at(index));
 }
 pub fn draw_case(case: u8) -> (Deployment, TestAction, u64) {
     match case {

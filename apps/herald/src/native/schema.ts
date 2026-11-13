@@ -4,6 +4,7 @@ import type { Abi } from "starknet";
 export interface NativeMember {
   name: string;
   type: string;
+  wireId?: number;
   id?: string;
   feltLength?: number | null;
 }

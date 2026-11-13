@@ -759,7 +759,9 @@ describe("a send's stages, as the game client reports them", () => {
     const submit = nativePlay(
       {
         bindings: {
-          commandAbi: [{ type: "enum", name: "world_native::commands::Command", variants: [{ name: "Explore" }] }],
+          commandAbi: [
+            { type: "enum", name: "world_native::commands::Command", variants: [{ name: "Explore", wireId: 1 }] },
+          ],
         } as unknown as Parameters<typeof nativePlay>[0]["bindings"],
         release: { ready: async () => {} },
         shard: SHARD,
@@ -785,7 +787,7 @@ describe("a send's stages, as the game client reports them", () => {
       submit(shard.account as unknown as AccountInterface, {
         ...CALL,
         entrypoint: "Explore",
-        calldata: ["0x3", "0x0"],
+        calldata: ["0x3", "0x1"],
       });
     return { stages, play };
   };
