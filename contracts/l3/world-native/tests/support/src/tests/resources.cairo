@@ -1,4 +1,4 @@
-pub use snforge_std::{ContractClassTrait, DeclareResultTrait, EventSpyTrait, EventsFilterTrait, declare, spy_events};
+pub use snforge_std::{EventSpyTrait, EventsFilterTrait, spy_events};
 pub use crate::resources::{Production, ProductionPacking, ResourceKey, Weight};
 pub use crate::rules::RESOURCE_PRECISION;
 
@@ -23,30 +23,55 @@ pub trait IResourceFixture<T> {
 
 #[starknet::contract]
 pub mod ResourceFixture {
-    use starknet::storage::{StorageMapWriteAccess, StoragePathEntry, StoragePointerWriteAccess};
+    use starknet::ContractAddress;
+    use crate::games::Authentication;
+    use crate::games_entry::GamesEntry;
+    use crate::logic::release::ReleaseState;
     use crate::logic::resources::ResourceState;
     use crate::resources::{Production, ResourceKey, Weight};
     component!(path: ResourceState, storage: resources, event: ResourceEvent);
+    component!(path: GamesEntry, storage: entry, event: EntryEvent);
+    component!(path: ReleaseState, storage: release, event: ReleaseEvent);
+    impl EntryInternal = GamesEntry::InternalImpl<ContractState>;
+    #[abi(embed_v0)]
+    impl Registrar = GamesEntry::RegistrarImpl<ContractState>;
+    #[abi(embed_v0)]
+    impl Releases = ReleaseState::ReleasesImpl<ContractState>;
     impl Internal = ResourceState::InternalImpl<ContractState>;
     #[storage]
     #[allow(starknet::colliding_storage_paths)]
     struct Storage {
         #[substorage(v0)]
         resources: ResourceState::Storage,
+        #[substorage(v0)]
+        entry: GamesEntry::Storage,
+        #[substorage(v0)]
+        release: ReleaseState::Storage,
     }
     #[event]
     #[derive(Drop, starknet::Event)]
     enum Event {
         #[flat]
         ResourceEvent: ResourceState::Event,
+        EntryEvent: GamesEntry::Event,
+        ReleaseEvent: ReleaseState::Event,
+    }
+    #[constructor]
+    fn constructor(
+        ref self: ContractState,
+        owner: ContractAddress,
+        launcher: ContractAddress,
+        authentication: Authentication,
+        release_id: u32,
+        release: crate::logic::release::Release,
+        vrf_public_key: realms_vrf_verifier::vendor::ecvrf::Point,
+        l2_gas_bound: u64,
+    ) {
+        self.entry.initializer(owner, launcher, authentication, release_id, release, vrf_public_key, l2_gas_bound);
     }
     #[abi(embed_v0)]
     impl Fixture of super::IResourceFixture<ContractState> {
         fn initialize(ref self: ContractState, key: ResourceKey, capacity: u128) {
-            let state = crate::state::write();
-            state.games.games.entry(key.game_id).preset_id.write(1);
-            state.registrar.presets.write(1, 1);
-            state.presets.entry(1).rules.day_unit_seconds.write(0);
             self.resources.initialize(key, capacity);
         }
         fn grant(ref self: ContractState, key: ResourceKey, amount: u128) {
@@ -102,6 +127,6 @@ pub mod ResourceFixture {
     }
 }
 pub fn fixture() -> IResourceFixtureDispatcher {
-    let (contract_address, _) = declare("ResourceFixture").unwrap().contract_class().deploy(@array![]).unwrap();
-    IResourceFixtureDispatcher { contract_address }
+    let d = super::setup_with_host(true, "MapLogic", "TroopFixture", "ResourceFixture");
+    IResourceFixtureDispatcher { contract_address: d.games }
 }

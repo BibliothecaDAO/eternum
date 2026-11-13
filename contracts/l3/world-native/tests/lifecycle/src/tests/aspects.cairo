@@ -203,8 +203,8 @@ fn a_home_settled_before_opening_has_both_armies_on_the_first_day() {
             assert_eq!(armies.len(), 2);
             let context = crate::commands::load_context(game_id, 0, 360);
             for id in armies {
-                let army = crate::logic::troops::active_explorer(
-                    crate::troops::ExplorerKey { game_id, explorer_id: *id }, 360, context,
+                let army = crate::logic::troops::command_explorer(
+                    crate::troops::ExplorerKey { game_id, explorer_id: *id }, None, 360, context,
                 );
                 assert_eq!(army.troops.count, 1500 * crate::rules::RESOURCE_PRECISION);
                 assert_eq!(army.troops.stamina.inline().amount, 180);

@@ -27,6 +27,19 @@ pub struct BaneProgress {
     pub ended_at: u64,
 }
 
+#[derive(Copy, Drop, Serde, Debug)]
+pub struct BaneEffects {
+    pub windows: Span<BaneWindow>,
+    pub beast_percent: u16,
+    pub stamina_percent: u16,
+    pub production_percent: u16,
+}
+
+#[starknet::interface]
+pub trait IBaneEffects<T> {
+    fn bane_effects(self: @T, home: crate::resources::ResourceKey, from: u64, until: u64) -> BaneEffects;
+}
+
 pub fn validate(rules: BaneRules) {
     assert!(rules.chance_step > 0 && rules.chance_step <= 100, "invalid world bane chance");
     assert!(rules.quorum_percent > 0 && rules.quorum_percent <= 100, "invalid bane quorum");

@@ -169,7 +169,8 @@ pub fn record_labor_grant(day: u64, grant: crate::entry::LaborGrant) {
     starknet::syscalls::emit_event_syscall(keys.span(), data.span()).unwrap();
 }
 
-fn grant_resource_context(game_id: u32, game: crate::game::GameRegistry) -> crate::commands::ResourceContext {
+#[inline(never)]
+pub fn grant_resource_context(game_id: u32, game: crate::game::GameRegistry) -> crate::commands::ResourceContext {
     let rules = crate::logic::preset_record::for_game(game_id).rules;
     crate::commands::ResourceContext {
         production_start: if rules.mode_rules.read() & crate::rules::PRODUCTION_START != 0 {

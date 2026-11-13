@@ -80,7 +80,7 @@ fn two_homes_end_the_lights_and_collect_the_second_grant_once() {
                 crate::state::read().banes.bonus_grants.read((game_id, first_home.entity_id, 1)),
                 Some((1000 * crate::rules::RESOURCE_PRECISION, 1500 * crate::rules::RESOURCE_PRECISION)),
             );
-            let windows = crate::logic::banes::windows(first_home, next - 1, now + 1);
+            let windows = crate::logic::banes::effects(first_home, next - 1, now + 1).windows;
             assert_eq!(windows.len(), 1);
             assert_eq!(
                 *windows.at(0),
@@ -246,7 +246,7 @@ fn team_lights_end_height_suppression_without_a_world_bonus_or_quest_switch() {
                 crate::state::read().entry.home_labor_grants.read((game_id, first_home.entity_id, 1)),
                 Some((first.actor, 1000 * crate::rules::RESOURCE_PRECISION, 1500 * crate::rules::RESOURCE_PRECISION)),
             );
-            assert!(crate::logic::banes::windows(first_home, next, second_done + 1).is_empty());
+            assert!(crate::logic::banes::effects(first_home, next, second_done + 1).windows.is_empty());
         },
     );
 }
