@@ -215,11 +215,12 @@ it("keeps the forecast and eligible rewards unknown until missing effects are kn
 it("adds active relics to a slot army's Battle skill without modifying stored troop boosts", () => {
   const { store, attack } = campBeside();
   const { army } = attack({ col: 41, row: 12, alt: false });
+  const slotKeys = { game_id: 1, structure_id: army.owner, epoch: BigInt(store.subscriptionScope().known!.expedition!.day), slot: 0 };
   const slotArmy = { ...army, troops: { ...army.troops, stamina: { Slot: 0 } } };
   store.applyFacts([
     { model: "ExplorerTroops", key: store.wireKeyOf("ExplorerTroops", army)!, value: slotArmy },
-    { model: "ArmySlot", key: "0x9100", value: {
-      game_id: 1, structure_id: army.owner, epoch: BigInt(store.subscriptionScope().known!.expedition!.day), slot: 0,
+    { model: "ArmySlot", key: store.wireKeyOf("ArmySlot", slotKeys)!, value: {
+      ...slotKeys,
       explorer_id: army.explorer_id, stamina: { amount: 100n, settled_at: 350n, remainder: 0 },
     } },
     { model: "ArmyProgress", key: "0x9101", value: {

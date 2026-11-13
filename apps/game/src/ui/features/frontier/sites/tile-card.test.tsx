@@ -624,7 +624,6 @@ describe("after the player's attack (owner, 30 October 2026: 'I'd like the army 
   });
 });
 
-
 it("refreshes the open forecast and XP when only an army relic effect arrives", () => {
   const { host, store, unmount } = renderCard("beside");
   try {

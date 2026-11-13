@@ -352,7 +352,10 @@ const RELIC_FORECAST_STEPS = [
     play: async (context) => {
       const { browser, extraScreenshot } = context;
       await pickTheSpireArmy({ browser });
-      const before = await openTheRuinsCardUntil(showsBothSides)({ ...context, extraScreenshot: (name) => extraScreenshot(`before-${name}`) });
+      const before = await openTheRuinsCardUntil(showsBothSides)({
+        ...context,
+        extraScreenshot: (name) => extraScreenshot(`before-${name}`),
+      });
       const beforeText = browser.read(`JSON.stringify(document.querySelector('[data-kit-sheet]')?.textContent ?? '')`);
       browser.press("Escape");
       await openTheArmyPanel(browser);
@@ -370,7 +373,10 @@ const RELIC_FORECAST_STEPS = [
         );
       }
       browser.press("Escape");
-      const after = await openTheRuinsCardUntil(showsBothSides)({ ...context, extraScreenshot: (name) => extraScreenshot(`after-${name}`) });
+      const after = await openTheRuinsCardUntil(showsBothSides)({
+        ...context,
+        extraScreenshot: (name) => extraScreenshot(`after-${name}`),
+      });
       return {
         before: before.after,
         after: after.after,
@@ -380,12 +386,17 @@ const RELIC_FORECAST_STEPS = [
       };
     },
     verify: ({ played }) => {
-      const effects = played.sent.flatMap(row => row.answered ?? []).filter(row => row.model === "ArmyRelicEffect").map(row => row.value);
-      return played.before.sides.length === 2 && played.after.sides.length === 2 &&
+      const effects = played.sent
+        .flatMap((row) => row.answered ?? [])
+        .filter((row) => row.model === "ArmyRelicEffect")
+        .map((row) => row.value);
+      return played.before.sides.length === 2 &&
+        played.after.sides.length === 2 &&
         JSON.stringify(played.before.sides) !== JSON.stringify(played.after.sides) &&
-        /136\s*XP/.test(played.beforeText) && /190\s*XP/.test(played.afterText) &&
-        effects.some(effect => effect.kind === "Blade" && effect.rank === 2) &&
-        effects.some(effect => effect.kind === "Tome" && effect.rank === 1)
+        /136\s*XP/.test(played.beforeText) &&
+        /190\s*XP/.test(played.afterText) &&
+        effects.some((effect) => effect.kind === "Blade" && effect.rank === 2) &&
+        effects.some((effect) => effect.kind === "Tome" && effect.rank === 1)
         ? completed(played)
         : failed("switching on Blade and Tome must change the fight and the ruin's XP from 136 to 190", played);
     },

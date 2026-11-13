@@ -1297,5 +1297,6 @@ fixture, starts three knight recipe cycles, then sends fifty wheat through Trans
 transcript keeps the submitted commands, the balance and production replies, and the visible result; each step also
 leaves a screenshot. `/lab/game?scenario=economy` opens the same two owned realms for manual reproduction.
 
-
-Relic forecast acceptance: `pnpm playtest --steps lab-relic-forecasts` starts `/lab/game?scenario=relics`, opens the ruin card, switches on Blade and Tome from the army panel, then checks the changed fight and XP. The shared readers also cover Ward, Plunder, expiry and incomplete snapshots in the site-card regressions.
+Relic forecast acceptance: `pnpm playtest --steps lab-relic-forecasts` starts `/lab/game?scenario=relics`, opens the
+ruin card, switches on Blade and Tome from the army panel, then checks the changed fight and XP. The shared readers also
+cover Ward, Plunder, expiry and incomplete snapshots in the site-card regressions.

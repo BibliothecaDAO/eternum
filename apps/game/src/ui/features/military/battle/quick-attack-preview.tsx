@@ -71,7 +71,9 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
     },
   } = useGame();
   const facts = useNativeFacts([
-    "ArmySlot", "ArmyRelicEffect", "ArmyProgress",
+    "ArmySlot",
+    "ArmyRelicEffect",
+    "ArmyProgress",
     "Structure",
     "Guard",
     "ExplorerTroops",

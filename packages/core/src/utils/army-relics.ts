@@ -19,7 +19,6 @@ export function armyRelicsEnabled(
   return store.subscriptionScope().known ? true : undefined;
 }
 
-
 type ArmyKey = Pick<NativeRows["ExplorerTroops"], "game_id" | "explorer_id">;
 type RelicKind = NativeRows["ArmyRelicEffect"]["kind"];
 
@@ -38,7 +37,11 @@ export function armyRelicBonus(
   kind: RelicKind,
   timestamp: number,
 ): number | undefined {
-  const result = store.requireOrAbsent("ArmyRelicEffect", { game_id: army.game_id, explorer_id: army.explorer_id, kind });
+  const result = store.requireOrAbsent("ArmyRelicEffect", {
+    game_id: army.game_id,
+    explorer_id: army.explorer_id,
+    kind,
+  });
   if (!result.known) return undefined;
   const effect = result.known;
   if (effect.rank === 0 || effect.expires_at === 0n) return 0;

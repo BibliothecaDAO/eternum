@@ -152,7 +152,9 @@ export const useAttackTargetData = (
       return [...structureRelicEffects, ...getStructureRelicEffects(targetProductionBoost, currentDefaultTick)];
     }
 
-    const troops = targetExplorer ? resolveExplorerCombatTroops(guardsFacts.store, targetExplorer, currentDefaultTick) : undefined;
+    const troops = targetExplorer
+      ? resolveExplorerCombatTroops(guardsFacts.store, targetExplorer, currentDefaultTick)
+      : undefined;
     return troops ? getArmyRelicEffects(troops, currentDefaultTick) : [];
   }, [
     guardsFacts,

@@ -45,7 +45,15 @@ export const useBattleLabLiveData = (
   targetHex: { x: number; y: number },
   alt = false,
 ): BattleLabLiveData => {
-  const facts = useNativeFacts(["ArmySlot", "ArmyRelicEffect", "ArmyProgress", "Structure", "Guard", "ExplorerTroops", "TileOccupancy"]);
+  const facts = useNativeFacts([
+    "ArmySlot",
+    "ArmyRelicEffect",
+    "ArmyProgress",
+    "Structure",
+    "Guard",
+    "ExplorerTroops",
+    "TileOccupancy",
+  ]);
   const staminaTimestamp = useCurrentDefaultTick();
 
   const { attackerRelicEffects, targetRelicEffects, target, targetResources, isLoading } = useAttackTargetData(
