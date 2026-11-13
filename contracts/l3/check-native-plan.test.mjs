@@ -37,13 +37,14 @@ test("the native runner selects one package and retains its worker limit", () =>
         env: { ...process.env, PATH: `${directory}:${process.env.PATH}` },
         encoding: "utf8",
       });
-    for (const [args, packageName] of [
-      [[], "world_tests_*"],
-      [["--package", "world_tests_discovery*"], "world_tests_discovery*"],
+    for (const [args, packageName, threads] of [
+      [[], "world_tests_*", "1"],
+      [["--package", "world_tests_discovery"], "world_tests_discovery", "1"],
+      [["--package", "world_tests_discovery_roots"], "world_tests_discovery_roots", "4"],
     ]) {
       const result = run(args);
       assert.equal(result.status, 0, result.stderr);
-      assert.deepEqual(result.stdout.trim().split("\n"), ["test", "--package", packageName, "--max-threads", "1"]);
+      assert.deepEqual(result.stdout.trim().split("\n"), ["test", "--package", packageName, "--max-threads", threads]);
     }
   } finally {
     rmSync(directory, { recursive: true, force: true });

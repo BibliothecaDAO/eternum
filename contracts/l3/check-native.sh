@@ -59,7 +59,12 @@ check_drift() {
 test_package() {
   local package=$1
   (cd "$world/tests" && RAYON_NUM_THREADS=1 scarb build --test --package "world_tests_$package*")
-  bash contracts/l3/test-native.sh --package "world_tests_$package*"
+  if [[ "$package" == discovery ]]; then
+    bash contracts/l3/test-native.sh --package world_tests_discovery
+    bash contracts/l3/test-native.sh --package world_tests_discovery_roots
+  else
+    bash contracts/l3/test-native.sh --package "world_tests_$package*"
+  fi
 }
 
 case "${1:-all}" in

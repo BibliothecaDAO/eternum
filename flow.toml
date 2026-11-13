@@ -47,49 +47,49 @@ estimate_gb = 9
 [kind.test-capture]
 cmd = "bash contracts/l3/check-native.sh test-capture"
 measure = 'grep -oE "Tests: [0-9]+ passed" "$FLOW_LOG" | tail -n 1'
-paths = "contracts/ .tool-versions flow.toml !contracts/l3/world-native/tests/combat/ !contracts/l3/world-native/tests/discovery/ !contracts/l3/world-native/tests/economy/ !contracts/l3/world-native/tests/lifecycle/ !contracts/l3/world-native/tests/registration/ !contracts/l3/world-native/tests/resources/ !contracts/l3/world-native/tests/world/"
+paths = "contracts/ .tool-versions flow.toml !contracts/l3/world-native/tests/combat/ !contracts/l3/world-native/tests/discovery/ !contracts/l3/world-native/tests/discovery-roots/ !contracts/l3/world-native/tests/economy/ !contracts/l3/world-native/tests/lifecycle/ !contracts/l3/world-native/tests/registration/ !contracts/l3/world-native/tests/resources/ !contracts/l3/world-native/tests/world/"
 estimate_gb = 9
 
 [kind.test-combat]
 cmd = "bash contracts/l3/check-native.sh test-combat"
 measure = 'grep -oE "Tests: [0-9]+ passed" "$FLOW_LOG" | tail -n 1'
-paths = "contracts/ .tool-versions flow.toml !contracts/l3/world-native/tests/capture/ !contracts/l3/world-native/tests/discovery/ !contracts/l3/world-native/tests/economy/ !contracts/l3/world-native/tests/lifecycle/ !contracts/l3/world-native/tests/registration/ !contracts/l3/world-native/tests/resources/ !contracts/l3/world-native/tests/world/"
+paths = "contracts/ .tool-versions flow.toml !contracts/l3/world-native/tests/capture/ !contracts/l3/world-native/tests/discovery/ !contracts/l3/world-native/tests/discovery-roots/ !contracts/l3/world-native/tests/economy/ !contracts/l3/world-native/tests/lifecycle/ !contracts/l3/world-native/tests/registration/ !contracts/l3/world-native/tests/resources/ !contracts/l3/world-native/tests/world/"
 estimate_gb = 9
 
 [kind.test-discovery]
 cmd = "bash contracts/l3/check-native.sh test-discovery"
-measure = 'grep -oE "Tests: [0-9]+ passed" "$FLOW_LOG" | tail -n 1'
+measure = 'awk "/Tests: [0-9]+ passed/ {sum += \$2} END {print sum}" "$FLOW_LOG" | xargs -I{} echo Tests: {} passed'
 paths = "contracts/ .tool-versions flow.toml !contracts/l3/world-native/tests/capture/ !contracts/l3/world-native/tests/combat/ !contracts/l3/world-native/tests/economy/ !contracts/l3/world-native/tests/lifecycle/ !contracts/l3/world-native/tests/registration/ !contracts/l3/world-native/tests/resources/ !contracts/l3/world-native/tests/world/"
 estimate_gb = 16
 
 [kind.test-economy]
 cmd = "bash contracts/l3/check-native.sh test-economy"
 measure = 'grep -oE "Tests: [0-9]+ passed" "$FLOW_LOG" | tail -n 1'
-paths = "contracts/ .tool-versions flow.toml !contracts/l3/world-native/tests/capture/ !contracts/l3/world-native/tests/combat/ !contracts/l3/world-native/tests/discovery/ !contracts/l3/world-native/tests/lifecycle/ !contracts/l3/world-native/tests/registration/ !contracts/l3/world-native/tests/resources/ !contracts/l3/world-native/tests/world/"
+paths = "contracts/ .tool-versions flow.toml !contracts/l3/world-native/tests/capture/ !contracts/l3/world-native/tests/combat/ !contracts/l3/world-native/tests/discovery/ !contracts/l3/world-native/tests/discovery-roots/ !contracts/l3/world-native/tests/lifecycle/ !contracts/l3/world-native/tests/registration/ !contracts/l3/world-native/tests/resources/ !contracts/l3/world-native/tests/world/"
 estimate_gb = 9
 
 [kind.test-lifecycle]
 cmd = "bash contracts/l3/check-native.sh test-lifecycle"
 measure = 'grep -oE "Tests: [0-9]+ passed" "$FLOW_LOG" | tail -n 1'
-paths = "contracts/ .tool-versions flow.toml !contracts/l3/world-native/tests/capture/ !contracts/l3/world-native/tests/combat/ !contracts/l3/world-native/tests/discovery/ !contracts/l3/world-native/tests/economy/ !contracts/l3/world-native/tests/registration/ !contracts/l3/world-native/tests/resources/ !contracts/l3/world-native/tests/world/"
+paths = "contracts/ .tool-versions flow.toml !contracts/l3/world-native/tests/capture/ !contracts/l3/world-native/tests/combat/ !contracts/l3/world-native/tests/discovery/ !contracts/l3/world-native/tests/discovery-roots/ !contracts/l3/world-native/tests/economy/ !contracts/l3/world-native/tests/registration/ !contracts/l3/world-native/tests/resources/ !contracts/l3/world-native/tests/world/"
 estimate_gb = 9
 
 [kind.test-registration]
 cmd = "bash contracts/l3/check-native.sh test-registration"
 measure = 'grep -oE "Tests: [0-9]+ passed" "$FLOW_LOG" | tail -n 1'
-paths = "contracts/ .tool-versions flow.toml !contracts/l3/world-native/tests/capture/ !contracts/l3/world-native/tests/combat/ !contracts/l3/world-native/tests/discovery/ !contracts/l3/world-native/tests/economy/ !contracts/l3/world-native/tests/lifecycle/ !contracts/l3/world-native/tests/resources/ !contracts/l3/world-native/tests/world/"
+paths = "contracts/ .tool-versions flow.toml !contracts/l3/world-native/tests/capture/ !contracts/l3/world-native/tests/combat/ !contracts/l3/world-native/tests/discovery/ !contracts/l3/world-native/tests/discovery-roots/ !contracts/l3/world-native/tests/economy/ !contracts/l3/world-native/tests/lifecycle/ !contracts/l3/world-native/tests/resources/ !contracts/l3/world-native/tests/world/"
 estimate_gb = 9
 
 [kind.test-resources]
 cmd = "bash contracts/l3/check-native.sh test-resources"
 measure = 'grep -oE "Tests: [0-9]+ passed" "$FLOW_LOG" | tail -n 1'
-paths = "contracts/ .tool-versions flow.toml !contracts/l3/world-native/tests/capture/ !contracts/l3/world-native/tests/combat/ !contracts/l3/world-native/tests/discovery/ !contracts/l3/world-native/tests/economy/ !contracts/l3/world-native/tests/lifecycle/ !contracts/l3/world-native/tests/registration/ !contracts/l3/world-native/tests/world/"
+paths = "contracts/ .tool-versions flow.toml !contracts/l3/world-native/tests/capture/ !contracts/l3/world-native/tests/combat/ !contracts/l3/world-native/tests/discovery/ !contracts/l3/world-native/tests/discovery-roots/ !contracts/l3/world-native/tests/economy/ !contracts/l3/world-native/tests/lifecycle/ !contracts/l3/world-native/tests/registration/ !contracts/l3/world-native/tests/world/"
 estimate_gb = 9
 
 [kind.test-world]
 cmd = "bash contracts/l3/check-native.sh test-world"
 measure = 'grep -oE "Tests: [0-9]+ passed" "$FLOW_LOG" | tail -n 1'
-paths = "contracts/ .tool-versions flow.toml !contracts/l3/world-native/tests/capture/ !contracts/l3/world-native/tests/combat/ !contracts/l3/world-native/tests/discovery/ !contracts/l3/world-native/tests/economy/ !contracts/l3/world-native/tests/lifecycle/ !contracts/l3/world-native/tests/registration/ !contracts/l3/world-native/tests/resources/"
+paths = "contracts/ .tool-versions flow.toml !contracts/l3/world-native/tests/capture/ !contracts/l3/world-native/tests/combat/ !contracts/l3/world-native/tests/discovery/ !contracts/l3/world-native/tests/discovery-roots/ !contracts/l3/world-native/tests/economy/ !contracts/l3/world-native/tests/lifecycle/ !contracts/l3/world-native/tests/registration/ !contracts/l3/world-native/tests/resources/"
 estimate_gb = 9
 
 [kind.format]

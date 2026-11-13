@@ -38,12 +38,13 @@ between binary and manifest publication, resolution refuses the incomplete insta
 ## Run tests and record fixtures
 
 ```bash
-(cd contracts/l3/world-native && scarb test)
-bash contracts/l3/check-native.sh
+build.sh test-discovery
+land.sh
 ```
 
-Both entrypoints resolve and verify the required installation before starting expensive work, regardless of `snforge` on
-`PATH`. A missing or stale installation stops with the rebuild command. The landing gate uses this runner for the native
+The service calls `contracts/l3/check-native.sh` by stage. Its test stages resolve and verify the required installation
+before starting expensive work, regardless of `snforge` on `PATH`. Discovery's statistical draws run on one worker;
+the separate root-independence package runs on four. Both packages retain every test and share the service's memory limit. A missing or stale installation stops with the rebuild command. The landing gate uses this runner for the native
 verifier too; the ledger keeps its separate toolchain. GitHub does not build or test the world package.
 
 Use the same entrypoint for ignored fixture producers, for example from the repository root:

@@ -6,4 +6,3 @@ mod frontier_economy;
 mod frontier_guards;
 mod frontier_reveal;
 mod random_vectors;
-mod roll_independence;

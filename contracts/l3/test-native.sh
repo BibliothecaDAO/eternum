@@ -11,4 +11,8 @@ if [[ "${1:-}" == "--package" ]]; then
   package=$2
   shift 2
 fi
-exec "$runner" test --package "$package" --max-threads 1 "$@"
+threads=1
+if [[ "$package" == "world_tests_discovery_roots" ]]; then
+  threads=4
+fi
+exec "$runner" test --package "$package" --max-threads "$threads" "$@"

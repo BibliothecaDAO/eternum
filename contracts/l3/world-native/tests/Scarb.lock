@@ -85,6 +85,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "world_tests_discovery_roots"
+version = "0.1.0"
+dependencies = [
+ "eternum_cubit",
+ "games_storage",
+ "realms_vrf_verifier",
+ "snforge_std",
+ "world_native",
+ "world_test_support",
+]
+
+[[package]]
 name = "world_tests_economy"
 version = "0.1.0"
 dependencies = [
