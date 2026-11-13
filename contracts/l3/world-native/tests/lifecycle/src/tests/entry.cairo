@@ -291,7 +291,19 @@ fn a_full_store_consumes_only_that_homes_daily_claim() {
     let grant = result.unwrap();
     assert_eq!(grant.amount, 0);
     assert_eq!(operator.grant_labor(home, 0, d.actor).unwrap(), grant);
-    assert_eq!(operator.labor_grant(crate::entry::LaborHome { game_id: home.game_id + 1, ..home }, 0).unwrap(), None);
+    assert!(operator.labor_grant(crate::entry::LaborHome { game_id: home.game_id + 1, ..home }, 0).is_err());
+    let preset = super::registrar::labor_home_definition("devcon");
+    let other_game = crate::registrar::IRegistrarDispatcherTrait::create_game(
+        super::registrar::registry(d),
+        crate::registrar::CreateGameParams {
+            name: 'other-labor-game',
+            start_main_at: 360,
+            duration_seconds: Into::<u32, u64>::into(preset.rules.day_unit_seconds) * 40,
+            end_grace_seconds: 0,
+            ..super::registrar::params(false),
+        },
+    );
+    assert_eq!(operator.labor_grant(crate::entry::LaborHome { game_id: other_game, ..home }, 0).unwrap(), None);
 }
 
 #[test]
