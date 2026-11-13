@@ -44,6 +44,11 @@ pub fn current_definition(name: ByteArray) -> (u32, crate::presets::PresetDefini
     assert!(registration.is_empty());
     (preset_id, definition)
 }
+pub fn retired_frontier_chest_rules() -> crate::relics::ChestRules {
+    let (preset_id, definition) = current_definition("frontier-retired");
+    assert_eq!(preset_id, 5);
+    definition.economy.chests.expect('retired cash rules missing')
+}
 pub fn frontier_discovery_rules() -> crate::expeditions::FrontierDiscoveryRules {
     let (_, definition) = current_definition("frontier-check");
     definition.economy.discovery.unwrap()

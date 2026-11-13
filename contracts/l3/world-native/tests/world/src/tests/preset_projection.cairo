@@ -86,8 +86,7 @@ fn current_frontier_requires_discovery_rejects_cash_rules_and_refuses_sequential
         if invalid == 0 {
             definition.economy.discovery = None;
         } else if invalid == 1 {
-            let (_, historical) = current_definition("frontier");
-            definition.economy.chests = historical.economy.chests;
+            definition.economy.chests = Some(retired_frontier_chest_rules());
         } else {
             definition.rules.map_config.camp_win_probability = 4;
         }

@@ -1,6 +1,6 @@
 use snforge_std::{start_cheat_block_timestamp, start_cheat_chain_id};
 use starknet::storage::{
-    StorageMapReadAccess, StorageMapWriteAccess, StoragePathEntry, StoragePointerReadAccess, StoragePointerWriteAccess,
+    StoragePathEntry, StoragePointerReadAccess, StoragePointerWriteAccess,
 };
 use world_test_support::tests::releases::*;
 use crate::approved_frontier_extension as approved;
@@ -24,7 +24,7 @@ fn setup() -> super::Deployment {
     };
     assert_eq!(registrar.create_game(params), approved::GAME_ID);
     assert_eq!(registrar.create_game(CreateGameParams { name: 'unrelated', ..params }), 2);
-    let (_, historical) = super::preset_projection::current_definition("frontier");
+    let chest_rules = super::preset_projection::retired_frontier_chest_rules();
     interact_with_state(
         d.games,
         || {
@@ -32,7 +32,7 @@ fn setup() -> super::Deployment {
                 .presets
                 .entry(crate::logic::game::preset_commitment(crate::logic::game::game(1)))
                 .rollover_chest_rules
-                .write(historical.economy.chests);
+                .write(Some(chest_rules));
             crate::state::write()
                 .relics
                 .rollover_budget
@@ -44,7 +44,7 @@ fn setup() -> super::Deployment {
                             pool_left: approved::POOL_LORDS,
                             open: 0,
                             day: 0,
-                            price: historical.economy.chests.unwrap().price_ceiling,
+                            price: chest_rules.price_ceiling,
                             rolled_shares: 0,
                             yesterday_shares: 0,
                             yesterday_ticks: 0,
