@@ -4,12 +4,13 @@ import { ShardOperator, type ShardTarget } from "@realms-world/value-ledger/shar
 import { frontierTerms, readFrontierGames } from "./frontier-games";
 import { optionalRow, readConfirmedSnapshot } from "./shard-snapshot";
 import { ShardReader, felt, uint, type ShardConnection } from "./shard-rpc";
+import { closedSeason, type FrontierLedger } from "./final-facts";
 
 /** The confirmed board fixes recipients; each award creates the same guarded withdrawal obligation as a chest. */
 export async function awardFrontierPrizes(
   target: ShardTarget & ShardConnection,
   heraldUrl: string,
-  ledger: { rpcUrl: string; address: string },
+  ledger: FrontierLedger,
 ) {
   const directory = await readFrontierGames(target, heraldUrl);
   const reader = new ShardReader(target);
@@ -30,7 +31,7 @@ export async function awardFrontierPrizes(
 async function awardGamePrizes(
   target: ShardTarget & ShardConnection,
   heraldUrl: string,
-  ledger: { rpcUrl: string; address: string },
+  ledger: FrontierLedger,
   gameId: number,
   directoryBlock: number,
   reader: ShardReader,
@@ -47,6 +48,8 @@ async function awardGamePrizes(
   if (!prize) return;
   const count = prize.count === null ? null : Number(uint(String(prize.count), 16));
   if (count === 0 || uint(String(prize.pool), 128) === uint(String(prize.issued), 128)) return;
+  const closed = closedSeason(target.chainId, gameId);
+  if (await ledger.finals.has(closed)) return;
   const terms = frontierTerms(snapshot);
   const funding = await readFrontierFunding(
     rpcAt(ledger.rpcUrl),
@@ -54,7 +57,10 @@ async function awardGamePrizes(
     { chainId: target.chainId, gameId: gameId },
     terms,
   );
-  if (funding.closed) return;
+  if (funding.closed) {
+    await ledger.finals.mark(closed);
+    return;
+  }
   if (uint(String(prize.pool), 128) !== BigInt(funding.prizePool) / 10n ** 18n)
     throw new Error("frontier_prize_differs_from_ledger");
   // A posted list is fixed on the ledger with its count: resume its awards, never derive the winners again.

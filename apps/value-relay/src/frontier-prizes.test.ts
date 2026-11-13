@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
+import { memoryFinalFacts } from "./final-facts";
 import { awardFrontierPrizes } from "./frontier-prizes";
 const calls = vi.hoisted(() => ({
   admin: vi.fn(),
@@ -35,6 +36,7 @@ vi.mock("./shard-snapshot", async (original) => ({
   ...(await original<typeof import("./shard-snapshot")>()),
   readConfirmedSnapshot: calls.snapshot,
 }));
+let finals = memoryFinalFacts();
 const target = {
   chainId: "0x1",
   rpcUrl: "https://shard.test",
@@ -44,7 +46,7 @@ const target = {
   privateKey: "0x1",
 };
 const run = () =>
-  awardFrontierPrizes(target, "https://herald.test", { rpcUrl: "https://ledger.test", address: "0x30" });
+  awardFrontierPrizes(target, "https://herald.test", { rpcUrl: "https://ledger.test", address: "0x30", finals });
 const snapshot = (issued = "0") => ({
   confirmed_block: 10,
   game_id: "7",
@@ -64,6 +66,7 @@ const board = (addresses = ["0x8", "0x2", "0x5", "0x1"], block = "10", sites: nu
     { headers: { "X-Confirmed-Block": block } },
   );
 beforeEach(() => {
+  finals = memoryFinalFacts();
   vi.clearAllMocks();
   calls.games.mockResolvedValue({ confirmedBlock: 10, games: [{ game_id: 7, clock: { end_at: 100 } }] });
   calls.header.mockResolvedValue({ timestamp: 100 });
