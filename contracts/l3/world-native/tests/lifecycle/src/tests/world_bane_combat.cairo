@@ -1,9 +1,9 @@
-use snforge_std::{interact_with_state, spy_events};
-use starknet::storage::StoragePointerReadAccess;
+use snforge_std::{interact_with_state, spy_events, start_cheat_caller_address, stop_cheat_caller_address};
+use starknet::storage::{StorageMapReadAccess, StoragePointerReadAccess};
 use world_test_support::tests::Deployment;
 use world_test_support::tests::resource_commands::{execute_in_game, grant};
 use crate::commands::{Battle, Command, CreateExplorer};
-use crate::resources::ResourceKey;
+use crate::resources::{IResourceOperationsDispatcher, IResourceOperationsDispatcherTrait, ResourceKey};
 use crate::rules::RESOURCE_PRECISION;
 use crate::troops::{ExplorerKey, TroopTier, TroopType};
 
@@ -117,6 +117,206 @@ fn stand_counts_the_guarded_site_once_on_clear_and_not_on_partial_hits() {
     );
 }
 
+#[test]
+fn stand_completion_ends_the_aspect_bane_and_records_both_capped_rewards_once() {
+    let (d, home, army, now) = prepare_bane_army(4, crate::quests::STAND, 3000);
+    let completed_at = complete_combat_quest(d, home, army, now, crate::quests::STAND);
+    interact_with_state(
+        d.games,
+        || {
+            assert!(crate::logic::resources::balance(home, crate::resources::LABOR) > 4000 * RESOURCE_PRECISION);
+        },
+    );
+    collect_both_rewards(d, home, completed_at);
+    let mut after_clear = completed_at;
+    let next_camp = discover_guarded_camp(d, home, ref after_clear);
+    let observed_at = after_clear;
+    interact_with_state(
+        d.games,
+        || {
+            let count = guard_count(next_camp);
+            assert!(count >= 1200 * RESOURCE_PRECISION && count <= 1400 * RESOURCE_PRECISION);
+            assert_eq!(crate::logic::quests::read(home, 1).progress, 3);
+            assert_eq!(
+                crate::logic::banes::progress(home.game_id, 1, 1),
+                crate::banes::BaneProgress { completed: 1, ended_at: completed_at },
+            );
+            assert!(crate::logic::banes::windows(home, completed_at, observed_at + 1).is_empty());
+        },
+    );
+}
+
+#[test]
+fn cull_completion_keeps_both_zero_labor_receipts_and_pays_essence_once() {
+    let (d, home, army, now) = prepare_bane_army(12, crate::quests::CULL, 3000);
+    let completed_at = complete_combat_quest(d, home, army, now, crate::quests::CULL);
+    let context = crate::commands::ExecutionContext {
+        timestamp: completed_at, ..world_test_support::tests::context(d.games, home.game_id),
+    };
+    start_cheat_caller_address(d.games, d.games);
+    IResourceOperationsDispatcher { contract_address: d.games }
+        .grant_resource(
+            home,
+            crate::resources::LABOR,
+            6000 * RESOURCE_PRECISION,
+            completed_at,
+            crate::commands::resource_context(context),
+        );
+    stop_cheat_caller_address(d.games);
+    interact_with_state(
+        d.games,
+        || {
+            assert_eq!(crate::logic::resources::balance(home, crate::resources::LABOR), 6000 * RESOURCE_PRECISION);
+        },
+    );
+    collect_both_rewards(d, home, completed_at);
+}
+
+fn complete_combat_quest(d: Deployment, home: ResourceKey, mut army: ExplorerKey, mut now: u64, kind: u8) -> u64 {
+    let start = now;
+    for site in 0_u8..3 {
+        if site != 0 {
+            assert!(
+                execute_in_game(
+                    d,
+                    home.game_id,
+                    Command::ManageTroops(crate::troop_management::ManageTroops::RemoveExplorer(army.explorer_id)),
+                    now,
+                ),
+            );
+            army = raise_bane_army(d, home, 3000, now);
+        }
+        let target = discover_guarded_camp(d, home, ref now);
+        let mut cleared = false;
+        for _ in 0_u8..10 {
+            let (guard_before, progress_before) = interact_with_state(
+                d.games, || (guard_count(target), crate::logic::quests::read(home, 1).progress),
+            );
+            now += 3600;
+            let timestamp = now;
+            let mut spy = spy_events();
+            assert!(
+                execute_in_game(d, home.game_id, attack(army, target), now),
+                "{}",
+                super::play_fixture::rejection(ref spy, d.games).reason,
+            );
+            let (complete, site_cleared) = interact_with_state(
+                d.games,
+                || {
+                    let site_cleared = crate::logic::expeditions::expedition_site(target).unwrap().clear.is_some();
+                    let earned = if kind == crate::quests::CULL {
+                        guard_before - guard_count(target)
+                    } else if site_cleared {
+                        1
+                    } else {
+                        0
+                    };
+                    let progress = crate::logic::quests::read(home, 1);
+                    assert_eq!(progress.progress, progress_before + earned);
+                    let complete = progress.progress >= crate::logic::banes::target(home, kind, 1);
+                    assert_eq!(progress.completed_level, if complete {
+                        1
+                    } else {
+                        0
+                    });
+                    let bane = crate::logic::banes::progress(home.game_id, 1, 1);
+                    assert_eq!(bane.completed, if complete {
+                        1
+                    } else {
+                        0
+                    });
+                    assert_eq!(bane.ended_at, if complete {
+                        timestamp
+                    } else {
+                        0
+                    });
+                    (complete, site_cleared)
+                },
+            );
+            if complete {
+                interact_with_state(
+                    d.games,
+                    || {
+                        let windows = crate::logic::banes::windows(home, start - 1, timestamp + 1);
+                        assert_eq!(windows.len(), 1);
+                        assert_eq!(
+                            *windows.at(0),
+                            crate::banes::BaneWindow {
+                                kind: if kind == crate::quests::STAND {
+                                    crate::banes::BLOOD_MOON
+                                } else {
+                                    crate::banes::ASH_FALL
+                                },
+                                start,
+                                end: timestamp,
+                            },
+                        );
+                        assert_eq!(crate::logic::banes::quest_kind(home, 1), kind);
+                        assert!(crate::logic::banes::won(home, 1));
+                    },
+                );
+                return now;
+            }
+            cleared = site_cleared;
+            if cleared {
+                break;
+            }
+        }
+        assert!(cleared);
+    }
+    panic!("combat quest did not complete");
+}
+
+fn collect_both_rewards(d: Deployment, home: ResourceKey, now: u64) {
+    let (labor_before, essence_before, progress_before) = interact_with_state(
+        d.games,
+        || {
+            let state = crate::state::read();
+            assert_eq!(state.troops.aspect_activity.read((home.game_id, 1, 0)), 1);
+            assert_eq!(state.troops.aspect_activity.read((home.game_id, 1, 1)), 1);
+            assert!(state.entry.home_labor_grants.read((home.game_id, home.entity_id, 1)).is_none());
+            assert!(state.banes.bonus_grants.read((home.game_id, home.entity_id, 1)).is_none());
+            (
+                crate::logic::resources::balance(home, crate::resources::LABOR),
+                crate::logic::resources::balance(home, crate::resources::ESSENCE),
+                crate::logic::quests::read(home, 1),
+            )
+        },
+    );
+    let base = core::cmp::min(1000 * RESOURCE_PRECISION, 6000 * RESOURCE_PRECISION - labor_before);
+    let bonus = core::cmp::min(1000 * RESOURCE_PRECISION, 6000 * RESOURCE_PRECISION - labor_before - base);
+    let claim = Command::ClaimDailyQuest(crate::quests::ClaimDailyQuest { home: home.entity_id, day: 1 });
+    for _ in 0_u8..3 {
+        assert!(execute_in_game(d, home.game_id, claim, now));
+        interact_with_state(
+            d.games,
+            || {
+                let state = crate::state::read();
+                assert_eq!(
+                    state.entry.home_labor_grants.read((home.game_id, home.entity_id, 1)),
+                    Some((d.actor, base, 1500 * RESOURCE_PRECISION)),
+                );
+                assert_eq!(
+                    state.banes.bonus_grants.read((home.game_id, home.entity_id, 1)),
+                    Some((bonus, 1500 * RESOURCE_PRECISION)),
+                );
+                assert_eq!(
+                    crate::logic::resources::balance(home, crate::resources::LABOR), labor_before + base + bonus,
+                );
+                assert_eq!(
+                    crate::logic::resources::balance(home, crate::resources::ESSENCE),
+                    essence_before + 3000 * RESOURCE_PRECISION,
+                );
+                assert_eq!(crate::logic::quests::read(home, 1), progress_before);
+                assert_eq!(
+                    crate::logic::banes::progress(home.game_id, 1, 1),
+                    crate::banes::BaneProgress { completed: 1, ended_at: now },
+                );
+            },
+        );
+    }
+}
+
 fn prepare_bane_army(seed: felt252, kind: u8, troops: u128) -> (Deployment, ResourceKey, ExplorerKey, u64) {
     let (_, mut preset) = world_test_support::tests::preset_projection::current_definition("season-one");
     // Select camps through the public preset; combat, guards, quests and banes retain Season 1 rules.
@@ -154,7 +354,17 @@ fn prepare_bane_army(seed: felt252, kind: u8, troops: u128) -> (Deployment, Reso
             (home, crate::days::day_of(game, unit, 360).end)
         },
     );
+    let army = raise_bane_army(d, home, troops, next);
+    interact_with_state(d.games, || {
+        assert_eq!(crate::logic::quests::read(home, 1).progress, 0);
+    });
+    (d, home, army, next)
+}
+
+fn raise_bane_army(d: Deployment, home: ResourceKey, troops: u128, now: u64) -> ExplorerKey {
+    let game_id = home.game_id;
     grant(d, home, crate::troops::stock_resource(TroopType::Knight, TroopTier::T1), troops * RESOURCE_PRECISION);
+    grant(d, home, crate::resources::WHEAT, 6000 * RESOURCE_PRECISION);
     assert!(
         execute_in_game(
             d,
@@ -169,21 +379,19 @@ fn prepare_bane_army(seed: felt252, kind: u8, troops: u128) -> (Deployment, Reso
                     slot: 0,
                 },
             ),
-            next,
+            now,
         ),
     );
     grant(d, home, crate::resources::WHEAT, 6000 * RESOURCE_PRECISION);
-    let army = interact_with_state(
+    interact_with_state(
         d.games,
         || {
             let armies = crate::logic::troops::home_armies(home);
             assert_eq!(armies.len(), 1);
             assert!(crate::logic::resources::balance(home, crate::resources::WHEAT) > 0);
-            assert_eq!(crate::logic::quests::read(home, 1).progress, 0);
             ExplorerKey { game_id, explorer_id: *armies.at(0) }
         },
-    );
-    (d, home, army, next)
+    )
 }
 
 fn discover_guarded_camp(d: Deployment, home: ResourceKey, ref now: u64) -> ResourceKey {
@@ -193,7 +401,7 @@ fn discover_guarded_camp(d: Deployment, home: ResourceKey, ref now: u64) -> Reso
             return target;
         }
         let action = interact_with_state(d.games, || super::quests::next_reveal_action(home, 0));
-        now += 1200;
+        now += 3600;
         let mut spy = spy_events();
         assert!(
             execute_in_game(d, home.game_id, action, now),
