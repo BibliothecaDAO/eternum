@@ -1,5 +1,6 @@
 import { troopTierIndex, TroopTier, TroopType, type Troops } from "@bibliothecadao/types";
 import type { NativeFactStore } from "../client/native-fact-store";
+import { armyRelicBonus } from "../utils/army-relics";
 import { battleBonusBps, logisticsStamina } from "../utils/attribute-tiers";
 import { nativeRuleConstants, type NativeRows } from "../../../../contracts/l3/world-native/schema/client.gen";
 
@@ -83,6 +84,27 @@ export function inlineTroops(troops: NativeRows["ExplorerTroops"]["troops"], rul
           staminaMax: troopStaminaLimits(rules.troop_stamina_config, troops.category, TroopTier.T1).staminaMax,
         }
       : {}),
+  };
+}
+
+/** Combat reads the same slot and skill state, plus active effects at the execution second. */
+export function resolveExplorerCombatTroops(
+  store: NativeFactStore,
+  explorer: NativeRows["ExplorerTroops"],
+  timestamp: number,
+): Troops | undefined {
+  const troops = resolveExplorerTroops(store, explorer);
+  if (!troops) return undefined;
+  const blade = armyRelicBonus(store, explorer, "Blade", timestamp);
+  const ward = armyRelicBonus(store, explorer, "Ward", timestamp);
+  if (blade === undefined || ward === undefined) return undefined;
+  return {
+    ...troops,
+    boosts: {
+      ...troops.boosts,
+      incr_damage_dealt_percent_num: troops.boosts.incr_damage_dealt_percent_num + blade,
+      decr_damage_gotten_percent_num: troops.boosts.decr_damage_gotten_percent_num + ward,
+    },
   };
 }
 

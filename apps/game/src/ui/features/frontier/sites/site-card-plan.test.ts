@@ -1,9 +1,9 @@
 import { afterEach, describe, expect, it } from "vitest";
-import { setBlockTimestampSource } from "@bibliothecadao/eternum";
+import { armyRelicReward, setBlockTimestampSource } from "@bibliothecadao/eternum";
 import { ResourcesIds, TroopTier, TroopType } from "@bibliothecadao/types";
 import preset from "../../../../../../../contracts/l3/world-native/tests/fixtures/current-presets/conformance.json";
 import { readArmyCard, readSiteCard } from "./site-card-plan";
-import { blightglowRift, campBeside, otherArmyAt, SITE_TILE } from "./site-fixture";
+import { blightglowRift, campBeside, otherArmyAt, relicEffectFact, SITE_TILE } from "./site-fixture";
 
 afterEach(() => setBlockTimestampSource(null));
 
@@ -170,4 +170,42 @@ describe("prod's Blightglow Rift, read through the card's own facts on Frontier'
     expect(card(794n, 120n, 29n).fight).toEqual({ refused: true });
     expect(card(794n, 120n, 30n).fight).toEqual({ troopsLost: 601, guardLeft: 1_033 });
   });
+});
+
+
+it("forecasts Blade and Ward, Plunder and Tome at the attack second and drops them exactly at expiry", () => {
+  const { store, site, structure, attack } = campBeside();
+  const action = attack({ col: 41, row: 12, alt: false });
+  const read = (timestamp: number) => readSiteCard(store, site, structure, SITE_TILE, { ...action, timestamp });
+  expect(read(350)).toMatchObject({ fight: { troopsLost: 320, guardLeft: 492 }, xp: 123, payout: { amount: 825 } });
+  store.applyFacts([relicEffectFact("Blade"), relicEffectFact("Ward"), relicEffectFact("Plunder"), relicEffectFact("Tome")]);
+  expect(read(399)).toMatchObject({ fight: { troopsLost: 304, guardLeft: 431 }, xp: 172, payout: { amount: 990, fits: 990 } });
+  expect(read(400)).toMatchObject({ fight: { troopsLost: 320, guardLeft: 492 }, xp: 123, payout: { amount: 825 } });
+  expect(action.army.troops.boosts.incr_damage_dealt_percent_num).toBe(0);
+  expect(action.army.troops.boosts.decr_damage_gotten_percent_num).toBe(0);
+});
+
+it("clips the Plunder reward after applying its bonus and leaves wheat unchanged", () => {
+  const { store, site, structure, attack } = campBeside();
+  const action = attack({ col: 41, row: 12, alt: false });
+  const limit = BigInt(store.require("BoardRules", { game_id: 1 }).settlement_resource_cap) * 1_000_000_000n;
+  const keys = { game_id: 1, entity_id: action.army.owner, resource_type: ResourcesIds.Labor };
+  store.applyFacts([
+    relicEffectFact("Plunder"),
+    { model: "ResourceBalance", key: store.wireKeyOf("ResourceBalance", keys)!, value: { ...keys, balance: limit - 900n * 1_000_000_000n } },
+  ]);
+  expect(readSiteCard(store, site, structure, SITE_TILE, action).payout).toEqual({ resourceId: ResourcesIds.Labor, amount: 990, fits: 900 });
+  expect(armyRelicReward(store, action.army, { resourceType: ResourcesIds.Wheat, amount: 100n }, 350)).toEqual({ resourceType: ResourcesIds.Wheat, amount: 100n });
+  const rift = campBeside("Rift");
+  rift.store.applyFacts([relicEffectFact("Plunder")]);
+  expect(readSiteCard(rift.store, rift.site, rift.structure, SITE_TILE, rift.attack(action.armyTile)).payout).toEqual({ resourceId: ResourcesIds.Essence, amount: 5940, fits: 5940 });
+});
+
+it("keeps the forecast and eligible rewards unknown until missing effects are known absent", () => {
+  const { store, site, structure, attack } = campBeside();
+  const action = attack({ col: 41, row: 12, alt: false });
+  store.setSnapshot({ gameId: 1, complete: false, actor: "0x111", timestamp: 350 });
+  expect(readSiteCard(store, site, structure, SITE_TILE, action)).toMatchObject({ fight: undefined, payout: undefined, xp: undefined });
+  store.setSnapshot({ gameId: 1, complete: true, actor: "0x111", timestamp: 350 });
+  expect(readSiteCard(store, site, structure, SITE_TILE, action)).toMatchObject({ fight: { troopsLost: 320, guardLeft: 492 }, xp: 123, payout: { amount: 825 } });
 });

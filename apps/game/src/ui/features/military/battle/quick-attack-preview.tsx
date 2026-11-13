@@ -1,4 +1,4 @@
-import { resolveExplorerTroops } from "@bibliothecadao/eternum/troop-stamina";
+import { resolveExplorerCombatTroops } from "@bibliothecadao/eternum/troop-stamina";
 import { useStoredBiome } from "@/hooks/helpers/use-tile-at";
 import { type MouseEvent, useEffect, useMemo, useState } from "react";
 
@@ -71,7 +71,7 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
     },
   } = useGame();
   const facts = useNativeFacts([
-    "ArmySlot",
+    "ArmySlot", "ArmyRelicEffect", "ArmyProgress",
     "Structure",
     "Guard",
     "ExplorerTroops",
@@ -147,9 +147,9 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
       game_id: configManager.getActiveGameId(),
       explorer_id: attacker.id,
     });
-    const troops = army ? resolveExplorerTroops(facts.store, army) : undefined;
+    const troops = army ? resolveExplorerCombatTroops(facts.store, army, executionSecond) : undefined;
     return troops ? { troops } : null;
-  }, [facts, attacker.id, attackerType, activeGuard]);
+  }, [facts, attacker.id, attackerType, activeGuard, executionSecond]);
   const attackerStamina = attackerArmyData
     ? StaminaManager.getStamina(attackerArmyData.troops, executionSecond).amount
     : undefined;

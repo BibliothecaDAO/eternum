@@ -7,6 +7,7 @@ import {
   nativeRuleConstants,
   nativeTilePackingConstants,
   type NativeModelName,
+  type NativeRows,
 } from "../../../../../../../contracts/l3/world-native/schema/client.gen";
 import rowFixture from "../../../../../../../contracts/l3/world-native/schema/fixtures/row-set.json";
 import { nativeCommandBits } from "../../../../../../../contracts/l3/world-native/schema/commands.gen";
@@ -336,3 +337,10 @@ export const sitesBeside = (stamina: bigint, layout: SitesLayout = SITES_LAYOUT)
   };
   return { store, vacate };
 };
+
+
+export const relicEffectFact = (kind: NativeRows["ArmyRelicEffect"]["kind"], rank = 1, expiresAt = 400) => ({
+  model: "ArmyRelicEffect" as const,
+  key: `0x${(0x9000 + nativeFactModels.ArmyRelicEffect.fields.kind.enum.indexOf(kind)).toString(16)}`,
+  value: { game_id: 1, explorer_id: 201n, kind, rank, expires_at: BigInt(expiresAt) },
+});

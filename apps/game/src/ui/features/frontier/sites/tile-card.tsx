@@ -42,6 +42,7 @@ const SITE_MODELS = [
   "SiteChest",
   "ExplorerTroops",
   "ArmyProgress",
+  "ArmyRelicEffect",
   "ArmySlot",
   "Guard",
   "Structure",

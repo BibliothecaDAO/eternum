@@ -1,5 +1,5 @@
 import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
-import { resolveExplorerTroops } from "@bibliothecadao/eternum/troop-stamina";
+import { resolveExplorerCombatTroops } from "@bibliothecadao/eternum/troop-stamina";
 import {
   configManager,
   divideByPrecision,
@@ -45,7 +45,7 @@ export const useBattleLabLiveData = (
   targetHex: { x: number; y: number },
   alt = false,
 ): BattleLabLiveData => {
-  const facts = useNativeFacts(["ArmySlot", "Structure", "Guard", "ExplorerTroops", "TileOccupancy"]);
+  const facts = useNativeFacts(["ArmySlot", "ArmyRelicEffect", "ArmyProgress", "Structure", "Guard", "ExplorerTroops", "TileOccupancy"]);
   const staminaTimestamp = useCurrentDefaultTick();
 
   const { attackerRelicEffects, targetRelicEffects, target, targetResources, isLoading } = useAttackTargetData(
@@ -99,7 +99,7 @@ export const useBattleLabLiveData = (
         game_id: configManager.getActiveGameId(),
         explorer_id: attackerEntityId,
       });
-      const troops = army ? resolveExplorerTroops(facts.store, army) : undefined;
+      const troops = army ? resolveExplorerCombatTroops(facts.store, army, staminaTimestamp) : undefined;
       if (army && troops) {
         const stamina = StaminaManager.getStamina(troops, staminaTimestamp).amount;
         armyAttacker = {

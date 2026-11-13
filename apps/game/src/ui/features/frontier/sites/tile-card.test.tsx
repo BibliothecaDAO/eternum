@@ -32,7 +32,7 @@ import { letGoOfClearedSite, letGoOfLostSelection } from "@/three/scenes/worldma
 import { ARMY_LOST_MS, ArmyLostSheet } from "../army/army-lost";
 import { useArmyPanelOpens } from "../army/army-opens";
 import { useOnePanel, useOrderSettledReturnsToTheArmy } from "../hud/one-panel";
-import { campBeside, otherArmyAt, SITE, SITE_TILE } from "./site-fixture";
+import { campBeside, otherArmyAt, relicEffectFact, SITE, SITE_TILE } from "./site-fixture";
 import { TileCard } from "./tile-card";
 
 const APPLIED = { hash: "0x1", block: 9, status: "SUCCEEDED" };
@@ -622,4 +622,18 @@ describe("after the player's attack (owner, 30 October 2026: 'I'd like the army 
     noResult(host);
     unmount();
   });
+});
+
+
+it("refreshes the open forecast and XP when only an army relic effect arrives", () => {
+  const { host, store, unmount } = renderCard("beside");
+  try {
+    act(() => useUIStore.getState().selectOnMap({ kind: "army", entityId: 201, tile: null }));
+    expect(fightSides(host)).toEqual(FORECAST);
+    act(() => store.applyFacts([relicEffectFact("Blade"), relicEffectFact("Ward"), relicEffectFact("Tome")]));
+    expect(fightSides(host)).toEqual(["Army 1,498 → 1,194, −304 · 20% lost", "Troll 1,100 → 431, −669 · 61% lost"]);
+    expect(host.textContent).toContain("172 XP");
+  } finally {
+    unmount();
+  }
 });

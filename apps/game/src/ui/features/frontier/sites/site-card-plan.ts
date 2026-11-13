@@ -1,6 +1,8 @@
 import { readStandingFrontierBeast, type FrontierBeast } from "@/three/structures/frontier-beast";
 import {
   availableRuinLords,
+  armyRelicReward,
+  armyRelicXp,
   configManager,
   getBlockTimestamp,
   ResourceManager,
@@ -11,7 +13,7 @@ import {
   siteClearXp,
 } from "@bibliothecadao/eternum";
 import { safeInteger, type NativeFactStore, type NativeRows } from "@bibliothecadao/eternum/game-client";
-import { resolveExplorerTroops } from "@bibliothecadao/eternum/troop-stamina";
+import { resolveExplorerCombatTroops } from "@bibliothecadao/eternum/troop-stamina";
 import {
   type BiomeType,
   getLayeredAttackDistance,
@@ -83,17 +85,20 @@ export const readSiteCard = (
   const guard = guards && guards.find((candidate) => candidate.troops.count > 0n);
   const kind = siteKindOf(structure.base.category);
   const chest = kind === "Ruin" ? store.get("SiteChest", { game_id: site.game_id, entity_id: site.entity_id }) : null;
-  const reward =
+  const baseReward =
     kind === "Ruin"
       ? chest && { resourceType: ResourcesIds.Lords, amount: chest.amount * PRECISION }
       : siteReward(store, site);
+  const reward = baseReward && attack ? armyRelicReward(store, attack.army, baseReward, attack.timestamp) : baseReward;
+  const baseXp = siteClearXp(store, site);
+  const xp = attack ? armyRelicXp(store, attack.army, baseXp, attack.timestamp) : baseXp;
   const beast = readStandingFrontierBeast(store, site.game_id, safeInteger(site.entity_id));
   return {
     name: beast?.name ?? attackTargetName(kind),
     beast,
     guard: guards === undefined ? undefined : guard ? troopsOf(guard.troops) : null,
     kind,
-    xp: siteClearXp(store, site),
+    xp,
     ruinDepth:
       kind === "Ruin"
         ? siteDepthName(Math.floor(site.row / store.require("SettlementRules", { game_id: site.game_id }).spacing) % 4)
@@ -123,7 +128,7 @@ export const readArmyCard = (
   armyTile: { col: number; row: number; alt: boolean },
   attack: SiteAttack | null,
 ): SiteCardPlan => {
-  const troops = resolveExplorerTroops(store, army);
+  const troops = resolveExplorerCombatTroops(store, army, attack?.timestamp ?? getBlockTimestamp().currentDefaultTick);
   return {
     name: "Army",
     guard: troops === undefined ? undefined : troops.count > 0n ? troopsOf(troops) : null,
@@ -179,7 +184,7 @@ const reachOf = (
   attack: SiteAttack,
   target: { col: number; row: number; alt: boolean },
 ): number | undefined => {
-  const troops = resolveExplorerTroops(store, attack.army);
+  const troops = resolveExplorerCombatTroops(store, attack.army, attack.timestamp);
   if (!troops) return undefined;
   const distance = getLayeredAttackDistance(attack.armyTile, target);
   return distance <= getTroopAttackRange(troops.category) ? distance : undefined;
@@ -203,7 +208,7 @@ const attackNow = (
 ): SiteFight | undefined => {
   if (configManager.rollsCombatDice(siteTile.alt))
     throw new Error("Frontier's site forecast is exact; this game rolls dice");
-  const troops = resolveExplorerTroops(store, attack.army);
+  const troops = resolveExplorerCombatTroops(store, attack.army, attack.timestamp);
   if (!troops) return undefined;
   const exchange = resolveExchange(
     troops,
