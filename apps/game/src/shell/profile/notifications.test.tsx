@@ -3,6 +3,7 @@ import { createRoot } from "react-dom/client";
 import { expect, it, vi } from "vitest";
 import {
   includesArmyRestedNotification,
+  includesDeepSiteNotification,
   includesKind,
   includesStoryNotification,
   NOTIFICATION_KINDS,
@@ -41,7 +42,9 @@ it("offers three levels, lights the saved one with what it brings, and saves the
     expect(levels.filter((level) => level.getAttribute("aria-selected") === "true").map((l) => l.textContent)).toEqual([
       "Important",
     ]);
-    expect(container.textContent).toContain("Each day's opening, rested armies, fights, results and messages");
+    expect(container.textContent).toContain(
+      "Each day's opening, rested armies, Deep sites you can take, fights, results and messages",
+    );
     await act(async () => (levels[2] as HTMLButtonElement).click());
     expect(save).toHaveBeenCalledWith("all");
     expect(container.textContent).toContain("This device");
@@ -69,11 +72,12 @@ it("names, at each level, exactly the kinds the server pushes at that level", ()
     const pushed = NOTIFICATION_KINDS.filter((kind) => includesKind(level, kind));
     expect(namedAt(level), level).toEqual(pushed);
     // The server's own deciders, story by story and for rested armies, agree with what Settings names.
-    for (const story of [...nativeStoryVariants, "BattleEvent", "RaidEvent"]) {
+    for (const story of [...nativeStoryVariants, "BattleEvent"]) {
       const rule = storyNotificationRule(story);
       if ("excluded" in rule) continue;
       expect(includesStoryNotification(level, story, "blitz"), `${story} at ${level}`).toBe(pushed.includes(rule.kind));
     }
     expect(includesArmyRestedNotification(level)).toBe(pushed.includes("army-rested"));
+    expect(includesDeepSiteNotification(level)).toBe(pushed.includes("deep-sites"));
   }
 });

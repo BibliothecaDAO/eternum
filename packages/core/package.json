@@ -22,6 +22,14 @@
       "types": "./dist/utils/expeditions.d.ts",
       "import": "./dist/utils/expeditions.js"
     },
+    "./deep": {
+      "types": "./dist/utils/deep.d.ts",
+      "import": "./dist/utils/deep.js"
+    },
+    "./realm-research": {
+      "types": "./dist/utils/realm-research.d.ts",
+      "import": "./dist/utils/realm-research.js"
+    },
     "./combat-exchange": {
       "types": "./dist/utils/combat-exchange.d.ts",
       "import": "./dist/utils/combat-exchange.js"

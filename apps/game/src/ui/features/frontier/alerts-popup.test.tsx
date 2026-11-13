@@ -96,7 +96,10 @@ it("opens once the map is clear, saying what the Important level pushes, with No
   expect(await open(false)).toBeNull();
   expect(await open()).toEqual({
     title: "Know when to come back",
-    lines: ["Know when to come back", "A push for each day's opening, rested armies, fights, results and messages."],
+    lines: [
+      "Know when to come back",
+      "A push for each day's opening, rested armies, Deep sites you can take, fights, results and messages.",
+    ],
     buttons: ["Not now", "Turn on alerts"],
   });
   expect(useAskMemory.getState().shownAt).toBe(START);
@@ -139,7 +142,7 @@ it("tells an iPhone's browser to install first, and its button installs", async 
     title: "Know when to come back",
     lines: [
       "Know when to come back",
-      "A push for each day's opening, rested armies, fights, results and messages.",
+      "A push for each day's opening, rested armies, Deep sites you can take, fights, results and messages.",
       "On an iPhone, alerts need Realms on your Home Screen first.",
     ],
     buttons: ["Not now", "Add to Home Screen"],

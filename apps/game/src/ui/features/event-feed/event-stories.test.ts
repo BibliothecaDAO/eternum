@@ -271,10 +271,9 @@ it("lists a building placed and paid for in one transaction once, and two buildi
   expect(oneStoryPerAction(stories).map((event) => event.id)).toEqual(["b4", "b2"]);
 });
 
-it("reads under Important the player's fights, raids, captures, crates and relic activations, and each Hyperstructure's captures", () => {
+it("reads under Important the player's fights, captures, crates and relic activations, and each Hyperstructure's captures", () => {
   expect(eventsReads("important", "0x1", [900, 901])).toEqual([
     { limit: 100, story: "BattleEvent", owner: "0x1" },
-    { limit: 100, story: "RaidEvent", owner: "0x1" },
     { limit: 100, story: "StructureCapturedStory", owner: "0x1" },
     { limit: 100, story: "RelicChestOpened", owner: "0x1" },
     { limit: 100, story: "RelicActivated", owner: "0x1" },
@@ -322,7 +321,6 @@ it("reads for the Feed's lenses the world, each notable kind from anyone, or the
   expect(feedReads("all", "0x1")).toEqual([{ limit: 350 }]);
   expect(feedReads("important", "0x1").map(({ story, owner }) => [story, owner])).toEqual([
     ["BattleEvent", undefined],
-    ["RaidEvent", undefined],
     ["StructureCapturedStory", undefined],
     ["SitePayout", undefined],
     ["RewardChestOpened", undefined],

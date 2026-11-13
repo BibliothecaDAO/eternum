@@ -37,6 +37,7 @@ export * from "./guilds";
 export * from "./market";
 export * from "./resources";
 export * from "./quests";
+export * from "./race";
 export * from "./structures";
 
 /** One-shot reads of the game facts the React hooks subscribe to, for a caller with no render loop. */

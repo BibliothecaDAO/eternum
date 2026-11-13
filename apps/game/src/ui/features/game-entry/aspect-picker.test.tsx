@@ -2,7 +2,7 @@ import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { AspectPicker, type AspectMembers } from "./aspect-picker";
+import { AspectPicker, aspectOffer, type AspectMembers } from "./aspect-picker";
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
@@ -19,7 +19,9 @@ const draw = (props: Partial<Parameters<typeof AspectPicker>[0]> = {}) => {
   root = createRoot(host);
   const onJoin = props.onJoin ?? vi.fn();
   act(() =>
-    root!.render(<AspectPicker members={MEMBERS} realmOrder={null} joining={null} onJoin={onJoin} {...props} />),
+    root!.render(
+      <AspectPicker members={MEMBERS} realmOrder={null} joining={null} offered={null} onJoin={onJoin} {...props} />,
+    ),
   );
   return { onJoin, cards: [...host.querySelectorAll<HTMLButtonElement>(".aspect-picker__card")] };
 };
@@ -78,5 +80,64 @@ describe("AspectPicker", () => {
   it("draws no count while the members are being read", () => {
     const { cards } = draw({ members: null });
     expect(cards.some((card) => card.querySelector(".aspect-picker__members"))).toBe(false);
+  });
+
+  it("lists a friend's invited Aspect first, marked, names who invited, every card still open", () => {
+    const { onJoin, cards } = draw({ offered: { aspect: 3, sender: "Linden" } });
+    expect(cards.map((card) => card.getAttribute("aria-label"))).toEqual([
+      "Join Chaos",
+      "Join Might",
+      "Join Harmony",
+      "Join Guile",
+    ]);
+    expect(cards.map((card) => card.querySelector(".aspect-picker__invite")?.textContent ?? null)).toEqual([
+      "Invited",
+      null,
+      null,
+      null,
+    ]);
+    expect(host!.querySelector(".aspect-picker__invited")?.textContent).toBe("Linden invited you to Chaos");
+    expect(cards.every((card) => !card.disabled)).toBe(true);
+    act(() => cards[3]!.click());
+    expect(onJoin).toHaveBeenCalledWith(4);
+  });
+
+  it("names no sender when the invite's sender has no name yet", () => {
+    draw({ offered: { aspect: 2, sender: null } });
+    expect(host!.querySelector(".aspect-picker__invited")?.textContent).toBe("You were invited to Harmony");
+  });
+
+  it("keeps a held Realm's Aspect and the plain order whatever a link invited to", () => {
+    const { cards } = draw({ realmOrder: FOX, offered: { aspect: 3, sender: "Linden" } });
+    expect(cards.map((card) => card.getAttribute("aria-label"))).toEqual([
+      "Join Might",
+      "Join Harmony",
+      "Join Chaos",
+      "Join Guile",
+    ]);
+    expect(host!.querySelector(".aspect-picker__invite")).toBeNull();
+    expect(host!.querySelector(".aspect-picker__invited")).toBeNull();
+    expect(cards.map((card) => card.hasAttribute("data-chosen"))).toEqual([false, false, false, true]);
+  });
+});
+
+describe("aspectOffer", () => {
+  const GAME = { chainId: "0x5245414c4d53", gameId: 8 };
+  const link = { kind: "aspect" as const, chainId: GAME.chainId, gameId: 8, moment: 2, name: "Linden" };
+
+  it("offers the Aspect of an invite made for this chain and game", () => {
+    expect(aspectOffer(link, GAME)).toEqual({ aspect: 2, sender: "Linden" });
+    expect(aspectOffer({ ...link, name: null }, GAME)).toEqual({ aspect: 2, sender: null });
+  });
+
+  it("offers nothing for another game, another chain, another kind of link or none", () => {
+    expect(aspectOffer({ ...link, gameId: 9 }, GAME)).toBeNull();
+    expect(aspectOffer({ ...link, chainId: "0x1" }, GAME)).toBeNull();
+    expect(aspectOffer({ ...link, kind: "frontier-day" }, GAME)).toBeNull();
+    expect(aspectOffer(null, GAME)).toBeNull();
+  });
+
+  it("refuses an invite whose Aspect the catalog does not hold", () => {
+    expect(() => aspectOffer({ ...link, moment: 5 }, GAME)).toThrow("Unknown Aspect 5");
   });
 });

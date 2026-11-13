@@ -13,7 +13,7 @@ import { iconDefinition, resourceMeaning } from "./icon-meaning";
 
 describe("story icon meanings", () => {
   it("paints every story the game can emit, and refuses one it cannot", () => {
-    for (const story of [...nativeStoryVariants, "BattleEvent", "RaidEvent"])
+    for (const story of [...nativeStoryVariants, "BattleEvent"])
       expect(iconDefinition(storyMeaning(story)).label, story).toBeTruthy();
     expect(() => storyMeaning("Unknown")).toThrow("Unknown story icon: Unknown");
   });

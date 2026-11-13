@@ -11,7 +11,7 @@ import { configManager } from "@bibliothecadao/eternum";
 import { useMemo } from "react";
 import { guardActions, resolveStructureAttention, type CombatHistory } from "./attention-policy";
 
-/** How much of the player's own history each read keeps: battles, raids and troop moves naming them, newest first. */
+/** How much of the player's own history each read keeps: battles and troop moves naming them, newest first. */
 const COMBAT_HISTORY = 100;
 
 /**
@@ -38,7 +38,7 @@ export const useStructureAttention = () => {
 };
 
 /**
- * The actions on guards naming the player (battles, raids, troops moved into a guard), once every read is done; null
+ * The actions on guards naming the player (battles and troops moved into a guard), once every read is done; null
  * while one is loading or has failed. Complete once each read's history reached the block the facts were read at.
  */
 const usePlayerCombatHistory = (): CombatHistory | null => {
@@ -46,9 +46,8 @@ const usePlayerCombatHistory = (): CombatHistory | null => {
   const streamGeneration = useConnectionStore((state) => state.lastGlobalHandshake);
   const snapshotBlock = useConnectionStore((state) => state.snapshotBlock);
   const battles = useStoryEvents(COMBAT_HISTORY, "BattleEvent", player, true);
-  const raids = useStoryEvents(COMBAT_HISTORY, "RaidEvent", player, true);
   const transfers = useStoryEvents(COMBAT_HISTORY, "TroopsTransferred", player, true);
-  const reads = [battles, raids, transfers];
+  const reads = [battles, transfers];
   const known = Boolean(player) && reads.every((read) => read.isSuccess);
   const complete =
     snapshotBlock !== null &&
@@ -57,11 +56,11 @@ const usePlayerCombatHistory = (): CombatHistory | null => {
     () =>
       known
         ? {
-            actions: guardActions([...battles.data, ...raids.data, ...transfers.data], streamGeneration),
+            actions: guardActions([...battles.data, ...transfers.data], streamGeneration),
             isPlayer: (address) => address !== null && isAddressEqualToAccount(address),
             complete,
           }
         : null,
-    [known, complete, battles.data, raids.data, transfers.data, streamGeneration],
+    [known, complete, battles.data, transfers.data, streamGeneration],
   );
 };

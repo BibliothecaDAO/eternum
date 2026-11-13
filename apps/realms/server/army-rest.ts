@@ -67,7 +67,7 @@ export const partitionByRunningGame = async <Entry extends { gameId: number }>(
 /**
  * Every player whose armies this page may have changed, once per game: one story or many cost one read. Herald's story
  * history carries the chain's stories, not its execution records: a player's own actions arrive as stories they own
- * (an explore as its reward, a march, a new army), and fights as battle or raid events naming their players.
+ * (an explore as its reward, a march, a new army), and fights as battle events naming their players.
  */
 export const actorsWhoActed = (page: HeraldStoryHistoryPage): { gameId: number; actor: string }[] => {
   const acted = new Map<string, { gameId: number; actor: string }>();
@@ -83,22 +83,21 @@ export const actorsWhoActed = (page: HeraldStoryHistoryPage): { gameId: number; 
     if (model === "BattleEvent")
       for (const side of [value.attacker, value.defender])
         add(gameId, (side as { player?: unknown } | undefined)?.player);
-    if (model === "RaidEvent") add(gameId, value.player);
   }
   return [...acted.values()];
 };
 
 /**
- * A player's armies in one game and when each is full, from the shard's own rules for that game. Herald narrows the
- * read to the armies the player's structures own, so its cost is one player's, not the game's. In a game of daily
- * expeditions an army from an earlier day is no army any more, whether or not its row remains.
+ * What a player's alerts read of one game, in one snapshot: their armies and when each is full, and the shared Deep
+ * (its sites, their guards and the homes' Aspects) beside their realm's research. Herald narrows the read to the
+ * player's structures and armies, and the Deep every player sees, so its cost is one player's, not the game's.
  */
-export const readActorArmies = async (
+export const readActorGame = async (
   shardUrl: string,
   gameId: number,
   actor: string,
   now: number,
-): Promise<ActorArmy[]> => {
+): Promise<NativeFactStore> => {
   const snapshot = await fetchHeraldGameSnapshot(
     { url: shardUrl },
     gameId,
@@ -113,6 +112,12 @@ export const readActorArmies = async (
       "ArmySlot",
       "ArmyProgress",
       "TileOccupancy",
+      "RealmKnowledge",
+      "HomeAspect",
+      "DeepRules",
+      "DeepSite",
+      "DeepGuard",
+      "DeepArmy",
     ],
     actor,
     actor,
@@ -122,44 +127,60 @@ export const readActorArmies = async (
     snapshot.models.flatMap(({ model, rows }) => rows.map((row) => ({ model, key: row.key, value: row.value }))),
   );
   store.setSnapshot({ gameId, actor, complete: true, timestamp: Math.floor(now / 1000) });
+  return store;
+};
+
+/**
+ * A player's armies in one game and when each is full, from the shard's own rules for that game. In a game of daily
+ * expeditions an army from an earlier day is no army any more, whether or not its row remains.
+ */
+export const actorArmies = (store: NativeFactStore, gameId: number, actor: string, now: number): ActorArmy[] => {
   const rules = store.require("SliceRules", { game_id: gameId });
   const tickSeconds = Number(rules.tick_config.armies_tick_in_seconds);
   const timestamp = Math.floor(now / 1000);
+  return currentArmies(store, gameId, actor, now).flatMap((army) => {
+    const troops = resolveExplorerTroops(store, army);
+    if (!troops) return [];
+    const stamina = staminaAt(troops, timestamp, rules.troop_stamina_config, tickSeconds);
+    const { staminaMax } = troopStaminaLimits(
+      rules.troop_stamina_config,
+      army.troops.category as TroopType,
+      army.troops.tier as TroopTier,
+    );
+    const fullSecond = affordableAt(
+      troops,
+      timestamp,
+      rules.troop_stamina_config,
+      tickSeconds,
+      troops.staminaMax ?? staminaMax,
+    );
+    return [
+      {
+        armyId: safeInteger(army.explorer_id),
+        full: Number(stamina.amount) >= (troops.staminaMax ?? staminaMax),
+        fullAt: fullSecond === null ? null : fullSecond * 1000,
+      },
+    ];
+  });
+};
+
+/**
+ * The player's own armies of today: those their structures own. The snapshot also holds the Deep's guards, which every
+ * player sees and most of which are other players' armies.
+ */
+export const currentArmies = (store: NativeFactStore, gameId: number, actor: string, now: number) => {
   const expedition = readExpeditionRules(store, gameId);
-  return [...store.inGame("ExplorerTroops", gameId)]
-    .filter(
-      (army) =>
-        !expedition ||
+  const homes = new Set([...store.structuresOwnedBy(gameId, BigInt(actor))].map((structure) => structure.entity_id));
+  return [...store.inGame("ExplorerTroops", gameId)].filter(
+    (army) =>
+      homes.has(army.owner) &&
+      (!expedition ||
         isCurrentExpeditionArmy(
           expedition,
           store.require("ArmyDay", { game_id: gameId, explorer_id: army.explorer_id }).day,
           now / 1000,
-        ),
-    )
-    .flatMap((army) => {
-      const troops = resolveExplorerTroops(store, army);
-      if (!troops) return [];
-      const stamina = staminaAt(troops, timestamp, rules.troop_stamina_config, tickSeconds);
-      const { staminaMax } = troopStaminaLimits(
-        rules.troop_stamina_config,
-        army.troops.category as TroopType,
-        army.troops.tier as TroopTier,
-      );
-      const fullSecond = affordableAt(
-        troops,
-        timestamp,
-        rules.troop_stamina_config,
-        tickSeconds,
-        troops.staminaMax ?? staminaMax,
-      );
-      return [
-        {
-          armyId: safeInteger(army.explorer_id),
-          full: Number(stamina.amount) >= (troops.staminaMax ?? staminaMax),
-          fullAt: fullSecond === null ? null : fullSecond * 1000,
-        },
-      ];
-    });
+        )),
+  );
 };
 
 /** A player's armies that are still recovering become watches; a rested or gone army has none. */

@@ -42,8 +42,6 @@ const battle = (
     },
     by,
   );
-const raid = (block: number, structureId: number, raider: string, holder: string, by: Arrival = "live") =>
-  story(block, "RaidEvent", raider, { structure_id: structureId, player: raider, target_owner: holder }, by);
 const reinforce = (block: number, structureId: number, by: Arrival = "live") =>
   story(
     block,
@@ -78,10 +76,10 @@ it("counts attacked structures once and deduplicates navigation with arrival tar
 it("expires attacks at the same boundary as battle badges", () => {
   expect(attacked([guard(1, 120)], history([battle(60, 1, THEM, ME)]))).toEqual([]);
 });
-it("flags a structure another player's army struck, live, while the player held it, by battle or raid", () => {
-  expect(attacked([guard(1, 170), guard(2, 170)], history([battle(90, 1, THEM, ME), raid(95, 2, THEM, ME)]))).toEqual([
-    1, 2,
-  ]);
+it("flags a structure another player's army struck, live, while the player held it", () => {
+  expect(attacked([guard(1, 170), guard(2, 170)], history([battle(90, 1, THEM, ME), battle(95, 2, THEM, ME)]))).toEqual(
+    [1, 2],
+  );
 });
 it("never flags the player's own capture, nor a hit on the structure before it was theirs", () => {
   // The Obsidian Hyperstructure: someone else fought its former holder, then the player captured it.

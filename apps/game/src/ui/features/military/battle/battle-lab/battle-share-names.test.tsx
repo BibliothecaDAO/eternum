@@ -88,8 +88,6 @@ it.each([
       },
       target: { id: 8, addressOwner: BigInt(owner), hex: { x: 1, y: 0 }, targetType: "Army" },
       targetResources: [],
-      attackerRelicEffects: [],
-      targetRelicEffects: [],
       isLoading: false,
     };
     const host = document.createElement("div"),

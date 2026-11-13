@@ -7,9 +7,13 @@ import { APP_HOST } from "@/config/app-address";
 import type { ResolvedGameMode } from "@/config/game-modes/resolved-mode";
 import { SHARED_MOMENT_WORDS, type CampaignKey, type OpeningMoment, type SocialProvider } from "@realms-world/identity";
 import type { NotificationKind, NotificationLevel } from "@bibliothecadao/notifications";
-import type { RuinChest } from "@bibliothecadao/eternum";
-import type { DailyQuestId } from "@/ui/design-system/domain-icon-meaning";
-import { nativeQuestConstants as quest } from "../../../../../../contracts/l3/world-native/schema/client.gen";
+import type { RuinChest, TriumphStage } from "@bibliothecadao/eternum";
+import type { QuestId } from "@/ui/design-system/domain-icon-meaning";
+import {
+  nativeBaneConstants,
+  nativeQuestConstants as quest,
+  nativeRuleConstants,
+} from "../../../../../../contracts/l3/world-native/schema/client.gen";
 import {
   BuildingType,
   rankName,
@@ -1002,6 +1006,10 @@ export const ASPECT_STEP_WORDS = {
   joining: (aspect: string) => `Joining ${aspect}…`,
   /** A held Realm's home: its Aspect is its Order's, so the step shows it and asks nothing. */
   realmsAspect: (order: string, aspect: string) => `Your Realm's ${order} plays for ${aspect}`,
+  /** The step's line for a friend's invite, and the invited card's tag; a sender with no name yet is not named. */
+  invitedTo: (sender: string | null, aspect: string) =>
+    sender === null ? `You were invited to ${aspect}` : `${sender} invited you to ${aspect}`,
+  invited: "Invited",
 } as const;
 
 /** The Season chip's tip: what a common chest pays today, and the pool the season pays chests from. */
@@ -1630,6 +1638,7 @@ export const LEVEL_WORDS = { off: "Off", important: "Important", all: "All" } as
 export const NOTIFICATION_KIND_WORDS = {
   "day-open": "each day's opening",
   "army-rested": "rested armies",
+  "deep-sites": "Deep sites you can take",
   fights: "fights",
   results: "results",
   messages: "messages",
@@ -1665,7 +1674,10 @@ const QUEST_COUNTED = {
   [quest.VETERANS]: ["skill point", "skill points"],
   [quest.FINDS]: ["find", "finds"],
   [quest.REVEALS]: ["tile", "tiles"],
-} as const satisfies Record<DailyQuestId, readonly [string, string]>;
+  [quest.STAND]: ["guarded site", "guarded sites"],
+  [quest.LIGHTS]: ["tile", "tiles"],
+  [quest.CULL]: ["guard troop", "guard troops"],
+} as const satisfies Record<QuestId, readonly [string, string]>;
 
 /** Invite a friend to the player's Aspect (U13): the panel, its two ways to post the link, and what can go wrong. */
 export const INVITE_WORDS = {
@@ -1682,7 +1694,7 @@ export const INVITE_WORDS = {
 /** The day's banner: today's quest, how far the home is ("1 of 2 camps"), its reward and collecting it. */
 export const QUEST_WORDS = {
   today: "Today's quest",
-  count: (quest: DailyQuestId, progress: bigint, target: bigint) =>
+  count: (quest: QuestId, progress: bigint, target: bigint) =>
     `${formatExact(Number(progress))} of ${formatExact(Number(target))} ${QUEST_COUNTED[quest][target === 1n ? 0 : 1]}`,
   collect: "Collect",
   collecting: "Collecting",
@@ -1691,24 +1703,97 @@ export const QUEST_WORDS = {
   week: "This week's quests",
   state: { collected: "Collected", done: "Done", missed: "Missed", today: "Today", coming: "Coming" },
   notCollected: "The quest's reward could not be collected.",
+  /** A world bane the Aspect ended pays the quest's reward a second time, collected by a second press. */
+  collectAgain: "Collect again",
+  readingDay: "Reading this day",
 } as const;
 
 /**
+ * A bane over the Aspect's day, as the banner's head says it (the owner's pick A): the mist's by name and rates, a
+ * rival's by its sender and crests, and how far the Aspect is at ending it ("4 of 6 members") or what ending it brought.
+ */
+export const BANE_WORDS = {
+  worldEyebrow: "World bane",
+  /** What each world bane does, from BaneRules' rates: beasts +50%, stamina at 50%, production at 50%. */
+  worldRules: {
+    [nativeBaneConstants.BLOOD_MOON]: (rules: { beast_percent: number }) => `Beasts +${rules.beast_percent - 100}%`,
+    [nativeBaneConstants.MIST_TIDE]: (rules: { stamina_percent: number }) =>
+      `Stamina regenerates at ${rules.stamina_percent}%`,
+    [nativeBaneConstants.ASH_FALL]: (rules: { production_percent: number }) =>
+      `Production at ${rules.production_percent}%`,
+  },
+  teamFrom: (sender: string) => `Team bane, from ${sender}`,
+  teamName: (sender: string) => `Bane of ${sender}`,
+  teamRule: "Your hyperstructure does not grow",
+  members: (completed: number, required: number) => `${formatExact(completed)} of ${formatExact(required)} members`,
+  worldEnded: "Ended: the quest pays twice",
+  worldEndedShort: "Ended, pays twice",
+  teamEndedShort: "Ended, grows again",
+  teamEnded: "Ended: your hyperstructure grows again",
+} as const;
+
+/**
+ * The Aspect's Triumph on the day after a stage of its hyperstructure (the frozen design's four): its name, and what it
+ * does today above the Deep, from the percentage RaceRules holds.
+ */
+export const TRIUMPH_WORDS = {
+  names: {
+    [nativeRuleConstants.CLEAR_MIST_STAGE]: "Clear Mist",
+    [nativeRuleConstants.SECOND_WIND_STAGE]: "Second Wind",
+    [nativeRuleConstants.PALE_MOON_STAGE]: "Pale Moon",
+    [nativeRuleConstants.SPOILS_STAGE]: "Spoils",
+  } satisfies Record<TriumphStage, string>,
+  effects: {
+    [nativeRuleConstants.CLEAR_MIST_STAGE]: (percent: number) =>
+      `A reveal finds something ${formatTimes(percent)} as often today`,
+    [nativeRuleConstants.SECOND_WIND_STAGE]: (percent: number) =>
+      `Stamina refills ${formatTimes(percent)} as fast today`,
+    [nativeRuleConstants.PALE_MOON_STAGE]: (percent: number) => `Beasts fight at ${percent}% of their strength today`,
+    [nativeRuleConstants.SPOILS_STAGE]: (percent: number) =>
+      `A cleared site pays ${formatTimes(percent)} the wheat, labor, Essence and XP today. A ruin's relic stays the same`,
+  } satisfies Record<TriumphStage, (percent: number) => string>,
+  eyebrow: "Triumph",
+  /** The banner's tip on a Triumph: where it applies. */
+  where: "Your Aspect's Triumph, for today, everywhere above the Deep.",
+  reading: "Reading your Aspect's day",
+} as const;
+
+/** A percentage as a multiple: 200 reads "2 times". */
+const formatTimes = (percent: number) => `${formatExact(percent / 100)} times`;
+
+/** Glory, the one score a member reads: its line (a dash while it is read) and what it is for. */
+export const GLORY_WORDS = {
+  line: (glory: number | null) => `Glory ${glory === null ? "—" : formatExact(glory)}`,
+  tip: "Glory sets your share of your Aspect's reward. Hold the Foundation or the Altar to earn it.",
+} as const;
+
+/** The game's numbers an opening line names, each read when its line is shown. */
+export interface OpeningRules {
+  knightsAnHour: () => number;
+  deepTick: () => { tickSeconds: number; lossPerTick: number };
+}
+
+/**
  * The interface that opens as you play (the frozen design's table, word for word): the one line each moment brings,
- * shown once per account, and Settings' switch that opens everything at once. A Barracks' Knights an hour come from
- * the game's rules.
+ * shown once per account, and Settings' switch that opens everything at once. A Barracks' Knights an hour, the army
+ * tick and the Deep's loss per tick come from the game's rules, read only for the line that names them.
  */
 export const OPENING_WORDS = {
   lines: {
     launch: () => "This is your Realm. Build on the lit plot, then send an army into the mist.",
-    barracks: (knightsAnHour: number) =>
-      `A Barracks raises ${formatAmount(knightsAnHour)} Knights an hour. Knights fill your armies.`,
+    barracks: (rules: OpeningRules) =>
+      `A Barracks raises ${formatAmount(rules.knightsAnHour())} Knights an hour. Knights fill your armies.`,
     guard: () => "Send 150% of the guard's troops to win.",
     fight: () => "Armies earn XP by fighting. Enough XP gives a skill point.",
     essence: () => "Essence buys research and lores.",
     "well-lore": () => "Your armies can now find wells.",
     "shrine-lore": () => "Your armies can now find shrines.",
-  } satisfies Record<OpeningMoment, (knightsAnHour: number) => string>,
+    deep: (rules: OpeningRules) => {
+      const { tickSeconds, lossPerTick } = rules.deepTick();
+      return `Every tick (${formatAmount(tickSeconds)} seconds) here, each army loses ${formatAmount(lossPerTick)} troops. Hold a site to earn.`;
+    },
+    bane: () => "A bane. Today's quest is the bane quest. Your Aspect ends the bane when enough members finish it.",
+  } satisfies Record<OpeningMoment, (rules: OpeningRules) => string>,
   gotIt: "Got it",
   interface: "Interface",
   showEverything: "Show everything",

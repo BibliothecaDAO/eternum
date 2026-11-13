@@ -121,7 +121,7 @@ it("does not reuse pre-disconnect live hits for an own-sortie cooldown in the re
     useConnectionStore.getState().setGlobalStatus("connected");
     show();
   });
-  expect(history.mock.calls.length).toBeGreaterThanOrEqual(6);
+  expect(history.mock.calls.length).toBeGreaterThanOrEqual(4);
   expect(host.textContent).toBe("0");
 
   // A hostile hit on the new stream restores the alert.
@@ -229,7 +229,7 @@ it("re-reads history a replacement snapshot overtook in flight, and recovers the
     });
   history.mockImplementation(heldRead as never);
   const { host, show } = await mountProbe();
-  expect(held).toHaveLength(3);
+  expect(held).toHaveLength(2);
   // History commits through 40, then a replacement snapshot at 35 applies; its handshake meets the reads in flight.
   history.mockImplementation(historyWithHostileHit(30, 40) as never);
   const callsBefore = history.mock.calls.length;
@@ -243,7 +243,7 @@ it("re-reads history a replacement snapshot overtook in flight, and recovers the
   });
   await settleUntil(() => host.textContent === "1");
   // The overtaken answers (through 34) are behind the snapshot: each read went back for history through 40.
-  expect(history.mock.calls.length - callsBefore).toBeGreaterThanOrEqual(3);
+  expect(history.mock.calls.length - callsBefore).toBeGreaterThanOrEqual(2);
   expect(host.textContent).toBe("1");
 });
 
@@ -295,12 +295,12 @@ it("does not read an unchanged answer behind the snapshot again without a new he
     await settle();
     counts.push(history.mock.calls.length);
   }
-  expect(counts).toEqual([3, 3, 3, 3]);
+  expect(counts).toEqual([2, 2, 2, 2]);
   expect(host.textContent).toBe("0");
 });
 
 const stuckAnswers = {
-  "history stuck behind the snapshot": { read: historyWithHostileHit(30, 34), readsPerHead: 3 },
+  "history stuck behind the snapshot": { read: historyWithHostileHit(30, 34), readsPerHead: 2 },
   "history whose coverage Herald does not know": {
     read: async () => ({ items: [], complete_through_block: null, limit: 100, offset: 0, total: 0 }),
     readsPerHead: 0,
@@ -323,14 +323,14 @@ it.each(Object.entries(stuckAnswers))(
     history.mockImplementation(read as never);
     const { host, show } = await mountProbe();
     await settle();
-    expect(history).toHaveBeenCalledTimes(3);
+    expect(history).toHaveBeenCalledTimes(2);
     for (const head of [36, 37, 38, 39, 40]) {
       await act(async () => {
         useConnectionStore.getState().recordConfirmedHead(head);
       });
       await settle();
     }
-    expect(history).toHaveBeenCalledTimes(3 + 5 * readsPerHead);
+    expect(history).toHaveBeenCalledTimes(2 + 5 * readsPerHead);
     // With no further head, renders of the clock read nothing.
     for (let tick = 0; tick < 3; tick += 1) {
       await act(async () => {
@@ -339,7 +339,7 @@ it.each(Object.entries(stuckAnswers))(
       });
       await settle();
     }
-    expect(history).toHaveBeenCalledTimes(3 + 5 * readsPerHead);
+    expect(history).toHaveBeenCalledTimes(2 + 5 * readsPerHead);
     expect(host.textContent).toBe("0");
   },
 );
@@ -353,7 +353,7 @@ it("recovers attack attention after a transient history failure and a successful
   const { host, show } = await mountProbe();
   await settle();
   expect(host.textContent).toBe("0");
-  expect(history).toHaveBeenCalledTimes(3);
+  expect(history).toHaveBeenCalledTimes(2);
   // HTTP recovers; the stream reconnects with a snapshot and head at 40, the guards' cooldown still set by the hit at 30.
   history.mockImplementation(historyWithHostileHit(30, 40) as never);
   await act(async () => {
@@ -365,12 +365,12 @@ it("recovers attack attention after a transient history failure and a successful
     show();
   });
   await settleUntil(() => host.textContent === "1");
-  expect(history).toHaveBeenCalledTimes(6);
+  expect(history).toHaveBeenCalledTimes(4);
   expect(host.textContent).toBe("1");
 });
 
 describe("an old history request still pending when the stream reconnects, failing after", () => {
-  /** Three reads asked under snapshot 35 that hang through the outage; the reconnect at 40 meets them in flight. */
+  /** Two reads asked under snapshot 35 that hang through the outage; the reconnect at 40 meets them in flight. */
   const reconnectOverPendingReads = async () => {
     resetGameSyncStoryEvents();
     Object.assign(world, { now: 60, end: 100 });
@@ -380,7 +380,7 @@ describe("an old history request still pending when the stream reconnects, faili
     history.mockImplementation(() => new Promise((_, reject) => timeOut.push(reject)));
     const probe = await mountProbe();
     await settle();
-    expect(history).toHaveBeenCalledTimes(3);
+    expect(history).toHaveBeenCalledTimes(2);
     return {
       ...probe,
       reconnect: (answer: () => void) =>
@@ -405,9 +405,9 @@ describe("an old history request still pending when the stream reconnects, faili
     const { host, reconnect, failTheOldRequests } = await reconnectOverPendingReads();
     await reconnect(() => history.mockImplementation(historyWithHostileHit(30, 40) as never));
     // The reconnect shares the reads in flight: no new request yet.
-    expect(history).toHaveBeenCalledTimes(3);
+    expect(history).toHaveBeenCalledTimes(2);
     await failTheOldRequests();
-    expect(history).toHaveBeenCalledTimes(6);
+    expect(history).toHaveBeenCalledTimes(4);
     expect(host.textContent).toBe("1");
   });
 
@@ -415,7 +415,7 @@ describe("an old history request still pending when the stream reconnects, faili
     const { host, show, reconnect, failTheOldRequests } = await reconnectOverPendingReads();
     await reconnect(() => history.mockRejectedValue(new Error("history still unavailable")));
     await failTheOldRequests();
-    expect(history).toHaveBeenCalledTimes(6);
+    expect(history).toHaveBeenCalledTimes(4);
     expect(host.textContent).toBe("0");
     for (let head = 41; head < 46; head += 1)
       await act(async () => {
@@ -423,7 +423,7 @@ describe("an old history request still pending when the stream reconnects, faili
         show();
       });
     await settle();
-    expect(history).toHaveBeenCalledTimes(6);
+    expect(history).toHaveBeenCalledTimes(4);
     await act(async () => root!.unmount());
     root = createRoot(host);
     await act(async () => {
@@ -431,6 +431,6 @@ describe("an old history request still pending when the stream reconnects, faili
       show();
     });
     await settle();
-    expect(history).toHaveBeenCalledTimes(6);
+    expect(history).toHaveBeenCalledTimes(4);
   });
 });

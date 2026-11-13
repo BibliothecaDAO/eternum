@@ -17,8 +17,8 @@ type DayState = keyof typeof QUEST_WORDS.state;
 
 /**
  * Today's page's week of quests (the opening interface's Essence moment opens it): each day of the week's bag with its
- * quest's painting and name, and where it stands: collected, done, missed, today, or coming. A past day whose rows the
- * snapshot has not settled says nothing of itself. Nothing in a game without quests.
+ * quest's painting and name (a bane day's bane quest), and where it stands: collected, done, missed, today, or coming.
+ * A day whose rows the snapshot has not settled says it is reading. Nothing in a game without quests.
  */
 export const QuestWeek = ({ realm }: { realm: NativeRows["Structure"] }) => {
   const { setup } = useGame();
@@ -29,11 +29,12 @@ export const QuestWeek = ({ realm }: { realm: NativeRows["Structure"] }) => {
     <HudPanel title={QUEST_WORDS.week} label={QUEST_WORDS.week} collapsible={false} bodyClassName="flex flex-col gap-1">
       {week.days.map((day) => {
         const state = dayState(day, week.today);
+        const { quest } = day;
         return (
           <HudRow
             key={day.day}
-            lead={<Icon name={questMeaning(day.id)} size={28} />}
-            title={day.name}
+            lead={quest && <Icon name={questMeaning(quest.id)} size={28} />}
+            title={quest?.name ?? QUEST_WORDS.readingDay}
             detail={`${DAY} ${formatAmount(day.day + 1)}`}
             trail={state && <HudChip tone={QUEST_STATE_TONES[state]}>{QUEST_WORDS.state[state]}</HudChip>}
           />

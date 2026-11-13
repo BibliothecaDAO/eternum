@@ -34,6 +34,12 @@ import { sitesScenario } from "./sites-scenario";
 import { highGroundScenario, SANDS, spireScenario } from "./spire-scenario";
 import { upkeepScenario } from "./upkeep-scenario";
 import { visitScenario } from "./visit-scenario";
+import { farPlaceScenario } from "./far-place-scenario";
+import { researchScenario } from "./research-scenario";
+import { settleInvitedScenario, settleScenario } from "./settle-scenario";
+import { upkeepScenario, spendLordsScenario } from "./upkeep-scenario";
+import { reinforceScenario } from "./reinforce-scenario";
+import { ruinChestsScenario, ruinChestsSurfaceScenario } from "./ruin-chests-scenario";
 
 /** The games the lab plays, by name: each a fixture and the chain's answers to the commands it proves. */
 export const LAB_SCENARIOS: Partial<Record<string, () => LabScenario>> = {
@@ -68,6 +74,7 @@ export const LAB_SCENARIOS: Partial<Record<string, () => LabScenario>> = {
   claim: claimScenario,
   upkeep: upkeepScenario,
   settle: settleScenario,
+  "settle-invited": settleInvitedScenario,
   explore: exploreScenario,
   "painted-buildings": () => paintedBuildingsScenario(),
   "painted-buildings-sands": () => paintedBuildingsScenario(SANDS),

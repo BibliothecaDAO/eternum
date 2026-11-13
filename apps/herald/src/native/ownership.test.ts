@@ -1,4 +1,3 @@
-import { storyTag } from "./fixtures";
 import { toJsonValue } from "../model-registry";
 import bindings from "../../../../contracts/l3/world-native/schema/bindings.json";
 import { CallData, CairoCustomEnum } from "starknet";
@@ -16,11 +15,14 @@ import {
   manifest,
 } from "./fixtures";
 
+/** A surviving story as the chain emits it: a structure's level-up, its variant found in the compiled Story enum. */
 function levelUpStory() {
   const layout = schema.games.events.find((event) => event.name === "StoryEvent")!;
+  const story = schema.types["world_native::ownership::Story"];
+  if (story.type !== "enum") throw new Error("Missing compiled story enum");
+  const variant = story.variants.findIndex(({ name }) => name === "StructureLevelUpStory");
   const keys = [...layout.prefix, "2", "1", "1", "0", "3", "0x55"];
-  const values = [storyTag("StructureLevelUpStory"), "2", "1860"];
-  return raw({ from_address: manifest.world.address, keys, data: values });
+  return raw({ from_address: manifest.world.address, keys, data: [String(variant), "2", "1860"] });
 }
 
 describe("native ownership projections", () => {
@@ -45,12 +47,15 @@ describe("native ownership projections", () => {
     expect(() => decoder.decode({ ...event, from_address: "0x999" })).toThrow();
   });
 
-  it("refuses the retired structure gift through the generated command ABI", () => {
+  it("leaves the structure gift out of the generated command ABI, so it cannot encode", () => {
+    const commands = bindings.commandAbi.find(
+      (item) => item.type === "enum" && item.name === "world_native::commands::Command",
+    );
+    const names = (commands as { variants: { name: string }[] }).variants.map(({ name }) => name);
+    expect(names).not.toContain("TransferStructureOwnership");
     const codec = new CallData(bindings.commandAbi);
-    for (const kind of ["TransferStructureOwnership"]) {
-      const command = new CairoCustomEnum({ [kind]: { entity_id: 3, new_owner: "0x456" } });
-      expect(() => codec.compile("command_commitment", { command })).toThrow();
-    }
+    const command = new CairoCustomEnum({ TransferStructureOwnership: { entity_id: 3, new_owner: "0x456" } });
+    expect(() => codec.compile("command_commitment", { command })).toThrow();
   });
   it("narrows a snapshot to one account's rows: its structures, their armies, and every model without an owner", () => {
     const { fold, native, decoder } = setup();

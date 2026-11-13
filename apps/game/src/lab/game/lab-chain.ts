@@ -1,4 +1,5 @@
 import { identityClient, useIdentitySessionStore } from "@/hooks/context/identity-session";
+import type { JoinedShare } from "@realms-world/identity";
 import { answerLabOpening } from "@/lab/lab-opening";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { LAB_GUARDIAN, LAB_SESSION } from "@/shell/lab/app-lab-fixtures";
@@ -78,6 +79,10 @@ export interface LabScenario {
   wallet?: string;
   /** The player enters from the home page's game card, as one not yet settled does; otherwise on the map. */
   entersFromHome?: boolean;
+  /** The game's preset as the directory lists it; none: the lab game's own (Frontier's). */
+  presetId?: number;
+  /** The link the player's account came by, as identity answers it; none: no link brought the account. */
+  joined?: JoinedShare;
   /**
    * Herald serves each selection its scope alone, as a live shard does: the player's own expedition, and another
    * player's realm and armies only on a visit. None: the lab's game is all the player's to see.
@@ -205,6 +210,7 @@ const installOnce = async (makeScenario: () => LabScenario, startedAt: number): 
     now,
     (url) => answerHeraldRead(url, scenario, chain, now, herald.confirmedBlock()),
     () => playerState(chain, scenario.player),
+    scenario.presetId ?? LAB_GAME.presetId,
     // The home page's entry reads the game's clock against the wall clock, as a live chain's runs with it: a game
     // entered from there has its clock in wall seconds, the lab chain's offset from it added.
     scenario.entersFromHome ? Math.floor(startedAt / 1000) - scenario.startsAt : 0,
@@ -212,9 +218,10 @@ const installOnce = async (makeScenario: () => LabScenario, startedAt: number): 
   answerAccountJoin(LAB_SHARD_RPC, LAB_ACCOUNT_CLASS);
   answerHeraldSocket(herald);
   answerLaborClaims(scenario, chain, record, herald, now);
+  answerHomeSources();
   answerLedgerReads(now);
   answerLabChat({ gameRooms: [gameChatZoneId(LAB_GAME.chainId, LAB_GAME.gameId)], history: scenario.chat });
-  signInLabPlayer(scenario.wallet);
+  signInLabPlayer(scenario.wallet, scenario.joined ?? null);
   seatPlayer(labAccount(scenario, chain, nativeBindings, record, herald, now, events));
   return scenario;
 };
@@ -270,6 +277,7 @@ const answerDirectory = (
   now: () => number,
   read: (url: URL) => unknown,
   playerStateNow: () => ReturnType<typeof playerState>,
+  presetId: number,
   clockOffset: number,
 ) => {
   const network = window.fetch.bind(window);
@@ -306,7 +314,7 @@ const answerDirectory = (
       return playerStateNow();
     },
     roster_count: 0,
-    preset_id: LAB_GAME.presetId,
+    preset_id: presetId,
     registration: null,
     settled_realms_count: 1,
     settled_villages_count: 0,
@@ -341,15 +349,33 @@ const answerDirectory = (
 
 /**
  * The lab's player is signed in as the app lab's (its session and guardian), so the game's HUD reads as a signed-in
- * player's. The identity client holds its own fetch, so its session read is answered on the client itself, and so is
- * its default wallet's: the lab's player has none (a payout wallet it links is another wallet).
+ * player's. The identity client holds its own fetch, so its session read is answered on the client itself, and so are
+ * its default wallet's (the lab's player has none; a payout wallet it links is another wallet) and the link the account
+ * came by.
  */
-const signInLabPlayer = (wallet: string | undefined) => {
+const signInLabPlayer = (wallet: string | undefined, joined: JoinedShare) => {
   const session = wallet ? { ...LAB_SESSION, user: { ...LAB_SESSION.user, address: wallet } } : LAB_SESSION;
   identityClient.getSession = async () => session;
   identityClient.readDefaultWallet = async () => null;
+  identityClient.joinedShare = async () => joined;
   answerLabOpening(session.user.realmsId);
   useIdentitySessionStore.getState().applySession(session);
+};
+
+/**
+ * The relay's home-source reads, for a player who holds nothing: the linked wallet holds no Realm, and founding a free
+ * home registers no source (the relay accepts it with nothing to attach).
+ */
+const answerHomeSources = () => {
+  const network = window.fetch.bind(window);
+  const json = (body: unknown) =>
+    new Response(JSON.stringify(body), { status: 200, headers: { "content-type": "application/json" } });
+  window.fetch = async (input, init) => {
+    const url = new URL(input instanceof Request ? input.url : String(input), window.location.origin);
+    if (url.pathname === "/api/value/held-realms") return json({ realms: [], held: [] });
+    if (url.pathname === "/api/value/realm-entry" && init?.method === "POST") return json({});
+    return network(input, init);
+  };
 };
 
 /** The lab's home claim follows the current relay: game day, grant facts, then the receipt's transaction. */

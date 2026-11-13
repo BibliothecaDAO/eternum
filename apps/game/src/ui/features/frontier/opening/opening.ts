@@ -6,6 +6,7 @@ import {
   getBalance,
   getBuildingQuantity,
   liveHomeArmies,
+  readDailyQuest,
   realmLearned,
   researchTier,
 } from "@bibliothecadao/eternum";
@@ -22,8 +23,8 @@ import { OPENING_MOMENTS, type OpeningMoment } from "@realms-world/identity";
  * The interface that opens as you play (the frozen design, "The interface opens as you play"): each moment, the facts
  * that say a realm reached it, and the painting its one line wears. A moment's parts show once the realm's facts show
  * it, or once the account kept it (an army that fought is gone the next day, its fight is not): never a tutorial step.
- * The moments that open nothing yet (a skill point's boons, the spire's odds, a layer down, the City, the Deep, a bane,
- * the shop) join the table in the change that brings their part.
+ * The moments that open nothing yet (a skill point's boons, the spire's odds, a layer down, the City, the shop) join
+ * the table in the change that brings their part.
  */
 export const OPENING = {
   launch: { icon: "realm", reached: () => true },
@@ -39,6 +40,8 @@ export const OPENING = {
     icon: "shrine",
     reached: (store, realm) => hasLore(store, realm, nativeResearchConstants.ROW_SHRINE),
   },
+  deep: { icon: "depth-3", reached: (store, realm, timestamp) => wentIntoTheDeep(store, realm, timestamp) },
+  bane: { icon: "flame", reached: (store, realm, timestamp) => underABane(store, realm, timestamp) },
 } as const satisfies Record<
   OpeningMoment,
   {
@@ -59,6 +62,10 @@ export const OPENING_PARTS = {
   research: "essence",
   /** Today, with the week's quests, from the day's clock. */
   today: "essence",
+  /** The realm's Glory, beside its rank on the realm panel and in a phone's purse. */
+  glory: "deep",
+  /** The bane over the Aspect's day, under the day's quest on the banner. */
+  "bane-row": "bane",
 } as const satisfies Record<string, OpeningMoment>;
 export type OpeningPart = keyof typeof OPENING_PARTS;
 
@@ -90,6 +97,17 @@ const earnedEssence = (store: NativeFactStore, realm: NativeRows["Structure"], t
   for (const grant of store.inGame("LaborGrant", realm.game_id)) if (grant.home === realm.entity_id) return true;
   return (knownAmount(getBalance(realmIdOf(realm), ResourcesIds.Essence, timestamp, store).balance) ?? 0) > 0;
 };
+
+/** One of the realm's armies stands in the Deep today, or the realm earned there before (its race row). */
+const wentIntoTheDeep = (store: NativeFactStore, realm: NativeRows["Structure"], timestamp: number) =>
+  store.get("RaceMember", { game_id: realm.game_id, entity_id: realm.entity_id }) !== undefined ||
+  liveHomeArmies(store, realmIdOf(realm), realm.game_id, timestamp).some(
+    (army) => store.get("DeepArmy", { game_id: army.game_id, explorer_id: army.explorer_id }) !== undefined,
+  );
+
+/** The realm's Aspect is under a bane today, as the day's quest reads it. */
+const underABane = (store: NativeFactStore, realm: NativeRows["Structure"], timestamp: number) =>
+  Boolean(readDailyQuest(store, realm.game_id, realmIdOf(realm), timestamp)?.reading.known?.bane);
 
 const hasLore = (store: NativeFactStore, realm: NativeRows["Structure"], row: number) => {
   const learned = realmLearned(store, realm.game_id, realm.entity_id);

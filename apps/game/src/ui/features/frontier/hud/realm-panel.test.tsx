@@ -111,6 +111,20 @@ it("marks the LORDS of an account with no linked wallet, its name and hover sayi
   expect(host.querySelector('[aria-label="LORDS 1,240"] [data-icon="warning"]')).toBeNull();
 });
 
+it("reads the realm's Glory beside its rank in a race game, with what it is for, and a dash while it is read", () => {
+  act(() => root.render(<RealmPanel name="Duskbite" level={1} stores={STORES} glory={12.5} />));
+  // Glory splits by troops, so a member holds parts of a point; it reads whole.
+  const ring = host.querySelector('[aria-label="Glory 13"]')!;
+  expect(ring.getAttribute("data-tip")).toBe(
+    "Glory sets your share of your Aspect's reward. Hold the Foundation or the Altar to earn it.",
+  );
+  expect(ring.textContent).toContain("13");
+  act(() => root.render(<RealmPanel name="Duskbite" level={1} stores={STORES} glory={null} />));
+  expect(host.querySelector('[aria-label="Glory —"]')!.textContent).toContain("—");
+  act(() => root.render(<RealmPanel name="Duskbite" level={1} stores={STORES} />));
+  expect(host.querySelector('[aria-label^="Glory"]')).toBeNull();
+});
+
 it("takes the map home from its whole header, which never folds, with the rank's steps beside the name", () => {
   const onHome = vi.fn();
   act(() => root.render(<RealmPanel name="Duskbite" level={1} highest={3} stores={STORES} onHome={onHome} />));

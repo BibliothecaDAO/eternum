@@ -6,6 +6,4 @@ export { SecondaryMenuItems } from "./containers/secondary-menu-items";
 
 // Hyperstructures - Exports used externally
 
-// Biome System - Exports used externally
-
 // Hyperstructures - Exports used externally

@@ -8,6 +8,7 @@ export default defineConfig({
   // troop-stamina, expeditions and combat-exchange are too: services and the docs read a game's own rules without the
   // client's config state.
   // build-order too: the identity worker reads a player's saved orders with the game's own reader.
+  // deep and realm-research too: the identity worker projects the Deep's guards and reads Spire lore for its site alert.
   entry: [
     "src/index.ts",
     "src/account/device-signer.ts",
@@ -20,6 +21,8 @@ export default defineConfig({
     "src/managers/troop-stamina.ts",
     "src/utils/expeditions.ts",
     "src/utils/combat-exchange.ts",
+    "src/utils/deep.ts",
+    "src/utils/realm-research.ts",
     "src/client/index.ts",
     "src/client/shard-reader.ts",
     "src/sync/index.ts",

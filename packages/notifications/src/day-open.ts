@@ -2,6 +2,7 @@ import { gamePath, parseNotificationPayload, type LocalNotificationPayload } fro
 import { clockTime } from "./clock";
 import { pushGameName, type PushGame } from "./game-name";
 import { kindTag } from "./notification-kinds";
+import { pushCount } from "./push-count";
 
 /** What the home's claim gives each game day (homeDailyClaim), or null for a home with no claim. */
 export interface DayOpenClaim {
@@ -58,13 +59,11 @@ export function buildDayOpen(
 /** "claim 1,000 Labor and 1,000 Essence before 20:00.", "it ends at 20:00.", or the last day's season end. */
 const dayLine = (claim: DayOpenClaim | null, ends: string, last: boolean): string => {
   const parts = [
-    ...(claim && claim.labor > 0 ? [`${amount(claim.labor)} Labor`] : []),
-    ...(claim && claim.essence > 0 ? [`${amount(claim.essence)} Essence`] : []),
+    ...(claim && claim.labor > 0 ? [`${pushCount(claim.labor)} Labor`] : []),
+    ...(claim && claim.essence > 0 ? [`${pushCount(claim.essence)} Essence`] : []),
   ];
   if (parts.length === 0) return last ? `the season ends at ${ends}.` : `it ends at ${ends}.`;
   return last
     ? `claim ${parts.join(" and ")}. The season ends at ${ends}.`
     : `claim ${parts.join(" and ")} before ${ends}.`;
 };
-
-const amount = (value: number) => value.toLocaleString("en-US");

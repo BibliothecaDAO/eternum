@@ -123,6 +123,7 @@ it.each([
   ["doorway/waiting", "Starts"],
   ["doorway/preparing", "Preparing… 17/24"],
   ["doorway/aspect", "Choose your Aspect"],
+  ["doorway/aspect-invited", "Linden invited you to Harmony"],
   ["doorway/aspect-realm", "Your Realm's Order of the Fox plays for Guile"],
   ["terms", "Terms of Service"],
   ["no-such-page", "Nothing here"],

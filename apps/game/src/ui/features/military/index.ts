@@ -1,4 +1,4 @@
-// Military Feature - Army management, combat, defense, raids
+// Military Feature - Army management, combat, defense
 // This feature consolidates all military operations from components and modules
 
 // Defense Components - Used externally

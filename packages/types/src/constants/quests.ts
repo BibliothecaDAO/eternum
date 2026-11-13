@@ -1,4 +1,7 @@
-import { nativeQuestConstants as quest } from "../../../../contracts/l3/world-native/schema/client.gen";
+import {
+  nativeBaneConstants as bane,
+  nativeQuestConstants as quest,
+} from "../../../../contracts/l3/world-native/schema/client.gen";
 
 export const dailyQuests = [
   { id: quest.HUNT, name: "The Hunt", objective: "Clear Cyclops herds or Wraith bands", baseCount: 1 },
@@ -14,4 +17,11 @@ export const baneQuests = [
   { id: quest.STAND, name: "The Stand", objective: "Clear guarded sites" },
   { id: quest.LIGHTS, name: "The Lights", objective: "Reveal tiles" },
   { id: quest.CULL, name: "The Cull", objective: "Defeat guard troops" },
+] as const;
+
+/** The mist's three world banes (the frozen design's Banes and Triumphs), each with the bane quest it brings. */
+export const worldBanes = [
+  { id: bane.BLOOD_MOON, name: "Blood Moon", quest: quest.STAND },
+  { id: bane.MIST_TIDE, name: "Mist Tide", quest: quest.LIGHTS },
+  { id: bane.ASH_FALL, name: "Ash Fall", quest: quest.CULL },
 ] as const;
