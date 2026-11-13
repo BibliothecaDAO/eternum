@@ -1,3 +1,4 @@
+use crate::ownership::{GuardAddStory, Story};
 use crate::rules::{RESOURCE_PRECISION, SliceRules};
 use crate::stamina::StaminaSourceTrait;
 use crate::troops::{TroopTier, TroopType, Troops};
@@ -53,7 +54,6 @@ pub struct ExplorerRemoved {
 }
 
 pub fn management_story(command: ManageTroops) -> (u64, crate::ownership::Story) {
-    use crate::ownership::{GuardAddStory, Story};
     match command {
         ManageTroops::RecruitGuard(value) => (
             value.guard.structure_id,

@@ -15,7 +15,7 @@ pub mod RelicState {
     };
     use crate::resources::{IResourceOperationsDispatcherTrait, IResourceOperationsLibraryDispatcher, ResourceKey};
     use crate::stamina::{StaminaSourceTrait, StaminaTrait};
-    use crate::troops::{ExplorerKey, ExplorerRecordTrait};
+    use crate::troops::{ArmySlotAction, ExplorerKey, ExplorerRecordTrait, ResolvedArmySlot};
 
     #[storage]
     #[allow(starknet::colliding_storage_paths)]
@@ -270,7 +270,6 @@ pub mod RelicState {
         fn army_slot_stamina(
             ref self: ComponentState<TContractState>, key: ExplorerKey, action: crate::troops::ArmySlotAction,
         ) -> crate::troops::ResolvedArmySlot {
-            use crate::troops::{ArmySlotAction, ResolvedArmySlot};
             use crate::logic::army_slot_storage;
             if let ArmySlotAction::Allocate(value) = action {
                 let home = crate::resources::ResourceKey { game_id: key.game_id, entity_id: value.home };

@@ -1860,6 +1860,7 @@ fn open_frontier_settlement_uses_only_each_players_home_and_entry() {
 #[test_case(name: "legacy_surface", 0)]
 #[test_case(name: "legacy_depth_one", 1)]
 #[test_case(name: "legacy_depth_two", 2)]
+#[test_case(name: "legacy_depth_three", 3)]
 fn legacy_clear_survives_release_application_and_other_depths_pay(first_depth: u8) {
     let rules = ruin_discovery_rules();
     let (d, game_id, key) = setup_frontier_chests_with_rules(Some(rules));
@@ -1893,14 +1894,20 @@ fn legacy_clear_survives_release_application_and_other_depths_pay(first_depth: u
     assert_eq!(releases.current_release(), target + 1);
     assert_eq!(releases.game_release(game_id), 1);
 
+    let legacy_deep_ruins = place_legacy_depth_three_ruins(d, game_id);
     let mut total_paid = 0_u128;
-    for offset in 0_u8..3 {
+    for offset in 0_u8..4 {
         let timestamp = 360_u64 + Into::<u8, u64>::into(offset) * 3;
-        let depth = (first_depth + offset) % 3;
+        let depth = (first_depth + offset) % 4;
         let coord = crate::geometry::neighbor(crate::expeditions::site(1024, 1, 0, depth), 0);
         super::resource_commands::set_explorer_fixture(d.games, key, crate::troops::ExplorerTroops { coord, ..army });
-        let (ruin, _) = reveal_ruin(d, key, rules, timestamp);
-        let (sibling, _) = reveal_ruin(d, key, rules, timestamp + 1);
+        let (ruin, sibling) = if depth == 3 {
+            legacy_deep_ruins
+        } else {
+            let (ruin, _) = reveal_ruin(d, key, rules, timestamp);
+            let (sibling, _) = reveal_ruin(d, key, rules, timestamp + 1);
+            (ruin, sibling)
+        };
         let chest = relics.site_chest(ruin).unwrap();
         let site = snforge_std::interact_with_state(
             d.games, || crate::logic::expeditions::expedition_site(ruin).unwrap(),
@@ -2005,9 +2012,8 @@ fn legacy_clear_survives_release_application_and_other_depths_pay(first_depth: u
         snforge_std::interact_with_state(d.games, || crate::state::read().map_rules.ruin_cleared.read((game_id, 1, 0))),
     );
     for depth in 0_u8..4 {
-        assert_eq!(
+        assert!(
             snforge_std::interact_with_state(d.games, || crate::logic::expeditions::ruin_cleared_at(counter, depth)),
-            depth < 3,
         );
         assert!(
             !snforge_std::interact_with_state(
@@ -2018,6 +2024,39 @@ fn legacy_clear_survives_release_application_and_other_depths_pay(first_depth: u
             ),
         );
     }
+}
+
+fn place_legacy_depth_three_ruins(d: super::Deployment, game_id: u32) -> (ResourceKey, ResourceKey) {
+    let army_coord = crate::geometry::neighbor(crate::deep::center(1024), 0);
+    let first = crate::geometry::neighbor(army_coord, 0);
+    let second = crate::geometry::neighbor(army_coord, 1);
+    snforge_std::interact_with_state(
+        d.games,
+        || {
+            for coord in array![first, second] {
+                assert!(crate::logic::deep::contains(game_id, coord));
+                assert!(crate::logic::map::tile(crate::geometry::tile_key(game_id, coord)).is_some());
+            }
+        },
+    );
+    (place_ruin(d, game_id, first, CHEST), place_ruin(d, game_id, second, CHEST))
+}
+
+#[test]
+fn fixed_deep_refuses_exploration_without_changing_the_army_or_visible_tile() {
+    let (d, game_id, key) = setup_frontier_chests_with_rules(Some(ruin_discovery_rules()));
+    let army = crate::troops::ExplorerTroops {
+        coord: crate::deep::center(1024), ..strong_frontier_army(d, game_id, key),
+    };
+    super::resource_commands::set_explorer_fixture(d.games, key, army);
+    let tile = crate::geometry::tile_key(game_id, crate::geometry::neighbor(army.coord, 0));
+    let before = snforge_std::interact_with_state(d.games, || crate::logic::map::tile(tile));
+    assert!(before.is_some());
+    assert!(
+        !execute_in_game(d, game_id, Command::Explore(Explore { explorer_id: key.explorer_id, direction: 0 }), 360),
+    );
+    assert_eq!(GameState { contract_address: d.games }.resolved_explorer(key).unwrap(), army);
+    assert_eq!(snforge_std::interact_with_state(d.games, || crate::logic::map::tile(tile)), before);
 }
 
 #[starknet::interface]
