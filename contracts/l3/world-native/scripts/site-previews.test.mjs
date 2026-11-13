@@ -18,6 +18,20 @@ test("the shipped site previews match the current Cairo payout functions", async
   await generateSitePreviews(true);
 });
 
+test("resource names resolve from module imports, including multiline imports", () => {
+  const declaration = "use crate::resources::{ESSENCE, LABOR, ResourceAmount};";
+  assert.ok(source.expeditions.startsWith(declaration));
+  const multiline = source.expeditions.replace(
+    declaration,
+    "use crate::resources::{\n    ESSENCE, LABOR, ResourceAmount,\n};",
+  );
+  assert.equal(compileSitePreviews({ ...source, expeditions: multiline }), compileSitePreviews(source));
+  const local = source.expeditions
+    .replace(declaration, "")
+    .replace("    let reward =", `    ${declaration}\n    let reward =`);
+  assert.throws(() => compileSitePreviews({ ...source, expeditions: local }), /Unsupported site_reward imports/);
+});
+
 test("a new category or a changed resource, ratio or XP rule comes from Cairo", () => {
   const changed = {
     ...source,
@@ -53,6 +67,13 @@ test("the old XP-only Beasts rule cannot match today's generated payout", () => 
 
 test("unsupported formulas, missing constants and changed signatures refuse generation", () => {
   for (const changed of [
+    { expeditions: source.expeditions.replace("use crate::resources::{ESSENCE, LABOR, ResourceAmount};", "") },
+    {
+      expeditions: source.expeditions.replace(
+        "use crate::resources::{ESSENCE, LABOR, ResourceAmount};",
+        "use crate::resources::{ESSENCE, LABOR as WOOD, ResourceAmount};",
+      ),
+    },
     { expeditions: source.expeditions.replace("site.initial_guard_count / 4", "site.initial_guard_count / 4 + 1") },
     { expeditions: source.expeditions.replace("else {\n        None\n    }", 'else { panic!("missing") }') },
     { resources: source.resources.replace("pub const LABOR: u8 = 23;", "") },
