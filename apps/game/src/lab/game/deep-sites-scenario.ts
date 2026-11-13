@@ -1,6 +1,7 @@
 import { readExpeditionRules, seasonDay } from "@bibliothecadao/eternum";
 import type { NativeFactStore } from "@bibliothecadao/eternum/game-client";
 import { aspects, deepSites, TileOccupier } from "@bibliothecadao/types";
+import { nativeRuleConstants } from "../../../../../contracts/l3/world-native/schema/client.gen";
 import { frontierSeasonOnePreset } from "../../../../../config/source/frontier/season-one";
 import { ARMY_DAY_KEY } from "@/ui/features/frontier/sites/site-fixture";
 import { SPIRE_ARMY, SPIRE_DAY_NOW } from "@/ui/features/frontier/spire-fixture";
@@ -22,10 +23,22 @@ const OTHERS = [
   { home: 0x1ac13n, owner: "0x1ac23", aspect: CHAOS.id, army: 0x1ac33n, site: "altar", slot: 1, troops: 3_000n },
 ] as const;
 
+/** The race so far: each Aspect's hyperstructure height, Might two stages built and Chaos three. */
+const HEIGHTS = { 1: 4_100, 2: 1_500, 3: 6_000, 4: 0 } as const;
+/** The Glory each home has earned holding the Foundation or the Altar; the player's realm 7 and its mate in Might. */
+const GLORY = [
+  { home: 7n, glory: 120n },
+  { home: OTHERS[0].home, glory: 340n },
+  { home: OTHERS[1].home, glory: 410n },
+] as const;
+/** Chaos's bane bar, filled by its Altar ticks. */
+const CHAOS_BAR = 600;
+
 /**
  * The Deep's three sites on a Season 1 day (/lab/game?scenario=deep-sites), at Season 1's numbers: the realm's army in
  * the Deep beside the Foundation, which a mate of its Aspect (Might) holds with one army; the Quarry behind its beast;
- * the Altar held by two armies of Chaos. The chain answers InteractSite on a Deep site as deep_guards.cairo `join`
+ * the Altar held by two armies of Chaos. The race stands with Chaos ahead at stage 3 and Might at stage 2, its first
+ * Triumph fallen, each holder's Glory and Chaos's bane bar part filled. The chain answers InteractSite on a Deep site as deep_guards.cairo `join`
  * does: the army takes the first free slot and leaves its tile. Every other command is the depth proof's.
  */
 export const deepSitesScenario = (): LabScenario => {
@@ -44,6 +57,7 @@ export const deepSitesScenario = (): LabScenario => {
   store.applyFacts([
     ...deepSites.flatMap((kind, index) => siteFacts(store, kind, index, tiles[kind.position], day)),
     ...OTHERS.flatMap((other, index) => guardFacts(store, other, index, day, tick)),
+    ...raceFacts(day),
   ] as never);
   return {
     ...scenario,
@@ -203,6 +217,26 @@ const guardFacts = (
     },
   ];
 };
+
+/** The race's facts: each Aspect's hyperstructure, Might's first Triumph today, the holders' Glory and Chaos's bar. */
+const raceFacts = (day: bigint): LabFact[] => [
+  ...aspects.map(({ id }, index) => ({
+    model: "AspectHyperstructure",
+    key: `0x1acf${index}`,
+    value: wire({ game_id: 1, aspect: id, entity_id: 0x1ad00n + BigInt(id), height: HEIGHTS[id] }),
+  })),
+  {
+    model: "TriumphDay",
+    key: "0x1ad10",
+    value: wire({ game_id: 1, aspect: MIGHT.id, stage: nativeRuleConstants.CLEAR_MIST_STAGE, day }),
+  },
+  ...GLORY.map(({ home, glory }, index) => ({
+    model: "RaceMember",
+    key: `0x1ad2${index}`,
+    value: wire({ game_id: 1, entity_id: home, glory: glory * PRECISION, contribution: 0n }),
+  })),
+  { model: "AltarBar", key: "0x1ad30", value: wire({ game_id: 1, aspect: CHAOS.id, charge: CHAOS_BAR }) },
+];
 
 const tickSeconds = (store: NativeFactStore) =>
   Number(store.require("SliceRules", { game_id: 1 }).tick_config.armies_tick_in_seconds);

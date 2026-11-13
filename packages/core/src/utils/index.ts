@@ -50,3 +50,4 @@ export * from "./skill-points";
 
 export * from "./daily-quest";
 export { currentArmy, currentResourceWeight, deepTicksLeft } from "./deep";
+export { HYPERSTRUCTURE_STAGES, readAspectRace, type AspectRace, type AspectStanding } from "./aspect-race";

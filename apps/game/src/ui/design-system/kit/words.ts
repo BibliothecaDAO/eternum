@@ -486,6 +486,28 @@ export const SPIRE_WORDS = {
   odds: (percent: number) => `Spire: ${percent}% on the next reveal`,
   commits: (army: string, left: string) => `${army} stays until the day ends (${left})`,
 } as const;
+/** The Aspect page (docs/plans/frontier-season-1.md, Aspects and the hyperstructure): the race, and the player's Aspect. */
+export const ASPECT_PAGE_WORDS = {
+  title: "Aspects",
+  race: "The hyperstructures",
+  height: (height: number, finish: number) => `${formatExact(height)} of ${formatExact(finish)}`,
+  stage: (stage: number, stages: number) => `Stage ${stage} of ${stages}`,
+  finished: "Finished",
+  won: (aspect: string) => `${aspect} finished first and won the age`,
+  yours: (aspect: string) => `Your Aspect: ${aspect}`,
+  triumphs: "Triumphs",
+  triumph: { 1: "Clear Mist", 2: "Second Wind", 3: "Pale Moon", 4: "Spoils" },
+  triumphOn: (day: number) => `day ${formatExact(day + 1)}`,
+  triumphAt: (stage: number) => `at stage ${stage}`,
+  baneBar: "Bane bar",
+  baneCharge: (charge: number, threshold: number) => `${formatExact(charge)} of ${formatExact(threshold)}`,
+  members: "Members",
+  glory: "Glory",
+  guards: (site: string) => `Guards the ${site}`,
+  noAspect: "Join an Aspect to see its members",
+  reading: "Reading the race…",
+} as const;
+
 /** The Deep's three sites (docs/plans/frontier-season-1.md, the Deep): who they serve, who guards them, what a tick pays. */
 export const DEEP_WORDS = {
   purpose: { foundation: "For your Aspect", quarry: "For you", altar: "Against a rival" },

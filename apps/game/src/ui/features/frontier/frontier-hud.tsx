@@ -20,7 +20,7 @@ import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { type ComponentProps, type ComponentType, type ReactNode, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { RealmVisitFoot, useRealmVisitNavigation, useVisitedRealm } from "./board/realm-visit";
-import { FrontierSeason, useSeasonRank } from "./board/season-board";
+import { SeasonPlace, useSeasonPlaceRank } from "./aspect/season-place";
 import { useSpectatorWatch } from "./board/spectator-watch";
 import { useExpeditionRules, useFrontierRealm, useGoToFrontierPlace } from "./frontier-home";
 import { ArmyRefill } from "./army/army-refill";
@@ -172,7 +172,7 @@ export const FrontierHud = ({
           setSurface(null);
         },
   });
-  const seasonRank = useSeasonRank();
+  const seasonRank = useSeasonPlaceRank();
   const layers = useMapLayers(rules, shown, visit ? null : realm);
   // The store card a ring or a plate opened, under the realm card on a desktop and under the strip on a phone.
   const [openStore, setOpenStore] = useState<CardStore | null>(null);
@@ -219,7 +219,7 @@ export const FrontierHud = ({
     surface === "research" && realm ? (
       <FrontierResearch key={researchPick} realm={realm} pick={researchPick} onClose={close} />
     ) : surface === "season" ? (
-      <FrontierSeason rules={rules} onVisited={close} onClose={close} />
+      <SeasonPlace rules={rules} onVisited={close} onClose={close} />
     ) : surface === "feed" ? (
       <FrontierFeed onClose={close} />
     ) : surface === "menu" ? (
@@ -530,7 +530,7 @@ const HudMenu = ({
   onClose: () => void;
 }) => {
   const navigate = useNavigate();
-  const rank = useSeasonRank();
+  const rank = useSeasonPlaceRank();
   const guide = useHowToPlay();
   return (
     <MenuPage

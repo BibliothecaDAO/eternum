@@ -8,6 +8,8 @@ import {
 import type { NativeFactStore, NativeRows } from "@bibliothecadao/eternum/game-client";
 import { deepSites, getNeighborHexes, RESOURCE_PRECISION } from "@bibliothecadao/types";
 
+import { altarCharge } from "../aspect/aspect-page-plan";
+
 /** One of a held site's four slots: the army in it, its player's realm, and what it holds of each tick. */
 export type DeepSlot = {
   slot: number;
@@ -150,13 +152,6 @@ const readTickPay = (
     }),
   };
   return pays[siteOf(site).position]();
-};
-
-/** An Aspect's bane bar now: zero before it has held the Altar, as AltarBar declares. */
-const altarCharge = (store: NativeFactStore, gameId: number, aspect: number): number => {
-  const bar = store.requireOrAbsent("AltarBar", { game_id: gameId, aspect });
-  if (bar.known === undefined) throw new Error(`AltarBar of Aspect ${aspect}: ${bar.unknown}`);
-  return bar.known.charge;
 };
 
 /** The site's entry in the Deep's catalog, by its kind. */
