@@ -37,5 +37,5 @@ pub fn act(d: super::Deployment, actor: ContractAddress, command: Command) -> bo
     act_at(d, actor, command, 40)
 }
 pub fn act_at(d: super::Deployment, actor: ContractAddress, command: Command, timestamp: u64) -> bool {
-    execute(super::Deployment { actor, ..d }, command, timestamp)
+    execute(super::bind_player(d, actor), command, timestamp)
 }

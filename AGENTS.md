@@ -214,6 +214,7 @@ If a required command fails or is unavailable, say so explicitly in the final ha
 | Worker fetches use `redirect: "manual"` and reject non-success responses when redirects must be refused.                                                                                                  | `pnpm check:worker-fetch` in static CI; workerd co-signer and relay regressions. The guard scans Wrangler apps and shared package sources.                |
 | Co-signer loopback configuration must work through its real RPC, receipt, funding and Herald readers.                                                                                                     | `bun test deploy/athanor/cosigner/loopback.test.ts` in native CI; IPv4/IPv6 signing, funding mismatch and redirect refusal.                               |
 | Native test-level contract calls have separate event budgets; nested calls retain the same transaction limit, and every emitted row remains observable.                                                   | `contracts/l3/world-native/toolchain/check_transaction_events.py`, run by the native gate; lifecycle event-order regression and two over-limit probes.    |
+| Player fixtures bind deployed accounts through `world_test_support::tests::bind_player`; only the shared fixture module constructs `Deployment`.                                                          | `contracts/l3/world-native/scripts/fixture-actors.test.mjs`, run before compilation by the native gate.                                                   |
 
 ### Running Tests
 

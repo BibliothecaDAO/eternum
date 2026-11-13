@@ -394,7 +394,7 @@ fn players_with_different_accounts_final_batches_settle_the_same_points_and_game
         super::resource_commands::set_fixture(d.games, selector!("games"), selector!("games"), array![3].span(), game);
     }
     let (helper_account, _) = super::deploy_player(3, super::GUARDIAN);
-    let helper_player = super::Deployment { actor: helper_account, ..helper };
+    let helper_player = super::bind_player(helper, helper_account);
     assert!(first_player.actor != super::authority() && helper_player.actor != first_player.actor);
     let first_player_before = points(first_player).player_points(3, first_player.actor);
     let helper_before = points(helper).player_points(3, helper.actor);

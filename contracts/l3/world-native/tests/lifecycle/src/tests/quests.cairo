@@ -1,6 +1,5 @@
 use snforge_std::{interact_with_state, start_cheat_caller_address, stop_cheat_caller_address};
 use starknet::storage::StorageMapReadAccess;
-use world_test_support::tests::Deployment;
 use world_test_support::tests::resource_commands::execute_in_game;
 use crate::commands::Command;
 use crate::entry::{IHomeGrantsSafeDispatcher, IHomeGrantsSafeDispatcherTrait, LaborHome};
@@ -60,6 +59,9 @@ fn a_free_home_reveals_then_collects_once_through_the_player_command() {
         }
     }
     assert!(done);
+    let essence_before_claim = interact_with_state(
+        d.games, || crate::logic::resources::balance(home, crate::resources::ESSENCE),
+    );
     assert!(execute_in_game(d, game_id, claim, timestamp));
     assert!(execute_in_game(d, game_id, claim, timestamp));
     interact_with_state(
@@ -70,7 +72,7 @@ fn a_free_home_reveals_then_collects_once_through_the_player_command() {
             assert_eq!(progress.completed_level, 1);
             assert_eq!(
                 crate::logic::resources::balance(home, crate::resources::ESSENCE),
-                1500 * crate::rules::RESOURCE_PRECISION,
+                essence_before_claim + 1500 * crate::rules::RESOURCE_PRECISION,
             );
 
             let grant = crate::state::read().entry.home_labor_grants.read((game_id, home.entity_id, 0)).unwrap();
@@ -79,7 +81,8 @@ fn a_free_home_reveals_then_collects_once_through_the_player_command() {
             );
         },
     );
-    let stranger = Deployment { actor: 777.try_into().unwrap(), ..d };
+    let (actor, _) = world_test_support::tests::deploy_player(777, world_test_support::tests::GUARDIAN);
+    let stranger = world_test_support::tests::bind_player(d, actor);
     assert!(!execute_in_game(stranger, game_id, claim, timestamp));
     assert!(
         !execute_in_game(
