@@ -180,8 +180,8 @@ it("forecasts Blade and Ward, Plunder and Tome at the attack second and drops th
   const read = (timestamp: number) => readSiteCard(store, site, structure, SITE_TILE, { ...action, timestamp });
   expect(read(350)).toMatchObject({ fight: { troopsLost: 320, guardLeft: 492 }, xp: 123, payout: { amount: 825 } });
   store.applyFacts([relicEffectFact("Blade"), relicEffectFact("Ward"), relicEffectFact("Plunder"), relicEffectFact("Tome")]);
-  expect(read(399)).toMatchObject({ fight: { troopsLost: 304, guardLeft: 431 }, xp: 172, payout: { amount: 990, fits: 990 } });
-  expect(read(400)).toMatchObject({ fight: { troopsLost: 320, guardLeft: 492 }, xp: 123, payout: { amount: 825 } });
+  expect(read(379)).toMatchObject({ fight: { troopsLost: 304, guardLeft: 431 }, xp: 172, payout: { amount: 990, fits: 990 } });
+  expect(read(380)).toMatchObject({ fight: { troopsLost: 320, guardLeft: 492 }, xp: 123, payout: { amount: 825 } });
   expect(action.army.troops.boosts.incr_damage_dealt_percent_num).toBe(0);
   expect(action.army.troops.boosts.decr_damage_gotten_percent_num).toBe(0);
 });
@@ -229,7 +229,7 @@ it("adds active relics to a slot army's Battle skill without modifying stored tr
     relicEffectFact("Blade"), relicEffectFact("Ward"),
   ]);
   const current = store.require("ExplorerTroops", army);
-  expect(resolveExplorerCombatTroops(store, current, 399)?.boosts).toMatchObject({ incr_damage_dealt_percent_num: 5500, decr_damage_gotten_percent_num: 500 });
-  expect(resolveExplorerCombatTroops(store, current, 400)?.boosts).toMatchObject({ incr_damage_dealt_percent_num: 4500, decr_damage_gotten_percent_num: 0 });
+  expect(resolveExplorerCombatTroops(store, current, 379)?.boosts).toMatchObject({ incr_damage_dealt_percent_num: 5500, decr_damage_gotten_percent_num: 500 });
+  expect(resolveExplorerCombatTroops(store, current, 380)?.boosts).toMatchObject({ incr_damage_dealt_percent_num: 4500, decr_damage_gotten_percent_num: 0 });
   expect(current.troops.boosts.incr_damage_dealt_percent_num).toBe(0);
 });

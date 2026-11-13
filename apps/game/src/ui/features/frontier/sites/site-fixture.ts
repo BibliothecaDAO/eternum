@@ -339,7 +339,7 @@ export const sitesBeside = (stamina: bigint, layout: SitesLayout = SITES_LAYOUT)
 };
 
 
-export const relicEffectFact = (kind: NativeRows["ArmyRelicEffect"]["kind"], rank = 1, expiresAt = 400) => ({
+export const relicEffectFact = (kind: NativeRows["ArmyRelicEffect"]["kind"], rank = 1, expiresAt = 380) => ({
   model: "ArmyRelicEffect" as const,
   key: `0x${(0x9000 + nativeFactModels.ArmyRelicEffect.fields.kind.enum.indexOf(kind)).toString(16)}`,
   value: { game_id: 1, explorer_id: 201n, kind, rank, expires_at: BigInt(expiresAt) },
