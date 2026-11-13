@@ -1,26 +1,18 @@
 import { expect, test } from "bun:test";
 import { mkdtempSync, readFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join, resolve } from "node:path";
+import { join } from "node:path";
 import { BLITZ_SLOT_PREPARATION_SECONDS } from "../../../packages/value-ledger/src/blitz-timetable";
 import { slotLaunches } from "./blitz-split";
 
 test("the offline command compiles every player's game without shard credentials", () => {
   const out = join(mkdtempSync(join(tmpdir(), "blitz-dry-run-")), "launches.json");
-  const result = Bun.spawnSync(
-    [
-      process.execPath,
-      "--tsconfig-override",
-      "deploy/athanor/harness/tsconfig.json",
-      "deploy/athanor/harness/blitz-split.ts",
-      "--players",
-      "25",
-      "--dry-run",
-      "--out",
-      out,
-    ],
-    { cwd: resolve(import.meta.dir, "../../.."), env: { PATH: process.env.PATH }, stdout: "pipe", stderr: "pipe" },
-  );
+  const result = Bun.spawnSync([process.execPath, "blitz-split.ts", "--players", "25", "--dry-run", "--out", out], {
+    cwd: import.meta.dir,
+    env: { PATH: process.env.PATH },
+    stdout: "pipe",
+    stderr: "pipe",
+  });
   expect(result.stderr.toString()).toBe("");
   expect(result.exitCode).toBe(0);
   const report = JSON.parse(readFileSync(out, "utf8"));

@@ -23,7 +23,6 @@ export const gamePainting = (game: Pick<DirectoryGame, "mode">): Painting | unde
     case "blitz":
     case "eternum":
       return ageOf(game.mode).painting;
-      return ageOf("blitz").painting;
     default:
       return undefined;
   }
