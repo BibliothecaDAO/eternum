@@ -183,7 +183,7 @@ fn discover_relic(
     let site = IMapLogicDispatcher { contract_address: d.games }
         .occupancy(crate::geometry::tile_key(key.game_id, destination))
         .unwrap();
-    assert_eq!(site.category, crate::taxonomy::RUIN_CATEGORY);
+    assert_eq!(site.category, crate::taxonomy::RUIN_OCCUPIER);
     ResourceKey { game_id: key.game_id, entity_id: site.entity_id }
 }
 
