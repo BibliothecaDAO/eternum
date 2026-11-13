@@ -1,11 +1,10 @@
 pub use world_test_support::tests::village::*;
 
-
 #[test]
 #[feature("safe_dispatcher")]
 fn production_pass_is_atomic_single_use_and_army_grant_uses_block_time() {
     let (deployment, realm) = setup(false);
-    let ledger = IVillagesSafeDispatcher { contract_address: deployment.games };
+    let ledger = IVillagePassesSafeDispatcher { contract_address: deployment.games };
     let pass = VillagePassKey { game_id: 3, pass_id: 7 };
     assert!(!run(deployment, settle(realm, 7), 100));
     assert!(ledger.village_pass(pass).unwrap().is_none());
@@ -94,7 +93,7 @@ fn development_villages_skip_passes_and_have_no_six_per_realm_limit() {
     for _ in 0..7_u8 {
         assert!(run(deployment, settle(realm, 0), 100));
     }
-    let ledger = IVillagesDispatcher { contract_address: deployment.games };
+    let ledger = IVillagePassesDispatcher { contract_address: deployment.games };
     assert!(ledger.village_pass(VillagePassKey { game_id: 3, pass_id: 0 }).is_none());
 }
 
@@ -113,7 +112,7 @@ fn exhausted_geometry_records_rejection_and_keeps_the_pass() {
     let pass = register_pass(deployment, 9);
     let mut rejection_spy = spy_events();
     assert!(!run(deployment, settle(realm, 9), 100));
-    let ledger = IVillagesDispatcher { contract_address: deployment.games };
+    let ledger = IVillagePassesDispatcher { contract_address: deployment.games };
     assert!(ledger.village_pass(pass).unwrap().village_id == 0);
     let pool = ISettlementPoolDispatcher { contract_address: deployment.games };
     assert!(

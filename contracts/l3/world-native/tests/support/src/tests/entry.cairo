@@ -11,7 +11,7 @@ pub use crate::settlement::{
     EntryEntitlement, EntryKey, ISettlementEntrySafeDispatcher, ISettlementEntrySafeDispatcherTrait,
 };
 pub use crate::tests::state::{GameState, TroopObservationTrait};
-pub use crate::village::{IVillagesSafeDispatcher, IVillagesSafeDispatcherTrait, VillagePassKey};
+pub use crate::village::{IVillagePassesSafeDispatcher, IVillagePassesSafeDispatcherTrait, VillagePassKey};
 pub use super::{Deployment, authority, setup};
 pub fn set_operator(d: Deployment, operator: ContractAddress) {
     start_cheat_caller_address(d.games, authority());

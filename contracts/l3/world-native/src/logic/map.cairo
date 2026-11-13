@@ -238,7 +238,6 @@ pub mod MapState {
 
 #[starknet::contract]
 pub mod MapLogic {
-    use starknet::storage::{StoragePathEntry, StoragePointerReadAccess};
     use crate::geometry::{distance, spire_neighbor, tile_key};
     use crate::logic::map::MapState;
     use crate::logic::release::ReleaseState;
@@ -264,6 +263,14 @@ pub mod MapLogic {
         StoryEvent: crate::ownership::StoryEvent,
     }
 
+    #[abi(embed_v0)]
+    impl PresetStructures of crate::presets::IPresetStructures<ContractState> {
+        fn store_structure_preset(
+            ref self: ContractState, commitment: felt252, structures: crate::presets::StructurePreset,
+        ) {
+            crate::logic::preset_record::store_structures(commitment, structures);
+        }
+    }
     #[abi(embed_v0)]
     impl RuinEntitlements of crate::logic::ruins::IRuinEntitlements<ContractState> {
         fn ruin_disappeared(self: @ContractState, key: crate::resources::ResourceKey) -> bool {
@@ -350,124 +357,6 @@ pub mod MapLogic {
             crate::settlement::ITerrainDerivationDispatcherTrait::expedition_home_ring(
                 crate::logic::map::terrain(game_id), game_id, region_id, timestamp,
             )
-        }
-    }
-    #[abi(embed_v0)]
-    impl FrontierDiscovery of crate::expeditions::IFrontierDiscovery<ContractState> {
-        fn frontier_discovery_rules(
-            self: @ContractState, game_id: u32,
-        ) -> Option<crate::expeditions::FrontierDiscoveryRules> {
-            crate::logic::preset_record::for_game(game_id).discovery_rules.read()
-        }
-        fn shrine_reward(
-            self: @ContractState, key: crate::resources::ResourceKey,
-        ) -> Option<crate::relics::ShrineReward> {
-            crate::logic::shrines::read(key)
-        }
-
-        fn consume_frontier_site(ref self: ContractState, key: TileKey, explorer_id: u64) -> Option<u8> {
-            let occupied = crate::logic::map::occupancy(key).expect('missing site');
-            assert!(
-                !occupied.is_structure
-                    && (occupied.category == crate::taxonomy::SHRINE_OCCUPIER
-                        || occupied.category == crate::taxonomy::WELL_OCCUPIER),
-                "tile is not a shrine or well",
-            );
-            let point = if occupied.category == crate::taxonomy::SHRINE_OCCUPIER {
-                Some(
-                    crate::logic::shrines::claim(
-                        crate::resources::ResourceKey { game_id: key.game_id, entity_id: occupied.entity_id },
-                        crate::troops::ExplorerKey { game_id: key.game_id, explorer_id },
-                    ),
-                )
-            } else {
-                None
-            };
-            crate::logic::map::MapState::vacate(key, occupied.entity_id);
-            point
-        }
-        fn expedition_discovery(
-            self: @ContractState, key: crate::expeditions::ExpeditionDiscoveryKey,
-        ) -> Option<crate::expeditions::ExpeditionDiscovery> {
-            crate::logic::expeditions::discovery(key)
-        }
-        fn discover_frontier_tile(
-            ref self: ContractState,
-            key: TileKey,
-            explorer_id: u64,
-            seed: u256,
-            context: crate::commands::ActionContext,
-        ) -> crate::discovery::Discovery {
-            let context = crate::commands::execution_context(key.game_id, context);
-            let mut rules = self.frontier_discovery_rules(key.game_id).expect('missing discovery rules');
-            let explorer_key = crate::troops::ExplorerKey { game_id: key.game_id, explorer_id };
-            let home = crate::state::read().troops.explorers.entry((key.game_id, explorer_id)).owner.read();
-            assert!(home != 0, "missing exploring army");
-            let progress = crate::logic::progression::require(explorer_key);
-            let home_key = crate::resources::ResourceKey { game_id: key.game_id, entity_id: home };
-            let learned = crate::logic::research::require(home_key).learned;
-            if crate::research::tier(learned, crate::research::ROW_SHRINE) == 0 {
-                rules.shrine_bps = 0;
-            }
-            if crate::research::tier(learned, crate::research::ROW_WELL) == 0 {
-                rules.well_bps = 0;
-            }
-            let counter = crate::expeditions::ExpeditionDiscoveryKey {
-                game_id: key.game_id,
-                structure_id: home,
-                epoch: crate::expeditions::region_day(
-                    crate::troops::Coord { alt: key.alt, x: key.col, y: key.row },
-                    crate::logic::settlement::rules(key.game_id).spacing,
-                ),
-            };
-            let day = crate::logic::expeditions::discovery(counter)
-                .unwrap_or(crate::expeditions::ExpeditionDiscovery { empty_reveals: 0, ruin_cleared: false });
-            if !key.alt
-                && crate::rules::rule_enabled(context.rules.unbox(), crate::rules::DISCOVER_CHESTS)
-                && crate::discovery::frontier_chest(seed) {
-                let odds = crate::logic::expeditions::depth_rules_at(
-                    key.game_id, Coord { alt: key.alt, x: key.col, y: key.row },
-                )
-                    .chest;
-                let chest = crate::logic::lords_budget::candidate(key.game_id, odds, seed, context);
-                if crate::logic::lords_budget::try_reserve(key.game_id, chest, context) {
-                    let id = crate::entity_ids::allocate_home(key.game_id, home);
-                    crate::logic::lords_budget::store_site_chest(
-                        crate::resources::ResourceKey { game_id: key.game_id, entity_id: id }, chest,
-                    );
-                    crate::logic::map::MapState::occupy(key, id, crate::taxonomy::CHEST_OCCUPIER, false);
-                    crate::logic::expeditions::record_discovery(counter, crate::discovery::Discovery::Chest);
-                    return crate::discovery::Discovery::Chest;
-                }
-            }
-            let depth = crate::logic::expeditions::depth_at(
-                key.game_id, Coord { alt: key.alt, x: key.col, y: key.row },
-            );
-            let ruin = if crate::logic::expeditions::ruin_cleared_at(counter, depth) {
-                None
-            } else {
-                let odds = crate::logic::expeditions::depth_rules_at(
-                    key.game_id, Coord { alt: key.alt, x: key.col, y: key.row },
-                )
-                    .chest;
-                Some(crate::logic::lords_budget::candidate(key.game_id, odds, seed, context))
-            };
-            let (camp, rift, sanctuaries) = crate::progression::scouting_bonus(progress);
-            let result = crate::discovery::frontier(rules, camp, rift, sanctuaries, day.empty_reveals, ruin, seed);
-            crate::logic::expeditions::record_discovery(counter, result);
-            if let Some(category) = crate::discovery::tile_occupier(result) {
-                let id = crate::entity_ids::allocate_home(key.game_id, home);
-                if category == crate::taxonomy::SHRINE_OCCUPIER {
-                    let coord = Coord { alt: key.alt, x: key.col, y: key.row };
-                    crate::logic::shrines::discover(
-                        crate::resources::ResourceKey { game_id: key.game_id, entity_id: id },
-                        crate::logic::expeditions::depth_at(key.game_id, coord),
-                        seed,
-                    );
-                }
-                crate::logic::map::MapState::occupy(key, id, category, false);
-            }
-            result
         }
     }
 }

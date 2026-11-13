@@ -91,7 +91,7 @@ pub const COMMAND_ROUTES: [CommandRoute; 72] = [
     CommandRoute { logic: 16, selector: selector!("enter_depth"), items_offset: None, batch: false },
     CommandRoute { logic: 3, selector: selector!("research"), items_offset: None, batch: false },
     CommandRoute { logic: 15, selector: selector!("spend_skill_point"), items_offset: None, batch: false },
-    CommandRoute { logic: 15, selector: selector!("interact_site"), items_offset: None, batch: false },
+    CommandRoute { logic: 16, selector: selector!("interact_site"), items_offset: None, batch: false },
     CommandRoute { logic: 10, selector: selector!("refill_stamina"), items_offset: None, batch: false },
     CommandRoute { logic: 10, selector: selector!("withdraw_lords"), items_offset: None, batch: false },
 ];

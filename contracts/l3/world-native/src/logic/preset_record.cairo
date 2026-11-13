@@ -21,7 +21,7 @@ pub fn store(commitment: felt252, definition: crate::presets::PresetDefinition) 
         definition.rules.mode_rules,
     );
     crate::presets::IPresetStructuresDispatcherTrait::store_structure_preset(
-        crate::presets::IPresetStructuresLibraryDispatcher { class_hash: classes.construction },
+        crate::presets::IPresetStructuresLibraryDispatcher { class_hash: classes.map },
         commitment,
         definition.structures,
     );

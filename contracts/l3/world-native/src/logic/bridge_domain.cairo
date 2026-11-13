@@ -9,6 +9,8 @@ pub mod BridgeLogic {
     #[abi(embed_v0)]
     impl LedgerOperator = EntryAdministration::LedgerOperatorImpl<ContractState>;
     impl AdministrationInternal = EntryAdministration::InternalImpl<ContractState>;
+    #[abi(embed_v0)]
+    impl CampaignRecovery = EntryAdministration::CampaignRecoveryImpl<ContractState>;
     #[storage]
     #[allow(starknet::colliding_storage_paths)]
     struct Storage {

@@ -7,6 +7,7 @@ pub mod SettlementLogic {
     use crate::logic::release::ReleaseState;
     use crate::logic::settlement::SettlementState;
     use crate::logic::upgrades::UpgradeState;
+    use crate::logic::village::VillageState;
     use crate::realms::{ISeasonPlacementDispatcherTrait, ISeasonPlacementLibraryDispatcher};
     use crate::settlement::{
         EntryKey, ISettlementCreationDispatcherTrait, ISettlementCreationLibraryDispatcher, RealmCreation,
@@ -16,6 +17,9 @@ pub mod SettlementLogic {
     use crate::settlement::{PlayerEntry, RealmGrants, SettlementProgress, SettlementRules};
     #[cfg(feature: "test_support")]
     use crate::upgrades::{UpgradeLimits, UpgradeRecipe};
+    use crate::village::VillagePassKey;
+    #[cfg(feature: "test_support")]
+    use crate::village::{VillagePass, VillageRules};
     component!(path: ReleaseState, storage: release, event: ReleaseEvent);
     impl LifeInternal = ReleaseState::InternalImpl<ContractState>;
     component!(path: crate::logic::realms::RealmState, storage: realms, event: RealmEvent);
@@ -24,9 +28,30 @@ pub mod SettlementLogic {
     impl SettlementInternal = SettlementState::InternalImpl<ContractState>;
     component!(path: UpgradeState, storage: upgrades, event: UpgradeEvent);
     impl UpgradeInternal = UpgradeState::InternalImpl<ContractState>;
+    component!(path: VillageState, storage: villages, event: VillageEvent);
+    impl VillageInternal = VillageState::InternalImpl<ContractState>;
+    #[abi(embed_v0)]
+    impl VillagePasses of crate::village::IVillagePasses<ContractState> {
+        #[cfg(feature: "test_support")]
+        fn village_rules(self: @ContractState, game_id: u32) -> VillageRules {
+            self.villages.rules(game_id)
+        }
+        #[cfg(feature: "test_support")]
+        fn village_pass(self: @ContractState, key: VillagePassKey) -> Option<VillagePass> {
+            self.villages.pass(key)
+        }
+        fn register_village_pass(ref self: ContractState, key: VillagePassKey, owner: ContractAddress) {
+            assert!(key.game_id != 0, "game id zero is reserved");
+            crate::logic::entry::assert_ledger_operator();
+            self.villages.register(key, owner);
+            crate::entity_ids::reserve_homes(key.game_id, owner);
+        }
+    }
     #[storage]
     #[allow(starknet::colliding_storage_paths)]
     struct Storage {
+        #[substorage(v0)]
+        villages: VillageState::Storage,
         #[flat]
         pub data: crate::state::Storage,
         #[substorage(v0)]
@@ -41,6 +66,7 @@ pub mod SettlementLogic {
     #[event]
     #[derive(Drop, starknet::Event)]
     enum Event {
+        VillageEvent: VillageState::Event,
         UpgradeEvent: UpgradeState::Event,
         RowSet: crate::events::RowSet,
         ReleaseEvent: ReleaseState::Event,

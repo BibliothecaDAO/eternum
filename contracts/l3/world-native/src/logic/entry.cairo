@@ -7,16 +7,31 @@ pub fn assert_ledger_operator() {
     assert!(operator != 0.try_into().unwrap() && starknet::get_caller_address() == operator, "only ledger operator");
 }
 
+pub fn recover_flyer_days(
+    key: crate::settlement::EntryKey, home: u64, entitlement: crate::settlement::EntryEntitlement,
+) {
+    crate::entry::ICampaignRecoveryDispatcherTrait::recover_flyer_days(
+        crate::entry::ICampaignRecoveryLibraryDispatcher {
+            class_hash: crate::logic::release::classes(key.game_id).bridge.read(),
+        },
+        key,
+        home,
+        entitlement,
+    );
+}
+
 #[starknet::component]
 pub mod EntryAdministration {
     use starknet::ContractAddress;
     use starknet::storage::{
-        StorageMapReadAccess, StorageMapWriteAccess, StoragePointerReadAccess, StoragePointerWriteAccess,
+        StorageMapReadAccess, StorageMapWriteAccess, StoragePathEntry, StoragePointerReadAccess,
+        StoragePointerWriteAccess,
     };
     use crate::entry::{LaborGrant, LaborHome};
     use crate::logic::release::ReleaseState;
     use crate::logic::release::ReleaseState::InternalTrait as LifeInternal;
     use crate::resources::ResourceKey;
+    use crate::settlement::{EntryEntitlement, EntryKey};
 
     #[storage]
     #[allow(starknet::colliding_storage_paths)]
@@ -178,6 +193,52 @@ pub mod EntryAdministration {
         ) -> LaborGrant {
             super::assert_ledger_operator();
             self.grant_home_resources(home, day, account)
+        }
+    }
+    #[embeddable_as(CampaignRecoveryImpl)]
+    pub impl CampaignRecovery<
+        TContractState, +HasComponent<TContractState>, +Drop<TContractState>,
+    > of crate::entry::ICampaignRecovery<ComponentState<TContractState>> {
+        fn recover_flyer_days(
+            ref self: ComponentState<TContractState>, key: EntryKey, home: u64, entitlement: EntryEntitlement,
+        ) {
+            let timestamp = starknet::get_block_timestamp();
+            let game = crate::logic::game::game(key.game_id);
+            let preset = crate::logic::preset_record::for_game(key.game_id);
+            crate::game::assert_playing(game, timestamp);
+            let created_at = self.data.structures.structures.entry((key.game_id, home)).base.read().created_at;
+            let unit = preset.rules.day_unit_seconds.read();
+            let founded = core::cmp::max(created_at.into(), game.start_main_at);
+            let first = crate::days::day_of(game, unit, founded).index;
+            let today = crate::days::day_of(game, unit, timestamp).index;
+            let rules = preset.labor_rules.read().expect('labor is disabled');
+            let resource_context = crate::commands::ResourceContext {
+                production_start: if preset.rules.mode_rules.read() & crate::rules::PRODUCTION_START != 0 {
+                    game.start_main_at.try_into().unwrap()
+                } else {
+                    0
+                },
+                troop_capacity: preset.rules.capacity_config.read().troop_capacity,
+                spire_fee: preset.rules.spire_travel_essence_cost.read(),
+                delivery_tick: preset.rules.tick_config.read().delivery_tick_in_seconds,
+            };
+            let release_id = self.data.game_releases.read(key.game_id);
+            let resources = self.data.releases.read(release_id).classes.resources;
+            for day in first..today {
+                if self.data.entry.home_labor_grants.read((key.game_id, home, day)).is_some() {
+                    continue;
+                }
+                let (amount, essence) = crate::logic::entry::grant_home_amounts(
+                    crate::entry::LaborHome { game_id: key.game_id, home },
+                    Some(entitlement.metadata_2.try_into().unwrap()),
+                    rules,
+                    resource_context,
+                    resources,
+                );
+                crate::logic::entry::record_labor_grant(
+                    day, crate::entry::LaborGrant { game_id: key.game_id, account: key.owner, home, amount, essence },
+                );
+            }
         }
     }
     #[generate_trait]

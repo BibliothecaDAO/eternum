@@ -93,7 +93,7 @@ export const commandRoutes = [
   { name: "EnterDepth", logic: "movement", entrypoint: "enter_depth" },
   { name: "Research", logic: "construction", entrypoint: "research" },
   { name: "SpendSkillPoint", logic: "relics", entrypoint: "spend_skill_point" },
-  { name: "InteractSite", logic: "relics", entrypoint: "interact_site" },
+  { name: "InteractSite", logic: "movement", entrypoint: "interact_site" },
   { name: "RefillStamina", logic: "prizes", entrypoint: "refill_stamina" },
   { name: "WithdrawLords", logic: "prizes", entrypoint: "withdraw_lords" },
 ];

@@ -1,6 +1,5 @@
 pub use world_test_support::tests::releases::*;
 
-
 #[test]
 #[feature("safe_dispatcher")]
 fn fresh_shard_uses_the_published_release_without_running_its_upgrade_migration() {
@@ -299,4 +298,44 @@ fn creation_release_survives_hotfixes_and_retried_launches() {
     }
     assert_eq!(registrar.create_game(params), existing);
     assert_eq!(interact_with_state(d.games, || crate::state::read().game_creation_releases.read(existing)), 2);
+}
+
+#[test]
+fn village_pass_registration_keeps_its_owner_in_the_games_pinned_release() {
+    let d = world_test_support::tests::setup_with_host(false, "StructuresLogic", "TroopsLogic", "Games");
+    super::entry::set_operator(d, authority());
+    start_cheat_caller_address(d.games, authority());
+    let registrar = IRegistrarDispatcher { contract_address: d.games };
+    registrar.register_preset(1, super::registrar::definition(true));
+    let game_id = registrar.create_game(super::registrar::params(true));
+    let releases = IReleasesDispatcher { contract_address: d.games };
+    let original = releases.release(1);
+    let without_village_passes = declare_logic("TroopFixture");
+    releases
+        .register_release(
+            2,
+            Release {
+                classes: games_storage::release::LogicClasses { season: without_village_passes, ..original.classes },
+                ..original,
+            },
+        );
+    releases.apply_release(game_id, 2);
+    releases
+        .register_release(
+            3,
+            Release {
+                classes: games_storage::release::LogicClasses {
+                    settlement: without_village_passes, ..original.classes,
+                },
+                ..original,
+            },
+        );
+    let key = crate::village::VillagePassKey { game_id, pass_id: 1 };
+    crate::village::IVillagePassesDispatcherTrait::register_village_pass(
+        crate::village::IVillagePassesDispatcher { contract_address: d.games }, key, d.actor,
+    );
+    let stored = interact_with_state(d.games, || crate::state::read().village.village_passes.read((game_id, 1)));
+    assert_eq!(stored, Some(crate::village::VillagePass { owner: d.actor, village_id: 0 }));
+    assert_eq!(releases.game_release(game_id), 2);
+    assert_eq!(releases.current_release(), 3);
 }

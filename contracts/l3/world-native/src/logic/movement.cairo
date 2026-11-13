@@ -6,6 +6,7 @@ pub mod MovementLogic {
     use crate::game::{IPointsDispatcherTrait, IPointsLibraryDispatcher};
     use crate::geometry::{neighbor, spire_neighbor, tile_key};
     use crate::logic::release::ReleaseState;
+    use crate::logic::relics::RelicState;
     use crate::logic::troops::TroopState;
     use crate::map::{BIOME_SCALE, BYTE_RANGE, IMapLogicDispatcherTrait};
     use crate::resources::{IResourceOperationsDispatcherTrait, ResourceKey};
@@ -15,15 +16,21 @@ pub mod MovementLogic {
     impl LifeInternal = ReleaseState::InternalImpl<ContractState>;
     use crate::logic::troops::troop_helpers::TroopHelpersTrait;
     impl Helpers = crate::logic::troops::troop_helpers::TroopHelpers<ContractState>;
+    component!(path: RelicState, storage: relics, event: RelicEvent);
+    #[abi(embed_v0)]
+    impl FrontierSites = RelicState::FrontierSitesImpl<ContractState>;
     #[storage]
     #[allow(starknet::colliding_storage_paths)]
     struct Storage {
+        #[substorage(v0)]
+        relics: RelicState::Storage,
         #[substorage(v0)]
         release: ReleaseState::Storage,
     }
     #[event]
     #[derive(Drop, starknet::Event)]
     enum Event {
+        RelicEvent: RelicState::Event,
         GuardEvent: crate::logic::guards::GuardState::Event,
         ReleaseEvent: ReleaseState::Event,
         TroopEvent: TroopState::Event,
@@ -79,7 +86,7 @@ pub mod MovementLogic {
                     if rules.day_unit_seconds != 0 {
                         crate::expeditions::IFrontierDiscoveryDispatcherTrait::discover_frontier_tile(
                             crate::expeditions::IFrontierDiscoveryLibraryDispatcher {
-                                class_hash: self.release.classes(game_id).map.read(),
+                                class_hash: self.release.classes(game_id).construction.read(),
                             },
                             tile,
                             command.explorer_id,

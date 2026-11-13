@@ -15,8 +15,8 @@ pub use crate::structures::IStructureOperationsDispatcher;
 pub use crate::tests::state::{MapObservationTrait, ResourceObservationTrait, StructureObservationTrait};
 pub use crate::troops::Coord;
 pub use crate::village::{
-    IVillagesDispatcher, IVillagesDispatcherTrait, IVillagesSafeDispatcher, IVillagesSafeDispatcherTrait, SettleVillage,
-    VillagePassKey, VillageRules,
+    IVillagePassesDispatcher, IVillagePassesDispatcherTrait, IVillagePassesSafeDispatcher,
+    IVillagePassesSafeDispatcherTrait, SettleVillage, VillagePassKey, VillageRules,
 };
 pub use super::{Deployment, authority, context, play_fixture};
 pub fn village_rules() -> VillageRules {
@@ -96,7 +96,7 @@ pub fn settle(realm: u64, pass_id: u16) -> Command {
 pub fn register_pass(deployment: Deployment, pass_id: u16) -> VillagePassKey {
     let key = VillagePassKey { game_id: 3, pass_id };
     start_cheat_caller_address(deployment.games, authority());
-    IVillagesDispatcher { contract_address: deployment.games }.register_village_pass(key, deployment.actor);
+    IVillagePassesDispatcher { contract_address: deployment.games }.register_village_pass(key, deployment.actor);
     stop_cheat_caller_address(deployment.games);
     key
 }
@@ -113,7 +113,7 @@ pub fn assert_blitz_village(mode: SettlementMode) {
     );
     let pass = register_pass(deployment, 1);
     assert!(run(deployment, settle(realm, 1), 100));
-    let ledger = IVillagesDispatcher { contract_address: deployment.games };
+    let ledger = IVillagePassesDispatcher { contract_address: deployment.games };
     assert!(ledger.village_pass(pass).unwrap().village_id != 0);
     assert!(!run(deployment, settle(realm, 1), 100));
     let progress = crate::settlement::ISettlementViewsDispatcherTrait::settlement_progress(
