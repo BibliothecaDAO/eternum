@@ -8,6 +8,7 @@ pub mod ConstructionLogic {
     use crate::logic::buildings::BuildingState;
     use crate::logic::release::ReleaseState;
     use crate::logic::structures::StructureState;
+    use crate::map::TileKey;
     use crate::ownership::{Story, StoryEvent};
     use crate::resources::{IResourceOperationsDispatcherTrait, IResourceOperationsLibraryDispatcher, ResourceKey};
     use crate::rules::RESOURCE_PRECISION;
@@ -17,14 +18,7 @@ pub mod ConstructionLogic {
     impl BuildingInternal = BuildingState::InternalImpl<ContractState>;
     component!(path: ReleaseState, storage: release, event: ReleaseEvent);
     impl LifeInternal = ReleaseState::InternalImpl<ContractState>;
-    #[abi(embed_v0)]
-    impl PresetStructures of crate::presets::IPresetStructures<ContractState> {
-        fn store_structure_preset(
-            ref self: ContractState, commitment: felt252, structures: crate::presets::StructurePreset,
-        ) {
-            crate::logic::preset_record::store_structures(commitment, structures);
-        }
-    }
+
     #[storage]
     #[allow(starknet::colliding_storage_paths)]
     struct Storage {
@@ -60,6 +54,64 @@ pub mod ConstructionLogic {
         }
     }
 
+    #[abi(embed_v0)]
+    impl DiscoveryRoll of crate::discovery::IDiscoveryRoll<ContractState> {
+        fn roll_expedition_discovery(
+            ref self: ContractState,
+            key: crate::map::TileKey,
+            explorer_id: u64,
+            seed: u256,
+            context: crate::commands::ActionContext,
+        ) -> crate::discovery::Discovery {
+            crate::logic::discovery::roll(key, explorer_id, seed, context)
+        }
+    }
+
+    #[abi(embed_v0)]
+    impl FrontierDiscovery of crate::expeditions::IFrontierDiscovery<ContractState> {
+        fn expedition_spire(
+            self: @ContractState, key: crate::spires::ExpeditionSpireKey,
+        ) -> Option<crate::spires::ExpeditionSpire> {
+            crate::logic::spires::read(key)
+        }
+        fn frontier_discovery_rules(
+            self: @ContractState, game_id: u32,
+        ) -> Option<crate::expeditions::FrontierDiscoveryRules> {
+            crate::logic::preset_record::for_game(game_id).discovery_rules.read()
+        }
+        fn shrine_reward(
+            self: @ContractState, key: crate::resources::ResourceKey,
+        ) -> Option<crate::relics::ShrineReward> {
+            crate::logic::shrines::read(key)
+        }
+
+        fn consume_frontier_site(ref self: ContractState, key: TileKey, explorer_id: u64) -> Option<u8> {
+            let occupied = crate::logic::map::occupancy(key).expect('missing site');
+            assert!(
+                !occupied.is_structure
+                    && (occupied.category == crate::taxonomy::SHRINE_OCCUPIER
+                        || occupied.category == crate::taxonomy::WELL_OCCUPIER),
+                "tile is not a shrine or well",
+            );
+            let point = if occupied.category == crate::taxonomy::SHRINE_OCCUPIER {
+                Some(
+                    crate::logic::shrines::claim(
+                        crate::resources::ResourceKey { game_id: key.game_id, entity_id: occupied.entity_id },
+                        crate::troops::ExplorerKey { game_id: key.game_id, explorer_id },
+                    ),
+                )
+            } else {
+                None
+            };
+            crate::logic::map::MapState::vacate(key, occupied.entity_id);
+            point
+        }
+        fn expedition_discovery(
+            self: @ContractState, key: crate::expeditions::ExpeditionDiscoveryKey,
+        ) -> Option<crate::expeditions::ExpeditionDiscovery> {
+            crate::logic::expeditions::discovery(key)
+        }
+    }
     #[abi(embed_v0)]
     impl BuildingCommands of crate::buildings::IBuildingCommands<ContractState> {
         fn create_building(

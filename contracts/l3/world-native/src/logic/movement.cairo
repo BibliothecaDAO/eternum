@@ -6,6 +6,7 @@ pub mod MovementLogic {
     use crate::game::{IPointsDispatcherTrait, IPointsLibraryDispatcher};
     use crate::geometry::{neighbor, spire_neighbor, tile_key};
     use crate::logic::release::ReleaseState;
+    use crate::logic::relics::RelicState;
     use crate::logic::troops::TroopState;
     use crate::map::{BIOME_SCALE, BYTE_RANGE, IMapLogicDispatcherTrait};
     use crate::resources::{IResourceOperationsDispatcherTrait, ResourceKey};
@@ -15,15 +16,21 @@ pub mod MovementLogic {
     impl LifeInternal = ReleaseState::InternalImpl<ContractState>;
     use crate::logic::troops::troop_helpers::TroopHelpersTrait;
     impl Helpers = crate::logic::troops::troop_helpers::TroopHelpers<ContractState>;
+    component!(path: RelicState, storage: relics, event: RelicEvent);
+    #[abi(embed_v0)]
+    impl FrontierSites = RelicState::FrontierSitesImpl<ContractState>;
     #[storage]
     #[allow(starknet::colliding_storage_paths)]
     struct Storage {
+        #[substorage(v0)]
+        relics: RelicState::Storage,
         #[substorage(v0)]
         release: ReleaseState::Storage,
     }
     #[event]
     #[derive(Drop, starknet::Event)]
     enum Event {
+        RelicEvent: RelicState::Event,
         GuardEvent: crate::logic::guards::GuardState::Event,
         ReleaseEvent: ReleaseState::Event,
         TroopEvent: TroopState::Event,
@@ -32,18 +39,6 @@ pub mod MovementLogic {
         OwnershipDeleted: crate::events::RowDeleted,
     }
 
-    #[abi(embed_v0)]
-    impl DiscoveryRoll of crate::discovery::IDiscoveryRoll<ContractState> {
-        fn roll_expedition_discovery(
-            ref self: ContractState,
-            key: crate::map::TileKey,
-            explorer_id: u64,
-            seed: u256,
-            context: crate::commands::ActionContext,
-        ) -> crate::discovery::Discovery {
-            crate::logic::discovery::roll(key, explorer_id, seed, context)
-        }
-    }
 
     #[abi(embed_v0)]
     impl Exploration of crate::commands::IExplore<ContractState> {
@@ -91,14 +86,20 @@ pub mod MovementLogic {
                     .register_exploration(game_id, actor, crate::commands::action_context(context));
                 discovery =
                     if rules.day_unit_seconds != 0 {
-                        DiscoveryRoll::roll_expedition_discovery(
-                            ref self, tile, command.explorer_id, seed, crate::commands::action_context(context),
+                        crate::discovery::IDiscoveryRollDispatcherTrait::roll_expedition_discovery(
+                            crate::discovery::IDiscoveryRollLibraryDispatcher {
+                                class_hash: self.release.classes(game_id).construction.read(),
+                            },
+                            tile,
+                            command.explorer_id,
+                            seed,
+                            crate::commands::action_context(context),
                         )
                     } else {
                         if !destination.alt {
                             crate::relics::IRelicMapDispatcherTrait::discover_relic_chest(
                                 crate::relics::IRelicMapLibraryDispatcher {
-                                    class_hash: self.release.classes(game_id).map.read(),
+                                    class_hash: self.release.classes(game_id).raid.read(),
                                 },
                                 game_id,
                                 explorer.owner,
@@ -151,7 +152,7 @@ pub mod MovementLogic {
             crate::logic::troops::TroopState::save(key, crate::troops::ExplorerRecordTrait::into_record(explorer));
 
             let extraction = crate::exploration_rewards::IExtractionLibraryDispatcher {
-                class_hash: self.release.classes(game_id).map.read(),
+                class_hash: self.release.classes(game_id).prizes.read(),
             };
             if discovery == crate::discovery::Discovery::Spire && rules.day_unit_seconds == 0 {
                 crate::exploration_rewards::IExtractionDispatcherTrait::raise_dormant_spire(

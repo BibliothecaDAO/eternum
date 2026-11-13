@@ -27,6 +27,13 @@ pub trait IHomeGrants<T> {
     fn labor_grant(self: @T, home: LaborHome, day: u64) -> Option<LaborGrant>;
 }
 
+#[starknet::interface]
+pub trait ICampaignRecovery<T> {
+    fn recover_flyer_days(
+        ref self: T, key: crate::settlement::EntryKey, home: u64, entitlement: crate::settlement::EntryEntitlement,
+    );
+}
+
 // One game-day grant belongs to the home's immutable entry source.
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]
 pub struct LaborHome {
