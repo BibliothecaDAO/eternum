@@ -2,6 +2,7 @@ import { CallData } from "starknet";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { gamesAbi, response } from "../../../packages/value-ledger/test-support/abi";
 import { ledgerAbi } from "../../../packages/value-ledger/test-support/ledger-abi";
+import { memoryFinalFacts } from "./final-facts";
 import { publishFrontierPools } from "./frontier-pools";
 
 const rpc = vi.hoisted(() => ({ call: vi.fn(), ledger: vi.fn(), execute: vi.fn(), receipt: vi.fn(), now: 50 }));
@@ -28,6 +29,7 @@ vi.mock("starknet", async (original) => ({
     return { execute: rpc.execute };
   }),
 }));
+let finals = memoryFinalFacts();
 const target = {
   rpcUrl: "https://shard.test",
   chainId: "0x1",
@@ -37,7 +39,7 @@ const target = {
   privateKey: "0x1",
 };
 const publish = () =>
-  publishFrontierPools(target, "https://herald.test", { rpcUrl: "https://ledger.test", address: "0x30" });
+  publishFrontierPools(target, "https://herald.test", { rpcUrl: "https://ledger.test", address: "0x30", finals });
 let published: bigint | null;
 let lag: boolean;
 let reverted: boolean;
@@ -102,6 +104,7 @@ const snapshot = (id: number) => ({
   ],
 });
 beforeEach(() => {
+  finals = memoryFinalFacts();
   vi.clearAllMocks();
   rpc.now = 50;
   published = null;
@@ -213,6 +216,19 @@ it("checks published custody without invoking when its immutable total matches",
   await publish();
   expect(rpc.ledger).toHaveBeenCalledTimes(2);
   expect(rpc.execute).not.toHaveBeenCalled();
+});
+it("reads a published pool from the ledger once, not on every later tick", async () => {
+  snapshotPool = "123";
+  await publish();
+  await publish();
+  await publish();
+  expect(rpc.ledger).toHaveBeenCalledTimes(2);
+});
+it("keeps checking a pool that differs from the ledger until it matches", async () => {
+  snapshotPool = "122";
+  await expect(publish()).rejects.toThrow("frontier_pool_differs_from_ledger");
+  await expect(publish()).rejects.toThrow("frontier_pool_differs_from_ledger");
+  expect(rpc.ledger).toHaveBeenCalledTimes(4);
 });
 it.each(["start", "end", "seed", "empty", "ended"])("never publishes invalid or ended funding: %s", async (kind) => {
   if (kind === "start") start = 11;

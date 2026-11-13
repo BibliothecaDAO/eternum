@@ -2,6 +2,7 @@ vi.mock("../../../packages/value-ledger/src/shard-abi", () => ({
   readShardAbi: async () => [{ type: "interface", items: [{ name: "deposit_source" }] }],
 }));
 import { beforeEach, expect, it, vi } from "vitest";
+import { memoryFinalFacts } from "./final-facts";
 import { sweepFrontierLords, frontierSettlementEvidence } from "./frontier-sweep";
 import { ResourcesIds, RESOURCE_PRECISION } from "@bibliothecadao/types";
 import type { ConfirmedSnapshot } from "./shard-snapshot";
@@ -45,10 +46,9 @@ const target = {
   accountAddress: "0x20",
   privateKey: "0x1",
 };
-const ledger = { rpcUrl: "https://ledger.test", address: "0x30" };
+let ledger = { rpcUrl: "https://ledger.test", address: "0x30", finals: memoryFinalFacts() };
 const wei = (amount: number) => String(BigInt(amount) * 10n ** 18n);
-const run = () =>
-  sweepFrontierLords(target, "https://herald.test", { rpcUrl: "https://ledger.test", address: "0x30" }, calls.settle);
+const run = () => sweepFrontierLords(target, "https://herald.test", ledger, calls.settle);
 const balance = (entity_id: number, amount: number, resource_type = ResourcesIds.Lords) => ({
   entity_id,
   balance: String(BigInt(amount) * BigInt(RESOURCE_PRECISION)),
@@ -70,6 +70,7 @@ const rows = (model: string, values: Record<string, unknown>[]) => {
 };
 beforeEach(() => {
   vi.resetAllMocks();
+  ledger = { ...ledger, finals: memoryFinalFacts() };
   calls.ledgerHead.mockResolvedValue({ number: 10, time: 100 });
   state = {
     confirmed_block: 10,
@@ -481,7 +482,8 @@ it("continues principal sweeps and retries payments after reward closure and its
   );
   expect(pay).toHaveBeenCalledWith({ chainId: "0x1", gameId: 7, account: "9", amount: "20" });
   await sweepFrontierLords(target, "https://herald.test", ledger, calls.settle, pay);
-  expect(pay).toHaveBeenCalledTimes(4);
+  expect(pay).toHaveBeenCalledTimes(3);
+  expect(pay.mock.calls.filter(([claim]) => claim.account === "9")).toHaveLength(1);
   expect(calls.settle).not.toHaveBeenCalled();
 });
 

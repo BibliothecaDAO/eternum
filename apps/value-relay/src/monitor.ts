@@ -46,6 +46,8 @@ export interface MonitorProgress {
    * ledger rewind that replays the same evidence, and a rewrite that changes it is checked again.
    */
   cleared?: string[];
+  /** Shard pools already matched to the ledger's: a season is funded once, so a matched pool is not read again. */
+  matchedPools?: string[];
   halted: string | null;
   cursors?: Partial<Record<"reportedClaims" | "paidClaims" | "postedResults", AuditCursor>>;
 }
@@ -90,13 +92,17 @@ const checkConservation = (ports: MonitorPorts, store: MonitorStore) =>
         return `lords_conservation:${balance.gameId}:${balance.confirmedBlock}`;
       }
       if (BigInt(balance.pool) === 0n) continue;
+      const matched = `${balance.chainId}:${balance.gameId}:${balance.pool}`;
+      if (progress.matchedPools?.includes(matched)) continue;
       const deposit = yield* Effect.result(ports.ledger.frontierPool(balance.chainId, balance.gameId));
       if (Result.isFailure(deposit)) {
         unavailable ??= deposit.failure;
         continue;
       }
       const poolRow = `conservation:pool:${balance.chainId}:${balance.gameId}:${balance.pool}:${deposit.success}`;
-      if (BigInt(balance.pool) !== BigInt(deposit.success) / 10n ** 18n && !isCleared(progress, poolRow)) {
+      if (BigInt(balance.pool) === BigInt(deposit.success) / 10n ** 18n) {
+        yield* relayOperation("remember matched pool", () => rememberMatchedPool(store, matched));
+      } else if (!isCleared(progress, poolRow)) {
         yield* recordFault(store, { row: poolRow, fact: poolRow });
         return `frontier_pool_mismatch:${balance.chainId}:${balance.gameId}`;
       }
@@ -104,6 +110,11 @@ const checkConservation = (ports: MonitorPorts, store: MonitorStore) =>
     if (unavailable) return yield* Effect.fail(unavailable);
     return null;
   });
+
+const rememberMatchedPool = async (store: MonitorStore, matched: string) => {
+  const current = await store.load();
+  await store.save({ ...current, matchedPools: [...(current.matchedPools ?? []), matched] });
+};
 
 /** Missing evidence is retried; only sustained unavailability becomes a stop condition. */
 const verifyReport = (check: RelayEffect<Mismatch | null>, reason: string): RelayEffect<Mismatch | null> =>

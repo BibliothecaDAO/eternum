@@ -41,6 +41,7 @@ import { settleFrontier } from "./frontier-settlement";
 import { frontierReceiptBindings } from "./frontier-binding";
 import approvedExtension from "../../../config/source/frontier/extension.json";
 import { readFrontierExtension, requireExtendedFrontier } from "./frontier-extension";
+import { durableFinalFacts } from "./final-facts";
 import { shardWithdrawalPorts } from "./shard-withdrawals";
 import { chestLedgerReads, finishChestOnLedger } from "./chest-ledger";
 import { DurableChestStore, finishChestNow, finishRequestedChests } from "./chests";
@@ -274,12 +275,7 @@ export class ValueRelay extends DurableObject<RelayEnv> {
               getAnchor: (key) => this.ctx.storage.get(key),
               putAnchor: (key, value) => this.ctx.storage.put(key, value),
             },
-            async (account) => {
-              const realmsId = await this.env.IDENTITY.realmsIdForAccount(account);
-              const wallet = realmsId ? await this.env.IDENTITY.linkedWallet(realmsId) : null;
-              if (!wallet) throw new Error("principal_wallet_unavailable");
-              return wallet;
-            },
+            (account) => this.principalWallet(account),
           ),
         ),
         [request.shard],
@@ -293,7 +289,11 @@ export class ValueRelay extends DurableObject<RelayEnv> {
       accountAddress: relayAccountAddress(shard),
       privateKey: this.env.SHARD_LEDGER_OPERATOR_PRIVATE_KEY,
     };
-    const ledger = { rpcUrl: this.env.L2_RPC_URL, address: ledgerAddress(this.env.ENVIRONMENT) };
+    const ledger = {
+      rpcUrl: this.env.L2_RPC_URL,
+      address: ledgerAddress(this.env.ENVIRONMENT),
+      finals: durableFinalFacts(this.ctx.storage),
+    };
     let unavailable: unknown;
     for (const publish of [publishFrontierPools, awardFrontierPrizes]) {
       try {
@@ -315,7 +315,15 @@ export class ValueRelay extends DurableObject<RelayEnv> {
     }
     if (unavailable) throw unavailable;
   }
+  /** Identity answers for free: a principal whose player has no wallet is not read on the ledger. */
+  private async principalWallet(account: string) {
+    const realmsId = await this.env.IDENTITY.realmsIdForAccount(account);
+    const wallet = realmsId ? await this.env.IDENTITY.linkedWallet(realmsId) : null;
+    if (!wallet) throw new Error("principal_wallet_unavailable");
+    return wallet;
+  }
   private async payPrincipal(claim: PrincipalSweep) {
+    await this.principalWallet(claim.account);
     await ledgerOf(this.env).depositMutation({
       kind: "principal",
       shard: claim.chainId,
