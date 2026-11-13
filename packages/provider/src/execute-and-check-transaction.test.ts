@@ -16,7 +16,7 @@ describe("provider submission boundary", () => {
   it("refuses a command before the shard's play submission is configured", async () => {
     const execute = vi.fn();
     const signer = { address: "0x111", execute } as unknown as AccountInterface;
-    await expect(makeProvider().claim_wonder_points({ signer, value: 1 })).rejects.toThrow("is not configured");
+    await expect(makeProvider().upgrade_realm({ signer, realm_entity_id: 1 })).rejects.toThrow("is not configured");
     expect(execute).not.toHaveBeenCalled();
   });
 
@@ -49,9 +49,9 @@ describe("provider submission boundary", () => {
     provider.on("transactionComplete", complete);
     provider.on("transactionFailed", failed);
     const signer = { address: "0x111" } as AccountInterface;
-    const first = provider.claim_wonder_points({ signer, value: 1 }).catch(() => undefined);
-    const next = provider.claim_wonder_points({ signer, value: 2 });
-    const other = provider.claim_wonder_points({ signer: { address: "0x222" } as AccountInterface, value: 3 });
+    const first = provider.upgrade_realm({ signer, realm_entity_id: 1 }).catch(() => undefined);
+    const next = provider.upgrade_realm({ signer, realm_entity_id: 2 });
+    const other = provider.upgrade_realm({ signer: { address: "0x222" } as AccountInterface, realm_entity_id: 3 });
     await vi.waitFor(() => expect(submit).toHaveBeenCalledTimes(3));
     expect(submit.mock.calls.map(([actor]) => (actor as AccountInterface).address)).toEqual([
       "0x111",
@@ -89,7 +89,7 @@ describe("provider submission boundary", () => {
     }));
     const failed = vi.fn();
     provider.on("transactionFailed", failed);
-    provider.claim_wonder_points({ signer: { address: "0x111" } as AccountInterface, value: 1 }).catch(() => undefined);
+    provider.upgrade_realm({ signer: { address: "0x111" } as AccountInterface, realm_entity_id: 1 }).catch(() => undefined);
     await vi.waitFor(() => expect(failed).toHaveBeenCalledOnce());
     expect(failed.mock.calls[0][0]).toMatchObject({
       stage: "revert",
@@ -114,8 +114,8 @@ describe("provider submission boundary", () => {
     const completed = vi.fn();
     provider.on("transactionComplete", completed);
     const signer = { address: "0x111" } as AccountInterface;
-    const first = provider.claim_wonder_points({ signer, value: 1 });
-    const next = provider.claim_wonder_points({ signer, value: 2 });
+    const first = provider.upgrade_realm({ signer, realm_entity_id: 1 });
+    const next = provider.upgrade_realm({ signer, realm_entity_id: 2 });
     await vi.advanceTimersByTimeAsync(299);
     expect(submit).toHaveBeenCalledTimes(2);
     expect(completed).not.toHaveBeenCalled();
@@ -146,8 +146,8 @@ describe("provider submission boundary", () => {
     provider.on("transactionComplete", completed);
     const signer = { address: "0x111" } as AccountInterface;
 
-    const first = provider.claim_wonder_points({ signer, value: 1 });
-    const next = provider.claim_wonder_points({ signer, value: 2 });
+    const first = provider.upgrade_realm({ signer, realm_entity_id: 1 });
+    const next = provider.upgrade_realm({ signer, realm_entity_id: 2 });
     await vi.advanceTimersByTimeAsync(9_000);
     expect(checking).not.toHaveBeenCalled();
     await vi.advanceTimersByTimeAsync(1_000);
@@ -175,7 +175,7 @@ describe("provider submission boundary", () => {
     const failed = vi.fn();
     provider.on("transactionFailed", failed);
 
-    await provider.claim_wonder_points({ signer: { address: "0x111" } as AccountInterface, value: 1 });
+    await provider.upgrade_realm({ signer: { address: "0x111" } as AccountInterface, realm_entity_id: 1 });
     await vi.waitFor(() => expect(failed).toHaveBeenCalledOnce());
     expect(failed.mock.calls[0][0]).toMatchObject({ failureKind: "not_sent", transactionHash: "0x9" });
   });
@@ -202,8 +202,8 @@ describe("provider submission boundary", () => {
     provider.on("transactionFailed", failed);
     provider.on("transactionComplete", completed);
     const signer = { address: "0x111" } as AccountInterface;
-    const slow = provider.claim_wonder_points({ signer, value: 1 });
-    const next = provider.claim_wonder_points({ signer, value: 2 });
+    const slow = provider.upgrade_realm({ signer, realm_entity_id: 1 });
+    const next = provider.upgrade_realm({ signer, realm_entity_id: 2 });
     await vi.advanceTimersByTimeAsync(70_000);
     expect(submit).toHaveBeenCalledTimes(2);
     admit({ transaction_hash: "0xabc" });
@@ -230,7 +230,7 @@ it("records the submit classification once and keeps the original cause", async 
   const failed = vi.fn();
   provider.on("transactionFailed", failed);
   await expect(
-    provider.claim_wonder_points({ signer: { address: "0x111" } as AccountInterface, value: 1 }),
+    provider.upgrade_realm({ signer: { address: "0x111" } as AccountInterface, realm_entity_id: 1 }),
   ).rejects.toMatchObject({
     _tag: "TransactionFailure",
     cause,

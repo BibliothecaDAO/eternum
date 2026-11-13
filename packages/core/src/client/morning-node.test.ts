@@ -140,7 +140,7 @@ const scenario = async (
         ),
     );
   const click = (value: number) =>
-    provider.claim_wonder_points({ signer: account, value }).then(
+    provider.upgrade_realm({ signer: account, realm_entity_id: value }).then(
       () => undefined,
       (error) =>
         timeline.push(`${at()}  click ${value} REJECTED at send: ${String(error?.message ?? error).slice(0, 80)}`),
