@@ -100,7 +100,7 @@ export default {fetch(){return new Response(null,{status:404})}};`,
       ],
     });
     try {
-      await (await mf.getWorker("relay")).scheduled({ cron: "* * * * *", scheduledTime: 0 });
+      await (await mf.getWorker("relay")).scheduled({ cron: "* * * * *", scheduledTime: new Date(0) });
       let health: { shards?: { chainId: string; value?: { reason?: string } }[] } = {};
       const deadline = Date.now() + 10_000;
       while (Date.now() < deadline) {
