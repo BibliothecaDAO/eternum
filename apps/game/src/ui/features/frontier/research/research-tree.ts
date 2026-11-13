@@ -4,6 +4,7 @@ import {
   purchasesOfGate,
   RESEARCH_TREE,
   SHRINE,
+  SPIRE_WORDS,
   STAMINA,
   type RankedWords,
   type Tier,
@@ -50,6 +51,7 @@ export interface RealmResearchFacts {
   /** A row's tier's price, as the game's preset sets it. */
   price: (row: number, tier: number) => { essence: number; labor: number };
   board: {
+    town: boolean;
     outputStepBps: number;
     storageStepBps: number;
     populationStepBps: number;
@@ -277,7 +279,7 @@ export const readResearchTree = (realm: RealmResearchFacts): TreeNode[] => {
     const mark = (side: number) => (side === 0 ? makeMark : otherMark);
     return {
       sides: (): SideEffect[] =>
-        [make, other].map((side, index) => ({
+        (realm.board.town && row <= research.ROW_WORKSHOP ? [make] : [make, other]).map((side, index) => ({
           choice: index,
           icon: mark(index),
           name: side.words[0],
@@ -411,11 +413,19 @@ export const readResearchTree = (realm: RealmResearchFacts): TreeNode[] => {
     ROW_SCOUTS_LODGE: [trainingNode(TRAINING.Scouting)],
     ROW_HEARTH: [trainingNode(TRAINING.Homecoming)],
     ROW_SHRINE: [
-      castleNode("shrine", ROWS.shrine, SHRINE, "shrine", {
-        line: RESEARCH_TREE.armiesFind(SHRINE),
-        now: "—",
-        next: RESEARCH_TREE.each("1 skill point"),
-      }),
+      castleNode(
+        "shrine",
+        ROWS.shrine,
+        SHRINE,
+        "shrine",
+        {
+          line: RESEARCH_TREE.armiesFind(SHRINE),
+          now: "—",
+          next: RESEARCH_TREE.each("1 skill point"),
+        },
+        1,
+        realm.board.town ? [{ kind: "tier", met: learned(ROWS.well).tier === 1, node: WELL, icon: "well" }] : [],
+      ),
     ],
     ROW_WELL: [
       castleNode("well", ROWS.well, WELL, "well", {
@@ -424,10 +434,11 @@ export const readResearchTree = (realm: RealmResearchFacts): TreeNode[] => {
         next: RESEARCH_TREE.each(`${formatExact(realm.wellRefillPercent)}% max ${STAMINA}`),
       }),
     ],
-    ROW_DEPTH: ([1, 2, 3] as const).map((depth) => {
-      const name = depthName(depth);
-      const before: Need[] =
-        depth === 1
+    ROW_DEPTH: (realm.board.town ? ([1] as const) : ([1, 2, 3] as const)).map((depth) => {
+      const name = realm.board.town ? SPIRE_WORDS.title : depthName(depth);
+      const before: Need[] = realm.board.town
+        ? [{ kind: "tier", met: learned(ROWS.shrine).tier === 1, node: SHRINE, icon: "shrine" }]
+        : depth === 1
           ? []
           : [
               {
@@ -445,7 +456,7 @@ export const readResearchTree = (realm: RealmResearchFacts): TreeNode[] => {
         { line: RESEARCH_TREE.enters(name), now: "—", next: RESEARCH_TREE.opens },
         depth,
         before,
-        depth < 3 ? [`reach-${depth + 1}`] : [],
+        !realm.board.town && depth < 3 ? [`reach-${depth + 1}`] : [],
       );
     }),
   } satisfies Record<ResearchRow, TreeNode[]>;

@@ -40,6 +40,7 @@ pub fn scouting_available(learned: u64, kind: u8) -> bool {
 
 // Building categories with a row; the four training buildings are unique on a realm board.
 pub const HUT: u8 = 1;
+pub const STOREHOUSE: u8 = 2;
 pub const WORKSHOP: u8 = 25;
 pub const BARRACKS: u8 = 28;
 pub const FARM: u8 = 37;

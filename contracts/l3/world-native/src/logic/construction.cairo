@@ -85,7 +85,8 @@ pub mod ConstructionLogic {
                 "invalid construction scouting kind",
             );
             if let Some(board) = board {
-                self.assert_board_category(key, command.category, board);
+                self.assert_board_category(key, base, command.category, board);
+                self.settle_storehouse(key, command.category, board, context);
             }
             self.erect_building(key, actor, base, location, coord, command.category, rule, context.timestamp, context);
             if let Some(board) = board {
@@ -148,6 +149,9 @@ pub mod ConstructionLogic {
             }
             if board.is_none() {
                 self.change_building_capacity(key, building.category, false, context);
+            }
+            if let Some(board) = board {
+                self.settle_storehouse(key, building.category, board, context);
             }
             let rule = self.buildings.rule(crate::buildings::BuildingRuleKey { game_id, category: building.category });
             self.buildings.remove(location, building, rule, context.rules.unbox().building_config.base_population);
@@ -212,6 +216,12 @@ pub mod ConstructionLogic {
                 base.category == crate::taxonomy::REALM_CATEGORY && board.is_some(), "research requires a realm board",
             );
             let before = crate::logic::research::require(key).learned;
+            if board.unwrap().town.is_some() {
+                self.assert_town_lore(before, command.row);
+                if command.row <= crate::research::ROW_WORKSHOP {
+                    assert!(command.choice == crate::research::CHOICE_MAKE, "town stores use the Storeroom");
+                }
+            }
             let learned = crate::research::learn(before, command.row, command.choice);
             self.assert_row_open(key, command.row);
             self
@@ -291,6 +301,14 @@ pub mod ConstructionLogic {
                     record.metadata.has_wonder,
                     next_level,
                 );
+            }
+            if record.base.category == crate::taxonomy::REALM_CATEGORY {
+                let old_rate = crate::logic::buildings::castle_labor_rate(game_id, record.base.level);
+                let new_rate = crate::logic::buildings::castle_labor_rate(game_id, next_level);
+                if old_rate != new_rate {
+                    self.change_board_output(key, crate::resources::LABOR, old_rate, false, context);
+                    self.change_board_output(key, crate::resources::LABOR, new_rate, true, context);
+                }
             }
             self.emit_structure_upgrade(key, actor, next_level, context.timestamp);
             ()
@@ -414,10 +432,48 @@ pub mod ConstructionLogic {
             );
         }
 
-        // A training building is unique and needs two Barracks purchases.
-        fn assert_board_category(
-            self: @ContractState, key: ResourceKey, category: u8, board: crate::buildings::BoardRules,
+        fn assert_town_lore(self: @ContractState, learned: u64, row: u8) {
+            if row == crate::research::ROW_SHRINE {
+                assert!(crate::research::tier(learned, crate::research::ROW_WELL) == 1, "learn Well lore first");
+            } else if row == crate::research::ROW_DEPTH {
+                assert!(crate::research::tier(learned, crate::research::ROW_SHRINE) == 1, "learn Shrine lore first");
+                assert!(crate::research::tier(learned, row) == 0, "Spire lore already learned");
+            }
+        }
+
+        fn settle_storehouse(
+            ref self: ContractState,
+            key: ResourceKey,
+            category: u8,
+            board: crate::buildings::BoardRules,
+            context: crate::commands::ExecutionContext,
         ) {
+            if board.town.is_some() && category == crate::research::STOREHOUSE {
+                self
+                    .resources_dispatcher(key.game_id)
+                    .settle_production(key, context.timestamp, crate::commands::resource_context(context));
+            }
+        }
+
+        // Town buildings open by castle level; older boards use their Barracks gate.
+        fn assert_board_category(
+            self: @ContractState,
+            key: ResourceKey,
+            base: StructureBase,
+            category: u8,
+            board: crate::buildings::BoardRules,
+        ) {
+            if board.town.is_some() {
+                if category == crate::research::STOREHOUSE {
+                    assert!(base.category == crate::taxonomy::REALM_CATEGORY, "Storeroom needs a Realm");
+                    assert!(base.level >= 1, "Storeroom needs City");
+                    assert!(self.standing(key, category) == 0, "one Storeroom per Realm");
+                } else if category == crate::research::SCOUTS_LODGE {
+                    assert!(base.level >= 1, "Scouts Lodge needs City");
+                } else if category == crate::research::WAR_HALL || category == crate::research::SUPPLY_YARD {
+                    assert!(base.level >= 2, "hall needs Kingdom");
+                }
+            }
             if !crate::research::is_training(category) {
                 return;
             }

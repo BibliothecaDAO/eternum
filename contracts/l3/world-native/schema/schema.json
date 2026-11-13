@@ -75,6 +75,7 @@
     "KIND_RIFTS": 1,
     "KIND_SANCTUARIES": 2,
     "HUT": 1,
+    "STOREHOUSE": 2,
     "WORKSHOP": 25,
     "BARRACKS": 28,
     "FARM": 37,
@@ -6309,6 +6310,12 @@
       ],
       "members": [
         {
+          "name": "town",
+          "type": "core::option::Option::<world_native::buildings::TownRules>",
+          "id": "0x746f776e",
+          "feltLength": null
+        },
+        {
           "name": "demolition_refund_bps",
           "type": "core::integer::u16",
           "id": "0x64656d6f6c6974696f6e5f726566756e645f627073",
@@ -6382,7 +6389,7 @@
         }
       ],
       "keyLength": 1,
-      "valueLength": 12,
+      "valueLength": null,
       "derivedFrom": "preset"
     },
     {
@@ -8221,6 +8228,20 @@
         }
       ]
     },
+    "core::option::Option::<world_native::buildings::TownRules>": {
+      "type": "enum",
+      "name": "core::option::Option::<world_native::buildings::TownRules>",
+      "variants": [
+        {
+          "name": "Some",
+          "type": "world_native::buildings::TownRules"
+        },
+        {
+          "name": "None",
+          "type": "()"
+        }
+      ]
+    },
     "core::option::Option::<world_native::deposits::DepositReceipt>": {
       "type": "enum",
       "name": "core::option::Option::<world_native::deposits::DepositReceipt>",
@@ -9102,6 +9123,10 @@
       "name": "world_native::buildings::BoardRules",
       "members": [
         {
+          "name": "town",
+          "type": "core::option::Option::<world_native::buildings::TownRules>"
+        },
+        {
           "name": "demolition_refund_bps",
           "type": "core::integer::u16"
         },
@@ -9314,6 +9339,28 @@
         {
           "name": "population",
           "type": "world_native::buildings::Population"
+        }
+      ]
+    },
+    "world_native::buildings::TownRules": {
+      "type": "struct",
+      "name": "world_native::buildings::TownRules",
+      "members": [
+        {
+          "name": "settlement_labor_cap",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "city_labor_cap",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "kingdom_labor_cap",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "empire_labor_cap",
+          "type": "core::integer::u32"
         }
       ]
     },
@@ -14736,5 +14783,5 @@
       ]
     }
   },
-  "identity": "46853e1dcc59d76ba5f5541de39e0b01755f166757b6b4ee0a26760d8ce074ee"
+  "identity": "51a97ad53b1504ebfe7c707c989afdc5bff4200a07a88ffab17a3c7c57fdeb55"
 }

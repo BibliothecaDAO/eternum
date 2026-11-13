@@ -14,6 +14,8 @@ mod realms;
 mod releases;
 mod season_lifecycle;
 mod settlement;
+
+mod town;
 mod village;
 mod world_bane_combat;
 

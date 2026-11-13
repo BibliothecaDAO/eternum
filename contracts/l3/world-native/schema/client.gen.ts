@@ -1,5 +1,5 @@
 // Generated from native fact models and contract ABIs. Run the native schema generator to update.
-export const nativeFactSchemaIdentity = "46853e1dcc59d76ba5f5541de39e0b01755f166757b6b4ee0a26760d8ce074ee";
+export const nativeFactSchemaIdentity = "51a97ad53b1504ebfe7c707c989afdc5bff4200a07a88ffab17a3c7c57fdeb55";
 export const nativeReleaseConstants = {
   "RUIN_DEPTH_LIMIT_RELEASE": 9
 } as const;
@@ -79,6 +79,7 @@ export const nativeResearchConstants = {
   "KIND_RIFTS": 1,
   "KIND_SANCTUARIES": 2,
   "HUT": 1,
+  "STOREHOUSE": 2,
   "WORKSHOP": 25,
   "BARRACKS": 28,
   "FARM": 37,
@@ -287,7 +288,7 @@ export interface NativeRows {
   ResourceArrival: { readonly game_id: number; readonly entity_id: bigint; readonly day: bigint; readonly slot: number; readonly resources: readonly ({ readonly resource_type: number; readonly amount: bigint })[] };
   RealmKnowledge: { readonly game_id: number; readonly structure_id: bigint; readonly learned: bigint };
   ResearchPrice: { readonly game_id: number; readonly row: number; readonly tier: number; readonly essence: bigint; readonly labor: bigint };
-  BoardRules: { readonly game_id: number; readonly demolition_refund_bps: number; readonly workshop_rate: bigint; readonly output_step_bps: number; readonly storage_step_bps: number; readonly population_step_bps: number; readonly ration_step: bigint; readonly training_gate_tier: number; readonly troop_store_deploys: number; readonly settlement_resource_cap: number; readonly city_resource_cap: number; readonly kingdom_resource_cap: number; readonly empire_resource_cap: number };
+  BoardRules: { readonly game_id: number; readonly town: ({ readonly settlement_labor_cap: number; readonly city_labor_cap: number; readonly kingdom_labor_cap: number; readonly empire_labor_cap: number }) | null; readonly demolition_refund_bps: number; readonly workshop_rate: bigint; readonly output_step_bps: number; readonly storage_step_bps: number; readonly population_step_bps: number; readonly ration_step: bigint; readonly training_gate_tier: number; readonly troop_store_deploys: number; readonly settlement_resource_cap: number; readonly city_resource_cap: number; readonly kingdom_resource_cap: number; readonly empire_resource_cap: number };
   BuildingRule: { readonly game_id: number; readonly category: number; readonly population_cost: number; readonly capacity_grant: number; readonly simple_cost: readonly ({ readonly resource_type: number; readonly amount: bigint })[]; readonly complex_cost: readonly ({ readonly resource_type: number; readonly amount: bigint })[] };
   Building: { readonly game_id: number; readonly structure_id: bigint; readonly inner_col: number; readonly inner_row: number; readonly category: number; readonly paused: boolean; readonly labor_paid: bigint };
   StructureBuildings: { readonly game_id: number; readonly entity_id: bigint; readonly packed_counts_1: bigint; readonly packed_counts_2: bigint; readonly packed_counts_3: bigint; readonly population: { readonly current: number; readonly max: number } };
@@ -1965,6 +1966,14 @@ export const nativeFactModels = {
     "scope": "game",
     "fields": {
       "game_id": "u32",
+      "town": {
+        "option": {
+          "settlement_labor_cap": "u32",
+          "city_labor_cap": "u32",
+          "kingdom_labor_cap": "u32",
+          "empire_labor_cap": "u32"
+        }
+      },
       "demolition_refund_bps": "u16",
       "workshop_rate": "u64",
       "output_step_bps": "u16",

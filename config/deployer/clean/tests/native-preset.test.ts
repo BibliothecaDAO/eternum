@@ -6,7 +6,7 @@ import { afterAll, describe, expect, test, mock, spyOn } from "bun:test";
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { CallData, type Account, type RpcProvider } from "starknet";
+import { CallData, CairoOption, CairoOptionVariant, type Account, type RpcProvider } from "starknet";
 import schema from "../../../../contracts/l3/world-native/schema/schema.json";
 import {
   nativeResearchConstants as research,
@@ -1138,4 +1138,44 @@ test("the S1 dev preset caps Kingdom and Empire bane quests at City without chan
     production_percent: 50,
     quest_counts: dev.worldBanes!.questCounts,
   });
+});
+
+test("Season One towns register separate labor stores, one priced Storeroom and a three-step lore ladder", () => {
+  const definition = buildNativePreset(
+    loadNativePresetConfiguration("madara.frontier", FRONTIER_S1_PRESET_ID),
+    FRONTIER_S1_PRESET_ID,
+  );
+  expect(definition.structures.board.unwrap()).toMatchObject({
+    town: new CairoOption(CairoOptionVariant.Some, {
+      settlement_labor_cap: 5000,
+      city_labor_cap: 15000,
+      kingdom_labor_cap: 50000,
+      empire_labor_cap: 100000,
+    }),
+    settlement_resource_cap: 6000,
+    city_resource_cap: 18000,
+    kingdom_resource_cap: 40000,
+    empire_resource_cap: 80000,
+  });
+  expect(definition.structures.upgrades.map(({ costs }) => costs)).toEqual(
+    [2500n, 15000n, 50000n].map((cost) => [
+      { resource_type: ResourcesIds.Labor, amount: cost * BigInt(RESOURCE_PRECISION) },
+    ]),
+  );
+  expect(definition.structures.buildings.find(({ category }) => category === 2)!.rule.simple_cost).toEqual([
+    { resource_type: ResourcesIds.Labor, amount: 10000n * BigInt(RESOURCE_PRECISION) },
+  ]);
+  expect(definition.structures.research.filter(({ row }) => row >= research.ROW_SHRINE)).toEqual(
+    (
+      [
+        [research.ROW_WELL, 2500n],
+        [research.ROW_SHRINE, 5000n],
+        [research.ROW_DEPTH, 10000n],
+      ] as const
+    ).map(([row, essence]) => ({
+      row,
+      tier: 1,
+      price: { essence: BigInt(essence!) * BigInt(RESOURCE_PRECISION), labor: 0n },
+    })),
+  );
 });

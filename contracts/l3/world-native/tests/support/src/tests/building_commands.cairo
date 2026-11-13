@@ -84,6 +84,7 @@ pub fn building_world_with_preset(preset: crate::presets::PresetDefinition) -> (
 }
 pub fn board_rules() -> crate::buildings::BoardRules {
     crate::buildings::BoardRules {
+        town: None,
         demolition_refund_bps: 5000,
         workshop_rate: 20,
         output_step_bps: 2500,

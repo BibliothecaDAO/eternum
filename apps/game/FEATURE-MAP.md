@@ -1352,3 +1352,11 @@ without `GameplayRejected`, and Herald snapshots covering its block. It checks e
 principal, earned-only pool return, unchanged swept balance and withdrawals, and native stamina plus regeneration
 against the visible army panel and purse. The live proof buys no tier. Season-end sweep and wallet-return evidence are
 separate rehearsal steps in [the runbook](../../deploy/athanor/README.md#deposit-rehearsal-on-dev).
+
+Season One town readers: Realm → Castle shows the current labor cap and the upgrade's cap from the same
+`ResourceManager.storeLimitAtLevel` used by the resource stores; a standing Storeroom affects both previews. Castle
+labor follows the Realm level. Research → Castle offers Well → Shrine → Spire, with the preceding lore required and only
+one Spire purchase. Farm and Workshop research offer output only on these towns. Older Frontier presets retain their
+existing tree. `research/research-tree.test.ts` covers the three-node reader and removed storage choices;
+`packages/core/src/managers/resource-manager.store-limit.test.ts` covers the per-resource caps and building diffs. The
+command proofs and their runner are listed in [the native feature map](../../contracts/l3/FEATURE-MAP.md).

@@ -53,12 +53,37 @@ pub fn store_limit(key: ResourceKey, resource_type: u8) -> Option<u128> {
             3 => board.empire_resource_cap,
             _ => panic!("invalid structure level"),
         };
-        cap.into()
+        if resource_type == crate::resources::LABOR {
+            if let Some(town) = board.town {
+                match base.level {
+                    0 => town.settlement_labor_cap,
+                    1 => town.city_labor_cap,
+                    2 => town.kingdom_labor_cap,
+                    _ => town.empire_labor_cap,
+                }.into()
+            } else {
+                cap.into()
+            }
+        } else {
+            cap.into()
+        }
     } else {
         Into::<u32, u128>::into(crate::troops::deployment_cap(preset.rules.troop_limit_config.read(), base.level))
             * Into::<u8, u128>::into(board.troop_store_deploys)
     };
     let castle_base = cap * crate::rules::RESOURCE_PRECISION;
+    if board.town.is_some() {
+        if resource_type != crate::resources::WHEAT && resource_type != crate::resources::LABOR {
+            return Some(castle_base);
+        }
+        let counts = crate::state::read().buildings.structure_buildings.read((key.game_id, key.entity_id));
+        let multiplier = if crate::buildings::category_count(counts, crate::research::STOREHOUSE) != 0 {
+            2
+        } else {
+            1
+        };
+        return Some(castle_base * multiplier);
+    }
     let stores = if resource_type == crate::resources::WHEAT {
         crate::research::picks(
             crate::logic::research::learned(key), crate::research::ROW_FARM, crate::research::CHOICE_STORE,

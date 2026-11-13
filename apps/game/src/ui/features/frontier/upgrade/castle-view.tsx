@@ -18,7 +18,7 @@ export type CastleSide = {
   art: IconMeaning;
   plots: number;
   slots: number;
-  /** What the castle holds of each resource at this level, before the Granary and Storeroom; unknown is undefined. */
+  /** The realm's labor cap at this level, including its standing Storeroom or research; unknown is undefined. */
   limit: number | undefined;
   maxArmySize: number;
 };
@@ -105,7 +105,7 @@ const castleRows = (now: CastleSide, next: CastleSide | null) => {
   return [
     row("hexagon", CASTLE_GIVES.plots, (side) => side.plots),
     row("army-capacity", CASTLE_GIVES.armySlots, (side) => side.slots),
-    row("resources", CASTLE_GIVES.storage, (side) => side.limit),
+    row("labor", `${LABOR} ${CASTLE_GIVES.storage.toLowerCase()}`, (side) => side.limit),
     row("troops", CASTLE_GIVES.maxArmySize, (side) => side.maxArmySize),
   ];
 };

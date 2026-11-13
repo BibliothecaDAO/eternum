@@ -84,7 +84,7 @@ const readResearchFacts = (
   const board = store.get("BoardRules", { game_id: realm.game_id });
   if (learned === undefined || essence === undefined || labor === undefined || !board) return undefined;
   const rows = decodeLearned(learned);
-  const storeroomPicks = (rows[research.ROW_WORKSHOP]?.sides ?? []).filter((side) => side === 1).length;
+  const resources = new ResourceManager(store, entity, realm.game_id);
   return {
     castleLevel: realm.base.level,
     essence,
@@ -97,15 +97,16 @@ const readResearchFacts = (
       return { essence: whole(price.essence), labor: whole(price.labor) };
     },
     board: {
+      town: board.town !== null,
       outputStepBps: board.output_step_bps,
       storageStepBps: board.storage_step_bps,
       populationStepBps: board.population_step_bps,
       trainingGateTier: board.training_gate_tier,
     },
     laborStore: (level) => {
-      const base = ResourceManager.castleStoreLimit(store, realm.game_id, level);
+      const base = resources.storeLimitAtLevel(ResourcesIds.Labor, level);
       if (base === undefined) throw new Error(`No castle store at level ${level}`);
-      return (whole(base) * (10_000 + storeroomPicks * board.storage_step_bps)) / 10_000;
+      return whole(base);
     },
     wheatPerTroop: (rations) => rationedWheatPerTroop(store, realm.game_id, ResourcesIds.Knight, rations),
     wellRefillPercent: WELL_REFILL_PERCENT,

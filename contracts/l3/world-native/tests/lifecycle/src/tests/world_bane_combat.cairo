@@ -166,7 +166,7 @@ fn cull_completion_keeps_both_zero_labor_receipts_and_pays_essence_once() {
     interact_with_state(
         d.games,
         || {
-            assert_eq!(crate::logic::resources::balance(home, crate::resources::LABOR), 6000 * RESOURCE_PRECISION);
+            assert_eq!(crate::logic::resources::balance(home, crate::resources::LABOR), 5000 * RESOURCE_PRECISION);
         },
     );
     collect_both_rewards(d, home, completed_at);
@@ -283,8 +283,8 @@ fn collect_both_rewards(d: Deployment, home: ResourceKey, now: u64) {
             )
         },
     );
-    let base = core::cmp::min(1000 * RESOURCE_PRECISION, 6000 * RESOURCE_PRECISION - labor_before);
-    let bonus = core::cmp::min(1000 * RESOURCE_PRECISION, 6000 * RESOURCE_PRECISION - labor_before - base);
+    let base = core::cmp::min(1000 * RESOURCE_PRECISION, 5000 * RESOURCE_PRECISION - labor_before);
+    let bonus = core::cmp::min(1000 * RESOURCE_PRECISION, 5000 * RESOURCE_PRECISION - labor_before - base);
     let claim = Command::ClaimDailyQuest(crate::quests::ClaimDailyQuest { home: home.entity_id, day: 1 });
     for _ in 0_u8..3 {
         assert!(execute_in_game(d, home.game_id, claim, now));

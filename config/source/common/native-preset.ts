@@ -54,6 +54,8 @@ export interface NativePreset {
   /** The unit a season's days are counted in (Frontier rules §9): a day lasts 2 to 6 units; 0 in modes without days. */
   dayUnitSeconds: number;
   board: null | {
+    /** Level-based town: independent labor caps, castle output, a single Storeroom and ordered lore. */
+    town: null | { laborStoreCaps: readonly [number, number, number, number] };
     demolitionRefundBps: number;
     workshopRate: number;
     /** What one tier pick adds for every building of its type: Fields, Tools and Drill, of the base output. */

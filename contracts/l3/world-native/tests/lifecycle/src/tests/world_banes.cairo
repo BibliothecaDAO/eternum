@@ -62,6 +62,13 @@ fn two_homes_end_the_lights_and_collect_the_second_grant_once() {
     );
     let second_done = reveal_quest(second, second_home, first_done);
     let now = core::cmp::max(first_done, second_done);
+    let precision = crate::rules::RESOURCE_PRECISION;
+    let castle_rate = (100 * precision + 1800) / 3600;
+    let produced = Into::<u64, u128>::into(now - next) * castle_rate;
+    let bonus_labor = core::cmp::min(
+        1000 * precision, 5000 * precision - 2000 * precision - 1000 * precision - produced,
+    );
+    assert!(bonus_labor > 0 && bonus_labor < 1000 * precision);
     assert!(execute_in_game(first, game_id, claim, now));
     assert!(execute_in_game(first, game_id, claim, now));
     interact_with_state(
@@ -78,7 +85,12 @@ fn two_homes_end_the_lights_and_collect_the_second_grant_once() {
             );
             assert_eq!(
                 crate::state::read().banes.bonus_grants.read((game_id, first_home.entity_id, 1)),
-                Some((1000 * crate::rules::RESOURCE_PRECISION, 1500 * crate::rules::RESOURCE_PRECISION)),
+                Some((bonus_labor, 1500 * precision)),
+            );
+            assert_eq!(crate::logic::resources::balance(first_home, crate::resources::LABOR), 5000 * precision);
+            assert_eq!(
+                crate::state::read().entry.home_labor_grants.read((game_id, first_home.entity_id, 1)),
+                Some((first.actor, 1000 * precision, 1500 * precision)),
             );
             let windows = crate::logic::banes::windows(first_home, next - 1, now + 1);
             assert_eq!(windows.len(), 1);

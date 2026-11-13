@@ -184,6 +184,15 @@ function buildStructures(config: Config, preset: ReturnType<typeof nativePresetF
       board === null
         ? new CairoOption(CairoOptionVariant.None)
         : new CairoOption(CairoOptionVariant.Some, {
+            town:
+              board.town === null
+                ? new CairoOption(CairoOptionVariant.None)
+                : new CairoOption(CairoOptionVariant.Some, {
+                    settlement_labor_cap: board.town.laborStoreCaps[0],
+                    city_labor_cap: board.town.laborStoreCaps[1],
+                    kingdom_labor_cap: board.town.laborStoreCaps[2],
+                    empire_labor_cap: board.town.laborStoreCaps[3],
+                  }),
             demolition_refund_bps: board.demolitionRefundBps,
             workshop_rate: scaled(board.workshopRate, precision),
             output_step_bps: board.outputStepBps,

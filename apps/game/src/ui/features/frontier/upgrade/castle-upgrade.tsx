@@ -54,7 +54,7 @@ export const CastleUpgrade = ({
   if (!levelUp) return null;
   return (
     <CastleView
-      now={castleSide(setup.store, realm.game_id, levelUp.currentLevel, skin, realm.metadata.has_wonder)}
+      now={castleSide(setup.store, realm, levelUp.currentLevel, skin, realm.metadata.has_wonder)}
       laborRate={castleLaborRate(setup.store, realm)}
       research={
         ordersAllowed &&
@@ -79,7 +79,7 @@ const upgradeOrder = (
   const held = (resource: number) => knownAmount(getBalance(realmId, resource, tick, store).balance);
   const short = levelUp.requirements.find(({ resource, amount }) => (held(resource) ?? 0) < amount);
   return {
-    next: castleSide(store, realm.game_id, levelUp.nextLevel, readRealmSkin(store, realm), realm.metadata.has_wonder),
+    next: castleSide(store, realm, levelUp.nextLevel, readRealmSkin(store, realm), realm.metadata.has_wonder),
     prices: levelUp.requirements.map(({ resource, amount }) => ({ of: castlePriceKind(resource), amount })),
     refusal:
       (short && {
@@ -102,12 +102,11 @@ const upgradeOrder = (
 };
 
 /**
- * The castle at a level: the plots its ring opens, its army slots, what it stores of each store (before the Granary and
- * Storeroom) and its deploy cap, from the preset.
+ * The castle at a level: the plots its ring opens, its army slots, its labor store with the realm's standing Storeroom or research and its deploy cap, from the preset.
  */
 const castleSide = (
   store: NativeFactStore,
-  gameId: number,
+  realm: NativeRows["Structure"],
   level: number,
   skin?: RealmSkin,
   hasWonder = false,
@@ -119,7 +118,12 @@ const castleSide = (
     art,
     plots: buildablePlotCount(level),
     slots: configManager.getArmySlots(level),
-    limit: wholeOrUnknown(ResourceManager.castleStoreLimit(store, gameId, level)),
+    limit: wholeOrUnknown(
+      new ResourceManager(store, safeInteger(realm.entity_id), realm.game_id).storeLimitAtLevel(
+        ResourcesIds.Labor,
+        level,
+      ),
+    ),
     maxArmySize: configManager.getMaxArmySize(level, TroopTier.T1),
   };
 };
@@ -133,7 +137,9 @@ const castleLaborRate = (store: NativeFactStore, realm: NativeRows["Structure"])
     game_id: realm.game_id,
     resource_type: ResourcesIds.Labor,
   }).realm_rate;
-  return formatRate(Number(perSecond) / RESOURCE_PRECISION);
+  const town = store.require("BoardRules", { game_id: realm.game_id }).town;
+  const multiplier = town ? 2 ** realm.base.level : 1;
+  return formatRate((Number(perSecond) * multiplier) / RESOURCE_PRECISION);
 };
 
 /** The castle is priced in labor (and Essence on presets that ask it); anything else is loud. */

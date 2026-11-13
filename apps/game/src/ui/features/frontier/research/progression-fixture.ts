@@ -64,6 +64,7 @@ const realmOn = (
     learned,
     price,
     board: {
+      town: false,
       outputStepBps: 2000,
       storageStepBps: 4000,
       populationStepBps: 2000,

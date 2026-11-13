@@ -295,6 +295,15 @@ fn write_buildings(
                 && board.empire_resource_cap > 0,
             "zero resource store",
         );
+        if let Some(town) = board.town {
+            assert!(
+                town.settlement_labor_cap > 0
+                    && town.city_labor_cap > 0
+                    && town.kingdom_labor_cap > 0
+                    && town.empire_labor_cap > 0,
+                "zero labor store",
+            );
+        }
         preset.board_terms.write(Some(board));
     }
 }
@@ -567,17 +576,17 @@ fn write_research(preset: PresetWrite, structures: crate::presets::StructurePres
         assert!(structures.research.is_empty(), "research needs a board");
         return;
     }
-    // Every row's tiers are priced exactly once, from the first tier above common to the row's last.
-    let mut expected = 0_u32;
-    for row in 0..crate::research::ROW_COUNT {
-        expected += crate::research::max_tier(row).into();
-    }
-    assert!(structures.research.len() == expected, "incomplete research prices");
+    // A priced row is a contiguous prefix; an omitted tier cannot be purchased.
     for entry in structures.research {
         let key = (*entry.row, *entry.tier);
         assert!(*entry.tier > 0 && *entry.tier <= crate::research::max_tier(*entry.row), "invalid research tier");
         assert!(preset.research_prices.read(key).is_none(), "duplicate research price");
         assert!((*entry.price).essence != 0, "empty research price");
         preset.research_prices.write(key, Some(*entry.price));
+    }
+    for entry in structures.research {
+        if *entry.tier > 1 {
+            assert!(preset.research_prices.read((*entry.row, *entry.tier - 1)).is_some(), "research price gap");
+        }
     }
 }

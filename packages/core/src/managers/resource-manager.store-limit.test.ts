@@ -43,6 +43,7 @@ const boardRealm = (wheat: bigint) => {
         storage_step_bps: 5000,
         population_step_bps: 2500,
         ration_step: PRECISION / 4n,
+        town: null,
         training_gate_tier: 2,
       },
     }),
@@ -131,4 +132,54 @@ describe("a board realm's store limits", () => {
     store.applyFacts([{ model: "BoardRules", key: "0x2", value: null }]);
     expect(manager.storeLimit(ResourcesIds.Wheat)).toBeUndefined();
   });
+});
+
+it("reads independent town caps and the standing Storeroom at every level, including replayed removal", () => {
+  const { store, manager } = boardRealm(0n);
+  const board = store.require("BoardRules", { game_id: 1 });
+  store.applyFacts(
+    upsert("0x2", {
+      BoardRules: {
+        ...board,
+        town: {
+          settlement_labor_cap: 5000,
+          city_labor_cap: 15000,
+          kingdom_labor_cap: 50000,
+          empire_labor_cap: 100000,
+        },
+      },
+    }),
+  );
+  const counts = (standing: boolean) =>
+    upsert("0x7", {
+      StructureBuildings: {
+        game_id: 1,
+        entity_id: 7,
+        packed_counts_1: standing ? 256n : 0n,
+        packed_counts_2: 0n,
+        packed_counts_3: 0n,
+        population: { current: 0, max: 0 },
+      },
+    });
+  let notifications = 0;
+  const unsubscribe = manager.subscribe(() => notifications++);
+  for (let level = 0; level < 4; level++) {
+    store.applyFacts(upsert("0x3", { Structure: realm(level) }));
+    for (const standing of [false, true, false]) {
+      const before = notifications;
+      store.applyFacts(counts(standing));
+      const multiplier = standing ? 2n : 1n;
+      expect(manager.storeLimit(ResourcesIds.Labor)).toBe(
+        BigInt([5000, 15000, 50000, 100000][level]!) * multiplier * PRECISION,
+      );
+      expect(manager.storeLimit(ResourcesIds.Wheat)).toBe(
+        BigInt([6000, 18000, 40000, 80000][level]!) * multiplier * PRECISION,
+      );
+      expect(manager.storeLimit(ResourcesIds.Knight)).toBe(BigInt([6000, 30000, 90000, 180000][level]!) * PRECISION);
+      if (standing) expect(notifications).toBeGreaterThan(before);
+    }
+  }
+  expect(manager.storeLimitAtLevel(ResourcesIds.Labor, 1)).toBe(15000n * PRECISION);
+  expect(manager.storeLimit(ResourcesIds.Essence)).toBeUndefined();
+  unsubscribe();
 });
