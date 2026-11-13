@@ -115,3 +115,13 @@ persistent recipient record holds a changed wallet for 24 hours, while unchanged
 gameplay accounts cannot be reassigned to another Realms ID to bypass that record. First-seen identity bindings and
 sustained identity compromise remain outside this protection; see the box deployment procedure for backup and relink
 rehearsal. The relay uses Worker-supported manual redirect handling and refuses every non-success co-signer response.
+
+## When the ledger is read
+
+Payments and shard reads run every minute. The ledger side (season posts, chests, the monitor's audit) is read in two
+cases only: the hour (`isLedgerReadTick`, `packages/chain/src/ledger-reads.ts`), and the minute after the relay wrote to
+the ledger (a paid or reported claim, a posted result or season top, a settlement, a deposit or principal). A relay
+write calls `ledgerWritten` on the relay's ledger actor and on the monitor (`RosterMonitor`); each keeps a flag the next
+minute's tick consumes, so a burst of writes is one read. A lost notice costs at most the hour. A fact that can never
+change again (a closed season, a paid principal, a published or matched pool) is read once and kept (`final-facts.ts`);
+`read-budget.test.ts` fails if a later tick reads it again.

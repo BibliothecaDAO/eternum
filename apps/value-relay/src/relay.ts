@@ -6,7 +6,7 @@ import { SHARD_PAGE_BLOCKS } from "./shard-page";
 import type { RelayProgress, RelayStore } from "./state";
 
 /** Only confirmed blocks produce value obligations. A rewritten observed block stops this cursor permanently. */
-export const runRelay = (chainId: string, ports: RelayPorts, store: RelayStore) =>
+export const runRelay = (chainId: string, ports: RelayPorts, store: RelayStore, reconcile = false) =>
   Effect.gen(function* () {
     const progress = yield* relayOperation("read relay progress", () => store.progress());
     if (progress.halted) return { status: "halted" as const, reason: progress.halted };
@@ -34,7 +34,7 @@ export const runRelay = (chainId: string, ports: RelayPorts, store: RelayStore) 
     }
     const payments = yield* payWithdrawals(ports, store);
     const results = yield* postResults(ports, store);
-    yield* restoreResolvableReceipts(ports, store);
+    yield* restoreResolvableReceipts(ports, store, reconcile);
     const held = yield* relayOperation("read deferred identity receipts", () => store.held());
     const unknown = held.flatMap((row) =>
       row.kind === "receipt" && row.reason === "withdrawal_account_unknown"
@@ -44,8 +44,11 @@ export const runRelay = (chainId: string, ports: RelayPorts, store: RelayStore) 
     return { status: "ready" as const, more, deferred: [...payments, ...results, ...unknown] };
   });
 
-/** Identity and funding outages are retried from the original confirmed receipt. */
-const restoreResolvableReceipts = (ports: RelayPorts, store: RelayStore) =>
+/**
+ * Identity and funding outages are retried from the original confirmed receipt. A claim set aside for a conflicting
+ * report changes only by an admin's void, so the ledger is asked about it on the hour.
+ */
+const restoreResolvableReceipts = (ports: RelayPorts, store: RelayStore, reconcile: boolean) =>
   Effect.gen(function* () {
     const held = yield* relayOperation("read held receipt recovery", () => store.heldRecovery());
     for (const row of held) {
@@ -57,6 +60,7 @@ const restoreResolvableReceipts = (ports: RelayPorts, store: RelayStore) =>
             : null;
       if (!receipt) continue;
       if (row.kind === "payment") {
+        if (!reconcile) continue;
         const payment = yield* Effect.result(ports.ledger.payment(row.withdrawal));
         if (Result.isFailure(payment) || payment.success !== null) continue;
       }

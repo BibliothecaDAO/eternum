@@ -66,6 +66,22 @@ it("reports a failed value read without a green health result", async () => {
   expect(observation.value_error).toBeTruthy();
   expect((await f.monitor.health()).success).toBe(false);
 });
+it("audits between hours only after the relay wrote, and again if that audit failed to run", async () => {
+  const f = fixture();
+  expect(await f.monitor.auditIfDue(false)).toBeNull();
+  expect(f.data.has("observation")).toBe(false);
+  await f.monitor.ledgerWritten();
+  expect(await f.monitor.auditIfDue(false)).not.toBeNull();
+  expect(f.data.has("audit:due")).toBe(false);
+  expect(await f.monitor.auditIfDue(false)).toBeNull();
+  const before = f.data.get("observation");
+  await f.monitor.ledgerWritten();
+  vi.spyOn(f.monitor, "tick").mockRejectedValueOnce(new Error("unavailable"));
+  await expect(f.monitor.auditIfDue(false)).rejects.toThrow("unavailable");
+  expect(f.data.get("audit:due")).toBe(true);
+  expect(f.data.get("observation")).toBe(before);
+  expect(await f.monitor.auditIfDue(true)).not.toBeNull();
+});
 it("reports a fresh completed audit as healthy, and refuses stale or paused progress", async () => {
   const f = fixture();
   const checked_at = Math.floor(Date.now() / 1000);

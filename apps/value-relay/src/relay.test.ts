@@ -181,7 +181,12 @@ const fixture = () => {
         }),
     },
   };
-  return { ports, store, single, run: () => Effect.runPromise(runRelay("0x1", ports, store)) };
+  return {
+    ports,
+    store,
+    single,
+    run: (reconcile = false) => Effect.runPromise(runRelay("0x1", ports, store, reconcile)),
+  };
 };
 
 describe("confirmed value relay", () => {
@@ -681,8 +686,13 @@ it("requeues the honest held receipt after the paused admin voids its forged rep
   expect(await f.store.held()).toMatchObject([{ kind: "payment", reason: "ledger_report_mismatch" }]);
   await f.run();
   expect(f.single.pay).not.toHaveBeenCalled();
-  f.ports.ledger.payment = () => Effect.succeed(null);
+  const read = vi.fn(() => Effect.succeed(null));
+  f.ports.ledger.payment = read;
   await f.run();
+  expect(read).not.toHaveBeenCalled();
+  expect(await f.store.held()).toMatchObject([{ kind: "payment", reason: "ledger_report_mismatch" }]);
+  await f.run(true);
+  expect(read).toHaveBeenCalledTimes(1);
   expect(await f.store.held()).toEqual([]);
   expect(await f.store.withdrawals()).toEqual([withdrawal]);
   await f.run();

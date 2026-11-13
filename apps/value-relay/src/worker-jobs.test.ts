@@ -145,15 +145,15 @@ it("records unavailable ledger work while shard ingestion and owned Realm labor 
       COSIGNER_TOKEN: "test-cosigner-token",
       LEDGER_OPERATOR_ADDRESS: "0x2",
       LEDGER_OPERATOR_PRIVATE_KEY: "0x3",
-      RELAY: { idFromName: (id: string) => id, get: () => ({ ledgerTick: () => relay.ledgerTick(), tick }) },
+      RELAY: { idFromName: (id: string) => id, get: () => ({ ledgerTickIfDue: () => relay.ledgerTick(), tick }) },
       IDENTITY: {},
     } as never,
   );
-  expect(tick).toHaveBeenCalledWith("0x1");
+  expect(tick).toHaveBeenCalledWith("0x1", true);
 });
 
-it("reads the ledger once every five minutes while shards tick every minute", async () => {
-  const ledgerTick = vi.fn();
+it("asks the ledger side to read once an hour while shards tick every minute", async () => {
+  const ledgerTickIfDue = vi.fn();
   const tick = vi.fn();
   const env = {
     ENVIRONMENT: "staging",
@@ -165,14 +165,48 @@ it("reads the ledger once every five minutes while shards tick every minute", as
     COSIGNER_TOKEN: "test-cosigner-token",
     LEDGER_OPERATOR_ADDRESS: "0x2",
     LEDGER_OPERATOR_PRIVATE_KEY: "0x3",
-    RELAY: { idFromName: (id: string) => id, get: () => ({ ledgerTick, tick }) },
+    RELAY: { idFromName: (id: string) => id, get: () => ({ ledgerTickIfDue, tick }) },
     IDENTITY: {},
   } as never;
   const minute = 60_000;
-  for (let elapsed = 0; elapsed < 10; elapsed++)
+  for (let elapsed = 0; elapsed < 120; elapsed++)
     await worker.scheduled({ scheduledTime: elapsed * minute } as ScheduledController, env);
-  expect(ledgerTick).toHaveBeenCalledTimes(2);
-  expect(tick).toHaveBeenCalledTimes(10);
+  expect(ledgerTickIfDue).toHaveBeenCalledTimes(120);
+  expect(ledgerTickIfDue.mock.calls.filter(([hourly]) => hourly)).toHaveLength(2);
+  expect(tick).toHaveBeenCalledTimes(120);
+  expect(tick.mock.calls.filter(([, reconcile]) => reconcile)).toHaveLength(2);
+});
+
+it("reads the ledger between hours only after the relay wrote to it", async () => {
+  const data = new Map<string, unknown>();
+  const ctx = {
+    blockConcurrencyWhile: async (run: () => Promise<unknown>) => run(),
+    storage: {
+      setAlarm: async () => {},
+      get: async (key: string) => data.get(key),
+      list: async () => new Map(),
+      put: async (key: string, value: unknown) => {
+        data.set(key, value);
+      },
+      delete: async (key: string) => data.delete(key),
+    },
+  };
+  finish.mockReturnValue(Effect.succeed({ finished: 0, failed: 0, pending: 0 }));
+  const announced = vi.fn(async () => {});
+  const relay = new ValueRelay(
+    ctx as unknown as DurableObjectState,
+    { IDENTITY: { l2ChainId: async () => "0x1" }, ROSTER_MONITOR: { ledgerWritten: announced } } as never,
+  );
+  const written = () => (relay as unknown as { ledgerWritten(): Promise<void> }).ledgerWritten();
+  expect(await relay.ledgerTickIfDue(false)).toBeNull();
+  expect(finish).not.toHaveBeenCalled();
+  await written();
+  expect(announced).toHaveBeenCalledTimes(1);
+  expect(await relay.ledgerTickIfDue(false)).not.toBeNull();
+  expect(await relay.ledgerTickIfDue(false)).toBeNull();
+  expect(finish).toHaveBeenCalledTimes(1);
+  expect(await relay.ledgerTickIfDue(true)).not.toBeNull();
+  expect(finish).toHaveBeenCalledTimes(2);
 });
 
 it("continues a full confirmed page through its alarm and stops when caught up", async () => {

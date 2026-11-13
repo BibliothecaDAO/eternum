@@ -57,7 +57,10 @@ import { RelayFailure, relayOperation, type RelayPorts, type LaborClaim } from "
 
 interface RelayEnv extends RelaySettings {
   IDENTITY_HTTP: Fetcher;
-  ROSTER_MONITOR: { verifyRoster(chainId: string, gameId: number): Promise<number | null> };
+  ROSTER_MONITOR: {
+    verifyRoster(chainId: string, gameId: number): Promise<number | null>;
+    ledgerWritten(): Promise<void>;
+  };
   IDENTITY: ShardDirectory & {
     l2ChainId(): Promise<string>;
     holdsRealm(wallet: string, realmId: number): Promise<boolean>;
@@ -75,6 +78,8 @@ interface RelayEnv extends RelaySettings {
   RELAY: DurableObjectNamespace<ValueRelay>;
 }
 
+const LEDGER_TICK_DUE = "ledgerTick:due";
+
 /** A single transaction stream per official chain, isolated from the shard host. */
 export class ValueRelay extends DurableObject<RelayEnv> {
   private readonly ledgerSigning = Semaphore.makeUnsafe(1);
@@ -89,6 +94,21 @@ export class ValueRelay extends DurableObject<RelayEnv> {
         for (const chain of new Set(chains)) await requireActiveChain(this.env.IDENTITY, chain);
       }).pipe(Effect.andThen(onIdentityChain(this.env.L2_RPC_URL, this.env.IDENTITY, operation))),
     );
+  }
+  /** The relay's own write is the cause to read the ledger again, here and in the monitor, without waiting for the hour. */
+  private async ledgerWritten() {
+    await this.ctx.storage.put(LEDGER_TICK_DUE, true);
+    try {
+      await this.env.ROSTER_MONITOR.ledgerWritten();
+    } catch {
+      /* The hourly audit still reads what a lost notice announced. */
+    }
+  }
+  /** The minute's ledger tick: it runs on the hour, or when the relay wrote since the last one. */
+  async ledgerTickIfDue(hourly: boolean) {
+    if (!hourly && !(await this.ctx.storage.get<true>(LEDGER_TICK_DUE))) return null;
+    await this.ctx.storage.delete(LEDGER_TICK_DUE);
+    return this.ledgerTick();
   }
   async ledgerTick() {
     const relay = this;
@@ -122,14 +142,16 @@ export class ValueRelay extends DurableObject<RelayEnv> {
                     challenge: async () => {
                       throw new Error("relay_cannot_challenge");
                     },
-                    post: (id, wallets) =>
-                      Effect.runPromise(
+                    post: async (id, wallets) => {
+                      await Effect.runPromise(
                         relay.ledgerPermit(
                           relayOperation("post season top", () =>
                             postSeasonTop(ledgerCredentialsOf(relay.env), id, wallets),
                           ),
                         ),
-                      ),
+                      );
+                      await relay.ledgerWritten();
+                    },
                   },
                   relay.ctx.storage,
                 ),
@@ -165,7 +187,7 @@ export class ValueRelay extends DurableObject<RelayEnv> {
       ),
     );
   }
-  async tick(chainId?: string) {
+  async tick(chainId?: string, reconcile = false) {
     const chain = chainId ?? (await this.ctx.storage.get<string>("chain"));
     if (!chain) return { status: "unavailable" as const, reason: "actor_chain_unbound" };
     const relay = this;
@@ -184,7 +206,11 @@ export class ValueRelay extends DurableObject<RelayEnv> {
             await relay.ctx.storage.put("chain", chain);
             const value = await Effect.runPromise(
               Effect.result(
-                onIdentityChain(relay.env.L2_RPC_URL, relay.env.IDENTITY, runRelay(chain, ports, relay.store)),
+                onIdentityChain(
+                  relay.env.L2_RPC_URL,
+                  relay.env.IDENTITY,
+                  runRelay(chain, ports, relay.store, reconcile),
+                ),
               ),
             );
             const funding = await Effect.runPromise(
@@ -262,8 +288,8 @@ export class ValueRelay extends DurableObject<RelayEnv> {
       },
     });
   }
-  depositMutation(request: DepositMutation) {
-    return Effect.runPromise(
+  async depositMutation(request: DepositMutation) {
+    await Effect.runPromise(
       this.ledgerPermit(
         relayOperation("resolve deposit custody", async () =>
           mutateDeposit(
@@ -281,6 +307,7 @@ export class ValueRelay extends DurableObject<RelayEnv> {
         [request.shard],
       ),
     );
+    await this.ledgerWritten();
   }
   private async publishPools(chainId: string) {
     const shard = await readRegisteredShard(this.env.IDENTITY, chainId);
@@ -333,8 +360,8 @@ export class ValueRelay extends DurableObject<RelayEnv> {
     });
   }
 
-  settleFrontier(settlement: FrontierSettlement) {
-    return Effect.runPromise(
+  async settleFrontier(settlement: FrontierSettlement) {
+    await Effect.runPromise(
       this.ledgerPermit(
         relayOperation("settle Frontier season", () =>
           settleFrontier(
@@ -346,6 +373,7 @@ export class ValueRelay extends DurableObject<RelayEnv> {
         [settlement.chainId],
       ),
     );
+    await this.ledgerWritten();
   }
   async alarm() {
     await this.tick();
@@ -357,36 +385,45 @@ export class ValueRelay extends DurableObject<RelayEnv> {
     const shard = await readRegisteredShard(this.env.IDENTITY, chainId);
     return relayPortsOf(this.env, shard);
   }
-  reportMany(rows: readonly import("./ports").Withdrawal[]) {
-    return Effect.runPromise(
-      this.ledgerPermit(
-        relayEffect("reportMany ledger claims", () =>
-          ledgerBatches(
-            ledgerCredentialsOf(this.env),
-            (decisions) => this.env.IDENTITY.recordPayDecisions(decisions),
-            cosignerClient(this.env.COSIGNER_URL, this.env.COSIGNER_TOKEN),
-          ).reportMany(rows),
+  async reportMany(rows: readonly import("./ports").Withdrawal[]) {
+    return this.announcingPaid(
+      await Effect.runPromise(
+        this.ledgerPermit(
+          relayEffect("reportMany ledger claims", () =>
+            ledgerBatches(
+              ledgerCredentialsOf(this.env),
+              (decisions) => this.env.IDENTITY.recordPayDecisions(decisions),
+              cosignerClient(this.env.COSIGNER_URL, this.env.COSIGNER_TOKEN),
+            ).reportMany(rows),
+          ),
+          rows.map((row) => row.chainId),
         ),
-        rows.map((row) => row.chainId),
       ),
     );
   }
-  payMany(rows: readonly import("./ports").PayableClaim[]) {
-    return Effect.runPromise(
-      this.ledgerPermit(
-        relayEffect("payMany ledger claims", () =>
-          ledgerBatches(
-            ledgerCredentialsOf(this.env),
-            (decisions) => this.env.IDENTITY.recordPayDecisions(decisions),
-            cosignerClient(this.env.COSIGNER_URL, this.env.COSIGNER_TOKEN),
-          ).payMany(rows),
+  async payMany(rows: readonly import("./ports").PayableClaim[]) {
+    return this.announcingPaid(
+      await Effect.runPromise(
+        this.ledgerPermit(
+          relayEffect("payMany ledger claims", () =>
+            ledgerBatches(
+              ledgerCredentialsOf(this.env),
+              (decisions) => this.env.IDENTITY.recordPayDecisions(decisions),
+              cosignerClient(this.env.COSIGNER_URL, this.env.COSIGNER_TOKEN),
+            ).payMany(rows),
+          ),
+          rows.map((row) => row.withdrawal.chainId),
         ),
-        rows.map((row) => row.withdrawal.chainId),
       ),
     );
   }
-  postResult(result: import("./ports").BlitzResult) {
-    return Effect.runPromise(
+  /** A batch that wrote at least one claim is a cause to audit; a batch the ledger refused is not. */
+  private async announcingPaid(outcomes: import("./ports").ClaimOutcome[]) {
+    if (outcomes.some((outcome) => outcome.error === null)) await this.ledgerWritten();
+    return outcomes;
+  }
+  async postResult(result: import("./ports").BlitzResult) {
+    await Effect.runPromise(
       this.ledgerPermit(
         relayOperation("verify and post paid game results", () =>
           postVerifiedResult(
@@ -398,6 +435,7 @@ export class ValueRelay extends DurableObject<RelayEnv> {
         [result.chainId],
       ),
     );
+    await this.ledgerWritten();
   }
   async shardHealth() {
     const progress = await this.store.progress();
@@ -821,16 +859,15 @@ export default {
   },
   async scheduled(controller: ScheduledController, raw: RelayEnv): Promise<void> {
     const env = { ...raw, ...decodeRelaySettings(raw) };
-    if (isLedgerReadTick(controller.scheduledTime)) {
-      try {
-        await ledgerOf(env).ledgerTick();
-      } catch {
-        console.error("ledger_tick_unavailable");
-      }
+    const hourly = isLedgerReadTick(controller.scheduledTime);
+    try {
+      await ledgerOf(env).ledgerTickIfDue(hourly);
+    } catch {
+      console.error("ledger_tick_unavailable");
     }
     for (const shard of await activeShards(env.IDENTITY)) {
       try {
-        await relayOf(env, shard.chainId).tick(shard.chainId);
+        await relayOf(env, shard.chainId).tick(shard.chainId, hourly);
       } catch {
         /* One unavailable shard must not suppress another shard. */
       }

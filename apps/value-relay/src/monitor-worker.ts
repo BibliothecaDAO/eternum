@@ -34,9 +34,26 @@ interface MonitorEnv extends MonitorSettings {
   MONITOR: DurableObjectNamespace<ValueMonitor>;
 }
 
+const AUDIT_DUE = "audit:due";
+
 export class ValueMonitor extends DurableObject<MonitorEnv> {
   private readonly checking = Semaphore.makeUnsafe(1);
   private readonly deposits = newDepositMemory();
+  /** A relay write is a cause to audit: the next minute's tick reads the ledger, whatever the hour. */
+  async ledgerWritten() {
+    await this.ctx.storage.put(AUDIT_DUE, true);
+  }
+  /** The minute's tick: audits on the hour, or when the relay wrote since the last audit. */
+  async auditIfDue(hourly: boolean) {
+    if (!hourly && !(await this.ctx.storage.get<true>(AUDIT_DUE))) return null;
+    await this.ctx.storage.delete(AUDIT_DUE);
+    try {
+      return await this.tick();
+    } catch (error) {
+      await this.ledgerWritten();
+      throw error;
+    }
+  }
   async tick() {
     const monitor = this;
     return Effect.runPromise(
@@ -451,7 +468,7 @@ export default {
   },
   async scheduled(controller: ScheduledController, raw: MonitorEnv): Promise<void> {
     const env = { ...raw, ...decodeMonitorSettings(raw) };
-    if (isLedgerReadTick(controller.scheduledTime)) await monitorOf(env).tick();
+    await monitorOf(env).auditIfDue(isLedgerReadTick(controller.scheduledTime));
   },
 };
 
@@ -461,5 +478,8 @@ export class RosterMonitor extends WorkerEntrypoint<MonitorEnv> {
   }
   verifyRoster(chainId: string, gameId: number) {
     return monitorOf(this.env).verifyRoster(chainId, gameId);
+  }
+  ledgerWritten() {
+    return monitorOf(this.env).ledgerWritten();
   }
 }

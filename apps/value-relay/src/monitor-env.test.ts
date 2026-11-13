@@ -41,10 +41,11 @@ it.each([true, false])("serves health under the existing monitor route (healthy:
   expect(reply.headers.get("cache-control")).toBe("no-store");
   expect((await worker.fetch(new Request("https://play.test/health"), env)).status).toBe(404);
 });
-it("audits the ledger once every five minutes", async () => {
-  const tick = vi.fn();
-  const env = { ...settings, MONITOR: { idFromName: (name: string) => name, get: () => ({ tick }) } } as never;
-  for (let minute = 0; minute < 10; minute++)
+it("audits on the hour, and between hours only when the relay wrote", async () => {
+  const auditIfDue = vi.fn();
+  const env = { ...settings, MONITOR: { idFromName: (name: string) => name, get: () => ({ auditIfDue }) } } as never;
+  for (let minute = 0; minute < 120; minute++)
     await worker.scheduled({ scheduledTime: minute * 60_000 } as ScheduledController, env);
-  expect(tick).toHaveBeenCalledTimes(2);
+  expect(auditIfDue).toHaveBeenCalledTimes(120);
+  expect(auditIfDue.mock.calls.flatMap(([hourly], minute) => (hourly ? [minute] : []))).toEqual([0, 60]);
 });
