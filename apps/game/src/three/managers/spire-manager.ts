@@ -17,21 +17,13 @@ import { getWorldPositionForHex } from "../utils";
 import { gltfLoader } from "../utils/utils";
 import { afterWorldInteractive } from "@/game-entry/world-interactive";
 
-/** Spires stood on the surface by a rule rather than a tile: a Frontier realm's spire, lit by depth research. */
-export interface RuleSpires {
-  /** Their hexes on the surface, in contract coordinates. */
-  hexes(): Array<{ col: number; row: number }>;
-  /** Calls back when a rule input changes: a realm's knowledge, or the day turning over. */
-  subscribe(onChange: () => void): () => void;
-}
-
 /** A spire's hex; a dormant one, found by a Blitz reveal, stands without its portal or a name over it, as scenery. */
 type SpireHex = { col: number; row: number; dormant: boolean };
 
 const isSpireTile = (occupierType: number | undefined) =>
   occupierType === TileOccupier.Spire || occupierType === TileOccupier.DormantSpire;
 
-/** Spires belong to tiles or to a rule, so they never require a Structure component. */
+/** Spires belong to tiles (a Frontier realm's found spire occupies its tile too), so they never require a Structure. */
 export class SpireManager {
   private readonly dummy = new Object3D();
   private readonly subscriptions: Array<() => void>;
@@ -54,7 +46,6 @@ export class SpireManager {
     private readonly labels: Group,
     private readonly terrain: TerrainSurface = FLAT_TERRAIN_SURFACE,
     private readonly markLabelsDirty: () => void = () => {},
-    private readonly ruleSpires?: RuleSpires,
     private readonly compilePipelines: PipelineCompiler = async () => {},
   ) {
     this.subscriptions = [
@@ -74,7 +65,6 @@ export class SpireManager {
           this.refresh();
         },
       ),
-      ...(ruleSpires ? [ruleSpires.subscribe(() => this.refresh())] : []),
       subscribeWorldOrigin(() => this.refresh()),
     ];
     this.refresh();
@@ -304,7 +294,7 @@ export class SpireManager {
 
   private nativeSpireHexes(): SpireHex[] {
     const layer = activeMapLayer();
-    const tileSpires = this.projection
+    return this.projection
       .getTiles(layer)
       .filter((tile) => isSpireTile(tile.occupierType))
       .map((tile) => ({
@@ -312,9 +302,6 @@ export class SpireManager {
         row: tile.hexCoords.row,
         dormant: tile.occupierType === TileOccupier.DormantSpire,
       }));
-    // A rule spire stands on the realm's surface ring.
-    if (layer || !this.ruleSpires) return tileSpires;
-    return [...tileSpires, ...this.ruleSpires.hexes().map((hex) => ({ ...hex, dormant: false }))];
   }
 
   private clearLabels(): void {

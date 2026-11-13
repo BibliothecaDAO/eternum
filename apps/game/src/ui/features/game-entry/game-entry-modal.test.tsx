@@ -3,11 +3,13 @@ import { act } from "react";
 import { createRoot } from "react-dom/client";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
-import { afterEach, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { canonicalRealm, getBlockTimestamp, homeDailyClaim } from "@bibliothecadao/eternum";
 import { NativeFactStore } from "@bibliothecadao/eternum/game-client";
 import { IdentityRequestError } from "@realms-world/identity";
+import { orders } from "@bibliothecadao/types";
+import { FRONTIER_S1_PRESET_ID } from "../../../../../../config/source/common/native-preset-modes";
 import { useChainTimeStore } from "@/hooks/store/use-chain-time-store";
 
 const settlement = vi.hoisted(() => ({
@@ -715,6 +717,52 @@ it("offers only Continue for a founded home whose held Realm is already taken", 
   } finally {
     await entry.close();
   }
+});
+
+describe("a founded Season 1 home attaching a held Realm (only one of its own Aspect)", () => {
+  /** The fixture home's Realm, 3098, and the first Realms whose Order is, or is not, in its Aspect. */
+  const aspectOf = (realmId: number) =>
+    orders.find(({ orderId }) => orderId === canonicalRealm(realmId)!.order)!.aspect;
+  const realmIds = Array.from({ length: 8_000 }, (_, index) => index + 1).filter((id) => id !== 3098);
+  const sameAspect = realmIds.find((id) => aspectOf(id) === aspectOf(3098))!;
+  const otherAspect = realmIds.find((id) => aspectOf(id) !== aspectOf(3098))!;
+  const foundedSeasonOneHome = () => {
+    (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
+    settlement.presetId = FRONTIER_S1_PRESET_ID;
+    settlement.settled = true;
+    signIn("0x456");
+    noTicket();
+  };
+
+  it("offers no Realm of another Aspect, sends no source, and goes on to the map", async () => {
+    foundedSeasonOneHome();
+    const registered = relay(() => held(otherAspect));
+    const entry = await openEntry();
+    try {
+      await vi.waitFor(() => expect(entry.host.textContent).toContain("Loading the map"));
+      expect(entry.host.textContent).not.toContain("Choose a daily claim");
+      expect(entry.host.textContent).not.toContain(name(otherAspect));
+      expect(registered).toEqual([]);
+      expect(settlement.calls).toEqual([]);
+    } finally {
+      await entry.close();
+    }
+  });
+
+  it("offers only the Realm of its own Aspect and attaches it", async () => {
+    foundedSeasonOneHome();
+    const registered = relay(() => held(otherAspect, sameAspect));
+    const entry = await openEntry();
+    try {
+      await vi.waitFor(() => expect(entry.featured()).toBe(name(sameAspect)));
+      expect(entry.host.textContent).not.toContain(name(otherAspect));
+      await entry.press("Add this daily claim");
+      await vi.waitFor(() => expect(registered).toEqual([{ gameId: 8, realmId: sameAspect }]));
+      expect(settlement.calls).toEqual([]);
+    } finally {
+      await entry.close();
+    }
+  });
 });
 
 it("resumes a home with an existing campaign source without offering or submitting another source", async () => {

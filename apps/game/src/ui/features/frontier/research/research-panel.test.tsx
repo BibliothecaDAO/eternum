@@ -69,7 +69,8 @@ it("names each of the castle card's compact tiles on the tile itself, which a ph
   act(() => root.render(<CastleResearch nodes={castle} onOpen={vi.fn()} />));
   const tiles = [...host.querySelectorAll<HTMLButtonElement>("[data-node]")];
   expect(tiles.map((tile) => tile.textContent)).toEqual(castle.map((node) => node.name));
-  expect(castle.length).toBeGreaterThanOrEqual(5);
+  // The castle's lores: shrines, wells and Spire lore.
+  expect(castle).toHaveLength(3);
 });
 
 it("researches the Farm's next tier with the side picked", () => {

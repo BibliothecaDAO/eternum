@@ -1,4 +1,4 @@
-import { expeditionDepth, regionSpire, type ExpeditionRules } from "@bibliothecadao/eternum";
+import { expeditionDepth, type ExpeditionRules } from "@bibliothecadao/eternum";
 import { Vector3 } from "three";
 import { claimCamera, type CameraClaim } from "./camera-moves";
 
@@ -50,14 +50,13 @@ const VEIL_CLOSE_MS = 350;
 const VEIL_OPEN_MS = 450;
 
 /**
- * The view's way between two layers of a region: down, into the region's spire where it stands in the layer left;
- * up, out of it where it stands in the layer reached. Either way the spire's spot lies in the region the camera shows
- * then, so the only move between regions is the cut under the veil; between the surface and a layer, it is the surface
- * spire itself.
+ * The view's way between two layers of a region: down, into the spot the camera looks at in the layer left (the spire
+ * itself when the view goes through one); up, out of the spot it reaches. A layer holds no spire until a realm finds
+ * one there, so the view dives where it stands; the only move between regions is the cut under the veil.
  */
 export function spireCrossing(rules: ExpeditionRules, from: MapHex, to: MapHex): SpireCrossing {
   const down = expeditionDepth(rules, { y: to.row }) > expeditionDepth(rules, { y: from.row });
-  return { spire: regionSpire(rules, down ? from : to), arrival: to, down };
+  return { spire: down ? from : to, arrival: to, down };
 }
 
 /**

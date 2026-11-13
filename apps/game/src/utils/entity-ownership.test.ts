@@ -60,7 +60,7 @@ describe("native ownership", () => {
 /** The registered presets of each mode (native-preset-modes.ts): the game's mode is its preset's. */
 const PRESETS = { eternum: 3, blitz: 2, frontier: 5 } as const;
 
-describe("allies (owner, 2026-10-21: tribe members, in Eternum only)", () => {
+describe("allies outside a season with Aspects (owner, 2026-10-21: tribe members, in Eternum only)", () => {
   afterEach(() => vi.restoreAllMocks());
   /** A game of the given mode where players 1 and 2 hold the given tribe memberships (none where undefined). */
   const game = (preset: number, guilds: { 1?: number; 2?: number }) => {
@@ -171,4 +171,36 @@ const structureRow = (entity: bigint, owner: bigint) => ({
     starting_troops_granted: false,
   },
   metadata: { realm_id: 1, order: 0, has_wonder: false, village_realm: 0, mine_kind: 0, deepest_depth: 0 },
+});
+
+describe("allies in a season with Aspects (frontier-season-1.md: members of one Aspect)", () => {
+  afterEach(() => vi.restoreAllMocks());
+  /** A Season 1 game where players 0xa and 0xb each own a home that joined the given Aspect (none where undefined). */
+  const season = ({ rules = true, a, b }: { rules?: boolean; a?: number; b?: number }) => {
+    const { store, write } = fixture();
+    vi.spyOn(configManager, "getPresetId").mockReturnValue(PRESETS.frontier);
+    if (rules) write("AspectRules", [1], { game_id: 1, orders: [1, 2, 3, 4, 4, 3, 4, 4, 1, 2, 2, 1, 1, 3, 3, 2] });
+    const home = (owner: string, entity: number, aspect: number | undefined) => {
+      const structure = store.get("Structure", { game_id: 1, entity_id: 1 })!;
+      write("Structure", [1, entity], { ...structure, entity_id: entity, owner });
+      if (aspect !== undefined) write("HomeAspect", [1, entity], { game_id: 1, home: entity, aspect });
+    };
+    home("0xa", 10, a);
+    home("0xb", 11, b);
+    return store;
+  };
+
+  it("makes members of one Aspect allies, whoever's address spelling asks", () => {
+    expect(arePlayersAllied(season({ a: 3, b: 3 }), "0x0a", 0xbn)).toBe(true);
+  });
+
+  it("makes no ally of another Aspect's member, or of a player whose home joined none", () => {
+    expect(arePlayersAllied(season({ a: 3, b: 2 }), 0xan, 0xbn)).toBe(false);
+    expect(arePlayersAllied(season({ a: 3 }), 0xan, 0xbn)).toBe(false);
+    expect(arePlayersAllied(season({ b: 3 }), 0xan, 0xbn)).toBe(false);
+  });
+
+  it("makes no allies in a Frontier game whose preset groups no Orders, even with membership rows", () => {
+    expect(arePlayersAllied(season({ rules: false, a: 3, b: 3 }), 0xan, 0xbn)).toBe(false);
+  });
 });
