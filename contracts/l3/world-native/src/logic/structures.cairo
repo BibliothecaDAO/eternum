@@ -231,6 +231,35 @@ pub mod StructuresLogic {
         RowSet: RowSet,
     }
     #[abi(embed_v0)]
+    impl Villages of crate::village::IVillageArmy<ContractState> {
+        fn receive_village_army(
+            ref self: ContractState,
+            game_id: u32,
+            actor: ContractAddress,
+            village_id: u64,
+            context: crate::commands::ActionContext,
+        ) -> () {
+            let context = crate::commands::execution_context(game_id, context);
+
+            assert_playing(context.game.unbox(), context.timestamp);
+            let key = ResourceKey { game_id, entity_id: village_id };
+            let record = crate::logic::structures::record(key);
+            assert!(record.owner == actor, "actor does not own village");
+            assert!(record.base.category == crate::taxonomy::VILLAGE_CATEGORY, "structure is not a village");
+            assert!(!record.base.starting_troops_granted, "army grant already claimed");
+            let grants = crate::logic::village::rules(game_id);
+            let interval = context.rules.unbox().tick_config.armies_tick_in_seconds;
+            let claimable_at: u64 = record.base.created_at.into() / interval + grants.troop_delay_ticks.into();
+            assert!(context.timestamp / interval >= claimable_at, "army grant cannot be claimed yet");
+            let category = crate::logic::structure_actions::biome_troop(key, context);
+            crate::logic::structure_actions::grant_starting_troops(
+                key, category, grants.resources, 10 * RESOURCE_PRECISION, context.timestamp, context,
+            );
+            ()
+        }
+    }
+
+    #[abi(embed_v0)]
     impl Camps of crate::camps::ICampRules<ContractState> {
         fn camp_rules(self: @ContractState, game_id: u32) -> crate::camps::CampRules {
             let preset = crate::logic::preset_record::for_game(game_id);

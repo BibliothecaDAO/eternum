@@ -60,7 +60,7 @@ export const commandRoutes = [
   },
   {
     name: "ReceiveVillageArmy",
-    logic: "registry",
+    logic: "structures",
     entrypoint: "receive_village_army",
   },
   {

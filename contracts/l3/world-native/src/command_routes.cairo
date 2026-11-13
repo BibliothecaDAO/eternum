@@ -23,7 +23,7 @@ pub const COMMAND_ROUTES: [CommandRoute; 52] = [
     CommandRoute { logic: 5, selector: selector!("create_reserved_hyperstructure"), items_offset: None, batch: false },
     CommandRoute { logic: 7, selector: selector!("settle_season"), items_offset: None, batch: false },
     CommandRoute { logic: 0, selector: selector!("settle_village"), items_offset: None, batch: false },
-    CommandRoute { logic: 11, selector: selector!("receive_village_army"), items_offset: None, batch: false },
+    CommandRoute { logic: 5, selector: selector!("receive_village_army"), items_offset: None, batch: false },
     CommandRoute { logic: 4, selector: selector!("burn_structure_resources"), items_offset: Some(1), batch: false },
     CommandRoute { logic: 4, selector: selector!("transfer_explorer_resources"), items_offset: Some(2), batch: false },
     CommandRoute { logic: 4, selector: selector!("offload_arrival"), items_offset: None, batch: false },
