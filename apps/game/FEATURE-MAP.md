@@ -1299,11 +1299,12 @@ carries it in one of its three slots; with all three full, the card lists them u
 the one this relic replaces." and Attack waits for a tap on one, then sends that slot (`relic_slot`). The choice stands
 only for that army, that ruin and the relic that slot held when tapped: if the slot's relic changes it asks again, and
 the slot is read again as Attack goes; while the army's relics are not yet known, Attack waits with "Reading the army's
-relics…" (`relics/ruin-relic-choice.ts`). The army's panel shows the relics running ("Rare Ward · 20m left") and its
-three slots, each relic with what it does and **Switch on** (free, anywhere; one of its kind running is replaced).
-Kinds, steps and durations come from the contract's rule constants (`relics/relic-catalog.ts`). Dev:
-`/lab/game?scenario=relics` (three carried, a Ward running, a ruin guarding an Epic Blade; the lab chain answers
-ApplyRelic as `army_relics.cairo` does).
+relics…", and while what the ruin pays is not, with "Reading the ruin's relic…": a ruin pays no relic only in a game
+whose rules say so (no days, or LORDS chest rules; `armyRelicsEnabled`), never because its relic has not arrived
+(`relics/ruin-relic-choice.ts`). The army's panel shows the relics running ("Rare Ward · 20m left") and its three slots,
+each relic with what it does and **Switch on** (free, anywhere; one of its kind running is replaced). Kinds, steps and
+durations come from the contract's rule constants (`relics/relic-catalog.ts`). Dev: `/lab/game?scenario=relics` (three
+carried, a Ward running, a ruin guarding an Epic Blade; the lab chain answers ApplyRelic as `army_relics.cairo` does).
 
 ## Ethereal depths
 

@@ -11,7 +11,7 @@ import { useWorldSpatialTiles } from "@/hooks/use-world-spatial-tiles";
 import { requestOrderAt } from "@/three/scenes/worldmap-order-request";
 import { toast } from "@/ui/features/event-feed/notify";
 
-import { RELIC_WORDS, type Tier } from "@/ui/design-system/kit/words";
+import type { Tier } from "@/ui/design-system/kit/words";
 import { extractReadableErrorMessage } from "@/utils/error-message";
 import {
   biomeTypeOf,
@@ -147,7 +147,7 @@ export const TileCard = ({
   const armyId = actor ? safeInteger(actor.army.explorer_id) : null;
   const inFlight = useInFlight("army", armyId)?.order;
   const refused = useFightRefusal(armyId, targetId(selected));
-  const relics = useRuinRelicChoice(selected.kind === "site" ? targetId(selected) : null, armyId);
+  const relics = useRuinRelicChoice(selected.kind === "site" ? selected.site : null, armyId);
 
   const attackSite = async () => {
     if (!attack || !account.account || armyId === null) return;
@@ -159,14 +159,13 @@ export const TileCard = ({
       if (readTarget(setup.store, selected, attack).chest?.funded === false)
         throw new Error("Today's LORDS budget cannot fund this ruin.");
       // The relic slot read from the facts as Attack goes: a choice the slot no longer bears, or relics not yet known,
-      // keep the order home.
-      const relicSlot = relics ? relics.dispatchSlot() : { slot: undefined };
-      if (!relicSlot) throw new Error(RELIC_WORDS.chooseFirst);
+      // keep the order home with the card's own reason.
+      const relicSlot = relics?.dispatchSlot();
       await sendOnce("army", armyId, { order: "attack" }, () => {
         sent = true;
         fightIsSent();
         playUnitCommandSound("attack");
-        return sendAttack(setup.systemCalls, signer, armyId, selected, relicSlot.slot);
+        return sendAttack(setup.systemCalls, signer, armyId, selected, relicSlot);
       });
     } catch (error) {
       fightWasNotSent({
@@ -183,17 +182,15 @@ export const TileCard = ({
   const verb: SiteVerb | null =
     plan.chest?.funded === false
       ? { kind: "blocked", reason: "Today's LORDS budget cannot fund this ruin." }
-      : relics?.state.kind === "unknown" && actor !== null
-        ? { kind: "blocked", reason: RELIC_WORDS.reading }
-        : relics?.state.kind === "full" && relics.state.chosen === null
-          ? { kind: "blocked", reason: RELIC_WORDS.chooseFirst }
-          : siteVerb({
-              hasArmy: actor !== null,
-              inReach: plan.inReach,
-              approach,
-              stamina,
-              attack: { stamina: plan.attackStamina, inFlight, refused, onAttack: () => void attackSite() },
-            });
+      : relics?.hold && actor !== null
+        ? { kind: "blocked", reason: relics.hold }
+        : siteVerb({
+            hasArmy: actor !== null,
+            inReach: plan.inReach,
+            approach,
+            stamina,
+            attack: { stamina: plan.attackStamina, inFlight, refused, onAttack: () => void attackSite() },
+          });
 
   return (
     <SiteCardView
@@ -206,7 +203,7 @@ export const TileCard = ({
       fight={plan.fight}
       pay={sitePay(plan)}
       chest={plan.chest ? { tier: (plan.chest.tier + 1) as Tier, lords: plan.chest.amount } : undefined}
-      relic={relics && relics.state.kind !== "none" ? relics.state.relic : undefined}
+      relic={(relics && relics.state.kind !== "none" && relics.state.relic) || undefined}
       replacement={
         relics?.state.kind === "full" && (
           <RelicReplacement carried={relics.state.carried} chosen={relics.state.chosen} onChoose={relics.replace} />

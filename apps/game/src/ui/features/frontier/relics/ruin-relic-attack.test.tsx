@@ -36,11 +36,16 @@ afterEach(() => {
   act(() => useUIStore.getState().selectOnMap(null));
 });
 
-/** The fixture's ruin guarding an Epic Blade, army 201 beside it carrying the relics given (null: an empty slot). */
-const ruinCard = (carried: [unknown, unknown, unknown]) => {
+const EPIC_BLADE = { model: "RuinRelic", key: "0xb1", value: { game_id: 1, entity_id: SITE, kind: "Blade", rank: 4 } };
+
+/**
+ * The fixture's ruin, in a Season 1 day (no chest rules), guarding an Epic Blade (`rewardDelivered` false: its RuinRelic
+ * row not received yet), army 201 beside it carrying the relics given (null: an empty slot).
+ */
+const ruinCard = (carried: [unknown, unknown, unknown], rewardDelivered = true) => {
   const { store, site, structure } = campBeside("Ruin");
   store.applyFacts([
-    { model: "RuinRelic", key: "0xb1", value: { game_id: 1, entity_id: SITE, kind: "Blade", rank: 4 } },
+    ...(rewardDelivered ? [EPIC_BLADE] : []),
     {
       model: "ArmyRelics",
       key: "0xb2",
@@ -164,9 +169,10 @@ it("withholds the attack while the army's relics are not known, saying it reads 
 
 it("holds a choice only for the army and the ruin it was made for", () => {
   const { store } = ruinCard(FULL);
+  const site = store.require("ExpeditionSite", { game_id: 1, entity_id: SITE });
   const choice = { armyId: 201, ruinId: SITE, slot: 1 as const, held: { kind: "Tome" as const, rank: 2 } };
   const chosen = (ruinId: number, armyId: number) => {
-    const state = ruinRelicState(store, ruinId, armyId, 350, choice);
+    const state = ruinRelicState(store, { ...site, entity_id: BigInt(ruinId) }, armyId, 350, choice);
     return state.kind === "full" ? state.chosen : state.kind;
   };
   expect(chosen(SITE, 201)).toBe(1);
@@ -187,4 +193,59 @@ it("holds a choice only for the army and the ruin it was made for", () => {
   ] as never);
   // (Its effects lie outside this store's scope, so they read unknown: either way it inherits no choice.)
   expect(chosen(SITE, 202)).not.toBe(1);
+});
+
+it("withholds the attack while what the ruin pays is still arriving, then asks a full army to choose", async () => {
+  // A snapshot in pieces: the ruin and the army are in, the ruin's reward and the army's effects not yet.
+  const { host, attack, button, store } = ruinCard(FULL, false);
+  act(() => store.setSnapshot({ gameId: 1, complete: false, actor: "0x111", timestamp: 350 }));
+  expect(host.querySelector("[data-ruin-relic]")).toBeNull();
+  expect(host.querySelector("[data-relic-replacement]")).toBeNull();
+  expect(host.textContent).toContain("Reading the ruin's relic…");
+  expect(button("Attack")?.disabled ?? true).toBe(true);
+  await act(async () => button("Attack")?.click());
+  expect(attack).not.toHaveBeenCalled();
+  // The reward arrives while the snapshot is still partial: the army's relics are what is left to read.
+  act(() => store.applyFacts([EPIC_BLADE] as never));
+  expect(host.querySelector("[data-ruin-relic]")?.getAttribute("aria-label")).toBe("Pays a relic: Epic Blade");
+  expect(host.textContent).toContain("Reading the army's relics…");
+  expect(button("Attack")?.disabled ?? true).toBe(true);
+  // The snapshot completes: the army is full, so it must choose before anything leaves.
+  act(() => store.setSnapshot({ gameId: 1, complete: true, actor: "0x111", timestamp: 350 }));
+  expect(host.querySelector("[data-relic-replacement]")).not.toBeNull();
+  expect(host.textContent).toContain("Choose the relic to replace first");
+  expect(button("Attack")?.disabled ?? true).toBe(true);
+  act(() => host.querySelector<HTMLButtonElement>('[aria-label="Replace Uncommon Tome"]')!.click());
+  await act(async () => button("Attack")!.click());
+  expect(attack).toHaveBeenCalledTimes(1);
+  expect(attack).toHaveBeenCalledWith(expect.objectContaining({ explorer_id: 201, structure_id: SITE, relic_slot: 1 }));
+});
+
+it("attacks a ruin of a game whose ruins pay LORDS chests with no relic and no slot, even mid-snapshot", async () => {
+  const { host, attack, button, store } = ruinCard(FULL, false);
+  act(() => store.setSnapshot({ gameId: 1, complete: false, actor: "0x111", timestamp: 350 }));
+  // The game's chest rules are a fact of their own: they say its ruins pay no relic, whatever else is still arriving.
+  act(() =>
+    store.applyFacts([
+      {
+        model: "ChestRules",
+        key: "0xb4",
+        value: {
+          game_id: 1,
+          price_ceiling: 50n,
+          shares: { common: 1, uncommon: 2, rare: 4, epic: 10, legendary: 20 },
+          claim_window_seconds: 604_800,
+          pool_bps: 7_000,
+          top_n: 10,
+        },
+      },
+    ] as never),
+  );
+  expect(host.querySelector("[data-ruin-relic]")).toBeNull();
+  expect(host.querySelector("[data-relic-replacement]")).toBeNull();
+  expect(host.textContent).not.toContain("Reading");
+  await act(async () => button("Attack")!.click());
+  expect(attack).toHaveBeenCalledWith(
+    expect.objectContaining({ explorer_id: 201, structure_id: SITE, relic_slot: undefined }),
+  );
 });
