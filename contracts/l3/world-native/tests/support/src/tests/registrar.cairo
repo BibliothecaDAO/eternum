@@ -354,9 +354,7 @@ pub fn discovery_root(
         let raw_root: u256 = sample.into();
         let mut root = raw_root;
         let seed = crate::random::game_root(ref root, game_id);
-        if crate::discovery::frontier(
-            rules, 0, 0, 0, empty_reveals, relic, seed,
-        ) == expected {
+        if crate::discovery::frontier(rules, 0, 0, 0, empty_reveals, relic, seed) == expected {
             return raw_root;
         }
     }
@@ -927,7 +925,9 @@ pub fn setup_frontier_relics_with_preset(
     (d, game_id, ExplorerKey { game_id, explorer_id })
 }
 
-pub fn any_relic() -> crate::army_relics::ArmyRelic { RELIC }
+pub fn any_relic() -> crate::army_relics::ArmyRelic {
+    RELIC
+}
 pub const RELIC: crate::army_relics::ArmyRelic = crate::army_relics::ArmyRelic {
     kind: crate::army_relics::RelicKind::Blade, rank: 1,
 };
@@ -946,7 +946,9 @@ pub fn strong_frontier_army(d: super::Deployment, game_id: u32, key: ExplorerKey
     stop_cheat_caller_address(d.games);
     army
 }
-pub fn place_ruin(d: super::Deployment, game_id: u32, coord: crate::troops::Coord, relic: crate::army_relics::ArmyRelic) -> ResourceKey {
+pub fn place_ruin(
+    d: super::Deployment, game_id: u32, coord: crate::troops::Coord, relic: crate::army_relics::ArmyRelic,
+) -> ResourceKey {
     let context = crate::commands::ExecutionContext { timestamp: 360, ..crate::tests::context(d.games, game_id) };
     start_cheat_caller_address(d.games, d.games);
     let site = IStructureOperationsDispatcher { contract_address: d.games }

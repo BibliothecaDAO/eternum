@@ -19,8 +19,4 @@ function commandMask(disabled: Array<keyof typeof nativeCommandBits>): bigint {
   return mask;
 }
 
-export const arenaCommandMask = commandMask([
-  "EnterDepth",
-  "Research",
-  "InteractSite",
-]);
+export const arenaCommandMask = commandMask(["EnterDepth", "Research", "InteractSite"]);

@@ -52,9 +52,7 @@ export const nativeCommandBits = {
   "EnterDepth": "281474976710656",
   "Research": "562949953421312",
   "SpendSkillPoint": "1125899906842624",
-  "InteractSite": "2251799813685248",
-  "RefillStamina": "4503599627370496",
-  "WithdrawLords": "9007199254740992"
+  "InteractSite": "2251799813685248"
 } as const;
 export interface NativeCommandPayloads {
   CreateExplorer: { readonly slot: BigNumberish; readonly structure_id: BigNumberish; readonly category: BigNumberish; readonly tier: BigNumberish; readonly amount: BigNumberish; readonly direction: BigNumberish };
@@ -83,13 +81,13 @@ export interface NativeCommandPayloads {
   CloseBitcoinPhase: BigNumberish;
   BindBitcoinPhase: BigNumberish;
   ClaimBitcoinPhase: { readonly phase: BigNumberish; readonly mine_ids: readonly (BigNumberish)[] };
-  BattleGuard: { readonly attacker_id: BigNumberish; readonly defender_id: BigNumberish };
+  BattleGuard: { readonly attacker_id: BigNumberish; readonly defender_id: BigNumberish; readonly relic_slot: { readonly kind: "Some"; readonly value: BigNumberish } | { readonly kind: "None"; readonly value: undefined } };
   InitializeHyperstructure: BigNumberish;
   ContributeHyperstructure: { readonly hyperstructure_id: BigNumberish; readonly from_structure_id: BigNumberish; readonly resources: readonly ({ readonly resource_type: BigNumberish; readonly amount: BigNumberish })[] };
   AllocateHyperstructureShares: { readonly hyperstructure_id: BigNumberish; readonly shareholders: readonly ({ readonly player: BigNumberish; readonly bps: BigNumberish })[] };
   SetConstructionAccess: { readonly hyperstructure_id: BigNumberish; readonly access: { readonly kind: "Public"; readonly value: undefined } | { readonly kind: "Private"; readonly value: undefined } | { readonly kind: "GuildOnly"; readonly value: undefined } };
   OpenRelicChest: { readonly explorer_id: BigNumberish; readonly coord: { readonly alt: boolean; readonly x: BigNumberish; readonly y: BigNumberish } };
-  ApplyRelic: { readonly entity_id: BigNumberish; readonly relic_id: BigNumberish; readonly recipient: { readonly kind: "Explorer"; readonly value: undefined } | { readonly kind: "StructureProduction"; readonly value: undefined } | { readonly kind: "StructureGuard"; readonly value: undefined } };
+  ApplyRelic: { readonly entity_id: BigNumberish; readonly relic_id: BigNumberish; readonly recipient: { readonly kind: "Explorer"; readonly value: undefined } | { readonly kind: "StructureProduction"; readonly value: undefined } | { readonly kind: "StructureGuard"; readonly value: undefined } | { readonly kind: "ArmySlot"; readonly value: BigNumberish } };
   CloseSeason: undefined;
   RecordBlitzResults: undefined;
   CraftRelic: BigNumberish;
@@ -109,7 +107,5 @@ export interface NativeCommandPayloads {
   Research: { readonly structure_id: BigNumberish; readonly row: BigNumberish; readonly choice: BigNumberish };
   SpendSkillPoint: { readonly explorer_id: BigNumberish; readonly choice: { readonly kind: "Battle"; readonly value: undefined } | { readonly kind: "Logistics"; readonly value: undefined } | { readonly kind: "Scouting"; readonly value: { readonly kind: "Camp"; readonly value: undefined } | { readonly kind: "Rift"; readonly value: undefined } | { readonly kind: "Sanctuaries"; readonly value: undefined } } | { readonly kind: "Homecoming"; readonly value: undefined } | { readonly kind: "Stamina"; readonly value: BigNumberish } };
   InteractSite: { readonly explorer_id: BigNumberish; readonly coord: { readonly alt: boolean; readonly x: BigNumberish; readonly y: BigNumberish } };
-  RefillStamina: { readonly explorer_id: BigNumberish; readonly amount: BigNumberish };
-  WithdrawLords: { readonly structure_id: BigNumberish; readonly amount: BigNumberish };
 }
 export type NativeCommand = { [K in keyof NativeCommandPayloads]: { kind: K; value: NativeCommandPayloads[K] } }[keyof NativeCommandPayloads];

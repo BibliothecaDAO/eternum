@@ -1,5 +1,11 @@
 {
   "ruleConstants": {
+    "RELIC_BLADE_BPS": 1000,
+    "RELIC_WARD_BPS": 500,
+    "RELIC_PLUNDER_BPS": 2000,
+    "RELIC_TOME_BPS": 4000,
+    "RELIC_SECONDS_PER_RANK": 1800,
+    "RELIC_TILES_PER_RANK": 6,
     "SHRINE_COMMON_BPS": 5000,
     "SHRINE_UNCOMMON_BPS": 3000,
     "SHRINE_RARE_BPS": 1500,
@@ -1556,6 +1562,59 @@
             "kind": "data"
           }
         ]
+      },
+      {
+        "name": "RowSet",
+        "prefix": [
+          "0x2a921933cc5cea2b53bb8bf4895528b1f1e94153fcf3495af25550d773f7717",
+          "0x1381128f2a0228389d1eba9d3aa09f8ed24da656b884a49eea09a5ed2e87724"
+        ],
+        "members": [
+          {
+            "name": "version",
+            "type": "core::integer::u8",
+            "kind": "key"
+          },
+          {
+            "name": "model",
+            "type": "core::felt252",
+            "kind": "key"
+          },
+          {
+            "name": "keys",
+            "type": "core::array::Span::<core::felt252>",
+            "kind": "data"
+          },
+          {
+            "name": "values",
+            "type": "core::array::Span::<core::felt252>",
+            "kind": "data"
+          }
+        ]
+      },
+      {
+        "name": "RowDeleted",
+        "prefix": [
+          "0x2a921933cc5cea2b53bb8bf4895528b1f1e94153fcf3495af25550d773f7717",
+          "0x34ee03e4825cf92d0335b5828e3389af6c145ecff05fce078c3753d871cc7f5"
+        ],
+        "members": [
+          {
+            "name": "version",
+            "type": "core::integer::u8",
+            "kind": "key"
+          },
+          {
+            "name": "model",
+            "type": "core::felt252",
+            "kind": "key"
+          },
+          {
+            "name": "keys",
+            "type": "core::array::Span::<core::felt252>",
+            "kind": "data"
+          }
+        ]
       }
     ],
     "entrypoints": [
@@ -1704,42 +1763,6 @@
       },
       {
         "type": "function",
-        "name": "publish_frontier_pool",
-        "inputs": [
-          {
-            "name": "game_id",
-            "type": "core::integer::u32"
-          },
-          {
-            "name": "amount",
-            "type": "core::integer::u128"
-          },
-          {
-            "name": "prize_pool",
-            "type": "core::integer::u128"
-          }
-        ],
-        "outputs": [],
-        "state_mutability": "external"
-      },
-      {
-        "type": "function",
-        "name": "post_frontier_top",
-        "inputs": [
-          {
-            "name": "game_id",
-            "type": "core::integer::u32"
-          },
-          {
-            "name": "winners",
-            "type": "core::array::Array::<core::starknet::contract_address::ContractAddress>"
-          }
-        ],
-        "outputs": [],
-        "state_mutability": "external"
-      },
-      {
-        "type": "function",
         "name": "sweep_lords",
         "inputs": [
           {
@@ -1749,22 +1772,6 @@
           {
             "name": "structure_id",
             "type": "core::integer::u64"
-          }
-        ],
-        "outputs": [],
-        "state_mutability": "external"
-      },
-      {
-        "type": "function",
-        "name": "award_frontier_prize",
-        "inputs": [
-          {
-            "name": "game_id",
-            "type": "core::integer::u32"
-          },
-          {
-            "name": "rank",
-            "type": "core::integer::u16"
           }
         ],
         "outputs": [],
@@ -4454,6 +4461,134 @@
       }
     },
     {
+      "name": "ArmyRelics",
+      "identity": "0x41726d7952656c696373",
+      "scope": "game",
+      "keys": [
+        {
+          "name": "game_id",
+          "type": "core::integer::u32",
+          "feltLength": 1
+        },
+        {
+          "name": "explorer_id",
+          "type": "core::integer::u64",
+          "feltLength": 1
+        }
+      ],
+      "members": [
+        {
+          "name": "first",
+          "type": "core::option::Option::<world_native::army_relics::ArmyRelic>",
+          "id": "0x6669727374",
+          "feltLength": null
+        },
+        {
+          "name": "second",
+          "type": "core::option::Option::<world_native::army_relics::ArmyRelic>",
+          "id": "0x7365636f6e64",
+          "feltLength": null
+        },
+        {
+          "name": "third",
+          "type": "core::option::Option::<world_native::army_relics::ArmyRelic>",
+          "id": "0x7468697264",
+          "feltLength": null
+        }
+      ],
+      "keyLength": 2,
+      "valueLength": null,
+      "absence": {
+        "parent": "ExplorerTroops",
+        "value": "zero",
+        "meaning": "No carried relics or running relic of this kind while the army exists.",
+        "parentKeys": {
+          "game_id": "game_id",
+          "explorer_id": "explorer_id"
+        }
+      }
+    },
+    {
+      "name": "ArmyRelicEffect",
+      "identity": "0x41726d7952656c6963456666656374",
+      "scope": "game",
+      "keys": [
+        {
+          "name": "game_id",
+          "type": "core::integer::u32",
+          "feltLength": 1
+        },
+        {
+          "name": "explorer_id",
+          "type": "core::integer::u64",
+          "feltLength": 1
+        },
+        {
+          "name": "kind",
+          "type": "world_native::army_relics::RelicKind",
+          "feltLength": 1
+        }
+      ],
+      "members": [
+        {
+          "name": "rank",
+          "type": "core::integer::u8",
+          "id": "0x72616e6b",
+          "feltLength": 1
+        },
+        {
+          "name": "expires_at",
+          "type": "core::integer::u64",
+          "id": "0x657870697265735f6174",
+          "feltLength": 1
+        }
+      ],
+      "keyLength": 3,
+      "valueLength": 2,
+      "absence": {
+        "parent": "ExplorerTroops",
+        "value": "zero",
+        "meaning": "No carried relics or running relic of this kind while the army exists.",
+        "parentKeys": {
+          "game_id": "game_id",
+          "explorer_id": "explorer_id"
+        }
+      }
+    },
+    {
+      "name": "RuinRelic",
+      "identity": "0x5275696e52656c6963",
+      "scope": "game",
+      "keys": [
+        {
+          "name": "game_id",
+          "type": "core::integer::u32",
+          "feltLength": 1
+        },
+        {
+          "name": "entity_id",
+          "type": "core::integer::u64",
+          "feltLength": 1
+        }
+      ],
+      "members": [
+        {
+          "name": "kind",
+          "type": "world_native::army_relics::RelicKind",
+          "id": "0x6b696e64",
+          "feltLength": 1
+        },
+        {
+          "name": "rank",
+          "type": "core::integer::u8",
+          "id": "0x72616e6b",
+          "feltLength": 1
+        }
+      ],
+      "keyLength": 2,
+      "valueLength": 2
+    },
+    {
       "name": "ArmyProgress",
       "identity": "0x41726d7950726f6772657373",
       "scope": "game",
@@ -6778,6 +6913,34 @@
         }
       ]
     },
+    "core::option::Option::<world_native::army_relics::ArmyRelic>": {
+      "type": "enum",
+      "name": "core::option::Option::<world_native::army_relics::ArmyRelic>",
+      "variants": [
+        {
+          "name": "Some",
+          "type": "world_native::army_relics::ArmyRelic"
+        },
+        {
+          "name": "None",
+          "type": "()"
+        }
+      ]
+    },
+    "core::option::Option::<world_native::army_relics::ArmyRelicEffect>": {
+      "type": "enum",
+      "name": "core::option::Option::<world_native::army_relics::ArmyRelicEffect>",
+      "variants": [
+        {
+          "name": "Some",
+          "type": "world_native::army_relics::ArmyRelicEffect"
+        },
+        {
+          "name": "None",
+          "type": "()"
+        }
+      ]
+    },
     "core::option::Option::<world_native::buildings::BoardRules>": {
       "type": "enum",
       "name": "core::option::Option::<world_native::buildings::BoardRules>",
@@ -7269,6 +7432,96 @@
         {
           "name": "y",
           "type": "core::felt252"
+        }
+      ]
+    },
+    "world_native::army_relics::ArmyRelic": {
+      "type": "struct",
+      "name": "world_native::army_relics::ArmyRelic",
+      "members": [
+        {
+          "name": "kind",
+          "type": "world_native::army_relics::RelicKind"
+        },
+        {
+          "name": "rank",
+          "type": "core::integer::u8"
+        }
+      ]
+    },
+    "world_native::army_relics::ArmyRelicEffect": {
+      "type": "struct",
+      "name": "world_native::army_relics::ArmyRelicEffect",
+      "members": [
+        {
+          "name": "rank",
+          "type": "core::integer::u8"
+        },
+        {
+          "name": "expires_at",
+          "type": "core::integer::u64"
+        }
+      ]
+    },
+    "world_native::army_relics::ArmyRelicEffectKey": {
+      "type": "struct",
+      "name": "world_native::army_relics::ArmyRelicEffectKey",
+      "members": [
+        {
+          "name": "game_id",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "explorer_id",
+          "type": "core::integer::u64"
+        },
+        {
+          "name": "kind",
+          "type": "world_native::army_relics::RelicKind"
+        }
+      ]
+    },
+    "world_native::army_relics::ArmyRelics": {
+      "type": "struct",
+      "name": "world_native::army_relics::ArmyRelics",
+      "members": [
+        {
+          "name": "first",
+          "type": "core::option::Option::<world_native::army_relics::ArmyRelic>"
+        },
+        {
+          "name": "second",
+          "type": "core::option::Option::<world_native::army_relics::ArmyRelic>"
+        },
+        {
+          "name": "third",
+          "type": "core::option::Option::<world_native::army_relics::ArmyRelic>"
+        }
+      ]
+    },
+    "world_native::army_relics::RelicKind": {
+      "type": "enum",
+      "name": "world_native::army_relics::RelicKind",
+      "variants": [
+        {
+          "name": "Blade",
+          "type": "()"
+        },
+        {
+          "name": "Ward",
+          "type": "()"
+        },
+        {
+          "name": "Plunder",
+          "type": "()"
+        },
+        {
+          "name": "FarEye",
+          "type": "()"
+        },
+        {
+          "name": "Tome",
+          "type": "()"
         }
       ]
     },
@@ -7957,6 +8210,10 @@
         {
           "name": "defender_id",
           "type": "core::integer::u64"
+        },
+        {
+          "name": "relic_slot",
+          "type": "core::option::Option::<core::integer::u8>"
         }
       ]
     },
@@ -8189,14 +8446,6 @@
         {
           "name": "InteractSite",
           "type": "world_native::relics::InteractSite"
-        },
-        {
-          "name": "RefillStamina",
-          "type": "world_native::relics::RefillStamina"
-        },
-        {
-          "name": "WithdrawLords",
-          "type": "world_native::relics::WithdrawLords"
         }
       ]
     },
@@ -8458,7 +8707,7 @@
         },
         {
           "name": "Ruin",
-          "type": "world_native::relics::SiteChest"
+          "type": "world_native::army_relics::ArmyRelic"
         },
         {
           "name": "Beasts",
@@ -10549,20 +10798,10 @@
         {
           "name": "StructureGuard",
           "type": "()"
-        }
-      ]
-    },
-    "world_native::relics::RefillStamina": {
-      "type": "struct",
-      "name": "world_native::relics::RefillStamina",
-      "members": [
-        {
-          "name": "explorer_id",
-          "type": "core::integer::u64"
         },
         {
-          "name": "amount",
-          "type": "core::integer::u64"
+          "name": "ArmySlot",
+          "type": "core::integer::u8"
         }
       ]
     },
@@ -10737,20 +10976,6 @@
         {
           "name": "benefit",
           "type": "world_native::relics::SiteBenefit"
-        }
-      ]
-    },
-    "world_native::relics::WithdrawLords": {
-      "type": "struct",
-      "name": "world_native::relics::WithdrawLords",
-      "members": [
-        {
-          "name": "structure_id",
-          "type": "core::integer::u64"
-        },
-        {
-          "name": "amount",
-          "type": "core::integer::u128"
         }
       ]
     },
@@ -12451,5 +12676,5 @@
       ]
     }
   },
-  "identity": "5b265193e4b08a23649b97df78516d67231940841aab11111f14bfec71e04867"
+  "identity": "e6b8e05ea788e407a7f3297adce2964cf20f96ad6a6847d56cca70575522ecef"
 }

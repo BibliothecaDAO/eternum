@@ -1,5 +1,5 @@
 {
-  "schemaIdentity": "5b265193e4b08a23649b97df78516d67231940841aab11111f14bfec71e04867",
+  "schemaIdentity": "e6b8e05ea788e407a7f3297adce2964cf20f96ad6a6847d56cca70575522ecef",
   "commandAbi": [
     {
       "type": "interface",
@@ -230,14 +230,6 @@
         {
           "name": "InteractSite",
           "type": "world_native::relics::InteractSite"
-        },
-        {
-          "name": "RefillStamina",
-          "type": "world_native::relics::RefillStamina"
-        },
-        {
-          "name": "WithdrawLords",
-          "type": "world_native::relics::WithdrawLords"
         }
       ]
     },
@@ -606,6 +598,24 @@
         {
           "name": "defender_id",
           "type": "core::integer::u64"
+        },
+        {
+          "name": "relic_slot",
+          "type": "core::option::Option::<core::integer::u8>"
+        }
+      ]
+    },
+    {
+      "type": "enum",
+      "name": "core::option::Option::<core::integer::u8>",
+      "variants": [
+        {
+          "name": "Some",
+          "type": "core::integer::u8"
+        },
+        {
+          "name": "None",
+          "type": "()"
         }
       ]
     },
@@ -744,6 +754,10 @@
         {
           "name": "StructureGuard",
           "type": "()"
+        },
+        {
+          "name": "ArmySlot",
+          "type": "core::integer::u8"
         }
       ]
     },
@@ -1134,34 +1148,6 @@
           "type": "world_native::troops::Coord"
         }
       ]
-    },
-    {
-      "type": "struct",
-      "name": "world_native::relics::RefillStamina",
-      "members": [
-        {
-          "name": "explorer_id",
-          "type": "core::integer::u64"
-        },
-        {
-          "name": "amount",
-          "type": "core::integer::u64"
-        }
-      ]
-    },
-    {
-      "type": "struct",
-      "name": "world_native::relics::WithdrawLords",
-      "members": [
-        {
-          "name": "structure_id",
-          "type": "core::integer::u64"
-        },
-        {
-          "name": "amount",
-          "type": "core::integer::u128"
-        }
-      ]
     }
   ],
   "events": [
@@ -1405,6 +1391,18 @@
     },
     {
       "name": "TileOccupancy",
+      "scope": "game"
+    },
+    {
+      "name": "ArmyRelics",
+      "scope": "game"
+    },
+    {
+      "name": "ArmyRelicEffect",
+      "scope": "game"
+    },
+    {
+      "name": "RuinRelic",
       "scope": "game"
     },
     {

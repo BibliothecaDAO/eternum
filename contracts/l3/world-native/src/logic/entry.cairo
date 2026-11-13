@@ -24,7 +24,7 @@ pub fn recover_flyer_days(
 pub mod EntryAdministration {
     use starknet::ContractAddress;
     use starknet::storage::{
-        StorageMapReadAccess, StorageMapWriteAccess, StoragePathEntry, StoragePointerReadAccess,
+        StorageMapReadAccess, StoragePathEntry, StoragePointerReadAccess,
         StoragePointerWriteAccess,
     };
     use crate::entry::{LaborGrant, LaborHome};
@@ -181,7 +181,6 @@ pub mod EntryAdministration {
         impl Life: ReleaseState::HasComponent<TContractState>,
         +Drop<TContractState>,
     > of InternalTrait<TContractState> {
-
         fn grant_home_resources(
             ref self: ComponentState<TContractState>, target: LaborHome, day: u64, account: ContractAddress,
         ) -> LaborGrant {

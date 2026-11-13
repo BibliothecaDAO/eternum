@@ -152,7 +152,7 @@ pub mod GamesEntry {
                 },
                 command,
             );
-            let (index, route, _payload) = crate::commands::route_command(command).expect('INVALID_COMMAND');
+            let (index, _, _) = crate::commands::route_command(command).expect('INVALID_COMMAND');
             // The season class reads the game's rules once for the whole play; the ingress reads only its gate.
             let command_mask = crate::logic::preset_record::for_game(game_id).rules.command_mask.read();
             assert!(crate::rules::command_enabled(command_mask, index.into()), "command disabled");

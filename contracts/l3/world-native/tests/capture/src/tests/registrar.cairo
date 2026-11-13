@@ -559,7 +559,6 @@ fn an_army_enters_a_depth_only_from_its_realms_spire_which_turns_each_day() {
 }
 
 
-
 #[test]
 fn a_beast_clear_pays_labor_once_keeps_xp_and_removes_its_blocker() {
     beast_clear_payout(false);
@@ -1254,9 +1253,7 @@ fn frontier_site_discovery_reads_home_knowledge_and_stores_the_shrine_reward() {
         let mut chosen = None;
         for sample in 0_u64..10000 {
             let seed: u256 = sample.into();
-            if crate::discovery::frontier(
-                enabled, 0, 0, 0, 0, Some(any_relic()), seed,
-            ) == expected {
+            if crate::discovery::frontier(enabled, 0, 0, 0, 0, Some(any_relic()), seed) == expected {
                 chosen = Some(seed);
                 break;
             }
@@ -1451,7 +1448,7 @@ fn two_ruins_at_the_same_depth_award_relics_without_closing_the_other_or_paying_
             ),
         );
         let after = GameState { contract_address: d.games }.resolved_explorer(key).unwrap();
-        timestamp = core::cmp::max(timestamp + 1, after.troops.battle_cooldown_end + 1);
+        timestamp = core::cmp::max(timestamp + 1, Into::<u32, u64>::into(after.troops.battle_cooldown_end) + 1);
         assert_site_removed(d, target);
         snforge_std::interact_with_state(
             d.games,

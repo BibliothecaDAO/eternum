@@ -12,13 +12,7 @@ import { requestOrderAt } from "@/three/scenes/worldmap-order-request";
 import { toast } from "@/ui/features/event-feed/notify";
 
 import { extractReadableErrorMessage } from "@/utils/error-message";
-import {
-  biomeTypeOf,
-  configManager,
-  getStructureName,
-  isViewerOwner,
-  ruinDisappeared,
-} from "@bibliothecadao/eternum";
+import { biomeTypeOf, configManager, getStructureName, isViewerOwner, ruinDisappeared } from "@bibliothecadao/eternum";
 import {
   safeInteger,
   type GameClientSetup,
@@ -177,14 +171,14 @@ export const TileCard = ({
 
   const verb: SiteVerb | null =
     relics?.hold && actor !== null
-        ? { kind: "blocked", reason: relics.hold }
-        : siteVerb({
-            hasArmy: actor !== null,
-            inReach: plan.inReach,
-            approach,
-            stamina,
-            attack: { stamina: plan.attackStamina, inFlight, refused, onAttack: () => void attackSite() },
-          });
+      ? { kind: "blocked", reason: relics.hold }
+      : siteVerb({
+          hasArmy: actor !== null,
+          inReach: plan.inReach,
+          approach,
+          stamina,
+          attack: { stamina: plan.attackStamina, inFlight, refused, onAttack: () => void attackSite() },
+        });
 
   return (
     <SiteCardView

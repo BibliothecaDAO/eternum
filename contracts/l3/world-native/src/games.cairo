@@ -150,14 +150,18 @@ pub mod Games {
 
         fn frontier_prize(self: @ContractState, game_id: u32) -> crate::entry::FrontierPrize {
             crate::entry::ILedgerOperatorDispatcherTrait::frontier_prize(
-                crate::entry::ILedgerOperatorLibraryDispatcher { class_hash: self.release.classes(game_id).bridge.read() },
+                crate::entry::ILedgerOperatorLibraryDispatcher {
+                    class_hash: self.release.classes(game_id).bridge.read(),
+                },
                 game_id,
             )
         }
 
         fn sweep_lords(ref self: ContractState, game_id: u32, structure_id: u64) {
             crate::entry::ILedgerOperatorDispatcherTrait::sweep_lords(
-                crate::entry::ILedgerOperatorLibraryDispatcher { class_hash: self.release.classes(game_id).bridge.read() },
+                crate::entry::ILedgerOperatorLibraryDispatcher {
+                    class_hash: self.release.classes(game_id).bridge.read(),
+                },
                 game_id,
                 structure_id,
             )
@@ -167,7 +171,9 @@ pub mod Games {
             ref self: ContractState, home: crate::entry::LaborHome, day: u64, account: ContractAddress,
         ) -> crate::entry::LaborGrant {
             crate::entry::ILedgerOperatorDispatcherTrait::grant_labor(
-                crate::entry::ILedgerOperatorLibraryDispatcher { class_hash: self.release.classes(home.game_id).bridge.read() },
+                crate::entry::ILedgerOperatorLibraryDispatcher {
+                    class_hash: self.release.classes(home.game_id).bridge.read(),
+                },
                 home,
                 day,
                 account,
@@ -177,7 +183,9 @@ pub mod Games {
             self: @ContractState, home: crate::entry::LaborHome, day: u64,
         ) -> Option<crate::entry::LaborGrant> {
             crate::entry::ILedgerOperatorDispatcherTrait::labor_grant(
-                crate::entry::ILedgerOperatorLibraryDispatcher { class_hash: self.release.classes(home.game_id).bridge.read() },
+                crate::entry::ILedgerOperatorLibraryDispatcher {
+                    class_hash: self.release.classes(home.game_id).bridge.read(),
+                },
                 home,
                 day,
             )

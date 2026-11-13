@@ -143,12 +143,7 @@ const ArmySheet = ({
       beside={!step.choosing && <ArmyDeleteButton army={army} onPress={() => setDeleting(true)} />}
       onClose={onClose}
     >
-      <ArmyDetail
-        army={view}
-        sending={sending}
-        step={step}
-        onLevelUp={onLevelUp}
-      />
+      <ArmyDetail army={view} sending={sending} step={step} onLevelUp={onLevelUp} />
       <ArmyRelicSlots explorerId={army.explorerId} />
       {deleting && !step.choosing && (
         <ArmyDeleteConfirm army={army} onCancel={() => setDeleting(false)} onDeleted={onClose} />

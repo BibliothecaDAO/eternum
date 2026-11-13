@@ -1,4 +1,4 @@
-use starknet::storage::{StorageMapReadAccess, StorageMapWriteAccess, StoragePathEntry, StoragePointerReadAccess};
+use starknet::storage::{StorageMapReadAccess, StorageMapWriteAccess};
 use crate::expeditions::*;
 use crate::troops::Coord;
 

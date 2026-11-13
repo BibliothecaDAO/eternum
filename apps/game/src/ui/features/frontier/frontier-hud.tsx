@@ -185,7 +185,9 @@ export const FrontierHud = ({
   const purse = spectating ? (
     <IdentityChip compact />
   ) : (
-    realm && !visit && claimWaiting && (
+    realm &&
+    !visit &&
+    claimWaiting && (
       <PurseRow>
         <RealmsChip waiting={claimWaiting} narrow onOpen={() => setSurface("realms")} />
       </PurseRow>
@@ -551,4 +553,3 @@ const FrontierRealmPanel = ({
     />
   );
 };
-

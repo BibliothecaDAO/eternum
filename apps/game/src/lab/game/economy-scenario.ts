@@ -30,21 +30,34 @@ export const economyScenario = (): LabScenario => {
     }),
     row("Structure", "0xe08", { ...home, entity_id: DESTINATION, metadata: { ...home.metadata, realm_id: 2 } }),
     row("TileOccupancy", "0xe09", {
-      game_id: 1, alt: false, col: at.col + 2, row: at.row,
-      entity_id: DESTINATION, category: home.base.category, is_structure: true,
+      game_id: 1,
+      alt: false,
+      col: at.col + 2,
+      row: at.row,
+      entity_id: DESTINATION,
+      category: home.base.category,
+      is_structure: true,
     }),
     row("ResourceWeight", "0xe0a", { game_id: 1, entity_id: DESTINATION, capacity: 100_000n * PRECISION, weight: 0n }),
     balance(HOME, ResourcesIds.Wheat, 1_000n * PRECISION),
     balance(HOME, ResourcesIds.Donkey, 100n * PRECISION),
     balance(DESTINATION, ResourcesIds.Wheat, 0n),
     row("ProductionRecipe", "0xb", {
-      game_id: 1, resource_type: ResourcesIds.Knight,
-      simple_output: PRECISION, simple_inputs: [{ resource_type: ResourcesIds.Wheat, amount: 2n * PRECISION }],
-      complex_output: 10n * PRECISION, complex_inputs: [{ resource_type: ResourcesIds.Wheat, amount: 2n * PRECISION }],
+      game_id: 1,
+      resource_type: ResourcesIds.Knight,
+      simple_output: PRECISION,
+      simple_inputs: [{ resource_type: ResourcesIds.Wheat, amount: 2n * PRECISION }],
+      complex_output: 10n * PRECISION,
+      complex_inputs: [{ resource_type: ResourcesIds.Wheat, amount: 2n * PRECISION }],
     }),
     row("ResourceProduction", "0xe0b", {
-      game_id: 1, entity_id: HOME, resource_type: ResourcesIds.Knight,
-      building_count: 1, production_rate: PRECISION, output_amount_left: 0n, last_settled_at: scenario.startsAt,
+      game_id: 1,
+      entity_id: HOME,
+      resource_type: ResourcesIds.Knight,
+      building_count: 1,
+      production_rate: PRECISION,
+      output_amount_left: 0n,
+      last_settled_at: scenario.startsAt,
     }),
   ] as never);
   return {
@@ -58,21 +71,34 @@ export const economyScenario = (): LabScenario => {
 };
 
 const row = (model: string, key: string, value: unknown): LabFact => ({ model, key, value: wire(value) });
-const balance = (entity: bigint, resource: number, amount: bigint): LabFact => row(
-  "ResourceBalance", `0xe${entity.toString(16)}${resource.toString(16)}`,
-  { game_id: 1, entity_id: entity, resource_type: resource, balance: amount },
-);
+const balance = (entity: bigint, resource: number, amount: bigint): LabFact =>
+  row("ResourceBalance", `0xe${entity.toString(16)}${resource.toString(16)}`, {
+    game_id: 1,
+    entity_id: entity,
+    resource_type: resource,
+    balance: amount,
+  });
 
 const produce = (command: LabCommand, chain: NativeFactStore, now: number): LabFact[] => {
   const [, home, resourceCount, resource, amountCount, cycles] = command.calldata.slice(4).map(BigInt);
   if (home !== HOME || resourceCount !== 1n || amountCount !== 1n || resource !== BigInt(ResourcesIds.Knight))
     throw new Error("The economy fixture produces one knight recipe at its home");
   const recipe = chain.require("ProductionRecipe", { game_id: 1, resource_type: Number(resource) });
-  const production = chain.require("ResourceProduction", { game_id: 1, entity_id: home, resource_type: Number(resource) });
+  const production = chain.require("ResourceProduction", {
+    game_id: 1,
+    entity_id: home,
+    resource_type: Number(resource),
+  });
   return [
-    ...balancesPaid(chain, home, recipe.complex_inputs.map((input) => ({ resource: input.resource_type, amount: input.amount * cycles }))),
+    ...balancesPaid(
+      chain,
+      home,
+      recipe.complex_inputs.map((input) => ({ resource: input.resource_type, amount: input.amount * cycles })),
+    ),
     row("ResourceProduction", "0xe0b", {
-      ...production, output_amount_left: production.output_amount_left + recipe.complex_output * cycles, last_settled_at: now,
+      ...production,
+      output_amount_left: production.output_amount_left + recipe.complex_output * cycles,
+      last_settled_at: now,
     }),
   ];
 };
@@ -88,11 +114,17 @@ const transfer = (command: LabCommand, chain: NativeFactStore, now: number): Lab
   const travel = shipmentTravelSeconds(Number(from), Number(to), chain, false);
   const tick = Math.floor((now + travel) / Number(rules.tick_config.delivery_tick_in_seconds));
   const arrival: NativeRows["ResourceArrival"] = {
-    game_id: 1, entity_id: to, day: BigInt(Math.floor(tick / nativeArrivalConstants.SLOTS_PER_DAY)), slot: tick % nativeArrivalConstants.SLOTS_PER_DAY + 1,
+    game_id: 1,
+    entity_id: to,
+    day: BigInt(Math.floor(tick / nativeArrivalConstants.SLOTS_PER_DAY)),
+    slot: (tick % nativeArrivalConstants.SLOTS_PER_DAY) + 1,
     resources: [{ resource_type: Number(resource), amount }],
   };
   return [
-    ...balancesPaid(chain, from, [{ resource: Number(resource), amount }, { resource: ResourcesIds.Donkey, amount: donkeys }]),
+    ...balancesPaid(chain, from, [
+      { resource: Number(resource), amount },
+      { resource: ResourcesIds.Donkey, amount: donkeys },
+    ]),
     row("ResourceArrival", "0xe0c", arrival),
   ];
 };

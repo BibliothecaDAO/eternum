@@ -135,7 +135,10 @@ export const formatArrivals = (arrivals: Iterable<NativeRows["ResourceArrival"]>
         amount: Number(amount),
       })),
       // A key's slot counts its day's ticks from 1.
-      arrivesAt: landingOfDeliveryTick(arrival.day * BigInt(nativeArrivalConstants.SLOTS_PER_DAY) + BigInt(arrival.slot) - 1n, deliveryTickSeconds),
+      arrivesAt: landingOfDeliveryTick(
+        arrival.day * BigInt(nativeArrivalConstants.SLOTS_PER_DAY) + BigInt(arrival.slot) - 1n,
+        deliveryTickSeconds,
+      ),
       day: arrival.day,
       slot: BigInt(arrival.slot),
     }));

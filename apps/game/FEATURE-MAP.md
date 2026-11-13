@@ -786,8 +786,9 @@ knights on the camp they cleared, beside the ruin they attacked (guard 999), bot
 that fight and another player's lost fight at a site the map never loaded; `scenario=low-stamina` is that army beside
 the same ruin with 5 stamina and no cooldown, short of an attack. `scenario=ruin-fight` is that army beside that ruin
 before the fight, stamina to attack and no cooldown: select the army, open the ruin's card (right-click, or tap),
-**Attack**; the lab's chain clears the ruin as the contract does (4 troops lost, an Uncommon Blade in the army’s first relic slot) and the
-camera stays where the player had it (`--steps lab-ruin-fight`), with its relic shown in the army panel. `scenario=ruin-far` stands that army, 1,626 knights, two tiles from a ruin of 3,000: select it, open the ruin's
+**Attack**; the lab's chain clears the ruin as the contract does (4 troops lost, an Uncommon Blade in the army’s first
+relic slot) and the camera stays where the player had it (`--steps lab-ruin-fight`), with its relic shown in the army
+panel. `scenario=ruin-far` stands that army, 1,626 knights, two tiles from a ruin of 3,000: select it, open the ruin's
 card, and it forecasts the attack (1,626 → 517, 3,000 → 2,412) with **Move** in Attack's place (`--steps lab-ruin-far`).
 `scenario=cleared-camp` stands the realm's second army on a camp it cleared, away from the spire, and leaves another
 cleared camp empty: tap the army for its panel, and the empty camp shows its standard with no token. `scenario=camp`
@@ -1292,6 +1293,6 @@ verifies routing and appearance; it is not a performance benchmark.
 ## Production and resource delivery proof
 
 `pnpm --dir apps/game playtest --steps lab-economy --iterations 1 --out <evidence>` opens Production in the Blitz
-fixture, starts three knight recipe cycles, then sends fifty wheat through Transfer and reads its Arrivals tab.
-The transcript keeps the submitted commands, the balance and production replies, and the visible result; each step
-also leaves a screenshot. `/lab/game?scenario=economy` opens the same two owned realms for manual reproduction.
+fixture, starts three knight recipe cycles, then sends fifty wheat through Transfer and reads its Arrivals tab. The
+transcript keeps the submitted commands, the balance and production replies, and the visible result; each step also
+leaves a screenshot. `/lab/game?scenario=economy` opens the same two owned realms for manual reproduction.

@@ -1,9 +1,15 @@
 // Generated from native fact models and contract ABIs. Run the native schema generator to update.
-export const nativeFactSchemaIdentity = "5b265193e4b08a23649b97df78516d67231940841aab11111f14bfec71e04867";
+export const nativeFactSchemaIdentity = "e6b8e05ea788e407a7f3297adce2964cf20f96ad6a6847d56cca70575522ecef";
 export const nativeReleaseConstants = {
   "RUIN_DEPTH_LIMIT_RELEASE": 9
 } as const;
 export const nativeRuleConstants = {
+  "RELIC_BLADE_BPS": 1000,
+  "RELIC_WARD_BPS": 500,
+  "RELIC_PLUNDER_BPS": 2000,
+  "RELIC_TOME_BPS": 4000,
+  "RELIC_SECONDS_PER_RANK": 1800,
+  "RELIC_TILES_PER_RANK": 6,
   "SHRINE_COMMON_BPS": 5000,
   "SHRINE_UNCOMMON_BPS": 3000,
   "SHRINE_RARE_BPS": 1500,
@@ -57,6 +63,9 @@ export const nativeRuleConstants = {
   "PRODUCTION_START": 131072,
   "WELL_STAMINA_DIVISOR": 2,
   "FRONTIER_REPORT_GRACE_SECONDS": 3600
+} as const;
+export const nativeArrivalConstants = {
+  "SLOTS_PER_DAY": 48
 } as const;
 export const nativeResearchConstants = {
   "ROW_FARM": 0,
@@ -229,6 +238,9 @@ export interface NativeRows {
   PlayerEntry: { readonly game_id: number; readonly owner: bigint; readonly player: bigint };
   TileOpt: { readonly game_id: number; readonly alt: boolean; readonly col: number; readonly row: number; readonly data: bigint };
   TileOccupancy: { readonly game_id: number; readonly alt: boolean; readonly col: number; readonly row: number; readonly entity_id: bigint; readonly category: number; readonly is_structure: boolean };
+  ArmyRelics: { readonly game_id: number; readonly explorer_id: bigint; readonly first: ({ readonly kind: "Blade" | "Ward" | "Plunder" | "FarEye" | "Tome"; readonly rank: number }) | null; readonly second: ({ readonly kind: "Blade" | "Ward" | "Plunder" | "FarEye" | "Tome"; readonly rank: number }) | null; readonly third: ({ readonly kind: "Blade" | "Ward" | "Plunder" | "FarEye" | "Tome"; readonly rank: number }) | null };
+  ArmyRelicEffect: { readonly game_id: number; readonly explorer_id: bigint; readonly kind: "Blade" | "Ward" | "Plunder" | "FarEye" | "Tome"; readonly rank: number; readonly expires_at: bigint };
+  RuinRelic: { readonly game_id: number; readonly entity_id: bigint; readonly kind: "Blade" | "Ward" | "Plunder" | "FarEye" | "Tome"; readonly rank: number };
   ArmyProgress: { readonly game_id: number; readonly explorer_id: bigint; readonly xp: number; readonly common_points: number; readonly uncommon_points: number; readonly rare_points: number; readonly epic_points: number; readonly legendary_points: number; readonly battle: number; readonly logistics: number; readonly scouting: number; readonly homecoming: number; readonly scouting_kinds: number };
   ArmySlot: { readonly game_id: number; readonly structure_id: bigint; readonly epoch: bigint; readonly slot: number; readonly explorer_id: bigint; readonly stamina: { readonly amount: bigint; readonly settled_at: number; readonly remainder: number } };
   ExplorerTroops: { readonly game_id: number; readonly explorer_id: bigint; readonly owner: bigint; readonly troops: { readonly category: "Knight" | "Paladin" | "Crossbowman"; readonly tier: "T1" | "T2" | "T3"; readonly count: bigint; readonly stamina: { readonly Inline: { readonly amount: bigint; readonly settled_at: number; readonly remainder: number } } | { readonly Slot: number }; readonly boosts: { readonly incr_damage_dealt_percent_num: number; readonly incr_damage_dealt_end_at: number; readonly decr_damage_gotten_percent_num: number; readonly decr_damage_gotten_end_at: number; readonly incr_stamina_regen_percent_num: number; readonly incr_stamina_regen_seconds_left: number; readonly incr_explore_reward_percent_num: number; readonly incr_explore_reward_end_at: number }; readonly battle_cooldown_end: number } };
@@ -318,6 +330,9 @@ export interface NativeKeys {
   PlayerEntry: { readonly game_id: number; readonly owner: bigint };
   TileOpt: { readonly game_id: number; readonly alt: boolean; readonly col: number; readonly row: number };
   TileOccupancy: { readonly game_id: number; readonly alt: boolean; readonly col: number; readonly row: number };
+  ArmyRelics: { readonly game_id: number; readonly explorer_id: bigint };
+  ArmyRelicEffect: { readonly game_id: number; readonly explorer_id: bigint; readonly kind: "Blade" | "Ward" | "Plunder" | "FarEye" | "Tome" };
+  RuinRelic: { readonly game_id: number; readonly entity_id: bigint };
   ArmyProgress: { readonly game_id: number; readonly explorer_id: bigint };
   ArmySlot: { readonly game_id: number; readonly structure_id: bigint; readonly epoch: bigint; readonly slot: number };
   ExplorerTroops: { readonly game_id: number; readonly explorer_id: bigint };
@@ -1246,6 +1261,121 @@ export const nativeFactModels = {
       "entity_id": "u64",
       "category": "u8",
       "is_structure": "boolean"
+    }
+  },
+  "ArmyRelics": {
+    "keys": [
+      "game_id",
+      "explorer_id"
+    ],
+    "scope": "game",
+    "fields": {
+      "game_id": "u32",
+      "explorer_id": "u64",
+      "first": {
+        "option": {
+          "kind": {
+            "enum": [
+              "Blade",
+              "Ward",
+              "Plunder",
+              "FarEye",
+              "Tome"
+            ]
+          },
+          "rank": "u8"
+        }
+      },
+      "second": {
+        "option": {
+          "kind": {
+            "enum": [
+              "Blade",
+              "Ward",
+              "Plunder",
+              "FarEye",
+              "Tome"
+            ]
+          },
+          "rank": "u8"
+        }
+      },
+      "third": {
+        "option": {
+          "kind": {
+            "enum": [
+              "Blade",
+              "Ward",
+              "Plunder",
+              "FarEye",
+              "Tome"
+            ]
+          },
+          "rank": "u8"
+        }
+      }
+    },
+    "absence": {
+      "parent": "ExplorerTroops",
+      "value": "zero",
+      "meaning": "No carried relics or running relic of this kind while the army exists.",
+      "parentKeys": {
+        "game_id": "game_id",
+        "explorer_id": "explorer_id"
+      }
+    }
+  },
+  "ArmyRelicEffect": {
+    "keys": [
+      "game_id",
+      "explorer_id",
+      "kind"
+    ],
+    "scope": "game",
+    "fields": {
+      "game_id": "u32",
+      "explorer_id": "u64",
+      "kind": {
+        "enum": [
+          "Blade",
+          "Ward",
+          "Plunder",
+          "FarEye",
+          "Tome"
+        ]
+      },
+      "rank": "u8",
+      "expires_at": "u64"
+    },
+    "absence": {
+      "parent": "ExplorerTroops",
+      "value": "zero",
+      "meaning": "No carried relics or running relic of this kind while the army exists.",
+      "parentKeys": {
+        "game_id": "game_id",
+        "explorer_id": "explorer_id"
+      }
+    }
+  },
+  "RuinRelic": {
+    "keys": [
+      "game_id",
+      "entity_id"
+    ],
+    "scope": "game",
+    "fields": {
+      "game_id": "u32",
+      "entity_id": "u64",
+      "kind": {
+        "enum": [
+          "Blade",
+          "Ward",
+          "Plunder",
+          "FarEye",
+          "Tome"
+        ]
+      },
+      "rank": "u8"
     }
   },
   "ArmyProgress": {
@@ -2242,6 +2372,21 @@ export const nativeSyncScopes = {
   "ArmyProgress": {
     "entities": [
       "explorer_id"
+    ]
+  },
+  "ArmyRelics": {
+    "entities": [
+      "explorer_id"
+    ]
+  },
+  "ArmyRelicEffect": {
+    "entities": [
+      "explorer_id"
+    ]
+  },
+  "RuinRelic": {
+    "entities": [
+      "entity_id"
     ]
   },
   "ExpeditionDiscovery": {

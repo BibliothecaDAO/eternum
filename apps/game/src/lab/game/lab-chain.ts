@@ -295,7 +295,9 @@ const answerDirectory = (
     status: "Live",
     ready: true,
     dev_mode_on: false,
-    expedition: rules.day_unit_seconds ? { day_unit_seconds: rules.day_unit_seconds, seed: String(registry.seed) } : null,
+    expedition: rules.day_unit_seconds
+      ? { day_unit_seconds: rules.day_unit_seconds, seed: String(registry.seed) }
+      : null,
     clock: {
       start_settling_at: 1 + clockOffset,
       start_main_at: 100 + clockOffset,

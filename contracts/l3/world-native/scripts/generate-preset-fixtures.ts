@@ -5,7 +5,10 @@ import { defineFactModels, factWireTypes } from "../schema/fact-models.mjs";
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { encodeMembers } from "../../../../apps/herald/src/native/serde";
 import { currentPresetFixture, serializePresetRows } from "../../../../apps/herald/src/native/current-preset-fixture";
-import { FRONTIER_S1_PRESET_ID, FRONTIER_FIXTURE_PRESET_ID } from "../../../../config/source/common/native-preset-modes";
+import {
+  FRONTIER_S1_PRESET_ID,
+  FRONTIER_FIXTURE_PRESET_ID,
+} from "../../../../config/source/common/native-preset-modes";
 
 const schema = presetFixtureSchema();
 

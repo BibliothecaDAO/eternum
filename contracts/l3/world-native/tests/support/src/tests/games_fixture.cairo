@@ -241,13 +241,19 @@ pub mod GamesFixture {
             )
         }
         fn reveal_relic_tiles(
-            ref self: TContractState, game_id: u32, coord: crate::troops::Coord, count: u8,
+            ref self: TContractState,
+            game_id: u32,
+            coord: crate::troops::Coord,
+            count: u8,
             game_context: crate::commands::BiomeContext,
         ) {
             let classes = fixture_classes(game_id);
             crate::relics::IRelicMapDispatcherTrait::reveal_relic_tiles(
                 crate::relics::IRelicMapLibraryDispatcher { class_hash: classes.raid.read() },
-                game_id, coord, count, game_context,
+                game_id,
+                coord,
+                count,
+                game_context,
             );
         }
         fn discover_relic_chest(
@@ -1912,12 +1918,16 @@ pub mod GamesFixture {
             )
         }
         fn deposit_receipt(self: @TContractState, game_id: u32, id: u64) -> Option<crate::deposits::DepositReceipt> {
-            crate::entry::ILedgerOperatorDispatcherTrait::deposit_receipt(ledger_operator_dispatcher(game_id), game_id, id)
+            crate::entry::ILedgerOperatorDispatcherTrait::deposit_receipt(
+                ledger_operator_dispatcher(game_id), game_id, id,
+            )
         }
         fn spend_lords(
             self: @TContractState, game_id: u32, account: starknet::ContractAddress,
         ) -> crate::deposits::SpendLords {
-            crate::entry::ILedgerOperatorDispatcherTrait::spend_lords(ledger_operator_dispatcher(game_id), game_id, account)
+            crate::entry::ILedgerOperatorDispatcherTrait::spend_lords(
+                ledger_operator_dispatcher(game_id), game_id, account,
+            )
         }
         fn principal_withdrawal(
             self: @TContractState, game_id: u32, account: starknet::ContractAddress,
@@ -1930,7 +1940,9 @@ pub mod GamesFixture {
             crate::entry::ILedgerOperatorDispatcherTrait::ledger_operator(current_ledger_operator_dispatcher())
         }
         fn set_ledger_operator(ref self: TContractState, operator: starknet::ContractAddress) {
-            crate::entry::ILedgerOperatorDispatcherTrait::set_ledger_operator(current_ledger_operator_dispatcher(), operator);
+            crate::entry::ILedgerOperatorDispatcherTrait::set_ledger_operator(
+                current_ledger_operator_dispatcher(), operator,
+            );
         }
 
         fn frontier_prize(self: @TContractState, game_id: u32) -> crate::entry::FrontierPrize {
@@ -1946,12 +1958,16 @@ pub mod GamesFixture {
         fn grant_labor(
             ref self: TContractState, home: crate::entry::LaborHome, day: u64, account: starknet::ContractAddress,
         ) -> crate::entry::LaborGrant {
-            crate::entry::ILedgerOperatorDispatcherTrait::grant_labor(ledger_operator_dispatcher(home.game_id), home, day, account)
+            crate::entry::ILedgerOperatorDispatcherTrait::grant_labor(
+                ledger_operator_dispatcher(home.game_id), home, day, account,
+            )
         }
         fn labor_grant(
             self: @TContractState, home: crate::entry::LaborHome, day: u64,
         ) -> Option<crate::entry::LaborGrant> {
-            crate::entry::ILedgerOperatorDispatcherTrait::labor_grant(ledger_operator_dispatcher(home.game_id), home, day)
+            crate::entry::ILedgerOperatorDispatcherTrait::labor_grant(
+                ledger_operator_dispatcher(home.game_id), home, day,
+            )
         }
     }
     #[starknet::embeddable]

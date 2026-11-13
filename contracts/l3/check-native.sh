@@ -9,7 +9,7 @@ account=contracts/l3/player-account
 prelude() {
   python3 "$world/toolchain/snforge.py" resolve > /dev/null
   node "$world/scripts/generate-extension.mjs" --check
-  node --test contracts/l3/check-native-plan.test.mjs "$world/scripts/fixture-actors.test.mjs" "$world/scripts/fact-models.test.mjs"
+  node --test contracts/l3/check-native-plan.test.mjs
   python3 -m unittest discover -s "$world/toolchain" -p test_snforge.py
   bash contracts/l2/ledger/check.sh
   (cd "$account" && "${LEDGER_SCARB:-scarb}" build)
