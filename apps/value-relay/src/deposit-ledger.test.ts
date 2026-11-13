@@ -84,3 +84,11 @@ it("reports a payment it just sent as written and not yet final", async () => {
   expect(await run()).toEqual({ wrote: true, final: null });
   expect(mocks.execute).toHaveBeenCalledTimes(1);
 });
+it("still recognizes a paid principal when the accepted block cannot be read", async () => {
+  mocks.principal.mockResolvedValue({ wallet: "0x50", amount: "60" });
+  mocks.finalPrincipal.mockRejectedValue(new Error("l1_accepted unsupported"));
+  const logged = vi.spyOn(console, "error").mockImplementation(() => {});
+  expect(await run()).toEqual({ wrote: false, final: null });
+  expect(logged).toHaveBeenCalledWith("final_evidence_unavailable", expect.anything());
+  logged.mockRestore();
+});

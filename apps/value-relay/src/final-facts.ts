@@ -43,8 +43,16 @@ export async function keepIfFinal(
   provider: Parameters<typeof readFinalLedgerHead>[0],
   holdsAt: (block: number) => Promise<boolean>,
 ) {
-  const final = await readFinalLedgerHead(provider);
-  if (await holdsAt(final.number)) await finals.mark(fact, { block: final.number, hash: final.hash });
+  try {
+    const final = await readFinalLedgerHead(provider);
+    if (await holdsAt(final.number)) await finals.mark(fact, { block: final.number, hash: final.hash });
+  } catch (error) {
+    // Nothing is kept, so the next tick reads again; the work that called this has already been done.
+    console.error("final_evidence_unavailable", {
+      fact,
+      error: error instanceof Error ? error.message : String(error),
+    });
+  }
 }
 
 /** The season's funding as of `block`, or null if it was not funded yet there. */

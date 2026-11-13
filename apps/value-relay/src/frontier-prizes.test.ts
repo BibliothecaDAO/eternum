@@ -257,3 +257,13 @@ it("does not award new prizes after the ledger has carried the expired reserve",
   await run();
   expect(calls.admin).not.toHaveBeenCalled();
 });
+it("keeps working, and keeps nothing, when the accepted block cannot be read", async () => {
+  calls.finalHead.mockRejectedValue(new Error("l1_accepted unsupported"));
+  calls.funding.mockResolvedValue({ closed: true, claimDeadline: 604900, prizePool: String(300n * 10n ** 18n) });
+  const logged = vi.spyOn(console, "error").mockImplementation(() => {});
+  await run();
+  await run();
+  expect(calls.funding).toHaveBeenCalledTimes(2);
+  expect(logged).toHaveBeenCalledWith("final_evidence_unavailable", expect.anything());
+  logged.mockRestore();
+});
