@@ -329,16 +329,6 @@ function nameEconomy(t: Transaction): Named | null {
   if (t.has("ResourceReceiveArrivalStory")) return ["Offload arrival", {}, owner];
   if (t.has("ResourceBurnStory")) return ["Burn resource", {}, owner];
   if (t.has("LordsWithdrawn")) return ["Withdraw LORDS", {}, owner];
-  for (const name of [
-    "TradeCreated",
-    "TradeAccepted",
-    "TradeCancelled",
-    "BankSwap",
-    "BankLiquidity",
-    "FaithPledged",
-    "FaithRemoved",
-  ])
-    if (t.has(name)) return ["Trade, bank or faith", { story: name }, owner];
   return null;
 }
 

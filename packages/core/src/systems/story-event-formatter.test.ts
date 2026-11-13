@@ -399,7 +399,6 @@ describe("every story the chain can tell", () => {
   const amount = "550000000000";
   // One sample per generated variant: a variant added to the Story enum fails to type-check here until it has one.
   const SAMPLES: Record<NativeStoryVariant | "BattleEvent", Record<string, unknown>> = {
-    FaithPointsClaimedStory: { wonder_id: 5, new_points: 10, total_points: 40 },
     StructureLevelUpStory: { structure_id: 5, new_level: 2 },
     RealmCreatedStory: { realm_id: 1, coord },
     GuardAddStory: { structure_id: 5, slot: 0, category: "Knight", tier: "T1", amount },
@@ -420,41 +419,6 @@ describe("every story the chain can tell", () => {
       owner_paid: amount,
     },
     StructureCapturedStory: { previous_owner: "0x0", new_owner: "0x123", points: 10 },
-    TradeCreated: {
-      trade_id: 1,
-      order: {
-        maker_id: 5,
-        taker_id: 0,
-        offered_resource: 23,
-        requested_resource: 35,
-        offered_per_lot: 1,
-        requested_per_lot: 2,
-        remaining_lots: 3,
-        expires_at: 100,
-      },
-    },
-    TradeAccepted: {
-      trade_id: 1,
-      maker_id: 5,
-      taker_id: 6,
-      offered_resource: 23,
-      requested_resource: 35,
-      offered_amount: amount,
-      requested_amount: amount,
-    },
-    TradeCancelled: { value: 1 },
-    BankSwap: {
-      bank_id: 2,
-      structure_id: 5,
-      resource_type: 23,
-      lords_amount: amount,
-      resource_amount: amount,
-      owner_fee: 0,
-      lp_fee: 0,
-      resource_price: 1,
-      buy: true,
-    },
-    BankLiquidity: { resource_type: 23, add: true },
     HyperstructurePoints: { player: "0x123", points: 5 },
     RelicChestOpened: {
       explorer_id: 7,
@@ -466,8 +430,6 @@ describe("every story the chain can tell", () => {
     ExplorationReward: { explorer_id: 7, receiver: 5, coord, resource_type: 38, amount: "150000000000" },
     SpireDiscovered: { explorer_id: 7, receiver: 5, coord, resource_type: 38, amount: "3000000000000" },
     SeasonEnded: { value: "0x123" },
-    FaithPledged: { structure_id: 5, wonder_id: 6, owner_rate: 1, pledger_rate: 1 },
-    FaithRemoved: { structure_id: 5, wonder_id: 6 },
     BlitzFinalized: { value: "0x1" },
     RelicCrafted: { value: 39 },
     RelicActivated: { relic_id: 41, recipient: "Explorer", rate_bps: 2000, duration_seconds: 1800, radius: 0 },
@@ -521,23 +483,10 @@ describe("every story the chain can tell", () => {
   );
 
   /**
-   * The stories no Frontier command tells (its preset's command mask: no trade, bank, faith, relic crafting,
-   * transfer or relic chest; a Frontier chest is a reward chest), and the game's own: these may leave their player out.
+   * The stories no Frontier command tells (its preset's command mask: no relic crafting, transfer or
+   * relic chest; a Frontier chest is a reward chest), and the game's own: these may leave their player out.
    */
-  const NOT_FRONTIER = new Set([
-    "FaithPointsClaimedStory",
-    "ResourceTransferStory",
-    "TradeCreated",
-    "TradeAccepted",
-    "TradeCancelled",
-    "BankSwap",
-    "BankLiquidity",
-    "RelicChestOpened",
-    "FaithPledged",
-    "FaithRemoved",
-    "BlitzFinalized",
-    "RelicCrafted",
-  ]);
+  const NOT_FRONTIER = new Set(["ResourceTransferStory", "RelicChestOpened", "BlitzFinalized", "RelicCrafted"]);
 
   it.each(Object.entries(SAMPLES).filter(([storyType]) => !NOT_FRONTIER.has(storyType)))(
     "names another player in %s, a line about ground this client never synced",

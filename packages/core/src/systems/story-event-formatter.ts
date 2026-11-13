@@ -13,7 +13,6 @@ import {
   frontierSiteName,
   GuardSlot,
   guardSlotName,
-  LORDS,
   rankName,
   RealmLevels,
   relicChestDelivery,
@@ -183,29 +182,6 @@ const formatters: Record<NativeStoryVariant | StoryEventModel | "TierBought", St
     ),
     icon: "battle",
   }),
-  TradeCreated: (_event, payload) => {
-    const order = payload.order as Record<string, unknown>;
-    return {
-      title: "Trade listed",
-      description: `${resourceName(Number(order.offered_resource))} for ${resourceName(Number(order.requested_resource))}`,
-      icon: "resource",
-    };
-  },
-  TradeAccepted: (_event, payload) => ({
-    title: "Trade filled",
-    description: `${formatResourceAmount(payload.offered_amount) ?? "—"} ${resourceName(Number(payload.offered_resource))} for ${formatResourceAmount(payload.requested_amount) ?? "—"} ${resourceName(Number(payload.requested_resource))}`,
-    icon: "resource",
-  }),
-  TradeCancelled: (_event, payload) => ({
-    title: "Trade cancelled",
-    description: `Trade ${formatNumber(payload.value) ?? "—"}`,
-    icon: "resource",
-  }),
-  BankSwap: (_event, payload) => ({
-    title: payload.buy ? "Bought at the bank" : "Sold at the bank",
-    description: `${formatResourceAmount(payload.resource_amount) ?? "—"} ${resourceName(Number(payload.resource_type))} for ${formatResourceAmount(payload.lords_amount) ?? "—"} ${LORDS}`,
-    icon: "resource",
-  }),
   HyperstructurePoints: (_event, payload, components, resolvePlayerName) => ({
     title: "Hyperstructure points",
     // Story points are at the contract's precision (a millionth of a point); a player reads whole points.
@@ -219,24 +195,6 @@ const formatters: Record<NativeStoryVariant | StoryEventModel | "TierBought", St
       `${nameOwner(payload.owner, components, resolvePlayerName) ?? "—"} +${formatResourceAmount(payload.owner_paid) ?? "—"}`,
     ]),
     icon: "prize",
-  }),
-  FaithPointsClaimedStory: (_event, payload, components) => ({
-    title: "Faith points claimed",
-    description: joinPieces([
-      describeStructureName(payload.wonder_id, components),
-      `+${formatNumber(payload.new_points) ?? "—"} (${formatNumber(payload.total_points) ?? "—"} in all)`,
-    ]),
-    icon: "prize",
-  }),
-  FaithPledged: (_event, payload, components) => ({
-    title: "Faith pledged",
-    description: `${describeStructureName(payload.structure_id, components) ?? "—"} → ${describeStructureName(payload.wonder_id, components) ?? "—"}`,
-    icon: "realm",
-  }),
-  FaithRemoved: (_event, payload, components) => ({
-    title: "Faith withdrawn",
-    description: `${describeStructureName(payload.structure_id, components) ?? "—"} from ${describeStructureName(payload.wonder_id, components) ?? "—"}`,
-    icon: "realm",
   }),
   SeasonEnded: (_event, payload, components, resolvePlayerName) => ({
     title: "Season ended",
@@ -421,11 +379,6 @@ const formatters: Record<NativeStoryVariant | StoryEventModel | "TierBought", St
       icon: "battle",
     };
   },
-  BankLiquidity: (_, payload) => ({
-    title: payload.add ? "Liquidity added" : "Liquidity withdrawn",
-    description: `${resourceName(Number(payload.resource_type))} / Lords`,
-    icon: "resource",
-  }),
   // Either end may be a structure or an army; one no longer in the store is left unsaid rather than guessed.
   ResourceTransferStory: (event, payload, components) => {
     const destination = describeEntity(payload.to_entity_id, components);

@@ -30,9 +30,6 @@ import { iconDefinition, type IconMeaning, resourceMeaning } from "./icon-meanin
 /** Every story the game can emit (the schema's story variants and a fight), by the act it tells. */
 const storyMeanings = {
   BattleEvent: "attack",
-  FaithPointsClaimedStory: "shrine",
-  FaithPledged: "shrine",
-  FaithRemoved: "shrine",
   StructureLevelUpStory: "upgrade",
   RealmCreatedStory: "realm",
   StructureCapturedStory: "flag",
@@ -45,11 +42,6 @@ const storyMeanings = {
   BuildingPlacementStory: "build",
   BuildingPaymentStory: "build",
   BitcoinAwardStory: "bitcoin-mine",
-  TradeCreated: "trade",
-  TradeAccepted: "trade",
-  TradeCancelled: "trade",
-  BankSwap: "swap",
-  BankLiquidity: "bank",
   HyperstructurePoints: "hyperstructure",
   RelicChestOpened: "relics",
   RelicCrafted: "relics",

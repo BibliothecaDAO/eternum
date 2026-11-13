@@ -12,13 +12,7 @@ it("covers every native story and tests every cumulative level", () => {
   const variants = schema.types[storyType].variants.map((variant: { name: string }) => variant.name);
   const nativeLevels = {
     important: ["BattleEvent", "StructureCapturedStory", "SeasonEnded", "BlitzFinalized"],
-    all: [
-      "ResourceReceiveArrivalStory",
-      "ResourceTransferStory",
-      "BitcoinAwardStory",
-      "TradeAccepted",
-      "HyperstructurePoints",
-    ],
+    all: ["ResourceReceiveArrivalStory", "ResourceTransferStory", "BitcoinAwardStory", "HyperstructurePoints"],
     // The player's own taps: the Feed and the Log tell them.
     excluded: [
       "ProductionStory",
@@ -29,15 +23,9 @@ it("covers every native story and tests every cumulative level", () => {
       "ExplorerDeleteStory",
       "GuardAddStory",
       "GuardDeleteStory",
-      "TradeCreated",
-      "TradeCancelled",
-      "BankSwap",
-      "BankLiquidity",
       "SkillPointSpent",
       "SitePayout",
       "ExplorationReward",
-      "FaithPledged",
-      "FaithRemoved",
       "RelicCrafted",
       "RelicActivated",
       "TroopsTransferred",
@@ -47,7 +35,6 @@ it("covers every native story and tests every cumulative level", () => {
       "StructureLevelUpStory",
       "RelicChestOpened",
       "RewardChestOpened",
-      "FaithPointsClaimedStory",
       "LordsWithdrawn",
       "SiteUsed",
     ],
@@ -94,7 +81,7 @@ it("uses event-time recipients, normalizes duplicates, and excludes neutral addr
   expect(storyRecipients("BattleEvent", "0xff", { attacker: { player: "0x0" }, defender: { player: "0x2" } })).toEqual([
     "0x2",
   ]);
-  expect(storyRecipients("FaithPointsClaimedStory", "0x1", {})).toEqual([]);
+  expect(storyRecipients("LordsWithdrawn", "0x1", {})).toEqual([]);
   expect(() => storyRecipients("BattleEvent", "0x1", { attacker: {}, defender: {} })).toThrow("event-time");
   expect(() => storyRecipients("SeasonEnded", "garbage", {})).toThrow();
 });

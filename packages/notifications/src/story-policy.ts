@@ -51,25 +51,14 @@ const STORY_RULES = {
     recipients: "owner",
     copy: says("Your caravan arrived", "the resources are in your stores."),
   },
-  TradeAccepted: {
-    kind: "deliveries",
-    recipients: "owner",
-    copy: says("A trade was filled", "the goods changed hands."),
-  },
   ResourceTransferStory: { kind: "deliveries", recipients: "transferReceiver", copy: transferStoryCopy },
   BitcoinAwardStory: { kind: "bitcoin", recipients: "owner", copy: bitcoinAwardCopy },
   HyperstructurePoints: { kind: "points", recipients: "owner", copy: hyperstructurePointsCopy },
 
   // The player's own taps: the Feed and the Log tell them, a push would only echo them.
-  TradeCreated: { excluded: OWN_ACTION },
-  TradeCancelled: { excluded: OWN_ACTION },
-  BankSwap: { excluded: OWN_ACTION },
-  BankLiquidity: { excluded: OWN_ACTION },
   SitePayout: { excluded: OWN_ACTION },
   SkillPointSpent: { excluded: OWN_ACTION },
   ExplorationReward: { excluded: OWN_ACTION },
-  FaithPledged: { excluded: OWN_ACTION },
-  FaithRemoved: { excluded: OWN_ACTION },
   RelicCrafted: { excluded: OWN_ACTION },
   RelicActivated: { excluded: OWN_ACTION },
   ProductionStory: { excluded: OWN_ACTION },
@@ -88,7 +77,6 @@ const STORY_RULES = {
   RelicChestOpened: { excluded: OWN_ACTION },
   RewardChestOpened: { excluded: OWN_ACTION },
 
-  FaithPointsClaimedStory: { excluded: "Recipient and notification UX deferred" },
   LordsWithdrawn: { excluded: "The player's own withdrawal needs no notification" },
   SiteUsed: { excluded: "Site use is recorded in Today and the Log" },
 } satisfies Record<NativeStoryVariant | "BattleEvent", StoryRule>;

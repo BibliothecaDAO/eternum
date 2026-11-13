@@ -18,7 +18,7 @@ describe("story event stream", () => {
           entity_id: "0x2a",
           tx_hash: "0xfeed",
           story: {
-            BankSwap: { structure_id: "0x2a", bank_id: "0x2b", buy: true },
+            StructureLevelUpStory: { structure_id: "0x2a", new_level: 2 },
           },
           timestamp: "0x64",
           event_position: { block_number: 12, transaction_hash: "0xfeed", transaction_index: 0, event_index: 0 },
@@ -28,11 +28,11 @@ describe("story event stream", () => {
     );
 
     expect(event).toMatchObject({
-      storyPayload: { structure_id: "0x2a", bank_id: "0x2b", buy: true },
+      storyPayload: { structure_id: "0x2a", new_level: 2 },
       entity_id: 42,
       event_id: "story:v2:0x1:0xabc:0x36:0xfeed:0x0",
       owner: "0xabc",
-      story: "BankSwap",
+      story: "StructureLevelUpStory",
       timestamp: "0x64",
       tx_hash: "0xfeed",
     });

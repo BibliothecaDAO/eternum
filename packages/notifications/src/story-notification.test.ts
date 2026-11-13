@@ -33,7 +33,6 @@ it.each([
   ["SeasonEnded", {}, "The season is over"],
   ["BlitzFinalized", {}, "Your Blitz is settled"],
   ["ResourceReceiveArrivalStory", {}, "Your caravan arrived"],
-  ["TradeAccepted", {}, "A trade was filled"],
   ["ResourceTransferStory", { to_entity_id: 11, travel_time: 0 }, "Resources received"],
 ] as const)("gives %s its own words", (story, payload, title) => {
   expect(storyNotificationCopy(story, payload).title).toBe(title);
@@ -112,7 +111,6 @@ it("puts every delivered story into its own words, in production as in developme
         "ResourceTransferStory",
         "SeasonEnded",
         "StructureCapturedStory",
-        "TradeAccepted",
       ].sort(),
     );
     // No story borrows another's words.

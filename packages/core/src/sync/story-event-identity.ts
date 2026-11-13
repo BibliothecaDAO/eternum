@@ -18,7 +18,7 @@ export function storyEventScopeKey(scope: StoryEventScope): string {
 }
 
 /**
- * A story, battle or raid is one event of one transaction: its game, its transaction hash and its index in that
+ * A story or battle is one event of one transaction: its game, its transaction hash and its index in that
  * receipt (games-interface StoryEvent v2: no order or index keys). Shared by history, streamed stories and
  * notification deduplication; the block and transaction index are its order, never its identity.
  */
