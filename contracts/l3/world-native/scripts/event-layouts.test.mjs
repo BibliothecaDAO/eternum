@@ -357,3 +357,29 @@ test("starting troops have one implementation in StructuresLogic", async () => {
   }
   assert.deepEqual(owners, ["StructuresLogic"]);
 });
+
+test("full settlement rules compile only where Placement consumes the record", async () => {
+  const { contracts } = JSON.parse(
+    await readFile(new URL("../target/dev/world_native.starknet_artifacts.json", import.meta.url), "utf8"),
+  );
+  const owners = [];
+  for (const { contract_name } of contracts) {
+    if (!contract_name.endsWith("Logic")) continue;
+    const { sierra_program_debug_info } = JSON.parse(
+      await readFile(
+        new URL(`../target/dev/world_native_${contract_name}.contract_class.json`, import.meta.url),
+        "utf8",
+      ),
+    );
+    if (
+      sierra_program_debug_info.user_func_names.some(([, name]) => name === "world_native::logic::settlement::rules")
+    ) {
+      owners.push(contract_name);
+    }
+  }
+  assert.deepEqual(
+    owners,
+    ["PlacementLogic"],
+    "Read preset.settlement_spacing, preset.settlement_mode or registrar.roster_sizes directly; only Placement needs the full SettlementRules record",
+  );
+});

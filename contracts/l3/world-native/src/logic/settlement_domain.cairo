@@ -257,11 +257,11 @@ pub mod SettlementLogic {
             assert!(Into::<u8, u32>::into(player_index) < roster_size, "seat outside Blitz roster");
             let player = self.data.registrar.roster_players.entry((game_id, player_index.into())).account.read();
             self.settlements.record_entry(EntryKey { game_id, owner: player }, player);
-            let rules = crate::logic::settlement::rules(game_id);
+            let preset = crate::logic::preset_record::for_game(game_id);
             let coords = crate::settlement_grid::settlement_location(
                 crate::settlement_grid::map_center(context.rules.unbox().map_center_offset),
-                rules.mode,
-                rules.spacing,
+                preset.settlement_mode.read(),
+                preset.settlement_spacing.read(),
                 progress.registered.into(),
             );
             let troops = crate::settlement::deal_troop_types(seed, coords.len());

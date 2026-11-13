@@ -893,7 +893,9 @@ pub mod StructuresLogic {
                 context.game.unbox(), context.rules.unbox().day_unit_seconds, context.timestamp,
             )
                 .index;
-            let origin = crate::expeditions::site(crate::logic::settlement::rules(game_id).spacing, realm_id, today, 0);
+            let origin = crate::expeditions::site(
+                crate::logic::preset_record::for_game(game_id).settlement_spacing.read(), realm_id, today, 0,
+            );
             crate::logic::map::raise_expedition_home(
                 tile_key(game_id, origin), crate::commands::biome_context(context),
             );
