@@ -8,6 +8,8 @@ fn ruins_fill_replace_and_activate_an_armys_relics_through_commands() {
         beasts_bps: 1, camp_bps: 0, rift_bps: 0, ruin_bps: 5000, shrine_bps: 0, well_bps: 0, empty_reveal_limit: 7,
     };
     preset.economy.discovery = Some(discovery);
+    preset.rules.tick_config.armies_tick_in_seconds = 1;
+    preset.rules.troop_stamina_config.stamina_gain_per_tick = 120;
     preset.rules.battle_config.cooldown_seconds = 0;
     preset.rules.battle_config.regular_immunity_ticks = 0;
     let mut depths = array![];
@@ -31,14 +33,15 @@ fn ruins_fill_replace_and_activate_an_armys_relics_through_commands() {
     assert!(
         execute_in_game(d, game_id, Command::SettleSeason(crate::realms::SettleSeason { selected_realm: None }), 360),
     );
-    let home = ResourceKey { game_id, entity_id: 1 };
+    let home_id = snforge_std::interact_with_state(d.games, || crate::entity_ids::home_for_actor(game_id, d.actor));
+    let home = ResourceKey { game_id, entity_id: home_id };
     let mut deployment_events = snforge_std::spy_events();
     if !execute_in_game(
             d,
             game_id,
             Command::CreateExplorer(
                 CreateExplorer {
-                    structure_id: 1, slot: 0, category: 0, tier: 0, amount: 1500 * RESOURCE_PRECISION, direction: 0,
+                    structure_id: home_id, slot: 0, category: 0, tier: 0, amount: 1500 * RESOURCE_PRECISION, direction: 0,
                 },
             ),
             360,
@@ -48,7 +51,7 @@ fn ruins_fill_replace_and_activate_an_armys_relics_through_commands() {
     let explorer_id = *IStructureOperationsDispatcher { contract_address: d.games }.home_armies(home).at(0);
     let key = ExplorerKey { game_id, explorer_id };
     let resources = IResourceOperationsDispatcher { contract_address: d.games };
-    let lords = ResourceSlot { game_id, entity_id: 1, resource_type: crate::resources::LORDS };
+    let lords = ResourceSlot { game_id, entity_id: home_id, resource_type: crate::resources::LORDS };
     for index in 0_u8..4 {
         let timestamp = 400 + Into::<u8, u64>::into(index) * 30;
         let kind = match index {
@@ -100,7 +103,7 @@ fn ruins_fill_replace_and_activate_an_armys_relics_through_commands() {
     assert_eq!(inventory.first, Some(ArmyRelic { kind: RelicKind::Tome, rank: 1 }));
     assert_eq!(inventory.second, Some(ArmyRelic { kind: RelicKind::Plunder, rank: 1 }));
     assert_eq!(inventory.third, Some(ArmyRelic { kind: RelicKind::Ward, rank: 1 }));
-    let essence = ResourceSlot { game_id, entity_id: 1, resource_type: crate::resources::ESSENCE };
+    let essence = ResourceSlot { game_id, entity_id: home_id, resource_type: crate::resources::ESSENCE };
     let essence_before = resources.resource_balance(essence);
     let activate = Command::ApplyRelic(
         crate::relics::ApplyRelic {
