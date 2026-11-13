@@ -1,6 +1,7 @@
 #[starknet::contract]
 pub mod RegistryLogic {
     use starknet::ContractAddress;
+    use starknet::storage::StoragePointerReadAccess;
     #[cfg(feature: "test_support")]
     use crate::game::GameRegistry;
     use crate::game::assert_playing;
@@ -8,9 +9,9 @@ pub mod RegistryLogic {
     use crate::logic::registrar::RegistrarState;
     use crate::logic::release::ReleaseState;
     use crate::resources::ResourceKey;
-    use crate::rules::RESOURCE_PRECISION;
     #[cfg(feature: "test_support")]
     use crate::rules::SliceRules;
+    use crate::structures::{IStartingTroopsDispatcherTrait, IStartingTroopsLibraryDispatcher};
     component!(path: ReleaseState, storage: release, event: ReleaseEvent);
     component!(path: RegistrarState, storage: registrar, event: RegistrarEvent);
     #[abi(embed_v0)]
@@ -78,14 +79,12 @@ pub mod RegistryLogic {
             assert!(record.owner == actor, "actor does not own village");
             assert!(record.base.category == crate::taxonomy::VILLAGE_CATEGORY, "structure is not a village");
             assert!(!record.base.starting_troops_granted, "army grant already claimed");
-            let grants = crate::logic::village::rules(game_id);
+            let delay = crate::logic::preset_record::for_game(game_id).village_delay.read();
             let interval = context.rules.unbox().tick_config.armies_tick_in_seconds;
-            let claimable_at: u64 = record.base.created_at.into() / interval + grants.troop_delay_ticks.into();
+            let claimable_at: u64 = record.base.created_at.into() / interval + delay.into();
             assert!(context.timestamp / interval >= claimable_at, "army grant cannot be claimed yet");
-            let category = crate::logic::structure_actions::biome_troop(key, context);
-            crate::logic::structure_actions::grant_starting_troops(
-                key, category, grants.resources, 10 * RESOURCE_PRECISION, context.timestamp, context,
-            );
+            IStartingTroopsLibraryDispatcher { class_hash: crate::logic::release::classes(game_id).structures.read() }
+                .grant_village_troops(key, crate::commands::action_context(context));
             ()
         }
     }

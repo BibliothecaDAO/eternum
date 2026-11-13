@@ -317,3 +317,43 @@ test("Day dispatchers share the pinned release reader", async () => {
     );
   }
 });
+
+test("starting troops have one implementation in StructuresLogic", async () => {
+  const { contracts } = JSON.parse(
+    await readFile(new URL("../target/dev/world_native.starknet_artifacts.json", import.meta.url), "utf8"),
+  );
+  const owners = [];
+  for (const { contract_name } of contracts) {
+    if (!contract_name.endsWith("Logic")) continue;
+    const { abi, sierra_program_debug_info } = JSON.parse(
+      await readFile(
+        new URL(`../target/dev/world_native_${contract_name}.contract_class.json`, import.meta.url),
+        "utf8",
+      ),
+    );
+    const methods = abi.flatMap((entry) => (entry.type === "interface" ? entry.items : [entry]));
+    if (methods.some(({ name }) => name === "grant_village_troops")) owners.push(contract_name);
+    const names = sierra_program_debug_info.user_func_names.map(([, name]) => name);
+    assert.equal(
+      names.some(
+        (name) =>
+          name.includes("structure_actions::grant_starting_troops") || name.includes("structure_actions::biome_troop"),
+      ),
+      false,
+      `${contract_name}: remove the old free grant and biome readers; use pinned IStartingTroops in Structures`,
+    );
+    if (contract_name === "RegistryLogic") {
+      assert.equal(
+        names.some((name) => name.includes("world_native::logic::village::rules")),
+        false,
+        "Registry: read preset.village_delay; the village grant reader belongs beside the grant in Structures",
+      );
+    }
+    assert.equal(
+      names.some((name) => name.includes("StructuresLogic::Internal::apply_starting_troops")),
+      contract_name === "StructuresLogic",
+      `${contract_name}: starting troops must compile only in StructuresLogic`,
+    );
+  }
+  assert.deepEqual(owners, ["StructuresLogic"]);
+});

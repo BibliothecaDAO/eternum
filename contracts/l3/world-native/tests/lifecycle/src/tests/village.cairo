@@ -1,8 +1,10 @@
 pub use world_test_support::tests::village::*;
+use crate::logic::release::{IReleasesDispatcher, IReleasesDispatcherTrait, Release};
 
-#[test]
+#[test_case(false)]
+#[test_case(true)]
 #[feature("safe_dispatcher")]
-fn production_pass_is_atomic_single_use_and_army_grant_uses_block_time() {
+fn production_pass_is_atomic_single_use_and_army_grant_uses_block_time(new_release: bool) {
     let (deployment, realm) = setup(false);
     let ledger = IVillagePassesSafeDispatcher { contract_address: deployment.games };
     let pass = VillagePassKey { game_id: 3, pass_id: 7 };
@@ -57,6 +59,24 @@ fn production_pass_is_atomic_single_use_and_army_grant_uses_block_time() {
     assert!(!run(deployment, Command::ReceiveVillageArmy(village_id), 100));
     let interval = play_fixture::rules().tick_config.armies_tick_in_seconds;
     let claimable_at = (100 / interval + 2) * interval;
+    if new_release {
+        let releases = IReleasesDispatcher { contract_address: deployment.games };
+        let original = releases.release(1);
+        start_cheat_caller_address(deployment.games, authority());
+        releases
+            .register_release(
+                2,
+                Release {
+                    classes: games_storage::release::LogicClasses {
+                        structures: original.classes.map, ..original.classes,
+                    },
+                    ..original,
+                },
+            );
+        stop_cheat_caller_address(deployment.games);
+        assert_eq!(releases.current_release(), 2);
+        assert_eq!(releases.game_release(3), 1);
+    }
     let mut spy = spy_events();
     assert!(run(deployment, Command::ReceiveVillageArmy(village_id), claimable_at));
     let mut guard_stories = 0;
