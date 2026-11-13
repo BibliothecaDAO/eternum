@@ -293,7 +293,15 @@ function createWorld(options: { expedition?: { dayUnitSeconds: number; spacing: 
       rules.get(model) ?? facts.require(model as "TileOpt", keys as never)) as never,
   } as Pick<
     NativeFactStore,
-    "entries" | "inGame" | "entityOccupancy" | "structuresOwnedBy" | "armiesAtHome" | "subscribe" | "get" | "require" | "subscriptionScope"
+    | "entries"
+    | "inGame"
+    | "entityOccupancy"
+    | "structuresOwnedBy"
+    | "armiesAtHome"
+    | "subscribe"
+    | "get"
+    | "require"
+    | "subscriptionScope"
   >;
   const projection = new WorldSpatialProjection({ store });
   projection.start();

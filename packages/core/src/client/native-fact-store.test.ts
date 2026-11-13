@@ -815,7 +815,6 @@ it("keys a fact by an enum field: an army's running relic of each kind, read bac
   expect(() => store.get("ArmyRelicEffect", { game_id: 1, explorer_id: 201, kind: "Spear" as never })).toThrow();
 });
 
-
 it("keeps the wire identity through updates and removes it with its row", () => {
   const store = new NativeFactStore();
   const keys = { game_id: 1, entity_id: 7, resource_type: 1 };
