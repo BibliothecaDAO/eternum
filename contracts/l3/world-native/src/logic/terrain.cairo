@@ -22,7 +22,7 @@ pub fn biome(key: TileKey, game_context: crate::commands::BiomeContext) -> u8 {
     let climate = if game_context.day_unit_seconds == 0 {
         game_context.climate
     } else {
-        let spacing = crate::logic::settlement::rules(key.game_id).spacing;
+        let spacing = crate::logic::preset_record::for_game(key.game_id).settlement_spacing.read();
         crate::expeditions::climate(
             game_context.climate,
             crate::troops::Coord { alt: key.alt, x: key.col, y: key.row },
@@ -40,7 +40,9 @@ pub fn expedition_home_ring(game_id: u32, region_id: u32, timestamp: u64) -> Spa
     let day_unit_seconds = crate::logic::preset_record::for_game(game_id).rules.day_unit_seconds.read();
     assert!(day_unit_seconds != 0, "game has no expeditions");
     let today = crate::days::day_of(game, day_unit_seconds, timestamp).index;
-    let site = crate::expeditions::site(crate::logic::settlement::rules(game_id).spacing, region_id, today, 0);
+    let site = crate::expeditions::site(
+        crate::logic::preset_record::for_game(game_id).settlement_spacing.read(), region_id, today, 0,
+    );
     let climate = crate::state::read().games.overrides.entry(game_id).biome_climate.read();
     home_ring(
         game_id, site, crate::commands::BiomeContext { climate, day_unit_seconds, start_main_at: game.start_main_at },
@@ -57,7 +59,7 @@ fn home_ring(game_id: u32, site: Coord, context: crate::commands::BiomeContext) 
 }
 
 pub fn raise_expedition_home(key: TileKey, context: crate::commands::BiomeContext) {
-    let spacing = crate::logic::settlement::rules(key.game_id).spacing;
+    let spacing = crate::logic::preset_record::for_game(key.game_id).settlement_spacing.read();
     let coord = Coord { alt: key.alt, x: key.col, y: key.row };
     assert!(context.day_unit_seconds != 0 && crate::expeditions::is_home_ring(coord, spacing), "not a home ring");
     let center = crate::expeditions::home_ring_center(coord, spacing);

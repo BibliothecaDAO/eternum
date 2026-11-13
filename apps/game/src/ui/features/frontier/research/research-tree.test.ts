@@ -172,3 +172,35 @@ it("keeps every research line short enough for one line on a phone", () => {
     }
   }
 });
+
+it("town lore asks only for Well, Shrine and one Spire price, and storage sides are gone", () => {
+  const realm = { ...EARLY_REALM, board: { ...EARLY_REALM.board, town: true }, essence: 17500, labor: 5000 };
+  const prices: number[] = [];
+  realm.price = (row, tier) => {
+    if (row === research.ROW_DEPTH) prices.push(tier);
+    if (row === research.ROW_DEPTH && tier !== 1) throw new Error("Unpriced lore tier");
+    const lore = new Map<number, number>([
+      [research.ROW_WELL, 2500],
+      [research.ROW_SHRINE, 5000],
+      [research.ROW_DEPTH, 10000],
+    ]);
+    return lore.has(row) ? { essence: lore.get(row)!, labor: 0 } : EARLY_REALM.price(row, tier);
+  };
+  const nodes = readResearchTree(realm);
+  expect(prices).toEqual([1]);
+  expect(nodes.filter(({ row }) => row === research.ROW_DEPTH)).toHaveLength(1);
+  expect(nodes.find(({ row }) => row === research.ROW_SHRINE)?.state).toBe("locked");
+  expect(nodes.find(({ row }) => row === research.ROW_DEPTH)?.state).toBe("locked");
+  for (const row of [research.ROW_FARM, research.ROW_WORKSHOP]) {
+    expect(nodes.find((node) => node.row === row)?.sides?.map(({ choice }) => choice)).toEqual([0]);
+  }
+  const unlocked = readResearchTree({
+    ...realm,
+    learned: {
+      ...realm.learned,
+      [research.ROW_WELL]: { tier: 1, sides: [] },
+      [research.ROW_SHRINE]: { tier: 1, sides: [] },
+    },
+  });
+  expect(unlocked.find(({ row }) => row === research.ROW_DEPTH)?.state).toBe("ready");
+});

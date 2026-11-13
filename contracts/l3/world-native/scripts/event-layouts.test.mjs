@@ -117,7 +117,14 @@ test("home rewards have one production implementation and no former-class entryp
       .map(async ({ contract_name }) => [contract_name, await entrypoints(contract_name)]),
   );
   const games = await entrypoints("Games");
-  for (const name of ["grant_labor", "labor_grant", "claim_daily_quest", "record_quest_progress", "bane_effects"]) {
+  for (const name of [
+    "grant_labor",
+    "labor_grant",
+    "claim_daily_quest",
+    "record_quest_progress",
+    "bane_effects",
+    "resource_context",
+  ]) {
     const implementations = libraries.flatMap(([contract, entries]) =>
       entries.filter((entry) => entry === name).map(() => contract),
     );
@@ -164,6 +171,49 @@ test("libraries sharing a Games selector must agree on every wire member", () =>
     () => eventLayouts([...abi("MapLogic", "core::felt252"), ...abi("MapLogic", "core::integer::u256")]),
     /Conflicting event definition/,
   );
+});
+
+test("bane effects are read only beside quest progress; callers use the pinned library", async () => {
+  const root = new URL("../src/logic/", import.meta.url);
+  const readers = [];
+  for (const file of await readdir(root)) {
+    if (!file.endsWith(".cairo")) continue;
+    const source = await readFile(new URL(file, root), "utf8");
+    assert.doesNotMatch(
+      source,
+      /banes::(?:windows|stamina_percent|production_percent)\s*\(/,
+      `${file}: use banes::effects so the interval and its rates compile once beside QuestState`,
+    );
+    if (/banes::read_effects\s*\(/.test(source)) readers.push(file);
+  }
+  assert.deepEqual(readers, ["quests.cairo"], "only QuestState may compile the bane effect reader");
+  const banes = await readFile(new URL("banes.cairo", root), "utf8");
+  assert.doesNotMatch(
+    banes,
+    /logic::game::(?:game|rules)\s*\(|commands::load_context\s*\(/,
+    "bane effects must read the seed and calendar fields directly, without a full game context",
+  );
+});
+
+test("village pass administration has one owner in SettlementLogic", async () => {
+  const { contracts } = JSON.parse(
+    await readFile(new URL("../target/dev/world_native.starknet_artifacts.json", import.meta.url), "utf8"),
+  );
+  const owners = [];
+  for (const { contract_name } of contracts) {
+    if (!contract_name.endsWith("Logic")) continue;
+    const { abi } = JSON.parse(
+      await readFile(
+        new URL(`../target/dev/world_native_${contract_name}.contract_class.json`, import.meta.url),
+        "utf8",
+      ),
+    );
+    for (const entry of abi) {
+      const methods = entry.type === "interface" ? entry.items : [entry];
+      if (methods.some(({ name }) => name === "register_village_pass")) owners.push(contract_name);
+    }
+  }
+  assert.deepEqual(owners, ["SettlementLogic"], "village passes use the game's pinned Settlement class");
 });
 
 test("Race eligibility reads only its preset fields", async () => {
@@ -234,45 +284,102 @@ test("Triumph callers use the pinned library instead of compiling another reader
   );
 });
 
-test("bane effects are read only beside quest progress; callers use the pinned library", async () => {
-  const root = new URL("../src/logic/", import.meta.url);
-  const readers = [];
-  for (const file of await readdir(root)) {
-    if (!file.endsWith(".cairo")) continue;
-    const source = await readFile(new URL(file, root), "utf8");
-    assert.doesNotMatch(
-      source,
-      /banes::(?:windows|stamina_percent|production_percent)\s*\(/,
-      `${file}: use banes::effects so the interval and its rates compile once beside QuestState`,
-    );
-    if (/banes::read_effects\s*\(/.test(source)) readers.push(file);
-  }
-  assert.deepEqual(readers, ["quests.cairo"], "only QuestState may compile the bane effect reader");
-  const banes = await readFile(new URL("banes.cairo", root), "utf8");
-  assert.doesNotMatch(
-    banes,
-    /logic::game::(?:game|rules)\s*\(|commands::load_context\s*\(/,
-    "bane effects must read the seed and calendar fields directly, without a full game context",
+test("Bridge operator paths never compile the complete rule reader", async () => {
+  const { sierra_program_debug_info } = JSON.parse(
+    await readFile(new URL("../target/dev/world_native_BridgeLogic.contract_class.json", import.meta.url), "utf8"),
+  );
+  const functions = sierra_program_debug_info.user_func_names.map(([, name]) => name);
+  assert.equal(
+    functions.some(
+      (name) =>
+        name.endsWith("::logic::game::rules") ||
+        (name.includes("SliceRulesStore") && /::read(?:_at_offset)?$/.test(name)),
+    ),
+    false,
+    "Bridge must use preset fields and home_grants::grant_resource_context; sweep_lords defers to the pinned resource context reader only for earned balances",
   );
 });
 
-test("village pass administration has one owner in SettlementLogic", async () => {
+test("Day claim readers fetch only the structure fields they consume", async () => {
+  for (const file of ["home_grants", "quests"]) {
+    const source = await readFile(new URL(`../src/logic/${file}.cairo`, import.meta.url), "utf8");
+    assert.doesNotMatch(source, /structures::record\s*\(/, `${file}: read the structure base and owner directly`);
+  }
+});
+
+test("Day dispatchers share the pinned release reader", async () => {
+  for (const file of ["aspects", "banes", "deposits", "entry", "home_grants", "quests"]) {
+    const source = await readFile(new URL(`../src/logic/${file}.cairo`, import.meta.url), "utf8");
+    assert.doesNotMatch(
+      source,
+      /\bgame_releases\b/,
+      `${file}: use logic::release::classes(game_id) for the pinned class instead of repeating its storage lookup`,
+    );
+  }
+});
+
+test("starting troops have one implementation in StructuresLogic", async () => {
   const { contracts } = JSON.parse(
     await readFile(new URL("../target/dev/world_native.starknet_artifacts.json", import.meta.url), "utf8"),
   );
   const owners = [];
   for (const { contract_name } of contracts) {
     if (!contract_name.endsWith("Logic")) continue;
-    const { abi } = JSON.parse(
+    const { abi, sierra_program_debug_info } = JSON.parse(
       await readFile(
         new URL(`../target/dev/world_native_${contract_name}.contract_class.json`, import.meta.url),
         "utf8",
       ),
     );
-    for (const entry of abi) {
-      const methods = entry.type === "interface" ? entry.items : [entry];
-      if (methods.some(({ name }) => name === "register_village_pass")) owners.push(contract_name);
+    const methods = abi.flatMap((entry) => (entry.type === "interface" ? entry.items : [entry]));
+    if (methods.some(({ name }) => name === "grant_village_troops")) owners.push(contract_name);
+    const names = sierra_program_debug_info.user_func_names.map(([, name]) => name);
+    assert.equal(
+      names.some(
+        (name) =>
+          name.includes("structure_actions::grant_starting_troops") || name.includes("structure_actions::biome_troop"),
+      ),
+      false,
+      `${contract_name}: remove the old free grant and biome readers; use pinned IStartingTroops in Structures`,
+    );
+    if (contract_name === "RegistryLogic") {
+      assert.equal(
+        names.some((name) => name.includes("world_native::logic::village::rules")),
+        false,
+        "Registry: read preset.village_delay; the village grant reader belongs beside the grant in Structures",
+      );
+    }
+    assert.equal(
+      names.some((name) => name.includes("StructuresLogic::Internal::apply_starting_troops")),
+      contract_name === "StructuresLogic",
+      `${contract_name}: starting troops must compile only in StructuresLogic`,
+    );
+  }
+  assert.deepEqual(owners, ["StructuresLogic"]);
+});
+
+test("full settlement rules compile only where Placement consumes the record", async () => {
+  const { contracts } = JSON.parse(
+    await readFile(new URL("../target/dev/world_native.starknet_artifacts.json", import.meta.url), "utf8"),
+  );
+  const owners = [];
+  for (const { contract_name } of contracts) {
+    if (!contract_name.endsWith("Logic")) continue;
+    const { sierra_program_debug_info } = JSON.parse(
+      await readFile(
+        new URL(`../target/dev/world_native_${contract_name}.contract_class.json`, import.meta.url),
+        "utf8",
+      ),
+    );
+    if (
+      sierra_program_debug_info.user_func_names.some(([, name]) => name === "world_native::logic::settlement::rules")
+    ) {
+      owners.push(contract_name);
     }
   }
-  assert.deepEqual(owners, ["SettlementLogic"], "village passes use the game's pinned Settlement class");
+  assert.deepEqual(
+    owners,
+    ["PlacementLogic"],
+    "Read preset.settlement_spacing, preset.settlement_mode or registrar.roster_sizes directly; only Placement needs the full SettlementRules record",
+  );
 });

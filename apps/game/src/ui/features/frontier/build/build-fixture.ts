@@ -1,12 +1,7 @@
+import { FRONTIER_S1_PRESET_ID } from "../../../../../../../config/source/common/native-preset-modes";
 import { configManager, setBlockTimestampSource } from "@bibliothecadao/eternum";
 import { NativeFactStore } from "@bibliothecadao/eternum/game-client";
-import {
-  type BuildingType,
-  RESOURCE_PRECISION,
-  ResourcesIds,
-  StructureType,
-  TileOccupier,
-} from "@bibliothecadao/types";
+import { BuildingType, RESOURCE_PRECISION, ResourcesIds, StructureType, TileOccupier } from "@bibliothecadao/types";
 import preset from "../../../../../../../contracts/l3/world-native/tests/fixtures/current-presets/preset-3.json";
 
 const set = (key: string, model: string, value: Record<string, unknown>) => ({ model, key, value });
@@ -48,6 +43,7 @@ export const realmBoard = () => {
       storage_step_bps: 5000,
       population_step_bps: 2500,
       ration_step: String(PRECISION / 4n),
+      town: null,
       training_gate_tier: 2,
       troop_store_deploys: 2,
       settlement_resource_cap: 6000,
@@ -132,4 +128,38 @@ export const buildingCounts = (category: BuildingType, count: number) => {
   const packed = BigInt(count) << BigInt((category - 1) * 8);
   const word = (index: number) => String((packed >> BigInt(128 * index)) & ((1n << 128n) - 1n));
   return { packed_counts_1: word(0), packed_counts_2: word(1), packed_counts_3: word(2) };
+};
+
+export const townBoard = (level = 0) => {
+  const { store, realm } = realmBoard();
+  const board = store.require("BoardRules", { game_id: 1 });
+  const storehouse = store.require("BuildingRule", { game_id: 1, category: BuildingType.Storehouse });
+  configManager.setActiveGame(1, FRONTIER_S1_PRESET_ID);
+  configManager.setStore(store);
+  store.applyFacts([
+    set("0x3", "GameRegistry", { ...store.require("GameRegistry", { game_id: 1 }), preset_id: FRONTIER_S1_PRESET_ID }),
+    set("0x70", "BoardRules", {
+      ...board,
+      town: {
+        settlement_labor_cap: 5000,
+        city_labor_cap: 15000,
+        kingdom_labor_cap: 50000,
+        empire_labor_cap: 100000,
+      },
+    }),
+    set("0x62", "BuildingRule", {
+      ...storehouse,
+      population_cost: 0,
+      simple_cost: [{ resource_type: ResourcesIds.Labor, amount: 10000n * PRECISION }],
+      complex_cost: [{ resource_type: ResourcesIds.Labor, amount: 10000n * PRECISION }],
+    }),
+    set("0x7", "Structure", { ...realm, base: { ...realm.base, level } }),
+    set("0x75", "ResourceBalance", {
+      game_id: 1,
+      entity_id: 7,
+      resource_type: ResourcesIds.Labor,
+      balance: 15000n * PRECISION,
+    }),
+  ] as never);
+  return { store, realm: store.require("Structure", { game_id: 1, entity_id: 7 }) };
 };

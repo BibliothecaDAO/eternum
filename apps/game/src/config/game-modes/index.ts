@@ -1,5 +1,11 @@
 import type { NativeFactStore } from "@bibliothecadao/eternum/game-client";
-import { configManager, getEntityInfo, getStructureName, nativeGameModeOf } from "@bibliothecadao/eternum";
+import {
+  boardBuildingCategories,
+  configManager,
+  getEntityInfo,
+  getStructureName,
+  nativeGameModeOf,
+} from "@bibliothecadao/eternum";
 import {
   BuildingType,
   type ContractAddress,
@@ -191,17 +197,7 @@ const frontierConfig: GameModeConfig = {
     getTiers: blitzConfig.resources.getTiers,
   },
   rules: {
-    isBuildingTypeAllowed: (key) =>
-      [
-        "WorkersHut",
-        "ResourceWheat",
-        "ResourceKnightT1",
-        "ResourceLabor",
-        "WarHall",
-        "SupplyYard",
-        "ScoutsLodge",
-        "Hearth",
-      ].includes(key),
+    isBuildingTypeAllowed: (key) => boardBuildingCategories.some((category) => BuildingType[category] === key),
   },
 };
 

@@ -359,7 +359,7 @@ pub mod MapLogic {
             if game_context.day_unit_seconds == 0
                 || !crate::expeditions::is_home_ring(
                     Coord { alt: key.alt, x: key.col, y: key.row },
-                    crate::logic::settlement::rules(key.game_id).spacing,
+                    crate::logic::preset_record::for_game(key.game_id).settlement_spacing.read(),
                 ) {
                 return stored;
             }

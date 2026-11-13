@@ -1,4 +1,4 @@
-use starknet::storage::{StorageMapReadAccess, StoragePathEntry, StoragePointerReadAccess};
+use starknet::storage::{StorageMapReadAccess, StoragePointerReadAccess};
 use crate::resources::ResourceKey;
 
 pub fn rules(game_id: u32) -> Option<u128> {
@@ -96,7 +96,5 @@ pub mod AspectState {
 }
 
 pub fn dispatcher(game_id: u32) -> crate::aspects::IAspectsLibraryDispatcher {
-    let state = crate::state::read();
-    let release = state.game_releases.read(game_id);
-    crate::aspects::IAspectsLibraryDispatcher { class_hash: state.releases.entry(release).classes.registry.read() }
+    crate::aspects::IAspectsLibraryDispatcher { class_hash: crate::logic::release::classes(game_id).registry.read() }
 }

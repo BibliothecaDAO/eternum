@@ -21,12 +21,9 @@ pub fn configure(game_id: u32, value: DepositSource) {
         assert!(value.epoch >= previous.epoch, "deposit signer epoch regressed");
         assert!(value.epoch != previous.epoch || value.signer == previous.signer, "deposit signer epoch reused");
     }
-    crate::logic::game::game(game_id);
-    assert!(crate::logic::game::rules(game_id).day_unit_seconds != 0, "deposits require Frontier");
-    assert!(
-        crate::logic::preset_record::for_game(game_id).rollover_chest_rules.read().is_some(),
-        "game has no LORDS balance",
-    );
+    let preset = crate::logic::preset_record::for_game(game_id);
+    assert!(preset.rules.day_unit_seconds.read() != 0, "deposits require Frontier");
+    assert!(preset.rollover_chest_rules.read().is_some(), "game has no LORDS balance");
     crate::state::write()
         .entry
         .deposit_sources

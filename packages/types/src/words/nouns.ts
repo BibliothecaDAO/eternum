@@ -117,6 +117,7 @@ export const structurePlural = (type: StructureType, mineKind?: number, mode?: S
 
 /** The buildings Frontier raises, by Frontier's names: its barracks trains knights, its hut houses workers. */
 const FRONTIER_BUILDINGS: Partial<Record<BuildingType, string>> = {
+  [BuildingType.Storehouse]: "Storeroom",
   [BuildingType.ResourceWheat]: "Farm",
   [BuildingType.ResourceLabor]: "Workshop",
   [BuildingType.ResourceKnightT1]: "Barracks",

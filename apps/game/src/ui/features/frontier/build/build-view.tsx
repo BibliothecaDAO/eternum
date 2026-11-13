@@ -74,6 +74,7 @@ export type BuildTile = {
         short?: { of: Price["of"]; wait: number | undefined } | { of: "population" };
       }
     | { kind: "built" }
+    | { kind: "unavailable"; reason: string }
     | { kind: "locked"; gate: number; bought: number };
 };
 
@@ -340,6 +341,12 @@ const Band = ({ standing }: { standing: BuildTile["standing"] }) => (
         <>
           <SemanticIcon name="lock" size={14} />
           {purchasesOfGate(standing.bought, standing.gate)} research
+        </>
+      )}
+      {standing.kind === "unavailable" && (
+        <>
+          <SemanticIcon name="lock" size={14} />
+          {standing.reason}
         </>
       )}
       {standing.kind === "price" && <Price standing={standing} />}

@@ -1,11 +1,11 @@
 use starknet::Event;
-use starknet::storage::{StorageMapWriteAccess, StoragePointerReadAccess};
+use starknet::storage::{StorageMapWriteAccess, StoragePathEntry, StoragePointerReadAccess};
 use crate::resources::{IResourceOperationsDispatcherTrait, IResourceOperationsLibraryDispatcher, ResourceKey};
 
 #[starknet::component]
 pub mod HomeGrantState {
     use starknet::ContractAddress;
-    use starknet::storage::{StorageMapReadAccess, StoragePointerReadAccess};
+    use starknet::storage::{StorageMapReadAccess, StoragePathEntry, StoragePointerReadAccess};
     use crate::entry::{LaborGrant, LaborHome};
     use crate::logic::release::ReleaseState;
     use crate::logic::release::ReleaseState::InternalTrait as LifeInternal;
@@ -45,6 +45,14 @@ pub mod HomeGrantState {
             self.grant_home_resources(home, day, account)
         }
     }
+    #[embeddable_as(ResourceContextImpl)]
+    pub impl ResourceContextView<
+        TContractState, +HasComponent<TContractState>, +Drop<TContractState>,
+    > of crate::entry::IResourceContext<ComponentState<TContractState>> {
+        fn resource_context(self: @ComponentState<TContractState>, game_id: u32) -> crate::commands::ResourceContext {
+            super::grant_resource_context(game_id)
+        }
+    }
     #[generate_trait]
     pub impl InternalImpl<
         TContractState,
@@ -77,7 +85,7 @@ pub mod HomeGrantState {
                 target,
                 campaign_tier,
                 rules,
-                super::grant_resource_context(target.game_id, game),
+                super::grant_resource_context(target.game_id),
                 get_dep_component!(@self, Life).classes(target.game_id).resources.read(),
             );
             let grant = LaborGrant { game_id: target.game_id, account, home: target.home, amount, essence };
@@ -87,11 +95,11 @@ pub mod HomeGrantState {
         fn home_campaign_tier(
             self: @ComponentState<TContractState>, target: LaborHome, account: ContractAddress,
         ) -> Option<u8> {
-            let record = crate::logic::structures::record(
-                ResourceKey { game_id: target.game_id, entity_id: target.home },
-            );
+            let key = ResourceKey { game_id: target.game_id, entity_id: target.home };
+            assert!(crate::logic::structures::exists(key), "missing structure");
+            let home = self.data.structures.structures.entry((target.game_id, target.home));
             assert!(
-                record.base.category == crate::taxonomy::REALM_CATEGORY && record.owner == account,
+                home.base.read().category == crate::taxonomy::REALM_CATEGORY && home.owner.read() == account,
                 "labor requires an owned realm",
             );
             if let Some((_, tier)) = self.data.settlements.campaign_homes.read((target.game_id, target.home)) {
@@ -170,11 +178,11 @@ pub fn record_labor_grant(day: u64, grant: crate::entry::LaborGrant) {
 }
 
 #[inline(never)]
-pub fn grant_resource_context(game_id: u32, game: crate::game::GameRegistry) -> crate::commands::ResourceContext {
+pub fn grant_resource_context(game_id: u32) -> crate::commands::ResourceContext {
     let rules = crate::logic::preset_record::for_game(game_id).rules;
     crate::commands::ResourceContext {
         production_start: if rules.mode_rules.read() & crate::rules::PRODUCTION_START != 0 {
-            game.start_main_at.try_into().unwrap()
+            crate::state::read().games.games.entry(game_id).start_main_at.read().try_into().unwrap()
         } else {
             0
         },

@@ -50,7 +50,7 @@ export const campaignScenario = (tier: "regular" | "golden", level?: number) => 
 export const fullLaborCampaignScenario = (): LabScenario => {
   const spire = campaignScenario("golden")();
   const limit = new ResourceManager(spire.store, 7, 1).storeLimit(ResourcesIds.Labor);
-  if (limit === undefined) throw new Error("The lab realm's Labor store has no limit");
+  if (limit == null) throw new Error("The lab realm's Labor store has no limit");
   const held = [...spire.store.entries("ResourceBalance")].find(
     ([, row]) => row.entity_id === 7n && row.resource_type === ResourcesIds.Labor,
   );

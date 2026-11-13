@@ -1,3 +1,4 @@
+import type { BuildingType } from "@bibliothecadao/types";
 import type { NativeFactStore } from "../client/native-fact-store";
 import { nativeResearchConstants as research } from "../../../../contracts/l3/world-native/schema/client.gen";
 
@@ -145,3 +146,9 @@ export function researchRowOf(category: number): number | undefined {
   const row = Object.entries(researchRowCategory).find(([, rowCategory]) => rowCategory === category)?.[0];
   return row === undefined ? undefined : Number(row);
 }
+
+/** Every board building named by the contract, including buildings with no research row. */
+export const boardBuildingCategories: readonly BuildingType[] = Object.entries(research)
+  .filter(([name]) => !/^(ROW_|CHOICE_|KIND_)/.test(name))
+  .map(([, category]) => category)
+  .sort((a, b) => (researchRowOf(a) ?? research.ROW_COUNT) - (researchRowOf(b) ?? research.ROW_COUNT));

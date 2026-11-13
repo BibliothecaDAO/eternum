@@ -46,7 +46,7 @@ export const readRealmStore = (
       ? troopsAtHome(store, realm, rules, clock.now, clock.now)
       : wholeBalance(store, safeInteger(realm.entity_id), stock, clock.now);
   const rawLimit = new ResourceManager(store, safeInteger(realm.entity_id), realm.game_id).storeLimit(stock);
-  const limit = rawLimit === undefined ? undefined : Number(rawLimit / BigInt(RESOURCE_PRECISION));
+  const limit = rawLimit == null ? undefined : Number(rawLimit / BigInt(RESOURCE_PRECISION));
   const perHour = realmPerHour(store, safeInteger(realm.entity_id), stock, clock.now);
   const fullIn = secondsUntilFull(amount, limit, perHour);
   const nextIn = secondsUntilNextUnit(store, safeInteger(realm.entity_id), stock, clock.now, perHour);
@@ -99,6 +99,7 @@ const STORE_MODELS = [
   "BoardRules",
   "RealmKnowledge",
   "Structure",
+  "StructureBuildings",
   "ExplorerTroops",
   "ArmyProgress",
   "TileOccupancy",

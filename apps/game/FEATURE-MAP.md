@@ -1435,3 +1435,17 @@ ticks stop, and the waiting action reads the updated game end. Quarry grants lab
 last troops' payment, the final season boundary, winning mid-backlog and next-day bane issuance. Run these through
 `bash contracts/l3/check-native.sh` after the shared Race and Day sources are folded; their screen and live-playtest
 coverage remains pending.
+
+Season One town readers: Realm → Castle shows the current labor cap and the upgrade's cap from the same
+`ResourceManager.storeLimitAtLevel` used by the resource stores; a standing Storeroom affects both previews. Castle
+labor follows the Realm level. Research → Castle offers Well → Shrine → Spire, with the preceding lore required and only
+one Spire purchase. Farm and Workshop research offer output only on these towns. Older Frontier presets retain their
+existing tree. `research/research-tree.test.ts` covers the three-node reader and removed storage choices;
+`packages/core/src/managers/resource-manager.store-limit.test.ts` covers the per-resource caps and building diffs. The
+command proofs and their runner are listed in [the native feature map](../../contracts/l3/FEATURE-MAP.md).
+
+Town Storeroom: in a Season 1 Realm, tap an empty plot → Storeroom. The card reads its storage effect and price from the
+shared rules, shows the City requirement, and refuses a second standing copy. Build sends the ordinary CreateBuilding
+action. During snapshot recovery, store balances and Castle/research cap previews stay unknown until building counts
+arrive. `build-options.test.ts`, `build-sheet.test.tsx`, `research-facts.test.tsx` and the core store-limit tests cover
+these paths.

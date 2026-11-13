@@ -415,7 +415,8 @@ const grantLabor = (chain: NativeFactStore, account: string, gameId: number, hom
         );
         const balance = (held?.[1].balance ?? 0n) + added;
         const limit = new ResourceManager(chain, Number(home), gameId).storeLimit(resource);
-        if (limit !== undefined && balance > limit) throw new Error(`The lab's home ${home} has no room for the claim`);
+        if (limit === undefined) throw new Error("The lab claim requires synchronized store limits");
+        if (limit !== null && balance > limit) throw new Error(`The lab's home ${home} has no room for the claim`);
         return {
           model: "ResourceBalance",
           key: held?.[0] ?? `0x1b${resource.toString(16)}`,

@@ -31,7 +31,8 @@ pub fn clear_rewarded_site(key: crate::resources::ResourceKey, site: ExpeditionS
         game_id: key.game_id,
         structure_id: result.home_id,
         epoch: region_day(
-            Coord { alt: site.alt, x: site.col, y: site.row }, crate::logic::settlement::rules(key.game_id).spacing,
+            Coord { alt: site.alt, x: site.col, y: site.row },
+            crate::logic::preset_record::for_game(key.game_id).settlement_spacing.read(),
         ),
     };
     if per_depth_ruins(key.game_id) {

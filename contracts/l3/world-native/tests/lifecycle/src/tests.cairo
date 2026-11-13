@@ -1,6 +1,7 @@
 pub use world_test_support::tests::*;
 mod aspects;
 mod blitz_results;
+mod board_storage;
 mod campaign;
 mod camps;
 mod entry;
@@ -14,6 +15,8 @@ mod realms;
 mod releases;
 mod season_lifecycle;
 mod settlement;
+
+mod town;
 mod village;
 mod world_bane_combat;
 

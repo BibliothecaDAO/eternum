@@ -135,14 +135,12 @@ pub mod EntryAdministration {
         fn sweep_lords(ref self: ComponentState<TContractState>, game_id: u32, structure_id: u64) {
             super::assert_ledger_operator();
             self.assert_season_ended(game_id);
-            let context = crate::commands::load_context(game_id, 0, starknet::get_block_timestamp());
             crate::relics::ILordsDispatcherTrait::sweep_lords(
                 crate::relics::ILordsLibraryDispatcher {
                     class_hash: get_dep_component!(@self, Life).classes(game_id).prizes.read(),
                 },
                 game_id,
                 structure_id,
-                crate::commands::action_context(context),
             );
         }
         fn award_frontier_prize(ref self: ComponentState<TContractState>, game_id: u32, rank: u16) {
@@ -194,9 +192,8 @@ pub mod EntryAdministration {
             let first = crate::days::day_of(game, unit, founded).index;
             let today = crate::days::day_of(game, unit, timestamp).index;
             let rules = preset.labor_rules.read().expect('labor is disabled');
-            let resource_context = crate::logic::home_grants::grant_resource_context(key.game_id, game);
-            let release_id = self.data.game_releases.read(key.game_id);
-            let resources = self.data.releases.entry(release_id).classes.resources.read();
+            let resource_context = crate::logic::home_grants::grant_resource_context(key.game_id);
+            let resources = crate::logic::release::classes(key.game_id).resources.read();
             for day in first..today {
                 if self.data.entry.home_labor_grants.read((key.game_id, home, day)).is_some() {
                     continue;

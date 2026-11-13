@@ -51,6 +51,7 @@ export interface RealmResearchFacts {
   /** A row's tier's price, as the game's preset sets it. */
   price: (row: number, tier: number) => { essence: number; labor: number };
   board: {
+    town: boolean;
     outputStepBps: number;
     storageStepBps: number;
     populationStepBps: number;
@@ -277,7 +278,7 @@ export const readResearchTree = (realm: RealmResearchFacts): TreeNode[] => {
     const mark = (side: number) => (side === 0 ? makeMark : otherMark);
     return {
       sides: (): SideEffect[] =>
-        [make, other].map((side, index) => ({
+        (realm.board.town && row <= research.ROW_WORKSHOP ? [make] : [make, other]).map((side, index) => ({
           choice: index,
           icon: mark(index),
           name: side.words[0],
@@ -411,11 +412,19 @@ export const readResearchTree = (realm: RealmResearchFacts): TreeNode[] => {
     ROW_SCOUTS_LODGE: [trainingNode(TRAINING.Scouting)],
     ROW_HEARTH: [trainingNode(TRAINING.Homecoming)],
     ROW_SHRINE: [
-      castleNode("shrine", ROWS.shrine, SHRINE, "shrine", {
-        line: RESEARCH_TREE.armiesFind(SHRINE),
-        now: "—",
-        next: RESEARCH_TREE.each("1 skill point"),
-      }),
+      castleNode(
+        "shrine",
+        ROWS.shrine,
+        SHRINE,
+        "shrine",
+        {
+          line: RESEARCH_TREE.armiesFind(SHRINE),
+          now: "—",
+          next: RESEARCH_TREE.each("1 skill point"),
+        },
+        1,
+        realm.board.town ? [{ kind: "tier", met: learned(ROWS.well).tier === 1, node: WELL, icon: "well" }] : [],
+      ),
     ],
     ROW_WELL: [
       castleNode("well", ROWS.well, WELL, "well", {
@@ -425,11 +434,19 @@ export const readResearchTree = (realm: RealmResearchFacts): TreeNode[] => {
       }),
     ],
     ROW_DEPTH: [
-      castleNode("spire-lore", ROWS.depth, RESEARCH_TREE.spireLore, reachMark(1), {
-        line: RESEARCH_TREE.armiesFind(SPIRE_WORDS.title.toLowerCase()),
-        now: "—",
-        next: RESEARCH_TREE.opens,
-      }),
+      castleNode(
+        "spire-lore",
+        ROWS.depth,
+        RESEARCH_TREE.spireLore,
+        reachMark(1),
+        {
+          line: RESEARCH_TREE.armiesFind(SPIRE_WORDS.title.toLowerCase()),
+          now: "—",
+          next: RESEARCH_TREE.opens,
+        },
+        1,
+        realm.board.town ? [{ kind: "tier", met: learned(ROWS.shrine).tier === 1, node: SHRINE, icon: "shrine" }] : [],
+      ),
     ],
   } satisfies Record<ResearchRow, TreeNode[]>;
   return Object.values(rows).flat();

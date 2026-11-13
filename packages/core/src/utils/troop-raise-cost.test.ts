@@ -43,6 +43,7 @@ const realm = (board: boolean, wheat: bigint) => {
             storage_step_bps: 5000,
             population_step_bps: 2500,
             ration_step: PRECISION / 4n,
+            town: null,
             training_gate_tier: 2,
             troop_store_deploys: 2,
             settlement_resource_cap: 6000,

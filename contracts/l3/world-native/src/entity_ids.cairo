@@ -46,7 +46,7 @@ pub fn reserve_homes(game_id: u32, owner: ContractAddress) {
     if state.games.home_reservations.read((game_id, owner)) != 0 {
         return;
     }
-    let count: u8 = match crate::logic::settlement::rules(game_id).mode {
+    let count: u8 = match crate::logic::preset_record::for_game(game_id).settlement_mode.read() {
         crate::settlement::SettlementMode::Triple => 3,
         _ => 1,
     };
@@ -72,7 +72,7 @@ pub fn assign_open_home(game_id: u32, owner: ContractAddress) -> EntityId {
         return previous;
     }
     let digest: u256 = core::poseidon::poseidon_hash_span(array![game_id.into(), owner.into()].span()).into();
-    let spacing = crate::logic::settlement::rules(game_id).spacing;
+    let spacing = crate::logic::preset_record::for_game(game_id).settlement_spacing.read();
     let regions = core::cmp::min(0x7fffffff_u32 / spacing, MAX_HOME_NAMESPACE);
     assert!(regions != 0, "no expedition home regions");
     let first: u32 = (digest % regions.into()).try_into().unwrap();

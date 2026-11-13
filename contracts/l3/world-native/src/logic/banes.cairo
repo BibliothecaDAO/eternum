@@ -5,9 +5,7 @@ use crate::deep::{IDeepBanesDispatcherTrait, IDeepBanesLibraryDispatcher};
 use crate::resources::ResourceKey;
 
 pub fn effects(home: ResourceKey, from: u64, until: u64) -> BaneEffects {
-    let state = crate::state::read();
-    let release = state.game_releases.read(home.game_id);
-    IBaneEffectsLibraryDispatcher { class_hash: state.releases.entry(release).classes.bridge.read() }
+    IBaneEffectsLibraryDispatcher { class_hash: crate::logic::release::classes(home.game_id).bridge.read() }
         .bane_effects(home, from, until)
 }
 
@@ -37,9 +35,8 @@ fn team_quest(home: ResourceKey, day: u64) -> Option<u8> {
     if crate::logic::preset_record::for_game(home.game_id).bane_rules.read().is_none() {
         return None;
     }
-    let state = crate::state::read();
-    let release = state.releases.entry(state.game_releases.read(home.game_id)).classes;
-    IDeepBanesLibraryDispatcher { class_hash: release.bridge.read() }.team_quest(home, day)
+    IDeepBanesLibraryDispatcher { class_hash: crate::logic::release::classes(home.game_id).bridge.read() }
+        .team_quest(home, day)
 }
 
 pub fn target(home: ResourceKey, kind: u8, level: u8) -> u128 {

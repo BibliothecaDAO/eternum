@@ -55,6 +55,7 @@ function presetFixtureSchema(): NativeSchema {
   const schema = structuredClone(compiledSchema);
   for (const type of factWireTypes) schema.types[type.name] = type;
   for (const module of [
+    "buildings",
     "rules",
     "entry",
     "quests",

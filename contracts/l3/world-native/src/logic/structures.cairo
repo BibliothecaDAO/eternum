@@ -280,6 +280,22 @@ pub mod StructuresLogic {
         }
     }
     #[abi(embed_v0)]
+    impl StartingTroops of crate::structures::IStartingTroops<ContractState> {
+        fn grant_village_troops(ref self: ContractState, key: ResourceKey, context: crate::commands::ActionContext) {
+            let context = crate::commands::execution_context(key.game_id, context);
+            self
+                .apply_starting_troops(
+                    key,
+                    crate::settlement::StartingTroops::Biome,
+                    crate::logic::village::rules(key.game_id).resources,
+                    10 * RESOURCE_PRECISION,
+                    context.timestamp,
+                    context,
+                );
+        }
+    }
+
+    #[abi(embed_v0)]
     impl Structures of crate::structures::IStructureOperations<ContractState> {
         fn create_discovery(
             ref self: ContractState,
@@ -797,7 +813,9 @@ pub mod StructuresLogic {
                 context.game.unbox(), context.rules.unbox().day_unit_seconds, context.timestamp,
             )
                 .index;
-            let origin = crate::expeditions::site(crate::logic::settlement::rules(game_id).spacing, realm_id, today, 0);
+            let origin = crate::expeditions::site(
+                crate::logic::preset_record::for_game(game_id).settlement_spacing.read(), realm_id, today, 0,
+            );
             crate::logic::map::raise_expedition_home(
                 tile_key(game_id, origin), crate::commands::biome_context(context),
             );
@@ -834,7 +852,7 @@ pub mod StructuresLogic {
                 .create_producer(
                     key,
                     crate::resources::UNLIMITED_OUTPUT,
-                    crate::logic::resources::rule(key.game_id, 23).realm_rate,
+                    crate::logic::buildings::castle_labor_rate(key.game_id, 0),
                     23,
                     25,
                     rules.building_config.base_population,
@@ -873,18 +891,101 @@ pub mod StructuresLogic {
             timestamp: u64,
             game_context: crate::commands::ExecutionContext,
         ) {
+            let guards = game_context.rules.unbox().troop_limit_config.starting_guard;
+            self
+                .apply_starting_troops(
+                    key, troops, resources, guards.into() * RESOURCE_PRECISION, timestamp, game_context,
+                );
+        }
+
+        fn biome_troop(
+            self: @ContractState, key: ResourceKey, game_context: crate::commands::ExecutionContext,
+        ) -> crate::troops::TroopType {
+            let record = crate::logic::structures::record(key);
+            let coord = if game_context.rules.unbox().day_unit_seconds != 0
+                && record.base.category == crate::taxonomy::REALM_CATEGORY {
+                crate::settlement::off_map_realm_reference(record.metadata.realm_id.into())
+            } else {
+                crate::structures::structure_coord(key)
+            };
+            let biome = crate::logic::structure_actions::map_dispatcher(key.game_id)
+                .biome(tile_key(key.game_id, coord), crate::commands::biome_context(game_context));
+            assert!(biome > 0 && biome <= 17, "starting troops require a biome");
+            crate::logic::settlement::biome_troop(key.game_id, biome)
+        }
+
+        fn apply_starting_troops(
+            ref self: ContractState,
+            key: ResourceKey,
+            troops: crate::settlement::StartingTroops,
+            resources: Span<crate::resources::ResourceAmount>,
+            guards: u128,
+            timestamp: u64,
+            game_context: crate::commands::ExecutionContext,
+        ) {
             let category = match troops {
                 crate::settlement::StartingTroops::None => { return; },
-                crate::settlement::StartingTroops::Biome => crate::logic::structure_actions::biome_troop(
-                    key, game_context,
-                ),
+                crate::settlement::StartingTroops::Biome => self.biome_troop(key, game_context),
                 crate::settlement::StartingTroops::Dealt(category) => category,
             };
-            let guards = game_context.rules.unbox().troop_limit_config.starting_guard;
-            crate::logic::structure_actions::grant_starting_troops(
-                key, category, resources, guards.into() * RESOURCE_PRECISION, timestamp, game_context,
-            );
+            let record = crate::logic::structures::record(key);
+            if record.base.starting_troops_granted {
+                return;
+            }
+            crate::logic::structures::StructureState::mark_starting_troops(key);
+            let resource_type = crate::troops::troop_resource(category, 0);
+            for grant in resources {
+                let kind = *grant.resource_type;
+                let amount = *grant.amount;
+                if kind == resource_type {
+                    crate::logic::structure_actions::resources_dispatcher(key.game_id)
+                        .grant_resource(
+                            key, kind, amount + guards, timestamp, crate::commands::resource_context(game_context),
+                        );
+                    if record.base.category == crate::taxonomy::REALM_CATEGORY {
+                        crate::troops::IStartingArmiesDispatcherTrait::deploy_starting_armies(
+                            crate::troops::IStartingArmiesLibraryDispatcher {
+                                class_hash: crate::logic::release::classes(key.game_id).troops.read(),
+                            },
+                            key,
+                            category,
+                            amount,
+                            crate::commands::action_context(game_context),
+                        );
+                    }
+                    if guards != 0 {
+                        crate::logic::structure_actions::spend(
+                            key, kind, guards, timestamp, crate::commands::resource_context(game_context),
+                        );
+                        crate::guards::IGuardsDispatcherTrait::add_starting_guard(
+                            crate::guards::IGuardsLibraryDispatcher {
+                                class_hash: crate::logic::release::classes(key.game_id).troops.read(),
+                            },
+                            key,
+                            category,
+                            guards,
+                            timestamp,
+                            crate::commands::action_context(game_context),
+                        );
+                        crate::logic::stories::emit_entity_story(
+                            key,
+                            record.owner,
+                            Story::GuardAddStory(
+                                crate::ownership::GuardAddStory {
+                                    structure_id: key.entity_id,
+                                    slot: 0,
+                                    category,
+                                    tier: crate::troops::TroopTier::T1,
+                                    amount: guards,
+                                },
+                            ),
+                            timestamp,
+                        );
+                    }
+                }
+            }
         }
+
 
         fn change_owner(
             ref self: ContractState,

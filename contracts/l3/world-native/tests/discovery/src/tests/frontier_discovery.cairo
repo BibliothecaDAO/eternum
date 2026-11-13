@@ -120,11 +120,11 @@ fn the_floor_draws_only_kinds_still_allowed() {
 
 #[test]
 fn frontier_floor_is_home_day_scoped_and_ruin_clears_preserve_it() {
-    let d = super::setup(true);
+    let (d, game_id) = super::registrar::setup_open_frontier();
     snforge_std::interact_with_state(
         d.games,
         || {
-            let key = ExpeditionDiscoveryKey { game_id: 1, structure_id: 17, epoch: 300 };
+            let key = ExpeditionDiscoveryKey { game_id, structure_id: 17, epoch: 300 };
             assert!(crate::logic::expeditions::discovery(key).is_none());
             // The empty-reveal floor is shared across armies and depths.
             for _ in 0_u8..7 {

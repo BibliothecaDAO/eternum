@@ -123,6 +123,14 @@ pub struct BuildingTerms {
     pub complex_count: u8,
 }
 #[derive(Copy, Drop, Serde, Debug, PartialEq, starknet::Store)]
+pub struct TownRules {
+    pub settlement_labor_cap: u32,
+    pub city_labor_cap: u32,
+    pub kingdom_labor_cap: u32,
+    pub empire_labor_cap: u32,
+}
+
+#[derive(Copy, Drop, Serde, Debug, PartialEq, starknet::Store)]
 pub struct BoardRules {
     pub demolition_refund_bps: u16,
     pub workshop_rate: u64,
@@ -141,6 +149,7 @@ pub struct BoardRules {
     pub city_resource_cap: u32,
     pub kingdom_resource_cap: u32,
     pub empire_resource_cap: u32,
+    pub town: Option<TownRules>,
 }
 
 #[derive(Copy, Drop, Default, Debug, PartialEq)]

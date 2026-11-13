@@ -13,6 +13,9 @@ import type { PriceKind } from "@/ui/design-system/kit/price-faces";
 import type { Refusal } from "@/ui/design-system/kit/refusal";
 import {
   BARRACKS,
+  BUILDING_UNAVAILABLE,
+  needsCastleLevel,
+  storesMultiplied,
   BUILD,
   makes,
   needsResearchPurchases,
@@ -43,6 +46,7 @@ import { resolveConstructionBuildability } from "@bibliothecadao/eternum/automat
 import { safeInteger, nativeResearchConstants, type NativeRows } from "@bibliothecadao/eternum/game-client";
 import {
   BUILDINGS_CENTER,
+  rankName,
   BuildingType,
   formatAmount,
   formatCharge,
@@ -193,7 +197,10 @@ export const BuildSheet = ({
   /** Where the chosen building stands: open, refused with its reason, or open but for free population. */
   const standing = (): { refusal?: Refusal; noRoom?: true } => {
     if (option.standing === "built") return { refusal: { reason: { kind: "failed", line: ONE_A_REALM } } };
-    if (option.standing !== "open") return { refusal: gateRefusal(option.standing) };
+    if (option.standing !== "open") {
+      if ("gate" in option.standing) return { refusal: gateRefusal(option.standing) };
+      return { refusal: { reason: { kind: "failed", line: buildingRequirement(option.standing) } } };
+    }
     const shortCost = option.cost.find(({ resource, amount }) => (held(resource) ?? 0) < amount);
     if (shortCost) {
       const have = held(shortCost.resource);
@@ -321,7 +328,10 @@ const buildTile = (option: BuildOption, holdings: Holdings): BuildTile => ({
 const standingOf = (option: BuildOption, { held, perHour, free }: Holdings): BuildTile["standing"] => {
   if (option.standing === "built") return { kind: "built" };
   // Training counts purchases across both Barracks sides.
-  if (option.standing !== "open") return { kind: "locked", ...option.standing };
+  if (option.standing !== "open")
+    return "gate" in option.standing
+      ? { kind: "locked", ...option.standing }
+      : { kind: "unavailable", reason: buildingRequirement(option.standing) };
   const missing = option.cost.find(({ resource, amount }) => (held(resource) ?? 0) < amount);
   const short: Extract<BuildTile["standing"], { kind: "price" }>["short"] = missing
     ? {
@@ -350,11 +360,13 @@ const standingOf = (option: BuildOption, { held, perHour, free }: Holdings): Bui
 const buildingLine = (option: BuildOption): RankedWords => {
   const { effect } = option;
   const does: RankedWords =
-    effect.kind === "produces"
-      ? [makes(FRONTIER_STORES[madeStore(effect.resource)].word, formatRate(effect.output.total))]
-      : effect.kind === "trains"
-        ? startsNewArmies(effect.attribute, option.tier)
-        : [`${formatGain(effect.amount)} ${POPULATION}`];
+    effect.kind === "storage"
+      ? [effect.multiplier === null ? BUILDING_UNAVAILABLE : storesMultiplied(effect.multiplier)]
+      : effect.kind === "produces"
+        ? [makes(FRONTIER_STORES[madeStore(effect.resource)].word, formatRate(effect.output.total))]
+        : effect.kind === "trains"
+          ? startsNewArmies(effect.attribute, option.tier)
+          : [`${formatGain(effect.amount)} ${POPULATION}`];
   const takes = option.populationCost > 0 ? `, ${takesPopulation(formatCharge(option.populationCost))}` : "";
   return [`${buildingName(option.category)}: `, ...does, ...(takes ? [takes] : [])];
 };
@@ -369,11 +381,13 @@ const gemsOf = ({ sides, tier }: BuildOption): BuildTile["gems"] =>
 
 /** What one more gives: what it makes a minute, the population room it adds, or the attribute new armies start in. */
 const givesOf = ({ effect }: BuildOption): BuildTile["gives"] =>
-  effect.kind === "produces"
-    ? { icon: FRONTIER_STORES[madeStore(effect.resource)].icon, value: formatRate(effect.output.total) }
-    : effect.kind === "trains"
-      ? { icon: ATTRIBUTE_MARKS[effect.attribute] }
-      : { icon: "person", value: formatGain(effect.amount) };
+  effect.kind === "storage"
+    ? { icon: "storehouse", value: effect.multiplier === null ? "—" : `x${effect.multiplier}` }
+    : effect.kind === "produces"
+      ? { icon: FRONTIER_STORES[madeStore(effect.resource)].icon, value: formatRate(effect.output.total) }
+      : effect.kind === "trains"
+        ? { icon: ATTRIBUTE_MARKS[effect.attribute] }
+        : { icon: "person", value: formatGain(effect.amount) };
 
 /** A realm's plot, as the actions in flight name it. */
 
@@ -406,3 +420,6 @@ const useBuildingGhost = (category: BuildingType | undefined, plot: HexPosition)
     return () => setPreviewBuilding(null);
   }, [category, plot.col, plot.row, setPreviewBuilding]);
 };
+
+const buildingRequirement = (standing: { level: number } | { unavailable: true }): string =>
+  "level" in standing ? needsCastleLevel(rankName(standing.level)) : BUILDING_UNAVAILABLE;

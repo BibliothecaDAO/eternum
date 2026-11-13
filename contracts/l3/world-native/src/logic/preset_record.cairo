@@ -283,6 +283,15 @@ fn write_buildings(
                 && board.empire_resource_cap > 0,
             "zero resource store",
         );
+        if let Some(town) = board.town {
+            assert!(
+                town.settlement_labor_cap > 0
+                    && town.city_labor_cap > 0
+                    && town.kingdom_labor_cap > 0
+                    && town.empire_labor_cap > 0,
+                "zero labor store",
+            );
+        }
         preset.board_terms.write(Some(board));
     }
 }
@@ -558,6 +567,7 @@ fn write_research(preset: PresetWrite, structures: crate::presets::StructurePres
         assert!(structures.research.is_empty(), "research needs a board");
         return;
     }
+    // A priced row is a contiguous prefix; an omitted tier cannot be purchased.
     for entry in structures.research {
         let key = (*entry.row, *entry.tier);
         assert!(*entry.tier > 0 && *entry.tier <= crate::research::max_tier(*entry.row), "invalid research tier");
@@ -565,13 +575,9 @@ fn write_research(preset: PresetWrite, structures: crate::presets::StructurePres
         assert!((*entry.price).essence != 0, "empty research price");
         preset.research_prices.write(key, Some(*entry.price));
     }
-    // The preset's prices define each row's purchasable tiers, within the packed knowledge's capacity.
-    for row in 0..crate::research::ROW_COUNT {
-        assert!(preset.research_prices.read((row, 1)).is_some(), "incomplete research prices");
-        for tier in 2..crate::research::max_tier(row) + 1 {
-            if preset.research_prices.read((row, tier)).is_some() {
-                assert!(preset.research_prices.read((row, tier - 1)).is_some(), "research tiers must be contiguous");
-            }
+    for entry in structures.research {
+        if *entry.tier > 1 {
+            assert!(preset.research_prices.read((*entry.row, *entry.tier - 1)).is_some(), "research price gap");
         }
     }
 }

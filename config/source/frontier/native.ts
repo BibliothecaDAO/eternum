@@ -78,6 +78,7 @@ export const frontierPreset = {
   // Four-hour units: days of 8 to 24 hours, bags of 80 hours, a season of 21 bags in ten weeks.
   dayUnitSeconds: FRONTIER_DAY_UNIT_SECONDS,
   board: {
+    town: null,
     demolitionRefundBps: 5000,
     workshopRate: 0.056,
     outputStepBps: 2000,

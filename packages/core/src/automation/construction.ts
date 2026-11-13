@@ -1,3 +1,4 @@
+import { storehouseAvailability } from "../utils/buildings";
 import { buildableRadius } from "../utils/castle-reach";
 import { configManager, divideByPrecision, getBalance, getBlockTimestamp, getBuildingCosts } from "../index";
 import {
@@ -6,6 +7,8 @@ import {
   getNeighborHexes,
   getProducedResource,
   ResourcesIds,
+  rankName,
+  buildingName,
   StructureType,
 } from "@bibliothecadao/types";
 import type { NativeFactStore } from "../client/index";
@@ -44,7 +47,8 @@ type ConstructionBuildabilityCode =
   | "insufficient_capacity"
   | "insufficient_population"
   | "invalid_resource_for_structure"
-  | "realm_full";
+  | "realm_full"
+  | "board_building_locked";
 
 type ConstructionBuildabilityResult = {
   canSubmit: boolean;
@@ -337,6 +341,19 @@ const validateStructureResource = ({ buildingType, realm, store }: ConstructionB
   return fail("invalid_resource_for_structure", "This structure cannot produce that resource.");
 };
 
+const validateBoardBuilding = (input: ConstructionBuildabilityInput): ConstructionBuildabilityResult => {
+  const game_id = configManager.getActiveGameId();
+  if (input.buildingType !== BuildingType.Storehouse || !input.store.get("BoardRules", { game_id })) return pass();
+  const realm = input.store.get("Structure", { game_id, entity_id: input.entityId });
+  const available = realm && storehouseAvailability(input.store, realm);
+  if (available === undefined) return fail("board_building_locked", "Building counts are not synchronized.");
+  if (available === "open") return pass();
+  if (available === "built")
+    return fail("board_building_locked", `One ${buildingName(input.buildingType, true)} per Realm.`);
+  if ("level" in available) return fail("board_building_locked", `Needs ${rankName(available.level)}.`);
+  return fail("board_building_locked", "Unavailable in this game.");
+};
+
 export const resolveConstructionBuildability = (
   input: ConstructionBuildabilityInput,
 ): ConstructionBuildabilityResult => {
@@ -350,6 +367,9 @@ export const resolveConstructionBuildability = (
 
   const modeResult = validateMode(input);
   if (!modeResult.canSubmit) return modeResult;
+
+  const boardResult = validateBoardBuilding(input);
+  if (!boardResult.canSubmit) return boardResult;
 
   const targetResult = validateTargetSpot(input);
   if (!targetResult.canSubmit) return targetResult;
