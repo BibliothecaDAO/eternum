@@ -4,6 +4,13 @@ pub const SHRINE_RARE_BPS: u32 = 1500;
 pub const SHRINE_EPIC_BPS: u32 = 400;
 pub const SHRINE_LEGENDARY_BPS: u32 = 100;
 pub const ATTRIBUTE_CAP: u8 = 5;
+pub const SPIRE_REVEAL_LIMIT: u8 = 10;
+pub const RELIC_BLADE_BPS: u32 = 1000;
+pub const RELIC_WARD_BPS: u32 = 500;
+pub const RELIC_PLUNDER_BPS: u32 = 2000;
+pub const RELIC_TOME_BPS: u32 = 4000;
+pub const RELIC_SECONDS_PER_RANK: u32 = 1800;
+pub const RELIC_TILES_PER_RANK: u8 = 6;
 pub const SKILL_POINT_REFILL_BASE: u8 = 10;
 pub const SKILL_POINT_REFILL_STEP: u8 = 10;
 // Rank 0 is untrained; Common I through Legendary V retain the original ceilings.
@@ -606,3 +613,21 @@ pub struct SpeedConfig {
 pub const WELL_STAMINA_DIVISOR: u8 = 2;
 
 pub const FRONTIER_REPORT_GRACE_SECONDS: u32 = crate::days::FRONTIER_REPORT_GRACE_SECONDS;
+
+pub const CLEAR_MIST_STAGE: u8 = 1;
+pub const SECOND_WIND_STAGE: u8 = 2;
+pub const PALE_MOON_STAGE: u8 = 3;
+pub const SPOILS_STAGE: u8 = 4;
+pub const BOON_MAX_STEPS: u32 = 5;
+pub const PATHS_SITE_STEP_BPS: u32 = 2500;
+pub const PATHS_SANCTUARY_STEP_BPS: u32 = 1500;
+pub const DEEP_MAP_SIZE: u32 = 50;
+
+pub const DEEP_FOUNDATION: u8 = 0;
+pub const DEEP_QUARRY: u8 = 1;
+pub const DEEP_ALTAR: u8 = 2;
+pub const DEEP_SITE_COUNT: u8 = 3;
+
+pub const DEEP_ARRIVAL_Y: u32 = 5;
+
+pub const DEEP_GUARD_SLOTS: u8 = 4;

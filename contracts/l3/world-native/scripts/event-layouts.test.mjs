@@ -121,7 +121,7 @@ test("home rewards have one production implementation and no former-class entryp
     const implementations = libraries.flatMap(([contract, entries]) =>
       entries.filter((entry) => entry === name).map(() => contract),
     );
-    assert.deepEqual(implementations, ["ProductionLogic"], `${name} must have exactly one production implementation`);
+    assert.deepEqual(implementations, ["BridgeLogic"], `${name} must have exactly one production implementation`);
   }
   for (const name of ["grant_labor", "labor_grant"]) {
     assert.equal(games.filter((entry) => entry === name).length, 1);

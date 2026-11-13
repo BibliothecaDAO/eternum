@@ -11,6 +11,39 @@ import { NativeIngestion } from "./ingestion";
 import { pointsAward, schema, manifest, receipt, raw, setup, battleEvent, rowEvent } from "./fixtures";
 
 describe("native row decoder", () => {
+  it("folds Altar charge and day-keyed team banes in one receipt and retains prior issues", () => {
+    const { native, fold } = setup();
+    native.applyReceipt(
+      fold,
+      receipt([
+        rowEvent("AltarBar", ["1", "2"], { charge: 1495 }),
+        rowEvent("AspectActivity", ["1", "3", "4"], { active: 21 }),
+      ]),
+      10,
+      0,
+    );
+    const issued = receipt([
+      rowEvent("AltarBar", ["1", "2"], { charge: 0 }),
+      rowEvent("TeamBane", ["1", "3", "5"], { source: 2, issued_day: 4, quest: 7 }),
+    ]);
+    const overlay = fold.overlay();
+    native.applyReceipt(overlay, issued, null, 0);
+    expect(fold.modelRows("TeamBane")).toEqual([]);
+    native.applyReceipt(fold, issued, 11, 0);
+    expect(fold.modelRows("TeamBane")).toEqual(overlay.modelRows("TeamBane"));
+    expect(fold.modelRows("AltarBar")[0].value).toEqual({ game_id: "0x1", aspect: "0x2", charge: "0x0" });
+    expect(fold.modelRows("AspectActivity")[0].value.active).toBe("0x15");
+    native.applyReceipt(
+      fold,
+      receipt([rowEvent("TeamBane", ["1", "3", "7"], { source: 4, issued_day: 6, quest: 8 })]),
+      12,
+      0,
+    );
+    expect(fold.modelRows("TeamBane").map(({ value }) => value)).toEqual([
+      { game_id: "0x1", aspect: "0x3", day: "0x5", source: "0x2", issued_day: "0x4", quest: "0x7" },
+      { game_id: "0x1", aspect: "0x3", day: "0x7", source: "0x4", issued_day: "0x6", quest: "0x8" },
+    ]);
+  });
   it("folds a known same-schema hotfix and refuses an unavailable decoder before its migration rows", () => {
     const released = structuredClone(manifest);
     released.native.releaseSchemas["2"] = schema.identity;

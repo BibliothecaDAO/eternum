@@ -148,7 +148,9 @@ fn the_frozen_daily_price_is_shared_and_a_previous_ruin_and_floor_do_not_block_t
                 d,
                 game_id,
                 Command::BattleGuard(
-                    crate::commands::Battle { attacker_id: key.explorer_id, defender_id: ruin.entity_id },
+                    crate::commands::Battle {
+                        attacker_id: key.explorer_id, defender_id: ruin.entity_id, relic_slot: None,
+                    },
                 ),
                 360,
             ),

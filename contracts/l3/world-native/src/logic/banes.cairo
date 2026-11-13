@@ -1,12 +1,13 @@
 use starknet::Event;
 use starknet::storage::{StorageMapReadAccess, StorageMapWriteAccess, StoragePathEntry, StoragePointerReadAccess};
 use crate::banes::{BaneEffects, BaneProgress, BaneWindow, IBaneEffectsDispatcherTrait, IBaneEffectsLibraryDispatcher};
+use crate::deep::{IDeepBanesDispatcherTrait, IDeepBanesLibraryDispatcher};
 use crate::resources::ResourceKey;
 
 pub fn effects(home: ResourceKey, from: u64, until: u64) -> BaneEffects {
     let state = crate::state::read();
     let release = state.game_releases.read(home.game_id);
-    IBaneEffectsLibraryDispatcher { class_hash: state.releases.entry(release).classes.production.read() }
+    IBaneEffectsLibraryDispatcher { class_hash: state.releases.entry(release).classes.bridge.read() }
         .bane_effects(home, from, until)
 }
 
@@ -23,10 +24,22 @@ pub fn kind(game_id: u32, day: u64) -> Option<u8> {
 }
 
 pub fn quest_kind(home: ResourceKey, day: u64) -> u8 {
+    if let Some(quest) = team_quest(home, day) {
+        return quest;
+    }
     if let Some(kind) = kind(home.game_id, day) {
         return crate::banes::quest_kind(kind);
     }
     crate::quests::daily_quest(crate::state::read().games.games.entry(home.game_id).seed.read(), day)
+}
+
+fn team_quest(home: ResourceKey, day: u64) -> Option<u8> {
+    if crate::logic::preset_record::for_game(home.game_id).bane_rules.read().is_none() {
+        return None;
+    }
+    let state = crate::state::read();
+    let release = state.releases.entry(state.game_releases.read(home.game_id)).classes;
+    IDeepBanesLibraryDispatcher { class_hash: release.bridge.read() }.team_quest(home, day)
 }
 
 pub fn target(home: ResourceKey, kind: u8, level: u8) -> u128 {
@@ -67,7 +80,7 @@ pub fn won(home: ResourceKey, day: u64) -> bool {
 }
 
 pub fn complete(home: ResourceKey, day: u64, timestamp: u64) {
-    if kind(home.game_id, day).is_none() {
+    if kind(home.game_id, day).is_none() && team_quest(home, day).is_none() {
         return;
     }
     let aspect = crate::logic::aspects::home_aspect(home);

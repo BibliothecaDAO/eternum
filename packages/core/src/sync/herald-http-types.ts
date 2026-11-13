@@ -1,3 +1,4 @@
+import type { AspectId } from "@bibliothecadao/types";
 import type { PlayerLeaderboardActivityEntry } from "./leaderboard-activity";
 
 export type HeraldGameStatus = "Created" | "Registration" | "Live" | "Ended" | "Settled";
@@ -67,6 +68,12 @@ export interface HeraldGameDirectoryEntry {
   mode: "blitz" | "eternum" | "frontier" | null;
   name: string;
   player_count: number;
+  /**
+   * The homes in each Aspect, every Aspect named (0 before its first home), for the founding step, which reads this row
+   * before the game opens; null in a game without Aspects (no AspectRules); absent from an older Herald or an archived
+   * season.
+   */
+  aspect_members?: Record<AspectId, number> | null;
   player_state: HeraldPlayerGameState | null;
   /** Players on a Blitz game's fixed roster; 0 for open-entry games. */
   roster_count: number;
@@ -197,6 +204,58 @@ export interface HeraldFrontierDayRanks {
   ends_at: number;
   confirmed_block: number;
   entries: { address: string; structure_id: string; rank: number }[];
+}
+
+/** One Aspect on a Season 1 board: its hyperstructure, its Triumphs and its members. */
+export interface HeraldRaceAspect {
+  aspect: AspectId;
+  /** 1 for the finished hyperstructure, then by height, ties by Aspect. */
+  rank: number;
+  /** Its hyperstructure's height, in whole units. */
+  height: number;
+  /** Stages built, 0 to 5; the fifth finishes it. */
+  stage: number;
+  /** The game day each of the first four stages' Triumph falls on, stage 1 first; null for one not built. */
+  triumph_days: (number | null)[];
+  /** The homes that joined it, by Glory (most first), Glory in whole units. */
+  members: { address: string; structure_id: string; glory: number }[];
+}
+
+/** One of the Deep's sites on a Season 1 board: who holds it and its guards, slot by slot. */
+export interface HeraldRaceSite {
+  site_id: string;
+  /** The site's kind, as the rules' DEEP_FOUNDATION, DEEP_QUARRY and DEEP_ALTAR number it. */
+  kind: number;
+  /** The Aspect its guards play for; null while the day's beast still holds it. */
+  holder: AspectId | null;
+  /**
+   * Its guards by slot: each army, its home and owner, its troops as last settled (whole units) and the army tick they
+   * were settled at, from which a reader projects the drain with the Deep's own rule.
+   */
+  guards: {
+    slot: number;
+    explorer_id: string;
+    structure_id: string;
+    address: string;
+    troops: number;
+    last_tick: number;
+  }[];
+}
+
+/**
+ * GET /games/:id/race, for a game that races its Aspects' hyperstructures (its preset has RaceRules): the four Aspects
+ * ranked. It stands beside the game's leaderboard, which keeps Season 0's board until H6 replaces its payout.
+ */
+export interface HeraldRaceBoard {
+  game_id: string;
+  mode: "race";
+  /** The height of one stage. */
+  stage_height: number;
+  /** The Aspect whose hyperstructure finished; null while the race runs or when the mist won. */
+  winner: AspectId | null;
+  aspects: HeraldRaceAspect[];
+  /** The Deep's sites, by kind; none in a game whose preset has no Deep. */
+  sites: HeraldRaceSite[];
 }
 
 export type HeraldGameLeaderboard = HeraldLeaderboard | HeraldFrontierLeaderboard;

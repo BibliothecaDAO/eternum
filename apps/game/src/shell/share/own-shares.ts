@@ -22,7 +22,8 @@ const useShareOwner = (): string | null => {
 
 /**
  * The account's link for one moment, as each channel posts it: made once per moment by identity, so the sheet opened
- * again gets the same one. `posted` records the post; `publish` hands identity the card the link then unfurls as.
+ * again gets the same one. `posted` records the post; `publish` hands identity the card the link then unfurls as;
+ * `failed` says identity refused or could not make it, and `retry` asks again.
  */
 export const useShareLink = (moment: ShareMoment) => {
   const owner = useShareOwner();
@@ -40,6 +41,8 @@ export const useShareLink = (moment: ShareMoment) => {
     // A post that cannot be recorded is still posted; the tally misses it, the player does not.
     posted: () => void (code && identityClient.sharePosted(code).catch(() => undefined)),
     publish: (card: Blob) => (code ? identityClient.uploadShareCard(code, card) : Promise.resolve()),
+    failed: owner !== null && made.isError,
+    retry: () => void made.refetch(),
   };
 };
 

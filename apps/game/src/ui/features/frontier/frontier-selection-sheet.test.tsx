@@ -50,17 +50,12 @@ import { ChestOpenings } from "@/ui/features/military/chest/chest-openings";
 import { campBeside, otherArmyAt, reloadSiteFacts, SITE, SITE_TILE } from "./sites/site-fixture";
 import { attachMapSelectionPositions } from "@/hooks/store/map-selection";
 import { useUIStore } from "@/hooks/store/use-ui-store";
-import {
-  configManager,
-  expeditionSpireTile,
-  readExpeditionRules,
-  setBlockTimestampSource,
-  setEntityNameLocalStorage,
-} from "@bibliothecadao/eternum";
-import { BuildingType, getNeighborHexes, siteName, TileOccupier } from "@bibliothecadao/types";
+import { configManager, setBlockTimestampSource, setEntityNameLocalStorage } from "@bibliothecadao/eternum";
+import { BuildingType, siteName, TileOccupier } from "@bibliothecadao/types";
 import { transferArmies, TRANSFER_TAPPED } from "./army/transfer-fixture";
 import { useSelectionCard } from "./frontier-selection-sheet";
 import { useOnePanel } from "./hud/one-panel";
+import { SPIRE_DAY_NOW, spireDay } from "./spire-fixture";
 
 /** The selection's card as the HUD draws it. */
 const FrontierSelectionSheet = (props: Parameters<typeof useSelectionCard>[0]) =>
@@ -306,61 +301,11 @@ describe("Frontier's selection sheet", () => {
   });
 });
 
-/** The realm's army standing beside its spire, Ethereal I researched: the spire's card acts for it. */
+/** The realm's army standing beside the spire its realm found today: the spire's card acts for it. */
 const armyAtSpire = () => {
-  const { store } = campBeside();
-  // Realm 7's day-0 site is in its home region, 7; the fixture's clock (t=350) is on day 0.
-  const spire = expeditionSpireTile(
-    readExpeditionRules(store, 1)!,
-    store.require("Structure", { game_id: 1, entity_id: 7 }),
-    350,
-  )!;
-  const beside = getNeighborHexes(spire.col, spire.row)[0];
-  store.applyFacts([
-    // research.cairo: the depth row's tier sits at bit 46; Ethereal I is researched.
-    { model: "RealmKnowledge", key: "0xd", value: { game_id: 1, structure_id: 7, learned: 1n << 48n } },
-    {
-      model: "DepthRules",
-      key: "0x901",
-      value: {
-        game_id: 1,
-        depth: 1,
-        reveal_percent: 100,
-        site_guard_lower: 1,
-        site_guard_upper: 2,
-        reveal_site_neighbors: false,
-        chest: { common: 10000, uncommon: 0, rare: 0, epic: 0, legendary: 0 },
-        ruin_guard_lower: 1,
-        ruin_guard_upper: 2,
-        guard_step: 1,
-        beast_weak_lower: 300,
-        beast_weak_upper: 350,
-        beast_strong_lower: 450,
-        beast_strong_upper: 550,
-      },
-    },
-    {
-      model: "TileOccupancy",
-      key: "0x75",
-      value: null,
-    },
-    {
-      model: "TileOccupancy",
-      key: "0x904",
-      // The army stands beside the realm's spire.
-      value: {
-        game_id: 1,
-        alt: false,
-        col: beside.col,
-        row: beside.row,
-        entity_id: 201,
-        category: 15,
-        is_structure: false,
-      },
-    },
-  ] as never);
+  const { store, spire } = spireDay();
   useAccountStore.setState({ account: { address: "0x111" } as never });
-  useBlockTimestampStore.setState({ currentBlockTimestamp: 350, currentDefaultTick: 350 });
+  useBlockTimestampStore.setState({ currentBlockTimestamp: SPIRE_DAY_NOW, currentDefaultTick: SPIRE_DAY_NOW });
   return { store, spire };
 };
 

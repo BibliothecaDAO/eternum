@@ -1,5 +1,5 @@
 import { SPIRE_ARMY } from "@/ui/features/frontier/spire-fixture";
-import { expeditionSpireTile, readExpeditionRules } from "@bibliothecadao/eternum";
+import { expeditionSpires } from "@bibliothecadao/eternum";
 import type { NativeFactStore } from "@bibliothecadao/eternum/game-client";
 import { getHexDistance, getHexesWithinRadius } from "@bibliothecadao/types";
 
@@ -25,6 +25,7 @@ export const clearedCampScenario = (): LabScenario => {
   const [, occupancy] = [...store.entries("TileOccupancy")].find(([, row]) => row.entity_id === BigInt(SPIRE_ARMY))!;
   const [held, empty] = campTiles(store, spire.opensOn, spire.startsAt);
   store.applyFacts([
+    { model: "ArmyDay", key: "0xad2", value: { game_id: 1, explorer_id: SECOND_ARMY, day: 0 } },
     { model: "ExplorerTroops", key: "0x1ab97", value: wire({ ...first, explorer_id: SECOND_ARMY }) },
     { model: "TileOccupancy", key: "0x1ab98", value: wire({ ...occupancy, ...held, entity_id: SECOND_ARMY }) },
     armyProgress("0x1ab9a", SECOND_ARMY, 0),
@@ -40,7 +41,7 @@ export const clearedCampScenario = (): LabScenario => {
  */
 const campTiles = (store: NativeFactStore, site: { col: number; row: number }, now: number) => {
   const realm = store.require("Structure", { game_id: 1, entity_id: 7 });
-  const spireTile = expeditionSpireTile(readExpeditionRules(store, 1)!, realm, now)!;
+  const [spireTile] = expeditionSpires(store, realm.game_id, now);
   const taken = [...store.entries("TileOccupancy")].map(([, row]) => ({ col: row.col, row: row.row }));
   const open = getHexesWithinRadius(site.col, site.row, 4).filter(
     (hex) =>

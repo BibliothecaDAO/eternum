@@ -34,6 +34,7 @@ export const blitzPreset: NativePreset = {
   spacing: 6,
   dayUnitSeconds: 0,
   progression: null,
+  deep: null,
   discovery: null,
   labor: null,
   chests: null,

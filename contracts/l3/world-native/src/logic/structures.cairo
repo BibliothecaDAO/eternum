@@ -793,9 +793,16 @@ pub mod StructuresLogic {
                 },
                 Discovery::Rift |
                 Discovery::Beasts => { assert!(rules.day_unit_seconds != 0, "site requires expeditions"); },
-                Discovery::Ruin(chest) => {
+                Discovery::Ruin(reward) => {
                     assert!(rules.day_unit_seconds != 0, "site requires expeditions");
-                    crate::logic::lords_budget::store_site_chest(key, chest);
+                    match reward {
+                        crate::army_relics::RuinReward::Chest(chest) => crate::logic::lords_budget::store_site_chest(
+                            key, chest,
+                        ),
+                        crate::army_relics::RuinReward::Relic(relic) => crate::logic::army_relics::store_ruin(
+                            key, relic,
+                        ),
+                    }
                 },
                 Discovery::None | Discovery::Shrine | Discovery::Well | Discovery::Spire |
                 Discovery::Chest => panic!("discovery is not a structure"),

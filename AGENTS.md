@@ -223,6 +223,7 @@ If a required command fails or is unavailable, say so explicitly in the final ha
 | Player fixtures bind deployed accounts through `world_test_support::tests::bind_player`; only the shared fixture module constructs `Deployment`.                                                          | `contracts/l3/world-native/scripts/fixture-actors.test.mjs`, run before compilation by the native gate.                                                      |
 | Terrain derivation has one implementation in MovementLogic; callers use the shared terrain dispatcher.                                                                                                    | `contracts/l3/world-native/scripts/event-layouts.test.mjs` checks the compiled interface owner; world terrain and lifecycle tests exercise the routed calls. |
 | Aspect activity has one counter in `troops.aspect_activity`, recorded before the first daily slot; bane quorum reads it. Fact model names are unique.                                                     | Shared allocator; lifecycle activity/quorum regressions; `contracts/l3/world-native/scripts/fact-models.test.mjs` in CI and the native gate.                 |
+| Cairo imports stay at module scope, including single-path and grouped imports.                                                                                                                            | `contracts/l3/world-native/scripts/check-cairo-imports.mjs`, run with its regression tests in static CI.                                                     |
 
 ### Running Tests
 

@@ -556,6 +556,39 @@ describe("GameSyncRuntime lifecycle", () => {
     await expect(runtime.waitForTransaction("0xabc")).rejects.toThrow("no transaction status channel");
   });
 
+  it("refreshes calendar projections after binding a confirmed head, including one without a transaction", async () => {
+    let head: GameSyncSubscriptionHandlers["onHead"] = () => {
+      throw new Error("subscription not started");
+    };
+    const harness = createSessionHarness({
+      beforeSnapshot: (handlers) => {
+        head = handlers.onHead;
+      },
+    });
+    const runtime = new GameSyncRuntime();
+    let bound = 0;
+    const projected: number[] = [];
+    harness.session.onHead = (head) => {
+      bound = head.timestamp;
+    };
+    await runtime.startSession(harness.session);
+    runtime.installWorldSpatialProjection({
+      start() {},
+      dispose() {},
+      subscribe: () => () => {},
+      refreshTime: () => projected.push(bound),
+    } as never);
+    try {
+      head({ block: 1, timestamp: 350, preconfirmed: true });
+      expect(projected).toEqual([]);
+      head({ block: 1, timestamp: 350, preconfirmed: false });
+      head({ block: 2, timestamp: 500, preconfirmed: false });
+      expect(projected).toEqual([350, 500]);
+    } finally {
+      runtime.dispose();
+    }
+  });
+
   it("owns and replaces the session spatial projection", () => {
     const runtime = new GameSyncRuntime();
     const first = { dispose: vi.fn(), start: vi.fn(), subscribe: vi.fn(() => () => undefined) };

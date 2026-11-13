@@ -1,6 +1,9 @@
+pub mod army_days;
+pub mod army_relics;
 pub mod army_slot_storage;
 pub mod army_slots;
 pub mod arrivals;
+
 pub mod aspect_activity;
 pub mod aspects;
 pub mod banes;
@@ -12,7 +15,14 @@ pub mod buildings;
 pub mod combat;
 pub mod combat_domain;
 pub mod construction;
+pub mod deep;
+pub mod deep_armies;
+pub mod deep_banes;
+pub mod deep_guards;
+pub mod deep_sites;
+pub mod deep_ticks;
 pub mod deposits;
+pub mod discovery;
 pub mod economy;
 pub mod entry;
 pub mod expeditions;
@@ -36,6 +46,7 @@ pub mod production;
 pub mod production_domain;
 pub mod progression;
 pub mod quests;
+pub mod race;
 pub mod raid;
 pub mod realms;
 pub mod registrar;
@@ -52,6 +63,7 @@ pub mod season;
 pub mod settlement;
 pub mod settlement_domain;
 pub mod shrines;
+pub mod spires;
 pub mod stories;
 
 pub mod structure_actions;
@@ -59,6 +71,7 @@ pub mod structures;
 
 pub mod terrain;
 pub mod trade;
+pub mod triumphs;
 pub mod troops;
 pub mod upgrades;
 pub mod village;

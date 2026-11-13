@@ -9,7 +9,8 @@ import {
   expeditionDayEndsAt,
   expeditionRealmSite,
   expeditionSpires,
-  expeditionSpireTile,
+  nextSpireOdds,
+  realmSpireToday,
   isArmyCrossing,
   isAtExpeditionSpire,
   isEtherealTile,
@@ -20,7 +21,6 @@ import {
   siteClearXp,
   spireEtherealView,
   viewInLayer,
-  regionSpire,
   LOCAL_VIEW_REACH,
 } from "./expeditions";
 
@@ -113,6 +113,7 @@ describe("liveHomeArmies", () => {
   });
   const armiesStore = (rules: Record<string, unknown>, armies: ReturnType<typeof army>[]) => ({
     ...storeWith(rules),
+    get: (model: string) => (model === "ArmyDay" ? { day: 0n } : storeWith(rules).get(model)),
     armiesAtHome: (_game: number, home: number) => armies.filter((army) => army.owner === home),
     entityOccupancy: (_game: number, id: number) => {
       const army = armies.find((army) => army.explorer_id === id);
@@ -147,63 +148,98 @@ describe("liveHomeArmies", () => {
   });
 
   describe("a look into a spire's Ethereal layer", () => {
-    // Realm 42's spire on day 0's surface (rows 0..9); Ethereal I below is rows 10..19, Ethereal II rows 20..29.
-    const spire = { col: 24, row: 5, realm: { game_id: 7, entity_id: 42 } as never };
+    // Realm 42's spire on day 0's Ethereal I (rows 10..19); Ethereal II below it is rows 20..29.
+    const spire = { col: 24, row: 15, depth: 1, realm: { game_id: 7, entity_id: 42 } as never };
 
-    it("goes to the realm's army in the Ethereal layer today", () => {
+    it("goes to the realm's army in the layer below the spire today", () => {
       const store = armiesStore(expeditionRules, [army(1, 6), army(2, 25)]);
       atFloor(rules.startMainAt + 60);
       expect(spireEtherealView(store as never, spire)).toEqual({ col: 25, row: 25 });
     });
 
-    it("goes to Ethereal I straight below the spire while none of the realm's armies is there", () => {
-      const store = armiesStore(expeditionRules, [army(1, 6), army(2, 25, 1_000n, 99)]);
+    it("goes straight below the spire while none of the realm's armies is in the layer below", () => {
+      const store = armiesStore(expeditionRules, [army(1, 6), army(2, 15)]);
       atFloor(rules.startMainAt + 60);
-      expect(spireEtherealView(store as never, spire)).toEqual({ col: 24, row: 15 });
+      expect(spireEtherealView(store as never, spire)).toEqual({ col: 24, row: 25 });
     });
   });
 
-  it("finds the same spot in each layer of its region, from the surface or from any Ethereal layer", () => {
-    // Day 0, spacing 10: the surface is rows 0..9, Ethereal I rows 10..19, II rows 20..29, III rows 30..39.
-    const layers = [0, 1, 2, 3] as const;
-    expect(layers.map((layer) => viewInLayer(rules, { col: 24, row: 7 }, layer))).toEqual([
-      { col: 24, row: 7 },
-      { col: 24, row: 17 },
-      { col: 24, row: 27 },
-      { col: 24, row: 37 },
+  it("keeps the private layers in today's region and centers every Deep view on the shared map", () => {
+    const shared = { ...rules, spacing: 100 };
+    expect([0, 1, 2, 3].map((layer) => viewInLayer(shared, { col: 250, row: 630 }, layer))).toEqual([
+      { col: 250, row: 430 },
+      { col: 250, row: 530 },
+      { col: 250, row: 630 },
+      { col: 50, row: 350 },
     ]);
-    expect(layers.map((layer) => viewInLayer(rules, { col: 24, row: 23 }, layer).row)).toEqual([3, 13, 23, 33]);
-    // Day 1's surface starts at row 40: its layers stay in day 1.
-    expect(viewInLayer(rules, { col: 3, row: 71 }, 0)).toEqual({ col: 3, row: 41 });
-  });
-
-  it("finds the realm's own spire on the surface, and the spot under it in each Ethereal layer of the region", () => {
-    const now = dayStart(1) + 60;
-    const own = expeditionSpireTile(rules, structure(), now)!;
-    const site = expeditionRealmSite(rules, entityHomeNamespace(3), now)!;
-    for (const layer of [0, 1, 2, 3])
-      expect(regionSpire(rules, { col: site.col - 2, row: site.row + layer * rules.spacing + 1 })).toEqual({
-        col: own.col,
-        row: own.row + layer * rules.spacing,
-      });
+    expect(viewInLayer(shared, { col: 450, row: 1230 }, 3)).toEqual({ col: 50, row: 350 });
   });
 });
 
 describe("expedition spire", () => {
-  // Realm 3's day-1 site is (25, 45), an odd row.
   const realm = (id: number) =>
     ({
       game_id: 7,
       entity_id: id,
       base: { category: StructureType.Realm },
-      metadata: { realm_id: 3 },
+      metadata: { realm_id: id },
     }) as never;
+  /** Realm `structure_id`'s spire record on `depth`, as discovery writes it; found where `at` is given. */
+  const record = (
+    structure_id: number,
+    epoch: number,
+    depth: number,
+    reveals: number,
+    at?: { x: number; y: number },
+  ) => ({
+    game_id: 7,
+    structure_id: BigInt(structure_id),
+    epoch: BigInt(epoch),
+    depth,
+    reveals,
+    location: at ? { alt: false, ...at } : null,
+  });
+  const spireStore = (records: ReturnType<typeof record>[]) => ({
+    ...storeWith(expeditionRules),
+    get: (model: string, key: Record<string, unknown>) => {
+      if (model === "Structure") return realm(Number(key.entity_id));
+      if (model === "ExpeditionSpire")
+        return records.find(
+          (row) =>
+            row.structure_id === BigInt(key.structure_id as number) &&
+            row.epoch === BigInt(key.epoch as number) &&
+            row.depth === key.depth,
+        );
+      return storeWith(expeditionRules).get(model);
+    },
+    inGame: (model: string) => (model === "ExpeditionSpire" ? records : [])[Symbol.iterator](),
+  });
 
-  it("stands on the home ring's tile in direction (day % 6) and turns one step each day", () => {
-    // Day 1: the site's neighbour in direction 1 on odd row 45 is (25, 46).
-    expect(expeditionSpireTile(rules, realm(3), dayStart(1) + 10)).toEqual({ col: 25, row: 46 });
-    // Day 2: site (25, 85), direction 2 on odd row 85 is (24, 86).
-    expect(expeditionSpireTile(rules, realm(3), dayStart(2) + 10)).toEqual({ col: 24, row: 86 });
+  it("raises the next reveal's odds by a tenth for each reveal made, and stops once the spire is found", () => {
+    expect(nextSpireOdds(undefined)).toBe(10);
+    expect(nextSpireOdds(record(3, 1, 0, 2))).toBe(30);
+    expect(nextSpireOdds(record(3, 1, 0, 9))).toBe(100);
+    expect(nextSpireOdds(record(3, 1, 0, 4, { x: 25, y: 46 }))).toBeNull();
+  });
+
+  it("reads a realm's record for today and that layer, never another day's", () => {
+    const today = record(3, 1, 0, 4);
+    const store = spireStore([record(3, 0, 0, 9, { x: 1, y: 1 }), today]);
+    expect(realmSpireToday(store as never, realm(3), 0, dayStart(1) + 10)).toBe(today);
+    expect(realmSpireToday(store as never, realm(3), 1, dayStart(1) + 10)).toBeUndefined();
+  });
+
+  it("lists the spires found today on every layer, and none still being looked for or found another day", () => {
+    const store = spireStore([
+      record(3, 1, 0, 4, { x: 25, y: 46 }),
+      record(3, 1, 1, 7, { x: 26, y: 57 }),
+      record(5, 1, 0, 3),
+      record(5, 0, 0, 2, { x: 45, y: 6 }),
+    ]);
+    expect(expeditionSpires(store as never, 7, dayStart(1) + 10)).toEqual([
+      { col: 25, row: 46, depth: 0, realm: realm(3) },
+      { col: 26, row: 57, depth: 1, realm: realm(3) },
+    ]);
   });
 
   it("takes an army on the spire or beside it, and nowhere else", () => {
@@ -211,20 +247,6 @@ describe("expedition spire", () => {
     expect(isAtExpeditionSpire(spire, { x: 25, y: 46 })).toBe(true);
     expect(isAtExpeditionSpire(spire, { x: 26, y: 46 })).toBe(true);
     expect(isAtExpeditionSpire(spire, { x: 27, y: 46 })).toBe(false);
-  });
-
-  it("lights a spire only for a realm with depth research", () => {
-    const store = {
-      ...storeWith(expeditionRules),
-      get: (model: string, key: { structure_id: number }) =>
-        model === "RealmKnowledge"
-          ? { learned: key.structure_id === 3 ? 1n << 48n : 0n }
-          : storeWith(expeditionRules).get(model),
-      inGame: (model: string) => (model === "Structure" ? [realm(1), realm(3)] : [])[Symbol.iterator](),
-    };
-    expect(expeditionSpires(store as never, 7, dayStart(1) + 10)).toEqual([
-      { col: 25, row: 46, deepest: 1, realm: realm(3) },
-    ]);
   });
 });
 
@@ -435,7 +457,6 @@ it("has no season day or map site before the exact start", () => {
   for (const now of [0, 86400, late.startMainAt - 1]) {
     expect(seasonDay(late, now)).toBeNull();
     expect(expeditionRealmSite(late, 1, now)).toBeNull();
-    expect(expeditionSpireTile(late, structure(), now)).toBeNull();
     vi.spyOn(timestamp, "getBlockTimestamp").mockReturnValue({ currentBlockTimestamp: now } as never);
     expect(
       structureMapPosition(

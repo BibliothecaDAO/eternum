@@ -216,7 +216,8 @@ it("keeps the final day's ruin reservation held through an absorbed bag boundary
 
 describe("each depth's ruin chest today", () => {
   const rules = { dayUnitSeconds: 100, spacing: 100, startMainAt: 0, endAt: 100_000, seed: 1n };
-  const realm = { game_id: 1, entity_id: 7 };
+  // Realm 7 has gone down to Ethereal I (enter_depth records the deepest layer reached).
+  const realm = { game_id: 1, entity_id: 7, metadata: { deepest_depth: 1 } } as never;
   const discovery = (ruin_cleared: boolean) => ({
     model: "ExpeditionDiscovery",
     key: "0x71",
@@ -227,7 +228,6 @@ describe("each depth's ruin chest today", () => {
     store.setSnapshot({ gameId: 1, complete: true, timestamp: 1 });
     store.applyFacts([
       release(releaseId),
-      { model: "RealmKnowledge", key: "0xd", value: { game_id: 1, structure_id: 7, learned: 1n << 48n } },
       // Another realm cleared today's Ethereal I: its receipt is not realm 7's.
       {
         model: "ExpeditionSite",
@@ -244,7 +244,7 @@ describe("each depth's ruin chest today", () => {
     value: { ...site(home + 1n, 40), clear: { explorer_id: 1n, home_id: 7n, reward: null } },
   };
 
-  it("opens every researched depth while today's discovery says nothing was cleared, and locks the rest", () => {
+  it("opens every depth the realm has reached while today's discovery says nothing was cleared, and locks the rest", () => {
     expect(dayOf(rules, 1)?.index).toBe(0);
     expect(chests(nativeReleaseConstants.RUIN_DEPTH_LIMIT_RELEASE, [discovery(false)])).toEqual([
       "open",

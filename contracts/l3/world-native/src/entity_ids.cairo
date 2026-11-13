@@ -19,6 +19,10 @@ pub fn namespace(home: EntityId) -> u32 {
     namespace.try_into().unwrap()
 }
 
+pub fn open_home(entity: EntityId) -> EntityId {
+    Into::<u32, u64>::into(namespace(entity)) * LOCAL_RANGE + 1
+}
+
 pub fn allocate_home(game_id: u32, home: EntityId) -> EntityId {
     let home = namespace(home);
     assert!(home <= MAX_HOME_NAMESPACE, "home namespace exceeds safe entity ids");
@@ -76,7 +80,7 @@ pub fn assign_open_home(game_id: u32, owner: ContractAddress) -> EntityId {
         let namespace = 1 + (Into::<u32, u64>::into(first) + probe.into()) % Into::<u32, u64>::into(regions);
         let namespace: u32 = namespace.try_into().unwrap();
         if state.games.namespace_owners.read((game_id, namespace)).is_zero() {
-            let home = Into::<u32, u64>::into(namespace) * LOCAL_RANGE + 1;
+            let home = open_home(namespace.into());
             state.games.namespace_owners.write((game_id, namespace), owner);
             state.games.open_homes.write((game_id, owner), home);
             state.games.home_entities.write((game_id, namespace), 1);

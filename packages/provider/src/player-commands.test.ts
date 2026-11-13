@@ -43,6 +43,19 @@ describe("player command callers", () => {
     expect(decoded()).toEqual({ home: 12n, day: 3n });
   });
 
+  it("encodes a clearing attack's replacement slot and free army relic activation", async () => {
+    const { calls, signer, decoded } = setup();
+    await calls.attack_explorer_vs_guard({ signer, explorer_id: 90, structure_id: 12, relic_slot: 2 });
+    expect(decoded().relic_slot.unwrap()).toBe(2n);
+    await calls.attack_explorer_vs_guard({ signer, explorer_id: 90, structure_id: 12 });
+    expect(decoded().relic_slot.isNone()).toBe(true);
+    await calls.apply_relic({ signer, entity_id: 90, relic_resource_id: 25, relic_slot: 2 });
+    const activation = decoded();
+    expect(activation.entity_id).toBe(90n);
+    expect(activation.relic_id).toBe(25n);
+    expect(activation.recipient.activeVariant()).toBe("ArmySlot");
+    expect(activation.recipient.unwrap()).toBe(2n);
+  });
   it("carries the chosen army slot through system calls and the provider into CreateExplorer", async () => {
     const { calls, signer, submit, decoded } = setup();
     await calls.explorer_create({

@@ -120,7 +120,20 @@ pub mod SeasonLogic {
                 game.end_grace_seconds == 0 || context.timestamp > game.end_at + game.end_grace_seconds.into(),
                 "game settlement grace period is active",
             );
-            let remaining = self.settle_final_points(game_id, context.timestamp, context);
+            let remaining = if crate::logic::race::rules(game_id).is_some() {
+                crate::deep::IDeepSitesDispatcherTrait::settle_deep(
+                    crate::deep::IDeepSitesLibraryDispatcher {
+                        class_hash: self.release.classes(game_id).combat.read(),
+                    },
+                    game_id,
+                    crate::commands::action_context(context),
+                );
+                crate::logic::race::finalize(game_id, context.timestamp);
+                game = crate::logic::game::game(game_id);
+                0
+            } else {
+                self.settle_final_points(game_id, context.timestamp, context)
+            };
             if remaining != 0 {
                 return (remaining.into());
             }
@@ -223,6 +236,7 @@ pub mod SeasonLogic {
             if amount == 0 {
                 return;
             }
+            assert!(crate::logic::race::rules(game_id).is_none(), "race earns Glory only from holding");
             let points = self.data.season.player_points.read((game_id, actor)) + amount;
             let total = self.data.season.season_points.read(game_id) + amount;
             self.data.season.player_points.write((game_id, actor), points);
@@ -268,8 +282,8 @@ pub mod SeasonLogic {
             raw_root: u256,
             timestamp: u64,
         ) -> Result<Span<felt252>, crate::commands::Rejection> {
-            // The one read of the game and its rules in a play; every library call below receives them.
-            let context = crate::commands::load_context(game_id, raw_root, timestamp);
+            // Commands share this rule snapshot; periodic settlement refreshes the game before dispatch.
+            let mut context = crate::commands::load_context(game_id, raw_root, timestamp);
 
             let (index, route, payload) = crate::commands::route_command(arguments).map_err(|code| rejection(code))?;
             let rules = context.rules.unbox();
@@ -278,6 +292,12 @@ pub mod SeasonLogic {
             }
             if !context.game.unbox().ready && index != crate::command_routes::SETTLE_BLITZ_ROSTER {
                 return Err(rejection('ROSTER_NOT_READY'));
+            }
+            if crate::logic::deep_sites::rules(game_id).is_some() {
+                crate::deep::IDeepSitesDispatcherTrait::settle_deep(
+                    crate::logic::deep_sites::dispatcher(game_id), game_id, crate::commands::action_context(context),
+                );
+                context.game = BoxTrait::new(crate::logic::game::game(game_id));
             }
             let result = dispatch(self.release.classes(game_id), route, game_id, actor, payload, context)
                 .map_err(|error| domain_rejection(error))?;

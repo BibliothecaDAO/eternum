@@ -177,7 +177,7 @@ pub mod Games {
             ref self: ContractState, home: crate::entry::LaborHome, day: u64, account: ContractAddress,
         ) -> crate::entry::LaborGrant {
             crate::entry::IHomeGrantsDispatcherTrait::grant_labor(
-                crate::entry::IHomeGrantsLibraryDispatcher { class_hash: self.release.current_classes().production },
+                crate::entry::IHomeGrantsLibraryDispatcher { class_hash: self.release.current_classes().bridge },
                 home,
                 day,
                 account,
@@ -187,7 +187,7 @@ pub mod Games {
             self: @ContractState, home: crate::entry::LaborHome, day: u64,
         ) -> Option<crate::entry::LaborGrant> {
             crate::entry::IHomeGrantsDispatcherTrait::labor_grant(
-                crate::entry::IHomeGrantsLibraryDispatcher { class_hash: self.release.current_classes().production },
+                crate::entry::IHomeGrantsLibraryDispatcher { class_hash: self.release.current_classes().bridge },
                 home,
                 day,
             )

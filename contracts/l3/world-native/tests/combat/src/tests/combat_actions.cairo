@@ -1,3 +1,6 @@
+use starknet::storage::{
+    StorageMapReadAccess, StorageMapWriteAccess, StoragePathEntry, StoragePointerReadAccess, StoragePointerWriteAccess,
+};
 pub use world_test_support::tests::combat_actions::*;
 
 
@@ -278,6 +281,7 @@ fn blitz_ethereal_battle_uses_both_root_d20_rolls_in_damage_and_history() {
             ref expected_defender,
             crate::combat::CombatContext {
                 timestamp: 80,
+                day_unit_seconds: rules.day_unit_seconds,
                 attacker_roll,
                 defender_roll,
                 attacker_biome: crate::biome::Biome::Underground,
@@ -393,6 +397,7 @@ fn a_dice_game_rolls_both_root_d20s_on_the_surface_too() {
             ref expected_defender,
             crate::combat::CombatContext {
                 timestamp: 80,
+                day_unit_seconds: rules.day_unit_seconds,
                 attacker_roll,
                 defender_roll,
                 attacker_biome: surface,
@@ -566,7 +571,9 @@ fn structure_capture_ignores_guards_outside_the_slot_limit() {
     assert!(
         execute(
             d,
-            Command::BattleGuard(crate::commands::Battle { attacker_id: attacker, defender_id: target.entity_id }),
+            Command::BattleGuard(
+                crate::commands::Battle { attacker_id: attacker, defender_id: target.entity_id, relic_slot: None },
+            ),
             80,
         ),
     );
@@ -590,7 +597,9 @@ fn capturing_a_players_realm_records_both_owners_in_one_capture_story() {
     assert!(
         execute(
             d,
-            Command::BattleGuard(crate::commands::Battle { attacker_id: attacker, defender_id: target.entity_id }),
+            Command::BattleGuard(
+                crate::commands::Battle { attacker_id: attacker, defender_id: target.entity_id, relic_slot: None },
+            ),
             80,
         ),
     );
@@ -656,7 +665,9 @@ fn guard_targeting_preserves_highest_occupied_functional_slot_first() {
     assert!(
         execute(
             d,
-            Command::BattleGuard(crate::commands::Battle { attacker_id: attacker, defender_id: target.entity_id }),
+            Command::BattleGuard(
+                crate::commands::Battle { attacker_id: attacker, defender_id: target.entity_id, relic_slot: None },
+            ),
             80,
         ),
     );
@@ -710,7 +721,7 @@ fn unowned_target_rule_rejects_owned_sites_and_allows_capture_of_an_unowned_site
         },
     );
     let command = Command::BattleGuard(
-        crate::commands::Battle { attacker_id: attacker, defender_id: target.entity_id },
+        crate::commands::Battle { attacker_id: attacker, defender_id: target.entity_id, relic_slot: None },
     );
     let before = troop(d, attacker);
     assert_terminal_rejection(d, command, 80);
@@ -762,4 +773,54 @@ fn preset_cooldown_keeps_blitz_at_sixty_seconds_and_allows_frontier_back_to_back
             assert!(success, "second attack failed");
         }
     }
+}
+
+#[test]
+fn frontier_armies_fight_only_in_the_deep_and_never_their_aspect() {
+    let (d, home, target, attacker, defender) = setup(false);
+    let center = crate::deep::center(100);
+    snforge_std::interact_with_state(
+        d.games,
+        || {
+            let state = crate::state::write();
+            let preset_id = state.games.games.entry(3).preset_id.read();
+            let commitment = state.registrar.presets.read(preset_id);
+            let mut rules = state.presets.entry(commitment).rules.read();
+            rules.day_unit_seconds = 60;
+            rules.troop_stamina_config.stamina_defense_req = 0;
+            state.presets.entry(commitment).rules.write(rules);
+            state.presets.entry(commitment).settlement_spacing.write(100);
+            state.settlements.home_aspects.write((3, home.entity_id), 1);
+            state.settlements.home_aspects.write((3, target.entity_id), 2);
+            let context = crate::tests::context(d.games, 3);
+            let day = crate::days::day_of(context.game.unbox(), 60, 80).index;
+            crate::logic::army_days::create(ExplorerKey { game_id: 3, explorer_id: attacker }, day);
+            crate::logic::army_days::create(ExplorerKey { game_id: 3, explorer_id: defender }, day);
+        },
+    );
+    let command = Command::Battle(
+        AttackExplorer { attacker_id: attacker, defender_id: defender, steal_resources: array![].span() },
+    );
+    let before_attacker = troop(d, attacker).unwrap();
+    let before_defender = troop(d, defender).unwrap();
+    assert_terminal_rejection(d, command, 80);
+    assert_eq!(troop(d, attacker).unwrap(), before_attacker);
+    assert_eq!(troop(d, defender).unwrap(), before_defender);
+    move_to(d, attacker, center);
+    assert_terminal_rejection(d, command, 80);
+    move_to(d, defender, crate::geometry::neighbor(center, 0));
+    snforge_std::interact_with_state(
+        d.games, || crate::state::write().settlements.home_aspects.write((3, target.entity_id), 1),
+    );
+    let allied_attacker = troop(d, attacker).unwrap();
+    let allied_defender = troop(d, defender).unwrap();
+    assert_terminal_rejection(d, command, 80);
+    assert_eq!(troop(d, attacker).unwrap(), allied_attacker);
+    assert_eq!(troop(d, defender).unwrap(), allied_defender);
+    snforge_std::interact_with_state(
+        d.games, || crate::state::write().settlements.home_aspects.write((3, target.entity_id), 2),
+    );
+    assert!(execute(d, command, 80));
+    assert!(troop(d, defender).is_none());
+    assert!(troop(d, attacker).unwrap().troops.count > 0);
 }

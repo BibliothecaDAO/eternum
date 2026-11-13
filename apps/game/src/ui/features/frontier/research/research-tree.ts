@@ -1,6 +1,5 @@
 import type { IconMeaning, IconMark } from "@/ui/design-system/icon";
 import {
-  depthName,
   purchasesOfGate,
   RESEARCH_TREE,
   SHRINE,
@@ -24,6 +23,7 @@ import { POINT_CHOICES, availableScoutingChoices, scoutingChoices, type Attribut
 
 import { buildingIcon, buildingName } from "../build/building-names";
 import { sideMarks } from "./sides-taken";
+import { reachMark } from "../depth-art";
 
 /**
  * The castle's tree as research.cairo and construction.cairo rule it, read from a realm's facts: every node a player
@@ -165,7 +165,6 @@ const TRAINING = {
 } satisfies {
   [K in keyof typeof ATTRIBUTE_MARKS]: { row: number; category: BuildingType; attribute: Lowercase<K>; word: K };
 };
-const DEPTH_MARKS: IconMeaning[] = ["depth-1", "depth-2", "depth-3"];
 
 const percent = (bps: number) => formatPercent(bps / 10_000, { signed: true });
 /** What one level of Scouting adds to the kind picked with it, in basis points of that kind's base rate. */
@@ -434,31 +433,21 @@ export const readResearchTree = (realm: RealmResearchFacts): TreeNode[] => {
         next: RESEARCH_TREE.each(`${formatExact(realm.wellRefillPercent)}% max ${STAMINA}`),
       }),
     ],
-    ROW_DEPTH: (realm.board.town ? ([1] as const) : ([1, 2, 3] as const)).map((depth) => {
-      const name = realm.board.town ? SPIRE_WORDS.title : depthName(depth);
-      const before: Need[] = realm.board.town
-        ? [{ kind: "tier", met: learned(ROWS.shrine).tier === 1, node: SHRINE, icon: "shrine" }]
-        : depth === 1
-          ? []
-          : [
-              {
-                kind: "tier",
-                met: learned(ROWS.depth).tier >= depth - 1,
-                node: depthName((depth - 1) as 1 | 2),
-                icon: DEPTH_MARKS[depth - 2]!,
-              },
-            ];
-      return castleNode(
-        `reach-${depth}`,
+    ROW_DEPTH: [
+      castleNode(
+        "spire-lore",
         ROWS.depth,
-        name,
-        DEPTH_MARKS[depth - 1]!,
-        { line: RESEARCH_TREE.enters(name), now: "—", next: RESEARCH_TREE.opens },
-        depth,
-        before,
-        !realm.board.town && depth < 3 ? [`reach-${depth + 1}`] : [],
-      );
-    }),
+        RESEARCH_TREE.spireLore,
+        reachMark(1),
+        {
+          line: RESEARCH_TREE.armiesFind(SPIRE_WORDS.title.toLowerCase()),
+          now: "—",
+          next: RESEARCH_TREE.opens,
+        },
+        1,
+        realm.board.town ? [{ kind: "tier", met: learned(ROWS.shrine).tier === 1, node: SHRINE, icon: "shrine" }] : [],
+      ),
+    ],
   } satisfies Record<ResearchRow, TreeNode[]>;
   return Object.values(rows).flat();
 

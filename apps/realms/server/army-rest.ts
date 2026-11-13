@@ -4,7 +4,6 @@ import {
   fetchHeraldGameDirectory,
   fetchHeraldGameSnapshot,
   NativeFactStore,
-  entityMapPosition,
 } from "@bibliothecadao/eternum/game-client";
 import type { HeraldStoryHistoryPage } from "@bibliothecadao/eternum/game-sync";
 import { isCurrentExpeditionArmy, readExpeditionRules } from "@bibliothecadao/eternum/expeditions";
@@ -110,6 +109,7 @@ export const readActorArmies = async (
       "Structure",
       "PlayerEntry",
       "ExplorerTroops",
+      "ArmyDay",
       "ArmySlot",
       "ArmyProgress",
       "TileOccupancy",
@@ -130,7 +130,11 @@ export const readActorArmies = async (
     .filter(
       (army) =>
         !expedition ||
-        isCurrentExpeditionArmy(expedition, entityMapPosition(store, gameId, army.explorer_id), now / 1000),
+        isCurrentExpeditionArmy(
+          expedition,
+          store.require("ArmyDay", { game_id: gameId, explorer_id: army.explorer_id }).day,
+          now / 1000,
+        ),
     )
     .flatMap((army) => {
       const troops = resolveExplorerTroops(store, army);

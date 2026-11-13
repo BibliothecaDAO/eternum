@@ -1,3 +1,4 @@
+import { useCurrentArmy } from "@/hooks/helpers/use-armies";
 import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 
 import { usePopoverStore } from "@/hooks/store/use-popover-store";
@@ -5,7 +6,7 @@ import Button from "@/ui/design-system/atoms/button";
 import { SurfaceFrame } from "@/ui/design-system/molecules/popover";
 import { getTileAt, configManager, entityMapPosition } from "@bibliothecadao/eternum";
 import { useGame } from "@/hooks/context/game-context";
-import { useNativeRow, useNativeRevision } from "@/hooks/helpers/use-native-facts";
+import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
 import { formatCharge, type ID } from "@bibliothecadao/types";
 import { resolveSpireCrossing } from "./spire-crossing";
 
@@ -22,7 +23,7 @@ export const SpireTravelModal = ({
     setup: { store },
   } = useGame();
   const closeSurface = usePopoverStore((state) => state.closeSurface);
-  const explorer = useNativeRow("ExplorerTroops", {
+  const explorer = useCurrentArmy({
     game_id: configManager.getActiveGameId(),
     explorer_id: explorerId,
   });

@@ -13,3 +13,4 @@ export * from "./troops";
 export * from "./utils";
 
 export * from "./quests";
+export * from "./deep-sites";

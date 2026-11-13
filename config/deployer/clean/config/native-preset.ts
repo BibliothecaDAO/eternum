@@ -31,6 +31,50 @@ function scaled(value: number, precision = RESOURCE_PRECISION): bigint {
   return BigInt(amount);
 }
 
+function buildDeep(preset: ReturnType<typeof nativePresetForId>) {
+  const deep = preset.deep;
+  if (deep === null) return new CairoOption(CairoOptionVariant.None);
+  if (!deep || preset.dayUnitSeconds === 0) throw new Error("Deep requires explicit expedition rules");
+  const sites = [deep.foundation, deep.quarry, deep.altar];
+  if (
+    preset.spacing < presetRule.DEEP_MAP_SIZE * 2 ||
+    sites.some(
+      ({ x, y }) =>
+        !Number.isSafeInteger(x) ||
+        !Number.isSafeInteger(y) ||
+        x < 0 ||
+        y < 0 ||
+        x >= presetRule.DEEP_MAP_SIZE ||
+        y >= presetRule.DEEP_MAP_SIZE ||
+        (x === presetRule.DEEP_MAP_SIZE / 2 && y === presetRule.DEEP_ARRIVAL_Y),
+    ) ||
+    new Set(sites.map(({ x, y }) => `${x}:${y}`)).size !== presetRule.DEEP_SITE_COUNT ||
+    !Number.isSafeInteger(deep.beastCount) ||
+    deep.beastCount <= 0 ||
+    !Number.isSafeInteger(deep.lossPerTick) ||
+    deep.lossPerTick <= 0 ||
+    !Number.isSafeInteger(deep.quarryPerTick) ||
+    deep.quarryPerTick <= 0 ||
+    !Number.isSafeInteger(deep.altarPerTick) ||
+    deep.altarPerTick <= 0 ||
+    !Number.isSafeInteger(deep.altarThreshold) ||
+    deep.altarThreshold <= 0 ||
+    deep.altarThreshold > 0xffff_ffff ||
+    deep.altarThreshold % deep.altarPerTick !== 0
+  )
+    throw new Error("Invalid Deep sites");
+  return new CairoOption(CairoOptionVariant.Some, {
+    foundation: { alt: false, x: deep.foundation.x, y: deep.foundation.y },
+    quarry: { alt: false, x: deep.quarry.x, y: deep.quarry.y },
+    altar: { alt: false, x: deep.altar.x, y: deep.altar.y },
+    beast_count: scaled(deep.beastCount),
+    loss_per_tick: scaled(deep.lossPerTick),
+    quarry_per_tick: scaled(deep.quarryPerTick),
+    altar_per_tick: deep.altarPerTick,
+    altar_threshold: deep.altarThreshold,
+  });
+}
+
 function amounts(resources: Array<{ resource: number; amount: number }>, precision: number) {
   return resources.map(({ resource, amount }) => ({ resource_type: resource, amount: scaled(amount, precision) }));
 }
@@ -299,8 +343,8 @@ function buildEconomy(
   tokens: Array<{ resource_type: number; token: string }>,
 ) {
   const chests = preset.chests;
-  if (chests === undefined || (chests !== null) !== (preset.dayUnitSeconds !== 0))
-    throw new Error("Explicit chest rules are required for expedition presets only");
+  if (chests === undefined || (chests !== null && preset.dayUnitSeconds === 0))
+    throw new Error("Chest rules must be explicit and require expedition days");
   if (chests !== null) {
     if (
       !Number.isInteger(chests.poolBps) ||
@@ -398,6 +442,8 @@ function buildEconomy(
             golden_amount: BigInt(preset.labor.goldenAmount),
             golden_essence: BigInt(preset.labor.goldenEssence),
           }),
+    race: buildRace(preset),
+    deep: buildDeep(preset),
     discovery: buildDiscovery(preset),
     progression:
       progression === null
@@ -617,5 +663,25 @@ function buildDiscovery(preset: ReturnType<typeof nativePresetForId>) {
     shrine_bps: rules.shrineBps,
     well_bps: rules.wellBps,
     empty_reveal_limit: rules.emptyRevealLimit,
+  });
+}
+
+function buildRace(preset: ReturnType<typeof nativePresetForId>) {
+  const race = preset.race;
+  if (!race) return new CairoOption(CairoOptionVariant.None);
+  const coord = ([x, y]: readonly [number, number]) => ({ alt: false, x, y });
+  return new CairoOption(CairoOptionVariant.Some, {
+    season_days: BigInt(race.seasonDays),
+    glory_per_tick: BigInt(race.gloryPerTick),
+    height_per_tick: race.heightPerTick,
+    stage_height: race.stageHeight,
+    clear_mist_percent: race.clearMistPercent,
+    second_wind_percent: race.secondWindPercent,
+    pale_moon_percent: race.paleMoonPercent,
+    spoils_percent: race.spoilsPercent,
+    first: coord(race.positions[0]),
+    second: coord(race.positions[1]),
+    third: coord(race.positions[2]),
+    fourth: coord(race.positions[3]),
   });
 }

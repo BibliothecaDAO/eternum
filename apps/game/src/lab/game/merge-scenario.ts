@@ -31,6 +31,7 @@ export const mergeScenario = (progressed: Progressed) => (): LabScenario => {
   const beside = besideOnOpenLand(store, occupancy);
   const first = store.require("ExplorerTroops", { game_id: 1, explorer_id: BigInt(SPIRE_ARMY) });
   store.applyFacts([
+    { model: "ArmyDay", key: "0xad2", value: { game_id: 1, explorer_id: MERGE_ARMY, day: 0 } },
     raisedArmyLimit(store),
     {
       model: "ExplorerTroops",

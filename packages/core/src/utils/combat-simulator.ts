@@ -42,6 +42,7 @@ export interface BattleRange {
 }
 
 export interface CombatParameters {
+  day_unit_seconds: number;
   damage_raid_percent_num: number;
   damage_biome_bonus_num: number;
   damage_scaling_factor: bigint;
@@ -54,6 +55,7 @@ export interface CombatParameters {
 }
 
 export class CombatSimulator {
+  private readonly dayUnitSeconds: number;
   private readonly t1DamageValue: number;
   private readonly t2DamageMultiplier: number;
   private readonly t3DamageMultiplier: number;
@@ -65,6 +67,7 @@ export class CombatSimulator {
   static MAX_U64: bigint = BigInt(2) ** BigInt(64);
 
   constructor(params: CombatParameters) {
+    this.dayUnitSeconds = params.day_unit_seconds;
     this.t1DamageValue = divideWithPrecision(params.t1_damage_value, CombatSimulator.MAX_U64);
     this.t2DamageMultiplier = divideWithPrecision(params.t2_damage_multiplier, CombatSimulator.MAX_U64);
     this.t3DamageMultiplier = divideWithPrecision(params.t3_damage_multiplier, CombatSimulator.MAX_U64);
@@ -184,13 +187,13 @@ export class CombatSimulator {
     const isAdjacentStructureGuardAssault =
       !context.attackerIsStructureGuard && context.defenderIsStructureGuard && (context.attackDistance ?? 1) === 1;
 
-    return attacker.troopType === TroopType.Knight && isAdjacentStructureGuardAssault
+    return this.dayUnitSeconds === 0 && attacker.troopType === TroopType.Knight && isAdjacentStructureGuardAssault
       ? KNIGHT_STRUCTURE_ASSAULT_DAMAGE_MULTIPLIER
       : 1;
   }
 
   private calculateIncomingDamageMultiplier(defender: Army, isStructureGuard: boolean | undefined): number {
-    return isStructureGuard && defender.troopType === TroopType.Knight
+    return this.dayUnitSeconds === 0 && isStructureGuard && defender.troopType === TroopType.Knight
       ? KNIGHT_STRUCTURE_GUARD_INCOMING_DAMAGE_MULTIPLIER
       : 1;
   }
@@ -382,6 +385,7 @@ export class CombatSimulator {
 
   public static getDefaultParameters(): CombatParameters {
     return {
+      day_unit_seconds: 0,
       damage_raid_percent_num: 1000, //10%
       damage_biome_bonus_num: 3000,
       damage_scaling_factor: 36893488147419103232n, // 2

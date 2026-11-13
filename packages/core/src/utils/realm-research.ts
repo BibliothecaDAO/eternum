@@ -106,14 +106,14 @@ export function realmLearned(
   return store.get("RealmKnowledge", { game_id: gameId, structure_id: structureId })?.learned;
 }
 
-/** The deepest Ethereal layer a realm has researched, 0 for none. */
-export function researchedDepth(
+/** Whether a realm knows Spire lore (the depth row's first tier), so its armies' reveals can find the day's spires. */
+export function knowsSpireLore(
   store: Pick<NativeFactStore, "get">,
   gameId: number,
   structureId: number | bigint,
-): number | undefined {
+): boolean {
   const learned = realmLearned(store, gameId, structureId);
-  return learned === undefined ? undefined : researchTier(learned, research.ROW_DEPTH);
+  return learned !== undefined && researchTier(learned, research.ROW_DEPTH) > 0;
 }
 
 /** The building type a building row's tiers apply to, as research.cairo's row_category; castle rows have none. */

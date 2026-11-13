@@ -529,9 +529,9 @@
   };
 
   window.__playtest = {
-    /** A step boundary; the heap is read after a forced collection when the browser exposes gc. */
+    /** A step boundary; the heap is read after a forced collection, by the collector the runner exposes (PLAYTEST_GC). */
     step(name) {
-      window.gc?.();
+      window.__playtestGc();
       const step = { heapBytes: usedHeapBytes(), name, t: performance.now() };
       push(state.steps, step);
       return JSON.stringify({ ...step, timeOrigin: performance.timeOrigin });

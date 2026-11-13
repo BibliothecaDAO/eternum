@@ -4,8 +4,8 @@ import { describe, expect, it } from "vitest";
 import { type CombatRules, type ExchangeTroops, forecastFight, resolveExchange } from "./combat-exchange";
 
 /**
- * The contract's own record of 200 exchanges (frontier-combat-v1.txt, written by its snforge producer): every loss and
- * stamina value must come out of resolveExchange as the same integer.
+ * The archived contract record of 200 exchanges (frontier-combat-v1.txt, written by its snforge producer) retains
+ * the historical structure modifiers. Replay every loss and stamina value exactly with the zero day clock below.
  */
 const FIXTURE = new URL("../../../../contracts/l3/world-native/tests/fixtures/frontier-combat-v1.txt", import.meta.url);
 const HEADER_FELTS = 25;
@@ -35,6 +35,7 @@ const readRules = (felts: bigint[]): CombatRules => {
   const [raid, biomeBonus, scaling, t1, t2, t3, ...stamina] = felts;
   const flags = stamina.map(Number);
   return {
+    dayUnitSeconds: 0,
     cooldownSeconds: 0,
     tickSeconds: flags[16]!,
     damage: {
@@ -196,6 +197,46 @@ describe("an exchange resolves as the contract resolves it", () => {
     expect(forecast.defenderLoss).toBeGreaterThan(recorded.expected.defenderLoss);
     expect(forecast.staminaSpent).toBe(BigInt(forecast.exchanges * rules.stamina.stamina_attack_req));
   });
+});
+
+it("uses the same expedition damage for Knights attacking armies and site guards", () => {
+  const { rules, cases } = readFixture();
+  const recorded = cases[0]!;
+  const expeditionRules: CombatRules = {
+    ...rules,
+    dayUnitSeconds: 14_400,
+    stamina: { ...rules.stamina, stamina_defense_req: 0 },
+  };
+  const army: ExchangeTroops = {
+    ...recorded.attacker,
+    category: "Knight",
+    tier: "T1",
+    count: 1_500n * 1_000_000_000n,
+    stamina: { amount: 180n, settled_at: recorded.context.timestamp, remainder: 0 },
+  };
+  const defender: ExchangeTroops = { ...army, count: 1_000n * 1_000_000_000n };
+  const context = { ...recorded.context, attackerIsStructureGuard: false, defenderIsStructureGuard: false };
+  const field = resolveExchange(army, defender, context, expeditionRules);
+  if (!field.ok) throw new Error(field.refusal);
+  expect(field.attackerLoss).toBe(418n * 1_000_000_000n);
+  expect(field.defenderLoss).toBe(627n * 1_000_000_000n);
+  for (const attackerIsStructureGuard of [false, true]) {
+    for (const defenderIsStructureGuard of [false, true]) {
+      expect(
+        resolveExchange(
+          army,
+          defender,
+          { ...context, attackerIsStructureGuard, defenderIsStructureGuard },
+          expeditionRules,
+        ),
+      ).toEqual(field);
+    }
+  }
+  const exhausted = { ...defender, stamina: { ...defender.stamina, amount: 0n } };
+  const result = resolveExchange(army, exhausted, context, expeditionRules);
+  if (!result.ok) throw new Error(result.refusal);
+  expect(result.attackerLoss).toBe(field.attackerLoss);
+  expect(result.defenderLoss).toBe(field.defenderLoss);
 });
 
 it("stops a Blitz forecast at the cooldown after this attack", () => {

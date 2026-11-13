@@ -246,18 +246,27 @@ pub fn refill_windows(
     tick_seconds: u64,
     timestamp: u64,
     windows: Span<crate::banes::BaneWindow>,
+    rate: u16,
     percent: u16,
 ) {
     if stamina.settled_at == 0 {
-        stamina.refill_to_max(ref boosts, maximum, config, tick_seconds, timestamp);
+        stamina.refill_at_rate(ref boosts, maximum, config, tick_seconds, timestamp, rate);
         return;
     }
     for window in windows {
         if *window.kind != crate::banes::MIST_TIDE {
             continue;
         }
-        stamina.refill_to_max(ref boosts, maximum, config, tick_seconds, *window.start);
-        stamina.refill_at_rate(ref boosts, maximum, config, tick_seconds, *window.end, percent);
+        stamina.refill_at_rate(ref boosts, maximum, config, tick_seconds, *window.start, rate);
+        stamina
+            .refill_at_rate(
+                ref boosts,
+                maximum,
+                config,
+                tick_seconds,
+                *window.end,
+                (Into::<u16, u32>::into(rate) * percent.into() / 100).try_into().unwrap(),
+            );
     }
-    stamina.refill_to_max(ref boosts, maximum, config, tick_seconds, timestamp);
+    stamina.refill_at_rate(ref boosts, maximum, config, tick_seconds, timestamp, rate);
 }

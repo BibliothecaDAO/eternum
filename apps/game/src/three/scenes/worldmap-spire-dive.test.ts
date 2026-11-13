@@ -1,4 +1,4 @@
-import { regionSpire, viewInLayer, type ExpeditionRules } from "@bibliothecadao/eternum";
+import { viewInLayer, type ExpeditionRules } from "@bibliothecadao/eternum";
 import { Vector3 } from "three";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -181,19 +181,11 @@ describe("a view through a spire between any two layers", () => {
     },
   );
 
-  it("dives into the surface spire from the surface, and comes out of it onto the surface", () => {
+  it("dives into the spot it leaves going down, and comes out of the spot it reaches going up", () => {
     const surface = { col: 137, row: 63 };
     const ethereal = viewInLayer(rules, surface, 2);
-    expect(spireCrossing(rules, surface, ethereal)).toEqual({
-      spire: regionSpire(rules, surface),
-      arrival: ethereal,
-      down: true,
-    });
-    expect(spireCrossing(rules, ethereal, surface)).toEqual({
-      spire: regionSpire(rules, surface),
-      arrival: surface,
-      down: false,
-    });
+    expect(spireCrossing(rules, surface, ethereal)).toEqual({ spire: surface, arrival: ethereal, down: true });
+    expect(spireCrossing(rules, ethereal, surface)).toEqual({ spire: surface, arrival: surface, down: false });
   });
 });
 

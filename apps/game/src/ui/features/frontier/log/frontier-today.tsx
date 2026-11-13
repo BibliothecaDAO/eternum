@@ -6,6 +6,7 @@ import type { readExpeditionRules } from "@bibliothecadao/eternum";
 import type { NativeFactStore, NativeRows } from "@bibliothecadao/eternum/game-client";
 import { type ReactNode, useState } from "react";
 
+import { QuestWeek } from "../day/quest-week";
 import { dayBounds, dayClock, seasonDay } from "../hud/day-clock";
 import { useDockArmies } from "../hud/dock-armies";
 import { useDayShare } from "../rollover/day-share-sheet";
@@ -17,9 +18,9 @@ type ExpeditionRules = NonNullable<ReturnType<typeof readExpeditionRules>>;
 
 /**
  * Today over the stories of the realm's owner: the player's own realm, or the one a spectator watches. Today's totals
- * (the ruin's LORDS among them) and log, stepping back through earlier days, and, for the player's own realm, today's
- * armies with a tier their XP can buy, the row opening the first of them, and on an earlier day they played the way to
- * share it.
+ * (the ruin's LORDS among them) and log, stepping back through earlier days, and, for the player's own realm, the
+ * week's quests, today's armies with a tier their XP can buy, the row opening the first of them, and on an earlier day
+ * they played the way to share it.
  */
 export const FrontierToday = ({
   rules,
@@ -60,6 +61,7 @@ export const FrontierToday = ({
         clock={clock}
         totals={played.totals}
         dayEnd={dayEnd}
+        week={onOpenArmy && realm && <QuestWeek realm={realm} />}
         lines={logLines(played.stories, setup.store)}
         armiesToUpgrade={onOpenArmy && day === today ? buyers.length : undefined}
         onArmies={onOpenArmy && buyers[0] ? () => onOpenArmy(buyers[0]!.explorerId) : undefined}

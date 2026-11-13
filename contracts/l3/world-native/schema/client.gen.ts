@@ -1,5 +1,5 @@
 // Generated from native fact models and contract ABIs. Run the native schema generator to update.
-export const nativeFactSchemaIdentity = "fa1ac6b4a849a9f6b6d8f31b93d2b7ada379a35e3212ae6f2fba4b69f0771f3f";
+export const nativeFactSchemaIdentity = "5e61bf5f3e29eee74f9941cf4d027b1e73114eb2bd616d09b1f337697ebab38c";
 export const nativeReleaseConstants = {
   "RUIN_DEPTH_LIMIT_RELEASE": 9
 } as const;
@@ -10,6 +10,13 @@ export const nativeRuleConstants = {
   "SHRINE_EPIC_BPS": 400,
   "SHRINE_LEGENDARY_BPS": 100,
   "ATTRIBUTE_CAP": 5,
+  "SPIRE_REVEAL_LIMIT": 10,
+  "RELIC_BLADE_BPS": 1000,
+  "RELIC_WARD_BPS": 500,
+  "RELIC_PLUNDER_BPS": 2000,
+  "RELIC_TOME_BPS": 4000,
+  "RELIC_SECONDS_PER_RANK": 1800,
+  "RELIC_TILES_PER_RANK": 6,
   "SKILL_POINT_REFILL_BASE": 10,
   "SKILL_POINT_REFILL_STEP": 10,
   "BATTLE_COMMON_BPS": 1000,
@@ -56,7 +63,21 @@ export const nativeRuleConstants = {
   "HYPERSTRUCTURE_MULTIPLIERS": 32768,
   "PRODUCTION_START": 131072,
   "WELL_STAMINA_DIVISOR": 2,
-  "FRONTIER_REPORT_GRACE_SECONDS": 3600
+  "FRONTIER_REPORT_GRACE_SECONDS": 3600,
+  "CLEAR_MIST_STAGE": 1,
+  "SECOND_WIND_STAGE": 2,
+  "PALE_MOON_STAGE": 3,
+  "SPOILS_STAGE": 4,
+  "BOON_MAX_STEPS": 5,
+  "PATHS_SITE_STEP_BPS": 2500,
+  "PATHS_SANCTUARY_STEP_BPS": 1500,
+  "DEEP_MAP_SIZE": 50,
+  "DEEP_FOUNDATION": 0,
+  "DEEP_QUARRY": 1,
+  "DEEP_ALTAR": 2,
+  "DEEP_SITE_COUNT": 3,
+  "DEEP_ARRIVAL_Y": 5,
+  "DEEP_GUARD_SLOTS": 4
 } as const;
 export const nativeResearchConstants = {
   "ROW_FARM": 0,
@@ -150,6 +171,7 @@ export enum NativeTileOccupier {
   ReservedHyperstructure = 39,
   Shrine = 40,
   Well = 41,
+  DeepSite = 46,
   DormantSpire = 45,
   Rift = 42,
   Ruin = 43,
@@ -216,6 +238,12 @@ export interface NativeRows {
   ArmyProgressionRules: { readonly game_id: number; readonly reveal_xp: number; readonly reveal_xp_per_depth: number; readonly common_xp: number; readonly uncommon_xp: number; readonly rare_xp: number; readonly epic_xp: number; readonly legendary_xp: number };
   FrontierDiscoveryRules: { readonly game_id: number; readonly beasts_bps: number; readonly camp_bps: number; readonly rift_bps: number; readonly ruin_bps: number; readonly shrine_bps: number; readonly well_bps: number; readonly empty_reveal_limit: number };
   ExpeditionDiscovery: { readonly game_id: number; readonly structure_id: bigint; readonly epoch: bigint; readonly empty_reveals: number; readonly ruin_cleared: boolean };
+  RaceRules: { readonly game_id: number; readonly season_days: bigint; readonly glory_per_tick: bigint; readonly height_per_tick: number; readonly stage_height: number; readonly clear_mist_percent: number; readonly second_wind_percent: number; readonly pale_moon_percent: number; readonly spoils_percent: number; readonly first: { readonly alt: boolean; readonly x: number; readonly y: number }; readonly second: { readonly alt: boolean; readonly x: number; readonly y: number }; readonly third: { readonly alt: boolean; readonly x: number; readonly y: number }; readonly fourth: { readonly alt: boolean; readonly x: number; readonly y: number } };
+  RaceMember: { readonly game_id: number; readonly entity_id: bigint; readonly glory: bigint; readonly contribution: bigint };
+  AspectHyperstructure: { readonly game_id: number; readonly aspect: number; readonly entity_id: bigint; readonly height: number };
+  TriumphDay: { readonly game_id: number; readonly aspect: number; readonly stage: number; readonly day: bigint };
+  RaceResult: { readonly game_id: number; readonly winner: (number) | null; readonly ended_at: bigint; readonly scheduled_end_at: bigint };
+  ExpeditionSpire: { readonly game_id: number; readonly structure_id: bigint; readonly epoch: bigint; readonly depth: number; readonly reveals: number; readonly location: ({ readonly alt: boolean; readonly x: number; readonly y: number }) | null };
   DepositSource: { readonly game_id: number; readonly chain: bigint; readonly ledger: bigint; readonly signer: bigint; readonly epoch: bigint };
   SpendLords: { readonly game_id: number; readonly account: bigint; readonly available: bigint; readonly consumed: bigint; readonly swept: bigint };
   PrincipalWithdrawal: { readonly game_id: number; readonly account: bigint; readonly amount: bigint };
@@ -273,8 +301,18 @@ export interface NativeRows {
   AspectMembers: { readonly game_id: number; readonly aspect: number; readonly members: number };
   TileOpt: { readonly game_id: number; readonly alt: boolean; readonly col: number; readonly row: number; readonly data: bigint };
   TileOccupancy: { readonly game_id: number; readonly alt: boolean; readonly col: number; readonly row: number; readonly entity_id: bigint; readonly category: number; readonly is_structure: boolean };
+  ArmyRelics: { readonly game_id: number; readonly explorer_id: bigint; readonly first: ({ readonly kind: "Blade" | "Ward" | "Plunder" | "FarEye" | "Tome"; readonly rank: number }) | null; readonly second: ({ readonly kind: "Blade" | "Ward" | "Plunder" | "FarEye" | "Tome"; readonly rank: number }) | null; readonly third: ({ readonly kind: "Blade" | "Ward" | "Plunder" | "FarEye" | "Tome"; readonly rank: number }) | null };
+  ArmyRelicEffect: { readonly game_id: number; readonly explorer_id: bigint; readonly kind: "Blade" | "Ward" | "Plunder" | "FarEye" | "Tome"; readonly rank: number; readonly expires_at: bigint };
+  RuinRelic: { readonly game_id: number; readonly entity_id: bigint; readonly kind: "Blade" | "Ward" | "Plunder" | "FarEye" | "Tome"; readonly rank: number };
   ArmyProgress: { readonly game_id: number; readonly explorer_id: bigint; readonly xp: number; readonly common_points: number; readonly uncommon_points: number; readonly rare_points: number; readonly epic_points: number; readonly legendary_points: number; readonly battle: number; readonly logistics: number; readonly scouting: number; readonly homecoming: number; readonly scouting_kinds: number };
   AspectActivity: { readonly game_id: number; readonly aspect: number; readonly day: bigint; readonly active: number };
+  AltarBar: { readonly game_id: number; readonly aspect: number; readonly charge: number };
+  TeamBane: { readonly game_id: number; readonly aspect: number; readonly day: bigint; readonly source: number; readonly issued_day: bigint; readonly quest: number };
+  DeepArmy: { readonly game_id: number; readonly explorer_id: bigint; readonly last_tick: bigint };
+  DeepGuard: { readonly game_id: number; readonly explorer_id: bigint; readonly site_id: bigint; readonly slot: number };
+  DeepSite: { readonly game_id: number; readonly entity_id: bigint; readonly kind: number; readonly day: bigint };
+  DeepRules: { readonly game_id: number; readonly foundation: { readonly alt: boolean; readonly x: number; readonly y: number }; readonly quarry: { readonly alt: boolean; readonly x: number; readonly y: number }; readonly altar: { readonly alt: boolean; readonly x: number; readonly y: number }; readonly beast_count: bigint; readonly loss_per_tick: bigint; readonly quarry_per_tick: bigint; readonly altar_per_tick: number; readonly altar_threshold: number };
+  ArmyDay: { readonly game_id: number; readonly explorer_id: bigint; readonly day: bigint };
   ArmySlot: { readonly game_id: number; readonly structure_id: bigint; readonly epoch: bigint; readonly slot: number; readonly explorer_id: bigint; readonly stamina: { readonly amount: bigint; readonly settled_at: number; readonly remainder: number } };
   ExplorerTroops: { readonly game_id: number; readonly explorer_id: bigint; readonly owner: bigint; readonly troops: { readonly category: "Knight" | "Paladin" | "Crossbowman"; readonly tier: "T1" | "T2" | "T3"; readonly count: bigint; readonly stamina: { readonly Inline: { readonly amount: bigint; readonly settled_at: number; readonly remainder: number } } | { readonly Slot: number }; readonly boosts: { readonly incr_damage_dealt_percent_num: number; readonly incr_damage_dealt_end_at: number; readonly decr_damage_gotten_percent_num: number; readonly decr_damage_gotten_end_at: number; readonly incr_stamina_regen_percent_num: number; readonly incr_stamina_regen_seconds_left: number; readonly incr_explore_reward_percent_num: number; readonly incr_explore_reward_end_at: number }; readonly battle_cooldown_end: number } };
   ExpeditionSite: { readonly game_id: number; readonly entity_id: bigint; readonly category: number; readonly initial_guard_count: bigint; readonly alt: boolean; readonly col: number; readonly row: number; readonly clear: ({ readonly explorer_id: bigint; readonly home_id: bigint; readonly reward: ({ readonly resource_type: number; readonly amount: bigint }) | null }) | null };
@@ -327,6 +365,12 @@ export interface NativeKeys {
   ArmyProgressionRules: { readonly game_id: number };
   FrontierDiscoveryRules: { readonly game_id: number };
   ExpeditionDiscovery: { readonly game_id: number; readonly structure_id: bigint; readonly epoch: bigint };
+  RaceRules: { readonly game_id: number };
+  RaceMember: { readonly game_id: number; readonly entity_id: bigint };
+  AspectHyperstructure: { readonly game_id: number; readonly aspect: number };
+  TriumphDay: { readonly game_id: number; readonly aspect: number; readonly stage: number };
+  RaceResult: { readonly game_id: number };
+  ExpeditionSpire: { readonly game_id: number; readonly structure_id: bigint; readonly epoch: bigint; readonly depth: number };
   DepositSource: { readonly game_id: number };
   SpendLords: { readonly game_id: number; readonly account: bigint };
   PrincipalWithdrawal: { readonly game_id: number; readonly account: bigint };
@@ -384,8 +428,18 @@ export interface NativeKeys {
   AspectMembers: { readonly game_id: number; readonly aspect: number };
   TileOpt: { readonly game_id: number; readonly alt: boolean; readonly col: number; readonly row: number };
   TileOccupancy: { readonly game_id: number; readonly alt: boolean; readonly col: number; readonly row: number };
+  ArmyRelics: { readonly game_id: number; readonly explorer_id: bigint };
+  ArmyRelicEffect: { readonly game_id: number; readonly explorer_id: bigint; readonly kind: "Blade" | "Ward" | "Plunder" | "FarEye" | "Tome" };
+  RuinRelic: { readonly game_id: number; readonly entity_id: bigint };
   ArmyProgress: { readonly game_id: number; readonly explorer_id: bigint };
   AspectActivity: { readonly game_id: number; readonly aspect: number; readonly day: bigint };
+  AltarBar: { readonly game_id: number; readonly aspect: number };
+  TeamBane: { readonly game_id: number; readonly aspect: number; readonly day: bigint };
+  DeepArmy: { readonly game_id: number; readonly explorer_id: bigint };
+  DeepGuard: { readonly game_id: number; readonly explorer_id: bigint };
+  DeepSite: { readonly game_id: number; readonly entity_id: bigint };
+  DeepRules: { readonly game_id: number };
+  ArmyDay: { readonly game_id: number; readonly explorer_id: bigint };
   ArmySlot: { readonly game_id: number; readonly structure_id: bigint; readonly epoch: bigint; readonly slot: number };
   ExplorerTroops: { readonly game_id: number; readonly explorer_id: bigint };
   ExpeditionSite: { readonly game_id: number; readonly entity_id: bigint };
@@ -641,6 +695,138 @@ export const nativeFactModels = {
       },
       "value": "zero",
       "meaning": "No empty player reveals in this expedition yet."
+    }
+  },
+  "RaceRules": {
+    "keys": [
+      "game_id"
+    ],
+    "scope": "game",
+    "fields": {
+      "game_id": "u32",
+      "season_days": "u64",
+      "glory_per_tick": "u128",
+      "height_per_tick": "u32",
+      "stage_height": "u32",
+      "clear_mist_percent": "u16",
+      "second_wind_percent": "u16",
+      "pale_moon_percent": "u16",
+      "spoils_percent": "u16",
+      "first": {
+        "alt": "boolean",
+        "x": "u32",
+        "y": "u32"
+      },
+      "second": {
+        "alt": "boolean",
+        "x": "u32",
+        "y": "u32"
+      },
+      "third": {
+        "alt": "boolean",
+        "x": "u32",
+        "y": "u32"
+      },
+      "fourth": {
+        "alt": "boolean",
+        "x": "u32",
+        "y": "u32"
+      }
+    }
+  },
+  "RaceMember": {
+    "keys": [
+      "game_id",
+      "entity_id"
+    ],
+    "scope": "game",
+    "fields": {
+      "game_id": "u32",
+      "entity_id": "u64",
+      "glory": "u128",
+      "contribution": "u128"
+    },
+    "absence": {
+      "parent": "Structure",
+      "value": "zero",
+      "meaning": "No Glory or height contribution before this home holds a Deep site.",
+      "parentKeys": {
+        "game_id": "game_id",
+        "entity_id": "entity_id"
+      }
+    }
+  },
+  "AspectHyperstructure": {
+    "keys": [
+      "game_id",
+      "aspect"
+    ],
+    "scope": "game",
+    "fields": {
+      "game_id": "u32",
+      "aspect": "u8",
+      "entity_id": "u64",
+      "height": "u32"
+    }
+  },
+  "TriumphDay": {
+    "keys": [
+      "game_id",
+      "aspect",
+      "stage"
+    ],
+    "scope": "game",
+    "fields": {
+      "game_id": "u32",
+      "aspect": "u8",
+      "stage": "u8",
+      "day": "u64"
+    }
+  },
+  "RaceResult": {
+    "keys": [
+      "game_id"
+    ],
+    "scope": "game",
+    "fields": {
+      "game_id": "u32",
+      "winner": {
+        "option": "u8"
+      },
+      "ended_at": "u64",
+      "scheduled_end_at": "u64"
+    }
+  },
+  "ExpeditionSpire": {
+    "keys": [
+      "game_id",
+      "structure_id",
+      "epoch",
+      "depth"
+    ],
+    "scope": "game",
+    "fields": {
+      "game_id": "u32",
+      "structure_id": "u64",
+      "epoch": "u64",
+      "depth": "u8",
+      "reveals": "u8",
+      "location": {
+        "option": {
+          "alt": "boolean",
+          "x": "u32",
+          "y": "u32"
+        }
+      }
+    },
+    "absence": {
+      "parent": "Structure",
+      "parentKeys": {
+        "game_id": "game_id",
+        "entity_id": "structure_id"
+      },
+      "value": "zero",
+      "meaning": "No reveal with Spire lore on this layer of this day's expedition yet."
     }
   },
   "DepositSource": {
@@ -1594,6 +1780,121 @@ export const nativeFactModels = {
       "is_structure": "boolean"
     }
   },
+  "ArmyRelics": {
+    "keys": [
+      "game_id",
+      "explorer_id"
+    ],
+    "scope": "game",
+    "fields": {
+      "game_id": "u32",
+      "explorer_id": "u64",
+      "first": {
+        "option": {
+          "kind": {
+            "enum": [
+              "Blade",
+              "Ward",
+              "Plunder",
+              "FarEye",
+              "Tome"
+            ]
+          },
+          "rank": "u8"
+        }
+      },
+      "second": {
+        "option": {
+          "kind": {
+            "enum": [
+              "Blade",
+              "Ward",
+              "Plunder",
+              "FarEye",
+              "Tome"
+            ]
+          },
+          "rank": "u8"
+        }
+      },
+      "third": {
+        "option": {
+          "kind": {
+            "enum": [
+              "Blade",
+              "Ward",
+              "Plunder",
+              "FarEye",
+              "Tome"
+            ]
+          },
+          "rank": "u8"
+        }
+      }
+    },
+    "absence": {
+      "parent": "ExplorerTroops",
+      "value": "zero",
+      "meaning": "No carried relics or running relic of this kind while the army exists.",
+      "parentKeys": {
+        "game_id": "game_id",
+        "explorer_id": "explorer_id"
+      }
+    }
+  },
+  "ArmyRelicEffect": {
+    "keys": [
+      "game_id",
+      "explorer_id",
+      "kind"
+    ],
+    "scope": "game",
+    "fields": {
+      "game_id": "u32",
+      "explorer_id": "u64",
+      "kind": {
+        "enum": [
+          "Blade",
+          "Ward",
+          "Plunder",
+          "FarEye",
+          "Tome"
+        ]
+      },
+      "rank": "u8",
+      "expires_at": "u64"
+    },
+    "absence": {
+      "parent": "ExplorerTroops",
+      "value": "zero",
+      "meaning": "No carried relics or running relic of this kind while the army exists.",
+      "parentKeys": {
+        "game_id": "game_id",
+        "explorer_id": "explorer_id"
+      }
+    }
+  },
+  "RuinRelic": {
+    "keys": [
+      "game_id",
+      "entity_id"
+    ],
+    "scope": "game",
+    "fields": {
+      "game_id": "u32",
+      "entity_id": "u64",
+      "kind": {
+        "enum": [
+          "Blade",
+          "Ward",
+          "Plunder",
+          "FarEye",
+          "Tome"
+        ]
+      },
+      "rank": "u8"
+    }
+  },
   "ArmyProgress": {
     "keys": [
       "game_id",
@@ -1636,6 +1937,121 @@ export const nativeFactModels = {
       "parentKeys": {
         "game_id": "game_id"
       }
+    }
+  },
+  "AltarBar": {
+    "keys": [
+      "game_id",
+      "aspect"
+    ],
+    "scope": "game",
+    "fields": {
+      "game_id": "u32",
+      "aspect": "u8",
+      "charge": "u32"
+    },
+    "absence": {
+      "parent": "DeepRules",
+      "value": "zero",
+      "meaning": "This Aspect has not held the Altar yet.",
+      "parentKeys": {
+        "game_id": "game_id"
+      }
+    }
+  },
+  "TeamBane": {
+    "keys": [
+      "game_id",
+      "aspect",
+      "day"
+    ],
+    "scope": "game",
+    "fields": {
+      "game_id": "u32",
+      "aspect": "u8",
+      "day": "u64",
+      "source": "u8",
+      "issued_day": "u64",
+      "quest": "u8"
+    }
+  },
+  "DeepArmy": {
+    "keys": [
+      "game_id",
+      "explorer_id"
+    ],
+    "scope": "game",
+    "fields": {
+      "game_id": "u32",
+      "explorer_id": "u64",
+      "last_tick": "u64"
+    }
+  },
+  "DeepGuard": {
+    "keys": [
+      "game_id",
+      "explorer_id"
+    ],
+    "scope": "game",
+    "fields": {
+      "game_id": "u32",
+      "explorer_id": "u64",
+      "site_id": "u64",
+      "slot": "u8"
+    }
+  },
+  "DeepSite": {
+    "keys": [
+      "game_id",
+      "entity_id"
+    ],
+    "scope": "game",
+    "fields": {
+      "game_id": "u32",
+      "entity_id": "u64",
+      "kind": "u8",
+      "day": "u64"
+    }
+  },
+  "DeepRules": {
+    "keys": [
+      "game_id"
+    ],
+    "scope": "game",
+    "fields": {
+      "game_id": "u32",
+      "foundation": {
+        "alt": "boolean",
+        "x": "u32",
+        "y": "u32"
+      },
+      "quarry": {
+        "alt": "boolean",
+        "x": "u32",
+        "y": "u32"
+      },
+      "altar": {
+        "alt": "boolean",
+        "x": "u32",
+        "y": "u32"
+      },
+      "beast_count": "u128",
+      "loss_per_tick": "u128",
+      "quarry_per_tick": "u128",
+      "altar_per_tick": "u32",
+      "altar_threshold": "u32"
+    }
+  },
+  "ArmyDay": {
+    "keys": [
+      "game_id",
+      "explorer_id"
+    ],
+    "scope": "game",
+    "fields": {
+      "game_id": "u32",
+      "explorer_id": "u64",
+      "day": "u64"
     }
   },
   "ArmySlot": {
@@ -2500,6 +2916,11 @@ export const nativeFactModels = {
   }
 } as const;
 export const nativeSyncScopes = {
+  "RaceRules": "shared",
+  "RaceMember": "shared",
+  "AspectHyperstructure": "shared",
+  "TriumphDay": "shared",
+  "RaceResult": "shared",
   "GameOverrides": "internal",
   "GameplayRejected": "actor",
   "BatchProgress": "actor",
@@ -2513,6 +2934,7 @@ export const nativeSyncScopes = {
   "ExtractionRewards": "shared",
   "RelicRules": "shared",
   "ChestRules": "shared",
+  "DeepRules": "shared",
   "LaborRules": "shared",
   "ArmyProgressionRules": "shared",
   "LordsBudget": "shared",
@@ -2584,7 +3006,6 @@ export const nativeSyncScopes = {
   "AspectRules": "shared",
   "QuestRules": "shared",
   "BaneRules": "shared",
-  "AspectActivity": "shared",
   "BaneProgress": "shared",
   "FirstTeamBane": "shared",
   "BaneGrant": {
@@ -2734,9 +3155,35 @@ export const nativeSyncScopes = {
     ]
   },
   "RelicChest": "shared",
+  "AspectActivity": "shared",
+  "DeepSite": "shared",
+  "DeepGuard": "shared",
+  "DeepArmy": "shared",
+  "AltarBar": "shared",
+  "TeamBane": "shared",
+  "ArmyDay": {
+    "entities": [
+      "explorer_id"
+    ]
+  },
   "ArmyProgress": {
     "entities": [
       "explorer_id"
+    ]
+  },
+  "ArmyRelics": {
+    "entities": [
+      "explorer_id"
+    ]
+  },
+  "ArmyRelicEffect": {
+    "entities": [
+      "explorer_id"
+    ]
+  },
+  "RuinRelic": {
+    "entities": [
+      "entity_id"
     ]
   },
   "ExpeditionDiscovery": {
@@ -2745,8 +3192,17 @@ export const nativeSyncScopes = {
     ],
     "epoch": "epoch"
   },
+  "ExpeditionSpire": {
+    "realms": [
+      "structure_id"
+    ],
+    "epoch": "epoch"
+  },
   "ArmySlot": {
     "realms": [
+      "structure_id"
+    ],
+    "entities": [
       "structure_id"
     ],
     "epoch": "epoch"

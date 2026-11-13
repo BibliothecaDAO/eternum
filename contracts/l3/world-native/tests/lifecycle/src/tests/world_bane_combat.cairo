@@ -325,7 +325,7 @@ fn prepare_bane_army(seed: felt252, kind: u8, troops: u128) -> (Deployment, Reso
         .discovery =
             Some(
                 crate::expeditions::FrontierDiscoveryRules {
-                    camp_bps: 5000,
+                    camp_bps: 2000,
                     beasts_bps: 0,
                     rift_bps: 0,
                     ruin_bps: 0,
@@ -439,5 +439,5 @@ fn guard_count(target: ResourceKey) -> u128 {
 }
 
 fn attack(army: ExplorerKey, target: ResourceKey) -> Command {
-    Command::BattleGuard(Battle { attacker_id: army.explorer_id, defender_id: target.entity_id })
+    Command::BattleGuard(Battle { attacker_id: army.explorer_id, defender_id: target.entity_id, relic_slot: None })
 }

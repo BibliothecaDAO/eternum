@@ -1,5 +1,5 @@
 {
-  "schemaIdentity": "fa1ac6b4a849a9f6b6d8f31b93d2b7ada379a35e3212ae6f2fba4b69f0771f3f",
+  "schemaIdentity": "5e61bf5f3e29eee74f9941cf4d027b1e73114eb2bd616d09b1f337697ebab38c",
   "commandAbi": [
     {
       "type": "interface",
@@ -714,6 +714,10 @@
         {
           "name": "defender_id",
           "type": "core::integer::u64"
+        },
+        {
+          "name": "relic_slot",
+          "type": "core::option::Option::<core::integer::u8>"
         }
       ]
     },
@@ -1002,6 +1006,10 @@
         {
           "name": "StructureGuard",
           "type": "()"
+        },
+        {
+          "name": "ArmySlot",
+          "type": "core::integer::u8"
         }
       ]
     },
@@ -1570,6 +1578,30 @@
       "scope": "game"
     },
     {
+      "name": "RaceRules",
+      "scope": "game"
+    },
+    {
+      "name": "RaceMember",
+      "scope": "game"
+    },
+    {
+      "name": "AspectHyperstructure",
+      "scope": "game"
+    },
+    {
+      "name": "TriumphDay",
+      "scope": "game"
+    },
+    {
+      "name": "RaceResult",
+      "scope": "game"
+    },
+    {
+      "name": "ExpeditionSpire",
+      "scope": "game"
+    },
+    {
       "name": "DepositSource",
       "scope": "game"
     },
@@ -1798,11 +1830,51 @@
       "scope": "game"
     },
     {
+      "name": "ArmyRelics",
+      "scope": "game"
+    },
+    {
+      "name": "ArmyRelicEffect",
+      "scope": "game"
+    },
+    {
+      "name": "RuinRelic",
+      "scope": "game"
+    },
+    {
       "name": "ArmyProgress",
       "scope": "game"
     },
     {
       "name": "AspectActivity",
+      "scope": "game"
+    },
+    {
+      "name": "AltarBar",
+      "scope": "game"
+    },
+    {
+      "name": "TeamBane",
+      "scope": "game"
+    },
+    {
+      "name": "DeepArmy",
+      "scope": "game"
+    },
+    {
+      "name": "DeepGuard",
+      "scope": "game"
+    },
+    {
+      "name": "DeepSite",
+      "scope": "game"
+    },
+    {
+      "name": "DeepRules",
+      "scope": "game"
+    },
+    {
+      "name": "ArmyDay",
       "scope": "game"
     },
     {

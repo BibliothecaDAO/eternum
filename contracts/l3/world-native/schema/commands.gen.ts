@@ -105,7 +105,7 @@ export interface NativeCommandPayloads {
   CloseBitcoinPhase: BigNumberish;
   BindBitcoinPhase: BigNumberish;
   ClaimBitcoinPhase: { readonly phase: BigNumberish; readonly mine_ids: readonly (BigNumberish)[] };
-  BattleGuard: { readonly attacker_id: BigNumberish; readonly defender_id: BigNumberish };
+  BattleGuard: { readonly attacker_id: BigNumberish; readonly defender_id: BigNumberish; readonly relic_slot: { readonly kind: "Some"; readonly value: BigNumberish } | { readonly kind: "None"; readonly value: undefined } };
   CreateTradeOrder: { readonly maker_id: BigNumberish; readonly taker_id: BigNumberish; readonly offered_resource: BigNumberish; readonly requested_resource: BigNumberish; readonly offered_per_lot: BigNumberish; readonly requested_per_lot: BigNumberish; readonly lots: BigNumberish; readonly expires_at: BigNumberish };
   AcceptTradeOrder: { readonly trade_id: BigNumberish; readonly taker_id: BigNumberish; readonly lots: BigNumberish };
   CancelTradeOrder: BigNumberish;
@@ -119,7 +119,7 @@ export interface NativeCommandPayloads {
   AllocateHyperstructureShares: { readonly hyperstructure_id: BigNumberish; readonly shareholders: readonly ({ readonly player: BigNumberish; readonly bps: BigNumberish })[] };
   SetConstructionAccess: { readonly hyperstructure_id: BigNumberish; readonly access: { readonly kind: "Public"; readonly value: undefined } | { readonly kind: "Private"; readonly value: undefined } | { readonly kind: "GuildOnly"; readonly value: undefined } };
   OpenRelicChest: { readonly explorer_id: BigNumberish; readonly coord: { readonly alt: boolean; readonly x: BigNumberish; readonly y: BigNumberish } };
-  ApplyRelic: { readonly entity_id: BigNumberish; readonly relic_id: BigNumberish; readonly recipient: { readonly kind: "Explorer"; readonly value: undefined } | { readonly kind: "StructureProduction"; readonly value: undefined } | { readonly kind: "StructureGuard"; readonly value: undefined } };
+  ApplyRelic: { readonly entity_id: BigNumberish; readonly relic_id: BigNumberish; readonly recipient: { readonly kind: "Explorer"; readonly value: undefined } | { readonly kind: "StructureProduction"; readonly value: undefined } | { readonly kind: "StructureGuard"; readonly value: undefined } | { readonly kind: "ArmySlot"; readonly value: BigNumberish } };
   CloseSeason: undefined;
   PledgeFaith: { readonly structure_id: BigNumberish; readonly wonder_id: BigNumberish };
   RemoveFaith: BigNumberish;

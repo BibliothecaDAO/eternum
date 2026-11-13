@@ -23,7 +23,7 @@ pub fn create_site(key: crate::resources::ResourceKey, guards: Span<crate::troop
 }
 
 pub fn clear_rewarded_site(key: crate::resources::ResourceKey, site: ExpeditionSite, result: SiteClear, depth: u8) {
-    if site.category != crate::taxonomy::RUIN_CATEGORY {
+    if site.category != crate::taxonomy::RUIN_CATEGORY || crate::logic::army_relics::enabled(key.game_id) {
         clear_site(key, result);
         return;
     }
@@ -73,7 +73,7 @@ pub fn depth_rules_at(game_id: u32, coord: Coord) -> DepthRules {
 }
 
 pub fn depth_at(game_id: u32, coord: Coord) -> u8 {
-    let spacing = crate::logic::settlement::rules(game_id).spacing;
+    let spacing = crate::logic::preset_record::for_game(game_id).settlement_spacing.read();
     (coord.y / spacing % 4).try_into().unwrap()
 }
 

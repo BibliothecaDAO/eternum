@@ -1,5 +1,5 @@
 use snforge_std::interact_with_state;
-use starknet::storage::{StorageMapReadAccess, StoragePointerReadAccess};
+use starknet::storage::{StorageMapReadAccess, StorageMapWriteAccess, StoragePointerReadAccess};
 use world_test_support::tests::Deployment;
 use world_test_support::tests::resource_commands::execute_in_game;
 use crate::commands::Command;
@@ -131,7 +131,7 @@ fn ending_the_lights_restores_another_armys_stamina_from_the_clear_timestamp() {
     explore_once(waiting, waiting_home, 0, before_clear);
     let before = first_slot_stamina(waiting, waiting_home);
     assert_eq!(
-        before, crate::troops::Stamina { amount: 100, settled_at: before_clear.try_into().unwrap(), remainder: 0 },
+        before, crate::troops::Stamina { amount: 160, settled_at: before_clear.try_into().unwrap(), remainder: 0 },
     );
     explore_once(finisher, finisher_home, 1, cleared_at);
     interact_with_state(
@@ -150,12 +150,12 @@ fn ending_the_lights_restores_another_armys_stamina_from_the_clear_timestamp() {
     explore_once(waiting, waiting_home, 0, cleared_at + 120);
     assert_eq!(
         first_slot_stamina(waiting, waiting_home),
-        crate::troops::Stamina { amount: 81, settled_at: (cleared_at + 120).try_into().unwrap(), remainder: 600000 },
+        crate::troops::Stamina { amount: 141, settled_at: (cleared_at + 120).try_into().unwrap(), remainder: 600000 },
     );
     explore_once(waiting, waiting_home, 0, cleared_at + 240);
     assert_eq!(
         first_slot_stamina(waiting, waiting_home),
-        crate::troops::Stamina { amount: 62, settled_at: (cleared_at + 240).try_into().unwrap(), remainder: 600000 },
+        crate::troops::Stamina { amount: 122, settled_at: (cleared_at + 240).try_into().unwrap(), remainder: 600000 },
     );
     interact_with_state(
         d.games,
@@ -290,4 +290,72 @@ fn explore_once(d: Deployment, home: ResourceKey, index: u8, timestamp: u64) {
         _ => panic!("expected an unrevealed neighbor"),
     }
     assert!(execute_in_game(d, home.game_id, action, timestamp));
+}
+
+#[test]
+fn team_lights_end_height_suppression_without_a_world_bonus_or_quest_switch() {
+    let (d, game_id) = super::aspects::setup_aspects(15);
+    for index in 0_u32..5 {
+        let (actor, _) = world_test_support::tests::deploy_player(
+            3000 + Into::<u32, felt252>::into(index), world_test_support::tests::GUARDIAN,
+        );
+        settle(world_test_support::tests::bind_player(d, actor), game_id, 360);
+    }
+    let next = interact_with_state(
+        d.games,
+        || {
+            let state = crate::state::write();
+            state.deep.team_banes.write((game_id, 1, 1), Some((2, 0, crate::quests::LIGHTS)));
+            state.banes.first_team_day.write(game_id, Some(0));
+            assert_eq!(state.troops.aspect_activity.read((game_id, 1, 0)), 5);
+            assert_eq!(crate::logic::banes::required(game_id, 1, 1), 2);
+            assert!(crate::logic::banes::kind(game_id, 1).is_none());
+            let game = crate::logic::game::game(game_id);
+            let unit = crate::logic::preset_record::for_game(game_id).rules.day_unit_seconds.read();
+            crate::days::day_of(game, unit, 360).end
+        },
+    );
+    let (first_actor, _) = world_test_support::tests::deploy_player(4001, world_test_support::tests::GUARDIAN);
+    let first = world_test_support::tests::bind_player(d, first_actor);
+    let (second_actor, _) = world_test_support::tests::deploy_player(4002, world_test_support::tests::GUARDIAN);
+    let second = world_test_support::tests::bind_player(d, second_actor);
+    let first_home = settle(first, game_id, next);
+    let second_home = settle(second, game_id, next);
+    let first_done = reveal_quest(first, first_home, next);
+    let before = interact_with_state(
+        d.games,
+        || {
+            assert_eq!(crate::logic::banes::quest_kind(first_home, 1), crate::quests::LIGHTS);
+            assert_eq!(crate::logic::banes::progress(game_id, 1, 1).completed, 1);
+            assert!(crate::logic::deep_banes::height_blocked(game_id, 1, first_done));
+            crate::logic::resources::balance(first_home, crate::resources::ESSENCE)
+        },
+    );
+    let claim = Command::ClaimDailyQuest(crate::quests::ClaimDailyQuest { home: first_home.entity_id, day: 1 });
+    assert!(execute_in_game(first, game_id, claim, first_done));
+    let second_done = reveal_quest(second, second_home, first_done);
+    assert!(execute_in_game(first, game_id, claim, second_done));
+    assert!(execute_in_game(first, game_id, claim, second_done));
+    interact_with_state(
+        d.games,
+        || {
+            let progress = crate::logic::banes::progress(game_id, 1, 1);
+            assert_eq!(progress.completed, 2);
+            assert_eq!(progress.ended_at, second_done);
+            assert!(crate::logic::deep_banes::height_blocked(game_id, 1, second_done - 1));
+            assert!(!crate::logic::deep_banes::height_blocked(game_id, 1, second_done));
+            assert_eq!(crate::logic::banes::quest_kind(first_home, 1), crate::quests::LIGHTS);
+            assert!(!crate::logic::banes::won(first_home, 1));
+            assert!(crate::state::read().banes.bonus_grants.read((game_id, first_home.entity_id, 1)).is_none());
+            assert_eq!(
+                crate::logic::resources::balance(first_home, crate::resources::ESSENCE),
+                before + 1500 * crate::rules::RESOURCE_PRECISION,
+            );
+            assert_eq!(
+                crate::state::read().entry.home_labor_grants.read((game_id, first_home.entity_id, 1)),
+                Some((first.actor, 1000 * crate::rules::RESOURCE_PRECISION, 1500 * crate::rules::RESOURCE_PRECISION)),
+            );
+            assert!(crate::logic::banes::effects(first_home, next, second_done + 1).windows.is_empty());
+        },
+    );
 }

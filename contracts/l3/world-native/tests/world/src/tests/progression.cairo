@@ -206,9 +206,9 @@ fn reveals_and_clears_pay_their_xp() {
         d.games,
         || {
             crate::logic::progression::award_xp(
-                key, crate::progression::XpAward::Reveal(crate::troops::Coord { alt: false, x: 1, y: 1 }),
+                key, crate::progression::XpAward::Reveal(crate::troops::Coord { alt: false, x: 1, y: 1 }), 0,
             );
-            crate::logic::progression::award_xp(key, crate::progression::XpAward::Clear(90));
+            crate::logic::progression::award_xp(key, crate::progression::XpAward::Clear(90), 0);
         },
     );
     assert_eq!(read_progress(d, key).xp, 2 + 90);
@@ -365,18 +365,41 @@ fn homecoming_returns_each_expired_armys_own_share_of_its_survivors() {
                 .write(
                     (game_id, 1), crate::resources::Weight { capacity: 0xffffffffffffffffffffffffffffffff, weight: 0 },
                 );
-            // The first army ends the day 10,000 strong at epic Homecoming, the second 1,000 strong at rare.
-            for (key, count, homecoming) in array![(first, 10_000_u128, 4_u8), (second, 1_000, 3)] {
-                let mut troops = crate::logic::troops::explorer(key).unwrap().troops;
-                troops.count = count * troop;
-                crate::logic::troops::TroopState::update_troops(key, troops);
-                crate::logic::progression::write(key, ArmyProgress { homecoming, ..crate::progression::initial() });
-            }
             let troops = crate::logic::troops::explorer(first).unwrap().troops;
             crate::troops::stock_resource(troops.category, troops.tier)
         },
     );
     let resources = crate::resources::IResourceOperationsDispatcher { contract_address: d.games };
+    // Each survivor count retains the carrying capacity earned by those troops.
+    let context = crate::commands::resource_context(crate::tests::context(d.games, game_id));
+    snforge_std::start_cheat_caller_address(d.games, d.games);
+    for (key, count, homecoming) in array![(first, 10_000_u128, 4_u8), (second, 1_000, 3)] {
+        let mut troops = super::state::GameState { contract_address: d.games }.explorer(key).unwrap().troops;
+        resources
+            .change_explorer_capacity(
+                crate::resources::ResourceKey { game_id, entity_id: key.explorer_id },
+                count * troop - troops.count,
+                true,
+                context,
+            );
+        troops.count = count * troop;
+        let troops = troops;
+        snforge_std::interact_with_state(
+            d.games,
+            || {
+                crate::logic::troops::TroopState::update_troops(key, troops);
+                crate::logic::progression::write(key, ArmyProgress { homecoming, ..crate::progression::initial() });
+                assert_eq!(
+                    crate::logic::resources::weight(
+                        crate::resources::ResourceKey { game_id, entity_id: key.explorer_id },
+                    )
+                        .capacity,
+                    count * troop * Into::<u32, u128>::into(context.troop_capacity),
+                );
+            },
+        );
+    }
+    snforge_std::stop_cheat_caller_address(d.games);
     let slot = crate::resources::ResourceSlot { game_id, entity_id: 1, resource_type: stock };
     let before = resources.resource_balance(slot);
     let tomorrow = super::registrar::day_start(d, game_id, 1);

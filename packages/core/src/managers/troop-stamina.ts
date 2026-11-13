@@ -1,5 +1,6 @@
 import { baneRateReader } from "../utils/world-banes";
 import { nativeBaneConstants as bane } from "../../../../contracts/l3/world-native/schema/client.gen";
+import { currentArmy } from "../utils/deep";
 import { troopTierIndex, TroopTier, TroopType, type Troops } from "@bibliothecadao/types";
 import type { NativeFactStore } from "../client/native-fact-store";
 import { battleBonusBps, logisticsStamina } from "../utils/attribute-tiers";
@@ -101,10 +102,12 @@ export function resolveExplorerTroops(
   store: NativeFactStore,
   explorer: NativeRows["ExplorerTroops"],
 ): Troops | undefined {
+  explorer = currentArmy(store, explorer);
   const source = explorer.troops.stamina;
   if ("Inline" in source) return inlineTroops(explorer.troops);
-  const epoch = slotEpoch(store);
-  if (epoch === undefined) return undefined;
+  const day = store.get("ArmyDay", { game_id: explorer.game_id, explorer_id: explorer.explorer_id });
+  if (!day) return undefined;
+  const epoch = day.day;
   const result = store.requireOrAbsent("ArmySlot", {
     game_id: explorer.game_id,
     structure_id: explorer.owner,

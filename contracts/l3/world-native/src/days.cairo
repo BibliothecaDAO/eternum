@@ -69,6 +69,20 @@ pub fn bag_lengths(seed: felt252, bag: u64) -> u64 {
     order_lengths((draw % BAG_ORDERS).try_into().unwrap())
 }
 
+/// Resolve a recorded army day through the same calendar used by current-day commands.
+pub fn day_at_index(game: GameRegistry, unit_seconds: u32, index: u64) -> Day {
+    let bag = index / DAYS_PER_BAG;
+    let mut lengths = bag_lengths(game.seed, bag);
+    let mut units = bag * UNITS_PER_BAG;
+    for _ in 0..index % DAYS_PER_BAG {
+        units += lengths % DIGIT;
+        lengths /= DIGIT;
+    }
+    let day = day_of(game, unit_seconds, game.start_main_at + units * Into::<u32, u64>::into(unit_seconds));
+    assert!(day.index == index, "army day outside calendar");
+    day
+}
+
 /// A bag order in [0, 96) builds the bag by inserting the lengths one at a time: 4 beside 3, then 5, then 6 anywhere,
 /// which gives each of the 24 orders of the long days once, and last the 2-unit day after one of the long days. So no
 /// bag opens with the short day, and two short days never touch, across bags included.

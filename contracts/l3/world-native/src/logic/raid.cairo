@@ -121,6 +121,11 @@ pub mod RaidLogic {
             crate::logic::map::MapState::vacate(key, id);
             id
         }
+        fn reveal_relic_tiles(
+            ref self: ContractState, game_id: u32, coord: Coord, count: u8, game_context: crate::commands::BiomeContext,
+        ) {
+            crate::logic::army_relics::reveal_tiles(game_id, coord, count, game_context);
+        }
         fn reveal_relic_ring(
             ref self: ContractState,
             game_id: u32,

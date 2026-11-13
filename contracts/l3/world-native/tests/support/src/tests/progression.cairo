@@ -77,6 +77,7 @@ fn damage_at_battle(
     };
     let context = crate::combat::CombatContext {
         timestamp: 360,
+        day_unit_seconds: rules.day_unit_seconds,
         attacker_roll: 0,
         defender_roll: 0,
         attacker_biome: crate::biome::Biome::Grassland,

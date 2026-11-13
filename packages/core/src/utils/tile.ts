@@ -1,4 +1,9 @@
-import { activeTileOccupancy } from "./ruins";
+import { currentArmy, deepTerrain } from "./deep";
+import { ruinDisappeared } from "./ruins";
+import { isArmyCurrent } from "./expeditions";
+import { isTileOccupierArmy } from "./map/hex";
+import { TileOccupier } from "@bibliothecadao/types";
+import type { NativeKeys, NativeRows } from "../../../../contracts/l3/world-native/schema/client.gen";
 import { BiomeIdToType, type BiomeType, type Tile } from "@bibliothecadao/types";
 import type { NativeFactStore } from "../client/native-fact-store";
 import { configManager } from "../managers/config-manager";
@@ -8,23 +13,24 @@ export { tileFactsToTile } from "./tile-facts";
 export const DEFAULT_COORD_ALT = false;
 
 export function getTileAt(
-  store: NativeFactStore,
+  store: Pick<NativeFactStore, "get" | "inGame">,
   alt: boolean,
   col: number,
   row: number,
   gameId = configManager.getActiveGameId(),
 ): Tile | undefined {
   const key = { game_id: gameId, alt, col, row };
-  return tileFactsToTile(key, store.get("TileOpt", key), activeTileOccupancy(store, key));
+  return tileFactsToTile(key, deepTerrain(store, key) ?? store.get("TileOpt", key), activeTileOccupancy(store, key));
 }
 
-/** The canonical tile occupied by a live entity; a missing position is an incomplete fact set. */
+/** The canonical map position, including an army garrisoned in a Deep site; a missing position is an incomplete fact set. */
 export function entityMapPosition(
-  store: Pick<NativeFactStore, "entityOccupancy">,
+  store: Pick<NativeFactStore, "entityOccupancy" | "get">,
   gameId: number,
   entityId: number | bigint,
 ): { x: number; y: number; alt: boolean } {
-  const tile = store.entityOccupancy(gameId, entityId);
+  const guard = store.get("DeepGuard", { game_id: gameId, explorer_id: BigInt(entityId) });
+  const tile = store.entityOccupancy(gameId, guard?.site_id ?? entityId);
   if (!tile) throw new Error(`Missing native position for entity ${gameId}:${entityId}`);
   return { x: tile.col, y: tile.row, alt: tile.alt };
 }
@@ -49,4 +55,21 @@ export function storedBiomeAt(
 ): BiomeType | undefined {
   const tile = getTileAt(store, alt, col, row, gameId);
   return tile && tile.biome !== 0 ? biomeTypeOf(tile.biome) : undefined;
+}
+
+/** Occupancy as commands see it: expired armies and vanished ruins leave walkable terrain without erasing the raw facts. */
+export function activeTileOccupancy(
+  store: Pick<NativeFactStore, "get" | "inGame">,
+  key: NativeKeys["TileOccupancy"],
+): NativeRows["TileOccupancy"] | undefined {
+  const occupancy = store.get("TileOccupancy", key);
+  if (occupancy && isTileOccupierArmy(occupancy.category) && !isArmyCurrent(store, key.game_id, occupancy.entity_id))
+    return undefined;
+  if (occupancy && isTileOccupierArmy(occupancy.category)) {
+    const army = store.get("ExplorerTroops", { game_id: key.game_id, explorer_id: occupancy.entity_id });
+    if (army && currentArmy(store, army).troops.count === 0n) return undefined;
+  }
+  if (occupancy?.category !== TileOccupier.Ruin) return occupancy;
+  const site = store.get("ExpeditionSite", { game_id: key.game_id, entity_id: occupancy.entity_id });
+  return site && ruinDisappeared(store, site) ? undefined : occupancy;
 }

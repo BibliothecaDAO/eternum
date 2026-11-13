@@ -332,7 +332,10 @@ describe("home ring", () => {
       });
       const army = (stamina: bigint) => rowEvent("ExplorerTroops", ["1", "20"], explorerValue("1", 1000n, stamina, 1n));
       const balance = (amount: bigint) => rowEvent("ResourceBalance", ["1", "1", "23"], { balance: amount });
-      const muster = receipt([army(30n), occupancy(51), balance(10n)], "0x71");
+      const muster = receipt(
+        [rowEvent("ArmyDay", ["1", "20"], { day: TODAY.index }), army(30n), occupancy(51), balance(10n)],
+        "0x71",
+      );
       if (!musterDuringStream) native.applyReceipt(fold, muster, 10, 0);
       const messages = connect(live, "0xa");
       const store = new NativeFactStore();
@@ -458,7 +461,7 @@ describe("home ring", () => {
     const { fold } = frontierWorld();
     const scope = fold.subscriptionScope("1", "0xa", MID_DAY);
     expect(scope.expedition?.day).toBe(0);
-    expect(scope.expedition?.regions).toEqual(new Set(["0:0"]));
+    expect(scope.expedition?.regions).toEqual(new Set(["0:3", "0:0"]));
     for (const [model, key] of [
       ["ArmySlot", { structure_id: "1", slot: "0" }],
       ["ExpeditionDiscovery", { structure_id: "1" }],
@@ -691,6 +694,7 @@ describe("client and Herald subscription scope parity", () => {
             explorer_id: 20,
             stamina: { amount: 30, settled_at: 1, remainder: 0 },
           }),
+          rowEvent("ArmyDay", ["1", "20"], { day: TODAY.index }),
           rowEvent("ExplorerTroops", ["1", "20"], {
             ...army,
             troops: { ...troops, stamina: new CairoCustomEnum({ Slot: 0 }) },
@@ -768,6 +772,7 @@ describe("client and Herald subscription scope parity", () => {
           explorer_id: 20,
           stamina: { amount: 30, settled_at: 1, remainder: 0 },
         }),
+        rowEvent("ArmyDay", ["1", "20"], { day: TODAY.index }),
         rowEvent("ExplorerTroops", ["1", "20"], {
           ...army,
           troops: { ...(army.troops as Record<string, unknown>), stamina: new CairoCustomEnum({ Slot: 0 }) },
@@ -820,6 +825,7 @@ describe("client and Herald subscription scope parity", () => {
           explorer_id: 20,
           stamina: { amount: 30, settled_at: 1, remainder: 0 },
         }),
+        rowEvent("ArmyDay", ["1", "20"], { day: TODAY.index }),
         rowEvent("ExplorerTroops", ["1", "20"], {
           ...army,
           troops: { ...(army.troops as Record<string, unknown>), stamina: new CairoCustomEnum({ Slot: 0 }) },
@@ -971,6 +977,7 @@ describe("visited realm subscription", () => {
           paused: false,
           labor_paid: 200000000000n,
         }),
+        rowEvent("ArmyDay", ["1", "20"], { day: TODAY.index }),
         rowEvent("ExplorerTroops", ["1", "20"], explorerValue("2", 1000n, 30n, 1n)),
         rowEvent("TileOccupancy", ["1", "0", "150", "150"], { entity_id: 20, category: 15, is_structure: false }),
         rowEvent("TileOpt", ["1", "0", "150", "150"], { data: 5n << 41n }),
@@ -993,7 +1000,7 @@ describe("visited realm subscription", () => {
     expect(snapshot.filter((row) => row.model === "ExplorerTroops")).toHaveLength(1);
     expect(schema.models.some(({ name }) => name === "ActionNonce")).toBe(false);
     expect(tilesIn(messages).some((row) => Number(row.value.col) >= 100)).toBe(false);
-    expect(fold.subscriptionScope("1", "0xa", MID_DAY, "0xbb").expedition?.regions).toEqual(new Set(["0:0"]));
+    expect(fold.subscriptionScope("1", "0xa", MID_DAY, "0xbb").expedition?.regions).toEqual(new Set(["0:3", "0:0"]));
     messages.length = 0;
     live.selectActor(session, "0xa");
     const scope = messages.find((message) => message.type === "scope")!;

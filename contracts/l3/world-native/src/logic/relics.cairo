@@ -5,6 +5,7 @@ pub mod RelicState {
     use starknet::storage::{StorageMapReadAccess, StorageMapWriteAccess, StoragePointerReadAccess};
     use crate::commands::ExecutionContext;
     use crate::game::{IPointsDispatcherTrait, IPointsLibraryDispatcher, assert_playing};
+    use crate::logic::army_slot_storage;
     use crate::logic::release::ReleaseState;
     use crate::logic::release::ReleaseState::InternalTrait as LifeInternalTrait;
     use crate::progression::{ScoutingKind, SkillPointUse};
@@ -15,7 +16,7 @@ pub mod RelicState {
     };
     use crate::resources::{IResourceOperationsDispatcherTrait, IResourceOperationsLibraryDispatcher, ResourceKey};
     use crate::stamina::{StaminaSourceTrait, StaminaTrait};
-    use crate::troops::{ExplorerKey, ExplorerRecordTrait};
+    use crate::troops::{ArmySlotAction, ExplorerKey, ExplorerRecordTrait, ResolvedArmySlot};
 
     #[storage]
     #[allow(starknet::colliding_storage_paths)]
@@ -46,7 +47,7 @@ pub mod RelicState {
             crate::logic::lords_budget::site_chest(key)
         }
         fn relic_rules(self: @ComponentState<TContractState>, game_id: u32) -> Span<RelicRule> {
-            if self.chest_rules(game_id).is_some() {
+            if crate::logic::game::rules(game_id).day_unit_seconds != 0 {
                 return array![].span();
             }
             let preset = crate::logic::preset_record::for_game(game_id);
@@ -91,6 +92,11 @@ pub mod RelicState {
             let context = crate::commands::execution_context(game_id, context);
 
             self.assert_command(game_id, context.timestamp, context);
+            if let Recipient::ArmySlot(index) = command.recipient {
+                self.activate_army_relic(game_id, actor, command, index, context);
+                return;
+            }
+            assert!(!crate::logic::army_relics::enabled(game_id), "use an army relic slot");
             assert!(
                 command.relic_id >= crate::relics::FIRST_RELIC && command.relic_id <= crate::relics::LAST_RELIC,
                 "invalid relic resource",
@@ -137,9 +143,12 @@ pub mod RelicState {
             crate::logic::progression::rules(game_id)
         }
         fn grant_army_xp(
-            ref self: ComponentState<TContractState>, key: ExplorerKey, award: crate::progression::XpAward,
+            ref self: ComponentState<TContractState>,
+            key: ExplorerKey,
+            award: crate::progression::XpAward,
+            timestamp: u64,
         ) {
-            crate::logic::progression::award_xp(key, award);
+            crate::logic::progression::award_xp(key, award, timestamp);
         }
         fn spend_skill_point(
             ref self: ComponentState<TContractState>,
@@ -204,6 +213,20 @@ pub mod RelicState {
             let context = crate::commands::execution_context(game_id, context);
             self.assert_command(game_id, context.timestamp, context);
             assert!(context.rules.unbox().day_unit_seconds != 0, "site requires expedition");
+            let deep_site = match crate::logic::map::occupancy(crate::geometry::tile_key(game_id, command.coord)) {
+                Some(occupied) => occupied.category == crate::taxonomy::DEEP_SITE_OCCUPIER,
+                None => false,
+            };
+            if deep_site {
+                crate::deep::IDeepSitesDispatcherTrait::join_deep_site(
+                    crate::logic::deep_sites::dispatcher(game_id),
+                    game_id,
+                    actor,
+                    command,
+                    crate::commands::action_context(context),
+                );
+                return;
+            }
             let key = ExplorerKey { game_id, explorer_id: command.explorer_id };
             let explorer = crate::logic::troops::command_explorer(key, Some(actor), context.timestamp, context);
             assert!(explorer.troops.count != 0, "explorer is dead");
@@ -256,8 +279,6 @@ pub mod RelicState {
         fn army_slot_stamina(
             ref self: ComponentState<TContractState>, key: ExplorerKey, action: crate::troops::ArmySlotAction,
         ) -> crate::troops::ResolvedArmySlot {
-            use crate::troops::{ArmySlotAction, ResolvedArmySlot};
-            use crate::logic::army_slot_storage;
             if let ArmySlotAction::Allocate(value) = action {
                 let home = crate::resources::ResourceKey { game_id: key.game_id, entity_id: value.home };
                 let progress = crate::logic::progression::create(key, crate::logic::research::learned(home));
@@ -288,6 +309,7 @@ pub mod RelicState {
                 },
                 ArmySlotAction::Release(stamina) => {
                     if let crate::troops::StaminaSource::Slot(_) = explorer.troops.stamina {
+                        crate::logic::army_relics::destroy(key);
                         crate::logic::progression::destroy(key);
                     }
                     explorer.troops.stamina = stamina;
@@ -311,11 +333,18 @@ pub mod RelicState {
             ref self: ComponentState<TContractState>,
             site: ResourceKey,
             explorer_id: u64,
+            relic_slot: Option<u8>,
             context: crate::commands::ActionContext,
         ) -> () {
             let context = crate::commands::execution_context(site.game_id, context);
             let explorer_key = ExplorerKey { game_id: site.game_id, explorer_id };
             let explorer = crate::logic::troops::command_explorer(explorer_key, None, context.timestamp, context);
+            if crate::logic::army_relics::enabled(site.game_id)
+                && crate::logic::expeditions::expedition_site(site)
+                    .expect('missing expedition site')
+                    .category == crate::taxonomy::RUIN_CATEGORY {
+                crate::logic::army_relics::award(explorer_key, site, relic_slot);
+            }
             self.refund_capture_stamina(explorer_key, explorer, context);
             if context.rules.unbox().day_unit_seconds != 0 {
                 crate::expeditions::ISiteRewardsDispatcherTrait::pay_expedition_site(
@@ -391,6 +420,29 @@ pub mod RelicState {
         impl Life: ReleaseState::HasComponent<TContractState>,
         +Drop<TContractState>,
     > of InternalTrait<TContractState> {
+        fn activate_army_relic(
+            self: @ComponentState<TContractState>,
+            game_id: u32,
+            actor: ContractAddress,
+            command: ApplyRelic,
+            index: u8,
+            context: ExecutionContext,
+        ) {
+            assert!(crate::logic::army_relics::enabled(game_id), "army relics are disabled");
+            let key = ExplorerKey { game_id, explorer_id: command.entity_id };
+            let explorer = crate::logic::troops::command_explorer(key, Some(actor), context.timestamp, context);
+            let relic = crate::logic::army_relics::activate(key, index, command.relic_id, context.timestamp);
+            if relic.kind == crate::army_relics::RelicKind::FarEye {
+                IRelicMapLibraryDispatcher { class_hash: self.logic_classes(game_id).raid.read() }
+                    .reveal_relic_tiles(
+                        game_id,
+                        explorer.coord,
+                        relic.rank * crate::rules::RELIC_TILES_PER_RANK,
+                        crate::commands::biome_context(context),
+                    );
+            }
+        }
+
         /// Adds stamina to a slot army's bar, up to its own maximum: a well's or a skill point's.
         fn grant_stamina(
             self: @ComponentState<TContractState>,

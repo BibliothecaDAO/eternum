@@ -143,6 +143,7 @@ fn write_economy(
     preset: PresetWrite, commitment: felt252, rules: crate::rules::SliceRules, economy: crate::presets::EconomyPreset,
 ) {
     preset.labor_rules.write(economy.labor);
+    preset.race_rules.write(economy.race);
     preset.trade_rules.write(economy.trade);
     write_banks(preset, economy.banks);
     write_hyperstructures(preset, rules, economy.hyperstructures);
@@ -157,6 +158,7 @@ fn write_economy(
     );
     preset.progression_rules.write(economy.progression);
     preset.discovery_rules.write(economy.discovery);
+    preset.deep_rules.write(economy.deep);
     preset.artificer_cost.write(economy.research_cost);
     if let Some(withdrawals) = economy.withdrawals {
         crate::presets::IPresetWithdrawalsDispatcherTrait::store_withdrawal_preset(
@@ -484,6 +486,9 @@ pub fn store_relics(
             "invalid chest shares",
         );
         assert!(rules.is_empty(), "ruin chests replace timed relics");
+    } else if day_unit_seconds != 0 {
+        assert!(rules.is_empty(), "army relic loadouts replace resource relics");
+        assert!(mode_rules & crate::rules::DISCOVER_CHESTS == 0, "army relics have no LORDS chests");
     } else {
         assert!(rules.len() == 18, "all eighteen relic rules required");
         let mut total: u128 = 0;
