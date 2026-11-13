@@ -17,8 +17,7 @@ export default defineConfig({
     // The asset and CLI checks run through vitest.assets.config.ts (`pnpm verify:assets`) where the artefacts
     // they check are produced; the PR gate stays a behaviour suite.
     exclude: ["**/node_modules/**", "**/dist/**", ...ASSET_CHECK_FILES],
-    env: {
-    },
+    env: {},
     globals: true,
     // The shared machine caps test workers with VITEST_MAX_WORKERS, which vitest 2 does not read (only
     // VITEST_MAX_FORKS/THREADS), so local runs took every core but one. Unset, as on CI, vitest keeps its default.

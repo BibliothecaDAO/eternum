@@ -19,7 +19,9 @@ it.each(Object.keys(settings))("rejects missing %s before health or scheduled wo
   await expect(worker.fetch(new Request(settings.BASE_URL + "/api/value/health"), env)).rejects.toThrow(
     "relay_environment_invalid",
   );
-  await expect(worker.scheduled({ scheduledTime: 0 } as ScheduledController, env)).rejects.toThrow("relay_environment_invalid");
+  await expect(worker.scheduled({ scheduledTime: 0 } as ScheduledController, env)).rejects.toThrow(
+    "relay_environment_invalid",
+  );
   expect(get).not.toHaveBeenCalled();
 });
 it("requires the canonical HTTPS RPC without exposing configuration values", () => {

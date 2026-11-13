@@ -138,7 +138,8 @@ const withdrawalsWorthReading = (
         continue;
       }
       const wallet = yield* Effect.result(ports.identity.linkedWallet(withdrawal.realmsId));
-      if (Result.isFailure(wallet)) deferred.push({ key: withdrawal.transactionHash, reason: wallet.failure.operation });
+      if (Result.isFailure(wallet))
+        deferred.push({ key: withdrawal.transactionHash, reason: wallet.failure.operation });
       else if (wallet.success) worth.push(withdrawal);
       else deferred.push({ key: withdrawal.transactionHash, reason: "withdrawal_wallet_unlinked" });
     }

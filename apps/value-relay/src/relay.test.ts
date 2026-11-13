@@ -233,7 +233,15 @@ describe("confirmed value relay", () => {
     expect(f.ports.ledger.voided).toHaveBeenCalledTimes(voidedAfterReport);
     f.ports.identity.linkedWallet = () => Effect.succeed("0x456");
     f.ports.ledger.payment = () =>
-      Effect.succeed({ reportedAt: 0, prizeRank: 0, prizeCount: 0, paid: false, seasonId: 4, wallet: "0", amount: "17" });
+      Effect.succeed({
+        reportedAt: 0,
+        prizeRank: 0,
+        prizeCount: 0,
+        paid: false,
+        seasonId: 4,
+        wallet: "0",
+        amount: "17",
+      });
     await f.run();
     expect(f.single.pay).toHaveBeenCalledWith({ ...withdrawal, reported: true }, "0x456");
   });

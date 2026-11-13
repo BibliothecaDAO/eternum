@@ -387,7 +387,11 @@ it("derives all three health addresses from the play origin", async () => {
 });
 it.each([
   ["guardian", "/api/guardian", { publicKey: "0x1" }],
-  ["monitor", "/api/operator/monitor/health", { service: "value-monitor", success: true, checked_at: now - (LEDGER_READ_STALE_SECONDS + 1) }],
+  [
+    "monitor",
+    "/api/operator/monitor/health",
+    { service: "value-monitor", success: true, checked_at: now - (LEDGER_READ_STALE_SECONDS + 1) },
+  ],
   ["monitor", "/api/operator/monitor/health", { service: "value-relay", success: true, checked_at: now }],
 ] as const)("reports malformed or stale %s health as down", async (id, path, body) => {
   const result = await probeServices(network({ [valueTargets.playUrl + path]: response(body) }), now, [], valueTargets);

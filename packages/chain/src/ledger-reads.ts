@@ -9,4 +9,5 @@ export const LEDGER_READ_STALE_SECONDS = 2 * LEDGER_READ_PERIOD_SECONDS;
 
 /** Whether the cron tick scheduled at this time (milliseconds, as Cloudflare gives it) is a ledger-reading tick. */
 export const isLedgerReadTick = (scheduledTime: number): boolean =>
-  Math.floor(scheduledTime / 1000 / 60) % (LEDGER_READ_PERIOD_SECONDS / 60) === 0;
+  Math.floor(scheduledTime / 1000 / 60) % (LEDGER_READ_PERIOD_SECONDS / 60) ===
+  0;
