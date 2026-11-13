@@ -8,8 +8,8 @@ fn exploring_at_each_depth_awards_exact_xp_once() {
         place_army_at_depth(d, key, depth);
 
         let before = read_progress(d, key);
-        let target = super::frontier_explore_chest::destination(d, key);
-        super::frontier_explore_chest::explore(d, key, super::frontier_explore_chest::HIT_ROOT, 360);
+        let target = exploration_destination(d, key);
+        explore(d, key, 19635, 360);
         let after = read_progress(d, key);
         assert_eq!(after, ArmyProgress { xp: before.xp + xp, ..before });
         assert!(map.tile(crate::geometry::tile_key(game_id, target)).is_some());
@@ -516,8 +516,8 @@ fn discovery_stores_a_depth_scaled_point_and_public_use_grants_it_once_without_x
         let root = super::registrar::discovery_root(
             game_id, unlocked, 0, Some(super::registrar::any_relic()), crate::discovery::Discovery::Shrine,
         );
-        let target = super::frontier_explore_chest::destination(d, key);
-        super::frontier_explore_chest::explore(d, key, root, 360);
+        let target = exploration_destination(d, key);
+        explore(d, key, root, 360);
         let occupied = snforge_std::interact_with_state(
             d.games, || crate::logic::map::occupancy(crate::geometry::tile_key(game_id, target)).unwrap(),
         );

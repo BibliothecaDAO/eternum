@@ -204,6 +204,7 @@ pub mod TroopState {
 #[starknet::contract]
 pub mod TroopsLogic {
     use starknet::ContractAddress;
+    use starknet::storage::StoragePointerReadAccess;
     use crate::commands::CreateExplorer;
     use crate::game::assert_playing;
     use crate::geometry::{neighbor, tile_key};

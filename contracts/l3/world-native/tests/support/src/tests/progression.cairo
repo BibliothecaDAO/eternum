@@ -131,3 +131,12 @@ pub fn place_army_at_depth(d: super::Deployment, key: crate::troops::ExplorerKey
     map.reveal(tile, 2);
     super::resource_commands::set_explorer_fixture(d.games, key, army);
 }
+
+pub fn exploration_destination(d: super::Deployment, key: crate::troops::ExplorerKey) -> crate::troops::Coord {
+    crate::geometry::neighbor(
+        super::state::GameState { contract_address: d.games }.resolved_explorer(key).unwrap().coord, 0,
+    )
+}
+pub fn explore(d: super::Deployment, key: crate::troops::ExplorerKey, root: u256, timestamp: u64) {
+    assert!(super::registrar::explore_with_root(d, key.game_id, key.explorer_id, root, timestamp));
+}
