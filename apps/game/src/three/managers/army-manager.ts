@@ -1,4 +1,4 @@
-import { currentArmy } from "@bibliothecadao/eternum";
+import { currentArmy, nextSkillPoint } from "@bibliothecadao/eternum";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { nextFrameOrTimeout } from "@/utils/frame-or-timeout";
 import { armyNumber, resolveExplorerTroops } from "@bibliothecadao/eternum/troop-stamina";
@@ -1276,6 +1276,14 @@ export class ArmyManager {
     return slot;
   }
 
+  /** The viewer's army's way to its next skill point, from its progress and the game's thresholds; none while unknown. */
+  private xpShareOf(entityId: ID): number | undefined {
+    const gameId = configManager.getActiveGameId();
+    const progress = this.store?.get("ArmyProgress", { game_id: gameId, explorer_id: entityId });
+    const rules = this.store?.get("ArmyProgressionRules", { game_id: gameId });
+    return progress && rules ? nextSkillPoint(progress.xp, rules).share : undefined;
+  }
+
   private updateArmyCompactLabel(army: ArmyData, position: Vector3): void {
     if (!this.shouldShowArmyCompactLabel(army)) {
       this.plates.removeLabel(army.entityId);
@@ -1291,6 +1299,7 @@ export class ArmyManager {
           ...army,
           isAlly: arePlayersAllied(this.store, accountAddress(), army.owner.address),
           watched: watchedSide(this.store, army.owner.address),
+          xpShare: army.isMine ? this.xpShareOf(army.entityId) : undefined,
         },
         this.resolveHomeRealmName(army),
         configManager.getExploreStaminaCost(),

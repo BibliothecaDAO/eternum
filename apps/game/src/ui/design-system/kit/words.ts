@@ -486,6 +486,11 @@ export const SPIRE_WORDS = {
   odds: (percent: number) => `Spire: ${percent}% on the next reveal`,
   commits: (army: string, left: string) => `${army} stays until the day ends (${left})`,
 } as const;
+/** An army's ring of XP toward its next skill point, for whoever reads the map without seeing it. */
+export const XP_RING = {
+  label: (percent: number) => `${XP}: ${percent}% of the way to the next skill point`,
+} as const;
+
 /** The Aspect page (docs/plans/frontier-season-1.md, Aspects and the hyperstructure): the race, and the player's Aspect. */
 export const ASPECT_PAGE_WORDS = {
   title: "Aspects",

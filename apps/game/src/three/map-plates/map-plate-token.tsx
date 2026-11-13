@@ -1,3 +1,4 @@
+import { XpRing } from "@/ui/design-system/kit/xp-ring";
 import { formatExact, formatPercent } from "@bibliothecadao/types";
 import { Icon, type IconMeaning } from "@/ui/design-system/icon";
 import { HudStamina, HudTierChip, type StaminaBar } from "@/ui/design-system/kit/hud-elements";
@@ -25,6 +26,8 @@ interface TokenReading {
   stamina: StaminaBar | null;
   /** To a watching viewer, its player's initial on the disk, in their seat's colour. */
   mark: PlateWatched["mark"];
+  /** The viewer's own army's way to its next skill point: a ring around the disk. */
+  xpShare: number | null;
 }
 
 export const tokenReading = (plate: MapPlate): TokenReading => {
@@ -36,6 +39,7 @@ export const tokenReading = (plate: MapPlate): TokenReading => {
       undefended: false,
       stamina: plate.stamina ?? null,
       mark: plate.watched?.mark ?? null,
+      xpShare: plate.xpShare ?? null,
     };
   const guards = plate.guards ?? [];
   return {
@@ -53,6 +57,7 @@ export const tokenReading = (plate: MapPlate): TokenReading => {
     undefended: plate.guards !== null && guards.length === 0,
     stamina: null,
     mark: plate.watched?.mark ?? null,
+    xpShare: null,
   };
 };
 
@@ -86,6 +91,7 @@ const TokenView = ({ reading }: { reading: TokenReading }) => (
   <div className="mp-token" role="img" aria-label={tokenWords(reading)}>
     <span className="mp-token__disk" data-undefended={reading.undefended}>
       <Icon name={reading.icon} size={20} />
+      {reading.xpShare !== null && <XpRing share={reading.xpShare} inset={-5} />}
       {reading.mark && (
         <span className="ui-seat mp-token__seat" data-ink={reading.mark.ink} aria-hidden>
           {reading.mark.letter}

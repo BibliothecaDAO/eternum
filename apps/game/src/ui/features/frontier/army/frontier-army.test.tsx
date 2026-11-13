@@ -267,13 +267,14 @@ it.each([
   [1500, "1,575"],
   [1575, "1,700"],
   [3000, "3,075"],
-])("shows the real next-point readout at %s XP, including in Level up", (xp, next) => {
+])("rings the portrait with the real way to the next point at %s XP, and writes no XP number", (xp, next) => {
   game.progress.xp = xp;
   game.progress.common_points = Number(xp >= game.rules.common_xp);
   useUIStore.setState((state) => ({ entityActions: { ...state.entityActions, selectedEntityId: 12 } }));
   act(() => root.render(<FrontierArmy realm={{ game_id: 1 } as never} choosing={false} onClose={vi.fn()} />));
   const readout = `${xp.toLocaleString("en-US")} / ${next} XP`;
-  expect(host.textContent).toContain(readout);
+  expect(host.querySelector(`[data-tip^="XP ${xp.toLocaleString("en-US")} of ${next} · next"]`)).not.toBeNull();
+  expect(host.textContent).not.toContain(readout);
   act(() => button(/Level[ -]up/)!.click());
-  expect(host.textContent).toContain(readout);
+  expect(host.textContent).not.toContain(readout);
 });
