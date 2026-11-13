@@ -15,7 +15,7 @@ pub fn initialize(game_id: u32) {
 }
 
 pub fn settle(game_id: u32, context: ExecutionContext) {
-    if crate::logic::deep_sites::rules(game_id).is_none() {
+    if crate::logic::deep_sites::rules_entry(game_id).is_none() {
         return;
     }
     let game = context.game.unbox();
@@ -120,7 +120,7 @@ fn pay_site(game_id: u32, kind: u8, shares: Span<DeepShare>, boundary: u64, cont
 }
 
 fn pay_quarry(game_id: u32, shares: Span<DeepShare>, boundary: u64, context: ExecutionContext) {
-    let amount = crate::logic::deep_sites::rules(game_id).expect('missing Deep rules').quarry_per_tick;
+    let amount = crate::logic::deep_sites::rules_entry(game_id).expect('missing Deep rules').quarry_per_tick.read();
     let payments = crate::race::split_payment(amount, shares);
     let state = crate::state::read();
     let release = state.releases.entry(state.game_releases.read(game_id)).classes;

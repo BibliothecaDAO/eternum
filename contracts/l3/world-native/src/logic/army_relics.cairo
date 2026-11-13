@@ -1,4 +1,4 @@
-use starknet::storage::{StorageMapReadAccess, StorageMapWriteAccess, StoragePathEntry, StoragePointerReadAccess};
+use starknet::storage::{StorageMapReadAccess, StorageMapWriteAccess, StoragePointerReadAccess};
 use crate::army_relics::{ArmyRelic, ArmyRelicEffect, ArmyRelicEffectKey, ArmyRelics, RelicKind};
 use crate::resources::ResourceKey;
 use crate::troops::ExplorerKey;

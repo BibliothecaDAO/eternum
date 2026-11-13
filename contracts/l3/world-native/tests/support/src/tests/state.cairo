@@ -168,8 +168,8 @@ pub impl TroopObservation of TroopObservationTrait {
         interact_with_state(
             self.contract_address,
             || {
-                crate::logic::troops::authorized_explorer(
-                    key, actor, timestamp, crate::commands::load_context(key.game_id, 0, timestamp),
+                crate::logic::troops::command_explorer(
+                    key, Some(actor), timestamp, crate::commands::load_context(key.game_id, 0, timestamp),
                 )
             },
         )
