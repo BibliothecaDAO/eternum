@@ -103,7 +103,7 @@ source = "contracts/l3/check-native-plan.sh"
 kinds = "gate-prelude gate-vrf gate-world gate-drift gate-events test-capture test-combat test-discovery test-economy test-lifecycle test-registration test-resources test-world"
 
 [land]
-kinds = "sizes gate-prelude gate-vrf gate-world gate-events gate-drift test-capture test-combat test-discovery test-economy test-lifecycle test-registration test-resources test-world format knip typecheck"
+kinds = "sizes gate-prelude gate-vrf gate-world gate-events gate-drift test-capture test-combat test-discovery test-economy test-lifecycle test-registration test-resources test-world format knip typecheck test-harness-confirmation"
 forbid = "co-authored-by|claude|anthropic|codex|openai|generated with|session"
 
 [kind.test-client-retirement]
@@ -156,4 +156,9 @@ estimate_gb = 4
 
 [kind.test-native-wire]
 cmd = "pnpm run build:packages && pnpm --dir packages/provider test && pnpm --dir packages/core test && pnpm --dir apps/herald exec vitest run src/native && bun test config/deployer/clean/tests/native-preset.test.ts"
+estimate_gb = 5
+
+[kind.test-harness-confirmation]
+cmd = "pnpm run build:packages && bun test deploy/athanor/harness/confirmation.test.ts"
+paths = "deploy/ packages/ config/ contracts/l3/world-native/schema/ package.json pnpm-lock.yaml .tool-versions flow.toml"
 estimate_gb = 5
