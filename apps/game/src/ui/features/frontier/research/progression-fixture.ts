@@ -119,6 +119,7 @@ const ARMY_RULES = {
 
 /** The owner's Army 1: 1,500 troops, 12 XP, 4 of 120 stamina, every attribute common. */
 export const EARLY_ARMY: ArmyDetailFacts = {
+  category: "Knight",
   learned: 0n,
   name: "Army 1",
   art: "knight-t1",
@@ -134,6 +135,7 @@ export const EARLY_ARMY: ArmyDetailFacts = {
 
 /** A veteran: 260 XP after a few clears, Battle II, Logistics III (170 stamina), Scouting II on rifts. */
 export const VETERAN_ARMY: ArmyDetailFacts = {
+  category: "Knight",
   learned: learnResearch(0n, research.ROW_SHRINE, 0),
   name: "Army 2",
   art: "knight-t1",

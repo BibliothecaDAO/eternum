@@ -315,18 +315,19 @@ it("counts season days from the exact start, whatever the time of day", () => {
 
 describe("siteReward", () => {
   it.each([
-    [548n, 137n],
-    [320n, 80n],
-  ])("previews the Beasts Labor for %s starting troops", (troops, labor) => {
+    [548n, 2192n],
+    [320n, 1280n],
+  ])("previews Cyclops wheat for %s starting troops", (troops, wheat) => {
     expect(
       siteReward(storeWith(expeditionRules) as never, {
         game_id: 7,
         row: 0,
         category: StructureType.Beasts,
+        beast_kind: "Cyclops" as const,
         initial_guard_count: troops * 1_000_000_000n,
         clear: null,
       }),
-    ).toEqual({ resourceType: ResourcesIds.Labor, amount: labor * 1_000_000_000n });
+    ).toEqual({ resourceType: ResourcesIds.Wheat, amount: wheat * 1_000_000_000n });
   });
   it("pays as the contract does: a camp half its first guard in labor, a rift three times it in Essence", () => {
     const guard = 1_100n * 1_000_000_000n;
@@ -335,6 +336,7 @@ describe("siteReward", () => {
         game_id: 7,
         row: 0,
         category: StructureType.Camp,
+        beast_kind: "None" as const,
         initial_guard_count: guard,
         clear: null,
       }),
@@ -347,6 +349,7 @@ describe("siteReward", () => {
         game_id: 7,
         row: 0,
         category: StructureType.Rift,
+        beast_kind: "None" as const,
         initial_guard_count: guard,
         clear: null,
       }),
@@ -360,6 +363,7 @@ describe("siteReward", () => {
         game_id: 7,
         row: 0,
         category: StructureType.Camp,
+        beast_kind: "None" as const,
         initial_guard_count: 3n,
         clear: null,
       })?.amount,
@@ -369,18 +373,20 @@ describe("siteReward", () => {
         game_id: 7,
         row: 0,
         category: StructureType.Beasts,
+        beast_kind: "Cyclops" as const,
         initial_guard_count: guard,
         clear: null,
       }),
     ).toEqual({
-      resourceType: ResourcesIds.Labor,
-      amount: guard / 4n,
+      resourceType: ResourcesIds.Wheat,
+      amount: guard * 4n,
     });
     expect(
       siteReward(storeWith(expeditionRules) as never, {
         game_id: 7,
         row: 0,
         category: StructureType.Ruin,
+        beast_kind: "None" as const,
         initial_guard_count: guard,
         clear: null,
       }),
@@ -394,6 +400,7 @@ describe("siteReward", () => {
         game_id: 7,
         row: 0,
         category: StructureType.Camp,
+        beast_kind: "None" as const,
         initial_guard_count: guard,
         clear: { explorer_id: 1n, home_id: 7n, reward: null },
       }),
@@ -403,6 +410,7 @@ describe("siteReward", () => {
         game_id: 7,
         row: 0,
         category: StructureType.Rift,
+        beast_kind: "None" as const,
         initial_guard_count: guard,
         clear: { explorer_id: 1n, home_id: 7n, reward: null },
       }),
@@ -422,6 +430,7 @@ describe("siteClearXp", () => {
       siteClearXp(storeWith(expeditionRules) as never, {
         game_id: 7,
         row: 0,
+        beast_kind: "None" as const,
         initial_guard_count: troops * 1_000_000_000n,
       }),
     ).toBe(xp);
@@ -429,16 +438,27 @@ describe("siteClearXp", () => {
 
   it("floors fractional troops and keeps integer square-root boundaries exact", () => {
     expect(
-      siteClearXp(storeWith(expeditionRules) as never, { game_id: 7, row: 0, initial_guard_count: 999_999_999n }),
+      siteClearXp(storeWith(expeditionRules) as never, {
+        game_id: 7,
+        row: 0,
+        beast_kind: "None" as const,
+        initial_guard_count: 999_999_999n,
+      }),
     ).toBe(0);
     expect(
-      siteClearXp(storeWith(expeditionRules) as never, { game_id: 7, row: 0, initial_guard_count: 1_999_999_999n }),
+      siteClearXp(storeWith(expeditionRules) as never, {
+        game_id: 7,
+        row: 0,
+        beast_kind: "None" as const,
+        initial_guard_count: 1_999_999_999n,
+      }),
     ).toBe(2);
     const square = (2n * 30_000_000n) ** 2n;
     expect(
       siteClearXp(storeWith(expeditionRules) as never, {
         game_id: 7,
         row: 0,
+        beast_kind: "None" as const,
         initial_guard_count: (square - 1n) * 1_000_000_000n,
       }),
     ).toBe(149_999_999);
@@ -446,6 +466,7 @@ describe("siteClearXp", () => {
       siteClearXp(storeWith(expeditionRules) as never, {
         game_id: 7,
         row: 0,
+        beast_kind: "None" as const,
         initial_guard_count: square * 1_000_000_000n,
       }),
     ).toBe(150_000_000);
@@ -498,6 +519,7 @@ it.each([
     game_id: 7,
     row: 80 + depth * 10 + 5,
     category: StructureType.Rift,
+    beast_kind: "None" as const,
     initial_guard_count: 430n * 1_000_000_000n,
     clear: null,
   };

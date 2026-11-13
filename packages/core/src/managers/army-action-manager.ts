@@ -66,7 +66,7 @@ export class ArmyActionManager {
   public canExplore(currentDefaultTick: number): boolean {
     const stamina = this.staminaManager.getStamina(currentDefaultTick);
 
-    if (Number(stamina?.amount ?? 0n) < configManager.getExploreStaminaCost()) {
+    if (Number(stamina?.amount ?? 0n) < configManager.getExploreStaminaCost(this._getTroopType())) {
       return false;
     }
 
@@ -206,7 +206,7 @@ export class ArmyActionManager {
 
   /** Why the army cannot explore now: the explore's stamina, or else its owner's food for it (canExplore). */
   private exploreRefusal(armyStamina: number): OrderRefusal {
-    const need = configManager.getExploreStaminaCost();
+    const need = configManager.getExploreStaminaCost(this._getTroopType());
     return armyStamina < need ? { reason: "stamina", need } : { reason: "food" };
   }
 
@@ -413,7 +413,7 @@ export class ArmyActionManager {
         }
       } else {
         actionType = ActionType.Explore;
-        staminaCost = configManager.getExploreStaminaCost();
+        staminaCost = configManager.getExploreStaminaCost(this._getTroopType());
       }
 
       if (staminaCost > armyStamina) {

@@ -1,3 +1,4 @@
+import { legacyRuinRules } from "@/ui/features/frontier/sites/site-fixture";
 import { ResourcesIds, StructureType } from "@bibliothecadao/types";
 
 import { wire, type LabFact, type LabScenario } from "./lab-chain";
@@ -34,6 +35,7 @@ const chestsScenario = ({ researched, claimed }: { researched: bigint; claimed: 
       game_id: 1,
       entity_id: 9_100 + depth,
       category: StructureType.Ruin,
+      beast_kind: "None" as const,
       initial_guard_count: 999n * 1_000_000_000n,
       alt: false,
       col: ruin.col,
@@ -46,6 +48,11 @@ const chestsScenario = ({ researched, claimed }: { researched: bigint; claimed: 
     }),
   });
   store.applyFacts([
+    {
+      model: "ChestRules",
+      key: "0x1ca",
+      value: wire(legacyRuinRules()),
+    },
     {
       model: "RealmKnowledge",
       key: "0xd",

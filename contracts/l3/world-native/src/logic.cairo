@@ -32,7 +32,6 @@ pub mod guilds;
 pub mod home_grants;
 pub mod hyperstructures;
 pub mod lords;
-pub mod lords_budget;
 pub mod map;
 pub mod mines;
 pub mod movement;

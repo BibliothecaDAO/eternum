@@ -106,15 +106,19 @@ describe("Frontier's camp is its Troll on the progression views (the shared stru
   });
 
   it("names the army's Scouting kind by the Troll", () => {
-    const army = readArmyDetail({ ...VETERAN_ARMY, progress: { ...VETERAN_ARMY.progress, scoutingKinds: ["camp"] } });
+    const army = readArmyDetail({
+      ...VETERAN_ARMY,
+      category: "Paladin",
+      progress: { ...VETERAN_ARMY.progress, scoutingKinds: ["camp"] },
+    });
     expect(army.attributes.find(({ key }) => key === "scouting")?.now).toBe("+10% discovery on Trolls");
     expect(JSON.stringify(army)).not.toMatch(/Camp/);
   });
 });
 
 describe("an army's detail as progression rules it", () => {
-  it("reads the owner's army: 12 of the 75 XP its first point needs, nothing to buy yet", () => {
-    const army = readArmyDetail(EARLY_ARMY);
+  it("reads a Scout army: 12 of the 75 XP its first point needs, nothing to buy yet", () => {
+    const army = readArmyDetail({ ...EARLY_ARMY, category: "Paladin" });
     expect([army.goal, army.available]).toEqual([{ rank: 1, at: 75, from: 0, share: 0.16 }, 0]);
     expect(army.attributes.map(({ name, now, next }) => [name, now, next?.change])).toEqual([
       ["Battle", "0% damage", "0% → +10% damage"],
@@ -125,7 +129,7 @@ describe("an army's detail as progression rules it", () => {
   });
 
   it("prices each attribute's next level by its own level, and counts what the XP buys now", () => {
-    const army = readArmyDetail(VETERAN_ARMY);
+    const army = readArmyDetail({ ...VETERAN_ARMY, category: "Paladin" });
     expect(army.attributes.map(({ name, next }) => [name, next?.point])).toEqual([
       ["Battle", 3],
       ["Logistics", 1],

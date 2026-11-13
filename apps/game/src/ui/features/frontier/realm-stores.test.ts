@@ -1,5 +1,5 @@
 import { readExpeditionRules, setBlockTimestampSource } from "@bibliothecadao/eternum";
-import { RESOURCE_PRECISION } from "@bibliothecadao/types";
+import { RESOURCE_PRECISION, ResourcesIds } from "@bibliothecadao/types";
 import { afterEach, describe, expect, it } from "vitest";
 
 import { frontierDay } from "./deploy/deploy-fixture";
@@ -38,4 +38,23 @@ describe("the realm's stores", () => {
     expect(realmDot([{ tone: "calm" }, { tone: "amber" }])).toBe("amber");
     expect(realmDot([{ tone: "calm" }])).toBeUndefined();
   });
+});
+
+it("keeps Scouts in their own store without counting them as Knights", () => {
+  const { store, row } = frontierDay();
+  const rules = readExpeditionRules(store, 1)!;
+  store.applyFacts([
+    {
+      model: "ResourceBalance",
+      key: "0x819",
+      value: {
+        game_id: 1,
+        entity_id: 7n,
+        resource_type: ResourcesIds.Paladin,
+        balance: 150n * BigInt(RESOURCE_PRECISION),
+      },
+    },
+  ]);
+  expect(readRealmStore(store, row, rules, "scouts", { now: 350 }).amount).toBe(150);
+  expect(readRealmStore(store, row, rules, "troops", { now: 350 }).amount).toBe(420);
 });

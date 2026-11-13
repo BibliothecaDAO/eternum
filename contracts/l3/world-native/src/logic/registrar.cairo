@@ -93,6 +93,7 @@ pub mod RegistrarState {
                 entry_rule: preset.rules.entry_rule.read(),
                 spacing: preset.settlement_spacing.read(),
             };
+            assert!(preset.rollover_chest_rules.read().is_none(), "LORDS presets are retired");
             crate::registrar::validate_params(params, rules);
             let mut encoded = array![];
             params.serialize(ref encoded);

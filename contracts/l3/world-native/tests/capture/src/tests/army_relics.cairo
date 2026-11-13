@@ -11,6 +11,8 @@ fn ruins_fill_replace_and_activate_an_armys_relics_through_commands() {
     preset.economy.discovery = Some(discovery);
     preset.rules.battle_config.cooldown_seconds = 0;
     preset.rules.battle_config.regular_immunity_ticks = 0;
+    preset.rules.troop_stamina_config.stamina_initial = 360;
+    preset.rules.troop_stamina_config.stamina_knight_max = 360;
     let mut depths = array![];
     for depth in preset.settlement.depths {
         depths
@@ -231,8 +233,8 @@ fn relic_root(
     for candidate in 0_u32..10_000 {
         let mut root: u256 = candidate.into();
         let seed = crate::random::game_root(ref root, game_id);
-        let reward = crate::army_relics::RuinReward::Relic(crate::army_relics::draw(odds, seed));
-        if reward == crate::army_relics::RuinReward::Relic(expected)
+        let reward = crate::army_relics::draw(odds, seed);
+        if reward == expected
             && crate::discovery::frontier(
                 rules, 0, 0, 0, 100, 0, Some(reward), seed,
             ) == crate::discovery::Discovery::Ruin(reward) {
@@ -247,4 +249,262 @@ fn read_loadout(d: super::Deployment, key: ExplorerKey) -> crate::army_relics::A
 }
 fn read_ruin(d: super::Deployment, key: ResourceKey) -> Option<ArmyRelic> {
     snforge_std::interact_with_state(d.games, || crate::logic::army_relics::ruin(key))
+}
+
+#[test]
+fn beast_clears_pay_wheat_or_triple_xp_through_explore_and_battle() {
+    for kind in array![crate::expeditions::BeastKind::Cyclops, crate::expeditions::BeastKind::Wraith] {
+        let (_, mut preset) = super::preset_projection::current_definition("frontier-s1");
+        let discovery = crate::expeditions::FrontierDiscoveryRules {
+            beasts_bps: 3000,
+            camp_bps: 0,
+            rift_bps: 0,
+            ruin_bps: 100,
+            shrine_bps: 0,
+            well_bps: 0,
+            empty_reveal_limit: 7,
+        };
+        preset.economy.discovery = Some(discovery);
+        let mut grants = array![];
+        for grant in preset.settlement.realms.resources {
+            let grant = *grant;
+            grants
+                .append(
+                    crate::resources::ResourceAmount {
+                        amount: if grant.resource_type == crate::resources::WHEAT {
+                            1000 * RESOURCE_PRECISION
+                        } else {
+                            grant.amount
+                        },
+                        ..grant,
+                    },
+                );
+        }
+        preset.settlement.realms.resources = grants.span();
+        let (d, game_id) = create_open_frontier(preset, BAG_SECONDS);
+        assert!(
+            execute_in_game(
+                d,
+                game_id,
+                Command::SettleSeason(crate::realms::SettleSeason { selected_realm: None, aspect: Some(1) }),
+                360,
+            ),
+        );
+        let home_id = snforge_std::interact_with_state(d.games, || crate::entity_ids::home_for_actor(game_id, d.actor));
+        let home = ResourceKey { game_id, entity_id: home_id };
+        let explorer_id = *IStructureOperationsDispatcher { contract_address: d.games }.home_armies(home).at(0);
+        let key = ExplorerKey { game_id, explorer_id };
+        let army = GameState { contract_address: d.games }.resolved_explorer(key).unwrap();
+        let destination = crate::geometry::neighbor(army.coord, 0);
+        let mut chosen = None;
+        for candidate in 0_u32..1000 {
+            let mut root: u256 = candidate.into();
+            let seed = crate::random::game_root(ref root, game_id);
+            if crate::expeditions::beast_kind(crate::taxonomy::BEASTS_CATEGORY, seed) == kind
+                && crate::discovery::frontier(
+                    discovery, 0, 0, 0, 100, 0, None, seed,
+                ) == crate::discovery::Discovery::Beasts {
+                chosen = Some(Into::<u32, u256>::into(candidate));
+                break;
+            }
+        }
+        assert!(explore_with_root(d, game_id, explorer_id, chosen.expect('no beast root'), 400));
+        let occupied = IMapLogicDispatcher { contract_address: d.games }
+            .occupancy(crate::geometry::tile_key(game_id, destination))
+            .unwrap();
+        let site_key = ResourceKey { game_id, entity_id: occupied.entity_id };
+        let site = snforge_std::interact_with_state(
+            d.games, || crate::logic::expeditions::expedition_site(site_key).unwrap(),
+        );
+        assert_eq!(site.beast_kind, kind);
+        let resources = IResourceOperationsDispatcher { contract_address: d.games };
+        let wheat = ResourceSlot { game_id, entity_id: home_id, resource_type: crate::resources::WHEAT };
+        let labor = ResourceSlot { resource_type: crate::resources::LABOR, ..wheat };
+        let before_wheat = resources.resource_balance(wheat);
+        let before_labor = resources.resource_balance(labor);
+        let before_xp = snforge_std::interact_with_state(d.games, || crate::logic::progression::require(key).xp);
+        assert!(
+            execute_in_game(
+                d,
+                game_id,
+                Command::BattleGuard(
+                    crate::commands::Battle {
+                        attacker_id: explorer_id, defender_id: site_key.entity_id, relic_slot: None,
+                    },
+                ),
+                401,
+            ),
+        );
+        let cleared = snforge_std::interact_with_state(
+            d.games, || crate::logic::expeditions::expedition_site(site_key).unwrap(),
+        );
+        assert_eq!(cleared.beast_kind, kind);
+        assert!(cleared.clear.is_some());
+        let expected_wheat = if kind == crate::expeditions::BeastKind::Cyclops {
+            site.initial_guard_count * 4
+        } else {
+            0
+        };
+        assert_eq!(resources.resource_balance(wheat) - before_wheat, expected_wheat);
+        assert_eq!(resources.resource_balance(labor), before_labor);
+        let xp = snforge_std::interact_with_state(d.games, || crate::logic::progression::require(key).xp);
+        let base = crate::progression::clear_xp(site.initial_guard_count, 0);
+        let expected_xp = if kind == crate::expeditions::BeastKind::Wraith {
+            base * 3
+        } else {
+            base
+        };
+        assert_eq!(xp - before_xp, expected_xp);
+    }
+}
+
+#[test]
+fn a_cleared_troll_camp_reinforces_from_home_stock_away_from_home() {
+    let (_, mut preset) = super::preset_projection::current_definition("frontier-s1");
+    let discovery = crate::expeditions::FrontierDiscoveryRules {
+        beasts_bps: 0, camp_bps: 100, rift_bps: 0, ruin_bps: 0, shrine_bps: 0, well_bps: 0, empty_reveal_limit: 7,
+    };
+    preset.economy.discovery = Some(discovery);
+    preset.rules.battle_config.cooldown_seconds = 0;
+    preset.rules.battle_config.regular_immunity_ticks = 0;
+    preset.rules.troop_stamina_config.stamina_initial = 180;
+    preset.rules.troop_stamina_config.stamina_knight_max = 180;
+    let (d, game_id) = create_open_frontier(preset, BAG_SECONDS);
+    assert!(
+        execute_in_game(
+            d,
+            game_id,
+            Command::SettleSeason(crate::realms::SettleSeason { selected_realm: None, aspect: Some(1) }),
+            360,
+        ),
+    );
+    let home_id = snforge_std::interact_with_state(d.games, || crate::entity_ids::home_for_actor(game_id, d.actor));
+    let home = ResourceKey { game_id, entity_id: home_id };
+    assert!(
+        execute_in_game(
+            d,
+            game_id,
+            Command::CreateBuilding(
+                crate::buildings::CreateBuilding {
+                    structure_id: home_id,
+                    directions: array![0].span(),
+                    category: 28,
+                    scouting_kind: 0,
+                    use_simple: true,
+                },
+            ),
+            361,
+        ),
+    );
+    let explorer_id = *IStructureOperationsDispatcher { contract_address: d.games }.home_armies(home).at(0);
+    let key = ExplorerKey { game_id, explorer_id };
+    let army = GameState { contract_address: d.games }.resolved_explorer(key).unwrap();
+    let camp_coord = crate::geometry::neighbor(army.coord, 0);
+    let root = discovery_root(game_id, discovery, 0, None, crate::discovery::Discovery::Camp);
+    assert!(explore_with_root(d, game_id, explorer_id, root, 400));
+    let camp_id = IMapLogicDispatcher { contract_address: d.games }
+        .occupancy(crate::geometry::tile_key(game_id, camp_coord))
+        .unwrap()
+        .entity_id;
+    let camp = ResourceKey { game_id, entity_id: camp_id };
+    for hit in 0_u64..4 {
+        let receipt = snforge_std::interact_with_state(
+            d.games, || crate::logic::expeditions::expedition_site(camp).unwrap(),
+        );
+        if receipt.clear.is_some() {
+            break;
+        }
+        assert!(
+            execute_in_game(
+                d,
+                game_id,
+                Command::BattleGuard(
+                    crate::commands::Battle { attacker_id: explorer_id, defender_id: camp_id, relic_slot: None },
+                ),
+                401 + hit,
+            ),
+        );
+    }
+    let receipt = snforge_std::interact_with_state(
+        d.games, || crate::logic::expeditions::expedition_site(camp).unwrap(),
+    );
+    assert_eq!(receipt.clear.unwrap().home_id, home_id);
+    let before_move = GameState { contract_address: d.games }.resolved_explorer(key).unwrap();
+    assert!(
+        !execute_in_game(
+            d, game_id, Command::Move(crate::commands::Move { explorer_id, directions: array![0, 0].span() }), 410,
+        ),
+    );
+    assert_eq!(GameState { contract_address: d.games }.resolved_explorer(key).unwrap(), before_move);
+    assert!(
+        execute_in_game(
+            d, game_id, Command::Move(crate::commands::Move { explorer_id, directions: array![0].span() }), 410,
+        ),
+    );
+    let empty_root = discovery_root(game_id, discovery, 0, None, crate::discovery::Discovery::None);
+    assert!(explore_with_root(d, game_id, explorer_id, empty_root, 411));
+    let army = GameState { contract_address: d.games }.resolved_explorer(key).unwrap();
+    let origin = crate::expeditions::site(preset.settlement.spacing, crate::entity_ids::namespace(home_id), 0, 0);
+    assert!(!crate::geometry::adjacent(army.coord, origin));
+    assert!(crate::geometry::adjacent(army.coord, camp_coord));
+    let resources = IResourceOperationsDispatcher { contract_address: d.games };
+    let wheat = ResourceSlot { game_id, entity_id: home_id, resource_type: crate::resources::WHEAT };
+    let before_wheat = resources.resource_balance(wheat);
+    assert!(
+        execute_in_game(
+            d,
+            game_id,
+            Command::ManageTroops(
+                crate::troop_management::ManageTroops::RecruitExplorer(
+                    crate::troop_management::RecruitExplorer { explorer_id, amount: RESOURCE_PRECISION },
+                ),
+            ),
+            412,
+        ),
+    );
+    assert_eq!(
+        GameState { contract_address: d.games }.resolved_explorer(key).unwrap().troops.count,
+        army.troops.count + RESOURCE_PRECISION,
+    );
+    assert_eq!(resources.resource_balance(wheat), before_wheat - 2 * RESOURCE_PRECISION);
+}
+
+#[test]
+fn supply_post_reader_checks_each_upper_layer_home_day_and_distance() {
+    let (address, _) = super::deploy("MovementLogic", @array![]);
+    let reader = crate::expeditions::ISupplyPostsDispatcher { contract_address: address };
+    let home = ResourceKey { game_id: 7, entity_id: 11 };
+    for depth in 0_u32..4 {
+        let camp = crate::troops::Coord { alt: false, x: 20, y: 4 * 32 + depth * 32 + 16 };
+        let army = crate::geometry::neighbor(camp, 0);
+        snforge_std::interact_with_state(
+            address,
+            || {
+                crate::state::write()
+                    .structures
+                    .supply_posts
+                    .write((home.game_id, camp.alt, camp.x, camp.y), home.entity_id);
+            },
+        );
+        assert_eq!(
+            crate::expeditions::ISupplyPostsDispatcherTrait::adjacent_supply_post(reader, home, army, 1, 32), depth < 3,
+        );
+        assert!(
+            !crate::expeditions::ISupplyPostsDispatcherTrait::adjacent_supply_post(
+                reader, ResourceKey { entity_id: 12, ..home }, army, 1, 32,
+            ),
+        );
+        assert!(!crate::expeditions::ISupplyPostsDispatcherTrait::adjacent_supply_post(reader, home, army, 2, 32));
+        assert!(!crate::expeditions::ISupplyPostsDispatcherTrait::adjacent_supply_post(reader, home, camp, 1, 32));
+        assert!(
+            !crate::expeditions::ISupplyPostsDispatcherTrait::adjacent_supply_post(
+                reader, home, crate::geometry::neighbor(army, 0), 1, 32,
+            ),
+        );
+    }
+    assert!(
+        !crate::expeditions::ISupplyPostsDispatcherTrait::adjacent_supply_post(
+            reader, home, crate::troops::Coord { alt: false, x: 0, y: 128 }, 1, 32,
+        ),
+    );
 }

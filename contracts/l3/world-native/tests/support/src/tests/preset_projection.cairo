@@ -45,11 +45,11 @@ pub fn current_definition(name: ByteArray) -> (u32, crate::presets::PresetDefini
     (preset_id, definition)
 }
 pub fn frontier_discovery_rules() -> crate::expeditions::FrontierDiscoveryRules {
-    let (_, definition) = current_definition("frontier");
+    let (_, definition) = current_definition("frontier-check");
     definition.economy.discovery.unwrap()
 }
 pub fn frontier_progression_rules() -> crate::progression::ArmyProgressionRules {
-    let (_, definition) = current_definition("frontier");
+    let (_, definition) = current_definition("frontier-check");
     definition.economy.progression.unwrap()
 }
 pub fn launch(address: ContractAddress, name: ByteArray) -> u32 {
@@ -66,7 +66,7 @@ pub fn launch(address: ContractAddress, name: ByteArray) -> u32 {
 pub fn assert_all_zero_chest_rules_refuse_registration() {
     let d = super::registrar::setup();
     start_cheat_caller_address(d.games, super::authority());
-    let (preset_id, mut definition) = current_definition("frontier");
+    let (preset_id, mut definition) = current_definition("frontier-check");
     definition
         .economy
         .chests =

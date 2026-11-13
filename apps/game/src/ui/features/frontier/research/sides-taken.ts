@@ -1,7 +1,7 @@
 import { type IconMeaning } from "@/ui/design-system/icon";
 import { type Rank } from "@/ui/design-system/kit/words";
 
-import { researchPicks } from "@bibliothecadao/eternum";
+import { researchHasIndependentSides, researchPicks } from "@bibliothecadao/eternum";
 import { nativeResearchConstants as research } from "@bibliothecadao/eternum/game-client";
 
 /**
@@ -25,7 +25,8 @@ export const sideMarks = (row: number): readonly [IconMeaning, IconMeaning] => {
 export type SidePick = { icon: IconMeaning; picks: Rank };
 
 /** The tiers a row spent on its make side (Fields, Tools, Drill): each adds a share of the building's base output. */
-export const makePicks = (learned: bigint, row: number): number => researchPicks(learned, row, 0);
+export const makePicks = (learned: bigint, row: number): number =>
+  researchHasIndependentSides(row) ? researchPicks(learned, row, 0) : 0;
 
 /**
  * Each side of a choosing row with the tiers bought on it, make side first ("fields" 2, "granary" 1); none for a row

@@ -192,6 +192,10 @@ export class CombatSimulator {
       : 1;
   }
 
+  private calculateScoutDamageMultiplier(army: Army): number {
+    return this.dayUnitSeconds !== 0 && army.troopType === TroopType.Paladin ? 0.75 : 1;
+  }
+
   private calculateIncomingDamageMultiplier(defender: Army, isStructureGuard: boolean | undefined): number {
     return this.dayUnitSeconds === 0 && isStructureGuard && defender.troopType === TroopType.Knight
       ? KNIGHT_STRUCTURE_GUARD_INCOMING_DAMAGE_MULTIPLIER
@@ -340,6 +344,7 @@ export class CombatSimulator {
         this.calculateStaminaModifier(attacker.stamina, true) *
         this.calculateBattleTimerDamageModifier(attacker.battle_cooldown_end, now, true) *
         this.calculateAttackerBiomeModifier(attacker, biome, context) *
+        this.calculateScoutDamageMultiplier(attacker) *
         this.calculateAttackerRoleDamageMultiplier(attacker, context) *
         this.calculateIncomingDamageMultiplier(defender, context.defenderIsStructureGuard)) /
       Math.pow(totalTroops, betaEff);
@@ -353,6 +358,7 @@ export class CombatSimulator {
           this.calculateStaminaModifier(defender.stamina, false) *
           this.calculateBattleTimerDamageModifier(defender.battle_cooldown_end, now, false) *
           this.calculateDefenderBiomeModifier(defender, biome, context) *
+          this.calculateScoutDamageMultiplier(defender) *
           this.calculateIncomingDamageMultiplier(attacker, context.attackerIsStructureGuard)) /
         Math.pow(totalTroops, betaEff);
 

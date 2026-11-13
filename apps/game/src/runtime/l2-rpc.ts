@@ -42,9 +42,6 @@ export const L2_LEDGER = ENVIRONMENT_L2.ledger;
  */
 export const L2_BLOCK_MS = 2_000;
 
-/** Where a player reads one of this build's L2 transactions. */
-export const l2TransactionUrl = (hash: string): string => `${L2_CHAIN.explorer}/tx/${hash}`;
-
 /** Whether a chain id, as a wallet or a payload gives it, is this build's L2. */
 export const isL2Chain = (chainId: bigint | string): boolean => BigInt(chainId) === BigInt(L2_CHAIN.id);
 

@@ -96,9 +96,14 @@ it("spends the selected point on Stamina, doubles its refill and prevents wastin
   );
 });
 
-it("shows empty sockets and the XP milestone, and no point while none is held", () => {
-  act(() => root.render(<Detail army={readArmyDetail(EARLY_ARMY)} sending={false} onLevelUp={vi.fn()} />));
-  expect(host.querySelectorAll('.ui-tier[data-tier="0"]')).toHaveLength(4);
+it.each([
+  ["Knight", 3],
+  ["Paladin", 4],
+] as const)("shows %s empty sockets and the XP milestone, and no point while none is held", (category, count) => {
+  act(() =>
+    root.render(<Detail army={readArmyDetail({ ...EARLY_ARMY, category })} sending={false} onLevelUp={vi.fn()} />),
+  );
+  expect(host.querySelectorAll('.ui-tier[data-tier="0"]')).toHaveLength(count);
   expect(host.querySelector('[aria-label="Skill points"]')!.textContent).toBe("");
   expect(host.textContent).toContain("12 / 75 XP");
 });
@@ -180,7 +185,7 @@ const variants = (name: string) =>
 
 it("offers and submits every skill-point use and Scouting kind in the generated command catalog", () => {
   const spent = vi.fn();
-  const army = readArmyDetail({ ...VETERAN_ARMY, points: [1, 1, 1, 1, 1] });
+  const army = readArmyDetail({ ...VETERAN_ARMY, category: "Paladin", points: [1, 1, 1, 1, 1] });
   act(() => root.render(<Detail army={army} sending={false} choosing onLevelUp={spent} />));
   const uses = variants("SkillPointUse");
   expect([...host.querySelectorAll("[data-attribute]")].map((button) => button.getAttribute("data-attribute"))).toEqual(
@@ -221,7 +226,7 @@ it.each([0n, learnResearch(0n, research.ROW_SHRINE, 0), learnResearch(0n, resear
   "offers Sanctuaries only after either site unlock and submits its command (%s)",
   (learned) => {
     const spent = vi.fn();
-    const army = readArmyDetail({ ...EARLY_ARMY, learned, points: [1, 0, 0, 0, 0] });
+    const army = readArmyDetail({ ...EARLY_ARMY, category: "Paladin", learned, points: [1, 0, 0, 0, 0] });
     act(() => root.render(<Detail army={army} sending={false} choosing onLevelUp={spent} />));
     act(() => host.querySelector<HTMLButtonElement>('[data-attribute="scouting"]')!.click());
     expect(host.querySelector('[data-scout-kind="beasts"]')).toBeNull();

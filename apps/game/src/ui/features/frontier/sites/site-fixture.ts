@@ -1,3 +1,4 @@
+import { frontierPreset } from "../../../../../../../config/source/frontier/native";
 import { frontierArmyRules } from "../army/progression-rules-fixture";
 import { BiomeType, BiomeTypeToId, getNeighborHexes, StructureType, TileOccupier } from "@bibliothecadao/types";
 import type { SiteKind } from "@bibliothecadao/eternum";
@@ -14,6 +15,19 @@ import preset from "../../../../../../../contracts/l3/world-native/tests/fixture
 import frontierConfig from "../../../../../../../config/generated/frontier.madara.json";
 import { frontierDay } from "../deploy/deploy-fixture";
 import type { SiteAttack } from "./site-card-plan";
+
+/** Retained cash-ruin fixtures use the historical preset's actual entitlement. */
+export const legacyRuinRules = () => {
+  const chests = frontierPreset.chests;
+  return {
+    game_id: 1,
+    price_ceiling: BigInt(chests.priceCeiling),
+    shares: chests.shares,
+    claim_window_seconds: chests.claimWindowSeconds,
+    pool_bps: chests.poolBps,
+    top_n: chests.topN,
+  };
+};
 
 const PRECISION = 1_000_000_000n;
 export const SITE = 710;
@@ -105,12 +119,16 @@ export const campBeside = (kind: SiteKind = "Camp", guardKnown = true, armyStami
       game_id: 1,
       entity_id: SITE,
       category: SITE_CATEGORY[kind],
+      beast_kind: kind === "Beasts" ? "Cyclops" : "None",
       initial_guard_count: String(guardCount * PRECISION),
       ...SITE_TILE,
       clear: null,
     }),
     ...(kind === "Ruin"
-      ? [set("0x76", "SiteChest", { game_id: 1, entity_id: SITE, tier: 3, amount: "500", reservation_day: "0" })]
+      ? [
+          set("0x1ca", "ChestRules", legacyRuinRules()),
+          set("0x76", "SiteChest", { game_id: 1, entity_id: SITE, tier: 3, amount: "500", reservation_day: "0" }),
+        ]
       : []),
     ...(guardKnown
       ? [

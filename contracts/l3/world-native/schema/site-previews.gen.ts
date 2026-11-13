@@ -5,17 +5,23 @@ export function previewRiftGuardBound(camp: number, step: number): number {
 
 export function previewSiteReward(
   category: number,
+  beastKind: string,
   initialGuardCount: bigint,
   depth: number,
 ): { resourceType: number; amount: bigint } | null {
+  if (category === 11) {
+    if (beastKind === "Cyclops") return { resourceType: 35, amount: initialGuardCount * 4n };
+    if (beastKind === "Wraith") return null;
+    throw new Error("Beast site has no kind");
+  }
   if (category === 7) return { resourceType: 23, amount: depthReward(initialGuardCount / 2n, depth) };
-  if (category === 11) return { resourceType: 23, amount: depthReward(initialGuardCount / 4n, depth) };
   if (category === 9) return { resourceType: 38, amount: depthReward(initialGuardCount * 3n, depth) };
   return null;
 }
 
-export function previewSiteClearXp(initialGuardCount: bigint, depth: number): number {
-  const xp = depthReward(integerSqrt((initialGuardCount / 1000000000n) * 25n) / 2n, depth);
+export function previewSiteClearXp(initialGuardCount: bigint, depth: number, beastKind: string): number {
+  const xp =
+    depthReward(integerSqrt((initialGuardCount / 1000000000n) * 25n) / 2n, depth) * (beastKind === "Wraith" ? 3n : 1n);
   if (xp > 0xffff_ffffn) throw new Error("Site clear XP exceeds u32");
   return Number(xp);
 }

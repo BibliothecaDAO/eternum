@@ -8,7 +8,13 @@ import {
 } from "@bibliothecadao/eternum";
 import type { NativeRows } from "@bibliothecadao/eternum/game-client";
 
-import { type Attribute, ATTRIBUTE_LIST, type AttributeKey } from "../army/army-detail";
+import {
+  type Attribute,
+  ATTRIBUTE_LIST,
+  armyAttributes,
+  type ArmyDetailFacts,
+  type AttributeKey,
+} from "../army/army-detail";
 
 /** An army's XP and attribute tiers, and the game's XP rules, exactly as the native store carries them. */
 export type ArmyProgressFacts = NativeRows["ArmyProgress"];
@@ -17,10 +23,10 @@ export const attributeTiers = (progress: ArmyProgressFacts): Record<AttributeKey
   Object.fromEntries(ATTRIBUTE_LIST.map(({ key }) => [key, progress[key]])) as Record<AttributeKey, number>;
 
 /** Attributes for which the army holds a fitting point. */
-export const availableRankUps = (progress: ArmyProgressFacts): Attribute[] =>
-  ATTRIBUTE_LIST.filter(({ key }) => lowestFittingPoint(progress, progress[key] + 1) !== undefined).map(
-    ({ attribute }) => attribute,
-  );
+export const availableRankUps = (progress: ArmyProgressFacts, category: ArmyDetailFacts["category"]): Attribute[] =>
+  armyAttributes(category)
+    .filter(({ key }) => lowestFittingPoint(progress, progress[key] + 1) !== undefined)
+    .map(({ attribute }) => attribute);
 
 /** Lifetime XP earned between two readings. */
 export const xpGained = (before: Pick<ArmyProgressFacts, "xp">, after: Pick<ArmyProgressFacts, "xp">): number =>

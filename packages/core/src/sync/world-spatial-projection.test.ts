@@ -208,6 +208,7 @@ const createHarness = () => {
         game_id: 13,
         entity_id: entityId,
         category: StructureType.Camp,
+        beast_kind: "None" as const,
         initial_guard_count: 1_600n,
         alt: false,
         col: input.col,

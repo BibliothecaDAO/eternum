@@ -306,6 +306,14 @@ pub impl TroopsImpl of TroopsTrait {
         assert!(context.attacker_roll <= 20 && context.defender_roll <= 20, "invalid combat die");
         ALPHA_DAMAGE_DEALT *= Self::_combat_percent_multiplier(100 + context.attacker_roll.into());
         BRAVO_DAMAGE_DEALT *= Self::_combat_percent_multiplier(100 + context.defender_roll.into());
+        if context.day_unit_seconds != 0 {
+            if alpha.category == TroopType::Paladin {
+                ALPHA_DAMAGE_DEALT *= Self::_combat_percent_multiplier(75);
+            }
+            if bravo.category == TroopType::Paladin {
+                BRAVO_DAMAGE_DEALT *= Self::_combat_percent_multiplier(75);
+            }
+        }
         ALPHA_DAMAGE_DEALT *= alpha._outgoing_damage_multiplier(context);
         ALPHA_DAMAGE_DEALT *= bravo
             ._incoming_damage_multiplier(context.defender_is_structure_guard, context.day_unit_seconds);

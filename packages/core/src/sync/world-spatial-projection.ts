@@ -613,7 +613,9 @@ export class WorldSpatialProjection {
         (change) =>
           (change.model === "ExpeditionSite" && change.current?.clear !== change.previous?.clear) ||
           (change.model === "ExpeditionDiscovery" && change.current?.ruin_cleared !== change.previous?.ruin_cleared) ||
-          (change.model === "GameRelease" && change.current?.release_id !== change.previous?.release_id),
+          (change.model === "GameRelease" && change.current?.release_id !== change.previous?.release_id) ||
+          change.model === "SliceRules" ||
+          change.model === "ChestRules",
       )
     ) {
       for (const [, occupancy] of this.store.entries("TileOccupancy")) {

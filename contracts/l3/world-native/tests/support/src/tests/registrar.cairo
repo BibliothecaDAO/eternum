@@ -19,7 +19,7 @@ pub use crate::registrar::{
     CreateGameParams, IRegistrarDispatcher, IRegistrarDispatcherTrait, IRegistrarSafeDispatcher,
     IRegistrarSafeDispatcherTrait, RosterPlayer,
 };
-pub use crate::relics::{ChestTiers, IRelicsDispatcher, IRelicsDispatcherTrait, SiteChest};
+pub use crate::relics::{ChestTiers, IRelicsDispatcher, IRelicsDispatcherTrait};
 pub use crate::resources::{
     IResourceOperationsDispatcher, IResourceOperationsDispatcherTrait, ResourceKey, ResourceRule, ResourceSlot,
 };
@@ -228,7 +228,7 @@ pub fn expedition_preset() -> PresetDefinition {
     preset.rules.day_unit_seconds = DAY_UNIT;
     preset.rules.tick_config.armies_tick_in_seconds = 60;
     preset.economy.discovery = Some(super::preset_projection::frontier_discovery_rules());
-    let (_, frontier) = super::preset_projection::current_definition("frontier");
+    let (_, frontier) = super::preset_projection::current_definition("frontier-check");
     preset.economy.chests = frontier.economy.chests;
     preset.economy.labor = frontier.economy.labor;
     preset.economy.relics = array![].span();
@@ -356,16 +356,14 @@ fn discovery_root(
     game_id: u32,
     rules: crate::expeditions::FrontierDiscoveryRules,
     empty_reveals: u8,
-    chest: Option<SiteChest>,
+    relic: Option<crate::army_relics::ArmyRelic>,
     expected: crate::discovery::Discovery,
 ) -> u256 {
     for sample in 0_u64..10000 {
         let raw_root: u256 = sample.into();
         let mut root = raw_root;
         let seed = crate::random::game_root(ref root, game_id);
-        if crate::discovery::frontier(
-            rules, 0, 0, 0, 100, empty_reveals, chest.map(|value| crate::army_relics::RuinReward::Chest(value)), seed,
-        ) == expected {
+        if crate::discovery::frontier(rules, 0, 0, 0, 100, empty_reveals, relic, seed) == expected {
             return raw_root;
         }
     }
@@ -407,7 +405,7 @@ fn assert_capture_at(
     open_entry(ref preset);
     preset.rules.day_unit_seconds = FRONTIER_DAY_UNIT;
     preset.economy.discovery = Some(super::preset_projection::frontier_discovery_rules());
-    let (_, frontier) = super::preset_projection::current_definition("frontier");
+    let (_, frontier) = super::preset_projection::current_definition("frontier-check");
     if labor_room.is_some() {
         preset.structures.board = frontier.structures.board;
         preset.structures.research = frontier.structures.research;
@@ -772,7 +770,9 @@ fn assert_capture_at(
                     if payout.site_id == camp_id {
                         camp_reward
                     } else {
-                        crate::expeditions::site_reward(category, expected, depth)
+                        crate::expeditions::site_reward(
+                            crate::expeditions::ExpeditionSite { category: category, ..expected }, depth,
+                        )
                     },
                 );
             }
@@ -803,38 +803,21 @@ fn assert_capture_at(
         assert_eq!(retained, Some(site_after));
     }
 }
-pub fn setup_frontier_chests() -> (super::Deployment, u32, ExplorerKey) {
-    setup_frontier_chests_with_rules(None)
+pub fn setup_frontier_relics() -> (super::Deployment, u32, ExplorerKey) {
+    setup_frontier_relics_with_rules(None)
 }
-pub fn setup_frontier_chests_with_rules(
+pub fn setup_frontier_relics_with_rules(
     discovery: Option<crate::expeditions::FrontierDiscoveryRules>,
 ) -> (super::Deployment, u32, ExplorerKey) {
-    let (_, frontier) = super::preset_projection::current_definition("frontier");
-    let result = setup_frontier_chests_with_preset(discovery, frontier, None);
-    let (d, game_id, _) = result;
-    publish_test_pool(d, game_id, 1000000, 350);
+    let (_, frontier) = super::preset_projection::current_definition("frontier-check");
+    let result = setup_frontier_relics_with_preset(discovery, frontier, None);
     result
 }
-pub fn setup_unfunded_frontier_chests() -> (super::Deployment, u32, ExplorerKey) {
-    let (_, frontier) = super::preset_projection::current_definition("frontier");
-    setup_frontier_chests_with_preset(None, frontier, None)
-}
-pub fn publish_test_pool(d: super::Deployment, game_id: u32, amount: u128, timestamp: u64) {
-    super::entry::set_operator(d, super::authority());
-    start_cheat_caller_address(d.games, super::authority());
-    snforge_std::start_cheat_block_timestamp(d.games, timestamp);
-    crate::entry::ILedgerOperatorDispatcherTrait::publish_frontier_pool(
-        crate::entry::ILedgerOperatorDispatcher { contract_address: d.games }, game_id, amount, 0,
-    );
-    snforge_std::stop_cheat_block_timestamp(d.games);
-    stop_cheat_caller_address(d.games);
-}
-pub fn setup_frontier_chests_with_preset(
+pub fn setup_frontier_relics_with_preset(
     discovery: Option<crate::expeditions::FrontierDiscoveryRules>,
     frontier: PresetDefinition,
     board: Option<crate::buildings::BoardRules>,
 ) -> (super::Deployment, u32, ExplorerKey) {
-    let chests = frontier.economy.chests.unwrap();
     let d = setup();
     let mut preset = definition(true);
     preset.structures.board = board;
@@ -869,7 +852,6 @@ pub fn setup_frontier_chests_with_preset(
     preset.rules.mode_rules = DISCOVER_CAMPS
         | crate::rules::UNOWNED_TARGETS
         | HOME_REWARDS
-        | DISCOVER_CHESTS
         | crate::rules::REVEAL_SUPPLIES
         | crate::rules::DEPTH_CONTENTS;
     preset.exploration = array![].span();
@@ -909,7 +891,7 @@ pub fn setup_frontier_chests_with_preset(
             );
     }
     preset.settlement.depths = depths.span();
-    preset.economy.chests = Some(chests);
+    preset.economy.chests = None;
     preset.economy.labor = frontier.economy.labor;
     preset.economy.relics = array![].span();
     if let Some(discovery) = discovery {
@@ -959,40 +941,12 @@ pub fn setup_frontier_chests_with_preset(
     let explorer_id = *structures.home_armies(home).at(0);
     (d, game_id, ExplorerKey { game_id, explorer_id })
 }
-pub fn assert_zero_pool_never_funds_a_ruin_or_payout_over_a_day() {
-    let (_, frontier) = super::preset_projection::current_definition("frontier");
-    let rules = ruin_discovery_rules();
-    let (d, game_id, key) = setup_frontier_chests_with_preset(Some(rules), frontier, None);
-    let army = strong_frontier_army(d, game_id, key);
-    let (ruin, _) = reveal_ruin(d, key, rules, 360);
-    let budget = IRelicsDispatcher { contract_address: d.games }.lords_budget(game_id).unwrap();
-    assert_eq!((budget.pool, budget.pool_left, budget.open), (0, 0, 0));
-    let before = GameState { contract_address: d.games }.resolved_explorer(key).unwrap();
-    let mut refused = snforge_std::spy_events();
-    assert!(
-        !execute_in_game(
-            d,
-            game_id,
-            Command::BattleGuard(
-                crate::commands::Battle { attacker_id: key.explorer_id, defender_id: ruin.entity_id, relic_slot: None },
-            ),
-            361,
-        ),
-    );
-    assert_eq!(super::play_fixture::rejection(ref refused, d.games).reason, "day's LORDS budget cannot fund this ruin");
-    assert_eq!(GameState { contract_address: d.games }.resolved_explorer(key).unwrap(), before);
-    assert!(IStructureOperationsDispatcher { contract_address: d.games }.structure(ruin).is_some());
-    assert_eq!(
-        IResourceOperationsDispatcher { contract_address: d.games }
-            .resource_balance(ResourceSlot { game_id, entity_id: army.owner, resource_type: crate::resources::LORDS }),
-        0,
-    );
+pub fn any_relic() -> crate::army_relics::ArmyRelic {
+    RELIC
 }
-pub // Any chest a draw can carry; its tier and amount never change the draw.
- fn any_chest() -> SiteChest {
-    SiteChest { tier: 0, amount: 50, reservation_day: 0 }
-}
-pub const CHEST: SiteChest = SiteChest { tier: 3, amount: 500, reservation_day: 0 };
+pub const RELIC: crate::army_relics::ArmyRelic = crate::army_relics::ArmyRelic {
+    kind: crate::army_relics::RelicKind::Blade, rank: 1,
+};
 pub fn strong_frontier_army(d: super::Deployment, game_id: u32, key: ExplorerKey) -> crate::troops::ExplorerTroops {
     assert_eq!(key.game_id, game_id);
     let mut army = GameState { contract_address: d.games }.resolved_explorer(key).unwrap();
@@ -1000,7 +954,9 @@ pub fn strong_frontier_army(d: super::Deployment, game_id: u32, key: ExplorerKey
     super::resource_commands::set_explorer_fixture(d.games, key, army);
     army
 }
-pub fn place_ruin(d: super::Deployment, game_id: u32, coord: crate::troops::Coord, chest: SiteChest) -> ResourceKey {
+pub fn place_ruin(
+    d: super::Deployment, game_id: u32, coord: crate::troops::Coord, relic: crate::army_relics::ArmyRelic,
+) -> ResourceKey {
     let context = crate::commands::ExecutionContext { timestamp: 360, ..crate::tests::context(d.games, game_id) };
     start_cheat_caller_address(d.games, d.games);
     let site = IStructureOperationsDispatcher { contract_address: d.games }
@@ -1008,7 +964,7 @@ pub fn place_ruin(d: super::Deployment, game_id: u32, coord: crate::troops::Coor
             game_id,
             1,
             coord,
-            crate::discovery::Discovery::Ruin(crate::army_relics::RuinReward::Chest(chest)),
+            crate::discovery::Discovery::Ruin(relic),
             123,
             360,
             crate::commands::action_context(context),
@@ -1025,13 +981,7 @@ pub fn reveal_ruin(
     d: super::Deployment, key: ExplorerKey, rules: crate::expeditions::FrontierDiscoveryRules, timestamp: u64,
 ) -> (ResourceKey, u8) {
     let army = GameState { contract_address: d.games }.resolved_explorer(key).unwrap();
-    let root = discovery_root(
-        key.game_id,
-        rules,
-        0,
-        Some(any_chest()),
-        crate::discovery::Discovery::Ruin(crate::army_relics::RuinReward::Chest(any_chest())),
-    );
+    let root = discovery_root(key.game_id, rules, 0, Some(any_relic()), crate::discovery::Discovery::Ruin(any_relic()));
     for direction in 0_u8..6 {
         let tile = crate::geometry::tile_key(key.game_id, crate::geometry::neighbor(army.coord, direction));
         let unseen = snforge_std::interact_with_state(d.games, || crate::logic::map::tile(tile).is_none());
@@ -1078,7 +1028,7 @@ pub fn assert_site_removed(d: super::Deployment, key: ResourceKey) {
 }
 
 pub fn setup_open_frontier() -> (super::Deployment, u32) {
-    setup_open_frontier_preset("frontier", 1)
+    setup_open_frontier_preset("frontier-check", 1)
 }
 
 pub fn setup_open_frontier_preset(name: ByteArray, bags: u64) -> (super::Deployment, u32) {

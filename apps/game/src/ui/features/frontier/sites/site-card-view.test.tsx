@@ -8,7 +8,7 @@ import { campBeside, SITE_TILE } from "./site-fixture";
 import { resourceMeaning } from "@/ui/design-system/icon-meaning";
 import { TARGET_MARKS, type AttackTargetKind } from "./site-marks";
 import { plateRows } from "@/three/map-plates/map-plate-rows";
-import { frontierSiteName, StructureType } from "@bibliothecadao/types";
+import { frontierSiteName, RESOURCE_PRECISION, ResourcesIds, StructureType } from "@bibliothecadao/types";
 
 let host: HTMLDivElement;
 let root: Root;
@@ -29,10 +29,28 @@ const army = { art: "knight-t1" as const, troops: 5_000 };
 const buttons = () => [...document.querySelectorAll<HTMLButtonElement>("section[role=dialog] button")];
 
 describe("a guarded site's card", () => {
-  it("renders the depth-I Beasts reward and XP in This attack earns", () => {
+  it.each([
+    [4_000, "This attack earns+4,000+118 XP+1 site"],
+    [10, "This attack earns+10Full: the rest did not fit+118 XP+1 site"],
+  ] as const)("renders the Cyclops Wheat credit with room for %i and its clear XP", (room, headline) => {
     const { store, site, structure, attack } = campBeside("Beasts");
-    const plan = readSiteCard(store, site, structure, SITE_TILE, attack({ col: 41, row: 12, alt: false }));
-    expect(plan.payout).toEqual({ resourceId: 23, amount: 375, fits: 375 });
+    const own = attack({ col: 41, row: 12, alt: false });
+    const limit = store.require("BoardRules", { game_id: 1 }).settlement_resource_cap;
+    store.applyFacts([
+      {
+        model: "ResourceBalance",
+        key: "0xc",
+        value: {
+          game_id: 1,
+          entity_id: own.army.owner,
+          resource_type: ResourcesIds.Wheat,
+          balance: BigInt(limit - room) * BigInt(RESOURCE_PRECISION),
+        },
+      },
+    ]);
+    const plan = readSiteCard(store, site, structure, SITE_TILE, own);
+    expect(plan.beast?.beast).toBe("cyclops");
+    expect(plan.payout).toEqual({ resourceId: ResourcesIds.Wheat, amount: 4_000, fits: room });
     expect(plan.xp).toBe(118);
     const payout = plan.payout!;
     act(() =>
@@ -50,7 +68,10 @@ describe("a guarded site's card", () => {
         />,
       ),
     );
-    expect(document.querySelector(".ui-frame__body header")?.textContent).toBe("This attack earns+375+118 XP+1 site");
+    const header = host.querySelector(".ui-frame__body header")!;
+    expect(header.textContent).toBe(headline);
+    expect(header.querySelector('[data-icon="wheat"]')).not.toBeNull();
+    expect(header.querySelector('[data-icon="labor"]')).toBeNull();
   });
 
   it("heads the attack with what it earns, and reads each side before and after as numbers alone", () => {

@@ -17,6 +17,7 @@ function encounter(kind: SiteKind) {
       value: {
         ...store.require("ExpeditionSite", { game_id: 1, entity_id: SITE }),
         row: 2,
+        beast_kind: kind === "Beasts" ? "Cyclops" : "None",
         initial_guard_count: kind === "Beasts" ? "314000000000" : "1000000000000",
       },
     },

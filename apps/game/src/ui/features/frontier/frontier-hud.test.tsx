@@ -532,7 +532,6 @@ const PHONE_SURFACES = {
   season: { label: "Season", open: () => fromMenu("Season") },
   realms: { label: "Realm Labor", open: () => fromMenu("Realm Labor") },
   settings: { label: "Settings", open: () => fromMenu("Settings") },
-  withdraw: { label: "Withdraw", open: () => press('button[aria-label^="LORDS"]') },
 } satisfies Record<
   // An army's sheet and a lost army's open from an army, which this lab game has none of: frontier-army.test and
   // tile-card.test stand those two in the frame.

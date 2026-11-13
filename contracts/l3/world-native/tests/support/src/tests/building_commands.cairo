@@ -62,7 +62,7 @@ pub fn building_preset(board: Option<crate::buildings::BoardRules>) -> crate::pr
     preset.structures.buildings = configured.span();
     preset.structures.board = board;
     if board.is_some() {
-        let (_, frontier) = super::preset_projection::current_definition("frontier");
+        let (_, frontier) = super::preset_projection::current_definition("frontier-check");
         preset.structures.research = frontier.structures.research;
     }
     let recipe = UpgradeRecipe { costs: array![].span() };
@@ -259,7 +259,7 @@ pub fn board_output(deployment: super::Deployment, home: ResourceKey, category: 
 pub /// A board realm with its castle, every command open, room for many buildings and plenty of Essence and labor.
  fn research_world() -> (super::Deployment, ResourceKey, crate::presets::PresetDefinition) {
     let mut preset = building_preset(Some(board_rules()));
-    let (_, frontier) = super::preset_projection::current_definition("frontier");
+    let (_, frontier) = super::preset_projection::current_definition("frontier-check");
     preset.structures.buildings = frontier.structures.buildings;
     preset
         .structures
@@ -271,7 +271,7 @@ pub /// A board realm with its castle, every command open, room for many buildin
     for rule in preset.resources.resources {
         resources
             .append(
-                if *rule.resource_type == 26 || *rule.resource_type == 35 {
+                if *rule.resource_type == 26 || *rule.resource_type == 32 || *rule.resource_type == 35 {
                     crate::resources::ResourceRule { realm_rate: 40, ..*rule }
                 } else {
                     *rule

@@ -279,6 +279,7 @@ describe("a realm's spire, from the player's path", () => {
           game_id: 1,
           entity_id: 711,
           category: StructureType.Camp,
+          beast_kind: "None" as const,
           initial_guard_count: 1_600n * 1_000_000_000n,
           alt: false,
           ...tile,

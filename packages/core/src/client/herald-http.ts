@@ -1,3 +1,5 @@
+import { decodeNativeRow } from "./native-row";
+import type { NativeRows } from "../../../../contracts/l3/world-native/schema/client.gen";
 import {
   HeraldHttpError,
   type HeraldGameDirectory,
@@ -104,12 +106,20 @@ export const fetchHeraldExpeditionSite = async (
   shard: Pick<Shard, "url">,
   gameId: number,
   siteId: number,
-): Promise<Record<string, unknown> | null> => {
+): Promise<Pick<
+  NativeRows["ExpeditionSite"],
+  "game_id" | "category" | "row" | "initial_guard_count" | "beast_kind"
+> | null> => {
   try {
-    return await fetchHeraldJson(
-      buildHeraldUrl(shard, `/games/${gameId}/sites/${siteId}`),
-      `Herald site ${siteId} for ${shard.url} game ${gameId}`,
+    const row = decodeNativeRow(
+      "ExpeditionSite",
+      await fetchHeraldJson(
+        buildHeraldUrl(shard, `/games/${gameId}/sites/${siteId}`),
+        `Herald site ${siteId} for ${shard.url} game ${gameId}`,
+      ),
     );
+    const { game_id, category, row: rowIndex, initial_guard_count, beast_kind } = row;
+    return { game_id, category, row: rowIndex, initial_guard_count, beast_kind };
   } catch (error) {
     if (error instanceof HeraldHttpError && error.status === 404) return null;
     throw error;

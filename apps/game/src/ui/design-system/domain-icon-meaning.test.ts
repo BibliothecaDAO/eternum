@@ -71,7 +71,12 @@ describe("guard and site icon meanings", () => {
         {
           model: "ExpeditionSite",
           key: "0x72",
-          value: { ...site, row: 2, initial_guard_count: BigInt(count) * BigInt(RESOURCE_PRECISION) },
+          value: {
+            ...site,
+            row: 2,
+            beast_kind: expected === "beast-cyclops" ? "Cyclops" : "Wraith",
+            initial_guard_count: BigInt(count) * BigInt(RESOURCE_PRECISION),
+          },
         },
       ]);
       expect(readStructureMeaning(store, structure)).toBe(expected);

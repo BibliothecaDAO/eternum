@@ -16,7 +16,10 @@ import { ArmyManager } from "../../managers/army-manager";
 import { configManager } from "../../managers/config-manager";
 import { StructureActionManager } from "../../managers/structure-action-manager";
 import { getGuardsByStructure } from "../../utils/army";
-import { structureMapPosition } from "../../utils/expeditions";
+import { readExpeditionRules, structureMapPosition } from "../../utils/expeditions";
+import { reinforcementDirectionOf } from "../../utils/reinforcement";
+import { FELT_CENTER } from "../../utils/utils";
+import { isViewerOwner } from "../../utils/viewer";
 import { getTileAt } from "../../utils/tile";
 import { type ActionPath, ActionPaths, ActionType } from "../../utils/action-paths";
 import { type ActionClient, requireSigner } from "./signer";
@@ -110,7 +113,7 @@ export const findStructurePaths = (client: ActionClient, input: StructurePathsIn
   const home = structureMapPosition(store, structure);
   const range = guardAttackRange(store, structure);
   if (!home || range === undefined) return new ActionPaths();
-  return new StructureActionManager().findActionPaths(
+  const paths = new StructureActionManager().findActionPaths(
     { col: home.x, row: home.y },
     input.armyHexes,
     input.exploredHexes,
@@ -118,7 +121,40 @@ export const findStructurePaths = (client: ActionClient, input: StructurePathsIn
     (hex) => (getTileAt(store, home.alt, hex.col, hex.row)?.occupier_type ?? TileOccupier.None) !== TileOccupier.None,
     range,
   );
+  addSupplyPostPaths(client, input, structure, { col: home.x, row: home.y }, paths);
+  return paths;
 };
+
+/** A supply post adds reinforcement to the Realm's map orders, without adding a muster or guard attack there. */
+function addSupplyPostPaths(
+  client: ActionClient,
+  input: StructurePathsInput,
+  realm: NativeRows["Structure"],
+  home: { col: number; row: number },
+  paths: ActionPaths,
+) {
+  const { store } = client.setup;
+  if (
+    !isViewerOwner(realm.owner, input.playerAddress) ||
+    configManager.helpTransfers("from-structure").length === 0 ||
+    !readExpeditionRules(store, realm.game_id)
+  )
+    return;
+  const center = FELT_CENTER();
+  for (const [column, armies] of input.armyHexes) {
+    for (const [row, army] of armies) {
+      const biome = input.exploredHexes.get(column)?.get(row);
+      if (biome === undefined || reinforcementDirectionOf(store, realm, army.id) === null) continue;
+      const hex = { col: column + center, row: row + center };
+      const actual = store.entityOccupancy(realm.game_id, army.id);
+      if (!actual || actual.col !== hex.col || actual.row !== hex.row) continue;
+      paths.set(ActionPaths.posKey(hex), [
+        { hex: home, actionType: ActionType.Move },
+        { hex, actionType: ActionType.Help, biomeType: biome, staminaCost: 0 },
+      ]);
+    }
+  }
+}
 
 /** The reach of the strongest-ranged guard with troops. */
 const guardAttackRange = (

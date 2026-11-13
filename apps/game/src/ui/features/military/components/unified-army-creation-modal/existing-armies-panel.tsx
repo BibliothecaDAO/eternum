@@ -118,7 +118,7 @@ const ExistingArmyRow = ({ army, structureId }: { army: ArmyInfo; structureId: I
         <ResourceIcon withTooltip={false} resource={troopResource} size="sm" className="shrink-0" />
       )}
       <span className="text-hud-label tabular-nums text-hud-accent">{formatAmount(knownAmount(rawCount))}</span>
-      {maxStamina > 0 && stamina && (
+      {maxStamina > 0 && stamina && army.troops && (
         <div
           className="flex min-w-0 flex-1 items-center gap-1.5"
           title={`Stamina ${Number(stamina.amount)}/${maxStamina}`}
@@ -129,7 +129,7 @@ const ExistingArmyRow = ({ army, structureId }: { army: ArmyInfo; structureId: I
               stamina={{
                 current: Number(stamina.amount),
                 max: maxStamina,
-                perExplore: configManager.getExploreStaminaCost(),
+                perExplore: configManager.getExploreStaminaCost(army.troops.category),
               }}
             />
           </span>

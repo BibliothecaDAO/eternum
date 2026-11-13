@@ -285,6 +285,7 @@ describe("native directory and leaderboard", () => {
     const { fold, native, decoder } = world();
     const site = {
       category: 9,
+      beast_kind: new CairoCustomEnum({ None: {} }),
       initial_guard_count: 1_000_000_000_000n,
       alt: false,
       col: 1764,
@@ -508,6 +509,7 @@ describe("native directory and leaderboard", () => {
     const site = (clear: CairoOption<unknown>) =>
       rowEvent("ExpeditionSite", ["1", "6"], {
         category: RIFT,
+        beast_kind: new CairoCustomEnum({ None: {} }),
         initial_guard_count: 1000n,
         alt: false,
         col: 1764n,

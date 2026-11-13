@@ -34,6 +34,7 @@ const site = (store: NativeFactStore, cleared: boolean, category: StructureType)
         game_id: GAME,
         entity_id: 42,
         category,
+        beast_kind: category === StructureType.Beasts ? "Cyclops" : "None",
         initial_guard_count: String(100n * BigInt(RESOURCE_PRECISION)),
         alt: false,
         col: 1,
@@ -56,7 +57,7 @@ describe("what a plate says taking a camp or a rift gives", () => {
   it.each([
     [StructureType.Camp, "50 Labor"],
     [StructureType.Rift, "300 Essence"],
-    [StructureType.Beasts, "25 Labor"],
+    [StructureType.Beasts, "400 Wheat"],
   ])("says a Frontier site's payout until its cleared fact arrives, then nothing (category %s)", (category, payout) => {
     vi.spyOn(configManager, "getActiveGameId").mockReturnValue(GAME);
     const { store } = frontierDay();

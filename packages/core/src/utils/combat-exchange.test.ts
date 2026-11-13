@@ -267,3 +267,35 @@ it("stops a Blitz forecast at the cooldown after this attack", () => {
   );
   expect(ranged.ok && ranged.attacker.battle_cooldown_end).toBe(recorded.context.timestamp + 30);
 });
+
+it("applies Scout damage before rounding for attackers and defenders against armies and guards", () => {
+  const { rules, cases } = readFixture();
+  const recorded = cases[0]!;
+  const expeditionRules: CombatRules = {
+    ...rules,
+    dayUnitSeconds: 14_400,
+    stamina: { ...rules.stamina, stamina_defense_req: 0 },
+  };
+  const army: ExchangeTroops = {
+    ...recorded.attacker,
+    category: "Knight",
+    tier: "T1",
+    count: 1_500n * 1_000_000_000n,
+    stamina: { amount: 180n, settled_at: recorded.context.timestamp, remainder: 0 },
+  };
+  for (const attackerCategory of ["Knight", "Paladin"] as const) {
+    for (const defenderCategory of ["Knight", "Paladin"] as const) {
+      for (const defenderIsStructureGuard of [false, true]) {
+        const result = resolveExchange(
+          { ...army, category: attackerCategory },
+          { ...army, category: defenderCategory, count: 1_000n * 1_000_000_000n },
+          { ...recorded.context, attackerIsStructureGuard: false, defenderIsStructureGuard },
+          expeditionRules,
+        );
+        if (!result.ok) throw new Error(result.refusal);
+        expect(result.defenderLoss).toBe((attackerCategory === "Paladin" ? 471n : 627n) * 1_000_000_000n);
+        expect(result.attackerLoss).toBe((defenderCategory === "Paladin" ? 314n : 418n) * 1_000_000_000n);
+      }
+    }
+  }
+});

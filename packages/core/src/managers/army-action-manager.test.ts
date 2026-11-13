@@ -155,6 +155,19 @@ describe("ArmyActionManager.findActionPaths origin precedence", () => {
     vi.restoreAllMocks();
   });
 
+  it("lets a Scout explore with ten stamina while a Knight still needs twenty", () => {
+    const { manager, components } = createTestSetup();
+    vi.mocked(configManager.getExploreStaminaCost).mockImplementation((category) =>
+      category === TroopType.Paladin ? 10 : 20,
+    );
+    vi.mocked(StaminaManager.prototype.getStamina).mockReturnValue({ amount: 10n, settled_at: 0, remainder: 0 });
+    const army = components.ExplorerTroops.get(String(TEST_ENTITY_ID));
+    army.troops.category = TroopType.Paladin;
+    expect(manager.canExplore(0)).toBe(true);
+    army.troops.category = TroopType.Knight;
+    expect(manager.canExplore(0)).toBe(false);
+  });
+
   it("anchors first-hop highlights to the TileOccupancy — the same coord the submit freshness guard checks", () => {
     const { manager, structureHexes, armyHexes, exploredHexes, chestHexes, oldFeltStart } = createTestSetup();
 

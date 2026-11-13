@@ -74,7 +74,11 @@ export const useOrderAt = (target: { col: number; row: number } | null): ArmyOrd
   const explore = actionType === ActionType.Explore;
   const tiles = path.length - 1;
 
-  const staminaCost = computeEffectiveStaminaCost(path.slice(1), actionType, configManager.getExploreStaminaCost());
+  const staminaCost = computeEffectiveStaminaCost(
+    path.slice(1),
+    actionType,
+    configManager.getExploreStaminaCost(army.troops.category),
+  );
   const staminaHeld = troops ? Number(StaminaManager.getStamina(troops, tick).amount) : undefined;
   // Frontier's preset charges no fish; the wheat is the order's whole food.
   const wheatCost = orderFood(path, army.troops).wheat;

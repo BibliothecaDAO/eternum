@@ -1,7 +1,13 @@
 import { describe, expect, it, vi } from "vitest";
 import { OccupiedSpaceError, TileManager } from "../index";
 import type { NativeFactStore } from "../client/native-fact-store";
-import { BUILDINGS_CENTER, BuildingType, type GameplayAccount, type SystemCalls } from "@bibliothecadao/types";
+import {
+  BUILDINGS_CENTER,
+  BuildingType,
+  ResourcesIds,
+  type GameplayAccount,
+  type SystemCalls,
+} from "@bibliothecadao/types";
 
 const setup = (occupied = false) => {
   const create_building = vi.fn().mockResolvedValue({ transaction_hash: "0x1" });
@@ -89,4 +95,20 @@ it("requires the Scouts first kind and sends each choice with construction", asy
       }),
     );
   }
+});
+
+it("keeps a Lodge's built tier Common even after Scouting research", () => {
+  const store = {
+    require: () => ({ entity_id: 1 }),
+    get: (model: string, key: { inner_col?: number; inner_row?: number }) =>
+      model === "RealmKnowledge"
+        ? { learned: 5n << 30n }
+        : model === "Building" && key.inner_col === BUILDINGS_CENTER[0] && key.inner_row === BUILDINGS_CENTER[1]
+          ? { inner_col: key.inner_col, inner_row: key.inner_row, category: BuildingType.ScoutsLodge, paused: false }
+          : undefined,
+  } as unknown as NativeFactStore;
+  const manager = TileManager.forStructure(store, {} as SystemCalls, 1);
+  expect(manager.existingBuildings()).toEqual([
+    expect.objectContaining({ category: BuildingType.ScoutsLodge, resource: ResourcesIds.Paladin, tier: 1 }),
+  ]);
 });

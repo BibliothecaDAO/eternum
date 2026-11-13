@@ -19,7 +19,7 @@ import {
   getStructureName,
   isViewerOwner,
   ruinDisappeared,
-  ruinLimitPerDepth,
+  ruinLimit,
 } from "@bibliothecadao/eternum";
 import {
   safeInteger,
@@ -46,6 +46,8 @@ const SITE_MODELS = [
   "ExpeditionSite",
   "ExpeditionDiscovery",
   "GameRelease",
+  "SliceRules",
+  "ChestRules",
   "LordsBudget",
   "SiteChest",
   "ExplorerTroops",
@@ -192,6 +194,8 @@ export const TileCard = ({
             attack: { stamina: plan.attackStamina, inFlight, refused, onAttack: () => void attackSite() },
           });
 
+  const limit = ruinLimit(facts.store, configManager.getActiveGameId());
+
   return (
     <SiteCardView
       receipt={receipt}
@@ -210,8 +214,8 @@ export const TileCard = ({
         )
       }
       ruinChoice={
-        plan.chest
-          ? { depth: plan.chest.depth, perDepth: ruinLimitPerDepth(facts.store, configManager.getActiveGameId()) }
+        plan.ruinDepth !== undefined && (limit === "home" || limit === "depth")
+          ? { depth: plan.ruinDepth, perDepth: limit === "depth" }
           : undefined
       }
       xp={plan.xp}
