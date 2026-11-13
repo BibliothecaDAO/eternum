@@ -150,12 +150,13 @@ const archivedFormatters = {
     return rankedStory([`${attribute} `, tier], [`${army} · ${price} XP`], "scroll");
   },
 } satisfies Record<string, StoryFormatter>;
+export type ArchivedStoryVariant = keyof typeof archivedFormatters;
 
 /**
  * One presentation for every story the chain can tell: each generated Story variant and each story model. A new
  * variant is a type error here until it has its line, so no story ever reaches the feed as raw fields.
  */
-const formatters: Record<NativeStoryVariant | StoryEventModel | keyof typeof archivedFormatters, StoryFormatter> = {
+const formatters: Record<NativeStoryVariant | StoryEventModel | ArchivedStoryVariant, StoryFormatter> = {
   ...archivedFormatters,
   ExplorationReward: (event, payload, components, resolvePlayerName) => {
     const site = discoveredSite(payload, components);
