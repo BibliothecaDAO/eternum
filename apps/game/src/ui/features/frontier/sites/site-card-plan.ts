@@ -145,7 +145,6 @@ const fittingPayout = (
   attack: SiteAttack | null,
 ): SiteCardPlan["payout"] => {
   const raw = Number(reward.amount) / Number(PRECISION);
-  if (reward.resourceType !== ResourcesIds.Labor) return { resourceId: reward.resourceType, amount: raw, fits: raw };
   const actor = store.subscriptionScope().known?.actor;
   const home =
     attack?.army.owner ??
@@ -156,13 +155,13 @@ const fittingPayout = (
         )?.entity_id);
   if (home === undefined) return undefined;
   const manager = new ResourceManager(store, safeInteger(home), gameId);
+  const limit = manager.storeLimit(reward.resourceType);
+  if (limit === undefined) return { resourceId: reward.resourceType, amount: raw, fits: raw };
   const held = manager.balanceWithProduction(
     attack?.timestamp ?? getBlockTimestamp().currentDefaultTick,
     reward.resourceType,
   );
   if (!held) return undefined;
-  const limit = manager.storeLimit(reward.resourceType);
-  if (limit === undefined) return { resourceId: reward.resourceType, amount: raw, fits: raw };
   const fits = Math.min(raw, Math.max(0, (Number(limit) - held.balance) / Number(PRECISION)));
   return { resourceId: reward.resourceType, amount: raw, fits };
 };

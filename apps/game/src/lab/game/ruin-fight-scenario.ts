@@ -2,7 +2,7 @@ import { nativeReleaseConstants } from "../../../../../contracts/l3/world-native
 import { SITE } from "@/ui/features/frontier/sites/site-fixture";
 import { siteClearXp } from "@bibliothecadao/eternum";
 import { SPIRE_ARMY } from "@/ui/features/frontier/spire-fixture";
-import type { NativeFactStore, NativeRows } from "@bibliothecadao/eternum/game-client";
+import type { NativeFactStore } from "@bibliothecadao/eternum/game-client";
 import { getNeighborHexes, StructureType } from "@bibliothecadao/types";
 
 import { siteAt } from "./after-battle-scenario";
@@ -60,6 +60,17 @@ const ruinScenario = (
     ...siteAt(store, ruinTile, { ...army.troops, count: guardTroops * PRECISION }, StructureType.Ruin),
     { model: "RuinRelic", key: "0x1ab9c", value: wire({ game_id: 1, entity_id: BigInt(SITE), ...RELIC }) },
     {
+      model: "ExpeditionDiscovery",
+      key: "0x1ab9f",
+      value: wire({
+        game_id: 1,
+        structure_id: BigInt(HOME),
+        epoch: BigInt(Math.floor(ruinTile.row / store.require("SettlementRules", { game_id: 1 }).spacing / 4)),
+        empty_reveals: 0,
+        ruin_cleared: false,
+      }),
+    },
+    {
       model: "ArmyRelics",
       key: "0x1ab9d",
       value: wire({ game_id: 1, explorer_id: BigInt(SPIRE_ARMY), first: null, second: null, third: null }),
@@ -103,12 +114,6 @@ const clearTheRuin = (chain: NativeFactStore, explorerId: bigint, player: string
   const site = chain.require("ExpeditionSite", { game_id: 1, entity_id: BigInt(SITE) });
   const progress = chain.require("ArmyProgress", { game_id: 1, explorer_id: explorerId });
   const relic = chain.require("RuinRelic", { game_id: 1, entity_id: BigInt(SITE) });
-  const epoch = BigInt(Math.floor(site.row / chain.require("SettlementRules", { game_id: 1 }).spacing / 4));
-  const discovery = chain.get("ExpeditionDiscovery", {
-    game_id: 1,
-    structure_id: BigInt(HOME),
-    epoch: epoch,
-  });
   const stamina = army.troops.stamina as { Inline: { amount: bigint } };
   const before = army.troops.count;
   const after = before - TROOPS_LOST * PRECISION;
@@ -150,17 +155,9 @@ const clearTheRuin = (chain: NativeFactStore, explorerId: bigint, player: string
       }),
     },
     {
-      model: "ExpeditionDiscovery",
-      key: discovery
-        ? keyOf(chain.entries("ExpeditionDiscovery"), (row) => row.structure_id === BigInt(HOME) && row.epoch === epoch)
-        : "0x1ab9f",
-      value: wire({
-        game_id: 1,
-        structure_id: BigInt(HOME),
-        epoch: epoch,
-        empty_reveals: discovery?.empty_reveals ?? 0,
-        ruin_cleared: true,
-      } satisfies NativeRows["ExpeditionDiscovery"]),
+      model: "RuinRelic",
+      key: keyOf(chain.entries("RuinRelic"), (row) => Number(row.entity_id) === SITE),
+      value: null,
     },
     {
       model: "ExplorerTroops",

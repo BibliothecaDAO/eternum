@@ -19,7 +19,7 @@ import type { NativeFactStore, NativeRows } from "@bibliothecadao/eternum/game-c
 import { StructureType } from "@bibliothecadao/types";
 import { nativeReleaseConstants } from "../../../../../../../contracts/l3/world-native/schema/client.gen";
 
-import { campBeside } from "../sites/site-fixture";
+import { campBeside, legacyRuinRules } from "../sites/site-fixture";
 
 import { layerTab, layerViews, type MapLayers, useMapLayers } from "./map-layers";
 import { PlaceNav } from "./place-nav";
@@ -157,6 +157,7 @@ describe("the map's layers", () => {
 const chestDay = (researched = 2n) => {
   const { store } = campBeside();
   store.applyFacts([
+    { model: "ChestRules", key: "0x1ca", value: legacyRuinRules() },
     {
       model: "GameRelease",
       key: "0x1ab0",
@@ -296,6 +297,22 @@ const listRows = () =>
   ]);
 
 describe("each layer's ruin chest today, on the layer switch", () => {
+  it("removes daily chest marks when the preset has relic ruins and restores historical marks from its rules", () => {
+    const { store, realm, rules, today } = chestDay();
+    discovered(store, today, false);
+    act(() => root.render(<LayerSwitch rules={rules} realm={realm} />));
+    expect(switchMarks()).toHaveLength(4);
+    act(() => store.applyFacts([{ model: "ChestRules", key: "0x1ca", value: null }]));
+    expect(switchMarks()).toEqual([]);
+    act(() => store.applyFacts([{ model: "ChestRules", key: "0x1ca", value: legacyRuinRules() }]));
+    expect(switchMarks()).toEqual([
+      "World: chest to take today",
+      "Ethereal I: chest to take today",
+      "Ethereal II: chest to take today",
+      "Ethereal III: not researched",
+    ]);
+  });
+
   it("opens every researched layer while nothing was cleared today, marks today's clears, and opens again tomorrow", () => {
     const { store, realm, rules, now, today } = chestDay();
     expect(today).toBe(1);

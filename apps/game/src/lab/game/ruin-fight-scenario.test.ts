@@ -1,10 +1,4 @@
-import {
-  configManager,
-  WorldUpdateListener,
-  ruinLimitPerDepth,
-  dayOf,
-  readExpeditionRules,
-} from "@bibliothecadao/eternum";
+import { configManager, WorldUpdateListener, ruinLimit, dayOf, readExpeditionRules } from "@bibliothecadao/eternum";
 import { NativeFactStore, type GameClientSetup } from "@bibliothecadao/eternum/game-client";
 import { BiomeType, ResourcesIds } from "@bibliothecadao/types";
 import { afterEach, expect, it, vi } from "vitest";
@@ -37,7 +31,7 @@ it.each([ruinFightScenario, ruinFarScenario])(
     expect(plan.chest).toBeUndefined();
     expect(plan.ruinDepth).toBe("Surface");
     expect(plan.payout).toBeUndefined();
-    expect(ruinLimitPerDepth(store, 1)).toBe(true);
+    expect(ruinLimit(store, 1)).toBe("none");
     expect(site.clear).toBeNull();
     const rules = readExpeditionRules(store, 1)!;
     const day = dayOf(rules, startsAt)!;
@@ -48,7 +42,7 @@ it.each([ruinFightScenario, ruinFarScenario])(
       rank: 2,
     });
     expect(plan.fight).toEqual(
-      makeScenario === ruinFightScenario ? { troopsLost: 364, guardLeft: 0 } : { troopsLost: 1_109, guardLeft: 2_412 },
+      makeScenario === ruinFightScenario ? { troopsLost: 364, guardLeft: 0 } : { troopsLost: 1_109, guardLeft: 2_399 },
     );
   },
 );
@@ -56,7 +50,7 @@ it.each([ruinFightScenario, ruinFarScenario])(
 it("answers the attack on the ruin as the chain clears it, and its payout story pairs with its winning battle", () => {
   vi.spyOn(configManager, "getActiveGameId").mockReturnValue(1);
   const scenario = ruinFightScenario();
-  expect(ruinLimitPerDepth(scenario.store, 1)).toBe(true);
+  expect(ruinLimit(scenario.store, 1)).toBe("none");
   const chain = new NativeFactStore();
   chain.applyFacts(rowsOf(scenario.store) as never);
   const army = chain.require("ExplorerTroops", { game_id: 1, explorer_id: BigInt(SPIRE_ARMY) });
@@ -91,7 +85,8 @@ it("answers the attack on the ruin as the chain clears it, and its payout story 
       }),
     );
 
-  expect(answered.some((fact) => fact.model === "SiteChest")).toBe(false);
+  expect(answered.some((fact) => fact.model === "SiteChest" || fact.model === "ExpeditionDiscovery")).toBe(false);
+  expect(chain.get("RuinRelic", { game_id: 1, entity_id: BigInt(SITE) })).toBeUndefined();
   expect(chain.get("SiteChest", { game_id: 1, entity_id: BigInt(SITE) })).toBeUndefined();
   expect(chain.get("LordsBudget", { game_id: 1 })).toEqual(budgetBefore);
   expect(chain.require("ArmyRelics", { game_id: 1, explorer_id: BigInt(SPIRE_ARMY) })).toMatchObject({
@@ -105,7 +100,7 @@ it("answers the attack on the ruin as the chain clears it, and its payout story 
   const day = dayOf(readExpeditionRules(chain, 1)!, scenario.startsAt)!;
   expect(
     chain.require("ExpeditionDiscovery", { game_id: 1, structure_id: 7n, epoch: BigInt(day.index) }).ruin_cleared,
-  ).toBe(true);
+  ).toBe(false);
   const after = chain.require("ExplorerTroops", { game_id: 1, explorer_id: BigInt(SPIRE_ARMY) });
   expect(after.troops.count).toBe(4_011n * 1_000_000_000n);
   expect((after.troops.stamina as { Inline: { amount: bigint } }).Inline.amount).toBe(staminaBefore - 50n);
@@ -139,7 +134,7 @@ it("stands the far ruin's army out of an attack's reach, and the card forecasts 
   expect(army.troops.count).toBe(1_626n * 1_000_000_000n);
   expect(plan.guard?.count).toBe(3_000);
   expect(plan.inReach).toBe(false);
-  // The attack from beside it: this one costs 1,109 of the 1,626 and leaves the guard 2,412. A second would lose the
+  // The attack from beside it: this one costs 1,109 of the 1,626 and leaves the guard 2,399. A second would lose the
   // army; the card speaks only of this one, so it warns of no loss (the owner's Blightglow Rift, 3 November 2026).
-  expect(plan.fight).toEqual({ troopsLost: 1_109, guardLeft: 2_412 });
+  expect(plan.fight).toEqual({ troopsLost: 1_109, guardLeft: 2_399 });
 });

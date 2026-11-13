@@ -94,7 +94,6 @@ export const HUD_WORDS = {
   close: "Close",
   chat: "Chat",
   realmLabor: "Realm Labor",
-  ruinRule: "One ruin per depth a day · others here vanish",
 };
 
 // A game's card on Play takes its step by the verb's name (`data-play-verb`, src/shell/play/play-item.tsx).
@@ -3422,7 +3421,7 @@ function farCardForecasts({ played }) {
 
 function fightCardOpenedCameraStill({ played }) {
   const { before, after } = played;
-  if (after.ruinRule !== HUD_WORDS.ruinRule) return failed("the ruin card shows another daily rule", played);
+  if (after.ruinRule !== null) return failed("a relic ruin must not show a daily entitlement", played);
   if (!before.ruinToken) return failed("the map draws no token for the ruin", played);
   if (!onADesktop() && !underTheCard(before.ruinToken))
     return failed("the ruin could not be panned under where its card opens", played);

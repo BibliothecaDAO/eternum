@@ -1,3 +1,4 @@
+import { legacyRuinRules } from "@/ui/features/frontier/sites/site-fixture";
 import { ResourcesIds, StructureType } from "@bibliothecadao/types";
 
 import { wire, type LabFact, type LabScenario } from "./lab-chain";
@@ -47,6 +48,11 @@ const chestsScenario = ({ researched, claimed }: { researched: bigint; claimed: 
     }),
   });
   store.applyFacts([
+    {
+      model: "ChestRules",
+      key: "0x1ca",
+      value: wire(legacyRuinRules()),
+    },
     {
       model: "RealmKnowledge",
       key: "0xd",

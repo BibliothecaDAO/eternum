@@ -35,7 +35,6 @@ describe("the HUD's words the steps press and read", () => {
       close: CLOSE,
       chat: CHAT,
       realmLabor: REALM_LABOR,
-      ruinRule: ruinRule(true),
     });
   });
 });
@@ -1069,13 +1068,13 @@ describe("lab-hud-devices", () => {
   });
 });
 
-it("the ruin fight proof refuses a legacy or missing daily rule", () => {
+it("the relic ruin proof refuses either historical daily rule", () => {
   const verify = STEP_SETS["lab-ruin-fight"].steps.find((step) => step.name === "open-the-fight").verify;
   const camera = { col: 1, row: 2 };
   const before = { ruinToken: [0, 180], camera };
-  const after = { camera, buttons: ["Attack"], ruinRule: ruinRule(true), sheet: "Ruin" };
+  const after = { camera, buttons: ["Attack"], ruinRule: null, sheet: "Ruin" };
   expect(verify({ played: { before, after } }).status).toBe("completed");
-  for (const rule of [ruinRule(false), null]) {
+  for (const rule of [ruinRule(false), ruinRule(true)]) {
     expect(verify({ played: { before, after: { ...after, ruinRule: rule } } }).status).toBe("failed");
   }
 });
