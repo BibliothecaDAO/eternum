@@ -220,6 +220,15 @@ export const FRONTIER = {
     days: n(Math.floor(frontierPreset.chests.claimWindowSeconds / 86400)),
   },
   labor: { perRealm: n(frontierPreset.labor.amount) },
+  /** Season 1's army relics: one step a tier, 30 minutes a tier, from the contract's rule constants. */
+  relics: {
+    blade: pct(rule.RELIC_BLADE_BPS),
+    ward: pct(rule.RELIC_WARD_BPS),
+    plunder: pct(rule.RELIC_PLUNDER_BPS),
+    tome: pct(rule.RELIC_TOME_BPS),
+    farEyeTiles: n(rule.RELIC_TILES_PER_RANK),
+    minutes: n(rule.RELIC_SECONDS_PER_RANK / 60),
+  },
   /** The day's spire on a layer: the odds a reveal adds, and the reveal that finds it at the latest (spires.cairo). */
   spire: { firstOdds: pct(10_000 / rule.SPIRE_REVEAL_LIMIT), reveals: n(rule.SPIRE_REVEAL_LIMIT) },
   /** Season 1's teams, as the Order catalog groups them: each Aspect's name and its four Orders. */

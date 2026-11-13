@@ -43,6 +43,8 @@ import { GuardToken } from "../hud/army-token";
 import { FightSide } from "./fight-side";
 import type { SiteFight } from "./site-card-plan";
 import { type AttackTargetKind, TARGET_MARKS, attackTargetName } from "./site-marks";
+import type { ArmyRelic } from "../relics/relic-catalog";
+import { RelicPay } from "../relics/relic-replacement";
 
 /** The step under the outcome: Attack (the same tap whatever the forecast), Move until the army is in reach, or
  * Attack held back, by the stamina the army lacks or by a site too far for one order, which the foot then says. */
@@ -80,6 +82,8 @@ export const SiteCardView = ({
   fight,
   pay,
   chest,
+  relic,
+  replacement,
   ruinChoice,
   xp,
   verb,
@@ -98,6 +102,10 @@ export const SiteCardView = ({
   pay: { icon: IconMeaning; amount: number; fits?: number } | null;
   /** A ruin's chest: its tier and the exact LORDS stored with it; undefined until the facts carry them. */
   chest?: { tier: Tier; lords: number };
+  /** A Season 1 ruin's relic, rolled when it was found: the clearing army carries it. */
+  relic?: ArmyRelic;
+  /** Before a full army clears a ruin: the relic it replaces, chosen there. */
+  replacement?: ReactNode;
   ruinChoice?: { depth: string; perDepth: boolean };
   xp: number | undefined;
   verb: SiteVerb | null;
@@ -120,9 +128,9 @@ export const SiteCardView = ({
   // an army is no site.
   const countsOnBoard = site !== "Army";
   const reward =
-    chest || pay || xp !== undefined || countsOnBoard ? (
+    relic || chest || pay || xp !== undefined || countsOnBoard ? (
       <Reward dimmed={facing !== undefined && !clears(facing)}>
-        {chest ? <ChestPay chest={chest} /> : pay ? <Pay pay={pay} /> : null}
+        {relic ? <RelicPay relic={relic} /> : chest ? <ChestPay chest={chest} /> : pay ? <Pay pay={pay} /> : null}
         {xp !== undefined && !(chest && lost) && (
           <HudChip>
             {formatShort(xp, { signed: true })} {XP}
@@ -167,6 +175,7 @@ export const SiteCardView = ({
       )}
       {!armyless && <FightPanel army={army} guard={guard} facing={facing} beast={beast} guardIcon={guardIcon} />}
       {receipt}
+      {replacement}
       <Verb
         verb={verb}
         site={word}

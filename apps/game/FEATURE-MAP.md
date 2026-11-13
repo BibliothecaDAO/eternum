@@ -1292,6 +1292,16 @@ Home paintings: `/lab/kit/home-icons` (Kit → Icons → Home levels) shows the 
 phone grid and checks all 16 distinct images decode. Season, the in-game season board and spectator standings use the
 same home badge.
 
+## Relics (Season 1)
+
+A ruin's card names the relic its beast guards in what its clear pays ("Epic Blade" with its rarity). The clearing army
+carries it in one of its three slots; with all three full, the card lists them under "Your army carries 3 relics. Choose
+the one this relic replaces." and Attack waits for a tap on one, then sends that slot (`relic_slot`). The army's panel
+shows the relics running ("Rare Ward · 20m left") and its three slots, each relic with what it does and **Switch on**
+(free, anywhere; one of its kind running is replaced). Kinds, steps and durations come from the contract's rule
+constants (`relics/relic-catalog.ts`). Dev: `/lab/game?scenario=relics` (three carried, a Ward running, a ruin guarding
+an Epic Blade; the lab chain answers ApplyRelic as `army_relics.cairo` does).
+
 ## Ethereal depths
 
 Frontier: a realm that knows Spire lore finds each layer's spire for the day by revealing on it (`ExpeditionSpire`: 10%

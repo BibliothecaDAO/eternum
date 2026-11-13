@@ -16,6 +16,7 @@ import { SCOUTING_CHOICES } from "../progression-choices";
 import { ArmyDetail, useArmyStep } from "./army-panel";
 import { ArmyRefill } from "./army-refill";
 import { ArmyDeleteButton, ArmyDeleteConfirm } from "./army-delete";
+import { ArmyRelicSlots } from "../relics/army-relic-slots";
 
 const PROGRESS_MODELS = ["RealmKnowledge", "ArmyProgress", "ArmyProgressionRules"] as const;
 
@@ -153,6 +154,7 @@ const ArmySheet = ({
         step={step}
         onLevelUp={onLevelUp}
       />
+      <ArmyRelicSlots explorerId={army.explorerId} />
       {deleting && !step.choosing && (
         <ArmyDeleteConfirm army={army} onCancel={() => setDeleting(false)} onDeleted={onClose} />
       )}
