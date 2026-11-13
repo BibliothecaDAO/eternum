@@ -1037,7 +1037,7 @@ pub mod GamesFixture {
         }
     }
     #[starknet::embeddable]
-    pub impl EconomyDeliveryFixture<
+    pub impl ResourceDeliveryFixture<
         TContractState, +Drop<TContractState>,
     > of crate::resources::IResourceDelivery<TContractState> {
         fn queue_resource_delivery(
