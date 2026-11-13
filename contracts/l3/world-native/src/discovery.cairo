@@ -10,7 +10,7 @@ pub enum Discovery {
     BitcoinMine,
     Camp,
     Rift,
-    Ruin: crate::army_relics::RuinReward,
+    Ruin: crate::army_relics::ArmyRelic,
     Beasts,
     Shrine,
     Well,
@@ -21,11 +21,6 @@ pub enum Discovery {
 // One reveal in two hundred, in basis points, when spire discovery is on.
 pub const SPIRE_FIND_BPS: u128 = 50;
 
-pub const FRONTIER_CHEST_FIND_BPS: u128 = 5;
-
-pub fn frontier_chest(seed: u256) -> bool {
-    crate::random::range(seed, 0x46524f4e544945525f4348455354, 10000) < FRONTIER_CHEST_FIND_BPS
-}
 
 pub fn surface(config: MapConfig, seed: u256, distance: u128, hyperstructures: u32, mode_rules: u32) -> Discovery {
     if mode_rules & crate::rules::DISCOVER_SPIRES != 0 && lottery(seed, 3, SPIRE_FIND_BPS, 10000 - SPIRE_FIND_BPS) {
@@ -104,7 +99,7 @@ pub fn frontier(
     sanctuaries_bonus_bps: u32,
     find_percent: u16,
     empty_reveals: u8,
-    ruin: Option<crate::army_relics::RuinReward>,
+    ruin: Option<crate::army_relics::ArmyRelic>,
     seed: u256,
 ) -> Discovery {
     let camp = modified_weight(rules.camp_bps, camp_bonus_bps, find_percent);

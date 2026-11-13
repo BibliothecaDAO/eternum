@@ -32,7 +32,7 @@ function shard(
     registeredRelease: async () => registered,
     gameId: async (name) => (pins[Number(name.replace("game-", ""))] === undefined ? 0 : Number(name.slice(5))),
     gameRelease: async (gameId) => pins[gameId]!,
-    isSettled: async (gameId) => settled.includes(gameId),
+    game: async (gameId) => ({ settled: settled.includes(gameId), preset_id: 7n }),
     applyRelease: async (gameId, releaseId) => {
       if (releaseId !== pins[gameId]! + 1) throw new Error("release must follow game pin");
       pins[gameId] = releaseId;
@@ -53,6 +53,16 @@ test("a running Frontier game on release 1 takes release 2 once it is registered
     { gameId: 1, from: 1, to: 2, transactions: ["0x12"] },
   ]);
   expect(applied).toEqual([[1, 2]]);
+});
+
+test.each([5n, 6n, 101n])("an existing game on retired preset %s keeps its release", async (presetId) => {
+  const { chain, applied, pins } = shard(2, { 1: 1, 2: 1 });
+  chain.game = async (gameId) => ({ settled: false, preset_id: gameId === 1 ? presetId : 7n });
+  expect(await advanceGames(chain, published(1, 2), candidate(2), ["game-1", "game-2"])).toEqual([
+    { gameId: 2, from: 1, to: 2, transactions: ["0x22"] },
+  ]);
+  expect(pins).toEqual({ 1: 1, 2: 2 });
+  expect(applied).toEqual([[2, 2]]);
 });
 
 test("a rerun on games already at the release sends nothing", async () => {
@@ -159,7 +169,7 @@ describe("interrupted Frontier launches", () => {
       registeredRelease: async () => ({ logic: { ...LOGIC }, migration: "0x0" }),
       gameId: async (name) => games[name] ?? 0,
       gameRelease: async (gameId) => pins.get(gameId)!,
-      isSettled: async () => false,
+      game: async () => ({ settled: false, preset_id: 7n }),
       applyRelease: async (gameId, releaseId) => {
         pins.set(gameId, releaseId);
         applied.push([gameId, releaseId]);

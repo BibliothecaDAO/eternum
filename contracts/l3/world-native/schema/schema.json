@@ -10811,14 +10811,6 @@
           "type": "world_native::relics::InteractSite"
         },
         {
-          "name": "RefillStamina",
-          "type": "world_native::relics::RefillStamina"
-        },
-        {
-          "name": "WithdrawLords",
-          "type": "world_native::relics::WithdrawLords"
-        },
-        {
           "name": "ClaimDailyQuest",
           "type": "world_native::quests::ClaimDailyQuest"
         }
@@ -16109,5 +16101,5 @@
       ]
     }
   },
-  "identity": "9e1ef4517cb65a69b5189b7859db98ffcd556ad04e9dedfe24ac596c92657283"
+  "identity": "7d4fe0434b9c9a25ebc98c146aba3657df059720ba75badaaa822fed955031fd"
 }

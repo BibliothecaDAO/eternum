@@ -11,7 +11,7 @@ pub fn owner(key: ResourceKey) -> ContractAddress {
 pub fn exists(key: ResourceKey) -> bool {
     let state = crate::state::read();
     let category = state.structures.structures.entry((key.game_id, key.entity_id)).base.read().category;
-    category != 0 && (category != crate::taxonomy::RUIN_CATEGORY || !crate::logic::expeditions::ruin_disappeared(key))
+    category != 0
 }
 
 pub fn record(key: ResourceKey) -> StructureRecord {
@@ -795,14 +795,7 @@ pub mod StructuresLogic {
                 Discovery::Beasts => { assert!(rules.day_unit_seconds != 0, "site requires expeditions"); },
                 Discovery::Ruin(reward) => {
                     assert!(rules.day_unit_seconds != 0, "site requires expeditions");
-                    match reward {
-                        crate::army_relics::RuinReward::Chest(chest) => crate::logic::lords_budget::store_site_chest(
-                            key, chest,
-                        ),
-                        crate::army_relics::RuinReward::Relic(relic) => crate::logic::army_relics::store_ruin(
-                            key, relic,
-                        ),
-                    }
+                    crate::logic::army_relics::store_ruin(key, reward);
                 },
                 Discovery::None | Discovery::Shrine | Discovery::Well | Discovery::Spire |
                 Discovery::Chest => panic!("discovery is not a structure"),

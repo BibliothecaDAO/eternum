@@ -35,11 +35,6 @@ pub struct ArmyRelicEffect {
     pub expires_at: u64,
 }
 
-#[derive(Copy, Drop, Serde, Debug, PartialEq)]
-pub enum RuinReward {
-    Chest: crate::relics::SiteChest,
-    Relic: ArmyRelic,
-}
 
 #[starknet::interface]
 pub trait IArmyRelics<T> {

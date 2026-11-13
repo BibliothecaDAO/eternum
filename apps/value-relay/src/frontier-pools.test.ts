@@ -1,6 +1,6 @@
 import { CallData } from "starknet";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
-import { gamesAbi, response } from "../../../packages/value-ledger/test-support/abi";
+import { seasonZeroGamesAbi as gamesAbi, response } from "../../../packages/value-ledger/test-support/abi";
 import { ledgerAbi } from "../../../packages/value-ledger/test-support/ledger-abi";
 import { publishFrontierPools } from "./frontier-pools";
 

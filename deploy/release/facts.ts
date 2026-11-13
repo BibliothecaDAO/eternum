@@ -9,7 +9,7 @@
 import { readFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { nativePresets } from "../../config/source/native";
+import { nativeReleasePresets } from "../../config/source/native";
 import { buildNativePreset } from "../../config/deployer/clean/config/native-preset";
 import type { DeploymentEnvironmentId } from "../../config/deployer/clean/types";
 import {
@@ -35,7 +35,7 @@ function releaseFacts() {
   const worldClass = (contract: string) => classHash(resolve(WORLD, `target/dev/world_native_${contract}`));
   // A commitment covers the register_preset calldata only, so any Games address encodes it the same way.
   const registrar = registrarWorldOf({ chainId: "0x0", worldAddress: "0x0", l2GasBound: 0n }, schema);
-  const presets = Object.values(nativePresets).map(({ id, gameType }) => {
+  const presets = Object.values(nativeReleasePresets).map(({ id, gameType }) => {
     const environment: DeploymentEnvironmentId = `madara.${gameType}`;
     const definition = buildNativePreset(loadNativePresetConfiguration(environment, id), id);
     return [String(id), presetRegistrationCall(definition, id, registrar).commitment];

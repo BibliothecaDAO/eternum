@@ -10,7 +10,6 @@ import {
   ArmyActionManager,
   canPayTroopRaise,
   realmLearned,
-  researchedDepth,
   researchRowCategory,
   researchTier,
   createGameActions,
@@ -46,7 +45,7 @@ import {
 } from "../../../contracts/l3/world-native/schema/client.gen";
 import { buildNativePreset } from "../../../config/deployer/clean/config/native-preset";
 import { nativePresetForId } from "../../../config/source/native";
-import { FRONTIER_ACCELERATED_PRESET_ID } from "../../../config/source/common/native-preset-modes";
+import { FRONTIER_FIXTURE_PRESET_ID } from "../../../config/source/common/native-preset-modes";
 import { loadNativePresetConfiguration } from "../../../config/deployer/clean/registrar/native-preset";
 import type { HarnessAccount } from "./account-factory";
 import { actorKey, type HarnessGameClient } from "./game-client";
@@ -76,7 +75,7 @@ const GUARDED_SITES = new Set<number>([
 
 /** A design run's day unit: the accelerated fixture preset's, which the season it plays must match. */
 const acceleratedDayUnitSeconds = (): number => {
-  const preset = nativePresetForId(FRONTIER_ACCELERATED_PRESET_ID);
+  const preset = nativePresetForId(FRONTIER_FIXTURE_PRESET_ID);
   return seasonDayUnitSeconds(preset);
 };
 
@@ -926,11 +925,7 @@ function planExpedition(client: GameClient, game: HarnessGame, player: Player): 
     const neighbors = getNeighborHexes(coord.x, coord.y);
     const spacing = client.setup.store.require("SettlementRules", { game_id: client.gameId }).spacing;
     const realm = home(client, player);
-    const depth = known(
-      researchedDepth(client.setup.store, client.gameId, player.realmId),
-      player.realmId,
-      "researched depth",
-    );
+    const depth = realm.metadata.deepest_depth;
     const atEntrance =
       Math.floor(coord.y / spacing) % 4 === 0 &&
       neighbors.some(
@@ -1122,10 +1117,7 @@ function observeProgress(client: GameClient, game: HarnessGame, player: Player) 
         research.ROW_BARRACKS,
       ),
     ],
-    [
-      "depth",
-      known(researchedDepth(client.setup.store, client.gameId, player.realmId), player.realmId, "researched depth"),
-    ],
+    ["depth", realm.metadata.deepest_depth],
   ] as const) {
     if (level > 0 && !player.rungs.some((rung) => rung.lane === lane && rung.level === level))
       player.rungs.push({ lane, level, at: now() });

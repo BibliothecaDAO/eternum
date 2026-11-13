@@ -1,7 +1,7 @@
-import type { NativePreset } from "../common/native-preset";
 import { nativeRuleConstants as rule } from "../../../contracts/l3/world-native/schema/client.gen";
-import { startingTroopsByBiome, realmResourcePool, relicRules, eternumExplorationRewards } from "../common/native-data";
 import { commandMask } from "../common/native-commands";
+import { eternumExplorationRewards, realmResourcePool, relicRules, startingTroopsByBiome } from "../common/native-data";
+import type { NativePreset } from "../common/native-preset";
 
 export const eternumPreset: NativePreset = {
   ledger: {
@@ -36,14 +36,7 @@ export const eternumPreset: NativePreset = {
     rule.DEV_VILLAGE_ENTRY |
     rule.COMBAT_DICE_ETHEREAL,
   entryRule: rule.ENTRY_ENTITLEMENT,
-  commandMask: commandMask([
-    "EnterDepth",
-    "Research",
-    "InteractSite",
-    "RefillStamina",
-    "WithdrawLords",
-    "ClaimDailyQuest",
-  ]),
+  commandMask: commandMask(["EnterDepth", "Research", "InteractSite", "ClaimDailyQuest"]),
   spacing: 6,
   dayUnitSeconds: 0,
   progression: null,

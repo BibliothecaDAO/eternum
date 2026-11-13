@@ -1,5 +1,7 @@
 use snforge_std::{start_cheat_block_timestamp, start_cheat_chain_id};
-use starknet::storage::{StorageMapWriteAccess, StoragePathEntry, StoragePointerWriteAccess};
+use starknet::storage::{
+    StorageMapReadAccess, StorageMapWriteAccess, StoragePathEntry, StoragePointerReadAccess, StoragePointerWriteAccess,
+};
 use world_test_support::tests::releases::*;
 use crate::approved_frontier_extension as approved;
 
@@ -8,7 +10,7 @@ fn setup() -> super::Deployment {
     let registrar = IRegistrarDispatcher { contract_address: d.games };
     let releases = IReleasesDispatcher { contract_address: d.games };
     start_cheat_caller_address(d.games, authority());
-    let (_, preset) = super::preset_projection::current_definition("frontier");
+    let (_, preset) = super::preset_projection::current_definition("frontier-check");
     registrar.register_preset(approved::PRESET_ID, preset);
     let params = CreateGameParams {
         name: approved::NAME,
@@ -22,7 +24,35 @@ fn setup() -> super::Deployment {
     };
     assert_eq!(registrar.create_game(params), approved::GAME_ID);
     assert_eq!(registrar.create_game(CreateGameParams { name: 'unrelated', ..params }), 2);
-    super::registrar::publish_test_pool(d, 1, approved::POOL_LORDS, approved::START + 1);
+    let (_, historical) = super::preset_projection::current_definition("frontier");
+    interact_with_state(
+        d.games,
+        || {
+            crate::state::write()
+                .presets
+                .entry(crate::logic::game::preset_commitment(crate::logic::game::game(1)))
+                .rollover_chest_rules
+                .write(historical.economy.chests);
+            crate::state::write()
+                .relics
+                .rollover_budget
+                .write(
+                    1,
+                    Some(
+                        crate::relics::LordsBudget {
+                            pool: approved::POOL_LORDS,
+                            pool_left: approved::POOL_LORDS,
+                            open: 0,
+                            day: 0,
+                            price: historical.economy.chests.unwrap().price_ceiling,
+                            rolled_shares: 0,
+                            yesterday_shares: 0,
+                            yesterday_ticks: 0,
+                        },
+                    ),
+                );
+        },
+    );
     start_cheat_caller_address(d.games, authority());
     let release = releases.release(1);
     releases.register_release(2, release);
@@ -38,7 +68,7 @@ fn setup() -> super::Deployment {
 }
 
 fn budget(d: super::Deployment) -> crate::relics::LordsBudget {
-    interact_with_state(d.games, || crate::logic::lords_budget::budget(1).unwrap())
+    interact_with_state(d.games, || crate::state::read().relics.rollover_budget.read(1).unwrap())
 }
 fn store_budget(d: super::Deployment, value: crate::relics::LordsBudget) {
     interact_with_state(d.games, || crate::state::write().relics.rollover_budget.write(1, Some(value)));
@@ -81,9 +111,6 @@ fn approved_extension_changes_only_end_emits_row_and_retries_without_events() {
     let final_day = crate::days::day_of(game(d), approved::DAY_UNIT, approved::END - 1);
     assert_eq!(final_day.index, 14);
     assert_eq!(final_day.end, approved::END);
-    crate::relics::assert_claim_window(
-        game(d), super::lords_budget::rules(), approved::END + approved::CLAIM_WINDOW.into() - 3601,
-    );
     assert!(
         !super::resource_commands::execute_in_game(d, 1, crate::commands::Command::MarkGameSettled, approved::OLD_END),
     );
@@ -170,7 +197,8 @@ fn extension_refuses_wrong_identity_lifecycle_authority_and_insolvent_unlock(cas
                     .write(
                         Some(
                             crate::relics::ChestRules {
-                                claim_window_seconds: 3600, ..crate::logic::lords_budget::chest_rules(1),
+                                claim_window_seconds: 3600,
+                                ..crate::logic::preset_record::for_game(1).rollover_chest_rules.read().unwrap(),
                             },
                         ),
                     );
@@ -183,12 +211,12 @@ fn extension_refuses_wrong_identity_lifecycle_authority_and_insolvent_unlock(cas
         start_cheat_caller_address(d.games, d.actor);
     }
     let before = game(d);
-    let before_budget = interact_with_state(d.games, || crate::logic::lords_budget::budget(1));
+    let before_budget = interact_with_state(d.games, || crate::state::read().relics.rollover_budget.read(1));
     let safe = IReleasesSafeDispatcher { contract_address: d.games };
     assert!(safe.apply_release(1, 4).is_err());
     assert_eq!(IReleasesDispatcher { contract_address: d.games }.game_release(1), 3);
     assert_eq!(game(d), before);
-    assert_eq!(interact_with_state(d.games, || crate::logic::lords_budget::budget(1)), before_budget);
+    assert_eq!(interact_with_state(d.games, || crate::state::read().relics.rollover_budget.read(1)), before_budget);
 }
 
 #[test_case(false)]

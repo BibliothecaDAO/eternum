@@ -68,7 +68,8 @@ describe("Frontier's tile card", () => {
     const plan = readSiteCard(store, site, structure, SITE_TILE, null);
     expect(plan.name).toBe("Basilisk");
     expect(plan.payout).toEqual({ resourceId: ResourcesIds.Lords, amount: 500, fits: 500 });
-    expect(plan.chest).toMatchObject({ tier: 3, amount: 500, depth: "Ethereal I", funded: true });
+    expect(plan.chest).toMatchObject({ tier: 3, amount: 500, funded: true });
+    expect(plan.ruinDepth).toBe("Ethereal I");
     expect(plan.xp).toBe(123);
     const rift = campBeside("Rift");
     expect(readSiteCard(rift.store, rift.site, rift.structure, SITE_TILE, null).payout).toEqual({
@@ -122,7 +123,6 @@ it("shows a ruin's fixed quote but refuses funding when the shared budget is spe
   expect(readSiteCard(store, site, structure, SITE_TILE, null).chest).toEqual({
     tier: 3,
     amount: 500,
-    depth: "Ethereal I",
     funded: false,
   });
 });

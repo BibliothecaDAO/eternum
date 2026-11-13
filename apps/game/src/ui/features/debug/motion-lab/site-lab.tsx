@@ -11,7 +11,6 @@ const STORIES: Record<"camp" | "rift" | "ruin", SiteClear> = {
   rift: { siteId: 2, kind: "Rift", reward: { resourceId: ResourcesIds.Essence, amount: 3_300 } },
   ruin: { siteId: 3, kind: "Ruin", reward: null },
 };
-const TROOPS_LOST = 420;
 
 /**
  * A site cleared from fixture stories: the banked counters are the status strip's own, and the realm's balance fact
@@ -32,7 +31,6 @@ export const SiteLab = () => {
     }
     playSiteClear({
       clear: result,
-      troopsLost: TROOPS_LOST,
       at: { x: box.left + box.width / 2, y: box.top + box.height / 2 },
       // The dust burst of 24 plays through the scene's playBurst; the lab has no world.
       burst: () => {},

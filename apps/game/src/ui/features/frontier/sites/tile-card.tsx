@@ -216,8 +216,8 @@ export const TileCard = ({
         )
       }
       ruinChoice={
-        plan.chest && (limit === "home" || limit === "depth")
-          ? { depth: plan.chest.depth, perDepth: limit === "depth" }
+        plan.ruinDepth !== undefined && (limit === "home" || limit === "depth")
+          ? { depth: plan.ruinDepth, perDepth: limit === "depth" }
           : undefined
       }
       xp={plan.xp}

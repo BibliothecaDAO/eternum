@@ -1,5 +1,7 @@
 import { expect, it, vi } from "vitest";
 
+const recovered = vi.hoisted(() => ({ epoch: 0n }));
+
 // A recovered base scenario already has today's discovery under its original native key.
 vi.mock("./ruin-fight-scenario", async (original) => {
   const actual = await original<typeof import("./ruin-fight-scenario")>();
@@ -7,12 +9,13 @@ vi.mock("./ruin-fight-scenario", async (original) => {
     ...actual,
     ruinFightScenario: () => {
       const scenario = actual.ruinFightScenario();
-      const chest = [...scenario.store.inGame("SiteChest", 1)][0]!;
+      const discovery = [...scenario.store.inGame("ExpeditionDiscovery", 1)][0]!;
+      recovered.epoch = discovery.epoch;
       scenario.store.applyFacts([
         {
           model: "ExpeditionDiscovery",
           key: "0x1ab9f",
-          value: { game_id: 1, structure_id: 7n, epoch: chest.reservation_day, empty_reveals: 2, ruin_cleared: false },
+          value: { ...discovery, empty_reveals: 2, ruin_cleared: false },
         },
       ] as never);
       return scenario;
@@ -32,7 +35,7 @@ it.each([
   expect(discoveries[0]?.[1]).toEqual({
     game_id: 1,
     structure_id: 7n,
-    epoch: [...store.inGame("SiteChest", 1)][0]!.reservation_day,
+    epoch: recovered.epoch,
     empty_reveals: 2,
     ruin_cleared: claimed,
   });

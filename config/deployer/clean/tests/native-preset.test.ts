@@ -1,40 +1,41 @@
-import { registerEnvironmentPreset } from "../registrar/register-preset";
-import { buildLedgerEconomicPreset, buildRegisterLedgerPresetCalldata } from "../ledger/economics";
-import { findRegistrarGame } from "../registrar/calls";
-import { nativePresets } from "../../../source/native";
-import { afterAll, describe, expect, test, mock, spyOn } from "bun:test";
+import developmentRelease from "../../../../deploy/release/dev.json";
+import productionRelease from "../../../../deploy/release/production.json";
+import { afterAll, describe, expect, mock, spyOn, test } from "bun:test";
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { CallData, type Account, type RpcProvider } from "starknet";
-import schema from "../../../../contracts/l3/world-native/schema/schema.json";
 import {
-  nativeResearchConstants as research,
   nativeRuleConstants,
+  nativeResearchConstants as research,
 } from "../../../../contracts/l3/world-native/schema/client.gen";
 import { nativeCommandBits } from "../../../../contracts/l3/world-native/schema/commands.gen";
-import { applyDeploymentConfigOverrides } from "../config/config-loader";
-import { buildNativePreset } from "../config/native-preset";
+import schema from "../../../../contracts/l3/world-native/schema/schema.json";
+import { orderLengths, seasonSeconds } from "../../../../packages/core/src/utils/days";
+import { RESOURCE_PRECISION, ResourcesIds } from "../../../../packages/types/src/constants";
 import {
   FRONTIER_ACCELERATED_PRESET_ID,
-  FRONTIER_PRESET_ID,
   FRONTIER_DEVCON_PRESET_ID,
   FRONTIER_FIXTURE_PRESET_ID,
   FRONTIER_PLAYGROUND_PRESET_ID,
+  FRONTIER_PRESET_ID,
   FRONTIER_S1_PRESET_ID,
   FRONTIER_S1_DEV_PRESET_ID,
   nativeGameModeOf,
 } from "../../../source/common/native-preset-modes";
-import { orderLengths, seasonSeconds } from "../../../../packages/core/src/utils/days";
-import { nativePresetIdFor } from "../../../source/native";
 import { clockScaled, seasonDayUnitSeconds } from "../../../source/common/season-clock";
-import { RESOURCE_PRECISION, ResourcesIds } from "../../../../packages/types/src/constants";
+import { nativePresetIdFor, nativePresets, nativeReleasePresets } from "../../../source/native";
+import { applyDeploymentConfigOverrides } from "../config/config-loader";
+import { buildNativePreset } from "../config/native-preset";
+import { buildLedgerEconomicPreset, buildRegisterLedgerPresetCalldata } from "../ledger/economics";
+import { findRegistrarGame } from "../registrar/calls";
 import {
-  buildNativePresetRegistration,
-  registerNativePreset,
   buildNativeGameParams,
+  buildNativePresetRegistration,
   loadNativePresetConfiguration,
+  registerNativePreset,
 } from "../registrar/native-preset";
+import { registerEnvironmentPreset } from "../registrar/register-preset";
 
 const abi = [...Object.values(schema.types), ...schema.games.entrypoints];
 const codec = new CallData(abi);
@@ -124,8 +125,18 @@ describe("native presets", () => {
       expect(previous.structures.research.filter(({ row }) => row === research.ROW_DEPTH)).toHaveLength(3);
     }
   });
-  test("Season 1 has no in-game LORDS commands while earlier presets retain them", () => {
-    const lordsCommands = ["OpenRelicChest", "RefillStamina", "WithdrawLords"] as const;
+  test("release registrations use supported presets and include Season 1", () => {
+    for (const release of [developmentRelease, productionRelease]) {
+      expect(release.presets).toContain(FRONTIER_S1_PRESET_ID);
+      for (const id of [FRONTIER_PRESET_ID, FRONTIER_DEVCON_PRESET_ID, FRONTIER_ACCELERATED_PRESET_ID])
+        expect(nativeReleasePresets[id]).toBeUndefined();
+      for (const id of release.presets) expect(nativePresets[id]!.chests).toBeNull();
+    }
+  });
+  test("Season 1 has no resource chest command and the paid commands are retired", () => {
+    const lordsCommands = ["OpenRelicChest"] as const;
+    expect(nativeCommandBits).not.toHaveProperty("RefillStamina");
+    expect(nativeCommandBits).not.toHaveProperty("WithdrawLords");
     for (const id of [FRONTIER_S1_PRESET_ID, FRONTIER_PRESET_ID, FRONTIER_DEVCON_PRESET_ID]) {
       const preset = buildNativePreset(loadNativePresetConfiguration("madara.frontier", id), id);
       for (const command of lordsCommands)
@@ -224,8 +235,8 @@ describe("native presets", () => {
     }
   });
 
-  test("every Frontier preset carries chest rules without a funding amount", () => {
-    for (const id of [FRONTIER_PRESET_ID, FRONTIER_ACCELERATED_PRESET_ID, FRONTIER_FIXTURE_PRESET_ID]) {
+  test("historical paying presets carry chest rules without a funding amount", () => {
+    for (const id of [FRONTIER_PRESET_ID, FRONTIER_ACCELERATED_PRESET_ID]) {
       expect(nativePresets[id]!.chests).not.toHaveProperty("pool");
       const chests = buildNativePreset(
         loadNativePresetConfiguration("madara.frontier", id),
@@ -344,7 +355,7 @@ describe("native presets", () => {
     expect(config.season.durationSeconds).toBe(0);
   });
 
-  test.each([FRONTIER_PRESET_ID, FRONTIER_ACCELERATED_PRESET_ID, FRONTIER_FIXTURE_PRESET_ID])(
+  test.each([FRONTIER_PRESET_ID, FRONTIER_ACCELERATED_PRESET_ID])(
     "Frontier preset %i removes one chest rarity at each depth and preserves the remaining proportions",
     (id) => {
       const preset = buildNativePreset(loadNativePresetConfiguration("madara.frontier", id), id);
@@ -383,8 +394,8 @@ describe("native presets", () => {
 
   test("the contract Frontier command gate uses the published mask", () => {
     const preset = buildNativePreset(
-      loadNativePresetConfiguration("madara.frontier", FRONTIER_PRESET_ID),
-      FRONTIER_PRESET_ID,
+      loadNativePresetConfiguration("madara.frontier", FRONTIER_FIXTURE_PRESET_ID),
+      FRONTIER_FIXTURE_PRESET_ID,
     );
     const mask = BigInt(
       readFileSync(
@@ -966,8 +977,13 @@ describe("scaled Frontier presets", () => {
       const ledger = buildLedgerEconomicPreset("frontier", { presetId });
       expect(world.rules.day_unit_seconds).toBe(dayUnit);
       expect(ledger.day_unit_seconds).toBe(dayUnit);
-      expect(world.economy.chests.unwrap()).toMatchObject({ claim_window_seconds: 604_800 });
-      expect(ledger.claim_window_seconds).toBe(604_800);
+      if (presetId === FRONTIER_FIXTURE_PRESET_ID) {
+        expect(world.economy.chests.isNone()).toBe(true);
+        expect(ledger.claim_window_seconds).toBe(0);
+      } else {
+        expect(world.economy.chests.unwrap()).toMatchObject({ claim_window_seconds: 604_800 });
+        expect(ledger.claim_window_seconds).toBe(604_800);
+      }
     }
   });
 
@@ -986,7 +1002,7 @@ describe("Devcon's fast Frontier preset", () => {
     const normal = definition(FRONTIER_PRESET_ID);
     const fast = definition(FRONTIER_DEVCON_PRESET_ID);
     expect(nativeGameModeOf(FRONTIER_DEVCON_PRESET_ID)).toBe("frontier");
-    expect(nativePresetIdFor("frontier")).toBe(FRONTIER_PRESET_ID);
+    expect(nativePresetIdFor("frontier")).toBe(FRONTIER_S1_PRESET_ID);
     expect(fast.rules.tick_config.armies_tick_in_seconds).toBe(40);
     expect(fast.rules.troop_stamina_config).toEqual(normal.rules.troop_stamina_config);
     expect(fast.settlement.realms.resources).toEqual(normal.settlement.realms.resources);
@@ -1091,7 +1107,7 @@ describe("the Frontier playground preset", () => {
 
   test("plays Frontier under its own id, which the launcher never creates from", () => {
     expect(nativeGameModeOf(FRONTIER_PLAYGROUND_PRESET_ID)).toBe("frontier");
-    expect(nativePresetIdFor("frontier")).toBe(FRONTIER_PRESET_ID);
+    expect(nativePresetIdFor("frontier")).toBe(FRONTIER_S1_PRESET_ID);
     expect(
       buildNativePresetRegistration(
         definition(FRONTIER_PLAYGROUND_PRESET_ID),

@@ -200,7 +200,7 @@ fn a_free_settlement_attaches_only_the_chosen_held_realm_once() {
 
 #[feature("safe_dispatcher")]
 fn settle_labor_home(held: bool) -> (Deployment, crate::entry::LaborHome) {
-    let (d, game_id) = super::registrar::setup_open_frontier_preset("devcon", 2);
+    let (d, game_id) = super::registrar::setup_labor_home_game("devcon", 2);
     set_operator(d, authority());
     if held {
         start_cheat_caller_address(d.games, authority());
@@ -244,7 +244,7 @@ fn a_held_settlement_receives_one_thousand_labor_per_day_and_retries_are_exact()
     let game = crate::game::IGameDispatcherTrait::game(
         crate::game::IGameDispatcher { contract_address: d.games }, home.game_id,
     );
-    let (_, preset) = super::preset_projection::current_definition("devcon");
+    let preset = super::registrar::labor_home_definition("devcon");
     let unit = preset.rules.day_unit_seconds;
     let mut today = crate::days::day_of(game, unit, 362);
     // All ten seeded days reset at their own boundary, including multiple claims within one UTC date.
@@ -305,7 +305,7 @@ fn midnight_is_not_a_frontier_labor_reset() {
     let game = crate::game::IGameDispatcherTrait::game(
         crate::game::IGameDispatcher { contract_address: d.games }, home.game_id,
     );
-    let (_, preset) = super::preset_projection::current_definition("devcon");
+    let preset = super::registrar::labor_home_definition("devcon");
     let day = crate::days::day_of(game, preset.rules.day_unit_seconds, 86400);
     assert!(day.start < 86400 && day.end > 86400);
     let operator = IHomeGrantsSafeDispatcher { contract_address: d.games };

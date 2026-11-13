@@ -1,5 +1,5 @@
 {
-  "schemaIdentity": "9e1ef4517cb65a69b5189b7859db98ffcd556ad04e9dedfe24ac596c92657283",
+  "schemaIdentity": "7d4fe0434b9c9a25ebc98c146aba3657df059720ba75badaaa822fed955031fd",
   "commandAbi": [
     {
       "type": "interface",
@@ -302,14 +302,6 @@
         {
           "name": "InteractSite",
           "type": "world_native::relics::InteractSite"
-        },
-        {
-          "name": "RefillStamina",
-          "type": "world_native::relics::RefillStamina"
-        },
-        {
-          "name": "WithdrawLords",
-          "type": "world_native::relics::WithdrawLords"
         },
         {
           "name": "ClaimDailyQuest",
@@ -1444,34 +1436,6 @@
         {
           "name": "coord",
           "type": "world_native::troops::Coord"
-        }
-      ]
-    },
-    {
-      "type": "struct",
-      "name": "world_native::relics::RefillStamina",
-      "members": [
-        {
-          "name": "explorer_id",
-          "type": "core::integer::u64"
-        },
-        {
-          "name": "amount",
-          "type": "core::integer::u64"
-        }
-      ]
-    },
-    {
-      "type": "struct",
-      "name": "world_native::relics::WithdrawLords",
-      "members": [
-        {
-          "name": "structure_id",
-          "type": "core::integer::u64"
-        },
-        {
-          "name": "amount",
-          "type": "core::integer::u128"
         }
       ]
     },

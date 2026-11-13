@@ -3,13 +3,13 @@ pub use world_test_support::tests::progression::*;
 #[test]
 fn exploring_each_private_layer_awards_exact_xp_once() {
     for (depth, xp) in array![(0_u8, 2_u32), (1, 3), (2, 4)] {
-        let (d, game_id, key) = super::registrar::setup_frontier_chests();
+        let (d, game_id, key) = super::registrar::setup_frontier_relics();
         let map = crate::map::IMapLogicDispatcher { contract_address: d.games };
         place_army_on_private_layer(d, key, depth);
 
         let before = read_progress(d, key);
-        let target = super::frontier_explore_chest::destination(d, key);
-        super::frontier_explore_chest::explore(d, key, super::frontier_explore_chest::HIT_ROOT, 360);
+        let target = exploration_destination(d, key);
+        explore(d, key, 19635, 360);
         let after = read_progress(d, key);
         assert_eq!(after, ArmyProgress { xp: before.xp + xp, ..before });
         assert!(map.tile(crate::geometry::tile_key(game_id, target)).is_some());
@@ -301,7 +301,7 @@ fn battle_tiers_multiply_damage_by_the_ruled_table() {
 
 #[test]
 fn logistics_tiers_set_the_maximum_stamina_by_the_ruled_table() {
-    let (_, frontier) = super::preset_projection::current_definition("frontier");
+    let (_, frontier) = super::preset_projection::current_definition("frontier-check");
     let rules = frontier.rules.troop_stamina_config;
     for (logistics, maximum) in array![(0_u8, 120_u64), (1, 140), (2, 165), (3, 195), (4, 230), (5, 270)] {
         let progress = ArmyProgress { logistics, ..crate::progression::initial() };
@@ -311,7 +311,7 @@ fn logistics_tiers_set_the_maximum_stamina_by_the_ruled_table() {
 
 #[test]
 fn added_stamina_stops_at_the_armys_own_maximum() {
-    let (_, frontier) = super::preset_projection::current_definition("frontier");
+    let (_, frontier) = super::preset_projection::current_definition("frontier-check");
     let rules = frontier.rules.troop_stamina_config;
     let maximum = crate::progression::stamina_max(
         ArmyProgress { logistics: 3, ..crate::progression::initial() }, crate::troops::TroopType::Knight, rules,
@@ -503,7 +503,7 @@ fn discovery_stores_a_depth_scaled_point_and_public_use_grants_it_once_without_x
     for depth in 0_u8..3 {
         let rules = super::preset_projection::frontier_discovery_rules();
         let unlocked = crate::expeditions::FrontierDiscoveryRules { well_bps: 0, ..rules };
-        let (d, game_id, key) = super::registrar::setup_frontier_chests_with_rules(Some(unlocked));
+        let (d, game_id, key) = super::registrar::setup_frontier_relics_with_rules(Some(unlocked));
         place_army_on_private_layer(d, key, depth);
         let army = super::state::GameState { contract_address: d.games }.resolved_explorer(key).unwrap();
         snforge_std::interact_with_state(
@@ -518,10 +518,10 @@ fn discovery_stores_a_depth_scaled_point_and_public_use_grants_it_once_without_x
             },
         );
         let root = super::registrar::discovery_root(
-            game_id, unlocked, 0, Some(super::registrar::any_chest()), crate::discovery::Discovery::Shrine,
+            game_id, unlocked, 0, Some(super::registrar::any_relic()), crate::discovery::Discovery::Shrine,
         );
-        let target = super::frontier_explore_chest::destination(d, key);
-        super::frontier_explore_chest::explore(d, key, root, 360);
+        let target = exploration_destination(d, key);
+        explore(d, key, root, 360);
         let occupied = snforge_std::interact_with_state(
             d.games, || crate::logic::map::occupancy(crate::geometry::tile_key(game_id, target)).unwrap(),
         );
@@ -625,7 +625,7 @@ fn fixed_deep_walking_grants_no_xp_chest_or_shrine(shrine: bool) {
     } else {
         None
     };
-    let (d, game_id, key) = super::registrar::setup_frontier_chests_with_rules(discovery);
+    let (d, game_id, key) = super::registrar::setup_frontier_relics_with_rules(discovery);
     let troops = super::state::GameState { contract_address: d.games };
     let mut army = troops.resolved_explorer(key).unwrap();
     let home = crate::resources::ResourceKey { game_id, entity_id: army.owner };
@@ -648,10 +648,10 @@ fn fixed_deep_walking_grants_no_xp_chest_or_shrine(shrine: bool) {
     }
     let root = if shrine {
         super::registrar::discovery_root(
-            game_id, unlocked, 0, Some(super::registrar::any_chest()), crate::discovery::Discovery::Shrine,
+            game_id, unlocked, 0, Some(super::registrar::any_relic()), crate::discovery::Discovery::Shrine,
         )
     } else {
-        super::frontier_explore_chest::HIT_ROOT
+        19635
     };
     let counter = crate::expeditions::ExpeditionDiscoveryKey { game_id, structure_id: army.owner, epoch: 0 };
     let before = read_progress(d, key);
@@ -666,10 +666,10 @@ fn fixed_deep_walking_grants_no_xp_chest_or_shrine(shrine: bool) {
     );
     let map = crate::map::IMapLogicDispatcher { contract_address: d.games };
     for timestamp in 360_u64..362 {
-        let target = super::frontier_explore_chest::destination(d, key);
+        let target = exploration_destination(d, key);
         let tile = crate::geometry::tile_key(game_id, target);
         assert!(map.tile(tile).is_some());
-        super::frontier_explore_chest::explore(d, key, root, timestamp);
+        explore(d, key, root, timestamp);
         assert_eq!(troops.resolved_explorer(key).unwrap().coord, target);
         assert_eq!(read_progress(d, key), before);
         snforge_std::interact_with_state(

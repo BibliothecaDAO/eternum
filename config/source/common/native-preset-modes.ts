@@ -1,10 +1,10 @@
 import type { GameType } from "./types";
 
-/** The fixture preset for accelerated Frontier: fixtures and harness design runs create from it, the launcher never does. */
+/** Historical accelerated Frontier; retired from new Season 1 games. */
 export const FRONTIER_ACCELERATED_PRESET_ID = 101;
-/** Frontier's own preset: the design the launcher's seasons create from. */
+/** Historical Frontier; existing games keep their release and preset. */
 export const FRONTIER_PRESET_ID = 5;
-/** Frontier's three-times-speed Devcon season; registered separately from normal-speed seasons. */
+/** Historical three-times-speed Devcon season; retired from new Season 1 games. */
 export const FRONTIER_DEVCON_PRESET_ID = 6;
 /** Season 1's rules; registered separately from the earlier Frontier seasons. */
 export const FRONTIER_S1_PRESET_ID = 7;

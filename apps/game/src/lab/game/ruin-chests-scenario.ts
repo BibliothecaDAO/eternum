@@ -1,3 +1,4 @@
+import { frontierPreset } from "../../../../../config/source/frontier/native";
 import { ResourcesIds, StructureType } from "@bibliothecadao/types";
 
 import { wire, type LabFact, type LabScenario } from "./lab-chain";
@@ -49,7 +50,20 @@ const chestsScenario = ({ reached, claimed }: { reached: bigint; claimed: readon
       },
     }),
   });
+  const chest = frontierPreset.chests;
   store.applyFacts([
+    {
+      model: "ChestRules",
+      key: "0x1cafe",
+      value: wire({
+        game_id: 1,
+        price_ceiling: BigInt(chest.priceCeiling),
+        shares: chest.shares,
+        claim_window_seconds: chest.claimWindowSeconds,
+        pool_bps: chest.poolBps,
+        top_n: chest.topN,
+      }),
+    },
     {
       model: "Structure",
       key: store.wireKeyOf("Structure", homeKey)!,
