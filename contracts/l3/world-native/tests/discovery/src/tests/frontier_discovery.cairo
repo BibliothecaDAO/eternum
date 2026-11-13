@@ -84,24 +84,31 @@ fn the_floor_draws_only_kinds_still_allowed() {
 
 #[test]
 fn frontier_floor_is_home_day_scoped_and_ruin_clears_preserve_it() {
-    let key = ExpeditionDiscoveryKey { game_id: 1, structure_id: 17, epoch: 300 };
-    assert!(crate::logic::expeditions::discovery(key).is_none());
-    // The empty-reveal floor is shared across armies and depths.
-    for _ in 0_u8..7 {
-        crate::logic::expeditions::record_discovery(key, Discovery::None);
-    }
-    assert_eq!(crate::logic::expeditions::discovery(key).unwrap().empty_reveals, 7);
-    crate::logic::expeditions::record_discovery(key, Discovery::Ruin(RELIC));
-    let row = crate::logic::expeditions::discovery(key).unwrap();
-    assert_eq!((row.empty_reveals, row.ruin_cleared), (0, false));
-    crate::logic::expeditions::record_discovery(key, Discovery::None);
-    crate::logic::expeditions::record_discovery(key, Discovery::Camp);
-    let row = crate::logic::expeditions::discovery(key).unwrap();
-    assert_eq!((row.empty_reveals, row.ruin_cleared), (0, false));
-    crate::logic::expeditions::close_ruins(key, 0);
-    assert!(crate::logic::expeditions::discovery(key).unwrap().ruin_cleared);
-    assert!(crate::logic::expeditions::discovery(ExpeditionDiscoveryKey { epoch: 301, ..key }).is_none());
-    assert!(crate::logic::expeditions::discovery(ExpeditionDiscoveryKey { structure_id: 18, ..key }).is_none());
+    let d = super::registrar::setup();
+    let (game_id, _, _) = super::registrar::expedition_home(d);
+    snforge_std::interact_with_state(
+        d.games,
+        || {
+            let key = ExpeditionDiscoveryKey { game_id, structure_id: 17, epoch: 300 };
+            assert!(crate::logic::expeditions::discovery(key).is_none());
+            // The empty-reveal floor is shared across armies and depths.
+            for _ in 0_u8..7 {
+                crate::logic::expeditions::record_discovery(key, Discovery::None);
+            }
+            assert_eq!(crate::logic::expeditions::discovery(key).unwrap().empty_reveals, 7);
+            crate::logic::expeditions::record_discovery(key, Discovery::Ruin(RELIC));
+            let row = crate::logic::expeditions::discovery(key).unwrap();
+            assert_eq!((row.empty_reveals, row.ruin_cleared), (0, false));
+            crate::logic::expeditions::record_discovery(key, Discovery::None);
+            crate::logic::expeditions::record_discovery(key, Discovery::Camp);
+            let row = crate::logic::expeditions::discovery(key).unwrap();
+            assert_eq!((row.empty_reveals, row.ruin_cleared), (0, false));
+            crate::logic::expeditions::close_ruins(key, 0);
+            assert!(crate::logic::expeditions::discovery(key).unwrap().ruin_cleared);
+            assert!(crate::logic::expeditions::discovery(ExpeditionDiscoveryKey { epoch: 301, ..key }).is_none());
+            assert!(crate::logic::expeditions::discovery(ExpeditionDiscoveryKey { structure_id: 18, ..key }).is_none());
+        },
+    );
 }
 
 #[test]

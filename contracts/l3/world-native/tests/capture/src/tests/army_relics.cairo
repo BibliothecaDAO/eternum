@@ -251,7 +251,7 @@ fn beast_clears_pay_wheat_or_triple_xp_through_explore_and_battle() {
             let seed = crate::random::game_root(ref root, game_id);
             if crate::expeditions::beast_kind(crate::taxonomy::BEASTS_CATEGORY, seed) == kind
                 && crate::discovery::frontier(
-                    discovery, 0, 0, 0, 100, 0, Some(any_relic()), seed,
+                    discovery, 0, 0, 0, 100, 0, None, seed,
                 ) == crate::discovery::Discovery::Beasts {
                 chosen = Some(Into::<u32, u256>::into(candidate));
                 break;
@@ -349,7 +349,7 @@ fn a_cleared_troll_camp_reinforces_from_home_stock_away_from_home() {
     let key = ExplorerKey { game_id, explorer_id };
     let army = GameState { contract_address: d.games }.resolved_explorer(key).unwrap();
     let camp_coord = crate::geometry::neighbor(army.coord, 0);
-    let root = discovery_root(game_id, discovery, 0, Some(any_relic()), crate::discovery::Discovery::Camp);
+    let root = discovery_root(game_id, discovery, 0, None, crate::discovery::Discovery::Camp);
     assert!(explore_with_root(d, game_id, explorer_id, root, 400));
     let camp_id = IMapLogicDispatcher { contract_address: d.games }
         .occupancy(crate::geometry::tile_key(game_id, camp_coord))
