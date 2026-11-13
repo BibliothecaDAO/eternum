@@ -26,8 +26,6 @@ pub mod SeasonLogic {
         ISettlementPoolLibraryDispatcher, SettlementCreation, VillageCreation,
     };
     use crate::village::{SettleVillage, VillagePassKey};
-    #[cfg(feature: "test_support")]
-    use crate::village::{VillagePass, VillageRules};
 
     component!(path: ReleaseState, storage: release, event: ReleaseEvent);
     impl ReleaseInternal = ReleaseState::InternalImpl<ContractState>;
@@ -299,20 +297,6 @@ pub mod SeasonLogic {
     }
     #[abi(embed_v0)]
     impl Villages of crate::village::IVillages<ContractState> {
-        #[cfg(feature: "test_support")]
-        fn village_rules(self: @ContractState, game_id: u32) -> VillageRules {
-            self.villages.rules(game_id)
-        }
-        #[cfg(feature: "test_support")]
-        fn village_pass(self: @ContractState, key: VillagePassKey) -> Option<VillagePass> {
-            self.villages.pass(key)
-        }
-        fn register_village_pass(ref self: ContractState, key: VillagePassKey, owner: ContractAddress) {
-            assert!(key.game_id != 0, "game id zero is reserved");
-            crate::logic::entry::assert_ledger_operator();
-            self.villages.register(key, owner);
-            crate::entity_ids::reserve_homes(key.game_id, owner);
-        }
         fn settle_village(
             ref self: ContractState,
             game_id: u32,

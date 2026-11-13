@@ -213,7 +213,7 @@ pub mod RelicState {
             assert!(crate::geometry::adjacent(explorer.coord, command.coord), "explorer is not adjacent to site");
             let point = crate::expeditions::IFrontierDiscoveryDispatcherTrait::consume_frontier_site(
                 crate::expeditions::IFrontierDiscoveryLibraryDispatcher {
-                    class_hash: self.logic_classes(game_id).map.read(),
+                    class_hash: self.logic_classes(game_id).construction.read(),
                 },
                 crate::geometry::tile_key(game_id, command.coord),
                 command.explorer_id,

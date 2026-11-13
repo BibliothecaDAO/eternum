@@ -187,3 +187,24 @@ test("bane effects are read only beside quest progress; callers use the pinned l
     "bane effects must read the seed and calendar fields directly, without a full game context",
   );
 });
+
+test("village pass administration has one owner in SettlementLogic", async () => {
+  const { contracts } = JSON.parse(
+    await readFile(new URL("../target/dev/world_native.starknet_artifacts.json", import.meta.url), "utf8"),
+  );
+  const owners = [];
+  for (const { contract_name } of contracts) {
+    if (!contract_name.endsWith("Logic")) continue;
+    const { abi } = JSON.parse(
+      await readFile(
+        new URL(`../target/dev/world_native_${contract_name}.contract_class.json`, import.meta.url),
+        "utf8",
+      ),
+    );
+    for (const entry of abi) {
+      const methods = entry.type === "interface" ? entry.items : [entry];
+      if (methods.some(({ name }) => name === "register_village_pass")) owners.push(contract_name);
+    }
+  }
+  assert.deepEqual(owners, ["SettlementLogic"], "village passes use the game's pinned Settlement class");
+});

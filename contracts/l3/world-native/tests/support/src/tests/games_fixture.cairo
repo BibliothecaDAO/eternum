@@ -712,29 +712,34 @@ pub mod GamesFixture {
         }
     }
     #[starknet::embeddable]
-    pub impl VillagesFixture<TContractState, +Drop<TContractState>> of crate::village::IVillages<TContractState> {
+    pub impl VillagePassesFixture<
+        TContractState, +Drop<TContractState>,
+    > of crate::village::IVillagePasses<TContractState> {
         fn village_rules(self: @TContractState, game_id: u32) -> crate::village::VillageRules {
             let classes = fixture_classes(game_id);
-            crate::village::IVillagesDispatcherTrait::village_rules(
-                crate::village::IVillagesLibraryDispatcher { class_hash: classes.season.read() }, game_id,
-            )
-        }
-        fn register_village_pass(
-            ref self: TContractState, key: crate::village::VillagePassKey, owner: starknet::ContractAddress,
-        ) {
-            let classes = fixture_classes(key.game_id);
-            crate::village::IVillagesDispatcherTrait::register_village_pass(
-                crate::village::IVillagesLibraryDispatcher { class_hash: classes.season.read() }, key, owner,
+            crate::village::IVillagePassesDispatcherTrait::village_rules(
+                crate::village::IVillagePassesLibraryDispatcher { class_hash: classes.settlement.read() }, game_id,
             )
         }
         fn village_pass(
             self: @TContractState, key: crate::village::VillagePassKey,
         ) -> Option<crate::village::VillagePass> {
             let classes = fixture_classes(key.game_id);
-            crate::village::IVillagesDispatcherTrait::village_pass(
-                crate::village::IVillagesLibraryDispatcher { class_hash: classes.season.read() }, key,
+            crate::village::IVillagePassesDispatcherTrait::village_pass(
+                crate::village::IVillagePassesLibraryDispatcher { class_hash: classes.settlement.read() }, key,
             )
         }
+        fn register_village_pass(
+            ref self: TContractState, key: crate::village::VillagePassKey, owner: starknet::ContractAddress,
+        ) {
+            let classes = fixture_classes(key.game_id);
+            crate::village::IVillagePassesDispatcherTrait::register_village_pass(
+                crate::village::IVillagePassesLibraryDispatcher { class_hash: classes.settlement.read() }, key, owner,
+            )
+        }
+    }
+    #[starknet::embeddable]
+    pub impl VillagesFixture<TContractState, +Drop<TContractState>> of crate::village::IVillages<TContractState> {
         fn settle_village(
             ref self: TContractState,
             game_id: u32,

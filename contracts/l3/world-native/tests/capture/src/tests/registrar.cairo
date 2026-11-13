@@ -1,7 +1,6 @@
 pub use world_test_support::tests::registrar::*;
 use crate::logic::release::{IReleasesDispatcher, IReleasesDispatcherTrait, Release};
 
-
 #[test]
 fn expedition_rollover_expires_armies_and_preserves_the_home_economy() {
     let d = setup();
@@ -1695,7 +1694,9 @@ fn frontier_site_discovery_reads_home_knowledge_and_stores_the_shrine_reward() {
     let army = GameState { contract_address: d.games }.resolved_explorer(key).unwrap();
     let home = ResourceKey { game_id, entity_id: army.owner };
     let rules = super::preset_projection::frontier_discovery_rules();
-    let map = crate::expeditions::IFrontierDiscoveryLibraryDispatcher { class_hash: super::declare_logic("MapLogic") };
+    let map = crate::expeditions::IFrontierDiscoveryLibraryDispatcher {
+        class_hash: super::declare_logic("ConstructionLogic"),
+    };
     for (expected, row, category) in array![
         (crate::discovery::Discovery::Shrine, crate::research::ROW_SHRINE, crate::taxonomy::SHRINE_OCCUPIER),
         (crate::discovery::Discovery::Well, crate::research::ROW_WELL, crate::taxonomy::WELL_OCCUPIER),
