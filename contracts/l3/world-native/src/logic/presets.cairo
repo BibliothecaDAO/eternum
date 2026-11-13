@@ -4,7 +4,7 @@ pub fn initialize_gameplay(classes: LogicClasses, game_id: u32, mode_rules: u32)
     crate::race::IRaceDispatcherTrait::initialize_race(
         crate::race::IRaceLibraryDispatcher { class_hash: classes.economy }, game_id,
     );
-    if crate::logic::deep_sites::rules(game_id).is_some() {
+    if crate::logic::deep_sites::rules_entry(game_id).is_some() {
         crate::deep::IDeepSitesDispatcherTrait::initialize_deep(
             crate::deep::IDeepSitesLibraryDispatcher { class_hash: classes.combat }, game_id,
         );

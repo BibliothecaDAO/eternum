@@ -51,6 +51,8 @@ pub struct RaceResult {
 #[starknet::interface]
 pub trait IRace<T> {
     fn initialize_race(ref self: T, game_id: u32);
+    fn finalize_race(ref self: T, game_id: u32, timestamp: u64);
+    fn triumph_percent(self: @T, home: crate::resources::ResourceKey, coord: Coord, stage: u8, timestamp: u64) -> u16;
     fn race_rules(self: @T, game_id: u32) -> Option<RaceRules>;
     fn race_member(self: @T, key: crate::resources::ResourceKey) -> RaceMember;
     fn aspect_hyperstructure(self: @T, key: AspectKey) -> AspectHyperstructure;

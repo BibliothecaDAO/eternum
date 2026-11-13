@@ -334,6 +334,12 @@ fn prepare_bane_army(seed: felt252, kind: u8, troops: u128) -> (Deployment, Reso
                     empty_reveal_limit: 1,
                 },
             );
+    assert_eq!(
+        crate::discovery::maximum_race_chance(
+            preset.economy.discovery.unwrap(), preset.economy.race.unwrap().clear_mist_percent,
+        ),
+        9000,
+    );
     let (d, game_id) = super::aspects::setup_aspect_preset(seed, preset);
     assert!(
         execute_in_game(

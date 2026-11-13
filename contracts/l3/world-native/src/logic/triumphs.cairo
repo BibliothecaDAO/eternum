@@ -1,9 +1,21 @@
-use starknet::storage::StoragePointerReadAccess;
+use starknet::storage::{StorageMapReadAccess, StoragePathEntry, StoragePointerReadAccess};
 use crate::race::TriumphKey;
 use crate::resources::ResourceKey;
 use crate::troops::Coord;
 
 pub fn percent(home: ResourceKey, coord: Coord, stage: u8, timestamp: u64) -> u16 {
+    let state = crate::state::read();
+    let release = state.game_releases.read(home.game_id);
+    crate::race::IRaceDispatcherTrait::triumph_percent(
+        crate::race::IRaceLibraryDispatcher { class_hash: state.releases.entry(release).classes.economy.read() },
+        home,
+        coord,
+        stage,
+        timestamp,
+    )
+}
+
+pub fn read_percent(home: ResourceKey, coord: Coord, stage: u8, timestamp: u64) -> u16 {
     let Some(rules) = crate::logic::race::rules(home.game_id) else {
         return 100;
     };

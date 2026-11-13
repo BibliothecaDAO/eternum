@@ -157,12 +157,8 @@ fn a_full_merge_over_the_survivor_cap_is_atomic_and_expired_armies_cannot_merge(
     super::resource_commands::set_explorer_fixture(d.games, source, full);
     let resources = crate::resources::ResourceKey { game_id, entity_id: source.explorer_id };
     let weight = snforge_std::interact_with_state(d.games, || crate::logic::resources::weight(resources));
-    super::resource_commands::set_fixture(
-        d.games,
-        selector!("resources"),
-        selector!("weights"),
-        array![game_id.into(), source.explorer_id.into()].span(),
-        crate::resources::Weight { capacity: weight.capacity / 3 * limit, ..weight },
+    assert_eq!(
+        weight.capacity, Into::<u32, u128>::into(preset.rules.capacity_config.troop_capacity) * full.troops.count,
     );
     let before_source = state.explorer(source).unwrap();
     let before_target = state.explorer(target).unwrap();

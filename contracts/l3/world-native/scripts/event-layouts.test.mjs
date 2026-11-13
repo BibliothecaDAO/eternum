@@ -208,3 +208,71 @@ test("village pass administration has one owner in SettlementLogic", async () =>
   }
   assert.deepEqual(owners, ["SettlementLogic"], "village passes use the game's pinned Settlement class");
 });
+
+test("Race eligibility reads only its preset fields", async () => {
+  for (const file of ["army_relics", "relics", "lords_budget"]) {
+    const source = await readFile(new URL(`../src/logic/${file}.cairo`, import.meta.url), "utf8");
+    assert.doesNotMatch(
+      source,
+      /logic::game::rules\(|commands::load_context\(/,
+      `${file}: read preset_record::for_game(...).rules.day_unit_seconds, not the full game context`,
+    );
+  }
+});
+
+test("Race settlement and Triumph evaluation have one Economy library owner", async () => {
+  for (const name of [
+    "Bridge",
+    "Combat",
+    "Construction",
+    "Economy",
+    "Map",
+    "Movement",
+    "Placement",
+    "Prizes",
+    "Production",
+    "Raid",
+    "Registry",
+    "Relics",
+    "Resources",
+    "Season",
+    "Settlement",
+    "Structures",
+    "Troops",
+  ]) {
+    const { abi } = JSON.parse(
+      await readFile(new URL(`../target/dev/world_native_${name}Logic.contract_class.json`, import.meta.url), "utf8"),
+    );
+    const methods = abi.flatMap((entry) => (entry.type === "interface" ? entry.items : [entry]));
+    for (const method of ["finalize_race", "triumph_percent"]) {
+      assert.equal(
+        methods.filter((entry) => entry.name === method).length,
+        name === "Economy" ? 1 : 0,
+        `${method} belongs to the existing Race component in Economy`,
+      );
+    }
+  }
+});
+
+test("Triumph callers use the pinned library instead of compiling another reader", async () => {
+  const directory = new URL("../src/logic/", import.meta.url);
+  const source = await readFile(new URL("triumphs.cairo", directory), "utf8");
+  const wrapper = source.slice(source.indexOf("pub fn percent("), source.indexOf("pub fn read_percent("));
+  assert.match(
+    wrapper,
+    /IRaceDispatcherTrait::triumph_percent/,
+    "Triumph callers must dispatch through the game's pinned Economy class",
+  );
+  assert.doesNotMatch(wrapper, /logic::race::rules/, "Keep the Triumph storage reader behind Economy's library call");
+  const callers = [];
+  for (const file of await readdir(directory)) {
+    if (!file.endsWith(".cairo") || file === "triumphs.cairo") continue;
+    const text = await readFile(new URL(file, directory), "utf8");
+    if (/\bread_percent\b/.test(text)) callers.push(file);
+  }
+  assert.deepEqual(
+    callers,
+    ["race.cairo"],
+    "Use triumphs::percent; only Economy's Race component reads Triumph storage",
+  );
+});

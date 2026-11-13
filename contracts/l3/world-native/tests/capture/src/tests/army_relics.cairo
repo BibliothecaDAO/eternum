@@ -1,4 +1,5 @@
 use crate::army_relics::{ArmyRelic, RelicKind};
+use crate::progression::{IArmyProgressionDispatcherTrait, IArmyProgressionLibraryDispatcher};
 use super::registrar::*;
 
 #[test]
@@ -40,10 +41,51 @@ fn ruins_fill_replace_and_activate_an_armys_relics_through_commands() {
     let home = ResourceKey { game_id, entity_id: home_id };
     let explorer_id = *IStructureOperationsDispatcher { contract_address: d.games }.home_armies(home).at(0);
     let key = ExplorerKey { game_id, explorer_id };
+    let saved_xp = preset.economy.progression.unwrap().rare_xp;
+    let progression_class = super::declare_logic("RelicsLogic");
+    snforge_std::interact_with_state(
+        d.games,
+        || IArmyProgressionLibraryDispatcher { class_hash: progression_class }
+            .grant_army_xp(key, crate::progression::XpAward::Clear(saved_xp), 360),
+    );
+    let saved = super::progression::read_progress(d, key);
+    assert_eq!((saved.common_points, saved.uncommon_points, saved.rare_points), (1, 1, 1));
+    assert_eq!(
+        GameState { contract_address: d.games }.resolved_explorer(key).unwrap().troops.stamina.inline().amount, 180,
+    );
     let resources = IResourceOperationsDispatcher { contract_address: d.games };
     let lords = ResourceSlot { game_id, entity_id: home_id, resource_type: crate::resources::LORDS };
     for index in 0_u8..4 {
         let timestamp = 400 + Into::<u8, u64>::into(index) * 30;
+        if index == 3 {
+            assert_eq!(
+                GameState { contract_address: d.games }.resolved_explorer(key).unwrap().troops.stamina.inline().amount,
+                0,
+            );
+            let before = super::progression::read_progress(d, key);
+            for rank in 1_u8..4 {
+                assert!(
+                    execute_in_game(
+                        d,
+                        game_id,
+                        Command::SpendSkillPoint(
+                            crate::progression::SpendSkillPoint {
+                                explorer_id, choice: crate::progression::SkillPointUse::Stamina(rank),
+                            },
+                        ),
+                        timestamp,
+                    ),
+                );
+            }
+            let after = super::progression::read_progress(d, key);
+            assert_eq!(after.xp, before.xp);
+            assert_eq!((after.common_points, after.uncommon_points, after.rare_points), (0, 0, 0));
+            assert_eq!(
+                GameState { contract_address: d.games }.resolved_explorer(key).unwrap().troops.stamina.inline().amount,
+                180,
+            );
+            assert_eq!(resources.resource_balance(lords), 0);
+        }
         let kind = match index {
             0 => RelicKind::Tome,
             1 => RelicKind::Blade,
@@ -169,11 +211,17 @@ fn discover_relic(
     let army = GameState { contract_address: d.games }.resolved_explorer(key).unwrap();
     let destination = crate::geometry::neighbor(army.coord, 0);
     let root = relic_root(key.game_id, rules, odds, expected);
-    assert!(explore_with_root(d, key.game_id, key.explorer_id, root, timestamp));
+    let mut spy = snforge_std::spy_events();
+    let applied = explore_with_root(d, key.game_id, key.explorer_id, root, timestamp);
+    if !applied {
+        let failure = super::play_fixture::rejection(ref spy, d.games);
+        println!("Relic reveal at {} refused: {}", timestamp, failure.reason);
+    }
+    assert!(applied);
     let site = IMapLogicDispatcher { contract_address: d.games }
         .occupancy(crate::geometry::tile_key(key.game_id, destination))
         .unwrap();
-    assert_eq!(site.category, crate::taxonomy::RUIN_CATEGORY);
+    assert_eq!(site.category, crate::taxonomy::RUIN_OCCUPIER);
     ResourceKey { game_id: key.game_id, entity_id: site.entity_id }
 }
 

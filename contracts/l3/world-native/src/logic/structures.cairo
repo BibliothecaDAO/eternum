@@ -519,8 +519,8 @@ pub mod StructuresLogic {
             let home = match crate::logic::structures::structure(key) {
                 Option::Some(_) => key,
                 Option::None => {
-                    let explorer = crate::logic::troops::active_explorer(
-                        ExplorerKey { game_id, explorer_id: command.entity_id }, context.timestamp, context,
+                    let explorer = crate::logic::troops::command_explorer(
+                        ExplorerKey { game_id, explorer_id: command.entity_id }, None, context.timestamp, context,
                     );
                     ResourceKey { game_id, entity_id: explorer.owner }
                 },
