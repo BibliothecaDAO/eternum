@@ -130,6 +130,37 @@ describe("the race board (H2)", () => {
     ]);
   });
 
+  it("refuses a site whose later guard's home joined no Aspect, or whose guards' Aspects differ, never inferring one", () => {
+    const twoGuards = (homes: FoldRow[]) =>
+      raceRows({
+        DeepSite: [row({ entity_id: 3000n, kind: 0, day: 4n })],
+        DeepGuard: [
+          row({ explorer_id: 51n, site_id: 3000n, slot: 0 }),
+          row({ explorer_id: 52n, site_id: 3000n, slot: 1 }),
+        ],
+        ExplorerTroops: [
+          row({ explorer_id: 51n, owner: 11n, troops: { count: BigInt(8_000 * RESOURCE_PRECISION) } }),
+          row({ explorer_id: 52n, owner: 12n, troops: { count: BigInt(5_000 * RESOURCE_PRECISION) } }),
+        ],
+        DeepArmy: [row({ explorer_id: 51n, last_tick: 900n }), row({ explorer_id: 52n, last_tick: 900n })],
+        HomeAspect: homes,
+      });
+    // Only the first slot's home has an Aspect: the second slot's is unknown.
+    expect(() => buildRaceBoard(twoGuards([row({ home: 11n, aspect: 2 })]), String(GAME))).toThrow(
+      "Deep guard's home 12 joined no Aspect",
+    );
+    // Both are known but differ: the site has no one holder.
+    expect(() =>
+      buildRaceBoard(twoGuards([row({ home: 11n, aspect: 2 }), row({ home: 12n, aspect: 3 })]), String(GAME)),
+    ).toThrow("Deep site 3000 has guards of more than one Aspect");
+    // Both in Harmony: the site is Harmony's, both guards kept in slot order.
+    const held = buildRaceBoard(
+      twoGuards([row({ home: 11n, aspect: 2 }), row({ home: 12n, aspect: 2 })]),
+      String(GAME),
+    );
+    expect(held.sites[0]).toMatchObject({ holder: 2, guards: [{ slot: 0 }, { slot: 1 }] });
+  });
+
   it("refuses a guard it cannot name rather than showing a site without it", () => {
     expect(() =>
       buildRaceBoard(

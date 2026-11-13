@@ -89,8 +89,8 @@ control.
 
 - `GET /api/shares` (signed in): the account's `{links, posted, visits, joined, activated}`, its joins settled first.
 - `GET /api/shares/joined` (signed in): the link the account came by (`{kind, chainId, gameId, moment, name}`), its
-  joins settled first; null for an account no link brought. The game's founding step reads it to offer an invite's
-  Aspect first.
+  joins settled first; null for an account no link brought. It is for the founding Aspect step to offer an invite's
+  Aspect first; no game screen reads it yet.
 - `GET /api/operator/shares` (operator token): every moment's funnel (`moments`: kind, chain, game, moment and the five
   counts), first visits from others' browsers by the tag their link carried (`firstVisitsByTag`: `x`, `system`, and null
   for none), the 20 sharers who brought the most (`topSharers`), `settledAt` and `unsettledJoins`, the joins whose board

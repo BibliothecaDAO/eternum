@@ -50,8 +50,9 @@ export function buildRaceBoard(modelRows: (model: string) => FoldRow[], gameId: 
 
 /**
  * The Deep's sites by kind (DeepSite), each guard (DeepGuard) read from its army (ExplorerTroops), its settled tick
- * (DeepArmy) and its home's owner and Aspect. A guard whose army, tick, home or Aspect is missing is a fault: a site is
- * never shown with a guard it cannot name.
+ * (DeepArmy) and its home's owner and Aspect. A guard whose army, tick, home or Aspect is missing is a fault, and so is
+ * a site whose guards' Aspects differ: a site is never shown with a guard it cannot name, nor a holder read from one
+ * guard for the others.
  */
 function deepSites(rows: (model: string) => Row[]): HeraldRaceSite[] {
   const guards = rows("DeepGuard");
@@ -68,7 +69,7 @@ function deepSites(rows: (model: string) => Row[]): HeraldRaceSite[] {
       return {
         site_id: integer(site.entity_id).toString(),
         kind: number(site.kind),
-        holder: posted[0] ? homeAspect(homes, posted[0].structure_id) : null,
+        holder: siteHolder(site, posted, homes),
         guards: posted,
       };
     })
@@ -90,6 +91,13 @@ function siteGuard(guard: Row, armies: Row[], ticks: Row[], structures: Row[]): 
     troops: Number(integer(record(army.troops).count)) / RESOURCE_PRECISION,
     last_tick: number(tick.last_tick),
   };
+}
+
+/** The one Aspect every guard's home joined; none while no guard is posted (the day's beast holds the site). */
+function siteHolder(site: Row, guards: HeraldRaceSite["guards"], homes: Row[]): AspectId | null {
+  const held = new Set(guards.map((guard) => homeAspect(homes, guard.structure_id)));
+  if (held.size > 1) throw new Error(`Deep site ${integer(site.entity_id)} has guards of more than one Aspect`);
+  return held.values().next().value ?? null;
 }
 
 function homeAspect(homes: Row[], home: string): AspectId {

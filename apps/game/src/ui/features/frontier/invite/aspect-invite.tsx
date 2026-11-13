@@ -15,8 +15,9 @@ const INVITE_MODELS = ["HomeAspect"] as const;
 
 /**
  * Invite a friend to the player's Aspect (U13): its name and its four Orders' crests, then Post on X or Copy link with
- * the player's own invite link, which lands the friend on the Aspect's name and offers it to them first at founding.
- * Nothing for a home that joined no Aspect (a game without Aspects).
+ * the player's own invite link, whose landing names the sharer and the Aspect. The link a new account came by is read
+ * back with identity's joinedShare(); offering its Aspect first belongs to the founding Aspect step. Nothing for a home
+ * that joined no Aspect (a game without Aspects).
  */
 export const AspectInvite = ({ realm }: { realm: NativeRows["Structure"] }) => {
   const { setup } = useGame();

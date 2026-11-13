@@ -85,6 +85,8 @@ it("invites to the home's Aspect by its name and its Orders' crests, posting and
   expect(panel()!.textContent).toContain("Invite a friend to Harmony");
   expect(panel()!.querySelectorAll("[data-icon], img, svg").length).toBeGreaterThanOrEqual(4);
   expect(createShare).toHaveBeenCalledWith({ kind: "aspect", chainId: getActiveGame()!.chainId, gameId: 1, moment: 2 });
+  // Both ways to post wait for the link; they offer it once identity made it.
+  await vi.waitFor(() => expect(button("Post on X")).toBeDefined());
 
   await act(async () => button("Post on X")!.click());
   const post = new URL(opened.mock.calls[0]![0] as string);
