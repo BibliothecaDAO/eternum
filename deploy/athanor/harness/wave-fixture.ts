@@ -41,7 +41,7 @@ const fixture: WaveFixturePort = {
     try {
       await assertProviderChain(provider, manifest, "public wave RPC");
       const game = create
-        ? await launchHarnessGame({ gameName: `wave-${Date.now().toString(36)}`, minutes: 60, presetId: 5, owners: [] })
+        ? await launchHarnessGame({ gameName: `wave-${Date.now().toString(36)}`, minutes: 60, presetId: 5 })
         : await listedFrontierGame(required("IDENTITY_URL"), shard, required("HERALD_URL"), 5);
       const accounts = await createHarnessAccounts({
         count: players,

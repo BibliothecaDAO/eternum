@@ -223,10 +223,7 @@ function createClientGame(client: GameClient, heraldConfirmations?: HeraldConfir
     },
     settle: (signer) => systemCalls.settle_season({ signer }),
     produceWood: (signer, structureId) => {
-      const produce = !configManager.isCommandEnabled("BurnLaborForResourceProduction")
-        ? systemCalls.burn_resource_for_resource_production
-        : systemCalls.burn_labor_for_resource_production;
-      return produce({
+      return systemCalls.burn_resource_for_resource_production({
         signer,
         from_entity_id: structureId,
         production_cycles: [1],
