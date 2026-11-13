@@ -25,6 +25,11 @@ pub trait IHomeGrants<T> {
 }
 
 #[starknet::interface]
+pub trait IResourceContext<T> {
+    fn resource_context(self: @T, game_id: u32) -> crate::commands::ResourceContext;
+}
+
+#[starknet::interface]
 pub trait ICampaignRecovery<T> {
     fn recover_flyer_days(
         ref self: T, key: crate::settlement::EntryKey, home: u64, entitlement: crate::settlement::EntryEntitlement,

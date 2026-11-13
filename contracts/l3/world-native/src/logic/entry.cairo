@@ -1,5 +1,5 @@
 use starknet::Event;
-use starknet::storage::{StorageMapWriteAccess, StoragePointerReadAccess};
+use starknet::storage::{StorageMapWriteAccess, StoragePathEntry, StoragePointerReadAccess};
 use crate::resources::{IResourceOperationsDispatcherTrait, IResourceOperationsLibraryDispatcher, ResourceKey};
 
 pub fn assert_ledger_operator() {
@@ -134,6 +134,14 @@ pub mod EntryAdministration {
             }
         }
     }
+    #[embeddable_as(ResourceContextImpl)]
+    pub impl ResourceContextView<
+        TContractState, +HasComponent<TContractState>, +Drop<TContractState>,
+    > of crate::entry::IResourceContext<ComponentState<TContractState>> {
+        fn resource_context(self: @ComponentState<TContractState>, game_id: u32) -> crate::commands::ResourceContext {
+            super::grant_resource_context(game_id)
+        }
+    }
     #[embeddable_as(CampaignRecoveryImpl)]
     pub impl CampaignRecovery<
         TContractState, +HasComponent<TContractState>, +Drop<TContractState>,
@@ -151,16 +159,7 @@ pub mod EntryAdministration {
             let first = crate::days::day_of(game, unit, founded).index;
             let today = crate::days::day_of(game, unit, timestamp).index;
             let rules = preset.labor_rules.read().expect('labor is disabled');
-            let resource_context = crate::commands::ResourceContext {
-                production_start: if preset.rules.mode_rules.read() & crate::rules::PRODUCTION_START != 0 {
-                    game.start_main_at.try_into().unwrap()
-                } else {
-                    0
-                },
-                troop_capacity: preset.rules.capacity_config.read().troop_capacity,
-                spire_fee: preset.rules.spire_travel_essence_cost.read(),
-                delivery_tick: preset.rules.tick_config.read().delivery_tick_in_seconds,
-            };
+            let resource_context = crate::entry::IResourceContext::resource_context(@self, key.game_id);
             let release_id = self.data.game_releases.read(key.game_id);
             let resources = self.data.releases.read(release_id).classes.resources;
             for day in first..today {
@@ -199,15 +198,12 @@ pub mod EntryAdministration {
             }
             assert!(account != 0.try_into().unwrap(), "invalid labor account");
             let timestamp = starknet::get_block_timestamp();
-            let context = crate::commands::load_context(target.game_id, 0, timestamp);
-            crate::game::assert_playing(context.game.unbox(), timestamp);
-            let rules = crate::logic::preset_record::for_game(target.game_id)
-                .labor_rules
-                .read()
-                .expect('labor is disabled');
+            let game = crate::logic::game::game(target.game_id);
+            crate::game::assert_playing(game, timestamp);
+            let preset = crate::logic::preset_record::for_game(target.game_id);
+            let rules = preset.labor_rules.read().expect('labor is disabled');
             assert!(
-                day == crate::days::day_of(context.game.unbox(), context.rules.unbox().day_unit_seconds, timestamp)
-                    .index,
+                day == crate::days::day_of(game, preset.rules.day_unit_seconds.read(), timestamp).index,
                 "incorrect labor day",
             );
             let campaign_tier = self.home_campaign_tier(target, account);
@@ -215,7 +211,7 @@ pub mod EntryAdministration {
                 target,
                 campaign_tier,
                 rules,
-                crate::commands::resource_context(context),
+                crate::entry::IResourceContext::resource_context(@self, target.game_id),
                 get_dep_component!(@self, Life).classes(target.game_id).resources.read(),
             );
             let grant = LaborGrant { game_id: target.game_id, account, home: target.home, amount, essence };
@@ -305,4 +301,19 @@ pub fn record_labor_grant(day: u64, grant: crate::entry::LaborGrant) {
     let mut data = array![];
     event.append_keys_and_data(ref keys, ref data);
     starknet::syscalls::emit_event_syscall(keys.span(), data.span()).unwrap();
+}
+
+#[inline(never)]
+fn grant_resource_context(game_id: u32) -> crate::commands::ResourceContext {
+    let rules = crate::logic::preset_record::for_game(game_id).rules;
+    crate::commands::ResourceContext {
+        production_start: if rules.mode_rules.read() & crate::rules::PRODUCTION_START != 0 {
+            crate::state::read().games.games.entry(game_id).start_main_at.read().try_into().unwrap()
+        } else {
+            0
+        },
+        troop_capacity: rules.capacity_config.troop_capacity.read(),
+        spire_fee: rules.spire_travel_essence_cost.read(),
+        delivery_tick: rules.tick_config.delivery_tick_in_seconds.read(),
+    }
 }
