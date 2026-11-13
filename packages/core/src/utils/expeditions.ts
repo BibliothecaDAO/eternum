@@ -93,6 +93,9 @@ export const expeditionDepth = (rules: ExpeditionRules, coord: { y: number }): n
 /** An Ethereal layer, I to III: a Frontier depth below the day's surface. */
 export type EtherealLayer = 1 | 2 | 3;
 
+/** The last layer down: the Deep, where no spire leads further. */
+export const DEEPEST_LAYER: EtherealLayer = 3;
+
 /**
  * The Ethereal layer an army stands in, by the same depth the terrain and the spire read; none on the day's surface or
  * in a game without expeditions.

@@ -10,7 +10,10 @@ import {
   ArmyActionManager,
   canPayTroopRaise,
   realmLearned,
-  researchedDepth,
+  armyAtItsSpire,
+  armyRealmSpire,
+  DEEPEST_LAYER,
+  isAtExpeditionSpire,
   researchRowCategory,
   researchTier,
   createGameActions,
@@ -925,24 +928,13 @@ function planExpedition(client: GameClient, game: HarnessGame, player: Player): 
     const coord = entityMapPosition(client.setup.store, client.gameId, army.explorer_id);
     const neighbors = getNeighborHexes(coord.x, coord.y);
     const spacing = client.setup.store.require("SettlementRules", { game_id: client.gameId }).spacing;
-    const realm = home(client, player);
-    const depth = known(
-      researchedDepth(client.setup.store, client.gameId, player.realmId),
-      player.realmId,
-      "researched depth",
-    );
-    const atEntrance =
-      Math.floor(coord.y / spacing) % 4 === 0 &&
-      neighbors.some(
-        (spot) =>
-          spot.col === (entityHomeNamespace(realm.entity_id) - 1) * spacing + spacing / 2 &&
-          spot.row === day.epoch * 4 * spacing + spacing / 2,
-      );
-    if (depth > 0 && atEntrance) {
+    // The way down is the realm's spire found today on the army's layer, as the spire's card offers it.
+    const spire = armyAtItsSpire(client.setup.store, client.gameId, army.explorer_id, now());
+    if (spire && spire.depth < DEEPEST_LAYER) {
       return command(
         client,
         player,
-        { kind: "EnterDepth", value: { explorer_id: army.explorer_id, depth } },
+        { kind: "EnterDepth", value: { explorer_id: army.explorer_id, depth: spire.depth + 1 } },
         TransactionType.ENTER_DEPTH,
       );
     }
@@ -1046,8 +1038,12 @@ function planExpedition(client: GameClient, game: HarnessGame, player: Player): 
       };
       return explore;
     }
-    if (!frontier && armyActions.maxTravelSteps(ticks.default) >= 1) {
-      const direction = pathToUnexplored(client, army);
+    const found = armyRealmSpire(client.setup.store, client.gameId, army.explorer_id, now());
+    const towardSpire = found && found.depth < DEEPEST_LAYER ? found : null;
+    if ((towardSpire || !frontier) && armyActions.maxTravelSteps(ticks.default) >= 1) {
+      const direction = towardSpire
+        ? pathTo(client, army, (spot) => isAtExpeditionSpire(towardSpire, { x: spot.col, y: spot.row }))
+        : pathTo(client, army, () => false);
       if (direction !== undefined) {
         const move = {
           ...command(
@@ -1089,7 +1085,11 @@ function affordableUpgrade(client: GameClient, explorerId: number) {
 export function holdsForSite(stamina: number, attackRequirement: number): boolean {
   return stamina < attackRequirement;
 }
-function pathToUnexplored(client: GameClient, army: Army): number | undefined {
+/**
+ * The first step of a walk over the region's explored free tiles to the nearest one that `arrives`, or to the nearest
+ * unexplored tile; none when neither can be reached.
+ */
+function pathTo(client: GameClient, army: Army, arrives: (spot: { col: number; row: number }) => boolean) {
   const spacing = client.setup.store.require("SettlementRules", { game_id: client.gameId }).spacing;
   const coord = entityMapPosition(client.setup.store, client.gameId, army.explorer_id);
   const queue = [{ x: coord.x, y: coord.y, direction: undefined as number | undefined }];
@@ -1108,6 +1108,7 @@ function pathToUnexplored(client: GameClient, army: Army): number | undefined {
       visited.add(key);
       const tile = getTileAt(client.setup.store, false, spot.col, spot.row, client.gameId);
       if (!tile?.biome) return current.direction;
+      if (!tile.occupier_id && arrives(spot)) return current.direction ?? spot.direction;
       if (!tile.occupier_id) queue.push({ x: spot.col, y: spot.row, direction: current.direction ?? spot.direction });
     }
 }
@@ -1122,10 +1123,7 @@ function observeProgress(client: GameClient, game: HarnessGame, player: Player) 
         research.ROW_BARRACKS,
       ),
     ],
-    [
-      "depth",
-      known(researchedDepth(client.setup.store, client.gameId, player.realmId), player.realmId, "researched depth"),
-    ],
+    ["depth", realm.metadata.deepest_depth],
   ] as const) {
     if (level > 0 && !player.rungs.some((rung) => rung.lane === lane && rung.level === level))
       player.rungs.push({ lane, level, at: now() });
