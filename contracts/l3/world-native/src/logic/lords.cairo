@@ -3,7 +3,6 @@ pub mod LordsState {
     use games_storage::release::LogicClasses;
     use starknet::ContractAddress;
     use starknet::storage::{StorageMapReadAccess, StorageMapWriteAccess, StoragePointerReadAccess};
-    use crate::commands::ExecutionContext;
     use crate::logic::release::ReleaseState;
     use crate::logic::release::ReleaseState::InternalTrait as LifeInternalTrait;
     use crate::resources::{IResourceOperationsDispatcherTrait, IResourceOperationsLibraryDispatcher, ResourceKey};
@@ -29,14 +28,8 @@ pub mod LordsState {
         impl Life: ReleaseState::HasComponent<TContractState>,
         +Drop<TContractState>,
     > of crate::relics::ILords<ComponentState<TContractState>> {
-        fn sweep_lords(
-            ref self: ComponentState<TContractState>,
-            game_id: u32,
-            structure_id: u64,
-            context: crate::commands::ActionContext,
-        ) {
+        fn sweep_lords(ref self: ComponentState<TContractState>, game_id: u32, structure_id: u64) {
             crate::logic::entry::assert_ledger_operator();
-            let context = crate::commands::execution_context(game_id, context);
             let realm = ResourceKey { game_id, entity_id: structure_id };
             let record = crate::logic::structures::record(realm);
             assert!(
@@ -50,7 +43,20 @@ pub mod LordsState {
                 return;
             }
             assert!(crate::logic::lords_budget::budget(game_id).is_some(), "Frontier pool not published");
-            self.withdraw_realm_lords(realm, record.owner, balance / crate::rules::RESOURCE_PRECISION, context);
+            let resource_context = crate::entry::IResourceContextDispatcherTrait::resource_context(
+                crate::entry::IResourceContextLibraryDispatcher {
+                    class_hash: self.logic_classes(game_id).bridge.read(),
+                },
+                game_id,
+            );
+            self
+                .withdraw_realm_lords(
+                    realm,
+                    record.owner,
+                    balance / crate::rules::RESOURCE_PRECISION,
+                    starknet::get_block_timestamp(),
+                    resource_context,
+                );
         }
 
         fn refill_stamina(
@@ -115,7 +121,10 @@ pub mod LordsState {
             let record = crate::logic::structures::record(realm);
             assert!(record.base.category == crate::taxonomy::REALM_CATEGORY, "withdrawal requires a realm");
             assert!(record.owner == actor, "actor does not own structure");
-            self.withdraw_realm_lords(realm, actor, command.amount, context);
+            self
+                .withdraw_realm_lords(
+                    realm, actor, command.amount, context.timestamp, crate::commands::resource_context(context),
+                );
             ()
         }
     }
@@ -132,7 +141,8 @@ pub mod LordsState {
             realm: ResourceKey,
             account: ContractAddress,
             amount: u128,
-            context: ExecutionContext,
+            timestamp: u64,
+            resource_context: crate::commands::ResourceContext,
         ) {
             assert!(account != 0.try_into().unwrap(), "withdrawal owner missing");
             self
@@ -141,14 +151,12 @@ pub mod LordsState {
                     realm,
                     crate::resources::LORDS,
                     amount * crate::rules::RESOURCE_PRECISION,
-                    context.timestamp,
-                    crate::commands::resource_context(context),
+                    timestamp,
+                    resource_context,
                 );
             self
                 .record_lords_withdrawal(
-                    realm,
-                    crate::relics::LordsWithdrawal { account, amount, prize_rank: 0, prize_count: 0 },
-                    context.timestamp,
+                    realm, crate::relics::LordsWithdrawal { account, amount, prize_rank: 0, prize_count: 0 }, timestamp,
                 );
         }
 

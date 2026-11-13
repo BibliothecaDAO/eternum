@@ -117,7 +117,14 @@ test("home rewards have one production implementation and no former-class entryp
       .map(async ({ contract_name }) => [contract_name, await entrypoints(contract_name)]),
   );
   const games = await entrypoints("Games");
-  for (const name of ["grant_labor", "labor_grant", "claim_daily_quest", "record_quest_progress", "bane_effects"]) {
+  for (const name of [
+    "grant_labor",
+    "labor_grant",
+    "claim_daily_quest",
+    "record_quest_progress",
+    "bane_effects",
+    "resource_context",
+  ]) {
     const implementations = libraries.flatMap(([contract, entries]) =>
       entries.filter((entry) => entry === name).map(() => contract),
     );
@@ -275,4 +282,27 @@ test("Triumph callers use the pinned library instead of compiling another reader
     ["race.cairo"],
     "Use triumphs::percent; only Economy's Race component reads Triumph storage",
   );
+});
+
+test("Bridge operator paths never compile the complete rule reader", async () => {
+  const { sierra_program_debug_info } = JSON.parse(
+    await readFile(new URL("../target/dev/world_native_BridgeLogic.contract_class.json", import.meta.url), "utf8"),
+  );
+  const functions = sierra_program_debug_info.user_func_names.map(([, name]) => name);
+  assert.equal(
+    functions.some(
+      (name) =>
+        name.endsWith("::logic::game::rules") ||
+        (name.includes("SliceRulesStore") && /::read(?:_at_offset)?$/.test(name)),
+    ),
+    false,
+    "Bridge must use preset fields and home_grants::grant_resource_context; sweep_lords defers to the pinned resource context reader only for earned balances",
+  );
+});
+
+test("Day claim readers fetch only the structure fields they consume", async () => {
+  for (const file of ["home_grants", "quests"]) {
+    const source = await readFile(new URL(`../src/logic/${file}.cairo`, import.meta.url), "utf8");
+    assert.doesNotMatch(source, /structures::record\s*\(/, `${file}: read the structure base and owner directly`);
+  }
 });

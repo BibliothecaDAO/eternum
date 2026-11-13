@@ -27,6 +27,9 @@ pub mod BridgeLogic {
     component!(path: crate::logic::home_grants::HomeGrantState, storage: home_grants, event: HomeGrantEvent);
     #[abi(embed_v0)]
     impl HomeGrants = crate::logic::home_grants::HomeGrantState::HomeGrantsImpl<ContractState>;
+    #[abi(embed_v0)]
+    impl ResourceContext =
+        crate::logic::home_grants::HomeGrantState::ResourceContextImpl<ContractState>;
     impl HomeGrantsInternal = crate::logic::home_grants::HomeGrantState::InternalImpl<ContractState>;
     component!(path: crate::logic::quests::QuestState, storage: quests, event: QuestEvent);
     #[abi(embed_v0)]

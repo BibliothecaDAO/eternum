@@ -1,7 +1,9 @@
 use snforge_std::signature::KeyPairTrait;
 use snforge_std::signature::stark_curve::{StarkCurveKeyPair, StarkCurveKeyPairImpl, StarkCurveSignerImpl};
 use snforge_std::{start_cheat_block_timestamp, start_cheat_caller_address, start_cheat_chain_id};
-use starknet::storage::StorageMapReadAccess;
+use starknet::storage::{
+    StorageMapReadAccess, StorageMapWriteAccess, StoragePathEntry, StoragePointerReadAccess, StoragePointerWriteAccess,
+};
 use world_test_support::tests::state::ResourceObservationTrait;
 use crate::commands::Command;
 use crate::deposits::{DepositSource, LordsDeposit, SpendLords, authorization_hash, deposit_hash};
@@ -205,9 +207,10 @@ fn assert_purchased_refill_isolated(per_depth_ruins: bool) {
     assert_eq!(entry.spend_lords(game_id, d.actor).available, 20);
 }
 
-#[test]
+#[test_case(false)]
+#[test_case(true)]
 #[feature("safe_dispatcher")]
-fn principal_only_sweep_needs_no_published_reward_budget() {
+fn principal_only_sweep_needs_no_published_reward_budget(wide_production_start: bool) {
     let (d, game_id, key_army) = super::registrar::setup_unfunded_frontier_chests();
     let realm = GameState { contract_address: d.games }.resolved_explorer(key_army).unwrap().owner;
     let entry = ILedgerOperatorDispatcher { contract_address: d.games };
@@ -232,6 +235,20 @@ fn principal_only_sweep_needs_no_published_reward_budget() {
     let (r, s) = sign(source, d.games, game_id, payment, false);
     entry.deliver_deposit(game_id, payment, r, s, false);
     assert!(safe.sweep_lords(game_id, realm).is_err());
+    if wide_production_start {
+        snforge_std::interact_with_state(
+            d.games,
+            || {
+                let state = crate::state::write();
+                let mut game = state.games.games.read(game_id);
+                let preset = state.presets.entry(state.registrar.presets.read(game.preset_id));
+                preset.rules.mode_rules.write(preset.rules.mode_rules.read() | crate::rules::PRODUCTION_START);
+                game.start_main_at = 0x100000000;
+                game.end_at = game.start_main_at + super::registrar::BAG_SECONDS;
+                state.games.games.write(game_id, game);
+            },
+        );
+    }
     let end = super::context(d.games, game_id).game.unbox().end_at;
     start_cheat_block_timestamp(d.games, end + 1000000);
     assert!(safe.publish_frontier_pool(game_id, 100, 0).is_err());
