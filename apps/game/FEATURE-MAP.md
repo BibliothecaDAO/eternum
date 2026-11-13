@@ -472,12 +472,12 @@ each closed by its cross, a tap outside, a swipe down or `Escape`. A right-click
   Starknet, so a Realm just bought counts and one just sold does not; when Starknet does not answer it says **Realm
   check unavailable. Try again.**
 - Season 1's Aspect step, in a game whose preset groups the Orders (`orderAspects`, Season 1's preset 7): **Choose your
-  Aspect**, four cards (Might, Harmony, Chaos, Guile), each with its four Orders' crests and its members (counts shown
-  once Herald's directory publishes them); one tap on a card founds the home into it (`settle_season` with its
-  `aspect`), the card spinning, and nothing founds without that tap. A held Realm's home sees **Your Aspect**, "Your
-  Realm's <Order> plays for <Aspect>", that card chosen and the others faint, and keeps **Create your realm**. Aspects
-  and their Orders come from the Order catalog (`aspects`, `orders[].aspect` in `packages/types`). Dev:
-  `/lab/app/<screen>/doorway/aspect` and `doorway/aspect-realm`.
+  Aspect**, four cards (Might, Harmony, Chaos, Guile), each with its four Orders' crests and its members (the homes in
+  it, from the game's directory row, `aspect_members`, which Herald counts from `AspectMembers`); one tap on a card
+  founds the home into it (`settle_season` with its `aspect`), the card spinning, and nothing founds without that tap. A
+  held Realm's home sees **Your Aspect**, "Your Realm's <Order> plays for <Aspect>", that card chosen and the others
+  faint, and keeps **Create your realm**. Aspects and their Orders come from the Order catalog (`aspects`,
+  `orders[].aspect` in `packages/types`). Dev: `/lab/app/<screen>/doorway/aspect` and `doorway/aspect-realm`.
 - Entering a game (the doorway, `ui/features/game-entry/doorway/`, one screen from the entry to play, the lazy game
   code's wait included): the realm under its Order's emblem, one bar with what runs (**Signing in**, **Preparing your
   realm**, **Loading the map**, **Entering the world**), its percent (the steps' spans, the map's following the opening
@@ -1420,10 +1420,10 @@ cover guard membership and rollback. Run the existing `pnpm --dir apps/game play
 Deep site card: with an army in the Deep selected, hover a Deep site beside it ("Open the site") and right-click it (a
 phone's tap), or tap the site with no army for its card alone. It names who the site serves, what a tick held pays (the
 Foundation's Glory and height, the Quarry's labor and Essence, the Altar's Glory and bane bar), split by troops, then
-today's beast, an open site, or the holder's Aspect and four slots: each guard's realm, troops, ticks left with its
-draining bar, and share of a tick. The selected army's order is Attack (the beast), Take (an open site) or Join (a free
-slot of its own Aspect's guard); away from the site it is Move, and otherwise the card says why (another Aspect's site,
-already guarding, four guards, another day's army). Lab: `/lab/game?scenario=deep-sites`.
+today's beast, an open site, or the holder's Aspect and four slots: each guard's realm, troops, the ticks they last and
+the time that is, and share of a tick. The selected army's order is Attack (the beast), Take (an open site) or Join (a
+free slot of its own Aspect's guard); away from the site it is Move, and otherwise the card says why (another Aspect's
+site, already guarding, four guards, another day's army). Lab: `/lab/game?scenario=deep-sites`.
 
 Shared Deep rollover: tile occupancy, field models and army action gates use `ArmyDay` with the confirmed execution
 clock. An empty confirmed head at day rollover removes yesterday's army from the map and opens its tile, while its raw

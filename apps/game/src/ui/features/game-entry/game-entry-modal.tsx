@@ -721,7 +721,7 @@ export const GameEntryModal = ({
           )}
           {choosesAspect && !choosingSource && (
             <AspectPicker
-              members={null}
+              members={worldMeta?.aspect_members ?? null}
               realmOrder={realmOrder}
               joining={isSettling ? aspect : null}
               waiting={!homeSettled}
