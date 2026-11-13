@@ -96,7 +96,7 @@ export class ValueRelay extends DurableObject<RelayEnv> {
   private readonly ingesting = Semaphore.makeUnsafe(1);
   private readonly store = new DurableRelayStore(this.ctx.storage);
   private readonly chests = new DurableChestStore(this.ctx.storage);
-  private lastDelivery: { at: number; result: Awaited<ReturnType<typeof relayDeposits>> } | null = null;
+  private readonly lastDelivery = new Map<string, { at: number; result: Awaited<ReturnType<typeof relayDeposits>> }>();
 
   private ledgerPermit<A, E>(operation: Effect.Effect<A, E>, chains: readonly string[] = []) {
     return this.ledgerSigning.withPermit(
@@ -270,14 +270,16 @@ export class ValueRelay extends DurableObject<RelayEnv> {
   }
   /**
    * A player's deposit, delivered now: the page asks once its payment landed, so a deposit is not found by reading the
-   * ledger's count every minute. Asks inside the throttle share the last answer.
+   * ledger's count every minute. A player asking again inside the throttle gets their last answer; another player's
+   * ask is never answered with it, since their deposit may have landed after it.
    */
-  async deliverDeposits(chainId: string) {
+  async deliverDeposits(chainId: string, realmsId: string) {
     await requireActiveChain(this.env.IDENTITY, chainId);
     const now = Date.now();
-    if (this.lastDelivery && now - this.lastDelivery.at < DELIVERY_THROTTLE_MS) return this.lastDelivery.result;
+    const last = this.lastDelivery.get(realmsId);
+    if (last && now - last.at < DELIVERY_THROTTLE_MS) return last.result;
     const result = await Effect.runPromise(this.relayDepositsNow(chainId));
-    this.lastDelivery = { at: now, result };
+    this.lastDelivery.set(realmsId, { at: now, result });
     const previous = await this.ctx.storage.get<ShardObservation>("shardTick");
     if (previous) await this.ctx.storage.put("shardTick", { ...previous, deposits: result });
     return result;
@@ -938,12 +940,12 @@ const finishChestResponse = async (request: Request, env: RelayEnv) => {
 const deliverDepositsResponse = async (request: Request, env: RelayEnv) => {
   if (request.headers.get("origin") !== new URL(env.BASE_URL).origin)
     return Response.json({ error: "invalid_origin" }, { status: 403 });
-  if (!(await env.IDENTITY.authenticate(request.headers.get("cookie") ?? "")))
-    return Response.json({ error: "unauthenticated" }, { status: 401 });
+  const identity = await env.IDENTITY.authenticate(request.headers.get("cookie") ?? "");
+  if (!identity) return Response.json({ error: "unauthenticated" }, { status: 401 });
   const chain = new URL(request.url).searchParams.get("chainId");
   if (!chain || !/^0x[0-9a-f]+$/i.test(chain)) return Response.json({ error: "invalid_chain" }, { status: 400 });
   try {
-    return Response.json(await relayOf(env, chain).deliverDeposits(chain), {
+    return Response.json(await relayOf(env, chain).deliverDeposits(chain, identity.realmsId), {
       headers: { "cache-control": "no-store" },
     });
   } catch {

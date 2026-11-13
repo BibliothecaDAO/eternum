@@ -217,14 +217,16 @@ it("looks for deposits on the hour, and between hours only while one is pending"
   await relay.tick("0x1");
   expect(deposits).toHaveBeenCalledTimes(7);
 });
-it("delivers a landed deposit at once, and shares one answer inside the throttle", async () => {
+it("delivers a landed deposit at once; one player's repeat ask shares an answer, another player's does not", async () => {
   deposits.mockResolvedValue({ ...settledDeposits, processed: 1 });
   const relay = shardRelay();
   await relay.tick("0x1");
   deposits.mockClear();
-  expect((await relay.deliverDeposits("0x1")).processed).toBe(1);
-  expect((await relay.deliverDeposits("0x1")).processed).toBe(1);
+  expect((await relay.deliverDeposits("0x1", "0x77")).processed).toBe(1);
+  expect((await relay.deliverDeposits("0x1", "0x77")).processed).toBe(1);
   expect(deposits).toHaveBeenCalledTimes(1);
+  await relay.deliverDeposits("0x1", "0x78");
+  expect(deposits).toHaveBeenCalledTimes(2);
 });
 it("asks the ledger side to read once an hour while shards tick every minute", async () => {
   const ledgerTickIfDue = vi.fn();
