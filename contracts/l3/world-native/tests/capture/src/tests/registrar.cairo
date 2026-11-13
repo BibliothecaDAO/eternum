@@ -518,7 +518,7 @@ fn frontier_ruin_clear_pays_its_stored_chest_into_the_realm_and_leaves_no_chest(
     assert_eq!(structures.structure(site_key).unwrap().base.category, crate::taxonomy::RUIN_CATEGORY);
     // The card and the clear read the one row stored at discovery.
     let relics = IRelicsDispatcher { contract_address: d.games };
-    assert_eq!(relics.site_chest(site_key), Some(crate::army_relics::RuinReward::Chest(CHEST)));
+    assert_eq!(relics.site_chest(site_key), Some(CHEST));
     let initial = snforge_std::interact_with_state(
         d.games, || crate::logic::expeditions::expedition_site(site_key).unwrap(),
     );
@@ -547,7 +547,7 @@ fn frontier_ruin_clear_pays_its_stored_chest_into_the_realm_and_leaves_no_chest(
     let tile = crate::geometry::tile_key(game_id, coord);
     assert!(snforge_std::interact_with_state(d.games, || crate::logic::map::occupancy(tile)).is_none());
     assert_site_removed(d, site_key);
-    assert_eq!(relics.site_chest(site_key), Some(crate::army_relics::RuinReward::Chest(CHEST)));
+    assert_eq!(relics.site_chest(site_key), Some(CHEST));
     let receipt = snforge_std::interact_with_state(
         d.games, || crate::logic::expeditions::expedition_site(site_key).unwrap().clear.unwrap(),
     );
