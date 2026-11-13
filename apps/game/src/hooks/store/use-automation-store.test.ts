@@ -119,19 +119,17 @@ describe("useAutomationStore", () => {
       useAutomationStore.getState().setResourcePercentages("1", ResourcesIds.Wood, { resourceToResource: 25 });
       const realm = useAutomationStore.getState().realms["1"];
       expect(realm.presetId).toBe("custom");
-      expect(realm.customPercentages[ResourcesIds.Wood]).toEqual({ resourceToResource: 25, laborToResource: 5 });
+      expect(realm.customPercentages[ResourcesIds.Wood]).toEqual({ resourceToResource: 25 });
     });
 
     it("clamps values above MAX and floors negatives", () => {
       useAutomationStore.getState().upsertRealm("1");
       useAutomationStore.getState().setResourcePercentages("1", ResourcesIds.Wood, {
         resourceToResource: 999,
-        laborToResource: -50,
       });
       const realm = useAutomationStore.getState().realms["1"];
       expect(realm.customPercentages[ResourcesIds.Wood]).toEqual({
         resourceToResource: MAX_RESOURCE_ALLOCATION_PERCENT,
-        laborToResource: 0,
       });
     });
 
@@ -141,22 +139,20 @@ describe("useAutomationStore", () => {
       expect(useAutomationStore.getState().realms["1"].customPercentages[ResourcesIds.Wheat]).toBeUndefined();
     });
 
-    it("forces Donkey laborToResource to 0", () => {
+    it("sets Donkey resource production", () => {
       useAutomationStore.getState().upsertRealm("1");
       useAutomationStore.getState().setResourcePercentages("1", ResourcesIds.Donkey, {
         resourceToResource: 20,
-        laborToResource: 30,
       });
       const realm = useAutomationStore.getState().realms["1"];
-      expect(realm.customPercentages[ResourcesIds.Donkey]).toEqual({ resourceToResource: 20, laborToResource: 0 });
+      expect(realm.customPercentages[ResourcesIds.Donkey]).toEqual({ resourceToResource: 20 });
     });
 
-    it("uses DONKEY_DEFAULT_RESOURCE_PERCENT as the default when Donkey is first set via a labor-only patch", () => {
+    it("uses DONKEY_DEFAULT_RESOURCE_PERCENT as the default when Donkey is first set without a percentage", () => {
       useAutomationStore.getState().upsertRealm("1");
-      useAutomationStore.getState().setResourcePercentages("1", ResourcesIds.Donkey, { laborToResource: 0 });
+      useAutomationStore.getState().setResourcePercentages("1", ResourcesIds.Donkey, {});
       expect(useAutomationStore.getState().realms["1"].customPercentages[ResourcesIds.Donkey]).toEqual({
         resourceToResource: DONKEY_DEFAULT_RESOURCE_PERCENT,
-        laborToResource: 0,
       });
     });
 
@@ -205,7 +201,6 @@ describe("useAutomationStore", () => {
       useAutomationStore.getState().recordExecution("1", {
         executedAt: 111,
         resourceToResource: [],
-        laborToResource: [],
         consumptionByResource: {},
         outputsByResource: {},
         skipped: [],
@@ -231,7 +226,6 @@ describe("useAutomationStore", () => {
       useAutomationStore.getState().recordExecution("nope", {
         executedAt: 1,
         resourceToResource: [],
-        laborToResource: [],
         consumptionByResource: {},
         outputsByResource: {},
         skipped: [],
@@ -274,7 +268,7 @@ describe("useAutomationStore", () => {
 
   describe("DEFAULT_RESOURCE_AUTOMATION_PERCENTAGES", () => {
     it("defaults to 0 resource, 5 labor so new configs don't over-commit", () => {
-      expect(DEFAULT_RESOURCE_AUTOMATION_PERCENTAGES).toEqual({ resourceToResource: 0, laborToResource: 5 });
+      expect(DEFAULT_RESOURCE_AUTOMATION_PERCENTAGES).toEqual({ resourceToResource: 0 });
     });
   });
 });

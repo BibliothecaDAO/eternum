@@ -37,21 +37,9 @@ const clampPercent = (value: number): number => {
 
 export const resolveProductionPercentages = (
   percentages: ResourceAutomationPercentages,
-  resourceId: ResourcesIds,
-): ResourceAutomationPercentages => {
-  if (!configManager.isCommandEnabled("BurnLaborForResourceProduction")) {
-    return {
-      resourceToResource: clampPercent(percentages.resourceToResource),
-      laborToResource: 0,
-    };
-  }
-  return {
-    resourceToResource: clampPercent(percentages.resourceToResource),
-    laborToResource: resourceId === ResourcesIds.Donkey ? 0 : clampPercent(percentages.laborToResource),
-  };
-};
-
-type SplitMode = "resource" | "labor";
+): ResourceAutomationPercentages => ({
+  resourceToResource: clampPercent(percentages.resourceToResource),
+});
 
 const buildSequentialWeights = (count: number, baseWeights: number[]): number[] => {
   if (count <= 0) return [];
@@ -63,37 +51,33 @@ const buildSequentialWeights = (count: number, baseWeights: number[]): number[] 
 };
 
 const assignTierSplit = (
-  target: Map<number, { resourceToResource: number; laborToResource: number }>,
+  target: Map<number, ResourceAutomationPercentages>,
   resourcesInTier: ResourcesIds[],
   weights: number[],
-  mode: SplitMode = "resource",
 ) => {
   resourcesInTier.forEach((resourceId, index) => {
     const weight = clampPercent(weights[index] ?? 0);
-    const existing = target.get(resourceId) ?? { resourceToResource: 0, laborToResource: 0 };
     target.set(resourceId, {
-      resourceToResource: mode === "resource" ? weight : existing.resourceToResource,
-      laborToResource: mode === "labor" ? weight : existing.laborToResource,
+      resourceToResource: weight,
     });
   });
 };
 
 const assignMarketDonkeyAllocation = (
-  target: Map<number, { resourceToResource: number; laborToResource: number }>,
+  target: Map<number, ResourceAutomationPercentages>,
   presentSet: Set<ResourcesIds>,
 ) => {
   if (!presentSet.has(ResourcesIds.Donkey)) return;
 
   target.set(ResourcesIds.Donkey, {
     resourceToResource: SMART_MARKET_DONKEY_RESOURCE_PERCENT,
-    laborToResource: 0,
   });
 };
 
 const buildSmartPresetAllocations = (
   resources: ResourcesIds[],
-): Map<number, { resourceToResource: number; laborToResource: number }> => {
-  const allocations = new Map<number, { resourceToResource: number; laborToResource: number }>();
+): Map<number, ResourceAutomationPercentages> => {
+  const allocations = new Map<number, ResourceAutomationPercentages>();
   const presentSet = new Set(resources);
 
   const presentT1 = SMART_T1_RESOURCES.filter((resourceId) => presentSet.has(resourceId));
@@ -115,11 +99,10 @@ const buildSmartPresetAllocations = (
         allocations,
         presentT1,
         presentT1.map(() => 5),
-        configManager.isCommandEnabled("BurnLaborForResourceProduction") ? "labor" : "resource",
       );
     } else if (!hasHigherResources) {
       // Complete T1 only: 30% each on resource slider.
-      assignTierSplit(allocations, SMART_T1_RESOURCES, [30, 30, 30], "resource");
+      assignTierSplit(allocations, SMART_T1_RESOURCES, [30, 30, 30]);
     } else {
       // Complete T1 with army and/or higher tiers: 20% wood, 20% coal, 30% copper on resource slider.
       const orderedT1 = [ResourcesIds.Wood, ResourcesIds.Coal, ResourcesIds.Copper];
@@ -127,7 +110,7 @@ const buildSmartPresetAllocations = (
         allocations,
         orderedT1.filter((id) => presentSet.has(id)),
         [20, 20, 30],
-        "resource",
+
       );
     }
   }
@@ -138,7 +121,7 @@ const buildSmartPresetAllocations = (
       allocations,
       SMART_T2_RESOURCES.filter((id) => presentSet.has(id)),
       weights,
-      "resource",
+
     );
   }
 
@@ -148,31 +131,31 @@ const buildSmartPresetAllocations = (
       allocations,
       SMART_T3_RESOURCES.filter((id) => presentSet.has(id)),
       weights,
-      "resource",
+
     );
   }
 
   // Army allocations (resource slider)
   if (presentArmyT3.length > 0) {
-    assignTierSplit(allocations, presentArmyT3, buildSequentialWeights(presentArmyT3.length, [50, 25, 15]), "resource");
+    assignTierSplit(allocations, presentArmyT3, buildSequentialWeights(presentArmyT3.length, [50, 25, 15]));
     if (presentArmyT2.length > 0) {
       assignTierSplit(
         allocations,
         presentArmyT2,
         buildSequentialWeights(presentArmyT2.length, [30, 15, 10]),
-        "resource",
+
       );
     }
     if (presentArmyT1.length > 0) {
-      assignTierSplit(allocations, presentArmyT1, buildSequentialWeights(presentArmyT1.length, [10, 5, 3]), "resource");
+      assignTierSplit(allocations, presentArmyT1, buildSequentialWeights(presentArmyT1.length, [10, 5, 3]));
     }
   } else if (presentArmyT2.length > 0) {
-    assignTierSplit(allocations, presentArmyT2, buildSequentialWeights(presentArmyT2.length, [30, 15, 10]), "resource");
+    assignTierSplit(allocations, presentArmyT2, buildSequentialWeights(presentArmyT2.length, [30, 15, 10]));
     if (presentArmyT1.length > 0) {
-      assignTierSplit(allocations, presentArmyT1, buildSequentialWeights(presentArmyT1.length, [10, 5, 3]), "resource");
+      assignTierSplit(allocations, presentArmyT1, buildSequentialWeights(presentArmyT1.length, [10, 5, 3]));
     }
   } else if (presentArmyT1.length > 0) {
-    assignTierSplit(allocations, presentArmyT1, buildSequentialWeights(presentArmyT1.length, [30, 20, 10]), "resource");
+    assignTierSplit(allocations, presentArmyT1, buildSequentialWeights(presentArmyT1.length, [30, 20, 10]));
   }
 
   assignMarketDonkeyAllocation(allocations, presentSet);
@@ -180,7 +163,7 @@ const buildSmartPresetAllocations = (
   // Ensure every resource has an entry, defaulting to zero.
   resources.forEach((resourceId) => {
     if (!allocations.has(resourceId)) {
-      allocations.set(resourceId, { resourceToResource: 0, laborToResource: 0 });
+      allocations.set(resourceId, { resourceToResource: 0 });
     }
   });
 
@@ -201,7 +184,7 @@ export const calculatePresetAllocations = (
 
   if (presetId === "idle") {
     scopedIds.forEach((resourceId) => {
-      allocations.set(resourceId, { resourceToResource: 0, laborToResource: 0 });
+      allocations.set(resourceId, { resourceToResource: 0 });
     });
     return allocations;
   }
@@ -209,8 +192,8 @@ export const calculatePresetAllocations = (
   if (presetId === "smart") {
     const smartAllocations = buildSmartPresetAllocations(scopedIds);
     scopedIds.forEach((resourceId) => {
-      const next = smartAllocations.get(resourceId) ?? { resourceToResource: 0, laborToResource: 0 };
-      allocations.set(resourceId, resolveProductionPercentages(next, resourceId));
+      const next = smartAllocations.get(resourceId) ?? { resourceToResource: 0 };
+      allocations.set(resourceId, resolveProductionPercentages(next));
     });
     return allocations;
   }
@@ -221,13 +204,12 @@ export const calculatePresetAllocations = (
 
 export const getAutomationOverallocation = (
   percentagesByResource: Record<number, ResourceAutomationPercentages> | undefined,
-): { resourceOver: boolean; laborOver: boolean } => {
+): { resourceOver: boolean } => {
   if (!percentagesByResource) {
-    return { resourceOver: false, laborOver: false };
+    return { resourceOver: false };
   }
 
   const resourceTotals = new Map<number, number>();
-  const laborTotals = new Map<number, number>();
 
   Object.entries(percentagesByResource).forEach(([key, stored]) => {
     const resourceId = Number(key) as ResourcesIds;
@@ -235,18 +217,12 @@ export const getAutomationOverallocation = (
     if (isAutomationResourceBlocked(resourceId) || !configManager.producibleResources().includes(resourceId)) {
       return;
     }
-    const percentages = configManager.isCommandEnabled("BurnLaborForResourceProduction")
-      ? stored
-      : { ...stored, laborToResource: 0 };
+    const percentages = stored;
     const rawComplexInputs = configManager.requireRecipeInputs(resourceId, false);
     const complexInputs = rawComplexInputs.filter(
       (input: { resource: ResourcesIds }) => input.resource !== ResourcesIds.Wheat,
     );
 
-    const rawSimpleInputs = configManager.requireRecipeInputs(resourceId, true);
-    const simpleInputs = rawSimpleInputs.filter(
-      (input: { resource: ResourcesIds }) => input.resource !== ResourcesIds.Wheat,
-    );
 
     if ((percentages?.resourceToResource ?? 0) > 0) {
       complexInputs.forEach(({ resource }: { resource: ResourcesIds }) => {
@@ -254,15 +230,10 @@ export const getAutomationOverallocation = (
       });
     }
 
-    if ((percentages?.laborToResource ?? 0) > 0) {
-      simpleInputs.forEach(({ resource }: { resource: ResourcesIds }) => {
-        laborTotals.set(resource, (laborTotals.get(resource) ?? 0) + (percentages?.laborToResource ?? 0));
-      });
-    }
+
   });
 
   let resourceOver = false;
-  let laborOver = false;
 
   resourceTotals.forEach((value) => {
     if (value > MAX_RESOURCE_ALLOCATION_PERCENT) {
@@ -270,13 +241,8 @@ export const getAutomationOverallocation = (
     }
   });
 
-  laborTotals.forEach((value) => {
-    if (value > MAX_RESOURCE_ALLOCATION_PERCENT) {
-      laborOver = true;
-    }
-  });
 
-  return { resourceOver, laborOver };
+  return { resourceOver };
 };
 
 export const inferRealmPreset = (automation?: RealmAutomationConfig): RealmPresetId => {

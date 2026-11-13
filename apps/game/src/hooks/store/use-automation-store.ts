@@ -77,15 +77,11 @@ const normalizePercentages = (
     resourceId === ResourcesIds.Donkey
       ? DONKEY_DEFAULT_RESOURCE_PERCENT
       : DEFAULT_RESOURCE_AUTOMATION_PERCENTAGES.resourceToResource;
-  const laborDefault = resourceId === ResourcesIds.Donkey ? 0 : DEFAULT_RESOURCE_AUTOMATION_PERCENTAGES.laborToResource;
 
   const resourceToResource = clampPercent(percentages?.resourceToResource ?? resourceDefault);
-  const laborToResource =
-    resourceId === ResourcesIds.Donkey ? 0 : clampPercent(percentages?.laborToResource ?? laborDefault);
 
   return {
     resourceToResource,
-    laborToResource,
   };
 };
 
@@ -224,8 +220,7 @@ export const useAutomationStore = create<ProductionAutomationState>()(
 
           const updatedPercentages = normalizePercentages({ ...current, ...percentages }, resourceId);
           const changed =
-            updatedPercentages.resourceToResource !== current.resourceToResource ||
-            updatedPercentages.laborToResource !== current.laborToResource;
+            updatedPercentages.resourceToResource !== current.resourceToResource;
 
           if (!changed && existingPercentages) {
             return state;
@@ -383,7 +378,6 @@ export const useAutomationStore = create<ProductionAutomationState>()(
             sanitizedLastExecution = {
               executedAt: typeof rest.executedAt === "number" ? rest.executedAt : Date.now(),
               resourceToResource: Array.isArray(rest.resourceToResource) ? rest.resourceToResource : [],
-              laborToResource: Array.isArray(rest.laborToResource) ? rest.laborToResource : [],
               consumptionByResource: rest.consumptionByResource ?? {},
               outputsByResource: rest.outputsByResource ?? {},
               skipped,
@@ -419,7 +413,6 @@ export const useAutomationStore = create<ProductionAutomationState>()(
               if (!percentages) return;
               legacyPercentages[resourceId] = {
                 resourceToResource: Number((percentages as any).resourceToResource ?? 0),
-                laborToResource: Number((percentages as any).laborToResource ?? 0),
               };
             });
             customPercentages = sanitizeCustomPercentages(legacyPercentages);

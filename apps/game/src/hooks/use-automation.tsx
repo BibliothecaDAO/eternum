@@ -370,7 +370,7 @@ export const useAutomation = () => {
                     const smartDefault = smartDefaults.get(resourceId);
                     const baseline =
                       resourceId === ResourcesIds.Donkey
-                        ? { resourceToResource: DONKEY_DEFAULT_RESOURCE_PERCENT, laborToResource: 0 }
+                        ? { resourceToResource: DONKEY_DEFAULT_RESOURCE_PERCENT }
                         : { ...DEFAULT_RESOURCE_AUTOMATION_PERCENTAGES };
                     effectivePercentages[resourceId] = stored ?? smartDefault ?? baseline;
                   });

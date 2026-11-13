@@ -7,7 +7,6 @@ import { configManager } from "./config-manager";
  */
 interface ResourceAutomationPercentagesInput {
   resourceToResource: number;
-  laborToResource: number;
 }
 
 interface AggregateConsumptionOptions {
@@ -86,7 +85,6 @@ export const aggregateConsumptionPerSecond = (
     if (!percentages) continue;
 
     const resourceRatio = clampRatio(percentages.resourceToResource / maxAllocationPercent);
-    const laborRatio = clampRatio(percentages.laborToResource / maxAllocationPercent);
 
     if (resourceRatio > 0) {
       const inputs = inputsOf(resourceId, false) ?? [];
@@ -95,12 +93,7 @@ export const aggregateConsumptionPerSecond = (
       }
     }
 
-    if (laborRatio > 0) {
-      const inputs = inputsOf(resourceId, true) ?? [];
-      for (const input of inputs) {
-        accumulate(input.resource, laborRatio * input.amount);
-      }
-    }
+
   }
 
   return totals;

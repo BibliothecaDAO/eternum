@@ -514,10 +514,7 @@ export class ClientConfigManager {
   canRefillProduction(resourceId: number): boolean {
     return hasEnabledProductionPath(
       this.facts().get("ProductionRecipe", { game_id: this.gameId, resource_type: resourceId }),
-      {
-        labor: this.isCommandEnabled("BurnLaborForResourceProduction"),
-        resource: this.isCommandEnabled("BurnResourceForResourceProduction"),
-      },
+      this.isCommandEnabled("BurnResourceForResourceProduction"),
     );
   }
   getSettlementConfig() {

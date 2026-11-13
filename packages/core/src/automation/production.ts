@@ -32,7 +32,6 @@ interface ResourceCycleCall {
 
 export interface RealmProductionCallset {
   resourceToResource: ResourceCycleCall[];
-  laborToResource: ResourceCycleCall[];
 }
 
 export interface RealmProductionPlan {
@@ -43,7 +42,6 @@ export interface RealmProductionPlan {
   consumptionByResource: Record<number, number>;
   outputsByResource: Record<number, number>;
   resourceExecutions: RealmAutomationExecutionSummary["resourceToResource"];
-  laborExecutions: RealmAutomationExecutionSummary["laborToResource"];
   skipped: RealmAutomationExecutionSummary["skipped"];
   evaluatedResourceIds: ResourcesIds[];
 }
@@ -58,11 +56,10 @@ type AutomationSkipEntry = RealmAutomationExecutionSummary["skipped"][number];
 const ZERO_PLAN: RealmProductionPlan = {
   realmId: 0,
   realmKey: "",
-  callset: { resourceToResource: [], laborToResource: [] },
+  callset: { resourceToResource: [] },
   consumptionByResource: {},
   outputsByResource: {},
   resourceExecutions: [],
-  laborExecutions: [],
   skipped: [],
   evaluatedResourceIds: [],
 };
@@ -79,7 +76,6 @@ const ensurePositiveNumber = (value: number): number => {
 
 const DEFAULT_PLAN_CALLSET: RealmProductionCallset = {
   resourceToResource: [],
-  laborToResource: [],
 };
 
 const TROOP_PLANNING_ORDER = new Map<ResourcesIds, number>([
@@ -321,7 +317,6 @@ export const buildRealmProductionPlan = ({
       consumptionByResource: {},
       outputsByResource: {},
       resourceExecutions: [],
-      laborExecutions: [],
       skipped: [],
       evaluatedResourceIds: [],
     };
@@ -335,7 +330,7 @@ export const buildRealmProductionPlan = ({
 
   const baselinePercentages = (resourceId: ResourcesIds): ResourceAutomationPercentages => {
     if (resourceId === ResourcesIds.Donkey) {
-      return { resourceToResource: DONKEY_DEFAULT_RESOURCE_PERCENT, laborToResource: 0 };
+      return { resourceToResource: DONKEY_DEFAULT_RESOURCE_PERCENT };
     }
     return { ...DEFAULT_RESOURCE_AUTOMATION_PERCENTAGES };
   };
@@ -355,9 +350,9 @@ export const buildRealmProductionPlan = ({
     const source =
       presetId === "custom"
         ? (customPercentages ?? smartPercentages)
-        : (presetPercentages ?? { resourceToResource: 0, laborToResource: 0 });
+        : (presetPercentages ?? { resourceToResource: 0 });
 
-    const percentages = resolveProductionPercentages(source, resourceId);
+    const percentages = resolveProductionPercentages(source);
 
     return { resourceId, percentages, hasActiveProduction };
   });
@@ -367,7 +362,7 @@ export const buildRealmProductionPlan = ({
   for (const definition of resourceDefinitions) {
     const {
       resourceId,
-      percentages: { resourceToResource, laborToResource },
+      percentages: { resourceToResource },
       hasActiveProduction,
     } = definition;
 
@@ -379,7 +374,7 @@ export const buildRealmProductionPlan = ({
       continue;
     }
 
-    const hasActivity = ensurePositiveNumber(resourceToResource) || ensurePositiveNumber(laborToResource);
+    const hasActivity = ensurePositiveNumber(resourceToResource);
 
     if (!hasActivity) {
       continue;
@@ -392,10 +387,7 @@ export const buildRealmProductionPlan = ({
       inputs.forEach((input) => resourcesToTrack.add(input.resource));
     }
 
-    if (laborToResource > 0) {
-      const inputs = configManager.requireRecipeInputs(resourceId, true);
-      inputs.forEach((input) => resourcesToTrack.add(input.resource));
-    }
+
   }
 
   const totalAvailable = new Map<ResourcesIds, number>();
@@ -433,14 +425,7 @@ export const buildRealmProductionPlan = ({
         addDemand(input.resource, percentages.resourceToResource);
       }
     }
-    if (percentages.laborToResource > 0) {
-      const laborConfig = configManager.getLaborConfig?.(resourceId);
-      const inputs = laborConfig?.inputResources ?? [];
-      for (const input of inputs) {
-        if (input.amount <= 0) continue;
-        addDemand(input.resource, percentages.laborToResource);
-      }
-    }
+
   }
   const scaleFactorByInput = new Map<ResourcesIds, number>();
   totalDemandByInput.forEach((demand, inputId) => {
@@ -451,10 +436,8 @@ export const buildRealmProductionPlan = ({
 
   const planCallset: RealmProductionCallset = {
     resourceToResource: [],
-    laborToResource: [],
   };
   const resourceExecutions: RealmAutomationExecutionSummary["resourceToResource"] = [];
-  const laborExecutions: RealmAutomationExecutionSummary["laborToResource"] = [];
 
   const reserveAmount = (resourceId: ResourcesIds, amount: number) => {
     if (!Number.isFinite(amount) || amount <= 0) return false;
@@ -474,7 +457,7 @@ export const buildRealmProductionPlan = ({
   for (const definition of resourceDefinitions) {
     const {
       resourceId,
-      percentages: { resourceToResource, laborToResource },
+      percentages: { resourceToResource },
       hasActiveProduction,
     } = definition;
 
@@ -482,7 +465,7 @@ export const buildRealmProductionPlan = ({
       continue;
     }
 
-    const hasConfig = ensurePositiveNumber(resourceToResource) || ensurePositiveNumber(laborToResource);
+    const hasConfig = ensurePositiveNumber(resourceToResource);
     if (!hasConfig) {
       continue;
     }
@@ -575,119 +558,8 @@ export const buildRealmProductionPlan = ({
       }
     }
 
-    // Labor -> Resource (simple recipe)
-    if (laborToResource > 0) {
-      const laborConfig = configManager.getLaborConfig(resourceId);
-      const inputResources = laborConfig?.inputResources ?? [];
-      const outputPerCycle = laborConfig?.resourceOutputPerInputResources ?? 0;
 
-      if (!laborConfig || !inputResources.length || outputPerCycle <= 0) {
-        skipped.push({
-          resourceId,
-          reason: "Missing labor recipe configuration",
-        });
-      } else {
-        let maxCycles = Number.POSITIVE_INFINITY;
-        const laborDebug: Array<{
-          inputResource: ResourcesIds;
-          totalAvailable: number;
-          budget: number;
-          desired: number;
-          permitted: number;
-          amountPerCycle: number;
-          cyclesForInput: number;
-        }> = [];
 
-        for (const input of inputResources) {
-          if (input.amount <= 0) {
-            laborDebug.push({
-              inputResource: input.resource,
-              totalAvailable: getTotal(input.resource),
-              budget: getBudget(input.resource),
-              desired: 0,
-              permitted: 0,
-              amountPerCycle: input.amount,
-              cyclesForInput: 0,
-            });
-            continue;
-          }
-          const total = getTotal(input.resource);
-          const budget = getBudget(input.resource);
-          if (total <= 0 || budget <= 0) {
-            maxCycles = 0;
-            break;
-          }
-
-          const desired = Math.floor((total * laborToResource * getInputShareScale(input.resource)) / 100);
-          if (desired <= 0) {
-            laborDebug.push({
-              inputResource: input.resource,
-              totalAvailable: total,
-              budget,
-              desired,
-              permitted: 0,
-              amountPerCycle: input.amount,
-              cyclesForInput: 0,
-            });
-            maxCycles = 0;
-            break;
-          }
-          const permitted = Math.min(desired, budget);
-          const cyclesForInput = Math.floor(permitted / input.amount);
-          laborDebug.push({
-            inputResource: input.resource,
-            totalAvailable: total,
-            budget,
-            desired,
-            permitted,
-            amountPerCycle: input.amount,
-            cyclesForInput,
-          });
-          maxCycles = Math.min(maxCycles, cyclesForInput);
-        }
-
-        if (!Number.isFinite(maxCycles) || maxCycles <= 0) {
-          skipped.push({
-            resourceId,
-            reason: "Insufficient labor recipe inputs",
-          });
-        } else {
-          const inputsConsumed = inputResources.map(({ resource, amount }) => ({
-            resourceId: resource,
-            amount: amount * maxCycles,
-          }));
-
-          let allocationSucceeded = true;
-          for (const entry of inputsConsumed) {
-            if (!reserveAmount(entry.resourceId, entry.amount)) {
-              allocationSucceeded = false;
-              break;
-            }
-          }
-
-          if (!allocationSucceeded) {
-            skipped.push({
-              resourceId,
-              reason: "Resource budget exhausted for labor recipe",
-            });
-          } else {
-            const produced = outputPerCycle * maxCycles;
-            addToRecord(outputsByResource, resourceId, produced);
-            planCallset.laborToResource.push({ resourceId, cycles: maxCycles });
-            laborExecutions.push({
-              resourceId,
-              cycles: maxCycles,
-              produced,
-              inputs: inputsConsumed,
-              method: "labor-to-resource",
-            });
-          }
-        }
-      }
-    }
-
-    // Resource -> Labor
-    // Resource -> Labor removed
   }
 
   return {
@@ -698,7 +570,6 @@ export const buildRealmProductionPlan = ({
     consumptionByResource,
     outputsByResource,
     resourceExecutions,
-    laborExecutions,
     skipped,
     evaluatedResourceIds: resourceDefinitions.map((definition) => definition.resourceId),
   };
@@ -707,7 +578,7 @@ export const buildRealmProductionPlan = ({
 export const planHasExecutableCalls = (plan: RealmProductionPlan): boolean => {
   if (!plan) return false;
   const { callset } = plan;
-  return Boolean(callset.resourceToResource.length || callset.laborToResource.length);
+  return Boolean(callset.resourceToResource.length);
 };
 
 export const buildExecutionSummary = (
@@ -716,9 +587,7 @@ export const buildExecutionSummary = (
 ): RealmAutomationExecutionSummary => {
   const skippedByResource: Record<number, string> = {};
   plan.skipped.forEach((entry) => {
-    // If the same resource skipped for multiple reasons (e.g. both the complex and labor
-    // recipes failed), keep the first reason since that's the primary signal the player
-    // cares about on the sidebar.
+    // Keep the first reason when a resource was skipped more than once.
     if (skippedByResource[entry.resourceId] === undefined) {
       skippedByResource[entry.resourceId] = entry.reason;
     }
@@ -727,7 +596,6 @@ export const buildExecutionSummary = (
   return {
     executedAt,
     resourceToResource: plan.resourceExecutions,
-    laborToResource: plan.laborExecutions,
     consumptionByResource: plan.consumptionByResource,
     outputsByResource: plan.outputsByResource,
     skipped: plan.skipped,

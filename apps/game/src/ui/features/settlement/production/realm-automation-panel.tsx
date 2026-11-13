@@ -115,11 +115,10 @@ export const RealmAutomationPanel = ({
 
   const createBaselinePercentages = useCallback((resourceId: ResourcesIds): ResourceAutomationPercentages => {
     if (resourceId === ResourcesIds.Donkey) {
-      return { resourceToResource: DONKEY_DEFAULT_RESOURCE_PERCENT, laborToResource: 0 };
+      return { resourceToResource: DONKEY_DEFAULT_RESOURCE_PERCENT };
     }
     return {
       resourceToResource: DEFAULT_RESOURCE_AUTOMATION_PERCENTAGES.resourceToResource,
-      laborToResource: DEFAULT_RESOURCE_AUTOMATION_PERCENTAGES.laborToResource,
     };
   }, []);
 
@@ -127,18 +126,18 @@ export const RealmAutomationPanel = ({
     (resourceId: ResourcesIds): ResourceAutomationPercentages => {
       const fromDraft = draftPercentages[resourceId];
       if (fromDraft) {
-        return resolveProductionPercentages(fromDraft, resourceId);
+        return resolveProductionPercentages(fromDraft);
       }
       if (activePresetId === "custom") {
         const stored = realmAutomation?.customPercentages?.[resourceId];
         if (stored) {
-          return resolveProductionPercentages(stored, resourceId);
+          return resolveProductionPercentages(stored);
         }
         const smartDefault = smartPresetAllocations.get(resourceId);
         if (smartDefault) {
           return { ...smartDefault };
         }
-        return resolveProductionPercentages(createBaselinePercentages(resourceId), resourceId);
+        return resolveProductionPercentages(createBaselinePercentages(resourceId));
       }
 
       const allocation = presetAllocations.get(resourceId);
@@ -146,7 +145,7 @@ export const RealmAutomationPanel = ({
         return { ...allocation };
       }
 
-      return resolveProductionPercentages(createBaselinePercentages(resourceId), resourceId);
+      return resolveProductionPercentages(createBaselinePercentages(resourceId));
     },
     [
       draftPercentages,
@@ -342,7 +341,7 @@ export const RealmAutomationPanel = ({
       setDraftPercentages((prev) => {
         const updated: Record<number, ResourceAutomationPercentages> = { ...prev };
         realmResources.forEach((resourceId) => {
-          const allocation = allocations.get(resourceId) ?? { resourceToResource: 0, laborToResource: 0 };
+          const allocation = allocations.get(resourceId) ?? { resourceToResource: 0 };
           updated[resourceId] = { ...allocation };
         });
 
@@ -360,7 +359,6 @@ export const RealmAutomationPanel = ({
         const existing = prev[resourceId] ?? resolveDraftPercentages(resourceId);
         const next: ResourceAutomationPercentages = {
           resourceToResource: value,
-          laborToResource: existing.laborToResource,
         };
         return {
           ...prev,
@@ -429,7 +427,7 @@ export const RealmAutomationPanel = ({
       const source = currentResourceSet.has(resourceId)
         ? (draftPercentages[resourceId] ?? resolveDraftPercentages(resourceId))
         : (realmAutomation.customPercentages?.[resourceId] ?? resolveDraftPercentages(resourceId));
-      normalizedPercentages[resourceId] = resolveProductionPercentages(source, resourceId);
+      normalizedPercentages[resourceId] = resolveProductionPercentages(source);
     });
 
     Object.entries(normalizedPercentages).forEach(([key, value]) => {
