@@ -258,7 +258,15 @@ pub fn refill_windows(
             continue;
         }
         stamina.refill_at_rate(ref boosts, maximum, config, tick_seconds, *window.start, rate);
-        stamina.refill_at_rate(ref boosts, maximum, config, tick_seconds, *window.end, (Into::<u16, u32>::into(rate) * percent.into() / 100).try_into().unwrap());
+        stamina
+            .refill_at_rate(
+                ref boosts,
+                maximum,
+                config,
+                tick_seconds,
+                *window.end,
+                (Into::<u16, u32>::into(rate) * percent.into() / 100).try_into().unwrap(),
+            );
     }
     stamina.refill_at_rate(ref boosts, maximum, config, tick_seconds, timestamp, rate);
 }
