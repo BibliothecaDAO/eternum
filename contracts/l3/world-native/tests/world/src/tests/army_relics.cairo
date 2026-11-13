@@ -1,4 +1,6 @@
 use crate::army_relics::{ArmyRelic, ArmyRelics, RelicKind, decode, encode, receive, slot};
+use crate::registrar::IRegistrarDispatcherTrait;
+use crate::relics::IRelicsDispatcherTrait;
 
 #[test]
 fn all_twenty_five_relics_round_trip_without_an_empty_code() {
@@ -71,4 +73,22 @@ fn plunder_doubles_only_labor_and_essence_at_legendary() {
         assert_eq!(crate::logic::army_relics::site_reward(key, reward, 9100), reward);
     }
     assert_eq!(slot(crate::logic::army_relics::read(key), 0), None);
+}
+
+#[test]
+fn day_relic_eligibility_and_catalog_preserve_supported_formats() {
+    for (name, enabled) in array![("season-one", true), ("frontier", false)] {
+        let (d, game_id) = super::registrar::setup_open_frontier_preset(name, 1);
+        assert_eq!(snforge_std::interact_with_state(d.games, || crate::logic::army_relics::enabled(game_id)), enabled);
+        let relics = crate::relics::IRelicsDispatcher { contract_address: d.games };
+        assert!(relics.relic_rules(game_id).is_empty());
+    }
+    let d = super::registrar::setup();
+    let preset = super::registrar::definition(true);
+    super::registrar::registry(d).register_preset(1, preset);
+    let game_id = super::registrar::registry(d).create_game(super::registrar::params(true));
+    assert!(!snforge_std::interact_with_state(d.games, || crate::logic::army_relics::enabled(game_id)));
+    let relics = crate::relics::IRelicsDispatcher { contract_address: d.games };
+    assert_eq!(relics.relic_rules(game_id), preset.economy.relics);
+    assert_eq!(relics.relic_rules(game_id).len(), 18);
 }
