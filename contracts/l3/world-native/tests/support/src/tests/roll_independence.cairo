@@ -89,7 +89,7 @@ pub fn typed_commands() -> Array<Command> {
         Command::ContributeBitcoinLabor(crate::bitcoin::ContributeLabor { structure_id: 999999, amount: 1 }),
         Command::CloseBitcoinPhase(999999), Command::BindBitcoinPhase(999999),
         Command::ClaimBitcoinPhase(crate::bitcoin::ClaimPhase { phase: 0, mine_ids: array![999999_u64].span() }),
-        Command::BattleGuard(crate::commands::Battle { attacker_id: 999999, defender_id: 999999 }),
+        Command::BattleGuard(crate::commands::Battle { attacker_id: 999999, defender_id: 999999 , relic_slot: None }),
         Command::InitializeHyperstructure(999999),
         Command::ContributeHyperstructure(
             crate::hyperstructures::Contribution {
