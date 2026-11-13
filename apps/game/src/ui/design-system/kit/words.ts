@@ -505,6 +505,8 @@ export const RELIC_WORDS = {
   /** Choosing which of three carried relics the ruin's relic replaces, before the attack. */
   full: "Your army carries 3 relics. Choose the one this relic replaces.",
   replace: (relic: string) => `Replace ${relic}`,
+  /** The held attack's step while the army's relics are not known yet: whether it must choose cannot be told. */
+  reading: "Reading the army's relics…",
   /** The held attack's step while no relic is chosen: the choice itself is said just above it. */
   chooseFirst: "Choose the relic to replace first",
 } as const;

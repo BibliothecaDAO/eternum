@@ -1,7 +1,7 @@
 import { resourceMeaning } from "@/ui/design-system/icon-meaning";
 import { playUnitCommandSound } from "@/audio/unit-command-audio";
 import { useGame } from "@/hooks/context/game-context";
-import { useCurrentBlockTimestamp, useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
+import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
 import { useNativeFacts, useNativeRevision } from "@/hooks/helpers/use-native-facts";
 import { useQuery } from "@/hooks/helpers/use-query";
 import { useAccountAddress } from "@/hooks/store/use-account-store";
@@ -29,7 +29,7 @@ import {
 } from "@bibliothecadao/eternum/game-client";
 import type { TileSpatialRenderable } from "@bibliothecadao/eternum/game-sync";
 import { RESOURCE_PRECISION } from "@bibliothecadao/types";
-import { useMemo, useState, type ReactNode } from "react";
+import { useMemo, type ReactNode } from "react";
 
 import { useFrontierRealm, useGoToFrontierPlace } from "../frontier-home";
 import { type ArmyOrder, type Cost, isCovered, useArmyStamina, useOrderAt } from "../hud/army-order";
@@ -39,8 +39,7 @@ import { fightIsSent, fightWasNotSent, useFightRefusal } from "./fight-refusal";
 import { useSelectedOwnArmy } from "./selected-army";
 import { readArmyCard, readSiteCard, type SiteAttack, type SiteCardPlan } from "./site-card-plan";
 import { SiteCardView, type SiteVerb } from "./site-card-view";
-import { ARMY_RELIC_MODELS, freeRelicSlot, readArmyRelics } from "../relics/army-relics";
-import type { ArmyRelic } from "../relics/relic-catalog";
+import { useRuinRelicChoice } from "../relics/ruin-relic-choice";
 import { RelicReplacement } from "../relics/relic-replacement";
 
 const SITE_MODELS = [
@@ -148,7 +147,7 @@ export const TileCard = ({
   const armyId = actor ? safeInteger(actor.army.explorer_id) : null;
   const inFlight = useInFlight("army", armyId)?.order;
   const refused = useFightRefusal(armyId, targetId(selected));
-  const relics = useRuinRelicChoice(selected, armyId);
+  const relics = useRuinRelicChoice(selected.kind === "site" ? targetId(selected) : null, armyId);
 
   const attackSite = async () => {
     if (!attack || !account.account || armyId === null) return;
@@ -159,11 +158,15 @@ export const TileCard = ({
         throw new Error("This ruin has disappeared.");
       if (readTarget(setup.store, selected, attack).chest?.funded === false)
         throw new Error("Today's LORDS budget cannot fund this ruin.");
+      // The relic slot read from the facts as Attack goes: a choice the slot no longer bears, or relics not yet known,
+      // keep the order home.
+      const relicSlot = relics ? relics.dispatchSlot() : { slot: undefined };
+      if (!relicSlot) throw new Error(RELIC_WORDS.chooseFirst);
       await sendOnce("army", armyId, { order: "attack" }, () => {
         sent = true;
         fightIsSent();
         playUnitCommandSound("attack");
-        return sendAttack(setup.systemCalls, signer, armyId, selected, relics?.replacing ?? undefined);
+        return sendAttack(setup.systemCalls, signer, armyId, selected, relicSlot.slot);
       });
     } catch (error) {
       fightWasNotSent({
@@ -180,15 +183,17 @@ export const TileCard = ({
   const verb: SiteVerb | null =
     plan.chest?.funded === false
       ? { kind: "blocked", reason: "Today's LORDS budget cannot fund this ruin." }
-      : relics?.carried && relics.replacing === null
-        ? { kind: "blocked", reason: RELIC_WORDS.chooseFirst }
-        : siteVerb({
-            hasArmy: actor !== null,
-            inReach: plan.inReach,
-            approach,
-            stamina,
-            attack: { stamina: plan.attackStamina, inFlight, refused, onAttack: () => void attackSite() },
-          });
+      : relics?.state.kind === "unknown" && actor !== null
+        ? { kind: "blocked", reason: RELIC_WORDS.reading }
+        : relics?.state.kind === "full" && relics.state.chosen === null
+          ? { kind: "blocked", reason: RELIC_WORDS.chooseFirst }
+          : siteVerb({
+              hasArmy: actor !== null,
+              inReach: plan.inReach,
+              approach,
+              stamina,
+              attack: { stamina: plan.attackStamina, inFlight, refused, onAttack: () => void attackSite() },
+            });
 
   return (
     <SiteCardView
@@ -201,10 +206,10 @@ export const TileCard = ({
       fight={plan.fight}
       pay={sitePay(plan)}
       chest={plan.chest ? { tier: (plan.chest.tier + 1) as Tier, lords: plan.chest.amount } : undefined}
-      relic={relics?.relic}
+      relic={relics && relics.state.kind !== "none" ? relics.state.relic : undefined}
       replacement={
-        relics?.carried && (
-          <RelicReplacement carried={relics.carried} chosen={relics.replacing} onChoose={relics.replace} />
+        relics?.state.kind === "full" && (
+          <RelicReplacement carried={relics.state.carried} chosen={relics.state.chosen} onChoose={relics.replace} />
         )
       }
       ruinChoice={
@@ -222,32 +227,6 @@ export const TileCard = ({
     />
   );
 };
-
-/**
- * A Season 1 ruin's relic (RuinRelic, rolled when it was found), and, while the attacking army carries three, the slot
- * the player chose for it to replace (null until chosen); undefined for any other target.
- */
-const useRuinRelicChoice = (target: AttackTarget, armyId: number | null) => {
-  const { setup } = useGame();
-  const now = useCurrentBlockTimestamp();
-  useNativeRevision(RUIN_RELIC_MODELS);
-  const [replacing, setReplacing] = useState<0 | 1 | 2 | null>(null);
-  if (target.kind !== "site") return undefined;
-  const gameId = configManager.getActiveGameId();
-  const relic = setup.store.get("RuinRelic", { game_id: gameId, entity_id: targetId(target) });
-  if (!relic) return undefined;
-  const army = armyId === null ? null : readArmyRelics(setup.store, gameId, armyId, now);
-  const carried =
-    army && freeRelicSlot(army) === null ? (army.slots as readonly [ArmyRelic, ArmyRelic, ArmyRelic]) : null;
-  return {
-    relic: { kind: relic.kind, rank: relic.rank },
-    carried,
-    replacing: carried ? replacing : null,
-    replace: setReplacing,
-  };
-};
-
-const RUIN_RELIC_MODELS = ["RuinRelic", ...ARMY_RELIC_MODELS] as const;
 
 /** The attack the contract takes for the target: on a site's guard, or on another army (taking nothing from it). */
 const sendAttack = (
