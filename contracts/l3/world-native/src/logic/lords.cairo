@@ -37,7 +37,7 @@ pub mod LordsState {
             let record = self.data.structures.structures.entry((game_id, structure_id));
             let owner = record.owner.read();
             assert!(
-                record.base.category.read() == crate::taxonomy::REALM_CATEGORY && owner != 0.try_into().unwrap(),
+                record.base.read().category == crate::taxonomy::REALM_CATEGORY && owner != 0.try_into().unwrap(),
                 "sweep requires an owned realm",
             );
             let balance = crate::logic::resources::balance(realm, crate::resources::LORDS);

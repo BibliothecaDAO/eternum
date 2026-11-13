@@ -1,7 +1,7 @@
 use snforge_std::signature::KeyPairTrait;
 use snforge_std::signature::stark_curve::{StarkCurveKeyPair, StarkCurveKeyPairImpl, StarkCurveSignerImpl};
 use snforge_std::{start_cheat_block_timestamp, start_cheat_caller_address, start_cheat_chain_id};
-use starknet::storage::StorageMapReadAccess;
+use starknet::storage::{StorageMapReadAccess, StorageMapWriteAccess};
 use world_test_support::tests::state::ResourceObservationTrait;
 use crate::commands::Command;
 use crate::deposits::{DepositSource, LordsDeposit, SpendLords, authorization_hash, deposit_hash};
@@ -12,6 +12,7 @@ use crate::entry::{
 use crate::registrar::{CreateGameParams, IRegistrarDispatcherTrait};
 use crate::resources::{IResourceOperationsDispatcher, IResourceOperationsDispatcherTrait, ResourceKey, ResourceSlot};
 use crate::stamina::StaminaSourceTrait;
+use super::play_fixture::IPlayFixtureSafeDispatcherTrait;
 use super::{GameState, IReleasesDispatcher, IReleasesDispatcherTrait, TroopObservationTrait};
 
 fn key() -> StarkCurveKeyPair {
@@ -299,7 +300,6 @@ fn seed_deposit_source(games: starknet::ContractAddress, game_id: u32, source: D
     snforge_std::interact_with_state(
         games,
         || {
-            use starknet::storage::StorageMapWriteAccess;
             crate::state::write()
                 .entry
                 .deposit_sources
@@ -312,7 +312,6 @@ fn seed_deposit_source(games: starknet::ContractAddress, game_id: u32, source: D
 #[test_case(71)]
 #[feature("safe_dispatcher")]
 fn retired_lords_commands_refuse_before_a_roll(index: felt252) {
-    use super::play_fixture::IPlayFixtureSafeDispatcherTrait;
     let (d, game_id) = super::registrar::setup_open_frontier_preset("frontier-s1", 1);
     let (release, preset) = super::play_fixture::pins(d.games, game_id);
     super::play_fixture::caller(d.games, d.actor, 360);

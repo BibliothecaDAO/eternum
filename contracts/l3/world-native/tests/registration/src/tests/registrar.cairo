@@ -1,3 +1,4 @@
+use starknet::storage::{StoragePathEntry, StoragePointerWriteAccess};
 pub use world_test_support::tests::registrar::*;
 use crate::tests::army_merge::{progress, slot, timers, write_progress};
 
@@ -1254,7 +1255,6 @@ fn paying_presets_cannot_register_on_the_new_release(name: ByteArray) {
 #[test]
 #[feature("safe_dispatcher")]
 fn an_already_registered_paying_preset_cannot_create_a_new_game() {
-    use starknet::storage::{StoragePathEntry, StoragePointerWriteAccess};
     let d = setup();
     let (id, preset) = super::preset_projection::current_definition("frontier-check");
     registry(d).register_preset(id, preset);
