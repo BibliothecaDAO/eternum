@@ -100,7 +100,7 @@ const storyVariant = (story: unknown): { payload: Record<string, unknown>; type:
   return { type: entry[0], payload: asRecord(entry[1]) ?? { value: entry[1] } };
 };
 
-const EVENT_MODELS = new Set(["StoryEvent", "BattleEvent", "RaidEvent"]);
+const EVENT_MODELS = new Set(["StoryEvent", "BattleEvent"]);
 
 const storyEventFromValue = (
   model: string,

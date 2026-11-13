@@ -95,10 +95,9 @@ const concludedTarget = (event: ToldStory): number | null => {
 /** A transaction's key, the same however its hash is written (case, leading zeros). */
 const transactionKey = (hash: string): string => hash.toLowerCase().replace(/^0x0*/, "");
 
-/** The stories that are important when they name the player: a fight, a raid, a capture, a crate opened, a relic used. */
+/** The stories that are important when they name the player: a fight, a capture, a crate opened, a relic used. */
 const IMPORTANT_STORIES = [
   "BattleEvent",
-  "RaidEvent",
   "StructureCapturedStory",
   "RelicChestOpened",
   "RelicActivated",
@@ -107,7 +106,7 @@ const IMPORTANT_STORIES = [
 
 /**
  * Whether a story is important, the default lens of Events and the Log: what the player must not miss. Their fights (an
- * army lost, a realm under attack), raids and captures, by them or of theirs, the crates they opened, and a
+ * army lost, a realm under attack) and captures, by them or of theirs, the crates they opened, and a
  * Hyperstructure taken by anyone, the race for points.
  */
 const isImportantStory = (event: ProcessedStoryEvent, address: string | null, isHyperstructure: IsHyperstructure) =>
@@ -141,7 +140,7 @@ const WORLD_STORIES = 350;
 
 /**
  * The history reads a lens needs: under All one read of the world's newest stories; under Important the player's
- * fights, raids, captures and crates and each Hyperstructure's captures, each its own read, so what one leaves out never
+ * fights, captures and crates and each Hyperstructure's captures, each its own read, so what one leaves out never
  * takes another's room.
  */
 export const eventsReads = (filter: EventsFilter, address: string | null, hyperstructures: number[]): StoryRead[] => {
@@ -162,13 +161,12 @@ export const eventsReads = (filter: EventsFilter, address: string | null, hypers
 export type FeedLens = "all" | "important" | "mine";
 
 /**
- * What the Feed's Important holds, from every player: a fight (with a player, a beast or a site's guard), a raid, a
+ * What the Feed's Important holds, from every player: a fight (with a player, a beast or a site's guard), a
  * capture, a site cleared, and a chest opened. Exploring, raising an army, training, moving troops and building are
  * the routine left to All and Mine.
  */
 const NOTABLE_STORIES = [
   "BattleEvent",
-  "RaidEvent",
   "StructureCapturedStory",
   "SitePayout",
   "RewardChestOpened",

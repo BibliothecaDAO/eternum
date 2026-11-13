@@ -91,7 +91,7 @@ const rankedStory = (
   icon,
 });
 /** What a story model other than StoryEvent's own variants reaches the feed as. */
-type StoryEventModel = "BattleEvent" | "RaidEvent";
+type StoryEventModel = "BattleEvent";
 
 /**
  * One presentation for every story the chain can tell: each generated Story variant and each story model. A new
@@ -421,11 +421,6 @@ const formatters: Record<NativeStoryVariant | StoryEventModel | "TierBought", St
       icon: "battle",
     };
   },
-  RaidEvent: (_, payload, components) => ({
-    title: `Raid on ${subjectOf(payload.structure_id, components)} ${payload.success ? "succeeded" : "repelled"}`,
-    description: payload.success ? formatResourceList(payload.requested_loot) : "Nothing taken",
-    icon: "battle",
-  }),
   BankLiquidity: (_, payload) => ({
     title: payload.add ? "Liquidity added" : "Liquidity withdrawn",
     description: `${resourceName(Number(payload.resource_type))} / Lords`,

@@ -27,10 +27,9 @@ import {
 } from "../../../../../contracts/l3/world-native/schema/client.gen";
 import { iconDefinition, type IconMeaning, resourceMeaning } from "./icon-meaning";
 
-/** Every story the game can emit (the schema's story variants, a fight and a raid), by the act it tells. */
+/** Every story the game can emit (the schema's story variants and a fight), by the act it tells. */
 const storyMeanings = {
   BattleEvent: "attack",
-  RaidEvent: "raid",
   FaithPointsClaimedStory: "shrine",
   FaithPledged: "shrine",
   FaithRemoved: "shrine",
@@ -69,7 +68,7 @@ const storyMeanings = {
   TierBought: "research",
   SkillPointSpent: "research",
   SiteUsed: "claim",
-} satisfies Record<NativeStoryVariant | "BattleEvent" | "RaidEvent" | "TierBought", IconMeaning>;
+} satisfies Record<NativeStoryVariant | "BattleEvent" | "TierBought", IconMeaning>;
 
 /** A story's painting, by its kind: the one table every Feed, Events and Log row reads. */
 export function storyMeaning(story: string): IconMeaning {

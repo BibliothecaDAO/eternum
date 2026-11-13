@@ -398,7 +398,7 @@ describe("every story the chain can tell", () => {
   const coord = { alt: false, x: 10, y: 12 };
   const amount = "550000000000";
   // One sample per generated variant: a variant added to the Story enum fails to type-check here until it has one.
-  const SAMPLES: Record<NativeStoryVariant | "BattleEvent" | "RaidEvent", Record<string, unknown>> = {
+  const SAMPLES: Record<NativeStoryVariant | "BattleEvent", Record<string, unknown>> = {
     FaithPointsClaimedStory: { wonder_id: 5, new_points: 10, total_points: 40 },
     StructureLevelUpStory: { structure_id: 5, new_level: 2 },
     RealmCreatedStory: { realm_id: 1, coord },
@@ -503,7 +503,6 @@ describe("every story the chain can tell", () => {
       attacker: side,
       defender: side,
     },
-    RaidEvent: { success: true, requested_loot: [{ resource_type: 23, amount }] },
   };
 
   it.each(Object.entries(SAMPLES))("gives %s its own line, never raw fields", (storyType, payload) => {
@@ -522,7 +521,7 @@ describe("every story the chain can tell", () => {
   );
 
   /**
-   * The stories no Frontier command tells (its preset's command mask: no trade, bank, faith, relic crafting, raid,
+   * The stories no Frontier command tells (its preset's command mask: no trade, bank, faith, relic crafting,
    * transfer or relic chest; a Frontier chest is a reward chest), and the game's own: these may leave their player out.
    */
   const NOT_FRONTIER = new Set([
@@ -538,7 +537,6 @@ describe("every story the chain can tell", () => {
     "FaithRemoved",
     "BlitzFinalized",
     "RelicCrafted",
-    "RaidEvent",
   ]);
 
   it.each(Object.entries(SAMPLES).filter(([storyType]) => !NOT_FRONTIER.has(storyType)))(

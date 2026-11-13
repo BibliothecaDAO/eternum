@@ -21,7 +21,7 @@ const site = (input: { day?: number; siteId?: number; now?: number } = {}) =>
   });
 
 it("tells a player a Deep site is within their army's reach, until its day ends, one shown per site", () => {
-  expect(site()).toMatchObject({
+  expect(site()!).toMatchObject({
     kind: "deep-sites",
     title: "The Foundation can be taken",
     body: "Frontier: its guard is down to 1,000 troops. Your army has 1,500.",
@@ -30,9 +30,9 @@ it("tells a player a Deep site is within their army's reach, until its day ends,
     expiresAt: at + 6 * HOUR,
   });
   // One per site and day: the same site the same day is the same alert; another site or day is another.
-  expect(site().id).toBe(site().id);
-  expect(site({ day: 5 }).id).not.toBe(site().id);
-  expect(site({ siteId: 301 }).tag).not.toBe(site().tag);
+  expect(site()!.id).toBe(site()!.id);
+  expect(site({ day: 5 })!.id).not.toBe(site()!.id);
+  expect(site({ siteId: 301 })!.tag).not.toBe(site()!.tag);
   // Its day over, the guards are gone: nothing to tell.
   expect(site({ now: at + 6 * HOUR })).toBeNull();
 });

@@ -64,7 +64,7 @@ describe("story event stream", () => {
     }
   });
 
-  it.each(["BattleEvent", "RaidEvent"])("keeps %s identity when its transaction confirms at another place", (model) => {
+  it.each(["BattleEvent"])("keeps %s identity when its transaction confirms at another place", (model) => {
     const event = (block: number | null, transaction_index: number) => ({
       model,
       key: "0x1",

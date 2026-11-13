@@ -67,7 +67,7 @@ export const partitionByRunningGame = async <Entry extends { gameId: number }>(
 /**
  * Every player whose armies this page may have changed, once per game: one story or many cost one read. Herald's story
  * history carries the chain's stories, not its execution records: a player's own actions arrive as stories they own
- * (an explore as its reward, a march, a new army), and fights as battle or raid events naming their players.
+ * (an explore as its reward, a march, a new army), and fights as battle events naming their players.
  */
 export const actorsWhoActed = (page: HeraldStoryHistoryPage): { gameId: number; actor: string }[] => {
   const acted = new Map<string, { gameId: number; actor: string }>();
@@ -83,7 +83,6 @@ export const actorsWhoActed = (page: HeraldStoryHistoryPage): { gameId: number; 
     if (model === "BattleEvent")
       for (const side of [value.attacker, value.defender])
         add(gameId, (side as { player?: unknown } | undefined)?.player);
-    if (model === "RaidEvent") add(gameId, value.player);
   }
   return [...acted.values()];
 };

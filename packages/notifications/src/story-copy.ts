@@ -7,7 +7,7 @@ export interface NotificationCopy {
 /** What a story's copy reads: its payload, and the account the alert is for. */
 interface CopyInput {
   payload: Record<string, unknown>;
-  /** The account the alert is for, which native battles, raids and captures need to tell one side from the other. */
+  /** The account the alert is for, which native battles and captures need to tell one side from the other. */
   recipient?: string;
 }
 
@@ -19,7 +19,6 @@ export const says =
   () => ({ title, body });
 
 export const battleCopy: StoryCopy = ({ payload, recipient }) => nativeBattleCopy(payload, recipient);
-export const raidStoryCopy: StoryCopy = ({ payload, recipient }) => raidCopy(payload, recipient);
 export const captureStoryCopy: StoryCopy = ({ payload, recipient }) => captureCopy(payload, recipient);
 export const transferStoryCopy: StoryCopy = ({ payload }) => transferCopy(payload);
 
@@ -65,17 +64,6 @@ function captureCopy(payload: Record<string, unknown>, recipient: string | undef
   return compareInteger(payload.previous_owner, 0) === false
     ? { title: "You took a structure", body: "its armies and incoming deliveries are yours too." }
     : { title: "You took a structure", body: "it is yours now." };
-}
-
-function raidCopy(payload: Record<string, unknown>, recipient: string | undefined): NotificationCopy {
-  const target = compareInteger(payload.target_owner, recipient) === true;
-  if (target)
-    return payload.success === true
-      ? { title: "Your realm was raided", body: "raiders took some of your resources." }
-      : { title: "You held off a raid", body: "your defenders kept your resources." };
-  return payload.success === true
-    ? { title: "Your raid succeeded", body: "your army is bringing the loot home." }
-    : { title: "Your raid failed", body: "the defenders held and your army is falling back." };
 }
 
 /**

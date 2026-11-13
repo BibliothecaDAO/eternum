@@ -72,7 +72,7 @@ it("names, at each level, exactly the kinds the server pushes at that level", ()
     const pushed = NOTIFICATION_KINDS.filter((kind) => includesKind(level, kind));
     expect(namedAt(level), level).toEqual(pushed);
     // The server's own deciders, story by story and for rested armies, agree with what Settings names.
-    for (const story of [...nativeStoryVariants, "BattleEvent", "RaidEvent"]) {
+    for (const story of [...nativeStoryVariants, "BattleEvent"]) {
       const rule = storyNotificationRule(story);
       if ("excluded" in rule) continue;
       expect(includesStoryNotification(level, story, "blitz"), `${story} at ${level}`).toBe(pushed.includes(rule.kind));

@@ -7,9 +7,9 @@ import { storyNotificationRule } from "./story-policy";
 /** Shared display content and logical identity for live-page and server delivery. */
 export function buildStoryNotification(input: {
   sourceId: string;
-  /** The history model the value came from; StoryEvent unless it is a native battle or raid. */
+  /** The history model the value came from; StoryEvent unless it is a native battle. */
   model?: string;
-  /** The account the alert is for, which native battles and raids need to tell victory from defeat. */
+  /** The account the alert is for, which native battles need to tell victory from defeat. */
   recipient?: string;
   value: Record<string, unknown>;
   owner: string;
@@ -56,7 +56,7 @@ export function storyNotificationCopy(
 }
 
 /**
- * A story from the history cursor: a StoryEvent names its variant inside the value, while a native battle or raid is
+ * A story from the history cursor: a StoryEvent names its variant inside the value, while a native battle is
  * its own event whose value is the payload. The cursor also carries events that are not stories (recorded executions,
  * batch progress, points); those are null.
  */
@@ -64,7 +64,7 @@ export function readHistoryStory(
   model: string,
   value: Record<string, unknown>,
 ): { story: string; payload: Record<string, unknown> } | null {
-  if (model === "BattleEvent" || model === "RaidEvent") return { story: model, payload: value };
+  if (model === "BattleEvent") return { story: model, payload: value };
   if (model !== "StoryEvent") return null;
   return readNotificationStory(value);
 }

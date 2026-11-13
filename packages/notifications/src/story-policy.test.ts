@@ -11,7 +11,7 @@ it("covers every native story and tests every cumulative level", () => {
   const storyType = event.event.members.find((member: { name: string }) => member.name === "story").type;
   const variants = schema.types[storyType].variants.map((variant: { name: string }) => variant.name);
   const nativeLevels = {
-    important: ["BattleEvent", "RaidEvent", "StructureCapturedStory", "SeasonEnded", "BlitzFinalized"],
+    important: ["BattleEvent", "StructureCapturedStory", "SeasonEnded", "BlitzFinalized"],
     all: [
       "ResourceReceiveArrivalStory",
       "ResourceTransferStory",
@@ -52,7 +52,7 @@ it("covers every native story and tests every cumulative level", () => {
       "SiteUsed",
     ],
   };
-  expect([...variants, "BattleEvent", "RaidEvent"].sort()).toEqual(Object.values(nativeLevels).flat().sort());
+  expect([...variants, "BattleEvent"].sort()).toEqual(Object.values(nativeLevels).flat().sort());
   for (const [minimum, stories] of Object.entries(nativeLevels)) {
     for (const story of stories) {
       expect(storyNotificationRule(story)).toBeDefined();
@@ -73,7 +73,6 @@ it("knows no retired Dojo story: a variant the chain no longer emits is unknown"
 it("uses event-time recipients, normalizes duplicates, and excludes neutral addresses", () => {
   const battle = { attacker: { player: "0x0001" }, defender: { player: 2n } };
   expect(storyRecipients("BattleEvent", "0x003", battle)).toEqual(["0x1", "0x2"]);
-  expect(storyRecipients("RaidEvent", "0x003", { player: "0x01", target_owner: "2" })).toEqual(["0x1", "0x2"]);
   // Goods sent: only the receiver hears of them, and nobody of goods moved between their own holdings.
   expect(
     storyRecipients("ResourceTransferStory", "0x003", {
@@ -129,13 +128,12 @@ it("excludes unknown variants in production and diagnoses them in development", 
   }
 });
 
-it("routes native battles and raids to the owners recorded in the event", () => {
+it("routes native battles to the owners recorded in the event", () => {
   expect(includesStoryNotification("important", "BattleEvent", "blitz")).toBe(true);
   expect(storyRecipients("BattleEvent", null, { attacker: { player: "0x11" }, defender: { player: "0x12" } })).toEqual([
     "0x11",
     "0x12",
   ]);
-  expect(storyRecipients("RaidEvent", null, { player: "0x11", target_owner: "0x12" })).toEqual(["0x11", "0x12"]);
 });
 
 it("notifies both owners for player capture, excluding the zero bandit owner", () => {
@@ -144,7 +142,7 @@ it("notifies both owners for player capture, excluding the zero bandit owner", (
 });
 
 it("pushes fights between players only where players fight: never in Frontier, whatever the level", () => {
-  for (const story of ["BattleEvent", "RaidEvent", "StructureCapturedStory"]) {
+  for (const story of ["BattleEvent", "StructureCapturedStory"]) {
     for (const level of NOTIFICATION_LEVELS) expect(includesStoryNotification(level, story, "frontier")).toBe(false);
     for (const mode of ["blitz", "eternum"] as const)
       expect(includesStoryNotification("important", story, mode), `${story} in ${mode}`).toBe(true);

@@ -5,14 +5,13 @@ import {
   battleCopy,
   captureStoryCopy,
   hyperstructurePointsCopy,
-  raidStoryCopy,
   says,
   type StoryCopy,
   transferStoryCopy,
 } from "./story-copy";
 import type { NativeStoryVariant } from "../../../contracts/l3/world-native/schema/client.gen";
 
-type RecipientSource = "capture" | "owner" | "transferReceiver" | "nativeBattle" | "raid";
+type RecipientSource = "capture" | "owner" | "transferReceiver" | "nativeBattle";
 /** A game's mode, as its shard's directory names it. */
 export type StoryGameMode = "blitz" | "eternum" | "frontier" | null;
 /**
@@ -37,7 +36,6 @@ const STORY_RULES = {
   // What happens to the player without their tap.
   BattleEvent: { kind: "fights", recipients: "nativeBattle", copy: battleCopy, modes: PLAYER_FIGHTS },
   StructureCapturedStory: { kind: "fights", recipients: "capture", copy: captureStoryCopy, modes: PLAYER_FIGHTS },
-  RaidEvent: { kind: "fights", recipients: "raid", copy: raidStoryCopy, modes: PLAYER_FIGHTS },
   SeasonEnded: {
     kind: "results",
     recipients: "owner",
@@ -93,7 +91,7 @@ const STORY_RULES = {
   FaithPointsClaimedStory: { excluded: "Recipient and notification UX deferred" },
   LordsWithdrawn: { excluded: "The player's own withdrawal needs no notification" },
   SiteUsed: { excluded: "Site use is recorded in Today and the Log" },
-} satisfies Record<NativeStoryVariant | "BattleEvent" | "RaidEvent", StoryRule>;
+} satisfies Record<NativeStoryVariant | "BattleEvent", StoryRule>;
 
 export function storyNotificationRule(story: string): StoryRule {
   if (!Object.hasOwn(STORY_RULES, story)) {
@@ -121,7 +119,6 @@ export function storyRecipients(story: string, owner: unknown, payload: Record<s
       (payload.attacker as Record<string, unknown> | undefined)?.player,
       (payload.defender as Record<string, unknown> | undefined)?.player,
     ],
-    raid: [payload.player, payload.target_owner],
     // Goods sent to another player: the sender sent them, so only the receiver hears of it.
     transferReceiver: [payload.to_entity_owner_address],
   };
