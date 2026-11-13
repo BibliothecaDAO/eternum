@@ -31,8 +31,6 @@ interface BattleLabLiveData {
   snapshot: LiveSnapshot | null;
   target: AttackTarget | null;
   targetResources: Array<{ resourceId: number; amount: number }>;
-  attackerRelicEffects: RelicEffect[];
-  targetRelicEffects: RelicEffect[];
   isLoading: boolean;
 }
 
@@ -176,5 +174,5 @@ export const useBattleLabLiveData = (
     targetRelicIds,
   ]);
 
-  return { snapshot, target, targetResources, attackerRelicEffects, targetRelicEffects, isLoading };
+  return { snapshot, target, targetResources, isLoading };
 };

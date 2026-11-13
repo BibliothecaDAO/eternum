@@ -176,6 +176,4 @@ export const spawnRing = (
   });
 };
 
-export const getRemainingCapacityInKg = (weight: NativeRows["ResourceWeight"]) =>
-  nanogramToKg(Number(weight.capacity - weight.weight));
 export const getArmyTotalCapacityInKg = (weight: NativeRows["ResourceWeight"]) => nanogramToKg(Number(weight.capacity));

@@ -177,9 +177,11 @@ export const FrontierHud = ({
   const layers = useMapLayers(rules, shown, visit ? null : realm);
   // The store card a ring or a plate opened, under the realm card on a desktop and under the strip on a phone.
   const [openStore, setOpenStore] = useState<CardStore | null>(null);
+  const own = realm && !visit ? realm : null;
+  // Read before the loading overlay's early return, so a hook never comes and goes with the overlay.
+  const bannerStands = useDayBannerStands(own);
   if (showBlankOverlay) return null;
   const close = () => setSurface(null);
-  const own = realm && !visit ? realm : null;
   const storeCards = own
     ? {
         kinds: CARD_STORE_KINDS,
@@ -194,7 +196,6 @@ export const FrontierHud = ({
     : undefined;
 
   // The day's banner: the player's own realm's quest, under the strip on a phone and the realm panel on a desktop.
-  const bannerStands = useDayBannerStands(own);
   const dayBanner = own && (
     <FrontierDayBanner realm={own} claim={{ waiting: claimWaiting, onOpen: () => setSurface("realms") }} />
   );

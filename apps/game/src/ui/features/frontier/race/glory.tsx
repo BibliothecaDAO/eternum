@@ -6,7 +6,7 @@ import { HudPill } from "@/ui/design-system/kit/hud-elements";
 import { GLORY_WORDS } from "@/ui/design-system/kit/words";
 import { readHomeGlory } from "@bibliothecadao/eternum";
 import { safeInteger, type NativeRows } from "@bibliothecadao/eternum/game-client";
-import { formatAmount } from "@bibliothecadao/types";
+import { formatShort } from "@bibliothecadao/types";
 
 import { useOpens } from "../opening/use-opening";
 
@@ -31,7 +31,7 @@ export const GloryPill = ({ glory }: { glory: number | null }) => (
     {[
       <span key="glory" className="flex items-center gap-1.5 tabular-nums">
         <Icon name={GLORY_MEANING} size={26} />
-        {glory === null ? "—" : formatAmount(glory)}
+        {glory === null ? "—" : formatShort(glory)}
       </span>,
     ]}
   </HudPill>

@@ -27,7 +27,6 @@ export interface GameModeConfig {
     tickGongSound: string;
   };
   ui: {
-    showAttackTypeSelector: boolean;
     showEndSeasonButton: boolean;
     showExplorerCapacity: boolean;
     showGuildsTab: boolean;
@@ -114,7 +113,6 @@ const blitzConfig: GameModeConfig = {
     tickGongSound: "event.blitz_gong",
   },
   ui: {
-    showAttackTypeSelector: false,
     showEndSeasonButton: false,
     showExplorerCapacity: false,
     showGuildsTab: false,
@@ -147,7 +145,6 @@ const eternumConfig: GameModeConfig = {
     tickGongSound: "event.gong",
   },
   ui: {
-    showAttackTypeSelector: true,
     showEndSeasonButton: true,
     showExplorerCapacity: true,
     showGuildsTab: true,

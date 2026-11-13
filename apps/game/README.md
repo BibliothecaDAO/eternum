@@ -24,7 +24,7 @@ src/ui/
 │   │   ├── resources/   # Resource management, transfers, inventory
 │   │   └── trading/     # Market orders, trading history, transfers
 │   ├── military/
-│   │   ├── battle/      # Combat system, raids, attack containers
+│   │   ├── battle/      # Combat system, attack containers
 │   │   └── components/  # Army management, battle logs, defense
 │   ├── world/
 │   │   └── components/  # Map entities, hyperstructures, battles

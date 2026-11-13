@@ -462,3 +462,28 @@ describe("on a phone", () => {
     expect(banner()!.textContent).toContain("Stamina refills 2 times as fast today");
   });
 });
+
+it("keeps its hooks whole when the loading overlay hides and reveals the HUD", async () => {
+  const { useUIStore } = await import("@/hooks/store/use-ui-store");
+  await act(async () =>
+    root.render(
+      <MemoryRouter initialEntries={["/unified/frontier"]}>
+        <QueryClientProvider client={new QueryClient()}>
+          <Routes>
+            <Route path="unified/:view?" element={<UnifiedHudLab />} />
+          </Routes>
+        </QueryClientProvider>
+      </MemoryRouter>,
+    ),
+  );
+  expect(banner()).not.toBeNull();
+  try {
+    // The route's boot and the scene's handoff toggle the overlay; hiding the HUD must not change its hook order.
+    await act(async () => useUIStore.getState().setShowBlankOverlay(true));
+    expect(banner()).toBeNull();
+    await act(async () => useUIStore.getState().setShowBlankOverlay(false));
+    expect(banner()).not.toBeNull();
+  } finally {
+    await act(async () => useUIStore.getState().setShowBlankOverlay(false));
+  }
+});

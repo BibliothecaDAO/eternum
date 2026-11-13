@@ -27,9 +27,6 @@ vi.mock("@realms-world/identity", async (original) => ({
 vi.mock("@/hooks/context/game-context", () => ({
   useGame: () => ({ setup: { store: held.store, systemCalls: {} }, account: { account: held.account } }),
 }));
-vi.mock("@/config/game-modes/use-game-mode-config", () => ({
-  useGameModeConfig: () => ({ ui: { showAttackTypeSelector: false } }),
-}));
 vi.mock("@bibliothecadao/eternum", async (original) => ({
   ...(await original<typeof import("@bibliothecadao/eternum")>()),
   getGuildFromPlayerAddress: () => null,
@@ -53,7 +50,6 @@ vi.mock("./biome-environment-bar", () => ({ BiomeEnvironmentBar: () => null }));
 vi.mock("./combat-parameters-panel", () => ({ CombatParametersPanel: () => null }));
 vi.mock("./outcome-banner", () => ({ OutcomeBanner: () => null }));
 vi.mock("./outcome-strip", () => ({ OutcomeStrip: () => null }));
-vi.mock("../raid-container", () => ({ RaidContainer: () => null }));
 vi.mock("@/ui/design-system/kit/hud-elements", () => ({
   HudWindow: ({ children }: any) => <section>{children}</section>,
   HudCheck: () => null,
@@ -92,8 +88,6 @@ it.each([
       },
       target: { id: 8, addressOwner: BigInt(owner), hex: { x: 1, y: 0 }, targetType: "Army" },
       targetResources: [],
-      attackerRelicEffects: [],
-      targetRelicEffects: [],
       isLoading: false,
     };
     const host = document.createElement("div"),
