@@ -1,14 +1,17 @@
-use starknet::storage::{StorageMapReadAccess, StorageMapWriteAccess};
+use starknet::storage::{
+    StorageMapReadAccess, StorageMapWriteAccess, StoragePathEntry, StoragePointer, StoragePointerReadAccess,
+    SubPointersForward,
+};
 use crate::deep::DeepGuard;
 use crate::resources::ResourceKey;
 use crate::troops::{ExplorerKey, ExplorerTroops, IBattleResolutionDispatcherTrait};
 
-pub fn guard(key: ExplorerKey) -> Option<DeepGuard> {
-    crate::state::read().deep.guards.read((key.game_id, key.explorer_id))
+pub fn entry(key: ExplorerKey) -> Option<StoragePointer<DeepGuard>> {
+    crate::state::read().deep.guards.entry((key.game_id, key.explorer_id)).sub_pointers()
 }
 
 pub fn assert_field(key: ExplorerKey) {
-    assert!(guard(key).is_none(), "army is guarding a Deep site");
+    assert!(entry(key).is_none(), "army is guarding a Deep site");
 }
 
 pub fn join(key: ExplorerKey, explorer: ExplorerTroops, site: ResourceKey) {
@@ -21,7 +24,7 @@ pub fn join(key: ExplorerKey, explorer: ExplorerTroops, site: ResourceKey) {
 fn assert_joinable(key: ExplorerKey, explorer: ExplorerTroops, site: ResourceKey) {
     assert!(key.game_id == site.game_id, "foreign Deep site");
     let target = crate::logic::deep_sites::site(site).expect('missing Deep site');
-    assert!(guard(key).is_none(), "army already guarding");
+    assert!(entry(key).is_none(), "army already guarding");
     assert!(explorer.troops.count != 0, "dead Deep guard");
     assert!(crate::logic::army_days::require(key) == target.day, "Deep guard day mismatch");
     let destination = crate::logic::map::entity_coord(site).expect('missing Deep site position');
@@ -74,15 +77,15 @@ fn available_slot(site: ResourceKey, home: u64) -> u8 {
 }
 
 pub fn remove(key: ExplorerKey) {
-    let Some(value) = guard(key) else {
+    let Some(value) = entry(key) else {
         return;
     };
+    let site_id = value.site_id.read();
+    let slot = value.slot.read();
     let state = crate::state::write();
-    assert!(
-        state.deep.slots.read((key.game_id, value.site_id, value.slot)) == key.explorer_id, "Deep guard index mismatch",
-    );
+    assert!(state.deep.slots.read((key.game_id, site_id, slot)) == key.explorer_id, "Deep guard index mismatch");
     state.deep.guards.write((key.game_id, key.explorer_id), None);
-    state.deep.slots.write((key.game_id, value.site_id, value.slot), 0);
+    state.deep.slots.write((key.game_id, site_id, slot), 0);
     let mut keys = array![];
     key.serialize(ref keys);
     crate::logic::troops::TroopState::emit(

@@ -27,11 +27,12 @@ pub fn height_blocked(game_id: u32, aspect: u8, timestamp: u64) -> bool {
 }
 
 pub fn credit(game_id: u32, source: u8, boundary: u64) {
-    let rules = crate::logic::deep_sites::rules(game_id).expect('missing Deep rules');
+    let rules = crate::logic::deep_sites::rules_entry(game_id).expect('missing Deep rules');
     let state = crate::state::write();
     let previous = state.deep.altar_bars.read((game_id, source));
-    let mut charge = previous + core::cmp::min(rules.altar_threshold - previous, rules.altar_per_tick);
-    if charge == rules.altar_threshold && issue_next_day(game_id, source, boundary) {
+    let threshold = rules.altar_threshold.read();
+    let mut charge = previous + core::cmp::min(threshold - previous, rules.altar_per_tick.read());
+    if charge == threshold && issue_next_day(game_id, source, boundary) {
         charge = 0;
     }
     state.deep.altar_bars.write((game_id, source), charge);

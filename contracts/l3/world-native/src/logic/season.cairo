@@ -297,7 +297,7 @@ pub mod SeasonLogic {
             if !context.game.unbox().ready && index != crate::command_routes::SETTLE_BLITZ_ROSTER {
                 return Err(rejection('ROSTER_NOT_READY'));
             }
-            if crate::logic::deep_sites::rules(game_id).is_some() {
+            if crate::logic::deep_sites::rules_entry(game_id).is_some() {
                 crate::deep::IDeepSitesDispatcherTrait::settle_deep(
                     crate::logic::deep_sites::dispatcher(game_id), game_id, crate::commands::action_context(context),
                 );

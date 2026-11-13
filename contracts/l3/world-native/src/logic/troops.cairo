@@ -3,7 +3,7 @@ use crate::resources::{IResourceOperationsDispatcherTrait, IResourceOperationsLi
 use crate::structures::Structure;
 use crate::troops::{IBattleResolutionDispatcherTrait, IBattleResolutionLibraryDispatcher};
 
-pub fn active_explorer(
+fn active_explorer(
     key: ExplorerKey, timestamp: u64, game_context: crate::commands::ExecutionContext,
 ) -> ExplorerTroops {
     let explorer = crate::logic::troops::explorer(key).expect('missing explorer');
@@ -28,7 +28,7 @@ pub fn owned_structure(game_id: u32, entity_id: u64, actor: ContractAddress) -> 
     home
 }
 
-pub fn authorized_explorer(
+fn authorized_explorer(
     key: ExplorerKey, actor: ContractAddress, timestamp: u64, game_context: crate::commands::ExecutionContext,
 ) -> ExplorerTroops {
     let explorer = active_explorer(key, timestamp, game_context);
@@ -46,7 +46,7 @@ pub fn field_explorer(
     key: ExplorerKey, actor: ContractAddress, timestamp: u64, context: crate::commands::ExecutionContext,
 ) -> ExplorerTroops {
     crate::logic::deep_guards::assert_field(key);
-    authorized_explorer(key, actor, timestamp, context)
+    command_explorer(key, Some(actor), timestamp, context)
 }
 use starknet::storage::{StorageMapReadAccess, StoragePathEntry, StoragePointerReadAccess};
 use crate::troops::{ExplorerKey, ExplorerTroops};
@@ -1162,7 +1162,7 @@ pub mod troop_helpers {
             self
                 .resources_dispatcher(key.game_id)
                 .destroy_resources(ResourceKey { game_id: key.game_id, entity_id: key.explorer_id });
-            if crate::logic::deep_guards::guard(key).is_none() {
+            if crate::logic::deep_guards::entry(key).is_none() {
                 crate::logic::map::MapState::vacate(tile_key(key.game_id, explorer.coord), key.explorer_id);
             }
             crate::logic::troops::TroopState::destroy(key);

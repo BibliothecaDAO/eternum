@@ -41,7 +41,7 @@ pub fn bar(d: super::Deployment, key: crate::troops::ExplorerKey, game_id: u32) 
         d.games,
         || {
             let context = crate::commands::load_context(game_id, 123, 360);
-            crate::logic::troops::active_explorer(key, 360, context).troops.stamina.inline().amount
+            crate::logic::troops::command_explorer(key, None, 360, context).troops.stamina.inline().amount
         },
     )
 }
