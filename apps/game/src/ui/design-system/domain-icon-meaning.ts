@@ -2,6 +2,7 @@ import { homeIcon, homeKind } from "./home-icons";
 import { readRealmSkin, type RealmSkin } from "@/three/structures/realm-skins";
 import type { FrontierSpecies } from "@/three/structures/frontier-beast";
 import {
+  baneQuests,
   BuildingType,
   dailyQuests,
   getProducedResource,
@@ -178,10 +179,10 @@ export function rewardChestMeaning(band?: number, opened = false): IconMeaning {
   return `reward-chest-${band}${opened ? "-opened" : ""}` as IconMeaning;
 }
 
-/** A daily quest's id, as the quest catalog numbers it. */
-export type DailyQuestId = (typeof dailyQuests)[number]["id"];
+/** A quest's id, as the quest catalog numbers it: a daily quest, or a bane quest that replaces it. */
+export type QuestId = (typeof dailyQuests)[number]["id"] | (typeof baneQuests)[number]["id"];
 
-/** Each daily quest by what it asks: the beast it hunts, the site it finds, the act it counts. */
+/** Each quest by what it asks: the beast it hunts, the site it finds, the act it counts, the fight a bane calls for. */
 const questMeanings = {
   [quest.HUNT]: "beast-cyclops",
   [quest.CAMPS]: "beast-troll",
@@ -190,8 +191,14 @@ const questMeanings = {
   [quest.VETERANS]: "upgrade",
   [quest.FINDS]: "explore",
   [quest.REVEALS]: "map",
-} satisfies Record<DailyQuestId, IconMeaning>;
-export const questMeaning = (quest: DailyQuestId): IconMeaning => questMeanings[quest];
+  [quest.STAND]: "attack",
+  [quest.LIGHTS]: "sun",
+  [quest.CULL]: "skull",
+} satisfies Record<QuestId, IconMeaning>;
+export const questMeaning = (quest: QuestId): IconMeaning => questMeanings[quest];
+
+/** A bane over the Aspect's day, the mist's or a rival's: one painting until the banner's look is picked. */
+export const BANE_MEANING: IconMeaning = "flame";
 
 /** Glory, the race's one score a member reads (Season 1): the score's painting. */
 export const GLORY_MEANING: IconMeaning = "victory";

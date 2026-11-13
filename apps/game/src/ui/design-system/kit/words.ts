@@ -8,7 +8,7 @@ import type { ResolvedGameMode } from "@/config/game-modes/resolved-mode";
 import { SHARED_MOMENT_WORDS, type CampaignKey, type OpeningMoment, type SocialProvider } from "@realms-world/identity";
 import type { NotificationKind, NotificationLevel } from "@bibliothecadao/notifications";
 import type { RuinChest, TriumphStage } from "@bibliothecadao/eternum";
-import type { DailyQuestId } from "@/ui/design-system/domain-icon-meaning";
+import type { QuestId } from "@/ui/design-system/domain-icon-meaning";
 import {
   nativeQuestConstants as quest,
   nativeRuleConstants,
@@ -1573,7 +1573,10 @@ const QUEST_COUNTED = {
   [quest.VETERANS]: ["skill point", "skill points"],
   [quest.FINDS]: ["find", "finds"],
   [quest.REVEALS]: ["tile", "tiles"],
-} as const satisfies Record<DailyQuestId, readonly [string, string]>;
+  [quest.STAND]: ["guarded site", "guarded sites"],
+  [quest.LIGHTS]: ["tile", "tiles"],
+  [quest.CULL]: ["guard troop", "guard troops"],
+} as const satisfies Record<QuestId, readonly [string, string]>;
 
 /** Invite a friend to the player's Aspect (U13): the panel, its two ways to post the link, and what can go wrong. */
 export const INVITE_WORDS = {
@@ -1590,7 +1593,7 @@ export const INVITE_WORDS = {
 /** The day's banner: today's quest, how far the home is ("1 of 2 camps"), its reward and collecting it. */
 export const QUEST_WORDS = {
   today: "Today's quest",
-  count: (quest: DailyQuestId, progress: bigint, target: bigint) =>
+  count: (quest: QuestId, progress: bigint, target: bigint) =>
     `${formatExact(Number(progress))} of ${formatExact(Number(target))} ${QUEST_COUNTED[quest][target === 1n ? 0 : 1]}`,
   collect: "Collect",
   collecting: "Collecting",
@@ -1599,6 +1602,20 @@ export const QUEST_WORDS = {
   week: "This week's quests",
   state: { collected: "Collected", done: "Done", missed: "Missed", today: "Today", coming: "Coming" },
   notCollected: "The quest's reward could not be collected.",
+  /** A world bane the Aspect ended pays the quest's reward a second time, collected by a second press. */
+  collectAgain: "Collect again",
+  readingDay: "Reading this day",
+} as const;
+
+/**
+ * A bane over the Aspect's day, as the banner says it until its look is picked: the mist's by name, a rival's by its
+ * sender, and how far the Aspect is at ending it ("4 of 6 finished") or what ending it brought.
+ */
+export const BANE_WORDS = {
+  team: (sender: string) => `${sender}'s bane`,
+  finished: (completed: number, required: number) => `${formatExact(completed)} of ${formatExact(required)} finished`,
+  worldEnded: "Ended: the quest pays twice",
+  teamEnded: "Ended: your hyperstructure grows again",
 } as const;
 
 /**
@@ -1659,6 +1676,7 @@ export const OPENING_WORDS = {
       const { tickSeconds, lossPerTick } = rules.deepTick();
       return `Every tick (${formatAmount(tickSeconds)} seconds) here, each army loses ${formatAmount(lossPerTick)} troops. Hold a site to earn.`;
     },
+    bane: () => "A bane. Today's quest is the bane quest. Your Aspect ends the bane when enough members finish it.",
   } satisfies Record<OpeningMoment, (rules: OpeningRules) => string>,
   gotIt: "Got it",
   interface: "Interface",

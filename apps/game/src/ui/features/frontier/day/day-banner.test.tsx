@@ -10,7 +10,10 @@ import type { NativeFactStore } from "@bibliothecadao/eternum/game-client";
 // the transaction's sending stand in.
 const { LabGame } = await import("@/ui/features/debug/kit-lab/lab-game");
 const { UnifiedHudLab } = await import("@/ui/features/debug/kit-lab/unified-hud-lab");
-const { readDailyQuest } = await import("@bibliothecadao/eternum");
+const { dayOf, readDailyQuest, readExpeditionRules } = await import("@bibliothecadao/eternum");
+const { worldBane } = await import("../../../../../../../packages/core/src/utils/world-banes");
+const { nativeQuestConstants: quests } =
+  await import("../../../../../../../contracts/l3/world-native/schema/client.gen");
 const { useChainTimeStore } = await import("@/hooks/store/use-chain-time-store");
 const { dailyQuests } = await import("@bibliothecadao/types");
 const { frontierSeasonOnePreset } = await import("../../../../../../../config/source/frontier/season-one");
@@ -251,6 +254,105 @@ it("says it is reading the Aspect's day while the snapshot cannot tell a Triumph
   expect(banner()!.textContent).toContain("Reading your Aspect's day");
 });
 
+/** Season 1's bane rules as its preset writes them, and the lab realm's home in Harmony. */
+const baneRules = () => {
+  const rules = frontierSeasonOnePreset.worldBanes;
+  return [
+    {
+      model: "BaneRules",
+      key: "0x9f8",
+      value: {
+        game_id: 1,
+        chance_step: rules.chanceStep,
+        quorum_percent: rules.quorumPercent,
+        beast_percent: rules.beastPercent,
+        stamina_percent: rules.staminaPercent,
+        production_percent: rules.productionPercent,
+        quest_counts: rules.questCounts.map(BigInt),
+      },
+    },
+    { model: "HomeAspect", key: "0x9f2", value: { game_id: 1, home: 7, aspect: 2 } },
+  ];
+};
+const baneProgress = (day: number, completed: number, endedAt: number) => ({
+  model: "BaneProgress",
+  key: "0x9f9",
+  value: { game_id: 1, aspect: 2, day, completed, ended_at: endedAt },
+});
+const activeYesterday = (day: number, active: number) => ({
+  model: "AspectActivity",
+  key: "0x9fb",
+  value: { game_id: 1, aspect: 2, day: day - 1, active },
+});
+/** The lab's chain clock moved into a later season day (the lab opens on day 0, which no bane ever falls on). */
+const moveToDay = async (store: NativeFactStore, index: number) => {
+  const rules = readExpeditionRules(store, 1)!;
+  let at = rules.startMainAt;
+  while (dayOf(rules, at)!.index < index) at = dayOf(rules, at)!.end;
+  await act(async () => useChainTimeStore.getState().anchor({ timestamp: (at + 1) * 1000 }));
+  await snapshot(store, true);
+};
+
+it("puts a rival's team bane's quest in place of the day's quest, with the bane and how far the Aspect is at ending it", async () => {
+  const store = await renderBanner([questRules(), ...baneRules()]);
+  const day = 2;
+  await act(async () =>
+    store.applyFacts([
+      {
+        model: "TeamBane",
+        key: "0x9fa",
+        value: { game_id: 1, aspect: 2, day, source: 3, issued_day: day - 1, quest: quests.STAND },
+      },
+      activeYesterday(day, 24),
+      baneProgress(day, 4, 0),
+    ] as never),
+  );
+  await moveToDay(store, day);
+  expect(banner()!.textContent).toContain("The Stand");
+  expect(banner()!.textContent).toContain("0 of 3 guarded sites");
+  expect(banner()!.textContent).toContain("Chaos's bane");
+  // 25% of the 24 Harmony homes out the day before end it: 4 of 6.
+  expect(banner()!.textContent).toContain("4 of 6 finished");
+});
+
+it("offers Collect again once the Aspect ends a world bane, for the reward a second time", async () => {
+  const store = await renderBanner([questRules(), ...baneRules()]);
+  const seed = BigInt(store.require("GameRegistry", { game_id: 1 }).seed);
+  const step = frontierSeasonOnePreset.worldBanes.chanceStep;
+  // The first day the preset's roll brings the mist over this lab game.
+  const day = Array.from({ length: 49 }, (_, index) => index + 1).find((d) => worldBane(seed, d, null, step) !== null)!;
+  await act(async () =>
+    store.applyFacts([
+      {
+        model: "QuestProgress",
+        key: "0x9e2",
+        value: { game_id: 1, home: 7, day, progress: 1_000_000_000_000n, completed_level: 1 },
+      },
+      receipt(day),
+      activeYesterday(day, 4),
+      baneProgress(day, 0, 0),
+    ] as never),
+  );
+  await moveToDay(store, day);
+  expect(banner()!.querySelector("[aria-label='Collected']")).not.toBeNull();
+  expect(banner()!.textContent).toContain("0 of 1 finished");
+  await act(async () => store.applyFacts([baneProgress(day, 1, 1)] as never));
+  expect(banner()!.textContent).toContain("Ended: the quest pays twice");
+  // The quest's action is offered again (an earlier test's send, held in flight on purpose, may still name it Collecting).
+  expect(["Collect again", "Collecting"]).toContain(banner()!.querySelector("button")?.textContent);
+  await act(async () =>
+    store.applyFacts([
+      {
+        model: "BaneGrant",
+        key: "0x9fc",
+        value: { game_id: 1, home: 7, day, account: 0x111n, amount: 1000n, essence: 1500n },
+      },
+    ] as never),
+  );
+  expect(banner()!.querySelector("button")).toBeNull();
+  expect(banner()!.querySelector("[aria-label='Collected']")).not.toBeNull();
+});
+
 it("stands in the realm's column of a new player's HUD (/lab/kit/unified/frontier-new)", async () => {
   await act(async () =>
     root.render(
@@ -270,5 +372,5 @@ it("stands in the realm's column of a new player's HUD (/lab/kit/unified/frontie
 function today(store: NativeFactStore) {
   const now = Math.floor(useChainTimeStore.getState().nowMs! / 1000);
   const quest = readDailyQuest(store, 1, 7, now)!;
-  return { day: quest.day, id: quest.id, target: Number(quest.reading.known!.target) };
+  return { day: quest.day, id: quest.quest!.id, target: Number(quest.reading.known!.target) };
 }

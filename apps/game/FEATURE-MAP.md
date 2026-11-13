@@ -635,14 +635,22 @@ signed-out fixture count as a played match.
 and name, its count ("0 of 2 finds") over a meter, and its reward in labor and Essence for the home's level (150% of the
 labor for a held Realm's or a campaign's home). **Collect** sends the reward once the quest is done; a check then says
 it was collected. While the snapshot has not settled the home's progress, receipt or labor bonus, it names the quest and
-says it is reading, with nothing to press. **Today** (the day's clock), on today's page, lists **This week's quests**:
-each day of the week's bag up to the season's last day, its painting and quest, and whether it was collected, done,
-missed, is today or is coming. In a race game (`RaceRules`), on a day the home's Aspect has a Triumph (`TriumphDay`, the
-day after one of its hyperstructure's first four stages), its painting, name and what it does today stand under the
-quest: **Clear Mist** (a reveal finds something 2 times as often), **Second Wind** (stamina refills 2 times as fast),
-**Pale Moon** (beasts at 50% of their strength), **Spoils** (a cleared site pays 2 times), each rate RaceRules'; while
-the snapshot cannot tell, it says it is reading the Aspect's day. Lab: `/lab/kit/unified/frontier`, `frontier-new` and
-`season-one-deep` (a Season 1 member with 145 Glory on Second Wind).
+says it is reading, with nothing to press. On a bane day the quest is the bane quest, as the contract picks it (a
+rival's team bane, `TeamBane`, first; else the mist's world bane): **The Stand** (guarded sites cleared), **The Lights**
+(tiles revealed) or **The Cull** (guard troops beaten), sized by `BaneRules` for the Realm's level. Under it the bane
+stands: the mist's by name (Blood Moon, Mist Tide, Ash Fall) or a rival's ("Chaos's bane"), with how far the Aspect is
+at ending it ("4 of 6 finished": 25% of its members out the day before, rounded up), then "Ended: the quest pays twice"
+or "Ended: your hyperstructure grows again". Once the Aspect ended a world bane, **Collect again** pays the quest's
+reward a second time (`BaneGrant`). The bane row's look waits on the owner's pick (`eternum/s1-banner`). **Today** (the
+day's clock), on today's page, lists **This week's quests**: each day of the week's bag up to the season's last day, its
+painting and quest, and whether it was collected, done, missed, is today or is coming (a day gone shows its bane quest;
+a coming day the bag's quest, since nobody knows a bane's day before it comes). In a race game (`RaceRules`), on a day
+the home's Aspect has a Triumph (`TriumphDay`, the day after one of its hyperstructure's first four stages), its
+painting, name and what it does today stand under the quest: **Clear Mist** (a reveal finds something 2 times as often),
+**Second Wind** (stamina refills 2 times as fast), **Pale Moon** (beasts at 50% of their strength), **Spoils** (a
+cleared site pays 2 times), each rate RaceRules'; while the snapshot cannot tell, it says it is reading the Aspect's
+day. Lab: `/lab/kit/unified/frontier`, `frontier-new` and `season-one-deep` (a Season 1 member with 145 Glory on Second
+Wind).
 
 **Glory** (`src/ui/features/frontier/race/glory.tsx`), a race game member's one score (`RaceMember`), once the realm
 went into the Deep: beside its rank on the desktop's realm panel, and in a phone's purse row under the strip, with what
@@ -659,11 +667,13 @@ account's first session shows its realm and level, labor and wheat, the lit plot
 map, the day's quest and the day's clock. Troops at home and the rest of the Build sheet open with the first Barracks;
 an army's XP (its token, row and panel) with its first fight won; Essence, **Research** and **Today** (the day's clock
 pressed) with the first quest reward collected or the first Essence; Glory once an army stood in the Deep (or the realm
-earned there), whose line says what each army tick there costs an army. Each moment's one line stands over the map once
-per account, for 8 s or until **Got it**; the account keeps the moments it reached (`/api/interface/opening`), so a part
-an army earned stays after the day ends it. Settings → Interface → **Show everything** opens everything at once, with no
-lines. Watching, visiting or signed out, everything shows. Lab: `/lab/kit/unified/frontier-new` (a new account's first
-minute) beside `/lab/kit/unified/frontier` (a seasoned account).
+earned there), whose line says what each army tick there costs an army; the bane on the banner the first day a bane
+falls on the Aspect, with "A bane. Today's quest is the bane quest. Your Aspect ends the bane when enough members finish
+it." Each moment's one line stands over the map once per account, for 8 s or until **Got it**; the account keeps the
+moments it reached (`/api/interface/opening`), so a part an army earned stays after the day ends it. Settings →
+Interface → **Show everything** opens everything at once, with no lines. Watching, visiting or signed out, everything
+shows. Lab: `/lab/kit/unified/frontier-new` (a new account's first minute) beside `/lab/kit/unified/frontier` (a
+seasoned account).
 
 On a desktop, Frontier plays on the HUD every mode shares (`src/ui/features/frontier/hud/frontier-desktop.tsx`, issue
 5067): the top bar (your name chip with your place on the season's board, which opens it; Realm / World; the day's

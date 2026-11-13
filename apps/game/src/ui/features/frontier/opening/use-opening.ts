@@ -21,6 +21,15 @@ const OPENING_MODELS = [
   "LaborGrant",
   "DeepArmy",
   "RaceMember",
+  "QuestRules",
+  "QuestProgress",
+  "HomeAspect",
+  "BaneRules",
+  "FirstTeamBane",
+  "TeamBane",
+  "AspectActivity",
+  "BaneProgress",
+  "BaneGrant",
 ] as const;
 
 interface OpeningState {

@@ -18,6 +18,7 @@ const { buildingOutput } = await import("@/ui/shared/lib/building-output");
 const { setBuildingCount } = await import("@bibliothecadao/eternum");
 const { BuildingType, formatAmount, RESOURCE_PRECISION, ResourcesIds } = await import("@bibliothecadao/types");
 const { OPENING_PARTS } = await import("./opening");
+const { frontierSeasonOnePreset } = await import("../../../../../../../config/source/frontier/season-one");
 const { OPENING_LINE_MS, OpeningLine } = await import("./opening-line");
 const { ShowEverything } = await import("./show-everything");
 const { useOpeningInterface, useOpens, useOpeningStore } = await import("./use-opening");
@@ -220,6 +221,57 @@ describe("the interface that opens as you play", () => {
       `Every tick (${formatAmount(Number(tick))} seconds) here, each army loses 200 troops. Hold a site to earn.Got it`,
     );
     expect((await kept()).reached).toEqual(["barracks", "deep", "essence", "launch"]);
+  });
+
+  it("opens the bane on the banner the first day a bane falls on the Aspect, and says what to do under it", async () => {
+    const quest = frontierSeasonOnePreset.dailyQuest;
+    const banes = frontierSeasonOnePreset.worldBanes;
+    const store = await renderOpening(["launch", "barracks", "essence"], [barracks(), essence(1_500)]);
+    await act(async () =>
+      store.applyFacts([
+        {
+          model: "QuestRules",
+          key: "0xe1",
+          value: {
+            game_id: 1,
+            base_counts: quest.baseCounts,
+            labor: BigInt(quest.labor),
+            essence: BigInt(quest.essence),
+            bonus_percent: quest.bonusPercent,
+          },
+        },
+        {
+          model: "BaneRules",
+          key: "0xe2",
+          value: {
+            game_id: 1,
+            chance_step: banes.chanceStep,
+            quorum_percent: banes.quorumPercent,
+            beast_percent: banes.beastPercent,
+            stamina_percent: banes.staminaPercent,
+            production_percent: banes.productionPercent,
+            quest_counts: banes.questCounts.map(BigInt),
+          },
+        },
+        { model: "HomeAspect", key: "0xe3", value: { game_id: 1, home: 7, aspect: 2 } },
+      ] as never),
+    );
+    expect(parts()).not.toContain("bane-row");
+    // Chaos's Altar filled its bar yesterday: today Harmony is under its bane.
+    await act(async () =>
+      store.applyFacts([
+        {
+          model: "TeamBane",
+          key: "0xe4",
+          value: { game_id: 1, aspect: 2, day: 0, source: 3, issued_day: 0, quest: 7 },
+        },
+      ] as never),
+    );
+    expect(parts()).toContain("bane-row");
+    expect(line()).toBe(
+      "A bane. Today's quest is the bane quest. Your Aspect ends the bane when enough members finish it.Got it",
+    );
+    expect((await kept()).reached).toContain("bane");
   });
 
   it("keeps without a line what a player's realm already showed before the interface opened", async () => {

@@ -1,10 +1,7 @@
-import { StructureType } from "@bibliothecadao/types";
+import { StructureType, worldBanes } from "@bibliothecadao/types";
 import { hash, shortString } from "starknet";
-import {
-  nativeBaneConstants as bane,
-  nativeQuestConstants as quest,
-} from "../../../../contracts/l3/world-native/schema/client.gen";
-import type { NativeFactStore } from "../client/native-fact-store";
+import { nativeBaneConstants as bane } from "../../../../contracts/l3/world-native/schema/client.gen";
+import type { NativeFactResult, NativeFactStore } from "../client/native-fact-store";
 import { dayOf } from "./days";
 
 export function worldBane(seed: bigint, day: number, firstTeamDay: number | null, chanceStep: number): number | null {
@@ -30,39 +27,111 @@ export function worldBane(seed: bigint, day: number, firstTeamDay: number | null
 // One immutable draw sequence; switching games replaces it. Cutoffs and completions always come from the store.
 let calendarDraws: { seed: bigint; step: number; chance: number; days: (number | null)[] } | undefined;
 
+/** The bane quest a world bane brings (banes.cairo's quest_kind), from the catalog's world banes. */
 export function baneQuest(kind: number): number {
-  switch (kind) {
-    case bane.BLOOD_MOON:
-      return quest.STAND;
-    case bane.MIST_TIDE:
-      return quest.LIGHTS;
-    case bane.ASH_FALL:
-      return quest.CULL;
-    default:
-      throw new Error(`Unknown world bane ${kind}`);
-  }
+  const world = worldBanes.find(({ id }) => id === kind);
+  if (!world) throw new Error(`Unknown world bane ${kind}`);
+  return world.quest;
 }
 
-export function readWorldBane(store: NativeFactStore, game_id: number, home: number | bigint, day: number) {
+/** A world bane on one day for one Aspect: which, and how far the Aspect is at ending it (banes.cairo's won). */
+interface WorldBaneDay {
+  kind: number;
+  required: number;
+  completed: number;
+  endedAt: number;
+  won: boolean;
+}
+
+/**
+ * The world bane a home's Aspect has on a day, as banes.cairo rolls and ends it: known none, or its kind with the count
+ * that ends it (25% of the Aspect's members active the day before, rounded up) and the members who finished. Unknown,
+ * with the reason, while a row it rests on is neither present nor known absent. None in a game without banes.
+ */
+function readWorldBane(
+  store: NativeFactStore,
+  game_id: number,
+  home: number | bigint,
+  day: number,
+): NativeFactResult<WorldBaneDay | null> | undefined {
   const rules = store.get("BaneRules", { game_id });
   if (!rules) return undefined;
   const game = store.require("GameRegistry", { game_id });
   const first = store.requireOrAbsent("FirstTeamBane", { game_id });
-  if (!first.known) throw new Error("World bane cutoff is unknown");
+  if (!first.known) return { unknown: first.unknown };
   const kind = worldBane(game.seed, day, first.known.day === null ? null : Number(first.known.day), rules.chance_step);
-  if (kind === null) return undefined;
-  const aspect = store.require("HomeAspect", { game_id, home }).aspect;
-  const activity = store.requireOrAbsent("AspectActivity", { game_id, aspect, day: day - 1 });
-  if (!activity.known) throw new Error("Aspect activity is unknown");
-  const required = Math.ceil((activity.known.active * rules.quorum_percent) / 100);
+  if (kind === null) return { known: null };
+  const aspect = homeAspect(store, game_id, home);
+  if (aspect.unknown !== undefined) return { unknown: aspect.unknown };
+  const ending = readEnding(store, game_id, aspect.known, day, rules.quorum_percent);
+  if (!ending.known) return ending;
+  return { known: { kind, ...ending.known } };
+}
+
+/** A bane on one day for a home's Aspect: the mist's (world) or a rival's (team), its quest and how far it is ended. */
+export interface DayBane {
+  source: "world" | "team";
+  /** The world bane's kind (Blood Moon, Mist Tide, Ash Fall); null for a team bane. */
+  kind: number | null;
+  /** The Aspect whose Altar sent a team bane; null for a world bane. */
+  sender: number | null;
+  /** The bane quest that replaces the daily quest: the Stand, the Lights or the Cull. */
+  quest: number;
+  required: number;
+  completed: number;
+  /** Ended by the Aspect: no one to wait for (nobody active the day before), or enough finished. */
+  won: boolean;
+}
+
+/**
+ * The bane a home's Aspect is under on a day, as banes.cairo's quest_kind picks it: a team bane first (TeamBane), else
+ * the world bane, else none. Known none, the bane, or unknown with the reason. None in a game without banes.
+ */
+export function readDayBane(
+  store: NativeFactStore,
+  game_id: number,
+  home: number | bigint,
+  day: number,
+): NativeFactResult<DayBane | null> | undefined {
+  const rules = store.get("BaneRules", { game_id });
+  if (!rules) return undefined;
+  const aspect = homeAspect(store, game_id, home);
+  if (aspect.unknown !== undefined) return { unknown: aspect.unknown };
+  const team = store.get("TeamBane", { game_id, aspect: aspect.known, day });
+  if (team) {
+    const ending = readEnding(store, game_id, aspect.known, day, rules.quorum_percent);
+    if (!ending.known) return ending;
+    return { known: { source: "team", kind: null, sender: team.source, quest: team.quest, ...ending.known } };
+  }
+  const noTeam = store.absenceKnown("TeamBane", { game_id, aspect: aspect.known, day });
+  if (!noTeam.known) return { unknown: noTeam.unknown };
+  const world = readWorldBane(store, game_id, home, day)!;
+  if (!world.known) return world.unknown === undefined ? { known: null } : { unknown: world.unknown };
+  const { kind, required, completed, won } = world.known;
+  return { known: { source: "world", kind, sender: null, quest: baneQuest(kind), required, completed, won } };
+}
+
+/** The home's Aspect; unknown while its row has not arrived (a bane game's Realm always joined one). */
+function homeAspect(store: NativeFactStore, game_id: number, home: number | bigint): NativeFactResult<number> {
+  const row = store.get("HomeAspect", { game_id, home });
+  return row ? { known: row.aspect } : { unknown: `HomeAspect ${home} is not known` };
+}
+
+/** The count that ends the Aspect's bane on a day, the members who finished it, and when it ended, if it did. */
+function readEnding(store: NativeFactStore, game_id: number, aspect: number, day: number, quorumPercent: number) {
+  const activity =
+    day === 0 ? { known: { active: 0 } } : store.requireOrAbsent("AspectActivity", { game_id, aspect, day: day - 1 });
+  if (!activity.known) return { unknown: activity.unknown! };
   const progress = store.requireOrAbsent("BaneProgress", { game_id, aspect, day });
-  if (!progress.known) throw new Error("Bane progress is unknown");
+  if (!progress.known) return { unknown: progress.unknown };
+  const required = Math.ceil((activity.known.active * quorumPercent) / 100);
   return {
-    kind,
-    required,
-    completed: progress.known.completed,
-    endedAt: Number(progress.known.ended_at),
-    won: required === 0 || progress.known.ended_at !== 0n,
+    known: {
+      required,
+      completed: progress.known.completed,
+      endedAt: Number(progress.known.ended_at),
+      won: required === 0 || progress.known.ended_at !== 0n,
+    },
   };
 }
 
@@ -90,7 +159,9 @@ export function baneRateReader(store: NativeFactStore, game_id: number, home: nu
     until = Math.min(until, calendar.endAt);
     while (cursor < until) {
       const day = dayOf(calendar, cursor)!;
-      const current = readWorldBane(store, game_id, home, day.index);
+      const read = readWorldBane(store, game_id, home, day.index)!;
+      if (!read.known && read.unknown !== undefined) throw new Error(`World bane is unknown: ${read.unknown}`);
+      const current = read.known;
       if (current?.kind === effect) {
         const end = current.required === 0 ? day.start : Math.min(current.endedAt || day.end, until);
         if (cursor < end) windows.push({ start: cursor, end, percent });

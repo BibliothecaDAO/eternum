@@ -14,6 +14,7 @@ export const OPENING_MOMENTS = [
   "well-lore",
   "shrine-lore",
   "deep",
+  "bane",
 ] as const;
 export type OpeningMoment = (typeof OPENING_MOMENTS)[number];
 
