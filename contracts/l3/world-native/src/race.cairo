@@ -120,10 +120,13 @@ pub fn split_payment(amount: u128, shares: Span<crate::deep::DeepShare>) -> Span
     let remaining = amount - allocated;
     let mut result = array![];
     for index in 0..shares.len() {
+        let remainder = *remainders.at(index);
+        let home = *shares.at(index).home;
         let mut ahead = 0_u128;
         for other in 0..shares.len() {
-            if *remainders.at(other) > *remainders.at(index)
-                || (*remainders.at(other) == *remainders.at(index) && *shares.at(other).home < *shares.at(index).home) {
+            let other_remainder = *remainders.at(other);
+            let other_home = *shares.at(other).home;
+            if other_remainder > remainder || (other_remainder == remainder && other_home < home) {
                 ahead += 1;
             }
         }
