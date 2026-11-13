@@ -173,14 +173,22 @@ describe("prod's Blightglow Rift, read through the card's own facts on Frontier'
   });
 });
 
-
 it("forecasts Blade and Ward, Plunder and Tome at the attack second and drops them exactly at expiry", () => {
   const { store, site, structure, attack } = campBeside();
   const action = attack({ col: 41, row: 12, alt: false });
   const read = (timestamp: number) => readSiteCard(store, site, structure, SITE_TILE, { ...action, timestamp });
   expect(read(350)).toMatchObject({ fight: { troopsLost: 320, guardLeft: 492 }, xp: 123, payout: { amount: 825 } });
-  store.applyFacts([relicEffectFact("Blade"), relicEffectFact("Ward"), relicEffectFact("Plunder"), relicEffectFact("Tome")]);
-  expect(read(379)).toMatchObject({ fight: { troopsLost: 304, guardLeft: 431 }, xp: 172, payout: { amount: 990, fits: 990 } });
+  store.applyFacts([
+    relicEffectFact("Blade"),
+    relicEffectFact("Ward"),
+    relicEffectFact("Plunder"),
+    relicEffectFact("Tome"),
+  ]);
+  expect(read(379)).toMatchObject({
+    fight: { troopsLost: 304, guardLeft: 431 },
+    xp: 172,
+    payout: { amount: 990, fits: 990 },
+  });
   expect(read(380)).toMatchObject({ fight: { troopsLost: 320, guardLeft: 492 }, xp: 123, payout: { amount: 825 } });
   expect(action.army.troops.boosts.incr_damage_dealt_percent_num).toBe(0);
   expect(action.army.troops.boosts.decr_damage_gotten_percent_num).toBe(0);
@@ -195,42 +203,92 @@ it("clips the Plunder reward after applying its bonus and leaves wheat unchanged
     relicEffectFact("Plunder"),
     { model: "ResourceBalance", key: "0x79", value: { ...keys, balance: limit - 900n * 1_000_000_000n } },
   ]);
-  expect(readSiteCard(store, site, structure, SITE_TILE, action).payout).toEqual({ resourceId: ResourcesIds.Labor, amount: 990, fits: 900 });
-  expect(armyRelicReward(store, action.army, { resourceType: ResourcesIds.Wheat, amount: 100n }, 350)).toEqual({ resourceType: ResourcesIds.Wheat, amount: 100n });
+  expect(readSiteCard(store, site, structure, SITE_TILE, action).payout).toEqual({
+    resourceId: ResourcesIds.Labor,
+    amount: 990,
+    fits: 900,
+  });
+  expect(armyRelicReward(store, action.army, { resourceType: ResourcesIds.Wheat, amount: 100n }, 350)).toEqual({
+    resourceType: ResourcesIds.Wheat,
+    amount: 100n,
+  });
   const rift = campBeside("Rift");
   rift.store.applyFacts([relicEffectFact("Plunder")]);
-  expect(readSiteCard(rift.store, rift.site, rift.structure, SITE_TILE, rift.attack(action.armyTile)).payout).toEqual({ resourceId: ResourcesIds.Essence, amount: 5940, fits: 5940 });
+  expect(readSiteCard(rift.store, rift.site, rift.structure, SITE_TILE, rift.attack(action.armyTile)).payout).toEqual({
+    resourceId: ResourcesIds.Essence,
+    amount: 5940,
+    fits: 5940,
+  });
 });
 
 it("keeps the forecast and eligible rewards unknown until missing effects are known absent", () => {
   const { store, site, structure, attack } = campBeside();
   const action = attack({ col: 41, row: 12, alt: false });
   store.setSnapshot({ gameId: 1, complete: false, actor: "0x111", timestamp: 350 });
-  expect(readSiteCard(store, site, structure, SITE_TILE, action)).toMatchObject({ fight: undefined, payout: undefined, xp: undefined });
+  expect(readSiteCard(store, site, structure, SITE_TILE, action)).toMatchObject({
+    fight: undefined,
+    payout: undefined,
+    xp: undefined,
+  });
   store.setSnapshot({ gameId: 1, complete: true, actor: "0x111", timestamp: 350 });
-  expect(readSiteCard(store, site, structure, SITE_TILE, action)).toMatchObject({ fight: { troopsLost: 320, guardLeft: 492 }, xp: 123, payout: { amount: 825 } });
+  expect(readSiteCard(store, site, structure, SITE_TILE, action)).toMatchObject({
+    fight: { troopsLost: 320, guardLeft: 492 },
+    xp: 123,
+    payout: { amount: 825 },
+  });
 });
-
 
 it("adds active relics to a slot army's Battle skill without modifying stored troop boosts", () => {
   const { store, attack } = campBeside();
   const { army } = attack({ col: 41, row: 12, alt: false });
-  const slotKeys = { game_id: 1, structure_id: army.owner, epoch: BigInt(store.subscriptionScope().known!.expedition!.day), slot: 0 };
+  const slotKeys = {
+    game_id: 1,
+    structure_id: army.owner,
+    epoch: BigInt(store.subscriptionScope().known!.expedition!.day),
+    slot: 0,
+  };
   const slotArmy = { ...army, troops: { ...army.troops, stamina: { Slot: 0 } } };
   store.applyFacts([
     { model: "ExplorerTroops", key: store.wireKeyOf("ExplorerTroops", army)!, value: slotArmy },
-    { model: "ArmySlot", key: store.wireKeyOf("ArmySlot", slotKeys)!, value: {
-      ...slotKeys,
-      explorer_id: army.explorer_id, stamina: { amount: 100n, settled_at: 350n, remainder: 0 },
-    } },
-    { model: "ArmyProgress", key: "0x9101", value: {
-      game_id: 1, explorer_id: army.explorer_id, xp: 0, battle: 3, logistics: 0, scouting: 0, scouting_kinds: 0, homecoming: 0,
-      common_points: 0, uncommon_points: 0, rare_points: 0, epic_points: 0, legendary_points: 0,
-    } },
-    relicEffectFact("Blade"), relicEffectFact("Ward"),
+    {
+      model: "ArmySlot",
+      key: store.wireKeyOf("ArmySlot", slotKeys)!,
+      value: {
+        ...slotKeys,
+        explorer_id: army.explorer_id,
+        stamina: { amount: 100n, settled_at: 350n, remainder: 0 },
+      },
+    },
+    {
+      model: "ArmyProgress",
+      key: "0x9101",
+      value: {
+        game_id: 1,
+        explorer_id: army.explorer_id,
+        xp: 0,
+        battle: 3,
+        logistics: 0,
+        scouting: 0,
+        scouting_kinds: 0,
+        homecoming: 0,
+        common_points: 0,
+        uncommon_points: 0,
+        rare_points: 0,
+        epic_points: 0,
+        legendary_points: 0,
+      },
+    },
+    relicEffectFact("Blade"),
+    relicEffectFact("Ward"),
   ]);
   const current = store.require("ExplorerTroops", army);
-  expect(resolveExplorerCombatTroops(store, current, 379)?.boosts).toMatchObject({ incr_damage_dealt_percent_num: 5500, decr_damage_gotten_percent_num: 500 });
-  expect(resolveExplorerCombatTroops(store, current, 380)?.boosts).toMatchObject({ incr_damage_dealt_percent_num: 4500, decr_damage_gotten_percent_num: 0 });
+  expect(resolveExplorerCombatTroops(store, current, 379)?.boosts).toMatchObject({
+    incr_damage_dealt_percent_num: 5500,
+    decr_damage_gotten_percent_num: 500,
+  });
+  expect(resolveExplorerCombatTroops(store, current, 380)?.boosts).toMatchObject({
+    incr_damage_dealt_percent_num: 4500,
+    decr_damage_gotten_percent_num: 0,
+  });
   expect(current.troops.boosts.incr_damage_dealt_percent_num).toBe(0);
 });

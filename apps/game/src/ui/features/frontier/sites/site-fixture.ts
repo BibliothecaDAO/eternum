@@ -266,7 +266,11 @@ export const otherArmyAt = (store: ReturnType<typeof campBeside>["store"], col: 
     {
       model: "Structure",
       key: "0x92",
-      value: wire({ ...store.require("Structure", { game_id: 1, entity_id: mine.owner }), entity_id: 9, owner: "0x222" }),
+      value: wire({
+        ...store.require("Structure", { game_id: 1, entity_id: mine.owner }),
+        entity_id: 9,
+        owner: "0x222",
+      }),
     },
     {
       model: "ExplorerTroops",
