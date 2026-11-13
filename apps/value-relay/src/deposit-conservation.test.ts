@@ -1,5 +1,5 @@
 import { beforeEach, expect, it, vi } from "vitest";
-import { auditDepositLedger, auditDeposits, DepositConservationFault } from "./deposit-conservation";
+import { auditDepositLedger, auditDeposits, newDepositMemory, DepositConservationFault } from "./deposit-conservation";
 import { checkDepositRetirement } from "./deposit-retirement";
 import { depositCommitment, LORDS_UNIT, type LordsDeposit } from "@realms-world/value-ledger/deposits";
 const mocks = vi.hoisted(() => ({ read: vi.fn(), snapshot: vi.fn(), rpc: vi.fn() }));
@@ -123,6 +123,24 @@ beforeEach(() => {
       ).map((value) => ({ value })),
     })),
   }));
+});
+it("reads each delivered deposit and each paid principal once across audits, and a pending deposit until it settles", async () => {
+  payments = [
+    { ...source },
+    { ...source, id: "2", amount: "20" },
+    { ...source, id: "3", amount: "5", status: "pending" },
+  ];
+  const deposits = vi.spyOn(reader, "deposit");
+  const principals = vi.spyOn(reader, "principal");
+  const memory = newDepositMemory();
+  for (let tick = 0; tick < 4; tick++) await auditDepositLedger(ledger, memory);
+  const reads = (id: string) => deposits.mock.calls.filter(([, read]) => read === id).length;
+  expect([reads("1"), reads("2"), reads("3")]).toEqual([1, 1, 4]);
+  expect(principals).toHaveBeenCalledTimes(1);
+  payments[2] = { ...payments[2]!, status: "delivered" };
+  await auditDepositLedger(ledger, memory);
+  await auditDepositLedger(ledger, memory);
+  expect([reads("1"), reads("2"), reads("3")]).toEqual([1, 1, 5]);
 });
 it("reconciles principal returns and undelivered refunds without including reward balances", async () => {
   expect(await auditDepositLedger(ledger)).toMatchObject({ principal: "40", returned: "60" });

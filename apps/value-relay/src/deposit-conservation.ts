@@ -16,6 +16,7 @@ export class DepositConservationFault extends Error {}
 const fail = (reason: string): never => {
   throw new DepositConservationFault(reason);
 };
+type DepositReader = Awaited<ReturnType<typeof depositReader>>;
 type DepositJournal = Awaited<ReturnType<typeof auditDepositLedger>>;
 type DepositTarget = { shard: string; gameId: number; games: string };
 type LedgerConnection = { rpcUrl: string; address: string; chainId: string };
@@ -26,8 +27,35 @@ const u256 = (fields: readonly string[]) => {
   return depositUint(fields[0]!, 128) + (depositUint(fields[1]!, 128) << 128n);
 };
 
+/**
+ * What a later audit need not read again: a deposit that was delivered or cancelled, and a principal that was paid, can
+ * never change on a confirmed ledger. Pending deposits and unpaid principals are read every time.
+ */
+export interface DepositMemory {
+  deposits: Map<string, LordsDeposit>;
+  principals: Map<string, { wallet: string; amount: string }>;
+}
+export const newDepositMemory = (): DepositMemory => ({ deposits: new Map(), principals: new Map() });
+
+async function readDeposit(reader: DepositReader, memory: DepositMemory, shard: string, id: string) {
+  const known = memory.deposits.get(key(shard, id));
+  if (known) return known;
+  const payment = await reader.deposit(shard, id);
+  if (payment.status !== "pending") memory.deposits.set(key(shard, id), payment);
+  return payment;
+}
+
+async function readPrincipal(reader: DepositReader, memory: DepositMemory, payment: LordsDeposit) {
+  const identity = key(payment.shard, payment.gameId, payment.account);
+  const known = memory.principals.get(identity);
+  if (known) return known;
+  const paid = await reader.principal(payment.shard, payment.gameId, payment.account);
+  if (paid) memory.principals.set(identity, paid);
+  return paid;
+}
+
 /** Older ledgers have no deposit custody; a configured ledger is audited even when every source shard has retired. */
-export async function auditDepositCustody(ledger: LedgerConnection) {
+export async function auditDepositCustody(ledger: LedgerConnection, memory = newDepositMemory()) {
   const provider = rpcAt(ledger.rpcUrl);
   const head = await readConfirmedLedgerHead(provider);
   const abi = await readShardAbi(provider, ledger.address, head.number);
@@ -38,18 +66,18 @@ export async function auditDepositCustody(ledger: LedgerConnection) {
     )
   )
     return null;
-  return auditDepositLedger(ledger);
+  return auditDepositLedger(ledger, memory);
 }
 
 /** The durable journal accounts for deposits, refunds and principal returns even after a source retires. */
-export async function auditDepositLedger(ledger: LedgerConnection) {
+export async function auditDepositLedger(ledger: LedgerConnection, memory = newDepositMemory()) {
   const reader = await depositReader(rpcAt(ledger.rpcUrl), ledger.address, ledger.chainId);
   const targets = await readDepositTargets(reader);
   const payments: LordsDeposit[] = [];
   for (const shard of new Set(targets.map((target) => target.shard))) {
     const count = await reader.count(shard);
     for (let id = 1n; id <= count; id++) {
-      const payment = await reader.deposit(shard, String(id));
+      const payment = await readDeposit(reader, memory, shard, String(id));
       const target = targets.find((target) => key(target.shard, target.gameId) === key(shard, payment.gameId));
       if (!target || BigInt(target.games) !== BigInt(payment.games)) fail("deposit_target_mismatch");
       payments.push(payment);
@@ -70,7 +98,7 @@ export async function auditDepositLedger(ledger: LedgerConnection) {
     accounts.set(identity, account);
   }
   for (const { payment, delivered } of accounts.values()) {
-    const paid = await reader.principal(payment.shard, payment.gameId, payment.account);
+    const paid = await readPrincipal(reader, memory, payment);
     if (!paid) continue;
     if (BigInt(paid.amount) > delivered) fail("principal_return_exceeds_delivery");
     returned += BigInt(paid.amount) * LORDS_UNIT;

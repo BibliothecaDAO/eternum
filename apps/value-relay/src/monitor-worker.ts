@@ -1,4 +1,4 @@
-import { auditDeposits, auditDepositCustody, DepositConservationFault } from "./deposit-conservation";
+import { auditDeposits, auditDepositCustody, newDepositMemory, DepositConservationFault } from "./deposit-conservation";
 import { readMonitorFeeBalance, type MonitorFeeBalance } from "./monitor-balance";
 import { decodeMonitorSettings, type MonitorSettings } from "./monitor-env";
 import { checkSlotRoster, slotRosterReads } from "./roster-monitor";
@@ -36,6 +36,7 @@ interface MonitorEnv extends MonitorSettings {
 
 export class ValueMonitor extends DurableObject<MonitorEnv> {
   private readonly checking = Semaphore.makeUnsafe(1);
+  private readonly deposits = newDepositMemory();
   async tick() {
     const monitor = this;
     return Effect.runPromise(
@@ -118,7 +119,7 @@ export class ValueMonitor extends DurableObject<MonitorEnv> {
                 chainId: await monitor.env.IDENTITY.l2ChainId(),
               };
               try {
-                const journal = await auditDepositCustody(ledger);
+                const journal = await auditDepositCustody(ledger, monitor.deposits);
                 if (!journal) return { enabled: false, games: [] };
                 for (const shard of await activeShards(monitor.env.IDENTITY)) {
                   const registered = await readRegisteredShard(monitor.env.IDENTITY, shard.chainId);
