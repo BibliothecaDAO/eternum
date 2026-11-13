@@ -215,6 +215,20 @@ fn beast_clears_pay_wheat_or_triple_xp_through_explore_and_battle() {
             empty_reveal_limit: 7,
         };
         preset.economy.discovery = Some(discovery);
+        let mut grants = array![];
+        for grant in preset.settlement.realms.resources {
+            grants
+                .append(
+                    crate::resources::ResourceAmount {
+                        amount: if grant.resource_type == crate::resources::WHEAT {
+                            0
+                        } else {
+                            grant.amount
+                        }, ..*grant,
+                    },
+                );
+        }
+        preset.settlement.realms.resources = grants.span();
         let (d, game_id) = create_open_frontier(preset, BAG_SECONDS);
         assert!(
             execute_in_game(
