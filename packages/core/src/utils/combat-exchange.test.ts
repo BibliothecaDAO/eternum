@@ -4,8 +4,8 @@ import { describe, expect, it } from "vitest";
 import { type CombatRules, type ExchangeTroops, forecastFight, resolveExchange } from "./combat-exchange";
 
 /**
- * The contract's own record of 200 exchanges (frontier-combat-v1.txt, written by its snforge producer): every loss and
- * stamina value must come out of resolveExchange as the same integer.
+ * The archived contract record of 200 exchanges (frontier-combat-v1.txt, written by its snforge producer) retains
+ * the historical structure modifiers. Replay every loss and stamina value exactly with the zero day clock below.
  */
 const FIXTURE = new URL("../../../../contracts/l3/world-native/tests/fixtures/frontier-combat-v1.txt", import.meta.url);
 const HEADER_FELTS = 25;

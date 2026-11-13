@@ -164,7 +164,7 @@ describe("a guarded site's card", () => {
     expect(document.querySelector('[role="status"]')).toBeNull();
   });
 
-  it("reads the owner's Blightglow Rift as this attack leaves it: 794 → 193 against 1,400 → 1,033, and warns of no loss", () => {
+  it("renders the archived 3 November Blightglow result without warning of a second attack's loss", () => {
     // Prod, 3 November 2026: this attack leaves the army 193, and the card said "Army will be lost" of a second attack
     // it does not send (owner: "the army will be lost shouldnt be shown either ?").
     const onAttack = vi.fn();
