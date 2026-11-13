@@ -1304,8 +1304,9 @@ from each tile's contract depth. Eternum's alternate layer retains its original 
 
 Art → Terrain → Ethereal depths (`/lab/ethereal-depths`) previews the approved depths and the original material through
 the same terrain renderer. `/lab/game?scenario=ethereal-depths-1` (and `-2`, `-3`) opens the real Frontier client with
-fixture facts: the army beside the spire its realm found on the layer above that depth, explored land below, and a spire
-beside the arrival for scale. No live game is used.
+fixture facts: the army beside the spire its realm found on the layer above that depth, explored land below, and for
+scale beside the arrival what really stands there: a spire found on that Ethereal layer, or in the Deep, which has no
+spire, an Aspect's hyperstructure. No live game is used.
 
 Reproduce all three Spire entries at desktop and phone sizes, with their stills and review page:
 

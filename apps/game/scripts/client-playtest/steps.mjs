@@ -3133,6 +3133,12 @@ async function openASiteCard(browser) {
   return { card: null, offered };
 }
 
+/**
+ * The plate of the hyperstructure the Deep's still shows for scale, which has no spire (ethereal-depths-scenario.ts,
+ * DEEP_SCALE_HYPERSTRUCTURE): the shallower depths show a spire found there.
+ */
+const DEEP_SCALE_PLATE = "structure:903";
+
 /** Each proof starts beside the spire found on the layer above its depth and enters as a Frontier player does. */
 function etherealDepthSteps(depth) {
   const label = `Ethereal ${"I".repeat(depth)}`;
@@ -3184,7 +3190,11 @@ function etherealDepthSteps(depth) {
           };
           return {
             army: framed(document.querySelector('.mp-at[data-key="army:${before.army.id}"] .mp-token')),
-            spire: [...document.querySelectorAll('div')].some(element => element.children.length === 0 && element.textContent === "Spire" && framed(element)),
+            scale: ${
+              depth === 3
+                ? `framed(document.querySelector('.mp-at[data-key="${DEEP_SCALE_PLATE}"] .mp-token'))`
+                : `[...document.querySelectorAll('div')].some(element => element.children.length === 0 && element.textContent === "Spire" && framed(element))`
+            },
             alternateLayer: window.__eternumMapSelection?.layer,
           };
         })())`);
@@ -3192,8 +3202,8 @@ function etherealDepthSteps(depth) {
       },
       verify: ({ played }) => {
         const { before, after, camera, terrain, subjects } = played;
-        if (!subjects.army || !subjects.spire || subjects.alternateLayer !== false)
-          return failed("The Frontier still does not frame both the army and Spire", played);
+        if (!subjects.army || !subjects.scale || subjects.alternateLayer !== false)
+          return failed("The Frontier still does not frame both the army and its scale reference", played);
         const command = after.sent.at(-1);
         if (
           after.sent.length !== before.sent.length + 1 ||
