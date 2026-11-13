@@ -279,8 +279,8 @@ fn frontier_reveal_pays_equal_strength_on_ethereal_one() {
 }
 
 #[test]
-fn frontier_and_eternum_set_no_reward_cap_so_a_frontier_reveal_still_pays_on_the_whole_army() {
-    for name in array!["frontier", "eternum"] {
+fn frontier_sets_no_reward_cap_so_a_reveal_pays_on_the_whole_army() {
+    for name in array!["frontier"] {
         let (_, preset) = super::preset_projection::current_definition(name);
         assert_eq!(preset.rules.troop_limit_config.explore_reward_strength_cap, 0);
     }
@@ -1208,32 +1208,8 @@ fn frontier_refuses_off_map_economy_commands_before_reading_positions() {
     let transfer = crate::resources::ResourceTransfer {
         from_entity_id: 1, to_entity_id: 2, resources: array![].span(),
     };
-    let swap = crate::market::Swap { bank_id: 2, structure_id: 1, resource_type: 1, amount: 1 };
     for command in array![
-        Command::CreateTradeOrder(
-            crate::trade::CreateOrder {
-                maker_id: 1,
-                taker_id: 2,
-                offered_resource: 1,
-                requested_resource: 2,
-                offered_per_lot: 1,
-                requested_per_lot: 1,
-                lots: 1,
-                expires_at: 399,
-            },
-        ),
-        Command::AcceptTradeOrder(crate::trade::AcceptOrder { trade_id: 1, taker_id: 2, lots: 1 }),
-        Command::CancelTradeOrder(1), Command::BuyFromBank(swap), Command::SellToBank(swap),
-        Command::AddBankLiquidity(
-            crate::market::AddLiquidity {
-                bank_id: 2, structure_id: 1, resource_type: 1, resource_amount: 1, lords_amount: 1,
-            },
-        ),
-        Command::RemoveBankLiquidity(
-            crate::market::RemoveLiquidity { bank_id: 2, structure_id: 1, resource_type: 1, shares: 1 },
-        ),
-        Command::SendResources(transfer), Command::TransferStructureResourcesToExplorer(transfer),
-        Command::TransferExplorerResourcesToStructure(transfer),
+        Command::SendResources(transfer), Command::TransferExplorerResourcesToStructure(transfer),
         Command::WithdrawResource(
             crate::bridge::Withdraw {
                 structure_id: 1, recipient: d.actor, resource_type: 1, amount: 1, client_fee_recipient: d.actor,

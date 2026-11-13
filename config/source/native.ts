@@ -1,7 +1,6 @@
 import { buildingIds, frontierPreset } from "./frontier/native";
 import { frontierDevconPreset } from "./frontier/devcon";
 import { blitzPreset } from "./blitz/native";
-import { eternumPreset } from "./eternum/native";
 import type { NativePreset } from "./common/native-preset";
 import {
   FRONTIER_ACCELERATED_PRESET_ID,
@@ -15,7 +14,6 @@ import type { GameType } from "./common/types";
 const modes: Record<GameType, NativePreset> = {
   frontier: frontierPreset,
   blitz: blitzPreset,
-  eternum: eternumPreset,
 };
 /**
  * Frontier 120 times faster, for automated tests only: a 1 s armies tick and a 120 s day unit, so its drawn days last 4

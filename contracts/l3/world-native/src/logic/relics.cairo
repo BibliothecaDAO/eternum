@@ -2,7 +2,7 @@
 pub mod RelicState {
     use games_storage::release::LogicClasses;
     use starknet::ContractAddress;
-    use starknet::storage::{StorageMapReadAccess, StorageMapWriteAccess, StoragePointerReadAccess};
+    use starknet::storage::{StorageMapReadAccess, StoragePointerReadAccess};
     use crate::commands::ExecutionContext;
     use crate::game::{IPointsDispatcherTrait, IPointsLibraryDispatcher, assert_playing};
     use crate::logic::release::ReleaseState;

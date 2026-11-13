@@ -40,8 +40,6 @@ function hasNoProduction(resource: number) {
 }
 
 function buildRules(config: Config, preset: ReturnType<typeof nativePresetForId>) {
-  const faith = config.faith;
-  if (!faith) throw new Error("Native faith config is required");
   const cooldownSeconds = config.battle.cooldownSeconds;
   if (!Number.isSafeInteger(cooldownSeconds) || cooldownSeconds < 0 || cooldownSeconds > 0xffff_ffff)
     throw new Error("Native battle cooldownSeconds must be an explicit u32");
@@ -50,7 +48,6 @@ function buildRules(config: Config, preset: ReturnType<typeof nativePresetForId>
     battle_config: {
       regular_immunity_ticks: config.battle.regularImmunityTicks,
       village_immunity_ticks: config.battle.villageImmunityTicks,
-      village_raid_immunity_ticks: config.battle.villageRaidImmunityTicks,
       cooldown_seconds: cooldownSeconds,
     },
     map_config: buildMapConfig(config),
@@ -88,7 +85,6 @@ function buildRules(config: Config, preset: ReturnType<typeof nativePresetForId>
     day_unit_seconds: seasonDayUnitSeconds(preset),
     mode_rules: preset.modeRules,
     entry_rule: preset.entryRule,
-    faith_enabled: faith.enabled,
     speed_config: {
       donkey_sec_per_km: config.speed.donkey_for_resources,
       donkey_sec_per_km_troops: config.speed.donkey_for_troops,
@@ -175,8 +171,6 @@ function buildMines(config: Config) {
 const buildingCategoryCount = nativeResearchConstants.HEARTH;
 
 function buildStructures(config: Config, preset: ReturnType<typeof nativePresetForId>) {
-  const faith = config.faith;
-  if (!faith) throw new Error("Native faith config is required");
   const precision = config.resources.resourcePrecision;
   const board = preset.board;
   return {
@@ -229,12 +223,6 @@ function buildStructures(config: Config, preset: ReturnType<typeof nativePresetF
         return { resource_type: resource, amount: scaled(min_amount, precision) };
       }),
       labor_rate: scaled(config.campLaborPerSecond, precision),
-    },
-    faith: {
-      wonder_rate: faith.wonder_base_fp_per_sec,
-      realm_rate: faith.realm_fp_per_sec,
-      village_rate: faith.village_fp_per_sec,
-      owner_share_bps: faith.owner_share_percent * 100,
     },
     upgrade_limits: { realm_max: config.realmMaxLevel - 1, village_max: config.villageMaxLevel - 1 },
     upgrades: Array.from({ length: Math.max(config.realmMaxLevel, config.villageMaxLevel) - 1 }, (_, index) => ({
@@ -366,13 +354,6 @@ function buildEconomy(
             pool_bps: chests.poolBps,
             top_n: chests.topN,
           }),
-    trade: { max_count: config.trade.maxCount },
-    banks: {
-      lp_fee_num: config.banks.lpFeesNumerator,
-      lp_fee_denom: config.banks.lpFeesDenominator,
-      owner_fee_num: config.banks.ownerFeesNumerator,
-      owner_fee_denom: config.banks.ownerFeesDenominator,
-    },
     hyperstructures: {
       initialize_shards: scaled(config.hyperstructures.hyperstructureInitializationShardsCost.amount),
       resources: config.hyperstructures.hyperstructureConstructionCost.map((resource) => ({
@@ -496,16 +477,6 @@ function validateRequiredNativeConfig(config: Config): void {
       throw new Error(`Invalid Bitcoin ${field}`);
   }
   if (config.bitcoin.ownerCutBps > 10000) throw new Error("Invalid Bitcoin owner cut");
-  if (!config.faith || typeof config.faith.enabled !== "boolean") throw new Error("Native faith config is required");
-  for (const field of [
-    "wonder_base_fp_per_sec",
-    "realm_fp_per_sec",
-    "village_fp_per_sec",
-    "owner_share_percent",
-  ] as const) {
-    if (!Number.isSafeInteger(config.faith[field]) || config.faith[field] < 0)
-      throw new Error(`Native faith ${field} is required and must be nonnegative`);
-  }
   if (!Number.isSafeInteger(config.artificer?.research_cost_for_relic) || config.artificer!.research_cost_for_relic < 0)
     throw new Error("Native research cost is required and must be nonnegative");
 }
@@ -515,7 +486,7 @@ function resolveBridgeTokens(config: Config, resources: readonly number[]) {
   const addresses = config.setup?.addresses;
   const configured = addresses?.resources;
   if (!configured || typeof configured !== "object" || Array.isArray(configured))
-    throw new Error("Eternum bridge resource tokens are required");
+    throw new Error("Bridge resource tokens are required");
   const tokens = [
     ...Object.values(configured!).map(([resource, token]) => ({
       resource_type: Number(resource),
@@ -523,7 +494,7 @@ function resolveBridgeTokens(config: Config, resources: readonly number[]) {
     })),
     { resource_type: ResourcesIds.Lords, token: addresses!.lords },
   ];
-  if (!tokens.length) throw new Error("Eternum bridge resource tokens are required");
+  if (!tokens.length) throw new Error("Bridge resource tokens are required");
   const seen = new Set<number>();
   for (const { resource_type, token } of tokens) {
     if (!Number.isSafeInteger(resource_type) || resource_type < 1 || resource_type > 58 || seen.has(resource_type))

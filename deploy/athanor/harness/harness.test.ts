@@ -226,17 +226,15 @@ describe("Madara harness workload", () => {
     });
   });
 
-  it("selects Eternum and rejects deferred ledger options", () => {
+  it("rejects retired presets and deferred ledger options", () => {
     expect(() => parseHarnessArgs(["--game-type", "frontier", "--interval-seconds", "30"])).toThrow(
       "--interval-seconds paces a cadence",
     );
     expect(parseHarnessArgs([]).gameType).toBe("frontier");
-    expect(parseHarnessArgs(["--game-type", "eternum"]).gameType).toBe("eternum");
-    expect(parseHarnessArgs(["--game-type", "eternum"])).toMatchObject({ presetId: 3, functional: false });
-    expect(parseHarnessArgs(["--game-type", "eternum", "--preset", "3", "--workload", "burst"])).toMatchObject({
-      presetId: 3,
-      workload: "burst",
-    });
+    expect(() => parseHarnessArgs(["--game-type", "eternum"])).toThrow("--game-type must be frontier");
+    for (const preset of ["3", "103"]) {
+      expect(() => parseHarnessArgs(["--preset", preset])).toThrow(`Unsupported native preset ${preset}`);
+    }
     expect(() => parseHarnessArgs(["--preset", "9"])).toThrow("Unsupported native preset 9");
     expect(parseHarnessArgs(["--game-type", "frontier", "--bots", "1"])).toMatchObject({
       presetId: 5,
@@ -253,7 +251,7 @@ describe("Madara harness workload", () => {
     expect(() => parseHarnessArgs(["--game-type", "frontier", "--workload", "burst"])).toThrow(
       "Frontier requires the frontier workload",
     );
-    expect(() => parseHarnessArgs(["--game-type", "unknown"])).toThrow("--game-type must be eternum or frontier");
+    expect(() => parseHarnessArgs(["--game-type", "unknown"])).toThrow("--game-type must be frontier");
     expect(() => parseHarnessArgs(["--game-type", "eternum", "--ledger"])).toThrow(
       "Unsupported harness option --ledger",
     );
@@ -985,7 +983,7 @@ describe("Madara harness CLI and concurrency", () => {
     });
     expect(parseHarnessArgs(["--game-type", "frontier"]).workers).toBe(1);
     expect(() => parseHarnessArgs(["--game-type", "eternum", "--workers", "2"])).toThrow(
-      "--workers splits a Frontier season",
+      "--game-type must be frontier",
     );
     expect(() => parseHarnessArgs(["--game-type", "frontier", "--functional", "--workers", "2"])).toThrow(
       "design run plays both profiles in one process",
@@ -1026,7 +1024,6 @@ describe("Madara harness CLI and concurrency", () => {
         "--burst-window-seconds",
         "15",
       ],
-      ["--game-type", "eternum", "--bots", "8", "--interval-seconds", "5"],
     ]) {
       const options = parseHarnessArgs(run);
       const worker = parseHarnessArgs(workerArguments(options, 4, "/tmp/game.json"));
@@ -1043,19 +1040,8 @@ describe("Madara harness CLI and concurrency", () => {
 
   it("parses an explicit smoke-run configuration", () => {
     expect(
-      parseHarnessArgs([
-        "--game-type",
-        "eternum",
-        "--bots",
-        "4",
-        "--minutes",
-        "0.5",
-        "--interval-seconds",
-        "5",
-        "--game-id",
-        "9",
-      ]),
-    ).toMatchObject({ bots: 4, minutes: 0.5, intervalSeconds: 5, gameId: 9, gameName: "game-9" });
+      parseHarnessArgs(["--game-type", "frontier", "--bots", "4", "--minutes", "0.5", "--game-id", "9"]),
+    ).toMatchObject({ bots: 4, minutes: 0.5, intervalSeconds: 15, gameId: 9, gameName: "game-9" });
   });
 
   it("runs Frontier bursts inside the campaign's windows unless a run names another", () => {
@@ -1068,7 +1054,7 @@ describe("Madara harness CLI and concurrency", () => {
     ).toEqual({ shape: "booth", windowSeconds: 120 });
     expect(parseHarnessArgs(["--game-type", "frontier"]).frontierBurst).toBeUndefined();
     expect(() => parseHarnessArgs(["--game-type", "eternum", "--frontier-burst", "booth"])).toThrow(
-      "--frontier-burst requires --game-type frontier",
+      "--game-type must be frontier",
     );
     expect(parseHarnessArgs(["--game-type", "frontier", "--frontier-burst", "rollover"]).frontierBurst).toEqual({
       shape: "rollover",

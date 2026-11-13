@@ -83,8 +83,6 @@ fn write_structures(preset: PresetWrite, structures: crate::presets::StructurePr
     }
     preset.camp_resource_count.write(camps.resources.len());
     preset.camp_labor_rate.write(camps.labor_rate);
-    assert!(structures.faith.owner_share_bps <= 10000, "invalid faith owner share");
-    preset.faith_rules.write(structures.faith);
     write_upgrades(preset, structures.upgrade_limits, structures.upgrades);
 }
 
@@ -117,8 +115,6 @@ fn write_economy(
     preset: PresetWrite, commitment: felt252, rules: crate::rules::SliceRules, economy: crate::presets::EconomyPreset,
 ) {
     preset.labor_rules.write(economy.labor);
-    preset.trade_rules.write(economy.trade);
-    write_banks(preset, economy.banks);
     write_hyperstructures(preset, rules, economy.hyperstructures);
     let classes = crate::state::read().releases.read(crate::state::read().current_release.read()).classes;
     crate::presets::IPresetRelicsDispatcherTrait::store_relic_preset(
@@ -222,16 +218,6 @@ fn write_mines(preset: PresetWrite, kinds: Span<crate::mines::MineKindEntry>, su
         preset.mine_weights.write(index, entry);
     }
     preset.mine_pool_count.write(count);
-}
-
-fn write_banks(preset: PresetWrite, rules: crate::market::BankRules) {
-    assert!(
-        rules.lp_fee_num < rules.lp_fee_denom
-            && rules.owner_fee_num <= rules.owner_fee_denom
-            && rules.owner_fee_denom != 0,
-        "invalid bank fee ratio",
-    );
-    preset.bank_rules.write(rules);
 }
 
 fn write_buildings(

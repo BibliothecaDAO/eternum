@@ -235,13 +235,6 @@ pub trait IResourceCommands<T> {
         command: crate::resources::ResourceTransfer,
         context: crate::commands::ActionContext,
     );
-    fn transfer_structure_resources_to_explorer(
-        ref self: T,
-        game_id: u32,
-        actor: ContractAddress,
-        command: crate::resources::ResourceTransfer,
-        context: crate::commands::ActionContext,
-    );
 }
 
 #[starknet::interface]

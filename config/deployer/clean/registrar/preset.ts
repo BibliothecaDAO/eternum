@@ -38,7 +38,6 @@ export function buildMapConfig(config: Config) {
 
 export function buildTroopDamageConfig(config: Config) {
   return {
-    damage_raid_percent_num: config.troop.damage.damageRaidPercentNum,
     damage_biome_bonus_num: config.troop.damage.damageBiomeBonusNum,
     damage_scaling_factor: config.troop.damage.damageScalingFactor,
     t1_damage_value: config.troop.damage.t1DamageValue,

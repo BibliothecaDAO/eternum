@@ -284,12 +284,12 @@ pub fn troop_deposit_ownership(blitz_mode_on: bool, category: u8) {
             mode_rules: if blitz_mode_on {
                 super::play_fixture::BLITZ_RULES
             } else {
-                super::play_fixture::ETERNUM_RULES
+                super::play_fixture::TEST_RULES
             },
             command_mask: if blitz_mode_on {
                 super::play_fixture::BLITZ_COMMAND_MASK
             } else {
-                super::play_fixture::ETERNUM_COMMAND_MASK
+                super::play_fixture::BLITZ_COMMAND_MASK
             },
             entry_rule: if blitz_mode_on {
                 crate::rules::ENTRY_ROSTER

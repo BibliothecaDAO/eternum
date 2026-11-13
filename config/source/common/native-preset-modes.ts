@@ -20,13 +20,10 @@ const NATIVE_PRESET_MODES: Readonly<Record<number, GameType>> = {
   // Frontier's first design; registered on the shards and still played by the games created from it.
   1: "frontier",
   2: "blitz",
-  3: "eternum",
   [FRONTIER_PRESET_ID]: "frontier",
   [FRONTIER_DEVCON_PRESET_ID]: "frontier",
   [FRONTIER_ACCELERATED_PRESET_ID]: "frontier",
-  // The first playtest's preset; registered on shard A and still played by the game created from it.
   102: "frontier",
-  103: "eternum",
   [FRONTIER_FIXTURE_PRESET_ID]: "frontier",
   [FRONTIER_PLAYGROUND_PRESET_ID]: "frontier",
 };

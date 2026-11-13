@@ -4,8 +4,6 @@ import { observeHarnessWorker, sendPreparedReport, superviseHarnessProcess } fro
 import { runFrontierWorkload, type FrontierBurst } from "./frontier";
 import { FRONTIER_ACCELERATED_PRESET_ID } from "../../../config/source/common/native-preset-modes";
 import { catchUncaughtFailures, recordWorkerFailure } from "./worker-boundary";
-import { runLayerRoundTrip } from "./layer-round-trip";
-import { closeHarnessSeason } from "./season-lifecycle";
 import { nativePresetForId, nativePresetIdFor } from "../../../config/source/native";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { Worker, isMainThread, parentPort, workerData } from "node:worker_threads";
@@ -73,7 +71,7 @@ export function parseHarnessArgs(args: string[]): HarnessCliOptions {
   const setupConcurrency = positiveInteger(values["setup-concurrency"] ?? "6", "setup-concurrency");
   const gameId = values["game-id"] === undefined ? undefined : positiveInteger(values["game-id"], "game-id");
   const gameType = values["game-type"] ?? "frontier";
-  if (gameType !== "eternum" && gameType !== "frontier") throw new Error("--game-type must be eternum or frontier");
+  if (gameType !== "frontier") throw new Error("--game-type must be frontier");
   const workload = values.workload ?? (gameType === "frontier" ? "frontier" : "cadence");
   if (workload !== "burst" && workload !== "cadence" && workload !== "frontier")
     throw new Error("--workload must be burst, cadence or frontier");
@@ -216,30 +214,6 @@ async function main(run: AbortSignal): Promise<void> {
           });
 
     const transportRequests = requests?.finish();
-    const layerRoundTrips =
-      options.gameType === "eternum"
-        ? [
-            await runLayerRoundTrip({
-              bots,
-              gameId: game.gameId,
-              provider,
-              client,
-              game: harnessGame,
-            }),
-          ]
-        : [];
-
-    const seasonFinalizations =
-      options.gameType === "eternum"
-        ? [
-            await closeHarnessSeason({
-              accounts,
-              client,
-              game: harnessGame,
-              provider,
-            }),
-          ]
-        : [];
 
     const gates = revision
       ? {
@@ -262,8 +236,6 @@ async function main(run: AbortSignal): Promise<void> {
       setupTransactions,
       heraldUrl: options.heraldUrl,
       workload,
-      seasonFinalizations,
-      layerRoundTrips,
       transportRequests,
     };
   } finally {
@@ -404,8 +376,6 @@ async function prepareGames(
       gameName: options.gameName ?? `lab-${Date.now().toString(36)}`,
       minutes: options.minutes,
       presetId: options.presetId,
-      // Only Eternum homes are entitlements; a Frontier season is open entry.
-      owners: options.gameType === "eternum" ? accounts.map(({ address }) => address) : [],
     }));
   return { game, accounts: accounts.map(({ account: _account, ...entry }) => ({ ...entry, gameId: game.gameId })) };
 }
@@ -701,7 +671,7 @@ function printUsage(): void {
 Usage: bun deploy/athanor/harness/run.ts [options]
 
   --bots <count>                 default: 96
-  --game-type <eternum|frontier>   default: frontier
+  --game-type <frontier>   default: frontier
   --minutes <minutes>            default: 10
   --interval-seconds <seconds>   default: 15
   --setup-concurrency <count>    default: 6
@@ -715,7 +685,7 @@ Usage: bun deploy/athanor/harness/run.ts [options]
   --functional                  omit request counts and the latency gates; for Frontier, the accelerated design run,
                                  or with --preset 5 the real-speed pass on the preset's own rates and charges
   --prepared-game <path>         resume a prepared roster using its private account file
-  --game-id <id>                 select a listed Frontier game or existing Eternum game
+  --game-id <id>                 select a listed Frontier game
   --create-game                  create the Frontier game as the shard's launcher instead of playing the directory's;
                                  only a measurement shard, whose runner makes the harness its launcher, accepts it
   --game-name <name>             name for a new game or report label for --game-id

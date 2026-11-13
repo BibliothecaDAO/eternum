@@ -3,5 +3,3 @@ mod bitcoin;
 
 mod deposits;
 mod lords_budget;
-mod market;
-mod trade;

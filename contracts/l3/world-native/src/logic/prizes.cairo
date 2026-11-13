@@ -3,21 +3,13 @@ pub mod PrizesLogic {
     use starknet::ContractAddress;
     use starknet::storage::{StorageMapReadAccess, StoragePointerReadAccess};
     use crate::events::RowSet;
-    #[cfg(feature: "test_support")]
-    use crate::faith::{FaithfulStructure, PlayerFaithKey, PlayerFaithPoints, WonderFaith, WonderFaithWinners};
     use crate::geometry::tile_key;
     use crate::logic::blitz_results::BlitzResultState;
-    use crate::logic::faith::FaithState;
     use crate::logic::lords::LordsState;
     use crate::logic::release::ReleaseState;
     use crate::map::{BIOME_SCALE, BYTE_RANGE};
-    use crate::resources::ResourceKey;
     use crate::troops::Coord;
 
-    component!(path: FaithState, storage: faith, event: FaithEvent);
-    impl FaithInternal = FaithState::InternalImpl<ContractState>;
-    #[abi(embed_v0)]
-    impl Faith = FaithState::FaithImpl<ContractState>;
     component!(path: BlitzResultState, storage: blitz, event: BlitzEvent);
     #[abi(embed_v0)]
     impl BlitzResults = BlitzResultState::BlitzResultsImpl<ContractState>;
@@ -36,8 +28,6 @@ pub mod PrizesLogic {
         release: ReleaseState::Storage,
         #[substorage(v0)]
         blitz: BlitzResultState::Storage,
-        #[substorage(v0)]
-        faith: FaithState::Storage,
     }
     #[event]
     #[derive(Drop, starknet::Event)]
@@ -45,45 +35,9 @@ pub mod PrizesLogic {
         RelicEvent: LordsState::Event,
         ReleaseEvent: ReleaseState::Event,
         BlitzEvent: BlitzResultState::Event,
-        FaithEvent: FaithState::Event,
         MapEvent: crate::logic::map::MapState::Event,
         StoryEvent: crate::ownership::StoryEvent,
         RowSet: RowSet,
-    }
-    #[abi(embed_v0)]
-    impl FaithViews of crate::faith::IFaithOwnershipViews<ContractState> {
-        #[cfg(feature: "test_support")]
-        fn wonder_faith(self: @ContractState, key: ResourceKey) -> WonderFaith {
-            self.faith.data.faith.faith_wonders.read((key.game_id, key.entity_id))
-        }
-        #[cfg(feature: "test_support")]
-        fn faithful_structure(self: @ContractState, key: ResourceKey) -> FaithfulStructure {
-            self.faith.data.faith.faith_pledges.read((key.game_id, key.entity_id))
-        }
-        #[cfg(feature: "test_support")]
-        fn player_faith_points(self: @ContractState, key: PlayerFaithKey) -> PlayerFaithPoints {
-            self.faith.data.faith.faith_players.read((key.game_id, key.player, key.wonder_id))
-        }
-        #[cfg(feature: "test_support")]
-        fn wonder_faith_winners(self: @ContractState, game_id: u32) -> WonderFaithWinners {
-            self.faith.winners(game_id)
-        }
-    }
-    #[abi(embed_v0)]
-    impl FaithOwnership of crate::faith::IFaithOwnership<ContractState> {
-        fn transfer_faith_ownership(
-            ref self: ContractState,
-            key: ResourceKey,
-            owner: ContractAddress,
-            timestamp: u64,
-            game_context: crate::commands::ActionContext,
-        ) -> () {
-            let game_context = crate::commands::execution_context(key.game_id, game_context);
-
-            let game = game_context.game.unbox();
-            self.faith.transfer(key.game_id, key.entity_id, owner, timestamp, game.end_at);
-            ()
-        }
     }
     #[abi(embed_v0)]
     impl Extraction of crate::exploration_rewards::IExtraction<ContractState> {

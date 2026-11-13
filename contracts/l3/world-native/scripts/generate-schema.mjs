@@ -243,14 +243,6 @@ const schema = {
       version: 2,
       event: productionAbi.find((item) => item.type === "event" && item.name === "world_native::troops::BattleEvent"),
     },
-    {
-      name: "RaidEvent",
-      scope: "game",
-      version: 2,
-      event: productionAbi.find(
-        (item) => item.type === "event" && item.name === "world_native::combat_actions::RaidEvent",
-      ),
-    },
   ],
   types: Object.fromEntries([...types].sort(([left], [right]) => left.localeCompare(right))),
 };

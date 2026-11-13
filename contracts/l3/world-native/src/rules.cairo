@@ -83,7 +83,6 @@ pub const RESOURCE_PRECISION: u128 = 1000000000;
 
 #[derive(Copy, Drop, Serde, Debug, PartialEq, starknet::Store)]
 pub struct TroopDamageConfig {
-    pub damage_raid_percent_num: u16,
     // Combat modifiers. Used for biome damage calculations
     pub damage_biome_bonus_num: u16,
     // Used in damage calculations for troop scaling
@@ -255,7 +254,6 @@ pub struct SliceRules {
     pub mode_rules: u32,
     pub day_unit_seconds: u32,
     pub entry_rule: u8,
-    pub faith_enabled: bool,
     pub speed_config: SpeedConfig,
 }
 
@@ -430,7 +428,6 @@ pub fn command_enabled(mask: u128, index: u128) -> bool {
 pub struct BattleConfig {
     pub regular_immunity_ticks: u8,
     pub village_immunity_ticks: u8,
-    pub village_raid_immunity_ticks: u8,
     pub cooldown_seconds: u32,
 }
 

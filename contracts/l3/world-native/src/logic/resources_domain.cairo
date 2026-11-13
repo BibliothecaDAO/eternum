@@ -276,8 +276,8 @@ pub mod ResourcesLogic {
         }
     }
     #[abi(embed_v0)]
-    impl EconomyDelivery of crate::trade::IEconomyDelivery<ContractState> {
-        fn queue_economy_delivery(
+    impl EconomyDelivery of crate::resources::IResourceDelivery<ContractState> {
+        fn queue_resource_delivery(
             ref self: ContractState,
             key: ResourceKey,
             resource: crate::resources::ResourceAmount,

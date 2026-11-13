@@ -141,19 +141,6 @@ pub mod ProductionLogic {
     }
     #[abi(embed_v0)]
     impl ProductionCommands of crate::production::IProductionCommands<ContractState> {
-        fn burn_labor_for_resource_production(
-            ref self: ContractState,
-            game_id: u32,
-            actor: ContractAddress,
-            command: RefillProduction,
-            context: crate::commands::ActionContext,
-        ) -> () {
-            let context = crate::commands::execution_context(game_id, context);
-
-            let key = self.assert_production_command(game_id, actor, command, context.timestamp, context);
-            self.refill_from_recipes(key, command, false, context.timestamp, context);
-            ()
-        }
         fn burn_resource_for_resource_production(
             ref self: ContractState,
             game_id: u32,
@@ -164,7 +151,7 @@ pub mod ProductionLogic {
             let context = crate::commands::execution_context(game_id, context);
 
             let key = self.assert_production_command(game_id, actor, command, context.timestamp, context);
-            self.refill_from_recipes(key, command, true, context.timestamp, context);
+            self.refill_from_recipes(key, command, context.timestamp, context);
             ()
         }
     }
@@ -354,7 +341,6 @@ pub mod ProductionLogic {
             ref self: ContractState,
             key: ResourceKey,
             command: RefillProduction,
-            complex: bool,
             timestamp: u64,
             game_context: crate::commands::ExecutionContext,
         ) {
@@ -363,11 +349,7 @@ pub mod ProductionLogic {
                 let cycles = *command.amounts.at(index);
                 assert!(cycles != 0, "zero production cycles");
                 let recipe = self.production.recipe(RecipeKey { game_id: key.game_id, resource_type });
-                let (inputs, per_cycle) = if complex {
-                    (recipe.complex_inputs, recipe.complex_output)
-                } else {
-                    (recipe.simple_inputs, recipe.simple_output)
-                };
+                let (inputs, per_cycle) = (recipe.complex_inputs, recipe.complex_output);
                 assert!(!inputs.is_empty(), "missing production input recipe");
                 let mut costs = array![];
                 for input in inputs {
@@ -422,8 +404,6 @@ pub mod ProductionLogic {
         }
     }
     #[abi(embed_v0)]
-    impl BankWithdrawal = BridgeState::BankWithdrawalImpl<ContractState>;
-    #[abi(embed_v0)]
     impl PresetWithdrawals of crate::presets::IPresetWithdrawals<ContractState> {
         fn store_withdrawal_preset(
             ref self: ContractState, commitment: felt252, withdrawals: crate::presets::WithdrawalPreset,
@@ -438,7 +418,7 @@ pub mod ProductionLogic {
             self.withdrawals.rules(game_id)
         }
         #[cfg(feature: "test_support")]
-        fn resource_token(self: @ContractState, key: crate::market::MarketKey) -> ContractAddress {
+        fn resource_token(self: @ContractState, key: crate::withdrawals::ResourceTokenKey) -> ContractAddress {
             self.withdrawals.token(key)
         }
     }
@@ -587,34 +567,6 @@ pub mod ProductionLogic {
             );
             assert!(to.owner != 0, "recipient explorer has no owner");
             assert!(crate::geometry::adjacent(from.coord, to.coord), "explorers are not adjacent");
-            self.transfer_instant(game_id, command, context.timestamp, context);
-            ()
-        }
-        fn transfer_structure_resources_to_explorer(
-            ref self: ContractState,
-            game_id: u32,
-            actor: ContractAddress,
-            command: crate::resources::ResourceTransfer,
-            context: crate::commands::ActionContext,
-        ) -> () {
-            let context = crate::commands::execution_context(game_id, context);
-
-            self.assert_resource_command(game_id, context.timestamp, context);
-            assert!(command.from_entity_id != 0 && command.to_entity_id != 0, "missing transfer entity");
-            let from_key = ResourceKey { game_id, entity_id: command.from_entity_id };
-            assert!(crate::logic::structures::owner(from_key) == actor, "actor does not own structure");
-            let to = crate::logic::troops::command_explorer(
-                ExplorerKey { game_id, explorer_id: command.to_entity_id }, None, context.timestamp, context,
-            );
-            assert!(
-                crate::geometry::adjacent(crate::structures::structure_coord(from_key), to.coord),
-                "structure and explorer are not adjacent",
-            );
-            for resource in command.resources {
-                assert!(
-                    !crate::resources::is_troop_resource(*resource.resource_type), "cannot transfer troop resource",
-                );
-            }
             self.transfer_instant(game_id, command, context.timestamp, context);
             ()
         }

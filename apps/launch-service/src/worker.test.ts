@@ -469,9 +469,9 @@ it("launches a game that is ready now while a result waits an hour for its game'
   await db
     .prepare(
       `INSERT INTO launch_runs (id,chain_id,kind,environment,name,request,status,available_at,created_at,updated_at)
-    VALUES ('ready-game',?,'game','madara.eternum','bltz-ready',?,'queued',?,?,?)`,
+    VALUES ('ready-game',?,'game','madara.frontier','bltz-ready',?,'queued',?,?,?)`,
     )
-    .bind(SHARD_CHAIN, JSON.stringify({ environment: "madara.eternum", gameName: "bltz-ready" }), now, now, now)
+    .bind(SHARD_CHAIN, JSON.stringify({ environment: "madara.frontier", gameName: "bltz-ready" }), now, now, now)
     .run();
   await tick();
 

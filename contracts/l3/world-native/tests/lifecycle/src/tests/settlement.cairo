@@ -257,9 +257,9 @@ fn a_missing_ledger_operator_never_bypasses_eternum_entitlements() {
     let d = setup(true);
     let games = IGameDispatcher { contract_address: d.games };
     let game_rules = crate::rules::SliceRules {
-        mode_rules: super::play_fixture::ETERNUM_RULES,
+        mode_rules: super::play_fixture::TEST_RULES,
         entry_rule: crate::rules::ENTRY_ENTITLEMENT,
-        command_mask: super::play_fixture::ETERNUM_COMMAND_MASK,
+        command_mask: super::play_fixture::BLITZ_COMMAND_MASK,
         ..play_fixture::rules(),
     };
     super::play_fixture::seed_game(

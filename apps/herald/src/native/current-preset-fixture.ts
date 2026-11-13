@@ -42,7 +42,7 @@ function fixtureLaunchParams(presetId: number, definition: ReturnType<typeof bui
     seater: presetId === 2 ? "0x333" : "0x0",
     registration_start: 1700,
     biome_climate: definition.rules.biome_climate_config,
-    map_override: new CairoOption(presetId === 3 ? CairoOptionVariant.Some : CairoOptionVariant.None, {
+    map_override: new CairoOption(CairoOptionVariant.None, {
       ...definition.rules.map_config,
       shards_mines_win_probability: 987,
     }),

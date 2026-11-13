@@ -80,39 +80,6 @@ fn explorer_transfers_keep_capacity_loss_and_reject_wrong_layers_atomically() {
 }
 
 #[test]
-fn structure_transfer_harvests_but_rejects_all_nine_troop_resources() {
-    let (deployment, home, _) = setup();
-    let explorer = explorer_fixture(deployment, 70, home.entity_id, Coord { alt: false, x: 2000001, y: 2000000 }, 100);
-    let transfer = crate::resources::ResourceTransfer {
-        from_entity_id: home.entity_id, to_entity_id: explorer.entity_id, resources: amount(1, 110),
-    };
-    // From 30 to 70 production pays 80: 180 held, 110 sent.
-    assert!(execute(deployment, Command::TransferStructureResourcesToExplorer(transfer), 70));
-    let resources = IResourceOperationsDispatcher { contract_address: deployment.games };
-    assert_eq!(
-        resources.resource_balance(ResourceSlot { game_id: 3, entity_id: home.entity_id, resource_type: 1 }), 70,
-    );
-    assert_eq!(
-        resources.resource_balance(ResourceSlot { game_id: 3, entity_id: explorer.entity_id, resource_type: 1 }), 100,
-    );
-    for resource_type in 26_u8..35 {
-        grant(deployment, home, resource_type, 100);
-        assert!(
-            !execute(
-                deployment,
-                Command::TransferStructureResourcesToExplorer(
-                    crate::resources::ResourceTransfer { resources: amount(resource_type, 1), ..transfer },
-                ),
-                70,
-            ),
-        );
-        assert_eq!(
-            resources.resource_balance(ResourceSlot { game_id: 3, entity_id: home.entity_id, resource_type }), 100,
-        );
-    }
-}
-
-#[test]
 fn arrivals_offload_only_the_requested_prefix_and_delete_the_last_row() {
     let (deployment, home, _) = setup();
     let resources = IResourceOperationsDispatcher { contract_address: deployment.games };
@@ -251,9 +218,6 @@ fn every_transfer_rejects_duplicates_without_changing_facts() {
     };
     for command in array![
         Command::SendResources(transfer),
-        Command::TransferStructureResourcesToExplorer(
-            crate::resources::ResourceTransfer { to_entity_id: explorer.entity_id, ..transfer },
-        ),
         Command::TransferExplorerResources(
             crate::resources::ResourceTransfer {
                 from_entity_id: explorer.entity_id, to_entity_id: other.entity_id, ..transfer,
@@ -390,12 +354,12 @@ fn delayed_village_troops_ignore_the_connection_and_keep_transport_ownership_rul
                 mode_rules: if blitz_mode_on {
                     super::play_fixture::BLITZ_RULES
                 } else {
-                    super::play_fixture::ETERNUM_RULES
+                    super::play_fixture::TEST_RULES
                 },
                 command_mask: if blitz_mode_on {
                     super::play_fixture::BLITZ_COMMAND_MASK
                 } else {
-                    super::play_fixture::ETERNUM_COMMAND_MASK
+                    super::play_fixture::BLITZ_COMMAND_MASK
                 },
                 entry_rule: if blitz_mode_on {
                     crate::rules::ENTRY_ROSTER

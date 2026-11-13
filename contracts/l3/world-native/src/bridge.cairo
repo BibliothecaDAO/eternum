@@ -34,19 +34,6 @@ pub trait IBridge<T> {
     );
 }
 #[starknet::interface]
-pub trait IBankWithdrawal<T> {
-    fn withdraw_bank_resources(
-        ref self: T,
-        game_id: u32,
-        actor: ContractAddress,
-        bank_id: u64,
-        resource_type: u8,
-        amount: u128,
-        timestamp: u64,
-        game_context: crate::commands::ActionContext,
-    );
-}
-#[starknet::interface]
 pub trait IDepositToken<T> {
     fn transfer_from(ref self: T, sender: ContractAddress, recipient: ContractAddress, amount: u256) -> bool;
 }

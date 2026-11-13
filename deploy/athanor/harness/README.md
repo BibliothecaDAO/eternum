@@ -1,5 +1,9 @@
 # Player-signed bot runs
 
+The supported launch formats are Blitz (preset 2) and Frontier. The long-format Eternum presets 3 and 103 and their
+faith, market, trade and raid commands are retired from this release. `lab:harness` plays Frontier; `lab:harness:split`
+checks Blitz launches. Each game is encoded with its own release schema.
+
 `pnpm lab:harness` uses each bot's approved device to sign one v3 `Games.play` invoke at its RPC nonce. The manifest
 supplies the immutable gas bound. The public proxy adds the randomness proof. There is one action in flight per account
 until the receipt and that bot's Herald transaction barrier both finish. Library rejection inside a successful invoke is

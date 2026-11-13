@@ -1,12 +1,10 @@
 #[starknet::contract]
 pub mod RaidLogic {
-    use starknet::ContractAddress;
     use starknet::storage::{StorageMapReadAccess, StorageMapWriteAccess};
     use crate::events::RowSet;
     use crate::geometry::tile_key;
     use crate::logic::release::ReleaseState;
     use crate::map::{BIOME_SCALE, BYTE_RANGE};
-    use crate::resources::ResourceKey;
     use crate::troops::Coord;
 
     component!(path: ReleaseState, storage: release, event: ReleaseEvent);
@@ -24,30 +22,10 @@ pub mod RaidLogic {
     pub enum Event {
         ReleaseEvent: ReleaseState::Event,
         BattleEvent: crate::troops::BattleEvent,
-        RaidEvent: crate::combat_actions::RaidEvent,
         OwnershipRow: crate::events::RowSet,
         RowSet: RowSet,
         MapEvent: crate::logic::map::MapState::Event,
     }
-    #[abi(embed_v0)]
-    impl Raids of crate::combat_actions::IRaids<ContractState> {
-        fn raid(
-            ref self: ContractState,
-            game_id: u32,
-            actor: ContractAddress,
-            command: crate::combat_actions::Raid,
-            context: crate::commands::ActionContext,
-        ) -> () {
-            let context = crate::commands::execution_context(game_id, context);
-
-            crate::logic::combat::raid(game_id, actor, command, context);
-            ()
-        }
-        fn village_last_raided(self: @ContractState, key: ResourceKey) -> u64 {
-            crate::logic::combat::village_last_raided(key)
-        }
-    }
-
     #[abi(embed_v0)]
     impl RelicMap of crate::relics::IRelicMap<ContractState> {
         #[cfg(feature: "test_support")]

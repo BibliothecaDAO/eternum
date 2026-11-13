@@ -11,7 +11,6 @@ pub struct StructurePreset {
     pub research: Span<crate::research::ResearchPriceConfig>,
     pub buildings: Span<crate::buildings::BuildingRuleConfig>,
     pub camps: crate::camps::CampRules,
-    pub faith: crate::faith::FaithRules,
     pub upgrade_limits: crate::upgrades::UpgradeLimits,
     pub upgrades: Span<crate::upgrades::UpgradeRecipe>,
 }
@@ -33,8 +32,6 @@ pub struct WithdrawalPreset {
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]
 pub struct EconomyPreset {
     pub labor: Option<crate::entry::LaborRules>,
-    pub trade: crate::trade::TradeRules,
-    pub banks: crate::market::BankRules,
     pub hyperstructures: crate::hyperstructures::HyperstructureRules,
     pub relics: Span<crate::relics::RelicRule>,
     pub chests: Option<crate::relics::ChestRules>,

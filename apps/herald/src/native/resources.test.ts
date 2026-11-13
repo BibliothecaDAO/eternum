@@ -1,3 +1,4 @@
+import { storyTag } from "./fixtures";
 import { describe, expect, it } from "vitest";
 import { toJsonValue } from "../model-registry";
 import { manifest, raw, seedDerivedRows, receipt, schema, setup, rowEvent } from "./fixtures";
@@ -158,7 +159,7 @@ describe("native production facts", () => {
       raw({
         from_address: manifest.world.address,
         keys: [...event.prefix, "2", "1", "0", "0x111", "0", "3", "0x55"],
-        data: ["7", "26", "125", "2", "23", "10", "35", "20", "1920"],
+        data: [storyTag("ProductionStory"), "26", "125", "2", "23", "10", "35", "20", "1920"],
       }),
     );
     expect(decoded.kind).toBe("event");
@@ -195,12 +196,12 @@ describe("native building facts", () => {
       if (decoded.kind !== "event") throw new Error("Expected building history event");
       return toJsonValue(decoded.value);
     };
-    expect(decode(["8", "0", "11", "10", "37", "1", "1920"])).toMatchObject({
+    expect(decode([storyTag("BuildingPlacementStory"), "0", "11", "10", "37", "1", "1920"])).toMatchObject({
       story: {
         BuildingPlacementStory: { coord: { alt: false, x: "0xb", y: "0xa" }, category: "0x25", change: "Destroyed" },
       },
     });
-    expect(decode(["9", "0", "11", "10", "37", "1", "23", "100", "1920"])).toMatchObject({
+    expect(decode([storyTag("BuildingPaymentStory"), "0", "11", "10", "37", "1", "23", "100", "1920"])).toMatchObject({
       story: { BuildingPaymentStory: { category: "0x25", cost: [{ resource_type: "0x17", amount: "0x64" }] } },
     });
     expect(fold.retainedRowCount()).toBe(0);

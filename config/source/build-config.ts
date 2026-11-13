@@ -10,13 +10,11 @@ import {
 import { mergeConfigPatches } from "./common/merge-config";
 import type { BuildConfigOptions, GameType } from "./common/types";
 import { resolveBlitzChainConfig } from "./blitz/chains";
-import { eternumBaseConfig } from "./eternum/base";
-import { resolveEternumChainConfig } from "./eternum/chains";
 
 export type { BuildConfigOptions, GameType };
 
 function resolveBaseGameConfig(gameType: GameType) {
-  return { blitz: blitzBaseConfig, eternum: eternumBaseConfig, frontier: frontierBaseConfig }[gameType];
+  return { blitz: blitzBaseConfig, frontier: frontierBaseConfig }[gameType];
 }
 
 const chainConfigByMode: Record<
@@ -25,7 +23,6 @@ const chainConfigByMode: Record<
 > = {
   frontier: () => ({}),
   blitz: resolveBlitzChainConfig,
-  eternum: resolveEternumChainConfig,
 };
 
 export async function buildConfig(options: BuildConfigOptions): Promise<Config> {

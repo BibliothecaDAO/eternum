@@ -277,3 +277,15 @@ pub trait IResourceOperations<T> {
     );
     fn spend_spire_fee(ref self: T, key: ResourceKey, timestamp: u64, game_context: crate::commands::ResourceContext);
 }
+
+#[starknet::interface]
+pub trait IResourceDelivery<T> {
+    fn queue_resource_delivery(
+        ref self: T,
+        key: crate::resources::ResourceKey,
+        resource: crate::resources::ResourceAmount,
+        travel_time: u64,
+        timestamp: u64,
+        game_context: crate::commands::ResourceContext,
+    );
+}

@@ -12,12 +12,6 @@ pub struct GuardAttack {
     pub guard: GuardSlot,
     pub explorer_id: u64,
 }
-#[derive(Copy, Drop, Serde, Debug, PartialEq)]
-pub struct Raid {
-    pub explorer_id: u64,
-    pub structure_id: u64,
-    pub steal_resources: Span<ResourceAmount>,
-}
 #[derive(Copy, Drop, Serde)]
 pub struct BattleSide {
     pub player: starknet::ContractAddress,
@@ -32,25 +26,6 @@ pub fn battle_side(
     player: starknet::ContractAddress, before: u128, after: crate::troops::Troops, roll: u8,
 ) -> BattleSide {
     BattleSide { player, category: after.category, tier: after.tier, before, after: after.count, roll }
-}
-
-#[derive(Drop, starknet::Event)]
-pub struct RaidEvent {
-    #[key]
-    pub version: u8,
-    #[key]
-    pub game_id: u32,
-    #[key]
-    pub explorer_id: u64,
-    #[key]
-    pub structure_id: u64,
-    pub success: bool,
-    pub player: starknet::ContractAddress,
-    pub target_owner: starknet::ContractAddress,
-    pub troops_before: u128,
-    pub troops_after: u128,
-    pub requested_loot: Span<ResourceAmount>,
-    pub timestamp: u64,
 }
 
 #[starknet::interface]
@@ -69,15 +44,4 @@ pub trait IBattles<T> {
         command: crate::combat_actions::GuardAttack,
         context: crate::commands::ActionContext,
     );
-}
-#[starknet::interface]
-pub trait IRaids<T> {
-    fn raid(
-        ref self: T,
-        game_id: u32,
-        actor: starknet::ContractAddress,
-        command: crate::combat_actions::Raid,
-        context: crate::commands::ActionContext,
-    );
-    fn village_last_raided(self: @T, key: crate::resources::ResourceKey) -> u64;
 }

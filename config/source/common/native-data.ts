@@ -5,43 +5,10 @@ const VILLAGE_WEIGHTS = [
   19815, 15556, 15062, 10556, 8951, 7130, 5031, 3920, 3673, 2531, 1358, 926, 988, 1049, 710, 741, 556, 494, 401, 278,
   185, 93,
 ];
-const EXPLORATION_WEIGHTS = [
-  2018108, 1585915, 1542455, 1063581, 891750, 700604, 474447, 385111, 367807, 239034, 120724, 99396, 96177, 96177,
-  69215, 65191, 55936, 44668, 37425, 22133, 14889, 9256, 22133,
-];
-
 export const villageResourcePool = RESOURCE_ORDER.map((resource_type, index) => ({
   resource_type,
   weight: VILLAGE_WEIGHTS[index],
 }));
-
-export function eternumExplorationRewards(percent: number) {
-  return [...RESOURCE_ORDER, 24].map((resource_type, index) => ({
-    resource_type,
-    percent,
-    weight: EXPLORATION_WEIGHTS[index],
-  }));
-}
-
-export const startingTroopsByBiome = [
-  "Crossbowman",
-  "Crossbowman",
-  "Crossbowman",
-  "Crossbowman",
-  "Paladin",
-  "Paladin",
-  "Crossbowman",
-  "Paladin",
-  "Paladin",
-  "Knight",
-  "Paladin",
-  "Knight",
-  "Knight",
-  "Paladin",
-  "Knight",
-  "Knight",
-  "Knight",
-] as const;
 
 export const realmResourcePool = [3, 2, 4, 5, 11, 7, 19, 9, 22];
 

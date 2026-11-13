@@ -52,7 +52,7 @@ test("the create-run and launcher-discovery routes are gone even for the operato
   expect((await app.request("/api/factory/operator/launcher/enrol", { method: "POST", headers: token })).status).toBe(
     404,
   );
-  for (const environment of ["madara.eternum", "madara.frontier", "madara.blitz"]) {
+  for (const environment of ["madara.frontier", "madara.blitz"]) {
     expect(
       (
         await app.request("/api/factory/runs", {
@@ -70,7 +70,7 @@ test.each([
   ["POST", "/api/slots/friday/refund"],
   ["PUT", "/api/factory/calendar/frontier"],
   ["POST", "/api/factory/runs/madara.frontier/frontier-7/actions/continue"],
-  ["POST", "/api/factory/runs/madara.eternum/old/actions/delete"],
+  ["POST", "/api/factory/runs/madara.frontier/old/actions/delete"],
   ["POST", "/api/factory/results/madara.blitz/old/actions/continue"],
   ["POST", "/api/factory/test-blitz"],
   ["POST", "/api/factory/release"],
@@ -133,7 +133,7 @@ test("only operator recovery continues a failed run in every format and results"
   for (const [kind, request] of [
     ["game", { environment: "madara.blitz", gameName: "paid", slotId: 12, groupIndex: 0 }],
     ["game", { environment: "madara.frontier", gameName: "frontier-fixture" }],
-    ["game", { environment: "madara.eternum", gameName: "old-factory" }],
+    ["game", { environment: "madara.frontier", gameName: "old-factory" }],
     ["result", { environment: "madara.blitz", gameName: "paid", gameId: 1 }],
   ] as const) {
     const run = await store.enqueue(kind, request);

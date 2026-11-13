@@ -37,7 +37,7 @@ pub trait IWithdrawals<T> {
     #[cfg(feature: "test_support")]
     fn withdrawal_rules(self: @T, game_id: u32) -> WithdrawalRules;
     #[cfg(feature: "test_support")]
-    fn resource_token(self: @T, key: crate::market::MarketKey) -> ContractAddress;
+    fn resource_token(self: @T, key: crate::withdrawals::ResourceTokenKey) -> ContractAddress;
 }
 #[starknet::interface]
 pub trait IResourceToken<T> {
@@ -67,4 +67,10 @@ pub fn transfer_or_mint(token: ContractAddress, recipient: ContractAddress, amou
     } else {
         assert!(token.transfer(recipient, amount), "resource token transfer failed");
     }
+}
+
+#[derive(Copy, Drop, Serde, Debug, PartialEq)]
+pub struct ResourceTokenKey {
+    pub game_id: u32,
+    pub resource_type: u8,
 }

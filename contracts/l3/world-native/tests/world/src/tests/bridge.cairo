@@ -120,7 +120,7 @@ fn rejected_bridge_actions_preserve_tokens_resources_and_arrivals() {
 fn bridge_configuration_requires_authority_and_is_immutable() {
     let (d, _, _, _) = setup(false, false);
     let bridge = IBridgeSafeDispatcher { contract_address: d.games };
-    let (mut withdrawals, _, _) = super::market::wallet_preset(d, true);
+    let (mut withdrawals, _, _) = super::bridge::wallet_preset(d, true);
     withdrawals.deposits = deposit_rules(true);
     let mut preset = super::resource_commands::fixture_preset(super::play_fixture::rules());
     preset.economy.withdrawals = Some(withdrawals);

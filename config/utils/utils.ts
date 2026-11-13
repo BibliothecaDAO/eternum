@@ -4,7 +4,6 @@ import type { GameType } from "../source/common/types";
 import type { ConfigurationNetwork } from "../shared/game-environments";
 export type { GameType };
 import blitzMadaraConfig from "../generated/blitz.madara.json";
-import eternumMadaraConfig from "../generated/eternum.madara.json";
 
 type NetworkConfigDocument = {
   configuration: any;
@@ -15,15 +14,12 @@ const configs: Record<GameType, Partial<Record<ConfigurationNetwork, NetworkConf
   blitz: {
     madara: blitzMadaraConfig,
   },
-  eternum: {
-    madara: eternumMadaraConfig,
-  },
 };
 
 function resolveConfigDocument(chain: ConfigurationNetwork, gameType: GameType): NetworkConfigDocument {
   const gameConfigs = configs[gameType];
   if (!gameConfigs) {
-    throw new Error(`Invalid game type: ${gameType}. Must be "blitz", "eternum", or "frontier".`);
+    throw new Error(`Invalid game type: ${gameType}. Must be "blitz" or "frontier".`);
   }
 
   const configDocument = gameConfigs[chain];

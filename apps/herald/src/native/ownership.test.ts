@@ -1,3 +1,4 @@
+import { storyTag } from "./fixtures";
 import { toJsonValue } from "../model-registry";
 import bindings from "../../../../contracts/l3/world-native/schema/bindings.json";
 import { CallData, CairoCustomEnum } from "starknet";
@@ -15,41 +16,40 @@ import {
   manifest,
 } from "./fixtures";
 
-function faithStory() {
+function levelUpStory() {
   const layout = schema.games.events.find((event) => event.name === "StoryEvent")!;
   const keys = [...layout.prefix, "2", "1", "1", "0", "3", "0x55"];
-  const values = ["0", "3", "30000", "30000", "1860"];
+  const values = [storyTag("StructureLevelUpStory"), "2", "1860"];
   return raw({ from_address: manifest.world.address, keys, data: values });
 }
 
 describe("native ownership projections", () => {
-  it("decodes faith accrual into the legacy story payload", () => {
+  it("decodes a structure level-up into its story payload", () => {
     const { decoder, fold } = setup();
-    const decoded = decoder.decode(faithStory());
+    const decoded = decoder.decode(levelUpStory());
     expect(decoded.kind).toBe("event");
     expect(decoded.model.name).toBe("StoryEvent");
     if (decoded.kind !== "event") throw new Error("Expected history event");
     expect(toJsonValue(decoded.key)).toMatchObject({ game_id: "0x1", tx_hash: "0x55" });
     expect(toJsonValue(decoded.value)).toMatchObject({
       timestamp: "0x744",
-      story: { FaithPointsClaimedStory: { wonder_id: "0x3", new_points: "0x7530", total_points: "0x7530" } },
+      story: { StructureLevelUpStory: { new_level: "0x2" } },
     });
     expect(fold.retainedRowCount()).toBe(0);
   });
 
   it("rejects malformed history and history emitted outside Games", () => {
     const { decoder } = setup();
-    const event = faithStory();
+    const event = levelUpStory();
     expect(() => decoder.decode({ ...event, data: event.data.slice(0, -1) })).toThrow();
     expect(() => decoder.decode({ ...event, from_address: "0x999" })).toThrow();
   });
 
-  it("exposes both ownership commands through the generated command ABI", () => {
+  it("refuses the retired structure gift through the generated command ABI", () => {
     const codec = new CallData(bindings.commandAbi);
     for (const kind of ["TransferStructureOwnership"]) {
       const command = new CairoCustomEnum({ [kind]: { entity_id: 3, new_owner: "0x456" } });
-      const values = codec.compile("command_commitment", { command });
-      expect(values.slice(1)).toEqual(["3", "1110"]);
+      expect(() => codec.compile("command_commitment", { command })).toThrow();
     }
   });
   it("narrows a snapshot to one account's rows: its structures, their armies, and every model without an owner", () => {

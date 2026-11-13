@@ -3,7 +3,6 @@
     "battle_config": {
       "regular_immunity_ticks": 24,
       "village_immunity_ticks": 0,
-      "village_raid_immunity_ticks": 24,
       "cooldown_seconds": 60
     },
     "map_config": {
@@ -34,7 +33,6 @@
       "bitcoin_phase_in_seconds": 600
     },
     "troop_damage_config": {
-      "damage_raid_percent_num": 1000,
       "damage_biome_bonus_num": 3000,
       "damage_scaling_factor": "0x20000000000000000",
       "t1_damage_value": "0x640000000000000000",
@@ -120,11 +118,10 @@
     },
     "map_center_offset": 20,
     "spire_travel_essence_cost": "0x2540be400",
-    "command_mask": "0x13ffffffffffffffff",
+    "command_mask": "0x4ffffffffffff",
     "day_unit_seconds": 0,
     "mode_rules": 1057816,
     "entry_rule": 0,
-    "faith_enabled": true,
     "speed_config": {
       "donkey_sec_per_km": 9,
       "donkey_sec_per_km_troops": 27

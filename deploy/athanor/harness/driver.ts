@@ -194,7 +194,7 @@ interface TrackTransactionOptions {
   tick?: number;
 }
 
-export type HarnessGameType = "eternum" | "frontier";
+export type HarnessGameType = "frontier";
 
 const TRANSACTION_TIMEOUT_MS = 30_000;
 const SETUP_TRANSACTION_TIMEOUT_MS = 120_000;
@@ -311,7 +311,6 @@ const STEADY_ACTION_PATTERN: readonly WorkloadActionKind[] = [
 ];
 
 export async function prepareHarnessBots({
-  gameType = "eternum",
   accounts,
   game,
   provider,
@@ -319,13 +318,6 @@ export async function prepareHarnessBots({
   setupTransactions,
 }: PrepareHarnessBotsOptions): Promise<HarnessBot[]> {
   await game.waitUntilPlaying();
-  if (gameType === "eternum") {
-    await mapWithConcurrency(accounts, setupConcurrency, async (harnessAccount) => {
-      const settle = await settleEternumBot({ harnessAccount, game, provider });
-      setupTransactions.push(settle);
-      assertCompleted(settle);
-    });
-  }
 
   const bots = await mapWithConcurrency(accounts, setupConcurrency, async (harnessAccount) => {
     const structureIds = await waitForSettlement(game, harnessAccount.address);
@@ -535,26 +527,6 @@ export function oppositeDirection(direction: number): number {
 
 export function prioritizeExplorer<T extends ExplorerPriority>(candidates: T[]): T | undefined {
   return [...candidates].sort((left, right) => left.lastUsedAt - right.lastUsedAt)[0];
-}
-
-async function settleEternumBot({
-  harnessAccount,
-  game,
-  provider,
-}: {
-  harnessAccount: HarnessAccount;
-  game: HarnessGame;
-  provider: HarnessProvider;
-}): Promise<TrackedTransaction> {
-  return trackTransaction({
-    actionIndex: 0,
-    botId: harnessAccount.botId,
-    gameId: game.gameId,
-    kind: "settle",
-    provider,
-    send: () => game.submit(harnessAccount.account, () => game.settle(harnessAccount.account)),
-    stage: "setup",
-  });
 }
 
 async function createBotExplorer({
@@ -1369,7 +1341,7 @@ function resolveSettlementCenter(structures: StructureState[]): Coord {
   return { x, y };
 }
 
-export function cubeDistance(left: Coord, right: Coord): number {
+function cubeDistance(left: Coord, right: Coord): number {
   const leftCube = evenRowToCube(left);
   const rightCube = evenRowToCube(right);
   return Math.max(

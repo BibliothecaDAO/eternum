@@ -10,7 +10,6 @@ import {
 /** Every config the deployer and client read from config/generated (see config/utils/utils.ts). */
 const GENERATED_CONFIGS: ReadonlyArray<{ chain: ConfigurationNetwork; gameType: GameType }> = [
   { chain: "madara", gameType: "blitz" },
-  { chain: "madara", gameType: "eternum" },
   { chain: "madara", gameType: "frontier" },
 ];
 

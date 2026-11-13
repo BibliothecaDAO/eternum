@@ -3,6 +3,14 @@
 export const factWireTypes = [
   {
     type: "struct",
+    name: "world_native::withdrawals::ResourceTokenKey",
+    members: [
+      { name: "game_id", type: "core::integer::u32" },
+      { name: "resource_type", type: "core::integer::u8" },
+    ],
+  },
+  {
+    type: "struct",
     name: "world_native::settlement::SettlementPool",
     members: [
       { name: "opened", type: "core::integer::u32" },
@@ -72,29 +80,6 @@ export const factWireTypes = [
       { name: "biome_climate", type: "world_native::rules::BiomeClimateConfig" },
       { name: "map", type: "core::option::Option::<world_native::rules::MapConfig>" },
       { name: "map_center_offset", type: "core::integer::u32" },
-    ],
-  },
-  {
-    type: "struct",
-    name: "world_native::faith::WonderFaith",
-    members: [
-      { name: "last_recorded_owner", type: "core::starknet::contract_address::ContractAddress" },
-      { name: "claimed_points", type: "core::integer::u128" },
-      { name: "claim_per_sec", type: "core::integer::u32" },
-      { name: "claim_last_at", type: "core::integer::u64" },
-      { name: "owner_claim_per_sec", type: "core::integer::u32" },
-      { name: "num_structures_pledged", type: "core::integer::u32" },
-    ],
-  },
-  {
-    type: "struct",
-    name: "world_native::faith::FaithfulStructure",
-    members: [
-      { name: "wonder_id", type: "core::integer::u64" },
-      { name: "faithful_since", type: "core::integer::u64" },
-      { name: "fp_to_wonder_owner_per_sec", type: "core::integer::u16" },
-      { name: "fp_to_struct_owner_per_sec", type: "core::integer::u16" },
-      { name: "last_recorded_owner", type: "core::starknet::contract_address::ContractAddress" },
     ],
   },
   {
@@ -347,46 +332,6 @@ export const factWireTypes = [
   },
   {
     type: "struct",
-    name: "world_native::faith::PlayerFaithKey",
-    members: [
-      {
-        name: "game_id",
-        type: "core::integer::u32",
-      },
-      {
-        name: "player",
-        type: "core::starknet::contract_address::ContractAddress",
-      },
-      {
-        name: "wonder_id",
-        type: "core::integer::u64",
-      },
-    ],
-  },
-  {
-    type: "struct",
-    name: "world_native::faith::PlayerFaithPoints",
-    members: [
-      {
-        name: "points_claimed",
-        type: "core::integer::u128",
-      },
-      {
-        name: "points_per_sec_as_owner",
-        type: "core::integer::u32",
-      },
-      {
-        name: "points_per_sec_as_pledger",
-        type: "core::integer::u32",
-      },
-      {
-        name: "last_updated_at",
-        type: "core::integer::u64",
-      },
-    ],
-  },
-  {
-    type: "struct",
     name: "world_native::game::GameRegistry",
     members: [
       {
@@ -455,24 +400,6 @@ export const factWireTypes = [
       {
         name: "data",
         type: "core::integer::u128",
-      },
-    ],
-  },
-  {
-    type: "struct",
-    name: "world_native::market::LiquidityKey",
-    members: [
-      {
-        name: "game_id",
-        type: "core::integer::u32",
-      },
-      {
-        name: "owner",
-        type: "core::starknet::contract_address::ContractAddress",
-      },
-      {
-        name: "resource_type",
-        type: "core::integer::u8",
       },
     ],
   },
@@ -688,20 +615,6 @@ export const factWireTypes = [
   },
   {
     type: "struct",
-    name: "world_native::trade::TradeKey",
-    members: [
-      {
-        name: "game_id",
-        type: "core::integer::u32",
-      },
-      {
-        name: "trade_id",
-        type: "core::integer::u64",
-      },
-    ],
-  },
-  {
-    type: "struct",
     name: "world_native::village::VillagePass",
     members: [
       {
@@ -728,15 +641,12 @@ const presetDerivedModels = new Set([
   "BoardRules",
   "ResearchPrice",
   "CampRules",
-  "FaithRules",
   "UpgradeLimits",
   "UpgradeRecipe",
   "RealmGrants",
   "VillageRules",
   "DepthRules",
   "SpireLayout",
-  "TradeRules",
-  "BankRules",
   "HyperstructureRules",
   "RelicRules",
   "ChestRules",
@@ -794,8 +704,6 @@ export function defineFactModels({ struct, model: declare }) {
         value: "zero",
         meaning: "No players have settled or registered realms in this game.",
       };
-    if (row.name === "VillageRaid")
-      row.absence = { parent: "Structure", value: "zero", meaning: "The village has not been successfully raided." };
     if (row.name === "PlayerPoints")
       row.absence = {
         value: "zero",
@@ -850,7 +758,6 @@ export function defineFactModels({ struct, model: declare }) {
       [{ name: "game_id", type: "core::integer::u32" }],
       struct("blitz_results::BlitzResult"),
     ),
-    model("FaithRules", "game", [{ name: "game_id", type: "core::integer::u32" }], struct("faith::FaithRules")),
     model(
       "SeasonWinThreshold",
       "game",
@@ -959,17 +866,10 @@ export function defineFactModels({ struct, model: declare }) {
       [{ name: "game_id", type: "core::integer::u32" }],
       struct("withdrawals::WithdrawalRules"),
     ),
-    model("ResourceToken", "game", struct("market::MarketKey"), [
+    model("ResourceToken", "game", struct("withdrawals::ResourceTokenKey"), [
       { name: "token", type: struct("withdrawals::ResourceToken")[1].type },
     ]),
-    model("BankRules", "game", [{ name: "game_id", type: "core::integer::u32" }], struct("market::BankRules")),
-    model("BankName", "game", struct("resources::ResourceKey"), [{ name: "name", type: "core::felt252" }]),
-    model("Market", "game", struct("market::MarketKey"), struct("market::Market")),
-    model("Liquidity", "game", struct("market::LiquidityKey"), [{ name: "shares", type: "core::integer::u128" }]),
-    model("TradeOrder", "game", struct("trade::TradeKey"), struct("trade::TradeOrder")),
-    model("TradeRules", "game", [{ name: "game_id", type: "core::integer::u32" }], struct("trade::TradeRules")),
     model("Guard", "game", struct("guards::GuardKey"), struct("guards::Guard")),
-    model("VillageRaid", "game", struct("resources::ResourceKey"), [{ name: "last_tick", type: "core::integer::u64" }]),
     model("BitcoinMine", "game", struct("resources::ResourceKey"), struct("bitcoin::MineFunding")),
     model("BitcoinClaim", "game", struct("bitcoin::ClaimKey"), [{ name: "claimed", type: "core::bool" }]),
     model("BitcoinPhase", "game", struct("bitcoin::PhaseKey"), struct("bitcoin::Phase")),
@@ -1099,18 +999,6 @@ export function defineFactModels({ struct, model: declare }) {
       struct("hyperstructures::HyperstructureRules"),
     ),
     model("EntityName", "game", struct("resources::ResourceKey"), struct("names::EntityName")),
-    ...["WonderFaith", "FaithfulStructure"].map((name) =>
-      model(
-        name,
-        "game",
-        [
-          struct("resources::ResourceKey")[0],
-          { name: name === "WonderFaith" ? "wonder_id" : "structure_id", type: "core::integer::u32" },
-        ],
-        struct(`faith::${name}`),
-      ),
-    ),
-    model("PlayerFaithPoints", "game", struct("faith::PlayerFaithKey"), struct("faith::PlayerFaithPoints")),
 
     model(
       "ResourceRule",
@@ -1184,7 +1072,6 @@ export function defineFactModels({ struct, model: declare }) {
 
 // Paths describe observable values, not serialized row positions.
 const behaviouralFacts = {
-  VillageRaid: { domain: "combat", fields: { lastRaidedAtTick: "last_tick" } },
   Guard: { domain: "troops", fields: { troops: "troops", destroyedAt: "destroyed_tick" } },
   BitcoinMine: {
     domain: "bitcoin",
@@ -1342,34 +1229,6 @@ const behaviouralFacts = {
       resourceTraits: "resources_packed",
     },
   },
-  WonderFaith: {
-    domain: "faith",
-    fields: {
-      points: "claimed_points",
-      pointsPerSecond: "claim_per_sec",
-      settledAt: "claim_last_at",
-      ownerPointsPerSecond: "owner_claim_per_sec",
-      pledgedStructures: "num_structures_pledged",
-    },
-  },
-  FaithfulStructure: {
-    domain: "faith",
-    fields: {
-      wonder: "wonder_id",
-      pledgedAt: "faithful_since",
-      wonderOwnerPointsPerSecond: "fp_to_wonder_owner_per_sec",
-      structureOwnerPointsPerSecond: "fp_to_struct_owner_per_sec",
-    },
-  },
-  PlayerFaithPoints: {
-    domain: "faith",
-    fields: {
-      points: "points_claimed",
-      ownershipPointsPerSecond: "points_per_sec_as_owner",
-      pledgePointsPerSecond: "points_per_sec_as_pledger",
-      settledAt: "last_updated_at",
-    },
-  },
 };
 
 // Which rows a player's subscription carries. "shared" rows reach every subscriber and "actor" rows only the selected
@@ -1392,7 +1251,6 @@ export const syncScopes = {
       "CampRules",
       "ArtificerCost",
       "BlitzResult",
-      "FaithRules",
       "SeasonWinThreshold",
       "ExtractionRewards",
       "RelicRules",
@@ -1407,9 +1265,6 @@ export const syncScopes = {
       "DepositSource",
       "WithdrawalRules",
       "ResourceToken",
-      "BankRules",
-      "Market",
-      "TradeRules",
       "BitcoinPhase",
       "MineKindConfig",
       "MinePool",
@@ -1444,21 +1299,17 @@ export const syncScopes = {
   EntryEntitlement: byOwner,
   PlayerEntry: byOwner,
   VillagePass: byOwner,
-  Liquidity: byOwner,
   StoryEvent: byOwner,
   Guild: { owners: ["guild_id"] },
   GuildMember: { owners: ["actor"] },
   GuildWhitelist: byPlayer,
   BitcoinContribution: byPlayer,
-  PlayerFaithPoints: byPlayer,
   PointsAwarded: byPlayer,
   LordsWithdrawal: { owners: ["account"] },
   LaborGrant: { owners: ["account"] },
   SpendLords: { owners: ["account"] },
   PrincipalWithdrawal: { owners: ["account"] },
   DepositReceipt: { owners: ["account"] },
-  RaidEvent: { owners: ["player", "target_owner"] },
-  WonderFaith: { owners: ["last_recorded_owner"] },
   TileOpt: { regions: [{ alt: "alt", x: "col", y: "row" }] },
   TileOccupancy: { regions: [{ alt: "alt", x: "col", y: "row" }], entities: ["entity_id"] },
   Building: { realms: ["structure_id"] },
@@ -1473,14 +1324,10 @@ export const syncScopes = {
   ArmySlot: { realms: ["structure_id"], epoch: "epoch" },
   ExplorerTroops: { entities: ["explorer_id"] },
   Guard: { entities: ["structure_id"] },
-  FaithfulStructure: { entities: ["structure_id"] },
   BitcoinClaim: { entities: ["mine_id"] },
-  TradeOrder: { entities: ["maker_id", "taker_id"] },
   BattleEvent: { entities: ["attacker_id", "defender_id"] },
   ResourceProduction: { entities: ["entity_id"] },
   Structure: byEntity,
-  BankName: byEntity,
-  VillageRaid: byEntity,
   BitcoinMine: byEntity,
   ResourceBalance: byEntity,
   ProductionBonus: byEntity,

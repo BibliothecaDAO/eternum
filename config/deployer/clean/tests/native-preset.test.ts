@@ -54,7 +54,7 @@ writeFileSync(
 afterAll(() => rmSync(directory, { recursive: true }));
 
 function configuration(preset: number) {
-  const config = loadNativePresetConfiguration(preset === 3 ? "madara.eternum" : "madara.blitz", preset);
+  const config = loadNativePresetConfiguration("madara.blitz", preset);
   return config;
 }
 
@@ -64,7 +64,6 @@ describe("native presets", () => {
     try {
       for (const [presetId, environmentId] of [
         [2, "madara.blitz"],
-        [3, "madara.eternum"],
         [5, "madara.frontier"],
         [FRONTIER_DEVCON_PRESET_ID, "madara.frontier"],
       ] as const) {
@@ -119,7 +118,6 @@ describe("native presets", () => {
         "OffloadArrival",
         "SendResources",
         "TransferExplorerResources",
-        "TransferStructureResourcesToExplorer",
         "TransferExplorerResourcesToStructure",
       ] as const) {
         expect(preset.rules.command_mask & BigInt(nativeCommandBits[command])).toBe(0n);
@@ -157,7 +155,7 @@ describe("native presets", () => {
         golden_essence: 0n,
       });
     }
-    for (const id of [2, 3]) expect(buildNativePreset(configuration(id), id).economy.labor.isNone()).toBe(true);
+    for (const id of [2]) expect(buildNativePreset(configuration(id), id).economy.labor.isNone()).toBe(true);
   });
   test.each([-1, 0.5, Number.NaN])("refuses invalid daily home grants (%s)", (invalid) => {
     const labor = nativePresets[FRONTIER_DEVCON_PRESET_ID]!.labor!;
@@ -187,9 +185,7 @@ describe("native presets", () => {
       ).toEqual([26, 29, 32].map((resource_type) => ({ resource_type, amount: 1_000_000_000_000n })));
     },
   );
-  test("Eternum keeps its biome troop table", () => {
-    expect(buildNativePreset(configuration(3), 3).settlement.realms.starting_troops).toHaveLength(17);
-  });
+
   test("Frontier caps daily chest prices without supplying a season duration", () => {
     const config = loadNativePresetConfiguration("madara.frontier", FRONTIER_PRESET_ID);
     const preset = buildNativePreset(config, FRONTIER_PRESET_ID);
@@ -227,7 +223,6 @@ describe("native presets", () => {
     for (const [network, id, expected] of [
       ["madara.frontier", 5, 0],
       ["madara.blitz", 2, 60],
-      ["madara.eternum", 3, 60],
     ] as const) {
       const config = loadNativePresetConfiguration(network, id);
       expect(buildNativePreset(config, id).rules.battle_config.cooldown_seconds).toBe(expected);
@@ -253,26 +248,11 @@ describe("native presets", () => {
     );
     expect(preset.rules.command_mask).toBe(mask);
     expect(mask & BigInt(nativeCommandBits.InteractSite)).not.toBe(0n);
-    for (const [network, id] of [
-      ["madara.blitz", 2],
-      ["madara.eternum", 3],
-    ] as const) {
+    for (const [network, id] of [["madara.blitz", 2]] as const) {
       const legacy = buildNativePreset(loadNativePresetConfiguration(network, id), id);
       expect(legacy.rules.command_mask & BigInt(nativeCommandBits.InteractSite)).toBe(0n);
     }
-    for (const command of [
-      "CreateTradeOrder",
-      "AcceptTradeOrder",
-      "CancelTradeOrder",
-      "BuyFromBank",
-      "SellToBank",
-      "AddBankLiquidity",
-      "RemoveBankLiquidity",
-      "SendResources",
-      "TransferStructureResourcesToExplorer",
-      "TransferExplorerResourcesToStructure",
-      "WithdrawResource",
-    ] as const)
+    for (const command of ["SendResources", "TransferExplorerResourcesToStructure", "WithdrawResource"] as const)
       expect(mask & BigInt(nativeCommandBits[command])).toBe(0n);
   });
   test("the accelerated Frontier preset is Frontier with every season clock 120 times faster, under its own id", () => {
@@ -306,7 +286,7 @@ describe("native presets", () => {
       expect(preset.exploration).toEqual([]);
       expect(preset.settlement.depths.map(({ reveal_percent }) => reveal_percent)).toEqual([10, 15, 20, 25]);
     }
-    for (const id of [2, 3]) expect(buildNativePreset(configuration(id), id).exploration.length).toBeGreaterThan(0);
+    for (const id of [2]) expect(buildNativePreset(configuration(id), id).exploration.length).toBeGreaterThan(0);
   });
 
   test("Frontier sites carry no flat camp reward or rift-production table", () => {
@@ -384,7 +364,7 @@ describe("native presets", () => {
   });
 
   test("A camp's labor rate is its own rule, at the rate it read from the village before", () => {
-    for (const id of [2, 3]) {
+    for (const id of [2]) {
       const preset = buildNativePreset(configuration(id), id);
       const labor = preset.resources.resources.find(({ resource_type }) => resource_type === 23)!;
       expect(preset.structures.camps.labor_rate).toBe(labor.realm_rate / 2n);
@@ -457,7 +437,7 @@ describe("native presets", () => {
     }
   });
 
-  test("Blitz carries no labor-paid production, while Frontier trains troops and Eternum keeps its labor path", () => {
+  test("Blitz carries no labor-paid production, while Frontier trains troops", () => {
     const laborPaid = (environment: Parameters<typeof loadNativePresetConfiguration>[0], presetId: number) =>
       buildNativePreset(loadNativePresetConfiguration(environment, presetId), presetId)
         .resources.production.filter(({ recipe }) => recipe.simple_inputs.length > 0)
@@ -465,7 +445,6 @@ describe("native presets", () => {
 
     expect(laborPaid("madara.blitz", 2)).toEqual([]);
     expect(laborPaid("madara.frontier", FRONTIER_PRESET_ID)).toEqual([26]);
-    expect(laborPaid("madara.eternum", 3).length).toBeGreaterThan(0);
   });
 
   test("Frontier carries separate weak and stronger beast ranges at each depth", () => {
@@ -505,7 +484,7 @@ describe("native presets", () => {
     ]).toEqual([0, 0, 0, 0]);
   });
 
-  test("Frontier disables both dice rules while Blitz and Eternum preserve Ethereal dice", () => {
+  test("Frontier disables both dice rules while Blitz preserves Ethereal dice", () => {
     const diceRules = (environment: Parameters<typeof loadNativePresetConfiguration>[0], presetId: number) => {
       const mask = buildNativePreset(loadNativePresetConfiguration(environment, presetId), presetId).rules.mode_rules;
       return [(mask & nativeRuleConstants.COMBAT_DICE) !== 0, (mask & nativeRuleConstants.COMBAT_DICE_ETHEREAL) !== 0];
@@ -513,7 +492,6 @@ describe("native presets", () => {
 
     expect(diceRules("madara.frontier", FRONTIER_PRESET_ID)).toEqual([false, false]);
     expect(diceRules("madara.blitz", 2)).toEqual([false, true]);
-    expect(diceRules("madara.eternum", 3)).toEqual([false, true]);
   });
 
   // The HS held rule says a realm settled later counts from the next capture: a capture recounts the realms only where
@@ -617,10 +595,9 @@ describe("native presets", () => {
   });
 
   test("every preset id names the mode it plays, and an unknown id fails by name", () => {
-    expect([1, 2, 3, FRONTIER_PRESET_ID, FRONTIER_ACCELERATED_PRESET_ID, 102].map(nativeGameModeOf)).toEqual([
+    expect([1, 2, FRONTIER_PRESET_ID, FRONTIER_ACCELERATED_PRESET_ID, 102].map(nativeGameModeOf)).toEqual([
       "frontier",
       "blitz",
-      "eternum",
       "frontier",
       "frontier",
       "frontier",
@@ -628,14 +605,19 @@ describe("native presets", () => {
     expect(() => nativeGameModeOf(4)).toThrow("Unknown native preset 4");
     expect(() => loadNativePresetConfiguration("madara.blitz", 4)).toThrow("Unsupported native preset 4");
     expect(() => nativeGameModeOf(9)).toThrow("Unknown native preset 9");
-    expect(nativeGameModeOf(103)).toBe("eternum");
+    for (const retired of [3, 103]) {
+      expect(() => nativeGameModeOf(retired)).toThrow(`Unknown native preset ${retired}`);
+      expect(() => loadNativePresetConfiguration("madara.blitz", retired)).toThrow(
+        `Unsupported native preset ${retired}`,
+      );
+    }
     expect(nativeGameModeOf(104)).toBe("frontier");
     expect(nativeGameModeOf(105)).toBe("frontier");
     expect(() => nativeGameModeOf(106)).toThrow("Unknown native preset 106");
   });
 
   test("native balances and mine ladders come only from the selected sheet", () => {
-    const config = configuration(3);
+    const config = configuration(2);
     config.bitcoin = { prizePerPhase: 7, minimumLabor: 123, ownerCutBps: 1500 };
     config.mines!.kinds[1] = {
       resourceType: 38,
@@ -645,10 +627,10 @@ describe("native presets", () => {
       capSteps: 3,
     };
     config.mines!.surfacePool = [{ kind: 1, weight: 4 }];
-    const definition = buildNativePreset(config, 3);
+    const definition = buildNativePreset(config, 2);
     expect(definition.rules.bitcoin_mine_config).toEqual({
-      enabled: true,
-      prize_per_phase: 7_000000000n,
+      enabled: false,
+      prize_per_phase: 0n,
       min_labor_per_contribution: 123_000000000n,
       owner_cut_bps: 1500,
     });
@@ -663,39 +645,40 @@ describe("native presets", () => {
   });
 
   test("missing balances and malformed mine pools fail before registration", () => {
-    const config = configuration(3);
+    const config = configuration(2);
     delete config.bitcoin;
-    expect(() => buildNativePreset(config, 3)).toThrow("Bitcoin balance config");
-    config.bitcoin = configuration(3).bitcoin;
+    expect(() => buildNativePreset(config, 2)).toThrow("Bitcoin balance config");
+    config.bitcoin = configuration(2).bitcoin;
     delete config.mines;
-    expect(() => buildNativePreset(config, 3)).toThrow("Mine balance config");
-    config.mines = configuration(3).mines;
+    expect(() => buildNativePreset(config, 2)).toThrow("Mine balance config");
+    config.mines = configuration(2).mines;
     config.mines!.surfacePool = [{ kind: 99, weight: 1 }];
-    expect(() => buildNativePreset(config, 3)).toThrow("Invalid mine pool");
+    expect(() => buildNativePreset(config, 2)).toThrow("Invalid mine pool");
     config.mines!.surfacePool = [];
-    expect(() => buildNativePreset(config, 3)).toThrow("requires a pool");
+    expect(() => buildNativePreset(config, 2)).toThrow("requires a pool");
   });
 
   test("large resource amounts retain bigint precision and missing balance entries fail", () => {
-    const config = configuration(3);
-    expect(buildNativePreset(config, 3).economy.hyperstructures.initialize_shards).toBe(20_000_000_000000000n);
+    const config = configuration(2);
+    config.hyperstructures.hyperstructureInitializationShardsCost.amount = 20_000_000;
+    expect(buildNativePreset(config, 2).economy.hyperstructures.initialize_shards).toBe(20_000_000_000000000n);
     delete (config.resources.resourceWeightsGrams as Partial<Record<number, number>>)[3];
-    expect(() => buildNativePreset(config, 3)).toThrow("Missing resource weight for 3");
+    expect(() => buildNativePreset(config, 2)).toThrow("Missing resource weight for 3");
   });
 
   test("building a changed preset cannot mutate the next definition's tables", () => {
-    const first = buildNativePreset(configuration(3), 3);
+    const first = buildNativePreset(configuration(2), 2);
     first.settlement.villages.resource_pool[0].weight = 1;
     first.economy.relics[0].rate_bps = 1;
     first.settlement.realms.realm_resources.length = 0;
-    const next = buildNativePreset(configuration(3), 3);
+    const next = buildNativePreset(configuration(2), 2);
     expect(next.settlement.villages.resource_pool[0].weight).toBe(19815);
     expect(next.economy.relics[0].rate_bps).toBe(5000);
     expect(next.settlement.realms.realm_resources).toHaveLength(9);
   });
 
   test("registration reads the current commitment and refuses a registered id locally", async () => {
-    const registration = buildNativePresetRegistration(buildNativePreset(configuration(3), 3), 1, manifestPath);
+    const registration = buildNativePresetRegistration(buildNativePreset(configuration(2), 2), 1, manifestPath);
     let commitment = registration.commitment;
     const account = {
       getBlockNumber: async () => 10,
@@ -737,36 +720,36 @@ describe("native presets", () => {
   });
 });
 
-test("rejects missing Eternum rules and bridge tokens before registration", () => {
-  for (const [mutation, error] of [
-    [
-      (config) => {
-        delete config.faith;
-      },
-      "Native faith config is required",
-    ],
-    [
-      (config) => {
-        delete config.artificer;
-      },
-      "Native research cost",
-    ],
-    [
-      (config) => {
-        delete (config.setup!.addresses as { resources?: unknown }).resources;
-      },
-      "Eternum bridge resource tokens",
-    ],
-    [
-      (config) => {
-        config.setup!.addresses.lords = "0x0";
-      },
-      "Missing bridge token for resource 37",
-    ],
-  ] as Array<[(config: ReturnType<typeof configuration>) => void, string]>) {
-    const config = configuration(3);
-    mutation(config);
-    expect(() => buildNativePreset(config, 3)).toThrow(error);
+test("rejects missing research costs and bridge tokens before registration", () => {
+  const previous = nativePresets[2]!.bridgeResources;
+  nativePresets[2]!.bridgeResources = [37];
+  try {
+    for (const [mutation, error] of [
+      [
+        (config) => {
+          delete config.artificer;
+        },
+        "Native research cost",
+      ],
+      [
+        (config) => {
+          delete (config.setup!.addresses as { resources?: unknown }).resources;
+        },
+        "Bridge resource tokens",
+      ],
+      [
+        (config) => {
+          config.setup!.addresses.lords = "0x0";
+        },
+        "Missing bridge token for resource 37",
+      ],
+    ] as Array<[(config: ReturnType<typeof configuration>) => void, string]>) {
+      const config = configuration(2);
+      mutation(config);
+      expect(() => buildNativePreset(config, 2)).toThrow(error);
+    }
+  } finally {
+    nativePresets[2]!.bridgeResources = previous;
   }
 });
 describe("fixed Regular Blitz rosters", () => {

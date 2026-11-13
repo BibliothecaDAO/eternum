@@ -195,7 +195,7 @@ pub mod StructuresLogic {
     use crate::logic::structures::StructureState;
     use crate::map::IMapLogicDispatcherTrait;
     use crate::mines::{IMineRulesDispatcherTrait, IMineRulesLibraryDispatcher, MinePoolKey};
-    use crate::ownership::{Story, StoryEvent, TransferOwnership};
+    use crate::ownership::{Story, StoryEvent};
     use crate::resources::{IResourceOperationsDispatcherTrait, ResourceKey};
     use crate::rules::RESOURCE_PRECISION;
     use crate::settlement::{ISettlementDisplacementDispatcherTrait, ISettlementDisplacementLibraryDispatcher};
@@ -243,60 +243,6 @@ pub mod StructuresLogic {
         }
     }
 
-    #[abi(embed_v0)]
-    impl BankCreation of crate::market::IBankCreation<ContractState> {
-        fn create_bank(
-            ref self: ContractState,
-            key: ResourceKey,
-            owner: ContractAddress,
-            coord: Coord,
-            timestamp: u64,
-            game_context: crate::commands::ActionContext,
-        ) {
-            let game_context = crate::commands::execution_context(key.game_id, game_context);
-
-            assert!(key.entity_id >= 0xfffffff9 && key.entity_id <= 0xfffffffe, "invalid regional bank id");
-            assert!(!coord.alt && owner != 0.try_into().unwrap(), "invalid bank placement");
-            let rules = game_context.rules.unbox();
-            assert!(!crate::logic::structures::exists(key), "bank already exists");
-            self.reveal_structure_tile(key.game_id, coord, game_context);
-            crate::logic::structure_actions::map_dispatcher(key.game_id)
-                .reveal_structure_surroundings(key.game_id, coord, crate::commands::biome_context(game_context));
-            let record = StructureRecord {
-                owner,
-                base: StructureBase {
-                    category: crate::taxonomy::BANK_CATEGORY,
-                    level: 3,
-                    troop_max_guard_count: 4,
-                    troop_max_explorer_count: 0,
-                    created_at: timestamp.try_into().unwrap(),
-                    ..Default::default(),
-                },
-                resources_packed: 0,
-                metadata: Default::default(),
-            };
-            crate::logic::structures::StructureState::create(key, record);
-            crate::logic::map::MapState::occupy(
-                tile_key(key.game_id, coord), key.entity_id, crate::taxonomy::BANK_OCCUPIER, true,
-            );
-            crate::logic::structure_actions::resources_dispatcher(key.game_id)
-                .initialize_resources(
-                    key,
-                    rules.structure_capacity_config.bank_structure_capacity.into() * RESOURCE_PRECISION,
-                    crate::taxonomy::BANK_CATEGORY,
-                    timestamp,
-                    crate::commands::action_context(game_context),
-                );
-            let seed: u256 = Into::<felt252, u256>::into('what could possibly go wrong') - key.entity_id.into();
-            crate::guards::IGuardsDispatcherTrait::initialize_structure_guards(
-                crate::guards::IGuardsLibraryDispatcher { class_hash: self.release.classes(key.game_id).troops.read() },
-                key,
-                seed,
-                timestamp,
-                crate::commands::action_context(game_context),
-            );
-        }
-    }
     #[abi(embed_v0)]
     impl BlitzHyperstructures of crate::settlement::IBlitzHyperstructures<ContractState> {
         fn create_reserved_hyperstructure(
@@ -536,32 +482,6 @@ pub mod StructuresLogic {
                         values: array![command.name].span(),
                     },
                 );
-        }
-    }
-    #[abi(embed_v0)]
-    impl Ownership of crate::ownership::IStructureOwnership<ContractState> {
-        fn transfer_structure_ownership(
-            ref self: ContractState,
-            game_id: u32,
-            actor: ContractAddress,
-            command: TransferOwnership,
-            context: crate::commands::ActionContext,
-        ) -> () {
-            let context = crate::commands::execution_context(game_id, context);
-
-            let game = context.game.unbox();
-            assert_playing(game, context.timestamp);
-            let key = ResourceKey { game_id, entity_id: command.entity_id };
-            let record = crate::logic::structures::record(key);
-            assert!(record.owner == actor, "actor does not own structure");
-            assert!(crate::logic::game::game_exists(game_id), "ownership rules require initialized game");
-            assert!(command.new_owner != 0.try_into().unwrap(), "new owner is zero");
-            assert!(record.base.category != crate::taxonomy::VILLAGE_CATEGORY, "cannot transfer ownership of village");
-            if record.owner == command.new_owner {
-                return ();
-            }
-            self.change_owner(key, command.new_owner, context.timestamp, context);
-            ()
         }
     }
     #[abi(embed_v0)]
@@ -967,18 +887,6 @@ pub mod StructuresLogic {
             game_context: crate::commands::ExecutionContext,
         ) {
             let record = crate::logic::structures::record(key);
-            let rules = game_context.rules.unbox();
-            if record.owner != 0.try_into().unwrap() && rules.faith_enabled {
-                crate::faith::IFaithOwnershipDispatcherTrait::transfer_faith_ownership(
-                    crate::faith::IFaithOwnershipLibraryDispatcher {
-                        class_hash: self.release.classes(key.game_id).prizes.read(),
-                    },
-                    key,
-                    owner,
-                    timestamp,
-                    crate::commands::action_context(game_context),
-                );
-            }
             crate::logic::structures::StructureState::transfer_owner(key, owner);
             if record.base.category == crate::taxonomy::HYPERSTRUCTURE_CATEGORY {
                 crate::hyperstructures::IHyperstructuresDispatcherTrait::transfer_hyperstructure_shares(

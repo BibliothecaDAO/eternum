@@ -37,7 +37,7 @@ pub mod WithdrawalState {
                 retention: retention.span(),
             }
         }
-        fn token(self: @ComponentState<TContractState>, key: crate::market::MarketKey) -> ContractAddress {
+        fn token(self: @ComponentState<TContractState>, key: crate::withdrawals::ResourceTokenKey) -> ContractAddress {
             let token = crate::logic::preset_record::for_game(key.game_id).withdrawal_tokens.read(key.resource_type);
             assert!(token != 0.try_into().unwrap(), "resource is not whitelisted");
             token

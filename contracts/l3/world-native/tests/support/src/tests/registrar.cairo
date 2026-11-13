@@ -61,12 +61,12 @@ pub fn definition(blitz: bool) -> PresetDefinition {
             mode_rules: if blitz {
                 super::play_fixture::BLITZ_RULES
             } else {
-                super::play_fixture::ETERNUM_RULES
+                super::play_fixture::TEST_RULES
             },
             command_mask: if blitz {
                 super::play_fixture::BLITZ_COMMAND_MASK
             } else {
-                super::play_fixture::ETERNUM_COMMAND_MASK
+                super::play_fixture::BLITZ_COMMAND_MASK
             },
             entry_rule: if blitz {
                 crate::rules::ENTRY_ROSTER
@@ -86,9 +86,6 @@ pub fn definition(blitz: bool) -> PresetDefinition {
             board: None,
             buildings: super::building_commands::rules(),
             camps: crate::camps::CampRules { resources: array![].span(), labor_rate: 5 },
-            faith: crate::faith::FaithRules {
-                wonder_rate: 500, realm_rate: 100, village_rate: 10, owner_share_bps: 3000,
-            },
             upgrade_limits: crate::upgrades::UpgradeLimits { realm_max: 1, village_max: 1 },
             upgrades: array![crate::upgrades::UpgradeRecipe { costs: array![].span() }].span(),
         },
@@ -118,10 +115,6 @@ pub fn definition(blitz: bool) -> PresetDefinition {
             labor: None,
             progression: None,
             discovery: None,
-            trade: crate::trade::TradeRules { max_count: 2 },
-            banks: crate::market::BankRules {
-                lp_fee_num: 3, lp_fee_denom: 1000, owner_fee_num: 1, owner_fee_denom: 100,
-            },
             hyperstructures: if blitz {
                 crate::hyperstructures::HyperstructureRules { initialize_shards: 0, resources: array![].span() }
             } else {

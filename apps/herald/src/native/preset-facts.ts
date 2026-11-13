@@ -107,7 +107,7 @@ function deriveStructures(emit: EmitRule, structures: PresetRecord) {
   // Registrations before CampRules carry the camp's grants alone.
   if (Array.isArray(structures.camps)) emit("CampResources", { resources: structures.camps });
   else emit("CampRules", record(structures.camps));
-  emit("FaithRules", record(structures.faith));
+  if ("faith" in structures) emit("FaithRules", record(structures.faith));
   emit("UpgradeLimits", record(structures.upgrade_limits));
   records(structures.upgrades).forEach((recipe, index) => emit("UpgradeRecipe", recipe, { level: index + 1 }));
 }
@@ -121,8 +121,8 @@ function deriveSettlement(emit: EmitRule, settlement: PresetRecord) {
 }
 
 function deriveEconomy(emit: EmitRule, economy: PresetRecord) {
-  emit("TradeRules", record(economy.trade));
-  emit("BankRules", record(economy.banks));
+  if ("trade" in economy) emit("TradeRules", record(economy.trade));
+  if ("banks" in economy) emit("BankRules", record(economy.banks));
   emit("HyperstructureRules", record(economy.hyperstructures));
   emit("RelicRules", { rules: economy.relics });
   if ("labor" in economy) {

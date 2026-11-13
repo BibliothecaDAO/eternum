@@ -423,29 +423,7 @@ pub mod GamesFixture {
             )
         }
     }
-    #[starknet::embeddable]
-    pub impl BankCreationFixture<
-        TContractState, +Drop<TContractState>,
-    > of crate::market::IBankCreation<TContractState> {
-        fn create_bank(
-            ref self: TContractState,
-            key: crate::resources::ResourceKey,
-            owner: starknet::ContractAddress,
-            coord: crate::troops::Coord,
-            timestamp: u64,
-            game_context: crate::commands::ActionContext,
-        ) {
-            let classes = fixture_classes(key.game_id);
-            crate::market::IBankCreationDispatcherTrait::create_bank(
-                crate::market::IBankCreationLibraryDispatcher { class_hash: classes.structures.read() },
-                key,
-                owner,
-                coord,
-                timestamp,
-                game_context,
-            )
-        }
-    }
+
     #[starknet::embeddable]
     pub impl BuildingRulesFixture<
         TContractState, +Drop<TContractState>,
@@ -1061,8 +1039,8 @@ pub mod GamesFixture {
     #[starknet::embeddable]
     pub impl EconomyDeliveryFixture<
         TContractState, +Drop<TContractState>,
-    > of crate::trade::IEconomyDelivery<TContractState> {
-        fn queue_economy_delivery(
+    > of crate::resources::IResourceDelivery<TContractState> {
+        fn queue_resource_delivery(
             ref self: TContractState,
             key: crate::resources::ResourceKey,
             resource: crate::resources::ResourceAmount,
@@ -1071,8 +1049,8 @@ pub mod GamesFixture {
             game_context: crate::commands::ResourceContext,
         ) {
             let classes = fixture_classes(key.game_id);
-            crate::trade::IEconomyDeliveryDispatcherTrait::queue_economy_delivery(
-                crate::trade::IEconomyDeliveryLibraryDispatcher { class_hash: classes.resources.read() },
+            crate::resources::IResourceDeliveryDispatcherTrait::queue_resource_delivery(
+                crate::resources::IResourceDeliveryLibraryDispatcher { class_hash: classes.resources.read() },
                 key,
                 resource,
                 travel_time,
@@ -1175,22 +1153,6 @@ pub mod GamesFixture {
     pub impl ProductionCommandsFixture<
         TContractState, +Drop<TContractState>,
     > of crate::production::IProductionCommands<TContractState> {
-        fn burn_labor_for_resource_production(
-            ref self: TContractState,
-            game_id: u32,
-            actor: starknet::ContractAddress,
-            command: crate::production::RefillProduction,
-            context: crate::commands::ActionContext,
-        ) {
-            let classes = fixture_classes(game_id);
-            crate::production::IProductionCommandsDispatcherTrait::burn_labor_for_resource_production(
-                crate::production::IProductionCommandsLibraryDispatcher { class_hash: classes.production.read() },
-                game_id,
-                actor,
-                command,
-                context,
-            )
-        }
         fn burn_resource_for_resource_production(
             ref self: TContractState,
             game_id: u32,
@@ -1292,226 +1254,9 @@ pub mod GamesFixture {
                 context,
             )
         }
-        fn transfer_structure_resources_to_explorer(
-            ref self: TContractState,
-            game_id: u32,
-            actor: starknet::ContractAddress,
-            command: crate::resources::ResourceTransfer,
-            context: crate::commands::ActionContext,
-        ) {
-            let classes = fixture_classes(game_id);
-            crate::commands::IResourceCommandsDispatcherTrait::transfer_structure_resources_to_explorer(
-                crate::commands::IResourceCommandsLibraryDispatcher { class_hash: classes.production.read() },
-                game_id,
-                actor,
-                command,
-                context,
-            )
-        }
     }
-    #[starknet::embeddable]
-    pub impl TradeFixture<TContractState, +Drop<TContractState>> of crate::trade::ITrade<TContractState> {
-        fn trade_rules(self: @TContractState, game_id: u32) -> crate::trade::TradeRules {
-            let classes = fixture_classes(game_id);
-            crate::trade::ITradeDispatcherTrait::trade_rules(
-                crate::trade::ITradeLibraryDispatcher { class_hash: classes.economy.read() }, game_id,
-            )
-        }
-        fn trade_order(self: @TContractState, key: crate::trade::TradeKey) -> Option<crate::trade::TradeOrder> {
-            let classes = fixture_classes(key.game_id);
-            crate::trade::ITradeDispatcherTrait::trade_order(
-                crate::trade::ITradeLibraryDispatcher { class_hash: classes.economy.read() }, key,
-            )
-        }
-        fn create_trade_order(
-            ref self: TContractState,
-            game_id: u32,
-            actor: starknet::ContractAddress,
-            command: crate::trade::CreateOrder,
-            context: crate::commands::ActionContext,
-        ) {
-            let classes = fixture_classes(game_id);
-            crate::trade::ITradeDispatcherTrait::create_trade_order(
-                crate::trade::ITradeLibraryDispatcher { class_hash: classes.economy.read() },
-                game_id,
-                actor,
-                command,
-                context,
-            )
-        }
-        fn accept_trade_order(
-            ref self: TContractState,
-            game_id: u32,
-            actor: starknet::ContractAddress,
-            command: crate::trade::AcceptOrder,
-            context: crate::commands::ActionContext,
-        ) {
-            let classes = fixture_classes(game_id);
-            crate::trade::ITradeDispatcherTrait::accept_trade_order(
-                crate::trade::ITradeLibraryDispatcher { class_hash: classes.economy.read() },
-                game_id,
-                actor,
-                command,
-                context,
-            )
-        }
-        fn cancel_trade_order(
-            ref self: TContractState,
-            game_id: u32,
-            actor: starknet::ContractAddress,
-            trade_id: u64,
-            context: crate::commands::ActionContext,
-        ) {
-            let classes = fixture_classes(game_id);
-            crate::trade::ITradeDispatcherTrait::cancel_trade_order(
-                crate::trade::ITradeLibraryDispatcher { class_hash: classes.economy.read() },
-                game_id,
-                actor,
-                trade_id,
-                context,
-            )
-        }
-    }
-    #[starknet::embeddable]
-    pub impl BankFixture<TContractState, +Drop<TContractState>> of crate::market::IBank<TContractState> {
-        fn bank_rules(self: @TContractState, game_id: u32) -> crate::market::BankRules {
-            let classes = fixture_classes(game_id);
-            crate::market::IBankDispatcherTrait::bank_rules(
-                crate::market::IBankLibraryDispatcher { class_hash: classes.economy.read() }, game_id,
-            )
-        }
-        fn bank_name(self: @TContractState, key: crate::resources::ResourceKey) -> felt252 {
-            let classes = fixture_classes(key.game_id);
-            crate::market::IBankDispatcherTrait::bank_name(
-                crate::market::IBankLibraryDispatcher { class_hash: classes.economy.read() }, key,
-            )
-        }
-        fn market(self: @TContractState, key: crate::market::MarketKey) -> crate::market::Market {
-            let classes = fixture_classes(key.game_id);
-            crate::market::IBankDispatcherTrait::market(
-                crate::market::IBankLibraryDispatcher { class_hash: classes.economy.read() }, key,
-            )
-        }
-        fn liquidity(self: @TContractState, key: crate::market::LiquidityKey) -> u128 {
-            let classes = fixture_classes(key.game_id);
-            crate::market::IBankDispatcherTrait::liquidity(
-                crate::market::IBankLibraryDispatcher { class_hash: classes.economy.read() }, key,
-            )
-        }
-        fn create_banks(
-            ref self: TContractState,
-            game_id: u32,
-            actor: starknet::ContractAddress,
-            banks: Span<crate::market::BankPlacement>,
-            context: crate::commands::ActionContext,
-        ) {
-            let classes = fixture_classes(game_id);
-            crate::market::IBankDispatcherTrait::create_banks(
-                crate::market::IBankLibraryDispatcher { class_hash: classes.economy.read() },
-                game_id,
-                actor,
-                banks,
-                context,
-            )
-        }
-        fn buy_from_bank(
-            ref self: TContractState,
-            game_id: u32,
-            actor: starknet::ContractAddress,
-            command: crate::market::Swap,
-            context: crate::commands::ActionContext,
-        ) {
-            let classes = fixture_classes(game_id);
-            crate::market::IBankDispatcherTrait::buy_from_bank(
-                crate::market::IBankLibraryDispatcher { class_hash: classes.economy.read() },
-                game_id,
-                actor,
-                command,
-                context,
-            )
-        }
-        fn sell_to_bank(
-            ref self: TContractState,
-            game_id: u32,
-            actor: starknet::ContractAddress,
-            command: crate::market::Swap,
-            context: crate::commands::ActionContext,
-        ) {
-            let classes = fixture_classes(game_id);
-            crate::market::IBankDispatcherTrait::sell_to_bank(
-                crate::market::IBankLibraryDispatcher { class_hash: classes.economy.read() },
-                game_id,
-                actor,
-                command,
-                context,
-            )
-        }
-        fn add_bank_liquidity(
-            ref self: TContractState,
-            game_id: u32,
-            actor: starknet::ContractAddress,
-            command: crate::market::AddLiquidity,
-            context: crate::commands::ActionContext,
-        ) {
-            let classes = fixture_classes(game_id);
-            crate::market::IBankDispatcherTrait::add_bank_liquidity(
-                crate::market::IBankLibraryDispatcher { class_hash: classes.economy.read() },
-                game_id,
-                actor,
-                command,
-                context,
-            )
-        }
-        fn remove_bank_liquidity(
-            ref self: TContractState,
-            game_id: u32,
-            actor: starknet::ContractAddress,
-            command: crate::market::RemoveLiquidity,
-            context: crate::commands::ActionContext,
-        ) {
-            let classes = fixture_classes(game_id);
-            crate::market::IBankDispatcherTrait::remove_bank_liquidity(
-                crate::market::IBankLibraryDispatcher { class_hash: classes.economy.read() },
-                game_id,
-                actor,
-                command,
-                context,
-            )
-        }
-    }
-    #[starknet::embeddable]
-    pub impl FaithOwnershipViewsFixture<
-        TContractState, +Drop<TContractState>,
-    > of crate::faith::IFaithOwnershipViews<TContractState> {
-        fn wonder_faith(self: @TContractState, key: crate::resources::ResourceKey) -> crate::faith::WonderFaith {
-            let classes = fixture_classes(key.game_id);
-            crate::faith::IFaithOwnershipViewsDispatcherTrait::wonder_faith(
-                crate::faith::IFaithOwnershipViewsLibraryDispatcher { class_hash: classes.prizes.read() }, key,
-            )
-        }
-        fn faithful_structure(
-            self: @TContractState, key: crate::resources::ResourceKey,
-        ) -> crate::faith::FaithfulStructure {
-            let classes = fixture_classes(key.game_id);
-            crate::faith::IFaithOwnershipViewsDispatcherTrait::faithful_structure(
-                crate::faith::IFaithOwnershipViewsLibraryDispatcher { class_hash: classes.prizes.read() }, key,
-            )
-        }
-        fn player_faith_points(
-            self: @TContractState, key: crate::faith::PlayerFaithKey,
-        ) -> crate::faith::PlayerFaithPoints {
-            let classes = fixture_classes(key.game_id);
-            crate::faith::IFaithOwnershipViewsDispatcherTrait::player_faith_points(
-                crate::faith::IFaithOwnershipViewsLibraryDispatcher { class_hash: classes.prizes.read() }, key,
-            )
-        }
-        fn wonder_faith_winners(self: @TContractState, game_id: u32) -> crate::faith::WonderFaithWinners {
-            let classes = fixture_classes(game_id);
-            crate::faith::IFaithOwnershipViewsDispatcherTrait::wonder_faith_winners(
-                crate::faith::IFaithOwnershipViewsLibraryDispatcher { class_hash: classes.prizes.read() }, game_id,
-            )
-        }
-    }
+
+
     #[starknet::embeddable]
     pub impl BitcoinViewsFixture<
         TContractState, +Drop<TContractState>,
@@ -1687,7 +1432,9 @@ pub mod GamesFixture {
                 crate::withdrawals::IWithdrawalsLibraryDispatcher { class_hash: classes.production.read() }, game_id,
             )
         }
-        fn resource_token(self: @TContractState, key: crate::market::MarketKey) -> starknet::ContractAddress {
+        fn resource_token(
+            self: @TContractState, key: crate::withdrawals::ResourceTokenKey,
+        ) -> starknet::ContractAddress {
             let classes = fixture_classes(key.game_id);
             crate::withdrawals::IWithdrawalsDispatcherTrait::resource_token(
                 crate::withdrawals::IWithdrawalsLibraryDispatcher { class_hash: classes.production.read() }, key,
@@ -2114,33 +1861,7 @@ pub mod GamesFixture {
             )
         }
     }
-    #[starknet::embeddable]
-    pub impl BankWithdrawalFixture<
-        TContractState, +Drop<TContractState>,
-    > of crate::bridge::IBankWithdrawal<TContractState> {
-        fn withdraw_bank_resources(
-            ref self: TContractState,
-            game_id: u32,
-            actor: starknet::ContractAddress,
-            bank_id: u64,
-            resource_type: u8,
-            amount: u128,
-            timestamp: u64,
-            game_context: crate::commands::ActionContext,
-        ) {
-            let classes = fixture_classes(game_id);
-            crate::bridge::IBankWithdrawalDispatcherTrait::withdraw_bank_resources(
-                crate::bridge::IBankWithdrawalLibraryDispatcher { class_hash: classes.production.read() },
-                game_id,
-                actor,
-                bank_id,
-                resource_type,
-                amount,
-                timestamp,
-                game_context,
-            )
-        }
-    }
+
     fn ledger_operator_dispatcher() -> crate::entry::ILedgerOperatorLibraryDispatcher {
         let state = crate::state::read();
         let release_id = state.current_release.read();
@@ -2254,111 +1975,7 @@ pub mod GamesFixture {
             )
         }
     }
-    #[starknet::embeddable]
-    pub impl FaithFixture<TContractState, +Drop<TContractState>> of crate::faith::IFaith<TContractState> {
-        fn faith_rules(self: @TContractState, game_id: u32) -> crate::faith::FaithRules {
-            let classes = fixture_classes(game_id);
-            crate::faith::IFaithDispatcherTrait::faith_rules(
-                crate::faith::IFaithLibraryDispatcher { class_hash: classes.prizes.read() }, game_id,
-            )
-        }
-        fn pledge_faith(
-            ref self: TContractState,
-            game_id: u32,
-            actor: starknet::ContractAddress,
-            command: crate::faith::Pledge,
-            context: crate::commands::ActionContext,
-        ) {
-            let classes = fixture_classes(game_id);
-            crate::faith::IFaithDispatcherTrait::pledge_faith(
-                crate::faith::IFaithLibraryDispatcher { class_hash: classes.prizes.read() },
-                game_id,
-                actor,
-                command,
-                context,
-            )
-        }
-        fn remove_faith(
-            ref self: TContractState,
-            game_id: u32,
-            actor: starknet::ContractAddress,
-            structure_id: u64,
-            context: crate::commands::ActionContext,
-        ) {
-            let classes = fixture_classes(game_id);
-            crate::faith::IFaithDispatcherTrait::remove_faith(
-                crate::faith::IFaithLibraryDispatcher { class_hash: classes.prizes.read() },
-                game_id,
-                actor,
-                structure_id,
-                context,
-            )
-        }
-        fn update_wonder_ownership(
-            ref self: TContractState,
-            game_id: u32,
-            actor: starknet::ContractAddress,
-            wonder_id: u64,
-            context: crate::commands::ActionContext,
-        ) {
-            let classes = fixture_classes(game_id);
-            crate::faith::IFaithDispatcherTrait::update_wonder_ownership(
-                crate::faith::IFaithLibraryDispatcher { class_hash: classes.prizes.read() },
-                game_id,
-                actor,
-                wonder_id,
-                context,
-            )
-        }
-        fn update_faithful_ownership(
-            ref self: TContractState,
-            game_id: u32,
-            actor: starknet::ContractAddress,
-            structure_id: u64,
-            context: crate::commands::ActionContext,
-        ) {
-            let classes = fixture_classes(game_id);
-            crate::faith::IFaithDispatcherTrait::update_faithful_ownership(
-                crate::faith::IFaithLibraryDispatcher { class_hash: classes.prizes.read() },
-                game_id,
-                actor,
-                structure_id,
-                context,
-            )
-        }
-        fn claim_wonder_points(
-            ref self: TContractState,
-            game_id: u32,
-            actor: starknet::ContractAddress,
-            wonder_id: u64,
-            context: crate::commands::ActionContext,
-        ) {
-            let classes = fixture_classes(game_id);
-            crate::faith::IFaithDispatcherTrait::claim_wonder_points(
-                crate::faith::IFaithLibraryDispatcher { class_hash: classes.prizes.read() },
-                game_id,
-                actor,
-                wonder_id,
-                context,
-            )
-        }
-        fn claim_player_faith_points(
-            ref self: TContractState,
-            game_id: u32,
-            actor: starknet::ContractAddress,
-            command: crate::faith::ClaimPlayer,
-            context: crate::commands::ActionContext,
-        ) {
-            let classes = fixture_classes(game_id);
-            crate::faith::IFaithDispatcherTrait::claim_player_faith_points(
-                crate::faith::IFaithLibraryDispatcher { class_hash: classes.prizes.read() },
-                game_id,
-                actor,
-                command,
-                context,
-            )
-        }
-    }
+
     #[starknet::embeddable]
     pub impl RelicsFixture<TContractState, +Drop<TContractState>> of crate::relics::IRelics<TContractState> {
         fn lords_budget(self: @TContractState, game_id: u32) -> Option<crate::relics::LordsBudget> {

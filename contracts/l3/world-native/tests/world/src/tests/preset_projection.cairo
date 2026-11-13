@@ -22,11 +22,6 @@ fn current_frontier_check_launch_starts_unfunded_and_matches_herald_projection()
 }
 
 #[test]
-fn current_eternum_optional_sections_and_map_match_herald_projection() {
-    compare_current_launch("eternum");
-}
-
-#[test]
 #[feature("safe_dispatcher")]
 fn current_frontier_rejects_a_reintroduced_supply_pool() {
     let d = super::registrar::setup();

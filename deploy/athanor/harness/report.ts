@@ -5,9 +5,7 @@ import type { PreparedTerminalReport } from "./terminal-report";
 import { summarizeFrontierDesign, type FrontierEvidence } from "./frontier";
 import { frontierRuleChecks } from "./frontier-rules";
 import type { HarnessRpcRequests } from "./provider";
-import type { LayerRoundTripEvidence } from "./layer-round-trip";
-import type { SeasonFinalizationEvidence } from "./season-lifecycle";
-import { collectGas, type CollectedTransaction, type GasSummary, type TransactionReceiptReader } from "./gas-collector";
+import { collectGas, type GasSummary, type TransactionReceiptReader } from "./gas-collector";
 import { readFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
@@ -84,8 +82,6 @@ export interface HarnessReportInput {
   heraldUrl: string;
   driver: DriverPlacement;
   workload: WorkloadResult;
-  seasonFinalizations?: SeasonFinalizationEvidence[];
-  layerRoundTrips?: LayerRoundTripEvidence[];
   transportRequests?: HarnessRpcRequests;
   /** What escaped every caller in this worker, and the frames no library could parse. */
   workerBoundary?: WorkerBoundaryEvidence;
@@ -229,23 +225,8 @@ export function latencyAgainstTargets(
 
 /** Every transaction the run recorded, by stage, against the node's close-block gas for the measured window. */
 function collectRunGas(input: HarnessReportInput): Promise<GasSummary> {
-  const finalizations: CollectedTransaction[] = (input.seasonFinalizations ?? []).flatMap((finalization) =>
-    finalization.transactionHash === undefined
-      ? []
-      : [
-          {
-            botId: 0,
-            gameId: finalization.gameId,
-            kind: "season_close",
-            outcome: "completed",
-            stage: "finalization",
-            transactionHash: finalization.transactionHash,
-          },
-        ],
-  );
-  const drills = (input.layerRoundTrips ?? []).flatMap((drill) => drill.steps.map((step) => step.transaction));
   return collectGas({
-    transactions: [...input.setupTransactions, ...input.workload.actions, ...drills, ...finalizations],
+    transactions: [...input.setupTransactions, ...input.workload.actions],
     reader: input.receipts,
   });
 }
@@ -282,8 +263,6 @@ export function analyzeHarnessResult(input: HarnessReportInput) {
       input.accounts.every(({ botId }) => completedActions.some((action) => action.botId === botId)),
     setup: setupFailures.length === 0,
     ...(input.workload.frontier && input.functional ? frontierChecks(input.workload.frontier, actions) : {}),
-    layerRoundTrips: input.layerRoundTrips?.every((result) => result.status === "passed") ?? true,
-    seasonsClosed: input.seasonFinalizations?.every((result) => result.status === "closed") ?? true,
     zeroBlockingFailures: blockingFailures.length === 0,
     noUncaughtFailures: (input.workerBoundary?.uncaughtFailures.length ?? 0) === 0,
     zeroBlockingReverts: blockingReverts.length === 0,
@@ -365,8 +344,6 @@ function buildHarnessManifest(
       executionModel: "single_process",
       instances: input.games,
     },
-    seasonFinalizations: input.seasonFinalizations ?? [],
-    layerRoundTrips: input.layerRoundTrips ?? [],
     workload: {
       profile: input.workload.profile ?? "cadence",
       functional: input.functional ?? false,

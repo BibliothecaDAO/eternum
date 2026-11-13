@@ -25,8 +25,7 @@ pub fn damage_config() -> TroopDamageConfig {
         t2_damage_multiplier: 46116860184273879040, // 2.5
         t3_damage_multiplier: 129127208515966861312, // 7
         damage_biome_bonus_num: 3_000, // 30%
-        damage_scaling_factor: 55340232221128654848, // 3
-        damage_raid_percent_num: 5,
+        damage_scaling_factor: 55340232221128654848 // 3
     }
 }
 pub fn stamina_config() -> TroopStaminaConfig {

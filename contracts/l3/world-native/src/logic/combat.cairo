@@ -1,5 +1,5 @@
 use starknet::ContractAddress;
-use starknet::storage::{StorageMapReadAccess, StorageMapWriteAccess, StoragePathEntry, StoragePointerReadAccess};
+use starknet::storage::{StorageMapReadAccess, StoragePathEntry, StoragePointerReadAccess};
 use crate::combat::{CombatContext, TroopsTrait};
 use crate::combat_actions::battle_side;
 use crate::commands::{Battle, ExecutionContext};
@@ -167,10 +167,6 @@ pub fn battle(
     );
 }
 
-pub fn village_last_raided(key: ResourceKey) -> u64 {
-    crate::state::write().combat_domain.village_raids.read((key.game_id, key.entity_id))
-}
-
 pub fn guard_attack(
     game_id: u32, actor: ContractAddress, command: crate::combat_actions::GuardAttack, context: ExecutionContext,
 ) {
@@ -224,107 +220,8 @@ pub fn guard_attack(
     );
 }
 
-pub fn raid(game_id: u32, actor: ContractAddress, command: crate::combat_actions::Raid, context: ExecutionContext) {
-    let rules = authorize(game_id, context);
-    crate::resources::assert_unique_resources(command.steal_resources);
-    let key = ExplorerKey { game_id, explorer_id: command.explorer_id };
-    let explorer = authorized_explorer(key, actor, context);
-    let target_key = ResourceKey { game_id, entity_id: command.structure_id };
-    let target = crate::logic::structures::structure(target_key).expect('missing raid target');
-    assert!(target.owner != actor, "actor owns defender");
-    assert!(explorer.troops.count != 0, "aggressor has no troops");
-    let destination = crate::structures::structure_coord(target_key);
-    assert!(crate::geometry::adjacent(explorer.coord, destination), "raid requires adjacency");
-    assert_battle_immunity(game_id, explorer.owner, rules, context.timestamp, context);
-    assert_battle_immunity(game_id, command.structure_id, rules, context.timestamp, context);
-    assert_loot_available(game_id, command.structure_id, command.steal_resources, context);
-    assert_raid_loot_immunity(game_id, command, target, rules, context.timestamp);
-    let result = resolve_raid(game_id, explorer, target_key, target.base.troop_max_guard_count, destination, context);
-    let troops_before = explorer.troops.count;
-    apply_raid_losses(key, explorer, target_key, result, context);
-    let success = raid_success(game_id, result, context);
-    if success && result.explorer.count != 0 {
-        collect_raid_loot(game_id, command, target, rules, context.timestamp, context);
-    }
-    emit(
-        crate::combat_actions::RaidEvent {
-            version: 2,
-            game_id,
-            explorer_id: command.explorer_id,
-            structure_id: command.structure_id,
-            success,
-            player: actor,
-            target_owner: target.owner,
-            troops_before,
-            troops_after: result.explorer.count,
-            requested_loot: command.steal_resources,
-            timestamp: context.timestamp,
-        },
-    );
-}
-
-pub fn apply_raid_losses(
-    key: ExplorerKey,
-    explorer: ExplorerTroops,
-    target: ResourceKey,
-    result: crate::raid::RaidResolution,
-    game_context: crate::commands::ExecutionContext,
-) {
-    if !result.guarded {
-        return;
-    }
-    combat_troops(key.game_id)
-        .finish_battle(
-            key,
-            ExplorerTroops { troops: result.explorer, ..explorer },
-            explorer.troops.count,
-            crate::commands::action_context(game_context),
-        );
-    for index in 0..result.guards.len() {
-        crate::logic::guards::GuardState::save(
-            crate::guards::GuardKey {
-                game_id: key.game_id,
-                structure_id: target.entity_id,
-                slot: (result.guards.len() - 1 - index).try_into().unwrap(),
-            },
-            *result.guards.at(index),
-        );
-    }
-}
-
 pub fn explorer_owner(key: ExplorerKey, explorer: ExplorerTroops) -> ContractAddress {
     crate::logic::structures::owner(ResourceKey { game_id: key.game_id, entity_id: explorer.owner })
-}
-
-pub fn resolve_raid(
-    game_id: u32,
-    explorer: ExplorerTroops,
-    target: ResourceKey,
-    maximum: u8,
-    destination: Coord,
-    context: ExecutionContext,
-) -> crate::raid::RaidResolution {
-    let mut guards = array![];
-    // Resolve outer guards first, preserving damage and cooldown evaluation order.
-    assert!(maximum <= 4, "invalid guard slot limit");
-    let mut slot = maximum;
-    while slot != 0 {
-        slot -= 1;
-        guards
-            .append(
-                crate::logic::guards::guard(crate::guards::GuardKey { game_id, structure_id: target.entity_id, slot }),
-            );
-    }
-    let biome = map_dispatcher(game_id)
-        .biome(tile_key(game_id, destination), crate::commands::biome_context(context))
-        .into();
-    calculate_raid(game_id, explorer.troops, guards.span(), biome, context.timestamp, context)
-}
-
-pub fn raid_success(game_id: u32, result: crate::raid::RaidResolution, context: ExecutionContext) -> bool {
-    let mut raw_root = context.raw_root;
-    let seed = crate::random::game_root(ref raw_root, game_id);
-    crate::raid::success(result, seed)
 }
 
 // Requested loot is a deterministic refusal, independent of whether the combat roll wins.
@@ -340,47 +237,6 @@ fn assert_loot_available(
         assert!(
             crate::logic::resources::balance(key, *resource.resource_type) >= *resource.amount,
             "insufficient requested loot",
-        );
-    }
-}
-
-fn assert_raid_loot_immunity(
-    game_id: u32, command: crate::combat_actions::Raid, target: Structure, rules: SliceRules, timestamp: u64,
-) {
-    let village = target.base.category == crate::taxonomy::VILLAGE_CATEGORY;
-    let tick = timestamp / rules.tick_config.armies_tick_in_seconds;
-    if village {
-        let last = crate::state::write().combat_domain.village_raids.read((game_id, command.structure_id));
-        if last != 0 && tick < last + rules.battle_config.village_raid_immunity_ticks.into() {
-            for resource in command.steal_resources {
-                assert!(crate::resources::is_troop_resource(*resource.resource_type), "village raid resource immunity");
-            }
-        }
-    }
-}
-
-pub fn collect_raid_loot(
-    game_id: u32,
-    command: crate::combat_actions::Raid,
-    target: Structure,
-    rules: SliceRules,
-    timestamp: u64,
-    game_context: crate::commands::ExecutionContext,
-) {
-    let village = target.base.category == crate::taxonomy::VILLAGE_CATEGORY;
-    let tick = timestamp / rules.tick_config.armies_tick_in_seconds;
-    take_loot(
-        game_id, command.structure_id, command.explorer_id, command.steal_resources, true, timestamp, game_context,
-    );
-    if village {
-        crate::state::write().combat_domain.village_raids.write((game_id, command.structure_id), tick);
-        emit(
-            crate::events::RowSet {
-                version: 1,
-                model: 'VillageRaid',
-                keys: array![game_id.into(), command.structure_id.into()].span(),
-                values: array![tick.into()].span(),
-            },
         );
     }
 }
@@ -587,18 +443,6 @@ pub fn combat_context(
         attacker_is_structure_guard: false,
         defender_is_structure_guard: false,
     }
-}
-
-pub fn calculate_raid(
-    game_id: u32,
-    explorer: Troops,
-    guards: Span<crate::guards::Guard>,
-    biome: crate::biome::Biome,
-    timestamp: u64,
-    game_context: crate::commands::ExecutionContext,
-) -> crate::raid::RaidResolution {
-    let rules = game_context.rules.unbox();
-    crate::raid::resolve(explorer, guards, biome, rules, timestamp)
 }
 
 pub fn resolve_battle(

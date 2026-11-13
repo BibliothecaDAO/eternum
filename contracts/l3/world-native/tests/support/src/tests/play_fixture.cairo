@@ -20,8 +20,7 @@ pub trait IPlayFixture<T> {
     );
     fn last_applied(self: @T) -> bool;
 }
-pub const BLITZ_COMMAND_MASK: u128 = 71478916396378193887;
-pub const ETERNUM_COMMAND_MASK: u128 = 73786976294838206463;
+pub const BLITZ_COMMAND_MASK: u128 = 0x4ffffffffffff;
 pub const BLITZ_RULES: u32 = crate::rules::HOME_REWARDS
     + crate::rules::DISCOVER_CAMPS
     + crate::rules::DISCOVER_CHESTS
@@ -33,15 +32,18 @@ pub const BLITZ_RULES: u32 = crate::rules::HOME_REWARDS
     + crate::rules::PRODUCTION_START
     + crate::rules::COMBAT_DICE_ETHEREAL
     + crate::rules::DISCOVER_SPIRES;
-pub const ETERNUM_RULES: u32 = crate::rules::DISCOVER_HYPERSTRUCTURES
+pub const TEST_RULES: u32 = crate::rules::DISCOVER_HYPERSTRUCTURES
     + crate::rules::SPIRES
     + crate::rules::SEASON_CLOSE
     + crate::rules::DEV_VILLAGE_ENTRY
     + crate::rules::COMBAT_DICE_ETHEREAL;
 pub fn rules() -> crate::rules::SliceRules {
-    let data = read_txt(@FileTrait::new("../fixtures/current-presets/preset-3.txt"));
+    let data = read_txt(@FileTrait::new("../fixtures/current-presets/conformance.txt"));
     let mut fields = data.span();
-    Serde::deserialize(ref fields).unwrap()
+    let rules: crate::rules::SliceRules = Serde::deserialize(ref fields).unwrap();
+    crate::rules::SliceRules {
+        mode_rules: TEST_RULES, command_mask: BLITZ_COMMAND_MASK, entry_rule: crate::rules::ENTRY_ENTITLEMENT, ..rules,
+    }
 }
 pub fn create_games(registry: ContractAddress) {
     for game_id in array![1, 2] {

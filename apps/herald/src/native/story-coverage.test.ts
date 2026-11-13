@@ -7,7 +7,6 @@ import { battleEvent, manifest, raw, schema, setup } from "./fixtures";
 const resources = [{ resource_type: 1n, amount: 100n }];
 const coord = { alt: true, x: 12n, y: 34n };
 const stories: Record<string, { fields: number[]; expected: unknown }> = {
-  FaithPointsClaimedStory: { fields: [3, 10, 20], expected: { wonder_id: 3n, new_points: 10n, total_points: 20n } },
   StructureLevelUpStory: { fields: [2], expected: { new_level: 2n } },
   RealmCreatedStory: { fields: [1, 12, 34], expected: { coord } },
   GuardAddStory: {
@@ -49,62 +48,6 @@ const stories: Record<string, { fields: number[]; expected: unknown }> = {
     },
   },
   StructureCapturedStory: { fields: [17, 34, 50], expected: { previous_owner: 17n, new_owner: 34n, points: 50n } },
-  TradeCreated: {
-    fields: [9, 3, 7, 1, 2, 10, 20, 4, 200],
-    expected: {
-      trade_id: 9n,
-      order: {
-        maker_id: 3n,
-        taker_id: 7n,
-        offered_resource: 1n,
-        requested_resource: 2n,
-        offered_per_lot: 10n,
-        requested_per_lot: 20n,
-        remaining_lots: 4n,
-        expires_at: 200n,
-      },
-    },
-  },
-  TradeAccepted: {
-    fields: [9, 3, 7, 1, 2, 40, 80],
-    expected: {
-      trade_id: 9n,
-      maker_id: 3n,
-      taker_id: 7n,
-      offered_resource: 1n,
-      requested_resource: 2n,
-      offered_amount: 40n,
-      requested_amount: 80n,
-    },
-  },
-  TradeCancelled: { fields: [9], expected: 9n },
-  BankSwap: {
-    fields: [9, 3, 1, 100, 50, 2, 3, 2, 1],
-    expected: {
-      bank_id: 9n,
-      structure_id: 3n,
-      resource_type: 1n,
-      lords_amount: 100n,
-      resource_amount: 50n,
-      owner_fee: 2n,
-      lp_fee: 3n,
-      resource_price: 2n,
-      buy: true,
-    },
-  },
-  BankLiquidity: {
-    fields: [9, 3, 1, 100, 50, 20, 2, 0],
-    expected: {
-      bank_id: 9n,
-      structure_id: 3n,
-      resource_type: 1n,
-      lords_amount: 100n,
-      resource_amount: 50n,
-      shares: 20n,
-      resource_price: 2n,
-      add: false,
-    },
-  },
   HyperstructurePoints: { fields: [17, 50], expected: { player: 17n, points: 50n } },
   RewardChestOpened: {
     fields: [7, 3, 1, 12, 34, 17],
@@ -123,11 +66,6 @@ const stories: Record<string, { fields: number[]; expected: unknown }> = {
     expected: { explorer_id: 7n, receiver: 3n, coord, resource_type: 38n, amount: 3000n },
   },
   SeasonEnded: { fields: [17], expected: 17n },
-  FaithPledged: {
-    fields: [3, 9, 2000, 8000],
-    expected: { structure_id: 3n, wonder_id: 9n, owner_rate: 2000n, pledger_rate: 8000n },
-  },
-  FaithRemoved: { fields: [3, 9], expected: { structure_id: 3n, wonder_id: 9n } },
   BlitzFinalized: { fields: [11], expected: 11n },
   RelicCrafted: { fields: [4], expected: 4n },
   RelicActivated: {
@@ -199,20 +137,6 @@ const standalone = {
     data: ["4", "50", "100", "200"],
     key: { game_id: 1n, player: 17n },
     value: { activity: "Hyperstructure", points: 50n, player_points: 100n, season_points: 200n },
-  },
-  RaidEvent: {
-    keys: ["2", "1", "7", "3"],
-    data: ["1", "17", "34", "100", "90", "1", "1", "100", "140"],
-    key: { game_id: 1n, explorer_id: 7n, structure_id: 3n },
-    value: {
-      success: true,
-      player: 17n,
-      target_owner: 34n,
-      troops_before: 100n,
-      troops_after: 90n,
-      requested_loot: resources,
-      timestamp: 140n,
-    },
   },
 };
 

@@ -166,9 +166,6 @@ pub mod GamesEntry {
                     game, crate::logic::lords_budget::chest_rules(game_id), starknet::get_block_timestamp(),
                 );
             }
-            if route.selector == selector!("create_banks") {
-                crate::logic::release::assert_launcher();
-            }
             actor
         }
 
