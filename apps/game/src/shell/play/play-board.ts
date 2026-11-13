@@ -76,11 +76,7 @@ const LEAD_ORDER: readonly ((item: PlayItem) => boolean)[] = [
 ];
 
 export const playBoard = (facts: PlayBoardFacts): PlayBoard => {
-  const items = [
-    ...blitzItems(facts.blitz),
-    ...frontierItems(facts),
-    ...resultItems(facts),
-  ];
+  const items = [...blitzItems(facts.blitz), ...frontierItems(facts), ...resultItems(facts)];
   const lead = LEAD_ORDER.map((matches) => items.find(matches)).find((item) => item !== undefined) ?? null;
   const rest = items.filter((item) => item !== lead);
   const ages = Object.fromEntries(

@@ -2737,10 +2737,7 @@ export class ArmyManager {
   /** The army's path colour, as its plate tells its side: its side's, or its owner's seat colour to a watcher. */
   private pathColourOf(army: ArmyData): Color {
     const owner = army.owner.address;
-    return armyPathColour(
-      { isMine: army.isMine, isAlly: false, owner: army.owner },
-      watchedSide(this.store, owner),
-    );
+    return armyPathColour({ isMine: army.isMine, isAlly: false, owner: army.owner }, watchedSide(this.store, owner));
   }
 
   private getArmyColorProfile(army: {
@@ -2748,11 +2745,7 @@ export class ArmyManager {
     isAlly?: boolean;
     owner?: { address: bigint };
   }): PlayerColorProfile {
-    return playerColorManager.getProfileForUnit(
-      army.isMine,
-      army.isAlly ?? false,
-      army.owner?.address,
-    );
+    return playerColorManager.getProfileForUnit(army.isMine, army.isAlly ?? false, army.owner?.address);
   }
 
   /**

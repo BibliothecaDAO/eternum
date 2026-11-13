@@ -4,16 +4,16 @@ import { nativePresetForId, nativePresetIdFor } from "../../../../config/source/
 import { nativeCommandBits } from "../../../../contracts/l3/world-native/schema/commands.gen";
 import { enabledHelpTransfers } from "./army-help";
 
-const enabledIn = (game: "frontier" | "blitz" | "eternum") => {
+const enabledIn = (game: "frontier" | "blitz") => {
   const mask = nativePresetForId(nativePresetIdFor(game)).commandMask;
   return (command: keyof typeof nativeCommandBits) => (mask & BigInt(nativeCommandBits[command])) !== 0n;
 };
 
 describe("army help transfers", () => {
-  it("offers what each game's command mask allows: Frontier merges armies, the arena and Eternum move relics too", () => {
+  it("offers what each game's command mask allows: Frontier merges armies, Blitz moves relics too", () => {
     expect(enabledHelpTransfers(enabledIn("frontier"), "armies", false)).toEqual(["troops"]);
     expect(enabledHelpTransfers(enabledIn("blitz"), "armies", true)).toEqual(["troops", "relics"]);
-    expect(enabledHelpTransfers(enabledIn("eternum"), "to-structure", true)).toEqual(["troops", "relics"]);
+    expect(enabledHelpTransfers(enabledIn("blitz"), "to-structure", true)).toEqual(["troops", "relics"]);
   });
 
   it("moves troops into a structure only where it has guard slots, so a Frontier realm takes none", () => {

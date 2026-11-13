@@ -23,5 +23,4 @@ describe("realm actions follow the game's command mask", () => {
   it("keeps Blitz's actions", () => {
     expect(offeredIn("blitz")).toEqual(["build", "production", "military", "transfer"]);
   });
-
 });

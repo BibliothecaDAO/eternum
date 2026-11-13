@@ -34,10 +34,7 @@ type SimulationKind = (typeof SIMULATION_KINDS)[number];
 
 /** One flat object: tool schemas must be objects at the root, so the per-kind requirements are checked in execute. */
 const SimulateParams = Type.Object({
-  kind: StringEnum(
-    SIMULATION_KINDS,
-    "combat: attackerId vs defenderId. building_cost: structureId + buildingType.",
-  ),
+  kind: StringEnum(SIMULATION_KINDS, "combat: attackerId vs defenderId. building_cost: structureId + buildingType."),
   attackerId: Type.Optional(EntityId("My attacking explorer army.")),
   defenderId: Type.Optional(EntityId("The defending explorer army or structure (combat).")),
   structureId: Type.Optional(EntityId("The realm that would build.")),
