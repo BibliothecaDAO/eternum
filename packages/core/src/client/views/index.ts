@@ -15,7 +15,6 @@ import type { GameClient } from "../game-client";
 import type { PlayerNameResolver } from "../../utils/entities";
 import { readExplorers, readStaminaManager } from "./armies";
 import { readGuildMembers, readGuildWhitelist } from "./guilds";
-import { type MarketView, readMarket, readOpenTrades } from "./market";
 import { readResourceArrivals, readResourceManager } from "./resources";
 import {
   type BuildingTiles,
@@ -31,7 +30,6 @@ import {
 } from "./structures";
 export * from "./armies";
 export * from "./guilds";
-export * from "./market";
 export * from "./resources";
 export * from "./structures";
 
@@ -53,7 +51,6 @@ export interface GameViews {
   guildMembers(guildEntityId: ContractAddress): GuildMemberInfo[];
   guildWhitelist(guildEntityId: ContractAddress): GuildMemberInfo[];
   playerWhitelist(playerAddress: ContractAddress): GuildMemberInfo[];
-  market(owner: ContractAddress, currentBlockTimestamp: number): MarketView;
 }
 
 export const createGameViews = (
@@ -78,10 +75,5 @@ export const createGameViews = (
     guildMembers: (id) => readGuildMembers(store, id, viewer, playerName),
     guildWhitelist: (id) => readGuildWhitelist(store, viewer, { guildId: id }, playerName),
     playerWhitelist: (player) => readGuildWhitelist(store, viewer, { player }, playerName),
-    market: (owner, timestamp) =>
-      readMarket(readOpenTrades(store, timestamp, playerName), [
-        ...readStructureIds(store, owner, StructureType.Realm),
-        ...readStructureIds(store, owner, StructureType.Village),
-      ]),
   };
 };

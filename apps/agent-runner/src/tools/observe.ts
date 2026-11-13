@@ -12,7 +12,6 @@ import {
   type ContractAddress,
   findResourceById,
   type ID,
-  type MarketInterface,
   type RealmInfo,
   ResourcesIds,
   type Structure,
@@ -26,7 +25,7 @@ import { readGameRegistry, resolveGamePhase, type GameRegistryClock } from "../g
 import { clipList, clipText, textResult } from "./result";
 import { StringEnum } from "./schema";
 
-export const OBSERVE_FOCUSES = ["empire", "armies", "nearby", "market", "leaderboard", "events"] as const;
+export const OBSERVE_FOCUSES = ["empire", "armies", "nearby", "leaderboard", "events"] as const;
 type ObserveFocus = (typeof OBSERVE_FOCUSES)[number];
 
 /** Summaries stay under this many characters so a turn's context is spent on judgement, not on a dump. */
@@ -38,7 +37,7 @@ const STAPLE_RESOURCES = [ResourcesIds.Wheat, ResourcesIds.Fish, ResourcesIds.La
 
 const ObserveParams = Type.Object({
   focus: Type.Optional(
-    StringEnum(OBSERVE_FOCUSES, "empire (default): my structures. armies, nearby, market, leaderboard, events."),
+    StringEnum(OBSERVE_FOCUSES, "empire (default): my structures. armies, nearby, leaderboard, events."),
   ),
 });
 
@@ -63,8 +62,6 @@ export const renderFocus = (game: RunnerGame, focus: ObserveFocus): string => {
       return renderArmies(game);
     case "nearby":
       return renderNearby(game);
-    case "market":
-      return renderMarket(game);
     case "leaderboard":
       return renderLeaderboard(game);
     case "events":
@@ -209,26 +206,6 @@ const describeOwner = (game: RunnerGame, structureId: ID): string => {
   if (owner === undefined) return "(unknown owner)";
   if (owner === game.viewer()) return "(mine)";
   return `(${playerName(owner)})`;
-};
-
-// Market
-
-const renderMarket = (game: RunnerGame): string => {
-  const { currentBlockTimestamp } = getBlockTimestamp();
-  const market = game.client.views.market(game.viewer(), currentBlockTimestamp);
-  const section = (title: string, trades: MarketInterface[]) =>
-    [`${title} (${trades.length}):`, ...clipList(trades.map(renderTrade), 5)].join("\n");
-  return [
-    section("My open trades", market.userTrades),
-    section("Lords bids", market.bidOffers),
-    section("Lords asks", market.askOffers),
-  ].join("\n");
-};
-
-const renderTrade = (trade: MarketInterface): string => {
-  const gives = trade.makerGets.map((r) => `${r.amount} ${resourceName(r.resourceId)}`).join("+");
-  const wants = trade.takerGets.map((r) => `${r.amount} ${resourceName(r.resourceId)}`).join("+");
-  return `trade #${trade.tradeId} by ${trade.makerName || trade.originName}: gives ${wants} for ${gives}, expires ${new Date(trade.expiresAt * 1000).toISOString()}`;
 };
 
 // Leaderboard

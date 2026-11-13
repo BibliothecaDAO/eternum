@@ -32,7 +32,6 @@ export * from "./resources";
 export * from "./structure";
 export * from "./tile";
 export * from "./timestamp";
-export * from "./trades";
 export * from "./transport";
 export * from "./travel";
 export * from "./utils";
