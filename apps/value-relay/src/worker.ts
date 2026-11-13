@@ -29,6 +29,7 @@ import { processSeasonTops } from "./season-tops";
 import { seasonLedgerReads, postSeasonTop } from "./season-ledger";
 import { ledgerBatches } from "./ledger-batches";
 import { isLedgerReadTick } from "@realms-world/chain";
+import { raiseCause, retryCause, takeCause } from "./ledger-cause";
 import { onIdentityChain } from "./ledger-chain";
 import { openSlotOnLedger, refundSlotOnLedger, markSlotRefundable } from "./blitz-launch";
 import { currentLaborDay, writeLaborGrant } from "./shard-labor";
@@ -79,6 +80,19 @@ interface RelayEnv extends RelaySettings {
 }
 
 const LEDGER_TICK_DUE = "ledgerTick:due";
+const RECONCILE_DUE = "reconcile:due";
+
+const ledgerTickFinished = (observation: {
+  seasons: string | null | { error: string };
+  chests: { failed: number; pending: number } | null;
+  chest_error?: string | null;
+}) =>
+  (observation.seasons === null ||
+    (typeof observation.seasons === "string" && observation.seasons.startsWith("season_review_pending"))) &&
+  observation.chests !== null &&
+  !observation.chest_error &&
+  observation.chests.failed === 0 &&
+  observation.chests.pending === 0;
 const DELIVERY_THROTTLE_MS = 10_000;
 
 interface ShardObservation {
@@ -107,18 +121,27 @@ export class ValueRelay extends DurableObject<RelayEnv> {
   }
   /** The relay's own write is the cause to read the ledger again, here and in the monitor, without waiting for the hour. */
   private async ledgerWritten() {
-    await this.ctx.storage.put(LEDGER_TICK_DUE, true);
+    await raiseCause(this.ctx.storage, LEDGER_TICK_DUE);
     try {
       await this.env.ROSTER_MONITOR.ledgerWritten();
     } catch {
       /* The hourly audit still reads what a lost notice announced. */
     }
   }
-  /** The minute's ledger tick: it runs on the hour, or when the relay wrote since the last one. */
+  /**
+   * The minute's ledger tick: it runs on the hour, or when the relay wrote since the last one. The cause is kept until
+   * the tick finished its work: a failure, season events still to read or chests still pending ask again in five minutes.
+   */
   async ledgerTickIfDue(hourly: boolean) {
-    if (!hourly && !(await this.ctx.storage.get<true>(LEDGER_TICK_DUE))) return null;
-    await this.ctx.storage.delete(LEDGER_TICK_DUE);
-    return this.ledgerTick();
+    if (!(await takeCause(this.ctx.storage, LEDGER_TICK_DUE, hourly))) return null;
+    try {
+      const observation = await this.ledgerTick();
+      if (!ledgerTickFinished(observation)) await retryCause(this.ctx.storage, LEDGER_TICK_DUE);
+      return observation;
+    } catch (error) {
+      await retryCause(this.ctx.storage, LEDGER_TICK_DUE);
+      throw error;
+    }
   }
   async ledgerTick() {
     const relay = this;
@@ -197,7 +220,13 @@ export class ValueRelay extends DurableObject<RelayEnv> {
       ),
     );
   }
-  async tick(chainId?: string, reconcile = false) {
+  /** An operator's action (a voided report, a reset) is the cause to ask the ledger about held claims at the next tick. */
+  async requestReconcile() {
+    await raiseCause(this.ctx.storage, RECONCILE_DUE);
+  }
+  async tick(chainId?: string, hourly = false) {
+    const asked = await takeCause(this.ctx.storage, RECONCILE_DUE, false);
+    const reconcile = asked || hourly;
     const chain = chainId ?? (await this.ctx.storage.get<string>("chain"));
     if (!chain) return { status: "unavailable" as const, reason: "actor_chain_unbound" };
     const relay = this;
@@ -248,6 +277,8 @@ export class ValueRelay extends DurableObject<RelayEnv> {
                 : { status: "unavailable", reason: value.failure.operation },
             };
             await relay.ctx.storage.put("shardTick", observation);
+            if (asked && !(Result.isSuccess(value) && value.success.status === "ready"))
+              await retryCause(relay.ctx.storage, RECONCILE_DUE);
             if (Result.isSuccess(value) && value.success.status === "ready" && value.success.more)
               await relay.ctx.storage.setAlarm(Date.now());
             return observation;
@@ -753,6 +784,11 @@ export class RelayDiagnostics extends WorkerEntrypoint<RelayEnv> {
   held() {
     return heldOf(this.env);
   }
+  /** The monitor's operator reset follows an admin's void of a report: the held honest claims are asked about now. */
+  async recoverHeld() {
+    for (const shard of await activeShards(this.env.IDENTITY))
+      await relayOf(this.env, shard.chainId).requestReconcile();
+  }
 }
 export class ValueLaunch extends WorkerEntrypoint<RelayEnv> {
   override fetch() {
@@ -826,9 +862,9 @@ export default {
       )
         return Response.json({ error: "reset_row_and_reason_required" }, { status: 400 });
       try {
-        return Response.json(
-          await relayOf(env, body.chainId as string).reset(body.chainId as string, body.row, body.reason),
-        );
+        const reset = await relayOf(env, body.chainId as string).reset(body.chainId as string, body.row, body.reason);
+        await relayOf(env, body.chainId as string).requestReconcile();
+        return Response.json(reset);
       } catch {
         return Response.json({ error: "fault_row_mismatch_or_unavailable" }, { status: 409 });
       }

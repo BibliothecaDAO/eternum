@@ -66,21 +66,84 @@ it("reports a failed value read without a green health result", async () => {
   expect(observation.value_error).toBeTruthy();
   expect((await f.monitor.health()).success).toBe(false);
 });
-it("audits between hours only after the relay wrote, and again if that audit failed to run", async () => {
-  const f = fixture();
-  expect(await f.monitor.auditIfDue(false)).toBeNull();
-  expect(f.data.has("observation")).toBe(false);
-  await f.monitor.ledgerWritten();
-  expect(await f.monitor.auditIfDue(false)).not.toBeNull();
-  expect(f.data.has("audit:due")).toBe(false);
-  expect(await f.monitor.auditIfDue(false)).toBeNull();
-  const before = f.data.get("observation");
-  await f.monitor.ledgerWritten();
-  vi.spyOn(f.monitor, "tick").mockRejectedValueOnce(new Error("unavailable"));
-  await expect(f.monitor.auditIfDue(false)).rejects.toThrow("unavailable");
-  expect(f.data.get("audit:due")).toBe(true);
-  expect(f.data.get("observation")).toBe(before);
-  expect(await f.monitor.auditIfDue(true)).not.toBeNull();
+it("audits between hours only after the relay wrote, and a thrown audit asks again", async () => {
+  vi.useFakeTimers();
+  vi.setSystemTime(new Date("2026-11-14T12:00:30Z"));
+  try {
+    const f = fixture();
+    expect(await f.monitor.auditIfDue(false)).toBeNull();
+    expect(f.data.has("observation")).toBe(false);
+    const tick = vi.spyOn(f.monitor, "tick");
+    tick.mockResolvedValueOnce({ value: { halted: null }, value_error: null, season_error: null } as never);
+    await f.monitor.ledgerWritten();
+    expect(await f.monitor.auditIfDue(false)).not.toBeNull();
+    expect(f.data.has("audit:due")).toBe(false);
+    expect(await f.monitor.auditIfDue(false)).toBeNull();
+    await f.monitor.ledgerWritten();
+    tick.mockRejectedValueOnce(new Error("unavailable"));
+    await expect(f.monitor.auditIfDue(false)).rejects.toThrow("unavailable");
+    expect(f.data.get("audit:due")).toBe(Math.floor(Date.now() / 1000) + 300);
+    expect(await f.monitor.auditIfDue(true)).not.toBeNull();
+  } finally {
+    vi.useRealTimers();
+  }
+});
+const audited = { value: { halted: null }, value_error: null, season_error: null, deposit_error: null };
+it.each([
+  ["a failed value read", { ...audited, value_error: "ledger reports unavailable" }],
+  ["a failed deposit audit", { ...audited, deposit_error: "deposit_receipt_snapshot_pending" }],
+  ["an unavailable season audit", { ...audited, season_error: "season_unavailable" }],
+  ["season history still to read", { ...audited, season_error: "season_history_pending" }],
+  [
+    "a page of ledger events still to read",
+    { ...audited, value: { halted: null, cursors: { paidClaims: { page: "p2" } } } },
+  ],
+])("asks again in five minutes, without a new write, after %s", async (_, observation) => {
+  vi.useFakeTimers();
+  vi.setSystemTime(new Date("2026-11-14T12:00:30Z"));
+  try {
+    const f = fixture();
+    const tick = vi.spyOn(f.monitor, "tick").mockResolvedValue(observation as never);
+    await f.monitor.ledgerWritten();
+    await f.monitor.auditIfDue(false);
+    expect(tick).toHaveBeenCalledTimes(1);
+    for (let minute = 1; minute < 5; minute++) {
+      vi.advanceTimersByTime(60_000);
+      expect(await f.monitor.auditIfDue(false)).toBeNull();
+    }
+    expect(tick).toHaveBeenCalledTimes(1);
+    vi.advanceTimersByTime(60_000);
+    tick.mockResolvedValue(audited as never);
+    await f.monitor.auditIfDue(false);
+    expect(tick).toHaveBeenCalledTimes(2);
+    vi.advanceTimersByTime(600_000);
+    expect(await f.monitor.auditIfDue(false)).toBeNull();
+    expect(tick).toHaveBeenCalledTimes(2);
+  } finally {
+    vi.useRealTimers();
+  }
+});
+it("keeps the cause when the real tick fails on an unavailable ledger, and does not audit a halted monitor again", async () => {
+  vi.useFakeTimers();
+  vi.setSystemTime(new Date("2026-11-14T12:00:30Z"));
+  try {
+    const f = fixture();
+    await f.monitor.ledgerWritten();
+    const observation = await f.monitor.auditIfDue(false);
+    expect(observation?.value_error).toBeTruthy();
+    expect(f.data.get("audit:due")).toBe(Math.floor(Date.now() / 1000) + 300);
+    f.data.delete("audit:due");
+    vi.spyOn(f.monitor, "tick").mockResolvedValue({
+      ...audited,
+      value: { halted: "lords_conservation:7:10" },
+      value_error: "x",
+    } as never);
+    await f.monitor.ledgerWritten();
+    await f.monitor.auditIfDue(false);
+    expect(f.data.has("audit:due")).toBe(false);
+  } finally {
+    vi.useRealTimers();
+  }
 });
 it("reports a fresh completed audit as healthy, and refuses stale or paused progress", async () => {
   const f = fixture();

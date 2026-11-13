@@ -9,6 +9,7 @@ import { processSeasonTops } from "./season-tops";
 import { seasonLedgerReads, challengeSeason } from "./season-ledger";
 import { isLedgerReadTick, LEDGER_READ_STALE_SECONDS } from "@realms-world/chain";
 import { onIdentityChain } from "./ledger-chain";
+import { raiseCause, retryCause, takeCause } from "./ledger-cause";
 import { presentsOperatorToken } from "@realms-world/identity";
 import { DurableObject, WorkerEntrypoint } from "cloudflare:workers";
 import { Effect, Result, Semaphore } from "effect";
@@ -30,26 +31,48 @@ interface MonitorEnv extends MonitorSettings {
       realmsIdForAccount(account: string): Promise<string | null>;
       matchesPayDecision(decision: import("@realms-world/identity").LedgerPayDecision): Promise<boolean>;
     };
-  RELAY_REPORT: { held(): Promise<{ kind: string; reason: string; transactionHash: string | null }[]> };
+  RELAY_REPORT: {
+    held(): Promise<{ kind: string; reason: string; transactionHash: string | null }[]>;
+    recoverHeld(): Promise<void>;
+  };
   MONITOR: DurableObjectNamespace<ValueMonitor>;
 }
 
 const AUDIT_DUE = "audit:due";
 
+/** What `tick` returns when the audit ran: errors and unread pages mean more to do; a halted monitor waits for its operator. */
+const auditFinished = (observation: {
+  value: { halted: string | null; cursors?: Record<string, { page: string | null } | undefined> } | null;
+  value_error: string | null;
+  season_error: string | null;
+  deposit_error?: string | null;
+}) =>
+  observation.value?.halted
+    ? true
+    : observation.value !== null &&
+      observation.value_error === null &&
+      !observation.deposit_error &&
+      (observation.season_error === null || observation.season_error.startsWith("season_review_pending")) &&
+      Object.values(observation.value.cursors ?? {}).every((cursor) => !cursor?.page);
+
 export class ValueMonitor extends DurableObject<MonitorEnv> {
   private readonly checking = Semaphore.makeUnsafe(1);
   /** A relay write is a cause to audit: the next minute's tick reads the ledger, whatever the hour. */
   async ledgerWritten() {
-    await this.ctx.storage.put(AUDIT_DUE, true);
+    await raiseCause(this.ctx.storage, AUDIT_DUE);
   }
-  /** The minute's tick: audits on the hour, or when the relay wrote since the last audit. */
+  /**
+   * The minute's tick: audits on the hour, or when the relay wrote since the last audit. The cause is kept until the
+   * audit finished its work: a failure, or a page of events still to read, asks again in five minutes.
+   */
   async auditIfDue(hourly: boolean) {
-    if (!hourly && !(await this.ctx.storage.get<true>(AUDIT_DUE))) return null;
-    await this.ctx.storage.delete(AUDIT_DUE);
+    if (!(await takeCause(this.ctx.storage, AUDIT_DUE, hourly))) return null;
     try {
-      return await this.tick();
+      const observation = await this.tick();
+      if (!auditFinished(observation)) await retryCause(this.ctx.storage, AUDIT_DUE);
+      return observation;
     } catch (error) {
-      await this.ledgerWritten();
+      await retryCause(this.ctx.storage, AUDIT_DUE);
       throw error;
     }
   }
@@ -454,9 +477,13 @@ export default {
       )
         return Response.json({ error: "reset_reason_required" }, { status: 400 });
       try {
-        return Response.json(await monitorOf(env).reset(body.row, body.reason), {
-          headers: { "cache-control": "no-store" },
-        });
+        const reset = await monitorOf(env).reset(body.row, body.reason);
+        try {
+          await env.RELAY_REPORT.recoverHeld();
+        } catch {
+          // The hourly reconciliation still asks about held claims if this notice is lost.
+        }
+        return Response.json(reset, { headers: { "cache-control": "no-store" } });
       } catch {
         return Response.json({ error: "fault_row_mismatch" }, { status: 409 });
       }

@@ -130,3 +130,10 @@ Deposits follow the same rule. The ledger emits no event for a deposit, so the r
 `deposit_count`; it does that on the hour, while a deposit is pending or failed, and when the player's page reports that
 its payment landed (`POST /api/value/deposits/deliver?chainId=`, same-origin and signed in, one pass per ten seconds per
 shard). A deposit nobody reported waits for the hour.
+
+A cause is kept until the work it asked for is finished: an audit or ledger tick that failed, or left events, pages or
+chests still to read, asks again after five minutes (`LEDGER_RETRY_SECONDS`), not on the next hour. A halted monitor is
+not retried: it waits for its operator. After an admin voids a forged report, the operator's `monitor/reset` (or the
+relay's `operator/reset`) asks the relay to ask the ledger about its held claims at the next tick; the hourly pass is
+the safety net. A stored deposit anchor whose block Ethereum never accepted is dropped when the chain replaced it, and
+the next payment is decided from the canonical chain; one whose block Ethereum accepted stays a fault.

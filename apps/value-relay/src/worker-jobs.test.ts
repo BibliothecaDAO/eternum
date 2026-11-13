@@ -13,6 +13,7 @@ import { Effect } from "effect";
 import { beforeEach, expect, it, vi } from "vitest";
 import { ValuePlaneAddressMissingError } from "@realms-world/chain";
 import worker, { ValueRelay } from "./worker";
+import { RelayFailure } from "./ports";
 
 vi.mock("cloudflare:workers", () => ({
   WorkerEntrypoint: class {},
@@ -41,6 +42,19 @@ vi.mock("./deposits", async (original) => ({
   ...(await original<typeof import("./deposits")>()),
   relayDeposits: deposits,
 }));
+const seasons = vi.hoisted(() => vi.fn());
+vi.mock("./season-tops", () => ({ processSeasonTops: seasons }));
+const runRelayCalls = vi.hoisted(() => vi.fn());
+vi.mock("./relay", async (original) => {
+  const real = await original<typeof import("./relay")>();
+  return {
+    ...real,
+    runRelay: (...args: Parameters<typeof real.runRelay>) => {
+      runRelayCalls(...args);
+      return real.runRelay(...args);
+    },
+  };
+});
 const finish = vi.hoisted(() => vi.fn());
 vi.mock("./chests", () => ({ DurableChestStore: class {}, finishRequestedChests: finish }));
 it("runs ledger-wide chest work independently of any configured shard", async () => {
@@ -82,6 +96,7 @@ vi.mock("./shard-labor", () => ({ currentLaborDay: () => Effect.succeed(4), writ
 vi.mock("./shard-account", () => ({ joinShardOperator: vi.fn(async () => "0x5") }));
 beforeEach(() => {
   vi.clearAllMocks();
+  seasons.mockReturnValue(Effect.fail(new RelayFailure({ operation: "season_unavailable" })));
   address.mockReturnValue("0x10");
 });
 it("records unavailable ledger work while shard ingestion and owned Realm labor continue", async () => {
@@ -196,6 +211,18 @@ const shardRelay = () => {
     } as never,
   );
 };
+it("asks the ledger about held claims on the next tick after an operator's request, and otherwise on the hour", async () => {
+  deposits.mockResolvedValue(settledDeposits);
+  const relay = shardRelay();
+  const reconciling = () => runRelayCalls.mock.calls.map((call) => call[3]);
+  await relay.tick("0x1");
+  await relay.tick("0x1");
+  await relay.requestReconcile();
+  await relay.tick("0x1");
+  await relay.tick("0x1");
+  await relay.tick("0x1", true);
+  expect(reconciling()).toEqual([false, false, true, false, true]);
+});
 it("looks for deposits on the hour, and between hours only while one is pending", async () => {
   deposits.mockResolvedValue(settledDeposits);
   const relay = shardRelay();
@@ -227,6 +254,49 @@ it("delivers a landed deposit at once; one player's repeat ask shares an answer,
   expect(deposits).toHaveBeenCalledTimes(1);
   await relay.deliverDeposits("0x1", "0x78");
   expect(deposits).toHaveBeenCalledTimes(2);
+});
+it.each([
+  ["a chest still pending", Effect.succeed({ finished: 0, failed: 0, pending: 1 })],
+  ["a failed chest", Effect.succeed({ finished: 0, failed: 1, pending: 0 })],
+  ["an unavailable chest read", Effect.fail(new RelayFailure({ operation: "ledger chests unavailable" }))],
+])("asks the ledger tick again in five minutes, without a new write, after %s", async (_, outcome) => {
+  vi.useFakeTimers();
+  vi.setSystemTime(new Date("2026-11-14T12:00:30Z"));
+  try {
+    const data = new Map<string, unknown>();
+    const ctx = {
+      blockConcurrencyWhile: async (run: () => Promise<unknown>) => run(),
+      storage: {
+        setAlarm: async () => {},
+        get: async (key: string) => data.get(key),
+        list: async () => new Map(),
+        put: async (key: string, value: unknown) => void data.set(key, value),
+        delete: async (key: string) => data.delete(key),
+      },
+    };
+    finish.mockReturnValue(outcome);
+    seasons.mockReturnValue(Effect.succeed(null));
+    const relay = new ValueRelay(
+      ctx as unknown as DurableObjectState,
+      { IDENTITY: { l2ChainId: async () => "0x1" }, ROSTER_MONITOR: { ledgerWritten: async () => {} } } as never,
+    );
+    await (relay as unknown as { ledgerWritten(): Promise<void> }).ledgerWritten();
+    await relay.ledgerTickIfDue(false);
+    expect(finish).toHaveBeenCalledTimes(1);
+    for (let minute = 1; minute < 5; minute++) {
+      vi.advanceTimersByTime(60_000);
+      expect(await relay.ledgerTickIfDue(false)).toBeNull();
+    }
+    expect(finish).toHaveBeenCalledTimes(1);
+    vi.advanceTimersByTime(60_000);
+    finish.mockReturnValue(Effect.succeed({ finished: 1, failed: 0, pending: 0 }));
+    await relay.ledgerTickIfDue(false);
+    expect(finish).toHaveBeenCalledTimes(2);
+    vi.advanceTimersByTime(600_000);
+    expect(await relay.ledgerTickIfDue(false)).toBeNull();
+  } finally {
+    vi.useRealTimers();
+  }
 });
 it("asks the ledger side to read once an hour while shards tick every minute", async () => {
   const ledgerTickIfDue = vi.fn();

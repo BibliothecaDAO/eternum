@@ -49,3 +49,29 @@ it("audits on the hour, and between hours only when the relay wrote", async () =
   expect(auditIfDue).toHaveBeenCalledTimes(120);
   expect(auditIfDue.mock.calls.flatMap(([hourly], minute) => (hourly ? [minute] : []))).toEqual([0, 60]);
 });
+it("tells the relay to ask about held claims once an operator's reset succeeded, and still answers if the notice is lost", async () => {
+  const reset = vi.fn(async () => ({ halted: null }));
+  const recoverHeld = vi.fn(async () => {});
+  const env = {
+    ...settings,
+    MONITOR: { idFromName: (name: string) => name, get: () => ({ reset }) },
+    RELAY_REPORT: { recoverHeld },
+  } as never;
+  const ask = () =>
+    worker.fetch(
+      new Request("https://play.test/api/operator/monitor/reset", {
+        method: "POST",
+        headers: { authorization: "Bearer test-token" },
+        body: JSON.stringify({ row: "reportedClaims:0x1:0xab", reason: "voided the forged report" }),
+      }),
+      env,
+    );
+  expect((await ask()).status).toBe(200);
+  expect(recoverHeld).toHaveBeenCalledTimes(1);
+  recoverHeld.mockRejectedValue(new Error("relay unavailable"));
+  expect((await ask()).status).toBe(200);
+  reset.mockRejectedValue(new Error("fault_row_mismatch"));
+  recoverHeld.mockClear();
+  expect((await ask()).status).toBe(409);
+  expect(recoverHeld).not.toHaveBeenCalled();
+});

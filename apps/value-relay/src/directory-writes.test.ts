@@ -44,7 +44,7 @@ it("serializes ledger reports for different official shards and rechecks retirem
     ],
   };
   const relay = new ValueRelay(
-    { storage: { put: async () => {} } } as unknown as DurableObjectState,
+    { storage: { get: async () => undefined, put: async () => {} } } as unknown as DurableObjectState,
     {
       IDENTITY: identity,
       ROSTER_MONITOR: { ledgerWritten: async () => {} },
@@ -85,7 +85,7 @@ it.each([
 ])("tells the monitor about a batch only if a claim was written (error: $error)", async ({ error, announced }) => {
   const written = vi.fn(async () => {});
   const relay = new ValueRelay(
-    { storage: { put: async () => {} } } as unknown as DurableObjectState,
+    { storage: { get: async () => undefined, put: async () => {} } } as unknown as DurableObjectState,
     {
       IDENTITY: { l2ChainId: async () => "0x3", shards: async () => [{ chainId: "0x1", status: "active" }] },
       ROSTER_MONITOR: { ledgerWritten: written },

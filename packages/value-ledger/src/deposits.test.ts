@@ -117,3 +117,54 @@ it("pins every custody read to the hash and refuses regression, replacement and 
   });
   await expect(reader.assertCanonical()).rejects.toThrow("rewritten");
 });
+
+/** A ledger whose head can be replaced: blocks above `final` are not yet accepted by Ethereum. */
+const simulatedChain = (head: number, final: number, hashes: Record<number, string>) => {
+  const block = (number: number, status: string) => ({
+    block_number: number,
+    block_hash: hashes[number]!,
+    timestamp: 1000 + number,
+    status,
+  });
+  return {
+    getChainId: async () => domain.chainId,
+    getBlock: async (id: number | string) =>
+      id === "latest"
+        ? block(head, "ACCEPTED_ON_L2")
+        : id === "l1_accepted"
+          ? block(final, "ACCEPTED_ON_L1")
+          : block(id as number, (id as number) <= final ? "ACCEPTED_ON_L1" : "ACCEPTED_ON_L2"),
+    callContract: async () => fields,
+  } as unknown as import("starknet").RpcProvider;
+};
+describe("a stored deposit anchor after the chain replaced its block", () => {
+  const stored = { number: 12, hash: "0xa1" };
+  it("keeps an anchor that still stands", async () => {
+    const { depositReader } = await import("./deposits");
+    const reader = await depositReader(
+      simulatedChain(14, 10, { 10: "0x10", 12: "0xa1", 14: "0x14" }),
+      domain.ledger,
+      domain.chainId,
+      stored,
+    );
+    expect(reader.head.number).toBe(14);
+  });
+  it.each([
+    ["rewritten", 14, { 10: "0x10", 12: "0xb2", 14: "0x14" }],
+    ["regressed", 11, { 10: "0x10", 11: "0x11", 12: "0xa1" }],
+  ])(
+    "drops an anchor that was %s before Ethereum accepted it, and reads the canonical chain",
+    async (_, head, hashes) => {
+      const { depositReader } = await import("./deposits");
+      const reader = await depositReader(simulatedChain(head, 10, hashes), domain.ledger, domain.chainId, stored);
+      expect(reader.head.number).toBe(head);
+      expect(await reader.deposit("0x222", "1")).toEqual(receipt);
+    },
+  );
+  it("still refuses an anchor whose block Ethereum had accepted", async () => {
+    const { depositReader } = await import("./deposits");
+    await expect(
+      depositReader(simulatedChain(14, 12, { 12: "0xb2", 14: "0x14" }), domain.ledger, domain.chainId, stored),
+    ).rejects.toThrow("rewritten");
+  });
+});

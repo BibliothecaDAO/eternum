@@ -168,9 +168,28 @@ async function assertDepositAnchor(provider: RpcProvider, anchor: DepositAnchor)
   if (BigInt(canonical.hash) !== BigInt(anchor.hash)) throw new DepositAnchorError("deposit_head_rewritten");
 }
 
+/**
+ * A stored anchor that no longer stands is only a fault if Ethereum had accepted its block. A head that was never
+ * accepted can be replaced by the chain: its anchor is dropped, and the next reads (a payment, a deposit) start from
+ * the canonical chain, which shows whether what the old head held survived.
+ */
+async function standingAnchor(provider: RpcProvider, previous: DepositAnchor): Promise<DepositAnchor | undefined> {
+  const head = await readConfirmedLedgerHead(provider);
+  const lost =
+    head.number < previous.number
+      ? new DepositAnchorError("deposit_head_regressed")
+      : BigInt((await readConfirmedLedgerHead(provider, previous.number)).hash) !== BigInt(previous.hash)
+        ? new DepositAnchorError("deposit_head_rewritten")
+        : null;
+  if (!lost) return previous;
+  const final = await readFinalLedgerHead(provider).catch(() => null);
+  if (!final || previous.number <= final.number) throw lost;
+  return undefined;
+}
+
 export async function depositReader(provider: RpcProvider, ledger: string, chainId: string, previous?: DepositAnchor) {
   if (BigInt(await provider.getChainId()) !== BigInt(chainId)) throw new Error("deposit_chain_differs");
-  const block = await confirmedDepositBlock(provider, previous);
+  const block = await confirmedDepositBlock(provider, previous && (await standingAnchor(provider, previous)));
   const read = (entrypoint: string, calldata: string[]) =>
     provider.callContract({ contractAddress: ledger, entrypoint, calldata }, block.head.hash);
   return {

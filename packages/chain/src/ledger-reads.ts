@@ -5,6 +5,9 @@
  */
 export const LEDGER_READ_PERIOD_SECONDS = 3600;
 
+/** A read that did not finish its work is tried again after this long, not on the next hour. */
+export const LEDGER_RETRY_SECONDS = 300;
+
 /** A ledger observation older than two periods means the reading tick stopped. */
 export const LEDGER_READ_STALE_SECONDS = 2 * LEDGER_READ_PERIOD_SECONDS;
 

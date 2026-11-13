@@ -194,3 +194,28 @@ it("reuses the persisted anchor and rotates a bounded backlog without losing any
   expect(new Set(progress.pending).size).toBe(45);
   expect(progress.pending.slice(-20)).toEqual(Array.from({ length: 20 }, (_, index) => String(index + 21)));
 });
+it("a pass reads the count once and each new deposit once, then only the count however many deposits there are", async () => {
+  const reads = {
+    count: vi.fn(async () => BigInt(rows.length)),
+    deposit: vi.fn(async (_s: string, id: string) => rows[Number(id) - 1]),
+  };
+  mocks.reader.mockImplementation(async () => ({
+    assertCanonical: mocks.canonical,
+    head: { number: 50, hash: "0x50", time: 1000 },
+    ...reads,
+  }));
+  rows = Array.from({ length: 30 }, (_, index) => ({
+    ...payment,
+    id: String(index + 1),
+    status: "delivered" as const,
+  }));
+  await relayDeposits(ports);
+  expect(reads.count).toHaveBeenCalledTimes(1);
+  const first = reads.deposit.mock.calls.length;
+  reads.count.mockClear();
+  reads.deposit.mockClear();
+  await relayDeposits(ports);
+  await relayDeposits(ports);
+  // Twenty new deposits a pass: the next pass reads the last ten, and the one after reads nothing but the count.
+  expect([first, reads.count.mock.calls.length, reads.deposit.mock.calls.length]).toEqual([20, 2, 10]);
+});
