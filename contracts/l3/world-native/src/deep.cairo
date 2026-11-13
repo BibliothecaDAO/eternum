@@ -27,6 +27,9 @@ pub struct DeepRules {
     pub altar: Coord,
     pub beast_count: u128,
     pub loss_per_tick: u128,
+    pub quarry_per_tick: u128,
+    pub altar_per_tick: u32,
+    pub altar_threshold: u32,
 }
 
 #[derive(Copy, Drop, Serde, Debug, PartialEq, starknet::Store)]
@@ -43,16 +46,24 @@ pub fn site_coord(rules: DeepRules, kind: u8, spacing: u32) -> Coord {
 }
 
 fn local_coord(rules: DeepRules, kind: u8) -> Coord {
-    match kind {
-        crate::rules::DEEP_FOUNDATION => rules.foundation,
-        crate::rules::DEEP_QUARRY => rules.quarry,
-        crate::rules::DEEP_ALTAR => rules.altar,
-        _ => panic!("invalid Deep site"),
+    if kind == crate::rules::DEEP_FOUNDATION {
+        rules.foundation
+    } else if kind == crate::rules::DEEP_QUARRY {
+        rules.quarry
+    } else if kind == crate::rules::DEEP_ALTAR {
+        rules.altar
+    } else {
+        panic!("invalid Deep site")
     }
 }
 
 pub fn validate(rules: DeepRules, spacing: u32) {
     assert!(rules.beast_count != 0, "empty Deep beast");
+    assert!(rules.quarry_per_tick != 0, "empty Quarry payment");
+    assert!(
+        rules.altar_per_tick != 0 && rules.altar_threshold != 0 && rules.altar_threshold % rules.altar_per_tick == 0,
+        "invalid Altar charge",
+    );
     assert!(
         rules.loss_per_tick != 0 && rules.loss_per_tick % crate::rules::RESOURCE_PRECISION == 0,
         "invalid Deep troop loss",
@@ -104,4 +115,34 @@ pub fn troops_after_ticks(count: u128, last_tick: u64, tick: u64, loss_per_tick:
     } else {
         count - loss.try_into().unwrap()
     }
+}
+
+#[derive(Copy, Drop, Serde, Debug, PartialEq)]
+pub struct DeepShare {
+    pub home: u64,
+    pub troops: u128,
+}
+
+#[derive(Copy, Drop, Serde, Debug, PartialEq)]
+pub struct AltarBar {
+    pub charge: u32,
+}
+
+#[derive(Copy, Drop, Serde, Debug, PartialEq)]
+pub struct TeamBaneKey {
+    pub game_id: u32,
+    pub aspect: u8,
+    pub day: u64,
+}
+
+#[derive(Copy, Drop, Serde, Debug, PartialEq)]
+pub struct TeamBane {
+    pub source: u8,
+    pub issued_day: u64,
+    pub quest: u8,
+}
+
+#[starknet::interface]
+pub trait IDeepRewards<T> {
+    fn pay_deep_tick(ref self: T, game_id: u32, kind: u8, aspect: u8, shares: Span<DeepShare>, timestamp: u64);
 }

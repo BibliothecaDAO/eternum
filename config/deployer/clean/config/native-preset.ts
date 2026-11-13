@@ -52,7 +52,15 @@ function buildDeep(preset: ReturnType<typeof nativePresetForId>) {
     !Number.isSafeInteger(deep.beastCount) ||
     deep.beastCount <= 0 ||
     !Number.isSafeInteger(deep.lossPerTick) ||
-    deep.lossPerTick <= 0
+    deep.lossPerTick <= 0 ||
+    !Number.isSafeInteger(deep.quarryPerTick) ||
+    deep.quarryPerTick <= 0 ||
+    !Number.isSafeInteger(deep.altarPerTick) ||
+    deep.altarPerTick <= 0 ||
+    !Number.isSafeInteger(deep.altarThreshold) ||
+    deep.altarThreshold <= 0 ||
+    deep.altarThreshold > 0xffff_ffff ||
+    deep.altarThreshold % deep.altarPerTick !== 0
   )
     throw new Error("Invalid Deep sites");
   return new CairoOption(CairoOptionVariant.Some, {
@@ -61,6 +69,9 @@ function buildDeep(preset: ReturnType<typeof nativePresetForId>) {
     altar: { alt: false, x: deep.altar.x, y: deep.altar.y },
     beast_count: scaled(deep.beastCount),
     loss_per_tick: scaled(deep.lossPerTick),
+    quarry_per_tick: scaled(deep.quarryPerTick),
+    altar_per_tick: deep.altarPerTick,
+    altar_threshold: deep.altarThreshold,
   });
 }
 

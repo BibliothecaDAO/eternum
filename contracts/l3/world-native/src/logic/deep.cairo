@@ -56,3 +56,23 @@ pub fn clear_expired_occupant(game_id: u32, coord: Coord, context: ExecutionCont
         let _ = crate::logic::troops::command_explorer(key, None, context.timestamp, context);
     }
 }
+
+pub fn emit<K, V, +Serde<K>, +Serde<V>, +Drop<K>, +Drop<V>>(model: felt252, key: K, value: V) {
+    let mut keys = array![];
+    key.serialize(ref keys);
+    let mut values = array![];
+    value.serialize(ref values);
+    crate::logic::troops::TroopState::emit(
+        crate::logic::troops::TroopState::Event::RowSet(
+            crate::events::RowSet { version: 1, model, keys: keys.span(), values: values.span() },
+        ),
+    );
+}
+
+pub fn calendar_game(game_id: u32) -> crate::game::GameRegistry {
+    let game = crate::logic::game::game(game_id);
+    match crate::logic::race::result(game_id) {
+        Some(result) => crate::game::GameRegistry { end_at: result.scheduled_end_at, ..game },
+        None => game,
+    }
+}

@@ -6,6 +6,8 @@ pub mod CombatLogic {
     component!(path: DeepSites, storage: deep_sites, event: DeepSiteEvent);
     #[abi(embed_v0)]
     impl DeepSitesImpl = DeepSites::DeepSitesImpl<ContractState>;
+    #[abi(embed_v0)]
+    impl HeightBaneImpl = DeepSites::HeightBaneImpl<ContractState>;
 
     #[storage]
     struct Storage {

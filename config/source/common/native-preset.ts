@@ -78,6 +78,9 @@ export interface NativePreset {
     altar: { x: number; y: number };
     beastCount: number;
     lossPerTick: number;
+    quarryPerTick: number;
+    altarPerTick: number;
+    altarThreshold: number;
   };
   discovery: null | {
     beastsBps: number;

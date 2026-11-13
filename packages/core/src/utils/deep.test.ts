@@ -96,65 +96,72 @@ it("projects the full fixed map and keeps one tile when an occupant arrives and 
   }
 });
 
-it("expires another home's shared army on the confirmed clock without deleting its facts", () => {
-  const store = map();
-  let now = 350;
-  setBlockTimestampSource(() => now);
-  const tomorrow = dayOf(readExpeditionRules(store, 1)!, now)!.end;
-  const center = deepCenter(1024);
-  const army = (id: number, day: number, col: number) => [
-    { model: "ArmyDay", key: String(id), value: { game_id: 1, explorer_id: id, day } },
-    {
-      model: "ExplorerTroops",
-      key: String(id),
-      value: {
-        ...explorerFixture.expected.value,
-        game_id: 1,
-        explorer_id: id,
-        owner: 2,
-        troops: { ...explorerFixture.expected.value.troops, count: 3000n },
+it.each(["rollover", "late snapshot"])(
+  "excludes another home's expired shared army after %s without deleting its facts",
+  (arrival) => {
+    const store = map();
+    let now = 350;
+    setBlockTimestampSource(() => now);
+    const tomorrow = dayOf(readExpeditionRules(store, 1)!, now)!.end;
+    const center = deepCenter(1024);
+    const army = (id: number, day: number, col: number) => [
+      { model: "ArmyDay", key: String(id), value: { game_id: 1, explorer_id: id, day } },
+      {
+        model: "ExplorerTroops",
+        key: String(id),
+        value: {
+          ...explorerFixture.expected.value,
+          game_id: 1,
+          explorer_id: id,
+          owner: 2,
+          troops: { ...explorerFixture.expected.value.troops, count: 3000n },
+        },
       },
-    },
-    {
-      model: "TileOccupancy",
-      key: String(id),
-      value: {
-        game_id: 1,
-        alt: false,
-        col,
-        row: center.row,
-        entity_id: id,
-        category: TileOccupier.ExplorerKnightT1,
-        is_structure: false,
+      {
+        model: "TileOccupancy",
+        key: String(id),
+        value: {
+          game_id: 1,
+          alt: false,
+          col,
+          row: center.row,
+          entity_id: id,
+          category: TileOccupier.ExplorerKnightT1,
+          is_structure: false,
+        },
       },
-    },
-  ];
-  store.applyFacts(army(81, 0, center.col));
-  const projection = new WorldSpatialProjection({ store });
-  projection.start();
-  const changes: number[] = [];
-  projection.subscribeArmies((batch) => changes.push(batch.length));
-  try {
-    expect(getTileAt(store, false, center.col, center.row, 1)?.occupier_id).toBe(81);
-    expect(projection.getArmy(81)?.entityId).toBe(81);
-    now = tomorrow;
-    projection.refreshTime();
-    expect(getTileAt(store, false, center.col, center.row, 1)?.occupier_id).toBe(0);
-    expect(projection.getArmy(81)).toBeUndefined();
-    expect(changes).toEqual([1]);
-    projection.refreshTime();
-    expect(changes).toEqual([1]);
-    expect(store.require("ArmyDay", { game_id: 1, explorer_id: 81 }).day).toBe(0n);
-    expect(store.require("TileOccupancy", { game_id: 1, alt: false, ...center }).entity_id).toBe(81n);
-    store.applyFacts(army(82, 1, center.col + 1));
-    expect(getTileAt(store, false, center.col + 1, center.row, 1)?.occupier_id).toBe(82);
-    expect(projection.getArmy(82)?.entityId).toBe(82);
-    projection.flush();
-    expect(changes).toEqual([1, 1]);
-  } finally {
-    projection.dispose();
-  }
-});
+    ];
+    store.applyFacts(army(81, 0, center.col));
+    if (arrival === "late snapshot") now = tomorrow;
+    const projection = new WorldSpatialProjection({ store });
+    projection.start();
+    const changes: number[] = [];
+    projection.subscribeArmies((batch) => changes.push(batch.length));
+    try {
+      if (arrival === "rollover") {
+        expect(getTileAt(store, false, center.col, center.row, 1)?.occupier_id).toBe(81);
+        expect(projection.getArmy(81)?.entityId).toBe(81);
+      }
+      now = tomorrow;
+      projection.refreshTime();
+      expect(getTileAt(store, false, center.col, center.row, 1)?.occupier_id).toBe(0);
+      expect(projection.getArmy(81)).toBeUndefined();
+      const expiryChanges = arrival === "rollover" ? [1] : [];
+      expect(changes).toEqual(expiryChanges);
+      projection.refreshTime();
+      expect(changes).toEqual(expiryChanges);
+      expect(store.require("ArmyDay", { game_id: 1, explorer_id: 81 }).day).toBe(0n);
+      expect(store.require("TileOccupancy", { game_id: 1, alt: false, ...center }).entity_id).toBe(81n);
+      store.applyFacts(army(82, 1, center.col + 1));
+      expect(getTileAt(store, false, center.col + 1, center.row, 1)?.occupier_id).toBe(82);
+      expect(projection.getArmy(82)?.entityId).toBe(82);
+      projection.flush();
+      expect(changes).toEqual([...expiryChanges, 1]);
+    } finally {
+      projection.dispose();
+    }
+  },
+);
 
 it("charges each Deep tick once, clamps at death and uses the primary count when given a derived army", () => {
   const store = map();
@@ -180,6 +187,9 @@ it("charges each Deep tick once, clamps at death and uses the primary count when
         altar: { alt: false, x: 38, y: 20 },
         beast_count: 10000n,
         loss_per_tick: 200n,
+        quarry_per_tick: 500n,
+        altar_per_tick: 5,
+        altar_threshold: 1500,
       },
     },
     {

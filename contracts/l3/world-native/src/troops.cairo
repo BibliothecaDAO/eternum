@@ -349,7 +349,6 @@ pub fn spend_stamina(
 }
 
 pub fn discovery_guards(category: u8, seed: u256, rules: crate::rules::SliceRules, timestamp: u64) -> Span<Troops> {
-    use crate::troops::{TroopTier, TroopType};
     let light_guard = category == crate::taxonomy::MINE_CATEGORY || category == crate::taxonomy::CAMP_CATEGORY;
     let limits = rules.troop_limit_config;
     let (lower, upper) = if light_guard {

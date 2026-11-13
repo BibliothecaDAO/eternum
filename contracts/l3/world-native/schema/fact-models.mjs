@@ -1,6 +1,26 @@
 // Fact-only Cairo wire types replace the removed fixture getter ABIs.
 // Production definitions, when present, must agree exactly with these fields.
 export const factWireTypes = [
+  { type: "struct", name: "world_native::deep::AltarBar", members: [{ name: "charge", type: "core::integer::u32" }] },
+  {
+    type: "struct",
+    name: "world_native::deep::TeamBaneKey",
+    members: [
+      { name: "game_id", type: "core::integer::u32" },
+      { name: "aspect", type: "core::integer::u8" },
+      { name: "day", type: "core::integer::u64" },
+    ],
+  },
+  {
+    type: "struct",
+    name: "world_native::deep::TeamBane",
+    members: [
+      { name: "source", type: "core::integer::u8" },
+      { name: "issued_day", type: "core::integer::u64" },
+      { name: "quest", type: "core::integer::u8" },
+    ],
+  },
+
   {
     type: "struct",
     name: "world_native::deep::DeepArmy",
@@ -1078,6 +1098,8 @@ export function defineFactModels({ struct, model: declare }) {
         value: "zero",
         meaning: "No carried relics or running relic of this kind while the army exists.",
       };
+    if (row.name === "AltarBar")
+      row.absence = { parent: "DeepRules", value: "zero", meaning: "This Aspect has not held the Altar yet." };
     if (row.name === "AspectActivity")
       row.absence = {
         parent: "GameRegistry",
@@ -1484,8 +1506,18 @@ export function defineFactModels({ struct, model: declare }) {
         { name: "aspect", type: "core::integer::u8" },
         { name: "day", type: "core::integer::u64" },
       ],
-      [{ name: "members", type: "core::integer::u32" }],
+      [{ name: "active", type: "core::integer::u32" }],
     ),
+    model(
+      "AltarBar",
+      "game",
+      [
+        { name: "game_id", type: "core::integer::u32" },
+        { name: "aspect", type: "core::integer::u8" },
+      ],
+      struct("deep::AltarBar"),
+    ),
+    model("TeamBane", "game", struct("deep::TeamBaneKey"), struct("deep::TeamBane")),
     model("DeepArmy", "game", struct("troops::ExplorerKey"), struct("deep::DeepArmy")),
     model("DeepGuard", "game", struct("troops::ExplorerKey"), struct("deep::DeepGuard")),
     model("DeepSite", "game", struct("resources::ResourceKey"), struct("deep::DeepSite")),
@@ -1935,6 +1967,8 @@ export const syncScopes = {
   DeepSite: "shared",
   DeepGuard: "shared",
   DeepArmy: "shared",
+  AltarBar: "shared",
+  TeamBane: "shared",
   ArmyDay: { entities: ["explorer_id"] },
   ArmyProgress: { entities: ["explorer_id"] },
   ArmyRelics: { entities: ["explorer_id"] },

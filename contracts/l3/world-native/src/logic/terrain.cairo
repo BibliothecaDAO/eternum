@@ -1,6 +1,6 @@
 use starknet::storage::{StoragePathEntry, StoragePointerReadAccess};
 use crate::geometry::tile_key;
-use crate::map::TileKey;
+use crate::map::{BIOME_SCALE, BYTE_RANGE, REWARD_EXTRACTED_FLAG, TileKey};
 use crate::troops::Coord;
 
 pub fn biome(key: TileKey, game_context: crate::commands::BiomeContext) -> u8 {
@@ -42,7 +42,6 @@ fn home_ring(game_id: u32, site: Coord, context: crate::commands::BiomeContext) 
 }
 
 pub fn raise_expedition_home(key: TileKey, context: crate::commands::BiomeContext) {
-    use crate::map::{BIOME_SCALE, BYTE_RANGE, REWARD_EXTRACTED_FLAG};
     let spacing = crate::logic::settlement::rules(key.game_id).spacing;
     let coord = Coord { alt: key.alt, x: key.col, y: key.row };
     assert!(context.day_unit_seconds != 0 && crate::expeditions::is_home_ring(coord, spacing), "not a home ring");

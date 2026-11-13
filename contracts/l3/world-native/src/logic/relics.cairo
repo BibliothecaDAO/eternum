@@ -5,6 +5,7 @@ pub mod RelicState {
     use starknet::storage::{StorageMapReadAccess, StorageMapWriteAccess, StoragePointerReadAccess};
     use crate::commands::ExecutionContext;
     use crate::game::{IPointsDispatcherTrait, IPointsLibraryDispatcher, assert_playing};
+    use crate::logic::army_slot_storage;
     use crate::logic::release::ReleaseState;
     use crate::logic::release::ReleaseState::InternalTrait as LifeInternalTrait;
     use crate::progression::{ScoutingKind, SkillPointUse};
@@ -15,7 +16,7 @@ pub mod RelicState {
     };
     use crate::resources::{IResourceOperationsDispatcherTrait, IResourceOperationsLibraryDispatcher, ResourceKey};
     use crate::stamina::{StaminaSourceTrait, StaminaTrait};
-    use crate::troops::{ExplorerKey, ExplorerRecordTrait};
+    use crate::troops::{ArmySlotAction, ExplorerKey, ExplorerRecordTrait, ResolvedArmySlot};
 
     #[storage]
     #[allow(starknet::colliding_storage_paths)]
@@ -278,8 +279,6 @@ pub mod RelicState {
         fn army_slot_stamina(
             ref self: ComponentState<TContractState>, key: ExplorerKey, action: crate::troops::ArmySlotAction,
         ) -> crate::troops::ResolvedArmySlot {
-            use crate::troops::{ArmySlotAction, ResolvedArmySlot};
-            use crate::logic::army_slot_storage;
             if let ArmySlotAction::Allocate(value) = action {
                 let home = crate::resources::ResourceKey { game_id: key.game_id, entity_id: value.home };
                 let progress = crate::logic::progression::create(key, crate::logic::research::learned(home));
