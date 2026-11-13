@@ -5,6 +5,8 @@ import { WorldSpatialProjection } from "../sync/world-spatial-projection";
 import { getTileAt } from "./tile";
 import { availableRuinLords, ruinChestsToday, ruinDisappeared } from "./ruins";
 import { nativeReleaseConstants } from "../../../../contracts/l3/world-native/schema/client.gen";
+import conformance from "../../../../contracts/l3/world-native/tests/fixtures/current-presets/conformance.json";
+import { frontierPreset } from "../../../../config/source/frontier/native";
 import { dayOf } from "./days";
 
 const home = 7n * 0x100000000n + 1n;
@@ -28,10 +30,27 @@ const release = (release_id = nativeReleaseConstants.RUIN_DEPTH_LIMIT_RELEASE) =
   value: { game_id: 1, release_id, created_release_id: 1, preset_commitment: 0n },
 });
 
+const historicalRules = [
+  { model: "SliceRules", key: "0xc0", value: { ...conformance.rules, game_id: 1, day_unit_seconds: 1 } },
+  {
+    model: "ChestRules",
+    key: "0xc1",
+    value: {
+      game_id: 1,
+      price_ceiling: BigInt(frontierPreset.chests.priceCeiling),
+      shares: frontierPreset.chests.shares,
+      claim_window_seconds: frontierPreset.chests.claimWindowSeconds,
+      pool_bps: frontierPreset.chests.poolBps,
+      top_n: frontierPreset.chests.topN,
+    },
+  },
+];
+
 const setup = () => {
   const store = new NativeFactStore();
   store.setSnapshot({ gameId: 1, complete: true, timestamp: 350 });
   store.applyFacts([
+    ...historicalRules,
     release(),
     {
       model: "SettlementRules",
@@ -226,6 +245,7 @@ describe("each depth's ruin chest today", () => {
     const store = new NativeFactStore();
     store.setSnapshot({ gameId: 1, complete: true, timestamp: 1 });
     store.applyFacts([
+      ...historicalRules,
       release(releaseId),
       { model: "RealmKnowledge", key: "0xd", value: { game_id: 1, structure_id: 7, learned: 1n << 48n } },
       // Another realm cleared today's Ethereal I: its receipt is not realm 7's.

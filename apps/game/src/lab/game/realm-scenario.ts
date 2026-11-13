@@ -45,7 +45,7 @@ export const realmScenario = (): LabScenario => {
     ...castlePriced(),
     {
       model: "StructureBuildings",
-      key: "0xb7",
+      key: spire.store.wireKeyOf("StructureBuildings", { game_id: 1, entity_id: 7 })!,
       value: {
         ...buildings,
         packed_counts_1: counts[0],

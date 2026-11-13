@@ -17,6 +17,7 @@ import {
 } from "@bibliothecadao/eternum";
 import type { NativeFactStore, NativeRows } from "@bibliothecadao/eternum/game-client";
 import { StructureType } from "@bibliothecadao/types";
+import { frontierPreset } from "../../../../../../../config/source/frontier/native";
 import { nativeReleaseConstants } from "../../../../../../../contracts/l3/world-native/schema/client.gen";
 
 import { campBeside } from "../sites/site-fixture";
@@ -157,6 +158,18 @@ describe("the map's layers", () => {
 const chestDay = (researched = 2n) => {
   const { store } = campBeside();
   store.applyFacts([
+    {
+      model: "ChestRules",
+      key: "0xc1",
+      value: {
+        game_id: 1,
+        price_ceiling: BigInt(frontierPreset.chests.priceCeiling),
+        shares: frontierPreset.chests.shares,
+        claim_window_seconds: frontierPreset.chests.claimWindowSeconds,
+        pool_bps: frontierPreset.chests.poolBps,
+        top_n: frontierPreset.chests.topN,
+      },
+    },
     {
       model: "GameRelease",
       key: "0x1ab0",

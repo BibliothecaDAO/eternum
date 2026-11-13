@@ -185,6 +185,7 @@ fn mixed_sweep_keeps_both_balances_game_pinned_until_applied() {
     let source = DepositSource {
         chain: 'SN_TEST', ledger: 'ledger'.try_into().unwrap(), signer: key().public_key, epoch: 0,
     };
+    super::entry::set_operator(d, super::authority());
     start_cheat_caller_address(d.games, super::authority());
     start_cheat_chain_id(d.games, 'shard');
     start_cheat_block_timestamp(d.games, 362);

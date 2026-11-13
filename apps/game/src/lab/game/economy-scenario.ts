@@ -21,8 +21,8 @@ export const economyScenario = (): LabScenario => {
   const home = store.require("Structure", { game_id: 1, entity_id: HOME });
   const at = store.entityOccupancy(1, Number(HOME))!;
   store.applyFacts([
-    row("GameRegistry", "0x3", { ...registry, preset_id: blitzPreset.id }),
-    row("SliceRules", "0x100", {
+    row("GameRegistry", store.wireKeyOf("GameRegistry", { game_id: 1 })!, { ...registry, preset_id: blitzPreset.id }),
+    row("SliceRules", store.wireKeyOf("SliceRules", { game_id: 1 })!, {
       ...rules,
       day_unit_seconds: 0,
       mode_rules: blitzPreset.modeRules,
@@ -31,10 +31,10 @@ export const economyScenario = (): LabScenario => {
     row("Structure", "0xe08", { ...home, entity_id: DESTINATION, metadata: { ...home.metadata, realm_id: 2 } }),
     row("TileOccupancy", "0xe09", { ...at, col: at.col + 2, entity_id: DESTINATION }),
     row("ResourceWeight", "0xe0a", { game_id: 1, entity_id: DESTINATION, capacity: 100_000n * PRECISION, weight: 0n }),
-    balance(HOME, ResourcesIds.Wheat, 1_000n * PRECISION),
-    balance(HOME, ResourcesIds.Donkey, 100n * PRECISION),
-    balance(DESTINATION, ResourcesIds.Wheat, 0n),
-    row("ProductionRecipe", "0xb", {
+    balance(store, HOME, ResourcesIds.Wheat, 1_000n * PRECISION),
+    balance(store, HOME, ResourcesIds.Donkey, 100n * PRECISION),
+    balance(store, DESTINATION, ResourcesIds.Wheat, 0n),
+    row("ProductionRecipe", store.wireKeyOf("ProductionRecipe", { game_id: 1, resource_type: ResourcesIds.Knight }) ?? "0xb", {
       game_id: 1,
       resource_type: ResourcesIds.Knight,
       simple_output: PRECISION,
@@ -42,7 +42,7 @@ export const economyScenario = (): LabScenario => {
       complex_output: 10n * PRECISION,
       complex_inputs: [{ resource_type: ResourcesIds.Wheat, amount: 2n * PRECISION }],
     }),
-    row("ResourceProduction", "0xe0b", {
+    row("ResourceProduction", store.wireKeyOf("ResourceProduction", { game_id: 1, entity_id: HOME, resource_type: ResourcesIds.Knight }) ?? "0xe0b", {
       game_id: 1,
       entity_id: HOME,
       resource_type: ResourcesIds.Knight,
@@ -63,8 +63,8 @@ export const economyScenario = (): LabScenario => {
 };
 
 const row = (model: string, key: string, value: unknown): LabFact => ({ model, key, value: wire(value) });
-const balance = (entity: bigint, resource: number, amount: bigint): LabFact =>
-  row("ResourceBalance", `0xe${entity.toString(16)}${resource.toString(16)}`, {
+const balance = (store: NativeFactStore, entity: bigint, resource: number, amount: bigint): LabFact =>
+  row("ResourceBalance", store.wireKeyOf("ResourceBalance", { game_id: 1, entity_id: entity, resource_type: resource }) ?? `0xe${entity.toString(16)}${resource.toString(16)}`, {
     game_id: 1,
     entity_id: entity,
     resource_type: resource,

@@ -32,8 +32,8 @@ fn ruins_fill_replace_and_activate_an_armys_relics_through_commands() {
         execute_in_game(d, game_id, Command::SettleSeason(crate::realms::SettleSeason { selected_realm: None }), 360),
     );
     let home = ResourceKey { game_id, entity_id: 1 };
-    assert!(
-        execute_in_game(
+    let mut deployment_events = snforge_std::spy_events();
+    if !execute_in_game(
             d,
             game_id,
             Command::CreateExplorer(
@@ -42,8 +42,9 @@ fn ruins_fill_replace_and_activate_an_armys_relics_through_commands() {
                 },
             ),
             360,
-        ),
-    );
+        ) {
+        panic!("{}", super::play_fixture::rejection(ref deployment_events, d.games).reason);
+    }
     let explorer_id = *IStructureOperationsDispatcher { contract_address: d.games }.home_armies(home).at(0);
     let key = ExplorerKey { game_id, explorer_id };
     let resources = IResourceOperationsDispatcher { contract_address: d.games };
