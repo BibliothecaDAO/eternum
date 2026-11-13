@@ -210,14 +210,6 @@ pub use world_test_support::tests::roll_independence::*;
 #[test_case(name: "route_51_roots_08_15", 51, 8)]
 #[test_case(name: "route_51_roots_16_23", 51, 16)]
 #[test_case(name: "route_51_roots_24_31", 51, 24)]
-#[test_case(name: "route_52_roots_00_07", 52, 0)]
-#[test_case(name: "route_52_roots_08_15", 52, 8)]
-#[test_case(name: "route_52_roots_16_23", 52, 16)]
-#[test_case(name: "route_52_roots_24_31", 52, 24)]
-#[test_case(name: "route_53_roots_00_07", 53, 0)]
-#[test_case(name: "route_53_roots_08_15", 53, 8)]
-#[test_case(name: "route_53_roots_16_23", 53, 16)]
-#[test_case(name: "route_53_roots_24_31", 53, 24)]
 #[feature("safe_dispatcher")]
 fn all_typed_entry_refusals_are_root_independent(index: u32, start: u64) {
     let commands = typed_commands();
@@ -233,9 +225,7 @@ fn all_typed_entry_refusals_are_root_independent(index: u32, start: u64) {
             start + sample - 1
         };
         let d = fresh_world(false);
-        if let Command::WithdrawLords(_) = command {
-            snforge_std::start_cheat_transaction_hash(d.games, (100000_u64 + root).into());
-        }
+
         let before = play_fixture::gameplay_snapshot(d.games);
         let (release, preset) = play_fixture::pins(d.games, 1);
         play_fixture::caller(d.games, d.actor, 100);
@@ -460,14 +450,6 @@ fn all_typed_entry_refusals_are_root_independent(index: u32, start: u64) {
 #[test_case(name: "route_51_roots_08_15", 51, 8)]
 #[test_case(name: "route_51_roots_16_23", 51, 16)]
 #[test_case(name: "route_51_roots_24_31", 51, 24)]
-#[test_case(name: "route_52_roots_00_07", 52, 0)]
-#[test_case(name: "route_52_roots_08_15", 52, 8)]
-#[test_case(name: "route_52_roots_16_23", 52, 16)]
-#[test_case(name: "route_52_roots_24_31", 52, 24)]
-#[test_case(name: "route_53_roots_00_07", 53, 0)]
-#[test_case(name: "route_53_roots_08_15", 53, 8)]
-#[test_case(name: "route_53_roots_16_23", 53, 16)]
-#[test_case(name: "route_53_roots_24_31", 53, 24)]
 fn all_real_domain_verdicts_are_root_independent(index: u32, start: u64) {
     let commands = typed_commands();
     assert_eq!(commands.len(), routes());
@@ -482,9 +464,7 @@ fn all_real_domain_verdicts_are_root_independent(index: u32, start: u64) {
             start + sample - 1
         };
         let d = fresh_world(true);
-        if let Command::WithdrawLords(_) = command {
-            snforge_std::start_cheat_transaction_hash(d.games, (200000_u64 + root).into());
-        }
+
         let mut spy = snforge_std::spy_events();
         let applied = play_fixture::play(d.games, TestAction { game_id: 1, actor: d.actor, command }, root.into(), 100);
         if let Some(previous) = expected {

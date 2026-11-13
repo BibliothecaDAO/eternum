@@ -273,14 +273,4 @@ export const commandRoutes = [
     logic: "movement",
     entrypoint: "interact_site",
   },
-  {
-    name: "RefillStamina",
-    logic: "prizes",
-    entrypoint: "refill_stamina",
-  },
-  {
-    name: "WithdrawLords",
-    logic: "prizes",
-    entrypoint: "withdraw_lords",
-  },
 ];

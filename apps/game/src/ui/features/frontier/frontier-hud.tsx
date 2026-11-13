@@ -23,7 +23,6 @@ import { RealmVisitFoot, useRealmVisitNavigation, useVisitedRealm } from "./boar
 import { FrontierSeason, useSeasonRank } from "./board/season-board";
 import { useSpectatorWatch } from "./board/spectator-watch";
 import { useExpeditionRules, useFrontierRealm, useGoToFrontierPlace } from "./frontier-home";
-import { ArmyRefill } from "./army/army-refill";
 import { ArmyLostSheet } from "./army/army-lost";
 import { useArmyPanelOpens, usePickArmy } from "./army/army-opens";
 import { FrontierArmy } from "./army/frontier-army";
@@ -52,16 +51,11 @@ import { HudBands } from "./hud/hud-bands";
 import { MenuPage } from "./hud/menu-page";
 import { useHowToPlay } from "@/ui/modules/how-to-play";
 import { FrontierRealms } from "./value/frontier-realms";
-import { FrontierPurse } from "./value/frontier-purse";
-import { useSpendLords } from "./value/use-spend-lords";
-import { useLinkWalletPrompt, useOwedLords } from "./value/link-wallet";
-import { SeasonPayout } from "./value/season-payout";
-import { LordsPurse, PurseRow, RealmsChip } from "./value/lords-purse";
+import { PurseRow, RealmsChip } from "./value/lords-purse";
 import { useHomeKind } from "@/hooks/helpers/use-home-kind";
 import { useCampaignMark } from "./value/campaign-home";
 import { dailyClaimWaiting, type DailyClaimWaiting } from "./value/realm-labor";
 import { useRealmLabor } from "./value/use-realm-labor";
-import { useRealmLords } from "./value/use-realm-lords";
 import { OfflineNotice } from "./hud/offline-notice";
 import { SceneFailureNotice } from "./hud/scene-failure-notice";
 import { NextOrderBar, OrderBar } from "./hud/order-bar";
@@ -70,8 +64,6 @@ import { SpireButton, useArmyAtItsSpire } from "./spire-card";
 import { FrontierToday } from "./log/frontier-today";
 import { CARD_STORE_KINDS, type CardStore, FrontierStoreCard, isCardStore } from "./production/frontier-store-card";
 import { FrontierResearch } from "./research/frontier-research";
-import { ClearedRuinChest } from "./chest/cleared-ruin-chest";
-import { ChestLordsMoment } from "./chest/chest-lords-moment";
 import { dayClock } from "./hud/day-clock";
 import { BuildingsInFlight } from "./build/build-sheet";
 import { DayDone } from "./rollover/day-done";
@@ -190,18 +182,13 @@ export const FrontierHud = ({
       {storeCards?.open && storeCards.card}
     </>
   );
-  // A phone's purse: the player's realm's LORDS; a spectator sees there what the desktop's top bar says of them.
   const purse = spectating ? (
     <IdentityChip compact />
   ) : (
-    realm &&
-    !visit && (
-      <RealmPurse
-        realm={realm}
-        waiting={claimWaiting}
-        onWithdraw={() => setSurface("withdraw")}
-        onRealms={() => setSurface("realms")}
-      />
+    realm && !visit && claimWaiting && (
+      <PurseRow>
+        <RealmsChip waiting={claimWaiting} narrow onOpen={() => setSurface("realms")} />
+      </PurseRow>
     )
   );
   const page =
@@ -216,8 +203,6 @@ export const FrontierHud = ({
     ) : undefined;
   const notices = (
     <>
-      <ClearedRuinChest />
-      <ChestLordsMoment />
       <OfflineNotice />
       <SceneFailureNotice />
       {own && <DayEndNotice dayEnd={dayEnd} onOpen={() => setSurface("today")} />}
@@ -235,7 +220,6 @@ export const FrontierHud = ({
     <>
       <FrontierSurfaces realm={realm} rules={rules} />
       {showsCard && card?.sheet}
-      {surface === "withdraw" && realm && !visit && <FrontierPurse realm={realm} onClose={close} />}
       {surface === "realms" && realm && !visit && <FrontierRealms labor={realmLabor} onClose={close} />}
       {surface === "army" && realm && !visit && <FrontierArmy realm={realm} choosing={armyChoosing} onClose={close} />}
       {surface === "army-lost" && <ArmyLostSheet onClose={close} />}
@@ -253,10 +237,7 @@ export const FrontierHud = ({
           onClose={close}
         />
       )}
-      {/* The card covers the HUD: Withdraw opens in its place; a board open as the season ends stays till closed. */}
-      {surface !== "season" && surface !== "withdraw" && (
-        <SeasonOver realm={visit ? null : realm} withdraw={realm && !visit && <SeasonPayout realm={realm} />} />
-      )}
+      {surface !== "season" && <SeasonOver realm={visit ? null : realm} />}
       {realm && <DayDone rules={rules} realm={realm} visiting={Boolean(visit)} />}
       <BuildingsInFlight />
     </>
@@ -401,7 +382,7 @@ const FrontierPhoneHud = ({
 /**
  * A phone's action row, the one row over the place bar that says what the pick lets the player do now (owner, 22 October
  * 2026: mobile direction A): with an order pending, its costs and verb; with the next order queued, its bar; with an
- * army picked, the army (a tap opens its card), its four sides, its stamina as its refill, and Level up; otherwise
+ * army picked, the army (a tap opens its card), its four sides, its stamina reading, and Level up; otherwise
  * nothing. A desktop has none: its orders go from the map, and the army's state is its panel's.
  */
 const ArmyAction = ({
@@ -424,25 +405,23 @@ const ArmyAction = ({
   if (order && selected) return <PendingOrder rules={rules} realm={realm} order={order} army={selected} />;
   if (selected && nextOrder?.entityId === selected.explorerId)
     return <NextOrderBar onCancel={() => dropNextOrder("cancelled", selected.explorerId)} />;
-  if (acting && onOpenArmy) return <ActingArmy army={acting} realm={realm} onOpenArmy={onOpenArmy} />;
+  if (acting && onOpenArmy) return <ActingArmy army={acting} onOpenArmy={onOpenArmy} />;
   return null;
 };
 
 /** The picked army in a phone's action row, with Spire while it stands at its spire. */
 const ActingArmy = ({
   army,
-  realm,
   onOpenArmy,
 }: {
   army: DockArmy;
-  realm: NativeRows["Structure"];
   onOpenArmy: (explorerId: number, choosing?: boolean) => void;
 }) => {
   const spire = useArmyAtItsSpire(army.explorerId);
   return (
     <PickedArmy
       army={army}
-      refill={<ArmyRefill army={army} realm={realm} look="stamina" />}
+      refill={army.stamina && <StaminaReading stamina={army.stamina} />}
       spire={spire && <SpireButton explorerId={army.explorerId} spire={spire} />}
       onDetails={() => onOpenArmy(army.explorerId)}
       onLevelUp={() => onOpenArmy(army.explorerId, army.canSpendSkillPoint)}
@@ -491,7 +470,6 @@ const PendingOrder = ({
         labor?.limit === undefined || labor.amount === undefined ? undefined : Math.max(0, labor.limit - labor.amount)
       }
       xp={order.xp}
-      refill={<ArmyRefill army={army} realm={realm} />}
       onCancel={() => useUIStore.getState().updateEntityActionHoveredHex(null)}
       onGo={() => requestOrderAt(order.target)}
     />
@@ -531,7 +509,7 @@ const HudMenu = ({
 /**
  * The desktop's realm panel over the realm the HUD reads (the player's, or the one watched or visited): its name and
  * rank's steps in a header that takes the map home to it, its population and stores, and for the player's own realm
- * its LORDS (Withdraw), its Realms' labor (Realms) and each store's card.
+ * its daily home claim and each store's card.
  */
 const FrontierRealmPanel = ({
   rules,
@@ -551,9 +529,6 @@ const FrontierRealmPanel = ({
 }) => {
   const name = useGameModeConfig().structure.getName(realm).name;
   const stores = useStoreReadings(realm, rules);
-  const lords = useRealmLords(own ?? realm);
-  const owed = useOwedLords(own ?? realm);
-  const linkWalletLine = useLinkWalletPrompt(own ? owed : undefined);
   const population = useRealmPopulation(realm);
   const goToPlace = useGoToFrontierPlace(realm);
   const mark = useCampaignMark(realm);
@@ -569,48 +544,11 @@ const FrontierRealmPanel = ({
       stores={stores}
       onHome={() => goToPlace(true)}
       {...(own && {
-        lords,
-        linkWalletLine,
         waiting,
         storeCards,
-        onWithdraw: () => onSurface("withdraw"),
         onRealms: () => onSurface("realms"),
       })}
     />
   );
 };
 
-/**
- * Under the strip: the realm's LORDS, which open Withdraw, and beside them the Realms chip while the home's daily claim
- * has Labor or Essence waiting today.
- */
-const RealmPurse = ({
-  realm,
-  waiting,
-  onWithdraw,
-  onRealms,
-}: {
-  realm: NativeRows["Structure"];
-  waiting: DailyClaimWaiting | null;
-  onWithdraw: () => void;
-  onRealms: () => void;
-}) => (
-  <PurseRow>
-    {waiting && <RealmsChip waiting={waiting} narrow onOpen={onRealms} />}
-    <OwnLordsPurse realm={realm} onOpen={onWithdraw} />
-  </PurseRow>
-);
-
-/** The player's own realm's LORDS, marked while the account has no linked wallet to receive them. */
-const OwnLordsPurse = ({ realm, onOpen }: { realm: NativeRows["Structure"]; onOpen: () => void }) => {
-  const lords = useRealmLords(realm);
-  const spend = useSpendLords(realm);
-  return (
-    <LordsPurse
-      lords={lords}
-      spendOnly={spend.source ? (spend.balance?.available ?? 0n) : undefined}
-      linkWalletLine={useLinkWalletPrompt(useOwedLords(realm))}
-      onOpen={onOpen}
-    />
-  );
-};

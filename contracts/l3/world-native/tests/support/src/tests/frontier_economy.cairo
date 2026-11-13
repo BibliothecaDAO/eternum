@@ -22,7 +22,7 @@ pub const WEST: u8 = 3;
 pub /// A board realm carrying Frontier's own recipes: two wheat for each troop.
  fn frontier_preset() -> crate::presets::PresetDefinition {
     let mut preset = super::building_commands::building_preset(Some(super::building_commands::board_rules()));
-    let (_, frontier) = super::preset_projection::current_definition("frontier");
+    let (_, frontier) = super::preset_projection::current_definition("frontier-check");
     preset.resources.production = frontier.resources.production;
     preset
 }

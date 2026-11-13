@@ -3,7 +3,6 @@ mod discovery_guards;
 mod explore_rewards;
 mod frontier_discovery;
 mod frontier_economy;
-mod frontier_explore_chest;
 mod frontier_guards;
 mod frontier_reveal;
 mod random_vectors;

@@ -1,7 +1,9 @@
+import developmentRelease from "../../../../deploy/release/dev.json";
+import productionRelease from "../../../../deploy/release/production.json";
 import { registerEnvironmentPreset } from "../registrar/register-preset";
 import { buildLedgerEconomicPreset, buildRegisterLedgerPresetCalldata } from "../ledger/economics";
 import { findRegistrarGame } from "../registrar/calls";
-import { nativePresets } from "../../../source/native";
+import { nativeReleasePresets, nativePresets } from "../../../source/native";
 import { afterAll, describe, expect, test, mock, spyOn } from "bun:test";
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -18,6 +20,7 @@ import { buildNativePreset } from "../config/native-preset";
 import {
   FRONTIER_ACCELERATED_PRESET_ID,
   FRONTIER_PRESET_ID,
+  FRONTIER_S1_PRESET_ID,
   FRONTIER_DEVCON_PRESET_ID,
   FRONTIER_FIXTURE_PRESET_ID,
   FRONTIER_PLAYGROUND_PRESET_ID,
@@ -59,6 +62,20 @@ function configuration(preset: number) {
 }
 
 describe("native presets", () => {
+  test("release registrations contain only Blitz and nonpaying Season 1", () => {
+    for (const release of [developmentRelease, productionRelease]) {
+      expect(release.presets).toEqual([2, FRONTIER_S1_PRESET_ID]);
+      for (const id of release.presets) expect(nativeReleasePresets[id]!.chests).toBeNull();
+    }
+    for (const id of [FRONTIER_PRESET_ID, FRONTIER_DEVCON_PRESET_ID, FRONTIER_ACCELERATED_PRESET_ID])
+      expect(nativeReleasePresets[id]).toBeUndefined();
+    expect(nativeCommandBits).not.toHaveProperty("RefillStamina");
+    expect(nativeCommandBits).not.toHaveProperty("WithdrawLords");
+    const mask = nativePresets[FRONTIER_S1_PRESET_ID]!.commandMask;
+    expect(mask & BigInt(nativeCommandBits.OpenRelicChest)).toBe(0n);
+    expect(mask & BigInt(nativeCommandBits.ApplyRelic)).not.toBe(0n);
+  });
+
   test("the mainnet deployment plan registers only the selected economic preset", async () => {
     const log = spyOn(console, "log").mockImplementation(() => {});
     try {
@@ -82,8 +99,8 @@ describe("native presets", () => {
     }
   });
 
-  test("every Frontier preset carries chest rules without a funding amount", () => {
-    for (const id of [FRONTIER_PRESET_ID, FRONTIER_ACCELERATED_PRESET_ID, FRONTIER_FIXTURE_PRESET_ID]) {
+  test("historical paying presets carry chest rules without a funding amount", () => {
+    for (const id of [FRONTIER_PRESET_ID, FRONTIER_ACCELERATED_PRESET_ID]) {
       expect(nativePresets[id]!.chests).not.toHaveProperty("pool");
       const chests = buildNativePreset(
         loadNativePresetConfiguration("madara.frontier", id),
@@ -99,14 +116,14 @@ describe("native presets", () => {
     }
   });
 
-  test("progression presets cannot grant or import relics into an army", () => {
+  test("progression presets cannot grant or import resource relics into an army", () => {
     const progressionPresets = Object.values(nativePresets).filter(({ progression }) => progression !== null);
     expect(progressionPresets.length).toBeGreaterThan(0);
     for (const source of progressionPresets) {
       expect(source.gameType).toBe("frontier");
       const preset = buildNativePreset(loadNativePresetConfiguration("madara.frontier", source.id), source.id);
       expect(preset.economy.progression.isSome()).toBe(true);
-      expect(preset.economy.chests.isSome()).toBe(true);
+      expect(preset.economy.chests.isSome()).toBe(source.chests !== null);
       expect(preset.rules.day_unit_seconds).toBeGreaterThan(0);
       expect(preset.economy.relics).toEqual([]);
       expect(preset.exploration).toEqual([]);
@@ -199,7 +216,7 @@ describe("native presets", () => {
     expect(config.season.durationSeconds).toBe(0);
   });
 
-  test.each([FRONTIER_PRESET_ID, FRONTIER_ACCELERATED_PRESET_ID, FRONTIER_FIXTURE_PRESET_ID])(
+  test.each([FRONTIER_PRESET_ID, FRONTIER_ACCELERATED_PRESET_ID])(
     "Frontier preset %i removes one chest rarity at each depth and preserves the remaining proportions",
     (id) => {
       const preset = buildNativePreset(loadNativePresetConfiguration("madara.frontier", id), id);
@@ -237,8 +254,8 @@ describe("native presets", () => {
 
   test("the contract Frontier command gate uses the published mask", () => {
     const preset = buildNativePreset(
-      loadNativePresetConfiguration("madara.frontier", FRONTIER_PRESET_ID),
-      FRONTIER_PRESET_ID,
+      loadNativePresetConfiguration("madara.frontier", FRONTIER_FIXTURE_PRESET_ID),
+      FRONTIER_FIXTURE_PRESET_ID,
     );
     const mask = BigInt(
       readFileSync(
@@ -807,8 +824,13 @@ describe("scaled Frontier presets", () => {
       const ledger = buildLedgerEconomicPreset("frontier", { presetId });
       expect(world.rules.day_unit_seconds).toBe(dayUnit);
       expect(ledger.day_unit_seconds).toBe(dayUnit);
-      expect(world.economy.chests.unwrap()).toMatchObject({ claim_window_seconds: 604_800 });
-      expect(ledger.claim_window_seconds).toBe(604_800);
+      if (presetId === FRONTIER_FIXTURE_PRESET_ID) {
+        expect(world.economy.chests.isNone()).toBe(true);
+        expect(ledger.claim_window_seconds).toBe(0);
+      } else {
+        expect(world.economy.chests.unwrap()).toMatchObject({ claim_window_seconds: 604_800 });
+        expect(ledger.claim_window_seconds).toBe(604_800);
+      }
     }
   });
 
@@ -827,7 +849,7 @@ describe("Devcon's fast Frontier preset", () => {
     const normal = definition(FRONTIER_PRESET_ID);
     const fast = definition(FRONTIER_DEVCON_PRESET_ID);
     expect(nativeGameModeOf(FRONTIER_DEVCON_PRESET_ID)).toBe("frontier");
-    expect(nativePresetIdFor("frontier")).toBe(FRONTIER_PRESET_ID);
+    expect(nativePresetIdFor("frontier")).toBe(FRONTIER_S1_PRESET_ID);
     expect(fast.rules.tick_config.armies_tick_in_seconds).toBe(40);
     expect(fast.rules.troop_stamina_config).toEqual(normal.rules.troop_stamina_config);
     expect(fast.settlement.realms.resources).toEqual(normal.settlement.realms.resources);
@@ -932,7 +954,7 @@ describe("the Frontier playground preset", () => {
 
   test("plays Frontier under its own id, which the launcher never creates from", () => {
     expect(nativeGameModeOf(FRONTIER_PLAYGROUND_PRESET_ID)).toBe("frontier");
-    expect(nativePresetIdFor("frontier")).toBe(FRONTIER_PRESET_ID);
+    expect(nativePresetIdFor("frontier")).toBe(FRONTIER_S1_PRESET_ID);
     expect(
       buildNativePresetRegistration(
         definition(FRONTIER_PLAYGROUND_PRESET_ID),

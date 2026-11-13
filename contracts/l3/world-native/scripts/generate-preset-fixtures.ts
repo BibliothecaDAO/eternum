@@ -1,11 +1,11 @@
 import { shortString } from "starknet";
 import { schema as compiledSchema } from "../../../../apps/herald/src/native/fixtures";
 import { schemaIdentity, type NativeMember, type NativeSchema } from "../../../../apps/herald/src/native/schema";
-import { defineFactModels } from "../schema/fact-models.mjs";
+import { defineFactModels, factWireTypes } from "../schema/fact-models.mjs";
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { encodeMembers } from "../../../../apps/herald/src/native/serde";
 import { currentPresetFixture, serializePresetRows } from "../../../../apps/herald/src/native/current-preset-fixture";
-import { FRONTIER_FIXTURE_PRESET_ID } from "../../../../config/source/common/native-preset-modes";
+import { FRONTIER_S1_PRESET_ID, FRONTIER_FIXTURE_PRESET_ID } from "../../../../config/source/common/native-preset-modes";
 
 const schema = presetFixtureSchema();
 
@@ -14,15 +14,17 @@ mkdirSync(directory, { recursive: true });
 const write = (name: string, felts: string[]) => writeFileSync(new URL(name, directory), felts.join("\n") + "\n");
 for (const [name, id] of [
   ["blitz", 2],
-  ["frontier", 5],
-  ["devcon", 6],
+  ["frontier", FRONTIER_S1_PRESET_ID],
   ["frontier-check", FRONTIER_FIXTURE_PRESET_ID],
+  ["frontier-retired", 5],
+  ["devcon", 6],
+  ["accelerated", 101],
 ] as const) {
   const fixture = await currentPresetFixture(id, schema);
   write(`${name}-register.txt`, fixture.registration);
   write(`${name}-create.txt`, fixture.creation);
   write(`${name}-rows.txt`, serializePresetRows(fixture.rows, schema));
-  if (id === 5) {
+  if (id === FRONTIER_S1_PRESET_ID) {
     writeFileSync(new URL("../frontier-command-mask.txt", directory), `${fixture.definition.rules.command_mask}\n`);
   }
 }
@@ -46,11 +48,13 @@ write(
 /** Fixture encoding can follow source edits before the single landing compile; production bindings still require ABI. */
 function presetFixtureSchema(): NativeSchema {
   const schema = structuredClone(compiledSchema);
+  for (const type of factWireTypes) schema.types[type.name] = type;
   for (const module of [
     "rules",
     "entry",
     "presets",
     "relics",
+    "army_relics",
     "registrar",
     "blitz_results",
     "progression",

@@ -1,3 +1,4 @@
+import { frontierSeasonOnePreset } from "./frontier/season-one";
 import { buildingIds, frontierPreset } from "./frontier/native";
 import { frontierDevconPreset } from "./frontier/devcon";
 import { blitzPreset } from "./blitz/native";
@@ -12,7 +13,7 @@ import { ResourcesIds } from "../../packages/types/src/constants";
 import type { GameType } from "./common/types";
 
 const modes: Record<GameType, NativePreset> = {
-  frontier: frontierPreset,
+  frontier: frontierSeasonOnePreset,
   blitz: blitzPreset,
 };
 /**
@@ -26,7 +27,7 @@ const frontierAcceleratedPreset: NativePreset = {
 };
 
 const frontierFixturePreset: NativePreset = {
-  ...frontierPreset,
+  ...frontierSeasonOnePreset,
   id: FRONTIER_FIXTURE_PRESET_ID,
 };
 
@@ -62,6 +63,7 @@ const frontierPlaygroundPreset: NativePreset = {
 export const nativePresets: Record<number, NativePreset> = Object.fromEntries(
   [
     ...Object.values(modes),
+    frontierPreset,
     frontierDevconPreset,
     frontierAcceleratedPreset,
     frontierFixturePreset,
@@ -71,6 +73,11 @@ export const nativePresets: Record<number, NativePreset> = Object.fromEntries(
       throw new Error(`Native preset ${preset.id} plays ${preset.gameType}, not ${nativeGameModeOf(preset.id)}`);
     return [preset.id, preset];
   }),
+);
+
+/** Definitions supported by this release; historical paying presets remain available for decoding. */
+export const nativeReleasePresets: Record<number, NativePreset> = Object.fromEntries(
+  Object.entries(nativePresets).filter(([, preset]) => preset.chests === null),
 );
 
 export function nativePresetForId(id: number): NativePreset {

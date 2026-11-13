@@ -102,14 +102,15 @@ const pickInDock = () =>
 
 /** A phone's picked army in the action row: its token, which opens its card. */
 const details = () => host.querySelector<HTMLButtonElement>('button[aria-label="Army 1: details"]');
-/** Beside the picked army's token: its four sides, its stamina (its refill) and Level up. */
+/** Beside the picked army's token: its four sides, its stamina and Level up. */
 const sides = () =>
   [...host.querySelectorAll("[data-picked-army] > * > [role='img']")].map((side) => side.getAttribute("aria-label"));
 const rowButton = (name: RegExp) =>
   [...details()!.parentElement!.querySelectorAll<HTMLButtonElement>("button")].find((button) =>
     name.test(button.getAttribute("aria-label") ?? button.textContent ?? ""),
   )!;
-const staminaButton = () => rowButton(/^Refill /);
+const staminaMeter = () =>
+  details()!.parentElement!.querySelector<HTMLElement>('[role="meter"][aria-label="Stamina"]')!;
 const levelUp = () => rowButton(/^Level/);
 /** The lab realm's LORDS. */
 const realmLords = (lords: number) => ({
@@ -145,7 +146,8 @@ describe("the army's panel on a phone (owner, 22 October 2026: mobile direction 
     await select(ARMY);
     // The fixture has Common attributes except untrained Scouting.
     expect(sides()).toEqual(["Battle I", "Logistics I", "Scouting 0", "Homecoming I"]);
-    expect(staminaButton().textContent).toBe("90/150");
+    expect(staminaMeter().getAttribute("aria-valuenow")).toBe("90");
+    expect(staminaMeter().getAttribute("aria-valuemax")).toBe("150");
     expect(levelUp().textContent).toBe("Level up");
     // One way to the card: the token, which wears the army's XP, number and troops.
     expect(host.querySelectorAll('button[aria-label="Army 1: details"]')).toHaveLength(1);
@@ -160,23 +162,16 @@ describe("the army's panel on a phone (owner, 22 October 2026: mobile direction 
     expect(useUIStore.getState().entityActions.selectedEntityId).toBe(ARMY);
   });
 
-  it("opens the refill's confirm from the stamina, once the realm holds at least one LORDS", async () => {
+  it("keeps stamina read-only when a historical LORDS balance arrives", async () => {
     const store = await renderHud();
     await select(ARMY);
-    // The lab realm holds no LORDS: the stamina reads in red and takes no press.
-    expect([staminaButton().disabled, staminaButton().dataset.tone, staminaButton().textContent]).toEqual([
-      true,
-      "bad",
-      "90/150",
-    ]);
-
+    const reading = () => [staminaMeter().getAttribute("aria-valuenow"), staminaMeter().getAttribute("aria-valuemax")];
+    expect(reading()).toEqual(["90", "150"]);
+    expect(rowButton(/^Refill /)).toBeUndefined();
     await act(async () => store.applyFacts([realmLords(40)] as never));
-    expect([staminaButton().disabled, staminaButton().dataset.tone]).toEqual([false, undefined]);
-    await act(async () => staminaButton().click());
-    const confirm = host.querySelector("[data-kit-sheet]")!;
-    expect([...confirm.querySelectorAll("button")].map((button) => button.textContent)).toEqual(
-      expect.arrayContaining(["Cancel", "Refill · 40 LORDS"]),
-    );
+    expect(reading()).toEqual(["90", "150"]);
+    expect(rowButton(/^Refill /)).toBeUndefined();
+    expect(host.querySelector("[data-kit-sheet]")).toBeNull();
   });
 
   it("opens the army's card on its level-up choices from Level up, and on its status while no level is bought", async () => {

@@ -62,13 +62,7 @@ pub fn validate(preset: PresetDefinition) {
         let _ = labor.golden_amount * crate::rules::RESOURCE_PRECISION;
         let _ = labor.golden_essence * crate::rules::RESOURCE_PRECISION;
     }
-    if let Some(chests) = preset.economy.chests {
-        assert!(
-            chests.claim_window_seconds > crate::days::FRONTIER_REPORT_GRACE_SECONDS,
-            "LORDS claim window needs reporting grace",
-        );
-    }
-    assert!(preset.economy.chests.is_some() == (rules.day_unit_seconds != 0), "chest rules require expedition");
+    assert!(preset.economy.chests.is_none(), "LORDS presets are retired");
     assert!(preset.economy.discovery.is_some() == (rules.day_unit_seconds != 0), "discovery requires expedition");
     if let Some(discovery) = preset.economy.discovery {
         crate::discovery::validate_frontier(discovery);

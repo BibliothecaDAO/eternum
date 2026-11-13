@@ -1,3 +1,4 @@
+import { ArmyRelicSlots } from "../relics/army-relic-slots";
 import { useGame } from "@/hooks/context/game-context";
 import { sendOnce, useInFlight } from "@/hooks/store/use-actions-in-flight";
 import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
@@ -14,7 +15,6 @@ import { type DockArmy, useDockArmies } from "../hud/dock-armies";
 import { type ArmyDetailFacts, type ArmyView, readArmyDetail } from "./army-detail";
 import { SCOUTING_CHOICES } from "../progression-choices";
 import { ArmyDetail, useArmyStep } from "./army-panel";
-import { ArmyRefill } from "./army-refill";
 import { ArmyDeleteButton, ArmyDeleteConfirm } from "./army-delete";
 
 const PROGRESS_MODELS = ["RealmKnowledge", "ArmyProgress", "ArmyProgressionRules"] as const;
@@ -103,7 +103,6 @@ const ArmyPanel = ({
 
   return (
     <ArmySheet
-      realm={realm}
       army={army}
       view={readArmyDetail(facts)}
       sending={sending}
@@ -120,7 +119,6 @@ const ArmyPanel = ({
  * status only; Delete's confirm in the body, and Spire in the foot while the army stands at its spire.
  */
 const ArmySheet = ({
-  realm,
   army,
   view,
   sending,
@@ -129,7 +127,6 @@ const ArmySheet = ({
   onLevelUp,
   onClose,
 }: {
-  realm: NativeRows["Structure"];
   army: DockArmy;
   view: ArmyView;
   sending: boolean;
@@ -148,11 +145,11 @@ const ArmySheet = ({
     >
       <ArmyDetail
         army={view}
-        refill={<ArmyRefill army={army} realm={realm} look="price" />}
         sending={sending}
         step={step}
         onLevelUp={onLevelUp}
       />
+      <ArmyRelicSlots explorerId={army.explorerId} />
       {deleting && !step.choosing && (
         <ArmyDeleteConfirm army={army} onCancel={() => setDeleting(false)} onDeleted={onClose} />
       )}

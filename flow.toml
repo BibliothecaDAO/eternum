@@ -137,3 +137,7 @@ estimate_gb = 4
 [kind.test-native-plan]
 cmd = "node --test contracts/l3/check-native-plan.test.mjs"
 estimate_gb = 1
+
+[kind.generate-native-retirement]
+cmd = 'bash contracts/l3/check-native.sh build && pnpm run schema:native && pnpm run fixtures:native-presets && (cd contracts/l3/world-native && scarb fmt) && (cd contracts/l3/world-native/tests && scarb fmt) && pnpm run format && git add -N -- contracts/l3/world-native/tests/fixtures/current-presets && git diff --binary > "$FLOW_TMP/generated.patch"'
+estimate_gb = 9

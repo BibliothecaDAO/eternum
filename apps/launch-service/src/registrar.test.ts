@@ -49,7 +49,7 @@ vi.mock("./shard-client", () => ({
     registeredRelease = async () => ({ logic: { season: "0x55e0", troops: "0x77a2" }, migration: "0x0" });
     gameId = async (name: string) => (name === "frontier-1" ? 1 : 0);
     gameRelease = async (gameId: number) => mock.pins.get(gameId)!;
-    isSettled = async () => false;
+    game = async () => ({ settled: false, preset_id: 7n });
     applyRelease = async (gameId: number, releaseId: number) => {
       mock.pins.set(gameId, releaseId);
       return `0x${gameId}${releaseId}`;

@@ -1,3 +1,9 @@
+pub const RELIC_BLADE_BPS: u32 = 1000;
+pub const RELIC_WARD_BPS: u32 = 500;
+pub const RELIC_PLUNDER_BPS: u32 = 2000;
+pub const RELIC_TOME_BPS: u32 = 4000;
+pub const RELIC_SECONDS_PER_RANK: u32 = 1800;
+pub const RELIC_TILES_PER_RANK: u8 = 6;
 pub const SHRINE_COMMON_BPS: u32 = 5000;
 pub const SHRINE_UNCOMMON_BPS: u32 = 3000;
 pub const SHRINE_RARE_BPS: u32 = 1500;

@@ -1,4 +1,5 @@
 pub mod approved_frontier_extension;
+pub mod army_relics;
 pub mod arrivals;
 pub mod artificer;
 pub mod biome;
@@ -22,7 +23,6 @@ pub mod exploration_rewards;
 pub mod fixed_constants;
 pub mod frontier_extension;
 
-pub mod frontier_prizes;
 pub mod game;
 pub mod games;
 pub mod games_entry;

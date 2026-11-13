@@ -61,8 +61,6 @@ export function createSystemCalls({ provider, authHandler }: { provider: any; au
   const research = (props: Parameters<typeof provider.research>[0]) => provider.research(props);
   const spend_skill_point = (props: Parameters<typeof provider.spend_skill_point>[0]) =>
     provider.spend_skill_point(props);
-  const refill_stamina = (props: Parameters<typeof provider.refill_stamina>[0]) => provider.refill_stamina(props);
-  const withdraw_lords = (props: Parameters<typeof provider.withdraw_lords>[0]) => provider.withdraw_lords(props);
 
   const bitcoin_mine_contribute_labor = async (
     props: SystemProps.BitcoinMineContributeLaborProps,
@@ -329,8 +327,6 @@ export function createSystemCalls({ provider, authHandler }: { provider: any; au
     enter_depth: withAuth(enter_depth),
     research: withAuth(research),
     spend_skill_point: withAuth(spend_skill_point),
-    refill_stamina: withAuth(refill_stamina),
-    withdraw_lords: withAuth(withdraw_lords),
     bridge_deposit_into_realm: withAuth(bridge_deposit_into_realm),
     bridge_withdraw_from_realm: withAuth(bridge_withdraw_from_realm),
 

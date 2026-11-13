@@ -22,7 +22,6 @@ export type HudSurface =
   | "season"
   | "army"
   | "army-lost"
-  | "withdraw"
   | "realms";
 
 /**

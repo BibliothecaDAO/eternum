@@ -3,13 +3,13 @@ pub use world_test_support::tests::progression::*;
 #[test]
 fn exploring_at_each_depth_awards_exact_xp_once() {
     for (depth, xp) in array![(0_u8, 2_u32), (1, 3), (2, 4), (3, 5)] {
-        let (d, game_id, key) = super::registrar::setup_frontier_chests();
+        let (d, game_id, key) = super::registrar::setup_frontier_relics();
         let map = crate::map::IMapLogicDispatcher { contract_address: d.games };
         place_army_at_depth(d, key, depth);
 
         let before = read_progress(d, key);
-        let target = super::frontier_explore_chest::destination(d, key);
-        super::frontier_explore_chest::explore(d, key, super::frontier_explore_chest::HIT_ROOT, 360);
+        let target = exploration_destination(d, key);
+        explore(d, key, 19635, 360);
         let after = read_progress(d, key);
         assert_eq!(after, ArmyProgress { xp: before.xp + xp, ..before });
         assert!(map.tile(crate::geometry::tile_key(game_id, target)).is_some());
@@ -206,9 +206,9 @@ fn reveals_and_clears_pay_their_xp() {
         d.games,
         || {
             crate::logic::progression::award_xp(
-                key, crate::progression::XpAward::Reveal(crate::troops::Coord { alt: false, x: 1, y: 1 }),
+                key, crate::progression::XpAward::Reveal(crate::troops::Coord { alt: false, x: 1, y: 1 }), 0,
             );
-            crate::logic::progression::award_xp(key, crate::progression::XpAward::Clear(90));
+            crate::logic::progression::award_xp(key, crate::progression::XpAward::Clear(90), 0);
         },
     );
     assert_eq!(read_progress(d, key).xp, 2 + 90);
@@ -301,7 +301,7 @@ fn battle_tiers_multiply_damage_by_the_ruled_table() {
 
 #[test]
 fn logistics_tiers_set_the_maximum_stamina_by_the_ruled_table() {
-    let (_, frontier) = super::preset_projection::current_definition("frontier");
+    let (_, frontier) = super::preset_projection::current_definition("frontier-check");
     let rules = frontier.rules.troop_stamina_config;
     for (logistics, maximum) in array![(0_u8, 120_u64), (1, 140), (2, 165), (3, 195), (4, 230), (5, 270)] {
         let progress = ArmyProgress { logistics, ..crate::progression::initial() };
@@ -311,7 +311,7 @@ fn logistics_tiers_set_the_maximum_stamina_by_the_ruled_table() {
 
 #[test]
 fn added_stamina_stops_at_the_armys_own_maximum() {
-    let (_, frontier) = super::preset_projection::current_definition("frontier");
+    let (_, frontier) = super::preset_projection::current_definition("frontier-check");
     let rules = frontier.rules.troop_stamina_config;
     let maximum = crate::progression::stamina_max(
         ArmyProgress { logistics: 3, ..crate::progression::initial() }, crate::troops::TroopType::Knight, rules,
@@ -499,7 +499,7 @@ fn discovery_stores_a_depth_scaled_point_and_public_use_grants_it_once_without_x
     for depth in 0_u8..4 {
         let rules = super::preset_projection::frontier_discovery_rules();
         let unlocked = crate::expeditions::FrontierDiscoveryRules { well_bps: 0, ..rules };
-        let (d, game_id, key) = super::registrar::setup_frontier_chests_with_rules(Some(unlocked));
+        let (d, game_id, key) = super::registrar::setup_frontier_relics_with_rules(Some(unlocked));
         place_army_at_depth(d, key, depth);
         let army = super::state::GameState { contract_address: d.games }.resolved_explorer(key).unwrap();
         snforge_std::interact_with_state(
@@ -514,10 +514,10 @@ fn discovery_stores_a_depth_scaled_point_and_public_use_grants_it_once_without_x
             },
         );
         let root = super::registrar::discovery_root(
-            game_id, unlocked, 0, Some(super::registrar::any_chest()), crate::discovery::Discovery::Shrine,
+            game_id, unlocked, 0, Some(super::registrar::any_relic()), crate::discovery::Discovery::Shrine,
         );
-        let target = super::frontier_explore_chest::destination(d, key);
-        super::frontier_explore_chest::explore(d, key, root, 360);
+        let target = exploration_destination(d, key);
+        explore(d, key, root, 360);
         let occupied = snforge_std::interact_with_state(
             d.games, || crate::logic::map::occupancy(crate::geometry::tile_key(game_id, target)).unwrap(),
         );

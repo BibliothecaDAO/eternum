@@ -276,8 +276,8 @@ function buildEconomy(
   tokens: Array<{ resource_type: number; token: string }>,
 ) {
   const chests = preset.chests;
-  if (chests === undefined || (chests !== null) !== (preset.dayUnitSeconds !== 0))
-    throw new Error("Explicit chest rules are required for expedition presets only");
+  if (chests === undefined || (chests !== null && preset.dayUnitSeconds === 0))
+    throw new Error("Chest rules must be explicit and require expedition days");
   if (chests !== null) {
     if (
       !Number.isInteger(chests.poolBps) ||

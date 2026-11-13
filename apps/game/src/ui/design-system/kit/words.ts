@@ -1867,3 +1867,31 @@ export const ARMY_MANAGEMENT = {
   loss: "Its troops, skills, XP and carried resources are lost. Its slot keeps its stamina.",
   deleteFailed: "The army could not be deleted.",
 } as const;
+
+export const RELIC_WORDS = {
+  title: "Relics",
+  kinds: { Blade: "Blade", Ward: "Ward", Plunder: "Plunder", FarEye: "Far-Eye", Tome: "Tome" },
+  blade: (amount: string) => `+${amount} damage dealt`,
+  ward: (amount: string) => `−${amount} damage taken`,
+  plunder: (amount: string) => `+${amount} labor and Essence from a cleared site`,
+  farEye: (tiles: number) => `Reveals the ${tiles} nearest tiles at once`,
+  tome: (amount: string) => `+${amount} XP`,
+  empty: "Empty slot",
+  switchOn: "Switch on",
+  switching: "Switching on…",
+  /** A running relic and its time left: "Rare Ward · 20m left". */
+  runs: (relic: string, left: string) => `${relic} · ${left} left`,
+  /** Switching on a relic whose kind already runs: the new one takes its place. */
+  replacesRunning: "Replaces the one running",
+  /** A ruin's relic, before the fight: the beast is as big as the relic is rare. */
+  guards: (relic: string) => `Pays a relic: ${relic}`,
+  /** Choosing which of three carried relics the ruin's relic replaces, before the attack. */
+  full: "Your army carries 3 relics. Choose the one this relic replaces.",
+  replace: (relic: string) => `Replace ${relic}`,
+  /** The held attack's step while the army's relics are not known yet: whether it must choose cannot be told. */
+  reading: "Reading the army's relics…",
+  /** The held attack's step while what the ruin pays is not known yet: whether a relic comes cannot be told. */
+  readingRuin: "Reading the ruin's relic…",
+  /** The held attack's step while no relic is chosen: the choice itself is said just above it. */
+  chooseFirst: "Choose the relic to replace first",
+} as const;

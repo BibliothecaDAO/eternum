@@ -799,9 +799,8 @@ knights on the camp they cleared, beside the ruin they attacked (guard 999), bot
 that fight and another player's lost fight at a site the map never loaded; `scenario=low-stamina` is that army beside
 the same ruin with 5 stamina and no cooldown, short of an attack. `scenario=ruin-fight` is that army beside that ruin
 before the fight, stamina to attack and no cooldown: select the army, open the ruin's card (right-click, or tap),
-**Attack**; the lab's chain clears the ruin as the contract does (4 troops lost, an Uncommon chest of 100 LORDS) and the
-camera stays where the player had it (`--steps lab-ruin-fight`), while the ruin's chest opens at the centre of the
-screen. `scenario=ruin-far` stands that army, 1,626 knights, two tiles from a ruin of 3,000: select it, open the ruin's
+**Attack**; the lab's chain clears the ruin as the contract does (4 troops lost, an Uncommon Blade in the army’s first relic slot) and the
+camera stays where the player had it (`--steps lab-ruin-fight`), with its relic shown in the army panel. `scenario=ruin-far` stands that army, 1,626 knights, two tiles from a ruin of 3,000: select it, open the ruin's
 card, and it forecasts the attack (1,626 → 517, 3,000 → 2,412) with **Move** in Attack's place (`--steps lab-ruin-far`).
 `scenario=cleared-camp` stands the realm's second army on a camp it cleared, away from the spire, and leaves another
 cleared camp empty: tap the army for its panel, and the empty camp shows its standard with no token. `scenario=camp`
@@ -1262,17 +1261,14 @@ exact eight packed sources. There is one production path per species and no sepa
 Training buildings grant their first rank when built: 12,000 Essence + 3,000 Labor, with the lodge's kind chosen on the
 build sheet. Research and building gems run from Common I to Legendary V; the model shows the highest side level.
 
-## Partial stamina and season LORDS
+## Army stamina and relics
 
-Frontier: select an army → **Refill** → choose stamina on the slider → **Refill**. Each point costs one LORDS; missing
-stamina and the realm's balance bound the choice. The Season board shows **Chests** and **Top 10** separately. The
-preset supplies the split and winner count. After season end, the relay creates each winner's withdrawal receipt; the
-existing payout service sends it to the linked wallet. Dev previews: `/lab/kit/hud/army-refill` and
-`/lab/kit/hud/season`; the same refill sheet and season figures render there.
+Select an army to read its stamina or spend a skill point. Ruins award relics to its three slots. A full army chooses
+which slot the next ruin replaces; activating a carried relic consumes it. Open `/lab/game?scenario=relics` to exercise
+activation and replacement. Season 1 removes paid refills, the LORDS purse, deposits and manual withdrawals. Existing
+balances retain the season-end sweep.
 
-Capture both with
-`pnpm --dir apps/game capture:hud-lab --base-url https://127.0.0.1:4235 --out <fresh-evidence-dir> --only frontier-army-refill,frontier-season`;
-the refill proof selects 25 points and checks both balances.
+`pnpm --dir apps/game playtest --steps lab-no-lords --iterations 1 --out <evidence>` checks the army panel and HUD.
 
 Skill points and the 0–V scale: the army panel shows lifetime XP, the points held by rank and the next repeating
 milestone (100 / 250 / 500 / 900 / 1,500). Rank 0 is an empty socket; research tiles show a gem for each independent
@@ -1305,49 +1301,3 @@ This wraps the standard `playtest` command’s `lab-ethereal-1`, `lab-ethereal-2
 the signed command, army position, camera and committed material, then clears selection overlays for the still. Each
 browser closes after its proof. `captures.json`, per-run transcripts and `index.html` remain. One run per depth/device
 verifies routing and appearance; it is not a performance benchmark.
-
-## Wallet LORDS deposits
-
-In a deposit-enabled Frontier season, open the LORDS purse in the HUD. **Deposit LORDS** accepts whole LORDS from the
-payout wallet and opens the payment over the game on the app sheet, through the one wallet send: a Realms wallet
-confirms with its passkey and pays its network fee in LORDS, shown before confirming; another linked wallet prompts and
-pays in STRK. The purse separates winnings from deposited LORDS, shows delivery/refund receipts, and allows another
-deposit after confirmation. A payment handed to a wallet is kept as that wallet's uncertain send from the moment the
-wallet or passkey is asked, so closing the payment while it is asked, or losing its answer, leaves its amount and
-request locked (no **Edit or cancel deposit**) until the passkey declines or the chain settles it; **Retry payment**
-reopens the same payment. **Withdraw winnings** uses the existing earned-only path. Refills spend deposited LORDS first.
-Unused deposits return to the linked wallet through the existing season-end sweep; undelivered deposits are refunded to
-the original paying wallet.
-
-`pnpm --dir apps/game playtest --steps lab-spend-lords --iterations 1 --out <evidence>` drives the real refill and purse
-against a native-fact fixture whose deposit source is the build's own L2 ledger. `--steps lab-deposit-amount` (play it
-at `--viewport 390x844` too) proves the amount the wallet will sign on the same fixture: the HUD field read at rest
-(accessible name, numeric input mode, contrast against its well of at least 4.5), tapped and typed with real keys (25),
-the deposit begun with Tab then Enter on a desktop or a tap on a phone, its payment open as **Deposit 25 LORDS**, then
-the page loaded again with that amount restored and locked. The run's test profile holds no wallet, so nothing is handed
-to a wallet: the restored deposit offers **Retry payment** and **Edit or cancel deposit**, with no uncertain status. The
-phone run is Chrome's device emulation: numeric input mode and real browser key events injected after a real tap; a
-physical OS keyboard is not exercised. On the reviewed dev rehearsal season, use the existing command with
-`--steps s1-deposits --chain-id <runner-chain> --game-id <game> --player <email> --storage-state <file> --headed --renderer-modes webgpu-auto --iterations 1`.
-Prepare the payout wallet in the player's persistent profile with 20 devLords plus its fee funding for both deposits
-(real LORDS for a Realms wallet, STRK for another). A Realms wallet runs at the dev client's origin with this checkout's
-build answering for it in the run's page (`--base-url https://play.dev-realms.party --client-at-origin`) and the
-device's saved passkeys (`--passkeys <file>`): each payment writes its fee and built calls to `<step>-fee-shown.json`
-and confirms once `<step>-fee-approved.json` is written (`-fee-refused.json` stops it). Another wallet's two prompts are
-confirmed by hand. Each waits ten minutes; Ctrl-C cancels. A missing wallet is reported.
-
-The live steps refuse chains outside `S1_DEPOSIT_`, require ten newly credited spend-only LORDS with unchanged winnings,
-then use the army panel and refill slider to submit exactly one partial refill. The account needs earned winnings from a
-ruin chest and a deployed army; up to eight ordinary Explore actions make missing stamina if needed. The actual slider
-amount must exceed purchased LORDS, fit purchased plus earned LORDS, and leave stamina below its maximum. Unmet
-prerequisites fail with the observed balances or stamina. After the mixed refill consumes all purchased LORDS,
-`wallet-deposit-for-sweep` repeats the normal ten-LORDS deposit with the same exact purchased increase and unchanged
-winnings check. The two deposits total 20 LORDS for this account and leave 10 unspent LORDS for the existing season-end
-principal return. Each deposit retains its own response bodies, credited receipt identity and before/after purse
-evidence.
-
-The transcript retains response bodies, normal action records, the actual invocation, its confirmed successful receipt
-without `GameplayRejected`, and Herald snapshots covering its block. It checks exact purchased-first spending, consumed
-principal, earned-only pool return, unchanged swept balance and withdrawals, and native stamina plus regeneration
-against the visible army panel and purse. The live proof buys no tier. Season-end sweep and wallet-return evidence are
-separate rehearsal steps in [the runbook](../../deploy/athanor/README.md#deposit-rehearsal-on-dev).

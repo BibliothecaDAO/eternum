@@ -252,6 +252,7 @@ export interface AttackExplorerVsExplorerProps extends SystemSigner {
  * Properties for explorer vs guard attack
  */
 export interface AttackExplorerVsGuardProps extends SystemSigner {
+  relic_slot?: 0 | 1 | 2;
   /** ID of the attacking explorer */
   explorer_id: number;
   /** ID of the structure with defending guard */
@@ -400,11 +401,10 @@ export interface BurnResearchForRelicProps extends SystemSigner {
   structure_id: BigNumberish;
 }
 
-export interface ApplyRelicProps extends SystemSigner {
+export type ApplyRelicProps = SystemSigner & {
   entity_id: BigNumberish;
   relic_resource_id: BigNumberish;
-  recipient_type: BigNumberish;
-}
+} & ({ recipient_type: BigNumberish; relic_slot?: never } | { recipient_type?: never; relic_slot: 0 | 1 | 2 });
 
 export interface BitcoinMineContributeLaborProps extends SystemSigner {
   structure_id: BigNumberish;

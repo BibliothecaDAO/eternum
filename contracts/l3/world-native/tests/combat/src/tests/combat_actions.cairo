@@ -424,7 +424,9 @@ fn structure_capture_ignores_guards_outside_the_slot_limit() {
     assert!(
         execute(
             d,
-            Command::BattleGuard(crate::commands::Battle { attacker_id: attacker, defender_id: target.entity_id }),
+            Command::BattleGuard(
+                crate::commands::Battle { attacker_id: attacker, defender_id: target.entity_id, relic_slot: None },
+            ),
             80,
         ),
     );
@@ -448,7 +450,9 @@ fn capturing_a_players_realm_records_both_owners_in_one_capture_story() {
     assert!(
         execute(
             d,
-            Command::BattleGuard(crate::commands::Battle { attacker_id: attacker, defender_id: target.entity_id }),
+            Command::BattleGuard(
+                crate::commands::Battle { attacker_id: attacker, defender_id: target.entity_id, relic_slot: None },
+            ),
             80,
         ),
     );
@@ -487,7 +491,9 @@ fn guard_targeting_preserves_highest_occupied_functional_slot_first() {
     assert!(
         execute(
             d,
-            Command::BattleGuard(crate::commands::Battle { attacker_id: attacker, defender_id: target.entity_id }),
+            Command::BattleGuard(
+                crate::commands::Battle { attacker_id: attacker, defender_id: target.entity_id, relic_slot: None },
+            ),
             80,
         ),
     );
@@ -541,7 +547,7 @@ fn unowned_target_rule_rejects_owned_sites_and_allows_capture_of_an_unowned_site
         },
     );
     let command = Command::BattleGuard(
-        crate::commands::Battle { attacker_id: attacker, defender_id: target.entity_id },
+        crate::commands::Battle { attacker_id: attacker, defender_id: target.entity_id, relic_slot: None },
     );
     let before = troop(d, attacker);
     assert_terminal_rejection(d, command, 80);

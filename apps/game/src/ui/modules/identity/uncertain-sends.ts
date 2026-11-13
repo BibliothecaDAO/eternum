@@ -1,5 +1,4 @@
 import { isSameStarknetAddress } from "@realms-world/identity";
-import { useSyncExternalStore } from "react";
 import { RpcError, type ProviderInterface, type TypedData } from "starknet";
 
 /**
@@ -48,24 +47,7 @@ const writeAll = (sends: UncertainSend[]) => {
   } catch (error) {
     throw new UncertainSendNotKeptError(error instanceof Error ? error.message : String(error));
   }
-  for (const listener of listeners) listener();
 };
-
-/** What a write here or in another tab tells: the screens that show whether a wallet has an uncertain send. */
-const listeners = new Set<() => void>();
-const subscribe = (listener: () => void) => {
-  const fromOtherTab = (event: StorageEvent) => event.key === KEY && listener();
-  listeners.add(listener);
-  window.addEventListener("storage", fromOtherTab);
-  return () => {
-    listeners.delete(listener);
-    window.removeEventListener("storage", fromOtherTab);
-  };
-};
-
-/** Whether `owner` has an uncertain send, kept current as sends are kept and settled. */
-export const useHasUncertainSend = (owner: string | null) =>
-  useSyncExternalStore(subscribe, () => owner !== null && uncertainSendOf(owner) !== undefined);
 
 export const uncertainSendOf = (owner: string): UncertainSend | undefined =>
   readAll().find((send) => isSameStarknetAddress(send.owner, owner));

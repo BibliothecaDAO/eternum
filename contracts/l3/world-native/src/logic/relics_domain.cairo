@@ -5,6 +5,9 @@ pub mod RelicsLogic {
 
     component!(path: ReleaseState, storage: release, event: ReleaseEvent);
     component!(path: RelicState, storage: relics, event: RelicEvent);
+    component!(path: crate::logic::army_relics::ArmyRelicState, storage: army_relics, event: ArmyRelicEvent);
+    #[abi(embed_v0)]
+    impl ArmyRelics = crate::logic::army_relics::ArmyRelicState::ViewsImpl<ContractState>;
     impl LifecycleInternal = ReleaseState::InternalImpl<ContractState>;
     #[abi(embed_v0)]
     impl Relics = RelicState::RelicsImpl<ContractState>;
@@ -35,6 +38,8 @@ pub mod RelicsLogic {
         #[substorage(v0)]
         release: ReleaseState::Storage,
         #[substorage(v0)]
+        army_relics: crate::logic::army_relics::ArmyRelicState::Storage,
+        #[substorage(v0)]
         relics: RelicState::Storage,
     }
     #[event]
@@ -42,5 +47,6 @@ pub mod RelicsLogic {
     enum Event {
         ReleaseEvent: ReleaseState::Event,
         RelicEvent: RelicState::Event,
+        ArmyRelicEvent: crate::logic::army_relics::ArmyRelicState::Event,
     }
 }

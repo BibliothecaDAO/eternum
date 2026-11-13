@@ -1,4 +1,5 @@
 pub use world_test_support::tests::registrar::*;
+use crate::logic::release::{IReleasesDispatcher, IReleasesDispatcherTrait};
 use crate::tests::army_merge::{progress, slot, timers, write_progress};
 
 
@@ -1210,5 +1211,77 @@ fn a_materialized_home_ring_moves_and_explores_without_a_roll() {
     // The home ring, the moved-to and the explored tiles keep the biome the terrain derives for them.
     assert!(
         super::terrain::assert_biomes_match_terrain(d, game_id, array![site, spawn, ring_tile, target].span()) != 0,
+    );
+}
+
+#[test_case("frontier-retired")]
+#[test_case("devcon")]
+#[test_case("accelerated")]
+#[feature("safe_dispatcher")]
+fn paying_presets_cannot_register_on_the_new_release(name: ByteArray) {
+    let d = setup();
+    let (id, preset) = super::preset_projection::current_definition(name);
+    assert!(preset.economy.chests.is_some());
+    assert!(safe(d, super::authority()).register_preset(id, preset).is_err());
+    assert_eq!(registry(d).preset_commitment(id), 0);
+    assert_eq!(registry(d).next_game_id(), 1);
+}
+
+#[test]
+#[feature("safe_dispatcher")]
+fn an_already_registered_paying_preset_cannot_create_a_new_game() {
+    let d = setup();
+    let (id, preset) = super::preset_projection::current_definition("frontier-check");
+    registry(d).register_preset(id, preset);
+    let commitment = registry(d).preset_commitment(id);
+    let (_, historical) = super::preset_projection::current_definition("frontier-retired");
+    snforge_std::interact_with_state(
+        d.games,
+        || {
+            crate::state::write().presets.entry(commitment).rollover_chest_rules.write(historical.economy.chests);
+        },
+    );
+    let next = registry(d).next_game_id();
+    let params = CreateGameParams { preset_id: id, ..params(false) };
+    assert!(safe(d, super::authority()).create_game(params).is_err());
+    assert_eq!(registry(d).next_game_id(), next);
+    assert_eq!(registry(d).game_id_by_name(params.name), 0);
+}
+
+#[test]
+#[feature("safe_dispatcher")]
+fn retirement_preserves_an_existing_games_pin_and_idempotent_launch() {
+    let d = setup();
+    let (id, preset) = super::preset_projection::current_definition("frontier-check");
+    registry(d).register_preset(id, preset);
+    let launch = CreateGameParams { preset_id: id, start_main_at: 360, duration_seconds: 3600, ..params(false) };
+    let game_id = registry(d).create_game(launch);
+    let before = snforge_std::interact_with_state(d.games, || crate::logic::game::game(game_id));
+    let (_, historical) = super::preset_projection::current_definition("frontier-retired");
+    let commitment = registry(d).preset_commitment(id);
+    snforge_std::interact_with_state(
+        d.games,
+        || {
+            crate::state::write().presets.entry(commitment).rollover_chest_rules.write(historical.economy.chests);
+        },
+    );
+    let releases = IReleasesDispatcher { contract_address: d.games };
+    let original = releases.release(1);
+    start_cheat_caller_address(d.games, super::authority());
+    releases.register_release(2, original);
+    stop_cheat_caller_address(d.games);
+    assert_eq!(releases.current_release(), 2);
+    assert_eq!(releases.game_release(game_id), 1);
+    assert_eq!(registry(d).create_game(launch), game_id);
+    assert!(safe(d, super::authority()).create_game(CreateGameParams { name: 'retired-new-game', ..launch }).is_err());
+    assert_eq!(registry(d).next_game_id(), game_id + 1);
+    assert_eq!(registry(d).game_id_by_name('retired-new-game'), 0);
+    assert_eq!(releases.game_release(game_id), 1);
+    snforge_std::interact_with_state(
+        d.games,
+        || {
+            assert_eq!(crate::state::read().game_creation_releases.read(game_id), 1);
+            assert_eq!(crate::logic::game::game(game_id), before);
+        },
     );
 }
