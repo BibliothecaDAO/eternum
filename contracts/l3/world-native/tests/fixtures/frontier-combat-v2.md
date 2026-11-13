@@ -1,11 +1,12 @@
-# Frontier combat vectors v1
+# Frontier combat vectors v2
 
-`frontier-combat-v1.txt` is shared by the Cairo replay and the client forecast test. Whitespace separates unsigned
+`frontier-combat-v2.txt` is shared by the Cairo replay and the client forecast test. Whitespace separates unsigned
 decimal felts, written one per line for snforge’s text reader. Losses/counts use resource precision (1,000,000,000);
 damage coefficients retain Cairo's 64.64 integers.
 
-The header is version (1), exchange count (200), `TroopDamageConfig` in declaration order, `TroopStaminaConfig` in
-declaration order, then the army tick interval in seconds.
+The header is version (2), exchange count (200), `TroopDamageConfig` in declaration order, `TroopStaminaConfig` in
+declaration order, then the army tick interval in seconds. Version 2 removes the retired raid coefficient from the
+damage header. All 200 exchange inputs and recorded outcomes are unchanged from version 1.
 
 Each exchange has 24 fields:
 
@@ -26,10 +27,11 @@ Regenerate inputs from the repository root:
 bun contracts/l3/world-native/scripts/frontier-combat-vectors.ts inputs
 ```
 
-This writes placeholder results. On the coordinated build box, under `athanor.slice`, record the contract outcomes:
+This writes placeholder results. On the coordinated build box, from `contracts/l3/world-native`, record the contract
+outcomes:
 
 ```sh
-snforge test record_frontier_combat_exchanges --ignored --max-threads 1 > frontier-combat-recording.log
+/home/djizus/projects/eternum-lanes/cairo-run.sh scarb test record_frontier_combat_exchanges --ignored > frontier-combat-recording.log
 ```
 
 Back at the repository root, merge the recording and run the Cairo replay on the box:
@@ -38,8 +40,10 @@ Back at the repository root, merge the recording and run the Cairo replay on the
 bun contracts/l3/world-native/scripts/frontier-combat-vectors.ts record /path/to/frontier-combat-recording.log
 ```
 
+From `contracts/l3/world-native`:
+
 ```sh
-snforge test frontier_combat_matches_two_hundred_shared_exchanges --max-threads 1
+/home/djizus/projects/eternum-lanes/cairo-run.sh scarb test frontier_combat_matches_two_hundred_shared_exchanges
 ```
 
 The frontend reads the same file and compares exact scaled losses using its fixed-point implementation. A separate Cairo

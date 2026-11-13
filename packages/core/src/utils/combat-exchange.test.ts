@@ -4,11 +4,11 @@ import { describe, expect, it } from "vitest";
 import { type CombatRules, type ExchangeTroops, forecastFight, resolveExchange } from "./combat-exchange";
 
 /**
- * The contract's own record of 200 exchanges (frontier-combat-v1.txt, written by its snforge producer): every loss and
+ * The contract's own record of 200 exchanges (frontier-combat-v2.txt, written by its snforge producer): every loss and
  * stamina value must come out of resolveExchange as the same integer.
  */
-const FIXTURE = new URL("../../../../contracts/l3/world-native/tests/fixtures/frontier-combat-v1.txt", import.meta.url);
-const HEADER_FELTS = 25;
+const FIXTURE = new URL("../../../../contracts/l3/world-native/tests/fixtures/frontier-combat-v2.txt", import.meta.url);
+const HEADER_FELTS = 24;
 const RECORD_FELTS = 24;
 const CATEGORIES = ["Knight", "Paladin", "Crossbowman"] as const;
 const TIERS = ["T1", "T2", "T3"] as const;
@@ -24,7 +24,7 @@ const readFixture = () => {
   };
   const header = Array.from({ length: HEADER_FELTS }, next);
   const [version, caseCount] = header;
-  if (version !== 1n) throw new Error(`Combat fixture version ${version}`);
+  if (version !== 2n) throw new Error(`Combat fixture version ${version}`);
   if (felts.length !== HEADER_FELTS + Number(caseCount) * RECORD_FELTS) throw new Error("Combat fixture length");
   const rules = readRules(header.slice(2));
   const cases = Array.from({ length: Number(caseCount) }, () => readCase(next, rules.tickSeconds));
@@ -32,13 +32,12 @@ const readFixture = () => {
 };
 
 const readRules = (felts: bigint[]): CombatRules => {
-  const [raid, biomeBonus, scaling, t1, t2, t3, ...stamina] = felts;
+  const [biomeBonus, scaling, t1, t2, t3, ...stamina] = felts;
   const flags = stamina.map(Number);
   return {
     cooldownSeconds: 0,
     tickSeconds: flags[16]!,
     damage: {
-      damage_raid_percent_num: Number(raid),
       damage_biome_bonus_num: Number(biomeBonus),
       damage_scaling_factor: scaling!,
       t1_damage_value: t1!,

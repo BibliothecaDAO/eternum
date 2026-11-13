@@ -3,7 +3,7 @@ import { buildNativePreset } from "../../../../config/deployer/clean/config/nati
 import { loadNativePresetConfiguration } from "../../../../config/deployer/clean/registrar/native-preset";
 import { FRONTIER_PRESET_ID } from "../../../../config/source/common/native-preset-modes";
 
-const fixture = new URL("../tests/fixtures/frontier-combat-v1.txt", import.meta.url);
+const fixture = new URL("../tests/fixtures/frontier-combat-v2.txt", import.meta.url);
 const staminaFields = [
   "stamina_gain_per_tick",
   "stamina_initial",
@@ -29,7 +29,7 @@ function buildInputs(): string {
     FRONTIER_PRESET_ID,
   );
   const header = [
-    1,
+    2,
     200,
     ...Object.values(rules.troop_damage_config),
     ...staminaFields.map((field) => Number(rules.troop_stamina_config[field])),
@@ -81,7 +81,7 @@ function buildInputs(): string {
 
 function recordOutcomes(logPath: string): void {
   const fields = readFileSync(fixture, "utf8").trim().split(/\s+/);
-  const headerLength = 2 + 6 + staminaFields.length + 1;
+  const headerLength = 2 + 5 + staminaFields.length + 1;
   const records = [...readFileSync(logPath, "utf8").matchAll(/FRONTIER_EXCHANGE (\d+) (\d+) (\d+) (\d+) (\d+)/g)];
   if (records.length !== 200 || fields.length !== headerLength + 200 * 24) {
     throw new Error("Expected exactly 200 contract outcomes");
