@@ -16,6 +16,8 @@ export interface Withdrawal {
   realmsId: string;
   amount: string;
   confirmedAt: number;
+  /** Set by the relay once the ledger holds this claim's report: an unlinked player's claim then costs no read. */
+  reported?: true;
 }
 export interface WithdrawalReceipt extends Omit<Withdrawal, "realmsId"> {
   account: string;

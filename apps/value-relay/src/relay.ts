@@ -121,10 +121,35 @@ const separateInvalidRows = (chainId: string, page: ConfirmedBlock): ConfirmedBl
   return { ...page, withdrawals, results, held };
 };
 
+/**
+ * A reported claim waits for its player's wallet. Asking identity is free, asking the L2 costs a read per minute per
+ * claim, so a reported claim with no linked wallet is left alone until one links.
+ */
+const withdrawalsWorthReading = (
+  ports: RelayPorts,
+  pending: readonly Withdrawal[],
+  deferred: { key: string; reason: string }[],
+) =>
+  Effect.gen(function* () {
+    const worth: Withdrawal[] = [];
+    for (const withdrawal of pending) {
+      if (!withdrawal.reported) {
+        worth.push(withdrawal);
+        continue;
+      }
+      const wallet = yield* Effect.result(ports.identity.linkedWallet(withdrawal.realmsId));
+      if (Result.isFailure(wallet)) deferred.push({ key: withdrawal.transactionHash, reason: wallet.failure.operation });
+      else if (wallet.success) worth.push(withdrawal);
+      else deferred.push({ key: withdrawal.transactionHash, reason: "withdrawal_wallet_unlinked" });
+    }
+    return worth;
+  });
+
 const payWithdrawals = (ports: RelayPorts, store: RelayStore) =>
   Effect.gen(function* () {
     const deferred: { key: string; reason: string }[] = [];
-    const rows = yield* relayOperation("read pending withdrawals", () => store.withdrawals());
+    const pending = yield* relayOperation("read pending withdrawals", () => store.withdrawals());
+    const rows = yield* withdrawalsWorthReading(ports, pending, deferred);
     const reads = yield* Effect.forEach(rows, (row) => Effect.result(ports.ledger.payment(row)), { concurrency: 25 });
     const reported: Withdrawal[] = [],
       fresh: Withdrawal[] = [];
@@ -148,8 +173,10 @@ const payWithdrawals = (ports: RelayPorts, store: RelayStore) =>
       }
       if (saved?.paid)
         yield* relayOperation("complete paid withdrawal", () => store.completeWithdrawal(withdrawal.transactionHash));
-      else if (saved) reported.push(withdrawal);
-      else fresh.push(withdrawal);
+      else if (saved) {
+        yield* relayOperation("remember reported withdrawal", () => store.markReported(withdrawal.transactionHash));
+        reported.push(withdrawal);
+      } else fresh.push(withdrawal);
     }
     if (fresh.length) {
       const report = yield* Effect.result(ports.ledger.reportMany(fresh));
@@ -158,8 +185,10 @@ const payWithdrawals = (ports: RelayPorts, store: RelayStore) =>
         : new Map(fresh.map((row) => [row.transactionHash, report.failure.operation]));
       for (const withdrawal of fresh) {
         const error = outcomes.get(withdrawal.transactionHash);
-        if (error === null) reported.push(withdrawal);
-        else yield* setAsideOrDefer(store, withdrawal, error!, deferred);
+        if (error === null) {
+          yield* relayOperation("remember reported withdrawal", () => store.markReported(withdrawal.transactionHash));
+          reported.push(withdrawal);
+        } else yield* setAsideOrDefer(store, withdrawal, error!, deferred);
       }
     }
     const ready: PayableClaim[] = [];

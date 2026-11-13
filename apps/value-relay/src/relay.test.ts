@@ -71,6 +71,10 @@ const fixture = () => {
     completeWithdrawal: async (hash) => {
       withdrawals.delete(hash);
     },
+    markReported: async (hash) => {
+      const row = withdrawals.get(hash);
+      if (row) withdrawals.set(hash, { ...row, reported: true });
+    },
     completeResult: async (id) => {
       results.delete(id);
     },
@@ -210,7 +214,28 @@ describe("confirmed value relay", () => {
     expect(await f.store.progress()).toMatchObject({ nextBlock: 1 });
     f.ports.identity.linkedWallet = () => Effect.succeed("0x456");
     await f.run();
-    expect(f.single.pay).toHaveBeenCalledWith(withdrawal, "0x456");
+    expect(f.single.pay).toHaveBeenCalledWith({ ...withdrawal, reported: true }, "0x456");
+  });
+  it("reads the ledger for a reported claim with no linked wallet once, not every tick", async () => {
+    const f = fixture();
+    f.ports.identity.linkedWallet = () => Effect.succeed(null);
+    f.ports.ledger.payment = vi.fn(() => Effect.succeed(null));
+    f.ports.ledger.voided = vi.fn(() => Effect.succeed(false));
+    await f.run();
+    const readsAfterReport = vi.mocked(f.ports.ledger.payment).mock.calls.length;
+    const voidedAfterReport = vi.mocked(f.ports.ledger.voided).mock.calls.length;
+    expect([readsAfterReport, voidedAfterReport]).toEqual([1, 1]);
+    for (let tick = 0; tick < 5; tick++)
+      expect(await f.run()).toMatchObject({
+        deferred: [{ key: withdrawal.transactionHash, reason: "withdrawal_wallet_unlinked" }],
+      });
+    expect(f.ports.ledger.payment).toHaveBeenCalledTimes(readsAfterReport);
+    expect(f.ports.ledger.voided).toHaveBeenCalledTimes(voidedAfterReport);
+    f.ports.identity.linkedWallet = () => Effect.succeed("0x456");
+    f.ports.ledger.payment = () =>
+      Effect.succeed({ reportedAt: 0, prizeRank: 0, prizeCount: 0, paid: false, seasonId: 4, wallet: "0", amount: "17" });
+    await f.run();
+    expect(f.single.pay).toHaveBeenCalledWith({ ...withdrawal, reported: true }, "0x456");
   });
   it("retries a payment after a lost acknowledgment using the withdrawal transaction hash", async () => {
     const f = fixture();
@@ -506,7 +531,7 @@ it("reports without a wallet and pays reported debt to the linked wallet at paym
     Effect.succeed({ reportedAt: 0, prizeRank: 0, prizeCount: 0, paid: false, seasonId: 4, wallet: "0", amount: "17" });
   f.ports.identity.linkedWallet = () => Effect.succeed("0x999");
   await f.run();
-  expect(f.single.pay).toHaveBeenCalledWith(withdrawal, "0x999");
+  expect(f.single.pay).toHaveBeenCalledWith({ ...withdrawal, reported: true }, "0x999");
   expect(await f.store.held()).toEqual([]);
 });
 

@@ -16,6 +16,7 @@ export interface RelayStore {
   withdrawals(): Promise<readonly Withdrawal[]>;
   results(): Promise<readonly BlitzResult[]>;
   completeWithdrawal(transactionHash: string): Promise<void>;
+  markReported(transactionHash: string): Promise<void>;
   completeResult(gameId: number): Promise<void>;
   halt(reason: string): Promise<void>;
   held(): Promise<readonly HeldObligation[]>;
@@ -87,6 +88,13 @@ export class DurableRelayStore implements RelayStore {
         await tx.delete(obligationIndexKey(`withdrawal:${transactionHash}`, withdrawal.blockNumber ?? 0));
       }
       await tx.delete(`withdrawal:${transactionHash}`);
+    });
+  }
+  async markReported(transactionHash: string) {
+    await this.storage.transaction(async (tx) => {
+      const withdrawal = await tx.get<Withdrawal>(`withdrawal:${transactionHash}`);
+      if (withdrawal && !withdrawal.reported)
+        await tx.put(`withdrawal:${transactionHash}`, { ...withdrawal, reported: true });
     });
   }
   async completeResult(gameId: number) {
