@@ -78,6 +78,9 @@ pub mod ConstructionLogic {
             let rule = self.buildings.rule(crate::buildings::BuildingRuleKey { game_id, category: command.category });
             let board = self.buildings.board(game_id);
             assert!(
+                command.category != crate::research::SCOUTS_LODGE || board.is_some(), "Scouts require a realm board",
+            );
+            assert!(
                 command.scouting_kind == 0
                     || (board.is_some()
                         && command.category == crate::research::SCOUTS_LODGE
@@ -85,7 +88,7 @@ pub mod ConstructionLogic {
                 "invalid construction scouting kind",
             );
             if let Some(board) = board {
-                self.assert_board_category(key, command.category, board);
+                self.assert_board_category(key, command.category, board, base.level);
             }
             self.erect_building(key, actor, base, location, coord, command.category, rule, context.timestamp, context);
             if let Some(board) = board {
@@ -416,8 +419,12 @@ pub mod ConstructionLogic {
 
         // A training building is unique and needs two Barracks purchases.
         fn assert_board_category(
-            self: @ContractState, key: ResourceKey, category: u8, board: crate::buildings::BoardRules,
+            self: @ContractState, key: ResourceKey, category: u8, board: crate::buildings::BoardRules, level: u8,
         ) {
+            if category == crate::research::SCOUTS_LODGE {
+                assert!(level >= 1, "Scouts require a City");
+                return;
+            }
             if !crate::research::is_training(category) {
                 return;
             }

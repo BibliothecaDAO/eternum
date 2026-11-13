@@ -2550,7 +2550,7 @@ export default class WorldmapScene extends WarpTravel {
     const short = refusal?.reason === "stamina" ? this.selectedArmyShortOf(refusal.need) : undefined;
     return orderTip({
       path,
-      exploreStamina: configManager.getExploreStaminaCost(),
+      exploreStamina: armyTroops ? configManager.getExploreStaminaCost(armyTroops.category) : 0,
       food: armyTroops ? orderFood(path, armyTroops) : { wheat: 0, fish: 0 },
       explored: this.exploredTiles.get(hexCoords.col)?.has(hexCoords.row) === true,
       refusal,

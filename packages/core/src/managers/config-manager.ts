@@ -365,8 +365,10 @@ export class ClientConfigManager {
     return 1 + modifier;
   }
 
-  getExploreStaminaCost() {
-    return this.rules().troop_stamina_config.stamina_explore_stamina_cost;
+  getExploreStaminaCost(troopType: `${TroopType}`) {
+    const rules = this.rules();
+    const base = rules.troop_stamina_config.stamina_explore_stamina_cost;
+    return rules.day_unit_seconds !== 0 && troopType === TroopType.Paladin ? Math.floor(base / 2) : base;
   }
   getSeasonMainGameStartAt() {
     return Number(this.game().start_main_at);

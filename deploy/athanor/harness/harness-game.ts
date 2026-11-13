@@ -87,7 +87,7 @@ export interface HarnessGame {
   explorerStamina(explorerId: ID, timestamp: number): number;
   explorerMaxStamina(explorerId: ID): number;
   /** The cheapest stamina an action of this kind can cost under the game's rulebook. */
-  minimumStaminaFor(kind: "move" | "explore"): number;
+  minimumStaminaFor(kind: "move" | "explore", explorerId: ID): number;
   production(structureId: ID): ProductionState | undefined;
   armyPathIndexes(): ArmyPathIndexes;
   /** The block the bot's facts were confirmed through, or null before Herald names one. */
@@ -203,8 +203,12 @@ function createClientGame(client: GameClient, heraldConfirmations?: HeraldConfir
       if (!troops) throw new Error(`Explorer ${explorerId} has no synchronized stamina`);
       return StaminaManager.getMaxStamina(troops.category, troops.tier, troops.staminaMax);
     },
-    minimumStaminaFor: (kind) =>
-      kind === "explore" ? configManager.getExploreStaminaCost() : configManager.getMinTravelStaminaCost(),
+    minimumStaminaFor: (kind, explorerId) => {
+      const row = store.require("ExplorerTroops", { game_id, explorer_id: explorerId });
+      return kind === "explore"
+        ? configManager.getExploreStaminaCost(row.troops.category)
+        : configManager.getMinTravelStaminaCost();
+    },
     production: (structureId) => {
       const resource = new ResourceManager(store, structureId);
       const labor = resource.balance(ResourcesIds.Labor);

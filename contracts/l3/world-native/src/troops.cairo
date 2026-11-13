@@ -312,7 +312,12 @@ pub fn spend_stamina(
 ) {
     let stamina = rules.troop_stamina_config;
     let cost: u64 = if exploring {
-        stamina.stamina_explore_stamina_cost.into()
+        let base: u64 = stamina.stamina_explore_stamina_cost.into();
+        if rules.day_unit_seconds != 0 && explorer.troops.category == TroopType::Paladin {
+            base / 2
+        } else {
+            base
+        }
     } else {
         let (increase, bonus) = explorer.troops.stamina_travel_bonus(biome, stamina);
         let base: u64 = stamina.stamina_travel_stamina_cost.into();

@@ -1116,3 +1116,21 @@ test("Frontier discoveries use the approved narrow guard ranges at every depth",
     }
   }
 });
+
+test("Season 1 funds Scouts at a hundred per hour and two wheat per troop", () => {
+  const preset = buildNativePreset(
+    loadNativePresetConfiguration("madara.frontier", FRONTIER_S1_PRESET_ID),
+    FRONTIER_S1_PRESET_ID,
+  );
+  const scout = preset.resources.resources.find((row) => row.resource_type === ResourcesIds.Paladin)!;
+  expect(scout.realm_rate).toBe(BigInt(Math.round((100 / 3600) * RESOURCE_PRECISION)));
+  const recipe = preset.resources.production.find((row) => row.resource_type === ResourcesIds.Paladin);
+  expect(recipe!.recipe.simple_inputs).toEqual([
+    { resource_type: ResourcesIds.Wheat, amount: 2n * BigInt(RESOURCE_PRECISION) },
+  ]);
+  expect(recipe!.recipe.simple_output).toBe(BigInt(RESOURCE_PRECISION));
+  const lodge = preset.structures.buildings.find((row) => row.category === research.SCOUTS_LODGE)!;
+  expect(lodge.rule.simple_cost).toEqual([
+    { resource_type: ResourcesIds.Labor, amount: 500n * BigInt(RESOURCE_PRECISION) },
+  ]);
+});

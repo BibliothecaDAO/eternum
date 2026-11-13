@@ -164,6 +164,9 @@ pub mod RelicState {
                 );
                 assert!(explorer.troops.stamina.inline().amount < maximum, "stamina is full");
             }
+            if let SkillPointUse::Scouting(_) = command.choice {
+                assert!(explorer.troops.category == crate::troops::TroopType::Paladin, "Scouting requires Scouts");
+            }
             if let SkillPointUse::Scouting(ScoutingKind::Sanctuaries) = command.choice {
                 let learned = crate::logic::research::learned(ResourceKey { game_id, entity_id: explorer.owner });
                 assert!(
@@ -265,7 +268,9 @@ pub mod RelicState {
             use crate::logic::army_slot_storage;
             if let ArmySlotAction::Allocate(value) = action {
                 let home = crate::resources::ResourceKey { game_id: key.game_id, entity_id: value.home };
-                let progress = crate::logic::progression::create(key, crate::logic::research::learned(home));
+                let progress = crate::logic::progression::create(
+                    key, crate::logic::research::learned(home), value.category,
+                );
                 // A slot's first army of the day starts full at its own maximum, trained Logistics included.
                 let maximum = crate::progression::stamina_max(progress, value.category, value.stamina_config);
                 let initial = crate::troops::Stamina { amount: maximum, ..value.initial };

@@ -120,7 +120,7 @@ fn each_scouting_rank_preserves_its_choice_including_the_fifth() {
     }
     assert_eq!(progress.scouting, 5);
     assert_eq!(progress.scouting_kinds, 2 + 4 + 2 * 16 + 3 * 64 + 2 * 256);
-    assert_eq!(crate::progression::scouting_bonus(progress), (1500, 6000, 2500));
+    assert_eq!(crate::progression::scouting_bonus(progress, crate::troops::TroopType::Paladin), (1500, 6000, 2500));
     for kind in array![ScoutingKind::Camp, ScoutingKind::Rift, ScoutingKind::Sanctuaries] {
         let mut all = crate::progression::initial();
         crate::progression::earn_xp(ref all, rules(), 1500);
@@ -132,7 +132,7 @@ fn each_scouting_rank_preserves_its_choice_including_the_fifth() {
             ScoutingKind::Rift => (0, 10000, 0),
             ScoutingKind::Sanctuaries => (0, 0, 10000),
         };
-        assert_eq!(crate::progression::scouting_bonus(all), expected);
+        assert_eq!(crate::progression::scouting_bonus(all, crate::troops::TroopType::Paladin), expected);
     }
 }
 
@@ -251,7 +251,7 @@ fn zero_rank_progress_exists_and_destroying_it_removes_its_points() {
             assert_eq!(crate::logic::progression::require(key).common_points, 1);
             crate::logic::progression::destroy(key);
             assert!(crate::logic::progression::read(key).is_none());
-            let recreated = crate::logic::progression::create(key, 0);
+            let recreated = crate::logic::progression::create(key, 0, crate::troops::TroopType::Knight);
             assert_eq!(recreated, crate::progression::initial());
             assert_eq!(crate::logic::progression::read(key), Some(recreated));
         },
@@ -461,7 +461,7 @@ fn trained_scouting_carries_every_choice_from_the_lodge() {
     ] {
         learned = crate::research::learn(learned, crate::research::ROW_SCOUTS_LODGE, kind);
     }
-    let progress = crate::progression::trained(learned);
+    let progress = crate::progression::trained(learned, crate::troops::TroopType::Paladin);
     assert_eq!(progress.scouting, 5);
     assert_eq!(progress.scouting_kinds, 2 + 4 + 3 * 16 + 2 * 64 + 3 * 256);
     assert_eq!(progress.xp, 0);
@@ -562,8 +562,8 @@ fn discovery_stores_a_depth_scaled_point_and_public_use_grants_it_once_without_x
 #[test_case(9, name: "well")]
 fn sanctuary_points_require_either_research_and_spend_once(row: u8) {
     let d = super::registrar::setup();
-    let (game_id, _, category) = super::registrar::expedition_home(d);
-    let (key, _) = super::registrar::expedition_armies(d, game_id, category);
+    let (game_id, _, _) = super::registrar::expedition_home(d);
+    let (key, _) = super::registrar::expedition_armies(d, game_id, crate::troops::TroopType::Paladin.into());
     let progress = ArmyProgress { common_points: 1, ..crate::progression::initial() };
     write_progress(d, key, progress);
     let choice = SkillPointUse::Scouting(ScoutingKind::Sanctuaries);
@@ -608,4 +608,28 @@ fn sanctuary_spending_records_a_new_history_discriminant() {
         old.choice,
         crate::progression::RecordedSkillPointUse::Scouting(crate::progression::RecordedScoutingKind::Beasts),
     );
+}
+
+#[test]
+fn only_scouts_inherit_or_use_scouting_research() {
+    let learned = crate::research::learn(0, crate::research::ROW_SCOUTS_LODGE, crate::research::KIND_CAMPS);
+    let scout = crate::progression::trained(learned, crate::troops::TroopType::Paladin);
+    assert_eq!(scout.scouting, 1);
+    assert_eq!(crate::progression::scouting_bonus(scout, crate::troops::TroopType::Paladin), (1000, 0, 0));
+    for category in array![crate::troops::TroopType::Knight, crate::troops::TroopType::Crossbowman] {
+        let progress = crate::progression::trained(learned, category);
+        assert_eq!((progress.scouting, progress.scouting_kinds), (0, 0));
+        assert_eq!(crate::progression::scouting_bonus(scout, category), (0, 0, 0));
+    }
+}
+
+#[test]
+fn a_knight_cannot_spend_a_point_on_scouting_and_keeps_the_point() {
+    let d = super::registrar::setup();
+    let (game_id, _, _) = super::registrar::expedition_home(d);
+    let (key, _) = super::registrar::expedition_armies(d, game_id, crate::troops::TroopType::Knight.into());
+    let progress = ArmyProgress { common_points: 1, ..crate::progression::initial() };
+    write_progress(d, key, progress);
+    assert!(!execute_spend(d, key, SkillPointUse::Scouting(ScoutingKind::Camp)));
+    assert_eq!(read_progress(d, key), progress);
 }

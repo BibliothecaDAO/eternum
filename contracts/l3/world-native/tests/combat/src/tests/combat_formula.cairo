@@ -361,3 +361,74 @@ fn combat_relics_change_casualties_for_their_full_window_and_replace_on_reapplic
         }
     }
 }
+
+#[test]
+fn scouts_deal_three_quarters_before_rounding_on_either_side_of_every_fight() {
+    let mut stamina = stamina_config();
+    stamina.stamina_attack_req = 30;
+    stamina.stamina_defense_req = 0;
+    stamina.damage_stamina_refund = false;
+    let mut damage = damage_config();
+    damage.damage_scaling_factor = 36893488147419103232;
+    damage.damage_biome_bonus_num = 0;
+    for attacker_category in array![TroopType::Knight, TroopType::Paladin] {
+        for defender_category in array![TroopType::Knight, TroopType::Paladin] {
+            for defender_is_structure_guard in array![false, true] {
+                let mut attacker = test_troops(attacker_category, TroopTier::T1, 1500, 120);
+                let mut defender = test_troops(defender_category, TroopTier::T1, 1000, 120);
+                attacker
+                    .attack_with_context(
+                        ref defender,
+                        CombatContext {
+                            day_unit_seconds: 14400, defender_is_structure_guard, ..context(Biome::Underground),
+                        },
+                        stamina,
+                        damage,
+                        120,
+                        0,
+                    );
+                let outgoing = if attacker_category == TroopType::Paladin {
+                    471
+                } else {
+                    627
+                };
+                let incoming = if defender_category == TroopType::Paladin {
+                    314
+                } else {
+                    418
+                };
+                assert_eq!(attacker.count, (1500 - incoming) * RESOURCE_PRECISION);
+                assert_eq!(defender.count, (1000 - outgoing) * RESOURCE_PRECISION);
+                assert_eq!(attacker.stamina.inline().amount, 90);
+                assert_eq!(defender.stamina.inline().amount, 120);
+            }
+        }
+    }
+}
+
+#[test]
+fn scouts_reveal_for_half_cost_and_walk_for_the_same_cost() {
+    let mut rules = crate::tests::play_fixture::rules();
+    rules.troop_stamina_config.stamina_explore_stamina_cost = 20;
+    rules.troop_stamina_config.stamina_travel_stamina_cost = 10;
+    rules.troop_stamina_config.stamina_bonus_value = 0;
+    for day_unit_seconds in array![0_u32, 14400] {
+        rules.day_unit_seconds = day_unit_seconds;
+        for category in array![TroopType::Knight, TroopType::Paladin] {
+            for exploring in array![false, true] {
+                let mut explorer = crate::troops::ExplorerTroops {
+                    owner: 1,
+                    coord: crate::troops::Coord { alt: false, x: 10, y: 10 },
+                    troops: test_troops(category, TroopTier::T1, 1000, 100),
+                };
+                crate::troops::spend_stamina(ref explorer, rules, Biome::Underground, exploring, 1);
+                let cost = if exploring && (day_unit_seconds == 0 || category == TroopType::Knight) {
+                    20
+                } else {
+                    10
+                };
+                assert_eq!(explorer.troops.stamina.inline().amount, 100 - cost);
+            }
+        }
+    }
+}

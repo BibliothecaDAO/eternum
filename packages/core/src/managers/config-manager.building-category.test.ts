@@ -224,3 +224,18 @@ describe("native immutable configuration", () => {
     expect(manager.getBiomeCombatBonus(TroopType.Knight, BiomeType.Beach)).toBe(1);
   });
 });
+
+it("reads Scout exploration cost by category without changing non-day Paladins", () => {
+  const { manager, write } = fixture();
+  for (const day_unit_seconds of [0, 14_400]) {
+    write("SliceRules", [54], {
+      ...preset.rules,
+      game_id: 54,
+      day_unit_seconds,
+      troop_stamina_config: { ...preset.rules.troop_stamina_config, stamina_explore_stamina_cost: 20 },
+    });
+    expect(manager.getExploreStaminaCost(TroopType.Knight)).toBe(20);
+    expect(manager.getExploreStaminaCost(TroopType.Paladin)).toBe(day_unit_seconds === 0 ? 20 : 10);
+    expect(manager.getExploreStaminaCost(TroopType.Crossbowman)).toBe(20);
+  }
+});

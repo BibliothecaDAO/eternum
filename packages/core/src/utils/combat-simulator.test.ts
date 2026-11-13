@@ -202,3 +202,24 @@ it("keeps ethereal terrain neutral even when the caller supplies a surface biome
     bonus.mockReturnValue(1);
   }
 });
+
+it("scales both Scout sides by three quarters only in day-based combat", () => {
+  for (const day_unit_seconds of [0, 14_400]) {
+    const simulator = new CombatSimulator({ ...CombatSimulator.getDefaultParameters(), day_unit_seconds });
+    const knights = simulator.simulateBattle(
+      0,
+      baseArmy(TroopType.Knight),
+      baseArmy(TroopType.Knight),
+      BiomeType.Taiga,
+    );
+    const scouts = simulator.simulateBattle(
+      0,
+      baseArmy(TroopType.Paladin),
+      baseArmy(TroopType.Paladin),
+      BiomeType.Taiga,
+    );
+    const scale = day_unit_seconds === 0 ? 1 : 0.75;
+    expect(scouts.attackerDamage).toBeCloseTo(knights.attackerDamage * scale, 8);
+    expect(scouts.defenderDamage).toBeCloseTo(knights.defenderDamage * scale, 8);
+  }
+});

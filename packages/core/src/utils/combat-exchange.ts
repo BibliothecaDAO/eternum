@@ -190,6 +190,10 @@ const exchangeDamage = (
     throw new Error("A combat die has twenty faces");
   attackerDamage = mul(attackerDamage, percent(100 + context.attackerRoll));
   defenderDamage = mul(defenderDamage, percent(100 + context.defenderRoll));
+  if (rules.dayUnitSeconds !== 0) {
+    if (attacker.category === "Paladin") attackerDamage = mul(attackerDamage, percent(75));
+    if (defender.category === "Paladin") defenderDamage = mul(defenderDamage, percent(75));
+  }
   attackerDamage = mul(attackerDamage, outgoingMultiplier(attacker, context, rules.dayUnitSeconds));
   attackerDamage = mul(
     attackerDamage,

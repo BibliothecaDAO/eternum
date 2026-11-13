@@ -43,6 +43,14 @@ export const frontierSeasonOnePreset = {
     { row: research.ROW_DEPTH, tier: 1, essenceCost: 10_000, laborCost: 0 },
   ],
   balance: {
+    resources: {
+      productionBySimpleRecipe: { [ResourcesIds.Paladin]: [{ resource: ResourcesIds.Wheat, amount: 2 }] },
+      productionBySimpleRecipeOutputs: { [ResourcesIds.Paladin]: 1 },
+      productionByComplexRecipeOutputs: { [ResourcesIds.Paladin]: 100 / 3600 },
+    },
+    buildings: {
+      simpleBuildingCost: { [research.SCOUTS_LODGE]: [{ resource: ResourcesIds.Labor, amount: 500 }] },
+    },
     season: { durationSeconds: (race.seasonDays / DAYS_PER_BAG) * DAY_UNITS_PER_BAG * FRONTIER_DAY_UNIT_SECONDS },
     startingResources: [
       { resource: ResourcesIds.Knight, amount: 3_000 },

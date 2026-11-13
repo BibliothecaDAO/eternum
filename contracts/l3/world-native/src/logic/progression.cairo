@@ -16,10 +16,10 @@ pub fn require(key: ExplorerKey) -> ArmyProgress {
     read(key).expect('missing army progress')
 }
 
-pub fn create(key: ExplorerKey, learned: u64) -> ArmyProgress {
+pub fn create(key: ExplorerKey, learned: u64, category: crate::troops::TroopType) -> ArmyProgress {
     assert!(read(key).is_none(), "army progress already exists");
     rules(key.game_id).expect('missing progression rules');
-    let progress = crate::progression::trained(learned);
+    let progress = crate::progression::trained(learned, category);
     write(key, progress);
     progress
 }

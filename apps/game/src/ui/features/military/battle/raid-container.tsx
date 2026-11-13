@@ -367,7 +367,7 @@ export const RaidContainer = ({
                                     stamina={{
                                       current: Number(attackerArmyData.troops.stamina.amount),
                                       max: attackerArmyData.troops.staminaMax,
-                                      perExplore: configManager.getExploreStaminaCost(),
+                                      perExplore: configManager.getExploreStaminaCost(attackerArmyData.troops.category),
                                     }}
                                     tone={
                                       Number(attackerArmyData.troops.stamina.amount) >= combatConfig.stamina_attack_req

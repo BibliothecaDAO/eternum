@@ -787,7 +787,7 @@ fn construction_grants_common_once_and_the_next_purchase_costs_uncommon(category
     assert_eq!(crate::research::tier(learned(d, home), row), 1);
     if category == crate::research::SCOUTS_LODGE {
         assert_eq!(crate::research::choice(learned(d, home), row, 1), kind);
-        let trained = crate::progression::trained(learned(d, home));
+        let trained = crate::progression::trained(learned(d, home), crate::troops::TroopType::Paladin);
         assert_eq!((trained.scouting, trained.scouting_kinds), (1, Into::<u8, u16>::into(kind) + 1));
     }
     let price = research_price(preset.structures.research, row, 2);
@@ -840,4 +840,37 @@ fn sanctuary_research_requires_a_site_unlock_without_spending_on_rejection(unloc
         crate::research::choice(learned(d, home), crate::research::ROW_SCOUTS_LODGE, 2),
         crate::research::KIND_SANCTUARIES,
     );
+}
+
+#[test]
+fn scouts_lodges_produce_paladins_and_multiple_lodges_add_their_rates() {
+    let (d, home, _) = research_world();
+    let resources = IResourceOperationsDispatcher { contract_address: d.games };
+    let scout = ResourceSlot {
+        game_id: home.game_id,
+        entity_id: home.entity_id,
+        resource_type: crate::troops::stock_resource(crate::troops::TroopType::Paladin, crate::troops::TroopTier::T1),
+    };
+    assert!(execute(d, build_toward(home, crate::research::SCOUTS_LODGE, 0), 40));
+    assert_eq!(resources.resource_production(scout).production_rate, 40);
+    assert_eq!(resources.resource_production(scout).building_count, 1);
+    assert!(execute(d, build_toward(home, crate::research::SCOUTS_LODGE, 1), 50));
+    assert_eq!(resources.resource_balance(scout), 400);
+    assert_eq!(resources.resource_production(scout).production_rate, 80);
+    assert_eq!(resources.resource_production(scout).building_count, 2);
+    assert!(execute(d, Command::DestroyBuilding(change(home)), 60));
+    assert_eq!(resources.resource_balance(scout), 1200);
+    assert_eq!(resources.resource_production(scout).production_rate, 40);
+    assert_eq!(resources.resource_production(scout).building_count, 1);
+}
+
+#[test]
+fn scouts_lodges_require_a_city_and_cannot_be_built_outside_realm_boards() {
+    for board in array![None, Some(board_rules())] {
+        let (d, home) = building_world(board);
+        let before = resource_facts(d, home);
+        assert_terminal_rejection(d, build_toward(home, crate::research::SCOUTS_LODGE, 0), 40);
+        assert_eq!(resource_facts(d, home), before);
+        assert!(IStructureOperationsDispatcher { contract_address: d.games }.building(east()).is_none());
+    }
 }

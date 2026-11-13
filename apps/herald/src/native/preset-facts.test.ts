@@ -135,7 +135,7 @@ describe("verified preset configuration facts", () => {
     const rules = store.require("SliceRules", { game_id: 1 });
     const stamina = rules.troop_stamina_config;
     const tick = Number(rules.tick_config.armies_tick_in_seconds);
-    expect(manager.getExploreStaminaCost()).toBe(20);
+    expect(manager.getExploreStaminaCost(TroopType.Knight)).toBe(20);
     expect(manager.getCombatConfig().stamina_attack_req).toBe(30);
     const troop = { category: TroopType.Knight, tier: TroopTier.T1 };
     const empty: Troops = {
@@ -155,7 +155,7 @@ describe("verified preset configuration facts", () => {
       battle_cooldown_end: 0,
     };
     expect(staminaAt(empty, 3700, stamina, tick).amount).toBe(30n);
-    expect(affordableAt(empty, 100, stamina, tick, manager.getExploreStaminaCost())).toBe(2500);
+    expect(affordableAt(empty, 100, stamina, tick, manager.getExploreStaminaCost(TroopType.Knight))).toBe(2500);
     expect(affordableAt(empty, 100, stamina, tick, manager.getCombatConfig().stamina_attack_req)).toBe(3700);
     for (const [trained, maximum, explores, attacks] of [
       [0, 120, 6, 4],
@@ -167,7 +167,7 @@ describe("verified preset configuration facts", () => {
     ] as const) {
       const bar = musterStamina({ slot: 0, inherited: null }, troop, 100, stamina, trained, tick);
       expect(bar).toEqual({ amount: maximum, max: maximum });
-      expect(Math.floor(bar.amount / manager.getExploreStaminaCost())).toBe(explores);
+      expect(Math.floor(bar.amount / manager.getExploreStaminaCost(TroopType.Knight))).toBe(explores);
       expect(Math.floor(bar.amount / manager.getCombatConfig().stamina_attack_req)).toBe(attacks);
     }
   });

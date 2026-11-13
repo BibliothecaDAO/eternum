@@ -203,7 +203,8 @@ pub trait IBuildingCommands<T> {
 
 pub fn produced_resource(category: u8) -> u8 {
     match category {
-        1 | 2 | 41 | 42 | 43 | 44 => 0,
+        1 | 2 | 41 | 42 | 44 => 0,
+        43 => crate::troops::stock_resource(crate::troops::TroopType::Paladin, crate::troops::TroopTier::T1),
         39 => 38,
         40 => 57,
         _ => {

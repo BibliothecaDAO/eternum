@@ -1297,7 +1297,7 @@ export class ArmyManager {
           watched: watchedSide(this.store, army.owner.address),
         },
         this.resolveHomeRealmName(army),
-        configManager.getExploreStaminaCost(),
+        configManager.getExploreStaminaCost(army.category),
       ),
     });
   }

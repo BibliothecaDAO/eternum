@@ -1190,7 +1190,7 @@ function fakeWorld(extraExplorer?: [number, ExplorerRow]): FakeWorld {
     explorer: (explorerId) => explorers.get(explorerId),
     explorerStamina: (explorerId) => Number(explorers.get(explorerId)!.staminaAmount),
     explorerMaxStamina: () => 120,
-    minimumStaminaFor: (kind) => (kind === "explore" ? 30 : 10),
+    minimumStaminaFor: (kind, _explorerId) => (kind === "explore" ? 30 : 10),
     production: (structureId) => production.get(structureId),
     armyPathIndexes: () => ({
       structureHexes: new Map(),

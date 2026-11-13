@@ -43,7 +43,8 @@ pub fn roll(
     let day = crate::logic::expeditions::discovery(counter)
         .unwrap_or(crate::expeditions::ExpeditionDiscovery { empty_reveals: 0, ruin_cleared: false });
     let ruin = Some(crate::army_relics::draw(crate::logic::expeditions::depth_rules(key.game_id, depth).chest, seed));
-    let (camp, rift, sanctuaries) = crate::progression::scouting_bonus(progress);
+    let category = crate::state::read().troops.explorers.entry((key.game_id, explorer_id)).troops.read().category;
+    let (camp, rift, sanctuaries) = crate::progression::scouting_bonus(progress, category);
     let rate = crate::logic::triumphs::percent(
         home_key, Coord { alt: key.alt, x: key.col, y: key.row }, crate::rules::CLEAR_MIST_STAGE, context.timestamp,
     );
