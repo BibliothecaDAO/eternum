@@ -10,7 +10,7 @@ describe("the rooms a player has", () => {
     expect(chatRooms(null)).toEqual([GLOBAL]);
   });
 
-  it.each(["frontier", "blitz", "eternum", "duel"] as const)("is Global alone in a %s game: no game room", (mode) => {
+  it.each(["frontier", "blitz", "eternum"] as const)("is Global alone in a %s game: no game room", (mode) => {
     expect(chatRooms({ zoneId: "game:0x52:7", mode })).toEqual([GLOBAL]);
   });
 });

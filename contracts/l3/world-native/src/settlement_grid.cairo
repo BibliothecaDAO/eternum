@@ -25,14 +25,12 @@ fn distances(spacing: u32) -> Distances {
     Distances { base: spacing, step: spacing * 3 / 2 + 3, mirror_first: spacing + 3, mirror_second: spacing / 2 }
 }
 
-pub fn target_pool_size(registered: u16, limit: u16, mode: SettlementMode) -> u16 {
+pub fn target_pool_size(registered: u16, limit: u16) -> u16 {
     if registered >= limit {
         return 0;
     }
     let remaining = limit - registered;
-    let window = if mode == SettlementMode::Duel {
-        remaining
-    } else if registered < 3 {
+    let window = if registered < 3 {
         6
     } else if registered < 15 {
         9
@@ -44,9 +42,6 @@ pub fn target_pool_size(registered: u16, limit: u16, mode: SettlementMode) -> u1
 
 // A candidate's ordinal replaces the mutable side/ring/point cursor and stored coordinates.
 pub fn settlement_location(center: Coord, mode: SettlementMode, spacing: u32, candidate: u32) -> Span<Coord> {
-    if mode == SettlementMode::Duel {
-        return duel_location(center, candidate);
-    }
     let distances = distances(spacing);
     let side = candidate % 6;
     let mut point = candidate / 6;
@@ -85,25 +80,7 @@ fn select_location(mode: SettlementMode, a: Coord, b: Coord, c: Coord, middle: C
     }
 }
 
-fn duel_location(center: Coord, candidate: u32) -> Span<Coord> {
-    assert!(candidate < 2, "two players already settled");
-    let (outward, lower, upper) = if candidate == 0 {
-        (3, 4, 2)
-    } else {
-        (0, 5, 1)
-    };
-    let anchor = neighbor_at_distance(center, outward, 4);
-    array![
-        neighbor_at_distance(center, outward, 8), neighbor_at_distance(anchor, lower, 2),
-        neighbor_at_distance(anchor, upper, 2),
-    ]
-        .span()
-}
-
-pub fn reservation_count(limit: u16, mode: SettlementMode) -> u32 {
-    if mode == SettlementMode::Duel {
-        return 3;
-    }
+pub fn reservation_count(limit: u16) -> u32 {
     let mut ring = 0_u32;
     while limit.into() >= 6 * ring * ring + 1 {
         ring += 1;
@@ -111,18 +88,9 @@ pub fn reservation_count(limit: u16, mode: SettlementMode) -> u32 {
     1 + 3 * ring * (ring + 1)
 }
 
-pub fn reservation_location(center: Coord, mode: SettlementMode, spacing: u32, candidate: u32) -> Coord {
+pub fn reservation_location(center: Coord, spacing: u32, candidate: u32) -> Coord {
     if candidate == 0 {
         return center;
-    }
-    if mode == SettlementMode::Duel {
-        assert!(candidate < 3, "all duel reservations placed");
-        let direction = if candidate == 1 {
-            1
-        } else {
-            5
-        };
-        return neighbor_at_distance(neighbor_at_distance(center, direction, 6), 3, 3);
     }
     let step = distances(spacing).step;
     let mut point = candidate - 1;

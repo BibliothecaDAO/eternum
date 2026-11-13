@@ -123,6 +123,7 @@ export const campBeside = (kind: SiteKind = "Camp", guardKnown = true, armyStami
           }),
         ]
       : []),
+    set("0xad", "ArmyDay", { game_id: 1, explorer_id: 201, day: 0 }),
     set("0x74", "ExplorerTroops", { game_id: 1, explorer_id: 201, owner: 7, troops: troops(1_498n, armyStamina) }),
     set("0x75", "TileOccupancy", {
       game_id: 1,
@@ -324,6 +325,7 @@ export const sitesBeside = (stamina: bigint, layout: SitesLayout = SITES_LAYOUT)
     ...revealed.map((tile, index) =>
       set(`0x20${index}`, "TileOpt", { game_id: 1, alt: false, col: tile.col, row: tile.row, data: grass }),
     ),
+    set("0xad", "ArmyDay", { game_id: 1, explorer_id: 201, day: 0 }),
     set("0x74", "ExplorerTroops", { game_id: 1, explorer_id: 201, owner: 7, troops: troops(1_498n, stamina) }),
     site("0x75", layout.army, 201, TileOccupier.ExplorerKnightT1),
     ...sites.map(([key, tile, entity, category]) => site(key, tile, entity, category)),

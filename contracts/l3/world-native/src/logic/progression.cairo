@@ -70,16 +70,36 @@ pub fn award_xp(key: ExplorerKey, award: XpAward, timestamp: u64) {
         },
         XpAward::Clear(amount) => amount,
     };
+    let before = progress;
     let tome = crate::logic::army_relics::bonus(key, crate::army_relics::RelicKind::Tome, timestamp);
     let amount = (Into::<u32, u64>::into(amount) * (10_000 + Into::<u32, u64>::into(tome)) / 10_000)
         .try_into()
         .unwrap();
     crate::progression::earn_xp(ref progress, rules, amount);
+    let mut earned = 0_u32;
+    for rank in 1_u8..6 {
+        earned += crate::progression::points(progress, rank) - crate::progression::points(before, rank);
+    }
+    record_earned_points(key, earned);
     write(key, progress);
 }
 
 pub fn grant_point(key: ExplorerKey, rank: u8) {
     let mut progress = require(key);
     crate::progression::earn_point(ref progress, rank);
+    record_earned_points(key, 1);
     write(key, progress);
+}
+
+fn record_earned_points(key: ExplorerKey, earned: u32) {
+    if earned == 0 || !crate::logic::quests::enabled(key.game_id) {
+        return;
+    }
+    let explorer = crate::logic::troops::explorer(key).expect('missing progressing army');
+    crate::logic::quests::record(
+        crate::resources::ResourceKey { game_id: key.game_id, entity_id: explorer.owner },
+        crate::quests::VETERANS,
+        earned.into(),
+        starknet::get_block_timestamp(),
+    );
 }

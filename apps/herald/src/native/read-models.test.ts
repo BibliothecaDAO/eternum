@@ -54,7 +54,7 @@ function world() {
         rowEvent("SettlementRules", ["2"], {
           registration_start: 5n,
           registration_limit: 2n,
-          mode: new CairoCustomEnum({ Duel: {} }),
+          mode: new CairoCustomEnum({ Triple: {} }),
           spacing: 8n,
         }),
         rowEvent("SettlementProgress", ["1"], { registered: 2n, realm_count: 1n }),
@@ -385,6 +385,35 @@ describe("native directory and leaderboard", () => {
     expect(before.level).toBe(1);
     expect(after.level).toBe(2);
     expect(afterFact).not.toEqual(beforeFact);
+  });
+
+  it("publishes each Aspect's homes on a game with Aspects, 0 for an Aspect none joined, and none on a game without", () => {
+    const { fold, native, decoder } = world();
+    // The S1 preset's sixteen Orders, each in its Aspect; the order of the list is the preset's, not read here.
+    const orders = [0, 1, 2, 3, 4, 4, 3, 4, 4, 1, 2, 2, 1, 1, 3, 3, 2];
+    native.applyReceipt(
+      fold,
+      receipt(
+        seedDerivedRows(fold, decoder, [
+          rowEvent("AspectRules", ["1"], { orders }),
+          rowEvent("AspectMembers", ["1", "1"], { members: 3n }),
+          rowEvent("AspectMembers", ["1", "3"], { members: 1n }),
+        ]),
+      ),
+      11,
+      0,
+    );
+    const input = { chain: "madara", confirmedBlock: 11, timestamp: 30, fold };
+    const members = (gameId: number) =>
+      buildNativeDirectory(input).games.find(({ game_id }) => game_id === gameId)!.aspect_members;
+    expect(members(1)).toEqual({ 1: 3, 2: 0, 3: 1, 4: 0 });
+    expect(members(2)).toBeNull();
+
+    // A home joining Harmony rebuilds the shared directory, which every player's founding step reads.
+    const revision = fold.directoryRevision();
+    native.applyReceipt(fold, receipt([rowEvent("AspectMembers", ["1", "2"], { members: 1n })]), 12, 0);
+    expect(fold.directoryRevision()).not.toBe(revision);
+    expect(members(1)).toEqual({ 1: 3, 2: 1, 3: 1, 4: 0 });
   });
 
   it("adds unsettled shares with contract rounding, caps at game end, and never double counts checkpointed points", () => {

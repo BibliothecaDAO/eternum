@@ -76,7 +76,9 @@ export const useMapLayers = (
     shown: !isMapView ? null : from ? (expeditionDepth(rules, { y: from.row }) as MapLayer) : 0,
     go: (layer) => {
       if (!from) return;
-      const to = viewInLayer(rules, from, layer);
+      const origin = expeditionDepth(rules, { y: from.row }) === 3 ? site : from;
+      if (!origin) return;
+      const to = viewInLayer(rules, origin, layer);
       if (isMapView) requestLayerView(to);
       else openPlace("map", Position.fromContract({ x: to.col, y: to.row }));
     },

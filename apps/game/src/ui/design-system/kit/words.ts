@@ -5,9 +5,11 @@
  */
 import { APP_HOST } from "@/config/app-address";
 import type { ResolvedGameMode } from "@/config/game-modes/resolved-mode";
-import { SHARED_MOMENT_WORDS, type CampaignKey, type SocialProvider } from "@realms-world/identity";
+import { SHARED_MOMENT_WORDS, type CampaignKey, type OpeningMoment, type SocialProvider } from "@realms-world/identity";
 import type { NotificationKind, NotificationLevel } from "@bibliothecadao/notifications";
 import type { RuinChest } from "@bibliothecadao/eternum";
+import type { DailyQuestId } from "@/ui/design-system/domain-icon-meaning";
+import { nativeQuestConstants as quest } from "../../../../../../contracts/l3/world-native/schema/client.gen";
 import {
   BuildingType,
   XP,
@@ -739,7 +741,7 @@ export const SHARED_DAYS_WORDS = {
 /** A shared link's landing: who shared which day, and the way into Frontier. */
 export const SHARED_LINK_WORDS = {
   /** Its title and pitch are the link's unfurl's too (@realms-world/identity's SHARED_MOMENT_WORDS), so both say one thing. */
-  sharedDay: SHARED_MOMENT_WORDS.title,
+  title: SHARED_MOMENT_WORDS.title,
   pitch: SHARED_MOMENT_WORDS.pitch,
   play: "Start your adventure",
   opening: "Opening…",
@@ -1553,6 +1555,65 @@ export const levelLine = (kinds: readonly NotificationKind[], below: Notificatio
     ? `${list.charAt(0).toUpperCase()}${list.slice(1)}`
     : `${LEVEL_WORDS[below]}, plus ${list}`;
 };
+
+/** What a daily quest counts, as its count line names it: one, and more than one. */
+const QUEST_COUNTED = {
+  [quest.HUNT]: ["herd or band", "herds or bands"],
+  [quest.CAMPS]: ["camp", "camps"],
+  [quest.RIFTS]: ["rift", "rifts"],
+  [quest.RELICS]: ["ruin", "ruins"],
+  [quest.VETERANS]: ["skill point", "skill points"],
+  [quest.FINDS]: ["find", "finds"],
+  [quest.REVEALS]: ["tile", "tiles"],
+} as const satisfies Record<DailyQuestId, readonly [string, string]>;
+
+/** Invite a friend to the player's Aspect (U13): the panel, its two ways to post the link, and what can go wrong. */
+export const INVITE_WORDS = {
+  title: (aspect: string) => `Invite a friend to ${aspect}`,
+  line: (aspect: string) => `Join me in ${aspect} in Frontier.`,
+  post: "Post on X",
+  copy: "Copy link",
+  copied: "Link copied",
+  making: "Making your link",
+  failed: "Your invite link could not be made.",
+  copyFailed: "The link could not be copied.",
+} as const;
+
+/** The day's banner: today's quest, how far the home is ("1 of 2 camps"), its reward and collecting it. */
+export const QUEST_WORDS = {
+  today: "Today's quest",
+  count: (quest: DailyQuestId, progress: bigint, target: bigint) =>
+    `${formatExact(Number(progress))} of ${formatExact(Number(target))} ${QUEST_COUNTED[quest][target === 1n ? 0 : 1]}`,
+  collect: "Collect",
+  collecting: "Collecting",
+  collected: "Collected",
+  reading: "Reading your progress",
+  week: "This week's quests",
+  state: { collected: "Collected", done: "Done", missed: "Missed", today: "Today", coming: "Coming" },
+  notCollected: "The quest's reward could not be collected.",
+} as const;
+
+/**
+ * The interface that opens as you play (the frozen design's table, word for word): the one line each moment brings,
+ * shown once per account, and Settings' switch that opens everything at once. A Barracks' Knights an hour come from
+ * the game's rules.
+ */
+export const OPENING_WORDS = {
+  lines: {
+    launch: () => "This is your Realm. Build on the lit plot, then send an army into the mist.",
+    barracks: (knightsAnHour: number) =>
+      `A Barracks raises ${formatAmount(knightsAnHour)} Knights an hour. Knights fill your armies.`,
+    guard: () => "Send 150% of the guard's troops to win.",
+    fight: () => "Armies earn XP by fighting. Enough XP gives a skill point.",
+    essence: () => "Essence buys research and lores.",
+    "well-lore": () => "Your armies can now find wells.",
+    "shrine-lore": () => "Your armies can now find shrines.",
+  } satisfies Record<OpeningMoment, (knightsAnHour: number) => string>,
+  gotIt: "Got it",
+  interface: "Interface",
+  showEverything: "Show everything",
+  notSaved: "Show everything could not be saved.",
+} as const;
 
 /** What's new: its patch notes, and the legal pages' date. */
 export const NEWS_WORDS = {

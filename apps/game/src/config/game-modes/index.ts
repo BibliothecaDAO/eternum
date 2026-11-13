@@ -12,7 +12,7 @@ import {
 import { BUILDINGS_GROUPS, buildingModelPaths, getStructureModelPaths } from "@/three/constants/scene-constants";
 import { frontierPaintedBuildingPath, frontierPaintedPath } from "@/three/structures/frontier-painted-buildings";
 
-export type GameModeId = "frontier" | "blitz" | "eternum" | "duel";
+export type GameModeId = "frontier" | "blitz" | "eternum";
 
 export interface GameModeConfig {
   id: GameModeId;
@@ -222,16 +222,10 @@ function frontierStructureModels() {
   paths[StructureType.Ruin] = [frontierPaintedPath("fallen-realm-ruin"), ...paths[StructureType.Ruin].slice(1)];
   return paths;
 }
-const duelConfig: GameModeConfig = {
-  ...blitzConfig,
-  id: "duel",
-  displayName: "Duel",
-};
 const GAME_MODE_CONFIGS: Record<GameModeId, GameModeConfig> = {
   frontier: frontierConfig,
   blitz: blitzConfig,
   eternum: eternumConfig,
-  duel: duelConfig,
 };
 
 export function getGameModeConfig(presetId = configManager.getPresetId()): GameModeConfig {

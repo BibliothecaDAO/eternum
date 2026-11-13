@@ -85,6 +85,8 @@ jobs:
       - uses: oven-sh/setup-bun@v2
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
+      - name: Check native fact model ownership
+        run: node --test contracts/l3/world-native/scripts/fact-models.test.mjs
       - name: Check season startup before package builds
         run: |
           season_private_dir=$(mktemp -d)

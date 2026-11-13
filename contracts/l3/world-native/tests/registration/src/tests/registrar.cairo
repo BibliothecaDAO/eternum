@@ -4,7 +4,7 @@ use crate::tests::army_merge::{progress, slot, timers, write_progress};
 #[test]
 fn a_preset_can_price_spire_lore_once_without_three_depth_purchases() {
     let d = setup();
-    let (preset_id, preset) = super::preset_projection::current_definition("frontier-s1");
+    let (preset_id, preset) = super::preset_projection::current_definition("season-one");
     registry(d).register_preset(preset_id, preset);
     assert_eq!(registry(d).preset_commitment(preset_id), crate::presets::commitment(preset));
 }
@@ -14,7 +14,7 @@ fn a_preset_can_price_spire_lore_once_without_three_depth_purchases() {
 #[feature("safe_dispatcher")]
 fn shortened_research_rows_still_require_a_contiguous_ladder(missing_tier: u8) {
     let d = setup();
-    let (preset_id, mut preset) = super::preset_projection::current_definition("frontier-s1");
+    let (preset_id, mut preset) = super::preset_projection::current_definition("season-one");
     let mut prices = array![];
     for entry in preset.structures.research {
         if *entry.row != crate::research::ROW_FARM || *entry.tier != missing_tier {
@@ -591,7 +591,7 @@ fn automatic_blitz_settlement_holds_play_for_its_last_seat_and_never_moves_the_s
         realms
             .append(
                 crate::settlement_grid::reservation_location(
-                    crate::troops::Coord { alt: false, x: map_center, y: map_center }, SettlementMode::Triple, 6, index,
+                    crate::troops::Coord { alt: false, x: map_center, y: map_center }, 6, index,
                 ),
             );
     }

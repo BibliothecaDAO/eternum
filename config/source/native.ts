@@ -1,9 +1,8 @@
 import { buildingIds, frontierPreset } from "./frontier/native";
 import { frontierDevconPreset } from "./frontier/devcon";
-import { frontierSeasonOnePreset } from "./frontier/season-one";
+import { frontierSeasonOnePreset, frontierSeasonOneDevPreset } from "./frontier/season-one";
 import { blitzPreset } from "./blitz/native";
 import { eternumPreset } from "./eternum/native";
-import { duelPreset } from "./duel/native";
 import type { NativePreset } from "./common/native-preset";
 import {
   FRONTIER_ACCELERATED_PRESET_ID,
@@ -18,7 +17,6 @@ const modes: Record<GameType, NativePreset> = {
   frontier: frontierPreset,
   blitz: blitzPreset,
   eternum: eternumPreset,
-  duel: duelPreset,
 };
 /**
  * Frontier 120 times faster, for automated tests only: a 1 s armies tick and a 120 s day unit, so its drawn days last 4
@@ -69,6 +67,7 @@ export const nativePresets: Record<number, NativePreset> = Object.fromEntries(
     ...Object.values(modes),
     frontierDevconPreset,
     frontierSeasonOnePreset,
+    frontierSeasonOneDevPreset,
     frontierAcceleratedPreset,
     frontierFixturePreset,
     frontierPlaygroundPreset,

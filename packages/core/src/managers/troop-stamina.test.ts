@@ -152,3 +152,27 @@ describe("stamina under one game's rules", () => {
     expect(affordableAt(troops, 101, { ...rules, stamina_gain_per_tick: 0 }, 60, 11)).toBeNull();
   });
 });
+
+it("splits stamina across the start and early end, carrying the same fraction through every settlement", () => {
+  const staminaRates = (from: number, until: number) => {
+    const start = Math.max(110, from),
+      end = Math.min(131, until);
+    return start < end ? [{ start, end, percent: 50 }] : [];
+  };
+  const army = { ...knight(0, 100), staminaRates };
+  const once = staminaAt(army, 160, rules, 60);
+  expect(once).toMatchObject({ amount: 16n, remainder: 300_000 });
+  expect(staminaAt(army, 115, rules, 60)).toMatchObject({ amount: 4n, remainder: 100_000 });
+  expect(staminaAt({ ...army, stamina: { ...army.stamina, settled_at: 120 } }, 140, rules, 60)).toMatchObject({
+    amount: 4n,
+    remainder: 500_000,
+  });
+  let repeated = army;
+  for (let now = 101; now <= 160; now++) {
+    const bar = staminaAt(repeated, now, rules, 60);
+    repeated = { ...repeated, stamina: bar };
+  }
+  expect(repeated.stamina.amount).toBe(once.amount);
+  expect(repeated.stamina.remainder).toBe(once.remainder);
+  expect(affordableAt(army, 100, rules, 60, 5)).toBe(120);
+});

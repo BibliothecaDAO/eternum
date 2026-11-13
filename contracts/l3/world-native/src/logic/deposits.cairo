@@ -1,5 +1,5 @@
 use starknet::ContractAddress;
-use starknet::storage::{StorageMapReadAccess, StorageMapWriteAccess};
+use starknet::storage::{StorageMapReadAccess, StorageMapWriteAccess, StoragePointerReadAccess};
 use crate::deposits::{DepositReceipt, DepositSource, LordsDeposit, PrincipalWithdrawal, SpendLords};
 
 pub fn source(game_id: u32) -> Option<DepositSource> {
@@ -23,6 +23,10 @@ pub fn configure(game_id: u32, value: DepositSource) {
     }
     crate::logic::game::game(game_id);
     assert!(crate::logic::game::rules(game_id).day_unit_seconds != 0, "deposits require Frontier");
+    assert!(
+        crate::logic::preset_record::for_game(game_id).rollover_chest_rules.read().is_some(),
+        "game has no LORDS balance",
+    );
     crate::state::write()
         .entry
         .deposit_sources

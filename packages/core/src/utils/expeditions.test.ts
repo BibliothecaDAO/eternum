@@ -113,6 +113,7 @@ describe("liveHomeArmies", () => {
   });
   const armiesStore = (rules: Record<string, unknown>, armies: ReturnType<typeof army>[]) => ({
     ...storeWith(rules),
+    get: (model: string) => (model === "ArmyDay" ? { day: 0n } : storeWith(rules).get(model)),
     armiesAtHome: (_game: number, home: number) => armies.filter((army) => army.owner === home),
     entityOccupancy: (_game: number, id: number) => {
       const army = armies.find((army) => army.explorer_id === id);
@@ -163,18 +164,15 @@ describe("liveHomeArmies", () => {
     });
   });
 
-  it("finds the same spot in each layer of its region, from the surface or from any Ethereal layer", () => {
-    // Day 0, spacing 10: the surface is rows 0..9, Ethereal I rows 10..19, II rows 20..29, III rows 30..39.
-    const layers = [0, 1, 2, 3] as const;
-    expect(layers.map((layer) => viewInLayer(rules, { col: 24, row: 7 }, layer))).toEqual([
-      { col: 24, row: 7 },
-      { col: 24, row: 17 },
-      { col: 24, row: 27 },
-      { col: 24, row: 37 },
+  it("keeps the private layers in today's region and centers every Deep view on the shared map", () => {
+    const shared = { ...rules, spacing: 100 };
+    expect([0, 1, 2, 3].map((layer) => viewInLayer(shared, { col: 250, row: 630 }, layer))).toEqual([
+      { col: 250, row: 430 },
+      { col: 250, row: 530 },
+      { col: 250, row: 630 },
+      { col: 50, row: 350 },
     ]);
-    expect(layers.map((layer) => viewInLayer(rules, { col: 24, row: 23 }, layer).row)).toEqual([3, 13, 23, 33]);
-    // Day 1's surface starts at row 40: its layers stay in day 1.
-    expect(viewInLayer(rules, { col: 3, row: 71 }, 0)).toEqual({ col: 3, row: 41 });
+    expect(viewInLayer(shared, { col: 450, row: 1230 }, 3)).toEqual({ col: 50, row: 350 });
   });
 });
 

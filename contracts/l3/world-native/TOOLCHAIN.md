@@ -1,12 +1,14 @@
 # Native contract toolchain
 
-The world runner is built from Foundry 0.64.0 at commit `ab78eeeb51a991ffd4b65e7be30b8791009066d5`, with both patches in
+The world runner is built from Foundry 0.64.0 at commit `ab78eeeb51a991ffd4b65e7be30b8791009066d5`, with the patches in
 `toolchain/`:
 
 - `library-call-rollback.patch` restores the storage contract's class hash after a failed library call, matching
   Blockifier and Madara. Upstream fix:
   [starknet-foundry #4601](https://github.com/foundry-rs/starknet-foundry/pull/4601).
 - `test-memory.patch` bounds artifact/summary retention and prepares one test package at a time.
+- `transaction-events.patch` gives each test-level contract call its own event budget. Nested calls share that budget;
+  retained events keep their order across transactions. The chain's event limit is unchanged.
 
 An upstream or older patched binary also prints `snforge 0.64.0`; its version alone is insufficient.
 
@@ -23,7 +25,7 @@ From the repository root:
 bash contracts/l3/world-native/build-snforge.sh
 ```
 
-The command prints the installed binary's absolute path. It keys the installation by the pinned source, both patch
+The command prints the installed binary's absolute path. It keys the installation by the pinned source, all patch
 contents, Rust version, `.tool-versions`, platform and build options, under
 `${XDG_DATA_HOME:-$HOME/.local/share}/eternum-native-tools/snforge/`. A manifest records those inputs and the binary's
 SHA-256. Repeating setup verifies the existing binary and returns without cloning or compiling. Changed inputs select a
@@ -63,5 +65,24 @@ The landing gate runs the lightweight installation regression tests. Run them al
 python3 -m unittest discover -s contracts/l3/world-native/toolchain -p 'test_snforge.py'
 ```
 
-When a released Foundry version includes both fixes, remove the patches and custom build/resolution together, migrate
+The lifecycle suite checks that two separate 600-event calls preserve all 1,200 rows in order. The gate also runs two
+deliberately failing, ignored probes: one 1,001-event call and one outer call containing two nested 600-event calls.
+Both must fail at the unchanged 1,000-event limit. Run the complete boundary check with retained logs:
+
+```bash
+python3 contracts/l3/world-native/toolchain/check_transaction_events.py --out /tmp/native-event-evidence
+```
+
+When a released Foundry version includes these fixes, remove the patches and custom build/resolution together, migrate
 the entrypoints, and update `.tool-versions`. Keep the rollback and memory regressions.
+
+## Fact declarations during development
+
+When only fact declarations or rule constants change, refresh client projections without compiling Cairo:
+
+```bash
+bun contracts/l3/world-native/scripts/generate-schema.mjs --facts-only
+```
+
+This reads the committed ABI and the current fact declarations. It does not update commands or prove the ABI matches
+Cairo. The landing gate still builds the contracts and regenerates the complete schema to check that boundary.

@@ -1,4 +1,5 @@
 import { identityClient, useIdentitySessionStore } from "@/hooks/context/identity-session";
+import { answerLabOpening } from "@/lab/lab-opening";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { LAB_GUARDIAN, LAB_SESSION } from "@/shell/lab/app-lab-fixtures";
 import { answerLabChat } from "@/shell/lab/lab-chat";
@@ -347,6 +348,7 @@ const signInLabPlayer = (wallet: string | undefined) => {
   const session = wallet ? { ...LAB_SESSION, user: { ...LAB_SESSION.user, address: wallet } } : LAB_SESSION;
   identityClient.getSession = async () => session;
   identityClient.readDefaultWallet = async () => null;
+  answerLabOpening(session.user.realmsId);
   useIdentitySessionStore.getState().applySession(session);
 };
 

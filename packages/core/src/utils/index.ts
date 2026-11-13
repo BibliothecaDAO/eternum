@@ -47,3 +47,6 @@ export * from "./frontier-beast";
 export * from "./ruins";
 
 export * from "./skill-points";
+
+export * from "./daily-quest";
+export { currentArmy, currentResourceWeight } from "./deep";

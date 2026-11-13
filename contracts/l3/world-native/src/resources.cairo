@@ -60,23 +60,28 @@ pub struct Production {
     pub production_rate: u64,
     pub output_amount_left: u128,
     pub last_settled_at: u32,
+    pub remainder: u8,
 }
 
 const PRODUCTION_TIME_SCALE: u128 = 0x10000000000000000;
 const PRODUCTION_COUNT_SCALE: u128 = 0x1000000000000000000000000;
 
-// The cap occupies the low limb; rate, settlement timestamp and building count use 104 high bits.
+const PRODUCTION_REMAINDER_SCALE: u128 = 0x100000000000000000000000000;
+
+// The cap occupies the low limb; rate, time, count and fractional output use 111 high bits.
 pub impl ProductionPacking of starknet::storage_access::StorePacking<Production, felt252> {
     fn pack(value: Production) -> felt252 {
         let high = value.production_rate.into()
             + value.last_settled_at.into() * PRODUCTION_TIME_SCALE
-            + value.building_count.into() * PRODUCTION_COUNT_SCALE;
+            + value.building_count.into() * PRODUCTION_COUNT_SCALE
+            + value.remainder.into() * PRODUCTION_REMAINDER_SCALE;
         u256 { low: value.output_amount_left, high }.try_into().unwrap()
     }
     fn unpack(value: felt252) -> Production {
         let value: u256 = value.into();
         Production {
-            building_count: (value.high / PRODUCTION_COUNT_SCALE).try_into().unwrap(),
+            building_count: (value.high / PRODUCTION_COUNT_SCALE % 256).try_into().unwrap(),
+            remainder: (value.high / PRODUCTION_REMAINDER_SCALE).try_into().unwrap(),
             production_rate: (value.high % PRODUCTION_TIME_SCALE).try_into().unwrap(),
             output_amount_left: value.low,
             last_settled_at: (value.high / PRODUCTION_TIME_SCALE % 0x100000000).try_into().unwrap(),
@@ -132,19 +137,47 @@ pub fn settle(
     limit: Option<u128>,
     now: u32,
 ) {
+    settle_at_rate(resource_type, ref balance, ref production, ref weight, unit_weight, limit, now, 100);
+}
+
+pub fn settle_at_rate(
+    resource_type: u8,
+    ref balance: u128,
+    ref production: Production,
+    ref weight: Weight,
+    unit_weight: u128,
+    limit: Option<u128>,
+    now: u32,
+    percent: u16,
+) {
     let since = production.last_settled_at;
     production.last_settled_at = now;
     if resource_type == LORDS || production.building_count == 0 {
         return;
     }
     let seconds: u128 = (now - since).into();
-    let mut produced = seconds * production.production_rate.into();
+    let numerator = seconds * production.production_rate.into() * percent.into() + production.remainder.into();
+    let mut produced = numerator / 100;
+    production.remainder = (numerator % 100).try_into().unwrap();
     if resource_type != 35 && resource_type != 36 && !is_unlimited(production.output_amount_left) {
         produced = core::cmp::min(produced, production.output_amount_left);
         production.output_amount_left -= produced;
+        if production.output_amount_left == 0 {
+            production.remainder = 0;
+        }
     }
     if produced != 0 {
-        add(resource_type, ref balance, ref weight, produced, unit_weight, limit);
+        let stored = add(resource_type, ref balance, ref weight, produced, unit_weight, limit);
+        if stored < produced {
+            production.remainder = 0;
+        }
+    }
+    let at_limit = match limit {
+        Some(cap) => balance >= cap,
+        None => false,
+    };
+    if weight.capacity == weight.weight || at_limit {
+        production.remainder = 0;
     }
 }
 
@@ -276,4 +309,47 @@ pub trait IResourceOperations<T> {
         game_context: crate::commands::ResourceContext,
     );
     fn spend_spire_fee(ref self: T, key: ResourceKey, timestamp: u64, game_context: crate::commands::ResourceContext);
+}
+
+pub fn settle_windows(
+    resource_type: u8,
+    ref resource: SettledResource,
+    unit_weight: u128,
+    now: u32,
+    windows: Span<crate::banes::BaneWindow>,
+    percent: u16,
+) {
+    for window in windows {
+        if *window.kind != crate::banes::ASH_FALL {
+            continue;
+        }
+        settle(
+            resource_type,
+            ref resource.balance,
+            ref resource.production,
+            ref resource.weight,
+            unit_weight,
+            resource.limit,
+            (*window.start).try_into().unwrap(),
+        );
+        settle_at_rate(
+            resource_type,
+            ref resource.balance,
+            ref resource.production,
+            ref resource.weight,
+            unit_weight,
+            resource.limit,
+            (*window.end).try_into().unwrap(),
+            percent,
+        );
+    }
+    settle(
+        resource_type,
+        ref resource.balance,
+        ref resource.production,
+        ref resource.weight,
+        unit_weight,
+        resource.limit,
+        now,
+    );
 }

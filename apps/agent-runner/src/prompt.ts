@@ -20,7 +20,7 @@ export interface ToolGuideEntry {
 interface GameSummaryInput {
   gameId: number;
   gameName: string;
-  mode: "blitz" | "eternum" | "frontier" | "duel" | null;
+  mode: "blitz" | "eternum" | "frontier" | null;
   chain: string;
   /** The signer's address, or null while spectating. */
   viewer: string | null;
@@ -37,7 +37,7 @@ export const renderGameSection = (gameSummary: string): string => `# The game\n\
 export const renderGameSummary = (input: GameSummaryInput): string =>
   [
     `Game ${input.gameId} "${input.gameName}" (${input.mode ?? "unknown mode"}) on the ${input.chain} chain.`,
-    input.mode === "blitz" || input.mode === "duel"
+    input.mode === "blitz"
       ? "Blitz is a short timed match: a fixed number of hours, a small map, and victory points from exploration, fights, chests, and hyperstructures. Every tick counts."
       : input.mode === "frontier"
         ? "Frontier keeps a season-long realm and rolls the expedition map and field armies over daily."

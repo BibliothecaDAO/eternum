@@ -1,9 +1,9 @@
 pub use snforge_std::{EventSpyTrait, EventsFilterTrait};
 pub use starknet::storage::{StorageMapReadAccess, StorageMapWriteAccess, StoragePathEntry, StoragePointerWriteAccess};
+pub use crate::command_routes::COMMAND_COUNT as ROUTES;
 pub use crate::commands::Command;
 pub use crate::tests::play_fixture::{IPlayFixtureSafeDispatcher, IPlayFixtureSafeDispatcherTrait, TestAction};
 pub use crate::tests::{Deployment, play_fixture};
-pub const ROUTES: u32 = 72;
 pub const ROOTS: u64 = 32;
 pub // Every value is a fully typed command. Missing entities and unavailable lifecycle transitions exercise domain
 // refusals.
@@ -248,13 +248,16 @@ fn typed_commands() -> Array<Command> {
         ),
         Command::RefillStamina(crate::relics::RefillStamina { explorer_id: 999999, amount: 1 }),
         Command::WithdrawLords(crate::relics::WithdrawLords { structure_id: 999999, amount: 1 }),
+        Command::ClaimDailyQuest(crate::quests::ClaimDailyQuest { home: 999999, day: 0 }),
     ]
 }
 pub fn fresh_world(ready: bool) -> Deployment {
     let d = super::setup_with_domains(true, "StructuresLogic", "TroopsLogic");
     let game = crate::game::IGameDispatcherTrait::game(crate::game::IGameDispatcher { contract_address: d.games }, 1);
     let rules = crate::rules::SliceRules {
-        command_mask: 0xffffffffffffffffff, entry_rule: crate::rules::ENTRY_ENTITLEMENT, ..play_fixture::rules(),
+        command_mask: 0xffffffffffffffffffffffffffffffff,
+        entry_rule: crate::rules::ENTRY_ENTITLEMENT,
+        ..play_fixture::rules(),
     };
     play_fixture::seed_game(
         d.games,

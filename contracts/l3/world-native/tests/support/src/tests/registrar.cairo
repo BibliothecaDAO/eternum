@@ -94,6 +94,7 @@ pub fn definition(blitz: bool) -> PresetDefinition {
         },
         settlement: SettlementPreset {
             order_aspects: array![].span(),
+            starting_armies: 0,
             mode: if blitz {
                 SettlementMode::Triple
             } else {
@@ -116,6 +117,10 @@ pub fn definition(blitz: bool) -> PresetDefinition {
             },
         },
         economy: EconomyPreset {
+            quests: None,
+            banes: None,
+            race: None,
+            deep: None,
             labor: None,
             progression: None,
             discovery: None,
@@ -221,8 +226,8 @@ pub /// Open entry draws starting troops from the biome table, which a fixed-ros
     preset.rules.entry_rule = crate::rules::ENTRY_OPEN;
     preset.settlement.realms = super::settlement::grants_for(crate::rules::ENTRY_OPEN);
 }
-pub // The expedition preset uses seeded day bags.
- fn expedition_preset() -> PresetDefinition {
+// The expedition preset uses seeded day bags.
+pub fn expedition_preset() -> PresetDefinition {
     let mut preset = definition(true);
     open_entry(ref preset);
     preset.rules.command_mask = preset.rules.command_mask
@@ -366,7 +371,7 @@ fn discovery_root(
         let mut root = raw_root;
         let seed = crate::random::game_root(ref root, game_id);
         if crate::discovery::frontier(
-            rules, 0, 0, 0, empty_reveals, chest.map(|value| crate::army_relics::RuinReward::Chest(value)), seed,
+            rules, 0, 0, 0, 100, empty_reveals, chest.map(|value| crate::army_relics::RuinReward::Chest(value)), seed,
         ) == expected {
             return raw_root;
         }
@@ -1108,6 +1113,10 @@ pub fn create_open_frontier(preset: PresetDefinition, duration: u64) -> (super::
         .create_game(
             CreateGameParams { start_main_at: 360, end_grace_seconds: 0, duration_seconds: duration, ..params(false) },
         );
+    if preset.economy.race.is_some() {
+        initialize_race_catalogue(d);
+        return (d, game_id);
+    }
     snforge_std::interact_with_state(
         d.games,
         || {
@@ -1119,6 +1128,23 @@ pub fn create_open_frontier(preset: PresetDefinition, duration: u64) -> (super::
         },
     );
     (d, game_id)
+}
+
+fn initialize_race_catalogue(d: super::Deployment) {
+    start_cheat_caller_address(d.games, super::authority());
+    let mut first = 0_u32;
+    while first < crate::realms::CANONICAL_REALM_COUNT {
+        let end = core::cmp::min(first + 128, crate::realms::CANONICAL_REALM_COUNT);
+        let mut traits = array![];
+        for index in first..end {
+            traits.append(0x4000001 + (index % 16) * 0x400000);
+        }
+        crate::realms::ISeasonRealmsDispatcherTrait::initialize_realm_traits(
+            crate::realms::ISeasonRealmsDispatcher { contract_address: d.games }, first + 1, traits.span(),
+        );
+        first = end;
+    }
+    stop_cheat_caller_address(d.games);
 }
 
 

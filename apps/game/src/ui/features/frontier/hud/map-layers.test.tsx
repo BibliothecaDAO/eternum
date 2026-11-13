@@ -2,6 +2,7 @@ import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+import { useUIStore } from "@/hooks/store/use-ui-store";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useChainTimeStore } from "@/hooks/store/use-chain-time-store";
 import { useConnectionStore } from "@/hooks/store/use-connection-store";
@@ -239,6 +240,7 @@ const armyIn = (store: NativeFactStore, rules: ExpeditionRules, today: number, d
     const tile = [...store.entries("TileOccupancy")].find(([, row]) => row.entity_id === 201n)![1];
     const key = `0x75${today}${depth}`;
     store.applyFacts([
+      { model: "ArmyDay", key: "0xad", value: { game_id: 1, explorer_id: 201, day: today } },
       { model: "TileOccupancy", key: armyTileKeys.get(store) ?? SITE_FIXTURE_ARMY_TILE_KEY, value: null },
       {
         model: "TileOccupancy",
@@ -581,3 +583,29 @@ const ruinPayout = (rules: ExpeditionRules, now: number, today: number, depth: n
     }),
   ];
 };
+
+it("returns from the shared Deep to the watched realm's current private day", () => {
+  const { store, realm, today } = chestDay(3);
+  store.applyFacts([
+    {
+      model: "SettlementRules",
+      key: "0x2",
+      value: { ...store.require("SettlementRules", { game_id: 1 }), spacing: 100 },
+    },
+  ] as never);
+  const rules = readExpeditionRules(store, 1)!;
+  context.mapView = true;
+  useUIStore.setState({ cameraTargetHex: { col: 50, row: 350 } });
+  try {
+    act(() => root.render(<LayerSwitch rules={rules} realm={realm} />));
+    const open = () => act(() => host.querySelector<HTMLButtonElement>("[aria-haspopup]")!.click());
+    open();
+    choose("World");
+    expect(requestLayerView).toHaveBeenLastCalledWith({ col: 650, row: today * 400 + 50 });
+    open();
+    choose("Ethereal II");
+    expect(requestLayerView).toHaveBeenLastCalledWith({ col: 650, row: today * 400 + 250 });
+  } finally {
+    useUIStore.setState({ cameraTargetHex: null });
+  }
+});

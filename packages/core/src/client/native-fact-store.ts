@@ -151,17 +151,33 @@ export class NativeFactStore implements GameSyncStore {
     }
   }
 
-  private absenceUnknown(model: NativeModelName, keys: object, absence: DeclaredAbsence): string | undefined {
-    const key = keys as Record<string, number | bigint>;
+  /**
+   * Whether a row this store lacks is known not to exist: the snapshot is complete for its game and a row with these
+   * fields (its keys and the fields its sync rule reads) lies in that snapshot's scope. Unknown, with the reason,
+   * otherwise. A reader that treats a missing row as none asks here first, or through requireOrAbsent.
+   */
+  absenceKnown(model: NativeModelName, row: Record<string, unknown>): NativeFactResult<true> {
+    const unknown = this.scopeUnknown(model, row);
+    return unknown ? { unknown } : { known: true };
+  }
+
+  private scopeUnknown(model: NativeModelName, row: Record<string, unknown>): string | undefined {
     const snapshot = this.snapshot;
-    if (!snapshot?.complete || snapshot.gameId !== key.game_id) return `INCOMPLETE_SNAPSHOT: ${model}`;
+    if (!snapshot?.complete || snapshot.gameId !== Number(row.game_id)) return `INCOMPLETE_SNAPSHOT: ${model}`;
     if (snapshot.actor === undefined) return `INCOMPLETE_ACTOR_SNAPSHOT: ${model}`;
     // Actor/shared scopes do not use expedition time or facts.
     const result = isExpeditionScopedModel(model)
       ? this.subscriptionScope()
       : { known: { actor: snapshot.actor ?? undefined } };
     if (!result.known) return result.unknown;
-    if (!rowInGameSyncScope(model, key, result.known)) return `OUTSIDE_SNAPSHOT_SCOPE: ${model}`;
+    if (!rowInGameSyncScope(model, row, result.known)) return `OUTSIDE_SNAPSHOT_SCOPE: ${model}`;
+    return undefined;
+  }
+
+  private absenceUnknown(model: NativeModelName, keys: object, absence: DeclaredAbsence): string | undefined {
+    const key = keys as Record<string, number | bigint>;
+    const outside = this.scopeUnknown(model, key);
+    if (outside) return outside;
     if (absence.parent) {
       const parentKeys = Object.fromEntries(
         Object.entries(absence.parentKeys!).map(([parent, child]) => [parent, key[child]]),

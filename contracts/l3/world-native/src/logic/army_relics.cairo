@@ -159,6 +159,7 @@ pub fn site_reward(
 pub fn reveal_tiles(game_id: u32, origin: crate::troops::Coord, count: u8, context: crate::commands::BiomeContext) {
     assert!(count > 0 && count <= 5 * crate::rules::RELIC_TILES_PER_RANK, "invalid relic tile count");
     let spacing = crate::logic::settlement::rules(game_id).spacing;
+    assert!(!crate::deep::contains(origin, spacing), "Deep terrain is already visible");
     let mut revealed = 0;
     for radius in 1..spacing {
         for direction in 0_u8..6 {
@@ -186,6 +187,7 @@ pub fn reveal_tiles(game_id: u32, origin: crate::troops::Coord, count: u8, conte
             }
         }
     }
+    assert!(revealed != 0, "no unrevealed tiles in this layer");
 }
 
 #[starknet::component]

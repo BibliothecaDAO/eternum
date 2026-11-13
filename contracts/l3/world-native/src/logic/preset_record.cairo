@@ -21,7 +21,7 @@ pub fn store(commitment: felt252, definition: crate::presets::PresetDefinition) 
         definition.rules.mode_rules,
     );
     crate::presets::IPresetStructuresDispatcherTrait::store_structure_preset(
-        crate::presets::IPresetStructuresLibraryDispatcher { class_hash: classes.construction },
+        crate::presets::IPresetStructuresLibraryDispatcher { class_hash: classes.map },
         commitment,
         definition.structures,
     );
@@ -34,6 +34,30 @@ pub fn store(commitment: felt252, definition: crate::presets::PresetDefinition) 
         definition.rules.day_unit_seconds,
     );
     write_economy(preset, commitment, definition.rules, definition.economy);
+    if let Some(banes) = definition.economy.banes {
+        preset
+            .bane_rules
+            .write(
+                Some(
+                    (
+                        banes.chance_step,
+                        banes.quorum_percent,
+                        banes.beast_percent,
+                        banes.stamina_percent,
+                        banes.production_percent,
+                    ),
+                ),
+            );
+        for index in 0..banes.quest_counts.len() {
+            preset.bane_quest_counts.write(index.try_into().unwrap(), *banes.quest_counts.at(index));
+        }
+    }
+    if let Some(quests) = definition.economy.quests {
+        preset.quest_rewards.write(Some((quests.labor, quests.essence, quests.bonus_percent)));
+        for index in 0..quests.base_counts.len() {
+            preset.quest_counts.write(index.try_into().unwrap(), *quests.base_counts.at(index));
+        }
+    }
     preset.season_win_points.write(definition.season_win_points);
 }
 
@@ -108,6 +132,7 @@ pub fn store_settlement(
         );
     preset.settlement_spacing.write(settlement.spacing);
     preset.order_aspects.write(crate::aspects::pack(settlement.order_aspects));
+    preset.starting_armies.write(settlement.starting_armies);
     write_depths(preset, mode_rules, day_unit_seconds, settlement.depths);
     write_realm_grants(preset, settlement.realms, entry_rule);
     write_villages(preset, settlement.villages);
@@ -118,6 +143,7 @@ fn write_economy(
     preset: PresetWrite, commitment: felt252, rules: crate::rules::SliceRules, economy: crate::presets::EconomyPreset,
 ) {
     preset.labor_rules.write(economy.labor);
+    preset.race_rules.write(economy.race);
     preset.trade_rules.write(economy.trade);
     write_banks(preset, economy.banks);
     write_hyperstructures(preset, rules, economy.hyperstructures);
@@ -132,10 +158,13 @@ fn write_economy(
     );
     preset.progression_rules.write(economy.progression);
     preset.discovery_rules.write(economy.discovery);
+    preset.deep_rules.write(economy.deep);
     preset.artificer_cost.write(economy.research_cost);
     if let Some(withdrawals) = economy.withdrawals {
         crate::presets::IPresetWithdrawalsDispatcherTrait::store_withdrawal_preset(
-            crate::presets::IPresetWithdrawalsLibraryDispatcher { class_hash: classes.bridge }, commitment, withdrawals,
+            crate::presets::IPresetWithdrawalsLibraryDispatcher { class_hash: classes.production },
+            commitment,
+            withdrawals,
         );
     }
 }

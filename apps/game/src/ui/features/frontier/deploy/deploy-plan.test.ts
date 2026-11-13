@@ -83,7 +83,10 @@ describe("Frontier's deploy", () => {
   it("counts Homecoming's return from an army whose day has ended among the troops this deploy finds", () => {
     const { store, row } = frontierDay();
     expect(planOf(store, row)!.troops!.atHome).toBe(420);
+    setBlockTimestampSource(() => 401);
+    store.setSnapshot({ gameId: 1, complete: true, actor: "0x111", timestamp: 401 });
     store.applyFacts([
+      { model: "ArmyDay", key: "0xad80", value: { game_id: 1, explorer_id: 80, day: 0 } },
       {
         model: "ExplorerTroops",
         key: "0x80",
@@ -94,7 +97,7 @@ describe("Frontier's deploy", () => {
           troops: { ...rowFixture.expected.value.troops, count: String(100n * 1_000_000_000n) },
         },
       },
-      // On the ethereal plane: never in today's region, so its day has ended.
+      // Coordinates do not decide lifetime; the army belongs to the previous day.
       {
         model: "TileOccupancy",
         key: "0x81",
@@ -121,7 +124,9 @@ describe("Frontier's deploy", () => {
       },
     ] as never);
     // An epic Homecoming returns 21% of its 100 whole troops.
-    expect(planOf(store, row)!.troops!.atHome).toBe(441);
+    expect(
+      readDeployPlan(store, row, readExpeditionRules(store, 1)!, { now: 401, defaultTick: 4 })!.troops!.atHome,
+    ).toBe(441);
   });
 
   it("deploys onto the picked tile while it stays open, else the first open one, never onto unknown or taken ground", () => {

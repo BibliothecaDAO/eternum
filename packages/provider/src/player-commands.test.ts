@@ -36,6 +36,13 @@ function setup() {
   return { provider, calls: createSystemCalls({ provider }), submit, signer, wait, decoded };
 }
 describe("player command callers", () => {
+  it("collects the chosen home and day through the player quest command", async () => {
+    const { calls, signer, submit, decoded } = setup();
+    await calls.claim_daily_quest({ signer, home: 12, day: 3 });
+    expect(submit.mock.calls.at(-1)![1]).toMatchObject({ entrypoint: "ClaimDailyQuest" });
+    expect(decoded()).toEqual({ home: 12n, day: 3n });
+  });
+
   it("encodes a clearing attack's replacement slot and free army relic activation", async () => {
     const { calls, signer, decoded } = setup();
     await calls.attack_explorer_vs_guard({ signer, explorer_id: 90, structure_id: 12, relic_slot: 2 });

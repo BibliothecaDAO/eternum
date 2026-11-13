@@ -12,7 +12,7 @@ fn frontier_draws_the_ruled_odds_over_100k_reveals() {
     let mut counts: Felt252Dict<u32> = Default::default();
     for sample in 0_u64..100000 {
         let seed = 0x46524f4e54494552 + Into::<u64, u256>::into(sample);
-        let key = bucket(frontier(preset, 0, 0, 0, 0, Some(crate::army_relics::RuinReward::Chest(CHEST)), seed));
+        let key = bucket(frontier(preset, 0, 0, 0, 100, 0, Some(crate::army_relics::RuinReward::Chest(CHEST)), seed));
         let count = counts.get(key);
         counts.insert(key, count + 1);
     }
@@ -33,6 +33,7 @@ fn scouting_raises_its_chosen_kind_without_changing_beasts() {
             0,
             0,
             0,
+            100,
             0,
             Some(crate::army_relics::RuinReward::Chest(CHEST)),
             0x53434f5554 + Into::<u64, u256>::into(sample),
@@ -42,6 +43,7 @@ fn scouting_raises_its_chosen_kind_without_changing_beasts() {
             0,
             10000,
             0,
+            100,
             0,
             Some(crate::army_relics::RuinReward::Chest(CHEST)),
             0x53434f5554 + Into::<u64, u256>::into(sample),
@@ -62,11 +64,12 @@ fn a_day_without_a_chest_never_draws_a_ruin_and_its_share_stays_empty() {
             0,
             0,
             0,
+            100,
             0,
             Some(crate::army_relics::RuinReward::Chest(CHEST)),
             0x5255494e + Into::<u64, u256>::into(sample),
         );
-        let taken = frontier(rules, 0, 0, 0, 0, None, 0x5255494e + Into::<u64, u256>::into(sample));
+        let taken = frontier(rules, 0, 0, 0, 100, 0, None, 0x5255494e + Into::<u64, u256>::into(sample));
         assert!(bucket(taken) != 3);
         if free == Discovery::Ruin(crate::army_relics::RuinReward::Chest(CHEST)) {
             assert_eq!(taken, Discovery::None);
@@ -89,7 +92,7 @@ fn the_floor_draws_only_kinds_still_allowed() {
     let locked = rules();
     let mut empty = 0_u8;
     for sample in 0_u64..20000 {
-        let session = frontier(locked, 0, 0, 0, empty, None, 0x464c4f4f52 + Into::<u64, u256>::into(sample));
+        let session = frontier(locked, 0, 0, 0, 100, empty, None, 0x464c4f4f52 + Into::<u64, u256>::into(sample));
         if empty == 7 {
             assert!(
                 session == Discovery::Camp || session == Discovery::Rift || session == Discovery::Beasts,
@@ -106,6 +109,7 @@ fn the_floor_draws_only_kinds_still_allowed() {
             0,
             0,
             0,
+            100,
             7,
             Some(crate::army_relics::RuinReward::Chest(CHEST)),
             0x464c4f4f52 + Into::<u64, u256>::into(sample),
@@ -146,6 +150,7 @@ fn shrine_and_well_appear_only_once_researched() {
             0,
             0,
             0,
+            100,
             0,
             Some(crate::army_relics::RuinReward::Chest(CHEST)),
             0x5349544553 + Into::<u64, u256>::into(sample),
@@ -156,6 +161,7 @@ fn shrine_and_well_appear_only_once_researched() {
             0,
             0,
             0,
+            100,
             0,
             Some(crate::army_relics::RuinReward::Chest(CHEST)),
             0x5349544553 + Into::<u64, u256>::into(sample),
@@ -173,8 +179,8 @@ fn sanctuaries_double_both_unlocked_sites_and_leave_beasts_unchanged() {
     let mut wells = 0_u32;
     for sample in 0_u64..100000 {
         let seed = 0x5354524147474c455253 + Into::<u64, u256>::into(sample);
-        let base = frontier(rules, 0, 0, 0, 0, Some(crate::army_relics::RuinReward::Chest(CHEST)), seed);
-        let boosted = frontier(rules, 0, 0, 10000, 0, Some(crate::army_relics::RuinReward::Chest(CHEST)), seed);
+        let base = frontier(rules, 0, 0, 0, 100, 0, Some(crate::army_relics::RuinReward::Chest(CHEST)), seed);
+        let boosted = frontier(rules, 0, 0, 10000, 100, 0, Some(crate::army_relics::RuinReward::Chest(CHEST)), seed);
         assert_eq!(base == Discovery::Beasts, boosted == Discovery::Beasts);
         if boosted == Discovery::Shrine {
             shrines += 1;
@@ -195,10 +201,11 @@ fn sanctuaries_cannot_find_a_site_that_is_still_locked_even_at_the_floor() {
         for empty in array![0_u8, 7] {
             let shrine_only = FrontierDiscoveryRules { well_bps: 0, ..preset };
             let well_only = FrontierDiscoveryRules { shrine_bps: 0, ..preset };
-            assert!(frontier(shrine_only, 0, 0, 10000, empty, None, seed) != Discovery::Well);
-            assert!(frontier(well_only, 0, 0, 10000, empty, None, seed) != Discovery::Shrine);
+            assert!(frontier(shrine_only, 0, 0, 10000, 100, empty, None, seed) != Discovery::Well);
+            assert!(frontier(well_only, 0, 0, 10000, 100, empty, None, seed) != Discovery::Shrine);
             assert_eq!(
-                frontier(rules(), 0, 0, 10000, empty, None, seed), frontier(rules(), 0, 0, 0, empty, None, seed),
+                frontier(rules(), 0, 0, 10000, 100, empty, None, seed),
+                frontier(rules(), 0, 0, 0, 100, empty, None, seed),
             );
         }
     }
@@ -243,4 +250,34 @@ fn same_depth_cannot_clear_twice(depth: u8) {
     let key = ExpeditionDiscoveryKey { game_id: 1, structure_id: 17, epoch: 300 };
     crate::logic::ruins::close(key, depth);
     crate::logic::ruins::close(key, depth);
+}
+
+#[test]
+fn clear_mist_and_all_five_paths_steps_fit_exactly_7500_of_10000() {
+    let rules = super::preset_projection::frontier_discovery_rules();
+    assert_eq!(crate::discovery::maximum_race_chance(rules, 200), 7500);
+    assert_eq!(crate::discovery::maximum_race_chance(rules, 100), 3750);
+    for sample in 0_u64..1000 {
+        let seed = 0x545249554d5048 + Into::<u64, u256>::into(sample);
+        let draw = frontier(
+            rules, 12500, 12500, 7500, 200, 0, Some(crate::army_relics::RuinReward::Chest(CHEST)), seed,
+        );
+        let rolled = crate::random::range(seed, 29, 10000);
+        let expected = if rolled < 1200 {
+            Discovery::Beasts
+        } else if rolled < 3000 {
+            Discovery::Camp
+        } else if rolled < 4800 {
+            Discovery::Rift
+        } else if rolled < 5400 {
+            Discovery::Ruin(crate::army_relics::RuinReward::Chest(CHEST))
+        } else if rolled < 6450 {
+            Discovery::Shrine
+        } else if rolled < 7500 {
+            Discovery::Well
+        } else {
+            Discovery::None
+        };
+        assert_eq!(draw, expected);
+    }
 }

@@ -5,6 +5,7 @@ pub mod RelicState {
     use starknet::storage::{StorageMapReadAccess, StorageMapWriteAccess, StoragePointerReadAccess};
     use crate::commands::ExecutionContext;
     use crate::game::{IPointsDispatcherTrait, IPointsLibraryDispatcher, assert_playing};
+    use crate::logic::army_slot_storage;
     use crate::logic::release::ReleaseState;
     use crate::logic::release::ReleaseState::InternalTrait as LifeInternalTrait;
     use crate::progression::{ScoutingKind, SkillPointUse};
@@ -15,7 +16,7 @@ pub mod RelicState {
     };
     use crate::resources::{IResourceOperationsDispatcherTrait, IResourceOperationsLibraryDispatcher, ResourceKey};
     use crate::stamina::{StaminaSourceTrait, StaminaTrait};
-    use crate::troops::{ExplorerKey, ExplorerRecordTrait};
+    use crate::troops::{ArmySlotAction, ExplorerKey, ExplorerRecordTrait, ResolvedArmySlot};
 
     #[storage]
     #[allow(starknet::colliding_storage_paths)]
@@ -72,7 +73,7 @@ pub mod RelicState {
             );
             assert!(explorer.troops.count != 0, "explorer is dead");
             assert!(crate::geometry::adjacent(explorer.coord, command.coord), "explorer is not adjacent to chest");
-            let chest_id = IRelicMapLibraryDispatcher { class_hash: classes.map.read() }
+            let chest_id = IRelicMapLibraryDispatcher { class_hash: classes.raid.read() }
                 .consume_relic_chest(game_id, command.coord);
             if context.rules.unbox().day_unit_seconds != 0 {
                 self.pay_reward_chest(game_id, actor, command, chest_id, explorer.owner, context);
@@ -212,6 +213,20 @@ pub mod RelicState {
             let context = crate::commands::execution_context(game_id, context);
             self.assert_command(game_id, context.timestamp, context);
             assert!(context.rules.unbox().day_unit_seconds != 0, "site requires expedition");
+            let deep_site = match crate::logic::map::occupancy(crate::geometry::tile_key(game_id, command.coord)) {
+                Some(occupied) => occupied.category == crate::taxonomy::DEEP_SITE_OCCUPIER,
+                None => false,
+            };
+            if deep_site {
+                crate::deep::IDeepSitesDispatcherTrait::join_deep_site(
+                    crate::logic::deep_sites::dispatcher(game_id),
+                    game_id,
+                    actor,
+                    command,
+                    crate::commands::action_context(context),
+                );
+                return;
+            }
             let key = ExplorerKey { game_id, explorer_id: command.explorer_id };
             let explorer = crate::logic::troops::command_explorer(key, Some(actor), context.timestamp, context);
             assert!(explorer.troops.count != 0, "explorer is dead");
@@ -221,7 +236,7 @@ pub mod RelicState {
             assert!(crate::geometry::adjacent(explorer.coord, command.coord), "explorer is not adjacent to site");
             let point = crate::expeditions::IFrontierDiscoveryDispatcherTrait::consume_frontier_site(
                 crate::expeditions::IFrontierDiscoveryLibraryDispatcher {
-                    class_hash: self.logic_classes(game_id).map.read(),
+                    class_hash: self.logic_classes(game_id).construction.read(),
                 },
                 crate::geometry::tile_key(game_id, command.coord),
                 command.explorer_id,
@@ -264,8 +279,6 @@ pub mod RelicState {
         fn army_slot_stamina(
             ref self: ComponentState<TContractState>, key: ExplorerKey, action: crate::troops::ArmySlotAction,
         ) -> crate::troops::ResolvedArmySlot {
-            use crate::troops::{ArmySlotAction, ResolvedArmySlot};
-            use crate::logic::army_slot_storage;
             if let ArmySlotAction::Allocate(value) = action {
                 let home = crate::resources::ResourceKey { game_id: key.game_id, entity_id: value.home };
                 let progress = crate::logic::progression::create(key, crate::logic::research::learned(home));
@@ -420,7 +433,7 @@ pub mod RelicState {
             let explorer = crate::logic::troops::command_explorer(key, Some(actor), context.timestamp, context);
             let relic = crate::logic::army_relics::activate(key, index, command.relic_id, context.timestamp);
             if relic.kind == crate::army_relics::RelicKind::FarEye {
-                IRelicMapLibraryDispatcher { class_hash: self.logic_classes(game_id).map.read() }
+                IRelicMapLibraryDispatcher { class_hash: self.logic_classes(game_id).raid.read() }
                     .reveal_relic_tiles(
                         game_id,
                         explorer.coord,

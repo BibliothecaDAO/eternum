@@ -1,3 +1,4 @@
+import { currentArmy } from "@bibliothecadao/eternum";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { nextFrameOrTimeout } from "@/utils/frame-or-timeout";
 import { armyNumber, resolveExplorerTroops } from "@bibliothecadao/eternum/troop-stamina";
@@ -518,7 +519,8 @@ export class ArmyManager {
 
   private resolveLiveExplorerTroopsComponent(entityId: ID): ExplorerTroopsComponentValue | undefined {
     if (!this.store) return undefined;
-    return this.store.get("ExplorerTroops", { game_id: configManager.getActiveGameId(), explorer_id: entityId });
+    const row = this.store.get("ExplorerTroops", { game_id: configManager.getActiveGameId(), explorer_id: entityId });
+    return row && currentArmy(this.store, row);
   }
 
   private isProjectedArmyInCurrentChunk(renderable: ArmySpatialRenderable): boolean {
@@ -2970,7 +2972,11 @@ ${
    * Recompute stamina for all armies and update visible labels when the execution floor advances
    */
   private recomputeStaminaForAllArmies(timestamp: number): void {
-    this.armyPresentations.forEach((_army, entityId) => this.refreshArmyStamina(entityId, timestamp));
+    this.armyPresentations.forEach((_army, entityId) => {
+      const row = this.resolveLiveExplorerTroopsComponent(entityId);
+      if (row) this.applyExplorerTroopsPresentationUpdate(row);
+      this.refreshArmyStamina(entityId, timestamp);
+    });
   }
 
   /** Reads the second-based stamina for one army into its record and label; a miss leaves it for the next advance. */
@@ -3035,6 +3041,7 @@ ${
   }
 
   private applyExplorerTroopsPresentationUpdate(explorerTroops: ExplorerTroopsComponentValue): void {
+    explorerTroops = currentArmy(this.store!, explorerTroops);
     const entityId = safeInteger(explorerTroops.explorer_id);
     const army = this.armyPresentations.get(entityId);
     if (!army) return;

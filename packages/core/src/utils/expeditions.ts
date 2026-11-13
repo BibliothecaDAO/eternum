@@ -1,3 +1,4 @@
+import { currentArmy, deepCenter } from "./deep";
 import { entityHomeNamespace } from "./entity-home";
 import { MAX_U32, ResourcesIds } from "@bibliothecadao/types";
 import type { NativeFactStore } from "../client/native-fact-store";
@@ -138,21 +139,36 @@ export const isArmyCrossing = (
 export const expeditionDayEndsAt = (rules: ExpeditionRules, nowSeconds: number): number =>
   dayOf(rules, nowSeconds)?.end ?? (nowSeconds < rules.startMainAt ? rules.startMainAt : Infinity);
 
-/**
- * An army belongs to today's expedition only while it stands in today's region, as the contract's `is_current` decides;
- * an army from an earlier day may remain a fact, but every command refuses it.
- */
-export const isCurrentExpeditionArmy = (
+/** An army lives for its recorded expedition day, including on the fixed shared Deep. */
+export const isCurrentExpeditionArmy = (rules: ExpeditionRules, day: bigint | number, nowSeconds: number): boolean => {
+  const today = seasonDay(rules, nowSeconds);
+  return today !== null && BigInt(day) === BigInt(today);
+};
+
+/** Every surface uses the recorded day, never the shared map coordinate, to decide whether an army still lives. */
+export function isArmyCurrent(
+  store: Pick<NativeFactStore, "get">,
+  gameId: number,
+  explorerId: bigint,
+  timestamp?: number,
+): boolean {
+  const slice = store.get("SliceRules", { game_id: gameId });
+  if (!slice || slice.day_unit_seconds === 0) return true;
+  const rules = readExpeditionRules(store, gameId)!;
+  const army = store.get("ArmyDay", { game_id: gameId, explorer_id: explorerId });
+  if (!army) throw new Error(`Missing expedition day for army ${gameId}:${explorerId}`);
+  return isCurrentExpeditionArmy(rules, army.day, timestamp ?? getBlockTimestamp().currentDefaultTick);
+}
+
+/** Personal expedition sites retain the day encoded by their map region. */
+export const isCurrentExpeditionRegion = (
   rules: ExpeditionRules,
   coord: { x: number; y: number; alt: boolean },
   nowSeconds: number,
-): boolean =>
-  !coord.alt &&
-  nowSeconds >= rules.startMainAt &&
-  Math.floor(expeditionBand(rules, coord) / 4) === seasonDay(rules, nowSeconds);
+): boolean => !coord.alt && isCurrentExpeditionArmy(rules, Math.floor(expeditionBand(rules, coord) / 4), nowSeconds);
 
 /**
- * A structure's living field armies: troops left and, in a game with expeditions, standing in today's region. An army
+ * A structure's living field armies: troops left and, in a game with expeditions, assigned to today. An army
  * from an earlier day is dead by rule: every command refuses it, and the contract destroys it before checking the army
  * cap when the realm next musters. So it never counts toward that cap or shows as the realm's army, even while its row
  * is still a fact. Today is judged at the execution floor, the time the next command will run at, unless a caller that
@@ -164,13 +180,10 @@ export const liveHomeArmies = (
   gameId: number,
   floorSeconds?: number,
 ): NativeRows["ExplorerTroops"][] => {
-  const armies = [...store.armiesAtHome(gameId, structureId)].filter((army) => army.troops.count > 0n);
-  const rules = readExpeditionRules(store, gameId);
-  if (!rules) return armies;
-  const floor = floorSeconds ?? getBlockTimestamp().currentDefaultTick;
-  return armies.filter((army) =>
-    isCurrentExpeditionArmy(rules, entityMapPosition(store, gameId, army.explorer_id), floor),
-  );
+  const armies = [...store.armiesAtHome(gameId, structureId)]
+    .map((army) => currentArmy(store, army, floorSeconds))
+    .filter((army) => army.troops.count > 0n);
+  return armies.filter((army) => isArmyCurrent(store, gameId, army.explorer_id, floorSeconds));
 };
 
 /**
@@ -200,10 +213,13 @@ export const viewInLayer = (
   rules: ExpeditionRules,
   at: { col: number; row: number },
   layer: 0 | EtherealLayer,
-): { col: number; row: number } => ({
-  col: at.col,
-  row: at.row + (layer - expeditionDepth(rules, { y: at.row })) * rules.spacing,
-});
+): { col: number; row: number } =>
+  layer === 3
+    ? deepCenter(rules.spacing)
+    : {
+        col: at.col,
+        row: at.row + (layer - expeditionDepth(rules, { y: at.row })) * rules.spacing,
+      };
 
 export { entityHomeNamespace } from "./entity-home";
 

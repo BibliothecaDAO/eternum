@@ -3,9 +3,9 @@ use super::registrar::*;
 
 #[test]
 fn ruins_fill_replace_and_activate_an_armys_relics_through_commands() {
-    let (_, mut preset) = super::preset_projection::current_definition("frontier-s1");
+    let (_, mut preset) = super::preset_projection::current_definition("season-one");
     let discovery = crate::expeditions::FrontierDiscoveryRules {
-        beasts_bps: 0, camp_bps: 0, rift_bps: 0, ruin_bps: 5000, shrine_bps: 0, well_bps: 0, empty_reveal_limit: 7,
+        beasts_bps: 100, camp_bps: 0, rift_bps: 0, ruin_bps: 4500, shrine_bps: 0, well_bps: 0, empty_reveal_limit: 7,
     };
     preset.economy.discovery = Some(discovery);
     preset.rules.battle_config.cooldown_seconds = 0;
@@ -29,25 +29,19 @@ fn ruins_fill_replace_and_activate_an_armys_relics_through_commands() {
     preset.settlement.depths = depths.span();
     let (d, game_id) = create_open_frontier(preset, BAG_SECONDS);
     assert!(
-        execute_in_game(d, game_id, Command::SettleSeason(crate::realms::SettleSeason { selected_realm: None }), 360),
-    );
-    let home = ResourceKey { game_id, entity_id: 1 };
-    assert!(
         execute_in_game(
             d,
             game_id,
-            Command::CreateExplorer(
-                CreateExplorer {
-                    structure_id: 1, slot: 0, category: 0, tier: 0, amount: 1500 * RESOURCE_PRECISION, direction: 0,
-                },
-            ),
+            Command::SettleSeason(crate::realms::SettleSeason { selected_realm: None, aspect: Some(1) }),
             360,
         ),
     );
+    let home_id = snforge_std::interact_with_state(d.games, || crate::entity_ids::home_for_actor(game_id, d.actor));
+    let home = ResourceKey { game_id, entity_id: home_id };
     let explorer_id = *IStructureOperationsDispatcher { contract_address: d.games }.home_armies(home).at(0);
     let key = ExplorerKey { game_id, explorer_id };
     let resources = IResourceOperationsDispatcher { contract_address: d.games };
-    let lords = ResourceSlot { game_id, entity_id: 1, resource_type: crate::resources::LORDS };
+    let lords = ResourceSlot { game_id, entity_id: home_id, resource_type: crate::resources::LORDS };
     for index in 0_u8..4 {
         let timestamp = 400 + Into::<u8, u64>::into(index) * 30;
         let kind = match index {
@@ -99,7 +93,7 @@ fn ruins_fill_replace_and_activate_an_armys_relics_through_commands() {
     assert_eq!(inventory.first, Some(ArmyRelic { kind: RelicKind::Tome, rank: 1 }));
     assert_eq!(inventory.second, Some(ArmyRelic { kind: RelicKind::Plunder, rank: 1 }));
     assert_eq!(inventory.third, Some(ArmyRelic { kind: RelicKind::Ward, rank: 1 }));
-    let essence = ResourceSlot { game_id, entity_id: 1, resource_type: crate::resources::ESSENCE };
+    let essence = ResourceSlot { game_id, entity_id: home_id, resource_type: crate::resources::ESSENCE };
     let essence_before = resources.resource_balance(essence);
     let activate = Command::ApplyRelic(
         crate::relics::ApplyRelic {
@@ -192,7 +186,7 @@ fn relic_root(
         let reward = crate::army_relics::RuinReward::Relic(crate::army_relics::draw(odds, seed));
         if reward == crate::army_relics::RuinReward::Relic(expected)
             && crate::discovery::frontier(
-                rules, 0, 0, 0, 0, Some(reward), seed,
+                rules, 0, 0, 0, 100, 0, Some(reward), seed,
             ) == crate::discovery::Discovery::Ruin(reward) {
             return candidate.into();
         }

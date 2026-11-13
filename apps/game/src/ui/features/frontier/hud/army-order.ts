@@ -1,3 +1,4 @@
+import { currentArmy } from "@bibliothecadao/eternum";
 import { useGame } from "@/hooks/context/game-context";
 import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
 import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
@@ -22,6 +23,9 @@ import { safeInteger } from "@bibliothecadao/eternum/game-client";
 
 const ORDER_MODELS = [
   "ExplorerTroops",
+  "DeepArmy",
+  "DeepRules",
+  "ArmyDay",
   "ArmySlot",
   "ArmyProgress",
   "ResourceBalance",
@@ -63,8 +67,9 @@ export const useOrderAt = (target: { col: number; row: number } | null): ArmyOrd
   if (!path || !pinsOrder(path)) return null;
   const actionType = ActionPaths.getActionType(path);
   const gameId = configManager.getActiveGameId();
-  const army = setup.store.get("ExplorerTroops", { game_id: gameId, explorer_id: selectedEntityId });
-  if (!army) return null;
+  const row = setup.store.get("ExplorerTroops", { game_id: gameId, explorer_id: selectedEntityId });
+  if (!row) return null;
+  const army = currentArmy(setup.store, row, tick);
   const troops = resolveExplorerTroops(setup.store, army);
   const explore = actionType === ActionType.Explore;
   const tiles = path.length - 1;

@@ -69,6 +69,11 @@ jobs:
       - name: Check Worker code asks fetch for no option the Workers runtime refuses
         run: pnpm check:worker-fetch
 
+      - name: Check Cairo imports stay at module scope
+        run: |
+          node --test contracts/l3/world-native/scripts/check-cairo-imports.test.mjs
+          node contracts/l3/world-native/scripts/check-cairo-imports.mjs
+
       - name: Check the Realms X account is written in one place
         run: pnpm check:realms-x
 

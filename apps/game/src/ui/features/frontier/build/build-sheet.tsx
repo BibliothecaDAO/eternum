@@ -57,6 +57,7 @@ import { readRealmPopulation } from "../realm/realm-population";
 import { realmPerHour, secondsUntilHeld } from "../hud/army-order";
 import { ATTRIBUTE_MARKS } from "../research/research-tree";
 import { FRONTIER_STORES, madeStore, STORE_KINDS } from "../stores";
+import { useOpens } from "../opening/use-opening";
 import { type BuildOption, readBuildOptions } from "./build-options";
 import { type BuildTile, BuildView, type RoomAskChoices } from "./build-view";
 import { buildingIcon, buildingName } from "./building-names";
@@ -100,7 +101,8 @@ export const useOpenPlot = (realm: NativeRows["Structure"] | null): HexPosition 
 /**
  * The build sheet over the game's facts: the buildings the plot can hold at the realm's researched tier, the chosen
  * one standing on the plot as a ghost, its gains, and Build, or the price the realm cannot pay yet with its wait. It
- * opens on the realm's first build while it has none (first-build.ts), else on the first building, and keeps the
+ * opens on the realm's first build while it has none (first-build.ts), offering it alone until the list of buildings
+ * opens (opening.ts), else on the first building, and keeps the
  * player's pick: with no free population, Build asks (RoomAsk) and offers the
  * Hut on this plot, never picking it for the player.
  */
@@ -122,17 +124,19 @@ export const BuildSheet = ({
   const useSimpleCost = resolveUseSimpleCost(configManager.buildingCostMode, requestedSimpleCost);
   const facts = useNativeFacts(BUILD_MODELS);
   const tick = useCurrentDefaultTick();
-  const options = useMemo(
-    () => readBuildOptions(facts.store, realm, useSimpleCost, tick),
-    [realm, facts, tick, useSimpleCost],
-  );
+  const firstBuild = useUIStore((state) => state.firstBuild);
+  // Before the list of buildings opens (opening.ts), the sheet offers the lit plot's first build alone.
+  const showsList = useOpens("building-list");
+  const options = useMemo(() => {
+    const all = readBuildOptions(facts.store, realm, useSimpleCost, tick);
+    return showsList || firstBuild === null ? all : all?.filter(({ category }) => category === firstBuild);
+  }, [realm, facts, tick, useSimpleCost, showsList, firstBuild]);
   const [picked, setPicked] = useState<BuildingType | null>(null);
   // Build pressed on the pick with no free population: the ask stands until the player answers or picks again.
   const [asking, setAsking] = useState(false);
   const [scoutingKind, setScoutingKind] = useState<ScoutingSide>(nativeResearchConstants.KIND_RIFTS);
   const indexOf = (category: BuildingType | null) =>
     options?.findIndex((candidate) => candidate.category === category) ?? -1;
-  const firstBuild = useUIStore((state) => state.firstBuild);
   const chosen = Math.max(indexOf(picked ?? firstBuild), 0);
   const option = options?.[chosen];
   const sending = useInFlight("plot", plotKey(realmId, plot)) !== undefined;

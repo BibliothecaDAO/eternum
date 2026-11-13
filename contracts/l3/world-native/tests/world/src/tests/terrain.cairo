@@ -99,7 +99,7 @@ fn home_ring_materializes_once_each_day_and_all_six_deployments_work() {
         interact_with_state(
             d.games,
             || {
-                crate::logic::terrain::raise_expedition_home(crate::geometry::tile_key(game_id, center), context);
+                crate::logic::map::raise_expedition_home(crate::geometry::tile_key(game_id, center), context);
             },
         );
         assert_eq!(before, ring_reward_balances(resources, game_id));
@@ -124,7 +124,7 @@ fn home_ring_materializes_once_each_day_and_all_six_deployments_work() {
         interact_with_state(
             d.games,
             || {
-                crate::logic::terrain::raise_expedition_home(crate::geometry::tile_key(game_id, center), context);
+                crate::logic::map::raise_expedition_home(crate::geometry::tile_key(game_id, center), context);
             },
         );
         assert_eq!(repeated.get_events().emitted_by(d.games).events.len(), 0);
@@ -187,12 +187,12 @@ fn deploy_refuses_a_missing_neighbour_after_the_ring_is_materialized() {
 
 #[test]
 fn tile_presence_follows_terrain_or_occupancy_on_both_layers() {
-    let d = super::registrar::setup();
+    let d = super::setup(true);
     for alt in array![false, true] {
         interact_with_state(
             d.games,
             || {
-                let key = crate::map::TileKey { game_id: 7, alt, col: 120, row: 130 };
+                let key = crate::map::TileKey { game_id: 1, alt, col: 120, row: 130 };
                 assert_eq!(crate::logic::map::tile(key), None);
                 crate::logic::map::MapState::occupy(key, 99, crate::taxonomy::EXPLORER_KNIGHT_T1_OCCUPIER, false);
                 assert_eq!(
@@ -222,11 +222,11 @@ fn tile_presence_follows_terrain_or_occupancy_on_both_layers() {
 #[test]
 #[should_panic(expected: "tile already revealed")]
 fn revealing_a_stored_tile_twice_is_refused() {
-    let d = super::registrar::setup();
+    let d = super::setup(true);
     interact_with_state(
         d.games,
         || {
-            let key = crate::map::TileKey { game_id: 7, alt: false, col: 120, row: 130 };
+            let key = crate::map::TileKey { game_id: 1, alt: false, col: 120, row: 130 };
             crate::logic::map::MapState::reveal(key, 11);
             crate::logic::map::MapState::reveal(key, 12);
         },
@@ -235,11 +235,11 @@ fn revealing_a_stored_tile_twice_is_refused() {
 
 #[test]
 fn reverse_positions_preserve_origin_full_coordinates_and_clear_on_vacate() {
-    let d = super::registrar::setup();
+    let d = super::setup(true);
     interact_with_state(
         d.games,
         || {
-            let entity = ResourceKey { game_id: 7, entity_id: 99 };
+            let entity = ResourceKey { game_id: 1, entity_id: 99 };
             assert_eq!(crate::logic::map::entity_coord(entity), None);
             for alt in array![false, true] {
                 for x in array![0_u32, 1, 0xffffffff] {
@@ -275,20 +275,20 @@ fn reverse_positions_preserve_origin_full_coordinates_and_clear_on_vacate() {
 
 #[test]
 fn tile_only_occupants_and_reservations_have_no_reverse_position() {
-    let d = super::registrar::setup();
+    let d = super::setup(true);
     interact_with_state(
         d.games,
         || {
-            let key = crate::map::TileKey { game_id: 7, alt: false, col: 120, row: 130 };
+            let key = crate::map::TileKey { game_id: 1, alt: false, col: 120, row: 130 };
             for category in array![crate::taxonomy::CHEST_OCCUPIER, crate::taxonomy::SPIRE_OCCUPIER] {
                 crate::logic::map::MapState::occupy(key, 99, category, false);
-                assert_eq!(crate::logic::map::entity_coord(ResourceKey { game_id: 7, entity_id: 99 }), None);
+                assert_eq!(crate::logic::map::entity_coord(ResourceKey { game_id: 1, entity_id: 99 }), None);
                 assert!(crate::logic::map::occupancy(key).is_some());
                 crate::logic::map::MapState::vacate(key, 99);
             }
             crate::logic::map::MapState::reveal(key, 11);
             crate::logic::map::MapState::reserve_hyperstructure(key);
-            assert_eq!(crate::logic::map::entity_coord(ResourceKey { game_id: 7, entity_id: 0 }), None);
+            assert_eq!(crate::logic::map::entity_coord(ResourceKey { game_id: 1, entity_id: 0 }), None);
             crate::logic::map::MapState::release_hyperstructure(key);
             assert_eq!(crate::logic::map::occupancy(key), None);
         },
@@ -298,11 +298,11 @@ fn tile_only_occupants_and_reservations_have_no_reverse_position() {
 #[test]
 #[should_panic(expected: "entity already placed")]
 fn an_entity_at_the_origin_cannot_be_placed_twice() {
-    let d = super::registrar::setup();
+    let d = super::setup(true);
     interact_with_state(
         d.games,
         || {
-            let origin = crate::map::TileKey { game_id: 7, alt: false, col: 0, row: 0 };
+            let origin = crate::map::TileKey { game_id: 1, alt: false, col: 0, row: 0 };
             crate::logic::map::MapState::occupy(origin, 99, crate::taxonomy::EXPLORER_KNIGHT_T1_OCCUPIER, false);
             crate::logic::map::MapState::occupy(
                 crate::map::TileKey { col: 1, ..origin }, 99, crate::taxonomy::EXPLORER_KNIGHT_T1_OCCUPIER, false,

@@ -83,3 +83,16 @@ export const dayOf = (calendar: SeasonCalendar, timestamp: number): SeasonDay | 
 /** How long a season of whole bags lasts, in seconds. */
 export const seasonSeconds = (seasonBags: number, dayUnitSeconds: number): number =>
   seasonBags * DAY_UNITS_PER_BAG * dayUnitSeconds;
+
+/** The bounds of a persisted day index, resolved through the same season calendar. */
+export function dayAtIndex(calendar: SeasonCalendar, index: number): SeasonDay {
+  const bag = Math.floor(index / DAYS_PER_BAG);
+  const units =
+    bag * DAY_UNITS_PER_BAG +
+    bagLengths(calendar.seed, bag)
+      .slice(0, index % DAYS_PER_BAG)
+      .reduce((a, b) => a + b, 0);
+  const day = dayOf(calendar, calendar.startMainAt + units * calendar.dayUnitSeconds);
+  if (!day || day.index !== index) throw new Error("Army day outside calendar");
+  return day;
+}

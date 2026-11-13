@@ -9,6 +9,7 @@ import { currentPresetFixture, serializePresetRows } from "../../../../apps/hera
 import {
   FRONTIER_FIXTURE_PRESET_ID,
   FRONTIER_S1_PRESET_ID,
+  FRONTIER_S1_DEV_PRESET_ID,
 } from "../../../../config/source/common/native-preset-modes";
 
 const schema = presetFixtureSchema();
@@ -20,9 +21,9 @@ for (const [name, id] of [
   ["blitz", 2],
   ["eternum", 3],
   ["frontier", 5],
-  ["frontier-s1", FRONTIER_S1_PRESET_ID],
   ["devcon", 6],
   ["season-one", FRONTIER_S1_PRESET_ID],
+  ["season-one-dev", FRONTIER_S1_DEV_PRESET_ID],
   ["frontier-check", FRONTIER_FIXTURE_PRESET_ID],
 ] as const) {
   const fixture = await currentPresetFixture(id, schema);
@@ -62,7 +63,20 @@ function conformancePreset(definition: Awaited<ReturnType<typeof currentPresetFi
 function presetFixtureSchema(): NativeSchema {
   const schema = structuredClone(compiledSchema);
   for (const type of factWireTypes) schema.types[type.name] = type;
-  for (const module of ["rules", "entry", "presets", "relics", "registrar", "blitz_results", "progression", "spires"])
+  for (const module of [
+    "rules",
+    "entry",
+    "quests",
+    "race",
+    "banes",
+    "presets",
+    "relics",
+    "registrar",
+    "blitz_results",
+    "progression",
+    "spires",
+    "deep",
+  ])
     readStructs(schema, module);
   schema.models = defineFactModels({
     struct: (name: string) => {

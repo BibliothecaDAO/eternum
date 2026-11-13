@@ -1,5 +1,5 @@
 {
-  "schemaIdentity": "5b33f723a37b95795cd2e201bb8e2e3aaa010f393de1bbf13f4246f103cfa3c3",
+  "schemaIdentity": "24111d7539bf9ad1c9b19c989409b7d0de33d839c98e868e74f066ae77afc42f",
   "commandAbi": [
     {
       "type": "interface",
@@ -310,6 +310,10 @@
         {
           "name": "WithdrawLords",
           "type": "world_native::relics::WithdrawLords"
+        },
+        {
+          "name": "ClaimDailyQuest",
+          "type": "world_native::quests::ClaimDailyQuest"
         }
       ]
     },
@@ -714,20 +718,6 @@
         {
           "name": "relic_slot",
           "type": "core::option::Option::<core::integer::u8>"
-        }
-      ]
-    },
-    {
-      "type": "enum",
-      "name": "core::option::Option::<core::integer::u8>",
-      "variants": [
-        {
-          "name": "Some",
-          "type": "core::integer::u8"
-        },
-        {
-          "name": "None",
-          "type": "()"
         }
       ]
     },
@@ -1484,6 +1474,20 @@
           "type": "core::integer::u128"
         }
       ]
+    },
+    {
+      "type": "struct",
+      "name": "world_native::quests::ClaimDailyQuest",
+      "members": [
+        {
+          "name": "home",
+          "type": "core::integer::u64"
+        },
+        {
+          "name": "day",
+          "type": "core::integer::u64"
+        }
+      ]
     }
   ],
   "events": [
@@ -1571,6 +1575,26 @@
     },
     {
       "name": "ExpeditionDiscovery",
+      "scope": "game"
+    },
+    {
+      "name": "RaceRules",
+      "scope": "game"
+    },
+    {
+      "name": "RaceMember",
+      "scope": "game"
+    },
+    {
+      "name": "AspectHyperstructure",
+      "scope": "game"
+    },
+    {
+      "name": "TriumphDay",
+      "scope": "game"
+    },
+    {
+      "name": "RaceResult",
       "scope": "game"
     },
     {
@@ -1766,6 +1790,30 @@
       "scope": "game"
     },
     {
+      "name": "BaneRules",
+      "scope": "game"
+    },
+    {
+      "name": "BaneProgress",
+      "scope": "game"
+    },
+    {
+      "name": "FirstTeamBane",
+      "scope": "game"
+    },
+    {
+      "name": "BaneGrant",
+      "scope": "game"
+    },
+    {
+      "name": "QuestRules",
+      "scope": "game"
+    },
+    {
+      "name": "QuestProgress",
+      "scope": "game"
+    },
+    {
       "name": "HomeAspect",
       "scope": "game"
     },
@@ -1798,6 +1846,38 @@
       "scope": "game"
     },
     {
+      "name": "AspectActivity",
+      "scope": "game"
+    },
+    {
+      "name": "AltarBar",
+      "scope": "game"
+    },
+    {
+      "name": "TeamBane",
+      "scope": "game"
+    },
+    {
+      "name": "DeepArmy",
+      "scope": "game"
+    },
+    {
+      "name": "DeepGuard",
+      "scope": "game"
+    },
+    {
+      "name": "DeepSite",
+      "scope": "game"
+    },
+    {
+      "name": "DeepRules",
+      "scope": "game"
+    },
+    {
+      "name": "ArmyDay",
+      "scope": "game"
+    },
+    {
       "name": "ArmySlot",
       "scope": "game"
     },
@@ -1819,6 +1899,10 @@
     },
     {
       "name": "ResourceProduction",
+      "scope": "game"
+    },
+    {
+      "name": "ProductionCarry",
       "scope": "game"
     },
     {

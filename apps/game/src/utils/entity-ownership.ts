@@ -135,7 +135,7 @@ export const onSidesChanged = (listener: () => void): (() => void) => {
 };
 
 /**
- * The game's players in seat order, the same on every client and through the game: a Blitz or Duel game's roster, fixed
+ * The game's players in seat order, the same on every client and through the game: a Blitz game's roster, fixed
  * before play; else an open game's players in the order they joined it (`useOpenGameSeats`). Empty until this game's
  * own order is known: another game's, on this shard or another, never stands in while its read is on its way or failed.
  */

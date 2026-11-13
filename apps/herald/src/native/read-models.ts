@@ -11,7 +11,7 @@ import {
 } from "@bibliothecadao/eternum/game-sync";
 import { nativeGameModeOf } from "@bibliothecadao/eternum";
 import { dayOf, expeditionRealmSite, entityHomeNamespace, isRealmCategory } from "@bibliothecadao/eternum/expeditions";
-import { StructureType } from "@bibliothecadao/types";
+import { aspects, type AspectId, StructureType } from "@bibliothecadao/types";
 import { isCheckGame, resolveDirectoryStatus, type DirectoryInput } from "../game-directory";
 import type { FoldRow } from "../types";
 
@@ -24,6 +24,14 @@ export const FINALIZED_GAME_MODELS: ReadonlySet<string> = new Set([
   "Structure",
   "TileOccupancy",
   "PlayerEntry",
+  "AspectRules",
+  "AspectMembers",
+  "HomeAspect",
+  "RaceRules",
+  "RaceMember",
+  "AspectHyperstructure",
+  "TriumphDay",
+  "RaceResult",
   "BlitzRoster",
   "BlitzResult",
   "PlayerPoints",
@@ -49,6 +57,8 @@ interface DirectoryRows {
   entries: FoldRow[];
   entitlements: FoldRow[];
   rosters: FoldRow[];
+  aspectRules: FoldRow[];
+  aspectMembers: FoldRow[];
 }
 
 export function buildNativeDirectory(input: DirectoryInput): HeraldGameDirectory {
@@ -99,6 +109,8 @@ function directoryRows(input: DirectoryInput): DirectoryRows {
     entries: rows("PlayerEntry"),
     entitlements: rows("EntryEntitlement"),
     rosters: rows("BlitzRoster"),
+    aspectRules: rows("AspectRules"),
+    aspectMembers: rows("AspectMembers"),
   };
 }
 
@@ -145,6 +157,10 @@ export function directoryFact(model: string, row: Row | undefined): unknown {
       return row.player;
     case "BlitzRoster":
       return row.players;
+    case "AspectRules":
+      return row.orders;
+    case "AspectMembers":
+      return [row.aspect, row.members];
     case "Structure":
       return [
         row.owner,
@@ -208,6 +224,7 @@ function directoryEntry(game: Row, facts: DirectoryRows, input: DirectoryInput):
     status: directoryStatus(game, input.timestamp),
     clock,
     player_count: new Set(settlements.map((row) => address(row.owner))).size,
+    aspect_members: aspectMembersOf(facts, game.game_id),
     player_state: directoryPlayerState(game, facts, input),
     roster_count: roster.length,
     roster: roster.map((row) => {
@@ -234,6 +251,18 @@ function directoryEntry(game: Row, facts: DirectoryRows, input: DirectoryInput):
     // Native placement is described by SettlementRules and SettlementPool in the snapshot.
     settlement: null,
   };
+}
+
+/**
+ * Each Aspect's homes in a game with Aspects: AspectMembers' count, or 0 where an Aspect has no row yet (its absence
+ * rule under AspectRules); null in a game without them.
+ */
+function aspectMembersOf(facts: DirectoryRows, gameId: unknown): Record<AspectId, number> | null {
+  if (gameRows(facts.aspectRules, gameId).length === 0) return null;
+  const members = gameRows(facts.aspectMembers, gameId);
+  return Object.fromEntries(
+    aspects.map(({ id }) => [id, number(members.find((row) => number(row.aspect) === id)?.members ?? 0)]),
+  ) as Record<AspectId, number>;
 }
 
 function playerStructure(

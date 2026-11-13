@@ -1,6 +1,10 @@
+import { baneRateReader } from "../utils/world-banes";
+import { nativeBaneConstants as bane } from "../../../../contracts/l3/world-native/schema/client.gen";
+import type { AccrualRates } from "@bibliothecadao/types";
+import { currentResourceWeight } from "../utils/deep";
 import { researchPicks } from "../utils/realm-research";
 import { nativeResearchConstants as research } from "../../../../contracts/l3/world-native/schema/client.gen";
-import { productionOutput } from "../utils/production-output";
+import { productionOutput, productionEndsAt } from "../utils/production-output";
 import { isModeRuleEnabled } from "../utils/mode-rules";
 import {
   BuildingType,
@@ -15,10 +19,11 @@ import type { NativeRows } from "../../../../contracts/l3/world-native/schema/cl
 import { divideByPrecision, getBuildingCount, gramToKg } from "../utils";
 import { configManager } from "./config-manager";
 
-type Production = Pick<
+type ProductionClock = Pick<
   NativeRows["ResourceProduction"],
   "building_count" | "production_rate" | "output_amount_left" | "last_settled_at"
 >;
+type Production = ProductionClock & { remainder: number; rates?: AccrualRates };
 interface ResourceState {
   balance: bigint;
   production: Production;
@@ -61,11 +66,19 @@ export class ResourceManager {
       if (
         changes.length === 0 ||
         changes.some((change) => {
+          if (
+            change.model === "BaneProgress" ||
+            change.model === "FirstTeamBane" ||
+            change.model === "AspectActivity" ||
+            change.model === "BaneRules"
+          )
+            return (change.current ?? change.previous)?.game_id === this.gameId;
           if (change.model === "GameRegistry") return (change.current ?? change.previous)?.game_id === this.gameId;
           // A realm's level sets its stores' limits.
           if (
             change.model !== "ResourceBalance" &&
             change.model !== "ResourceProduction" &&
+            change.model !== "ProductionCarry" &&
             change.model !== "ResourceWeight" &&
             change.model !== "Structure" &&
             change.model !== "RealmKnowledge"
@@ -94,15 +107,18 @@ export class ResourceManager {
     const keys = { game_id: this.gameId, entity_id: this.entityId, resource_type: resourceId };
     const production = this.store.requireOrAbsent("ResourceProduction", keys);
     const balance = this.store.requireOrAbsent("ResourceBalance", keys);
-    if (!production.known || !balance.known) return undefined;
-    const adjusted = this.productionForGameClock(production.known);
+    const carry = this.store.requireOrAbsent("ProductionCarry", keys);
+    if (!production.known || !balance.known || !carry.known) return undefined;
+    const adjusted: Production = { ...this.productionForGameClock(production.known), remainder: carry.known.remainder };
+    if (adjusted.building_count > 0)
+      adjusted.rates = baneRateReader(this.store, this.gameId, this.entityId, bane.ASH_FALL);
     return { balance: balance.known.balance, production: adjusted };
   }
 
-  private productionForGameClock(production: Production): Production {
-    if (production.building_count === 0) return production;
+  private productionForGameClock(production: ProductionClock): ProductionClock {
+    if (production.building_count === 0) return { ...production };
     const rules = this.store.require("SliceRules", { game_id: this.gameId });
-    if (!isModeRuleEnabled(rules, "PRODUCTION_START")) return production;
+    if (!isModeRuleEnabled(rules, "PRODUCTION_START")) return { ...production };
     const game = this.store.require("GameRegistry", { game_id: this.gameId });
     return {
       ...production,
@@ -111,7 +127,8 @@ export class ResourceManager {
   }
 
   private weight() {
-    return this.store.get("ResourceWeight", { game_id: this.gameId, entity_id: this.entityId });
+    const row = this.store.get("ResourceWeight", { game_id: this.gameId, entity_id: this.entityId });
+    return row && currentResourceWeight(this.store, row);
   }
 
   /**
@@ -153,13 +170,13 @@ export class ResourceManager {
   }
 
   /** Production that never runs out: continuous food, or a producer written with the unlimited output sentinel. */
-  private static neverRunsOut(production: Production, resourceId: ResourcesIds): boolean {
+  private static neverRunsOut(production: ProductionClock, resourceId: ResourcesIds): boolean {
     return (
       ResourceManager.isContinuousProductionResource(resourceId) || isUnlimitedOutput(production.output_amount_left)
     );
   }
 
-  private static hasActiveProduction(production: Production | undefined, resourceId: ResourcesIds) {
+  private static hasActiveProduction(production: ProductionClock | undefined, resourceId: ResourcesIds) {
     if (!production) return false;
 
     const isContinuousProductionResource = ResourceManager.isContinuousProductionResource(resourceId);
@@ -265,9 +282,7 @@ export class ResourceManager {
     const { production } = resource;
     if (production.building_count === 0 || production.production_rate === 0n) return 0;
     if (ResourceManager.neverRunsOut(production, resourceId)) return Number.MAX_SAFE_INTEGER;
-    const produced = productionOutput(production, timestamp);
-    const remaining = production.output_amount_left > produced ? production.output_amount_left - produced : 0n;
-    return secondsUntilPaid(remaining, production.production_rate);
+    return Math.max(0, productionEndsAt(production, production.output_amount_left) - timestamp);
   }
 
   /** The timestamp at which a producer with a finite budget pays its last; 0 when it has none. */
@@ -279,7 +294,7 @@ export class ResourceManager {
     const settledAt = production.last_settled_at;
     if (production.production_rate === 0n || production.output_amount_left === 0n) return settledAt;
     if (ResourceManager.neverRunsOut(production, resourceId)) return Number.MAX_SAFE_INTEGER;
-    return settledAt + secondsUntilPaid(production.output_amount_left, production.production_rate);
+    return productionEndsAt(production, production.output_amount_left);
   }
 
   /** The store's capacity and use; undefined when this client holds no resource owner for the entity. */
@@ -368,7 +383,8 @@ export class ResourceManager {
   ): ResourceProductionData {
     const { production } = productionInfo;
     const produced = productionOutput(production, timestamp);
-    const productionPerSecond = divideByPrecision(Number(production.production_rate), false);
+    const percent = production.rates?.(timestamp, timestamp + 1)[0]?.percent ?? 100;
+    const productionPerSecond = divideByPrecision((Number(production.production_rate) * percent) / 100, false);
 
     const isProducing = production.building_count > 0 && production.production_rate !== 0n;
     // Production that never runs out has no remaining output or time: both are infinite, never the sentinel's value.
@@ -386,13 +402,7 @@ export class ResourceManager {
       productionPerSecond,
       isProducing: isProducing && remainingOutput > 0n,
       outputRemaining: Number(remainingOutput) / RESOURCE_PRECISION,
-      timeRemainingSeconds: secondsUntilPaid(remainingOutput, production.production_rate),
+      timeRemainingSeconds: Math.max(0, productionEndsAt(production, production.output_amount_left) - timestamp),
     };
   }
 }
-
-/** The last partial second consumes the rest of a finite output budget. */
-const secondsUntilPaid = (remaining: bigint, ratePerSecond: bigint): number => {
-  if (remaining <= 0n || ratePerSecond <= 0n) return 0;
-  return Number((remaining + ratePerSecond - 1n) / ratePerSecond);
-};

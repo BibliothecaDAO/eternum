@@ -10,15 +10,14 @@ pub mod SettlementLogic {
     use crate::logic::village::VillageState;
     use crate::realms::{ISeasonPlacementDispatcherTrait, ISeasonPlacementLibraryDispatcher};
     use crate::settlement::{
-        EntryKey, ISettlementCreationDispatcherTrait, ISettlementCreationLibraryDispatcher,
-        ISettlementPoolDispatcherTrait, ISettlementPoolLibraryDispatcher, RealmCreation, SettlementCreation,
-        VillageCreation,
+        EntryKey, ISettlementCreationDispatcherTrait, ISettlementCreationLibraryDispatcher, RealmCreation,
+        SettlementCreation,
     };
     #[cfg(feature: "test_support")]
     use crate::settlement::{PlayerEntry, RealmGrants, SettlementProgress, SettlementRules};
     #[cfg(feature: "test_support")]
     use crate::upgrades::{UpgradeLimits, UpgradeRecipe};
-    use crate::village::{SettleVillage, VillagePassKey};
+    use crate::village::VillagePassKey;
     #[cfg(feature: "test_support")]
     use crate::village::{VillagePass, VillageRules};
     component!(path: ReleaseState, storage: release, event: ReleaseEvent);
@@ -27,17 +26,33 @@ pub mod SettlementLogic {
     impl RealmInternal = crate::logic::realms::RealmState::InternalImpl<ContractState>;
     component!(path: SettlementState, storage: settlements, event: SettlementEvent);
     impl SettlementInternal = SettlementState::InternalImpl<ContractState>;
-    component!(path: VillageState, storage: villages, event: VillageEvent);
-    impl VillageInternal = VillageState::InternalImpl<ContractState>;
     component!(path: UpgradeState, storage: upgrades, event: UpgradeEvent);
     impl UpgradeInternal = UpgradeState::InternalImpl<ContractState>;
-    component!(path: crate::logic::aspects::AspectState, storage: aspects, event: AspectEvent);
-    impl AspectInternal = crate::logic::aspects::AspectState::InternalImpl<ContractState>;
+    use crate::aspects::IAspectsDispatcherTrait;
+    component!(path: VillageState, storage: villages, event: VillageEvent);
+    impl VillageInternal = VillageState::InternalImpl<ContractState>;
+    #[abi(embed_v0)]
+    impl VillagePasses of crate::village::IVillagePasses<ContractState> {
+        #[cfg(feature: "test_support")]
+        fn village_rules(self: @ContractState, game_id: u32) -> VillageRules {
+            self.villages.rules(game_id)
+        }
+        #[cfg(feature: "test_support")]
+        fn village_pass(self: @ContractState, key: VillagePassKey) -> Option<VillagePass> {
+            self.villages.pass(key)
+        }
+        fn register_village_pass(ref self: ContractState, key: VillagePassKey, owner: ContractAddress) {
+            assert!(key.game_id != 0, "game id zero is reserved");
+            crate::logic::entry::assert_ledger_operator();
+            self.villages.register(key, owner);
+            crate::entity_ids::reserve_homes(key.game_id, owner);
+        }
+    }
     #[storage]
     #[allow(starknet::colliding_storage_paths)]
     struct Storage {
         #[substorage(v0)]
-        aspects: crate::logic::aspects::AspectState::Storage,
+        villages: VillageState::Storage,
         #[flat]
         pub data: crate::state::Storage,
         #[substorage(v0)]
@@ -48,37 +63,17 @@ pub mod SettlementLogic {
         realms: crate::logic::realms::RealmState::Storage,
         #[substorage(v0)]
         settlements: SettlementState::Storage,
-        #[substorage(v0)]
-        villages: VillageState::Storage,
     }
     #[event]
     #[derive(Drop, starknet::Event)]
     enum Event {
-        AspectEvent: crate::logic::aspects::AspectState::Event,
+        VillageEvent: VillageState::Event,
         UpgradeEvent: UpgradeState::Event,
         RowSet: crate::events::RowSet,
         ReleaseEvent: ReleaseState::Event,
         RealmEvent: crate::logic::realms::RealmState::Event,
         SettlementEvent: SettlementState::Event,
-        VillageEvent: VillageState::Event,
     }
-    #[abi(embed_v0)]
-    impl TerrainDerivation of crate::settlement::ITerrainDerivation<ContractState> {
-        fn raise_expedition_home(
-            ref self: ContractState, key: crate::map::TileKey, context: crate::commands::BiomeContext,
-        ) {
-            crate::logic::terrain::raise_expedition_home(key, context);
-        }
-        fn biome(self: @ContractState, key: crate::map::TileKey, context: crate::commands::BiomeContext) -> u8 {
-            crate::logic::terrain::biome(key, context)
-        }
-        fn expedition_home_ring(
-            self: @ContractState, game_id: u32, region_id: u32, timestamp: u64,
-        ) -> Span<(crate::troops::Coord, u8)> {
-            crate::logic::terrain::expedition_home_ring(game_id, region_id, timestamp)
-        }
-    }
-
     #[abi(embed_v0)]
     impl UpgradeRules of crate::upgrades::IUpgradeRules<ContractState> {
         #[cfg(feature: "test_support")]
@@ -187,70 +182,6 @@ pub mod SettlementLogic {
         }
     }
 
-    #[abi(embed_v0)]
-    impl Villages of crate::village::IVillages<ContractState> {
-        #[cfg(feature: "test_support")]
-        fn village_rules(self: @ContractState, game_id: u32) -> VillageRules {
-            self.villages.rules(game_id)
-        }
-        #[cfg(feature: "test_support")]
-        fn village_pass(self: @ContractState, key: VillagePassKey) -> Option<VillagePass> {
-            self.villages.pass(key)
-        }
-        fn register_village_pass(ref self: ContractState, key: VillagePassKey, owner: ContractAddress) {
-            assert!(key.game_id != 0, "game id zero is reserved");
-            crate::logic::entry::assert_ledger_operator();
-            self.villages.register(key, owner);
-            crate::entity_ids::reserve_homes(key.game_id, owner);
-        }
-        fn settle_village(
-            ref self: ContractState,
-            game_id: u32,
-            actor: ContractAddress,
-            command: SettleVillage,
-            context: crate::commands::ActionContext,
-        ) -> () {
-            let context = crate::commands::execution_context(game_id, context);
-
-            let classes = self.release.classes(game_id);
-            let owner = actor;
-            let game = context.game.unbox();
-            let rules = context.rules.unbox();
-            assert!(game.dev_mode_on || context.timestamp >= game.start_settling_at, "settling not started");
-            assert!(game.end_at == 0 || context.timestamp < game.end_at, "game ended");
-            let dev_entry = game.dev_mode_on && crate::rules::rule_enabled(rules, crate::rules::DEV_VILLAGE_ENTRY);
-            let pass = VillagePassKey { game_id, pass_id: command.pass_id };
-            if !dev_entry {
-                self.villages.require_pass(pass, owner);
-            }
-            let mut raw_root = context.raw_root;
-            let seed = crate::random::game_root(ref raw_root, game_id);
-            let village_rules = self.villages.rules(game_id);
-            let resource = crate::village::select_resource(village_rules.resource_pool, seed);
-            let progress = self.settlements.data.settlements.progress.read(game_id);
-            let coord = ISettlementPoolLibraryDispatcher { class_hash: classes.placement.read() }
-                .claim_village(
-                    game_id,
-                    progress.registered,
-                    seed,
-                    crate::settlement_grid::map_center(context.rules.unbox().map_center_offset),
-                );
-            let village_id = ISettlementCreationLibraryDispatcher { class_hash: classes.structures.read() }
-                .create_settlement(
-                    game_id,
-                    actor,
-                    coord,
-                    SettlementCreation::Village(
-                        VillageCreation { connected_realm: command.connected_realm_entity_id, resource },
-                    ),
-                    crate::commands::action_context(context),
-                );
-            if !dev_entry {
-                self.villages.consume(pass, owner, village_id);
-            }
-            ()
-        }
-    }
     #[abi(embed_v0)]
     impl SettlementViews of crate::settlement::ISettlementViews<ContractState> {
         #[cfg(feature: "test_support")]
@@ -368,7 +299,8 @@ pub mod SettlementLogic {
             };
             let realm_id = self.resolve_open_realm(home, selected_realm, command.aspect, context);
             let traits = self.realms.traits(realm_id);
-            self.aspects.join(crate::resources::ResourceKey { game_id, entity_id: home }, traits.order, command.aspect);
+            crate::logic::aspects::dispatcher(game_id)
+                .join(crate::resources::ResourceKey { game_id, entity_id: home }, traits.order, command.aspect);
             ISettlementCreationLibraryDispatcher { class_hash: self.release.classes(game_id).structures.read() }
                 .create_settlement(
                     game_id,
@@ -395,7 +327,8 @@ pub mod SettlementLogic {
             if let Some(orders) = crate::logic::aspects::rules(context.game_id) {
                 let mut root = context.raw_root;
                 let seed = crate::random::game_root(ref root, context.game_id);
-                return self.aspects.draw_realm(orders, aspect.expect('choose an Aspect'), seed);
+                return crate::logic::aspects::dispatcher(context.game_id)
+                    .draw_realm(orders, aspect.expect('choose an Aspect'), seed);
             }
             assert!(aspect.is_none(), "Aspects are disabled");
             crate::entity_ids::namespace(home) % crate::realms::CANONICAL_REALM_COUNT + 1

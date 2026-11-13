@@ -267,7 +267,6 @@ pub struct SliceRules {
 }
 
 pub const MAX_BLITZ_ROSTER_PLAYERS: u32 = crate::roster_limits::MAX_BLITZ_ROSTER_PLAYERS;
-pub const DUEL_ROSTER_PLAYERS: u32 = crate::roster_limits::DUEL_ROSTER_PLAYERS;
 pub const ENTRY_ENTITLEMENT: u8 = 0;
 pub const ENTRY_OPEN: u8 = 1;
 pub const ENTRY_ROSTER: u8 = 2;
@@ -614,3 +613,21 @@ pub struct SpeedConfig {
 pub const WELL_STAMINA_DIVISOR: u8 = 2;
 
 pub const FRONTIER_REPORT_GRACE_SECONDS: u32 = crate::days::FRONTIER_REPORT_GRACE_SECONDS;
+
+pub const CLEAR_MIST_STAGE: u8 = 1;
+pub const SECOND_WIND_STAGE: u8 = 2;
+pub const PALE_MOON_STAGE: u8 = 3;
+pub const SPOILS_STAGE: u8 = 4;
+pub const BOON_MAX_STEPS: u32 = 5;
+pub const PATHS_SITE_STEP_BPS: u32 = 2500;
+pub const PATHS_SANCTUARY_STEP_BPS: u32 = 1500;
+pub const DEEP_MAP_SIZE: u32 = 50;
+
+pub const DEEP_FOUNDATION: u8 = 0;
+pub const DEEP_QUARRY: u8 = 1;
+pub const DEEP_ALTAR: u8 = 2;
+pub const DEEP_SITE_COUNT: u8 = 3;
+
+pub const DEEP_ARRIVAL_Y: u32 = 5;
+
+pub const DEEP_GUARD_SLOTS: u8 = 4;
