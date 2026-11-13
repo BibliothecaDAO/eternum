@@ -13,7 +13,7 @@ import {
   siteClearXp,
 } from "@bibliothecadao/eternum";
 import { safeInteger, type NativeFactStore, type NativeRows } from "@bibliothecadao/eternum/game-client";
-import { resolveExplorerCombatTroops } from "@bibliothecadao/eternum/troop-stamina";
+import { resolveExplorerCombatTroops, resolveExplorerTroops } from "@bibliothecadao/eternum/troop-stamina";
 import {
   type BiomeType,
   getLayeredAttackDistance,
@@ -184,7 +184,7 @@ const reachOf = (
   attack: SiteAttack,
   target: { col: number; row: number; alt: boolean },
 ): number | undefined => {
-  const troops = resolveExplorerCombatTroops(store, attack.army, attack.timestamp);
+  const troops = resolveExplorerTroops(store, attack.army);
   if (!troops) return undefined;
   const distance = getLayeredAttackDistance(attack.armyTile, target);
   return distance <= getTroopAttackRange(troops.category) ? distance : undefined;

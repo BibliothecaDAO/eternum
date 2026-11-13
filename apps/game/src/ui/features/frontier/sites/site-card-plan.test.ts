@@ -193,7 +193,7 @@ it("clips the Plunder reward after applying its bonus and leaves wheat unchanged
   const keys = { game_id: 1, entity_id: action.army.owner, resource_type: ResourcesIds.Labor };
   store.applyFacts([
     relicEffectFact("Plunder"),
-    { model: "ResourceBalance", key: store.wireKeyOf("ResourceBalance", keys)!, value: { ...keys, balance: limit - 900n * 1_000_000_000n } },
+    { model: "ResourceBalance", key: "0x79", value: { ...keys, balance: limit - 900n * 1_000_000_000n } },
   ]);
   expect(readSiteCard(store, site, structure, SITE_TILE, action).payout).toEqual({ resourceId: ResourcesIds.Labor, amount: 990, fits: 900 });
   expect(armyRelicReward(store, action.army, { resourceType: ResourcesIds.Wheat, amount: 100n }, 350)).toEqual({ resourceType: ResourcesIds.Wheat, amount: 100n });

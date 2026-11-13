@@ -264,6 +264,11 @@ export const otherArmyAt = (store: ReturnType<typeof campBeside>["store"], col: 
     JSON.parse(JSON.stringify(value, (_, field) => (typeof field === "bigint" ? field.toString() : field)));
   store.applyFacts([
     {
+      model: "Structure",
+      key: "0x92",
+      value: wire({ ...store.require("Structure", { game_id: 1, entity_id: mine.owner }), entity_id: 9, owner: "0x222" }),
+    },
+    {
       model: "ExplorerTroops",
       key: "0x90",
       value: wire({ ...mine, explorer_id: 301, owner: 9, troops: { ...mine.troops, count: 300n * PRECISION } }),
@@ -274,6 +279,7 @@ export const otherArmyAt = (store: ReturnType<typeof campBeside>["store"], col: 
       value: { game_id: 1, alt: false, col, row, entity_id: 301, category: 15, is_structure: false },
     },
   ] as never);
+  store.setSnapshot({ gameId: 1, complete: true, actor: "0x111", visit: "0x222", timestamp: 350 });
   return store.require("ExplorerTroops", { game_id: 1, explorer_id: 301 });
 };
 
