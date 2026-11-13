@@ -8,7 +8,7 @@ import preset from "../../../../contracts/l3/world-native/tests/fixtures/current
 import { NativeFactStore } from "../client/native-fact-store";
 import { WorldSpatialProjection } from "../sync/world-spatial-projection";
 import { getTileAt } from "./tile";
-import { currentArmy, currentResourceWeight, deepCenter, deepTiles } from "./deep";
+import { currentArmy, currentResourceWeight, deepCenter, deepTicksLeft, deepTiles } from "./deep";
 
 function map() {
   setBlockTimestampSource(() => 350);
@@ -267,4 +267,57 @@ it("charges each Deep tick once, clamps at death and uses the primary count when
   } finally {
     projection.dispose();
   }
+});
+
+it("gives a Deep army the ticks it has left, until its troops are gone or its day ends", () => {
+  const store = map();
+  const army = (count: bigint, explorer_id = 82) => ({
+    ...explorerFixture.expected.value,
+    game_id: 1,
+    explorer_id,
+    troops: { ...explorerFixture.expected.value.troops, count },
+  });
+  store.applyFacts([
+    {
+      model: "SliceRules",
+      key: "1",
+      value: {
+        ...store.require("SliceRules", { game_id: 1 }),
+        tick_config: { ...preset.rules.tick_config, armies_tick_in_seconds: 120 },
+      },
+    },
+    {
+      model: "DeepRules",
+      key: "1",
+      value: {
+        game_id: 1,
+        foundation: { alt: false, x: 25, y: 35 },
+        quarry: { alt: false, x: 12, y: 20 },
+        altar: { alt: false, x: 38, y: 20 },
+        beast_count: 10000n,
+        loss_per_tick: 200n,
+        quarry_per_tick: 500n,
+        altar_per_tick: 5,
+        altar_threshold: 1500,
+      },
+    },
+    { model: "ExplorerTroops", key: "82", value: army(500n) },
+    { model: "ArmyDay", key: "82", value: { game_id: 1, explorer_id: 82, day: 0 } },
+    { model: "DeepArmy", key: "82", value: { game_id: 1, explorer_id: 82, last_tick: 2 } },
+    { model: "ExplorerTroops", key: "83", value: army(1_000_000_000n, 83) },
+    { model: "ArmyDay", key: "83", value: { game_id: 1, explorer_id: 83, day: 0 } },
+    { model: "DeepArmy", key: "83", value: { game_id: 1, explorer_id: 83, last_tick: 2 } },
+    { model: "ExplorerTroops", key: "84", value: army(500n, 84) },
+  ]);
+  const read = (explorer_id: number) => store.require("ExplorerTroops", { game_id: 1, explorer_id });
+  const day = dayOf(readExpeditionRules(store, 1)!, 350)!;
+  const ofDay = Math.floor((day.end - day.start) / 120);
+  // 500 troops at 200 a tick: three ticks, the last taking what is left.
+  expect(deepTicksLeft(store, read(82), 350)).toEqual({ left: 3, ofDay });
+  expect(deepTicksLeft(store, read(82), 360)).toEqual({ left: 2, ofDay });
+  expect(deepTicksLeft(store, read(82), 600)).toEqual({ left: 0, ofDay });
+  // An army its troops would carry past its day has the ticks to the day's end.
+  expect(deepTicksLeft(store, read(83), 350)).toEqual({ left: Math.floor(day.end / 120) - 2, ofDay });
+  // An army on no Deep tick has none to count.
+  expect(deepTicksLeft(store, read(84), 350)).toBeNull();
 });

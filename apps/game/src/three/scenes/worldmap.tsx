@@ -2931,6 +2931,7 @@ export default class WorldmapScene extends WarpTravel {
     return (
       action === ActionType.UseSite ||
       action === ActionType.EnterDepth ||
+      action === ActionType.DeepSite ||
       action === ActionType.CreateArmy ||
       action === ActionType.Help
     );
@@ -3233,8 +3234,8 @@ export default class WorldmapScene extends WarpTravel {
           this.onSiteUse(actionPath, selectedEntityId);
         } else if (actionType === ActionType.CreateArmy) {
           this.onArmyCreate(actionPath, selectedEntityId);
-        } else if (actionType === ActionType.EnterDepth) {
-          // The depth is the player's choice: the spire's card, with this army, offers each one.
+        } else if (actionType === ActionType.EnterDepth || actionType === ActionType.DeepSite) {
+          // The player's choice is the card's: the spire's offers each depth, a Deep site's its Attack, Take or Join.
           this.openTargetCardForSelectedArmy(actionPath[actionPath.length - 1].hex);
         }
         this.logInteractionDebug("action_executed_from_right_click", {

@@ -71,6 +71,9 @@ export const isTileOccupierMapSite = (tileOccupier: number) => {
   return kind === "usable-site" || kind === "dormant-spire" || kind === "deep-site";
 };
 
+/** One of the Deep's three sites: held by armies, fought over with BattleGuard and joined with InteractSite. */
+export const isTileOccupierDeepSite = (tileOccupier: number) => tileOccupantKind(tileOccupier) === "deep-site";
+
 /** A shrine or a well: a single-use site an army beside it uses where it stands (the contract's InteractSite). */
 export const isTileOccupierUsableSite = (tileOccupier: number) => tileOccupantKind(tileOccupier) === "usable-site";
 

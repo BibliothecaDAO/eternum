@@ -6,6 +6,7 @@ import {
   EXPLORE,
   MOVE,
   REINFORCE,
+  DEEP_WORDS,
   SPIRE_WORDS,
   STAMINA,
   TRANSFER,
@@ -80,6 +81,7 @@ const ORDERS: Partial<Record<ActionType, string>> = {
   [ActionType.Help]: `${TRANSFER} troops`,
   [ActionType.SpireTravel]: "Travel through the spire",
   [ActionType.EnterDepth]: SPIRE_WORDS.order,
+  [ActionType.DeepSite]: DEEP_WORDS.order,
   [ActionType.UseSite]: USE,
 };
 
@@ -89,8 +91,10 @@ const orderOf = ({ path, exploreStamina, food, site, byRealm }: TileOrder): Orde
   if (path && byRealm && actionType === ActionType.Help) return { line: REINFORCE.verb, cost: null };
   const line = actionType === undefined ? undefined : ORDERS[actionType];
   if (!path || line === undefined) return null;
-  // A crate costs nothing; the spire's entry is free, and its card picks the Ethereal layer to enter.
-  if (actionType === ActionType.Chest || actionType === ActionType.EnterDepth) return { line, cost: null };
+  // A crate costs nothing; the spire's entry is free, and its card picks the Ethereal layer to enter; a Deep site's card
+  // prices its own order.
+  if (actionType === ActionType.Chest || actionType === ActionType.EnterDepth || actionType === ActionType.DeepSite)
+    return { line, cost: null };
   if (actionType === ActionType.UseSite)
     return { line, cost: site ? siteGainLine(site.kind, site.gain, site.stamina) : null };
   const stamina = computeEffectiveStaminaCost(path.slice(1), actionType, exploreStamina);

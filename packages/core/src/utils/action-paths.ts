@@ -22,6 +22,8 @@ export enum ActionType {
   CreateArmy = "create_army",
   /** Into one of the realm's depths, from beside its spire; the spire's card picks which. */
   EnterDepth = "enter_depth",
+  /** One of the Deep's sites beside the army; its card offers Attack, Take or Join. */
+  DeepSite = "deep_site",
 }
 
 const sameStep = (left: ActionPath, right: ActionPath): boolean =>

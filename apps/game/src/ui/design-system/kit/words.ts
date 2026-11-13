@@ -486,6 +486,34 @@ export const SPIRE_WORDS = {
   odds: (percent: number) => `Spire: ${percent}% on the next reveal`,
   commits: (army: string, left: string) => `${army} stays until the day ends (${left})`,
 } as const;
+/** The Deep's three sites (docs/plans/frontier-season-1.md, the Deep): who they serve, who guards them, what a tick pays. */
+export const DEEP_WORDS = {
+  purpose: { foundation: "For your Aspect", quarry: "For you", altar: "Against a rival" },
+  tickPays: "Each tick held pays",
+  splitByTroops: "split by troops",
+  glory: (amount: number) => `${formatExact(amount)} Glory`,
+  height: (amount: number) => `+${formatExact(amount)} height to your Aspect's hyperstructure`,
+  resources: (amount: number) => `${formatExact(amount)} labor and ${formatExact(amount)} Essence`,
+  bar: (perTick: number, charge: number, threshold: number) =>
+    `+${formatExact(perTick)} on the bane bar: ${formatExact(charge)} of ${formatExact(threshold)}`,
+  beast: (troops: number) => `Today's beast: ${formatExact(troops)} troops`,
+  open: "No guard: the next army takes it",
+  heldBy: (aspect: string) => `Held by ${aspect}`,
+  freeSlot: "Free slot",
+  ticksLeft: (left: number) => `${formatExact(left)} ticks left`,
+  share: (percent: number) => `${percent}% of each tick`,
+  attack: "Attack",
+  take: "Take",
+  join: "Join",
+  pickArmy: "Select an army in the Deep",
+  guarding: "Your army guards here",
+  full: "All 4 slots are taken",
+  rival: "Another Aspect holds it",
+  otherDay: "Only today's armies can fight here",
+  reading: "Reading the site…",
+  /** The map's order on a Deep site beside the army: its card then offers the site's own verb. */
+  order: "Open the site",
+} as const;
 /** An army's relics (docs/plans/frontier-season-1.md, relics): its three slots, switching one on, and its timer. */
 export const RELIC_WORDS = {
   title: "Relics",

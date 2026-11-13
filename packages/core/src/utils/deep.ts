@@ -59,9 +59,38 @@ export function currentArmy(
   army: NativeRows["ExplorerTroops"],
   timestamp?: number,
 ): NativeRows["ExplorerTroops"] {
+  const clock = deepClock(store, army, timestamp);
+  if (!clock) return army;
+  const elapsed = clock.tick > clock.deep.last_tick ? clock.tick - clock.deep.last_tick : 0n;
+  const loss = elapsed * clock.rules.loss_per_tick;
+  const count = loss >= clock.source.troops.count ? 0n : clock.source.troops.count - loss;
+  return { ...clock.source, troops: { ...clock.source.troops, count } };
+}
+
+/**
+ * The army ticks a Deep army has left (`left`): each takes the preset's loss, and the army is gone when its troops are
+ * or when its day ends, whichever comes first; and the ticks its whole day holds (`ofDay`), what a full bar is. Null
+ * for an army outside the Deep.
+ */
+export function deepTicksLeft(
+  store: Pick<NativeFactStore, "get">,
+  army: NativeRows["ExplorerTroops"],
+  timestamp?: number,
+): { left: number; ofDay: number } | null {
+  const clock = deepClock(store, army, timestamp);
+  if (!clock) return null;
+  const troops = currentArmy(store, army, timestamp).troops.count;
+  const byTroops = (troops + clock.rules.loss_per_tick - 1n) / clock.rules.loss_per_tick;
+  const byDay = BigInt(Math.floor(clock.end / clock.interval)) - clock.tick;
+  const left = byTroops < byDay ? byTroops : byDay > 0n ? byDay : 0n;
+  return { left: Number(left), ofDay: Math.floor((clock.end - clock.start) / clock.interval) };
+}
+
+/** The facts a Deep army's losses are read from, and the army tick it stands at; null outside the Deep. */
+function deepClock(store: Pick<NativeFactStore, "get">, army: NativeRows["ExplorerTroops"], timestamp?: number) {
   const key = { game_id: army.game_id, explorer_id: army.explorer_id };
   const deep = store.get("DeepArmy", key);
-  if (!deep) return army;
+  if (!deep) return null;
   const rules = store.get("DeepRules", { game_id: army.game_id });
   const slice = store.get("SliceRules", { game_id: army.game_id });
   const birth = store.get("ArmyDay", key);
@@ -69,15 +98,12 @@ export function currentArmy(
   if (!rules || !slice || !birth || !source) throw new Error("Deep attrition requires its rules and army facts");
   const calendar = readExpeditionRules(store, army.game_id);
   if (!calendar) throw new Error("Deep attrition requires expedition days");
-  const end = dayAtIndex(calendar, Number(birth.day)).end;
+  const { start, end } = dayAtIndex(calendar, Number(birth.day));
   const interval = Number(slice.tick_config.armies_tick_in_seconds);
   if (interval <= 0 || rules.loss_per_tick <= 0n) throw new Error("Invalid Deep tick rules");
   const now = timestamp ?? getBlockTimestamp().currentDefaultTick;
   const tick = BigInt(Math.floor(Math.min(now, end) / interval));
-  const elapsed = tick > deep.last_tick ? tick - deep.last_tick : 0n;
-  const loss = elapsed * rules.loss_per_tick;
-  const count = loss >= source.troops.count ? 0n : source.troops.count - loss;
-  return { ...source, troops: { ...source.troops, count } };
+  return { deep, rules, source, start, end, interval, tick };
 }
 
 /** The same lost troops remove their carrying capacity when the native command settles them. */
