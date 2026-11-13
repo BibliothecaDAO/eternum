@@ -906,6 +906,24 @@ pub mod TroopsLogic {
     }
     #[abi(embed_v0)]
     impl BattleResolution of crate::troops::IBattleResolution<ContractState> {
+        fn expire_explorer(
+            ref self: ContractState,
+            key: ExplorerKey,
+            explorer: ExplorerTroops,
+            context: crate::commands::ActionContext,
+        ) {
+            super::expire_explorer(key, explorer, crate::commands::execution_context(key.game_id, context));
+        }
+        fn settle_deep_army(
+            ref self: ContractState,
+            key: ExplorerKey,
+            explorer: ExplorerTroops,
+            context: crate::commands::ActionContext,
+        ) {
+            let context = crate::commands::execution_context(key.game_id, context);
+            let explorer = crate::logic::army_slots::resolve(key, explorer, None);
+            let _ = crate::logic::deep_armies::settle(key, explorer, context);
+        }
         fn command_explorer(
             self: @ContractState,
             key: ExplorerKey,
@@ -976,7 +994,7 @@ pub mod troop_helpers {
         }
 
         fn expedition_spacing(self: @TContractState, game_id: u32) -> u32 {
-            crate::logic::settlement::rules(game_id).spacing
+            crate::logic::preset_record::for_game(game_id).settlement_spacing.read()
         }
 
         fn expire_home_armies(
@@ -1170,7 +1188,7 @@ pub fn command_explorer(
 }
 
 
-pub fn expire_explorer(key: ExplorerKey, mut explorer: ExplorerTroops, context: crate::commands::ExecutionContext) {
+fn expire_explorer(key: ExplorerKey, mut explorer: ExplorerTroops, context: crate::commands::ExecutionContext) {
     let today = crate::days::day_of(context.game.unbox(), context.rules.unbox().day_unit_seconds, context.timestamp)
         .index;
     assert!(crate::logic::army_days::require(key) < today, "army has not expired");
