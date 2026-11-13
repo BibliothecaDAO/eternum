@@ -430,7 +430,7 @@ pub mod TroopsLogic {
             let key = ExplorerKey { game_id, explorer_id: id };
             let explorer = crate::logic::troops::authorized_explorer(key, actor, timestamp, game_context);
             assert!(explorer.troops.count != 0, "explorer is dead");
-            self.destroy_explorer(key, explorer);
+            crate::logic::troops::destroy_explorer(key, explorer);
         }
 
         fn deploy_explorer(
@@ -733,11 +733,10 @@ pub mod TroopsLogic {
                     }
                     let explorer_key = ExplorerKey { game_id, explorer_id: id };
                     if troops.count == 0 {
-                        self
-                            .destroy_explorer(
-                                explorer_key,
-                                ExplorerTroops { troops, ..crate::logic::troops::explorer(explorer_key).unwrap() },
-                            );
+                        crate::logic::troops::destroy_explorer(
+                            explorer_key,
+                            ExplorerTroops { troops, ..crate::logic::troops::explorer(explorer_key).unwrap() },
+                        );
                     } else {
                         crate::logic::troops::TroopState::update_troops(explorer_key, troops);
                     }
@@ -906,6 +905,9 @@ pub mod TroopsLogic {
     }
     #[abi(embed_v0)]
     impl BattleResolution of crate::troops::IBattleResolution<ContractState> {
+        fn destroy_explorer(ref self: ContractState, key: ExplorerKey, explorer: ExplorerTroops) {
+            super::destroy_explorer(key, explorer);
+        }
         fn expire_explorer(
             ref self: ContractState,
             key: ExplorerKey,
@@ -956,7 +958,7 @@ pub mod TroopsLogic {
                     crate::commands::resource_context(game_context),
                 );
             if explorer.troops.count == 0 {
-                self.destroy_explorer(key, explorer);
+                crate::logic::troops::destroy_explorer(key, explorer);
             } else {
                 crate::logic::troops::TroopState::save(key, crate::troops::ExplorerRecordTrait::into_record(explorer));
             }
@@ -1156,17 +1158,6 @@ pub mod troop_helpers {
                     crate::commands::resource_context(game_context),
                 );
         }
-
-        fn destroy_explorer(ref self: TContractState, key: ExplorerKey, explorer: ExplorerTroops) {
-            crate::logic::army_slots::release(key, explorer);
-            self
-                .resources_dispatcher(key.game_id)
-                .destroy_resources(ResourceKey { game_id: key.game_id, entity_id: key.explorer_id });
-            if crate::logic::deep_guards::entry(key).is_none() {
-                crate::logic::map::MapState::vacate(tile_key(key.game_id, explorer.coord), key.explorer_id);
-            }
-            crate::logic::troops::TroopState::destroy(key);
-        }
     }
 }
 
@@ -1229,4 +1220,16 @@ fn return_homecoming(key: ExplorerKey, explorer: ExplorerTroops, context: crate:
             context.timestamp,
             crate::commands::resource_context(context),
         );
+}
+
+fn destroy_explorer(key: ExplorerKey, explorer: ExplorerTroops) {
+    crate::logic::army_slots::release(key, explorer);
+    let state = crate::state::read();
+    let release = state.releases.entry(state.game_releases.read(key.game_id)).classes;
+    IResourceOperationsLibraryDispatcher { class_hash: release.resources.read() }
+        .destroy_resources(ResourceKey { game_id: key.game_id, entity_id: key.explorer_id });
+    if crate::logic::deep_guards::entry(key).is_none() {
+        crate::logic::map::MapState::vacate(crate::geometry::tile_key(key.game_id, explorer.coord), key.explorer_id);
+    }
+    TroopState::destroy(key);
 }

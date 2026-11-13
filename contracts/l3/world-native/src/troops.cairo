@@ -453,6 +453,7 @@ fn discovered_guard(
 
 #[starknet::interface]
 pub trait IBattleResolution<T> {
+    fn destroy_explorer(ref self: T, key: ExplorerKey, explorer: ExplorerTroops);
     fn expire_explorer(
         ref self: T, key: ExplorerKey, explorer: ExplorerTroops, context: crate::commands::ActionContext,
     );

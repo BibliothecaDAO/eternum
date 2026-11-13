@@ -6,6 +6,9 @@ pub mod BridgeLogic {
     impl LifeInternal = ReleaseState::InternalImpl<ContractState>;
     #[abi(embed_v0)]
     impl DeepBanes of crate::deep::IDeepBanes<ContractState> {
+        fn height_blocked(self: @ContractState, game_id: u32, aspect: u8, timestamp: u64) -> bool {
+            crate::logic::deep_banes::height_blocked(game_id, aspect, timestamp)
+        }
         fn credit_altar(ref self: ContractState, game_id: u32, source: u8, boundary: u64) {
             crate::logic::deep_banes::credit(game_id, source, boundary);
         }

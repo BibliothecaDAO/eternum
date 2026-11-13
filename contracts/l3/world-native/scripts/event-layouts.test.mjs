@@ -165,3 +165,35 @@ test("libraries sharing a Games selector must agree on every wire member", () =>
     /Conflicting event definition/,
   );
 });
+
+test("Deep lifecycle and bane bodies compile only beside their owning state", async () => {
+  const { contracts } = JSON.parse(
+    await readFile(new URL("../target/dev/world_native.starknet_artifacts.json", import.meta.url), "utf8"),
+  );
+  const owners = new Map();
+  for (const { contract_name, artifacts } of contracts) {
+    if (!contract_name.endsWith("Logic")) continue;
+    const { sierra_program_debug_info } = JSON.parse(
+      await readFile(new URL(`../target/dev/${artifacts.sierra}`, import.meta.url), "utf8"),
+    );
+    for (const [, name] of sierra_program_debug_info.user_func_names) {
+      const classes = owners.get(name) ?? new Set();
+      classes.add(contract_name);
+      owners.set(name, classes);
+    }
+  }
+  for (const [body, owner, route] of [
+    ["deep_banes::day", "BridgeLogic", "IDeepBanes.height_blocked"],
+    ["deep_banes::height_blocked", "BridgeLogic", "IDeepBanes.height_blocked"],
+    ["deep_guards::remove", "TroopsLogic", "IBattleResolution.destroy_explorer"],
+    ["deep_armies::settle", "TroopsLogic", "IBattleResolution.settle_deep_army"],
+    ["troops::expire_explorer", "TroopsLogic", "IBattleResolution.expire_explorer"],
+    ["troops::return_homecoming", "TroopsLogic", "IBattleResolution.expire_explorer"],
+  ]) {
+    assert.deepEqual(
+      [...(owners.get(`world_native::logic::${body}`) ?? [])],
+      [owner],
+      `${body} must compile only in ${owner}; use ${route} from other classes`,
+    );
+  }
+});

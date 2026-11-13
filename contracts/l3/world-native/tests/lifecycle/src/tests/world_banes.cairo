@@ -3,6 +3,7 @@ use starknet::storage::{StorageMapReadAccess, StorageMapWriteAccess, StoragePoin
 use world_test_support::tests::Deployment;
 use world_test_support::tests::resource_commands::execute_in_game;
 use crate::commands::Command;
+use crate::race::{IHeightBaneDispatcherTrait, IHeightBaneLibraryDispatcher};
 use crate::resources::ResourceKey;
 
 #[test]
@@ -218,7 +219,10 @@ fn team_lights_end_height_suppression_without_a_world_bonus_or_quest_switch() {
         || {
             assert_eq!(crate::logic::banes::quest_kind(first_home, 1), crate::quests::LIGHTS);
             assert_eq!(crate::logic::banes::progress(game_id, 1, 1).completed, 1);
-            assert!(crate::logic::deep_banes::height_blocked(game_id, 1, first_done));
+            assert!(
+                IHeightBaneLibraryDispatcher { class_hash: crate::logic::deep_sites::dispatcher(game_id).class_hash }
+                    .height_blocked(game_id, 1, first_done),
+            );
             crate::logic::resources::balance(first_home, crate::resources::ESSENCE)
         },
     );
@@ -233,8 +237,14 @@ fn team_lights_end_height_suppression_without_a_world_bonus_or_quest_switch() {
             let progress = crate::logic::banes::progress(game_id, 1, 1);
             assert_eq!(progress.completed, 2);
             assert_eq!(progress.ended_at, second_done);
-            assert!(crate::logic::deep_banes::height_blocked(game_id, 1, second_done - 1));
-            assert!(!crate::logic::deep_banes::height_blocked(game_id, 1, second_done));
+            assert!(
+                IHeightBaneLibraryDispatcher { class_hash: crate::logic::deep_sites::dispatcher(game_id).class_hash }
+                    .height_blocked(game_id, 1, second_done - 1),
+            );
+            assert!(
+                !IHeightBaneLibraryDispatcher { class_hash: crate::logic::deep_sites::dispatcher(game_id).class_hash }
+                    .height_blocked(game_id, 1, second_done),
+            );
             assert_eq!(crate::logic::banes::quest_kind(first_home, 1), crate::quests::LIGHTS);
             assert!(!crate::logic::banes::won(first_home, 1));
             assert!(crate::state::read().banes.bonus_grants.read((game_id, first_home.entity_id, 1)).is_none());

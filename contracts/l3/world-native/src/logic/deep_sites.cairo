@@ -211,6 +211,7 @@ fn reset_beast(key: ResourceKey, kind: u8, day: u64, count: u128, timestamp: u64
 
 #[starknet::component]
 pub mod DeepSites {
+    use starknet::storage::{StorageMapReadAccess, StoragePathEntry, StoragePointerReadAccess};
     #[storage]
     pub struct Storage {}
     #[event]
@@ -251,7 +252,14 @@ pub mod DeepSites {
         TContractState, +HasComponent<TContractState>, +Drop<TContractState>,
     > of crate::race::IHeightBane<ComponentState<TContractState>> {
         fn height_blocked(self: @ComponentState<TContractState>, game_id: u32, aspect: u8, timestamp: u64) -> bool {
-            crate::logic::deep_banes::height_blocked(game_id, aspect, timestamp)
+            let state = crate::state::read();
+            let release = state.releases.entry(state.game_releases.read(game_id)).classes;
+            crate::deep::IDeepBanesDispatcherTrait::height_blocked(
+                crate::deep::IDeepBanesLibraryDispatcher { class_hash: release.bridge.read() },
+                game_id,
+                aspect,
+                timestamp,
+            )
         }
     }
 }

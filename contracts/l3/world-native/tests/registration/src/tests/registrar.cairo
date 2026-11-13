@@ -745,8 +745,9 @@ fn launcher_roster_batches_block_early_play_and_report_transaction_progress() {
     assert_eq!(status_at(games.game(game_id), end_at), GameStatus::Settled);
 }
 
-#[test]
-fn roster_settlement_displaces_an_army_without_a_stale_position_or_home_entry() {
+#[test_case(name: "space_available", false)]
+#[test_case(name: "surrounded", true)]
+fn roster_settlement_displaces_an_army_without_a_stale_position_or_home_entry(surrounded: bool) {
     let d = setup();
     let preset = definition(true);
     registry(d).register_preset(1, preset);
@@ -791,16 +792,64 @@ fn roster_settlement_displaces_an_army_without_a_stale_position_or_home_entry() 
             },
         },
     );
+    if surrounded {
+        snforge_std::interact_with_state(
+            d.games,
+            || {
+                for direction in 0_u8..6 {
+                    let tile = crate::geometry::tile_key(game_id, crate::geometry::neighbor(origin, direction));
+                    crate::logic::map::MapState::reveal(tile, 1);
+                    crate::logic::map::MapState::reserve_hyperstructure(tile);
+                }
+            },
+        );
+    }
+    let resources = IResourceOperationsDispatcher { contract_address: d.games };
+    let army_resources = ResourceKey { game_id, entity_id: army.explorer_id };
+    let army_capacity: u128 = rules.capacity_config.troop_capacity.into() * RESOURCE_PRECISION;
+    let context = crate::commands::action_context(crate::tests::context(d.games, game_id));
+    snforge_std::interact_with_state(
+        d.games,
+        || {
+            crate::logic::combat::resources_dispatcher(game_id)
+                .initialize_resources(army_resources, army_capacity, 0, 205, context);
+        },
+    );
+    assert_eq!(resources.resource_weight(army_resources).capacity, army_capacity);
     crate::tests::state::assert_spatial_indexes(d.games, game_id, array![10000, 10001].span(), array![origin].span());
     super::season_lifecycle::execute_batch_in_game(
         super::bind_authority(d), game_id, Command::SettleBlitzRoster, 205, 0,
     );
-    let moved = GameState { contract_address: d.games }.resolved_explorer(army).unwrap();
-    assert!(moved.coord != origin);
-    assert_eq!(moved.owner, home.entity_id);
-    crate::tests::state::assert_spatial_indexes(
-        d.games, game_id, array![1, 10000, 10001].span(), array![origin, moved.coord].span(),
-    );
+    let moved = GameState { contract_address: d.games }.resolved_explorer(army);
+    if surrounded {
+        assert!(moved.is_none());
+        assert!(IStructureOperationsDispatcher { contract_address: d.games }.home_armies(home).is_empty());
+        assert!(IStructureOperationsDispatcher { contract_address: d.games }.position(army_resources).is_none());
+        crate::tests::state::assert_spatial_indexes(
+            d.games, game_id, array![1, 10000, 10001].span(), array![origin].span(),
+        );
+        snforge_std::interact_with_state(
+            d.games,
+            || {
+                let state = crate::state::read();
+                assert!(!state.resources.resource_exists.read((game_id, army.explorer_id)));
+                assert_eq!(state.resources.weights.read((game_id, army.explorer_id)).capacity, 0);
+                for direction in 0_u8..6 {
+                    let tile = crate::geometry::tile_key(game_id, crate::geometry::neighbor(origin, direction));
+                    let held = crate::logic::map::occupancy(tile).unwrap();
+                    assert_eq!(held.category, crate::taxonomy::RESERVED_HYPERSTRUCTURE_OCCUPIER);
+                    assert_eq!(held.entity_id, 0);
+                }
+            },
+        );
+    } else {
+        let moved = moved.unwrap();
+        assert!(moved.coord != origin);
+        assert_eq!(moved.owner, home.entity_id);
+        crate::tests::state::assert_spatial_indexes(
+            d.games, game_id, array![1, 10000, 10001].span(), array![origin, moved.coord].span(),
+        );
+    }
     assert_eq!(
         IStructureOperationsDispatcher { contract_address: d.games }.position(ResourceKey { game_id, entity_id: 1 }),
         Some(origin),

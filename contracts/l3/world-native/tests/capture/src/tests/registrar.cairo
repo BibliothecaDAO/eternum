@@ -1,5 +1,6 @@
 pub use world_test_support::tests::registrar::*;
 use crate::logic::release::{IReleasesDispatcher, IReleasesDispatcherTrait, Release};
+use crate::race::{IHeightBaneDispatcherTrait, IHeightBaneLibraryDispatcher};
 
 #[test]
 fn expedition_rollover_expires_armies_and_preserves_the_home_economy() {
@@ -3354,7 +3355,10 @@ fn altar_issues_next_day_banes_in_board_order_and_stops_world_rolls() {
             assert!(crate::logic::deep_banes::bane(crate::deep::TeamBaneKey { game_id, aspect: 2, day: 1 }).is_some());
             assert!(crate::logic::deep_banes::bane(crate::deep::TeamBaneKey { game_id, aspect: 3, day: 1 }).is_none());
             assert_eq!(crate::state::read().banes.first_team_day.read(game_id), Some(0));
-            assert!(!crate::logic::deep_banes::height_blocked(game_id, 2, 480));
+            assert!(
+                !IHeightBaneLibraryDispatcher { class_hash: crate::logic::deep_sites::dispatcher(game_id).class_hash }
+                    .height_blocked(game_id, 2, 480),
+            );
         },
     );
     assert!(!execute_in_game(d, game_id, muster_command(category, 0), 720));
@@ -3372,9 +3376,18 @@ fn altar_issues_next_day_banes_in_board_order_and_stops_world_rolls() {
             assert_eq!(crate::state::read().deep.altar_bars.read((game_id, 1)), 0);
             assert_eq!(crate::logic::banes::required(game_id, 2, 1), 2);
             let tomorrow = crate::days::day_at_index(crate::logic::game::game(game_id), 600, 1);
-            assert!(crate::logic::deep_banes::height_blocked(game_id, 2, tomorrow.start));
-            assert!(!crate::logic::deep_banes::height_blocked(game_id, 3, tomorrow.start));
-            assert!(!crate::logic::deep_banes::height_blocked(game_id, 2, tomorrow.end));
+            assert!(
+                IHeightBaneLibraryDispatcher { class_hash: crate::logic::deep_sites::dispatcher(game_id).class_hash }
+                    .height_blocked(game_id, 2, tomorrow.start),
+            );
+            assert!(
+                !IHeightBaneLibraryDispatcher { class_hash: crate::logic::deep_sites::dispatcher(game_id).class_hash }
+                    .height_blocked(game_id, 3, tomorrow.start),
+            );
+            assert!(
+                !IHeightBaneLibraryDispatcher { class_hash: crate::logic::deep_sites::dispatcher(game_id).class_hash }
+                    .height_blocked(game_id, 2, tomorrow.end),
+            );
             for day in 1_u64..10 {
                 assert!(crate::logic::banes::kind(game_id, day).is_none());
             }

@@ -11,7 +11,7 @@ pub mod MovementLogic {
     use crate::map::{BIOME_SCALE, BYTE_RANGE, IMapLogicDispatcherTrait};
     use crate::resources::{IResourceOperationsDispatcherTrait, ResourceKey};
     use crate::structures::IStructureOperationsDispatcherTrait;
-    use crate::troops::{Coord, ExplorerKey};
+    use crate::troops::{Coord, ExplorerKey, IBattleResolutionDispatcherTrait};
     component!(path: ReleaseState, storage: release, event: ReleaseEvent);
     impl LifeInternal = ReleaseState::InternalImpl<ContractState>;
     use crate::logic::troops::troop_helpers::TroopHelpersTrait;
@@ -213,7 +213,7 @@ pub mod MovementLogic {
                 crate::logic::map::MapState::occupy(tile, explorer_id, category, false);
                 return;
             }
-            self.destroy_explorer(key, explorer);
+            crate::logic::combat::combat_troops(game_id).destroy_explorer(key, explorer);
         }
     }
     #[abi(embed_v0)]
