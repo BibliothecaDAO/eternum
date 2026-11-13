@@ -374,3 +374,14 @@ function today(store: NativeFactStore) {
   const quest = readDailyQuest(store, 1, 7, now)!;
   return { day: quest.day, id: quest.quest!.id, target: Number(quest.reading.known!.target) };
 }
+
+it("says Spoils doubles a cleared site's numeric rewards and leaves a ruin's relic alone", async () => {
+  const store = await renderBanner([questRules(), ...raceRules()]);
+  const { day } = today(store);
+  await snapshot(store, true);
+  await act(async () => store.applyFacts([triumphOn(4, day)] as never));
+  expect(banner()!.textContent).toContain("Spoils");
+  expect(banner()!.textContent).toContain(
+    "A cleared site pays 2 times the wheat, labor, Essence and XP today. A ruin's relic stays the same",
+  );
+});

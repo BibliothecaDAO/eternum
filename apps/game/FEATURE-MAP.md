@@ -648,9 +648,9 @@ a coming day the bag's quest, since nobody knows a bane's day before it comes). 
 the home's Aspect has a Triumph (`TriumphDay`, the day after one of its hyperstructure's first four stages), its
 painting, name and what it does today stand under the quest: **Clear Mist** (a reveal finds something 2 times as often),
 **Second Wind** (stamina refills 2 times as fast), **Pale Moon** (beasts at 50% of their strength), **Spoils** (a
-cleared site pays 2 times), each rate RaceRules'; while the snapshot cannot tell, it says it is reading the Aspect's
-day. Lab: `/lab/kit/unified/frontier`, `frontier-new` and `season-one-deep` (a Season 1 member with 145 Glory on Second
-Wind).
+cleared site pays 2 times the wheat, labor, Essence and XP; a ruin's relic is unchanged), each rate RaceRules'; while
+the snapshot cannot tell, it says it is reading the Aspect's day. Lab: `/lab/kit/unified/frontier`, `frontier-new` and
+`season-one-deep` (a Season 1 member with 145 Glory on Second Wind).
 
 **Glory** (`src/ui/features/frontier/race/glory.tsx`), a race game member's one score (`RaceMember`), once the realm
 went into the Deep: beside its rank on the desktop's realm panel, and in a phone's purse row under the strip, with what

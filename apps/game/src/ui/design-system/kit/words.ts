@@ -1635,7 +1635,8 @@ export const TRIUMPH_WORDS = {
     [nativeRuleConstants.SECOND_WIND_STAGE]: (percent: number) =>
       `Stamina refills ${formatTimes(percent)} as fast today`,
     [nativeRuleConstants.PALE_MOON_STAGE]: (percent: number) => `Beasts fight at ${percent}% of their strength today`,
-    [nativeRuleConstants.SPOILS_STAGE]: (percent: number) => `A cleared site pays ${formatTimes(percent)} today`,
+    [nativeRuleConstants.SPOILS_STAGE]: (percent: number) =>
+      `A cleared site pays ${formatTimes(percent)} the wheat, labor, Essence and XP today. A ruin's relic stays the same`,
   } satisfies Record<TriumphStage, (percent: number) => string>,
   /** The banner's tip on a Triumph: where it applies. */
   where: "Your Aspect's Triumph, for today, everywhere above the Deep.",
