@@ -134,11 +134,10 @@ it("keeps health red until an unavailable deposit audit recovers without pausing
     value_error: null,
     season_error: null,
   });
-  expect(calls.custody).toHaveBeenCalledWith({
-    rpcUrl: "https://ledger.test",
-    address: "0x10",
-    chainId: "0x1",
-  });
+  expect(calls.custody).toHaveBeenCalledWith(
+    { rpcUrl: "https://ledger.test", address: "0x10", chainId: "0x1" },
+    { deposits: expect.any(Map), principals: expect.any(Map) },
+  );
   await worker.tick();
   expect(await worker.health()).toMatchObject({
     success: true,
