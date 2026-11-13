@@ -2,12 +2,11 @@ import { describe, expect, it, vi } from "vitest";
 import { nativeCommandBits } from "../../../../../../../../contracts/l3/world-native/schema/commands.gen";
 import { nativePresetIdFor, nativePresetForId } from "../../../../../../../../config/source/native";
 
-vi.mock("@/ui/features/economy/trading", () => ({ MarketModal: () => null }));
 vi.mock("@/ui/features/settlement/production/production-modal", () => ({ ProductionModal: () => null }));
 
 const { isStructureActionEnabled } = await import("./use-structure-actions");
 
-const ACTIONS = ["build", "production", "military", "transfer", "trade"] as const;
+const ACTIONS = ["build", "production", "military", "transfer"] as const;
 
 const offeredIn = (mode: "frontier" | "blitz" | "eternum") => {
   const mask = nativePresetForId(nativePresetIdFor(mode)).commandMask;
@@ -21,11 +20,11 @@ describe("realm actions follow the game's command mask", () => {
     expect(offeredIn("frontier")).toEqual(["build", "military"]);
   });
 
-  it("keeps Blitz's actions and leaves its market out", () => {
+  it("keeps Blitz's actions", () => {
     expect(offeredIn("blitz")).toEqual(["build", "production", "military", "transfer"]);
   });
 
-  it("offers Eternum's market", () => {
-    expect(offeredIn("eternum")).toEqual(["build", "production", "military", "transfer", "trade"]);
+  it("offers Eternum the same four: the game has no market to open", () => {
+    expect(offeredIn("eternum")).toEqual(["build", "production", "military", "transfer"]);
   });
 });

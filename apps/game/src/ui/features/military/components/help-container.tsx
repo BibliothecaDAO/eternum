@@ -77,6 +77,11 @@ export const HelpContainer = ({
   })();
 
   const transferDirection = derivedTransferDirection;
+  // Resources leave an army, for a structure or another army: Help puts the army first whenever one is there.
+  const resourcesDirection =
+    currentSelected.type === ActorType.Explorer && currentTarget.type === ActorType.Explorer
+      ? TransferDirection.ExplorerToExplorer
+      : TransferDirection.ExplorerToStructure;
 
   // Handle toggling transfer direction when both entities support it
   const handleToggleDirection = () => {
@@ -126,7 +131,7 @@ export const HelpContainer = ({
             <TransferResourcesContainer
               selectedEntityId={currentSelected.id}
               targetEntityId={currentTarget.id}
-              transferDirection={transferDirection}
+              transferDirection={resourcesDirection}
               onTransferComplete={closeSurface}
             />
           ) : (

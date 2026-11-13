@@ -71,10 +71,6 @@ const labelPlanCallset = (plan: RealmProductionPlan) => ({
     ...call,
     resource: resolveResourceLabel(call.resourceId),
   })),
-  laborToResource: plan.callset.laborToResource.map((call) => ({
-    ...call,
-    resource: resolveResourceLabel(call.resourceId),
-  })),
 });
 
 const formatSnapshotLog = (
@@ -260,7 +256,6 @@ export const useAutomation = () => {
                 outputs: labelResourceRecord(plan.outputsByResource),
                 consumption: labelResourceRecord(plan.consumptionByResource),
                 resourceExecutions: labelExecutionEntries(plan.resourceExecutions),
-                laborExecutions: labelExecutionEntries(plan.laborExecutions),
                 skipped: plan.skipped,
               });
               anyExecuted = true;
@@ -380,16 +375,15 @@ export const useAutomation = () => {
                     effectivePercentages[resourceId] = stored ?? smartDefault ?? baseline;
                   });
 
-                  const { resourceOver, laborOver } = getAutomationOverallocation(effectivePercentages);
+                  const { resourceOver } = getAutomationOverallocation(effectivePercentages);
 
-                  if (resourceOver || laborOver) {
+                  if (resourceOver) {
                     runStatusNote = "Over budget: Smart used this run";
                     verboseLog("[Automation] Using smart preset for this run due to over-allocation", {
                       realmId: activeRealmConfig.realmId,
                       realmName: realmLabel,
                       producedResourceIds,
                       resourceOver,
-                      laborOver,
                     });
 
                     activeRealmConfig = {
@@ -479,10 +473,6 @@ export const useAutomation = () => {
                     realm_entity_id: submitted.realmId,
                     skipQueue: true,
                     resource_to_resource: submitted.callset.resourceToResource.map((item) => ({
-                      resource_id: item.resourceId,
-                      cycles: item.cycles,
-                    })),
-                    labor_to_resource: submitted.callset.laborToResource.map((item) => ({
                       resource_id: item.resourceId,
                       cycles: item.cycles,
                     })),

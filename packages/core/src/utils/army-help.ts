@@ -5,7 +5,7 @@ type NativeCommandName = keyof typeof nativeCommandBits;
 /** The transfers an army's Help surface offers, each with the commands it may send. */
 const HELP_TRANSFERS = {
   troops: ["ManageTroops"],
-  relics: ["TransferExplorerResources", "TransferExplorerResourcesToStructure", "TransferStructureResourcesToExplorer"],
+  relics: ["TransferExplorerResources", "TransferExplorerResourcesToStructure"],
 } as const satisfies Record<string, readonly NativeCommandName[]>;
 
 export type HelpTransfer = keyof typeof HELP_TRANSFERS;

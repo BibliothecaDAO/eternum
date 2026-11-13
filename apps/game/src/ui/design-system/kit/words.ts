@@ -335,8 +335,6 @@ export const ONE_A_REALM = "Built. A realm holds one.";
 export const PRICE_UP = "price raised";
 /** Why a price is above its first, on the arrow beside it, in one line and no sum: "Costs more with each one standing: 2". */
 export const priceRaised = (standing: string) => `Costs more with each one standing: ${standing}`;
-/** A market's price for one unit, as a shop says it, never as an equation: "0.03 LORDS each". */
-export const priceEach = (price: string, currency: string) => `${price} ${currency} each`;
 /** What a building does, in one line on its card's tooltip: "Wheat +5/min". */
 export const makes = (noun: string, rate: string) => `${noun} ${rate}`;
 export const takesPopulation = (amount: string) => `takes ${amount} ${POPULATION}`;
@@ -429,8 +427,6 @@ export const FIGHT_WORDS = {
  */
 export const fightLost = (lost: string, share: string) => `−${lost} · ${share}% lost`;
 export const NONE_LOST = "None lost";
-/** Why a village's trade in troops is refused, wherever the market and the bank say so. */
-export const VILLAGE_TROOP_TRADE_REFUSED = "Villages cannot trade military resources.";
 export const USE = "Use";
 export const USING = "Using…";
 
