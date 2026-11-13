@@ -84,8 +84,8 @@ pub mod MovementLogic {
                     .register_exploration(game_id, actor, crate::commands::action_context(context));
                 discovery =
                     if rules.day_unit_seconds != 0 {
-                        crate::expeditions::IFrontierDiscoveryDispatcherTrait::discover_frontier_tile(
-                            crate::expeditions::IFrontierDiscoveryLibraryDispatcher {
+                        crate::discovery::IDiscoveryRollDispatcherTrait::roll_expedition_discovery(
+                            crate::discovery::IDiscoveryRollLibraryDispatcher {
                                 class_hash: self.release.classes(game_id).construction.read(),
                             },
                             tile,

@@ -538,6 +538,8 @@ mod bridge;
 mod days;
 mod entity_ids;
 mod guilds;
+
+mod lane_interfaces;
 mod preset_projection;
 mod progression;
 mod race;

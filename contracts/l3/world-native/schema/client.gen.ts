@@ -1,5 +1,5 @@
 // Generated from native fact models and contract ABIs. Run the native schema generator to update.
-export const nativeFactSchemaIdentity = "d1656fed73004bf0b66c05fcb3950c46a6abb9af61f423c73c30c241682af1b6";
+export const nativeFactSchemaIdentity = "88a077a6771eaf900d7adce6fa13b990b154f92fefb7277a1cfc7063c4956f3e";
 export const nativeReleaseConstants = {
   "RUIN_DEPTH_LIMIT_RELEASE": 9
 } as const;
@@ -62,7 +62,14 @@ export const nativeRuleConstants = {
   "HYPERSTRUCTURE_MULTIPLIERS": 32768,
   "PRODUCTION_START": 131072,
   "WELL_STAMINA_DIVISOR": 2,
-  "FRONTIER_REPORT_GRACE_SECONDS": 3600
+  "FRONTIER_REPORT_GRACE_SECONDS": 3600,
+  "DEEP_MAP_SIZE": 50,
+  "DEEP_FOUNDATION": 0,
+  "DEEP_QUARRY": 1,
+  "DEEP_ALTAR": 2,
+  "DEEP_SITE_COUNT": 3,
+  "DEEP_ARRIVAL_Y": 5,
+  "DEEP_GUARD_SLOTS": 4
 } as const;
 export const nativeArrivalConstants = {
   "SLOTS_PER_DAY": 48

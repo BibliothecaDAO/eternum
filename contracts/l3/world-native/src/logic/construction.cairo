@@ -93,7 +93,10 @@ pub mod ConstructionLogic {
         ) -> Option<crate::expeditions::ExpeditionDiscovery> {
             crate::logic::expeditions::discovery(key)
         }
-        fn discover_frontier_tile(
+    }
+    #[abi(embed_v0)]
+    impl DiscoveryRoll of crate::discovery::IDiscoveryRoll<ContractState> {
+        fn roll_expedition_discovery(
             ref self: ContractState,
             key: TileKey,
             explorer_id: u64,
