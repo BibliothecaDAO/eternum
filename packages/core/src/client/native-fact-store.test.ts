@@ -814,3 +814,17 @@ it("keys a fact by an enum field: an army's running relic of each kind, read bac
   expect(store.get("ArmyRelicEffect", { game_id: 1, explorer_id: 201, kind: "Blade" })).toBeUndefined();
   expect(() => store.get("ArmyRelicEffect", { game_id: 1, explorer_id: 201, kind: "Spear" as never })).toThrow();
 });
+
+
+it("keeps the wire identity through updates and removes it with its row", () => {
+  const store = new NativeFactStore();
+  const keys = { game_id: 1, entity_id: 7, resource_type: 1 };
+  store.applyFacts([set("0xdead", "ResourceBalance", balance(7, "20"))]);
+  expect(store.wireKeyOf("ResourceBalance", keys)).toBe("0xdead");
+  expect(store.wireKeyOf("ResourceBalance", { ...keys, entity_id: 8 })).toBeUndefined();
+  store.applyFacts([set(store.wireKeyOf("ResourceBalance", keys)!, "ResourceBalance", balance(7, "30"))]);
+  expect(store.require("ResourceBalance", keys).balance).toBe(30n);
+  store.applyFacts([remove(store.wireKeyOf("ResourceBalance", keys)!, "ResourceBalance")]);
+  expect(store.get("ResourceBalance", keys)).toBeUndefined();
+  expect(store.wireKeyOf("ResourceBalance", keys)).toBeUndefined();
+});

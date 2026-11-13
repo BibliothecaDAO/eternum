@@ -141,7 +141,10 @@ export type WorldSpatialProjectionChange =
   | ArmySpatialProjectionChange;
 
 export interface WorldSpatialProjectionOptions {
-  store: Pick<NativeFactStore, "entries" | "subscribe" | "get" | "require" | "entityOccupancy" | "inGame" | "subscriptionScope">;
+  store: Pick<
+    NativeFactStore,
+    "entries" | "subscribe" | "get" | "require" | "entityOccupancy" | "inGame" | "subscriptionScope"
+  >;
   bucketSize?: number;
 }
 

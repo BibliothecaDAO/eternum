@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { NativeFactStore } from "../client/native-fact-store";
 import { armyRelicsEnabled } from "./army-relics";
-import preset from "../../../../contracts/l3/world-native/tests/fixtures/current-presets/preset-3.json";
+import preset from "../../../../contracts/l3/world-native/tests/fixtures/current-presets/conformance.json";
 
 const sliceRules = (day_unit_seconds: number) => ({
   model: "SliceRules" as const,

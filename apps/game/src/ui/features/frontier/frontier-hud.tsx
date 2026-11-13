@@ -1,3 +1,4 @@
+import { StaminaReading } from "./hud/army-token";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { useHeldTicket } from "@/hooks/use-holdings";
 import { getActiveGame } from "@/runtime/world";

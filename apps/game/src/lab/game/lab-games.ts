@@ -1,3 +1,4 @@
+import { actionsScenario } from "./actions-scenario";
 import { economyScenario } from "./economy-scenario";
 import { relicsScenario } from "./relics-scenario";
 import { etherealDepthsScenario } from "./ethereal-depths-scenario";
