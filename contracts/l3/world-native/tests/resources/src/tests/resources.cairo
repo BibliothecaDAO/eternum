@@ -1,4 +1,39 @@
 pub use world_test_support::tests::resources::*;
+use world_test_support::tests::{authority, declare_logic, start_cheat_caller_address};
+use crate::logic::release::{IReleasesDispatcher, IReleasesDispatcherTrait, Release};
+
+#[test]
+fn resource_fixture_settles_through_each_games_pin_after_a_new_release() {
+    let resources = fixture();
+    let releases = IReleasesDispatcher { contract_address: resources.contract_address };
+    let original = releases.release(1);
+    assert_eq!(original.classes.bridge, declare_logic("BridgeLogic"));
+    let replacement = Release {
+        classes: games_storage::release::LogicClasses { bridge: declare_logic("ResourcesLogic"), ..original.classes },
+        ..original,
+    };
+    start_cheat_caller_address(resources.contract_address, authority());
+    releases.register_release(2, replacement);
+    assert_eq!(releases.current_release(), 2);
+    for game_id in array![1, 2] {
+        assert_eq!(releases.game_release(game_id), 1);
+        let key = ResourceKey { game_id, entity_id: 7 };
+        resources.initialize(key, 100);
+        resources.start_at(key, 2, 2, 100, 10);
+        resources.spend_at(key, 2, 0, 1, 20);
+        assert_eq!(
+            resources.read_slot(key, 2),
+            (
+                20,
+                Production {
+                    remainder: 0, building_count: 1, production_rate: 2, output_amount_left: 80, last_settled_at: 20,
+                },
+                Weight { capacity: 100, weight: 20 },
+            ),
+        );
+        assert_eq!(releases.game_release(game_id), 1);
+    }
+}
 
 
 #[test]
