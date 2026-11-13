@@ -2681,6 +2681,35 @@ fn defeating_a_deep_beast_keeps_its_site_and_the_next_day_restores_the_same_guar
     let site_id = snforge_std::interact_with_state(
         d.games, || crate::state::read().deep.site_ids.read((game_id, crate::rules::DEEP_FOUNDATION)),
     );
+    let (_, season) = super::preset_projection::current_definition("season-one");
+    let quests = season.economy.quests.unwrap();
+    let banes = season.economy.banes.unwrap();
+    snforge_std::interact_with_state(
+        d.games,
+        || {
+            let preset = crate::logic::preset_record::for_game(game_id);
+            preset.quest_rewards.write(Some((quests.labor, quests.essence, quests.bonus_percent)));
+            preset
+                .bane_rules
+                .write(
+                    Some(
+                        (
+                            banes.chance_step,
+                            banes.quorum_percent,
+                            banes.beast_percent,
+                            banes.stamina_percent,
+                            banes.production_percent,
+                        ),
+                    ),
+                );
+            for index in 0..banes.quest_counts.len() {
+                preset.bane_quest_counts.write(index.try_into().unwrap(), *banes.quest_counts.at(index));
+            }
+            crate::state::write().deep.team_banes.write((game_id, 1, 0), Some((2, 0, crate::quests::CULL)));
+            assert_eq!(crate::logic::progression::require(key).xp, 0);
+            assert_eq!(crate::logic::quests::read(ResourceKey { game_id, entity_id: 1 }, 0).progress, 0);
+        },
+    );
     let command = Command::BattleGuard(
         crate::commands::Battle { attacker_id: id, defender_id: site_id, relic_slot: None },
     );
@@ -2693,7 +2722,22 @@ fn defeating_a_deep_beast_keeps_its_site_and_the_next_day_restores_the_same_guar
         Some(crate::deep::DeepGuard { site_id, slot: 0 }),
     );
     assert_eq!(troops.resolved_explorer(key).unwrap().coord, coord);
+    let progress = snforge_std::interact_with_state(d.games, || crate::logic::progression::require(key));
+    assert_eq!(progress.xp, 625);
+    assert_eq!((progress.common_points, progress.uncommon_points, progress.rare_points), (1, 1, 1));
+    let quest = snforge_std::interact_with_state(
+        d.games, || crate::logic::quests::read(ResourceKey { game_id, entity_id: 1 }, 0),
+    );
+    assert_eq!(quest.progress, 10000 * RESOURCE_PRECISION);
+    assert_eq!(quest.completed_level, 1);
     assert!(!execute_in_game(d, game_id, command, 361));
+    assert_eq!(snforge_std::interact_with_state(d.games, || crate::logic::progression::require(key)), progress);
+    assert_eq!(
+        snforge_std::interact_with_state(
+            d.games, || crate::logic::quests::read(ResourceKey { game_id, entity_id: 1 }, 0),
+        ),
+        quest,
+    );
     let occupied = snforge_std::interact_with_state(
         d.games, || crate::logic::map::occupancy(crate::geometry::tile_key(game_id, coord)),
     )
