@@ -7,6 +7,7 @@ pub use crate::troops::{Stamina, TroopBoosts, TroopTier, TroopType, Troops};
 pub fn context(biome: Biome) -> CombatContext {
     CombatContext {
         timestamp: 1,
+        day_unit_seconds: 0,
         attacker_roll: 0,
         defender_roll: 0,
         attacker_biome: biome,
@@ -68,6 +69,7 @@ pub fn dice_damage(attacker_roll: u8, defender_roll: u8) -> (u128, u128) {
             ref defender,
             CombatContext {
                 timestamp: 1,
+                day_unit_seconds: 0,
                 attacker_roll,
                 defender_roll,
                 attacker_biome: Biome::Underground,

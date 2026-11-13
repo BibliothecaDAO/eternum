@@ -1,6 +1,17 @@
 use crate::combat::TroopsTrait;
 use crate::stamina::StaminaSourceTrait;
 
+#[starknet::interface]
+pub trait IStartingArmies<T> {
+    fn deploy_starting_armies(
+        ref self: T,
+        key: crate::resources::ResourceKey,
+        category: TroopType,
+        amount: u128,
+        context: crate::commands::ActionContext,
+    );
+}
+
 #[derive(Copy, Drop, Serde, Default, Debug, PartialEq, starknet::Store)]
 pub struct Coord {
     pub alt: bool,
@@ -338,7 +349,6 @@ pub fn spend_stamina(
 }
 
 pub fn discovery_guards(category: u8, seed: u256, rules: crate::rules::SliceRules, timestamp: u64) -> Span<Troops> {
-    use crate::troops::{TroopTier, TroopType};
     let light_guard = category == crate::taxonomy::MINE_CATEGORY || category == crate::taxonomy::CAMP_CATEGORY;
     let limits = rules.troop_limit_config;
     let (lower, upper) = if light_guard {
@@ -443,6 +453,12 @@ fn discovered_guard(
 
 #[starknet::interface]
 pub trait IBattleResolution<T> {
+    fn expire_explorer(
+        ref self: T, key: ExplorerKey, explorer: ExplorerTroops, context: crate::commands::ActionContext,
+    );
+    fn settle_deep_army(
+        ref self: T, key: ExplorerKey, explorer: ExplorerTroops, context: crate::commands::ActionContext,
+    );
     // The explorer a command acts with: active this day, and owned by the actor when one is given.
     fn command_explorer(
         self: @T,

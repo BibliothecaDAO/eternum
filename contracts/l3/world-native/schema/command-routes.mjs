@@ -283,4 +283,5 @@ export const commandRoutes = [
     logic: "prizes",
     entrypoint: "withdraw_lords",
   },
+  { name: "ClaimDailyQuest", logic: "bridge", entrypoint: "claim_daily_quest" },
 ];

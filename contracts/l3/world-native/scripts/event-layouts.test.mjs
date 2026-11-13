@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { readFile } from "node:fs/promises";
+import { readFile, readdir } from "node:fs/promises";
 import { eventLayouts, uniqueEventLayouts } from "./event-layouts.mjs";
 
 test("Games exposes the published player frame, roles and frozen roster ABI", async () => {
@@ -101,6 +101,59 @@ function abi(contract, type) {
   ];
 }
 
+test("home rewards have one production implementation and no former-class entrypoints", async () => {
+  const entrypoints = async (contract) => {
+    const { abi } = JSON.parse(
+      await readFile(new URL(`../target/dev/world_native_${contract}.contract_class.json`, import.meta.url), "utf8"),
+    );
+    return abi.flatMap((entry) => (entry.type === "interface" ? entry.items : [entry])).map(({ name }) => name);
+  };
+  const { contracts } = JSON.parse(
+    await readFile(new URL("../target/dev/world_native.starknet_artifacts.json", import.meta.url), "utf8"),
+  );
+  const libraries = await Promise.all(
+    contracts
+      .filter(({ contract_name }) => contract_name.endsWith("Logic"))
+      .map(async ({ contract_name }) => [contract_name, await entrypoints(contract_name)]),
+  );
+  const games = await entrypoints("Games");
+  for (const name of ["grant_labor", "labor_grant", "claim_daily_quest", "record_quest_progress", "bane_effects"]) {
+    const implementations = libraries.flatMap(([contract, entries]) =>
+      entries.filter((entry) => entry === name).map(() => contract),
+    );
+    assert.deepEqual(implementations, ["BridgeLogic"], `${name} must have exactly one production implementation`);
+  }
+  for (const name of ["grant_labor", "labor_grant"]) {
+    assert.equal(games.filter((entry) => entry === name).length, 1);
+  }
+});
+
+test("terrain derivation has one implementation in MovementLogic", async () => {
+  const { contracts } = JSON.parse(
+    await readFile(new URL("../target/dev/world_native.starknet_artifacts.json", import.meta.url), "utf8"),
+  );
+  const implementations = [];
+  for (const { contract_name } of contracts) {
+    if (!contract_name.endsWith("Logic")) continue;
+    const { abi } = JSON.parse(
+      await readFile(
+        new URL(`../target/dev/world_native_${contract_name}.contract_class.json`, import.meta.url),
+        "utf8",
+      ),
+    );
+    for (const entry of abi) {
+      if (entry.type === "interface" && entry.name === "world_native::settlement::ITerrainDerivation") {
+        implementations.push(contract_name);
+        assert.deepEqual(
+          entry.items.map(({ name }) => name),
+          ["raise_expedition_home", "biome", "expedition_home_ring"],
+        );
+      }
+    }
+  }
+  assert.deepEqual(implementations, ["MovementLogic"], "Route terrain through the single MovementLogic implementation");
+});
+
 test("libraries sharing a Games selector must agree on every wire member", () => {
   const first = eventLayouts(abi("MapLogic", "core::felt252"));
   const same = eventLayouts(abi("TroopsLogic", "core::felt252"));
@@ -111,4 +164,115 @@ test("libraries sharing a Games selector must agree on every wire member", () =>
     () => eventLayouts([...abi("MapLogic", "core::felt252"), ...abi("MapLogic", "core::integer::u256")]),
     /Conflicting event definition/,
   );
+});
+
+test("Race eligibility reads only its preset fields", async () => {
+  for (const file of ["army_relics", "relics", "lords_budget"]) {
+    const source = await readFile(new URL(`../src/logic/${file}.cairo`, import.meta.url), "utf8");
+    assert.doesNotMatch(
+      source,
+      /logic::game::rules\(|commands::load_context\(/,
+      `${file}: read preset_record::for_game(...).rules.day_unit_seconds, not the full game context`,
+    );
+  }
+});
+
+test("Race settlement and Triumph evaluation have one Economy library owner", async () => {
+  for (const name of [
+    "Bridge",
+    "Combat",
+    "Construction",
+    "Economy",
+    "Map",
+    "Movement",
+    "Placement",
+    "Prizes",
+    "Production",
+    "Raid",
+    "Registry",
+    "Relics",
+    "Resources",
+    "Season",
+    "Settlement",
+    "Structures",
+    "Troops",
+  ]) {
+    const { abi } = JSON.parse(
+      await readFile(new URL(`../target/dev/world_native_${name}Logic.contract_class.json`, import.meta.url), "utf8"),
+    );
+    const methods = abi.flatMap((entry) => (entry.type === "interface" ? entry.items : [entry]));
+    for (const method of ["finalize_race", "triumph_percent"]) {
+      assert.equal(
+        methods.filter((entry) => entry.name === method).length,
+        name === "Economy" ? 1 : 0,
+        `${method} belongs to the existing Race component in Economy`,
+      );
+    }
+  }
+});
+
+test("Triumph callers use the pinned library instead of compiling another reader", async () => {
+  const directory = new URL("../src/logic/", import.meta.url);
+  const source = await readFile(new URL("triumphs.cairo", directory), "utf8");
+  const wrapper = source.slice(source.indexOf("pub fn percent("), source.indexOf("pub fn read_percent("));
+  assert.match(
+    wrapper,
+    /IRaceDispatcherTrait::triumph_percent/,
+    "Triumph callers must dispatch through the game's pinned Economy class",
+  );
+  assert.doesNotMatch(wrapper, /logic::race::rules/, "Keep the Triumph storage reader behind Economy's library call");
+  const callers = [];
+  for (const file of await readdir(directory)) {
+    if (!file.endsWith(".cairo") || file === "triumphs.cairo") continue;
+    const text = await readFile(new URL(file, directory), "utf8");
+    if (/\bread_percent\b/.test(text)) callers.push(file);
+  }
+  assert.deepEqual(
+    callers,
+    ["race.cairo"],
+    "Use triumphs::percent; only Economy's Race component reads Triumph storage",
+  );
+});
+
+test("bane effects are read only beside quest progress; callers use the pinned library", async () => {
+  const root = new URL("../src/logic/", import.meta.url);
+  const readers = [];
+  for (const file of await readdir(root)) {
+    if (!file.endsWith(".cairo")) continue;
+    const source = await readFile(new URL(file, root), "utf8");
+    assert.doesNotMatch(
+      source,
+      /banes::(?:windows|stamina_percent|production_percent)\s*\(/,
+      `${file}: use banes::effects so the interval and its rates compile once beside QuestState`,
+    );
+    if (/banes::read_effects\s*\(/.test(source)) readers.push(file);
+  }
+  assert.deepEqual(readers, ["quests.cairo"], "only QuestState may compile the bane effect reader");
+  const banes = await readFile(new URL("banes.cairo", root), "utf8");
+  assert.doesNotMatch(
+    banes,
+    /logic::game::(?:game|rules)\s*\(|commands::load_context\s*\(/,
+    "bane effects must read the seed and calendar fields directly, without a full game context",
+  );
+});
+
+test("village pass administration has one owner in SettlementLogic", async () => {
+  const { contracts } = JSON.parse(
+    await readFile(new URL("../target/dev/world_native.starknet_artifacts.json", import.meta.url), "utf8"),
+  );
+  const owners = [];
+  for (const { contract_name } of contracts) {
+    if (!contract_name.endsWith("Logic")) continue;
+    const { abi } = JSON.parse(
+      await readFile(
+        new URL(`../target/dev/world_native_${contract_name}.contract_class.json`, import.meta.url),
+        "utf8",
+      ),
+    );
+    for (const entry of abi) {
+      const methods = entry.type === "interface" ? entry.items : [entry];
+      if (methods.some(({ name }) => name === "register_village_pass")) owners.push(contract_name);
+    }
+  }
+  assert.deepEqual(owners, ["SettlementLogic"], "village passes use the game's pinned Settlement class");
 });

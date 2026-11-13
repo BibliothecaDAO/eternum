@@ -1,11 +1,16 @@
 import { shortString } from "starknet";
 import { schema as compiledSchema } from "../../../../apps/herald/src/native/fixtures";
 import { schemaIdentity, type NativeMember, type NativeSchema } from "../../../../apps/herald/src/native/schema";
-import { defineFactModels } from "../schema/fact-models.mjs";
+import { defineFactModels, factWireTypes } from "../schema/fact-models.mjs";
+import { toJsonValue } from "../../../../apps/herald/src/model-registry";
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { encodeMembers } from "../../../../apps/herald/src/native/serde";
 import { currentPresetFixture, serializePresetRows } from "../../../../apps/herald/src/native/current-preset-fixture";
-import { FRONTIER_FIXTURE_PRESET_ID } from "../../../../config/source/common/native-preset-modes";
+import {
+  FRONTIER_FIXTURE_PRESET_ID,
+  FRONTIER_S1_PRESET_ID,
+  FRONTIER_S1_DEV_PRESET_ID,
+} from "../../../../config/source/common/native-preset-modes";
 
 const schema = presetFixtureSchema();
 
@@ -16,6 +21,8 @@ for (const [name, id] of [
   ["blitz", 2],
   ["frontier", 5],
   ["devcon", 6],
+  ["season-one", FRONTIER_S1_PRESET_ID],
+  ["season-one-dev", FRONTIER_S1_DEV_PRESET_ID],
   ["frontier-check", FRONTIER_FIXTURE_PRESET_ID],
 ] as const) {
   const fixture = await currentPresetFixture(id, schema);
@@ -46,15 +53,21 @@ write(
 /** Fixture encoding can follow source edits before the single landing compile; production bindings still require ABI. */
 function presetFixtureSchema(): NativeSchema {
   const schema = structuredClone(compiledSchema);
+  for (const type of factWireTypes) schema.types[type.name] = type;
   for (const module of [
     "rules",
     "entry",
+    "quests",
+    "race",
+    "banes",
     "presets",
     "relics",
     "registrar",
     "blitz_results",
     "progression",
     "withdrawals",
+    "spires",
+    "deep",
   ])
     readStructs(schema, module);
   schema.models = defineFactModels({

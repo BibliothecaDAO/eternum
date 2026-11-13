@@ -16,6 +16,8 @@ pub struct StructurePreset {
 }
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]
 pub struct SettlementPreset {
+    pub order_aspects: Span<u8>,
+    pub starting_armies: u8,
     pub mode: crate::settlement::SettlementMode,
     pub spacing: u32,
     pub depths: Span<crate::expeditions::DepthRules>,
@@ -31,6 +33,10 @@ pub struct WithdrawalPreset {
 }
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]
 pub struct EconomyPreset {
+    pub quests: Option<crate::quests::QuestRules>,
+    pub banes: Option<crate::banes::BaneRules>,
+    pub race: Option<crate::race::RaceRules>,
+    pub deep: Option<crate::deep::DeepRules>,
     pub labor: Option<crate::entry::LaborRules>,
     pub hyperstructures: crate::hyperstructures::HyperstructureRules,
     pub relics: Span<crate::relics::RelicRule>,
@@ -53,7 +59,56 @@ pub struct PresetDefinition {
 
 pub fn validate(preset: PresetDefinition) {
     let rules = preset.rules;
-    assert!(preset.economy.labor.is_some() == (rules.day_unit_seconds != 0), "labor rules require expeditions");
+    if let Some(banes) = preset.economy.banes {
+        assert!(preset.economy.quests.is_some(), "banes require quests");
+        crate::banes::validate(banes);
+        for relic in preset.economy.relics {
+            assert!(
+                Into::<u16, u32>::into(*relic.rate_bps) * Into::<u16, u32>::into(banes.stamina_percent) % 100 == 0,
+                "bane boost rate loses precision",
+            );
+        }
+    }
+    if let Some(quests) = preset.economy.quests {
+        crate::quests::validate(quests);
+        assert!(
+            rules.day_unit_seconds != 0 && !preset.settlement.order_aspects.is_empty(),
+            "quests require Aspect expeditions",
+        );
+    }
+    crate::aspects::validate(preset.settlement.order_aspects);
+    if preset.settlement.starting_armies != 0 {
+        assert!(
+            rules.entry_rule == crate::rules::ENTRY_OPEN && rules.day_unit_seconds != 0,
+            "starting armies require open expeditions",
+        );
+        assert!(
+            preset.settlement.starting_armies <= 6
+                && Into::<u8, u16>::into(preset.settlement.starting_armies) <= rules
+                    .troop_limit_config
+                    .settlement_armies,
+            "starting armies exceed deployment slots",
+        );
+    }
+    assert!(
+        preset.settlement.order_aspects.is_empty()
+            || (rules.entry_rule == crate::rules::ENTRY_OPEN && rules.day_unit_seconds != 0),
+        "Aspects require open expeditions",
+    );
+    assert!(
+        (preset.economy.labor.is_some() || preset.economy.quests.is_some()) == (rules.day_unit_seconds != 0),
+        "home rewards require expeditions",
+    );
+    assert!(!(preset.economy.labor.is_some() && preset.economy.quests.is_some()), "choose one home reward rule");
+    if let Some(race) = preset.economy.race {
+        crate::race::validate(race);
+        assert!(rules.day_unit_seconds != 0 && preset.economy.chests.is_none(), "race requires days without LORDS");
+        assert!(preset.season_win_points == 0, "race cannot use victory points");
+    }
+    if let Some(deep) = preset.economy.deep {
+        assert!(rules.day_unit_seconds != 0, "Deep needs expedition days");
+        crate::deep::validate(deep, preset.settlement.spacing);
+    }
     if let Some(labor) = preset.economy.labor {
         assert!(labor.amount != 0, "zero daily labor grant");
         assert!(labor.golden_amount != 0, "zero golden labor grant");
@@ -68,10 +123,16 @@ pub fn validate(preset: PresetDefinition) {
             "LORDS claim window needs reporting grace",
         );
     }
-    assert!(preset.economy.chests.is_some() == (rules.day_unit_seconds != 0), "chest rules require expedition");
+    assert!(preset.economy.chests.is_none() || rules.day_unit_seconds != 0, "chest rules require expedition");
     assert!(preset.economy.discovery.is_some() == (rules.day_unit_seconds != 0), "discovery requires expedition");
     if let Some(discovery) = preset.economy.discovery {
         crate::discovery::validate_frontier(discovery);
+        if let Some(race) = preset.economy.race {
+            assert!(
+                crate::discovery::maximum_race_chance(discovery, race.clear_mist_percent) <= 10000,
+                "Triumph and boon discovery odds exceed 100 percent",
+            );
+        }
         assert!(
             rules.map_config.camp_win_probability == 0 && rules.map_config.shards_mines_win_probability == 0,
             "expedition uses categorical odds",

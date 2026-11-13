@@ -591,12 +591,24 @@ export class EternumProvider extends EventEmitter {
     );
   }
 
-  public async settle_season(props: SystemProps.SystemSigner & { selectedRealm?: number }) {
+  public async claim_daily_quest(props: SystemProps.SystemSigner & { home: number; day: number }) {
+    return this.submitCommand(
+      props.signer,
+      { kind: "ClaimDailyQuest", value: { home: props.home, day: props.day } },
+      TransactionType.CLAIM_DAILY_QUEST,
+    );
+  }
+
+  public async settle_season(
+    props: SystemProps.SystemSigner & { selectedRealm?: number; aspect?: SystemProps.AspectId },
+  ) {
     return this.submitCommand(
       props.signer,
       {
         kind: "SettleSeason",
         value: {
+          aspect:
+            props.aspect === undefined ? { kind: "None", value: undefined } : { kind: "Some", value: props.aspect },
           selected_realm:
             props.selectedRealm === undefined
               ? { kind: "None", value: undefined }
@@ -794,7 +806,17 @@ export class EternumProvider extends EventEmitter {
   public async attack_explorer_vs_guard(props: SystemProps.AttackExplorerVsGuardProps) {
     return this.submitCommand(
       props.signer,
-      { kind: "BattleGuard", value: { attacker_id: props.explorer_id, defender_id: props.structure_id } },
+      {
+        kind: "BattleGuard",
+        value: {
+          attacker_id: props.explorer_id,
+          defender_id: props.structure_id,
+          relic_slot:
+            props.relic_slot === undefined
+              ? { kind: "None", value: undefined }
+              : { kind: "Some", value: props.relic_slot },
+        },
+      },
       TransactionType.ATTACK_EXPLORER_VS_GUARD,
     );
   }
@@ -1018,7 +1040,10 @@ export class EternumProvider extends EventEmitter {
         value: {
           entity_id: props.entity_id,
           relic_id: props.relic_resource_id,
-          recipient: unitVariant(props.recipient_type, ["Explorer", "StructureProduction", "StructureGuard"] as const),
+          recipient:
+            props.relic_slot === undefined
+              ? unitVariant(props.recipient_type, ["Explorer", "StructureProduction", "StructureGuard"] as const)
+              : { kind: "ArmySlot", value: props.relic_slot },
         },
       },
       TransactionType.APPLY_RELIC,

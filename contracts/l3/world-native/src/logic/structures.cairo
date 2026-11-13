@@ -465,8 +465,8 @@ pub mod StructuresLogic {
             let home = match crate::logic::structures::structure(key) {
                 Option::Some(_) => key,
                 Option::None => {
-                    let explorer = crate::logic::troops::active_explorer(
-                        ExplorerKey { game_id, explorer_id: command.entity_id }, context.timestamp, context,
+                    let explorer = crate::logic::troops::command_explorer(
+                        ExplorerKey { game_id, explorer_id: command.entity_id }, None, context.timestamp, context,
                     );
                     ResourceKey { game_id, entity_id: explorer.owner }
                 },
@@ -713,9 +713,16 @@ pub mod StructuresLogic {
                 },
                 Discovery::Rift |
                 Discovery::Beasts => { assert!(rules.day_unit_seconds != 0, "site requires expeditions"); },
-                Discovery::Ruin(chest) => {
+                Discovery::Ruin(reward) => {
                     assert!(rules.day_unit_seconds != 0, "site requires expeditions");
-                    crate::logic::lords_budget::store_site_chest(key, chest);
+                    match reward {
+                        crate::army_relics::RuinReward::Chest(chest) => crate::logic::lords_budget::store_site_chest(
+                            key, chest,
+                        ),
+                        crate::army_relics::RuinReward::Relic(relic) => crate::logic::army_relics::store_ruin(
+                            key, relic,
+                        ),
+                    }
                 },
                 Discovery::None | Discovery::Shrine | Discovery::Well | Discovery::Spire |
                 Discovery::Chest => panic!("discovery is not a structure"),

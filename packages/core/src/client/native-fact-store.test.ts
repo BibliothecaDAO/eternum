@@ -542,6 +542,7 @@ describe("declared fact absence", () => {
     } as unknown as NativeRows["ExplorerTroops"];
     expect(resolveExplorerTroops(new NativeFactStore(), army)).toBeUndefined();
     expect(resolveExplorerTroops(store, { ...army, owner: 8n })).toBeUndefined();
+    store.applyFacts([set("0x73", "ArmyDay", { game_id: 1, explorer_id: army.explorer_id, day: 0n })]);
     expect(() => resolveExplorerTroops(store, army)).toThrow("unused");
     const occupied = {
       ...slot,
@@ -757,6 +758,7 @@ describe("declared fact absence", () => {
     store.applyFacts([
       set("0x7", "Structure", structure("0x111")),
       set("0x8", "ExplorerTroops", { ...explorer, owner: 7, troops: { ...explorer.troops, count: "1" } }),
+      set("0x73", "ArmyDay", { game_id: 1, explorer_id: explorer.explorer_id, day: 0n }),
     ]);
     expect(seen.every((reason) => reason?.startsWith("INCOMPLETE_SNAPSHOT"))).toBe(true);
     expect(() => store.setSnapshot({ gameId: 1, complete: true, actor: "0x111", timestamp: 350 })).not.toThrow();
@@ -794,4 +796,24 @@ describe("declared fact absence", () => {
       "INCOMPLETE_SCOPE",
     );
   });
+});
+
+it("keys a fact by an enum field: an army's running relic of each kind, read back by that kind", () => {
+  const store = new NativeFactStore();
+  store.applyFacts([
+    {
+      model: "ArmyRelicEffect",
+      key: "0xa2",
+      value: { game_id: 1, explorer_id: 201, kind: "Ward", rank: 3, expires_at: 2_800 },
+    },
+    {
+      model: "ArmyRelicEffect",
+      key: "0xa3",
+      value: { game_id: 1, explorer_id: 201, kind: "Tome", rank: 2, expires_at: 900 },
+    },
+  ] as never);
+  expect(store.get("ArmyRelicEffect", { game_id: 1, explorer_id: 201, kind: "Ward" })?.rank).toBe(3);
+  expect(store.get("ArmyRelicEffect", { game_id: 1, explorer_id: 201, kind: "Tome" })?.expires_at).toBe(900n);
+  expect(store.get("ArmyRelicEffect", { game_id: 1, explorer_id: 201, kind: "Blade" })).toBeUndefined();
+  expect(() => store.get("ArmyRelicEffect", { game_id: 1, explorer_id: 201, kind: "Spear" as never })).toThrow();
 });

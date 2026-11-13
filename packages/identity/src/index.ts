@@ -1,5 +1,6 @@
 export * from "./account-rules";
 export * from "./mentions";
+export * from "./opening";
 export * from "./address";
 export * from "./campaigns";
 export * from "./client";

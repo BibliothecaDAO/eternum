@@ -1,5 +1,6 @@
 pub use world_test_support::tests::*;
 mod discovery_guards;
+mod expedition_spires;
 mod explore_rewards;
 mod frontier_discovery;
 mod frontier_economy;

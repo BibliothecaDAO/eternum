@@ -268,6 +268,22 @@ pub mod GamesFixture {
                 crate::relics::IRelicMapLibraryDispatcher { class_hash: classes.raid.read() }, game_id, coord,
             )
         }
+        fn reveal_relic_tiles(
+            ref self: TContractState,
+            game_id: u32,
+            coord: crate::troops::Coord,
+            count: u8,
+            game_context: crate::commands::BiomeContext,
+        ) {
+            let classes = fixture_classes(game_id);
+            crate::relics::IRelicMapDispatcherTrait::reveal_relic_tiles(
+                crate::relics::IRelicMapLibraryDispatcher { class_hash: classes.raid.read() },
+                game_id,
+                coord,
+                count,
+                game_context,
+            )
+        }
         fn reveal_relic_ring(
             ref self: TContractState,
             game_id: u32,
@@ -1939,15 +1955,27 @@ pub mod GamesFixture {
                 ledger_operator_dispatcher(), game_id, rank,
             )
         }
+    }
+    fn home_grants_dispatcher() -> crate::entry::IHomeGrantsLibraryDispatcher {
+        let state = crate::state::read();
+        let release_id = state.current_release.read();
+        assert!(release_id != 0, "shard has no release");
+        crate::entry::IHomeGrantsLibraryDispatcher {
+            class_hash: state.releases.entry(release_id).classes.bridge.read(),
+        }
+    }
+
+    #[starknet::embeddable]
+    pub impl HomeGrantsFixture<TContractState, +Drop<TContractState>> of crate::entry::IHomeGrants<TContractState> {
         fn grant_labor(
             ref self: TContractState, home: crate::entry::LaborHome, day: u64, account: starknet::ContractAddress,
         ) -> crate::entry::LaborGrant {
-            crate::entry::ILedgerOperatorDispatcherTrait::grant_labor(ledger_operator_dispatcher(), home, day, account)
+            crate::entry::IHomeGrantsDispatcherTrait::grant_labor(home_grants_dispatcher(), home, day, account)
         }
         fn labor_grant(
             self: @TContractState, home: crate::entry::LaborHome, day: u64,
         ) -> Option<crate::entry::LaborGrant> {
-            crate::entry::ILedgerOperatorDispatcherTrait::labor_grant(ledger_operator_dispatcher(), home, day)
+            crate::entry::IHomeGrantsDispatcherTrait::labor_grant(home_grants_dispatcher(), home, day)
         }
     }
     #[starknet::embeddable]

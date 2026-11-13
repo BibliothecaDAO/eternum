@@ -20,6 +20,7 @@ pub struct Explore {
 pub struct Battle {
     pub attacker_id: u64,
     pub defender_id: u64,
+    pub relic_slot: Option<u8>,
 }
 
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]
@@ -70,9 +71,8 @@ impl ExecutionContextSerde of Serde<ExecutionContext> {
     }
 }
 
-// A play reads its game and rules once, in the season class, and carries them through every library call it makes.
-// Rules never change after a game is created; the game record changes only as the last step of the play that changes
-// it (a season's close, its settlement, a full roster's readiness), so no later call in that play can see a stale copy.
+// Rules are immutable. The season refreshes the game after periodic settlement, which can end the race,
+// before dispatching the waiting command.
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]
 pub struct ActionContext {
     pub raw_root: u256,

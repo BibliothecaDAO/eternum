@@ -25,4 +25,5 @@ export const arenaCommandMask = commandMask([
   "InteractSite",
   "RefillStamina",
   "WithdrawLords",
+  "ClaimDailyQuest",
 ]);

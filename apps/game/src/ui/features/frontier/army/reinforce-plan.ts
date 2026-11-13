@@ -1,5 +1,6 @@
 import {
   configManager,
+  currentArmy,
   getBalance,
   getTroopResourceId,
   realmLearned,
@@ -44,7 +45,7 @@ export const readReinforcePlan = (
   const realmId = safeInteger(realm.entity_id);
   const held = getBalance(realmId, getTroopResourceId(troops.type, troops.tier), defaultTick, store).balance;
   if (held === undefined) return undefined;
-  const current = Number(army.troops.count / PRECISION);
+  const current = Number(currentArmy(store, army, defaultTick).troops.count / PRECISION);
   const cap = configManager.getMaxArmySize(realm.base.level, troops.tier);
   const stock = Number(BigInt(held) / PRECISION);
   const raise = readTroopRaise(store, realm, troops, roomFor({ current, cap, stock }), defaultTick);

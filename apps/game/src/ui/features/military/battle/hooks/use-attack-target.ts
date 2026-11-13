@@ -1,3 +1,4 @@
+import { useCurrentArmy } from "@/hooks/helpers/use-armies";
 import { resolveExplorerTroops } from "@bibliothecadao/eternum/troop-stamina";
 import { useTileAt } from "@/hooks/helpers/use-tile-at";
 import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
@@ -54,8 +55,7 @@ export const useAttackTargetData = (
       ? { game_id: configManager.getActiveGameId(), entity_id: attackerEntityId }
       : undefined,
   );
-  const attackerExplorer = useNativeRow(
-    "ExplorerTroops",
+  const attackerExplorer = useCurrentArmy(
     attackerEntityId !== undefined
       ? { game_id: configManager.getActiveGameId(), explorer_id: attackerEntityId }
       : undefined,
@@ -71,8 +71,7 @@ export const useAttackTargetData = (
     "Structure",
     targetEntityId !== undefined ? { game_id: configManager.getActiveGameId(), entity_id: targetEntityId } : undefined,
   );
-  const targetExplorer = useNativeRow(
-    "ExplorerTroops",
+  const targetExplorer = useCurrentArmy(
     targetEntityId !== undefined
       ? { game_id: configManager.getActiveGameId(), explorer_id: targetEntityId }
       : undefined,

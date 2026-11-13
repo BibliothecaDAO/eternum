@@ -1,3 +1,4 @@
+import { useCurrentArmy } from "@/hooks/helpers/use-armies";
 import { relicEffectLine } from "@/ui/design-system/kit/words";
 import { configManager } from "@bibliothecadao/eternum";
 import { useNativeRow } from "@/hooks/helpers/use-native-facts";
@@ -65,8 +66,7 @@ export const isRelicCompatible = (relicInfo: RelicInfoResult, recipientType: Rel
  * while that balance is not known, or with no holder.
  */
 export const useRelicPayerEssence = (holderId: ID | undefined, isArmy: boolean): number | undefined => {
-  const explorer = useNativeRow(
-    "ExplorerTroops",
+  const explorer = useCurrentArmy(
     isArmy && holderId !== undefined ? { game_id: configManager.getActiveGameId(), explorer_id: holderId } : undefined,
   );
   const payerId = isArmy ? (explorer ? Number(explorer.owner) : undefined) : holderId;

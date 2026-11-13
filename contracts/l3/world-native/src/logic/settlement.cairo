@@ -369,7 +369,7 @@ pub mod SettlementState {
             } else {
                 assert!(entitlement.pass_kind == crate::settlement::CAMPAIGN_KIND, "invalid home source");
                 self.claim_campaign_home(key, home, entitlement);
-                if entitlement.metadata_3 == 'devcon-recovery' {
+                if entitlement.metadata_3 == 'devcon-recovery' && !crate::logic::quests::enabled(key.game_id) {
                     crate::logic::entry::recover_flyer_days(key, home, entitlement);
                 }
             }
@@ -444,6 +444,14 @@ pub mod SettlementState {
         }
         fn claim_held_realm(ref self: ComponentState<TContractState>, key: EntryKey, realm_id: u32, home: u64) {
             let game_id = key.game_id;
+            let joined = self.data.settlements.home_aspects.read((game_id, home));
+            if joined != 0 {
+                let orders = crate::logic::aspects::rules(game_id).expect('missing Aspect rules');
+                let traits = crate::realms::decode_traits(self.data.realms.traits.read(realm_id));
+                assert!(
+                    crate::aspects::order_aspect(orders, traits.order) == joined, "Realm belongs to another Aspect",
+                );
+            }
             assert!(
                 self.data.settlements.held_realm_owners.read((game_id, realm_id)) == key.owner,
                 "Realm reserved for another owner",

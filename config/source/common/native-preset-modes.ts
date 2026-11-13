@@ -6,6 +6,10 @@ export const FRONTIER_ACCELERATED_PRESET_ID = 101;
 export const FRONTIER_PRESET_ID = 5;
 /** Frontier's three-times-speed Devcon season; registered separately from normal-speed seasons. */
 export const FRONTIER_DEVCON_PRESET_ID = 6;
+/** Season 1's rules; registered separately from the earlier Frontier seasons. */
+export const FRONTIER_S1_PRESET_ID = 7;
+/** Slice 1 playtests cap upper-level bane quests at City until Scouts are available. */
+export const FRONTIER_S1_DEV_PRESET_ID = 106;
 /** Immutable Frontier preset used by the committed contract fixtures. */
 export const FRONTIER_FIXTURE_PRESET_ID = 104;
 /**
@@ -22,6 +26,8 @@ const NATIVE_PRESET_MODES: Readonly<Record<number, GameType>> = {
   2: "blitz",
   [FRONTIER_PRESET_ID]: "frontier",
   [FRONTIER_DEVCON_PRESET_ID]: "frontier",
+  [FRONTIER_S1_PRESET_ID]: "frontier",
+  [FRONTIER_S1_DEV_PRESET_ID]: "frontier",
   [FRONTIER_ACCELERATED_PRESET_ID]: "frontier",
   102: "frontier",
   [FRONTIER_FIXTURE_PRESET_ID]: "frontier",

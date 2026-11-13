@@ -2,6 +2,7 @@ import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+import { useUIStore } from "@/hooks/store/use-ui-store";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useChainTimeStore } from "@/hooks/store/use-chain-time-store";
 import { useConnectionStore } from "@/hooks/store/use-connection-store";
@@ -77,7 +78,7 @@ const choose = (word: string) =>
       .click(),
   );
 
-// A realm with Ethereal I and II researched, the camera in Ethereal II.
+// A realm that has reached Ethereal I and II, the camera in Ethereal II.
 const layersShowingII = (go: MapLayers["go"]): MapLayers => ({ layers: [0, 1, 2], shown: 2, go });
 
 describe("the map's layers", () => {
@@ -151,10 +152,10 @@ describe("the map's layers", () => {
 });
 
 /**
- * Realm 7's day with per-depth ruins and `researched` layers (Ethereal I and II by default, Ethereal III locked), and its
+ * Realm 7's day with per-depth ruins and `reached` layers (Ethereal I and II by default, Ethereal III not yet), and its
  * army 201, the season's second day on the clock, so the first has clears of its own.
  */
-const chestDay = (researched = 2n) => {
+const chestDay = (reached = 2) => {
   const { store } = campBeside();
   store.applyFacts([
     {
@@ -167,7 +168,15 @@ const chestDay = (researched = 2n) => {
         preset_commitment: 0x1abn,
       },
     },
-    { model: "RealmKnowledge", key: "0xd", value: { game_id: 1, structure_id: 7, learned: researched << 48n } },
+    // enter_depth records the deepest layer the realm has reached.
+    {
+      model: "Structure",
+      key: "0x7",
+      value: (() => {
+        const realm = store.require("Structure", { game_id: 1, entity_id: 7 });
+        return { ...realm, metadata: { ...realm.metadata, deepest_depth: reached } };
+      })(),
+    },
   ] as never);
   context.store = store;
   const rules = readExpeditionRules(store, 1)!;
@@ -231,6 +240,7 @@ const armyIn = (store: NativeFactStore, rules: ExpeditionRules, today: number, d
     const tile = [...store.entries("TileOccupancy")].find(([, row]) => row.entity_id === 201n)![1];
     const key = `0x75${today}${depth}`;
     store.applyFacts([
+      { model: "ArmyDay", key: "0xad", value: { game_id: 1, explorer_id: 201, day: today } },
       { model: "TileOccupancy", key: armyTileKeys.get(store) ?? SITE_FIXTURE_ARMY_TILE_KEY, value: null },
       {
         model: "TileOccupancy",
@@ -295,7 +305,7 @@ const listRows = () =>
   ]);
 
 describe("each layer's ruin chest today, on the layer switch", () => {
-  it("opens every researched layer while nothing was cleared today, marks today's clears, and opens again tomorrow", () => {
+  it("opens every reached layer while nothing was cleared today, marks today's clears, and opens again tomorrow", () => {
     const { store, realm, rules, now, today } = chestDay();
     expect(today).toBe(1);
     discovered(store, today, false);
@@ -308,7 +318,7 @@ describe("each layer's ruin chest today, on the layer switch", () => {
       "World: chest to take today",
       "Ethereal I: chest to take today",
       "Ethereal II: chest to take today",
-      "Ethereal III: not researched",
+      "Ethereal III: not reached yet",
     ]);
 
     // Realm 7 clears today's Surface ruin: its region is the home's own, always held.
@@ -323,13 +333,13 @@ describe("each layer's ruin chest today, on the layer switch", () => {
     choose("Ethereal II");
     expect(requestLayerView).toHaveBeenCalledTimes(1);
 
-    // The day turns: tomorrow's discovery holds no clear, so every researched layer has its chest again.
+    // The day turns: tomorrow's discovery holds no clear, so every reached layer has its chest again.
     clockAt(store, expeditionDayEndsAt(rules, now) + 1);
     expect(switchMarks()).toEqual([
       "World: chest to take today",
       "Ethereal I: chest to take today",
       "Ethereal II: chest to take today",
-      "Ethereal III: not researched",
+      "Ethereal III: not reached yet",
     ]);
   });
 
@@ -349,7 +359,7 @@ describe("each layer's ruin chest today, on the layer switch", () => {
       "World: chest to take today",
       "Ethereal I: chest not known without an army there",
       "Ethereal II: chest to take today",
-      "Ethereal III: not researched",
+      "Ethereal III: not reached yet",
     ]);
 
     // A fresh snapshot of that scope never had the receipt: the same marks.
@@ -373,7 +383,7 @@ describe("each layer's ruin chest today, on the layer switch", () => {
       "World: chest to take today",
       "Ethereal I: chest taken today",
       "Ethereal II: chest to take today",
-      "Ethereal III: not researched",
+      "Ethereal III: not reached yet",
     ]);
   });
 
@@ -445,7 +455,7 @@ describe("each layer's ruin chest today, on the layer switch", () => {
       "World: chest to take today",
       "Ethereal I: chest taken today",
       "Ethereal II: chest to take today",
-      "Ethereal III: not researched",
+      "Ethereal III: not reached yet",
     ]);
   });
 
@@ -455,15 +465,15 @@ describe("each layer's ruin chest today, on the layer switch", () => {
   ])(
     "on %s before Ethereal I, the switch stays Realm / World and carries the Surface's chest and three locks",
     (_, phone) => {
-      const { store, realm, rules, today } = chestDay(0n);
+      const { store, realm, rules, today } = chestDay(0);
       discovered(store, today, false);
       context.mapView = true;
       act(() => root.render(<LayerSwitch rules={rules} realm={realm} phone={phone} />));
       expect(switchMarks()).toEqual([
         "World: chest to take today",
-        "Ethereal I: not researched",
-        "Ethereal II: not researched",
-        "Ethereal III: not researched",
+        "Ethereal I: not reached yet",
+        "Ethereal II: not reached yet",
+        "Ethereal III: not reached yet",
       ]);
       expect(host.querySelector("[aria-haspopup]")).toBeNull();
 
@@ -573,3 +583,29 @@ const ruinPayout = (rules: ExpeditionRules, now: number, today: number, depth: n
     }),
   ];
 };
+
+it("returns from the shared Deep to the watched realm's current private day", () => {
+  const { store, realm, today } = chestDay(3);
+  store.applyFacts([
+    {
+      model: "SettlementRules",
+      key: "0x2",
+      value: { ...store.require("SettlementRules", { game_id: 1 }), spacing: 100 },
+    },
+  ] as never);
+  const rules = readExpeditionRules(store, 1)!;
+  context.mapView = true;
+  useUIStore.setState({ cameraTargetHex: { col: 50, row: 350 } });
+  try {
+    act(() => root.render(<LayerSwitch rules={rules} realm={realm} />));
+    const open = () => act(() => host.querySelector<HTMLButtonElement>("[aria-haspopup]")!.click());
+    open();
+    choose("World");
+    expect(requestLayerView).toHaveBeenLastCalledWith({ col: 650, row: today * 400 + 50 });
+    open();
+    choose("Ethereal II");
+    expect(requestLayerView).toHaveBeenLastCalledWith({ col: 650, row: today * 400 + 250 });
+  } finally {
+    useUIStore.setState({ cameraTargetHex: null });
+  }
+});

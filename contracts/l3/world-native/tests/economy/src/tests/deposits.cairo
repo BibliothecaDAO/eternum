@@ -44,7 +44,9 @@ fn credit_cancel_rotation_and_season_sweep_have_one_irreversible_outcome() {
         super::registrar::execute_in_game(
             d,
             other_game,
-            crate::commands::Command::SettleSeason(crate::realms::SettleSeason { selected_realm: Some(1) }),
+            crate::commands::Command::SettleSeason(
+                crate::realms::SettleSeason { selected_realm: Some(1), aspect: None },
+            ),
             350,
         ),
     );
@@ -343,4 +345,29 @@ fn mixed_sweep_keeps_both_balances_game_pinned_until_applied() {
             d.games, || crate::state::read().relics.lords_withdrawals.read(88205).is_none(),
         ),
     );
+}
+
+#[test]
+#[feature("safe_dispatcher")]
+fn season_one_rejects_lords_commands_and_cannot_configure_deposits() {
+    let (d, game_id) = super::registrar::setup_open_frontier_preset("season-one", 1);
+    let (release, preset) = super::play_fixture::pins(d.games, game_id);
+    super::play_fixture::caller(d.games, d.actor, 360);
+    for command in array![
+        Command::OpenRelicChest(
+            crate::relics::OpenChest { explorer_id: 1, coord: crate::troops::Coord { alt: false, x: 0, y: 0 } },
+        ),
+        Command::RefillStamina(crate::relics::RefillStamina { explorer_id: 1, amount: 1 }),
+        Command::WithdrawLords(crate::relics::WithdrawLords { structure_id: 1, amount: 1 }),
+    ] {
+        super::assert_entry_refusal(
+            d, game_id, release, preset, super::play_fixture::encode(command), "command disabled",
+        );
+    }
+    start_cheat_caller_address(d.games, super::authority());
+    let source = DepositSource {
+        chain: 'SN_TEST', ledger: 'ledger'.try_into().unwrap(), signer: key().public_key, epoch: 0,
+    };
+    assert!(ILedgerOperatorSafeDispatcher { contract_address: d.games }.configure_deposits(game_id, source).is_err());
+    assert!(snforge_std::interact_with_state(d.games, || crate::logic::deposits::source(game_id)).is_none());
 }

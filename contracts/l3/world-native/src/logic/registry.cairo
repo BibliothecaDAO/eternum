@@ -21,9 +21,14 @@ pub mod RegistryLogic {
     component!(path: GuildState, storage: guilds, event: GuildEvent);
     #[abi(embed_v0)]
     impl Guilds = GuildState::GuildsImpl<ContractState>;
+    component!(path: crate::logic::aspects::AspectState, storage: aspects, event: AspectEvent);
+    #[abi(embed_v0)]
+    impl Aspects = crate::logic::aspects::AspectState::AspectsImpl<ContractState>;
     #[storage]
     #[allow(starknet::colliding_storage_paths)]
     struct Storage {
+        #[substorage(v0)]
+        aspects: crate::logic::aspects::AspectState::Storage,
         #[substorage(v0)]
         guilds: GuildState::Storage,
         #[substorage(v0)]
@@ -34,6 +39,8 @@ pub mod RegistryLogic {
     #[event]
     #[derive(Drop, starknet::Event)]
     pub enum Event {
+        AspectEvent: crate::logic::aspects::AspectState::Event,
+        #[substorage(v0)]
         GuildEvent: GuildState::Event,
         GameEvent: crate::logic::game::Event,
         ReleaseEvent: ReleaseState::Event,

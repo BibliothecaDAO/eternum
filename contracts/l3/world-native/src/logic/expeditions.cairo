@@ -23,7 +23,7 @@ pub fn create_site(key: crate::resources::ResourceKey, guards: Span<crate::troop
 }
 
 pub fn clear_rewarded_site(key: crate::resources::ResourceKey, site: ExpeditionSite, result: SiteClear, depth: u8) {
-    if site.category != crate::taxonomy::RUIN_CATEGORY {
+    if site.category != crate::taxonomy::RUIN_CATEGORY || crate::logic::army_relics::enabled(key.game_id) {
         clear_site(key, result);
         return;
     }
@@ -73,7 +73,7 @@ pub fn depth_rules_at(game_id: u32, coord: Coord) -> DepthRules {
 }
 
 pub fn depth_at(game_id: u32, coord: Coord) -> u8 {
-    let spacing = crate::logic::settlement::rules(game_id).spacing;
+    let spacing = crate::logic::preset_record::for_game(game_id).settlement_spacing.read();
     (coord.y / spacing % 4).try_into().unwrap()
 }
 
@@ -146,6 +146,13 @@ pub fn cache_ruin_depths(key: ExpeditionDiscoveryKey) {
 }
 
 pub fn record_discovery(key: ExpeditionDiscoveryKey, result: crate::discovery::Discovery) {
+    if result != crate::discovery::Discovery::None {
+        let home = crate::resources::ResourceKey { game_id: key.game_id, entity_id: key.structure_id };
+        crate::logic::quests::record(home, crate::quests::FINDS, 1, starknet::get_block_timestamp());
+        if let crate::discovery::Discovery::Ruin(_) = result {
+            crate::logic::quests::record(home, crate::quests::RELICS, 1, starknet::get_block_timestamp());
+        }
+    }
     let previous = discovery(key).unwrap_or(ExpeditionDiscovery { empty_reveals: 0, ruin_cleared: false });
     cache_ruin_depths(key);
     let next = ExpeditionDiscovery {

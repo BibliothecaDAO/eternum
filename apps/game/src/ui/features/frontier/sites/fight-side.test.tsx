@@ -25,7 +25,7 @@ const lines = (page: Document) =>
 describe("what a fight costs a side, under its bar", () => {
   const lost = (page: Document) => lines(page).at(-1);
 
-  it("reads the owner's Blightglow Rift: the army's loss in red, the guard's in gold", () => {
+  it("renders the archived 3 November Blightglow result: the army's loss in red, the guard's in gold", () => {
     const army = drawn(794, 193, "ours");
     const guard = drawn(1_400, 1_033, "theirs");
     expect(lines(army)).toEqual(["794 →", "193", "−601 · 76% lost"]);

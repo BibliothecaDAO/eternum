@@ -1,15 +1,10 @@
 import { dayOf } from "./days";
 import type { NativeFactStore } from "../client/native-fact-store";
-import {
-  nativeReleaseConstants,
-  type NativeKeys,
-  type NativeRows,
-} from "../../../../contracts/l3/world-native/schema/client.gen";
-import { StructureType, TileOccupier } from "@bibliothecadao/types";
+import { nativeReleaseConstants, type NativeRows } from "../../../../contracts/l3/world-native/schema/client.gen";
+import { StructureType } from "@bibliothecadao/types";
 import { entityHomeNamespace } from "./entity-home";
 import { type ExpeditionRules, expeditionRealmSite, seasonDay } from "./expeditions";
 import { regionInGameSyncScope } from "../sync/model-manifest";
-import { researchedDepth } from "./realm-research";
 
 type RuinReader = Pick<NativeFactStore, "get" | "inGame">;
 
@@ -80,7 +75,7 @@ const NO_HISTORY: RuinHistory = { cleared: new Set(), complete: false };
 export function ruinChestsToday(
   store: ChestReader,
   rules: ExpeditionRules,
-  realm: Pick<NativeRows["Structure"], "game_id" | "entity_id">,
+  realm: Pick<NativeRows["Structure"], "game_id" | "entity_id" | "metadata">,
   nowSeconds: number,
   history: RuinHistory = NO_HISTORY,
 ): RuinChests | null {
@@ -101,7 +96,7 @@ export function ruinChestsToday(
   // A history that shows no clear while the discovery row has one lags the facts: it proves nothing.
   const historyProves = history.complete && !(discovery?.ruin_cleared === true && history.cleared.size === 0);
   const held = depthRegionHeld(store, rules, home, nowSeconds);
-  const deepest = researchedDepth(store, realm.game_id, realm.entity_id) ?? 0;
+  const deepest = realm.metadata.deepest_depth;
   const chest = (depth: number): RuinChest => {
     if (depth > deepest) return "locked";
     if (claimed.has(depth) || history.cleared.has(depth)) return "claimed";
@@ -120,17 +115,6 @@ const depthRegionHeld = (store: ChestReader, rules: ExpeditionRules, home: numbe
     // Today's site is on the Surface; each depth lies a region further down the same column.
     regionInGameSyncScope(scope, { x: site.col, y: site.row + depth * rules.spacing });
 };
-
-/** Occupancy as commands see it: a vanished ruin leaves walkable terrain without erasing the raw facts. */
-export function activeTileOccupancy(
-  store: RuinReader,
-  key: NativeKeys["TileOccupancy"],
-): NativeRows["TileOccupancy"] | undefined {
-  const occupancy = store.get("TileOccupancy", key);
-  if (occupancy?.category !== TileOccupier.Ruin) return occupancy;
-  const site = store.get("ExpeditionSite", { game_id: key.game_id, entity_id: occupancy.entity_id });
-  return site && ruinDisappeared(store, site) ? undefined : occupancy;
-}
 
 /** Whole LORDS available now, releasing yesterday's holds when the calendar has advanced. */
 export function availableRuinLords(store: Pick<NativeFactStore, "get">, gameId: number, timestamp: number): bigint {

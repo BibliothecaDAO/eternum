@@ -6,6 +6,8 @@ import { afterEach, expect, it, vi } from "vitest";
 
 const state = vi.hoisted(() => ({
   settled: false,
+  /** What each founding asked the chain for: settle_season's props, the signer left out. */
+  founded: [] as { aspect?: number; selectedRealm?: number }[],
   navigate: vi.fn(),
   milestone: vi.fn(),
   entry: {
@@ -45,7 +47,19 @@ vi.mock("./selected-world-entity-wait", () => ({
   isSelectedWorldEntityWaitAborted: () => false,
 }));
 vi.mock("@/services/settlement", () => ({
-  submitSettlement: async () => {
+  submitSettlement: async (
+    _context: unknown,
+    submit: (client: { setup: { systemCalls: { settle_season: (props: never) => Promise<void> } } }) => Promise<void>,
+  ) => {
+    await submit({
+      setup: {
+        systemCalls: {
+          settle_season: async ({ aspect, selectedRealm }: { aspect?: number; selectedRealm?: number }) => {
+            state.founded.push({ aspect, selectedRealm });
+          },
+        },
+      },
+    });
     state.settled = true;
   },
 }));
@@ -54,6 +68,7 @@ vi.mock("@/ui/layouts/game-entry-timeline", () => ({ markGameEntryMilestone: sta
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useIdentitySessionStore } from "@/hooks/context/identity-session";
 import { GameEntryModal } from "./game-entry-modal";
+import { FRONTIER_S1_PRESET_ID } from "../../../../../../config/source/common/native-preset-modes";
 
 afterEach(() => {
   vi.useRealTimers();
@@ -130,5 +145,35 @@ it("opens a returning player's session on the map: only the entry that created t
     expect(enteredAt()).toBe("/g/0xa1/8/map");
   } finally {
     await close();
+  }
+});
+
+it("asks a Season 1 free home for its Aspect, founds nothing without a tap, and founds into the one tapped", async () => {
+  state.settled = false;
+  state.founded = [];
+  state.entry = { ...state.entry, preset_id: FRONTIER_S1_PRESET_ID };
+  const { host, close } = await openEntry("settle");
+  try {
+    const cards = [...host.querySelectorAll<HTMLButtonElement>(".aspect-picker__card")];
+    expect(cards.map((card) => card.getAttribute("aria-label"))).toEqual([
+      "Join Might",
+      "Join Harmony",
+      "Join Chaos",
+      "Join Guile",
+    ]);
+    expect(state.founded).toEqual([]);
+    expect(state.navigate).not.toHaveBeenCalled();
+    // No other verb stands beside the cards: the tap is the founding.
+    expect([...host.querySelectorAll("button")].some((button) => button.textContent === "Create your realm")).toBe(
+      false,
+    );
+
+    await act(async () => cards[2]!.click());
+    await act(async () => vi.advanceTimersByTimeAsync(100));
+    expect(state.founded).toEqual([{ aspect: 3, selectedRealm: undefined }]);
+    expect(state.navigate).toHaveBeenCalledTimes(1);
+  } finally {
+    await close();
+    state.entry = { ...state.entry, preset_id: 5 };
   }
 });

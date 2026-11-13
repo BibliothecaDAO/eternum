@@ -2,6 +2,7 @@ export * from "./action-paths";
 export * from "./action-highlight-descriptors";
 export * from "./army";
 export * from "./army-help";
+export * from "./army-relics";
 export * from "./banks";
 export * from "./biome";
 export * from "./buildings";
@@ -46,3 +47,6 @@ export * from "./frontier-beast";
 export * from "./ruins";
 
 export * from "./skill-points";
+
+export * from "./daily-quest";
+export { currentArmy, currentResourceWeight } from "./deep";

@@ -1,10 +1,20 @@
 import { homeIcon, homeKind } from "./home-icons";
 import { readRealmSkin, type RealmSkin } from "@/three/structures/realm-skins";
 import type { FrontierSpecies } from "@/three/structures/frontier-beast";
-import { BuildingType, getProducedResource, StructureType, type StructureNamingMode } from "@bibliothecadao/types";
+import {
+  BuildingType,
+  dailyQuests,
+  getProducedResource,
+  StructureType,
+  type StructureNamingMode,
+} from "@bibliothecadao/types";
 import { frontierBeast, isGuardedSite, nativeGameModeOf, readFrontierBeast } from "@bibliothecadao/eternum";
 import { safeInteger, type NativeFactStore } from "@bibliothecadao/eternum/game-client";
-import type { NativeRows, NativeStoryVariant } from "../../../../../contracts/l3/world-native/schema/client.gen";
+import {
+  nativeQuestConstants as quest,
+  type NativeRows,
+  type NativeStoryVariant,
+} from "../../../../../contracts/l3/world-native/schema/client.gen";
 import { iconDefinition, type IconMeaning, resourceMeaning } from "./icon-meaning";
 
 /** Every story the game can emit (the schema's story variants, a fight and a raid), by the act it tells. */
@@ -160,3 +170,18 @@ export function rewardChestMeaning(band?: number, opened = false): IconMeaning {
   if (!Number.isInteger(band) || band < 0 || band > 4) throw new Error(`Unknown reward chest band: ${band}`);
   return `reward-chest-${band}${opened ? "-opened" : ""}` as IconMeaning;
 }
+
+/** A daily quest's id, as the quest catalog numbers it. */
+export type DailyQuestId = (typeof dailyQuests)[number]["id"];
+
+/** Each daily quest by what it asks: the beast it hunts, the site it finds, the act it counts. */
+const questMeanings = {
+  [quest.HUNT]: "beast-cyclops",
+  [quest.CAMPS]: "beast-troll",
+  [quest.RIFTS]: "beast-dark-fey",
+  [quest.RELICS]: "ruin",
+  [quest.VETERANS]: "upgrade",
+  [quest.FINDS]: "explore",
+  [quest.REVEALS]: "map",
+} satisfies Record<DailyQuestId, IconMeaning>;
+export const questMeaning = (quest: DailyQuestId): IconMeaning => questMeanings[quest];

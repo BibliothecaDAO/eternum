@@ -1,3 +1,4 @@
+import { useCurrentArmy } from "@/hooks/helpers/use-armies";
 import { resolveExplorerTroops } from "@bibliothecadao/eternum/troop-stamina";
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
@@ -49,7 +50,7 @@ export const useArmyEntityDetail = ({ armyEntityId }: UseArmyEntityDetailOptions
   const timestamp = useCurrentDefaultTick();
   const userAddress = useAccountAddress();
   const [isLoadingDelete, setIsLoadingDelete] = useState(false);
-  const explorer = useNativeRow("ExplorerTroops", {
+  const explorer = useCurrentArmy({
     game_id: configManager.getActiveGameId(),
     explorer_id: armyEntityId,
   });

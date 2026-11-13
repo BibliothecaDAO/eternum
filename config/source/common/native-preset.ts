@@ -39,6 +39,18 @@ export interface NativePreset {
   commandMask: bigint;
   settlementMode: "Single" | "Triple";
   spacing: number;
+  /** One Aspect per canonical Order, in Order-id order; empty disables teams. */
+  orderAspects: readonly number[];
+  startingArmyCount: number;
+  worldBanes: null | {
+    chanceStep: number;
+    quorumPercent: number;
+    beastPercent: number;
+    staminaPercent: number;
+    productionPercent: number;
+    questCounts: readonly number[];
+  };
+  dailyQuest: null | { baseCounts: readonly number[]; labor: number; essence: number; bonusPercent: number };
   /** The unit a season's days are counted in (Frontier rules §9): a day lasts 2 to 6 units; 0 in modes without days. */
   dayUnitSeconds: number;
   board: null | {
@@ -60,6 +72,16 @@ export interface NativePreset {
   };
   /** One price per research row tier above common; rows are research.cairo's ROW_* ids. */
   research: readonly { row: number; tier: number; essenceCost: number; laborCost: number }[];
+  deep: null | {
+    foundation: { x: number; y: number };
+    quarry: { x: number; y: number };
+    altar: { x: number; y: number };
+    beastCount: number;
+    lossPerTick: number;
+    quarryPerTick: number;
+    altarPerTick: number;
+    altarThreshold: number;
+  };
   discovery: null | {
     beastsBps: number;
     campBps: number;
@@ -80,6 +102,22 @@ export interface NativePreset {
     legendaryXp: number;
   };
   labor: null | { amount: number; campaignEssence: number; goldenAmount: number; goldenEssence: number };
+  race?: {
+    seasonDays: number;
+    gloryPerTick: number;
+    heightPerTick: number;
+    stageHeight: number;
+    clearMistPercent: number;
+    secondWindPercent: number;
+    paleMoonPercent: number;
+    spoilsPercent: number;
+    positions: readonly [
+      readonly [number, number],
+      readonly [number, number],
+      readonly [number, number],
+      readonly [number, number],
+    ];
+  };
   chests: null | {
     poolBps: number;
     topN: number;

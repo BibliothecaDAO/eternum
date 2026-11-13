@@ -90,6 +90,8 @@ pub fn definition(blitz: bool) -> PresetDefinition {
             upgrades: array![crate::upgrades::UpgradeRecipe { costs: array![].span() }].span(),
         },
         settlement: SettlementPreset {
+            order_aspects: array![].span(),
+            starting_armies: 0,
             mode: if blitz {
                 SettlementMode::Triple
             } else {
@@ -112,6 +114,10 @@ pub fn definition(blitz: bool) -> PresetDefinition {
             },
         },
         economy: EconomyPreset {
+            quests: None,
+            banes: None,
+            race: None,
+            deep: None,
             labor: None,
             progression: None,
             discovery: None,
@@ -213,8 +219,8 @@ pub /// Open entry draws starting troops from the biome table, which a fixed-ros
     preset.rules.entry_rule = crate::rules::ENTRY_OPEN;
     preset.settlement.realms = super::settlement::grants_for(crate::rules::ENTRY_OPEN);
 }
-pub // The expedition preset uses seeded day bags.
- fn expedition_preset() -> PresetDefinition {
+// The expedition preset uses seeded day bags.
+pub fn expedition_preset() -> PresetDefinition {
     let mut preset = definition(true);
     open_entry(ref preset);
     preset.rules.command_mask = preset.rules.command_mask
@@ -259,7 +265,10 @@ pub fn expedition_home(d: super::Deployment) -> (u32, PresetDefinition, u8) {
     );
     assert!(
         execute_in_game(
-            d, game_id, Command::SettleSeason(crate::realms::SettleSeason { selected_realm: Some(1) }), 350,
+            d,
+            game_id,
+            Command::SettleSeason(crate::realms::SettleSeason { selected_realm: Some(1), aspect: None }),
+            350,
         ),
     );
     let guards = IGuardsDispatcher { contract_address: d.games };
@@ -354,7 +363,9 @@ fn discovery_root(
         let raw_root: u256 = sample.into();
         let mut root = raw_root;
         let seed = crate::random::game_root(ref root, game_id);
-        if crate::discovery::frontier(rules, 0, 0, 0, empty_reveals, chest, seed) == expected {
+        if crate::discovery::frontier(
+            rules, 0, 0, 0, 100, empty_reveals, chest.map(|value| crate::army_relics::RuinReward::Chest(value)), seed,
+        ) == expected {
             return raw_root;
         }
     }
@@ -496,7 +507,10 @@ fn assert_capture_at(
     super::play_fixture::reserve_fixture_homes(d.games, game_id, d.actor);
     assert!(
         execute_in_game(
-            d, game_id, Command::SettleSeason(crate::realms::SettleSeason { selected_realm: Some(1) }), opening,
+            d,
+            game_id,
+            Command::SettleSeason(crate::realms::SettleSeason { selected_realm: Some(1), aspect: None }),
+            opening,
         ),
     );
     let home = ResourceKey { game_id, entity_id: 1 };
@@ -619,7 +633,9 @@ fn assert_capture_at(
     let camp_reward = Some(
         crate::resources::ResourceAmount { resource_type: crate::resources::LABOR, amount: camp_credit },
     );
-    let attack = Command::BattleGuard(crate::commands::Battle { attacker_id: explorer_id, defender_id: camp_id });
+    let attack = Command::BattleGuard(
+        crate::commands::Battle { attacker_id: explorer_id, defender_id: camp_id, relic_slot: None },
+    );
     let mut payout_events = snforge_std::spy_events();
     assert!(execute_in_game(d, game_id, attack, capture_at));
     assert_site_removed(d, camp);
@@ -691,7 +707,9 @@ fn assert_capture_at(
         execute_in_game(
             d,
             game_id,
-            Command::BattleGuard(crate::commands::Battle { attacker_id: explorer_id, defender_id: mine_id }),
+            Command::BattleGuard(
+                crate::commands::Battle { attacker_id: explorer_id, defender_id: mine_id, relic_slot: None },
+            ),
             capture_at + 1,
         ),
     );
@@ -913,7 +931,10 @@ pub fn setup_frontier_chests_with_preset(
     super::play_fixture::reserve_fixture_homes(d.games, game_id, d.actor);
     assert!(
         execute_in_game(
-            d, game_id, Command::SettleSeason(crate::realms::SettleSeason { selected_realm: Some(1) }), 350,
+            d,
+            game_id,
+            Command::SettleSeason(crate::realms::SettleSeason { selected_realm: Some(1), aspect: None }),
+            350,
         ),
     );
     let home = ResourceKey { game_id, entity_id: 1 };
@@ -952,7 +973,9 @@ pub fn assert_zero_pool_never_funds_a_ruin_or_payout_over_a_day() {
         !execute_in_game(
             d,
             game_id,
-            Command::BattleGuard(crate::commands::Battle { attacker_id: key.explorer_id, defender_id: ruin.entity_id }),
+            Command::BattleGuard(
+                crate::commands::Battle { attacker_id: key.explorer_id, defender_id: ruin.entity_id, relic_slot: None },
+            ),
             361,
         ),
     );
@@ -971,18 +994,10 @@ pub // Any chest a draw can carry; its tier and amount never change the draw.
 }
 pub const CHEST: SiteChest = SiteChest { tier: 3, amount: 500, reservation_day: 0 };
 pub fn strong_frontier_army(d: super::Deployment, game_id: u32, key: ExplorerKey) -> crate::troops::ExplorerTroops {
+    assert_eq!(key.game_id, game_id);
     let mut army = GameState { contract_address: d.games }.resolved_explorer(key).unwrap();
     army.troops.count = 100000 * RESOURCE_PRECISION;
     super::resource_commands::set_explorer_fixture(d.games, key, army);
-    start_cheat_caller_address(d.games, d.games);
-    IResourceOperationsDispatcher { contract_address: d.games }
-        .change_explorer_capacity(
-            ResourceKey { game_id, entity_id: key.explorer_id },
-            99999 * RESOURCE_PRECISION,
-            true,
-            crate::commands::resource_context(crate::tests::context(d.games, game_id)),
-        );
-    stop_cheat_caller_address(d.games);
     army
 }
 pub fn place_ruin(d: super::Deployment, game_id: u32, coord: crate::troops::Coord, chest: SiteChest) -> ResourceKey {
@@ -993,7 +1008,7 @@ pub fn place_ruin(d: super::Deployment, game_id: u32, coord: crate::troops::Coor
             game_id,
             1,
             coord,
-            crate::discovery::Discovery::Ruin(chest),
+            crate::discovery::Discovery::Ruin(crate::army_relics::RuinReward::Chest(chest)),
             123,
             360,
             crate::commands::action_context(context),
@@ -1010,7 +1025,13 @@ pub fn reveal_ruin(
     d: super::Deployment, key: ExplorerKey, rules: crate::expeditions::FrontierDiscoveryRules, timestamp: u64,
 ) -> (ResourceKey, u8) {
     let army = GameState { contract_address: d.games }.resolved_explorer(key).unwrap();
-    let root = discovery_root(key.game_id, rules, 0, Some(any_chest()), crate::discovery::Discovery::Ruin(any_chest()));
+    let root = discovery_root(
+        key.game_id,
+        rules,
+        0,
+        Some(any_chest()),
+        crate::discovery::Discovery::Ruin(crate::army_relics::RuinReward::Chest(any_chest())),
+    );
     for direction in 0_u8..6 {
         let tile = crate::geometry::tile_key(key.game_id, crate::geometry::neighbor(army.coord, direction));
         let unseen = snforge_std::interact_with_state(d.games, || crate::logic::map::tile(tile).is_none());
@@ -1070,13 +1091,17 @@ pub fn setup_open_frontier_duration(name: ByteArray, duration: u64) -> (super::D
     create_open_frontier(preset, duration)
 }
 
-fn create_open_frontier(preset: PresetDefinition, duration: u64) -> (super::Deployment, u32) {
+pub fn create_open_frontier(preset: PresetDefinition, duration: u64) -> (super::Deployment, u32) {
     let d = setup();
     registry(d).register_preset(1, preset);
     let game_id = registry(d)
         .create_game(
             CreateGameParams { start_main_at: 360, end_grace_seconds: 0, duration_seconds: duration, ..params(false) },
         );
+    if preset.economy.race.is_some() {
+        initialize_race_catalogue(d);
+        return (d, game_id);
+    }
     snforge_std::interact_with_state(
         d.games,
         || {
@@ -1088,6 +1113,23 @@ fn create_open_frontier(preset: PresetDefinition, duration: u64) -> (super::Depl
         },
     );
     (d, game_id)
+}
+
+fn initialize_race_catalogue(d: super::Deployment) {
+    start_cheat_caller_address(d.games, super::authority());
+    let mut first = 0_u32;
+    while first < crate::realms::CANONICAL_REALM_COUNT {
+        let end = core::cmp::min(first + 128, crate::realms::CANONICAL_REALM_COUNT);
+        let mut traits = array![];
+        for index in first..end {
+            traits.append(0x4000001 + (index % 16) * 0x400000);
+        }
+        crate::realms::ISeasonRealmsDispatcherTrait::initialize_realm_traits(
+            crate::realms::ISeasonRealmsDispatcher { contract_address: d.games }, first + 1, traits.span(),
+        );
+        first = end;
+    }
+    stop_cheat_caller_address(d.games);
 }
 
 

@@ -9,19 +9,23 @@ import { requestOrderAt } from "@/three/scenes/worldmap-order-request";
 import { Icon } from "@/ui/design-system/icon";
 import { HudButton, HudChip, HudCost, HudRow, HudSheet } from "@/ui/design-system/kit/hud-elements";
 import { costLine } from "@/ui/design-system/kit/price-faces";
-import { ARMY, dayLeft, MOVE, RESEARCH, depthName, SPIRE_WORDS, STAMINA } from "@/ui/design-system/kit/words";
+import { ARMY, dayLeft, MOVE, depthName, SPIRE_WORDS, STAMINA } from "@/ui/design-system/kit/words";
 import { toast } from "@/ui/features/event-feed/notify";
 import {
   armyAtItsSpire,
+  type FoundSpire,
   configManager,
   entityMapPosition,
   expeditionDayEndsAt,
+  expeditionDepth,
   expeditionSpires,
+  knowsSpireLore,
+  nextSpireOdds,
+  realmSpireToday,
   isAtExpeditionSpire,
   isViewerOwner,
   readExpeditionRules,
 } from "@bibliothecadao/eternum";
-import type { NativeRows } from "@bibliothecadao/eternum/game-client";
 import { formatHeldAgainst } from "@bibliothecadao/types";
 import type { Account } from "starknet";
 
@@ -32,14 +36,13 @@ import { useApproachTile } from "./sites/approach";
 
 const SPIRE_MODELS = ["ArmySlot", "ExplorerTroops", "Structure", "RealmKnowledge", "TileOccupancy"] as const;
 
-type Spire = { col: number; row: number; deepest: number; realm: NativeRows["Structure"] };
+type Spire = FoundSpire;
 
 /**
- * The lit spire on the tile the selection names, with its realm; null otherwise. An army selected on or beside its
+ * The spire found today on the tile the selection names, with its realm; null otherwise. An army selected on or beside its
  * spire is the army's panel, like an army on any site (owner, 28 October 2026: tapping a tile with his army on it selects
  * the army, whatever site is under it): its spire's card opens from Spire on that panel (SpireButton), or a tap on the
- * spire's tile. Research draws a spire by rule and no occupancy marks it, so it is found from the rules the map draws it
- * by.
+ * spire's tile. A spire is the one its realm found today on that layer (ExpeditionSpire).
  */
 export const useSelectedSpire = (): Spire | null => {
   const { setup } = useGame();
@@ -65,6 +68,37 @@ export const useArmyAtItsSpire = (explorerId: number): Spire | null => {
 };
 
 /**
+ * The odds that the realm's next reveal on an army's layer finds the day's spire there (rising with each reveal, so the
+ * last finds it), while the realm knows Spire lore and has not found it yet; null otherwise, and in the Deep, which has
+ * no spire.
+ */
+const useArmySpireOdds = (explorerId: number): number | null => {
+  const { setup } = useGame();
+  const now = useCurrentBlockTimestamp();
+  useNativeRevision(SPIRE_ODDS_MODELS);
+  const gameId = configManager.getActiveGameId();
+  const rules = readExpeditionRules(setup.store, gameId);
+  const army = setup.store.get("ExplorerTroops", { game_id: gameId, explorer_id: explorerId });
+  const tile = army && setup.store.entityOccupancy(gameId, explorerId);
+  const realm = army && setup.store.get("Structure", { game_id: gameId, entity_id: army.owner });
+  if (!rules || !tile || !realm || !knowsSpireLore(setup.store, gameId, realm.entity_id)) return null;
+  const depth = expeditionDepth(rules, { y: tile.row });
+  return depth < 3 ? nextSpireOdds(realmSpireToday(setup.store, realm, depth, now)) : null;
+};
+
+const SPIRE_ODDS_MODELS = ["ExpeditionSpire", "ExplorerTroops", "RealmKnowledge", "TileOccupancy"] as const;
+
+/** On an army's panel, while its realm looks for the day's spire on the army's layer: the next reveal's odds. */
+export const SpireOdds = ({ explorerId }: { explorerId: number }) => {
+  const odds = useArmySpireOdds(explorerId);
+  return odds === null ? null : (
+    <HudChip icons={[reachMark(1)]} label={SPIRE_WORDS.title}>
+      {SPIRE_WORDS.odds(odds)}
+    </HudChip>
+  );
+};
+
+/**
  * The way from an army's panel to its spire's card, while the army stands on or beside the spire: the army stays
  * selected and the card acts for it, as a tap on the spire's tile does.
  */
@@ -85,34 +119,20 @@ export const SpireButton = ({ explorerId, spire }: { explorerId: number; spire: 
 
 /**
  * A spire's card, whatever the player brought to it. Another realm's says so. The player's own names the army it acts
- * for (the selected one, else one standing beside it) and offers that army each depth its realm has researched: the
- * landing's availability, then Enter, the one step to go. It says
- * that entering keeps the army there for the rest of the day, since no command brings it back up; the next depth
- * points at its research; an army away from the spire gets the move beside it.
+ * for (the selected one, else one standing beside it) and offers that army the one layer the spire leads down to: Enter,
+ * the one step to go. It says that entering keeps the army there for the rest of the day, since no command brings it
+ * back up; an army away from the spire on its layer gets the move beside it.
  */
-export const RealmSpireSheet = ({
-  spire,
-  onResearch,
-  onClose,
-}: {
-  spire: Spire;
-  /** Opens Research, where the next depth is bought. */
-  onResearch: () => void;
-  onClose: () => void;
-}) => {
+export const RealmSpireSheet = ({ spire, onClose }: { spire: Spire; onClose: () => void }) => {
   const own = isViewerOwner(spire.realm.owner, useAccountAddress());
   return (
     <HudSheet label={SPIRE_WORDS.title} onClose={onClose}>
-      {own ? (
-        <OwnSpire spire={spire} onResearch={onResearch} />
-      ) : (
-        <p className="text-hud-body text-hud-ink">{SPIRE_WORDS.foreign}</p>
-      )}
+      {own ? <OwnSpire spire={spire} /> : <p className="text-hud-body text-hud-ink">{SPIRE_WORDS.foreign}</p>}
     </HudSheet>
   );
 };
 
-const OwnSpire = ({ spire, onResearch }: { spire: Spire; onResearch: () => void }) => {
+const OwnSpire = ({ spire }: { spire: Spire }) => {
   const { setup, account } = useGame();
   const { store, systemCalls } = setup;
   const selectedId = useUIStore((state) => state.entityActions.selectedEntityId);
@@ -123,31 +143,23 @@ const OwnSpire = ({ spire, onResearch }: { spire: Spire; onResearch: () => void 
   const rules = readExpeditionRules(store, gameId);
   if (!rules) throw new Error("A spire stands only in an expedition game");
   const at = (army: DockArmy) => entityMapPosition(store, gameId, army.explorerId);
+  const onItsLayer = (army: DockArmy) => (army.ethereal ?? 0) === spire.depth;
   const actor =
     selectedId === null
-      ? armies.find((army) => isAtExpeditionSpire(spire, at(army)))
+      ? armies.find((army) => onItsLayer(army) && isAtExpeditionSpire(spire, at(army)))
       : armies.find((army) => army.explorerId === selectedId);
   const position = actor && at(actor);
-  const depthNow = actor?.ethereal ?? 0;
-  const beside = position !== undefined && depthNow === 0 && isAtExpeditionSpire(spire, position);
-  const approach = useOrderAt(useApproachTile(spire, actor !== undefined && depthNow === 0 && !beside));
+  const sameLayer = actor !== undefined && onItsLayer(actor);
+  const beside = position !== undefined && sameLayer && isAtExpeditionSpire(spire, position);
+  const approach = useOrderAt(useApproachTile(spire, sameLayer && !beside));
+  const below = (spire.depth + 1) as 1 | 2 | 3;
 
-  const depths = ([1, 2, 3] as const).filter((depth) => depth <= spire.deepest);
-  const next = ([1, 2, 3] as const).find((depth) => depth === spire.deepest + 1);
-  const choice = (depth: 1 | 2 | 3) => {
-    if (!actor || !position || !beside) return { why: null, open: false };
-    // enter_depth lands the army straight below where it stands, one region down per depth.
-    const landing = { game_id: gameId, alt: false, col: position.x, row: position.y + depth * rules.spacing };
-    if (store.get("TileOccupancy", landing)) return { why: SPIRE_WORDS.landingTaken, open: false };
-    return { why: null, open: true };
-  };
-
-  const enter = (army: DockArmy, depth: number) =>
+  const enter = (army: DockArmy) =>
     sendOnce("army", army.explorerId, { order: "move" }, () =>
       systemCalls.enter_depth({
         signer: account.account as unknown as Account,
         explorerId: army.explorerId,
-        depth,
+        depth: below,
       }),
     ).catch((error: unknown) => toast.failed(error, "The army could not enter the Spire."));
 
@@ -168,12 +180,8 @@ const OwnSpire = ({ spire, onResearch }: { spire: Spire; onResearch: () => void 
       ) : (
         <p className="text-hud-body text-hud-ink">{SPIRE_WORDS.pickArmy}</p>
       )}
-      {actor && depthNow > 0 && (
-        <p className="text-hud-body text-hud-ink">
-          {SPIRE_WORDS.inDepth(actor.label, depthName(depthNow as 1 | 2 | 3))}
-        </p>
-      )}
-      {actor && depthNow === 0 && !beside && (
+      {actor && !sameLayer && <p className="text-hud-body text-hud-ink">{SPIRE_WORDS.elsewhere(actor.label)}</p>}
+      {actor && sameLayer && !beside && (
         <>
           <p className="text-hud-body text-hud-ink">{SPIRE_WORDS.away(actor.label)}</p>
           {approach && (
@@ -191,45 +199,24 @@ const OwnSpire = ({ spire, onResearch }: { spire: Spire; onResearch: () => void 
           )}
         </>
       )}
-      {depthNow === 0 && (
-        <div className="flex flex-col gap-1" data-spire-depths>
-          {depths.map((depth) => {
-            const { why, open } = choice(depth);
-            return (
-              <HudRow
-                key={depth}
-                lead={<Icon name={reachMark(depth)} size={22} />}
-                title={depthName(depth)}
-                detail={why ?? undefined}
-                disabled={!open}
-                controls={
-                  <HudButton
-                    kind="secondary"
-                    size="sm"
-                    disabled={!open}
-                    aria-label={`${SPIRE_WORDS.enter} ${depthName(depth)}`}
-                    onClick={() => actor && enter(actor, depth)}
-                  >
-                    {SPIRE_WORDS.enter}
-                  </HudButton>
-                }
-              />
-            );
-          })}
-          {next && (
-            <HudRow
-              lead={<Icon name={reachMark(next)} size={22} />}
-              title={depthName(next)}
-              detail={SPIRE_WORDS.locked}
-              controls={
-                <HudButton kind="secondary" size="sm" onClick={onResearch}>
-                  {RESEARCH}
-                </HudButton>
-              }
-            />
-          )}
-        </div>
-      )}
+      <div className="flex flex-col gap-1" data-spire-depths>
+        <HudRow
+          lead={<Icon name={reachMark(below)} size={22} />}
+          title={depthName(below)}
+          disabled={!beside}
+          controls={
+            <HudButton
+              kind="secondary"
+              size="sm"
+              disabled={!beside}
+              aria-label={`${SPIRE_WORDS.enter} ${depthName(below)}`}
+              onClick={() => actor && enter(actor)}
+            >
+              {SPIRE_WORDS.enter}
+            </HudButton>
+          }
+        />
+      </div>
       {actor && beside && (
         <p className="text-hud-body text-hud-ink" data-spire-commitment>
           {SPIRE_WORDS.commits(actor.label, dayLeft(expeditionDayEndsAt(rules, now) - now).reading)}

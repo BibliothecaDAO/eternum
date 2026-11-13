@@ -11,6 +11,8 @@ vi.mock("@/hooks/context/game-context", () => ({
 }));
 vi.mock("../value/use-spend-lords", () => ({ useSpendLords: () => ({ balance: undefined }) }));
 vi.mock("../value/use-realm-lords", () => ({ useRealmLords: () => 40 }));
+// The refill pays LORDS: a game whose preset holds LORDS in play.
+vi.mock("../value/lords-in-game", () => ({ lordsInGame: () => true }));
 vi.mock("@/hooks/store/use-actions-in-flight", () => ({
   useInFlight: () => undefined,
   sendOnce: async (_kind: string, _id: number, _wait: boolean, send: () => Promise<unknown>) => send(),

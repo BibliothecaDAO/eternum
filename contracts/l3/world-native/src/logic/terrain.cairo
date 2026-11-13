@@ -1,7 +1,22 @@
 use starknet::storage::{StoragePathEntry, StoragePointerReadAccess};
 use crate::geometry::tile_key;
-use crate::map::TileKey;
+use crate::map::{BIOME_SCALE, BYTE_RANGE, REWARD_EXTRACTED_FLAG, TileKey};
 use crate::troops::Coord;
+
+#[starknet::embeddable]
+pub impl TerrainDerivation<
+    TContractState, +Drop<TContractState>,
+> of crate::settlement::ITerrainDerivation<TContractState> {
+    fn raise_expedition_home(ref self: TContractState, key: TileKey, context: crate::commands::BiomeContext) {
+        crate::logic::terrain::raise_expedition_home(key, context);
+    }
+    fn biome(self: @TContractState, key: TileKey, context: crate::commands::BiomeContext) -> u8 {
+        crate::logic::terrain::biome(key, context)
+    }
+    fn expedition_home_ring(self: @TContractState, game_id: u32, region_id: u32, timestamp: u64) -> Span<(Coord, u8)> {
+        crate::logic::terrain::expedition_home_ring(game_id, region_id, timestamp)
+    }
+}
 
 pub fn biome(key: TileKey, game_context: crate::commands::BiomeContext) -> u8 {
     let climate = if game_context.day_unit_seconds == 0 {
@@ -42,7 +57,6 @@ fn home_ring(game_id: u32, site: Coord, context: crate::commands::BiomeContext) 
 }
 
 pub fn raise_expedition_home(key: TileKey, context: crate::commands::BiomeContext) {
-    use crate::map::{BIOME_SCALE, BYTE_RANGE, REWARD_EXTRACTED_FLAG};
     let spacing = crate::logic::settlement::rules(key.game_id).spacing;
     let coord = Coord { alt: key.alt, x: key.col, y: key.row };
     assert!(context.day_unit_seconds != 0 && crate::expeditions::is_home_ring(coord, spacing), "not a home ring");

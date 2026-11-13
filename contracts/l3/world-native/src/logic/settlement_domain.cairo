@@ -28,6 +28,7 @@ pub mod SettlementLogic {
     impl SettlementInternal = SettlementState::InternalImpl<ContractState>;
     component!(path: UpgradeState, storage: upgrades, event: UpgradeEvent);
     impl UpgradeInternal = UpgradeState::InternalImpl<ContractState>;
+    use crate::aspects::IAspectsDispatcherTrait;
     component!(path: VillageState, storage: villages, event: VillageEvent);
     impl VillageInternal = VillageState::InternalImpl<ContractState>;
     #[abi(embed_v0)]
@@ -73,23 +74,6 @@ pub mod SettlementLogic {
         RealmEvent: crate::logic::realms::RealmState::Event,
         SettlementEvent: SettlementState::Event,
     }
-    #[abi(embed_v0)]
-    impl TerrainDerivation of crate::settlement::ITerrainDerivation<ContractState> {
-        fn raise_expedition_home(
-            ref self: ContractState, key: crate::map::TileKey, context: crate::commands::BiomeContext,
-        ) {
-            crate::logic::terrain::raise_expedition_home(key, context);
-        }
-        fn biome(self: @ContractState, key: crate::map::TileKey, context: crate::commands::BiomeContext) -> u8 {
-            crate::logic::terrain::biome(key, context)
-        }
-        fn expedition_home_ring(
-            self: @ContractState, game_id: u32, region_id: u32, timestamp: u64,
-        ) -> Span<(crate::troops::Coord, u8)> {
-            crate::logic::terrain::expedition_home_ring(game_id, region_id, timestamp)
-        }
-    }
-
     #[abi(embed_v0)]
     impl UpgradeRules of crate::upgrades::IUpgradeRules<ContractState> {
         #[cfg(feature: "test_support")]
@@ -150,6 +134,7 @@ pub mod SettlementLogic {
                 self.settle_open_frontier(game_id, actor, command, context);
                 return;
             }
+            assert!(command.aspect.is_none(), "Aspects are disabled");
             let key = EntryKey { game_id, owner: owner };
             if command.selected_realm.is_some() {
                 assert!(game.dev_mode_on, "development mode required");
@@ -312,9 +297,10 @@ pub mod SettlementLogic {
             } else {
                 None
             };
-            let realm_id = selected_realm
-                .unwrap_or(crate::entity_ids::namespace(home) % crate::realms::CANONICAL_REALM_COUNT + 1);
+            let realm_id = self.resolve_open_realm(home, selected_realm, command.aspect, context);
             let traits = self.realms.traits(realm_id);
+            crate::logic::aspects::dispatcher(game_id)
+                .join(crate::resources::ResourceKey { game_id, entity_id: home }, traits.order, command.aspect);
             ISettlementCreationLibraryDispatcher { class_hash: self.release.classes(game_id).structures.read() }
                 .create_settlement(
                     game_id,
@@ -330,6 +316,22 @@ pub mod SettlementLogic {
                     ),
                     crate::commands::action_context(context),
                 );
+        }
+
+        fn resolve_open_realm(
+            self: @ContractState, home: u64, selected: Option<u32>, aspect: Option<u8>, context: DomainContext,
+        ) -> u32 {
+            if let Some(realm) = selected {
+                return realm;
+            }
+            if let Some(orders) = crate::logic::aspects::rules(context.game_id) {
+                let mut root = context.raw_root;
+                let seed = crate::random::game_root(ref root, context.game_id);
+                return crate::logic::aspects::dispatcher(context.game_id)
+                    .draw_realm(orders, aspect.expect('choose an Aspect'), seed);
+            }
+            assert!(aspect.is_none(), "Aspects are disabled");
+            crate::entity_ids::namespace(home) % crate::realms::CANONICAL_REALM_COUNT + 1
         }
 
         fn claim_frontier_source(

@@ -167,6 +167,8 @@ pub mod GamesTest {
     #[abi(embed_v0)]
     impl LedgerOperatorFixture = GamesFixture::LedgerOperatorFixture<ContractState>;
     #[abi(embed_v0)]
+    impl HomeGrantsFixture = GamesFixture::HomeGrantsFixture<ContractState>;
+    #[abi(embed_v0)]
     impl BlitzResultsFixture = GamesFixture::BlitzResultsFixture<ContractState>;
     #[abi(embed_v0)]
     impl RelicsFixture = GamesFixture::RelicsFixture<ContractState>;

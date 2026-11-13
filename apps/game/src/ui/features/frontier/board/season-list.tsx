@@ -74,6 +74,7 @@ export const SeasonList = ({
   onOpen,
   onClose,
   ends,
+  invite,
 }: {
   /** The player's rank; null for a player without a realm on the list, undefined while it loads. */
   rank: number | null | undefined;
@@ -90,6 +91,8 @@ export const SeasonList = ({
   onClose: () => void;
   /** When the season ends, and today against its last day while it runs; undefined until the game is known. */
   ends?: { at: number; day?: number; lastDay?: number };
+  /** The way to invite a friend to the player's Aspect (AspectInvite), above the board. */
+  invite?: ReactNode;
 }) => {
   const phone = useLayout() === "phone";
   return (
@@ -102,6 +105,7 @@ export const SeasonList = ({
     >
       <div className="flex min-h-0 flex-1 flex-col overflow-y-auto">
         {ends && <SeasonEnds {...ends} />}
+        {invite}
         {podium !== undefined && (phone ? <FoldedPodium podium={podium} /> : <SeasonPodium podium={podium} />)}
         {state === "failed" ? (
           <Failed onRetry={onRetry} />

@@ -1,5 +1,5 @@
-import { expeditionSpireTile, readExpeditionRules } from "@bibliothecadao/eternum";
-import { getNeighborHexes } from "@bibliothecadao/types";
+import { entityHomeNamespace, expeditionRealmSite, readExpeditionRules, seasonDay } from "@bibliothecadao/eternum";
+import { getNeighborHexes, TileOccupier } from "@bibliothecadao/types";
 
 import { campBeside } from "./sites/site-fixture";
 
@@ -31,14 +31,43 @@ const depthRules = (depth: number) => ({
 });
 
 /**
- * Realm 7's day 0 (its spire on the home ring around its site), with Ethereal I and II researched, free entry, and its army standing beside the spire, on its tile or three tiles off it,
- * holding the stamina given. The spire card's tests and the game lab's spire both play it.
+ * A spire realm 7 found on a layer today, as discovery writes it (logic/spires.cairo): its ExpeditionSpire row, counting
+ * the reveals made, and the tile it occupies as a spire.
+ */
+export const foundSpireFacts = (
+  spire: { col: number; row: number },
+  { day, depth = 0, reveals = 3 }: { day: number; depth?: number; reveals?: number },
+) => [
+  {
+    model: "ExpeditionSpire",
+    key: `0x5b${depth}`,
+    value: {
+      game_id: 1,
+      structure_id: 7,
+      epoch: day,
+      depth,
+      reveals,
+      location: { alt: false, x: spire.col, y: spire.row },
+    },
+  },
+  {
+    model: "TileOccupancy",
+    key: `0x5c${depth}`,
+    value: { game_id: 1, alt: false, ...spire, entity_id: 0, category: TileOccupier.Spire, is_structure: false },
+  },
+];
+
+/**
+ * Realm 7's day 0, with Spire lore known, Ethereal II reached on an earlier day, its spire found on the surface beside
+ * its site today, and its army standing
+ * beside the spire or three tiles off it (a found spire occupies its own tile), holding the stamina given. The spire card's tests and the game
+ * lab's spire both play it.
  */
 export const spireDay = ({
   stamina = 100n,
   standing = "beside",
   spacing,
-}: { stamina?: bigint; standing?: "beside" | "on" | "away"; spacing?: number } = {}) => {
+}: { stamina?: bigint; standing?: "beside" | "away"; spacing?: number } = {}) => {
   const { store } = campBeside("Camp", true, stamina);
   // The regions' width: the deploy fixture's small one unless the game needs Frontier's own.
   if (spacing !== undefined)
@@ -50,19 +79,24 @@ export const spireDay = ({
       },
     ] as never);
   const rules = readExpeditionRules(store, 1)!;
-  const spire = expeditionSpireTile(rules, store.require("Structure", { game_id: 1, entity_id: 7 }), SPIRE_DAY_NOW)!;
-  const [beside] = getNeighborHexes(spire.col, spire.row);
+  const day = seasonDay(rules, SPIRE_DAY_NOW)!;
+  const site = expeditionRealmSite(rules, entityHomeNamespace(7), SPIRE_DAY_NOW)!;
+  const [spire] = getNeighborHexes(site.col, site.row);
+  const [beside] = getNeighborHexes(spire.col, spire.row).filter((hex) => hex.col !== site.col || hex.row !== site.row);
   const armyTile = {
     beside: { col: beside.col, row: beside.row },
-    on: { col: spire.col, row: spire.row },
     away: { col: spire.col + 3, row: spire.row },
   }[standing];
+  const realm = store.require("Structure", { game_id: 1, entity_id: 7 });
   store.applyFacts([
-    // research.cairo: the depth row's tier sits at bit 46; Ethereal I and II are researched.
-    { model: "RealmKnowledge", key: "0xd", value: { game_id: 1, structure_id: 7, learned: String(2n << 48n) } },
+    // An earlier day took the realm's armies down to Ethereal II (record_depth): its layers are World, I and II.
+    { model: "Structure", key: "0x7", value: { ...realm, metadata: { ...realm.metadata, deepest_depth: 2 } } },
+    // research.cairo: the depth row's tier sits at bit 48; its first tier is Spire lore.
+    { model: "RealmKnowledge", key: "0xd", value: { game_id: 1, structure_id: 7, learned: String(1n << 48n) } },
     depthRules(1),
     depthRules(2),
     depthRules(3),
+    ...foundSpireFacts({ col: spire.col, row: spire.row }, { day }),
     { model: "TileOccupancy", key: "0x75", value: null },
     {
       model: "TileOccupancy",
@@ -70,5 +104,5 @@ export const spireDay = ({
       value: { game_id: 1, alt: false, ...armyTile, entity_id: SPIRE_ARMY, category: 15, is_structure: false },
     },
   ] as never);
-  return { store, rules, spire, armyTile };
+  return { store, rules, spire: { col: spire.col, row: spire.row }, armyTile };
 };

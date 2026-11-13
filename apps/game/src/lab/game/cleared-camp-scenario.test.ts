@@ -1,15 +1,12 @@
 import { expect, it } from "vitest";
-import { expeditionSpireTile, readExpeditionRules } from "@bibliothecadao/eternum";
+import { expeditionSpires } from "@bibliothecadao/eternum";
 import { getHexDistance } from "@bibliothecadao/types";
 import { clearedCampScenario } from "./cleared-camp-scenario";
 
 it("stands the realm's second army on a cleared camp away from its spire, beside another cleared camp left empty", () => {
   const { store, startsAt } = clearedCampScenario();
-  const spire = expeditionSpireTile(
-    readExpeditionRules(store, 1)!,
-    store.require("Structure", { game_id: 1, entity_id: 7 }),
-    startsAt,
-  )!;
+  const [spire] = expeditionSpires(store, 1, startsAt);
+  expect(spire).toBeDefined();
   const army = store.entityOccupancy(1, 203)!;
   const [held, empty] = [711, 712].map((entityId) =>
     store.require("ExpeditionSite", { game_id: 1, entity_id: entityId }),

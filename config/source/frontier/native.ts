@@ -30,6 +30,10 @@ export const frontierPreset = {
     protocolCutBps: 0,
     mmrEnabled: false,
   },
+  orderAspects: [],
+  startingArmyCount: 0,
+  dailyQuest: null,
+  worldBanes: null,
   bitcoinEnabled: false,
   startingTroops: Array.from({ length: 17 }, () => "Knight" as const),
   realmResources: [],
@@ -103,6 +107,7 @@ export const frontierPreset = {
       laborCost: 0,
     })),
   ],
+  deep: null,
   discovery: {
     beastsBps: 600,
     campBps: 400,

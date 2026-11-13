@@ -34,6 +34,30 @@ pub fn store(commitment: felt252, definition: crate::presets::PresetDefinition) 
         definition.rules.day_unit_seconds,
     );
     write_economy(preset, commitment, definition.rules, definition.economy);
+    if let Some(banes) = definition.economy.banes {
+        preset
+            .bane_rules
+            .write(
+                Some(
+                    (
+                        banes.chance_step,
+                        banes.quorum_percent,
+                        banes.beast_percent,
+                        banes.stamina_percent,
+                        banes.production_percent,
+                    ),
+                ),
+            );
+        for index in 0..banes.quest_counts.len() {
+            preset.bane_quest_counts.write(index.try_into().unwrap(), *banes.quest_counts.at(index));
+        }
+    }
+    if let Some(quests) = definition.economy.quests {
+        preset.quest_rewards.write(Some((quests.labor, quests.essence, quests.bonus_percent)));
+        for index in 0..quests.base_counts.len() {
+            preset.quest_counts.write(index.try_into().unwrap(), *quests.base_counts.at(index));
+        }
+    }
     preset.season_win_points.write(definition.season_win_points);
 }
 
@@ -105,6 +129,8 @@ pub fn store_settlement(
             },
         );
     preset.settlement_spacing.write(settlement.spacing);
+    preset.order_aspects.write(crate::aspects::pack(settlement.order_aspects));
+    preset.starting_armies.write(settlement.starting_armies);
     write_depths(preset, mode_rules, day_unit_seconds, settlement.depths);
     write_realm_grants(preset, settlement.realms, entry_rule);
     write_villages(preset, settlement.villages);
@@ -115,6 +141,7 @@ fn write_economy(
     preset: PresetWrite, commitment: felt252, rules: crate::rules::SliceRules, economy: crate::presets::EconomyPreset,
 ) {
     preset.labor_rules.write(economy.labor);
+    preset.race_rules.write(economy.race);
     write_hyperstructures(preset, rules, economy.hyperstructures);
     let classes = crate::state::read().releases.read(crate::state::read().current_release.read()).classes;
     crate::presets::IPresetRelicsDispatcherTrait::store_relic_preset(
@@ -127,6 +154,7 @@ fn write_economy(
     );
     preset.progression_rules.write(economy.progression);
     preset.discovery_rules.write(economy.discovery);
+    preset.deep_rules.write(economy.deep);
     preset.artificer_cost.write(economy.research_cost);
     if let Some(withdrawals) = economy.withdrawals {
         crate::presets::IPresetWithdrawalsDispatcherTrait::store_withdrawal_preset(
@@ -435,6 +463,9 @@ pub fn store_relics(
             "invalid chest shares",
         );
         assert!(rules.is_empty(), "ruin chests replace timed relics");
+    } else if day_unit_seconds != 0 {
+        assert!(rules.is_empty(), "army relic loadouts replace resource relics");
+        assert!(mode_rules & crate::rules::DISCOVER_CHESTS == 0, "army relics have no LORDS chests");
     } else {
         assert!(rules.len() == 18, "all eighteen relic rules required");
         let mut total: u128 = 0;
@@ -527,17 +558,20 @@ fn write_research(preset: PresetWrite, structures: crate::presets::StructurePres
         assert!(structures.research.is_empty(), "research needs a board");
         return;
     }
-    // Every row's tiers are priced exactly once, from the first tier above common to the row's last.
-    let mut expected = 0_u32;
-    for row in 0..crate::research::ROW_COUNT {
-        expected += crate::research::max_tier(row).into();
-    }
-    assert!(structures.research.len() == expected, "incomplete research prices");
     for entry in structures.research {
         let key = (*entry.row, *entry.tier);
         assert!(*entry.tier > 0 && *entry.tier <= crate::research::max_tier(*entry.row), "invalid research tier");
         assert!(preset.research_prices.read(key).is_none(), "duplicate research price");
         assert!((*entry.price).essence != 0, "empty research price");
         preset.research_prices.write(key, Some(*entry.price));
+    }
+    // The preset's prices define each row's purchasable tiers, within the packed knowledge's capacity.
+    for row in 0..crate::research::ROW_COUNT {
+        assert!(preset.research_prices.read((row, 1)).is_some(), "incomplete research prices");
+        for tier in 2..crate::research::max_tier(row) + 1 {
+            if preset.research_prices.read((row, tier)).is_some() {
+                assert!(preset.research_prices.read((row, tier - 1)).is_some(), "research tiers must be contiguous");
+            }
+        }
     }
 }
