@@ -70,6 +70,19 @@ pub mod ResourcesLogic {
                 crate::expeditions::site_reward(category, site, depth)
             };
             let home = ResourceKey { game_id: key.game_id, entity_id: home_id };
+            crate::logic::quests::record(home, crate::quests::STAND, 1, context.timestamp);
+            let quest = if category == crate::taxonomy::BEASTS_CATEGORY {
+                Some(crate::quests::HUNT)
+            } else if category == crate::taxonomy::CAMP_CATEGORY {
+                Some(crate::quests::CAMPS)
+            } else if category == crate::taxonomy::RIFT_CATEGORY {
+                Some(crate::quests::RIFTS)
+            } else {
+                None
+            };
+            if let Some(kind) = quest {
+                crate::logic::quests::record(home, kind, 1, context.timestamp);
+            }
             let reward = if let Some(reward) = reward {
                 let amount = self
                     .grant_resource(

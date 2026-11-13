@@ -93,6 +93,8 @@ pub fn definition(blitz: bool) -> PresetDefinition {
             upgrades: array![crate::upgrades::UpgradeRecipe { costs: array![].span() }].span(),
         },
         settlement: SettlementPreset {
+            order_aspects: array![].span(),
+            starting_armies: 0,
             mode: if blitz {
                 SettlementMode::Triple
             } else {
@@ -115,6 +117,8 @@ pub fn definition(blitz: bool) -> PresetDefinition {
             },
         },
         economy: EconomyPreset {
+            quests: None,
+            banes: None,
             labor: None,
             progression: None,
             discovery: None,
@@ -266,7 +270,10 @@ pub fn expedition_home(d: super::Deployment) -> (u32, PresetDefinition, u8) {
     );
     assert!(
         execute_in_game(
-            d, game_id, Command::SettleSeason(crate::realms::SettleSeason { selected_realm: Some(1) }), 350,
+            d,
+            game_id,
+            Command::SettleSeason(crate::realms::SettleSeason { selected_realm: Some(1), aspect: None }),
+            350,
         ),
     );
     let guards = IGuardsDispatcher { contract_address: d.games };
@@ -503,7 +510,10 @@ fn assert_capture_at(
     super::play_fixture::reserve_fixture_homes(d.games, game_id, d.actor);
     assert!(
         execute_in_game(
-            d, game_id, Command::SettleSeason(crate::realms::SettleSeason { selected_realm: Some(1) }), opening,
+            d,
+            game_id,
+            Command::SettleSeason(crate::realms::SettleSeason { selected_realm: Some(1), aspect: None }),
+            opening,
         ),
     );
     let home = ResourceKey { game_id, entity_id: 1 };
@@ -920,7 +930,10 @@ pub fn setup_frontier_chests_with_preset(
     super::play_fixture::reserve_fixture_homes(d.games, game_id, d.actor);
     assert!(
         execute_in_game(
-            d, game_id, Command::SettleSeason(crate::realms::SettleSeason { selected_realm: Some(1) }), 350,
+            d,
+            game_id,
+            Command::SettleSeason(crate::realms::SettleSeason { selected_realm: Some(1), aspect: None }),
+            350,
         ),
     );
     let home = ResourceKey { game_id, entity_id: 1 };

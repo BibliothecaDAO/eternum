@@ -1,6 +1,8 @@
 pub mod approved_frontier_extension;
 pub mod arrivals;
 pub mod artificer;
+pub mod aspects;
+pub mod banes;
 pub mod biome;
 pub mod bitcoin;
 pub mod blitz_results;
@@ -41,6 +43,7 @@ pub mod ownership;
 pub mod presets;
 pub mod production;
 pub mod progression;
+pub mod quests;
 pub mod raid;
 pub mod random;
 pub mod realms;

@@ -114,6 +114,8 @@ function deriveStructures(emit: EmitRule, structures: PresetRecord) {
 
 function deriveSettlement(emit: EmitRule, settlement: PresetRecord) {
   emit("RealmGrants", record(settlement.realms));
+  if (Array.isArray(settlement.order_aspects) && settlement.order_aspects.length > 0)
+    emit("AspectRules", { orders: settlement.order_aspects });
   emit("VillageRules", record(settlement.villages));
   records(settlement.depths).forEach((rules, depth) => emit("DepthRules", rules, { depth }));
   const spires = some(settlement.spires);
@@ -121,6 +123,14 @@ function deriveSettlement(emit: EmitRule, settlement: PresetRecord) {
 }
 
 function deriveEconomy(emit: EmitRule, economy: PresetRecord) {
+  if ("banes" in economy) {
+    const banes = some(economy.banes);
+    if (banes) emit("BaneRules", banes);
+  }
+  if ("quests" in economy) {
+    const quests = some(economy.quests);
+    if (quests) emit("QuestRules", quests);
+  }
   emit("TradeRules", record(economy.trade));
   emit("BankRules", record(economy.banks));
   emit("HyperstructureRules", record(economy.hyperstructures));

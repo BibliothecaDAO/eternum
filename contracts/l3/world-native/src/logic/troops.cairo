@@ -202,6 +202,7 @@ pub mod TroopState {
 #[starknet::contract]
 pub mod TroopsLogic {
     use starknet::ContractAddress;
+    use starknet::storage::StoragePointerReadAccess;
     use crate::commands::CreateExplorer;
     use crate::game::assert_playing;
     use crate::geometry::{neighbor, tile_key};
@@ -291,7 +292,9 @@ pub mod TroopsLogic {
                 let depth = crate::logic::expeditions::depth_rules_at(
                     key.game_id, crate::structures::structure_coord(key),
                 );
-                array![crate::troops::frontier_guard(category, depth, seed, rules, timestamp)].span()
+                let mut guard = crate::troops::frontier_guard(category, depth, seed, rules, timestamp);
+                guard.count = guard.count * crate::logic::banes::beast_percent(key, timestamp).into() / 100;
+                array![guard].span()
             } else {
                 crate::troops::discovery_guards(category, seed, rules, timestamp)
             };
@@ -423,6 +426,93 @@ pub mod TroopsLogic {
             let explorer = crate::logic::troops::authorized_explorer(key, actor, timestamp, game_context);
             assert!(explorer.troops.count != 0, "explorer is dead");
             self.destroy_explorer(key, explorer);
+        }
+
+        fn deploy_explorer(
+            ref self: ContractState,
+            game_id: u32,
+            actor: ContractAddress,
+            command: CreateExplorer,
+            context: crate::commands::ExecutionContext,
+        ) {
+            let rules = context.rules.unbox();
+            let home = crate::logic::troops::owned_structure(game_id, command.structure_id, actor);
+            let category = troop_type(command.category);
+            let tier = troop_tier(command.tier);
+            let id = crate::entity_ids::allocate_home(game_id, command.structure_id);
+            let today = if rules.day_unit_seconds == 0 {
+                0
+            } else {
+                crate::days::day_of(context.game.unbox(), rules.day_unit_seconds, context.timestamp).index
+            };
+            let origin = self.army_home(ResourceKey { game_id, entity_id: command.structure_id }, context);
+            let coord = neighbor(origin, command.direction);
+            if rules.day_unit_seconds != 0 {
+                crate::logic::map::raise_expedition_home(
+                    tile_key(game_id, origin), crate::commands::biome_context(context),
+                );
+                let destination = crate::logic::map::tile(tile_key(game_id, coord))
+                    .expect('deployment tile unexplored');
+                let biome = destination.data / crate::map::BIOME_SCALE % crate::map::BYTE_RANGE;
+                assert!(biome > 0 && biome <= 17, "deployment tile unexplored");
+            }
+            assert!(
+                command.amount <= crate::troops::max_army_size(rules.troop_limit_config, home.base.level, tier).into()
+                    * RESOURCE_PRECISION,
+                "army size limit",
+            );
+            let mut troops = initial_troops(category, tier, command.amount, rules, context.timestamp);
+            if rules.day_unit_seconds != 0 {
+                // A slot's first army of the day starts full at its own maximum, read from the progress it is
+                // created with; a slot an army already used keeps the bar that army left.
+                troops
+                    .stamina =
+                        crate::logic::army_slots::allocate(
+                            ExplorerKey { game_id, explorer_id: id },
+                            crate::troops::ArmySlotAllocation {
+                                slot: command.slot,
+                                home: command.structure_id,
+                                epoch: today,
+                                allowance: home
+                                    .base
+                                    .troop_max_explorer_count
+                                    .try_into()
+                                    .expect('invalid slot allowance'),
+                                initial: troops.stamina.inline(),
+                                category,
+                                stamina_config: rules.troop_stamina_config,
+                            },
+                        );
+            }
+            crate::logic::map::MapState::occupy(
+                tile_key(game_id, coord), id, crate::troops::troop_occupier(troops), false,
+            );
+            crate::logic::troops::TroopState::create(
+                ExplorerKey { game_id, explorer_id: id },
+                crate::troops::ExplorerRecord { owner: command.structure_id, troops },
+            );
+            self
+                .resources_dispatcher(game_id)
+                .initialize_explorer_resources(
+                    ResourceKey { game_id, entity_id: id }, command.amount, crate::commands::resource_context(context),
+                );
+            self
+                .emit_troop_story(
+                    game_id,
+                    actor,
+                    id,
+                    crate::ownership::Story::ExplorerCreateStory(
+                        crate::troop_management::ExplorerCreated {
+                            explorer_id: id,
+                            structure_id: command.structure_id,
+                            category,
+                            tier,
+                            amount: command.amount,
+                            spawn_direction: command.direction.try_into().expect('invalid direction'),
+                        },
+                    ),
+                    context.timestamp,
+                );
         }
 
         fn pay_troops(
@@ -701,6 +791,55 @@ pub mod TroopsLogic {
     }
 
     #[abi(embed_v0)]
+    impl StartingArmies of crate::troops::IStartingArmies<ContractState> {
+        fn deploy_starting_armies(
+            ref self: ContractState,
+            key: ResourceKey,
+            category: TroopType,
+            amount: u128,
+            context: crate::commands::ActionContext,
+        ) {
+            let count = crate::logic::preset_record::for_game(key.game_id).starting_armies.read();
+            if count == 0 {
+                return;
+            }
+            let mut context = crate::commands::execution_context(key.game_id, context);
+            let home = crate::logic::structures::record(key);
+            assert!(home.base.category == crate::taxonomy::REALM_CATEGORY, "starting armies require a Realm");
+            assert!(crate::logic::troops::home_armies(key).is_empty(), "starting armies already deployed");
+            let per_army = amount / Into::<u8, u128>::into(count);
+            crate::troop_management::assert_amount(per_army);
+            assert!(per_army * Into::<u8, u128>::into(count) == amount, "starting troops must divide evenly");
+            self
+                .resources_dispatcher(key.game_id)
+                .spend_resource(
+                    key,
+                    crate::troops::stock_resource(category, TroopTier::T1),
+                    amount,
+                    context.timestamp,
+                    crate::commands::resource_context(context),
+                );
+            context.timestamp = core::cmp::max(context.timestamp, context.game.unbox().start_main_at);
+            for slot in 0..count {
+                self
+                    .deploy_explorer(
+                        key.game_id,
+                        home.owner,
+                        CreateExplorer {
+                            structure_id: key.entity_id,
+                            category: category.into(),
+                            tier: 0,
+                            amount: per_army,
+                            direction: slot.into(),
+                            slot,
+                        },
+                        context,
+                    );
+            }
+        }
+    }
+
+    #[abi(embed_v0)]
     impl Actions of crate::commands::ICreateExplorer<ContractState> {
         fn create_explorer(
             ref self: ContractState,
@@ -712,7 +851,7 @@ pub mod TroopsLogic {
             let context = crate::commands::execution_context(game_id, context);
 
             let rules = self.authorize(game_id, context);
-            let home = crate::logic::troops::owned_structure(game_id, command.structure_id, actor);
+            crate::logic::troops::owned_structure(game_id, command.structure_id, actor);
             if rules.day_unit_seconds != 0 {
                 self
                     .expire_home_armies(
@@ -724,81 +863,8 @@ pub mod TroopsLogic {
             }
             let category = troop_type(command.category);
             let tier = troop_tier(command.tier);
-            let id = crate::entity_ids::allocate_home(game_id, command.structure_id);
             self.pay_troops(game_id, command.structure_id, category, tier, command.amount, context.timestamp, context);
-            let today = if rules.day_unit_seconds == 0 {
-                0
-            } else {
-                crate::days::day_of(context.game.unbox(), rules.day_unit_seconds, context.timestamp).index
-            };
-            let origin = self.army_home(ResourceKey { game_id, entity_id: command.structure_id }, context);
-            let coord = neighbor(origin, command.direction);
-            if rules.day_unit_seconds != 0 {
-                crate::logic::map::raise_expedition_home(
-                    tile_key(game_id, origin), crate::commands::biome_context(context),
-                );
-                let destination = crate::logic::map::tile(tile_key(game_id, coord))
-                    .expect('deployment tile unexplored');
-                let biome = destination.data / crate::map::BIOME_SCALE % crate::map::BYTE_RANGE;
-                assert!(biome > 0 && biome <= 17, "deployment tile unexplored");
-            }
-            assert!(
-                command.amount <= crate::troops::max_army_size(rules.troop_limit_config, home.base.level, tier).into()
-                    * RESOURCE_PRECISION,
-                "army size limit",
-            );
-            let mut troops = initial_troops(category, tier, command.amount, rules, context.timestamp);
-            if rules.day_unit_seconds != 0 {
-                // A slot's first army of the day starts full at its own maximum, read from the progress it is
-                // created with; a slot an army already used keeps the bar that army left.
-                troops
-                    .stamina =
-                        crate::logic::army_slots::allocate(
-                            ExplorerKey { game_id, explorer_id: id },
-                            crate::troops::ArmySlotAllocation {
-                                slot: command.slot,
-                                home: command.structure_id,
-                                epoch: today,
-                                allowance: home
-                                    .base
-                                    .troop_max_explorer_count
-                                    .try_into()
-                                    .expect('invalid slot allowance'),
-                                initial: troops.stamina.inline(),
-                                category,
-                                stamina_config: rules.troop_stamina_config,
-                            },
-                        );
-            }
-            crate::logic::map::MapState::occupy(
-                tile_key(game_id, coord), id, crate::troops::troop_occupier(troops), false,
-            );
-            crate::logic::troops::TroopState::create(
-                ExplorerKey { game_id, explorer_id: id },
-                crate::troops::ExplorerRecord { owner: command.structure_id, troops },
-            );
-            self
-                .resources_dispatcher(game_id)
-                .initialize_explorer_resources(
-                    ResourceKey { game_id, entity_id: id }, command.amount, crate::commands::resource_context(context),
-                );
-            self
-                .emit_troop_story(
-                    game_id,
-                    actor,
-                    id,
-                    crate::ownership::Story::ExplorerCreateStory(
-                        crate::troop_management::ExplorerCreated {
-                            explorer_id: id,
-                            structure_id: command.structure_id,
-                            category,
-                            tier,
-                            amount: command.amount,
-                            spawn_direction: command.direction.try_into().expect('invalid direction'),
-                        },
-                    ),
-                    context.timestamp,
-                );
+            self.deploy_explorer(game_id, actor, command, context);
             ()
         }
     }

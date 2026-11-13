@@ -39,6 +39,18 @@ export interface NativePreset {
   commandMask: bigint;
   settlementMode: "Single" | "Triple";
   spacing: number;
+  /** One Aspect per canonical Order, in Order-id order; empty disables teams. */
+  orderAspects: readonly number[];
+  startingArmyCount: number;
+  worldBanes: null | {
+    chanceStep: number;
+    quorumPercent: number;
+    beastPercent: number;
+    staminaPercent: number;
+    productionPercent: number;
+    questCounts: readonly number[];
+  };
+  dailyQuest: null | { baseCounts: readonly number[]; labor: number; essence: number; bonusPercent: number };
   /** The unit a season's days are counted in (Frontier rules §9): a day lasts 2 to 6 units; 0 in modes without days. */
   dayUnitSeconds: number;
   board: null | {

@@ -36,3 +36,31 @@ Setup requires the normal harness identity/launcher environment. `--fixture <mod
 checked once, assigned to its own worker group and reads its own Herald store. Duplicate accounts, duplicate bot IDs,
 missing participants and mismatched game assignments fail before workers start. Prepared credential files remain
 private; public result files contain neither device keys nor signed bodies.
+
+## Season 1 groundwork
+
+Run the existing Frontier path with `--game-type frontier --functional --preset <preset id>` against a shard carrying
+the matching release and registered preset. Resolve the Season 1 id from
+[`FRONTIER_S1_PRESET_ID`](../../../config/source/common/native-preset-modes.ts); its starting stock and calendar live in
+[`season-one.ts`](../../../config/source/frontier/season-one.ts). The earlier presets retain their own definitions. The
+harness records the player actions and resulting Herald facts in its existing reports. It distributes free homes across
+the Aspect catalog when `AspectRules` exists. Settlement sends the chosen `aspect`; held Realms may omit it and inherit
+their Order's Aspect. Read `HomeAspect` and `AspectMembers` from the shared native store. Settlement also fields the
+preset's starting armies. The harness reads the existing `ExplorerTroops` and `ArmySlot` facts and uses these armies
+without raising replacements.
+
+For the daily quest, `client.views.dailyQuest(home, timestamp)` reads the current objective, target, progress,
+completion and collection from native facts. Collect a finished quest with
+`client.setup.systemCalls.claim_daily_quest({ signer, home, day })`. The persisted receipt is `LaborGrant`; repeating
+collection cannot pay twice. `QuestRules` replaces the old `LaborRules` in S1. The lifecycle quest regression drives
+settlement, reveals and collection through player commands. On a world bane day this view returns the replacement quest
+and the Aspect's completion count. `BaneProgress.ended_at` closes the effect interval; the quest remains for the day.
+Collect again after the Aspect succeeds: `BaneGrant` records the second payment and prevents a third. Production and
+stamina readers split accrual at both interval edges. The lifecycle world-bane regression settles homes, completes the
+Lights and collects through the same player commands. The resource regression and client tests share the boundary and
+remainder vectors. The Slice 1 dev preset is `FRONTIER_S1_DEV_PRESET_ID`; its Kingdom and Empire bane targets are capped
+at City. Team issuance must record `FirstTeamBane` in the same transaction as the issued bane.
+
+The home reward administration path is `Games.grant_labor`, with `Games.labor_grant` reading the recorded result. Both
+dispatch to the existing Prizes class. `bash contracts/l3/check-native.sh` checks their compiled routing and runs the
+lifecycle claim regressions; the integration fold owns this gate before further reward rules are added.

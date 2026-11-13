@@ -96,4 +96,5 @@ export const commandRoutes = [
   { name: "InteractSite", logic: "relics", entrypoint: "interact_site" },
   { name: "RefillStamina", logic: "prizes", entrypoint: "refill_stamina" },
   { name: "WithdrawLords", logic: "prizes", entrypoint: "withdraw_lords" },
+  { name: "ClaimDailyQuest", logic: "production", entrypoint: "claim_daily_quest" },
 ];

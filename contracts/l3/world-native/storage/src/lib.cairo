@@ -1,5 +1,6 @@
 pub mod arrivals;
 pub mod authentication;
+pub mod banes;
 pub mod bitcoin;
 pub mod blitz_results;
 pub mod buildings;
@@ -15,6 +16,7 @@ pub mod map;
 pub mod market;
 pub mod presets;
 pub mod production;
+pub mod quests;
 pub mod realms;
 pub mod registrar;
 pub mod release;

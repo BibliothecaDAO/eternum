@@ -51,14 +51,18 @@ pub fn resolve(key: ExplorerKey, mut explorer: ExplorerTroops, refill: Option<St
         if let Some(refill) = refill {
             let progress = crate::logic::progression::require(key);
             let maximum = crate::progression::stamina_max(progress, explorer.troops.category, refill.stamina_config);
-            stamina
-                .refill_to_max(
-                    ref explorer.troops.boosts,
-                    maximum,
-                    refill.stamina_config,
-                    refill.armies_tick_in_seconds,
-                    refill.timestamp,
-                );
+            let home = crate::resources::ResourceKey { game_id: key.game_id, entity_id: explorer.owner };
+            let windows = crate::logic::banes::windows(home, stamina.settled_at.into(), refill.timestamp);
+            crate::stamina::refill_windows(
+                ref stamina,
+                ref explorer.troops.boosts,
+                maximum,
+                refill.stamina_config,
+                refill.armies_tick_in_seconds,
+                refill.timestamp,
+                windows,
+                crate::logic::banes::stamina_percent(key.game_id),
+            );
             stamina.clamp(maximum);
         }
         explorer.troops.stamina = StaminaSource::Inline(stamina);
@@ -79,6 +83,9 @@ pub fn allocate(
     };
     stamina.clamp(maximum);
     write(slot_key, ArmySlot { explorer_id: key.explorer_id, stamina });
+    crate::logic::banes::record_activity(
+        crate::resources::ResourceKey { game_id: key.game_id, entity_id: home }, epoch,
+    );
     StaminaSource::Slot(slot)
 }
 

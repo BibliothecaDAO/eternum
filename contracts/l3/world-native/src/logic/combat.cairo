@@ -58,6 +58,14 @@ pub fn battle_guard(game_id: u32, actor: ContractAddress, command: Battle, conte
         let (attacker_after, guard_after) = resolve_battle(game_id, attacker.troops, guard, combat, context);
         attacker.troops = attacker_after;
         guard = guard_after;
+        if crate::logic::expeditions::expedition_site(target_key).is_some() {
+            crate::logic::quests::record(
+                ResourceKey { game_id, entity_id: attacker.owner },
+                crate::quests::CULL,
+                defender_before - guard.count,
+                context.timestamp,
+            );
+        }
         combat_troops(game_id).finish_battle(key, attacker, before, crate::commands::action_context(context));
         let mut row = crate::logic::guards::guard(slot);
         if guard.count == 0 {

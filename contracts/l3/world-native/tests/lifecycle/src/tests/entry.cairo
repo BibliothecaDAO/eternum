@@ -103,7 +103,9 @@ fn held_realm_settlement_uses_catalogue_traits_and_cannot_be_repeated() {
     let mut spy = spy_events();
     ledger(d).register_entitlement(key, held).unwrap();
     assert_eq!(spy.get_events().emitted_by(d.games).events.len(), 0);
-    let command = crate::commands::Command::SettleSeason(crate::realms::SettleSeason { selected_realm: None });
+    let command = crate::commands::Command::SettleSeason(
+        crate::realms::SettleSeason { selected_realm: None, aspect: None },
+    );
     assert!(super::resource_commands::execute_in_game(d, game_id, command, 360));
     let home = snforge_std::interact_with_state(d.games, || crate::entity_ids::home_for_actor(game_id, d.actor));
     assert_eq!(ledger(d).settled_realm(game_id, 711).unwrap(), home);
@@ -144,7 +146,9 @@ fn resume_reserved_realm_after_a_second_owner_attempts_entry(alternative: Option
     if let Some(realm_id) = alternative {
         ledger(d).register_entitlement(second, EntryEntitlement { realm_id: realm_id.into(), ..held }).unwrap();
     }
-    let command = crate::commands::Command::SettleSeason(crate::realms::SettleSeason { selected_realm: None });
+    let command = crate::commands::Command::SettleSeason(
+        crate::realms::SettleSeason { selected_realm: None, aspect: None },
+    );
     assert!(super::resource_commands::execute_in_game(buyer, game_id, command, 360));
     assert!(super::resource_commands::execute_in_game(d, game_id, command, 360));
     let first_home = snforge_std::interact_with_state(d.games, || crate::entity_ids::home_for_actor(game_id, d.actor));
@@ -176,7 +180,9 @@ fn interrupted_held_entry_keeps_its_claim_and_the_buyer_can_register_another_rea
 #[feature("safe_dispatcher")]
 fn a_free_settlement_attaches_only_the_chosen_held_realm_once() {
     let (d, game_id) = super::registrar::setup_open_frontier();
-    let command = crate::commands::Command::SettleSeason(crate::realms::SettleSeason { selected_realm: None });
+    let command = crate::commands::Command::SettleSeason(
+        crate::realms::SettleSeason { selected_realm: None, aspect: None },
+    );
     assert!(super::resource_commands::execute_in_game(d, game_id, command, 360));
     let home = snforge_std::interact_with_state(d.games, || crate::entity_ids::home_for_actor(game_id, d.actor));
     set_operator(d, authority());
@@ -210,7 +216,7 @@ fn settle_labor_home(held: bool) -> (Deployment, crate::entry::LaborHome) {
         super::resource_commands::execute_in_game(
             d,
             game_id,
-            crate::commands::Command::SettleSeason(crate::realms::SettleSeason { selected_realm: None }),
+            crate::commands::Command::SettleSeason(crate::realms::SettleSeason { selected_realm: None, aspect: None }),
             360,
         ),
     );
@@ -224,7 +230,7 @@ fn settle_labor_home(held: bool) -> (Deployment, crate::entry::LaborHome) {
 #[feature("safe_dispatcher")]
 fn a_held_settlement_receives_one_thousand_labor_per_day_and_retries_are_exact() {
     let (d, home) = settle_labor_home(true);
-    let operator = ILedgerOperatorSafeDispatcher { contract_address: d.games };
+    let operator = IHomeGrantsSafeDispatcher { contract_address: d.games };
     assert!(operator.grant_labor(home, 1, d.actor).is_err());
     assert!(operator.grant_labor(home, 0, authority()).is_err());
     let grant = operator.grant_labor(home, 0, d.actor).unwrap();
@@ -268,7 +274,7 @@ fn a_held_settlement_receives_one_thousand_labor_per_day_and_retries_are_exact()
 #[feature("safe_dispatcher")]
 fn a_free_settlement_has_no_daily_labor_claim() {
     let (d, home) = settle_labor_home(false);
-    let operator = ILedgerOperatorSafeDispatcher { contract_address: d.games };
+    let operator = IHomeGrantsSafeDispatcher { contract_address: d.games };
     assert!(operator.grant_labor(home, 0, d.actor).is_err());
     assert_eq!(operator.labor_grant(home, 0).unwrap(), None);
 }
@@ -286,7 +292,7 @@ fn a_full_store_consumes_only_that_homes_daily_claim() {
                 .write((home.game_id, home.home), crate::resources::Weight { capacity: 0, weight: 0 });
         },
     );
-    let operator = ILedgerOperatorSafeDispatcher { contract_address: d.games };
+    let operator = IHomeGrantsSafeDispatcher { contract_address: d.games };
     let grant = operator.grant_labor(home, 0, d.actor).unwrap();
     assert_eq!(grant.amount, 0);
     assert_eq!(operator.grant_labor(home, 0, d.actor).unwrap(), grant);
@@ -303,7 +309,7 @@ fn midnight_is_not_a_frontier_labor_reset() {
     let (_, preset) = super::preset_projection::current_definition("devcon");
     let day = crate::days::day_of(game, preset.rules.day_unit_seconds, 86400);
     assert!(day.start < 86400 && day.end > 86400);
-    let operator = ILedgerOperatorSafeDispatcher { contract_address: d.games };
+    let operator = IHomeGrantsSafeDispatcher { contract_address: d.games };
     snforge_std::start_cheat_block_timestamp(d.games, 86399);
     let grant = operator.grant_labor(home, day.index, d.actor).unwrap();
     snforge_std::start_cheat_block_timestamp(d.games, 86400);

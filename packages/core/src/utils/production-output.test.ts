@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { productionOutput } from "./production-output";
+import { productionOutput, productionEndsAt } from "./production-output";
 
 describe("production paid by the second", () => {
-  const farm = { last_settled_at: 40, production_rate: 7n };
+  const farm = { remainder: 0, last_settled_at: 40, production_rate: 7n };
 
   it("pays one second between consecutive settles and the same total for one long settle", () => {
     let total = 0n;
@@ -29,4 +29,20 @@ describe("production paid by the second", () => {
       expect(() => productionOutput({ ...farm, last_settled_at: timestamp }, 100)).toThrow("clock");
     }
   });
+});
+
+it("splits output at a bane's start and early end without losing fractional output", () => {
+  const rates = (from: number, until: number) => {
+    const start = Math.max(50, from),
+      end = Math.min(71, until);
+    return start < end ? [{ start, end, percent: 50 }] : [];
+  };
+  const farm = { last_settled_at: 40, production_rate: 7n, remainder: 0, rates };
+  expect(productionOutput(farm, 55)).toBe(87n);
+  expect(productionOutput({ ...farm, last_settled_at: 60 }, 80)).toBe(101n);
+  expect(productionOutput(farm, 80)).toBe(206n);
+  expect(productionEndsAt(farm, 206n)).toBe(80);
+  expect(productionEndsAt(farm, 207n)).toBe(81);
+  const atEdge = { ...farm, last_settled_at: 51, remainder: 50 };
+  expect(productionOutput(farm, 51) + productionOutput(atEdge, 80)).toBe(206n);
 });

@@ -247,6 +247,8 @@ function buildSettlement(config: Config, preset: ReturnType<typeof nativePresetF
   return {
     mode: new CairoCustomEnum({ [preset.settlementMode]: {} }),
     spacing: preset.spacing,
+    order_aspects: [...preset.orderAspects],
+    starting_armies: preset.startingArmyCount,
     depths: preset.depths.map((depth) => ({
       reveal_percent: depth.revealPercent,
       site_guard_lower: depth.siteGuardLower,
@@ -330,9 +332,25 @@ function buildEconomy(
     throw new Error("Progression XP values must be positive u32 integers");
   if (progression && progression.revealXp + 3 * progression.revealXpPerDepth > 0xffff_ffff)
     throw new Error("Depth reveal XP exceeds u32");
+  const banes = preset.worldBanes;
+  if (
+    banes &&
+    (preset.dailyQuest === null ||
+      [banes.chanceStep, banes.quorumPercent, banes.staminaPercent, banes.productionPercent].some(
+        (value) => !Number.isInteger(value) || value <= 0 || value > 100,
+      ) ||
+      !Number.isInteger(banes.beastPercent) ||
+      banes.beastPercent < 100 ||
+      banes.beastPercent > 65_535 ||
+      banes.questCounts.length !== 12 ||
+      banes.questCounts.some((value) => !Number.isSafeInteger(value) || value <= 0) ||
+      preset.relics.some((relic) => (relic.rate_bps * banes.staminaPercent) % 100 !== 0))
+  )
+    throw new Error("Invalid world bane rules");
   const labor = preset.labor;
   if (
-    (labor !== null) !== (preset.dayUnitSeconds !== 0) ||
+    (labor !== null || preset.dailyQuest !== null) !== (preset.dayUnitSeconds !== 0) ||
+    (labor !== null && preset.dailyQuest !== null) ||
     (labor !== null &&
       (!Number.isSafeInteger(labor.amount) ||
         labor.amount <= 0 ||
@@ -342,6 +360,26 @@ function buildEconomy(
   )
     throw new Error("Invalid Realm labor rules");
   return {
+    banes:
+      preset.worldBanes === null
+        ? new CairoOption(CairoOptionVariant.None)
+        : new CairoOption(CairoOptionVariant.Some, {
+            chance_step: preset.worldBanes.chanceStep,
+            quorum_percent: preset.worldBanes.quorumPercent,
+            beast_percent: preset.worldBanes.beastPercent,
+            stamina_percent: preset.worldBanes.staminaPercent,
+            production_percent: preset.worldBanes.productionPercent,
+            quest_counts: [...preset.worldBanes.questCounts],
+          }),
+    quests:
+      preset.dailyQuest === null
+        ? new CairoOption(CairoOptionVariant.None)
+        : new CairoOption(CairoOptionVariant.Some, {
+            base_counts: [...preset.dailyQuest.baseCounts],
+            labor: preset.dailyQuest.labor,
+            essence: preset.dailyQuest.essence,
+            bonus_percent: preset.dailyQuest.bonusPercent,
+          }),
     labor:
       preset.labor === null
         ? new CairoOption(CairoOptionVariant.None)

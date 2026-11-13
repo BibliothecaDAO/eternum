@@ -109,10 +109,13 @@ export enum EntityType {
 
 export type RelicEffect = { id: ResourcesIds; endAt: number };
 
+export type AccrualRates = (from: number, until: number) => readonly { start: number; end: number; percent: number }[];
+
 export type Troops = Omit<NativeRows["ExplorerTroops"]["troops"], "stamina"> & {
   readonly stamina: NativeRows["ArmySlot"]["stamina"];
   /** Derived from the slot army's current attributes; never a stored fact. */
   readonly staminaMax?: number;
+  readonly staminaRates?: AccrualRates;
 };
 export type TroopTier = Troops["tier"];
 /** Every troop tier the game's schema allows: a tier the schema adds fails to compile until it is named here. */
@@ -179,7 +182,10 @@ export interface Position {
   y: number;
 }
 
+export type AspectId = 1 | 2 | 3 | 4;
+
 export interface IOrder {
+  aspect: AspectId | null;
   orderId: number;
   orderName: string;
   fullOrderName: string;

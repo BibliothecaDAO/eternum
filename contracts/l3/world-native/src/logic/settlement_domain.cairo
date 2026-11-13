@@ -31,6 +31,7 @@ pub mod SettlementLogic {
     impl VillageInternal = VillageState::InternalImpl<ContractState>;
     component!(path: UpgradeState, storage: upgrades, event: UpgradeEvent);
     impl UpgradeInternal = UpgradeState::InternalImpl<ContractState>;
+    use crate::aspects::IAspectsDispatcherTrait;
     #[storage]
     #[allow(starknet::colliding_storage_paths)]
     struct Storage {
@@ -134,6 +135,7 @@ pub mod SettlementLogic {
                 self.settle_open_frontier(game_id, actor, command, context);
                 return;
             }
+            assert!(command.aspect.is_none(), "Aspects are disabled");
             let key = EntryKey { game_id, owner: owner };
             if command.selected_realm.is_some() {
                 assert!(game.dev_mode_on, "development mode required");
@@ -360,9 +362,10 @@ pub mod SettlementLogic {
             } else {
                 None
             };
-            let realm_id = selected_realm
-                .unwrap_or(crate::entity_ids::namespace(home) % crate::realms::CANONICAL_REALM_COUNT + 1);
+            let realm_id = self.resolve_open_realm(home, selected_realm, command.aspect, context);
             let traits = self.realms.traits(realm_id);
+            crate::logic::aspects::dispatcher(game_id)
+                .join(crate::resources::ResourceKey { game_id, entity_id: home }, traits.order, command.aspect);
             ISettlementCreationLibraryDispatcher { class_hash: self.release.classes(game_id).structures.read() }
                 .create_settlement(
                     game_id,
@@ -378,6 +381,22 @@ pub mod SettlementLogic {
                     ),
                     crate::commands::action_context(context),
                 );
+        }
+
+        fn resolve_open_realm(
+            self: @ContractState, home: u64, selected: Option<u32>, aspect: Option<u8>, context: DomainContext,
+        ) -> u32 {
+            if let Some(realm) = selected {
+                return realm;
+            }
+            if let Some(orders) = crate::logic::aspects::rules(context.game_id) {
+                let mut root = context.raw_root;
+                let seed = crate::random::game_root(ref root, context.game_id);
+                return crate::logic::aspects::dispatcher(context.game_id)
+                    .draw_realm(orders, aspect.expect('choose an Aspect'), seed);
+            }
+            assert!(aspect.is_none(), "Aspects are disabled");
+            crate::entity_ids::namespace(home) % crate::realms::CANONICAL_REALM_COUNT + 1
         }
 
         fn claim_frontier_source(

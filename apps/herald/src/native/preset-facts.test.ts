@@ -81,6 +81,52 @@ function applyRegistration(world: ReturnType<typeof setup>, preset: ReturnType<t
 }
 
 describe("verified preset configuration facts", () => {
+  it("projects the quest reward rules instead of the old labor claim for Season 1", () => {
+    const world = setup();
+    const preset = registration(7);
+    applyRegistration(world, preset);
+    world.native.applyReceipt(world.fold, receipt(launch(preset)), 11, 0);
+    const store = new NativeFactStore();
+    store.applyFacts(
+      world.fold.gameRows("QuestRules", "1").map(({ key, value }) => ({ model: "QuestRules", key, value })),
+    );
+    expect(store.require("QuestRules", { game_id: 1 })).toEqual({
+      game_id: 1,
+      base_counts: [1, 1, 1, 1, 1, 2, 15],
+      labor: 1000n,
+      essence: 1500n,
+      bonus_percent: 150,
+    });
+    expect(world.fold.gameRows("LaborRules", "1")).toHaveLength(0);
+    store.applyFacts(
+      world.fold.gameRows("BaneRules", "1").map(({ key, value }) => ({ model: "BaneRules", key, value })),
+    );
+    expect(store.require("BaneRules", { game_id: 1 })).toEqual({
+      game_id: 1,
+      chance_step: 20,
+      quorum_percent: 25,
+      beast_percent: 150,
+      stamina_percent: 50,
+      production_percent: 50,
+      quest_counts: [3n, 6n, 9n, 12n, 20n, 40n, 60n, 80n, 2500n, 6000n, 10000n, 15000n],
+    });
+  });
+  it("publishes the S1 Order mapping and leaves earlier presets without Aspect rules", () => {
+    for (const presetId of [5, 7]) {
+      const world = setup();
+      const preset = registration(presetId);
+      applyRegistration(world, preset);
+      world.native.applyReceipt(world.fold, receipt(launch(preset)), 11, 0);
+      const store = new NativeFactStore();
+      store.applyFacts(
+        world.fold.gameRows("AspectRules", "1").map(({ key, value }) => ({ model: "AspectRules", key, value })),
+      );
+      expect(store.get("AspectRules", { game_id: 1 })).toEqual(
+        presetId === 7 ? { game_id: 1, orders: preset.definition.settlement.order_aspects } : undefined,
+      );
+    }
+  });
+
   it("projects both beast strength ranges and renamed discovery odds into client facts", () => {
     const world = setup();
     const preset = registration();

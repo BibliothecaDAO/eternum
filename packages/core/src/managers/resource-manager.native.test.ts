@@ -71,6 +71,33 @@ describe("native resource facts", () => {
     expect(observedBalance).toBeUndefined();
   });
 
+  it("reads an older production row unchanged and takes fractional carry from its own fact", () => {
+    const store = new NativeFactStore();
+    store.setSnapshot({ gameId: 1, complete: true, actor: null, timestamp: 350 });
+    store.applyFacts(
+      upsert("0x1", {
+        SliceRules: { ...rules, game_id: 1, mode_rules: 0 },
+        ResourceWeight: weight(),
+        ResourceBalance: balance(),
+        ResourceProduction: production,
+      }),
+    );
+    const manager = new ResourceManager(store, 7, 1);
+    expect(manager.current(23)?.production.remainder).toBe(0);
+    let carry = -1;
+    const unsubscribe = manager.subscribe(() => {
+      carry = manager.current(23)!.production.remainder;
+    });
+    store.applyFacts(
+      upsert("0x2", { ProductionCarry: { game_id: 1, entity_id: 7, resource_type: 23, remainder: 50 } }),
+    );
+    expect(carry).toBe(50);
+    expect(manager.current(23)?.production.remainder).toBe(50);
+    store.applyFacts([{ model: "ProductionCarry", key: "0x2", value: null }]);
+    expect(carry).toBe(0);
+    unsubscribe();
+  });
+
   it("produces until a finite batch runs out at the clock, with no later settlement of its row", () => {
     const store = new NativeFactStore();
     store.setSnapshot({ gameId: 1, complete: true, actor: null, timestamp: 350 });

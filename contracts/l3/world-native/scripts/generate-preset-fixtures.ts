@@ -6,7 +6,11 @@ import { toJsonValue } from "../../../../apps/herald/src/model-registry";
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { encodeMembers } from "../../../../apps/herald/src/native/serde";
 import { currentPresetFixture, serializePresetRows } from "../../../../apps/herald/src/native/current-preset-fixture";
-import { FRONTIER_FIXTURE_PRESET_ID } from "../../../../config/source/common/native-preset-modes";
+import {
+  FRONTIER_FIXTURE_PRESET_ID,
+  FRONTIER_S1_PRESET_ID,
+  FRONTIER_S1_DEV_PRESET_ID,
+} from "../../../../config/source/common/native-preset-modes";
 
 const schema = presetFixtureSchema();
 
@@ -18,6 +22,8 @@ for (const [name, id] of [
   ["eternum", 3],
   ["frontier", 5],
   ["devcon", 6],
+  ["season-one", FRONTIER_S1_PRESET_ID],
+  ["season-one-dev", FRONTIER_S1_DEV_PRESET_ID],
   ["frontier-check", FRONTIER_FIXTURE_PRESET_ID],
 ] as const) {
   const fixture = await currentPresetFixture(id, schema);
@@ -56,7 +62,17 @@ function conformancePreset(definition: Awaited<ReturnType<typeof currentPresetFi
 /** Fixture encoding can follow source edits before the single landing compile; production bindings still require ABI. */
 function presetFixtureSchema(): NativeSchema {
   const schema = structuredClone(compiledSchema);
-  for (const module of ["rules", "entry", "presets", "relics", "registrar", "blitz_results", "progression"])
+  for (const module of [
+    "rules",
+    "entry",
+    "quests",
+    "banes",
+    "presets",
+    "relics",
+    "registrar",
+    "blitz_results",
+    "progression",
+  ])
     readStructs(schema, module);
   schema.models = defineFactModels({
     struct: (name: string) => {
