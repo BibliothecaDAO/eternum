@@ -36,6 +36,7 @@ pub mod days;
 pub mod discovery_guards;
 pub mod entity_ids;
 pub mod entry;
+pub mod event_transactions;
 pub mod explore_rewards;
 pub mod fact_wire;
 pub mod faith;
@@ -126,8 +127,12 @@ pub fn setup_with_structures(seed_games: bool, structures_class: ByteArray) -> D
     setup_with_domains(seed_games, structures_class, "TroopFixture")
 }
 pub fn bind_authority(d: Deployment) -> Deployment {
-    deploy_player(2, GUARDIAN);
-    Deployment { actor: authority(), ..d }
+    let (actor, _) = deploy_player(2, GUARDIAN);
+    bind_player(d, actor)
+}
+pub fn bind_player(d: Deployment, actor: ContractAddress) -> Deployment {
+    assert_eq!(starknet::syscalls::get_class_hash_at_syscall(actor).unwrap(), d.account_class);
+    Deployment { actor, ..d }
 }
 pub fn declare_logic(name: ByteArray) -> ClassHash {
     *declare(name).unwrap().contract_class().class_hash

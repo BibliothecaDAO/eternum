@@ -1118,7 +1118,7 @@ fn creation_emits_release_and_overrides_without_per_game_configuration_rows() {
 fn launcher_rotation_preserves_roster_batch_settlements() {
     let first_run = setup();
     let (helper_account, _) = super::deploy_player(3, super::GUARDIAN);
-    let helper_run = super::Deployment { actor: helper_account, ..setup() };
+    let helper_run = super::bind_player(setup(), helper_account);
     let preset = definition(true);
     let request = CreateGameParams { roster: roster(1), ..params(true) };
     registry(first_run).register_preset(1, preset);

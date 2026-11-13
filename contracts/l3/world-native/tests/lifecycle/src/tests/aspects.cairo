@@ -9,9 +9,13 @@ use crate::resources::ResourceKey;
 use crate::stamina::StaminaSourceTrait;
 
 pub fn setup_aspects(seed: felt252) -> (Deployment, u32) {
+    let (_, preset) = world_test_support::tests::preset_projection::current_definition("season-one");
+    setup_aspect_preset(seed, preset)
+}
+
+pub fn setup_aspect_preset(seed: felt252, preset: crate::presets::PresetDefinition) -> (Deployment, u32) {
     let d = setup();
     world_test_support::tests::entry::set_operator(d, authority());
-    let (_, preset) = world_test_support::tests::preset_projection::current_definition("season-one");
     registry(d).register_preset(1, preset);
     let game_id = registry(d)
         .create_game(
@@ -44,7 +48,10 @@ fn settle(d: Deployment, game_id: u32, aspect: Option<u8>) -> bool {
 fn all_four_free_choices_draw_their_orders_and_join_once() {
     let (d, game_id) = setup_aspects(42);
     for aspect in 1_u8..5 {
-        let player = Deployment { actor: (1000 + Into::<u8, felt252>::into(aspect)).try_into().unwrap(), ..d };
+        let (actor, _) = world_test_support::tests::deploy_player(
+            1000 + Into::<u8, felt252>::into(aspect), world_test_support::tests::GUARDIAN,
+        );
+        let player = world_test_support::tests::bind_player(d, actor);
         assert!(settle(player, game_id, Some(aspect)));
         interact_with_state(
             d.games,

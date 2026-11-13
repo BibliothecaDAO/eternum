@@ -18,6 +18,7 @@ const TX_MESSAGES: Record<TransactionType, string> = {
   [TransactionType.SPEND_SKILL_POINT]: "Upgrade bought",
   [TransactionType.REFILL_STAMINA]: "Stamina refilled",
   [TransactionType.WITHDRAW_LORDS]: "LORDS withdrawn",
+  [TransactionType.CLAIM_DAILY_QUEST]: "Daily quest rewards collected",
   [TransactionType.EXPLORER_CREATE]: "Army raised",
   [TransactionType.EXPLORER_ADD]: "Army reinforced",
   [TransactionType.EXPLORER_DELETE]: "Army disbanded",

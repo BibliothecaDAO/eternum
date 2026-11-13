@@ -1057,7 +1057,12 @@ const presetDerivedModels = new Set([
 ]);
 
 export function defineFactModels({ struct, model: declare }) {
+  const names = new Set();
   const model = (...arguments_) => {
+    const [name] = arguments_;
+    if (names.has(name))
+      throw new Error(`Duplicate fact model ${name}: keep one declaration and migrate its consumers`);
+    names.add(name);
     const row = declare(...arguments_);
     if (row.name === "ResourceBalance" || row.name === "ResourceProduction")
       row.absence = {
@@ -1122,7 +1127,13 @@ export function defineFactModels({ struct, model: declare }) {
       };
     if (row.name === "AspectMembers")
       row.absence = { parent: "AspectRules", value: "zero", meaning: "No home has joined this Aspect in this game." };
-    if (["AspectActivity", "BaneProgress", "FirstTeamBane"].includes(row.name))
+    if (row.name === "AspectActivity")
+      row.absence = {
+        parent: "GameRegistry",
+        value: "zero",
+        meaning: "No home in this Aspect allocated an army on this day.",
+      };
+    if (["BaneProgress", "FirstTeamBane"].includes(row.name))
       row.absence = {
         parent: "BaneRules",
         value: "zero",
@@ -1418,16 +1429,6 @@ export function defineFactModels({ struct, model: declare }) {
       [{ name: "orders", type: "core::array::Span::<core::integer::u8>" }],
     ),
     model("BaneRules", "game", [{ name: "game_id", type: "core::integer::u32" }], struct("banes::BaneRules")),
-    model(
-      "AspectActivity",
-      "game",
-      [
-        { name: "game_id", type: "core::integer::u32" },
-        { name: "aspect", type: "core::integer::u8" },
-        { name: "day", type: "core::integer::u64" },
-      ],
-      [{ name: "active", type: "core::integer::u32" }],
-    ),
     model(
       "BaneProgress",
       "game",
