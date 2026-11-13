@@ -1,6 +1,7 @@
 import type { ExpeditionRules } from "@bibliothecadao/eternum";
 
 import { FrontierSeason, useSeasonRank } from "../board/season-board";
+import { AspectFights } from "./aspect-fights";
 import { AspectPage, useAspectPage } from "./aspect-page";
 
 /**
@@ -17,8 +18,9 @@ export const SeasonPlace = ({
   onClose: () => void;
 }) => {
   const page = useAspectPage();
+  const own = page?.kind === "page" ? page.own : null;
   return page ? (
-    <AspectPage plan={page} onClose={onClose} />
+    <AspectPage plan={page} fights={own && <AspectFights aspect={own.aspect} />} onClose={onClose} />
   ) : (
     <FrontierSeason rules={rules} onVisited={onVisited} onClose={onClose} />
   );

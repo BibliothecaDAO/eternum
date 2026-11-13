@@ -43,9 +43,18 @@ export const useAspectPage = (): AspectPagePlan | null => {
 /**
  * The Aspect page (one job: how the four Aspects stand in the race, and what the player's own is doing): the four
  * hyperstructures ranked, each with its height and stage; then the player's Aspect, its Triumphs, its bane bar and its
- * members by Glory with the site each guards today.
+ * members by Glory with the site each guards today; then its fights.
  */
-export const AspectPage = ({ plan, onClose }: { plan: AspectPagePlan; onClose: () => void }) => (
+export const AspectPage = ({
+  plan,
+  fights,
+  onClose,
+}: {
+  plan: AspectPagePlan;
+  /** The Aspect's fights from the game's history, under its members (AspectFights). */
+  fights?: ReactNode;
+  onClose: () => void;
+}) => (
   <HudPage label={ASPECT_PAGE_WORDS.title} icon="hyperstructure" onClose={onClose} bodyClassName="gap-3">
     {plan.kind === "reading" ? (
       <span className="text-hud-label text-hud-muted">{ASPECT_PAGE_WORDS.reading}</span>
@@ -53,6 +62,7 @@ export const AspectPage = ({ plan, onClose }: { plan: AspectPagePlan; onClose: (
       <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto">
         <Race race={plan.race} own={plan.own?.aspect ?? null} />
         {plan.own ? <YourAspect own={plan.own} /> : <Muted>{ASPECT_PAGE_WORDS.noAspect}</Muted>}
+        {plan.own && fights}
       </div>
     )}
   </HudPage>

@@ -505,6 +505,9 @@ export const ASPECT_PAGE_WORDS = {
   glory: "Glory",
   guards: (site: string) => `Guards the ${site}`,
   noAspect: "Join an Aspect to see its members",
+  fights: "Fights",
+  noFights: "No fights yet",
+  against: (aspect: string) => `against ${aspect}`,
   reading: "Reading the race…",
 } as const;
 
