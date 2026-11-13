@@ -9,9 +9,13 @@ use crate::resources::ResourceKey;
 use crate::stamina::StaminaSourceTrait;
 
 pub fn setup_aspects(seed: felt252) -> (Deployment, u32) {
+    let (_, preset) = world_test_support::tests::preset_projection::current_definition("season-one");
+    setup_aspect_preset(seed, preset)
+}
+
+pub fn setup_aspect_preset(seed: felt252, preset: crate::presets::PresetDefinition) -> (Deployment, u32) {
     let d = setup();
     world_test_support::tests::entry::set_operator(d, authority());
-    let (_, preset) = world_test_support::tests::preset_projection::current_definition("season-one");
     registry(d).register_preset(1, preset);
     let game_id = registry(d)
         .create_game(
