@@ -4,13 +4,7 @@ pub use world_test_support::tests::progression::*;
 fn exploring_at_each_depth_awards_exact_xp_once() {
     for (depth, xp) in array![(0_u8, 2_u32), (1, 3), (2, 4), (3, 5)] {
         let discovery = crate::expeditions::FrontierDiscoveryRules {
-            camp_bps: 5000,
-            rift_bps: 0,
-            ruin_bps: 0,
-            beasts_bps: 0,
-            shrine_bps: 0,
-            well_bps: 0,
-            empty_reveal_limit: 7,
+            camp_bps: 5000, rift_bps: 0, ruin_bps: 0, beasts_bps: 0, shrine_bps: 0, well_bps: 0, empty_reveal_limit: 7,
         };
         let (d, game_id, key) = super::registrar::setup_frontier_relics_with_rules(Some(discovery));
         let map = crate::map::IMapLogicDispatcher { contract_address: d.games };
