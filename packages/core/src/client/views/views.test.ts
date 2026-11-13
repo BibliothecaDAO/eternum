@@ -17,74 +17,6 @@ const RIVAL = ContractAddress(0xdef);
 describe("game views", () => {
   afterEach(() => setBlockTimestampSource(null));
 
-  it("keeps incomplete quest snapshots unknown and resolves known absence only after completion", () => {
-    const { store, views } = createQuestHarness();
-    store.setSnapshot({ gameId: GAME_ID, complete: false, actor: PLAYER.toString(), timestamp: 100 });
-    expect(store.requireOrAbsent("QuestProgress", { game_id: GAME_ID, home: 12, day: 0 }).unknown).toContain(
-      "INCOMPLETE_SNAPSHOT",
-    );
-    expect(views.dailyQuest(12, 100)).toBeUndefined();
-    store.setSnapshot({ gameId: GAME_ID, complete: true, actor: PLAYER.toString(), timestamp: 100 });
-    expect(views.dailyQuest(12, 100)).toMatchObject({
-      id: 6,
-      target: 15n,
-      progress: 0n,
-      completed: false,
-      claimed: false,
-      bonusClaimed: false,
-    });
-  });
-
-  it("recovers completed and claimed quests after subscription and reconnect finish", () => {
-    const { store, views } = createQuestHarness();
-    store.setSnapshot({ gameId: GAME_ID, complete: false, actor: PLAYER.toString(), timestamp: 100 });
-    store.applyFacts([
-      {
-        model: "QuestProgress",
-        key: "0x202",
-        value: { game_id: GAME_ID, home: 12, day: 0, progress: 15n, completed_level: 1 },
-      },
-    ]);
-    expect(views.dailyQuest(12, 100)).toBeUndefined();
-    store.applyFacts([
-      {
-        model: "LaborGrant",
-        key: "0x203",
-        value: { game_id: GAME_ID, home: 12, day: 0, account: PLAYER, amount: 0n, essence: 0n },
-      },
-    ]);
-    expect(views.dailyQuest(12, 100)).toBeUndefined();
-    store.setSnapshot({ gameId: GAME_ID, complete: true, actor: PLAYER.toString(), timestamp: 100 });
-    const expected = { target: 15n, progress: 15n, completed: true, claimed: true, bonusClaimed: false };
-    expect(views.dailyQuest(12, 100)).toMatchObject(expected);
-    store.setSnapshot({ gameId: GAME_ID, complete: false, actor: PLAYER.toString(), timestamp: 100 });
-    expect(views.dailyQuest(12, 100)).toBeUndefined();
-    store.setSnapshot({ gameId: GAME_ID, complete: true, actor: PLAYER.toString(), timestamp: 100 });
-    expect(views.dailyQuest(12, 100)).toMatchObject(expected);
-  });
-
-  it("keeps a quest outside the home snapshot scope unknown even when old facts remain", () => {
-    const { store, views } = createQuestHarness();
-    seedStructure(store, { entityId: 13, owner: RIVAL, category: StructureType.Realm, x: 2, y: 2 });
-    store.setSnapshot({ gameId: GAME_ID, complete: true, actor: PLAYER.toString(), timestamp: 100 });
-    expect(views.dailyQuest(13, 100)).toBeUndefined();
-    store.applyFacts([
-      {
-        model: "QuestProgress",
-        key: "0x302",
-        value: { game_id: GAME_ID, home: 13, day: 0, progress: 15n, completed_level: 1 },
-      },
-      {
-        model: "LaborGrant",
-        key: "0x303",
-        value: { game_id: GAME_ID, home: 13, day: 0, account: RIVAL, amount: 1000n, essence: 1500n },
-      },
-    ]);
-    expect(views.dailyQuest(13, 100)).toBeUndefined();
-    store.setSnapshot({ gameId: GAME_ID, complete: true, actor: RIVAL.toString(), timestamp: 100 });
-    expect(views.dailyQuest(13, 100)).toMatchObject({ target: 15n, progress: 15n, completed: true, claimed: true });
-  });
-
   it("reads the day's quest, completion and collection only from native facts", () => {
     const { store, views } = createHarness();
     expect(views.dailyQuest(12, 100)).toBeUndefined();
@@ -104,7 +36,6 @@ describe("game views", () => {
       },
     ]);
     expect(views.dailyQuest(12, 99)).toBeUndefined();
-    store.setSnapshot({ gameId: GAME_ID, complete: true, actor: PLAYER.toString(), timestamp: 100 });
     expect(views.dailyQuest(12, 100)).toMatchObject({
       id: 6,
       day: 0,
@@ -172,8 +103,6 @@ describe("game views", () => {
       bane: { required: 2, completed: 0, won: false },
       bonusClaimed: false,
     });
-    store.setSnapshot({ gameId: GAME_ID, complete: false, actor: PLAYER.toString(), timestamp: 15001 });
-    expect(views.dailyQuest(12, 15001)).toBeUndefined();
     store.applyFacts([
       {
         model: "BaneProgress",
@@ -191,8 +120,6 @@ describe("game views", () => {
         value: { game_id: GAME_ID, home: 12, day: 1, account: PLAYER, amount: 1000, essence: 1500 },
       },
     ]);
-    expect(views.dailyQuest(12, 15001)).toBeUndefined();
-    store.setSnapshot({ gameId: GAME_ID, complete: true, actor: PLAYER.toString(), timestamp: 15001 });
     expect(intervals(14490, 15010)).toEqual([{ start: 14500, end: 15000, percent: 50 }]);
     expect(views.dailyQuest(12, 15001)).toMatchObject({
       id: 8,
@@ -278,26 +205,6 @@ const createHarness = (): { store: NativeFactStore; views: GameViews } => {
   ClientConfigManager.instance().setActiveGame(GAME_ID, 1);
   const store = new NativeFactStore();
   return { store, views: createGameViews(fakeClient(store), PLAYER, () => null) };
-};
-
-const createQuestHarness = () => {
-  const result = createHarness();
-  seedFrontierRules(result.store, { startMainAt: 100, spacing: 10, seed: "5" });
-  seedStructure(result.store, { entityId: 12, owner: PLAYER, category: StructureType.Realm, x: 1, y: 1 });
-  result.store.applyFacts([
-    {
-      model: "QuestRules",
-      key: "0x201",
-      value: {
-        game_id: GAME_ID,
-        base_counts: dailyQuests.map(({ baseCount }) => baseCount),
-        labor: 1000n,
-        essence: 1500n,
-        bonus_percent: 150,
-      },
-    },
-  ]);
-  return result;
 };
 
 const fakeClient = (store: NativeFactStore): GameClient => ({ gameId: GAME_ID, setup: { store } }) as GameClient;

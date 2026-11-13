@@ -39,7 +39,6 @@ export * from "./structures";
 
 /** One-shot reads of the game facts the React hooks subscribe to, for a caller with no render loop. */
 export interface GameViews {
-  /** Undefined until the home snapshot is complete and in scope, or when no daily quest is enabled/active. */
   dailyQuest(home: ID, timestamp: number): ReturnType<typeof readDailyQuest>;
   explorers(structureEntityId: ID): ArmyInfo[];
   stamina(armyEntityId: ID): StaminaManager;
