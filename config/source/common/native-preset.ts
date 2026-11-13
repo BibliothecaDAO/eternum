@@ -92,6 +92,22 @@ export interface NativePreset {
     legendaryXp: number;
   };
   labor: null | { amount: number; campaignEssence: number; goldenAmount: number; goldenEssence: number };
+  race?: {
+    seasonDays: number;
+    gloryPerTick: number;
+    heightPerTick: number;
+    stageHeight: number;
+    clearMistPercent: number;
+    secondWindPercent: number;
+    paleMoonPercent: number;
+    spoilsPercent: number;
+    positions: readonly [
+      readonly [number, number],
+      readonly [number, number],
+      readonly [number, number],
+      readonly [number, number],
+    ];
+  };
   chests: null | {
     poolBps: number;
     topN: number;

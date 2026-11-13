@@ -131,6 +131,8 @@ function deriveEconomy(emit: EmitRule, economy: PresetRecord) {
     const quests = some(economy.quests);
     if (quests) emit("QuestRules", quests);
   }
+  const race = some(economy.race);
+  if (race) emit("RaceRules", race);
   emit("TradeRules", record(economy.trade));
   emit("BankRules", record(economy.banks));
   emit("HyperstructureRules", record(economy.hyperstructures));

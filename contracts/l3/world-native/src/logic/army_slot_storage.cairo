@@ -52,6 +52,9 @@ pub fn resolve(key: ExplorerKey, mut explorer: ExplorerTroops, refill: Option<St
             let progress = crate::logic::progression::require(key);
             let maximum = crate::progression::stamina_max(progress, explorer.troops.category, refill.stamina_config);
             let home = crate::resources::ResourceKey { game_id: key.game_id, entity_id: explorer.owner };
+            let rate = crate::logic::triumphs::percent(
+                home, explorer.coord, crate::rules::SECOND_WIND_STAGE, refill.timestamp,
+            );
             let windows = crate::logic::banes::windows(home, stamina.settled_at.into(), refill.timestamp);
             crate::stamina::refill_windows(
                 ref stamina,
@@ -61,6 +64,7 @@ pub fn resolve(key: ExplorerKey, mut explorer: ExplorerTroops, refill: Option<St
                 refill.armies_tick_in_seconds,
                 refill.timestamp,
                 windows,
+                rate,
                 crate::logic::banes::stamina_percent(key.game_id),
             );
             stamina.clamp(maximum);

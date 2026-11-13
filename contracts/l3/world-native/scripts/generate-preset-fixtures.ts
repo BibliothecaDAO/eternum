@@ -1,7 +1,7 @@
 import { shortString } from "starknet";
 import { schema as compiledSchema } from "../../../../apps/herald/src/native/fixtures";
 import { schemaIdentity, type NativeMember, type NativeSchema } from "../../../../apps/herald/src/native/schema";
-import { defineFactModels } from "../schema/fact-models.mjs";
+import { defineFactModels, factWireTypes } from "../schema/fact-models.mjs";
 import { toJsonValue } from "../../../../apps/herald/src/model-registry";
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { encodeMembers } from "../../../../apps/herald/src/native/serde";
@@ -62,16 +62,19 @@ function conformancePreset(definition: Awaited<ReturnType<typeof currentPresetFi
 /** Fixture encoding can follow source edits before the single landing compile; production bindings still require ABI. */
 function presetFixtureSchema(): NativeSchema {
   const schema = structuredClone(compiledSchema);
+  for (const type of factWireTypes) schema.types[type.name] = type;
   for (const module of [
     "rules",
     "entry",
     "quests",
+    "race",
     "banes",
     "presets",
     "relics",
     "registrar",
     "blitz_results",
     "progression",
+    "spires",
   ])
     readStructs(schema, module);
   schema.models = defineFactModels({

@@ -13,7 +13,7 @@ fn production_splits_at_start_and_early_end_and_carries_fractional_output() {
     };
     let window = BaneWindow { kind: ASH_FALL, start: 50, end: 71 };
     let mut once = resource;
-    settle_windows(23, ref once, 1, 80, array![window].span(), 50);
+    settle_windows(23, ref once, 1, 80, array![window].span(), 100, 50);
     assert_eq!(once.balance, 206);
     assert_eq!(once.production.remainder, 50);
     settle_windows(23, ref resource, 1, 51, array![BaneWindow { end: 51, ..window }].span(), 50);
@@ -32,7 +32,7 @@ fn stamina_splits_at_start_and_early_end_with_the_client_remainder() {
     let window = BaneWindow { kind: MIST_TIDE, start: 110, end: 131 };
     let mut once = initial;
     let mut boosts = Default::default();
-    crate::stamina::refill_windows(ref once, ref boosts, 120, config, 60, 160, array![window].span(), 50);
+    crate::stamina::refill_windows(ref once, ref boosts, 120, config, 60, 160, array![window].span(), 100, 50);
     assert_eq!(once.amount, 16);
     assert_eq!(once.remainder, 300000);
     let mut repeated = initial;
@@ -44,7 +44,7 @@ fn stamina_splits_at_start_and_early_end_with_the_client_remainder() {
         } else {
             array![].span()
         };
-        crate::stamina::refill_windows(ref repeated, ref boosts, 120, config, 60, now, windows, 50);
+        crate::stamina::refill_windows(ref repeated, ref boosts, 120, config, 60, now, windows, 100, 50);
     }
     assert_eq!(repeated, once);
 }

@@ -19,7 +19,9 @@ pub fn active_explorer(
         stamina_config: rules.troop_stamina_config,
         armies_tick_in_seconds: rules.tick_config.armies_tick_in_seconds,
     };
-    crate::logic::army_slots::resolve(key, explorer, Some(refill))
+    let mut explorer = crate::logic::army_slots::resolve(key, explorer, Some(refill));
+    crate::logic::army_relics::combat_boosts(key, ref explorer.troops.boosts, timestamp);
+    explorer
 }
 
 pub fn owned_structure(game_id: u32, entity_id: u64, actor: ContractAddress) -> Structure {
@@ -255,6 +257,7 @@ pub mod TroopsLogic {
                 crate::relics::Recipient::StructureGuard => self
                     .boost_guards(game_id, actor, command, rule, rules, timestamp),
                 crate::relics::Recipient::StructureProduction => panic!("production relic requires resources domain"),
+                crate::relics::Recipient::ArmySlot(_) => panic!("army relic requires relics domain"),
             }
         }
     }
@@ -293,7 +296,7 @@ pub mod TroopsLogic {
                     key.game_id, crate::structures::structure_coord(key),
                 );
                 let mut guard = crate::troops::frontier_guard(category, depth, seed, rules, timestamp);
-                guard.count = guard.count * crate::logic::banes::beast_percent(key, timestamp).into() / 100;
+                guard.count = guard.count * crate::logic::triumphs::beast_percent(key, timestamp).into() / 100;
                 array![guard].span()
             } else {
                 crate::troops::discovery_guards(category, seed, rules, timestamp)

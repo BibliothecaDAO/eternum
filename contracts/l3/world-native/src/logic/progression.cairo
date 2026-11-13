@@ -60,7 +60,7 @@ pub fn own_stamina_max(
     }
 }
 
-pub fn award_xp(key: ExplorerKey, award: XpAward) {
+pub fn award_xp(key: ExplorerKey, award: XpAward, timestamp: u64) {
     let rules = rules(key.game_id).expect('missing progression rules');
     let mut progress = require(key);
     let amount = match award {
@@ -71,6 +71,10 @@ pub fn award_xp(key: ExplorerKey, award: XpAward) {
         XpAward::Clear(amount) => amount,
     };
     let before = progress;
+    let tome = crate::logic::army_relics::bonus(key, crate::army_relics::RelicKind::Tome, timestamp);
+    let amount = (Into::<u32, u64>::into(amount) * (10_000 + Into::<u32, u64>::into(tome)) / 10_000)
+        .try_into()
+        .unwrap();
     crate::progression::earn_xp(ref progress, rules, amount);
     let mut earned = 0_u32;
     for rank in 1_u8..6 {

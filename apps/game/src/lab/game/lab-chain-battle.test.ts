@@ -18,7 +18,7 @@ it("sends a ruin fight through the lab account with its payout events separate f
   const scenario = await installLabChain(ruinFightScenario, startedAt);
   const span = encodeNativeCommand(nativeBindings.commandAbi, {
     kind: "BattleGuard",
-    value: { attacker_id: SPIRE_ARMY, defender_id: SITE },
+    value: { attacker_id: SPIRE_ARMY, defender_id: SITE, relic_slot: { kind: "None", value: undefined } },
   });
   const errors = vi.spyOn(console, "error");
   vi.useFakeTimers();

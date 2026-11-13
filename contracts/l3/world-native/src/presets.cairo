@@ -36,6 +36,7 @@ pub struct WithdrawalPreset {
 pub struct EconomyPreset {
     pub quests: Option<crate::quests::QuestRules>,
     pub banes: Option<crate::banes::BaneRules>,
+    pub race: Option<crate::race::RaceRules>,
     pub labor: Option<crate::entry::LaborRules>,
     pub trade: crate::trade::TradeRules,
     pub banks: crate::market::BankRules,
@@ -101,6 +102,11 @@ pub fn validate(preset: PresetDefinition) {
         "home rewards require expeditions",
     );
     assert!(!(preset.economy.labor.is_some() && preset.economy.quests.is_some()), "choose one home reward rule");
+    if let Some(race) = preset.economy.race {
+        crate::race::validate(race);
+        assert!(rules.day_unit_seconds != 0 && preset.economy.chests.is_none(), "race requires days without LORDS");
+        assert!(preset.season_win_points == 0, "race cannot use victory points");
+    }
     if let Some(labor) = preset.economy.labor {
         assert!(labor.amount != 0, "zero daily labor grant");
         assert!(labor.golden_amount != 0, "zero golden labor grant");
@@ -115,10 +121,16 @@ pub fn validate(preset: PresetDefinition) {
             "LORDS claim window needs reporting grace",
         );
     }
-    assert!(preset.economy.chests.is_some() == (rules.day_unit_seconds != 0), "chest rules require expedition");
+    assert!(preset.economy.chests.is_none() || rules.day_unit_seconds != 0, "chest rules require expedition");
     assert!(preset.economy.discovery.is_some() == (rules.day_unit_seconds != 0), "discovery requires expedition");
     if let Some(discovery) = preset.economy.discovery {
         crate::discovery::validate_frontier(discovery);
+        if let Some(race) = preset.economy.race {
+            assert!(
+                crate::discovery::maximum_race_chance(discovery, race.clear_mist_percent) <= 10000,
+                "Triumph and boon discovery odds exceed 100 percent",
+            );
+        }
         assert!(
             rules.map_config.camp_win_probability == 0 && rules.map_config.shards_mines_win_probability == 0,
             "expedition uses categorical odds",

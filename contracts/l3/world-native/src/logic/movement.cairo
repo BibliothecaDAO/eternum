@@ -33,6 +33,19 @@ pub mod MovementLogic {
     }
 
     #[abi(embed_v0)]
+    impl DiscoveryRoll of crate::discovery::IDiscoveryRoll<ContractState> {
+        fn roll_expedition_discovery(
+            ref self: ContractState,
+            key: crate::map::TileKey,
+            explorer_id: u64,
+            seed: u256,
+            context: crate::commands::ActionContext,
+        ) -> crate::discovery::Discovery {
+            crate::logic::discovery::roll(key, explorer_id, seed, context)
+        }
+    }
+
+    #[abi(embed_v0)]
     impl Exploration of crate::commands::IExplore<ContractState> {
         fn explore(
             ref self: ContractState,
@@ -77,14 +90,8 @@ pub mod MovementLogic {
                     .register_exploration(game_id, actor, crate::commands::action_context(context));
                 discovery =
                     if rules.day_unit_seconds != 0 {
-                        crate::expeditions::IFrontierDiscoveryDispatcherTrait::discover_frontier_tile(
-                            crate::expeditions::IFrontierDiscoveryLibraryDispatcher {
-                                class_hash: self.release.classes(game_id).map.read(),
-                            },
-                            tile,
-                            command.explorer_id,
-                            seed,
-                            crate::commands::action_context(context),
+                        DiscoveryRoll::roll_expedition_discovery(
+                            ref self, tile, command.explorer_id, seed, crate::commands::action_context(context),
                         )
                     } else {
                         if !destination.alt {
@@ -145,7 +152,7 @@ pub mod MovementLogic {
             let extraction = crate::exploration_rewards::IExtractionLibraryDispatcher {
                 class_hash: self.release.classes(game_id).map.read(),
             };
-            if discovery == crate::discovery::Discovery::Spire {
+            if discovery == crate::discovery::Discovery::Spire && rules.day_unit_seconds == 0 {
                 crate::exploration_rewards::IExtractionDispatcherTrait::raise_dormant_spire(
                     extraction,
                     game_id,
@@ -221,23 +228,24 @@ pub mod MovementLogic {
             assert!(explorer.troops.count != 0, "explorer is dead");
             let _home = crate::logic::troops::owned_structure(game_id, explorer.owner, actor);
             let home_key = crate::resources::ResourceKey { game_id, entity_id: explorer.owner };
-            assert!(command.depth > 0 && command.depth < 4, "invalid expedition depth");
             assert!(
                 crate::research::tier(
                     crate::logic::research::require(home_key).learned, crate::research::ROW_DEPTH,
-                ) >= command
-                    .depth,
-                "depth is not unlocked",
+                ) != 0,
+                "spire lore is not unlocked",
             );
             let spacing = self.expedition_spacing(game_id);
             let today = crate::days::day_of(context.game.unbox(), rules.day_unit_seconds, context.timestamp).index;
-            let spire = crate::expeditions::spire(spacing, crate::entity_ids::namespace(explorer.owner), today);
-            assert!(
-                explorer.coord == spire || crate::geometry::adjacent(explorer.coord, spire),
-                "army must be at its realm's spire",
+            let depth = crate::logic::expeditions::depth_at(game_id, explorer.coord);
+            let spire = crate::logic::spires::descent_origin(
+                crate::spires::ExpeditionSpireKey { game_id, structure_id: explorer.owner, epoch: today, depth },
+                explorer.coord,
+                command.depth,
             );
-            let destination = Coord {
-                y: explorer.coord.y + Into::<u8, u32>::into(command.depth) * spacing, ..explorer.coord,
+            let destination = if command.depth == 3 {
+                crate::logic::deep::arrival(game_id, context)
+            } else {
+                crate::logic::spires::nearest_free_arrival(game_id, Coord { y: spire.y + spacing, ..spire }, spacing)
             };
             let location = tile_key(game_id, destination);
             self.reveal_depth_arrival(game_id, destination, context);

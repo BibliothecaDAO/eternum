@@ -27,6 +27,7 @@ pub type Preset =
         crate::withdrawals::Retention,
         crate::exploration_rewards::ExplorationReward,
         crate::entry::LaborRules,
+        crate::race::RaceRules,
     >;
 
 pub type Storage =

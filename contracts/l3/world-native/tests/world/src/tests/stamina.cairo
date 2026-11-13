@@ -165,3 +165,22 @@ fn inline_army_actions_settle_the_bar_before_costs_and_refunds() {
     source.revert_initial_amount(rules(30), 110);
     assert_eq!(source.inline().amount, 35);
 }
+
+#[test]
+fn second_wind_multiplies_the_armys_bonus_and_mist_tide_rate_without_partition_drift() {
+    for (rate, expected) in array![(200_u16, 90_u64), (100, 45)] {
+        let mut once = bar(0);
+        let mut divided = once;
+        let mut boosts = TroopBoosts {
+            incr_stamina_regen_percent_num: 5000, incr_stamina_regen_seconds_left: 3600, ..Default::default(),
+        };
+        let mut divided_boosts = boosts;
+        once.refill_at_rate(ref boosts, 180, rules(1), 120, 3701, rate);
+        for timestamp in array![102_u64, 500, 1700, 3701] {
+            divided.refill_at_rate(ref divided_boosts, 180, rules(1), 120, timestamp, rate);
+        }
+        assert_eq!(once.amount, expected);
+        assert_eq!(once, divided);
+        assert_eq!(boosts, divided_boosts);
+    }
+}

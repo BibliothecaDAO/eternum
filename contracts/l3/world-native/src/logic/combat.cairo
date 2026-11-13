@@ -91,7 +91,7 @@ pub fn battle_guard(game_id: u32, actor: ContractAddress, command: Battle, conte
             );
         crate::logic::troops::TroopState::save(key, crate::troops::ExplorerRecordTrait::into_record(attacker));
     }
-    try_capture(key, attacker, target_key, target, rules, context);
+    try_capture(key, attacker, target_key, target, rules, command.relic_slot, context);
     if slot.is_some() {
         let (attacker_roll, defender_roll) = rolls;
         let winner = if attacker.troops.count == 0 && guard.count != 0 {
@@ -212,7 +212,13 @@ pub fn guard_attack(
     }
     crate::logic::guards::GuardState::save(guard_key, guard);
     try_capture(
-        defender_key, defender, ResourceKey { game_id, entity_id: command.guard.structure_id }, home, rules, context,
+        defender_key,
+        defender,
+        ResourceKey { game_id, entity_id: command.guard.structure_id },
+        home,
+        rules,
+        None,
+        context,
     );
     emit(
         crate::troops::BattleEvent {
@@ -434,6 +440,7 @@ pub fn try_capture(
     key: ResourceKey,
     target: Structure,
     rules: SliceRules,
+    relic_slot: Option<u8>,
     context: ExecutionContext,
 ) {
     if explorer.troops.count == 0
@@ -461,6 +468,7 @@ pub fn try_capture(
             crate::relics::ICaptureRewardsLibraryDispatcher { class_hash: classes(key.game_id).relics.read() },
             key,
             explorer_key.explorer_id,
+            relic_slot,
             crate::commands::action_context(context),
         );
     }

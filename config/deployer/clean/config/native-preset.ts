@@ -290,8 +290,8 @@ function buildEconomy(
   tokens: Array<{ resource_type: number; token: string }>,
 ) {
   const chests = preset.chests;
-  if (chests === undefined || (chests !== null) !== (preset.dayUnitSeconds !== 0))
-    throw new Error("Explicit chest rules are required for expedition presets only");
+  if (chests === undefined || (chests !== null && preset.dayUnitSeconds === 0))
+    throw new Error("Chest rules must be explicit and require expedition days");
   if (chests !== null) {
     if (
       !Number.isInteger(chests.poolBps) ||
@@ -389,6 +389,7 @@ function buildEconomy(
             golden_amount: BigInt(preset.labor.goldenAmount),
             golden_essence: BigInt(preset.labor.goldenEssence),
           }),
+    race: buildRace(preset),
     discovery: buildDiscovery(preset),
     progression:
       progression === null
@@ -608,5 +609,25 @@ function buildDiscovery(preset: ReturnType<typeof nativePresetForId>) {
     shrine_bps: rules.shrineBps,
     well_bps: rules.wellBps,
     empty_reveal_limit: rules.emptyRevealLimit,
+  });
+}
+
+function buildRace(preset: ReturnType<typeof nativePresetForId>) {
+  const race = preset.race;
+  if (!race) return new CairoOption(CairoOptionVariant.None);
+  const coord = ([x, y]: readonly [number, number]) => ({ alt: false, x, y });
+  return new CairoOption(CairoOptionVariant.Some, {
+    season_days: BigInt(race.seasonDays),
+    glory_per_tick: BigInt(race.gloryPerTick),
+    height_per_tick: race.heightPerTick,
+    stage_height: race.stageHeight,
+    clear_mist_percent: race.clearMistPercent,
+    second_wind_percent: race.secondWindPercent,
+    pale_moon_percent: race.paleMoonPercent,
+    spoils_percent: race.spoilsPercent,
+    first: coord(race.positions[0]),
+    second: coord(race.positions[1]),
+    third: coord(race.positions[2]),
+    fourth: coord(race.positions[3]),
   });
 }
