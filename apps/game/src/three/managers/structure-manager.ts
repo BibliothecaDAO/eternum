@@ -486,7 +486,8 @@ export class StructureManager {
             change.model === "StructureBuildings" ||
             change.model === "Hyperstructure" ||
             change.model === "HyperstructureProgress" ||
-            change.model === "HyperstructureShares"
+            change.model === "HyperstructureShares" ||
+            change.model === "AspectHyperstructure"
           ) {
             const row = change.current ?? change.previous;
             if (row?.game_id === configManager.getActiveGameId()) touched.add(safeInteger(row.entity_id));

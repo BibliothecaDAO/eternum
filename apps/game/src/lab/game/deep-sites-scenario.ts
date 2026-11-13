@@ -1,6 +1,6 @@
 import { readExpeditionRules, seasonDay } from "@bibliothecadao/eternum";
 import type { NativeFactStore } from "@bibliothecadao/eternum/game-client";
-import { aspects, deepSites, TileOccupier } from "@bibliothecadao/types";
+import { aspects, deepSites, StructureType, TileOccupier } from "@bibliothecadao/types";
 import { nativeRuleConstants } from "../../../../../contracts/l3/world-native/schema/client.gen";
 import { frontierSeasonOnePreset } from "../../../../../config/source/frontier/season-one";
 import { ARMY_DAY_KEY } from "@/ui/features/frontier/sites/site-fixture";
@@ -23,8 +23,8 @@ const OTHERS = [
   { home: 0x1ac13n, owner: "0x1ac23", aspect: CHAOS.id, army: 0x1ac33n, site: "altar", slot: 1, troops: 3_000n },
 ] as const;
 
-/** The race so far: each Aspect's hyperstructure height, Might two stages built and Chaos three. */
-const HEIGHTS = { 1: 4_100, 2: 1_500, 3: 6_000, 4: 0 } as const;
+/** The race so far: each Aspect's hyperstructure height, four stages apart: Harmony 1, Might 2, Chaos 3, Guile 4. */
+const HEIGHTS = { 1: 4_100, 2: 2_500, 3: 6_000, 4: 8_200 } as const;
 /** The Glory each home has earned holding the Foundation or the Altar; the player's realm 7 and its mate in Might. */
 const GLORY = [
   { home: 7n, glory: 120n },
@@ -37,8 +37,8 @@ const CHAOS_BAR = 600;
 /**
  * The Deep's three sites on a Season 1 day (/lab/game?scenario=deep-sites), at Season 1's numbers: the realm's army in
  * the Deep beside the Foundation, which a mate of its Aspect (Might) holds with one army; the Quarry behind its beast;
- * the Altar held by two armies of Chaos. The race stands with Chaos ahead at stage 3 and Might at stage 2, its first
- * Triumph fallen, each holder's Glory and Chaos's bane bar part filled. The chain answers InteractSite on a Deep site as deep_guards.cairo `join`
+ * the Altar held by two armies of Chaos. The race stands Guile at stage 4, Chaos 3, Might 2 (its first Triumph
+ * fallen) and Harmony 1, their four towers in a row above the arrival, each holder's Glory and Chaos's bane bar part filled. The chain answers InteractSite on a Deep site as deep_guards.cairo `join`
  * does: the army takes the first free slot and leaves its tile. Every other command is the depth proof's.
  */
 export const deepSitesScenario = (): LabScenario => {
@@ -58,6 +58,7 @@ export const deepSitesScenario = (): LabScenario => {
     ...deepSites.flatMap((kind, index) => siteFacts(store, kind, index, tiles[kind.position], day)),
     ...OTHERS.flatMap((other, index) => guardFacts(store, other, index, day, tick)),
     ...raceFacts(day),
+    ...aspectTowers(store, arrival),
   ] as never);
   return {
     ...scenario,
@@ -237,6 +238,45 @@ const raceFacts = (day: bigint): LabFact[] => [
   })),
   { model: "AltarBar", key: "0x1ad30", value: wire({ game_id: 1, aspect: CHAOS.id, charge: CHAOS_BAR }) },
 ];
+
+/** Each Aspect's hyperstructure, the entity its AspectHyperstructure names, in a row three tiles above the arrival. */
+const aspectTowers = (store: NativeFactStore, arrival: { col: number; row: number }): LabFact[] => {
+  const realm = store.require("Structure", { game_id: 1, entity_id: 7 });
+  return aspects.flatMap(({ id }, index) => {
+    const entity_id = 0x1ad00n + BigInt(id);
+    const tile = { col: arrival.col - 3 + index * 2, row: arrival.row - 3 };
+    return [
+      {
+        model: "Structure",
+        key: `0x1ad4${index}`,
+        value: wire({
+          ...realm,
+          entity_id,
+          owner: 0n,
+          base: { ...realm.base, category: StructureType.Hyperstructure, level: 0 },
+          metadata: { ...realm.metadata, realm_id: 0, order: 0, has_wonder: false },
+        }),
+      },
+      {
+        model: "Hyperstructure",
+        key: `0x1ad5${index}`,
+        value: { game_id: 1, entity_id, stage: "Construction", access: "Public", seed: "0x1" },
+      },
+      {
+        model: "TileOccupancy",
+        key: `0x1ad6${index}`,
+        value: wire({
+          game_id: 1,
+          alt: false,
+          ...tile,
+          entity_id,
+          category: TileOccupier.Hyperstructure,
+          is_structure: true,
+        }),
+      },
+    ];
+  });
+};
 
 const tickSeconds = (store: NativeFactStore) =>
   Number(store.require("SliceRules", { game_id: 1 }).tick_config.armies_tick_in_seconds);

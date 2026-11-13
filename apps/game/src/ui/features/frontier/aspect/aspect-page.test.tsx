@@ -9,7 +9,7 @@ import { chainOf } from "@/lab/game/lab-chain";
 import { AspectPage } from "./aspect-page";
 import { readAspectPage } from "./aspect-page-plan";
 
-/** The lab's Deep game: Chaos ahead at stage 3, the player's Might at stage 2 with its first Triumph, Chaos's bar part filled. */
+/** The lab's Deep game: Guile at stage 4, Chaos 3, the player's Might 2 with its first Triumph, Harmony 1; Chaos's bar part filled. */
 const lab = () => {
   vi.spyOn(configManager, "getActiveGameId").mockReturnValue(1);
   const scenario = deepSitesScenario();
@@ -21,10 +21,10 @@ it("ranks the four hyperstructures as the contract does, each with its height an
   const page = readAspectPage(chain, 1, 7n, player, now);
   if (page?.kind !== "page") throw new Error("no Aspect page");
   expect(page.race.standings.map(({ aspect, rank, height, stage }) => ({ aspect, rank, height, stage }))).toEqual([
-    { aspect: 3, rank: 1, height: 6_000, stage: 3 },
-    { aspect: 1, rank: 2, height: 4_100, stage: 2 },
-    { aspect: 2, rank: 3, height: 1_500, stage: 0 },
-    { aspect: 4, rank: 4, height: 0, stage: 0 },
+    { aspect: 4, rank: 1, height: 8_200, stage: 4 },
+    { aspect: 3, rank: 2, height: 6_000, stage: 3 },
+    { aspect: 1, rank: 3, height: 4_100, stage: 2 },
+    { aspect: 2, rank: 4, height: 2_500, stage: 1 },
   ]);
 });
 
@@ -71,10 +71,10 @@ it("draws the board, the player's Aspect and its members on the page", () => {
   act(() => root.render(<AspectPage plan={page} onClose={() => {}} />));
   const rows = [...host.querySelectorAll("[data-aspect-race] .ui-row")].map((row) => row.textContent);
   expect(rows).toEqual([
-    "1ChaosStage 3 of 5 · 6,000 of 10,000",
-    "2MightStage 2 of 5 · 4,100 of 10,000",
-    "3HarmonyStage 0 of 5 · 1,500 of 10,000",
-    "4GuileStage 0 of 5 · 0 of 10,000",
+    "1GuileStage 4 of 5 · 8,200 of 10,000",
+    "2ChaosStage 3 of 5 · 6,000 of 10,000",
+    "3MightStage 2 of 5 · 4,100 of 10,000",
+    "4HarmonyStage 1 of 5 · 2,500 of 10,000",
   ]);
   expect(host.textContent).toContain("Your Aspect: Might");
   expect(host.querySelector("[data-aspect-triumphs]")?.textContent).toContain("Clear Mist · day");
