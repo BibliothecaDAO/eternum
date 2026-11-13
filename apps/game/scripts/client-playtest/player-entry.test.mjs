@@ -1,7 +1,7 @@
 import { JSDOM } from "jsdom";
 import { describe, expect, it, vi } from "vitest";
 
-import { CONNECT_PLACE, markHomeCardEntryExpression, signInIfSignedOut } from "./player-entry.mjs";
+import { continueWithoutWallet, CONNECT_PLACE, markHomeCardEntryExpression, signInIfSignedOut } from "./player-entry.mjs";
 import { STEP_SETS } from "./steps.mjs";
 
 /**
@@ -76,4 +76,27 @@ it("refuses an expired saved state without sending another email code", async ()
   ).rejects.toThrow("no sign-in code was sent");
   expect(browser.run.mock.calls).toEqual([[["open", "https://dev.test/"]]]);
   expect(browser.click).not.toHaveBeenCalled();
+});
+
+
+describe("the optional wallet invitation", () => {
+  it("closes the wallet prompt through its close control and records that it was shown", async () => {
+    const dom = page('<section role="dialog" aria-label="Your wallet"><button aria-label="Close">Close</button></section>');
+    const run = vi.fn(([action, selector]) => {
+      expect(action).toBe("click");
+      dom.window.document.querySelector(selector).closest("section").remove();
+    });
+    const browser = { read: (expression) => dom.window.eval(expression), run };
+    expect(await continueWithoutWallet(browser, { sleep: vi.fn() })).toBe(true);
+    expect(run).toHaveBeenCalledOnce();
+    expect(dom.window.document.querySelector('[role="dialog"]')).toBeNull();
+  });
+
+  it("leaves other dialogs open", async () => {
+    const dom = page('<section role="dialog" aria-label="Your name"><button aria-label="Close">Close</button></section>');
+    const browser = { read: (expression) => dom.window.eval(expression), run: vi.fn() };
+    expect(await continueWithoutWallet(browser, { sleep: vi.fn() })).toBe(false);
+    expect(browser.run).not.toHaveBeenCalled();
+    expect(dom.window.document.querySelector('[role="dialog"]')).not.toBeNull();
+  });
 });

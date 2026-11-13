@@ -48,7 +48,7 @@ import {
   resolveBrowserExecutable,
   writeIntegratedGpuLauncher,
 } from "./client-playtest/integrated-gpu.mjs";
-import { continuePastTheDaySummary, enterAsPlayer, signInIfSignedOut } from "./client-playtest/player-entry.mjs";
+import { continuePastTheDaySummary, continueWithoutWallet, enterAsPlayer, signInIfSignedOut } from "./client-playtest/player-entry.mjs";
 import { restorePasskeys } from "./client-playtest/passkeys.mjs";
 import { Cancelled, createRunOwner } from "./client-playtest/run-owner.mjs";
 import { STEP_SETS } from "./client-playtest/steps.mjs";
@@ -418,6 +418,7 @@ async function playRun(context) {
     );
     browser.screenshot(join(runDir, `${label}-00-boot.png`));
     if (context.channel === "app-store") assertAppStorePage(browser);
+    record.walletInvitation = await continueWithoutWallet(browser, owner);
     if (player) record.daySummary = await continuePastTheDaySummary(browser, owner);
     // No order is sent before the run is proven to be in the game it was asked to play.
     record.game = assertInTargetGame(browser.observe().path, game);

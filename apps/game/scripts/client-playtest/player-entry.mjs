@@ -111,6 +111,16 @@ export async function findHomeCardEntry(browser, owner, timeoutMs, { card, game 
   return entry;
 }
 
+/** Closes the optional wallet invitation through its visible close button before playing the map. */
+export async function continueWithoutWallet(browser, owner) {
+  const prompt = '[role="dialog"][aria-label="Your wallet"]';
+  if (!browser.read(`Boolean(document.querySelector(${JSON.stringify(prompt)}))`)) return false;
+  browser.run(["click", `${prompt} button[aria-label="Close"]`]);
+  await waitUntil(owner, () => !browser.read(`Boolean(document.querySelector(${JSON.stringify(prompt)}))`),
+    "the wallet invitation did not close");
+  return true;
+}
+
 /**
  * A new day opens on the last one's summary card, over the map; a player reads it and continues. Returns whether it
  * was shown.
