@@ -52,6 +52,7 @@ check_events() {
 check_drift() {
   build_world
   pnpm run schema:native
+  pnpm run fixtures:native-presets
   (cd "$world" && scarb fmt)
   (cd "$world/tests" && scarb fmt)
   git diff --exit-code -- "$world/schema" "$world/src" "$world/storage" "$world/tests"

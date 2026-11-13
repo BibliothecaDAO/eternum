@@ -5,6 +5,7 @@ import { defineFactModels, factWireTypes } from "../schema/fact-models.mjs";
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { encodeMembers } from "../../../../apps/herald/src/native/serde";
 import { currentPresetFixture, serializePresetRows } from "../../../../apps/herald/src/native/current-preset-fixture";
+import { arenaCommandMask } from "../../../../config/source/common/native-commands";
 import {
   FRONTIER_S1_PRESET_ID,
   FRONTIER_FIXTURE_PRESET_ID,
@@ -35,6 +36,11 @@ console.log("Generated current Blitz, Frontier and Frontier check preset inputs 
 
 // Shared conformance conditions are independent of the playable preset catalog.
 const conformance = JSON.parse(readFileSync(new URL("conformance.json", directory), "utf8"));
+conformance.rules.command_mask = arenaCommandMask;
+writeFileSync(
+  new URL("../../support/src/command_masks.cairo", directory),
+  `// Generated from the current preset command catalog.\npub const BLITZ_COMMAND_MASK: u128 = 0x${arenaCommandMask.toString(16)};\n`,
+);
 write(
   "conformance.txt",
   encodeMembers(

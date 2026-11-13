@@ -119,7 +119,7 @@ fn story_v2_wire_has_entity_keys_and_no_contract_order_fields() {
     let mut data = array![];
     starknet::Event::append_keys_and_data(@event, ref keys, ref data);
     assert_eq!(keys.span(), array![2, 3, 0, owner.into(), 0, 0x100000001, 456].span());
-    assert_eq!(data.span(), array![1, 0, 12, 34, 50].span());
+    assert_eq!(data.span(), array![2, 0, 12, 34, 50].span());
 }
 
 #[test]

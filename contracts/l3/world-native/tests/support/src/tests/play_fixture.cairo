@@ -20,7 +20,7 @@ pub trait IPlayFixture<T> {
     );
     fn last_applied(self: @T) -> bool;
 }
-pub const BLITZ_COMMAND_MASK: u128 = 0x4ffffffffffff;
+pub use crate::command_masks::BLITZ_COMMAND_MASK;
 pub const BLITZ_RULES: u32 = crate::rules::HOME_REWARDS
     + crate::rules::DISCOVER_CAMPS
     + crate::rules::DISCOVER_CHESTS
