@@ -491,12 +491,23 @@ pub mod TroopsLogic {
             let key = ExplorerKey { game_id, explorer_id: command.explorer_id };
             let mut explorer = crate::logic::troops::authorized_explorer(key, actor, timestamp, game_context);
             let home = crate::logic::troops::owned_structure(game_id, explorer.owner, actor);
-            assert!(
-                crate::geometry::adjacent(
-                    explorer.coord, self.army_home(ResourceKey { game_id, entity_id: explorer.owner }, game_context),
-                ),
-                "explorer not adjacent to home",
-            );
+            let home_key = ResourceKey { game_id, entity_id: explorer.owner };
+            if !crate::geometry::adjacent(explorer.coord, self.army_home(home_key, game_context)) {
+                assert!(rules.day_unit_seconds != 0, "explorer not adjacent to home");
+                let today = crate::days::day_of(game_context.game.unbox(), rules.day_unit_seconds, timestamp).index;
+                assert!(
+                    crate::expeditions::ISupplyPostsDispatcherTrait::adjacent_supply_post(
+                        crate::expeditions::ISupplyPostsLibraryDispatcher {
+                            class_hash: self.release.classes(game_id).movement.read(),
+                        },
+                        home_key,
+                        explorer.coord,
+                        today,
+                        self.expedition_spacing(game_id),
+                    ),
+                    "explorer not adjacent to a supply post",
+                );
+            }
             self
                 .pay_troops(
                     game_id,

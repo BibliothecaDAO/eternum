@@ -1,7 +1,7 @@
 #[starknet::contract]
 pub mod MovementLogic {
     use starknet::ContractAddress;
-    use starknet::storage::StoragePointerReadAccess;
+    use starknet::storage::{StorageMapReadAccess, StoragePointerReadAccess};
     use crate::commands::{ExecutionContext, Explore};
     use crate::game::{IPointsDispatcherTrait, IPointsLibraryDispatcher};
     use crate::geometry::{neighbor, spire_neighbor, tile_key};
@@ -42,6 +42,33 @@ pub mod MovementLogic {
             context: crate::commands::ActionContext,
         ) -> crate::discovery::Discovery {
             crate::logic::discovery::roll(key, explorer_id, seed, context)
+        }
+    }
+
+    #[abi(embed_v0)]
+    impl SupplyPosts of crate::expeditions::ISupplyPosts<ContractState> {
+        fn adjacent_supply_post(
+            self: @ContractState, home: ResourceKey, army: Coord, today: u64, spacing: u32,
+        ) -> bool {
+            if army.alt || crate::expeditions::region_day(army, spacing) != today || army.y / spacing % 4 == 3 {
+                return false;
+            }
+            for direction in 0_u8..6 {
+                let Some(coord) = crate::geometry::checked_neighbor_at_distance(army, direction, 1) else {
+                    continue;
+                };
+                if coord.y / spacing != army.y / spacing || coord.x / spacing != army.x / spacing {
+                    continue;
+                }
+                let cleared_by = crate::state::read()
+                    .structures
+                    .supply_posts
+                    .read((home.game_id, coord.alt, coord.x, coord.y));
+                if cleared_by != 0 && cleared_by == home.entity_id {
+                    return true;
+                }
+            }
+            false
         }
     }
 

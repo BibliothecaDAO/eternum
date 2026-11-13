@@ -16,6 +16,7 @@ import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import {
   configManager,
+  dayOf,
   entityHomeNamespace,
   expeditionRealmSite,
   readExpeditionRules,
@@ -28,9 +29,11 @@ import {
   RESOURCE_PRECISION,
   ResourcesIds,
   TroopTier,
+  StructureType,
 } from "@bibliothecadao/types";
 
 import { ReinforceSheet, useSelectedReinforcement } from "./reinforce";
+import { reinforcementDirectionOf } from "@bibliothecadao/eternum";
 import { transferArmies } from "./transfer-fixture";
 
 let host: HTMLDivElement;
@@ -233,3 +236,59 @@ it("opens no card for the realm on its own, an army away from home, or a viewer"
   act(() => useUIStore.setState({ isSpectating: true }));
   expect(host.textContent).toBe("");
 });
+
+const armyBesideSupplyPost = (depth: number) => {
+  const fixture = armyBesideHome();
+  const rules = readExpeditionRules(fixture.store, 1)!;
+  const camp = { col: fixture.home.col + 3, row: fixture.home.row + depth * rules.spacing };
+  const beside = getNeighborHexes(camp.col, camp.row)[0]!;
+  fixture.moveTo(beside);
+  const site = {
+    game_id: 1,
+    entity_id: 710,
+    category: StructureType.Camp,
+    beast_kind: "None" as const,
+    initial_guard_count: 1000n * BigInt(RESOURCE_PRECISION),
+    alt: false,
+    ...camp,
+    clear: { explorer_id: 201n, home_id: fixture.realm.entity_id, reward: null },
+  };
+  fixture.store.applyFacts([{ model: "ExpeditionSite", key: "0x72", value: site }]);
+  return { ...fixture, beside, camp, site, rules };
+};
+
+it.each([0, 1, 2])("reinforces from the Realm's stock beside its cleared camp at depth %s", async (depth) => {
+  const fixture = armyBesideSupplyPost(depth);
+  const { add } = render(fixture);
+  expect(host.textContent).toContain("Reinforce Army 1");
+  await press("Max");
+  expect(host.textContent).toContain("840 Wheat");
+  await press("Reinforce");
+  expect(add).toHaveBeenCalledOnce();
+  expect(add.mock.calls[0][0]).toMatchObject({
+    to_explorer_id: 201,
+    amount: 420 * RESOURCE_PRECISION,
+    home_direction: getDirectionBetweenAdjacentHexes(fixture.beside, fixture.camp),
+  });
+});
+
+it.each(["uncleared", "other Realm", "rift", "distant", "yesterday", "Deep"])(
+  "rejects an ineligible supply post: %s",
+  (reason) => {
+    const fixture = armyBesideSupplyPost(reason === "Deep" ? 3 : 1);
+    const site = { ...fixture.site };
+    if (reason === "uncleared")
+      fixture.store.applyFacts([{ model: "ExpeditionSite", key: "0x72", value: { ...site, clear: null } }]);
+    if (reason === "other Realm")
+      fixture.store.applyFacts([
+        { model: "ExpeditionSite", key: "0x72", value: { ...site, clear: { ...site.clear, home_id: 8n } } },
+      ]);
+    if (reason === "rift")
+      fixture.store.applyFacts([
+        { model: "ExpeditionSite", key: "0x72", value: { ...site, category: StructureType.Rift } },
+      ]);
+    if (reason === "distant") fixture.moveTo({ col: fixture.camp.col + 3, row: fixture.camp.row });
+    if (reason === "yesterday") setBlockTimestampSource(() => dayOf(fixture.rules, 350)!.end);
+    expect(reinforcementDirectionOf(fixture.store, fixture.realm, 201)).toBeNull();
+  },
+);

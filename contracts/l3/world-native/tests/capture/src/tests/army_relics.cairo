@@ -291,3 +291,145 @@ fn beast_clears_pay_wheat_or_triple_xp_through_explore_and_battle() {
         assert_eq!(xp - before_xp, expected_xp);
     }
 }
+
+#[test]
+fn a_cleared_troll_camp_reinforces_from_home_stock_away_from_home() {
+    let (_, mut preset) = super::preset_projection::current_definition("frontier-s1");
+    let discovery = crate::expeditions::FrontierDiscoveryRules {
+        beasts_bps: 0, camp_bps: 100, rift_bps: 0, ruin_bps: 100, shrine_bps: 0, well_bps: 0, empty_reveal_limit: 7,
+    };
+    preset.economy.discovery = Some(discovery);
+    preset.rules.battle_config.cooldown_seconds = 0;
+    preset.rules.battle_config.regular_immunity_ticks = 0;
+    preset.rules.troop_stamina_config.stamina_initial = 180;
+    preset.rules.troop_stamina_config.stamina_knight_max = 180;
+    let (d, game_id) = create_open_frontier(preset, BAG_SECONDS);
+    assert!(
+        execute_in_game(
+            d,
+            game_id,
+            Command::SettleSeason(crate::realms::SettleSeason { selected_realm: None, aspect: Some(1) }),
+            360,
+        ),
+    );
+    let home_id = snforge_std::interact_with_state(d.games, || crate::entity_ids::home_for_actor(game_id, d.actor));
+    let home = ResourceKey { game_id, entity_id: home_id };
+    assert!(
+        execute_in_game(
+            d,
+            game_id,
+            Command::CreateBuilding(
+                crate::buildings::CreateBuilding {
+                    structure_id: home_id,
+                    directions: array![0].span(),
+                    category: 28,
+                    scouting_kind: 0,
+                    use_simple: true,
+                },
+            ),
+            361,
+        ),
+    );
+    let explorer_id = *IStructureOperationsDispatcher { contract_address: d.games }.home_armies(home).at(0);
+    let key = ExplorerKey { game_id, explorer_id };
+    let army = GameState { contract_address: d.games }.resolved_explorer(key).unwrap();
+    let camp_coord = crate::geometry::neighbor(army.coord, 0);
+    let root = discovery_root(game_id, discovery, 0, Some(any_relic()), crate::discovery::Discovery::Camp);
+    assert!(explore_with_root(d, game_id, explorer_id, root, 400));
+    let camp_id = IMapLogicDispatcher { contract_address: d.games }
+        .occupancy(crate::geometry::tile_key(game_id, camp_coord))
+        .unwrap()
+        .entity_id;
+    let camp = ResourceKey { game_id, entity_id: camp_id };
+    for hit in 0_u64..4 {
+        let receipt = snforge_std::interact_with_state(
+            d.games, || crate::logic::expeditions::expedition_site(camp).unwrap(),
+        );
+        if receipt.clear.is_some() {
+            break;
+        }
+        assert!(
+            execute_in_game(
+                d,
+                game_id,
+                Command::BattleGuard(
+                    crate::commands::Battle { attacker_id: explorer_id, defender_id: camp_id, relic_slot: None },
+                ),
+                401 + hit,
+            ),
+        );
+    }
+    let receipt = snforge_std::interact_with_state(
+        d.games, || crate::logic::expeditions::expedition_site(camp).unwrap(),
+    );
+    assert_eq!(receipt.clear.unwrap().home_id, home_id);
+    assert!(
+        execute_in_game(
+            d, game_id, Command::Move(crate::commands::Move { explorer_id, directions: array![0, 0].span() }), 410,
+        ),
+    );
+    let army = GameState { contract_address: d.games }.resolved_explorer(key).unwrap();
+    let origin = crate::expeditions::site(preset.settlement.spacing, crate::entity_ids::namespace(home_id), 0, 0);
+    assert!(!crate::geometry::adjacent(army.coord, origin));
+    assert!(crate::geometry::adjacent(army.coord, camp_coord));
+    let resources = IResourceOperationsDispatcher { contract_address: d.games };
+    let wheat = ResourceSlot { game_id, entity_id: home_id, resource_type: crate::resources::WHEAT };
+    let before_wheat = resources.resource_balance(wheat);
+    assert!(
+        execute_in_game(
+            d,
+            game_id,
+            Command::ManageTroops(
+                crate::troop_management::ManageTroops::RecruitExplorer(
+                    crate::troop_management::RecruitExplorer { explorer_id, amount: RESOURCE_PRECISION },
+                ),
+            ),
+            411,
+        ),
+    );
+    assert_eq!(
+        GameState { contract_address: d.games }.resolved_explorer(key).unwrap().troops.count,
+        army.troops.count + RESOURCE_PRECISION,
+    );
+    assert_eq!(resources.resource_balance(wheat), before_wheat - 2 * RESOURCE_PRECISION);
+}
+
+#[test]
+fn supply_post_reader_checks_each_upper_layer_home_day_and_distance() {
+    let (address, _) = super::deploy("MovementLogic", @array![]);
+    let reader = crate::expeditions::ISupplyPostsDispatcher { contract_address: address };
+    let home = ResourceKey { game_id: 7, entity_id: 11 };
+    for depth in 0_u32..4 {
+        let camp = crate::troops::Coord { alt: false, x: 20, y: 4 * 32 + depth * 32 + 16 };
+        let army = crate::geometry::neighbor(camp, 0);
+        snforge_std::interact_with_state(
+            address,
+            || {
+                crate::state::write()
+                    .structures
+                    .supply_posts
+                    .write((home.game_id, camp.alt, camp.x, camp.y), home.entity_id);
+            },
+        );
+        assert_eq!(
+            crate::expeditions::ISupplyPostsDispatcherTrait::adjacent_supply_post(reader, home, army, 1, 32), depth < 3,
+        );
+        assert!(
+            !crate::expeditions::ISupplyPostsDispatcherTrait::adjacent_supply_post(
+                reader, ResourceKey { entity_id: 12, ..home }, army, 1, 32,
+            ),
+        );
+        assert!(!crate::expeditions::ISupplyPostsDispatcherTrait::adjacent_supply_post(reader, home, army, 2, 32));
+        assert!(!crate::expeditions::ISupplyPostsDispatcherTrait::adjacent_supply_post(reader, home, camp, 1, 32));
+        assert!(
+            !crate::expeditions::ISupplyPostsDispatcherTrait::adjacent_supply_post(
+                reader, home, crate::geometry::neighbor(army, 0), 1, 32,
+            ),
+        );
+    }
+    assert!(
+        !crate::expeditions::ISupplyPostsDispatcherTrait::adjacent_supply_post(
+            reader, home, crate::troops::Coord { alt: false, x: 0, y: 128 }, 1, 32,
+        ),
+    );
+}

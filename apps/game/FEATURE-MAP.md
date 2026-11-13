@@ -10,12 +10,13 @@ separate `--steps home-golden` run checks the golden home and claimed day after 
 Frontier army management: select an army from the dock or map; on a phone tap its selected token for details. The
 panel's red trash, right after its name at the top left, is **Delete**: it asks for confirmation in the panel (troops,
 skills, XP and carried resources are lost; the freed slot keeps its stamina), then removes the army. Reinforce is the
-realm's, as in Blitz: select the realm on the map, then right-click (on a phone, hold) its army on a tile beside home
-(the tooltip reads **Reinforce**): the **Reinforce** sheet takes the count (Max, +500, slider), shows the army's troops
-before → after and the wheat price, and sends `explorer_add` from the realm's stock of the army's own troop. Proof: the
-standard client playtest with `--steps army-management --player <saved-test-player> --storage-state <file>` deploys ten
-troops, cancels Delete once, then confirms it and checks the army disappears. Dev: `/lab/kit/hud/army-crowded` (the
-owner's Army 4 with 0 LORDS) and `army-crowded-ready` (1,240 LORDS and a point held).
+realm's, as in Blitz: select the realm on the map, then right-click (on a phone, hold) its army on a tile beside home or
+a Troll camp that Realm cleared today, on any layer above the Deep (the tooltip reads **Reinforce**): the **Reinforce**
+sheet takes the count (Max, +500, slider), shows the army's troops before → after and the wheat price, and sends
+`explorer_add` from the realm's stock of the army's own troop. Proof: the standard client playtest with
+`--steps army-management --player <saved-test-player> --storage-state <file>` deploys ten troops, cancels Delete once,
+then confirms it and checks the army disappears. Dev: `/lab/kit/hud/army-crowded` (the owner's Army 4 with 0 LORDS) and
+`army-crowded-ready` (1,240 LORDS and a point held).
 
 The optional `--steps army-stock` preparation builds a Barracks through the realm board when the saved home needs
 reserve troops.
@@ -1219,13 +1220,14 @@ receipt over native fixture facts.
 ## Frontier beast guards
 
 Standing sites share one species identity between model, plate, selected card and a fight's forces in history. Roaming
-Beasts show Cyclops for the lowly encounter and Wraith for the stronger encounter. Their inclusive count bands, Knight
-T1 combat and immutable initial-count classification are unchanged. Camps show Troll alone at every depth. Rifts show
-Dark fey hovering and moving its wings above the rift. Ruins show Ammit / Basilisk / Wyvern / Hydra from surface through
-depth III. All beasts have subtle GPU idle motion: planted breathing, a drifting Wraith shroud and the fey's
-hover/wings. Instance phases differ; clearing a site removes its guard and standing effects. All standing beasts and
-their landmarks share the settlements' south-facing orientation, toward the fixed map camera at every hex and zoom. The
-idle motion remains in model-local coordinates.
+Beasts show Cyclops for the lowly encounter and Wraith for the stronger encounter. The site receipt retains the drawn
+kind, including when the two strength bands meet or a bane changes the guard count. Cyclops pay four wheat per initial
+guard troop; Wraiths pay triple clear XP and no resource. Camps show Troll alone at every depth. Rifts show Dark fey
+hovering and moving its wings above the rift. Ruins show Ammit / Basilisk / Wyvern / Hydra from surface through depth
+III. All beasts have subtle GPU idle motion: planted breathing, a drifting Wraith shroud and the fey's hover/wings.
+Instance phases differ; clearing a site removes its guard and standing effects. All standing beasts and their landmarks
+share the settlements' south-facing orientation, toward the fixed map camera at every hex and zoom. The idle motion
+remains in model-local coordinates.
 
 `/lab/models?family=beasts&group=site-map` opens the final eight encounter contexts on their tiles. View focuses a tile;
 Turn and Light inspect it. The sidebar shows the selected concepts and a recorded screenshot of the previous production

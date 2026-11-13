@@ -3774,7 +3774,11 @@ export default class WorldmapScene extends WarpTravel {
       this.openTargetCardForSelectedArmy(targetHex);
       return;
     }
-    if (this.isFrontierHud() && selected.structure && target.army) {
+    if (
+      this.isFrontierHud() &&
+      target.army &&
+      this.game.store.get("Structure", { game_id: configManager.getActiveGameId(), entity_id: selectedEntityId })
+    ) {
       this.state.selectOnMap({ kind: "structure", entityId: selectedEntityId, tile: targetHex });
       this.state.updateEntityActionHoveredHex(null);
       return;

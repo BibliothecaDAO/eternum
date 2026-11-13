@@ -1,18 +1,6 @@
-import {
-  configManager,
-  getBalance,
-  getTroopResourceId,
-  realmLearned,
-  structureMapPosition,
-} from "@bibliothecadao/eternum";
+import { configManager, getBalance, getTroopResourceId, realmLearned } from "@bibliothecadao/eternum";
 import { safeInteger, type NativeFactStore, type NativeRows } from "@bibliothecadao/eternum/game-client";
-import {
-  type Direction,
-  getDirectionBetweenAdjacentHexes,
-  RESOURCE_PRECISION,
-  type TroopTier,
-  type TroopType,
-} from "@bibliothecadao/types";
+import { RESOURCE_PRECISION, type TroopTier, type TroopType } from "@bibliothecadao/types";
 
 import { readTroopRaise, troopRange, type TroopRaise, type TroopRange } from "../deploy/deploy-plan";
 
@@ -57,18 +45,3 @@ export const reinforceRange = (plan: ReinforcePlan): TroopRange => troopRange(ro
 /** The troops that could go before the wheat: the realm's stock, within the room under the army's cap. */
 const roomFor = ({ current, cap, stock }: Pick<ReinforcePlan, "current" | "cap" | "stock">): number =>
   Math.max(0, Math.min(stock, cap - current));
-
-/**
- * Where the army stands against its realm's home today: the direction from it to the home when it stands on a tile
- * beside it on the surface, the one place the contract reinforces it; null anywhere else or while unknown.
- */
-export const homeDirectionOf = (
-  store: NativeFactStore,
-  realm: NativeRows["Structure"],
-  explorerId: number,
-): Direction | null => {
-  const army = store.entityOccupancy(realm.game_id, explorerId);
-  const home = structureMapPosition(store, realm);
-  if (!army || army.alt || !home || home.alt) return null;
-  return getDirectionBetweenAdjacentHexes(army, { col: home.x, row: home.y });
-};

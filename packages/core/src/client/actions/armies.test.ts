@@ -96,3 +96,47 @@ it("plans around standing structures and leaves a cleared site's tile open", asy
   expect(indexes.structureHexes.get(7)?.get(8)).toEqual({ id: 2, owner: 9n });
   vi.restoreAllMocks();
 });
+
+it("offers only reinforcement beside the Realm's cleared camp and uses the same eligibility as the sheet", () => {
+  vi.spyOn(configManager, "getActiveGameId").mockReturnValue(7);
+  vi.spyOn(configManager, "getTroopConfig").mockReturnValue({
+    troop_limit_config: { guard_resurrection_delay: 0 },
+  } as never);
+  vi.spyOn(configManager, "getTick").mockReturnValue(1);
+  vi.spyOn(configManager, "getMapCenter").mockReturnValue(0);
+  vi.spyOn(configManager, "helpTransfers").mockReturnValue(["troops"]);
+  vi.spyOn(timestamp, "getBlockTimestamp").mockReturnValue({ currentBlockTimestamp: 129_610 } as never);
+  const realm = { ...parkedRealm, entity_id: 3n, owner: 1n };
+  const army = { col: 28, row: 55, alt: false };
+  let clearedBy = 3n;
+  let armyHome = 3n;
+  const scoped = {
+    setup: {
+      store: {
+        get: (model: string) =>
+          model === "Structure" ? realm : model === "ExplorerTroops" ? { owner: armyHome } : rows[model],
+        require: (model: string) => (model === "Structure" ? realm : rows[model]),
+        entityOccupancy: () => army,
+        inGame: () => [{ category: StructureType.Camp, col: 27, row: 55, alt: false, clear: { home_id: clearedBy } }],
+      },
+    },
+  } as never;
+  const input = {
+    structureId: 3,
+    armyHexes: new Map([[28, new Map([[55, { id: 201, owner: 1n }]])]]),
+    exploredHexes: new Map([[28, new Map([[55, 1 as BiomeType]])]]),
+    playerAddress: 1n,
+  };
+  const paths = createGameActions(scoped).structurePaths(input);
+  expect(paths.getPaths().size).toBe(1);
+  expect(paths.get(ActionPaths.posKey(army))).toEqual([
+    { hex: { col: 25, row: 45 }, actionType: ActionType.Move },
+    { hex: { col: 28, row: 55 }, actionType: ActionType.Help, biomeType: 1, staminaCost: 0 },
+  ]);
+  clearedBy = 4n;
+  expect(createGameActions(scoped).structurePaths(input).getPaths().size).toBe(0);
+  clearedBy = 3n;
+  armyHome = 4n;
+  expect(createGameActions(scoped).structurePaths(input).getPaths().size).toBe(0);
+  vi.restoreAllMocks();
+});

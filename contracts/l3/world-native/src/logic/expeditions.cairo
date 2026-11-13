@@ -59,6 +59,12 @@ pub fn clear_site(key: crate::resources::ResourceKey, result: SiteClear) {
     assert!(site.clear.is_none(), "site already cleared");
     site.clear = Some(result);
     write_site(key, site);
+    if site.category == crate::taxonomy::CAMP_CATEGORY {
+        crate::state::write()
+            .structures
+            .supply_posts
+            .write((key.game_id, site.alt, site.col, site.row), result.home_id);
+    }
     crate::logic::map::MapState::clear_expedition_site(key);
     crate::logic::guards::GuardState::reset(key);
     crate::logic::structures::StructureState::remove(key);

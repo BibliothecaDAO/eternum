@@ -245,3 +245,10 @@ pub trait ISiteRewards<T> {
         context: crate::commands::ActionContext,
     );
 }
+
+#[starknet::interface]
+pub trait ISupplyPosts<T> {
+    fn adjacent_supply_post(
+        self: @T, home: crate::resources::ResourceKey, army: Coord, today: u64, spacing: u32,
+    ) -> bool;
+}
