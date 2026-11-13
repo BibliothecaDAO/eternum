@@ -1,4 +1,4 @@
-use starknet::storage::{StorageMapReadAccess, StorageMapWriteAccess, StoragePointerReadAccess};
+use starknet::storage::{StorageMapReadAccess, StorageMapWriteAccess, StoragePathEntry, StoragePointerReadAccess};
 use crate::deep::{AltarBar, TeamBane, TeamBaneKey};
 
 pub fn bane(key: TeamBaneKey) -> Option<TeamBane> {
@@ -13,12 +13,9 @@ pub fn bane(key: TeamBaneKey) -> Option<TeamBane> {
 }
 
 pub fn height_blocked(game_id: u32, aspect: u8, timestamp: u64) -> bool {
-    let game = crate::logic::deep::calendar_game(game_id);
-    if timestamp < game.start_main_at || timestamp >= game.end_at {
+    let Some(day) = day(game_id, timestamp) else {
         return false;
-    }
-    let unit = crate::logic::preset_record::for_game(game_id).rules.day_unit_seconds.read();
-    let day = crate::days::day_of(game, unit, timestamp);
+    };
     if bane(TeamBaneKey { game_id, aspect, day: day.index }).is_none() {
         return false;
     }
@@ -42,14 +39,12 @@ pub fn credit(game_id: u32, source: u8, boundary: u64) {
 }
 
 fn issue_next_day(game_id: u32, source: u8, boundary: u64) -> bool {
-    let game = crate::logic::game::game(game_id);
-    if boundary >= game.end_at {
+    let end = crate::state::read().games.games.entry(game_id).end_at.read();
+    if boundary >= end {
         return false;
     }
-    let day = crate::days::day_of(
-        game, crate::logic::preset_record::for_game(game_id).rules.day_unit_seconds.read(), boundary - 1,
-    );
-    if day.end >= game.end_at {
+    let day = day(game_id, boundary - 1).expect('Altar tick outside season');
+    if day.end >= end {
         return false;
     }
     let Some(target) = target(game_id, source, day.index, boundary - 1) else {
@@ -91,7 +86,7 @@ fn next_quest(key: TeamBaneKey, source: u8) -> u8 {
         .latest_bane_day
         .read((key.game_id, key.aspect))
         .map(|day| bane(TeamBaneKey { day, ..key }).expect('missing previous team bane').quest);
-    let seed = crate::logic::game::game(key.game_id).seed;
+    let seed = crate::state::read().games.games.entry(key.game_id).seed.read();
     let draw: u256 = core::poseidon::poseidon_hash_span(
         array![seed, 'team-bane-quest', key.aspect.into(), source.into(), key.day.into()].span(),
     )
@@ -109,4 +104,26 @@ fn next_quest(key: TeamBaneKey, source: u8) -> u8 {
         }
     }
     quest
+}
+
+fn day(game_id: u32, timestamp: u64) -> Option<crate::days::Day> {
+    let state = crate::state::read();
+    let game = state.games.games.entry(game_id);
+    let start = game.start_main_at.read();
+    let end = match crate::logic::race::result(game_id) {
+        Some(result) => result.scheduled_end_at,
+        None => game.end_at.read(),
+    };
+    if timestamp < start || timestamp >= end {
+        return None;
+    }
+    Some(
+        crate::days::calendar_day(
+            game.seed.read(),
+            start,
+            end,
+            crate::logic::preset_record::for_game(game_id).rules.day_unit_seconds.read(),
+            timestamp,
+        ),
+    )
 }

@@ -20,7 +20,7 @@ pub fn settle(key: ExplorerKey, mut army: ExplorerTroops, context: ExecutionCont
         return army;
     };
     let day = crate::days::day_at_index(
-        crate::logic::deep::calendar_game(key.game_id),
+        crate::logic::deep::calendar_game(key.game_id, context.game.unbox()),
         context.rules.unbox().day_unit_seconds,
         crate::logic::army_days::require(key),
     );

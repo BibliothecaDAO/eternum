@@ -45,6 +45,12 @@ pub fn battle_beast(game_id: u32, actor: starknet::ContractAddress, command: Bat
     );
     attacker.troops = attacker_after;
     guard.troops = defender_after;
+    crate::logic::quests::record(
+        ResourceKey { game_id, entity_id: attacker.owner },
+        crate::quests::CULL,
+        defender_before - guard.troops.count,
+        context.timestamp,
+    );
     if guard.troops.count == 0 {
         guard
             .destroyed_tick = (context.timestamp / context.rules.unbox().tick_config.armies_tick_in_seconds)
@@ -56,6 +62,7 @@ pub fn battle_beast(game_id: u32, actor: starknet::ContractAddress, command: Bat
         .finish_battle(key, attacker, attacker_before, crate::commands::action_context(context));
     if attacker.troops.count != 0 && guard.troops.count == 0 {
         crate::logic::deep_guards::join(key, attacker, target);
+        grant_beast_xp(key, destination, context.timestamp);
     }
     emit_beast_battle(
         game_id,
@@ -65,6 +72,19 @@ pub fn battle_beast(game_id: u32, actor: starknet::ContractAddress, command: Bat
         ExplorerTroops { troops: guard.troops, ..defender },
         (attacker_before, defender_before),
         combat,
+    );
+}
+
+fn grant_beast_xp(key: ExplorerKey, coord: crate::troops::Coord, timestamp: u64) {
+    let count = rules(key.game_id).expect('missing Deep rules').beast_count;
+    let depth = crate::logic::expeditions::depth_at(key.game_id, coord);
+    let state = crate::state::read();
+    let release = state.releases.entry(state.game_releases.read(key.game_id)).classes;
+    crate::progression::IArmyProgressionDispatcherTrait::grant_army_xp(
+        crate::progression::IArmyProgressionLibraryDispatcher { class_hash: release.relics.read() },
+        key,
+        crate::progression::XpAward::Clear(crate::progression::clear_xp(count, depth)),
+        timestamp,
     );
 }
 
@@ -107,8 +127,8 @@ fn initialize(game_id: u32) {
         return;
     };
     let state = crate::state::write();
-    let game = crate::logic::game::game(game_id);
-    let spacing = crate::logic::settlement::rules(game_id).spacing;
+    let start = state.games.games.entry(game_id).start_main_at.read();
+    let spacing = crate::logic::preset_record::for_game(game_id).settlement_spacing.read();
     for kind in 0..crate::rules::DEEP_SITE_COUNT {
         if state.deep.site_ids.read((game_id, kind)) != 0 {
             continue;
@@ -122,7 +142,7 @@ fn initialize(game_id: u32) {
             crate::taxonomy::DEEP_SITE_OCCUPIER,
             false,
         );
-        reset_beast(key, kind, 0, rules.beast_count, game.start_main_at);
+        reset_beast(key, kind, 0, rules.beast_count, start);
     }
     crate::logic::deep_ticks::initialize(game_id);
 }

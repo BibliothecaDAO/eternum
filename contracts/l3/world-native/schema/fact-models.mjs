@@ -1127,12 +1127,6 @@ export function defineFactModels({ struct, model: declare }) {
       };
     if (row.name === "AspectMembers")
       row.absence = { parent: "AspectRules", value: "zero", meaning: "No home has joined this Aspect in this game." };
-    if (row.name === "AspectActivity")
-      row.absence = {
-        parent: "GameRegistry",
-        value: "zero",
-        meaning: "No home in this Aspect allocated an army on this day.",
-      };
     if (["BaneProgress", "FirstTeamBane"].includes(row.name))
       row.absence = {
         parent: "BaneRules",
@@ -1429,6 +1423,7 @@ export function defineFactModels({ struct, model: declare }) {
       [{ name: "orders", type: "core::array::Span::<core::integer::u8>" }],
     ),
     model("BaneRules", "game", [{ name: "game_id", type: "core::integer::u32" }], struct("banes::BaneRules")),
+
     model(
       "BaneProgress",
       "game",
@@ -1932,7 +1927,6 @@ export const syncScopes = {
   AspectRules: "shared",
   QuestRules: "shared",
   BaneRules: "shared",
-  AspectActivity: "shared",
   BaneProgress: "shared",
   FirstTeamBane: "shared",
   BaneGrant: { entities: ["home"] },

@@ -32,7 +32,7 @@ pub fn day_of(game: GameRegistry, unit_seconds: u32, timestamp: u64) -> Day {
 
 // Keep one calendar calculation per class without passing the game's unrelated launch fields to every call.
 #[inline(never)]
-fn calendar_day(seed: felt252, season_start: u64, season_end: u64, unit_seconds: u32, timestamp: u64) -> Day {
+pub fn calendar_day(seed: felt252, season_start: u64, season_end: u64, unit_seconds: u32, timestamp: u64) -> Day {
     assert!(timestamp >= season_start && timestamp < season_end, "timestamp outside season");
     let unit: u64 = unit_seconds.into();
     let season_units = (season_end - season_start) / unit;

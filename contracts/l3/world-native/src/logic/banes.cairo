@@ -1,6 +1,7 @@
 use starknet::Event;
-use starknet::storage::{StorageMapReadAccess, StorageMapWriteAccess, StoragePointerReadAccess};
+use starknet::storage::{StorageMapReadAccess, StorageMapWriteAccess, StoragePathEntry, StoragePointerReadAccess};
 use crate::banes::{BaneProgress, BaneWindow};
+use crate::deep::{IDeepBanesDispatcherTrait, IDeepBanesLibraryDispatcher};
 use crate::resources::ResourceKey;
 
 pub fn enabled(game_id: u32) -> bool {
@@ -12,15 +13,30 @@ pub fn kind(game_id: u32, day: u64) -> Option<u8> {
         return None;
     };
     crate::banes::world_kind(
-        crate::logic::game::game(game_id).seed, day, crate::state::read().banes.first_team_day.read(game_id), step,
+        crate::state::read().games.games.entry(game_id).seed.read(),
+        day,
+        crate::state::read().banes.first_team_day.read(game_id),
+        step,
     )
 }
 
 pub fn quest_kind(home: ResourceKey, day: u64) -> u8 {
+    if let Some(quest) = team_quest(home, day) {
+        return quest;
+    }
     if let Some(kind) = kind(home.game_id, day) {
         return crate::banes::quest_kind(kind);
     }
-    crate::quests::daily_quest(crate::logic::game::game(home.game_id).seed, day)
+    crate::quests::daily_quest(crate::state::read().games.games.entry(home.game_id).seed.read(), day)
+}
+
+fn team_quest(home: ResourceKey, day: u64) -> Option<u8> {
+    if !enabled(home.game_id) {
+        return None;
+    }
+    let state = crate::state::read();
+    let release = state.releases.entry(state.game_releases.read(home.game_id)).classes;
+    IDeepBanesLibraryDispatcher { class_hash: release.bridge.read() }.team_quest(home, day)
 }
 
 pub fn target(home: ResourceKey, kind: u8, level: u8) -> u128 {
@@ -61,7 +77,7 @@ pub fn won(home: ResourceKey, day: u64) -> bool {
 }
 
 pub fn complete(home: ResourceKey, day: u64, timestamp: u64) {
-    if kind(home.game_id, day).is_none() {
+    if kind(home.game_id, day).is_none() && team_quest(home, day).is_none() {
         return;
     }
     let aspect = crate::logic::aspects::home_aspect(home);
@@ -95,12 +111,15 @@ pub fn windows(home: ResourceKey, from: u64, until: u64) -> Span<BaneWindow> {
         return windows.span();
     }
     let aspect = crate::logic::aspects::home_aspect(home);
-    let game = crate::logic::game::game(home.game_id);
+    let game = crate::state::read().games.games.entry(home.game_id);
+    let seed = game.seed.read();
+    let start = game.start_main_at.read();
+    let end = game.end_at.read();
     let unit = crate::logic::preset_record::for_game(home.game_id).rules.day_unit_seconds.read();
-    let mut cursor = core::cmp::max(from, game.start_main_at);
-    let until = core::cmp::min(until, game.end_at);
+    let mut cursor = core::cmp::max(from, start);
+    let until = core::cmp::min(until, end);
     while cursor < until {
-        let day = crate::days::day_of(game, unit, cursor);
+        let day = crate::days::calendar_day(seed, start, end, unit, cursor);
         if let Some(kind) = kind(home.game_id, day.index) {
             let ended = progress(home.game_id, aspect, day.index).ended_at;
             let end = if required(home.game_id, aspect, day.index) == 0 {
