@@ -1418,13 +1418,20 @@ expires the guards and restores the beast. The site's card (below) is the select
 combat is pending. Native regressions cover creation, joins, refusals, death and day rollover. Core view and scope tests
 cover guard membership and rollback. Run the existing `pnpm --dir apps/game playtest` when the screen is wired.
 
+Deep sites on the map: the Foundation stands as a hyperstructure's bare foundation, the Quarry as a fragment mine and
+the Altar as a Shrine until its own model comes (the owner's pick eternum/s1-sites; one table in `map-site-manager.ts`).
+Hovering a site opens its plate: who holds it ("Held by Might") or "Every Aspect fights for it", and what holding it
+pays (the Foundation's: "+5 height a tick to the holder's hyperstructure"). The four Aspects' hyperstructures stand
+apart, each a fifth higher for each stage built (the pick eternum/s1-hs-stages).
+
 Deep site card: with an army in the Deep selected, hover a Deep site beside it ("Open the site") and right-click it (a
 phone's tap), or tap the site with no army for its card alone. It names who the site serves, what a tick held pays (the
 Foundation's Glory and height, the Quarry's labor and Essence, the Altar's Glory and bane bar), split by troops, then
-today's beast, an open site, or the holder's Aspect and four slots: each guard's realm, troops, the ticks they last and
-the time that is, and share of a tick. The selected army's order is Attack (the beast), Take (an open site) or Join (a
-free slot of its own Aspect's guard); away from the site it is Move, and otherwise the card says why (another Aspect's
-site, already guarding, four guards, another day's army). Lab: `/lab/game?scenario=deep-sites`.
+today's beast, an open site, or the holder's Aspect and its four slots in the order an attacker fights them (the highest
+first, the army fought next marked): each guard's realm, troops, the ticks they last and the time that is, and share of
+a tick. The selected army's order is Attack (the beast), Take (an open site) or Join (a free slot of its own Aspect's
+guard); away from the site it is Move, and otherwise the card says why (another Aspect's site, already guarding, four
+guards, another day's army). Lab: `/lab/game?scenario=deep-sites`.
 
 Shared Deep rollover: tile occupancy, field models and army action gates use `ArmyDay` with the confirmed execution
 clock. An empty confirmed head at day rollover removes yesterday's army from the map and opens its tile, while its raw
