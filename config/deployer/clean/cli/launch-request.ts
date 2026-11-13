@@ -176,7 +176,6 @@ function resolveSharedLaunchRequestOptions(args: Args, environment: DeploymentEn
     privateKey: resolveOptionalArg(args, "private-key", ["DEPLOYER_PRIVATE_KEY"]),
     devModeOn: resolveOptionalBooleanArg(args, "dev-mode-on", ["DEV_MODE_ON"]),
     singleRealmMode: resolveOptionalBooleanArg(args, "single-realm-mode", ["SINGLE_REALM_MODE"]),
-    twoPlayerMode: resolveOptionalBooleanArg(args, "two-player-mode", ["TWO_PLAYER_MODE"]),
     durationSeconds: resolveOptionalNumber(
       args["duration-seconds"] || process.env.DURATION_SECONDS,
       "duration seconds",

@@ -1,4 +1,3 @@
-import duelMadaraConfig from "../generated/duel.madara.json";
 import frontierMadaraConfig from "../generated/frontier.madara.json";
 
 import type { GameType } from "../source/common/types";
@@ -12,7 +11,6 @@ type NetworkConfigDocument = {
 };
 
 const configs: Record<GameType, Partial<Record<ConfigurationNetwork, NetworkConfigDocument>>> = {
-  duel: { madara: duelMadaraConfig },
   frontier: { madara: frontierMadaraConfig },
   blitz: {
     madara: blitzMadaraConfig,
@@ -25,7 +23,7 @@ const configs: Record<GameType, Partial<Record<ConfigurationNetwork, NetworkConf
 function resolveConfigDocument(chain: ConfigurationNetwork, gameType: GameType): NetworkConfigDocument {
   const gameConfigs = configs[gameType];
   if (!gameConfigs) {
-    throw new Error(`Invalid game type: ${gameType}. Must be "blitz", "eternum", "frontier" or "duel".`);
+    throw new Error(`Invalid game type: ${gameType}. Must be "blitz", "eternum", or "frontier".`);
   }
 
   const configDocument = gameConfigs[chain];

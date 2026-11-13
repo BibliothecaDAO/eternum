@@ -8,7 +8,6 @@ describe("inclusive discovery guard presets", () => {
   test.each([
     ["blitz", 999, 1499, 1499, 1999],
     ["eternum", 800, 1499, 800, 1499],
-    ["duel", 800, 1599, 800, 1599],
     ["frontier", 800, 1599, 800, 1599],
   ] as const)(
     "%s encodes its exact reachable endpoints",

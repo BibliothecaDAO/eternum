@@ -72,7 +72,7 @@ pub mod RelicState {
             );
             assert!(explorer.troops.count != 0, "explorer is dead");
             assert!(crate::geometry::adjacent(explorer.coord, command.coord), "explorer is not adjacent to chest");
-            let chest_id = IRelicMapLibraryDispatcher { class_hash: classes.map.read() }
+            let chest_id = IRelicMapLibraryDispatcher { class_hash: classes.raid.read() }
                 .consume_relic_chest(game_id, command.coord);
             if context.rules.unbox().day_unit_seconds != 0 {
                 self.pay_reward_chest(game_id, actor, command, chest_id, explorer.owner, context);

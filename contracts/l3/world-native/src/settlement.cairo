@@ -11,7 +11,6 @@ pub const CAMPAIGN_GOLDEN: u8 = 2;
 pub enum SettlementMode {
     Single,
     Triple,
-    Duel,
 }
 
 #[derive(Copy, Drop, Serde, Debug, PartialEq, starknet::Store)]

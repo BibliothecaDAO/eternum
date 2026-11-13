@@ -81,7 +81,6 @@
     "layer_capacity_increment": 6,
     "layer_capacity_bps": 8000,
     "single_realm_mode": false,
-    "two_player_mode": false,
     "spires_layer_distance": 6,
     "spires_max_count": 6,
     "spires_settled_count": 0

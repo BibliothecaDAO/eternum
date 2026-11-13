@@ -104,11 +104,6 @@ fn triple_village_consumes_one_pass_and_leaves_both_entries_available() {
 }
 
 #[test]
-fn duel_village_consumes_one_pass_and_leaves_both_entries_available() {
-    assert_blitz_village(SettlementMode::Duel);
-}
-
-#[test]
 fn exhausted_geometry_records_rejection_and_keeps_the_pass() {
     let (deployment, realm) = setup_config(
         false,

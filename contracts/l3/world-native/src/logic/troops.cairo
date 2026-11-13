@@ -340,7 +340,6 @@ pub mod TroopsLogic {
         }
     }
 
-
     #[abi(embed_v0)]
     impl Management of crate::troop_management::ITroopManagement<ContractState> {
         fn manage_troops(
@@ -869,7 +868,6 @@ pub mod TroopsLogic {
         }
     }
 
-
     fn troop_type(value: u8) -> TroopType {
         match value {
             0 => TroopType::Knight,
@@ -1082,7 +1080,7 @@ pub mod troop_helpers {
             if command.relic_id == 45 || command.relic_id == 46 {
                 crate::relics::IRelicMapDispatcherTrait::reveal_relic_ring(
                     crate::relics::IRelicMapLibraryDispatcher {
-                        class_hash: Release::get_component(@self).classes(game_id).map.read(),
+                        class_hash: Release::get_component(@self).classes(game_id).raid.read(),
                     },
                     game_id,
                     explorer.coord,

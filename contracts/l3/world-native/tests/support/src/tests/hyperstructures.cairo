@@ -210,3 +210,30 @@ fn share_writes(
     }
     writes
 }
+
+pub fn settle_neighbor(deployment: super::Deployment, hyper: ResourceKey, timestamp: u64) {
+    let origin = snforge_std::interact_with_state(deployment.games, || crate::structures::structure_coord(hyper));
+    let coord = crate::geometry::checked_neighbor_at_distance(
+        crate::geometry::checked_neighbor_at_distance(origin, 0, 8).unwrap(), 4, 4,
+    )
+        .unwrap();
+    let (new_owner, _) = super::deploy_player(3, super::GUARDIAN);
+    super::play_fixture::reserve_fixture_homes(deployment.games, 3, new_owner);
+    start_cheat_caller_address(deployment.games, deployment.games);
+    crate::settlement::ISettlementCreationDispatcherTrait::create_settlement(
+        crate::settlement::ISettlementCreationDispatcher { contract_address: deployment.games },
+        3,
+        new_owner,
+        coord,
+        crate::settlement::SettlementCreation::Realm(
+            crate::settlement::RealmCreation {
+                realm_id: 3,
+                traits: crate::realms::RealmTraits { wonder: 0, order: 0, resources: array![].span() },
+                troops: crate::settlement::StartingTroops::None,
+                activate_economy: false,
+            },
+        ),
+        crate::commands::action_context(ExecutionContext { timestamp, ..super::context(deployment.games, 3) }),
+    );
+    stop_cheat_caller_address(deployment.games);
+}

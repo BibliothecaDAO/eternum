@@ -37,7 +37,7 @@ export interface NativePreset {
   modeRules: number;
   entryRule: number;
   commandMask: bigint;
-  settlementMode: "Single" | "Triple" | "Duel";
+  settlementMode: "Single" | "Triple";
   spacing: number;
   /** One Aspect per canonical Order, in Order-id order; empty disables teams. */
   orderAspects: readonly number[];

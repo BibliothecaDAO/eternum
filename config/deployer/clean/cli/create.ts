@@ -23,7 +23,6 @@ function usage(): void {
       "  VERBOSE_CONFIG_LOGS=true / --verbose-config-logs",
       "  DEV_MODE_ON=true|false / --dev-mode-on true|false",
       "  SINGLE_REALM_MODE=true|false / --single-realm-mode true|false",
-      "  TWO_PLAYER_MODE=true|false / --two-player-mode true|false",
       "  DURATION_SECONDS=<integer> / --duration-seconds <integer>",
       "                               overrides config duration; used by blitz season end_at",
       "  MAP_CONFIG_OVERRIDES_JSON=<json> / --map-config-overrides-json <json>",

@@ -27,7 +27,7 @@ it("earns what the contract's checkpoint registers, split per share and stopped 
     { player: other, points: 75_000n },
   ]);
 
-  const duel = { start_at: 50n, multiplier: 2, shareholders: [{ player: actor, bps: 10_000 }] };
-  expect(unclaimedSharePoints(duel, 1_000, 60n)).toEqual([{ player: actor, points: 20_000n }]);
+  const allocation = { start_at: 50n, multiplier: 2, shareholders: [{ player: actor, bps: 10_000 }] };
+  expect(unclaimedSharePoints(allocation, 1_000, 60n)).toEqual([{ player: actor, points: 20_000n }]);
   expect(unclaimedSharePoints(split, 1_000, 100n)).toEqual([]);
 });

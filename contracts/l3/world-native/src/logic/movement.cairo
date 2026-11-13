@@ -93,7 +93,7 @@ pub mod MovementLogic {
                         if !destination.alt {
                             crate::relics::IRelicMapDispatcherTrait::discover_relic_chest(
                                 crate::relics::IRelicMapLibraryDispatcher {
-                                    class_hash: self.release.classes(game_id).map.read(),
+                                    class_hash: self.release.classes(game_id).raid.read(),
                                 },
                                 game_id,
                                 explorer.owner,
@@ -146,7 +146,7 @@ pub mod MovementLogic {
             crate::logic::troops::TroopState::save(key, crate::troops::ExplorerRecordTrait::into_record(explorer));
 
             let extraction = crate::exploration_rewards::IExtractionLibraryDispatcher {
-                class_hash: self.release.classes(game_id).map.read(),
+                class_hash: self.release.classes(game_id).prizes.read(),
             };
             if discovery == crate::discovery::Discovery::Spire {
                 crate::exploration_rewards::IExtractionDispatcherTrait::raise_dormant_spire(

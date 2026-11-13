@@ -25,14 +25,13 @@ export const X_HANDLE = REALMS_X_TAG;
 /**
  * Each game's guide: its section's first page on the docs site (apps/game-docs), the address a game's How to play opens
  * (owner, 4 November 2026: "we also need a docs link in the game"). Eternum's archive has no front page, so it opens its
- * first, Key concepts; Duel has no section, so it opens the site's front page. Keyed by the mode, so a new mode does not
+ * first, Key concepts. Keyed by the mode, so a new mode does not
  * compile without its guide; how-to-play.test.ts fails a guide that is not a page of the docs site.
  */
 export const HOW_TO_PLAY_BY_MODE = {
   frontier: `${DOCS_ADDRESS}/frontier/`,
   blitz: `${DOCS_ADDRESS}/blitz/`,
   eternum: `${DOCS_ADDRESS}/eternum/key-concepts`,
-  duel: `${DOCS_ADDRESS}/`,
 } satisfies Record<GameModeId, string>;
 
 /**

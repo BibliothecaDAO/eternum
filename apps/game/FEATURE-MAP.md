@@ -1,5 +1,8 @@
 # Feature map — game client
 
+Play's game doorways, in-game HUD and How to play link use the supported mode catalog
+(`packages/types/src/words/modes.ts`). Each supported mode has its own age; an unknown directory mode has no doorway.
+
 A confirmed golden Devcon upgrade updates the home skin and Realm Labor amounts together. Open Realm Labor from the
 Labor chip (desktop) or Menu → Realm Labor (phone). Paid days stay claimed; the next unpaid claim uses golden amounts.
 The standard playtest `--steps home-found-regular` founds through the picker with a saved regular-ticket identity and

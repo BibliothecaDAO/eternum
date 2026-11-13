@@ -14,7 +14,7 @@ import type { NativeStoryVariant } from "../../../contracts/l3/world-native/sche
 
 type RecipientSource = "capture" | "owner" | "transferReceiver" | "nativeBattle" | "raid";
 /** A game's mode, as its shard's directory names it. */
-export type StoryGameMode = "blitz" | "eternum" | "frontier" | "duel" | null;
+export type StoryGameMode = "blitz" | "eternum" | "frontier" | null;
 /**
  * A delivered story's kind (which names its level and how long it lives), who it is for, the game modes it is pushed in
  * (every mode when absent), and what its alert says; a story is delivered with its words or not at all.
@@ -29,7 +29,7 @@ type StoryRule =
   | { excluded: string };
 
 /** Fights between players. Frontier ships none: its battles are the player's own taps against beasts and camps. */
-const PLAYER_FIGHTS: readonly StoryGameMode[] = ["blitz", "eternum", "duel"];
+const PLAYER_FIGHTS: readonly StoryGameMode[] = ["blitz", "eternum"];
 
 // Recipient fields are emitted with the action. Never resolve them from present-day structure ownership.
 const OWN_ACTION = "The player's own action: the Feed and the Log show it";
