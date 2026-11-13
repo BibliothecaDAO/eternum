@@ -222,6 +222,27 @@ export interface HeraldRaceAspect {
   members: { address: string; structure_id: string; glory: number }[];
 }
 
+/** One of the Deep's sites on a Season 1 board: who holds it and its guards, slot by slot. */
+export interface HeraldRaceSite {
+  site_id: string;
+  /** The site's kind, as the rules' DEEP_FOUNDATION, DEEP_QUARRY and DEEP_ALTAR number it. */
+  kind: number;
+  /** The Aspect its guards play for; null while the day's beast still holds it. */
+  holder: AspectId | null;
+  /**
+   * Its guards by slot: each army, its home and owner, its troops as last settled (whole units) and the army tick they
+   * were settled at, from which a reader projects the drain with the Deep's own rule.
+   */
+  guards: {
+    slot: number;
+    explorer_id: string;
+    structure_id: string;
+    address: string;
+    troops: number;
+    last_tick: number;
+  }[];
+}
+
 /**
  * GET /games/:id/race, for a game that races its Aspects' hyperstructures (its preset has RaceRules): the four Aspects
  * ranked. It stands beside the game's leaderboard, which keeps Season 0's board until H6 replaces its payout.
@@ -234,6 +255,8 @@ export interface HeraldRaceBoard {
   /** The Aspect whose hyperstructure finished; null while the race runs or when the mist won. */
   winner: AspectId | null;
   aspects: HeraldRaceAspect[];
+  /** The Deep's sites, by kind; none in a game whose preset has no Deep. */
+  sites: HeraldRaceSite[];
 }
 
 export type HeraldGameLeaderboard = HeraldLeaderboard | HeraldFrontierLeaderboard;

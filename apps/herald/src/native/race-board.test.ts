@@ -79,7 +79,67 @@ describe("the race board (H2)", () => {
         { aspect: 3, rank: 3, height: 4_200, stage: 2, triumph_days: [null, null, null, null], members: [] },
         { aspect: 4, rank: 4, height: 0, stage: 0, triumph_days: [null, null, null, null], members: [] },
       ],
+      sites: [],
     });
+  });
+
+  it("names each Deep site's holder and its guards by slot, troops as last settled with the tick they were settled at", () => {
+    const board = buildRaceBoard(
+      raceRows({
+        DeepSite: [
+          row({ entity_id: 3002n, kind: 2, day: 4n }),
+          row({ entity_id: 3000n, kind: 0, day: 4n }),
+          row({ entity_id: 3001n, kind: 1, day: 4n }),
+        ],
+        // Harmony's two homes guard the Foundation, slot 2 before slot 0 in the store's order; the Quarry's beast holds.
+        DeepGuard: [
+          row({ explorer_id: 52n, site_id: 3000n, slot: 2 }),
+          row({ explorer_id: 51n, site_id: 3000n, slot: 0 }),
+          row({ explorer_id: 53n, site_id: 3002n, slot: 0 }),
+        ],
+        ExplorerTroops: [
+          row({ explorer_id: 51n, owner: 11n, troops: { count: BigInt(8_000 * RESOURCE_PRECISION) } }),
+          row({ explorer_id: 52n, owner: 12n, troops: { count: BigInt(5_500 * RESOURCE_PRECISION) } }),
+          row({ explorer_id: 53n, owner: 13n, troops: { count: BigInt(15_000 * RESOURCE_PRECISION) } }),
+        ],
+        DeepArmy: [
+          row({ explorer_id: 51n, last_tick: 900n }),
+          row({ explorer_id: 52n, last_tick: 905n }),
+          row({ explorer_id: 53n, last_tick: 901n }),
+        ],
+      }),
+      String(GAME),
+    );
+    expect(board.sites).toEqual([
+      {
+        site_id: "3000",
+        kind: 0,
+        holder: 2,
+        guards: [
+          { slot: 0, explorer_id: "51", structure_id: "11", address: "0xa", troops: 8_000, last_tick: 900 },
+          { slot: 2, explorer_id: "52", structure_id: "12", address: "0xb", troops: 5_500, last_tick: 905 },
+        ],
+      },
+      { site_id: "3001", kind: 1, holder: null, guards: [] },
+      {
+        site_id: "3002",
+        kind: 2,
+        holder: 1,
+        guards: [{ slot: 0, explorer_id: "53", structure_id: "13", address: "0xc", troops: 15_000, last_tick: 901 }],
+      },
+    ]);
+  });
+
+  it("refuses a guard it cannot name rather than showing a site without it", () => {
+    expect(() =>
+      buildRaceBoard(
+        raceRows({
+          DeepSite: [row({ entity_id: 3000n, kind: 0, day: 4n })],
+          DeepGuard: [row({ explorer_id: 51n, site_id: 3000n, slot: 0 })],
+        }),
+        String(GAME),
+      ),
+    ).toThrow("Deep guard 51 has no army or tick");
   });
 
   it("puts the finished hyperstructure first, its fifth stage built", () => {

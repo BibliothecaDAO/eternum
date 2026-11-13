@@ -1,7 +1,7 @@
-import type { HeraldRaceAspect, HeraldRaceBoard } from "@bibliothecadao/eternum/game-sync";
+import type { HeraldRaceAspect, HeraldRaceBoard, HeraldRaceSite } from "@bibliothecadao/eternum/game-sync";
 import { aspects, type AspectId, RESOURCE_PRECISION } from "@bibliothecadao/types";
 import type { FoldRow } from "../types";
-import { address, gameRows, integer, number, required, type Row } from "./values";
+import { address, gameRows, integer, number, record, required, type Row } from "./values";
 
 /** The stages a hyperstructure is built in: the fifth finishes it, and there is no sixth. */
 const STAGES = 5;
@@ -15,7 +15,8 @@ export const isRaceGame = (modelRows: (model: string) => FoldRow[], gameId: stri
 /**
  * A Season 1 game's board (H2), from the rows the race publishes: the four Aspects' hyperstructures, the finished one
  * first, then by height, ties by Aspect as the contract's Altar targeting orders them (race::aspect_order); each with
- * its stage, its Triumphs' days and its members by Glory. No score is computed here that the chain does not hold.
+ * its stage, its Triumphs' days and its members by Glory; then the Deep's sites, each with its holder and its guards.
+ * No score is computed here that the chain does not hold.
  */
 export function buildRaceBoard(modelRows: (model: string) => FoldRow[], gameId: string): HeraldRaceBoard {
   const rows = (model: string) => gameRows(modelRows(model), gameId);
@@ -43,7 +44,58 @@ export function buildRaceBoard(modelRows: (model: string) => FoldRow[], gameId: 
         stage: Math.min(STAGES, Math.floor(entry.height / number(rules.stage_height))),
       }),
     ),
+    sites: deepSites(rows),
   };
+}
+
+/**
+ * The Deep's sites by kind (DeepSite), each guard (DeepGuard) read from its army (ExplorerTroops), its settled tick
+ * (DeepArmy) and its home's owner and Aspect. A guard whose army, tick, home or Aspect is missing is a fault: a site is
+ * never shown with a guard it cannot name.
+ */
+function deepSites(rows: (model: string) => Row[]): HeraldRaceSite[] {
+  const guards = rows("DeepGuard");
+  const armies = rows("ExplorerTroops");
+  const ticks = rows("DeepArmy");
+  const homes = rows("HomeAspect");
+  const structures = rows("Structure");
+  return rows("DeepSite")
+    .map((site) => {
+      const posted = guards
+        .filter((guard) => integer(guard.site_id) === integer(site.entity_id))
+        .map((guard) => siteGuard(guard, armies, ticks, structures))
+        .sort((a, b) => a.slot - b.slot);
+      return {
+        site_id: integer(site.entity_id).toString(),
+        kind: number(site.kind),
+        holder: posted[0] ? homeAspect(homes, posted[0].structure_id) : null,
+        guards: posted,
+      };
+    })
+    .sort((a, b) => a.kind - b.kind);
+}
+
+function siteGuard(guard: Row, armies: Row[], ticks: Row[], structures: Row[]): HeraldRaceSite["guards"][number] {
+  const explorer = integer(guard.explorer_id);
+  const army = armies.find((each) => integer(each.explorer_id) === explorer);
+  const tick = ticks.find((each) => integer(each.explorer_id) === explorer);
+  if (!army || !tick) throw new Error(`Deep guard ${explorer} has no army or tick`);
+  const home = structures.find((each) => integer(each.entity_id) === integer(army.owner));
+  if (!home) throw new Error(`Deep guard ${explorer} has no home`);
+  return {
+    slot: number(guard.slot),
+    explorer_id: explorer.toString(),
+    structure_id: integer(army.owner).toString(),
+    address: address(home.owner),
+    troops: Number(integer(record(army.troops).count)) / RESOURCE_PRECISION,
+    last_tick: number(tick.last_tick),
+  };
+}
+
+function homeAspect(homes: Row[], home: string): AspectId {
+  const row = homes.find((each) => integer(each.home) === integer(home));
+  if (!row) throw new Error(`Deep guard's home ${home} joined no Aspect`);
+  return aspectId(number(row.aspect));
 }
 
 /** The Aspect whose hyperstructure finished; none while the race runs, or when the mist won. */
