@@ -132,7 +132,6 @@ pub struct TownRules {
 
 #[derive(Copy, Drop, Serde, Debug, PartialEq, starknet::Store)]
 pub struct BoardRules {
-    pub town: Option<TownRules>,
     pub demolition_refund_bps: u16,
     pub workshop_rate: u64,
     // What one tier pick adds, for every building of its type: Fields, Tools and Drill a share of the base output,
@@ -150,6 +149,7 @@ pub struct BoardRules {
     pub city_resource_cap: u32,
     pub kingdom_resource_cap: u32,
     pub empire_resource_cap: u32,
+    pub town: Option<TownRules>,
 }
 
 #[derive(Copy, Drop, Default, Debug, PartialEq)]

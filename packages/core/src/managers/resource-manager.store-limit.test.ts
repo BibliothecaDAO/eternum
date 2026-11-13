@@ -63,8 +63,8 @@ describe("a board realm's store limits", () => {
     expect(manager.storeLimit(ResourcesIds.Wheat)).toBe(settlementLimit);
     expect(manager.storeLimit(ResourcesIds.Labor)).toBe(settlementLimit);
     expect(manager.storeLimit(ResourcesIds.Knight)).toBe(settlementLimit);
-    expect(manager.storeLimit(ResourcesIds.Essence)).toBeUndefined();
-    expect(manager.storeLimit(ResourcesIds.Lords)).toBeUndefined();
+    expect(manager.storeLimit(ResourcesIds.Essence)).toBeNull();
+    expect(manager.storeLimit(ResourcesIds.Lords)).toBeNull();
   });
 
   it("adds half the castle base per store choice, independently of troop storage", () => {
@@ -130,7 +130,7 @@ describe("a board realm's store limits", () => {
   it("has no limit of its own off a board", () => {
     const { store, manager } = boardRealm(0n);
     store.applyFacts([{ model: "BoardRules", key: "0x2", value: null }]);
-    expect(manager.storeLimit(ResourcesIds.Wheat)).toBeUndefined();
+    expect(manager.storeLimit(ResourcesIds.Wheat)).toBeNull();
   });
 });
 
@@ -180,6 +180,83 @@ it("reads independent town caps and the standing Storeroom at every level, inclu
     }
   }
   expect(manager.storeLimitAtLevel(ResourcesIds.Labor, 1)).toBe(15000n * PRECISION);
-  expect(manager.storeLimit(ResourcesIds.Essence)).toBeUndefined();
+  expect(manager.storeLimit(ResourcesIds.Essence)).toBeNull();
   unsubscribe();
+});
+
+it("keeps a town balance unknown until the cap inputs arrive, then clips and recovers from replay", () => {
+  const { store, manager } = boardRealm(5999n * PRECISION);
+  const keys = { game_id: 1, entity_id: 7, resource_type: ResourcesIds.Wheat };
+  const carry = store.requireOrAbsent("ProductionCarry", keys).known!;
+  store.applyFacts([
+    ...upsert("0x2", {
+      BoardRules: {
+        ...store.require("BoardRules", { game_id: 1 }),
+        town: {
+          settlement_labor_cap: 5000,
+          city_labor_cap: 15000,
+          kingdom_labor_cap: 50000,
+          empire_labor_cap: 100000,
+        },
+      },
+    }),
+    ...upsert("0x8", {
+      ResourceProduction: {
+        ...keys,
+        building_count: 1,
+        production_rate: 2n * PRECISION,
+        output_amount_left: 0n,
+        last_settled_at: 100,
+      },
+    }),
+    ...upsert("0x9", { ProductionCarry: { ...carry, ...keys } }),
+  ]);
+  store.setSnapshot({ gameId: 1, complete: false, actor: null, timestamp: 100 });
+  expect(manager.current(ResourcesIds.Wheat)).toBeDefined();
+  expect(manager.storeLimit(ResourcesIds.Wheat)).toBeUndefined();
+  expect(manager.storeLimitAtLevel(ResourcesIds.Labor, 1)).toBeUndefined();
+  expect(manager.balanceWithProduction(101, ResourcesIds.Wheat)).toBeUndefined();
+  let notices = 0;
+  const stop = manager.subscribe(() => notices++);
+  const counts = (packed: bigint) =>
+    upsert("0x7", {
+      StructureBuildings: {
+        game_id: 1,
+        entity_id: 7,
+        packed_counts_1: packed,
+        packed_counts_2: 0n,
+        packed_counts_3: 0n,
+        population: { current: 0, max: 0 },
+      },
+    });
+  store.applyFacts(counts(0n));
+  expect(manager.balanceWithProduction(101, ResourcesIds.Wheat)).toMatchObject({
+    balance: Number(6000n * PRECISION),
+    hasReachedMaxCapacity: true,
+    amountProducedLimited: PRECISION,
+  });
+  store.applyFacts(counts(256n));
+  expect(manager.balanceWithProduction(101, ResourcesIds.Wheat)).toMatchObject({
+    balance: Number(6001n * PRECISION),
+    hasReachedMaxCapacity: false,
+    amountProducedLimited: 2n * PRECISION,
+  });
+  store.applyFacts([{ model: "StructureBuildings", key: "0x7", value: null }]);
+  expect(manager.balanceWithProduction(101, ResourcesIds.Wheat)).toBeUndefined();
+  store.applyFacts(counts(0n));
+  expect(manager.storeLimit(ResourcesIds.Wheat)).toBe(6000n * PRECISION);
+  expect(notices).toBe(4);
+  stop();
+});
+
+it("distinguishes an unknown board or research dependency from a known unlimited store", () => {
+  const { store, manager } = boardRealm(0n);
+  store.setSnapshot({ gameId: 1, complete: false, actor: null, timestamp: 100 });
+  store.applyFacts([{ model: "RealmKnowledge", key: "0x6", value: null }]);
+  expect(manager.storeLimit(ResourcesIds.Wheat)).toBeUndefined();
+  store.applyFacts([{ model: "BoardRules", key: "0x2", value: null }]);
+  expect(manager.storeLimit(ResourcesIds.Wheat)).toBeUndefined();
+  store.setSnapshot({ gameId: 1, complete: true, actor: null, timestamp: 100 });
+  expect(manager.storeLimit(ResourcesIds.Wheat)).toBeNull();
+  expect(manager.storeLimit(ResourcesIds.Essence)).toBeNull();
 });

@@ -46,7 +46,7 @@ export const CastleUpgrade = ({
 }) => {
   const { setup } = useGame();
   const tick = useCurrentDefaultTick();
-  useNativeRevision(["CampaignHome"]);
+  useNativeRevision(["CampaignHome", "StructureBuildings", "RealmKnowledge", "BoardRules", "SliceRules"]);
   const skin = readRealmSkin(setup.store, realm);
   const ordersAllowed = useUIStore(canIssueOrders);
   const levelUp = useRealmLevelUp(safeInteger(realm.entity_id));
@@ -122,7 +122,7 @@ const castleSide = (
       new ResourceManager(store, safeInteger(realm.entity_id), realm.game_id).storeLimitAtLevel(
         ResourcesIds.Labor,
         level,
-      ),
+      ) ?? undefined,
     ),
     maxArmySize: configManager.getMaxArmySize(level, TroopTier.T1),
   };

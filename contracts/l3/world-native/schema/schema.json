@@ -73,7 +73,9 @@
     "DEEP_ALTAR": 2,
     "DEEP_SITE_COUNT": 3,
     "DEEP_ARRIVAL_Y": 5,
-    "DEEP_GUARD_SLOTS": 4
+    "DEEP_GUARD_SLOTS": 4,
+    "TOWN_STOREHOUSE_LEVEL": 1,
+    "TOWN_STOREHOUSE_MULTIPLIER": 2
   },
   "researchConstants": {
     "ROW_FARM": 0,
@@ -7115,12 +7117,6 @@
       ],
       "members": [
         {
-          "name": "town",
-          "type": "core::option::Option::<world_native::buildings::TownRules>",
-          "id": "0x746f776e",
-          "feltLength": null
-        },
-        {
           "name": "demolition_refund_bps",
           "type": "core::integer::u16",
           "id": "0x64656d6f6c6974696f6e5f726566756e645f627073",
@@ -7191,6 +7187,12 @@
           "type": "core::integer::u32",
           "id": "0x656d706972655f7265736f757263655f636170",
           "feltLength": 1
+        },
+        {
+          "name": "town",
+          "type": "core::option::Option::<world_native::buildings::TownRules>",
+          "id": "0x746f776e",
+          "feltLength": null
         }
       ],
       "keyLength": 1,
@@ -10176,10 +10178,6 @@
       "name": "world_native::buildings::BoardRules",
       "members": [
         {
-          "name": "town",
-          "type": "core::option::Option::<world_native::buildings::TownRules>"
-        },
-        {
           "name": "demolition_refund_bps",
           "type": "core::integer::u16"
         },
@@ -10226,6 +10224,10 @@
         {
           "name": "empire_resource_cap",
           "type": "core::integer::u32"
+        },
+        {
+          "name": "town",
+          "type": "core::option::Option::<world_native::buildings::TownRules>"
         }
       ]
     },
@@ -16156,5 +16158,5 @@
       ]
     }
   },
-  "identity": "5e61bf5f3e29eee74f9941cf4d027b1e73114eb2bd616d09b1f337697ebab38c"
+  "identity": "d1f858479fa9aeee0a778adca0521a8972b6a8d603f2c9a52408f626b1aaa8d4"
 }

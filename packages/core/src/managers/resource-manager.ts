@@ -1,5 +1,8 @@
 import { baneRateReader } from "../utils/world-banes";
-import { nativeBaneConstants as bane } from "../../../../contracts/l3/world-native/schema/client.gen";
+import {
+  nativeBaneConstants as bane,
+  nativeRuleConstants as rules,
+} from "../../../../contracts/l3/world-native/schema/client.gen";
 import type { AccrualRates } from "@bibliothecadao/types";
 import { currentResourceWeight } from "../utils/deep";
 import { researchPicks } from "../utils/realm-research";
@@ -73,7 +76,8 @@ export class ResourceManager {
             change.model === "BaneRules"
           )
             return (change.current ?? change.previous)?.game_id === this.gameId;
-          if (change.model === "GameRegistry") return (change.current ?? change.previous)?.game_id === this.gameId;
+          if (change.model === "GameRegistry" || change.model === "BoardRules" || change.model === "SliceRules")
+            return (change.current ?? change.previous)?.game_id === this.gameId;
           // A realm's level sets its stores' limits.
           if (
             change.model !== "ResourceBalance" &&
@@ -199,38 +203,46 @@ export class ResourceManager {
     const { balance, production } = resource;
     if (!production)
       return { balance: Number(balance), hasReachedMaxCapacity: false, amountProduced: 0n, amountProducedLimited: 0n };
-    const amountProduced = ResourceManager._amountProducedStatic(resource, currentTick, resourceId);
-    // A store keeps nothing past its own limit, as the contract adds production to it.
     const limit = this.storeLimit(resourceId);
-    const room = limit === undefined ? undefined : limit > balance ? limit - balance : 0n;
+    if (limit === undefined) return undefined;
+    const amountProduced = ResourceManager._amountProducedStatic(resource, currentTick, resourceId);
+    const room = limit === null ? undefined : limit > balance ? limit - balance : 0n;
     const fitting = this._limitProductionByStoreCapacity(amountProduced, resourceId);
     const amountProducedLimited = room === undefined || fitting < room ? fitting : room;
     const kept = balance + amountProducedLimited;
     return {
       balance: Number(kept),
-      hasReachedMaxCapacity: amountProducedLimited < amountProduced || (limit !== undefined && kept >= limit),
+      hasReachedMaxCapacity: amountProducedLimited < amountProduced || (limit !== null && kept >= limit),
       amountProduced,
       amountProducedLimited,
     };
   }
 
-  /** A realm's current store limit, or no independent cap off a board. */
-  public storeLimit(resourceId: ResourcesIds): bigint | undefined {
-    const structure = this.store.get("Structure", { game_id: this.gameId, entity_id: this.entityId });
-    if (structure?.base.category !== StructureType.Realm) return undefined;
+  /** A known cap, null for no independent cap, or undefined while a cap input is unknown. */
+  public storeLimit(resourceId: ResourcesIds): bigint | null | undefined {
+    if (!hasCastleLimit(resourceId)) return null;
+    const keys = { game_id: this.gameId, entity_id: this.entityId };
+    const structure = this.store.get("Structure", keys);
+    if (!structure) {
+      if (this.store.get("ExplorerTroops", { game_id: this.gameId, explorer_id: this.entityId })) return null;
+      return this.store.absenceKnown("Structure", keys).known ? null : undefined;
+    }
+    if (structure.base.category !== StructureType.Realm) return null;
     return this.storeLimitAtLevel(resourceId, structure.base.level);
   }
 
   /** The same store after a castle upgrade, with the realm's standing buildings and research. */
-  public storeLimitAtLevel(resourceId: ResourcesIds, level: number): bigint | undefined {
-    if (!hasCastleLimit(resourceId)) return undefined;
+  public storeLimitAtLevel(resourceId: ResourcesIds, level: number): bigint | null | undefined {
+    if (!hasCastleLimit(resourceId)) return null;
     const board = this.store.get("BoardRules", { game_id: this.gameId });
-    if (!board) return undefined;
+    if (!board) return this.store.absenceKnown("BoardRules", { game_id: this.gameId }).known ? null : undefined;
     const storedResource = resourceId === ResourcesIds.Wheat || resourceId === ResourcesIds.Labor;
     let caps: readonly number[];
     let multiplier = 1;
     if (!storedResource) {
-      const limits = this.store.require("SliceRules", { game_id: this.gameId }).troop_limit_config;
+      const rules = this.store.get("SliceRules", { game_id: this.gameId });
+      if (!rules) return undefined;
+      const limits = rules.troop_limit_config;
       caps = [
         limits.settlement_deployment_cap,
         limits.city_deployment_cap,
@@ -258,15 +270,21 @@ export class ResourceManager {
     const base = BigInt(cap) * BigInt(multiplier) * BigInt(RESOURCE_PRECISION);
     if (!storedResource) return base;
     if (board.town !== null) {
-      const counts = this.store.require("StructureBuildings", { game_id: this.gameId, entity_id: this.entityId });
+      const counts = this.store.get("StructureBuildings", { game_id: this.gameId, entity_id: this.entityId });
+      if (!counts) return undefined;
       const storerooms = getBuildingCount(BuildingType.Storehouse, [
         counts.packed_counts_1,
         counts.packed_counts_2,
         counts.packed_counts_3,
       ]);
-      return base * (storerooms > 0 ? 2n : 1n);
+      return base * (storerooms > 0 ? BigInt(rules.TOWN_STOREHOUSE_MULTIPLIER) : 1n);
     }
-    const learned = this.store.require("RealmKnowledge", { game_id: this.gameId, structure_id: this.entityId }).learned;
+    const knowledge = this.store.requireOrAbsent("RealmKnowledge", {
+      game_id: this.gameId,
+      structure_id: this.entityId,
+    });
+    if (!knowledge.known) return undefined;
+    const learned = knowledge.known.learned;
     const row = resourceId === ResourcesIds.Wheat ? research.ROW_FARM : research.ROW_WORKSHOP;
     const stores = researchPicks(learned, row, research.CHOICE_STORE);
     return (base * BigInt(10_000 + stores * board.storage_step_bps)) / 10_000n;

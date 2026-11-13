@@ -15,7 +15,7 @@ import { configManager, type GameClient, setBlockTimestampSource, learnResearch 
 import { nativeResearchConstants as research, type GameClientSetup } from "@bibliothecadao/eternum/game-client";
 import { BuildingType, RESOURCE_PRECISION, ResourcesIds } from "@bibliothecadao/types";
 import preset from "../../../../../../../contracts/l3/world-native/tests/fixtures/current-presets/preset-3.json";
-import { buildingCounts, realmBoard } from "./build-fixture";
+import { buildingCounts, realmBoard, townBoard } from "./build-fixture";
 import { BuildingsInFlight, BuildSheet } from "./build-sheet";
 
 afterEach(() => {
@@ -851,3 +851,79 @@ it("reds only the price lines the realm holds less of, so a training building sh
     band: "bad",
   });
 });
+
+it.each([
+  { level: 0, standing: 0 },
+  { level: 1, standing: 0 },
+  { level: 1, standing: 1 },
+])(
+  "shows the Storeroom effect and only sends an eligible City build ($level, $standing)",
+  async ({ level, standing }) => {
+    (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
+    const { store, realm } = townBoard(level);
+    const counts = store.require("StructureBuildings", { game_id: 1, entity_id: 7 });
+    store.applyFacts([
+      {
+        model: "StructureBuildings",
+        key: "0x72",
+        value: { ...counts, ...buildingCounts(BuildingType.Storehouse, standing) },
+      },
+    ] as never);
+    const placeBuilding = vi.fn(() => {
+      store.applyFacts([
+        {
+          model: "StructureBuildings",
+          key: "0x72",
+          value: { ...counts, ...buildingCounts(BuildingType.Storehouse, 1) },
+        },
+      ] as never);
+      return Promise.resolve({ transaction_hash: "0x28" });
+    });
+    installActiveGameClient({
+      connect() {},
+      disconnect() {},
+      dispose() {},
+      actions: { placeBuilding },
+      waitForAction: () => Promise.resolve({ hash: "0x28", block: 28, status: "SUCCEEDED" }),
+    } as unknown as GameClient);
+    const host = document.createElement("div");
+    document.body.append(host);
+    const root = createRoot(host);
+    const onClose = vi.fn();
+    const plot = { col: 11, row: 10 };
+    try {
+      act(() =>
+        root.render(
+          <GameProvider value={{ store } as unknown as GameClientSetup} account={{ address: "0x111" } as never}>
+            <BuildSheet realm={realm} plot={plot} onClose={onClose} />
+          </GameProvider>,
+        ),
+      );
+      const card = [...host.querySelectorAll<HTMLButtonElement>(".ui-card__choose")].find(
+        (node) => node.querySelector(".ui-card__title")?.textContent === "Storeroom",
+      );
+      expect(card).toBeDefined();
+      act(() => card!.click());
+      expect(host.textContent).toContain("x2");
+      const build = [...host.querySelectorAll<HTMLButtonElement>("button")].find(
+        (node) => node.textContent === "Build",
+      );
+      if (level === 0 || standing > 0) {
+        expect(build).toBeUndefined();
+        expect(placeBuilding).not.toHaveBeenCalled();
+        expect(host.textContent).toContain(level === 0 ? "Needs City" : "Built. A realm holds one.");
+      } else {
+        expect(build, host.textContent ?? "missing build sheet").toBeDefined();
+        await act(async () => build!.click());
+        expect(placeBuilding).toHaveBeenCalledWith(
+          expect.objectContaining({ structureId: 7, buildingType: BuildingType.Storehouse, hex: plot }),
+        );
+        expect(store.require("StructureBuildings", { game_id: 1, entity_id: 7 }).packed_counts_1).toBe(256n);
+        expect(onClose).toHaveBeenCalledOnce();
+      }
+    } finally {
+      act(() => root.unmount());
+      host.remove();
+    }
+  },
+);

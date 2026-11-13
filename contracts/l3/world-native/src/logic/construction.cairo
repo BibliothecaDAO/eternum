@@ -505,7 +505,7 @@ pub mod ConstructionLogic {
             if board.town.is_some() {
                 if category == crate::research::STOREHOUSE {
                     assert!(base.category == crate::taxonomy::REALM_CATEGORY, "Storeroom needs a Realm");
-                    assert!(base.level >= 1, "Storeroom needs City");
+                    assert!(base.level >= crate::rules::TOWN_STOREHOUSE_LEVEL, "Storeroom needs City");
                     assert!(self.standing(key, category) == 0, "one Storeroom per Realm");
                 } else if category == crate::research::SCOUTS_LODGE {
                     assert!(base.level >= 1, "Scouts Lodge needs City");

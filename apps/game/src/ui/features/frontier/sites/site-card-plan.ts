@@ -160,7 +160,8 @@ const fittingPayout = (
   );
   if (!held) return undefined;
   const limit = manager.storeLimit(reward.resourceType);
-  if (limit === undefined) return { resourceId: reward.resourceType, amount: raw, fits: raw };
+  if (limit === undefined) return undefined;
+  if (limit === null) return { resourceId: reward.resourceType, amount: raw, fits: raw };
   const fits = Math.min(raw, Math.max(0, (Number(limit) - held.balance) / Number(PRECISION)));
   return { resourceId: reward.resourceType, amount: raw, fits };
 };

@@ -78,7 +78,7 @@ pub fn store_limit(key: ResourceKey, resource_type: u8) -> Option<u128> {
         }
         let counts = crate::state::read().buildings.structure_buildings.read((key.game_id, key.entity_id));
         let multiplier = if crate::buildings::category_count(counts, crate::research::STOREHOUSE) != 0 {
-            2
+            Into::<u8, u128>::into(crate::rules::TOWN_STOREHOUSE_MULTIPLIER)
         } else {
             1
         };

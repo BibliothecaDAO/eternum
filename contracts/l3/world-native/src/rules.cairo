@@ -631,3 +631,6 @@ pub const DEEP_SITE_COUNT: u8 = 3;
 pub const DEEP_ARRIVAL_Y: u32 = 5;
 
 pub const DEEP_GUARD_SLOTS: u8 = 4;
+
+pub const TOWN_STOREHOUSE_LEVEL: u8 = 1;
+pub const TOWN_STOREHOUSE_MULTIPLIER: u8 = 2;

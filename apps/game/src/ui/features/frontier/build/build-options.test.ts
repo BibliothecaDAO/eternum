@@ -1,9 +1,10 @@
+import { resolveConstructionBuildability } from "@bibliothecadao/eternum/automation";
 import { setBlockTimestampSource } from "@bibliothecadao/eternum";
 import { nativeResearchConstants } from "@bibliothecadao/eternum/game-client";
 import { BuildingType, ResourcesIds } from "@bibliothecadao/types";
 import { afterEach, describe, expect, it } from "vitest";
 import preset from "../../../../../../../contracts/l3/world-native/tests/fixtures/current-presets/preset-3.json";
-import { HOUR, realmBoard } from "./build-fixture";
+import { HOUR, realmBoard, townBoard, buildingCounts } from "./build-fixture";
 import { readBuildOptions } from "./build-options";
 
 afterEach(() => setBlockTimestampSource(null));
@@ -25,7 +26,10 @@ describe("Frontier's build options", () => {
     });
     expect(options.get(BuildingType.ResourceLabor)?.effect).toMatchObject({ resource: ResourcesIds.Labor });
     expect((options.get(BuildingType.ResourceLabor)?.effect as { perHour: number }).perHour).toBeCloseTo(50, 0);
-    expect(options.has(BuildingType.Storehouse)).toBe(false);
+    expect(options.get(BuildingType.Storehouse)).toMatchObject({
+      standing: { unavailable: true },
+      effect: { kind: "storage", multiplier: null },
+    });
     const hut = preset.buildings.find(({ category }) => category === BuildingType.WorkersHut)!.rule.capacity_grant;
     expect(options.get(BuildingType.WorkersHut)?.effect).toEqual({ kind: "population", amount: hut });
     expect(options.get(BuildingType.ResourceWheat)?.cost.length).toBeGreaterThan(0);
@@ -115,5 +119,71 @@ describe("Frontier's build options", () => {
     expect(warHall().standing).toBe("open");
     learn(2n << 14n);
     expect(warHall().standing).toBe("open");
+  });
+});
+
+it("offers the Storeroom with its price, storage effect, City requirement and one-per-Realm limit", () => {
+  const { store, realm } = townBoard();
+  const option = (level: number) =>
+    readBuildOptions(store, { ...realm, base: { ...realm.base, level } }, true, 350)!.find(
+      ({ category }) => category === BuildingType.Storehouse,
+    )!;
+  expect(option(0)).toMatchObject({
+    standing: { level: 1 },
+    effect: { kind: "storage", multiplier: 2 },
+    cost: [{ resource: ResourcesIds.Labor, amount: 10000 }],
+    populationCost: 0,
+  });
+  expect(option(1).standing).toBe("open");
+  const counts = store.require("StructureBuildings", { game_id: 1, entity_id: 7 });
+  store.applyFacts([
+    { model: "StructureBuildings", key: "0x72", value: { ...counts, ...buildingCounts(BuildingType.Storehouse, 1) } },
+  ] as never);
+  expect(option(1).standing).toBe("built");
+  store.applyFacts([
+    { model: "StructureBuildings", key: "0x72", value: { ...counts, ...buildingCounts(BuildingType.Storehouse, 0) } },
+  ] as never);
+  expect(option(1)).toMatchObject({ standing: "open", cost: [{ resource: ResourcesIds.Labor, amount: 10000 }] });
+});
+
+it("keeps the roster unknown while standing building counts are missing", () => {
+  const { store, realm } = townBoard(1);
+  store.applyFacts([{ model: "StructureBuildings", key: "0x72", value: null }]);
+  expect(readBuildOptions(store, realm, true, 350)).toBeUndefined();
+});
+
+it("applies the same City and uniqueness gate to shared construction callers", () => {
+  const { store, realm } = townBoard();
+  const verdict = () =>
+    resolveConstructionBuildability({
+      entityId: 7,
+      buildingType: BuildingType.Storehouse,
+      useSimpleCost: true,
+      store,
+      realm: {
+        category: realm.base.category,
+        level: store.require("Structure", { game_id: 1, entity_id: 7 }).base.level,
+        population: 0,
+        capacity: 12,
+      },
+      targetSpot: { col: 11, row: 10 },
+    });
+  expect(verdict()).toMatchObject({ canSubmit: false, code: "board_building_locked", reason: "Needs City." });
+  store.applyFacts([{ model: "Structure", key: "0x7", value: { ...realm, base: { ...realm.base, level: 1 } } }]);
+  expect(verdict()).toEqual({ canSubmit: true });
+  const counts = store.require("StructureBuildings", { game_id: 1, entity_id: 7 });
+  store.applyFacts([
+    { model: "StructureBuildings", key: "0x72", value: { ...counts, ...buildingCounts(BuildingType.Storehouse, 1) } },
+  ] as never);
+  expect(verdict()).toMatchObject({
+    canSubmit: false,
+    code: "board_building_locked",
+    reason: "One Storeroom per Realm.",
+  });
+  store.applyFacts([{ model: "StructureBuildings", key: "0x72", value: null }]);
+  expect(verdict()).toMatchObject({
+    canSubmit: false,
+    code: "board_building_locked",
+    reason: "Building counts are not synchronized.",
   });
 });

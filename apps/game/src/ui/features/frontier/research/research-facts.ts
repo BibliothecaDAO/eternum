@@ -105,7 +105,7 @@ const readResearchFacts = (
     },
     laborStore: (level) => {
       const base = resources.storeLimitAtLevel(ResourcesIds.Labor, level);
-      if (base === undefined) throw new Error(`No castle store at level ${level}`);
+      if (base == null) throw new Error(`No castle store at level ${level}`);
       return whole(base);
     },
     wheatPerTroop: (rations) => rationedWheatPerTroop(store, realm.game_id, ResourcesIds.Knight, rations),

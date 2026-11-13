@@ -1973,3 +1973,7 @@ export const ARMY_MANAGEMENT = {
   loss: "Its troops, skills, XP and carried resources are lost. Its slot keeps its stamina.",
   deleteFailed: "The army could not be deleted.",
 } as const;
+
+export const BUILDING_UNAVAILABLE = "Unavailable in this game";
+export const needsCastleLevel = (level: string) => `Needs ${level}`;
+export const storesMultiplied = (multiplier: number) => `x${multiplier} ${LABOR} and ${WHEAT} storage`;

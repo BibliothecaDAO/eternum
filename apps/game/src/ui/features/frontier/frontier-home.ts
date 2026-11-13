@@ -110,7 +110,8 @@ export const stocksAtNextDeploy = (
     const held = divideByPrecision(Number(balance));
     const back = returning.get(resourceId) ?? 0;
     const limit = manager.storeLimit(resourceId);
-    const room = limit === undefined ? back : Math.max(0, Number(limit / BigInt(RESOURCE_PRECISION)) - held);
+    if (limit === undefined) return undefined;
+    const room = limit === null ? back : Math.max(0, Number(limit / BigInt(RESOURCE_PRECISION)) - held);
     stocks.set(resourceId, { held, returning: back, fits: Math.min(back, room) });
   }
   return stocks;
