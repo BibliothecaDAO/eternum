@@ -193,8 +193,7 @@ pub mod EntryAdministration {
             let today = crate::days::day_of(game, unit, timestamp).index;
             let rules = preset.labor_rules.read().expect('labor is disabled');
             let resource_context = crate::logic::home_grants::grant_resource_context(key.game_id);
-            let release_id = self.data.game_releases.read(key.game_id);
-            let resources = self.data.releases.entry(release_id).classes.resources.read();
+            let resources = crate::logic::release::classes(key.game_id).resources.read();
             for day in first..today {
                 if self.data.entry.home_labor_grants.read((key.game_id, home, day)).is_some() {
                     continue;

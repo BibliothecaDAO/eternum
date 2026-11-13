@@ -306,3 +306,14 @@ test("Day claim readers fetch only the structure fields they consume", async () 
     assert.doesNotMatch(source, /structures::record\s*\(/, `${file}: read the structure base and owner directly`);
   }
 });
+
+test("Day dispatchers share the pinned release reader", async () => {
+  for (const file of ["aspects", "banes", "deposits", "entry", "home_grants", "quests"]) {
+    const source = await readFile(new URL(`../src/logic/${file}.cairo`, import.meta.url), "utf8");
+    assert.doesNotMatch(
+      source,
+      /\bgame_releases\b/,
+      `${file}: use logic::release::classes(game_id) for the pinned class instead of repeating its storage lookup`,
+    );
+  }
+});

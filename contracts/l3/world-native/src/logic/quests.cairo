@@ -1,4 +1,4 @@
-use starknet::storage::{StorageMapReadAccess, StoragePathEntry, StoragePointerReadAccess};
+use starknet::storage::{StorageMapReadAccess, StoragePointerReadAccess};
 use crate::quests::{IQuestProgressDispatcherTrait, IQuestProgressLibraryDispatcher, QuestProgress};
 use crate::resources::ResourceKey;
 
@@ -10,9 +10,7 @@ pub fn record(home: ResourceKey, kind: u8, amount: u128, timestamp: u64) {
     if amount == 0 {
         return;
     }
-    let state = crate::state::read();
-    let release = state.game_releases.read(home.game_id);
-    IQuestProgressLibraryDispatcher { class_hash: state.releases.entry(release).classes.bridge.read() }
+    IQuestProgressLibraryDispatcher { class_hash: crate::logic::release::classes(home.game_id).bridge.read() }
         .record_quest_progress(home, kind, amount, timestamp);
 }
 
@@ -181,9 +179,8 @@ pub mod QuestState {
                     100
                 }, level,
             );
-            let release = self.data.game_releases.read(home.game_id);
             let resources = IResourceOperationsLibraryDispatcher {
-                class_hash: self.data.releases.entry(release).classes.resources.read(),
+                class_hash: crate::logic::release::classes(home.game_id).resources.read(),
             };
             let resource_context = crate::commands::resource_context(context);
             let amount = resources
