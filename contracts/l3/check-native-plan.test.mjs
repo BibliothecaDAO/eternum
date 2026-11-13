@@ -57,7 +57,6 @@ test("an unknown stage refuses without running any checks", () => {
   assert.match(result.stderr, /Unknown native gate stage: missing-stage/);
 });
 
-
 test("every native gate script exists in the committed tree", () => {
   const gate = readFileSync(new URL("contracts/l3/check-native.sh", root), "utf8");
   const directories = { world: "world-native", verifier: "vrf-verifier", account: "player-account" };

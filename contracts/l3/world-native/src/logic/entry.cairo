@@ -24,8 +24,7 @@ pub fn recover_flyer_days(
 pub mod EntryAdministration {
     use starknet::ContractAddress;
     use starknet::storage::{
-        StorageMapReadAccess, StoragePathEntry, StoragePointerReadAccess,
-        StoragePointerWriteAccess,
+        StorageMapReadAccess, StoragePathEntry, StoragePointerReadAccess, StoragePointerWriteAccess,
     };
     use crate::entry::{LaborGrant, LaborHome};
     use crate::logic::release::ReleaseState;

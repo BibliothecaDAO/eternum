@@ -44,9 +44,13 @@ export const realmScenario = (): LabScenario => {
     ...firstRingBuilt(),
     ...castlePriced(),
     {
-      model: "StructureBuildings", key: "0xb7", value: {
+      model: "StructureBuildings",
+      key: "0xb7",
+      value: {
         ...buildings,
-        packed_counts_1: counts[0], packed_counts_2: counts[1], packed_counts_3: counts[2],
+        packed_counts_1: counts[0],
+        packed_counts_2: counts[1],
+        packed_counts_3: counts[2],
         population: { ...buildings.population, current: FIRST_RING.length },
       },
     },

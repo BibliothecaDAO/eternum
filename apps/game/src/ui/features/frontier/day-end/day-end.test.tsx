@@ -77,9 +77,7 @@ describe("the day's end", () => {
     const run = vi.fn();
     const dayEnd: DayEnd = { clock: clockAt(42 * 60), items: EVERYTHING_LEFT, run };
     const block = render(<DayEndBlock dayEnd={dayEnd} />);
-    expect(block.host.querySelector(".ui-notice")!.textContent).toBe(
-      "At day end, today's map and armies go",
-    );
+    expect(block.host.querySelector(".ui-notice")!.textContent).toBe("At day end, today's map and armies go");
     act(() => block.button("Show")!.click());
     act(() => block.button("Claim")!.click());
     expect(run.mock.calls).toEqual([["camp"], ["claim"]]);

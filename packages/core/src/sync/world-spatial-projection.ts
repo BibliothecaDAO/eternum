@@ -141,7 +141,7 @@ export type WorldSpatialProjectionChange =
   | ArmySpatialProjectionChange;
 
 export interface WorldSpatialProjectionOptions {
-  store: Pick<NativeFactStore, "entries" | "subscribe" | "get" | "require" | "entityOccupancy" | "inGame">;
+  store: Pick<NativeFactStore, "entries" | "subscribe" | "get" | "require" | "entityOccupancy" | "inGame" | "subscriptionScope">;
   bucketSize?: number;
 }
 
@@ -537,10 +537,7 @@ const toArmyChange = ({
  * `flush()`, which the sync runtime calls after each applied ingest slice.
  */
 export class WorldSpatialProjection {
-  private readonly store: Pick<
-    NativeFactStore,
-    "entries" | "subscribe" | "get" | "require" | "entityOccupancy" | "inGame"
-  >;
+  private readonly store: WorldSpatialProjectionOptions["store"];
   private readonly chestIndex: SpatialIndex<ID, ChestSpatialRenderable>;
   private readonly structureIndex: SpatialIndex<StructureSpatialRenderable["spatialId"], StructureSpatialRenderable>;
   private readonly armyIndex: SpatialIndex<ID, ArmySpatialRenderable>;

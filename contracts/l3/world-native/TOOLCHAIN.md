@@ -43,20 +43,19 @@ land.sh
 ```
 
 The service calls `contracts/l3/check-native.sh` by stage. Its test stages resolve and verify the required installation
-before starting expensive work, regardless of `snforge` on `PATH`. Discovery's statistical draws run on one worker;
-the separate root-independence package runs on four. Both packages retain every test and share the service's memory limit. A missing or stale installation stops with the rebuild command. The landing gate uses this runner for the native
-verifier too; the ledger keeps its separate toolchain. GitHub does not build or test the world package.
+before starting expensive work, regardless of `snforge` on `PATH`. Discovery's statistical draws run on one worker; the
+separate root-independence package runs on four. Both packages retain every test and share the service's memory limit. A
+missing or stale installation stops with the rebuild command. The landing gate uses this runner for the native verifier
+too; the ledger keeps its separate toolchain. GitHub does not build or test the world package.
 
 Use the same entrypoint for ignored fixture producers, for example from the repository root:
 
 ```bash
 bash contracts/l3/test-native.sh record_spatial_replay --ignored
 bash contracts/l3/test-native.sh record_frontier_combat_exchanges --ignored
-python3 contracts/l3/world-native/scripts/generate-lords-budget-fixtures.py
 ```
 
-The budget producer uses the same resolver before writing checkpoint input. Direct `snforge test` calls bypass these
-checks and are not the supported world test or fixture-recording path.
+Direct `snforge test` calls bypass these checks and are not the supported world test or fixture-recording path.
 
 The landing gate runs the lightweight installation regression tests. Run them alone with:
 
