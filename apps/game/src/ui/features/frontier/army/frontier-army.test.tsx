@@ -57,7 +57,9 @@ vi.mock("@/hooks/context/game-context", () => ({
             ? game.progress
             : model === "RealmKnowledge"
               ? { learned: game.learned }
-              : game.rules,
+              : model === "ArmyProgressionRules"
+                ? game.rules
+                : undefined,
       },
       systemCalls: { spend_skill_point: game.spendPoint },
     },
@@ -66,6 +68,10 @@ vi.mock("@/hooks/context/game-context", () => ({
 }));
 vi.mock("@/sync/action-outcome", () => ({ untilApplied: async (sent: Promise<unknown>) => (await sent, "0x7") }));
 vi.mock("@/hooks/helpers/use-native-facts", () => ({ useNativeRevision: () => 0 }));
+vi.mock("@/hooks/helpers/use-block-timestamp", async (original) => ({
+  ...(await original<typeof import("@/hooks/helpers/use-block-timestamp")>()),
+  useCurrentBlockTimestamp: () => 350,
+}));
 vi.mock("@/hooks/helpers/use-navigate", () => ({ useSelectArmyOnMap: () => game.select }));
 vi.mock("@/hooks/store/use-account-store", () => ({
   useAccountStore: (pick: (state: unknown) => unknown) => pick({ account: { address: "0x111" } }),

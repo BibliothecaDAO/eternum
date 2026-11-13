@@ -35,6 +35,8 @@ export interface ArmyDetailFacts {
   rules: NativeRows["ArmyProgressionRules"];
   /** The Ethereal layer it stands in (armyEtherealLayer); none on the surface. */
   ethereal?: EtherealLayer;
+  /** In the Deep, the army ticks its troops last and the seconds until the last of them (deepTicksLeft); none elsewhere. */
+  deep?: { left: number; seconds: number };
 }
 
 export interface AttributeView {
@@ -54,6 +56,7 @@ export interface ArmyView {
   art: IconMeaning;
   ethereal?: EtherealLayer;
   troops: number;
+  deep?: { left: number; seconds: number };
   xp: number;
   stamina: StaminaBar;
   secondsToFull: number | undefined;
@@ -117,6 +120,7 @@ export const readArmyDetail = (army: ArmyDetailFacts): ArmyView => {
     art: army.art,
     ethereal: army.ethereal,
     troops: army.troops,
+    deep: army.deep,
     xp: army.xp,
     stamina: army.stamina,
     secondsToFull: army.secondsToFull,

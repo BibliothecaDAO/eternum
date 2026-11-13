@@ -502,6 +502,8 @@ export const DEEP_WORDS = {
   freeSlot: "Free slot",
   /** How long a guard's troops last: its army ticks, and the time until the last of them. */
   lasts: (ticks: number, time: string) => `${formatExact(ticks)} ticks left (${time})`,
+  /** What the army panel's chip of those ticks counts. */
+  inTheDeep: "In the Deep",
   share: (percent: number) => `${percent}% of each tick`,
   attack: "Attack",
   take: "Take",

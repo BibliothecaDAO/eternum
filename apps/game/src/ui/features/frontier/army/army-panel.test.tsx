@@ -236,3 +236,19 @@ it.each([0n, learnResearch(0n, research.ROW_SHRINE, 0), learnResearch(0n, resear
     expect(spent).toHaveBeenCalledWith({ kind: "Scouting", value: { kind: "Sanctuaries", value: undefined } });
   },
 );
+
+it("tells an army in the Deep how long its troops last, beside them, and no such chip elsewhere", () => {
+  act(() =>
+    root.render(
+      <Detail
+        army={readArmyDetail({ ...EARLY_ARMY, deep: { left: 15, seconds: 1_790 } })}
+        sending={false}
+        onLevelUp={vi.fn()}
+      />,
+    ),
+  );
+  const chip = host.querySelector('[aria-label^="In the Deep"]');
+  expect(chip?.textContent).toBe("15 ticks left (30m)");
+  act(() => root.render(<Detail army={readArmyDetail(EARLY_ARMY)} sending={false} onLevelUp={vi.fn()} />));
+  expect(host.querySelector('[aria-label^="In the Deep"]')).toBeNull();
+});

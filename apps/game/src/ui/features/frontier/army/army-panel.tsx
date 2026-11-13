@@ -1,6 +1,6 @@
 import { SKILL_POINT_RANKS, type SkillPointChoice, type SkillPointRank } from "@bibliothecadao/eternum";
 import { EtherealMark } from "../hud/army-token";
-import { formatExact, formatShort } from "@bibliothecadao/types";
+import { formatDuration, formatExact, formatShort } from "@bibliothecadao/types";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { Icon, IconGroup } from "@/ui/design-system/icon";
 import {
@@ -13,7 +13,7 @@ import {
   HudTierStep,
   rankedTip,
 } from "@/ui/design-system/kit/hud-elements";
-import { ARMY_DETAIL, tierNumeral, TROOPS, UPGRADING, XP } from "@/ui/design-system/kit/words";
+import { ARMY_DETAIL, DEEP_WORDS, tierNumeral, TROOPS, UPGRADING, XP } from "@/ui/design-system/kit/words";
 import { type ReactNode, useState } from "react";
 
 import { FullIn } from "../full-in";
@@ -184,12 +184,20 @@ export const ArmyDetail = ({
   );
 };
 
-/** Over the stamina line: the army's troops, and what each tile explored sends home (none where reveals pay none). */
+/**
+ * Over the stamina line: the army's troops; in the Deep, how long they last (each tick takes its loss); and what each tile
+ * explored sends home (none where reveals pay none).
+ */
 const StatusChips = ({ army }: { army: ArmyView }) => (
   <span className="flex flex-wrap items-center gap-1.5">
     <HudChip icons={["troops"]} label={TROOPS}>
       {formatShort(army.troops)}
     </HudChip>
+    {army.deep && (
+      <HudChip icons={["hourglass"]} label={DEEP_WORDS.inTheDeep}>
+        {DEEP_WORDS.lasts(army.deep.left, formatDuration(army.deep.seconds, { days: false }))}
+      </HudChip>
+    )}
     {army.revealYield !== null && (
       <HudChip icons={["essence", "labor"]} label={ARMY_DETAIL.revealPaysLabel}>
         {army.revealYield === undefined ? "—" : ARMY_DETAIL.revealPays(formatShort(army.revealYield))}
