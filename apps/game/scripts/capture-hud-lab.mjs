@@ -305,6 +305,9 @@ export const SURFACES = [
   // Twelve-digit sides whose short figures would read alike: exact, set smaller to fit, on the attack card.
   { name: "frontier-site-alike", path: "/lab/kit/hud/site-alike", mark: "frontier", ...FIGHT_FITS },
   { name: "frontier-day-done", path: "/lab/kit/hud/day-done-full", mark: "frontier", sizes: CARDS },
+  // The interface that opens as you play: a new account's first minute beside a seasoned account's whole HUD.
+  { name: "frontier-opening-new", path: "/lab/kit/unified/frontier-new", mark: "unified", sizes: CARDS },
+  { name: "frontier-opening-seasoned", path: "/lab/kit/unified/frontier", mark: "unified", sizes: CARDS },
 ];
 
 /**
@@ -319,6 +322,7 @@ const HUD_LAYOUT_PAGES = [
   "unified/blitz-spectator",
   "unified/blitz-finished",
   "unified/frontier",
+  "unified/frontier-new",
   "hud/selected",
   "hud/site-camp",
   "hud/deploy",

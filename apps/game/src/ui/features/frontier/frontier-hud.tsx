@@ -46,6 +46,9 @@ import { useOnePanel, useOrderSettledReturnsToTheArmy } from "./hud/one-panel";
 import { FrontierDayClock } from "./hud/day-pill";
 import { DayEndBlock, DayEndNotice, useDayEnd } from "./day-end/day-end";
 import { useFirstBuild, useMarkFirstBuild } from "./build/first-build";
+import { FrontierDayBanner } from "./day/day-banner";
+import { OpeningLine } from "./opening/opening-line";
+import { useOpeningInterface, useOpens } from "./opening/use-opening";
 import { FrontierStrip, useStoreReadings } from "./hud/frontier-strip";
 import { RealmPanel } from "./hud/realm-panel";
 import { HudBands } from "./hud/hud-bands";
@@ -55,6 +58,7 @@ import { FrontierRealms } from "./value/frontier-realms";
 import { FrontierPurse } from "./value/frontier-purse";
 import { useSpendLords } from "./value/use-spend-lords";
 import { useLinkWalletPrompt, useOwedLords } from "./value/link-wallet";
+import { lordsInGame } from "./value/lords-in-game";
 import { SeasonPayout } from "./value/season-payout";
 import { LordsPurse, PurseRow, RealmsChip } from "./value/lords-purse";
 import { useHomeKind } from "@/hooks/helpers/use-home-kind";
@@ -120,6 +124,8 @@ export const FrontierHud = ({
   const [researchPick, setResearchPick] = useState<string | undefined>();
   // The realm's first build: its board lights a plot for it and the build sheet opens on it; a visit marks none.
   useMarkFirstBuild(useFirstBuild(visit ? null : realm));
+  // The HUD opens as the player's own realm plays; watching or visiting, it shows everything.
+  useOpeningInterface(visit || spectating ? null : realm);
   const card = useSelectionCard({
     realm: shown,
     onResearch: (node) => {
@@ -129,6 +135,8 @@ export const FrontierHud = ({
   });
   const desktop = useLayout() === "desktop";
   const { surface, openSurface: setSurface, showsCard } = useOnePanel(card?.key ?? null, !desktop);
+  const showsResearch = useOpens("research");
+  const openToday = useOpens("today") ? () => setSurface("today") : undefined;
   const realmLabor = useRealmLabor(rules, realm);
   const claimWaiting = dailyClaimWaiting(realmLabor?.plan);
   const research = useResearchTree(realm);
@@ -184,10 +192,13 @@ export const FrontierHud = ({
       }
     : undefined;
 
+  // The day's banner: the player's own realm's quest, under the strip on a phone and the realm panel on a desktop.
+  const dayBanner = own && <FrontierDayBanner realm={own} />;
   const strip = (
     <>
-      <FrontierStrip rules={rules} realm={shown} onOpenDay={() => setSurface("today")} storeCards={storeCards} />
+      <FrontierStrip rules={rules} realm={shown} onOpenDay={openToday} storeCards={storeCards} />
       {storeCards?.open && storeCards.card}
+      {dayBanner}
     </>
   );
   // A phone's purse: the player's realm's LORDS; a spectator sees there what the desktop's top bar says of them.
@@ -221,6 +232,7 @@ export const FrontierHud = ({
       <OfflineNotice />
       <SceneFailureNotice />
       {own && <DayEndNotice dayEnd={dayEnd} onOpen={() => setSurface("today")} />}
+      {own && <OpeningLine realm={own} />}
     </>
   );
   const action = (
@@ -255,7 +267,10 @@ export const FrontierHud = ({
       )}
       {/* The card covers the HUD: Withdraw opens in its place; a board open as the season ends stays till closed. */}
       {surface !== "season" && surface !== "withdraw" && (
-        <SeasonOver realm={visit ? null : realm} withdraw={realm && !visit && <SeasonPayout realm={realm} />} />
+        <SeasonOver
+          realm={visit ? null : realm}
+          withdraw={realm && !visit && lordsInGame() && <SeasonPayout realm={realm} />}
+        />
       )}
       {realm && <DayDone rules={rules} realm={realm} visiting={Boolean(visit)} />}
       <BuildingsInFlight />
@@ -265,18 +280,21 @@ export const FrontierHud = ({
   return desktop ? (
     <FrontierDesktop
       season={{ rank: seasonRank, onOpen: () => setSurface("season") }}
-      clock={<FrontierDayClock rules={rules} onOpenToday={() => setSurface("today")} />}
+      clock={<FrontierDayClock rules={rules} onOpenToday={openToday} />}
       worldTab={layers ? layerTab(layers) : undefined}
       realm={
         shown && (
-          <FrontierRealmPanel
-            rules={rules}
-            realm={shown}
-            own={own}
-            waiting={claimWaiting}
-            storeCards={storeCards}
-            onSurface={setSurface}
-          />
+          <>
+            <FrontierRealmPanel
+              rules={rules}
+              realm={shown}
+              own={own}
+              waiting={claimWaiting}
+              storeCards={storeCards}
+              onSurface={setSurface}
+            />
+            {dayBanner}
+          </>
         )
       }
       armies={dock}
@@ -292,7 +310,7 @@ export const FrontierHud = ({
           <FrontierPlaces
             surface={surface}
             onSurface={setSurface}
-            research={realm ? canResearchNow(research?.nodes) : undefined}
+            research={realm && showsResearch ? canResearchNow(research?.nodes) : undefined}
           />
         )
       }
@@ -569,20 +587,18 @@ const FrontierRealmPanel = ({
       stores={stores}
       onHome={() => goToPlace(true)}
       {...(own && {
-        lords,
-        linkWalletLine,
         waiting,
         storeCards,
-        onWithdraw: () => onSurface("withdraw"),
         onRealms: () => onSurface("realms"),
+        ...(lordsInGame() && { lords, linkWalletLine, onWithdraw: () => onSurface("withdraw") }),
       })}
     />
   );
 };
 
 /**
- * Under the strip: the realm's LORDS, which open Withdraw, and beside them the Realms chip while the home's daily claim
- * has Labor or Essence waiting today.
+ * Under the strip: the realm's LORDS, which open Withdraw (in a game with LORDS in play), and beside them the Realms
+ * chip while the home's daily claim has Labor or Essence waiting today. Nothing when neither stands.
  */
 const RealmPurse = ({
   realm,
@@ -594,12 +610,16 @@ const RealmPurse = ({
   waiting: DailyClaimWaiting | null;
   onWithdraw: () => void;
   onRealms: () => void;
-}) => (
-  <PurseRow>
-    {waiting && <RealmsChip waiting={waiting} narrow onOpen={onRealms} />}
-    <OwnLordsPurse realm={realm} onOpen={onWithdraw} />
-  </PurseRow>
-);
+}) => {
+  const lords = lordsInGame();
+  if (!waiting && !lords) return null;
+  return (
+    <PurseRow>
+      {waiting && <RealmsChip waiting={waiting} narrow onOpen={onRealms} />}
+      {lords && <OwnLordsPurse realm={realm} onOpen={onWithdraw} />}
+    </PurseRow>
+  );
+};
 
 /** The player's own realm's LORDS, marked while the account has no linked wallet to receive them. */
 const OwnLordsPurse = ({ realm, onOpen }: { realm: NativeRows["Structure"]; onOpen: () => void }) => {

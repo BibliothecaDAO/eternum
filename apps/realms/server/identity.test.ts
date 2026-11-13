@@ -1396,6 +1396,43 @@ describe("identity Worker", () => {
     expect((await createBrowser().request("/api/build-orders")).status).toBe(401);
   });
 
+  it("keeps the opening interface's moments an account reached, adding and never removing, and Show everything when named", async () => {
+    const browser = createBrowser();
+    await signInWithCode(browser, "opening@realms.test");
+    const owner = (await browser.session())!.user.realmsId;
+    const save = (change: object) => browser.request("/api/interface/opening", { body: { owner, ...change } });
+    const kept = async () => (await browser.request("/api/interface/opening")).json();
+    const sorted = (record: unknown) => {
+      const { reached, ...rest } = record as { reached: string[] };
+      return { ...rest, reached: [...reached].sort() };
+    };
+
+    expect(await kept()).toEqual({ owner, reached: [], showAll: false });
+    expect(sorted(await (await save({ reach: ["launch", "barracks"] })).json())).toEqual({
+      owner,
+      reached: ["barracks", "launch"],
+      showAll: false,
+    });
+    // Two devices saving at once keep both; a moment saved again is kept once; a save without Show everything keeps it.
+    await Promise.all([save({ reach: ["fight"], showAll: true }), save({ reach: ["essence", "barracks"] })]);
+    expect(sorted(await kept())).toEqual({
+      owner,
+      reached: ["barracks", "essence", "fight", "launch"],
+      showAll: true,
+    });
+    expect(sorted(await (await save({ reach: [], showAll: false })).json())).toEqual({
+      owner,
+      reached: ["barracks", "essence", "fight", "launch"],
+      showAll: false,
+    });
+
+    expect((await save({ reach: ["tutorial"] })).status).toBe(400);
+    expect(
+      (await browser.request("/api/interface/opening", { body: { owner: "someone-else", reach: [] } })).status,
+    ).toBe(403);
+    expect((await createBrowser().request("/api/interface/opening")).status).toBe(401);
+  });
+
   /** A running Devcon season game in a shard's directory, as Herald answers it for one player. */
   const devconGame = (entered: boolean) => ({
     game_id: 41,
@@ -4023,6 +4060,7 @@ describe("shared links", () => {
     return {
       browser,
       realmsId,
+      account,
       share: async (moment: number) => {
         const response = await browser.request("/api/shares", {
           body: { kind: "frontier-day", chainId, gameId, moment },
@@ -4165,6 +4203,79 @@ describe("shared links", () => {
     await visit(sharer.browser, code);
     await player("sharer-alt-second", sharer.browser);
     expect((await sharer.tally()).joined).toBe(0);
+  });
+
+  /** The shared game's race board (Herald's /games/<id>/race): each Aspect's members by account. */
+  const publishRace = (members: Record<number, string[]>) =>
+    heralds.set(`${shard}/games/${gameId}/race`, {
+      game_id: String(gameId),
+      mode: "race",
+      stage_height: 2000,
+      winner: null,
+      aspects: [1, 2, 3, 4].map((aspect, index) => ({
+        aspect,
+        rank: index + 1,
+        height: 0,
+        stage: 0,
+        triumph_days: [null, null, null, null],
+        members: (members[aspect] ?? []).map((address, at) => ({ address, structure_id: String(at + 1), glory: 0 })),
+      })),
+    });
+  const invite = (who: Awaited<ReturnType<typeof player>>, aspect: unknown) =>
+    who.browser.request("/api/shares", { body: { kind: "aspect", chainId, gameId, moment: aspect } });
+
+  it("invites to the sharer's own Aspect only, as the game's race board names it", async () => {
+    const sharer = await player("inviter-harmony");
+    await env.DB.prepare(`UPDATE "user" SET "name" = 'Linden' WHERE "realmsId" = ?`).bind(sharer.realmsId).run();
+    publishRace({ 2: [sharer.account] });
+    const made = await invite(sharer, 2);
+    expect(made.status).toBe(200);
+    const code = ((await made.json()) as { code: string }).code;
+    expect(((await (await invite(sharer, 2)).json()) as { code: string }).code).toBe(code);
+    expect(await visit(createBrowser(), code)).toEqual([200, { kind: "aspect", moment: 2, name: "Linden" }]);
+
+    // Another Aspect, or one outside the catalog, is no invite of theirs.
+    expect([(await invite(sharer, 3)).status, await (await invite(sharer, 3)).json()]).toEqual([
+      403,
+      { error: "not_in_aspect" },
+    ]);
+    expect((await invite(sharer, 5)).status).toBe(400);
+    // A board that cannot answer refuses the invite; it never reads as no Aspect.
+    heralds.delete(`${shard}/games/${gameId}/race`);
+    expect([(await invite(sharer, 2)).status, await (await invite(sharer, 2)).json()]).toEqual([
+      503,
+      { error: "aspect_unavailable" },
+    ]);
+  });
+
+  it("tells a new account the invite it came by, and nothing to an account no link brought", async () => {
+    const sharer = await player("inviter-chaos");
+    await env.DB.prepare(`UPDATE "user" SET "name" = 'Cael' WHERE "realmsId" = ?`).bind(sharer.realmsId).run();
+    publishRace({ 3: [sharer.account] });
+    const code = ((await (await invite(sharer, 3)).json()) as { code: string }).code;
+    const friendBrowser = createBrowser();
+    await visit(friendBrowser, code);
+    const friend = await player("invited-to-chaos", friendBrowser);
+    expect(await (await friend.browser.request("/api/shares/joined")).json()).toEqual({
+      kind: "aspect",
+      chainId,
+      gameId,
+      moment: 3,
+      name: "Cael",
+    });
+    const alone = await player("came-alone");
+    expect(await (await alone.browser.request("/api/shares/joined")).json()).toBeNull();
+    expect((await createBrowser().request("/api/shares/joined")).status).toBe(401);
+  });
+
+  it("unfurls an invite as the sharer inviting to their Aspect", async () => {
+    const sharer = await player("inviter-unfurl");
+    await env.DB.prepare(`UPDATE "user" SET "name" = 'Orrin' WHERE "realmsId" = ?`).bind(sharer.realmsId).run();
+    publishRace({ 4: [sharer.account] });
+    const code = ((await (await invite(sharer, 4)).json()) as { code: string }).code;
+    const [status, html] = await page(code);
+    expect(status).toBe(200);
+    expect(tag(html, "og:title")).toBe("Orrin invites you to Guile in Frontier");
   });
 
   /** A JPEG as the share sheet's browser makes it: its start marker, then the rest of its bytes. */

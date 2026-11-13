@@ -1,6 +1,7 @@
 import { SeasonOver } from "@/shell/season-tab/season-over";
+import { answerLabOpening } from "@/lab/lab-opening";
 import { frontierArmyRules } from "../../frontier/army/progression-rules-fixture";
-import { useIdentitySessionStore } from "@/hooks/context/identity-session";
+import { identityClient, useIdentitySessionStore } from "@/hooks/context/identity-session";
 import { LAB_SESSION } from "@/shell/lab/app-lab-fixtures";
 import { answerLabChat } from "@/shell/lab/lab-chat";
 import { usePopoverStore } from "@/hooks/store/use-popover-store";
@@ -20,11 +21,19 @@ import {
   type SkillPointChoice,
 } from "@bibliothecadao/eternum";
 import type { NativeFactStore } from "@bibliothecadao/eternum/game-client";
-import { ActorType, RESOURCE_PRECISION, ResourcesIds, StructureType, TileOccupier } from "@bibliothecadao/types";
+import {
+  ActorType,
+  aspects,
+  RESOURCE_PRECISION,
+  ResourcesIds,
+  StructureType,
+  TileOccupier,
+} from "@bibliothecadao/types";
 import { useEffect } from "react";
 import { useParams } from "react-router-dom";
 
 import ROW_SET from "../../../../../../../contracts/l3/world-native/schema/fixtures/row-set.json";
+import { frontierSeasonOnePreset } from "../../../../../../../config/source/frontier/season-one";
 import { PLAYER } from "./fixture-game";
 import { LabGame } from "./lab-game";
 
@@ -53,6 +62,8 @@ const VIEWS = {
   // Eternum's player on the same HUD as Blitz's, in Eternum's own age colours.
   eternum: { preset: 3, spectating: false, finished: false, army: false, attack: false },
   "frontier-army": { preset: 5, spectating: false, finished: false, army: true, attack: false },
+  // A new player's first minute: a fresh account on the fresh realm, the HUD as it opens, with its first line.
+  "frontier-new": { preset: 5, spectating: false, finished: false, army: false, attack: false, fresh: true },
   "blitz-spectator": { preset: 2, spectating: true, finished: false, army: false, attack: false },
   "blitz-finished": { preset: 2, spectating: true, finished: true, army: false, attack: false },
   "blitz-out": { preset: 2, spectating: false, finished: false, army: false, attack: false, out: true },
@@ -68,7 +79,7 @@ export const UNIFIED_VIEWS = (Object.keys(VIEWS) as View[]).map((name) => ({
 
 /**
  * Dev only: the in-game HUD as the game mounts it (a desktop's columns, a phone's compact HUD), every mode's, on the
- * lab's game, at /lab/kit/unified/<view>: blitz, blitz-attack, blitz-attack-short, blitz-build, blitz-start, eternum, frontier, frontier-army,
+ * lab's game, at /lab/kit/unified/<view>: blitz, blitz-attack, blitz-attack-short, blitz-build, blitz-start, eternum, frontier, frontier-army, frontier-new,
  * blitz-spectator, blitz-finished, blitz-out, blitz-out-watching. Frontier's states on the same HUD are the Frontier HUD
  * lab's, /lab/kit/hud/<state>.
  */
@@ -84,16 +95,25 @@ const ViewLab = ({ view }: { view: View }) => {
   const start = "start" in VIEWS[view];
   const out = "out" in VIEWS[view];
   const tired = "tired" in VIEWS[view];
+  const fresh = "fresh" in VIEWS[view];
   const mode = nativeGameModeOf(preset);
   const frontier = mode === "frontier";
   useDocumentClass(frontier ? "frontier-hud" : "classic-hud");
   useHudMode(mode === "eternum" ? "eternum" : frontier ? "frontier" : "blitz");
   // The lab's player is signed in, as a player in a game is, and chat connects to the lab's chat server, in the tab.
+  // Identity makes the lab player's shared links in the tab: one code for every link.
   useEffect(() => {
-    const restore = answerLabChat({});
+    const restoreChat = answerLabChat({});
+    const restoreOpening = answerLabOpening(LAB_SESSION.user.realmsId, fresh ? [] : undefined);
+    const { createShare } = identityClient;
+    identityClient.createShare = async () => LAB_SHARE_CODE;
     useIdentitySessionStore.getState().applySession(LAB_SESSION);
-    return restore;
-  }, []);
+    return () => {
+      restoreChat();
+      restoreOpening();
+      identityClient.createShare = createShare;
+    };
+  }, [fresh]);
   return (
     <>
       <div
@@ -105,18 +125,19 @@ const ViewLab = ({ view }: { view: View }) => {
         preset={preset}
         spectating={spectating}
         finished={finished}
-        facts={
-          army
-            ? (store) => [
+        facts={(store) => [
+          ...(frontier ? seasonOneFacts() : []),
+          ...(army
+            ? [
                 ...labArmyOut(store, tired ? TIRED_STAMINA : LAB_ARMY_STAMINA),
                 ...(attack ? enemyArmyBeside(store) : []),
               ]
             : stocked
-              ? stockedRealm
+              ? stockedRealm()
               : out
-                ? lastRealmLost
-                : undefined
-        }
+                ? lastRealmLost(store)
+                : []),
+        ]}
         systemCalls={army ? () => ({ spend_skill_point: recordSkillPointSpent }) : undefined}
       >
         {(store) => {
@@ -335,3 +356,28 @@ const recordSkillPointSpent = (call: { explorerId: number; choice: SkillPointCho
   target.__labSkillPointSpent = [...(target.__labSkillPointSpent ?? []), sent];
   return Promise.resolve();
 };
+
+/**
+ * Season 1's quest rules as its preset writes them, and the lab realm a member of Harmony, so a Frontier view draws the
+ * day's banner and the invite to its Aspect.
+ */
+const seasonOneFacts = (): unknown[] => {
+  const { baseCounts, labor, essence, bonusPercent } = frontierSeasonOnePreset.dailyQuest;
+  return [
+    {
+      model: "QuestRules",
+      key: "0x9e1",
+      value: {
+        game_id: 1,
+        base_counts: baseCounts,
+        labor: BigInt(labor),
+        essence: BigInt(essence),
+        bonus_percent: bonusPercent,
+      },
+    },
+    { model: "HomeAspect", key: "0x9e2", value: { game_id: 1, home: 7n, aspect: aspects[1].id } },
+  ];
+};
+
+/** The code identity gives every link the lab player makes, as a link's code is spelled. */
+const LAB_SHARE_CODE = "LABSHARE";

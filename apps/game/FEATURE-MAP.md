@@ -623,6 +623,31 @@ signed-out fixture count as a played match.
 
 ## Frontier in a match
 
+**The day's banner** (`src/ui/features/frontier/day/day-banner.tsx`), in a game whose preset has the daily quest
+(`QuestRules`): under the realm panel on a desktop, under the strip on a phone. It shows today's quest with its painting
+and name, its count ("0 of 2 finds") over a meter, and its reward in labor and Essence for the home's level (150% of the
+labor for a held Realm's or a campaign's home). **Collect** sends the reward once the quest is done; a check then says
+it was collected. While the snapshot has not settled the home's progress, receipt or labor bonus, it names the quest and
+says it is reading, with nothing to press. **Today** (the day's clock), on today's page, lists **This week's quests**:
+each day of the week's bag up to the season's last day, its painting and quest, and whether it was collected, done,
+missed, is today or is coming. Lab: `/lab/kit/unified/frontier` and `frontier-new`.
+
+**Invite a friend to your Aspect** (`src/ui/features/frontier/invite/aspect-invite.tsx`), for a home that joined an
+Aspect (`HomeAspect`): at the top of **Season** (a desktop's Season bubble; a phone's Menu, then Season), where the
+Aspect page will stand. It shows the Aspect's four Order crests and its name, with **Post on X** and **Copy link**
+carrying the player's own invite link, `/s/<code>`. Identity makes it only for the Aspect the game's race board names
+for the player; its landing says "<name> invites you to <Aspect> in Frontier". Lab: `/lab/kit/unified/frontier`, Season.
+
+**The interface opens as you play** (`src/ui/features/frontier/opening/opening.ts`, the frozen design's table). A new
+account's first session shows its realm and level, labor and wheat, the lit plot, its armies with their stamina, the
+map, the day's quest and the day's clock. Troops at home and the rest of the Build sheet open with the first Barracks;
+an army's XP (its token, row and panel) with its first fight won; Essence, **Research** and **Today** (the day's clock
+pressed) with the first quest reward collected or the first Essence. Each moment's one line stands over the map once per
+account, for 8 s or until **Got it**; the account keeps the moments it reached (`/api/interface/opening`), so a part an
+army earned stays after the day ends it. Settings → Interface → **Show everything** opens everything at once, with no
+lines. Watching, visiting or signed out, everything shows. Lab: `/lab/kit/unified/frontier-new` (a new account's first
+minute) beside `/lab/kit/unified/frontier` (a seasoned account).
+
 On a desktop, Frontier plays on the HUD every mode shares (`src/ui/features/frontier/hud/frontier-desktop.tsx`, issue
 5067): the top bar (your name chip with your place on the season's board, which opens it; Realm / World; the day's
 clock, its one day timer, which opens **Today**), the left column (one panel for the realm, whose whole header takes the
@@ -1176,19 +1201,19 @@ and then "+N". The post's text is the day as a line of emoji (`Frontier · Day 1
 `🏛️🌀🌀💀🐺👹`) and links the signed-in player's own link for that day, `/s/<code>`, made by identity as the sheet opens
 (the game's address while it is made, or when nobody is signed in); Post records the post. Nothing leaves the device
 until a way to post is pressed: Post on X (or a phone's Share) publishes the card the link unfurls as, titled "<name>
-shared Day 12 of Frontier"; closing the sheet publishes nothing. The link's landing says who shared which day and leads
-into the game, recording the visit for this browser; an account made on that browser afterwards is the link's, and
-counts as activated once it clears a site on the link's season board (`apps/realms` README, Shared links). A phone's
-sheet shows and copies the tall cut (1080 × 1350) and draws the wide cut out of sight for the unfurl. A phone whose
-share sheet takes images also gets **Share** above the two steps: the tall card's PNG, the post's line and the link, to
-any app (the season recap stays X only). Each link carries the button that made it (`?via=x`, `?via=system`), which its
-landing hands identity with the visit. What a player's shared days brought stands on You as **Your shared days** once
-they posted one: days posted, opened by friends, friends who joined, and those who cleared a site. Dev:
-`/lab/kit/hud/day-share` (a rich day), `day-share-thin`; `/lab/kit/hud/day-done` and `today-earlier` show the button;
-`/lab/app/shared-days/profile`. Code: `rollover/day-share.ts` (best moment, trail and post),
-`rollover/day-share-sheet.tsx` (the sheet, and `useDayShare`, which both places open it through) and `system-share.tsx`,
-`shell/share/` (its steps, the account's links in `own-shares.ts`, and the landing),
-`shell/profile/shared-days-panel.tsx`.
+shared Day 12 of Frontier"; closing the sheet publishes nothing. The link's landing says who shared which day (or, for
+an invite, "<name> invites you to <Aspect> in Frontier") and leads into the game, recording the visit for this browser;
+an account made on that browser afterwards is the link's, and counts as activated once it clears a site on the link's
+season board (`apps/realms` README, Shared links). A phone's sheet shows and copies the tall cut (1080 × 1350) and draws
+the wide cut out of sight for the unfurl. A phone whose share sheet takes images also gets **Share** above the two
+steps: the tall card's PNG, the post's line and the link, to any app (the season recap stays X only). Each link carries
+the button that made it (`?via=x`, `?via=system`), which its landing hands identity with the visit. What a player's
+shared days brought stands on You as **Your shared days** once they posted one: days posted, opened by friends, friends
+who joined, and those who cleared a site. Dev: `/lab/kit/hud/day-share` (a rich day), `day-share-thin`;
+`/lab/kit/hud/day-done` and `today-earlier` show the button; `/lab/app/shared-days/profile`. Code:
+`rollover/day-share.ts` (best moment, trail and post), `rollover/day-share-sheet.tsx` (the sheet, and `useDayShare`,
+which both places open it through) and `system-share.tsx`, `shell/share/` (its steps, the account's links in
+`own-shares.ts`, and the landing), `shell/profile/shared-days-panel.tsx`.
 
 Coming back to a tab the browser put away (a phone's, mostly): a lost GPU (WebGL's context, which phones take from a tab
 in the background, or WebGPU's device) boots the page again on its route once it is seen, and a Herald stream silent for
@@ -1315,6 +1340,98 @@ Frontier: a realm that knows Spire lore finds each layer's spire for the day by 
 on the first reveal, 10% more each next one, found by the tenth); the army's panel shows **Spire: N% on the next
 reveal** until it is found, and the found spire stands on its tile. Select an army beside it → **Spire** → **Enter** the
 one layer below: the army goes to the nearest free tile there and the camera follows. A spire found on Ethereal II leads
-into the Deep. The map's layer switch lists World and each layer the realm has reached. Ethereal III uses the shared 50 × 50 Deep, with visible terrain; army lifetime follows its native ArmyDay fact rather than its map band.
+into the Deep. The map's layer switch lists World and each layer the realm has reached. Ethereal III uses the shared 50
+× 50 Deep, with visible terrain; army lifetime follows its native ArmyDay fact rather than its map band.
 `src/three/terrain/ethereal-depths.json` owns Violet descent's material and mineral values; the renderer selects them
 from each tile's contract depth. Eternum's alternate layer retains its original basalt.
+
+Art → Terrain → Ethereal depths (`/lab/ethereal-depths`) previews the approved depths and the original material through
+the same terrain renderer. `/lab/game?scenario=ethereal-depths-1` (and `-2`, `-3`) opens the real Frontier client with
+fixture facts: the army beside the spire its realm found on the layer above that depth, explored land below, and for
+scale beside the arrival what really stands there: a spire found on that Ethereal layer, or in the Deep, which has no
+spire, an Aspect's hyperstructure. No live game is used.
+
+Reproduce all three Spire entries at desktop and phone sizes, with their stills and review page:
+
+```sh
+pnpm --dir apps/game prove:ethereal-depths --port 4197 --out .context/ethereal-depths
+```
+
+This wraps the standard `playtest` command’s `lab-ethereal-1`, `lab-ethereal-2` and `lab-ethereal-3` steps. It checks
+the signed command, army position, camera and committed material, then clears selection overlays for the still. Each
+browser closes after its proof. `captures.json`, per-run transcripts and `index.html` remain. One run per depth/device
+verifies routing and appearance; it is not a performance benchmark.
+
+## Wallet LORDS deposits
+
+In a deposit-enabled Frontier season, open the LORDS purse in the HUD. **Deposit LORDS** accepts whole LORDS from the
+payout wallet and opens the payment over the game on the app sheet, through the one wallet send: a Realms wallet
+confirms with its passkey and pays its network fee in LORDS, shown before confirming; another linked wallet prompts and
+pays in STRK. The purse separates winnings from deposited LORDS, shows delivery/refund receipts, and allows another
+deposit after confirmation. A payment handed to a wallet is kept as that wallet's uncertain send from the moment the
+wallet or passkey is asked, so closing the payment while it is asked, or losing its answer, leaves its amount and
+request locked (no **Edit or cancel deposit**) until the passkey declines or the chain settles it; **Retry payment**
+reopens the same payment. **Withdraw winnings** uses the existing earned-only path. Refills spend deposited LORDS first.
+Unused deposits return to the linked wallet through the existing season-end sweep; undelivered deposits are refunded to
+the original paying wallet.
+
+`pnpm --dir apps/game playtest --steps lab-spend-lords --iterations 1 --out <evidence>` drives the real refill and purse
+against a native-fact fixture whose deposit source is the build's own L2 ledger. `--steps lab-deposit-amount` (play it
+at `--viewport 390x844` too) proves the amount the wallet will sign on the same fixture: the HUD field read at rest
+(accessible name, numeric input mode, contrast against its well of at least 4.5), tapped and typed with real keys (25),
+the deposit begun with Tab then Enter on a desktop or a tap on a phone, its payment open as **Deposit 25 LORDS**, then
+the page loaded again with that amount restored and locked. The run's test profile holds no wallet, so nothing is handed
+to a wallet: the restored deposit offers **Retry payment** and **Edit or cancel deposit**, with no uncertain status. The
+phone run is Chrome's device emulation: numeric input mode and real browser key events injected after a real tap; a
+physical OS keyboard is not exercised. On the reviewed dev rehearsal season, use the existing command with
+`--steps s1-deposits --chain-id <runner-chain> --game-id <game> --player <email> --storage-state <file> --headed --renderer-modes webgpu-auto --iterations 1`.
+Prepare the payout wallet in the player's persistent profile with 20 devLords plus its fee funding for both deposits
+(real LORDS for a Realms wallet, STRK for another). A Realms wallet runs at the dev client's origin with this checkout's
+build answering for it in the run's page (`--base-url https://play.dev-realms.party --client-at-origin`) and the
+device's saved passkeys (`--passkeys <file>`): each payment writes its fee and built calls to `<step>-fee-shown.json`
+and confirms once `<step>-fee-approved.json` is written (`-fee-refused.json` stops it). Another wallet's two prompts are
+confirmed by hand. Each waits ten minutes; Ctrl-C cancels. A missing wallet is reported.
+
+The live steps refuse chains outside `S1_DEPOSIT_`, require ten newly credited spend-only LORDS with unchanged winnings,
+then use the army panel and refill slider to submit exactly one partial refill. The account needs earned winnings from a
+ruin chest and a deployed army; up to eight ordinary Explore actions make missing stamina if needed. The actual slider
+amount must exceed purchased LORDS, fit purchased plus earned LORDS, and leave stamina below its maximum. Unmet
+prerequisites fail with the observed balances or stamina. After the mixed refill consumes all purchased LORDS,
+`wallet-deposit-for-sweep` repeats the normal ten-LORDS deposit with the same exact purchased increase and unchanged
+winnings check. The two deposits total 20 LORDS for this account and leave 10 unspent LORDS for the existing season-end
+principal return. Each deposit retains its own response bodies, credited receipt identity and before/after purse
+evidence.
+
+The transcript retains response bodies, normal action records, the actual invocation, its confirmed successful receipt
+without `GameplayRejected`, and Herald snapshots covering its block. It checks exact purchased-first spending, consumed
+principal, earned-only pool return, unchanged swept balance and withdrawals, and native stamina plus regeneration
+against the visible army panel and purse. The live proof buys no tier. Season-end sweep and wallet-return evidence are
+separate rehearsal steps in [the runbook](../../deploy/athanor/README.md#deposit-rehearsal-on-dev).
+
+Deep site contract/read path: a preset with `DeepRules` creates the Foundation, Quarry and Altar in the fixed Deep.
+`views.deepSites(timestamp)` reads their persistent IDs, positions, daily beast counts and four guard slots. The
+existing `BattleGuard` command accepts their IDs; beating the beast puts the surviving winner into the first slot. An
+adjacent allied army joins through `InteractSite`. Each player may hold one slot per site; four allied players may hold
+it together. Held armies leave their field tiles and take the site's position. Death releases a slot, and a new day
+expires the guards and restores the beast. The dedicated selection and holding screen is not wired yet; combined guard
+combat is pending. Native regressions cover creation, joins, refusals, death and day rollover. Core view and scope tests
+cover guard membership and rollback. Run the existing `pnpm --dir apps/game playtest` when the screen is wired.
+
+Shared Deep rollover: tile occupancy, field models and army action gates use `ArmyDay` with the confirmed execution
+clock. An empty confirmed head at day rollover removes yesterday's army from the map and opens its tile, while its raw
+facts remain until the contract deletes them. The core Deep regression drives this clock path and checks both views.
+
+Deep troop loss: entering through `EnterDepth` records `DeepArmy.last_tick`. Each completed army tick removes the
+preset's loss from both field armies and held guards. The ordinary army command settles that loss once and reduces
+carrying capacity; a dead field army no longer blocks movement or arrival. `currentArmy`, `currentResourceWeight` and
+the existing troop resolver read the same native facts at the confirmed clock. The dock, transfer inputs, previews and
+map labels use those readers. The focused core count test and `use-armies.deep` test advance 500 → 300 → 100 → 0 without
+writing a troop row.
+
+Deep payments: the gameplay prefix settles Foundation, Quarry and Altar in completed army-tick order, pays the pre-loss
+troop weights, then removes troops. A winning Foundation tick still pays the other two sites at that boundary; later
+ticks stop, and the waiting action reads the updated game end. Quarry grants labor and Essence to each guard's home.
+`AltarBar` and day-keyed `TeamBane` rows are shared facts. Native command regressions cover repeated settlement, the
+last troops' payment, the final season boundary, winning mid-backlog and next-day bane issuance. Run these through
+`bash contracts/l3/check-native.sh` after the shared Race and Day sources are folded; their screen and live-playtest
+coverage remains pending.
