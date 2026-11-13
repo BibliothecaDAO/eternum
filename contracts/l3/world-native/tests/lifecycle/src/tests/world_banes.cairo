@@ -91,6 +91,75 @@ fn two_homes_end_the_lights_and_collect_the_second_grant_once() {
 }
 
 #[test]
+fn ending_the_lights_restores_another_armys_stamina_from_the_clear_timestamp() {
+    let (d, game_id) = super::aspects::setup_aspects(15);
+    settle(d, game_id, 360);
+    let next = interact_with_state(
+        d.games,
+        || {
+            let game = crate::logic::game::game(game_id);
+            let rules = crate::logic::game::rules(game_id);
+            assert_eq!(rules.tick_config.armies_tick_in_seconds, 120);
+            assert_eq!(rules.troop_stamina_config.stamina_gain_per_tick, 1);
+            assert_eq!(rules.troop_stamina_config.stamina_explore_stamina_cost, 20);
+            assert_eq!(crate::logic::banes::kind(game_id, 1), Some(crate::banes::MIST_TIDE));
+            assert_eq!(crate::logic::banes::required(game_id, 1, 1), 1);
+            crate::days::day_of(game, rules.day_unit_seconds, 360).end
+        },
+    );
+    let (finisher_actor, _) = world_test_support::tests::deploy_player(3001, world_test_support::tests::GUARDIAN);
+    let finisher = world_test_support::tests::bind_player(d, finisher_actor);
+    let finisher_home = settle(finisher, game_id, next);
+    let (waiting_actor, _) = world_test_support::tests::deploy_player(3002, world_test_support::tests::GUARDIAN);
+    let waiting = world_test_support::tests::bind_player(d, waiting_actor);
+    let waiting_home = settle(waiting, game_id, next);
+    let ready = reveal_to_progress(finisher, finisher_home, next, 19);
+    let before_clear = ready + 1080;
+    let cleared_at = ready + 1200;
+    explore_once(waiting, waiting_home, 0, before_clear);
+    let before = first_slot_stamina(waiting, waiting_home);
+    assert_eq!(
+        before, crate::troops::Stamina { amount: 100, settled_at: before_clear.try_into().unwrap(), remainder: 0 },
+    );
+    explore_once(finisher, finisher_home, 1, cleared_at);
+    interact_with_state(
+        d.games,
+        || {
+            assert_eq!(crate::logic::quests::read(finisher_home, 1).completed_level, 1);
+            assert_eq!(
+                crate::logic::banes::progress(game_id, 1, 1),
+                crate::banes::BaneProgress { completed: 1, ended_at: cleared_at },
+            );
+            assert_eq!(crate::state::read().troops.aspect_activity.read((game_id, 1, 0)), 1);
+            assert_eq!(crate::state::read().troops.aspect_activity.read((game_id, 1, 1)), 2);
+        },
+    );
+    assert_eq!(first_slot_stamina(waiting, waiting_home), before);
+    explore_once(waiting, waiting_home, 0, cleared_at + 120);
+    assert_eq!(
+        first_slot_stamina(waiting, waiting_home),
+        crate::troops::Stamina { amount: 81, settled_at: (cleared_at + 120).try_into().unwrap(), remainder: 600000 },
+    );
+    explore_once(waiting, waiting_home, 0, cleared_at + 240);
+    assert_eq!(
+        first_slot_stamina(waiting, waiting_home),
+        crate::troops::Stamina { amount: 62, settled_at: (cleared_at + 240).try_into().unwrap(), remainder: 600000 },
+    );
+    interact_with_state(
+        d.games,
+        || {
+            assert_eq!(crate::logic::quests::read(waiting_home, 1).progress, 3);
+            assert_eq!(crate::logic::banes::progress(game_id, 1, 1).completed, 1);
+            assert_eq!(
+                crate::logic::banes::windows(waiting_home, before_clear, cleared_at + 240),
+                array![crate::banes::BaneWindow { kind: crate::banes::MIST_TIDE, start: before_clear, end: cleared_at }]
+                    .span(),
+            );
+        },
+    );
+}
+
+#[test]
 fn activity_counts_a_home_once_through_slot_reuse_rejection_and_rollover() {
     let (d, game_id) = super::aspects::setup_aspects(15);
     let home = settle(d, game_id, 360);
@@ -170,15 +239,43 @@ fn settle(d: Deployment, game_id: u32, timestamp: u64) -> ResourceKey {
 }
 
 fn reveal_quest(d: Deployment, home: ResourceKey, start: u64) -> u64 {
+    let completed_at = reveal_to_progress(d, home, start, 20);
+    interact_with_state(d.games, || assert_eq!(crate::logic::quests::read(home, 1).completed_level, 1));
+    completed_at
+}
+
+fn reveal_to_progress(d: Deployment, home: ResourceKey, start: u64, target: u128) -> u64 {
     for step in 0_u32..45 {
         let timestamp = start + Into::<u32, u64>::into(step + 1) * 1200;
         let action = interact_with_state(
             d.games, || super::quests::next_reveal_action(home, (step % 2).try_into().unwrap()),
         );
         assert!(execute_in_game(d, home.game_id, action, timestamp));
-        if interact_with_state(d.games, || crate::logic::quests::read(home, 1).completed_level == 1) {
+        if interact_with_state(d.games, || crate::logic::quests::read(home, 1).progress >= target) {
             return timestamp;
         }
     }
-    panic!("The Lights did not complete")
+    panic!("Lights progress target not reached")
+}
+
+fn first_slot_stamina(d: Deployment, home: ResourceKey) -> crate::troops::Stamina {
+    interact_with_state(
+        d.games,
+        || {
+            crate::logic::army_slot_storage::read(
+                crate::troops::ArmySlotKey { game_id: home.game_id, structure_id: home.entity_id, epoch: 1, slot: 0 },
+            )
+                .unwrap()
+                .stamina
+        },
+    )
+}
+
+fn explore_once(d: Deployment, home: ResourceKey, index: u8, timestamp: u64) {
+    let action = interact_with_state(d.games, || super::quests::next_reveal_action(home, index));
+    match action {
+        Command::Explore(_) => {},
+        _ => panic!("expected an unrevealed neighbor"),
+    }
+    assert!(execute_in_game(d, home.game_id, action, timestamp));
 }
