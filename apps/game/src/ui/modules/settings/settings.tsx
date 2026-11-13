@@ -34,6 +34,7 @@ import { hudFor } from "@/ui/layouts/hud-for";
 import { useState } from "react";
 import { shortAddress } from "@/ui/design-system/kit/address";
 import { HowToPlayRow, useHowToPlay } from "../how-to-play";
+import { ShowEverything } from "@/ui/features/frontier/opening/show-everything";
 import { AppSettings } from "./app-settings";
 import { SettingsSection } from "./settings-section";
 import { KeyboardShortcuts } from "./keyboard-shortcuts";
@@ -61,6 +62,7 @@ export const SettingsPanel = () => {
         <VideoSettings />
       </SettingsSection>
       <NextUpSettings />
+      <OpeningSettings />
       <SettingsSection title={PROFILE_WORDS.notifications}>
         <NotificationSettings />
       </SettingsSection>
@@ -210,6 +212,12 @@ function NextUpSettings() {
       </HudSetting>
     </SettingsSection>
   );
+}
+
+/** Frontier's HUD opens as the player plays; Show everything opens it at once (show-everything.tsx). */
+function OpeningSettings() {
+  if (hudFor(getGameModeId(), true) !== "frontier") return null;
+  return <ShowEverything />;
 }
 
 function VolumeSlider({ label, value, onChange }: { label: string; value: number; onChange: (value: number) => void }) {

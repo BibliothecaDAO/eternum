@@ -1,7 +1,12 @@
 import { frontierArmyRules } from "../../ui/features/frontier/army/progression-rules-fixture";
 import { installLabGame } from "@/ui/features/debug/kit-lab/fixture-game";
 import { SPIRE_ARMY, SPIRE_DAY_NOW, spireDay } from "@/ui/features/frontier/spire-fixture";
-import { entityHomeNamespace, expeditionRealmSite, readExpeditionRules } from "@bibliothecadao/eternum";
+import {
+  entityHomeNamespace,
+  expeditionRealmSite,
+  expeditionSpires,
+  readExpeditionRules,
+} from "@bibliothecadao/eternum";
 import {
   BiomeType,
   BiomeTypeToId,
@@ -84,6 +89,8 @@ export const spireScenario = (ground: LabGround = GRASSLAND): LabScenario => {
     store,
     startsAt: SPIRE_DAY_NOW,
     player: "0x111",
+    // Already playing, with a payout wallet linked: wallet onboarding is not what the spire's games prove.
+    wallet: "0x456",
     opensOn: site,
     answer: (command, chain) => {
       if (command.kind !== "EnterDepth") return [];
@@ -92,15 +99,30 @@ export const spireScenario = (ground: LabGround = GRASSLAND): LabScenario => {
       const [occupancyKey, occupancy] = [...chain.entries("TileOccupancy")].find(
         ([, row]) => row.entity_id === explorerId,
       )!;
-      const landing = { col: occupancy.col, row: occupancy.row + depth * rules.spacing };
+      // spires.cairo: the army lands on the nearest free tile one region below the spire its realm found on its layer.
+      const spire = expeditionSpires(chain, 1, SPIRE_DAY_NOW).find((found) => found.depth === depth - 1)!;
+      const below = { col: spire.col, row: spire.row + rules.spacing };
+      const landing = [below, ...getHexesWithinRadius(below.col, below.row, 2)].find(
+        (hex) => !chain.get("TileOccupancy", { game_id: 1, alt: false, col: hex.col, row: hex.row }),
+      )!;
+      const [realmKey, realm] = [...chain.entries("Structure")].find(([, row]) => row.entity_id === 7n)!;
       return [
         { model: "TileOccupancy", key: occupancyKey, value: null },
         {
           model: "TileOccupancy",
           key: `0x1abd${depth}`,
-          value: wire({ ...occupancy, ...landing }),
+          value: wire({ ...occupancy, col: landing.col, row: landing.row }),
         },
         tile(`0x1abe${depth}`, landing.col, landing.row),
+        // record_depth: the realm's deepest layer reached.
+        {
+          model: "Structure",
+          key: realmKey,
+          value: wire({
+            ...realm,
+            metadata: { ...realm.metadata, deepest_depth: Math.max(realm.metadata.deepest_depth, depth) },
+          }),
+        },
       ];
     },
   };

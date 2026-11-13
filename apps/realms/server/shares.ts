@@ -1,3 +1,4 @@
+import { aspects, type AspectId } from "@bibliothecadao/types";
 import { isShareChannel, isShareKind } from "@realms-world/identity";
 import type { ShareChannel, ShareMoment } from "@realms-world/identity";
 
@@ -9,10 +10,14 @@ import { json } from "./http";
 import { createShareStore } from "./share-store";
 import type { PendingJoin } from "./share-store";
 
-/** What share settlement reads beyond D1: each game's season board, and the account each Realms id plays with. */
+/**
+ * What shares read beyond D1: each game's season board, the Aspect an account plays for in a game (its race board;
+ * throws while it cannot answer), and the account each Realms id plays with.
+ */
 export interface ShareWorld {
   db: D1Database;
   sitesCleared: (game: { chainId: string; gameId: number }) => Promise<Map<string, number> | null>;
+  aspectOf: (game: { chainId: string; gameId: number }, account: string) => Promise<AspectId | null>;
   accountOf: (realmsId: string) => Promise<string>;
 }
 
@@ -21,13 +26,40 @@ const TOP_SHARERS = 20;
 /** The largest day a moment may name: a season is far shorter, so anything above is no moment of ours. */
 const MOMENT_LIMIT = 10_000;
 
-/** POST /api/shares: the signed-in account's link for one moment (a Frontier day), made once and the same after. */
-export async function handleCreateShare(request: Request, auth: IdentityAuth, db: D1Database) {
+/**
+ * POST /api/shares: the signed-in account's link for one moment (a Frontier day, or an invite to its Aspect), made
+ * once and the same after. An invite names only the Aspect its sharer plays for in that game, as its race board says.
+ */
+export async function handleCreateShare(request: Request, auth: IdentityAuth, world: ShareWorld) {
   const sharer = await signedInRealmsId(request, auth);
   if (typeof sharer !== "string") return sharer;
   const moment = readShareMoment(await request.json().catch(() => null));
   if (!moment) return json({ error: "invalid_share" }, 400);
-  return json({ code: await createShareStore(db).linkFor(sharer, moment, nowSeconds()) });
+  if (moment.kind === "aspect") {
+    const refusal = await inviteRefusal(world, sharer, moment);
+    if (refusal) return refusal;
+  }
+  return json({ code: await createShareStore(world.db).linkFor(sharer, moment, nowSeconds()) });
+}
+
+/** Why an invite cannot be made: the race board could not answer, or names another Aspect (or none) for its sharer. */
+const inviteRefusal = async (world: ShareWorld, sharer: string, moment: ShareMoment): Promise<Response | null> => {
+  let aspect: AspectId | null;
+  try {
+    aspect = await world.aspectOf(moment, await world.accountOf(sharer));
+  } catch {
+    return json({ error: "aspect_unavailable" }, 503);
+  }
+  return aspect === moment.moment ? null : json({ error: "not_in_aspect" }, 403);
+};
+
+/** GET /api/shares/joined: the link the signed-in account came by, its joins settled first; null for none. */
+export async function handleJoinedShare(request: Request, auth: IdentityAuth, db: D1Database) {
+  const friend = await signedInRealmsId(request, auth);
+  if (typeof friend !== "string") return friend;
+  const store = createShareStore(db);
+  await store.settleJoins();
+  return json(await store.joinedLink(friend));
 }
 
 /** POST /api/shares/<code>/posted: the sharer opened the post with their link. */
@@ -128,19 +160,22 @@ const joinsByGame = (joins: readonly PendingJoin[]) => {
   return [...games.values()].map(({ game, joins: grouped }) => [game, grouped] as const);
 };
 
-/** A moment as the share sheet sends it; null for anything else. The chain is kept in one spelling, lowercase hex. */
+/**
+ * A moment as the share sheet sends it, a day or an Aspect by its kind; null for anything else. The chain is kept in
+ * one spelling, lowercase hex.
+ */
 const readShareMoment = (body: unknown): ShareMoment | null => {
   if (!body || typeof body !== "object") return null;
   const { kind, chainId, gameId, moment } = body as Record<string, unknown>;
-  if (
-    !isShareKind(kind) ||
-    !isWholeBetween(gameId, 0, Number.MAX_SAFE_INTEGER) ||
-    !isWholeBetween(moment, 1, MOMENT_LIMIT)
-  )
+  if (!isShareKind(kind) || !isWholeBetween(gameId, 0, Number.MAX_SAFE_INTEGER) || !isMomentOf(kind, moment))
     return null;
   const chain = chainSpelling(chainId);
   return chain ? { kind, chainId: chain, gameId, moment } : null;
 };
+
+/** A day of a season for a day's link; an Aspect of the catalog for an invite. */
+const isMomentOf = (kind: ShareMoment["kind"], moment: unknown): moment is number =>
+  kind === "aspect" ? aspects.some(({ id }) => id === moment) : isWholeBetween(moment, 1, MOMENT_LIMIT);
 
 const isWholeBetween = (value: unknown, least: number, most: number): value is number =>
   typeof value === "number" && Number.isInteger(value) && value >= least && value <= most;

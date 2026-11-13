@@ -9,13 +9,14 @@ import { realmLearned, scoutingKindsOf, heldSkillPoints, type SkillPointChoice }
 import { type NativeRows } from "@bibliothecadao/eternum/game-client";
 
 import { useArmyRevealYield } from "../frontier-reveal-yield";
-import { SpireButton, useArmyAtItsSpire } from "../spire-card";
+import { SpireButton, SpireOdds, useArmyAtItsSpire } from "../spire-card";
 import { type DockArmy, useDockArmies } from "../hud/dock-armies";
 import { type ArmyDetailFacts, type ArmyView, readArmyDetail } from "./army-detail";
 import { SCOUTING_CHOICES } from "../progression-choices";
 import { ArmyDetail, useArmyStep } from "./army-panel";
 import { ArmyRefill } from "./army-refill";
 import { ArmyDeleteButton, ArmyDeleteConfirm } from "./army-delete";
+import { ArmyRelicSlots } from "../relics/army-relic-slots";
 
 const PROGRESS_MODELS = ["RealmKnowledge", "ArmyProgress", "ArmyProgressionRules"] as const;
 
@@ -153,13 +154,16 @@ const ArmySheet = ({
         step={step}
         onLevelUp={onLevelUp}
       />
+      <ArmyRelicSlots explorerId={army.explorerId} />
       {deleting && !step.choosing && (
         <ArmyDeleteConfirm army={army} onCancel={() => setDeleting(false)} onDeleted={onClose} />
       )}
-      {spire && (
+      {spire ? (
         <HudWindowFoot>
           <SpireButton explorerId={army.explorerId} spire={spire} />
         </HudWindowFoot>
+      ) : (
+        <SpireOdds explorerId={army.explorerId} />
       )}
     </HudSheet>
   );

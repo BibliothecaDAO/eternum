@@ -1,4 +1,5 @@
 import { nativeReleaseConstants } from "../../../../../contracts/l3/world-native/schema/client.gen";
+import { frontierPreset } from "../../../../../config/source/frontier/native";
 import { SITE } from "@/ui/features/frontier/sites/site-fixture";
 import { dayOf, readExpeditionRules, siteClearXp } from "@bibliothecadao/eternum";
 import { SPIRE_ARMY } from "@/ui/features/frontier/spire-fixture";
@@ -84,7 +85,21 @@ const fundedRuin = (store: NativeFactStore, tile: { row: number }, now: number):
   const held = [...store.entries("ResourceBalance")].find(
     ([, row]) => row.entity_id === BigInt(HOME) && row.resource_type === ResourcesIds.Lords,
   );
+  const chests = frontierPreset.chests;
   return [
+    // A LORDS pool is published only in a game whose preset carries chest rules: its ruins pay chests, not relics.
+    {
+      model: "ChestRules",
+      key: "0x1ab9b",
+      value: wire({
+        game_id: 1,
+        price_ceiling: BigInt(chests.priceCeiling),
+        shares: chests.shares,
+        claim_window_seconds: chests.claimWindowSeconds,
+        pool_bps: chests.poolBps,
+        top_n: chests.topN,
+      } satisfies NativeRows["ChestRules"]),
+    },
     {
       model: "SiteChest",
       key: "0x1ab9c",

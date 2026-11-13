@@ -422,6 +422,8 @@ function zeroValue(type: WireType): unknown {
 }
 
 function keyParts(value: unknown, type: WireType, path: string): string[] {
+  // An enum key (an army's running relic is keyed by its kind) is its variant's name, checked against the variants.
+  if (typeof type === "object" && "enum" in type) return [String(compileDecoder(type, path)(value))];
   if (typeof type !== "string") {
     if (!value || typeof value !== "object") throw new Error(`Invalid native key ${path}`);
     return Object.entries(type).flatMap(([field, member]) =>

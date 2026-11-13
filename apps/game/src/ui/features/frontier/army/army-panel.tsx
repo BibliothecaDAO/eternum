@@ -17,6 +17,7 @@ import { ARMY_DETAIL, tierNumeral, TROOPS, UPGRADING, XP } from "@/ui/design-sys
 import { type ReactNode, useState } from "react";
 
 import { FullIn } from "../full-in";
+import { useOpens } from "../opening/use-opening";
 import type { ArmyView, AttributeKey, AttributeView, ScoutKind } from "./army-detail";
 
 import { pointChoices, scoutingChoices } from "../progression-choices";
@@ -68,6 +69,7 @@ export const ArmyDetail = ({
   onLevelUp: (choice: SkillPointChoice) => unknown;
 }) => {
   const { choosing: open, choose: setOpen } = step;
+  const showsXp = useOpens("army-xp");
   const [chosen, setChosen] = useState<AttributeKey | "stamina">(() => firstChoice(army));
   const [kind, setKind] = useState<ScoutKind>("camp");
   const [staminaRank, setStaminaRank] = useState<SkillPointRank>(army.staminaPoints[0]?.rank ?? 1);
@@ -177,7 +179,7 @@ export const ArmyDetail = ({
           <AttributeRow key={attribute.key} attribute={attribute} onOpen={() => choose(attribute.key)} />
         ))}
       </div>
-      <XpBlock army={army} onLevelUp={() => setOpen(true)} />
+      {showsXp && <XpBlock army={army} onLevelUp={() => setOpen(true)} />}
     </div>
   );
 };

@@ -5,7 +5,6 @@ import {
   learnResearch,
   realmLearned,
   researchChoice,
-  researchedDepth,
   researchPicks,
   researchPurchases,
   researchTier,
@@ -72,9 +71,6 @@ describe("realm research", () => {
 
   it("keeps unknown knowledge unknown", () => {
     expect(realmLearned(store(undefined), 7, 9)).toBeUndefined();
-    expect(researchedDepth(store(undefined), 7, 9)).toBeUndefined();
-    expect(researchedDepth(store(0n), 7, 9)).toBe(0);
-    expect(researchedDepth(store(learned), 7, 9)).toBe(2);
   });
 
   it("learns a row's next tier with its side, as the chain packs it", () => {

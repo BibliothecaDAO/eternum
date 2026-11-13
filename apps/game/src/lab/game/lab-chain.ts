@@ -1,4 +1,5 @@
 import { identityClient, useIdentitySessionStore } from "@/hooks/context/identity-session";
+import { answerLabOpening } from "@/lab/lab-opening";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { LAB_GUARDIAN, LAB_SESSION } from "@/shell/lab/app-lab-fixtures";
 import { answerLabChat } from "@/shell/lab/lab-chat";
@@ -113,10 +114,31 @@ declare global {
 export const wire = (value: unknown): Record<string, unknown> =>
   JSON.parse(JSON.stringify(value, (_, field) => (typeof field === "bigint" ? field.toString() : field)));
 
+/**
+ * A row's key as Herald carries it: its key fields' felts joined by ":". The store names a row by its decoded key, where
+ * an enum key field (an army's running relic is keyed by its kind) is its variant's name; on the wire it is the
+ * variant's index.
+ */
+const wireKey = (model: NativeModelName, key: string): string => {
+  const fields = nativeFactModels[model].keys.map(
+    (field) => nativeFactModels[model].fields[field as never],
+  ) as unknown[];
+  return key
+    .split(":")
+    .map((part, index) => {
+      const type = fields[index];
+      if (typeof type !== "object" || type === null || !("enum" in type)) return part;
+      const variant = (type.enum as readonly string[]).indexOf(part);
+      if (variant === -1) throw new Error(`${model} has no ${part} in its key`);
+      return String(variant);
+    })
+    .join(":");
+};
+
 /** Every row of a store as Herald carries it. */
 export const rowsOf = (store: NativeFactStore): LabFact[] =>
   (Object.keys(nativeFactModels) as NativeModelName[]).flatMap((model) =>
-    [...store.entries(model)].map(([key, value]) => ({ model, key, value: wire(value) })),
+    [...store.entries(model)].map(([key, value]) => ({ model, key: wireKey(model, key), value: wire(value) })),
   );
 
 /**
@@ -142,7 +164,7 @@ const scopedRowsOf = (store: NativeFactStore, actor: string | undefined, visit: 
   return (Object.keys(nativeFactModels) as NativeModelName[]).flatMap((model) =>
     [...store.entries(model)]
       .filter(([, value]) => rowInGameSyncScope(model, value as Record<string, unknown>, scope))
-      .map(([key, value]) => ({ model, key, value: wire(value) })),
+      .map(([key, value]) => ({ model, key: wireKey(model, key), value: wire(value) })),
   );
 };
 
@@ -326,6 +348,7 @@ const signInLabPlayer = (wallet: string | undefined) => {
   const session = wallet ? { ...LAB_SESSION, user: { ...LAB_SESSION.user, address: wallet } } : LAB_SESSION;
   identityClient.getSession = async () => session;
   identityClient.readDefaultWallet = async () => null;
+  answerLabOpening(session.user.realmsId);
   useIdentitySessionStore.getState().applySession(session);
 };
 
@@ -582,12 +605,12 @@ const labAccount = (
  * A fact under the key its row is held by on the chain, as Herald names every row by one key: a later answer that
  * finds the row in the chain's store (its entries) and changes or removes it then names the row the game holds.
  */
-const keyedAsHeldOnChain = (fact: LabFact): LabFact => {
+export const keyedAsHeldOnChain = (fact: LabFact): LabFact => {
   if (fact.value === null) return fact;
   const held = new NativeFactStore();
   held.applyFacts([fact] as never);
   const [[key]] = [...held.entries(fact.model as NativeModelName)];
-  return { ...fact, key };
+  return { ...fact, key: wireKey(fact.model as NativeModelName, key) };
 };
 
 type AbiItem = {
