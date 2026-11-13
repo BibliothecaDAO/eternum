@@ -36,7 +36,8 @@ console.log("Generated current Blitz, Frontier and Frontier check preset inputs 
 
 // Shared conformance conditions are independent of the playable preset catalog.
 const conformance = JSON.parse(readFileSync(new URL("conformance.json", directory), "utf8"));
-conformance.rules.command_mask = arenaCommandMask;
+conformance.rules.command_mask = arenaCommandMask.toString();
+writeFileSync(new URL("conformance.json", directory), JSON.stringify(conformance, null, 2) + "\n");
 writeFileSync(
   new URL("../../support/src/command_masks.cairo", directory),
   `// Generated from the current preset command catalog.\npub const BLITZ_COMMAND_MASK: u128 = 0x${arenaCommandMask.toString(16)};\n`,
