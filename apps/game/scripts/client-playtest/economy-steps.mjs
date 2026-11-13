@@ -86,17 +86,19 @@ const command = (browser, kind) =>
   browser.read(`window.__labChain?.sent.find(row => row.command.kind === ${JSON.stringify(kind)}) ?? null`);
 const textOf = (browser, selector) =>
   browser.read(
-    `(() => { const element = document.querySelector(${JSON.stringify(selector)}); return element ? [element.innerText, ...[...element.querySelectorAll('img[alt]')].map(image => image.alt)].join(' ') : ''; })()`,
+    `JSON.stringify((() => { const element = document.querySelector(${JSON.stringify(selector)}); return element ? [element.innerText, ...[...element.querySelectorAll('img[alt]')].map(image => image.alt)].join(' ') : ''; })())`,
   );
 
 async function clickButton(browser, owner, selector, words) {
-  const at = await until(owner, () => browser.read(`(() => {
+  const at = await until(owner, () =>
+    browser.read(`(() => {
     const button = [...document.querySelectorAll(${JSON.stringify(selector)})].find(element =>
       !element.disabled && element.textContent.trim().toLowerCase().startsWith(${JSON.stringify(words.toLowerCase())}) &&
       element.getBoundingClientRect().height > 0);
     const rect = button?.getBoundingClientRect();
     return rect ? { x: Math.round(rect.left + rect.width / 2), y: Math.round(rect.top + rect.height / 2) } : null;
-  })()`));
+  })()`),
+  );
   browser.run(["batch", `mouse move ${at.x} ${at.y}`, "mouse down", "mouse up"]);
 }
 
