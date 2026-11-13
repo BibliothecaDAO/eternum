@@ -194,13 +194,13 @@ export const RaidContainer = ({
 
   const remainingCapacity = useMemo(() => {
     const remainingCapacity = resourceWeight
-      ? getRemainingCapacityInKg(currentResourceWeight(facts.store, resourceWeight))
+      ? getRemainingCapacityInKg(currentResourceWeight(facts.store, resourceWeight, timestamp))
       : 0;
     const remainingCapacityAfterRaid =
       remainingCapacity -
       (raidSimulation?.raiderDamageTaken || 0) * configManager.getCapacityConfigKg(CapacityConfig.Army);
     return { beforeRaid: remainingCapacity, afterRaid: remainingCapacityAfterRaid };
-  }, [resourceWeight, raidSimulation]);
+  }, [facts, resourceWeight, raidSimulation, timestamp]);
 
   const stealableResources = useMemo(() => {
     let capacityAfterRaid = remainingCapacity.afterRaid;

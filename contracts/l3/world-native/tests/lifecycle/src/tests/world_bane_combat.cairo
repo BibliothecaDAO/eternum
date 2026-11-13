@@ -325,7 +325,7 @@ fn prepare_bane_army(seed: felt252, kind: u8, troops: u128) -> (Deployment, Reso
         .discovery =
             Some(
                 crate::expeditions::FrontierDiscoveryRules {
-                    camp_bps: 2000,
+                    camp_bps: preset.economy.discovery.unwrap().camp_bps,
                     beasts_bps: 0,
                     rift_bps: 0,
                     ruin_bps: 0,

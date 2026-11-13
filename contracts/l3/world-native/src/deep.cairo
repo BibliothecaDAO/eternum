@@ -153,6 +153,7 @@ pub trait IDeepRewards<T> {
 
 #[starknet::interface]
 pub trait IDeepBanes<T> {
+    fn height_blocked(self: @T, game_id: u32, aspect: u8, timestamp: u64) -> bool;
     fn credit_altar(ref self: T, game_id: u32, source: u8, boundary: u64);
     fn team_quest(self: @T, home: crate::resources::ResourceKey, day: u64) -> Option<u8>;
 }

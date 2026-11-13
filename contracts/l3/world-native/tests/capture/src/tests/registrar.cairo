@@ -1,5 +1,6 @@
 pub use world_test_support::tests::registrar::*;
 use crate::logic::release::{IReleasesDispatcher, IReleasesDispatcherTrait, Release};
+use crate::race::{IHeightBaneDispatcherTrait, IHeightBaneLibraryDispatcher};
 
 #[test]
 fn expedition_rollover_expires_armies_and_preserves_the_home_economy() {
@@ -3330,7 +3331,10 @@ fn altar_issues_next_day_banes_in_board_order_and_stops_world_rolls() {
             assert!(crate::logic::deep_banes::bane(crate::deep::TeamBaneKey { game_id, aspect: 2, day: 1 }).is_some());
             assert!(crate::logic::deep_banes::bane(crate::deep::TeamBaneKey { game_id, aspect: 3, day: 1 }).is_none());
             assert_eq!(crate::state::read().banes.first_team_day.read(game_id), Some(0));
-            assert!(!crate::logic::deep_banes::height_blocked(game_id, 2, 480));
+            assert!(
+                !IHeightBaneLibraryDispatcher { class_hash: crate::logic::deep_sites::dispatcher(game_id).class_hash }
+                    .height_blocked(game_id, 2, 480),
+            );
         },
     );
     assert!(!execute_in_game(d, game_id, muster_command(category, 0), 720));
@@ -3348,9 +3352,18 @@ fn altar_issues_next_day_banes_in_board_order_and_stops_world_rolls() {
             assert_eq!(crate::state::read().deep.altar_bars.read((game_id, 1)), 0);
             assert_eq!(crate::logic::banes::required(game_id, 2, 1), 2);
             let tomorrow = crate::days::day_at_index(crate::logic::game::game(game_id), 600, 1);
-            assert!(crate::logic::deep_banes::height_blocked(game_id, 2, tomorrow.start));
-            assert!(!crate::logic::deep_banes::height_blocked(game_id, 3, tomorrow.start));
-            assert!(!crate::logic::deep_banes::height_blocked(game_id, 2, tomorrow.end));
+            assert!(
+                IHeightBaneLibraryDispatcher { class_hash: crate::logic::deep_sites::dispatcher(game_id).class_hash }
+                    .height_blocked(game_id, 2, tomorrow.start),
+            );
+            assert!(
+                !IHeightBaneLibraryDispatcher { class_hash: crate::logic::deep_sites::dispatcher(game_id).class_hash }
+                    .height_blocked(game_id, 3, tomorrow.start),
+            );
+            assert!(
+                !IHeightBaneLibraryDispatcher { class_hash: crate::logic::deep_sites::dispatcher(game_id).class_hash }
+                    .height_blocked(game_id, 2, tomorrow.end),
+            );
             for day in 1_u64..10 {
                 assert!(crate::logic::banes::kind(game_id, day).is_none());
             }
@@ -3404,4 +3417,168 @@ fn triumph_readers_use_the_games_pinned_economy_and_preserve_all_four_windows() 
             }
         },
     );
+}
+
+
+#[test_case(name: "four_slots", false)]
+#[test_case(name: "gap", true)]
+fn deep_site_defensive_guards_fight_outermost_first_and_capture_only_after_the_last(gap: bool) {
+    let (d, game_id, _) = deep_tick_fixture();
+    let mut guards = array![];
+    for slot in 0_u8..4 {
+        guards.append(join_deep_tick_fixture(d, game_id, crate::rules::DEEP_QUARRY, 101 + slot.into(), 2000));
+    }
+    let (site_id, coord) = snforge_std::interact_with_state(
+        d.games,
+        || {
+            let site_id = crate::state::read().deep.site_ids.read((game_id, crate::rules::DEEP_QUARRY));
+            (site_id, crate::logic::map::entity_coord(ResourceKey { game_id, entity_id: site_id }).unwrap())
+        },
+    );
+    let structures = IStructureOperationsDispatcher { contract_address: d.games };
+    if gap {
+        let owner = structures.structure(ResourceKey { game_id, entity_id: 103 }).unwrap().owner;
+        assert!(
+            execute_in_game(
+                super::bind_player(d, owner),
+                game_id,
+                Command::ManageTroops(crate::troop_management::ManageTroops::RemoveExplorer(*guards.at(2).explorer_id)),
+                361,
+            ),
+        );
+    }
+    let (ally, _) = super::deploy_player(201, super::GUARDIAN);
+    let allied = deep_joiner_fixture(d, game_id, 201, ally, crate::geometry::neighbor(coord, 1), 1);
+    assert!(
+        !execute_in_game(
+            super::bind_player(d, ally),
+            game_id,
+            Command::BattleGuard(
+                crate::commands::Battle { attacker_id: allied.explorer_id, defender_id: site_id, relic_slot: None },
+            ),
+            362,
+        ),
+    );
+    // Direct army attacks cannot skip the site's defensive order.
+    let (weak_actor, _) = super::deploy_player(202, super::GUARDIAN);
+    let weak = deep_joiner_fixture(d, game_id, 202, weak_actor, crate::geometry::neighbor(coord, 2), 2);
+    let mut weak_army = GameState { contract_address: d.games }.resolved_explorer(weak).unwrap();
+    weak_army.troops.count = RESOURCE_PRECISION;
+    super::resource_commands::set_explorer_fixture(d.games, weak, weak_army);
+    assert!(
+        !execute_in_game(
+            super::bind_player(d, weak_actor),
+            game_id,
+            Command::Battle(
+                crate::combat_actions::AttackExplorer {
+                    attacker_id: weak.explorer_id,
+                    defender_id: *guards.at(0).explorer_id,
+                    steal_resources: array![].span(),
+                },
+            ),
+            363,
+        ),
+    );
+    assert!(
+        execute_in_game(
+            super::bind_player(d, weak_actor),
+            game_id,
+            Command::BattleGuard(
+                crate::commands::Battle { attacker_id: weak.explorer_id, defender_id: site_id, relic_slot: None },
+            ),
+            363,
+        ),
+    );
+    assert!(GameState { contract_address: d.games }.resolved_explorer(weak).is_none());
+    assert_eq!(
+        snforge_std::interact_with_state(
+            d.games, || crate::logic::deep_guards::next(ResourceKey { game_id, entity_id: site_id }),
+        ),
+        Some(*guards.at(3)),
+    );
+    for slot in 0_u32..3 {
+        if gap && slot == 2 {
+            continue;
+        }
+        assert_eq!(
+            GameState { contract_address: d.games }.resolved_explorer(*guards.at(slot)).unwrap().troops.count,
+            2000 * RESOURCE_PRECISION,
+        );
+    }
+    let mut remaining = 4_u8;
+    while remaining != 0 {
+        remaining -= 1;
+        if gap && remaining == 2 {
+            continue;
+        }
+        let home: u64 = 300 + remaining.into();
+        let (actor, _) = super::deploy_player(home.into(), super::GUARDIAN);
+        let attacker = deep_joiner_fixture(d, game_id, home, actor, crate::geometry::neighbor(coord, 2), 2);
+        let mut army = GameState { contract_address: d.games }.resolved_explorer(attacker).unwrap();
+        army.troops.count = 100000 * RESOURCE_PRECISION;
+        super::resource_commands::set_explorer_fixture(d.games, attacker, army);
+        assert_eq!(
+            snforge_std::interact_with_state(
+                d.games, || crate::logic::deep_guards::next(ResourceKey { game_id, entity_id: site_id }),
+            ),
+            Some(*guards.at(remaining.into())),
+        );
+        assert!(
+            execute_in_game(
+                super::bind_player(d, actor),
+                game_id,
+                Command::BattleGuard(
+                    crate::commands::Battle {
+                        attacker_id: attacker.explorer_id, defender_id: site_id, relic_slot: None,
+                    },
+                ),
+                370 + (3 - remaining).into(),
+            ),
+        );
+        let removed = *guards.at(remaining.into());
+        assert!(GameState { contract_address: d.games }.resolved_explorer(removed).is_none());
+        assert!(snforge_std::interact_with_state(d.games, || crate::logic::deep_guards::entry(removed).is_none()));
+        for slot in 0_u8..remaining {
+            if gap && slot == 2 {
+                continue;
+            }
+            assert_eq!(
+                GameState { contract_address: d.games }
+                    .resolved_explorer(*guards.at(slot.into()))
+                    .unwrap()
+                    .troops
+                    .count,
+                2000 * RESOURCE_PRECISION,
+            );
+        }
+        let joined = snforge_std::interact_with_state(
+            d.games, || crate::logic::deep_guards::entry(attacker).map(|value| value.read()),
+        );
+        if remaining == 0 {
+            assert_eq!(joined, Some(crate::deep::DeepGuard { site_id, slot: 0 }));
+            assert_eq!(
+                snforge_std::interact_with_state(
+                    d.games, || crate::logic::deep_guards::next(ResourceKey { game_id, entity_id: site_id }),
+                ),
+                Some(attacker),
+            );
+        } else {
+            assert!(joined.is_none());
+            // A surviving field attacker leaves before the next challenger takes its tile.
+            assert!(
+                execute_in_game(
+                    super::bind_player(d, actor),
+                    game_id,
+                    Command::ManageTroops(crate::troop_management::ManageTroops::RemoveExplorer(attacker.explorer_id)),
+                    370 + (3 - remaining).into(),
+                ),
+            );
+        }
+        let occupied = snforge_std::interact_with_state(
+            d.games, || crate::logic::map::occupancy(crate::geometry::tile_key(game_id, coord)),
+        )
+            .unwrap();
+        assert_eq!(occupied.entity_id, site_id);
+        assert_eq!(occupied.category, crate::taxonomy::DEEP_SITE_OCCUPIER);
+    }
 }

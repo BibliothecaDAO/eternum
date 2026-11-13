@@ -14,6 +14,7 @@ export interface DeepSiteView {
   day: number;
   beastTroops: bigint;
   guard: NativeRows["Guard"] | undefined;
+  /** Defensive order: the highest live slot is faced next. */
   guards: { slot: number; army: NativeRows["ExplorerTroops"] }[];
 }
 
@@ -55,7 +56,7 @@ export function readDeepSites(store: NativeFactStore, timestamp: number): DeepSi
 function readGuards(store: NativeFactStore, gameId: number, siteId: bigint, timestamp: number): DeepSiteView["guards"] {
   const guards = [...store.inGame("DeepGuard", gameId)]
     .filter((guard) => guard.site_id === siteId)
-    .sort((left, right) => left.slot - right.slot);
+    .sort((left, right) => right.slot - left.slot);
   const slots = new Set<number>();
   return guards
     .map(({ slot, explorer_id }) => {

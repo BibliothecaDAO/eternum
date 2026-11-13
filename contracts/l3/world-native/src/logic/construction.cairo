@@ -55,6 +55,19 @@ pub mod ConstructionLogic {
     }
 
     #[abi(embed_v0)]
+    impl DiscoveryRoll of crate::discovery::IDiscoveryRoll<ContractState> {
+        fn roll_expedition_discovery(
+            ref self: ContractState,
+            key: crate::map::TileKey,
+            explorer_id: u64,
+            seed: u256,
+            context: crate::commands::ActionContext,
+        ) -> crate::discovery::Discovery {
+            crate::logic::discovery::roll(key, explorer_id, seed, context)
+        }
+    }
+
+    #[abi(embed_v0)]
     impl FrontierDiscovery of crate::expeditions::IFrontierDiscovery<ContractState> {
         fn expedition_spire(
             self: @ContractState, key: crate::spires::ExpeditionSpireKey,
@@ -803,18 +816,6 @@ pub mod ConstructionLogic {
             game_context: crate::commands::ResourceContext,
         ) {
             self.resources_dispatcher(key.game_id).spend_resource(key, resource_type, amount, timestamp, game_context);
-        }
-    }
-    #[abi(embed_v0)]
-    impl DiscoveryRoll of crate::discovery::IDiscoveryRoll<ContractState> {
-        fn roll_expedition_discovery(
-            ref self: ContractState,
-            key: crate::map::TileKey,
-            explorer_id: u64,
-            seed: u256,
-            context: crate::commands::ActionContext,
-        ) -> crate::discovery::Discovery {
-            crate::logic::discovery::roll(key, explorer_id, seed, context)
         }
     }
 }

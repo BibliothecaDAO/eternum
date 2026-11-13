@@ -144,15 +144,18 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
 
   const activeGuard = attackerType === AttackerType.Structure ? eligibleStructureGuards[0] : undefined;
 
-  const attackerArmyData: { troops: Troops } | null = useMemo(() => {
-    if (attackerType === AttackerType.Structure) return activeGuard ? { troops: activeGuard.troops } : null;
-    const army = facts.store.get("ExplorerTroops", {
-      game_id: configManager.getActiveGameId(),
-      explorer_id: attacker.id,
-    });
-    const troops = army ? resolveExplorerTroops(facts.store, army) : undefined;
-    return troops ? { troops } : null;
-  }, [facts, attacker.id, attackerType, activeGuard, executionSecond]);
+  const explorer =
+    attackerType === AttackerType.Army
+      ? facts.store.get("ExplorerTroops", {
+          game_id: configManager.getActiveGameId(),
+          explorer_id: attacker.id,
+        })
+      : undefined;
+  const attackerTroops = explorer ? resolveExplorerTroops(facts.store, explorer) : activeGuard?.troops;
+  const attackerArmyData: { troops: Troops } | null = useMemo(
+    () => (attackerTroops ? { troops: attackerTroops } : null),
+    [attackerTroops],
+  );
   const attackerStamina = attackerArmyData
     ? StaminaManager.getStamina(attackerArmyData.troops, executionSecond).amount
     : undefined;

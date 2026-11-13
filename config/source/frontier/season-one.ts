@@ -41,6 +41,7 @@ export const frontierSeasonOnePreset: NativePreset & {
     trainingGateTier: 0,
     workshopRate: 200 / 3600,
   },
+  progression: { ...frontierPreset.progression, commonXp: 60 },
   labor: null,
   dailyQuest: {
     baseCounts: dailyQuests.map(({ baseCount }) => baseCount),

@@ -1175,6 +1175,15 @@ describe("the Season 1 Frontier preset", () => {
         altar_per_tick: 5,
         altar_threshold: 1_500,
       });
+      expect(season.economy.progression.unwrap()).toEqual({
+        reveal_xp: 2,
+        reveal_xp_per_depth: 1,
+        common_xp: 60,
+        uncommon_xp: 200,
+        rare_xp: 400,
+        epic_xp: 800,
+        legendary_xp: 1500,
+      });
       expect(season.rules.command_mask & BigInt(nativeCommandBits.Battle)).not.toBe(0n);
       expect(season.rules.tick_config.armies_tick_in_seconds).toBe(120);
       expect(season.rules.troop_stamina_config).toMatchObject({
@@ -1189,6 +1198,7 @@ describe("the Season 1 Frontier preset", () => {
     }
     for (const id of [FRONTIER_PRESET_ID, FRONTIER_DEVCON_PRESET_ID]) {
       expect(definition(id).economy.deep.isNone()).toBe(true);
+      expect(definition(id).economy.progression.unwrap()).toMatchObject({ common_xp: 75 });
       expect(definition(id).rules.troop_stamina_config.stamina_initial).toBe(120);
       expect(definition(id).rules.command_mask & BigInt(nativeCommandBits.Battle)).toBe(0n);
     }
