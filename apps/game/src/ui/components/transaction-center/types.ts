@@ -19,7 +19,6 @@ const TX_MESSAGES: Record<TransactionType, string> = {
   [TransactionType.CLAIM_DAILY_QUEST]: "Quest reward collected",
   [TransactionType.REFILL_STAMINA]: "Stamina refilled",
   [TransactionType.WITHDRAW_LORDS]: "LORDS withdrawn",
-  [TransactionType.CLAIM_DAILY_QUEST]: "Daily quest rewards collected",
   [TransactionType.EXPLORER_CREATE]: "Army raised",
   [TransactionType.EXPLORER_ADD]: "Army reinforced",
   [TransactionType.EXPLORER_DELETE]: "Army disbanded",

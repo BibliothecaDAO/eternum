@@ -585,7 +585,7 @@ const ruinPayout = (rules: ExpeditionRules, now: number, today: number, depth: n
 };
 
 it("returns from the shared Deep to the watched realm's current private day", () => {
-  const { store, realm, today } = chestDay(3n);
+  const { store, realm, today } = chestDay(3);
   store.applyFacts([
     {
       model: "SettlementRules",
