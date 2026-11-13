@@ -1,5 +1,5 @@
 use starknet::ContractAddress;
-use starknet::storage::{StorageMapReadAccess, StorageMapWriteAccess};
+use starknet::storage::{StorageMapReadAccess, StorageMapWriteAccess, StoragePathEntry, StoragePointerReadAccess};
 use crate::deposits::{DepositReceipt, DepositSource, LordsDeposit, PrincipalWithdrawal, SpendLords};
 
 pub fn source(game_id: u32) -> Option<DepositSource> {

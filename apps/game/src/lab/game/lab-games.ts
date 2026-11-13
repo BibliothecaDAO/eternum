@@ -1,3 +1,4 @@
+import { economyScenario } from "./economy-scenario";
 import { relicsScenario } from "./relics-scenario";
 import { etherealDepthsScenario } from "./ethereal-depths-scenario";
 import { REALM_SKIN_MODELS } from "@/three/structures/realm-skins";
@@ -35,6 +36,7 @@ import { visitScenario } from "./visit-scenario";
 /** The games the lab plays, by name: each a fixture and the chain's answers to the commands it proves. */
 export const LAB_SCENARIOS: Partial<Record<string, () => LabScenario>> = {
   spire: spireScenario,
+  economy: economyScenario,
   relics: relicsScenario,
   "ethereal-depths": etherealDepthsScenario,
   /** The spire's game opened on the home page, entered by its card's Resume: a way back home there is the app's own. */

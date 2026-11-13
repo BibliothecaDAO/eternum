@@ -417,7 +417,7 @@ pub mod RelicState {
             let explorer = crate::logic::troops::command_explorer(key, Some(actor), context.timestamp, context);
             let relic = crate::logic::army_relics::activate(key, index, command.relic_id, context.timestamp);
             if relic.kind == crate::army_relics::RelicKind::FarEye {
-                IRelicMapLibraryDispatcher { class_hash: self.logic_classes(game_id).map.read() }
+                IRelicMapLibraryDispatcher { class_hash: self.logic_classes(game_id).raid.read() }
                     .reveal_relic_tiles(
                         game_id,
                         explorer.coord,

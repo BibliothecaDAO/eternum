@@ -312,7 +312,7 @@ fn seed_deposit_source(games: starknet::ContractAddress, game_id: u32, source: D
 #[test_case(1)]
 #[feature("safe_dispatcher")]
 fn unknown_command_tags_refuse_before_a_roll(offset: u32) {
-    let index: felt252 = (crate::command_routes::COMMAND_COUNT + offset).into();
+    let index: felt252 = (crate::command_routes::COMMAND_ROUTES.span().len() + offset).into();
     let (d, game_id) = super::registrar::setup_open_frontier_preset("frontier", 1);
     let (release, preset) = super::play_fixture::pins(d.games, game_id);
     super::play_fixture::caller(d.games, d.actor, 360);

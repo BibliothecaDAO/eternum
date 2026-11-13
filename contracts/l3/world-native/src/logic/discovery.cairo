@@ -3,9 +3,8 @@ use crate::map::TileKey;
 use crate::troops::Coord;
 
 pub fn roll(
-    key: TileKey, explorer_id: u64, seed: u256, context: crate::commands::ActionContext,
+    key: TileKey, explorer_id: u64, seed: u256, _context: crate::commands::ActionContext,
 ) -> crate::discovery::Discovery {
-    let context = crate::commands::execution_context(key.game_id, context);
     let mut rules = crate::logic::preset_record::for_game(key.game_id)
         .discovery_rules
         .read()

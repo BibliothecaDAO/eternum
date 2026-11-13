@@ -1301,3 +1301,10 @@ This wraps the standard `playtest` command’s `lab-ethereal-1`, `lab-ethereal-2
 the signed command, army position, camera and committed material, then clears selection overlays for the still. Each
 browser closes after its proof. `captures.json`, per-run transcripts and `index.html` remain. One run per depth/device
 verifies routing and appearance; it is not a performance benchmark.
+
+## Production and resource delivery proof
+
+`pnpm --dir apps/game playtest --steps lab-economy --iterations 1 --out <evidence>` opens Production in the Blitz
+fixture, starts three knight recipe cycles, then sends fifty wheat through Transfer and reads its Arrivals tab.
+The transcript keeps the submitted commands, the balance and production replies, and the visible result; each step
+also leaves a screenshot. `/lab/game?scenario=economy` opens the same two owned realms for manual reproduction.

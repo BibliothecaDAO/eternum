@@ -24,7 +24,7 @@ import type { AccountInterface, Call } from "starknet";
 
 import { LAB_CHAIN_ID } from "./lab-shard";
 
-import { FRONTIER_S1_PRESET_ID } from "../../../../../config/source/common/native-preset-modes";
+import { FRONTIER_S1_PRESET_ID, nativeGameModeOf } from "../../../../../config/source/common/native-preset-modes";
 import {
   nativeFactModels,
   nativeFactSchemaIdentity,
@@ -286,14 +286,16 @@ const answerDirectory = (
     guardianPublicKey: "0x3",
     l2GasBound: LAB_L2_GAS_BOUND,
   };
+  const registry = chain.require("GameRegistry", { game_id: LAB_GAME.gameId });
+  const rules = chain.require("SliceRules", { game_id: LAB_GAME.gameId });
   const game = {
     game_id: LAB_GAME.gameId,
     name: "lab",
-    mode: "frontier",
+    mode: nativeGameModeOf(registry.preset_id),
     status: "Live",
     ready: true,
     dev_mode_on: false,
-    expedition: { day_unit_seconds: 3600, seed: "1" },
+    expedition: rules.day_unit_seconds ? { day_unit_seconds: rules.day_unit_seconds, seed: String(registry.seed) } : null,
     clock: {
       start_settling_at: 1 + clockOffset,
       start_main_at: 100 + clockOffset,
@@ -305,7 +307,7 @@ const answerDirectory = (
       return playerStateNow();
     },
     roster_count: 0,
-    preset_id: LAB_GAME.presetId,
+    preset_id: registry.preset_id,
     registration: null,
     settled_realms_count: 1,
     settled_villages_count: 0,

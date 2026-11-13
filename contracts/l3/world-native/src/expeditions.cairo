@@ -123,6 +123,10 @@ pub fn is_current(coord: Coord, spacing: u32, day: u64) -> bool {
 }
 
 pub fn assert_same_region(origin: Coord, destination: Coord, spacing: u32) {
+    assert!(inside_region(origin, destination, spacing), "outside expedition region");
+}
+
+pub fn inside_region(origin: Coord, destination: Coord, spacing: u32) -> bool {
     let same_region = origin.x / spacing == destination.x / spacing && origin.y / spacing == destination.y / spacing;
     let local_x = destination.x % spacing;
     let local_y = destination.y % spacing;
@@ -130,7 +134,7 @@ pub fn assert_same_region(origin: Coord, destination: Coord, spacing: u32) {
     let inside_region = local_x >= margin && local_x < spacing
         - margin && local_y >= margin && local_y < spacing
         - margin;
-    assert!(!destination.alt && same_region && inside_region, "outside expedition region");
+    !destination.alt && same_region && inside_region
 }
 
 // Each day's map draws its own terrain: the climate seeds move by the day, counted in units from absolute time so

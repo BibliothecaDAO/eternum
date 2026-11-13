@@ -141,3 +141,7 @@ estimate_gb = 1
 [kind.generate-native-retirement]
 cmd = 'bash contracts/l3/check-native.sh build && pnpm run schema:native && pnpm run fixtures:native-presets && (cd contracts/l3/world-native && scarb fmt) && (cd contracts/l3/world-native/tests && scarb fmt) && pnpm run format && git add -N -- contracts/l3/world-native/tests/fixtures/current-presets && git diff --binary > "$FLOW_TMP/generated.patch"'
 estimate_gb = 9
+
+[kind.playtest-economy]
+cmd = 'cp /home/djizus/projects/eternum-lanes/showcase/apps/game/.env.local apps/game/.env.local && pnpm run build:packages && pnpm --dir apps/game playtest --port 4184 --steps lab-economy --iterations 1 --renderer-modes webgpu-force-webgl --out "$FLOW_TMP/playtest"'
+estimate_gb = 6

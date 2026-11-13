@@ -104,6 +104,7 @@ pub mod PrizesLogic {
                     },
                     crate::troops::ExplorerKey { game_id, explorer_id },
                     crate::progression::XpAward::Reveal(coord),
+                    context.timestamp,
                 );
             }
             self

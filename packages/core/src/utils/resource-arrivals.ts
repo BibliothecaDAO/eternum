@@ -1,6 +1,6 @@
 import { safeInteger } from "./safe-integer";
 import { ID, ResourceArrivalInfo, ResourcesIds, TickIds, TroopTier, TroopType } from "@bibliothecadao/types";
-import type { NativeRows } from "../../../../contracts/l3/world-native/schema/client.gen";
+import { nativeArrivalConstants, type NativeRows } from "../../../../contracts/l3/world-native/schema/client.gen";
 import { configManager } from "../managers/config-manager";
 import { isMilitaryResource } from "./resources";
 import { divideByPrecision } from "./utils";
@@ -135,7 +135,7 @@ export const formatArrivals = (arrivals: Iterable<NativeRows["ResourceArrival"]>
         amount: Number(amount),
       })),
       // A key's slot counts its day's ticks from 1.
-      arrivesAt: landingOfDeliveryTick(arrival.day * 48n + BigInt(arrival.slot) - 1n, deliveryTickSeconds),
+      arrivesAt: landingOfDeliveryTick(arrival.day * BigInt(nativeArrivalConstants.SLOTS_PER_DAY) + BigInt(arrival.slot) - 1n, deliveryTickSeconds),
       day: arrival.day,
       slot: BigInt(arrival.slot),
     }));

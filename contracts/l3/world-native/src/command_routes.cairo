@@ -11,7 +11,7 @@ pub struct CommandRoute {
 
 pub const SETTLE_BLITZ_ROSTER: u32 = 6;
 
-pub const COMMAND_ROUTES: [CommandRoute; 49] = [
+pub const COMMAND_ROUTES: [CommandRoute; 52] = [
     CommandRoute { logic: 6, selector: selector!("create_explorer"), items_offset: None, batch: false },
     CommandRoute { logic: 16, selector: selector!("explore"), items_offset: None, batch: false },
     CommandRoute { logic: 12, selector: selector!("battle"), items_offset: Some(2), batch: false },

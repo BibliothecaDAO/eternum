@@ -164,6 +164,11 @@ const researchConstants = Object.fromEntries(
   ]),
 );
 
+const arrivalSource = await readFile(new URL("src/arrivals.cairo", root), "utf8");
+const slotsPerDay = arrivalSource.match(/^pub const SLOTS_PER_DAY: u8 = ([0-9]+);$/m)?.[1];
+if (!slotsPerDay) throw new Error("Missing Cairo arrival slot count");
+const arrivalConstants = { SLOTS_PER_DAY: Number(slotsPerDay) };
+
 const taxonomy = await readCheckedTaxonomy(fileURLToPath(new URL("src/", root)));
 // The schema identity hashes these four, and every shard release pins that identity. They leave the schema at its next
 // declared shape change; readers take the full taxonomy from the generated enums.
@@ -435,6 +440,7 @@ const declarations = [
   `export const nativeFactSchemaIdentity = ${JSON.stringify(schema.identity)};`,
   `export const nativeReleaseConstants = ${JSON.stringify(releaseConstants, null, 2)} as const;`,
   `export const nativeRuleConstants = ${JSON.stringify(ruleConstants, null, 2)} as const;`,
+  `export const nativeArrivalConstants = ${JSON.stringify(arrivalConstants, null, 2)} as const;`,
   `export const nativeResearchConstants = ${JSON.stringify(researchConstants, null, 2)} as const;`,
   typeScriptEnum(
     "NativeStructureCategory",

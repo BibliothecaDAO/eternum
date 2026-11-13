@@ -1,3 +1,4 @@
+import { ECONOMY_STEPS } from "./economy-steps.mjs";
 import depthLooks from "../../src/three/terrain/ethereal-depths.json" with { type: "json" };
 import homeIcons from "../../src/ui/design-system/home-icons.json" with { type: "json" };
 import { existsSync, writeFileSync } from "node:fs";
@@ -4701,6 +4702,7 @@ export const STEP_SETS = {
   "lab-actions-spire": { game: LAB_SPIRE, steps: SPIRE_ACTION_STEPS },
   "lab-double-click": { game: { ...LAB_SPIRE, lab: "camp" }, steps: LAB_DOUBLE_CLICK_STEPS },
   "lab-actions-merge": { game: labSpireGame("merge-loses-xp"), steps: mergeActionSteps() },
+  "lab-economy": { game: { ...labSpireGame("economy"), mode: "blitz" }, steps: ECONOMY_STEPS },
   "lab-actions-transfer": { game: labSpireGame("merge-loses-xp"), steps: transferActionSteps() },
   "lab-actions-deploy": { game: labSpireGame("actions"), steps: DEPLOY_ACTION_STEPS },
   "lab-actions-research": { game: labSpireGame("research"), steps: RESEARCH_ACTION_STEPS },
