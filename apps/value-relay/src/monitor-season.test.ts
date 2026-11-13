@@ -136,7 +136,7 @@ it("keeps health red until an unavailable deposit audit recovers without pausing
   });
   expect(calls.custody).toHaveBeenCalledWith(
     { rpcUrl: "https://ledger.test", address: "0x10", chainId: "0x1" },
-    { deposits: expect.any(Map), principals: expect.any(Map) },
+    expect.objectContaining({ get: expect.any(Function), put: expect.any(Function) }),
   );
   await worker.tick();
   expect(await worker.health()).toMatchObject({

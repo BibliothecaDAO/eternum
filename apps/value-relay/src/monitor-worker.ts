@@ -1,4 +1,4 @@
-import { auditDeposits, auditDepositCustody, newDepositMemory, DepositConservationFault } from "./deposit-conservation";
+import { auditDeposits, auditDepositCustody, DepositConservationFault } from "./deposit-conservation";
 import { readMonitorFeeBalance, type MonitorFeeBalance } from "./monitor-balance";
 import { decodeMonitorSettings, type MonitorSettings } from "./monitor-env";
 import { checkSlotRoster, slotRosterReads } from "./roster-monitor";
@@ -36,7 +36,6 @@ interface MonitorEnv extends MonitorSettings {
 
 export class ValueMonitor extends DurableObject<MonitorEnv> {
   private readonly checking = Semaphore.makeUnsafe(1);
-  private readonly deposits = newDepositMemory();
   async tick() {
     const monitor = this;
     return Effect.runPromise(
@@ -119,7 +118,7 @@ export class ValueMonitor extends DurableObject<MonitorEnv> {
                 chainId: await monitor.env.IDENTITY.l2ChainId(),
               };
               try {
-                const journal = await auditDepositCustody(ledger, monitor.deposits);
+                const journal = await auditDepositCustody(ledger, monitor.ctx.storage);
                 if (!journal) return { enabled: false, games: [] };
                 for (const shard of await activeShards(monitor.env.IDENTITY)) {
                   const registered = await readRegisteredShard(monitor.env.IDENTITY, shard.chainId);
@@ -385,6 +384,10 @@ const monitorPortsOf = (env: MonitorEnv, storage: DurableObjectStorage): Monitor
       frontierPool: (...read: Parameters<LedgerPorts["frontierPool"]>) =>
         relayOperation("ledger Frontier funding unavailable", () =>
           Effect.runPromise(ledgerReads().frontierPool(...read)),
+        ),
+      finalFrontierPool: (...read: Parameters<LedgerPorts["finalFrontierPool"]>) =>
+        relayOperation("ledger final Frontier funding unavailable", () =>
+          Effect.runPromise(ledgerReads().finalFrontierPool(...read)),
         ),
       reportedClaims: (...read: Parameters<LedgerPorts["reportedClaims"]>) =>
         relayOperation("ledger reports unavailable", () => Effect.runPromise(ledgerReads().reportedClaims(...read))),

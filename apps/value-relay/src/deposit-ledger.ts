@@ -5,6 +5,13 @@ import type { DepositSigningRequest } from "@realms-world/value-ledger/deposits"
 import type { Cosignature } from "@realms-world/value-ledger";
 import type { ledgerReportAdapter } from "./chain";
 import type { DepositMutation } from "./deposits";
+import type { FinalEvidence } from "./final-facts";
+
+/** Whether the call sent a transaction, and the evidence that a principal it found paid is final. */
+export interface DepositOutcome {
+  wrote: boolean;
+  final: FinalEvidence | null;
+}
 
 /** Called under the ledger actor's nonce permit; terminal onchain state, not local acknowledgements, owns retries. */
 export async function mutateDeposit(
@@ -14,7 +21,7 @@ export async function mutateDeposit(
   sign: (request: DepositSigningRequest) => Promise<Cosignature>,
   anchors: DepositAnchors,
   payoutWallet: (account: string) => Promise<string>,
-) {
+): Promise<DepositOutcome> {
   const provider = rpcAt(credentials.rpcUrl);
   const key = `ledger:${BigInt(chainId)}:${BigInt(credentials.contractAddress)}`;
   const reader = await depositReader(provider, credentials.contractAddress, chainId, await anchors.getAnchor(key));
@@ -24,7 +31,7 @@ export async function mutateDeposit(
     if (payment.status !== "pending") {
       if ((payment.status === "cancelled") !== request.cancelled) throw new Error("deposit_resolution_differs");
       await reader.assertCanonical();
-      return;
+      return { wrote: false, final: null };
     }
     const signature = await sign({
       kind: "resolve-deposit",
@@ -43,12 +50,13 @@ export async function mutateDeposit(
     ).deposit(request.shard, request.id);
     if (result.status !== (request.cancelled ? "cancelled" : "delivered"))
       throw new Error("deposit_resolution_pending");
+    return { wrote: true, final: null };
   } else {
     const previous = await reader.principal(request.shard, request.season, request.account);
     if (previous) {
       if (BigInt(previous.amount) !== BigInt(request.amount)) throw new Error("principal_payment_differs");
       await reader.assertCanonical();
-      return;
+      return { wrote: false, final: await finalPrincipal(reader, request, previous) };
     }
     const wallet = await payoutWallet(request.account);
     const signature = await sign({ ...request, wallet });
@@ -60,6 +68,7 @@ export async function mutateDeposit(
       amount: request.amount,
       ...signature,
     });
+    return { wrote: true, final: null };
   }
 
   async function submit(entrypoint: string, args: Record<string, string | number | boolean>) {
@@ -76,4 +85,19 @@ export async function mutateDeposit(
     });
     if (receipt.isReverted()) throw new Error("deposit_mutation_reverted", { cause: receipt.revert_reason });
   }
+}
+
+/** Evidence that the principal's payment is on a block Ethereum has accepted; null while it is only on the head. */
+async function finalPrincipal(
+  reader: Awaited<ReturnType<typeof depositReader>>,
+  request: Extract<DepositMutation, { kind: "principal" }>,
+  previous: { wallet: string; amount: string },
+): Promise<FinalEvidence | null> {
+  const final = await reader.final();
+  const settled = await final.principal(request.shard, request.season, request.account);
+  return settled &&
+    BigInt(settled.amount) === BigInt(previous.amount) &&
+    BigInt(settled.wallet) === BigInt(previous.wallet)
+    ? { block: final.block.number, hash: final.block.hash }
+    : null;
 }

@@ -28,29 +28,73 @@ const u256 = (fields: readonly string[]) => {
 };
 
 /**
- * What a later audit need not read again: a deposit that was delivered or cancelled, and a principal that was paid, can
- * never change on a confirmed ledger. Pending deposits and unpaid principals are read every time.
+ * What a later audit need not read again, kept in the monitor's storage so a restart forgets nothing: a deposit that
+ * was delivered or cancelled, and a principal that was paid. Each is kept with the Ethereum-accepted block that held
+ * it; seen only at the head it is read again. Pending deposits and unpaid principals are read every time.
  */
 interface DepositMemory {
-  deposits: Map<string, LordsDeposit>;
-  principals: Map<string, { wallet: string; amount: string }>;
+  get<A>(key: string): Promise<A | undefined>;
+  put(key: string, value: unknown): Promise<unknown>;
 }
-export const newDepositMemory = (): DepositMemory => ({ deposits: new Map(), principals: new Map() });
+export const newDepositMemory = (): DepositMemory => {
+  const kept = new Map<string, unknown>();
+  return {
+    get: async <A>(key: string) => kept.get(key) as A | undefined,
+    put: async (key, value) => void kept.set(key, value),
+  };
+};
+interface Kept<A> {
+  value: A;
+  block: number;
+  hash: string;
+}
+type FinalReader = Awaited<ReturnType<DepositReader["final"]>>;
+/** The accepted block is read once per audit, and only when something is waiting to be kept. */
+const finalOf = (reader: DepositReader) => {
+  let once: Promise<FinalReader> | undefined;
+  return () => (once ??= reader.final());
+};
+/** A read at the accepted block that fails keeps nothing: the head read stands, and the next audit tries again. */
+const heldAtFinal = async <A>(read: () => Promise<A>) => read().catch(() => null);
 
-async function readDeposit(reader: DepositReader, memory: DepositMemory, shard: string, id: string) {
-  const known = memory.deposits.get(key(shard, id));
-  if (known) return known;
+async function readDeposit(
+  reader: DepositReader,
+  memory: DepositMemory,
+  final: () => Promise<FinalReader>,
+  shard: string,
+  id: string,
+) {
+  const stored = `final:deposit:${key(shard, id)}`;
+  const known = await memory.get<Kept<LordsDeposit>>(stored);
+  if (known) return known.value;
   const payment = await reader.deposit(shard, id);
-  if (payment.status !== "pending") memory.deposits.set(key(shard, id), payment);
+  if (payment.status === "pending") return payment;
+  const settled = await heldAtFinal(async () => (await final()).deposit(shard, id));
+  if (settled?.status === payment.status) {
+    const { block } = await final();
+    await memory.put(stored, { value: settled, block: block.number, hash: block.hash });
+  }
   return payment;
 }
 
-async function readPrincipal(reader: DepositReader, memory: DepositMemory, payment: LordsDeposit) {
-  const identity = key(payment.shard, payment.gameId, payment.account);
-  const known = memory.principals.get(identity);
-  if (known) return known;
+async function readPrincipal(
+  reader: DepositReader,
+  memory: DepositMemory,
+  final: () => Promise<FinalReader>,
+  payment: LordsDeposit,
+) {
+  const stored = `final:principal:${key(payment.shard, payment.gameId, payment.account)}`;
+  const known = await memory.get<Kept<{ wallet: string; amount: string }>>(stored);
+  if (known) return known.value;
   const paid = await reader.principal(payment.shard, payment.gameId, payment.account);
-  if (paid) memory.principals.set(identity, paid);
+  if (!paid) return paid;
+  const settled = await heldAtFinal(async () =>
+    (await final()).principal(payment.shard, payment.gameId, payment.account),
+  );
+  if (settled && BigInt(settled.amount) === BigInt(paid.amount) && BigInt(settled.wallet) === BigInt(paid.wallet)) {
+    const { block } = await final();
+    await memory.put(stored, { value: settled, block: block.number, hash: block.hash });
+  }
   return paid;
 }
 
@@ -73,11 +117,12 @@ export async function auditDepositCustody(ledger: LedgerConnection, memory = new
 export async function auditDepositLedger(ledger: LedgerConnection, memory = newDepositMemory()) {
   const reader = await depositReader(rpcAt(ledger.rpcUrl), ledger.address, ledger.chainId);
   const targets = await readDepositTargets(reader);
+  const final = finalOf(reader);
   const payments: LordsDeposit[] = [];
   for (const shard of new Set(targets.map((target) => target.shard))) {
     const count = await reader.count(shard);
     for (let id = 1n; id <= count; id++) {
-      const payment = await readDeposit(reader, memory, shard, String(id));
+      const payment = await readDeposit(reader, memory, final, shard, String(id));
       const target = targets.find((target) => key(target.shard, target.gameId) === key(shard, payment.gameId));
       if (!target || BigInt(target.games) !== BigInt(payment.games)) fail("deposit_target_mismatch");
       payments.push(payment);
@@ -98,7 +143,7 @@ export async function auditDepositLedger(ledger: LedgerConnection, memory = newD
     accounts.set(identity, account);
   }
   for (const { payment, delivered } of accounts.values()) {
-    const paid = await readPrincipal(reader, memory, payment);
+    const paid = await readPrincipal(reader, memory, final, payment);
     if (!paid) continue;
     if (BigInt(paid.amount) > delivered) fail("principal_return_exceeds_delivery");
     returned += BigInt(paid.amount) * LORDS_UNIT;

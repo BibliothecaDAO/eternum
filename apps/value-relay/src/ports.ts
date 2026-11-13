@@ -178,6 +178,11 @@ export interface MonitorPorts {
   };
   ledger: {
     frontierPool(chainId: string, gameId: number): RelayEffect<string>;
+    /** The same pool as of the newest Ethereum-accepted block, with that block; null if it was not funded there yet. */
+    finalFrontierPool(
+      chainId: string,
+      gameId: number,
+    ): RelayEffect<{ pool: string; block: number; hash: string } | null>;
     reportedClaims(
       after: string | null,
       fromBlock?: number,

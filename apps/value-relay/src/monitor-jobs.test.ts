@@ -189,6 +189,7 @@ describe.each(["paidClaims", "postedResults"] as const)(
       },
       ledger: {
         frontierPool: () => Effect.succeed("0"),
+        finalFrontierPool: () => Effect.succeed(null),
         reportedClaims: () =>
           Effect.succeed({
             rows: [],

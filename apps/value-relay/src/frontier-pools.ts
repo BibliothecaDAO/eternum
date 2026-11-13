@@ -3,7 +3,7 @@ import { ShardOperator, type ShardTarget } from "@realms-world/value-ledger/shar
 import { frontierTerms, readFrontierGames } from "./frontier-games";
 import { optionalRow, readConfirmedSnapshot } from "./shard-snapshot";
 import { ShardReader, uint, type ShardConnection } from "./shard-rpc";
-import { verifiedPool, type FrontierLedger } from "./final-facts";
+import { fundingAt, keepIfFinal, verifiedPool, type FrontierLedger } from "./final-facts";
 
 /** Confirmed snapshots own publication state; the contract refuses duplicate publication while Herald catches up. */
 export async function publishFrontierPools(
@@ -44,12 +44,10 @@ async function publishGamePool(
   if (await ledger.finals.has(verified)) return;
   const budget = optionalRow(snapshot, "LordsBudget");
   const existing = budget ? uint(String(budget.pool), 128) : 0n;
-  const funding = await readFrontierFunding(
-    rpcAt(ledger.rpcUrl),
-    ledger.address,
-    { chainId: target.chainId, gameId },
-    frontierTerms(snapshot),
-  );
+  const provider = rpcAt(ledger.rpcUrl);
+  const key = { chainId: target.chainId, gameId };
+  const terms = frontierTerms(snapshot);
+  const funding = await readFrontierFunding(provider, ledger.address, key, terms);
   const wei = BigInt(funding.pool);
   if (funding.closed || wei <= 0n) throw new Error("invalid_frontier_deposit");
   const amount = uint(String(wei / 10n ** 18n), 128);
@@ -59,8 +57,13 @@ async function publishGamePool(
   if (existing > 0n && (!prize || uint(String(prize.pool), 128) !== prize_pool))
     throw new Error("frontier_prize_differs_from_ledger");
   if (existing > 0n && existing !== amount) throw new Error("frontier_pool_differs_from_ledger");
+  const keepVerified = () =>
+    keepIfFinal(ledger.finals, verified, provider, async (block) => {
+      const funded = await fundingAt(provider, ledger.address, key, terms, block);
+      return !!funded && !funded.closed && BigInt(funded.pool) === wei && BigInt(funded.prizePool) === prizeWei;
+    });
   if (existing === amount) {
-    await ledger.finals.mark(verified);
+    await keepVerified();
     return;
   }
   const operator = new ShardOperator(target);
@@ -74,7 +77,7 @@ async function publishGamePool(
   const pool = readback ? uint(String(readback.pool), 128) : 0n;
   if (pool === 0n) throw new Error("frontier_pool_confirmation_pending");
   if (pool !== amount) throw new Error("frontier_pool_differs_from_ledger");
-  await ledger.finals.mark(verified);
+  await keepVerified();
 }
 
 const isAlreadyPublished = (error: unknown) =>

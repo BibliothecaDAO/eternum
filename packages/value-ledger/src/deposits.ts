@@ -1,5 +1,5 @@
 import { hash, shortString, type Call, type RpcProvider } from "starknet";
-import { readConfirmedLedgerHead } from "./codecs";
+import { readConfirmedLedgerHead, readFinalLedgerHead } from "./codecs";
 import type { CosigningDomain } from "./cosigning";
 
 export const LORDS_UNIT = 10n ** 18n;
@@ -180,6 +180,19 @@ export async function depositReader(provider: RpcProvider, ledger: string, chain
     count: async (shard: string) => depositUint((await read("deposit_count", [shard]))[0]!, 64),
     principal: async (shard: string, game: number, account: string) =>
       decodePrincipalPayment(await read("principal_payment", [shard, String(game), account])),
+    /** The same views as of the newest Ethereum-accepted block: the only place a fact is final enough to keep. */
+    final: async () => {
+      const finalHead = await readFinalLedgerHead(provider);
+      const readFinal = (entrypoint: string, calldata: string[]) =>
+        provider.callContract({ contractAddress: ledger, entrypoint, calldata }, finalHead.number);
+      return {
+        block: { number: finalHead.number, hash: finalHead.hash },
+        deposit: async (shard: string, id: string) =>
+          decodeLordsDeposit(shard, id, await readFinal("get_deposit", [shard, id])),
+        principal: async (shard: string, game: number, account: string) =>
+          decodePrincipalPayment(await readFinal("principal_payment", [shard, String(game), account])),
+      };
+    },
   };
 }
 

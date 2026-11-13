@@ -23,7 +23,7 @@ export interface DepositVerification {
   payoutIdentity?: (account: string, wallet: string) => Promise<string>;
   anchors?: DepositAnchors;
   publicKey: string;
-  ledger: Awaited<ReturnType<typeof depositReader>>;
+  ledger: Omit<Awaited<ReturnType<typeof depositReader>>, "final">;
   shard: ShardConnection & { heraldUrl: string };
 }
 

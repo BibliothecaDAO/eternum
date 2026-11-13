@@ -223,6 +223,7 @@ const monitorFixture = () => {
     },
     ledger: {
       frontierPool: () => Effect.succeed(String(100n * 10n ** 18n)),
+      finalFrontierPool: () => Effect.succeed(null),
       pause: vi.fn(() => Effect.void),
       reportedClaims: () =>
         Effect.succeed({
