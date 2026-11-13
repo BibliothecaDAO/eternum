@@ -33,6 +33,7 @@ fn scouting_raises_its_chosen_kind_without_changing_beasts() {
             0,
             0,
             0,
+            100,
             0,
             Some(crate::army_relics::RuinReward::Chest(CHEST)),
             0x53434f5554 + Into::<u64, u256>::into(sample),
@@ -42,6 +43,7 @@ fn scouting_raises_its_chosen_kind_without_changing_beasts() {
             0,
             10000,
             0,
+            100,
             0,
             Some(crate::army_relics::RuinReward::Chest(CHEST)),
             0x53434f5554 + Into::<u64, u256>::into(sample),
@@ -62,11 +64,12 @@ fn a_day_without_a_chest_never_draws_a_ruin_and_its_share_stays_empty() {
             0,
             0,
             0,
+            100,
             0,
             Some(crate::army_relics::RuinReward::Chest(CHEST)),
             0x5255494e + Into::<u64, u256>::into(sample),
         );
-        let taken = frontier(rules, 0, 0, 0, 0, None, 0x5255494e + Into::<u64, u256>::into(sample));
+        let taken = frontier(rules, 0, 0, 0, 100, 0, None, 0x5255494e + Into::<u64, u256>::into(sample));
         assert!(bucket(taken) != 3);
         if free == Discovery::Ruin(crate::army_relics::RuinReward::Chest(CHEST)) {
             assert_eq!(taken, Discovery::None);
@@ -89,7 +92,7 @@ fn the_floor_draws_only_kinds_still_allowed() {
     let locked = rules();
     let mut empty = 0_u8;
     for sample in 0_u64..20000 {
-        let session = frontier(locked, 0, 0, 0, empty, None, 0x464c4f4f52 + Into::<u64, u256>::into(sample));
+        let session = frontier(locked, 0, 0, 0, 100, empty, None, 0x464c4f4f52 + Into::<u64, u256>::into(sample));
         if empty == 7 {
             assert!(
                 session == Discovery::Camp || session == Discovery::Rift || session == Discovery::Beasts,
@@ -106,6 +109,7 @@ fn the_floor_draws_only_kinds_still_allowed() {
             0,
             0,
             0,
+            100,
             7,
             Some(crate::army_relics::RuinReward::Chest(CHEST)),
             0x464c4f4f52 + Into::<u64, u256>::into(sample),
@@ -146,6 +150,7 @@ fn shrine_and_well_appear_only_once_researched() {
             0,
             0,
             0,
+            100,
             0,
             Some(crate::army_relics::RuinReward::Chest(CHEST)),
             0x5349544553 + Into::<u64, u256>::into(sample),
@@ -156,6 +161,7 @@ fn shrine_and_well_appear_only_once_researched() {
             0,
             0,
             0,
+            100,
             0,
             Some(crate::army_relics::RuinReward::Chest(CHEST)),
             0x5349544553 + Into::<u64, u256>::into(sample),
