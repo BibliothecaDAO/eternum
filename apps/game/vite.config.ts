@@ -9,6 +9,7 @@ import mkcert from "vite-plugin-mkcert";
 import { VitePWA } from "vite-plugin-pwa";
 import wasm from "vite-plugin-wasm";
 import { resolveRendererViteAliases } from "./src/three/renderer-vite-config";
+import { refuseRetiredVariables } from "./build/retired-env";
 import { PWA_PRECACHE_BUDGET_BYTES, PWA_PRECACHE_FILES } from "./build/pwa-assets.mjs";
 import { createPwaReleasePlugin } from "./build/pwa-release";
 import { APP_ADDRESS, STAGING_ORIGIN } from "./src/config/app-address";
@@ -67,6 +68,7 @@ export default defineConfig(({ command, mode }: ConfigEnv): UserConfig => {
     undefined;
 
   const plugins = [
+    refuseRetiredVariables(),
     labArtwork(isDevEnvironment(appEnv.VITE_PUBLIC_ENVIRONMENT)),
     hashedModels(),
     assetLinks(),
