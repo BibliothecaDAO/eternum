@@ -40,9 +40,13 @@ pub struct DeepSite {
 
 pub fn site_coord(rules: DeepRules, kind: u8, spacing: u32) -> Coord {
     let local = local_coord(rules, kind);
+    site_position(local.x, local.y, spacing)
+}
+
+pub fn site_position(local_x: u32, local_y: u32, spacing: u32) -> Coord {
     let center = center(spacing);
     let half = crate::rules::DEEP_MAP_SIZE / 2;
-    Coord { alt: false, x: center.x - half + local.x, y: center.y - half + local.y }
+    Coord { alt: false, x: center.x - half + local_x, y: center.y - half + local_y }
 }
 
 fn local_coord(rules: DeepRules, kind: u8) -> Coord {

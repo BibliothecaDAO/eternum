@@ -2,7 +2,7 @@ use starknet::storage::{StorageMapReadAccess, StorageMapWriteAccess, StoragePath
 use crate::commands::ExecutionContext;
 use crate::deep::{DeepShare, IDeepBanesDispatcherTrait, IDeepRewardsDispatcherTrait};
 use crate::resources::{IResourceOperationsDispatcherTrait, IResourceOperationsLibraryDispatcher, ResourceKey};
-use crate::troops::{ExplorerKey, ExplorerTroops};
+use crate::troops::{ExplorerKey, ExplorerTroops, IBattleResolutionDispatcherTrait};
 
 pub fn initialize(game_id: u32) {
     let state = crate::state::write();
@@ -15,7 +15,7 @@ pub fn initialize(game_id: u32) {
 }
 
 pub fn settle(game_id: u32, context: ExecutionContext) {
-    if crate::logic::deep_sites::rules(game_id).is_none() {
+    if crate::logic::deep_sites::rules_entry(game_id).is_none() {
         return;
     }
     let game = context.game.unbox();
@@ -73,8 +73,8 @@ fn settle_site(game_id: u32, kind: u8, boundary: u64, context: ExecutionContext)
     pay_site(game_id, kind, shares, boundary, context);
     let context = ExecutionContext { timestamp: boundary, ..context };
     for (key, army) in guards {
-        let army = crate::logic::army_slots::resolve(*key, *army, None);
-        let _ = crate::logic::deep_armies::settle(*key, army, context);
+        crate::logic::combat::combat_troops(game_id)
+            .settle_deep_army(*key, *army, crate::commands::action_context(context));
     }
 }
 
@@ -120,7 +120,7 @@ fn pay_site(game_id: u32, kind: u8, shares: Span<DeepShare>, boundary: u64, cont
 }
 
 fn pay_quarry(game_id: u32, shares: Span<DeepShare>, boundary: u64, context: ExecutionContext) {
-    let amount = crate::logic::deep_sites::rules(game_id).expect('missing Deep rules').quarry_per_tick;
+    let amount = crate::logic::deep_sites::rules_entry(game_id).expect('missing Deep rules').quarry_per_tick.read();
     let payments = crate::race::split_payment(amount, shares);
     let state = crate::state::read();
     let release = state.releases.entry(state.game_releases.read(game_id)).classes;

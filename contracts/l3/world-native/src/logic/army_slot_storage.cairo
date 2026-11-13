@@ -53,7 +53,7 @@ pub fn resolve(key: ExplorerKey, mut explorer: ExplorerTroops, refill: Option<St
             let rate = crate::logic::triumphs::percent(
                 home, explorer.coord, crate::rules::SECOND_WIND_STAGE, refill.timestamp,
             );
-            let windows = crate::logic::banes::windows(home, stamina.settled_at.into(), refill.timestamp);
+            let effects = crate::logic::banes::effects(home, stamina.settled_at.into(), refill.timestamp);
             crate::stamina::refill_windows(
                 ref stamina,
                 ref explorer.troops.boosts,
@@ -61,9 +61,9 @@ pub fn resolve(key: ExplorerKey, mut explorer: ExplorerTroops, refill: Option<St
                 refill.stamina_config,
                 refill.armies_tick_in_seconds,
                 refill.timestamp,
-                windows,
+                effects.windows,
                 rate,
-                crate::logic::banes::stamina_percent(key.game_id),
+                effects.stamina_percent,
             );
             stamina.clamp(maximum);
         }
