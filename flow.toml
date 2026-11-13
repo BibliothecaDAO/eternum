@@ -1,12 +1,4 @@
 [project]
-name = "eternum"
-repo = "/home/djizus/projects/eternum"
-branch = "feat/frontier-s1"
-machine = "tower"
-slots = 2
-env = "SCARB_CACHE=/home/djizus/.local/state/flow/eternum/scarb-cache"
-budget_gb = 16
-reserve_gb = 1
 setup = "pnpm install --frozen-lockfile --prefer-offline"
 
 [kind.build]
