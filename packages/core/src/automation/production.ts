@@ -386,8 +386,6 @@ export const buildRealmProductionPlan = ({
       const inputs = configManager.requireRecipeInputs(resourceId, false);
       inputs.forEach((input) => resourcesToTrack.add(input.resource));
     }
-
-
   }
 
   const totalAvailable = new Map<ResourcesIds, number>();
@@ -425,7 +423,6 @@ export const buildRealmProductionPlan = ({
         addDemand(input.resource, percentages.resourceToResource);
       }
     }
-
   }
   const scaleFactorByInput = new Map<ResourcesIds, number>();
   totalDemandByInput.forEach((demand, inputId) => {
@@ -557,9 +554,6 @@ export const buildRealmProductionPlan = ({
         }
       }
     }
-
-
-
   }
 
   return {

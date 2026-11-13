@@ -219,8 +219,7 @@ export const useAutomationStore = create<ProductionAutomationState>()(
             : normalizePercentages(undefined, resourceId);
 
           const updatedPercentages = normalizePercentages({ ...current, ...percentages }, resourceId);
-          const changed =
-            updatedPercentages.resourceToResource !== current.resourceToResource;
+          const changed = updatedPercentages.resourceToResource !== current.resourceToResource;
 
           if (!changed && existingPercentages) {
             return state;

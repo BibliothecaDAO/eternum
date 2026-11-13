@@ -74,9 +74,7 @@ const assignMarketDonkeyAllocation = (
   });
 };
 
-const buildSmartPresetAllocations = (
-  resources: ResourcesIds[],
-): Map<number, ResourceAutomationPercentages> => {
+const buildSmartPresetAllocations = (resources: ResourcesIds[]): Map<number, ResourceAutomationPercentages> => {
   const allocations = new Map<number, ResourceAutomationPercentages>();
   const presentSet = new Set(resources);
 
@@ -110,7 +108,6 @@ const buildSmartPresetAllocations = (
         allocations,
         orderedT1.filter((id) => presentSet.has(id)),
         [20, 20, 30],
-
       );
     }
   }
@@ -121,7 +118,6 @@ const buildSmartPresetAllocations = (
       allocations,
       SMART_T2_RESOURCES.filter((id) => presentSet.has(id)),
       weights,
-
     );
   }
 
@@ -131,7 +127,6 @@ const buildSmartPresetAllocations = (
       allocations,
       SMART_T3_RESOURCES.filter((id) => presentSet.has(id)),
       weights,
-
     );
   }
 
@@ -139,12 +134,7 @@ const buildSmartPresetAllocations = (
   if (presentArmyT3.length > 0) {
     assignTierSplit(allocations, presentArmyT3, buildSequentialWeights(presentArmyT3.length, [50, 25, 15]));
     if (presentArmyT2.length > 0) {
-      assignTierSplit(
-        allocations,
-        presentArmyT2,
-        buildSequentialWeights(presentArmyT2.length, [30, 15, 10]),
-
-      );
+      assignTierSplit(allocations, presentArmyT2, buildSequentialWeights(presentArmyT2.length, [30, 15, 10]));
     }
     if (presentArmyT1.length > 0) {
       assignTierSplit(allocations, presentArmyT1, buildSequentialWeights(presentArmyT1.length, [10, 5, 3]));
@@ -223,14 +213,11 @@ export const getAutomationOverallocation = (
       (input: { resource: ResourcesIds }) => input.resource !== ResourcesIds.Wheat,
     );
 
-
     if ((percentages?.resourceToResource ?? 0) > 0) {
       complexInputs.forEach(({ resource }: { resource: ResourcesIds }) => {
         resourceTotals.set(resource, (resourceTotals.get(resource) ?? 0) + (percentages?.resourceToResource ?? 0));
       });
     }
-
-
   });
 
   let resourceOver = false;
@@ -240,7 +227,6 @@ export const getAutomationOverallocation = (
       resourceOver = true;
     }
   });
-
 
   return { resourceOver };
 };

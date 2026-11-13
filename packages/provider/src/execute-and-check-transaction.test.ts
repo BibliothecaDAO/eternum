@@ -89,7 +89,9 @@ describe("provider submission boundary", () => {
     }));
     const failed = vi.fn();
     provider.on("transactionFailed", failed);
-    provider.upgrade_realm({ signer: { address: "0x111" } as AccountInterface, realm_entity_id: 1 }).catch(() => undefined);
+    provider
+      .upgrade_realm({ signer: { address: "0x111" } as AccountInterface, realm_entity_id: 1 })
+      .catch(() => undefined);
     await vi.waitFor(() => expect(failed).toHaveBeenCalledOnce());
     expect(failed.mock.calls[0][0]).toMatchObject({
       stage: "revert",

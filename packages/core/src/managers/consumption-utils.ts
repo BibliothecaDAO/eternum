@@ -92,8 +92,6 @@ export const aggregateConsumptionPerSecond = (
         accumulate(input.resource, resourceRatio * input.amount);
       }
     }
-
-
   }
 
   return totals;
