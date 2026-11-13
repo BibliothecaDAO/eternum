@@ -39,6 +39,18 @@ export const economyScenario = (): LabScenario => {
     row("TileOccupancy", "0xe07", at),
     row("Structure", "0xe08", { ...home, entity_id: DESTINATION, metadata: { ...home.metadata, realm_id: 2 } }),
     row("TileOccupancy", "0xe09", { ...at, ...destination, entity_id: DESTINATION }),
+    row("RealmKnowledge", "0xe10", { game_id: 1, structure_id: DESTINATION, learned: 0n }),
+    row("StructureBuildings", "0xe11", {
+      game_id: 1,
+      entity_id: DESTINATION,
+      packed_counts_1: 0n,
+      packed_counts_2: 0n,
+      packed_counts_3: 0n,
+      population: {
+        current: 0,
+        max: store.require("StructureBuildings", { game_id: 1, entity_id: HOME }).population.max,
+      },
+    }),
     row("ResourceWeight", "0xe0a", { game_id: 1, entity_id: DESTINATION, capacity: 100_000n * PRECISION, weight: 0n }),
     balance(store, HOME, ResourcesIds.Wheat, 1_000n * PRECISION),
     balance(store, HOME, ResourcesIds.Donkey, 100n * PRECISION),
