@@ -529,9 +529,8 @@
   };
 
   window.__playtest = {
-    /** A step boundary; the heap is read after a forced collection when the browser exposes gc. */
+    /** A step boundary; the runner collects through DevTools before each retained-heap measurement. */
     step(name) {
-      window.gc?.();
       const step = { heapBytes: usedHeapBytes(), name, t: performance.now() };
       push(state.steps, step);
       return JSON.stringify({ ...step, timeOrigin: performance.timeOrigin });

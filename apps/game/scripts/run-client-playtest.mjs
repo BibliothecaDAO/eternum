@@ -71,8 +71,7 @@ const PROBE_PATH = join(SCRIPTS_DIR, "client-playtest/probe.js");
 const DEFAULTS = { port: 4173, iterations: 3, rendererModes: RENDERER_MODES, timeoutMs: 30_000, cpuThrottle: 1 };
 const POLL_INTERVAL_MS = 500;
 const LOAD_SAMPLE_MS = 5_000;
-// Beside the session's GPU flags: a callable gc for retained-heap reads, and unrounded heap sizes.
-const MEMORY_ARGS = ["--js-flags=--expose-gc", "--enable-precise-memory-info"];
+const MEMORY_ARGS = ["--enable-precise-memory-info"];
 /** The GPU the page draws on: the machine's default, or its integrated one (`--gpu low-power`, integrated-gpu.mjs). */
 const GPUS = ["default", "low-power"];
 
@@ -470,6 +469,7 @@ async function playStep({ browser, captureResults, devTools, owner, step, base, 
   let startedOn = null;
   let probe = null;
   try {
+    await devTools.send("HeapProfiler.collectGarbage");
     startedOn = JSON.parse(browser.eval(`window.__playtest.step(${JSON.stringify(step.name)})`));
     const extraScreenshot = (suffix) => takeScreenshot(browser, `${base}-${suffix}.png`);
     if (profiled) await startCpuProfile(devTools);
@@ -477,6 +477,7 @@ async function playStep({ browser, captureResults, devTools, owner, step, base, 
     await owner.sleep(step.settleMs);
     if (profiled) attempt.played.cpuProfile = await writeCpuProfile(devTools, `${base}.cpuprofile`);
     browser.screenshot(screenshot);
+    await devTools.send("HeapProfiler.collectGarbage");
     browser.run(["eval", `window.__playtest.step(${JSON.stringify(`${step.name}:end`)})`]);
     const seen = browser.observe();
     const sameDocument = seen.timeOrigin === startedOn.timeOrigin;
