@@ -571,6 +571,8 @@ function writeRunEvidence({ browser, context, record }) {
     clientAtOrigin: context.clientAtOrigin ? { origin: context.baseUrl, served: record.servedFromBuild ?? null } : null,
     signIn: record.signIn ?? null,
     daySummary: record.daySummary ?? null,
+    walletInvitation: record.walletInvitation ?? false,
+    workerErrors: record.workerErrors ?? [],
     steps: record.steps.map(({ summary }) => summary),
     url: record.url,
   };
