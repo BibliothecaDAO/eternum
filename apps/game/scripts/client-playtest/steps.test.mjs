@@ -9,6 +9,7 @@ import { WORLDMAP_CAMERA_ZOOM } from "../../src/three/scenes/worldmap-camera-vie
 import { ARMY_PLATE_HEIGHT } from "../../src/three/constants/army-constants";
 import { ARMY_LABEL_POINT } from "./plates.mjs";
 import { MAP_LEAST_SHARE } from "./hud-layout.mjs";
+import { setViewport } from "./browser-session.mjs";
 import { HUD_MAP_LEAST_SHARE } from "../../src/tokens";
 import { CHAT, CLOSE, ruinRule, EVENTS_WORDS, MENU, REALM_LABOR, SEASON } from "../../src/ui/design-system/kit/words";
 import {
@@ -1253,5 +1254,39 @@ it("the ruin fight proof refuses a legacy or missing daily rule", () => {
   expect(verify({ played: { before, after } }).status).toBe("completed");
   for (const rule of [ruinRule(false), null]) {
     expect(verify({ played: { before, after: { ...after, ruinRule: rule } } }).status).toBe("failed");
+  }
+});
+
+// The phone run of s1-screens-14: a second after its last key, the pan was still gliding over a hex's edge (652,49 read,
+// 652,48 at rest, the ruin's token still at [121, 121]), and the card's tap took the blame.
+it("on a phone, opens the ruin's card only once the pan has stopped gliding, and judges the camera from there", async () => {
+  const step = STEP_SETS["lab-ruin-fight"].steps.find((one) => one.name === "open-the-fight");
+  const glide = [49, 49, 49, 48];
+  let tapped = false;
+  const browser = {
+    read: () => {
+      const row = glide.length > 1 ? glide.shift() : glide[0];
+      const card = tapped ? { sheet: "Stormfall Ruin", buttons: ["Attack"], ruinRule: ruinRule(true) } : {};
+      return { camera: { col: 652, row }, ruinToken: [0, 121], buttons: [], ruinRule: null, ...card };
+    },
+    tap: () => {
+      tapped = true;
+    },
+  };
+  setViewport({ width: 390, height: 844 });
+  vi.useFakeTimers();
+  try {
+    const playing = step.play({ browser, extraScreenshot: () => undefined });
+    await vi.runAllTimersAsync();
+    const played = await playing;
+    expect(played.pan.panned.camera).toEqual({ col: 652, row: 49 });
+    expect(played.before.camera).toEqual({ col: 652, row: 48 });
+    expect(step.verify({ played }).status).toBe("completed");
+    // A tap that moves the camera still fails.
+    const moved = { ...played, after: { ...played.after, camera: { col: 653, row: 52 } } };
+    expect(step.verify({ played: moved }).reason).toBe('opening the fight moved the camera from {"col":652,"row":48}');
+  } finally {
+    vi.useRealTimers();
+    setViewport({ width: 1920, height: 1080 });
   }
 });

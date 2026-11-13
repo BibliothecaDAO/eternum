@@ -4111,10 +4111,30 @@ const UNDER_THE_CARD_PX = [70, 160];
 /** How far from the middle a ruin may stand across a phone and still be tapped whole: a far ruin is panned within. */
 const ACROSS_THE_PHONE_PX = [-120, 120];
 const PAN_BURSTS = 16;
+const SETTLE_READS = 6;
 const underTheCard = (token) => token && token[1] >= UNDER_THE_CARD_PX[0] && token[1] <= UNDER_THE_CARD_PX[1];
+/** Pans the ruin under the card and waits for the pan to come to rest; what the map showed then and at rest. */
 async function panTheRuinUnderTheCard(browser) {
   await panTheRuinInto(browser, 0, ACROSS_THE_PHONE_PX, ["KeyA", "KeyD"]);
   await panTheRuinInto(browser, 1, UNDER_THE_CARD_PX, ["KeyW", "KeyS"]);
+  const panned = browser.read(FIGHT_STATE);
+  return { panned, atRest: await panAtRest(browser, panned) };
+}
+
+/**
+ * Reads the map until a keyboard pan has stopped gliding. The map's controls damp a pan (CONTROL_CONFIG.dampingFactor),
+ * so about 5% of it is still to come a second after the key: a camera judged against a target still moving under it
+ * reads as moved. At rest is the camera's hex and the ruin's token where they stood one report earlier.
+ */
+async function panAtRest(browser, from) {
+  let last = from;
+  for (let read = 0; read < SETTLE_READS; read += 1) {
+    await sleep(CAMERA_REPORT_MS);
+    const now = browser.read(FIGHT_STATE);
+    if (sameHex(now.camera, last.camera) && String(now.ruinToken) === String(last.ruinToken)) return now;
+    last = now;
+  }
+  return last;
 }
 
 /**
@@ -4148,15 +4168,15 @@ function showsBothSides(shown) {
  */
 function openTheRuinsCardUntil(ready) {
   return async ({ browser, extraScreenshot }) => {
-    if (!onADesktop()) await panTheRuinUnderTheCard(browser);
+    const pan = onADesktop() ? null : await panTheRuinUnderTheCard(browser);
     const before = browser.read(FIGHT_STATE);
-    if (!before.ruinToken) return { before, after: before };
+    if (!before.ruinToken) return { pan, before, after: before };
     extraScreenshot("before-fight");
     if (onADesktop()) browser.rightClick(before.ruinToken);
     else browser.tap(before.ruinToken);
     const after = await readUntil(() => browser.read(FIGHT_STATE), ready, MERGE_WAIT_MS);
     extraScreenshot("fight-card");
-    return { before, after };
+    return { pan, before, after };
   };
 }
 
