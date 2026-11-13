@@ -85,7 +85,7 @@ export const DAY_END = {
   endsIn: (day: number | undefined, secondsLeft: number | undefined) =>
     `${DAY} ${day ?? "—"} ends in ${dayLength(secondsLeft)}`,
   open: "Open",
-  goes: "At day end, today's map, its armies and chests go",
+  goes: "At day end, today's map and armies go",
   claim: "Claim today's Labor",
   claimVerb: "Claim",
   site: (name: string) => `Clear today's ${name}`,

@@ -78,7 +78,7 @@ describe("the day's end", () => {
     const dayEnd: DayEnd = { clock: clockAt(42 * 60), items: EVERYTHING_LEFT, run };
     const block = render(<DayEndBlock dayEnd={dayEnd} />);
     expect(block.host.querySelector(".ui-notice")!.textContent).toBe(
-      "At day end, today's map, its armies and chests go",
+      "At day end, today's map and armies go",
     );
     act(() => block.button("Show")!.click());
     act(() => block.button("Claim")!.click());
@@ -101,7 +101,7 @@ describe("the day's end", () => {
           onClose={vi.fn()}
         />,
       );
-    const goes = '[aria-label="At day end, today\'s map, its armies and chests go"]';
+    const goes = '[aria-label="At day end, today\'s map and armies go"]';
     const today = sheet(true);
     expect(today.host.querySelector(goes)).not.toBeNull();
     today.unmount();
