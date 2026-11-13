@@ -29,7 +29,12 @@ function setup() {
     const call = submit.mock.calls.at(-1)![1] as Call;
     expect(call.contractAddress).toBe("0x77");
     expect(call.calldata?.[0]).toBe("7");
-    const value = new CallData(abi as Abi).parse("decode_command", (call.calldata as string[]).slice(1)) as any;
+    const commands = bindings.commandAbi.find((item) => item.name === "world_native::commands::Command")!;
+    const index = commands.variants.findIndex(({ name }) => name === call.entrypoint);
+    expect(index).toBeGreaterThanOrEqual(0);
+    const fields = (call.calldata as string[]).slice(1);
+    expect(BigInt(fields[0])).toBe(BigInt(commands.variants[index].wireId));
+    const value = new CallData(abi as Abi).parse("decode_command", [String(index), ...fields.slice(1)]) as any;
     expect(value.command.activeVariant()).toBe(call.entrypoint);
     return value.command.unwrap();
   };

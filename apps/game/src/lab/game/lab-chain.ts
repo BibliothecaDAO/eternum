@@ -621,7 +621,7 @@ type AbiItem = {
   type: string;
   name: string;
   members?: { name: string; type: string }[];
-  variants?: { name: string; type: string }[];
+  variants?: { name: string; type: string; wireId?: number }[];
 };
 
 /** A play call's command, as native-submission builds it: game, release, commitment, the span's length, the span. */
@@ -629,7 +629,7 @@ const readCommand = (bindings: NativeWorldBindings, calldata: string[]): LabComm
   const span = calldata.slice(4);
   const abi = bindings.commandAbi as unknown as AbiItem[];
   const commands = abi.find((item) => item.type === "enum" && item.name === "world_native::commands::Command");
-  const variant = commands?.variants?.[Number(span[0])];
+  const variant = commands?.variants?.find(({ wireId }) => wireId === Number(span[0]));
   if (!variant) throw new Error(`The lab cannot read command ${span[0]}`);
   // Flat commands (each field one felt) read field by field; anything else keeps its raw span.
   const members = abi.find((item) => item.name === variant.type)?.members ?? [];
