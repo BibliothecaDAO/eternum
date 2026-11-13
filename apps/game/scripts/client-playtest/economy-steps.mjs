@@ -58,11 +58,16 @@ export const ECONOMY_STEPS = [
       await clickButton(browser, owner, `${TRANSFER} button`, "Send 1 good");
       const sent = await until(owner, () => command(browser, "SendResources"));
       browser.run(["find", "role", "tab", "click", "--name", "Arrivals"]);
-      const shown = await until(owner, () => {
+      const arrivalText = await until(owner, () => {
         const text = textOf(browser, `${TRANSFER} [role="tabpanel"][aria-label="arrivals"]`);
-        return /50/.test(text) && /Wheat/.test(text) ? text : null;
+        return /50/.test(text) ? text : null;
       });
-      return { preview, sent, shown };
+      browser.run(["hover", `${TRANSFER} [role="tabpanel"][aria-label="arrivals"] [data-tip="Wheat"]`]);
+      const resourceName = await until(owner, () => {
+        const text = textOf(browser, '[role="tooltip"]');
+        return /Wheat/.test(text) ? text : null;
+      });
+      return { preview, sent, shown: `${arrivalText} ${resourceName}` };
     },
     verify: ({ played }) => {
       const payload = played.sent?.command.calldata.slice(4).map(String);
