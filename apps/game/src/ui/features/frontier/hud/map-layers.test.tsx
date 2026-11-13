@@ -20,6 +20,8 @@ import type { NativeFactStore, NativeRows } from "@bibliothecadao/eternum/game-c
 import { StructureType } from "@bibliothecadao/types";
 import { nativeReleaseConstants } from "../../../../../../../contracts/l3/world-native/schema/client.gen";
 
+import { frontierPreset } from "../../../../../../../config/source/frontier/native";
+
 import { campBeside } from "../sites/site-fixture";
 
 import { layerTab, layerViews, type MapLayers, useMapLayers } from "./map-layers";
@@ -157,7 +159,20 @@ describe("the map's layers", () => {
  */
 const chestDay = (reached = 2) => {
   const { store } = campBeside();
+  const chests = frontierPreset.chests;
   store.applyFacts([
+    {
+      model: "ChestRules",
+      key: "0x1ab9b",
+      value: {
+        game_id: 1,
+        price_ceiling: BigInt(chests.priceCeiling),
+        shares: chests.shares,
+        claim_window_seconds: chests.claimWindowSeconds,
+        pool_bps: chests.poolBps,
+        top_n: chests.topN,
+      } satisfies NativeRows["ChestRules"],
+    },
     {
       model: "GameRelease",
       key: "0x1ab0",
@@ -305,6 +320,31 @@ const listRows = () =>
   ]);
 
 describe("each layer's ruin chest today, on the layer switch", () => {
+  it("refreshes cash badges when chest rules arrive and hides them when their absence becomes authoritative", () => {
+    const { store, realm, rules, now, today } = chestDay();
+    const chestRules = store.require("ChestRules", { game_id: 1 });
+    discovered(store, today, false);
+    context.mapView = true;
+    act(() => {
+      store.setSnapshot({ gameId: 1, complete: false, actor: "0x111", timestamp: now });
+      store.applyFacts([{ model: "ChestRules", key: "0x1ab9b", value: null }]);
+      root.render(<LayerSwitch rules={rules} realm={realm} />);
+    });
+    expect(switchMarks()).toEqual([]);
+    act(() => store.applyFacts([{ model: "ChestRules", key: "0x1ab9b", value: chestRules }] as never));
+    expect(switchMarks()).toEqual([
+      "World: chest to take today",
+      "Ethereal I: chest to take today",
+      "Ethereal II: chest to take today",
+      "Ethereal III: not reached yet",
+    ]);
+    act(() => {
+      store.applyFacts([{ model: "ChestRules", key: "0x1ab9b", value: null }]);
+      store.setSnapshot({ gameId: 1, complete: true, actor: "0x111", timestamp: now });
+    });
+    expect(switchMarks()).toEqual([]);
+  });
+
   it("opens every reached layer while nothing was cleared today, marks today's clears, and opens again tomorrow", () => {
     const { store, realm, rules, now, today } = chestDay();
     expect(today).toBe(1);

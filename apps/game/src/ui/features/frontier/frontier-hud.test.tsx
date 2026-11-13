@@ -514,8 +514,6 @@ it.each([
   },
 );
 
-/** The control `selector` finds, pressed. */
-const press = (selector: string) => act(async () => host.querySelector<HTMLButtonElement>(selector)!.click());
 /** The Menu opened, then its row named `word` pressed. */
 const fromMenu = async (word: string) => {
   await pressPlace("Menu");

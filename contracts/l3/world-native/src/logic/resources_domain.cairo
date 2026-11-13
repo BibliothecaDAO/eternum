@@ -106,8 +106,8 @@ pub mod ResourcesLogic {
                 None
             };
             self.resources.destroy(key);
-            crate::logic::expeditions::clear_rewarded_site(
-                key, site, crate::expeditions::SiteClear { explorer_id: explorer.explorer_id, home_id, reward }, depth,
+            crate::logic::expeditions::clear_site(
+                key, crate::expeditions::SiteClear { explorer_id: explorer.explorer_id, home_id, reward },
             );
             crate::progression::IArmyProgressionDispatcherTrait::grant_army_xp(
                 crate::progression::IArmyProgressionLibraryDispatcher {

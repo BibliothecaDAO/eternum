@@ -33,13 +33,6 @@ fn authorized_explorer(
 ) -> ExplorerTroops {
     let explorer = active_explorer(key, timestamp, game_context);
     owned_structure(key.game_id, explorer.owner, actor);
-    if game_context.rules.unbox().day_unit_seconds != 0 {
-        crate::logic::expeditions::cache_ruin_depths(
-            crate::expeditions::ExpeditionDiscoveryKey {
-                game_id: key.game_id, structure_id: explorer.owner, epoch: crate::logic::army_days::require(key),
-            },
-        );
-    }
     explorer
 }
 pub fn field_explorer(

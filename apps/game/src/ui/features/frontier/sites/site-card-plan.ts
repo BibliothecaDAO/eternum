@@ -52,7 +52,8 @@ export interface SiteCardPlan {
   /** The XP a clear pays; another player's army pays none this card can promise. */
   xp: number | undefined;
   /** A ruin's stored tier and whole LORDS; unknown until its chest fact arrives. */
-  chest: { tier: number; amount: number; depth: string; funded: boolean } | null | undefined;
+  ruinDepth?: string;
+  chest: { tier: number; amount: number; funded: boolean } | null | undefined;
   /**
    * Whole units paid home and what fits beside what the store holds; null for XP-only sites, undefined until the home's
    * facts arrive.
@@ -93,12 +94,13 @@ export const readSiteCard = (
     guard: guards === undefined ? undefined : guard ? troopsOf(guard.troops) : null,
     kind,
     xp: siteClearXp(store, site),
+    ruinDepth:
+      kind === "Ruin"
+        ? siteDepthName(Math.floor(site.row / store.require("SettlementRules", { game_id: site.game_id }).spacing) % 4)
+        : undefined,
     chest: chest && {
       tier: chest.tier,
       amount: Number(chest.amount),
-      depth: siteDepthName(
-        Math.floor(site.row / store.require("SettlementRules", { game_id: site.game_id }).spacing) % 4,
-      ),
       funded:
         chest.amount > 0n &&
         availableRuinLords(store, site.game_id, attack?.timestamp ?? getBlockTimestamp().currentDefaultTick) >=

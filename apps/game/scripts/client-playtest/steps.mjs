@@ -4359,6 +4359,8 @@ const DISMISSED_AT_EXPRESSION = `JSON.stringify(
  * fails a command that is neither.
  */
 export const UNMEASURED_COMMANDS = {
+  Battle: "Season 1 field battles have no paired-army lab timing; the measured ruin fight sends BattleGuard",
+  ClaimDailyQuest: "the daily quest claim has no desktop and phone timing baseline in the action lab yet",
   ApplyRelic: "army relic activation has no client control yet; its click-to-result timing needs that control",
   MarkGameSettled:
     "sent by the value relay's operator once a season's game has ended (apps/value-relay), never by a player",

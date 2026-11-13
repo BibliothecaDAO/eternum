@@ -214,8 +214,8 @@ pub fn day_start(d: super::Deployment, game_id: u32, index: u64) -> u64 {
     }
     day.start
 }
-pub /// Open entry draws starting troops from the biome table, which a fixed-roster definition leaves empty.
- fn open_entry(ref preset: PresetDefinition) {
+/// Open entry draws starting troops from the biome table, which a fixed-roster definition leaves empty.
+pub fn open_entry(ref preset: PresetDefinition) {
     preset.rules.entry_rule = crate::rules::ENTRY_OPEN;
     preset.settlement.realms = super::settlement::grants_for(crate::rules::ENTRY_OPEN);
 }
@@ -323,8 +323,8 @@ pub fn transfer(source: ExplorerKey, target: ExplorerKey, troops: u128) -> Comma
         ),
     )
 }
-pub // A free home-ring neighbour and the direction to it.
-fn free_ring_neighbor(
+// A free home-ring neighbour and the direction to it.
+pub fn free_ring_neighbor(
     map: IMapLogicDispatcher, game_id: u32, from: crate::troops::Coord, site: crate::troops::Coord, spacing: u32,
 ) -> (u8, crate::troops::Coord) {
     let mut found = Option::None;
@@ -351,8 +351,8 @@ pub fn assert_expedition_capture(depth: u8) {
 pub fn assert_capture_with_reveal(depth: u8, count: u128, tier: crate::troops::TroopTier, reveal_amount: u128) {
     assert_capture_at(depth, count, tier, reveal_amount, false, None);
 }
-pub // Search roll inputs, never the gameplay clock. Every chosen input is passed to the action unchanged.
-fn discovery_root(
+// Search roll inputs, never the gameplay clock. Every chosen input is passed to the action unchanged.
+pub fn discovery_root(
     game_id: u32,
     rules: crate::expeditions::FrontierDiscoveryRules,
     empty_reveals: u8,
@@ -379,8 +379,8 @@ pub fn explore_with_root(d: super::Deployment, game_id: u32, explorer_id: u64, r
         timestamp,
     )
 }
-pub // Settles on day 1's first second and captures in its first minute, or with `late` in its last.
-fn assert_capture_at(
+// Settles on day 1's first second and captures in its first minute, or with `late` in its last.
+pub fn assert_capture_at(
     depth: u8, count: u128, tier: crate::troops::TroopTier, reveal_amount: u128, late: bool, labor_room: Option<u128>,
 ) {
     let d = setup();
@@ -1036,9 +1036,20 @@ pub fn setup_open_frontier_preset(name: ByteArray, bags: u64) -> (super::Deploym
     create_open_frontier(preset, Into::<u32, u64>::into(preset.rules.day_unit_seconds) * 20 * bags)
 }
 
-pub fn setup_open_frontier_duration(name: ByteArray, duration: u64) -> (super::Deployment, u32) {
-    let (_, preset) = super::preset_projection::current_definition(name);
-    create_open_frontier(preset, duration)
+pub fn labor_home_definition(name: ByteArray) -> PresetDefinition {
+    let (_, mut preset) = super::preset_projection::current_definition(name);
+    preset.economy.chests = None;
+    preset.rules.mode_rules = preset.rules.mode_rules & (0xffffffff - crate::rules::DISCOVER_CHESTS);
+    preset
+}
+
+pub fn setup_labor_home_game(name: ByteArray, bags: u64) -> (super::Deployment, u32) {
+    let preset = labor_home_definition(name);
+    create_open_frontier(preset, Into::<u32, u64>::into(preset.rules.day_unit_seconds) * 20 * bags)
+}
+
+pub fn setup_labor_home_duration(name: ByteArray, duration: u64) -> (super::Deployment, u32) {
+    create_open_frontier(labor_home_definition(name), duration)
 }
 
 pub fn create_open_frontier(preset: PresetDefinition, duration: u64) -> (super::Deployment, u32) {

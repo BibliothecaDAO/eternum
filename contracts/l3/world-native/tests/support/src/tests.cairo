@@ -39,18 +39,18 @@ pub mod entry;
 pub mod event_transactions;
 pub mod explore_rewards;
 pub mod fact_wire;
+pub mod faith;
 pub mod fixtures;
 pub mod frontier_combat_vectors;
 pub mod frontier_discovery;
 pub mod frontier_economy;
-pub mod frontier_explore_chest;
 pub mod frontier_guards;
 pub mod frontier_reveal;
 pub mod games_fixture;
 pub mod games_host;
 pub mod guilds;
 pub mod hyperstructures;
-pub mod lords_budget;
+pub mod market;
 pub mod mines;
 pub mod play_fixture;
 pub mod preset_projection;
@@ -75,6 +75,7 @@ pub mod state;
 pub mod structure_rules;
 pub mod structure_storage;
 pub mod terrain;
+pub mod trade;
 pub mod troop_management;
 pub mod unlimited_production;
 pub mod village;
@@ -189,14 +190,7 @@ pub fn context(games: ContractAddress, game_id: u32) -> ExecutionContext {
     }
 }
 pub fn read_context(game_id: u32) -> ExecutionContext {
-    let state = crate::state::read();
-    ExecutionContext {
-        raw_root: 987654321,
-        timestamp: 100,
-        game_id,
-        game: BoxTrait::new(state.games.games.read(game_id)),
-        rules: BoxTrait::new(crate::logic::game::rules(game_id)),
-    }
+    crate::commands::load_context(game_id, 987654321, 100)
 }
 pub fn map_center(games: ContractAddress, game_id: u32) -> crate::troops::Coord {
     crate::settlement_grid::map_center(context(games, game_id).rules.unbox().map_center_offset)

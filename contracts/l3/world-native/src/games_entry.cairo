@@ -161,10 +161,9 @@ pub mod GamesEntry {
                 assert!(self.data.registrar.roster_sizes.read(game_id) != 0, "roster not frozen");
                 assert!(actor == self.data.registrar.seaters.read(game_id), "only the game's seater");
             }
-            if route.selector == selector!("withdraw_lords") {
-                crate::relics::assert_claim_window(
-                    game, crate::logic::lords_budget::chest_rules(game_id), starknet::get_block_timestamp(),
-                );
+
+            if route.selector == selector!("create_banks") {
+                crate::logic::release::assert_launcher();
             }
             actor
         }

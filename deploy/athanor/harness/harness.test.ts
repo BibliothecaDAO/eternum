@@ -238,12 +238,12 @@ describe("Madara harness workload", () => {
     }
     expect(() => parseHarnessArgs(["--preset", "9"])).toThrow("Unsupported native preset 9");
     expect(parseHarnessArgs(["--game-type", "frontier", "--bots", "1"])).toMatchObject({
-      presetId: nativePresetIdFor("frontier"),
+      presetId: 7,
       functional: false,
     });
     // The design run plays the accelerated fixture preset; it never edits Frontier's own preset.
     expect(parseHarnessArgs(["--game-type", "frontier", "--bots", "2", "--functional"])).toMatchObject({
-      presetId: 101,
+      presetId: 104,
       functional: true,
     });
     expect(() => parseHarnessArgs(["--game-type", "frontier", "--bots", "1", "--functional"])).toThrow(

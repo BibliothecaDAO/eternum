@@ -5,8 +5,7 @@ import { createRoot, type Root } from "react-dom/client";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 
-// The real Frontier HUD on the lab's game with an army out; only the network and the identity stand in. A game whose
-// preset enables WithdrawLords holds LORDS in play; Season 1's preset leaves it and RefillStamina out.
+// The real Frontier HUD on the lab game with an army out; only network and identity stand in.
 vi.mock("@/hooks/context/identity-session", async (original) => ({
   ...(await original<typeof import("@/hooks/context/identity-session")>()),
   useIdentitySession: () => ({ status: "signed-out", session: null }),
@@ -15,7 +14,6 @@ vi.mock("@/hooks/context/identity-session", async (original) => ({
 const { NativeFactStore } = await import("@bibliothecadao/eternum/game-client");
 const { useUIStore } = await import("@/hooks/store/use-ui-store");
 const { UnifiedHudLab } = await import("@/ui/features/debug/kit-lab/unified-hud-lab");
-const { nativeCommandBits } = await import("../../../../../../../contracts/l3/world-native/schema/commands.gen");
 
 const ARMY = 90;
 let host: HTMLDivElement;
@@ -49,8 +47,8 @@ afterEach(async () => {
   host.remove();
 });
 
-/** The HUD with the realm's army out; `withoutLords` takes WithdrawLords and RefillStamina out of the game's preset. */
-const renderHud = async (withoutLords: boolean) => {
+/** The real HUD, including any historical LORDS rows retained by its fixture. */
+const renderHud = async () => {
   const writes = vi.spyOn(NativeFactStore.prototype, "applyFacts");
   await act(async () =>
     root.render(
@@ -63,21 +61,7 @@ const renderHud = async (withoutLords: boolean) => {
       </MemoryRouter>,
     ),
   );
-  const store = writes.mock.instances.at(-1) as unknown as InstanceType<typeof NativeFactStore>;
   writes.mockRestore();
-  if (withoutLords) {
-    const rules = store.require("SliceRules", { game_id: 1 });
-    const lords = BigInt(nativeCommandBits.WithdrawLords) | BigInt(nativeCommandBits.RefillStamina);
-    await act(async () =>
-      store.applyFacts([
-        {
-          model: "SliceRules",
-          key: "0x100",
-          value: { ...rules, command_mask: String(BigInt(rules.command_mask) & ~lords) },
-        },
-      ] as never),
-    );
-  }
 };
 
 const lordsButton = () =>
@@ -87,29 +71,16 @@ const refillButton = () =>
 const pickArmy = () =>
   act(async () => useUIStore.getState().selectOnMap({ kind: "army", entityId: ARMY, tile: "own" }));
 
-it.each([true, false])(
-  "draws the realm's LORDS and Withdraw only in a game with LORDS in play (desktop: %s)",
-  async (desktop) => {
-    layout(desktop);
-    await renderHud(false);
-    expect(lordsButton()).toBeDefined();
-
-    await act(async () => root.unmount());
-    root = createRoot(host);
-    await renderHud(true);
-    expect(lordsButton()).toBeUndefined();
-  },
-);
+it.each([true, false])("keeps LORDS and withdrawal controls out of the game HUD (desktop: %s)", async (desktop) => {
+  layout(desktop);
+  await renderHud();
+  expect(host.querySelector("button")).not.toBeNull();
+  expect(lordsButton()).toBeUndefined();
+});
 
 it("shows a phone's picked army its stamina as a reading, with no refill, in a game without LORDS in play", async () => {
   layout(false);
-  await renderHud(false);
-  await pickArmy();
-  expect(refillButton()).toBeDefined();
-
-  await act(async () => root.unmount());
-  root = createRoot(host);
-  await renderHud(true);
+  await renderHud();
   await pickArmy();
   expect(refillButton()).toBeUndefined();
   expect(

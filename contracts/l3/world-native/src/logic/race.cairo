@@ -1,8 +1,19 @@
 use starknet::storage::{StorageMapReadAccess, StorageMapWriteAccess, StoragePathEntry, StoragePointerReadAccess};
-use crate::race::{AspectHyperstructure, AspectKey, RaceMember, RaceResult, RaceRules, TriumphKey};
+use crate::race::{AspectHyperstructure, AspectKey, IRaceDispatcherTrait, RaceMember, RaceResult, RaceRules, TriumphKey};
 use crate::resources::ResourceKey;
+use crate::troops::Coord;
 
-pub fn rules(game_id: u32) -> Option<RaceRules> {
+pub fn dispatcher(game_id: u32) -> crate::race::IRaceLibraryDispatcher {
+    let state = crate::state::read();
+    let release = state.game_releases.read(game_id);
+    crate::race::IRaceLibraryDispatcher { class_hash: state.releases.entry(release).classes.economy.read() }
+}
+
+pub fn enabled(game_id: u32) -> bool {
+    dispatcher(game_id).race_enabled(game_id)
+}
+
+fn rules(game_id: u32) -> Option<RaceRules> {
     crate::logic::preset_record::for_game(game_id).race_rules.read()
 }
 
@@ -11,7 +22,7 @@ pub fn member(key: ResourceKey) -> RaceMember {
     RaceMember { glory, contribution }
 }
 
-pub fn hyperstructure(key: AspectKey) -> AspectHyperstructure {
+fn hyperstructure(key: AspectKey) -> AspectHyperstructure {
     crate::race::assert_aspect(key.aspect);
     let state = crate::state::read();
     let entity_id = state.season.aspect_hyperstructures.read((key.game_id, key.aspect));
@@ -43,13 +54,18 @@ pub fn result(game_id: u32) -> Option<RaceResult> {
 }
 
 pub fn aspect_order(game_id: u32) -> Span<u8> {
+    let reader = dispatcher(game_id);
+    let mut heights = array![];
+    for aspect in 1_u8..5 {
+        heights.append(reader.aspect_hyperstructure(AspectKey { game_id, aspect }).height);
+    }
     let mut ranked = array![];
     for rank in 0_u8..4 {
         for aspect in 1_u8..5 {
-            let height = hyperstructure(AspectKey { game_id, aspect }).height;
+            let height = *heights.at((aspect - 1).into());
             let mut ahead = 0_u8;
             for other in 1_u8..5 {
-                let other_height = hyperstructure(AspectKey { game_id, aspect: other }).height;
+                let other_height = *heights.at((other - 1).into());
                 if other_height > height || (other_height == height && other < aspect) {
                     ahead += 1;
                 }
@@ -60,6 +76,37 @@ pub fn aspect_order(game_id: u32) -> Span<u8> {
         }
     }
     ranked.span()
+}
+
+fn triumph_percent(home: ResourceKey, coord: Coord, stage: u8, timestamp: u64) -> u16 {
+    let Some(rules) = rules(home.game_id) else {
+        return 100;
+    };
+    if crate::logic::expeditions::depth_at(home.game_id, coord) == 3 {
+        return 100;
+    }
+    let game = crate::logic::game::game(home.game_id);
+    if timestamp < game.start_main_at || timestamp >= game.end_at {
+        return 100;
+    }
+    let aspect = crate::logic::aspects::home_aspect(home);
+    let day = crate::days::day_of(
+        game, crate::logic::preset_record::for_game(home.game_id).rules.day_unit_seconds.read(), timestamp,
+    );
+    if triumph_day(TriumphKey { game_id: home.game_id, aspect, stage }) != Some(day.index) {
+        return 100;
+    }
+    if stage == crate::rules::CLEAR_MIST_STAGE {
+        rules.clear_mist_percent
+    } else if stage == crate::rules::SECOND_WIND_STAGE {
+        rules.second_wind_percent
+    } else if stage == crate::rules::PALE_MOON_STAGE {
+        rules.pale_moon_percent
+    } else if stage == crate::rules::SPOILS_STAGE {
+        rules.spoils_percent
+    } else {
+        panic!("invalid Triumph stage")
+    }
 }
 
 fn initialize(game_id: u32) {
@@ -242,7 +289,10 @@ pub mod RaceState {
             stage: u8,
             timestamp: u64,
         ) -> u16 {
-            crate::logic::triumphs::read_percent(home, coord, stage, timestamp)
+            super::triumph_percent(home, coord, stage, timestamp)
+        }
+        fn race_enabled(self: @ComponentState<TContractState>, game_id: u32) -> bool {
+            super::rules(game_id).is_some()
         }
         fn race_rules(self: @ComponentState<TContractState>, game_id: u32) -> Option<crate::race::RaceRules> {
             super::rules(game_id)

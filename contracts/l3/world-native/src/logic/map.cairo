@@ -29,23 +29,10 @@ use crate::map::{TileKey, TileOpt};
 
 pub fn occupancy(key: TileKey) -> Option<crate::map::TileOccupancy> {
     let state = crate::state::read();
-    let occupancy = crate::map::occupancy_from_bits(
-        state.map.occupancy.read((key.game_id, key.alt, key.col, key.row)),
-    )?;
-    if occupancy.category == crate::taxonomy::RUIN_OCCUPIER
-        && crate::logic::expeditions::ruin_disappeared(
-            crate::resources::ResourceKey { game_id: key.game_id, entity_id: occupancy.entity_id },
-        ) {
-        None
-    } else {
-        Some(occupancy)
-    }
+    crate::map::occupancy_from_bits(state.map.occupancy.read((key.game_id, key.alt, key.col, key.row)))
 }
 
 pub fn entity_coord(key: crate::resources::ResourceKey) -> Option<crate::troops::Coord> {
-    if crate::logic::expeditions::ruin_disappeared(key) {
-        return None;
-    }
     let state = crate::state::read();
     let entity_id =
         match crate::logic::deep_guards::entry(
@@ -287,22 +274,6 @@ pub mod MapLogic {
             crate::logic::preset_record::store_structures(commitment, structures);
         }
     }
-    #[abi(embed_v0)]
-    impl RuinEntitlements of crate::logic::ruins::IRuinEntitlements<ContractState> {
-        fn ruin_disappeared(self: @ContractState, key: crate::resources::ResourceKey) -> bool {
-            crate::logic::ruins::disappeared(key)
-        }
-        fn ruin_cleared_at(self: @ContractState, key: crate::expeditions::ExpeditionDiscoveryKey, depth: u8) -> bool {
-            crate::logic::ruins::cleared_at(key, depth)
-        }
-        fn cache_ruin_depths(ref self: ContractState, key: crate::expeditions::ExpeditionDiscoveryKey) {
-            crate::logic::ruins::cache(key);
-        }
-        fn close_ruins(ref self: ContractState, key: crate::expeditions::ExpeditionDiscoveryKey, depth: u8) {
-            crate::logic::ruins::close(key, depth);
-        }
-    }
-
     #[abi(embed_v0)]
     impl Map of crate::map::IMapLogic<ContractState> {
         fn biome(self: @ContractState, key: TileKey, game_context: crate::commands::BiomeContext) -> u8 {

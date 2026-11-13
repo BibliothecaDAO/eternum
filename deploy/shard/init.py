@@ -50,7 +50,7 @@ def requested_presets(environ, facts):
     release's catalogue is refused before anything deploys."""
     ids = [int(value) for value in environ.get("PRESETS", "").split(",") if value.strip()]
     if not ids:
-        raise ValueError("PRESETS must name the preset ids this shard registers, e.g. PRESETS=2,5")
+        raise ValueError("PRESETS must name the preset ids this shard registers, e.g. PRESETS=2,7")
     unknown = [preset for preset in ids if str(preset) not in facts["presets"]]
     if unknown:
         raise ValueError(f"Presets {unknown} are not in this release's catalogue {sorted(facts['presets'], key=int)}")

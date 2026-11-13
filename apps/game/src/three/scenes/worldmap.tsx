@@ -4868,6 +4868,7 @@ export default class WorldmapScene extends WarpTravel {
     });
     this.applyWorldmapSceneExitProjection(nextSceneName);
     this.mapPlates.setVisible(false);
+    // A reward's chest staged mid-moment ends with the map, and the moment beside it with it.
     this.invalidateWorldmapSwitchOffTransitions();
     // A dive through a spire ends with the map: it writes the shared camera and canvas no more.
     this.spireDive?.cancel();

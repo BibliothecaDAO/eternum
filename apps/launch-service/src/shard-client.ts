@@ -82,9 +82,6 @@ export class LaunchShard extends ShardOperator implements ReleaseChain {
   async gameRelease(gameId: number) {
     return Number(await this.view<bigint>("game_release", [gameId]));
   }
-  async isSettled(gameId: number) {
-    return (await this.game(gameId)).settled;
-  }
   async applyRelease(gameId: number, releaseId: number) {
     return (await this.admin("apply_release", { game_id: gameId, release_id: releaseId })).transactionHash;
   }

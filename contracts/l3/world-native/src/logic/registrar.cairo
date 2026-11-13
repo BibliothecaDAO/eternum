@@ -105,6 +105,7 @@ pub mod RegistrarState {
                 );
                 return previous;
             }
+            assert!(preset.rollover_chest_rules.read().is_none(), "LORDS presets are retired");
             let game_id = self.data.registrar.next_game.read();
             assert!(game_id != 0 && game_id < 0xffffffff, "game identity space exhausted");
             let release_id = self.data.current_release.read();

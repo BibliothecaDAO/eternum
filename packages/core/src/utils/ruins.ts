@@ -1,4 +1,5 @@
 import { dayOf } from "./days";
+import { armyRelicsEnabled } from "./army-relics";
 import type { NativeFactStore } from "../client/native-fact-store";
 import { nativeReleaseConstants, type NativeRows } from "../../../../contracts/l3/world-native/schema/client.gen";
 import { StructureType } from "@bibliothecadao/types";
@@ -6,14 +7,18 @@ import { entityHomeNamespace } from "./entity-home";
 import { type ExpeditionRules, expeditionRealmSite, seasonDay } from "./expeditions";
 import { regionInGameSyncScope } from "../sync/model-manifest";
 
-type RuinReader = Pick<NativeFactStore, "get" | "inGame">;
+type RuinReader = Pick<NativeFactStore, "get" | "inGame" | "subscriptionScope">;
 
-/** The preset chooses whether ruins have an entitlement; the pinned release chooses its historical scope. */
-export function ruinLimit(store: Pick<RuinReader, "get">, gameId: number): "none" | "home" | "depth" | undefined {
-  const rules = store.get("SliceRules", { game_id: gameId });
+/** A cash ruin's daily entitlement; relic ruins have none. Unknown until the preset is authoritative. */
+export function ruinLimit(
+  store: Pick<RuinReader, "get" | "subscriptionScope">,
+  gameId: number,
+): "none" | "home" | "depth" | undefined {
+  const relics = armyRelicsEnabled(store, gameId);
+  if (relics === undefined) return undefined;
+  if (relics || store.get("SliceRules", { game_id: gameId })?.day_unit_seconds === 0) return "none";
   const release = store.get("GameRelease", { game_id: gameId });
-  if (!rules || !release) return undefined;
-  if (rules.day_unit_seconds === 0 || !store.get("ChestRules", { game_id: gameId })) return "none";
+  if (!release) return undefined;
   return release.release_id >= nativeReleaseConstants.RUIN_DEPTH_LIMIT_RELEASE ? "depth" : "home";
 }
 
@@ -23,11 +28,11 @@ const homeClearBand = (row: NativeRows["ExpeditionSite"], home: number, spacing:
     ? Math.floor(row.row / spacing)
     : null;
 
-/** Historical cash entitlements close sibling ruins; relic ruins and stored clear receipts remain visible. */
-export function ruinDisappeared(store: RuinReader, site: NativeRows["ExpeditionSite"]): boolean {
+/** A clear closes other ruins at the same depth in its home namespace and map day; stored receipts remain visible. */
+export function ruinDisappeared(store: RuinReader, site: NativeRows["ExpeditionSite"]): boolean | undefined {
   if (site.category !== StructureType.Ruin || site.clear) return false;
   const limit = ruinLimit(store, site.game_id);
-  if (limit === undefined) throw new Error("A ruin requires its game rules and release");
+  if (limit === undefined) return undefined;
   if (limit === "none") return false;
   const spacing = store.get("SettlementRules", { game_id: site.game_id })?.spacing;
   if (!spacing) throw new Error("A ruin requires its expedition spacing");

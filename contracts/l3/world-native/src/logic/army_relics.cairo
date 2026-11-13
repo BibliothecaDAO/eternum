@@ -4,8 +4,7 @@ use crate::resources::ResourceKey;
 use crate::troops::ExplorerKey;
 
 pub fn enabled(game_id: u32) -> bool {
-    let preset = crate::logic::preset_record::for_game(game_id);
-    preset.rules.day_unit_seconds.read() != 0 && preset.rollover_chest_rules.read().is_none()
+    crate::logic::preset_record::for_game(game_id).rules.day_unit_seconds.read() != 0
 }
 
 pub fn read(key: ExplorerKey) -> ArmyRelics {

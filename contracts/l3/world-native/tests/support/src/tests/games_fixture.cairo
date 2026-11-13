@@ -1887,17 +1887,23 @@ pub mod GamesFixture {
         }
     }
 
+    fn ledger_operator_dispatcher(game_id: u32) -> crate::entry::ILedgerOperatorLibraryDispatcher {
+        crate::entry::ILedgerOperatorLibraryDispatcher {
+            class_hash: crate::logic::release::classes(game_id).bridge.read(),
+        }
+    }
+
     #[starknet::embeddable]
     pub impl LedgerOperatorFixture<
         TContractState, +Drop<TContractState>,
     > of crate::entry::ILedgerOperator<TContractState> {
         fn configure_deposits(ref self: TContractState, game_id: u32, source: crate::deposits::DepositSource) {
             crate::entry::ILedgerOperatorDispatcherTrait::configure_deposits(
-                ledger_operator_dispatcher(), game_id, source,
+                ledger_operator_dispatcher(game_id), game_id, source,
             )
         }
         fn deposit_source(self: @TContractState, game_id: u32) -> Option<crate::deposits::DepositSource> {
-            crate::entry::ILedgerOperatorDispatcherTrait::deposit_source(ledger_operator_dispatcher(), game_id)
+            crate::entry::ILedgerOperatorDispatcherTrait::deposit_source(ledger_operator_dispatcher(game_id), game_id)
         }
         fn deliver_deposit(
             ref self: TContractState,
@@ -1908,51 +1914,42 @@ pub mod GamesFixture {
             cancel: bool,
         ) {
             crate::entry::ILedgerOperatorDispatcherTrait::deliver_deposit(
-                ledger_operator_dispatcher(), game_id, deposit, r, s, cancel,
+                ledger_operator_dispatcher(game_id), game_id, deposit, r, s, cancel,
             )
         }
         fn deposit_receipt(self: @TContractState, game_id: u32, id: u64) -> Option<crate::deposits::DepositReceipt> {
-            crate::entry::ILedgerOperatorDispatcherTrait::deposit_receipt(ledger_operator_dispatcher(), game_id, id)
+            crate::entry::ILedgerOperatorDispatcherTrait::deposit_receipt(
+                ledger_operator_dispatcher(game_id), game_id, id,
+            )
         }
         fn spend_lords(
             self: @TContractState, game_id: u32, account: starknet::ContractAddress,
         ) -> crate::deposits::SpendLords {
-            crate::entry::ILedgerOperatorDispatcherTrait::spend_lords(ledger_operator_dispatcher(), game_id, account)
+            crate::entry::ILedgerOperatorDispatcherTrait::spend_lords(
+                ledger_operator_dispatcher(game_id), game_id, account,
+            )
         }
         fn principal_withdrawal(
             self: @TContractState, game_id: u32, account: starknet::ContractAddress,
         ) -> Option<crate::deposits::PrincipalWithdrawal> {
             crate::entry::ILedgerOperatorDispatcherTrait::principal_withdrawal(
-                ledger_operator_dispatcher(), game_id, account,
+                ledger_operator_dispatcher(game_id), game_id, account,
             )
         }
         fn ledger_operator(self: @TContractState) -> starknet::ContractAddress {
-            crate::entry::ILedgerOperatorDispatcherTrait::ledger_operator(ledger_operator_dispatcher())
+            crate::entry::ILedgerOperatorDispatcherTrait::ledger_operator(current_ledger_operator_dispatcher())
         }
         fn set_ledger_operator(ref self: TContractState, operator: starknet::ContractAddress) {
-            crate::entry::ILedgerOperatorDispatcherTrait::set_ledger_operator(ledger_operator_dispatcher(), operator);
-        }
-        fn publish_frontier_pool(ref self: TContractState, game_id: u32, amount: u128, prize_pool: u128) {
-            crate::entry::ILedgerOperatorDispatcherTrait::publish_frontier_pool(
-                ledger_operator_dispatcher(), game_id, amount, prize_pool,
+            crate::entry::ILedgerOperatorDispatcherTrait::set_ledger_operator(
+                current_ledger_operator_dispatcher(), operator,
             );
         }
         fn frontier_prize(self: @TContractState, game_id: u32) -> crate::entry::FrontierPrize {
-            crate::entry::ILedgerOperatorDispatcherTrait::frontier_prize(ledger_operator_dispatcher(), game_id)
-        }
-        fn post_frontier_top(ref self: TContractState, game_id: u32, winners: Array<starknet::ContractAddress>) {
-            crate::entry::ILedgerOperatorDispatcherTrait::post_frontier_top(
-                ledger_operator_dispatcher(), game_id, winners,
-            )
+            crate::entry::ILedgerOperatorDispatcherTrait::frontier_prize(ledger_operator_dispatcher(game_id), game_id)
         }
         fn sweep_lords(ref self: TContractState, game_id: u32, structure_id: u64) {
             crate::entry::ILedgerOperatorDispatcherTrait::sweep_lords(
-                ledger_operator_dispatcher(), game_id, structure_id,
-            )
-        }
-        fn award_frontier_prize(ref self: TContractState, game_id: u32, rank: u16) {
-            crate::entry::ILedgerOperatorDispatcherTrait::award_frontier_prize(
-                ledger_operator_dispatcher(), game_id, rank,
+                ledger_operator_dispatcher(game_id), game_id, structure_id,
             )
         }
     }

@@ -63,6 +63,7 @@ export class ChestManager {
   private chestModel?: RewardTileModel;
   private modelLoadPromise?: Promise<void>;
   private chestTransitions?: ChestTransitions;
+  /** The reward stage's own chest, drawn over the map in the stage's pass. */
   private renderedChunk: string | null = null;
   private renderChunkSize: RenderChunkSize;
   private hexagonScene?: HexagonScene;

@@ -1,3 +1,5 @@
+import { nativeRuleConstants as rule } from "../../contracts/l3/world-native/schema/client.gen";
+import { nativeCommandBits } from "../../contracts/l3/world-native/schema/commands.gen";
 import { buildingIds, frontierPreset } from "./frontier/native";
 import { frontierDevconPreset } from "./frontier/devcon";
 import { frontierSeasonOnePreset, frontierSeasonOneDevPreset } from "./frontier/season-one";
@@ -13,7 +15,7 @@ import { ResourcesIds } from "../../packages/types/src/constants";
 import type { GameType } from "./common/types";
 
 const modes: Record<GameType, NativePreset> = {
-  frontier: frontierPreset,
+  frontier: frontierSeasonOnePreset,
   blitz: blitzPreset,
 };
 /**
@@ -29,6 +31,10 @@ const frontierAcceleratedPreset: NativePreset = {
 const frontierFixturePreset: NativePreset = {
   ...frontierPreset,
   id: FRONTIER_FIXTURE_PRESET_ID,
+  chests: null,
+  modeRules: frontierPreset.modeRules & ~rule.DISCOVER_CHESTS,
+  commandMask:
+    (frontierPreset.commandMask | BigInt(nativeCommandBits.ApplyRelic)) & ~BigInt(nativeCommandBits.OpenRelicChest),
 };
 
 /** Labor, wheat and troops a Settlement's castle stores: two full deploys of its level. A grant above it is lost. */
@@ -63,6 +69,7 @@ const frontierPlaygroundPreset: NativePreset = {
 export const nativePresets: Record<number, NativePreset> = Object.fromEntries(
   [
     ...Object.values(modes),
+    frontierPreset,
     frontierDevconPreset,
     frontierSeasonOnePreset,
     frontierSeasonOneDevPreset,
@@ -74,6 +81,11 @@ export const nativePresets: Record<number, NativePreset> = Object.fromEntries(
       throw new Error(`Native preset ${preset.id} plays ${preset.gameType}, not ${nativeGameModeOf(preset.id)}`);
     return [preset.id, preset];
   }),
+);
+
+/** Definitions supported by this release; historical paying presets remain available for decoding. */
+export const nativeReleasePresets: Record<number, NativePreset> = Object.fromEntries(
+  Object.entries(nativePresets).filter(([, preset]) => preset.chests === null),
 );
 
 export function nativePresetForId(id: number): NativePreset {

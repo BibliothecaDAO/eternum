@@ -54,7 +54,7 @@ pub trait IChangedSweep<T> {
 }
 
 #[starknet::contract]
-pub mod ChangedSweepPrizesFixture {
+pub mod ChangedSweepFixture {
     #[storage]
     struct Storage {}
 
@@ -130,7 +130,7 @@ pub fn gameplay_facts(address: starknet::ContractAddress) -> Array<felt252> {
             let state = crate::state::read();
             let mut facts = array![];
             state.games.games.read(1).serialize(ref facts);
-            crate::logic::game::rules(1).serialize(ref facts);
+            crate::commands::load_context(1, 0, 0).rules.unbox().serialize(ref facts);
             state.games.next_entity.read(1).serialize(ref facts);
             for explorer_id in array![7, 8] {
                 crate::logic::troops::explorer(ExplorerKey { game_id: 1, explorer_id }).serialize(ref facts);

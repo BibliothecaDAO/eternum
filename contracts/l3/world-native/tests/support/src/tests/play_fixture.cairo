@@ -234,7 +234,7 @@ pub fn reserve_fixture_homes(games: ContractAddress, game_id: u32, owner: Contra
 }
 pub fn prepare_fixture_home(game_id: u32, owner: ContractAddress) {
     let state = crate::state::write();
-    let rules = crate::logic::game::rules(game_id);
+    let rules = crate::commands::load_context(game_id, 0, 0).rules.unbox();
     if rules.entry_rule == crate::rules::ENTRY_OPEN && rules.day_unit_seconds != 0 {
         if state.games.open_homes.read((game_id, owner)) == 0 {
             let first = crate::logic::game::allocate_setup_entity(game_id);

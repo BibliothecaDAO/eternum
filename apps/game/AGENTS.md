@@ -118,6 +118,7 @@ Resolve conflicts in YOUR files only If conflict is in a file you didn't modify,
 | Playing lab scenarios seed discovery facts before an action and preserve native payout units.                                                  | `src/lab/game/ruin-fight-scenario.test.ts` checks the discovered relic, clear receipt, unchanged LORDS and awarded army slot.                           |
 | Ruin availability and daily-limit copy use the preset entitlement and pinned release through `ruinLimit`.                                      | `packages/core/src/utils/ruins.test.ts` exercises actual presets and two relic clears across reconnect; the ruin browser step rejects daily-limit copy. |
 
+
 `pnpm --dir apps/game playtest --port <your port>` builds the client as players get it (`vite build` into its own
 `.context/playtest-builds/<run>` directory), serves it with `vite preview` on that port, plays the newest live game of
 its steps' mode (Frontier by default) in a browser on the machine's GPU (Vulkan; headless Chrome would otherwise render
@@ -269,10 +270,10 @@ keyboard; run it at each device's size with `--viewport`), `--steps lab-ruin-fig
 the owner's army beside the ruin before its fight: the army picked from the HUD must bring the camera onto it; then, on
 a phone with the ruin first panned under where its card opens, the ruin's card opened from the map (a right-click, a
 tap) and **Attack** pressed must leave the camera where it was, the chain's BattleGuard answered, the ruin gone, the
-army at 4,011 and the ruin's chest shown; then the Feed, opened from its place, must tell the attack and the clear it
-won as one row, the clear's; play it at `--viewport 390x844` too), `--steps lab-hover-zoom` (the army after its fight,
-with nothing selected and the dev overlays on, at each wheel step from the closest zoom to the farthest: each army's
-token must stand over its own model, and the pointer on its model at its feet, middle and top must open its plate;
+army at 4,011 and no cash chest; then the Feed, opened from its place, must tell the attack and the clear it won as one
+row, the clear's; play it at `--viewport 390x844` too), `--steps lab-hover-zoom` (the army after its fight, with nothing
+selected and the dev overlays on, at each wheel step from the closest zoom to the farthest: each army's token must stand
+over its own model, and the pointer on its model at its feet, middle and top must open its plate;
 `--steps lab-hover-zoom-pair` the same with the realm's two armies side by side, the merge game's),
 `--steps lab-high-ground` (`/lab/game?scenario=high-ground`, the spire's game on snow, bare rock and tundra, with the
 dev overlays on: the army picked, every tile it is lit on must lie above the highest ground under it),

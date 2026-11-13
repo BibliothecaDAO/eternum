@@ -8,7 +8,7 @@ fn current_blitz_launch_readers_match_herald_projection() {
 
 #[test]
 fn current_frontier_launch_readers_match_herald_projection() {
-    compare_current_launch("frontier-s1");
+    compare_current_launch("season-one");
 }
 
 #[test]
@@ -25,7 +25,7 @@ fn current_frontier_check_launch_starts_unfunded_and_matches_herald_projection()
 fn current_frontier_rejects_a_reintroduced_supply_pool() {
     let d = super::registrar::setup();
     start_cheat_caller_address(d.games, super::authority());
-    let mut registration = read_txt(@FileTrait::new("../fixtures/current-presets/frontier-register.txt")).span();
+    let mut registration = read_txt(@FileTrait::new("../fixtures/current-presets/frontier-check-register.txt")).span();
     let preset_id: u32 = Serde::deserialize(ref registration).unwrap();
     let mut definition: crate::presets::PresetDefinition = Serde::deserialize(ref registration).unwrap();
     assert!(registration.is_empty());
@@ -77,7 +77,7 @@ fn current_frontier_requires_complete_progression_rules() {
 
 #[test]
 #[feature("safe_dispatcher")]
-fn current_frontier_requires_discovery_and_chest_rules_and_refuses_sequential_odds() {
+fn current_frontier_requires_discovery_rejects_cash_rules_and_refuses_sequential_odds() {
     let d = super::registrar::setup();
     start_cheat_caller_address(d.games, super::authority());
     for invalid in 0_u8..3 {
@@ -85,7 +85,8 @@ fn current_frontier_requires_discovery_and_chest_rules_and_refuses_sequential_od
         if invalid == 0 {
             definition.economy.discovery = None;
         } else if invalid == 1 {
-            definition.economy.chests = None;
+            let (_, historical) = current_definition("frontier");
+            definition.economy.chests = historical.economy.chests;
         } else {
             definition.rules.map_config.camp_win_probability = 4;
         }

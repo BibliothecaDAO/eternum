@@ -94,7 +94,7 @@ export const useSelectedTarget = (): AttackTarget | null => {
 const standingSite = (store: NativeFactStore, tile: TileSpatialRenderable): AttackTarget | null => {
   const key = { game_id: configManager.getActiveGameId(), entity_id: tile.occupierId };
   const site = store.get("ExpeditionSite", key);
-  if (!site || site.clear || ruinDisappeared(store, site)) return null;
+  if (!site || site.clear || ruinDisappeared(store, site) !== false) return null;
   return { kind: "site", site, structure: store.require("Structure", key), tile };
 };
 
@@ -156,8 +156,11 @@ export const TileCard = ({
     const signer = account.account;
     let sent = false;
     try {
-      if (selected.kind === "site" && ruinDisappeared(setup.store, selected.site))
-        throw new Error("This ruin has disappeared.");
+      if (selected.kind === "site") {
+        const disappeared = ruinDisappeared(setup.store, selected.site);
+        if (disappeared === undefined) throw new Error("The ruin's rules are still loading.");
+        if (disappeared) throw new Error("This ruin has disappeared.");
+      }
       if (readTarget(setup.store, selected, attack).chest?.funded === false)
         throw new Error("Today's LORDS budget cannot fund this ruin.");
       // The relic slot read from the facts as Attack goes: a choice the slot no longer bears, or relics not yet known,
@@ -195,7 +198,6 @@ export const TileCard = ({
           });
 
   const limit = ruinLimit(facts.store, configManager.getActiveGameId());
-
   return (
     <SiteCardView
       receipt={receipt}

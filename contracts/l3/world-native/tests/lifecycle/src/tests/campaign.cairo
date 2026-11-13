@@ -38,7 +38,7 @@ fn found_at(d: Deployment, game_id: u32, timestamp: u64) -> LaborHome {
 
 #[feature("safe_dispatcher")]
 fn campaign_home(preset: ByteArray, tier: u8) -> (Deployment, LaborHome) {
-    let (d, game_id) = super::registrar::setup_open_frontier_preset(preset, 2);
+    let (d, game_id) = super::registrar::setup_labor_home_game(preset, 2);
     set_operator(d, authority());
     register(d, game_id, ticket(tier));
     let home = found(d, game_id);
@@ -91,9 +91,7 @@ fn claims_each_game_day(tier: u8, expected_amount: u128, expected_essence: u128)
     let game = crate::game::IGameDispatcherTrait::game(
         crate::game::IGameDispatcher { contract_address: d.games }, home.game_id,
     );
-    let (_, mut preset) = super::preset_projection::current_definition("devcon");
-    preset.economy.chests = None;
-    preset.rules.mode_rules = preset.rules.mode_rules & (0xffffffff - crate::rules::DISCOVER_CHESTS);
+    let preset = super::registrar::labor_home_definition("devcon");
     let unit = preset.rules.day_unit_seconds;
     assert_eq!(unit, 7200);
     assert_eq!(crate::days::day_of(game, unit, game.end_at - 1).index + 1, 10);
@@ -148,7 +146,7 @@ fn a_golden_campaign_home_claims_labor_and_essence_once_together() {
 #[test]
 #[feature("safe_dispatcher")]
 fn campaign_homes_share_the_campaign_but_never_a_canonical_claim() {
-    let (d, game_id) = super::registrar::setup_open_frontier_preset("devcon", 3);
+    let (d, game_id) = super::registrar::setup_labor_home_game("devcon", 3);
     let other = super::bind_authority(d);
     set_operator(d, authority());
     register(d, game_id, ticket(crate::settlement::CAMPAIGN_NORMAL));
@@ -182,7 +180,7 @@ fn campaign_homes_share_the_campaign_but_never_a_canonical_claim() {
 
 #[feature("safe_dispatcher")]
 fn refuses_a_second_source(held_first: bool) {
-    let (d, game_id) = super::registrar::setup_open_frontier_preset("devcon", 3);
+    let (d, game_id) = super::registrar::setup_labor_home_game("devcon", 3);
     set_operator(d, authority());
     let held = EntryEntitlement { realm_id: 711, metadata_1: 0, metadata_2: 0, metadata_3: 0, pass_kind: 2 };
     let campaign = ticket(crate::settlement::CAMPAIGN_GOLDEN);
@@ -241,7 +239,7 @@ fn an_interrupted_campaign_entry_cannot_switch_to_an_nft_and_can_resume() {
 #[test]
 #[feature("safe_dispatcher")]
 fn campaign_tier_and_id_are_fixed_and_malformed_tickets_do_not_lock_entry() {
-    let (d, game_id) = super::registrar::setup_open_frontier_preset("devcon", 3);
+    let (d, game_id) = super::registrar::setup_labor_home_game("devcon", 3);
     set_operator(d, authority());
     let key = EntryKey { game_id, owner: d.actor };
     let normal = ticket(crate::settlement::CAMPAIGN_NORMAL);
@@ -371,7 +369,7 @@ fn campaign_entries_refuse_games_without_open_frontier_homes() {
 #[feature("safe_dispatcher")]
 fn partial_seasons_grant_once_per_actual_day_and_stop_at_the_end() {
     for hours in array![81_u64, 84, 85] {
-        let (d, game_id) = super::registrar::setup_open_frontier_duration("devcon", hours * 3600);
+        let (d, game_id) = super::registrar::setup_labor_home_duration("devcon", hours * 3600);
         set_operator(d, authority());
         register(d, game_id, ticket(crate::settlement::CAMPAIGN_NORMAL));
         let home = found(d, game_id);
@@ -402,13 +400,13 @@ fn partial_seasons_grant_once_per_actual_day_and_stop_at_the_end() {
 #[test]
 #[should_panic(expected: "season does not end on a tick")]
 fn a_partial_season_still_requires_an_aligned_end() {
-    super::registrar::setup_open_frontier_duration("devcon", 85 * 3600 + 1);
+    super::registrar::setup_labor_home_duration("devcon", 85 * 3600 + 1);
 }
 
 #[test]
 #[feature("safe_dispatcher")]
 fn a_late_held_realm_keeps_the_home_and_grants_only_today_without_essence() {
-    let (d, game_id) = super::registrar::setup_open_frontier_preset("devcon", 3);
+    let (d, game_id) = super::registrar::setup_labor_home_game("devcon", 3);
     let other = super::bind_authority(d);
     set_operator(d, authority());
     let game = crate::game::IGameDispatcherTrait::game(
@@ -452,7 +450,7 @@ fn a_late_held_realm_keeps_the_home_and_grants_only_today_without_essence() {
 #[feature("safe_dispatcher")]
 fn flyer_recovery_grants_missed_days_once_and_leaves_today_to_the_normal_claim() {
     for (tier, amount) in array![(1_u8, 1000_u128), (2_u8, 2000_u128)] {
-        let (d, game_id) = super::registrar::setup_open_frontier_preset("devcon", 3);
+        let (d, game_id) = super::registrar::setup_labor_home_game("devcon", 3);
         set_operator(d, authority());
         let game = crate::game::IGameDispatcherTrait::game(
             crate::game::IGameDispatcher { contract_address: d.games }, game_id,
@@ -487,7 +485,7 @@ fn flyer_recovery_grants_missed_days_once_and_leaves_today_to_the_normal_claim()
 #[test]
 #[feature("safe_dispatcher")]
 fn recovery_resumes_a_drawn_ticket_without_repaying_claimed_days_and_obeys_storage_limits() {
-    let (d, game_id) = super::registrar::setup_open_frontier_preset("devcon", 3);
+    let (d, game_id) = super::registrar::setup_labor_home_game("devcon", 3);
     set_operator(d, authority());
     let home = found(d, game_id);
     register(d, game_id, ticket(2));
@@ -513,7 +511,7 @@ fn recovery_resumes_a_drawn_ticket_without_repaying_claimed_days_and_obeys_stora
 #[test]
 #[feature("safe_dispatcher")]
 fn recovery_requires_a_founded_devcon_home_and_pays_nothing_for_today() {
-    let (d, game_id) = super::registrar::setup_open_frontier_preset("devcon", 3);
+    let (d, game_id) = super::registrar::setup_labor_home_game("devcon", 3);
     set_operator(d, authority());
     start_cheat_caller_address(d.games, authority());
     let key = EntryKey { game_id, owner: d.actor };
@@ -533,7 +531,7 @@ fn recovery_requires_a_founded_devcon_home_and_pays_nothing_for_today() {
 #[test]
 #[feature("safe_dispatcher")]
 fn an_ordinary_late_ticket_does_not_compensate_previous_days() {
-    let (d, game_id) = super::registrar::setup_open_frontier_preset("devcon", 3);
+    let (d, game_id) = super::registrar::setup_labor_home_game("devcon", 3);
     set_operator(d, authority());
     let home = found(d, game_id);
     let game = crate::game::IGameDispatcherTrait::game(
@@ -644,7 +642,7 @@ fn golden_upgrade_changes_an_unclaimed_day_without_recovering_missed_days() {
 #[test]
 #[feature("safe_dispatcher")]
 fn separate_regular_homes_can_both_upgrade_to_golden_and_claim_the_unpaid_day() {
-    let (d, game_id) = super::registrar::setup_open_frontier_preset("devcon", 3);
+    let (d, game_id) = super::registrar::setup_labor_home_game("devcon", 3);
     let other = super::bind_authority(d);
     set_operator(d, authority());
     for player in array![d, other] {
@@ -665,7 +663,7 @@ fn separate_regular_homes_can_both_upgrade_to_golden_and_claim_the_unpaid_day() 
 #[feature("safe_dispatcher")]
 fn golden_upgrade_refuses_unfounded_free_held_wrong_campaign_and_closed_homes() {
     for case in 0_u8..9 {
-        let (d, game_id) = super::registrar::setup_open_frontier_preset("devcon", 3);
+        let (d, game_id) = super::registrar::setup_labor_home_game("devcon", 3);
         set_operator(d, authority());
         let entry = EntryKey { game_id, owner: d.actor };
         start_cheat_caller_address(d.games, authority());

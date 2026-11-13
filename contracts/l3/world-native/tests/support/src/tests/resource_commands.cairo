@@ -287,7 +287,9 @@ pub fn assert_terminal_rejection(deployment: Deployment, command: Command, times
         play_fixture::assert_preflight_rejection(deployment.games, action, timestamp);
         return;
     };
-    let rules = snforge_std::interact_with_state(deployment.games, || crate::logic::game::rules(3));
+    let rules = snforge_std::interact_with_state(
+        deployment.games, || crate::commands::load_context(3, 0, 0).rules.unbox(),
+    );
     if !crate::rules::command_enabled(rules.command_mask, index.into()) {
         play_fixture::assert_preflight_rejection(deployment.games, action, timestamp);
         return;

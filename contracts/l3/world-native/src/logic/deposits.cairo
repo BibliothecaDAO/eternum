@@ -1,5 +1,5 @@
 use starknet::ContractAddress;
-use starknet::storage::{StorageMapReadAccess, StorageMapWriteAccess, StoragePointerReadAccess};
+use starknet::storage::{StorageMapReadAccess, StorageMapWriteAccess, StoragePathEntry, StoragePointerReadAccess};
 use crate::deposits::{DepositReceipt, DepositSource, LordsDeposit, PrincipalWithdrawal, SpendLords};
 
 pub fn source(game_id: u32) -> Option<DepositSource> {
@@ -21,9 +21,14 @@ pub fn configure(game_id: u32, value: DepositSource) {
         assert!(value.epoch >= previous.epoch, "deposit signer epoch regressed");
         assert!(value.epoch != previous.epoch || value.signer == previous.signer, "deposit signer epoch reused");
     }
-    let preset = crate::logic::preset_record::for_game(game_id);
-    assert!(preset.rules.day_unit_seconds.read() != 0, "deposits require Frontier");
-    assert!(preset.rollover_chest_rules.read().is_some(), "game has no LORDS balance");
+    crate::logic::game::game(game_id);
+    assert!(
+        crate::logic::preset_record::for_game(game_id).rules.day_unit_seconds.read() != 0, "deposits require Frontier",
+    );
+    assert!(
+        crate::logic::preset_record::for_game(game_id).rollover_chest_rules.read().is_some(),
+        "game has no LORDS balance",
+    );
     crate::state::write()
         .entry
         .deposit_sources
@@ -107,7 +112,9 @@ pub fn sweep(game_id: u32, account: ContractAddress) {
     if value.available == 0 {
         return;
     }
-    assert!(starknet::get_block_timestamp() >= crate::logic::game::game(game_id).end_at, "season has not ended");
+    let game = crate::state::read().games.games.entry(game_id);
+    assert!(game.preset_id.read() != 0, "game does not exist");
+    assert!(starknet::get_block_timestamp() >= game.end_at.read(), "season has not ended");
     assert!(withdrawal(game_id, account).is_none(), "principal already swept");
     let amount = value.available;
     value.available = 0;
@@ -115,18 +122,6 @@ pub fn sweep(game_id: u32, account: ContractAddress) {
     write_balance(game_id, account, value);
     crate::state::write().entry.principal_withdrawals.write((game_id, account), Some(amount));
     emit('PrincipalWithdrawal', array![game_id.into(), account.into()], array![amount.into()]);
-}
-
-/// Purchased LORDS pay first. The caller charges only the remainder to earned resources and the reward budget.
-pub fn spend(game_id: u32, account: ContractAddress, amount: u128) -> u128 {
-    let mut value = balance(game_id, account);
-    let purchased = core::cmp::min(value.available, amount);
-    if purchased != 0 {
-        value.available -= purchased;
-        value.consumed += purchased;
-        write_balance(game_id, account, value);
-    }
-    amount - purchased
 }
 
 fn write_balance(game_id: u32, account: ContractAddress, value: SpendLords) {

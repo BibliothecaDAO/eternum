@@ -58,7 +58,7 @@ pub mod RegistryLogic {
             crate::logic::game::game(game_id)
         }
         fn rules(self: @ContractState, game_id: u32) -> SliceRules {
-            crate::logic::game::rules(game_id)
+            crate::commands::load_context(game_id, 0, 0).rules.unbox()
         }
     }
 

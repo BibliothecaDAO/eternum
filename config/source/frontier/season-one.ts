@@ -1,3 +1,8 @@
+import {
+  nativeResearchConstants as research,
+  nativeRuleConstants as rules,
+} from "../../../contracts/l3/world-native/schema/client.gen";
+import { nativeCommandBits } from "../../../contracts/l3/world-native/schema/commands.gen";
 import { DAYS_PER_BAG, DAY_UNITS_PER_BAG } from "../../../packages/core/src/utils/days";
 import { ResourcesIds, orders, dailyQuests } from "../../../packages/types/src/constants";
 import type { NativePreset } from "../common/native-preset";
@@ -76,11 +81,7 @@ export const frontierSeasonOnePreset: NativePreset & {
       BigInt(nativeCommandBits.Battle) |
       BigInt(nativeCommandBits.ApplyRelic) |
       BigInt(nativeCommandBits.ClaimDailyQuest)) &
-    ~(
-      BigInt(nativeCommandBits.OpenRelicChest) |
-      BigInt(nativeCommandBits.RefillStamina) |
-      BigInt(nativeCommandBits.WithdrawLords)
-    ),
+    ~BigInt(nativeCommandBits.OpenRelicChest),
   depths: frontierPreset.depths.map((depth, index) =>
     index === 1 ? { ...depth, chest: { common: 0, uncommon: 5_000, rare: 2_800, epic: 1_500, legendary: 700 } } : depth,
   ),

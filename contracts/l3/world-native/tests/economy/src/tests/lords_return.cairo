@@ -1,4 +1,4 @@
-use starknet::storage::StorageMapReadAccess;
+use starknet::storage::{StorageMapReadAccess, StorageMapWriteAccess};
 use crate::entry::{ILedgerOperatorSafeDispatcher, ILedgerOperatorSafeDispatcherTrait};
 use crate::resources::{IResourceOperationsDispatcher, IResourceOperationsDispatcherTrait, ResourceKey};
 

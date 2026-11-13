@@ -2,7 +2,7 @@
 import { listedFrontierGame } from "./directory-game";
 import { observeHarnessWorker, sendPreparedReport, superviseHarnessProcess } from "./terminal-report";
 import { runFrontierWorkload, type FrontierBurst } from "./frontier";
-import { FRONTIER_ACCELERATED_PRESET_ID } from "../../../config/source/common/native-preset-modes";
+import { FRONTIER_FIXTURE_PRESET_ID } from "../../../config/source/common/native-preset-modes";
 import { catchUncaughtFailures, recordWorkerFailure } from "./worker-boundary";
 import { nativePresetForId, nativePresetIdFor } from "../../../config/source/native";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
@@ -634,7 +634,7 @@ async function waitForWorkloadStart(): Promise<void> {
 
 /** A Frontier design run plays the accelerated fixture preset; every other run plays its mode's own. */
 function defaultPresetFor(gameType: HarnessGameType, functional: boolean): number {
-  return gameType === "frontier" && functional ? FRONTIER_ACCELERATED_PRESET_ID : nativePresetIdFor(gameType);
+  return gameType === "frontier" && functional ? FRONTIER_FIXTURE_PRESET_ID : nativePresetIdFor(gameType);
 }
 
 /** A shard endpoint has no default: a lab port that answers for the wrong shard is worse than a loud stop. */

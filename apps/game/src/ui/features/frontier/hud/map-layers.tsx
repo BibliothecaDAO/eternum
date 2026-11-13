@@ -150,7 +150,6 @@ const CHEST_MODELS = [
   "ExpeditionDiscovery",
   "RealmKnowledge",
   "GameRelease",
-  "SliceRules",
   "ChestRules",
   ...SCOPE_INPUT_MODELS,
 ] as const;

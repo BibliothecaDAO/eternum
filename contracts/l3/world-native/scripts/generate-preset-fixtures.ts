@@ -1,16 +1,17 @@
+import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { shortString } from "starknet";
+import { toJsonValue } from "../../../../apps/herald/src/model-registry";
+import { currentPresetFixture, serializePresetRows } from "../../../../apps/herald/src/native/current-preset-fixture";
 import { schema as compiledSchema } from "../../../../apps/herald/src/native/fixtures";
 import { schemaIdentity, type NativeMember, type NativeSchema } from "../../../../apps/herald/src/native/schema";
-import { defineFactModels, factWireTypes } from "../schema/fact-models.mjs";
-import { toJsonValue } from "../../../../apps/herald/src/model-registry";
-import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { encodeMembers } from "../../../../apps/herald/src/native/serde";
-import { currentPresetFixture, serializePresetRows } from "../../../../apps/herald/src/native/current-preset-fixture";
 import {
+  FRONTIER_ACCELERATED_PRESET_ID,
   FRONTIER_FIXTURE_PRESET_ID,
   FRONTIER_S1_PRESET_ID,
   FRONTIER_S1_DEV_PRESET_ID,
 } from "../../../../config/source/common/native-preset-modes";
+import { defineFactModels, factWireTypes } from "../schema/fact-models.mjs";
 
 const schema = presetFixtureSchema();
 
@@ -23,13 +24,14 @@ for (const [name, id] of [
   ["devcon", 6],
   ["season-one", FRONTIER_S1_PRESET_ID],
   ["season-one-dev", FRONTIER_S1_DEV_PRESET_ID],
+  ["accelerated", FRONTIER_ACCELERATED_PRESET_ID],
   ["frontier-check", FRONTIER_FIXTURE_PRESET_ID],
 ] as const) {
   const fixture = await currentPresetFixture(id, schema);
   write(`${name}-register.txt`, fixture.registration);
   write(`${name}-create.txt`, fixture.creation);
   write(`${name}-rows.txt`, serializePresetRows(fixture.rows, schema));
-  if (id === 5) {
+  if (id === FRONTIER_FIXTURE_PRESET_ID) {
     writeFileSync(new URL("../frontier-command-mask.txt", directory), `${fixture.definition.rules.command_mask}\n`);
   }
 }

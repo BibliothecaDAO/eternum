@@ -1068,7 +1068,7 @@ describe("lab-hud-devices", () => {
   });
 });
 
-it("the relic ruin proof refuses either historical daily rule", () => {
+it("the relic ruin fight proof refuses either historical cash entitlement", () => {
   const verify = STEP_SETS["lab-ruin-fight"].steps.find((step) => step.name === "open-the-fight").verify;
   const camera = { col: 1, row: 2 };
   const before = { ruinToken: [0, 180], camera };
