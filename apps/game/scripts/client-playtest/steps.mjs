@@ -344,6 +344,54 @@ async function enterEtherealIIFromItsCard({ browser }) {
  * Attack (a desktop's right-click, a phone's two taps), then the card's Attack; the result is the army's token showing
  * exactly the troops the chain left it.
  */
+const RELIC_FORECAST_STEPS = [
+  { name: "enter-on-map", settleMs: 3_000, verify: inScene("map") },
+  {
+    name: "activate-relics-and-read-forecast",
+    settleMs: 0,
+    play: async (context) => {
+      const { browser, extraScreenshot } = context;
+      await pickTheSpireArmy({ browser });
+      const before = await openTheRuinsCardUntil(showsBothSides)({ ...context, extraScreenshot: (name) => extraScreenshot(`before-${name}`) });
+      const beforeText = browser.read(`JSON.stringify(document.querySelector('[data-kit-sheet]')?.textContent ?? '')`);
+      browser.press("Escape");
+      await openTheArmyPanel(browser);
+      for (const [index, name] of ["Uncommon Blade", "Common Tome"].entries()) {
+        browser.run(["find", "role", "button", "click", "--name", `Switch on ${name}`]);
+        await readUntil(
+          () => browser.read(`window.__labChain?.sent.filter(row => row.command.kind === 'ApplyRelic').length ?? 0`),
+          (count) => count === index + 1,
+          MERGE_WAIT_MS,
+        );
+        await readUntil(
+          () => browser.read(`Boolean(document.querySelector('[data-army-relics] button[disabled]'))`),
+          (disabled) => !disabled,
+          MERGE_WAIT_MS,
+        );
+      }
+      browser.press("Escape");
+      const after = await openTheRuinsCardUntil(showsBothSides)({ ...context, extraScreenshot: (name) => extraScreenshot(`after-${name}`) });
+      return {
+        before: before.after,
+        after: after.after,
+        beforeText,
+        afterText: browser.read(`JSON.stringify(document.querySelector('[data-kit-sheet]')?.textContent ?? '')`),
+        sent: browser.read(`window.__labChain?.sent.filter(row => row.command.kind === 'ApplyRelic') ?? []`),
+      };
+    },
+    verify: ({ played }) => {
+      const effects = played.sent.flatMap(row => row.answered ?? []).filter(row => row.model === "ArmyRelicEffect").map(row => row.value);
+      return played.before.sides.length === 2 && played.after.sides.length === 2 &&
+        JSON.stringify(played.before.sides) !== JSON.stringify(played.after.sides) &&
+        /136\s*XP/.test(played.beforeText) && /190\s*XP/.test(played.afterText) &&
+        effects.some(effect => effect.kind === "Blade" && effect.rank === 2) &&
+        effects.some(effect => effect.kind === "Tome" && effect.rank === 1)
+        ? completed(played)
+        : failed("switching on Blade and Tome must change the fight and the ruin's XP from 136 to 190", played);
+    },
+  },
+];
+
 const FIGHT_ACTION_STEPS = [
   { name: "enter-on-map", settleMs: 3_000, verify: inScene("map") },
   { name: "select-army", play: selectTheReadiestArmy, settleMs: 1_500, verify: armySelected },
@@ -4706,6 +4754,7 @@ export const STEP_SETS = {
   "lab-actions-research": { game: labSpireGame("research"), steps: RESEARCH_ACTION_STEPS },
   "lab-actions-claim": { game: labSpireGame("claim"), steps: CLAIM_ACTION_STEPS },
   "lab-far-place": { game: labSpireGame("far-place"), steps: FAR_PLACE_STEPS, devOverlays: true },
+  "lab-relic-forecasts": { game: labSpireGame("relics"), steps: RELIC_FORECAST_STEPS },
   "lab-no-lords": {
     game: labSpireGame("upkeep"),
     steps: [

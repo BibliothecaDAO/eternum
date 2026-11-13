@@ -1296,3 +1296,6 @@ verifies routing and appearance; it is not a performance benchmark.
 fixture, starts three knight recipe cycles, then sends fifty wheat through Transfer and reads its Arrivals tab. The
 transcript keeps the submitted commands, the balance and production replies, and the visible result; each step also
 leaves a screenshot. `/lab/game?scenario=economy` opens the same two owned realms for manual reproduction.
+
+
+Relic forecast acceptance: `pnpm playtest --steps lab-relic-forecasts` starts `/lab/game?scenario=relics`, opens the ruin card, switches on Blade and Tome from the army panel, then checks the changed fight and XP. The shared readers also cover Ward, Plunder, expiry and incomplete snapshots in the site-card regressions.
