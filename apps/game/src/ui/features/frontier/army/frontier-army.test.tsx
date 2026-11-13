@@ -58,7 +58,9 @@ vi.mock("@/hooks/context/game-context", () => ({
             ? game.progress
             : model === "RealmKnowledge"
               ? { learned: game.learned }
-              : game.rules,
+              : model === "ArmyProgressionRules"
+                ? game.rules
+                : undefined,
       },
       systemCalls: { spend_skill_point: game.spendPoint },
     },
@@ -67,6 +69,10 @@ vi.mock("@/hooks/context/game-context", () => ({
 }));
 vi.mock("@/sync/action-outcome", () => ({ untilApplied: async (sent: Promise<unknown>) => (await sent, "0x7") }));
 vi.mock("@/hooks/helpers/use-native-facts", () => ({ useNativeRevision: () => 0 }));
+vi.mock("@/hooks/helpers/use-block-timestamp", async (original) => ({
+  ...(await original<typeof import("@/hooks/helpers/use-block-timestamp")>()),
+  useCurrentBlockTimestamp: () => 350,
+}));
 vi.mock("@/hooks/helpers/use-navigate", () => ({ useSelectArmyOnMap: () => game.select }));
 vi.mock("@/hooks/store/use-account-store", () => ({
   useAccountStore: (pick: (state: unknown) => unknown) => pick({ account: { address: "0x111" } }),
@@ -263,15 +269,16 @@ it.each([
   [1500, "1,575"],
   [1575, "1,700"],
   [3000, "3,075"],
-])("shows the real next-point readout at %s XP, including in Level up", (xp, next) => {
+])("rings the portrait with the real way to the next point at %s XP, and writes no XP number", (xp, next) => {
   game.progress.xp = xp;
   game.progress.common_points = Number(xp >= game.rules.common_xp);
   useUIStore.setState((state) => ({ entityActions: { ...state.entityActions, selectedEntityId: 12 } }));
   act(() => root.render(<FrontierArmy realm={{ game_id: 1 } as never} choosing={false} onClose={vi.fn()} />));
   const readout = `${xp.toLocaleString("en-US")} / ${next} XP`;
-  expect(host.textContent).toContain(readout);
+  expect(host.querySelector(`[data-tip^="XP ${xp.toLocaleString("en-US")} of ${next} · next"]`)).not.toBeNull();
+  expect(host.textContent).not.toContain(readout);
   act(() => button(/Level[ -]up/)!.click());
-  expect(host.textContent).toContain(readout);
+  expect(host.textContent).not.toContain(readout);
 });
 
 it.each(["Knight", "Crossbowman"])("offers only eligible point uses for %s and submits Battle", async (category) => {

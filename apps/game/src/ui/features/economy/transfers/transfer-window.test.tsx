@@ -88,7 +88,7 @@ vi.mock("@/config/game-modes/use-game-mode-config", () => ({
   }),
 }));
 /** The window's other views, each its tab's panel. */
-vi.mock("@/ui/features/economy/trading", () => ({ ResourceArrivals: () => <p>Arrivals list</p> }));
+vi.mock("./resource-arrivals", () => ({ AllResourceArrivals: () => <p>Arrivals list</p> }));
 vi.mock("@/ui/features/economy/transfers/transfer-automation-modal", () => ({
   TransferAutomationAdvancedModal: () => <p>Automation list</p>,
 }));

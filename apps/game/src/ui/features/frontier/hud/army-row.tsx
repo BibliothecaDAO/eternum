@@ -1,7 +1,7 @@
-import { formatAmount } from "@bibliothecadao/types";
 import { Icon as SemanticIcon, type IconMeaning } from "@/ui/design-system/icon";
 import { HudPanel, HudPortrait, HudRow, rankedTip } from "@/ui/design-system/kit/hud-elements";
-import { ARMIES, TROOPS, troopCount, UPGRADE, XP } from "@/ui/design-system/kit/words";
+import { XpRing } from "@/ui/design-system/kit/xp-ring";
+import { ARMIES, TROOPS, troopCount, UPGRADE } from "@/ui/design-system/kit/words";
 import type { StaminaBar } from "@/ui/design-system/kit/hud-elements";
 import type { ReactNode } from "react";
 
@@ -53,6 +53,7 @@ export const ArmyRow = ({
     lead={
       <span data-fly-target={flyTarget} className="relative shrink-0">
         {art ? <HudPortrait icon={art} label={TROOPS} /> : <HudPortrait initial={String(number ?? "")} label={label} />}
+        <RowXp xp={xp} goal={xpGoal} />
         {number !== undefined && (
           <span className="absolute -left-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full border border-hud-line-strong bg-hud-dark px-1 text-hud-strong leading-none text-hud-ink tabular-nums">
             {number}
@@ -62,7 +63,7 @@ export const ArmyRow = ({
       </span>
     }
     label={label}
-    title={<RowLine words={label} figure={<RowXp xp={xp} goal={xpGoal} />} />}
+    title={label}
     // The troops line is figures throughout, set as the HUD sets figures.
     detail={
       <span className="flex flex-col gap-1 tabular-nums">
@@ -134,11 +135,11 @@ const RowStamina = ({ stamina }: { stamina: StaminaBar | undefined }) => (
 );
 
 /** A list row's trail, the same place on every row whether it holds the card fan or nothing. */
-/** The army's XP beside its name, once the HUD shows XP (the first fight won). */
+/** The army's way to its next skill point, a ring around its portrait, once the HUD shows XP (the first fight won). */
 const RowXp = ({ xp, goal }: { xp: number | undefined; goal: XpGoal | undefined }) =>
-  useOpens("army-xp") ? (
-    <span {...rankedTip(xpLine(xp, goal))} className="text-hud-gold">
-      {`${formatAmount(xp)} ${XP}`}
+  useOpens("army-xp") && goal ? (
+    <span className="absolute inset-0" {...rankedTip(xpLine(xp, goal))}>
+      <XpRing share={goal.share} />
     </span>
   ) : null;
 

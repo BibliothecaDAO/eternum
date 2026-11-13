@@ -268,37 +268,42 @@ picked, its panel, a site's card, Chat and the Menu, each read by hit-testing a 
 canvas is the first thing a press reaches and which HUD part takes each other point, with the share above a phone's
 keyboard; run it at each device's size with `--viewport`), `--steps lab-ruin-fight` (`/lab/game?scenario=ruin-fight`,
 the owner's army beside the ruin before its fight: the army picked from the HUD must bring the camera onto it; then, on
-a phone with the ruin first panned under where its card opens, the ruin's card opened from the map (a right-click, a
-tap) and **Attack** pressed must leave the camera where it was, the chain's BattleGuard answered, the ruin gone, the
-army at 4,011 and no cash chest; then the Feed, opened from its place, must tell the attack and the clear it won as one
-row, the clear's; play it at `--viewport 390x844` too), `--steps lab-hover-zoom` (the army after its fight, with nothing
-selected and the dev overlays on, at each wheel step from the closest zoom to the farthest: each army's token must stand
-over its own model, and the pointer on its model at its feet, middle and top must open its plate;
-`--steps lab-hover-zoom-pair` the same with the realm's two armies side by side, the merge game's),
-`--steps lab-high-ground` (`/lab/game?scenario=high-ground`, the spire's game on snow, bare rock and tundra, with the
-dev overlays on: the army picked, every tile it is lit on must lie above the highest ground under it),
-`--steps lab-day-turn`, `--steps lab-day-later`, `--steps lab-day-turn-slow` and `--steps lab-day-later-short` (the same
-game on Frontier's day 2 ending, `/lab/game?scenario=day-turn` in the session or `scenario=day-later` before it opened,
-over prod's recorded history of that day, the map opened where the realm stood on day 2: the summary's totals must be
-the recorded player's own day 2 (slow: history answers only after the moment went on, and the summary opens then; short:
-a page of stories late in day 2 leaves its start unread, and the card shows dashes and says why), and Continue must
-bring the camera onto the realm's day-3 site), `--steps lab-day-later-quiet` and `--steps lab-day-later-played-on` (day
-2 not played, or the player already played on in day 3 on another device: no summary, and the day's end still brings the
-camera onto the day-3 site), `--steps lab-season-opens` (a player in the season 30 s before its first day, their realm
-founded but on no site yet: the map must draw with no error, then day 1's turn must play, with no summary, and leave the
-camera on the realm's first site), `--steps lab-day-turn-asleep` (the owner's phone, at `--viewport 390x844`: a minute
-before day 2 ends the tab's window is minimized and the page frozen, its WebGL context lost and Herald's stream silent
-with its socket open, then brought back past the end; on WebGL the page must boot again and the map draw, its middle
-band no more than half black past what it was, the loss's two error lines its outcome; on WebGPU, whose device this
-machine keeps, the silent stream must be dropped and resumed; then the summary and Continue as above),
-`--steps realm-load` (a spectator's realm view as first met: the map held still, the first press of Realm, the realm
-held still, back to the map, Realm again, and the realm's address loaded again; each step reports its downloads by kind
-with their bytes on the wire, the GPU work its frames asked for (pipelines and shaders compiled, bytes uploaded), long
-frames, the frames where the drawn scene changed and the scene marks `scene:<name>:requested` and
-`scene:<name>:presentable`; the boot reports the same as `bootWindow`), `--steps lab-realm-load` (the same on the lab's
-built Kingdom, `/lab/game?scenario=painted-buildings`, reopened on its realm with `&scene=hex`),
-`--steps lab-devcon-art` (all regular and golden Devcon model tiers on the map, HUD and local keep;
-`/lab/game?scenario=devcon-0` through `devcon-3`, and `devcon-golden-0` through `devcon-golden-3`),
+a phone with the ruin first panned under where its card opens and the pan's glide come to rest, the ruin's card opened
+from the map (a right-click, a tap) and **Attack** pressed must leave the camera where it was, the chain's BattleGuard
+answered, the ruin gone, the army at 4,011 and the ruin's chest shown; then the Feed, opened from its place, must tell
+the attack and the clear it won as one row, the clear's; play it at `--viewport 390x844` too), `--steps lab-deep-sites`
+(`/lab/game?scenario=deep-sites`, the army in the Deep beside the Foundation, held by a mate of its Aspect, and the
+Altar, held by a rival: the army picked from the HUD brings the camera onto it; each site's card opened from the map (a
+right-click, a phone's tap) keeps the camera and the selection; the Altar's names its rival holder and offers no order;
+the Foundation's says it is shared and offers **Join**, which sends InteractSite, the chain answering as the contract
+does, the army leaving its tile and the reopened card listing it in a slot; play it at `--viewport 390x844` too),
+`--steps lab-hover-zoom` (the army after its fight, with nothing selected and the dev overlays on, at each wheel step
+from the closest zoom to the farthest: each army's token must stand over its own model, and the pointer on its model at
+its feet, middle and top must open its plate; `--steps lab-hover-zoom-pair` the same with the realm's two armies side by
+side, the merge game's), `--steps lab-high-ground` (`/lab/game?scenario=high-ground`, the spire's game on snow, bare
+rock and tundra, with the dev overlays on: the army picked, every tile it is lit on must lie above the highest ground
+under it), `--steps lab-day-turn`, `--steps lab-day-later`, `--steps lab-day-turn-slow` and
+`--steps lab-day-later-short` (the same game on Frontier's day 2 ending, `/lab/game?scenario=day-turn` in the session or
+`scenario=day-later` before it opened, over prod's recorded history of that day, the map opened where the realm stood on
+day 2: the summary's totals must be the recorded player's own day 2 (slow: history answers only after the moment went
+on, and the summary opens then; short: a page of stories late in day 2 leaves its start unread, and the card shows
+dashes and says why), and Continue must bring the camera onto the realm's day-3 site), `--steps lab-day-later-quiet` and
+`--steps lab-day-later-played-on` (day 2 not played, or the player already played on in day 3 on another device: no
+summary, and the day's end still brings the camera onto the day-3 site), `--steps lab-season-opens` (a player in the
+season 30 s before its first day, their realm founded but on no site yet: the map must draw with no error, then day 1's
+turn must play, with no summary, and leave the camera on the realm's first site), `--steps lab-day-turn-asleep` (the
+owner's phone, at `--viewport 390x844`: a minute before day 2 ends the tab's window is minimized and the page frozen,
+its WebGL context lost and Herald's stream silent with its socket open, then brought back past the end; on WebGL the
+page must boot again and the map draw, its middle band no more than half black past what it was, the loss's two error
+lines its outcome; on WebGPU, whose device this machine keeps, the silent stream must be dropped and resumed; then the
+summary and Continue as above), `--steps realm-load` (a spectator's realm view as first met: the map held still, the
+first press of Realm, the realm held still, back to the map, Realm again, and the realm's address loaded again; each
+step reports its downloads by kind with their bytes on the wire, the GPU work its frames asked for (pipelines and
+shaders compiled, bytes uploaded), long frames, the frames where the drawn scene changed and the scene marks
+`scene:<name>:requested` and `scene:<name>:presentable`; the boot reports the same as `bootWindow`),
+`--steps lab-realm-load` (the same on the lab's built Kingdom, `/lab/game?scenario=painted-buildings`, reopened on its
+realm with `&scene=hex`), `--steps lab-devcon-art` (all regular and golden Devcon model tiers on the map, HUD and local
+keep; `/lab/game?scenario=devcon-0` through `devcon-3`, and `devcon-golden-0` through `devcon-golden-3`),
 `--steps lab-devcon-season` (regular, golden and ordinary Season homes outside the streamed scope;
 `/lab/game?scenario=devcon-season`), `--steps blitz-realm-load` (the same on the newest live Blitz game),
 `--steps entry` (the game entered from a fresh profile, then the same address loaded again from the HTTP cache, each

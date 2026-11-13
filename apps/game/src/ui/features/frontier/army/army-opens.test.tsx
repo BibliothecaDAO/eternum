@@ -21,8 +21,8 @@ const { UnifiedHudLab } = await import("@/ui/features/debug/kit-lab/unified-hud-
 
 /** The lab realm's army out. */
 const ARMY = 90;
-/** Its token: its XP (260), its number (1) and its troops (5,000). */
-const TOKEN = "26015,000";
+/** Its token: its number (1) and its troops (5,000); its XP is a ring around the portrait, with no number. */
+const TOKEN = "15,000";
 
 let host: HTMLDivElement;
 let root: Root;

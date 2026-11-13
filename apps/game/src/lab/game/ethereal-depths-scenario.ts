@@ -35,7 +35,7 @@ const etherealDepthScenario = (depth: 1 | 2 | 3) => (): LabScenario => {
     ...(above > 0
       ? [
           { model: "TileOccupancy", key: SPIRE_ARMY_TILE_KEY, value: null },
-          { model: "TileOccupancy", key: `0x904${depth}`, value: wire({ ...army, ...down(army, above) }) },
+          { model: "TileOccupancy", key: etherealArmyTileKey(depth), value: wire({ ...army, ...down(army, above) }) },
         ]
       : []),
     ...[arrival, ...getHexesWithinRadius(arrival.col, arrival.row, 7)].map((hex, index) =>
@@ -49,6 +49,9 @@ const etherealDepthScenario = (depth: 1 | 2 | 3) => (): LabScenario => {
 
 /** The entity of the Deep's hyperstructure that stands for scale beside the arrival there (steps.mjs reads its plate). */
 export const DEEP_SCALE_HYPERSTRUCTURE = 903;
+
+/** The wire key the spire's army stands under on a layer below the surface: a lab game that moves it replaces it there. */
+export const etherealArmyTileKey = (depth: 1 | 2 | 3) => `0x904${depth}`;
 
 /**
  * What stands beside the arrival for scale, as a player meets it there: a spire the realm found on that Ethereal layer,

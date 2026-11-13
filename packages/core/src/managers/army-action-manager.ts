@@ -27,7 +27,7 @@ import { StaminaManager } from "./stamina-manager";
 import { computeExploreFoodCosts, computeTravelFoodCosts } from "./utils";
 import { isViewerOwner } from "../utils/viewer";
 import { armyRealmSpire, isAtExpeditionSpire } from "../utils/expeditions";
-import { isTileOccupierMapSite, isTileOccupierUsableSite } from "../utils/map/hex";
+import { isTileOccupierDeepSite, isTileOccupierMapSite, isTileOccupierUsableSite } from "../utils/map/hex";
 
 /**
  * What bounds an army's orders as chain time passes: its spendable stamina, the steps its stamina and its owner's food
@@ -174,9 +174,17 @@ export class ArmyActionManager {
     );
   }
 
-  /** Why a held tile offers no order: a usable site wants the army beside it, anything else holds its tile. */
+  /** One of the Deep's sites: the army beside it acts on it from where it stands, through the site's card. */
+  private isDeepSiteHex(position: HexPosition): boolean {
+    const tile = getTileAt(this.store, this._getCurrentPosition().alt, position.col, position.row);
+    return tile !== undefined && isTileOccupierDeepSite(tile.occupier_type);
+  }
+
+  /** Why a held tile offers no order: a site acted on from beside wants the army there, anything else holds its tile. */
   private heldTileRefusal(position: HexPosition): OrderRefusal {
-    return this.isUsableSiteHex(position) ? { reason: "too-far" } : { reason: "occupied" };
+    return this.isUsableSiteHex(position) || this.isDeepSiteHex(position)
+      ? { reason: "too-far" }
+      : { reason: "occupied" };
   }
 
   /**
@@ -351,6 +359,14 @@ export class ArmyActionManager {
         actionPaths.set(key, [
           { hex: { col: startPos.col, row: startPos.row }, actionType: ActionType.Move },
           { hex: { col, row }, actionType: ActionType.UseSite, staminaCost: 0 },
+        ]);
+        continue;
+      }
+      // A Deep site beside a living army is its order there, in the site's card: Attack its beast, Take it or Join.
+      if (alive && this.isDeepSiteHex({ col, row })) {
+        actionPaths.set(key, [
+          { hex: { col: startPos.col, row: startPos.row }, actionType: ActionType.Move },
+          { hex: { col, row }, actionType: ActionType.DeepSite, staminaCost: 0 },
         ]);
         continue;
       }
@@ -576,13 +592,16 @@ export class ArmyActionManager {
   }
 
   /**
-   * Every usable site this client holds on the army's layer that no rule above decided stands beyond its step: the
-   * army uses it from beside it, so the reason is the distance. The indexes leave these sites out, so their tiles say.
+   * Every usable site or Deep site this client holds on the army's layer that no rule above decided stands beyond its
+   * step: the army acts on it from beside it, so the reason is the distance. The indexes leave these sites out, so their
+   * tiles say.
    */
   private refuseSitesBeyondStep(actionPaths: ActionPaths, startPos: HexPosition & { alt: boolean }) {
-    if (!configManager.isCommandEnabled("InteractSite")) return;
+    const usable = configManager.isCommandEnabled("InteractSite");
     for (const occupancy of this.store.inGame("TileOccupancy", configManager.getActiveGameId())) {
-      if (occupancy.alt !== startPos.alt || !isTileOccupierUsableSite(occupancy.category)) continue;
+      const actedOnFromBeside =
+        (usable && isTileOccupierUsableSite(occupancy.category)) || isTileOccupierDeepSite(occupancy.category);
+      if (occupancy.alt !== startPos.alt || !actedOnFromBeside) continue;
       const key = ActionPaths.posKey({ col: occupancy.col, row: occupancy.row });
       if (!actionPaths.decided(key)) actionPaths.refuse(key, { reason: "too-far" });
     }

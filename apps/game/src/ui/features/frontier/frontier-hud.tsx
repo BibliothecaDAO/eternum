@@ -1,79 +1,87 @@
-import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
-import { useNowSeconds } from "@/hooks/helpers/use-block-timestamp";
-import { useHomeKind } from "@/hooks/helpers/use-home-kind";
 import { useUIStore } from "@/hooks/store/use-ui-store";
-import { useDocumentClass } from "@/hooks/use-document-class";
 import { useHeldTicket } from "@/hooks/use-holdings";
 import { getActiveGame } from "@/runtime/world";
 import { campaignOfPreset } from "@/services/home-claim-rules";
-import { useLayout } from "@/shell/frame/layout";
+import { canIssueOrders, isWatching } from "@/utils/can-issue-orders";
 import { useRealmVisit } from "@/sync/active-game-client";
 import { dropNextOrder } from "@/three/scenes/worldmap-next-order";
 import { requestOrderAt } from "@/three/scenes/worldmap-order-request";
-import { HudSheet } from "@/ui/design-system/kit/hud-elements";
 import { SETTINGS } from "@/ui/design-system/kit/words";
-import { useUnreadImportantCount } from "@/ui/features/event-feed/quick-feed";
 import { useGameChat } from "@/ui/features/world/containers/hud-chat-window";
 import { IdentityChip } from "@/ui/features/world/containers/top-header/identity-chip";
-import { useHowToPlay } from "@/ui/modules/how-to-play";
+import { HudSheet } from "@/ui/design-system/kit/hud-elements";
+import { useUnreadImportantCount } from "@/ui/features/event-feed/quick-feed";
 import { SettingsPanel } from "@/ui/modules/settings/settings";
-import { canIssueOrders, isWatching } from "@/utils/can-issue-orders";
 import { configManager } from "@bibliothecadao/eternum";
+import type { NativeRows } from "@bibliothecadao/eternum/game-client";
 import { StructureType } from "@bibliothecadao/types";
+import { useLayout } from "@/shell/frame/layout";
+import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { type ComponentProps, type ComponentType, type ReactNode, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { RealmVisitFoot, useRealmVisitNavigation, useVisitedRealm } from "./board/realm-visit";
+import { SeasonPlace, useSeasonPlaceRank } from "./aspect/season-place";
+import { useSpectatorWatch } from "./board/spectator-watch";
+import { useExpeditionRules, useFrontierRealm, useGoToFrontierPlace } from "./frontier-home";
+import { ArmyRefill } from "./army/army-refill";
 import { ArmyLostSheet } from "./army/army-lost";
 import { useArmyPanelOpens, usePickArmy } from "./army/army-opens";
 import { FrontierArmy } from "./army/frontier-army";
-import { RealmVisitFoot, useRealmVisitNavigation, useVisitedRealm } from "./board/realm-visit";
-import { FrontierSeason, useSeasonRank } from "./board/season-board";
-import { useSpectatorWatch } from "./board/spectator-watch";
-import { BuildingsInFlight } from "./build/build-sheet";
-import { useFirstBuild, useMarkFirstBuild } from "./build/first-build";
-import { DayEndBlock, DayEndNotice, useDayEnd } from "./day-end/day-end";
-import { useExpeditionRules, useFrontierRealm, useGoToFrontierPlace } from "./frontier-home";
-import { useArmyRevealYield } from "./frontier-reveal-yield";
 import { useSelectionCard } from "./frontier-selection-sheet";
+import { useRealmStores } from "./realm-stores";
 import { FrontierSurfaces } from "./frontier-surfaces";
-import { ArmyDock } from "./hud/army-dock";
+import { useArmyRevealYield } from "./frontier-reveal-yield";
 import { type ArmyOrder, useArmyOrder } from "./hud/army-order";
-import { StaminaReading } from "./hud/army-token";
+import { ArmyDock } from "./hud/army-dock";
 import { useChatKey } from "./hud/chat-key";
-import { ChatPage } from "./hud/chat-page";
-import { dayClock } from "./hud/day-clock";
-import { FrontierDayClock } from "./hud/day-pill";
-import { type DockArmy, useDockArmies } from "./hud/dock-armies";
 import { FrontierDesktop, FrontierPlaces } from "./hud/frontier-desktop";
 import { FrontierFeed } from "./hud/frontier-feed";
+import { useResearchTree } from "./research/research-facts";
+import { canResearchNow } from "./research/research-tree";
+import { ChatPage } from "./hud/chat-page";
+import { type DockArmy, useDockArmies } from "./hud/dock-armies";
 import { FrontierNav, type HudSurface } from "./hud/frontier-nav";
 import { layerTab, type MapLayers, useMapLayers } from "./hud/map-layers";
 import { useOnePanel, useOrderSettledReturnsToTheArmy } from "./hud/one-panel";
+import { FrontierDayClock } from "./hud/day-pill";
+import { DayEndBlock, DayEndNotice, useDayEnd } from "./day-end/day-end";
+import { useFirstBuild, useMarkFirstBuild } from "./build/first-build";
 import { FrontierDayBanner } from "./day/day-banner";
 import { OpeningLine } from "./opening/opening-line";
 import { useOpeningInterface, useOpens } from "./opening/use-opening";
 import { FrontierStrip, useStoreReadings } from "./hud/frontier-strip";
+import { RealmPanel } from "./hud/realm-panel";
 import { HudBands } from "./hud/hud-bands";
 import { MenuPage } from "./hud/menu-page";
+import { useHowToPlay } from "@/ui/modules/how-to-play";
 import { FrontierRealms } from "./value/frontier-realms";
+import { FrontierPurse } from "./value/frontier-purse";
+import { useSpendLords } from "./value/use-spend-lords";
+import { useLinkWalletPrompt, useOwedLords } from "./value/link-wallet";
+import { lordsInGame } from "./value/lords-in-game";
+import { SeasonPayout } from "./value/season-payout";
+import { LordsPurse, PurseRow, RealmsChip } from "./value/lords-purse";
+import { useHomeKind } from "@/hooks/helpers/use-home-kind";
 import { useCampaignMark } from "./value/campaign-home";
 import { dailyClaimWaiting, type DailyClaimWaiting } from "./value/realm-labor";
 import { useRealmLabor } from "./value/use-realm-labor";
-import { PurseRow, RealmsChip } from "./value/lords-purse";
+import { useRealmLords } from "./value/use-realm-lords";
 import { OfflineNotice } from "./hud/offline-notice";
+import { SceneFailureNotice } from "./hud/scene-failure-notice";
 import { NextOrderBar, OrderBar } from "./hud/order-bar";
 import { PickedArmy } from "./hud/picked-army";
-import { RealmPanel } from "./hud/realm-panel";
-import { SceneFailureNotice } from "./hud/scene-failure-notice";
+import { SpireButton, useArmyAtItsSpire } from "./spire-card";
 import { FrontierToday } from "./log/frontier-today";
 import { CARD_STORE_KINDS, type CardStore, FrontierStoreCard, isCardStore } from "./production/frontier-store-card";
-import { useRealmStores } from "./realm-stores";
-import { useRealmPopulation } from "./realm/realm-population";
 import { FrontierResearch } from "./research/frontier-research";
-import { useResearchTree } from "./research/research-facts";
-import { canResearchNow } from "./research/research-tree";
+import { ClearedRuinChest } from "./chest/cleared-ruin-chest";
+import { ChestLordsMoment } from "./chest/chest-lords-moment";
+import { dayClock } from "./hud/day-clock";
+import { BuildingsInFlight } from "./build/build-sheet";
 import { DayDone } from "./rollover/day-done";
-import { SpireButton, useArmyAtItsSpire } from "./spire-card";
-import type { NativeRows } from "@bibliothecadao/eternum/game-client";
+import { useRealmPopulation } from "./realm/realm-population";
+import { useNowSeconds } from "@/hooks/helpers/use-block-timestamp";
+import { useDocumentClass } from "@/hooks/use-document-class";
 
 type ExpeditionRules = NonNullable<ReturnType<typeof useExpeditionRules>>;
 
@@ -164,7 +172,7 @@ export const FrontierHud = ({
           setSurface(null);
         },
   });
-  const seasonRank = useSeasonRank();
+  const seasonRank = useSeasonPlaceRank();
   const layers = useMapLayers(rules, shown, visit ? null : realm);
   // The store card a ring or a plate opened, under the realm card on a desktop and under the strip on a phone.
   const [openStore, setOpenStore] = useState<CardStore | null>(null);
@@ -193,23 +201,25 @@ export const FrontierHud = ({
       {dayBanner}
     </>
   );
-  // A phone shows the pending home claim; spectators see their identity.
+  // A phone's purse: the player's realm's LORDS; a spectator sees there what the desktop's top bar says of them.
   const purse = spectating ? (
     <IdentityChip compact />
   ) : (
     realm &&
-    !visit &&
-    claimWaiting && (
-      <PurseRow>
-        <RealmsChip waiting={claimWaiting} narrow onOpen={() => setSurface("realms")} />
-      </PurseRow>
+    !visit && (
+      <RealmPurse
+        realm={realm}
+        waiting={claimWaiting}
+        onWithdraw={() => setSurface("withdraw")}
+        onRealms={() => setSurface("realms")}
+      />
     )
   );
   const page =
     surface === "research" && realm ? (
       <FrontierResearch key={researchPick} realm={realm} pick={researchPick} onClose={close} />
     ) : surface === "season" ? (
-      <FrontierSeason rules={rules} onVisited={close} onClose={close} />
+      <SeasonPlace rules={rules} onVisited={close} onClose={close} />
     ) : surface === "feed" ? (
       <FrontierFeed onClose={close} />
     ) : surface === "menu" ? (
@@ -217,6 +227,8 @@ export const FrontierHud = ({
     ) : undefined;
   const notices = (
     <>
+      <ClearedRuinChest />
+      <ChestLordsMoment />
       <OfflineNotice />
       <SceneFailureNotice />
       {own && <DayEndNotice dayEnd={dayEnd} onOpen={() => setSurface("today")} />}
@@ -235,6 +247,7 @@ export const FrontierHud = ({
     <>
       <FrontierSurfaces realm={realm} rules={rules} />
       {showsCard && card?.sheet}
+      {surface === "withdraw" && realm && !visit && <FrontierPurse realm={realm} onClose={close} />}
       {surface === "realms" && realm && !visit && <FrontierRealms labor={realmLabor} onClose={close} />}
       {surface === "army" && realm && !visit && <FrontierArmy realm={realm} choosing={armyChoosing} onClose={close} />}
       {surface === "army-lost" && <ArmyLostSheet onClose={close} />}
@@ -252,8 +265,13 @@ export const FrontierHud = ({
           onClose={close}
         />
       )}
-      {/* A board open as the season ends stays until closed. */}
-      {surface !== "season" && <SeasonOver realm={visit ? null : realm} />}
+      {/* The card covers the HUD: Withdraw opens in its place; a board open as the season ends stays till closed. */}
+      {surface !== "season" && surface !== "withdraw" && (
+        <SeasonOver
+          realm={visit ? null : realm}
+          withdraw={realm && !visit && lordsInGame() && <SeasonPayout realm={realm} />}
+        />
+      )}
       {realm && <DayDone rules={rules} realm={realm} visiting={Boolean(visit)} />}
       <BuildingsInFlight />
     </>
@@ -401,7 +419,7 @@ const FrontierPhoneHud = ({
 /**
  * A phone's action row, the one row over the place bar that says what the pick lets the player do now (owner, 22 October
  * 2026: mobile direction A): with an order pending, its costs and verb; with the next order queued, its bar; with an
- * army picked, the army (a tap opens its card), its four sides, its stamina reading, and Level up; otherwise
+ * army picked, the army (a tap opens its card), its four sides, its stamina as its refill, and Level up; otherwise
  * nothing. A desktop has none: its orders go from the map, and the army's state is its panel's.
  */
 const ArmyAction = ({
@@ -424,23 +442,25 @@ const ArmyAction = ({
   if (order && selected) return <PendingOrder rules={rules} realm={realm} order={order} army={selected} />;
   if (selected && nextOrder?.entityId === selected.explorerId)
     return <NextOrderBar onCancel={() => dropNextOrder("cancelled", selected.explorerId)} />;
-  if (acting && onOpenArmy) return <ActingArmy army={acting} onOpenArmy={onOpenArmy} />;
+  if (acting && onOpenArmy) return <ActingArmy army={acting} realm={realm} onOpenArmy={onOpenArmy} />;
   return null;
 };
 
 /** The picked army in a phone's action row, with Spire while it stands at its spire. */
 const ActingArmy = ({
   army,
+  realm,
   onOpenArmy,
 }: {
   army: DockArmy;
+  realm: NativeRows["Structure"];
   onOpenArmy: (explorerId: number, choosing?: boolean) => void;
 }) => {
   const spire = useArmyAtItsSpire(army.explorerId);
   return (
     <PickedArmy
       army={army}
-      refill={army.stamina && <StaminaReading stamina={army.stamina} />}
+      refill={<ArmyRefill army={army} realm={realm} look="stamina" />}
       spire={spire && <SpireButton explorerId={army.explorerId} spire={spire} />}
       onDetails={() => onOpenArmy(army.explorerId)}
       onLevelUp={() => onOpenArmy(army.explorerId, army.canSpendSkillPoint)}
@@ -489,6 +509,7 @@ const PendingOrder = ({
         labor?.limit === undefined || labor.amount === undefined ? undefined : Math.max(0, labor.limit - labor.amount)
       }
       xp={order.xp}
+      refill={<ArmyRefill army={army} realm={realm} />}
       onCancel={() => useUIStore.getState().updateEntityActionHoveredHex(null)}
       onGo={() => requestOrderAt(order.target)}
     />
@@ -509,7 +530,7 @@ const HudMenu = ({
   onClose: () => void;
 }) => {
   const navigate = useNavigate();
-  const rank = useSeasonRank();
+  const rank = useSeasonPlaceRank();
   const guide = useHowToPlay();
   return (
     <MenuPage
@@ -528,7 +549,7 @@ const HudMenu = ({
 /**
  * The desktop's realm panel over the realm the HUD reads (the player's, or the one watched or visited): its name and
  * rank's steps in a header that takes the map home to it, its population and stores, and for the player's own realm
- * its daily home claim and each store's card.
+ * its LORDS (Withdraw), its Realms' labor (Realms) and each store's card.
  */
 const FrontierRealmPanel = ({
   rules,
@@ -548,6 +569,9 @@ const FrontierRealmPanel = ({
 }) => {
   const name = useGameModeConfig().structure.getName(realm).name;
   const stores = useStoreReadings(realm, rules);
+  const lords = useRealmLords(own ?? realm);
+  const owed = useOwedLords(own ?? realm);
+  const linkWalletLine = useLinkWalletPrompt(own ? owed : undefined);
   const population = useRealmPopulation(realm);
   const goToPlace = useGoToFrontierPlace(realm);
   const mark = useCampaignMark(realm);
@@ -566,7 +590,47 @@ const FrontierRealmPanel = ({
         waiting,
         storeCards,
         onRealms: () => onSurface("realms"),
+        ...(lordsInGame() && { lords, linkWalletLine, onWithdraw: () => onSurface("withdraw") }),
       })}
+    />
+  );
+};
+
+/**
+ * Under the strip: the realm's LORDS, which open Withdraw (in a game with LORDS in play), and beside them the Realms
+ * chip while the home's daily claim has Labor or Essence waiting today. Nothing when neither stands.
+ */
+const RealmPurse = ({
+  realm,
+  waiting,
+  onWithdraw,
+  onRealms,
+}: {
+  realm: NativeRows["Structure"];
+  waiting: DailyClaimWaiting | null;
+  onWithdraw: () => void;
+  onRealms: () => void;
+}) => {
+  const lords = lordsInGame();
+  if (!waiting && !lords) return null;
+  return (
+    <PurseRow>
+      {waiting && <RealmsChip waiting={waiting} narrow onOpen={onRealms} />}
+      {lords && <OwnLordsPurse realm={realm} onOpen={onWithdraw} />}
+    </PurseRow>
+  );
+};
+
+/** The player's own realm's LORDS, marked while the account has no linked wallet to receive them. */
+const OwnLordsPurse = ({ realm, onOpen }: { realm: NativeRows["Structure"]; onOpen: () => void }) => {
+  const lords = useRealmLords(realm);
+  const spend = useSpendLords(realm);
+  return (
+    <LordsPurse
+      lords={lords}
+      spendOnly={spend.source ? (spend.balance?.available ?? 0n) : undefined}
+      linkWalletLine={useLinkWalletPrompt(useOwedLords(realm))}
+      onOpen={onOpen}
     />
   );
 };

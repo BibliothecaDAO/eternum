@@ -13,6 +13,7 @@ import { ARMY, dayLeft, MOVE, depthName, SPIRE_WORDS, STAMINA } from "@/ui/desig
 import { toast } from "@/ui/features/event-feed/notify";
 import {
   armyAtItsSpire,
+  DEEPEST_LAYER,
   type FoundSpire,
   configManager,
   entityMapPosition,
@@ -83,7 +84,7 @@ const useArmySpireOdds = (explorerId: number): number | null => {
   const realm = army && setup.store.get("Structure", { game_id: gameId, entity_id: army.owner });
   if (!rules || !tile || !realm || !knowsSpireLore(setup.store, gameId, realm.entity_id)) return null;
   const depth = expeditionDepth(rules, { y: tile.row });
-  return depth < 3 ? nextSpireOdds(realmSpireToday(setup.store, realm, depth, now)) : null;
+  return depth < DEEPEST_LAYER ? nextSpireOdds(realmSpireToday(setup.store, realm, depth, now)) : null;
 };
 
 const SPIRE_ODDS_MODELS = ["ExpeditionSpire", "ExplorerTroops", "RealmKnowledge", "TileOccupancy"] as const;

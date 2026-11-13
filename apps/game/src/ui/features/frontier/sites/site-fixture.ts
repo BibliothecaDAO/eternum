@@ -31,6 +31,8 @@ export const legacyRuinRules = () => {
 
 const PRECISION = 1_000_000_000n;
 export const SITE = 710;
+/** The wire key army 201's ArmyDay is held under: a lab game that moves the army to another day replaces it there. */
+export const ARMY_DAY_KEY = "0xad";
 export const SITE_TILE = { col: 40, row: 12, alt: false };
 const set = (key: string, model: string, value: Record<string, unknown>) => ({ model, key, value });
 const troops = (count: bigint, stamina: bigint) => ({
@@ -141,7 +143,7 @@ export const campBeside = (kind: SiteKind = "Camp", guardKnown = true, armyStami
           }),
         ]
       : []),
-    set("0xad", "ArmyDay", { game_id: 1, explorer_id: 201, day: 0 }),
+    set(ARMY_DAY_KEY, "ArmyDay", { game_id: 1, explorer_id: 201, day: 0 }),
     set("0x74", "ExplorerTroops", { game_id: 1, explorer_id: 201, owner: 7, troops: troops(1_498n, armyStamina) }),
     set("0x75", "TileOccupancy", {
       game_id: 1,
@@ -343,7 +345,7 @@ export const sitesBeside = (stamina: bigint, layout: SitesLayout = SITES_LAYOUT)
     ...revealed.map((tile, index) =>
       set(`0x20${index}`, "TileOpt", { game_id: 1, alt: false, col: tile.col, row: tile.row, data: grass }),
     ),
-    set("0xad", "ArmyDay", { game_id: 1, explorer_id: 201, day: 0 }),
+    set(ARMY_DAY_KEY, "ArmyDay", { game_id: 1, explorer_id: 201, day: 0 }),
     set("0x74", "ExplorerTroops", { game_id: 1, explorer_id: 201, owner: 7, troops: troops(1_498n, stamina) }),
     site("0x75", layout.army, 201, TileOccupier.ExplorerKnightT1),
     ...sites.map(([key, tile, entity, category]) => site(key, tile, entity, category)),

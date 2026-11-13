@@ -1,19 +1,19 @@
 import { SKILL_POINT_RANKS, type SkillPointChoice, type SkillPointRank } from "@bibliothecadao/eternum";
-import { EtherealMark } from "../hud/army-token";
-import { formatExact, formatShort } from "@bibliothecadao/types";
+import { EtherealMark, xpLine } from "../hud/army-token";
+import { XpRing } from "@/ui/design-system/kit/xp-ring";
+import { formatDuration, formatExact, formatShort } from "@bibliothecadao/types";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { Icon, IconGroup } from "@/ui/design-system/icon";
 import {
   HudButton,
   HudChip,
-  HudMeter,
   HudPortrait,
   HudStamina,
   HudTier,
   HudTierStep,
   rankedTip,
 } from "@/ui/design-system/kit/hud-elements";
-import { ARMY_DETAIL, tierNumeral, TROOPS, UPGRADING, XP } from "@/ui/design-system/kit/words";
+import { ARMY_DETAIL, DEEP_WORDS, tierNumeral, TROOPS, UPGRADING } from "@/ui/design-system/kit/words";
 import { type ReactNode, useState } from "react";
 
 import { FullIn } from "../full-in";
@@ -90,7 +90,7 @@ export const ArmyDetail = ({
     return (
       <div data-army-step="choose" className="flex flex-col gap-3 pt-1">
         <div className="flex items-center justify-end gap-2">
-          <XpLine army={army} />
+          <HeldPoints points={army.points} />
         </div>
         {pointChoices.map((option) =>
           option.key === "stamina" ? (
@@ -164,6 +164,11 @@ export const ArmyDetail = ({
       <div className="flex items-center gap-3">
         <span className="relative shrink-0">
           <HudPortrait icon={army.art} label={TROOPS} />
+          {showsXp && (
+            <span className="absolute inset-0" {...rankedTip(xpLine(army.xp, army.goal))}>
+              <XpRing share={army.goal.share} />
+            </span>
+          )}
           <EtherealMark layer={army.ethereal} />
         </span>
         <div className="flex min-w-0 flex-1 flex-col gap-2">
@@ -184,12 +189,20 @@ export const ArmyDetail = ({
   );
 };
 
-/** Over the stamina line: the army's troops, and what each tile explored sends home (none where reveals pay none). */
+/**
+ * Over the stamina line: the army's troops; in the Deep, how long they last (each tick takes its loss); and what each tile
+ * explored sends home (none where reveals pay none).
+ */
 const StatusChips = ({ army }: { army: ArmyView }) => (
   <span className="flex flex-wrap items-center gap-1.5">
     <HudChip icons={["troops"]} label={TROOPS}>
       {formatShort(army.troops)}
     </HudChip>
+    {army.deep && (
+      <HudChip icons={["hourglass"]} label={DEEP_WORDS.inTheDeep}>
+        {DEEP_WORDS.lasts(army.deep.left, formatDuration(army.deep.seconds, { days: false }))}
+      </HudChip>
+    )}
     {army.revealYield !== null && (
       <HudChip icons={["essence", "labor"]} label={ARMY_DETAIL.revealPaysLabel}>
         {army.revealYield === undefined ? "—" : ARMY_DETAIL.revealPays(formatShort(army.revealYield))}
@@ -245,24 +258,11 @@ const AttributeRow = ({ attribute, onOpen }: { attribute: AttributeView; onOpen:
 const firstChoice = (army: ArmyView): AttributeKey | "stamina" =>
   army.attributes.find(({ next }) => next?.affordable)?.key ?? (army.available > 0 ? "stamina" : "battle");
 
-const XpLine = ({ army }: { army: ArmyView }) => (
-  <span className="flex items-center gap-1 text-hud-label tabular-nums text-hud-muted">
-    {formatExact(army.xp)} / {formatExact(army.goal.at)} {XP}
-    <HudTier tier={army.goal.rank} />
-  </span>
-);
-
-/** The XP toward the next point, the points held beside Level up (only the ranks held), and the XP's meter. */
+/** The points held beside Level up (only the ranks held); the way to the next point is the portrait's ring. */
 const XpBlock = ({ army, onLevelUp }: { army: ArmyView; onLevelUp: () => void }) => (
-  <div className="flex flex-col gap-2">
-    <div className="flex items-center gap-2">
-      <XpLine army={army} />
-      <span className="ml-auto flex items-center gap-2">
-        <HeldPoints points={army.points} />
-        <LevelUpButton affordable={army.available > 0} onPress={onLevelUp} />
-      </span>
-    </div>
-    <HudMeter share={army.goal.share} label={XP} />
+  <div className="flex items-center justify-end gap-2">
+    <HeldPoints points={army.points} />
+    <LevelUpButton affordable={army.available > 0} onPress={onLevelUp} />
   </div>
 );
 

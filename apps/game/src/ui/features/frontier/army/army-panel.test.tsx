@@ -96,16 +96,14 @@ it("spends the selected point on Stamina, doubles its refill and prevents wastin
   );
 });
 
-it.each([
-  ["Knight", 3],
-  ["Paladin", 4],
-] as const)("shows %s empty sockets and the XP milestone, and no point while none is held", (category, count) => {
-  act(() =>
-    root.render(<Detail army={readArmyDetail({ ...EARLY_ARMY, category })} sending={false} onLevelUp={vi.fn()} />),
-  );
-  expect(host.querySelectorAll('.ui-tier[data-tier="0"]')).toHaveLength(count);
+it("shows empty sockets, the way to the next point as the portrait's ring, and no point while none is held", () => {
+  act(() => root.render(<Detail army={readArmyDetail(EARLY_ARMY)} sending={false} onLevelUp={vi.fn()} />));
+  expect(host.querySelectorAll('.ui-tier[data-tier="0"]')).toHaveLength(4);
   expect(host.querySelector('[aria-label="Skill points"]')!.textContent).toBe("");
-  expect(host.textContent).toContain("12 / 75 XP");
+  // No XP number (the owner, 13 November 2026): 12 of 75 is a ring 16% filled, its tip the same words as before.
+  expect(host.textContent).not.toContain("12 / 75");
+  expect(host.querySelector('[aria-label="XP: 16% of the way to the next skill point"]')).not.toBeNull();
+  expect(host.querySelector('[data-tip="XP 12 of 75 · next I point"]')).not.toBeNull();
 });
 
 it("shows only the ranks of the points held, beside Level up", () => {
@@ -185,7 +183,7 @@ const variants = (name: string) =>
 
 it("offers and submits every skill-point use and Scouting kind in the generated command catalog", () => {
   const spent = vi.fn();
-  const army = readArmyDetail({ ...VETERAN_ARMY, category: "Paladin", points: [1, 1, 1, 1, 1] });
+  const army = readArmyDetail({ ...VETERAN_ARMY, points: [1, 1, 1, 1, 1] });
   act(() => root.render(<Detail army={army} sending={false} choosing onLevelUp={spent} />));
   const uses = variants("SkillPointUse");
   expect([...host.querySelectorAll("[data-attribute]")].map((button) => button.getAttribute("data-attribute"))).toEqual(
@@ -226,7 +224,7 @@ it.each([0n, learnResearch(0n, research.ROW_SHRINE, 0), learnResearch(0n, resear
   "offers Sanctuaries only after either site unlock and submits its command (%s)",
   (learned) => {
     const spent = vi.fn();
-    const army = readArmyDetail({ ...EARLY_ARMY, category: "Paladin", learned, points: [1, 0, 0, 0, 0] });
+    const army = readArmyDetail({ ...EARLY_ARMY, learned, points: [1, 0, 0, 0, 0] });
     act(() => root.render(<Detail army={army} sending={false} choosing onLevelUp={spent} />));
     act(() => host.querySelector<HTMLButtonElement>('[data-attribute="scouting"]')!.click());
     expect(host.querySelector('[data-scout-kind="beasts"]')).toBeNull();
@@ -241,3 +239,19 @@ it.each([0n, learnResearch(0n, research.ROW_SHRINE, 0), learnResearch(0n, resear
     expect(spent).toHaveBeenCalledWith({ kind: "Scouting", value: { kind: "Sanctuaries", value: undefined } });
   },
 );
+
+it("tells an army in the Deep how long its troops last, beside them, and no such chip elsewhere", () => {
+  act(() =>
+    root.render(
+      <Detail
+        army={readArmyDetail({ ...EARLY_ARMY, deep: { left: 15, seconds: 1_790 } })}
+        sending={false}
+        onLevelUp={vi.fn()}
+      />,
+    ),
+  );
+  const chip = host.querySelector('[aria-label^="In the Deep"]');
+  expect(chip?.textContent).toBe("15 ticks left (30m)");
+  act(() => root.render(<Detail army={readArmyDetail(EARLY_ARMY)} sending={false} onLevelUp={vi.fn()} />));
+  expect(host.querySelector('[aria-label^="In the Deep"]')).toBeNull();
+});

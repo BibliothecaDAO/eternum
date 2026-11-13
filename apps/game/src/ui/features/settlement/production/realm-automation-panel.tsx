@@ -8,8 +8,8 @@ import {
 } from "@/hooks/store/use-automation-store";
 import { PROCESS_INTERVAL_MS } from "@bibliothecadao/eternum/automation";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
-import { aggregateConsumptionPerSecond, configManager, getTroopResourceId } from "@bibliothecadao/eternum";
-import { ResourcesIds, TROOP_TIERS, TROOP_TYPES, TroopTier, formatFigure, formatPercent } from "@bibliothecadao/types";
+import { aggregateConsumptionPerSecond, configManager } from "@bibliothecadao/eternum";
+import { ResourcesIds, formatFigure, formatPercent } from "@bibliothecadao/types";
 import {
   HudButton,
   HudEmpty,
@@ -43,11 +43,6 @@ const clampPercent = (value: number): number => {
   if (value > MAX_RESOURCE_ALLOCATION_PERCENT) return MAX_RESOURCE_ALLOCATION_PERCENT;
   return Math.round(value);
 };
-const ARMY_T2_T3_RESOURCES = new Set<ResourcesIds>(
-  TROOP_TYPES.flatMap((type) =>
-    TROOP_TIERS.filter((tier) => tier !== TroopTier.T1).map((tier) => getTroopResourceId(type, tier)),
-  ),
-);
 
 const formatPerCycle = (value: number): string =>
   !Number.isFinite(value) || Math.abs(value) < 0.0001 ? "0/c" : `${formatFigure(value, { signed: true })}/c`;
@@ -76,7 +71,6 @@ export const RealmAutomationPanel = ({
   producedResources,
   entityType = "realm",
 }: RealmAutomationPanelProps) => {
-  const laborEnabled = configManager.isCommandEnabled("BurnLaborForResourceProduction");
   const upsertRealm = useAutomationStore((state) => state.upsertRealm);
   const setRealmPreset = useAutomationStore((state) => state.setRealmPreset);
   const setResourcePercentages = useAutomationStore((state) => state.setResourcePercentages);
@@ -184,12 +178,7 @@ export const RealmAutomationPanel = ({
       const resourceId = Number(id) as ResourcesIds;
       const saved = lastSavedSnapshot.percentages[resourceId] ?? createBaselinePercentages(resourceId);
       const current = draftPercentages[resourceId] ?? createBaselinePercentages(resourceId);
-      if (
-        saved.resourceToResource !== current.resourceToResource ||
-        saved.laborToResource !== current.laborToResource
-      ) {
-        return true;
-      }
+      if (saved.resourceToResource !== current.resourceToResource) return true;
     }
 
     return false;
@@ -244,19 +233,12 @@ export const RealmAutomationPanel = ({
   const aggregatedUsageMap = useMemo(() => {
     const totals = new Map<number, number>();
     automationRows.forEach((row) => {
-      const { percentages, complexInputs, simpleInputs } = row;
+      const { percentages, complexInputs } = row;
 
       if (percentages.resourceToResource > 0) {
         complexInputs.forEach((input) => {
           if (input.resource === ResourcesIds.Wheat) return;
           totals.set(input.resource, (totals.get(input.resource) ?? 0) + percentages.resourceToResource);
-        });
-      }
-
-      if (percentages.laborToResource > 0) {
-        simpleInputs.forEach((input) => {
-          if (input.resource === ResourcesIds.Wheat) return;
-          totals.set(input.resource, (totals.get(input.resource) ?? 0) + percentages.laborToResource);
         });
       }
     });
@@ -306,19 +288,11 @@ export const RealmAutomationPanel = ({
 
     automationRows.forEach(({ resourceId, percentages }) => {
       const resourceRatio = Math.min(1, Math.max(0, percentages.resourceToResource / MAX_RESOURCE_ALLOCATION_PERCENT));
-      const laborRatio = Math.min(1, Math.max(0, percentages.laborToResource / MAX_RESOURCE_ALLOCATION_PERCENT));
 
       if (resourceRatio > 0) {
         const complexOutput = configManager.getRecipeOutput(resourceId, false)!;
         if (complexOutput > 0) {
           totals.set(resourceId, (totals.get(resourceId) ?? 0) + resourceRatio * complexOutput);
-        }
-      }
-
-      if (laborRatio > 0) {
-        const simpleOutput = configManager.getRecipeOutput(resourceId, true)!;
-        if (simpleOutput > 0) {
-          totals.set(resourceId, (totals.get(resourceId) ?? 0) + laborRatio * simpleOutput);
         }
       }
     });
@@ -381,12 +355,12 @@ export const RealmAutomationPanel = ({
   );
 
   const handleSliderChange = useCallback(
-    (resourceId: ResourcesIds, key: "resourceToResource" | "laborToResource", value: number) => {
+    (resourceId: ResourcesIds, value: number) => {
       setDraftPercentages((prev) => {
         const existing = prev[resourceId] ?? resolveDraftPercentages(resourceId);
         const next: ResourceAutomationPercentages = {
-          resourceToResource: key === "resourceToResource" ? value : existing.resourceToResource,
-          laborToResource: key === "laborToResource" ? value : existing.laborToResource,
+          resourceToResource: value,
+          laborToResource: existing.laborToResource,
         };
         return {
           ...prev,
@@ -560,10 +534,9 @@ export const RealmAutomationPanel = ({
         {/* The sliders are always in reach: moving one turns the preset into Custom. */}
         {
           <section aria-label="Automation allocations" className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
-            {automationRows.map(({ resourceId, percentages, complexInputs, simpleInputs }) => {
+            {automationRows.map(({ resourceId, percentages, complexInputs }) => {
               const label = resolveResourceLabel(resourceId);
               const complexImpacted = gatherImpactedResources(complexInputs.map((input) => input.resource));
-              const simpleImpacted = gatherImpactedResources(simpleInputs.map((input) => input.resource));
               const resourceUsage = aggregatedUsageRecord[resourceId] ?? 0;
               const resourceOverBudget = resourceUsage > MAX_RESOURCE_ALLOCATION_PERCENT;
 
@@ -624,10 +597,6 @@ export const RealmAutomationPanel = ({
                 );
               };
 
-              const isDonkeyResource = resourceId === ResourcesIds.Donkey;
-              const laborDisabled =
-                !laborEnabled || isDonkeyResource || ARMY_T2_T3_RESOURCES.has(resourceId as ResourcesIds);
-
               return (
                 <HudPanel
                   key={`automation-row-${resourceId}`}
@@ -651,16 +620,9 @@ export const RealmAutomationPanel = ({
                     {renderSlider(
                       "Resource",
                       percentages.resourceToResource,
-                      (next) => handleSliderChange(resourceId, "resourceToResource", next),
+                      (next) => handleSliderChange(resourceId, next),
                       complexImpacted,
                     )}
-                    {!laborDisabled &&
-                      renderSlider(
-                        "Labor",
-                        percentages.laborToResource,
-                        (next) => handleSliderChange(resourceId, "laborToResource", next),
-                        simpleImpacted,
-                      )}
                   </div>
                 </HudPanel>
               );

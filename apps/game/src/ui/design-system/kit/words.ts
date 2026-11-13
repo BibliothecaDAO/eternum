@@ -338,8 +338,6 @@ export const ONE_A_REALM = "Built. A realm holds one.";
 export const PRICE_UP = "price raised";
 /** Why a price is above its first, on the arrow beside it, in one line and no sum: "Costs more with each one standing: 2". */
 export const priceRaised = (standing: string) => `Costs more with each one standing: ${standing}`;
-/** A market's price for one unit, as a shop says it, never as an equation: "0.03 LORDS each". */
-export const priceEach = (price: string, currency: string) => `${price} ${currency} each`;
 /** What a building does, in one line on its card's tooltip: "Wheat +5/min". */
 export const makes = (noun: string, rate: string) => `${noun} ${rate}`;
 export const takesPopulation = (amount: string) => `takes ${amount} ${POPULATION}`;
@@ -432,8 +430,6 @@ export const FIGHT_WORDS = {
  */
 export const fightLost = (lost: string, share: string) => `−${lost} · ${share}% lost`;
 export const NONE_LOST = "None lost";
-/** Why a village's trade in troops is refused, wherever the market and the bank say so. */
-export const VILLAGE_TROOP_TRADE_REFUSED = "Villages cannot trade military resources.";
 export const USE = "Use";
 export const USING = "Using…";
 
@@ -488,6 +484,107 @@ export const SPIRE_WORDS = {
   /** The odds the realm's next reveal on a layer finds its spire there today. */
   odds: (percent: number) => `Spire: ${percent}% on the next reveal`,
   commits: (army: string, left: string) => `${army} stays until the day ends (${left})`,
+} as const;
+/** The boon sheet (docs/plans/frontier-season-1.md, Army boons and XP): a point's three boons, or rest. */
+export const BOON_WORDS = {
+  title: "Skill point",
+  choose: "Take one boon for the day, or rest",
+  names: {
+    battle: "Battle",
+    charge: "Charge",
+    guard: "Guard",
+    vigour: "Vigour",
+    plunder: "Plunder",
+    lore: "Lore",
+    camps: "Camps",
+    rifts: "Rifts",
+    shrines: "Shrines",
+  },
+  percent: (percent: number, of: string) => `+${percent}% ${of}`,
+  less: (percent: number, of: string) => `−${percent}% ${of}`,
+  charge: (percent: number) => `${percent}% of the opening hit lands first`,
+  steps: (from: number, to: number) => `${from} → ${to} of 5 steps`,
+  giveBack: (stamina: number) => `+${stamina} stamina for the steps past 5`,
+  take: "Take",
+  rest: "Rest",
+  restGives: (stamina: number) => `+${stamina} stamina now`,
+  waiting: (points: number) => (points === 1 ? "1 more point after this one" : `${points} more points after this one`),
+  boons: "Boons",
+} as const;
+
+/** An army's ring of XP toward its next skill point, for whoever reads the map without seeing it. */
+export const XP_RING = {
+  label: (percent: number) => `${XP}: ${percent}% of the way to the next skill point`,
+} as const;
+
+/** The Aspect page (docs/plans/frontier-season-1.md, Aspects and the hyperstructure): the race, and the player's Aspect. */
+export const ASPECT_PAGE_WORDS = {
+  title: "Aspects",
+  race: "The hyperstructures",
+  height: (height: number, finish: number) => `${formatExact(height)} of ${formatExact(finish)}`,
+  stage: (stage: number, stages: number) => `Stage ${stage} of ${stages}`,
+  finished: "Finished",
+  won: (aspect: string) => `${aspect} finished first and won the age`,
+  yours: (aspect: string) => `Your Aspect: ${aspect}`,
+  triumphs: "Triumphs",
+  triumph: { 1: "Clear Mist", 2: "Second Wind", 3: "Pale Moon", 4: "Spoils" },
+  triumphOn: (day: number) => `day ${formatExact(day + 1)}`,
+  triumphAt: (stage: number) => `at stage ${stage}`,
+  baneBar: "Bane bar",
+  baneCharge: (charge: number, threshold: number) => `${formatExact(charge)} of ${formatExact(threshold)}`,
+  members: "Members",
+  glory: "Glory",
+  guards: (site: string) => `Guards the ${site}`,
+  noAspect: "Join an Aspect to see its members",
+  fights: "Fights",
+  noFights: "No fights yet",
+  against: (aspect: string) => `against ${aspect}`,
+  reading: "Reading the race…",
+} as const;
+
+/** The Deep's three sites (docs/plans/frontier-season-1.md, the Deep): who they serve, who guards them, what a tick pays. */
+export const DEEP_WORDS = {
+  purpose: {
+    foundation: "One site every Aspect fights for: holding it raises your Aspect's hyperstructure",
+    quarry: "For you",
+    altar: "Against a rival",
+  },
+  /** A Deep site's plate on the map: nobody holds it, and what a tick held pays. */
+  shared: "Every Aspect fights for it",
+  foundationPlate: (height: number) => `+${formatExact(height)} height a tick to the holder's hyperstructure`,
+  quarryPlate: "Labor and Essence a tick to its holders",
+  altarPlate: "Fills the holder's bane bar",
+  tickPays: "Each tick held pays",
+  splitByTroops: "split by troops",
+  glory: (amount: number) => `${formatExact(amount)} Glory`,
+  height: (amount: number) => `+${formatExact(amount)} height to your Aspect's hyperstructure`,
+  resources: (amount: number) => `${formatExact(amount)} labor and ${formatExact(amount)} Essence`,
+  bar: (perTick: number, charge: number, threshold: number) =>
+    `+${formatExact(perTick)} on the bane bar: ${formatExact(charge)} of ${formatExact(threshold)}`,
+  beast: (troops: number) => `Today's beast: ${formatExact(troops)} troops`,
+  open: "No guard: the next army takes it",
+  heldBy: (aspect: string) => `Held by ${aspect}`,
+  freeSlot: "Free slot",
+  foughtInOrder: "An attacker fights them one after the other, from the top",
+  facesNext: "fought next",
+  /** How long a guard's troops last: its army ticks, and the time until the last of them. */
+  lasts: (ticks: number, time: string) => `${formatExact(ticks)} ticks left (${time})`,
+  /** What the army panel's chip of those ticks counts. */
+  inTheDeep: "In the Deep",
+  share: (percent: number) => `${percent}% of each tick`,
+  attack: "Attack",
+  take: "Take",
+  join: "Join",
+  pickArmy: "Select an army in the Deep",
+  guarding: "Your army guards here",
+  full: "All 4 slots are taken",
+  rival: "Another Aspect holds it",
+  otherDay: "Only today's armies can fight here",
+  noTroops: "This army has no troops left",
+  readingStamina: "Reading the army's stamina…",
+  reading: "Reading the site…",
+  /** The map's order on a Deep site beside the army: its card then offers the site's own verb. */
+  order: "Open the site",
 } as const;
 /** An army's relics (docs/plans/frontier-season-1.md, relics): its three slots, switching one on, and its timer. */
 export const RELIC_WORDS = {

@@ -1,5 +1,6 @@
 import { ETHEREAL_DEPTH_SCENARIOS } from "./ethereal-depths-scenario";
 import { relicsScenario } from "./relics-scenario";
+import { deepSitesScenario } from "./deep-sites-scenario";
 import { S1_SITE_LOOK_SCENARIOS, s1SitesScenario } from "./s1-sites-scenario";
 import { REALM_SKIN_MODELS } from "@/three/structures/realm-skins";
 import { actionsScenario } from "./actions-scenario";
@@ -39,6 +40,7 @@ export const LAB_SCENARIOS: Partial<Record<string, () => LabScenario>> = {
   spire: spireScenario,
   ...ETHEREAL_DEPTH_SCENARIOS,
   relics: relicsScenario,
+  "deep-sites": deepSitesScenario,
   "s1-sites": () => s1SitesScenario(),
   ...S1_SITE_LOOK_SCENARIOS,
   /** The spire's game opened on the home page, entered by its card's Resume: a way back home there is the app's own. */

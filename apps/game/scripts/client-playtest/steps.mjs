@@ -3317,6 +3317,147 @@ const LAB_RUIN_FAR_STEPS = [
   { name: "pick-army", play: pickTheArmyAndReadTheCamera, settleMs: 0, verify: cameraWentToTheArmy },
   { name: "open-the-far-card", play: openTheRuinsCardUntil(showsBothSides), settleMs: 0, verify: farCardForecasts },
 ];
+/**
+ * The Deep's sites, played (s1-screens-16 to 25; review 18): the army in the Deep beside the Foundation, which a mate of
+ * its Aspect holds, and beside the Altar, which a rival Aspect holds (/lab/game?scenario=deep-sites). The army picked
+ * from the HUD brings the camera onto it; from there each site's card opens from the map (a desktop's right-click, a
+ * phone's tap) and leaves the camera where it was: the Altar's names its rival holder and offers no order; the
+ * Foundation's offers Join, and Join sends InteractSite, the chain answering as deep_guards.cairo does, so the army leaves
+ * its tile for the Foundation's slot, the card then listing it there.
+ */
+const LAB_DEEP_SITES_STEPS = [
+  { name: "enter-on-map", settleMs: 3_000, verify: inScene("map") },
+  { name: "pick-army", play: pickTheArmyAndReadTheCamera, settleMs: 0, verify: cameraWentToTheArmy },
+  {
+    name: "open-the-rival-altar",
+    play: openTheDeepSite("altar", (shown) => shown.sheet === "Altar"),
+    settleMs: 0,
+    verify: rivalSiteRefused,
+  },
+  {
+    name: "open-the-foundation",
+    play: openTheDeepSite("foundation", (shown) => shown.buttons.includes("Join")),
+    settleMs: 0,
+    verify: foundationOffersJoin,
+  },
+  { name: "join-the-foundation", play: joinTheFoundation, settleMs: 0, verify: joinedTheFoundation },
+];
+/** The lab's Deep sites by the catalog's key (deep-sites-scenario.ts SITE_IDS): their plates are `shrine:<id>`. */
+const LAB_DEEP_SITES = { foundation: 0x1ac01, altar: 0x1ac03 };
+/** What a player sees of a Deep site's card: the camera, the army, the card's name, words and buttons, the site's token. */
+const deepState = (site) => `JSON.stringify({
+  camera: window.__eternumMapSelection?.camera ?? null,
+  army: window.__eternumMapSelection?.army ?? null,
+  sheet: document.querySelector("[data-kit-sheet]")?.getAttribute("aria-label") ?? null,
+  text: document.querySelector("[data-kit-sheet]")?.textContent ?? null,
+  buttons: [...(document.querySelector("[data-kit-sheet]")?.querySelectorAll("button") ?? [])].map((button) => button.textContent.trim()),
+  sent: (window.__labChain?.sent ?? []).map(({ command }) => command.kind),
+  armyToken: document.querySelector('.mp-at[data-key="army:${PICKED_ARMY}"]')?.textContent ?? null,
+  siteToken: (() => {
+    const slot = document.querySelector('.mp-at[data-key="shrine:${site}"]');
+    if (!slot || getComputedStyle(slot).display === "none" || !slot.firstElementChild) return null;
+    const token = slot.firstElementChild.getBoundingClientRect();
+    return [Math.round(token.left + token.width / 2 - innerWidth / 2), Math.round(token.top + token.height / 2 - innerHeight / 2)];
+  })(),
+})`;
+/** How far below its token a press tries for the site's tile: the token floats over the model by its height. */
+const BELOW_THE_TOKEN_PX = [24, 40, 56, 72];
+
+/**
+ * Opens a Deep site's card from the map with the army selected, as a player does: a desktop's right-click, a phone's tap,
+ * just below the site's token, lower each try, until the card shows what `ready` waits for. A press that missed and
+ * left the army is followed by the army picked again from the HUD, as a player would.
+ */
+function openTheDeepSite(key, ready) {
+  return async ({ browser, extraScreenshot }) => {
+    const site = LAB_DEEP_SITES[key];
+    const before = browser.read(deepState(site));
+    if (!before.siteToken) return { before, after: before };
+    let after = before;
+    for (const below of BELOW_THE_TOKEN_PX) {
+      const at = [before.siteToken[0], before.siteToken[1] + below];
+      if (onADesktop()) browser.rightClick(at);
+      else browser.tap(at);
+      after = await readUntil(() => browser.read(deepState(site)), ready, 2_000);
+      if (ready(after)) break;
+      if (after.sheet) browser.press("Escape");
+      if (!browser.read(deepState(site)).army) await pickTheSpireArmy({ browser });
+    }
+    extraScreenshot(`${key}-card`);
+    return { before, after };
+  };
+}
+
+/** The card opened from the map kept the camera, and the army selected, where the player put them. */
+const cardKeptTheView = ({ before, after }) =>
+  !before.camera
+    ? "the page reports no camera"
+    : !sameHex(before.camera, after.camera)
+      ? `opening the card moved the camera from ${JSON.stringify(before.camera)}`
+      : after.army?.id !== PICKED_ARMY
+        ? "the card left the army unselected"
+        : null;
+
+/** The rival's Altar names its holder and offers no order: the contract refuses another Aspect's site. */
+function rivalSiteRefused({ played }) {
+  const { before, after } = played;
+  if (!before.siteToken) return failed("the map draws no token for the Altar", played);
+  if (after.sheet !== "Altar") return failed("the Altar's card did not open from the map", played);
+  const view = cardKeptTheView(played);
+  if (view) return failed(view, played);
+  if (!after.text?.includes("Held by Chaos")) return failed("the Altar's card names no rival holder", played);
+  if (!after.text?.includes("Another Aspect holds it")) return failed("the Altar's card gives no reason", played);
+  if (after.buttons.some((text) => text === "Join" || text === "Attack" || text === "Take"))
+    return failed("the card offers an order on a rival's site", played);
+  return completed({ camera: after.camera, buttons: after.buttons });
+}
+
+/** The Foundation's card offers Join to a mate of its holder, the camera and the army left where they were. */
+function foundationOffersJoin({ played }) {
+  const { before, after } = played;
+  if (!before.siteToken) return failed("the map draws no token for the Foundation", played);
+  if (after.sheet !== "Foundation") return failed("the Foundation's card did not open from the map", played);
+  const view = cardKeptTheView(played);
+  if (view) return failed(view, played);
+  if (!after.text?.includes("One site every Aspect fights for"))
+    return failed("the card does not say the Foundation is shared", played);
+  if (!after.buttons.includes("Join")) return failed("the Foundation's card offers no Join", played);
+  return completed({ camera: after.camera, buttons: after.buttons });
+}
+
+/** Presses Join, waits for the chain's answer, then opens the Foundation's card again from its token. */
+async function joinTheFoundation({ browser, extraScreenshot }) {
+  const site = LAB_DEEP_SITES.foundation;
+  const before = browser.read(deepState(site));
+  if (before.buttons.includes("Join")) browser.click("Join");
+  const answered = await readUntil(
+    () => browser.read(deepState(site)),
+    (shown) => shown.sent.includes("InteractSite") && shown.armyToken === null,
+    MERGE_WAIT_MS,
+  );
+  if (answered.sheet) browser.press("Escape");
+  const token = browser.read(deepState(site)).siteToken;
+  if (token) browser.tap([token[0], token[1] + BELOW_THE_TOKEN_PX[0]]);
+  const reopened = await readUntil(
+    () => browser.read(deepState(site)),
+    (shown) => shown.sheet === "Foundation",
+    MERGE_WAIT_MS,
+  );
+  extraScreenshot("foundation-joined");
+  return { before, answered, reopened };
+}
+
+/** The chain answered Join: the army left its tile for the Foundation's slot, and the card lists it there. */
+function joinedTheFoundation({ played }) {
+  const { answered, reopened } = played;
+  if (!answered.sent.includes("InteractSite")) return failed("Join sent no InteractSite", played);
+  if (answered.armyToken !== null) return failed("the army still stands on its tile after joining", played);
+  if (reopened.sheet !== "Foundation") return failed("the Foundation's card did not open again", played);
+  if (!/Temtinos/.test(reopened.text ?? ""))
+    return failed("the Foundation's slots do not list the player's army", played);
+  return completed({ sent: answered.sent, slots: reopened.text });
+}
+
 /** The ruin beside the army (site-fixture.ts) and how near a framed army stands to the camera's target, in hexes. */
 const LAB_RUIN = 710;
 const FRAMED_WITHIN_HEXES = 6;
@@ -3372,10 +3513,30 @@ const UNDER_THE_CARD_PX = [70, 160];
 /** How far from the middle a ruin may stand across a phone and still be tapped whole: a far ruin is panned within. */
 const ACROSS_THE_PHONE_PX = [-120, 120];
 const PAN_BURSTS = 16;
+const SETTLE_READS = 6;
 const underTheCard = (token) => token && token[1] >= UNDER_THE_CARD_PX[0] && token[1] <= UNDER_THE_CARD_PX[1];
+/** Pans the ruin under the card and waits for the pan to come to rest; what the map showed then and at rest. */
 async function panTheRuinUnderTheCard(browser) {
   await panTheRuinInto(browser, 0, ACROSS_THE_PHONE_PX, ["KeyA", "KeyD"]);
   await panTheRuinInto(browser, 1, UNDER_THE_CARD_PX, ["KeyW", "KeyS"]);
+  const panned = browser.read(FIGHT_STATE);
+  return { panned, atRest: await panAtRest(browser, panned) };
+}
+
+/**
+ * Reads the map until a keyboard pan has stopped gliding. The map's controls damp a pan (CONTROL_CONFIG.dampingFactor),
+ * so about 5% of it is still to come a second after the key: a camera judged against a target still moving under it
+ * reads as moved. At rest is the camera's hex and the ruin's token where they stood one report earlier.
+ */
+async function panAtRest(browser, from) {
+  let last = from;
+  for (let read = 0; read < SETTLE_READS; read += 1) {
+    await sleep(CAMERA_REPORT_MS);
+    const now = browser.read(FIGHT_STATE);
+    if (sameHex(now.camera, last.camera) && String(now.ruinToken) === String(last.ruinToken)) return now;
+    last = now;
+  }
+  return last;
 }
 
 /**
@@ -3409,15 +3570,15 @@ function showsBothSides(shown) {
  */
 function openTheRuinsCardUntil(ready) {
   return async ({ browser, extraScreenshot }) => {
-    if (!onADesktop()) await panTheRuinUnderTheCard(browser);
+    const pan = onADesktop() ? null : await panTheRuinUnderTheCard(browser);
     const before = browser.read(FIGHT_STATE);
-    if (!before.ruinToken) return { before, after: before };
+    if (!before.ruinToken) return { pan, before, after: before };
     extraScreenshot("before-fight");
     if (onADesktop()) browser.rightClick(before.ruinToken);
     else browser.tap(before.ruinToken);
     const after = await readUntil(() => browser.read(FIGHT_STATE), ready, MERGE_WAIT_MS);
     extraScreenshot("fight-card");
-    return { before, after };
+    return { pan, before, after };
   };
 }
 
@@ -4751,6 +4912,7 @@ export const STEP_SETS = {
   "lab-reenter": { game: LAB_FROM_HOME, steps: labReenterSteps() },
   "lab-ruin-fight": { game: labSpireGame("ruin-fight"), steps: LAB_RUIN_FIGHT_STEPS },
   "lab-ruin-far": { game: labSpireGame("ruin-far"), steps: LAB_RUIN_FAR_STEPS },
+  "lab-deep-sites": { game: labSpireGame("deep-sites"), steps: LAB_DEEP_SITES_STEPS },
   "lab-hover-zoom": { game: labSpireGame("after-battle"), steps: LAB_HOVER_ZOOM_STEPS, devOverlays: true },
   "lab-hover-zoom-pair": { game: labSpireGame("merge-loses-xp"), steps: LAB_HOVER_ZOOM_STEPS, devOverlays: true },
   "lab-high-ground": { game: labSpireGame("high-ground"), steps: LAB_HIGH_GROUND_STEPS, devOverlays: true },

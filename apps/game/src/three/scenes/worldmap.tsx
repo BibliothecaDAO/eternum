@@ -2922,6 +2922,7 @@ export default class WorldmapScene extends WarpTravel {
     return (
       action === ActionType.UseSite ||
       action === ActionType.EnterDepth ||
+      action === ActionType.DeepSite ||
       action === ActionType.CreateArmy ||
       action === ActionType.Help
     );
@@ -3008,7 +3009,8 @@ export default class WorldmapScene extends WarpTravel {
       armySelected: this.worldSpatialProjection.getArmy(selectedEntityId) !== undefined,
       site:
         (structure !== undefined && this.isStandingExpeditionSite(structure.id)) ||
-        this.usableSiteAt(hexCoords) !== null,
+        this.usableSiteAt(hexCoords) !== null ||
+        (path !== undefined && ActionPaths.getActionType(path) === ActionType.DeepSite),
       // An army of the player's standing on the spire is selected by the tap, as on any site.
       ownSpire: this.isArmysSpire(selectedEntityId, hexCoords) && !this.holdsOwnSelectable(hexCoords),
       onPhone: layoutNow() === "phone",
@@ -3224,8 +3226,8 @@ export default class WorldmapScene extends WarpTravel {
           this.onSiteUse(actionPath, selectedEntityId);
         } else if (actionType === ActionType.CreateArmy) {
           this.onArmyCreate(actionPath, selectedEntityId);
-        } else if (actionType === ActionType.EnterDepth) {
-          // The depth is the player's choice: the spire's card, with this army, offers each one.
+        } else if (actionType === ActionType.EnterDepth || actionType === ActionType.DeepSite) {
+          // The player's choice is the card's: the spire's offers each depth, a Deep site's its Attack, Take or Join.
           this.openTargetCardForSelectedArmy(actionPath[actionPath.length - 1].hex);
         }
         this.logInteractionDebug("action_executed_from_right_click", {

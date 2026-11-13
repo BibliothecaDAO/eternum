@@ -2,7 +2,9 @@ import { NativeFactStore } from "@bibliothecadao/eternum/game-client";
 import { configManager } from "@bibliothecadao/eternum";
 import { RESOURCE_PRECISION } from "@bibliothecadao/types";
 import { hash } from "starknet";
-import { beforeEach, describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import { deepSitesScenario } from "@/lab/game/deep-sites-scenario";
+import { chainOf } from "@/lab/game/lab-chain";
 import { readHyperstructureConstruction } from "./hyperstructure-state";
 
 let store: NativeFactStore;
@@ -59,5 +61,22 @@ describe("hyperstructure construction from native facts", () => {
     setStage("Foundation");
     contribute(1n);
     expect(() => readHyperstructureConstruction(store, 17)).toThrow("contributions without resource requirements");
+  });
+});
+
+describe("a Season 1 hyperstructure, built by its Aspect's height", () => {
+  it("stands each Aspect's tower by the stages its height has built: a fifth of the tower a stage", () => {
+    vi.spyOn(configManager, "getActiveGameId").mockReturnValue(1);
+    const chain = chainOf(deepSitesScenario());
+    // Might 4,100 (stage 2), Harmony 2,500 (1), Chaos 6,000 (3), Guile 8,200 (4): entities 0x1ad01 to 0x1ad04.
+    expect([1, 2, 3, 4].map((aspect) => readHyperstructureConstruction(chain, 0x1ad00 + aspect))).toEqual([
+      { entityId: 0x1ad01, progress: 40, completed: false },
+      { entityId: 0x1ad02, progress: 20, completed: false },
+      { entityId: 0x1ad03, progress: 60, completed: false },
+      { entityId: 0x1ad04, progress: 80, completed: false },
+    ]);
+    // A hyperstructure no Aspect builds keeps the resources given to it: the depth proof's, none given.
+    expect(readHyperstructureConstruction(chain, 903)).toEqual({ entityId: 903, progress: 0, completed: false });
+    vi.restoreAllMocks();
   });
 });

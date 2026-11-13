@@ -9,7 +9,6 @@ import { resolveFiniteSeasonEndAt, resolveSeasonStartTimestamp } from "@/ui/feat
 import {
   ClientConfigManager,
   configManager,
-  getStructureName,
   formatArmies,
   formatArrivals,
   formatGuilds,
@@ -201,22 +200,6 @@ export const incomingTroopArrivalsView: FactView<ReturnType<typeof summarizeInco
 export const settlementPlayersView: FactView<bigint[]> = {
   models: ["PlayerEntry"],
   read: readBlitzSettlementPlayerAddresses,
-};
-
-export const faithFactsView: FactView<{
-  structures: (NativeRows["Structure"] & { display_name: string })[];
-  wonderFaith: NativeRows["WonderFaith"][];
-  faithfulStructures: NativeRows["FaithfulStructure"][];
-}> = {
-  models: ["Structure", "WonderFaith", "FaithfulStructure", "SettledRealm", "GameRelease"],
-  read: (store) => ({
-    structures: inActiveGame("Structure")(store).map((structure) => ({
-      ...structure,
-      display_name: getStructureName(structure, store).name,
-    })),
-    wonderFaith: inActiveGame("WonderFaith")(store),
-    faithfulStructures: inActiveGame("FaithfulStructure")(store),
-  }),
 };
 
 /** The game's clock and dev-mode gate, as its registry row states them. */

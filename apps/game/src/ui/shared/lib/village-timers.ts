@@ -1,14 +1,9 @@
-import { configManager } from "@bibliothecadao/eternum";
-import { TickIds } from "@bibliothecadao/types";
-
 const MILITIA_UNLOCK_DELAY_SECONDS = 24 * 60 * 60;
 
 type NumericLike = number | bigint | string | null | undefined;
 
 interface VillageTimerSummary {
   militiaUnlockRemainingSeconds: number;
-  settlementImmunityRemainingSeconds: number;
-  postRaidImmunityWindowSeconds: number;
 }
 
 interface BuildVillageTimerSummaryParams {
@@ -48,19 +43,7 @@ export const buildVillageTimerSummary = ({
     return null;
   }
 
-  const armiesTickSeconds = configManager.getTick(TickIds.Armies);
-  const settlementImmunityDurationSeconds = Math.max(
-    0,
-    configManager.getVillageSettlementImmunityTickCount() * armiesTickSeconds,
-  );
-  const postRaidImmunityWindowSeconds = Math.max(
-    0,
-    configManager.getVillagePostRaidImmunityTickCount() * armiesTickSeconds,
-  );
-
   return {
     militiaUnlockRemainingSeconds: Math.max(0, createdAt + MILITIA_UNLOCK_DELAY_SECONDS - currentTimestamp),
-    settlementImmunityRemainingSeconds: Math.max(0, createdAt + settlementImmunityDurationSeconds - currentTimestamp),
-    postRaidImmunityWindowSeconds,
   };
 };

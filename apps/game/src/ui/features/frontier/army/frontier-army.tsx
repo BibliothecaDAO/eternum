@@ -1,22 +1,31 @@
-import { ArmyDetail, useArmyStep } from "./army-panel";
-import { type ArmyDetailFacts, type ArmyView, readArmyDetail } from "./army-detail";
 import { useGame } from "@/hooks/context/game-context";
-import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
 import { sendOnce, useInFlight } from "@/hooks/store/use-actions-in-flight";
+import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
+import { useCurrentBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
+import { useState } from "react";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { HudSheet, HudWindowFoot } from "@/ui/design-system/kit/hud-elements";
 import { toast } from "@/ui/features/event-feed/notify";
-import { heldSkillPoints, realmLearned, scoutingKindsOf, type SkillPointChoice } from "@bibliothecadao/eternum";
-import { type NativeRows } from "@bibliothecadao/eternum/game-client";
-import { useState } from "react";
+import {
+  deepTicksLeft,
+  realmLearned,
+  scoutingKindsOf,
+  heldSkillPoints,
+  type SkillPointChoice,
+} from "@bibliothecadao/eternum";
+import { type NativeFactStore, type NativeRows } from "@bibliothecadao/eternum/game-client";
+
 import { useArmyRevealYield } from "../frontier-reveal-yield";
 import { SpireButton, SpireOdds, useArmyAtItsSpire } from "../spire-card";
 import { type DockArmy, useDockArmies } from "../hud/dock-armies";
+import { type ArmyDetailFacts, type ArmyView, readArmyDetail } from "./army-detail";
 import { SCOUTING_CHOICES } from "../progression-choices";
+import { ArmyDetail, useArmyStep } from "./army-panel";
+import { ArmyRefill } from "./army-refill";
 import { ArmyDeleteButton, ArmyDeleteConfirm } from "./army-delete";
 import { ArmyRelicSlots } from "../relics/army-relic-slots";
 
-const PROGRESS_MODELS = ["RealmKnowledge", "ArmyProgress", "ArmyProgressionRules"] as const;
+const PROGRESS_MODELS = ["RealmKnowledge", "ArmyProgress", "ArmyProgressionRules", "DeepArmy", "DeepRules"] as const;
 
 /**
  * The selected army's detail over the game's facts, the one army panel: opened by selecting the army, on the map or
@@ -52,6 +61,7 @@ const ArmyPanel = ({
   onClose: () => void;
 }) => {
   const { setup, account } = useGame();
+  const now = useCurrentBlockTimestamp();
   useNativeRevision(PROGRESS_MODELS);
   const sending = useInFlight("tier", army.explorerId) !== undefined;
   const revealYield = useArmyRevealYield(army);
@@ -67,6 +77,7 @@ const ArmyPanel = ({
     art: army.art,
     ethereal: army.ethereal,
     troops: army.troops,
+    deep: deepTicksLeftOf(setup.store, realm.game_id, army.explorerId, now),
     xp: progress.xp,
     stamina: army.stamina,
     secondsToFull: army.secondsToFull,
@@ -102,6 +113,7 @@ const ArmyPanel = ({
 
   return (
     <ArmySheet
+      realm={realm}
       army={army}
       view={readArmyDetail(facts)}
       sending={sending}
@@ -118,6 +130,7 @@ const ArmyPanel = ({
  * status only; Delete's confirm in the body, and Spire in the foot while the army stands at its spire.
  */
 const ArmySheet = ({
+  realm,
   army,
   view,
   sending,
@@ -126,6 +139,7 @@ const ArmySheet = ({
   onLevelUp,
   onClose,
 }: {
+  realm: NativeRows["Structure"];
   army: DockArmy;
   view: ArmyView;
   sending: boolean;
@@ -142,7 +156,13 @@ const ArmySheet = ({
       beside={!step.choosing && <ArmyDeleteButton army={army} onPress={() => setDeleting(true)} />}
       onClose={onClose}
     >
-      <ArmyDetail army={view} sending={sending} step={step} onLevelUp={onLevelUp} />
+      <ArmyDetail
+        army={view}
+        refill={<ArmyRefill army={army} realm={realm} look="price" />}
+        sending={sending}
+        step={step}
+        onLevelUp={onLevelUp}
+      />
       <ArmyRelicSlots explorerId={army.explorerId} />
       {deleting && !step.choosing && (
         <ArmyDeleteConfirm army={army} onCancel={() => setDeleting(false)} onDeleted={onClose} />
@@ -156,4 +176,10 @@ const ArmySheet = ({
       )}
     </HudSheet>
   );
+};
+
+/** In the Deep, how long the army's troops last; none for an army elsewhere (deepTicksLeft). */
+const deepTicksLeftOf = (store: NativeFactStore, gameId: number, explorerId: number, now: number) => {
+  const stored = store.get("ExplorerTroops", { game_id: gameId, explorer_id: explorerId });
+  return (stored && deepTicksLeft(store, stored, now)) ?? undefined;
 };
