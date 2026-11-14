@@ -103,7 +103,12 @@ vi.mock("@bibliothecadao/eternum", async (importOriginal) => {
     // Realm 7's name, as the card writes it.
     getStructureName: () => ({ name: "Temtinos", originalName: "Temtinos" }),
     // The day's turn reads the game's calendar and the realm's site from the facts: realm 7's day-3 site.
-    readExpeditionRules: () => ({ ...recorded.calendar, scheduledEndAt: herald.scheduledEndAt, endAt: Number(herald.game.end_at), spacing: 100 }),
+    readExpeditionRules: () => ({
+      ...recorded.calendar,
+      scheduledEndAt: herald.scheduledEndAt,
+      endAt: Number(herald.game.end_at),
+      spacing: 100,
+    }),
     isExpeditionRealm: () => true,
     expeditionRealmSite: () => ({ col: 650, row: 850 }),
   };
