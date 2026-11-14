@@ -31,7 +31,14 @@ import { useOrderAt } from "./hud/army-order";
 import { type DockArmy, useDockArmies } from "./hud/dock-armies";
 import { useApproachTile } from "./sites/approach";
 
-const SPIRE_MODELS = ["ArmySlot", "ExplorerTroops", "Structure", "RealmKnowledge", "TileOccupancy", "DeepRules"] as const;
+const SPIRE_MODELS = [
+  "ArmySlot",
+  "ExplorerTroops",
+  "Structure",
+  "RealmKnowledge",
+  "TileOccupancy",
+  "DeepRules",
+] as const;
 
 type Spire = { col: number; row: number; deepest: number; realm: NativeRows["Structure"] };
 
@@ -134,7 +141,7 @@ const OwnSpire = ({ spire, onResearch }: { spire: Spire; onResearch: () => void 
   const approach = useOrderAt(useApproachTile(spire, actor !== undefined && depthNow === 0 && !beside));
 
   const sharedDeep = store.get("DeepRules", { game_id: gameId }) !== undefined;
-  const depthLabel = (depth: 1 | 2 | 3) => depth === 3 && sharedDeep ? DEEP_WORDS.title : depthName(depth);
+  const depthLabel = (depth: 1 | 2 | 3) => (depth === 3 && sharedDeep ? DEEP_WORDS.title : depthName(depth));
   const depths = ([1, 2, 3] as const).filter((depth) => depth <= spire.deepest);
   const next = ([1, 2, 3] as const).find((depth) => depth === spire.deepest + 1);
   const choice = (depth: 1 | 2 | 3) => {

@@ -88,9 +88,10 @@ it("covers any end without gaps, extra days or an unmerged short stub", () => {
   }
 });
 
-
 it("rejects an allocation day beyond the actual season or absorbed into its last day", () => {
   expect(() => dayAtIndex(calendar, -1)).toThrow("Invalid day index");
   expect(() => dayAtIndex(calendar, 105)).toThrow("Day index outside season");
-  expect(() => dayAtIndex({ ...calendar, startMainAt: 0, endAt: 5 * 7200, dayUnitSeconds: 7200 }, 1)).toThrow("Day index outside season");
+  expect(() => dayAtIndex({ ...calendar, startMainAt: 0, endAt: 5 * 7200, dayUnitSeconds: 7200 }, 1)).toThrow(
+    "Day index outside season",
+  );
 });

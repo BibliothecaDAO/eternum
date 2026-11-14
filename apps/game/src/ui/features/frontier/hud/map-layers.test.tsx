@@ -593,13 +593,30 @@ const ruinPayout = (rules: ExpeditionRules, now: number, today: number, depth: n
   ];
 };
 
-
 describe("the shared Deep in the map layer menu", () => {
   it("shows Deep without a private chest and visits its shared center", () => {
     const { store, realm } = chestDay(3n);
     store.applyFacts([
-      { model: "SettlementRules", key: "0x2", value: { ...store.require("SettlementRules", { game_id: 1 }), spacing: 1024 } },
-      { model: "DeepRules", key: "0xdeef", value: { game_id: 1, foundation: { x: 10, y: 25, alt: false }, quarry: { x: 25, y: 25, alt: false }, altar: { x: 40, y: 25, alt: false }, beast_count: 1000n, loss_per_tick: 1n, quarry_per_tick: 1n, altar_per_tick: 1, altar_threshold: 10 } },
+      {
+        model: "SettlementRules",
+        key: "0x2",
+        value: { ...store.require("SettlementRules", { game_id: 1 }), spacing: 1024 },
+      },
+      {
+        model: "DeepRules",
+        key: "0xdeef",
+        value: {
+          game_id: 1,
+          foundation: { x: 10, y: 25, alt: false },
+          quarry: { x: 25, y: 25, alt: false },
+          altar: { x: 40, y: 25, alt: false },
+          beast_count: 1000n,
+          loss_per_tick: 1n,
+          quarry_per_tick: 1n,
+          altar_per_tick: 1,
+          altar_threshold: 10,
+        },
+      },
     ] as never);
     const rules = readExpeditionRules(store, 1)!;
     context.mapView = true;

@@ -18,7 +18,11 @@ export interface DeepSiteView {
   guards: { slot: number; army: NativeRows["ExplorerTroops"] }[];
 }
 
-export function readDeepSites(store: NativeFactStore, timestamp: number, gameId = configManager.getActiveGameId()): DeepSiteView[] {
+export function readDeepSites(
+  store: NativeFactStore,
+  timestamp: number,
+  gameId = configManager.getActiveGameId(),
+): DeepSiteView[] {
   const rules = store.get("DeepRules", { game_id: gameId });
   if (!rules) {
     if ([...store.inGame("DeepSite", gameId)].length) throw new Error("Deep sites are missing their preset rules");

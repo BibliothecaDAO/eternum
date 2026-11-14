@@ -40,15 +40,30 @@ describe("GameSubscription", () => {
       subscriptionScope,
       scopeValidUntil: () => 86_400,
       subscriptionSnapshot: () => ({ confirmed_block: 1, game_id: "1", models: [] }),
-      scopeKeyRows: (_game: string, _spacing: number, keys: ReadonlySet<string>) => keys.has("entities:301") ? [gained] : [],
+      scopeKeyRows: (_game: string, _spacing: number, keys: ReadonlySet<string>) =>
+        keys.has("entities:301") ? [gained] : [],
       currentRow: () => undefined,
     } as unknown as WorldFold;
-    const subscription = new GameSubscription("1", "0x111", () => fold, () => 1, () => 100, setup().decoder.registry);
+    const subscription = new GameSubscription(
+      "1",
+      "0x111",
+      () => fold,
+      () => 1,
+      () => 100,
+      setup().decoder.registry,
+    );
     subscription.snapshot();
-    scope = { ...initial, expedition: { ...initial.expedition!, entities: new Set([...initial.expedition!.entities, "301"]) } };
+    scope = {
+      ...initial,
+      expedition: { ...initial.expedition!, entities: new Set([...initial.expedition!.entities, "301"]) },
+    };
     const published = subscription.project({ type: "diff", block: 2, preconfirmed: false, set: [changed], del: [] });
     expect(subscriptionScope).toHaveBeenCalledTimes(2);
-    expect(published.flatMap((body) => body.type === "diff" ? body.set.filter((row) => row.model === "ExplorerTroops") : [])).toEqual([gained]);
+    expect(
+      published.flatMap((body) =>
+        body.type === "diff" ? body.set.filter((row) => row.model === "ExplorerTroops") : [],
+      ),
+    ).toEqual([gained]);
   });
 
   it("invalidates a visit when its player entry resolves to an owner", () => {

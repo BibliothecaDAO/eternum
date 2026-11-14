@@ -2,7 +2,6 @@
 pub mod CombatLogic {
     use starknet::ContractAddress;
     use crate::commands::Battle;
-
     use crate::logic::deep_sites::DeepSites;
     component!(path: DeepSites, storage: deep_sites, event: DeepSiteEvent);
     #[abi(embed_v0)]

@@ -211,7 +211,10 @@ pub mod RelicState {
             assert!(context.rules.unbox().day_unit_seconds != 0, "site requires expedition");
             if crate::logic::deep::contains(game_id, command.coord) {
                 crate::deep::IDeepSitesDispatcherTrait::join_deep_site(
-                    crate::logic::deep_sites::dispatcher(game_id), game_id, actor, command,
+                    crate::logic::deep_sites::dispatcher(game_id),
+                    game_id,
+                    actor,
+                    command,
                     crate::commands::action_context(context),
                 );
                 return;

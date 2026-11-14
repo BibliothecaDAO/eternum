@@ -3,9 +3,9 @@ mod army_activity;
 
 mod aspects;
 mod blitz_results;
-mod deep_sites;
 mod campaign;
 mod camps;
+mod deep_sites;
 mod entry;
 
 mod frontier_extension;

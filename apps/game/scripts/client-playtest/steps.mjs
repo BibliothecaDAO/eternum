@@ -3290,11 +3290,19 @@ const DEEP_JOIN_STEPS = [
       if (!before.quarry) return { before, after: before };
       if (onADesktop()) browser.rightClick(before.quarry);
       else browser.tap(before.quarry);
-      const opened = await readUntil(() => browser.read(DEEP_JOIN_STATE), (state) => state.sheet === "Quarry", MERGE_WAIT_MS);
+      const opened = await readUntil(
+        () => browser.read(DEEP_JOIN_STATE),
+        (state) => state.sheet === "Quarry",
+        MERGE_WAIT_MS,
+      );
       extraScreenshot("quarry-before-join");
       if (!opened.text.includes("Join")) return { before, after: opened };
       browser.click("Join");
-      const after = await readUntil(() => browser.read(DEEP_JOIN_STATE), (state) => state.joined.length === 1 && state.text.includes("Already guarding"), MERGE_WAIT_MS);
+      const after = await readUntil(
+        () => browser.read(DEEP_JOIN_STATE),
+        (state) => state.joined.length === 1 && state.text.includes("Already guarding"),
+        MERGE_WAIT_MS,
+      );
       extraScreenshot("quarry-joined");
       return { before, opened, after };
     },
@@ -3303,13 +3311,16 @@ const DEEP_JOIN_STEPS = [
       const facts = joined.flatMap((row) => row.answered ?? []);
       const guard = facts.find((fact) => fact.model === "DeepGuard" && Number(fact.value?.explorer_id) === PICKED_ARMY);
       const leftField = facts.some((fact) => fact.model === "TileOccupancy" && fact.value === null);
-      return joined.length === 1 && guard?.value.slot === 1 && leftField && played.after.text.includes("Already guarding") && (played.after.slots.match(/Free slot/g) ?? []).length === 2
+      return joined.length === 1 &&
+        guard?.value.slot === 1 &&
+        leftField &&
+        played.after.text.includes("Already guarding") &&
+        (played.after.slots.match(/Free slot/g) ?? []).length === 2
         ? completed(played)
         : failed("Join must submit InteractSite once, leave the field and show the second allied guard slot", played);
     },
   },
 ];
-
 
 /**
  * Two of the realm's armies merged as a player merges them, then hovered (owner, 2026-10-25: "due to an army merge I dont

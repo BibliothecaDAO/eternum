@@ -47,7 +47,10 @@ pub fn battle_guard(game_id: u32, actor: ContractAddress, command: Battle, conte
     let mut defender = guard_defender(target, actor, attacker, context);
     let attacker_before = attacker.troops.count;
     let defender_before = defender.army.troops.count;
-    let fought = match defender.source { GuardSource::Empty => false, _ => true };
+    let fought = match defender.source {
+        GuardSource::Empty => false,
+        _ => true,
+    };
     let rolls = if fought {
         fight_guard(key, ref attacker, ref defender, context)
     } else {
@@ -60,7 +63,9 @@ pub fn battle_guard(game_id: u32, actor: ContractAddress, command: Battle, conte
     }
 }
 
-fn guard_target(key: ResourceKey, actor: ContractAddress, attacker: ExplorerTroops, context: ExecutionContext) -> GuardTarget {
+fn guard_target(
+    key: ResourceKey, actor: ContractAddress, attacker: ExplorerTroops, context: ExecutionContext,
+) -> GuardTarget {
     let rules = context.rules.unbox();
     if let Some(site) = crate::logic::deep_sites::site(key) {
         let day = crate::days::day_of(context.game.unbox(), rules.day_unit_seconds, context.timestamp);
@@ -78,7 +83,9 @@ fn guard_target(key: ResourceKey, actor: ContractAddress, attacker: ExplorerTroo
     GuardTarget { key, coord: crate::structures::structure_coord(key), structure: Some(structure) }
 }
 
-fn guard_defender(target: GuardTarget, actor: ContractAddress, attacker: ExplorerTroops, context: ExecutionContext) -> GuardDefender {
+fn guard_defender(
+    target: GuardTarget, actor: ContractAddress, attacker: ExplorerTroops, context: ExecutionContext,
+) -> GuardDefender {
     let game_id = target.key.game_id;
     if target.structure.is_none() {
         if let Some(key) = crate::logic::deep_guards::next(target.key) {
@@ -99,18 +106,21 @@ fn guard_defender(target: GuardTarget, actor: ContractAddress, attacker: Explore
         None => (GuardSource::Empty, Default::default()),
     };
     GuardDefender {
-        source, actor: owner,
-        army: ExplorerTroops { owner: target.key.entity_id, coord: target.coord, troops },
+        source, actor: owner, army: ExplorerTroops { owner: target.key.entity_id, coord: target.coord, troops },
     }
 }
 
-fn fight_guard(key: ExplorerKey, ref attacker: ExplorerTroops, ref defender: GuardDefender, context: ExecutionContext) -> (u8, u8) {
+fn fight_guard(
+    key: ExplorerKey, ref attacker: ExplorerTroops, ref defender: GuardDefender, context: ExecutionContext,
+) -> (u8, u8) {
     let combat = CombatContext {
         defender_is_structure_guard: true, ..combat_context(key.game_id, attacker, defender.army, context),
     };
     let attacker_before = attacker.troops.count;
     let defender_before = defender.army.troops.count;
-    let (attacker_after, defender_after) = resolve_battle(key.game_id, attacker.troops, defender.army.troops, combat, context);
+    let (attacker_after, defender_after) = resolve_battle(
+        key.game_id, attacker.troops, defender.army.troops, combat, context,
+    );
     attacker.troops = attacker_after;
     defender.army.troops = defender_after;
     combat_troops(key.game_id).finish_battle(key, attacker, attacker_before, crate::commands::action_context(context));
@@ -120,15 +130,17 @@ fn fight_guard(key: ExplorerKey, ref attacker: ExplorerTroops, ref defender: Gua
 
 fn save_guard_defender(defender: GuardDefender, before: u128, context: ExecutionContext) {
     match defender.source {
-        GuardSource::Army(key) => combat_troops(key.game_id).finish_battle(
-            key, defender.army, before, crate::commands::action_context(context),
-        ),
+        GuardSource::Army(key) => combat_troops(key.game_id)
+            .finish_battle(key, defender.army, before, crate::commands::action_context(context)),
         GuardSource::Guard(key) => {
             let mut row = crate::logic::guards::guard(key);
             row.troops = defender.army.troops;
             if row.troops.count == 0 {
                 row.troops.stamina.reset();
-                row.destroyed_tick = (context.timestamp / context.rules.unbox().tick_config.armies_tick_in_seconds).try_into().unwrap();
+                row
+                    .destroyed_tick = (context.timestamp / context.rules.unbox().tick_config.armies_tick_in_seconds)
+                    .try_into()
+                    .unwrap();
             }
             crate::logic::guards::GuardState::save(key, row);
         },
@@ -139,23 +151,37 @@ fn save_guard_defender(defender: GuardDefender, before: u128, context: Execution
 fn spend_claim(key: ExplorerKey, ref attacker: ExplorerTroops, destination: Coord, context: ExecutionContext) {
     assert!(crate::geometry::adjacent(attacker.coord, destination), "structure claim requires adjacency");
     let rules = context.rules.unbox();
-    attacker.troops.stamina.spend(
-        ref attacker.troops.boosts, attacker.troops.category, attacker.troops.tier,
-        rules.troop_stamina_config, rules.troop_stamina_config.stamina_attack_req.into(),
-        rules.tick_config.armies_tick_in_seconds, context.timestamp, true,
-    );
+    attacker
+        .troops
+        .stamina
+        .spend(
+            ref attacker.troops.boosts,
+            attacker.troops.category,
+            attacker.troops.tier,
+            rules.troop_stamina_config,
+            rules.troop_stamina_config.stamina_attack_req.into(),
+            rules.tick_config.armies_tick_in_seconds,
+            context.timestamp,
+            true,
+        );
     crate::logic::troops::TroopState::save(key, crate::troops::ExplorerRecordTrait::into_record(attacker));
 }
 
 fn complete_guard_capture(
-    key: ExplorerKey, attacker: ExplorerTroops, target: GuardTarget, defender: GuardDefender,
-    relic_slot: Option<u8>, context: ExecutionContext,
+    key: ExplorerKey,
+    attacker: ExplorerTroops,
+    target: GuardTarget,
+    defender: GuardDefender,
+    relic_slot: Option<u8>,
+    context: ExecutionContext,
 ) {
     if let Some(structure) = target.structure {
         try_capture(key, attacker, target.key, structure, context.rules.unbox(), relic_slot, context);
         return;
     }
-    if attacker.troops.count == 0 || defender.army.troops.count != 0 || crate::logic::deep_guards::next(target.key).is_some() {
+    if attacker.troops.count == 0
+        || defender.army.troops.count != 0
+        || crate::logic::deep_guards::next(target.key).is_some() {
         return;
     }
     crate::logic::deep_guards::join(key, attacker, target.key);
@@ -165,24 +191,43 @@ fn complete_guard_capture(
 }
 
 fn emit_guard_battle(
-    key: ExplorerKey, actor: ContractAddress, attacker: ExplorerTroops, attacker_before: u128,
-    target: GuardTarget, defender: GuardDefender, defender_before: u128, rolls: (u8, u8), context: ExecutionContext,
+    key: ExplorerKey,
+    actor: ContractAddress,
+    attacker: ExplorerTroops,
+    attacker_before: u128,
+    target: GuardTarget,
+    defender: GuardDefender,
+    defender_before: u128,
+    rolls: (u8, u8),
+    context: ExecutionContext,
 ) {
     let winner = if attacker.troops.count == 0 && defender.army.troops.count != 0 {
         target.key.entity_id
     } else if defender.army.troops.count == 0 && attacker.troops.count != 0 {
         attacker.owner
-    } else { 0 };
+    } else {
+        0
+    };
     let (attacker_roll, defender_roll) = rolls;
-    emit(crate::troops::BattleEvent {
-        version: 2, game_id: key.game_id, attacker_id: key.explorer_id, defender_id: target.key.entity_id,
-        attacker_owner: attacker.owner,
-        defender_owner: match defender.source { GuardSource::Army(_) => defender.army.owner, _ => 0 },
-        winner_id: winner, coord: target.coord, max_reward: array![].span(),
-        attacker: battle_side(actor, attacker_before, attacker.troops, attacker_roll),
-        defender: battle_side(defender.actor, defender_before, defender.army.troops, defender_roll),
-        timestamp: context.timestamp,
-    });
+    emit(
+        crate::troops::BattleEvent {
+            version: 2,
+            game_id: key.game_id,
+            attacker_id: key.explorer_id,
+            defender_id: target.key.entity_id,
+            attacker_owner: attacker.owner,
+            defender_owner: match defender.source {
+                GuardSource::Army(_) => defender.army.owner,
+                _ => 0,
+            },
+            winner_id: winner,
+            coord: target.coord,
+            max_reward: array![].span(),
+            attacker: battle_side(actor, attacker_before, attacker.troops, attacker_roll),
+            defender: battle_side(defender.actor, defender_before, defender.army.troops, defender_roll),
+            timestamp: context.timestamp,
+        },
+    );
 }
 
 pub fn battle(

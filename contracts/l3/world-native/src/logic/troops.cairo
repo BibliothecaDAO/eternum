@@ -1,7 +1,7 @@
 use starknet::ContractAddress;
 use crate::resources::{IResourceOperationsDispatcherTrait, IResourceOperationsLibraryDispatcher, ResourceKey};
-use crate::troops::IBattleResolutionDispatcherTrait;
 use crate::structures::Structure;
+use crate::troops::IBattleResolutionDispatcherTrait;
 
 pub fn active_explorer(
     key: ExplorerKey, timestamp: u64, game_context: crate::commands::ExecutionContext,
@@ -41,7 +41,6 @@ pub fn field_explorer(
     crate::logic::deep_guards::assert_field(key);
     command_explorer(key, Some(actor), timestamp, context)
 }
-
 use starknet::storage::{StorageMapReadAccess, StoragePathEntry, StoragePointerReadAccess};
 use crate::troops::{ExplorerKey, ExplorerTroops};
 
@@ -861,7 +860,9 @@ pub mod TroopsLogic {
     #[abi(embed_v0)]
     impl BattleResolution of crate::troops::IBattleResolution<ContractState> {
         fn expire_explorer(
-            ref self: ContractState, key: ExplorerKey, explorer: ExplorerTroops,
+            ref self: ContractState,
+            key: ExplorerKey,
+            explorer: ExplorerTroops,
             context: crate::commands::ActionContext,
         ) {
             super::expire_explorer(key, explorer, crate::commands::execution_context(key.game_id, context));

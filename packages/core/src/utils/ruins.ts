@@ -140,7 +140,11 @@ export function activeTileOccupancy(
     const birth = store.get("ArmyDay", { game_id: key.game_id, explorer_id: occupancy.entity_id });
     const calendar = readExpeditionRules(store, key.game_id);
     if (!army || !birth || !calendar) throw new Error("Deep occupancy requires its army and calendar");
-    if (!isCurrentExpeditionArmy(calendar, birth.day, getBlockTimestamp().currentDefaultTick) || currentArmy(store, army).troops.count === 0n) return undefined;
+    if (
+      !isCurrentExpeditionArmy(calendar, birth.day, getBlockTimestamp().currentDefaultTick) ||
+      currentArmy(store, army).troops.count === 0n
+    )
+      return undefined;
   }
   if (occupancy?.category !== TileOccupier.Ruin) return occupancy;
   const site = store.get("ExpeditionSite", { game_id: key.game_id, entity_id: occupancy.entity_id });

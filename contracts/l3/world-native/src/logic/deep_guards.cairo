@@ -100,10 +100,10 @@ pub fn settle(site: ResourceKey, context: crate::commands::ExecutionContext) {
     for slot in 0..crate::rules::DEEP_GUARD_SLOTS {
         let explorer_id = state.deep.slots.read((site.game_id, site.entity_id, slot));
         if explorer_id != 0 {
-            crate::logic::combat::combat_troops(site.game_id).command_explorer(
-                ExplorerKey { game_id: site.game_id, explorer_id }, None,
-                crate::commands::action_context(context),
-            );
+            crate::logic::combat::combat_troops(site.game_id)
+                .command_explorer(
+                    ExplorerKey { game_id: site.game_id, explorer_id }, None, crate::commands::action_context(context),
+                );
         }
     }
 }

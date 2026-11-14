@@ -182,7 +182,9 @@ export const liveHomeArmies = (
   gameId: number,
   floorSeconds?: number,
 ): NativeRows["ExplorerTroops"][] => {
-  const armies = [...store.armiesAtHome(gameId, structureId)].map((army) => currentArmy(store, army, floorSeconds)).filter((army) => army.troops.count > 0n);
+  const armies = [...store.armiesAtHome(gameId, structureId)]
+    .map((army) => currentArmy(store, army, floorSeconds))
+    .filter((army) => army.troops.count > 0n);
   const rules = readExpeditionRules(store, gameId);
   if (!rules) return armies;
   const floor = floorSeconds ?? getBlockTimestamp().currentDefaultTick;

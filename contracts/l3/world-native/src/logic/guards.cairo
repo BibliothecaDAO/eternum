@@ -46,13 +46,14 @@ pub mod GuardState {
         assert!(maximum <= 4, "invalid guard slot limit");
         let mut counts = array![];
         for slot in 0..maximum {
-            counts.append(crate::logic::guards::guard(GuardKey {
-                game_id: key.game_id, structure_id: key.entity_id, slot,
-            }).troops.count);
+            counts
+                .append(
+                    crate::logic::guards::guard(GuardKey { game_id: key.game_id, structure_id: key.entity_id, slot })
+                        .troops
+                        .count,
+                );
         }
-        next_slot(counts.span()).map(|slot| GuardKey {
-            game_id: key.game_id, structure_id: key.entity_id, slot,
-        })
+        next_slot(counts.span()).map(|slot| GuardKey { game_id: key.game_id, structure_id: key.entity_id, slot })
     }
 
     pub fn next_slot(counts: Span<u128>) -> Option<u8> {

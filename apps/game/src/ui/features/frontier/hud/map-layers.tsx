@@ -73,8 +73,20 @@ export const useMapLayers = (
   const from = isMapView ? (camera ?? site) : site;
   const sharedDeep = facts.store.get("DeepRules", { game_id: realm.game_id }) !== undefined;
   return {
-    layers: [0, ...Array.from({ length: deepest }, (_, index): MapLayer => index === 2 && sharedDeep ? "deep" : (index + 1) as EtherealLayer)],
-    shown: !isMapView ? null : from ? (sharedDeep && isDeepTile(rules.spacing, { ...from, alt: false }) ? "deep" : expeditionDepth(rules, { y: from.row }) as MapLayer) : 0,
+    layers: [
+      0,
+      ...Array.from(
+        { length: deepest },
+        (_, index): MapLayer => (index === 2 && sharedDeep ? "deep" : ((index + 1) as EtherealLayer)),
+      ),
+    ],
+    shown: !isMapView
+      ? null
+      : from
+        ? sharedDeep && isDeepTile(rules.spacing, { ...from, alt: false })
+          ? "deep"
+          : (expeditionDepth(rules, { y: from.row }) as MapLayer)
+        : 0,
     go: (layer) => {
       if (!from) return;
       const fromDeep = sharedDeep && isDeepTile(rules.spacing, { ...from, alt: false });
@@ -94,7 +106,8 @@ const realmSite = (store: Parameters<typeof structureMapPosition>[0], realm: Nat
 };
 
 /** A layer's word: World, or Ethereal I to III. */
-const layerName = (layer: MapLayer): string => (layer === "deep" ? DEEP_WORDS.title : layer === 0 ? WORLD : depthName(layer));
+const layerName = (layer: MapLayer): string =>
+  layer === "deep" ? DEEP_WORDS.title : layer === 0 ? WORLD : depthName(layer);
 
 /** A layer's painting: the world map's, or the depth's own mark. */
 const layerMark = (layer: MapLayer): IconMeaning => (layer === 0 ? "map" : reachMark(layer === "deep" ? 3 : layer));
@@ -198,7 +211,15 @@ const ChestMark = ({ chest }: { chest: RuinChest }) => (
  * The four layers' chests on the layer switch, read before its list opens: each layer's mark with its chest's state on
  * its corner, faded once its chest is taken or while the layer is locked.
  */
-const LayerChests = ({ chests, layers, compact = false }: { chests: RuinChests; layers: readonly MapLayer[]; compact?: boolean }) => (
+const LayerChests = ({
+  chests,
+  layers,
+  compact = false,
+}: {
+  chests: RuinChests;
+  layers: readonly MapLayer[];
+  compact?: boolean;
+}) => (
   <span className="ui-layer-chests">
     {MAP_LAYERS.filter((layer) => layer !== 3 || !layers.includes("deep")).map((layer) => (
       <span

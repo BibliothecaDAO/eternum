@@ -176,9 +176,10 @@ it("includes shared Deep field armies and all held guards with their home facts"
     { model: "ExplorerTroops", value: { explorer_id: "301", owner: "8", troops: { count: "1000000000" } } },
     { model: "ExplorerTroops", value: { explorer_id: "302", owner: "9", troops: { count: "1000000000" } } },
   ];
-  const shared: ScopeRowReader = (model, spacing, keys) => [...rows, ...extra].filter(
-    (row) => row.model === model && scopeInputKeys(model, row.value, spacing).some((key) => keys.includes(key)),
-  );
+  const shared: ScopeRowReader = (model, spacing, keys) =>
+    [...rows, ...extra].filter(
+      (row) => row.model === model && scopeInputKeys(model, row.value, spacing).some((key) => keys.includes(key)),
+    );
   const scope = deriveGameSyncScope("0xa", 350, expedition, shared);
   expect(scope.expedition?.regions).toContain("0:3");
   for (const id of ["200", "301", "302", "8", "9"]) expect(scope.expedition?.entities).toContain(id);

@@ -142,9 +142,35 @@ describe("a realm's spire, from the player's path", () => {
   it("enters the shared Deep even when the old personal-map landing is occupied", async () => {
     const { store, rules, spire, armyTile } = spireDay({ spacing: 1024 });
     store.applyFacts([
-      { model: "DeepRules", key: "0xdeef", value: { game_id: 1, foundation: { x: 10, y: 25, alt: false }, quarry: { x: 25, y: 25, alt: false }, altar: { x: 40, y: 25, alt: false }, beast_count: 1000n, loss_per_tick: 1n, quarry_per_tick: 1n, altar_per_tick: 1, altar_threshold: 10 } },
+      {
+        model: "DeepRules",
+        key: "0xdeef",
+        value: {
+          game_id: 1,
+          foundation: { x: 10, y: 25, alt: false },
+          quarry: { x: 25, y: 25, alt: false },
+          altar: { x: 40, y: 25, alt: false },
+          beast_count: 1000n,
+          loss_per_tick: 1n,
+          quarry_per_tick: 1n,
+          altar_per_tick: 1,
+          altar_threshold: 10,
+        },
+      },
       { model: "RealmKnowledge", key: "0xd", value: { game_id: 1, structure_id: 7, learned: 3n << 48n } },
-      { model: "TileOccupancy", key: "0x905", value: { game_id: 1, alt: false, col: armyTile.col, row: armyTile.row + 3 * rules.spacing, entity_id: 990, category: TileOccupier.Camp, is_structure: true } },
+      {
+        model: "TileOccupancy",
+        key: "0x905",
+        value: {
+          game_id: 1,
+          alt: false,
+          col: armyTile.col,
+          row: armyTile.row + 3 * rules.spacing,
+          entity_id: 990,
+          category: TileOccupier.Camp,
+          is_structure: true,
+        },
+      },
     ] as never);
     const hud = renderHud(store);
     try {

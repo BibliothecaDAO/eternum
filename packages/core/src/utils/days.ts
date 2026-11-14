@@ -84,7 +84,11 @@ export const dayOf = (calendar: SeasonCalendar, timestamp: number): SeasonDay | 
 export const dayAtIndex = (calendar: SeasonCalendar, index: number): SeasonDay => {
   if (!Number.isSafeInteger(index) || index < 0) throw new Error("Invalid day index");
   const bag = Math.floor(index / DAYS_PER_BAG);
-  const units = bag * DAY_UNITS_PER_BAG + bagLengths(calendar.seed, bag).slice(0, index % DAYS_PER_BAG).reduce((sum, length) => sum + length, 0);
+  const units =
+    bag * DAY_UNITS_PER_BAG +
+    bagLengths(calendar.seed, bag)
+      .slice(0, index % DAYS_PER_BAG)
+      .reduce((sum, length) => sum + length, 0);
   const day = dayOf(calendar, calendar.startMainAt + units * calendar.dayUnitSeconds);
   if (!day || day.index !== index) throw new Error("Day index outside season");
   return day;

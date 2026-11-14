@@ -30,7 +30,9 @@ export function deriveGameSyncScope(
     if (!expedition) throw new Error("Position requires expedition rules");
     const guards = read("DeepGuard", expedition.spacing, [scopeLookup.guard(entity)]);
     if (guards.length > 1) throw new Error("Multiple Deep memberships for army");
-    const positions = read("TileOccupancy", expedition.spacing, [scopeLookup.occupancyOf(guards[0]?.value.site_id ?? entity)]);
+    const positions = read("TileOccupancy", expedition.spacing, [
+      scopeLookup.occupancyOf(guards[0]?.value.site_id ?? entity),
+    ]);
     if (positions.length !== 1) throw new Error(`Expected one position for scope entity ${syncScalar(entity)}`);
     const row = positions[0].value;
     return { x: Number(row.col), y: Number(row.row), alt: row.alt === true };

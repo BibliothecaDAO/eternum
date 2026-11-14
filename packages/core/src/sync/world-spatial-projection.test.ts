@@ -54,7 +54,16 @@ const createHarness = () => {
     }
   };
   const write = (
-    model: "TileOpt" | "TileOccupancy" | "ExplorerTroops" | "Structure" | "ExpeditionSite" | "DeepRules" | "DeepArmy" | "ArmyDay" | "DeepGuard",
+    model:
+      | "TileOpt"
+      | "TileOccupancy"
+      | "ExplorerTroops"
+      | "Structure"
+      | "ExpeditionSite"
+      | "DeepRules"
+      | "DeepArmy"
+      | "ArmyDay"
+      | "DeepGuard",
     alias: string,
     keys: (number | boolean)[],
     row: object,
@@ -224,20 +233,46 @@ const createHarness = () => {
     writeDeep: () => {
       writeExpeditionRules(14400, 1024, 360);
       rules.set("SliceRules", { game_id: 13, day_unit_seconds: 14400, tick_config: { armies_tick_in_seconds: 60n } });
-      write("DeepRules", "deep", [13], {
-        game_id: 13,
-        foundation: { alt: false, x: 10, y: 25 }, quarry: { alt: false, x: 25, y: 25 }, altar: { alt: false, x: 40, y: 25 },
-        beast_count: 100n, loss_per_tick: 1n, quarry_per_tick: 100n, altar_per_tick: 1, altar_threshold: 10,
-      }, false);
+      write(
+        "DeepRules",
+        "deep",
+        [13],
+        {
+          game_id: 13,
+          foundation: { alt: false, x: 10, y: 25 },
+          quarry: { alt: false, x: 25, y: 25 },
+          altar: { alt: false, x: 40, y: 25 },
+          beast_count: 100n,
+          loss_per_tick: 1n,
+          quarry_per_tick: 100n,
+          altar_per_tick: 1,
+          altar_threshold: 10,
+        },
+        false,
+      );
     },
-    writeDeepArmy: (explorer: number) => atomic(() => {
-      write("ArmyDay", `day-${explorer}`, [13, explorer], { game_id: 13, explorer_id: explorer, day: 0n }, false);
-      write("DeepArmy", `deep-${explorer}`, [13, explorer], { game_id: 13, explorer_id: explorer, last_tick: 6n }, false);
-    }),
-    joinDeep: (alias: string, explorer: number, site: number) => atomic(() => {
-      remove("TileOccupancy", `army-${alias}`);
-      write("DeepGuard", `guard-${explorer}`, [13, explorer], { game_id: 13, explorer_id: explorer, site_id: site, slot: 0 }, false);
-    }),
+    writeDeepArmy: (explorer: number) =>
+      atomic(() => {
+        write("ArmyDay", `day-${explorer}`, [13, explorer], { game_id: 13, explorer_id: explorer, day: 0n }, false);
+        write(
+          "DeepArmy",
+          `deep-${explorer}`,
+          [13, explorer],
+          { game_id: 13, explorer_id: explorer, last_tick: 6n },
+          false,
+        );
+      }),
+    joinDeep: (alias: string, explorer: number, site: number) =>
+      atomic(() => {
+        remove("TileOccupancy", `army-${alias}`);
+        write(
+          "DeepGuard",
+          `guard-${explorer}`,
+          [13, explorer],
+          { game_id: 13, explorer_id: explorer, site_id: site, slot: 0 },
+          false,
+        );
+      }),
     writeTile,
     writeArmy,
     writeExpeditionRules,
@@ -1000,7 +1035,6 @@ describe("WorldSpatialProjection", () => {
   });
 });
 
-
 describe("shared Deep spatial projection", () => {
   it("removes an exhausted army and stale occupancy on a clock-only head, retaining fixed terrain", () => {
     let now = 360;
@@ -1020,7 +1054,9 @@ describe("shared Deep spatial projection", () => {
       harness.projection.refreshTime();
       expect(harness.projection.getArmy(11)).toBeUndefined();
       expect(harness.projection.getTiles(false)).toHaveLength(2500);
-      const tile = harness.projection.getTiles(false).find((tile) => tile.hexCoords.col === 512 && tile.hexCoords.row === 3584)!;
+      const tile = harness.projection
+        .getTiles(false)
+        .find((tile) => tile.hexCoords.col === 512 && tile.hexCoords.row === 3584)!;
       expect(tile.occupierId).toBe(0);
       expect(harness.source.require("ExplorerTroops", { game_id: 13, explorer_id: 11 }).troops.count).toBe(2n);
     } finally {
@@ -1050,7 +1086,11 @@ describe("shared Deep spatial projection", () => {
       harness.projection.rebuild();
       expect(harness.projection.getArmies(false)).toEqual([]);
       expect(harness.projection.getTiles(false)).toHaveLength(2500);
-      expect(harness.projection.getTiles(false).find((tile) => tile.occupierId === 20)?.hexCoords).toEqual({ col: 513, row: 3584, alt: false });
+      expect(harness.projection.getTiles(false).find((tile) => tile.occupierId === 20)?.hexCoords).toEqual({
+        col: 513,
+        row: 3584,
+        alt: false,
+      });
     } finally {
       harness.projection.dispose();
       setBlockTimestampSource(null);

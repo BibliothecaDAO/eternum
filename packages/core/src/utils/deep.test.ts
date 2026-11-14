@@ -11,7 +11,14 @@ const calendar = { startMainAt: 360, endAt: 288360, dayUnitSeconds: 14400, seed:
 const precision = 1_000_000_000n;
 const fixture = () => {
   const rows: Record<string, Record<string, unknown>[]> = {
-    SliceRules: [{ game_id: 7, day_unit_seconds: 14400, tick_config: { armies_tick_in_seconds: 60n }, capacity_config: { troop_capacity: 10 } }],
+    SliceRules: [
+      {
+        game_id: 7,
+        day_unit_seconds: 14400,
+        tick_config: { armies_tick_in_seconds: 60n },
+        capacity_config: { troop_capacity: 10 },
+      },
+    ],
     SettlementRules: [{ game_id: 7, spacing: 1024 }],
     GameRegistry: [{ game_id: 7, start_main_at: 360n, end_at: 288360n, seed: 1n }],
     DeepRules: [{ game_id: 7, loss_per_tick: precision, beast_count: 10n * precision }],
@@ -20,9 +27,13 @@ const fixture = () => {
     ExplorerTroops: [{ game_id: 7, explorer_id: 11n, owner: 1n, troops: { count: 10n * precision } }],
     ResourceWeight: [{ game_id: 7, entity_id: 11n, weight: 0n, capacity: 100n * precision }],
     TileOccupancy: [{ game_id: 7, entity_id: 11n, col: 512, row: 3584, alt: false }],
-    HomeAspect: [{ game_id: 7, home: 1n, aspect: 1 }, { game_id: 7, home: 2n, aspect: 1 }],
+    HomeAspect: [
+      { game_id: 7, home: 1n, aspect: 1 },
+      { game_id: 7, home: 2n, aspect: 1 },
+    ],
   };
-  const get = (model: string, key: Record<string, unknown>) => rows[model]?.find((row) => Object.entries(key).every(([name, value]) => String(row[name]) === String(value)));
+  const get = (model: string, key: Record<string, unknown>) =>
+    rows[model]?.find((row) => Object.entries(key).every(([name, value]) => String(row[name]) === String(value)));
   const store = {
     get,
     require: (model: string, key: Record<string, unknown>) => {
@@ -44,7 +55,9 @@ describe("the shared Deep", () => {
     expect(tiles).toHaveLength(2500);
     expect(tiles[0]).toEqual({ game_id: 7, alt: false, col: 487, row: 3559 });
     expect(tiles.at(-1)).toEqual({ game_id: 7, alt: false, col: 536, row: 3608 });
-    expect(deepTerrain(store, tiles[0]!)).toEqual({ data: BigInt(BiomeTypeToId[BiomeType.Underground]) * BigInt(nativeTilePackingConstants.BIOME_SCALE) });
+    expect(deepTerrain(store, tiles[0]!)).toEqual({
+      data: BigInt(BiomeTypeToId[BiomeType.Underground]) * BigInt(nativeTilePackingConstants.BIOME_SCALE),
+    });
     expect(deepTerrain(store, { ...tiles[0]!, col: 486 })).toBeUndefined();
     expect(deepTerrain(store, { ...tiles[0]!, alt: true })).toBeUndefined();
     rows.DeepRules = [];
@@ -92,17 +105,38 @@ describe("the shared Deep", () => {
   it("reads all sites in catalog order, highest live guard first, then restores next-day beasts", () => {
     const { rows, store } = fixture();
     rows.DeepSite = [2, 0, 1].map((kind) => ({ game_id: 7, entity_id: BigInt(20 + kind), kind, day: 0n }));
-    rows.Guard = rows.DeepSite.map((site) => ({ game_id: 7, structure_id: site.entity_id, slot: 0, troops: { count: 0n } }));
-    rows.TileOccupancy!.push(...rows.DeepSite.map((site) => ({ game_id: 7, entity_id: site.entity_id, col: 500 + Number(site.kind), row: 3584, alt: false })));
+    rows.Guard = rows.DeepSite.map((site) => ({
+      game_id: 7,
+      structure_id: site.entity_id,
+      slot: 0,
+      troops: { count: 0n },
+    }));
+    rows.TileOccupancy!.push(
+      ...rows.DeepSite.map((site) => ({
+        game_id: 7,
+        entity_id: site.entity_id,
+        col: 500 + Number(site.kind),
+        row: 3584,
+        alt: false,
+      })),
+    );
     rows.ExplorerTroops!.push({ game_id: 7, explorer_id: 12n, owner: 2n, troops: { count: 20n * precision } });
     rows.DeepArmy!.push({ game_id: 7, explorer_id: 12n, last_tick: 6n });
     rows.ArmyDay!.push({ game_id: 7, explorer_id: 12n, day: 0n });
-    rows.DeepGuard = [{ game_id: 7, explorer_id: 11n, site_id: 20n, slot: 0 }, { game_id: 7, explorer_id: 12n, site_id: 20n, slot: 3 }];
+    rows.DeepGuard = [
+      { game_id: 7, explorer_id: 11n, site_id: 20n, slot: 0 },
+      { game_id: 7, explorer_id: 12n, site_id: 20n, slot: 3 },
+    ];
     const today = readDeepSites(store, 420, 7);
     expect(today.map((site) => site.name)).toEqual(["Foundation", "Quarry", "Altar"]);
-    expect(today[0]!.guards.map(({ slot, army }) => [slot, army.troops.count])).toEqual([[3, 19n * precision], [0, 9n * precision]]);
+    expect(today[0]!.guards.map(({ slot, army }) => [slot, army.troops.count])).toEqual([
+      [3, 19n * precision],
+      [0, 9n * precision],
+    ]);
     const tomorrow = readDeepSites(store, dayAtIndex(calendar, 0).end, 7);
-    expect(tomorrow.map((site) => [site.id, site.beastTroops, site.guards])).toEqual([20n, 21n, 22n].map((id) => [id, 10n * precision, []]));
+    expect(tomorrow.map((site) => [site.id, site.beastTroops, site.guards])).toEqual(
+      [20n, 21n, 22n].map((id) => [id, 10n * precision, []]),
+    );
     rows.DeepSite.pop();
     expect(() => readDeepSites(store, 420, 7)).toThrow("Incomplete Deep site facts");
   });
