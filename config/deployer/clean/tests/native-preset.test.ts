@@ -1380,3 +1380,19 @@ test("Clear Mist and maximum Scouting must fit one categorical discovery draw", 
     Object.assign(source, previous);
   }
 });
+
+
+test("race registration excludes generated and reserved hyperstructures", () => {
+  const source = nativePresets[FRONTIER_S1_PRESET_ID]!;
+  const previous = { race: source.race, deep: source.deep, modeRules: source.modeRules };
+  try {
+    source.race = raceFixture();
+    source.deep = deepFixture();
+    for (const flag of [nativeRuleConstants.DISCOVER_HYPERSTRUCTURES, nativeRuleConstants.RESERVED_HYPERSTRUCTURES]) {
+      source.modeRules = previous.modeRules | flag;
+      expect(() => buildNativePreset(loadNativePresetConfiguration("madara.frontier", source.id), source.id)).toThrow("Race has only fixed monuments");
+    }
+  } finally {
+    Object.assign(source, previous);
+  }
+});

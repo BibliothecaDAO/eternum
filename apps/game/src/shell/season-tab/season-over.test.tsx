@@ -6,6 +6,7 @@ import { afterEach, expect, it, vi } from "vitest";
 
 /** What the HUD's season-over reads, at its edges: the game, the board, the viewer and their home's CampaignHome row. */
 const facts = vi.hoisted(() => ({
+  race: false,
   presetId: 6,
   viewer: null as string | null,
   campaignHome: undefined as unknown,
@@ -16,7 +17,7 @@ vi.mock("@/hooks/helpers/use-block-timestamp", () => ({ useNowSeconds: () => 0 }
 vi.mock("@/hooks/helpers/use-native-facts", () => ({ useNativeRevision: () => 0 }));
 vi.mock("@/hooks/context/game-context", () => ({
   useGame: () => ({
-    setup: { store: { get: (model: string) => (model === "CampaignHome" ? facts.campaignHome : undefined) } },
+    setup: { store: { get: (model: string) => (model === "CampaignHome" ? facts.campaignHome : model === "RaceRules" && facts.race ? {} : undefined) } },
   }),
 }));
 vi.mock("@/hooks/context/identity-session", async (importOriginal) => ({
@@ -42,7 +43,10 @@ vi.mock("@/ui/features/frontier/board/season-board", async () => {
   const { ARCHIVED_SEASONS, archivedSeason } = await import("./archive/archive");
   const board = archivedSeason({ chainId: ARCHIVED_SEASONS[0]!.chainId, gameId: ARCHIVED_SEASONS[0]!.game_id })!.board;
   return {
-    useFrontierBoard: (select: (state: { data: typeof board }) => unknown) => select({ data: board }),
+    useFrontierBoard: (select: (state: { data: typeof board }) => unknown) => {
+      if (facts.race) throw new Error("Race cannot read the sites-cleared board");
+      return select({ data: board });
+    },
     useSeasonViewer: () => facts.viewer,
   };
 });
@@ -59,6 +63,10 @@ vi.stubGlobal("fetch", (input: string | URL | Request) =>
 // A browser whose clipboard takes a PNG, so the recap's first step is Copy image.
 vi.stubGlobal("ClipboardItem", { supports: (type: string) => type === "image/png" });
 vi.stubGlobal("navigator", { ...navigator, clipboard: { write: async () => {} } });
+
+vi.mock("@/ui/features/frontier/aspect/aspect-page", () => ({
+  FrontierAspectPage: ({ onClose }: { onClose: () => void }) => <button onClick={onClose}>Close race board</button>,
+}));
 
 import { shortString } from "starknet";
 
@@ -79,7 +87,7 @@ const devconHome = (tier: 1 | 2) => ({
 let unmount: (() => Promise<void>) | null = null;
 afterEach(async () => {
   await unmount?.();
-  Object.assign(facts, { presetId: 6, viewer: null, campaignHome: undefined });
+  Object.assign(facts, { race: false, presetId: 6, viewer: null, campaignHome: undefined });
 });
 
 /** The season-over as the HUD mounts it, for a reader whose home has this CampaignHome row (none: free or held). */
@@ -88,8 +96,9 @@ const open = async ({
   viewer = CANZI as string | null,
   campaignHome = devconHome(1) as unknown,
   width = 1440,
+  race = false,
 } = {}) => {
-  Object.assign(facts, { presetId, viewer, campaignHome });
+  Object.assign(facts, { race, presetId, viewer, campaignHome });
   (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
   setViewportWidth(width);
   const host = document.body.appendChild(document.createElement("div"));
@@ -98,7 +107,7 @@ const open = async ({
     root.render(
       <QueryClientProvider client={new QueryClient()}>
         <MemoryRouter>
-          <SeasonOver realm={REALM} />
+          <SeasonOver realm={REALM} withdraw={<button>Return principal</button>} />
         </MemoryRouter>
       </QueryClientProvider>,
     ),
@@ -169,4 +178,14 @@ it("greets no Devcon owner in another season, nor a reader with no realm on the 
     expect(page.querySelector(".season-recap")).not.toBeNull();
     await unmount!();
   }
+});
+
+
+it("opens the native race board and preserves principal return without requesting the old ranking", async () => {
+  const page = await open({ race: true });
+  expect(page.querySelector("[data-race-ended]")).not.toBeNull();
+  expect(said(page)).toContain("Return principal");
+  expect(page.querySelector(".season-recap")).toBeNull();
+  await act(async () => [...page.querySelectorAll("button")].find((button) => button.textContent === "Close race board")!.click());
+  expect(page.querySelector("[data-race-ended]")).toBeNull();
 });

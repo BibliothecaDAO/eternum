@@ -108,5 +108,10 @@ export function raceScenario(finished = false): LabScenario {
     );
   }
   store.applyFacts(facts);
-  return { ...scenario, startsAt: now, scoped: true };
+  return {
+    ...scenario,
+    startsAt: now,
+    opensOn: { col: center.col + rules.first.x - half, row: center.row + rules.first.y - half },
+    scoped: true,
+  };
 }

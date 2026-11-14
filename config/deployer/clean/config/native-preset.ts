@@ -568,6 +568,8 @@ function buildRace(preset: ReturnType<typeof nativePresetForId>) {
   const race = preset.race;
   if (race === null) return new CairoOption(CairoOptionVariant.None);
   if (!race || preset.deep === null) throw new Error("Race requires the Deep");
+  if (preset.modeRules & (presetRule.DISCOVER_HYPERSTRUCTURES | presetRule.RESERVED_HYPERSTRUCTURES))
+    throw new Error("Race has only fixed monuments");
   validateRace(race, preset.deep);
   const coord = ([x, y]: readonly [number, number]) => ({ alt: false, x, y });
   return new CairoOption(CairoOptionVariant.Some, {

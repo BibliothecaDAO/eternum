@@ -339,7 +339,7 @@ fn an_optional_race_preset_stores_exact_payments_stages_triumphs_and_positions()
 fn malformed_race_rules_leave_no_preset_registered() {
     let d = super::registrar::setup();
     start_cheat_caller_address(d.games, super::authority());
-    for invalid in 0_u8..17 {
+    for invalid in 0_u8..19 {
         let (preset_id, mut definition) = current_definition("frontier");
         let mut race = optional_race_rules();
         definition.economy.deep = Some(optional_deep_rules());
@@ -386,6 +386,11 @@ fn malformed_race_rules_leave_no_preset_registered() {
             definition
                 .economy
                 .discovery = Some(crate::expeditions::FrontierDiscoveryRules { beasts_bps: 4000, ..discovery });
+        }
+        if invalid == 17 {
+            definition.rules.mode_rules = definition.rules.mode_rules | crate::rules::DISCOVER_HYPERSTRUCTURES;
+        } else if invalid == 18 {
+            definition.rules.mode_rules = definition.rules.mode_rules | crate::rules::RESERVED_HYPERSTRUCTURES;
         }
         definition.economy.race = Some(race);
         assert!(IRegistrarSafeDispatcher { contract_address: d.games }.register_preset(preset_id, definition).is_err());

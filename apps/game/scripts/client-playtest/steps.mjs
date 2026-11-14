@@ -3459,7 +3459,7 @@ const RACE_BOARD_STATE = `JSON.stringify((() => {
 
 function raceBoardSteps(finished) {
   return [
-    { name: "enter-on-map", settleMs: 3_000, verify: inScene("map") },
+    { name: "enter-on-map", settleMs: 3_000, verify: inScene("map", "Deep") },
     {
       name: "read-aspect-race",
       play: async ({ browser, extraScreenshot }) => {
