@@ -47,12 +47,24 @@ describe("the day's banner", () => {
     draw(DAY_BANNER_CASES["World bane ended, second reward"]);
     expect(button("Collect again")).toBeDefined();
     expect(text()).toContain("Your Aspect ended the bane");
+    expect(text()).toContain("The Lights");
+    expect(text()).toContain("20 of 20 tiles");
   });
 
   it("heads the panel with the bane and how many members are at it", () => {
     draw(DAY_BANNER_CASES["World bane day, members at it"]);
     expect(text()).toContain("Blood Moon");
+    expect(text()).toContain("The Stand");
+    expect(text()).toContain("1 of 3 sites");
     expect(text()).toContain("4 of 6 members");
+  });
+
+  it("a rival's bane comes with the Cull, counted in troops, and the crests of its sender", () => {
+    draw(DAY_BANNER_CASES["Rival bane and Triumph"]);
+    expect(text()).toContain("The Cull");
+    expect(text()).toContain("0 of 2,500 troops");
+    expect(text()).toContain("Your Aspect's hyperstructure does not grow today");
+    expect(text()).toContain("Clear Mist");
   });
 
   it("says it is reading, and offers nothing, while the facts are not settled", () => {
@@ -63,10 +75,10 @@ describe("the day's banner", () => {
 
   it("is lighter on a phone: the news is chips, and a press opens the bane's line", () => {
     draw(DAY_BANNER_CASES["World bane day, members at it"], "phone");
-    expect(text()).not.toContain("Guards hit 25% harder today");
+    expect(text()).not.toContain("Each guarded site is 50% harder today");
     expect(text()).toContain("4 of 6");
     act(() => button("Blood Moon")!.click());
-    expect(text()).toContain("Guards hit 25% harder today");
+    expect(text()).toContain("Each guarded site is 50% harder today");
   });
 
   it("never offers LORDS", () => {
