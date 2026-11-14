@@ -1,4 +1,5 @@
-import { FRONTIER_FIXTURE_PRESET_ID, configManager, setBlockTimestampSource } from "@bibliothecadao/eternum";
+import { FRONTIER_FIXTURE_PRESET_ID } from "../../../../../../../config/source/common/native-preset-modes";
+import { configManager, setBlockTimestampSource } from "@bibliothecadao/eternum";
 import { NativeFactStore } from "@bibliothecadao/eternum/game-client";
 import { RESOURCE_PRECISION, StructureType } from "@bibliothecadao/types";
 import preset from "../../../../../../../contracts/l3/world-native/tests/fixtures/current-presets/conformance.json";
