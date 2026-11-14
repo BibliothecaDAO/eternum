@@ -571,9 +571,17 @@ describe("declared fact absence", () => {
         homecoming: 1,
       }),
     ]);
-    store.applyFacts([set("0x74", "TileOccupancy", {
-      game_id: 1, alt: false, col: 5, row: 5, entity_id: army.explorer_id, category: 15, is_structure: false,
-    })]);
+    store.applyFacts([
+      set("0x74", "TileOccupancy", {
+        game_id: 1,
+        alt: false,
+        col: 5,
+        row: 5,
+        entity_id: army.explorer_id,
+        category: 15,
+        is_structure: false,
+      }),
+    ]);
     expect(resolveExplorerTroops(store, army)?.stamina).toEqual({ amount: 7n, settled_at: 17, remainder: 0 });
     expect(resolveExplorerTroops(store, army)?.staminaMax).toBe(
       Number(preset.rules.troop_stamina_config.stamina_knight_max) + 75,

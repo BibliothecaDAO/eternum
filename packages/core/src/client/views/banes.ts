@@ -115,7 +115,11 @@ export function readBaneEffects(
   home: number | bigint,
   from: number,
   until: number,
-): NativeFactResult<{ windows: { kind: number; start: number; end: number }[]; productionPercent: number; staminaPercent: number }> {
+): NativeFactResult<{
+  windows: { kind: number; start: number; end: number }[];
+  productionPercent: number;
+  staminaPercent: number;
+}> {
   const ruleReading = readOptionalSeasonRow(store, "BaneRules", { game_id: gameId });
   if (!ruleReading.known) return ruleReading;
   const rules = ruleReading.known.row;

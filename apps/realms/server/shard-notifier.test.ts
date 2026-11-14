@@ -247,14 +247,41 @@ const STRUCTURE_OWNERS = new Map([
 function mistFacts(endedAt: number | undefined) {
   if (endedAt === undefined) return [];
   return [
-    { model: "BaneRules", rows: [{ key: "0xb01", value: { game_id: GAME_ID, chance_step: 20,
-      quorum_percent: 25, beast_percent: 150, stamina_percent: 50, production_percent: 50,
-      quest_counts: [3,6,9,12,20,40,60,80,2500,6000,10000,15000] } }] },
+    {
+      model: "BaneRules",
+      rows: [
+        {
+          key: "0xb01",
+          value: {
+            game_id: GAME_ID,
+            chance_step: 20,
+            quorum_percent: 25,
+            beast_percent: 150,
+            stamina_percent: 50,
+            production_percent: 50,
+            quest_counts: [3, 6, 9, 12, 20, 40, 60, 80, 2500, 6000, 10000, 15000],
+          },
+        },
+      ],
+    },
     { model: "HomeAspect", rows: [{ key: "0xb02", value: { game_id: GAME_ID, home: HOME, aspect: 1 } }] },
-    { model: "AspectActivity", rows: [{ key: "0xb03", value: { game_id: GAME_ID, aspect: 1, day: TODAY - 1, active: 4 } }] },
-    { model: "WorldBane", rows: [{ key: "0xb04", value: { game_id: GAME_ID, day: TODAY, kind: nativeBaneConstants.MIST_TIDE } }] },
-    { model: "BaneProgress", rows: [{ key: "0xb05", value: { game_id: GAME_ID, aspect: 1, day: TODAY,
-      completed: endedAt === 0 ? 0 : 1, ended_at: endedAt } }] },
+    {
+      model: "AspectActivity",
+      rows: [{ key: "0xb03", value: { game_id: GAME_ID, aspect: 1, day: TODAY - 1, active: 4 } }],
+    },
+    {
+      model: "WorldBane",
+      rows: [{ key: "0xb04", value: { game_id: GAME_ID, day: TODAY, kind: nativeBaneConstants.MIST_TIDE } }],
+    },
+    {
+      model: "BaneProgress",
+      rows: [
+        {
+          key: "0xb05",
+          value: { game_id: GAME_ID, aspect: 1, day: TODAY, completed: endedAt === 0 ? 0 : 1, ended_at: endedAt },
+        },
+      ],
+    },
   ];
 }
 
@@ -744,7 +771,9 @@ describe.concurrent("shard notifications", () => {
       expect(Date.now() / 1000).toBeGreaterThanOrEqual(fullAt);
       expect(Date.now() / 1000).toBeLessThan(spentAt + 2 * REST_TICKS * ARMIES_TICK_SECONDS);
       expect(await push.words()).toEqual(["Your armies are rested / Frontier: their stamina is full."]);
-      expect(herald.state.requestedModels.some(models => models.includes("BaneProgress") && models.includes("TriumphDay"))).toBe(true);
+      expect(
+        herald.state.requestedModels.some((models) => models.includes("BaneProgress") && models.includes("TriumphDay")),
+      ).toBe(true);
     } finally {
       await worker.dispose();
     }

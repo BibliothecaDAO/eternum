@@ -90,7 +90,8 @@
     "ASH_FALL_QUEST": 9
   },
   "raceConstants": {
-    "STAGE_COUNT": 5
+    "STAGE_COUNT": 5,
+    "SECOND_WIND_STAGE": 2
   },
   "researchConstants": {
     "ROW_FARM": 0,
@@ -14435,5 +14436,5 @@
       ]
     }
   },
-  "identity": "b2eb60c73c58b8ca085d4e3eda16eded88828849dac32f949c0ef6759d14d81b"
+  "identity": "06bc2380bf86409fb981fdfda24fa7a6d738038c444e490713ba589bc28e1d80"
 }

@@ -63,38 +63,77 @@ fn recorded_second_wind_multiplies_mist_tide_and_changes_real_exploration_refill
     pay(d, game_id, DEEP_FOUNDATION, 1, shares, 480);
     pay(d, game_id, DEEP_FOUNDATION, 1, shares, 600);
     let tomorrow = world_test_support::tests::registrar::day_start(d, game_id, 1);
-    assert!(world_test_support::tests::play_fixture::play(d.games,
-        world_test_support::tests::play_fixture::TestAction { game_id, actor: d.actor,
-            command: Command::SetEntityName(crate::names::SetEntityName { entity_id: home.entity_id, name: 'wind proof' }) },
-        super::banes::root_for(game_id, 1, 20, crate::banes::MIST_TIDE), tomorrow));
+    assert!(
+        world_test_support::tests::play_fixture::play(
+            d.games,
+            world_test_support::tests::play_fixture::TestAction {
+                game_id,
+                actor: d.actor,
+                command: Command::SetEntityName(
+                    crate::names::SetEntityName { entity_id: home.entity_id, name: 'wind proof' },
+                ),
+            },
+            super::banes::root_for(game_id, 1, 20, crate::banes::MIST_TIDE),
+            tomorrow,
+        ),
+    );
     assert!(execute_in_game(d, game_id, super::army_activity::muster(home.entity_id, 0, 0, 10), tomorrow));
     let slot = crate::troops::ArmySlotKey { game_id, structure_id: home.entity_id, epoch: 1, slot: 0 };
     let explorer_id = super::army_activity::slot_army(d, slot);
-    let discovery = interact_with_state(d.games, || crate::logic::preset_record::for_game(game_id).discovery_rules.read().unwrap());
+    let discovery = interact_with_state(
+        d.games, || crate::logic::preset_record::for_game(game_id).discovery_rules.read().unwrap(),
+    );
     for step in 0_u64..3 {
-        let root = world_test_support::tests::registrar::discovery_root(game_id,
+        let root = world_test_support::tests::registrar::discovery_root(
+            game_id,
             crate::expeditions::FrontierDiscoveryRules { shrine_bps: 0, well_bps: 0, ..discovery },
-            step.try_into().unwrap(), Some(crate::army_relics::ArmyRelic { kind: crate::army_relics::RelicKind::FarEye, rank: 1 }),
-            crate::discovery::Discovery::None);
-        assert!(world_test_support::tests::registrar::explore_with_root(d, game_id, explorer_id, root, tomorrow + step * 60));
-        interact_with_state(d.games, || {
-            let bar = crate::logic::army_slot_storage::read(slot).unwrap().stamina;
-            let gained = if step == 0 { 0 } else if step == 1 { 2 } else { 6 };
-            assert_eq!(bar.amount, maximum - cost * (step + 1) + gained);
-        });
+            step.try_into().unwrap(),
+            Some(crate::army_relics::ArmyRelic { kind: crate::army_relics::RelicKind::FarEye, rank: 1 }),
+            crate::discovery::Discovery::None,
+        );
+        assert!(
+            world_test_support::tests::registrar::explore_with_root(
+                d, game_id, explorer_id, root, tomorrow + step * 60,
+            ),
+        );
+        interact_with_state(
+            d.games,
+            || {
+                let bar = crate::logic::army_slot_storage::read(slot).unwrap().stamina;
+                let gained = if step == 0 {
+                    0
+                } else if step == 1 {
+                    2
+                } else {
+                    6
+                };
+                assert_eq!(bar.amount, maximum - cost * (step + 1) + gained);
+            },
+        );
     }
-    interact_with_state(d.games, || {
-        assert_eq!(race(game_id).triumph_day(TriumphKey { game_id, aspect: 1, stage: crate::race::SECOND_WIND_STAGE }), Some(1));
-        let mut bar = crate::troops::Stamina { amount: 0, settled_at: tomorrow.try_into().unwrap(), remainder: 0 };
-        let mut boosts = Default::default();
-        let rules = crate::logic::game::rules(game_id);
-        crate::logic::stamina_effects::refill(home,
-            crate::deep::center(crate::logic::preset_record::for_game(game_id).settlement_spacing.read()),
-            ref bar, ref boosts, maximum,
-            crate::troops::StaminaRefill { stamina_config: rules.troop_stamina_config,
-                armies_tick_in_seconds: 60, timestamp: tomorrow + 60 });
-        assert_eq!(bar.amount, 2);
-    });
+    interact_with_state(
+        d.games,
+        || {
+            assert_eq!(
+                race(game_id).triumph_day(TriumphKey { game_id, aspect: 1, stage: crate::race::SECOND_WIND_STAGE }),
+                Some(1),
+            );
+            let mut bar = crate::troops::Stamina { amount: 0, settled_at: tomorrow.try_into().unwrap(), remainder: 0 };
+            let mut boosts = Default::default();
+            let rules = crate::logic::game::rules(game_id);
+            crate::logic::stamina_effects::refill(
+                home,
+                crate::deep::center(crate::logic::preset_record::for_game(game_id).settlement_spacing.read()),
+                ref bar,
+                ref boosts,
+                maximum,
+                crate::troops::StaminaRefill {
+                    stamina_config: rules.troop_stamina_config, armies_tick_in_seconds: 60, timestamp: tomorrow + 60,
+                },
+            );
+            assert_eq!(bar.amount, 2);
+        },
+    );
 }
 
 #[test]

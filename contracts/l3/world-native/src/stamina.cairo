@@ -34,7 +34,9 @@ pub impl StaminaImpl of StaminaTrait {
                 Self::max(troop_type, troop_tier, troop_stamina_config),
                 troop_stamina_config,
                 tick_seconds,
-                timestamp, 10000);
+                timestamp,
+                10000,
+            );
     }
 
     fn refill_to_max(
@@ -60,9 +62,13 @@ pub impl StaminaImpl of StaminaTrait {
             let denominator = tick_seconds * PercentageValueImpl::_100();
             let gain: u128 = troop_stamina_config.stamina_gain_per_tick.into();
             let rate: u128 = rate_bps.into();
-            let boosted_rate = rate * (10000 + Into::<u16, u128>::into(troop_boosts.incr_stamina_regen_percent_num)) / 10000;
+            let boosted_rate = rate
+                * (10000 + Into::<u16, u128>::into(troop_boosts.incr_stamina_regen_percent_num))
+                / 10000;
             let numerator = Into::<u32, u128>::into(self.remainder)
-                + gain * (Into::<u64, u128>::into(elapsed - boosted) * rate + Into::<u64, u128>::into(boosted) * boosted_rate);
+                + gain
+                    * (Into::<u64, u128>::into(elapsed - boosted) * rate
+                        + Into::<u64, u128>::into(boosted) * boosted_rate);
             self.amount += (numerator / denominator.into()).try_into().unwrap();
             self.remainder = (numerator % denominator.into()).try_into().unwrap();
             troop_boosts.incr_stamina_regen_seconds_left -= boosted.try_into().unwrap();

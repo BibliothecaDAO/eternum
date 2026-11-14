@@ -7,8 +7,18 @@ import { BANE_MODELS, readBaneEffects } from "./banes";
 import { readOptionalSeasonRow } from "./season-rows";
 
 export const STAMINA_MODELS = [
-  ...BANE_MODELS, "Structure", "RaceRules", "TriumphDay", "GameRegistry", "SliceRules", "SettlementRules",
-  "ArmyDay", "ArmySlot", "ArmyProgress", "ExplorerTroops", "TileOccupancy",
+  ...BANE_MODELS,
+  "Structure",
+  "RaceRules",
+  "TriumphDay",
+  "GameRegistry",
+  "SliceRules",
+  "SettlementRules",
+  "ArmyDay",
+  "ArmySlot",
+  "ArmyProgress",
+  "ExplorerTroops",
+  "TileOccupancy",
 ] as const;
 
 /** Regeneration forecasts end with the army's day; an unrecorded later roll is never predicted. */
@@ -31,13 +41,15 @@ export function readStaminaEffects(
   if (!race.known) return race;
   const { windows, staminaPercent } = bane.known;
   const periods: { start: number; end: number; rateBps: number }[] = windows
-    .filter(window => window.kind === nativeBaneConstants.MIST_TIDE)
-    .map(window => ({ start: window.start, end: window.end, rateBps: staminaPercent * 100 }));
+    .filter((window) => window.kind === nativeBaneConstants.MIST_TIDE)
+    .map((window) => ({ start: window.start, end: window.end, rateBps: staminaPercent * 100 }));
   if (race.known.row) {
     const membership = store.get("HomeAspect", { game_id: gameId, home });
     if (!membership) return { unknown: "MISSING_HOME_ASPECT" };
     const wind = readOptionalSeasonRow(store, "TriumphDay", {
-      game_id: gameId, aspect: membership.aspect, stage: nativeRaceConstants.SECOND_WIND_STAGE,
+      game_id: gameId,
+      aspect: membership.aspect,
+      stage: nativeRaceConstants.SECOND_WIND_STAGE,
     });
     if (!wind.known) return wind;
     if (wind.known.row) {
@@ -50,11 +62,13 @@ export function readStaminaEffects(
 
 /** The intersection multiplies the rates while each boundary retains the same fractional remainder. */
 function combinePeriods(periods: StaminaEffects["windows"], from: number, until: number): StaminaEffects["windows"] {
-  const boundaries = [...new Set([from, until, ...periods.flatMap(period => [period.start, period.end])])]
-    .filter(second => second >= from && second <= until).sort((a, b) => a - b);
+  const boundaries = [...new Set([from, until, ...periods.flatMap((period) => [period.start, period.end])])]
+    .filter((second) => second >= from && second <= until)
+    .sort((a, b) => a - b);
   return boundaries.slice(0, -1).flatMap((start, index) => {
-    const rateBps = periods.filter(period => period.start <= start && start < period.end)
-      .reduce((rate, period) => rate * period.rateBps / 10_000, 10_000);
+    const rateBps = periods
+      .filter((period) => period.start <= start && start < period.end)
+      .reduce((rate, period) => (rate * period.rateBps) / 10_000, 10_000);
     return rateBps === 10_000 ? [] : [{ start, end: boundaries[index + 1], rateBps }];
   });
 }

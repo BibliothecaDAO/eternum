@@ -11,25 +11,83 @@ function fixture() {
   const store = new NativeFactStore();
   store.applyFacts([
     { model: "SliceRules", key: "1", value: { ...preset.rules, game_id: 1, day_unit_seconds: 100 } },
-    { model: "GameRegistry", key: "1", value: { game_id: 1, preset_id: 7, name: "1", seed: 5,
-      start_settling_at: 1, start_main_at: 100, scheduled_end_at: 10_000, end_at: 10_000,
-      ready: true, settled: false, dev_mode_on: false, end_grace_seconds: 0 } },
-    { model: "SettlementRules", key: "1", value: { game_id: 1, registration_start: 1,
-      registration_limit: 2, spacing: 10, mode: "Single" } },
-    { model: "Structure", key: "1:7", value: { game_id: 1, entity_id: 7, owner: "0x111", resources_packed: 0,
-      base: { category: 1, level: 0, created_at: 100, troop_max_guard_count: 0,
-        troop_max_explorer_count: 0, starting_troops_granted: false },
-      metadata: { realm_id: 1, village_realm: 0, mine_kind: 0, deepest_depth: 0, has_wonder: false, order: 0 } } },
+    {
+      model: "GameRegistry",
+      key: "1",
+      value: {
+        game_id: 1,
+        preset_id: 7,
+        name: "1",
+        seed: 5,
+        start_settling_at: 1,
+        start_main_at: 100,
+        scheduled_end_at: 10_000,
+        end_at: 10_000,
+        ready: true,
+        settled: false,
+        dev_mode_on: false,
+        end_grace_seconds: 0,
+      },
+    },
+    {
+      model: "SettlementRules",
+      key: "1",
+      value: { game_id: 1, registration_start: 1, registration_limit: 2, spacing: 10, mode: "Single" },
+    },
+    {
+      model: "Structure",
+      key: "1:7",
+      value: {
+        game_id: 1,
+        entity_id: 7,
+        owner: "0x111",
+        resources_packed: 0,
+        base: {
+          category: 1,
+          level: 0,
+          created_at: 100,
+          troop_max_guard_count: 0,
+          troop_max_explorer_count: 0,
+          starting_troops_granted: false,
+        },
+        metadata: { realm_id: 1, village_realm: 0, mine_kind: 0, deepest_depth: 0, has_wonder: false, order: 0 },
+      },
+    },
     { model: "HomeAspect", key: "1:7", value: { game_id: 1, home: 7, aspect: 1 } },
-    { model: "BaneRules", key: "1", value: { game_id: 1, chance_step: 20, quorum_percent: 25,
-      beast_percent: 150, stamina_percent: 50, production_percent: 50,
-      quest_counts: [3,6,9,12,20,40,60,80,2500,6000,10000,15000] } },
+    {
+      model: "BaneRules",
+      key: "1",
+      value: {
+        game_id: 1,
+        chance_step: 20,
+        quorum_percent: 25,
+        beast_percent: 150,
+        stamina_percent: 50,
+        production_percent: 50,
+        quest_counts: [3, 6, 9, 12, 20, 40, 60, 80, 2500, 6000, 10000, 15000],
+      },
+    },
     { model: "AspectActivity", key: "1:1:0", value: { game_id: 1, aspect: 1, day: 0, active: 4 } },
     { model: "WorldBane", key: "1:1", value: { game_id: 1, day: 1, kind: nativeBaneConstants.MIST_TIDE } },
-    { model: "RaceRules", key: "1", value: { game_id: 1, season_days: 50, glory_per_tick: 5, height_per_tick: 5,
-      stage_height: 2000, clear_mist_percent: 200, second_wind_percent: 200, pale_moon_percent: 50, spoils_percent: 200,
-      first: { alt: false, x: 5, y: 5 }, second: { alt: false, x: 45, y: 5 },
-      third: { alt: false, x: 5, y: 45 }, fourth: { alt: false, x: 45, y: 45 } } },
+    {
+      model: "RaceRules",
+      key: "1",
+      value: {
+        game_id: 1,
+        season_days: 50,
+        glory_per_tick: 5,
+        height_per_tick: 5,
+        stage_height: 2000,
+        clear_mist_percent: 200,
+        second_wind_percent: 200,
+        pale_moon_percent: 50,
+        spoils_percent: 200,
+        first: { alt: false, x: 5, y: 5 },
+        second: { alt: false, x: 45, y: 5 },
+        third: { alt: false, x: 5, y: 45 },
+        fourth: { alt: false, x: 45, y: 45 },
+      },
+    },
   ]);
   store.setSnapshot({ gameId: 1, actor: "0x111", complete: true, timestamp: day.start });
   return store;
@@ -37,19 +95,44 @@ function fixture() {
 
 it("multiplies Second Wind and Mist Tide, then restores the Triumph rate at the exact quorum second", () => {
   const store = fixture();
-  expect(readStaminaEffects(store, 1, 7, 1n, day.start, 0)).toEqual({ known: {
-    until: day.end, windows: [{ start: day.start, end: day.end, rateBps: 5_000 }],
-  } });
-  store.applyFacts([{ model: "TriumphDay", key: "1:1:2", value: {
-    game_id: 1, aspect: 1, stage: nativeRaceConstants.SECOND_WIND_STAGE, day: 1,
-  } }]);
+  expect(readStaminaEffects(store, 1, 7, 1n, day.start, 0)).toEqual({
+    known: {
+      until: day.end,
+      windows: [{ start: day.start, end: day.end, rateBps: 5_000 }],
+    },
+  });
+  store.applyFacts([
+    {
+      model: "TriumphDay",
+      key: "1:1:2",
+      value: {
+        game_id: 1,
+        aspect: 1,
+        stage: nativeRaceConstants.SECOND_WIND_STAGE,
+        day: 1,
+      },
+    },
+  ]);
   expect(readStaminaEffects(store, 1, 7, 1n, day.start, 0)).toEqual({ known: { until: day.end, windows: [] } });
-  store.applyFacts([{ model: "BaneProgress", key: "1:1:1", value: {
-    game_id: 1, aspect: 1, day: 1, completed: 1, ended_at: day.start + 60,
-  } }]);
-  expect(readStaminaEffects(store, 1, 7, 1n, day.start, 0)).toEqual({ known: {
-    until: day.end, windows: [{ start: day.start + 60, end: day.end, rateBps: 20_000 }],
-  } });
+  store.applyFacts([
+    {
+      model: "BaneProgress",
+      key: "1:1:1",
+      value: {
+        game_id: 1,
+        aspect: 1,
+        day: 1,
+        completed: 1,
+        ended_at: day.start + 60,
+      },
+    },
+  ]);
+  expect(readStaminaEffects(store, 1, 7, 1n, day.start, 0)).toEqual({
+    known: {
+      until: day.end,
+      windows: [{ start: day.start + 60, end: day.end, rateBps: 20_000 }],
+    },
+  });
   expect(readStaminaEffects(store, 1, 7, 1n, day.start, 3)).toEqual({ known: { until: day.end, windows: [] } });
 });
 
@@ -67,9 +150,16 @@ it("ignores a scheduled Triumph after an early finish without changing its calen
   const game = store.require("GameRegistry", { game_id: 1 });
   store.applyFacts([
     { model: "GameRegistry", key: "1", value: { ...game, end_at: day.start + 90 } },
-    { model: "TriumphDay", key: "1:1:2", value: { game_id: 1, aspect: 1, stage: nativeRaceConstants.SECOND_WIND_STAGE, day: 2 } },
+    {
+      model: "TriumphDay",
+      key: "1:1:2",
+      value: { game_id: 1, aspect: 1, stage: nativeRaceConstants.SECOND_WIND_STAGE, day: 2 },
+    },
   ]);
-  expect(readStaminaEffects(store, 1, 7, 1n, day.start, 0)).toEqual({ known: {
-    until: day.start + 90, windows: [{ start: day.start, end: day.start + 90, rateBps: 5_000 }],
-  } });
+  expect(readStaminaEffects(store, 1, 7, 1n, day.start, 0)).toEqual({
+    known: {
+      until: day.start + 90,
+      windows: [{ start: day.start, end: day.start + 90, rateBps: 5_000 }],
+    },
+  });
 });

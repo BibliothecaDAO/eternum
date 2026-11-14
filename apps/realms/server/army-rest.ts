@@ -106,13 +106,7 @@ export const readActorArmies = async (
   const snapshot = await fetchHeraldGameSnapshot(
     { url: shardUrl },
     gameId,
-    [
-      ...STAMINA_MODELS,
-      "PlayerEntry",
-      "DeepArmy",
-      "DeepGuard",
-      "DeepRules",
-    ],
+    [...STAMINA_MODELS, "PlayerEntry", "DeepArmy", "DeepGuard", "DeepRules"],
     actor,
     actor,
   );
@@ -152,8 +146,17 @@ export const readActorArmies = async (
       const aboveDeep = expedition && position && expeditionDepth(expedition, { y: position.row }) !== 3;
       const fullSecond = full
         ? affordableAt(troops, troops.stamina.settled_at || timestamp, rules.troop_stamina_config, tickSeconds, maximum)
-        : earliestRestCheck(store, gameId, army.owner, troops, timestamp, rules.troop_stamina_config,
-            tickSeconds, maximum, Boolean(aboveDeep));
+        : earliestRestCheck(
+            store,
+            gameId,
+            army.owner,
+            troops,
+            timestamp,
+            rules.troop_stamina_config,
+            tickSeconds,
+            maximum,
+            Boolean(aboveDeep),
+          );
       return [
         {
           armyId: safeInteger(army.explorer_id),
@@ -181,13 +184,26 @@ function earliestRestCheck(
   const reading = readBaneEffects(store, gameId, home, now, effects.until);
   if (!reading.known) throw new Error(reading.unknown);
   const { staminaPercent } = reading.known;
-  const mist = reading.known.windows.find(window => window.kind === nativeBaneConstants.MIST_TIDE && window.start <= now);
+  const mist = reading.known.windows.find(
+    (window) => window.kind === nativeBaneConstants.MIST_TIDE && window.start <= now,
+  );
   if (!mist) return affordableAt(troops, now, rules, tickSeconds, maximum);
-  const boundaries = [...new Set([troops.stamina.settled_at, now, mist.end, effects.until,
-    ...effects.windows.flatMap(window => [window.start, window.end])])].sort((a, b) => a - b);
+  const boundaries = [
+    ...new Set([
+      troops.stamina.settled_at,
+      now,
+      mist.end,
+      effects.until,
+      ...effects.windows.flatMap((window) => [window.start, window.end]),
+    ]),
+  ].sort((a, b) => a - b);
   const windows = boundaries.slice(0, -1).map((start, index) => {
-    const rate = effects.windows.find(window => window.start <= start && start < window.end)?.rateBps ?? 10_000;
-    return { start, end: boundaries[index + 1], rateBps: start >= now && start < mist.end ? rate * 100 / staminaPercent : rate };
+    const rate = effects.windows.find((window) => window.start <= start && start < window.end)?.rateBps ?? 10_000;
+    return {
+      start,
+      end: boundaries[index + 1],
+      rateBps: start >= now && start < mist.end ? (rate * 100) / staminaPercent : rate,
+    };
   });
   return affordableAt({ ...troops, staminaEffects: { ...effects, windows } }, now, rules, tickSeconds, maximum);
 }

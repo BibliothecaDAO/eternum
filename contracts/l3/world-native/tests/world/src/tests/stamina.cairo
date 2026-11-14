@@ -142,7 +142,7 @@ fn a_preset_cannot_overflow_the_carried_remainder() {
 fn effect_boundaries_keep_fractional_stamina_and_boost_expiry_independent_of_read_frequency() {
     let mut once = bar(0);
     let mut once_boost = TroopBoosts {
-        incr_stamina_regen_percent_num: 3333, incr_stamina_regen_seconds_left: 17, ..Default::default()
+        incr_stamina_regen_percent_num: 3333, incr_stamina_regen_seconds_left: 17, ..Default::default(),
     };
     let mut repeated = once;
     let mut repeated_boost = once_boost;
@@ -151,7 +151,15 @@ fn effect_boundaries_keep_fractional_stamina_and_boost_expiry_independent_of_rea
     once.refill_to_max(ref once_boost, 120, rules(7), 60, 131, 20000);
     once.refill_to_max(ref once_boost, 120, rules(7), 60, 150, 10000);
     for now in 102_u64..151 {
-        let rate = if now <= 111 { 5000 } else if now <= 121 { 10000 } else if now <= 131 { 20000 } else { 10000 };
+        let rate = if now <= 111 {
+            5000
+        } else if now <= 121 {
+            10000
+        } else if now <= 131 {
+            20000
+        } else {
+            10000
+        };
         repeated.refill_to_max(ref repeated_boost, 120, rules(7), 60, now, rate);
     }
     assert_eq!(once.amount, 6);

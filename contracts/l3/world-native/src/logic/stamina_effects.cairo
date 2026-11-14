@@ -37,17 +37,20 @@ pub fn refill(
         }
         settle_with_wind(ref stamina, ref boosts, maximum, request, *window.start, 10000, wind);
         settle_with_wind(
-            ref stamina, ref boosts, maximum, request, *window.end,
-            Into::<u16, u32>::into(effects.stamina_percent) * 100, wind,
+            ref stamina,
+            ref boosts,
+            maximum,
+            request,
+            *window.end,
+            Into::<u16, u32>::into(effects.stamina_percent) * 100,
+            wind,
         );
     }
     settle_with_wind(ref stamina, ref boosts, maximum, request, request.timestamp, 10000, wind);
 }
 
 fn second_wind(home: ResourceKey, unit: u32) -> Option<Wind> {
-    let race = IRaceLibraryDispatcher {
-        class_hash: crate::logic::release::classes(home.game_id).economy.read(),
-    };
+    let race = IRaceLibraryDispatcher { class_hash: crate::logic::release::classes(home.game_id).economy.read() };
     let rules = race.race_rules(home.game_id)?;
     let aspect = crate::logic::aspects::home_aspect(home);
     let index = race.triumph_day(TriumphKey { game_id: home.game_id, aspect, stage: crate::race::SECOND_WIND_STAGE })?;
@@ -86,14 +89,7 @@ fn settle_with_wind(
 }
 
 fn settle(
-    ref stamina: Stamina,
-    ref boosts: TroopBoosts,
-    maximum: u64,
-    request: StaminaRefill,
-    until: u64,
-    rate_bps: u32,
+    ref stamina: Stamina, ref boosts: TroopBoosts, maximum: u64, request: StaminaRefill, until: u64, rate_bps: u32,
 ) {
-    stamina.refill_to_max(
-        ref boosts, maximum, request.stamina_config, request.armies_tick_in_seconds, until, rate_bps,
-    );
+    stamina.refill_to_max(ref boosts, maximum, request.stamina_config, request.armies_tick_in_seconds, until, rate_bps);
 }

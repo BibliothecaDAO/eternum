@@ -21,11 +21,7 @@ import { resolveExplorerTroops, STAMINA_MODELS } from "@bibliothecadao/eternum/t
 import { ResourcesIds, type Troops } from "@bibliothecadao/types";
 import { safeInteger } from "@bibliothecadao/eternum/game-client";
 
-const ORDER_MODELS = [
-  ...STAMINA_MODELS,
-  ...RESOURCE_PRODUCTION_MODELS,
-  "ArmyProgressionRules",
-] as const;
+const ORDER_MODELS = [...STAMINA_MODELS, ...RESOURCE_PRODUCTION_MODELS, "ArmyProgressionRules"] as const;
 
 /** A cost the army or its realm pays, held against what it has, with the exact wait when it is short. */
 export type Cost = { cost: number; held: number | undefined; wait: number | undefined };

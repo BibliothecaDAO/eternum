@@ -345,9 +345,13 @@ export class ArmyManager {
 
   private subscribeToExplorerTroopsPresentation(): void {
     this.unsubscribeExplorerTroopsPresentation = this.store?.subscribe((changes) => {
-      const effectsChanged = changes.some(change => change.model !== "ExplorerTroops"
-        && change.model !== "ArmySlot" && change.model !== "TileOccupancy"
-        && STAMINA_MODELS.some(model => model === change.model));
+      const effectsChanged = changes.some(
+        (change) =>
+          change.model !== "ExplorerTroops" &&
+          change.model !== "ArmySlot" &&
+          change.model !== "TileOccupancy" &&
+          STAMINA_MODELS.some((model) => model === change.model),
+      );
       if (effectsChanged) {
         for (const explorer of this.store!.inGame("ExplorerTroops", configManager.getActiveGameId())) {
           if (explorer.troops.count > 0n) this.applyExplorerTroopsPresentationUpdate(explorer);

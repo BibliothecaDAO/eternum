@@ -34,10 +34,22 @@ export const troopStaminaLimits = (rules: TroopStaminaRules, troopType: TroopTyp
 export function staminaAt(troops: Troops, timestamp: number, rules: TroopStaminaRules, tickSeconds: number) {
   const { staminaInitial, staminaMax } = troopStaminaLimits(rules, troops.category, troops.tier);
   const maximum = BigInt(troops.staminaMax ?? staminaMax);
-  const until = Math.max(troops.stamina.settled_at, Math.min(Math.floor(timestamp), troops.staminaEffects?.until ?? Infinity));
+  const until = Math.max(
+    troops.stamina.settled_at,
+    Math.min(Math.floor(timestamp), troops.staminaEffects?.until ?? Infinity),
+  );
   let bar = { ...troops.stamina, boostSecondsLeft: troops.boosts.incr_stamina_regen_seconds_left };
   const settle = (end: number, rateBps: number) => {
-    bar = refillStamina(bar, troops.boosts.incr_stamina_regen_percent_num, Math.max(bar.settled_at, end), maximum, staminaInitial, rules.stamina_gain_per_tick, tickSeconds, rateBps);
+    bar = refillStamina(
+      bar,
+      troops.boosts.incr_stamina_regen_percent_num,
+      Math.max(bar.settled_at, end),
+      maximum,
+      staminaInitial,
+      rules.stamina_gain_per_tick,
+      tickSeconds,
+      rateBps,
+    );
   };
   if (bar.settled_at !== 0) {
     for (const window of troops.staminaEffects?.windows ?? []) {
@@ -66,8 +78,9 @@ function refillStamina(
   const boosted = Math.min(elapsed, bar.boostSecondsLeft);
   const denominator = BigInt(tickSeconds) * 10_000n;
   const rate = BigInt(rateBps);
-  const boostedRate = rate * BigInt(10_000 + boostBps) / 10_000n;
-  const numerator = BigInt(bar.remainder) + BigInt(gain) * (BigInt(elapsed - boosted) * rate + BigInt(boosted) * boostedRate);
+  const boostedRate = (rate * BigInt(10_000 + boostBps)) / 10_000n;
+  const numerator =
+    BigInt(bar.remainder) + BigInt(gain) * (BigInt(elapsed - boosted) * rate + BigInt(boosted) * boostedRate);
   const total = bar.settled_at === 0 ? BigInt(initial) : bar.amount + numerator / denominator;
   return {
     amount: total >= maximum ? maximum : total,
@@ -93,9 +106,10 @@ export function affordableAt(
   const gain = Number(rules.stamina_gain_per_tick);
   if (cost > maximum || gain <= 0) return null;
   let low = now;
-  let high = troops.staminaEffects && Number.isFinite(troops.staminaEffects.until)
-    ? troops.staminaEffects.until - 1
-    : Math.max(now, troops.stamina.settled_at) + Math.ceil((cost * tickSeconds) / gain) + 1;
+  let high =
+    troops.staminaEffects && Number.isFinite(troops.staminaEffects.until)
+      ? troops.staminaEffects.until - 1
+      : Math.max(now, troops.stamina.settled_at) + Math.ceil((cost * tickSeconds) / gain) + 1;
   if (!canAfford(high)) return null;
   while (high - low > 1) {
     const middle = Math.floor((low + high) / 2);
@@ -167,8 +181,14 @@ export function resolveExplorerTroops(
   const calendar = readExpeditionRules(store, explorer.game_id);
   const position = store.entityOccupancy(explorer.game_id, explorer.explorer_id);
   if (calendar && !position) return undefined;
-  const effects = readStaminaEffects(store, explorer.game_id, explorer.owner, epoch, result.known.stamina.settled_at,
-    calendar && position ? expeditionDepth(calendar, { y: position.row }) : 0);
+  const effects = readStaminaEffects(
+    store,
+    explorer.game_id,
+    explorer.owner,
+    epoch,
+    result.known.stamina.settled_at,
+    calendar && position ? expeditionDepth(calendar, { y: position.row }) : 0,
+  );
   if (!effects.known) return undefined;
   const base = troopStaminaLimits(rules.troop_stamina_config, explorer.troops.category, TroopTier.T1).staminaMax;
   return {
@@ -222,7 +242,14 @@ export function openArmySlots(
     if (result.unknown) return undefined;
     if (!result.known) open.push({ slot, inherited: null });
     else if (result.known.explorer_id === 0n) {
-      const effects = readStaminaEffects(store, home.game_id, home.entity_id, epoch, result.known.stamina.settled_at, 0);
+      const effects = readStaminaEffects(
+        store,
+        home.game_id,
+        home.entity_id,
+        epoch,
+        result.known.stamina.settled_at,
+        0,
+      );
       if (!effects.known) return undefined;
       open.push({ slot, inherited: result.known.stamina, effects: effects.known });
     }

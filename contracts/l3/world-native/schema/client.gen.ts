@@ -1,5 +1,5 @@
 // Generated from native fact models and contract ABIs. Run the native schema generator to update.
-export const nativeFactSchemaIdentity = "b2eb60c73c58b8ca085d4e3eda16eded88828849dac32f949c0ef6759d14d81b";
+export const nativeFactSchemaIdentity = "06bc2380bf86409fb981fdfda24fa7a6d738038c444e490713ba589bc28e1d80";
 export const nativeReleaseConstants = {
   "RUIN_DEPTH_LIMIT_RELEASE": 9
 } as const;
@@ -94,7 +94,8 @@ export const nativeBaneConstants = {
   "ASH_FALL_QUEST": 9
 } as const;
 export const nativeRaceConstants = {
-  "STAGE_COUNT": 5
+  "STAGE_COUNT": 5,
+  "SECOND_WIND_STAGE": 2
 } as const;
 export const nativeArrivalConstants = {
   "SLOTS_PER_DAY": 48
