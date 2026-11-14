@@ -164,10 +164,21 @@ fn complete(d: Deployment, home: ResourceKey, day: u64, timestamp: u64) -> u128 
                 timestamp,
             ),
         );
-        labor_reward = interact_with_state(d.games, || {
-            crate::logic::expeditions::expedition_site(ResourceKey { game_id: home.game_id, entity_id: site.entity_id })
-                .unwrap().clear.unwrap().reward.unwrap().amount
-        });
+        labor_reward =
+            interact_with_state(
+                d.games,
+                || {
+                    crate::logic::expeditions::expedition_site(
+                        ResourceKey { game_id: home.game_id, entity_id: site.entity_id },
+                    )
+                        .unwrap()
+                        .clear
+                        .unwrap()
+                        .reward
+                        .unwrap()
+                        .amount
+                },
+            );
     }
     assert_eq!(interact_with_state(d.games, || crate::logic::quests::read(home, day).completed_level), 1);
     labor_reward
@@ -313,7 +324,8 @@ fn quorum_ends_the_effect_once_and_collection_pays_the_second_reward_once() {
                     Some((1000 * RESOURCE_PRECISION, 1500 * RESOURCE_PRECISION)),
                 );
                 assert_eq!(
-                    crate::logic::resources::balance(target, crate::resources::LABOR), 3600 * RESOURCE_PRECISION + clear_reward,
+                    crate::logic::resources::balance(target, crate::resources::LABOR),
+                    3600 * RESOURCE_PRECISION + clear_reward,
                 );
                 assert_eq!(
                     crate::logic::resources::balance(target, crate::resources::ESSENCE), 3000 * RESOURCE_PRECISION,

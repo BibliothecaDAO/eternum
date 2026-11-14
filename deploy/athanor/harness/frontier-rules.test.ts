@@ -41,16 +41,27 @@ describe("Frontier rules at real speed", () => {
     // An action that did not settle the realm's wheat says nothing about what it cost.
     expect(wheatCharged(before, { ...before }, ordinary)).toBeNull();
     // Spending within the same second still has a charge, with no intervening production.
-    expect(wheatCharged(before, { ...before, balance: before.balance - 900n * precision }, ordinary)).toBe(900n * precision);
+    expect(wheatCharged(before, { ...before, balance: before.balance - 900n * precision }, ordinary)).toBe(
+      900n * precision,
+    );
   });
 
   it("excludes slowed production and its carried fraction from the observed wheat charge", () => {
-    const production = { building_count: 1, production_rate: 7n, output_amount_left: 0n, last_settled_at: 1000, remainder: 0 };
+    const production = {
+      building_count: 1,
+      production_rate: 7n,
+      output_amount_left: 0n,
+      last_settled_at: 1000,
+      remainder: 0,
+    };
     const before = { balance: 1000n, production };
     const after = { balance: 1036n, production: { ...production, last_settled_at: 1013, remainder: 50 } };
-    expect(wheatCharged(before, after, {
-      windows: [{ kind: nativeBaneConstants.ASH_FALL, start: 1003, end: 1010 }], productionPercent: 50,
-    })).toBe(30n);
+    expect(
+      wheatCharged(before, after, {
+        windows: [{ kind: nativeBaneConstants.ASH_FALL, start: 1003, end: 1010 }],
+        productionPercent: 50,
+      }),
+    ).toBe(30n);
   });
 
   it("compares each producing building's rate on chain with preset 5's", () => {

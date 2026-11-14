@@ -54,7 +54,12 @@ export function wheatCharged(
 ): bigint | null {
   if (after.production.last_settled_at === before.production.last_settled_at && after.balance === before.balance)
     return null;
-  return before.balance + productionOutput(before.production, after.production.last_settled_at, effects.windows, effects.productionPercent).amount - after.balance;
+  return (
+    before.balance +
+    productionOutput(before.production, after.production.last_settled_at, effects.windows, effects.productionPercent)
+      .amount -
+    after.balance
+  );
 }
 
 /** Each producing row on chain beside the preset's rate for one building of its resource. */
