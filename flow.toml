@@ -182,5 +182,5 @@ paths = "apps/game/ packages/ config/ deploy/ contracts/l3/world-native/ package
 estimate_gb = 5
 
 [kind.playtest-aspect-founding]
-cmd = 'cp /home/djizus/projects/eternum-lanes/showcase/apps/game/.env.local apps/game/.env.local && pnpm run build:packages && for viewport in 1920x1080 390x844; do pnpm --dir apps/game playtest --port 4188 --steps lab-aspect-settle --iterations 1 --renderer-modes webgpu-force-webgl --viewport "$viewport" --out "$FLOW_TMP/playtest/$viewport" || exit $?; done'
+cmd = 'cp /home/djizus/projects/eternum-lanes/showcase/apps/game/.env.local apps/game/.env.local && pnpm run build:packages && exec 8>"${FLOW_JOB%/running/*}/playtest-port-4188.lock" && flock 8 && for viewport in 1920x1080 390x844; do pnpm --dir apps/game playtest --port 4188 --steps lab-aspect-settle --iterations 1 --renderer-modes webgpu-force-webgl --viewport "$viewport" --out "$FLOW_TMP/playtest/$viewport" || exit $?; done'
 estimate_gb = 6

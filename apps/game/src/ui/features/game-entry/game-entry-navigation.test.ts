@@ -1,7 +1,7 @@
 // @vitest-environment node
 
 import { configManager, Position } from "@bibliothecadao/eternum";
-import { mapRouteHex } from "@/play/navigation/play-route";
+import { buildEntryHref, mapRouteHex, parseRendererOptions } from "@/play/navigation/play-route";
 import { describe, expect, it, vi } from "vitest";
 
 import { resolveGameEntryTarget } from "./game-entry-navigation";
@@ -9,6 +9,30 @@ import { resolveGameEntryTarget } from "./game-entry-navigation";
 vi.spyOn(configManager, "getMapCenter").mockReturnValue(2010831280);
 
 describe("resolveGameEntryTarget", () => {
+  it.each(["play", "spectate"] as const)("carries a renderer trial from the home page through %s entry", (intent) => {
+    vi.stubGlobal("location", { pathname: "/", search: "?rendererMode=webgpu-force-webgl&logs=1&dev=0" });
+    try {
+      const href = buildEntryHref({ chainId: "0xa1", gameId: 3, intent, autoSettle: false });
+      expect(href).toBe(
+        `/g/0xa1/3?${intent === "spectate" ? "spectate=true&" : ""}rendererMode=webgpu-force-webgl&logs=1`,
+      );
+      const target = resolveGameEntryTarget({
+        chainId: "0xa1",
+        gameId: 3,
+        structureEntityId: 0,
+        worldMapReturnPosition: null,
+        isSpectateMode: intent === "spectate",
+        realmFirst: false,
+        renderer: parseRendererOptions(new URL(href, "https://game.test").searchParams),
+      });
+      expect(target.url).toBe(
+        `/g/0xa1/3/map?${intent === "spectate" ? "spectate=true&" : ""}rendererMode=webgpu-force-webgl&logs=1`,
+      );
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+
   it("routes player entry through the bootstrapped world-map target when one is available", () => {
     expect(
       resolveGameEntryTarget({
