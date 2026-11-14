@@ -9,6 +9,7 @@ import { deepScenario } from "@/lab/game/deep-scenario";
 import { setBlockTimestampSource } from "@bibliothecadao/eternum";
 import { readDeepSites } from "@bibliothecadao/eternum/game-client";
 import { DeepSiteCard } from "./deep-site-card";
+import { resolveExplorerCombatTroops } from "@bibliothecadao/eternum/troop-stamina";
 
 vi.mock("@/sync/active-game-client", async (original) => ({
   ...(await original<typeof import("@/sync/active-game-client")>()),
@@ -132,4 +133,17 @@ it("counts only actual army-tick boundaries before a day ending between ticks", 
   } finally {
     hud.unmount();
   }
+});
+
+it("forecasts Deep troop loss at the execution second rather than the displayed clock", () => {
+  const { store, startsAt } = deepScenario();
+  setBlockTimestampSource(() => startsAt);
+  const army = store.require("ExplorerTroops", { game_id: 1, explorer_id: 201 });
+  const interval = Number(store.require("SliceRules", { game_id: 1 }).tick_config.armies_tick_in_seconds);
+  const boundary = (Math.floor(startsAt / interval) + 1) * interval;
+  const loss = store.require("DeepRules", { game_id: 1 }).loss_per_tick;
+  expect(resolveExplorerCombatTroops(store, army, startsAt)?.count).toBe(army.troops.count);
+  expect(resolveExplorerCombatTroops(store, army, boundary)?.count).toBe(army.troops.count - loss);
+  expect(resolveExplorerCombatTroops(store, army, boundary + interval)?.count).toBe(army.troops.count - 2n * loss);
+  expect(store.require("ExplorerTroops", { game_id: 1, explorer_id: 201 }).troops.count).toBe(army.troops.count);
 });

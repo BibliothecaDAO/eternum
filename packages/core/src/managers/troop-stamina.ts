@@ -94,7 +94,7 @@ export function resolveExplorerCombatTroops(
   explorer: NativeRows["ExplorerTroops"],
   timestamp: number,
 ): Troops | undefined {
-  const troops = resolveExplorerTroops(store, explorer);
+  const troops = resolveExplorerTroops(store, explorer, timestamp);
   if (!troops) return undefined;
   const blade = armyRelicBonus(store, explorer, "Blade", timestamp);
   const ward = armyRelicBonus(store, explorer, "Ward", timestamp);
