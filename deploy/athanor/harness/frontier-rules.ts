@@ -1,4 +1,4 @@
-import { productionOutput, type ResourceManager } from "@bibliothecadao/eternum";
+import { productionOutput, type ResourceManager, type readBaneEffects } from "@bibliothecadao/eternum";
 import { RESOURCE_PRECISION, ResourcesIds } from "@bibliothecadao/types";
 import type { buildNativePreset } from "../../../config/deployer/clean/config/native-preset";
 import type { TrackedTransaction } from "./driver";
@@ -47,10 +47,14 @@ export function expectedWheat(definition: PresetDefinition, charge: WheatCharge)
  * What an action took from the realm's wheat: the balance before, plus what its farms grew up to the block that
  * settled the action, less the balance after. Null when neither its settled second nor its balance changed.
  */
-export function wheatCharged(before: WheatState, after: WheatState): bigint | null {
+export function wheatCharged(
+  before: WheatState,
+  after: WheatState,
+  effects: NonNullable<ReturnType<typeof readBaneEffects>["known"]>,
+): bigint | null {
   if (after.production.last_settled_at === before.production.last_settled_at && after.balance === before.balance)
     return null;
-  return before.balance + productionOutput(before.production, after.production.last_settled_at) - after.balance;
+  return before.balance + productionOutput(before.production, after.production.last_settled_at, effects.windows, effects.productionPercent).amount - after.balance;
 }
 
 /** Each producing row on chain beside the preset's rate for one building of its resource. */

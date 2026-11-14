@@ -1,4 +1,5 @@
 import { describe, expect, it } from "bun:test";
+import { nativeBaneConstants } from "../../../contracts/l3/world-native/schema/client.gen";
 import { RESOURCE_PRECISION, ResourcesIds } from "@bibliothecadao/types";
 import { buildNativePreset } from "../../../config/deployer/clean/config/native-preset";
 import { loadNativePresetConfiguration } from "../../../config/deployer/clean/registrar/native-preset";
@@ -11,6 +12,7 @@ import {
 } from "./frontier-rules";
 
 const precision = BigInt(RESOURCE_PRECISION);
+const ordinary = { windows: [], productionPercent: 100 };
 const frontier = buildNativePreset(loadNativePresetConfiguration("madara.frontier", 5), 5);
 
 describe("Frontier rules at real speed", () => {
@@ -35,11 +37,20 @@ describe("Frontier rules at real speed", () => {
       balance: 1_000n * precision + 60n * 84_000_000n - 900n * precision,
       production: { ...farm, last_settled_at: 1060 },
     };
-    expect(wheatCharged(before, after)).toBe(900n * precision);
+    expect(wheatCharged(before, after, ordinary)).toBe(900n * precision);
     // An action that did not settle the realm's wheat says nothing about what it cost.
-    expect(wheatCharged(before, { ...before })).toBeNull();
+    expect(wheatCharged(before, { ...before }, ordinary)).toBeNull();
     // Spending within the same second still has a charge, with no intervening production.
-    expect(wheatCharged(before, { ...before, balance: before.balance - 900n * precision })).toBe(900n * precision);
+    expect(wheatCharged(before, { ...before, balance: before.balance - 900n * precision }, ordinary)).toBe(900n * precision);
+  });
+
+  it("excludes slowed production and its carried fraction from the observed wheat charge", () => {
+    const production = { building_count: 1, production_rate: 7n, output_amount_left: 0n, last_settled_at: 1000, remainder: 0 };
+    const before = { balance: 1000n, production };
+    const after = { balance: 1036n, production: { ...production, last_settled_at: 1013, remainder: 50 } };
+    expect(wheatCharged(before, after, {
+      windows: [{ kind: nativeBaneConstants.ASH_FALL, start: 1003, end: 1010 }], productionPercent: 50,
+    })).toBe(30n);
   });
 
   it("compares each producing building's rate on chain with preset 5's", () => {

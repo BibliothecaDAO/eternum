@@ -23,6 +23,7 @@ import {
   entityMapPosition,
   liveHomeArmies,
   readExpeditionRules,
+  readBaneEffects,
   readTroopRaiseCost,
   ResourceManager,
   type GameClient,
@@ -236,7 +237,11 @@ function recordRules(client: GameClient) {
       }
     },
     recordCharge(player: Player, charge: WheatCharge, before: WheatState, after: WheatState) {
-      const charged = wheatCharged(before, after);
+      const effects = readBaneEffects(
+        player.client.setup.store, player.client.gameId, player.realmId,
+        before.production.last_settled_at, after.production.last_settled_at,
+      );
+      const charged = wheatCharged(before, after, known(effects.known, player.realmId, "production intervals"));
       if (charged === null) return;
       evidence.charges.push({
         botId: player.identity.botId,

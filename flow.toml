@@ -170,7 +170,7 @@ cmd = "pnpm run build:packages && pnpm --dir packages/provider test && pnpm --di
 estimate_gb = 5
 
 [kind.test-harness-confirmation]
-cmd = "pnpm run build:packages && bun test deploy/athanor/harness/confirmation.test.ts"
+cmd = "pnpm run build:packages && bun test deploy/athanor/harness/confirmation.test.ts deploy/athanor/harness/frontier-rules.test.ts"
 paths = "deploy/ packages/ config/ contracts/l3/world-native/schema/ package.json pnpm-lock.yaml .tool-versions"
 estimate_gb = 5
 
