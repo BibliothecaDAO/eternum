@@ -32,7 +32,7 @@ fn setup(seed: felt252) -> (Deployment, u32) {
 fn deployed(d: Deployment, game_id: u32, aspect: u8, count: u128) -> ExplorerKey {
     let home = found(d, game_id, aspect);
     grant(d, ResourceKey { game_id, entity_id: home }, 38, 100000 * crate::rules::RESOURCE_PRECISION);
-    for _ in 0..3 {
+    for _ in 0_u8..3 {
         applied(
             d,
             game_id,
