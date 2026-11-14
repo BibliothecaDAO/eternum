@@ -107,6 +107,7 @@ const answerTransfer = (command: LabCommand, chain: NativeFactStore): LabFact[] 
   return [
     { model: "TileOccupancy", key: vacatedKey, value: null },
     { model: "ExplorerTroops", key: sourceKey, value: null },
+    { model: "ArmyDay", key: chain.wireKeyOf("ArmyDay", { game_id: 1, explorer_id: source })!, value: null },
     holding,
   ];
 };
