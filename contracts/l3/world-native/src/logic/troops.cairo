@@ -711,9 +711,6 @@ pub mod TroopsLogic {
                         ResourceKey { game_id, entity_id: command.structure_id }, rules, context.timestamp, context,
                     );
             }
-            if rules.day_unit_seconds == 0 {
-                assert!(command.slot == 0, "slots require expedition");
-            }
             self.pay_troops(
                 game_id, command.structure_id, troop_type(command.category), troop_tier(command.tier),
                 command.amount, context.timestamp, context,
@@ -735,6 +732,9 @@ pub mod TroopsLogic {
             let rules = context.rules.unbox();
             let home = crate::logic::troops::owned_structure(game_id, command.structure_id, actor);
             assert!(command.amount > 0, "empty army allocation");
+            if rules.day_unit_seconds == 0 {
+                assert!(command.slot == 0, "slots require expedition");
+            }
             let category = troop_type(command.category);
             let tier = troop_tier(command.tier);
             let id = crate::entity_ids::allocate_home(game_id, command.structure_id);
