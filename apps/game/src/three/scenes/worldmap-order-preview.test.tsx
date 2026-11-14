@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
 import { act, type ReactElement } from "react";
+import { deepScenario } from "@/lab/game/deep-scenario";
 import { createRoot } from "react-dom/client";
 import type { ActionPath } from "@bibliothecadao/eternum";
 import { StructureType } from "@bibliothecadao/types";
@@ -1026,4 +1027,30 @@ describe("the click matrix: what is selected × what is clicked", () => {
       realm: facts,
     });
   });
+});
+
+
+it.each([true, false])("opens a Deep site for the selected army on desktop=%s", (desktop) => {
+  screen(desktop);
+  vi.spyOn(configManager, "getActiveGameId").mockReturnValue(1);
+  const scenario = deepScenario();
+  const site = scenario.opensOn!;
+  const normalized = Position.fromContract({ x: site.col, y: site.row }).getNormalized();
+  const target = { col: normalized.x, row: normalized.y };
+  useUIStore.setState((state) => ({
+    mapLayer: false,
+    entityActions: { ...state.entityActions, selectedEntityId: 201, actionPaths: new Map() },
+  }));
+  const { scene } = worldMap(true);
+  const selected: unknown[] = [];
+  Object.assign(scene, {
+    game: { store: scenario.store },
+    state: {
+      selectOnMap: (selection: unknown) => selected.push(selection),
+      updateEntityActionHoveredHex: () => {},
+    },
+  });
+  expect(scene.answerTapWithSelectedOrder(target)).toBe(true);
+  expect(selected).toEqual([{ kind: "army", entityId: 201, tile: { col: site.col, row: site.row } }]);
+  expect(usePopoverStore.getState().surface).toBeNull();
 });

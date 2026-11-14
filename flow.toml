@@ -175,7 +175,7 @@ paths = "deploy/ packages/ config/ contracts/l3/world-native/schema/ package.jso
 estimate_gb = 5
 
 [kind.test-army-lifetime]
-cmd = "pnpm run build:packages && pnpm --dir packages/core test && pnpm --dir apps/herald exec vitest run src/native src/home-ring.test.ts src/game-subscription.test.ts && pnpm --dir apps/game test src/lab/game src/ui/features/frontier src/ui/features/relics/components/relic-activation-selector.test.tsx src/ui/features/settlement/production/production-sidebar.test.tsx src/ui/features/world/containers/left-facets/realm-suggestions.test.tsx src/ui/features/world/hud/coach-explore-gate.test.tsx src/ui/features/world/hud/coach-select-army.test.tsx"
+cmd = "pnpm run build:packages && pnpm --dir packages/core test && pnpm --dir apps/herald exec vitest run src/native src/home-ring.test.ts src/game-subscription.test.ts && pnpm --dir apps/game test src/three/managers/army-manager.walking-plate.test.ts src/three/scenes/worldmap-order-preview.test.tsx src/lab/game src/ui/features/frontier src/ui/features/relics/components/relic-activation-selector.test.tsx src/ui/features/settlement/production/production-sidebar.test.tsx src/ui/features/world/containers/left-facets/realm-suggestions.test.tsx src/ui/features/world/hud/coach-explore-gate.test.tsx src/ui/features/world/hud/coach-select-army.test.tsx"
 estimate_gb = 5
 
 [kind.playtest-army-lifetime]

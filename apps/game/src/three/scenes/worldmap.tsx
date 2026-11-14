@@ -2917,7 +2917,7 @@ export default class WorldmapScene extends WarpTravel {
    */
   private isBareGround(hexCoords: HexPosition): boolean {
     const { army, structure, chest } = this.getHexagonEntity(hexCoords);
-    if (army || structure || chest || this.usableSiteAt(hexCoords) !== null) return false;
+    if (army || structure || chest || this.hasSiteCardAt(hexCoords)) return false;
     const armyId = this.selectedArmyId();
     if (armyId !== null && this.isArmysSpire(armyId, hexCoords)) return false;
     const path = getLiveWorldmapEntityActions().actionPaths.get(ActionPaths.posKey(hexCoords, true));
@@ -3028,8 +3028,7 @@ export default class WorldmapScene extends WarpTravel {
       path,
       armySelected: this.worldSpatialProjection.getArmy(selectedEntityId) !== undefined,
       site:
-        (structure !== undefined && this.isStandingExpeditionSite(structure.id)) ||
-        this.usableSiteAt(hexCoords) !== null,
+        (structure !== undefined && this.isStandingExpeditionSite(structure.id)) || this.hasSiteCardAt(hexCoords),
       // An army of the player's standing on the spire is selected by the tap, as on any site.
       ownSpire: this.isArmysSpire(selectedEntityId, hexCoords) && !this.holdsOwnSelectable(hexCoords),
       onPhone: layoutNow() === "phone",
@@ -4370,6 +4369,12 @@ export default class WorldmapScene extends WarpTravel {
       explorerId: safeInteger(selectedEntityId),
       site,
     });
+  }
+
+  private hasSiteCardAt(hexCoords: HexPosition): boolean {
+    if (this.usableSiteAt(hexCoords) !== null) return true;
+    const { col, row } = contractHexOf(hexCoords);
+    return getTileAt(this.game.store, activeMapLayer(), col, row)?.occupier_type === TileOccupier.DeepSite;
   }
 
   /**

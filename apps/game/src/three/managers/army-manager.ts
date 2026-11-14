@@ -49,7 +49,7 @@ import { GRAPHICS_DEV_GUI_ENABLED, createGuiFolder } from "@/three/utils/gui-man
 import { isAddressEqualToAccount } from "@/three/utils/utils";
 import { getExplorerStaminaSnapshot } from "@/utils/explorer-stamina";
 import { readArmyMovementReadiness } from "@/ui/features/world/components/armies/army-movement-readiness";
-import { safeInteger, type GameClientSetup as SetupResult } from "@bibliothecadao/eternum/game-client";
+import { currentArmy, safeInteger, type GameClientSetup as SetupResult } from "@bibliothecadao/eternum/game-client";
 import {
   FELT_CENTER,
   Position,
@@ -507,9 +507,10 @@ export class ArmyManager {
     }
   }
 
-  private resolveLiveExplorerTroopsComponent(entityId: ID): ExplorerTroopsComponentValue | undefined {
+  private resolveLiveExplorerTroopsComponent(entityId: ID, timestamp?: number): ExplorerTroopsComponentValue | undefined {
     if (!this.store) return undefined;
-    return this.store.get("ExplorerTroops", { game_id: configManager.getActiveGameId(), explorer_id: entityId });
+    const explorer = this.store.get("ExplorerTroops", { game_id: configManager.getActiveGameId(), explorer_id: entityId });
+    return explorer && currentArmy(this.store, explorer, timestamp);
   }
 
   private isProjectedArmyInCurrentChunk(renderable: ArmySpatialRenderable): boolean {
@@ -2974,6 +2975,8 @@ ${
       this.staminaUnresolved.delete(entityId);
       army.currentStamina = staminaSnapshot.current;
       army.maxStamina = staminaSnapshot.max;
+      const explorer = this.resolveLiveExplorerTroopsComponent(entityId, timestamp);
+      if (explorer) army.troopCount = divideByPrecision(Number(explorer.troops.count));
       army.foodBlocked = this.resolveFoodBlocked(entityId, army.isMine);
       this.refreshArmyCompactLabel(army);
     } catch {
@@ -3019,6 +3022,7 @@ ${
   }
 
   private applyExplorerTroopsPresentationUpdate(explorerTroops: ExplorerTroopsComponentValue): void {
+    explorerTroops = currentArmy(this.store!, explorerTroops);
     const entityId = safeInteger(explorerTroops.explorer_id);
     const army = this.armyPresentations.get(entityId);
     if (!army) return;
