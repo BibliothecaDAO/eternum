@@ -340,6 +340,7 @@ function buildEconomy(
             golden_amount: BigInt(preset.labor.goldenAmount),
             golden_essence: BigInt(preset.labor.goldenEssence),
           }),
+    deep: buildDeep(preset),
     discovery: buildDiscovery(preset),
     progression:
       progression === null
@@ -511,6 +512,50 @@ function resolveBridgeTokens(config: Config, resources: readonly number[]) {
       return { resource_type, token };
     })
     .sort((a, b) => a.resource_type - b.resource_type);
+}
+
+function buildDeep(preset: ReturnType<typeof nativePresetForId>) {
+  const deep = preset.deep;
+  if (deep === null) return new CairoOption(CairoOptionVariant.None);
+  if (!deep || preset.dayUnitSeconds === 0 || preset.orderAspects.length === 0)
+    throw new Error("Deep requires explicit Aspect expedition rules");
+  validateDeep(deep, preset.spacing);
+  return new CairoOption(CairoOptionVariant.Some, {
+    foundation: { alt: false, ...deep.foundation },
+    quarry: { alt: false, ...deep.quarry },
+    altar: { alt: false, ...deep.altar },
+    beast_count: scaled(deep.beastCount),
+    loss_per_tick: scaled(deep.lossPerTick),
+    quarry_per_tick: scaled(deep.quarryPerTick),
+    altar_per_tick: deep.altarPerTick,
+    altar_threshold: deep.altarThreshold,
+  });
+}
+
+function validateDeep(deep: NonNullable<ReturnType<typeof nativePresetForId>["deep"]>, spacing: number) {
+  const sites = [deep.foundation, deep.quarry, deep.altar];
+  if (
+    spacing < presetRule.DEEP_MAP_SIZE * 2 ||
+    sites.some(
+      ({ x, y }) =>
+        !Number.isSafeInteger(x) ||
+        !Number.isSafeInteger(y) ||
+        x < 0 ||
+        y < 0 ||
+        x >= presetRule.DEEP_MAP_SIZE ||
+        y >= presetRule.DEEP_MAP_SIZE ||
+        (x === presetRule.DEEP_MAP_SIZE / 2 && y === presetRule.DEEP_ARRIVAL_Y),
+    ) ||
+    new Set(sites.map(({ x, y }) => `${x}:${y}`)).size !== presetRule.DEEP_SITE_COUNT
+  )
+    throw new Error("Invalid Deep sites");
+  const amounts = [deep.beastCount, deep.lossPerTick, deep.quarryPerTick, deep.altarPerTick, deep.altarThreshold];
+  if (
+    amounts.some((value) => !Number.isSafeInteger(value) || value <= 0) ||
+    deep.altarThreshold > 0xffff_ffff ||
+    deep.altarThreshold % deep.altarPerTick !== 0
+  )
+    throw new Error("Invalid Deep tick amounts");
 }
 
 function buildDiscovery(preset: ReturnType<typeof nativePresetForId>) {

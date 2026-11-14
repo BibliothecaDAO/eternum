@@ -101,8 +101,3 @@ pub fn split_payment(amount: u128, shares: Span<crate::deep::DeepShare>) -> Span
     }
     result.span()
 }
-
-#[starknet::interface]
-pub trait IHeightBane<T> {
-    fn height_blocked(self: @T, game_id: u32, aspect: u8, timestamp: u64) -> bool;
-}

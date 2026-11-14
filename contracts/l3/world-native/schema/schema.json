@@ -2999,6 +2999,71 @@
       "derivedFrom": "preset"
     },
     {
+      "name": "DeepRules",
+      "identity": "0x4465657052756c6573",
+      "scope": "game",
+      "keys": [
+        {
+          "name": "game_id",
+          "type": "core::integer::u32",
+          "feltLength": 1
+        }
+      ],
+      "members": [
+        {
+          "name": "foundation",
+          "type": "world_native::troops::Coord",
+          "id": "0x666f756e646174696f6e",
+          "feltLength": 3
+        },
+        {
+          "name": "quarry",
+          "type": "world_native::troops::Coord",
+          "id": "0x717561727279",
+          "feltLength": 3
+        },
+        {
+          "name": "altar",
+          "type": "world_native::troops::Coord",
+          "id": "0x616c746172",
+          "feltLength": 3
+        },
+        {
+          "name": "beast_count",
+          "type": "core::integer::u128",
+          "id": "0x62656173745f636f756e74",
+          "feltLength": 1
+        },
+        {
+          "name": "loss_per_tick",
+          "type": "core::integer::u128",
+          "id": "0x6c6f73735f7065725f7469636b",
+          "feltLength": 1
+        },
+        {
+          "name": "quarry_per_tick",
+          "type": "core::integer::u128",
+          "id": "0x7175617272795f7065725f7469636b",
+          "feltLength": 1
+        },
+        {
+          "name": "altar_per_tick",
+          "type": "core::integer::u32",
+          "id": "0x616c7461725f7065725f7469636b",
+          "feltLength": 1
+        },
+        {
+          "name": "altar_threshold",
+          "type": "core::integer::u32",
+          "id": "0x616c7461725f7468726573686f6c64",
+          "feltLength": 1
+        }
+      ],
+      "keyLength": 1,
+      "valueLength": 14,
+      "derivedFrom": "preset"
+    },
+    {
       "name": "LaborGrant",
       "identity": "0x4c61626f724772616e74",
       "scope": "game",
@@ -7103,6 +7168,20 @@
         }
       ]
     },
+    "core::option::Option::<world_native::deep::DeepRules>": {
+      "type": "enum",
+      "name": "core::option::Option::<world_native::deep::DeepRules>",
+      "variants": [
+        {
+          "name": "Some",
+          "type": "world_native::deep::DeepRules"
+        },
+        {
+          "name": "None",
+          "type": "()"
+        }
+      ]
+    },
     "core::option::Option::<world_native::deposits::DepositReceipt>": {
       "type": "enum",
       "name": "core::option::Option::<world_native::deposits::DepositReceipt>",
@@ -8771,6 +8850,44 @@
         }
       ]
     },
+    "world_native::deep::DeepRules": {
+      "type": "struct",
+      "name": "world_native::deep::DeepRules",
+      "members": [
+        {
+          "name": "foundation",
+          "type": "world_native::troops::Coord"
+        },
+        {
+          "name": "quarry",
+          "type": "world_native::troops::Coord"
+        },
+        {
+          "name": "altar",
+          "type": "world_native::troops::Coord"
+        },
+        {
+          "name": "beast_count",
+          "type": "core::integer::u128"
+        },
+        {
+          "name": "loss_per_tick",
+          "type": "core::integer::u128"
+        },
+        {
+          "name": "quarry_per_tick",
+          "type": "core::integer::u128"
+        },
+        {
+          "name": "altar_per_tick",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "altar_threshold",
+          "type": "core::integer::u32"
+        }
+      ]
+    },
     "world_native::deposits::DepositReceipt": {
       "type": "struct",
       "name": "world_native::deposits::DepositReceipt",
@@ -10218,6 +10335,10 @@
       "type": "struct",
       "name": "world_native::presets::EconomyPreset",
       "members": [
+        {
+          "name": "deep",
+          "type": "core::option::Option::<world_native::deep::DeepRules>"
+        },
         {
           "name": "labor",
           "type": "core::option::Option::<world_native::entry::LaborRules>"
@@ -12913,5 +13034,5 @@
       ]
     }
   },
-  "identity": "446502be62780505679b1e3f425ace53907cb47a79cd48784d9192136a4bc3f5"
+  "identity": "7d0ad97050c2628798f2cee5263f143b172b9ecf92e6f919175239937b4f58af"
 }

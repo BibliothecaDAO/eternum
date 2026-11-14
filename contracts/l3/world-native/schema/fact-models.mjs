@@ -756,6 +756,7 @@ const presetDerivedModels = new Set([
   "RelicRules",
   "ChestRules",
   "LaborRules",
+  "DeepRules",
   "ArmyProgressionRules",
   "FrontierDiscoveryRules",
   "ArtificerCost",
@@ -941,6 +942,7 @@ export function defineFactModels({ struct, model: declare }) {
       struct("deposits::DepositReceipt"),
     ),
     model("LaborRules", "game", [{ name: "game_id", type: "core::integer::u32" }], struct("entry::LaborRules")),
+    model("DeepRules", "game", [{ name: "game_id", type: "core::integer::u32" }], struct("deep::DeepRules")),
     model(
       "LaborGrant",
       "game",
@@ -1397,6 +1399,7 @@ export const syncScopes = {
       "RelicRules",
       "ChestRules",
       "LaborRules",
+      "DeepRules",
       "ArmyProgressionRules",
       "LordsBudget",
       "FrontierPrize",

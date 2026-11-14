@@ -1,5 +1,5 @@
 // Generated from native fact models and contract ABIs. Run the native schema generator to update.
-export const nativeFactSchemaIdentity = "446502be62780505679b1e3f425ace53907cb47a79cd48784d9192136a4bc3f5";
+export const nativeFactSchemaIdentity = "7d0ad97050c2628798f2cee5263f143b172b9ecf92e6f919175239937b4f58af";
 export const nativeReleaseConstants = {
   "RUIN_DEPTH_LIMIT_RELEASE": 9
 } as const;
@@ -209,6 +209,7 @@ export interface NativeRows {
   PrincipalWithdrawal: { readonly game_id: number; readonly account: bigint; readonly amount: bigint };
   DepositReceipt: { readonly game_id: number; readonly id: bigint; readonly commitment: bigint; readonly account: bigint; readonly amount: bigint; readonly cancelled: boolean };
   LaborRules: { readonly game_id: number; readonly amount: bigint; readonly campaign_essence: bigint; readonly golden_amount: bigint; readonly golden_essence: bigint };
+  DeepRules: { readonly game_id: number; readonly foundation: { readonly alt: boolean; readonly x: number; readonly y: number }; readonly quarry: { readonly alt: boolean; readonly x: number; readonly y: number }; readonly altar: { readonly alt: boolean; readonly x: number; readonly y: number }; readonly beast_count: bigint; readonly loss_per_tick: bigint; readonly quarry_per_tick: bigint; readonly altar_per_tick: number; readonly altar_threshold: number };
   LaborGrant: { readonly game_id: number; readonly home: bigint; readonly day: bigint; readonly account: bigint; readonly amount: bigint; readonly essence: bigint };
   ChestRules: { readonly game_id: number; readonly price_ceiling: bigint; readonly shares: { readonly common: number; readonly uncommon: number; readonly rare: number; readonly epic: number; readonly legendary: number }; readonly claim_window_seconds: number; readonly pool_bps: number; readonly top_n: number };
   FrontierPrize: { readonly game_id: number; readonly pool: bigint; readonly issued: bigint; readonly count: (number) | null };
@@ -305,6 +306,7 @@ export interface NativeKeys {
   PrincipalWithdrawal: { readonly game_id: number; readonly account: bigint };
   DepositReceipt: { readonly game_id: number; readonly id: bigint };
   LaborRules: { readonly game_id: number };
+  DeepRules: { readonly game_id: number };
   LaborGrant: { readonly game_id: number; readonly home: bigint; readonly day: bigint };
   ChestRules: { readonly game_id: number };
   FrontierPrize: { readonly game_id: number };
@@ -654,6 +656,35 @@ export const nativeFactModels = {
       "campaign_essence": "u128",
       "golden_amount": "u128",
       "golden_essence": "u128"
+    }
+  },
+  "DeepRules": {
+    "keys": [
+      "game_id"
+    ],
+    "scope": "game",
+    "fields": {
+      "game_id": "u32",
+      "foundation": {
+        "alt": "boolean",
+        "x": "u32",
+        "y": "u32"
+      },
+      "quarry": {
+        "alt": "boolean",
+        "x": "u32",
+        "y": "u32"
+      },
+      "altar": {
+        "alt": "boolean",
+        "x": "u32",
+        "y": "u32"
+      },
+      "beast_count": "u128",
+      "loss_per_tick": "u128",
+      "quarry_per_tick": "u128",
+      "altar_per_tick": "u32",
+      "altar_threshold": "u32"
     }
   },
   "LaborGrant": {
@@ -2262,6 +2293,7 @@ export const nativeSyncScopes = {
   "RelicRules": "shared",
   "ChestRules": "shared",
   "LaborRules": "shared",
+  "DeepRules": "shared",
   "ArmyProgressionRules": "shared",
   "LordsBudget": "shared",
   "FrontierPrize": "shared",

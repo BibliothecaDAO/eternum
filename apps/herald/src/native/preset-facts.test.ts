@@ -15,9 +15,10 @@ import { presetPreimageCommitment } from "./preset-preimages";
 
 const codec = new CallData([...Object.values(schema.types), ...schema.games.entrypoints] as Abi);
 
-function registration(presetId = 5) {
+function registration(presetId = 5, amend?: (definition: ReturnType<typeof buildNativePreset>) => void) {
   const environment = presetId === 2 ? "madara.blitz" : "madara.frontier";
   const definition = buildNativePreset(loadNativePresetConfiguration(environment, presetId), presetId);
+  amend?.(definition);
   const calldata = codec.compile("register_preset", { preset_id: presetId, definition });
   const commitment = presetPreimageCommitment(calldata.slice(1));
   const accountCalldata = [
@@ -401,4 +402,30 @@ describe("verified preset configuration facts", () => {
     );
     expect(world.fold.checkpoint()).toEqual(registered);
   });
+});
+
+it("projects optional Deep rules from verified registration and publishes no row for None", () => {
+  const deep = {
+    foundation: { alt: false, x: 25, y: 35 },
+    quarry: { alt: false, x: 12, y: 20 },
+    altar: { alt: false, x: 38, y: 20 },
+    beast_count: 10_000_000_000_000n,
+    loss_per_tick: 200_000_000_000n,
+    quarry_per_tick: 500_000_000_000n,
+    altar_per_tick: 5,
+    altar_threshold: 1_500,
+  };
+  for (const enabled of [false, true]) {
+    const world = setup();
+    const preset = registration(7, (definition) => {
+      if (enabled) definition.economy.deep = new CairoOption(CairoOptionVariant.Some, deep);
+    });
+    applyRegistration(world, preset);
+    world.native.applyReceipt(world.fold, receipt(launch(preset)), 11, 0);
+    const store = new NativeFactStore();
+    store.applyFacts(
+      world.fold.gameRows("DeepRules", "1").map(({ key, value }) => ({ model: "DeepRules", key, value })),
+    );
+    expect(store.get("DeepRules", { game_id: 1 })).toEqual(enabled ? { game_id: 1, ...deep } : undefined);
+  }
 });

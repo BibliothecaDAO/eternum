@@ -32,6 +32,7 @@ pub struct WithdrawalPreset {
 }
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]
 pub struct EconomyPreset {
+    pub deep: Option<crate::deep::DeepRules>,
     pub labor: Option<crate::entry::LaborRules>,
     pub hyperstructures: crate::hyperstructures::HyperstructureRules,
     pub relics: Span<crate::relics::RelicRule>,
@@ -54,6 +55,12 @@ pub struct PresetDefinition {
 
 pub fn validate(preset: PresetDefinition) {
     let rules = preset.rules;
+    if let Some(deep) = preset.economy.deep {
+        assert!(
+            rules.day_unit_seconds != 0 && !preset.settlement.order_aspects.is_empty(), "Deep needs Aspect expeditions",
+        );
+        crate::deep::validate(deep, preset.settlement.spacing);
+    }
     crate::aspects::validate(preset.settlement.order_aspects);
     assert!(
         preset.settlement.order_aspects.is_empty()

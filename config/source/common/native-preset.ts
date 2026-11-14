@@ -62,6 +62,16 @@ export interface NativePreset {
   };
   /** One price per research row tier above common; rows are research.cairo's ROW_* ids. */
   research: readonly { row: number; tier: number; essenceCost: number; laborCost: number }[];
+  deep: null | {
+    foundation: { x: number; y: number };
+    quarry: { x: number; y: number };
+    altar: { x: number; y: number };
+    beastCount: number;
+    lossPerTick: number;
+    quarryPerTick: number;
+    altarPerTick: number;
+    altarThreshold: number;
+  };
   discovery: null | {
     beastsBps: number;
     campBps: number;

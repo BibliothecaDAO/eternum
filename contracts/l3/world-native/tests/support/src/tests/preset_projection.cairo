@@ -239,6 +239,10 @@ pub fn observe_economy(ref rows: Array<ObservedRow>, address: ContractAddress, g
     let artificer = IArtificerDispatcher { contract_address: address };
     let bridge = IBridgeDispatcher { contract_address: address };
     let withdrawals = IWithdrawalsDispatcher { contract_address: address };
+    if let Some(deep) =
+        interact_with_state(address, || crate::logic::preset_record::for_game(game_id).deep_rules.read()) {
+        row(ref rows, 'DeepRules', key, deep);
+    }
     row(ref rows, 'HyperstructureRules', key, hyperstructures.hyperstructure_rules(game_id));
     row(ref rows, 'RelicRules', key, relics.relic_rules(game_id));
     if let Some(labor) =

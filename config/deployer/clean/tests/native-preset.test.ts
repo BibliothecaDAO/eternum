@@ -1050,3 +1050,71 @@ test("Season 1 and its check preset share the canonical Aspect mapping", () => {
   ))
     expect(preset.orderAspects).toEqual([]);
 });
+
+const deepFixture = () => ({
+  foundation: { x: 25, y: 35 },
+  quarry: { x: 12, y: 20 },
+  altar: { x: 38, y: 20 },
+  beastCount: 10_000,
+  lossPerTick: 200,
+  quarryPerTick: 500,
+  altarPerTick: 5,
+  altarThreshold: 1_500,
+});
+
+test("Deep remains disabled in published presets until its runtime lands", () => {
+  for (const source of Object.values(nativePresets)) {
+    expect(source.deep).toBeNull();
+    const environment = source.gameType === "blitz" ? "madara.blitz" : "madara.frontier";
+    expect(
+      buildNativePreset(loadNativePresetConfiguration(environment, source.id), source.id).economy.deep.isNone(),
+    ).toBe(true);
+  }
+});
+
+test("an optional Deep preset serializes exact coordinates, resource precision and Altar counts", () => {
+  const source = nativePresets[FRONTIER_S1_PRESET_ID]!;
+  const previous = source.deep;
+  try {
+    source.deep = deepFixture();
+    const built = buildNativePreset(loadNativePresetConfiguration("madara.frontier", source.id), source.id);
+    expect(built.economy.deep.unwrap()).toEqual({
+      foundation: { alt: false, x: 25, y: 35 },
+      quarry: { alt: false, x: 12, y: 20 },
+      altar: { alt: false, x: 38, y: 20 },
+      beast_count: 10_000n * BigInt(RESOURCE_PRECISION),
+      loss_per_tick: 200n * BigInt(RESOURCE_PRECISION),
+      quarry_per_tick: 500n * BigInt(RESOURCE_PRECISION),
+      altar_per_tick: 5,
+      altar_threshold: 1_500,
+    });
+    codec.compile("register_preset", { preset_id: source.id, definition: built });
+  } finally {
+    source.deep = previous;
+  }
+});
+
+test("the Deep codec refuses invalid sites and tick amounts", () => {
+  const source = nativePresets[FRONTIER_S1_PRESET_ID]!;
+  const previous = source.deep;
+  const malformed = [
+    { ...deepFixture(), quarry: { x: 25, y: 35 } },
+    { ...deepFixture(), foundation: { x: 50, y: 0 } },
+    { ...deepFixture(), altar: { x: nativeRuleConstants.DEEP_MAP_SIZE / 2, y: nativeRuleConstants.DEEP_ARRIVAL_Y } },
+    { ...deepFixture(), beastCount: 0 },
+    { ...deepFixture(), lossPerTick: 0.5 },
+    { ...deepFixture(), quarryPerTick: 0 },
+    { ...deepFixture(), altarPerTick: 0 },
+    { ...deepFixture(), altarThreshold: 1_501 },
+  ];
+  try {
+    for (const deep of malformed) {
+      source.deep = deep;
+      expect(() => buildNativePreset(loadNativePresetConfiguration("madara.frontier", source.id), source.id)).toThrow(
+        "Invalid Deep",
+      );
+    }
+  } finally {
+    source.deep = previous;
+  }
+});

@@ -28,6 +28,7 @@ pub struct PresetStorage<
     TRetention,
     TExplorationReward,
     TLaborRules,
+    TDeepRules,
 > {
     pub rules: TSliceRules,
     pub resource_rules: Map<u8, (u128, u128)>,
@@ -79,4 +80,5 @@ pub struct PresetStorage<
     pub exploration_rewards: Map<u32, TExplorationReward>,
     pub season_win_points: u128,
     pub labor_rules: Option<TLaborRules>,
+    pub deep_rules: Option<TDeepRules>,
 }
