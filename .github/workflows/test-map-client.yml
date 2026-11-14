@@ -1,0 +1,40 @@
+name: map client
+
+on:
+  workflow_call:
+
+jobs:
+  test-map-client:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    # The map client's renderer is Rust, and the module the page loads is built from it and committed. This job runs
+    # the crate's tests and builds the module again with the pinned tools: a committed module that its sources do not
+    # build fails here.
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          sparse-checkout: |
+            apps/game/map-client
+            apps/game/scripts
+            apps/game/src/map-client
+
+      - name: Install the Rust toolchain the crate pins
+        working-directory: apps/game/map-client
+        run: rustup show active-toolchain || rustup toolchain install
+
+      - name: Run the renderer's tests
+        working-directory: apps/game/map-client
+        run: cargo test --locked
+
+      - name: Install the wasm-pack the build pins
+        run: cargo install wasm-pack --version 0.15.0 --locked
+
+      - name: Build the renderer's module again
+        run: node apps/game/scripts/build-map-client.mjs
+
+      - name: Refuse a committed module that its sources do not build
+        run: git diff --exit-code -- apps/game/src/map-client/renderer

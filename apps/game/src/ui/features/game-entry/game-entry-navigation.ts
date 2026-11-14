@@ -7,8 +7,8 @@ type WorldMapPosition = {
   row: number;
 };
 
-/** What the entry's address asked of the renderer (a backend, diagnostics): the map's address carries it on. */
-type RendererRequest = Pick<PlayRouteDescriptor, "rendererMode" | "verboseLogs">;
+/** What the entry's address asked of the renderer (a backend, the map client, diagnostics): the map's address carries it on. */
+type RendererRequest = Pick<PlayRouteDescriptor, "rendererMode" | "mapClient" | "verboseLogs">;
 
 type ResolveGameEntryTargetInput = GameRef & {
   structureEntityId: number;

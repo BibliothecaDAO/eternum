@@ -26,6 +26,7 @@ jobs:
       native: ${{ steps.paths.outputs.native }}
       runtime: ${{ steps.paths.outputs.runtime }}
       amm: ${{ steps.paths.outputs.amm }}
+      map_client: ${{ steps.paths.outputs.map_client }}
       collectibles: ${{ steps.paths.outputs.collectibles }}
       mmr: ${{ steps.paths.outputs.mmr }}
       season_pass: ${{ steps.paths.outputs.season_pass }}
@@ -117,6 +118,11 @@ jobs:
     if: needs.scope.outputs.amm == 'true'
     uses: ./.github/workflows/test-ammv2.yml
 
+  map_client:
+    needs: scope
+    if: needs.scope.outputs.map_client == 'true'
+    uses: ./.github/workflows/test-map-client.yml
+
   collectibles:
     needs: scope
     if: needs.scope.outputs.collectibles == 'true'
@@ -156,6 +162,7 @@ jobs:
         native,
         runtime,
         amm,
+        map_client,
         collectibles,
         mmr,
         season_pass,

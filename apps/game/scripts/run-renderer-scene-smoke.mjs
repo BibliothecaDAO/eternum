@@ -57,6 +57,8 @@ export function buildSceneSmokeUrl({ baseUrl, chainId, gameId, rendererMode, sce
   url.searchParams.set("row", "0");
   url.searchParams.set("spectate", "true");
   url.searchParams.set("rendererMode", rendererMode);
+  // The smoke checks the game's current renderer, whichever the build opens its map with.
+  url.searchParams.set("mapClient", "current");
 
   return url.toString();
 }

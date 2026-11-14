@@ -24,6 +24,7 @@
 **/*.graphql
 **/*.gen.ts
 apps/game/src/shell/generated/
+apps/game/src/map-client/renderer/
 
 # ignore json files
 **/*.json
