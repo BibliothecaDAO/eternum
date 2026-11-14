@@ -36,7 +36,7 @@ describe("the day's banner", () => {
     expect(reward("Labor")).toBe("2,000");
     expect(reward("Essence")).toBe("3,000");
     expect(button("Collect")).toBeUndefined();
-    expect(button("1k")).toBeDefined();
+    expect(button("1K")).toBeDefined();
   });
 
   it("collects once the quest is done, and shows a check once collected", () => {
