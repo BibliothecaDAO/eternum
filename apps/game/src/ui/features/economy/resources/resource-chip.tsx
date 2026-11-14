@@ -137,7 +137,9 @@ export const ResourceChip = ({
   }
   const ratePerHour = isProducing && !hasReachedMaxCap ? formatRate(productionRate) : null;
   const timeLeft =
-    timeUntilValueReached !== undefined && timeUntilValueReached > 0 && Number.isFinite(timeUntilValueReached) ? formatWait(timeUntilValueReached) : null;
+    timeUntilValueReached !== undefined && timeUntilValueReached > 0 && Number.isFinite(timeUntilValueReached)
+      ? formatWait(timeUntilValueReached)
+      : null;
   // Each action keeps the app's named tip on hover, as before; the chip is the anchor it hangs from.
   const tipOn = (content: string) => (event: React.MouseEvent<HTMLElement>) =>
     setTooltip({ anchorElement: event.currentTarget, content, position: "bottom" });

@@ -281,8 +281,11 @@ pub mod SeasonLogic {
             }
             if crate::logic::preset_record::for_game(game_id).bane_rules.read().is_some() {
                 crate::banes::IWorldBanesDispatcherTrait::prepare_bane_day(
-                    crate::banes::IWorldBanesLibraryDispatcher { class_hash: self.release.classes(game_id).bridge.read() },
-                    game_id, crate::commands::action_context(context),
+                    crate::banes::IWorldBanesLibraryDispatcher {
+                        class_hash: self.release.classes(game_id).bridge.read(),
+                    },
+                    game_id,
+                    crate::commands::action_context(context),
                 );
             }
             let result = dispatch(self.release.classes(game_id), route, game_id, actor, payload, context)

@@ -126,11 +126,15 @@ pub mod QuestState {
     pub impl InternalImpl<TContractState, +HasComponent<TContractState>> of InternalTrait<TContractState> {
         fn record_bane_grant(ref self: ComponentState<TContractState>, day: u64, grant: crate::entry::LaborGrant) {
             self.data.banes.bonus_grants.write((grant.game_id, grant.home, day), Some((grant.amount, grant.essence)));
-            self.emit(crate::events::RowSet {
-                version: 1, model: 'BaneGrant',
-                keys: array![grant.game_id.into(), grant.home.into(), day.into()].span(),
-                values: array![grant.account.into(), grant.amount.into(), grant.essence.into()].span(),
-            });
+            self
+                .emit(
+                    crate::events::RowSet {
+                        version: 1,
+                        model: 'BaneGrant',
+                        keys: array![grant.game_id.into(), grant.home.into(), day.into()].span(),
+                        values: array![grant.account.into(), grant.amount.into(), grant.essence.into()].span(),
+                    },
+                );
         }
 
         fn grant_reward(

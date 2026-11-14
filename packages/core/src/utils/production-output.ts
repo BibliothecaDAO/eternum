@@ -18,8 +18,12 @@ export function productionOutput(
   let scaledSeconds = BigInt(Math.max(0, timestamp - since)) * 100n;
   let previousEnd = Number.NEGATIVE_INFINITY;
   for (const window of windows) {
-    if (!Number.isSafeInteger(window.start) || !Number.isSafeInteger(window.end)
-      || window.end < window.start || window.start < previousEnd)
+    if (
+      !Number.isSafeInteger(window.start) ||
+      !Number.isSafeInteger(window.end) ||
+      window.end < window.start ||
+      window.start < previousEnd
+    )
       throw new Error("Invalid production windows");
     previousEnd = window.end;
     if (window.kind !== nativeBaneConstants.ASH_FALL) continue;

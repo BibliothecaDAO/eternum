@@ -22,7 +22,6 @@ const SectionRow = ({ label, children }: { label: string; children: React.ReactN
   </div>
 );
 
-
 /** The realm's labor income as the chain produces it, the castle's and every workshop's together, per hour. */
 const LaborRateRow = ({ structureId }: { structureId: ID }) => {
   const { setup } = useGame();
@@ -30,9 +29,7 @@ const LaborRateRow = ({ structureId }: { structureId: ID }) => {
   const manager = new ResourceManager(setup.store, structureId);
   const timestamp = useCurrentDefaultTick();
   const perSecond =
-    timestamp > 0
-      ? manager.productionData(ResourcesIds.Labor, timestamp)?.productionPerSecond
-      : undefined;
+    timestamp > 0 ? manager.productionData(ResourcesIds.Labor, timestamp)?.productionPerSecond : undefined;
   return (
     <SectionRow label={resourceName(ResourcesIds.Labor)}>
       <span data-tip="Labor production">

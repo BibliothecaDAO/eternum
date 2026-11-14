@@ -1,20 +1,30 @@
 use starknet::storage_access::StorePacking;
-use crate::resources::{Production, ProductionPacking, SettledResource, Weight, UNLIMITED_OUTPUT, settle_windows};
 use crate::banes::{ASH_FALL, BaneWindow};
+use crate::resources::{Production, ProductionPacking, SettledResource, UNLIMITED_OUTPUT, Weight, settle_windows};
 
 fn producer() -> SettledResource {
     SettledResource {
         balance: 0,
-        production: Production { building_count: 1, production_rate: 7, output_amount_left: UNLIMITED_OUTPUT, last_settled_at: 100, remainder: 0 },
-        weight: Weight { capacity: UNLIMITED_OUTPUT, weight: 0 }, limit: None,
+        production: Production {
+            building_count: 1,
+            production_rate: 7,
+            output_amount_left: UNLIMITED_OUTPUT,
+            last_settled_at: 100,
+            remainder: 0,
+        },
+        weight: Weight { capacity: UNLIMITED_OUTPUT, weight: 0 },
+        limit: None,
     }
 }
 
 #[test]
 fn production_fraction_survives_storage_and_preserves_legacy_packed_values() {
     let original = Production {
-        building_count: 255, production_rate: 0xffffffffffffffff,
-        output_amount_left: UNLIMITED_OUTPUT, last_settled_at: 0xffffffff, remainder: 99,
+        building_count: 255,
+        production_rate: 0xffffffffffffffff,
+        output_amount_left: UNLIMITED_OUTPUT,
+        last_settled_at: 0xffffffff,
+        remainder: 99,
     };
     assert_eq!(ProductionPacking::unpack(ProductionPacking::pack(original)), original);
     let legacy = Production { remainder: 0, ..original };
@@ -38,7 +48,11 @@ fn production_partitioning_preserves_every_fraction_across_bane_edges() {
     for now in 101_u32..114 {
         let start = core::cmp::max(now - 1, 103);
         let end = core::cmp::min(now, 110);
-        let windows = if start < end { array![BaneWindow { kind: ASH_FALL, start: start.into(), end: end.into() }] } else { array![] };
+        let windows = if start < end {
+            array![BaneWindow { kind: ASH_FALL, start: start.into(), end: end.into() }]
+        } else {
+            array![]
+        };
         settle_windows(crate::resources::LABOR, ref pieces, 0, now, windows.span(), 50);
     }
     assert_eq!(pieces.balance, whole.balance);
@@ -51,14 +65,21 @@ fn exhausted_output_and_full_stores_do_not_bank_fractional_production() {
     let window = array![BaneWindow { kind: ASH_FALL, start: 100, end: 101 }];
     for case in 0_u8..3 {
         let mut resource = producer();
-        if case == 0 { resource.production.output_amount_left = 3; }
-        else if case == 1 { resource.limit = Some(3); }
-        else { resource.weight.capacity = 3; }
+        if case == 0 {
+            resource.production.output_amount_left = 3;
+        } else if case == 1 {
+            resource.limit = Some(3);
+        } else {
+            resource.weight.capacity = 3;
+        }
         settle_windows(crate::resources::LABOR, ref resource, 1, 101, window.span(), 50);
         assert_eq!(resource.balance, 3);
         assert_eq!(resource.production.remainder, 0);
-        if case == 0 { assert_eq!(resource.production.output_amount_left, 0); }
-        else if case == 2 { assert_eq!(resource.weight.weight, 3); }
+        if case == 0 {
+            assert_eq!(resource.production.output_amount_left, 0);
+        } else if case == 2 {
+            assert_eq!(resource.weight.weight, 3);
+        }
     }
 }
 
@@ -70,12 +91,19 @@ fn a_full_weighted_inventory_preserves_weightless_output_fractions() {
     for now in 101_u32..103 {
         let window = array![BaneWindow { kind: ASH_FALL, start: (now - 1).into(), end: now.into() }];
         settle_windows(crate::resources::LABOR, ref resource, 0, now, window.span(), 50);
-        assert_eq!(resource.balance, if now == 101 { 3 } else { 7 });
-        assert_eq!(resource.production.remainder, if now == 101 { 50 } else { 0 });
+        assert_eq!(resource.balance, if now == 101 {
+            3
+        } else {
+            7
+        });
+        assert_eq!(resource.production.remainder, if now == 101 {
+            50
+        } else {
+            0
+        });
         assert_eq!(resource.weight, Weight { capacity: 3, weight: 3 });
     }
 }
-
 use snforge_std::fs::{FileTrait, read_txt};
 
 #[derive(Drop, Serde)]

@@ -1,5 +1,5 @@
-use starknet::storage::StoragePointerReadAccess;
 use games_storage::release::LogicClasses;
+use starknet::storage::StoragePointerReadAccess;
 
 pub fn initialize_gameplay(classes: LogicClasses, game_id: u32, mode_rules: u32) {
     if crate::logic::preset_record::for_game(game_id).bane_rules.read().is_some() {

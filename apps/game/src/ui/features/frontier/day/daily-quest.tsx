@@ -31,9 +31,13 @@ export const DailyQuest = ({ realm, layout }: { realm: NativeRows["Structure"]; 
     ).catch((error: unknown) => toast.failed(error, "The quest reward could not be collected."));
   };
   const bane = reading?.bane;
-  const heads = !bane ? [] : [bane.type === "world"
-    ? worldBaneHead(bane.kind, setup.store.require("BaneRules", { game_id: realm.game_id }))
-    : teamBaneHead(bane.source)];
+  const heads = !bane
+    ? []
+    : [
+        bane.type === "world"
+          ? worldBaneHead(bane.kind, setup.store.require("BaneRules", { game_id: realm.game_id }))
+          : teamBaneHead(bane.source),
+      ];
   return (
     <section data-daily-quest>
       <DayBannerView
@@ -44,7 +48,10 @@ export const DailyQuest = ({ realm, layout }: { realm: NativeRows["Structure"]; 
             ? {
                 progress: safeInteger(reading.progress),
                 target: safeInteger(reading.target),
-                reward: { labor: Number(reading.reward.labor) / RESOURCE_PRECISION, essence: Number(reading.reward.essence) / RESOURCE_PRECISION },
+                reward: {
+                  labor: Number(reading.reward.labor) / RESOURCE_PRECISION,
+                  essence: Number(reading.reward.essence) / RESOURCE_PRECISION,
+                },
                 state: reading.state,
               }
             : null

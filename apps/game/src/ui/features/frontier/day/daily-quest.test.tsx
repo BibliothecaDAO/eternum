@@ -98,7 +98,9 @@ function worldDay(layout: "desktop" | "phone") {
   const registry = store.require("GameRegistry", { game_id: 1 });
   const rules = store.require("SliceRules", { game_id: 1 });
   const calendar = {
-    seed: registry.seed, startMainAt: Number(registry.start_main_at), endAt: Number(registry.end_at),
+    seed: registry.seed,
+    startMainAt: Number(registry.start_main_at),
+    endAt: Number(registry.end_at),
     dayUnitSeconds: rules.day_unit_seconds,
   };
   const start = dayOf(calendar, calendar.startMainAt)!.end;
@@ -106,26 +108,51 @@ function worldDay(layout: "desktop" | "phone") {
   store.applyFacts([
     { model: "HomeAspect", key: "membership", value: { game_id: 1, home: 7, aspect: 2 } },
     { model: "AspectActivity", key: "activity", value: { game_id: 1, aspect: 2, day: 0, active: 5 } },
-    { model: "BaneRules", key: "banes", value: {
-      game_id: 1, chance_step: 20, quorum_percent: 40, beast_percent: 150, stamina_percent: 50, production_percent: 50,
-      quest_counts: [3, 6, 9, 12, 20, 40, 60, 80, 2500, 6000, 10_000, 15_000],
-    } },
+    {
+      model: "BaneRules",
+      key: "banes",
+      value: {
+        game_id: 1,
+        chance_step: 20,
+        quorum_percent: 40,
+        beast_percent: 150,
+        stamina_percent: 50,
+        production_percent: 50,
+        quest_counts: [3, 6, 9, 12, 20, 40, 60, 80, 2500, 6000, 10_000, 15_000],
+      },
+    },
     { model: "WorldBane", key: "world-day", value: { game_id: 1, day: 1, kind: nativeBaneConstants.ASH_FALL } },
-    { model: "QuestProgress", key: "quest-day", value: { game_id: 1, home: 7, day: 1, progress: 2500, completed_level: 1 } },
+    {
+      model: "QuestProgress",
+      key: "quest-day",
+      value: { game_id: 1, home: 7, day: 1, progress: 2500, completed_level: 1 },
+    },
   ]);
   store.setSnapshot({ gameId: 1, complete: true, actor: fixtureGame.scenario.player, timestamp: clock.now });
   const grant = (model: "LaborGrant" | "BaneGrant", labor = 1000, essence = 1500) => ({
-    model, key: `receipt-${model}`, value: {
-      game_id: 1, home: 7, day: 1, account: fixtureGame.scenario.player,
-      amount: BigInt(labor) * BigInt(RESOURCE_PRECISION), essence: BigInt(essence) * BigInt(RESOURCE_PRECISION),
+    model,
+    key: `receipt-${model}`,
+    value: {
+      game_id: 1,
+      home: 7,
+      day: 1,
+      account: fixtureGame.scenario.player,
+      amount: BigInt(labor) * BigInt(RESOURCE_PRECISION),
+      essence: BigInt(essence) * BigInt(RESOURCE_PRECISION),
     },
   });
-  const win = () => store.applyFacts([
-    { model: "BaneProgress", key: "quorum-day", value: { game_id: 1, aspect: 2, day: 1, completed: 2, ended_at: start + 10 } },
-  ]);
+  const win = () =>
+    store.applyFacts([
+      {
+        model: "BaneProgress",
+        key: "quorum-day",
+        value: { game_id: 1, aspect: 2, day: 1, completed: 2, ended_at: start + 10 },
+      },
+    ]);
   return { ...fixtureGame, grant, win };
 }
-const collectAgain = () => [...host.querySelectorAll("button")].find((button) => button.textContent === "Collect again");
+const collectAgain = () =>
+  [...host.querySelectorAll("button")].find((button) => button.textContent === "Collect again");
 const reward = (name: string) => host.querySelector(`[data-reward="${name}"]`)?.textContent?.trim();
 
 describe.each(["desktop", "phone"] as const)("bane collection on %s", (layout) => {
@@ -177,7 +204,7 @@ describe.each(["desktop", "phone"] as const)("bane collection on %s", (layout) =
     game.draw();
     expect(host.textContent).toContain("Reading today's quest");
     expect(host.textContent).not.toContain("The Cull");
-    expect(host.querySelector('[data-reward]')).toBeNull();
+    expect(host.querySelector("[data-reward]")).toBeNull();
     expect(collect()).toBeUndefined();
     expect(collectAgain()).toBeUndefined();
   });
@@ -187,10 +214,23 @@ describe.each(["desktop", "phone"] as const)("bane collection on %s", (layout) =
     const source = aspects.find((aspect) => aspect.id !== 2)!;
     game.store.applyFacts([
       { model: "FirstTeamBane", key: "first-bane", value: { game_id: 1, issued_day: 0 } },
-      { model: "TeamBane", key: "team-day", value: {
-        game_id: 1, aspect: 2, day: 1, issued_day: 0, source: source.id, quest: nativeQuestConstants.STAND,
-      } },
-      { model: "QuestProgress", key: "quest-day", value: { game_id: 1, home: 7, day: 1, progress: 3, completed_level: 1 } },
+      {
+        model: "TeamBane",
+        key: "team-day",
+        value: {
+          game_id: 1,
+          aspect: 2,
+          day: 1,
+          issued_day: 0,
+          source: source.id,
+          quest: nativeQuestConstants.STAND,
+        },
+      },
+      {
+        model: "QuestProgress",
+        key: "quest-day",
+        value: { game_id: 1, home: 7, day: 1, progress: 3, completed_level: 1 },
+      },
       game.grant("LaborGrant"),
     ]);
     game.win();
@@ -214,5 +254,4 @@ describe.each(["desktop", "phone"] as const)("bane collection on %s", (layout) =
     expect(reward("Labor")).toBe("<1");
     expect(reward("Essence")).toBe("<1");
   });
-
 });

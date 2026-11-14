@@ -15,7 +15,8 @@ const realm = (board: boolean, wheat: bigint) => {
     upsert("0x1", "SliceRules", { ...preset.rules, game_id: 1, mode_rules: 0 }),
     upsert("0x2", "ResourceWeight", { game_id: 1, entity_id: 7, capacity: 1000n * PRECISION, weight: 0n }),
     upsert("0x3", "ResourceBalance", { game_id: 1, entity_id: 7, resource_type: 35, balance: wheat }),
-    upsert("0x4", "ResourceProduction", {remainder: 0,
+    upsert("0x4", "ResourceProduction", {
+      remainder: 0,
 
       game_id: 1,
       entity_id: 7,

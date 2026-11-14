@@ -80,6 +80,14 @@
     "LIGHTS": 8,
     "CULL": 9
   },
+  "baneConstants": {
+    "BLOOD_MOON": 1,
+    "MIST_TIDE": 2,
+    "ASH_FALL": 3,
+    "BLOOD_MOON_QUEST": 7,
+    "MIST_TIDE_QUEST": 8,
+    "ASH_FALL_QUEST": 9
+  },
   "researchConstants": {
     "ROW_FARM": 0,
     "ROW_WORKSHOP": 1,
@@ -1644,6 +1652,35 @@
       {
         "name": "RowSet",
         "prefix": [
+          "0x108086be942fea9c1dc00998eff8d0b42b2bf14c62afc372d32857f47956cd2",
+          "0x1381128f2a0228389d1eba9d3aa09f8ed24da656b884a49eea09a5ed2e87724"
+        ],
+        "members": [
+          {
+            "name": "version",
+            "type": "core::integer::u8",
+            "kind": "key"
+          },
+          {
+            "name": "model",
+            "type": "core::felt252",
+            "kind": "key"
+          },
+          {
+            "name": "keys",
+            "type": "core::array::Span::<core::felt252>",
+            "kind": "data"
+          },
+          {
+            "name": "values",
+            "type": "core::array::Span::<core::felt252>",
+            "kind": "data"
+          }
+        ]
+      },
+      {
+        "name": "RowSet",
+        "prefix": [
           "0x2a921933cc5cea2b53bb8bf4895528b1f1e94153fcf3495af25550d773f7717",
           "0x1381128f2a0228389d1eba9d3aa09f8ed24da656b884a49eea09a5ed2e87724"
         ],
@@ -3139,6 +3176,224 @@
         "value": "zero",
         "meaning": "This home has made no daily quest progress on this day."
       }
+    },
+    {
+      "name": "WorldBane",
+      "identity": "0x576f726c6442616e65",
+      "scope": "game",
+      "keys": [
+        {
+          "name": "game_id",
+          "type": "core::integer::u32",
+          "feltLength": 1
+        },
+        {
+          "name": "day",
+          "type": "core::integer::u64",
+          "feltLength": 1
+        }
+      ],
+      "members": [
+        {
+          "name": "kind",
+          "type": "core::integer::u8",
+          "id": "0x6b696e64",
+          "feltLength": 1
+        }
+      ],
+      "keyLength": 2,
+      "valueLength": 1
+    },
+    {
+      "name": "FirstTeamBane",
+      "identity": "0x46697273745465616d42616e65",
+      "scope": "game",
+      "keys": [
+        {
+          "name": "game_id",
+          "type": "core::integer::u32",
+          "feltLength": 1
+        }
+      ],
+      "members": [
+        {
+          "name": "issued_day",
+          "type": "core::integer::u64",
+          "id": "0x6973737565645f646179",
+          "feltLength": 1
+        }
+      ],
+      "keyLength": 1,
+      "valueLength": 1
+    },
+    {
+      "name": "BaneProgress",
+      "identity": "0x42616e6550726f6772657373",
+      "scope": "game",
+      "keys": [
+        {
+          "name": "game_id",
+          "type": "core::integer::u32",
+          "feltLength": 1
+        },
+        {
+          "name": "aspect",
+          "type": "core::integer::u8",
+          "feltLength": 1
+        },
+        {
+          "name": "day",
+          "type": "core::integer::u64",
+          "feltLength": 1
+        }
+      ],
+      "members": [
+        {
+          "name": "completed",
+          "type": "core::integer::u32",
+          "id": "0x636f6d706c65746564",
+          "feltLength": 1
+        },
+        {
+          "name": "ended_at",
+          "type": "core::integer::u64",
+          "id": "0x656e6465645f6174",
+          "feltLength": 1
+        }
+      ],
+      "keyLength": 3,
+      "valueLength": 2,
+      "absence": {
+        "parent": "BaneRules",
+        "value": "zero",
+        "meaning": "No member of this Aspect has completed the bane quest on this day.",
+        "parentKeys": {
+          "game_id": "game_id"
+        }
+      }
+    },
+    {
+      "name": "TeamBane",
+      "identity": "0x5465616d42616e65",
+      "scope": "game",
+      "keys": [
+        {
+          "name": "game_id",
+          "type": "core::integer::u32",
+          "feltLength": 1
+        },
+        {
+          "name": "aspect",
+          "type": "core::integer::u8",
+          "feltLength": 1
+        },
+        {
+          "name": "day",
+          "type": "core::integer::u64",
+          "feltLength": 1
+        }
+      ],
+      "members": [
+        {
+          "name": "source",
+          "type": "core::integer::u8",
+          "id": "0x736f75726365",
+          "feltLength": 1
+        },
+        {
+          "name": "issued_day",
+          "type": "core::integer::u64",
+          "id": "0x6973737565645f646179",
+          "feltLength": 1
+        },
+        {
+          "name": "quest",
+          "type": "core::integer::u8",
+          "id": "0x7175657374",
+          "feltLength": 1
+        }
+      ],
+      "keyLength": 3,
+      "valueLength": 3
+    },
+    {
+      "name": "AltarBar",
+      "identity": "0x416c746172426172",
+      "scope": "game",
+      "keys": [
+        {
+          "name": "game_id",
+          "type": "core::integer::u32",
+          "feltLength": 1
+        },
+        {
+          "name": "aspect",
+          "type": "core::integer::u8",
+          "feltLength": 1
+        }
+      ],
+      "members": [
+        {
+          "name": "charge",
+          "type": "core::integer::u32",
+          "id": "0x636861726765",
+          "feltLength": 1
+        }
+      ],
+      "keyLength": 2,
+      "valueLength": 1,
+      "absence": {
+        "parent": "DeepRules",
+        "value": "zero",
+        "meaning": "This Aspect has not received an Altar charge in this game.",
+        "parentKeys": {
+          "game_id": "game_id"
+        }
+      }
+    },
+    {
+      "name": "BaneGrant",
+      "identity": "0x42616e654772616e74",
+      "scope": "game",
+      "keys": [
+        {
+          "name": "game_id",
+          "type": "core::integer::u32",
+          "feltLength": 1
+        },
+        {
+          "name": "home",
+          "type": "core::integer::u64",
+          "feltLength": 1
+        },
+        {
+          "name": "day",
+          "type": "core::integer::u64",
+          "feltLength": 1
+        }
+      ],
+      "members": [
+        {
+          "name": "account",
+          "type": "core::starknet::contract_address::ContractAddress",
+          "id": "0x6163636f756e74",
+          "feltLength": 1
+        },
+        {
+          "name": "amount",
+          "type": "core::integer::u128",
+          "id": "0x616d6f756e74",
+          "feltLength": 1
+        },
+        {
+          "name": "essence",
+          "type": "core::integer::u128",
+          "id": "0x657373656e6365",
+          "feltLength": 1
+        }
+      ],
+      "keyLength": 3,
+      "valueLength": 3
     },
     {
       "name": "LaborRules",
@@ -5508,10 +5763,16 @@
           "type": "core::integer::u32",
           "id": "0x6c6173745f736574746c65645f6174",
           "feltLength": 1
+        },
+        {
+          "name": "remainder",
+          "type": "core::integer::u8",
+          "id": "0x72656d61696e646572",
+          "feltLength": 1
         }
       ],
       "keyLength": 3,
-      "valueLength": 4,
+      "valueLength": 5,
       "absence": {
         "parent": "ResourceWeight",
         "value": "zero",
@@ -7116,6 +7377,16 @@
         }
       ]
     },
+    "core::array::Span::<world_native::banes::BaneWindow>": {
+      "type": "struct",
+      "name": "core::array::Span::<world_native::banes::BaneWindow>",
+      "members": [
+        {
+          "name": "snapshot",
+          "type": "@core::array::Array::<world_native::banes::BaneWindow>"
+        }
+      ]
+    },
     "core::array::Span::<world_native::blitz_results::RankedPlayer>": {
       "type": "struct",
       "name": "core::array::Span::<world_native::blitz_results::RankedPlayer>",
@@ -8150,6 +8421,42 @@
         }
       ]
     },
+    "world_native::banes::BaneEffects": {
+      "type": "struct",
+      "name": "world_native::banes::BaneEffects",
+      "members": [
+        {
+          "name": "windows",
+          "type": "core::array::Span::<world_native::banes::BaneWindow>"
+        },
+        {
+          "name": "beast_percent",
+          "type": "core::integer::u16"
+        },
+        {
+          "name": "stamina_percent",
+          "type": "core::integer::u16"
+        },
+        {
+          "name": "production_percent",
+          "type": "core::integer::u16"
+        }
+      ]
+    },
+    "world_native::banes::BaneProgress": {
+      "type": "struct",
+      "name": "world_native::banes::BaneProgress",
+      "members": [
+        {
+          "name": "completed",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "ended_at",
+          "type": "core::integer::u64"
+        }
+      ]
+    },
     "world_native::banes::BaneRules": {
       "type": "struct",
       "name": "world_native::banes::BaneRules",
@@ -8177,6 +8484,44 @@
         {
           "name": "quest_counts",
           "type": "core::array::Span::<core::integer::u128>"
+        }
+      ]
+    },
+    "world_native::banes::BaneWindow": {
+      "type": "struct",
+      "name": "world_native::banes::BaneWindow",
+      "members": [
+        {
+          "name": "kind",
+          "type": "core::integer::u8"
+        },
+        {
+          "name": "start",
+          "type": "core::integer::u64"
+        },
+        {
+          "name": "end",
+          "type": "core::integer::u64"
+        }
+      ]
+    },
+    "world_native::banes::FirstTeamBane": {
+      "type": "struct",
+      "name": "world_native::banes::FirstTeamBane",
+      "members": [
+        {
+          "name": "issued_day",
+          "type": "core::integer::u64"
+        }
+      ]
+    },
+    "world_native::banes::WorldBane": {
+      "type": "struct",
+      "name": "world_native::banes::WorldBane",
+      "members": [
+        {
+          "name": "kind",
+          "type": "core::integer::u8"
         }
       ]
     },
@@ -9229,6 +9574,16 @@
         }
       ]
     },
+    "world_native::deep::AltarBar": {
+      "type": "struct",
+      "name": "world_native::deep::AltarBar",
+      "members": [
+        {
+          "name": "charge",
+          "type": "core::integer::u32"
+        }
+      ]
+    },
     "world_native::deep::DeepArmy": {
       "type": "struct",
       "name": "world_native::deep::DeepArmy",
@@ -9302,6 +9657,24 @@
         {
           "name": "day",
           "type": "core::integer::u64"
+        }
+      ]
+    },
+    "world_native::deep::TeamBane": {
+      "type": "struct",
+      "name": "world_native::deep::TeamBane",
+      "members": [
+        {
+          "name": "source",
+          "type": "core::integer::u8"
+        },
+        {
+          "name": "issued_day",
+          "type": "core::integer::u64"
+        },
+        {
+          "name": "quest",
+          "type": "core::integer::u8"
         }
       ]
     },
@@ -11891,6 +12264,10 @@
         {
           "name": "last_settled_at",
           "type": "core::integer::u32"
+        },
+        {
+          "name": "remainder",
+          "type": "core::integer::u8"
         }
       ]
     },
@@ -13509,5 +13886,5 @@
       ]
     }
   },
-  "identity": "3f4e076f404fae3eb90a4b1ae7aaba337d07953193b4d5f80b4c5a66893f4caf"
+  "identity": "008753876f586d513afe61a60c55bb7d23694eabc1e809b7da99de098cff9b68"
 }

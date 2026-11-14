@@ -1010,10 +1010,42 @@ const DAILY_QUEST_STEPS = [
 ];
 
 const BANE_COLLECTIONS = {
-  world: { button: "Collect", receipts: ["LaborGrant"], labor: "1500000000000", essence: "1500000000000", quest: "The Cull", count: "2,500 of 2,500 troops", head: "Ash Fall" },
-  again: { button: "Collect again", receipts: ["BaneGrant"], labor: "2500000000000", essence: "3000000000000", quest: "The Cull", count: "2,500 of 2,500 troops", head: "Ash Fall" },
-  late: { button: "Collect", receipts: ["LaborGrant", "BaneGrant"], labor: "2500000000000", essence: "3000000000000", quest: "The Cull", count: "2,500 of 2,500 troops", head: "Ash Fall" },
-  team: { button: "Collect", receipts: ["LaborGrant"], labor: "1500000000000", essence: "1500000000000", quest: "The Stand", count: "3 of 3 sites", head: "Might's bane" },
+  world: {
+    button: "Collect",
+    receipts: ["LaborGrant"],
+    labor: "1500000000000",
+    essence: "1500000000000",
+    quest: "The Cull",
+    count: "2,500 of 2,500 troops",
+    head: "Ash Fall",
+  },
+  again: {
+    button: "Collect again",
+    receipts: ["BaneGrant"],
+    labor: "2500000000000",
+    essence: "3000000000000",
+    quest: "The Cull",
+    count: "2,500 of 2,500 troops",
+    head: "Ash Fall",
+  },
+  late: {
+    button: "Collect",
+    receipts: ["LaborGrant", "BaneGrant"],
+    labor: "2500000000000",
+    essence: "3000000000000",
+    quest: "The Cull",
+    count: "2,500 of 2,500 troops",
+    head: "Ash Fall",
+  },
+  team: {
+    button: "Collect",
+    receipts: ["LaborGrant"],
+    labor: "1500000000000",
+    essence: "1500000000000",
+    quest: "The Stand",
+    count: "3 of 3 sites",
+    head: "Might's bane",
+  },
 };
 
 const baneCollectionSteps = (expected) => [
@@ -1022,21 +1054,26 @@ const baneCollectionSteps = (expected) => [
     name: "collect-bane-quest",
     play: async ({ browser, extraScreenshot }) => {
       const ready = await readUntil(
-        () => browser.read(`JSON.stringify((() => {
+        () =>
+          browser.read(`JSON.stringify((() => {
           const panel = document.querySelector('[data-daily-quest]');
           const button = [...(panel?.querySelectorAll('button') ?? [])].find(b => b.textContent === ${JSON.stringify(expected.button)});
           return { text: panel?.textContent, collect: Boolean(button && !button.disabled) };
         })())`),
-        (value) => value.collect, PLAYABLE_WAIT_MS,
+        (value) => value.collect,
+        PLAYABLE_WAIT_MS,
       );
       const before = extraScreenshot("bane-ready");
       if (!ready?.collect) return { ready, before };
       browser.click(expected.button);
       const collected = await readUntil(
         () => browser.read(`Boolean(document.querySelector('[data-daily-quest] [aria-label="Collected"]'))`),
-        Boolean, PLAYABLE_WAIT_MS,
+        Boolean,
+        PLAYABLE_WAIT_MS,
       );
-      const grants = browser.read(`JSON.stringify((window.__labChain?.sent ?? []).filter(({command}) => command.kind === 'ClaimDailyQuest'))`);
+      const grants = browser.read(
+        `JSON.stringify((window.__labChain?.sent ?? []).filter(({command}) => command.kind === 'ClaimDailyQuest'))`,
+      );
       return { ready, before, collected, grants };
     },
     settleMs: 0,
@@ -1044,17 +1081,28 @@ const baneCollectionSteps = (expected) => [
       const [sent] = played.grants ?? [];
       const receipts = sent?.answered.filter(({ model }) => model === "LaborGrant" || model === "BaneGrant") ?? [];
       const balances = sent?.answered.filter(({ model }) => model === "ResourceBalance") ?? [];
-      const exact = played.ready?.collect && played.collected && played.grants?.length === 1
-        && [expected.quest, expected.count, expected.head].every((text) => played.ready.text?.includes(text))
-        && Number(sent.command.fields.home) === 7 && Number(sent.command.fields.day) === 1
-        && receipts.length === expected.receipts.length
-        && expected.receipts.every((model) => receipts.filter((receipt) => receipt.model === model).length === 1)
-        && receipts.every(({ value }) => Number(value.home) === 7 && Number(value.day) === 1
-          && value.amount === "1000000000000" && value.essence === "1500000000000")
-        && balances.length === 2
-        && balances.some(({ value }) => Number(value.resource_type) === 23 && value.balance === expected.labor)
-        && balances.some(({ value }) => Number(value.resource_type) === 38 && value.balance === expected.essence);
-      return exact ? completed(played) : failed("Bane collection must name the recorded quest and credit each exact receipt once", played);
+      const exact =
+        played.ready?.collect &&
+        played.collected &&
+        played.grants?.length === 1 &&
+        [expected.quest, expected.count, expected.head].every((text) => played.ready.text?.includes(text)) &&
+        Number(sent.command.fields.home) === 7 &&
+        Number(sent.command.fields.day) === 1 &&
+        receipts.length === expected.receipts.length &&
+        expected.receipts.every((model) => receipts.filter((receipt) => receipt.model === model).length === 1) &&
+        receipts.every(
+          ({ value }) =>
+            Number(value.home) === 7 &&
+            Number(value.day) === 1 &&
+            value.amount === "1000000000000" &&
+            value.essence === "1500000000000",
+        ) &&
+        balances.length === 2 &&
+        balances.some(({ value }) => Number(value.resource_type) === 23 && value.balance === expected.labor) &&
+        balances.some(({ value }) => Number(value.resource_type) === 38 && value.balance === expected.essence);
+      return exact
+        ? completed(played)
+        : failed("Bane collection must name the recorded quest and credit each exact receipt once", played);
     },
   },
 ];
@@ -5039,9 +5087,12 @@ export const STEP_SETS = {
   "lab-actions-deploy": { game: labSpireGame("actions"), steps: DEPLOY_ACTION_STEPS },
   "lab-actions-research": { game: labSpireGame("research"), steps: RESEARCH_ACTION_STEPS },
   "lab-daily-quest": { game: labSpireGame("quest"), steps: DAILY_QUEST_STEPS },
-  ...Object.fromEntries(Object.entries(BANE_COLLECTIONS).map(([stage, expected]) => [
-    `lab-bane-${stage}`, { game: labSpireGame(`bane-${stage}`), steps: baneCollectionSteps(expected) },
-  ])),
+  ...Object.fromEntries(
+    Object.entries(BANE_COLLECTIONS).map(([stage, expected]) => [
+      `lab-bane-${stage}`,
+      { game: labSpireGame(`bane-${stage}`), steps: baneCollectionSteps(expected) },
+    ]),
+  ),
   "lab-actions-claim": { game: labSpireGame("claim"), steps: CLAIM_ACTION_STEPS },
   "lab-far-place": { game: labSpireGame("far-place"), steps: FAR_PLACE_STEPS, devOverlays: true },
   "lab-relic-forecasts": { game: labSpireGame("relics"), steps: RELIC_FORECAST_STEPS },

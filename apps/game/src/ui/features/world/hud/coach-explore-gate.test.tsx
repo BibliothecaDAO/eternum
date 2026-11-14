@@ -86,7 +86,8 @@ const realmWithExplorer = (food: { wheat: string; fish: string }) => {
     ...[35, 36].map((resource_type) => ({
       model: "ResourceProduction",
       key: `0xf${resource_type}`,
-      value: {remainder: 0,
+      value: {
+        remainder: 0,
 
         game_id: 1,
         entity_id: 7,

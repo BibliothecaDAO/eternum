@@ -2,6 +2,8 @@ pub use world_test_support::tests::*;
 mod army_activity;
 
 mod aspects;
+
+mod banes;
 mod blitz_results;
 mod campaign;
 mod camps;
@@ -19,5 +21,3 @@ mod season_lifecycle;
 mod settlement;
 mod starting_armies;
 mod village;
-
-mod banes;

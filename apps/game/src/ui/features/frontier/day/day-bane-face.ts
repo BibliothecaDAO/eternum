@@ -23,7 +23,10 @@ export function teamBaneHead(source: number): DayHead {
   const aspect = aspects.find((aspect) => aspect.id === source);
   if (!aspect) throw new Error(`Missing source Aspect ${source}`);
   return {
-    tone: "bad", icon: "hyperstructure", eyebrow: WORDS.baneFrom(aspect.name), name: WORDS.rivalBane(aspect.name),
+    tone: "bad",
+    icon: "hyperstructure",
+    eyebrow: WORDS.baneFrom(aspect.name),
+    name: WORDS.rivalBane(aspect.name),
     rule: WORDS.heightBlocked,
     crests: orders.filter((order) => order.aspect === aspect.id).map(({ orderId }) => orderMeaning(orderId)),
   };

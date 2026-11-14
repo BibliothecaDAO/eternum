@@ -61,11 +61,12 @@ const TONE_TEXT: Record<Tone, string> = { good: "text-hud-good", bad: "text-hud-
  * one row, one foot row, and the news as chips that open their line on a press.
  */
 export const DayBannerView = ({ quest, ...props }: DayBannerProps) => {
-  if (!quest) return (
-    <HudPanel label={WORDS.today} collapsible={false} className="pointer-events-auto">
-      <HudLoading line={WORDS.reading} />
-    </HudPanel>
-  );
+  if (!quest)
+    return (
+      <HudPanel label={WORDS.today} collapsible={false} className="pointer-events-auto">
+        <HudLoading line={WORDS.reading} />
+      </HudPanel>
+    );
   return props.layout === "phone" ? <PhoneDay {...props} quest={quest} /> : <DesktopDay {...props} quest={quest} />;
 };
 

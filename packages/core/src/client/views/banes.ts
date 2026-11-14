@@ -4,12 +4,16 @@ import type { NativeFactResult, NativeFactStore, ReadKeys } from "../native-fact
 import { dayOf } from "../../utils/days";
 
 export const BANE_MODELS = [
-  "BaneRules", "WorldBane", "FirstTeamBane", "HomeAspect", "TeamBane", "BaneProgress", "AspectActivity",
+  "BaneRules",
+  "WorldBane",
+  "FirstTeamBane",
+  "HomeAspect",
+  "TeamBane",
+  "BaneProgress",
+  "AspectActivity",
 ] as const;
 
-type BaneIdentity =
-  | { type: "world"; kind: number; quest: number }
-  | { type: "team"; source: number; quest: number };
+type BaneIdentity = { type: "world"; kind: number; quest: number } | { type: "team"; source: number; quest: number };
 
 export type BaneDay = BaneIdentity & {
   aspect: number;
@@ -20,7 +24,10 @@ export type BaneDay = BaneIdentity & {
 
 /** The day's quest remains a bane quest after the Aspect ends its effect. */
 export function readBaneDay(
-  store: NativeFactStore, gameId: number, home: number | bigint, today: { index: number; start: number },
+  store: NativeFactStore,
+  gameId: number,
+  home: number | bigint,
+  today: { index: number; start: number },
 ): NativeFactResult<{ bane: BaneDay | null }> {
   const day = today.index;
   const ruleReading = optionalBaneRow(store, "BaneRules", { game_id: gameId });
@@ -33,21 +40,32 @@ export function readBaneDay(
   const identity = readBaneIdentity(store, gameId, aspect, day);
   if (!identity.known) return identity;
   if (!identity.known.bane) return { known: { bane: null } };
-  const active = day === 0
-    ? { known: { active: 0 } }
-    : store.requireOrAbsent("AspectActivity", { game_id: gameId, aspect, day: day - 1 });
+  const active =
+    day === 0
+      ? { known: { active: 0 } }
+      : store.requireOrAbsent("AspectActivity", { game_id: gameId, aspect, day: day - 1 });
   if (!active.known) return active;
   const progress = store.requireOrAbsent("BaneProgress", { game_id: gameId, aspect, day });
   if (!progress.known) return progress;
-  const required = Math.ceil(active.known.active * rules.quorum_percent / 100);
-  return { known: { bane: {
-    ...identity.known.bane, aspect, required, completed: progress.known.completed,
-    endedAt: required === 0 ? today.start : Number(progress.known.ended_at),
-  } } };
+  const required = Math.ceil((active.known.active * rules.quorum_percent) / 100);
+  return {
+    known: {
+      bane: {
+        ...identity.known.bane,
+        aspect,
+        required,
+        completed: progress.known.completed,
+        endedAt: required === 0 ? today.start : Number(progress.known.ended_at),
+      },
+    },
+  };
 }
 
 function readBaneIdentity(
-  store: NativeFactStore, gameId: number, aspect: number, day: number,
+  store: NativeFactStore,
+  gameId: number,
+  aspect: number,
+  day: number,
 ): NativeFactResult<{ bane: BaneIdentity | null }> {
   const first = optionalBaneRow(store, "FirstTeamBane", { game_id: gameId });
   if (!first.known) return first;
@@ -59,9 +77,16 @@ function readBaneIdentity(
   const kind = stopped ? 0 : world!.kind;
   if (kind !== 0 && team.known.row) throw new Error("An Aspect cannot have world and team banes together");
   if (kind !== 0) return { known: { bane: { type: "world", kind, quest: worldQuest(kind) } } };
-  if (team.known.row) return { known: { bane: {
-    type: "team", source: team.known.row.source, quest: team.known.row.quest,
-  } } };
+  if (team.known.row)
+    return {
+      known: {
+        bane: {
+          type: "team",
+          source: team.known.row.source,
+          quest: team.known.row.quest,
+        },
+      },
+    };
   return { known: { bane: null } };
 }
 
@@ -72,7 +97,9 @@ function worldQuest(kind: number): number {
 }
 
 function optionalBaneRow<M extends "BaneRules" | "FirstTeamBane" | "TeamBane">(
-  store: NativeFactStore, model: M, keys: ReadKeys<M>,
+  store: NativeFactStore,
+  model: M,
+  keys: ReadKeys<M>,
 ): NativeFactResult<{ row: NativeRows[M] | undefined }> {
   const row = store.get(model, keys);
   if (row) return { known: { row } };
@@ -83,12 +110,21 @@ function optionalBaneRow<M extends "BaneRules" | "FirstTeamBane" | "TeamBane">(
 function baneCalendar(store: NativeFactStore, gameId: number) {
   const game = store.require("GameRegistry", { game_id: gameId });
   const rules = store.require("SliceRules", { game_id: gameId });
-  return { seed: game.seed, startMainAt: Number(game.start_main_at), endAt: Number(game.end_at), dayUnitSeconds: rules.day_unit_seconds };
+  return {
+    seed: game.seed,
+    startMainAt: Number(game.start_main_at),
+    endAt: Number(game.end_at),
+    dayUnitSeconds: rules.day_unit_seconds,
+  };
 }
 
 /** Historical windows use recorded rolls and exact quorum times, never today's rate applied to past output. */
 export function readBaneEffects(
-  store: NativeFactStore, gameId: number, home: number | bigint, from: number, until: number,
+  store: NativeFactStore,
+  gameId: number,
+  home: number | bigint,
+  from: number,
+  until: number,
 ): NativeFactResult<{ windows: { kind: number; start: number; end: number }[]; productionPercent: number }> {
   const ruleReading = optionalBaneRow(store, "BaneRules", { game_id: gameId });
   if (!ruleReading.known) return ruleReading;

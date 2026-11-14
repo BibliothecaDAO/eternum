@@ -71,7 +71,8 @@ it("keeps chain time where Herald's head put it while a realm's production waits
   const fact = (key: string, model: string, value: Record<string, unknown>) => ({ key, model, value });
   store.applyFacts([
     fact("0x1", "ResourceWeight", { game_id: 1, entity_id: 7, capacity: (1n << 128n) - 1n, weight: 0n }),
-    fact("0x1", "ResourceProduction", {remainder: 0,
+    fact("0x1", "ResourceProduction", {
+      remainder: 0,
 
       game_id: 1,
       entity_id: 7,

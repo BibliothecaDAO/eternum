@@ -477,7 +477,8 @@ describe("the Deploy sheet", () => {
       {
         model: "ResourceProduction",
         key: "0x835",
-        value: {remainder: 0,
+        value: {
+          remainder: 0,
 
           game_id: 1,
           entity_id: 7,
@@ -630,7 +631,8 @@ describe("the Deploy sheet", () => {
       {
         model: "ResourceProduction",
         key: "0x826",
-        value: {remainder: 0,
+        value: {
+          remainder: 0,
 
           game_id: 1,
           entity_id: 7,

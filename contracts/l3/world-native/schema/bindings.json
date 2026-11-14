@@ -1,5 +1,5 @@
 {
-  "schemaIdentity": "3f4e076f404fae3eb90a4b1ae7aaba337d07953193b4d5f80b4c5a66893f4caf",
+  "schemaIdentity": "008753876f586d513afe61a60c55bb7d23694eabc1e809b7da99de098cff9b68",
   "commandAbi": [
     {
       "type": "interface",
@@ -1330,6 +1330,30 @@
     },
     {
       "name": "QuestProgress",
+      "scope": "game"
+    },
+    {
+      "name": "WorldBane",
+      "scope": "game"
+    },
+    {
+      "name": "FirstTeamBane",
+      "scope": "game"
+    },
+    {
+      "name": "BaneProgress",
+      "scope": "game"
+    },
+    {
+      "name": "TeamBane",
+      "scope": "game"
+    },
+    {
+      "name": "AltarBar",
+      "scope": "game"
+    },
+    {
+      "name": "BaneGrant",
       "scope": "game"
     },
     {

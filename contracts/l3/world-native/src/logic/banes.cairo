@@ -155,31 +155,40 @@ fn emit_row(row: crate::events::RowSet) {
 #[starknet::component]
 pub mod BaneState {
     #[embeddable_as(EffectsImpl)]
-    pub impl Effects<TContractState, +HasComponent<TContractState>, +Drop<TContractState>>
-        of crate::banes::IBaneEffects<ComponentState<TContractState>> {
-        fn bane_effects(self: @ComponentState<TContractState>, home: crate::resources::ResourceKey, from: u64, until: u64) -> crate::banes::BaneEffects {
+    pub impl Effects<
+        TContractState, +HasComponent<TContractState>, +Drop<TContractState>,
+    > of crate::banes::IBaneEffects<ComponentState<TContractState>> {
+        fn bane_effects(
+            self: @ComponentState<TContractState>, home: crate::resources::ResourceKey, from: u64, until: u64,
+        ) -> crate::banes::BaneEffects {
             super::read_effects(home, from, until)
         }
     }
 
     #[embeddable_as(CalendarImpl)]
-    pub impl Calendar<TContractState, +HasComponent<TContractState>, +Drop<TContractState>>
-        of crate::banes::IWorldBanes<ComponentState<TContractState>> {
-        fn prepare_bane_day(ref self: ComponentState<TContractState>, game_id: u32, context: crate::commands::ActionContext) {
+    pub impl Calendar<
+        TContractState, +HasComponent<TContractState>, +Drop<TContractState>,
+    > of crate::banes::IWorldBanes<ComponentState<TContractState>> {
+        fn prepare_bane_day(
+            ref self: ComponentState<TContractState>, game_id: u32, context: crate::commands::ActionContext,
+        ) {
             crate::logic::bane_calendar::prepare(game_id, context);
         }
     }
 
     #[embeddable_as(TeamImpl)]
-    pub impl Team<TContractState, +HasComponent<TContractState>, +Drop<TContractState>>
-        of crate::deep::IDeepBanes<ComponentState<TContractState>> {
+    pub impl Team<
+        TContractState, +HasComponent<TContractState>, +Drop<TContractState>,
+    > of crate::deep::IDeepBanes<ComponentState<TContractState>> {
         fn height_blocked(self: @ComponentState<TContractState>, game_id: u32, aspect: u8, timestamp: u64) -> bool {
             crate::logic::deep_banes::height_blocked(game_id, aspect, timestamp)
         }
         fn credit_altar(ref self: ComponentState<TContractState>, game_id: u32, source: u8, boundary: u64) {
             crate::logic::deep_banes::credit(game_id, source, boundary);
         }
-        fn team_quest(self: @ComponentState<TContractState>, home: crate::resources::ResourceKey, day: u64) -> Option<u8> {
+        fn team_quest(
+            self: @ComponentState<TContractState>, home: crate::resources::ResourceKey, day: u64,
+        ) -> Option<u8> {
             crate::logic::deep_banes::team_quest(home, day)
         }
     }

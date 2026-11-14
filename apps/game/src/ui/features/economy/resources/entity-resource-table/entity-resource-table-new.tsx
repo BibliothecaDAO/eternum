@@ -176,8 +176,7 @@ export const EntityResourceTableNew = React.memo(({ entityId }: EntityResourceTa
         if (!production || !withProduction) return;
         const { hasReachedMaxCapacity, balance } = withProduction;
 
-        const { productionPerSecond, isProducing, outputRemaining, timeRemainingSeconds } =
-          production;
+        const { productionPerSecond, isProducing, outputRemaining, timeRemainingSeconds } = production;
 
         // Only count production rate if actually producing
         const activeProductionRate = isProducing ? productionPerSecond : 0;

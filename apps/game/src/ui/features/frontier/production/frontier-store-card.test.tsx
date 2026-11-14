@@ -34,7 +34,8 @@ it("keeps an open barracks figure fixed until the chain-proven floor advances", 
     {
       model: "ResourceProduction",
       key: "0x99",
-      value: {remainder: 0,
+      value: {
+        remainder: 0,
 
         game_id: 1,
         entity_id: 7,

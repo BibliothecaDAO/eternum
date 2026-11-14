@@ -94,7 +94,8 @@ export const realmBoard = () => {
       population: { current: 0, max: 6 },
     }),
     set("0x73", "ResourceWeight", { game_id: 1, entity_id: 7, capacity: "100000000000000", weight: "0" }),
-    set("0x74", "ResourceProduction", {remainder: 0,
+    set("0x74", "ResourceProduction", {
+      remainder: 0,
 
       game_id: 1,
       entity_id: 7,

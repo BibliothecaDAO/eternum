@@ -35,8 +35,13 @@ describe("production paid by the second", () => {
 // Append to production-output.test.ts after its existing no-bane cases migrate to the result object.
 // Imports: readFileSync from node:fs.
 it("matches the native vectors across ordinary output, bane edges and carried fractions", () => {
-  const words = readFileSync(new URL("../../../../contracts/l3/world-native/tests/fixtures/production-banes.txt", import.meta.url), "utf8")
-    .trim().split(/\s+/).map(BigInt);
+  const words = readFileSync(
+    new URL("../../../../contracts/l3/world-native/tests/fixtures/production-banes.txt", import.meta.url),
+    "utf8",
+  )
+    .trim()
+    .split(/\s+/)
+    .map(BigInt);
   let cursor = 0;
   const next = () => {
     const value = words[cursor++];
@@ -51,11 +56,17 @@ it("matches the native vectors across ordinary output, bane edges and carried fr
     const until = Number(next());
     const remainder = Number(next());
     const percent = Number(next());
-    const windows = Array.from({ length: Number(next()) }, () => ({ kind: Number(next()), start: Number(next()), end: Number(next()) }));
+    const windows = Array.from({ length: Number(next()) }, () => ({
+      kind: Number(next()),
+      start: Number(next()),
+      end: Number(next()),
+    }));
     const amount = next();
     const finalRemainder = Number(next());
-    expect(productionOutput({ production_rate, last_settled_at, remainder }, until, windows, percent))
-      .toEqual({ amount, remainder: finalRemainder });
+    expect(productionOutput({ production_rate, last_settled_at, remainder }, until, windows, percent)).toEqual({
+      amount,
+      remainder: finalRemainder,
+    });
   }
   expect(cursor).toBe(words.length);
 });

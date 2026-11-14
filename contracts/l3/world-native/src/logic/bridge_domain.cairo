@@ -1,9 +1,9 @@
 #[starknet::contract]
 pub mod BridgeLogic {
+    use crate::logic::banes::BaneState;
     use crate::logic::entry::EntryAdministration;
     use crate::logic::guilds::GuildState;
     use crate::logic::quests::QuestState;
-    use crate::logic::banes::BaneState;
     use crate::logic::release::ReleaseState;
     component!(path: ReleaseState, storage: release, event: ReleaseEvent);
     impl LifeInternal = ReleaseState::InternalImpl<ContractState>;

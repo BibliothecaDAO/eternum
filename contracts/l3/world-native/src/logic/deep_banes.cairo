@@ -28,7 +28,9 @@ pub fn height_blocked(game_id: u32, aspect: u8, timestamp: u64) -> bool {
 
 pub fn credit(game_id: u32, source: u8, boundary: u64) {
     let preset = crate::logic::preset_record::for_game(game_id);
-    if preset.bane_rules.read().is_none() { return; }
+    if preset.bane_rules.read().is_none() {
+        return;
+    }
     assert!(source >= 1 && source <= 4, "invalid Altar Aspect");
     let game = crate::logic::game::game(game_id);
     assert!(boundary > game.start_main_at && boundary <= game.end_at, "Altar tick outside season");
@@ -65,7 +67,8 @@ fn target(game_id: u32, source: u8, day: u64, timestamp: u64) -> Option<u8> {
     let mut selected = None;
     let mut height = 0;
     for aspect in 1_u8..5 {
-        if aspect == source || height_blocked(game_id, aspect, timestamp)
+        if aspect == source
+            || height_blocked(game_id, aspect, timestamp)
             || bane(TeamBaneKey { game_id, aspect, day: day + 1 }).is_some() {
             continue;
         }
@@ -84,7 +87,11 @@ fn issue(key: TeamBaneKey, source: u8, issued_day: u64) {
     let state = crate::state::write();
     state.banes.team_banes.write((key.game_id, key.aspect, key.day), Some((source, issued_day, quest)));
     state.banes.latest_bane_day.write((key.game_id, key.aspect), Some(key.day));
-    crate::logic::banes::emit('TeamBane', array![key.game_id.into(), key.aspect.into(), key.day.into()].span(), array![source.into(), issued_day.into(), quest.into()].span());
+    crate::logic::banes::emit(
+        'TeamBane',
+        array![key.game_id.into(), key.aspect.into(), key.day.into()].span(),
+        array![source.into(), issued_day.into(), quest.into()].span(),
+    );
     if state.banes.first_team_day.read(key.game_id).is_none() {
         state.banes.first_team_day.write(key.game_id, Some(issued_day));
         crate::logic::banes::emit('FirstTeamBane', array![key.game_id.into()].span(), array![issued_day.into()].span());
@@ -119,12 +126,20 @@ fn next_quest(key: TeamBaneKey, source: u8) -> u8 {
 
 fn day(game_id: u32, timestamp: u64) -> Option<crate::days::Day> {
     let game = crate::logic::game::game(game_id);
-    if timestamp < game.start_main_at || timestamp >= game.end_at { return None; }
-    Some(crate::days::day_of(game, crate::logic::preset_record::for_game(game_id).rules.day_unit_seconds.read(), timestamp))
+    if timestamp < game.start_main_at || timestamp >= game.end_at {
+        return None;
+    }
+    Some(
+        crate::days::day_of(
+            game, crate::logic::preset_record::for_game(game_id).rules.day_unit_seconds.read(), timestamp,
+        ),
+    )
 }
 
 pub fn team_quest(home: crate::resources::ResourceKey, day: u64) -> Option<u8> {
-    if crate::logic::preset_record::for_game(home.game_id).bane_rules.read().is_none() { return None; }
+    if crate::logic::preset_record::for_game(home.game_id).bane_rules.read().is_none() {
+        return None;
+    }
     let aspect = crate::logic::aspects::home_aspect(home);
     bane(TeamBaneKey { game_id: home.game_id, aspect, day }).map(|bane| bane.quest)
 }

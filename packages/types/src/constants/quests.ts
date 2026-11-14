@@ -1,4 +1,7 @@
-import { nativeQuestConstants as quest, nativeBaneConstants as bane } from "../../../../contracts/l3/world-native/schema/client.gen";
+import {
+  nativeQuestConstants as quest,
+  nativeBaneConstants as bane,
+} from "../../../../contracts/l3/world-native/schema/client.gen";
 
 export const dailyQuests = [
   { id: quest.HUNT, unit: "herds or bands", name: "The Hunt", objective: "Clear Cyclops herds or Wraith bands" },

@@ -8,7 +8,6 @@ import {
   getStructureArmyRelicEffects,
   getStructureRelicEffects,
   isMilitaryResource,
-  ResourceManager,
 } from "@bibliothecadao/eternum";
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { useResourceManager } from "@/hooks/helpers/use-resources";

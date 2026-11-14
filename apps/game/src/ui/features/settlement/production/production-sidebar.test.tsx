@@ -33,7 +33,8 @@ vi.mock("@/hooks/helpers/use-resources", () => ({
       if (!production) return undefined;
       return {
         balance: 0n,
-        production: {remainder: 0,
+        production: {
+          remainder: 0,
 
           building_count: 1,
           production_rate: RATE,

@@ -9,8 +9,14 @@ import { heldRealmForHome } from "../../utils/home-claim";
 import { BANE_MODELS, readBaneDay, type BaneDay } from "./banes";
 
 export const DAILY_QUEST_MODELS = [
-  ...SCOPE_INPUT_MODELS, ...BANE_MODELS,
-  "QuestRules", "QuestProgress", "LaborGrant", "BaneGrant", "CampaignHome", "SettledRealm",
+  ...SCOPE_INPUT_MODELS,
+  ...BANE_MODELS,
+  "QuestRules",
+  "QuestProgress",
+  "LaborGrant",
+  "BaneGrant",
+  "CampaignHome",
+  "SettledRealm",
 ] as const;
 
 /** Unknown recorded rolls leave the quest itself unknown; no ordinary quest is invented while loading. */
@@ -25,10 +31,15 @@ function questCalendar(store: NativeFactStore, gameId: number, home: number, tim
   if (!rules) return undefined;
   const game = store.require("GameRegistry", { game_id });
   const clock = store.require("SliceRules", { game_id });
-  const day = dayOf({
-    seed: game.seed, startMainAt: Number(game.start_main_at),
-    endAt: Number(game.end_at), dayUnitSeconds: clock.day_unit_seconds,
-  }, timestamp);
+  const day = dayOf(
+    {
+      seed: game.seed,
+      startMainAt: Number(game.start_main_at),
+      endAt: Number(game.end_at),
+      dayUnitSeconds: clock.day_unit_seconds,
+    },
+    timestamp,
+  );
   if (!day) return undefined;
   const structure = store.require("Structure", { game_id, entity_id: home });
   if (structure.base.category !== StructureType.Realm) throw new Error("A daily quest belongs to a Realm");
@@ -62,12 +73,20 @@ function readQuestOnDay(store: NativeFactStore, at: QuestAt): NativeFactResult<Q
   const level = progress.completed_level || at.structure.base.level + 1;
   const won = bane?.type === "world" && bane.endedAt !== 0 && bane.endedAt <= at.timestamp;
   const grants = (receipts.ordinary ? 0 : 1) + (won && !receipts.bonus ? 1 : 0);
-  const state = progress.completed_level === 0 ? "running"
-    : !receipts.ordinary ? "done" : grants > 0 ? "again" : "collected";
+  const state =
+    progress.completed_level === 0 ? "running" : !receipts.ordinary ? "done" : grants > 0 ? "again" : "collected";
   const reward = grants === 0 ? receivedReward(receipts) : questReward(at.rules, level, bonus, grants);
-  return { known: {
-    quest, bane, target: questTarget(store, at, kind, level), progress: progress.progress, state, reward, receipts,
-  } };
+  return {
+    known: {
+      quest,
+      bane,
+      target: questTarget(store, at, kind, level),
+      progress: progress.progress,
+      state,
+      reward,
+      receipts,
+    },
+  };
 }
 
 function questTarget(store: NativeFactStore, at: QuestAt, kind: number, level: number): bigint {
@@ -89,19 +108,25 @@ function readQuestFacts(store: NativeFactStore, at: QuestAt, bane: BaneDay | nul
   if (!progress.known) return { unknown: progress.unknown };
   const ordinary = readReceipt(store, "LaborGrant", key, at.structure.owner);
   if (!ordinary.known) return ordinary;
-  const extra: NativeFactResult<{ row: NativeRows["BaneGrant"] | undefined }> = bane?.type === "world"
-    ? readReceipt(store, "BaneGrant", key, at.structure.owner) : { known: { row: undefined } };
+  const extra: NativeFactResult<{ row: NativeRows["BaneGrant"] | undefined }> =
+    bane?.type === "world" ? readReceipt(store, "BaneGrant", key, at.structure.owner) : { known: { row: undefined } };
   if (!extra.known) return extra;
   const bonus = readLaborBonus(store, game_id, home);
   if (!bonus.known) return bonus;
-  return { known: {
-    progress: progress.known, bonus: bonus.known.present,
-    receipts: { ordinary: ordinary.known.row, bonus: extra.known.row },
-  } };
+  return {
+    known: {
+      progress: progress.known,
+      bonus: bonus.known.present,
+      receipts: { ordinary: ordinary.known.row, bonus: extra.known.row },
+    },
+  };
 }
 
 function readReceipt(
-  store: NativeFactStore, model: "LaborGrant" | "BaneGrant", key: { game_id: number; home: number; day: number }, account: bigint,
+  store: NativeFactStore,
+  model: "LaborGrant" | "BaneGrant",
+  key: { game_id: number; home: number; day: number },
+  account: bigint,
 ): NativeFactResult<{ row: NativeRows["LaborGrant"] | undefined }> {
   const row = store.get(model, key);
   if (row) return { known: { row } };
@@ -111,7 +136,8 @@ function readReceipt(
 
 function readLaborBonus(store: NativeFactStore, gameId: number, home: number): NativeFactResult<{ present: boolean }> {
   const campaign = presentOrKnownAbsent(store, "CampaignHome", store.get("CampaignHome", { game_id: gameId, home }), {
-    game_id: gameId, home,
+    game_id: gameId,
+    home,
   });
   if (!campaign.known || campaign.known.present) return campaign;
   const held = heldRealmForHome(store, { gameId, entityId: home }) !== null;
@@ -119,7 +145,10 @@ function readLaborBonus(store: NativeFactStore, gameId: number, home: number): N
 }
 
 function presentOrKnownAbsent(
-  store: NativeFactStore, model: "CampaignHome" | "SettledRealm", present: unknown, row: Record<string, unknown>,
+  store: NativeFactStore,
+  model: "CampaignHome" | "SettledRealm",
+  present: unknown,
+  row: Record<string, unknown>,
 ): NativeFactResult<{ present: boolean }> {
   if (present) return { known: { present: true } };
   const absence = store.absenceKnown(model, row);
@@ -127,7 +156,10 @@ function presentOrKnownAbsent(
 }
 
 function questReward(
-  rules: { labor: bigint; essence: bigint; bonus_percent: number }, level: number, bonus: boolean, grants: number,
+  rules: { labor: bigint; essence: bigint; bonus_percent: number },
+  level: number,
+  bonus: boolean,
+  grants: number,
 ): Reward {
   const multiplier = 1n << BigInt(level - 1);
   const percent = BigInt(bonus ? rules.bonus_percent : 100);

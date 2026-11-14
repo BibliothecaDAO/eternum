@@ -126,14 +126,16 @@ async function expeditionWorld() {
           rowEvent("ResourceWeight", ["1", String(entityId)], { capacity: 1000n, weight: 100n }),
           rowEvent("EntityName", ["1", String(entityId)], { name: String(entityId) }),
         ]),
-        rowEvent("ResourceProduction", ["1", "100", "29"], {remainder: 0,
+        rowEvent("ResourceProduction", ["1", "100", "29"], {
+          remainder: 0,
 
           building_count: 1n,
           production_rate: 10n,
           output_amount_left: 100n,
           last_settled_at: 2,
         }),
-        rowEvent("ResourceProduction", ["1", "99", "29"], {remainder: 0,
+        rowEvent("ResourceProduction", ["1", "99", "29"], {
+          remainder: 0,
 
           building_count: 1n,
           production_rate: 10n,

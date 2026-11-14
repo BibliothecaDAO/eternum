@@ -20,9 +20,18 @@ import { divideByPrecision, getBuildingCount, gramToKg } from "../utils";
 import { configManager } from "./config-manager";
 
 export const RESOURCE_PRODUCTION_MODELS = [
-  ...SCOPE_INPUT_MODELS, ...BANE_MODELS,
-  "ResourceBalance", "ResourceProduction", "ResourceWeight", "ResourceRule", "RealmKnowledge",
-  "StructureBuildings", "ProductionBonus", "BoardRules", "SliceRules", "GameRegistry",
+  ...SCOPE_INPUT_MODELS,
+  ...BANE_MODELS,
+  "ResourceBalance",
+  "ResourceProduction",
+  "ResourceWeight",
+  "ResourceRule",
+  "RealmKnowledge",
+  "StructureBuildings",
+  "ProductionBonus",
+  "BoardRules",
+  "SliceRules",
+  "GameRegistry",
 ] as const;
 
 type Production = Pick<
@@ -180,7 +189,9 @@ export class ResourceManager {
     if (!settled) return undefined;
     const amountProduced = ResourceManager.neverRunsOut(production, resourceId)
       ? settled.amount
-      : settled.amount < production.output_amount_left ? settled.amount : production.output_amount_left;
+      : settled.amount < production.output_amount_left
+        ? settled.amount
+        : production.output_amount_left;
     // A store keeps nothing past its own limit, as the contract adds production to it.
     const limit = this.storeLimit(resourceId);
     const room = limit === undefined ? undefined : limit > balance ? limit - balance : 0n;
@@ -303,13 +314,17 @@ export class ResourceManager {
     if (production.building_count === 0 || !ResourceManager.hasActiveProduction(production, resourceId))
       return { amount: 0n, remainder: production.remainder, rateNumerator: 0n };
     const effects = readBaneEffects(
-      this.store, this.gameId, this.entityId, Math.min(production.last_settled_at, timestamp), timestamp + 1,
+      this.store,
+      this.gameId,
+      this.entityId,
+      Math.min(production.last_settled_at, timestamp),
+      timestamp + 1,
     );
     if (!effects.known) return undefined;
     const { windows, productionPercent } = effects.known;
     const output = productionOutput(production, timestamp, windows, productionPercent);
-    const ash = windows.some((window) =>
-      window.kind === nativeBaneConstants.ASH_FALL && window.start <= timestamp && timestamp < window.end,
+    const ash = windows.some(
+      (window) => window.kind === nativeBaneConstants.ASH_FALL && window.start <= timestamp && timestamp < window.end,
     );
     return { ...output, rateNumerator: production.production_rate * BigInt(ash ? productionPercent : 100) };
   }
@@ -350,13 +365,17 @@ export class ResourceManager {
     const isProducing = production.building_count > 0 && settled.rateNumerator !== 0n;
     if (ResourceManager.neverRunsOut(production, resourceId)) {
       return {
-        productionPerSecond, isProducing,
-        outputRemaining: Number.POSITIVE_INFINITY, timeRemainingSeconds: Number.POSITIVE_INFINITY,
+        productionPerSecond,
+        isProducing,
+        outputRemaining: Number.POSITIVE_INFINITY,
+        timeRemainingSeconds: Number.POSITIVE_INFINITY,
       };
     }
-    const remaining = production.output_amount_left > settled.amount ? production.output_amount_left - settled.amount : 0n;
+    const remaining =
+      production.output_amount_left > settled.amount ? production.output_amount_left - settled.amount : 0n;
     return {
-      productionPerSecond, isProducing: isProducing && remaining > 0n,
+      productionPerSecond,
+      isProducing: isProducing && remaining > 0n,
       outputRemaining: Number(remaining) / RESOURCE_PRECISION,
       timeRemainingSeconds: secondsUntilPaid(remaining, settled.rateNumerator, settled.remainder),
     };

@@ -71,7 +71,8 @@ export const economyScenario = (): LabScenario => {
       "ResourceProduction",
       store.wireKeyOf("ResourceProduction", { game_id: 1, entity_id: HOME, resource_type: ResourcesIds.Knight }) ??
         "0xe0b",
-      {remainder: 0,
+      {
+        remainder: 0,
 
         game_id: 1,
         entity_id: HOME,

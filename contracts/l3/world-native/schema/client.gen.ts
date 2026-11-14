@@ -1,5 +1,5 @@
 // Generated from native fact models and contract ABIs. Run the native schema generator to update.
-export const nativeFactSchemaIdentity = "3f4e076f404fae3eb90a4b1ae7aaba337d07953193b4d5f80b4c5a66893f4caf";
+export const nativeFactSchemaIdentity = "008753876f586d513afe61a60c55bb7d23694eabc1e809b7da99de098cff9b68";
 export const nativeReleaseConstants = {
   "RUIN_DEPTH_LIMIT_RELEASE": 9
 } as const;
@@ -83,6 +83,14 @@ export const nativeQuestConstants = {
   "STAND": 7,
   "LIGHTS": 8,
   "CULL": 9
+} as const;
+export const nativeBaneConstants = {
+  "BLOOD_MOON": 1,
+  "MIST_TIDE": 2,
+  "ASH_FALL": 3,
+  "BLOOD_MOON_QUEST": 7,
+  "MIST_TIDE_QUEST": 8,
+  "ASH_FALL_QUEST": 9
 } as const;
 export const nativeArrivalConstants = {
   "SLOTS_PER_DAY": 48
@@ -225,6 +233,12 @@ export interface NativeRows {
   BaneRules: { readonly game_id: number; readonly chance_step: number; readonly quorum_percent: number; readonly beast_percent: number; readonly stamina_percent: number; readonly production_percent: number; readonly quest_counts: readonly (bigint)[] };
   QuestRules: { readonly game_id: number; readonly base_counts: readonly (number)[]; readonly labor: bigint; readonly essence: bigint; readonly bonus_percent: number };
   QuestProgress: { readonly game_id: number; readonly home: bigint; readonly day: bigint; readonly progress: bigint; readonly completed_level: number };
+  WorldBane: { readonly game_id: number; readonly day: bigint; readonly kind: number };
+  FirstTeamBane: { readonly game_id: number; readonly issued_day: bigint };
+  BaneProgress: { readonly game_id: number; readonly aspect: number; readonly day: bigint; readonly completed: number; readonly ended_at: bigint };
+  TeamBane: { readonly game_id: number; readonly aspect: number; readonly day: bigint; readonly source: number; readonly issued_day: bigint; readonly quest: number };
+  AltarBar: { readonly game_id: number; readonly aspect: number; readonly charge: number };
+  BaneGrant: { readonly game_id: number; readonly home: bigint; readonly day: bigint; readonly account: bigint; readonly amount: bigint; readonly essence: bigint };
   LaborRules: { readonly game_id: number; readonly amount: bigint; readonly campaign_essence: bigint; readonly golden_amount: bigint; readonly golden_essence: bigint };
   DeepRules: { readonly game_id: number; readonly foundation: { readonly alt: boolean; readonly x: number; readonly y: number }; readonly quarry: { readonly alt: boolean; readonly x: number; readonly y: number }; readonly altar: { readonly alt: boolean; readonly x: number; readonly y: number }; readonly beast_count: bigint; readonly loss_per_tick: bigint; readonly quarry_per_tick: bigint; readonly altar_per_tick: number; readonly altar_threshold: number };
   LaborGrant: { readonly game_id: number; readonly home: bigint; readonly day: bigint; readonly account: bigint; readonly amount: bigint; readonly essence: bigint };
@@ -280,7 +294,7 @@ export interface NativeRows {
   ExpeditionSite: { readonly game_id: number; readonly entity_id: bigint; readonly category: number; readonly initial_guard_count: bigint; readonly alt: boolean; readonly col: number; readonly row: number; readonly clear: ({ readonly explorer_id: bigint; readonly home_id: bigint; readonly reward: ({ readonly resource_type: number; readonly amount: bigint }) | null }) | null };
   Structure: { readonly game_id: number; readonly entity_id: bigint; readonly owner: bigint; readonly base: { readonly troop_max_guard_count: number; readonly troop_max_explorer_count: number; readonly created_at: number; readonly category: number; readonly level: number; readonly starting_troops_granted: boolean }; readonly resources_packed: bigint; readonly metadata: { readonly realm_id: number; readonly order: number; readonly has_wonder: boolean; readonly village_realm: bigint; readonly mine_kind: number; readonly deepest_depth: number } };
   ResourceBalance: { readonly game_id: number; readonly entity_id: bigint; readonly resource_type: number; readonly balance: bigint };
-  ResourceProduction: { readonly game_id: number; readonly entity_id: bigint; readonly resource_type: number; readonly building_count: number; readonly production_rate: bigint; readonly output_amount_left: bigint; readonly last_settled_at: number };
+  ResourceProduction: { readonly game_id: number; readonly entity_id: bigint; readonly resource_type: number; readonly building_count: number; readonly production_rate: bigint; readonly output_amount_left: bigint; readonly last_settled_at: number; readonly remainder: number };
   ProductionBonus: { readonly game_id: number; readonly entity_id: bigint; readonly incr_resource_rate_percent_num: number; readonly incr_labor_rate_percent_num: number; readonly incr_troop_rate_percent_num: number; readonly incr_resource_rate_end_at: number; readonly incr_labor_rate_end_at: number; readonly incr_troop_rate_end_at: number };
   ProductionRecipe: { readonly game_id: number; readonly resource_type: number; readonly simple_output: bigint; readonly complex_output: bigint; readonly simple_inputs: readonly ({ readonly resource_type: number; readonly amount: bigint })[]; readonly complex_inputs: readonly ({ readonly resource_type: number; readonly amount: bigint })[] };
   ResourceWeight: { readonly game_id: number; readonly entity_id: bigint; readonly capacity: bigint; readonly weight: bigint };
@@ -329,6 +343,12 @@ export interface NativeKeys {
   BaneRules: { readonly game_id: number };
   QuestRules: { readonly game_id: number };
   QuestProgress: { readonly game_id: number; readonly home: bigint; readonly day: bigint };
+  WorldBane: { readonly game_id: number; readonly day: bigint };
+  FirstTeamBane: { readonly game_id: number };
+  BaneProgress: { readonly game_id: number; readonly aspect: number; readonly day: bigint };
+  TeamBane: { readonly game_id: number; readonly aspect: number; readonly day: bigint };
+  AltarBar: { readonly game_id: number; readonly aspect: number };
+  BaneGrant: { readonly game_id: number; readonly home: bigint; readonly day: bigint };
   LaborRules: { readonly game_id: number };
   DeepRules: { readonly game_id: number };
   LaborGrant: { readonly game_id: number; readonly home: bigint; readonly day: bigint };
@@ -727,6 +747,103 @@ export const nativeFactModels = {
       },
       "value": "zero",
       "meaning": "This home has made no daily quest progress on this day."
+    }
+  },
+  "WorldBane": {
+    "keys": [
+      "game_id",
+      "day"
+    ],
+    "scope": "game",
+    "fields": {
+      "game_id": "u32",
+      "day": "u64",
+      "kind": "u8"
+    }
+  },
+  "FirstTeamBane": {
+    "keys": [
+      "game_id"
+    ],
+    "scope": "game",
+    "fields": {
+      "game_id": "u32",
+      "issued_day": "u64"
+    }
+  },
+  "BaneProgress": {
+    "keys": [
+      "game_id",
+      "aspect",
+      "day"
+    ],
+    "scope": "game",
+    "fields": {
+      "game_id": "u32",
+      "aspect": "u8",
+      "day": "u64",
+      "completed": "u32",
+      "ended_at": "u64"
+    },
+    "absence": {
+      "parent": "BaneRules",
+      "value": "zero",
+      "meaning": "No member of this Aspect has completed the bane quest on this day.",
+      "parentKeys": {
+        "game_id": "game_id"
+      }
+    }
+  },
+  "TeamBane": {
+    "keys": [
+      "game_id",
+      "aspect",
+      "day"
+    ],
+    "scope": "game",
+    "fields": {
+      "game_id": "u32",
+      "aspect": "u8",
+      "day": "u64",
+      "source": "u8",
+      "issued_day": "u64",
+      "quest": "u8"
+    }
+  },
+  "AltarBar": {
+    "keys": [
+      "game_id",
+      "aspect"
+    ],
+    "scope": "game",
+    "fields": {
+      "game_id": "u32",
+      "aspect": "u8",
+      "charge": "u32"
+    },
+    "absence": {
+      "parent": "DeepRules",
+      "value": "zero",
+      "meaning": "This Aspect has not received an Altar charge in this game.",
+      "parentKeys": {
+        "game_id": "game_id"
+      }
+    }
+  },
+  "BaneGrant": {
+    "keys": [
+      "game_id",
+      "home",
+      "day"
+    ],
+    "scope": "game",
+    "fields": {
+      "game_id": "u32",
+      "home": "u64",
+      "day": "u64",
+      "account": "felt",
+      "amount": "u128",
+      "essence": "u128"
     }
   },
   "LaborRules": {
@@ -1820,7 +1937,8 @@ export const nativeFactModels = {
       "building_count": "u8",
       "production_rate": "u64",
       "output_amount_left": "u128",
-      "last_settled_at": "u32"
+      "last_settled_at": "u32",
+      "remainder": "u8"
     },
     "absence": {
       "parent": "ResourceWeight",
@@ -2505,6 +2623,16 @@ export const nativeSyncScopes = {
   "AspectRules": "shared",
   "QuestRules": "shared",
   "BaneRules": "shared",
+  "WorldBane": "shared",
+  "FirstTeamBane": "shared",
+  "BaneProgress": "shared",
+  "TeamBane": "shared",
+  "AltarBar": "shared",
+  "BaneGrant": {
+    "owners": [
+      "account"
+    ]
+  },
   "QuestProgress": {
     "entities": [
       "home"

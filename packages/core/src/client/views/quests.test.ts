@@ -92,8 +92,10 @@ describe("daily quest facts", () => {
         known: {
           target: 15n,
           progress: 0n,
-          quest: { name: "Cartographers" }, bane: null,
-          state: "running", receipts: { ordinary: undefined, bonus: undefined },
+          quest: { name: "Cartographers" },
+          bane: null,
+          state: "running",
+          receipts: { ordinary: undefined, bonus: undefined },
           reward: { labor: 1000n * BigInt(RESOURCE_PRECISION), essence: 1500n * BigInt(RESOURCE_PRECISION) },
         },
       },
@@ -109,7 +111,9 @@ describe("daily quest facts", () => {
     expect(read()?.reading.known).toMatchObject({
       target: 15n,
       progress: 15n,
-      state: "done", quest: { name: "Cartographers" }, bane: null,
+      state: "done",
+      quest: { name: "Cartographers" },
+      bane: null,
       receipts: { ordinary: undefined, bonus: undefined },
       reward: { labor: 1000n * BigInt(RESOURCE_PRECISION), essence: 1500n * BigInt(RESOURCE_PRECISION) },
     });
@@ -128,7 +132,8 @@ describe("daily quest facts", () => {
       },
     ]);
     expect(read()?.reading.known).toMatchObject({
-      state: "collected", reward: { labor: 1000n * BigInt(RESOURCE_PRECISION), essence: 1500n * BigInt(RESOURCE_PRECISION) },
+      state: "collected",
+      reward: { labor: 1000n * BigInt(RESOURCE_PRECISION), essence: 1500n * BigInt(RESOURCE_PRECISION) },
       receipts: { ordinary: { amount: 1_000_000_000_000n, essence: 1_500_000_000_000n } },
     });
   });
@@ -141,7 +146,10 @@ describe("daily quest facts", () => {
         ? { model: "SettledRealm", key: "1:123", value: { game_id: 1, realm_id: 123, home: 7 } }
         : { model: "CampaignHome", key: "1:7", value: { game_id: 1, home: 7, campaign_id: 9, tier: 1 } },
     ]);
-    expect(read()?.reading.known).toMatchObject({ target: 30n, reward: { labor: 3000n * BigInt(RESOURCE_PRECISION), essence: 3000n * BigInt(RESOURCE_PRECISION) } });
+    expect(read()?.reading.known).toMatchObject({
+      target: 30n,
+      reward: { labor: 3000n * BigInt(RESOURCE_PRECISION), essence: 3000n * BigInt(RESOURCE_PRECISION) },
+    });
   });
 
   it("does not infer a missing receipt or bonus from an incomplete snapshot", () => {
@@ -188,31 +196,66 @@ function worldQuestFixture() {
   store.applyFacts([
     { model: "HomeAspect", key: "aspect", value: { game_id: 1, home: 7, aspect: 1 } },
     { model: "AspectActivity", key: "activity", value: { game_id: 1, aspect: 1, day: 0, active: 5 } },
-    { model: "BaneRules", key: "banes", value: {
-      game_id: 1, chance_step: 20, quorum_percent: 40, beast_percent: 150,
-      stamina_percent: 50, production_percent: 50,
-      quest_counts: [3, 6, 9, 12, 20, 40, 60, 80, 2500, 6000, 10_000, 15_000],
-    } },
+    {
+      model: "BaneRules",
+      key: "banes",
+      value: {
+        game_id: 1,
+        chance_step: 20,
+        quorum_percent: 40,
+        beast_percent: 150,
+        stamina_percent: 50,
+        production_percent: 50,
+        quest_counts: [3, 6, 9, 12, 20, 40, 60, 80, 2500, 6000, 10_000, 15_000],
+      },
+    },
     { model: "WorldBane", key: "world", value: { game_id: 1, day: 1, kind: nativeBaneConstants.ASH_FALL } },
   ]);
   store.setSnapshot({ gameId: 1, complete: true, actor: "0x111", timestamp: startsAt + 10 });
   const read = () => readDailyQuest(store, 1, 7, startsAt + 10);
-  const finish = (level = 1, amount = [2500, 6000, 10_000, 15_000][level - 1]) => store.applyFacts([
-    { model: "QuestProgress", key: "finished", value: {
-      game_id: 1, home: 7, day: 1, progress: amount, completed_level: level,
-    } },
-  ]);
-  const win = () => store.applyFacts([
-    { model: "BaneProgress", key: "quorum", value: {
-      game_id: 1, aspect: 1, day: 1, completed: 2, ended_at: startsAt + 5,
-    } },
-  ]);
-  const receipt = (model: "LaborGrant" | "BaneGrant", labor = 1000, essence = 1500) => store.applyFacts([
-    { model, key: `receipt-${model}`, value: {
-      game_id: 1, home: 7, day: 1, account: "0x111",
-      amount: BigInt(labor) * BigInt(RESOURCE_PRECISION), essence: BigInt(essence) * BigInt(RESOURCE_PRECISION),
-    } },
-  ]);
+  const finish = (level = 1, amount = [2500, 6000, 10_000, 15_000][level - 1]) =>
+    store.applyFacts([
+      {
+        model: "QuestProgress",
+        key: "finished",
+        value: {
+          game_id: 1,
+          home: 7,
+          day: 1,
+          progress: amount,
+          completed_level: level,
+        },
+      },
+    ]);
+  const win = () =>
+    store.applyFacts([
+      {
+        model: "BaneProgress",
+        key: "quorum",
+        value: {
+          game_id: 1,
+          aspect: 1,
+          day: 1,
+          completed: 2,
+          ended_at: startsAt + 5,
+        },
+      },
+    ]);
+  const receipt = (model: "LaborGrant" | "BaneGrant", labor = 1000, essence = 1500) =>
+    store.applyFacts([
+      {
+        model,
+        key: `receipt-${model}`,
+        value: {
+          game_id: 1,
+          home: 7,
+          day: 1,
+          account: "0x111",
+          amount: BigInt(labor) * BigInt(RESOURCE_PRECISION),
+          essence: BigInt(essence) * BigInt(RESOURCE_PRECISION),
+        },
+      },
+    ]);
   return { store, read, finish, win, receipt, startsAt };
 }
 
@@ -220,15 +263,20 @@ describe("recorded bane quest rewards", () => {
   it("keeps the world quest after quorum and advertises both grants for a late first collection", () => {
     const { read, finish, win } = worldQuestFixture();
     expect(read()?.reading.known).toMatchObject({
-      quest: { id: nativeQuestConstants.CULL }, target: 2500n, state: "running",
+      quest: { id: nativeQuestConstants.CULL },
+      target: 2500n,
+      state: "running",
       bane: { type: "world", required: 2, completed: 0 },
       reward: { labor: 1000n * BigInt(RESOURCE_PRECISION), essence: 1500n * BigInt(RESOURCE_PRECISION) },
     });
     finish();
     win();
     expect(read()?.reading.known).toMatchObject({
-      quest: { id: nativeQuestConstants.CULL }, target: 2500n, state: "done",
-      bane: { type: "world", required: 2, completed: 2 }, reward: { labor: 2000n * BigInt(RESOURCE_PRECISION), essence: 3000n * BigInt(RESOURCE_PRECISION) },
+      quest: { id: nativeQuestConstants.CULL },
+      target: 2500n,
+      state: "done",
+      bane: { type: "world", required: 2, completed: 2 },
+      reward: { labor: 2000n * BigInt(RESOURCE_PRECISION), essence: 3000n * BigInt(RESOURCE_PRECISION) },
     });
   });
 
@@ -238,10 +286,14 @@ describe("recorded bane quest rewards", () => {
     receipt("LaborGrant");
     expect(read()?.reading.known?.state).toBe("collected");
     win();
-    expect(read()?.reading.known).toMatchObject({ state: "again", reward: { labor: 1000n * BigInt(RESOURCE_PRECISION), essence: 1500n * BigInt(RESOURCE_PRECISION) } });
+    expect(read()?.reading.known).toMatchObject({
+      state: "again",
+      reward: { labor: 1000n * BigInt(RESOURCE_PRECISION), essence: 1500n * BigInt(RESOURCE_PRECISION) },
+    });
     receipt("BaneGrant", 250, 500);
     expect(read()?.reading.known).toMatchObject({
-      state: "collected", reward: { labor: 1250n * BigInt(RESOURCE_PRECISION), essence: 2000n * BigInt(RESOURCE_PRECISION) },
+      state: "collected",
+      reward: { labor: 1250n * BigInt(RESOURCE_PRECISION), essence: 2000n * BigInt(RESOURCE_PRECISION) },
       receipts: { bonus: { amount: 250n * BigInt(RESOURCE_PRECISION), essence: 500n * BigInt(RESOURCE_PRECISION) } },
     });
   });
@@ -255,14 +307,19 @@ describe("recorded bane quest rewards", () => {
       { model: "CampaignHome", key: "campaign", value: { game_id: 1, home: 7, campaign_id: 9, tier: 1 } },
     ]);
     win();
-    expect(read()?.reading.known).toMatchObject({ target: 6000n, reward: { labor: 6000n * BigInt(RESOURCE_PRECISION), essence: 6000n * BigInt(RESOURCE_PRECISION) } });
+    expect(read()?.reading.known).toMatchObject({
+      target: 6000n,
+      reward: { labor: 6000n * BigInt(RESOURCE_PRECISION), essence: 6000n * BigInt(RESOURCE_PRECISION) },
+    });
   });
 
   it("leaves the whole quest unknown when its recorded roll or second receipt is not known", () => {
     const { store, read, finish, win, receipt } = worldQuestFixture();
     store.applyFacts([{ model: "WorldBane", key: "world", value: null }]);
     expect(read()?.reading).toEqual({ unknown: "MISSING_WORLD_BANE_DAY" });
-    store.applyFacts([{ model: "WorldBane", key: "world", value: { game_id: 1, day: 1, kind: nativeBaneConstants.ASH_FALL } }]);
+    store.applyFacts([
+      { model: "WorldBane", key: "world", value: { game_id: 1, day: 1, kind: nativeBaneConstants.ASH_FALL } },
+    ]);
     finish();
     win();
     receipt("LaborGrant");
@@ -274,28 +331,48 @@ describe("recorded bane quest rewards", () => {
     const { store, read, finish, win, receipt } = worldQuestFixture();
     store.applyFacts([
       { model: "FirstTeamBane", key: "first", value: { game_id: 1, issued_day: 0 } },
-      { model: "TeamBane", key: "team", value: { game_id: 1, aspect: 1, day: 1, source: 2, issued_day: 0, quest: nativeQuestConstants.STAND } },
+      {
+        model: "TeamBane",
+        key: "team",
+        value: { game_id: 1, aspect: 1, day: 1, source: 2, issued_day: 0, quest: nativeQuestConstants.STAND },
+      },
     ]);
     finish(1, 3);
     win();
     expect(read()?.reading.known).toMatchObject({
-      quest: { id: nativeQuestConstants.STAND }, bane: { type: "team", source: 2 }, target: 3n,
-      state: "done", reward: { labor: 1000n * BigInt(RESOURCE_PRECISION), essence: 1500n * BigInt(RESOURCE_PRECISION) },
+      quest: { id: nativeQuestConstants.STAND },
+      bane: { type: "team", source: 2 },
+      target: 3n,
+      state: "done",
+      reward: { labor: 1000n * BigInt(RESOURCE_PRECISION), essence: 1500n * BigInt(RESOURCE_PRECISION) },
     });
     receipt("LaborGrant");
     expect(read()?.reading.known?.state).toBe("collected");
   });
   it("keeps a cap-clipped receipt below one whole unit exact", () => {
     const { store, read, finish, win, receipt } = worldQuestFixture();
-    finish(); win(); receipt("LaborGrant", 0, 0);
-    store.applyFacts([{ model: "BaneGrant", key: "receipt-BaneGrant", value: {
-      game_id: 1, home: 7, day: 1, account: "0x111", amount: 500_000_000n, essence: 250_000_000n,
-    } }]);
+    finish();
+    win();
+    receipt("LaborGrant", 0, 0);
+    store.applyFacts([
+      {
+        model: "BaneGrant",
+        key: "receipt-BaneGrant",
+        value: {
+          game_id: 1,
+          home: 7,
+          day: 1,
+          account: "0x111",
+          amount: 500_000_000n,
+          essence: 250_000_000n,
+        },
+      },
+    ]);
     expect(read()?.reading.known).toMatchObject({
-      state: "collected", reward: { labor: 500_000_000n, essence: 250_000_000n },
+      state: "collected",
+      reward: { labor: 500_000_000n, essence: 250_000_000n },
     });
   });
-
 });
 
 // Append beside the existing daily quest fixture when applying the runtime reader.
@@ -309,11 +386,19 @@ const thirdDay = dayOf(calendar, secondDay.end)!;
 function baneFixture() {
   const { store } = fixture();
   store.applyFacts([
-    { model: "BaneRules", key: "1", value: {
-      game_id: 1, chance_step: 20, quorum_percent: 25, beast_percent: 150,
-      stamina_percent: 50, production_percent: 50,
-      quest_counts: [3, 6, 9, 12, 20, 40, 60, 80, 2500, 6000, 10000, 15000],
-    } },
+    {
+      model: "BaneRules",
+      key: "1",
+      value: {
+        game_id: 1,
+        chance_step: 20,
+        quorum_percent: 25,
+        beast_percent: 150,
+        stamina_percent: 50,
+        production_percent: 50,
+        quest_counts: [3, 6, 9, 12, 20, 40, 60, 80, 2500, 6000, 10000, 15000],
+      },
+    },
     { model: "HomeAspect", key: "1:7", value: { game_id: 1, home: 7, aspect: 1 } },
     { model: "AspectActivity", key: "1:1:0", value: { game_id: 1, aspect: 1, day: 0, active: 5 } },
     { model: "WorldBane", key: "1:0", value: { game_id: 1, day: 0, kind: 0 } },
@@ -324,26 +409,53 @@ function baneFixture() {
 
 it("reads the recorded bane and ceiling quorum, keeping its quest after the effect ends", () => {
   const store = baneFixture();
-  expect(readBaneDay(store, 1, 7, secondDay)).toEqual({ known: { bane: {
-    type: "world", kind: nativeBaneConstants.ASH_FALL, quest: nativeQuestConstants.CULL,
-    aspect: 1, required: 2, completed: 0, endedAt: 0,
-  } } });
-  store.applyFacts([{ model: "BaneProgress", key: "1:1:1", value: {
-    game_id: 1, aspect: 1, day: 1, completed: 2, ended_at: secondDay.start + 60,
-  } }]);
-  expect(readBaneDay(store, 1, 7, secondDay).known?.bane).toMatchObject({
-    quest: nativeQuestConstants.CULL, required: 2, completed: 2, endedAt: secondDay.start + 60,
+  expect(readBaneDay(store, 1, 7, secondDay)).toEqual({
+    known: {
+      bane: {
+        type: "world",
+        kind: nativeBaneConstants.ASH_FALL,
+        quest: nativeQuestConstants.CULL,
+        aspect: 1,
+        required: 2,
+        completed: 0,
+        endedAt: 0,
+      },
+    },
   });
-  expect(readBaneEffects(store, 1, 7, secondDay.start - 10, secondDay.start + 120)).toEqual({ known: {
-    productionPercent: 50, windows: [{ kind: nativeBaneConstants.ASH_FALL, start: secondDay.start, end: secondDay.start + 60 }],
-  } });
+  store.applyFacts([
+    {
+      model: "BaneProgress",
+      key: "1:1:1",
+      value: {
+        game_id: 1,
+        aspect: 1,
+        day: 1,
+        completed: 2,
+        ended_at: secondDay.start + 60,
+      },
+    },
+  ]);
+  expect(readBaneDay(store, 1, 7, secondDay).known?.bane).toMatchObject({
+    quest: nativeQuestConstants.CULL,
+    required: 2,
+    completed: 2,
+    endedAt: secondDay.start + 60,
+  });
+  expect(readBaneEffects(store, 1, 7, secondDay.start - 10, secondDay.start + 120)).toEqual({
+    known: {
+      productionPercent: 50,
+      windows: [{ kind: nativeBaneConstants.ASH_FALL, start: secondDay.start, end: secondDay.start + 60 }],
+    },
+  });
 });
 
 it("never turns an unknown roll or missing scope evidence into an ordinary day", () => {
   const store = baneFixture();
   store.applyFacts([{ model: "WorldBane", key: "1:1", value: null }]);
   expect(readBaneDay(store, 1, 7, secondDay)).toEqual({ unknown: "MISSING_WORLD_BANE_DAY" });
-  expect(readBaneEffects(store, 1, 7, secondDay.start, secondDay.start + 1)).toEqual({ unknown: "MISSING_WORLD_BANE_DAY" });
+  expect(readBaneEffects(store, 1, 7, secondDay.start, secondDay.start + 1)).toEqual({
+    unknown: "MISSING_WORLD_BANE_DAY",
+  });
   store.setSnapshot({ gameId: 1, actor: "0x111", complete: false, timestamp: secondDay.start });
   expect(readBaneDay(store, 1, 7, secondDay).unknown).toContain("INCOMPLETE_SNAPSHOT: FirstTeamBane");
 });
@@ -352,29 +464,53 @@ it("ends a zero-quorum effect at day start while retaining the bane quest", () =
   const store = baneFixture();
   store.applyFacts([{ model: "AspectActivity", key: "1:1:0", value: null }]);
   expect(readBaneDay(store, 1, 7, secondDay).known?.bane).toMatchObject({
-    quest: nativeQuestConstants.CULL, required: 0, endedAt: secondDay.start,
+    quest: nativeQuestConstants.CULL,
+    required: 0,
+    endedAt: secondDay.start,
   });
-  expect(readBaneEffects(store, 1, 7, secondDay.start, secondDay.end)).toEqual({ known: {
-    productionPercent: 50, windows: [],
-  } });
+  expect(readBaneEffects(store, 1, 7, secondDay.start, secondDay.end)).toEqual({
+    known: {
+      productionPercent: 50,
+      windows: [],
+    },
+  });
 });
 
 it("keeps today's world bane when the first team bane is issued, then reads tomorrow's team quest", () => {
   const store = baneFixture();
   store.applyFacts([
     { model: "FirstTeamBane", key: "1", value: { game_id: 1, issued_day: 1 } },
-    { model: "TeamBane", key: "1:1:2", value: {
-      game_id: 1, aspect: 1, day: 2, source: 2, issued_day: 1, quest: nativeQuestConstants.STAND,
-    } },
+    {
+      model: "TeamBane",
+      key: "1:1:2",
+      value: {
+        game_id: 1,
+        aspect: 1,
+        day: 2,
+        source: 2,
+        issued_day: 1,
+        quest: nativeQuestConstants.STAND,
+      },
+    },
     { model: "AspectActivity", key: "1:1:1", value: { game_id: 1, aspect: 1, day: 1, active: 5 } },
   ]);
-  expect(readBaneDay(store, 1, 7, secondDay).known?.bane).toMatchObject({ type: "world", quest: nativeQuestConstants.CULL });
-  expect(readBaneDay(store, 1, 7, thirdDay).known?.bane).toEqual({
-    type: "team", source: 2, quest: nativeQuestConstants.STAND, aspect: 1, required: 2, completed: 0, endedAt: 0,
+  expect(readBaneDay(store, 1, 7, secondDay).known?.bane).toMatchObject({
+    type: "world",
+    quest: nativeQuestConstants.CULL,
   });
-  expect(readBaneEffects(store, 1, 7, thirdDay.start, thirdDay.end)).toEqual({ known: { productionPercent: 50, windows: [] } });
+  expect(readBaneDay(store, 1, 7, thirdDay).known?.bane).toEqual({
+    type: "team",
+    source: 2,
+    quest: nativeQuestConstants.STAND,
+    aspect: 1,
+    required: 2,
+    completed: 0,
+    endedAt: 0,
+  });
+  expect(readBaneEffects(store, 1, 7, thirdDay.start, thirdDay.end)).toEqual({
+    known: { productionPercent: 50, windows: [] },
+  });
 });
-
 
 it("waits for optional-rule absence before showing ordinary quests or production", () => {
   const { store, read } = fixture();

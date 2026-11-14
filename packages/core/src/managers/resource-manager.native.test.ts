@@ -311,7 +311,5 @@ it.each([60, 120])("pays every second with an unchanged %s-second armies tick", 
   expect(manager.balanceWithProduction(239, 35)!.balance).toBe(23_900);
   expect(manager.balanceWithProduction(240, 35)!.balance).toBe(24_000);
   // The hourly figure derives directly from the per-second rate.
-  expect(manager.productionData(35, 130)!.productionPerSecond).toBe(
-    100 / 1e9,
-  );
+  expect(manager.productionData(35, 130)!.productionPerSecond).toBe(100 / 1e9);
 });

@@ -11,11 +11,25 @@ function productionManager(resourceId: ResourcesIds, outputAmountLeft: bigint) {
   store.setSnapshot({ gameId: 1, complete: true, actor: null, timestamp: 100 });
   store.applyFacts([
     { model: "SliceRules", key: "rules", value: { ...preset.rules, game_id: 1, mode_rules: 0 } },
-    { model: "ResourceWeight", key: "weight", value: { game_id: 1, entity_id: 7, capacity: (1n << 128n) - 1n, weight: 0 } },
-    { model: "ResourceProduction", key: "production", value: {
-      game_id: 1, entity_id: 7, resource_type: resourceId, building_count: 2,
-      production_rate: RATE, output_amount_left: outputAmountLeft, last_settled_at: 100, remainder: 0,
-    } },
+    {
+      model: "ResourceWeight",
+      key: "weight",
+      value: { game_id: 1, entity_id: 7, capacity: (1n << 128n) - 1n, weight: 0 },
+    },
+    {
+      model: "ResourceProduction",
+      key: "production",
+      value: {
+        game_id: 1,
+        entity_id: 7,
+        resource_type: resourceId,
+        building_count: 2,
+        production_rate: RATE,
+        output_amount_left: outputAmountLeft,
+        last_settled_at: 100,
+        remainder: 0,
+      },
+    },
   ]);
   return new ResourceManager(store, 7, 1);
 }
@@ -42,8 +56,10 @@ describe("ResourceManager.productionData", () => {
       expect(data.outputRemaining).toBe(Number.POSITIVE_INFINITY);
       expect(data.timeRemainingSeconds).toBe(Number.POSITIVE_INFINITY);
     }
-    const limited = productionManager(ResourcesIds.Knight, unlimited - (1n << 64n) - 1n)
-      .productionData(ResourcesIds.Knight, 5_000)!;
+    const limited = productionManager(ResourcesIds.Knight, unlimited - (1n << 64n) - 1n).productionData(
+      ResourcesIds.Knight,
+      5_000,
+    )!;
     expect(limited.outputRemaining).toBeLessThan(Number.POSITIVE_INFINITY);
   });
 

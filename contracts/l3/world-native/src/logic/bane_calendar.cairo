@@ -16,12 +16,20 @@ pub fn prepare(game_id: u32, context: crate::commands::ActionContext) {
     let mut chance = state.banes.next_chance.read(game_id);
     while cursor <= timestamp && cursor < game.end_at {
         let day = crate::days::day_of(game, unit, cursor);
-        let kind = if world_stopped(game_id, day.index) { 0 } else { draw(game_id, day.index, context.raw_root, chance) };
+        let kind = if world_stopped(game_id, day.index) {
+            0
+        } else {
+            draw(game_id, day.index, context.raw_root, chance)
+        };
         state.banes.world_days.write((game_id, day.index), Some(kind));
         crate::logic::banes::emit(
             'WorldBane', array![game_id.into(), day.index.into()].span(), array![kind.into()].span(),
         );
-        chance = if kind == 0 { core::cmp::min(100, chance + step) } else { 0 };
+        chance = if kind == 0 {
+            core::cmp::min(100, chance + step)
+        } else {
+            0
+        };
         cursor = day.end;
     }
     state.banes.next_roll_at.write(game_id, cursor);
@@ -33,16 +41,25 @@ pub fn kind(game_id: u32, day: u64) -> Option<u8> {
         return None;
     }
     let kind = crate::state::read().banes.world_days.read((game_id, day)).expect('world day is not prepared');
-    if kind == 0 { None } else { Some(kind) }
+    if kind == 0 {
+        None
+    } else {
+        Some(kind)
+    }
 }
 
 pub fn draw(game_id: u32, day: u64, raw_root: u256, chance: u16) -> u8 {
     assert!(chance <= 100, "invalid world bane chance");
-    if chance == 0 { return 0; }
+    if chance == 0 {
+        return 0;
+    }
     let seed: u256 = core::poseidon::poseidon_hash_span(
         array![raw_root.low.into(), raw_root.high.into(), game_id.into(), day.into(), 'world-bane-day'].span(),
-    ).into();
-    if crate::random::range(seed, 0, 100) >= chance.into() { return 0; }
+    )
+        .into();
+    if crate::random::range(seed, 0, 100) >= chance.into() {
+        return 0;
+    }
     let kind: u8 = crate::random::range(seed, 1, 3).try_into().unwrap();
     kind + crate::banes::BLOOD_MOON
 }

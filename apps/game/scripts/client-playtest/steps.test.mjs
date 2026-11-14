@@ -1230,7 +1230,10 @@ it.each([
   const sent = {
     command: { fields: { home: "7", day: "1" } },
     answered: [
-      ...models.map((model) => ({ model, value: { home: "7", day: "1", amount: "1000000000000", essence: "1500000000000" } })),
+      ...models.map((model) => ({
+        model,
+        value: { home: "7", day: "1", amount: "1000000000000", essence: "1500000000000" },
+      })),
       { model: "ResourceBalance", value: { resource_type: 23, balance: labor } },
       { model: "ResourceBalance", value: { resource_type: 38, balance: essence } },
     ],
@@ -1245,8 +1248,17 @@ it.each([
     { ...played, grants: [{ ...sent, command: { fields: { home: "7", day: "0" } } }] },
     withAnswers(sent.answered.slice(1)),
     withAnswers([...sent.answered, sent.answered[0]]),
-    withAnswers(sent.answered.map((fact) => fact.model === models[0] ? { ...fact, value: { ...fact.value, amount: "0" } } : fact)),
-    withAnswers(sent.answered.map((fact) => fact.model === "ResourceBalance" ? { ...fact, value: { ...fact.value, balance: "0" } } : fact)),
+    withAnswers(
+      sent.answered.map((fact) =>
+        fact.model === models[0] ? { ...fact, value: { ...fact.value, amount: "0" } } : fact,
+      ),
+    ),
+    withAnswers(
+      sent.answered.map((fact) =>
+        fact.model === "ResourceBalance" ? { ...fact, value: { ...fact.value, balance: "0" } } : fact,
+      ),
+    ),
     withAnswers(sent.answered.filter((fact) => fact.model !== "ResourceBalance")),
-  ]) expect(verify({ played: bad }).status).toBe("failed");
+  ])
+    expect(verify({ played: bad }).status).toBe("failed");
 });

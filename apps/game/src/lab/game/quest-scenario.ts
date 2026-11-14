@@ -48,8 +48,7 @@ export function questScenario(): LabScenario {
       const home = Number(command.fields.home);
       const day = Number(command.fields.day);
       const quest = readDailyQuest(chain, 1, home, now);
-      if (home !== 7 || day !== quest?.day || !quest.reading.known)
-        throw new Error("Quest is not collectible");
+      if (home !== 7 || day !== quest?.day || !quest.reading.known) throw new Error("Quest is not collectible");
       if (quest.reading.known.state === "collected") return [];
       if (quest.reading.known.state !== "done") throw new Error("Quest is not complete");
       const { reward } = quest.reading.known;
