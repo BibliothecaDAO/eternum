@@ -14,7 +14,7 @@ export interface AspectStanding {
   own: boolean;
 }
 
-/** A Triumph of the player's Aspect: its stage (1 to 4), and the game day it fell on, or null while its stage is unbuilt. */
+/** A Triumph of the player's Aspect: its stage (1 to 4), and the game day it falls on, shown as given; null while its stage is unbuilt. */
 export interface AspectTriumph {
   stage: keyof typeof WORDS.triumph;
   day: number | null;

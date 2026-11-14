@@ -23,9 +23,12 @@ const standings = (heights: Record<string, number>, own: string): AspectStanding
       own: aspect === own,
     }));
 
-/** A Triumph falls the day after its stage is built (at 2,000, 4,000, 6,000, 8,000): `builtOn` is those stages' days. */
-const triumphs = (height: number, builtOn: readonly number[]): AspectTriumph[] =>
-  TRIUMPH_STAGES.map((stage) => ({ stage, day: height >= stage * STAGE ? builtOn[stage - 1]! : null }));
+/**
+ * The Aspect's Triumphs: each stage built (at 2,000, 4,000, 6,000, 8,000) gives a Triumph the next day, and `fallsOn`
+ * is the game day each falls on. A stage not yet built has no day: nothing stands in for it.
+ */
+const triumphs = (height: number, fallsOn: Record<(typeof TRIUMPH_STAGES)[number], number>): AspectTriumph[] =>
+  TRIUMPH_STAGES.map((stage) => ({ stage, day: height >= stage * STAGE ? fallsOn[stage] : null }));
 
 const member = (id: string, realm: string, glory: number, guards: string | null, mine = false): AspectMember => ({
   id,
@@ -38,7 +41,7 @@ const [foundation, quarry, altar] = deepSites.map(({ name }) => name);
 
 const harmony = (height: number, charge: number): OwnAspect => ({
   aspect: "Harmony",
-  triumphs: triumphs(height, [11, 18]),
+  triumphs: triumphs(height, { 1: 12, 2: 19, 3: 26, 4: 33 }),
   bar: { charge, threshold: BANE_THRESHOLD },
   members: [
     member("a", "Aldor", 1_240, foundation!),

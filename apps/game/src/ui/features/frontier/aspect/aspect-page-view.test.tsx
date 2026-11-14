@@ -39,6 +39,7 @@ describe("the Aspect page", () => {
     const triumphs = part("data-aspect-triumphs");
     expect(triumphs).toContain("Clear Mist · day 12");
     expect(triumphs).toContain("Second Wind · day 19");
+    expect(triumphs).not.toContain("day 26");
     expect(triumphs).toContain("Pale Moon · at stage 3");
     expect(triumphs).toContain("Spoils · at stage 4");
   });
@@ -58,7 +59,31 @@ describe("the Aspect page", () => {
     draw(ASPECT_PAGE_CASES["Age won by another Aspect"]);
     expect(part("data-aspect-race")).toContain("Might finished first and won the age");
     expect(part("data-aspect-race")).toContain("Finished · 10,000 of 10,000");
-    expect(part("data-aspect-triumphs")).toContain("Pale Moon · day");
+    const triumphs = part("data-aspect-triumphs");
+    expect(triumphs).toContain("Clear Mist · day 12");
+    expect(triumphs).toContain("Second Wind · day 19");
+    expect(triumphs).toContain("Pale Moon · day 26");
+    expect(triumphs).toContain("Spoils · at stage 4");
+  });
+
+  it("gives every built stage a known, finite day in every scenario, and never prints a broken one", () => {
+    for (const props of Object.values(ASPECT_PAGE_CASES)) {
+      draw(props);
+      expect(document.body.textContent).not.toMatch(/NaN|undefined|Infinity/);
+      for (const { stage, day } of props.own?.triumphs ?? []) {
+        const built = props.own!.triumphs.find((each) => each.stage === stage)!.day !== null;
+        if (built) expect(Number.isInteger(day)).toBe(true);
+      }
+    }
+  });
+
+  it("shows the day it is given, unchanged", () => {
+    const own = ASPECT_PAGE_CASES["Mid-season, the player's Aspect second"].own;
+    draw({
+      ...ASPECT_PAGE_CASES["Mid-season, the player's Aspect second"],
+      own: { ...own, triumphs: [{ stage: 1, day: 12 }] },
+    });
+    expect(part("data-aspect-triumphs")).toContain("Clear Mist · day 12");
   });
 
   it("asks a player with no Aspect to join one, and says it is reading while the race is not settled", () => {

@@ -581,7 +581,7 @@ export const ASPECT_PAGE_WORDS = {
   yours: (aspect: string) => `Your Aspect: ${aspect}`,
   triumphs: "Triumphs",
   triumph: { 1: "Clear Mist", 2: "Second Wind", 3: "Pale Moon", 4: "Spoils" },
-  triumphOn: (day: number) => `day ${formatExact(day + 1)}`,
+  triumphOn: (day: number) => `day ${formatExact(day)}`,
   triumphAt: (stage: number) => `at stage ${stage}`,
   baneBar: "Bane bar",
   baneCharge: (charge: number, threshold: number) => `${formatExact(charge)} of ${formatExact(threshold)}`,
