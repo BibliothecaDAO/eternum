@@ -242,9 +242,14 @@ fn one_player_cannot_fill_two_slots_and_day_rollover_restores_every_beast() {
     for kind in 0..crate::rules::DEEP_SITE_COUNT {
         let current = site(d, game_id, kind);
         assert_eq!(interact_with_state(d.games, || crate::logic::deep_sites::site(current).unwrap().day), 1);
-        let count = interact_with_state(d.games, || crate::logic::guards::guard(crate::guards::GuardKey {
-            game_id, structure_id: current.entity_id, slot: 0,
-        }).troops.count);
+        let count = interact_with_state(
+            d.games,
+            || crate::logic::guards::guard(
+                crate::guards::GuardKey { game_id, structure_id: current.entity_id, slot: 0 },
+            )
+                .troops
+                .count,
+        );
         assert_eq!(count, crate::rules::RESOURCE_PRECISION);
     }
     beside(d, fresh, target, 0);
