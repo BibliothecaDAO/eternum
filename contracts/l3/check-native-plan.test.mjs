@@ -7,22 +7,67 @@ import test from "node:test";
 
 const root = new URL("../../", import.meta.url);
 
-test("the service's full gate executes every native stage exactly once", () => {
-  const plan = readFileSync(new URL("contracts/l3/check-native-plan.sh", root), "utf8");
-  const stages = plan.match(/for stage in (.+); do/)[1].split(" ");
-  const config = readFileSync(new URL("flow.toml", root), "utf8");
+const sectionsOf = (config) => {
   const parts = config.split(/^\[([^\]]+)\]$/m);
   const sections = {};
   for (let index = 1; index < parts.length; index += 2) sections[parts[index]] = parts[index + 1];
+  return sections;
+};
+
+/** What a malformed native mapping breaks: a gate kind outside the landing list, a kind off the native gate, a stage run twice or never. */
+const planProblem = (plan, config) => {
+  const stages = plan.match(/for stage in (.+); do/)[1].split(" ");
+  const sections = sectionsOf(config);
   const kinds = sections.gate.match(/^kinds = "([^"]+)"/m)[1].split(" ");
   const landing = sections.land.match(/^kinds = "([^"]+)"/m)[1].split(" ");
-  for (const kind of kinds) assert.ok(landing.includes(kind), `The landing gate omits ${kind}`);
-  const actual = kinds.map((kind) => {
+  for (const kind of kinds) if (!landing.includes(kind)) return `The landing gate omits ${kind}`;
+  const actual = [];
+  for (const kind of kinds) {
     const command = sections[`kind.${kind}`]?.match(/^cmd = "([^"]+)"/m)?.[1];
-    assert.match(command, /^bash contracts\/l3\/check-native\.sh \S+$/, `${kind} must use the native gate`);
-    return command.split(" ").at(-1);
+    if (!/^bash contracts\/l3\/check-native\.sh \S+$/.test(command ?? "")) return `${kind} must use the native gate`;
+    actual.push(command.split(" ").at(-1));
+  }
+  return JSON.stringify(actual.toSorted()) === JSON.stringify(stages.toSorted())
+    ? null
+    : `the gate runs ${actual.toSorted()} but the plan has ${stages.toSorted()}`;
+};
+
+/** The kinds a landing selects for a changed file, as the landing's paths say (a leading ! excludes). */
+const selectedBy = (config, file) => {
+  const sections = sectionsOf(config);
+  return sections.land.match(/^kinds = "([^"]+)"/m)[1].split(" ").filter((kind) => {
+    const paths = sections[`kind.${kind}`]?.match(/^paths = "([^"]+)"/m)?.[1].split(" ") ?? [];
+    return (
+      paths.some((path) => !path.startsWith("!") && file.startsWith(path)) &&
+      !paths.some((path) => path.startsWith("!") && file.startsWith(path.slice(1)))
+    );
   });
-  assert.deepEqual(actual.toSorted(), stages.toSorted());
+};
+
+const plan = readFileSync(new URL("contracts/l3/check-native-plan.sh", root), "utf8");
+const config = readFileSync(new URL("flow.toml", root), "utf8");
+
+test("the service's full gate executes every native stage exactly once", () => {
+  assert.equal(planProblem(plan, config), null);
+});
+
+test("a malformed native mapping is refused", () => {
+  const swapped = config.replace(/(\[kind\.gate-world\]\ncmd = "bash contracts\/l3\/check-native\.sh )world/, "$1test-world");
+  assert.notEqual(swapped, config);
+  assert.match(planProblem(plan, swapped), /the gate runs/);
+  const dropped = config.replace(/^(\[land\]\nkinds = ".*?) gate-world/m, "$1");
+  assert.notEqual(dropped, config);
+  assert.equal(planProblem(plan, dropped), "The landing gate omits gate-world");
+});
+
+test("an edit of flow.toml selects the cheap plan check and no Cairo suite", () => {
+  assert.deepEqual(selectedBy(config, "flow.toml"), ["test-native-plan"]);
+});
+
+test("a contract change still selects every Cairo kind", () => {
+  const selected = selectedBy(config, "contracts/l3/world-native/src/deep.cairo");
+  for (const kind of ["sizes", "gate-prelude", "gate-vrf", "gate-world", "gate-events", "gate-drift", "test-world"])
+    assert.ok(selected.includes(kind), `a contract change must select ${kind}`);
 });
 
 test("the native runner selects one package and retains its worker limit", () => {
