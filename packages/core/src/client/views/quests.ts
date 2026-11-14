@@ -100,9 +100,9 @@ function readQuestFacts(store: NativeFactStore, at: QuestAt, bane: BaneDay | nul
   } };
 }
 
-function readReceipt<M extends "LaborGrant" | "BaneGrant">(
-  store: NativeFactStore, model: M, key: { game_id: number; home: number; day: number }, account: bigint,
-): NativeFactResult<{ row: NativeRows[M] | undefined }> {
+function readReceipt(
+  store: NativeFactStore, model: "LaborGrant" | "BaneGrant", key: { game_id: number; home: number; day: number }, account: bigint,
+): NativeFactResult<{ row: NativeRows["LaborGrant"] | undefined }> {
   const row = store.get(model, key);
   if (row) return { known: { row } };
   const absent = store.absenceKnown(model, { ...key, account });
