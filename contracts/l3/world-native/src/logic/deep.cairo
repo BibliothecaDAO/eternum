@@ -4,6 +4,9 @@ use crate::geometry::tile_key;
 use crate::troops::{Coord, ExplorerKey, IBattleResolutionDispatcherTrait};
 
 pub fn contains(game_id: u32, coord: Coord) -> bool {
+    if !crate::logic::game::game_exists(game_id) {
+        return false;
+    }
     let preset = crate::logic::preset_record::for_game(game_id);
     crate::logic::deep_sites::rules_entry(game_id).is_some()
         && crate::deep::contains(coord, preset.settlement_spacing.read())

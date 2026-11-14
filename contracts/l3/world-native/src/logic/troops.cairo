@@ -1133,12 +1133,7 @@ fn expire_explorer(key: ExplorerKey, mut explorer: ExplorerTroops, context: crat
         return;
     }
     return_homecoming(key, explorer, context);
-    let state = crate::state::read();
-    let release = state.releases.entry(state.game_releases.read(key.game_id)).classes;
-    let before = explorer.troops.count;
-    explorer.troops.count = 0;
-    crate::troops::IBattleResolutionLibraryDispatcher { class_hash: release.troops.read() }
-        .finish_battle(key, explorer, before, crate::commands::action_context(context));
+    destroy_explorer(key, explorer);
 }
 
 fn return_homecoming(key: ExplorerKey, explorer: ExplorerTroops, context: crate::commands::ExecutionContext) {
