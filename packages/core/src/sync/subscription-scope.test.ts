@@ -34,7 +34,8 @@ describe("visited realm scope", () => {
     for (const model of ["Building", "RealmKnowledge", "ArmySlot"])
       expect(rowInGameSyncScope(model, { structure_id: "2", epoch: 0 }, scope)).toBe(true);
     expect(rowInGameSyncScope("TileOpt", { alt: false, col: 1600, row: 2700 }, scope)).toBe(false);
-    expect(rowInGameSyncScope("TileOccupancy", rows.find((row) => row.model === "TileOccupancy" && row.value.entity_id === "102")!.value, scope)).toBe(true);
+    const visitedArmyTile = rows.find((row) => row.model === "TileOccupancy" && row.value.entity_id === "102")!;
+    expect(rowInGameSyncScope("TileOccupancy", visitedArmyTile.value, scope)).toBe(true);
     expect(rowInGameSyncScope("GameplayRejected", { actor: "11" }, scope)).toBe(false);
   });
 
@@ -156,9 +157,10 @@ it("drops expired armies before reading positions on the shared map", () => {
     { model: "ArmyDay", value: { explorer_id: "103", day: "1" } },
     { model: "TileOccupancy", value: { entity_id: "103", category: "26", alt: false, col: 512, row: 1600 } },
   ];
-  const readNext: ScopeRowReader = (model, spacing, keys) => nextRows.filter(
-    (row) => row.model === model && scopeInputKeys(model, row.value, spacing).some((key) => keys.includes(key)),
-  );
+  const readNext: ScopeRowReader = (model, spacing, keys) =>
+    nextRows.filter(
+      (row) => row.model === model && scopeInputKeys(model, row.value, spacing).some((key) => keys.includes(key)),
+    );
   const scope = deriveGameSyncScope("0xa", nextDay, expedition, readNext);
   expect(scope.expedition!.entities.has("103")).toBe(true);
   expect(scope.expedition!.entities.has("101")).toBe(false);
