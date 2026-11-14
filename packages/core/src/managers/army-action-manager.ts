@@ -1,3 +1,4 @@
+import { armyCombatRefusal } from "../utils/army-opponents";
 import { safeInteger } from "../utils/safe-integer";
 import { entityMapPosition } from "../utils/tile";
 import {
@@ -209,6 +210,17 @@ export class ArmyActionManager {
     return armyStamina < need ? { reason: "stamina", need } : { reason: "food" };
   }
 
+  private armyTargetRefusal(target: HexEntityInfo | undefined): OrderRefusal | undefined {
+    if (!target) return undefined;
+    const game_id = configManager.getActiveGameId();
+    const reason = armyCombatRefusal(
+      this.store,
+      this.store.require("ExplorerTroops", { game_id, explorer_id: this.entityId }),
+      this.store.require("ExplorerTroops", { game_id, explorer_id: target.id }),
+    );
+    return reason ? { reason } : undefined;
+  }
+
   private getAttackStaminaRequirement(): number {
     return configManager.getCombatConfig().stamina_attack_req;
   }
@@ -237,6 +249,11 @@ export class ArmyActionManager {
       }
       if (!this.gameTakesAttackOn(army !== undefined)) {
         actionPaths.refuse(ActionPaths.posKey({ col, row }), { reason: "no-attack" });
+        continue;
+      }
+      const refusal = this.armyTargetRefusal(army);
+      if (refusal) {
+        actionPaths.refuse(ActionPaths.posKey({ col, row }), refusal);
         continue;
       }
       // A target in range the army cannot yet strike: the attack's stamina is the reason.
@@ -387,6 +404,11 @@ export class ArmyActionManager {
       } else if (canAttack) {
         if (!this.gameTakesAttackOn(hasArmy)) {
           actionPaths.refuse(key, { reason: "no-attack" });
+          continue;
+        }
+        const refusal = this.armyTargetRefusal(armyHexes.get(col - this.FELT_CENTER)?.get(row - this.FELT_CENTER));
+        if (refusal) {
+          actionPaths.refuse(key, refusal);
           continue;
         }
         actionType = ActionType.Attack;

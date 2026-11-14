@@ -1,3 +1,4 @@
+import { orderRefusalWords } from "../hud/order-tip";
 import { resourceMeaning } from "@/ui/design-system/icon-meaning";
 import { playUnitCommandSound } from "@/audio/unit-command-audio";
 import { useGame } from "@/hooks/context/game-context";
@@ -14,6 +15,7 @@ import { toast } from "@/ui/features/event-feed/notify";
 import { extractReadableErrorMessage } from "@/utils/error-message";
 import { biomeTypeOf, configManager, getStructureName, isViewerOwner, ruinDisappeared } from "@bibliothecadao/eternum";
 import {
+  armyCombatRefusal,
   safeInteger,
   type GameClientSetup,
   type NativeFactStore,
@@ -44,6 +46,7 @@ const SITE_MODELS = [
   "ArmyProgress",
   "ArmyRelicEffect",
   "ArmySlot",
+  "HomeAspect",
   "Guard",
   "Structure",
   "TileOccupancy",
@@ -170,7 +173,12 @@ export const TileCard = ({
     }
   };
 
-  const verb: SiteVerb | null =
+  const combatRefusal = selected.kind === "army" && actor
+    ? armyCombatRefusal(setup.store, actor.army, selected.army)
+    : undefined;
+  const verb: SiteVerb | null = combatRefusal
+    ? { kind: "blocked", reason: orderRefusalWords[combatRefusal] }
+    :
     relics?.hold && actor !== null
       ? { kind: "blocked", reason: relics.hold }
       : siteVerb({

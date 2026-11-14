@@ -16,3 +16,5 @@ export { hasSingleTilePosition } from "./native-occupancy";
 
 export { entityMapPosition } from "../utils/tile";
 export { safeInteger } from "../utils/safe-integer";
+
+export { armyCombatRefusal } from "../utils/army-opponents";

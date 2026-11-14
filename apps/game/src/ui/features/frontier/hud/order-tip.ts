@@ -133,13 +133,14 @@ export const refusedOrderVerb = ({
  */
 const refusalLine = ({ refusal, staminaWait, staminaHeld, explored }: TileOrder): string | null => {
   if (refusal?.reason === "stamina") return staminaShortfall(staminaHeld, refusal.need, staminaWait);
-  if (refusal) return REFUSALS[refusal.reason];
+  if (refusal) return orderRefusalWords[refusal.reason];
   return explored ? null : UNEXPLORED;
 };
 
-const REFUSALS: Record<Exclude<OrderRefusal["reason"], "stamina">, string> = {
+export const orderRefusalWords: Record<Exclude<OrderRefusal["reason"], "stamina">, string> = {
   food: "Not enough food for the army",
   "off-limits": "Only unclaimed structures can be attacked",
+  allied: "Allied armies cannot attack each other",
   "no-attack": "This game allows no attack here",
   "no-transfer": "This game allows no transfer here",
   occupied: "No army can enter this tile",
