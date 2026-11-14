@@ -101,9 +101,15 @@ fn claim(d: Deployment, home: ResourceKey, day: u64, timestamp: u64) -> bool {
 }
 
 fn build(d: Deployment, home: ResourceKey, category: u8, direction: u8, timestamp: u64) {
-    let command = Command::CreateBuilding(crate::buildings::CreateBuilding {
-        scouting_kind: 0, structure_id: home.entity_id, directions: array![direction].span(), category, use_simple: true,
-    });
+    let command = Command::CreateBuilding(
+        crate::buildings::CreateBuilding {
+            scouting_kind: 0,
+            structure_id: home.entity_id,
+            directions: array![direction].span(),
+            category,
+            use_simple: true,
+        },
+    );
     let mut events = spy_events();
     if !execute_in_game(d, home.game_id, command, timestamp) {
         panic!("{}", world_test_support::tests::play_fixture::rejection(ref events, d.games).reason);
