@@ -65,6 +65,7 @@ const ringStep = (blitzPreset.spacing * 3) / 2 + 3;
 const FIXED_ONE = 2n ** 64n;
 const damageRules = buildTroopDamageConfig(config);
 const combatRules: CombatRules = {
+  dayUnitSeconds: blitzPreset.dayUnitSeconds,
   cooldownSeconds: config.battle.cooldownSeconds,
   tickSeconds,
   damage: {
