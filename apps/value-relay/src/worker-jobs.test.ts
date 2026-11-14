@@ -348,6 +348,24 @@ it("completes an operator's request for held claims after the worker dies after 
     },
   );
 });
+it("keeps an operator's request while a deposit or the funding failed in the same pass, and completes it once they are healthy", async () => {
+  vi.useFakeTimers({ toFake: ["Date"] });
+  vi.setSystemTime(new Date("2026-11-14T12:00:30Z"));
+  runRelayOutcome.next = () => Effect.succeed({ status: "ready", more: false, deferred: [], reconciled: true });
+  deposits.mockResolvedValue(settledDeposits);
+  const data = new Map<string, unknown>();
+  const relay = shardRelay(data);
+  await relay.tick("0x1");
+  await relay.requestReconcile();
+  deposits.mockResolvedValue({ ...settledDeposits, error: [{ obligation: "deposit:1:2", error: "node unavailable" }] });
+  await relay.tick("0x1");
+  // The withdrawal reconciliation succeeded, but the deposit recovery in the same pass did not: the request stays.
+  expect(data.get("reconcile:due")).toMatchObject({ at: Math.floor(Date.now() / 1000) + 60 });
+  deposits.mockResolvedValue(settledDeposits);
+  vi.setSystemTime(new Date(Date.now() + 60_000));
+  await relay.tick("0x1");
+  expect(data.get("reconcile:due")).toBeUndefined();
+});
 it("asks again after an hourly reconciliation whose recovery read failed", async () => {
   vi.useFakeTimers({ toFake: ["Date"] });
   vi.setSystemTime(new Date("2026-11-14T12:00:30Z"));

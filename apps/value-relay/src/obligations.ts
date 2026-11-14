@@ -67,6 +67,8 @@ export async function driveObligations<O>(kind: ObligationKind<O>, work: readonl
         awaiting++;
       }
     } catch (cause) {
+      // An attempt that failed is work to do again on the next pass, whatever state it was in before.
+      await context.state.delete(awaitingKey(kind, key));
       todo++;
       errors.push({ obligation: `${kind.name}:${key}`, error: cause instanceof Error ? cause.message : String(cause) });
     }

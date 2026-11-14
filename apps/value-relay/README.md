@@ -156,6 +156,7 @@ block Ethereum accepted and its hash). An obligation is to do (attempted every m
 only in a proof pass: the hour, or an operator's request), or settled. A replaced block shows the work gone at the head,
 and the next attempt does it again, because the obligation was never removed. A cause (`ledger-cause.ts`) follows the
 same rule: beginning work does not remove it, only completing and publishing does, and only if no newer report arrived.
-`obligations-interruption.test.ts` kills the worker after every state write of a pass, for every kind of obligation, and
-replaces the unaccepted blocks at every stage; it asserts one canonical payment or refund each, settlement, and a
+`obligations-matrix.test.ts` kills the worker after every durable write of every pass, for every kind of obligation and
+every chain event (blocks replaced, a deposit vanishing, the accepted block unreadable, replies lost, the node failing),
+and replaces the unaccepted blocks at every stage; it asserts one canonical payment or refund each, settlement, and a
 history that says what the chain says.

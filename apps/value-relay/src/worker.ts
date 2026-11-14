@@ -282,12 +282,19 @@ export class ValueRelay extends DurableObject<RelayEnv> {
                 : { status: "unavailable", reason: value.failure.operation },
             };
             await relay.ctx.storage.put("shardTick", observation);
+            const depositsDone = Result.isSuccess(deposits) && !deposits.success.error;
             if (reported) {
-              if (Result.isSuccess(deposits)) await completeCause(relay.ctx.storage, reported);
+              if (depositsDone) await completeCause(relay.ctx.storage, reported);
               else await retryCause(relay.ctx.storage, reported, DELIVERY_RETRY_SECONDS);
             }
             if (reconciling) {
-              const done = Result.isSuccess(value) && value.success.status === "ready" && value.success.reconciled;
+              // The request covers every kind of work a proof pass does: a failure in any of them keeps the cause.
+              const done =
+                Result.isSuccess(value) &&
+                value.success.status === "ready" &&
+                value.success.reconciled &&
+                Result.isSuccess(funding) &&
+                depositsDone;
               if (done) await completeCause(relay.ctx.storage, reconciling);
               else await retryCause(relay.ctx.storage, reconciling, RECONCILE_RETRY_SECONDS);
             }

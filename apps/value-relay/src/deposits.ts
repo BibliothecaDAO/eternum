@@ -27,6 +27,12 @@ export interface DepositRelayPorts {
     get<T>(key: string): Promise<T | undefined>;
     put(key: string, value: unknown): Promise<unknown>;
     delete(key: string): Promise<unknown>;
+    transaction<A>(
+      run: (tx: {
+        put(key: string, value: unknown): Promise<unknown>;
+        delete(key: string): Promise<unknown>;
+      }) => Promise<A>,
+    ): Promise<A>;
     list<T>(options: { prefix: string; reverse?: boolean; limit?: number; end?: string }): Promise<Map<string, T>>;
   };
   sign(request: DepositSigningRequest): Promise<Cosignature>;
@@ -41,6 +47,8 @@ interface DepositProgress {
   next: string;
   /** Deposits discovered and not yet settled: the work queue. Only final evidence takes one out. */
   open: string[];
+  /** Deposits the shard credited and the ledger no longer has: quarantined, reported every pass, never retried. */
+  vanished: string[];
   /** The name this queue had before it was one. */
   pending?: string[];
   anchor?: DepositAnchor;
@@ -81,31 +89,44 @@ const depositResolution = (
   },
 });
 
-/** Discovery and delivery have separate durable progress: a failed obligation never hides later receipts. */
+/**
+ * Discovery and delivery have separate durable progress: a failed obligation never hides later receipts. Two writes that
+ * must agree are one transaction: a deposit enters the queue together with its history row, and a vanished deposit leaves
+ * it together with its row, its state and the rewound cursor, so a worker killed anywhere can resume from what is stored.
+ */
 export async function relayDeposits(ports: DepositRelayPorts) {
   const { target, ledger } = ports;
   if (!(await supportsDeposits(target))) return { enabled: false, processed: 0 };
   const key = `deposits:${BigInt(ledger.chainId)}:${BigInt(ledger.address)}:progress`;
   const stored = await ports.storage.get<DepositProgress>(key);
-  const progress: DepositProgress = {
+  let progress: DepositProgress = {
     next: stored?.next ?? "1",
     open: stored?.open ?? stored?.pending ?? [],
+    vanished: stored?.vanished ?? [],
     ...(stored?.anchor && { anchor: stored.anchor }),
   };
   const reader = await depositReader(rpcAt(ledger.rpcUrl), ledger.address, ledger.chainId, progress.anchor);
   const count = await reader.count(target.chainId);
-  if (BigInt(progress.next) > count + 1n) await forgetVanished(ports, progress, count);
-  const discovered = BigInt(progress.next);
-  const fresh: string[] = [];
-  while (BigInt(progress.next) <= count && fresh.length < 20) {
-    fresh.push(progress.next);
-    progress.next = String(BigInt(progress.next) + 1n);
-  }
-  progress.open.push(...fresh);
-  await reader.assertCanonical();
-  progress.anchor = reader.head;
-  await ports.storage.put(key, progress);
   const errors: { obligation: string; error: string }[] = [];
+  if (BigInt(progress.next) > count + 1n) progress = await reconcileVanished(ports, key, progress, count);
+  const discovered = BigInt(progress.next);
+  const fresh: LordsDeposit[] = [];
+  for (let id = discovered; id <= count && fresh.length < 20; id++) {
+    try {
+      fresh.push(await reader.deposit(target.chainId, String(id)));
+    } catch (cause) {
+      errors.push({ obligation: `deposit:${id}`, error: cause instanceof Error ? cause.message : String(cause) });
+      break;
+    }
+  }
+  await reader.assertCanonical();
+  progress = {
+    ...progress,
+    next: String(discovered + BigInt(fresh.length)),
+    open: [...progress.open, ...fresh.map(({ id }) => id)],
+    anchor: reader.head,
+  };
+  await commit(ports, key, progress, fresh);
   try {
     await backfillHistory(ports, reader, discovered);
   } catch (cause) {
@@ -113,45 +134,74 @@ export async function relayDeposits(ports: DepositRelayPorts) {
     errors.push({ obligation: "deposit history", error: cause instanceof Error ? cause.message : String(cause) });
   }
   let accepted: ReturnType<typeof reader.final> | undefined;
+  const quarantined = new Set(progress.vanished);
   const pass = await driveObligations(
     depositResolution(ports, reader, () => (accepted ??= reader.final())),
-    progress.open,
+    progress.open.filter((id) => !quarantined.has(id)),
     { finals: ports.finals, state: ports.obligations, proofs: ports.proofs },
   );
   const anchorFault = pass.errors.find(({ error }) => error.startsWith("deposit_head_"));
   if (anchorFault) throw new DepositAnchorError(anchorFault.error);
   errors.push(...pass.errors);
+  for (const id of progress.vanished)
+    errors.push({ obligation: `deposit:${id}`, error: "deposit_vanished_after_credit" });
   const settled = new Set(pass.settled);
-  progress.open = progress.open.filter((id) => !settled.has(`${BigInt(target.chainId)}:${BigInt(id)}`));
+  progress = {
+    ...progress,
+    open: progress.open.filter((id) => !settled.has(`${BigInt(target.chainId)}:${BigInt(id)}`)),
+  };
   await ports.storage.put(key, progress);
   return {
     enabled: true,
     processed: pass.attempted,
     next: progress.next,
     total: String(count),
-    pending: pass.todo,
+    pending: pass.todo + progress.vanished.length,
     awaiting: pass.awaiting,
     more: BigInt(progress.next) <= count || pass.todo > 0,
     error: errors.length ? errors : null,
   };
 }
 
+/** A deposit enters the queue with its history row, or not at all. */
+const commit = (ports: DepositRelayPorts, key: string, progress: DepositProgress, rows: readonly LordsDeposit[]) =>
+  ports.storage.transaction(async (tx) => {
+    for (const row of rows) await tx.put(rowKey(row.shard, row.id), row);
+    await tx.put(key, progress);
+  });
+
 /**
  * The count went below what was discovered: a replaced block took deposits away. A deposit the shard has not been told of
- * is simply forgotten and discovered again if it comes back; one the shard already credited is a custody fault, loud.
+ * is forgotten, with its row and state and the rewound cursor in one transaction, and discovered again if it comes back.
+ * One the shard already credited is a custody fault: it is quarantined, reported on every pass, and stops nothing else.
  */
-async function forgetVanished(ports: DepositRelayPorts, progress: DepositProgress, count: bigint) {
-  const gone = progress.open.filter((id) => BigInt(id) > count);
+async function reconcileVanished(
+  ports: DepositRelayPorts,
+  key: string,
+  progress: DepositProgress,
+  count: bigint,
+): Promise<DepositProgress> {
+  const gone = progress.open.filter((id) => BigInt(id) > count && !progress.vanished.includes(id));
+  const forgotten: string[] = [];
+  const credited: string[] = [];
   for (const id of gone) {
     const row = await ports.storage.get<LordsDeposit>(rowKey(ports.target.chainId, id));
-    if (!row || (await shardHasReceipt(ports, row))) throw new DepositAnchorError("deposit_count_regressed");
+    (row && !(await shardHasReceipt(ports, row)) ? forgotten : credited).push(id);
   }
-  for (const id of gone) {
-    await ports.storage.delete(rowKey(ports.target.chainId, id));
-    await ports.obligations.delete(`obligation:deposit:${BigInt(ports.target.chainId)}:${BigInt(id)}`);
-  }
-  progress.open = progress.open.filter((id) => BigInt(id) <= count);
-  progress.next = String(count + 1n);
+  const next: DepositProgress = {
+    ...progress,
+    open: progress.open.filter((id) => !forgotten.includes(id)),
+    vanished: [...progress.vanished, ...credited],
+    next: String(count + 1n),
+  };
+  await ports.storage.transaction(async (tx) => {
+    for (const id of forgotten) {
+      await tx.delete(rowKey(ports.target.chainId, id));
+      await tx.delete(`obligation:deposit:${BigInt(ports.target.chainId)}:${BigInt(id)}`);
+    }
+    await tx.put(key, next);
+  });
+  return next;
 }
 
 const shardReceipt = async (ports: DepositRelayPorts, payment: Pick<LordsDeposit, "gameId" | "id">) => {

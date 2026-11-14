@@ -70,12 +70,13 @@ let rows: LordsDeposit[];
 let saved: Map<string, unknown>;
 const sign = vi.fn(async (_request: unknown) => ({ r: "0x1", s: "0x2" }));
 const mutate = vi.fn<DepositRelayPorts["mutate"]>();
-const storage = {
+const storage: DepositRelayPorts["storage"] = {
   get: async <T>(key: string) => structuredClone(saved.get(key)) as T | undefined,
   put: async (key: string, value: unknown) => {
     saved.set(key, structuredClone(value));
   },
   delete: async (key: string) => saved.delete(key),
+  transaction: async <A>(run: (tx: typeof storage) => Promise<A>) => run(storage),
   list: async <T>({
     prefix,
     reverse,
@@ -240,8 +241,9 @@ it("a pass reads the count once and each new deposit once, then only the count h
   reads.deposit.mockClear();
   await relayDeposits(ports);
   await relayDeposits(ports);
-  // Twenty new deposits a pass: the next pass reads the last ten, and the one after reads nothing but the count.
-  expect([first, reads.count.mock.calls.length, reads.deposit.mock.calls.length]).toEqual([20, 2, 10]);
+  // Twenty new deposits a pass, each read once to be stored with its history row and once by its attempt: the next pass
+  // does the last ten, and the one after reads nothing but the count.
+  expect([first, reads.count.mock.calls.length, reads.deposit.mock.calls.length]).toEqual([40, 2, 20]);
 });
 
 const history = (realmsId: string, before?: string) => depositHistory(ports, realmsId, before);

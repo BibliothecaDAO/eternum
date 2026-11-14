@@ -474,7 +474,7 @@ const depositPorts = (data: Map<string, unknown>, proofs: boolean): DepositRelay
   sign: async () => ({ r: "0x1", s: "0x2" }),
   mutate: async () => {},
 });
-const DEPOSIT = { quiet: 0, perObligationAwaiting: 0 };
+const DEPOSIT = { quiet: 0, perObligationAwaiting: 0, discoveryEach: 0, proofSingle: 0 };
 const DEPOSIT_QUIET = 180;
 it("states a deposit pass with nothing new, with obligations awaiting proof, and after a restart", async () => {
   const data = new Map<string, unknown>();
@@ -485,7 +485,8 @@ it("states a deposit pass with nothing new, with obligations awaiting proof, and
   // Ten deposits are discovered and resolved; the accepted block does not hold the resolutions yet, so they await proof.
   chain.deposits = 10;
   chain.depositsFinal = false;
-  await reads(() => relayDeposits(depositPorts(data, false)));
+  const discovery = await reads(() => relayDeposits(depositPorts(data, false)));
+  DEPOSIT.discoveryEach = (discovery.cu - quiet.cu) / 10;
   // A plain pass leaves them alone: it reads what a quiet pass reads.
   expect((await reads(() => relayDeposits(depositPorts(data, false)))).counts).toEqual(quiet.counts);
   // The hour's proof pass attempts each once; after a restart (a new pass over the same storage) the same again.
@@ -495,6 +496,14 @@ it("states a deposit pass with nothing new, with obligations awaiting proof, and
   DEPOSIT.perObligationAwaiting = (proof.cu - quiet.cu) / 10;
   // Per deposit: the head view, the accepted view and their blocks; the accepted head is shared by the ten.
   expect(DEPOSIT.perObligationAwaiting).toBe(62);
+  // One deposit alone: the accepted head is read for it alone, so this is the price per deposit when they arrive one by one.
+  const single = new Map<string, unknown>();
+  chain.deposits = 1;
+  await relayDeposits(depositPorts(single, false));
+  const alone = await reads(() => relayDeposits(depositPorts(single, true)));
+  DEPOSIT.proofSingle = alone.cu - quiet.cu;
+  expect(DEPOSIT.proofSingle).toBe(80);
+  chain.deposits = 10;
   // Once the accepted block holds them, one proof pass settles all ten and later ones are quiet again.
   chain.depositsFinal = true;
   await relayDeposits(depositPorts(data, true));
@@ -595,10 +604,14 @@ const month = (inputs: Inputs) => {
     (inputs.targets * CUSTODY.perTarget + CUSTODY.perShard + inputs.depositors * CUSTODY.perUnpaidPrincipal);
   const ticks = (hourly + writes) * LEDGER_TICK.steady;
   const waiting = inputs.endedGamesWaiting * inputs.hoursToAcceptance * 60 * WAITING_MINUTE;
+  // An obligation is proven by the hourly passes until Ethereum accepts its block: one pass per started hour. The count is
+  // exact when the first proof pass follows the action by less than an hour and the delay is whole hours; otherwise one
+  // more pass (the rounding bound), which `proofPasses` takes as the ceiling plus none.
+  const proofPasses = Math.ceil(inputs.hoursToAcceptance);
   const deposits =
     inputs.depositPassesPerDay * days * DEPOSIT.quiet +
-    inputs.newDepositsPerDay * days * (inputs.hoursToAcceptance > 0 ? 1 : 0) * DEPOSIT.perObligationAwaiting * 2;
-  const payments = inputs.payoutsPerDay * days * (PAYMENT.read * 3 + PAYMENT.proofUntilFinal * 2 + 800);
+    inputs.newDepositsPerDay * days * (DEPOSIT.discoveryEach + proofPasses * DEPOSIT.proofSingle);
+  const payments = inputs.payoutsPerDay * days * (PAYMENT.read * 3 + PAYMENT.proofUntilFinal * proofPasses + 800);
   const ratings = inputs.ratingsRefreshesPerDay * days * (inputs.ratingsPlayers + 6) * 20;
   return {
     audits,
@@ -617,7 +630,7 @@ it("derives the month for production and dev on one key from the counts above", 
   // rated players. Both see 20 announced relay writes a day (each causing one audit and one ledger tick), a deposit
   // pass an hour, a ratings refresh an hour and one per result post (26 a day), and Ethereum takes six hours to accept
   // a block (an assumption, not a measurement).
-  const production = month({
+  const productionInputs: Inputs = {
     announcedWritesPerDay: 20,
     endedGamesWaiting: 1,
     hoursToAcceptance: 6,
@@ -628,7 +641,8 @@ it("derives the month for production and dev on one key from the counts above", 
     ratingsPlayers: 500,
     ratingsRefreshesPerDay: 26,
     depositPassesPerDay: 24,
-  });
+  };
+  const production = month(productionInputs);
   const dev = month({
     announcedWritesPerDay: 20,
     endedGamesWaiting: 4,
@@ -643,6 +657,13 @@ it("derives the month for production and dev on one key from the counts above", 
   });
   expect(production.audits).toBe((720 + 600) * AUDIT.steady);
   expect(production.total + dev.total).toBeLessThan(30_000_000);
-  expect([production.total, dev.total]).toEqual([13_089_000, 4_354_200]);
-  expect(production.total + dev.total).toBe(17_443_200);
+  expect([production.total, dev.total]).toEqual([13_442_700, 4_491_900]);
+  expect(production.total + dev.total).toBe(17_934_600);
+  // The finality assumption drives the proof reads: twice the acceptance delay costs six more hours of proof passes for
+  // every new deposit and payment, and six more hours of waiting for each unclosed game.
+  const slower = month({ ...productionInputs, hoursToAcceptance: 12 });
+  expect(slower.total - production.total).toBe(
+    43_200 + 5 * 30 * 6 * DEPOSIT.proofSingle + 40 * 30 * 6 * PAYMENT.proofUntilFinal,
+  );
+  expect(slower.total).toBe(13_989_900);
 });

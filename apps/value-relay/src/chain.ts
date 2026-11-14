@@ -43,9 +43,13 @@ export const ledgerPaymentProof =
     relayOperation("read withdrawal proof", async () => {
       const provider = rpcAt(rpcUrl);
       const atHead = (await Effect.runPromise(ledgerPaymentRead(rpcUrl, address)(withdrawal)))?.paid === true;
-      const final = await readFinalLedgerHead(provider);
-      const accepted = await Effect.runPromise(ledgerPaymentRead(rpcUrl, address, final.number)(withdrawal));
-      return { atHead, final: accepted?.paid ? { block: final.number, hash: final.hash } : null };
+      // The head's answer is enough to resume work known to be undone; only settlement needs the accepted block, so a
+      // failed lookup of it leaves the claim awaiting proof, never blocks its recovery.
+      const final = await readFinalLedgerHead(provider).catch(() => null);
+      const accepted = final
+        ? await Effect.runPromise(ledgerPaymentRead(rpcUrl, address, final.number)(withdrawal)).catch(() => null)
+        : null;
+      return { atHead, final: final && accepted?.paid ? { block: final.number, hash: final.hash } : null };
     });
 
 /** Recovery only reads payment state after a confirmed pause has stopped further transfers. */
