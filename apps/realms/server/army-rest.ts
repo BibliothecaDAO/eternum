@@ -1,6 +1,6 @@
 import { normalizeStarknetAddress as canonicalFelt } from "@realms-world/identity";
 import { safeInteger } from "../../../packages/core/src/utils/safe-integer";
-import { readBaneEffects } from "../../../packages/core/src/client/views/banes";
+import { readBaneEffects } from "@bibliothecadao/eternum";
 import {
   fetchHeraldGameDirectory,
   fetchHeraldGameSnapshot,
@@ -201,7 +201,7 @@ function earliestRestCheck(
     const rate = effects.windows.find((window) => window.start <= start && start < window.end)?.rateBps ?? 10_000;
     return {
       start,
-      end: boundaries[index + 1],
+      end: boundaries[index + 1]!,
       rateBps: start >= now && start < mist.end ? (rate * 100) / staminaPercent : rate,
     };
   });

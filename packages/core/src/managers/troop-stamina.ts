@@ -286,7 +286,7 @@ export function musterStamina(
     count: 0n,
     stamina: { ...slot.inherited, amount: BigInt(Math.min(Number(slot.inherited.amount), staminaMax)) },
     staminaMax,
-    staminaEffects: slot.effects,
+    ...(slot.effects ? { staminaEffects: slot.effects } : {}),
     boosts: NO_BOOSTS,
     battle_cooldown_end: 0,
   };

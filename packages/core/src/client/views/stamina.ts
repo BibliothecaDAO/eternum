@@ -71,6 +71,6 @@ function combinePeriods(periods: StaminaEffects["windows"], from: number, until:
     const rateBps = periods
       .filter((period) => period.start <= start && start < period.end)
       .reduce((rate, period) => (rate * period.rateBps) / 10_000, 10_000);
-    return rateBps === 10_000 ? [] : [{ start, end: boundaries[index + 1], rateBps }];
+    return rateBps === 10_000 ? [] : [{ start, end: boundaries[index + 1]!, rateBps }];
   });
 }
