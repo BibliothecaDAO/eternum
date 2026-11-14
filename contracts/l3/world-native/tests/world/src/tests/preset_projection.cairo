@@ -399,7 +399,9 @@ fn malformed_race_rules_leave_no_preset_registered() {
         }
         if invalid == 16 {
             let discovery = definition.economy.discovery.unwrap();
-            definition.economy.discovery = Some(crate::expeditions::FrontierDiscoveryRules { beasts_bps: 4000, ..discovery });
+            definition
+                .economy
+                .discovery = Some(crate::expeditions::FrontierDiscoveryRules { beasts_bps: 4000, ..discovery });
         }
         definition.economy.race = Some(race);
         assert!(IRegistrarSafeDispatcher { contract_address: d.games }.register_preset(preset_id, definition).is_err());

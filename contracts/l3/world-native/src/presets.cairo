@@ -101,7 +101,9 @@ pub fn validate(preset: PresetDefinition) {
     assert!(preset.economy.chests.is_none(), "LORDS presets are retired");
     assert!(preset.economy.discovery.is_some() == (rules.day_unit_seconds != 0), "discovery requires expedition");
     if let Some(discovery) = preset.economy.discovery {
-        crate::discovery::validate_frontier(discovery, preset.economy.race.map(|race| race.clear_mist_percent).unwrap_or(100));
+        crate::discovery::validate_frontier(
+            discovery, preset.economy.race.map(|race| race.clear_mist_percent).unwrap_or(100),
+        );
         assert!(
             rules.map_config.camp_win_probability == 0 && rules.map_config.shards_mines_win_probability == 0,
             "expedition uses categorical odds",

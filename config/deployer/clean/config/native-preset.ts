@@ -692,9 +692,15 @@ function buildDiscovery(preset: ReturnType<typeof nativePresetForId>) {
     rules.emptyRevealLimit < 1 ||
     rules.emptyRevealLimit > 255 ||
     rules.beastsBps + rules.campBps + rules.riftBps === 0 ||
-    (rules.beastsBps + rules.campBps + rules.riftBps + rules.ruinBps + rules.shrineBps + rules.wellBps
-      + Math.max(rules.shrineBps + rules.wellBps, rules.campBps, rules.riftBps))
-      * (preset.race?.clearMistPercent ?? 100) > 1_000_000
+    (rules.beastsBps +
+      rules.campBps +
+      rules.riftBps +
+      rules.ruinBps +
+      rules.shrineBps +
+      rules.wellBps +
+      Math.max(rules.shrineBps + rules.wellBps, rules.campBps, rules.riftBps)) *
+      (preset.race?.clearMistPercent ?? 100) >
+      1_000_000
   )
     throw new Error("Invalid categorical discovery rules");
   return new CairoOption(CairoOptionVariant.Some, {

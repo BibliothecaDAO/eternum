@@ -1366,16 +1366,17 @@ test("the race codec refuses missing Deep rules, malformed amounts, effects and 
   }
 });
 
-
 test("Clear Mist and maximum Scouting must fit one categorical discovery draw", () => {
-  const source=nativePresets[FRONTIER_S1_PRESET_ID]!;
-  const previous={race:source.race,deep:source.deep,discovery:source.discovery};
+  const source = nativePresets[FRONTIER_S1_PRESET_ID]!;
+  const previous = { race: source.race, deep: source.deep, discovery: source.discovery };
   try {
-    source.deep=deepFixture();
-    source.discovery={...source.discovery!,beastsBps:4000};
-    const configuration=loadNativePresetConfiguration("madara.frontier",source.id);
-    expect(()=>buildNativePreset(configuration,source.id)).not.toThrow();
-    source.race=raceFixture();
-    expect(()=>buildNativePreset(configuration,source.id)).toThrow("Invalid categorical discovery rules");
-  } finally {Object.assign(source,previous);}
+    source.deep = deepFixture();
+    source.discovery = { ...source.discovery!, beastsBps: 4000 };
+    const configuration = loadNativePresetConfiguration("madara.frontier", source.id);
+    expect(() => buildNativePreset(configuration, source.id)).not.toThrow();
+    source.race = raceFixture();
+    expect(() => buildNativePreset(configuration, source.id)).toThrow("Invalid categorical discovery rules");
+  } finally {
+    Object.assign(source, previous);
+  }
 });

@@ -69,7 +69,10 @@ pub fn validate_frontier(rules: crate::expeditions::FrontierDiscoveryRules, find
     let sanctuaries: u32 = Into::<u16, u32>::into(rules.shrine_bps) + rules.well_bps.into();
     let reserve: u32 = core::cmp::max(sanctuaries, core::cmp::max(rules.camp_bps, rules.rift_bps).into());
     assert!(
-        Into::<u32, u128>::into(guarded + rules.ruin_bps.into() + reserve + rules.shrine_bps.into() + rules.well_bps.into()) * find_percent.into() <= 1000000,
+        Into::<
+            u32, u128,
+        >::into(guarded + rules.ruin_bps.into() + reserve + rules.shrine_bps.into() + rules.well_bps.into())
+            * find_percent.into() <= 1000000,
         "discovery odds exceed 100 percent",
     );
 }
