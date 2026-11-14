@@ -105,7 +105,8 @@ describe("structureMapPosition", () => {
 describe("liveHomeArmies", () => {
   afterEach(() => vi.restoreAllMocks());
 
-  const army = (explorer_id: number, y: number, count = 1_000n, owner = 42) => ({
+  const army = (explorer_id: number, y: number, count = 1_000n, owner = 42, day = 0) => ({
+    day,
     explorer_id,
     owner,
     position: { x: 25, y, alt: false },
@@ -113,6 +114,9 @@ describe("liveHomeArmies", () => {
   });
   const armiesStore = (rules: Record<string, unknown>, armies: ReturnType<typeof army>[]) => ({
     ...storeWith(rules),
+    require: (model: string, keys: { explorer_id: number }) => model === "ArmyDay"
+      ? { day: armies.find((army) => army.explorer_id === keys.explorer_id)!.day }
+      : storeWith(rules).require(model),
     armiesAtHome: (_game: number, home: number) => armies.filter((army) => army.owner === home),
     entityOccupancy: (_game: number, id: number) => {
       const army = armies.find((army) => army.explorer_id === id);
@@ -129,6 +133,14 @@ describe("liveHomeArmies", () => {
     expect(liveHomeArmies(store as never, 42, 7).map(({ explorer_id }) => explorer_id)).toEqual([1, 2]);
 
     atFloor(dayStart(1) + 1);
+    expect(liveHomeArmies(store as never, 42, 7)).toEqual([]);
+  });
+
+  it("uses allocation days when two days' armies share the same map tile", () => {
+    const store = armiesStore(expeditionRules, [army(1, 35, 1_000n, 42, 0), army(2, 35, 1_000n, 42, 1)]);
+    atFloor(dayStart(1));
+    expect(liveHomeArmies(store as never, 42, 7).map(({ explorer_id }) => explorer_id)).toEqual([2]);
+    atFloor(dayStart(2));
     expect(liveHomeArmies(store as never, 42, 7)).toEqual([]);
   });
 

@@ -115,8 +115,9 @@ export function resolveExplorerTroops(
 ): Troops | undefined {
   const source = explorer.troops.stamina;
   if ("Inline" in source) return inlineTroops(explorer.troops);
-  const epoch = slotEpoch(store);
-  if (epoch === undefined) return undefined;
+  const day = store.get("ArmyDay", { game_id: explorer.game_id, explorer_id: explorer.explorer_id });
+  if (!day) return undefined;
+  const epoch = day.day;
   const result = store.requireOrAbsent("ArmySlot", {
     game_id: explorer.game_id,
     structure_id: explorer.owner,

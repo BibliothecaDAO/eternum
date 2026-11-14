@@ -43,7 +43,7 @@ export const readRealmStore = (
   const stock = FRONTIER_STORES[kind].resource;
   const amount =
     kind === "troops"
-      ? troopsAtHome(store, realm, rules, clock.now, clock.now)
+      ? troopsAtHome(store, realm, clock.now, clock.now)
       : wholeBalance(store, safeInteger(realm.entity_id), stock, clock.now);
   const rawLimit = new ResourceManager(store, safeInteger(realm.entity_id), realm.game_id).storeLimit(stock);
   const limit = rawLimit === undefined ? undefined : Number(rawLimit / BigInt(RESOURCE_PRECISION));

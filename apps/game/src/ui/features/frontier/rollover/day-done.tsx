@@ -72,10 +72,10 @@ export const DayDone = ({
     const { totals } = played;
     // The realm's armies and Homecoming are read as they stand, so they tell only the day that just ended.
     const justEnded = recap.day === ended.day;
-    const gone = justEnded ? endedHomeArmies(setup.store, realm, rules, now) : [];
+    const gone = justEnded ? endedHomeArmies(setup.store, realm, now) : [];
     // Only a whole history says the day was not played; one that failed or stops short shows the card with dashes.
     if (played.history === "whole" && gone.length === 0 && played.stories.length === 0) return null;
-    const returned = justEnded ? homecomingAtNextDeploy(setup.store, realm, rules, now, tick) : null;
+    const returned = justEnded ? homecomingAtNextDeploy(setup.store, realm, now, tick) : null;
     const taken = gone.reduce((sum, army) => sum + Number(army.troops.count / BigInt(RESOURCE_PRECISION)), 0);
     return (
       <DayDoneCard

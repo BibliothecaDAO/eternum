@@ -5,12 +5,10 @@ import { useAccountStore } from "@/hooks/store/use-account-store";
 import {
   configManager,
   divideByPrecision,
-  entityMapPosition,
-  type ExpeditionRules,
   getBalance,
   getTroopResourceId,
   homecomingReturn,
-  isCurrentExpeditionArmy,
+  isArmyCurrent,
   isExpeditionRealm,
   Position,
   readExpeditionRules,
@@ -66,17 +64,16 @@ export const useGoToFrontierPlace = (realm: NativeRows["Structure"] | null) => {
 
 const TROOP_RESOURCE_IDS = TROOP_TYPES.flatMap((type) => TROOP_TIERS.map((tier) => getTroopResourceId(type, tier)));
 
-/** The realm's armies the day has ended: still at home in the facts, no longer in today's region. */
+/** The realm's armies the day has ended: still at home in the facts, allocated on an earlier day. */
 export const endedHomeArmies = (
   store: NativeFactStore,
   realm: NativeRows["Structure"],
-  rules: ExpeditionRules,
   now: number,
 ): NativeRows["ExplorerTroops"][] =>
   [...store.armiesAtHome(realm.game_id, realm.entity_id)].filter(
     (army) =>
       army.troops.count > 0n &&
-      !isCurrentExpeditionArmy(rules, entityMapPosition(store, realm.game_id, army.explorer_id), now),
+      !isArmyCurrent(store, realm.game_id, army.explorer_id, now),
   );
 
 /** One troop stock as the realm's next deploy finds it, in whole troops. */
@@ -90,11 +87,10 @@ type StockAtDeploy = { held: number; returning: number; fits: number };
 export const stocksAtNextDeploy = (
   store: NativeFactStore,
   realm: NativeRows["Structure"],
-  rules: ExpeditionRules,
   now: number,
   tick: number,
 ): Map<ResourcesIds, StockAtDeploy> | undefined => {
-  const returning = homecomingByStock(store, realm, rules, now);
+  const returning = homecomingByStock(store, realm, now);
   if (!returning) return undefined;
   const manager = new ResourceManager(store, safeInteger(realm.entity_id), realm.game_id);
   const stocks = new Map<ResourcesIds, StockAtDeploy>();
@@ -114,11 +110,10 @@ export const stocksAtNextDeploy = (
 const homecomingByStock = (
   store: NativeFactStore,
   realm: NativeRows["Structure"],
-  rules: ExpeditionRules,
   now: number,
 ): Map<ResourcesIds, number> | undefined => {
   const returning = new Map<ResourcesIds, number>();
-  for (const army of endedHomeArmies(store, realm, rules, now)) {
+  for (const army of endedHomeArmies(store, realm, now)) {
     const progress = store.get("ArmyProgress", { game_id: army.game_id, explorer_id: army.explorer_id });
     if (!progress) return undefined;
     const stock = getTroopResourceId(army.troops.category as TroopType, army.troops.tier as TroopTier);
@@ -132,11 +127,10 @@ const homecomingByStock = (
 export const troopsAtHome = (
   store: NativeFactStore,
   realm: NativeRows["Structure"],
-  rules: ExpeditionRules,
   now: number,
   tick: number,
 ): number | undefined => {
-  const stocks = stocksAtNextDeploy(store, realm, rules, now, tick);
+  const stocks = stocksAtNextDeploy(store, realm, now, tick);
   return stocks && [...stocks.values()].reduce((sum, stock) => sum + stock.held + stock.fits, 0);
 };
 
@@ -147,11 +141,10 @@ export const troopsAtHome = (
 export const homecomingAtNextDeploy = (
   store: NativeFactStore,
   realm: NativeRows["Structure"],
-  rules: ExpeditionRules,
   now: number,
   tick: number,
 ): { sent: number; fitted: number } | undefined => {
-  const stocks = stocksAtNextDeploy(store, realm, rules, now, tick);
+  const stocks = stocksAtNextDeploy(store, realm, now, tick);
   if (!stocks) return undefined;
   const all = [...stocks.values()];
   return {

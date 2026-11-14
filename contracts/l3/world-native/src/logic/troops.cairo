@@ -10,7 +10,7 @@ pub fn active_explorer(
     if rules.day_unit_seconds != 0 {
         let today = crate::days::day_of(game_context.game.unbox(), rules.day_unit_seconds, timestamp).index;
         assert!(
-            crate::expeditions::is_current(explorer.coord, crate::logic::settlement::rules(key.game_id).spacing, today),
+            crate::logic::army_days::require(key) == today,
             "EXPIRED_ARMY",
         );
     }
@@ -141,6 +141,7 @@ pub mod TroopState {
         let previous = state.troops.explorers.entry((key.game_id, key.explorer_id)).owner.read();
         assert!(previous != 0, "missing explorer");
         write_home_membership(key, previous, 0);
+        crate::logic::army_days::remove(key);
 
         // Owner zero marks absence; recreation overwrites the complete explorer.
         state.troops.explorers.entry((key.game_id, key.explorer_id)).owner.write(0);
@@ -703,7 +704,7 @@ pub mod TroopsLogic {
             let context = crate::commands::execution_context(game_id, context);
 
             let rules = self.authorize(game_id, context);
-            let home = crate::logic::troops::owned_structure(game_id, command.structure_id, actor);
+            crate::logic::troops::owned_structure(game_id, command.structure_id, actor);
             if rules.day_unit_seconds != 0 {
                 self
                     .expire_home_armies(
@@ -713,10 +714,30 @@ pub mod TroopsLogic {
             if rules.day_unit_seconds == 0 {
                 assert!(command.slot == 0, "slots require expedition");
             }
+            self.pay_troops(
+                game_id, command.structure_id, troop_type(command.category), troop_tier(command.tier),
+                command.amount, context.timestamp, context,
+            );
+            Allocation::allocate_army(ref self, game_id, actor, command, crate::commands::action_context(context));
+        }
+    }
+
+    #[abi(embed_v0)]
+    impl Allocation of crate::troops::IArmyAllocation<ContractState> {
+        fn allocate_army(
+            ref self: ContractState,
+            game_id: u32,
+            actor: ContractAddress,
+            command: CreateExplorer,
+            context: crate::commands::ActionContext,
+        ) -> u64 {
+            let context = crate::commands::execution_context(game_id, context);
+            let rules = context.rules.unbox();
+            let home = crate::logic::troops::owned_structure(game_id, command.structure_id, actor);
+            assert!(command.amount > 0, "empty army allocation");
             let category = troop_type(command.category);
             let tier = troop_tier(command.tier);
             let id = crate::entity_ids::allocate_home(game_id, command.structure_id);
-            self.pay_troops(game_id, command.structure_id, category, tier, command.amount, context.timestamp, context);
             let today = if rules.day_unit_seconds == 0 {
                 0
             } else {
@@ -790,7 +811,7 @@ pub mod TroopsLogic {
                     ),
                     context.timestamp,
                 );
-            ()
+            id
         }
     }
 
@@ -907,11 +928,10 @@ pub mod troop_helpers {
             game_context: crate::commands::ExecutionContext,
         ) {
             let today = crate::days::day_of(game_context.game.unbox(), rules.day_unit_seconds, timestamp).index;
-            let spacing = self.expedition_spacing(home.game_id);
             for id in crate::logic::troops::home_armies(home) {
                 let key = ExplorerKey { game_id: home.game_id, explorer_id: *id };
                 let explorer = crate::logic::troops::explorer(key).expect('missing home army');
-                if !crate::expeditions::is_current(explorer.coord, spacing, today) {
+                if crate::logic::army_days::require(key) != today {
                     self.return_troops(key, home, explorer, timestamp, game_context);
                     self.destroy_explorer(key, explorer);
                 }

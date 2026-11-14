@@ -56,6 +56,7 @@ const realmWithExplorer = (food: { wheat: string; fish: string }) => {
   world.holdings = [{ entityId: 7, structure: row }];
   const { troops } = explorerFixture.expected.value;
   store.applyFacts([
+    { model: "ArmyDay", key: "0xad70", value: { game_id: 1, explorer_id: 70, day: 0 } },
     {
       model: "ExplorerTroops",
       key: "0x70",

@@ -2,7 +2,7 @@ use starknet::storage::{StorageMapReadAccess, StorageMapWriteAccess};
 use crate::events::RowSet;
 use crate::stamina::{StaminaSourceTrait, StaminaTrait};
 use crate::troops::{
-    ArmySlot, ArmySlotKey, ArmySlotRecord, Coord, ExplorerKey, ExplorerRecord, ExplorerTroops, Stamina, StaminaRefill,
+    ArmySlot, ArmySlotKey, ArmySlotRecord, ExplorerKey, ExplorerRecord, ExplorerTroops, Stamina, StaminaRefill,
     StaminaSource, Troops,
 };
 
@@ -31,10 +31,8 @@ fn write(key: ArmySlotKey, value: ArmySlot) {
     );
 }
 
-fn key_for(key: ExplorerKey, home: u64, coord: Coord, slot: u8) -> ArmySlotKey {
-    assert!(!coord.alt, "slot outside expedition");
-    let day = crate::expeditions::region_day(coord, crate::logic::settlement::rules(key.game_id).spacing);
-    ArmySlotKey { game_id: key.game_id, structure_id: home, epoch: day, slot }
+fn key_for(key: ExplorerKey, home: u64, slot: u8) -> ArmySlotKey {
+    ArmySlotKey { game_id: key.game_id, structure_id: home, epoch: crate::logic::army_days::require(key), slot }
 }
 
 fn occupied(key: ArmySlotKey, explorer_id: u64) -> ArmySlot {
@@ -46,7 +44,7 @@ fn occupied(key: ArmySlotKey, explorer_id: u64) -> ArmySlot {
 // Command arithmetic gets a transient bar; only persist writes it back, preserving the stored Slot tag.
 pub fn resolve(key: ExplorerKey, mut explorer: ExplorerTroops, refill: Option<StaminaRefill>) -> ExplorerTroops {
     if let StaminaSource::Slot(slot) = explorer.troops.stamina {
-        let slot_key = key_for(key, explorer.owner, explorer.coord, slot);
+        let slot_key = key_for(key, explorer.owner, slot);
         let mut stamina = occupied(slot_key, key.explorer_id).stamina;
         if let Some(refill) = refill {
             let progress = crate::logic::progression::require(key);
@@ -78,17 +76,14 @@ pub fn allocate(
         None => initial,
     };
     stamina.clamp(maximum);
+    crate::logic::army_days::create(key, epoch);
     write(slot_key, ArmySlot { explorer_id: key.explorer_id, stamina });
     StaminaSource::Slot(slot)
 }
 
 pub fn persist(key: ExplorerKey, previous: ExplorerRecord, mut troops: Troops) -> Troops {
     if let StaminaSource::Slot(slot) = previous.troops.stamina {
-        let coord = crate::logic::map::entity_coord(
-            crate::resources::ResourceKey { game_id: key.game_id, entity_id: key.explorer_id },
-        )
-            .expect('missing explorer position');
-        let slot_key = key_for(key, previous.owner, coord, slot);
+        let slot_key = key_for(key, previous.owner, slot);
         let mut value = occupied(slot_key, key.explorer_id);
         match troops.stamina {
             StaminaSource::Inline(stamina) => {
@@ -107,7 +102,7 @@ pub fn persist(key: ExplorerKey, previous: ExplorerRecord, mut troops: Troops) -
 pub fn release(key: ExplorerKey, explorer: ExplorerTroops) {
     let previous = crate::state::read().troops.explorers.read((key.game_id, key.explorer_id));
     if let StaminaSource::Slot(slot) = previous.troops.stamina {
-        let slot_key = key_for(key, previous.owner, explorer.coord, slot);
+        let slot_key = key_for(key, previous.owner, slot);
         let mut value = occupied(slot_key, key.explorer_id);
         if let StaminaSource::Inline(stamina) = explorer.troops.stamina {
             value.stamina = stamina;

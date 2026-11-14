@@ -1,3 +1,4 @@
+pub mod army_days;
 pub mod army_relics;
 pub mod army_slot_storage;
 pub mod army_slots;

@@ -137,7 +137,7 @@ const readTroopsAtHome = (
   rules: ExpeditionRules,
   clock: { now: number; defaultTick: number },
 ): DeployPlan["troops"] | undefined => {
-  const stocks = stocksAtNextDeploy(store, realm, rules, clock.now, clock.defaultTick);
+  const stocks = stocksAtNextDeploy(store, realm, clock.now, clock.defaultTick);
   if (!stocks) return undefined;
   for (const tier of TROOP_TIERS)
     for (const type of TROOP_TYPES) {

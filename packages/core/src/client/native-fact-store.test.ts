@@ -541,6 +541,7 @@ describe("declared fact absence", () => {
     } as unknown as NativeRows["ExplorerTroops"];
     expect(resolveExplorerTroops(new NativeFactStore(), army)).toBeUndefined();
     expect(resolveExplorerTroops(store, { ...army, owner: 8n })).toBeUndefined();
+    store.applyFacts([set("0x73", "ArmyDay", { game_id: 1, explorer_id: army.explorer_id, day: 0 })]);
     expect(() => resolveExplorerTroops(store, army)).toThrow("unused");
     const occupied = {
       ...slot,

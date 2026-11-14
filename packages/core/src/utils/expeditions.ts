@@ -139,21 +139,37 @@ export const isArmyCrossing = (
 export const expeditionDayEndsAt = (rules: ExpeditionRules, nowSeconds: number): number =>
   dayOf(rules, nowSeconds)?.end ?? (nowSeconds < rules.startMainAt ? rules.startMainAt : Infinity);
 
-/**
- * An army belongs to today's expedition only while it stands in today's region, as the contract's `is_current` decides;
- * an army from an earlier day may remain a fact, but every command refuses it.
- */
+/** Army lifetime follows its allocation day, independent of its position. */
 export const isCurrentExpeditionArmy = (
   rules: ExpeditionRules,
-  coord: { x: number; y: number; alt: boolean },
+  day: bigint | number | string,
   nowSeconds: number,
-): boolean =>
-  !coord.alt &&
-  nowSeconds >= rules.startMainAt &&
-  Math.floor(expeditionBand(rules, coord) / 4) === seasonDay(rules, nowSeconds);
+): boolean => {
+  const today = seasonDay(rules, nowSeconds);
+  return today !== null && BigInt(day) === BigInt(today);
+};
+
+export const isArmyCurrent = (
+  store: Pick<NativeFactStore, "get" | "require">,
+  gameId: number,
+  explorerId: bigint,
+  nowSeconds: number,
+): boolean => {
+  const rules = readExpeditionRules(store, gameId);
+  if (!rules) return true;
+  const army = store.require("ArmyDay", { game_id: gameId, explorer_id: explorerId });
+  return isCurrentExpeditionArmy(rules, army.day, nowSeconds);
+};
+
+/** Personal sites remain in the map region belonging to their discovery day. */
+export const isCurrentExpeditionRegion = (
+  rules: ExpeditionRules,
+  coord: { y: number; alt: boolean },
+  nowSeconds: number,
+): boolean => !coord.alt && isCurrentExpeditionArmy(rules, Math.floor(expeditionBand(rules, coord) / 4), nowSeconds);
 
 /**
- * A structure's living field armies: troops left and, in a game with expeditions, standing in today's region. An army
+ * A structure's living field armies: troops left and, in a game with expeditions, allocated today. An army
  * from an earlier day is dead by rule: every command refuses it, and the contract destroys it before checking the army
  * cap when the realm next musters. So it never counts toward that cap or shows as the realm's army, even while its row
  * is still a fact. Today is judged at the execution floor, the time the next command will run at, unless a caller that
@@ -170,7 +186,7 @@ export const liveHomeArmies = (
   if (!rules) return armies;
   const floor = floorSeconds ?? getBlockTimestamp().currentDefaultTick;
   return armies.filter((army) =>
-    isCurrentExpeditionArmy(rules, entityMapPosition(store, gameId, army.explorer_id), floor),
+    isArmyCurrent(store, gameId, army.explorer_id, floor),
   );
 };
 

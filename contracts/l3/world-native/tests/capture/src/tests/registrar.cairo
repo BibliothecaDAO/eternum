@@ -21,6 +21,11 @@ fn expedition_rollover_expires_armies_and_preserves_the_home_economy() {
     let old_id = *structures.home_armies(home).at(0);
     let troops = GameState { contract_address: d.games };
     let old = ExplorerKey { game_id, explorer_id: old_id };
+    let read_day = |id| snforge_std::interact_with_state(d.games, || {
+        use starknet::storage::StorageMapReadAccess;
+        crate::state::read().troops.army_days.read((game_id, id))
+    });
+    assert_eq!(read_day(old_id), Some(0));
     let yesterday = troops.resolved_explorer(old).unwrap().coord;
     assert!(execute_in_game(d, game_id, Command::Explore(Explore { explorer_id: old_id, direction: 0 }), 360));
     let after_explore = troops.resolved_explorer(old).unwrap().coord;
@@ -30,7 +35,9 @@ fn expedition_rollover_expires_armies_and_preserves_the_home_economy() {
     assert_eq!(troops.resolved_explorer(old).unwrap().coord, after_explore);
     assert!(execute_in_game(d, game_id, muster, tomorrow + 1));
     assert!(troops.resolved_explorer(old).is_none());
+    assert_eq!(read_day(old_id), None);
     let new_id = *structures.home_armies(home).at(0);
+    assert_eq!(read_day(new_id), Some(1));
     let today = troops.resolved_explorer(ExplorerKey { game_id, explorer_id: new_id }).unwrap().coord;
     super::state::assert_spatial_indexes(
         d.games,
@@ -86,8 +93,6 @@ fn expedition_regions_remain_disjoint_for_every_depth_through_a_season() {
                 assert_eq!(regions.get(region), 0);
                 regions.insert(region, 1);
                 assert_eq!(crate::expeditions::region_day(site, 1024), day);
-                assert!(crate::expeditions::is_current(site, 1024, day));
-                assert!(!crate::expeditions::is_current(site, 1024, day + 1));
             }
         }
     }

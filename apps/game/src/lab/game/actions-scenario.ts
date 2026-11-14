@@ -1,5 +1,6 @@
 import {
   entityHomeNamespace,
+  seasonDay,
   expeditionRealmSite,
   getTroopResourceId,
   readExpeditionRules,
@@ -142,6 +143,7 @@ const deployArmy: Answer = (command, chain, now) => {
   if (!raise) throw new Error(`The lab's realm ${structureId} holds an unknown balance its raise needs`);
   const stamina = staminaRules(chain)[`stamina_${category.toLowerCase()}_max` as "stamina_knight_max"];
   return [
+    { model: "ArmyDay", key: `0xad${explorerId}`, value: wire({ game_id: 1, explorer_id: explorerId, day: seasonDay(readExpeditionRules(chain, 1)!, now)! }) },
     {
       model: "ExplorerTroops",
       key: `0x1b0${explorerId}`,

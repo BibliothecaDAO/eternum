@@ -4,7 +4,7 @@ import { useNativeFacts } from "@/hooks/helpers/use-native-facts";
 import {
   configManager,
   getGuardsByStructure,
-  isCurrentExpeditionArmy,
+  isCurrentExpeditionRegion,
   liveHomeArmies,
   StaminaManager,
   structureMapPosition,
@@ -68,7 +68,7 @@ const guardedCampToday = (
     if (structure.base.category !== StructureType.Camp || structure.owner === realm.owner) continue;
     const position = structureMapPosition(store, structure);
     if (!position) continue;
-    if (isCurrentExpeditionArmy(rules, position, now) && isGuarded(structure, store)) return position;
+    if (isCurrentExpeditionRegion(rules, position, now) && isGuarded(structure, store)) return position;
   }
   return null;
 };

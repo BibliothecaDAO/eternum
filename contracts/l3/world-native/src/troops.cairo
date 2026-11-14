@@ -493,3 +493,14 @@ pub struct ResolvedArmySlot {
 pub trait IArmySlotStamina<T> {
     fn army_slot_stamina(ref self: T, key: ExplorerKey, action: ArmySlotAction) -> ResolvedArmySlot;
 }
+
+#[starknet::interface]
+pub trait IArmyAllocation<T> {
+    fn allocate_army(
+        ref self: T,
+        game_id: u32,
+        actor: starknet::ContractAddress,
+        command: crate::commands::CreateExplorer,
+        context: crate::commands::ActionContext,
+    ) -> u64;
+}

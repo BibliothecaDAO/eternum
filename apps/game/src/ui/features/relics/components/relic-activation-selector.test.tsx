@@ -57,6 +57,7 @@ function game(
     }),
     set("0x3", "GameRegistry", { ...store.require("GameRegistry", { game_id: 1 }), preset_id: presetId }),
     set("0xa1", "RelicRules", { game_id: 1, rules: preset.relics }),
+    set("0xad2", "ArmyDay", { game_id: 1, explorer_id: ARMY_ID, day: 0 }),
     set("0xa2", "ExplorerTroops", {
       ...explorerFixture.expected.value,
       game_id: 1,

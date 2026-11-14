@@ -7,6 +7,8 @@ import { deriveGameSyncScope, scopeInputKeys, type ScopeRowReader } from "./subs
 // Day 0 runs from 300 for at least three 60 s units, so t=350 is on it.
 const expedition = { dayUnitSeconds: 60, spacing: 1024, startMainAt: 300, endAt: 300 + 21 * 20 * 60, seed: 1n };
 const rows = [
+  { model: "ArmyDay", value: { explorer_id: "101", day: "0" } },
+  { model: "ArmyDay", value: { explorer_id: "102", day: "0" } },
   { model: "PlayerEntry", value: { owner: "11", player: "3003" } },
   { model: "Structure", value: { entity_id: "1", owner: "10", base: { category: 1 }, metadata: { realm_id: 1 } } },
   { model: "Structure", value: { entity_id: "2", owner: "11", base: { category: 1 }, metadata: { realm_id: 2 } } },

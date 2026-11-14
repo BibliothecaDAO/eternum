@@ -332,7 +332,7 @@ describe("home ring", () => {
       });
       const army = (stamina: bigint) => rowEvent("ExplorerTroops", ["1", "20"], explorerValue("1", 1000n, stamina, 1n));
       const balance = (amount: bigint) => rowEvent("ResourceBalance", ["1", "1", "23"], { balance: amount });
-      const muster = receipt([army(30n), occupancy(51), balance(10n)], "0x71");
+      const muster = receipt([rowEvent("ArmyDay", ["1", "20"], { day: TODAY.index }), army(30n), occupancy(51), balance(10n)], "0x71");
       if (!musterDuringStream) native.applyReceipt(fold, muster, 10, 0);
       const messages = connect(live, "0xa");
       const store = new NativeFactStore();
@@ -691,6 +691,7 @@ describe("client and Herald subscription scope parity", () => {
             explorer_id: 20,
             stamina: { amount: 30, settled_at: 1, remainder: 0 },
           }),
+          rowEvent("ArmyDay", ["1", "20"], { day: TODAY.index }),
           rowEvent("ExplorerTroops", ["1", "20"], {
             ...army,
             troops: { ...troops, stamina: new CairoCustomEnum({ Slot: 0 }) },
@@ -724,7 +725,7 @@ describe("client and Herald subscription scope parity", () => {
       expect(rowInGameSyncScope(row.model, row.value, afterScope)).toBe(true);
     }
     // The muster's own rows go out; the home rows the client already holds are not sent again.
-    for (const model of ["ArmySlot", "ExplorerTroops", "TileOccupancy"] as const)
+    for (const model of ["ArmyDay", "ArmySlot", "ExplorerTroops", "TileOccupancy"] as const)
       expect(rebase[0].set.some((row) => row.model === model)).toBe(true);
     for (const model of ["Structure", "ResourceWeight", "ResourceBalance", "StructureBuildings", "Building"] as const)
       expect(rebase[0].set.some((row) => row.model === model)).toBe(false);
@@ -768,6 +769,7 @@ describe("client and Herald subscription scope parity", () => {
           explorer_id: 20,
           stamina: { amount: 30, settled_at: 1, remainder: 0 },
         }),
+        rowEvent("ArmyDay", ["1", "20"], { day: TODAY.index }),
         rowEvent("ExplorerTroops", ["1", "20"], {
           ...army,
           troops: { ...(army.troops as Record<string, unknown>), stamina: new CairoCustomEnum({ Slot: 0 }) },
@@ -820,6 +822,7 @@ describe("client and Herald subscription scope parity", () => {
           explorer_id: 20,
           stamina: { amount: 30, settled_at: 1, remainder: 0 },
         }),
+        rowEvent("ArmyDay", ["1", "20"], { day: TODAY.index }),
         rowEvent("ExplorerTroops", ["1", "20"], {
           ...army,
           troops: { ...(army.troops as Record<string, unknown>), stamina: new CairoCustomEnum({ Slot: 0 }) },
@@ -971,6 +974,7 @@ describe("visited realm subscription", () => {
           paused: false,
           labor_paid: 200000000000n,
         }),
+        rowEvent("ArmyDay", ["1", "20"], { day: TODAY.index }),
         rowEvent("ExplorerTroops", ["1", "20"], explorerValue("2", 1000n, 30n, 1n)),
         rowEvent("TileOccupancy", ["1", "0", "150", "150"], { entity_id: 20, category: 15, is_structure: false }),
         rowEvent("TileOpt", ["1", "0", "150", "150"], { data: 5n << 41n }),

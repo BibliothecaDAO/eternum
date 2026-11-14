@@ -32,6 +32,7 @@ export const mergeScenario = (progressed: Progressed) => (): LabScenario => {
   const first = store.require("ExplorerTroops", { game_id: 1, explorer_id: BigInt(SPIRE_ARMY) });
   store.applyFacts([
     raisedArmyLimit(store),
+    { model: "ArmyDay", key: "0xad302", value: wire({ ...store.require("ArmyDay", { game_id: 1, explorer_id: BigInt(SPIRE_ARMY) }), explorer_id: MERGE_ARMY }) },
     {
       model: "ExplorerTroops",
       key: "0x1ab90",
