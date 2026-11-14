@@ -1,5 +1,5 @@
 import { checkDepositRetirement } from "./deposit-retirement";
-import { relayDeposits, depositHistory, type DepositMutation } from "./deposits";
+import { relayDeposits, depositHistory, clearDepositFault, type DepositMutation } from "./deposits";
 import { mutateDeposit } from "./deposit-ledger";
 import { cosignerClient } from "./cosigner-client";
 import type { HeldRealm } from "@realms-world/identity";
@@ -369,6 +369,11 @@ export class ValueRelay extends DurableObject<RelayEnv> {
       sign: cosignerClient(this.env.COSIGNER_URL, this.env.COSIGNER_TOKEN).deposit,
       mutate: (request: DepositMutation) => ledgerOf(this.env).depositMutation(request),
     };
+  }
+  /** The operator dealt with a deposit the shard credited and the ledger lost: its fault goes, no other work is touched. */
+  async clearDepositFault(chainId: string, commitment: string, reason: string) {
+    const fault = await clearDepositFault(this.ctx.storage, chainId, commitment, reason);
+    return { id: fault.id, commitment: fault.commitment, row: fault.row };
   }
   async deposits(chainId: string, realmsId: string, before?: string) {
     return depositHistory(await this.depositPorts(chainId, false), realmsId, before);
@@ -886,6 +891,34 @@ export default {
         });
       } catch {
         return Response.json({ error: "deposit_retirement_not_ready" }, { status: 409 });
+      }
+    }
+    if (new URL(request.url).pathname === "/api/value/operator/deposit-fault" && request.method === "POST") {
+      if (!(await presentsOperatorToken(request, env.OPERATOR_TOKEN)))
+        return Response.json({ error: "unauthorized" }, { status: 401 });
+      const body = (await request.json().catch(() => null)) as {
+        chainId?: unknown;
+        commitment?: unknown;
+        reason?: unknown;
+      } | null;
+      if (
+        !body ||
+        typeof body.chainId !== "string" ||
+        !/^0x[0-9a-f]+$/i.test(body.chainId) ||
+        typeof body.commitment !== "string" ||
+        !/^0x[0-9a-f]+$/i.test(body.commitment) ||
+        typeof body.reason !== "string" ||
+        !body.reason.trim() ||
+        body.reason.length > 500 ||
+        Object.keys(body).sort().join() !== "chainId,commitment,reason"
+      )
+        return Response.json({ error: "deposit_fault_commitment_and_reason_required" }, { status: 400 });
+      try {
+        return Response.json(
+          await relayOf(env, body.chainId).clearDepositFault(body.chainId, body.commitment, body.reason),
+        );
+      } catch {
+        return Response.json({ error: "deposit_fault_unknown" }, { status: 409 });
       }
     }
     if (new URL(request.url).pathname === "/api/value/operator/reset" && request.method === "POST") {

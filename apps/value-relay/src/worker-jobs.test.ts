@@ -348,24 +348,37 @@ it("completes an operator's request for held claims after the worker dies after 
     },
   );
 });
-it("keeps an operator's request while a deposit or the funding failed in the same pass, and completes it once they are healthy", async () => {
-  vi.useFakeTimers({ toFake: ["Date"] });
-  vi.setSystemTime(new Date("2026-11-14T12:00:30Z"));
-  runRelayOutcome.next = () => Effect.succeed({ status: "ready", more: false, deferred: [], reconciled: true });
-  deposits.mockResolvedValue(settledDeposits);
-  const data = new Map<string, unknown>();
-  const relay = shardRelay(data);
-  await relay.tick("0x1");
-  await relay.requestReconcile();
-  deposits.mockResolvedValue({ ...settledDeposits, error: [{ obligation: "deposit:1:2", error: "node unavailable" }] });
-  await relay.tick("0x1");
-  // The withdrawal reconciliation succeeded, but the deposit recovery in the same pass did not: the request stays.
-  expect(data.get("reconcile:due")).toMatchObject({ at: Math.floor(Date.now() / 1000) + 60 });
-  deposits.mockResolvedValue(settledDeposits);
-  vi.setSystemTime(new Date(Date.now() + 60_000));
-  await relay.tick("0x1");
-  expect(data.get("reconcile:due")).toBeUndefined();
-});
+it.each([
+  [
+    "a deposit",
+    () =>
+      deposits.mockResolvedValueOnce({
+        ...settledDeposits,
+        error: [{ obligation: "deposit:1:2", error: "node unavailable" }],
+      }),
+  ],
+  ["the funding and principal returns", () => sweep.mockRejectedValueOnce(new Error("funding unavailable"))],
+])(
+  "keeps an operator's request while %s failed in the same pass, and completes it once they are healthy",
+  async (_, fail) => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date("2026-11-14T12:00:30Z"));
+    runRelayOutcome.next = () => Effect.succeed({ status: "ready", more: false, deferred: [], reconciled: true });
+    deposits.mockResolvedValue(settledDeposits);
+    const data = new Map<string, unknown>();
+    const relay = shardRelay(data);
+    await relay.tick("0x1");
+    await relay.requestReconcile();
+    fail();
+    await relay.tick("0x1");
+    // The withdrawal reconciliation succeeded, but another kind of work in the same pass did not: the request stays.
+    expect(data.get("reconcile:due")).toMatchObject({ at: Math.floor(Date.now() / 1000) + 60 });
+    vi.setSystemTime(new Date(Date.now() + 60_000));
+    await relay.tick("0x1");
+    expect(data.get("reconcile:due")).toBeUndefined();
+  },
+);
+
 it("asks again after an hourly reconciliation whose recovery read failed", async () => {
   vi.useFakeTimers({ toFake: ["Date"] });
   vi.setSystemTime(new Date("2026-11-14T12:00:30Z"));
@@ -382,6 +395,37 @@ it("asks again after an hourly reconciliation whose recovery read failed", async
   await relay.tick("0x1");
   await relay.tick("0x1");
   expect(runRelayCalls.mock.calls.map((call) => call[3])).toEqual([true, false, true, false]);
+});
+it("answers an operator's request to clear a deposit fault, and refuses without the token or a reason", async () => {
+  const clearDepositFault = vi.fn(async () => ({ id: "2", commitment: "0xaa", row: {} }));
+  const env = {
+    ENVIRONMENT: "staging",
+    BASE_URL: "https://app.test",
+    L2_RPC_URL: "https://ledger.test",
+    OPERATOR_TOKEN: "operator-token",
+    SHARD_LEDGER_OPERATOR_PRIVATE_KEY: "0x1",
+    COSIGNER_URL: "https://cosigner.test",
+    COSIGNER_TOKEN: "test-cosigner-token",
+    LEDGER_OPERATOR_ADDRESS: "0x2",
+    LEDGER_OPERATOR_PRIVATE_KEY: "0x3",
+    RELAY: { idFromName: (id: string) => id, get: () => ({ clearDepositFault }) },
+    IDENTITY: {},
+  } as never;
+  const ask = (body: unknown, token = "operator-token") =>
+    worker.fetch(
+      new Request("https://app.test/api/value/operator/deposit-fault", {
+        method: "POST",
+        headers: { authorization: `Bearer ${token}` },
+        body: JSON.stringify(body),
+      }),
+      env,
+    );
+  const good = { chainId: "0x1", commitment: "0xaa", reason: "credit reversed on the shard" };
+  expect((await ask(good, "wrong")).status).toBe(401);
+  expect((await ask({ ...good, reason: " " })).status).toBe(400);
+  expect((await ask({ ...good, extra: 1 })).status).toBe(400);
+  expect((await ask(good)).status).toBe(200);
+  expect(clearDepositFault).toHaveBeenCalledExactlyOnceWith("0x1", "0xaa", "credit reversed on the shard");
 });
 it("looks for deposits on the hour, and between hours only while one is pending", async () => {
   deposits.mockResolvedValue(settledDeposits);

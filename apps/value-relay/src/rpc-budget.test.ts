@@ -43,12 +43,77 @@ vi.mock("./chain", async (original) => ({
   ...(await original<typeof import("./chain")>()),
   ledgerPauserAdapter: () => vi.fn(),
 }));
-const shard = vi.hoisted(() => ({ games: vi.fn(), snapshot: vi.fn() }));
-vi.mock("@realms-world/value-ledger/shard", () => ({
-  ShardOperator: class {
-    admin = vi.fn();
-    provider = { callContract: async () => ["1"] };
+const shard = vi.hoisted(() => ({
+  games: vi.fn(),
+  snapshot: vi.fn(),
+  /** What the shard holds for each (game, id) it credited: the commitment it was told. */
+  receipts: new Map<string, { commitment: string; account: string }>(),
+}));
+vi.mock("@realms-world/value-ledger/shard", async () => {
+  const { depositCommitment } = await import("@realms-world/value-ledger/deposits");
+  return {
+    ShardOperator: class {
+      provider = {
+        callContract: async ({ calldata }: { calldata: string[] }) => {
+          const held = shard.receipts.get(`${BigInt(calldata[0]!)}:${BigInt(calldata[1]!)}`);
+          return held ? ["0", held.commitment, held.account, "40", "0"] : ["1"];
+        },
+      };
+      admin = async (
+        _method: string,
+        args: {
+          game_id: number;
+          deposit: {
+            id: string;
+            account: string;
+            realms_id: string;
+            home: string;
+            payer: string;
+            amount: string;
+            paid_at: string;
+          };
+        },
+      ) => {
+        const deposit = args.deposit;
+        shard.receipts.set(`${args.game_id}:${BigInt(deposit.id)}`, {
+          account: deposit.account,
+          commitment: depositCommitment(
+            { chainId: "0x1", ledger: "0x10" },
+            {
+              shard: "0x2",
+              id: deposit.id,
+              gameId: args.game_id,
+              games: "0x20",
+              account: deposit.account,
+              realmsId: deposit.realms_id,
+              home: deposit.home,
+              payer: deposit.payer,
+              amount: deposit.amount,
+              paidAt: deposit.paid_at,
+              status: "pending",
+            },
+          ),
+        });
+        return { transactionHash: "0x1", events: [] };
+      };
+    },
+  };
+});
+vi.mock("starknet", async (original) => ({
+  ...(await original<typeof import("starknet")>()),
+  Account: class {
+    execute = async ({ entrypoint, calldata }: { entrypoint: string; calldata: string[] }) => {
+      if (entrypoint !== "resolve_deposit") throw new Error(`unexpected write ${entrypoint}`);
+      chain.writes++;
+      chain.resolved.add(Number(BigInt(calldata[1]!)));
+      return { transaction_hash: "0x11" };
+    };
   },
+}));
+vi.mock("./deposit-destination", async (original) => ({
+  ...(await original<typeof import("./deposit-destination")>()),
+  readDepositEvidence: async () => ({ remember: async () => {} }),
+  depositDestinationError: async () => null,
 }));
 vi.mock("./shard-rpc", async (original) => ({
   ...(await original<typeof import("./shard-rpc")>()),
@@ -90,6 +155,11 @@ const chain = vi.hoisted(() => ({
   deposits: 0,
   /** Whether the accepted block already holds the deposits' resolution. */
   depositsFinal: true,
+  /** Deposits that are pending on the ledger until a resolution is sent, and the ones resolved since. */
+  unresolved: new Set<number>(),
+  resolved: new Set<number>(),
+  /** Resolutions sent (a modeled cost, not a count at the transport). */
+  writes: 0,
 }));
 const count = (name: string) => chain.calls.set(name, (chain.calls.get(name) ?? 0) + 1);
 const frontier = (closed: boolean) =>
@@ -156,6 +226,7 @@ vi.mock("@realms-world/value-ledger", async (original) => {
   };
   const ledger = {
     getChainId: async () => (count("getChainId"), "0x1"),
+    waitForTransaction: async () => ({ isReverted: () => false }),
     getBlock: async (id: number | string) => (count("getBlock"), block(id)),
     getClassHashAt: async (_address: string, number: number | string) => {
       count("getClassHashAt");
@@ -175,7 +246,14 @@ vi.mock("@realms-world/value-ledger", async (original) => {
       if (entrypoint === "deposit_target") return ["0x20"];
       if (entrypoint === "deposit_count") return [String(chain.deposits)];
       if (entrypoint === "get_deposit")
-        return depositFields(Number(calldata[1]), typeof at === "number" && !chain.depositsFinal ? "0" : "1");
+        return depositFields(
+          Number(calldata[1]),
+          chain.unresolved.has(Number(calldata[1])) && !chain.resolved.has(Number(calldata[1]))
+            ? "0"
+            : typeof at === "number" && !chain.depositsFinal
+              ? "0"
+              : "1",
+        );
       if (entrypoint === "principal_payment") return ["1"];
       if (entrypoint === "deposit_principal")
         return [String(received % 2n ** 128n), String(received >> 128n), "0", "0", "0", "0"];
@@ -300,6 +378,10 @@ beforeEach(() => {
   chain.targets = 0;
   chain.deposits = 0;
   chain.depositsFinal = true;
+  chain.unresolved = new Set();
+  chain.resolved = new Set();
+  chain.writes = 0;
+  shard.receipts = new Map();
 });
 
 // ---- the hourly audit ----------------------------------------------------------------------------------------------
@@ -577,6 +659,10 @@ it("states the reads of one payment: its status read, the void check and its pro
 
 // ---- the month -----------------------------------------------------------------------------------------------------
 
+/** Hourly passes strictly after an action at `action` minutes, up to the first at or after acceptance `delay` minutes later. */
+const proofPassesFor = (action: number, delay: number) => Math.ceil((action + delay) / 60) - Math.floor(action / 60);
+const averageProofPasses = (delay: number) =>
+  Array.from({ length: 60 }, (_, minute) => proofPassesFor(minute, delay)).reduce((all, count) => all + count, 0) / 60;
 interface Inputs {
   announcedWritesPerDay: number;
   endedGamesWaiting: number;
@@ -604,13 +690,12 @@ const month = (inputs: Inputs) => {
     (inputs.targets * CUSTODY.perTarget + CUSTODY.perShard + inputs.depositors * CUSTODY.perUnpaidPrincipal);
   const ticks = (hourly + writes) * LEDGER_TICK.steady;
   const waiting = inputs.endedGamesWaiting * inputs.hoursToAcceptance * 60 * WAITING_MINUTE;
-  // An obligation is proven by the hourly passes until Ethereum accepts its block: one pass per started hour. The count is
-  // exact when the first proof pass follows the action by less than an hour and the delay is whole hours; otherwise one
-  // more pass (the rounding bound), which `proofPasses` takes as the ceiling plus none.
-  const proofPasses = Math.ceil(inputs.hoursToAcceptance);
+  // An obligation is proven by the hourly passes after its action until the first at or after Ethereum's acceptance. That
+  // count depends on where in the hour the action falls, so it is averaged over every minute of the hour.
+  const proofPasses = averageProofPasses(inputs.hoursToAcceptance * 60);
   const deposits =
     inputs.depositPassesPerDay * days * DEPOSIT.quiet +
-    inputs.newDepositsPerDay * days * (DEPOSIT.discoveryEach + proofPasses * DEPOSIT.proofSingle);
+    inputs.newDepositsPerDay * days * (DELIVERY.success + WRITE + proofPasses * DEPOSIT.proofSingle);
   const payments = inputs.payoutsPerDay * days * (PAYMENT.read * 3 + PAYMENT.proofUntilFinal * proofPasses + 800);
   const ratings = inputs.ratingsRefreshesPerDay * days * (inputs.ratingsPlayers + 6) * 20;
   return {
@@ -657,13 +742,86 @@ it("derives the month for production and dev on one key from the counts above", 
   });
   expect(production.audits).toBe((720 + 600) * AUDIT.steady);
   expect(production.total + dev.total).toBeLessThan(30_000_000);
-  expect([production.total, dev.total]).toEqual([13_442_700, 4_491_900]);
-  expect(production.total + dev.total).toBe(17_934_600);
+  expect([production.total, dev.total]).toEqual([13_546_000, 4_542_100]);
+  expect(production.total + dev.total).toBe(18_088_100);
+  // The proof count follows the action's place in the hour and the acceptance time: on the boundary six passes, ten minutes
+  // past it seven, and the same for twelve hours.
+  expect([0, 10, 59].map((minute) => proofPassesFor(minute, 360))).toEqual([6, 7, 7]);
+  expect([0, 10, 59].map((minute) => proofPassesFor(minute, 720))).toEqual([12, 13, 13]);
   // The finality assumption drives the proof reads: twice the acceptance delay costs six more hours of proof passes for
   // every new deposit and payment, and six more hours of waiting for each unclosed game.
   const slower = month({ ...productionInputs, hoursToAcceptance: 12 });
   expect(slower.total - production.total).toBe(
     43_200 + 5 * 30 * 6 * DEPOSIT.proofSingle + 40 * 30 * 6 * PAYMENT.proofUntilFinal,
   );
-  expect(slower.total).toBe(13_989_900);
+  expect(slower.total).toBe(14_093_200);
+});
+
+// ---- the public delivery action: a real POST, its resolution, a retry, a recovery and a restart -------------------------
+
+/** The modeled price of a ledger write: fee estimate, nonce, the transaction and one receipt poll (`rpc-cost-3.md`). */
+const WRITE = 20 + 20 + 160 + 20;
+const DELIVERY = { failure: 0, success: 0, again: 0, recovery: 0, restart: 0 };
+it("counts a deposit delivered through the public route: success, a repeat, a failure and its retry, a recovery, a restart", async () => {
+  let cosigner = false;
+  vi.stubGlobal(
+    "fetch",
+    vi.fn(async () => (cosigner ? Response.json({ r: "0x1", s: "0x2" }) : new Response(null, { status: 503 }))),
+  );
+  chain.deposits = 1;
+  chain.unresolved = new Set([1]);
+  chain.depositsFinal = false;
+  const data = new Map<string, unknown>();
+  const instance = relay(data);
+  const namespace = (actor: () => ValueRelay) => ({ idFromName: (id: string) => id, get: () => actor() });
+  // The relay is its own ledger actor here: the route and the delivery's mutation reach the same worker, as they do in one DO.
+  Object.assign((instance as unknown as { env: object }).env, { RELAY: namespace(() => instance) });
+  const env = { ...relayEnv, RELAY: namespace(() => instance) };
+  const post = () =>
+    worker.fetch(
+      new Request("https://play.test/api/value/deposits/deliver?chainId=0x2", {
+        method: "POST",
+        headers: { origin: "https://play.test", cookie: "s=1" },
+      }),
+      env as never,
+    );
+  // The co-signer is down: the pass fails after reading, sends nothing, and the report stays for the retry.
+  const failure = await reads(async () => {
+    const response = await post();
+    expect(((await response.json()) as { error: unknown[] }).error).toHaveLength(1);
+  });
+  expect(chain.writes).toBe(0);
+  DELIVERY.failure = failure.cu;
+  cosigner = true;
+  const success = await reads(async () => {
+    const response = await post();
+    expect(response.status).toBe(200);
+  });
+  expect(chain.writes).toBe(1);
+  expect([...chain.resolved]).toEqual([1]);
+  DELIVERY.success = success.cu;
+  // The report is shared and the work is settled for now: a repeat reads what a quiet pass reads, nothing delivered again.
+  const again = await reads(async () => expect((await post()).status).toBe(200));
+  expect(chain.writes).toBe(1);
+  DELIVERY.again = again.cu;
+  // The ledger replaces the block that held the resolution; the hourly proof pass redoes it and costs a write again.
+  chain.resolved = new Set();
+  const recovery = await reads(async () => {
+    await relayDeposits({ ...depositPorts(data, true), mutate: (request) => instance.depositMutation(request) });
+  });
+  expect(chain.writes).toBe(2);
+  DELIVERY.recovery = recovery.cu;
+  // A restart is a new worker over the same storage: the same pass reads the same.
+  const restarted = relay(data);
+  Object.assign((restarted as unknown as { env: object }).env, { RELAY: namespace(() => restarted) });
+  chain.resolved = new Set();
+  const restart = await reads(async () => {
+    await relayDeposits({ ...depositPorts(data, true), mutate: (request) => restarted.depositMutation(request) });
+  });
+  expect(restart.counts).toEqual(recovery.counts);
+  expect(chain.writes).toBe(3);
+  DELIVERY.restart = restart.cu;
+  // Reads only; each resolution is one modeled write (WRITE), counted separately as `chain.writes`.
+  expect(DELIVERY).toEqual({ failure: 160, success: 460, again: 180, recovery: 520, restart: 520 });
+  vi.unstubAllGlobals();
 });

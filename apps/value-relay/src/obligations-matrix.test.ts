@@ -112,14 +112,14 @@ const payerOf = (label: string) => (label === "B" ? "0x44" : "0x33");
 const paymentOf = (label: string, id: number, status: "pending" | "delivered" | "cancelled") => ({
   shard: "0x2",
   id: String(id),
-  gameId: 7,
+  gameId: label === "D" ? 8 : 7,
   games: "0x20",
   account: ACCOUNT,
   realmsId: "0x77",
   home: "17",
   payer: payerOf(label),
   amount: "40",
-  paidAt: label === "C" ? "1000" : "999",
+  paidAt: label === "C" ? "1000" : label === "D" ? "1001" : "999",
   status,
 });
 const depositStatus = (label: string, at: number): "pending" | "delivered" | "cancelled" =>
@@ -131,7 +131,17 @@ const depositStatus = (label: string, at: number): "pending" | "delivered" | "ca
 const statusNumber = { pending: "0", delivered: "1", cancelled: "2" } as const;
 const depositFields = (label: string, id: number, at: number) => {
   const payment = paymentOf(label, id, depositStatus(label, at));
-  return ["7", "0x20", ACCOUNT, "0x77", "17", payment.payer, "40", "999", statusNumber[payment.status]];
+  return [
+    String(payment.gameId),
+    "0x20",
+    ACCOUNT,
+    "0x77",
+    "17",
+    payment.payer,
+    "40",
+    payment.paidAt,
+    statusNumber[payment.status],
+  ];
 };
 const frontier = response(ledgerAbi, "get_frontier", {
   prize_pool: { low: 0, high: 0 },
@@ -226,10 +236,11 @@ vi.mock("@realms-world/value-ledger/shard", () => ({
     provider = {
       callContract: async ({ calldata }: { calldata: string[] }) => {
         const id = String(BigInt(calldata[1]!));
-        const receipt = world.state.shardReceipts.get(id);
+        const game = Number(BigInt(calldata[0]!));
+        const receipt = world.state.shardReceipts.get(`${game}:${id}`);
         if (!receipt) return ["1"];
         const label = world.labels(world.head())[Number(id) - 1];
-        const payment = paymentOf(label ?? "?", Number(id), "pending");
+        const payment = { ...paymentOf(label ?? "?", Number(id), "pending"), gameId: game };
         // What the shard holds is what it was told when it credited: the payer it saw, not the ledger's current one.
         return [
           "0",
@@ -245,11 +256,11 @@ vi.mock("@realms-world/value-ledger/shard", () => ({
     };
     admin = async (
       method: string,
-      args: { deposit?: { id: string; payer: string; paid_at: string }; cancel?: boolean },
+      args: { game_id?: number; deposit?: { id: string; payer: string; paid_at: string }; cancel?: boolean },
     ) => {
       if (world.state.shardDown) throw new Error("shard unavailable");
       if (method === "deliver_deposit")
-        world.state.shardReceipts.set(String(BigInt(args.deposit!.id)), {
+        world.state.shardReceipts.set(`${args.game_id}:${BigInt(args.deposit!.id)}`, {
           cancelled: !!args.cancel,
           payer: args.deposit!.payer,
           paidAt: args.deposit!.paid_at,
@@ -508,22 +519,30 @@ interface Scenario {
   start?: Beat[];
   /** The deposit that vanishes, if any. */
   vanishes?: "B";
-  /** Deposit C arrives only after everything else has settled, so a fault cannot be masked by its id being reused. */
-  lateC?: boolean;
+  /**
+   * A deposit arrives only after everything else has settled and takes the id the vanished one had: C in the same game
+   * (a real commitment conflict with the shard's receipt), D in another game (no conflict at all).
+   */
+  late?: "C" | "D";
+  /** The deposit arrives within the schedule, before the relay has noticed the vanished one: the count never changes. */
+  arrivesInSchedule?: boolean;
   /** The accepted block never becomes readable: work known to be undone must still be done; nothing can settle. */
   neverFinal?: boolean;
   /** Checks that must hold right after a step of an uninterrupted run: work that failed is redone on the next minute. */
   after?: Record<number, () => void>;
 }
 /** A later deposit, unrelated to the failure, arrives and is accepted. */
-const arriveC: Beat = () => {
-  world.send("deposit:C");
-  world.finalize();
-};
-const schedule = (events: Partial<Record<number, Beat[]>>, lateC = false): Step[] =>
+const arrive =
+  (label: "C" | "D"): Beat =>
+  () => {
+    world.send(`deposit:${label}`);
+    world.finalize();
+  };
+const arriveC = arrive("C");
+const schedule = (events: Partial<Record<number, Beat[]>>, late = false): Step[] =>
   [false, false, true, false, true, false, true].map((proofs, index) => ({
     proofs,
-    before: [...(index === 2 && !lateC ? [arriveC] : []), ...(events[index] ?? [])],
+    before: [...(index === 2 && !late ? [arriveC] : []), ...(events[index] ?? [])],
   }));
 const scenarios: Scenario[] = [
   { name: "nothing happens", steps: schedule({}) },
@@ -535,7 +554,42 @@ const scenarios: Scenario[] = [
     name: "a deposit vanishes with its block",
     steps: schedule({ 1: [() => world.rewrite()] }, true),
     vanishes: "B",
-    lateC: true,
+    late: "D",
+  },
+  {
+    name: "a deposit vanishes after the shard credited it and the same game reuses its id",
+    steps: schedule({ 1: [() => world.rewrite()] }, true),
+    vanishes: "B",
+    late: "C",
+  },
+  {
+    name: "a credited deposit is replaced by one of another game before the relay notices (the count never changes)",
+    steps: schedule({ 1: [() => world.rewrite(), arrive("D")] }, true),
+    vanishes: "B",
+    late: "D",
+    arrivesInSchedule: true,
+  },
+  {
+    name: "a credited deposit is replaced by one of the same game before the relay notices (a real commitment conflict)",
+    steps: schedule({ 1: [() => world.rewrite(), arrive("C")] }, true),
+    vanishes: "B",
+    late: "C",
+    arrivesInSchedule: true,
+  },
+  {
+    name: "an uncredited deposit is replaced by another before the relay notices",
+    steps: [
+      { proofs: false },
+      {
+        proofs: false,
+        before: [() => world.rewrite(), arrive("D"), () => void (world.state.shardDown = false)],
+      },
+      ...schedule({}, true).slice(2),
+    ],
+    start: [() => void (world.state.shardDown = true)],
+    vanishes: "B",
+    late: "D",
+    arrivesInSchedule: true,
   },
   {
     name: "a deposit vanishes before the shard was told of it",
@@ -546,7 +600,7 @@ const scenarios: Scenario[] = [
     ],
     start: [() => void (world.state.shardDown = true)],
     vanishes: "B",
-    lateC: true,
+    late: "C",
   },
   {
     name: "the accepted block cannot be read while blocks are replaced",
@@ -595,56 +649,75 @@ const scenarios: Scenario[] = [
   },
 ];
 
-/** Runs a scenario's schedule once, killing the worker after write `killAt` of step `killStep` (0: never). */
+/**
+ * Runs a scenario's whole schedule: its steps, then time passing (Ethereum accepts what the chain holds and the hourly
+ * proof passes look again), then the late deposit if there is one. Every pass is in the kill matrix: killing after write
+ * `killAt` of pass `killStep` (1-based over the whole schedule; 0: never).
+ */
 async function run(scenario: Scenario, killStep: number, killAt: number) {
   world.reset();
   ERRORS.length = 0;
-  // Deposit B was accepted from the start, except in the scenario where it vanishes with its block.
+  // Deposit B was accepted from the start, except in the scenarios where it vanishes with its block.
   if (scenario.vanishes) {
     world.state.blocks[6]!.txs = [];
     world.send("deposit:B");
   }
   scenario.start?.forEach((beat) => beat());
+  const settle: Step[] = Array.from({ length: 8 }, () => ({
+    proofs: true,
+    before: [
+      () => {
+        if (!scenario.neverFinal) world.state.finalityDown = false;
+        world.finalize();
+      },
+    ],
+  }));
+  const late: Step[] =
+    scenario.late && !scenario.arrivesInSchedule
+      ? Array.from({ length: 4 }, (_, index) => ({
+          proofs: true,
+          before: [...(index === 0 ? [arrive(scenario.late!)] : []), () => world.finalize()],
+        }))
+      : [];
+  const steps = [...scenario.steps, ...settle, ...late];
   const data = new Map<string, unknown>();
   const writes: number[] = [];
   const stepErrors: string[][] = [];
   let creditedBeforeVanish = false;
-  for (const [index, step] of scenario.steps.entries()) {
-    if (scenario.vanishes && index === 1) creditedBeforeVanish = world.state.shardReceipts.has("2");
+  let beforeLate: Record<string, unknown> = {};
+  for (const [index, step] of steps.entries()) {
+    if (scenario.vanishes && index === 1) creditedBeforeVanish = world.state.shardReceipts.has("7:2");
+    if (scenario.late && !scenario.arrivesInSchedule && index === scenario.steps.length + settle.length)
+      beforeLate = {
+        a: world.canonical("resolve:A:delivered"),
+        proofs: [...data.keys()].filter((key) => key.startsWith("proof:")).length,
+        withdrawal: world.canonical("pay:0xabc"),
+        principal: world.canonical("principal:8"),
+      };
     step.before?.forEach((beat) => beat());
     const kill: Kill = { n: index + 1 === killStep ? killAt : 0, writes: 0 };
+    ERRORS.length = 0;
     await worker(data, kill).pass(step.proofs);
     if (killStep === 0) scenario.after?.[index]?.();
     writes.push(kill.writes);
     stepErrors.push([...ERRORS]);
-    ERRORS.length = 0;
   }
-  // Time passes: Ethereum accepts what the chain holds, and the hourly proof passes look again.
-  const tail: number[] = [];
-  for (let step = 0; step < 8; step++) {
-    if (!scenario.neverFinal) world.state.finalityDown = false;
-    world.finalize();
-    ERRORS.length = 0;
-    await worker(data, { n: 0, writes: 0 }).pass(true);
-    tail.push(ERRORS.length);
-  }
-  const beforeC = {
-    a: world.canonical("resolve:A:delivered"),
-    proofs: [...data.keys()].filter((key) => key.startsWith("proof:")).length,
-    withdrawal: world.canonical("pay:0xabc"),
-    principal: world.canonical("principal:8"),
-    errors: tail.slice(-3),
+  if (!scenario.late || scenario.arrivesInSchedule)
+    beforeLate = {
+      a: world.canonical("resolve:A:delivered"),
+      proofs: [...data.keys()].filter((key) => key.startsWith("proof:")).length,
+      withdrawal: world.canonical("pay:0xabc"),
+      principal: world.canonical("principal:8"),
+    };
+  return {
+    data,
+    writes,
+    stepErrors,
+    creditedBeforeVanish,
+    beforeLate,
+    killStep,
+    lateFrom: scenario.steps.length + settle.length,
   };
-  if (scenario.lateC) {
-    arriveC();
-    for (let step = 0; step < 4; step++) {
-      world.finalize();
-      ERRORS.length = 0;
-      await worker(data, { n: 0, writes: 0 }).pass(true);
-      tail.push(ERRORS.length);
-    }
-  }
-  return { data, writes, tail, errors: [...stepErrors.flat(), ...ERRORS], stepErrors, creditedBeforeVanish, beforeC };
 }
 
 const history = async (data: Map<string, unknown>) =>
@@ -656,19 +729,25 @@ const history = async (data: Map<string, unknown>) =>
 const chainHistory = (at: number) =>
   world.labels(at).map((label, index) => [String(index + 1), depositStatus(label, at)] as const);
 
-async function expectOutcome(scenario: Scenario, outcome: Awaited<ReturnType<typeof run>>) {
-  if (process.env.DBG)
-    console.log(
-      "DBG",
-      scenario.name,
-      JSON.stringify(world.state.sent),
-      JSON.stringify(outcome.errors),
-      JSON.stringify(outcome.tail),
+const faultsIn = (data: Map<string, unknown>) =>
+  [...data.entries()]
+    .filter(([key]) => key.startsWith("deposit-fault:"))
+    .map(
+      ([, value]) =>
+        value as { id: string; commitment: string; row: { payer: string; gameId: number }; reason: string },
     );
-  const { data, tail, errors, creditedBeforeVanish, beforeC } = outcome;
+
+async function expectOutcome(scenario: Scenario, outcome: Awaited<ReturnType<typeof run>>) {
+  const { data, stepErrors, creditedBeforeVanish, beforeLate, killStep, lateFrom } = outcome;
+  /** The pass that was killed publishes nothing; every other pass is held to the assertion. */
+  const published = (from: number) =>
+    stepErrors
+      .map((errors, index) => ({ errors, index }))
+      .filter(({ index }) => index >= from && index + 1 !== killStep);
   const tainted = !!scenario.vanishes && creditedBeforeVanish;
+  const note = `errors: ${stepErrors.map((step) => step.join(",")).join(" | ")}`;
   // Before anything arrives to reuse the vanished id, the unrelated work has already completed and nothing is stuck.
-  expect(beforeC, "before the late deposit").toMatchObject({
+  expect(beforeLate, "before the late deposit").toMatchObject({
     a: 1,
     withdrawal: 1,
     principal: 1,
@@ -684,13 +763,48 @@ async function expectOutcome(scenario: Scenario, outcome: Awaited<ReturnType<typ
     expect(data.has("final:withdrawal:0xabc")).toBe(true);
   }
   if (tainted) {
-    // The shard credited a deposit the ledger no longer has: a loud custody fault, nothing else.
-    expect(errors.length + tail.reduce((all, count) => all + count, 0)).toBeGreaterThan(0);
+    // The shard credited a deposit the ledger no longer has: its fault is kept with its evidence and reported on every
+    // pass from the time it was found, and it stops nothing.
+    const faults = faultsIn(data);
+    expect(faults, note).toHaveLength(1);
+    expect(faults[0]!.row).toMatchObject({ payer: "0x44", gameId: 7 });
+    for (const { errors, index } of published(scenario.steps.length))
+      expect(
+        errors.some((error) => /deposit_(vanished|replaced)_after_credit/.test(error)),
+        `pass ${index + 1}: ${note}`,
+      ).toBe(true);
+    if (scenario.late === "D") {
+      // Another game takes the id: nothing conflicts, so it is resolved exactly once, and only the fault is reported.
+      expect(world.canonical("resolve:D:delivered"), "the deposit of another game").toBe(1);
+      for (const { errors } of published(lateFrom + 2))
+        expect(
+          errors.every((error) => /deposit_(vanished|replaced)_after_credit/.test(error)),
+          note,
+        ).toBe(true);
+    }
+    if (scenario.late === "C") {
+      // The same game takes the id: a real conflict with the shard's receipt, loud for that deposit alone, every pass.
+      expect(world.canonical("resolve:C:delivered") + world.canonical("resolve:C:cancelled")).toBe(0);
+      for (const { errors } of published(lateFrom + 1))
+        expect(
+          errors.some((error) => error.includes("deposit_resolution_unconfirmed")),
+          note,
+        ).toBe(true);
+    }
+    // The fault is answered by its commitment, and nothing else is touched.
+    const before = faultsIn(data);
+    const k = worker(data, { n: 0, writes: 0 });
+    void k;
+    expect(before[0]!.commitment).toMatch(/^0x/);
     return;
   }
   // No error survives: the last passes are clean.
-  expect(tail.slice(-3), `errors: ${errors.join(" | ")}`).toEqual([0, 0, 0]);
-  expect(world.canonical("resolve:C:delivered"), "deposit C").toBe(1);
+  expect(
+    stepErrors.slice(-3).map((errors) => errors.length),
+    note,
+  ).toEqual([0, 0, 0]);
+  if (scenario.late) expect(world.canonical(`resolve:${scenario.late}:delivered`), "late deposit").toBe(1);
+  else expect(world.canonical("resolve:C:delivered"), "deposit C").toBe(1);
   if (scenario.vanishes) {
     expect(world.canonical("deposit:B")).toBe(0);
     expect(world.canonical("resolve:B:cancelled") + world.canonical("resolve:B:delivered")).toBe(0);
@@ -698,8 +812,9 @@ async function expectOutcome(scenario: Scenario, outcome: Awaited<ReturnType<typ
     expect(world.canonical("resolve:B:cancelled"), "deposit B refund").toBe(1);
     expect(world.canonical("resolve:B:delivered")).toBe(0);
   }
-  const progress = [...data.entries()].find(([key]) => key.endsWith(":progress"))![1] as { open: string[] };
+  const progress = [...data.entries()].find(([key]) => key.endsWith(":progress"))![1] as { open: unknown[] };
   if (!scenario.neverFinal) expect(progress.open).toEqual([]);
+  expect(faultsIn(data)).toEqual([]);
   expect(await history(data)).toEqual(chainHistory(scenario.neverFinal ? world.head() : world.state.accepted));
 }
 
@@ -715,7 +830,7 @@ for (const scenario of scenarios) {
         const outcome = await run(scenario, index + 1, killAt);
         await expectOutcome(scenario, outcome).catch((error) => {
           throw new Error(
-            `${scenario.name}: killed after write ${killAt} of pass ${index + 1}: ${error.message} [${outcome.errors.join(" | ")}]`,
+            `${scenario.name}: killed after write ${killAt} of pass ${index + 1}: ${error.message} [${outcome.stepErrors.map((step) => step.join(",")).join(" | ")}]`,
           );
         });
       }

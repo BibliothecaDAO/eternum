@@ -160,3 +160,11 @@ same rule: beginning work does not remove it, only completing and publishing doe
 every chain event (blocks replaced, a deposit vanishing, the accepted block unreadable, replies lost, the node failing),
 and replaces the unaccepted blocks at every stage; it asserts one canonical payment or refund each, settlement, and a
 history that says what the chain says.
+
+A deposit is identified by its commitment, not its id: the ledger can give a vanished deposit's id to a different one. A
+deposit the shard credited that the ledger no longer has (vanished, or replaced under its id) leaves the work queue and
+is kept as a fault under its commitment, with the row it had, apart from the history row its id is given to next. It is
+reported on every pass and stops nothing: the deposit that takes the id is its own obligation, resolved if it conflicts
+with nothing on the shard and failing loudly (`deposit_resolution_unconfirmed`) for itself alone if it does.
+`POST /api/value/operator/deposit-fault` (operator token, `{chainId, commitment, reason}`) clears that one fault, once
+the shard's credit has been dealt with, and keeps the cleared record.

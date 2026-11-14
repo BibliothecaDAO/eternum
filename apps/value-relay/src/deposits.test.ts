@@ -1,7 +1,7 @@
 import { structureSnapshot } from "../test-support/deposit-structure";
 import { beforeEach, expect, it, vi } from "vitest";
 import { durableFinalFacts } from "./final-facts";
-import { relayDeposits, depositHistory, type DepositRelayPorts } from "./deposits";
+import { relayDeposits, depositHistory, clearDepositFault, type DepositRelayPorts } from "./deposits";
 import { DepositAnchorError, depositCommitment, type LordsDeposit } from "@realms-world/value-ledger/deposits";
 import { realmsAccountAddress } from "../../../packages/identity/src/account";
 const mocks = vi.hoisted(() => ({
@@ -167,7 +167,7 @@ it("persists a failed resolution and recovers without issuing a second credit", 
   expect(await relayDeposits(ports)).toMatchObject({
     processed: 0,
     pending: 1,
-    error: [{ obligation: "deposit:2:1", error: "lost settlement response" }],
+    error: [{ obligation: expect.stringMatching(/^deposit:2:1:0x/), error: "lost settlement response" }],
   });
   expect(mocks.admin).toHaveBeenCalledTimes(1);
   expect(await relayDeposits(ports)).toMatchObject({ processed: 1, next: "2", more: false, pending: 0 });
@@ -285,4 +285,28 @@ it("keeps the history of deposits discovered before it was kept, reading each on
   await relayDeposits(ports);
   await relayDeposits(ports);
   expect(reads).toHaveBeenCalledTimes(3);
+});
+
+it("clears one fault by its commitment, keeps its evidence in an audit record, and touches nothing else", async () => {
+  await relayDeposits(ports);
+  saved.set("deposit-fault:2:0xaa", {
+    id: "2",
+    commitment: "0xaa",
+    row: { ...payment, id: "2" },
+    reason: "vanished_after_credit",
+    since: 1,
+  });
+  saved.set("deposit-fault:2:0xbb", {
+    id: "3",
+    commitment: "0xbb",
+    row: { ...payment, id: "3" },
+    reason: "replaced_after_credit",
+    since: 1,
+  });
+  const before = new Map(saved);
+  await expect(clearDepositFault(storage, "0x2", "0xcc", "no such fault")).rejects.toThrow("deposit_fault_unknown");
+  await clearDepositFault(storage, "0x2", "0xaa", "credit reversed on the shard");
+  expect(saved.has("deposit-fault:2:0xaa")).toBe(false);
+  expect(saved.get("deposit-fault-cleared:2:0xaa")).toMatchObject({ id: "2", cleared: "credit reversed on the shard" });
+  for (const [key, value] of before) if (key !== "deposit-fault:2:0xaa") expect(saved.get(key), key).toEqual(value);
 });
