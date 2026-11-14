@@ -2,6 +2,7 @@ import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+import { useUIStore } from "@/hooks/store/use-ui-store";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useChainTimeStore } from "@/hooks/store/use-chain-time-store";
 import { useConnectionStore } from "@/hooks/store/use-connection-store";
@@ -15,7 +16,7 @@ import {
   seasonDay,
   setBlockTimestampSource,
 } from "@bibliothecadao/eternum";
-import type { NativeFactStore, NativeRows } from "@bibliothecadao/eternum/game-client";
+import { deepCenter, type NativeFactStore, type NativeRows } from "@bibliothecadao/eternum/game-client";
 import { StructureType } from "@bibliothecadao/types";
 import { frontierPreset } from "../../../../../../../config/source/frontier/native";
 import { nativeReleaseConstants } from "../../../../../../../contracts/l3/world-native/schema/client.gen";
@@ -591,3 +592,29 @@ const ruinPayout = (rules: ExpeditionRules, now: number, today: number, depth: n
     }),
   ];
 };
+
+
+describe("the shared Deep in the map layer menu", () => {
+  it("shows Deep without a private chest and visits its shared center", () => {
+    const { store, realm } = chestDay(3n);
+    store.applyFacts([
+      { model: "SettlementRules", key: "0x2", value: { ...store.require("SettlementRules", { game_id: 1 }), spacing: 1024 } },
+      { model: "DeepRules", key: "0xdeef", value: { game_id: 1, foundation: { x: 10, y: 25, alt: false }, quarry: { x: 25, y: 25, alt: false }, altar: { x: 40, y: 25, alt: false }, beast_count: 1000n, loss_per_tick: 1n, quarry_per_tick: 1n, altar_per_tick: 1, altar_threshold: 10 } },
+    ] as never);
+    const rules = readExpeditionRules(store, 1)!;
+    context.mapView = true;
+    useUIStore.setState({ cameraTargetHex: { col: 512, row: 512 } });
+    act(() => root.render(<LayerSwitch rules={rules} realm={realm} />));
+    const open = () => act(() => [...host.querySelectorAll<HTMLButtonElement>('[role="tab"]')][1]!.click());
+    open();
+    expect(listRows().map(([label]) => label)).toEqual(["World", "Ethereal I", "Ethereal II", "Deep"]);
+    expect(listRows().at(-1)?.[2]).toBeNull();
+    expect(switchMarks()).toHaveLength(3);
+    choose("Deep");
+    expect(requestLayerView).toHaveBeenCalledExactlyOnceWith(deepCenter(rules.spacing));
+    act(() => useUIStore.setState({ cameraTargetHex: deepCenter(rules.spacing) }));
+    expect([...host.querySelectorAll('[role="tab"]')][1]!.textContent).toBe("Deep");
+    open();
+    expect(listRows().at(-1)?.[1]).toBe("true");
+  });
+});

@@ -17,7 +17,8 @@ export function deepTerrain(
 ): Pick<NativeRows["TileOpt"], "data"> | undefined {
   if (!store.get("DeepRules", { game_id: key.game_id })) return undefined;
   const settlement = store.get("SettlementRules", { game_id: key.game_id });
-  if (!settlement || !isDeepTile(settlement.spacing, key)) return undefined;
+  if (!settlement) throw new Error("Deep terrain requires settlement rules");
+  if (!isDeepTile(settlement.spacing, key)) return undefined;
   return { data: BigInt(BiomeTypeToId[BiomeType.Underground]) * BigInt(nativeTilePackingConstants.BIOME_SCALE) };
 }
 
@@ -26,7 +27,7 @@ export function* deepTiles(
 ): Generator<Pick<NativeRows["TileOpt"], "game_id" | "alt" | "col" | "row">> {
   for (const [, rules] of store.entries("DeepRules")) {
     const settlement = store.get("SettlementRules", { game_id: rules.game_id });
-    if (!settlement || settlement.spacing < nativeRuleConstants.DEEP_MAP_SIZE * 2) continue;
+    if (!settlement) throw new Error("Deep terrain requires settlement rules");
     const center = deepCenter(settlement.spacing);
     const half = nativeRuleConstants.DEEP_MAP_SIZE / 2;
     for (let col = center.col - half; col < center.col + half; col++)

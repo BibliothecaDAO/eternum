@@ -483,6 +483,7 @@ export const SPIRE_WORDS = {
 } as const;
 /** The Deep's three sites (docs/plans/frontier-season-1.md, the Deep): who they serve, who guards them, what a tick pays. */
 export const DEEP_WORDS = {
+  title: "Deep",
   purpose: {
     foundation: "One site every Aspect fights for: holding it raises your Aspect's hyperstructure",
     quarry: "For you",

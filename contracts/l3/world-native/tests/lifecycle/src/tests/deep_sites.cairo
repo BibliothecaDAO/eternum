@@ -11,7 +11,7 @@ fn setup(seed: felt252) -> (Deployment, u32) {
     let (_, mut preset) = world_test_support::tests::preset_projection::current_definition("frontier");
     preset.rules.command_mask = preset.rules.command_mask | 4;
     preset.rules.battle_config.regular_immunity_ticks = 0;
-    preset.deep = Some(crate::deep::DeepRules {
+    preset.economy.deep = Some(crate::deep::DeepRules {
         foundation: crate::troops::Coord { alt: false, x: 10, y: 25 },
         quarry: crate::troops::Coord { alt: false, x: 25, y: 25 },
         altar: crate::troops::Coord { alt: false, x: 40, y: 25 },
@@ -166,4 +166,45 @@ fn exhausted_guards_release_slots_before_a_new_holder_joins() {
     assert_eq!(held(d, next), Some(crate::deep::DeepGuard { site_id: target.entity_id, slot: 0 }));
     let expected = crate::deep::troops_after_ticks(1000 * crate::rules::RESOURCE_PRECISION, 360 / interval, now / interval, crate::rules::RESOURCE_PRECISION);
     assert_eq!(army(d, next).troops.count, expected);
+}
+
+#[test]
+fn one_player_cannot_fill_two_slots_and_day_rollover_restores_every_beast() {
+    let (d, game_id) = setup(84);
+    let target = site(d, game_id, crate::rules::DEEP_FOUNDATION);
+    let first = deployed(d, game_id, 1, 10);
+    let home = army(d, first).owner;
+    beside(d, first, target, 0);
+    applied(d, game_id, fight(first, target), 360);
+    applied(d, game_id, muster(home, 1, 1, 10), 360);
+    let second = ExplorerKey { game_id, explorer_id: slot_army(d, ArmySlotKey {
+        game_id, structure_id: home, epoch: 0, slot: 1,
+    }) };
+    applied(d, game_id, Command::EnterDepth(crate::commands::EnterDepth { explorer_id: second.explorer_id, depth: 3 }), 360);
+    beside(d, second, target, 1);
+    refused(d, game_id, join(d, second, target), 360, "player already guards site");
+    assert!(held(d, second).is_none());
+
+    let context = crate::tests::context(d.games, game_id);
+    let tomorrow = crate::days::day_at_index(context.game.unbox(), context.rules.unbox().day_unit_seconds, 0).end;
+    applied(d, game_id, muster(home, 0, 0, 100), tomorrow);
+    let fresh = ExplorerKey { game_id, explorer_id: slot_army(d, ArmySlotKey {
+        game_id, structure_id: home, epoch: 1, slot: 0,
+    }) };
+    applied(d, game_id, Command::EnterDepth(crate::commands::EnterDepth { explorer_id: fresh.explorer_id, depth: 3 }), tomorrow);
+    beside(d, fresh, target, 0);
+    applied(d, game_id, fight(fresh, target), tomorrow);
+    assert!(held(d, first).is_none());
+    assert!(held(d, second).is_none());
+    assert!(interact_with_state(d.games, || crate::logic::troops::explorer(first)).is_none());
+    assert!(interact_with_state(d.games, || crate::logic::troops::explorer(second)).is_none());
+    assert_eq!(held(d, fresh), Some(crate::deep::DeepGuard { site_id: target.entity_id, slot: 0 }));
+    for kind in 0..crate::rules::DEEP_SITE_COUNT {
+        let current = site(d, game_id, kind);
+        assert_eq!(interact_with_state(d.games, || crate::logic::deep_sites::site(current).unwrap().day), 1);
+        let count = interact_with_state(d.games, || crate::logic::guards::guard(crate::guards::GuardKey {
+            game_id, structure_id: current.entity_id, slot: 0,
+        }).troops.count);
+        assert_eq!(count, if kind == crate::rules::DEEP_FOUNDATION { 0 } else { crate::rules::RESOURCE_PRECISION });
+    }
 }

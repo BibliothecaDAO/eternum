@@ -24,3 +24,4 @@ export { safeInteger } from "../utils/safe-integer";
 export { armyCombatRefusal } from "../utils/army-opponents";
 export { readDeepSites, type DeepSiteView } from "./views/deep-sites";
 export { currentArmy } from "../utils/deep";
+export { deepCenter, isDeepTile } from "../utils/deep-geometry";

@@ -78,6 +78,7 @@ describe("the shared Deep", () => {
   it("refuses allied targets and personal-map combat while retaining Blitz's opponent rules", () => {
     const { rows, store, army } = fixture();
     const enemy = { ...army, explorer_id: 12n, owner: 2n };
+    rows.ExplorerTroops!.push(enemy);
     rows.TileOccupancy!.push({ game_id: 7, entity_id: 12n, col: 513, row: 3584, alt: false });
     expect(armyCombatRefusal(store, army, enemy)).toBe("allied");
     rows.HomeAspect![1]!.aspect = 2;

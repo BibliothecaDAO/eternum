@@ -250,7 +250,9 @@ pub mod MovementLogic {
                 Coord { y: explorer.coord.y + Into::<u8, u32>::into(command.depth) * spacing, ..explorer.coord }
             };
             let location = tile_key(game_id, destination);
-            self.reveal_depth_arrival(game_id, destination, context);
+            if !crate::logic::deep::contains(game_id, destination) {
+                self.reveal_depth_arrival(game_id, destination, context);
+            }
             crate::logic::map::MapState::vacate(tile_key(game_id, explorer.coord), command.explorer_id);
             crate::logic::map::MapState::occupy(
                 location, command.explorer_id, crate::troops::explorer_occupier(explorer), false,

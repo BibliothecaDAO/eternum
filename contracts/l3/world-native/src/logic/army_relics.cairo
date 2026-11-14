@@ -157,6 +157,9 @@ pub fn site_reward(
 
 pub fn reveal_tiles(game_id: u32, origin: crate::troops::Coord, count: u8, context: crate::commands::BiomeContext) {
     assert!(count > 0 && count <= 5 * crate::rules::RELIC_TILES_PER_RANK, "invalid relic tile count");
+    if crate::logic::deep::contains(game_id, origin) {
+        return;
+    }
     let spacing = crate::logic::settlement::rules(game_id).spacing;
     let mut revealed = 0;
     for radius in 1..spacing {

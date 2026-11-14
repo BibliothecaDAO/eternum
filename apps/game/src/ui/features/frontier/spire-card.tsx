@@ -1,3 +1,4 @@
+import { DEEP_WORDS } from "@/ui/design-system/kit/words";
 import { useGame } from "@/hooks/context/game-context";
 import { useCurrentBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
 import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
@@ -30,7 +31,7 @@ import { useOrderAt } from "./hud/army-order";
 import { type DockArmy, useDockArmies } from "./hud/dock-armies";
 import { useApproachTile } from "./sites/approach";
 
-const SPIRE_MODELS = ["ArmySlot", "ExplorerTroops", "Structure", "RealmKnowledge", "TileOccupancy"] as const;
+const SPIRE_MODELS = ["ArmySlot", "ExplorerTroops", "Structure", "RealmKnowledge", "TileOccupancy", "DeepRules"] as const;
 
 type Spire = { col: number; row: number; deepest: number; realm: NativeRows["Structure"] };
 
@@ -132,11 +133,13 @@ const OwnSpire = ({ spire, onResearch }: { spire: Spire; onResearch: () => void 
   const beside = position !== undefined && depthNow === 0 && isAtExpeditionSpire(spire, position);
   const approach = useOrderAt(useApproachTile(spire, actor !== undefined && depthNow === 0 && !beside));
 
+  const sharedDeep = store.get("DeepRules", { game_id: gameId }) !== undefined;
+  const depthLabel = (depth: 1 | 2 | 3) => depth === 3 && sharedDeep ? DEEP_WORDS.title : depthName(depth);
   const depths = ([1, 2, 3] as const).filter((depth) => depth <= spire.deepest);
   const next = ([1, 2, 3] as const).find((depth) => depth === spire.deepest + 1);
   const choice = (depth: 1 | 2 | 3) => {
     if (!actor || !position || !beside) return { why: null, open: false };
-    // enter_depth lands the army straight below where it stands, one region down per depth.
+    if (depth === 3 && sharedDeep) return { why: null, open: true };
     const landing = { game_id: gameId, alt: false, col: position.x, row: position.y + depth * rules.spacing };
     if (store.get("TileOccupancy", landing)) return { why: SPIRE_WORDS.landingTaken, open: false };
     return { why: null, open: true };
@@ -170,7 +173,7 @@ const OwnSpire = ({ spire, onResearch }: { spire: Spire; onResearch: () => void 
       )}
       {actor && depthNow > 0 && (
         <p className="text-hud-body text-hud-ink">
-          {SPIRE_WORDS.inDepth(actor.label, depthName(depthNow as 1 | 2 | 3))}
+          {SPIRE_WORDS.inDepth(actor.label, depthLabel(depthNow as 1 | 2 | 3))}
         </p>
       )}
       {actor && depthNow === 0 && !beside && (
@@ -199,7 +202,7 @@ const OwnSpire = ({ spire, onResearch }: { spire: Spire; onResearch: () => void 
               <HudRow
                 key={depth}
                 lead={<Icon name={reachMark(depth)} size={22} />}
-                title={depthName(depth)}
+                title={depthLabel(depth)}
                 detail={why ?? undefined}
                 disabled={!open}
                 controls={
@@ -207,7 +210,7 @@ const OwnSpire = ({ spire, onResearch }: { spire: Spire; onResearch: () => void 
                     kind="secondary"
                     size="sm"
                     disabled={!open}
-                    aria-label={`${SPIRE_WORDS.enter} ${depthName(depth)}`}
+                    aria-label={`${SPIRE_WORDS.enter} ${depthLabel(depth)}`}
                     onClick={() => actor && enter(actor, depth)}
                   >
                     {SPIRE_WORDS.enter}
@@ -219,7 +222,7 @@ const OwnSpire = ({ spire, onResearch }: { spire: Spire; onResearch: () => void 
           {next && (
             <HudRow
               lead={<Icon name={reachMark(next)} size={22} />}
-              title={depthName(next)}
+              title={depthLabel(next)}
               detail={SPIRE_WORDS.locked}
               controls={
                 <HudButton kind="secondary" size="sm" onClick={onResearch}>

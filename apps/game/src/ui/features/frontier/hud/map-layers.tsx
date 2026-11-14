@@ -8,7 +8,7 @@ import { openPlace } from "@/play/navigation/open-place";
 import { requestLayerView } from "@/three/scenes/worldmap-layer-request";
 import { Icon, type IconMeaning } from "@/ui/design-system/icon";
 import type { MenuItem } from "@/ui/design-system/kit/hud-elements";
-import { depthName, layerChestLine, REALM, WORLD } from "@/ui/design-system/kit/words";
+import { DEEP_WORDS, depthName, layerChestLine, REALM, WORLD } from "@/ui/design-system/kit/words";
 import type { WorldTab } from "@/ui/features/world/containers/top-header/map-view-controls";
 import {
   type EtherealLayer,
@@ -23,7 +23,7 @@ import {
   structureMapPosition,
   viewInLayer,
 } from "@bibliothecadao/eternum";
-import type { NativeRows } from "@bibliothecadao/eternum/game-client";
+import { deepCenter, isDeepTile, type NativeRows } from "@bibliothecadao/eternum/game-client";
 import { SCOPE_INPUT_MODELS } from "@bibliothecadao/eternum/game-sync";
 
 import { reachMark } from "../depth-art";
@@ -31,7 +31,7 @@ import { usePlayerDay } from "../log/player-day";
 import { historyRuinClears } from "./ruin-clears";
 
 /** A layer the map shows: the day's surface, the world (0), or an Ethereal layer below it. */
-export type MapLayer = 0 | EtherealLayer;
+export type MapLayer = 0 | EtherealLayer | "deep";
 /** Every layer, the world then Ethereal I to III. */
 const MAP_LAYERS = [0, 1, 2, 3] as const satisfies readonly MapLayer[];
 
@@ -46,7 +46,7 @@ export type MapLayers = {
   chests?: RuinChests | null;
 };
 
-const LAYER_MODELS = ["RealmKnowledge", "Structure"] as const;
+const LAYER_MODELS = ["RealmKnowledge", "Structure", "DeepRules"] as const;
 
 /**
  * The map's layers once the realm has researched Ethereal I, its spire a portal into them (owner, 4 November 2026: "its
@@ -71,12 +71,16 @@ export const useMapLayers = (
   if (!realm) return null;
   const site = realmSite(facts.store, realm);
   const from = isMapView ? (camera ?? site) : site;
+  const sharedDeep = facts.store.get("DeepRules", { game_id: realm.game_id }) !== undefined;
   return {
-    layers: [0, ...Array.from({ length: deepest }, (_, index) => (index + 1) as EtherealLayer)],
-    shown: !isMapView ? null : from ? (expeditionDepth(rules, { y: from.row }) as MapLayer) : 0,
+    layers: [0, ...Array.from({ length: deepest }, (_, index): MapLayer => index === 2 && sharedDeep ? "deep" : (index + 1) as EtherealLayer)],
+    shown: !isMapView ? null : from ? (sharedDeep && isDeepTile(rules.spacing, { ...from, alt: false }) ? "deep" : expeditionDepth(rules, { y: from.row }) as MapLayer) : 0,
     go: (layer) => {
       if (!from) return;
-      const to = viewInLayer(rules, from, layer);
+      const fromDeep = sharedDeep && isDeepTile(rules.spacing, { ...from, alt: false });
+      const origin = fromDeep ? site : from;
+      if (!origin) return;
+      const to = layer === "deep" ? deepCenter(rules.spacing) : viewInLayer(rules, origin, layer);
       if (isMapView) requestLayerView(to);
       else openPlace("map", Position.fromContract({ x: to.col, y: to.row }));
     },
@@ -90,10 +94,10 @@ const realmSite = (store: Parameters<typeof structureMapPosition>[0], realm: Nat
 };
 
 /** A layer's word: World, or Ethereal I to III. */
-const layerName = (layer: MapLayer): string => (layer === 0 ? WORLD : depthName(layer));
+const layerName = (layer: MapLayer): string => (layer === "deep" ? DEEP_WORDS.title : layer === 0 ? WORLD : depthName(layer));
 
 /** A layer's painting: the world map's, or the depth's own mark. */
-const layerMark = (layer: MapLayer): IconMeaning => (layer === 0 ? "map" : reachMark(layer));
+const layerMark = (layer: MapLayer): IconMeaning => (layer === 0 ? "map" : reachMark(layer === "deep" ? 3 : layer));
 
 /** One view in a list of views, by its word and painting: a layer, or a phone's Realm. */
 const viewChoice = (label: string, icon: IconMeaning, checked: boolean, onSelect: () => void): MenuItem => ({
@@ -113,7 +117,7 @@ const layerChoices = ({ layers, shown, go, chests }: MapLayers, chosen: () => vo
       if (layer !== shown) go(layer);
       chosen();
     }),
-    trail: chests && <ChestMark chest={chests[layer]} />,
+    trail: chests && layer !== "deep" && <ChestMark chest={chests[layer]} />,
   }));
 
 /**
@@ -122,7 +126,7 @@ const layerChoices = ({ layers, shown, go, chests }: MapLayers, chosen: () => vo
  * away).
  */
 export const layerViews = (layers: MapLayers, realm: { icon: IconMeaning; go: () => void }, chosen: () => void) => {
-  const marks = layers.chests && <LayerChests chests={layers.chests} compact />;
+  const marks = layers.chests && <LayerChests chests={layers.chests} layers={layers.layers} compact />;
   // Before Ethereal I there is one layer: the switch stays Realm / World, carrying the marks.
   if (layers.layers.length === 1) return { marks };
   return {
@@ -140,7 +144,7 @@ export const layerViews = (layers: MapLayers, realm: { icon: IconMeaning; go: ()
 export const layerTab = (layers: MapLayers): WorldTab => ({
   label: layerName(layers.shown ?? 0),
   menu: layers.layers.length > 1 ? layerChoices(layers) : undefined,
-  badge: layers.chests && <LayerChests chests={layers.chests} />,
+  badge: layers.chests && <LayerChests chests={layers.chests} layers={layers.layers} />,
 });
 
 /** What a layer's chest is read from: the receipts and today's discovery, and what the client's scope is derived from. */
@@ -194,9 +198,9 @@ const ChestMark = ({ chest }: { chest: RuinChest }) => (
  * The four layers' chests on the layer switch, read before its list opens: each layer's mark with its chest's state on
  * its corner, faded once its chest is taken or while the layer is locked.
  */
-const LayerChests = ({ chests, compact = false }: { chests: RuinChests; compact?: boolean }) => (
+const LayerChests = ({ chests, layers, compact = false }: { chests: RuinChests; layers: readonly MapLayer[]; compact?: boolean }) => (
   <span className="ui-layer-chests">
-    {MAP_LAYERS.map((layer) => (
+    {MAP_LAYERS.filter((layer) => layer !== 3 || !layers.includes("deep")).map((layer) => (
       <span
         key={layer}
         data-chest={chests[layer]}
