@@ -114,7 +114,6 @@ class WorkflowCommands(unittest.TestCase):
             "apps/game-docs/docs/pages/index.mdx",
             "apps/game-docs/docs/pages/frontier/index.mdx",
             "apps/game-docs/docs/pages/blitz/index.mdx",
-            "apps/game-docs/docs/pages/eternum/key-concepts.mdx",
         ):
             with self.subTest(page=page):
                 self.assertIn("client", areas_run_by(page))

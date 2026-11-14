@@ -2,7 +2,7 @@
 /**
  * Checks the built docs show each mode's own balance: on a page, a label must be followed by the value its mode's
  * generated config holds, and the relic page each relic's cost as the Blitz preset's relic rules set it. Blitz and
- * Eternum differ on these values, so a Blitz component that reads Eternum's config (or a hard-coded number that
+ * Frontier differ on these values, so a Blitz component that reads another mode's config (or a hard-coded number that
  * drifted) fails the build. The text export (llm.txt) must state the same numbers, with no expression left as code.
  * Run after `vocs build`: node scripts/check-rendered-balance.mjs <dist>
  */
@@ -24,7 +24,7 @@ const DONKEY = 25;
 const ESSENCE = 38;
 
 /** Each page's expected runs of visible text, each a label then the values its mode's config gives. */
-export const expectedRuns = (blitz, eternum) => {
+export const expectedRuns = (blitz) => {
   const firstReward = blitz.blitz.exploration.rewards[0];
   const donkeyWheat = blitz.resources.productionByComplexRecipe[DONKEY].find((input) => input.resource === WHEAT);
   if (firstReward.rewardId !== ESSENCE) throw new Error("the first Blitz exploration reward is no longer Essence");
@@ -54,10 +54,6 @@ export const expectedRuns = (blitz, eternum) => {
         ],
       ],
     },
-    {
-      page: "eternum/worldmap-movement/movement",
-      runs: [["Stamina on Deployment", String(eternum.troop.stamina.staminaInitial)]],
-    },
   ];
 };
 
@@ -82,30 +78,6 @@ const pct = (bps) => `${n(bps / 100)}%`;
 const DEPTH_NAMES = ["Surface", "Ethereal I", "Ethereal II", "Ethereal III"];
 const TIERS = ["common", "uncommon", "rare", "epic", "legendary"];
 const POINTS_PRECISION = 1_000_000;
-
-/** Stamina as each mode's prose states it: a phase is one armies tick, and a day six of them. */
-const staminaPhrases = (mode, config) => {
-  const stamina = config.troop.stamina;
-  return [
-    {
-      page: `${mode}/military/stamina-and-biomes`,
-      phrases: [
-        `Stamina Regeneration per Phase: ${stamina.staminaGainPerTick} stamina`,
-        `Total Stamina Regeneration per Day: ${stamina.staminaGainPerTick * 6} stamina`,
-        `the attacker must spend ${stamina.staminaAttackReq} stamina`,
-        `The defender simultaneously spends ${stamina.staminaDefenseReq} stamina`,
-      ],
-    },
-    {
-      page: `${mode}/worldmap-movement/movement`,
-      phrases: [
-        `+${stamina.staminaGainPerTick} stamina per Phase`,
-        `Exploring an unknown hex always costs ${stamina.staminaExploreStaminaCost} stamina`,
-      ],
-    },
-    { page: `${mode}/key-concepts`, phrases: [`regenerating at +${stamina.staminaGainPerTick} per Phase`] },
-  ];
-};
 
 /** A tier's damage multiplier over T1's, from its 64.64 fixed-point config value. */
 const tierWeight = (multiplier) => n(Number(BigInt(multiplier) / 2n ** 64n));
@@ -312,9 +284,8 @@ export const payoutWalletPhrases = (changeHoldSeconds) => [
 ];
 
 /** The phrases every rules page that states a stamina, guard, chest or points number must show. */
-export const expectedPhrases = (blitz, eternum, frontier, frontierPreset, ledger, chests, riftGuardBound) => [
+export const expectedPhrases = (blitz, frontier, frontierPreset, ledger, chests, riftGuardBound) => [
   ...blitzStaminaPhrases(blitz),
-  ...staminaPhrases("eternum", eternum),
   {
     page: "blitz/map",
     phrases: [
@@ -507,7 +478,6 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const phrases = [
     ...expectedPhrases(
       configOf("blitz"),
-      configOf("eternum"),
       configOf("frontier"),
       frontierPreset,
       ledger,
@@ -518,7 +488,7 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
   ];
   const missing = [
     ...missingRuns(dist, [
-      ...expectedRuns(configOf("blitz"), configOf("eternum")),
+      ...expectedRuns(configOf("blitz")),
       ...relicRuns(relics, rules, firstRelicId),
     ]),
     ...missingPhrases(dist, phrases),
