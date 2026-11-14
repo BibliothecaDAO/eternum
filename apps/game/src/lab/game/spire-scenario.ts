@@ -116,7 +116,20 @@ export const revealedTile = (key: string, hex: { col: number; row: number }, bio
 /** An army's troops row once it has paid `cost` stamina at `now`, as the chain writes it. */
 export const armySpent = (chain: NativeFactStore, explorerId: bigint, cost: number | bigint, now: number): LabFact => {
   const [key, army] = [...chain.entries("ExplorerTroops")].find(([, row]) => row.explorer_id === explorerId)!;
-  const stamina = army.troops.stamina as { Inline: { amount: bigint } };
+  if ("Slot" in army.troops.stamina) {
+    const { day } = chain.require("ArmyDay", { game_id: 1, explorer_id: explorerId });
+    const slotKey = { game_id: 1, structure_id: army.owner, epoch: day, slot: army.troops.stamina.Slot };
+    const slot = chain.require("ArmySlot", slotKey);
+    return {
+      model: "ArmySlot",
+      key: chain.wireKeyOf("ArmySlot", slotKey)!,
+      value: wire({
+        ...slot,
+        stamina: { amount: slot.stamina.amount - BigInt(cost), settled_at: now, remainder: 0 },
+      }),
+    };
+  }
+  const stamina = army.troops.stamina;
   return {
     model: "ExplorerTroops",
     key,
