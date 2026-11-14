@@ -1,5 +1,5 @@
 {
-  "schemaIdentity": "adadecd8f7b7ee2b61ef7ff53ee83a0b0cf7ee52e5b0dfd010f43f930b4cc6ea",
+  "schemaIdentity": "772fda715200f5970ca638ddca43ec5ddd76c0db814450fca321cd6ed1624cc5",
   "commandAbi": [
     {
       "type": "interface",
@@ -1510,6 +1510,18 @@
     },
     {
       "name": "ArmyDay",
+      "scope": "game"
+    },
+    {
+      "name": "DeepSite",
+      "scope": "game"
+    },
+    {
+      "name": "DeepGuard",
+      "scope": "game"
+    },
+    {
+      "name": "DeepArmy",
       "scope": "game"
     },
     {

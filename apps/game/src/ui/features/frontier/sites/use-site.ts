@@ -36,7 +36,8 @@ export const siteUseFacts = (
   army: NativeRows["ExplorerTroops"] | undefined,
   timestamp: number,
 ) => {
-  const snapshot = army && getExplorerStaminaSnapshot({ timestamp, liveTroops: resolveExplorerTroops(store, army, timestamp) });
+  const snapshot =
+    army && getExplorerStaminaSnapshot({ timestamp, liveTroops: resolveExplorerTroops(store, army, timestamp) });
   return {
     kind: site.kind,
     gain: siteGain(site.kind, shrineRewardAt(store, site.tile), snapshot ?? undefined),

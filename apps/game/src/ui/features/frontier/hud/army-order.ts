@@ -85,10 +85,7 @@ export const useOrderAt = (target: { col: number; row: number } | null): ArmyOrd
     stamina: {
       cost: staminaCost,
       held: staminaHeld,
-      wait:
-        staminaHeld < staminaCost
-          ? secondsUntilStamina(troops, staminaCost, tick)
-          : undefined,
+      wait: staminaHeld < staminaCost ? secondsUntilStamina(troops, staminaCost, tick) : undefined,
     },
     wheat: { cost: wheatCost, held: wheatHeld, wait: secondsUntilHeld(wheatHeld, wheatCost, wheatPerHour) },
     xp: explore ? readRevealXp(setup.store, gameId, { y: target.row + FELT_CENTER() }) : undefined,

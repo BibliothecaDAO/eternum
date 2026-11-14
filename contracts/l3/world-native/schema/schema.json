@@ -5019,6 +5019,99 @@
       "valueLength": 1
     },
     {
+      "name": "DeepSite",
+      "identity": "0x4465657053697465",
+      "scope": "game",
+      "keys": [
+        {
+          "name": "game_id",
+          "type": "core::integer::u32",
+          "feltLength": 1
+        },
+        {
+          "name": "entity_id",
+          "type": "core::integer::u64",
+          "feltLength": 1
+        }
+      ],
+      "members": [
+        {
+          "name": "kind",
+          "type": "core::integer::u8",
+          "id": "0x6b696e64",
+          "feltLength": 1
+        },
+        {
+          "name": "day",
+          "type": "core::integer::u64",
+          "id": "0x646179",
+          "feltLength": 1
+        }
+      ],
+      "keyLength": 2,
+      "valueLength": 2
+    },
+    {
+      "name": "DeepGuard",
+      "identity": "0x446565704775617264",
+      "scope": "game",
+      "keys": [
+        {
+          "name": "game_id",
+          "type": "core::integer::u32",
+          "feltLength": 1
+        },
+        {
+          "name": "explorer_id",
+          "type": "core::integer::u64",
+          "feltLength": 1
+        }
+      ],
+      "members": [
+        {
+          "name": "site_id",
+          "type": "core::integer::u64",
+          "id": "0x736974655f6964",
+          "feltLength": 1
+        },
+        {
+          "name": "slot",
+          "type": "core::integer::u8",
+          "id": "0x736c6f74",
+          "feltLength": 1
+        }
+      ],
+      "keyLength": 2,
+      "valueLength": 2
+    },
+    {
+      "name": "DeepArmy",
+      "identity": "0x4465657041726d79",
+      "scope": "game",
+      "keys": [
+        {
+          "name": "game_id",
+          "type": "core::integer::u32",
+          "feltLength": 1
+        },
+        {
+          "name": "explorer_id",
+          "type": "core::integer::u64",
+          "feltLength": 1
+        }
+      ],
+      "members": [
+        {
+          "name": "last_tick",
+          "type": "core::integer::u64",
+          "id": "0x6c6173745f7469636b",
+          "feltLength": 1
+        }
+      ],
+      "keyLength": 2,
+      "valueLength": 1
+    },
+    {
       "name": "AspectActivity",
       "identity": "0x4173706563744163746976697479",
       "scope": "game",
@@ -9039,6 +9132,30 @@
         }
       ]
     },
+    "world_native::deep::DeepArmy": {
+      "type": "struct",
+      "name": "world_native::deep::DeepArmy",
+      "members": [
+        {
+          "name": "last_tick",
+          "type": "core::integer::u64"
+        }
+      ]
+    },
+    "world_native::deep::DeepGuard": {
+      "type": "struct",
+      "name": "world_native::deep::DeepGuard",
+      "members": [
+        {
+          "name": "site_id",
+          "type": "core::integer::u64"
+        },
+        {
+          "name": "slot",
+          "type": "core::integer::u8"
+        }
+      ]
+    },
     "world_native::deep::DeepRules": {
       "type": "struct",
       "name": "world_native::deep::DeepRules",
@@ -9074,6 +9191,20 @@
         {
           "name": "altar_threshold",
           "type": "core::integer::u32"
+        }
+      ]
+    },
+    "world_native::deep::DeepSite": {
+      "type": "struct",
+      "name": "world_native::deep::DeepSite",
+      "members": [
+        {
+          "name": "kind",
+          "type": "core::integer::u8"
+        },
+        {
+          "name": "day",
+          "type": "core::integer::u64"
         }
       ]
     },
@@ -13277,5 +13408,5 @@
       ]
     }
   },
-  "identity": "adadecd8f7b7ee2b61ef7ff53ee83a0b0cf7ee52e5b0dfd010f43f930b4cc6ea"
+  "identity": "772fda715200f5970ca638ddca43ec5ddd76c0db814450fca321cd6ed1624cc5"
 }

@@ -143,7 +143,12 @@ import {
   recordClientActionRendered,
   recordClientActionSubmitted,
 } from "@/observability/client-action-latency";
-import { currentArmy, safeInteger, type GameClientSetup as SetupResult, type NativeRows } from "@bibliothecadao/eternum/game-client";
+import {
+  currentArmy,
+  safeInteger,
+  type GameClientSetup as SetupResult,
+  type NativeRows,
+} from "@bibliothecadao/eternum/game-client";
 import {
   ActionPath,
   ActionPaths,

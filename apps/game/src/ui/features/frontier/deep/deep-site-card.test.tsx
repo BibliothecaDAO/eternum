@@ -158,10 +158,17 @@ it("prices Deep movement from the troops left at the requested second", () => {
   const boundary = (Math.floor(startsAt / interval) + 1) * interval;
   const loss = store.require("DeepRules", { game_id: 1 }).loss_per_tick;
   const structureResources = { balanceWithProduction: () => ({ balance: 0 }) } as unknown as ResourceManager;
-  const read = (currentDefaultTick: number) => readArmyMovementReadiness({ army, store, structureResources, currentDefaultTick });
+  const read = (currentDefaultTick: number) =>
+    readArmyMovementReadiness({ army, store, structureResources, currentDefaultTick });
   const perTroop = configManager.getTravelFoodCostConfig(ResourcesIds.Knight).travelWheatBurnAmount;
   expect(perTroop).toBeGreaterThan(0);
-  expect(read(startsAt)?.foodBlock?.perStep.wheatPayAmount).toBe(Number(army.troops.count) / RESOURCE_PRECISION * perTroop);
-  expect(read(boundary)?.foodBlock?.perStep.wheatPayAmount).toBe(Number(army.troops.count - loss) / RESOURCE_PRECISION * perTroop);
-  expect(read(boundary + interval)?.foodBlock?.perStep.wheatPayAmount).toBe(Number(army.troops.count - 2n * loss) / RESOURCE_PRECISION * perTroop);
+  expect(read(startsAt)?.foodBlock?.perStep.wheatPayAmount).toBe(
+    (Number(army.troops.count) / RESOURCE_PRECISION) * perTroop,
+  );
+  expect(read(boundary)?.foodBlock?.perStep.wheatPayAmount).toBe(
+    (Number(army.troops.count - loss) / RESOURCE_PRECISION) * perTroop,
+  );
+  expect(read(boundary + interval)?.foodBlock?.perStep.wheatPayAmount).toBe(
+    (Number(army.troops.count - 2n * loss) / RESOURCE_PRECISION) * perTroop,
+  );
 });
