@@ -3,7 +3,7 @@ import type { IconMeaning } from "@/ui/design-system/icon-meaning";
 import { resourceMeaning } from "@/ui/design-system/icon-meaning";
 import { HudButton, HudChip, HudLoading, HudMeter, HudPanel } from "@/ui/design-system/kit/hud-elements";
 import { DAY_BANNER_WORDS as WORDS } from "@/ui/design-system/kit/words";
-import { formatAmount, ResourcesIds } from "@bibliothecadao/types";
+import { formatAmount, formatShort, ResourcesIds } from "@bibliothecadao/types";
 import { useState } from "react";
 
 type Tone = "good" | "bad" | "warn";
@@ -242,6 +242,6 @@ const MembersShort = ({ members }: { members: DayMembers }) => (
 const Claim = ({ claim, onOpen }: { claim: DayBannerProps["claim"]; onOpen: () => void }) =>
   claim && (
     <HudChip icons={["labor"]} onPress={onOpen}>
-      {formatAmount(claim.labor)}
+      {formatShort(claim.labor)}
     </HudChip>
   );

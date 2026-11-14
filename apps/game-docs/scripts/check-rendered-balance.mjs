@@ -476,21 +476,11 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
   } = await loadBalanceSources();
   const llm = readFileSync(llmTxtFile, "utf8");
   const phrases = [
-    ...expectedPhrases(
-      configOf("blitz"),
-      configOf("frontier"),
-      frontierPreset,
-      ledger,
-      chests,
-      previewRiftGuardBound,
-    ),
+    ...expectedPhrases(configOf("blitz"), configOf("frontier"), frontierPreset, ledger, chests, previewRiftGuardBound),
     ...payoutWalletPhrases(payoutWalletChangeSeconds),
   ];
   const missing = [
-    ...missingRuns(dist, [
-      ...expectedRuns(configOf("blitz")),
-      ...relicRuns(relics, rules, firstRelicId),
-    ]),
+    ...missingRuns(dist, [...expectedRuns(configOf("blitz")), ...relicRuns(relics, rules, firstRelicId)]),
     ...missingPhrases(dist, phrases),
     ...exportProblems(llm, phrases),
     ...forbiddenValues(dist, llm),

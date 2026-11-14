@@ -35,7 +35,7 @@ import { SettlementModel } from "../structures/settlement-model";
 import { resolveSettlementRelationship } from "../structures/settlement-appearance";
 import { RiftModelPath, isRealmModelPath, isSettlementModelPath } from "../constants/scene-constants";
 import { onSidesChanged, watchedSide } from "@/utils/entity-ownership";
-import { accountAddress, useAccountStore } from "@/hooks/store/use-account-store";
+import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useChainTimeStore } from "@/hooks/store/use-chain-time-store";
 import { getGameModeConfig } from "@/config/game-modes";
 import type { GameModeConfig } from "@/config/game-modes";

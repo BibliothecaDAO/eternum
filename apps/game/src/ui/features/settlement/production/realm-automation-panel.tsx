@@ -366,7 +366,7 @@ export const RealmAutomationPanel = ({
       });
       setDraftPresetId("custom");
     },
-    [resolveDraftPercentages],
+    [],
   );
 
   const handleUndo = useCallback(() => {

@@ -2,7 +2,7 @@
 import { configManager } from "@bibliothecadao/eternum";
 import { NativeFactStore } from "@bibliothecadao/eternum/game-client";
 import { hash } from "starknet";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it } from "vitest";
 import { SEAT_COLOURS, seatSide } from "@/tokens";
 import { overrideSpectateIntent } from "./spectator-session";
 import { isEntityOwnedByAccount, seatOrder, watchedSide } from "./entity-ownership";
