@@ -1091,7 +1091,7 @@ it("requires the selected Aspect in both the founding command and its membership
   const verify = STEP_SETS["lab-aspect-settle"].steps[0].verify;
   const choice = { sent: 0, cards: ["Join Might", "Join Harmony", "Join Chaos", "Join Guile"] };
   const seen = { scene: "hex", rendered: "hex", place: "Realm", playable: true };
-  const armyButtons = [1, 2].map((number) => ({ label: `Army ${number}`, text: "1.5k", current: "120", max: "120" }));
+  const armyButtons = [1, 2].map((number) => ({ label: `Army ${number}`, text: "1.5k", current: "120", max: "120", visible: true }));
   const startRows = [
     ...[0, 1].flatMap((slot) => [
       {
@@ -1159,6 +1159,10 @@ it("requires the selected Aspect in both the founding command and its membership
       played: { choice, founded: [founded], armyButtons: armyButtons.map((button) => ({ ...button, current: "100" })) },
     }).status,
   ).toBe("failed");
+  expect(verify({
+    seen,
+    played: { choice, founded: [founded], armyButtons: armyButtons.map((button) => ({ ...button, visible: false })) },
+  }).status).toBe("failed");
   for (const missing of ["ExplorerTroops", "ArmySlot", "ArmyDay", "ResourceBalance"]) {
     expect(
       verify({

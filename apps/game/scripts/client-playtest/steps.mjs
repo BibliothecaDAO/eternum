@@ -758,10 +758,21 @@ function armyDeployed({ actionLatency }) {
  * the player's realm, then the game opening on it, on that realm. The wait covers the game's boot after the chain has
  * answered.
  */
+const STARTING_ARMY_BUTTONS = `JSON.stringify([...document.querySelectorAll('button[aria-label="Army 1"], button[aria-label="Army 2"]')].map(node => {
+  const box = node.getBoundingClientRect();
+  const visible = node.checkVisibility({ visibilityProperty: true, opacityProperty: true })
+    && box.width > 0 && box.height > 0 && box.top >= 0 && box.left >= 0
+    && box.bottom <= innerHeight && box.right <= innerWidth
+    && node.contains(document.elementFromPoint(box.left + box.width / 2, box.top + box.height / 2));
+  return { label: node.getAttribute("aria-label"), text: node.textContent, visible,
+    current: node.querySelector("[role=meter]")?.getAttribute("aria-valuenow"),
+    max: node.querySelector("[role=meter]")?.getAttribute("aria-valuemax") };
+}))`;
+
 const ASPECT_SETTLE_STEPS = [
   {
     name: "found-in-chosen-aspect",
-    play: async ({ browser, owner, extraScreenshot }) => {
+    play: async ({ browser, owner, extraScreenshot, devTools }) => {
       await playFromTheHomeCard({ browser, owner });
       await waitUntil(
         () => browser.read('document.querySelectorAll(".aspect-picker__card:not(:disabled)").length') === 4,
@@ -778,16 +789,17 @@ const ASPECT_SETTLE_STEPS = [
       const founded = browser.read(`JSON.stringify(
         (window.__labChain?.sent ?? []).filter(({command}) => command.kind === "SettleSeason")
       )`);
-      await waitUntil(
-        () =>
-          browser.read(
-            'document.querySelectorAll(\'button[aria-label="Army 1"], button[aria-label="Army 2"]\').length',
-          ) === 2,
-        PLAYABLE_WAIT_MS,
-      );
-      const armyButtons = browser.read(
-        'JSON.stringify([...document.querySelectorAll(\'button[aria-label="Army 1"], button[aria-label="Army 2"]\')].map(node => ({ label: node.getAttribute("aria-label"), text: node.textContent, current: node.querySelector("[role=meter]")?.getAttribute("aria-valuenow"), max: node.querySelector("[role=meter]")?.getAttribute("aria-valuemax") })))',
-      );
+      await waitUntil(() => {
+        const buttons = browser.read(STARTING_ARMY_BUTTONS);
+        return buttons.length === 2 && buttons.every((button) => button.visible);
+      }, PLAYABLE_WAIT_MS);
+      await devTools.send("Runtime.evaluate", {
+        expression: "new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(() => resolve(true))))",
+        awaitPromise: true,
+        returnByValue: true,
+      });
+      const armyButtons = browser.read(STARTING_ARMY_BUTTONS);
+      extraScreenshot("starting-armies");
       return { choice, choosing, founded, armyButtons };
     },
     settleMs: 0,
@@ -852,6 +864,7 @@ function hasStartingArmies(played) {
       played.armyButtons.some(
         (button) =>
           button.label === label &&
+          button.visible === true &&
           /1\.5k|1,500/.test(button.text) &&
           Number(button.current) === 120 &&
           Number(button.max) === 120,
