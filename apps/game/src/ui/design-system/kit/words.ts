@@ -481,6 +481,50 @@ export const SPIRE_WORDS = {
   locked: "Research it to open it",
   commits: (army: string, left: string) => `${army} stays until the day ends (${left})`,
 } as const;
+/** The Deep's three sites (docs/plans/frontier-season-1.md, the Deep): who they serve, who guards them, what a tick pays. */
+export const DEEP_WORDS = {
+  purpose: {
+    foundation: "One site every Aspect fights for: holding it raises your Aspect's hyperstructure",
+    quarry: "For you",
+    altar: "Against a rival",
+  },
+  /** A Deep site's plate on the map: nobody holds it, and what a tick held pays. */
+  shared: "Every Aspect fights for it",
+  foundationPlate: (height: number) => `+${formatExact(height)} height a tick to the holder's hyperstructure`,
+  quarryPlate: "Labor and Essence a tick to its holders",
+  altarPlate: "Fills the holder's bane bar",
+  tickPays: "Each tick held pays",
+  splitByTroops: "split by troops",
+  glory: (amount: number) => `${formatExact(amount)} Glory`,
+  height: (amount: number) => `+${formatExact(amount)} height to your Aspect's hyperstructure`,
+  resources: (amount: number) => `${formatExact(amount)} labor and ${formatExact(amount)} Essence`,
+  bar: (perTick: number, charge: number, threshold: number) =>
+    `+${formatExact(perTick)} on the bane bar: ${formatExact(charge)} of ${formatExact(threshold)}`,
+  beast: (troops: number) => `Today's beast: ${formatExact(troops)} troops`,
+  open: "No guard: the next army takes it",
+  heldBy: (aspect: string) => `Held by ${aspect}`,
+  freeSlot: "Free slot",
+  foughtInOrder: "An attacker fights them one after the other, from the top",
+  facesNext: "fought next",
+  /** How long a guard's troops last: its army ticks, and the time until the last of them. */
+  lasts: (ticks: number, time: string) => `${formatExact(ticks)} ticks left (${time})`,
+  /** What the army panel's chip of those ticks counts. */
+  inTheDeep: "In the Deep",
+  share: (percent: number) => `${percent}% of each tick`,
+  attack: "Attack",
+  take: "Take",
+  join: "Join",
+  pickArmy: "Select an army in the Deep",
+  guarding: "Your army guards here",
+  full: "All 4 slots are taken",
+  rival: "Another Aspect holds it",
+  otherDay: "Only today's armies can fight here",
+  noTroops: "This army has no troops left",
+  readingStamina: "Reading the army's stamina…",
+  reading: "Reading the site…",
+  /** The map's order on a Deep site beside the army: its card then offers the site's own verb. */
+  order: "Open the site",
+} as const;
 export const RESEARCHING = "Researching…";
 export const BUILDING = "Building…";
 export const UPGRADING = "Upgrading…";

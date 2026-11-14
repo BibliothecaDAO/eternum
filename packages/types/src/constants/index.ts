@@ -1,6 +1,7 @@
 export { ResourcesIds } from "./resource-ids";
 
 export * from "./buildings";
+export * from "./deep-sites";
 export * from "./hex";
 export * from "./market";
 export * from "./misc";

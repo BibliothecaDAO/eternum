@@ -329,6 +329,18 @@ export const ROOMS: LabRoom[] = [
         ],
       },
       {
+        title: "Season 1",
+        modes: FRONTIER,
+        views: [
+          view(
+            "Deep site",
+            "/lab/season-one/deep-site",
+            "season-one/deep-site",
+            load(() => import("./season-one/deep-site-lab"), "DeepSiteLab"),
+          ),
+        ],
+      },
+      {
         title: "Game end",
         modes: BOTH,
         views: [
