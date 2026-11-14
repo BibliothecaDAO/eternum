@@ -351,7 +351,8 @@ fn quorum_ends_the_effect_once_and_collection_pays_the_second_reward_once() {
                     labor_before + 2000 * RESOURCE_PRECISION,
                 );
                 assert_eq!(
-                    crate::logic::resources::balance(target, crate::resources::ESSENCE), essence_before + 3000 * RESOURCE_PRECISION,
+                    crate::logic::resources::balance(target, crate::resources::ESSENCE),
+                    essence_before + 3000 * RESOURCE_PRECISION,
                 );
             },
         );
