@@ -1,3 +1,4 @@
+use starknet::storage::StorageMapReadAccess;
 pub use world_test_support::tests::registrar::*;
 
 #[test]
@@ -26,8 +27,7 @@ fn expedition_rollover_expires_armies_and_preserves_the_home_economy() {
     | snforge_std::interact_with_state(
         d.games,
         || {
-            use starknet::storage::StorageMapReadAccess;
-            crate::state::read().troops.army_days.read((game_id, id))
+                crate::state::read().troops.army_days.read((game_id, id))
         },
     );
     assert_eq!(read_day(old_id), Some(0));
