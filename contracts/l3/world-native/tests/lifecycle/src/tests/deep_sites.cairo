@@ -31,13 +31,16 @@ fn setup(seed: felt252) -> (Deployment, u32) {
 
 fn deployed(d: Deployment, game_id: u32, aspect: u8, count: u128) -> ExplorerKey {
     let home = found(d, game_id, aspect);
-    let depth_budget = interact_with_state(d.games, || {
-        let mut budget = 0;
-        for tier in 1_u8..4 {
-            budget += crate::logic::research::price(game_id, crate::research::ROW_DEPTH, tier).essence;
-        }
-        budget
-    });
+    let depth_budget = interact_with_state(
+        d.games,
+        || {
+            let mut budget = 0;
+            for tier in 1_u8..4 {
+                budget += crate::logic::research::price(game_id, crate::research::ROW_DEPTH, tier).essence;
+            }
+            budget
+        },
+    );
     grant(d, ResourceKey { game_id, entity_id: home }, crate::resources::ESSENCE, depth_budget);
     for _ in 0_u8..3 {
         applied(
