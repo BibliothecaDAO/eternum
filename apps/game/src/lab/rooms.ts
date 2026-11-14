@@ -344,6 +344,12 @@ export const ROOMS: LabRoom[] = [
             "season-one/day-banner",
             load(() => import("./season-one/day-banner-lab"), "DayBannerLab"),
           ),
+          view(
+            "Opening",
+            "/lab/season-one/opening",
+            "season-one/opening",
+            load(() => import("./season-one/opening-lab"), "OpeningLab"),
+          ),
         ],
       },
       {

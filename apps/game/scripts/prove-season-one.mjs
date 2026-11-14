@@ -6,8 +6,9 @@ import { withDevClient } from "./lib/dev-client.mjs";
 
 /** Season 1's client presentations in the lab: each view's every case, on a desktop and on a phone, one still each. */
 const VIEWS = [
-  { name: "deep-site", path: "/lab/season-one/deep-site", cases: 5, shown: "section[role=dialog]" },
-  { name: "day-banner", path: "/lab/season-one/day-banner", cases: 7, shown: "[data-day-banner]" },
+  { name: "deep-site", path: "/lab/season-one/deep-site", cases: [0, 1, 2, 3, 4], shown: "section[role=dialog]" },
+  { name: "day-banner", path: "/lab/season-one/day-banner", cases: [0, 1, 2, 3, 4, 5, 6], shown: "[data-day-banner]" },
+  { name: "opening", path: "/lab/season-one/opening", cases: [0, 1, 3, 7, 8], shown: "[data-opening-line]" },
 ];
 const SIZES = [
   ["desktop", "1920", "1080"],
@@ -25,7 +26,7 @@ await withDevClient({ base: option("--base-url", null), port, out }, async (base
     for (const [device, width, height] of SIZES) {
       browser.run(["set", "viewport", width, height]);
       for (const { name, path, cases, shown } of VIEWS)
-        for (let each = 0; each < cases; each += 1) {
+        for (const each of cases) {
           browser.run(["open", `${baseUrl}${path}?case=${each}`]);
           browser.run(["wait", "--fn", `!!document.querySelector('${shown}')`]);
           browser.screenshot(join(out, `${name}-${each}-${device}.png`));

@@ -99,7 +99,7 @@ paths = "flow.toml apps packages common deploy config package.json pnpm-lock.yam
 estimate_gb = 5
 
 [kind.test-season-one]
-cmd = "pnpm run build:packages && pnpm --dir apps/game test src/ui/features/frontier/deep src/ui/features/frontier/day src/lab/season-one"
+cmd = "pnpm run build:packages && pnpm --dir apps/game test src/ui/features/frontier/deep src/ui/features/frontier/day src/ui/features/frontier/opening src/lab/season-one"
 paths = "flow.toml apps/game packages"
 estimate_gb = 5
 

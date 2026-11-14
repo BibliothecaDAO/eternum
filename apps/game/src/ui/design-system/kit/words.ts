@@ -541,6 +541,34 @@ export const DAY_BANNER_WORDS = {
   /** Today's claim waiting at the realm: "Labor and Essence waiting". */
   claimWaiting: "Waiting in Realms",
 } as const;
+/** What a moment's one line needs from the game's rules; the caller reads them, the line only names them. */
+export interface OpeningRules {
+  knightsAnHour: number;
+  deepTick: { tickSeconds: number; lossPerTick: number };
+}
+
+/**
+ * The interface that opens as you play (the frozen design's table, word for word): the one line each moment brings,
+ * shown once, and the switch that opens everything at once.
+ */
+export const OPENING_WORDS = {
+  lines: {
+    launch: () => "This is your Realm. Build on the lit plot, then send an army into the mist.",
+    barracks: (rules: OpeningRules) =>
+      `A Barracks raises ${formatAmount(rules.knightsAnHour)} Knights an hour. Knights fill your armies.`,
+    guard: () => "Send 150% of the guard's troops to win.",
+    fight: () => "Armies earn XP by fighting. Enough XP gives a skill point.",
+    essence: () => "Essence buys research and lores.",
+    "well-lore": () => "Your armies can now find wells.",
+    "shrine-lore": () => "Your armies can now find shrines.",
+    deep: (rules: OpeningRules) =>
+      `Every tick (${formatAmount(rules.deepTick.tickSeconds)} seconds) here, each army loses ${formatAmount(rules.deepTick.lossPerTick)} troops. Hold a site to earn.`,
+    bane: () => "A bane. Today's quest is the bane quest. Your Aspect ends the bane when enough members finish it.",
+  },
+  gotIt: "Got it",
+  interface: "Interface",
+  showEverything: "Show everything",
+} as const;
 export const RESEARCHING = "Researching…";
 export const BUILDING = "Building…";
 export const UPGRADING = "Upgrading…";
