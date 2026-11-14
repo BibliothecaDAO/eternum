@@ -16,6 +16,7 @@ import {
   scopeInputKeys,
 } from "@bibliothecadao/eternum/game-sync";
 import {
+  aspects,
   RESOURCE_PRECISION,
   ResourcesIds,
   type NativeWorldBindings,
@@ -212,6 +213,7 @@ const installOnce = async (makeScenario: () => LabScenario, startedAt: number): 
   answerAccountJoin(LAB_SHARD_RPC, LAB_ACCOUNT_CLASS);
   answerHeraldSocket(herald);
   answerLaborClaims(scenario, chain, record, herald, now);
+  if (scenario.entersFromHome) answerHomeEntry(scenario);
   answerLedgerReads(now);
   answerLabChat({ gameRooms: [gameChatZoneId(LAB_GAME.chainId, LAB_GAME.gameId)], history: scenario.chat });
   signInLabPlayer(scenario.wallet);
@@ -306,6 +308,15 @@ const answerDirectory = (
       end_grace_seconds: 0,
     },
     player_count: 1,
+    get aspect_members() {
+      if (!chain.get("AspectRules", { game_id: LAB_GAME.gameId })) return null;
+      return Object.fromEntries(
+        aspects.map(({ id }) => [
+          id,
+          chain.get("AspectMembers", { game_id: LAB_GAME.gameId, aspect: id })?.members ?? 0,
+        ]),
+      );
+    },
     get player_state() {
       return playerStateNow();
     },
@@ -354,6 +365,21 @@ const signInLabPlayer = (wallet: string | undefined) => {
   identityClient.readDefaultWallet = async () => null;
   answerLabBuildOrders();
   useIdentitySessionStore.getState().applySession(session);
+};
+
+/** A free lab home has no source to register, matching the relay's empty answer for an account with no holdings. */
+const answerHomeEntry = (scenario: LabScenario) => {
+  const network = window.fetch.bind(window);
+  window.fetch = async (input, init) => {
+    const url = new URL(input instanceof Request ? input.url : String(input), window.location.origin);
+    if (url.pathname !== "/api/value/realm-entry" || init?.method !== "POST") return network(input, init);
+    const { gameId, realmId } = JSON.parse(String(init.body)) as { gameId: number; realmId?: number };
+    if (realmId !== undefined || scenario.wallet)
+      return Response.json({ error: "realm_wallet_missing" }, { status: 409 });
+    if (gameId !== LAB_GAME.gameId || url.searchParams.get("chainId") !== LAB_GAME.chainId)
+      return Response.json({ error: "realm_registration_refused" }, { status: 409 });
+    return Response.json({});
+  };
 };
 
 /** The lab's home claim follows the current relay: game day, grant facts, then the receipt's transaction. */

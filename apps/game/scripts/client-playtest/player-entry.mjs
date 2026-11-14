@@ -100,15 +100,16 @@ export async function enterAsPlayer(browser, owner, timeoutMs, { card, game }) {
  */
 export async function findHomeCardEntry(browser, owner, timeoutMs, { card, game }) {
   const startedAt = Date.now();
-  let entry = null;
-  while (!(entry = browser.read(markHomeCardEntryExpression(card, game)))) {
+  while (true) {
+    await continueWithoutWallet(browser, owner);
+    const entry = browser.read(markHomeCardEntryExpression(card, game));
+    if (entry) return entry;
     if (Date.now() - startedAt > timeoutMs) {
       throw new Error(`No card for game ${game.gameId} to ${card.verbs.join(" or ")} on the home page`);
     }
     browser.press("Escape");
     await owner.sleep(POLL_MS);
   }
-  return entry;
 }
 
 /** Closes the optional wallet invitation through its visible close button before playing the map. */

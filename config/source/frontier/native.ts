@@ -30,6 +30,7 @@ export const frontierPreset = {
     protocolCutBps: 0,
     mmrEnabled: false,
   },
+  orderAspects: [],
   bitcoinEnabled: false,
   startingTroops: Array.from({ length: 17 }, () => "Knight" as const),
   realmResources: [],

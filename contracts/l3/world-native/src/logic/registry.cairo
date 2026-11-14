@@ -1,5 +1,8 @@
 #[starknet::contract]
 pub mod RegistryLogic {
+    component!(path: crate::logic::aspects::AspectState, storage: aspects, event: AspectEvent);
+    #[abi(embed_v0)]
+    impl Aspects = crate::logic::aspects::AspectState::AspectsImpl<ContractState>;
     #[cfg(feature: "test_support")]
     use crate::game::GameRegistry;
     use crate::logic::guilds::GuildState;
@@ -21,6 +24,8 @@ pub mod RegistryLogic {
     #[allow(starknet::colliding_storage_paths)]
     struct Storage {
         #[substorage(v0)]
+        aspects: crate::logic::aspects::AspectState::Storage,
+        #[substorage(v0)]
         guilds: GuildState::Storage,
         #[substorage(v0)]
         release: ReleaseState::Storage,
@@ -30,6 +35,7 @@ pub mod RegistryLogic {
     #[event]
     #[derive(Drop, starknet::Event)]
     pub enum Event {
+        AspectEvent: crate::logic::aspects::AspectState::Event,
         GuildEvent: GuildState::Event,
         GameEvent: crate::logic::game::Event,
         ReleaseEvent: ReleaseState::Event,

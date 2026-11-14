@@ -1,3 +1,4 @@
+use starknet::storage::StorageMapReadAccess;
 pub use world_test_support::tests::realms::*;
 
 
@@ -80,7 +81,7 @@ fn forged_season_commands_cannot_allocate_or_place_realms() {
             season,
             1,
             deployment.actor,
-            crate::realms::SettleSeason { selected_realm: Option::None },
+            crate::realms::SettleSeason { selected_realm: Option::None, aspect: None },
             crate::commands::action_context(super::context(deployment.games, 1)),
         )
             .is_err(),
@@ -94,4 +95,23 @@ fn forged_season_commands_cannot_allocate_or_place_realms() {
             .is_err(),
     );
     assert_eq!(super::play_fixture::gameplay_snapshot(deployment.games), before);
+}
+
+#[test]
+fn catalogue_indexes_each_realms_actual_order_across_batches() {
+    let pool = fixture();
+    pool.initialize(1, array![0x4000003, 0x9000002].span());
+    pool.initialize(3, array![0x4000001].span());
+    snforge_std::interact_with_state(
+        pool.contract_address,
+        || {
+            let state = crate::state::read();
+            assert_eq!(state.realms.order_count.read(1), 2);
+            assert_eq!(state.realms.order_count.read(5), 1);
+            assert_eq!(state.realms.order_count.read(2), 0);
+            assert_eq!(state.realms.order_realms.read((1, 0)), 1);
+            assert_eq!(state.realms.order_realms.read((1, 1)), 3);
+            assert_eq!(state.realms.order_realms.read((5, 0)), 2);
+        },
+    );
 }

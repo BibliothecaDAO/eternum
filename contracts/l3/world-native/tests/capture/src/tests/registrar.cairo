@@ -180,7 +180,10 @@ fn expedition_army_limits_follow_castle_level_without_guards_or_returning_troops
     super::play_fixture::reserve_fixture_homes(d.games, game_id, d.actor);
     assert!(
         execute_in_game(
-            d, game_id, Command::SettleSeason(crate::realms::SettleSeason { selected_realm: Some(1) }), 350,
+            d,
+            game_id,
+            Command::SettleSeason(crate::realms::SettleSeason { selected_realm: Some(1), aspect: None }),
+            350,
         ),
     );
     let home = ResourceKey { game_id, entity_id: 1 };
@@ -372,7 +375,10 @@ fn depth_entry_requires_research_and_keeps_stamina_at_every_depth() {
     super::play_fixture::reserve_fixture_homes(d.games, game_id, d.actor);
     assert!(
         execute_in_game(
-            d, game_id, Command::SettleSeason(crate::realms::SettleSeason { selected_realm: Some(1) }), 350,
+            d,
+            game_id,
+            Command::SettleSeason(crate::realms::SettleSeason { selected_realm: Some(1), aspect: None }),
+            350,
         ),
     );
     let home = ResourceKey { game_id, entity_id: 1 };
@@ -1333,7 +1339,9 @@ fn open_frontier_settlement_uses_only_each_players_home_and_entry() {
     let views = ISettlementViewsDispatcher { contract_address: d.games };
     let progress = views.settlement_progress(game_id);
     let other = super::bind_authority(d);
-    let command = Command::SettleSeason(crate::realms::SettleSeason { selected_realm: None });
+    let command = Command::SettleSeason(
+        crate::realms::SettleSeason { selected_realm: None, aspect: first_aspect_choice(d, game_id) },
+    );
     assert!(execute_in_game(d, game_id, command, 360));
     assert!(execute_in_game(other, game_id, command, 360));
     let first = snforge_std::interact_with_state(d.games, || crate::entity_ids::home_for_actor(game_id, d.actor));

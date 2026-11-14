@@ -1,5 +1,5 @@
 {
-  "schemaIdentity": "9a624e27d4359b1e695345302d060108e4ad61c6ee20f8771b08bb77ffc58f69",
+  "schemaIdentity": "446502be62780505679b1e3f425ace53907cb47a79cd48784d9192136a4bc3f5",
   "commandAbi": [
     {
       "type": "interface",
@@ -448,6 +448,10 @@
         {
           "name": "selected_realm",
           "type": "core::option::Option::<core::integer::u32>"
+        },
+        {
+          "name": "aspect",
+          "type": "core::option::Option::<core::integer::u8>"
         }
       ]
     },
@@ -458,6 +462,20 @@
         {
           "name": "Some",
           "type": "core::integer::u32"
+        },
+        {
+          "name": "None",
+          "type": "()"
+        }
+      ]
+    },
+    {
+      "type": "enum",
+      "name": "core::option::Option::<core::integer::u8>",
+      "variants": [
+        {
+          "name": "Some",
+          "type": "core::integer::u8"
         },
         {
           "name": "None",
@@ -654,20 +672,6 @@
         {
           "name": "relic_slot",
           "type": "core::option::Option::<core::integer::u8>"
-        }
-      ]
-    },
-    {
-      "type": "enum",
-      "name": "core::option::Option::<core::integer::u8>",
-      "variants": [
-        {
-          "name": "Some",
-          "type": "core::integer::u8"
-        },
-        {
-          "name": "None",
-          "type": "()"
         }
       ]
     },
@@ -1435,6 +1439,18 @@
     },
     {
       "name": "PlayerEntry",
+      "scope": "game"
+    },
+    {
+      "name": "AspectRules",
+      "scope": "game"
+    },
+    {
+      "name": "HomeAspect",
+      "scope": "game"
+    },
+    {
+      "name": "AspectMembers",
       "scope": "game"
     },
     {

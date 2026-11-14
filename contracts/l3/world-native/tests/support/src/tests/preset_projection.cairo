@@ -210,6 +210,13 @@ pub fn observe_settlement(ref rows: Array<ObservedRow>, address: ContractAddress
     let villages = IVillagePassesDispatcher { contract_address: address };
     let expedition_rules = IExpeditionRulesDispatcher { contract_address: address };
     let spires = ISpiresDispatcher { contract_address: address };
+    if let Some(packed) = interact_with_state(address, || crate::logic::aspects::rules(game_id)) {
+        let mut orders = array![];
+        for order in 1_u8..17 {
+            orders.append(crate::aspects::order_aspect(packed, order));
+        }
+        row(ref rows, 'AspectRules', key, orders.span());
+    }
     row(ref rows, 'RealmGrants', key, settlement_views.realm_grants(game_id));
     row(ref rows, 'VillageRules', key, villages.village_rules(game_id));
     let depths = interact_with_state(address, || crate::logic::preset_record::for_game(game_id).depth_count.read());

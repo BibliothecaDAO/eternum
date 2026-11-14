@@ -1303,3 +1303,14 @@ leaves a screenshot. `/lab/game?scenario=economy` opens the same two owned realm
 Relic forecast acceptance: `pnpm playtest --steps lab-relic-forecasts` starts `/lab/game?scenario=relics`, opens the
 ruin card, switches on Blade and Tome from the army panel, then checks the changed fight and XP. The shared readers also
 cover Ward, Plunder, expiry and incomplete snapshots in the site-card regressions.
+
+## Season 1 Aspect founding
+
+A Season 1 free or campaign home chooses one of four Aspects on the game entry screen. Tap its card to found the home;
+its four Orders and current member count come from the shared catalog and Herald's directory. A held Realm inherits its
+Order's Aspect. A founded home can attach only a held Realm from that Aspect.
+
+Presentation: `/lab/app/wallet-ready/doorway/aspect` and `/lab/app/wallet-ready/doorway/aspect-realm` mount the
+production picker. The full founding flow is `/lab/game?scenario=aspect-settle`; the canonical playtest's
+`--steps lab-aspect-settle` opens Play, verifies no automatic founding, taps an Aspect and checks the command plus
+resulting membership facts.

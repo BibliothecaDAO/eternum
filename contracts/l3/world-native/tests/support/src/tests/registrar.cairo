@@ -90,6 +90,7 @@ pub fn definition(blitz: bool) -> PresetDefinition {
             upgrades: array![crate::upgrades::UpgradeRecipe { costs: array![].span() }].span(),
         },
         settlement: SettlementPreset {
+            order_aspects: array![].span(),
             mode: if blitz {
                 SettlementMode::Triple
             } else {
@@ -259,7 +260,10 @@ pub fn expedition_home(d: super::Deployment) -> (u32, PresetDefinition, u8) {
     );
     assert!(
         execute_in_game(
-            d, game_id, Command::SettleSeason(crate::realms::SettleSeason { selected_realm: Some(1) }), 350,
+            d,
+            game_id,
+            Command::SettleSeason(crate::realms::SettleSeason { selected_realm: Some(1), aspect: None }),
+            350,
         ),
     );
     let guards = IGuardsDispatcher { contract_address: d.games };
@@ -496,7 +500,10 @@ pub fn assert_capture_at(
     super::play_fixture::reserve_fixture_homes(d.games, game_id, d.actor);
     assert!(
         execute_in_game(
-            d, game_id, Command::SettleSeason(crate::realms::SettleSeason { selected_realm: Some(1) }), opening,
+            d,
+            game_id,
+            Command::SettleSeason(crate::realms::SettleSeason { selected_realm: Some(1), aspect: None }),
+            opening,
         ),
     );
     let home = ResourceKey { game_id, entity_id: 1 };
@@ -899,7 +906,10 @@ pub fn setup_frontier_relics_with_preset(
     super::play_fixture::reserve_fixture_homes(d.games, game_id, d.actor);
     assert!(
         execute_in_game(
-            d, game_id, Command::SettleSeason(crate::realms::SettleSeason { selected_realm: Some(1) }), 350,
+            d,
+            game_id,
+            Command::SettleSeason(crate::realms::SettleSeason { selected_realm: Some(1), aspect: None }),
+            350,
         ),
     );
     let home = ResourceKey { game_id, entity_id: 1 };
@@ -1051,16 +1061,11 @@ pub fn create_open_frontier(preset: PresetDefinition, duration: u64) -> (super::
         .create_game(
             CreateGameParams { start_main_at: 360, end_grace_seconds: 0, duration_seconds: duration, ..params(false) },
         );
-    snforge_std::interact_with_state(
-        d.games,
-        || {
-            let state = crate::state::write();
-            state.realms.catalogue_count.write(crate::realms::CANONICAL_REALM_COUNT);
-            for index in 1_u32..crate::realms::CANONICAL_REALM_COUNT + 1 {
-                state.realms.traits.write(index, 0x4000001);
-            }
-        },
-    );
+    let mut traits = array![];
+    for _ in 0..crate::realms::CANONICAL_REALM_COUNT {
+        traits.append(0x4000001);
+    }
+    super::realms::seed_catalogue(d, traits.span());
     (d, game_id)
 }
 
@@ -1073,4 +1078,16 @@ pub fn apply_ruin_depth_release(d: super::Deployment, game_id: u32) {
         releases.apply_release(game_id, release_id);
     }
     stop_cheat_caller_address(d.games);
+}
+
+pub fn first_aspect_choice(d: super::Deployment, game_id: u32) -> Option<u8> {
+    snforge_std::interact_with_state(
+        d.games, || {
+            if crate::logic::aspects::rules(game_id).is_some() {
+                Some(1)
+            } else {
+                None
+            }
+        },
+    )
 }

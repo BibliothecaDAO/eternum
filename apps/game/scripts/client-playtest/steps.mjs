@@ -758,6 +758,50 @@ function armyDeployed({ actionLatency }) {
  * the player's realm, then the game opening on it, on that realm. The wait covers the game's boot after the chain has
  * answered.
  */
+const ASPECT_SETTLE_STEPS = [
+  {
+    name: "found-in-chosen-aspect",
+    play: async ({ browser, owner, extraScreenshot }) => {
+      await playFromTheHomeCard({ browser, owner });
+      await waitUntil(
+        () => browser.read('document.querySelectorAll(".aspect-picker__card:not(:disabled)").length') === 4,
+        PLAYABLE_WAIT_MS,
+      );
+      const choice = browser.read(`JSON.stringify({
+        cards: [...document.querySelectorAll(".aspect-picker__card")].map(card => card.getAttribute("aria-label")),
+        sent: (window.__labChain?.sent ?? []).filter(({command}) => command.kind === "SettleSeason").length,
+      })`);
+      const choosing = extraScreenshot("aspect-choice");
+      if (choice.sent !== 0 || choice.cards.length !== 4) return { choice, choosing };
+      browser.click("Join Chaos");
+      await waitFor(browser, (seen) => seen.playable && seen.scene === "hex", PLAYABLE_WAIT_MS);
+      const founded = browser.read(`JSON.stringify(
+        (window.__labChain?.sent ?? []).filter(({command}) => command.kind === "SettleSeason")
+      )`);
+      return { choice, choosing, founded };
+    },
+    settleMs: 0,
+    verify: ({ played, seen }) => {
+      const [founded] = played.founded ?? [];
+      const home = founded?.answered.find(({ model }) => model === "HomeAspect")?.value;
+      const members = founded?.answered.find(({ model }) => model === "AspectMembers")?.value;
+      return played.choice?.sent === 0 &&
+        played.choice.cards?.length === 4 &&
+        played.choice.cards.includes("Join Chaos") &&
+        played.founded?.length === 1 &&
+        founded.command.calldata.slice(5).map(Number).join(",") === "1,0,3" &&
+        Number(home?.home) === 7 &&
+        Number(home?.aspect) === 3 &&
+        Number(members?.aspect) === 3 &&
+        Number(members?.members) === 1 &&
+        seen.playable &&
+        isIn(seen, "Realm", "hex")
+        ? completed(played)
+        : failed("The chosen Aspect must be submitted and become the home's membership", played);
+    },
+  },
+];
+
 const SETTLE_ACTION_STEPS = [
   clickToResultStep("settle", "SettleSeason", playFromTheHomeCard, enteredOnTheRealm, { settleMs: SETTLE_RESULT_MS }),
 ];
@@ -4790,6 +4834,7 @@ export const STEP_SETS = {
   "lab-actions-army": { game: labSpireGame("upkeep"), steps: ARMY_ACTION_STEPS },
   "lab-actions-demolish": { game: labSpireGame("upkeep"), steps: DEMOLISH_ACTION_STEPS },
   "lab-actions-settle": { game: LAB_SETTLE, steps: SETTLE_ACTION_STEPS },
+  "lab-aspect-settle": { game: { ...labSpireGame("aspect-settle"), entersFromHome: true }, steps: ASPECT_SETTLE_STEPS },
   "lab-actions-fight": { game: labSpireGame("fight"), steps: FIGHT_ACTION_STEPS },
   "lab-actions-fight-lost": { game: labSpireGame("fight-lost"), steps: FIGHT_LOST_STEPS },
   "lab-actions-sites": { game: labSpireGame("sites"), steps: SITE_ACTION_STEPS },

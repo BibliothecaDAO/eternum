@@ -23,7 +23,7 @@ export const GameLabView = () => {
     installLabChain(scenario, startLabGame(name).startedAt).then(
       (game) => {
         game.startDevice?.();
-        navigate(game.entersFromHome ? "/" : mapHref(game.opensOn, params), { replace: true });
+        navigate(gameHref(game.opensOn, params, game.entersFromHome), { replace: true });
       },
       (error: unknown) => setFailed(String(error)),
     );
@@ -40,12 +40,13 @@ export const GameLabView = () => {
  * player's map on their site; the page's other options (the renderer mode, dev overlays) are the game's and go on with
  * it.
  */
-const mapHref = (tile: { col: number; row: number }, params: URLSearchParams): string => {
-  const at = Position.fromContract({ x: tile.col, y: tile.row }).getNormalized();
+const gameHref = (tile: { col: number; row: number }, params: URLSearchParams, entersFromHome = false): string => {
   const options = new URLSearchParams(params);
   const scene = options.get("scene") === "hex" ? "hex" : "map";
   options.delete("scenario");
   options.delete("scene");
+  if (entersFromHome) return options.size ? `/?${options.toString()}` : "/";
+  const at = Position.fromContract({ x: tile.col, y: tile.row }).getNormalized();
   options.set("col", String(at.x));
   options.set("row", String(at.y));
   return `/g/${LAB_GAME.chainId}/${LAB_GAME.gameId}/${scene}?${options.toString()}`;

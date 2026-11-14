@@ -737,6 +737,7 @@ export const factWireTypes = [
 const presetDerivedModels = new Set([
   "SliceRules",
   "SettlementRules",
+  "AspectRules",
   "ResourceRule",
   "ProductionRecipe",
   "MineKindConfig",
@@ -808,6 +809,8 @@ export function defineFactModels({ struct, model: declare }) {
         value: "zero",
         meaning: "No troops or resurrection delay in this guard slot.",
       };
+    if (row.name === "AspectMembers")
+      row.absence = { parent: "AspectRules", value: "zero", meaning: "No home has joined this Aspect in this game." };
     if (row.name === "SettlementProgress")
       row.absence = {
         parent: "SettlementRules",
@@ -1062,6 +1065,30 @@ export function defineFactModels({ struct, model: declare }) {
     ),
     model("EntryEntitlement", "game", struct("settlement::EntryKey"), struct("settlement::EntryEntitlement")),
     model("PlayerEntry", "game", struct("settlement::EntryKey"), struct("settlement::PlayerEntry")),
+    model(
+      "AspectRules",
+      "game",
+      [{ name: "game_id", type: "core::integer::u32" }],
+      [{ name: "orders", type: "core::array::Span::<core::integer::u8>" }],
+    ),
+    model(
+      "HomeAspect",
+      "game",
+      [
+        { name: "game_id", type: "core::integer::u32" },
+        { name: "home", type: "core::integer::u64" },
+      ],
+      [{ name: "aspect", type: "core::integer::u8" }],
+    ),
+    model(
+      "AspectMembers",
+      "game",
+      [
+        { name: "game_id", type: "core::integer::u32" },
+        { name: "aspect", type: "core::integer::u8" },
+      ],
+      [{ name: "members", type: "core::integer::u32" }],
+    ),
     model("TileOpt", "game", struct("map::TileKey"), struct("map::TileOpt")),
     model("TileOccupancy", "game", struct("map::TileKey"), struct("map::TileOccupancy")),
     model("ArmyRelics", "game", struct("troops::ExplorerKey"), struct("army_relics::ArmyRelics")),
@@ -1412,6 +1439,9 @@ export const syncScopes = {
   CampaignHome: { entities: ["home"] },
   EntryEntitlement: byOwner,
   PlayerEntry: byOwner,
+  AspectRules: "shared",
+  HomeAspect: "shared",
+  AspectMembers: "shared",
   VillagePass: byOwner,
   StoryEvent: byOwner,
   Guild: { owners: ["guild_id"] },

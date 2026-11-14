@@ -31,7 +31,14 @@ fn ruins_fill_replace_and_activate_an_armys_relics_through_commands() {
     preset.settlement.depths = depths.span();
     let (d, game_id) = create_open_frontier(preset, BAG_SECONDS);
     assert!(
-        execute_in_game(d, game_id, Command::SettleSeason(crate::realms::SettleSeason { selected_realm: None }), 360),
+        execute_in_game(
+            d,
+            game_id,
+            Command::SettleSeason(
+                crate::realms::SettleSeason { selected_realm: None, aspect: first_aspect_choice(d, game_id) },
+            ),
+            360,
+        ),
     );
     let home_id = snforge_std::interact_with_state(d.games, || crate::entity_ids::home_for_actor(game_id, d.actor));
     let home = ResourceKey { game_id, entity_id: home_id };

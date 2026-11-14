@@ -3,6 +3,7 @@ import { describe, expect, it, vi } from "vitest";
 
 import {
   continueWithoutWallet,
+  findHomeCardEntry,
   CONNECT_PLACE,
   markHomeCardEntryExpression,
   signInIfSignedOut,
@@ -84,6 +85,29 @@ it("refuses an expired saved state without sending another email code", async ()
 });
 
 describe("the optional wallet invitation", () => {
+  it("closes the invitation before returning an already enabled home-card entry", async () => {
+    const dom = page(`<div data-play-item="0x1ab9:1"><button data-play-verb="resume">Resume</button></div>
+      <section role="dialog" aria-label="Your wallet"><button aria-label="Close">Close</button></section>`);
+    const run = vi.fn(([action, selector]) => {
+      expect(action).toBe("click");
+      dom.window.document.querySelector(selector).closest("section").remove();
+    });
+    const browser = {
+      read: (expression) => {
+        const value = dom.window.eval(expression);
+        return typeof value === "string" ? JSON.parse(value) : value;
+      },
+      run,
+    };
+    const entry = await findHomeCardEntry(browser, { sleep: vi.fn() }, 1_000, {
+      card: frontierCard,
+      game: FRONTIER_GAME,
+    });
+    expect(entry).toEqual({ step: "enter", t: 7, entry: "Resume" });
+    expect(run).toHaveBeenCalledOnce();
+    expect(dom.window.document.querySelector('[role="dialog"]')).toBeNull();
+  });
+
   it("closes the wallet prompt through its close control and records that it was shown", async () => {
     const dom = page(
       '<section role="dialog" aria-label="Your wallet"><button aria-label="Close">Close</button></section>',

@@ -1037,3 +1037,16 @@ test("Frontier discoveries use the approved narrow guard ranges at every depth",
     }
   }
 });
+
+test("Season 1 and its check preset share the canonical Aspect mapping", () => {
+  const season = buildNativePreset(
+    loadNativePresetConfiguration("madara.frontier", FRONTIER_S1_PRESET_ID),
+    FRONTIER_S1_PRESET_ID,
+  );
+  expect(season.settlement.order_aspects).toEqual([1, 2, 3, 4, 4, 3, 4, 4, 1, 2, 2, 1, 1, 3, 3, 2]);
+  expect(nativePresets[FRONTIER_FIXTURE_PRESET_ID]!.orderAspects).toEqual(season.settlement.order_aspects);
+  for (const preset of Object.values(nativePresets).filter(
+    ({ id }) => id !== FRONTIER_S1_PRESET_ID && id !== FRONTIER_FIXTURE_PRESET_ID,
+  ))
+    expect(preset.orderAspects).toEqual([]);
+});

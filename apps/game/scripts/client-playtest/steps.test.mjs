@@ -1086,3 +1086,37 @@ it("requires an opened army panel and no retired LORDS controls", () => {
   expect(verify({ played: { panel, controls: ["Refill"] } }).status).toBe("failed");
   expect(verify({ played: { panel: { army: "Army 1" }, controls: [] } }).status).toBe("failed");
 });
+
+it("requires the selected Aspect in both the founding command and its membership result", () => {
+  const verify = STEP_SETS["lab-aspect-settle"].steps[0].verify;
+  const choice = { sent: 0, cards: ["Join Might", "Join Harmony", "Join Chaos", "Join Guile"] };
+  const seen = { scene: "hex", rendered: "hex", place: "Realm", playable: true };
+  const founded = {
+    command: { calldata: ["1", "0", "0", "0", "10", "1", "0", "3"] },
+    answered: [
+      { model: "HomeAspect", value: { home: 7, aspect: 3 } },
+      { model: "AspectMembers", value: { aspect: 3, members: 1 } },
+    ],
+  };
+  expect(verify({ seen, played: { choice, founded: [founded] } }).status).toBe("completed");
+  expect(verify({ seen, played: { choice: { ...choice, sent: 1 }, founded: [founded] } }).status).toBe("failed");
+  expect(verify({ seen, played: { choice, founded: [] } }).status).toBe("failed");
+  expect(verify({ seen, played: { choice, founded: [{ ...founded, answered: [] }] } }).status).toBe("failed");
+  expect(
+    verify({
+      seen,
+      played: { choice, founded: [{ ...founded, command: { calldata: ["1", "0", "0", "0", "10", "1", "0", "2"] } }] },
+    }).status,
+  ).toBe("failed");
+  expect(
+    verify({
+      seen,
+      played: {
+        choice,
+        founded: [
+          { ...founded, answered: [{ model: "HomeAspect", value: { home: 7, aspect: 2 } }, founded.answered[1]] },
+        ],
+      },
+    }).status,
+  ).toBe("failed");
+});

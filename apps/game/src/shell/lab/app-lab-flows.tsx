@@ -1,3 +1,5 @@
+import { AspectPicker } from "@/ui/features/game-entry/aspect-picker";
+import type { AspectId } from "@bibliothecadao/types";
 import { BLITZ_WORDS, SIGN_IN_PROVIDER_NAMES, SIGN_IN_WORDS, WORDS } from "@/ui/design-system/kit/words";
 import { failureSentence } from "@/ui/modules/identity/identity-failures";
 import { IdentityRequestError, SOCIAL_PROVIDERS } from "@realms-world/identity";
@@ -139,13 +141,17 @@ export const LabDoorway = () => {
       onSignIn={noop}
       onSpectate={noop}
       results="/lab/app/reward-sealed/results/0x5245414c4d53-7"
-      asking={state === "home"}
+      asking={state === "home" || state === "aspect" || state === "aspect-realm"}
       verb={state === "home" ? <FoundButton founding={false} ready onFound={noop} /> : undefined}
     >
       {/* The entry's own chips at the realm step, as game-entry-modal passes them. */}
       {state === "waiting" && <ClockChip prefix="starts" at={now + LAB_SEASON_WAIT} now={now} />}
       {state === "preparing" && <Pill icon="hourglass">{`${BLITZ_WORDS.preparing} 17/24`}</Pill>}
       {state === "home" && <LabHomeStep />}
+      {state === "aspect" && <LabAspectStep />}
+      {state === "aspect-realm" && (
+        <AspectPicker members={LAB_ASPECT_MEMBERS} realmOrder={4} joining={null} onJoin={noop} />
+      )}
     </DoorwayScreen>
   );
 };
@@ -166,4 +172,10 @@ const LabHomeStep = () => {
       <PlaysAs />
     </>
   );
+};
+
+const LAB_ASPECT_MEMBERS = { 1: 38, 2: 21, 3: 1, 4: 0 };
+const LabAspectStep = () => {
+  const [joining, setJoining] = useState<AspectId | null>(null);
+  return <AspectPicker members={LAB_ASPECT_MEMBERS} realmOrder={null} joining={joining} onJoin={setJoining} />;
 };

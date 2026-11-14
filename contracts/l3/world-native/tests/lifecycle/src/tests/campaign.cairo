@@ -29,7 +29,11 @@ fn found_at(d: Deployment, game_id: u32, timestamp: u64) -> LaborHome {
         super::resource_commands::execute_in_game(
             d,
             game_id,
-            crate::commands::Command::SettleSeason(crate::realms::SettleSeason { selected_realm: None }),
+            crate::commands::Command::SettleSeason(
+                crate::realms::SettleSeason {
+                    selected_realm: None, aspect: super::registrar::first_aspect_choice(d, game_id),
+                },
+            ),
             timestamp,
         ),
     );
@@ -199,7 +203,9 @@ fn refuses_a_second_source(held_first: bool) {
         !super::resource_commands::execute_in_game(
             d,
             game_id,
-            crate::commands::Command::SettleSeason(crate::realms::SettleSeason { selected_realm: Some(711) }),
+            crate::commands::Command::SettleSeason(
+                crate::realms::SettleSeason { selected_realm: Some(711), aspect: None },
+            ),
             360,
         ),
     );

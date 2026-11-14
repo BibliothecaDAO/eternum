@@ -3,7 +3,7 @@ import "./home-source-picker.css";
 import { useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { canonicalRealm, homeSourceClaim, type HomeClaimSource, type LaborRuleAmounts } from "@bibliothecadao/eternum";
-import { orders } from "@bibliothecadao/types";
+import { orders, type AspectId } from "@bibliothecadao/types";
 import type { CampaignKey, HeldRealm } from "@realms-world/identity";
 
 import { useHeldRealms, useHeldTicket } from "@/hooks/use-holdings";
@@ -13,6 +13,7 @@ import { linkWalletHref } from "@/shell/profile/settings-route";
 import { returnPathOf } from "@/shell/return-path";
 import { homeIcon } from "@/ui/design-system/home-icons";
 import { HomeArt } from "@/ui/shared/components/home-art";
+import { aspectOfOrder } from "./aspect-picker";
 import { Icon } from "@/ui/design-system/icon";
 import { mintedResourceMeaning, orderMeaning } from "@/ui/design-system/icon-meaning";
 import { HudLoading } from "@/ui/design-system/kit/hud-elements";
@@ -50,10 +51,13 @@ export function HomeSourcePicker({
   takenRealmIds = [],
   onSourceAvailable,
   requireSource = false,
+  aspect = null,
 }: {
   presetId: number;
   title?: string;
   requireSource?: boolean;
+  /** The Aspect a founded home plays for, in a season with Aspects: only Realms of its Orders can attach to it. */
+  aspect?: AspectId | null;
   takenRealmIds?: readonly number[];
   onSourceAvailable?: (available: boolean) => void;
   registered: number | null;
@@ -63,9 +67,9 @@ export function HomeSourcePicker({
   disabled: boolean;
 }) {
   const sources = useHomeSources(presetId);
-  const choices = choicesOf(sources).map((choice) =>
-    choice.kind === "realm" ? { ...choice, taken: takenRealmIds.includes(choice.realmId) } : choice,
-  );
+  const choices = choicesOf(sources)
+    .filter((choice) => aspect === null || choice.kind !== "realm" || aspectOfOrder(choice.order) === aspect)
+    .map((choice) => (choice.kind === "realm" ? { ...choice, taken: takenRealmIds.includes(choice.realmId) } : choice));
   const available = choices.filter((choice) => !isTaken(choice));
   const hasSource = available.length > 0;
   const hasChoices = choices.length > 0;
@@ -459,7 +463,7 @@ interface HomeSources {
  * Whether the account has nothing to choose at the Realm step: every read answered and no Realm held, so its home is
  * its ticket or a free one. Entry then creates the realm without asking (the owner's flow F3, 4 November 2026).
  */
-export function useNothingToChoose(presetId: number): boolean {
+export function useNothingToChoose(presetId: number | null): boolean {
   const sources = useHomeSources(presetId);
   return sources.ready && sources.realms.length === 0 && !sources.realmsUnreadable && !sources.ticketUnreadable;
 }
@@ -469,17 +473,17 @@ export function useNothingToChoose(presetId: number): boolean {
  * once both have answered: a failed read (Realms or ticket) is not an answer, so the step waits on its Try again rather
  * than offering a free home or a lesser default without it.
  */
-function useHomeSources(presetId: number): HomeSources {
+function useHomeSources(presetId: number | null): HomeSources {
   const { session, wallet, held } = useHeldRealms();
-  const campaign = campaignOfPreset(presetId);
+  const campaign = presetId === null ? null : campaignOfPreset(presetId);
   const ticket = useHeldTicket(campaign);
-  const rules = useMemo(() => presetLaborRules(presetId), [presetId]);
+  const rules = useMemo(() => (presetId === null ? null : presetLaborRules(presetId)), [presetId]);
   const heldKnown = wallet === null || held.data !== undefined;
   return {
     wallet,
     ticket: ticketChoice(campaign, ticket),
     realms: held.data ?? [],
-    ready: session !== null && heldKnown && (ticket.state === "none" || ticket.state === "held"),
+    ready: presetId !== null && session !== null && heldKnown && (ticket.state === "none" || ticket.state === "held"),
     realmsUnreadable: held.isError ? () => void held.refetch() : null,
     ticketUnreadable: ticket.state === "unreadable" ? ticket.retry : null,
     rules,

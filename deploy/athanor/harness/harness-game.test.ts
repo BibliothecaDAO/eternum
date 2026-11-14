@@ -81,7 +81,7 @@ test("a prepared Frontier player reaches confirmed play with no owner credential
     gameId: 7,
     waitForAction: async () => ({ status: "SUCCEEDED" }),
     setup: {
-      store: {},
+      store: { get: () => undefined },
       network: { provider },
       systemCalls: {
         settle_season: async (call: unknown) => {
@@ -95,7 +95,7 @@ test("a prepared Frontier player reaches confirmed play with no owner credential
     const game = createHarnessGame(client);
     const sent = await game.submit(signer, () => game.settle(signer));
     await sent.confirmed;
-    expect(calls).toEqual([{ signer }]);
+    expect(calls).toEqual([{ signer, aspect: undefined }]);
     expect(sent.transactionHash).toBe("0x123");
   } finally {
     if (saved.address === undefined) delete process.env.DEPLOYER_ACCOUNT_ADDRESS;
@@ -120,4 +120,22 @@ test("keeps listening for provider timing after the separate confirmation resolv
   provider.emit("transactionComplete", { details: { transaction_hash: "0x123" }, admissionToVisibleMs: 480 });
   expect(await submission.admissionToVisibleMs).toBe(480);
   expect(provider.listenerCount("transactionComplete")).toBe(0);
+});
+
+test("a free home in an Aspect game submits a canonical choice", async () => {
+  const signer = { address: "0x42" } as Account;
+  const calls: unknown[] = [];
+  const game = createHarnessGame({
+    gameId: 7,
+    setup: {
+      store: { get: (model: string) => (model === "AspectRules" ? { orders: [1, 2, 3, 4] } : undefined) },
+      systemCalls: {
+        settle_season: async (props: unknown) => {
+          calls.push(props);
+        },
+      },
+    },
+  } as unknown as GameClient);
+  await game.settle(signer);
+  expect(calls).toEqual([{ signer, aspect: 1 }]);
 });
