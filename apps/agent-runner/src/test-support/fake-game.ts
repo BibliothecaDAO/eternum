@@ -228,7 +228,7 @@ export const seedGameRegistry = (
     dev_mode_on: true,
     start_settling_at: 0n,
     start_main_at: BigInt(input.startMainAt),
-    scheduled_end_at: BigInt(input.scheduledEndAt),
+    scheduled_end_at: BigInt(input.endAt),
     end_at: BigInt(input.endAt),
     end_grace_seconds: 0,
     seed: 0n,

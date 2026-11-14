@@ -241,7 +241,8 @@ it("never records closing ranks for a hidden check game, even without its rules"
 it.each([81, 84, 85])("records an %ih season's final ranks once, with no snapshot for an absorbed stub", (hours) => {
   const end = start + hours * 3600;
   const readPartial = (model: string): FoldRow[] => {
-    if (model === "GameRegistry") return [{ key: "1", value: { ...game, seed: 0x5eedn, end_at: end, scheduled_end_at: end } }];
+    if (model === "GameRegistry")
+      return [{ key: "1", value: { ...game, seed: 0x5eedn, end_at: end, scheduled_end_at: end } }];
     if (model === "SliceRules") return [{ key: "1", value: { game_id: 1, day_unit_seconds: 7200 } }];
     return read(model);
   };

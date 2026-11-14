@@ -142,7 +142,12 @@ it("folds the extension row and preserves the added days through a checkpoint re
       fold: state,
     }).games[0]!;
   expect(directory(fold, approved.oldEnd).day_index).toBeNull();
-  native.applyReceipt(fold, receipt([rowEvent("GameRegistry", ["1"], { ...game, end_at: approved.end, scheduled_end_at: approved.end })]), 11, 0);
+  native.applyReceipt(
+    fold,
+    receipt([rowEvent("GameRegistry", ["1"], { ...game, end_at: approved.end, scheduled_end_at: approved.end })]),
+    11,
+    0,
+  );
   expect(directory(fold, approved.oldEnd)).toMatchObject({ day_index: 10, clock: { end_at: approved.end } });
   const cold = WorldFold.restore(decoder.registry, JSON.parse(JSON.stringify(fold.checkpoint())));
   expect(directory(cold, approved.oldEnd)).toEqual(directory(fold, approved.oldEnd));

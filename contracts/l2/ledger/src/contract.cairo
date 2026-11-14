@@ -2037,7 +2037,9 @@ fn frontier_unlock(season: FrontierSeason, preset: Preset, now: u64) -> u256 {
     } else if now >= season.end {
         season.pool
     } else {
-        let clock = crate::types::FrontierClock { start_main_at: season.start, end_at: season.end, scheduled_end_at: season.end, seed: season.seed };
+        let clock = crate::types::FrontierClock {
+            start_main_at: season.start, end_at: season.end, scheduled_end_at: season.end, seed: season.seed,
+        };
         let day = crate::days::day_of(clock, preset.day_unit_seconds, now);
         season.pool * (day.end - season.start).into() / (season.end - season.start).into()
     }
