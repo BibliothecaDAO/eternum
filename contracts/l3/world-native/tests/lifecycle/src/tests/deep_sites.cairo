@@ -5,7 +5,7 @@ use world_test_support::tests::resource_commands::{execute_in_game, grant, set_e
 use crate::commands::Command;
 use crate::resources::ResourceKey;
 use crate::troops::{ArmySlotKey, ExplorerKey, ExplorerTroops};
-use super::army_activity::{army, found, player, slot_army};
+use super::army_activity::{army, found, muster, player, slot_army};
 
 fn setup(seed: felt252) -> (Deployment, u32) {
     let (_, mut preset) = world_test_support::tests::preset_projection::current_definition("frontier");
@@ -244,7 +244,14 @@ fn one_player_cannot_fill_two_slots_and_day_rollover_restores_every_beast() {
     let home = army(d, first).owner;
     beside(d, first, target, 0);
     applied(d, game_id, fight(first, target), 360);
-    applied(d, game_id, muster(home, 1, 1, 10), 360);
+    applied(
+        d,
+        game_id,
+        world_test_support::tests::building_commands::create(
+            ResourceKey { game_id, entity_id: home }, crate::research::BARRACKS,
+        ),
+        360,
+    );
     let second = ExplorerKey {
         game_id, explorer_id: slot_army(d, ArmySlotKey { game_id, structure_id: home, epoch: 0, slot: 1 }),
     };
