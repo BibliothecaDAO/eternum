@@ -53,6 +53,11 @@ jobs:
 
       - uses: oven-sh/setup-bun@v2
 
+      - name: Require a local landing kind for every validation job and its inputs
+        run: |
+          bun scripts/ci/flow.ts --check
+          bun test scripts/ci
+
       - name: Check workflows cannot read stored secrets
         run: bun test ./.github/scripts/workflow-credentials.test.ts
 

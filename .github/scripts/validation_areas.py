@@ -6,9 +6,10 @@ A CI file belongs to the area that runs it: a workflow validation.yml calls belo
 a composite action to the areas whose workflows use it. CI files that only the static job checks, or that validation
 never runs, belong to STATIC. A file under .github that none of these name fails the static job, naming the file."""
 import fnmatch
+import re
 
 # A change to any of these runs every area: every area's checks install from them.
-SHARED = ["package.json", "pnpm-lock.yaml", "pnpm-workspace.yaml", ".npmrc"]
+SHARED = ["package.json", "pnpm-lock.yaml", "pnpm-workspace.yaml", ".npmrc", "scripts/ci/**", ".github/scripts/validation_areas.py"]
 # The checkout of every job that reads no media: a change to it runs each of them.
 MEDIA_FREE_CHECKOUT = ".github/actions/checkout-without-media/**"
 # CI files the static job owns. Static runs on every run, so a change to one selects no further area: static tests the
@@ -259,6 +260,7 @@ AREAS = {
         "contracts/l2/ledger/scripts/chest-preset.js",
         "contracts/l2/ledger/schema/**",
         "contracts/l3/world-native/schema/**",
+        "contracts/l3/world-native/src/**",
         "contracts/l3/world-native/tests/fixtures/**",
         "contracts/common/addresses/**",
         "contracts/utils/**",
@@ -308,7 +310,7 @@ def selected_areas(files, every_area, landing=False):
     """Select changed inputs; landing pushes additionally require all core areas."""
     return {
         area: (every_area or (landing and area not in PATH_SCOPED)
-               or any(matches(path, SHARED + patterns) for path in files))
+               or any(path.startswith(prefix) for path in files for prefix in path_prefixes(SHARED + patterns)))
         for area, patterns in AREAS.items()
     }
 
@@ -317,3 +319,16 @@ def unowned_ci_files(files):
     """The files under .github that no area, STATIC or SHARED names: a change to one would run no check."""
     owners = SHARED + STATIC + [pattern for patterns in AREAS.values() for pattern in patterns]
     return [path for path in files if path.startswith(".github/") and not matches(path, owners)]
+
+
+def path_prefixes(patterns):
+    """Flow accepts prefixes. Both PR scoping and local landing use this conservative projection."""
+    return sorted({re.split(r"[*?\[]", pattern, maxsplit=1)[0] for pattern in patterns})
+
+
+if __name__ == "__main__":
+    import json
+    import sys
+    if sys.argv[1:] != ["--flow-paths"]:
+        raise SystemExit("usage: validation_areas.py --flow-paths")
+    print(json.dumps({area: path_prefixes(SHARED + patterns) for area, patterns in AREAS.items()}))

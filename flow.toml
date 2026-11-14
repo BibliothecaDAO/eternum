@@ -84,25 +84,6 @@ measure = 'grep -oE "Tests: [0-9]+ passed" "$FLOW_LOG" | tail -n 1'
 paths = "contracts/ .tool-versions !contracts/l3/world-native/tests/capture/ !contracts/l3/world-native/tests/combat/ !contracts/l3/world-native/tests/discovery/ !contracts/l3/world-native/tests/discovery-roots/ !contracts/l3/world-native/tests/economy/ !contracts/l3/world-native/tests/lifecycle/ !contracts/l3/world-native/tests/registration/ !contracts/l3/world-native/tests/resources/"
 estimate_gb = 9
 
-[kind.format]
-cmd = "pnpm prettier --check ."
-estimate_gb = 4
-
-[kind.knip]
-cmd = "pnpm run knip"
-paths = "apps packages common knip.config.ts package.json pnpm-lock.yaml .tool-versions"
-estimate_gb = 5
-
-[kind.typecheck]
-cmd = "pnpm run build:packages && pnpm run typecheck && pnpm --dir apps/agent-runner typecheck && pnpm exec tsc -p deploy/athanor/tsconfig.json && pnpm exec tsc -p config/tsconfig.json --noEmit"
-paths = "apps packages common deploy config package.json pnpm-lock.yaml .tool-versions contracts/l3/world-native/schema"
-estimate_gb = 5
-
-[kind.test-season-one]
-cmd = "pnpm run build:packages && pnpm --dir apps/game test src/ui/features/frontier/deep src/ui/features/frontier/day src/ui/features/frontier/opening src/ui/features/frontier/aspect src/lab/season-one"
-paths = "apps/game packages"
-estimate_gb = 5
-
 [kind.prove-season-one]
 cmd = "pnpm run build:packages && pnpm --dir apps/game exec node ./scripts/prove-season-one.mjs"
 paths = "apps/game/scripts/prove-season-one.mjs"
@@ -113,7 +94,7 @@ source = "contracts/l3/check-native-plan.sh"
 kinds = "gate-prelude gate-vrf gate-world gate-drift gate-events test-capture test-combat test-discovery test-economy test-lifecycle test-registration test-resources test-world"
 
 [land]
-kinds = "sizes gate-prelude gate-vrf gate-world gate-events gate-drift test-capture test-combat test-discovery test-economy test-lifecycle test-registration test-resources test-world format knip typecheck test-harness-confirmation test-native-plan test-season-one test-aspect-founding test-army-lifetime test-army-rest"
+kinds = "sizes gate-prelude gate-vrf gate-world gate-events gate-drift test-capture test-combat test-discovery test-economy test-lifecycle test-registration test-resources test-world test-native-plan workflow-parity ci-static-knip ci-client-test-client ci-herald-history-and-stream ci-services-workers ci-portal-portal ci-native-service-class-sizes-game_ledger ci-native-service-class-sizes-realms_vrf_verifier ci-native-player-account ci-native-native-deployer ci-native-native-stamping ci-native-native-provider ci-runtime-offline-tests-runner ci-runtime-offline-tests-harness ci-runtime-offline-tests-sandbox-proxy ci-amm-test-ammv2 ci-collectibles-test-collectibles ci-mmr-test-mmr ci-season_pass-test-season-pass ci-contract_scripts-runtime-tests ci-docs-docs"
 forbid = "co-authored-by|claude|anthropic|codex|openai|generated with|session"
 
 [kind.test-client-retirement]
@@ -169,23 +150,9 @@ estimate_gb = 4
 cmd = "pnpm run build:packages && pnpm --dir packages/provider test && pnpm --dir packages/core test && pnpm --dir apps/herald exec vitest run src/native && bun test config/deployer/clean/tests/native-preset.test.ts"
 estimate_gb = 5
 
-[kind.test-harness-confirmation]
-cmd = "pnpm run build:packages && bun test deploy/athanor/harness/confirmation.test.ts deploy/athanor/harness/frontier-rules.test.ts"
-paths = "deploy/ packages/ config/ contracts/l3/world-native/schema/ package.json pnpm-lock.yaml .tool-versions"
-estimate_gb = 5
-
-[kind.test-army-lifetime]
-cmd = "pnpm run build:packages && pnpm --dir packages/core test && pnpm --dir apps/herald exec vitest run src/native src/home-ring.test.ts src/game-subscription.test.ts && pnpm --dir apps/game test src/three/managers/army-manager.walking-plate.test.ts src/three/scenes/worldmap-order-preview.test.tsx src/lab/game src/ui/features/frontier src/ui/features/relics/components/relic-activation-selector.test.tsx src/ui/features/settlement/production/production-sidebar.test.tsx src/ui/features/world/containers/left-facets/realm-suggestions.test.tsx src/ui/features/world/hud/coach-explore-gate.test.tsx src/ui/features/world/hud/coach-select-army.test.tsx"
-estimate_gb = 5
-
 [kind.playtest-army-lifetime]
 cmd = 'cp /home/djizus/projects/eternum-lanes/showcase/apps/game/.env.local apps/game/.env.local && pnpm run build:packages && pnpm --dir apps/game playtest --port 4189 --steps lab-actions-deploy --iterations 1 --renderer-modes webgpu-force-webgl --out "$FLOW_TMP/deploy" && pnpm --dir apps/game playtest --port 4189 --steps lab-day-turn --iterations 1 --renderer-modes webgpu-force-webgl --out "$FLOW_TMP/rollover"'
 estimate_gb = 6
-
-[kind.test-aspect-founding]
-cmd = "pnpm run build:packages && pnpm --dir packages/types test src/constants/orders.test.ts src/constants/quests.test.ts && bun test deploy/athanor/harness/harness-game.test.ts && pnpm --dir apps/game test src/ui/features/game-entry src/lab/game/lab-games.test.ts src/lab/game/lab-home-entry.test.ts && pnpm --dir apps/game verify:assets scripts/client-playtest/steps.test.mjs scripts/client-playtest/player-entry.test.mjs"
-paths = "apps/game/ packages/ config/ deploy/ contracts/l3/world-native/ package.json pnpm-lock.yaml .tool-versions"
-estimate_gb = 5
 
 [kind.playtest-aspect-founding]
 cmd = 'cp /home/djizus/projects/eternum-lanes/showcase/apps/game/.env.local apps/game/.env.local && pnpm run build:packages && exec 8>"${FLOW_JOB%/running/*}/playtest-port-4188.lock" && flock 8 && for viewport in 1920x1080 390x844; do pnpm --dir apps/game playtest --port 4188 --steps lab-aspect-settle --iterations 1 --renderer-modes webgpu-force-webgl --viewport "$viewport" --out "$FLOW_TMP/playtest/$viewport" || exit $?; done'
@@ -198,11 +165,6 @@ estimate_gb = 6
 [kind.playtest-deep]
 cmd = 'cp /home/djizus/projects/eternum-lanes/showcase/apps/game/.env.local apps/game/.env.local && pnpm run build:packages && exec 8>"${FLOW_JOB%/running/*}/playtest-port-4191.lock" && flock 8 && for viewport in 1920x1080 390x844; do pnpm --dir apps/game playtest --port 4191 --steps lab-deep-join --iterations 1 --renderer-modes webgpu-force-webgl --viewport "$viewport" --out "$FLOW_TMP/playtest/$viewport" || exit $?; done'
 estimate_gb = 6
-
-[kind.test-army-rest]
-cmd = "pnpm run build:packages && pnpm --dir apps/realms typecheck && pnpm --dir apps/realms test server/shard-notifier.test.ts -t 'armies the player left|held or exhausted Deep|rechecks Mist Tide'"
-paths = "apps/realms/ packages/core/ contracts/l3/world-native/schema/ package.json pnpm-lock.yaml .tool-versions"
-estimate_gb = 5
 
 [kind.playtest-banes]
 cmd = 'cp /home/djizus/projects/eternum-lanes/showcase/apps/game/.env.local apps/game/.env.local && pnpm run build:packages && exec 8>"${FLOW_JOB%/running/*}/playtest-port-4188.lock" && flock 8 && for scenario in world again late team; do for viewport in 1920x1080 390x844; do pnpm --dir apps/game playtest --port 4188 --steps "lab-bane-$scenario" --iterations 1 --renderer-modes webgpu-force-webgl --viewport "$viewport" --out "$FLOW_TMP/playtest/$scenario/$viewport" || exit $?; done; done'
@@ -240,6 +202,106 @@ estimate_gb = 6
 cmd = "pnpm run build:packages && pnpm --dir packages/chain test && pnpm --dir packages/value-ledger typecheck && pnpm --dir packages/value-ledger test && pnpm --dir apps/value-relay typecheck && pnpm --dir apps/value-relay test && pnpm --dir apps/status-monitor typecheck && pnpm --dir apps/status-monitor test && pnpm --dir apps/realms typecheck && pnpm --dir apps/realms test server/rating-reader.test.ts server/rating-top.test.ts server/ratings-worker.test.ts && pnpm --dir apps/herald exec vitest run src/value-readers.test.ts && pnpm --dir apps/game test build/env-boundary.test.ts env.test.ts"
 estimate_gb = 6
 
-[kind.test-ci-recovery]
-cmd = "pnpm run build:packages && pnpm shell:check && python3 .github/scripts/check_validation_areas.py && python3 .github/scripts/test_validation_areas.py && pnpm --dir apps/herald typecheck && pnpm --dir apps/game-docs test && bun test deploy/first/*.test.ts deploy/athanor/harness && pnpm --dir apps/launch-service test"
+[kind.workflow-parity]
+cmd = "bun scripts/ci/flow.ts --check && bun test scripts/ci"
+estimate_gb = 1
+
+# Validation jobs generated by bun scripts/ci/flow.ts --write
+[kind.ci-static-knip]
+cmd = "bun scripts/ci/run.ts static/knip"
+estimate_gb = 6
+
+[kind.ci-client-test-client]
+cmd = "bun scripts/ci/run.ts client/test-client"
+paths = ".github/actions/checkout-without-media/ .github/scripts/validation_areas.py .github/workflows/test-client.yml .npmrc .prettierrc README.md apps/android/twa-manifest.json apps/game-docs/docs/brand.gen.json apps/game-docs/docs/pages/blitz/index.mdx apps/game-docs/docs/pages/eternum/key-concepts.mdx apps/game-docs/docs/pages/frontier/index.mdx apps/game-docs/docs/pages/index.mdx apps/game-docs/docs/styles.css apps/game-docs/docs/utils/paths.ts apps/game-docs/vite-plugin-llm-txt.mjs apps/game-docs/vocs.config.ts apps/game/ apps/herald/src/ apps/ios/capacitor.config.ts apps/launch-service/migrations/ apps/launch-service/src/ apps/launch-service/wrangler.jsonc apps/status/public/index.html apps/value-relay/src/deposit-destination.ts apps/value-relay/src/failure.ts apps/value-relay/src/final-facts.ts apps/value-relay/src/frontier-games.ts apps/value-relay/src/frontier-sweep.ts apps/value-relay/src/obligations.ts apps/value-relay/src/ports.ts apps/value-relay/src/shard-conservation.ts apps/value-relay/src/shard-page.ts apps/value-relay/src/shard-rpc.ts apps/value-relay/src/shard-snapshot.ts apps/value-relay/src/source-url.ts apps/value-relay/test-support/ config/ contracts/common/addresses/ contracts/l2/ledger/schema/ contracts/l2/ledger/scripts/chest-preset.js contracts/l2/ledger/src/contract.cairo contracts/l3/player-account/class-hash.json contracts/l3/world-native/schema/ contracts/l3/world-native/scripts/generate-site-previews.mjs contracts/l3/world-native/scripts/site-previews.test.mjs contracts/l3/world-native/src/expeditions.cairo contracts/l3/world-native/src/progression.cairo contracts/l3/world-native/src/resources.cairo contracts/l3/world-native/src/rules.cairo contracts/l3/world-native/src/taxonomy.cairo contracts/l3/world-native/src/tests/fixtures/spatial-replay/ contracts/l3/world-native/src/troops.cairo contracts/l3/world-native/tests/fixtures/ contracts/utils/ deploy/first/environments.json deploy/release/ package.json packages/ pnpm-lock.yaml pnpm-workspace.yaml scripts/check-forbidden-hosts scripts/ci/ scripts/hud-sheet/ scripts/icons/ scripts/shell-tokens/ scripts/words/"
+estimate_gb = 6
+
+[kind.ci-herald-history-and-stream]
+cmd = "bun scripts/ci/run.ts herald/history-and-stream"
+paths = ".github/actions/checkout-without-media/ .github/scripts/validation_areas.py .github/workflows/test-herald.yml .npmrc apps/herald/ apps/launch-service/src/release.ts apps/value-relay/src/deposit-destination.ts apps/value-relay/src/failure.ts apps/value-relay/src/final-facts.ts apps/value-relay/src/frontier-games.ts apps/value-relay/src/frontier-sweep.ts apps/value-relay/src/obligations.ts apps/value-relay/src/ports.ts apps/value-relay/src/shard-conservation.ts apps/value-relay/src/shard-page.ts apps/value-relay/src/shard-rpc.ts apps/value-relay/src/shard-snapshot.ts apps/value-relay/src/source-url.ts apps/value-relay/test-support/ config/ contracts/common/addresses/ contracts/l2/ledger/schema/ contracts/l2/ledger/scripts/chest-preset.js contracts/l2/ledger/src/contract.cairo contracts/l3/world-native/schema/ contracts/l3/world-native/src/tests/fixtures/spatial-replay/ contracts/l3/world-native/tests/fixtures/ contracts/utils/ deploy/athanor/scripts/directory.py deploy/athanor/scripts/service_requests.py deploy/first/environments.json deploy/release/ package.json packages/ pnpm-lock.yaml pnpm-workspace.yaml scripts/ci/"
+estimate_gb = 6
+
+[kind.ci-services-workers]
+cmd = "bun scripts/ci/run.ts services/workers"
+paths = ".github/actions/checkout-without-media/ .github/scripts/validation_areas.py .github/workflows/test-services.yml .npmrc apps/admin/ apps/game/index.html apps/guardian/ apps/herald/src/native/schema.ts apps/herald/src/shard-manifest.ts apps/indexer/ apps/launch-service/ apps/realms/ apps/status-monitor/ apps/status/ apps/value-relay/ apps/web/ config/ contracts/common/addresses/ contracts/l2/ledger/schema/ contracts/l2/ledger/scripts/chest-preset.js contracts/l2/ledger/src/contract.cairo contracts/l3/player-account/class-hash.json contracts/l3/world-native/schema/ contracts/l3/world-native/tests/fixtures/ contracts/utils/ deploy/first/environments.json deploy/release/ package.json packages/ pnpm-lock.yaml pnpm-workspace.yaml scripts/ci/"
+estimate_gb = 6
+
+[kind.ci-portal-portal]
+cmd = "bun scripts/ci/run.ts portal/portal"
+paths = ".github/actions/checkout-without-media/ .github/scripts/validation_areas.py .github/workflows/test-portal.yml .npmrc apps/web/ contracts/common/addresses/ package.json packages/chain/ packages/db/ packages/identity/ pnpm-lock.yaml pnpm-workspace.yaml scripts/ci/"
+estimate_gb = 6
+
+[kind.ci-native-service-class-sizes-game_ledger]
+cmd = "bun scripts/ci/run.ts native/service-class-sizes/game_ledger"
+paths = ".github/actions/checkout-without-media/ .github/scripts/validation_areas.py .github/workflows/test-native.yml .npmrc .tool-versions apps/game/package.json apps/game/src/runtime/l2-environment.ts apps/game/src/shell/frame/environment.ts apps/herald/src/ apps/launch-service/migrations/ apps/launch-service/src/ apps/launch-service/wrangler.jsonc apps/realms/server/chat/chat-objects.ts apps/realms/server/l2.ts apps/realms/server/realm-holdings.ts apps/value-relay/src/ apps/value-relay/test-support/ config/ contracts/common/addresses/ contracts/l2/collectibles/ contracts/l2/ledger/ contracts/l2/ledger/schema/ contracts/l2/ledger/scripts/chest-preset.js contracts/l2/ledger/scripts/commands/deployment/ contracts/l2/ledger/src/contract.cairo contracts/l3/ contracts/scripts-runtime/ contracts/utils/ deploy/athanor/ deploy/first/ deploy/first/environments.json deploy/release/ deploy/shard/ package.json packages/ pnpm-lock.yaml pnpm-workspace.yaml scripts/ci/ scripts/generate-realm-metadata.py"
+estimate_gb = 9
+
+[kind.ci-native-service-class-sizes-realms_vrf_verifier]
+cmd = "bun scripts/ci/run.ts native/service-class-sizes/realms_vrf_verifier"
+paths = ".github/actions/checkout-without-media/ .github/scripts/validation_areas.py .github/workflows/test-native.yml .npmrc .tool-versions apps/game/package.json apps/game/src/runtime/l2-environment.ts apps/game/src/shell/frame/environment.ts apps/herald/src/ apps/launch-service/migrations/ apps/launch-service/src/ apps/launch-service/wrangler.jsonc apps/realms/server/chat/chat-objects.ts apps/realms/server/l2.ts apps/realms/server/realm-holdings.ts apps/value-relay/src/ apps/value-relay/test-support/ config/ contracts/common/addresses/ contracts/l2/collectibles/ contracts/l2/ledger/ contracts/l2/ledger/schema/ contracts/l2/ledger/scripts/chest-preset.js contracts/l2/ledger/scripts/commands/deployment/ contracts/l2/ledger/src/contract.cairo contracts/l3/ contracts/scripts-runtime/ contracts/utils/ deploy/athanor/ deploy/first/ deploy/first/environments.json deploy/release/ deploy/shard/ package.json packages/ pnpm-lock.yaml pnpm-workspace.yaml scripts/ci/ scripts/generate-realm-metadata.py"
+estimate_gb = 9
+
+[kind.ci-native-player-account]
+cmd = "bun scripts/ci/run.ts native/player-account"
+paths = ".github/actions/checkout-without-media/ .github/scripts/validation_areas.py .github/workflows/test-native.yml .npmrc .tool-versions apps/game/package.json apps/game/src/runtime/l2-environment.ts apps/game/src/shell/frame/environment.ts apps/herald/src/ apps/launch-service/migrations/ apps/launch-service/src/ apps/launch-service/wrangler.jsonc apps/realms/server/chat/chat-objects.ts apps/realms/server/l2.ts apps/realms/server/realm-holdings.ts apps/value-relay/src/ apps/value-relay/test-support/ config/ contracts/common/addresses/ contracts/l2/collectibles/ contracts/l2/ledger/ contracts/l2/ledger/schema/ contracts/l2/ledger/scripts/chest-preset.js contracts/l2/ledger/scripts/commands/deployment/ contracts/l2/ledger/src/contract.cairo contracts/l3/ contracts/scripts-runtime/ contracts/utils/ deploy/athanor/ deploy/first/ deploy/first/environments.json deploy/release/ deploy/shard/ package.json packages/ pnpm-lock.yaml pnpm-workspace.yaml scripts/ci/ scripts/generate-realm-metadata.py"
+estimate_gb = 9
+
+[kind.ci-native-native-deployer]
+cmd = "bun scripts/ci/run.ts native/native-deployer"
+paths = ".github/actions/checkout-without-media/ .github/scripts/validation_areas.py .github/workflows/test-native.yml .npmrc .tool-versions apps/game/package.json apps/game/src/runtime/l2-environment.ts apps/game/src/shell/frame/environment.ts apps/herald/src/ apps/launch-service/migrations/ apps/launch-service/src/ apps/launch-service/wrangler.jsonc apps/realms/server/chat/chat-objects.ts apps/realms/server/l2.ts apps/realms/server/realm-holdings.ts apps/value-relay/src/ apps/value-relay/test-support/ config/ contracts/common/addresses/ contracts/l2/collectibles/ contracts/l2/ledger/ contracts/l2/ledger/schema/ contracts/l2/ledger/scripts/chest-preset.js contracts/l2/ledger/scripts/commands/deployment/ contracts/l2/ledger/src/contract.cairo contracts/l3/ contracts/scripts-runtime/ contracts/utils/ deploy/athanor/ deploy/first/ deploy/first/environments.json deploy/release/ deploy/shard/ package.json packages/ pnpm-lock.yaml pnpm-workspace.yaml scripts/ci/ scripts/generate-realm-metadata.py"
+estimate_gb = 9
+
+[kind.ci-native-native-stamping]
+cmd = "bun scripts/ci/run.ts native/native-stamping"
+paths = ".github/actions/checkout-without-media/ .github/scripts/validation_areas.py .github/workflows/test-native.yml .npmrc .tool-versions apps/game/package.json apps/game/src/runtime/l2-environment.ts apps/game/src/shell/frame/environment.ts apps/herald/src/ apps/launch-service/migrations/ apps/launch-service/src/ apps/launch-service/wrangler.jsonc apps/realms/server/chat/chat-objects.ts apps/realms/server/l2.ts apps/realms/server/realm-holdings.ts apps/value-relay/src/ apps/value-relay/test-support/ config/ contracts/common/addresses/ contracts/l2/collectibles/ contracts/l2/ledger/ contracts/l2/ledger/schema/ contracts/l2/ledger/scripts/chest-preset.js contracts/l2/ledger/scripts/commands/deployment/ contracts/l2/ledger/src/contract.cairo contracts/l3/ contracts/scripts-runtime/ contracts/utils/ deploy/athanor/ deploy/first/ deploy/first/environments.json deploy/release/ deploy/shard/ package.json packages/ pnpm-lock.yaml pnpm-workspace.yaml scripts/ci/ scripts/generate-realm-metadata.py"
+estimate_gb = 9
+
+[kind.ci-native-native-provider]
+cmd = "bun scripts/ci/run.ts native/native-provider"
+paths = ".github/actions/checkout-without-media/ .github/scripts/validation_areas.py .github/workflows/test-native.yml .npmrc .tool-versions apps/game/package.json apps/game/src/runtime/l2-environment.ts apps/game/src/shell/frame/environment.ts apps/herald/src/ apps/launch-service/migrations/ apps/launch-service/src/ apps/launch-service/wrangler.jsonc apps/realms/server/chat/chat-objects.ts apps/realms/server/l2.ts apps/realms/server/realm-holdings.ts apps/value-relay/src/ apps/value-relay/test-support/ config/ contracts/common/addresses/ contracts/l2/collectibles/ contracts/l2/ledger/ contracts/l2/ledger/schema/ contracts/l2/ledger/scripts/chest-preset.js contracts/l2/ledger/scripts/commands/deployment/ contracts/l2/ledger/src/contract.cairo contracts/l3/ contracts/scripts-runtime/ contracts/utils/ deploy/athanor/ deploy/first/ deploy/first/environments.json deploy/release/ deploy/shard/ package.json packages/ pnpm-lock.yaml pnpm-workspace.yaml scripts/ci/ scripts/generate-realm-metadata.py"
+estimate_gb = 9
+
+[kind.ci-runtime-offline-tests-runner]
+cmd = "bun scripts/ci/run.ts runtime/offline-tests/runner"
+paths = ".github/actions/checkout-without-media/ .github/scripts/validation_areas.py .github/workflows/test-agent-runtime.yml .npmrc apps/agent-runner/ apps/game/package.json apps/game/src/runtime/l2-environment.ts apps/game/src/shell/frame/environment.ts apps/herald/src/native/schema.ts apps/herald/src/shard-manifest.ts apps/launch-service/ apps/realms/server/chat/chat-objects.ts apps/realms/server/l2.ts apps/realms/server/realm-holdings.ts apps/value-relay/src/ apps/value-relay/test-support/ config/ contracts/common/addresses/ contracts/l2/ledger/schema/ contracts/l2/ledger/scripts/chest-preset.js contracts/l2/ledger/scripts/commands/deployment/ contracts/l3/world-native/schema/ contracts/l3/world-native/tests/fixtures/ contracts/scripts-runtime/ contracts/utils/ deploy/athanor/ deploy/first/ deploy/first/environments.json deploy/release/ deploy/release/native-release.ts deploy/shard/ package.json packages/ pnpm-lock.yaml pnpm-workspace.yaml scripts/ci/"
+estimate_gb = 6
+
+[kind.ci-runtime-offline-tests-harness]
+cmd = "bun scripts/ci/run.ts runtime/offline-tests/harness"
+paths = ".github/actions/checkout-without-media/ .github/scripts/validation_areas.py .github/workflows/test-agent-runtime.yml .npmrc apps/agent-runner/ apps/game/package.json apps/game/src/runtime/l2-environment.ts apps/game/src/shell/frame/environment.ts apps/herald/src/native/schema.ts apps/herald/src/shard-manifest.ts apps/launch-service/ apps/realms/server/chat/chat-objects.ts apps/realms/server/l2.ts apps/realms/server/realm-holdings.ts apps/value-relay/src/ apps/value-relay/test-support/ config/ contracts/common/addresses/ contracts/l2/ledger/schema/ contracts/l2/ledger/scripts/chest-preset.js contracts/l2/ledger/scripts/commands/deployment/ contracts/l3/world-native/schema/ contracts/l3/world-native/tests/fixtures/ contracts/scripts-runtime/ contracts/utils/ deploy/athanor/ deploy/first/ deploy/first/environments.json deploy/release/ deploy/release/native-release.ts deploy/shard/ package.json packages/ pnpm-lock.yaml pnpm-workspace.yaml scripts/ci/"
+estimate_gb = 6
+
+[kind.ci-runtime-offline-tests-sandbox-proxy]
+cmd = "bun scripts/ci/run.ts runtime/offline-tests/sandbox-proxy"
+paths = ".github/actions/checkout-without-media/ .github/scripts/validation_areas.py .github/workflows/test-agent-runtime.yml .npmrc apps/agent-runner/ apps/game/package.json apps/game/src/runtime/l2-environment.ts apps/game/src/shell/frame/environment.ts apps/herald/src/native/schema.ts apps/herald/src/shard-manifest.ts apps/launch-service/ apps/realms/server/chat/chat-objects.ts apps/realms/server/l2.ts apps/realms/server/realm-holdings.ts apps/value-relay/src/ apps/value-relay/test-support/ config/ contracts/common/addresses/ contracts/l2/ledger/schema/ contracts/l2/ledger/scripts/chest-preset.js contracts/l2/ledger/scripts/commands/deployment/ contracts/l3/world-native/schema/ contracts/l3/world-native/tests/fixtures/ contracts/scripts-runtime/ contracts/utils/ deploy/athanor/ deploy/first/ deploy/first/environments.json deploy/release/ deploy/release/native-release.ts deploy/shard/ package.json packages/ pnpm-lock.yaml pnpm-workspace.yaml scripts/ci/"
+estimate_gb = 6
+
+[kind.ci-amm-test-ammv2]
+cmd = "bun scripts/ci/run.ts amm/test-ammv2"
+paths = ".github/actions/checkout-without-media/ .github/actions/fetch-cairo-dependencies/ .github/scripts/validation_areas.py .github/workflows/test-ammv2.yml .npmrc contracts/l2/ammv2/ package.json pnpm-lock.yaml pnpm-workspace.yaml scripts/ci/"
+estimate_gb = 9
+
+[kind.ci-collectibles-test-collectibles]
+cmd = "bun scripts/ci/run.ts collectibles/test-collectibles"
+paths = ".github/actions/checkout-without-media/ .github/actions/fetch-cairo-dependencies/ .github/scripts/validation_areas.py .github/workflows/test-collectibles.yml .npmrc .tool-versions contracts/l2/collectibles/ package.json pnpm-lock.yaml pnpm-workspace.yaml scripts/ci/"
+estimate_gb = 9
+
+[kind.ci-mmr-test-mmr]
+cmd = "bun scripts/ci/run.ts mmr/test-mmr"
+paths = ".github/actions/checkout-without-media/ .github/actions/fetch-cairo-dependencies/ .github/scripts/validation_areas.py .github/workflows/test-mmr.yml .npmrc .tool-versions contracts/l2/mmr/ package.json pnpm-lock.yaml pnpm-workspace.yaml scripts/ci/"
+estimate_gb = 9
+
+[kind.ci-season_pass-test-season-pass]
+cmd = "bun scripts/ci/run.ts season_pass/test-season-pass"
+paths = ".github/actions/checkout-without-media/ .github/actions/fetch-cairo-dependencies/ .github/scripts/validation_areas.py .github/workflows/test-season-pass.yml .npmrc contracts/l2/season_pass/ package.json pnpm-lock.yaml pnpm-workspace.yaml scripts/ci/"
+estimate_gb = 9
+
+[kind.ci-contract_scripts-runtime-tests]
+cmd = "bun scripts/ci/run.ts contract_scripts/runtime-tests"
+paths = ".github/actions/checkout-without-media/ .github/scripts/validation_areas.py .github/workflows/test-contract-scripts.yml .npmrc contracts/scripts-runtime/ package.json packages/chain/chain-guard.js packages/chain/shard-manifest.js pnpm-lock.yaml pnpm-workspace.yaml scripts/ci/"
+estimate_gb = 6
+
+[kind.ci-docs-docs]
+cmd = "bun scripts/ci/run.ts docs/docs"
+paths = ".github/actions/checkout-without-media/ .github/scripts/validation_areas.py .github/workflows/test-docs.yml .npmrc apps/game-docs/ apps/game/asset-sources/facets/ apps/game/asset-sources/festival/ apps/game/public/ apps/game/src/brand/link-preview.ts apps/game/src/config/app-address.ts apps/game/src/services/home-claim-rules.ts apps/game/src/shell/frame/environment.ts apps/game/src/shell/generated/patch-notes.ts apps/game/src/shell/news/patch-note.ts apps/game/src/ui/design-system/icon-meaning.ts apps/herald/src/native/schema.ts apps/herald/src/shard-manifest.ts apps/launch-service/src/release.ts config/ contracts/common/addresses/ contracts/l2/ledger/schema/ contracts/l2/ledger/scripts/chest-preset.js contracts/l3/world-native/schema/ contracts/l3/world-native/src/ contracts/l3/world-native/tests/fixtures/ contracts/utils/ deploy/first/environments.json deploy/release/ package.json packages/ pnpm-lock.yaml pnpm-workspace.yaml scripts/ci/"
 estimate_gb = 6
