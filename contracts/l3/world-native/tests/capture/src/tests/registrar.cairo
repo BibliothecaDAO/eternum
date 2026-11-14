@@ -22,9 +22,9 @@ fn expedition_rollover_expires_armies_and_preserves_the_home_economy() {
     let old_id = *structures.home_armies(home).at(0);
     let troops = GameState { contract_address: d.games };
     let old = ExplorerKey { game_id, explorer_id: old_id };
-    let read_day = |id| snforge_std::interact_with_state(
-        d.games, || crate::state::read().troops.army_days.read((game_id, id)),
-    );
+    let read_day = |
+        id,
+    | snforge_std::interact_with_state(d.games, || crate::state::read().troops.army_days.read((game_id, id)));
     assert_eq!(read_day(old_id), Some(0));
     let yesterday = troops.resolved_explorer(old).unwrap().coord;
     assert!(execute_in_game(d, game_id, Command::Explore(Explore { explorer_id: old_id, direction: 0 }), 360));
