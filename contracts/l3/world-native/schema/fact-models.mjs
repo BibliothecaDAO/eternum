@@ -569,6 +569,10 @@ export const factWireTypes = [
         name: "seed",
         type: "core::felt252",
       },
+      {
+        name: "scheduled_end_at",
+        type: "core::integer::u64",
+      },
     ],
   },
   {
