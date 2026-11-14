@@ -46,33 +46,11 @@ pub fn grant_starting_troops(
         if kind == resource_type {
             resources_dispatcher(key.game_id)
                 .grant_resource(key, kind, amount + guards, timestamp, crate::commands::resource_context(game_context));
-            if guards != 0 {
-                spend(key, kind, guards, timestamp, crate::commands::resource_context(game_context));
-                crate::guards::IGuardsDispatcherTrait::add_starting_guard(
-                    crate::guards::IGuardsLibraryDispatcher {
-                        class_hash: crate::logic::release::classes(key.game_id).troops.read(),
-                    },
-                    key,
-                    category,
-                    guards,
-                    timestamp,
-                    crate::commands::action_context(game_context),
-                );
-                crate::logic::stories::emit_entity_story(
-                    key,
-                    record.owner,
-                    Story::GuardAddStory(
-                        crate::ownership::GuardAddStory {
-                            structure_id: key.entity_id,
-                            slot: 0,
-                            category,
-                            tier: crate::troops::TroopTier::T1,
-                            amount: guards,
-                        },
-                    ),
-                    timestamp,
-                );
+            if record.base.category == crate::taxonomy::REALM_CATEGORY
+                && crate::logic::aspects::rules(key.game_id).is_some() {
+                deploy_starting_armies(key, category, amount, timestamp, game_context);
             }
+            grant_starting_guard(key, category, guards, timestamp, game_context);
         }
     }
 }
@@ -81,4 +59,84 @@ pub fn spend(
     key: ResourceKey, resource_type: u8, amount: u128, timestamp: u64, game_context: crate::commands::ResourceContext,
 ) {
     resources_dispatcher(key.game_id).spend_resource(key, resource_type, amount, timestamp, game_context);
+}
+
+fn deploy_starting_armies(
+    key: ResourceKey,
+    category: crate::troops::TroopType,
+    amount: u128,
+    timestamp: u64,
+    game_context: crate::commands::ExecutionContext,
+) {
+    assert!(amount > 0 && amount % (2 * crate::rules::RESOURCE_PRECISION) == 0, "unequal starting armies");
+    spend(
+        key,
+        crate::troops::troop_resource(category, 0),
+        amount,
+        timestamp,
+        crate::commands::resource_context(game_context),
+    );
+    let context = crate::commands::action_context(game_context);
+    let context = crate::commands::ActionContext {
+        timestamp: core::cmp::max(timestamp, context.game.start_main_at), ..context,
+    };
+    let allocator = crate::troops::IArmyAllocationLibraryDispatcher {
+        class_hash: crate::logic::release::classes(key.game_id).troops.read(),
+    };
+    let actor = crate::logic::structures::record(key).owner;
+    for slot in 0_u8..2 {
+        crate::troops::IArmyAllocationDispatcherTrait::allocate_army(
+            allocator,
+            key.game_id,
+            actor,
+            crate::commands::CreateExplorer {
+                slot,
+                structure_id: key.entity_id,
+                category: category.into(),
+                tier: 0,
+                amount: amount / 2,
+                direction: slot,
+            },
+            context,
+        );
+    }
+}
+
+fn grant_starting_guard(
+    key: ResourceKey,
+    category: crate::troops::TroopType,
+    amount: u128,
+    timestamp: u64,
+    game_context: crate::commands::ExecutionContext,
+) {
+    if amount == 0 {
+        return;
+    }
+    spend(
+        key,
+        crate::troops::troop_resource(category, 0),
+        amount,
+        timestamp,
+        crate::commands::resource_context(game_context),
+    );
+    crate::guards::IGuardsDispatcherTrait::add_starting_guard(
+        crate::guards::IGuardsLibraryDispatcher {
+            class_hash: crate::logic::release::classes(key.game_id).troops.read(),
+        },
+        key,
+        category,
+        amount,
+        timestamp,
+        crate::commands::action_context(game_context),
+    );
+    crate::logic::stories::emit_entity_story(
+        key,
+        crate::logic::structures::record(key).owner,
+        Story::GuardAddStory(
+            crate::ownership::GuardAddStory {
+                structure_id: key.entity_id, slot: 0, category, tier: crate::troops::TroopTier::T1, amount,
+            },
+        ),
+        timestamp,
+    );
 }

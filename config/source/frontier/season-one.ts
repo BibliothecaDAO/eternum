@@ -1,4 +1,4 @@
-import { orders } from "../../../packages/types/src/constants";
+import { orders, ResourcesIds } from "../../../packages/types/src/constants";
 import { nativeCommandBits } from "../../../contracts/l3/world-native/schema/commands.gen";
 import { nativeRuleConstants as rules } from "../../../contracts/l3/world-native/schema/client.gen";
 import type { NativePreset } from "../common/native-preset";
@@ -8,6 +8,13 @@ import { frontierPreset } from "./native";
 export const frontierSeasonOnePreset = {
   ...frontierPreset,
   id: FRONTIER_S1_PRESET_ID,
+  balance: {
+    startingResources: [
+      { resource: ResourcesIds.Knight, amount: 3000 },
+      { resource: ResourcesIds.Wheat, amount: 6000 },
+      { resource: ResourcesIds.Labor, amount: 2000 },
+    ],
+  },
   orderAspects: orders.filter(({ aspect }) => aspect !== null).map(({ aspect }) => aspect!),
   modeRules: frontierPreset.modeRules & ~rules.DISCOVER_CHESTS,
   chests: null,

@@ -156,7 +156,7 @@ export const campBeside = (kind: SiteKind = "Camp", guardKnown = true, armyStami
  * attack, 40 to defend, a bar of 120 gaining one a tick, no refund) and its two-minute army tick, over the fixture's
  * rules. Wheat and fish costs in the config are whole units; the rules hold them in the resource precision.
  */
-const frontierCombatRules = () => {
+export const frontierCombatRules = () => {
   const { damage, stamina } = frontierConfig.configuration.troop;
   const units = (amount: number) => String(Math.round(amount * Number(PRECISION)));
   return {

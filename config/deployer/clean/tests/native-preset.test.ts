@@ -76,6 +76,18 @@ describe("native presets", () => {
     expect(mask & BigInt(nativeCommandBits.ApplyRelic)).not.toBe(0n);
   });
 
+  test("Season 1 grants the two-army start while historical presets retain their stock", () => {
+    for (const id of [FRONTIER_S1_PRESET_ID, FRONTIER_FIXTURE_PRESET_ID, FRONTIER_PRESET_ID]) {
+      const preset = buildNativePreset(loadNativePresetConfiguration("madara.frontier", id), id);
+      const seasonOne = id !== FRONTIER_PRESET_ID;
+      expect(preset.settlement.realms.resources).toEqual([
+        { resource_type: ResourcesIds.Knight, amount: BigInt(seasonOne ? 3000 : 1500) * BigInt(RESOURCE_PRECISION) },
+        { resource_type: ResourcesIds.Wheat, amount: BigInt(seasonOne ? 6000 : 4500) * BigInt(RESOURCE_PRECISION) },
+        { resource_type: ResourcesIds.Labor, amount: 2000n * BigInt(RESOURCE_PRECISION) },
+      ]);
+    }
+  });
+
   test("the mainnet deployment plan registers only the selected economic preset", async () => {
     const log = spyOn(console, "log").mockImplementation(() => {});
     try {

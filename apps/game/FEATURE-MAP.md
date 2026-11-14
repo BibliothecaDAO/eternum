@@ -1313,7 +1313,8 @@ Order's Aspect. A founded home can attach only a held Realm from that Aspect.
 Presentation: `/lab/app/wallet-ready/doorway/aspect` and `/lab/app/wallet-ready/doorway/aspect-realm` mount the
 production picker. The full founding flow is `/lab/game?scenario=aspect-settle`; the canonical playtest's
 `--steps lab-aspect-settle` opens Play, verifies no automatic founding, taps an Aspect and checks the command plus
-resulting membership facts.
+resulting membership facts, two 1,500-Knight armies with full independent stamina bars, and the starting stores (6,000
+wheat, 2,000 labor, no idle Knights or Essence). Both armies appear in the production HUD.
 
 ## Daily quest collection
 

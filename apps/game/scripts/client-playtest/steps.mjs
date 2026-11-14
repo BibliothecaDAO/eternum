@@ -778,7 +778,17 @@ const ASPECT_SETTLE_STEPS = [
       const founded = browser.read(`JSON.stringify(
         (window.__labChain?.sent ?? []).filter(({command}) => command.kind === "SettleSeason")
       )`);
-      return { choice, choosing, founded };
+      await waitUntil(
+        () =>
+          browser.read(
+            'document.querySelectorAll(\'button[aria-label="Army 1"], button[aria-label="Army 2"]\').length',
+          ) === 2,
+        PLAYABLE_WAIT_MS,
+      );
+      const armyButtons = browser.read(
+        'JSON.stringify([...document.querySelectorAll(\'button[aria-label="Army 1"], button[aria-label="Army 2"]\')].map(node => ({ label: node.getAttribute("aria-label"), text: node.textContent, current: node.querySelector("[role=meter]")?.getAttribute("aria-valuenow"), max: node.querySelector("[role=meter]")?.getAttribute("aria-valuemax") })))',
+      );
+      return { choice, choosing, founded, armyButtons };
     },
     settleMs: 0,
     verify: ({ played, seen }) => {
@@ -794,6 +804,7 @@ const ASPECT_SETTLE_STEPS = [
         Number(home?.aspect) === 3 &&
         Number(members?.aspect) === 3 &&
         Number(members?.members) === 1 &&
+        hasStartingArmies(played) &&
         seen.playable &&
         isIn(seen, "Realm", "hex")
         ? completed(played)
@@ -801,6 +812,53 @@ const ASPECT_SETTLE_STEPS = [
     },
   },
 ];
+
+function hasStartingArmies(played) {
+  const rows = played.founded?.[0]?.answered ?? [];
+  const armies = rows.filter(({ model }) => model === "ExplorerTroops").map(({ value }) => value);
+  const slots = rows.filter(({ model }) => model === "ArmySlot").map(({ value }) => value);
+  const days = rows.filter(({ model }) => model === "ArmyDay").map(({ value }) => value);
+  const balance = (resource) =>
+    rows.find(({ model, value }) => model === "ResourceBalance" && Number(value.resource_type) === resource)?.value
+      .balance;
+  return (
+    armies.length === 2 &&
+    slots.length === 2 &&
+    days.length === 2 &&
+    armies.every(
+      (army) =>
+        Number(army.owner) === 7 &&
+        army.troops.category === "Knight" &&
+        army.troops.tier === "T1" &&
+        BigInt(army.troops.count) === 1_500_000_000_000n,
+    ) &&
+    [0, 1].every((slot) => {
+      const army = armies.find(({ troops }) => troops.stamina.Slot === slot);
+      const bar = slots.find((value) => value.slot === slot);
+      return (
+        army &&
+        bar &&
+        String(bar.explorer_id) === String(army.explorer_id) &&
+        Number(bar.stamina.amount) === 120 &&
+        days.some((day) => String(day.explorer_id) === String(army.explorer_id) && Number(day.day) === 0)
+      );
+    }) &&
+    BigInt(balance(26) ?? -1) === 0n &&
+    BigInt(balance(35) ?? -1) === 6_000_000_000_000n &&
+    BigInt(balance(23) ?? -1) === 2_000_000_000_000n &&
+    BigInt(balance(38) ?? -1) === 0n &&
+    played.armyButtons?.length === 2 &&
+    ["Army 1", "Army 2"].every((label) =>
+      played.armyButtons.some(
+        (button) =>
+          button.label === label &&
+          /1\.5k|1,500/.test(button.text) &&
+          Number(button.current) === 120 &&
+          Number(button.max) === 120,
+      ),
+    )
+  );
+}
 
 const SETTLE_ACTION_STEPS = [
   clickToResultStep("settle", "SettleSeason", playFromTheHomeCard, enteredOnTheRealm, { settleMs: SETTLE_RESULT_MS }),

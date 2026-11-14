@@ -43,23 +43,39 @@ pub fn slot_army(d: Deployment, key: ArmySlotKey) -> u64 {
 fn activity_counts_a_home_once_across_slot_choice_refusal_removal_and_reuse() {
     let (d, game_id) = super::aspects::setup_aspects(71);
     let home = found(d, game_id, 1);
-    assert_eq!(active(d, game_id, 1, 0), 0);
-    assert!(execute_in_game(d, game_id, muster(home, 1, 0, 1), 360));
-    let key = ArmySlotKey { game_id, structure_id: home, epoch: 0, slot: 1 };
+    assert_eq!(active(d, game_id, 1, 0), 1);
+    assert!(
+        execute_in_game(
+            d,
+            game_id,
+            world_test_support::tests::building_commands::create(
+                crate::resources::ResourceKey { game_id, entity_id: home }, crate::research::BARRACKS,
+            ),
+            360,
+        ),
+    );
+    assert!(execute_in_game(d, game_id, muster(home, 2, 2, 1), 480));
+    let key = ArmySlotKey { game_id, structure_id: home, epoch: 0, slot: 2 };
     let first = slot_army(d, key);
     assert_eq!(active(d, game_id, 1, 0), 1);
-    assert!(!execute_in_game(d, game_id, muster(home, 1, 1, 1), 361));
+    assert!(!execute_in_game(d, game_id, muster(home, 2, 3, 1), 481));
     assert_eq!(slot_army(d, key), first);
     assert_eq!(active(d, game_id, 1, 0), 1);
     assert!(
         execute_in_game(
-            d, game_id, Command::ManageTroops(crate::troop_management::ManageTroops::RemoveExplorer(first)), 362,
+            d, game_id, Command::ManageTroops(crate::troop_management::ManageTroops::RemoveExplorer(first)), 482,
         ),
     );
-    assert!(execute_in_game(d, game_id, muster(home, 1, 0, 1), 363));
+    assert!(execute_in_game(d, game_id, muster(home, 2, 2, 1), 483));
     let replacement = slot_army(d, key);
     assert_ne!(replacement, first);
-    assert!(execute_in_game(d, game_id, muster(home, 0, 1, 1), 364));
+    let starting = slot_army(d, ArmySlotKey { slot: 0, ..key });
+    assert!(
+        execute_in_game(
+            d, game_id, Command::ManageTroops(crate::troop_management::ManageTroops::RemoveExplorer(starting)), 484,
+        ),
+    );
+    assert!(execute_in_game(d, game_id, muster(home, 0, 0, 1), 484));
     assert_eq!(active(d, game_id, 1, 0), 1);
 
     let tomorrow = interact_with_state(
@@ -87,8 +103,7 @@ fn activity_separates_homes_aspects_and_games() {
     let (d, game_id) = super::aspects::setup_aspects(72);
     for (salt, aspect, expected) in array![(7201, 1_u8, 1_u32), (7202, 1, 2), (7203, 2, 1)] {
         let member = player(d, salt);
-        let home = found(member, game_id, aspect);
-        assert!(execute_in_game(member, game_id, muster(home, 1, 0, 1), 360));
+        found(member, game_id, aspect);
         assert_eq!(active(d, game_id, aspect, 0), expected);
     }
     assert_eq!(active(d, game_id, 1, 0), 2);
@@ -107,8 +122,7 @@ fn activity_separates_homes_aspects_and_games() {
             },
         );
     snforge_std::stop_cheat_caller_address(d.games);
-    let home = found(d, other_game, 1);
-    assert!(execute_in_game(d, other_game, muster(home, 0, 0, 1), 360));
+    found(d, other_game, 1);
     assert_eq!(active(d, other_game, 1, 0), 1);
     assert_eq!(active(d, game_id, 1, 0), 2);
 }
@@ -142,9 +156,6 @@ fn frontier_attacks_refuse_allies_and_personal_maps_but_allow_rivals_in_the_deep
     let home = found(d, game_id, 1);
     let ally_home = found(ally, game_id, 1);
     let rival_home = found(rival, game_id, 2);
-    assert!(execute_in_game(d, game_id, muster(home, 0, 0, 1000), 360));
-    assert!(execute_in_game(ally, game_id, muster(ally_home, 0, 0, 1), 360));
-    assert!(execute_in_game(rival, game_id, muster(rival_home, 0, 0, 1), 360));
     let attacker = ExplorerKey {
         game_id, explorer_id: slot_army(d, ArmySlotKey { game_id, structure_id: home, epoch: 0, slot: 0 }),
     };
@@ -154,6 +165,23 @@ fn frontier_attacks_refuse_allies_and_personal_maps_but_allow_rivals_in_the_deep
     let enemy = ExplorerKey {
         game_id, explorer_id: slot_army(d, ArmySlotKey { game_id, structure_id: rival_home, epoch: 0, slot: 0 }),
     };
+    let reserve = slot_army(d, ArmySlotKey { game_id, structure_id: rival_home, epoch: 0, slot: 1 });
+    assert!(
+        execute_in_game(
+            rival,
+            game_id,
+            Command::ManageTroops(
+                crate::troop_management::ManageTroops::Transfer(
+                    crate::troop_management::TransferTroops {
+                        source: crate::troop_management::Army::Explorer(enemy.explorer_id),
+                        target: crate::troop_management::Army::Explorer(reserve),
+                        amount: 1499 * crate::rules::RESOURCE_PRECISION,
+                    },
+                ),
+            ),
+            360,
+        ),
+    );
     refused(d, game_id, attack(attacker.explorer_id, enemy.explorer_id), "army combat requires Deep");
     let center = crate::deep::center(preset.settlement.spacing);
     set_explorer_fixture(d.games, attacker, ExplorerTroops { coord: center, ..army(d, attacker) });

@@ -24,7 +24,7 @@ for (const [name, id] of [
   ["devcon", 6],
   ["accelerated", 101],
 ] as const) {
-  const fixture = await currentPresetFixture(id, schema);
+  const fixture = currentPresetFixture(id, schema);
   write(`${name}-register.txt`, fixture.registration);
   write(`${name}-create.txt`, fixture.creation);
   write(`${name}-rows.txt`, serializePresetRows(fixture.rows, schema));

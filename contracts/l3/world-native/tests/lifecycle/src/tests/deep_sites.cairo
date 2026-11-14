@@ -5,7 +5,7 @@ use world_test_support::tests::resource_commands::{execute_in_game, grant, set_e
 use crate::commands::Command;
 use crate::resources::ResourceKey;
 use crate::troops::{ArmySlotKey, ExplorerKey, ExplorerTroops};
-use super::army_activity::{army, found, muster, player, slot_army};
+use super::army_activity::{army, found, player, slot_army};
 
 fn setup(seed: felt252) -> (Deployment, u32) {
     let (_, mut preset) = world_test_support::tests::preset_projection::current_definition("frontier");
@@ -52,7 +52,25 @@ fn deployed(d: Deployment, game_id: u32, aspect: u8, count: u128) -> ExplorerKey
             360,
         );
     }
-    applied(d, game_id, muster(home, 0, 0, count), 360);
+    assert!(count > 0 && count <= 1500, "invalid starting-army test count");
+    let first = slot_army(d, ArmySlotKey { game_id, structure_id: home, epoch: 0, slot: 0 });
+    let second = slot_army(d, ArmySlotKey { game_id, structure_id: home, epoch: 0, slot: 1 });
+    if count < 1500 {
+        applied(
+            d,
+            game_id,
+            Command::ManageTroops(
+                crate::troop_management::ManageTroops::Transfer(
+                    crate::troop_management::TransferTroops {
+                        source: crate::troop_management::Army::Explorer(first),
+                        target: crate::troop_management::Army::Explorer(second),
+                        amount: (1500 - count) * crate::rules::RESOURCE_PRECISION,
+                    },
+                ),
+            ),
+            360,
+        );
+    }
     let key = ExplorerKey {
         game_id, explorer_id: slot_army(d, ArmySlotKey { game_id, structure_id: home, epoch: 0, slot: 0 }),
     };

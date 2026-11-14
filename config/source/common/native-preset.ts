@@ -17,7 +17,7 @@ export interface NativePreset {
    */
   clockScale?: { days: number; activity: number };
   /**
-   * What a fixture preset changes in its mode's balance (starting stock, prices); the rest of the balance is the mode's.
+   * What a preset changes in its mode's balance (starting stock, prices); the rest of the balance is the mode's.
    * Applied wherever a preset's configuration is loaded.
    */
   balance?: ConfigPatch;

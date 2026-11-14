@@ -42,19 +42,6 @@ fn ruins_fill_replace_and_activate_an_armys_relics_through_commands() {
     );
     let home_id = snforge_std::interact_with_state(d.games, || crate::entity_ids::home_for_actor(game_id, d.actor));
     let home = ResourceKey { game_id, entity_id: home_id };
-    let mut deployment_events = snforge_std::spy_events();
-    if !execute_in_game(
-        d,
-        game_id,
-        Command::CreateExplorer(
-            CreateExplorer {
-                structure_id: home_id, slot: 0, category: 0, tier: 0, amount: 1500 * RESOURCE_PRECISION, direction: 0,
-            },
-        ),
-        360,
-    ) {
-        panic!("{}", super::play_fixture::rejection(ref deployment_events, d.games).reason);
-    }
     let explorer_id = *IStructureOperationsDispatcher { contract_address: d.games }.home_armies(home).at(0);
     let key = ExplorerKey { game_id, explorer_id };
     let resources = IResourceOperationsDispatcher { contract_address: d.games };

@@ -16,4 +16,5 @@ mod realms;
 mod releases;
 mod season_lifecycle;
 mod settlement;
+mod starting_armies;
 mod village;
