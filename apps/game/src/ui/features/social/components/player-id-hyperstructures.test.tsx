@@ -70,7 +70,7 @@ beforeEach(() => {
     start_settling_at: 1n,
     start_main_at: 1n,
     scheduled_end_at: 200n,
-end_at: 200n,
+    end_at: 200n,
     settled: false,
     ready: true,
     dev_mode_on: false,

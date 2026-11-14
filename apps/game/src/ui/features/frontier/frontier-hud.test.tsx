@@ -664,7 +664,7 @@ it("keeps the extended season live past its old end and reloads its final day fr
                       start_main_at: String(approved.start),
                       start_settling_at: String(approved.start),
                       scheduled_end_at: String(approved.end),
-end_at: String(approved.end),
+                      end_at: String(approved.end),
                       seed: approved.seed,
                       settled: false,
                     },

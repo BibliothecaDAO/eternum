@@ -305,7 +305,7 @@ const answerDirectory = (
       start_settling_at: 1 + clockOffset,
       start_main_at: 100 + clockOffset,
       scheduled_end_at: LAB_GAME_ENDS_AT + clockOffset,
-end_at: LAB_GAME_ENDS_AT + clockOffset,
+      end_at: LAB_GAME_ENDS_AT + clockOffset,
       end_grace_seconds: 0,
     },
     player_count: 1,

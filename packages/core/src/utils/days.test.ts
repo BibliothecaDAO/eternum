@@ -6,7 +6,7 @@ const calendar = {
   seed: 0x5eedn,
   startMainAt: 1_800_000_000,
   scheduledEndAt: 1_800_000_000 + seasonSeconds(21, 14_400),
-endAt: 1_800_000_000 + seasonSeconds(21, 14_400),
+  endAt: 1_800_000_000 + seasonSeconds(21, 14_400),
   dayUnitSeconds: 14_400,
 };
 
@@ -58,8 +58,7 @@ it("matches Cairo on clipped, merged, exact-minimum, very short and whole-bag se
     .map(Number);
   for (let offset = 0; offset < values.length; offset += 5) {
     const [duration, timestamp, index, start, end] = values.slice(offset, offset + 5);
-    const clock = { seed: 0x5eedn, startMainAt: 0, scheduledEndAt: duration,
-endAt: duration, dayUnitSeconds: 7200 };
+    const clock = { seed: 0x5eedn, startMainAt: 0, scheduledEndAt: duration, endAt: duration, dayUnitSeconds: 7200 };
     expect(dayOf(clock, timestamp)).toEqual({ index, start, end });
     expect(dayAtIndex(clock, index)).toEqual({ index, start, end });
     expect(dayOf(clock, duration)).toBeNull();
@@ -70,8 +69,7 @@ it("covers any end without gaps, extra days or an unmerged short stub", () => {
   for (const seed of [1n, 7n, 42n, 0x5eedn]) {
     const lengths = [0, 1, 2].flatMap((bag) => bagLengths(seed, bag));
     for (let duration = 1; duration <= 60 * 40; duration += 17) {
-      const clock = { seed, startMainAt: 0, scheduledEndAt: duration,
-endAt: duration, dayUnitSeconds: 40 };
+      const clock = { seed, startMainAt: 0, scheduledEndAt: duration, endAt: duration, dayUnitSeconds: 40 };
       const expected: { index: number; start: number; end: number }[] = [];
       let start = 0;
       for (const length of lengths) {
@@ -94,12 +92,10 @@ endAt: duration, dayUnitSeconds: 40 };
 it("rejects an allocation day beyond the actual season or absorbed into its last day", () => {
   expect(() => dayAtIndex(calendar, -1)).toThrow("Invalid day index");
   expect(() => dayAtIndex(calendar, 105)).toThrow("Day index outside season");
-  expect(() => dayAtIndex({ ...calendar, startMainAt: 0, scheduledEndAt: 5 * 7200,
-endAt: 5 * 7200, dayUnitSeconds: 7200 }, 1)).toThrow(
-    "Day index outside season",
-  );
+  expect(() =>
+    dayAtIndex({ ...calendar, startMainAt: 0, scheduledEndAt: 5 * 7200, endAt: 5 * 7200, dayUnitSeconds: 7200 }, 1),
+  ).toThrow("Day index outside season");
 });
-
 
 it("keeps the winning day's identity when victory ends it before the minimum day length", () => {
   const second = dayAtIndex(calendar, 1);

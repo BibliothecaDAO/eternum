@@ -41,8 +41,12 @@ vi.mock("@/hooks/use-game-entry", () => ({
       preset_id: settlement.presetId,
       aspect_members: settlement.presetId === FRONTIER_S1_PRESET_ID ? { 1: 0, 2: 0, 3: 0, 4: 0 } : null,
       player_state: { structures: [{ entity_id: 7, category: 1, realm_id: 3098, level: 2 }] },
-      clock: { start_settling_at: now - 60, start_main_at: now - 60, scheduled_end_at: now + 3_600,
-end_at: now + 3_600 },
+      clock: {
+        start_settling_at: now - 60,
+        start_main_at: now - 60,
+        scheduled_end_at: now + 3_600,
+        end_at: now + 3_600,
+      },
     };
     return { data: entry, error: null };
   },

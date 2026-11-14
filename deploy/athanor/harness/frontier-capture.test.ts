@@ -12,7 +12,7 @@ const dayUnitSeconds = Number(definition.rules.day_unit_seconds);
 const calendar: ExpeditionRules = {
   startMainAt,
   scheduledEndAt: startMainAt + 2 * DAY_UNITS_PER_BAG * dayUnitSeconds,
-endAt: startMainAt + 2 * DAY_UNITS_PER_BAG * dayUnitSeconds,
+  endAt: startMainAt + 2 * DAY_UNITS_PER_BAG * dayUnitSeconds,
   dayUnitSeconds,
   seed: 1n,
   spacing: 100,

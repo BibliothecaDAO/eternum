@@ -14,8 +14,7 @@ const blitz = (gameId: number, over: Partial<DirectoryGame>): DirectoryGame =>
     status: "Live",
     player_count: 24,
     roster_count: 24,
-    clock: { start_settling_at: 0, start_main_at: 0, scheduled_end_at: 9_000,
-end_at: 9_000, end_grace_seconds: 0 },
+    clock: { start_settling_at: 0, start_main_at: 0, scheduled_end_at: 9_000, end_at: 9_000, end_grace_seconds: 0 },
     player_state: {
       registered: false,
       settled: false,
@@ -46,8 +45,13 @@ describe("the lobby's Blitz rows", () => {
         blitz(3, {
           ready: false,
           status: "Registration",
-          clock: { start_settling_at: 0, start_main_at: 1_600, scheduled_end_at: 9_000,
-end_at: 9_000, end_grace_seconds: 0 },
+          clock: {
+            start_settling_at: 0,
+            start_main_at: 1_600,
+            scheduled_end_at: 9_000,
+            end_at: 9_000,
+            end_grace_seconds: 0,
+          },
           player_state: {
             registered: false,
             settled: false,

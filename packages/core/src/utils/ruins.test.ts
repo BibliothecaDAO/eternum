@@ -203,14 +203,12 @@ describe("a realm's daily ruin choice per depth", () => {
   });
 
   it("computes available LORDS using today's unlock, paid amounts and only today's reservations", () => {
-    const calendar = { startMainAt: 100, scheduledEndAt: 1000,
-endAt: 1000, dayUnitSeconds: 100, seed: 1n };
+    const calendar = { startMainAt: 100, scheduledEndAt: 1000, endAt: 1000, dayUnitSeconds: 100, seed: 1n };
     const day = dayOf(calendar, 350)!;
     const budget = { pool: 9000n, pool_left: 8000n, open: 500n, day: BigInt(day.index) };
     const rows: Record<string, object> = {
       LordsBudget: budget,
-      GameRegistry: { start_main_at: 100n, scheduled_end_at: 1000n,
-end_at: 1000n, seed: 1n },
+      GameRegistry: { start_main_at: 100n, scheduled_end_at: 1000n, end_at: 1000n, seed: 1n },
       SliceRules: { day_unit_seconds: 100 },
     };
     const store = { get: (model: string) => rows[model] } as unknown as Pick<NativeFactStore, "get">;
@@ -227,8 +225,7 @@ end_at: 1000n, seed: 1n },
 it("keeps the final day's ruin reservation held through an absorbed bag boundary", () => {
   const rows: Record<string, object> = {
     LordsBudget: { pool: 9000n, pool_left: 8000n, open: 500n, day: 9n },
-    GameRegistry: { start_main_at: 0n, scheduled_end_at: 81n * 3600n,
-end_at: 81n * 3600n, seed: 0x5eedn },
+    GameRegistry: { start_main_at: 0n, scheduled_end_at: 81n * 3600n, end_at: 81n * 3600n, seed: 0x5eedn },
     SliceRules: { day_unit_seconds: 7200 },
   };
   const store = { get: (model: string) => rows[model] } as unknown as Pick<NativeFactStore, "get">;
@@ -237,8 +234,14 @@ end_at: 81n * 3600n, seed: 0x5eedn },
 });
 
 describe("each depth's ruin chest today", () => {
-  const rules = { dayUnitSeconds: 100, spacing: 100, startMainAt: 0, scheduledEndAt: 100_000,
-endAt: 100_000, seed: 1n };
+  const rules = {
+    dayUnitSeconds: 100,
+    spacing: 100,
+    startMainAt: 0,
+    scheduledEndAt: 100_000,
+    endAt: 100_000,
+    seed: 1n,
+  };
   const realm = { game_id: 1, entity_id: 7 };
   const discovery = (ruin_cleared: boolean) => ({
     model: "ExpeditionDiscovery",

@@ -249,9 +249,12 @@ fn extension_keeps_current_chest_holds_but_excludes_expired_holds(expired: bool)
 fn release_backfills_the_scheduled_end_once_without_extending_play() {
     let d = setup();
     let before = game(d);
-    interact_with_state(d.games, || {
-        crate::state::write().games.games.write(1, crate::game::GameRegistry { scheduled_end_at: 0, ..before });
-    });
+    interact_with_state(
+        d.games,
+        || {
+            crate::state::write().games.games.write(1, crate::game::GameRegistry { scheduled_end_at: 0, ..before });
+        },
+    );
     start_cheat_chain_id(d.games, 'DEV');
     let releases = IReleasesDispatcher { contract_address: d.games };
     let mut events = spy_events();

@@ -6922,10 +6922,16 @@
           "type": "core::felt252",
           "id": "0x73656564",
           "feltLength": 1
+        },
+        {
+          "name": "scheduled_end_at",
+          "type": "core::integer::u64",
+          "id": "0x7363686564756c65645f656e645f6174",
+          "feltLength": 1
         }
       ],
       "keyLength": 1,
-      "valueLength": 10
+      "valueLength": 11
     },
     {
       "name": "GameOverrides",
@@ -10331,6 +10337,10 @@
         {
           "name": "seed",
           "type": "core::felt252"
+        },
+        {
+          "name": "scheduled_end_at",
+          "type": "core::integer::u64"
         }
       ]
     },
@@ -14050,5 +14060,5 @@
       ]
     }
   },
-  "identity": "3c79dec97ce46e79ba6c10efc1d43a1d97941af4cd08df511874ad2fcc9fed65"
+  "identity": "dfb28c763b6ea783a070de9e71dcbb5cea69bf5ae4f778f10d828579ecc20d05"
 }

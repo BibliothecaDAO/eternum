@@ -46,7 +46,9 @@ pub fn day_at_index(game: GameRegistry, unit_seconds: u32, index: u64) -> Day {
 
 // Keep one calendar calculation per class without passing the game's unrelated launch fields to every call.
 #[inline(never)]
-fn calendar_day(seed: felt252, season_start: u64, actual_end: u64, season_end: u64, unit_seconds: u32, timestamp: u64) -> Day {
+fn calendar_day(
+    seed: felt252, season_start: u64, actual_end: u64, season_end: u64, unit_seconds: u32, timestamp: u64,
+) -> Day {
     assert!(actual_end <= season_end, "season end exceeds its calendar");
     assert!(timestamp >= season_start && timestamp < actual_end, "timestamp outside season");
     let unit: u64 = unit_seconds.into();

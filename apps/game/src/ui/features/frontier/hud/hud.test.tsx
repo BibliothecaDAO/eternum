@@ -43,8 +43,13 @@ afterEach(() => {
 });
 
 describe("the day clock", () => {
-  const rules = { dayUnitSeconds: 4 * 3_600, seed: 1n, startMainAt: 0, scheduledEndAt: 21 * 20 * 14_400,
-endAt: 21 * 20 * 14_400 };
+  const rules = {
+    dayUnitSeconds: 4 * 3_600,
+    seed: 1n,
+    startMainAt: 0,
+    scheduledEndAt: 21 * 20 * 14_400,
+    endAt: 21 * 20 * 14_400,
+  };
 
   it("counts days from one on the season's calendar, ends today with its day and says how long tomorrow lasts", () => {
     const eleventh = dayOf(rules, 0)!;
@@ -92,8 +97,16 @@ describe("the status strip", () => {
   });
 
   it("reads a 24-hour day in hours on the dial, as Play does: never '1d' (live-qa-night-1 P3-8)", () => {
-    const day = dayClock({ dayUnitSeconds: 4 * 3_600, seed: 1n, startMainAt: 0, scheduledEndAt: 21 * 20 * 14_400,
-endAt: 21 * 20 * 14_400 }, 3_600);
+    const day = dayClock(
+      {
+        dayUnitSeconds: 4 * 3_600,
+        seed: 1n,
+        startMainAt: 0,
+        scheduledEndAt: 21 * 20 * 14_400,
+        endAt: 21 * 20 * 14_400,
+      },
+      3_600,
+    );
     const clock = { ...day, secondsLeft: 24 * 3_600, tomorrowSeconds: 24 * 3_600 };
     const markup = renderToStaticMarkup(<StatusStrip clock={clock} stores={[store("essence", 1)]} />);
     expect(markup).toContain(`aria-label="Day ${day.day} · 24h left"`);
@@ -101,8 +114,16 @@ endAt: 21 * 20 * 14_400 }, 3_600);
   });
 
   it("keeps the strip to one row: the day's ring runs down through the day and turns red in its last hour", () => {
-    const day = dayClock({ dayUnitSeconds: 4 * 3_600, seed: 1n, startMainAt: 0, scheduledEndAt: 21 * 20 * 14_400,
-endAt: 21 * 20 * 14_400 }, 3_600);
+    const day = dayClock(
+      {
+        dayUnitSeconds: 4 * 3_600,
+        seed: 1n,
+        startMainAt: 0,
+        scheduledEndAt: 21 * 20 * 14_400,
+        endAt: 21 * 20 * 14_400,
+      },
+      3_600,
+    );
     const morning = renderToStaticMarkup(
       <StatusStrip clock={{ ...day, shareLeft: 0.75, tone: "calm" }} stores={[store("essence", 1)]} />,
     );
@@ -122,8 +143,16 @@ endAt: 21 * 20 * 14_400 }, 3_600);
   });
 
   it("shows each store with a limit bar where it has a limit, and dashes the unknown", () => {
-    const clock = dayClock({ dayUnitSeconds: 4 * 3_600, seed: 1n, startMainAt: 0, scheduledEndAt: 21 * 20 * 14_400,
-endAt: 21 * 20 * 14_400 }, 3_600);
+    const clock = dayClock(
+      {
+        dayUnitSeconds: 4 * 3_600,
+        seed: 1n,
+        startMainAt: 0,
+        scheduledEndAt: 21 * 20 * 14_400,
+        endAt: 21 * 20 * 14_400,
+      },
+      3_600,
+    );
     const markup = renderToStaticMarkup(
       <StatusStrip
         clock={clock}
@@ -656,8 +685,7 @@ describe("the HUD's panels", () => {
 
 it.each([81, 84, 85])("shows the last %ih day with its real countdown and no tomorrow", (hours) => {
   const endAt = hours * 3600;
-  const calendar = { seed: 0x5eedn, startMainAt: 0, scheduledEndAt: endAt,
-endAt, dayUnitSeconds: 7200 };
+  const calendar = { seed: 0x5eedn, startMainAt: 0, scheduledEndAt: endAt, endAt, dayUnitSeconds: 7200 };
   const clock = dayClock(calendar, endAt - 600);
   const day = hours === 81 ? 10 : 11;
   expect(clock).toMatchObject({ day, endsAt: endAt, secondsLeft: 600, tomorrowSeconds: undefined, tone: "ember" });

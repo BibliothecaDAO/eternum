@@ -5,8 +5,14 @@ import { rowInGameSyncScope } from "./model-manifest";
 import { deriveGameSyncScope, scopeInputKeys, type ScopeRowReader } from "./subscription-scope";
 
 // Day 0 runs from 300 for at least three 60 s units, so t=350 is on it.
-const expedition = { dayUnitSeconds: 60, spacing: 1024, startMainAt: 300, scheduledEndAt: 300 + 21 * 20 * 60,
-endAt: 300 + 21 * 20 * 60, seed: 1n };
+const expedition = {
+  dayUnitSeconds: 60,
+  spacing: 1024,
+  startMainAt: 300,
+  scheduledEndAt: 300 + 21 * 20 * 60,
+  endAt: 300 + 21 * 20 * 60,
+  seed: 1n,
+};
 const rows = [
   { model: "ArmyDay", value: { explorer_id: "101", day: "0" } },
   { model: "ArmyDay", value: { explorer_id: "102", day: "0" } },

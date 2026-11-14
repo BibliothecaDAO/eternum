@@ -53,8 +53,12 @@ const snapshot = (id: number) => ({
   models: [
     {
       model: "GameRegistry",
-      rows: [{ key: String(id), value: { game_id: id, preset_id: 6, start_main_at: 10, scheduled_end_at: end,
-end_at: end, seed: 153 } }],
+      rows: [
+        {
+          key: String(id),
+          value: { game_id: id, preset_id: 6, start_main_at: 10, scheduled_end_at: end, end_at: end, seed: 153 },
+        },
+      ],
     },
     {
       model: "ChestRules",

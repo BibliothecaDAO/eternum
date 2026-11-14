@@ -337,7 +337,7 @@ describe("createGameClient", () => {
                 seed: "0x1",
                 ready: true,
                 scheduled_end_at: "0x6ad5da80",
-end_at: "0x6ad5da80",
+                end_at: "0x6ad5da80",
                 game_id: "0x36",
                 settled: true,
                 preset_id: "0x2",

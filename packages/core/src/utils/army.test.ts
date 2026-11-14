@@ -25,8 +25,12 @@ const storeWith = (rules: Record<string, unknown>) =>
 const frontier = {
   SliceRules: { day_unit_seconds: 14_400 },
   SettlementRules: { spacing: 10 },
-  GameRegistry: { start_main_at: 86400n, scheduled_end_at: 86400n + 21n * 20n * 14400n,
-end_at: 86400n + 21n * 20n * 14400n, seed: 1n },
+  GameRegistry: {
+    start_main_at: 86400n,
+    scheduled_end_at: 86400n + 21n * 20n * 14400n,
+    end_at: 86400n + 21n * 20n * 14400n,
+    seed: 1n,
+  },
 };
 const DAY_ONE = 129_600;
 const nothingExplored = () => undefined;

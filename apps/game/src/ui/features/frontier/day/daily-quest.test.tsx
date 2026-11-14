@@ -101,7 +101,7 @@ function worldDay(layout: "desktop" | "phone") {
     seed: registry.seed,
     startMainAt: Number(registry.start_main_at),
     scheduledEndAt: Number(registry.end_at),
-endAt: Number(registry.end_at),
+    endAt: Number(registry.end_at),
     dayUnitSeconds: rules.day_unit_seconds,
   };
   const start = dayOf(calendar, calendar.startMainAt)!.end;

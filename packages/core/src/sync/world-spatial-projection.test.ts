@@ -175,7 +175,7 @@ const createHarness = () => {
       game_id: 13,
       start_main_at: BigInt(startMainAt),
       scheduled_end_at: BigInt(startMainAt + 21 * 20 * dayUnitSeconds),
-end_at: BigInt(startMainAt + 21 * 20 * dayUnitSeconds),
+      end_at: BigInt(startMainAt + 21 * 20 * dayUnitSeconds),
       seed: 1n,
     });
   };

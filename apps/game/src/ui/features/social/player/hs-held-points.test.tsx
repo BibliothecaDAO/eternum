@@ -69,7 +69,7 @@ const ownersGame = () => {
     start_settling_at: 1n,
     start_main_at: 1n,
     scheduled_end_at: 100_000n,
-end_at: 100_000n,
+    end_at: 100_000n,
     settled: false,
     ready: true,
     dev_mode_on: false,

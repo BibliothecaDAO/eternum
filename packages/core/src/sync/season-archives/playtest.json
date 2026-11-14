@@ -23,6 +23,7 @@
       "start_settling_at": 1792575960,
       "start_main_at": 1792575960,
       "end_at": 1793439960,
+      "scheduled_end_at": 1793439960,
       "end_grace_seconds": 0
     },
     "player_count": 45,

@@ -31,7 +31,7 @@ function gameEvent(game = "1", settled = "0", dev = "0", preset = "2", name = "B
     start_settling_at: "10",
     start_main_at: "20",
     scheduled_end_at: "200",
-end_at: "200",
+    end_at: "200",
     end_grace_seconds: "10",
     seed: "42",
   });
@@ -97,7 +97,7 @@ it("never lists deployment check games or counts them as Frontier seasons", () =
       start_settling_at: 10n,
       start_main_at: 20n,
       scheduled_end_at: 200n,
-end_at: 200n,
+      end_at: 200n,
       end_grace_seconds: 10n,
       seed: 42n,
     };

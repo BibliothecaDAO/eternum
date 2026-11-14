@@ -50,8 +50,13 @@ const render = (props: Partial<Parameters<typeof TodaySheet>[0]>) => {
 
 describe("Today", () => {
   it("bounds any day of the season back from today, and none before the first or after today", () => {
-    const calendar = { dayUnitSeconds: DAY / 4, seed: 1n, startMainAt: 0, scheduledEndAt: 21 * 20 * 14_400,
-endAt: 21 * 20 * 14_400 };
+    const calendar = {
+      dayUnitSeconds: DAY / 4,
+      seed: 1n,
+      startMainAt: 0,
+      scheduledEndAt: 21 * 20 * 14_400,
+      endAt: 21 * 20 * 14_400,
+    };
     const days = [dayOf(calendar, 0)!];
     while (days.length < 12) days.push(dayOf(calendar, days.at(-1)!.end)!);
     const now = days[11].start + 60;
@@ -62,8 +67,13 @@ endAt: 21 * 20 * 14_400 };
   });
 
   it("counts today against the season's last day, and none outside the season (audit 10-27)", () => {
-    const calendar = { dayUnitSeconds: DAY / 4, seed: 1n, startMainAt: 0, scheduledEndAt: 21 * 20 * 14_400,
-endAt: 21 * 20 * 14_400 };
+    const calendar = {
+      dayUnitSeconds: DAY / 4,
+      seed: 1n,
+      startMainAt: 0,
+      scheduledEndAt: 21 * 20 * 14_400,
+      endAt: 21 * 20 * 14_400,
+    };
     const days = [dayOf(calendar, 0)!];
     while (days.length < 14) days.push(dayOf(calendar, days.at(-1)!.end)!);
     const endsAt = days[13].end;

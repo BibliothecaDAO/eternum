@@ -23,7 +23,7 @@ const game = {
   start_settling_at: 0n,
   start_main_at: 200n,
   scheduled_end_at: 1100n,
-end_at: 1100n,
+  end_at: 1100n,
   end_grace_seconds: 0,
   seed: 1n,
 };

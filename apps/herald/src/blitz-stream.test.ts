@@ -26,7 +26,7 @@ it("preserves the whole Blitz game's facts through snapshot, overlay, confirmati
           start_settling_at: 120n,
           start_main_at: 120n,
           scheduled_end_at: 999999n,
-end_at: 999999n,
+          end_at: 999999n,
           end_grace_seconds: 0n,
           seed: 7n,
         }),

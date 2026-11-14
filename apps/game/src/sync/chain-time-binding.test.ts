@@ -93,7 +93,7 @@ it("keeps chain time where Herald's head put it while a realm's production waits
       start_settling_at: BigInt(HEAD_SECONDS - 60),
       start_main_at: BigInt(startsAt),
       scheduled_end_at: BigInt(startsAt + 3600),
-end_at: BigInt(startsAt + 3600),
+      end_at: BigInt(startsAt + 3600),
       end_grace_seconds: 0,
       seed: 1n,
     }),

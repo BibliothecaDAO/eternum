@@ -91,8 +91,14 @@ const home = {
   base: { created_at: 360, level: 0 },
   metadata: { realm_id: 711 },
 } as unknown as NativeRows["Structure"];
-const rules = { seed: 711n, dayUnitSeconds: 7200, startMainAt: 360, scheduledEndAt: 360 + 21 * 20 * 7200,
-endAt: 360 + 21 * 20 * 7200, spacing: 50 };
+const rules = {
+  seed: 711n,
+  dayUnitSeconds: 7200,
+  startMainAt: 360,
+  scheduledEndAt: 360 + 21 * 20 * 7200,
+  endAt: 360 + 21 * 20 * 7200,
+  spacing: 50,
+};
 const Sheet = () => (
   <FrontierRealms labor={useRealmLabor({ ...rules, endAt: Number(facts.seasonEnd) }, home)} onClose={() => {}} />
 );

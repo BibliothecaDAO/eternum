@@ -65,7 +65,7 @@ function launch(preset: ReturnType<typeof registration>, gameId = 1, rosterSize 
       start_settling_at: "1800",
       start_main_at: "1800",
       scheduled_end_at: "999999",
-end_at: "999999",
+      end_at: "999999",
       end_grace_seconds: "0",
       seed: "1",
     }),

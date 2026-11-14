@@ -48,7 +48,7 @@ export function chestStudyGame(frontier = false) {
         start_settling_at: "1",
         start_main_at: "100",
         scheduled_end_at: "1000",
-end_at: "1000",
+        end_at: "1000",
         settled: false,
         ready: true,
         dev_mode_on: false,

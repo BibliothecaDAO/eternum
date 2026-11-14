@@ -123,7 +123,7 @@ const createHerald = () => {
             clock: {
               start_main_at: state.seasonStart,
               scheduled_end_at: state.seasonEnd ?? state.seasonStart + 21 * 20 * DAY_UNIT_SECONDS,
-end_at: state.seasonEnd ?? state.seasonStart + 21 * 20 * DAY_UNIT_SECONDS,
+              end_at: state.seasonEnd ?? state.seasonStart + 21 * 20 * DAY_UNIT_SECONDS,
             },
             expedition: { seed: "1", day_unit_seconds: DAY_UNIT_SECONDS },
           },
@@ -344,7 +344,7 @@ const snapshot = (
             start_settling_at: SEASON_START,
             start_main_at: SEASON_START,
             scheduled_end_at: SEASON_START + 2 * 20 * DAY_UNIT_SECONDS,
-end_at: SEASON_START + 2 * 20 * DAY_UNIT_SECONDS,
+            end_at: SEASON_START + 2 * 20 * DAY_UNIT_SECONDS,
             end_grace_seconds: 0,
             seed: "0x1",
           },
@@ -788,8 +788,13 @@ describe.concurrent("shard notifications", () => {
   /** Open a day of the shared calendar a few seconds from now (Day 2 by default); no player needs to have acted. */
   const openSoon = (herald: ReturnType<typeof createHerald>, seconds = 8, dayIndex = 1) => {
     const opensAt = (Math.floor(Date.now() / 1000) + seconds) * 1000;
-    const calendar = { seed: 1n, startMainAt: 0, scheduledEndAt: 21 * 20 * DAY_UNIT_SECONDS,
-endAt: 21 * 20 * DAY_UNIT_SECONDS, dayUnitSeconds: DAY_UNIT_SECONDS };
+    const calendar = {
+      seed: 1n,
+      startMainAt: 0,
+      scheduledEndAt: 21 * 20 * DAY_UNIT_SECONDS,
+      endAt: 21 * 20 * DAY_UNIT_SECONDS,
+      dayUnitSeconds: DAY_UNIT_SECONDS,
+    };
     let start = 0;
     for (let index = 0; index < dayIndex; index++) start = dayOf(calendar, start)!.end;
     herald.state.seasonStart = opensAt / 1000 - start;
@@ -1350,7 +1355,7 @@ endAt: 21 * 20 * DAY_UNIT_SECONDS, dayUnitSeconds: DAY_UNIT_SECONDS };
           seed: 1n,
           startMainAt: herald.state.seasonStart,
           scheduledEndAt: herald.state.seasonStart + 21 * 20 * DAY_UNIT_SECONDS,
-endAt: herald.state.seasonStart + 21 * 20 * DAY_UNIT_SECONDS,
+          endAt: herald.state.seasonStart + 21 * 20 * DAY_UNIT_SECONDS,
           dayUnitSeconds: DAY_UNIT_SECONDS,
         };
         const dayEnd = dayOf(calendar, opensAt / 1000)!.end;

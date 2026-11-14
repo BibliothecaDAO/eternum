@@ -158,7 +158,7 @@ const seedFrontierRules = (store: NativeFactStore, input: { startMainAt: number;
         start_settling_at: "1",
         start_main_at: String(input.startMainAt),
         scheduled_end_at: "1000000",
-end_at: "1000000",
+        end_at: "1000000",
         settled: false,
         ready: true,
         dev_mode_on: false,

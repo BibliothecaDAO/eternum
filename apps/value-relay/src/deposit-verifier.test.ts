@@ -81,8 +81,7 @@ beforeEach(() => {
     game_id: "7",
     models: [
       { model: "DepositSource", rows: [{ value: { chain: "0x1", ledger: "0x10", signer: "0x44", epoch: 2 } }] },
-      { model: "GameRegistry", rows: [{ value: { start_main_at: 1, scheduled_end_at: 2000,
-end_at: 2000 } }] },
+      { model: "GameRegistry", rows: [{ value: { start_main_at: 1, scheduled_end_at: 2000, end_at: 2000 } }] },
       { model: "Structure", rows: [{ value: structureSnapshot(account) }] },
     ],
   });

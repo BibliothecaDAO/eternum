@@ -85,7 +85,7 @@ export class EndgameFixtureScene {
           start_settling_at: "1",
           start_main_at: "1",
           scheduled_end_at: "0",
-end_at: "0",
+          end_at: "0",
           settled: ended,
           ready: true,
           dev_mode_on: false,

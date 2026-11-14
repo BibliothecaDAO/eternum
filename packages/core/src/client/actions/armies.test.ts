@@ -25,8 +25,12 @@ const rows: Record<string, unknown> = {
   SliceRules: { day_unit_seconds: 14_400 },
   SettlementRules: { spacing: 10 },
   // Seed 1's first bag opens with a 12-hour day, so day 1 starts at 129600.
-  GameRegistry: { start_main_at: 86400n, scheduled_end_at: 86400n + 21n * 20n * 14400n,
-end_at: 86400n + 21n * 20n * 14400n, seed: 1n },
+  GameRegistry: {
+    start_main_at: 86400n,
+    scheduled_end_at: 86400n + 21n * 20n * 14400n,
+    end_at: 86400n + 21n * 20n * 14400n,
+    seed: 1n,
+  },
 };
 
 const client = {

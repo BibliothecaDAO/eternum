@@ -15,8 +15,14 @@ test("setup waits for the confirmed start and roster readiness in every game mod
     gameId: 4,
     setup: {
       store: {
-        require: () => ({ start_main_at: start, start_settling_at: 40n, scheduled_end_at: 200n,
-end_at: 200n, ready, dev_mode_on: false }),
+        require: () => ({
+          start_main_at: start,
+          start_settling_at: 40n,
+          scheduled_end_at: 200n,
+          end_at: 200n,
+          ready,
+          dev_mode_on: false,
+        }),
       },
       systemCalls: {},
     },

@@ -19,7 +19,7 @@ function realm() {
       start_settling_at: 0n,
       start_main_at: 200n,
       scheduled_end_at: 86_600n,
-end_at: 86_600n,
+      end_at: 86_600n,
       end_grace_seconds: 0,
       seed: 1n,
     },

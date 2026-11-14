@@ -5,8 +5,13 @@ import type { DirectoryInput } from "../game-directory";
 import type { FoldRow } from "../types";
 
 const start = 1_800_000_000;
-const calendar = { seed: 42n, startMainAt: start, scheduledEndAt: start + 21 * 20 * 14_400,
-endAt: start + 21 * 20 * 14_400, dayUnitSeconds: 14_400 };
+const calendar = {
+  seed: 42n,
+  startMainAt: start,
+  scheduledEndAt: start + 21 * 20 * 14_400,
+  endAt: start + 21 * 20 * 14_400,
+  dayUnitSeconds: 14_400,
+};
 const input = (timestamp: number): DirectoryInput => {
   const games = [
     { game_id: 1, preset_id: 5, settled: true },
@@ -21,7 +26,7 @@ const input = (timestamp: number): DirectoryInput => {
     start_settling_at: start - 100,
     start_main_at: start,
     scheduled_end_at: start + 21 * 20 * 14_400,
-end_at: start + 21 * 20 * 14_400,
+    end_at: start + 21 * 20 * 14_400,
     end_grace_seconds: 0,
     seed: 42n,
   }));
@@ -114,7 +119,7 @@ it("folds the extension row and preserves the added days through a checkpoint re
     start_main_at: approved.start,
     start_settling_at: approved.start,
     scheduled_end_at: approved.oldEnd,
-end_at: approved.oldEnd,
+    end_at: approved.oldEnd,
     end_grace_seconds: 0,
     seed: BigInt(approved.seed),
   };
@@ -137,7 +142,7 @@ end_at: approved.oldEnd,
       fold: state,
     }).games[0]!;
   expect(directory(fold, approved.oldEnd).day_index).toBeNull();
-  native.applyReceipt(fold, receipt([rowEvent("GameRegistry", ["1"], { ...game, end_at: approved.end })]), 11, 0);
+  native.applyReceipt(fold, receipt([rowEvent("GameRegistry", ["1"], { ...game, end_at: approved.end, scheduled_end_at: approved.end })]), 11, 0);
   expect(directory(fold, approved.oldEnd)).toMatchObject({ day_index: 10, clock: { end_at: approved.end } });
   const cold = WorldFold.restore(decoder.registry, JSON.parse(JSON.stringify(fold.checkpoint())));
   expect(directory(cold, approved.oldEnd)).toEqual(directory(fold, approved.oldEnd));
@@ -154,7 +159,7 @@ it.each([81, 84, 85])("publishes the final %ih day without a tomorrow", (hours) 
       ...row,
       value: {
         ...row.value,
-        ...(model === "GameRegistry" ? { seed: 0x5eedn, end_at: end } : {}),
+        ...(model === "GameRegistry" ? { seed: 0x5eedn, end_at: end, scheduled_end_at: end } : {}),
         ...(model === "SliceRules" && row.value.game_id === 3 ? { day_unit_seconds: 7200 } : {}),
       },
     }));

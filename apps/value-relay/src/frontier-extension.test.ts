@@ -51,7 +51,7 @@ beforeEach(() => {
     start_settling_at: approved.start,
     start_main_at: approved.start,
     scheduled_end_at: approved.end,
-end_at: approved.end,
+    end_at: approved.end,
     end_grace_seconds: 0,
     seed: approved.seed,
   };

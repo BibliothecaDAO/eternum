@@ -36,7 +36,7 @@ const calendar = [
       start_settling_at: 0n,
       start_main_at: 100n,
       scheduled_end_at: 1_000_000n,
-end_at: 1_000_000n,
+      end_at: 1_000_000n,
       end_grace_seconds: 0,
       seed: 1n,
     },

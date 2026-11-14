@@ -62,8 +62,13 @@ async function expeditionWorld() {
   const dayStart = Date.parse("2026-09-22T00:00:00Z") / 1000;
   // The season's day 0, drawn from the game's seed 7 below; its last second is the eve of the rollover.
   const dayZero = dayOf(
-    { seed: 7n, startMainAt: dayStart + 120, scheduledEndAt: dayStart + 120 + 21 * 20 * 14_400,
-endAt: dayStart + 120 + 21 * 20 * 14_400, dayUnitSeconds: 14_400 },
+    {
+      seed: 7n,
+      startMainAt: dayStart + 120,
+      scheduledEndAt: dayStart + 120 + 21 * 20 * 14_400,
+      endAt: dayStart + 120 + 21 * 20 * 14_400,
+      dayUnitSeconds: 14_400,
+    },
     dayStart + 120,
   )!;
   const beforeMidnight = dayZero.end - 1;
@@ -106,7 +111,7 @@ endAt: dayStart + 120 + 21 * 20 * 14_400, dayUnitSeconds: 14_400 },
           start_settling_at: String(dayStart + 120),
           start_main_at: String(dayStart + 120),
           scheduled_end_at: String(dayStart + 120 + 2 * 288_000),
-end_at: String(dayStart + 120 + 2 * 288_000),
+          end_at: String(dayStart + 120 + 2 * 288_000),
           end_grace_seconds: "0",
           seed: "7",
         }),

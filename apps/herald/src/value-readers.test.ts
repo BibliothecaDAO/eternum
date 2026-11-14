@@ -65,7 +65,7 @@ async function endedSeason() {
       start_settling_at: String(season.start),
       start_main_at: String(season.start),
       scheduled_end_at: String(season.end),
-end_at: String(season.end),
+      end_at: String(season.end),
       end_grace_seconds: "0",
       seed: "7",
     }),

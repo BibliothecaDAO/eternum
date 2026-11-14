@@ -394,7 +394,7 @@ function seasonDayOf(game: Record<string, unknown>, dayUnitSeconds: number, now:
     dayUnitSeconds,
     seed: BigInt(game.seed as string),
     scheduledEndAt: Number(game.scheduled_end_at),
-endAt: Number(game.end_at),
+    endAt: Number(game.end_at),
     startMainAt: Number(game.start_main_at),
   };
   return dayOf(calendar, now)?.index ?? null;

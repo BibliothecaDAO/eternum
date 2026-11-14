@@ -676,7 +676,7 @@ const restedUntil = (game: Game | undefined, fullAt: number): number => {
     seed: BigInt(game.expedition.seed),
     startMainAt: game.clock.start_main_at,
     scheduledEndAt: game.clock.scheduled_end_at,
-endAt: game.clock.end_at,
+    endAt: game.clock.end_at,
     dayUnitSeconds: game.expedition.day_unit_seconds,
   };
   return Math.min((dayOf(calendar, fullAt / 1000)?.end ?? 0) * 1000, gameEnd);

@@ -54,7 +54,7 @@ export function presetLaunch(
       start_settling_at: timestamp,
       start_main_at: timestamp,
       scheduled_end_at: timestamp + PRESET_FIXTURE_DURATION_SECONDS,
-end_at: timestamp + PRESET_FIXTURE_DURATION_SECONDS,
+      end_at: timestamp + PRESET_FIXTURE_DURATION_SECONDS,
       end_grace_seconds: 0,
       seed: 1,
     }),

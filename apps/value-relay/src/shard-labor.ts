@@ -22,7 +22,7 @@ export const currentLaborDay = (connection: ShardConnection, heraldUrl: string, 
       {
         seed: BigInt(String(game.seed)),
         scheduledEndAt: Number(game.scheduled_end_at),
-endAt: Number(game.end_at),
+        endAt: Number(game.end_at),
         startMainAt: Number(game.start_main_at),
         dayUnitSeconds: Number(rules.day_unit_seconds),
       },

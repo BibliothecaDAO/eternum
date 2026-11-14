@@ -48,7 +48,7 @@ const httpState: Parameters<typeof createHeraldRequestHandler>[0] = {
               start_settling_at: "0x1",
               start_main_at: "0x2",
               scheduled_end_at: "0x3",
-end_at: "0x3",
+              end_at: "0x3",
               end_grace_seconds: "0x4",
             },
           },

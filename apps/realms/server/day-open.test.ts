@@ -13,15 +13,18 @@ const calendar = {
   seed: 0x5eedn,
   startMainAt: 1_800_000_000,
   scheduledEndAt: 1_800_000_000 + 2 * 20 * 7_200,
-endAt: 1_800_000_000 + 2 * 20 * 7_200,
+  endAt: 1_800_000_000 + 2 * 20 * 7_200,
   dayUnitSeconds: 7_200,
 };
 const game: DayOpenGame = {
   game_id: 1,
   mode: "frontier",
   status: "Live",
-  clock: { start_main_at: calendar.startMainAt, scheduled_end_at: calendar.startMainAt + 2 * 20 * calendar.dayUnitSeconds,
-end_at: calendar.startMainAt + 2 * 20 * calendar.dayUnitSeconds },
+  clock: {
+    start_main_at: calendar.startMainAt,
+    scheduled_end_at: calendar.startMainAt + 2 * 20 * calendar.dayUnitSeconds,
+    end_at: calendar.startMainAt + 2 * 20 * calendar.dayUnitSeconds,
+  },
   expedition: { seed: calendar.seed.toString(), day_unit_seconds: calendar.dayUnitSeconds },
 };
 const days = () => {
@@ -154,7 +157,7 @@ it("reads confirmed enrollment for all owners, rather than activity or the entry
 it.each([81, 84, 85])("opens the actual final day of an %ih season and never prepares another", (hours) => {
   const end = calendar.startMainAt + hours * 3600;
   const lastStart = calendar.startMainAt + (hours === 81 ? 68 : 80) * 3600;
-  const partial = { ...game, clock: { ...game.clock, end_at: end } };
+  const partial = { ...game, clock: { ...game.clock, end_at: end, scheduled_end_at: end } };
   expect(planDayOpenings([partial], lastStart * 1000 - 10_000, 60_000).prepare).toEqual([
     {
       gameId: 1,

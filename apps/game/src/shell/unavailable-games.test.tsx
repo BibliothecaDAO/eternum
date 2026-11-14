@@ -21,8 +21,7 @@ const season = {
   ready: true,
   error: "unavailable",
   expedition: null,
-  clock: { start_main_at: 0, scheduled_end_at: 100,
-end_at: 100 },
+  clock: { start_main_at: 0, scheduled_end_at: 100, end_at: 100 },
   player_count: 1,
   roster_count: 0,
   player_state: {

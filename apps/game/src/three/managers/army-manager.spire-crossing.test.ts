@@ -18,8 +18,7 @@ const store = {
     ({
       SliceRules: { day_unit_seconds: 14_400 },
       SettlementRules: { spacing: 10 },
-      GameRegistry: { start_main_at: 86_400n, scheduled_end_at: 10_000_000n,
-end_at: 10_000_000n, seed: 1n },
+      GameRegistry: { start_main_at: 86_400n, scheduled_end_at: 10_000_000n, end_at: 10_000_000n, seed: 1n },
     })[model],
 };
 

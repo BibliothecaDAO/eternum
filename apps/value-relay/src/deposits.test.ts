@@ -112,8 +112,7 @@ beforeEach(() => {
         model === "DepositSource"
           ? [{ value: { chain: "0x1", ledger: "0x10" } }]
           : model === "GameRegistry"
-            ? [{ value: { start_main_at: 1, scheduled_end_at: ended ? 999 : 2000,
-end_at: ended ? 999 : 2000 } }]
+            ? [{ value: { start_main_at: 1, scheduled_end_at: ended ? 999 : 2000, end_at: ended ? 999 : 2000 } }]
             : model === "Structure"
               ? [{ value: structureSnapshot(account, category) }]
               : [],
