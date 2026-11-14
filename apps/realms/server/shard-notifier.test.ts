@@ -770,7 +770,7 @@ describe.concurrent("shard notifications", () => {
       await waitUntil(() => push.received.length > 0, 15_000);
       expect(Date.now() / 1000).toBeGreaterThanOrEqual(fullAt);
       expect(Date.now() / 1000).toBeLessThan(spentAt + 2 * REST_TICKS * ARMIES_TICK_SECONDS);
-      expect(await push.words()).toEqual(["Your armies are rested / Frontier: their stamina is full."]);
+      expect(await push.words()).toEqual(["Your army is rested / Frontier: its stamina is full."]);
       expect(
         herald.state.requestedModels.some((models) => models.includes("BaneProgress") && models.includes("TriumphDay")),
       ).toBe(true);
