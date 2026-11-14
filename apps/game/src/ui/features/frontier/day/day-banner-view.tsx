@@ -46,8 +46,8 @@ export interface DayBannerProps {
   reading: DayQuestReading | null;
   heads: readonly DayHead[];
   members: DayMembers | null;
-  /** The home's daily claim waiting today (Labor and Essence), which opens Realms; null once claimed. */
-  claim: { labor: number; essence: number } | null;
+  /** The home's daily claim waiting today (its Labor), which opens Realms; null once claimed. */
+  claim: { labor: number } | null;
   collecting: boolean;
   onCollect: () => void;
   onOpenClaim: () => void;
@@ -174,7 +174,7 @@ const Rewards = ({ reading }: { reading: DayQuestReading }) => (
 );
 
 const Amount = ({ resource, amount }: { resource: ResourcesIds; amount: number }) => (
-  <span className="flex items-center gap-1">
+  <span data-reward={ResourcesIds[resource]} className="flex items-center gap-1">
     <Icon name={resourceMeaning(resource)} size={20} />
     {formatAmount(amount)}
   </span>
@@ -232,7 +232,7 @@ const MembersShort = ({ members }: { members: DayMembers }) => (
 
 const Claim = ({ claim, onOpen }: { claim: DayBannerProps["claim"]; onOpen: () => void }) =>
   claim && (
-    <HudChip icons={["labor", "essence"]} onPress={onOpen}>
-      {`${formatAmount(claim.labor)} · ${formatAmount(claim.essence)}`}
+    <HudChip icons={["labor"]} onPress={onOpen}>
+      {formatAmount(claim.labor)}
     </HudChip>
   );

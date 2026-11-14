@@ -2,6 +2,9 @@ import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+import { orderMeaning } from "@/ui/design-system/icon-meaning";
+import { aspects, orders } from "@bibliothecadao/types";
+
 import { DAY_BANNER_CASES } from "./day-banner-fixtures";
 import { DayBannerView, type DayBannerProps, type DayLayout } from "./day-banner-view";
 
@@ -21,6 +24,7 @@ afterEach(() => {
 const draw = (props: Omit<DayBannerProps, "layout">, layout: DayLayout = "desktop") =>
   act(() => root.render(<DayBannerView {...props} layout={layout} />));
 const text = () => host.textContent ?? "";
+const reward = (resource: "Labor" | "Essence") => host.querySelector(`[data-reward="${resource}"]`)?.textContent;
 const button = (name: string) => [...host.querySelectorAll("button")].find((each) => each.textContent?.includes(name));
 
 describe("the day's banner", () => {
@@ -28,7 +32,9 @@ describe("the day's banner", () => {
     draw(DAY_BANNER_CASES["Quest running"]);
     expect(text()).toContain("Camp-breakers");
     expect(text()).toContain("1 of 2 camps");
-    expect(text()).toContain("1,500");
+    // a City's quest (the level that doubles a Settlement's count and reward), no labor bonus
+    expect(reward("Labor")).toBe("2,000");
+    expect(reward("Essence")).toBe("3,000");
     expect(button("Collect")).toBeUndefined();
     expect(button("1,000")).toBeDefined();
   });
@@ -48,7 +54,10 @@ describe("the day's banner", () => {
     expect(button("Collect again")).toBeDefined();
     expect(text()).toContain("Your Aspect ended the bane");
     expect(text()).toContain("The Lights");
-    expect(text()).toContain("20 of 20 tiles");
+    expect(text()).toContain("60 of 60 tiles");
+    // a Kingdom's Lights, no bonus: 4,000 labor and 6,000 Essence
+    expect(reward("Labor")).toBe("4,000");
+    expect(reward("Essence")).toBe("6,000");
   });
 
   it("heads the panel with the bane and how many members are at it", () => {
@@ -56,13 +65,23 @@ describe("the day's banner", () => {
     expect(text()).toContain("Blood Moon");
     expect(text()).toContain("The Stand");
     expect(text()).toContain("1 of 3 sites");
+    // a Settlement's Stand with the labor bonus: 150% of 1,000 labor, 1,500 Essence
+    expect(reward("Labor")).toBe("1,500");
+    expect(reward("Essence")).toBe("1,500");
     expect(text()).toContain("4 of 6 members");
   });
 
-  it("a rival's bane comes with the Cull, counted in troops, and the crests of its sender", () => {
+  it("a rival's bane comes with the Cull, counted in troops, and exactly the sender Aspect's four crests", () => {
     draw(DAY_BANNER_CASES["Rival bane and Triumph"]);
     expect(text()).toContain("The Cull");
-    expect(text()).toContain("0 of 2,500 troops");
+    expect(text()).toContain("0 of 6,000 troops");
+    expect(reward("Labor")).toBe("2,000");
+    expect(reward("Essence")).toBe("3,000");
+    const orderIcons = new Set(orders.map(({ orderId }) => orderMeaning(orderId)));
+    const shown = [...host.querySelectorAll("[data-icon]")].map((each) => each.getAttribute("data-icon")!).filter((icon) => orderIcons.has(icon as never));
+    const might = aspects[0];
+    expect(shown.toSorted()).toEqual(orders.filter((order) => order.aspect === might.id).map(({ orderId }) => orderMeaning(orderId)).toSorted());
+    expect(shown).toHaveLength(4);
     expect(text()).toContain("Your Aspect's hyperstructure does not grow today");
     expect(text()).toContain("Clear Mist");
   });
