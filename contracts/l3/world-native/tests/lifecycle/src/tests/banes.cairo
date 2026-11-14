@@ -111,7 +111,7 @@ fn train(d: Deployment, home: ResourceKey, timestamp: u64) {
     );
 }
 
-fn complete(d: Deployment, home: ResourceKey, day: u64, timestamp: u64) {
+fn complete(d: Deployment, home: ResourceKey, day: u64, timestamp: u64) -> u128 {
     let slot = crate::troops::ArmySlotKey { game_id: home.game_id, structure_id: home.entity_id, epoch: day, slot: 0 };
     let existing = interact_with_state(d.games, || crate::logic::army_slot_storage::read(slot));
     if existing.is_none() {
@@ -149,6 +149,7 @@ fn complete(d: Deployment, home: ResourceKey, day: u64, timestamp: u64) {
     for _ in 0..reveals {
         assert!(world_test_support::tests::registrar::explore_with_root(d, home.game_id, explorer_id, root, timestamp));
     }
+    let mut labor_reward = 0;
     if fight {
         let site = interact_with_state(
             d.games, || crate::logic::map::occupancy(crate::geometry::tile_key(home.game_id, destination)).unwrap(),
@@ -163,8 +164,13 @@ fn complete(d: Deployment, home: ResourceKey, day: u64, timestamp: u64) {
                 timestamp,
             ),
         );
+        labor_reward = interact_with_state(d.games, || {
+            crate::logic::expeditions::expedition_site(ResourceKey { game_id: home.game_id, entity_id: site.entity_id })
+                .unwrap().clear.unwrap().reward.unwrap().amount
+        });
     }
     assert_eq!(interact_with_state(d.games, || crate::logic::quests::read(home, day).completed_level), 1);
+    labor_reward
 }
 
 #[test]
@@ -262,7 +268,7 @@ fn quorum_ends_the_effect_once_and_collection_pays_the_second_reward_once() {
         ),
     );
     assert_eq!(interact_with_state(d.games, || crate::logic::banes::required(game_id, 1, 1)), 2);
-    complete(first, home, 1, tomorrow + 60);
+    let first_clear_reward = complete(first, home, 1, tomorrow + 60);
     assert!(claim(first, home, 1, tomorrow + 60));
     interact_with_state(
         d.games,
@@ -296,9 +302,9 @@ fn quorum_ends_the_effect_once_and_collection_pays_the_second_reward_once() {
     let third = *members.at(2);
     let third_home = *homes.at(2);
     assert!(!claim(third, third_home, 1, tomorrow + 180));
-    complete(third, third_home, 1, tomorrow + 181);
+    let third_clear_reward = complete(third, third_home, 1, tomorrow + 181);
     assert!(claim(third, third_home, 1, tomorrow + 182));
-    for target in array![home, third_home] {
+    for (target, clear_reward) in array![(home, first_clear_reward), (third_home, third_clear_reward)] {
         interact_with_state(
             d.games,
             || {
@@ -307,7 +313,7 @@ fn quorum_ends_the_effect_once_and_collection_pays_the_second_reward_once() {
                     Some((1000 * RESOURCE_PRECISION, 1500 * RESOURCE_PRECISION)),
                 );
                 assert_eq!(
-                    crate::logic::resources::balance(target, crate::resources::LABOR), 3600 * RESOURCE_PRECISION,
+                    crate::logic::resources::balance(target, crate::resources::LABOR), 3600 * RESOURCE_PRECISION + clear_reward,
                 );
                 assert_eq!(
                     crate::logic::resources::balance(target, crate::resources::ESSENCE), 3000 * RESOURCE_PRECISION,
@@ -366,7 +372,7 @@ fn real_production_splits_at_the_bane_start_and_quorum_end_and_army_stores_still
             tomorrow,
         ),
     );
-    complete(d, home, 1, tomorrow + 600);
+    let clear_reward = complete(d, home, 1, tomorrow + 600);
     let now = tomorrow + 1000;
     assert!(
         execute_in_game(
@@ -374,7 +380,7 @@ fn real_production_splits_at_the_bane_start_and_quorum_end_and_army_stores_still
         ),
     );
     let ordinary_seconds: u128 = (tomorrow - 360 + 400).into();
-    let expected = rate * ordinary_seconds + rate * 600 / 2 - 800 * RESOURCE_PRECISION;
+    let expected = rate * ordinary_seconds + rate * 600 / 2 - 800 * RESOURCE_PRECISION + clear_reward;
     interact_with_state(
         d.games,
         || {

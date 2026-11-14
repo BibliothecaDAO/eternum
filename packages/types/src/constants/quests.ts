@@ -13,8 +13,6 @@ export const dailyQuests = [
   { id: quest.REVEALS, unit: "tiles", name: "Cartographers", objective: "Reveal tiles" },
 ] as const;
 
-export type DailyQuestId = (typeof dailyQuests)[number]["id"];
-
 export const baneQuests = [
   { id: quest.STAND, unit: "sites", name: "The Stand", objective: "Clear guarded sites" },
   { id: quest.LIGHTS, unit: "tiles", name: "The Lights", objective: "Reveal tiles" },
