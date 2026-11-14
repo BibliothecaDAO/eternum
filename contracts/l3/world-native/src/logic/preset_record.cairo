@@ -119,6 +119,7 @@ fn write_economy(
     write_quests(preset, economy.quests);
     write_banes(preset, economy.banes);
     preset.deep_rules.write(economy.deep);
+    preset.race_rules.write(economy.race);
     write_hyperstructures(preset, rules, economy.hyperstructures);
     let classes = crate::state::read().releases.read(crate::state::read().current_release.read()).classes;
     crate::presets::IPresetRelicsDispatcherTrait::store_relic_preset(

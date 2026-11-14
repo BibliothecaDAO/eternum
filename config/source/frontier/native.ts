@@ -32,6 +32,7 @@ export const frontierPreset = {
   },
   orderAspects: [],
   deep: null,
+  race: null,
   bitcoinEnabled: false,
   dailyQuest: null,
   banes: null,

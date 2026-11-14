@@ -113,6 +113,7 @@ pub fn definition(blitz: bool) -> PresetDefinition {
             },
         },
         economy: EconomyPreset {
+            race: None,
             banes: None,
             quests: None,
             deep: None,

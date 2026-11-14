@@ -1244,3 +1244,58 @@ test("the bane codec preserves whole quest units and refuses invalid effects", (
     Object.assign(source, previous);
   }
 });
+
+const raceFixture = () => ({
+  seasonDays: 50, gloryPerTick: 5, heightPerTick: 5, stageHeight: 2_000,
+  clearMistPercent: 200, secondWindPercent: 200, paleMoonPercent: 50, spoilsPercent: 200,
+  positions: [[5,5],[45,5],[5,45],[45,45]] as const,
+});
+
+test("published presets keep the race disabled until its complete runtime lands", () => {
+  for (const source of Object.values(nativePresets)) {
+    expect(source.race).toBeNull();
+    const environment = source.gameType === "blitz" ? "madara.blitz" : "madara.frontier";
+    expect(buildNativePreset(loadNativePresetConfiguration(environment,source.id),source.id).economy.race.isNone()).toBe(true);
+  }
+});
+
+test("the race codec preserves whole Glory payments and four exact positions", () => {
+  const source=nativePresets[FRONTIER_S1_PRESET_ID]!;
+  const previous={race:source.race,deep:source.deep};
+  try {
+    source.race=raceFixture(); source.deep=deepFixture();
+    const built=buildNativePreset(loadNativePresetConfiguration("madara.frontier",source.id),source.id);
+    expect(built.economy.race.unwrap()).toEqual({
+      season_days:50n,glory_per_tick:5n,height_per_tick:5,stage_height:2_000,
+      clear_mist_percent:200,second_wind_percent:200,pale_moon_percent:50,spoils_percent:200,
+      first:{alt:false,x:5,y:5},second:{alt:false,x:45,y:5},
+      third:{alt:false,x:5,y:45},fourth:{alt:false,x:45,y:45},
+    });
+    codec.compile("register_preset",{preset_id:source.id,definition:built});
+  } finally {Object.assign(source,previous);}
+});
+
+test("the race codec refuses missing Deep rules, malformed amounts, effects and positions", () => {
+  const source=nativePresets[FRONTIER_S1_PRESET_ID]!;
+  const previous={race:source.race,deep:source.deep};
+  const malformed = [
+    {...raceFixture(),seasonDays:0}, {...raceFixture(),seasonDays:49},
+    {...raceFixture(),gloryPerTick:0}, {...raceFixture(),heightPerTick:0},
+    {...raceFixture(),stageHeight:2001}, {...raceFixture(),stageHeight:0xffff_ffff},
+    {...raceFixture(),clearMistPercent:99}, {...raceFixture(),secondWindPercent:201},
+    {...raceFixture(),paleMoonPercent:0}, {...raceFixture(),spoilsPercent:99},
+    {...raceFixture(),positions:[[50,5],[45,5],[5,45],[45,45]] as const},
+    {...raceFixture(),positions:[[5,5],[45,5],[5,45],[5,5]] as const},
+    {...raceFixture(),positions:[[25,35],[45,5],[5,45],[45,45]] as const},
+    {...raceFixture(),positions:[[nativeRuleConstants.DEEP_MAP_SIZE/2,nativeRuleConstants.DEEP_ARRIVAL_Y],[45,5],[5,45],[45,45]] as const},
+  ];
+  try {
+    source.race=raceFixture(); source.deep=null;
+    expect(()=>buildNativePreset(loadNativePresetConfiguration("madara.frontier",source.id),source.id)).toThrow("Race requires the Deep");
+    source.deep=deepFixture();
+    for(const race of malformed){
+      source.race=race;
+      expect(()=>buildNativePreset(loadNativePresetConfiguration("madara.frontier",source.id),source.id)).toThrow();
+    }
+  } finally {Object.assign(source,previous);}
+});

@@ -29,6 +29,7 @@ pub struct PresetStorage<
     TExplorationReward,
     TLaborRules,
     TDeepRules,
+    TRaceRules,
 > {
     pub rules: TSliceRules,
     pub resource_rules: Map<u8, (u128, u128)>,
@@ -85,4 +86,5 @@ pub struct PresetStorage<
     pub bane_rules: Option<(u16, u16, u16, u16, u16)>,
     pub bane_quest_counts: Map<u8, u128>,
     pub deep_rules: Option<TDeepRules>,
+    pub race_rules: Option<TRaceRules>,
 }

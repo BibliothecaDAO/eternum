@@ -32,6 +32,7 @@ pub struct WithdrawalPreset {
 }
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]
 pub struct EconomyPreset {
+    pub race: Option<crate::race::RaceRules>,
     pub banes: Option<crate::banes::BaneRules>,
     pub quests: Option<crate::quests::QuestRules>,
     pub deep: Option<crate::deep::DeepRules>,
@@ -57,6 +58,10 @@ pub struct PresetDefinition {
 
 pub fn validate(preset: PresetDefinition) {
     let rules = preset.rules;
+    if let Some(race) = preset.economy.race {
+        assert!(preset.season_win_points == 0, "race cannot use victory points");
+        crate::race::validate(race, preset.economy.deep.expect('race requires the Deep'));
+    }
     if let Some(banes) = preset.economy.banes {
         assert!(preset.economy.quests.is_some(), "banes require daily quests");
         crate::banes::validate(banes);

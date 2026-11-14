@@ -1,7 +1,7 @@
 import { tupleTypes } from "../../../../apps/herald/src/native/serde.ts";
 import { compileCommandRoutes } from "./command-routes.mjs";
 import { assignWireIds, renderWireSerde } from "./wire-ids.mjs";
-import { readRuleConstants, readReleaseConstants, readQuestConstants, readBaneConstants } from "./rule-constants.mjs";
+import { readRuleConstants, readReleaseConstants, readQuestConstants, readBaneConstants, readRaceConstants } from "./rule-constants.mjs";
 import { generateSitePreviews } from "./generate-site-previews.mjs";
 import { execFileSync } from "node:child_process";
 import { mkdtemp, rm } from "node:fs/promises";
@@ -161,6 +161,7 @@ for (const model of models) {
 const ruleConstants = await readRuleConstants(root);
 const questConstants = await readQuestConstants(root);
 const baneConstants = await readBaneConstants(root);
+const raceConstants = await readRaceConstants(root);
 const releaseConstants = await readReleaseConstants(root);
 await generateSitePreviews(process.argv.includes("--check"));
 
@@ -207,6 +208,7 @@ const schema = {
   ruleConstants,
   questConstants,
   baneConstants,
+  raceConstants,
   researchConstants,
   tileOccupierConstants,
   tilePackingConstants,
@@ -453,6 +455,7 @@ const declarations = [
   `export const nativeRuleConstants = ${JSON.stringify(ruleConstants, null, 2)} as const;`,
   `export const nativeQuestConstants = ${JSON.stringify(questConstants, null, 2)} as const;`,
   `export const nativeBaneConstants = ${JSON.stringify(baneConstants, null, 2)} as const;`,
+  `export const nativeRaceConstants = ${JSON.stringify(raceConstants, null, 2)} as const;`,
   `export const nativeArrivalConstants = ${JSON.stringify(arrivalConstants, null, 2)} as const;`,
   `export const nativeResearchConstants = ${JSON.stringify(researchConstants, null, 2)} as const;`,
   typeScriptEnum(

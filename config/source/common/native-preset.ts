@@ -62,6 +62,17 @@ export interface NativePreset {
   };
   /** One price per research row tier above common; rows are research.cairo's ROW_* ids. */
   research: readonly { row: number; tier: number; essenceCost: number; laborCost: number }[];
+  race: null | {
+    seasonDays: number;
+    gloryPerTick: number;
+    heightPerTick: number;
+    stageHeight: number;
+    clearMistPercent: number;
+    secondWindPercent: number;
+    paleMoonPercent: number;
+    spoilsPercent: number;
+    positions: readonly [readonly [number, number], readonly [number, number], readonly [number, number], readonly [number, number]];
+  };
   deep: null | {
     foundation: { x: number; y: number };
     quarry: { x: number; y: number };

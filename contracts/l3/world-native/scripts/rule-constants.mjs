@@ -36,6 +36,10 @@ export async function readReleaseConstants(root) {
   return unsignedConstants(await readFile(new URL("src/logic/release.cairo", root), "utf8"));
 }
 
+export async function readRaceConstants(root) {
+  return unsignedConstants(await readFile(new URL("src/race.cairo", root), "utf8"));
+}
+
 export async function readBaneConstants(root) {
   const source = await readFile(new URL("src/banes.cairo", root), "utf8");
   const quests = await readQuestConstants(root);

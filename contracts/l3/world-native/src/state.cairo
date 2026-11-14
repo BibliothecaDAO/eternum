@@ -25,6 +25,7 @@ pub type Preset =
         crate::exploration_rewards::ExplorationReward,
         crate::entry::LaborRules,
         crate::deep::DeepRules,
+        crate::race::RaceRules,
     >;
 
 pub type Storage =
