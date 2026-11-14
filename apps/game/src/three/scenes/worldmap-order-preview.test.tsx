@@ -1029,7 +1029,6 @@ describe("the click matrix: what is selected × what is clicked", () => {
   });
 });
 
-
 it.each([true, false])("opens a Deep site for the selected army on desktop=%s", (desktop) => {
   screen(desktop);
   vi.spyOn(configManager, "getActiveGameId").mockReturnValue(1);

@@ -507,9 +507,15 @@ export class ArmyManager {
     }
   }
 
-  private resolveLiveExplorerTroopsComponent(entityId: ID, timestamp?: number): ExplorerTroopsComponentValue | undefined {
+  private resolveLiveExplorerTroopsComponent(
+    entityId: ID,
+    timestamp?: number,
+  ): ExplorerTroopsComponentValue | undefined {
     if (!this.store) return undefined;
-    const explorer = this.store.get("ExplorerTroops", { game_id: configManager.getActiveGameId(), explorer_id: entityId });
+    const explorer = this.store.get("ExplorerTroops", {
+      game_id: configManager.getActiveGameId(),
+      explorer_id: entityId,
+    });
     return explorer && currentArmy(this.store, explorer, timestamp);
   }
 
