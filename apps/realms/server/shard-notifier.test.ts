@@ -222,7 +222,14 @@ const createHerald = () => {
 };
 
 /** The game's rules with a short armies tick, the player's home realm, and their army if it still exists. */
-type ArmyState = { amount: number; settledAt: number; day: number; mapDay?: number; guard?: boolean; deepTick?: number };
+type ArmyState = {
+  amount: number;
+  settledAt: number;
+  day: number;
+  mapDay?: number;
+  guard?: boolean;
+  deepTick?: number;
+};
 
 /** Structure owners, so the fake narrows armies to one account's as Herald's owner filter does. */
 const STRUCTURE_OWNERS = new Map([
@@ -358,15 +365,45 @@ const snapshot = (
         ...(army ? [{ id: ARMY, home: HOME, day: army.day }] : []),
         ...(second ? [{ id: SECOND_ARMY, home: HOME, day: second.day }] : []),
         ...(neighbour ? [{ id: NEIGHBOUR_ARMY, home: NEIGHBOUR_HOME, day: neighbour.day }] : []),
-      ].filter(({ home }) => owner === null || BigInt(STRUCTURE_OWNERS.get(home)!) === BigInt(owner))
+      ]
+        .filter(({ home }) => owner === null || BigInt(STRUCTURE_OWNERS.get(home)!) === BigInt(owner))
         .map(({ id, day }) => ({ key: `0x${id.toString(16)}`, value: { game_id: GAME_ID, explorer_id: id, day } })),
     },
-    { model: "DeepGuard", rows: army?.guard ? [{ key: "0xdee1", value: { game_id: GAME_ID, explorer_id: ARMY, site_id: 800, slot: 0 } }] : [] },
-    { model: "DeepArmy", rows: army?.deepTick === undefined ? [] : [{ key: "0xdee2", value: { game_id: GAME_ID, explorer_id: ARMY, last_tick: army.deepTick } }] },
-    { model: "DeepRules", rows: army?.deepTick === undefined ? [] : [{ key: "0xdee3", value: {
-      game_id: GAME_ID, foundation: { alt: false, x: 10, y: 25 }, quarry: { alt: false, x: 25, y: 25 }, altar: { alt: false, x: 40, y: 25 },
-      beast_count: 100, loss_per_tick: 100, quarry_per_tick: 500, altar_per_tick: 5, altar_threshold: 1500,
-    } }] },
+    {
+      model: "DeepGuard",
+      rows: army?.guard
+        ? [{ key: "0xdee1", value: { game_id: GAME_ID, explorer_id: ARMY, site_id: 800, slot: 0 } }]
+        : [],
+    },
+    {
+      model: "DeepArmy",
+      rows:
+        army?.deepTick === undefined
+          ? []
+          : [{ key: "0xdee2", value: { game_id: GAME_ID, explorer_id: ARMY, last_tick: army.deepTick } }],
+    },
+    {
+      model: "DeepRules",
+      rows:
+        army?.deepTick === undefined
+          ? []
+          : [
+              {
+                key: "0xdee3",
+                value: {
+                  game_id: GAME_ID,
+                  foundation: { alt: false, x: 10, y: 25 },
+                  quarry: { alt: false, x: 25, y: 25 },
+                  altar: { alt: false, x: 40, y: 25 },
+                  beast_count: 100,
+                  loss_per_tick: 100,
+                  quarry_per_tick: 500,
+                  altar_per_tick: 5,
+                  altar_threshold: 1500,
+                },
+              },
+            ],
+    },
     {
       model: "ArmySlot",
       rows: [
@@ -662,7 +699,9 @@ describe.concurrent("shard notifications", () => {
       herald.state.army!.deepTick = armiesTick();
       await pause(ticks(REST_TICKS + 1) + polls(3));
       expect(push.received).toEqual([]);
-    } finally { await worker.dispose(); }
+    } finally {
+      await worker.dispose();
+    }
   }, 180_000);
 
   it("a game that ends while an army rests alerts nothing for it, and every other alert still flows", async () => {

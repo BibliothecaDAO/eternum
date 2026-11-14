@@ -24,10 +24,11 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
-const draw = () => {
+const draw = (now?: number) => {
   (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
   const scenario = deepScenario();
-  const { store, startsAt } = scenario;
+  const { store } = scenario;
+  const startsAt = now ?? scenario.startsAt;
   setBlockTimestampSource(() => startsAt);
   useBlockTimestampStore.setState({ currentBlockTimestamp: startsAt, currentDefaultTick: startsAt });
   useAccountStore.setState({ account: { address: scenario.player } as never });
@@ -108,4 +109,20 @@ describe("the Deep site's live native binding", () => {
       hud.unmount();
     }
   });
+});
+
+
+it("counts only actual army-tick boundaries before a day ending between ticks", () => {
+  const hud = draw(361);
+  try {
+    const game = hud.store.require("GameRegistry", { game_id: 1 });
+    act(() => hud.store.applyFacts([{
+      model: "GameRegistry",
+      key: hud.store.wireKeyOf("GameRegistry", { game_id: 1 })!,
+      value: { ...game, end_at: 1000n },
+    }]));
+    hud.render();
+    expect(hud.host.textContent).toContain("5 ticks left");
+    expect(hud.host.textContent).not.toContain("6 ticks left");
+  } finally { hud.unmount(); }
 });
