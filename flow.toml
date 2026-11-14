@@ -103,6 +103,11 @@ cmd = "pnpm run build:packages && pnpm --dir apps/game test src/ui/features/fron
 paths = "flow.toml apps/game packages"
 estimate_gb = 5
 
+[kind.prove-season-one]
+cmd = "pnpm run build:packages && pnpm --dir apps/game exec node ./scripts/prove-season-one.mjs"
+paths = "apps/game/scripts/prove-season-one.mjs"
+estimate_gb = 6
+
 [gate]
 source = "contracts/l3/check-native-plan.sh"
 kinds = "gate-prelude gate-vrf gate-world gate-drift gate-events test-capture test-combat test-discovery test-economy test-lifecycle test-registration test-resources test-world"
