@@ -1,3 +1,4 @@
+use starknet::storage::StoragePathEntry;
 pub use world_test_support::tests::preset_projection::*;
 
 
@@ -111,7 +112,6 @@ fn optional_deep_rules() -> crate::deep::DeepRules {
 
 #[test]
 fn an_optional_deep_preset_stores_the_exact_sites_and_tick_rules() {
-    use starknet::storage::StoragePathEntry;
     let d = super::registrar::setup();
     start_cheat_caller_address(d.games, super::authority());
     let (preset_id, mut definition) = current_definition("frontier");
