@@ -288,7 +288,14 @@ fn quorum_ends_the_effect_once_and_collection_pays_the_second_reward_once() {
         ),
     );
     assert_eq!(interact_with_state(d.games, || crate::logic::banes::required(game_id, 1, 1)), 2);
-    let first_clear_reward = complete(first, home, 1, tomorrow + 60);
+    complete(first, home, 1, tomorrow + 60);
+    let first_before = interact_with_state(
+        d.games,
+        || (
+            crate::logic::resources::balance(home, crate::resources::LABOR),
+            crate::logic::resources::balance(home, crate::resources::ESSENCE),
+        ),
+    );
     assert!(claim(first, home, 1, tomorrow + 60));
     interact_with_state(
         d.games,
@@ -322,9 +329,16 @@ fn quorum_ends_the_effect_once_and_collection_pays_the_second_reward_once() {
     let third = *members.at(2);
     let third_home = *homes.at(2);
     assert!(!claim(third, third_home, 1, tomorrow + 180));
-    let third_clear_reward = complete(third, third_home, 1, tomorrow + 181);
+    complete(third, third_home, 1, tomorrow + 181);
+    let third_before = interact_with_state(
+        d.games,
+        || (
+            crate::logic::resources::balance(third_home, crate::resources::LABOR),
+            crate::logic::resources::balance(third_home, crate::resources::ESSENCE),
+        ),
+    );
     assert!(claim(third, third_home, 1, tomorrow + 182));
-    for (target, clear_reward) in array![(home, first_clear_reward), (third_home, third_clear_reward)] {
+    for (target, (labor_before, essence_before)) in array![(home, first_before), (third_home, third_before)] {
         interact_with_state(
             d.games,
             || {
@@ -334,10 +348,10 @@ fn quorum_ends_the_effect_once_and_collection_pays_the_second_reward_once() {
                 );
                 assert_eq!(
                     crate::logic::resources::balance(target, crate::resources::LABOR),
-                    3600 * RESOURCE_PRECISION + clear_reward,
+                    labor_before + 2000 * RESOURCE_PRECISION,
                 );
                 assert_eq!(
-                    crate::logic::resources::balance(target, crate::resources::ESSENCE), 3000 * RESOURCE_PRECISION,
+                    crate::logic::resources::balance(target, crate::resources::ESSENCE), essence_before + 3000 * RESOURCE_PRECISION,
                 );
             },
         );
