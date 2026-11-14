@@ -2,6 +2,7 @@
 // Production schema generation never loads this test class.
 #[derive(Drop, Serde)]
 pub struct FactWire {
+    pub quest_progress: crate::quests::QuestProgress,
     pub resource_token_key: crate::withdrawals::ResourceTokenKey,
     pub settlement_rules: crate::settlement::SettlementRules,
     pub arrival: crate::arrivals::Arrival,
