@@ -1,5 +1,5 @@
 {
-  "schemaIdentity": "7d0ad97050c2628798f2cee5263f143b172b9ecf92e6f919175239937b4f58af",
+  "schemaIdentity": "17fd0d26e6aeda054f6c3b603f0b01af18c79a0982da4bf4d5847c5b6a8b9339",
   "commandAbi": [
     {
       "type": "interface",
@@ -1483,6 +1483,10 @@
     },
     {
       "name": "ArmyDay",
+      "scope": "game"
+    },
+    {
+      "name": "AspectActivity",
       "scope": "game"
     },
     {
