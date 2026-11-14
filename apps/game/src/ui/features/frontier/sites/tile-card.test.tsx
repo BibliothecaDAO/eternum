@@ -257,9 +257,10 @@ describe("the tile card", () => {
       },
       { model: "HomeAspect", key: "0xa701", value: { game_id: 1, home: 7n, aspect: 1 } },
       { model: "HomeAspect", key: "0xa901", value: { game_id: 1, home: 9n, aspect: 2 } },
+      { model: "TileOccupancy", key: "0x75", value: null },
       {
         model: "TileOccupancy",
-        key: "0x75",
+        key: "0xa702",
         value: { game_id: 1, entity_id: 201n, col: 511, row: 3584, alt: false, category: 15, is_structure: false },
       },
     ]);
