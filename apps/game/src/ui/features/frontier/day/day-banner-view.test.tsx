@@ -78,9 +78,16 @@ describe("the day's banner", () => {
     expect(reward("Labor")).toBe("2,000");
     expect(reward("Essence")).toBe("3,000");
     const orderIcons = new Set(orders.map(({ orderId }) => orderMeaning(orderId)));
-    const shown = [...host.querySelectorAll("[data-icon]")].map((each) => each.getAttribute("data-icon")!).filter((icon) => orderIcons.has(icon as never));
+    const shown = [...host.querySelectorAll("[data-icon]")]
+      .map((each) => each.getAttribute("data-icon")!)
+      .filter((icon) => orderIcons.has(icon as never));
     const might = aspects[0];
-    expect(shown.toSorted()).toEqual(orders.filter((order) => order.aspect === might.id).map(({ orderId }) => orderMeaning(orderId)).toSorted());
+    expect(shown.toSorted()).toEqual(
+      orders
+        .filter((order) => order.aspect === might.id)
+        .map(({ orderId }) => orderMeaning(orderId))
+        .toSorted(),
+    );
     expect(shown).toHaveLength(4);
     expect(text()).toContain("Your Aspect's hyperstructure does not grow today");
     expect(text()).toContain("Clear Mist");
