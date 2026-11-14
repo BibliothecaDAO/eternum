@@ -70,9 +70,11 @@ describe("the Aspect page", () => {
     for (const props of Object.values(ASPECT_PAGE_CASES)) {
       draw(props);
       expect(document.body.textContent).not.toMatch(/NaN|undefined|Infinity/);
+      const height = props.race?.standings.find((each) => each.own)?.height ?? 0;
       for (const { stage, day } of props.own?.triumphs ?? []) {
-        const built = props.own!.triumphs.find((each) => each.stage === stage)!.day !== null;
-        if (built) expect(Number.isInteger(day)).toBe(true);
+        // a stage's Triumph has a day exactly when its 2,000-high stage is built
+        if (height >= stage * 2_000) expect(Number.isInteger(day)).toBe(true);
+        else expect(day).toBeNull();
       }
     }
   });
