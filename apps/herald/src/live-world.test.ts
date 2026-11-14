@@ -87,9 +87,10 @@ async function expeditionWorld() {
       metadata: { ...structureValue.metadata, realm_id: id },
     }),
   );
-  const armies = [1, 2].map((id) =>
+  const armies = [1, 2].flatMap((id) => [
     rowEvent("ExplorerTroops", ["1", String(id * 10)], explorerValue(String(id), 1000n, 120n, 1n)),
-  );
+    rowEvent("ArmyDay", ["1", String(id * 10)], { day: 0n }),
+  ]);
   const positions = [1, 2].map((id) =>
     rowEvent("TileOccupancy", ["1", "0", String(id * 100 - 50), "50"], {
       entity_id: String(id * 10),

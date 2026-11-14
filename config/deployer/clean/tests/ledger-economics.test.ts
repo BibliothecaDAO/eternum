@@ -113,8 +113,16 @@ describe("mystery chest economics", () => {
   });
 });
 
-it("funds Frontier chests at 70 percent and reserves the remainder for the top ten", () => {
-  const preset = buildLedgerEconomicPreset("frontier");
+it("funds historical Frontier chests at 70 percent and reserves the remainder for the top ten", () => {
+  const preset = buildLedgerEconomicPreset("frontier", { presetId: 5 });
   expect(preset.frontier_chest_bps).toBe(7000);
   expect(preset.frontier_top_n).toBe(10);
+});
+
+it("the current Frontier preset carries no retired chest pool or claim deadline", () => {
+  expect(buildLedgerEconomicPreset("frontier")).toMatchObject({
+    frontier_chest_bps: 0,
+    frontier_top_n: 0,
+    claim_window_seconds: 0,
+  });
 });
