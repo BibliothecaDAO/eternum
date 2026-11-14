@@ -14,6 +14,12 @@ export async function raiseCause(storage: CauseStorage, key: string, after = 0) 
   if (earlier === undefined || at < earlier) await storage.put(key, at);
 }
 
+/** Whether a cause is waiting and its time has come, without consuming it. */
+export async function causeDue(storage: CauseStorage, key: string) {
+  const at = await storage.get<number>(key);
+  return at !== undefined && at <= now();
+}
+
 /** Consumes the cause when the hour or the cause says it is time. The work must then call `retryCause` unless it finished. */
 export async function takeCause(storage: CauseStorage, key: string, hourly: boolean) {
   const at = await storage.get<number>(key);

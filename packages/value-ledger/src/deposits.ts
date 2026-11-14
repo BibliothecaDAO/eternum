@@ -141,6 +141,8 @@ export function decodeDepositSigningRequest(input: Record<string, unknown>): Dep
 export interface DepositAnchor {
   number: number;
   hash: string;
+  /** The newest block Ethereum had accepted when this anchor was stored. Absent: only observed, never known final. */
+  final?: { number: number; hash: string };
 }
 export interface DepositAnchors {
   getAnchor(key: string): Promise<DepositAnchor | undefined>;
@@ -169,31 +171,43 @@ async function assertDepositAnchor(provider: RpcProvider, anchor: DepositAnchor)
 }
 
 /**
- * A stored anchor that no longer stands is only a fault if Ethereum had accepted its block. A head that was never
- * accepted can be replaced by the chain: its anchor is dropped, and the next reads (a payment, a deposit) start from
- * the canonical chain, which shows whether what the old head held survived.
+ * A stored anchor says what was seen, and separately which block Ethereum had accepted when it was stored (`final`).
+ * A hash recorded as final that the chain no longer holds is a fault. An observed head above it that the chain
+ * replaced is not: it was never accepted, even if its replacement has been accepted since, so the anchor falls back
+ * to the accepted block and the next reads (a payment, a deposit) start from the canonical chain, which shows whether
+ * what the replaced head held survived.
  */
 async function standingAnchor(provider: RpcProvider, previous: DepositAnchor): Promise<DepositAnchor | undefined> {
   const head = await readConfirmedLedgerHead(provider);
-  const lost =
-    head.number < previous.number
-      ? new DepositAnchorError("deposit_head_regressed")
-      : BigInt((await readConfirmedLedgerHead(provider, previous.number)).hash) !== BigInt(previous.hash)
-        ? new DepositAnchorError("deposit_head_rewritten")
-        : null;
-  if (!lost) return previous;
-  const final = await readFinalLedgerHead(provider).catch(() => null);
-  if (!final || previous.number <= final.number) throw lost;
-  return undefined;
+  const { final } = previous;
+  if (final) {
+    if (head.number < final.number) throw new DepositAnchorError("deposit_head_regressed");
+    if (BigInt((await readConfirmedLedgerHead(provider, final.number)).hash) !== BigInt(final.hash))
+      throw new DepositAnchorError("deposit_head_rewritten");
+  }
+  if (head.number >= previous.number) {
+    const canonical = await readConfirmedLedgerHead(provider, previous.number);
+    if (BigInt(canonical.hash) === BigInt(previous.hash)) return previous;
+  }
+  if (final && previous.number <= final.number)
+    throw new DepositAnchorError(head.number < previous.number ? "deposit_head_regressed" : "deposit_head_rewritten");
+  return final && { ...final, final };
 }
 
 export async function depositReader(provider: RpcProvider, ledger: string, chainId: string, previous?: DepositAnchor) {
   if (BigInt(await provider.getChainId()) !== BigInt(chainId)) throw new Error("deposit_chain_differs");
   const block = await confirmedDepositBlock(provider, previous && (await standingAnchor(provider, previous)));
+  const accepted = await readFinalLedgerHead(provider).catch(() => null);
+  const final =
+    accepted && (!previous?.final || accepted.number >= previous.final.number)
+      ? { number: accepted.number, hash: accepted.hash }
+      : previous?.final;
+  const anchored = { ...block.head, ...(final && { final }) };
   const read = (entrypoint: string, calldata: string[]) =>
     provider.callContract({ contractAddress: ledger, entrypoint, calldata }, block.head.hash);
   return {
     ...block,
+    head: anchored,
     read,
     deposit: async (shard: string, id: string) => decodeLordsDeposit(shard, id, await read("get_deposit", [shard, id])),
     count: async (shard: string) => depositUint((await read("deposit_count", [shard]))[0]!, 64),

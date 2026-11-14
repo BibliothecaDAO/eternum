@@ -29,7 +29,7 @@ import { processSeasonTops } from "./season-tops";
 import { seasonLedgerReads, postSeasonTop } from "./season-ledger";
 import { ledgerBatches } from "./ledger-batches";
 import { isLedgerReadTick } from "@realms-world/chain";
-import { raiseCause, retryCause, takeCause } from "./ledger-cause";
+import { causeDue, raiseCause, retryCause, takeCause } from "./ledger-cause";
 import { onIdentityChain } from "./ledger-chain";
 import { openSlotOnLedger, refundSlotOnLedger, markSlotRefundable } from "./blitz-launch";
 import { currentLaborDay, writeLaborGrant } from "./shard-labor";
@@ -71,6 +71,7 @@ interface RelayEnv extends RelaySettings {
       presetId: number,
     ): Promise<{ campaign: string; tier: "regular" | "golden" } | null>;
     recordPayDecisions(decisions: import("@realms-world/identity").LedgerPayDecision[]): Promise<void>;
+    ratingsChanged(): Promise<void>;
     linkedWallet(id: string): Promise<string | null>;
     authenticate(cookie: string): Promise<{ realmsId: string } | null>;
     accountForRealmsId(id: string): Promise<string | null>;
@@ -81,6 +82,7 @@ interface RelayEnv extends RelaySettings {
 
 const LEDGER_TICK_DUE = "ledgerTick:due";
 const RECONCILE_DUE = "reconcile:due";
+const RECONCILE_RETRY_SECONDS = 60;
 
 const ledgerTickFinished = (observation: {
   seasons: string | null | { error: string };
@@ -93,7 +95,8 @@ const ledgerTickFinished = (observation: {
   !observation.chest_error &&
   observation.chests.failed === 0 &&
   observation.chests.pending === 0;
-const DELIVERY_THROTTLE_MS = 10_000;
+const DELIVERY_DUE = "deposits:due";
+const DELIVERY_RETRY_SECONDS = 60;
 
 interface ShardObservation {
   deposits?: { error?: unknown; pending?: number; more?: boolean };
@@ -110,7 +113,6 @@ export class ValueRelay extends DurableObject<RelayEnv> {
   private readonly ingesting = Semaphore.makeUnsafe(1);
   private readonly store = new DurableRelayStore(this.ctx.storage);
   private readonly chests = new DurableChestStore(this.ctx.storage);
-  private readonly lastDelivery = new Map<string, { at: number; result: Awaited<ReturnType<typeof relayDeposits>> }>();
 
   private ledgerPermit<A, E>(operation: Effect.Effect<A, E>, chains: readonly string[] = []) {
     return this.ledgerSigning.withPermit(
@@ -265,7 +267,10 @@ export class ValueRelay extends DurableObject<RelayEnv> {
             );
             const lastTick = await relay.ctx.storage.get<ShardObservation>("shardTick");
             const deposits =
-              lastTick?.deposits && !reconcile && depositsSettled(lastTick.deposits)
+              lastTick?.deposits &&
+              !reconcile &&
+              !(await causeDue(relay.ctx.storage, DELIVERY_DUE)) &&
+              depositsSettled(lastTick.deposits)
                 ? Result.succeed(lastTick.deposits)
                 : await Effect.runPromise(Effect.result(relay.relayDepositsNow(chain)));
             const observation = {
@@ -277,8 +282,8 @@ export class ValueRelay extends DurableObject<RelayEnv> {
                 : { status: "unavailable", reason: value.failure.operation },
             };
             await relay.ctx.storage.put("shardTick", observation);
-            if (asked && !(Result.isSuccess(value) && value.success.status === "ready"))
-              await retryCause(relay.ctx.storage, RECONCILE_DUE);
+            if (reconcile && !(Result.isSuccess(value) && value.success.status === "ready" && value.success.reconciled))
+              await raiseCause(relay.ctx.storage, RECONCILE_DUE, RECONCILE_RETRY_SECONDS);
             if (Result.isSuccess(value) && value.success.status === "ready" && value.success.more)
               await relay.ctx.storage.setAlarm(Date.now());
             return observation;
@@ -292,28 +297,45 @@ export class ValueRelay extends DurableObject<RelayEnv> {
       value: { status: "unavailable", reason: outcome.failure.operation },
     };
     await this.ctx.storage.put("shardTick", observation);
+    if (reconcile) await raiseCause(this.ctx.storage, RECONCILE_DUE, RECONCILE_RETRY_SECONDS);
     return observation;
   }
+  /**
+   * One pass over the deposits. Its cause is consumed first, so a report that arrives during the pass is kept for the
+   * next one; a pass that fails asks again in a minute, because a player is waiting.
+   */
+  private async depositPass(chainId: string) {
+    await this.ctx.storage.delete(DELIVERY_DUE);
+    try {
+      return await relayDeposits(await this.depositPorts(chainId));
+    } catch (error) {
+      await raiseCause(this.ctx.storage, DELIVERY_DUE, DELIVERY_RETRY_SECONDS);
+      throw error;
+    }
+  }
   private relayDepositsNow(chainId: string) {
-    return this.shardSigning.withPermit(
-      relayOperation("relay LORDS deposits", async () => relayDeposits(await this.depositPorts(chainId))),
-    );
+    return this.shardSigning.withPermit(relayOperation("relay LORDS deposits", () => this.depositPass(chainId)));
   }
   /**
    * A player's deposit, delivered now: the page asks once its payment landed, so a deposit is not found by reading the
-   * ledger's count every minute. A player asking again inside the throttle gets their last answer; another player's
-   * ask is never answered with it, since their deposit may have landed after it.
+   * ledger's count every minute. The report is stored before anything is attempted. Reports that arrive together share
+   * one pass, never an older answer: a pass that started after a report covers it, one that started before leaves it for
+   * the next. A pass that fails leaves the report for the next minute's tick.
    */
-  async deliverDeposits(chainId: string, realmsId: string) {
+  async deliverDeposits(chainId: string) {
     await requireActiveChain(this.env.IDENTITY, chainId);
-    const now = Date.now();
-    const last = this.lastDelivery.get(realmsId);
-    if (last && now - last.at < DELIVERY_THROTTLE_MS) return last.result;
-    const result = await Effect.runPromise(this.relayDepositsNow(chainId));
-    this.lastDelivery.set(realmsId, { at: now, result });
-    const previous = await this.ctx.storage.get<ShardObservation>("shardTick");
-    if (previous) await this.ctx.storage.put("shardTick", { ...previous, deposits: result });
-    return result;
+    await raiseCause(this.ctx.storage, DELIVERY_DUE);
+    return Effect.runPromise(
+      this.shardSigning.withPermit(
+        relayOperation("relay LORDS deposits", async () => {
+          const previous = await this.ctx.storage.get<ShardObservation>("shardTick");
+          if ((await this.ctx.storage.get(DELIVERY_DUE)) === undefined) return previous?.deposits ?? null;
+          const result = await this.depositPass(chainId);
+          await this.ctx.storage.put("shardTick", { ...previous, deposits: result });
+          return result;
+        }),
+      ),
+    );
   }
   private async depositPorts(chainId: string) {
     const shard = await readRegisteredShard(this.env.IDENTITY, chainId);
@@ -505,6 +527,11 @@ export class ValueRelay extends DurableObject<RelayEnv> {
       ),
     );
     await this.ledgerWritten();
+    try {
+      await this.env.IDENTITY.ratingsChanged();
+    } catch {
+      /* The identity service's own hour still refreshes the ratings if this notice is lost. */
+    }
   }
   async shardHealth() {
     const progress = await this.store.progress();
@@ -976,12 +1003,12 @@ const finishChestResponse = async (request: Request, env: RelayEnv) => {
 const deliverDepositsResponse = async (request: Request, env: RelayEnv) => {
   if (request.headers.get("origin") !== new URL(env.BASE_URL).origin)
     return Response.json({ error: "invalid_origin" }, { status: 403 });
-  const identity = await env.IDENTITY.authenticate(request.headers.get("cookie") ?? "");
-  if (!identity) return Response.json({ error: "unauthenticated" }, { status: 401 });
+  if (!(await env.IDENTITY.authenticate(request.headers.get("cookie") ?? "")))
+    return Response.json({ error: "unauthenticated" }, { status: 401 });
   const chain = new URL(request.url).searchParams.get("chainId");
   if (!chain || !/^0x[0-9a-f]+$/i.test(chain)) return Response.json({ error: "invalid_chain" }, { status: 400 });
   try {
-    return Response.json(await relayOf(env, chain).deliverDeposits(chain, identity.realmsId), {
+    return Response.json(await relayOf(env, chain).deliverDeposits(chain), {
       headers: { "cache-control": "no-store" },
     });
   } catch {

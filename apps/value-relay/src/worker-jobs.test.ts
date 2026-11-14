@@ -10,7 +10,7 @@ vi.mock("./environment", async (original) => ({
   ledgerContractOf: () => ({ contractAddress: address(), deploymentBlock: 1 }),
 }));
 import { Effect } from "effect";
-import { beforeEach, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { ValuePlaneAddressMissingError } from "@realms-world/chain";
 import worker, { ValueRelay } from "./worker";
 import { RelayFailure } from "./ports";
@@ -45,13 +45,16 @@ vi.mock("./deposits", async (original) => ({
 const seasons = vi.hoisted(() => vi.fn());
 vi.mock("./season-tops", () => ({ processSeasonTops: seasons }));
 const runRelayCalls = vi.hoisted(() => vi.fn());
+const runRelayOutcome = vi.hoisted(() => ({ next: undefined as undefined | (() => unknown) }));
 vi.mock("./relay", async (original) => {
   const real = await original<typeof import("./relay")>();
   return {
     ...real,
     runRelay: (...args: Parameters<typeof real.runRelay>) => {
       runRelayCalls(...args);
-      return real.runRelay(...args);
+      return runRelayOutcome.next
+        ? (runRelayOutcome.next() as ReturnType<typeof real.runRelay>)
+        : real.runRelay(...args);
     },
   };
 });
@@ -94,8 +97,12 @@ vi.mock("./shard-rpc", async (original) => ({
 }));
 vi.mock("./shard-labor", () => ({ currentLaborDay: () => Effect.succeed(4), writeLaborGrant: shard.grant }));
 vi.mock("./shard-account", () => ({ joinShardOperator: vi.fn(async () => "0x5") }));
+afterEach(() => {
+  vi.useRealTimers();
+});
 beforeEach(() => {
   vi.clearAllMocks();
+  runRelayOutcome.next = undefined;
   seasons.mockReturnValue(Effect.fail(new RelayFailure({ operation: "season_unavailable" })));
   address.mockReturnValue("0x10");
 });
@@ -223,6 +230,50 @@ it("asks the ledger about held claims on the next tick after an operator's reque
   await relay.tick("0x1", true);
   expect(reconciling()).toEqual([false, false, true, false, true]);
 });
+it.each([
+  [
+    "a recovery read that failed",
+    () => Effect.succeed({ status: "ready", more: false, deferred: [], reconciled: false }),
+  ],
+  ["a tick that failed before the recovery", () => Effect.fail(new RelayFailure({ operation: "shard unavailable" }))],
+])(
+  "keeps an operator's request after %s, and a healthy tick a minute later completes it without another request",
+  async (_, outcome) => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date("2026-11-14T12:00:30Z"));
+    deposits.mockResolvedValue(settledDeposits);
+    const relay = shardRelay();
+    await relay.tick("0x1");
+    runRelayCalls.mockClear();
+    runRelayOutcome.next = outcome;
+    await relay.requestReconcile();
+    await relay.tick("0x1");
+    runRelayOutcome.next = () => Effect.succeed({ status: "ready", more: false, deferred: [], reconciled: true });
+    await relay.tick("0x1");
+    expect(runRelayCalls.mock.calls.map((call) => call[3])).toEqual([true, false]);
+    vi.setSystemTime(new Date(Date.now() + 60_000));
+    await relay.tick("0x1");
+    await relay.tick("0x1");
+    expect(runRelayCalls.mock.calls.map((call) => call[3])).toEqual([true, false, true, false]);
+  },
+);
+it("asks again after an hourly reconciliation whose recovery read failed", async () => {
+  vi.useFakeTimers({ toFake: ["Date"] });
+  vi.setSystemTime(new Date("2026-11-14T12:00:30Z"));
+  deposits.mockResolvedValue(settledDeposits);
+  const relay = shardRelay();
+  await relay.tick("0x1");
+  runRelayCalls.mockClear();
+  runRelayOutcome.next = () => Effect.succeed({ status: "ready", more: false, deferred: [], reconciled: false });
+  await relay.tick("0x1", true);
+  runRelayOutcome.next = () => Effect.succeed({ status: "ready", more: false, deferred: [], reconciled: true });
+  await relay.tick("0x1");
+  expect(runRelayCalls.mock.calls.map((call) => call[3])).toEqual([true, false]);
+  vi.setSystemTime(new Date(Date.now() + 60_000));
+  await relay.tick("0x1");
+  await relay.tick("0x1");
+  expect(runRelayCalls.mock.calls.map((call) => call[3])).toEqual([true, false, true, false]);
+});
 it("looks for deposits on the hour, and between hours only while one is pending", async () => {
   deposits.mockResolvedValue(settledDeposits);
   const relay = shardRelay();
@@ -244,17 +295,61 @@ it("looks for deposits on the hour, and between hours only while one is pending"
   await relay.tick("0x1");
   expect(deposits).toHaveBeenCalledTimes(7);
 });
-it("delivers a landed deposit at once; one player's repeat ask shares an answer, another player's does not", async () => {
+it("delivers a landed deposit at once, and a second deposit by the same player right after it", async () => {
   deposits.mockResolvedValue({ ...settledDeposits, processed: 1 });
   const relay = shardRelay();
   await relay.tick("0x1");
   deposits.mockClear();
-  expect((await relay.deliverDeposits("0x1", "0x77")).processed).toBe(1);
-  expect((await relay.deliverDeposits("0x1", "0x77")).processed).toBe(1);
-  expect(deposits).toHaveBeenCalledTimes(1);
-  await relay.deliverDeposits("0x1", "0x78");
+  await relay.deliverDeposits("0x1");
+  await relay.deliverDeposits("0x1");
   expect(deposits).toHaveBeenCalledTimes(2);
 });
+it("keeps a report that arrives during a pass for the next pass, and lets reports made before a pass share it", async () => {
+  const relay = shardRelay();
+  await relay.tick("0x1");
+  deposits.mockClear();
+  let release!: () => void;
+  const gate = new Promise<void>((resolve) => (release = resolve));
+  deposits.mockImplementationOnce(async () => {
+    await gate;
+    return settledDeposits;
+  });
+  deposits.mockResolvedValue(settledDeposits);
+  const first = relay.deliverDeposits("0x1");
+  while (!deposits.mock.calls.length) await new Promise((resolve) => setTimeout(resolve));
+  const during = relay.deliverDeposits("0x1");
+  release();
+  await Promise.all([first, during]);
+  expect(deposits).toHaveBeenCalledTimes(2);
+  deposits.mockClear();
+  await Promise.all([relay.deliverDeposits("0x1"), relay.deliverDeposits("0x1"), relay.deliverDeposits("0x1")]);
+  expect(deposits.mock.calls.length).toBeLessThan(3);
+  expect(deposits.mock.calls.length).toBeGreaterThan(0);
+});
+it("looks again at the next minute's tick after a reported deposit's first pass failed", async () => {
+  vi.useFakeTimers({ toFake: ["Date"] });
+  vi.setSystemTime(new Date("2026-11-14T12:00:30Z"));
+  try {
+    deposits.mockResolvedValue(settledDeposits);
+    const relay = shardRelay();
+    await relay.tick("0x1");
+    deposits.mockClear();
+    deposits.mockRejectedValueOnce(new Error("ledger unavailable"));
+    await expect(relay.deliverDeposits("0x1")).rejects.toThrow();
+    deposits.mockResolvedValue(settledDeposits);
+    await relay.tick("0x1");
+    expect(deposits).toHaveBeenCalledTimes(1);
+    vi.setSystemTime(new Date(Date.now() + 60_000));
+    await relay.tick("0x1");
+    expect(deposits).toHaveBeenCalledTimes(2);
+    await relay.tick("0x1");
+    await relay.tick("0x1");
+    expect(deposits).toHaveBeenCalledTimes(2);
+  } finally {
+    vi.useRealTimers();
+  }
+});
+
 it.each([
   ["a chest still pending", Effect.succeed({ finished: 0, failed: 0, pending: 1 })],
   ["a failed chest", Effect.succeed({ finished: 0, failed: 1, pending: 0 })],

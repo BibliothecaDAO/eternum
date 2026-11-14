@@ -12,9 +12,14 @@ const MMR_UPDATED = hash.getSelectorFromName("MMRUpdated");
 const SCAN_BLOCKS = 100_000;
 const EVENTS_PER_PAGE = 1000;
 const CONTRACT_NOT_FOUND = 20;
+const KEPT_MS = 60 * 60 * 1000;
+const KEPT_ANSWERS = 100;
+const CHANGED_AT = "ratings:changedAt";
 
 /**
- * One RPC budget across callers; every read names a verified chain block and retains no rating value. The top list's
+ * One RPC budget across callers; every read names a verified chain block. An answer is kept for the hour, and dropped
+ * sooner when the relay says it posted results (ratings change only then), so a page that asks every few seconds, or on
+ * every focus, does not read the chain once per player each time. The top list's
  * population is every wallet the token has ever updated, read from its own events and kept with the block (height and
  * hash) they were read through. A kept block the chain no longer holds discards the population, which is read again,
  * so a wallet seen only in a replaced block cannot stay ranked. A range extends the population only if the chain still
@@ -42,7 +47,7 @@ export class RatingReader extends DurableObject<Env> {
   }
 
   ratings(owners: string[], blockHash?: string) {
-    return this.serial(async () => {
+    return this.kept(`ratings:${blockHash ?? "latest"}:${[...owners].sort().join(",")}`, async () => {
       const ledger = await openRatingLedger(this.provider, this.env, blockHash);
       const values = await readLedgerRatings(ledger, owners);
       return {
@@ -54,11 +59,38 @@ export class RatingReader extends DurableObject<Env> {
   }
 
   top() {
-    return this.serial(async () => {
+    return this.kept("top", async () => {
       const ledger = await openRatingLedger(this.provider, this.env);
       const values = await readLedgerRatings(ledger, await this.ratedPlayers(ledger));
       return { block_number: ledger.block, block_hash: ledger.blockHash, entries: this.rank(values) };
     });
+  }
+
+  /** The relay posted results: every answer kept so far is older than the ratings. */
+  async ratingsChanged() {
+    await this.ctx.storage.put(CHANGED_AT, Date.now());
+  }
+
+  /** A kept answer is served while it is under an hour old and no results were posted since it was read. */
+  private kept<T>(key: string, read: () => Promise<T>): Promise<T> {
+    return this.serial(async () => {
+      const stored = `rating:${key}`;
+      const [entry, changedAt] = await Promise.all([
+        this.ctx.storage.get<{ at: number; answer: T }>(stored),
+        this.ctx.storage.get<number>(CHANGED_AT),
+      ]);
+      const now = Date.now();
+      if (entry && now - entry.at < KEPT_MS && entry.at > (changedAt ?? 0)) return entry.answer;
+      const answer = await read();
+      await this.ctx.storage.put(stored, { at: now, answer });
+      await this.pruneKept();
+      return answer;
+    });
+  }
+  private async pruneKept() {
+    const all = await this.ctx.storage.list<{ at: number }>({ prefix: "rating:" });
+    const stale = [...all].sort(([, left], [, right]) => right.at - left.at).slice(KEPT_ANSWERS);
+    for (const [key] of stale) await this.ctx.storage.delete(key);
   }
 
   private serial<T>(operation: () => Promise<T>): Promise<T> {

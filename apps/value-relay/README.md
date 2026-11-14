@@ -137,3 +137,11 @@ not retried: it waits for its operator. After an admin voids a forged report, th
 relay's `operator/reset`) asks the relay to ask the ledger about its held claims at the next tick; the hourly pass is
 the safety net. A stored deposit anchor whose block Ethereum never accepted is dropped when the chain replaced it, and
 the next payment is decided from the canonical chain; one whose block Ethereum accepted stays a fault.
+
+Nothing a page can poll reads the chain. The deposit history route answers from the deposits the relay already read
+(`deposit-row:` keys, written when a pass discovers a deposit and when it delivers or cancels it; deposits found before
+history was kept are read once). A report that a payment landed (`POST /api/value/deposits/deliver`) is stored as a
+cause before anything is tried, shared with reports made at the same time, kept if the pass fails, and retried by the
+next minute's tick. The identity service keeps each rating board and wallet answer for an hour and drops them when the
+relay says it posted results (`ratingsChanged`). `rpc-budget.test.ts` counts every call the ledger URL receives beneath
+the real readers and derives the month from those counts.

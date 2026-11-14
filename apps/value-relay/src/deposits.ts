@@ -21,7 +21,11 @@ export interface DepositRelayPorts {
   target: ShardTarget & ShardConnection;
   heraldUrl: string;
   ledger: { rpcUrl: string; address: string; chainId: string };
-  storage: { get<T>(key: string): Promise<T | undefined>; put(key: string, value: unknown): Promise<unknown> };
+  storage: {
+    get<T>(key: string): Promise<T | undefined>;
+    put(key: string, value: unknown): Promise<unknown>;
+    list<T>(options: { prefix: string; reverse?: boolean; limit?: number; end?: string }): Promise<Map<string, T>>;
+  };
   sign(request: DepositSigningRequest): Promise<Cosignature>;
   mutate(request: DepositMutation): Promise<unknown>;
 }
@@ -41,6 +45,7 @@ export async function relayDeposits(ports: DepositRelayPorts) {
   const reader = await depositReader(rpcAt(ledger.rpcUrl), ledger.address, ledger.chainId, progress.anchor);
   const count = await reader.count(target.chainId);
   if (BigInt(progress.next) > count + 1n) throw new DepositAnchorError("deposit_count_regressed");
+  const discovered = BigInt(progress.next);
   const fresh: string[] = [];
   while (BigInt(progress.next) <= count && fresh.length < 20) {
     fresh.push(progress.next);
@@ -61,11 +66,16 @@ export async function relayDeposits(ports: DepositRelayPorts) {
       errors.push({ obligation, error: cause instanceof Error ? cause.message : String(cause) });
     }
   };
+  await attempt("deposit history", () => backfillHistory(ports, reader, discovered));
   let processed = 0;
   for (const id of [...retry, ...fresh]) {
     await attempt(`deposit:${id}`, async () => {
       const payment = await reader.deposit(target.chainId, id);
-      if (payment.status === "pending") await deliverPayment(ports, payment, reader.assertCanonical);
+      await remember(ports, payment);
+      if (payment.status === "pending") {
+        const cancelled = await deliverPayment(ports, payment, reader.assertCanonical);
+        await remember(ports, { ...payment, status: cancelled ? "cancelled" : "delivered" });
+      }
       progress.pending = progress.pending.filter((pending) => pending !== id);
       processed++;
     });
@@ -87,7 +97,11 @@ export async function relayDeposits(ports: DepositRelayPorts) {
   };
 }
 
-async function deliverPayment(ports: DepositRelayPorts, payment: LordsDeposit, assertCanonical: () => Promise<void>) {
+async function deliverPayment(
+  ports: DepositRelayPorts,
+  payment: LordsDeposit,
+  assertCanonical: () => Promise<void>,
+): Promise<boolean> {
   const { target, ledger } = ports;
   if (BigInt(payment.games) !== BigInt(target.gamesAddress)) throw new Error("deposit_games_differs");
   const operator = new ShardOperator(target);
@@ -134,6 +148,21 @@ async function deliverPayment(ports: DepositRelayPorts, payment: LordsDeposit, a
   }
   const cancelled = verifyDepositResolution(receipt, commitment, payment);
   await ports.mutate({ kind: "resolve", shard: target.chainId, id: payment.id, cancelled });
+  return cancelled;
+}
+
+/** Deposits the relay discovered before it kept history are read once, so the page's history is complete. */
+async function backfillHistory(
+  ports: DepositRelayPorts,
+  reader: Awaited<ReturnType<typeof depositReader>>,
+  discovered: bigint,
+) {
+  const done = `deposits:${BigInt(ports.ledger.chainId)}:${BigInt(ports.ledger.address)}:history`;
+  if (await ports.storage.get(done)) return;
+  for (let id = 1n; id < discovered; id++)
+    if ((await ports.storage.get(rowKey(ports.target.chainId, id))) === undefined)
+      await remember(ports, await reader.deposit(ports.target.chainId, String(id)));
+  await ports.storage.put(done, true);
 }
 
 async function canDeliver(ports: DepositRelayPorts, payment: LordsDeposit) {
@@ -148,19 +177,31 @@ async function canDeliver(ports: DepositRelayPorts, payment: LordsDeposit) {
   return error === null;
 }
 
+const rowKey = (shard: string, id: bigint | string) =>
+  `deposit-row:${BigInt(shard)}:${BigInt(id).toString().padStart(20, "0")}`;
+const remember = (ports: Pick<DepositRelayPorts, "storage">, payment: LordsDeposit) =>
+  ports.storage.put(rowKey(payment.shard, payment.id), payment);
+
+/**
+ * A player's deposits, from what the relay has already read: each deposit it discovered, with its status as of the
+ * last time the relay looked or acted on it. The page asks every few seconds; the chain is not read to answer.
+ */
 export async function depositHistory(
-  ports: Pick<DepositRelayPorts, "target" | "ledger">,
+  ports: Pick<DepositRelayPorts, "target" | "storage">,
   realmsId: string,
   before?: string,
 ) {
-  const reader = await depositReader(rpcAt(ports.ledger.rpcUrl), ports.ledger.address, ports.ledger.chainId);
-  const count = await reader.count(ports.target.chainId);
-  let id = before ? depositUint(before, 64) : count;
-  if (id > count) throw new Error("deposit_page_out_of_range");
-  const rows: LordsDeposit[] = [];
-  for (let scanned = 0; id > 0n && scanned < 50; scanned++, id--) {
-    const receipt = await reader.deposit(ports.target.chainId, String(id));
-    if (BigInt(receipt.realmsId) === BigInt(realmsId)) rows.push(receipt);
-  }
-  return { rows, next: id > 0n ? String(id) : null };
+  const shard = ports.target.chainId;
+  const prefix = `deposit-row:${BigInt(shard)}:`;
+  const newest = before ? depositUint(before, 64) : undefined;
+  const page = await ports.storage.list<LordsDeposit>({
+    prefix,
+    reverse: true,
+    limit: 50,
+    ...(newest !== undefined && { end: rowKey(shard, newest + 1n) }),
+  });
+  const stored = [...page.entries()];
+  const rows = stored.map(([, payment]) => payment).filter((payment) => BigInt(payment.realmsId) === BigInt(realmsId));
+  const oldest = stored.length === 50 ? BigInt(stored.at(-1)![1].id) - 1n : 0n;
+  return { rows, next: oldest > 0n ? String(oldest) : null };
 }

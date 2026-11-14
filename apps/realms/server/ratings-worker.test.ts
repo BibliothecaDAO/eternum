@@ -1,7 +1,16 @@
 import dev from "../../../contracts/common/addresses/dev.json";
 import { hash } from "starknet";
 import { beforeAll, expect, it } from "vitest";
-import { buildWorkerBundle, migrationStatements, newStorage, ORIGIN, startWorker, vapidKeys } from "./workerd-harness";
+import { environmentL2 } from "@realms-world/chain";
+import {
+  buildWorkerBundle,
+  migrationStatements,
+  newStorage,
+  ORIGIN,
+  pause,
+  startWorker,
+  vapidKeys,
+} from "./workerd-harness";
 
 const MMR_UPDATED = hash.getSelectorFromName("MMRUpdated");
 const tokenDeployedAt = (params: unknown) =>
@@ -11,7 +20,7 @@ beforeAll(() => {
   bundle = buildWorkerBundle();
 }, 180_000);
 
-it("reads wallet owners through the deployed Worker's SDK and serves new ledger values without caching", async () => {
+it("reads wallet owners through the deployed Worker's SDK and serves new ledger values once results were posted", async () => {
   const calls: { method: string; params: unknown }[] = [];
   let points = 1000n;
   let blockNumber = 123;
@@ -52,6 +61,12 @@ it("reads wallet owners through the deployed Worker's SDK and serves new ledger 
     await worker.db.batch(migrationStatements().map((statement) => worker.db.prepare(statement)));
     const player = await worker.signInWithEmailCode("ratings@realms.test");
     await worker.db.prepare('UPDATE "user" SET "address" = ? WHERE "realmsId" = ?').bind("0xa", player.realmsId).run();
+    const resultsPosted = async () => {
+      await pause(5);
+      const readers = await worker.mf.getDurableObjectNamespace("RATING_READER");
+      const reader = readers.get(readers.idFromName(environmentL2("staging").chain));
+      await (reader as unknown as { ratingsChanged(): Promise<void> }).ratingsChanged();
+    };
     const read = () => worker.mf.dispatchFetch(`${ORIGIN}/api/ratings?players=0xa`);
     const response = await read();
     expect(response.status).toBe(200);
@@ -70,6 +85,11 @@ it("reads wallet owners through the deployed Worker's SDK and serves new ledger 
     points = 1300n;
     blockNumber = 124;
     blockHash = "0xabd";
+    // The ledger moved, but nobody said results were posted: the kept answer still stands.
+    expect(await (await read()).json()).toMatchObject({ ratings: { "0xa": { rating: "1000" } } });
+    await pause(5);
+    await resultsPosted();
+    await pause(5);
     expect(await (await read()).json()).toMatchObject({ ratings: { "0xa": { rating: "1300" } } });
     const top = await worker.mf.dispatchFetch(`${ORIGIN}/api/ratings/top?player=0xa`);
     expect(top.status).toBe(200);
@@ -107,7 +127,8 @@ it("reads wallet owners through the deployed Worker's SDK and serves new ledger 
       entries: [{ profile: null }],
     });
     expect(await (await read()).json()).toMatchObject({ ratings: { "0xa": { player: "0xa", rating: "1300" } } });
-    expect(calls.filter((call) => call.method === "starknet_call").length).toBeGreaterThan(tokenCalls);
+    // Profiles are read fresh each time; the ratings are kept, so none of these asks reached the chain.
+    expect(calls.filter((call) => call.method === "starknet_call").length).toBe(tokenCalls);
     expect(
       calls
         .filter((call) => call.method === "starknet_getEvents")
@@ -121,6 +142,9 @@ it("reads wallet owners through the deployed Worker's SDK and serves new ledger 
     ]);
     await worker.db.prepare('UPDATE "user" SET "address" = ? WHERE "realmsId" = ?').bind("0xa", player.realmsId).run();
     unavailable = true;
+    expect((await read()).status).toBe(200);
+    await resultsPosted();
+    await pause(5);
     expect((await read()).status).toBe(503);
   } finally {
     await worker.dispose();

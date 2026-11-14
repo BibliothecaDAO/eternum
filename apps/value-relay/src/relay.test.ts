@@ -703,3 +703,16 @@ it("requeues the honest held receipt after the paused admin voids its forged rep
   expect(f.single.report).toHaveBeenCalledExactlyOnceWith(withdrawal);
   expect(f.single.pay).toHaveBeenCalledExactlyOnceWith(withdrawal, "0x123");
 });
+
+it("reports whether the recovery of held claims finished, so a failed read is asked again", async () => {
+  const f = fixture();
+  f.ports.ledger.payment = () =>
+    Effect.succeed({ ...withdrawal, amount: "18", wallet: "0x0", paid: false, reportedAt: 1 });
+  await f.run();
+  f.ports.ledger.payment = () => Effect.fail(new RelayFailure({ operation: "ledger unavailable" }));
+  expect(await Effect.runPromise(runRelay("0x1", f.ports, f.store, true))).toMatchObject({ reconciled: false });
+  expect(await f.store.held()).toMatchObject([{ kind: "payment", reason: "ledger_report_mismatch" }]);
+  f.ports.ledger.payment = () => Effect.succeed(null);
+  expect(await Effect.runPromise(runRelay("0x1", f.ports, f.store, true))).toMatchObject({ reconciled: true });
+  expect(await f.store.held()).toEqual([]);
+});

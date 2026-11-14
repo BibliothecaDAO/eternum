@@ -69,30 +69,37 @@ beforeEach(() => {
   chain.execute.mockResolvedValue({ transaction_hash: "0x11" });
 });
 
-it("pays again after a rewrite removed the payment from the head the anchor was stored at", async () => {
-  expect((await pay()).wrote).toBe(true);
-  expect(stored.size).toBe(1);
+const replaced = (final: number) => {
   chain.head = 13;
+  chain.final = final;
   chain.hashes = { 10: "0xf0", 12: "0xb2", 13: "0xb3" };
+};
+
+it.each([
+  ["its replacement is not accepted yet", 10],
+  ["its replacement has been accepted since", 12],
+])("pays again when a head the anchor observed was replaced without the payment and %s", async (_, final) => {
+  expect((await pay()).wrote).toBe(true);
+  expect([...stored.values()][0]).toMatchObject({ number: 12, final: { number: 10 } });
+  replaced(final);
   expect((await pay()).wrote).toBe(true);
   expect(chain.execute).toHaveBeenCalledTimes(2);
   expect([...stored.values()][0]).toMatchObject({ number: 13, hash: "0xb3" });
 });
 
-it("does not pay again after a rewrite that kept the payment", async () => {
+it.each([10, 12])("does not pay twice when the replaced head's payment survived (accepted block %i)", async (final) => {
   await pay();
-  chain.head = 13;
-  chain.hashes = { 10: "0xf0", 12: "0xb2", 13: "0xb3" };
+  replaced(final);
   chain.paid = true;
   expect((await pay()).wrote).toBe(false);
   expect(chain.execute).toHaveBeenCalledTimes(1);
 });
 
-it("still refuses to read from a ledger whose accepted block was rewritten", async () => {
-  await pay();
+it("refuses to read from a ledger that replaced a head the anchor recorded as accepted", async () => {
   chain.final = 12;
-  chain.head = 13;
-  chain.hashes = { 12: "0xb2", 13: "0xb3" };
+  await pay();
+  expect([...stored.values()][0]).toMatchObject({ number: 12, final: { number: 12, hash: "0xa1" } });
+  replaced(12);
   await expect(pay()).rejects.toThrow("deposit_head_rewritten");
   expect(chain.execute).toHaveBeenCalledTimes(1);
 });

@@ -1,6 +1,6 @@
 import { structureSnapshot } from "../test-support/deposit-structure";
 import { beforeEach, expect, it, vi } from "vitest";
-import { relayDeposits, type DepositRelayPorts } from "./deposits";
+import { relayDeposits, depositHistory, type DepositRelayPorts } from "./deposits";
 import { DepositAnchorError, depositCommitment, type LordsDeposit } from "@realms-world/value-ledger/deposits";
 import { realmsAccountAddress } from "../../../packages/identity/src/account";
 const mocks = vi.hoisted(() => ({
@@ -84,6 +84,21 @@ const ports: DepositRelayPorts = {
     get: async <T>(key: string) => structuredClone(saved.get(key)) as T | undefined,
     put: async (key, value) => {
       saved.set(key, structuredClone(value));
+    },
+    list: async <T>({
+      prefix,
+      reverse,
+      limit,
+      end,
+    }: {
+      prefix: string;
+      reverse?: boolean;
+      limit?: number;
+      end?: string;
+    }) => {
+      const keys = [...saved.keys()].filter((key) => key.startsWith(prefix) && (!end || key < end)).sort();
+      if (reverse) keys.reverse();
+      return new Map(keys.slice(0, limit).map((key) => [key, structuredClone(saved.get(key)) as T]));
     },
   },
   sign,
@@ -218,4 +233,45 @@ it("a pass reads the count once and each new deposit once, then only the count h
   await relayDeposits(ports);
   // Twenty new deposits a pass: the next pass reads the last ten, and the one after reads nothing but the count.
   expect([first, reads.count.mock.calls.length, reads.deposit.mock.calls.length]).toEqual([20, 2, 10]);
+});
+
+const history = (realmsId: string, before?: string) => depositHistory(ports, realmsId, before);
+it("serves a player's deposit history from what the relay read, with no chain read, and updates a status when it acts", async () => {
+  await relayDeposits(ports);
+  mocks.reader.mockClear();
+  expect((await history("0x77")).rows.map(({ id, status }) => [id, status])).toEqual([["1", "delivered"]]);
+  expect((await history("0x78")).rows).toEqual([]);
+  expect(mocks.reader).not.toHaveBeenCalled();
+});
+it("pages the history newest first, 50 deposits a page, and finds the player's deposits among others'", async () => {
+  rows = Array.from({ length: 70 }, (_, index) => ({
+    ...payment,
+    id: String(index + 1),
+    realmsId: index % 2 ? "0x77" : "0x88",
+    status: "delivered" as const,
+  }));
+  for (let pass = 0; pass < 4; pass++) await relayDeposits(ports);
+  const first = await history("0x77");
+  expect(first.rows.map(({ id }) => id)).toEqual(Array.from({ length: 25 }, (_, index) => String(70 - 2 * index)));
+  expect(first.next).toBe("20");
+  const second = await history("0x77", first.next!);
+  expect(second.rows.map(({ id }) => id)).toEqual(Array.from({ length: 10 }, (_, index) => String(20 - 2 * index)));
+  expect(second.next).toBeNull();
+});
+it("keeps the history of deposits discovered before it was kept, reading each once", async () => {
+  rows = Array.from({ length: 3 }, (_, index) => ({ ...payment, id: String(index + 1), status: "delivered" as const }));
+  saved.set("deposits:1:16:progress", { next: "4", pending: [] });
+  const reads = vi.fn(async (_shard: string, id: string) => rows[Number(id) - 1]);
+  mocks.reader.mockImplementation(async () => ({
+    assertCanonical: mocks.canonical,
+    head: { number: 50, hash: "0x50", time: 1000 },
+    count: async () => 3n,
+    deposit: reads,
+  }));
+  await relayDeposits(ports);
+  expect((await history("0x77")).rows.map(({ id }) => id)).toEqual(["3", "2", "1"]);
+  expect(reads).toHaveBeenCalledTimes(3);
+  await relayDeposits(ports);
+  await relayDeposits(ports);
+  expect(reads).toHaveBeenCalledTimes(3);
 });

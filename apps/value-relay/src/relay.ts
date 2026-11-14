@@ -34,23 +34,25 @@ export const runRelay = (chainId: string, ports: RelayPorts, store: RelayStore, 
     }
     const payments = yield* payWithdrawals(ports, store);
     const results = yield* postResults(ports, store);
-    yield* restoreResolvableReceipts(ports, store, reconcile);
+    const reconciled = yield* restoreResolvableReceipts(ports, store, reconcile);
     const held = yield* relayOperation("read deferred identity receipts", () => store.held());
     const unknown = held.flatMap((row) =>
       row.kind === "receipt" && row.reason === "withdrawal_account_unknown"
         ? [{ key: row.receipt.transactionHash, reason: row.reason }]
         : [],
     );
-    return { status: "ready" as const, more, deferred: [...payments, ...results, ...unknown] };
+    return { status: "ready" as const, more, deferred: [...payments, ...results, ...unknown], reconciled };
   });
 
 /**
  * Identity and funding outages are retried from the original confirmed receipt. A claim set aside for a conflicting
- * report changes only by an admin's void, so the ledger is asked about it on the hour.
+ * report changes only by an admin's void, so the ledger is asked about it on the hour or when an operator asks.
+ * Resolves false when a read this recovery needed failed, so the caller keeps its cause and asks again.
  */
 const restoreResolvableReceipts = (ports: RelayPorts, store: RelayStore, reconcile: boolean) =>
   Effect.gen(function* () {
     const held = yield* relayOperation("read held receipt recovery", () => store.heldRecovery());
+    let complete = true;
     for (const row of held) {
       const receipt =
         row.kind === "receipt" && row.reason !== "decode withdrawal receipt"
@@ -62,12 +64,15 @@ const restoreResolvableReceipts = (ports: RelayPorts, store: RelayStore, reconci
       if (row.kind === "payment") {
         if (!reconcile) continue;
         const payment = yield* Effect.result(ports.ledger.payment(row.withdrawal));
+        if (Result.isFailure(payment)) complete = false;
         if (Result.isFailure(payment) || payment.success !== null) continue;
       }
       const resolved = yield* Effect.result(ports.shard.withdrawal(receipt.chainId, receipt.transactionHash));
-      if (Result.isSuccess(resolved) && resolved.success)
+      if (Result.isFailure(resolved)) complete = false;
+      else if (resolved.success)
         yield* relayOperation("restore verified withdrawal", () => store.restoreWithdrawal(resolved.success!));
     }
+    return complete;
   });
 
 const haltRelay = (store: RelayStore, reason: string) =>

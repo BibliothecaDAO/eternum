@@ -103,12 +103,20 @@ it("pins every custody read to the hash and refuses regression, replacement and 
     { contractAddress: domain.ledger, entrypoint: "get_deposit", calldata: ["0x222", "1"] },
     "0xa",
   );
-  await expect(depositReader(rpc, domain.ledger, domain.chainId, { number: 11, hash: "0xb" })).rejects.toThrow(
-    "regressed",
-  );
-  await expect(depositReader(rpc, domain.ledger, domain.chainId, { number: 10, hash: "0xb" })).rejects.toThrow(
-    "rewritten",
-  );
+  await expect(
+    depositReader(rpc, domain.ledger, domain.chainId, {
+      number: 11,
+      hash: "0xb",
+      final: { number: 11, hash: "0xb" },
+    }),
+  ).rejects.toThrow("regressed");
+  await expect(
+    depositReader(rpc, domain.ledger, domain.chainId, {
+      number: 10,
+      hash: "0xb",
+      final: { number: 10, hash: "0xb" },
+    }),
+  ).rejects.toThrow("rewritten");
   provider.getBlock.mockResolvedValue({
     block_number: 10,
     block_hash: "0xb",
@@ -138,33 +146,37 @@ const simulatedChain = (head: number, final: number, hashes: Record<number, stri
   } as unknown as import("starknet").RpcProvider;
 };
 describe("a stored deposit anchor after the chain replaced its block", () => {
-  const stored = { number: 12, hash: "0xa1" };
-  it("keeps an anchor that still stands", async () => {
+  const observed = { number: 12, hash: "0xa1", final: { number: 10, hash: "0xf0" } };
+  const read = async (anchor: object, chain: ReturnType<typeof simulatedChain>) => {
     const { depositReader } = await import("./deposits");
-    const reader = await depositReader(
-      simulatedChain(14, 10, { 10: "0x10", 12: "0xa1", 14: "0x14" }),
-      domain.ledger,
-      domain.chainId,
-      stored,
-    );
+    return depositReader(chain, domain.ledger, domain.chainId, anchor as never);
+  };
+  it("keeps an anchor that still stands, and records the accepted block it was stored under", async () => {
+    const reader = await read(observed, simulatedChain(14, 11, { 10: "0xf0", 11: "0xf1", 12: "0xa1", 14: "0x14" }));
+    expect(reader.head).toMatchObject({ number: 14, final: { number: 11, hash: "0xf1" } });
+  });
+  it.each([
+    ["rewritten, its replacement not yet accepted", 14, 10, { 10: "0xf0", 12: "0xb2", 14: "0x14" }],
+    ["rewritten, its replacement accepted since", 14, 12, { 10: "0xf0", 12: "0xb2", 14: "0x14" }],
+    ["regressed", 11, 10, { 10: "0xf0", 11: "0x11", 12: "0xa1" }],
+  ])("reconciles an observed head that was %s", async (_, head, final, hashes) => {
+    const reader = await read(observed, simulatedChain(head, final, hashes));
+    expect(reader.head.number).toBe(head);
+    expect(await reader.deposit("0x222", "1")).toEqual(receipt);
+  });
+  it("reconciles an anchor that never recorded an accepted block", async () => {
+    const reader = await read({ number: 12, hash: "0xa1" }, simulatedChain(14, 12, { 12: "0xb2", 14: "0x14" }));
     expect(reader.head.number).toBe(14);
   });
   it.each([
-    ["rewritten", 14, { 10: "0x10", 12: "0xb2", 14: "0x14" }],
-    ["regressed", 11, { 10: "0x10", 11: "0x11", 12: "0xa1" }],
-  ])(
-    "drops an anchor that was %s before Ethereum accepted it, and reads the canonical chain",
-    async (_, head, hashes) => {
-      const { depositReader } = await import("./deposits");
-      const reader = await depositReader(simulatedChain(head, 10, hashes), domain.ledger, domain.chainId, stored);
-      expect(reader.head.number).toBe(head);
-      expect(await reader.deposit("0x222", "1")).toEqual(receipt);
-    },
-  );
-  it("still refuses an anchor whose block Ethereum had accepted", async () => {
-    const { depositReader } = await import("./deposits");
-    await expect(
-      depositReader(simulatedChain(14, 12, { 12: "0xb2", 14: "0x14" }), domain.ledger, domain.chainId, stored),
-    ).rejects.toThrow("rewritten");
+    [
+      "the head it recorded as accepted",
+      { number: 12, hash: "0xa1", final: { number: 12, hash: "0xa1" } },
+      { 12: "0xb2", 14: "0x14" },
+      12,
+    ],
+    ["the accepted block it recorded", observed, { 10: "0xee", 12: "0xa1", 14: "0x14" }, 10],
+  ])("refuses a replacement of %s", async (_, anchor, hashes, final) => {
+    await expect(read(anchor, simulatedChain(14, final, hashes))).rejects.toThrow(/rewritten/);
   });
 });
