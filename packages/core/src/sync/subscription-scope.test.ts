@@ -147,3 +147,20 @@ it.each([
     ),
   ).toBe(false);
 });
+
+it("drops expired armies before reading positions on the shared map", () => {
+  const nextDay = dayOf(expedition, 350)!.end;
+  const nextRows = [
+    ...rows.filter((row) => row.model !== "TileOccupancy"),
+    { model: "ExplorerTroops", value: { explorer_id: "103", owner: "1", troops: { count: "1000000000" } } },
+    { model: "ArmyDay", value: { explorer_id: "103", day: "1" } },
+    { model: "TileOccupancy", value: { entity_id: "103", category: "26", alt: false, col: 512, row: 1600 } },
+  ];
+  const readNext: ScopeRowReader = (model, spacing, keys) => nextRows.filter(
+    (row) => row.model === model && scopeInputKeys(model, row.value, spacing).some((key) => keys.includes(key)),
+  );
+  const scope = deriveGameSyncScope("0xa", nextDay, expedition, readNext);
+  expect(scope.expedition!.entities.has("103")).toBe(true);
+  expect(scope.expedition!.entities.has("101")).toBe(false);
+  expect(scope.expedition!.day).toBe(1);
+});
