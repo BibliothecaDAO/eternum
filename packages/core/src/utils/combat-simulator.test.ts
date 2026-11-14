@@ -18,6 +18,27 @@ const baseArmy = (troopType: TroopType): Army => ({
   battle_cooldown_end: 0,
 });
 
+it("removes Knight structure bonuses from expedition previews on both sides", () => {
+  const simulator = new CombatSimulator({ ...CombatSimulator.getDefaultParameters(), day_unit_seconds: 14_400 });
+  const attacker = { ...baseArmy(TroopType.Knight), troopCount: 1_500 };
+  const defender = baseArmy(TroopType.Knight);
+  const field = simulator.simulateBattle(0, attacker, defender, BiomeType.Taiga);
+  expect(Math.round(field.attackerDamage)).toBe(627);
+  expect(Math.round(field.defenderDamage)).toBe(418);
+  const exhausted = simulator.simulateBattle(0, attacker, { ...defender, stamina: 0 }, BiomeType.Taiga);
+  expect(exhausted.defenderDamage).toBe(field.defenderDamage);
+  for (const attackerIsStructureGuard of [false, true]) {
+    for (const defenderIsStructureGuard of [false, true]) {
+      const guard = simulator.simulateBattle(0, attacker, defender, BiomeType.Taiga, [], [], {
+        attackerIsStructureGuard,
+        defenderIsStructureGuard,
+      });
+      expect(guard.attackerDamage).toBe(field.attackerDamage);
+      expect(guard.defenderDamage).toBe(field.defenderDamage);
+    }
+  }
+});
+
 describe("CombatSimulator Combat v3 context", () => {
   it("applies exact Crossbowman ranged field damage and removes counter-damage", () => {
     const simulator = new CombatSimulator(CombatSimulator.getDefaultParameters());

@@ -76,6 +76,7 @@ fn damage_at_battle(
         ..attacker,
     };
     let context = crate::combat::CombatContext {
+        day_unit_seconds: 0,
         timestamp: 360,
         attacker_roll: 0,
         defender_roll: 0,

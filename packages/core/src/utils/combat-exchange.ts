@@ -30,6 +30,7 @@ export type TroopDamageConfig = NativeRows["SliceRules"]["troop_damage_config"];
 export type TroopStaminaConfig = NativeRows["SliceRules"]["troop_stamina_config"];
 
 export interface CombatRules {
+  dayUnitSeconds: number;
   cooldownSeconds: number;
   tickSeconds: number;
   damage: TroopDamageConfig;
@@ -97,7 +98,7 @@ export const resolveExchange = (
   let defenderStaminaLoss =
     defenderStamina < BigInt(defenderStaminaRequired) ? defenderStamina : BigInt(defenderStaminaRequired);
   let attackerStaminaLoss = BigInt(rules.stamina.stamina_attack_req);
-  const tired = !ranged && defenderStaminaLoss < BigInt(defenderStaminaRequired);
+  const tired = rules.dayUnitSeconds === 0 && !ranged && defenderStaminaLoss < BigInt(defenderStaminaRequired);
 
   const damage = exchangeDamage(attacker, defender, context, rules, {
     defenderStaminaMultiplier: tired ? div(fixed(7n), fixed(10n)) : ONE,
@@ -189,9 +190,15 @@ const exchangeDamage = (
     throw new Error("A combat die has twenty faces");
   attackerDamage = mul(attackerDamage, percent(100 + context.attackerRoll));
   defenderDamage = mul(defenderDamage, percent(100 + context.defenderRoll));
-  attackerDamage = mul(attackerDamage, outgoingMultiplier(attacker, context));
-  attackerDamage = mul(attackerDamage, incomingMultiplier(defender, context.defenderIsStructureGuard));
-  defenderDamage = mul(defenderDamage, incomingMultiplier(attacker, context.attackerIsStructureGuard));
+  attackerDamage = mul(attackerDamage, outgoingMultiplier(attacker, context, rules.dayUnitSeconds));
+  attackerDamage = mul(
+    attackerDamage,
+    incomingMultiplier(defender, context.defenderIsStructureGuard, rules.dayUnitSeconds),
+  );
+  defenderDamage = mul(
+    defenderDamage,
+    incomingMultiplier(attacker, context.attackerIsStructureGuard, rules.dayUnitSeconds),
+  );
   if (context.attackDistance > 1) defenderDamage = ZERO;
 
   const attackerBoosts = activeBoosts(attacker, context.timestamp);
@@ -255,12 +262,13 @@ const biomeBonus = (category: ExchangeTroops["category"], biome: BiomeType, dama
   return div(bonus ? add(BPS_100, edge) : sub(BPS_100, edge), BPS_100);
 };
 
-const outgoingMultiplier = (attacker: ExchangeTroops, context: ExchangeContext): Fixed => {
+const outgoingMultiplier = (attacker: ExchangeTroops, context: ExchangeContext, dayUnitSeconds: number): Fixed => {
   const rangedCrossbow =
     attacker.category === "Crossbowman" && context.attackDistance > 1
       ? percent(context.defenderIsStructureGuard ? 30 : 70)
       : unscaled(1);
   const knightAssault =
+    dayUnitSeconds === 0 &&
     attacker.category === "Knight" &&
     !context.attackerIsStructureGuard &&
     context.defenderIsStructureGuard &&
@@ -270,8 +278,8 @@ const outgoingMultiplier = (attacker: ExchangeTroops, context: ExchangeContext):
   return mul(rangedCrossbow, knightAssault);
 };
 
-const incomingMultiplier = (troops: ExchangeTroops, isStructureGuard: boolean): Fixed =>
-  isStructureGuard && troops.category === "Knight" ? percent(85) : unscaled(1);
+const incomingMultiplier = (troops: ExchangeTroops, isStructureGuard: boolean, dayUnitSeconds: number): Fixed =>
+  dayUnitSeconds === 0 && isStructureGuard && troops.category === "Knight" ? percent(85) : unscaled(1);
 
 const activeBoosts = (troops: ExchangeTroops, timestamp: number) => ({
   dealt:

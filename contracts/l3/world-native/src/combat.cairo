@@ -8,6 +8,7 @@ use crate::troops::{TroopTier, TroopType, Troops};
 #[derive(Copy, Drop, Serde)]
 pub struct CombatContext {
     pub timestamp: u64,
+    pub day_unit_seconds: u32,
     pub attacker_roll: u8,
     pub defender_roll: u8,
     pub attacker_biome: Biome,
@@ -173,7 +174,8 @@ pub impl TroopsImpl of TroopsTrait {
     }
 
     fn _knight_structure_assault_multiplier(ref self: Troops, context: CombatContext) -> Fixed {
-        if self.category == TroopType::Knight
+        if context.day_unit_seconds == 0
+            && self.category == TroopType::Knight
             && !context.attacker_is_structure_guard
             && context.defender_is_structure_guard
             && context.attack_distance == 1 {
@@ -187,8 +189,8 @@ pub impl TroopsImpl of TroopsTrait {
         self._ranged_crossbow_damage_multiplier(context) * self._knight_structure_assault_multiplier(context)
     }
 
-    fn _incoming_damage_multiplier(ref self: Troops, is_structure_guard: bool) -> Fixed {
-        if is_structure_guard && self.category == TroopType::Knight {
+    fn _incoming_damage_multiplier(ref self: Troops, is_structure_guard: bool, day_unit_seconds: u32) -> Fixed {
+        if day_unit_seconds == 0 && is_structure_guard && self.category == TroopType::Knight {
             return Self::_combat_percent_multiplier(85);
         }
 
@@ -260,7 +262,7 @@ pub impl TroopsImpl of TroopsTrait {
         let mut BRAVO_STAMINA_LOSS: u128 = core::cmp::min(
             bravo.stamina.inline().amount.into(), defender_stamina_req.into(),
         );
-        if !is_ranged_attack && BRAVO_STAMINA_LOSS < defender_stamina_req.into() {
+        if context.day_unit_seconds == 0 && !is_ranged_attack && BRAVO_STAMINA_LOSS < defender_stamina_req.into() {
             BRAVO_STAMINA_BONUS_DAMAGE_MULTIPLIER = FixedTrait::new(7, false) / FixedTrait::new(10, false); // 0.7
         }
 
@@ -305,8 +307,10 @@ pub impl TroopsImpl of TroopsTrait {
         ALPHA_DAMAGE_DEALT *= Self::_combat_percent_multiplier(100 + context.attacker_roll.into());
         BRAVO_DAMAGE_DEALT *= Self::_combat_percent_multiplier(100 + context.defender_roll.into());
         ALPHA_DAMAGE_DEALT *= alpha._outgoing_damage_multiplier(context);
-        ALPHA_DAMAGE_DEALT *= bravo._incoming_damage_multiplier(context.defender_is_structure_guard);
-        BRAVO_DAMAGE_DEALT *= alpha._incoming_damage_multiplier(context.attacker_is_structure_guard);
+        ALPHA_DAMAGE_DEALT *= bravo
+            ._incoming_damage_multiplier(context.defender_is_structure_guard, context.day_unit_seconds);
+        BRAVO_DAMAGE_DEALT *= alpha
+            ._incoming_damage_multiplier(context.attacker_is_structure_guard, context.day_unit_seconds);
         if is_ranged_attack {
             BRAVO_DAMAGE_DEALT = FixedTrait::ZERO();
         }

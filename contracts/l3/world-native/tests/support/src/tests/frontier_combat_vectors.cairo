@@ -96,6 +96,7 @@ pub fn resolve_exchange(
         .attack_with_context(
             ref defender,
             CombatContext {
+                day_unit_seconds: 0,
                 timestamp: exchange.timestamp,
                 attacker_roll: 0,
                 defender_roll: 0,

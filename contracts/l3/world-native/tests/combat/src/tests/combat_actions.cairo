@@ -148,6 +148,7 @@ fn blitz_ethereal_battle_uses_both_root_d20_rolls_in_damage_and_history() {
         .attack_with_context(
             ref expected_defender,
             crate::combat::CombatContext {
+                day_unit_seconds: 0,
                 timestamp: 80,
                 attacker_roll,
                 defender_roll,
@@ -263,6 +264,7 @@ fn a_dice_game_rolls_both_root_d20s_on_the_surface_too() {
         .attack_with_context(
             ref expected_defender,
             crate::combat::CombatContext {
+                day_unit_seconds: 0,
                 timestamp: 80,
                 attacker_roll,
                 defender_roll,
