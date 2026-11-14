@@ -6,11 +6,12 @@ import { PLAYER } from "./fixture-game";
 const BLITZ_PRESET = 2;
 const PLAYERS = [PLAYER, "0x222", "0x333", "0x444"];
 
-const playerFacts = () => PLAYERS.map((address) => ({
-  model: "PlayerEntry",
-  key: `0x7c${address.slice(2)}`,
-  value: { game_id: 1, owner: address, player: address },
-}));
+const playerFacts = () =>
+  PLAYERS.map((address) => ({
+    model: "PlayerEntry",
+    key: `0x7c${address.slice(2)}`,
+    value: { game_id: 1, owner: address, player: address },
+  }));
 
 /** The Blitz standings at /lab/kit/standings: Players opens each card and returns to the list. */
 export const StandingsLab = () => (

@@ -353,21 +353,18 @@ export const RealmAutomationPanel = ({
     [realmResources],
   );
 
-  const handleSliderChange = useCallback(
-    (resourceId: ResourcesIds, value: number) => {
-      setDraftPercentages((prev) => {
-        const next: ResourceAutomationPercentages = {
-          resourceToResource: value,
-        };
-        return {
-          ...prev,
-          [resourceId]: next,
-        };
-      });
-      setDraftPresetId("custom");
-    },
-    [],
-  );
+  const handleSliderChange = useCallback((resourceId: ResourcesIds, value: number) => {
+    setDraftPercentages((prev) => {
+      const next: ResourceAutomationPercentages = {
+        resourceToResource: value,
+      };
+      return {
+        ...prev,
+        [resourceId]: next,
+      };
+    });
+    setDraftPresetId("custom");
+  }, []);
 
   const handleUndo = useCallback(() => {
     if (!lastSavedSnapshot) return;
