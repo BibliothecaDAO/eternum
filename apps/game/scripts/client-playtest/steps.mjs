@@ -1267,8 +1267,7 @@ async function arrives(browser, place, scene) {
   return shown(browser.observe());
 }
 
-function inScene(scene) {
-  const place = scene === "map" ? "Map" : "Realm";
+function inScene(scene, place = scene === "map" ? "Map" : "Realm") {
   return ({ seen }) =>
     isIn(seen, place, scene)
       ? completed({ scene })
@@ -3272,7 +3271,7 @@ const DEEP_JOIN_STATE = `JSON.stringify({
   slots: document.querySelector("[data-deep-slots]")?.textContent ?? "",
   joined: (window.__labChain?.sent ?? []).filter(({ command }) => command.kind === "InteractSite"),
   quarry: (() => {
-    const slot = document.querySelector('.mp-at[data-key^="structure:"]:has([data-icon="pickaxe"])');
+    const slot = document.querySelector('.mp-at:has([data-icon="pickaxe"])');
     if (!slot || getComputedStyle(slot).display === "none" || !slot.firstElementChild) return null;
     const token = slot.firstElementChild.getBoundingClientRect();
     return [Math.round(token.left + token.width / 2 - innerWidth / 2), Math.round(token.bottom - innerHeight / 2)];
@@ -3280,7 +3279,7 @@ const DEEP_JOIN_STATE = `JSON.stringify({
 })`;
 
 const DEEP_JOIN_STEPS = [
-  { name: "enter-on-map", settleMs: 3_000, verify: inScene("map") },
+  { name: "enter-on-map", settleMs: 3_000, verify: inScene("map", "Deep") },
   { name: "pick-army", play: pickTheSpireArmy, settleMs: 1_500, verify: spireArmyPicked },
   {
     name: "join-the-quarry",
