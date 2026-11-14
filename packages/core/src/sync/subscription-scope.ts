@@ -9,9 +9,9 @@ import {
 } from "../utils/expeditions";
 import { isTileOccupierUsableSite } from "../utils/map/hex";
 import { hasSingleTilePosition } from "../client/native-occupancy";
-import { gameSyncRegion, syncScalar, type GameSyncScope } from "./model-manifest";
+import { gameSyncRegion, syncScalar, type GameSyncScope, type SCOPE_INPUT_MODELS } from "./model-manifest";
 
-type ScopeInputModel = "DeepSite" | "DeepGuard" | "ArmyDay" | "PlayerEntry" | "Structure" | "ExplorerTroops" | "TileOccupancy" | "ExpeditionSite";
+type ScopeInputModel = (typeof SCOPE_INPUT_MODELS)[number];
 export type ScopeRowReader = (
   model: ScopeInputModel,
   spacing: number,

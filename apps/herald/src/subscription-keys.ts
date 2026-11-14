@@ -23,6 +23,7 @@ export function scopeInputInterest(scope: GameSyncScope): Set<string> {
   const expedition = scope.expedition;
   if (!expedition) return new Set();
   return new Set([
+    scopeLookup.deepSites,
     ...(scope.actor === undefined ? [] : [scopeLookup.entryOf(scope.actor)]),
     ...(scope.visit === undefined ? [] : [scopeLookup.entryOf(scope.visit)]),
     ...[...expedition.owners].map(scopeLookup.structuresOf),
@@ -33,6 +34,9 @@ export function scopeInputInterest(scope: GameSyncScope): Set<string> {
       scopeLookup.structure(entity),
       scopeLookup.army(entity),
       scopeLookup.occupancyOf(entity),
+      scopeLookup.guard(entity),
+      scopeLookup.guardsAt(entity),
+      scopeLookup.armyDay(entity),
     ]),
   ]);
 }
