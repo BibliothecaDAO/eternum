@@ -9,6 +9,7 @@ import App from "./app";
 import { recoverChunkLoad } from "./utils/chunk-load-recovery";
 import { selectHasPendingTransactions, useTransactionStore } from "./hooks/store/use-transaction-store";
 import { distributionChannel } from "./runtime/distribution-channel";
+import { suppliedPublicEnv } from "../env";
 import { resolveSentryRuntimeOptions } from "./sentry-config";
 import { BootLoaderCrashFallback, markBootMilestone, setBootDocumentState } from "./ui/modules/boot-loader";
 
@@ -68,7 +69,7 @@ class BootCrashBoundary extends React.Component<BootCrashBoundaryProps, BootCras
 }
 
 if (sentryEnabled) {
-  const sentryOptions = resolveSentryRuntimeOptions(import.meta.env, channel);
+  const sentryOptions = resolveSentryRuntimeOptions(suppliedPublicEnv, channel);
 
   Sentry.init({
     dsn: sentryDsn,

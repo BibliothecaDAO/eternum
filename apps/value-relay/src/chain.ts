@@ -4,6 +4,7 @@ import type { LedgerPayDecision } from "@realms-world/identity";
 import {
   rpcAt,
   readConfirmedLedgerHead,
+  readFinalLedgerHead,
   decodeFrontierSeason,
   decodeWithdrawalPayment,
 } from "@realms-world/value-ledger";
@@ -33,6 +34,22 @@ export const ledgerPaymentRead =
         head,
       );
       return decodeWithdrawalPayment(fields);
+    });
+
+/** A payment the head shows is not settled until the accepted block shows it too; this asks both. */
+export const ledgerPaymentProof =
+  (rpcUrl: string, address: string): RelayPorts["ledger"]["paymentProof"] =>
+  (withdrawal) =>
+    relayOperation("read withdrawal proof", async () => {
+      const provider = rpcAt(rpcUrl);
+      const atHead = (await Effect.runPromise(ledgerPaymentRead(rpcUrl, address)(withdrawal)))?.paid === true;
+      // The head's answer is enough to resume work known to be undone; only settlement needs the accepted block, so a
+      // failed lookup of it leaves the claim awaiting proof, never blocks its recovery.
+      const final = await readFinalLedgerHead(provider).catch(() => null);
+      const accepted = final
+        ? await Effect.runPromise(ledgerPaymentRead(rpcUrl, address, final.number)(withdrawal)).catch(() => null)
+        : null;
+      return { atHead, final: final && accepted?.paid ? { block: final.number, hash: final.hash } : null };
     });
 
 /** Recovery only reads payment state after a confirmed pause has stopped further transfers. */

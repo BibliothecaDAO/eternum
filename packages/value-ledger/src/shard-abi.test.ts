@@ -21,10 +21,18 @@ it("reuses immutable class content across readers but checks each confirmed bloc
   getClassByHash.mockResolvedValue({ abi: [{ type: "event", name: "new" }] });
   expect(await readShardAbi(provider(), "0xa", 13)).toEqual([{ type: "event", name: "new" }]);
   expect(getClassByHash).toHaveBeenLastCalledWith("0x456");
-  // The cache retains only one class, so changing back reloads rather than growing indefinitely.
+  // The ledger and each shard are different classes: changing back finds the first one still kept.
   getClassHashAt.mockResolvedValue("0x123");
   await readShardAbi(provider(), "0xa", 14);
-  expect(getClassByHash).toHaveBeenCalledTimes(3);
+  expect(getClassByHash).toHaveBeenCalledTimes(2);
+  // The cache is bounded: the oldest class leaves first.
+  for (const hash of ["0x201", "0x202", "0x203", "0x204"]) {
+    getClassHashAt.mockResolvedValue(hash);
+    await readShardAbi(provider(), "0xa", 15);
+  }
+  getClassHashAt.mockResolvedValue("0x123");
+  await readShardAbi(provider(), "0xa", 16);
+  expect(getClassByHash).toHaveBeenCalledTimes(7);
 });
 
 it("retries a failed class fetch and rejects a missing ABI", async () => {

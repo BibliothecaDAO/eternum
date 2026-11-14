@@ -2,6 +2,8 @@ vi.mock("../../../packages/value-ledger/src/shard-abi", () => ({
   readShardAbi: async () => [{ type: "interface", items: [{ name: "deposit_source" }] }],
 }));
 import { beforeEach, expect, it, vi } from "vitest";
+import { memoryFinalFacts } from "./final-facts";
+import { memoryObligations } from "./obligations";
 import { sweepFrontierLords, frontierSettlementEvidence } from "./frontier-sweep";
 import { ResourcesIds, RESOURCE_PRECISION } from "@bibliothecadao/types";
 import type { ConfirmedSnapshot } from "./shard-snapshot";
@@ -10,6 +12,7 @@ const calls = vi.hoisted(() => ({
   admin: vi.fn(),
   funding: vi.fn(),
   ledgerHead: vi.fn(),
+  finalHead: vi.fn(),
   header: vi.fn(),
   snapshot: vi.fn(),
   games: vi.fn(),
@@ -20,6 +23,7 @@ vi.mock("@realms-world/value-ledger", async (original) => ({
   rpcAt: vi.fn(),
   readFrontierFunding: calls.funding,
   readConfirmedLedgerHead: calls.ledgerHead,
+  readFinalLedgerHead: calls.finalHead,
 }));
 vi.mock("@realms-world/value-ledger/shard", () => ({
   ShardOperator: class {
@@ -45,10 +49,15 @@ const target = {
   accountAddress: "0x20",
   privateKey: "0x1",
 };
-const ledger = { rpcUrl: "https://ledger.test", address: "0x30" };
+let ledger = {
+  rpcUrl: "https://ledger.test",
+  address: "0x30",
+  finals: memoryFinalFacts(),
+  obligations: memoryObligations(),
+  proofs: true,
+};
 const wei = (amount: number) => String(BigInt(amount) * 10n ** 18n);
-const run = () =>
-  sweepFrontierLords(target, "https://herald.test", { rpcUrl: "https://ledger.test", address: "0x30" }, calls.settle);
+const run = () => sweepFrontierLords(target, "https://herald.test", ledger, calls.settle);
 const balance = (entity_id: number, amount: number, resource_type = ResourcesIds.Lords) => ({
   entity_id,
   balance: String(BigInt(amount) * BigInt(RESOURCE_PRECISION)),
@@ -70,7 +79,9 @@ const rows = (model: string, values: Record<string, unknown>[]) => {
 };
 beforeEach(() => {
   vi.resetAllMocks();
+  ledger = { ...ledger, finals: memoryFinalFacts(), obligations: memoryObligations(), proofs: true };
   calls.ledgerHead.mockResolvedValue({ number: 10, time: 100 });
+  calls.finalHead.mockResolvedValue({ number: 9, hash: "0xf", time: 90 });
   state = {
     confirmed_block: 10,
     game_id: "7",
@@ -467,7 +478,7 @@ it("continues principal sweeps and retries payments after reward closure and its
     { model: "Structure", rows: [{ key: "7:17", value: structureSnapshot("0x8") }] },
     { model: "PrincipalWithdrawal", rows: [] },
   );
-  const pay = vi.fn();
+  const pay = vi.fn().mockResolvedValue({ block: 9, hash: "0xf" });
   await sweepFrontierLords(target, "https://herald.test", ledger, calls.settle, pay);
   expect(calls.admin.mock.calls).toEqual([["sweep_lords", { game_id: 7, structure_id: "17" }]]);
   rows("SpendLords", [{ account: "0x8", available: "0", consumed: "0", swept: "40" }]);
@@ -481,7 +492,8 @@ it("continues principal sweeps and retries payments after reward closure and its
   );
   expect(pay).toHaveBeenCalledWith({ chainId: "0x1", gameId: 7, account: "9", amount: "20" });
   await sweepFrontierLords(target, "https://herald.test", ledger, calls.settle, pay);
-  expect(pay).toHaveBeenCalledTimes(4);
+  expect(pay).toHaveBeenCalledTimes(3);
+  expect(pay.mock.calls.filter(([claim]) => claim.account === "9")).toHaveLength(1);
   expect(calls.settle).not.toHaveBeenCalled();
 });
 
@@ -525,4 +537,39 @@ it("closes eligible rewards despite an unavailable principal wallet, then retrie
   await sweepFrontierLords(target, "https://herald.test", ledger, calls.settle, pay);
   expect(pay).toHaveBeenCalledTimes(2);
   expect(calls.settle).toHaveBeenCalledTimes(1);
+});
+
+const principalCase = () => {
+  state.models.push({
+    model: "PrincipalWithdrawal",
+    rows: [{ key: "7:8", value: { game_id: 7, account: "0x8", amount: "40" } }],
+  });
+  calls.funding.mockResolvedValue({ closed: true, claimDeadline: 101 });
+};
+it("keeps a principal as paid only with final evidence, and asks again while it is on the head only", async () => {
+  principalCase();
+  const pay = vi.fn().mockResolvedValue(null);
+  for (let tick = 0; tick < 3; tick++)
+    await sweepFrontierLords(target, "https://herald.test", ledger, calls.settle, pay);
+  expect(pay).toHaveBeenCalledTimes(3);
+  pay.mockResolvedValue({ block: 9, hash: "0xf" });
+  await sweepFrontierLords(target, "https://herald.test", ledger, calls.settle, pay);
+  for (let tick = 0; tick < 3; tick++)
+    await sweepFrontierLords(target, "https://herald.test", ledger, calls.settle, pay);
+  expect(pay).toHaveBeenCalledTimes(4);
+});
+it("keeps a season as closed only once the Ethereum-accepted block shows it closed", async () => {
+  calls.funding.mockImplementation(async (_p, _a, _k, _t, block?: number) => ({
+    closed: block === undefined || block === 10,
+    claimDeadline: 101,
+  }));
+  for (let tick = 0; tick < 3; tick++) await run();
+  // The sweep's head read and its read at the accepted block, every tick, until that block holds the closing.
+  expect(calls.funding).toHaveBeenCalledTimes(6);
+  calls.funding.mockImplementation(async () => ({ closed: true, claimDeadline: 101 }));
+  await run();
+  calls.funding.mockClear();
+  await run();
+  await run();
+  expect(calls.funding).not.toHaveBeenCalled();
 });

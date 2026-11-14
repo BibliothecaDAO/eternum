@@ -6,6 +6,8 @@ import {
   ledgerInteger,
   ledgerU256,
   readConfirmedLedgerHead,
+  readFinalLedgerHead,
+  isContractRevert,
 } from "@realms-world/value-ledger";
 import { Account, hash, RpcProvider, type EmittedEvent } from "starknet";
 import { blitzCommitment } from "@realms-world/value-ledger/commitment";
@@ -111,7 +113,10 @@ const resultCommitment = async (provider: RpcProvider, address: string, result: 
 export const ledgerMonitorReads = (
   rpcUrl: string,
   ledger: LedgerContract,
-): Pick<MonitorPorts["ledger"], "reportedClaims" | "paidClaims" | "postedResults" | "frontierPool"> => {
+): Pick<
+  MonitorPorts["ledger"],
+  "reportedClaims" | "paidClaims" | "postedResults" | "frontierPool" | "finalFrontierPool"
+> => {
   const address = ledger.contractAddress;
   return {
     frontierPool: (chainId, gameId) =>
@@ -128,6 +133,23 @@ export const ledgerMonitorReads = (
             head.number,
           ),
         ).pool;
+      }),
+    finalFrontierPool: (chainId, gameId) =>
+      relayOperation("read final ledger Frontier pool", async () => {
+        const provider = rpcAt(rpcUrl);
+        const final = await readFinalLedgerHead(provider);
+        try {
+          const season = decodeFrontierSeason(
+            await provider.callContract(
+              { contractAddress: address, entrypoint: "get_frontier", calldata: [chainId, String(gameId)] },
+              final.number,
+            ),
+          );
+          return { pool: season.pool, block: final.number, hash: final.hash };
+        } catch (error) {
+          if (isContractRevert(error, "Ledger: unknown Frontier season")) return null;
+          throw error;
+        }
       }),
     reportedClaims: (cursor, fromBlock, anchor) =>
       relayOperation("read ledger reported claims", () =>

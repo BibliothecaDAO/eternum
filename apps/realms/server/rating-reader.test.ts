@@ -40,6 +40,8 @@ const create = () => {
       put: async (key: string, value: unknown) => {
         values.set(key, value);
       },
+      delete: async (key: string) => values.delete(key),
+      list: async ({ prefix }: { prefix: string }) => new Map([...values].filter(([key]) => key.startsWith(prefix))),
     },
   };
   /**
@@ -105,10 +107,18 @@ const create = () => {
     const answers = [...batch].reverse().map((call) => ({ jsonrpc: "2.0", id: call.id, ...answer(call) }));
     return Response.json(Array.isArray(raw) ? answers : answers[0]);
   });
-  const reader = new RatingReader(ctx as unknown as DurableObjectState, {
+  const kept = new RatingReader(ctx as unknown as DurableObjectState, {
     ENVIRONMENT: "staging",
     L2_RPC_URL: "https://starknet-mainnet.g.alchemy.com/v2/test",
   });
+  /** The reader as the chain tests need it: every call reads the chain, as if results were posted since the last. */
+  const reader = {
+    top: async () => (await kept.ratingsChanged(), kept.top()),
+    ratings: async (...args: Parameters<RatingReader["ratings"]>) => (
+      await kept.ratingsChanged(),
+      kept.ratings(...args)
+    ),
+  };
   vi.stubGlobal("fetch", network);
   const eventRanges = () =>
     paid
@@ -116,7 +126,7 @@ const create = () => {
       .filter((call) => call.method === "starknet_getEvents")
       .map(({ params }) => [params.filter.from_block.block_number, params.filter.to_block.block_number]);
   const ranked = async () => (await reader.top()).entries.map(({ player }) => player);
-  return { reader, paid, chain, hashAt, failing, eventRanges, ranked, database, ctx };
+  return { reader, kept, paid, chain, hashAt, failing, eventRanges, ranked, database, ctx };
 };
 
 it("re-reads named blocks and latest values without retaining a snapshot table", async () => {
@@ -273,3 +283,81 @@ function forkAfterHeader(chain: ReturnType<typeof create>["chain"], block: numbe
     if (read === block && ++seen === reads) chain.forks.push({ at: fork, branch: "b" });
   };
 }
+
+it("serves the board and a wallet's rating from what it kept, until an hour passes or results were posted", async () => {
+  vi.useFakeTimers({ toFake: ["Date"] });
+  vi.setSystemTime(new Date("2026-11-14T12:00:00Z"));
+  const later = (ms: number) => vi.setSystemTime(new Date(Date.now() + ms));
+  const { kept, paid, database } = create();
+  try {
+    const first = await kept.top();
+    const own = await kept.ratings(["0x1"], first.block_hash);
+    const reads = paid.length;
+    for (let ask = 0; ask < 30; ask++) {
+      later(2_000);
+      expect(await kept.top()).toEqual(first);
+      expect(await kept.ratings(["0x1"], first.block_hash)).toEqual(own);
+    }
+    expect(paid).toHaveLength(reads);
+    later(1_000);
+    await kept.ratingsChanged();
+    later(1_000);
+    await kept.top();
+    expect(paid.length).toBeGreaterThan(reads);
+    const afterCause = paid.length;
+    later(1_000);
+    await kept.top();
+    expect(paid).toHaveLength(afterCause);
+    later(3_600_000);
+    await kept.top();
+    expect(paid.length).toBeGreaterThan(afterCause);
+  } finally {
+    vi.useRealTimers();
+    vi.unstubAllGlobals();
+    database.close();
+  }
+});
+it("keeps at most a hundred answers", async () => {
+  const { kept, ctx, database } = create();
+  try {
+    for (let wallet = 1; wallet <= 105; wallet++) await kept.ratings([`0x${wallet.toString(16)}`]);
+    const stored = await ctx.storage.list({ prefix: "rating:" });
+    expect(stored.size).toBeLessThanOrEqual(100);
+  } finally {
+    vi.unstubAllGlobals();
+    database.close();
+  }
+}, 30_000);
+
+/** Every paid call a board refresh makes, by method. */
+const methodsOf = (paid: { method: string }[][]) =>
+  paid
+    .flat()
+    .reduce<Record<string, number>>((all, call) => ({ ...all, [call.method]: (all[call.method] ?? 0) + 1 }), {});
+it("states what one board refresh reads, by RPC method: the first one, and a later one with the board known", async () => {
+  const { kept, paid, chain, database } = create();
+  try {
+    await kept.top();
+    const first = methodsOf(paid);
+    paid.length = 0;
+    chain.head = 78;
+    await kept.ratingsChanged();
+    await kept.top();
+    expect(first).toEqual({
+      starknet_chainId: 1,
+      starknet_getBlockWithTxHashes: 3,
+      starknet_getClassHashAt: 7,
+      starknet_getEvents: 1,
+      starknet_call: players.length,
+    });
+    // A board of N players costs N + 6 paid reads once its population is known: a rating each, five headers, one page.
+    expect(methodsOf(paid)).toEqual({
+      starknet_getBlockWithTxHashes: 5,
+      starknet_getEvents: 1,
+      starknet_call: players.length,
+    });
+  } finally {
+    vi.unstubAllGlobals();
+    database.close();
+  }
+});

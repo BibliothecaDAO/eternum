@@ -140,7 +140,8 @@ it("reads trusted names alongside fresh wallet ratings and leaves unlinked owner
     entries: [{ profile: null }, { profile: null }, { profile: null }, { profile: null }],
     self: { profile: null },
   });
-  expect(RpcProvider.prototype.callContract).toHaveBeenCalledTimes(12);
+  // The ratings are kept, so three requests read the board once (four players); the names are read each time.
+  expect(RpcProvider.prototype.callContract).toHaveBeenCalledTimes(4);
   expect(profileBatch).toHaveBeenCalledTimes(3);
 });
 

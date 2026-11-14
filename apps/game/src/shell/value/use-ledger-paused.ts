@@ -11,5 +11,5 @@ export const useLedgerPaused = (ledger: EnvironmentLedger | null): boolean | und
     queryKey: ["ledger", "paused"],
     queryFn: () => (ledger as EnvironmentLedger).paused(),
     enabled: ledger !== null,
-    refetchInterval: 15_000,
+    refetchInterval: 60_000,
   }).data;

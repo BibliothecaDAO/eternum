@@ -1,5 +1,6 @@
 import { resolve } from "node:path";
 import { randomBytes, createECDH, createHash } from "node:crypto";
+import { PUBLIC_L2_RPC_URL } from "../../packages/chain/src/endpoints";
 import { accountIdentity, newKey, type Keys } from "./chain";
 import { apnsKeyOf, pagesSites, root, signInClientsOf, type Inputs, type PagesSite, type Target } from "./settings";
 import type { PrivateStore } from "./private-store";
@@ -99,7 +100,7 @@ export function workerSecrets(
     case "status":
       // Alerts go out through the identity Worker's Resend account, to the address setup recorded.
       return {
-        L2_RPC_URL: inputs.rpc,
+        L2_RPC_URL: PUBLIC_L2_RPC_URL,
         RESEND_API_KEY: inputs.resend,
         ...(inputs.alertEmail ? { ALERT_EMAIL: inputs.alertEmail } : {}),
       };

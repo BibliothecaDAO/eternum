@@ -82,12 +82,10 @@ pnpm install --frozen-lockfile
 pnpm run build:packages
 ```
 
-**The game client** plays on the dev environment's shards: it signs in against them and lists their games. It needs your
-own Alchemy endpoint for Starknet mainnet in `apps/game/.env.local` (gitignored); without one, the dev server refuses to
-start.
+**The game client** plays on the dev environment's shards: it signs in against them and lists their games. It reads
+Starknet mainnet through a free public endpoint, so it needs no key.
 
 ```bash
-echo 'VITE_PUBLIC_L2_RPC_URL=https://starknet-mainnet.g.alchemy.com/starknet/version/rpc/v0_9/<your-key>' > apps/game/.env.local
 pnpm dev        # https://localhost:5173
 ```
 

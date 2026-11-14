@@ -1,3 +1,4 @@
+import { PUBLIC_L2_RPC_URL } from "../../packages/chain/src/endpoints";
 import mainnetAddresses from "../../contracts/common/addresses/mainnet.json";
 import { setupQuestions, validateInputs } from "./dates";
 import { afterEach, expect, mock, test } from "bun:test";
@@ -520,12 +521,14 @@ test("metadata presence follows all confirmed event pages; differing metadata re
   ).rejects.toThrow("metadata differs");
 });
 
-test("every service uses one RPC; deployer and cold admin keys never enter Worker values", () => {
+test("the signing and auditing services use the paid RPC, the status probe the public one; deployer and cold admin keys never enter Worker values", () => {
   const access = { teamDomain: "realms.cloudflareaccess.com", audience: "aud", operators: ["o@x.io"], writers: [] };
   const map = Object.fromEntries(
     workers.map((worker) => [worker.id, workerSecrets(worker, input, secrets, keys, access)]),
   );
-  for (const name of ["identity", "relay", "monitor", "status"]) expect(map[name]!.L2_RPC_URL).toBe(input.rpc);
+  for (const name of ["identity", "relay", "monitor"]) expect(map[name]!.L2_RPC_URL).toBe(input.rpc);
+  expect(map.status!.L2_RPC_URL).toBe(PUBLIC_L2_RPC_URL);
+  expect(map.status!.L2_RPC_URL).not.toBe(input.rpc);
   expect(map.guardian).toEqual({});
   expect(map.relay!.LEDGER_OPERATOR_PRIVATE_KEY).toBe(keys.relay);
   expect(map.relay!.COSIGNER_URL).toBe(input.cosignerUrl);
@@ -660,12 +663,12 @@ test("the identity Worker gets the APNs key only when inputs.json holds all of i
 test("the status monitor emails incidents through the identity Worker's Resend key, to the address setup recorded", () => {
   const status = workers.find((worker) => worker.id === "status")!;
   expect(workerSecrets(status, { ...input, alertEmail: "oncall@example.test" }, secrets, keys, undefined)).toEqual({
-    L2_RPC_URL: input.rpc,
+    L2_RPC_URL: PUBLIC_L2_RPC_URL,
     RESEND_API_KEY: input.resend,
     ALERT_EMAIL: "oncall@example.test",
   });
   expect(workerSecrets(status, { ...input, alertEmail: undefined }, secrets, keys, undefined)).toEqual({
-    L2_RPC_URL: input.rpc,
+    L2_RPC_URL: PUBLIC_L2_RPC_URL,
     RESEND_API_KEY: input.resend,
   });
 });

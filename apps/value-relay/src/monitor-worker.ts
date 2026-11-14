@@ -7,7 +7,9 @@ import { bindLedgerState, ledgerOrNull, ledgerStateName } from "./ledger-state";
 import { activeShards, isDevShardChain, readRegisteredShard, type ShardDirectory } from "@realms-world/value-ledger";
 import { processSeasonTops } from "./season-tops";
 import { seasonLedgerReads, challengeSeason } from "./season-ledger";
+import { isLedgerReadTick, LEDGER_READ_STALE_SECONDS } from "@realms-world/chain";
 import { onIdentityChain } from "./ledger-chain";
+import { beginCause, completeCause, raiseCause, retryCause } from "./ledger-cause";
 import { presentsOperatorToken } from "@realms-world/identity";
 import { DurableObject, WorkerEntrypoint } from "cloudflare:workers";
 import { Effect, Result, Semaphore } from "effect";
@@ -29,12 +31,53 @@ interface MonitorEnv extends MonitorSettings {
       realmsIdForAccount(account: string): Promise<string | null>;
       matchesPayDecision(decision: import("@realms-world/identity").LedgerPayDecision): Promise<boolean>;
     };
-  RELAY_REPORT: { held(): Promise<{ kind: string; reason: string; transactionHash: string | null }[]> };
+  RELAY_REPORT: {
+    held(): Promise<{ kind: string; reason: string; transactionHash: string | null }[]>;
+    recoverHeld(): Promise<void>;
+  };
   MONITOR: DurableObjectNamespace<ValueMonitor>;
 }
 
+const AUDIT_DUE = "audit:due";
+
+/** What `tick` returns when the audit ran: errors and unread pages mean more to do; a halted monitor waits for its operator. */
+const auditFinished = (observation: {
+  value: { halted: string | null; cursors?: Record<string, { page: string | null } | undefined> } | null;
+  value_error: string | null;
+  season_error: string | null;
+  deposit_error?: string | null;
+}) =>
+  observation.value?.halted
+    ? true
+    : observation.value !== null &&
+      observation.value_error === null &&
+      !observation.deposit_error &&
+      (observation.season_error === null || observation.season_error.startsWith("season_review_pending")) &&
+      Object.values(observation.value.cursors ?? {}).every((cursor) => !cursor?.page);
+
 export class ValueMonitor extends DurableObject<MonitorEnv> {
   private readonly checking = Semaphore.makeUnsafe(1);
+  /** A relay write is a cause to audit: the next minute's tick reads the ledger, whatever the hour. */
+  async ledgerWritten() {
+    await raiseCause(this.ctx.storage, AUDIT_DUE);
+  }
+  /**
+   * The minute's tick: audits on the hour, or when the relay wrote since the last audit. The cause is kept until the
+   * audit finished its work: a failure, or a page of events still to read, asks again in five minutes.
+   */
+  async auditIfDue(hourly: boolean) {
+    const began = await beginCause(this.ctx.storage, AUDIT_DUE, hourly);
+    if (!began) return null;
+    try {
+      const observation = await this.tick();
+      if (auditFinished(observation)) await completeCause(this.ctx.storage, began);
+      else await retryCause(this.ctx.storage, began);
+      return observation;
+    } catch (error) {
+      await retryCause(this.ctx.storage, began);
+      throw error;
+    }
+  }
   async tick() {
     const monitor = this;
     return Effect.runPromise(
@@ -117,7 +160,7 @@ export class ValueMonitor extends DurableObject<MonitorEnv> {
                 chainId: await monitor.env.IDENTITY.l2ChainId(),
               };
               try {
-                const journal = await auditDepositCustody(ledger);
+                const journal = await auditDepositCustody(ledger, monitor.ctx.storage);
                 if (!journal) return { enabled: false, games: [] };
                 for (const shard of await activeShards(monitor.env.IDENTITY)) {
                   const registered = await readRegisteredShard(monitor.env.IDENTITY, shard.chainId);
@@ -239,7 +282,7 @@ export class ValueMonitor extends DurableObject<MonitorEnv> {
       ...observation,
       success:
         age >= 0 &&
-        age <= 300 &&
+        age <= LEDGER_READ_STALE_SECONDS &&
         observation?.value !== null &&
         observation?.value !== undefined &&
         observation.season_error === null &&
@@ -384,6 +427,10 @@ const monitorPortsOf = (env: MonitorEnv, storage: DurableObjectStorage): Monitor
         relayOperation("ledger Frontier funding unavailable", () =>
           Effect.runPromise(ledgerReads().frontierPool(...read)),
         ),
+      finalFrontierPool: (...read: Parameters<LedgerPorts["finalFrontierPool"]>) =>
+        relayOperation("ledger final Frontier funding unavailable", () =>
+          Effect.runPromise(ledgerReads().finalFrontierPool(...read)),
+        ),
       reportedClaims: (...read: Parameters<LedgerPorts["reportedClaims"]>) =>
         relayOperation("ledger reports unavailable", () => Effect.runPromise(ledgerReads().reportedClaims(...read))),
       paidClaims: (...read: Parameters<LedgerPorts["paidClaims"]>) =>
@@ -432,9 +479,13 @@ export default {
       )
         return Response.json({ error: "reset_reason_required" }, { status: 400 });
       try {
-        return Response.json(await monitorOf(env).reset(body.row, body.reason), {
-          headers: { "cache-control": "no-store" },
-        });
+        const reset = await monitorOf(env).reset(body.row, body.reason);
+        try {
+          await env.RELAY_REPORT.recoverHeld();
+        } catch {
+          // The hourly reconciliation still asks about held claims if this notice is lost.
+        }
+        return Response.json(reset, { headers: { "cache-control": "no-store" } });
       } catch {
         return Response.json({ error: "fault_row_mismatch" }, { status: 409 });
       }
@@ -447,9 +498,9 @@ export default {
       { status: health.success ? 200 : 503, headers: { "cache-control": "no-store" } },
     );
   },
-  async scheduled(_controller: ScheduledController, raw: MonitorEnv): Promise<void> {
+  async scheduled(controller: ScheduledController, raw: MonitorEnv): Promise<void> {
     const env = { ...raw, ...decodeMonitorSettings(raw) };
-    await monitorOf(env).tick();
+    await monitorOf(env).auditIfDue(isLedgerReadTick(controller.scheduledTime));
   },
 };
 
@@ -459,5 +510,8 @@ export class RosterMonitor extends WorkerEntrypoint<MonitorEnv> {
   }
   verifyRoster(chainId: string, gameId: number) {
     return monitorOf(this.env).verifyRoster(chainId, gameId);
+  }
+  ledgerWritten() {
+    return monitorOf(this.env).ledgerWritten();
   }
 }

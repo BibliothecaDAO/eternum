@@ -1,3 +1,4 @@
+import { LEDGER_READ_STALE_SECONDS } from "@realms-world/chain";
 import type { Probe, Status, Target } from "./model";
 
 const DEADLINE_MS = 5000;
@@ -82,7 +83,7 @@ async function probeValueWorker(read: Reader, url: string, now: number, service:
     relay.service !== service ||
     !height(relay.checked_at) ||
     relay.checked_at > now + 60 ||
-    now - relay.checked_at > 300
+    now - relay.checked_at > LEDGER_READ_STALE_SECONDS
   )
     throw new Error("Relay observation stale");
   return "up";

@@ -3,7 +3,6 @@ import { afterEach, beforeEach, expect, it, vi } from "vitest";
 beforeEach(() => {
   vi.resetModules();
   for (const key of Object.keys(import.meta.env)) if (key.startsWith("VITE_")) vi.stubEnv(key, undefined);
-  vi.stubEnv("VITE_PUBLIC_L2_RPC_URL", "https://rpc.test");
   vi.spyOn(console, "error").mockImplementation(() => {});
 });
 afterEach(() => {
@@ -14,7 +13,6 @@ afterEach(() => {
 it("decodes every default and leaves missing optional fields absent", async () => {
   const { env } = await import("./env");
   expect(env).toStrictEqual({
-    VITE_PUBLIC_L2_RPC_URL: "https://rpc.test",
     VITE_PUBLIC_RENDERER_BUILD_MODE: "webgpu-auto",
     VITE_PUBLIC_GAME_VERSION: "",
     VITE_SOCIAL_LINK: "",
@@ -59,8 +57,6 @@ it("preserves empty DSN, strict true flags, numeric conversion and renderer reso
 });
 
 it.each([
-  ["VITE_PUBLIC_L2_RPC_URL", "not a URL"],
-  ["VITE_PUBLIC_L2_RPC_URL", undefined],
   ["VITE_PUBLIC_SENTRY_DSN", "not a URL"],
   ["VITE_SOCIAL_LINK", "not a URL"],
   ["VITE_PUBLIC_WORLDMAP_CHUNK_PHASE_TIMEOUT_MS", "-1"],

@@ -68,8 +68,8 @@ chest payouts are not being relayed.
 
 ## monitor — value monitor
 
-The ledger watcher has not checked in for five minutes or reports a fault. It is the component that pauses payouts on a
-mismatch.
+The ledger watcher has not checked in for two hours (it audits every hour, and sooner after a relay write) or reports a
+fault. It is the component that pauses payouts on a mismatch.
 
 1. `curl -s https://play.dev-realms.party/api/operator/monitor/health`.
 2. `pnpm --dir apps/value-relay exec wrangler tail realms-value-monitor-staging`.

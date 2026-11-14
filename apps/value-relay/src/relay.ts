@@ -6,7 +6,7 @@ import { SHARD_PAGE_BLOCKS } from "./shard-page";
 import type { RelayProgress, RelayStore } from "./state";
 
 /** Only confirmed blocks produce value obligations. A rewritten observed block stops this cursor permanently. */
-export const runRelay = (chainId: string, ports: RelayPorts, store: RelayStore) =>
+export const runRelay = (chainId: string, ports: RelayPorts, store: RelayStore, reconcile = false) =>
   Effect.gen(function* () {
     const progress = yield* relayOperation("read relay progress", () => store.progress());
     if (progress.halted) return { status: "halted" as const, reason: progress.halted };
@@ -34,20 +34,27 @@ export const runRelay = (chainId: string, ports: RelayPorts, store: RelayStore) 
     }
     const payments = yield* payWithdrawals(ports, store);
     const results = yield* postResults(ports, store);
-    yield* restoreResolvableReceipts(ports, store);
+    const recovered = yield* restoreResolvableReceipts(ports, store, reconcile);
+    const proven = reconcile ? yield* proveWithdrawals(ports, store) : true;
+    const reconciled = recovered && proven;
     const held = yield* relayOperation("read deferred identity receipts", () => store.held());
     const unknown = held.flatMap((row) =>
       row.kind === "receipt" && row.reason === "withdrawal_account_unknown"
         ? [{ key: row.receipt.transactionHash, reason: row.reason }]
         : [],
     );
-    return { status: "ready" as const, more, deferred: [...payments, ...results, ...unknown] };
+    return { status: "ready" as const, more, deferred: [...payments, ...results, ...unknown], reconciled };
   });
 
-/** Identity and funding outages are retried from the original confirmed receipt. */
-const restoreResolvableReceipts = (ports: RelayPorts, store: RelayStore) =>
+/**
+ * Identity and funding outages are retried from the original confirmed receipt. A claim set aside for a conflicting
+ * report changes only by an admin's void, so the ledger is asked about it on the hour or when an operator asks.
+ * Resolves false when a read this recovery needed failed, so the caller keeps its cause and asks again.
+ */
+const restoreResolvableReceipts = (ports: RelayPorts, store: RelayStore, reconcile: boolean) =>
   Effect.gen(function* () {
     const held = yield* relayOperation("read held receipt recovery", () => store.heldRecovery());
+    let complete = true;
     for (const row of held) {
       const receipt =
         row.kind === "receipt" && row.reason !== "decode withdrawal receipt"
@@ -57,13 +64,40 @@ const restoreResolvableReceipts = (ports: RelayPorts, store: RelayStore) =>
             : null;
       if (!receipt) continue;
       if (row.kind === "payment") {
+        if (!reconcile) continue;
         const payment = yield* Effect.result(ports.ledger.payment(row.withdrawal));
+        if (Result.isFailure(payment)) complete = false;
         if (Result.isFailure(payment) || payment.success !== null) continue;
       }
       const resolved = yield* Effect.result(ports.shard.withdrawal(receipt.chainId, receipt.transactionHash));
-      if (Result.isSuccess(resolved) && resolved.success)
+      if (Result.isFailure(resolved)) complete = false;
+      else if (resolved.success)
         yield* relayOperation("restore verified withdrawal", () => store.restoreWithdrawal(resolved.success!));
     }
+    return complete;
+  });
+
+/**
+ * A claim the head shows paid stays in the proof queue until the accepted block shows it paid. If the head no longer
+ * shows it paid, a replaced block took the payment away: it is a claim to pay again, and the ledger refuses a repeat.
+ * Resolves false when a read failed, so the caller keeps its cause.
+ */
+const proveWithdrawals = (ports: RelayPorts, store: RelayStore) =>
+  Effect.gen(function* () {
+    let complete = true;
+    for (const withdrawal of yield* relayOperation("read claims awaiting proof", () => store.awaitingProof())) {
+      const proof = yield* Effect.result(ports.ledger.paymentProof(withdrawal));
+      if (Result.isFailure(proof)) {
+        complete = false;
+        continue;
+      }
+      const { atHead, final } = proof.success;
+      if (final)
+        yield* relayOperation("settle proven claim", () => store.settleProof(withdrawal.transactionHash, final));
+      else if (!atHead)
+        yield* relayOperation("requeue unpaid claim", () => store.requeuePaid(withdrawal.transactionHash));
+    }
+    return complete;
   });
 
 const haltRelay = (store: RelayStore, reason: string) =>
@@ -121,10 +155,36 @@ const separateInvalidRows = (chainId: string, page: ConfirmedBlock): ConfirmedBl
   return { ...page, withdrawals, results, held };
 };
 
+/**
+ * A reported claim waits for its player's wallet. Asking identity is free, asking the L2 costs a read per minute per
+ * claim, so a reported claim with no linked wallet is left alone until one links.
+ */
+const withdrawalsWorthReading = (
+  ports: RelayPorts,
+  pending: readonly Withdrawal[],
+  deferred: { key: string; reason: string }[],
+) =>
+  Effect.gen(function* () {
+    const worth: Withdrawal[] = [];
+    for (const withdrawal of pending) {
+      if (!withdrawal.reported) {
+        worth.push(withdrawal);
+        continue;
+      }
+      const wallet = yield* Effect.result(ports.identity.linkedWallet(withdrawal.realmsId));
+      if (Result.isFailure(wallet))
+        deferred.push({ key: withdrawal.transactionHash, reason: wallet.failure.operation });
+      else if (wallet.success) worth.push(withdrawal);
+      else deferred.push({ key: withdrawal.transactionHash, reason: "withdrawal_wallet_unlinked" });
+    }
+    return worth;
+  });
+
 const payWithdrawals = (ports: RelayPorts, store: RelayStore) =>
   Effect.gen(function* () {
     const deferred: { key: string; reason: string }[] = [];
-    const rows = yield* relayOperation("read pending withdrawals", () => store.withdrawals());
+    const pending = yield* relayOperation("read pending withdrawals", () => store.withdrawals());
+    const rows = yield* withdrawalsWorthReading(ports, pending, deferred);
     const reads = yield* Effect.forEach(rows, (row) => Effect.result(ports.ledger.payment(row)), { concurrency: 25 });
     const reported: Withdrawal[] = [],
       fresh: Withdrawal[] = [];
@@ -148,8 +208,10 @@ const payWithdrawals = (ports: RelayPorts, store: RelayStore) =>
       }
       if (saved?.paid)
         yield* relayOperation("complete paid withdrawal", () => store.completeWithdrawal(withdrawal.transactionHash));
-      else if (saved) reported.push(withdrawal);
-      else fresh.push(withdrawal);
+      else if (saved) {
+        yield* relayOperation("remember reported withdrawal", () => store.markReported(withdrawal.transactionHash));
+        reported.push(withdrawal);
+      } else fresh.push(withdrawal);
     }
     if (fresh.length) {
       const report = yield* Effect.result(ports.ledger.reportMany(fresh));
@@ -158,8 +220,10 @@ const payWithdrawals = (ports: RelayPorts, store: RelayStore) =>
         : new Map(fresh.map((row) => [row.transactionHash, report.failure.operation]));
       for (const withdrawal of fresh) {
         const error = outcomes.get(withdrawal.transactionHash);
-        if (error === null) reported.push(withdrawal);
-        else yield* setAsideOrDefer(store, withdrawal, error!, deferred);
+        if (error === null) {
+          yield* relayOperation("remember reported withdrawal", () => store.markReported(withdrawal.transactionHash));
+          reported.push(withdrawal);
+        } else yield* setAsideOrDefer(store, withdrawal, error!, deferred);
       }
     }
     const ready: PayableClaim[] = [];

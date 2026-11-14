@@ -1,5 +1,5 @@
 import { beforeEach, expect, it, vi } from "vitest";
-import { auditDepositLedger, auditDeposits, DepositConservationFault } from "./deposit-conservation";
+import { auditDepositLedger, auditDeposits, newDepositMemory, DepositConservationFault } from "./deposit-conservation";
 import { checkDepositRetirement } from "./deposit-retirement";
 import { depositCommitment, LORDS_UNIT, type LordsDeposit } from "@realms-world/value-ledger/deposits";
 const mocks = vi.hoisted(() => ({ read: vi.fn(), snapshot: vi.fn(), rpc: vi.fn() }));
@@ -56,7 +56,8 @@ let payments: LordsDeposit[],
   balances: Record<string, unknown>[],
   receipts: Record<string, unknown>[],
   withdrawals: Record<string, unknown>[],
-  end: number;
+  end: number,
+  acceptedLags = false;
 const reader = {
   head: { number: 50, hash: "0x50", time: 3000 },
   assertCanonical: async () => {},
@@ -65,9 +66,18 @@ const reader = {
   deposit: async (chain: string, id: string) =>
     payments.find((payment) => BigInt(payment.shard) === BigInt(chain) && payment.id === id)!,
   principal: async () => paid,
+  final: async () => ({
+    block: { number: 40, hash: "0x40" },
+    deposit: async (chain: string, id: string) => {
+      if (acceptedLags) throw new Error("deposit_unknown_at_block");
+      return payments.find((payment) => BigInt(payment.shard) === BigInt(chain) && payment.id === id)!;
+    },
+    principal: async () => (acceptedLags ? null : paid),
+  }),
 };
 beforeEach(() => {
   vi.clearAllMocks();
+  acceptedLags = false;
   payments = [{ ...source }];
   paid = { wallet: "0x88", amount: "60" };
   end = 2000;
@@ -123,6 +133,54 @@ beforeEach(() => {
       ).map((value) => ({ value })),
     })),
   }));
+});
+it("reads each delivered deposit and each paid principal once across audits, and a pending deposit until it settles", async () => {
+  payments = [
+    { ...source },
+    { ...source, id: "2", amount: "20" },
+    { ...source, id: "3", amount: "5", status: "pending" },
+  ];
+  const deposits = vi.spyOn(reader, "deposit");
+  const principals = vi.spyOn(reader, "principal");
+  const memory = newDepositMemory();
+  for (let tick = 0; tick < 4; tick++) await auditDepositLedger(ledger, memory);
+  const reads = (id: string) => deposits.mock.calls.filter(([, read]) => read === id).length;
+  expect([reads("1"), reads("2"), reads("3")]).toEqual([1, 1, 4]);
+  expect(principals).toHaveBeenCalledTimes(1);
+  payments[2] = { ...payments[2]!, status: "delivered" };
+  await auditDepositLedger(ledger, memory);
+  await auditDepositLedger(ledger, memory);
+  expect([reads("1"), reads("2"), reads("3")]).toEqual([1, 1, 5]);
+});
+const persisted = (kept: Map<string, unknown>) => ({
+  get: async <A>(key: string) => kept.get(key) as A | undefined,
+  put: async (key: string, value: unknown) => void kept.set(key, value),
+});
+it("forgets nothing when the monitor is recreated over the same storage", async () => {
+  payments = [{ ...source }, { ...source, id: "2", amount: "20" }];
+  const deposits = vi.spyOn(reader, "deposit");
+  const principals = vi.spyOn(reader, "principal");
+  const storage = new Map<string, unknown>();
+  for (let restart = 0; restart < 4; restart++) await auditDepositLedger(ledger, persisted(storage));
+  expect(deposits).toHaveBeenCalledTimes(2);
+  expect(principals).toHaveBeenCalledTimes(1);
+  expect([...storage.keys()].sort()).toEqual(["final:deposit:2:1", "final:deposit:2:2", "final:principal:2:7:48"]);
+  expect(storage.get("final:deposit:2:1")).toMatchObject({ block: 40, hash: "0x40" });
+});
+it("keeps a delivered deposit and a paid principal only once the accepted block holds them", async () => {
+  payments = [{ ...source }];
+  acceptedLags = true;
+  const deposits = vi.spyOn(reader, "deposit");
+  const principals = vi.spyOn(reader, "principal");
+  const storage = new Map<string, unknown>();
+  for (let audit = 0; audit < 3; audit++) await auditDepositLedger(ledger, persisted(storage));
+  expect(deposits).toHaveBeenCalledTimes(3);
+  expect(principals).toHaveBeenCalledTimes(3);
+  expect(storage.size).toBe(0);
+  acceptedLags = false;
+  await auditDepositLedger(ledger, persisted(storage));
+  await auditDepositLedger(ledger, persisted(storage));
+  expect([deposits.mock.calls.length, principals.mock.calls.length]).toEqual([4, 4]);
 });
 it("reconciles principal returns and undelivered refunds without including reward balances", async () => {
   expect(await auditDepositLedger(ledger)).toMatchObject({ principal: "40", returned: "60" });

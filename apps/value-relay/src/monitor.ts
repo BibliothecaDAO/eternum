@@ -46,6 +46,11 @@ export interface MonitorProgress {
    * ledger rewind that replays the same evidence, and a rewrite that changes it is checked again.
    */
   cleared?: string[];
+  /**
+   * Shard pools matched to the ledger's, each with the Ethereum-accepted block that held the funding: a season is
+   * funded once, so a pool matched there is not read again. A match seen only at the head is read again.
+   */
+  matchedPools?: Record<string, { block: number; hash: string }>;
   halted: string | null;
   cursors?: Partial<Record<"reportedClaims" | "paidClaims" | "postedResults", AuditCursor>>;
 }
@@ -90,20 +95,37 @@ const checkConservation = (ports: MonitorPorts, store: MonitorStore) =>
         return `lords_conservation:${balance.gameId}:${balance.confirmedBlock}`;
       }
       if (BigInt(balance.pool) === 0n) continue;
+      const matched = `${balance.chainId}:${balance.gameId}:${balance.pool}`;
+      if (progress.matchedPools?.[matched]) continue;
       const deposit = yield* Effect.result(ports.ledger.frontierPool(balance.chainId, balance.gameId));
       if (Result.isFailure(deposit)) {
         unavailable ??= deposit.failure;
         continue;
       }
       const poolRow = `conservation:pool:${balance.chainId}:${balance.gameId}:${balance.pool}:${deposit.success}`;
-      if (BigInt(balance.pool) !== BigInt(deposit.success) / 10n ** 18n && !isCleared(progress, poolRow)) {
+      if (BigInt(balance.pool) !== BigInt(deposit.success) / 10n ** 18n) {
+        if (isCleared(progress, poolRow)) continue;
         yield* recordFault(store, { row: poolRow, fact: poolRow });
         return `frontier_pool_mismatch:${balance.chainId}:${balance.gameId}`;
       }
+      const final = yield* Effect.result(ports.ledger.finalFrontierPool(balance.chainId, balance.gameId));
+      if (Result.isFailure(final)) {
+        unavailable ??= final.failure;
+        continue;
+      }
+      if (final.success && BigInt(final.success.pool) === BigInt(deposit.success))
+        yield* relayOperation("remember matched pool", () =>
+          rememberMatchedPool(store, matched, { block: final.success!.block, hash: final.success!.hash }),
+        );
     }
     if (unavailable) return yield* Effect.fail(unavailable);
     return null;
   });
+
+const rememberMatchedPool = async (store: MonitorStore, matched: string, evidence: { block: number; hash: string }) => {
+  const current = await store.load();
+  await store.save({ ...current, matchedPools: { ...current.matchedPools, [matched]: evidence } });
+};
 
 /** Missing evidence is retried; only sustained unavailability becomes a stop condition. */
 const verifyReport = (check: RelayEffect<Mismatch | null>, reason: string): RelayEffect<Mismatch | null> =>

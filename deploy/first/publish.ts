@@ -1,7 +1,6 @@
 import { PublicError, deploymentStage } from "./errors";
 import { join, relative } from "node:path";
 import { setTimeout } from "node:timers/promises";
-import { l2EnvironmentProblem } from "../../apps/game/src/runtime/l2-environment";
 import { command } from "./process";
 import { Platform, databaseWorkers, workers, type Secrets, type Worker } from "./platform";
 import { clientSite, type PagesSite } from "./settings";
@@ -133,10 +132,7 @@ export async function advanceFrontierRelease(platform: Platform, revision: strin
 }
 
 export function clientEnvironment(platform: Platform, revision: string) {
-  const problem = l2EnvironmentProblem(platform.target.worker, platform.inputs.rpc);
-  if (problem) throw new PublicError("Client chain and Alchemy RPC environment do not agree");
   return {
-    VITE_PUBLIC_L2_RPC_URL: platform.inputs.rpc,
     VITE_PUBLIC_ENVIRONMENT: platform.target.worker,
     VITE_PUBLIC_GAME_VERSION: revision,
     // The privacy policy (apps/game/src/shell/legal.tsx) describes no error reports: a DSN here needs a section there

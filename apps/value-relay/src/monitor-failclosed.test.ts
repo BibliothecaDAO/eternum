@@ -27,6 +27,7 @@ const fixture = () => {
     },
     ledger: {
       frontierPool: () => Effect.succeed(String(100n * 10n ** 18n)),
+      finalFrontierPool: () => Effect.succeed(null),
       reportedClaims: () =>
         Effect.succeed({
           rows: [],

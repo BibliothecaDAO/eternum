@@ -9,6 +9,7 @@ import mkcert from "vite-plugin-mkcert";
 import { VitePWA } from "vite-plugin-pwa";
 import wasm from "vite-plugin-wasm";
 import { resolveRendererViteAliases } from "./src/three/renderer-vite-config";
+import { refuseRetiredVariables } from "./build/retired-env";
 import { PWA_PRECACHE_BUDGET_BYTES, PWA_PRECACHE_FILES } from "./build/pwa-assets.mjs";
 import { createPwaReleasePlugin } from "./build/pwa-release";
 import { APP_ADDRESS, STAGING_ORIGIN } from "./src/config/app-address";
@@ -17,22 +18,7 @@ import { hashedModels } from "./build/hashed-models";
 import { assetLinks } from "./build/asset-links";
 import { labArtwork } from "./build/lab-artwork";
 import { isDevEnvironment } from "./src/shell/frame/environment";
-import { l2EnvironmentProblem } from "./src/runtime/l2-environment";
 import { SHELL_COLORS } from "./src/tokens";
-
-/**
- * The environment's one L2 RPC: the team's https Alchemy endpoint for the L2 the build's environment names in its
- * address book (contracts/common/addresses), never committed and never a public node. Checked once
- * Vite has resolved its env, so the dev server and the build (and so the deploy, before its upload) fail at once, by
- * name; tools that only read this file for its settings (knip) are not stopped by it.
- */
-const requireL2Environment = (): PluginOption => ({
-  name: "require-l2-environment",
-  configResolved(config) {
-    const problem = l2EnvironmentProblem(config.env.VITE_PUBLIC_ENVIRONMENT, config.env.VITE_PUBLIC_L2_RPC_URL);
-    if (problem) throw new Error(problem);
-  },
-});
 
 /**
  * The dev environment's install name and icons (the hatched corner) and its page title, so an installed dev app never
@@ -82,7 +68,7 @@ export default defineConfig(({ command, mode }: ConfigEnv): UserConfig => {
     undefined;
 
   const plugins = [
-    requireL2Environment(),
+    refuseRetiredVariables(),
     labArtwork(isDevEnvironment(appEnv.VITE_PUBLIC_ENVIRONMENT)),
     hashedModels(),
     assetLinks(),

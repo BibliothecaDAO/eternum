@@ -234,8 +234,8 @@ export const decodeBlitzSeason = (fields: readonly string[]) => {
 };
 /** One confirmed header format for immutable reads; no pending head can become a cache anchor. */
 export const readConfirmedLedgerHead = async (
-  provider: { getBlock(number: number | "latest"): Promise<unknown> },
-  number: number | "latest" = "latest",
+  provider: { getBlock(number: number | "latest" | "l1_accepted"): Promise<unknown> },
+  number: number | "latest" | "l1_accepted" = "latest",
 ) => {
   const block = await provider.getBlock(number);
   if (
@@ -249,7 +249,8 @@ export const readConfirmedLedgerHead = async (
     !["ACCEPTED_ON_L2", "ACCEPTED_ON_L1"].includes(block.status ?? "") ||
     !Number.isSafeInteger(block.block_number) ||
     block.block_number < 0 ||
-    (number !== "latest" && block.block_number !== number) ||
+    (typeof number === "number" && block.block_number !== number) ||
+    (number === "l1_accepted" && block.status !== "ACCEPTED_ON_L1") ||
     !("timestamp" in block) ||
     typeof block.timestamp !== "number" ||
     !Number.isSafeInteger(block.timestamp) ||
@@ -260,6 +261,10 @@ export const readConfirmedLedgerHead = async (
     throw new Error("ledger_head_unconfirmed");
   return { number: block.block_number, hash: block.block_hash, time: block.timestamp };
 };
+
+/** The newest block Ethereum has accepted. A fact read there cannot be rewritten, so only such a read may be kept as final. */
+export const readFinalLedgerHead = (provider: Parameters<typeof readConfirmedLedgerHead>[0]) =>
+  readConfirmedLedgerHead(provider, "l1_accepted");
 
 /** Published FrontierSeason backing and clock, shared by discovery and batched payments. */
 export const decodeFrontierSeason = (fields: readonly string[]) => {
