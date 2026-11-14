@@ -3000,6 +3000,59 @@
       "valueLength": 4
     },
     {
+      "name": "BaneRules",
+      "identity": "0x42616e6552756c6573",
+      "scope": "game",
+      "keys": [
+        {
+          "name": "game_id",
+          "type": "core::integer::u32",
+          "feltLength": 1
+        }
+      ],
+      "members": [
+        {
+          "name": "chance_step",
+          "type": "core::integer::u16",
+          "id": "0x6368616e63655f73746570",
+          "feltLength": 1
+        },
+        {
+          "name": "quorum_percent",
+          "type": "core::integer::u16",
+          "id": "0x71756f72756d5f70657263656e74",
+          "feltLength": 1
+        },
+        {
+          "name": "beast_percent",
+          "type": "core::integer::u16",
+          "id": "0x62656173745f70657263656e74",
+          "feltLength": 1
+        },
+        {
+          "name": "stamina_percent",
+          "type": "core::integer::u16",
+          "id": "0x7374616d696e615f70657263656e74",
+          "feltLength": 1
+        },
+        {
+          "name": "production_percent",
+          "type": "core::integer::u16",
+          "id": "0x70726f64756374696f6e5f70657263656e74",
+          "feltLength": 1
+        },
+        {
+          "name": "quest_counts",
+          "type": "core::array::Span::<core::integer::u128>",
+          "id": "0x71756573745f636f756e7473",
+          "feltLength": null
+        }
+      ],
+      "keyLength": 1,
+      "valueLength": null,
+      "derivedFrom": "preset"
+    },
+    {
       "name": "QuestRules",
       "identity": "0x517565737452756c6573",
       "scope": "game",
@@ -7417,6 +7470,20 @@
         }
       ]
     },
+    "core::option::Option::<world_native::banes::BaneRules>": {
+      "type": "enum",
+      "name": "core::option::Option::<world_native::banes::BaneRules>",
+      "variants": [
+        {
+          "name": "Some",
+          "type": "world_native::banes::BaneRules"
+        },
+        {
+          "name": "None",
+          "type": "()"
+        }
+      ]
+    },
     "core::option::Option::<world_native::buildings::BoardRules>": {
       "type": "enum",
       "name": "core::option::Option::<world_native::buildings::BoardRules>",
@@ -8080,6 +8147,36 @@
         {
           "name": "resource_count",
           "type": "core::integer::u8"
+        }
+      ]
+    },
+    "world_native::banes::BaneRules": {
+      "type": "struct",
+      "name": "world_native::banes::BaneRules",
+      "members": [
+        {
+          "name": "chance_step",
+          "type": "core::integer::u16"
+        },
+        {
+          "name": "quorum_percent",
+          "type": "core::integer::u16"
+        },
+        {
+          "name": "beast_percent",
+          "type": "core::integer::u16"
+        },
+        {
+          "name": "stamina_percent",
+          "type": "core::integer::u16"
+        },
+        {
+          "name": "production_percent",
+          "type": "core::integer::u16"
+        },
+        {
+          "name": "quest_counts",
+          "type": "core::array::Span::<core::integer::u128>"
         }
       ]
     },
@@ -10655,6 +10752,10 @@
       "type": "struct",
       "name": "world_native::presets::EconomyPreset",
       "members": [
+        {
+          "name": "banes",
+          "type": "core::option::Option::<world_native::banes::BaneRules>"
+        },
         {
           "name": "quests",
           "type": "core::option::Option::<world_native::quests::QuestRules>"
@@ -13408,5 +13509,5 @@
       ]
     }
   },
-  "identity": "772fda715200f5970ca638ddca43ec5ddd76c0db814450fca321cd6ed1624cc5"
+  "identity": "c264987e3603c501b13a6323104c9c3118d9566133e811d0ae7db652d5af177a"
 }

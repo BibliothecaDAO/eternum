@@ -236,7 +236,11 @@ fn invalid_quest_rules_and_duplicate_reward_paths_refuse_registration() {
 
 fn optional_bane_rules() -> crate::banes::BaneRules {
     crate::banes::BaneRules {
-        chance_step: 20, quorum_percent: 25, beast_percent: 150, stamina_percent: 50, production_percent: 50,
+        chance_step: 20,
+        quorum_percent: 25,
+        beast_percent: 150,
+        stamina_percent: 50,
+        production_percent: 50,
         quest_counts: array![3, 6, 9, 12, 20, 40, 60, 80, 2500, 6000, 10000, 15000].span(),
     }
 }
@@ -255,13 +259,16 @@ fn optional_banes_store_all_effects_and_whole_unit_targets() {
     registrar.register_preset(preset_id, definition);
     let commitment = registrar.preset_commitment(preset_id);
     assert!(commitment != 0);
-    interact_with_state(d.games, || {
-        let preset = crate::state::read().presets.entry(commitment);
-        assert_eq!(preset.bane_rules.read(), Some((20, 25, 150, 50, 50)));
-        for index in 0_u8..12 {
-            assert_eq!(preset.bane_quest_counts.read(index), *rules.quest_counts.at(index.into()));
-        }
-    });
+    interact_with_state(
+        d.games,
+        || {
+            let preset = crate::state::read().presets.entry(commitment);
+            assert_eq!(preset.bane_rules.read(), Some((20, 25, 150, 50, 50)));
+            for index in 0_u8..12 {
+                assert_eq!(preset.bane_quest_counts.read(index), *rules.quest_counts.at(index.into()));
+            }
+        },
+    );
 }
 
 #[test]
@@ -276,17 +283,29 @@ fn malformed_banes_and_banes_without_quests_refuse_registration() {
             definition.economy.quests = Some(optional_quest_rules());
             definition.economy.labor = None;
         }
-        if invalid == 1 { rules.chance_step = 0; }
-        else if invalid == 2 { rules.chance_step = 101; }
-        else if invalid == 3 { rules.quorum_percent = 0; }
-        else if invalid == 4 { rules.quorum_percent = 101; }
-        else if invalid == 5 { rules.beast_percent = 99; }
-        else if invalid == 6 { rules.stamina_percent = 0; }
-        else if invalid == 7 { rules.stamina_percent = 101; }
-        else if invalid == 8 { rules.production_percent = 0; }
-        else if invalid == 9 { rules.production_percent = 101; }
-        else if invalid == 10 { rules.quest_counts = array![3].span(); }
-        else if invalid == 11 { rules.quest_counts = array![3, 6, 9, 12, 20, 40, 60, 80, 2500, 6000, 10000, 0].span(); }
+        if invalid == 1 {
+            rules.chance_step = 0;
+        } else if invalid == 2 {
+            rules.chance_step = 101;
+        } else if invalid == 3 {
+            rules.quorum_percent = 0;
+        } else if invalid == 4 {
+            rules.quorum_percent = 101;
+        } else if invalid == 5 {
+            rules.beast_percent = 99;
+        } else if invalid == 6 {
+            rules.stamina_percent = 0;
+        } else if invalid == 7 {
+            rules.stamina_percent = 101;
+        } else if invalid == 8 {
+            rules.production_percent = 0;
+        } else if invalid == 9 {
+            rules.production_percent = 101;
+        } else if invalid == 10 {
+            rules.quest_counts = array![3].span();
+        } else if invalid == 11 {
+            rules.quest_counts = array![3, 6, 9, 12, 20, 40, 60, 80, 2500, 6000, 10000, 0].span();
+        }
         definition.economy.banes = Some(rules);
         assert!(IRegistrarSafeDispatcher { contract_address: d.games }.register_preset(preset_id, definition).is_err());
         assert_eq!(IRegistrarDispatcher { contract_address: d.games }.preset_commitment(preset_id), 0);

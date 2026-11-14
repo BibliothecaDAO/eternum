@@ -5,7 +5,6 @@ pub mod RegistryLogic {
     impl Aspects = crate::logic::aspects::AspectState::AspectsImpl<ContractState>;
     #[cfg(feature: "test_support")]
     use crate::game::GameRegistry;
-    use crate::logic::guilds::GuildState;
     use crate::logic::registrar::RegistrarState;
     use crate::logic::release::ReleaseState;
     #[cfg(feature: "test_support")]
@@ -17,16 +16,11 @@ pub mod RegistryLogic {
     impl RegistrarInternal = RegistrarState::InternalImpl<ContractState>;
     impl LifeInternal = ReleaseState::InternalImpl<ContractState>;
 
-    component!(path: GuildState, storage: guilds, event: GuildEvent);
-    #[abi(embed_v0)]
-    impl Guilds = GuildState::GuildsImpl<ContractState>;
     #[storage]
     #[allow(starknet::colliding_storage_paths)]
     struct Storage {
         #[substorage(v0)]
         aspects: crate::logic::aspects::AspectState::Storage,
-        #[substorage(v0)]
-        guilds: GuildState::Storage,
         #[substorage(v0)]
         release: ReleaseState::Storage,
         #[substorage(v0)]
@@ -36,7 +30,6 @@ pub mod RegistryLogic {
     #[derive(Drop, starknet::Event)]
     pub enum Event {
         AspectEvent: crate::logic::aspects::AspectState::Event,
-        GuildEvent: GuildState::Event,
         GameEvent: crate::logic::game::Event,
         ReleaseEvent: ReleaseState::Event,
         RegistrarEvent: RegistrarState::Event,

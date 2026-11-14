@@ -1181,7 +1181,11 @@ test("the daily quest codec replaces legacy labor and preserves whole reward uni
 });
 
 const baneFixture = () => ({
-  chanceStep: 20, quorumPercent: 25, beastPercent: 150, staminaPercent: 50, productionPercent: 50,
+  chanceStep: 20,
+  quorumPercent: 25,
+  beastPercent: 150,
+  staminaPercent: 50,
+  productionPercent: 50,
   questCounts: [3, 6, 9, 12, 20, 40, 60, 80, 2500, 6000, 10000, 15000],
 });
 
@@ -1189,7 +1193,9 @@ test("published presets keep banes disabled until their complete effect consumer
   for (const source of Object.values(nativePresets)) {
     expect(source.banes).toBeNull();
     const environment = source.gameType === "blitz" ? "madara.blitz" : "madara.frontier";
-    expect(buildNativePreset(loadNativePresetConfiguration(environment, source.id), source.id).economy.banes.isNone()).toBe(true);
+    expect(
+      buildNativePreset(loadNativePresetConfiguration(environment, source.id), source.id).economy.banes.isNone(),
+    ).toBe(true);
   }
 });
 
@@ -1198,27 +1204,43 @@ test("the bane codec preserves whole quest units and refuses invalid effects", (
   const previous = { banes: source.banes, dailyQuest: source.dailyQuest, labor: source.labor };
   try {
     source.banes = baneFixture();
-    expect(() => buildNativePreset(loadNativePresetConfiguration("madara.frontier", source.id), source.id)).toThrow("Banes require daily quests");
+    expect(() => buildNativePreset(loadNativePresetConfiguration("madara.frontier", source.id), source.id)).toThrow(
+      "Banes require daily quests",
+    );
     source.dailyQuest = questFixture();
     source.labor = null;
     const built = buildNativePreset(loadNativePresetConfiguration("madara.frontier", source.id), source.id);
     expect(built.economy.banes.unwrap()).toEqual({
-      chance_step: 20, quorum_percent: 25, beast_percent: 150, stamina_percent: 50, production_percent: 50,
+      chance_step: 20,
+      quorum_percent: 25,
+      beast_percent: 150,
+      stamina_percent: 50,
+      production_percent: 50,
       quest_counts: [3n, 6n, 9n, 12n, 20n, 40n, 60n, 80n, 2500n, 6000n, 10000n, 15000n],
     });
     codec.compile("register_preset", { preset_id: source.id, definition: built });
     for (const invalid of [
-      { ...baneFixture(), chanceStep: 0 }, { ...baneFixture(), chanceStep: 101 },
-      { ...baneFixture(), quorumPercent: 0 }, { ...baneFixture(), quorumPercent: 101 },
-      { ...baneFixture(), beastPercent: 99 }, { ...baneFixture(), beastPercent: 0x1_0000 },
-      { ...baneFixture(), staminaPercent: 0 }, { ...baneFixture(), staminaPercent: 101 },
-      { ...baneFixture(), productionPercent: 0 }, { ...baneFixture(), productionPercent: 101 },
-      { ...baneFixture(), chanceStep: 0.5 }, { ...baneFixture(), questCounts: [3] },
+      { ...baneFixture(), chanceStep: 0 },
+      { ...baneFixture(), chanceStep: 101 },
+      { ...baneFixture(), quorumPercent: 0 },
+      { ...baneFixture(), quorumPercent: 101 },
+      { ...baneFixture(), beastPercent: 99 },
+      { ...baneFixture(), beastPercent: 0x1_0000 },
+      { ...baneFixture(), staminaPercent: 0 },
+      { ...baneFixture(), staminaPercent: 101 },
+      { ...baneFixture(), productionPercent: 0 },
+      { ...baneFixture(), productionPercent: 101 },
+      { ...baneFixture(), chanceStep: 0.5 },
+      { ...baneFixture(), questCounts: [3] },
       { ...baneFixture(), questCounts: [3, 6, 9, 12, 20, 40, 60, 80, 2500, 6000, 10000, 0] },
       { ...baneFixture(), questCounts: [3, 6, 9, 12, 20, 40, 60, 80, 2500, 6000, 10000, 0.5] },
     ]) {
       source.banes = invalid;
-      expect(() => buildNativePreset(loadNativePresetConfiguration("madara.frontier", source.id), source.id)).toThrow("Invalid bane");
+      expect(() => buildNativePreset(loadNativePresetConfiguration("madara.frontier", source.id), source.id)).toThrow(
+        "Invalid bane",
+      );
     }
-  } finally { Object.assign(source, previous); }
+  } finally {
+    Object.assign(source, previous);
+  }
 });

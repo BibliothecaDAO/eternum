@@ -1740,7 +1740,7 @@ pub mod GamesFixture {
         ) -> starknet::ContractAddress {
             let classes = fixture_classes(game_id);
             crate::guilds::IGuildsDispatcherTrait::guild_member(
-                crate::guilds::IGuildsLibraryDispatcher { class_hash: classes.registry.read() }, game_id, actor,
+                crate::guilds::IGuildsLibraryDispatcher { class_hash: classes.bridge.read() }, game_id, actor,
             )
         }
         fn guild(
@@ -1748,13 +1748,13 @@ pub mod GamesFixture {
         ) -> Option<crate::guilds::Guild> {
             let classes = fixture_classes(game_id);
             crate::guilds::IGuildsDispatcherTrait::guild(
-                crate::guilds::IGuildsLibraryDispatcher { class_hash: classes.registry.read() }, game_id, guild_id,
+                crate::guilds::IGuildsLibraryDispatcher { class_hash: classes.bridge.read() }, game_id, guild_id,
             )
         }
         fn guild_whitelisted(self: @TContractState, key: crate::guilds::WhitelistKey) -> bool {
             let classes = fixture_classes(key.game_id);
             crate::guilds::IGuildsDispatcherTrait::guild_whitelisted(
-                crate::guilds::IGuildsLibraryDispatcher { class_hash: classes.registry.read() }, key,
+                crate::guilds::IGuildsLibraryDispatcher { class_hash: classes.bridge.read() }, key,
             )
         }
         fn create_guild(
@@ -1766,7 +1766,7 @@ pub mod GamesFixture {
         ) {
             let classes = fixture_classes(game_id);
             crate::guilds::IGuildsDispatcherTrait::create_guild(
-                crate::guilds::IGuildsLibraryDispatcher { class_hash: classes.registry.read() },
+                crate::guilds::IGuildsLibraryDispatcher { class_hash: classes.bridge.read() },
                 game_id,
                 actor,
                 command,
@@ -1782,7 +1782,7 @@ pub mod GamesFixture {
         ) {
             let classes = fixture_classes(game_id);
             crate::guilds::IGuildsDispatcherTrait::join_guild(
-                crate::guilds::IGuildsLibraryDispatcher { class_hash: classes.registry.read() },
+                crate::guilds::IGuildsLibraryDispatcher { class_hash: classes.bridge.read() },
                 game_id,
                 actor,
                 command,
@@ -1797,7 +1797,7 @@ pub mod GamesFixture {
         ) {
             let classes = fixture_classes(game_id);
             crate::guilds::IGuildsDispatcherTrait::leave_guild(
-                crate::guilds::IGuildsLibraryDispatcher { class_hash: classes.registry.read() },
+                crate::guilds::IGuildsLibraryDispatcher { class_hash: classes.bridge.read() },
                 game_id,
                 actor,
                 context,
@@ -1812,7 +1812,7 @@ pub mod GamesFixture {
         ) {
             let classes = fixture_classes(game_id);
             crate::guilds::IGuildsDispatcherTrait::set_guild_whitelist(
-                crate::guilds::IGuildsLibraryDispatcher { class_hash: classes.registry.read() },
+                crate::guilds::IGuildsLibraryDispatcher { class_hash: classes.bridge.read() },
                 game_id,
                 actor,
                 command,
@@ -1828,7 +1828,7 @@ pub mod GamesFixture {
         ) {
             let classes = fixture_classes(game_id);
             crate::guilds::IGuildsDispatcherTrait::remove_guild_member(
-                crate::guilds::IGuildsLibraryDispatcher { class_hash: classes.registry.read() },
+                crate::guilds::IGuildsLibraryDispatcher { class_hash: classes.bridge.read() },
                 game_id,
                 actor,
                 member,

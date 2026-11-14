@@ -195,27 +195,27 @@ export const commandRoutes = [
   },
   {
     name: "CreateGuild",
-    logic: "registry",
+    logic: "bridge",
     entrypoint: "create_guild",
   },
   {
     name: "JoinGuild",
-    logic: "registry",
+    logic: "bridge",
     entrypoint: "join_guild",
   },
   {
     name: "LeaveGuild",
-    logic: "registry",
+    logic: "bridge",
     entrypoint: "leave_guild",
   },
   {
     name: "SetGuildWhitelist",
-    logic: "registry",
+    logic: "bridge",
     entrypoint: "set_guild_whitelist",
   },
   {
     name: "RemoveGuildMember",
-    logic: "registry",
+    logic: "bridge",
     entrypoint: "remove_guild_member",
   },
   {

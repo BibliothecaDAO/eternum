@@ -142,8 +142,22 @@ fn write_economy(
 }
 
 fn write_banes(preset: PresetWrite, rules: Option<crate::banes::BaneRules>) {
-    let Some(rules) = rules else { return; };
-    preset.bane_rules.write(Some((rules.chance_step, rules.quorum_percent, rules.beast_percent, rules.stamina_percent, rules.production_percent)));
+    let Some(rules) = rules else {
+        return;
+    };
+    preset
+        .bane_rules
+        .write(
+            Some(
+                (
+                    rules.chance_step,
+                    rules.quorum_percent,
+                    rules.beast_percent,
+                    rules.stamina_percent,
+                    rules.production_percent,
+                ),
+            ),
+        );
     for index in 0..rules.quest_counts.len() {
         preset.bane_quest_counts.write(index.try_into().unwrap(), *rules.quest_counts.at(index));
     }

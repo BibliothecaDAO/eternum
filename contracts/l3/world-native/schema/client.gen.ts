@@ -1,5 +1,5 @@
 // Generated from native fact models and contract ABIs. Run the native schema generator to update.
-export const nativeFactSchemaIdentity = "772fda715200f5970ca638ddca43ec5ddd76c0db814450fca321cd6ed1624cc5";
+export const nativeFactSchemaIdentity = "c264987e3603c501b13a6323104c9c3118d9566133e811d0ae7db652d5af177a";
 export const nativeReleaseConstants = {
   "RUIN_DEPTH_LIMIT_RELEASE": 9
 } as const;
@@ -222,6 +222,7 @@ export interface NativeRows {
   SpendLords: { readonly game_id: number; readonly account: bigint; readonly available: bigint; readonly consumed: bigint; readonly swept: bigint };
   PrincipalWithdrawal: { readonly game_id: number; readonly account: bigint; readonly amount: bigint };
   DepositReceipt: { readonly game_id: number; readonly id: bigint; readonly commitment: bigint; readonly account: bigint; readonly amount: bigint; readonly cancelled: boolean };
+  BaneRules: { readonly game_id: number; readonly chance_step: number; readonly quorum_percent: number; readonly beast_percent: number; readonly stamina_percent: number; readonly production_percent: number; readonly quest_counts: readonly (bigint)[] };
   QuestRules: { readonly game_id: number; readonly base_counts: readonly (number)[]; readonly labor: bigint; readonly essence: bigint; readonly bonus_percent: number };
   QuestProgress: { readonly game_id: number; readonly home: bigint; readonly day: bigint; readonly progress: bigint; readonly completed_level: number };
   LaborRules: { readonly game_id: number; readonly amount: bigint; readonly campaign_essence: bigint; readonly golden_amount: bigint; readonly golden_essence: bigint };
@@ -325,6 +326,7 @@ export interface NativeKeys {
   SpendLords: { readonly game_id: number; readonly account: bigint };
   PrincipalWithdrawal: { readonly game_id: number; readonly account: bigint };
   DepositReceipt: { readonly game_id: number; readonly id: bigint };
+  BaneRules: { readonly game_id: number };
   QuestRules: { readonly game_id: number };
   QuestProgress: { readonly game_id: number; readonly home: bigint; readonly day: bigint };
   LaborRules: { readonly game_id: number };
@@ -669,6 +671,23 @@ export const nativeFactModels = {
       "account": "felt",
       "amount": "u128",
       "cancelled": "boolean"
+    }
+  },
+  "BaneRules": {
+    "keys": [
+      "game_id"
+    ],
+    "scope": "game",
+    "fields": {
+      "game_id": "u32",
+      "chance_step": "u16",
+      "quorum_percent": "u16",
+      "beast_percent": "u16",
+      "stamina_percent": "u16",
+      "production_percent": "u16",
+      "quest_counts": [
+        "u128"
+      ]
     }
   },
   "QuestRules": {
@@ -2485,6 +2504,7 @@ export const nativeSyncScopes = {
   },
   "AspectRules": "shared",
   "QuestRules": "shared",
+  "BaneRules": "shared",
   "QuestProgress": {
     "entities": [
       "home"

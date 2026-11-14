@@ -1,6 +1,7 @@
 #[starknet::contract]
 pub mod BridgeLogic {
     use crate::logic::entry::EntryAdministration;
+    use crate::logic::guilds::GuildState;
     use crate::logic::quests::QuestState;
     use crate::logic::release::ReleaseState;
     component!(path: ReleaseState, storage: release, event: ReleaseEvent);
@@ -21,9 +22,14 @@ pub mod BridgeLogic {
     impl QuestProgress = QuestState::ProgressImpl<ContractState>;
     #[abi(embed_v0)]
     impl DailyQuest = QuestState::DailyQuestImpl<ContractState>;
+    component!(path: GuildState, storage: guilds, event: GuildEvent);
+    #[abi(embed_v0)]
+    impl Guilds = GuildState::GuildsImpl<ContractState>;
     #[storage]
     #[allow(starknet::colliding_storage_paths)]
     struct Storage {
+        #[substorage(v0)]
+        guilds: GuildState::Storage,
         #[substorage(v0)]
         administration: EntryAdministration::Storage,
         #[substorage(v0)]
@@ -34,6 +40,7 @@ pub mod BridgeLogic {
     #[event]
     #[derive(Drop, starknet::Event)]
     enum Event {
+        GuildEvent: GuildState::Event,
         AdministrationEvent: EntryAdministration::Event,
         QuestEvent: QuestState::Event,
         ReleaseEvent: ReleaseState::Event,
