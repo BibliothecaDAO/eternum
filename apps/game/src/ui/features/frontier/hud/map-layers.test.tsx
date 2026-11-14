@@ -628,7 +628,8 @@ describe("the shared Deep in the map layer menu", () => {
     expect(listRows().at(-1)?.[2]).toBeNull();
     expect(switchMarks()).toHaveLength(3);
     choose("Deep");
-    expect(requestLayerView).toHaveBeenCalledExactlyOnceWith(deepCenter(rules.spacing));
+    expect(requestLayerView).toHaveBeenCalledTimes(1);
+    expect(requestLayerView).toHaveBeenCalledWith(deepCenter(rules.spacing));
     act(() => useUIStore.setState({ cameraTargetHex: deepCenter(rules.spacing) }));
     expect([...host.querySelectorAll('[role="tab"]')][1]!.textContent).toBe("Deep");
     open();

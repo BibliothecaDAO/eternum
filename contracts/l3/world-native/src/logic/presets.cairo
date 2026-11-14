@@ -4,7 +4,7 @@ use starknet::storage::StoragePointerReadAccess;
 pub fn initialize_gameplay(classes: LogicClasses, game_id: u32, mode_rules: u32) {
     if crate::logic::preset_record::for_game(game_id).deep_rules.read().is_some() {
         crate::deep::IDeepSitesDispatcherTrait::initialize_deep(
-            crate::deep::IDeepSitesLibraryDispatcher { class_hash: classes.combat }, game_id,
+            crate::deep::IDeepSitesLibraryDispatcher { class_hash: classes.map }, game_id,
         );
     }
     if mode_rules & crate::rules::RESERVED_HYPERSTRUCTURES != 0 {

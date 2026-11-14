@@ -37,7 +37,9 @@ struct GuardDefender {
 
 pub fn battle_guard(game_id: u32, actor: ContractAddress, command: Battle, context: ExecutionContext) {
     let rules = authorize(game_id, context);
-    crate::logic::deep_sites::rollover(game_id, context);
+    crate::deep::IDeepSitesDispatcherTrait::settle_deep(
+        crate::logic::deep_sites::dispatcher(game_id), game_id, crate::commands::action_context(context),
+    );
     let key = ExplorerKey { game_id, explorer_id: command.attacker_id };
     let mut attacker = authorized_explorer(key, actor, context);
     let target = guard_target(ResourceKey { game_id, entity_id: command.defender_id }, actor, attacker, context);
@@ -57,7 +59,7 @@ pub fn battle_guard(game_id: u32, actor: ContractAddress, command: Battle, conte
         spend_claim(key, ref attacker, target.coord, context);
         (0, 0)
     };
-    complete_guard_capture(key, attacker, target, defender, command.relic_slot, context);
+    complete_guard_capture(key, actor, attacker, target, defender, command.relic_slot, context);
     if fought {
         emit_guard_battle(key, actor, attacker, attacker_before, target, defender, defender_before, rolls, context);
     }
@@ -169,6 +171,7 @@ fn spend_claim(key: ExplorerKey, ref attacker: ExplorerTroops, destination: Coor
 
 fn complete_guard_capture(
     key: ExplorerKey,
+    actor: ContractAddress,
     attacker: ExplorerTroops,
     target: GuardTarget,
     defender: GuardDefender,
@@ -184,7 +187,11 @@ fn complete_guard_capture(
         || crate::logic::deep_guards::next(target.key).is_some() {
         return;
     }
-    crate::logic::deep_guards::join(key, attacker, target.key);
+    crate::deep::IDeepSitesDispatcherTrait::join_deep_site(
+        crate::logic::deep_sites::dispatcher(key.game_id), key.game_id, actor,
+        crate::relics::InteractSite { explorer_id: key.explorer_id, coord: target.coord },
+        crate::commands::action_context(context),
+    );
     if let GuardSource::Guard(_) = defender.source {
         crate::logic::deep_sites::grant_beast_xp(key, target.coord, context.timestamp);
     }

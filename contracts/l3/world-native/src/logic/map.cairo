@@ -241,6 +241,10 @@ pub mod MapState {
 
 #[starknet::contract]
 pub mod MapLogic {
+    use crate::logic::deep_sites::DeepSites;
+    component!(path: DeepSites, storage: deep_sites, event: DeepSiteEvent);
+    #[abi(embed_v0)]
+    impl Sites = DeepSites::DeepSitesImpl<ContractState>;
     use crate::geometry::{distance, spire_neighbor, tile_key};
     use crate::logic::map::MapState;
     use crate::logic::release::ReleaseState;
@@ -256,11 +260,14 @@ pub mod MapLogic {
         pub data: crate::state::Storage,
         #[substorage(v0)]
         release: ReleaseState::Storage,
+        #[substorage(v0)]
+        deep_sites: DeepSites::Storage,
     }
     #[event]
     #[derive(Drop, starknet::Event)]
     enum Event {
         ReleaseEvent: ReleaseState::Event,
+        DeepSiteEvent: DeepSites::Event,
         MapEvent: MapState::Event,
         RowSet: crate::events::RowSet,
         StoryEvent: crate::ownership::StoryEvent,

@@ -177,7 +177,8 @@ describe("a realm's spire, from the player's path", () => {
       tapSpireWithArmy(spire);
       expect(hud.depths().at(-1)).toEqual({ depth: "Deep", line: undefined, button: "Enter", enabled: true });
       await hud.press("Enter Deep");
-      expect(hud.enter).toHaveBeenCalledExactlyOnceWith(expect.objectContaining({ explorerId: ARMY, depth: 3 }));
+      expect(hud.enter).toHaveBeenCalledTimes(1);
+      expect(hud.enter).toHaveBeenCalledWith(expect.objectContaining({ explorerId: ARMY, depth: 3 }));
     } finally {
       hud.unmount();
     }

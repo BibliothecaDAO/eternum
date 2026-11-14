@@ -20,7 +20,7 @@ pub fn dispatcher(game_id: u32) -> crate::deep::IDeepSitesLibraryDispatcher {
     let state = crate::state::read();
     let release = state.game_releases.read(game_id);
     assert!(release != 0, "game has no release");
-    crate::deep::IDeepSitesLibraryDispatcher { class_hash: state.releases.entry(release).classes.combat.read() }
+    crate::deep::IDeepSitesLibraryDispatcher { class_hash: state.releases.entry(release).classes.map.read() }
 }
 
 pub fn grant_beast_xp(key: ExplorerKey, coord: crate::troops::Coord, timestamp: u64) {
@@ -73,7 +73,7 @@ fn initialize(game_id: u32) {
     }
 }
 
-pub fn rollover(game_id: u32, context: ExecutionContext) {
+fn rollover(game_id: u32, context: ExecutionContext) {
     let Some(rules) = rules_entry(game_id) else {
         return;
     };

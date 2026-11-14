@@ -64,7 +64,8 @@ describe("the Deep site's live native binding", () => {
       expect(hud.button("Join")?.disabled).toBe(false);
       await act(async () => hud.button("Join")!.click());
       const site = readDeepSites(hud.store, hud.scenario.startsAt, 1).find((site) => site.name === "Quarry")!;
-      expect(hud.join).toHaveBeenCalledExactlyOnceWith(
+      expect(hud.join).toHaveBeenCalledTimes(1);
+      expect(hud.join).toHaveBeenCalledWith(
         expect.objectContaining({ explorer_id: 201, coord: site.position }),
       );
       expect(hud.attack).not.toHaveBeenCalled();
@@ -100,7 +101,8 @@ describe("the Deep site's live native binding", () => {
       expect(hud.button("Attack")?.disabled).toBe(false);
       await act(async () => hud.button("Attack")!.click());
       const quarry = readDeepSites(hud.store, hud.scenario.startsAt, 1).find((site) => site.name === "Quarry")!;
-      expect(hud.attack).toHaveBeenCalledExactlyOnceWith(
+      expect(hud.attack).toHaveBeenCalledTimes(1);
+      expect(hud.attack).toHaveBeenCalledWith(
         expect.objectContaining({ explorer_id: 201, structure_id: Number(quarry.id) }),
       );
       expect(hud.join).not.toHaveBeenCalled();
