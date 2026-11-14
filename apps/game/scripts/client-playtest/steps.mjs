@@ -3447,6 +3447,48 @@ const DEEP_JOIN_STATE = `JSON.stringify({
   })(),
 })`;
 
+const RACE_BOARD_STATE = `JSON.stringify((() => {
+  const read = (selector) => {
+    const node = document.querySelector(selector);
+    const rect = node?.getBoundingClientRect();
+    return { text: node?.textContent ?? "", visible: Boolean(rect && rect.width > 0 && rect.height > 0 && rect.top >= 0 && rect.bottom <= innerHeight) };
+  };
+  return { race: read('[data-aspect-race]'), members: read('[data-aspect-members]'), triumphs: read('[data-aspect-triumphs]'),
+    scopes: window.__labChain?.scopes ?? [], ended: Boolean(document.querySelector('[data-race-ended]')) };
+})())`;
+
+function raceBoardSteps(finished) {
+  return [
+    { name: "enter-on-map", settleMs: 3_000, verify: inScene("map") },
+    {
+      name: "read-aspect-race",
+      play: async ({ browser, extraScreenshot }) => {
+        if (!finished) {
+          if (!onADesktop()) { browser.click(HUD_WORDS.menu); await sleep(500); }
+          browser.click(HUD_WORDS.season);
+        }
+        const race = await readUntil(() => browser.read(RACE_BOARD_STATE), (state) => state.race.visible, PLAYABLE_WAIT_MS);
+        extraScreenshot("aspect-standings");
+        browser.read(`(() => { document.querySelector('[data-aspect-members]')?.scrollIntoView({ block: 'nearest' }); return true; })()`);
+        const members = await readUntil(() => browser.read(RACE_BOARD_STATE), (state) => state.members.visible, PLAYABLE_WAIT_MS);
+        extraScreenshot("aspect-members");
+        return { race, members };
+      },
+      verify: ({ played }) => {
+        const race = played.race?.race;
+        const members = played.members?.members;
+        const scoped = played.race?.scopes?.at(-1)?.structures ?? [];
+        return race?.visible && members?.visible && race.text.includes("Harmony") && race.text.includes("Might") &&
+          race.text.includes("Chaos") && race.text.includes("Guile") && race.text.includes(finished ? "10,000 of 10,000" : "6,400 of 10,000") &&
+          members.text.includes("1.3K") && members.text.includes("3.8K") &&
+          scoped.includes(7) && scoped.includes(9) && scoped.includes(901) && scoped.includes(904) &&
+          (!finished || played.race.ended)
+          ? completed(played) : failed("The scoped native race must show four heights, both members' Glory and the early winner", played);
+      },
+    },
+  ];
+}
+
 const DEEP_JOIN_STEPS = [
   { name: "enter-on-map", settleMs: 3_000, verify: inScene("map", "Deep") },
   { name: "pick-army", play: pickTheSpireArmy, settleMs: 1_500, verify: spireArmyPicked },
@@ -5096,6 +5138,8 @@ export const STEP_SETS = {
   "lab-actions-claim": { game: labSpireGame("claim"), steps: CLAIM_ACTION_STEPS },
   "lab-far-place": { game: labSpireGame("far-place"), steps: FAR_PLACE_STEPS, devOverlays: true },
   "lab-relic-forecasts": { game: labSpireGame("relics"), steps: RELIC_FORECAST_STEPS },
+  "lab-race": { game: labSpireGame("race"), steps: raceBoardSteps(false) },
+  "lab-race-finished": { game: labSpireGame("race-finished"), steps: raceBoardSteps(true) },
   "lab-deep-join": { game: labSpireGame("deep"), steps: DEEP_JOIN_STEPS },
   "lab-no-lords": {
     game: labSpireGame("upkeep"),

@@ -400,6 +400,12 @@ selects the player's army, submits Join, and records the signed InteractSite com
 before/after screenshots. The lab snapshot is `/lab/game?scenario=deep`; its current facts also drive the site binding's
 component tests.
 
+The race board opens from Season, or by selecting a fixed Aspect hyperstructure in the Deep. It reads heights, Glory,
+Triumph days and the winner from native facts; after a finish the same board opens over the map. `--steps lab-race`
+and `--steps lab-race-finished` exercise the production board on scoped snapshots, recording standings and member
+screenshots on desktop and phone. Their lab snapshots are `/lab/game?scenario=race` and `race-finished`. Contract
+payment, bane and finish behavior is checked by the native lifecycle suite; the lab fixtures prove its presentation.
+
 ## Browser Testing with `agent-browser` Skill
 
 Use this runbook when validating spectator/game flow in a real browser session.

@@ -18,6 +18,7 @@ import { TransferTroopsSheet, useSelectedTransfer } from "./army/transfer-troops
 import { ReinforceSheet, useSelectedReinforcement } from "./army/reinforce";
 import { BuildingCard } from "./building/building-card";
 import { useTappedBuilding } from "./research/selected-building";
+import { FrontierAspectPage, useSelectedRaceMonument } from "./aspect/aspect-page";
 
 /**
  * What the player tapped, as its Frontier card, with its key: which card it is and for which tile, so the HUD's one
@@ -53,6 +54,7 @@ export const useSelectionCard = ({
   const cleared = useSelectedClearedSite();
   const mapSite = useSelectedMapSite();
   const deepSite = useSelectedDeepSite();
+  const monument = useSelectedRaceMonument();
   const tileObject = useSelectedTileObject();
   const keep = useKeepSelected(realm);
   const building = useTappedBuilding(realm);
@@ -76,6 +78,7 @@ export const useSelectionCard = ({
   if (realm && openPlot)
     return card("plot", <BuildSheet realm={realm} plot={openPlot} onResearch={onResearch} onClose={close} />);
   if (deepSite) return card("deep-site", <DeepSiteCard site={deepSite} onClose={close} />);
+  if (monument !== null) return card("race-monument", <FrontierAspectPage onClose={close} />);
   if (target)
     return card(
       "target",

@@ -1,5 +1,5 @@
 use starknet::ContractAddress;
-use starknet::storage::{StorageMapReadAccess, StoragePathEntry, StoragePointerReadAccess};
+use starknet::storage::{StorageMapReadAccess, StoragePathEntry, StoragePointerReadAccess, SubPointersForward};
 use crate::combat::{CombatContext, TroopsTrait};
 use crate::combat_actions::battle_side;
 use crate::commands::{Battle, ExecutionContext};
@@ -77,6 +77,12 @@ fn guard_target(
         return GuardTarget { key, coord, structure: None };
     }
     let structure = crate::logic::structures::structure(key).expect('missing guarded structure');
+    if structure.base.category == crate::taxonomy::HYPERSTRUCTURE_CATEGORY {
+        assert!(
+            crate::logic::preset_record::for_game(key.game_id).race_rules.sub_pointers().is_none(),
+            "race monuments cannot be attacked",
+        );
+    }
     if crate::rules::rule_enabled(rules, crate::rules::UNOWNED_TARGETS) {
         assert!(structure.owner == 0.try_into().unwrap(), "target must be unowned");
     }

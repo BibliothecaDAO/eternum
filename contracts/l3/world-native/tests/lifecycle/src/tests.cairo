@@ -15,6 +15,7 @@ mod hyperstructures;
 
 mod quest_producers;
 mod quests;
+mod race;
 mod realms;
 mod releases;
 mod season_lifecycle;

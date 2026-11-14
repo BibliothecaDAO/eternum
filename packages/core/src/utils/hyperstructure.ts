@@ -5,6 +5,8 @@ import type { NativeRows } from "../../../../contracts/l3/world-native/schema/cl
 import { configManager } from "../managers";
 import { structureMapPosition } from "./expeditions";
 import { getTileAt } from "./tile";
+import { readRaceMonument } from "../client/views/race";
+import { nativeRaceConstants } from "../../../../contracts/l3/world-native/schema/client.gen";
 
 type VictoryPointGrants = ReturnType<typeof configManager.getVictoryPointGrants>;
 
@@ -26,6 +28,7 @@ export const getHyperstructureRates = (store: NativeFactStore): Map<ID, Hyperstr
   const rates = new Map<ID, HyperstructureRate>();
   for (const hyperstructure of store.inGame("Structure", game_id)) {
     if (hyperstructure.base.category !== StructureType.Hyperstructure) continue;
+    if (readRaceMonument(store, game_id, hyperstructure.entity_id)) continue;
     const position = structureMapPosition(store, hyperstructure);
     if (!position) continue;
     const entity_id = safeInteger(hyperstructure.entity_id);
@@ -104,6 +107,13 @@ export const hyperstructureRateWords = ({ pointsPerSecond, taken }: Hyperstructu
 
 export const getHyperstructureProgress = (hyperstructureId: number, store: NativeFactStore) => {
   const game = configManager.getActiveGameId();
+  const monument = readRaceMonument(store, game, hyperstructureId);
+  if (monument) {
+    const rules = store.require("RaceRules", { game_id: game });
+    const finish = rules.stage_height * nativeRaceConstants.STAGE_COUNT;
+    return { percentage: monument.height / finish * 100, initialized: true, completed: monument.height === finish };
+  }
+  if (store.get("RaceRules", { game_id: game })) throw new Error("Race monument height is not synchronized");
   const hyperstructure = store.get("Hyperstructure", { game_id: game, entity_id: hyperstructureId });
   const completed = hyperstructure?.stage === "Complete";
   if (completed) return { percentage: 100, initialized: true, completed: true };

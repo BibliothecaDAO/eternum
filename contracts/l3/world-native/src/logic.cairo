@@ -23,6 +23,7 @@ pub mod deep_sites;
 pub mod deposits;
 pub mod discovery;
 pub mod economy;
+pub mod race;
 pub mod entry;
 pub mod expeditions;
 pub mod game;

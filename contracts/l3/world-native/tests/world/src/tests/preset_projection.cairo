@@ -312,22 +312,6 @@ fn malformed_banes_and_banes_without_quests_refuse_registration() {
     }
 }
 
-fn optional_race_rules() -> crate::race::RaceRules {
-    crate::race::RaceRules {
-        season_days: 50,
-        glory_per_tick: 5,
-        height_per_tick: 5,
-        stage_height: 2000,
-        clear_mist_percent: 200,
-        second_wind_percent: 200,
-        pale_moon_percent: 50,
-        spoils_percent: 200,
-        first: crate::troops::Coord { alt: false, x: 5, y: 5 },
-        second: crate::troops::Coord { alt: false, x: 45, y: 5 },
-        third: crate::troops::Coord { alt: false, x: 5, y: 45 },
-        fourth: crate::troops::Coord { alt: false, x: 45, y: 45 },
-    }
-}
 
 #[test]
 fn an_optional_race_preset_stores_exact_payments_stages_triumphs_and_positions() {

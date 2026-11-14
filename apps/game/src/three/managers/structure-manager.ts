@@ -9,7 +9,7 @@ import { FrontierModel, frontierModelKind } from "../structures/frontier-model";
 import { nextFrameOrTimeout } from "@/utils/frame-or-timeout";
 import { realmModelIndex, isWonderModelPath } from "../structures/realm-design";
 import { MineKinds, structureName, troopTierIndex } from "@bibliothecadao/types";
-import { configManager, siteDisplayName, siteKindOf, type SiteKind } from "@bibliothecadao/eternum";
+import { configManager, getHyperstructureProgress, siteDisplayName, siteKindOf, type SiteKind } from "@bibliothecadao/eternum";
 import {
   FALLEN_REALM_RUIN_MODEL_INDEX,
   frontierBeastModelIndex,
@@ -473,6 +473,7 @@ export class StructureManager {
             change.model === "StructureBuildings" ||
             change.model === "Hyperstructure" ||
             change.model === "HyperstructureProgress" ||
+            change.model === "AspectHyperstructure" ||
             change.model === "HyperstructureShares"
           ) {
             const row = change.current ?? change.previous;
@@ -657,8 +658,7 @@ export class StructureManager {
 
   private resolveHyperstructureInitialized(entityId: ID, structureType: StructureType): boolean {
     if (structureType !== StructureType.Hyperstructure || !this.store) return false;
-    const row = this.store.get("Hyperstructure", { game_id: configManager.getActiveGameId(), entity_id: entityId });
-    return row !== undefined && row.stage !== "Foundation";
+    return getHyperstructureProgress(entityId, this.store).initialized;
   }
 
   private resolveActiveProductions(entityId: ID): Array<{ buildingCount: number; buildingType: BuildingType }> {

@@ -19,6 +19,7 @@ import { type SeasonDetail, SeasonDetailSheet } from "./season-detail";
 import { SeasonList, type SeasonListRow, type SeasonPodiumPlace } from "./season-list";
 import { type SeasonLords, seasonLordsOf, seasonPodium } from "./season-pool";
 import { findOwnEntry, ownRank, wholeLords, earnedResource } from "./standings";
+import { FrontierAspectPage, useAspectBoard } from "../aspect/aspect-page";
 
 type Entry = HeraldFrontierLeaderboardEntry;
 
@@ -28,13 +29,14 @@ const REFRESH_MS = 30_000;
  * Frontier's season board from Herald's read model: sites cleared, then deepest depth, then who reached the count
  * first. Herald ranks; the client only reads, and an unknown board shows as "—".
  */
-export const useSeasonBoard = () => useFrontierBoard((board) => board.entries);
+export const useSeasonBoard = (enabled = true) => useFrontierBoard((board) => board.entries, enabled);
 
 /** Herald's Frontier board for the active game, its entries and prizes, read through `select`. */
-export const useFrontierBoard = <T,>(select: (board: HeraldFrontierLeaderboard) => T) => {
+export const useFrontierBoard = <T,>(select: (board: HeraldFrontierLeaderboard) => T, enabled = true) => {
   const shard = requireShard(getActiveGame()?.chainId);
   const gameId = configManager.getActiveGameId();
   return useQuery({
+    enabled,
     queryKey: ["frontierSeasonBoard", shard.url, gameId],
     queryFn: async () => {
       const board = await fetchHeraldLeaderboard(shard, gameId);
@@ -72,7 +74,16 @@ export const useSeasonViewer = () => useAccountStore((state) => state.account?.a
 
 /** The player's season rank as the Menu's Season row shows it: "—" while unknown, none for a viewer without a realm. */
 export const useSeasonRank = (): string => {
-  const rank = ownRank(useSeasonBoard().data, useSeasonViewer());
+  const race = useAspectBoard();
+  const legacy = useSeasonBoard(race.known?.race === null);
+  const viewer = useSeasonViewer();
+  if (!race.known) return "—";
+  if (race.known.race) {
+    const board = race.known.race;
+    const rank = board.standings.find((row) => row.aspect === board.own?.aspect)?.rank;
+    return rank === undefined ? "" : `#${rank}`;
+  }
+  const rank = ownRank(legacy.data, viewer);
   return rank === undefined ? "—" : rank === null ? "" : `#${rank}`;
 };
 
@@ -81,6 +92,19 @@ export const useSeasonRank = (): string => {
  * player's own lit, a row's detail with Visit. Visiting closes the page for the visited realm.
  */
 export const FrontierSeason = ({
+  rules, onVisited, onClose,
+}: {
+  rules: ExpeditionRules;
+  onVisited: () => void;
+  onClose: () => void;
+}) => {
+  const race = useAspectBoard();
+  return race.known?.race === null
+    ? <LegacyFrontierSeason rules={rules} onVisited={onVisited} onClose={onClose} />
+    : <FrontierAspectPage onClose={onClose} />;
+};
+
+const LegacyFrontierSeason = ({
   rules,
   onVisited,
   onClose,

@@ -1,4 +1,5 @@
 import { armyCombatRefusal } from "../utils/army-opponents";
+import { readRaceMonument } from "../client/views/race";
 import { currentArmy } from "../utils/deep";
 import { safeInteger } from "../utils/safe-integer";
 import { entityMapPosition } from "../utils/tile";
@@ -190,14 +191,11 @@ export class ArmyActionManager {
     return tile !== undefined && tile.occupier_type !== TileOccupier.None;
   }
 
-  /**
-   * Another player's structure where the game lets an army attack only what nobody owns: the contract refuses the
-   * attack, so the hex is no target and no order leads onto it.
-   */
+  /** Race monuments and owned structures excluded by the game's targeting rule offer no attack order. */
   private isStructureOffLimits(structure: HexEntityInfo | undefined): boolean {
-    return (
-      structure !== undefined && BigInt(structure.owner ?? 0n) !== 0n && configManager.attacksOnlyUnownedStructures()
-    );
+    if (!structure) return false;
+    return readRaceMonument(this.store, configManager.getActiveGameId(), structure.id) !== undefined ||
+      (BigInt(structure.owner) !== 0n && configManager.attacksOnlyUnownedStructures());
   }
 
   /** Whether the game takes an army's attack on this target: another army (Battle), or a structure's guard (BattleGuard). */

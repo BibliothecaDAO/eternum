@@ -116,11 +116,11 @@ fn build(d: Deployment, home: ResourceKey, category: u8, direction: u8, timestam
     }
 }
 
-fn train(d: Deployment, home: ResourceKey, timestamp: u64) {
+pub fn train(d: Deployment, home: ResourceKey, timestamp: u64) {
     build(d, home, crate::research::BARRACKS, 1, timestamp);
 }
 
-fn complete(d: Deployment, home: ResourceKey, day: u64, timestamp: u64) -> u128 {
+pub fn complete(d: Deployment, home: ResourceKey, day: u64, timestamp: u64) -> u128 {
     let slot = crate::troops::ArmySlotKey { game_id: home.game_id, structure_id: home.entity_id, epoch: day, slot: 0 };
     let existing = interact_with_state(d.games, || crate::logic::army_slot_storage::read(slot));
     if existing.is_none() {
@@ -421,7 +421,7 @@ fn real_production_splits_at_the_bane_start_and_quorum_end_and_army_stores_still
     );
 }
 
-fn deep_definition() -> crate::presets::PresetDefinition {
+pub fn deep_definition() -> crate::presets::PresetDefinition {
     let mut preset = definition();
     preset
         .economy
@@ -441,7 +441,7 @@ fn deep_definition() -> crate::presets::PresetDefinition {
     preset
 }
 
-fn altar(d: Deployment, game_id: u32, source: u8, boundary: u64) {
+pub fn altar(d: Deployment, game_id: u32, source: u8, boundary: u64) {
     interact_with_state(
         d.games,
         || {

@@ -194,3 +194,31 @@ it("includes shared Deep field armies and all held guards with their home facts"
   expect(rowInGameSyncScope("DeepArmy", { explorer_id: "302" }, scope)).toBe(true);
   expect(rowInGameSyncScope("Structure", { entity_id: "9" }, scope)).toBe(true);
 });
+
+it("includes the own Aspect's member identities and fixed monuments without adding their private map regions", () => {
+  const teamRows = [
+    ...rows,
+    { model: "HomeAspect", value: { home: "1", aspect: 1 } },
+    { model: "HomeAspect", value: { home: "3", aspect: 1 } },
+    { model: "HomeAspect", value: { home: "2", aspect: 2 } },
+    { model: "HomeAspect", value: { home: "4", aspect: 2 } },
+    { model: "AspectHyperstructure", value: { aspect: 1, entity_id: "900", height: 2000 } },
+  ];
+  const teamRead: ScopeRowReader = (model, spacing, keys) => teamRows.filter(
+    (row) => row.model === model && scopeInputKeys(model, row.value, spacing).some((key) => keys.includes(key)),
+  );
+  const own = deriveGameSyncScope("0xa", 350, expedition, teamRead);
+  expect(own.expedition?.entities).toEqual(new Set(["1", "101", "3", "900"]));
+  expect(own.expedition?.regions).toEqual(new Set(["0:0", "0:1"]));
+  expect(rowInGameSyncScope("Structure", { entity_id: "3" }, own)).toBe(true);
+  expect(rowInGameSyncScope("EntityName", { entity_id: "3" }, own)).toBe(true);
+  expect(rowInGameSyncScope("Building", { structure_id: "3" }, own)).toBe(false);
+  expect(rowInGameSyncScope("Structure", { entity_id: "4" }, own)).toBe(false);
+  const visiting = deriveGameSyncScope("0xa", 350, expedition, teamRead, "0xbbb");
+  expect(rowInGameSyncScope("Structure", { entity_id: "4" }, visiting)).toBe(true);
+  expect(visiting.expedition?.regions).toEqual(own.expedition?.regions);
+  const watching = deriveGameSyncScope(undefined, 350, expedition, teamRead, "0xbbb");
+  expect(rowInGameSyncScope("Structure", { entity_id: "4" }, watching)).toBe(true);
+  expect(rowInGameSyncScope("Structure", { entity_id: "3" }, watching)).toBe(false);
+  expect(rowInGameSyncScope("Structure", { entity_id: "900" }, watching)).toBe(true);
+});

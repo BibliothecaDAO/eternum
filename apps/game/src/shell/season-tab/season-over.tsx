@@ -1,4 +1,7 @@
 import { useNowSeconds } from "@/hooks/helpers/use-block-timestamp";
+import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
+import { useGame } from "@/hooks/context/game-context";
+import { FrontierAspectPage } from "@/ui/features/frontier/aspect/aspect-page";
 import { getActiveGame } from "@/runtime/world";
 import { campaignOfPreset } from "@/services/home-claim-rules";
 import { AppButton, AppIconButton } from "@/ui/design-system/kit/app-elements";
@@ -33,8 +36,28 @@ export const SeasonOver = ({
   realm: NativeRows["Structure"] | null;
   withdraw?: ReactNode;
 }) => {
+  const { setup } = useGame();
+  useNativeRevision(["RaceRules"]);
   useNowSeconds();
-  return configManager.isGameOver() ? <EndedSeason realm={realm} withdraw={withdraw} /> : null;
+  if (!configManager.isGameOver()) return null;
+  return setup.store.get("RaceRules", { game_id: configManager.getActiveGameId() })
+    ? <EndedRace withdraw={withdraw} />
+    : <EndedSeason realm={realm} withdraw={withdraw} />;
+};
+
+const EndedRace = ({ withdraw }: { withdraw?: ReactNode }) => {
+  const navigate = useNavigate();
+  const [closed, setClosed] = useState(false);
+  if (closed) return null;
+  return (
+    <div data-race-ended className="pointer-events-auto fixed inset-0 z-50 flex items-center justify-center bg-hud-night/90 p-2 lg:p-8">
+      <div className="flex max-h-full w-full max-w-2xl flex-col gap-2 overflow-y-auto">
+        <FrontierAspectPage onClose={() => setClosed(true)} />
+        {withdraw}
+        <AppButton kind="primary" icon="exit" onClick={() => navigate("/")}>{EXIT}</AppButton>
+      </div>
+    </div>
+  );
 };
 
 /** The ended season's board, its directory entry, the viewer and their home's campaign, read once the season is over. */

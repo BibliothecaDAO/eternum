@@ -153,6 +153,8 @@ export const SCOPE_RULE_MODELS = ["SliceRules", "GameRegistry", "SettlementRules
 export const SCOPE_INPUT_MODELS = [
   ...SCOPE_RULE_MODELS,
   "DeepSite",
+  "AspectHyperstructure",
+  "HomeAspect",
   "DeepGuard",
   "ArmyDay",
   "PlayerEntry",

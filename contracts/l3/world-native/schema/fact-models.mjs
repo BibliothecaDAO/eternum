@@ -882,6 +882,12 @@ export function defineFactModels({ struct, model: declare }) {
         value: "zero",
         meaning: "No resource contribution to this hyperstructure.",
       };
+    if (row.name === "RaceMember")
+      row.absence = {
+        parent: "Structure",
+        value: "zero",
+        meaning: "This home has earned no Glory or height contribution yet.",
+      };
     if (row.name === "ExpeditionDiscovery")
       row.absence = {
         parent: "Structure",
@@ -1066,6 +1072,10 @@ export function defineFactModels({ struct, model: declare }) {
       struct("deposits::DepositReceipt"),
     ),
     model("RaceRules", "game", [{ name: "game_id", type: "core::integer::u32" }], struct("race::RaceRules")),
+    model("RaceMember", "game", struct("resources::ResourceKey"), struct("race::RaceMember")),
+    model("AspectHyperstructure", "game", struct("race::AspectKey"), struct("race::AspectHyperstructure")),
+    model("TriumphDay", "game", struct("race::TriumphKey"), [{ name: "day", type: "core::integer::u64" }]),
+    model("RaceResult", "game", [{ name: "game_id", type: "core::integer::u32" }], struct("race::RaceResult")),
     model("BaneRules", "game", [{ name: "game_id", type: "core::integer::u32" }], struct("banes::BaneRules")),
     model("QuestRules", "game", [{ name: "game_id", type: "core::integer::u32" }], struct("quests::QuestRules")),
     model(
@@ -1645,6 +1655,10 @@ export const syncScopes = {
   QuestRules: "shared",
   BaneRules: "shared",
   RaceRules: "shared",
+  RaceMember: "shared",
+  AspectHyperstructure: "shared",
+  TriumphDay: "shared",
+  RaceResult: "shared",
   WorldBane: "shared",
   FirstTeamBane: "shared",
   BaneProgress: "shared",

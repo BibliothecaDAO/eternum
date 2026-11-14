@@ -74,6 +74,7 @@ function createTestSetup(systemCalls: Record<string, unknown> = {}, enabled: Par
   }
 
   const components = {
+    AspectHyperstructure: [],
     ExplorerTroops: new Map([
       [
         TEST_ENTITY_ID.toString(),
@@ -103,6 +104,7 @@ function createTestSetup(systemCalls: Record<string, unknown> = {}, enabled: Par
       get: read,
       require: read,
       *inGame(model: string) {
+        if (model === "AspectHyperstructure") yield* components.AspectHyperstructure;
         if (model !== "TileOccupancy") return;
         for (const [key, tile] of components.TileOpt as Map<string, { occupancy: Record<string, unknown> }>) {
           const [alt, col, row] = key.split(":").map(Number);
@@ -378,6 +380,19 @@ describe("ArmyActionManager.findActionPaths origin precedence", () => {
     const actionPaths = manager.findActionPaths(structureHexes, armyHexes, exploredHexes, chestHexes, 0, 0x123n as any);
 
     expect(ActionPaths.getActionType(actionPaths.get(ActionPaths.posKey(targetHex)) ?? [])).toBe(ActionType.Attack);
+  });
+
+  it("offers no capture of a fixed race monument, while an ordinary unowned structure remains attackable", () => {
+    const { manager, components, structureHexes, armyHexes, exploredHexes, chestHexes, oldFeltStart } = createTestSetup();
+    const [monument, ordinary] = getNeighborHexes(oldFeltStart.col, oldFeltStart.row);
+    components.AspectHyperstructure.push({ game_id: 1, aspect: 1, entity_id: 900n, height: 2000 });
+    setNestedMapValue(structureHexes, monument.col - TEST_FELT_CENTER, monument.row - TEST_FELT_CENTER, { id: 900, owner: 0n } as HexEntityInfo);
+    setNestedMapValue(structureHexes, ordinary.col - TEST_FELT_CENTER, ordinary.row - TEST_FELT_CENTER, { id: 901, owner: 0n } as HexEntityInfo);
+    vi.mocked(StaminaManager.prototype.getStamina).mockReturnValue({ amount: 150n, settled_at: 0, remainder: 0 } as any);
+    const paths = manager.findActionPaths(structureHexes, armyHexes, exploredHexes, chestHexes, 0, 0x123n as any);
+    expect(paths.get(ActionPaths.posKey(monument))).toBeUndefined();
+    expect(paths.getRefusals().get(ActionPaths.posKey(monument))).toEqual({ reason: "off-limits" });
+    expect(ActionPaths.getActionType(paths.get(ActionPaths.posKey(ordinary))!)).toBe(ActionType.Attack);
   });
 
   it("offers no attack on another player's structure where the game allows only unowned targets, and keeps a site", () => {
