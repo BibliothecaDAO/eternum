@@ -3870,7 +3870,7 @@ const labDayTurnSteps = (expected) => [
 
 /** Prod's leading player's own day 2: 35 reveals and 5 sites cleared, paying 7,246 Essence and 524 Labor. */
 const RECORDED_DAY_2 = {
-  totals: ["35Reveals", "5Sites cleared", "0Chests", "+7,246Essence", "+524Labor", "+0LORDS"],
+  totals: ["35Reveals", "5Sites cleared", "0Chests", "+7.2KEssence", "+524Labor", "+0LORDS"],
   notice: null,
 };
 /** Day 2 past the history read: each total a dash, and the card says why. */
