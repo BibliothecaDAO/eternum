@@ -3,6 +3,56 @@
 export const factWireTypes = [
   {
     type: "struct",
+    name: "world_native::spires::ExpeditionSpireKey",
+    members: [
+      {
+        name: "game_id",
+        type: "core::integer::u32",
+      },
+      {
+        name: "structure_id",
+        type: "core::integer::u64",
+      },
+      {
+        name: "epoch",
+        type: "core::integer::u64",
+      },
+      {
+        name: "depth",
+        type: "core::integer::u8",
+      },
+    ],
+  },
+  {
+    type: "enum",
+    name: "core::option::Option::<world_native::troops::Coord>",
+    variants: [
+      {
+        name: "Some",
+        type: "world_native::troops::Coord",
+      },
+      {
+        name: "None",
+        type: "()",
+      },
+    ],
+  },
+  {
+    type: "struct",
+    name: "world_native::spires::ExpeditionSpire",
+    members: [
+      {
+        name: "reveals",
+        type: "core::integer::u8",
+      },
+      {
+        name: "location",
+        type: "core::option::Option::<world_native::troops::Coord>",
+      },
+    ],
+  },
+  {
+    type: "struct",
     name: "world_native::banes::WorldBane",
     members: [
       {
@@ -888,12 +938,15 @@ export function defineFactModels({ struct, model: declare }) {
         value: "zero",
         meaning: "This home has earned no Glory or height contribution yet.",
       };
-    if (row.name === "ExpeditionDiscovery")
+    if (row.name === "ExpeditionDiscovery" || row.name === "ExpeditionSpire")
       row.absence = {
         parent: "Structure",
         parentKeys: { entity_id: "structure_id" },
         value: "zero",
-        meaning: "No empty player reveals in this expedition yet.",
+        meaning:
+          row.name === "ExpeditionSpire"
+            ? "No eligible Spire reveals on this home, day and layer yet."
+            : "No empty player reveals in this expedition yet.",
       };
     if (row.name === "ArmyRelics" || row.name === "ArmyRelicEffect")
       row.absence = {
@@ -1032,6 +1085,7 @@ export function defineFactModels({ struct, model: declare }) {
       [{ name: "game_id", type: "core::integer::u32" }],
       struct("expeditions::FrontierDiscoveryRules"),
     ),
+    model("ExpeditionSpire", "game", struct("spires::ExpeditionSpireKey"), struct("spires::ExpeditionSpire")),
     model(
       "ExpeditionDiscovery",
       "game",
@@ -1694,6 +1748,7 @@ export const syncScopes = {
   ArmyRelicEffect: { entities: ["explorer_id"] },
   RuinRelic: { entities: ["entity_id"] },
   ExpeditionDiscovery: { realms: ["structure_id"], epoch: "epoch" },
+  ExpeditionSpire: { realms: ["structure_id"], epoch: "epoch" },
   ArmyDay: { entities: ["explorer_id"] },
   AspectActivity: shared,
   DeepSite: shared,

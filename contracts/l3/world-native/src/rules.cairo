@@ -280,7 +280,7 @@ pub const REVEAL_SUPPLIES: u32 = 262144;
 // Every battle rolls a d20 per side.
 pub const COMBAT_DICE: u32 = 524288;
 pub const COMBAT_DICE_ETHEREAL: u32 = 1048576;
-// One reveal in two hundred finds a dormant spire that pays its finder Essence once.
+// Blitz finds dormant reward spires; expedition games discover one descent spire per home, day and layer.
 pub const DISCOVER_SPIRES: u32 = 2097152;
 pub const SAME_OWNER_TRANSFER: u32 = 256;
 pub const SEASON_CLOSE: u32 = 1024;
@@ -609,6 +609,8 @@ pub struct SpeedConfig {
 pub const WELL_STAMINA_DIVISOR: u8 = 2;
 
 pub const FRONTIER_REPORT_GRACE_SECONDS: u32 = crate::days::FRONTIER_REPORT_GRACE_SECONDS;
+
+pub const SPIRE_REVEAL_LIMIT: u8 = 10;
 
 pub const DEEP_MAP_SIZE: u32 = 50;
 pub const DEEP_FOUNDATION: u8 = 0;

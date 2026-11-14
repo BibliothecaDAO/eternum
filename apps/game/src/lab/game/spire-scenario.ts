@@ -1,6 +1,6 @@
 import { frontierArmyRules } from "../../ui/features/frontier/army/progression-rules-fixture";
 import { installLabGame } from "@/ui/features/debug/kit-lab/fixture-game";
-import { SPIRE_ARMY, SPIRE_DAY_NOW, spireDay } from "@/ui/features/frontier/spire-fixture";
+import { SPIRE_ARMY, SPIRE_DAY_NOW, applySpireDiscovery, spireDay } from "@/ui/features/frontier/spire-fixture";
 import { entityHomeNamespace, expeditionRealmSite, readExpeditionRules } from "@bibliothecadao/eternum";
 import {
   BiomeType,
@@ -207,3 +207,31 @@ export const armyProgress = (key: string, explorerId: number, xp: number): LabFa
     homecoming: 1,
   },
 });
+
+/** A discovered Ethereal I portal opens only Ethereal II, using the same card and movement answer. */
+export const discoveredSpireScenario = (): LabScenario => {
+  const scenario = spireScenario();
+  const { spire, rules } = applySpireDiscovery(scenario.store, 1);
+  scenario.store.applyFacts(
+    [spire, ...getHexesWithinRadius(spire.col, spire.row, 4)].map((hex, index) =>
+      revealedTile(`0x5ff${index.toString(16)}`, hex, BiomeType.Underground),
+    ) as never,
+  );
+  return {
+    ...scenario,
+    opensOn: spire,
+    answer: (command, chain) => {
+      if (command.kind !== "EnterDepth") return [];
+      const explorerId = BigInt(command.fields.explorer_id);
+      if (Number(command.fields.depth) !== 2 || explorerId !== BigInt(SPIRE_ARMY))
+        throw new Error("Discovered Spire only opens the next layer");
+      const [key, army] = [...chain.entries("TileOccupancy")].find(([, row]) => row.entity_id === explorerId)!;
+      const landing = { col: spire.col, row: spire.row + rules.spacing };
+      return [
+        { model: "TileOccupancy", key, value: null },
+        { model: "TileOccupancy", key: "0x5fe1", value: wire({ ...army, ...landing }) },
+        revealedTile("0x5fe2", landing, BiomeType.Underground),
+      ];
+    },
+  };
+};

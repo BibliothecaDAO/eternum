@@ -2,8 +2,17 @@ import { act } from "react";
 import { createRoot } from "react-dom/client";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-// The world's tiles: none hold anything here, as a rule-drawn spire's tile holds nothing.
-vi.mock("@/hooks/use-world-spatial-tiles", () => ({ useWorldSpatialTiles: () => [] }));
+const { spatialTiles } = vi.hoisted(() => ({
+  spatialTiles: {
+    current: [] as { occupierType: number; occupierId: number; hexCoords: { col: number; row: number } }[],
+  },
+}));
+vi.mock("@/hooks/use-world-spatial-tiles", () => ({
+  useWorldSpatialTiles: (hexes: { col: number; row: number }[]) =>
+    spatialTiles.current.filter((tile) =>
+      hexes.some((hex) => hex.col === tile.hexCoords.col && hex.row === tile.hexCoords.row),
+    ),
+}));
 vi.mock("@/hooks/helpers/use-query", () => ({ useQuery: () => ({ isMapView: true }) }));
 vi.mock("./build/build-sheet", () => ({ BuildSheet: () => null, useOpenPlot: () => null }));
 vi.mock("./upgrade/castle-upgrade", () => ({ CastleUpgrade: () => null, useKeepSelected: () => null }));
@@ -26,15 +35,19 @@ import {
   ArmyActionManager,
   configManager,
   expeditionDepth,
+  expeditionDayEndsAt,
+  expeditionSpires,
+  armyRealmSpire,
+  armySpireChance,
   setBlockTimestampSource,
 } from "@bibliothecadao/eternum";
 import { StructureType, TileOccupier } from "@bibliothecadao/types";
 import { attachMapSelectionPositions } from "@/hooks/store/map-selection";
 import { useArmyPanelOpens } from "./army/army-opens";
-import { SpireButton, useArmyAtItsSpire } from "./spire-card";
+import { useArmySpireStatus } from "./spire-card";
 import { useSelectionCard } from "./frontier-selection-sheet";
 import { useOnePanel } from "./hud/one-panel";
-import { SPIRE_ARMY, SPIRE_DAY_NOW, spireDay as spireFixture } from "./spire-fixture";
+import { SPIRE_ARMY, SPIRE_DAY_NOW, discoveredSpireDay, spireDay as spireFixture } from "./spire-fixture";
 
 const ARMY = SPIRE_ARMY;
 const NOW = SPIRE_DAY_NOW;
@@ -89,6 +102,7 @@ const tapSpireWithArmy = (spire: { col: number; row: number }) =>
   act(() => useUIStore.getState().selectOnMap({ kind: "army", entityId: ARMY, tile: spire }));
 
 afterEach(() => {
+  spatialTiles.current = [];
   vi.restoreAllMocks();
   useUIStore.getState().selectOnMap(null);
   useAccountStore.setState({ account: null });
@@ -276,8 +290,8 @@ describe("a realm's spire, from the player's path", () => {
     });
     useUIStore.getState().setMapLayer(false);
     const ArmySpire = () => {
-      const spire = useArmyAtItsSpire(ARMY);
-      return spire && <SpireButton explorerId={ARMY} spire={spire} />;
+      const spire = useArmySpireStatus(ARMY);
+      return spire;
     };
     const Hud = () => {
       const card = useSelectionCard({ realm, onResearch: () => undefined });
@@ -319,6 +333,7 @@ describe("a realm's spire, from the player's path", () => {
           .click(),
       );
     return {
+      host,
       sheets,
       enterButtons,
       press,
@@ -328,6 +343,48 @@ describe("a realm's spire, from the player's path", () => {
       },
     };
   };
+
+  it.each(["desktop", "phone"] as const)("shows rising Spire odds on a %s from the native counter", (layout) => {
+    const { store } = discoveredSpireDay(0);
+    setBlockTimestampSource(() => NOW);
+    useBlockTimestampStore.setState({ currentBlockTimestamp: NOW, currentDefaultTick: NOW });
+    const key = { game_id: 1, structure_id: 7, epoch: 0, depth: 0 };
+    const found = store.require("ExpeditionSpire", key);
+    const wireKey = store.wireKeyOf("ExpeditionSpire", key)!;
+    store.applyFacts([{ model: "ExpeditionSpire", key: wireKey, value: null }]);
+    const hud = renderLayoutHud(store, layout);
+    try {
+      act(() => useUIStore.getState().selectOnMap({ kind: "army", entityId: ARMY, tile: "own" }));
+      expect(hud.host.textContent).toContain("Spire · next reveal 10%");
+      for (const [reveals, chance] of [[3, 40], [9, 100]]) {
+        act(() => store.applyFacts([{ model: "ExpeditionSpire", key: wireKey, value: { ...found, reveals, location: null } }]));
+        expect(hud.host.textContent).toContain(`Spire · next reveal ${chance}%`);
+      }
+      act(() => store.applyFacts([{ model: "ExpeditionSpire", key: wireKey, value: found }]));
+      expect(hud.host.querySelector("[data-spire-chance]")).toBeNull();
+      expect(hud.host.querySelector("button")?.textContent).toBe("Spire");
+    } finally { hud.unmount(); }
+  });
+
+  it("does not borrow another day's or layer's odds, or invent an unsynchronized counter", () => {
+    const { store } = discoveredSpireDay(1);
+    const key = { game_id: 1, structure_id: 7, epoch: 0, depth: 1 };
+    const row = store.require("ExpeditionSpire", key);
+    const wireKey = store.wireKeyOf("ExpeditionSpire", key)!;
+    store.applyFacts([
+      { model: "ExpeditionSpire", key: wireKey, value: null },
+      { model: "ExpeditionSpire", key: "0x5f04", value: { ...row, depth: 0, reveals: 9, location: null } },
+      { model: "ExpeditionSpire", key: "0x5f05", value: { ...row, epoch: 1, reveals: 9, location: null } },
+    ]);
+    expect(armySpireChance(store, 1, ARMY, NOW)).toBe(10);
+    store.setSnapshot({ gameId: 1, complete: false, actor: "0x111", timestamp: NOW });
+    expect(armySpireChance(store, 1, ARMY, NOW)).toBeNull();
+    store.setSnapshot({ gameId: 1, complete: true, actor: "0x111", timestamp: NOW });
+    const knowledge = store.require("RealmKnowledge", { game_id: 1, structure_id: 7 });
+    store.applyFacts([{ model: "RealmKnowledge", key: store.wireKeyOf("RealmKnowledge", knowledge)!, value: { ...knowledge, learned: 0n } }]);
+    expect(armySpireChance(store, 1, ARMY, NOW)).toBeNull();
+    expect(armySpireChance(store, 1, ARMY, NOW + 86400)).toBeNull();
+  });
 
   /** The camp the army cleared, on the tile it stands on: the site's row with its receipt, as clear_site leaves it. */
   const clearedCampUnder = (store: ReturnType<typeof spireDay>["store"], tile: { col: number; row: number }) =>
@@ -443,5 +500,36 @@ describe("a realm's spire, from the player's path", () => {
     expect(beside?.at(-1)?.staminaCost).toBe(0);
     const away = plan("away");
     expect(away && ActionPaths.getActionType(away)).not.toBe(ActionType.EnterDepth);
+  });
+});
+
+describe("discovered expedition Spires", () => {
+  it.each([0, 1] as const)("offers only the next layer from a discovered layer %i Spire", async (depth) => {
+    const { store, spire } = discoveredSpireDay(depth);
+    const portal = store.get("TileOccupancy", { game_id: 1, alt: false, ...spire })!;
+    spatialTiles.current = [{ occupierType: portal.category, occupierId: Number(portal.entity_id), hexCoords: spire }];
+    setBlockTimestampSource(() => NOW);
+    useBlockTimestampStore.setState({ currentBlockTimestamp: NOW, currentDefaultTick: NOW });
+    const hud = renderHud(store);
+    try {
+      tapSpireWithArmy(spire);
+      const title = depth === 0 ? "Ethereal I" : "Ethereal II";
+      expect(hud.depths()).toEqual([{ depth: title, line: undefined, button: "Enter", enabled: true }]);
+      expect(armyRealmSpire(store, 1, ARMY, NOW)).toMatchObject({ ...spire, targetDepth: depth + 1 });
+      await hud.press(`Enter ${title}`);
+      expect(hud.enter).toHaveBeenCalledTimes(1);
+      expect(hud.enter).toHaveBeenCalledWith(expect.objectContaining({ explorerId: ARMY, depth: depth + 1 }));
+    } finally {
+      hud.unmount();
+    }
+  });
+
+  it("does not invent a portal before discovery or carry it into tomorrow", () => {
+    const { store, rules } = discoveredSpireDay();
+    expect(expeditionSpires(store, 1, NOW)).toHaveLength(1);
+    expect(expeditionSpires(store, 1, expeditionDayEndsAt(rules, NOW))).toEqual([]);
+    store.applyFacts([{ model: "ExpeditionSpire", key: "0x5f01", value: null }]);
+    expect(expeditionSpires(store, 1, NOW)).toEqual([]);
+    expect(armyRealmSpire(store, 1, ARMY, NOW)).toBeNull();
   });
 });

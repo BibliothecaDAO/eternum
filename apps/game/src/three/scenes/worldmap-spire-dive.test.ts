@@ -168,7 +168,11 @@ describe("a view through a spire between any two layers", () => {
         const from = viewInLayer(rules, start, fromLayer);
         const to = viewInLayer(rules, start, toLayer);
         const scene = sceneAround(from);
-        expect(await landed(scene.dive(spireCrossing(rules, from, to)).done)).toBe(true);
+        expect(
+          await landed(
+            scene.dive(spireCrossing(rules, from, to, regionSpire(rules, fromLayer < toLayer ? from : to))).done,
+          ),
+        ).toBe(true);
 
         // Replay the steps: a flight while the canvas shows must start and end in one region; a jump happens veiled.
         let looking = region(from);
@@ -191,12 +195,12 @@ describe("a view through a spire between any two layers", () => {
   it("dives into the surface spire from the surface, and comes out of it onto the surface", () => {
     const surface = { col: 137, row: 63 };
     const ethereal = viewInLayer(rules, surface, 2);
-    expect(spireCrossing(rules, surface, ethereal)).toEqual({
+    expect(spireCrossing(rules, surface, ethereal, regionSpire(rules, surface))).toEqual({
       spire: regionSpire(rules, surface),
       arrival: ethereal,
       down: true,
     });
-    expect(spireCrossing(rules, ethereal, surface)).toEqual({
+    expect(spireCrossing(rules, ethereal, surface, regionSpire(rules, surface))).toEqual({
       spire: regionSpire(rules, surface),
       arrival: surface,
       down: false,

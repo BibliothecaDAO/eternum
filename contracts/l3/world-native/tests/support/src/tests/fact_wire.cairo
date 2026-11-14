@@ -29,6 +29,8 @@ pub struct FactWire {
     pub tile_opt: crate::map::TileOpt,
     pub tile_occupancy: crate::map::TileOccupancy,
     pub army_slot_key: crate::troops::ArmySlotKey,
+    pub expedition_spire_key: crate::spires::ExpeditionSpireKey,
+    pub expedition_spire: crate::spires::ExpeditionSpire,
     pub deep_site: crate::deep::DeepSite,
     pub deep_guard: crate::deep::DeepGuard,
     pub deep_army: crate::deep::DeepArmy,

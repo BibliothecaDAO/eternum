@@ -61,7 +61,7 @@ import { OfflineNotice } from "./hud/offline-notice";
 import { SceneFailureNotice } from "./hud/scene-failure-notice";
 import { NextOrderBar, OrderBar } from "./hud/order-bar";
 import { PickedArmy } from "./hud/picked-army";
-import { SpireButton, useArmyAtItsSpire } from "./spire-card";
+import { useArmySpireStatus } from "./spire-card";
 import { DailyQuest } from "./day/daily-quest";
 import { FrontierToday } from "./log/frontier-today";
 import { CARD_STORE_KINDS, type CardStore, FrontierStoreCard, isCardStore } from "./production/frontier-store-card";
@@ -422,12 +422,12 @@ const ActingArmy = ({
   army: DockArmy;
   onOpenArmy: (explorerId: number, choosing?: boolean) => void;
 }) => {
-  const spire = useArmyAtItsSpire(army.explorerId);
+  const spire = useArmySpireStatus(army.explorerId);
   return (
     <PickedArmy
       army={army}
       refill={army.stamina && <StaminaReading stamina={army.stamina} />}
-      spire={spire && <SpireButton explorerId={army.explorerId} spire={spire} />}
+      spire={spire}
       onDetails={() => onOpenArmy(army.explorerId)}
       onLevelUp={() => onOpenArmy(army.explorerId, army.canSpendSkillPoint)}
     />

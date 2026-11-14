@@ -469,6 +469,7 @@ export const siteDepthName = (depth: number): string => {
  * commits that army to.
  */
 export const SPIRE_WORDS = {
+  nextReveal: (percent: number) => `Spire · next reveal ${percent}%`,
   title: "Spire",
   enter: "Enter",
   /** The order on the spire's tile; its card then picks the Ethereal layer to enter. */

@@ -10,7 +10,7 @@ import { realmLearned, scoutingKindsOf, heldSkillPoints, type SkillPointChoice }
 import { type NativeRows } from "@bibliothecadao/eternum/game-client";
 
 import { useArmyRevealYield } from "../frontier-reveal-yield";
-import { SpireButton, useArmyAtItsSpire } from "../spire-card";
+import { useArmySpireStatus } from "../spire-card";
 import { type DockArmy, useDockArmies } from "../hud/dock-armies";
 import { type ArmyDetailFacts, type ArmyView, readArmyDetail } from "./army-detail";
 import { SCOUTING_CHOICES } from "../progression-choices";
@@ -56,7 +56,7 @@ const ArmyPanel = ({
   useNativeRevision(PROGRESS_MODELS);
   const sending = useInFlight("tier", army.explorerId) !== undefined;
   const revealYield = useArmyRevealYield(army);
-  const spire = useArmyAtItsSpire(army.explorerId);
+  const spire = useArmySpireStatus(army.explorerId);
   const progress = setup.store.get("ArmyProgress", { game_id: realm.game_id, explorer_id: army.explorerId });
   const rules = setup.store.get("ArmyProgressionRules", { game_id: realm.game_id });
   if (!progress || !rules || !army.stamina) return null;
@@ -131,7 +131,7 @@ const ArmySheet = ({
   view: ArmyView;
   sending: boolean;
   choosing: boolean;
-  spire: ReturnType<typeof useArmyAtItsSpire>;
+  spire: ReturnType<typeof useArmySpireStatus>;
   onLevelUp: (choice: SkillPointChoice) => unknown;
   onClose: () => void;
 }) => {
@@ -150,7 +150,7 @@ const ArmySheet = ({
       )}
       {spire && (
         <HudWindowFoot>
-          <SpireButton explorerId={army.explorerId} spire={spire} />
+          {spire}
         </HudWindowFoot>
       )}
     </HudSheet>

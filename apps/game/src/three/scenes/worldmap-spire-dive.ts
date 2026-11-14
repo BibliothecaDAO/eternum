@@ -1,4 +1,4 @@
-import { expeditionDepth, regionSpire, type ExpeditionRules } from "@bibliothecadao/eternum";
+import { expeditionDepth, type ExpeditionRules } from "@bibliothecadao/eternum";
 import { Vector3 } from "three";
 import { claimCamera, type CameraClaim } from "./camera-moves";
 
@@ -55,9 +55,9 @@ const VEIL_OPEN_MS = 450;
  * then, so the only move between regions is the cut under the veil; between the surface and a layer, it is the surface
  * spire itself.
  */
-export function spireCrossing(rules: ExpeditionRules, from: MapHex, to: MapHex): SpireCrossing {
+export function spireCrossing(rules: ExpeditionRules, from: MapHex, to: MapHex, spire: MapHex): SpireCrossing {
   const down = expeditionDepth(rules, { y: to.row }) > expeditionDepth(rules, { y: from.row });
-  return { spire: regionSpire(rules, down ? from : to), arrival: to, down };
+  return { spire, arrival: to, down };
 }
 
 /**

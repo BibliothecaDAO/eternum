@@ -92,7 +92,10 @@ import {
   armyRealmSpire,
   configManager,
   dayOf,
+  expeditionDepth,
   expeditionSpires,
+  discoversSpires,
+  regionSpire,
   isArmyCrossing,
   NEUTRAL_BIOME_CLIMATE,
   Position,
@@ -1472,7 +1475,10 @@ export default class WorldmapScene extends WarpTravel {
     const store = this.game.store;
     const projection = this.worldSpatialProjection;
     return {
-      hexes: () => expeditionSpires(store, configManager.getActiveGameId(), getBlockTimestamp().currentBlockTimestamp),
+      hexes: () =>
+        discoversSpires(store, configManager.getActiveGameId())
+          ? []
+          : expeditionSpires(store, configManager.getActiveGameId(), getBlockTimestamp().currentBlockTimestamp),
       subscribe: (onChange) => {
         const unsubscribeFacts = store.subscribe((changes) => {
           if (changes.some((change) => ["Structure", "RealmKnowledge"].includes(change.model))) onChange();
@@ -2659,10 +2665,24 @@ export default class WorldmapScene extends WarpTravel {
       await this.cutToMapHex(to);
       return true;
     }
+    const down = expeditionDepth(rules, { y: to.row }) > expeditionDepth(rules, { y: from.row });
+    const upper = down ? from : to;
+    const gameId = configManager.getActiveGameId();
+    const portal = discoversSpires(this.game.store, gameId)
+      ? expeditionSpires(this.game.store, gameId, getBlockTimestamp().currentBlockTimestamp).find(
+          (spire) =>
+            spire.targetDepth === expeditionDepth(rules, { y: upper.row }) + 1 &&
+            Math.floor(spire.col / rules.spacing) === Math.floor(upper.col / rules.spacing),
+        )
+      : regionSpire(rules, upper);
+    if (!portal) {
+      await this.cutToMapHex(to);
+      return true;
+    }
     const dive = diveThroughSpire(
       this.controls,
       (claim) => this.spireDiveStage(claim),
-      spireCrossing(rules, from, to),
+      spireCrossing(rules, from, to, portal),
       useWorldAppearanceStore.getState().reducedMotion,
     );
     this.spireDive = dive;

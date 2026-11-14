@@ -41,7 +41,7 @@ export const PickedArmy = ({
   army: PickedArmyView;
   /** The army's stamina as its refill's button. */
   refill: ReactNode;
-  /** The way to its spire's card, while the army stands on or beside its spire (SpireButton). */
+  /** Its next-reveal Spire chance, or the nearby discovered Spire's card. */
   spire?: ReactNode;
   onDetails: () => void;
   onLevelUp: () => void;

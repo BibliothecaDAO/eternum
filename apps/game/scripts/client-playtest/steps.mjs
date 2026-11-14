@@ -2604,6 +2604,61 @@ const LAB_SPIRE_STEPS = [
   { name: "enter-depth", play: enterEtherealII, settleMs: 0, verify: armyEnteredEtherealII },
 ];
 
+const DISCOVERED_SPIRE_STEPS = [
+  { name: "enter-on-map", settleMs: 3_000, verify: inScene("map", "Ethereal I") },
+  LAB_SPIRE_STEPS[1],
+  LAB_SPIRE_STEPS[2],
+  {
+    name: "spire-card",
+    play: pressSpire,
+    settleMs: 0,
+    verify: ({ played }) => {
+      const state = played.state;
+      return state.sheet === "Spire" &&
+        state.army &&
+        state.depths.length === 1 &&
+        state.depths[0].depth === "Ethereal II" &&
+        state.depths[0].enabled
+        ? completed(state)
+        : failed("Discovered Spire must offer only Ethereal II", state);
+    },
+  },
+  {
+    name: "enter-next-layer",
+    play: enterEtherealII,
+    settleMs: 0,
+    verify: ({ played }) => {
+      const { before, after, camera } = played;
+      const command = after.sent.at(-1);
+      return after.sent.length === before.sent.length + 1 &&
+        command?.kind === "EnterDepth" &&
+        Number(command.fields.explorer_id) === before.army.id &&
+        command.fields.depth === "2" &&
+        after.army?.id === before.army.id &&
+        after.army.hex.row - before.army.hex.row === 100 &&
+        after.army.hex.col === before.army.hex.col - 1 &&
+        camera &&
+        hexesApart(camera, after.army.hex) <= FRAMED_WITHIN_HEXES
+        ? completed(played)
+        : failed("Discovered Spire did not enter the adjacent layer and follow the army", played);
+    },
+  },
+  {
+    name: "next-spire-chance",
+    play: async ({ browser }) => {
+      await pickTheSpireArmy({ browser });
+      return readUntil(() => browser.read(`JSON.stringify([...document.querySelectorAll('[data-spire-chance]')].filter(element => {
+        const rect = element.getBoundingClientRect();
+        const style = getComputedStyle(element);
+        return rect.width > 0 && rect.height > 0 && rect.left >= 0 && rect.right <= innerWidth && rect.top >= 0 && rect.bottom <= innerHeight && style.visibility !== 'hidden' && style.display !== 'none';
+      }).map(element => element.textContent))`), shown => shown.includes("Spire · next reveal 10%"), SPIRE_WAIT_MS);
+    },
+    settleMs: 0,
+    verify: ({ played }) => played.includes("Spire · next reveal 10%")
+      ? completed(played) : failed("The new layer must show its own first-reveal Spire chance", played),
+  },
+];
+
 /**
  * The map's share of the page on an odd device (owner, 4 November: "on some weird mobile devices with weird shapes the
  * map is like 15%"), on the lab's sites game: the map at rest, the army picked, its panel, a site's card beside it,
@@ -5163,6 +5218,8 @@ export const STEP_SETS = {
   "lab-relic-forecasts": { game: labSpireGame("relics"), steps: RELIC_FORECAST_STEPS },
   "lab-race": { game: labSpireGame("race"), steps: raceBoardSteps(false) },
   "lab-race-finished": { game: labSpireGame("race-finished"), steps: raceBoardSteps(true) },
+
+  "lab-discovered-spire": { game: labSpireGame("discovered-spire"), steps: DISCOVERED_SPIRE_STEPS },
   "lab-deep-join": { game: labSpireGame("deep"), steps: DEEP_JOIN_STEPS },
   "lab-no-lords": {
     game: labSpireGame("upkeep"),

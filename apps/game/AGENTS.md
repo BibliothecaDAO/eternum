@@ -572,3 +572,8 @@ Labor/Essence and the day's receipt.
 the map it writes `<step>-registration-ready.json`; after operator registration and the third snapshot, write
 `<step>-registered.json`. It then claims through Realm Labor and verifies today's claimed mark. This rehearsal uses a
 source-less dev home with a held ticket and leaves the source attachment to the operator.
+
+The discovered-Spire path is `/lab/game?scenario=discovered-spire`: select Army 1, open Spire, then Enter Ethereal II.
+`build.sh playtest-spire-discovery` drives that path at desktop and phone sizes, asserts that only the next layer is
+offered and checks the command, new occupancy and camera arrival. The army panel then shows the new layer’s next-reveal
+Spire chance, read from its home/day/layer counter. Evidence stays in the flow result directory.

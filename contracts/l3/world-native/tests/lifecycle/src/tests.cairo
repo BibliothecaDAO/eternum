@@ -10,6 +10,8 @@ mod camps;
 mod deep_sites;
 mod entry;
 
+mod expedition_spires;
+
 mod frontier_extension;
 mod hyperstructures;
 

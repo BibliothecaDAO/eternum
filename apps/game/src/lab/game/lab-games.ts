@@ -35,13 +35,14 @@ import { ruinFarScenario, ruinFightScenario } from "./ruin-fight-scenario";
 import { seasonOpensScenario } from "./season-opens-scenario";
 import { settleScenario } from "./settle-scenario";
 import { sitesScenario } from "./sites-scenario";
-import { highGroundScenario, SANDS, spireScenario } from "./spire-scenario";
+import { highGroundScenario, discoveredSpireScenario, SANDS, spireScenario } from "./spire-scenario";
 import { upkeepScenario } from "./upkeep-scenario";
 import { visitScenario } from "./visit-scenario";
 
 /** The games the lab plays, by name: each a fixture and the chain's answers to the commands it proves. */
 export const LAB_SCENARIOS: Partial<Record<string, () => LabScenario>> = {
   spire: spireScenario,
+  "discovered-spire": discoveredSpireScenario,
   deep: deepScenario,
   race: raceScenario,
   "race-finished": () => raceScenario(true),
