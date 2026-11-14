@@ -27,7 +27,10 @@ vi.mock("@/three/scenes/worldmap-order-request", () => ({ pinsOrder: () => true 
 vi.mock("@/lib/army-stamina/path-cost", () => ({ computeEffectiveStaminaCost: () => 21 }));
 // QA's charge: 563 troops at 0.05 wheat a step.
 vi.mock("./order-tip", () => ({ orderFood: () => ({ wheat: 28.15, fish: 0 }) }));
-vi.mock("@bibliothecadao/eternum/troop-stamina", () => ({ resolveExplorerTroops: () => ({}) }));
+vi.mock("@bibliothecadao/eternum/troop-stamina", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@bibliothecadao/eternum/troop-stamina")>()),
+  resolveExplorerTroops: () => ({}),
+}));
 const realm = vi.hoisted(() => ({ wheat: 0 }));
 vi.mock("@bibliothecadao/eternum", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@bibliothecadao/eternum")>();

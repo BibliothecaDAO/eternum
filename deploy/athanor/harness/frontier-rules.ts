@@ -50,7 +50,7 @@ export function expectedWheat(definition: PresetDefinition, charge: WheatCharge)
 export function wheatCharged(
   before: WheatState,
   after: WheatState,
-  effects: NonNullable<ReturnType<typeof readBaneEffects>["known"]>,
+  effects: Pick<NonNullable<ReturnType<typeof readBaneEffects>["known"]>, "windows" | "productionPercent">,
 ): bigint | null {
   if (after.production.last_settled_at === before.production.last_settled_at && after.balance === before.balance)
     return null;

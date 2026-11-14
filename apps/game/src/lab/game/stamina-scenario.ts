@@ -15,14 +15,19 @@ export function staminaScenario(wind: boolean): LabScenario {
   const startsAt = scenario.startsAt + elapsed;
   const rowOffset = 4 * calendar.spacing;
   const facts: LabFact[] = [];
+  const relocated: LabFact[] = [];
   for (const model of ["TileOpt", "TileOccupancy"] as const) {
     for (const [key, row] of store.entries(model)) {
-      if (!row.alt) facts.push({ model, key, value: wire({ ...row, row: row.row + rowOffset }) });
+      if (!row.alt) {
+        relocated.push({ model, key, value: null });
+        facts.push({ model, key, value: wire({ ...row, row: row.row + rowOffset }) });
+      }
     }
   }
   for (const [key, row] of store.entries("ArmyDay"))
     facts.push({ model: "ArmyDay", key, value: wire({ ...row, day: 1 }) });
-  for (const [key, row] of store.entries("ArmySlot"))
+  for (const [key, row] of store.entries("ArmySlot")) {
+    relocated.push({ model: "ArmySlot", key, value: null });
     facts.push({
       model: "ArmySlot",
       key,
@@ -32,6 +37,7 @@ export function staminaScenario(wind: boolean): LabScenario {
         stamina: { ...row.stamina, settled_at: startsAt - 60 },
       }),
     });
+  }
   const rules = store.require("SliceRules", { game_id: 1 });
   const army = store.require("ExplorerTroops", { game_id: 1, explorer_id: SPIRE_ARMY });
   facts.push(
@@ -77,6 +83,7 @@ export function staminaScenario(wind: boolean): LabScenario {
         day: 1,
       },
     });
+  store.applyFacts(relocated as never);
   store.applyFacts(facts as never);
   store.setSnapshot({ gameId: 1, actor: scenario.player, complete: true, timestamp: startsAt });
   return {

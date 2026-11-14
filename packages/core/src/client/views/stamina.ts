@@ -19,6 +19,8 @@ export const STAMINA_MODELS = [
   "ArmyProgress",
   "ExplorerTroops",
   "TileOccupancy",
+  "DeepArmy",
+  "DeepRules",
 ] as const;
 
 /** Regeneration forecasts end with the army's day; an unrecorded later roll is never predicted. */
