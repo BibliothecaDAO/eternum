@@ -35,13 +35,16 @@ const planProblem = (plan, config) => {
 /** The kinds a landing selects for a changed file, as the landing's paths say (a leading ! excludes). */
 const selectedBy = (config, file) => {
   const sections = sectionsOf(config);
-  return sections.land.match(/^kinds = "([^"]+)"/m)[1].split(" ").filter((kind) => {
-    const paths = sections[`kind.${kind}`]?.match(/^paths = "([^"]+)"/m)?.[1].split(" ") ?? [];
-    return (
-      paths.some((path) => !path.startsWith("!") && file.startsWith(path)) &&
-      !paths.some((path) => path.startsWith("!") && file.startsWith(path.slice(1)))
-    );
-  });
+  return sections.land
+    .match(/^kinds = "([^"]+)"/m)[1]
+    .split(" ")
+    .filter((kind) => {
+      const paths = sections[`kind.${kind}`]?.match(/^paths = "([^"]+)"/m)?.[1].split(" ") ?? [];
+      return (
+        paths.some((path) => !path.startsWith("!") && file.startsWith(path)) &&
+        !paths.some((path) => path.startsWith("!") && file.startsWith(path.slice(1)))
+      );
+    });
 };
 
 const plan = readFileSync(new URL("contracts/l3/check-native-plan.sh", root), "utf8");
@@ -52,7 +55,10 @@ test("the service's full gate executes every native stage exactly once", () => {
 });
 
 test("a malformed native mapping is refused", () => {
-  const swapped = config.replace(/(\[kind\.gate-world\]\ncmd = "bash contracts\/l3\/check-native\.sh )world/, "$1test-world");
+  const swapped = config.replace(
+    /(\[kind\.gate-world\]\ncmd = "bash contracts\/l3\/check-native\.sh )world/,
+    "$1test-world",
+  );
   assert.notEqual(swapped, config);
   assert.match(planProblem(plan, swapped), /the gate runs/);
   const dropped = config.replace(/^(\[land\]\nkinds = ".*?) gate-world/m, "$1");
