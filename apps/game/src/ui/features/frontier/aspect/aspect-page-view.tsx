@@ -82,13 +82,7 @@ const Race = ({ race }: { race: NonNullable<AspectPageProps["race"]> }) => (
   </section>
 );
 
-const StandingRow = ({
-  standing,
-  race,
-}: {
-  standing: AspectStanding;
-  race: NonNullable<AspectPageProps["race"]>;
-}) => {
+const StandingRow = ({ standing, race }: { standing: AspectStanding; race: NonNullable<AspectPageProps["race"]> }) => {
   const height = WORDS.height(standing.height, race.finishHeight);
   return (
     <HudRow
@@ -146,5 +140,9 @@ const YourAspect = ({ own }: { own: OwnAspect }) => (
   </section>
 );
 
-const Heading = ({ children }: { children: ReactNode }) => <span className="text-hud-strong text-hud-ink">{children}</span>;
-const Muted = ({ children }: { children: ReactNode }) => <span className="text-hud-label text-hud-muted">{children}</span>;
+const Heading = ({ children }: { children: ReactNode }) => (
+  <span className="text-hud-strong text-hud-ink">{children}</span>
+);
+const Muted = ({ children }: { children: ReactNode }) => (
+  <span className="text-hud-label text-hud-muted">{children}</span>
+);

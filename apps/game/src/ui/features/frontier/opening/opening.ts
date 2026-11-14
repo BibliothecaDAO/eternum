@@ -29,5 +29,5 @@ type Opened = "all" | ReadonlySet<OpeningMoment>;
 
 /** Whether the HUD shows a part: the part waits on the one moment whose row lists it. */
 export const partShown = (opened: Opened, part: OpeningPart): boolean =>
-  opened === "all" || OPENING_MOMENTS.some((moment) => opened.has(moment) && OPENING[moment].parts.some((each) => each === part));
-
+  opened === "all" ||
+  OPENING_MOMENTS.some((moment) => opened.has(moment) && OPENING[moment].parts.some((each) => each === part));

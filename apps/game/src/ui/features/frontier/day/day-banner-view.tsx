@@ -145,7 +145,9 @@ const HeadRow = ({ head }: { head: DayHead }) => (
       <span className="text-hud-label">{head.eyebrow}</span>
       <span className="flex items-center gap-2">
         <span className="text-hud-strong">{head.name}</span>
-        {head.crests?.map((crest) => <Icon key={crest} name={crest} size={18} />)}
+        {head.crests?.map((crest) => (
+          <Icon key={crest} name={crest} size={18} />
+        ))}
       </span>
       <span className="text-hud-label text-hud-muted">{head.rule}</span>
     </span>
