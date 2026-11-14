@@ -27,7 +27,7 @@ STATIC = [
 # The payout relay's, co-signer's and monitor's readers, which apps/herald/src/value-readers.test.ts drives against Herald.
 VALUE_READERS = [
     f"apps/value-relay/src/{name}.ts"
-    for name in ("frontier-sweep", "deposit-destination", "frontier-games", "shard-conservation", "shard-snapshot", "shard-rpc", "shard-page",
+    for name in ("frontier-sweep", "deposit-destination", "frontier-games", "final-facts", "shard-conservation", "shard-snapshot", "shard-rpc", "shard-page",
                  "source-url", "ports", "failure")
 ]
 AREAS = {
