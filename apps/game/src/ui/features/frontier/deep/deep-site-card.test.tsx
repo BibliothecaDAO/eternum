@@ -111,18 +111,25 @@ describe("the Deep site's live native binding", () => {
   });
 });
 
-
 it("counts only actual army-tick boundaries before a day ending between ticks", () => {
   const hud = draw(361);
   try {
     const game = hud.store.require("GameRegistry", { game_id: 1 });
-    act(() => hud.store.applyFacts([{
-      model: "GameRegistry",
-      key: hud.store.wireKeyOf("GameRegistry", { game_id: 1 })!,
-      value: { ...game, end_at: 1000n },
-    }]));
+    const interval = Number(hud.store.require("SliceRules", { game_id: 1 }).tick_config.armies_tick_in_seconds);
+    const end = (Math.floor(361 / interval) + 5) * interval + Math.floor(interval / 2);
+    act(() =>
+      hud.store.applyFacts([
+        {
+          model: "GameRegistry",
+          key: hud.store.wireKeyOf("GameRegistry", { game_id: 1 })!,
+          value: { ...game, end_at: BigInt(end) },
+        },
+      ]),
+    );
     hud.render();
     expect(hud.host.textContent).toContain("5 ticks left");
     expect(hud.host.textContent).not.toContain("6 ticks left");
-  } finally { hud.unmount(); }
+  } finally {
+    hud.unmount();
+  }
 });

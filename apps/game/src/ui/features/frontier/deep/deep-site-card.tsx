@@ -178,7 +178,10 @@ function guardView(store: NativeFactStore, game_id: number, site: Site, selected
         armyId: safeInteger(army.explorer_id),
         realm: getStructureName(home, store).name,
         troops: Number(army.troops.count) / RESOURCE_PRECISION,
-        ticks: { left: Math.min(ticks, Math.floor(day.end / interval) - Math.floor(now / interval)), time: formatDuration(expires - now) },
+        ticks: {
+          left: Math.min(ticks, Math.floor(day.end / interval) - Math.floor(now / interval)),
+          time: formatDuration(expires - now),
+        },
         share: Number((army.troops.count * 100n) / total),
         mine: selected !== null && army.owner === selected.army.owner,
       };
