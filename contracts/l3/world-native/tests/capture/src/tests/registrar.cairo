@@ -1,4 +1,3 @@
-use starknet::storage::StorageMapReadAccess;
 pub use world_test_support::tests::registrar::*;
 
 #[test]

@@ -121,6 +121,7 @@ pub fn battle(
     let defender_key = ExplorerKey { game_id, explorer_id: command.defender_id };
     let mut attacker = authorized_explorer(attacker_key, actor, context);
     let mut defender = active_explorer(defender_key, context);
+    assert_army_opponents(game_id, attacker, defender, rules);
     let defender_owner = explorer_owner(defender_key, defender);
     assert!(defender_owner != actor, "actor owns defender");
     assert_battle_immunity(game_id, attacker.owner, rules, context.timestamp, context);
@@ -186,6 +187,7 @@ pub fn guard_attack(
     assert_battle_immunity(game_id, command.guard.structure_id, rules, context.timestamp, context);
     assert_battle_immunity(game_id, defender.owner, rules, context.timestamp, context);
     let attacker = ExplorerTroops { owner: command.guard.structure_id, coord, troops: guard.troops };
+    assert_army_opponents(game_id, attacker, defender, rules);
     let combat = CombatContext {
         attacker_is_structure_guard: true, ..combat_context(game_id, attacker, defender, context),
     };
@@ -228,6 +230,20 @@ pub fn guard_attack(
 
 pub fn explorer_owner(key: ExplorerKey, explorer: ExplorerTroops) -> ContractAddress {
     crate::logic::structures::owner(ResourceKey { game_id: key.game_id, entity_id: explorer.owner })
+}
+
+fn assert_army_opponents(game_id: u32, attacker: ExplorerTroops, defender: ExplorerTroops, rules: SliceRules) {
+    if rules.day_unit_seconds == 0 {
+        return;
+    }
+    let spacing = crate::logic::settlement::rules(game_id).spacing;
+    assert!(
+        crate::deep::contains(attacker.coord, spacing) && crate::deep::contains(defender.coord, spacing),
+        "army combat requires Deep",
+    );
+    let attacker_aspect = crate::logic::aspects::home_aspect(ResourceKey { game_id, entity_id: attacker.owner });
+    let defender_aspect = crate::logic::aspects::home_aspect(ResourceKey { game_id, entity_id: defender.owner });
+    assert!(attacker_aspect != defender_aspect, "cannot attack an allied army");
 }
 
 // Requested loot is a deterministic refusal, independent of whether the combat roll wins.

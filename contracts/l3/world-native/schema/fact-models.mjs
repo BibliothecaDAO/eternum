@@ -796,6 +796,12 @@ export function defineFactModels({ struct, model: declare }) {
         value: "zero",
         meaning: "No carried relics or running relic of this kind while the army exists.",
       };
+    if (row.name === "AspectActivity")
+      row.absence = {
+        parent: "GameRegistry",
+        value: "zero",
+        meaning: "No home in this Aspect allocated an army on this day.",
+      };
     if (row.name === "ArmySlot")
       row.absence = {
         parent: "Structure",
@@ -1098,6 +1104,16 @@ export function defineFactModels({ struct, model: declare }) {
     model("RuinRelic", "game", struct("resources::ResourceKey"), struct("army_relics::ArmyRelic")),
     model("ArmyProgress", "game", struct("troops::ExplorerKey"), struct("progression::ArmyProgress")),
     model("ArmyDay", "game", struct("troops::ExplorerKey"), [{ name: "day", type: "core::integer::u64" }]),
+    model(
+      "AspectActivity",
+      "game",
+      [
+        { name: "game_id", type: "core::integer::u32" },
+        { name: "aspect", type: "core::integer::u8" },
+        { name: "day", type: "core::integer::u64" },
+      ],
+      [{ name: "active", type: "core::integer::u32" }],
+    ),
     model("ArmySlot", "game", struct("troops::ArmySlotKey"), struct("troops::ArmySlot")),
     model("ExplorerTroops", "game", struct("troops::ExplorerKey"), struct("troops::ExplorerRecord")),
     model("ExpeditionSite", "game", struct("resources::ResourceKey"), struct("expeditions::ExpeditionSite")),
@@ -1472,6 +1488,7 @@ export const syncScopes = {
   RuinRelic: { entities: ["entity_id"] },
   ExpeditionDiscovery: { realms: ["structure_id"], epoch: "epoch" },
   ArmyDay: { entities: ["explorer_id"] },
+  AspectActivity: shared,
   ArmySlot: { realms: ["structure_id"], epoch: "epoch" },
   ExplorerTroops: { entities: ["explorer_id"] },
   Guard: { entities: ["structure_id"] },

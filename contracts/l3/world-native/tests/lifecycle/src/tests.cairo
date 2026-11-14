@@ -2,6 +2,7 @@ pub use world_test_support::tests::*;
 
 mod aspects;
 mod blitz_results;
+mod army_activity;
 mod campaign;
 mod camps;
 mod entry;
