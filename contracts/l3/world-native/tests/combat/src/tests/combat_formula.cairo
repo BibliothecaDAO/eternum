@@ -349,8 +349,8 @@ fn expedition_knights_use_one_damage_formula_for_armies_and_guards_even_without_
                     ref defender,
                     CombatContext {
                         day_unit_seconds: 14400,
-                        attacker_is_structure_guard: *attacker_is_structure_guard,
-                        defender_is_structure_guard: *defender_is_structure_guard,
+                        attacker_is_structure_guard,
+                        defender_is_structure_guard,
                         ..context(Biome::Underground)
                     },
                     stamina, damage, 120, 0,
@@ -358,7 +358,7 @@ fn expedition_knights_use_one_damage_formula_for_armies_and_guards_even_without_
                 assert_eq!(attacker.count, (1500 - 418) * RESOURCE_PRECISION);
                 assert_eq!(defender.count, (1000 - 627) * RESOURCE_PRECISION);
                 assert_eq!(attacker.stamina.inline().amount, 50);
-                assert_eq!(defender.stamina.inline().amount, if *defender_stamina == 0 { 0 } else { 60 });
+                assert_eq!(defender.stamina.inline().amount, if defender_stamina == 0 { 0 } else { 60 });
             }
         }
     }
