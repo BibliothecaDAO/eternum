@@ -81,7 +81,11 @@ export function deriveGameSyncScope(
   }
   const entities = new Set([...realms, ...armies.map(({ value }) => syncScalar(value.explorer_id))]);
   const memberships = read("HomeAspect", spacing, [...realms].map(scopeLookup.homeAspect));
-  for (const { value } of read("HomeAspect", spacing, memberships.map(({ value }) => scopeLookup.aspectHomes(value.aspect)))) {
+  for (const { value } of read(
+    "HomeAspect",
+    spacing,
+    memberships.map(({ value }) => scopeLookup.aspectHomes(value.aspect)),
+  )) {
     entities.add(syncScalar(value.home));
   }
   for (const { value } of read("AspectHyperstructure", spacing, [scopeLookup.monuments])) {

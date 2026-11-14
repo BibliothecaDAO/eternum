@@ -111,7 +111,7 @@ export const getHyperstructureProgress = (hyperstructureId: number, store: Nativ
   if (monument) {
     const rules = store.require("RaceRules", { game_id: game });
     const finish = rules.stage_height * nativeRaceConstants.STAGE_COUNT;
-    return { percentage: monument.height / finish * 100, initialized: true, completed: monument.height === finish };
+    return { percentage: (monument.height / finish) * 100, initialized: true, completed: monument.height === finish };
   }
   if (store.get("RaceRules", { game_id: game })) throw new Error("Race monument height is not synchronized");
   const hyperstructure = store.get("Hyperstructure", { game_id: game, entity_id: hyperstructureId });

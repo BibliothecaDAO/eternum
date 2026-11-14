@@ -40,9 +40,11 @@ export const SeasonOver = ({
   useNativeRevision(["RaceRules"]);
   useNowSeconds();
   if (!configManager.isGameOver()) return null;
-  return setup.store.get("RaceRules", { game_id: configManager.getActiveGameId() })
-    ? <EndedRace withdraw={withdraw} />
-    : <EndedSeason realm={realm} withdraw={withdraw} />;
+  return setup.store.get("RaceRules", { game_id: configManager.getActiveGameId() }) ? (
+    <EndedRace withdraw={withdraw} />
+  ) : (
+    <EndedSeason realm={realm} withdraw={withdraw} />
+  );
 };
 
 const EndedRace = ({ withdraw }: { withdraw?: ReactNode }) => {
@@ -50,11 +52,16 @@ const EndedRace = ({ withdraw }: { withdraw?: ReactNode }) => {
   const [closed, setClosed] = useState(false);
   if (closed) return null;
   return (
-    <div data-race-ended className="pointer-events-auto fixed inset-0 z-50 flex items-center justify-center bg-hud-night/90 p-2 lg:p-8">
+    <div
+      data-race-ended
+      className="pointer-events-auto fixed inset-0 z-50 flex items-center justify-center bg-hud-night/90 p-2 lg:p-8"
+    >
       <div className="flex max-h-full w-full max-w-2xl flex-col gap-2 overflow-y-auto">
         <FrontierAspectPage onClose={() => setClosed(true)} />
         {withdraw}
-        <AppButton kind="primary" icon="exit" onClick={() => navigate("/")}>{EXIT}</AppButton>
+        <AppButton kind="primary" icon="exit" onClick={() => navigate("/")}>
+          {EXIT}
+        </AppButton>
       </div>
     </div>
   );

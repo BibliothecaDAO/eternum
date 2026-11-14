@@ -383,12 +383,23 @@ describe("ArmyActionManager.findActionPaths origin precedence", () => {
   });
 
   it("offers no capture of a fixed race monument, while an ordinary unowned structure remains attackable", () => {
-    const { manager, components, structureHexes, armyHexes, exploredHexes, chestHexes, oldFeltStart } = createTestSetup();
+    const { manager, components, structureHexes, armyHexes, exploredHexes, chestHexes, oldFeltStart } =
+      createTestSetup();
     const [monument, ordinary] = getNeighborHexes(oldFeltStart.col, oldFeltStart.row);
     components.AspectHyperstructure.push({ game_id: 1, aspect: 1, entity_id: 900n, height: 2000 });
-    setNestedMapValue(structureHexes, monument.col - TEST_FELT_CENTER, monument.row - TEST_FELT_CENTER, { id: 900, owner: 0n } as HexEntityInfo);
-    setNestedMapValue(structureHexes, ordinary.col - TEST_FELT_CENTER, ordinary.row - TEST_FELT_CENTER, { id: 901, owner: 0n } as HexEntityInfo);
-    vi.mocked(StaminaManager.prototype.getStamina).mockReturnValue({ amount: 150n, settled_at: 0, remainder: 0 } as any);
+    setNestedMapValue(structureHexes, monument.col - TEST_FELT_CENTER, monument.row - TEST_FELT_CENTER, {
+      id: 900,
+      owner: 0n,
+    } as HexEntityInfo);
+    setNestedMapValue(structureHexes, ordinary.col - TEST_FELT_CENTER, ordinary.row - TEST_FELT_CENTER, {
+      id: 901,
+      owner: 0n,
+    } as HexEntityInfo);
+    vi.mocked(StaminaManager.prototype.getStamina).mockReturnValue({
+      amount: 150n,
+      settled_at: 0,
+      remainder: 0,
+    } as any);
     const paths = manager.findActionPaths(structureHexes, armyHexes, exploredHexes, chestHexes, 0, 0x123n as any);
     expect(paths.get(ActionPaths.posKey(monument))).toBeUndefined();
     expect(paths.getRefusals().get(ActionPaths.posKey(monument))).toEqual({ reason: "off-limits" });

@@ -3464,13 +3464,26 @@ function raceBoardSteps(finished) {
       name: "read-aspect-race",
       play: async ({ browser, extraScreenshot }) => {
         if (!finished) {
-          if (!onADesktop()) { browser.click(HUD_WORDS.menu); await sleep(500); }
+          if (!onADesktop()) {
+            browser.click(HUD_WORDS.menu);
+            await sleep(500);
+          }
           browser.click(HUD_WORDS.season);
         }
-        const race = await readUntil(() => browser.read(RACE_BOARD_STATE), (state) => state.race.visible, PLAYABLE_WAIT_MS);
+        const race = await readUntil(
+          () => browser.read(RACE_BOARD_STATE),
+          (state) => state.race.visible,
+          PLAYABLE_WAIT_MS,
+        );
         extraScreenshot("aspect-standings");
-        browser.read(`(() => { document.querySelector('[data-aspect-members]')?.scrollIntoView({ block: 'nearest' }); return true; })()`);
-        const members = await readUntil(() => browser.read(RACE_BOARD_STATE), (state) => state.members.visible, PLAYABLE_WAIT_MS);
+        browser.read(
+          `(() => { document.querySelector('[data-aspect-members]')?.scrollIntoView({ block: 'nearest' }); return true; })()`,
+        );
+        const members = await readUntil(
+          () => browser.read(RACE_BOARD_STATE),
+          (state) => state.members.visible,
+          PLAYABLE_WAIT_MS,
+        );
         extraScreenshot("aspect-members");
         return { race, members };
       },
@@ -3478,12 +3491,22 @@ function raceBoardSteps(finished) {
         const race = played.race?.race;
         const members = played.members?.members;
         const scoped = played.race?.scopes?.at(-1)?.structures ?? [];
-        return race?.visible && members?.visible && race.text.includes("Harmony") && race.text.includes("Might") &&
-          race.text.includes("Chaos") && race.text.includes("Guile") && race.text.includes(finished ? "10,000 of 10,000" : "6,400 of 10,000") &&
-          members.text.includes("1.3K") && members.text.includes("3.8K") &&
-          scoped.includes(7) && scoped.includes(9) && scoped.includes(901) && scoped.includes(904) &&
+        return race?.visible &&
+          members?.visible &&
+          race.text.includes("Harmony") &&
+          race.text.includes("Might") &&
+          race.text.includes("Chaos") &&
+          race.text.includes("Guile") &&
+          race.text.includes(finished ? "10,000 of 10,000" : "6,400 of 10,000") &&
+          members.text.includes("1.3K") &&
+          members.text.includes("3.8K") &&
+          scoped.includes(7) &&
+          scoped.includes(9) &&
+          scoped.includes(901) &&
+          scoped.includes(904) &&
           (!finished || played.race.ended)
-          ? completed(played) : failed("The scoped native race must show four heights, both members' Glory and the early winner", played);
+          ? completed(played)
+          : failed("The scoped native race must show four heights, both members' Glory and the early winner", played);
       },
     },
   ];

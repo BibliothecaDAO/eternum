@@ -194,8 +194,10 @@ export class ArmyActionManager {
   /** Race monuments and owned structures excluded by the game's targeting rule offer no attack order. */
   private isStructureOffLimits(structure: HexEntityInfo | undefined): boolean {
     if (!structure) return false;
-    return readRaceMonument(this.store, configManager.getActiveGameId(), structure.id) !== undefined ||
-      (BigInt(structure.owner) !== 0n && configManager.attacksOnlyUnownedStructures());
+    return (
+      readRaceMonument(this.store, configManager.getActiveGameId(), structure.id) !== undefined ||
+      (BigInt(structure.owner) !== 0n && configManager.attacksOnlyUnownedStructures())
+    );
   }
 
   /** Whether the game takes an army's attack on this target: another army (Battle), or a structure's guard (BattleGuard). */

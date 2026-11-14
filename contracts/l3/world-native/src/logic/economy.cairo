@@ -1,8 +1,8 @@
 #[starknet::contract]
 pub mod EconomyLogic {
     use crate::logic::hyperstructures::HyperstructureState;
-    use crate::logic::release::ReleaseState;
     use crate::logic::race::RaceState;
+    use crate::logic::release::ReleaseState;
     component!(path: RaceState, storage: race, event: RaceEvent);
     #[abi(embed_v0)]
     impl Race = RaceState::RaceImpl<ContractState>;

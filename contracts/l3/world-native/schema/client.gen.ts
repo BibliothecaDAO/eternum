@@ -1,5 +1,5 @@
 // Generated from native fact models and contract ABIs. Run the native schema generator to update.
-export const nativeFactSchemaIdentity = "dfb28c763b6ea783a070de9e71dcbb5cea69bf5ae4f778f10d828579ecc20d05";
+export const nativeFactSchemaIdentity = "97e1ad509a8a1c1484c50ad995fd4c4192b2911d1b5c6e87586698128de72f8b";
 export const nativeReleaseConstants = {
   "RUIN_DEPTH_LIMIT_RELEASE": 9
 } as const;
@@ -234,6 +234,10 @@ export interface NativeRows {
   PrincipalWithdrawal: { readonly game_id: number; readonly account: bigint; readonly amount: bigint };
   DepositReceipt: { readonly game_id: number; readonly id: bigint; readonly commitment: bigint; readonly account: bigint; readonly amount: bigint; readonly cancelled: boolean };
   RaceRules: { readonly game_id: number; readonly season_days: bigint; readonly glory_per_tick: bigint; readonly height_per_tick: number; readonly stage_height: number; readonly clear_mist_percent: number; readonly second_wind_percent: number; readonly pale_moon_percent: number; readonly spoils_percent: number; readonly first: { readonly alt: boolean; readonly x: number; readonly y: number }; readonly second: { readonly alt: boolean; readonly x: number; readonly y: number }; readonly third: { readonly alt: boolean; readonly x: number; readonly y: number }; readonly fourth: { readonly alt: boolean; readonly x: number; readonly y: number } };
+  RaceMember: { readonly game_id: number; readonly entity_id: bigint; readonly glory: bigint; readonly contribution: bigint };
+  AspectHyperstructure: { readonly game_id: number; readonly aspect: number; readonly entity_id: bigint; readonly height: number };
+  TriumphDay: { readonly game_id: number; readonly aspect: number; readonly stage: number; readonly day: bigint };
+  RaceResult: { readonly game_id: number; readonly winner: (number) | null; readonly ended_at: bigint; readonly scheduled_end_at: bigint };
   BaneRules: { readonly game_id: number; readonly chance_step: number; readonly quorum_percent: number; readonly beast_percent: number; readonly stamina_percent: number; readonly production_percent: number; readonly quest_counts: readonly (bigint)[] };
   QuestRules: { readonly game_id: number; readonly base_counts: readonly (number)[]; readonly labor: bigint; readonly essence: bigint; readonly bonus_percent: number };
   QuestProgress: { readonly game_id: number; readonly home: bigint; readonly day: bigint; readonly progress: bigint; readonly completed_level: number };
@@ -345,6 +349,10 @@ export interface NativeKeys {
   PrincipalWithdrawal: { readonly game_id: number; readonly account: bigint };
   DepositReceipt: { readonly game_id: number; readonly id: bigint };
   RaceRules: { readonly game_id: number };
+  RaceMember: { readonly game_id: number; readonly entity_id: bigint };
+  AspectHyperstructure: { readonly game_id: number; readonly aspect: number };
+  TriumphDay: { readonly game_id: number; readonly aspect: number; readonly stage: number };
+  RaceResult: { readonly game_id: number };
   BaneRules: { readonly game_id: number };
   QuestRules: { readonly game_id: number };
   QuestProgress: { readonly game_id: number; readonly home: bigint; readonly day: bigint };
@@ -733,6 +741,69 @@ export const nativeFactModels = {
         "x": "u32",
         "y": "u32"
       }
+    }
+  },
+  "RaceMember": {
+    "keys": [
+      "game_id",
+      "entity_id"
+    ],
+    "scope": "game",
+    "fields": {
+      "game_id": "u32",
+      "entity_id": "u64",
+      "glory": "u128",
+      "contribution": "u128"
+    },
+    "absence": {
+      "parent": "Structure",
+      "value": "zero",
+      "meaning": "This home has earned no Glory or height contribution yet.",
+      "parentKeys": {
+        "game_id": "game_id",
+        "entity_id": "entity_id"
+      }
+    }
+  },
+  "AspectHyperstructure": {
+    "keys": [
+      "game_id",
+      "aspect"
+    ],
+    "scope": "game",
+    "fields": {
+      "game_id": "u32",
+      "aspect": "u8",
+      "entity_id": "u64",
+      "height": "u32"
+    }
+  },
+  "TriumphDay": {
+    "keys": [
+      "game_id",
+      "aspect",
+      "stage"
+    ],
+    "scope": "game",
+    "fields": {
+      "game_id": "u32",
+      "aspect": "u8",
+      "stage": "u8",
+      "day": "u64"
+    }
+  },
+  "RaceResult": {
+    "keys": [
+      "game_id"
+    ],
+    "scope": "game",
+    "fields": {
+      "game_id": "u32",
+      "winner": {
+        "option": "u8"
+      },
+      "ended_at": "u64",
+      "scheduled_end_at": "u64"
     }
   },
   "BaneRules": {
@@ -2667,6 +2738,10 @@ export const nativeSyncScopes = {
   "QuestRules": "shared",
   "BaneRules": "shared",
   "RaceRules": "shared",
+  "RaceMember": "shared",
+  "AspectHyperstructure": "shared",
+  "TriumphDay": "shared",
+  "RaceResult": "shared",
   "WorldBane": "shared",
   "FirstTeamBane": "shared",
   "BaneProgress": "shared",

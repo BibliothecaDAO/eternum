@@ -26,13 +26,31 @@ describe("the race board from native facts", () => {
       { aspect: 3, rank: 3, height: 2800, stage: 2 },
       { aspect: 4, rank: 4, height: 900, stage: 1 },
     ]);
-    expect(board.own!.members.map(({ home, glory, contribution, mine, guards }) => ({ home: home.entity_id, glory, contribution, mine, guards }))).toEqual([
+    expect(
+      board.own!.members.map(({ home, glory, contribution, mine, guards }) => ({
+        home: home.entity_id,
+        glory,
+        contribution,
+        mine,
+        guards,
+      })),
+    ).toEqual([
       { home: 9n, glory: 3750n * precision, contribution: 3900n * precision, mine: false, guards: ["Quarry"] },
       { home: 7n, glory: 1250n * precision, contribution: 1300n * precision, mine: true, guards: [] },
     ]);
     const page = aspectPage(board, (home) => getStructureName(home, store).name);
-    expect(page.race?.standings.map((row) => [row.aspect, row.own])).toEqual([["Harmony", false], ["Might", true], ["Chaos", false], ["Guile", false]]);
-    expect(page.own?.triumphs).toEqual([{ stage: 1, day: 2 }, { stage: 2, day: 2 }, { stage: 3, day: null }, { stage: 4, day: null }]);
+    expect(page.race?.standings.map((row) => [row.aspect, row.own])).toEqual([
+      ["Harmony", false],
+      ["Might", true],
+      ["Chaos", false],
+      ["Guile", false],
+    ]);
+    expect(page.own?.triumphs).toEqual([
+      { stage: 1, day: 2 },
+      { stage: 2, day: 2 },
+      { stage: 3, day: null },
+      { stage: 4, day: null },
+    ]);
     expect(page.own?.members.map(({ glory }) => glory)).toEqual([3750, 1250]);
     expect(page.own?.bar).toEqual({ charge: 300, threshold: 1500 });
   });
@@ -45,14 +63,21 @@ describe("the race board from native facts", () => {
     expect(readRaceBoard(restored, 1, 7n, startsAt)).toEqual(read());
     expect(readRaceMonument(restored, 1, 901)?.aspect).toBe(1);
     expect(getHyperstructureProgress(901, restored)).toEqual({ percentage: 52, initialized: true, completed: false });
-    expect(getStructureName(restored.require("Structure", { game_id: 1, entity_id: 901 }), restored).name).toBe("Might Hyperstructure");
+    expect(getStructureName(restored.require("Structure", { game_id: 1, entity_id: 901 }), restored).name).toBe(
+      "Might Hyperstructure",
+    );
   });
 
   it("reads the winner and both dates after early finish without future guard projections", () => {
     const { read, store } = fixture(true);
     const board = read().known!.race!;
     const game = store.require("GameRegistry", { game_id: 1 });
-    expect(board.result).toEqual({ game_id: 1, winner: 2, ended_at: game.end_at, scheduled_end_at: game.scheduled_end_at });
+    expect(board.result).toEqual({
+      game_id: 1,
+      winner: 2,
+      ended_at: game.end_at,
+      scheduled_end_at: game.scheduled_end_at,
+    });
     expect(game.end_at).toBeLessThan(game.scheduled_end_at);
     expect(board.own!.members.every((member) => member.guards.length === 0)).toBe(true);
     expect(aspectPage(board, () => "Realm").race?.winner).toBe("Harmony");
@@ -61,12 +86,16 @@ describe("the race board from native facts", () => {
 
   it("accepts a known zero receipt only for an existing member and keeps incomplete snapshots unknown", () => {
     const { store, read, player, startsAt } = fixture();
-    store.applyFacts([{ model: "RaceMember", key: store.wireKeyOf("RaceMember", { game_id: 1, entity_id: 7 })!, value: null }]);
+    store.applyFacts([
+      { model: "RaceMember", key: store.wireKeyOf("RaceMember", { game_id: 1, entity_id: 7 })!, value: null },
+    ]);
     expect(read().known!.race!.own!.members.find((member) => member.home.entity_id === 7n)?.glory).toBe(0n);
     store.setSnapshot({ gameId: 1, actor: player, timestamp: startsAt, complete: false });
     expect(read().unknown).toBe("INCOMPLETE_SNAPSHOT: RaceRules");
     store.setSnapshot({ gameId: 1, actor: player, timestamp: startsAt, complete: true });
-    store.applyFacts([{ model: "Structure", key: store.wireKeyOf("Structure", { game_id: 1, entity_id: 9 })!, value: null }]);
+    store.applyFacts([
+      { model: "Structure", key: store.wireKeyOf("Structure", { game_id: 1, entity_id: 9 })!, value: null },
+    ]);
     expect(read().unknown).toBe("MISSING_ASPECT_MEMBER_HOME");
   });
 });

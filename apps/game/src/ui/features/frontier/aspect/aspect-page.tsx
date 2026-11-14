@@ -6,7 +6,13 @@ import { useUIStore } from "@/hooks/store/use-ui-store";
 import { useWorldSpatialTiles } from "@/hooks/use-world-spatial-tiles";
 import { ASPECT_PAGE_WORDS } from "@/ui/design-system/kit/words";
 import { configManager, getStructureName } from "@bibliothecadao/eternum";
-import { RACE_MODELS, readRaceBoard, readRaceMonument, nativeRaceConstants, type RaceBoard } from "@bibliothecadao/eternum/game-client";
+import {
+  RACE_MODELS,
+  readRaceBoard,
+  readRaceMonument,
+  nativeRaceConstants,
+  type RaceBoard,
+} from "@bibliothecadao/eternum/game-client";
 import { aspects, RESOURCE_PRECISION } from "@bibliothecadao/types";
 import { useMemo } from "react";
 import { useFrontierRealm } from "../frontier-home";
@@ -25,7 +31,7 @@ export function useSelectedRaceMonument(): bigint | null {
   const { isMapView } = useQuery();
   useNativeRevision(["AspectHyperstructure"]);
   const selected = useUIStore((state) => state.selectedHex);
-  const hexes = useMemo(() => selected ? [selected] : [], [selected]);
+  const hexes = useMemo(() => (selected ? [selected] : []), [selected]);
   const [tile] = useWorldSpatialTiles(hexes);
   if (!isMapView || !tile) return null;
   return readRaceMonument(setup.store, configManager.getActiveGameId(), tile.occupierId)?.entity_id ?? null;
@@ -36,7 +42,9 @@ export function FrontierAspectPage({ onClose }: { onClose: () => void }) {
   const reading = useAspectBoard();
   const board = reading.known?.race;
   if (!board) return <AspectPageView race={null} own={null} onClose={onClose} />;
-  return <AspectPageView {...aspectPage(board, (home) => getStructureName(home, setup.store).name)} onClose={onClose} />;
+  return (
+    <AspectPageView {...aspectPage(board, (home) => getStructureName(home, setup.store).name)} onClose={onClose} />
+  );
 }
 
 export function aspectPage(
@@ -46,19 +54,31 @@ export function aspectPage(
   return {
     race: {
       standings: board.standings.map((row) => ({
-        aspect: aspectName(row.aspect), rank: row.rank, height: row.height, stage: row.stage,
-        finished: row.finished, own: row.aspect === board.own?.aspect,
+        aspect: aspectName(row.aspect),
+        rank: row.rank,
+        height: row.height,
+        stage: row.stage,
+        finished: row.finished,
+        own: row.aspect === board.own?.aspect,
       })),
       finishHeight: board.rules.stage_height * nativeRaceConstants.STAGE_COUNT,
       stages: nativeRaceConstants.STAGE_COUNT,
-      winner: board.result?.winner === undefined || board.result.winner === null ? null : aspectName(board.result.winner),
+      winner:
+        board.result?.winner === undefined || board.result.winner === null ? null : aspectName(board.result.winner),
     },
     own: board.own && {
-      aspect: aspectName(board.own.aspect), bar: board.own.bar,
-      triumphs: board.own.triumphs.map(({ stage, day }) => ({ stage: triumphStage(stage), day: day === null ? null : Number(day) + 1 })),
+      aspect: aspectName(board.own.aspect),
+      bar: board.own.bar,
+      triumphs: board.own.triumphs.map(({ stage, day }) => ({
+        stage: triumphStage(stage),
+        day: day === null ? null : Number(day) + 1,
+      })),
       members: board.own.members.map((member) => ({
-        id: member.home.entity_id.toString(), realm: name(member.home), mine: member.mine,
-        glory: Number(member.glory) / RESOURCE_PRECISION, guards: member.guards.length ? member.guards.join(", ") : null,
+        id: member.home.entity_id.toString(),
+        realm: name(member.home),
+        mine: member.mine,
+        glory: Number(member.glory) / RESOURCE_PRECISION,
+        guards: member.guards.length ? member.guards.join(", ") : null,
       })),
     },
   };

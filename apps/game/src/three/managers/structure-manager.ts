@@ -9,7 +9,13 @@ import { FrontierModel, frontierModelKind } from "../structures/frontier-model";
 import { nextFrameOrTimeout } from "@/utils/frame-or-timeout";
 import { realmModelIndex, isWonderModelPath } from "../structures/realm-design";
 import { MineKinds, structureName, troopTierIndex } from "@bibliothecadao/types";
-import { configManager, getHyperstructureProgress, siteDisplayName, siteKindOf, type SiteKind } from "@bibliothecadao/eternum";
+import {
+  configManager,
+  getHyperstructureProgress,
+  siteDisplayName,
+  siteKindOf,
+  type SiteKind,
+} from "@bibliothecadao/eternum";
 import {
   FALLEN_REALM_RUIN_MODEL_INDEX,
   frontierBeastModelIndex,

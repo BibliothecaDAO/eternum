@@ -92,16 +92,20 @@ export const useSeasonRank = (): string => {
  * player's own lit, a row's detail with Visit. Visiting closes the page for the visited realm.
  */
 export const FrontierSeason = ({
-  rules, onVisited, onClose,
+  rules,
+  onVisited,
+  onClose,
 }: {
   rules: ExpeditionRules;
   onVisited: () => void;
   onClose: () => void;
 }) => {
   const race = useAspectBoard();
-  return race.known?.race === null
-    ? <LegacyFrontierSeason rules={rules} onVisited={onVisited} onClose={onClose} />
-    : <FrontierAspectPage onClose={onClose} />;
+  return race.known?.race === null ? (
+    <LegacyFrontierSeason rules={rules} onVisited={onVisited} onClose={onClose} />
+  ) : (
+    <FrontierAspectPage onClose={onClose} />
+  );
 };
 
 const LegacyFrontierSeason = ({

@@ -26,14 +26,24 @@ pub fn triumph_day(key: TriumphKey) -> Option<u64> {
 }
 
 pub fn result(game_id: u32) -> Option<RaceResult> {
-    crate::state::read().season.race_winners.read(game_id).map(|winner| {
-        let game = crate::logic::game::game(game_id);
-        RaceResult {
-            winner: if winner == 0 { None } else { Some(winner) },
-            ended_at: game.end_at,
-            scheduled_end_at: game.scheduled_end_at,
-        }
-    })
+    crate::state::read()
+        .season
+        .race_winners
+        .read(game_id)
+        .map(
+            |winner| {
+                let game = crate::logic::game::game(game_id);
+                RaceResult {
+                    winner: if winner == 0 {
+                        None
+                    } else {
+                        Some(winner)
+                    },
+                    ended_at: game.end_at,
+                    scheduled_end_at: game.scheduled_end_at,
+                }
+            },
+        )
 }
 
 fn initialize(game_id: u32) {
@@ -56,7 +66,8 @@ fn validate_game(game_id: u32, rules: RaceRules) {
     let tick = crate::logic::preset_record::for_game(game_id).rules.tick_config.armies_tick_in_seconds.read();
     let ticks = game.scheduled_end_at / tick - game.start_main_at / tick;
     let maximum_glory = Into::<u128, u256>::into(rules.glory_per_tick * crate::rules::RESOURCE_PRECISION)
-        * Into::<u64, u256>::into(ticks) * 2;
+        * Into::<u64, u256>::into(ticks)
+        * 2;
     let _: u128 = maximum_glory.try_into().expect('race Glory exceeds limit');
 }
 
@@ -77,7 +88,7 @@ fn initialize_hyperstructure(key: AspectKey, rules: RaceRules, spacing: u32) {
             base: crate::structures::StructureBase {
                 category: crate::taxonomy::HYPERSTRUCTURE_CATEGORY,
                 created_at: crate::logic::game::game(key.game_id).start_main_at.try_into().unwrap(),
-                ..Default::default()
+                ..Default::default(),
             },
             resources_packed: 0,
             metadata: Default::default(),
@@ -134,7 +145,11 @@ fn build_height(key: AspectKey, rules: RaceRules, timestamp: u64) -> u32 {
     let before = hyperstructure(key);
     let blocked = height_blocked(key, timestamp - 1);
     let finish_height = rules.stage_height * Into::<u8, u32>::into(crate::race::STAGE_COUNT);
-    let height = if blocked { before.height } else { before.height + core::cmp::min(rules.height_per_tick, finish_height - before.height) };
+    let height = if blocked {
+        before.height
+    } else {
+        before.height + core::cmp::min(rules.height_per_tick, finish_height - before.height)
+    };
     if height == before.height {
         return 0;
     }

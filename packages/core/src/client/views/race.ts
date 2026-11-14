@@ -4,8 +4,23 @@ import type { NativeFactResult, NativeFactStore } from "../native-fact-store";
 import { readDeepSites } from "./deep-sites";
 
 export const RACE_MODELS = [
-  "RaceRules", "RaceMember", "AspectHyperstructure", "TriumphDay", "RaceResult", "HomeAspect", "AspectMembers",
-  "Structure", "EntityName", "GameRegistry", "AltarBar", "DeepRules", "DeepSite", "DeepGuard", "DeepArmy", "ArmyDay", "ExplorerTroops",
+  "RaceRules",
+  "RaceMember",
+  "AspectHyperstructure",
+  "TriumphDay",
+  "RaceResult",
+  "HomeAspect",
+  "AspectMembers",
+  "Structure",
+  "EntityName",
+  "GameRegistry",
+  "AltarBar",
+  "DeepRules",
+  "DeepSite",
+  "DeepGuard",
+  "DeepArmy",
+  "ArmyDay",
+  "ExplorerTroops",
 ] as const;
 
 export interface RaceBoard {
@@ -49,19 +64,30 @@ export function readRaceBoard(
     if (!row) return { unknown: "MISSING_ASPECT_HYPERSTRUCTURE" };
     if (row.height > finish) throw new Error("Race height exceeds its finish");
     standings.push({
-      ...row, rank: 0, stage: Math.min(nativeRaceConstants.STAGE_COUNT, Math.floor(row.height / rules.stage_height) + 1),
+      ...row,
+      rank: 0,
+      stage: Math.min(nativeRaceConstants.STAGE_COUNT, Math.floor(row.height / rules.stage_height) + 1),
       finished: row.height === finish,
     });
   }
   standings.sort((a, b) => b.height - a.height || a.aspect - b.aspect);
-  standings.forEach((row, index) => { row.rank = index + 1; });
+  standings.forEach((row, index) => {
+    row.rank = index + 1;
+  });
   const own = readOwnAspect(store, gameId, home, timestamp);
   if (!own.known) return own;
-  return { known: { race: { rules, standings, result: store.get("RaceResult", { game_id: gameId }) ?? null, own: own.known.own } } };
+  return {
+    known: {
+      race: { rules, standings, result: store.get("RaceResult", { game_id: gameId }) ?? null, own: own.known.own },
+    },
+  };
 }
 
 function readOwnAspect(
-  store: NativeFactStore, gameId: number, home: bigint | null, timestamp: number,
+  store: NativeFactStore,
+  gameId: number,
+  home: bigint | null,
+  timestamp: number,
 ): NativeFactResult<{ own: RaceBoard["own"] }> {
   if (home === null) return { known: { own: null } };
   const membership = store.get("HomeAspect", { game_id: gameId, home });
@@ -78,11 +104,16 @@ function readOwnAspect(
     const member = store.requireOrAbsent("RaceMember", { game_id: gameId, entity_id: row.home });
     if (!member.known) return member;
     members.push({
-      home: structure, glory: member.known.glory, contribution: member.known.contribution, mine: row.home === home,
+      home: structure,
+      glory: member.known.glory,
+      contribution: member.known.contribution,
+      mine: row.home === home,
       guards: sites.filter((site) => site.guards.some(({ army }) => army.owner === row.home)).map((site) => site.name),
     });
   }
-  members.sort((a, b) => a.glory === b.glory ? (a.home.entity_id < b.home.entity_id ? -1 : 1) : a.glory > b.glory ? -1 : 1);
+  members.sort((a, b) =>
+    a.glory === b.glory ? (a.home.entity_id < b.home.entity_id ? -1 : 1) : a.glory > b.glory ? -1 : 1,
+  );
   const triumphs = Array.from({ length: nativeRaceConstants.STAGE_COUNT - 1 }, (_, index) => {
     const stage = index + 1;
     return { stage, day: store.get("TriumphDay", { game_id: gameId, aspect, stage })?.day ?? null };
@@ -91,5 +122,7 @@ function readOwnAspect(
   if (!bar.known) return bar;
   const deep = store.get("DeepRules", { game_id: gameId });
   if (!deep) return { unknown: "MISSING_DEEP_RULES" };
-  return { known: { own: { aspect, members, triumphs, bar: { charge: bar.known.charge, threshold: deep.altar_threshold } } } };
+  return {
+    known: { own: { aspect, members, triumphs, bar: { charge: bar.known.charge, threshold: deep.altar_threshold } } },
+  };
 }

@@ -204,9 +204,10 @@ it("includes the own Aspect's member identities and fixed monuments without addi
     { model: "HomeAspect", value: { home: "4", aspect: 2 } },
     { model: "AspectHyperstructure", value: { aspect: 1, entity_id: "900", height: 2000 } },
   ];
-  const teamRead: ScopeRowReader = (model, spacing, keys) => teamRows.filter(
-    (row) => row.model === model && scopeInputKeys(model, row.value, spacing).some((key) => keys.includes(key)),
-  );
+  const teamRead: ScopeRowReader = (model, spacing, keys) =>
+    teamRows.filter(
+      (row) => row.model === model && scopeInputKeys(model, row.value, spacing).some((key) => keys.includes(key)),
+    );
   const own = deriveGameSyncScope("0xa", 350, expedition, teamRead);
   expect(own.expedition?.entities).toEqual(new Set(["1", "101", "3", "900"]));
   expect(own.expedition?.regions).toEqual(new Set(["0:0", "0:1"]));
