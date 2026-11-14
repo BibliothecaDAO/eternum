@@ -313,7 +313,7 @@ fn late_campaign_recovery_attaches_the_bonus_without_bypassing_any_quest() {
     };
     snforge_std::start_cheat_block_timestamp(d.games, tomorrow);
     snforge_std::start_cheat_caller_address(d.games, world_test_support::tests::authority());
-    for _ in 0..2 {
+    for _ in 0_u32..2 {
         world_test_support::tests::entry::ledger(d)
             .register_entitlement(world_test_support::tests::entry::EntryKey { game_id, owner: d.actor }, entitlement)
             .unwrap();
