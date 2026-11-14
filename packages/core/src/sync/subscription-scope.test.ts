@@ -34,7 +34,7 @@ describe("visited realm scope", () => {
     for (const model of ["Building", "RealmKnowledge", "ArmySlot"])
       expect(rowInGameSyncScope(model, { structure_id: "2", epoch: 0 }, scope)).toBe(true);
     expect(rowInGameSyncScope("TileOpt", { alt: false, col: 1600, row: 2700 }, scope)).toBe(false);
-    expect(rowInGameSyncScope("TileOccupancy", rows[6].value, scope)).toBe(true);
+    expect(rowInGameSyncScope("TileOccupancy", rows.find((row) => row.model === "TileOccupancy" && row.value.entity_id === "102")!.value, scope)).toBe(true);
     expect(rowInGameSyncScope("GameplayRejected", { actor: "11" }, scope)).toBe(false);
   });
 

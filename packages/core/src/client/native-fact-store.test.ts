@@ -760,6 +760,8 @@ describe("declared fact absence", () => {
     ]);
     expect(seen.every((reason) => reason?.startsWith("INCOMPLETE_SNAPSHOT"))).toBe(true);
     expect(() => store.setSnapshot({ gameId: 1, complete: true, actor: "0x111", timestamp: 350 })).not.toThrow();
+    expect(seen.at(-1)).toContain("INCOMPLETE_SCOPE: Missing army day for scope entity 7");
+    store.applyFacts([set("0x10", "ArmyDay", { game_id: 1, explorer_id: 7, day: "0" })]);
     expect(seen.at(-1)).toContain("INCOMPLETE_SCOPE: Expected one position for scope entity");
     expect(() =>
       store.applyFacts([set("0x9", "ResourceWeight", { game_id: 1, entity_id: 7, capacity: "1", weight: "0" })]),
