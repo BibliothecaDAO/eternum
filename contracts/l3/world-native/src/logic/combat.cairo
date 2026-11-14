@@ -195,7 +195,7 @@ fn complete_guard_capture(
         crate::commands::action_context(context),
     );
     if let GuardSource::Guard(_) = defender.source {
-        crate::logic::deep_sites::grant_beast_xp(key, target.coord, context.timestamp);
+        crate::logic::deep_sites::reward_beast_clear(key, attacker.owner, target.coord, context.timestamp);
     }
 }
 

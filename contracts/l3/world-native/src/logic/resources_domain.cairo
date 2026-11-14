@@ -86,6 +86,7 @@ pub mod ResourcesLogic {
             crate::logic::expeditions::clear_site(
                 key, crate::expeditions::SiteClear { explorer_id: explorer.explorer_id, home_id, reward },
             );
+            crate::logic::quest_progress::cleared(home, category, site.initial_guard_count, context.timestamp);
             crate::progression::IArmyProgressionDispatcherTrait::grant_army_xp(
                 crate::progression::IArmyProgressionLibraryDispatcher {
                     class_hash: self.release.classes(key.game_id).relics.read(),

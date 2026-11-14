@@ -3,7 +3,7 @@ use crate::map::TileKey;
 use crate::troops::Coord;
 
 pub fn roll(
-    key: TileKey, explorer_id: u64, seed: u256, _context: crate::commands::ActionContext,
+    key: TileKey, explorer_id: u64, seed: u256, context: crate::commands::ActionContext,
 ) -> crate::discovery::Discovery {
     let mut rules = crate::logic::preset_record::for_game(key.game_id)
         .discovery_rules
@@ -37,6 +37,8 @@ pub fn roll(
     let result = crate::discovery::frontier(rules, camp, rift, sanctuaries, day.empty_reveals, ruin, seed);
     crate::logic::expeditions::record_discovery(counter, result);
     occupy_discovery(key, home, result, seed);
+    crate::logic::quest_progress::revealed(home_key, 1, context.timestamp);
+    crate::logic::quest_progress::discovered(home_key, result, context.timestamp);
     result
 }
 

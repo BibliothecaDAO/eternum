@@ -74,7 +74,22 @@ pub fn award_xp(key: ExplorerKey, award: XpAward, timestamp: u64) {
     let amount = (Into::<u32, u64>::into(amount) * (10_000 + Into::<u32, u64>::into(tome)) / 10_000)
         .try_into()
         .unwrap();
+    let before = progress;
     crate::progression::earn_xp(ref progress, rules, amount);
+    let mut earned: u128 = 0;
+    for rank in 1_u8..6 {
+        earned +=
+            Into::<
+                u32, u128,
+            >::into(crate::progression::points(progress, rank) - crate::progression::points(before, rank));
+    }
+    let home = crate::logic::troops::explorer(key).expect('missing rewarded army').owner;
+    crate::logic::quest_progress::record(
+        crate::resources::ResourceKey { game_id: key.game_id, entity_id: home },
+        crate::quests::VETERANS,
+        earned,
+        timestamp,
+    );
     write(key, progress);
 }
 

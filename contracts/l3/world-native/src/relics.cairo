@@ -242,7 +242,7 @@ pub trait IRelicMap<T> {
     fn consume_relic_chest(ref self: T, game_id: u32, coord: Coord) -> u64;
     fn reveal_relic_tiles(
         ref self: T, game_id: u32, coord: Coord, count: u8, game_context: crate::commands::BiomeContext,
-    );
+    ) -> u8;
     fn reveal_relic_ring(
         ref self: T, game_id: u32, coord: Coord, radius: u8, game_context: crate::commands::BiomeContext,
     );

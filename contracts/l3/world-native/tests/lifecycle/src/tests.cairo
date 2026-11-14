@@ -11,6 +11,7 @@ mod entry;
 mod frontier_extension;
 mod hyperstructures;
 
+mod quest_producers;
 mod quests;
 mod realms;
 mod releases;

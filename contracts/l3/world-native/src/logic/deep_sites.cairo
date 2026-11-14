@@ -23,8 +23,11 @@ pub fn dispatcher(game_id: u32) -> crate::deep::IDeepSitesLibraryDispatcher {
     crate::deep::IDeepSitesLibraryDispatcher { class_hash: state.releases.entry(release).classes.map.read() }
 }
 
-pub fn grant_beast_xp(key: ExplorerKey, coord: crate::troops::Coord, timestamp: u64) {
+pub fn reward_beast_clear(key: ExplorerKey, home: u64, coord: crate::troops::Coord, timestamp: u64) {
     let count = rules_entry(key.game_id).expect('missing Deep rules').beast_count.read();
+    crate::logic::quest_progress::guarded_site_cleared(
+        ResourceKey { game_id: key.game_id, entity_id: home }, count, timestamp,
+    );
     let depth = crate::logic::expeditions::depth_at(key.game_id, coord);
     let state = crate::state::read();
     let release = state.releases.entry(state.game_releases.read(key.game_id)).classes;

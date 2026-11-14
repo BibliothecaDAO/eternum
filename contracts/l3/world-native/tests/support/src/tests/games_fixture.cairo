@@ -246,7 +246,7 @@ pub mod GamesFixture {
             coord: crate::troops::Coord,
             count: u8,
             game_context: crate::commands::BiomeContext,
-        ) {
+        ) -> u8 {
             let classes = fixture_classes(game_id);
             crate::relics::IRelicMapDispatcherTrait::reveal_relic_tiles(
                 crate::relics::IRelicMapLibraryDispatcher { class_hash: classes.raid.read() },
@@ -254,7 +254,7 @@ pub mod GamesFixture {
                 coord,
                 count,
                 game_context,
-            );
+            )
         }
         fn discover_relic_chest(
             ref self: TContractState,

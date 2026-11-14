@@ -37,6 +37,7 @@ pub mod prizes;
 pub mod production;
 pub mod production_domain;
 pub mod progression;
+pub mod quest_progress;
 pub mod quests;
 pub mod raid;
 pub mod realms;

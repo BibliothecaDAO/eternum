@@ -155,10 +155,12 @@ pub fn site_reward(
     crate::resources::ResourceAmount { amount: reward.amount * (10_000 + extra) / 10_000, ..reward }
 }
 
-pub fn reveal_tiles(game_id: u32, origin: crate::troops::Coord, count: u8, context: crate::commands::BiomeContext) {
+pub fn reveal_tiles(
+    game_id: u32, origin: crate::troops::Coord, count: u8, context: crate::commands::BiomeContext,
+) -> u8 {
     assert!(count > 0 && count <= 5 * crate::rules::RELIC_TILES_PER_RANK, "invalid relic tile count");
     if crate::logic::deep::contains(game_id, origin) {
-        return;
+        return 0;
     }
     let spacing = crate::logic::settlement::rules(game_id).spacing;
     let mut revealed = 0;
@@ -183,11 +185,12 @@ pub fn reveal_tiles(game_id: u32, origin: crate::troops::Coord, count: u8, conte
                 crate::logic::map::MapState::reveal(key, crate::logic::map::biome(key, context));
                 revealed += 1;
                 if revealed == count {
-                    return;
+                    return revealed;
                 }
             }
         }
     }
+    revealed
 }
 
 #[starknet::component]
