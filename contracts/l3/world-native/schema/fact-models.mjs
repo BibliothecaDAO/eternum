@@ -686,6 +686,7 @@ export const factWireTypes = [
         name: "last_settled_at",
         type: "core::integer::u32",
       },
+      { name: "remainder", type: "core::integer::u8" },
     ],
   },
   {
