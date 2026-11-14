@@ -67,4 +67,3 @@ pub fn clear_expired_occupant(game_id: u32, coord: Coord, context: ExecutionCont
         let _ = crate::logic::troops::command_explorer(key, None, context.timestamp, context);
     }
 }
-

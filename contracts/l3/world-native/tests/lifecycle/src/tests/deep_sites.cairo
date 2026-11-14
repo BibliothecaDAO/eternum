@@ -9,9 +9,9 @@ use super::army_activity::{army, found, muster, player, slot_army};
 
 fn setup(seed: felt252) -> (Deployment, u32) {
     let (_, mut preset) = world_test_support::tests::preset_projection::current_definition("frontier");
-    preset.rules.command_mask |= 4;
+    preset.rules.command_mask = preset.rules.command_mask | 4;
     preset.rules.battle_config.regular_immunity_ticks = 0;
-    preset.deep_rules = Some(crate::deep::DeepRules {
+    preset.deep = Some(crate::deep::DeepRules {
         foundation: crate::troops::Coord { alt: false, x: 10, y: 25 },
         quarry: crate::troops::Coord { alt: false, x: 25, y: 25 },
         altar: crate::troops::Coord { alt: false, x: 40, y: 25 },
