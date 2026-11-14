@@ -1,6 +1,6 @@
 import { nativeRuleConstants } from "../../../../contracts/l3/world-native/schema/client.gen";
 
-function deepCenter(spacing: number): { col: number; row: number } {
+export function deepCenter(spacing: number): { col: number; row: number } {
   if (spacing < nativeRuleConstants.DEEP_MAP_SIZE * 2) throw new Error("Deep needs a full expedition region");
   return { col: Math.floor(spacing / 2), row: spacing * 3 + Math.floor(spacing / 2) };
 }
