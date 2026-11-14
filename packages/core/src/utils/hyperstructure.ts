@@ -1,5 +1,12 @@
 import { safeInteger } from "./safe-integer";
-import { type ID, formatRate, ResourcesIds, StructureType, RESOURCE_PRECISION } from "@bibliothecadao/types";
+import {
+  type ID,
+  formatRate,
+  ResourcesIds,
+  StructureType,
+  StructureTypeToNameMapping,
+  RESOURCE_PRECISION,
+} from "@bibliothecadao/types";
 import type { NativeFactStore } from "../client/native-fact-store";
 import type { NativeRows } from "../../../../contracts/l3/world-native/schema/client.gen";
 import { configManager } from "../managers";
@@ -275,6 +282,7 @@ const hyperstructureSuffixes = [
 
 export const getHyperstructureName = (structure: NativeRows["Structure"]): string => {
   const seed = safeInteger(structure.entity_id);
+  const typeName = StructureTypeToNameMapping[StructureType.Hyperstructure];
 
   // Same hash function as chest naming for consistency
   const hash = (n: number) => {
@@ -291,7 +299,7 @@ export const getHyperstructureName = (structure: NativeRows["Structure"]): strin
 
   // Base hyperstructure name
   const adjIndex = rand % hyperstructureAdjectives.length;
-  let hyperstructureName = `${hyperstructureAdjectives[adjIndex]} Hyperstructure`;
+  let hyperstructureName = `${hyperstructureAdjectives[adjIndex]} ${typeName}`;
 
   // Determine rarity/greatness (0-20)
   const greatness = rand % 21;
@@ -310,7 +318,7 @@ export const getHyperstructureName = (structure: NativeRows["Structure"]): strin
     const selectedDescriptor = hyperstructureDescriptors[descriptorIndex];
     const selectedPrefix = hyperstructurePrefixes[prefixIndex];
 
-    hyperstructureName = `${selectedDescriptor} of ${selectedPrefix} Hyperstructure`;
+    hyperstructureName = `${selectedDescriptor} of ${selectedPrefix} ${typeName}`;
 
     // Add additional suffix for legendary items (greatness === 20)
     if (greatness === 20) {

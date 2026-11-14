@@ -10,6 +10,7 @@ import {
   ID,
   NEUTRAL_OWNER_NAME,
   StructureType,
+  StructureTypeToNameMapping,
   siteName,
 } from "@bibliothecadao/types";
 import type { NativeFactStore } from "../client/native-fact-store";
@@ -117,7 +118,7 @@ export const getStructureName = (structure: NativeRows["Structure"], store: Nati
   if (monument) {
     const aspect = aspects.find((aspect) => aspect.id === monument.aspect);
     if (!aspect) throw new Error("Race monument has an unknown Aspect");
-    const name = `${aspect.name} Hyperstructure`;
+    const name = `${aspect.name} ${StructureTypeToNameMapping[StructureType.Hyperstructure]}`;
     return { name, originalName: name };
   }
   if (structure.base.category !== StructureType.Realm && structure.base.category !== StructureType.Hyperstructure) {
