@@ -371,7 +371,6 @@ export const ROOMS: LabRoom[] = [
     pages: [
       {
         title: "Terrain",
-        modes: BOTH,
         views: [
           view(
             "Terrain & buildings",
@@ -390,6 +389,12 @@ export const ROOMS: LabRoom[] = [
             "/lab/terrain-props",
             "terrain-props",
             load(() => import("../ui/features/debug/terrain-prop-debug-view"), "TerrainPropDebugView"),
+          ),
+          view(
+            "Wildlife",
+            "/lab/wildlife",
+            "wildlife",
+            load(() => import("../ui/features/debug/wildlife-lab-view"), "WildlifeLabView"),
           ),
         ],
       },
@@ -508,7 +513,6 @@ export const ROOMS: LabRoom[] = [
     pages: [
       {
         title: "Set",
-        modes: BOTH,
         views: [
           view(
             "Set",

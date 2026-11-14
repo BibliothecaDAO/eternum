@@ -38,7 +38,6 @@ export function EndgameMistLabView() {
         canvas: canvas.current!,
         captureMode: false,
         endgame: readEndgameSettings(search),
-        gameMode: new URLSearchParams(search).get("mode") === "frontier" ? "frontier" : "blitz",
         forceWebGL: new URLSearchParams(search).get("rendererMode") === "webgpu-force-webgl",
         qualityTier: "detail",
         revealProgress: 0,

@@ -59,7 +59,7 @@ export class StudioArmies {
     private readonly ground: TerrainSurface,
     compile: PipelineCompiler,
   ) {
-    this.model = new ArmyModel(scene, (col, row) => studioBiomeAt({ col, row }), undefined, compile);
+    this.model = new ArmyModel(scene, (col, row) => studioBiomeAt({ col, row }), compile);
     this.model.setShadowsEnabled(true);
     this.characters = new ProceduralArmyCharacterLayer(scene);
     this.characters.setShadowsEnabled(true);
@@ -103,7 +103,7 @@ export class StudioArmies {
     const from = this.model.getEntityWorldPosition(entityId)?.clone();
     const slot = this.model.getEntitySlot(entityId);
     if (!army || !from || slot === undefined) return;
-    this.model.startMovement(entityId, [from, this.hexPosition(to).clone()], slot, army.category, army.tier);
+    this.model.startMovement(entityId, [from, this.hexPosition(to).clone()], slot, army.category, army.tier, "walk");
     army.hex = to;
   }
 

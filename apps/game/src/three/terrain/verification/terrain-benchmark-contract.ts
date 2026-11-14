@@ -30,7 +30,6 @@ export interface TerrainBenchmarkVariantConfig {
 export interface TerrainBenchmarkSnapshot {
   activeMode: "webgl2-fallback" | "webgpu";
   assets: {
-    groundArrayRequests: number;
     propCatalogRequests: number;
   };
   chunks: {

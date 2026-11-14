@@ -166,8 +166,6 @@ describe("prepareTerrainPage", () => {
         position[1],
         ...readAttribute(page.buffers.colors, vertex, 3),
         ...readAttribute(page.buffers.uvs, vertex, 2),
-        ...readAttribute(page.buffers.groundWeights0, vertex, 4),
-        ...readAttribute(page.buffers.groundWeights1, vertex, 4),
         ...readAttribute(page.buffers.shore, vertex, 1),
       ];
       const existing = attributesByPosition.get(key);
@@ -186,18 +184,6 @@ describe("prepareTerrainPage", () => {
 
     expect(page.diagnostics.exploredSurfaceSamples).toBeGreaterThan(0);
     expect(page.diagnostics.exploredSurfaceSamples).toBeLessThan(page.diagnostics.vertices / 2);
-  });
-
-  it("packs every continuous ground recipe into eight normalized bytes", () => {
-    const page = prepareTerrainPage(createAllBiomesTerrainRequest());
-
-    for (let vertex = 0; vertex < page.buffers.positions.length / 3; vertex += 1) {
-      const packedWeights = [
-        ...readAttribute(page.buffers.groundWeights0, vertex, 4),
-        ...readAttribute(page.buffers.groundWeights1, vertex, 4),
-      ];
-      expect(packedWeights.reduce((total, weight) => total + weight, 0)).toBe(255);
-    }
   });
 
   it("warps absolute ground coordinates continuously to break visible material repetition", () => {

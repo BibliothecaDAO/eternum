@@ -23,7 +23,7 @@ import { realmHeightScenario } from "./realm-height-scenario";
 import { ruinFarScenario, ruinFightScenario } from "./ruin-fight-scenario";
 import { seasonOpensScenario } from "./season-opens-scenario";
 import { sitesScenario } from "./sites-scenario";
-import { highGroundScenario, SANDS, spireScenario } from "./spire-scenario";
+import { biomesScenario, fullLoadScenario, highGroundScenario, SANDS, spireScenario } from "./spire-scenario";
 import { visitScenario } from "./visit-scenario";
 import { farPlaceScenario } from "./far-place-scenario";
 import { researchScenario } from "./research-scenario";
@@ -40,6 +40,9 @@ export const LAB_SCENARIOS: Partial<Record<string, () => LabScenario>> = {
   "from-home": () => ({ ...spireScenario(), entersFromHome: true }),
   actions: actionsScenario,
   "high-ground": highGroundScenario,
+  // The board (playtest --steps board): every Surface biome round the realm, and every depth researched.
+  board: () => etherealDepthsScenario(biomesScenario()),
+  "full-load": fullLoadScenario,
   "day-end": dayEndScenario,
   realm: realmScenario,
   "realm-height": realmHeightScenario,

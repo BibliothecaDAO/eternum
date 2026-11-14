@@ -146,6 +146,7 @@ export function summarizeStep(probe, { name, startedOn }) {
     },
     drawCalls: distribution(frameIndexes.map((index) => probe.draws[index])),
     vertices: distribution(frameIndexes.map((index) => probe.vertices?.[index]).filter(Number.isFinite)),
+    triangles: distribution(frameIndexes.map((index) => probe.triangles?.[index]).filter(Number.isFinite)),
     frameCallbackMs: distribution(frameIndexes.map((index) => probe.callbackMs?.[index])),
     gpuDoneMs: distribution(frameIndexes.map((index) => probe.gpuDoneMs?.[index])),
     gpuMemoryAtEnd: summarizeGpuMemory(probe.gpuMemory),

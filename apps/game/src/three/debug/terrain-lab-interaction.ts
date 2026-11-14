@@ -141,7 +141,6 @@ export class TerrainLabInteraction {
               tier: TroopTier.T1,
               entityId: 1,
               isNaval: false,
-              isMoving: false,
               primaryColor: "#4268b5",
               distanceToCameraSquared: this.camera.position.distanceToSquared(this.armyPosition),
               position: this.armyPosition,

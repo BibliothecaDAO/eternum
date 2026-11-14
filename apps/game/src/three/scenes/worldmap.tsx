@@ -192,6 +192,7 @@ import { playerColorManager } from "@/three/systems/player-colors";
 import { resolveWorldmapContentLadder, type WorldmapContentLadder } from "./worldmap-content-ladder";
 import type { TerrainUploadMetrics } from "@/three/terrain/procedural-terrain";
 import type { TerrainRoadAnchor, TerrainSettlementAnchor } from "@/three/terrain/terrain-types";
+import type { GroundLights } from "@/three/terrain/ground-lights";
 import type { TerrainSurface } from "@/three/terrain/terrain-surface";
 import type { TerrainMovementInteraction } from "@/three/terrain/terrain-movement-effects";
 import { env } from "../../../env";
@@ -616,6 +617,7 @@ type WorldmapChunkDiagnosticsDebugWindow = Window & {
   getStrategicMarkers?: () => StrategicMarkerLayer;
   getTerrainUploadMetrics?: () => TerrainUploadMetrics;
   getTerrainPresentMetrics?: () => TerrainPresentMetrics;
+  getTerrainLoad?: () => ReturnType<WorldmapProceduralTerrain["getLoad"]>;
   getWorldmapTerrainCoverage?: () => {
     groundBounds: ReturnType<typeof resolveWorldmapCameraGroundBounds>;
     camera: number[];
@@ -951,7 +953,10 @@ export default class WorldmapScene extends WarpTravel {
     const contractHex = Position.fromNormalized({ x: normalizedHex.col, y: normalizedHex.row }).getContract();
     const camera = { col: Number(contractHex.x), row: Number(contractHex.y) };
     useUIStore.getState().setCameraTargetHex(camera);
-    publishMapSelection({ camera, layer: useUIStore.getState().mapLayer });
+    publishMapSelection({
+      camera: { ...camera, distance: Math.round(this.getCurrentCameraDistance() * 100) / 100 },
+      layer: useUIStore.getState().mapLayer,
+    });
     this.publishSelectedHexOnScreen();
   };
 
@@ -1205,6 +1210,10 @@ export default class WorldmapScene extends WarpTravel {
     return this.proceduralTerrain;
   }
 
+  public override getGroundLights(): GroundLights {
+    return this.proceduralTerrain.groundLights;
+  }
+
   private registerWorldmapRecoveryHandle(): void {
     this.unregisterWorldmapRecoveryHandle = registerActiveWorldmapRecoveryHandle({
       refreshAfterReconnect: () => this.refreshAfterReconnect(),
@@ -1230,7 +1239,7 @@ export default class WorldmapScene extends WarpTravel {
 
   private initializeWorldmapSceneServices(): void {
     this.fxManager = new FXManager(this.scene, 1);
-    this.proceduralTerrain = new WorldmapProceduralTerrain(getGameModeId());
+    this.proceduralTerrain = new WorldmapProceduralTerrain();
     this.refreshTerrainPropOccupancy();
     this.scene.add(this.proceduralTerrain.object3d);
     this.strategicMarkers = new StrategicMarkerLayer();
@@ -1240,9 +1249,6 @@ export default class WorldmapScene extends WarpTravel {
     });
     void this.proceduralTerrain.loadProps().catch((error) => {
       console.warn("[WorldMap] Optional procedural terrain props failed to load", error);
-    });
-    void this.proceduralTerrain.loadGroundTextures().catch((error) => {
-      console.warn("[WorldMap] Procedural ground textures failed; retaining flat terrain", error);
     });
 
     if (MEMORY_MONITORING_ENABLED) {
@@ -1373,6 +1379,7 @@ export default class WorldmapScene extends WarpTravel {
       this.markLabelsDirty,
       this.createRuleSpires(),
       this.compilePipelines,
+      this.getGroundLights(),
     );
     this.mapSiteManager = new MapSiteManager(
       this.scene,
@@ -1523,6 +1530,8 @@ export default class WorldmapScene extends WarpTravel {
       this.syncProjectedArmyPathfinding(changes);
       this.handleProjectedArmyChanges(changes);
       this.syncArmyMarkers(changes);
+      // An army stands clear: no prop on its hex, nothing taller than it beside it.
+      this.refreshTerrainPropOccupancy();
     });
     const unsubscribeCampaigns = this.game.store.subscribe((changes) => {
       for (const change of changes) {
@@ -3346,10 +3355,10 @@ export default class WorldmapScene extends WarpTravel {
     if (actionPath.length > 0) {
       playUnitCommandSoundForWorldmapAction(actionType);
       if (actionType === ActionType.Move || actionType === ActionType.Explore) {
-        this.armyManager.expectOrderedRoute(
-          selectedEntityId,
-          actionPath.map(({ hex }) => Position.fromContract({ x: hex.col, y: hex.row })),
-        );
+        this.armyManager.expectOrderedRoute(selectedEntityId, {
+          hexes: actionPath.map(({ hex }) => Position.fromContract({ x: hex.col, y: hex.row })),
+          pace: actionType === ActionType.Explore ? "run" : "walk",
+        });
       }
 
       // Get the target position for the effect
@@ -4524,6 +4533,7 @@ export default class WorldmapScene extends WarpTravel {
       const hex = { col: contract.x, row: contract.y };
       return (
         this.worldSpatialProjection.getStructuresAtHex({ ...hex, alt: activeMapLayer() }).length > 0 ||
+        this.worldSpatialProjection.getArmiesAtHex({ ...hex, alt: activeMapLayer() }).length > 0 ||
         this.worldSpatialProjection.getChestsAtHex({ ...hex, alt: activeMapLayer() }).length > 0 ||
         this.worldSpatialProjection.getTileAtHex({ ...hex, alt: activeMapLayer() })?.occupierType === TileOccupier.Spire
       );
@@ -8722,6 +8732,7 @@ export default class WorldmapScene extends WarpTravel {
     debugWindow.getStrategicMarkers = () => this.strategicMarkers;
     debugWindow.getTerrainUploadMetrics = () => this.proceduralTerrain.getUploadMetrics();
     debugWindow.getTerrainPresentMetrics = () => this.proceduralTerrain.getPresentMetrics();
+    debugWindow.getTerrainLoad = () => this.proceduralTerrain.getLoad();
     debugWindow.getWorldmapTerrainCoverage = () => {
       const presentedPageKeys = this.proceduralTerrain.getPresentedPageKeys();
       const criticalPageKeys = this.visualTerrainWindow?.criticalPageKeys ?? [];
@@ -8764,6 +8775,7 @@ export default class WorldmapScene extends WarpTravel {
     debugWindow.getStrategicMarkers = undefined;
     debugWindow.getTerrainUploadMetrics = undefined;
     debugWindow.getTerrainPresentMetrics = undefined;
+    debugWindow.getTerrainLoad = undefined;
     debugWindow.getWorldmapTerrainCoverage = undefined;
     debugWindow.resetWorldmapRenderDiagnostics = undefined;
     debugWindow.captureWorldmapChunkBaseline = undefined;

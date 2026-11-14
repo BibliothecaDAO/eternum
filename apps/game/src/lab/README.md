@@ -50,7 +50,7 @@ restore their network and identity overrides when you leave them.
 | Game   | Game end                                | `/lab/endgame`                                                                                                    | `prove:endgame`                                           |
 | Game   | Chest opening                           | `/lab/relic-chest`                                                                                                | `prove:relic-chest`                                       |
 | Game   | Map labels & sites                      | `/lab/map-labels`                                                                                                 | Owner; lanes                                              |
-| Art    | Terrain                                 | Terrain & buildings `/lab/terrain`, Props `/lab/terrain-props`                                                    | Art; `verify:terrain:gallery`                             |
+| Art    | Terrain                                 | Terrain & buildings `/lab/terrain`, Props `/lab/terrain-props`, Wildlife `/lab/wildlife`                          | Art; `verify:terrain:gallery`                             |
 | Art    | Models                                  | `/lab/models` and its families (`family=`)                                                                        | Art; owner                                                |
 | Art    | Characters                              | `/lab/characters`                                                                                                 | Art; `capture:character-animation`, `smoke:character-gym` |
 | Art    | Chests                                  | `/lab/rewards`                                                                                                    | Art                                                       |
@@ -62,6 +62,16 @@ restore their network and identity overrides when you leave them.
 
 `pnpm --dir apps/game prove:lab-load --port <free> --out <fresh-dir>` opens every page twice and records what each
 fetches (the client's own modules, every script, the bytes), when its last script arrived and whether it drew 3D.
+
+### Wildlife
+
+Art → Terrain → Wildlife (`/lab/wildlife`) runs the map's own wildlife on one flat paddock per biome, so each species'
+size, gait and idle behaviour is judged before the map shows it. `species=<id>` follows one animal and names what it is
+doing; `army=1` marches a stand-in army past it, again and again, to show how it and its herd take it; `view=map` looks
+from the world map's angle, with `distance` in world units (the map's zoom runs from 5 to 20), while the default flank
+view counts `distance` in the animal's own sizes. The tiger's paddock lies beside the zebra's and the deer's, so
+following `bengal-tiger` shows its hunts: the readout names each phase as it comes. `capture=1` holds the clock:
+`window.__wildlifeLab.step(seconds)` advances the animals, and the next frame draws them, for stills of a known moment.
 
 ### HUD room
 
@@ -130,21 +140,16 @@ restoration of real network/identity behavior:
 pnpm --dir apps/game test src/lab/lab-app.test.tsx src/shell/lab/app-lab.test.tsx
 ```
 
-## Release atmosphere comparison
+## Terrain gallery
 
-In Art → Terrain (`/lab/terrain`), the lab's **Game** switch compares Blitz (shipped lighting, new ordinary edge mist)
-with Frontier (Ember lighting, darker mist). Both use the production `ProceduralTerrain` and
-`WorldAtmosphereController`; biomes, props and ground textures remain shipped. The existing Time, Weather, Exploration
-and quality controls still apply. This switch belongs to the dev lab; live games select their presentation from the
-synced game mode.
+Art → Terrain (`/lab/terrain`) draws the production `ProceduralTerrain` and `WorldAtmosphereController` in the one light
+every game shares (a golden afternoon). Its Time, Weather, Exploration and quality controls apply.
 
 ```sh
-pnpm --dir apps/game verify:terrain:gallery --base-url 'https://127.0.0.1:4194/?mode=blitz' --scenes all-biomes,fog-reveal --ground-modes textured --timing-policy informational --artifact-dir <fresh-blitz-directory>
-pnpm --dir apps/game verify:terrain:gallery --base-url 'https://127.0.0.1:4194/?mode=frontier' --scenes all-biomes,fog-reveal --ground-modes textured --timing-policy informational --artifact-dir <fresh-frontier-directory>
+pnpm --dir apps/game verify:terrain:gallery --base-url 'https://127.0.0.1:4194/' --scenes all-biomes,fog-reveal --ground-modes textured --timing-policy informational --artifact-dir <fresh-directory>
 ```
 
-Both renderer backends are checked by default. Each capture records the requested world mode and the actual terrain
-snapshot; the gate rejects a mode mismatch. These runs verify presentation and reveal coverage; they do not establish
+Both renderer backends are checked by default. These runs verify presentation and reveal coverage; they do not establish
 performance on a live world. Live proof uses the existing `playtest` command after the dev stack is available.
 
 ## Production realms
@@ -203,7 +208,7 @@ at 2 s, spreads the fractured mist (2–7.5 s), then settles and holds (7.5–9 
 terrain. Orb origins use the model's authored spherical-core transform. There is one production end path; the old global
 frost, variation selector, alternate material library and timeline seeking are deleted.
 
-- `mode=frontier` spares the central fixture realm and uses production Frontier lighting. Blitz spares no hex.
+- `mode=frontier` spares the central fixture realm. Blitz spares no hex.
 - `spires=materialise` (default) supplies no native spires. Production chooses two actual empty Tile rows on opposite
   sides of the observed map. `spires=awaken` supplies discovered dormant spires. Both have identical terrain.
 - `busy=1` uses 1,008 hexes, 25 realms and 50 armies; the smaller fixture uses 320 hexes, 5 realms and 10 armies.
@@ -269,9 +274,8 @@ them all. The set lives in `src/lab/studio/`; nothing in it ships to players.
 - **Camera:** drag pans, right-drag orbits, the wheel zooms; W/A/S/D move, Q/E turn, R/F tilt, Z/X zoom; Lens sets the
   field of view. Mark key adds the current view to a path, Play runs it, Copy the path puts it on the clipboard as JSON.
 - **Clean frame:** H, or `clean=1&capture=1`, hides the lab's header and the panel.
-- **Light:** the lab's Game switch (Blitz or Frontier light, `mode=frontier`), time of day, weather, world speed (0.25×
-  to 2×). A take runs on the world's clock, camera included: at 0.25× it plays every moment, four times as long, as slow
-  motion.
+- **Light:** time of day, weather, world speed (0.25× to 2×). A take runs on the world's clock, camera included: at
+  0.25× it plays every moment, four times as long, as slow motion.
 - **Script:** `window.__studio` makes the panel's calls: `take(name)` and `path({keys, cues})` return a promise that
   settles when they end; `trigger(name, args)` plays `rise` (`{progress}`), `attack`, `defeat`, `explore`, `realm`
   (`{level}`) or `strike`; `pose(partial)` reads or moves the camera (`{target, distance, tilt, turn, fov}`, tilt 0
@@ -286,4 +290,4 @@ pnpm --dir apps/game prove:studio --port 4199 --out <fresh-evidence-directory>
 ```
 
 `--base-url https://127.0.0.1:<port>` drives a client already served by you; `--size 1080x1920` films vertical;
-`--game frontier` uses Frontier's light; `--takes battle,explore` rolls only those.
+`--takes battle,explore` rolls only those.

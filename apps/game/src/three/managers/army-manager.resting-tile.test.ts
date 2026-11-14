@@ -68,6 +68,7 @@ const managerWithForeignArmy = () => {
       },
       setMovementCompleteCallback: vi.fn(),
       assignModelToEntity: vi.fn(),
+      setEntitySide: vi.fn(),
       assignCosmeticToEntity: vi.fn(),
       clearCosmeticForEntity: vi.fn(),
       rebindMovementMatrixIndex: vi.fn(),

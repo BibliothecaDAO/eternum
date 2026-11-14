@@ -141,3 +141,38 @@ function descriptor(
 ): TerrainBiomeDescriptor {
   return { baseHeight, elevationScale, foliage, label, primary, relief, roughness, secondary, shore, snow, stone };
 }
+
+/** What a biome's ground is made of: the family the ground shader paints it as, and what a frontier carries across. */
+export const TERRAIN_GROUNDS = Object.freeze([
+  "water",
+  "sand",
+  "snow",
+  "tundra",
+  "rock",
+  "lava",
+  "grass",
+  "forest",
+  "ethereal",
+] as const);
+export type TerrainGround = (typeof TERRAIN_GROUNDS)[number];
+
+export const TERRAIN_BIOME_GROUNDS = Object.freeze({
+  [BiomeType.Underground]: "ethereal",
+  [BiomeType.None]: "grass",
+  [BiomeType.DeepOcean]: "water",
+  [BiomeType.Ocean]: "water",
+  [BiomeType.Beach]: "sand",
+  [BiomeType.Scorched]: "lava",
+  [BiomeType.Bare]: "rock",
+  [BiomeType.Tundra]: "tundra",
+  [BiomeType.Snow]: "snow",
+  [BiomeType.TemperateDesert]: "sand",
+  [BiomeType.Shrubland]: "grass",
+  [BiomeType.Taiga]: "forest",
+  [BiomeType.Grassland]: "grass",
+  [BiomeType.TemperateDeciduousForest]: "forest",
+  [BiomeType.TemperateRainForest]: "forest",
+  [BiomeType.SubtropicalDesert]: "sand",
+  [BiomeType.TropicalSeasonalForest]: "forest",
+  [BiomeType.TropicalRainForest]: "forest",
+} satisfies Record<BiomeType, TerrainGround>);

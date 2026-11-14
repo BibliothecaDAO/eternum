@@ -1,4 +1,5 @@
 import { BiomeType } from "@bibliothecadao/types";
+import { worldOrigin } from "@/three/world-origin";
 
 import { BASALT_SHELL_TRIANGLES, BASALT_SHELL_VERTICES } from "./terrain-basalt";
 import { type SurfaceBasaltTransition, visitSurfaceBasaltSlabs } from "./terrain-basalt-transition";
@@ -42,8 +43,6 @@ interface GeometryAccumulator {
   biomeIds: number[];
   colors: number[];
   explored: number[];
-  groundWeights0: number[];
-  groundWeights1: number[];
   heights: number[];
   indices: number[];
   normals: number[];
@@ -183,6 +182,7 @@ export function prepareTerrainPage(request: TerrainPageRequest): PreparedTerrain
         (basalt.length / 3) * BASALT_SHELL_VERTICES,
     },
     fingerprint,
+    origin: worldOrigin(),
     propInstances,
     request,
     shroudInstances,
@@ -521,9 +521,6 @@ function appendVertex(
   target.shore.push(sample.shore);
   target.biomeIds.push(sample.biomeId);
   target.explored.push(sample.explored);
-  const groundWeights = quantizeGroundWeights(sample.groundWeights);
-  target.groundWeights0.push(...groundWeights.slice(0, 4));
-  target.groundWeights1.push(...groundWeights.slice(4, 8));
   target.heights.push(sample.height);
   target.waterDepth.push(waterDepth);
   return index;
@@ -535,8 +532,6 @@ function createGeometryAccumulator(): GeometryAccumulator {
     biomeIds: [],
     colors: [],
     explored: [],
-    groundWeights0: [],
-    groundWeights1: [],
     heights: [],
     indices: [],
     normals: [],
@@ -556,8 +551,6 @@ function finalizeGeometry(source: GeometryAccumulator): TerrainGeometryBuffers {
     bounds: resolveGeometryBounds(positions),
     colors: new Float32Array(source.colors),
     explored: new Float32Array(source.explored),
-    groundWeights0: new Uint8Array(source.groundWeights0),
-    groundWeights1: new Uint8Array(source.groundWeights1),
     heights: new Float32Array(source.heights),
     indices: new Uint32Array(source.indices),
     normals: new Float32Array(source.normals),
@@ -603,19 +596,6 @@ function resolveGeometryBounds(positions: ArrayLike<number>): TerrainGeometryBuf
     sphereCenter: [centerX, centerY, centerZ],
     sphereRadius: Math.sqrt(radiusSquared),
   };
-}
-
-function quantizeGroundWeights(weights: TerrainVisualSample["groundWeights"]): number[] {
-  const scaled = weights.map((weight) => Math.max(0, weight) * 255);
-  const quantized = scaled.map(Math.floor);
-  const remaining = 255 - quantized.reduce((total, weight) => total + weight, 0);
-  const allocationOrder = scaled
-    .map((weight, index) => ({ fraction: weight - quantized[index], index }))
-    .toSorted((left, right) => right.fraction - left.fraction || left.index - right.index);
-  for (let index = 0; index < remaining; index += 1) {
-    quantized[allocationOrder[index].index] += 1;
-  }
-  return quantized;
 }
 
 function canonicalCells(cells: readonly TerrainCellInput[]): TerrainCellInput[] {

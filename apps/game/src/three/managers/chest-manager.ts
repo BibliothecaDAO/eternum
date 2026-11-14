@@ -130,14 +130,7 @@ export class ChestManager {
   }
 
   private handleCameraViewChange = (view: CameraView) => {
-    const shadowsEnabled = this.hexagonScene?.getShadowsEnabled() ?? true;
-    const enableContactShadows = !(view === CameraView.Close && shadowsEnabled);
-
-    // Cheap grounding in zoomed-out views (and as a fallback if shadows are disabled).
-    if (this.chestModel) {
-      this.chestModel.setContactShadowsEnabled(enableContactShadows);
-    }
-
+    this.applyShadowFlags();
     this.applyContentLadder(resolveWorldmapContentLadder(view));
     if (this.currentCameraView === view) return;
 
@@ -156,6 +149,11 @@ export class ChestManager {
     // Update all existing labels to reflect the new view
     applyLabelTransitions(this.entityIdLabels, view);
   };
+
+  /** A chest casts its shadow whenever shadows are on, at every zoom; the flat blob grounds it only when they are off. */
+  private applyShadowFlags(): void {
+    this.chestModel?.setContactShadowsEnabled(!(this.hexagonScene?.getShadowsEnabled() ?? true));
+  }
 
   private applyContentLadder(ladder: WorldmapContentLadder): void {
     this.contentLadder = ladder;
@@ -294,6 +292,7 @@ export class ChestManager {
       this.chestTransitions = transitions;
       this.stagedChest = staged;
       this.scene.add(model.group, transitions.group);
+      this.applyShadowFlags();
       this.applyContentLadder(this.contentLadder);
     } catch (error) {
       staged?.dispose();

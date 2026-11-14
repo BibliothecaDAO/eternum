@@ -2963,9 +2963,8 @@ function knightPresented(onMap) {
     if (stats.visibleArmyCount === 0) return blocked("no T1 Knights in this camera's view", played);
     if (stats.fallbackRepresentationCount !== 0)
       return failed("a visible Knight is still using the replaced model", played);
-    if (stats.nearKnightCount + stats.midKnightCount !== stats.actorCount)
-      return failed("Knight LOD count does not match actors", played);
-    const triangles = stats.nearKnightCount * 14999 + stats.midKnightCount * 5998;
+    if (stats.knightCount !== stats.actorCount) return failed("Knight count does not match actors", played);
+    const triangles = stats.knightCount * 5998;
     return stats.meshDrawsPerPass === stats.actorCount * 3 && stats.trianglesPerPass === triangles
       ? completed(played)
       : failed("Knight render budget does not match the delivered meshes", played);
@@ -3400,6 +3399,272 @@ const LAB_LAYERS_STEPS = [
   { name: "open-map", play: goTo("Map", "map"), settleMs: 3_000, verify: inScene("map") },
 ];
 
+/**
+ * The board: the fixed views every look change is judged on (renderer-aaa-2, step 0), the same in any client that has the
+ * board's lab game. Twelve on the Surface (the realm at the map's opening zoom, closest and widest; six places round it,
+ * whatever ground lies there; the edge of the known land; the ground up close; the realm view) and three on each depth
+ * (opening zoom, closest, widest), each still kept by the run. The camera goes by the address, as a link takes it, and
+ * by the wheel; every opening-zoom view is shot before the wheel turns. Run it with `pnpm --dir apps/game board`.
+ */
+const BOARD_PLACES = [
+  ["north", 0, -8],
+  ["south", 0, 8],
+  ["east", 8, 0],
+  ["west", -8, 0],
+  ["north-east", 5, -6],
+  ["south-west", -5, 6],
+  ["known-edge", 11, 0],
+];
+const BOARD_SETTLE_MS = 3_000;
+const BOARD_OPENING_DISTANCE = 20;
+const BOARD_DEPTHS = Object.keys(depthLooks).map(Number);
+const BOARD_LAYER_WORD = (depth) => `Ethereal ${"I".repeat(depth)}`;
+/** The realm's address as the board's game opens on it, and its army's offset from it: every view is reached from them. */
+let boardRealm = null;
+let boardArmy = null;
+
+const BOARD_STEPS = [
+  {
+    name: "realm",
+    play: readTheBoardRealm,
+    settleMs: BOARD_SETTLE_MS,
+    verify: boardView({ distance: BOARD_OPENING_DISTANCE }),
+  },
+  ...BOARD_PLACES.map(([name, dx, dy]) => ({
+    name,
+    play: boardGoTo(dx, dy),
+    settleMs: BOARD_SETTLE_MS,
+    verify: boardView({ distance: BOARD_OPENING_DISTANCE }),
+  })),
+  ...BOARD_DEPTHS.map((depth) => ({
+    name: `ethereal-${depth}`,
+    play: boardDive(depth),
+    settleMs: BOARD_SETTLE_MS,
+    verify: boardView({ layer: depth, distance: BOARD_OPENING_DISTANCE }),
+  })),
+  { name: "back-to-world", play: chooseLayer("World"), settleMs: 0, verify: boardView({ layer: 0 }) },
+  { name: "realm-view", play: goTo("Realm", "hex"), settleMs: BOARD_SETTLE_MS, verify: inScene("hex") },
+  { name: "open-map", play: goTo("Map", "map"), settleMs: 0, verify: inScene("map") },
+  {
+    name: "realm-closest",
+    play: boardZoom(boardGoTo(0, 0), zoomAllTheWayIn),
+    settleMs: BOARD_SETTLE_MS,
+    verify: boardView({ distance: CLOSEST_CAMERA_DISTANCE }),
+  },
+  {
+    name: "east-closest",
+    play: boardGoTo(8, 0),
+    settleMs: BOARD_SETTLE_MS,
+    verify: boardView({ distance: CLOSEST_CAMERA_DISTANCE }),
+  },
+  ...BOARD_DEPTHS.map((depth) => ({
+    name: `ethereal-${depth}-closest`,
+    play: boardDive(depth),
+    settleMs: BOARD_SETTLE_MS,
+    verify: boardView({ layer: depth, distance: CLOSEST_CAMERA_DISTANCE }),
+  })),
+  { name: "world-again", play: chooseLayer("World"), settleMs: 0, verify: boardView({ layer: 0 }) },
+  {
+    name: "realm-widest",
+    play: boardZoom(boardGoTo(0, 0), zoomAllTheWayOut),
+    settleMs: BOARD_SETTLE_MS,
+    verify: boardView({ distance: FARTHEST_CAMERA_DISTANCE }),
+  },
+  ...BOARD_DEPTHS.map((depth) => ({
+    name: `ethereal-${depth}-widest`,
+    play: boardDive(depth),
+    settleMs: BOARD_SETTLE_MS,
+    verify: boardView({ layer: depth, distance: FARTHEST_CAMERA_DISTANCE }),
+  })),
+];
+
+/**
+ * The map at its heaviest, timed as a phone meets it (`/lab/game?scenario=full-load`, opened with the dev overlays for the
+ * map's load report): the vegetation at full density across its pages and the wildlife at its cap, held still, with the
+ * army walking through it, panned far across new pages, and at the widest zoom. Every step fails unless the map reports
+ * its wildlife at the cap with every animal drawn. Run it on the phone stand-in: `--gpu low-power --cpu-throttle 4
+ * --viewport 390x844`.
+ */
+const FULL_LOAD_STEPS = [
+  { name: "full-load-still", settleMs: 8_000, verify: atFullLoad(BOARD_OPENING_DISTANCE) },
+  {
+    name: "full-load-army",
+    play: walkTheArmy,
+    settleMs: 6_000,
+    verify: atFullLoad(BOARD_OPENING_DISTANCE, armyWalked),
+  },
+  {
+    name: "full-load-pan",
+    play: panFarAcross,
+    settleMs: 20_000,
+    verify: atFullLoad(BOARD_OPENING_DISTANCE, newPagesPresented),
+  },
+  { name: "full-load-widest", play: zoomAllTheWayOut, settleMs: 6_000, verify: atFullLoad(FARTHEST_CAMERA_DISTANCE) },
+];
+
+/** What the map's load report must hold, each a count: the wildlife, its cap and how many are drawn, props, pages. */
+const TERRAIN_LOAD_FIELDS = [
+  "animals",
+  "animalsLoaded",
+  "animalCap",
+  "props",
+  "propTriangles",
+  "pages",
+  "pagesPresented",
+];
+/** The pages the full-load land presents round the camera: fewer, and the vegetation timed is not the fixture's. */
+const FULL_LOAD_PAGES = 4;
+
+/** The army sent on three moves in a row, each to a tile beside it, as a player orders them (the lab's wallet offer closed). */
+async function walkTheArmy(context) {
+  context.browser.run(["eval", `document.querySelector('[role=dialog] button[aria-label*="lose" i]')?.click()`]);
+  const moves = [];
+  for (let move = 0; move < 3; move += 1) {
+    moves.push(await orderBesideArmy(context, "Move"));
+    await sleep(1_500);
+  }
+  return { moves };
+}
+
+function armyWalked({ actionLatency }) {
+  const sent = (actionLatency?.chainAnswers ?? []).filter(({ kind }) => kind === "Move").length;
+  return sent > 0 ? null : "no move reached the chain";
+}
+
+/**
+ * A pan twice round a loop across the revealed land, a second and a half a key, back where it began: new pages come and
+ * go under it, and its wildlife refills before the step is judged. From the load the map reported before it.
+ */
+async function panFarAcross({ browser }) {
+  const before = browser.observe().terrainLoad;
+  const loop = ["KeyD", "KeyS", "KeyA", "KeyW"];
+  browser.run(["eval", `void window.__playtest.pan(${JSON.stringify([...loop, ...loop])}, 1500)`]);
+  return { before };
+}
+
+function newPagesPresented({ played, seen }) {
+  return seen.terrainLoad.pagesPresented > (played.before?.pagesPresented ?? Infinity)
+    ? null
+    : `no new terrain page was presented (${played.before?.pagesPresented} before, ${seen.terrainLoad.pagesPresented} after)`;
+}
+
+/**
+ * On the map at `distance`, as the map reports its camera at the step's end, carrying the full load: every field of its
+ * load report a count, its wildlife at a cap above none with every animal drawn, its vegetation drawn across the
+ * fixture's pages; and whatever else `alsoWrong` finds wrong. Any of them missing fails the step.
+ */
+function atFullLoad(distance, alsoWrong = () => null) {
+  return (context) => {
+    const { seen, played } = context;
+    const scene = inScene("map")({ seen });
+    if (scene.status !== "completed") return failed(scene.reason, played);
+    const shown = seen.selection?.camera?.distance;
+    if (typeof shown !== "number") return failed("the map reported no camera distance", played);
+    if (Math.abs(shown - distance) > CLOSEST_DISTANCE_TOLERANCE)
+      return failed(`the camera stands ${shown} away, not ${distance}`, played);
+    const wrongLoad = fullLoadWrong(seen.terrainLoad);
+    if (wrongLoad) return failed(wrongLoad, { ...played, load: seen.terrainLoad ?? null });
+    const load = seen.terrainLoad;
+    const wrong = alsoWrong(context);
+    return wrong
+      ? failed(wrong, { ...played, distance: shown, load })
+      : completed({ ...played, distance: shown, load });
+  };
+}
+
+/** What keeps a load report from being the full load, or null when it is. */
+function fullLoadWrong(load) {
+  if (!load) return "the map reported no terrain load (open it with the dev overlays)";
+  const missing = TERRAIN_LOAD_FIELDS.filter((field) => !Number.isInteger(load[field]) || load[field] < 0);
+  if (missing.length > 0) return `the map's load report has no count for ${missing.join(", ")}`;
+  if (load.animalCap === 0) return "the map's wildlife has no cap";
+  if (load.animals !== load.animalCap || load.animalsLoaded !== load.animals)
+    return `the wildlife is not at its cap, every animal drawn: ${JSON.stringify(load)}`;
+  if (load.props === 0 || load.propTriangles === 0) return "no vegetation is drawn";
+  if (load.pages < FULL_LOAD_PAGES) return `the map presents ${load.pages} pages, not the fixture's ${FULL_LOAD_PAGES}`;
+  return null;
+}
+
+/** The board's views, as its stills are named: every step but the moves between them. */
+const BOARD_PASSAGES = new Set(["back-to-world", "open-map", "world-again"]);
+export const BOARD_SHOTS = BOARD_STEPS.map(({ name }) => name).filter((name) => !BOARD_PASSAGES.has(name));
+
+/**
+ * The realm's address as the game opened on it, and where its army stands (Tab picks it, as a player does; Escape lets it
+ * go): each depth's land lies under the army. The lab's wallet offer is closed, never answered. Ends on the realm.
+ */
+async function readTheBoardRealm(context) {
+  const { browser } = context;
+  const url = new URL(browser.run(["get", "url"]));
+  const camera = browser.read(MAP_CAMERA);
+  boardRealm = { col: Number(url.searchParams.get("col")), row: Number(url.searchParams.get("row")), camera };
+  browser.run(["eval", `document.querySelector('[role=dialog] button[aria-label*="lose" i]')?.click()`]);
+  const { army } = await selectTheArmyByTab(context);
+  for (let press = 0; press < ESCAPES_TO_DESELECT; press += 1) browser.press("Escape");
+  boardArmy = army && camera && { dx: army.hex.col - camera.col, dy: army.hex.row - camera.row };
+  // Tab moved the camera, not the address: the map follows an address only when it changes.
+  await boardGoTo(boardArmy?.dx ?? 1, boardArmy?.dy ?? 0)(context);
+  const back = await boardGoTo(0, 0)(context);
+  return { ...back, army: boardArmy };
+}
+
+/** The army's tile on the Surface, then the layer switch onto `depth`: the camera keeps its spot, on that depth's land. */
+function boardDive(depth) {
+  return async (context) => {
+    await boardGoTo(boardArmy?.dx ?? 0, boardArmy?.dy ?? 0)(context);
+    return chooseLayer(BOARD_LAYER_WORD(depth))(context);
+  };
+}
+
+/** The camera taken to the realm's address moved by `dx`, `dy` hexes, as a link to that tile takes it, in the page. */
+function boardGoTo(dx, dy) {
+  return async ({ browser }) => {
+    const to = { col: boardRealm.col + dx, row: boardRealm.row + dy };
+    const expected = { col: boardRealm.camera.col + dx, row: boardRealm.camera.row + dy };
+    browser.run([
+      "eval",
+      `(() => { const url = new URL(location.href); url.searchParams.set("col", "${to.col}"); url.searchParams.set("row", "${to.row}"); history.pushState(history.state, "", url); dispatchEvent(new PopStateEvent("popstate", { state: history.state })); })()`,
+    ]);
+    const camera = await readUntil(
+      () => browser.read(MAP_CAMERA),
+      (seen) => seen && hexesApart(seen, expected) === 0,
+      SCENE_WAIT_MS,
+    );
+    return { address: to, camera, expected, distance: browser.observe().worldmapDistance };
+  };
+}
+
+/** A view reached, then the wheel turned to the zoom it shoots at, and the camera read again once it has come to rest. */
+function boardZoom(reach, zoom) {
+  return async (context) => {
+    const reached = await reach(context);
+    await zoom(context);
+    return { ...reached, camera: await cameraAtRest(context.browser) };
+  };
+}
+
+/**
+ * On the map in `layer` (the Surface by default) at `distance`, when one is named, as the map reports its camera: a view
+ * whose camera was not observed, or whose distance the map did not report, is not that view.
+ */
+function boardView({ layer = 0, distance } = {}) {
+  return ({ played, seen }) => {
+    const scene = inScene("map")({ seen });
+    if (scene.status !== "completed") return failed(scene.reason, played);
+    const camera = played.after ?? played.camera ?? null;
+    if (!camera) return failed("the map reported no camera", played);
+    if (played.expected && hexesApart(camera, played.expected) !== 0)
+      return failed(`the camera stands at ${JSON.stringify(camera)}, not ${JSON.stringify(played.expected)}`, played);
+    if (Math.floor(camera.row / REGION_ROWS) % 4 !== layer)
+      return failed(`the camera stands in layer ${Math.floor(camera.row / REGION_ROWS) % 4}, not ${layer}`, played);
+    if (distance === undefined) return completed(played);
+    if (typeof camera.distance !== "number") return failed("the map reported no camera distance", played);
+    if (Math.abs(camera.distance - distance) > CLOSEST_DISTANCE_TOLERANCE)
+      return failed(`the camera stands ${camera.distance} away, not ${distance}`, played);
+    return completed({ ...played, distance: camera.distance });
+  };
+}
+
 /** Opens the list of views, reads its choices and the switch's word, chooses `word`, and reads where the camera goes. */
 function chooseLayer(word) {
   return async ({ browser }) => {
@@ -3416,13 +3681,13 @@ function chooseLayer(word) {
   };
 }
 
-/** The camera's tile once two reads a dive's frame apart agree, within SPIRE_WAIT_MS. */
+/** The camera's tile and distance once two reads a dive's frame apart agree, within SPIRE_WAIT_MS. */
 async function cameraAtRest(browser) {
   let last = browser.read(MAP_CAMERA);
   for (const until = Date.now() + SPIRE_WAIT_MS; Date.now() < until; ) {
     await sleep(LIST_SETTLE_MS);
     const now = browser.read(MAP_CAMERA);
-    if (now && last && hexesApart(now, last) === 0) return now;
+    if (now && last && hexesApart(now, last) === 0 && now.distance === last.distance) return now;
     last = now;
   }
   return last;
@@ -5440,6 +5705,8 @@ export const STEP_SETS = {
   "lab-devcon-season": { game: { ...LAB_SPIRE, lab: "devcon-season" }, steps: [devconSeasonStep] },
   "lab-spire": { game: LAB_SPIRE, steps: LAB_SPIRE_STEPS },
   "lab-layers": { game: LAB_SPIRE, steps: LAB_LAYERS_STEPS },
+  board: { game: { ...LAB_SPIRE, lab: "board" }, steps: BOARD_STEPS },
+  "full-load": { game: labSpireGame("full-load"), steps: FULL_LOAD_STEPS, devOverlays: true },
   ...Object.fromEntries(
     Object.keys(depthLooks).map((depth) => [
       `lab-ethereal-${depth}`,

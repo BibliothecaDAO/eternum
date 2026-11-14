@@ -5,11 +5,11 @@ import { TERRAIN_FOG_CELL_CAPACITY, TERRAIN_FOG_REVEAL_DURATION_SECONDS, Terrain
 import { buildTerrainFogMask, type TerrainFogMask } from "./terrain-fog-mask";
 import type { TerrainShroudInstance } from "./terrain-types";
 
-describe.each(["blitz", "frontier"] as const)("TerrainFogField (%s)", (gameMode) => {
+describe("TerrainFogField", () => {
   afterEach(() => vi.restoreAllMocks());
 
   it("keeps the streaming backdrop inside a bounded camera neighbourhood while covering the far view", () => {
-    const fog = new TerrainFogField(gameMode);
+    const fog = new TerrainFogField();
     fog.enableStreaming();
     const mesh = fog.object3d.children[0] as Mesh;
     const camera = new PerspectiveCamera(50, 16 / 9, 0.1, 65);
@@ -36,7 +36,7 @@ describe.each(["blitz", "frontier"] as const)("TerrainFogField (%s)", (gameMode)
   });
 
   it("keeps one fog sheet over unloaded ground even when all resident terrain is explored", () => {
-    const fog = new TerrainFogField(gameMode);
+    const fog = new TerrainFogField();
     fog.enableStreaming();
     fog.setPage("fixture", [instance(0, 0, false)]);
     fog.commit();
@@ -50,7 +50,7 @@ describe.each(["blitz", "frontier"] as const)("TerrainFogField (%s)", (gameMode)
   });
 
   it("renders every unexplored cell through one continuous bounded mist sheet", () => {
-    const fog = new TerrainFogField(gameMode);
+    const fog = new TerrainFogField();
     fog.setPage("fixture", [instance(0, 0, true), instance(1, 0, false)]);
     fog.commit();
 
@@ -74,7 +74,7 @@ describe.each(["blitz", "frontier"] as const)("TerrainFogField (%s)", (gameMode)
   });
 
   it("keeps tile coverage unchanged while ambient mist moves", () => {
-    const fog = new TerrainFogField(gameMode);
+    const fog = new TerrainFogField();
     fog.setPage("fixture", [instance(0, 0, true), instance(1, 0, false)]);
     fog.commit();
     const texture = (fog as unknown as { maskTexture: DataTexture }).maskTexture;
@@ -87,7 +87,7 @@ describe.each(["blitz", "frontier"] as const)("TerrainFogField (%s)", (gameMode)
   });
 
   it("registers the mask's minimum-z source row to the fog sheet's minimum-z world edge", () => {
-    const fog = new TerrainFogField(gameMode);
+    const fog = new TerrainFogField();
     fog.setPage("fixture", [instance(0, 0, false), instance(0, 4, false)]);
     fog.commit();
 
@@ -102,7 +102,7 @@ describe.each(["blitz", "frontier"] as const)("TerrainFogField (%s)", (gameMode)
   });
 
   it("starts a bounded material reveal only when the explored tile commits", () => {
-    const fog = new TerrainFogField(gameMode);
+    const fog = new TerrainFogField();
     fog.setPage("fixture", [instance(0, 0, true), instance(1, 0, false)]);
     fog.commit();
     fog.queueReveal(0, 0);
@@ -122,7 +122,7 @@ describe.each(["blitz", "frontier"] as const)("TerrainFogField (%s)", (gameMode)
   });
 
   it("rewrites only a changed page's sub-rect and matches a whole-window build", () => {
-    const fog = new TerrainFogField(gameMode);
+    const fog = new TerrainFogField();
     const west = block("west", 0, 5);
     const east = block("east", 8, 13);
     fog.setPage("west", west);
@@ -141,7 +141,7 @@ describe.each(["blitz", "frontier"] as const)("TerrainFogField (%s)", (gameMode)
   });
 
   it("writes nothing for an unchanged window and drops a removed page through its sub-rect", () => {
-    const fog = new TerrainFogField(gameMode);
+    const fog = new TerrainFogField();
     const west = block("west", 0, 5);
     const middle = block("middle", 8, 13);
     const east = block("east", 16, 21);
@@ -166,7 +166,7 @@ describe.each(["blitz", "frontier"] as const)("TerrainFogField (%s)", (gameMode)
   });
 
   it("finishes a reveal without rewriting the atmosphere mask", () => {
-    const fog = new TerrainFogField(gameMode);
+    const fog = new TerrainFogField();
     const cells = block("fixture", 0, 5);
     fog.setPage("fixture", cells);
     fog.commit();
@@ -185,7 +185,7 @@ describe.each(["blitz", "frontier"] as const)("TerrainFogField (%s)", (gameMode)
   });
 
   it("only prepares a whole-window mask off-thread when the incoming pages move the fog window", () => {
-    const fog = new TerrainFogField(gameMode);
+    const fog = new TerrainFogField();
     const cells = block("fixture", 0, 5);
     expect(fog.requiresMaskRebuild(cells)).toBe(true);
     fog.setPage("fixture", cells);
@@ -199,7 +199,7 @@ describe.each(["blitz", "frontier"] as const)("TerrainFogField (%s)", (gameMode)
 
   it("replaces and disposes the texture only when adaptive mask dimensions change", () => {
     const disposeTexture = vi.spyOn(DataTexture.prototype, "dispose");
-    const fog = new TerrainFogField(gameMode);
+    const fog = new TerrainFogField();
     fog.setPage("fixture", [instance(0, 0, false)]);
     fog.commit();
     disposeTexture.mockClear();
@@ -220,7 +220,7 @@ describe.each(["blitz", "frontier"] as const)("TerrainFogField (%s)", (gameMode)
   });
 
   it("fails loudly before the bounded fog-cell contract can overflow", () => {
-    const fog = new TerrainFogField(gameMode);
+    const fog = new TerrainFogField();
     const instances = Array.from({ length: TERRAIN_FOG_CELL_CAPACITY + 1 }, (_, index) => instance(index, 0, false));
 
     expect(() => fog.setPage("fixture", instances)).toThrow(`exceeded ${TERRAIN_FOG_CELL_CAPACITY} cells`);

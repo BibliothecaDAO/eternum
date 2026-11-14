@@ -3,7 +3,6 @@ import { MapSheetPresentation } from "@/lab/sheet-map/presentation";
 import { EndgameFixtureScene } from "@/lab/endgame-mist/fixture-scene";
 import { createEndgameFixture } from "@/lab/endgame-mist/fixture";
 import type { EndgameLabSettings } from "@/lab/endgame-mist/fixture";
-import type { GameModeId } from "@/config/game-modes";
 import { createPipelineCompiler, type PipelineCompiler } from "@/three/pipeline-compiler";
 import { WeatherLabRuntime } from "./weather-lab-runtime";
 import { resetGameEnd } from "@/three/effects/endgame/state";
@@ -69,7 +68,6 @@ export interface ProceduralTerrainDebugStats {
     renderSubmissionSamples: number;
     rendererTriangles: number;
   };
-  gameMode: GameModeId;
   activeMode: "webgl2-fallback" | "webgpu";
   biomeCount: number;
   buildingInstances: number;
@@ -93,8 +91,6 @@ export interface ProceduralTerrainDebugStats {
   frameP95Ms: number;
   frameWorstMs: number;
   frameSampleCount: number;
-  groundTextureBytes: number;
-  groundTextureLayers: number;
   groundCoverInstances: number;
   prepareMs: number;
   propInstances: number;
@@ -189,7 +185,6 @@ interface MountProceduralTerrainDebugRendererInput {
   mapSheet?: { chapter: MapChapter; overlay: HTMLDivElement };
   endgame?: EndgameLabSettings;
   stage?: LabStage;
-  gameMode?: GameModeId;
   canvas: HTMLCanvasElement;
   captureMode: boolean;
   localRadius?: number;
@@ -234,7 +229,6 @@ interface TerrainDebugRuntime {
   stage: LabStage | null;
   clock: LabClock;
   renderSubmissionMs: number[];
-  gameMode: GameModeId;
   atmosphere: WorldAtmosphereController;
   weather: WeatherLabRuntime;
   cycleProgress: number;
@@ -428,8 +422,8 @@ async function createRuntime(input: MountProceduralTerrainDebugRendererInput): P
   const cameraFrame = createCameraFrame(camera, request.cells);
   positionCamera(camera, controls, cameraFrame);
 
-  const terrain = new ProceduralTerrain({ streaming: true, gameMode: input.gameMode });
-  await Promise.all([terrain.loadProps(), terrain.loadGroundTextures()]);
+  const terrain = new ProceduralTerrain({ streaming: true });
+  await terrain.loadProps();
   terrain.setQualityTier(input.qualityTier);
   let prepared = await terrain.preparePageAsync(request);
   let fogMask = await terrain.prepareFogMaskAsync([prepared]);
@@ -451,7 +445,6 @@ async function createRuntime(input: MountProceduralTerrainDebugRendererInput): P
   }
   const propStats = terrain.getPropStats();
   const shroudStats = terrain.getShroudStats();
-  const groundTextureStats = terrain.getGroundTextureStats();
   const realmModel = await createSettlementRealmModel(input.sceneId, terrain);
   const realmGeometry = measureInstancedModelGeometry(realmModel);
   const ecologyTransects = measureTerrainEcologyTransects(request);
@@ -470,8 +463,6 @@ async function createRuntime(input: MountProceduralTerrainDebugRendererInput): P
     fogMaskBytes: shroudStats.maskBytes,
     fogMaskHeight: shroudStats.maskHeight,
     fogMaskWidth: shroudStats.maskWidth,
-    groundTextureBytes: groundTextureStats.bytes,
-    groundTextureLayers: groundTextureStats.layerCount,
     groundCoverInstances: propStats.groundCoverInstances,
     prepareMs: prepared.diagnostics.prepareMs,
     propInstances: propStats.instances,
@@ -503,7 +494,6 @@ async function createRuntime(input: MountProceduralTerrainDebugRendererInput): P
     ...ecologyTransects,
   } satisfies Omit<
     ProceduralTerrainDebugStats,
-    | "gameMode"
     | "activeMode"
     | "drawCalls"
     | "firstRenderMs"
@@ -516,7 +506,7 @@ async function createRuntime(input: MountProceduralTerrainDebugRendererInput): P
   >;
   scene.add(terrain.object3d);
   if (realmModel) scene.add(realmModel.group);
-  const { atmosphere, sun } = createGameLighting(scene, input.gameMode);
+  const { atmosphere, sun } = createGameLighting(scene);
   const weather = new WeatherLabRuntime(scene, sun, controls, (x, z) => terrain.sampleSurface(x, z).height);
   atmosphere.update(50, controls.target, { snap: true });
   terrain.setGroundTextureDetailEnabled(input.texturedGround);
@@ -567,7 +557,6 @@ async function createRuntime(input: MountProceduralTerrainDebugRendererInput): P
     atmosphere,
     weather,
     cycleProgress: 50,
-    gameMode: input.gameMode ?? "blitz",
     interaction,
     camera,
     cameraFrame,
@@ -728,10 +717,7 @@ function advanceRevealToProgress(terrain: ProceduralTerrain, progress: number): 
   for (let step = 0; step < steps; step += 1) terrain.update(Math.min(0.05, targetSeconds - step * 0.05));
 }
 
-function createGameLighting(
-  scene: Scene,
-  gameMode: GameModeId = "blitz",
-): { atmosphere: WorldAtmosphereController; sun: DirectionalLight } {
+function createGameLighting(scene: Scene): { atmosphere: WorldAtmosphereController; sun: DirectionalLight } {
   const ambient = new AmbientLight();
   const hemisphere = new HemisphereLight();
   const sun = new DirectionalLight();
@@ -740,14 +726,7 @@ function createGameLighting(
   // The game controller also uses this detached fog object for atmosphere colors.
   // Exploration coverage belongs to TerrainFogField, not Three.js distance fog.
   return {
-    atmosphere: new WorldAtmosphereController(
-      scene,
-      sun,
-      hemisphere,
-      ambient,
-      new Fog(TERRAIN_DEEP_FOG_COLOR),
-      gameMode,
-    ),
+    atmosphere: new WorldAtmosphereController(scene, sun, hemisphere, ambient, new Fog(TERRAIN_DEEP_FOG_COLOR)),
     sun,
   };
 }
@@ -954,7 +933,6 @@ function readStats(
           },
         }
       : {}),
-    gameMode: runtime.gameMode,
     wildlife: runtime.terrain.getWildlifeStats(),
     buildingInstances: runtime.interaction?.getState().buildings.length ?? 0,
     propInstances: runtime.terrain.getPropStats().instances,

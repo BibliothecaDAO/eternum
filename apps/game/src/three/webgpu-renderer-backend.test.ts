@@ -10,6 +10,12 @@ import { resetRendererStartupTimings, snapshotRendererStartupTimings } from "./p
 import { createWebGPURendererBackend } from "./webgpu-renderer-backend";
 import { createRenderableOverlayScene } from "./renderer-overlay-passes.test-fixture";
 
+/** A finish that draws the main scene straight through the test's renderer, as the backend did before the finish. */
+const drawsThrough = (renderer: { render(scene: unknown, camera: unknown): void }) => ({
+  render: (scene: unknown, camera: unknown) => renderer.render(scene, camera),
+  dispose: () => {},
+});
+
 const threeWebGpuMock = vi.hoisted(() => ({
   rendererParameters: [] as Array<{ forceWebGL: boolean }>,
 }));
@@ -76,18 +82,19 @@ describe("createWebGPURendererBackend", () => {
         requestedMode: "webgpu-auto",
       },
       {
+        createFinish: drawsThrough,
         createRenderer: vi.fn(),
         now: vi.fn(() => 100),
       },
     );
 
     expect(backend.capabilities).toEqual({
-      supportsBloom: false,
+      supportsBloom: true,
       supportsChromaticAberration: false,
-      supportsColorGrade: false,
+      supportsColorGrade: true,
       supportsEnvironmentIbl: false,
       supportsToneMappingControl: true,
-      supportsVignette: false,
+      supportsVignette: true,
       supportsWideLines: false,
     });
   });
@@ -108,6 +115,7 @@ describe("createWebGPURendererBackend", () => {
         requestedMode: "webgpu-auto",
       },
       {
+        createFinish: drawsThrough,
         createRenderer: vi.fn(async ({ forceWebGL }) => ({
           renderer: forceWebGL ? webGlRenderer : webGpuRenderer,
         })),
@@ -136,6 +144,7 @@ describe("createWebGPURendererBackend", () => {
         requestedMode: "webgpu-auto",
       },
       {
+        createFinish: drawsThrough,
         createRenderer: vi.fn(async () => ({ renderer })),
         now: vi.fn(() => 0),
       },
@@ -203,7 +212,10 @@ describe("createWebGPURendererBackend", () => {
     const glRenderer = Object.assign(createRendererSurface("webgl2-fallback"), { init: vi.fn(async () => {}) });
     const backend = createWebGPURendererBackend(
       { isMobileDevice: false, pixelRatio: 1, requestedMode: "webgpu-auto" },
-      { createRenderer: async ({ forceWebGL }) => ({ renderer: forceWebGL ? glRenderer : gpuRenderer }) },
+      {
+        createFinish: drawsThrough,
+        createRenderer: async ({ forceWebGL }) => ({ renderer: forceWebGL ? glRenderer : gpuRenderer }),
+      },
     );
     const initialization = backend.initialize();
     await vi.advanceTimersByTimeAsync(3_200);
@@ -342,6 +354,7 @@ describe("createWebGPURendererBackend", () => {
         requestedMode: "webgpu-auto",
       },
       {
+        createFinish: drawsThrough,
         createRenderer: vi.fn(({ forceWebGL, signal }: { forceWebGL: boolean; signal: AbortSignal }) => {
           if (forceWebGL) {
             return Promise.resolve({ renderer: webGlRenderer });
@@ -398,6 +411,7 @@ describe("createWebGPURendererBackend", () => {
         requestedMode: "webgpu-auto",
       },
       {
+        createFinish: drawsThrough,
         createRenderer: vi.fn(async () => ({
           activeMode: "webgpu" as const,
           renderer,
@@ -454,7 +468,7 @@ describe("createWebGPURendererBackend", () => {
     });
     const backend = createWebGPURendererBackend(
       { isMobileDevice: true, onDeviceLost, pixelRatio: 1, requestedMode: "webgpu-force-webgl" },
-      { createRenderer: vi.fn(async () => ({ renderer })), now: vi.fn(() => 10) },
+      { createFinish: drawsThrough, createRenderer: vi.fn(async () => ({ renderer })), now: vi.fn(() => 10) },
     );
 
     syncRendererBackendDiagnostics(await backend.initialize());
@@ -476,6 +490,7 @@ describe("createWebGPURendererBackend", () => {
         requestedMode: "webgpu-auto",
       },
       {
+        createFinish: drawsThrough,
         createRenderer: vi.fn(async ({ forceWebGL }) => ({
           activeMode: forceWebGL ? ("webgl2-fallback" as const) : ("webgpu" as const),
           renderer: Object.assign(renderer, { init }),
@@ -512,6 +527,7 @@ describe("createWebGPURendererBackend", () => {
         requestedMode: "webgpu-force-webgl",
       },
       {
+        createFinish: drawsThrough,
         createRenderer: vi.fn(async ({ forceWebGL }) => ({
           activeMode: forceWebGL ? ("webgl2-fallback" as const) : ("webgpu" as const),
           renderer: Object.assign(createRendererSurface("webgl2-fallback"), {
@@ -539,6 +555,7 @@ describe("createWebGPURendererBackend", () => {
         requestedMode: "webgpu-auto",
       },
       {
+        createFinish: drawsThrough,
         createRenderer: vi.fn(async () => ({
           renderer: Object.assign(createRendererSurface("webgl2-fallback"), {
             init: vi.fn(async () => {}),
@@ -567,6 +584,7 @@ describe("createWebGPURendererBackend", () => {
         requestedMode: "webgpu-auto",
       },
       {
+        createFinish: drawsThrough,
         createRenderer: vi.fn(async () => ({
           activeMode: "webgpu" as const,
           renderer: Object.assign(renderer, {
@@ -630,6 +648,7 @@ describe("createWebGPURendererBackend", () => {
         requestedMode: "webgpu-auto",
       },
       {
+        createFinish: drawsThrough,
         createRenderer: vi.fn(async () => ({
           activeMode: "webgpu" as const,
           renderer: Object.assign(renderer, {
@@ -668,6 +687,7 @@ describe("createWebGPURendererBackend", () => {
       const backend = createWebGPURendererBackend(
         { isMobileDevice: false, pixelRatio: 1, requestedMode: "webgpu-auto" },
         {
+          createFinish: drawsThrough,
           createRenderer: vi.fn(async () => ({
             activeMode,
             renderer: Object.assign(renderer, { init: vi.fn(async () => {}) }),

@@ -1,8 +1,8 @@
 // Registered by run-client-playtest.mjs as an init script, so it runs before any page code. It only observes: frame
 // times, the scene each frame drew, long animation frames, input-to-paint latency, every input's time, draw calls, the
-// GPU work each frame asked for (pipelines and shaders compiled, bytes uploaded), the vertices each frame drew, each frame's
-// script time in frame callbacks and its GPU time to work done, the GPU
-// memory held, what keeps running on its own (frame callbacks, timers, CSS animations, hidden overlays), every download, the scene marks, heap,
+// GPU work each frame asked for (pipelines and shaders compiled, bytes uploaded), the vertices and triangles each frame
+// drew, each frame's script time in frame callbacks and the time from its first submit to the GPU reporting that work
+// done (queue and callback delay included, not the GPU's own duration), the GPU memory held, what keeps running on its own (frame callbacks, timers, CSS animations, hidden overlays), every download, the scene marks, heap,
 // the map labels' DOM size, and each Herald socket message's arrival and handler cost. The runner reads it with `window.__playtest.read()` and reduces it per step.
 (() => {
   if (window.__playtest) return;
@@ -12,6 +12,7 @@
   const state = {
     draws: [],
     vertices: [],
+    triangles: [],
     callbackMs: [],
     gpuDoneMs: [],
     events: [],
@@ -34,6 +35,7 @@
   let watches = [];
   let drawsThisFrame = 0;
   let verticesThisFrame = 0;
+  let trianglesThisFrame = 0;
   let callbackMsThisFrame = 0;
   let gpuFrame = null;
   const NO_GPU_WORK = { pipelines: 0, shaders: 0, uploadBytes: 0, callMs: 0 };
@@ -58,18 +60,77 @@
     drawIndirect: () => 0,
     drawIndexedIndirect: () => 0,
   };
+  // And its triangles: a list draws one for each three vertices, a strip or fan one for each vertex past the second, a
+  // line or point none. WebGL2 names the topology in each draw's mode; a WebGPU pass draws with the pipeline it last set,
+  // whose topology was given when it was created.
+  const GL_TRIANGLES = 4;
+  const GL_TRIANGLE_STRIP = 5;
+  const GL_TRIANGLE_FAN = 6;
+  const GL_MODE = (mode) =>
+    mode === GL_TRIANGLES
+      ? "triangle-list"
+      : mode === GL_TRIANGLE_STRIP || mode === GL_TRIANGLE_FAN
+        ? "triangle-strip"
+        : "none";
+  const pipelineTopology = new WeakMap();
+  const passTopology = new WeakMap();
+  const DRAW_TOPOLOGY = {
+    drawArrays: (args) => GL_MODE(args[0]),
+    drawElements: (args) => GL_MODE(args[0]),
+    drawArraysInstanced: (args) => GL_MODE(args[0]),
+    drawElementsInstanced: (args) => GL_MODE(args[0]),
+    drawRangeElements: (args) => GL_MODE(args[0]),
+  };
+  const DRAW_INSTANCES = { drawArraysInstanced: (args) => args[3], drawElementsInstanced: (args) => args[4] };
+  const trianglesOf = (topology, vertices, instances) =>
+    topology === "triangle-list"
+      ? Math.floor(vertices / instances / 3) * instances
+      : topology === "triangle-strip"
+        ? Math.max(0, vertices / instances - 2) * instances
+        : 0;
   const countDraws = (prototype, names) => {
     if (!prototype) return;
     for (const name of names) {
       const draw = prototype[name];
       if (typeof draw !== "function") continue;
       prototype[name] = function (...args) {
+        const vertices = DRAW_VERTICES[name](args) || 0;
+        const topology = DRAW_TOPOLOGY[name]?.(args) ?? passTopology.get(this) ?? "triangle-list";
+        const instances =
+          DRAW_INSTANCES[name]?.(args) ?? (name === "draw" || name === "drawIndexed" ? (args[1] ?? 1) : 1);
         drawsThisFrame += 1;
-        verticesThisFrame += DRAW_VERTICES[name](args) || 0;
+        verticesThisFrame += vertices;
+        trianglesThisFrame += instances > 0 ? trianglesOf(topology, vertices, instances) : 0;
         return draw.apply(this, args);
       };
     }
   };
+  const rememberTopology = (pipeline, descriptor) => {
+    if (pipeline && typeof pipeline === "object")
+      pipelineTopology.set(pipeline, descriptor?.primitive?.topology ?? "triangle-list");
+    return pipeline;
+  };
+  const devicePrototype = window.GPUDevice?.prototype;
+  if (devicePrototype?.createRenderPipeline) {
+    const create = devicePrototype.createRenderPipeline;
+    devicePrototype.createRenderPipeline = function (descriptor) {
+      return rememberTopology(create.call(this, descriptor), descriptor);
+    };
+  }
+  if (devicePrototype?.createRenderPipelineAsync) {
+    const createAsync = devicePrototype.createRenderPipelineAsync;
+    devicePrototype.createRenderPipelineAsync = function (descriptor) {
+      return createAsync.call(this, descriptor).then((pipeline) => rememberTopology(pipeline, descriptor));
+    };
+  }
+  const passPrototype = window.GPURenderPassEncoder?.prototype;
+  if (passPrototype?.setPipeline) {
+    const setPipeline = passPrototype.setPipeline;
+    passPrototype.setPipeline = function (pipeline) {
+      passTopology.set(this, pipelineTopology.get(pipeline) ?? "triangle-list");
+      return setPipeline.call(this, pipeline);
+    };
+  }
   countDraws(window.WebGL2RenderingContext?.prototype, [
     "drawArrays",
     "drawElements",
@@ -381,11 +442,13 @@
     push(state.gpuDoneMs, gpuFrame);
     push(state.draws, drawsThisFrame);
     push(state.vertices, verticesThisFrame);
+    push(state.triangles, trianglesThisFrame);
     push(state.gpu, gpuThisFrame);
     // The scene the renderer drew last; read here, it is the previous frame's, one frame late at a change.
     push(state.scenes, window.__rendererDiagnostics?.sceneName ?? null);
     drawsThisFrame = 0;
     verticesThisFrame = 0;
+    trianglesThisFrame = 0;
     callbackMsThisFrame = 0;
     gpuFrame = null;
     gpuThisFrame = { ...NO_GPU_WORK };
@@ -567,6 +630,7 @@
       return JSON.stringify({
         draws: state.draws.slice(fromFrame),
         vertices: state.vertices.slice(fromFrame),
+        triangles: state.triangles.slice(fromFrame),
         callbackMs: state.callbackMs.slice(fromFrame),
         gpuDoneMs: state.gpuDoneMs.slice(fromFrame).map((frame) => frame?.ms ?? null),
         gpuMemory: gpuMemory(),

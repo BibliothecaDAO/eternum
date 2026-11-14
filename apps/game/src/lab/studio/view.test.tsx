@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
-import { Link, MemoryRouter } from "react-router-dom";
+import { MemoryRouter } from "react-router-dom";
 import { PerspectiveCamera, Vector3 } from "three";
 import { afterEach, expect, it, vi } from "vitest";
 
@@ -28,11 +28,6 @@ vi.mock("@/three/debug/procedural-terrain-debug-renderer", () => ({
 let root: Root;
 let host: HTMLDivElement;
 const studio = () => (window as Window & { __studio?: StudioBridge }).__studio;
-const page = () => ({
-  ready: host.querySelector("[data-ready]")?.getAttribute("data-ready"),
-  take: host.querySelector("[data-take]")?.getAttribute("data-take"),
-  status: host.querySelector("[role=status]")?.textContent,
-});
 
 afterEach(async () => {
   await act(async () => root.unmount());
@@ -47,20 +42,10 @@ async function openStudio() {
     root.render(
       <MemoryRouter initialEntries={["/lab/studio"]}>
         <StudioLabView />
-        <Link to="/lab/studio?mode=frontier">Frontier</Link>
       </MemoryRouter>,
     ),
   );
 }
-
-it("starts the new world idle when the game changes mid-take", async () => {
-  await openStudio();
-  await act(async () => void studio()!.take("battle"));
-  expect(page().take).toBe("battle");
-  await act(async () => host.querySelector<HTMLAnchorElement>('a[href="/lab/studio?mode=frontier"]')!.click());
-  expect(studio()!.status().playing).toBe(false);
-  expect(page()).toEqual({ ready: "true", take: "idle", status: "Ready to roll" });
-});
 
 it("settles a take silently when the page leaves mid-take, and takes its bridge with it", async () => {
   await openStudio();

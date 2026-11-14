@@ -51,7 +51,6 @@ function WorldComparison() {
         canvas: element,
         captureMode: true,
         mapSheet: { chapter, overlay: overlay.current! },
-        gameMode: "blitz",
         forceWebGL,
         qualityTier: "detail",
         revealProgress: 0,

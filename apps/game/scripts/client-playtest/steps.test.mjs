@@ -1255,3 +1255,70 @@ it("the ruin fight proof refuses a legacy or missing daily rule", () => {
     expect(verify({ played: { before, after: { ...after, ruinRule: rule } } }).status).toBe("failed");
   }
 });
+
+describe("the full load's steps", () => {
+  const verifyOf = (name) => STEP_SETS["full-load"].steps.find((step) => step.name === name).verify;
+  const full = {
+    animals: 48,
+    animalsLoaded: 48,
+    animalCap: 48,
+    props: 1805,
+    propTriangles: 757938,
+    pages: 4,
+    pagesPresented: 51,
+  };
+  const atZoom = (distance, terrainLoad = full) => ({
+    scene: "map",
+    rendered: "map",
+    place: "Map",
+    selection: { camera: { col: 0, row: 0, distance } },
+    terrainLoad,
+  });
+  const still = (seen) => verifyOf("full-load-still")({ seen, played: {} });
+  const widest = (seen) => verifyOf("full-load-widest")({ seen, played: {} });
+
+  it("complete at the zoom they claim with the full load, whatever the wildlife's cap", () => {
+    expect(still(atZoom(20))).toMatchObject({ status: "completed", distance: 20, load: full });
+    expect(widest(atZoom(45))).toMatchObject({ status: "completed", distance: 45 });
+    const nextsCap = { ...full, animals: 32, animalsLoaded: 32, animalCap: 32, props: 554, propTriangles: 271908 };
+    expect(still(atZoom(20, nextsCap)).status).toBe("completed");
+  });
+
+  it("fail at the wrong zoom, or with no camera distance", () => {
+    expect(widest(atZoom(20)).reason).toBe("the camera stands 20 away, not 45");
+    expect(still({ ...atZoom(20), selection: { camera: { col: 0, row: 0 } } }).reason).toBe(
+      "the map reported no camera distance",
+    );
+    expect(still({ ...atZoom(20), selection: null }).reason).toBe("the map reported no camera distance");
+  });
+
+  it("fail without a load report, or with any of its counts missing", () => {
+    expect(still(atZoom(20, null)).reason).toBe("the map reported no terrain load (open it with the dev overlays)");
+    expect(still(atZoom(20, {})).reason).toBe(
+      "the map's load report has no count for animals, animalsLoaded, animalCap, props, propTriangles, pages, pagesPresented",
+    );
+    const { props: _props, ...noProps } = full;
+    expect(still(atZoom(20, noProps)).reason).toBe("the map's load report has no count for props");
+  });
+
+  it("fail with no wildlife cap, a population short of it, or animals not drawn", () => {
+    expect(still(atZoom(20, { ...full, animals: 0, animalsLoaded: 0, animalCap: 0 })).reason).toBe(
+      "the map's wildlife has no cap",
+    );
+    expect(still(atZoom(20, { ...full, animals: 40, animalsLoaded: 40 })).status).toBe("failed");
+    expect(still(atZoom(20, { ...full, animalsLoaded: 47 })).status).toBe("failed");
+  });
+
+  it("fail without the fixture's vegetation and pages", () => {
+    expect(still(atZoom(20, { ...full, props: 0, propTriangles: 0 })).reason).toBe("no vegetation is drawn");
+    expect(still(atZoom(20, { ...full, pages: 2 })).reason).toBe("the map presents 2 pages, not the fixture's 4");
+  });
+
+  it("fail a pan that presented no new page", () => {
+    const pan = verifyOf("full-load-pan");
+    expect(pan({ seen: atZoom(20), played: { before: full } }).status).toBe("failed");
+    expect(pan({ seen: atZoom(20, { ...full, pagesPresented: 263 }), played: { before: full } }).status).toBe(
+      "completed",
+    );
+  });
+});

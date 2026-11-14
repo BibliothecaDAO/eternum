@@ -35,16 +35,25 @@ describe("terrain gallery verification", () => {
     ]);
   });
 
-  it("rejects duplicate wildlife regions and incomplete creature loads", () => {
+  it("rejects two herds in one wildlife region and incomplete creature loads, and accepts one herd of several", () => {
     const results = healthyResults();
-    results[0].snapshot.wildlife = {
-      count: 2,
-      loaded: 2,
+    const wildlifeOf = (creatures) => ({
+      count: creatures.length,
+      loaded: creatures.length,
       pending: 0,
       failed: [],
       visible: true,
-      creatures: [{ region: "0:0" }, { region: "0:0" }],
-    };
+      creatures,
+    });
+    results[0].snapshot.wildlife = wildlifeOf([
+      { herd: 0, region: "0:0" },
+      { herd: 0, region: "0:0" },
+    ]);
+    expect(evaluateTerrainGalleryResults(results).ok).toBe(true);
+    results[0].snapshot.wildlife = wildlifeOf([
+      { herd: 0, region: "0:0" },
+      { herd: 1, region: "0:0" },
+    ]);
     expect(evaluateTerrainGalleryResults(results).reasons).toContain(
       "all-biomes/webgpu-auto/flat: wildlife loading or 8x8 density contract failed",
     );
@@ -54,7 +63,7 @@ describe("terrain gallery verification", () => {
       pending: 1,
       failed: [],
       visible: true,
-      creatures: [{ region: "0:0" }],
+      creatures: [{ herd: 0, region: "0:0" }],
     };
     expect(evaluateTerrainGalleryResults(results).ok).toBe(false);
   });
@@ -293,8 +302,6 @@ function result(rendererMode, activeMode, groundMode) {
       frameP95Ms: 16.7,
       frameWorstMs: 18,
       frameSampleCount: 72,
-      groundTextureBytes: 3_406_477,
-      groundTextureLayers: 8,
       groundCoverInstances: 12,
       prepareMs: 20,
       propInstances: 39,
@@ -332,19 +339,10 @@ function result(rendererMode, activeMode, groundMode) {
   };
 }
 
-it.each(["blitz", "frontier"])("captures the requested production world mode %s", (gameMode) => {
+it("opens the terrain lab with its own settings only, whatever the base address carries", () => {
   const url = new URL(
-    buildTerrainGalleryUrl(`https://localhost:4173/?mode=${gameMode}&look=dawn&biomes=reworked`, "webgpu-auto"),
+    buildTerrainGalleryUrl("https://localhost:4173/?mode=frontier&look=dawn&biomes=reworked", "webgpu-auto"),
   );
   expect(url.pathname).toBe("/lab/terrain");
-  expect(url.searchParams.get("mode")).toBe(gameMode);
-  expect(url.searchParams.has("look")).toBe(false);
-  expect(url.searchParams.has("biomes")).toBe(false);
-  const results = healthyResults();
-  for (const result of results) result.snapshot.gameMode = gameMode;
-  expect(evaluateTerrainGalleryResults(results, { gameMode }).ok).toBe(true);
-  results[0].snapshot.gameMode = "wrong";
-  expect(evaluateTerrainGalleryResults(results, { gameMode }).reasons).toContain(
-    "all-biomes/webgpu-auto/flat: world mode did not match request",
-  );
+  expect([...url.searchParams.keys()].sort()).toEqual(["capture", "groundMode", "quality", "rendererMode", "scene"]);
 });

@@ -58,7 +58,6 @@ export function DayEndLabView() {
       canvas: canvas.current!,
       captureMode: false,
       stage: dayEnd,
-      gameMode: "frontier",
       forceWebGL,
       qualityTier: "detail",
       revealProgress: 0,

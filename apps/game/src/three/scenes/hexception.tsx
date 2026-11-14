@@ -43,7 +43,6 @@ import { resolveStructureRotationY } from "@/three/structures/structure-orientat
 import { resolvePlayRouteTarget } from "@/play/navigation/play-route-target";
 import { RealmGridBuilds } from "./hexception-grid-builds";
 import type { PipelineCompiler } from "@/three/pipeline-compiler";
-import { awaitLocalScenePresentable } from "./local-scene-presentation";
 import { getGameModeConfig } from "@/config/game-modes";
 import type { GameModeConfig } from "@/config/game-modes";
 import {
@@ -306,7 +305,6 @@ export default class HexceptionScene extends HexagonScene {
   // Presentable once the realm's first frame has been drawn behind the held map frame (see whenPresentable).
   private presentation: Promise<void> = Promise.resolve();
   private resolveFirstFrame: (() => void) | undefined;
-  private groundTexturesReady: Promise<void> = Promise.resolve();
   // Store Zustand unsubscribe functions to clean up on destroy
   private storeUnsubscribes: (() => void)[] = [];
   // True from setup until switch-off. Store subscriptions fire in every scene, so a grid rebuild (and the
@@ -670,9 +668,6 @@ export default class HexceptionScene extends HexagonScene {
     this.localAssetsStarted = true;
     void this.proceduralTerrain.loadProps().catch((error) => {
       console.warn("[Hexception] Optional procedural terrain props failed to load", error);
-    });
-    this.groundTexturesReady = this.proceduralTerrain.loadGroundTextures().catch((error) => {
-      console.warn("[Hexception] Procedural ground textures failed; retaining flat terrain", error);
     });
   }
 
@@ -1257,10 +1252,8 @@ export default class HexceptionScene extends HexagonScene {
     // A realm superseded before its first frame releases whoever waited on it.
     this.resolveFirstFrame?.();
     const firstFrame = new Promise<void>((resolve) => (this.resolveFirstFrame = resolve));
-    this.localPresentation = awaitLocalScenePresentable({
-      gridBuilt: this.gridBuilds.whenBuilt(),
-      groundTextures: this.groundTexturesReady,
-    }).finally(() => {
+    // The local scene is revealed once its grid is built; a grid that failed fails the scene.
+    this.localPresentation = this.gridBuilds.whenBuilt().finally(() => {
       if (this.ownsRealmGeneration(generation)) this.localPresentationReady = true;
     });
     this.presentation = this.localPresentation.then(() => firstFrame);
@@ -1831,9 +1824,13 @@ export default class HexceptionScene extends HexagonScene {
    * The ground of the local-view hex that shows this map hex: the tile's stored biome, or the realm's own where a
    * neighbour is not revealed yet. A view opened before the realm's tile row arrives shows grassland until it is rebuilt.
    */
+  /** A hex's biome on the map, else the realm's own; the realm's own tile without one is a missing fact. */
   private localBiome(col: number, row: number): BiomeType {
     const stored = (hexCol: number, hexRow: number) => storedBiomeAt(this.game.store, false, hexCol, hexRow);
-    return stored(col, row) ?? stored(this.centerColRow[0], this.centerColRow[1]) ?? BiomeType.Grassland;
+    const biome = stored(col, row) ?? stored(this.centerColRow[0], this.centerColRow[1]);
+    if (biome) return biome;
+    if (import.meta.env.DEV) console.error("[Hexception] the realm's tile has no biome", this.centerColRow);
+    return BiomeType.Grassland;
   }
 
   /**

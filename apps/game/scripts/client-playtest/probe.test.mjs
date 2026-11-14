@@ -32,8 +32,12 @@ function probedPage() {
     createBuffer() {
       return new GPUBuffer();
     }
+    createRenderPipeline() {
+      return {};
+    }
   }
   class GPURenderPassEncoder {
+    setPipeline() {}
     draw() {}
     drawIndexed() {}
   }
@@ -92,6 +96,7 @@ function probedPage() {
     gl: new WebGL2RenderingContext(),
     frame: () => lastFrame().gpu.at(-1).uploadBytes,
     vertices: () => lastFrame().vertices.at(-1),
+    triangles: () => lastFrame().triangles.at(-1),
     gpuMemory: () => lastFrame().gpuMemory,
   };
 }
@@ -126,6 +131,25 @@ it("counts a WebGL2 upload's bytes the same way, a zero length running to the en
   expect(page.frame()).toBe(8);
   page.gl.bufferSubData(0, 0, shorts.buffer);
   expect(page.frame()).toBe(20);
+});
+
+it("counts the triangles a frame drew by each draw's topology, instances included, WebGPU's and WebGL2's", () => {
+  const page = probedPage();
+  const list = page.device.createRenderPipeline({ primitive: { topology: "triangle-list" } });
+  const strip = page.device.createRenderPipeline({ primitive: { topology: "triangle-strip" } });
+  const lines = page.device.createRenderPipeline({ primitive: { topology: "line-list" } });
+
+  page.pass.setPipeline(list);
+  page.pass.drawIndexed(300, 4);
+  page.pass.setPipeline(strip);
+  page.pass.draw(6);
+  page.pass.setPipeline(lines);
+  page.pass.draw(10);
+  page.gl.drawElementsInstanced(4, 36, 0, 0, 10);
+  page.gl.drawArrays(5, 0, 5);
+  page.gl.drawArrays(1, 0, 8);
+  expect(page.triangles()).toBe(400 + 4 + 0 + 120 + 3 + 0);
+  expect(page.triangles()).toBe(0);
 });
 
 it("counts the vertices a frame drew, instances included, WebGPU's and WebGL2's", () => {

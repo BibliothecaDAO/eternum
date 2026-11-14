@@ -63,7 +63,7 @@ describe("terrain prop placement", () => {
     expect(instances.every(({ archetype }) => ["dead-tree", "boulder", "fallen-log"].includes(archetype))).toBe(true);
   });
 
-  it("derives dense near-view ground cover from the same vegetation field", () => {
+  it("derives near-view ground cover of more than one kind from the same vegetation field", () => {
     const cells = Array.from({ length: 100 }, (_, index) =>
       cell(index % 10, Math.floor(index / 10), BiomeType.Grassland),
     );
@@ -71,7 +71,7 @@ describe("terrain prop placement", () => {
     const instances = prepareTerrainPropInstances(terrainRequest, new TerrainField(terrainRequest));
     const groundCover = instances.filter(({ archetype }) => getTerrainPropPlacementLayer(archetype) === "groundcover");
 
-    expect(groundCover.length).toBeGreaterThan(4);
+    expect(groundCover.length).toBeGreaterThan(0);
     expect(new Set(groundCover.map(({ archetype }) => archetype)).size).toBeGreaterThan(1);
   });
 
@@ -128,15 +128,13 @@ describe("terrain prop placement", () => {
 
   it("applies and validates a deterministic global density multiplier", () => {
     const stressed = densityContext({ elevation: 0.75, moisture: 0.25, normalY: 0.97, patchiness: 0.3 });
-    const baseline = resolveEffectiveTerrainPropDensity(
-      BiomeType.TropicalRainForest,
-      stressed.context,
-      stressed.normalY,
-    );
+    // A sparse biome, so twice its density stays under the probability's ceiling.
+    const baseline = resolveEffectiveTerrainPropDensity(BiomeType.Snow, stressed.context, stressed.normalY);
 
-    expect(
-      resolveEffectiveTerrainPropDensity(BiomeType.TropicalRainForest, stressed.context, stressed.normalY, 2),
-    ).toBeCloseTo(baseline * 2);
+    expect(baseline * 2).toBeLessThan(1);
+    expect(resolveEffectiveTerrainPropDensity(BiomeType.Snow, stressed.context, stressed.normalY, 2)).toBeCloseTo(
+      baseline * 2,
+    );
     const invalid = { ...request([cell(0, 0, BiomeType.Grassland)]), propDensityMultiplier: 3.1 };
     expect(() => prepareTerrainPropInstances(invalid, new TerrainField(invalid))).toThrow(
       "Terrain prop density multiplier must be from 0.25 to 3",

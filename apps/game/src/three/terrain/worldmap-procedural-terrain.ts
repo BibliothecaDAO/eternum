@@ -1,5 +1,5 @@
+import type { GroundLights } from "./ground-lights";
 import type { EtherealSurface } from "./ethereal-depths";
-import type { GameModeId } from "@/config/game-modes";
 import { NEUTRAL_BIOME_CLIMATE, type BiomeClimateConfig } from "@bibliothecadao/eternum";
 import { BiomeType, getNeighborHexes } from "@bibliothecadao/types";
 import type { Group } from "three";
@@ -224,9 +224,24 @@ class SupersededPresentationError extends Error {
   }
 }
 
+interface TerrainLoad {
+  animals: number;
+  animalsLoaded: number;
+  animalCap: number;
+  props: number;
+  propTriangles: number;
+  pages: number;
+  /** Page presentations since the map opened: how much terrain a pan has brought in. */
+  pagesPresented: number;
+}
+
 export class WorldmapProceduralTerrain {
   readonly object3d: Group;
   private readonly terrain: ProceduralTerrain;
+
+  get groundLights(): GroundLights {
+    return this.terrain.groundLights;
+  }
   /** The latest prepared version of each page, by page key, with the signature it was prepared for. */
   private readonly preparedByPageKey = new Map<string, { signature: string; page: PreparedTerrainPage }>();
   private readonly pendingBySignature = new Map<string, Promise<PreparedTerrainPage>>();
@@ -248,8 +263,8 @@ export class WorldmapProceduralTerrain {
   private surfacePresentation: "world" | "ethereal" = "world";
   private disposed = false;
 
-  constructor(gameMode: GameModeId = "blitz") {
-    this.terrain = new ProceduralTerrain({ streaming: true, gameMode });
+  constructor() {
+    this.terrain = new ProceduralTerrain({ streaming: true });
     this.object3d = this.terrain.object3d;
     this.object3d.name = "worldmap-procedural-terrain";
   }
@@ -277,12 +292,6 @@ export class WorldmapProceduralTerrain {
 
   loadProps(): Promise<void> {
     return this.terrain.loadProps();
-  }
-
-  async loadGroundTextures(): Promise<void> {
-    await this.terrain.loadGroundTextures();
-    if (this.disposed) return;
-    this.terrain.setSurfacePresentation(this.surfacePresentation);
   }
 
   setSurfacePresentation(presentation: "world" | "ethereal"): void {
@@ -344,6 +353,21 @@ export class WorldmapProceduralTerrain {
 
   getPresentedPageKeys(): string[] {
     return [...this.presentedPages.keys()];
+  }
+
+  /** What the map's terrain carries now: its animals against their cap, its props and its pages, for load proofs. */
+  getLoad(): TerrainLoad {
+    const wildlife = this.terrain.getWildlifeStats();
+    const props = this.terrain.getPropStats();
+    return {
+      animals: wildlife.count,
+      animalsLoaded: wildlife.loaded,
+      animalCap: wildlife.cap,
+      props: props.instances,
+      propTriangles: props.triangles,
+      pages: this.presentedPages.size,
+      pagesPresented: this.presentMetrics.presentTasks,
+    };
   }
 
   /** Cells on screen, explored or fog: an unexplored region is presented terrain, not missing terrain. */

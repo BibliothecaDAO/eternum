@@ -24,6 +24,7 @@ vi.mock("../ui/features/debug/model-lab-view", () => ({ ModelLabView: () => <Too
 vi.mock("../ui/features/debug/reward-lab-view", () => ({ RewardLabView: () => <Tool name="rewards" /> }));
 vi.mock("./relic-chest/view", () => ({ RelicChestLab: () => <Tool name="relic-chest" /> }));
 vi.mock("../ui/features/debug/terrain-prop-debug-view", () => ({ TerrainPropDebugView: () => <Tool name="props" /> }));
+vi.mock("../ui/features/debug/wildlife-lab-view", () => ({ WildlifeLabView: () => <Tool name="wildlife" /> }));
 vi.mock("./endgame-mist/view", () => ({ EndgameMistLabView: () => <Tool name="endgame" /> }));
 vi.mock("./day-end/view", () => ({ DayEndLabView: () => <Tool name="day-end" /> }));
 vi.mock("../ui/features/debug/world-fx-gym-view", () => ({ WorldFxGymView: () => <Tool name="fx" /> }));
@@ -164,13 +165,14 @@ it.each([
   ["/lab/day-end?case=late-block", "day-end", "Game", "Day end"],
   ["/lab/endgame?variation=tide&mode=frontier", "endgame", "Game", "Game end"],
   ["/lab/map-labels?zoom=close&hover=28", "map-labels", "Game", "Map labels & sites"],
-  ["/lab/terrain?mode=frontier", "terrain", "Art", "Terrain"],
+  ["/lab/terrain", "terrain", "Art", "Terrain"],
   ["/lab/terrain-props", "props", "Art", "Terrain"],
+  ["/lab/wildlife?species=moose&view=map", "wildlife", "Art", "Terrain"],
   ["/lab/rewards", "rewards", "Art", "Chests"],
   ["/lab/chunks", "chunks", "Art", "Bench"],
   ["/lab/data?view=balance", "data", "Data", "Balance & data"],
   ["/lab/data/usage?mode=blitz", "ui-usage", "Data", "UI usage"],
-  ["/lab/studio?take=battle&mode=frontier", "studio", "Studio", "Set"],
+  ["/lab/studio?take=battle", "studio", "Studio", "Set"],
   ["/lab/footage", "footage", "Studio", "Footage"],
 ])("opens %s through the common bootstrap, in its room and page", async (at, name, room, page) => {
   await openLab(at);
@@ -199,12 +201,12 @@ it("opens the lab on the kit's sheet, not on a 3D page", async () => {
 
 it("opens a page that draws Frontier on Frontier, and its Game switch opens it again in the other game", async () => {
   await openLab("/lab/kit");
-  await press("Rooms", "Studio");
-  expect(address()).toBe("/lab/studio?mode=frontier");
+  await press("Rooms", "Data");
+  expect(address()).toBe("/lab/data?mode=frontier");
   await press("Game", "Blitz");
-  expect(address()).toBe("/lab/studio?mode=blitz");
-  expect(lifecycle.disposed).toContain("studio");
-  expect(lifecycle.active).toEqual(new Set(["studio"]));
+  expect(address()).toBe("/lab/data?mode=blitz");
+  expect(lifecycle.disposed).toContain("data");
+  expect(lifecycle.active).toEqual(new Set(["data"]));
 });
 
 it("shows on the Game switch the game a page draws when its address names none", async () => {

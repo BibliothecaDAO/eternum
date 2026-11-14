@@ -28,13 +28,19 @@ const SCENE_IDS = [
 ];
 const QUALITY_TIERS = ["overview", "balanced", "detail"];
 
+/** The most animals the map shows at once, herds counted by their members. */
+const MAX_WILDLIFE = 48;
+
 function isWildlifePopulationValid(wildlife) {
-  if (!wildlife || !Number.isInteger(wildlife.count) || wildlife.count < 0 || wildlife.count > 32) return false;
+  if (!wildlife || !Number.isInteger(wildlife.count) || wildlife.count < 0 || wildlife.count > MAX_WILDLIFE)
+    return false;
   if (wildlife.visible && (wildlife.pending !== 0 || wildlife.failed.length > 0 || wildlife.loaded !== wildlife.count))
     return false;
+  // One herd to a region: every animal reports its herd and the region its herd's leader holds.
+  const herds = new Set(wildlife.creatures.map((creature) => creature.herd));
   return (
     wildlife.creatures.length === wildlife.count &&
-    new Set(wildlife.creatures.map((creature) => creature.region)).size === wildlife.count
+    new Set(wildlife.creatures.map((creature) => creature.region)).size === herds.size
   );
 }
 
@@ -47,7 +53,6 @@ export function buildTerrainGalleryUrl(
   revealProgress = 0,
 ) {
   const url = new URL(baseUrl);
-  const gameMode = url.searchParams.get("mode");
   url.pathname = "/lab/terrain";
   url.search = "";
   url.searchParams.set("capture", "1");
@@ -56,7 +61,6 @@ export function buildTerrainGalleryUrl(
   url.searchParams.set("scene", sceneId);
   url.searchParams.set("quality", qualityTier);
   if (revealProgress > 0) url.searchParams.set("reveal", String(revealProgress));
-  if (gameMode === "blitz" || gameMode === "frontier") url.searchParams.set("mode", gameMode);
   return url.toString();
 }
 
@@ -87,8 +91,6 @@ export function evaluateTerrainGalleryResults(results, options = {}) {
     if (result.snapshot && result.snapshot.activeMode !== ACTIVE_MODE_OF[result.rendererMode]) {
       reasons.push(`${label}: rendered on ${result.snapshot.activeMode}, not ${ACTIVE_MODE_OF[result.rendererMode]}`);
     }
-    if (options.gameMode && result.snapshot?.gameMode !== options.gameMode)
-      reasons.push(`${label}: world mode did not match request`);
     if (result.errors.length > 0) reasons.push(`${label}: browser reported ${result.errors[0]}`);
     if (result.sceneId === "all-biomes" && result.snapshot?.biomeCount !== 16) {
       reasons.push(`${label}: expected 16 biomes`);
@@ -103,8 +105,6 @@ export function evaluateTerrainGalleryResults(results, options = {}) {
     if (result.snapshot?.revealProgress !== result.revealProgress) {
       reasons.push(`${label}: snapshot reveal progress did not match request`);
     }
-    if (result.snapshot?.groundTextureLayers !== 8) reasons.push(`${label}: expected eight ground texture layers`);
-    if (!(result.snapshot?.groundTextureBytes > 0)) reasons.push(`${label}: expected measured ground texture bytes`);
     if (enforceTiming) {
       if (!(result.snapshot?.frameSampleCount >= 30)) {
         reasons.push(`${label}: expected at least 30 stable frame samples`);
@@ -261,8 +261,8 @@ export function evaluateTerrainGalleryResults(results, options = {}) {
     if (!isWildlifePopulationValid(wildlife)) {
       reasons.push(`${label}: wildlife loading or 8x8 density contract failed`);
     }
-    // Authored rigid joints cost at most 28 primitives per creature, drawn in color and shadow passes.
-    const drawCallBudget = 40 + (wildlife?.visible ? Math.min(wildlife.loaded, 32) * 56 : 0);
+    // A rigid-jointed creature costs at most 28 primitives, drawn in color and shadow passes; a skinned one costs one.
+    const drawCallBudget = 40 + (wildlife?.visible ? Math.min(wildlife.loaded, MAX_WILDLIFE) * 56 : 0);
     if (!(result.snapshot?.drawCalls > 0 && result.snapshot.drawCalls <= drawCallBudget)) {
       reasons.push(`${label}: draw-call count exceeded policy or was unavailable`);
     }
@@ -302,8 +302,6 @@ export function evaluateTerrainGalleryResults(results, options = {}) {
         metric.fogOpacity !== reference.fogOpacity ||
         metric.fogTerrainCells !== reference.fogTerrainCells ||
         metric.preparedFrontierCells !== reference.preparedFrontierCells ||
-        metric.groundTextureBytes !== reference.groundTextureBytes ||
-        metric.groundTextureLayers !== reference.groundTextureLayers ||
         metric.groundCoverInstances !== reference.groundCoverInstances ||
         metric.propInstances !== reference.propInstances ||
         metric.roadSegments !== reference.roadSegments ||
@@ -543,13 +541,11 @@ async function main(args) {
       }
     }
   }
-  const gameMode = new URL(baseUrl).searchParams.get("mode") === "frontier" ? "frontier" : "blitz";
   const evaluation = evaluateTerrainGalleryResults(results, {
     groundModes,
     rendererModes,
     sceneIds,
     timingPolicy,
-    gameMode,
   });
   const summary = {
     ...evaluation,

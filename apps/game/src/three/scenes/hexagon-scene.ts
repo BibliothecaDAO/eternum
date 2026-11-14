@@ -1,10 +1,10 @@
-import { getGameModeId } from "@/config/game-modes";
 import { RainEffect } from "@/three/effects/rain-effect";
 import { createWorldFxRuntime, type WorldFxRuntime } from "@/three/fx/world-fx-runtime";
 import { useWorldAppearanceStore } from "@/hooks/store/use-world-appearance-store";
 import { burstParticles, momentSpeed, type Intensity } from "@/ui/motion/motion-scale";
 import { placeKeyLight } from "@/three/effects/key-light";
-import { configureWorldSunShadows } from "@/three/effects/world-sun-shadows";
+import { configureWorldSunShadows, fitSunShadowToView } from "@/three/effects/world-sun-shadows";
+import type { GroundLights } from "@/three/terrain/ground-lights";
 import { useUIStore, type AppStore } from "@/hooks/store/use-ui-store";
 import { TERRAIN_DEEP_FOG_COLOR } from "@/three/terrain/terrain-fog-style";
 import { CAMERA_CONFIG, FOG_CONFIG } from "@/three/constants";
@@ -328,7 +328,6 @@ export abstract class HexagonScene {
       this.hemisphereLight,
       this.ambientPurpleLight,
       this.fog,
-      this.sceneName === SceneName.WorldMap ? getGameModeId() : "blitz",
     );
   }
 
@@ -765,6 +764,11 @@ export abstract class HexagonScene {
     return FLAT_TERRAIN_SURFACE;
   }
 
+  /** What glows on this scene's ground lights it; a scene without a painted ground has none. */
+  public getGroundLights(): GroundLights | null {
+    return null;
+  }
+
   public getThunderBoltManager(): ThunderBoltManager {
     return this.thunderBoltManager;
   }
@@ -1021,7 +1025,8 @@ export abstract class HexagonScene {
       return;
     }
 
-    const { position, target } = this.mainDirectionalLight;
+    fitSunShadowToView(this.mainDirectionalLight, this.camera);
+    const { position, target, shadow } = this.mainDirectionalLight;
     this.shadowRefreshPolicy.observeSun([
       position.x,
       position.y,
@@ -1029,6 +1034,10 @@ export abstract class HexagonScene {
       target.position.x,
       target.position.y,
       target.position.z,
+      shadow.camera.left,
+      shadow.camera.right,
+      shadow.camera.top,
+      shadow.camera.bottom,
     ]);
     if (this.shadowRefreshPolicy.consumeRefresh(deltaTime * 1000)) {
       this.mainDirectionalLight.shadow.needsUpdate = true;
@@ -1073,6 +1082,7 @@ export abstract class HexagonScene {
     }
 
     this.updateShadowRefresh(deltaTime);
+    this.getGroundLights()?.follow(this.controls.target.x, this.controls.target.z);
 
     PerformanceMonitor.end("scene.update");
   }
@@ -1085,19 +1095,6 @@ export abstract class HexagonScene {
     this.weatherAtmosphereState = state ? { ...state } : undefined;
   }
 
-  protected getAnimationDistanceForView(): number {
-    switch (this.currentCameraView) {
-      case CameraView.Close:
-        return this.animationDistanceThreshold;
-      case CameraView.Medium:
-        return this.animationDistanceThreshold * 0.85;
-      case CameraView.Far:
-        return this.animationDistanceThreshold * 0.6;
-      default:
-        return this.animationDistanceThreshold;
-    }
-  }
-
   protected getAnimationVisibilityContext(): AnimationVisibilityContext | undefined {
     this.animationCameraTarget.copy(this.controls.target);
 
@@ -1105,11 +1102,11 @@ export abstract class HexagonScene {
       this.animationVisibilityContext = {
         visibilityManager: this.visibilityManager,
         cameraPosition: this.animationCameraTarget,
-        maxDistance: this.getAnimationDistanceForView(), // View-scaled threshold
+        maxDistance: this.animationDistanceThreshold,
       };
     } else {
       this.animationVisibilityContext.visibilityManager = this.visibilityManager;
-      this.animationVisibilityContext.maxDistance = this.getAnimationDistanceForView();
+      this.animationVisibilityContext.maxDistance = this.animationDistanceThreshold;
     }
 
     return this.animationVisibilityContext;

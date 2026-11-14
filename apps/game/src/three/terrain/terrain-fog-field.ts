@@ -1,4 +1,3 @@
-import type { GameModeId } from "@/config/game-modes";
 import { BASALT_BLOCK_RADIUS } from "./terrain-basalt";
 import { mapAnimationTime as time } from "../effects/endgame/state";
 import {
@@ -33,7 +32,7 @@ import {
 } from "three/tsl";
 
 import { terrainCellKey } from "./terrain-coordinates";
-import { createEtherealEnergy } from "./terrain-ethereal-material";
+import { mistColour } from "./terrain-mist-node";
 import { terrainHexEdgeDistance } from "./terrain-hex-node";
 import {
   buildTerrainFogMask,
@@ -109,8 +108,8 @@ export class TerrainFogField {
   private mask: TerrainFogMask | null = null;
   private frontierInstances = 0;
 
-  constructor(gameMode: GameModeId = "blitz") {
-    this.materials = createFogMaterial(this.maskTexture, gameMode);
+  constructor() {
+    this.materials = createFogMaterial(this.maskTexture);
     this.fogMesh = createFogMesh(this.materials.material);
     this.object3d.name = "terrain-exploration-fog-field";
     this.object3d.add(this.fogMesh);
@@ -342,7 +341,7 @@ function createFogBounds() {
   return uniform(new Vector4(0, 0, 1, 1));
 }
 
-function createFogMaterial(maskTexture: DataTexture, gameMode: GameModeId): FogMaterialSet {
+function createFogMaterial(maskTexture: DataTexture): FogMaterialSet {
   const bounds = createFogBounds();
   const streaming = uniform(0, "float");
   const clarity = uniform(1, "float");
@@ -388,9 +387,6 @@ function createFogMaterial(maskTexture: DataTexture, gameMode: GameModeId): FogM
   // Keep a little movement in the interior without turning it into a bright cloud-covered surface.
   const cloudVeil = smoothstep(0.18, 0.86, mistNoise).mul(mistStrength);
   const mistLight = cloudVeil.mul(edgeBand.mul(0.24).add(0.12));
-  const etherealHint = createEtherealEnergy(fogGround.xz, drift, mistNoise).mul(0.045);
-  const veilLight = cloudVeil.mul(gameMode === "frontier" ? 0.68 * 0.68 : 0.68);
-  const fogColor = mix(color("#161923"), color("#b29b89"), veilLight).add(etherealHint);
   // Motion changes the mist's color, never the exploration boundary or coverage.
   const coverage = smoothstep(mix(0.04, 0.28, clarity), mix(0.96, 0.8, clarity), mask);
   const frontierOpacity = coverage.clamp(0, TERRAIN_DEEP_FOG_OPACITY);
@@ -400,7 +396,11 @@ function createFogMaterial(maskTexture: DataTexture, gameMode: GameModeId): FogM
   const slabDistance = terrainHexEdgeDistance(fogGround.xz.div(BASALT_BLOCK_RADIUS)).mul(BASALT_BLOCK_RADIUS);
   const slab = smoothstep(0.025, 0.12, slabDistance).mul(0.003).mul(mistNoise.mul(0.6).add(0.4));
   const basaltFog = color("#111318").add(slab).add(mistLight.mul(0.065));
-  material.colorNode = shadeFogHexBoundary(mix(fogColor, basaltFog, ethereal), fogGround.xz);
+  material.colorNode = mix(
+    mistColour({ covered: mask, time: drift }),
+    shadeFogHexBoundary(basaltFog, fogGround.xz),
+    ethereal,
+  );
   material.opacityNode = mix(surfaceOpacity, float(1), streaming);
   return {
     bounds,

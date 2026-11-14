@@ -92,15 +92,15 @@ const BIOME_PROP_PROFILES: Readonly<Record<BiomeType, BiomePropProfile>> = {
   [BiomeType.None]: profile(0),
   [BiomeType.DeepOcean]: profile(0),
   [BiomeType.Ocean]: profile(0),
-  [BiomeType.Beach]: profile(0.16, ["palm", 6], ["boulder", 2], ["fallen-log", 3], ["grass-tuft", 5], ["cycad", 1]),
-  [BiomeType.Scorched]: profile(0.14, ["dead-tree", 4], ["boulder", 8], ["fallen-log", 1]),
-  [BiomeType.Bare]: profile(0.2, ["boulder", 10], ["grass-tuft", 1]),
-  [BiomeType.Tundra]: profile(0.23, ["boulder", 4], ["shrub", 5], ["grass-tuft", 8], ["wildflower", 2]),
-  [BiomeType.Snow]: profile(0.12, ["boulder", 8], ["dead-tree", 1]),
-  [BiomeType.TemperateDesert]: profile(0.22, ["boulder", 5], ["shrub", 5], ["grass-tuft", 6], ["dead-tree", 1]),
-  [BiomeType.Shrubland]: profile(0.22, ["shrub", 9], ["boulder", 3], ["grass-tuft", 8], ["wildflower", 4]),
+  [BiomeType.Beach]: profile(0.64, ["palm", 6], ["boulder", 2], ["fallen-log", 3], ["grass-tuft", 5], ["cycad", 1]),
+  [BiomeType.Scorched]: profile(0.56, ["dead-tree", 4], ["boulder", 8], ["fallen-log", 1]),
+  [BiomeType.Bare]: profile(0.8, ["boulder", 10], ["grass-tuft", 1]),
+  [BiomeType.Tundra]: profile(0.92, ["boulder", 4], ["shrub", 5], ["grass-tuft", 8], ["wildflower", 2]),
+  [BiomeType.Snow]: profile(0.48, ["boulder", 8], ["dead-tree", 1]),
+  [BiomeType.TemperateDesert]: profile(0.88, ["boulder", 5], ["shrub", 5], ["grass-tuft", 6], ["dead-tree", 1]),
+  [BiomeType.Shrubland]: profile(0.88, ["shrub", 9], ["boulder", 3], ["grass-tuft", 8], ["wildflower", 4]),
   [BiomeType.Taiga]: profile(
-    0.33,
+    1.32,
     ["conifer", 12],
     ["birch", 1],
     ["fallen-log", 3],
@@ -109,7 +109,7 @@ const BIOME_PROP_PROFILES: Readonly<Record<BiomeType, BiomePropProfile>> = {
     ["grass-tuft", 4],
   ),
   [BiomeType.Grassland]: profile(
-    0.15,
+    0.6,
     ["shrub", 2],
     ["birch", 1],
     ["boulder", 1],
@@ -117,7 +117,7 @@ const BIOME_PROP_PROFILES: Readonly<Record<BiomeType, BiomePropProfile>> = {
     ["wildflower", 7],
   ),
   [BiomeType.TemperateDeciduousForest]: profile(
-    0.31,
+    1.24,
     ["broadleaf", 6],
     ["birch", 3],
     ["shrub", 2],
@@ -127,7 +127,7 @@ const BIOME_PROP_PROFILES: Readonly<Record<BiomeType, BiomePropProfile>> = {
     ["wildflower", 3],
   ),
   [BiomeType.TemperateRainForest]: profile(
-    0.32,
+    1.28,
     ["conifer", 4],
     ["rainforest-canopy", 5],
     ["broadleaf", 2],
@@ -137,9 +137,9 @@ const BIOME_PROP_PROFILES: Readonly<Record<BiomeType, BiomePropProfile>> = {
     ["fern", 10],
     ["cycad", 3],
   ),
-  [BiomeType.SubtropicalDesert]: profile(0.16, ["cactus", 9], ["boulder", 3], ["grass-tuft", 2]),
+  [BiomeType.SubtropicalDesert]: profile(0.64, ["cactus", 9], ["boulder", 3], ["grass-tuft", 2]),
   [BiomeType.TropicalSeasonalForest]: profile(
-    0.3,
+    1.2,
     ["palm", 6],
     ["broadleaf", 3],
     ["shrub", 3],
@@ -149,7 +149,7 @@ const BIOME_PROP_PROFILES: Readonly<Record<BiomeType, BiomePropProfile>> = {
     ["wildflower", 2],
   ),
   [BiomeType.TropicalRainForest]: profile(
-    0.34,
+    1.36,
     ["palm", 4],
     ["rainforest-canopy", 3],
     ["broadleaf", 5],
@@ -370,9 +370,12 @@ function buildTerrainPropCandidate(
         worldX: site.worldX,
         worldZ: site.worldZ,
       },
-      (col, row) => {
-        const cell = context.eligibleByKey.get(terrainCellKey(col, row));
-        return !cell || cell.occupied;
+      {
+        isBlocked: (col, row) => {
+          const cell = context.eligibleByKey.get(terrainCellKey(col, row));
+          return !cell || cell.occupied;
+        },
+        isOccupied: (col, row) => context.eligibleByKey.get(terrainCellKey(col, row))?.occupied ?? false,
       },
     )
   )

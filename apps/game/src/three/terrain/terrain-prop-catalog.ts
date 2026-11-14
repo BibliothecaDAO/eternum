@@ -24,26 +24,26 @@ export type TerrainPropArchetypeId = (typeof TERRAIN_PROP_ARCHETYPE_IDS)[number]
 
 /**
  * Instances one terrain page holds per archetype: the size of its slot in the prop pools, and the most the generator
- * places on one page, so no page can outgrow its slot. Set at 1.5× the per-page maximum measured 2026-09-07 at
+ * places on one page, so no page can outgrow its slot. Set at 1.5× the per-page maximum measured 2026-11-11 at
  * production density (the balanced benchmark fixture, homogeneous 3×3-page blocks of every biome, eight climate seed
- * pairs), rounded up to a multiple of 16, so the cap thins only a page denser than any measured.
+ * pairs), rounded up to a multiple of 8, so the cap thins only a page denser than any measured.
  */
 export const TERRAIN_PROP_PAGE_SLOT_CAPACITY: Readonly<Record<TerrainPropArchetypeId, number>> = Object.freeze({
-  birch: 112, // measured 65
-  boulder: 144, // measured 88
-  broadleaf: 208, // measured 135
-  cactus: 112, // measured 73
-  conifer: 320, // measured 209
-  "dead-tree": 48, // measured 25
-  "fallen-log": 64, // measured 33
-  fern: 208, // measured 136
-  "grass-tuft": 160, // measured 103
-  palm: 176, // measured 109
-  cycad: 96, // measured 55
-  shrub: 176, // measured 111
-  mushroom: 32, // measured 17
-  wildflower: 96, // measured 63
-  "rainforest-canopy": 144, // measured 87
+  birch: 232, // measured 151
+  boulder: 472, // measured 312
+  broadleaf: 528, // measured 349
+  cactus: 368, // measured 245
+  conifer: 656, // measured 437
+  "dead-tree": 120, // measured 80
+  "fallen-log": 176, // measured 117
+  fern: 768, // measured 512
+  "grass-tuft": 568, // measured 376
+  palm: 432, // measured 284
+  cycad: 272, // measured 178
+  shrub: 608, // measured 402
+  mushroom: 88, // measured 55
+  wildflower: 320, // measured 212
+  "rainforest-canopy": 280, // measured 185
 });
 export type TerrainPropRole = "canopy" | "groundcover" | "rigid" | "understory";
 export type TerrainPropPlacementLayer = "canopy" | "debris" | "groundcover" | "understory";
