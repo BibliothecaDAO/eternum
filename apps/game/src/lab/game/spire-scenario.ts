@@ -107,7 +107,7 @@ export const spireScenario = (ground: LabGround = GRASSLAND): LabScenario => {
 };
 
 /** A tile revealed in `biome`, as the chain holds it. */
-export const revealedTile = (key: string, hex: { col: number; row: number }, biome: BiomeType): LabFact => ({
+export const revealedTile = (key: string, hex: { col: number; row: number }, biome: BiomeType) => ({
   model: "TileOpt",
   key,
   value: { game_id: 1, alt: false, col: hex.col, row: hex.row, data: tileData(biome).toString() },
