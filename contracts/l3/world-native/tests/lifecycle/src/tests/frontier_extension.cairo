@@ -86,7 +86,7 @@ fn approved_extension_changes_only_end_emits_row_and_retries_without_events() {
     let before_rules = games.rules(1);
     let mut events = spy_events();
     releases.apply_release(1, 4);
-    assert_eq!(game(d), crate::game::GameRegistry { end_at: approved::END, ..before });
+    assert_eq!(game(d), crate::game::GameRegistry { end_at: approved::END, scheduled_end_at: approved::END, ..before });
     assert_eq!(budget(d), before_budget);
     assert_eq!(games.rules(1), before_rules);
     assert_eq!(games.game(2), other);
@@ -164,7 +164,10 @@ fn extension_refuses_wrong_identity_lifecycle_authority_and_insolvent_unlock(cas
         0 => changed.seed += 1,
         1 => changed.name = 'different',
         2 => changed.start_main_at += 120,
-        3 => changed.end_at += 120,
+        3 => {
+            changed.end_at += 120;
+            changed.scheduled_end_at = changed.end_at;
+        },
         4 => changed.settled = true,
         5 => changed.ready = false,
         6 => start_cheat_block_timestamp(d.games, approved::OLD_END),
@@ -239,4 +242,33 @@ fn extension_keeps_current_chest_holds_but_excludes_expired_holds(expired: bool)
         approved::OLD_END
     });
     assert_eq!(budget(d), value);
+}
+
+
+#[test]
+fn release_backfills_the_scheduled_end_once_without_extending_play() {
+    let d = setup();
+    let before = game(d);
+    interact_with_state(d.games, || {
+        crate::state::write().games.games.write(1, crate::game::GameRegistry { scheduled_end_at: 0, ..before });
+    });
+    start_cheat_chain_id(d.games, 'DEV');
+    let releases = IReleasesDispatcher { contract_address: d.games };
+    let mut events = spy_events();
+    releases.apply_release(1, 4);
+    assert_eq!(game(d), before);
+    assert_eq!(releases.game_release(1), 4);
+    let emitted = events.get_events().emitted_by(d.games);
+    assert_eq!(emitted.events.len(), 2);
+    let (_, row) = emitted.events.at(1);
+    assert_eq!(row.keys.span(), array![selector!("GameEvent"), selector!("RowSet"), 1, 'GameRegistry'].span());
+    let mut values = array![];
+    before.serialize(ref values);
+    let mut expected = array![1, 1, values.len().into()];
+    expected.append_span(values.span());
+    assert_eq!(row.data.span(), expected.span());
+    let mut repeated = spy_events();
+    releases.apply_release(1, 4);
+    assert!(repeated.get_events().emitted_by(d.games).events.is_empty());
+    assert_eq!(game(d), before);
 }

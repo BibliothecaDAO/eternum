@@ -17,7 +17,8 @@ const game = (mode: DirectoryGame["mode"], over: Partial<DirectoryGame> = {}): D
     status: "Live",
     ready: true,
     expedition: null,
-    clock: { start_settling_at: 0, start_main_at: 100, end_at: 9_000, end_grace_seconds: 0 },
+    clock: { start_settling_at: 0, start_main_at: 100, scheduled_end_at: 9_000,
+end_at: 9_000, end_grace_seconds: 0 },
     player_count: 10,
     roster_count: 0,
     player_state: {

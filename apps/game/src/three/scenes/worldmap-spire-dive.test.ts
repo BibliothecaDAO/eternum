@@ -146,7 +146,8 @@ describe("the view through a spire", () => {
 
 describe("a view through a spire between any two layers", () => {
   // Spacing 100: day 0's surface is rows 0..99, Ethereal I to III rows 100..399; day 1 starts at row 400.
-  const rules: ExpeditionRules = { dayUnitSeconds: 14_400, spacing: 100, startMainAt: 0, endAt: 1e9, seed: 1n };
+  const rules: ExpeditionRules = { dayUnitSeconds: 14_400, spacing: 100, startMainAt: 0, scheduledEndAt: 1e9,
+endAt: 1e9, seed: 1n };
   const region = (hex: Hex) => `${Math.floor(hex.col / rules.spacing)}:${Math.floor(hex.row / rules.spacing)}`;
   const layers = [0, 1, 2, 3] as const;
   const pairs = layers.flatMap((from) => layers.filter((to) => to !== from).map((to) => [from, to] as const));

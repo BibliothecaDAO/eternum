@@ -12,14 +12,16 @@ vi.mock("@bibliothecadao/eternum/game-client", async (importOriginal) => ({
 const calendar = {
   seed: 0x5eedn,
   startMainAt: 1_800_000_000,
-  endAt: 1_800_000_000 + 2 * 20 * 7_200,
+  scheduledEndAt: 1_800_000_000 + 2 * 20 * 7_200,
+endAt: 1_800_000_000 + 2 * 20 * 7_200,
   dayUnitSeconds: 7_200,
 };
 const game: DayOpenGame = {
   game_id: 1,
   mode: "frontier",
   status: "Live",
-  clock: { start_main_at: calendar.startMainAt, end_at: calendar.startMainAt + 2 * 20 * calendar.dayUnitSeconds },
+  clock: { start_main_at: calendar.startMainAt, scheduled_end_at: calendar.startMainAt + 2 * 20 * calendar.dayUnitSeconds,
+end_at: calendar.startMainAt + 2 * 20 * calendar.dayUnitSeconds },
   expedition: { seed: calendar.seed.toString(), day_unit_seconds: calendar.dayUnitSeconds },
 };
 const days = () => {

@@ -114,6 +114,7 @@ function baneCalendar(store: NativeFactStore, gameId: number) {
     seed: game.seed,
     startMainAt: Number(game.start_main_at),
     endAt: Number(game.end_at),
+      scheduledEndAt: Number(game.scheduled_end_at),
     dayUnitSeconds: rules.day_unit_seconds,
   };
 }

@@ -55,7 +55,8 @@ beforeEach(() => {
           {
             model: "GameRegistry",
             rows: [
-              { key: "7", value: { game_id: 7, preset_id: 6, start_main_at: game[6], end_at: game[7], seed: game[9] } },
+              { key: "7", value: { game_id: 7, preset_id: 6, start_main_at: game[6], scheduled_end_at: game[7],
+end_at: game[7], seed: game[9] } },
             ],
           },
           {
@@ -159,7 +160,8 @@ it("keeps a funding mismatch unavailable when the snapshot pool differs", async 
         models: [
           {
             model: "GameRegistry",
-            rows: [{ key: "7", value: { game_id: 7, preset_id: 6, start_main_at: 10, end_at: 110, seed: "0x99" } }],
+            rows: [{ key: "7", value: { game_id: 7, preset_id: 6, start_main_at: 10, scheduled_end_at: 110,
+end_at: 110, seed: "0x99" } }],
           },
           {
             model: "ChestRules",

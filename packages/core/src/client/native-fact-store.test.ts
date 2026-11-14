@@ -522,7 +522,8 @@ describe("declared fact absence", () => {
 
         start_settling_at: "1",
         start_main_at: "100",
-        end_at: "1000",
+        scheduled_end_at: "1000",
+end_at: "1000",
         settled: false,
         ready: true,
         dev_mode_on: false,
@@ -627,7 +628,8 @@ describe("declared fact absence", () => {
 
         start_settling_at: "1",
         start_main_at: "100",
-        end_at: "1000",
+        scheduled_end_at: "1000",
+end_at: "1000",
         settled: false,
         ready: true,
         dev_mode_on: false,
@@ -695,7 +697,8 @@ describe("declared fact absence", () => {
 
         start_settling_at: "1",
         start_main_at: "100",
-        end_at: "1000",
+        scheduled_end_at: "1000",
+end_at: "1000",
         settled: false,
         ready: true,
         dev_mode_on: false,
@@ -748,7 +751,8 @@ describe("declared fact absence", () => {
 
         start_settling_at: "1",
         start_main_at: "100",
-        end_at: "1000",
+        scheduled_end_at: "1000",
+end_at: "1000",
         settled: false,
         ready: true,
         dev_mode_on: false,

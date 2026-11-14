@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { ETHEREAL_DEPTH_LOOKS, etherealSurfaceAt } from "./ethereal-depths";
 
-const rules = { spacing: 100, dayUnitSeconds: 3600, startMainAt: 0, endAt: 999999, seed: 1n };
+const rules = { spacing: 100, dayUnitSeconds: 3600, startMainAt: 0, scheduledEndAt: 999999,
+endAt: 999999, seed: 1n };
 
 describe("Frontier depth presentation", () => {
   it("selects the approved look from contract rows across days and band boundaries", () => {

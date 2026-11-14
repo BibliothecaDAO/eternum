@@ -934,7 +934,7 @@ fn audit_regression_contributions_and_settlement_share_the_final_partial_phase()
         selector!("games"),
         selector!("games"),
         array![3].span(),
-        crate::game::GameRegistry { end_at: 35, ..game },
+        crate::game::GameRegistry { end_at: 35, scheduled_end_at: 35, ..game },
     );
     assert!(execute(deployment, contribute(home, 100), 30));
     assert_terminal_rejection(deployment, contribute(home, 10), 35);

@@ -27,7 +27,7 @@ pub struct Day {
 /// The day `timestamp` falls in, using only the game's calendar fields.
 #[inline(always)]
 pub fn day_of(game: GameRegistry, unit_seconds: u32, timestamp: u64) -> Day {
-    calendar_day(game.seed, game.start_main_at, game.end_at, unit_seconds, timestamp)
+    calendar_day(game.seed, game.start_main_at, game.end_at, game.scheduled_end_at, unit_seconds, timestamp)
 }
 
 /// Resolve a stored allocation day through the same calendar, including the clipped final day.
@@ -46,8 +46,9 @@ pub fn day_at_index(game: GameRegistry, unit_seconds: u32, index: u64) -> Day {
 
 // Keep one calendar calculation per class without passing the game's unrelated launch fields to every call.
 #[inline(never)]
-fn calendar_day(seed: felt252, season_start: u64, season_end: u64, unit_seconds: u32, timestamp: u64) -> Day {
-    assert!(timestamp >= season_start && timestamp < season_end, "timestamp outside season");
+fn calendar_day(seed: felt252, season_start: u64, actual_end: u64, season_end: u64, unit_seconds: u32, timestamp: u64) -> Day {
+    assert!(actual_end <= season_end, "season end exceeds its calendar");
+    assert!(timestamp >= season_start && timestamp < actual_end, "timestamp outside season");
     let unit: u64 = unit_seconds.into();
     let season_units = (season_end - season_start) / unit;
     // The last two units belong to the day already running at their start, absorbing a shorter final stub.
@@ -67,11 +68,11 @@ fn calendar_day(seed: felt252, season_start: u64, season_end: u64, unit_seconds:
     Day {
         index,
         start: season_start + start * unit,
-        end: if end > final_day_probe {
+        end: core::cmp::min(actual_end, if end > final_day_probe {
             season_end
         } else {
             season_start + end * unit
-        },
+        }),
     }
 }
 

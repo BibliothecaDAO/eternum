@@ -75,7 +75,8 @@ const game = (over: Partial<DirectoryGame>): DirectoryGame => ({
   ready: true,
   dev_mode_on: false,
   expedition: null,
-  clock: { start_settling_at: NOW - DAY, start_main_at: NOW - DAY, end_at: NOW + 7 * DAY, end_grace_seconds: 0 },
+  clock: { start_settling_at: NOW - DAY, start_main_at: NOW - DAY, scheduled_end_at: NOW + 7 * DAY,
+end_at: NOW + 7 * DAY, end_grace_seconds: 0 },
   player_count: 0,
   player_state: {
     registered: false,
@@ -118,7 +119,8 @@ const frontier = (withRealm: boolean) =>
     clock: {
       start_settling_at: NOW - 12 * DAY + LEFT_TODAY,
       start_main_at: NOW - 12 * DAY + LEFT_TODAY,
-      end_at: NOW + 20 * DAY,
+      scheduled_end_at: NOW + 20 * DAY,
+end_at: NOW + 20 * DAY,
       end_grace_seconds: 0,
     },
     player_count: 1240,
@@ -131,7 +133,8 @@ const endedFrontier = game({
   name: "frontier-0",
   status: "Ended",
   season_number: 2,
-  clock: { start_settling_at: NOW - 21 * DAY, start_main_at: NOW - 21 * DAY, end_at: NOW - 3600, end_grace_seconds: 0 },
+  clock: { start_settling_at: NOW - 21 * DAY, start_main_at: NOW - 21 * DAY, scheduled_end_at: NOW - 3600,
+end_at: NOW - 3600, end_grace_seconds: 0 },
   player_count: 1240,
   player_state: owned,
 });
@@ -141,7 +144,8 @@ const liveBlitz = (member: boolean) =>
     game_id: 7,
     name: "blitz-1500-1",
     mode: "blitz",
-    clock: { start_settling_at: NOW - 3600, start_main_at: NOW - 2400, end_at: NOW + 5040, end_grace_seconds: 0 },
+    clock: { start_settling_at: NOW - 3600, start_main_at: NOW - 2400, scheduled_end_at: NOW + 5040,
+end_at: NOW + 5040, end_grace_seconds: 0 },
     player_count: 24,
     roster_count: 24,
     player_state: member ? owned : null,
@@ -154,7 +158,8 @@ const preparingBlitz = game({
   mode: "blitz",
   status: "Registration",
   ready: false,
-  clock: { start_settling_at: NOW + 3600, start_main_at: NOW + 7200, end_at: NOW + 14_400, end_grace_seconds: 0 },
+  clock: { start_settling_at: NOW + 3600, start_main_at: NOW + 7200, scheduled_end_at: NOW + 14_400,
+end_at: NOW + 14_400, end_grace_seconds: 0 },
   player_count: 18,
   roster_count: 24,
   player_state: {
@@ -177,7 +182,8 @@ const eternum = game({
   clock: {
     start_settling_at: NOW + 7 * DAY,
     start_main_at: NOW + 7 * DAY,
-    end_at: NOW + 60 * DAY,
+    scheduled_end_at: NOW + 60 * DAY,
+end_at: NOW + 60 * DAY,
     end_grace_seconds: 0,
   },
 });
@@ -187,7 +193,8 @@ const openEternum = game({
   ...eternum,
   status: "Live",
   ready: true,
-  clock: { start_settling_at: NOW - DAY, start_main_at: NOW - DAY, end_at: NOW + 60 * DAY, end_grace_seconds: 0 },
+  clock: { start_settling_at: NOW - DAY, start_main_at: NOW - DAY, scheduled_end_at: NOW + 60 * DAY,
+end_at: NOW + 60 * DAY, end_grace_seconds: 0 },
   player_state: {
     registered: true,
     settled: false,

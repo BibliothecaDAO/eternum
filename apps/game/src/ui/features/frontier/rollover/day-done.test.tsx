@@ -359,7 +359,8 @@ it("shows a dash for each total, and says history did not answer, with Try again
 
 describe("the alerts popup, which waits for the day's end", () => {
   /** Day 3, today: the summary of day 2 opens over it. */
-  const today = () => dayOf({ ...RULES, endAt: Number(herald.game.end_at) }, BEFORE_PLAYING_ON.now)!;
+  const today = () => dayOf({ ...RULES, scheduledEndAt: Number(herald.game.end_at),
+endAt: Number(herald.game.end_at) }, BEFORE_PLAYING_ON.now)!;
   const popup = () => document.body.querySelector("[role='dialog'][aria-label='Know when to come back']");
   /** Day 2's end already gone through on this device: the map opens clear. */
   const day2Seen = () => window.localStorage.setItem(`frontier.day-done.1.${RECORDED_DAY.player}`, "2");

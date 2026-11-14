@@ -93,7 +93,7 @@ pub fn build_game(params: CreateGameParams, entry_rule: u8) -> crate::game::Game
         dev_mode_on: params.dev_mode_on,
         start_settling_at: params.start_settling_at,
         start_main_at: params.start_main_at,
-        end_at: params.start_main_at + params.duration_seconds,
+        end_at: params.start_main_at + params.duration_seconds, scheduled_end_at: params.start_main_at + params.duration_seconds,
         end_grace_seconds: params.end_grace_seconds,
         seed: params.seed,
     }

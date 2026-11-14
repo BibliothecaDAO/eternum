@@ -276,7 +276,8 @@ function createWorld(options: { expedition?: { dayUnitSeconds: number; spacing: 
     rules.set("GameRegistry", {
       game_id: GAME,
       start_main_at: BigInt(options.expedition.startMainAt),
-      end_at: BigInt(options.expedition.startMainAt + 21 * 20 * options.expedition.dayUnitSeconds),
+      scheduled_end_at: BigInt(options.expedition.startMainAt + 21 * 20 * options.expedition.dayUnitSeconds),
+end_at: BigInt(options.expedition.startMainAt + 21 * 20 * options.expedition.dayUnitSeconds),
       seed: 1n,
     });
   }

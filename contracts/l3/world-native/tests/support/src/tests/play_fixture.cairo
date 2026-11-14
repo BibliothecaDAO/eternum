@@ -58,7 +58,7 @@ pub fn create_games(registry: ContractAddress) {
                 dev_mode_on: true,
                 start_settling_at: 0,
                 start_main_at: 0,
-                end_at: 999999,
+                end_at: 999999, scheduled_end_at: 999999,
                 end_grace_seconds: 0,
                 seed: 1,
             },

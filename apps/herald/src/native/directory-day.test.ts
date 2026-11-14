@@ -5,7 +5,8 @@ import type { DirectoryInput } from "../game-directory";
 import type { FoldRow } from "../types";
 
 const start = 1_800_000_000;
-const calendar = { seed: 42n, startMainAt: start, endAt: start + 21 * 20 * 14_400, dayUnitSeconds: 14_400 };
+const calendar = { seed: 42n, startMainAt: start, scheduledEndAt: start + 21 * 20 * 14_400,
+endAt: start + 21 * 20 * 14_400, dayUnitSeconds: 14_400 };
 const input = (timestamp: number): DirectoryInput => {
   const games = [
     { game_id: 1, preset_id: 5, settled: true },
@@ -19,7 +20,8 @@ const input = (timestamp: number): DirectoryInput => {
     dev_mode_on: false,
     start_settling_at: start - 100,
     start_main_at: start,
-    end_at: start + 21 * 20 * 14_400,
+    scheduled_end_at: start + 21 * 20 * 14_400,
+end_at: start + 21 * 20 * 14_400,
     end_grace_seconds: 0,
     seed: 42n,
   }));
@@ -111,7 +113,8 @@ it("folds the extension row and preserves the added days through a checkpoint re
     dev_mode_on: false,
     start_main_at: approved.start,
     start_settling_at: approved.start,
-    end_at: approved.oldEnd,
+    scheduled_end_at: approved.oldEnd,
+end_at: approved.oldEnd,
     end_grace_seconds: 0,
     seed: BigInt(approved.seed),
   };

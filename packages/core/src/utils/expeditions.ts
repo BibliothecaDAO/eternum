@@ -23,7 +23,7 @@ type ExpeditionRuleReader = (model: ExpeditionRuleModel) => Record<string, unkno
 export const readExpeditionRules = (
   source: Pick<NativeFactStore, "get"> | ExpeditionRuleReader,
   gameId: number,
-): { dayUnitSeconds: number; spacing: number; startMainAt: number; endAt: number; seed: bigint } | null => {
+): { dayUnitSeconds: number; spacing: number; startMainAt: number; endAt: number; scheduledEndAt: number; seed: bigint } | null => {
   const read: ExpeditionRuleReader =
     typeof source === "function" ? source : (model) => source.get(model, { game_id: gameId });
   const rules = read("SliceRules");
@@ -38,6 +38,7 @@ export const readExpeditionRules = (
     spacing: Number(settlement.spacing),
     startMainAt: Number(game.start_main_at),
     endAt: Number(game.end_at),
+      scheduledEndAt: Number(game.scheduled_end_at),
     seed: BigInt(game.seed as bigint | string),
   };
 };

@@ -77,7 +77,8 @@ const game = (over: Partial<DirectoryGame>): DirectoryGame =>
     status: "Live",
     ready: true,
     expedition: null,
-    clock: { start_settling_at: 0, start_main_at: 100, end_at: 4_000_000_000, end_grace_seconds: 0 },
+    clock: { start_settling_at: 0, start_main_at: 100, scheduled_end_at: 4_000_000_000,
+end_at: 4_000_000_000, end_grace_seconds: 0 },
     player_count: 10,
     roster_count: 0,
     player_state: {
@@ -116,7 +117,8 @@ const preparing = game({
   mode: "blitz",
   status: "Registration",
   ready: false,
-  clock: { start_settling_at: 0, start_main_at: 4_000_000_000, end_at: 4_000_100_000, end_grace_seconds: 0 },
+  clock: { start_settling_at: 0, start_main_at: 4_000_000_000, scheduled_end_at: 4_000_100_000,
+end_at: 4_000_100_000, end_grace_seconds: 0 },
   roster_count: 24,
   player_count: 18,
   player_state: {

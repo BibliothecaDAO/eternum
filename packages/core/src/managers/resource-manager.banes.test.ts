@@ -7,7 +7,8 @@ import { ResourceManager } from "./resource-manager";
 
 function baneProduction() {
   const store = new NativeFactStore();
-  const start = dayOf({ seed: 5n, startMainAt: 100, endAt: 10_000, dayUnitSeconds: 100 }, 100)!.end;
+  const start = dayOf({ seed: 5n, startMainAt: 100, scheduledEndAt: 10_000,
+endAt: 10_000, dayUnitSeconds: 100 }, 100)!.end;
   const now = start + 11;
   store.applyFacts([
     {
@@ -24,7 +25,8 @@ function baneProduction() {
         name: 1,
         start_settling_at: 1,
         start_main_at: 100,
-        end_at: 10_000,
+        scheduled_end_at: 10_000,
+end_at: 10_000,
         settled: false,
         ready: true,
         dev_mode_on: false,

@@ -7,7 +7,8 @@ import { armyCombatRefusal } from "./army-opponents";
 import { readDeepSites } from "../client/views/deep-sites";
 import { dayAtIndex } from "./days";
 
-const calendar = { startMainAt: 360, endAt: 288360, dayUnitSeconds: 14400, seed: 1n };
+const calendar = { startMainAt: 360, scheduledEndAt: 288360,
+endAt: 288360, dayUnitSeconds: 14400, seed: 1n };
 const precision = 1_000_000_000n;
 const fixture = () => {
   const rows: Record<string, Record<string, unknown>[]> = {
@@ -20,7 +21,8 @@ const fixture = () => {
       },
     ],
     SettlementRules: [{ game_id: 7, spacing: 1024 }],
-    GameRegistry: [{ game_id: 7, start_main_at: 360n, end_at: 288360n, seed: 1n }],
+    GameRegistry: [{ game_id: 7, start_main_at: 360n, scheduled_end_at: 288360n,
+end_at: 288360n, seed: 1n }],
     DeepRules: [{ game_id: 7, loss_per_tick: precision, beast_count: 10n * precision }],
     DeepArmy: [{ game_id: 7, explorer_id: 11n, last_tick: 6n }],
     ArmyDay: [{ game_id: 7, explorer_id: 11n, day: 0n }],

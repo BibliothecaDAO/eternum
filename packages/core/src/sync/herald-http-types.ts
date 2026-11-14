@@ -4,6 +4,7 @@ import type { PlayerLeaderboardActivityEntry } from "./leaderboard-activity";
 export type HeraldGameStatus = "Created" | "Registration" | "Live" | "Ended" | "Settled";
 
 export interface HeraldGameClock {
+  scheduled_end_at: number;
   end_at: number;
   end_grace_seconds: number;
 

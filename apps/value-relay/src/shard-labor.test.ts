@@ -38,7 +38,8 @@ beforeEach(() => {
   rpc.header.mockResolvedValue({ timestamp: 86401 });
   rpc.snapshot.mockResolvedValue({
     models: [
-      { model: "GameRegistry", rows: [{ value: { seed: "711", start_main_at: 360, end_at: 288360 } }] },
+      { model: "GameRegistry", rows: [{ value: { seed: "711", start_main_at: 360, scheduled_end_at: 288360,
+end_at: 288360 } }] },
       { model: "SliceRules", rows: [{ value: { day_unit_seconds: 7200 } }] },
     ],
   });
@@ -94,7 +95,8 @@ it("refuses another account's receipt and a different chain", async () => {
   expect(rpc.admin).not.toHaveBeenCalled();
 });
 it("uses all ten seeded Devcon game days and refuses outside the season", async () => {
-  const calendar = { seed: 711n, startMainAt: 360, endAt: 360 + 21 * 20 * 7200, dayUnitSeconds: 7200 };
+  const calendar = { seed: 711n, startMainAt: 360, scheduledEndAt: 360 + 21 * 20 * 7200,
+endAt: 360 + 21 * 20 * 7200, dayUnitSeconds: 7200 };
   let timestamp = calendar.startMainAt;
   for (let index = 0; index < 10; index++) {
     const day = dayOf(calendar, timestamp)!;
@@ -173,7 +175,8 @@ it.each([81, 84, 85])("claims only the actual final day of an %ih season", async
   const end = start + hours * 3600;
   rpc.snapshot.mockResolvedValue({
     models: [
-      { model: "GameRegistry", rows: [{ value: { seed: String(0x5eed), start_main_at: start, end_at: end } }] },
+      { model: "GameRegistry", rows: [{ value: { seed: String(0x5eed), start_main_at: start, scheduled_end_at: end,
+end_at: end } }] },
       { model: "SliceRules", rows: [{ value: { day_unit_seconds: 7200 } }] },
     ],
   });

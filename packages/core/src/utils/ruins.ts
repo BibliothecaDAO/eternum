@@ -161,7 +161,7 @@ export function availableRuinLords(store: Pick<NativeFactStore, "get">, gameId: 
   const start = Number(game.start_main_at);
   const end = Number(game.end_at);
   const day = dayOf(
-    { startMainAt: start, endAt: end, dayUnitSeconds: rules.day_unit_seconds, seed: game.seed },
+    { startMainAt: start, endAt: end, scheduledEndAt: Number(game.scheduled_end_at), dayUnitSeconds: rules.day_unit_seconds, seed: game.seed },
     timestamp,
   );
   if (!day) return 0n;

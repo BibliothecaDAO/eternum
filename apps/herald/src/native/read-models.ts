@@ -195,11 +195,13 @@ function directoryEntry(game: Row, facts: DirectoryRows, input: DirectoryInput):
     start_settling_at: number(game.start_settling_at),
     start_main_at: number(game.start_main_at),
     end_at: number(game.end_at),
+    scheduled_end_at: number(game.scheduled_end_at),
     end_grace_seconds: number(game.end_grace_seconds),
   };
   const calendar =
     mode === "frontier" && dayUnitSeconds !== 0
-      ? { seed: integer(game.seed), endAt: clock.end_at, startMainAt: clock.start_main_at, dayUnitSeconds }
+      ? { seed: integer(game.seed), scheduledEndAt: clock.scheduled_end_at,
+endAt: clock.end_at, startMainAt: clock.start_main_at, dayUnitSeconds }
       : null;
   const day = calendar && game.settled !== true ? dayOf(calendar, input.timestamp) : null;
 
@@ -293,7 +295,8 @@ function structurePosition(
       {
         dayUnitSeconds,
         spacing: number(settlement.spacing),
-        endAt: number(game.end_at),
+        scheduledEndAt: number(game.scheduled_end_at),
+endAt: number(game.end_at),
         startMainAt: number(game.start_main_at),
         seed: integer(game.seed),
       },

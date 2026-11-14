@@ -174,7 +174,8 @@ const createHarness = () => {
     rules.set("GameRegistry", {
       game_id: 13,
       start_main_at: BigInt(startMainAt),
-      end_at: BigInt(startMainAt + 21 * 20 * dayUnitSeconds),
+      scheduled_end_at: BigInt(startMainAt + 21 * 20 * dayUnitSeconds),
+end_at: BigInt(startMainAt + 21 * 20 * dayUnitSeconds),
       seed: 1n,
     });
   };

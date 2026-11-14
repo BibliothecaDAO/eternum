@@ -4,7 +4,7 @@ import { dayOf, homeDailyClaim, isRealmCategory, type HomeDailyClaim } from "@bi
 import type { PushGame } from "@bibliothecadao/notifications";
 
 export type DayOpenGame = Pick<HeraldGameDirectoryEntry, "game_id" | "mode" | "status" | "expedition"> & {
-  clock: Pick<HeraldGameDirectoryEntry["clock"], "start_main_at" | "end_at">;
+  clock: Pick<HeraldGameDirectoryEntry["clock"], "start_main_at" | "end_at" | "scheduled_end_at">;
 };
 
 /** One Frontier game day about to open. Instants are milliseconds; `day` is the day's index (Day 1 is 0). */
@@ -47,7 +47,8 @@ function nextOpening(game: DayOpenGame, now: number): DayOpening | null {
   const calendar = {
     seed: BigInt(game.expedition.seed),
     startMainAt: game.clock.start_main_at,
-    endAt: game.clock.end_at,
+    scheduledEndAt: game.clock.scheduled_end_at,
+endAt: game.clock.end_at,
     dayUnitSeconds: game.expedition.day_unit_seconds,
   };
   const seasonEnd = game.clock.end_at;

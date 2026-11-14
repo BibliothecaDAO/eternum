@@ -36,6 +36,7 @@ function questCalendar(store: NativeFactStore, gameId: number, home: number, tim
       seed: game.seed,
       startMainAt: Number(game.start_main_at),
       endAt: Number(game.end_at),
+      scheduledEndAt: Number(game.scheduled_end_at),
       dayUnitSeconds: clock.day_unit_seconds,
     },
     timestamp,

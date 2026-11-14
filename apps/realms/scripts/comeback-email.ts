@@ -116,7 +116,8 @@ async function readSeason(): Promise<Season> {
   const activity = new Activity({
     seed: BigInt(game.expedition.seed),
     startMainAt: Number(game.clock.start_main_at),
-    endAt: Number(game.clock.end_at),
+    scheduledEndAt: Number(game.clock.scheduled_end_at),
+endAt: Number(game.clock.end_at),
     dayUnitSeconds: Number(game.expedition.day_unit_seconds),
   });
   activity.noteHistory(history as HistoryEvent[]);

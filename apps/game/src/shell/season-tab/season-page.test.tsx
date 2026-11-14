@@ -107,6 +107,7 @@ it("says Season did not answer in the glossary's words, with Try again, and the 
 });
 
 /** Frontier's live season 1, on its 4th day, with no realm on its board. */
+const FRONTIER_END = Math.floor(Date.now() / 1000) + 30 * 86_400;
 const FRONTIER = {
   chainId: "0x52",
   game_id: 1,
@@ -115,7 +116,8 @@ const FRONTIER = {
   season_number: 1,
   day_index: 3,
   day_ends_at: Math.floor(Date.now() / 1000) + 3600,
-  clock: { start_settling_at: 0, start_main_at: 1, end_at: Math.floor(Date.now() / 1000) + 30 * 86_400 },
+  clock: { start_settling_at: 0, start_main_at: 1, scheduled_end_at: FRONTIER_END,
+end_at: FRONTIER_END },
 };
 
 it("titles the page Season and names Frontier's own season on its board; an empty board says how to get on it", async () => {
@@ -243,7 +245,8 @@ const ended = (game_id: number, season_number: number, end_at: number, status = 
   status,
   day_index: null,
   day_ends_at: null,
-  clock: { start_settling_at: 0, start_main_at: end_at - 10 * 86_400, end_at },
+  clock: { start_settling_at: 0, start_main_at: end_at - 10 * 86_400, scheduled_end_at: end_at,
+end_at },
 });
 /** Season 2, ended on 20 November; its board ranks Volcanic, djizus and Canzi, with no prize pool. */
 const seasonTwo = (status = "Settled") => ended(2, 2, ENDED_AT + 20 * 86_400, status);
@@ -358,7 +361,8 @@ it.each([390, 1440])("keeps the last season's final board while the next is only
     clock: {
       start_settling_at: ENDED_AT + 7 * 86_400,
       start_main_at: ENDED_AT + 7 * 86_400,
-      end_at: ENDED_AT + 37 * 86_400,
+      scheduled_end_at: ENDED_AT + 37 * 86_400,
+end_at: ENDED_AT + 37 * 86_400,
     },
   };
   reads.directory = { data: { games: [announced] }, isError: false, isPending: false };

@@ -40,7 +40,8 @@ const expedition = () => ({
   seed: 1n,
   spacing: SPACING,
   startMainAt,
-  endAt: startMainAt + PRESET_FIXTURE_DURATION_SECONDS,
+  scheduledEndAt: startMainAt + PRESET_FIXTURE_DURATION_SECONDS,
+endAt: startMainAt + PRESET_FIXTURE_DURATION_SECONDS,
 });
 const MAP_STRUCTURES_PER_GAME = 150;
 const BUILDINGS_PER_REALM = 20;

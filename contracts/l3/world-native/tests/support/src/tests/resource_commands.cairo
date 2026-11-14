@@ -52,7 +52,7 @@ pub fn setup_in_deployment(
             dev_mode_on: false,
             start_settling_at: 10,
             start_main_at: 20,
-            end_at: 200,
+            end_at: 200, scheduled_end_at: 200,
             end_grace_seconds: 10,
             ..games.game(1),
         },

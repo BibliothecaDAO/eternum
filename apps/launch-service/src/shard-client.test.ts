@@ -44,7 +44,8 @@ it("launches a Blitz from its closed slot: creation parameters, settling time, o
         seed: BigInt(String(params!.seed)),
         start_settling_at: BigInt(String(params!.start_settling_at)),
         start_main_at: BigInt(String(params!.start_main_at)),
-        end_at: 460n,
+        scheduled_end_at: 460n,
+end_at: 460n,
       }) as never,
   );
   vi.spyOn(native, "rosterReady").mockImplementation(async () => seated);
@@ -159,7 +160,8 @@ const releasedShard = (existing: Record<string, number>, currentRelease: number)
             seed: byId(id).seed,
             start_settling_at: 100n,
             start_main_at: 400n,
-            end_at: 460n,
+            scheduled_end_at: 460n,
+end_at: 460n,
           }) as never,
       );
       vi.spyOn(native, "rosterReady").mockImplementation(async (id) => byId(id).ready);

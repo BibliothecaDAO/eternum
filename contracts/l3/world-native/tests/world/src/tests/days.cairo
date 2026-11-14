@@ -92,7 +92,7 @@ fn cut_and_merged_days_match_the_shared_client_vectors() {
         let index: u64 = (*values.pop_front().unwrap()).try_into().unwrap();
         let start: u64 = (*values.pop_front().unwrap()).try_into().unwrap();
         let end: u64 = (*values.pop_front().unwrap()).try_into().unwrap();
-        let game = GameRegistry { end_at: START + duration, ..season(0x5eed) };
+        let game = GameRegistry { end_at: START + duration, scheduled_end_at: START + duration, ..season(0x5eed) };
         assert_eq!(day_of(game, 7200, START + timestamp), Day { index, start: START + start, end: START + end });
         assert_eq!(crate::days::day_at_index(game, 7200, index), Day { index, start: START + start, end: START + end });
     }
@@ -103,4 +103,15 @@ fn cut_and_merged_days_match_the_shared_client_vectors() {
 fn no_day_after_the_season() {
     let game = season('ended');
     day_of(game, UNIT, game.end_at);
+}
+
+#[test]
+fn an_early_finish_clips_the_day_without_changing_its_identity() {
+    let planned=season(0x5eed);
+    let second=crate::days::day_at_index(planned,UNIT,1);
+    let finish=second.start+1;
+    let ended=GameRegistry {end_at:finish,..planned};
+    assert_eq!(day_of(ended,UNIT,second.start),Day {index:1,start:second.start,end:finish});
+    assert_eq!(crate::days::day_at_index(ended,UNIT,1),Day {index:1,start:second.start,end:finish});
+    assert_eq!(day_of(ended,UNIT,second.start-1),day_of(planned,UNIT,second.start-1));
 }

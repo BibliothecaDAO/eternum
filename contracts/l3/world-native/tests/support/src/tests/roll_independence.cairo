@@ -186,7 +186,7 @@ pub fn fresh_world(ready: bool) -> Deployment {
         d.games,
         1,
         crate::game::GameRegistry {
-            ready, dev_mode_on: false, start_settling_at: 20, start_main_at: 20, end_at: 200, ..game,
+            ready, dev_mode_on: false, start_settling_at: 20, start_main_at: 20, end_at: 200, scheduled_end_at: 200, ..game,
         },
         rules,
     );

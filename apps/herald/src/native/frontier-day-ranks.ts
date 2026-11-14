@@ -47,7 +47,8 @@ function closedDayBounds(
     if (unit === 0 || game.settled === true) continue;
     const calendar = {
       seed: integer(game.seed),
-      endAt: number(game.end_at),
+      scheduledEndAt: number(game.scheduled_end_at),
+endAt: number(game.end_at),
       startMainAt: number(game.start_main_at),
       dayUnitSeconds: unit,
     };

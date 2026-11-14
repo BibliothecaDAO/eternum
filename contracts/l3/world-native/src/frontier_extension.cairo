@@ -7,10 +7,19 @@ pub mod ReleaseMigration {
     #[storage]
     struct Storage {}
 
+    fn initialize_scheduled_end(game_id: u32) {
+        let mut game = crate::logic::game::game(game_id);
+        if game.scheduled_end_at == 0 && game.end_at != 0 {
+            game.scheduled_end_at = game.end_at;
+            crate::logic::game::write_game(game_id, game);
+        }
+    }
+
     #[abi(embed_v0)]
     impl Migration of crate::logic::release::IReleaseMigration<ContractState> {
         fn migrate(ref self: ContractState, game_id: u32, previous_release: u32, release_id: u32) {
             crate::logic::release::assert_launcher();
+            initialize_scheduled_end(game_id);
             if release_id != approved::RELEASE {
                 return;
             }
@@ -65,6 +74,7 @@ pub mod ReleaseMigration {
                 0
             };
             game.end_at = approved::END;
+            game.scheduled_end_at = approved::END;
             let extended_day = crate::days::day_of(game, day_unit, day.start);
             let elapsed: u128 = (extended_day.end - game.start_main_at).into();
             let unlocked: u128 = (budget.pool.wide_mul(elapsed) / (game.end_at - game.start_main_at).into())

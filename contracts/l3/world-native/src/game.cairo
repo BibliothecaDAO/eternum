@@ -21,6 +21,7 @@ pub struct GameRegistry {
     pub end_at: u64,
     pub end_grace_seconds: u32,
     pub seed: felt252,
+    pub scheduled_end_at: u64,
 }
 
 #[derive(Copy, Drop, Serde, Debug, PartialEq, starknet::Store)]

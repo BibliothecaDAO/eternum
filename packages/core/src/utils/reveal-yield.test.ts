@@ -34,7 +34,8 @@ describe("what a reveal sends home", () => {
   });
 
   it("finds a tile's depth from its band of rows, as depth_rules_at does", () => {
-    const rules = { dayUnitSeconds: 14400, spacing: 100, startMainAt: 0, endAt: 21 * 20 * 14400, seed: 1n };
+    const rules = { dayUnitSeconds: 14400, spacing: 100, startMainAt: 0, scheduledEndAt: 21 * 20 * 14400,
+endAt: 21 * 20 * 14400, seed: 1n };
     expect([0, 99, 100, 250, 399, 400].map((y) => expeditionDepth(rules, { y }))).toEqual([0, 0, 1, 2, 3, 0]);
   });
 });

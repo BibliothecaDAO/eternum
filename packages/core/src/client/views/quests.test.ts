@@ -20,7 +20,8 @@ function fixture() {
         name: "1",
         start_settling_at: 1,
         start_main_at: 100,
-        end_at: 10_000,
+        scheduled_end_at: 10_000,
+end_at: 10_000,
         settled: false,
         ready: true,
         dev_mode_on: false,
@@ -193,7 +194,8 @@ describe("daily quest facts", () => {
 
 function worldQuestFixture() {
   const { store } = fixture();
-  const calendar = { seed: 5n, startMainAt: 100, endAt: 10_000, dayUnitSeconds: 100 };
+  const calendar = { seed: 5n, startMainAt: 100, scheduledEndAt: 10_000,
+endAt: 10_000, dayUnitSeconds: 100 };
   const startsAt = dayOf(calendar, 100)!.end;
   store.applyFacts([
     { model: "HomeAspect", key: "0xd000", value: { game_id: 1, home: 7, aspect: 1 } },
@@ -377,7 +379,8 @@ describe("recorded bane quest rewards", () => {
   });
 });
 
-const calendar = { seed: 5n, startMainAt: 100, endAt: 10_000, dayUnitSeconds: 100 };
+const calendar = { seed: 5n, startMainAt: 100, scheduledEndAt: 10_000,
+endAt: 10_000, dayUnitSeconds: 100 };
 const firstDay = dayOf(calendar, 100)!;
 const secondDay = dayOf(calendar, firstDay.end)!;
 const thirdDay = dayOf(calendar, secondDay.end)!;

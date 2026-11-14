@@ -239,7 +239,8 @@ describe("Results read by a player who had no seat in the game (qa-app-2 P3-13)"
       name: "blitz-7",
       mode: "blitz",
       status: "Ended",
-      clock: { start_settling_at: 0, start_main_at: 100, end_at: 1_790_000_000, end_grace_seconds: 0 },
+      clock: { start_settling_at: 0, start_main_at: 100, scheduled_end_at: 1_790_000_000,
+end_at: 1_790_000_000, end_grace_seconds: 0 },
     };
     board.everyone = [game];
     const page = await open(1440);

@@ -39,7 +39,8 @@ const header = {
 
 function snapshot(pool: number, models: string[]) {
   const rows: Record<string, Record<string, unknown>[]> = {
-    GameRegistry: [{ preset_id: 6, start_main_at: 10, end_at: 110, seed: "0x99" }],
+    GameRegistry: [{ preset_id: 6, start_main_at: 10, scheduled_end_at: 110,
+end_at: 110, seed: "0x99" }],
     ChestRules: [{ pool_bps: 7000, top_n: 10, claim_window_seconds: 604800 }],
     SliceRules: [{ day_unit_seconds: 5 }],
     LordsBudget: [{ pool: String(pool), pool_left: String(pool - 17) }],

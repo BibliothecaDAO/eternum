@@ -40,14 +40,16 @@ function openedChest(owner: number, amount: number) {
 }
 
 const start = 1800000000;
-const calendar = { seed: 42n, startMainAt: start, endAt: start + 21 * 20 * 3600, dayUnitSeconds: 3600 };
+const calendar = { seed: 42n, startMainAt: start, scheduledEndAt: start + 21 * 20 * 3600,
+endAt: start + 21 * 20 * 3600, dayUnitSeconds: 3600 };
 const game = {
   name: "0x46526f6e74696572",
   game_id: 1,
   preset_id: 5,
   seed: 42n,
   start_main_at: start,
-  end_at: start + 1000000,
+  scheduled_end_at: start + 1000000,
+end_at: start + 1000000,
   settled: false,
 };
 const rows = {

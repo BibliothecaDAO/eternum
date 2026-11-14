@@ -23,7 +23,8 @@ const season = (gameId: number, startMainAt: number, ownRealm: boolean): Directo
   game_id: gameId,
   mode: "frontier",
   status: "Live",
-  clock: { start_settling_at: 0, start_main_at: startMainAt, end_at: 9_000_000_000, end_grace_seconds: 0 },
+  clock: { start_settling_at: 0, start_main_at: startMainAt, scheduled_end_at: 9_000_000_000,
+end_at: 9_000_000_000, end_grace_seconds: 0 },
   player_state: {
     registered: ownRealm,
     settled: ownRealm,
