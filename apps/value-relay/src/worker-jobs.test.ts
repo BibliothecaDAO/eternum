@@ -180,17 +180,42 @@ it("records unavailable ledger work while shard ingestion and owned Realm labor 
 });
 
 const settledDeposits = { enabled: true, processed: 0, next: "1", total: "0", pending: 0, more: false, error: null };
-const shardRelay = () => {
-  const data = new Map<string, unknown>();
+/** Dies after its `n`th write (n = 0: never), and stays dead: a worker that was killed does nothing more. */
+interface Kill {
+  n: number;
+  writes: number;
+  dead: boolean;
+}
+class Died extends Error {}
+const shardRelay = (data = new Map<string, unknown>(), kill: Kill = { n: 0, writes: 0, dead: false }) => {
+  const alive = () => {
+    if (kill.dead) throw new Died();
+  };
+  const wrote = () => {
+    kill.writes++;
+    if (kill.n > 0 && kill.writes === kill.n) {
+      kill.dead = true;
+      throw new Died();
+    }
+  };
   const storage = {
-    get: async (key: string) => data.get(key),
+    get: async (key: string) => (alive(), data.get(key)),
     put: async (key: string, value: unknown) => {
+      alive();
       data.set(key, value);
+      wrote();
     },
     setAlarm: async () => {},
-    list: async ({ prefix, end }: { prefix: string; end?: string }) =>
-      new Map([...data].filter(([key]) => key.startsWith(prefix) && (!end || key < end))),
-    delete: async (key: string) => data.delete(key),
+    list: async ({ prefix, end }: { prefix: string; end?: string }) => (
+      alive(),
+      new Map([...data].filter(([key]) => key.startsWith(prefix) && (!end || key < end)))
+    ),
+    delete: async (key: string) => {
+      alive();
+      const had = data.delete(key);
+      wrote();
+      return had;
+    },
     transaction: async (run: (tx: unknown) => Promise<unknown>): Promise<unknown> => run(storage),
   };
   shard.head.mockResolvedValue(0);
@@ -257,6 +282,72 @@ it.each([
     expect(runRelayCalls.mock.calls.map((call) => call[3])).toEqual([true, false, true, false]);
   },
 );
+/** Kills a worker after each state write of `work`; a new worker over the same storage must finish it by itself. */
+async function everyKill(
+  work: (relay: ReturnType<typeof shardRelay>) => Promise<unknown>,
+  finish: (data: Map<string, unknown>) => Promise<void>,
+) {
+  const writes = await (async () => {
+    const kill = { n: 0, writes: 0, dead: false };
+    await work(
+      shardRelay(
+        new Map([["shardTick", { checked_at: 1, deposits: settledDeposits, value: { status: "ready" } }]]),
+        kill,
+      ),
+    );
+    return kill.writes;
+  })();
+  expect(writes).toBeGreaterThan(0);
+  for (let at = 1; at <= writes; at++) {
+    // The worker has already published a settled observation: the reviewer's starting state.
+    const data = new Map<string, unknown>([
+      ["shardTick", { checked_at: 1, deposits: settledDeposits, value: { status: "ready" } }],
+    ]);
+    const kill = { n: at, writes: 0, dead: false };
+    deposits.mockClear();
+    runRelayCalls.mockClear();
+    await work(shardRelay(data, kill)).catch((error) => {
+      if (!kill.dead) throw error;
+    });
+    await finish(data);
+  }
+}
+it("completes a reported deposit's work after the worker dies after any state write, without another report", async () => {
+  vi.useFakeTimers({ toFake: ["Date"] });
+  vi.setSystemTime(new Date("2026-11-14T12:00:30Z"));
+  deposits.mockResolvedValue(settledDeposits);
+  await everyKill(
+    async (relay) => relay.deliverDeposits("0x1"),
+    async (data) => {
+      const next = shardRelay(data);
+      vi.setSystemTime(new Date(Date.now() + 120_000));
+      await next.tick("0x1");
+      // The report was stored first; whatever died after, the pass ran (before or after the kill) and the cause is gone.
+      expect(deposits.mock.calls.length).toBeGreaterThan(0);
+      expect(data.get("deposits:due")).toBeUndefined();
+    },
+  );
+});
+it("completes an operator's request for held claims after the worker dies after any state write", async () => {
+  vi.useFakeTimers({ toFake: ["Date"] });
+  vi.setSystemTime(new Date("2026-11-14T12:00:30Z"));
+  deposits.mockResolvedValue(settledDeposits);
+  runRelayOutcome.next = () => Effect.succeed({ status: "ready", more: false, deferred: [], reconciled: true });
+  await everyKill(
+    async (relay) => {
+      await relay.requestReconcile();
+      await relay.tick("0x1");
+    },
+    async (data) => {
+      const next = shardRelay(data);
+      vi.setSystemTime(new Date(Date.now() + 120_000));
+      await next.tick("0x1");
+      await next.tick("0x1");
+      expect(runRelayCalls.mock.calls.map((call) => call[3])).toContain(true);
+      expect(data.get("reconcile:due")).toBeUndefined();
+    },
+  );
+});
 it("asks again after an hourly reconciliation whose recovery read failed", async () => {
   vi.useFakeTimers({ toFake: ["Date"] });
   vi.setSystemTime(new Date("2026-11-14T12:00:30Z"));

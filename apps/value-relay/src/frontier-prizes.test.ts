@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { memoryFinalFacts } from "./final-facts";
+import { memoryObligations } from "./obligations";
 import { awardFrontierPrizes } from "./frontier-prizes";
 const calls = vi.hoisted(() => ({
   admin: vi.fn(),
@@ -51,7 +52,13 @@ const target = {
   privateKey: "0x1",
 };
 const run = () =>
-  awardFrontierPrizes(target, "https://herald.test", { rpcUrl: "https://ledger.test", address: "0x30", finals });
+  awardFrontierPrizes(target, "https://herald.test", {
+    rpcUrl: "https://ledger.test",
+    address: "0x30",
+    finals,
+    obligations: memoryObligations(),
+    proofs: true,
+  });
 const snapshot = (issued = "0") => ({
   confirmed_block: 10,
   game_id: "7",

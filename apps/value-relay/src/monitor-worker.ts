@@ -9,7 +9,7 @@ import { processSeasonTops } from "./season-tops";
 import { seasonLedgerReads, challengeSeason } from "./season-ledger";
 import { isLedgerReadTick, LEDGER_READ_STALE_SECONDS } from "@realms-world/chain";
 import { onIdentityChain } from "./ledger-chain";
-import { raiseCause, retryCause, takeCause } from "./ledger-cause";
+import { beginCause, completeCause, raiseCause, retryCause } from "./ledger-cause";
 import { presentsOperatorToken } from "@realms-world/identity";
 import { DurableObject, WorkerEntrypoint } from "cloudflare:workers";
 import { Effect, Result, Semaphore } from "effect";
@@ -66,13 +66,15 @@ export class ValueMonitor extends DurableObject<MonitorEnv> {
    * audit finished its work: a failure, or a page of events still to read, asks again in five minutes.
    */
   async auditIfDue(hourly: boolean) {
-    if (!(await takeCause(this.ctx.storage, AUDIT_DUE, hourly))) return null;
+    const began = await beginCause(this.ctx.storage, AUDIT_DUE, hourly);
+    if (!began) return null;
     try {
       const observation = await this.tick();
-      if (!auditFinished(observation)) await retryCause(this.ctx.storage, AUDIT_DUE);
+      if (auditFinished(observation)) await completeCause(this.ctx.storage, began);
+      else await retryCause(this.ctx.storage, began);
       return observation;
     } catch (error) {
-      await retryCause(this.ctx.storage, AUDIT_DUE);
+      await retryCause(this.ctx.storage, began);
       throw error;
     }
   }

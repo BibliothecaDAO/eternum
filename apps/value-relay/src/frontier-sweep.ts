@@ -18,15 +18,8 @@ import {
   type ConfirmedSnapshot,
 } from "./shard-snapshot";
 import { ShardReader, type ShardConnection } from "./shard-rpc";
-import {
-  closedSeason,
-  fundingAt,
-  keepIfFinal,
-  paidPrincipal,
-  type FinalEvidence,
-  type FinalFacts,
-  type FrontierLedger,
-} from "./final-facts";
+import { driveObligations, type ObligationKind } from "./obligations";
+import { closedSeason, fundingAt, keepIfFinal, type FinalEvidence, type FrontierLedger } from "./final-facts";
 
 export interface PrincipalSweep {
   chainId: string;
@@ -100,7 +93,7 @@ async function sweepGame(
   const rewardError = open ? rewardPublicationError(snapshot, open.funding) : null;
   const principalError = await sweepBalancesAndPayPrincipal(
     target,
-    ledger.finals,
+    ledger,
     gameId,
     snapshot,
     operator,
@@ -222,9 +215,19 @@ async function settlementSnapshot(target: ShardConnection, heraldUrl: string, ga
   ]);
 }
 
+/** A principal return is the obligation shape: the attempt asks the ledger actor, which reads before it sends. */
+const principalReturn = (pay?: PayPrincipal): ObligationKind<PrincipalSweep> => ({
+  name: "principal",
+  key: ({ chainId, gameId, account }) => `${BigInt(chainId)}:${gameId}:${BigInt(account)}`,
+  attempt: async (claim) => {
+    if (!pay) throw new Error("principal_payment_unavailable");
+    return { final: await pay(claim) };
+  },
+});
+
 async function sweepBalancesAndPayPrincipal(
   target: ShardConnection,
-  finals: FinalFacts,
+  ledger: FrontierLedger,
   gameId: number,
   snapshot: ConfirmedSnapshot,
   operator: ShardOperator,
@@ -243,23 +246,16 @@ async function sweepBalancesAndPayPrincipal(
   } catch (error) {
     unavailable ??= error;
   }
-  for (const { value } of snapshot.models.find(({ model }) => model === "PrincipalWithdrawal")?.rows ?? []) {
-    try {
-      const receipt = decodeNativeRow("PrincipalWithdrawal", value);
-      const paid = paidPrincipal(target.chainId, gameId, String(receipt.account));
-      if (await finals.has(paid)) continue;
-      if (!payPrincipal) throw new Error("principal_payment_unavailable");
-      const final = await payPrincipal({
-        chainId: target.chainId,
-        gameId,
-        account: String(receipt.account),
-        amount: String(receipt.amount),
-      });
-      if (final) await finals.mark(paid, final);
-    } catch (error) {
-      unavailable ??= error;
-    }
-  }
+  const owed = (snapshot.models.find(({ model }) => model === "PrincipalWithdrawal")?.rows ?? []).map(({ value }) => {
+    const receipt = decodeNativeRow("PrincipalWithdrawal", value);
+    return { chainId: target.chainId, gameId, account: String(receipt.account), amount: String(receipt.amount) };
+  });
+  const principals = await driveObligations(principalReturn(payPrincipal), owed, {
+    finals: ledger.finals,
+    state: ledger.obligations,
+    proofs: ledger.proofs,
+  });
+  unavailable ??= principals.errors.length ? new Error(principals.errors[0]!.error) : undefined;
   return unavailable;
 }
 

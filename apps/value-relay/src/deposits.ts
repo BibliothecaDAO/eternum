@@ -13,6 +13,8 @@ import { rpcAt, type Cosignature } from "@realms-world/value-ledger";
 import { ShardOperator, type ShardTarget } from "@realms-world/value-ledger/shard";
 import { type ShardConnection } from "./shard-rpc";
 import { verifyDepositResolution } from "./deposit-verifier";
+import { driveObligations, type ObligationKind, type ObligationState } from "./obligations";
+import type { FinalFacts } from "./final-facts";
 
 export type DepositMutation =
   | { kind: "resolve"; shard: string; id: string; cancelled: boolean }
@@ -24,78 +26,151 @@ export interface DepositRelayPorts {
   storage: {
     get<T>(key: string): Promise<T | undefined>;
     put(key: string, value: unknown): Promise<unknown>;
+    delete(key: string): Promise<unknown>;
     list<T>(options: { prefix: string; reverse?: boolean; limit?: number; end?: string }): Promise<Map<string, T>>;
   };
   sign(request: DepositSigningRequest): Promise<Cosignature>;
+  finals: FinalFacts;
+  obligations: ObligationState;
+  /** A proof pass attempts deposits whose resolution awaits the accepted block; a plain pass leaves them. */
+  proofs: boolean;
   mutate(request: DepositMutation): Promise<unknown>;
 }
 
 interface DepositProgress {
   next: string;
-  pending: string[];
+  /** Deposits discovered and not yet settled: the work queue. Only final evidence takes one out. */
+  open: string[];
+  /** The name this queue had before it was one. */
+  pending?: string[];
   anchor?: DepositAnchor;
 }
+
+/**
+ * A deposit is an obligation: deliver it to the shard (or refund it) and resolve it on the ledger. It stays in `open`
+ * until the accepted ledger block shows the resolution; a pass that ends, a receipt accepted on L2, or a delivery that
+ * returned remove nothing. A rewritten block shows the resolution gone at the head, and the next attempt does it again.
+ */
+const depositResolution = (
+  ports: DepositRelayPorts,
+  reader: Awaited<ReturnType<typeof depositReader>>,
+  finalOf: () => Promise<Awaited<ReturnType<typeof reader.final>>>,
+): ObligationKind<string> => ({
+  name: "deposit",
+  key: (id) => `${BigInt(ports.target.chainId)}:${BigInt(id)}`,
+  attempt: async (id) => {
+    await reader.assertCanonical();
+    const payment = await reader.deposit(ports.target.chainId, id);
+    await remember(ports, payment);
+    let status = payment.status;
+    if (status === "pending") {
+      const cancelled = await deliverPayment(ports, payment, reader.assertCanonical);
+      status = cancelled ? "cancelled" : "delivered";
+      await remember(ports, { ...payment, status });
+    }
+    // A read at the accepted block that fails keeps nothing: the head's answer stands and the proof pass tries again.
+    const accepted = await Promise.resolve()
+      .then(finalOf)
+      .then(
+        async (final) => ({ block: final.block, settled: await final.deposit(ports.target.chainId, id) }),
+        () => null,
+      );
+    return {
+      final: accepted?.settled.status === status ? { block: accepted.block.number, hash: accepted.block.hash } : null,
+    };
+  },
+});
 
 /** Discovery and delivery have separate durable progress: a failed obligation never hides later receipts. */
 export async function relayDeposits(ports: DepositRelayPorts) {
   const { target, ledger } = ports;
   if (!(await supportsDeposits(target))) return { enabled: false, processed: 0 };
   const key = `deposits:${BigInt(ledger.chainId)}:${BigInt(ledger.address)}:progress`;
-  const progress = (await ports.storage.get<DepositProgress>(key)) ?? { next: "1", pending: [] };
+  const stored = await ports.storage.get<DepositProgress>(key);
+  const progress: DepositProgress = {
+    next: stored?.next ?? "1",
+    open: stored?.open ?? stored?.pending ?? [],
+    ...(stored?.anchor && { anchor: stored.anchor }),
+  };
   const reader = await depositReader(rpcAt(ledger.rpcUrl), ledger.address, ledger.chainId, progress.anchor);
   const count = await reader.count(target.chainId);
-  if (BigInt(progress.next) > count + 1n) throw new DepositAnchorError("deposit_count_regressed");
+  if (BigInt(progress.next) > count + 1n) await forgetVanished(ports, progress, count);
   const discovered = BigInt(progress.next);
   const fresh: string[] = [];
   while (BigInt(progress.next) <= count && fresh.length < 20) {
     fresh.push(progress.next);
     progress.next = String(BigInt(progress.next) + 1n);
   }
-  const retry = progress.pending.slice(0, 20);
-  progress.pending.push(...fresh);
+  progress.open.push(...fresh);
   await reader.assertCanonical();
   progress.anchor = reader.head;
   await ports.storage.put(key, progress);
   const errors: { obligation: string; error: string }[] = [];
-  const attempt = async (obligation: string, work: () => Promise<void>) => {
-    try {
-      await reader.assertCanonical();
-      await work();
-    } catch (cause) {
-      if (cause instanceof DepositAnchorError) throw cause;
-      errors.push({ obligation, error: cause instanceof Error ? cause.message : String(cause) });
-    }
-  };
-  await attempt("deposit history", () => backfillHistory(ports, reader, discovered));
-  let processed = 0;
-  for (const id of [...retry, ...fresh]) {
-    await attempt(`deposit:${id}`, async () => {
-      const payment = await reader.deposit(target.chainId, id);
-      await remember(ports, payment);
-      if (payment.status === "pending") {
-        const cancelled = await deliverPayment(ports, payment, reader.assertCanonical);
-        await remember(ports, { ...payment, status: cancelled ? "cancelled" : "delivered" });
-      }
-      progress.pending = progress.pending.filter((pending) => pending !== id);
-      processed++;
-    });
+  try {
+    await backfillHistory(ports, reader, discovered);
+  } catch (cause) {
+    if (cause instanceof DepositAnchorError) throw cause;
+    errors.push({ obligation: "deposit history", error: cause instanceof Error ? cause.message : String(cause) });
   }
-  // Rotate failed old obligations so a bounded retry batch cannot starve newer failures.
-  progress.pending = [
-    ...progress.pending.filter((id) => !retry.includes(id)),
-    ...retry.filter((id) => progress.pending.includes(id)),
-  ];
+  let accepted: ReturnType<typeof reader.final> | undefined;
+  const pass = await driveObligations(
+    depositResolution(ports, reader, () => (accepted ??= reader.final())),
+    progress.open,
+    { finals: ports.finals, state: ports.obligations, proofs: ports.proofs },
+  );
+  const anchorFault = pass.errors.find(({ error }) => error.startsWith("deposit_head_"));
+  if (anchorFault) throw new DepositAnchorError(anchorFault.error);
+  errors.push(...pass.errors);
+  const settled = new Set(pass.settled);
+  progress.open = progress.open.filter((id) => !settled.has(`${BigInt(target.chainId)}:${BigInt(id)}`));
   await ports.storage.put(key, progress);
   return {
     enabled: true,
-    processed,
+    processed: pass.attempted,
     next: progress.next,
     total: String(count),
-    pending: progress.pending.length,
-    more: BigInt(progress.next) <= count || progress.pending.length > 0,
+    pending: pass.todo,
+    awaiting: pass.awaiting,
+    more: BigInt(progress.next) <= count || pass.todo > 0,
     error: errors.length ? errors : null,
   };
 }
+
+/**
+ * The count went below what was discovered: a replaced block took deposits away. A deposit the shard has not been told of
+ * is simply forgotten and discovered again if it comes back; one the shard already credited is a custody fault, loud.
+ */
+async function forgetVanished(ports: DepositRelayPorts, progress: DepositProgress, count: bigint) {
+  const gone = progress.open.filter((id) => BigInt(id) > count);
+  for (const id of gone) {
+    const row = await ports.storage.get<LordsDeposit>(rowKey(ports.target.chainId, id));
+    if (!row || (await shardHasReceipt(ports, row))) throw new DepositAnchorError("deposit_count_regressed");
+  }
+  for (const id of gone) {
+    await ports.storage.delete(rowKey(ports.target.chainId, id));
+    await ports.obligations.delete(`obligation:deposit:${BigInt(ports.target.chainId)}:${BigInt(id)}`);
+  }
+  progress.open = progress.open.filter((id) => BigInt(id) <= count);
+  progress.next = String(count + 1n);
+}
+
+const shardReceipt = async (ports: DepositRelayPorts, payment: Pick<LordsDeposit, "gameId" | "id">) => {
+  const block = await confirmedDepositBlock(rpcAt(ports.target.rpcUrl));
+  const receipt = await new ShardOperator(ports.target).provider.callContract(
+    {
+      contractAddress: ports.target.gamesAddress,
+      entrypoint: "deposit_receipt",
+      calldata: [String(payment.gameId), payment.id],
+    },
+    block.head.hash,
+  );
+  await block.assertCanonical();
+  return receipt;
+};
+const shardHasReceipt = async (ports: DepositRelayPorts, payment: Pick<LordsDeposit, "gameId" | "id">) => {
+  const receipt = await shardReceipt(ports, payment);
+  return !(receipt.length === 1 && BigInt(receipt[0]!) === 1n);
+};
 
 async function deliverPayment(
   ports: DepositRelayPorts,
@@ -105,19 +180,7 @@ async function deliverPayment(
   const { target, ledger } = ports;
   if (BigInt(payment.games) !== BigInt(target.gamesAddress)) throw new Error("deposit_games_differs");
   const operator = new ShardOperator(target);
-  const read = async () => {
-    const block = await confirmedDepositBlock(rpcAt(target.rpcUrl));
-    const receipt = await operator.provider.callContract(
-      {
-        contractAddress: target.gamesAddress,
-        entrypoint: "deposit_receipt",
-        calldata: [String(payment.gameId), payment.id],
-      },
-      block.head.hash,
-    );
-    await block.assertCanonical();
-    return receipt;
-  };
+  const read = () => shardReceipt(ports, payment);
   let receipt = await read();
   const commitment = depositCommitment({ chainId: ledger.chainId, ledger: ledger.address }, payment);
   if (receipt.length === 1 && BigInt(receipt[0]!) === 1n) {

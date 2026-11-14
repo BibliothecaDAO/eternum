@@ -3,6 +3,7 @@ vi.mock("../../../packages/value-ledger/src/shard-abi", () => ({
 }));
 import { beforeEach, expect, it, vi } from "vitest";
 import { memoryFinalFacts } from "./final-facts";
+import { memoryObligations } from "./obligations";
 import { sweepFrontierLords, frontierSettlementEvidence } from "./frontier-sweep";
 import { ResourcesIds, RESOURCE_PRECISION } from "@bibliothecadao/types";
 import type { ConfirmedSnapshot } from "./shard-snapshot";
@@ -48,7 +49,13 @@ const target = {
   accountAddress: "0x20",
   privateKey: "0x1",
 };
-let ledger = { rpcUrl: "https://ledger.test", address: "0x30", finals: memoryFinalFacts() };
+let ledger = {
+  rpcUrl: "https://ledger.test",
+  address: "0x30",
+  finals: memoryFinalFacts(),
+  obligations: memoryObligations(),
+  proofs: true,
+};
 const wei = (amount: number) => String(BigInt(amount) * 10n ** 18n);
 const run = () => sweepFrontierLords(target, "https://herald.test", ledger, calls.settle);
 const balance = (entity_id: number, amount: number, resource_type = ResourcesIds.Lords) => ({
@@ -72,7 +79,7 @@ const rows = (model: string, values: Record<string, unknown>[]) => {
 };
 beforeEach(() => {
   vi.resetAllMocks();
-  ledger = { ...ledger, finals: memoryFinalFacts() };
+  ledger = { ...ledger, finals: memoryFinalFacts(), obligations: memoryObligations(), proofs: true };
   calls.ledgerHead.mockResolvedValue({ number: 10, time: 100 });
   calls.finalHead.mockResolvedValue({ number: 9, hash: "0xf", time: 90 });
   state = {

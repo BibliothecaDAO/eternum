@@ -1,5 +1,6 @@
 import { structureSnapshot } from "../test-support/deposit-structure";
 import { beforeEach, expect, it, vi } from "vitest";
+import { durableFinalFacts } from "./final-facts";
 import { relayDeposits, depositHistory, type DepositRelayPorts } from "./deposits";
 import { DepositAnchorError, depositCommitment, type LordsDeposit } from "@realms-world/value-ledger/deposits";
 import { realmsAccountAddress } from "../../../packages/identity/src/account";
@@ -69,6 +70,28 @@ let rows: LordsDeposit[];
 let saved: Map<string, unknown>;
 const sign = vi.fn(async (_request: unknown) => ({ r: "0x1", s: "0x2" }));
 const mutate = vi.fn<DepositRelayPorts["mutate"]>();
+const storage = {
+  get: async <T>(key: string) => structuredClone(saved.get(key)) as T | undefined,
+  put: async (key: string, value: unknown) => {
+    saved.set(key, structuredClone(value));
+  },
+  delete: async (key: string) => saved.delete(key),
+  list: async <T>({
+    prefix,
+    reverse,
+    limit,
+    end,
+  }: {
+    prefix: string;
+    reverse?: boolean;
+    limit?: number;
+    end?: string;
+  }) => {
+    const keys = [...saved.keys()].filter((key) => key.startsWith(prefix) && (!end || key < end)).sort();
+    if (reverse) keys.reverse();
+    return new Map(keys.slice(0, limit).map((key) => [key, structuredClone(saved.get(key)) as T]));
+  },
+};
 const ports: DepositRelayPorts = {
   target: {
     chainId: "0x2",
@@ -80,27 +103,10 @@ const ports: DepositRelayPorts = {
   },
   heraldUrl: "https://herald.test",
   ledger: { rpcUrl: "https://ledger.test", address: "0x10", chainId: "0x1" },
-  storage: {
-    get: async <T>(key: string) => structuredClone(saved.get(key)) as T | undefined,
-    put: async (key, value) => {
-      saved.set(key, structuredClone(value));
-    },
-    list: async <T>({
-      prefix,
-      reverse,
-      limit,
-      end,
-    }: {
-      prefix: string;
-      reverse?: boolean;
-      limit?: number;
-      end?: string;
-    }) => {
-      const keys = [...saved.keys()].filter((key) => key.startsWith(prefix) && (!end || key < end)).sort();
-      if (reverse) keys.reverse();
-      return new Map(keys.slice(0, limit).map((key) => [key, structuredClone(saved.get(key)) as T]));
-    },
-  },
+  storage,
+  finals: durableFinalFacts(storage),
+  obligations: storage,
+  proofs: false,
   sign,
   mutate,
 };
@@ -160,7 +166,7 @@ it("persists a failed resolution and recovers without issuing a second credit", 
   expect(await relayDeposits(ports)).toMatchObject({
     processed: 0,
     pending: 1,
-    error: [{ obligation: "deposit:1", error: "lost settlement response" }],
+    error: [{ obligation: "deposit:2:1", error: "lost settlement response" }],
   });
   expect(mocks.admin).toHaveBeenCalledTimes(1);
   expect(await relayDeposits(ports)).toMatchObject({ processed: 1, next: "2", more: false, pending: 0 });
@@ -197,18 +203,21 @@ it("halts before signing or mutating when a durable anchor is rewritten", async 
   expect(mutate).not.toHaveBeenCalled();
   expect(mocks.admin).not.toHaveBeenCalled();
 });
-it("reuses the persisted anchor and rotates a bounded backlog without losing any obligation", async () => {
+it("reuses the persisted anchor and keeps every discovered deposit as work until it is settled", async () => {
   rows = Array.from({ length: 45 }, (_, index) => ({ ...payment, id: String(index + 1) }));
   mocks.receipt.mockRejectedValue(new Error("unavailable"));
   await relayDeposits(ports);
   await relayDeposits(ports);
   await relayDeposits(ports);
   expect(mocks.reader).toHaveBeenCalledWith(expect.anything(), "0x10", "0x1", { number: 50, hash: "0x50", time: 1000 });
-  const progress = [...saved.values()][0] as { next: string; pending: string[] };
+  const progress = [...saved.values()].find((value) => (value as { open?: string[] }).open) as {
+    next: string;
+    open: string[];
+  };
   expect(progress.next).toBe("46");
-  expect(new Set(progress.pending).size).toBe(45);
-  expect(progress.pending.slice(-20)).toEqual(Array.from({ length: 20 }, (_, index) => String(index + 21)));
+  expect(new Set(progress.open).size).toBe(45);
 });
+
 it("a pass reads the count once and each new deposit once, then only the count however many deposits there are", async () => {
   const reads = {
     count: vi.fn(async () => BigInt(rows.length)),

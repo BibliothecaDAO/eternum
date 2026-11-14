@@ -1,8 +1,9 @@
 /**
- * The read budget at the RPC boundary: every call the ledger's URL receives, counted by method beneath the real readers
- * (the monitor's audit, the relay's ledger tick, the Frontier jobs, the deposit pass, the history route), over a
- * deterministic fake chain. The month's compute units for production and dev follow from these counts and the stated
- * inputs, at the end of the file; adding a read anywhere below changes a number here.
+ * The read budget at the RPC boundary. Every paid reader below is the real one (the monitor's audit with its custody
+ * audit and shard ABI reads, the relay's ledger tick, the Frontier jobs, the deposit pass, the payment proof, the public
+ * history route through the Worker's own `fetch`); only the transport is fake, a deterministic chain that counts every
+ * call the ledger's URL receives, by method. The month for production and dev follows from those counts and the stated
+ * inputs at the end of the file: adding a read anywhere in a reader changes a number here.
  */
 vi.mock("./environment", async (original) => ({
   ...(await original<typeof import("./environment")>()),
@@ -13,14 +14,18 @@ import { Effect } from "effect";
 import { beforeEach, expect, it, vi } from "vitest";
 import { response } from "../../../packages/value-ledger/test-support/abi";
 import { ledgerAbi } from "../../../packages/value-ledger/test-support/ledger-abi";
+import { realmsAccountAddress } from "../../../packages/identity/src/account";
+import worker, { ValueRelay } from "./worker";
 import { ValueMonitor } from "./monitor-worker";
-import { ValueRelay } from "./worker";
 import { ledgerMonitorReads } from "./ledger";
-import { memoryFinalFacts } from "./final-facts";
+import { ledgerPaymentProof, ledgerPaymentRead } from "./chain";
+import { durableFinalFacts, memoryFinalFacts } from "./final-facts";
+import { memoryObligations } from "./obligations";
 import { publishFrontierPools } from "./frontier-pools";
 import { awardFrontierPrizes } from "./frontier-prizes";
 import { sweepFrontierLords } from "./frontier-sweep";
-import { depositHistory, relayDeposits, type DepositRelayPorts } from "./deposits";
+import { relayDeposits, type DepositRelayPorts } from "./deposits";
+import type { LordsDeposit } from "@realms-world/value-ledger/deposits";
 
 vi.mock("cloudflare:workers", () => ({
   WorkerEntrypoint: class {},
@@ -34,14 +39,15 @@ vi.mock("cloudflare:workers", () => ({
 vi.mock("./ledger-chain", () => ({
   onIdentityChain: (_url: unknown, _identity: unknown, operation: unknown) => operation,
 }));
-vi.mock("./chain", () => ({ ledgerPauserAdapter: () => vi.fn() }));
-vi.mock("../../../packages/value-ledger/src/shard-abi", () => ({
-  readShardAbi: async () => [{ type: "interface", items: [{ name: "deposit_count" }, { name: "deposit_source" }] }],
+vi.mock("./chain", async (original) => ({
+  ...(await original<typeof import("./chain")>()),
+  ledgerPauserAdapter: () => vi.fn(),
 }));
 const shard = vi.hoisted(() => ({ games: vi.fn(), snapshot: vi.fn() }));
 vi.mock("@realms-world/value-ledger/shard", () => ({
   ShardOperator: class {
     admin = vi.fn();
+    provider = { callContract: async () => ["1"] };
   },
 }));
 vi.mock("./shard-rpc", async (original) => ({
@@ -68,17 +74,24 @@ vi.mock("./shard-snapshot", async (original) => ({
   readConfirmedSnapshot: shard.snapshot,
 }));
 
+// ---- the fake transport --------------------------------------------------------------------------------------------
+
 const FINAL = 90;
-/** Every RPC method the ledger URL receives. */
-const rpc = vi.hoisted(() => ({
+const ACCOUNT = realmsAccountAddress("0x77", "0x11", "0x22");
+/** The ledger the transport answers for: its blocks, its custody targets and deposits, which payments it holds. */
+const chain = vi.hoisted(() => ({
   calls: new Map<string, number>(),
   head: 100,
   final: 90,
   /** Seasons are closed from this block on. */
   closedAt: 80,
   l1Tag: true,
+  targets: 0,
+  deposits: 0,
+  /** Whether the accepted block already holds the deposits' resolution. */
+  depositsFinal: true,
 }));
-const count = (name: string) => rpc.calls.set(name, (rpc.calls.get(name) ?? 0) + 1);
+const count = (name: string) => chain.calls.set(name, (chain.calls.get(name) ?? 0) + 1);
 const frontier = (closed: boolean) =>
   response(ledgerAbi, "get_frontier", {
     prize_pool: { low: 0, high: 0 },
@@ -107,59 +120,118 @@ const preset = () =>
     day_unit_seconds: 5,
     claim_window_seconds: 604800,
   });
+const payment = (paid: boolean) =>
+  response(ledgerAbi, "get_payment", {
+    reported_at: 1,
+    paid,
+    season_id: 4,
+    wallet: "0x123",
+    amount: { low: 17, high: 0 },
+    prize_rank: 0,
+    prize_count: 0,
+  });
+const depositFields = (id: number, status = "1") => [
+  "1",
+  "0x20",
+  String(BigInt(ACCOUNT) + BigInt(id)),
+  "0x77",
+  "17",
+  "0x33",
+  "40",
+  "999",
+  status,
+];
+const abi = [{ type: "interface", items: [{ name: "deposit_count" }, { name: "deposit_source" }] }];
 vi.mock("@realms-world/value-ledger", async (original) => {
   const real = await original<typeof import("@realms-world/value-ledger")>();
   const block = (id: number | string) => {
-    if (id === "l1_accepted" && !rpc.l1Tag) throw new Error("unsupported block tag");
-    const number = id === "latest" ? rpc.head : id === "l1_accepted" ? rpc.final : (id as number);
+    if (id === "l1_accepted" && !chain.l1Tag) throw new Error("unsupported block tag");
+    const number = id === "latest" ? chain.head : id === "l1_accepted" ? chain.final : (id as number);
     return {
       block_number: number,
       block_hash: `0x${number.toString(16)}`,
       timestamp: 1000 + number,
-      status: number <= rpc.final ? "ACCEPTED_ON_L1" : "ACCEPTED_ON_L2",
+      status: number <= chain.final ? "ACCEPTED_ON_L1" : "ACCEPTED_ON_L2",
     };
+  };
+  const ledger = {
+    getChainId: async () => (count("getChainId"), "0x1"),
+    getBlock: async (id: number | string) => (count("getBlock"), block(id)),
+    getClassHashAt: async (_address: string, number: number | string) => {
+      count("getClassHashAt");
+      if (typeof number === "number" && number < 1) throw Object.assign(new Error("not found"), { code: 20 });
+      return "0xabc";
+    },
+    getClassByHash: async () => (count("getClassByHash"), { abi }),
+    getEvents: async () => (count("getEvents"), { events: [], continuation_token: undefined }),
+    callContract: async (
+      { entrypoint, calldata }: { entrypoint: string; calldata: string[] },
+      at?: number | string,
+    ) => {
+      count("callContract");
+      const received = BigInt(chain.deposits) * 40n * 10n ** 18n;
+      if (entrypoint === "deposit_target_count") return [String(chain.targets)];
+      if (entrypoint === "deposit_target_at") return ["0x2", String(Number(calldata[0]) + 1)];
+      if (entrypoint === "deposit_target") return ["0x20"];
+      if (entrypoint === "deposit_count") return [String(chain.deposits)];
+      if (entrypoint === "get_deposit")
+        return depositFields(Number(calldata[1]), typeof at === "number" && !chain.depositsFinal ? "0" : "1");
+      if (entrypoint === "principal_payment") return ["1"];
+      if (entrypoint === "deposit_principal")
+        return [String(received % 2n ** 128n), String(received >> 128n), "0", "0", "0", "0"];
+      if (entrypoint === "lords") return ["0x99"];
+      if (entrypoint === "balance_of") return [String(received % 2n ** 128n), String(received >> 128n)];
+      if (entrypoint === "get_preset") return preset();
+      if (entrypoint === "get_payment") return payment(true);
+      if (entrypoint === "get_frontier") return frontier((typeof at === "number" ? at : chain.head) >= chain.closedAt);
+      throw new Error(`unexpected view ${entrypoint}`);
+    },
+  };
+  const shardNode = {
+    getChainId: async () => "0x2",
+    getBlock: async () => ({ ...block("latest"), status: "ACCEPTED_ON_L2" }),
+    getClassHashAt: async () => "0xdef",
+    getClassByHash: async () => ({ abi }),
+    callContract: async () => ["1"],
   };
   return {
     ...real,
-    rpcAt: () => ({
-      getChainId: async () => (count("getChainId"), "0x1"),
-      getBlock: async (id: number | string) => (count("getBlock"), block(id)),
-      getClassHashAt: async (_address: string, number: number) => {
-        count("getClassHashAt");
-        if (number < 1) throw Object.assign(new Error("not found"), { code: 20 });
-        return "0xabc";
-      },
-      getEvents: async () => (count("getEvents"), { events: [], continuation_token: undefined }),
-      callContract: async ({ entrypoint }: { entrypoint: string }, at?: number | string) => {
-        count("callContract");
-        if (entrypoint === "deposit_target_count") return ["0"];
-        if (entrypoint === "deposit_principal") return ["0", "0", "0", "0", "0", "0"];
-        if (entrypoint === "lords") return ["0x99"];
-        if (entrypoint === "balance_of") return ["0", "0"];
-        if (entrypoint === "deposit_count") return ["0"];
-        if (entrypoint === "get_preset") return preset();
-        if (entrypoint === "get_frontier") return frontier((typeof at === "number" ? at : rpc.head) >= rpc.closedAt);
-        throw new Error(`unexpected view ${entrypoint}`);
-      },
+    rpcAt: (url: string) => (url.includes("ledger") ? ledger : shardNode),
+    readRegisteredShard: async () => ({
+      chainId: "0x2",
+      rpcUrl: "https://shard.test",
+      url: "https://herald.test",
+      contracts: { games: "0x20" },
+      releaseSchemas: { "1": "0xs" },
     }),
+    requireActiveChain: async () => {},
+    relayAccountAddress: () => "0x5",
+    activeShards: async () => [{ chainId: "0x2" }],
   };
 });
 
-const PRICE = { getBlock: 20, getEvents: 20, callContract: 20, getClassHashAt: 20, getChainId: 0 } as const;
+// Alchemy's prices (`rpc-cost-1.md`): 20 CU a read, nothing for the chain id.
+const PRICE = {
+  getBlock: 20,
+  getEvents: 20,
+  callContract: 20,
+  getClassHashAt: 20,
+  getClassByHash: 20,
+  getChainId: 0,
+} as const;
 type Counts = Partial<Record<keyof typeof PRICE, number>>;
-/** Alchemy's price for these calls: 20 CU each, nothing for the chain id (`rpc-cost-1.md`). */
 const compute = (counts: Counts) =>
   (Object.keys(PRICE) as (keyof typeof PRICE)[]).reduce((total, name) => total + (counts[name] ?? 0) * PRICE[name], 0);
-const seen = (): Counts => Object.fromEntries([...rpc.calls].sort()) as Counts;
+const seen = (): Counts => Object.fromEntries([...chain.calls].sort()) as Counts;
 /** What `work` read from the ledger, by method, and what that costs. */
 async function reads(work: () => Promise<unknown>) {
-  rpc.calls.clear();
+  chain.calls.clear();
   await work();
   return { counts: seen(), cu: compute(seen()) };
 }
 const storageOver = (data: Map<string, unknown>) => {
   const storage = {
-    get: async (key: string) => data.get(key),
+    get: async <A>(key: string) => data.get(key) as A | undefined,
     put: async (key: string, value: unknown) => void data.set(key, value),
     delete: async (key: string) => data.delete(key),
     list: async ({
@@ -194,59 +266,101 @@ const monitor = (data = new Map<string, unknown>()) =>
       RELAY_REPORT: { held: async () => [] },
     } as never,
   );
+const relayEnv = {
+  ENVIRONMENT: "staging",
+  BASE_URL: "https://play.test",
+  L2_RPC_URL: "https://ledger.test",
+  OPERATOR_TOKEN: "t",
+  LEDGER_OPERATOR_ADDRESS: "0x20",
+  LEDGER_OPERATOR_PRIVATE_KEY: "0x30",
+  SHARD_LEDGER_OPERATOR_PRIVATE_KEY: "0x1",
+  COSIGNER_URL: "https://cosigner.test",
+  COSIGNER_TOKEN: "t",
+  IDENTITY: {
+    l2ChainId: async () => "0x1",
+    shards: async () => [],
+    authenticate: async () => ({ realmsId: "0x77" }),
+  },
+  ROSTER_MONITOR: { ledgerWritten: async () => {} },
+};
 const relay = (data = new Map<string, unknown>()) =>
-  new ValueRelay(
-    { storage: storageOver(data) } as unknown as DurableObjectState,
-    {
-      ENVIRONMENT: "staging",
-      L2_RPC_URL: "https://ledger.test",
-      LEDGER_OPERATOR_ADDRESS: "0x20",
-      LEDGER_OPERATOR_PRIVATE_KEY: "0x30",
-      COSIGNER_URL: "https://cosigner.test",
-      COSIGNER_TOKEN: "t",
-      IDENTITY: { l2ChainId: async () => "0x1", shards: async () => [] },
-      ROSTER_MONITOR: { ledgerWritten: async () => {} },
-    } as never,
-  );
+  new ValueRelay({ storage: storageOver(data) } as unknown as DurableObjectState, relayEnv as never);
 
 /** The chain moves on between two reads, as it does in an hour. */
 const advance = () => {
-  rpc.head += 100;
-  rpc.final += 100;
+  chain.head += 100;
+  chain.final += 100;
 };
 beforeEach(() => {
-  rpc.calls.clear();
-  rpc.head = 100;
-  rpc.final = FINAL;
-  rpc.closedAt = 80;
-  rpc.l1Tag = true;
+  chain.calls.clear();
+  chain.head = 100;
+  chain.final = FINAL;
+  chain.closedAt = 80;
+  chain.l1Tag = true;
+  chain.targets = 0;
+  chain.deposits = 0;
+  chain.depositsFinal = true;
 });
 
-// ---- the hourly audit and the ledger tick --------------------------------------------------------------------------
+// ---- the hourly audit ----------------------------------------------------------------------------------------------
 
-const AUDIT = { first: 660, steady: 560 };
-it("states the monitor's audit: the first one probes the deployment, a later one reads each stream once", async () => {
+const AUDIT = { first: 0, steady: 0 };
+it("states the monitor's audit with its custody audit and shard ABI reads: nothing to audit", async () => {
+  const quiet = monitor();
+  const first = await reads(() => quiet.tick());
+  advance();
+  const steady = await reads(() => quiet.tick());
+  expect(first.counts).toMatchObject({
+    callContract: 5,
+    getBlock: 14,
+    getChainId: 1,
+    getClassHashAt: 11,
+    getEvents: 5,
+  });
+  expect(steady.counts).toEqual({ callContract: 5, getBlock: 19, getChainId: 1, getClassHashAt: 1, getEvents: 5 });
+  AUDIT.first = first.cu;
+  AUDIT.steady = steady.cu;
+  expect([first.cu, steady.cu]).toEqual([720, 600]);
+});
+
+/** What each custody target and each deposit adds to an audit: the deposits are final after the first audit. */
+const CUSTODY = { perTarget: 0, perShard: 0, perUnpaidPrincipal: 0 };
+it("states what custody targets and deposits add to an audit, with every deposit delivered", async () => {
+  const empty = monitor();
+  await empty.tick();
+  advance();
+  const base = (await reads(() => empty.tick())).counts;
+  chain.targets = 2;
+  chain.deposits = 30;
   const worker = monitor();
   const first = await reads(() => worker.tick());
   advance();
   const steady = await reads(() => worker.tick());
-  expect(first.counts).toEqual({ callContract: 5, getBlock: 13, getChainId: 1, getClassHashAt: 10, getEvents: 5 });
-  expect(steady.counts).toEqual({ callContract: 5, getBlock: 18, getChainId: 1, getEvents: 5 });
-  expect([first.cu, steady.cu]).toEqual([AUDIT.first, AUDIT.steady]);
+  // First audit: each deposit at the head and at the accepted block, each unpaid principal at the head. Later audits: the
+  // deposits are kept as final; the unpaid principals are read again, one per depositor.
+  const extra = (counts: Counts) => compute(counts) - compute(base);
+  // Two targets cost two views each and the one shard's count one: five reads, and thirty unpaid principals thirty.
+  expect(first.counts.callContract! - base.callContract!).toBe(5 + 30 * 3);
+  expect(steady.counts.callContract! - base.callContract!).toBe(5 + 30);
+  CUSTODY.perTarget = 2 * 20;
+  CUSTODY.perShard = 20;
+  CUSTODY.perUnpaidPrincipal = 20;
+  expect([extra(first.counts), extra(steady.counts)]).toEqual([2000, 680]);
 });
 
-const LEDGER_TICK = { first: 260, steady: 200 };
+const LEDGER_TICK = { first: 0, steady: 0 };
 it("states the relay's ledger tick of a quiet ledger", async () => {
   const worker = relay();
   const first = await reads(() => worker.ledgerTick());
   advance();
   const steady = await reads(() => worker.ledgerTick());
+  LEDGER_TICK.first = first.cu;
+  LEDGER_TICK.steady = steady.cu;
   expect(first.counts).toEqual({ getBlock: 4, getClassHashAt: 6, getEvents: 3 });
   expect(steady.counts).toEqual({ getBlock: 7, getEvents: 3 });
-  expect([first.cu, steady.cu]).toEqual([LEDGER_TICK.first, LEDGER_TICK.steady]);
+  expect([first.cu, steady.cu]).toEqual([260, 200]);
 });
 
-const POOL_UNTIL_FINAL = 80;
 it("states what one funded game adds to an audit: two views a pool, until the accepted block holds it", async () => {
   const ports = ledgerMonitorReads("https://ledger.test", { contractAddress: "0x10", deploymentBlock: 1 });
   const head = await reads(() => Effect.runPromise(ports.frontierPool("0x1", 7)));
@@ -255,12 +369,18 @@ it("states what one funded game adds to an audit: two views a pool, until the ac
     { callContract: 1, getBlock: 1 },
     { callContract: 1, getBlock: 1 },
   ]);
-  expect(head.cu + final.cu).toBe(POOL_UNTIL_FINAL / 1);
+  expect(head.cu + final.cu).toBe(80);
 });
 
-// ---- the relay's minute tick ---------------------------------------------------------------------------------------
+// ---- the relay's minute tick: Frontier jobs ------------------------------------------------------------------------
 
-const ledgerForJobs = () => ({ rpcUrl: "https://ledger.test", address: "0x30", finals: memoryFinalFacts() });
+const ledgerForJobs = () => ({
+  rpcUrl: "https://ledger.test",
+  address: "0x30",
+  finals: memoryFinalFacts(),
+  obligations: memoryObligations(),
+  proofs: false,
+});
 const target = {
   chainId: "0x1",
   rpcUrl: "https://shard.test",
@@ -294,8 +414,8 @@ function endedGames(games: number) {
     ],
   }));
 }
-/** One minute of the relay's Frontier jobs: pools, prizes, sweep and principal returns. */
-const minute = (ledger: ReturnType<typeof ledgerForJobs>, paid: "final" | "head") => async () => {
+/** One minute of the relay's Frontier jobs; each principal's attempt answers as the ledger actor does. */
+const minute = (ledger: ReturnType<typeof ledgerForJobs>, principals: "final" | "head") => async () => {
   await publishFrontierPools(target, "https://herald.test", ledger);
   await awardFrontierPrizes(target, "https://herald.test", ledger);
   await sweepFrontierLords(
@@ -303,7 +423,7 @@ const minute = (ledger: ReturnType<typeof ledgerForJobs>, paid: "final" | "head"
     "https://herald.test",
     ledger,
     async () => {},
-    async () => (paid === "final" ? { block: FINAL, hash: `0x${FINAL.toString(16)}` } : null),
+    async () => (principals === "final" ? { block: FINAL, hash: `0x${FINAL.toString(16)}` } : null),
   );
 };
 
@@ -311,110 +431,218 @@ it.each([1, 5, 20])("states a relay minute over %i ended games: promotion reads 
   endedGames(games);
   const ledger = ledgerForJobs();
   const first = await reads(minute(ledger, "final"));
-  // Per game, the prize job reads the funding (season and preset) at the head and at the accepted block, and the
-  // accepted block's header once; the season is then kept closed and the sweep has nothing to ask.
-  expect(first.counts).toEqual({ callContract: 4 * games, getBlock: games + games });
+  expect(first.counts).toEqual({ callContract: 4 * games, getBlock: 2 * games });
   expect((await reads(minute(ledger, "final"))).counts).toEqual({});
   expect((await reads(minute(ledger, "final"))).counts).toEqual({});
 });
 
-const WAITING_MINUTE = { callContract: 4, getBlock: 2 };
+const WAITING_MINUTE = 120;
 it("states a relay minute while the accepted block does not hold the closing yet", async () => {
   endedGames(1);
-  rpc.closedAt = 95;
+  chain.closedAt = 95;
   const ledger = ledgerForJobs();
   const each = await reads(minute(ledger, "final"));
   expect((await reads(minute(ledger, "final"))).counts).toEqual(each.counts);
-  expect(each.counts).toEqual(WAITING_MINUTE);
-  expect(each.cu).toBe(120);
+  expect(each.counts).toEqual({ callContract: 4, getBlock: 2 });
+  expect(each.cu).toBe(WAITING_MINUTE);
 });
 
+const UNSUPPORTED_MINUTE = 80;
 it("states a relay minute where the node does not answer the accepted-block tag", async () => {
   endedGames(1);
-  rpc.l1Tag = false;
+  chain.l1Tag = false;
   const ledger = ledgerForJobs();
   const logged = vi.spyOn(console, "error").mockImplementation(() => {});
   const each = await reads(minute(ledger, "head"));
   expect((await reads(minute(ledger, "head"))).counts).toEqual(each.counts);
   logged.mockRestore();
-  expect(each.cu).toBeGreaterThan(0);
+  // Nothing is kept, so every minute reads the season again at the head: the old per-minute cost.
+  expect(each.counts).toEqual({ callContract: 2, getBlock: 2 });
+  expect(each.cu).toBe(UNSUPPORTED_MINUTE);
 });
 
-// ---- deposits and the history route --------------------------------------------------------------------------------
+// ---- the deposit pass: discovery, obligations awaiting proof, retries and a restart ---------------------------------
 
-const depositPorts = (data: Map<string, unknown>): DepositRelayPorts => ({
-  target,
+const depositPorts = (data: Map<string, unknown>, proofs: boolean): DepositRelayPorts => ({
+  target: { ...target, chainId: "0x2", gamesAddress: "0x20" },
   heraldUrl: "https://herald.test",
   ledger: { rpcUrl: "https://ledger.test", address: "0x10", chainId: "0x1" },
   storage: storageOver(data) as never,
+  finals: durableFinalFacts(storageOver(data)),
+  obligations: storageOver(data),
+  proofs,
   sign: async () => ({ r: "0x1", s: "0x2" }),
   mutate: async () => {},
 });
-const DEPOSIT_PASS = 200;
-it("states a deposit pass with nothing new, which is what the hour costs, and the history route's reads: none", async () => {
+const DEPOSIT = { quiet: 0, perObligationAwaiting: 0 };
+const DEPOSIT_QUIET = 180;
+it("states a deposit pass with nothing new, with obligations awaiting proof, and after a restart", async () => {
   const data = new Map<string, unknown>();
-  const ports = depositPorts(data);
-  await relayDeposits(ports);
-  const quiet = await reads(() => relayDeposits(ports));
-  expect(quiet.cu).toBe(DEPOSIT_PASS);
-  // The page asks every two seconds while the purse is open; the relay answers from what it keeps.
+  await relayDeposits(depositPorts(data, false));
+  const quiet = await reads(() => relayDeposits(depositPorts(data, false)));
+  expect(quiet.cu).toBe(DEPOSIT_QUIET);
+  DEPOSIT.quiet = quiet.cu;
+  // Ten deposits are discovered and resolved; the accepted block does not hold the resolutions yet, so they await proof.
+  chain.deposits = 10;
+  chain.depositsFinal = false;
+  await reads(() => relayDeposits(depositPorts(data, false)));
+  // A plain pass leaves them alone: it reads what a quiet pass reads.
+  expect((await reads(() => relayDeposits(depositPorts(data, false)))).counts).toEqual(quiet.counts);
+  // The hour's proof pass attempts each once; after a restart (a new pass over the same storage) the same again.
+  const proof = await reads(() => relayDeposits(depositPorts(data, true)));
+  const restarted = await reads(() => relayDeposits(depositPorts(data, true)));
+  expect(restarted.counts).toEqual(proof.counts);
+  DEPOSIT.perObligationAwaiting = (proof.cu - quiet.cu) / 10;
+  // Per deposit: the head view, the accepted view and their blocks; the accepted head is shared by the ten.
+  expect(DEPOSIT.perObligationAwaiting).toBe(62);
+  // Once the accepted block holds them, one proof pass settles all ten and later ones are quiet again.
+  chain.depositsFinal = true;
+  await relayDeposits(depositPorts(data, true));
+  expect((await reads(() => relayDeposits(depositPorts(data, true)))).counts).toEqual(quiet.counts);
+});
+
+// ---- the public history route, through the Worker's own fetch --------------------------------------------------------
+
+it("serves a populated deposit history through the public route with no read, however often the page asks", async () => {
+  const data = new Map<string, unknown>();
+  const deposits = 60;
+  for (let id = 1; id <= deposits; id++) {
+    const row: LordsDeposit = {
+      shard: "0x2",
+      id: String(id),
+      gameId: 1,
+      games: "0x20",
+      account: ACCOUNT,
+      realmsId: id % 2 ? "0x77" : "0x88",
+      home: "17",
+      payer: "0x33",
+      amount: "40",
+      paidAt: "999",
+      status: "delivered",
+    };
+    data.set(`deposit-row:2:${String(id).padStart(20, "0")}`, row);
+  }
+  const instance = relay(data);
+  const env = {
+    ...relayEnv,
+    RELAY: { idFromName: (id: string) => id, get: () => instance },
+  };
+  const ask = () =>
+    worker.fetch(
+      new Request("https://play.test/api/value/deposits?chainId=0x2", { headers: { cookie: "s=1" } }),
+      env as never,
+    );
+  await instance.deposits("0x2", "0x77");
+  const first = await ask();
+  expect(first.status).toBe(200);
+  const page = (await first.json()) as { rows: { id: string }[]; next: string | null };
+  expect(page.rows.length).toBe(25);
+  expect(page.next).toBe("10");
   const history = await reads(async () => {
-    for (let ask = 0; ask < 1800; ask++) await depositHistory(ports, "0x77");
+    for (let asks = 0; asks < 1800; asks++) await ask();
   });
   expect(history.counts).toEqual({});
 });
 
+// ---- payments ------------------------------------------------------------------------------------------------------
+
+const PAYMENT = { read: 0, proofUntilFinal: 0 };
+it("states the reads of one payment: its status read, the void check and its proof", async () => {
+  const claim = {
+    prizeRank: 0,
+    prizeCount: 0,
+    chainId: "0x2",
+    seasonId: 4,
+    transactionHash: "0xabc",
+    realmsId: "0x2",
+    amount: "17",
+    confirmedAt: 1000,
+  };
+  const status = await reads(() => Effect.runPromise(ledgerPaymentRead("https://ledger.test", "0x10")(claim)));
+  const proof = await reads(() => Effect.runPromise(ledgerPaymentProof("https://ledger.test", "0x10")(claim)));
+  expect(status.counts).toEqual({ callContract: 1 });
+  expect(proof.counts).toEqual({ callContract: 2, getBlock: 1 });
+  PAYMENT.read = status.cu;
+  PAYMENT.proofUntilFinal = proof.cu;
+});
+
 // ---- the month -----------------------------------------------------------------------------------------------------
 
-/**
- * One environment's month in compute units, from the numbers stated above and explicit inputs. Every term is a count of
- * RPC calls times 20 CU; nothing here is a measurement of production, it is what the code does for these inputs.
- */
-const month = (inputs: {
+interface Inputs {
   announcedWritesPerDay: number;
-  endedGamesWaitingForAcceptance: number;
+  endedGamesWaiting: number;
   hoursToAcceptance: number;
-  ratingsRefreshesPerDay: number;
+  targets: number;
+  depositors: number;
+  newDepositsPerDay: number;
+  payoutsPerDay: number;
   ratingsPlayers: number;
+  ratingsRefreshesPerDay: number;
   depositPassesPerDay: number;
-}) => {
+}
+/**
+ * One environment's month in compute units: every term is a count measured above times 20 CU. The payment writes (a
+ * report, a payment, their fee estimates and receipt polls) are not counted by a fake here; they are priced from
+ * Alchemy's table at 800 CU a payment (`rpc-cost-3.md`).
+ */
+const month = (inputs: Inputs) => {
   const days = 30;
   const hourly = 24 * days;
   const writes = inputs.announcedWritesPerDay * days;
   const audits = (hourly + writes) * AUDIT.steady;
+  const custody =
+    (hourly + writes) *
+    (inputs.targets * CUSTODY.perTarget + CUSTODY.perShard + inputs.depositors * CUSTODY.perUnpaidPrincipal);
   const ticks = (hourly + writes) * LEDGER_TICK.steady;
-  const waiting = inputs.endedGamesWaitingForAcceptance * inputs.hoursToAcceptance * 60 * 120;
-  const deposits = inputs.depositPassesPerDay * days * DEPOSIT_PASS;
-  // A board refresh reads one rating per rated player and six more (`rating-reader.test.ts` states it by method).
+  const waiting = inputs.endedGamesWaiting * inputs.hoursToAcceptance * 60 * WAITING_MINUTE;
+  const deposits =
+    inputs.depositPassesPerDay * days * DEPOSIT.quiet +
+    inputs.newDepositsPerDay * days * (inputs.hoursToAcceptance > 0 ? 1 : 0) * DEPOSIT.perObligationAwaiting * 2;
+  const payments = inputs.payoutsPerDay * days * (PAYMENT.read * 3 + PAYMENT.proofUntilFinal * 2 + 800);
   const ratings = inputs.ratingsRefreshesPerDay * days * (inputs.ratingsPlayers + 6) * 20;
-  return { audits, ticks, waiting, deposits, ratings, total: audits + ticks + waiting + deposits + ratings };
+  return {
+    audits,
+    custody,
+    ticks,
+    waiting,
+    deposits,
+    payments,
+    ratings,
+    total: audits + custody + ticks + waiting + deposits + payments + ratings,
+  };
 };
 it("derives the month for production and dev on one key from the counts above", () => {
-  // Inputs: production has one ended game and about 500 rated players; dev has four ended games and 100; both see 20
-  // announced writes a day, a deposit pass an hour, a ratings refresh an hour and one per results post (two a day),
-  // and Ethereum takes six hours to accept a block (an assumption, not a measurement).
+  // Inputs, stated: production has one ended game, 2 custody targets, 100 depositors, 5 new deposits and 40 payouts a day
+  // and 500 rated players; dev four ended games, 4 targets, 30 depositors, 5 new deposits and 10 payouts a day and 100
+  // rated players. Both see 20 announced relay writes a day (each causing one audit and one ledger tick), a deposit
+  // pass an hour, a ratings refresh an hour and one per result post (26 a day), and Ethereum takes six hours to accept
+  // a block (an assumption, not a measurement).
   const production = month({
     announcedWritesPerDay: 20,
-    endedGamesWaitingForAcceptance: 1,
+    endedGamesWaiting: 1,
     hoursToAcceptance: 6,
-    ratingsRefreshesPerDay: 26,
+    targets: 2,
+    depositors: 100,
+    newDepositsPerDay: 5,
+    payoutsPerDay: 40,
     ratingsPlayers: 500,
+    ratingsRefreshesPerDay: 26,
     depositPassesPerDay: 24,
   });
   const dev = month({
     announcedWritesPerDay: 20,
-    endedGamesWaitingForAcceptance: 4,
+    endedGamesWaiting: 4,
     hoursToAcceptance: 6,
-    ratingsRefreshesPerDay: 26,
+    targets: 4,
+    depositors: 30,
+    newDepositsPerDay: 5,
+    payoutsPerDay: 10,
     ratingsPlayers: 100,
+    ratingsRefreshesPerDay: 26,
     depositPassesPerDay: 24,
   });
-  expect(production.audits).toBe((720 + 600) * 560);
-  expect(production.ticks).toBe((720 + 600) * 200);
-  expect(production.waiting).toBe(43_200);
-  expect(production.deposits).toBe(144_000);
-  expect(production.ratings).toBe(7_893_600);
-  expect([production.total, dev.total]).toEqual([9_084_000, 2_973_600]);
-  expect(production.total + dev.total).toBe(12_057_600);
+  expect(production.audits).toBe((720 + 600) * AUDIT.steady);
   expect(production.total + dev.total).toBeLessThan(30_000_000);
+  expect([production.total, dev.total]).toEqual([13_089_000, 4_354_200]);
+  expect(production.total + dev.total).toBe(17_443_200);
 });

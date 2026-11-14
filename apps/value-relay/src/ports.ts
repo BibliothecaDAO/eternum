@@ -162,6 +162,10 @@ export interface RelayPorts {
       prizeCount: number;
     } | null>;
     voided(withdrawal: Withdrawal): RelayEffect<boolean>;
+    /** Whether the head still shows the claim paid, and the evidence if the accepted block shows it paid too. */
+    paymentProof(
+      withdrawal: Withdrawal,
+    ): RelayEffect<{ atHead: boolean; final: { block: number; hash: string } | null }>;
     reportMany(withdrawals: readonly Withdrawal[]): RelayEffect<ClaimOutcome[]>;
     payMany(rows: readonly PayableClaim[]): RelayEffect<ClaimOutcome[]>;
     postResult(result: BlitzResult): RelayEffect<void>;

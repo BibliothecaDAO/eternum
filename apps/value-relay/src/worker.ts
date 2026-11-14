@@ -29,7 +29,7 @@ import { processSeasonTops } from "./season-tops";
 import { seasonLedgerReads, postSeasonTop } from "./season-ledger";
 import { ledgerBatches } from "./ledger-batches";
 import { isLedgerReadTick } from "@realms-world/chain";
-import { causeDue, raiseCause, retryCause, takeCause } from "./ledger-cause";
+import { beginCause, causeDue, completeCause, raiseCause, retryCause } from "./ledger-cause";
 import { onIdentityChain } from "./ledger-chain";
 import { openSlotOnLedger, refundSlotOnLedger, markSlotRefundable } from "./blitz-launch";
 import { currentLaborDay, writeLaborGrant } from "./shard-labor";
@@ -49,7 +49,7 @@ import { DurableChestStore, finishChestNow, finishRequestedChests } from "./ches
 import { DurableObject, WorkerEntrypoint } from "cloudflare:workers";
 import { Effect, Result, Semaphore } from "effect";
 import { ledgerResultAdapter, postVerifiedResult } from "./ledger";
-import { ledgerPaymentRead, ledgerWithdrawalVoided, ledgerResetPayments } from "./chain";
+import { ledgerPaymentRead, ledgerPaymentProof, ledgerWithdrawalVoided, ledgerResetPayments } from "./chain";
 import { presentsOperatorToken } from "@realms-world/identity";
 import { identityAdapter } from "./adapters";
 import { runRelay, grantDailyLabor } from "./relay";
@@ -135,13 +135,15 @@ export class ValueRelay extends DurableObject<RelayEnv> {
    * the tick finished its work: a failure, season events still to read or chests still pending ask again in five minutes.
    */
   async ledgerTickIfDue(hourly: boolean) {
-    if (!(await takeCause(this.ctx.storage, LEDGER_TICK_DUE, hourly))) return null;
+    const began = await beginCause(this.ctx.storage, LEDGER_TICK_DUE, hourly);
+    if (!began) return null;
     try {
       const observation = await this.ledgerTick();
-      if (!ledgerTickFinished(observation)) await retryCause(this.ctx.storage, LEDGER_TICK_DUE);
+      if (ledgerTickFinished(observation)) await completeCause(this.ctx.storage, began);
+      else await retryCause(this.ctx.storage, began);
       return observation;
     } catch (error) {
-      await retryCause(this.ctx.storage, LEDGER_TICK_DUE);
+      await retryCause(this.ctx.storage, began);
       throw error;
     }
   }
@@ -227,8 +229,8 @@ export class ValueRelay extends DurableObject<RelayEnv> {
     await raiseCause(this.ctx.storage, RECONCILE_DUE);
   }
   async tick(chainId?: string, hourly = false) {
-    const asked = await takeCause(this.ctx.storage, RECONCILE_DUE, false);
-    const reconcile = asked || hourly;
+    const reconciling = await beginCause(this.ctx.storage, RECONCILE_DUE, hourly);
+    const reconcile = reconciling !== null;
     const chain = chainId ?? (await this.ctx.storage.get<string>("chain"));
     if (!chain) return { status: "unavailable" as const, reason: "actor_chain_unbound" };
     const relay = this;
@@ -260,19 +262,17 @@ export class ValueRelay extends DurableObject<RelayEnv> {
                   relay.env.L2_RPC_URL,
                   relay.env.IDENTITY,
                   relay.shardSigning.withPermit(
-                    relayOperation("publish Frontier pools", () => relay.publishPools(chain)),
+                    relayOperation("publish Frontier pools", () => relay.publishPools(chain, reconcile)),
                   ),
                 ),
               ),
             );
             const lastTick = await relay.ctx.storage.get<ShardObservation>("shardTick");
+            const reported = await beginCause(relay.ctx.storage, DELIVERY_DUE, false);
             const deposits =
-              lastTick?.deposits &&
-              !reconcile &&
-              !(await causeDue(relay.ctx.storage, DELIVERY_DUE)) &&
-              depositsSettled(lastTick.deposits)
+              lastTick?.deposits && !reconcile && !reported && depositsSettled(lastTick.deposits)
                 ? Result.succeed(lastTick.deposits)
-                : await Effect.runPromise(Effect.result(relay.relayDepositsNow(chain)));
+                : await Effect.runPromise(Effect.result(relay.relayDepositsNow(chain, reconcile)));
             const observation = {
               checked_at: Math.floor(Date.now() / 1000),
               deposits: Result.isSuccess(deposits) ? deposits.success : { error: deposits.failure.operation },
@@ -282,8 +282,15 @@ export class ValueRelay extends DurableObject<RelayEnv> {
                 : { status: "unavailable", reason: value.failure.operation },
             };
             await relay.ctx.storage.put("shardTick", observation);
-            if (reconcile && !(Result.isSuccess(value) && value.success.status === "ready" && value.success.reconciled))
-              await raiseCause(relay.ctx.storage, RECONCILE_DUE, RECONCILE_RETRY_SECONDS);
+            if (reported) {
+              if (Result.isSuccess(deposits)) await completeCause(relay.ctx.storage, reported);
+              else await retryCause(relay.ctx.storage, reported, DELIVERY_RETRY_SECONDS);
+            }
+            if (reconciling) {
+              const done = Result.isSuccess(value) && value.success.status === "ready" && value.success.reconciled;
+              if (done) await completeCause(relay.ctx.storage, reconciling);
+              else await retryCause(relay.ctx.storage, reconciling, RECONCILE_RETRY_SECONDS);
+            }
             if (Result.isSuccess(value) && value.success.status === "ready" && value.success.more)
               await relay.ctx.storage.setAlarm(Date.now());
             return observation;
@@ -297,30 +304,20 @@ export class ValueRelay extends DurableObject<RelayEnv> {
       value: { status: "unavailable", reason: outcome.failure.operation },
     };
     await this.ctx.storage.put("shardTick", observation);
-    if (reconcile) await raiseCause(this.ctx.storage, RECONCILE_DUE, RECONCILE_RETRY_SECONDS);
+    if (reconciling) await retryCause(this.ctx.storage, reconciling, RECONCILE_RETRY_SECONDS);
     return observation;
   }
-  /**
-   * One pass over the deposits. Its cause is consumed first, so a report that arrives during the pass is kept for the
-   * next one; a pass that fails asks again in a minute, because a player is waiting.
-   */
-  private async depositPass(chainId: string) {
-    await this.ctx.storage.delete(DELIVERY_DUE);
-    try {
-      return await relayDeposits(await this.depositPorts(chainId));
-    } catch (error) {
-      await raiseCause(this.ctx.storage, DELIVERY_DUE, DELIVERY_RETRY_SECONDS);
-      throw error;
-    }
-  }
-  private relayDepositsNow(chainId: string) {
-    return this.shardSigning.withPermit(relayOperation("relay LORDS deposits", () => this.depositPass(chainId)));
+  /** One pass over the deposits: the work is durable in the obligations, so a pass that ends or dies loses nothing. */
+  private relayDepositsNow(chainId: string, proofs: boolean) {
+    return this.shardSigning.withPermit(
+      relayOperation("relay LORDS deposits", async () => relayDeposits(await this.depositPorts(chainId, proofs))),
+    );
   }
   /**
    * A player's deposit, delivered now: the page asks once its payment landed, so a deposit is not found by reading the
-   * ledger's count every minute. The report is stored before anything is attempted. Reports that arrive together share
-   * one pass, never an older answer: a pass that started after a report covers it, one that started before leaves it for
-   * the next. A pass that fails leaves the report for the next minute's tick.
+   * ledger's count every minute. The report is stored before anything is attempted and stays until the pass and its
+   * published observation are done: a worker killed anywhere in between leaves it for the next tick. Reports made before
+   * a pass share it; one that arrives during it is kept for the next.
    */
   async deliverDeposits(chainId: string) {
     await requireActiveChain(this.env.IDENTITY, chainId);
@@ -329,15 +326,22 @@ export class ValueRelay extends DurableObject<RelayEnv> {
       this.shardSigning.withPermit(
         relayOperation("relay LORDS deposits", async () => {
           const previous = await this.ctx.storage.get<ShardObservation>("shardTick");
-          if ((await this.ctx.storage.get(DELIVERY_DUE)) === undefined) return previous?.deposits ?? null;
-          const result = await this.depositPass(chainId);
-          await this.ctx.storage.put("shardTick", { ...previous, deposits: result });
-          return result;
+          const began = await beginCause(this.ctx.storage, DELIVERY_DUE, false);
+          if (!began) return previous?.deposits ?? null;
+          try {
+            const result = await relayDeposits(await this.depositPorts(chainId, false));
+            await this.ctx.storage.put("shardTick", { ...previous, deposits: result });
+            await completeCause(this.ctx.storage, began);
+            return result;
+          } catch (error) {
+            await retryCause(this.ctx.storage, began, DELIVERY_RETRY_SECONDS);
+            throw error;
+          }
         }),
       ),
     );
   }
-  private async depositPorts(chainId: string) {
+  private async depositPorts(chainId: string, proofs: boolean) {
     const shard = await readRegisteredShard(this.env.IDENTITY, chainId);
     return {
       target: {
@@ -352,12 +356,15 @@ export class ValueRelay extends DurableObject<RelayEnv> {
         chainId: await this.env.IDENTITY.l2ChainId(),
       },
       storage: this.ctx.storage,
+      finals: durableFinalFacts(this.ctx.storage),
+      obligations: this.ctx.storage,
+      proofs,
       sign: cosignerClient(this.env.COSIGNER_URL, this.env.COSIGNER_TOKEN).deposit,
       mutate: (request: DepositMutation) => ledgerOf(this.env).depositMutation(request),
     };
   }
   async deposits(chainId: string, realmsId: string, before?: string) {
-    return depositHistory(await this.depositPorts(chainId), realmsId, before);
+    return depositHistory(await this.depositPorts(chainId, false), realmsId, before);
   }
   async depositRetirement(chainId: string) {
     const shard = await readRegisteredShard(this.env.IDENTITY, chainId);
@@ -392,7 +399,7 @@ export class ValueRelay extends DurableObject<RelayEnv> {
     if (outcome.wrote) await this.ledgerWritten();
     return outcome.final;
   }
-  private async publishPools(chainId: string) {
+  private async publishPools(chainId: string, proofs: boolean) {
     const shard = await readRegisteredShard(this.env.IDENTITY, chainId);
     const target = {
       ...shardConnection(shard),
@@ -403,6 +410,8 @@ export class ValueRelay extends DurableObject<RelayEnv> {
       rpcUrl: this.env.L2_RPC_URL,
       address: ledgerAddress(this.env.ENVIRONMENT),
       finals: durableFinalFacts(this.ctx.storage),
+      obligations: this.ctx.storage,
+      proofs,
     };
     let unavailable: unknown;
     for (const publish of [publishFrontierPools, awardFrontierPrizes]) {
@@ -732,6 +741,10 @@ const relayPortsOf = (env: RelayEnv, shard: Awaited<ReturnType<typeof readRegist
       payment: (row) =>
         relayEffect("read ledger payment", () =>
           ledgerPaymentRead(env.L2_RPC_URL, ledgerAddress(env.ENVIRONMENT))(row),
+        ),
+      paymentProof: (row) =>
+        relayEffect("read ledger payment proof", () =>
+          ledgerPaymentProof(env.L2_RPC_URL, ledgerAddress(env.ENVIRONMENT))(row),
         ),
       voided: (row) =>
         relayEffect("read ledger voided", () =>

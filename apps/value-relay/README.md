@@ -145,3 +145,17 @@ cause before anything is tried, shared with reports made at the same time, kept 
 next minute's tick. The identity service keeps each rating board and wallet answer for an hour and drops them when the
 relay says it posted results (`ratingsChanged`). `rpc-budget.test.ts` counts every call the ledger URL receives beneath
 the real readers and derives the month from those counts.
+
+## What the relay owes, and when it stops owing it
+
+Everything the relay owes the chain or a player (a deposit to deliver or refund, a principal to return, a withdrawal to
+pay, a reported cause to act on) is one shape (`obligations.ts`): an obligation, an idempotent attempt, and evidence. It
+is durable from the moment it is known until the accepted chain proves its outcome. It is never removed because a call
+returned, a receipt was accepted on L2, or a pass ended: the only removal is `settle`, which takes the evidence (the
+block Ethereum accepted and its hash). An obligation is to do (attempted every minute), awaiting proof (attempted again
+only in a proof pass: the hour, or an operator's request), or settled. A replaced block shows the work gone at the head,
+and the next attempt does it again, because the obligation was never removed. A cause (`ledger-cause.ts`) follows the
+same rule: beginning work does not remove it, only completing and publishing does, and only if no newer report arrived.
+`obligations-interruption.test.ts` kills the worker after every state write of a pass, for every kind of obligation, and
+replaces the unaccepted blocks at every stage; it asserts one canonical payment or refund each, settlement, and a
+history that says what the chain says.

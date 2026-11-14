@@ -1,4 +1,5 @@
 import { readFinalLedgerHead, readFrontierFunding } from "@realms-world/value-ledger";
+import type { ObligationState } from "./obligations";
 
 /** The block a fact was read at, once Ethereum had accepted it: the evidence that no rewrite can reach it. */
 export interface FinalEvidence {
@@ -21,6 +22,9 @@ export interface FrontierLedger {
   rpcUrl: string;
   address: string;
   finals: FinalFacts;
+  /** Where obligations awaiting proof are kept, and whether this pass is one that attempts them. */
+  obligations: ObligationState;
+  proofs: boolean;
 }
 
 export const durableFinalFacts = (storage: {
@@ -73,9 +77,6 @@ export async function fundingAt(
 
 /** `closed` is set once by the ledger; it is kept only once the block that set it is final. */
 export const closedSeason = (chainId: string, gameId: number) => `closed:${BigInt(chainId)}:${gameId}`;
-/** A principal payment is kept only once the block that holds it is final. */
-export const paidPrincipal = (chainId: string, gameId: number, account: string) =>
-  `principal:${BigInt(chainId)}:${gameId}:${BigInt(account)}`;
 /** A season is funded once; the shard's pool is kept as matching only once the funding block is final. */
 export const verifiedPool = (chainId: string, gameId: number) => `pool:${BigInt(chainId)}:${gameId}`;
 

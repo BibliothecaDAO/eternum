@@ -16,6 +16,12 @@ export interface RelayStore {
   withdrawals(): Promise<readonly Withdrawal[]>;
   results(): Promise<readonly BlitzResult[]>;
   completeWithdrawal(transactionHash: string): Promise<void>;
+  /** Claims the head shows paid and the accepted block has not proven yet. */
+  awaitingProof(): Promise<readonly Withdrawal[]>;
+  /** The only way a paid claim leaves the proof queue: the accepted block's evidence. */
+  settleProof(transactionHash: string, evidence: { block: number; hash: string }): Promise<void>;
+  /** The head no longer shows the claim paid: it is a claim to pay again. */
+  requeuePaid(transactionHash: string): Promise<void>;
   markReported(transactionHash: string): Promise<void>;
   completeResult(gameId: number): Promise<void>;
   halt(reason: string): Promise<void>;
@@ -85,9 +91,29 @@ export class DurableRelayStore implements RelayStore {
       const withdrawal = await tx.get<Withdrawal>(`withdrawal:${transactionHash}`);
       if (withdrawal) {
         await tx.put(`paid:${transactionHash}`, withdrawal);
+        await tx.put(`proof:${transactionHash}`, withdrawal);
         await tx.delete(obligationIndexKey(`withdrawal:${transactionHash}`, withdrawal.blockNumber ?? 0));
       }
       await tx.delete(`withdrawal:${transactionHash}`);
+    });
+  }
+  awaitingProof() {
+    return listStoredValues<Withdrawal>(this.storage, "proof:");
+  }
+  async settleProof(transactionHash: string, evidence: { block: number; hash: string }) {
+    await this.storage.transaction(async (tx) => {
+      await tx.put(`final:withdrawal:${transactionHash}`, evidence);
+      await tx.delete(`proof:${transactionHash}`);
+    });
+  }
+  async requeuePaid(transactionHash: string) {
+    await this.storage.transaction(async (tx) => {
+      const withdrawal = await tx.get<Withdrawal>(`proof:${transactionHash}`);
+      if (!withdrawal) return;
+      await indexObligation(tx, `withdrawal:${transactionHash}`, withdrawal.blockNumber ?? 0);
+      await tx.put(`withdrawal:${transactionHash}`, withdrawal);
+      await tx.delete(`paid:${transactionHash}`);
+      await tx.delete(`proof:${transactionHash}`);
     });
   }
   async markReported(transactionHash: string) {

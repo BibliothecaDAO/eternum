@@ -34,7 +34,9 @@ export const runRelay = (chainId: string, ports: RelayPorts, store: RelayStore, 
     }
     const payments = yield* payWithdrawals(ports, store);
     const results = yield* postResults(ports, store);
-    const reconciled = yield* restoreResolvableReceipts(ports, store, reconcile);
+    const recovered = yield* restoreResolvableReceipts(ports, store, reconcile);
+    const proven = reconcile ? yield* proveWithdrawals(ports, store) : true;
+    const reconciled = recovered && proven;
     const held = yield* relayOperation("read deferred identity receipts", () => store.held());
     const unknown = held.flatMap((row) =>
       row.kind === "receipt" && row.reason === "withdrawal_account_unknown"
@@ -71,6 +73,29 @@ const restoreResolvableReceipts = (ports: RelayPorts, store: RelayStore, reconci
       if (Result.isFailure(resolved)) complete = false;
       else if (resolved.success)
         yield* relayOperation("restore verified withdrawal", () => store.restoreWithdrawal(resolved.success!));
+    }
+    return complete;
+  });
+
+/**
+ * A claim the head shows paid stays in the proof queue until the accepted block shows it paid. If the head no longer
+ * shows it paid, a replaced block took the payment away: it is a claim to pay again, and the ledger refuses a repeat.
+ * Resolves false when a read failed, so the caller keeps its cause.
+ */
+const proveWithdrawals = (ports: RelayPorts, store: RelayStore) =>
+  Effect.gen(function* () {
+    let complete = true;
+    for (const withdrawal of yield* relayOperation("read claims awaiting proof", () => store.awaitingProof())) {
+      const proof = yield* Effect.result(ports.ledger.paymentProof(withdrawal));
+      if (Result.isFailure(proof)) {
+        complete = false;
+        continue;
+      }
+      const { atHead, final } = proof.success;
+      if (final)
+        yield* relayOperation("settle proven claim", () => store.settleProof(withdrawal.transactionHash, final));
+      else if (!atHead)
+        yield* relayOperation("requeue unpaid claim", () => store.requeuePaid(withdrawal.transactionHash));
     }
     return complete;
   });

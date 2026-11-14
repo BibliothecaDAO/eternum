@@ -3,6 +3,7 @@ import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { gamesAbi, response } from "../../../packages/value-ledger/test-support/abi";
 import { ledgerAbi } from "../../../packages/value-ledger/test-support/ledger-abi";
 import { memoryFinalFacts } from "./final-facts";
+import { memoryObligations } from "./obligations";
 import { publishFrontierPools } from "./frontier-pools";
 
 const FINAL_BLOCK = vi.hoisted(() => 5);
@@ -41,7 +42,13 @@ const target = {
   privateKey: "0x1",
 };
 const publish = () =>
-  publishFrontierPools(target, "https://herald.test", { rpcUrl: "https://ledger.test", address: "0x30", finals });
+  publishFrontierPools(target, "https://herald.test", {
+    rpcUrl: "https://ledger.test",
+    address: "0x30",
+    finals,
+    obligations: memoryObligations(),
+    proofs: true,
+  });
 let published: bigint | null;
 let lag: boolean;
 let reverted: boolean;

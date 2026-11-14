@@ -5,7 +5,8 @@ import { beforeEach, expect, it, vi } from "vitest";
 import { Effect } from "effect";
 import { runMonitor, type MonitorProgress } from "./monitor";
 import type { MonitorPorts } from "./ports";
-import { memoryFinalFacts } from "./final-facts";
+import { memoryFinalFacts, type FrontierLedger } from "./final-facts";
+import { memoryObligations } from "./obligations";
 import { sweepFrontierLords } from "./frontier-sweep";
 import { awardFrontierPrizes } from "./frontier-prizes";
 import { publishFrontierPools } from "./frontier-pools";
@@ -84,7 +85,7 @@ function endedClosedGames(count: number) {
 }
 
 /** One shard tick of the relay's Frontier jobs, and what it asked of the ledger. */
-async function tick(ledger: { rpcUrl: string; address: string; finals: ReturnType<typeof memoryFinalFacts> }) {
+async function tick(ledger: FrontierLedger) {
   reads.funding.mockClear();
   reads.ledgerHead.mockClear();
   reads.finalHead.mockClear();
@@ -114,7 +115,13 @@ it.each([1, 4, 20])(
   "with %i ended closed games, the second tick reads nothing a first tick already settled",
   async (games) => {
     endedClosedGames(games);
-    const ledger = { rpcUrl: "https://ledger.test", address: "0x30", finals: memoryFinalFacts() };
+    const ledger = {
+      rpcUrl: "https://ledger.test",
+      address: "0x30",
+      finals: memoryFinalFacts(),
+      obligations: memoryObligations(),
+      proofs: true,
+    };
 
     const first = await tick(ledger);
     // The prize job reads each game's season at the head, then at the accepted block, and keeps it closed; the sweep
@@ -141,7 +148,13 @@ it.each([1, 4])(
       prizePool: wei(300),
       claimDeadline: 101,
     }));
-    const ledger = { rpcUrl: "https://ledger.test", address: "0x30", finals: memoryFinalFacts() };
+    const ledger = {
+      rpcUrl: "https://ledger.test",
+      address: "0x30",
+      finals: memoryFinalFacts(),
+      obligations: memoryObligations(),
+      proofs: true,
+    };
     // The prize job and the sweep each read a game that is not final yet: the head, the accepted block, the funding at both.
     const every = {
       atHead: 2 * games,
@@ -162,7 +175,13 @@ it.each([1, 4])(
 
 it("a principal whose payment failed is asked again, and only that one", async () => {
   endedClosedGames(1);
-  const ledger = { rpcUrl: "https://ledger.test", address: "0x30", finals: memoryFinalFacts() };
+  const ledger = {
+    rpcUrl: "https://ledger.test",
+    address: "0x30",
+    finals: memoryFinalFacts(),
+    obligations: memoryObligations(),
+    proofs: true,
+  };
   reads.pay.mockRejectedValueOnce(new Error("principal_wallet_unavailable"));
   await expect(tick(ledger)).rejects.toThrow("principal_wallet_unavailable");
   const retry = await tick(ledger);

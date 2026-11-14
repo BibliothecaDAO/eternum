@@ -48,6 +48,7 @@ const fixture = () => {
   let progress: RelayProgress = { nextBlock: 0, lastHash: null as string | null, halted: null as string | null };
   const held: import("./ports").HeldObligation[] = [];
   const withdrawals = new Map<string, Withdrawal>();
+  const proofs = new Map<string, Withdrawal>();
   const results = new Map<number, BlitzResult>();
   const store: RelayStore = {
     progress: async () => progress,
@@ -69,7 +70,18 @@ const fixture = () => {
     withdrawals: async () => [...withdrawals.values()],
     results: async () => [...results.values()],
     completeWithdrawal: async (hash) => {
+      const row = withdrawals.get(hash);
+      if (row) proofs.set(hash, row);
       withdrawals.delete(hash);
+    },
+    awaitingProof: async () => [...proofs.values()],
+    settleProof: async (hash) => {
+      proofs.delete(hash);
+    },
+    requeuePaid: async (hash) => {
+      const row = proofs.get(hash);
+      if (row) withdrawals.set(hash, row);
+      proofs.delete(hash);
     },
     markReported: async (hash) => {
       const row = withdrawals.get(hash);
@@ -133,6 +145,7 @@ const fixture = () => {
     ledger: {
       frontierPool: () => Effect.succeed(String(100n * 10n ** 18n)),
       finalFrontierPool: () => Effect.succeed(null),
+      paymentProof: () => Effect.succeed({ atHead: true, final: { block: 9, hash: "0xf" } }),
       voided: () => Effect.succeed(false),
       payment: () => Effect.succeed(null),
       reportMany: vi.fn((rows: readonly Withdrawal[]) =>

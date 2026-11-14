@@ -82,7 +82,7 @@ it("audits between hours only after the relay wrote, and a thrown audit asks aga
     await f.monitor.ledgerWritten();
     tick.mockRejectedValueOnce(new Error("unavailable"));
     await expect(f.monitor.auditIfDue(false)).rejects.toThrow("unavailable");
-    expect(f.data.get("audit:due")).toBe(Math.floor(Date.now() / 1000) + 300);
+    expect(f.data.get("audit:due")).toMatchObject({ at: Math.floor(Date.now() / 1000) + 300 });
     expect(await f.monitor.auditIfDue(true)).not.toBeNull();
   } finally {
     vi.useRealTimers();
@@ -131,7 +131,7 @@ it("keeps the cause when the real tick fails on an unavailable ledger, and does 
     await f.monitor.ledgerWritten();
     const observation = await f.monitor.auditIfDue(false);
     expect(observation?.value_error).toBeTruthy();
-    expect(f.data.get("audit:due")).toBe(Math.floor(Date.now() / 1000) + 300);
+    expect(f.data.get("audit:due")).toMatchObject({ at: Math.floor(Date.now() / 1000) + 300 });
     f.data.delete("audit:due");
     vi.spyOn(f.monitor, "tick").mockResolvedValue({
       ...audited,
