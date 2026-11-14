@@ -516,7 +516,7 @@ export const DEEP_WORDS = {
   take: "Take",
   join: "Join",
   pickArmy: "Select an army in the Deep",
-  guarding: "Your army guards here",
+  guarding: "Already guarding",
   full: "All 4 slots are taken",
   rival: "Another Aspect holds it",
   otherDay: "Only today's armies can fight here",

@@ -3266,6 +3266,51 @@ const POINTER_PARKED = [0, -300];
 /** An army's tile below its token at the map's default zoom (a player run never zooms): its label point's height. */
 const TOKEN_ABOVE_TILE_PX = 100;
 
+const DEEP_JOIN_STATE = `JSON.stringify({
+  sheet: document.querySelector("[data-kit-sheet]")?.getAttribute("aria-label") ?? null,
+  text: document.querySelector("[data-kit-sheet]")?.textContent ?? "",
+  slots: document.querySelector("[data-deep-slots]")?.textContent ?? "",
+  joined: (window.__labChain?.sent ?? []).filter(({ command }) => command.kind === "InteractSite"),
+  quarry: (() => {
+    const slot = [...document.querySelectorAll('.mp-at[data-key^="structure:"]')].find((node) => node.textContent.includes("Quarry"));
+    if (!slot || getComputedStyle(slot).display === "none" || !slot.firstElementChild) return null;
+    const token = slot.firstElementChild.getBoundingClientRect();
+    return [Math.round(token.left + token.width / 2 - innerWidth / 2), Math.round(token.top + token.height / 2 + ${TOKEN_ABOVE_TILE_PX} - innerHeight / 2)];
+  })(),
+})`;
+
+const DEEP_JOIN_STEPS = [
+  { name: "enter-on-map", settleMs: 3_000, verify: inScene("map") },
+  { name: "pick-army", play: pickTheSpireArmy, settleMs: 1_500, verify: spireArmyPicked },
+  {
+    name: "join-the-quarry",
+    settleMs: 0,
+    play: async ({ browser, extraScreenshot }) => {
+      const before = browser.read(DEEP_JOIN_STATE);
+      if (!before.quarry) return { before, after: before };
+      if (onADesktop()) browser.rightClick(before.quarry);
+      else browser.tap(before.quarry);
+      const opened = await readUntil(() => browser.read(DEEP_JOIN_STATE), (state) => state.sheet === "Quarry", MERGE_WAIT_MS);
+      extraScreenshot("quarry-before-join");
+      if (!opened.text.includes("Join")) return { before, after: opened };
+      browser.click("Join");
+      const after = await readUntil(() => browser.read(DEEP_JOIN_STATE), (state) => state.joined.length === 1 && state.text.includes("Already guarding"), MERGE_WAIT_MS);
+      extraScreenshot("quarry-joined");
+      return { before, opened, after };
+    },
+    verify: ({ played }) => {
+      const joined = played.after.joined;
+      const facts = joined.flatMap((row) => row.answered ?? []);
+      const guard = facts.find((fact) => fact.model === "DeepGuard" && Number(fact.value?.explorer_id) === PICKED_ARMY);
+      const leftField = facts.some((fact) => fact.model === "TileOccupancy" && fact.value === null);
+      return joined.length === 1 && guard?.value.slot === 1 && leftField && played.after.text.includes("Already guarding") && (played.after.slots.match(/Free slot/g) ?? []).length === 2
+        ? completed(played)
+        : failed("Join must submit InteractSite once, leave the field and show the second allied guard slot", played);
+    },
+  },
+];
+
+
 /**
  * Two of the realm's armies merged as a player merges them, then hovered (owner, 2026-10-25: "due to an army merge I dont
  * see the hover label"): the spire's army picked, the other right-clicked for the transfer card, its Merge pressed (and
@@ -4860,6 +4905,7 @@ export const STEP_SETS = {
   "lab-actions-claim": { game: labSpireGame("claim"), steps: CLAIM_ACTION_STEPS },
   "lab-far-place": { game: labSpireGame("far-place"), steps: FAR_PLACE_STEPS, devOverlays: true },
   "lab-relic-forecasts": { game: labSpireGame("relics"), steps: RELIC_FORECAST_STEPS },
+  "lab-deep-join": { game: labSpireGame("deep"), steps: DEEP_JOIN_STEPS },
   "lab-no-lords": {
     game: labSpireGame("upkeep"),
     steps: [

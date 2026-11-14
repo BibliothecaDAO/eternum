@@ -1,5 +1,6 @@
 import { questScenario } from "./quest-scenario";
 import { aspectSettleScenario } from "./aspect-settle-scenario";
+import { deepScenario } from "./deep-scenario";
 import { actionsScenario } from "./actions-scenario";
 import { economyScenario } from "./economy-scenario";
 import { relicsScenario } from "./relics-scenario";
@@ -39,6 +40,7 @@ import { visitScenario } from "./visit-scenario";
 /** The games the lab plays, by name: each a fixture and the chain's answers to the commands it proves. */
 export const LAB_SCENARIOS: Partial<Record<string, () => LabScenario>> = {
   spire: spireScenario,
+  deep: deepScenario,
   economy: economyScenario,
   relics: relicsScenario,
   "ethereal-depths": etherealDepthsScenario,

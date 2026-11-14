@@ -393,6 +393,13 @@ step had refused are kept apart, as `provokedErrors`), a WebGPU fallback without
 average over 12 (the machine is shared: such a run is not evidence). A blocked step and a page reload during a step are
 warnings, the reload with its cost.
 
+The shared Deep is reached through the spire's Deep entry or the map layer menu. Select a field army, then a Deep
+site: its card offers Attack against a beast or rival, Join for an allied free slot, or Take for an empty site. A held
+army appears in the site's slots, last filled fought first. `--steps lab-deep-join` opens the real map on an allied
+Quarry, selects the player's army, submits Join, and records the signed InteractSite command and the confirmed guard
+slot with before/after screenshots. The lab snapshot is `/lab/game?scenario=deep`; its current facts also drive the
+site binding's component tests.
+
 ## Browser Testing with `agent-browser` Skill
 
 Use this runbook when validating spectator/game flow in a real browser session.
