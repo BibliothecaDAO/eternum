@@ -13,7 +13,7 @@ pub const UNITS_PER_BAG: u64 = 20;
 // Two orders for where 4 goes beside 3, three for 5, four for 6, then four places for the short day.
 const BAG_ORDERS: u256 = 96;
 // A bag packs its five lengths in base 8, the first day in the lowest digit.
-const DIGIT: u64 = 8;
+pub const DIGIT: u64 = 8;
 
 /// One day of the season: its index from the season's start, and its bounds, end excluded.
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]

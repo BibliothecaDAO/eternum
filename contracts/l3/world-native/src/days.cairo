@@ -1,3 +1,4 @@
+use crate::day_schedule::DIGIT;
 pub use crate::day_schedule::{
     DAYS_PER_BAG, Day, FRONTIER_REPORT_GRACE_SECONDS, UNITS_PER_BAG, bag_lengths, order_lengths,
 };
