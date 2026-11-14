@@ -1,4 +1,4 @@
-use snforge_std::interact_with_state;
+use snforge_std::{interact_with_state, spy_events};
 use starknet::storage::{StorageMapReadAccess, StoragePointerReadAccess};
 use world_test_support::tests::Deployment;
 use world_test_support::tests::play_fixture::{TestAction, play};
@@ -100,15 +100,18 @@ fn claim(d: Deployment, home: ResourceKey, day: u64, timestamp: u64) -> bool {
     )
 }
 
+fn build(d: Deployment, home: ResourceKey, category: u8, direction: u8, timestamp: u64) {
+    let command = Command::CreateBuilding(crate::buildings::CreateBuilding {
+        scouting_kind: 0, structure_id: home.entity_id, directions: array![direction].span(), category, use_simple: true,
+    });
+    let mut events = spy_events();
+    if !execute_in_game(d, home.game_id, command, timestamp) {
+        panic!("{}", world_test_support::tests::play_fixture::rejection(ref events, d.games).reason);
+    }
+}
+
 fn train(d: Deployment, home: ResourceKey, timestamp: u64) {
-    assert!(
-        execute_in_game(
-            d,
-            home.game_id,
-            world_test_support::tests::building_commands::create(home, crate::research::BARRACKS),
-            timestamp,
-        ),
-    );
+    build(d, home, crate::research::BARRACKS, 1, timestamp);
 }
 
 fn complete(d: Deployment, home: ResourceKey, day: u64, timestamp: u64) -> u128 {
@@ -339,11 +342,7 @@ fn quorum_ends_the_effect_once_and_collection_pays_the_second_reward_once() {
 fn real_production_splits_at_the_bane_start_and_quorum_end_and_army_stores_still_work() {
     let (d, game_id) = setup();
     let home = found(d, game_id, 360);
-    assert!(
-        execute_in_game(
-            d, game_id, world_test_support::tests::building_commands::create(home, crate::research::WORKSHOP), 360,
-        ),
-    );
+    build(d, home, crate::research::WORKSHOP, 0, 360);
     let rate: u128 = interact_with_state(
         d.games,
         || {
@@ -386,11 +385,7 @@ fn real_production_splits_at_the_bane_start_and_quorum_end_and_army_stores_still
     );
     let clear_reward = complete(d, home, 1, tomorrow + 600);
     let now = tomorrow + 1000;
-    assert!(
-        execute_in_game(
-            d, game_id, world_test_support::tests::building_commands::create(home, crate::research::FARM), now,
-        ),
-    );
+    build(d, home, crate::research::FARM, 2, now);
     let ordinary_seconds: u128 = (tomorrow - 360 + 400).into();
     let expected = rate * ordinary_seconds + rate * 600 / 2 - 800 * RESOURCE_PRECISION + clear_reward;
     interact_with_state(
