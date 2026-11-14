@@ -2,6 +2,7 @@
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { JSDOM } from "jsdom";
 
 import { afterEach, expect, it, vi } from "vitest";
 
@@ -98,4 +99,21 @@ it("refuses a launch option on one command, which would relaunch the browser wit
       `${option} launches the browser: give it to createBrowserSession, not one command`,
     );
   }
+});
+
+
+it.each(["Deep", "Ethereal II"])("observes the phone's visible %s layer rather than inferring Map from its switch", (layer) => {
+  const dom = new JSDOM(`<nav aria-label="Places"><button data-switch="realm" aria-haspopup="listbox"><span>0</span><span>${layer}</span><div>3 chests</div></button></nav>`, {
+    url: "https://play.test/game/map", runScripts: "outside-only",
+  });
+  dom.window.__rendererDiagnostics = { sceneName: "map" };
+  spawnSync.mockImplementationOnce((_command, args) => {
+    const expression = args[args.indexOf("eval") + 1];
+    return { status: 0, stdout: JSON.stringify(dom.window.eval(expression)), stderr: "" };
+  });
+  try {
+    expect(createBrowserSession("layer-proof", { profile: "/tmp/layer-proof" }).observe()).toMatchObject({
+      scene: "map", rendered: "map", place: layer,
+    });
+  } finally { dom.window.close(); }
 });
