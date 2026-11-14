@@ -113,8 +113,9 @@ export function resolveExplorerCombatTroops(
 export function resolveExplorerTroops(
   store: NativeFactStore,
   explorer: NativeRows["ExplorerTroops"],
+  timestamp?: number,
 ): Troops | undefined {
-  explorer = currentArmy(store, explorer);
+  explorer = currentArmy(store, explorer, timestamp);
   const source = explorer.troops.stamina;
   if ("Inline" in source) return inlineTroops(explorer.troops);
   const day = store.get("ArmyDay", { game_id: explorer.game_id, explorer_id: explorer.explorer_id });

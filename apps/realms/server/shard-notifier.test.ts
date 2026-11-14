@@ -87,11 +87,11 @@ const recordedItem = (model: string, story?: string): RecordedItem => {
 const createHerald = () => {
   const log: HeraldHistoryEvent[] = [];
   const state = {
-    army: null as null | { amount: number; settledAt: number; day: number },
+    army: null as null | ArmyState,
     /** The neighbour's army, spent whenever the player acts, so it rests alongside the player's. */
-    neighbourArmy: null as null | { amount: number; settledAt: number; day: number },
+    neighbourArmy: null as null | ArmyState,
     /** The player's second army, none until a test spends it. */
-    secondArmy: null as null | { amount: number; settledAt: number; day: number },
+    secondArmy: null as null | ArmyState,
     status: "Live" as "Live" | "Settled",
     /** The game's mode in the directory: fights between players push only outside Frontier. */
     mode: "frontier" as "frontier" | "blitz",
@@ -222,7 +222,7 @@ const createHerald = () => {
 };
 
 /** The game's rules with a short armies tick, the player's home realm, and their army if it still exists. */
-type ArmyState = { amount: number; settledAt: number; day: number };
+type ArmyState = { amount: number; settledAt: number; day: number; mapDay?: number; guard?: boolean; deepTick?: number };
 
 /** Structure owners, so the fake narrows armies to one account's as Herald's owner filter does. */
 const STRUCTURE_OWNERS = new Map([
@@ -353,6 +353,21 @@ const snapshot = (
         .map(({ home: _home, ...row }) => row),
     },
     {
+      model: "ArmyDay",
+      rows: [
+        ...(army ? [{ id: ARMY, home: HOME, day: army.day }] : []),
+        ...(second ? [{ id: SECOND_ARMY, home: HOME, day: second.day }] : []),
+        ...(neighbour ? [{ id: NEIGHBOUR_ARMY, home: NEIGHBOUR_HOME, day: neighbour.day }] : []),
+      ].filter(({ home }) => owner === null || BigInt(STRUCTURE_OWNERS.get(home)!) === BigInt(owner))
+        .map(({ id, day }) => ({ key: `0x${id.toString(16)}`, value: { game_id: GAME_ID, explorer_id: id, day } })),
+    },
+    { model: "DeepGuard", rows: army?.guard ? [{ key: "0xdee1", value: { game_id: GAME_ID, explorer_id: ARMY, site_id: 800, slot: 0 } }] : [] },
+    { model: "DeepArmy", rows: army?.deepTick === undefined ? [] : [{ key: "0xdee2", value: { game_id: GAME_ID, explorer_id: ARMY, last_tick: army.deepTick } }] },
+    { model: "DeepRules", rows: army?.deepTick === undefined ? [] : [{ key: "0xdee3", value: {
+      game_id: GAME_ID, foundation: { alt: false, x: 10, y: 25 }, quarry: { alt: false, x: 25, y: 25 }, altar: { alt: false, x: 40, y: 25 },
+      beast_count: 100, loss_per_tick: 100, quarry_per_tick: 500, altar_per_tick: 5, altar_threshold: 1500,
+    } }] },
+    {
       model: "ArmySlot",
       rows: [
         ...(army ? [armySlotRow(ARMY, HOME, army)] : []),
@@ -460,7 +475,7 @@ const armyPosition = (explorerId: number, home: number, army: ArmyState, step = 
     game_id: GAME_ID,
     alt: false,
     col: (home === HOME ? 0 : REGION_SPACING) + REGION_SPACING / 2 + step,
-    row: army.day * 4 * REGION_SPACING + REGION_SPACING / 2,
+    row: (army.mapDay ?? army.day) * 4 * REGION_SPACING + REGION_SPACING / 2,
     entity_id: explorerId,
     category: 15,
     is_structure: false,
@@ -604,7 +619,8 @@ describe.concurrent("shard notifications", () => {
     await pause(ticks(REST_TICKS + 1) + polls(10));
     expect(push.received).toEqual([]);
 
-    herald.act(0, TODAY - 1); // an army of yesterday's expedition is still a fact, but no longer an army
+    herald.act(0, TODAY - 1); // An old army may still occupy a shared map tile on today's coordinates.
+    herald.state.army!.mapDay = TODAY;
     await pause(ticks(REST_TICKS + 1) + polls(10));
     expect(push.received).toEqual([]);
 
@@ -632,6 +648,22 @@ describe.concurrent("shard notifications", () => {
     expect(new Set(await push.tags())).toEqual(new Set([`army-rested:/g/${CHAIN_ID}/${GAME_ID}`]));
     await worker.dispose();
   }, 420_000);
+
+  it("does not alert held or exhausted Deep armies", async () => {
+    const { herald, push, worker } = await createHarness("important");
+    try {
+      await worker.runCron();
+      await pause(polls(5));
+      herald.act(0);
+      herald.state.army!.guard = true;
+      await pause(ticks(REST_TICKS + 1) + polls(3));
+      expect(push.received).toEqual([]);
+      herald.act(0);
+      herald.state.army!.deepTick = armiesTick();
+      await pause(ticks(REST_TICKS + 1) + polls(3));
+      expect(push.received).toEqual([]);
+    } finally { await worker.dispose(); }
+  }, 180_000);
 
   it("a game that ends while an army rests alerts nothing for it, and every other alert still flows", async () => {
     const { herald, push, worker } = await createHarness("important");

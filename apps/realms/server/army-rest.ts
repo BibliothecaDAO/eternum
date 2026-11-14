@@ -4,7 +4,6 @@ import {
   fetchHeraldGameDirectory,
   fetchHeraldGameSnapshot,
   NativeFactStore,
-  entityMapPosition,
 } from "@bibliothecadao/eternum/game-client";
 import type { HeraldStoryHistoryPage } from "@bibliothecadao/eternum/game-sync";
 import { isCurrentExpeditionArmy, readExpeditionRules } from "@bibliothecadao/eternum/expeditions";
@@ -112,6 +111,10 @@ export const readActorArmies = async (
       "ExplorerTroops",
       "ArmySlot",
       "ArmyProgress",
+      "ArmyDay",
+      "DeepArmy",
+      "DeepGuard",
+      "DeepRules",
       "TileOccupancy",
     ],
     actor,
@@ -129,12 +132,14 @@ export const readActorArmies = async (
   return [...store.inGame("ExplorerTroops", gameId)]
     .filter(
       (army) =>
-        !expedition ||
-        isCurrentExpeditionArmy(expedition, entityMapPosition(store, gameId, army.explorer_id), now / 1000),
+        !store.get("DeepGuard", { game_id: gameId, explorer_id: army.explorer_id }) &&
+        (!expedition || isCurrentExpeditionArmy(
+          expedition, store.require("ArmyDay", { game_id: gameId, explorer_id: army.explorer_id }).day, timestamp,
+        )),
     )
     .flatMap((army) => {
-      const troops = resolveExplorerTroops(store, army);
-      if (!troops) return [];
+      const troops = resolveExplorerTroops(store, army, timestamp);
+      if (!troops || troops.count === 0n) return [];
       const stamina = staminaAt(troops, timestamp, rules.troop_stamina_config, tickSeconds);
       const { staminaMax } = troopStaminaLimits(
         rules.troop_stamina_config,
