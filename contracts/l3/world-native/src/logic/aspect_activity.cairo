@@ -9,7 +9,8 @@ pub fn record_first_allocation(home: ResourceKey, day: u64, allowance: u8) {
     for slot in 0..allowance {
         if crate::logic::army_slot_storage::read(
             ArmySlotKey { game_id: home.game_id, structure_id: home.entity_id, epoch: day, slot },
-        ).is_some() {
+        )
+            .is_some() {
             return;
         }
     }

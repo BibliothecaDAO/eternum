@@ -173,13 +173,11 @@ export const TileCard = ({
     }
   };
 
-  const combatRefusal = selected.kind === "army" && actor
-    ? armyCombatRefusal(setup.store, actor.army, selected.army)
-    : undefined;
+  const combatRefusal =
+    selected.kind === "army" && actor ? armyCombatRefusal(setup.store, actor.army, selected.army) : undefined;
   const verb: SiteVerb | null = combatRefusal
     ? { kind: "blocked", reason: orderRefusalWords[combatRefusal] }
-    :
-    relics?.hold && actor !== null
+    : relics?.hold && actor !== null
       ? { kind: "blocked", reason: relics.hold }
       : siteVerb({
           hasArmy: actor !== null,
