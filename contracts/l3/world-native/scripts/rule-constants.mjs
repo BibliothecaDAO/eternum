@@ -5,7 +5,7 @@ export async function readRuleConstants(root) {
   const [source, roster, days] = await Promise.all([
     readFile(new URL("src/rules.cairo", root), "utf8"),
     readFile(new URL("src/roster_limits.cairo", root), "utf8"),
-    readFile(new URL("src/days.cairo", root), "utf8"),
+    readFile(new URL("src/day_schedule.cairo", root), "utf8"),
   ]);
   const shared = { ...unsignedConstants(roster), ...unsignedConstants(days) };
   const resolved = source.replace(

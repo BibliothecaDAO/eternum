@@ -157,15 +157,6 @@ pub struct GameKey {
     pub game_id: u32,
 }
 
-// The shared day schedule reads only these launch values, not the world contract's gameplay state.
-#[derive(Copy, Drop)]
-pub struct FrontierClock {
-    pub scheduled_end_at: u64,
-    pub start_main_at: u64,
-    pub end_at: u64,
-    pub seed: felt252,
-}
-
 #[derive(Copy, Drop, Serde, Hash, PartialEq, starknet::Store)]
 pub struct SlotKey {
     pub shard: felt252,

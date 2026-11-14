@@ -1,1 +1,1 @@
-../../../l3/world-native/src/days.cairo
+../../../l3/world-native/src/day_schedule.cairo

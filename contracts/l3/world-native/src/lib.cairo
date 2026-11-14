@@ -14,6 +14,7 @@ pub mod combat;
 pub mod combat_actions;
 pub mod command_routes;
 pub mod commands;
+mod day_schedule;
 pub mod days;
 pub mod deep;
 pub mod deposits;
