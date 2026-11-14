@@ -4,7 +4,7 @@ import {
   formatRate,
   ResourcesIds,
   StructureType,
-  StructureTypeToNameMapping,
+  structureName,
   RESOURCE_PRECISION,
 } from "@bibliothecadao/types";
 import type { NativeFactStore } from "../client/native-fact-store";
@@ -282,7 +282,7 @@ const hyperstructureSuffixes = [
 
 export const getHyperstructureName = (structure: NativeRows["Structure"]): string => {
   const seed = safeInteger(structure.entity_id);
-  const typeName = StructureTypeToNameMapping[StructureType.Hyperstructure];
+  const typeName = structureName(StructureType.Hyperstructure);
 
   // Same hash function as chest naming for consistency
   const hash = (n: number) => {
