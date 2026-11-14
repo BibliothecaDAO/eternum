@@ -66,7 +66,7 @@ export const useIdleArmies = (): IdleArmies => {
             explorer_id: entityId,
           });
           const snapshot = explorer
-            ? getExplorerStaminaSnapshot({ timestamp, liveTroops: resolveExplorerTroops(setup.store, explorer) })
+            ? getExplorerStaminaSnapshot({ timestamp, liveTroops: resolveExplorerTroops(setup.store, explorer, timestamp) })
             : null;
           return {
             entityId,

@@ -16,7 +16,7 @@ export class StaminaManager {
     });
     if (!explorer) return undefined;
 
-    const troops = resolveExplorerTroops(this.store, explorer);
+    const troops = resolveExplorerTroops(this.store, explorer, timestamp);
     return troops ? StaminaManager.getStamina(troops, timestamp) : undefined;
   }
 

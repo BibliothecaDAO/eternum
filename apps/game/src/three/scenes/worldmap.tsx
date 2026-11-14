@@ -143,7 +143,7 @@ import {
   recordClientActionRendered,
   recordClientActionSubmitted,
 } from "@/observability/client-action-latency";
-import { safeInteger, type GameClientSetup as SetupResult, type NativeRows } from "@bibliothecadao/eternum/game-client";
+import { currentArmy, safeInteger, type GameClientSetup as SetupResult, type NativeRows } from "@bibliothecadao/eternum/game-client";
 import {
   ActionPath,
   ActionPaths,
@@ -2567,10 +2567,11 @@ export default class WorldmapScene extends WarpTravel {
   private selectedArmyRow() {
     const armyId = this.selectedArmyId();
     if (armyId === null) return undefined;
-    return this.game.store.get("ExplorerTroops", {
+    const army = this.game.store.get("ExplorerTroops", {
       game_id: configManager.getActiveGameId(),
       explorer_id: safeInteger(armyId),
     });
+    return army && currentArmy(this.game.store, army);
   }
 
   /**

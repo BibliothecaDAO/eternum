@@ -52,8 +52,8 @@ const readDayEndFacts = (
 
 const anArmyCanExplore = (store: NativeFactStore, realm: NativeRows["Structure"], tick: number): boolean => {
   const cost = configManager.getExploreStaminaCost();
-  return liveHomeArmies(store, safeInteger(realm.entity_id), realm.game_id).some((army) => {
-    const troops = resolveExplorerTroops(store, army);
+  return liveHomeArmies(store, safeInteger(realm.entity_id), realm.game_id, tick).some((army) => {
+    const troops = resolveExplorerTroops(store, army, tick);
     return troops !== undefined && Number(StaminaManager.getStamina(troops, tick).amount) >= cost;
   });
 };

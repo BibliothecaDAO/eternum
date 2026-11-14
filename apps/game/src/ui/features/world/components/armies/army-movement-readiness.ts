@@ -101,10 +101,10 @@ export const readArmyMovementReadiness = ({
   store: NativeFactStore;
   currentDefaultTick: number;
 }): ArmyMovementReadiness | null => {
-  const troops = resolveExplorerTroops(store, army);
+  const troops = resolveExplorerTroops(store, army, currentDefaultTick);
   if (!troops) return null;
   const movementFoodCosts = army.owner
-    ? { travel: computeTravelFoodCosts(army.troops), explore: computeExploreFoodCosts(army.troops) }
+    ? { travel: computeTravelFoodCosts(troops), explore: computeExploreFoodCosts(troops) }
     : {
         travel: { wheatPayAmount: 0, fishPayAmount: 0 },
         explore: { wheatPayAmount: 0, fishPayAmount: 0 },

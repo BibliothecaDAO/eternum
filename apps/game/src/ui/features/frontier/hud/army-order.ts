@@ -65,14 +65,15 @@ export const useOrderAt = (target: { col: number; row: number } | null): ArmyOrd
   const gameId = configManager.getActiveGameId();
   const army = setup.store.get("ExplorerTroops", { game_id: gameId, explorer_id: selectedEntityId });
   if (!army) return null;
-  const troops = resolveExplorerTroops(setup.store, army);
+  const troops = resolveExplorerTroops(setup.store, army, tick);
+  if (!troops) return null;
   const explore = actionType === ActionType.Explore;
   const tiles = path.length - 1;
 
   const staminaCost = computeEffectiveStaminaCost(path.slice(1), actionType, configManager.getExploreStaminaCost());
   const staminaHeld = troops ? Number(StaminaManager.getStamina(troops, tick).amount) : undefined;
   // Frontier's preset charges no fish; the wheat is the order's whole food.
-  const wheatCost = orderFood(path, army.troops).wheat;
+  const wheatCost = orderFood(path, troops).wheat;
   const wheatBalance = getBalance(safeInteger(army.owner), ResourcesIds.Wheat, tick, setup.store).balance;
   const wheatHeld = wheatBalance === undefined ? undefined : divideByPrecision(wheatBalance, false);
   const wheatPerHour = new ResourceManager(setup.store, safeInteger(army.owner)).wheatPerHour(tick);
@@ -103,7 +104,7 @@ export const useArmyStamina = (explorerId: number | null, need: number): Cost | 
   const { setup } = useGame();
   if (explorerId === null) return undefined;
   const army = setup.store.get("ExplorerTroops", { game_id: configManager.getActiveGameId(), explorer_id: explorerId });
-  const troops = army && resolveExplorerTroops(setup.store, army);
+  const troops = army && resolveExplorerTroops(setup.store, army, tick);
   if (!troops) return undefined;
   const held = Number(StaminaManager.getStamina(troops, tick).amount);
   return {

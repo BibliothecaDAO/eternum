@@ -6,7 +6,9 @@ import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useBlockTimestampStore } from "@/hooks/store/use-block-timestamp-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { deepScenario } from "@/lab/game/deep-scenario";
-import { setBlockTimestampSource } from "@bibliothecadao/eternum";
+import { configManager, ResourceManager, setBlockTimestampSource } from "@bibliothecadao/eternum";
+import { RESOURCE_PRECISION, ResourcesIds } from "@bibliothecadao/types";
+import { readArmyMovementReadiness } from "@/ui/features/world/components/armies/army-movement-readiness";
 import { readDeepSites } from "@bibliothecadao/eternum/game-client";
 import { DeepSiteCard } from "./deep-site-card";
 import { resolveExplorerCombatTroops } from "@bibliothecadao/eternum/troop-stamina";
@@ -146,4 +148,20 @@ it("forecasts Deep troop loss at the execution second rather than the displayed 
   expect(resolveExplorerCombatTroops(store, army, boundary)?.count).toBe(army.troops.count - loss);
   expect(resolveExplorerCombatTroops(store, army, boundary + interval)?.count).toBe(army.troops.count - 2n * loss);
   expect(store.require("ExplorerTroops", { game_id: 1, explorer_id: 201 }).troops.count).toBe(army.troops.count);
+});
+
+it("prices Deep movement from the troops left at the requested second", () => {
+  const { store, startsAt } = deepScenario();
+  setBlockTimestampSource(() => startsAt);
+  const army = store.require("ExplorerTroops", { game_id: 1, explorer_id: 201 });
+  const interval = Number(store.require("SliceRules", { game_id: 1 }).tick_config.armies_tick_in_seconds);
+  const boundary = (Math.floor(startsAt / interval) + 1) * interval;
+  const loss = store.require("DeepRules", { game_id: 1 }).loss_per_tick;
+  const structureResources = { balanceWithProduction: () => ({ balance: 0 }) } as unknown as ResourceManager;
+  const read = (currentDefaultTick: number) => readArmyMovementReadiness({ army, store, structureResources, currentDefaultTick });
+  const perTroop = configManager.getTravelFoodCostConfig(ResourcesIds.Knight).travelWheatBurnAmount;
+  expect(perTroop).toBeGreaterThan(0);
+  expect(read(startsAt)?.foodBlock?.perStep.wheatPayAmount).toBe(Number(army.troops.count) / RESOURCE_PRECISION * perTroop);
+  expect(read(boundary)?.foodBlock?.perStep.wheatPayAmount).toBe(Number(army.troops.count - loss) / RESOURCE_PRECISION * perTroop);
+  expect(read(boundary + interval)?.foodBlock?.perStep.wheatPayAmount).toBe(Number(army.troops.count - 2n * loss) / RESOURCE_PRECISION * perTroop);
 });

@@ -184,7 +184,7 @@ const reachOf = (
   attack: SiteAttack,
   target: { col: number; row: number; alt: boolean },
 ): number | undefined => {
-  const troops = resolveExplorerTroops(store, attack.army);
+  const troops = resolveExplorerTroops(store, attack.army, attack.timestamp);
   if (!troops) return undefined;
   const distance = getLayeredAttackDistance(attack.armyTile, target);
   return distance <= getTroopAttackRange(troops.category) ? distance : undefined;

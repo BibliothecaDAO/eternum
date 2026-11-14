@@ -66,7 +66,7 @@ export const useDockArmies = (realm: NativeRows["Structure"] | null): DockArmy[]
     const explorerId = safeInteger(army.explorer_id);
     const snapshot = getExplorerStaminaSnapshot({
       timestamp,
-      liveTroops: resolveExplorerTroops(setup.store, army),
+      liveTroops: resolveExplorerTroops(setup.store, army, timestamp),
     });
     const stamina = snapshot
       ? buildStaminaDisplayModel({
