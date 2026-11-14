@@ -3272,10 +3272,10 @@ const DEEP_JOIN_STATE = `JSON.stringify({
   slots: document.querySelector("[data-deep-slots]")?.textContent ?? "",
   joined: (window.__labChain?.sent ?? []).filter(({ command }) => command.kind === "InteractSite"),
   quarry: (() => {
-    const slot = [...document.querySelectorAll('.mp-at[data-key^="structure:"]')].find((node) => node.textContent.includes("Quarry"));
+    const slot = document.querySelector('.mp-at[data-key^="structure:"]:has([data-icon="pickaxe"])');
     if (!slot || getComputedStyle(slot).display === "none" || !slot.firstElementChild) return null;
     const token = slot.firstElementChild.getBoundingClientRect();
-    return [Math.round(token.left + token.width / 2 - innerWidth / 2), Math.round(token.top + token.height / 2 + ${TOKEN_ABOVE_TILE_PX} - innerHeight / 2)];
+    return [Math.round(token.left + token.width / 2 - innerWidth / 2), Math.round(token.bottom - innerHeight / 2)];
   })(),
 })`;
 
