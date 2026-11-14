@@ -71,20 +71,15 @@ export const ResourceChip = ({
     [resourceManager, now, resourceEnumId],
   );
   const balance = production?.balance;
-  const productionInfo = useMemo(() => resourceManager.current(resourceEnumId), [resourceManager, resourceEnumId]);
-
-  const productionData = useMemo(() => {
-    if (!productionInfo) return null;
-
-    return ResourceManager.calculateResourceProductionData(resourceEnumId, productionInfo, now);
-  }, [productionInfo, resourceEnumId, now]);
+  const productionData = useMemo(
+    () => resourceManager.productionData(resourceEnumId, now),
+    [resourceManager, resourceEnumId, now],
+  );
 
   const productionRate = productionData?.productionPerSecond ?? 0;
   const isProducing = productionData?.isProducing ?? false;
 
-  const timeUntilValueReached = useMemo(() => {
-    return resourceManager.timeUntilValueReached(now, resourceId);
-  }, [resourceManager, now, resourceId]);
+  const timeUntilValueReached = productionData?.timeRemainingSeconds;
 
   const icon = useMemo(() => {
     return <ResourceIcon withTooltip={false} resource={resourceId} size="sm" className="self-center" />;
@@ -142,7 +137,7 @@ export const ResourceChip = ({
   }
   const ratePerHour = isProducing && !hasReachedMaxCap ? formatRate(productionRate) : null;
   const timeLeft =
-    timeUntilValueReached > 0 && timeUntilValueReached <= 1_000_000_000 ? formatWait(timeUntilValueReached) : null;
+    timeUntilValueReached !== undefined && timeUntilValueReached > 0 && Number.isFinite(timeUntilValueReached) ? formatWait(timeUntilValueReached) : null;
   // Each action keeps the app's named tip on hover, as before; the chip is the anchor it hangs from.
   const tipOn = (content: string) => (event: React.MouseEvent<HTMLElement>) =>
     setTooltip({ anchorElement: event.currentTarget, content, position: "bottom" });

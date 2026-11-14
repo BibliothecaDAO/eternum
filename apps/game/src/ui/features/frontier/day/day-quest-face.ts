@@ -1,6 +1,6 @@
 import type { IconMeaning } from "@/ui/design-system/icon-meaning";
 import { nativeQuestConstants as quest } from "@bibliothecadao/eternum/game-client";
-import { dailyQuests, type DailyQuestId } from "@bibliothecadao/types";
+import { questCatalog, type QuestId } from "@bibliothecadao/types";
 import type { DayQuestFace } from "./day-banner-view";
 
 const QUEST_ICONS = {
@@ -11,10 +11,13 @@ const QUEST_ICONS = {
   [quest.VETERANS]: "order-skill",
   [quest.FINDS]: "eye",
   [quest.REVEALS]: "explore",
-} satisfies Record<DailyQuestId, IconMeaning>;
+  [quest.STAND]: "defend",
+  [quest.LIGHTS]: "sun",
+  [quest.CULL]: "skull",
+} satisfies Record<QuestId, IconMeaning>;
 
-export function dayQuestFace(id: DailyQuestId): DayQuestFace {
-  const quest = dailyQuests.find((quest) => quest.id === id);
-  if (!quest) throw new Error(`Missing daily quest ${id}`);
+export function dayQuestFace(id: QuestId): DayQuestFace {
+  const quest = questCatalog.find((quest) => quest.id === id);
+  if (!quest) throw new Error(`Missing quest ${id}`);
   return { icon: QUEST_ICONS[id], name: quest.name, unit: quest.unit };
 }

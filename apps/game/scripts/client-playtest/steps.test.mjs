@@ -1219,3 +1219,34 @@ it("requires one quest command, its exact receipt, both credited balances and th
   ])
     expect(verify({ played: failed }).status).toBe("failed");
 });
+
+it.each([
+  ["world", ["LaborGrant"], "1500000000000", "1500000000000", "The Cull: 2,500 of 2,500 troops. Ash Fall"],
+  ["again", ["BaneGrant"], "2500000000000", "3000000000000", "The Cull: 2,500 of 2,500 troops. Ash Fall"],
+  ["late", ["LaborGrant", "BaneGrant"], "2500000000000", "3000000000000", "The Cull: 2,500 of 2,500 troops. Ash Fall"],
+  ["team", ["LaborGrant"], "1500000000000", "1500000000000", "The Stand: 3 of 3 sites. Might's bane"],
+])("requires exact %s bane receipts, balances, identity and collected UI", (stage, models, labor, essence, text) => {
+  const verify = STEP_SETS[`lab-bane-${stage}`].steps[1].verify;
+  const sent = {
+    command: { fields: { home: "7", day: "1" } },
+    answered: [
+      ...models.map((model) => ({ model, value: { home: "7", day: "1", amount: "1000000000000", essence: "1500000000000" } })),
+      { model: "ResourceBalance", value: { resource_type: 23, balance: labor } },
+      { model: "ResourceBalance", value: { resource_type: 38, balance: essence } },
+    ],
+  };
+  const played = { ready: { collect: true, text }, collected: true, grants: [sent] };
+  expect(verify({ played }).status).toBe("completed");
+  const withAnswers = (answered) => ({ ...played, grants: [{ ...sent, answered }] });
+  for (const bad of [
+    { ...played, collected: false },
+    { ...played, ready: { collect: true, text: "A different quest" } },
+    { ...played, grants: [sent, sent] },
+    { ...played, grants: [{ ...sent, command: { fields: { home: "7", day: "0" } } }] },
+    withAnswers(sent.answered.slice(1)),
+    withAnswers([...sent.answered, sent.answered[0]]),
+    withAnswers(sent.answered.map((fact) => fact.model === models[0] ? { ...fact, value: { ...fact.value, amount: "0" } } : fact)),
+    withAnswers(sent.answered.map((fact) => fact.model === "ResourceBalance" ? { ...fact, value: { ...fact.value, balance: "0" } } : fact)),
+    withAnswers(sent.answered.filter((fact) => fact.model !== "ResourceBalance")),
+  ]) expect(verify({ played: bad }).status).toBe("failed");
+});

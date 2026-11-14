@@ -44,11 +44,11 @@ pub fn required(active: u32, percent: u16) -> u32 {
 
 pub fn quest_kind(kind: u8) -> u8 {
     if kind == BLOOD_MOON {
-        crate::quests::STAND
+        BLOOD_MOON_QUEST
     } else if kind == MIST_TIDE {
-        crate::quests::LIGHTS
+        MIST_TIDE_QUEST
     } else if kind == ASH_FALL {
-        crate::quests::CULL
+        ASH_FALL_QUEST
     } else {
         panic!("invalid world bane")
     }
@@ -64,4 +64,25 @@ pub fn validate(rules: BaneRules) {
     for count in rules.quest_counts {
         assert!(*count > 0, "empty bane quest target");
     }
+}
+
+pub const BLOOD_MOON_QUEST: u8 = crate::quests::STAND;
+
+pub const MIST_TIDE_QUEST: u8 = crate::quests::LIGHTS;
+
+pub const ASH_FALL_QUEST: u8 = crate::quests::CULL;
+
+#[starknet::interface]
+pub trait IWorldBanes<T> {
+    fn prepare_bane_day(ref self: T, game_id: u32, context: crate::commands::ActionContext);
+}
+
+#[derive(Copy, Drop, Serde, Debug, PartialEq)]
+pub struct WorldBane {
+    pub kind: u8,
+}
+
+#[derive(Copy, Drop, Serde, Debug, PartialEq)]
+pub struct FirstTeamBane {
+    pub issued_day: u64,
 }

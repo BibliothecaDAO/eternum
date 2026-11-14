@@ -35,3 +35,16 @@ export async function readQuestConstants(root) {
 export async function readReleaseConstants(root) {
   return unsignedConstants(await readFile(new URL("src/logic/release.cairo", root), "utf8"));
 }
+
+export async function readBaneConstants(root) {
+  const source = await readFile(new URL("src/banes.cairo", root), "utf8");
+  const quests = await readQuestConstants(root);
+  const resolved = source.replace(
+    /^pub const ([A-Z][A-Z0-9_]*): u8 = crate::quests::([A-Z][A-Z0-9_]*);$/gm,
+    (_line, name, quest) => {
+      if (!Object.hasOwn(quests, quest)) throw new Error(`Unknown bane quest ${quest}`);
+      return `pub const ${name}: u8 = ${quests[quest]};`;
+    },
+  );
+  return unsignedConstants(resolved);
+}

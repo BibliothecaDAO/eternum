@@ -23,7 +23,8 @@ describe("Frontier rules at real speed", () => {
   });
 
   it("reads what an action took from the realm's balance and the farms' output up to the block that settled it", () => {
-    const farm = { building_count: 1, production_rate: 84_000_000n, output_amount_left: 0n, last_settled_at: 1000 };
+    const farm = {remainder: 0,
+ building_count: 1, production_rate: 84_000_000n, output_amount_left: 0n, last_settled_at: 1000 };
     const before = { balance: 1_000n * precision, production: farm };
     const after = {
       balance: 1_000n * precision + 60n * 84_000_000n - 900n * precision,

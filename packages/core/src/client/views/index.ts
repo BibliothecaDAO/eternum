@@ -30,6 +30,7 @@ import {
 } from "./structures";
 export * from "./armies";
 export * from "./quests";
+export * from "./banes";
 export * from "./guilds";
 export * from "./resources";
 export * from "./structures";

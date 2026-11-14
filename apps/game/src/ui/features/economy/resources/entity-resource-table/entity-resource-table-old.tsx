@@ -114,15 +114,7 @@ export const EntityResourceTableOld = React.memo(
               }
 
               if (showProductionOnly) {
-                const productionInfo = resourceManager.current(resourceId);
-                if (!productionInfo) return false;
-                const { isProducing } = ResourceManager.calculateResourceProductionData(
-                  resourceId,
-                  productionInfo,
-                  now,
-                );
-
-                if (!isProducing) {
+                if (!resourceManager.isProducingAt(resourceId, now)) {
                   return false;
                 }
               }

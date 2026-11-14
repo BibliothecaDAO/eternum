@@ -62,7 +62,8 @@ fn resource_deletion_clears_production_without_affecting_another_game() {
 #[test]
 fn production_storage_round_trips_empty_and_maximum_values() {
     assert_eq!(ProductionPacking::unpack(ProductionPacking::pack(Default::default())), Default::default());
-    let maximum = Production {
+    let maximum = Production {remainder: 0,
+
         building_count: 0xff,
         production_rate: 0xffffffffffffffff,
         output_amount_left: 0xffffffffffffffffffffffffffffffff,
@@ -74,7 +75,8 @@ fn production_storage_round_trips_empty_and_maximum_values() {
 #[test]
 #[fuzzer(runs: 256)]
 fn packed_production_fields_do_not_overlap(buildings: u8, rate: u64, cap: u128, time: u32) {
-    let production = Production {
+    let production = Production {remainder: 0,
+
         building_count: buildings, production_rate: rate, output_amount_left: cap, last_settled_at: time,
     };
     assert_eq!(ProductionPacking::unpack(ProductionPacking::pack(production)), production);
@@ -98,7 +100,8 @@ fn spending_settles_once_and_emits_only_the_final_resource_facts() {
     assert_eq!(resources.weight(key), Weight { capacity: 100, weight: 15 });
     assert_eq!(
         resources.production(key),
-        Production { building_count: 1, production_rate: 2, output_amount_left: 80, last_settled_at: 20 },
+        Production {remainder: 0,
+ building_count: 1, production_rate: 2, output_amount_left: 80, last_settled_at: 20 },
     );
     let mut spy = spy_events();
     resources.grant_at(key, 23, 10, 1, 25);
@@ -180,7 +183,8 @@ fn inactive_resources_have_no_clock_and_activation_starts_at_block_time() {
     let (balance, production, _) = resources.read_slot(key, 1);
     assert_eq!(balance, 8);
     assert_eq!(
-        production, Production { building_count: 1, production_rate: 2, output_amount_left: 100, last_settled_at: 200 },
+        production, Production {remainder: 0,
+ building_count: 1, production_rate: 2, output_amount_left: 100, last_settled_at: 200 },
     );
     resources.spend_at(key, 1, 0, 1, 205);
     let (balance, production, weight) = resources.read_slot(key, 1);
@@ -217,7 +221,8 @@ fn consecutive_seconds_pay_one_second_and_match_a_single_settlement() {
 fn elapsed_seconds_pay_exactly_however_often_production_settles() {
     // The exact Frontier farm rate pays for every second, including between armies ticks.
     let rate = 84000000_u64;
-    let mut production = Production {
+    let mut production = Production {remainder: 0,
+
         building_count: 1, production_rate: rate, output_amount_left: 0, last_settled_at: 0,
     };
     let mut balance = 0_u128;
@@ -240,7 +245,8 @@ fn frontier_rates_keep_the_same_total_at_every_output_tier() {
     ] {
         for picks in 0_u128..5 {
             let tier_rate = Into::<u64, u128>::into(rate) * (10000 + picks * 2500) / 10000;
-            let mut production = Production {
+            let mut production = Production {remainder: 0,
+
                 building_count: 1,
                 production_rate: tier_rate.try_into().unwrap(),
                 output_amount_left: crate::resources::UNLIMITED_OUTPUT,

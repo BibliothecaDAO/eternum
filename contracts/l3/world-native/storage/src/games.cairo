@@ -53,6 +53,7 @@ pub struct GamesStorage<
     pub deep: crate::deep::DeepStorage<TDeepSite, TDeepGuard>,
     pub entry: crate::entry::EntryAdministrationStorage,
     pub quests: crate::quests::QuestStateStorage,
+    pub banes: crate::banes::BaneStorage,
     pub games: crate::game::GameStateStorage<TGameRegistry, TGameOverrides>,
     pub guards: crate::guards::GuardStateStorage<TGuard>,
     pub guilds: crate::guilds::GuildStateStorage<TGuild>,

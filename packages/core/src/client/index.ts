@@ -12,6 +12,7 @@ export {
   nativeResearchConstants,
   nativeRuleConstants,
   nativeQuestConstants,
+  nativeBaneConstants,
 } from "../../../../contracts/l3/world-native/schema/client.gen";
 
 export type { GameClientSetup } from "./game-client";

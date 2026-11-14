@@ -89,7 +89,7 @@ describe("the day's banner", () => {
         .toSorted(),
     );
     expect(shown).toHaveLength(4);
-    expect(text()).toContain("Your Aspect's hyperstructure does not grow today");
+    expect(text()).toContain("Your Aspect's hyperstructure does not grow while the bane lasts");
     expect(text()).toContain("Clear Mist");
   });
 
@@ -101,10 +101,10 @@ describe("the day's banner", () => {
 
   it("is lighter on a phone: the news is chips, and a press opens the bane's line", () => {
     draw(DAY_BANNER_CASES["World bane day, members at it"], "phone");
-    expect(text()).not.toContain("Each guarded site is 50% harder today");
+    expect(text()).not.toContain("Guarded sites have 150% strength while the bane lasts");
     expect(text()).toContain("4 of 6");
     act(() => button("Blood Moon")!.click());
-    expect(text()).toContain("Each guarded site is 50% harder today");
+    expect(text()).toContain("Guarded sites have 150% strength while the bane lasts");
   });
 
   it("never offers LORDS", () => {

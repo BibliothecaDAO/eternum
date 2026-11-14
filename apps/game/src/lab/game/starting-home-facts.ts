@@ -26,7 +26,8 @@ function castleProductionRows(home: bigint, store: NativeFactStore, now: number)
     {
       model: "ResourceProduction",
       key: "0xb300",
-      value: wire({
+      value: wire({remainder: 0,
+
         game_id: 1,
         entity_id: home,
         resource_type: ResourcesIds.Labor,

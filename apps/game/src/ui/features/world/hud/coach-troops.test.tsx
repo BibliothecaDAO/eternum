@@ -43,7 +43,8 @@ const twoHoldings = () => {
     {
       model: "ResourceProduction",
       key: "0xa7",
-      value: {
+      value: {remainder: 0,
+
         game_id: 1,
         entity_id: 7,
         resource_type: 26,
@@ -73,7 +74,8 @@ const twoHoldings = () => {
     {
       model: "ResourceProduction",
       key: "0xbb",
-      value: {
+      value: {remainder: 0,
+
         game_id: 1,
         entity_id: 8,
         resource_type: 26,

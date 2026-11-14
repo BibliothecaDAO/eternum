@@ -1,4 +1,4 @@
-import { readResourceManager, type ResourceManager } from "@bibliothecadao/eternum";
+import { readResourceManager, RESOURCE_PRODUCTION_MODELS, type ResourceManager } from "@bibliothecadao/eternum";
 import type { ID } from "@bibliothecadao/types";
 import { useMemo } from "react";
 import { useNativeFacts } from "./use-native-facts";
@@ -7,13 +7,7 @@ import { useNativeFacts } from "./use-native-facts";
 export function useResourceManager(entityId: ID): ResourceManager;
 export function useResourceManager(entityId: ID | undefined): ResourceManager | undefined;
 export function useResourceManager(entityId: ID | undefined): ResourceManager | undefined {
-  const facts = useNativeFacts([
-    "ResourceBalance",
-    "ResourceProduction",
-    "ResourceWeight",
-    "StructureBuildings",
-    "ProductionBonus",
-  ]);
+  const facts = useNativeFacts(RESOURCE_PRODUCTION_MODELS);
   return useMemo(
     () => (entityId === undefined ? undefined : readResourceManager(facts.store, entityId)),
     [facts, entityId],

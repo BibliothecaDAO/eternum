@@ -57,7 +57,7 @@ pub mod QuestState {
             let game = crate::logic::game::game(home.game_id);
             let preset = crate::logic::preset_record::for_game(home.game_id);
             let day = crate::days::day_of(game, preset.rules.day_unit_seconds.read(), timestamp).index;
-            let selected = crate::quests::daily_quest(game.seed, day);
+            let selected = crate::logic::banes::quest_kind(home, day);
             if selected != kind {
                 return;
             }
@@ -70,12 +70,15 @@ pub mod QuestState {
             assert!(base.category == crate::taxonomy::REALM_CATEGORY, "quest requires a Realm");
             let level = base.level + 1;
             assert!(level >= 1 && level <= 4, "invalid Realm level");
-            let target = Into::<u32, u128>::into(preset.quest_counts.read(kind)) * Into::<u8, u128>::into(level);
+            let target = crate::logic::banes::target(home, kind, level);
             progress.progress += amount;
             if progress.progress >= target {
                 progress.completed_level = level;
             }
             self.write_progress(home, day, progress);
+            if progress.completed_level != 0 {
+                crate::logic::banes::complete(home, day, timestamp);
+            }
         }
     }
 
@@ -112,11 +115,24 @@ pub mod QuestState {
                 let grant = self.grant_reward(home, actor, progress.completed_level, context);
                 crate::logic::entry::record_labor_grant(day, grant);
             }
+            if crate::logic::banes::won(home, day) && self.data.banes.bonus_grants.read(key).is_none() {
+                let grant = self.grant_reward(home, actor, progress.completed_level, context);
+                self.record_bane_grant(day, grant);
+            }
         }
     }
 
     #[generate_trait]
     pub impl InternalImpl<TContractState, +HasComponent<TContractState>> of InternalTrait<TContractState> {
+        fn record_bane_grant(ref self: ComponentState<TContractState>, day: u64, grant: crate::entry::LaborGrant) {
+            self.data.banes.bonus_grants.write((grant.game_id, grant.home, day), Some((grant.amount, grant.essence)));
+            self.emit(crate::events::RowSet {
+                version: 1, model: 'BaneGrant',
+                keys: array![grant.game_id.into(), grant.home.into(), day.into()].span(),
+                values: array![grant.account.into(), grant.amount.into(), grant.essence.into()].span(),
+            });
+        }
+
         fn grant_reward(
             ref self: ComponentState<TContractState>,
             home: ResourceKey,

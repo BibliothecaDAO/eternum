@@ -481,7 +481,8 @@ describe("declared fact absence", () => {
       }),
     ]);
     expect(store.requireOrAbsent("ResourceBalance", resource).known?.balance).toBe(0n);
-    expect(store.requireOrAbsent("ResourceProduction", resource).known).toMatchObject({
+    expect(store.requireOrAbsent("ResourceProduction", resource).known).toMatchObject({remainder: 0,
+
       building_count: 0,
       production_rate: 0n,
       output_amount_left: 0n,

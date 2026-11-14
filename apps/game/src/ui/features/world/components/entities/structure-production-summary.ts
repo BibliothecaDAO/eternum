@@ -75,11 +75,8 @@ const buildStructureProductionSummary = ({
   const items = Array.from(summaries.entries()).flatMap(([resourceId, stats]) => {
     const productionInfo = resources.current(resourceId);
     if (!productionInfo) return [];
-    const productionData = ResourceManager.calculateResourceProductionData(
-      resourceId,
-      productionInfo,
-      currentDefaultTick,
-    );
+    const productionData = resources.productionData(resourceId, currentDefaultTick);
+    if (!productionData) return [];
     const isProducing = productionData.isProducing;
     const buildingCount = Number(productionInfo?.production?.building_count ?? 0);
     const activeBuildings = isProducing ? (buildingCount > 0 ? buildingCount : stats.totalBuildings) : 0;

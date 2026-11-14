@@ -5,9 +5,11 @@ import { sendOnce, useInFlight } from "@/hooks/store/use-actions-in-flight";
 import { toast } from "@/ui/features/event-feed/notify";
 import { DAILY_QUEST_MODELS, readDailyQuest } from "@bibliothecadao/eternum";
 import { safeInteger, type NativeRows } from "@bibliothecadao/eternum/game-client";
+import { RESOURCE_PRECISION } from "@bibliothecadao/types";
 import type { Account } from "starknet";
 import { DayBannerView, type DayLayout } from "./day-banner-view";
 import { dayQuestFace } from "./day-quest-face";
+import { baneMembers, teamBaneHead, worldBaneHead } from "./day-bane-face";
 
 export const DailyQuest = ({ realm, layout }: { realm: NativeRows["Structure"]; layout: DayLayout }) => {
   const { setup, account } = useGame();
@@ -19,7 +21,7 @@ export const DailyQuest = ({ realm, layout }: { realm: NativeRows["Structure"]; 
   if (!today) return null;
   const reading = today.reading.known;
   const collect = () => {
-    if (!reading?.completed || reading.claimed || key === null) return;
+    if (!reading || (reading.state !== "done" && reading.state !== "again") || key === null) return;
     return sendOnce("quest", key, true, () =>
       setup.systemCalls.claim_daily_quest({
         signer: account.account as unknown as Account,
@@ -28,23 +30,27 @@ export const DailyQuest = ({ realm, layout }: { realm: NativeRows["Structure"]; 
       }),
     ).catch((error: unknown) => toast.failed(error, "The quest reward could not be collected."));
   };
+  const bane = reading?.bane;
+  const heads = !bane ? [] : [bane.type === "world"
+    ? worldBaneHead(bane.kind, setup.store.require("BaneRules", { game_id: realm.game_id }))
+    : teamBaneHead(bane.source)];
   return (
     <section data-daily-quest>
       <DayBannerView
         layout={layout}
-        quest={dayQuestFace(today.id)}
+        quest={reading ? dayQuestFace(reading.quest.id) : null}
         reading={
           reading
             ? {
                 progress: safeInteger(reading.progress),
                 target: safeInteger(reading.target),
-                reward: { labor: safeInteger(reading.reward.labor), essence: safeInteger(reading.reward.essence) },
-                state: reading.claimed ? "collected" : reading.completed ? "done" : "running",
+                reward: { labor: Number(reading.reward.labor) / RESOURCE_PRECISION, essence: Number(reading.reward.essence) / RESOURCE_PRECISION },
+                state: reading.state,
               }
             : null
         }
-        heads={[]}
-        members={null}
+        heads={heads}
+        members={bane ? baneMembers(bane, now) : null}
         claim={null}
         collecting={collecting}
         onCollect={collect}

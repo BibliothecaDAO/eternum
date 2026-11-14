@@ -1327,3 +1327,13 @@ the configured labor bonus. Published presets keep quests disabled until their a
 `pnpm playtest --steps lab-daily-quest` run presses Collect, checks the provider's home/day payload, the receipt and
 both resource balances, then captures the collected state. Run the flow kind `playtest-daily-quest` for desktop and
 phone evidence.
+
+
+Bane quest collection uses the existing day banner. The confirmed day, Aspect completion count and exact reward receipts come from the native fact store.
+
+| Path | Player action | Proof |
+| --- | --- | --- |
+| `/lab/game?scenario=bane-world` | Collect the completed world-bane quest before quorum | `playtest --steps lab-bane-world` |
+| `/lab/game?scenario=bane-again` | Collect again after the Aspect reaches quorum | `playtest --steps lab-bane-again` |
+| `/lab/game?scenario=bane-late` | Collect both world-bane rewards in one first collection | `playtest --steps lab-bane-late` |
+| `/lab/game?scenario=bane-team` | Collect a team-bane quest, with no world bonus | `playtest --steps lab-bane-team` |

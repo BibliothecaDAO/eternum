@@ -123,7 +123,7 @@ const readSeasonClock = () => {
 };
 
 const PLAYER_STRUCTURE_FACTS = ["Structure", "StructureBuildings", "TileOccupancy"] as const;
-export const RESOURCE_FACTS = ["ResourceBalance", "ResourceProduction", "ResourceWeight", "ProductionBonus"] as const;
+export { RESOURCE_PRODUCTION_MODELS as RESOURCE_FACTS } from "@bibliothecadao/eternum";
 
 export const playerStructuresView: FactView<Structure[]> = {
   models: PLAYER_STRUCTURE_FACTS,

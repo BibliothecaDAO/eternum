@@ -172,7 +172,8 @@ const production = (store: NativeFactStore, resource: ResourcesIds, buildings: n
   return {
     model: "ResourceProduction",
     key: `1:7:${resource}`,
-    value: {
+    value: {remainder: 0,
+
       game_id: 1,
       entity_id: 7,
       resource_type: resource,

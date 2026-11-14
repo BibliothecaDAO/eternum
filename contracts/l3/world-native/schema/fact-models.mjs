@@ -2,6 +2,68 @@
 // Production definitions, when present, must agree exactly with these fields.
 export const factWireTypes = [
   {
+  "type": "struct",
+  "name": "world_native::banes::WorldBane",
+  "members": [
+    {
+      "name": "kind",
+      "type": "core::integer::u8"
+    }
+  ]
+},
+  {
+  "type": "struct",
+  "name": "world_native::banes::FirstTeamBane",
+  "members": [
+    {
+      "name": "issued_day",
+      "type": "core::integer::u64"
+    }
+  ]
+},
+  {
+  "type": "struct",
+  "name": "world_native::banes::BaneProgress",
+  "members": [
+    {
+      "name": "completed",
+      "type": "core::integer::u32"
+    },
+    {
+      "name": "ended_at",
+      "type": "core::integer::u64"
+    }
+  ]
+},
+  {
+  "type": "struct",
+  "name": "world_native::deep::TeamBane",
+  "members": [
+    {
+      "name": "source",
+      "type": "core::integer::u8"
+    },
+    {
+      "name": "issued_day",
+      "type": "core::integer::u64"
+    },
+    {
+      "name": "quest",
+      "type": "core::integer::u8"
+    }
+  ]
+},
+  {
+  "type": "struct",
+  "name": "world_native::deep::AltarBar",
+  "members": [
+    {
+      "name": "charge",
+      "type": "core::integer::u32"
+    }
+  ]
+},
+  {
     type: "struct",
     name: "world_native::quests::QuestProgress",
     members: [
@@ -847,6 +909,16 @@ export function defineFactModels({ struct, model: declare }) {
         value: "zero",
         meaning: "No troops or resurrection delay in this guard slot.",
       };
+    if (row.name === "BaneProgress")
+      row.absence = {
+        parent: "BaneRules", value: "zero",
+        meaning: "No member of this Aspect has completed the bane quest on this day.",
+      };
+    if (row.name === "AltarBar")
+      row.absence = {
+        parent: "DeepRules", value: "zero",
+        meaning: "This Aspect has not received an Altar charge in this game.",
+      };
     if (row.name === "QuestProgress")
       row.absence = {
         parent: "Structure",
@@ -997,6 +1069,12 @@ export function defineFactModels({ struct, model: declare }) {
       ],
       struct("quests::QuestProgress"),
     ),
+    model("WorldBane", "game", [{"name": "game_id", "type": "core::integer::u32"}, {"name": "day", "type": "core::integer::u64"}], struct("banes::WorldBane")),
+    model("FirstTeamBane", "game", [{"name": "game_id", "type": "core::integer::u32"}], struct("banes::FirstTeamBane")),
+    model("BaneProgress", "game", [{"name": "game_id", "type": "core::integer::u32"}, {"name": "aspect", "type": "core::integer::u8"}, {"name": "day", "type": "core::integer::u64"}], struct("banes::BaneProgress")),
+    model("TeamBane", "game", [{"name": "game_id", "type": "core::integer::u32"}, {"name": "aspect", "type": "core::integer::u8"}, {"name": "day", "type": "core::integer::u64"}], struct("deep::TeamBane")),
+    model("AltarBar", "game", [{"name": "game_id", "type": "core::integer::u32"}, {"name": "aspect", "type": "core::integer::u8"}], struct("deep::AltarBar")),
+    model("BaneGrant", "game", [{"name": "game_id", "type": "core::integer::u32"}, {"name": "home", "type": "core::integer::u64"}, {"name": "day", "type": "core::integer::u64"}], struct("entry::LaborGrant").filter(({ name }) => name !== "game_id" && name !== "home")),
     model("LaborRules", "game", [{ name: "game_id", type: "core::integer::u32" }], struct("entry::LaborRules")),
     model("DeepRules", "game", [{ name: "game_id", type: "core::integer::u32" }], struct("deep::DeepRules")),
     model(
@@ -1514,6 +1592,12 @@ export const syncScopes = {
   AspectRules: "shared",
   QuestRules: "shared",
   BaneRules: "shared",
+  WorldBane: "shared",
+  FirstTeamBane: "shared",
+  BaneProgress: "shared",
+  TeamBane: "shared",
+  AltarBar: "shared",
+  BaneGrant: { owners: ["account"] },
   QuestProgress: { entities: ["home"] },
   HomeAspect: "shared",
   AspectMembers: "shared",

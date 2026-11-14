@@ -1,3 +1,4 @@
+import { RESOURCE_PRODUCTION_MODELS } from "@bibliothecadao/eternum";
 import { useNextUpHoldsPrimary } from "@/ui/features/world/hud/next-up-shows";
 import { Icon } from "@/ui/design-system/icon";
 import { HudButton, HudChip } from "@/ui/design-system/kit/hud-elements";
@@ -21,17 +22,16 @@ const SectionRow = ({ label, children }: { label: string; children: React.ReactN
   </div>
 );
 
-const PRODUCTION_MODELS = ["ResourceProduction", "ResourceWeight"] as const;
 
 /** The realm's labor income as the chain produces it, the castle's and every workshop's together, per hour. */
 const LaborRateRow = ({ structureId }: { structureId: ID }) => {
   const { setup } = useGame();
-  useNativeRevision(PRODUCTION_MODELS);
-  const labor = new ResourceManager(setup.store, structureId).current(ResourcesIds.Labor);
+  useNativeRevision(RESOURCE_PRODUCTION_MODELS);
+  const manager = new ResourceManager(setup.store, structureId);
   const timestamp = useCurrentDefaultTick();
   const perSecond =
-    labor && timestamp > 0
-      ? ResourceManager.calculateResourceProductionData(ResourcesIds.Labor, labor, timestamp).productionPerSecond
+    timestamp > 0
+      ? manager.productionData(ResourcesIds.Labor, timestamp)?.productionPerSecond
       : undefined;
   return (
     <SectionRow label={resourceName(ResourcesIds.Labor)}>

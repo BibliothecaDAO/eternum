@@ -1,6 +1,9 @@
 import { currentResourceWeight } from "../utils/deep";
 import { researchPicks } from "../utils/realm-research";
 import { nativeResearchConstants as research } from "../../../../contracts/l3/world-native/schema/client.gen";
+import { BANE_MODELS, readBaneEffects } from "../client/views/banes";
+import { SCOPE_INPUT_MODELS } from "../sync/model-manifest";
+import { nativeBaneConstants } from "../../../../contracts/l3/world-native/schema/client.gen";
 import { productionOutput } from "../utils/production-output";
 import { isModeRuleEnabled } from "../utils/mode-rules";
 import {
@@ -16,9 +19,15 @@ import type { NativeRows } from "../../../../contracts/l3/world-native/schema/cl
 import { divideByPrecision, getBuildingCount, gramToKg } from "../utils";
 import { configManager } from "./config-manager";
 
+export const RESOURCE_PRODUCTION_MODELS = [
+  ...SCOPE_INPUT_MODELS, ...BANE_MODELS,
+  "ResourceBalance", "ResourceProduction", "ResourceWeight", "ResourceRule", "RealmKnowledge",
+  "StructureBuildings", "ProductionBonus", "BoardRules", "SliceRules", "GameRegistry",
+] as const;
+
 type Production = Pick<
   NativeRows["ResourceProduction"],
-  "building_count" | "production_rate" | "output_amount_left" | "last_settled_at"
+  "building_count" | "production_rate" | "output_amount_left" | "last_settled_at" | "remainder"
 >;
 interface ResourceState {
   balance: bigint;
@@ -59,27 +68,16 @@ export class ResourceManager {
 
   public subscribe(onChange: () => void): () => void {
     return this.store.subscribe((changes) => {
-      if (
-        changes.length === 0 ||
-        changes.some((change) => {
-          if (change.model === "GameRegistry") return (change.current ?? change.previous)?.game_id === this.gameId;
-          // A realm's level sets its stores' limits.
-          if (
-            change.model !== "ResourceBalance" &&
-            change.model !== "ResourceProduction" &&
-            change.model !== "ResourceWeight" &&
-            change.model !== "Structure" &&
-            change.model !== "RealmKnowledge"
-          )
-            return false;
-          const row = change.current ?? change.previous;
-          return (
-            row?.game_id === this.gameId &&
-            ("entity_id" in row ? row.entity_id : row.structure_id) === BigInt(this.entityId)
-          );
-        })
-      )
-        onChange();
+      const relevant = changes.some((change) => {
+        if (!RESOURCE_PRODUCTION_MODELS.some((model) => model === change.model)) return false;
+        const row = change.current ?? change.previous;
+        if (!row || !("game_id" in row) || row.game_id !== this.gameId) return false;
+        if ("entity_id" in row) return row.entity_id === BigInt(this.entityId);
+        if ("structure_id" in row) return row.structure_id === BigInt(this.entityId);
+        if ("home" in row) return row.home === BigInt(this.entityId);
+        return true;
+      });
+      if (changes.length === 0 || relevant) onChange();
     });
   }
 
@@ -148,10 +146,7 @@ export class ResourceManager {
    * has settled its row.
    */
   public isProducingAt(resourceId: ResourcesIds, timestamp: number): boolean {
-    const state = this.current(resourceId);
-    return (
-      state !== undefined && ResourceManager.calculateResourceProductionData(resourceId, state, timestamp).isProducing
-    );
+    return this.productionData(resourceId, timestamp)?.isProducing === true;
   }
 
   /** Production that never runs out: continuous food, or a producer written with the unlimited output sentinel. */
@@ -181,9 +176,11 @@ export class ResourceManager {
     const resource = this.current(resourceId);
     if (!resource) return undefined;
     const { balance, production } = resource;
-    if (!production)
-      return { balance: Number(balance), hasReachedMaxCapacity: false, amountProduced: 0n, amountProducedLimited: 0n };
-    const amountProduced = ResourceManager._amountProducedStatic(resource, currentTick, resourceId);
+    const settled = this.productionAt(resourceId, production, currentTick);
+    if (!settled) return undefined;
+    const amountProduced = ResourceManager.neverRunsOut(production, resourceId)
+      ? settled.amount
+      : settled.amount < production.output_amount_left ? settled.amount : production.output_amount_left;
     // A store keeps nothing past its own limit, as the contract adds production to it.
     const limit = this.storeLimit(resourceId);
     const room = limit === undefined ? undefined : limit > balance ? limit - balance : 0n;
@@ -253,35 +250,8 @@ export class ResourceManager {
    * consumes wheat: only raising and marching armies spend it. Undefined where the entity holds no wheat.
    */
   public wheatPerHour(currentTick: number): number | undefined {
-    const wheat = this.current(ResourcesIds.Wheat);
-    if (!wheat) return undefined;
-    return (
-      ResourceManager.calculateResourceProductionData(ResourcesIds.Wheat, wheat, currentTick).productionPerSecond * 3600
-    );
-  }
-
-  /** Seconds until a producer with a finite budget runs dry, paid each second; 0 when it has nothing left. */
-  public timeUntilValueReached(timestamp: number, resourceId: ResourcesIds): number {
-    const resource = this.current(resourceId);
-    if (!resource) return 0;
-    const { production } = resource;
-    if (production.building_count === 0 || production.production_rate === 0n) return 0;
-    if (ResourceManager.neverRunsOut(production, resourceId)) return Number.MAX_SAFE_INTEGER;
-    const produced = productionOutput(production, timestamp);
-    const remaining = production.output_amount_left > produced ? production.output_amount_left - produced : 0n;
-    return secondsUntilPaid(remaining, production.production_rate);
-  }
-
-  /** The timestamp at which a producer with a finite budget pays its last; 0 when it has none. */
-  public getProductionEndsAt(resourceId: ResourcesIds): number {
-    const resource = this.current(resourceId);
-    if (!resource) return 0;
-    const { production } = resource;
-    if (production.building_count === 0) return 0;
-    const settledAt = production.last_settled_at;
-    if (production.production_rate === 0n || production.output_amount_left === 0n) return settledAt;
-    if (ResourceManager.neverRunsOut(production, resourceId)) return Number.MAX_SAFE_INTEGER;
-    return settledAt + secondsUntilPaid(production.output_amount_left, production.production_rate);
+    const production = this.productionData(ResourcesIds.Wheat, currentTick);
+    return production && production.productionPerSecond * 3600;
   }
 
   /** The store's capacity and use; undefined when this client holds no resource owner for the entity. */
@@ -329,13 +299,19 @@ export class ResourceManager {
     return amountProduced * unitWeight > room ? room / unitWeight : amountProduced;
   }
 
-  private static _amountProducedStatic(resource: ResourceState, timestamp: number, resourceId: ResourcesIds): bigint {
-    const { production } = resource;
-    if (production.building_count === 0 || production.production_rate === 0n) return 0n;
-    const produced = productionOutput(production, timestamp);
-    if (!ResourceManager.isContinuousProductionResource(resourceId) && produced > production.output_amount_left)
-      return production.output_amount_left;
-    return produced;
+  private productionAt(resourceId: ResourcesIds, production: Production, timestamp: number) {
+    if (production.building_count === 0 || !ResourceManager.hasActiveProduction(production, resourceId))
+      return { amount: 0n, remainder: production.remainder, rateNumerator: 0n };
+    const effects = readBaneEffects(
+      this.store, this.gameId, this.entityId, Math.min(production.last_settled_at, timestamp), timestamp + 1,
+    );
+    if (!effects.known) return undefined;
+    const { windows, productionPercent } = effects.known;
+    const output = productionOutput(production, timestamp, windows, productionPercent);
+    const ash = windows.some((window) =>
+      window.kind === nativeBaneConstants.ASH_FALL && window.start <= timestamp && timestamp < window.end,
+    );
+    return { ...output, rateNumerator: production.production_rate * BigInt(ash ? productionPercent : 100) };
   }
 
   public getActiveProductions(): Array<{
@@ -363,38 +339,33 @@ export class ResourceManager {
     });
   }
 
-  public static calculateResourceProductionData(
-    resourceId: ResourcesIds,
-    productionInfo: ResourceState,
-    timestamp: number,
-  ): ResourceProductionData {
-    const { production } = productionInfo;
-    const produced = productionOutput(production, timestamp);
-    const productionPerSecond = divideByPrecision(Number(production.production_rate), false);
-
-    const isProducing = production.building_count > 0 && production.production_rate !== 0n;
-    // Production that never runs out has no remaining output or time: both are infinite, never the sentinel's value.
+  /** Current output and rate from the same recorded intervals as balance settlement. */
+  public productionData(resourceId: ResourcesIds, timestamp: number): ResourceProductionData | undefined {
+    const resource = this.current(resourceId);
+    if (!resource) return undefined;
+    const { production } = resource;
+    const settled = this.productionAt(resourceId, production, timestamp);
+    if (!settled) return undefined;
+    const productionPerSecond = Number(settled.rateNumerator) / (100 * RESOURCE_PRECISION);
+    const isProducing = production.building_count > 0 && settled.rateNumerator !== 0n;
     if (ResourceManager.neverRunsOut(production, resourceId)) {
       return {
-        productionPerSecond,
-        isProducing,
-        outputRemaining: Number.POSITIVE_INFINITY,
-        timeRemainingSeconds: Number.POSITIVE_INFINITY,
+        productionPerSecond, isProducing,
+        outputRemaining: Number.POSITIVE_INFINITY, timeRemainingSeconds: Number.POSITIVE_INFINITY,
       };
     }
-
-    const remainingOutput = production.output_amount_left > produced ? production.output_amount_left - produced : 0n;
+    const remaining = production.output_amount_left > settled.amount ? production.output_amount_left - settled.amount : 0n;
     return {
-      productionPerSecond,
-      isProducing: isProducing && remainingOutput > 0n,
-      outputRemaining: Number(remainingOutput) / RESOURCE_PRECISION,
-      timeRemainingSeconds: secondsUntilPaid(remainingOutput, production.production_rate),
+      productionPerSecond, isProducing: isProducing && remaining > 0n,
+      outputRemaining: Number(remaining) / RESOURCE_PRECISION,
+      timeRemainingSeconds: secondsUntilPaid(remaining, settled.rateNumerator, settled.remainder),
     };
   }
 }
 
-/** The last partial second consumes the rest of a finite output budget. */
-const secondsUntilPaid = (remaining: bigint, ratePerSecond: bigint): number => {
-  if (remaining <= 0n || ratePerSecond <= 0n) return 0;
-  return Number((remaining + ratePerSecond - 1n) / ratePerSecond);
+/** Estimate at the current rate; a future bane or quorum can change it. */
+const secondsUntilPaid = (remaining: bigint, rateNumerator: bigint, remainder: number): number => {
+  if (remaining <= 0n || rateNumerator <= 0n) return 0;
+  const unpaid = remaining * 100n - BigInt(remainder);
+  return Number((unpaid + rateNumerator - 1n) / rateNumerator);
 };

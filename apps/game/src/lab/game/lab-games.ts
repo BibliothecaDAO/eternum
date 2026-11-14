@@ -1,3 +1,4 @@
+import { baneScenario } from "./bane-scenario";
 import { questScenario } from "./quest-scenario";
 import { aspectSettleScenario } from "./aspect-settle-scenario";
 import { deepScenario } from "./deep-scenario";
@@ -68,6 +69,10 @@ export const LAB_SCENARIOS: Partial<Record<string, () => LabScenario>> = {
   research: researchScenario,
   claim: claimScenario,
   quest: questScenario,
+  "bane-world": () => baneScenario("world"),
+  "bane-again": () => baneScenario("again"),
+  "bane-late": () => baneScenario("late"),
+  "bane-team": () => baneScenario("team"),
   upkeep: upkeepScenario,
   settle: settleScenario,
   "aspect-settle": aspectSettleScenario,

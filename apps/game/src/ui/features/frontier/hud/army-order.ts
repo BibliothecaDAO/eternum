@@ -1,3 +1,4 @@
+import { RESOURCE_PRODUCTION_MODELS } from "@bibliothecadao/eternum";
 import { useGame } from "@/hooks/context/game-context";
 import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
 import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
@@ -24,8 +25,7 @@ const ORDER_MODELS = [
   "ExplorerTroops",
   "ArmySlot",
   "ArmyProgress",
-  "ResourceBalance",
-  "ResourceProduction",
+  ...RESOURCE_PRODUCTION_MODELS,
   "ArmyProgressionRules",
 ] as const;
 
@@ -134,8 +134,6 @@ export const realmPerHour = (
   resourceId: ResourcesIds,
   tick: number,
 ): number | undefined => {
-  const resource = new ResourceManager(store, realmId).current(resourceId);
-  return (
-    resource && ResourceManager.calculateResourceProductionData(resourceId, resource, tick).productionPerSecond * 3_600
-  );
+  const production = new ResourceManager(store, realmId).productionData(resourceId, tick);
+  return production && production.productionPerSecond * 3_600;
 };

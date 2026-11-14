@@ -41,7 +41,7 @@ export type DayMembers = { completed: number; required: number } | { ended: stri
 
 export interface DayBannerProps {
   layout: DayLayout;
-  quest: DayQuestFace;
+  quest: DayQuestFace | null;
   /** Null while the facts the day rests on are not settled: the banner says it is reading and offers nothing. */
   reading: DayQuestReading | null;
   heads: readonly DayHead[];
@@ -60,10 +60,18 @@ const TONE_TEXT: Record<Tone, string> = { good: "text-hud-good", bad: "text-hud-
  * its reward, the Aspect's members and the claim waiting. No LORDS anywhere. A phone gets the lighter panel: the quest on
  * one row, one foot row, and the news as chips that open their line on a press.
  */
-export const DayBannerView = (props: DayBannerProps) =>
-  props.layout === "phone" ? <PhoneDay {...props} /> : <DesktopDay {...props} />;
+export const DayBannerView = ({ quest, ...props }: DayBannerProps) => {
+  if (!quest) return (
+    <HudPanel label={WORDS.today} collapsible={false} className="pointer-events-auto">
+      <HudLoading line={WORDS.reading} />
+    </HudPanel>
+  );
+  return props.layout === "phone" ? <PhoneDay {...props} quest={quest} /> : <DesktopDay {...props} quest={quest} />;
+};
 
-const DesktopDay = ({ quest, reading, heads, members, claim, collecting, onCollect, onOpenClaim }: DayBannerProps) => (
+type KnownQuestProps = Omit<DayBannerProps, "quest"> & { quest: DayQuestFace };
+
+const DesktopDay = ({ quest, reading, heads, members, claim, collecting, onCollect, onOpenClaim }: KnownQuestProps) => (
   <HudPanel label={WORDS.today} collapsible={false} className="pointer-events-auto" bodyClassName="flex flex-col gap-2">
     {heads.map((head) => (
       <HeadRow key={head.eyebrow} head={head} />
@@ -93,7 +101,7 @@ const DesktopDay = ({ quest, reading, heads, members, claim, collecting, onColle
   </HudPanel>
 );
 
-const PhoneDay = ({ quest, reading, heads, members, claim, collecting, onCollect, onOpenClaim }: DayBannerProps) => {
+const PhoneDay = ({ quest, reading, heads, members, claim, collecting, onCollect, onOpenClaim }: KnownQuestProps) => {
   const [open, setOpen] = useState<string | null>(null);
   const opened = heads.find((head) => head.eyebrow === open);
   return (

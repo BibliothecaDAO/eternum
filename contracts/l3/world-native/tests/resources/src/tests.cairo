@@ -6,3 +6,5 @@ mod production;
 mod resource_commands;
 mod resources;
 mod unlimited_production;
+
+mod bane_production;

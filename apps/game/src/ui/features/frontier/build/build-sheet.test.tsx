@@ -443,7 +443,8 @@ describe("the build sheet", () => {
     // No labor yet, growing 100 an hour.
     labor(store, 0n);
     store.applyFacts([
-      fact("0x78", "ResourceProduction", {
+      fact("0x78", "ResourceProduction", {remainder: 0,
+
         game_id: 1,
         entity_id: 7,
         resource_type: ResourcesIds.Labor,

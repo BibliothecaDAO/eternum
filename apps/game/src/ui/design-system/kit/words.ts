@@ -534,6 +534,15 @@ export const DAY_BANNER_WORDS = {
   collecting: "Collecting…",
   collected: "Collected",
   collectAgain: "Collect again",
+  worldBane: "World bane",
+  baneEnded: "Your Aspect ended the bane",
+  baneEndedShort: "Ended",
+  baneFrom: (aspect: string) => `Bane from ${aspect}`,
+  rivalBane: (aspect: string) => `${aspect}'s bane`,
+  heightBlocked: "Your Aspect's hyperstructure does not grow while the bane lasts",
+  beastBane: (percent: number) => `Guarded sites have ${formatExact(percent)}% strength while the bane lasts`,
+  staminaBane: (percent: number) => `Stamina returns at ${formatExact(percent)}% while the bane lasts`,
+  productionBane: (percent: number) => `Production runs at ${formatExact(percent)}% while the bane lasts`,
   /** A quest's count in its own unit: "1 of 2 camps". */
   count: (progress: number, target: number, unit: string) =>
     `${formatExact(progress)} of ${formatExact(target)} ${unit}`,

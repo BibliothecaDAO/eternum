@@ -19,3 +19,5 @@ mod season_lifecycle;
 mod settlement;
 mod starting_armies;
 mod village;
+
+mod banes;

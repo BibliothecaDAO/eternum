@@ -171,13 +171,13 @@ export const EntityResourceTableNew = React.memo(({ entityId }: EntityResourceTa
       if (!balances) return;
 
       balances.forEach(({ resourceId, amount }) => {
-        const productionInfo = resourceValue.current(resourceId);
+        const production = resourceValue.productionData(resourceId, currentDefaultTick);
         const withProduction = resourceValue.balanceWithProduction(currentDefaultTick, resourceId);
-        if (!productionInfo || !withProduction) return;
+        if (!production || !withProduction) return;
         const { hasReachedMaxCapacity, balance } = withProduction;
 
         const { productionPerSecond, isProducing, outputRemaining, timeRemainingSeconds } =
-          ResourceManager.calculateResourceProductionData(resourceId, productionInfo, currentDefaultTick);
+          production;
 
         // Only count production rate if actually producing
         const activeProductionRate = isProducing ? productionPerSecond : 0;

@@ -1,7 +1,7 @@
-import { orderMeaning } from "@/ui/design-system/icon-meaning";
-import { aspects, orders } from "@bibliothecadao/types";
-import { nativeQuestConstants as quest } from "@bibliothecadao/eternum/game-client";
+import { aspects } from "@bibliothecadao/types";
+import { nativeQuestConstants as quest, nativeBaneConstants as bane } from "@bibliothecadao/eternum/game-client";
 import { dayQuestFace } from "./day-quest-face";
+import { worldBaneHead, teamBaneHead } from "./day-bane-face";
 
 import type { DayBannerProps, DayHead } from "./day-banner-view";
 
@@ -27,40 +27,17 @@ const dailyCount = (base: number, level: Level) => base * (level + 1);
 
 /** A bane day's quest is the bane's own: Blood Moon the Stand, Mist Tide the Lights, a rival's the Cull. */
 const camps = dayQuestFace(quest.CAMPS);
-const stand = { icon: "defend", name: "The Stand", unit: "sites" } as const;
-const lights = { icon: "sun", name: "The Lights", unit: "tiles" } as const;
-const cull = { icon: "skull", name: "The Cull", unit: "troops" } as const;
+const stand = dayQuestFace(quest.STAND);
+const lights = dayQuestFace(quest.LIGHTS);
+const cull = dayQuestFace(quest.CULL);
 
 /** The daily claim waiting at the home: one claim of 1,000 labor. */
 const claim = { labor: 1_000 };
 
-/** The Aspect's four Order crests, from the catalog: every Order that plays for it. */
-const crestsOf = (aspect: (typeof aspects)[number]) =>
-  orders.filter((order) => order.aspect === aspect.id).map(({ orderId }) => orderMeaning(orderId));
-const might = aspects[0];
-
-const bloodMoon: DayHead = {
-  tone: "warn",
-  icon: "moon",
-  eyebrow: "World bane",
-  name: "Blood Moon",
-  rule: "Each guarded site is 50% harder today",
-};
-const mistTide: DayHead = {
-  tone: "warn",
-  icon: "waves",
-  eyebrow: "World bane",
-  name: "Mist Tide",
-  rule: "Stamina comes back at 50% today",
-};
-const rival: DayHead = {
-  tone: "bad",
-  icon: "hyperstructure",
-  eyebrow: `Bane from ${might.name}`,
-  name: `${might.name}'s bane`,
-  rule: "Your Aspect's hyperstructure does not grow today",
-  crests: crestsOf(might),
-};
+const baneRules = { beast_percent: 150, stamina_percent: 50, production_percent: 50 };
+const bloodMoon = worldBaneHead(bane.BLOOD_MOON, baneRules);
+const mistTide = worldBaneHead(bane.MIST_TIDE, baneRules);
+const rival = teamBaneHead(aspects[0].id);
 const triumph: DayHead = {
   tone: "good",
   icon: "eye",

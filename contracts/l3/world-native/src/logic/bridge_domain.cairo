@@ -3,6 +3,7 @@ pub mod BridgeLogic {
     use crate::logic::entry::EntryAdministration;
     use crate::logic::guilds::GuildState;
     use crate::logic::quests::QuestState;
+    use crate::logic::banes::BaneState;
     use crate::logic::release::ReleaseState;
     component!(path: ReleaseState, storage: release, event: ReleaseEvent);
     impl LifeInternal = ReleaseState::InternalImpl<ContractState>;
@@ -17,6 +18,13 @@ pub mod BridgeLogic {
     impl AdministrationInternal = EntryAdministration::InternalImpl<ContractState>;
     #[abi(embed_v0)]
     impl CampaignRecovery = EntryAdministration::CampaignRecoveryImpl<ContractState>;
+    component!(path: BaneState, storage: banes, event: BaneEvent);
+    #[abi(embed_v0)]
+    impl BaneEffects = BaneState::EffectsImpl<ContractState>;
+    #[abi(embed_v0)]
+    impl BaneCalendar = BaneState::CalendarImpl<ContractState>;
+    #[abi(embed_v0)]
+    impl TeamBanes = BaneState::TeamImpl<ContractState>;
     component!(path: QuestState, storage: quests, event: QuestEvent);
     #[abi(embed_v0)]
     impl QuestProgress = QuestState::ProgressImpl<ContractState>;
@@ -35,6 +43,8 @@ pub mod BridgeLogic {
         #[substorage(v0)]
         quests: QuestState::Storage,
         #[substorage(v0)]
+        banes: BaneState::Storage,
+        #[substorage(v0)]
         release: ReleaseState::Storage,
     }
     #[event]
@@ -43,6 +53,7 @@ pub mod BridgeLogic {
         GuildEvent: GuildState::Event,
         AdministrationEvent: EntryAdministration::Event,
         QuestEvent: QuestState::Event,
+        BaneEvent: BaneState::Event,
         ReleaseEvent: ReleaseState::Event,
     }
 }

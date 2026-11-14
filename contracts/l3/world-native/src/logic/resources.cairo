@@ -99,7 +99,7 @@ pub mod ResourceState {
     use starknet::storage::{StorageMapReadAccess, StorageMapWriteAccess, StoragePathEntry, StoragePointerWriteAccess};
     use crate::events::{RowDeleted, RowSet};
     use crate::resources::{
-        Production, ResourceKey, SettledResource, Weight, add, assert_production, has_production, settle, spend,
+        Production, ResourceKey, SettledResource, Weight, add, assert_production, has_production, spend,
     };
 
     #[storage]
@@ -358,16 +358,13 @@ pub mod ResourceState {
             let previous = resource;
             let since = core::cmp::max(resource.production.last_settled_at, core::cmp::min(now, start_at));
             resource.production.last_settled_at = since;
-            if since != now {
-                settle(
-                    resource_type,
-                    ref resource.balance,
-                    ref resource.production,
-                    ref resource.weight,
-                    unit_weight,
-                    resource.limit,
-                    now,
+            if since != now && resource.production.building_count != 0 {
+                let effects = crate::logic::banes::effects(key, since.into(), now.into());
+                crate::resources::settle_windows(
+                    resource_type, ref resource, unit_weight, now, effects.windows, effects.production_percent,
                 );
+            } else {
+                resource.production.last_settled_at = now;
             }
             (previous, resource)
         }

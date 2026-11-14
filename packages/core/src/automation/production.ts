@@ -269,7 +269,8 @@ export const buildRealmResourceSnapshot = ({
     const withProduction = manager.balanceWithProduction(currentTick, resourceId);
     if (!current || !withProduction) continue;
     const { balance } = withProduction;
-    const production = ResourceManager.calculateResourceProductionData(resourceId, current, currentTick);
+    const production = manager.productionData(resourceId, currentTick);
+    if (!production) continue;
     snapshot.set(resourceId, {
       resourceId,
       balanceHuman: divideByPrecision(balance),

@@ -428,11 +428,8 @@ export const SelectPreviewBuildingMenu = ({ entityId }: { entityId: number }) =>
       const productionInfo = resourceData.current(resourceId);
       if (!productionInfo?.production) return;
 
-      const productionData = ResourceManager.calculateResourceProductionData(
-        resourceId,
-        productionInfo,
-        currentDefaultTick,
-      );
+      const productionData = resourceData.productionData(resourceId, currentDefaultTick);
+      if (!productionData) return;
 
       const totalBuildings = Number(productionInfo.production.building_count ?? 0);
 
