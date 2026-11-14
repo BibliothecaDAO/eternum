@@ -25,7 +25,7 @@ type OpeningPart = (typeof OPENING)[OpeningMoment]["parts"][number];
 export const OPENING_MOMENTS = Object.keys(OPENING) as OpeningMoment[];
 
 /** What the HUD shows: every part (outside the game's HUD, watching, or Show everything), or those of the moments reached. */
-export type Opened = "all" | ReadonlySet<OpeningMoment>;
+type Opened = "all" | ReadonlySet<OpeningMoment>;
 
 /** Whether the HUD shows a part: the part waits on the one moment whose row lists it. */
 export const partShown = (opened: Opened, part: OpeningPart): boolean =>
