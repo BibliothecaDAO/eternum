@@ -3,12 +3,13 @@ import { createRoot } from "react-dom/client";
 import { expect, it, vi } from "vitest";
 import { MenuPage } from "./menu-page";
 
-it("opens Today and Settings from their own semantic glyphs, and has no Guide or Production row", async () => {
+it("opens named menu actions independently of their badges, with their own semantic glyphs", async () => {
   (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
   const host = document.createElement("div");
   document.body.append(host);
   const root = createRoot(host);
   const onToday = vi.fn(),
+    onSeason = vi.fn(),
     onSettings = vi.fn();
   try {
     await act(async () =>
@@ -16,7 +17,7 @@ it("opens Today and Settings from their own semantic glyphs, and has no Guide or
         <MenuPage
           rank="#12"
           onToday={onToday}
-          onSeason={() => {}}
+          onSeason={onSeason}
           onSettings={onSettings}
           guide="https://docs.realms.party/frontier/"
           onExit={() => {}}
@@ -26,10 +27,11 @@ it("opens Today and Settings from their own semantic glyphs, and has no Guide or
     );
     for (const [label, name, callback] of [
       ["Today", "clock", onToday],
+      ["Season", "victory", onSeason],
       ["Settings", "settings", onSettings],
     ] as const) {
       const button = [...host.querySelectorAll<HTMLButtonElement>("nav button")].find((b) =>
-        b.textContent?.includes(label),
+        b.getAttribute("aria-label") === label,
       )!;
       expect(button).toBeTruthy();
       expect(button.closest(".ui-row")?.querySelector("img")?.getAttribute("src")).toBe(
