@@ -19,6 +19,9 @@ pub fn assert_step(game_id: u32, origin: Coord, destination: Coord) {
 }
 
 pub fn arrival(game_id: u32, context: ExecutionContext) -> Coord {
+    crate::deep::IDeepSitesDispatcherTrait::settle_deep(
+        crate::logic::deep_sites::dispatcher(game_id), game_id, crate::commands::action_context(context),
+    );
     let spacing = crate::logic::preset_record::for_game(game_id).settlement_spacing.read();
     let origin = crate::deep::arrival(spacing);
     clear_expired_occupant(game_id, origin, context);
