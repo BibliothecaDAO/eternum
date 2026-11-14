@@ -40,8 +40,8 @@ fn definition() -> crate::presets::PresetDefinition {
                 crate::expeditions::DepthRules {
                     beast_weak_lower: 1,
                     beast_weak_upper: 1,
-                    beast_strong_lower: 1,
-                    beast_strong_upper: 1,
+                    beast_strong_lower: 2,
+                    beast_strong_upper: 2,
                     guard_step: 1,
                     ..*depth,
                 },
