@@ -17,7 +17,12 @@ vi.mock("@/hooks/helpers/use-block-timestamp", () => ({ useNowSeconds: () => 0 }
 vi.mock("@/hooks/helpers/use-native-facts", () => ({ useNativeRevision: () => 0 }));
 vi.mock("@/hooks/context/game-context", () => ({
   useGame: () => ({
-    setup: { store: { get: (model: string) => (model === "CampaignHome" ? facts.campaignHome : model === "RaceRules" && facts.race ? {} : undefined) } },
+    setup: {
+      store: {
+        get: (model: string) =>
+          model === "CampaignHome" ? facts.campaignHome : model === "RaceRules" && facts.race ? {} : undefined,
+      },
+    },
   }),
 }));
 vi.mock("@/hooks/context/identity-session", async (importOriginal) => ({
@@ -180,12 +185,13 @@ it("greets no Devcon owner in another season, nor a reader with no realm on the 
   }
 });
 
-
 it("opens the native race board and preserves principal return without requesting the old ranking", async () => {
   const page = await open({ race: true });
   expect(page.querySelector("[data-race-ended]")).not.toBeNull();
   expect(said(page)).toContain("Return principal");
   expect(page.querySelector(".season-recap")).toBeNull();
-  await act(async () => [...page.querySelectorAll("button")].find((button) => button.textContent === "Close race board")!.click());
+  await act(async () =>
+    [...page.querySelectorAll("button")].find((button) => button.textContent === "Close race board")!.click(),
+  );
   expect(page.querySelector("[data-race-ended]")).toBeNull();
 });

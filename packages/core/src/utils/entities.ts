@@ -110,9 +110,10 @@ export const siteDisplayName = (entityId: ID): string => getEntityNameFromLocalS
  */
 export const getStructureName = (structure: NativeRows["Structure"], store: NativeFactStore) => {
   const entityId = safeInteger(structure.entity_id);
-  const monument = structure.base.category === StructureType.Hyperstructure
-    ? readRaceMonument(store, structure.game_id, entityId)
-    : undefined;
+  const monument =
+    structure.base.category === StructureType.Hyperstructure
+      ? readRaceMonument(store, structure.game_id, entityId)
+      : undefined;
   if (monument) {
     const aspect = aspects.find((aspect) => aspect.id === monument.aspect);
     if (!aspect) throw new Error("Race monument has an unknown Aspect");

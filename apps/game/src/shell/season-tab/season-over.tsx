@@ -37,7 +37,7 @@ export const SeasonOver = ({
   withdraw?: ReactNode;
 }) => {
   const { setup } = useGame();
-  useNativeRevision(["RaceRules"]);
+  useNativeRevision(["RaceRules", "GameRegistry", "RaceResult"]);
   useNowSeconds();
   if (!configManager.isGameOver()) return null;
   return setup.store.get("RaceRules", { game_id: configManager.getActiveGameId() }) ? (
