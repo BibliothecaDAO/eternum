@@ -18,7 +18,11 @@ import {
 } from "@bibliothecadao/types";
 
 import { musterStamina, openArmySlots } from "@bibliothecadao/eternum/troop-stamina";
-import { nativeResearchConstants as research, type NativeFactStore } from "@bibliothecadao/eternum/game-client";
+import {
+  nativeResearchConstants as research,
+  safeInteger,
+  type NativeFactStore,
+} from "@bibliothecadao/eternum/game-client";
 
 import { standTheArmyAtTheEdge } from "./explore-scenario";
 import { wire, type LabCommand, type LabFact, type LabScenario } from "./lab-chain";
@@ -159,7 +163,7 @@ const deployArmy: Answer = (command, chain, now) => {
     now,
     rules.troop_stamina_config,
     progress.logistics,
-    rules.tick_config.armies_tick_in_seconds,
+    safeInteger(rules.tick_config.armies_tick_in_seconds),
   ).max;
   const stamina = slot.inherited
     ? { ...slot.inherited, amount: BigInt(Math.min(Number(slot.inherited.amount), maximum)) }
