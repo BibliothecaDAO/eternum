@@ -55,10 +55,7 @@ test("the service's full gate executes every native stage exactly once", () => {
 });
 
 test("a malformed native mapping is refused", () => {
-  const swapped = config.replace(
-    /(\[kind\.gate-world\]\ncmd = "bash contracts\/l3\/check-native\.sh )world/,
-    "$1test-world",
-  );
+  const swapped = config.replace('cmd = "bash contracts/l3/check-native.sh world"', 'cmd = "bash contracts/l3/check-native.sh test-world"');
   assert.notEqual(swapped, config);
   assert.match(planProblem(plan, swapped), /the gate runs/);
   const dropped = config.replace(/^(\[land\]\nkinds = ".*?) gate-world/m, "$1");
