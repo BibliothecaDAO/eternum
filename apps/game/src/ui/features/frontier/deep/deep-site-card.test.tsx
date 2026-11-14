@@ -6,7 +6,7 @@ import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useBlockTimestampStore } from "@/hooks/store/use-block-timestamp-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { deepScenario } from "@/lab/game/deep-scenario";
-import { configManager, ResourceManager, setBlockTimestampSource } from "@bibliothecadao/eternum";
+import { configManager, type ResourceManager, setBlockTimestampSource } from "@bibliothecadao/eternum";
 import { RESOURCE_PRECISION, ResourcesIds } from "@bibliothecadao/types";
 import { readArmyMovementReadiness } from "@/ui/features/world/components/armies/army-movement-readiness";
 import { readDeepSites } from "@bibliothecadao/eternum/game-client";

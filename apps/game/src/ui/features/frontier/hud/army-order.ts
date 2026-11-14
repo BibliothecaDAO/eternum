@@ -71,7 +71,7 @@ export const useOrderAt = (target: { col: number; row: number } | null): ArmyOrd
   const tiles = path.length - 1;
 
   const staminaCost = computeEffectiveStaminaCost(path.slice(1), actionType, configManager.getExploreStaminaCost());
-  const staminaHeld = troops ? Number(StaminaManager.getStamina(troops, tick).amount) : undefined;
+  const staminaHeld = Number(StaminaManager.getStamina(troops, tick).amount);
   // Frontier's preset charges no fish; the wheat is the order's whole food.
   const wheatCost = orderFood(path, troops).wheat;
   const wheatBalance = getBalance(safeInteger(army.owner), ResourcesIds.Wheat, tick, setup.store).balance;
@@ -86,7 +86,7 @@ export const useOrderAt = (target: { col: number; row: number } | null): ArmyOrd
       cost: staminaCost,
       held: staminaHeld,
       wait:
-        troops && staminaHeld !== undefined && staminaHeld < staminaCost
+        staminaHeld < staminaCost
           ? secondsUntilStamina(troops, staminaCost, tick)
           : undefined,
     },
