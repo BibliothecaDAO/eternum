@@ -338,6 +338,12 @@ export const ROOMS: LabRoom[] = [
             "season-one/deep-site",
             load(() => import("./season-one/deep-site-lab"), "DeepSiteLab"),
           ),
+          view(
+            "Day banner",
+            "/lab/season-one/day-banner",
+            "season-one/day-banner",
+            load(() => import("./season-one/day-banner-lab"), "DayBannerLab"),
+          ),
         ],
       },
       {

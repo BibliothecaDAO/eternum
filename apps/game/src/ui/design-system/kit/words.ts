@@ -525,6 +525,22 @@ export const DEEP_WORDS = {
   /** The map's order on a Deep site beside the army: its card then offers the site's own verb. */
   order: "Open the site",
 } as const;
+/** The day's banner: today's quest, its count and reward, the bane or Triumph heading it, the Aspect's members. */
+export const DAY_BANNER_WORDS = {
+  today: "Today",
+  reading: "Reading today's quest…",
+  collect: "Collect",
+  collecting: "Collecting…",
+  collected: "Collected",
+  collectAgain: "Collect again",
+  /** A quest's count in its own unit: "1 of 2 camps". */
+  count: (progress: number, target: number, unit: string) => `${formatExact(progress)} of ${formatExact(target)} ${unit}`,
+  /** How many members of the Aspect finished the bane's quest: "4 of 6 members". */
+  members: (completed: number, required: number) => `${formatExact(completed)} of ${formatExact(required)} members`,
+  membersShort: (completed: number, required: number) => `${formatExact(completed)} of ${formatExact(required)}`,
+  /** Today's claim waiting at the realm: "Labor and Essence waiting". */
+  claimWaiting: "Waiting in Realms",
+} as const;
 export const RESEARCHING = "Researching…";
 export const BUILDING = "Building…";
 export const UPGRADING = "Upgrading…";

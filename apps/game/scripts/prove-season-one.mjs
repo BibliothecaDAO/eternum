@@ -5,7 +5,10 @@ import { createBrowserSession } from "./client-playtest/browser-session.mjs";
 import { withDevClient } from "./lib/dev-client.mjs";
 
 /** Season 1's client presentations in the lab: each view's every case, on a desktop and on a phone, one still each. */
-const VIEWS = [{ name: "deep-site", path: "/lab/season-one/deep-site", cases: 5 }];
+const VIEWS = [
+  { name: "deep-site", path: "/lab/season-one/deep-site", cases: 5, shown: "section[role=dialog]" },
+  { name: "day-banner", path: "/lab/season-one/day-banner", cases: 7, shown: "[data-day-banner]" },
+];
 const SIZES = [
   ["desktop", "1920", "1080"],
   ["phone", "390", "844"],
@@ -21,10 +24,10 @@ await withDevClient({ base: option("--base-url", null), port, out }, async (base
   try {
     for (const [device, width, height] of SIZES) {
       browser.run(["set", "viewport", width, height]);
-      for (const { name, path, cases } of VIEWS)
+      for (const { name, path, cases, shown } of VIEWS)
         for (let each = 0; each < cases; each += 1) {
           browser.run(["open", `${baseUrl}${path}?case=${each}`]);
-          browser.run(["wait", "--fn", "!!document.querySelector('section[role=dialog]')"]);
+          browser.run(["wait", "--fn", `!!document.querySelector('${shown}')`]);
           browser.screenshot(join(out, `${name}-${each}-${device}.png`));
         }
     }
