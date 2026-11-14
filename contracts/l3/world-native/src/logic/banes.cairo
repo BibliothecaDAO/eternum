@@ -169,6 +169,9 @@ pub mod BaneState {
     pub impl Calendar<
         TContractState, +HasComponent<TContractState>, +Drop<TContractState>,
     > of crate::banes::IWorldBanes<ComponentState<TContractState>> {
+        fn initialize_bane_calendar(ref self: ComponentState<TContractState>, game_id: u32) {
+            crate::logic::bane_calendar::initialize(game_id);
+        }
         fn prepare_bane_day(
             ref self: ComponentState<TContractState>, game_id: u32, context: crate::commands::ActionContext,
         ) {

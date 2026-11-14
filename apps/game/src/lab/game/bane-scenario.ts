@@ -7,7 +7,7 @@ import {
 } from "@bibliothecadao/eternum";
 import { nativeBaneConstants, nativeQuestConstants } from "@bibliothecadao/eternum/game-client";
 import { BiomeType, getHexesWithinRadius, RESOURCE_PRECISION, ResourcesIds } from "@bibliothecadao/types";
-import { type LabFact, type LabScenario, wire } from "./lab-chain";
+import { type LabScenario, wire } from "./lab-chain";
 import { withoutArmies } from "./day-turn-scenario";
 import { questScenario } from "./quest-scenario";
 import { revealedTile } from "./spire-scenario";
@@ -129,7 +129,7 @@ export function baneScenario(stage: BaneCase): LabScenario {
   };
 }
 
-function receipt(model: "LaborGrant" | "BaneGrant", account: string, labor: bigint, essence: bigint): LabFact {
+function receipt(model: "LaborGrant" | "BaneGrant", account: string, labor: bigint, essence: bigint) {
   return {
     model,
     key: model === "LaborGrant" ? "0xb20" : "0xb21",
@@ -146,7 +146,7 @@ function receipt(model: "LaborGrant" | "BaneGrant", account: string, labor: bigi
 function balance(store: LabScenario["store"], resource: ResourcesIds) {
   return store.require("ResourceBalance", { game_id: 1, entity_id: 7, resource_type: resource }).balance;
 }
-function resource(store: LabScenario["store"], resource: ResourcesIds, amount: bigint): LabFact {
+function resource(store: LabScenario["store"], resource: ResourcesIds, amount: bigint) {
   const keys = { game_id: 1, entity_id: 7, resource_type: resource };
   return {
     model: "ResourceBalance",

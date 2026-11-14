@@ -139,7 +139,7 @@ fn complete(d: Deployment, home: ResourceKey, day: u64, timestamp: u64) {
         Some(crate::army_relics::ArmyRelic { kind: crate::army_relics::RelicKind::FarEye, rank: 1 }),
         discovery,
     );
-    let reveals = if !already_complete && kind == crate::quests::LIGHTS {
+    let reveals: u32 = if !already_complete && kind == crate::quests::LIGHTS {
         2
     } else {
         1

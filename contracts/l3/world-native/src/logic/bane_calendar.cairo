@@ -2,15 +2,23 @@ use starknet::storage::{StorageMapReadAccess, StorageMapWriteAccess, StoragePoin
 
 pub fn prepare(game_id: u32, context: crate::commands::ActionContext) {
     let context = crate::commands::execution_context(game_id, context);
-    let timestamp = context.timestamp;
+    prepare_at(game_id, context.game.unbox(), context.rules.unbox().day_unit_seconds, context.timestamp, context.raw_root);
+}
+
+pub fn initialize(game_id: u32) {
+    if crate::logic::preset_record::for_game(game_id).bane_rules.read().is_none() { return; }
+    let game = crate::logic::game::game(game_id);
+    let unit = crate::logic::preset_record::for_game(game_id).rules.day_unit_seconds.read();
+    prepare_at(game_id, game, unit, game.start_main_at, 0);
+}
+
+fn prepare_at(game_id: u32, game: crate::game::GameRegistry, unit: u32, timestamp: u64, raw_root: u256) {
     let Some((step, _, _, _, _)) = crate::logic::preset_record::for_game(game_id).bane_rules.read() else {
         return;
     };
-    let game = context.game.unbox();
     if timestamp < game.start_main_at {
         return;
     }
-    let unit = context.rules.unbox().day_unit_seconds;
     let state = crate::state::write();
     let mut cursor = core::cmp::max(state.banes.next_roll_at.read(game_id), game.start_main_at);
     let mut chance = state.banes.next_chance.read(game_id);
@@ -19,7 +27,7 @@ pub fn prepare(game_id: u32, context: crate::commands::ActionContext) {
         let kind = if world_stopped(game_id, day.index) {
             0
         } else {
-            draw(game_id, day.index, context.raw_root, chance)
+            draw(game_id, day.index, raw_root, chance)
         };
         state.banes.world_days.write((game_id, day.index), Some(kind));
         crate::logic::banes::emit(

@@ -32,8 +32,6 @@ describe("production paid by the second", () => {
   });
 });
 
-// Append to production-output.test.ts after its existing no-bane cases migrate to the result object.
-// Imports: readFileSync from node:fs.
 it("matches the native vectors across ordinary output, bane edges and carried fractions", () => {
   const words = readFileSync(
     new URL("../../../../contracts/l3/world-native/tests/fixtures/production-banes.txt", import.meta.url),

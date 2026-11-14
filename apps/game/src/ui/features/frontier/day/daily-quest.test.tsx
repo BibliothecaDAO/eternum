@@ -106,11 +106,11 @@ function worldDay(layout: "desktop" | "phone") {
   const start = dayOf(calendar, calendar.startMainAt)!.end;
   clock.now = start + 20;
   store.applyFacts([
-    { model: "HomeAspect", key: "membership", value: { game_id: 1, home: 7, aspect: 2 } },
-    { model: "AspectActivity", key: "activity", value: { game_id: 1, aspect: 2, day: 0, active: 5 } },
+    { model: "HomeAspect", key: "0xd000", value: { game_id: 1, home: 7, aspect: 2 } },
+    { model: "AspectActivity", key: "0xd001", value: { game_id: 1, aspect: 2, day: 0, active: 5 } },
     {
       model: "BaneRules",
-      key: "banes",
+      key: "0xd002",
       value: {
         game_id: 1,
         chance_step: 20,
@@ -121,17 +121,17 @@ function worldDay(layout: "desktop" | "phone") {
         quest_counts: [3, 6, 9, 12, 20, 40, 60, 80, 2500, 6000, 10_000, 15_000],
       },
     },
-    { model: "WorldBane", key: "world-day", value: { game_id: 1, day: 1, kind: nativeBaneConstants.ASH_FALL } },
+    { model: "WorldBane", key: "0xd003", value: { game_id: 1, day: 1, kind: nativeBaneConstants.ASH_FALL } },
     {
       model: "QuestProgress",
-      key: "quest-day",
+      key: "0xd004",
       value: { game_id: 1, home: 7, day: 1, progress: 2500, completed_level: 1 },
     },
   ]);
   store.setSnapshot({ gameId: 1, complete: true, actor: fixtureGame.scenario.player, timestamp: clock.now });
   const grant = (model: "LaborGrant" | "BaneGrant", labor = 1000, essence = 1500) => ({
     model,
-    key: `receipt-${model}`,
+    key: "0xff10",
     value: {
       game_id: 1,
       home: 7,
@@ -145,7 +145,7 @@ function worldDay(layout: "desktop" | "phone") {
     store.applyFacts([
       {
         model: "BaneProgress",
-        key: "quorum-day",
+        key: "0xd005",
         value: { game_id: 1, aspect: 2, day: 1, completed: 2, ended_at: start + 10 },
       },
     ]);
@@ -200,7 +200,7 @@ describe.each(["desktop", "phone"] as const)("bane collection on %s", (layout) =
 
   it("does not invent an ordinary quest while the recorded day is missing", () => {
     const game = worldDay(layout);
-    game.store.applyFacts([{ model: "WorldBane", key: "world-day", value: null }]);
+    game.store.applyFacts([{ model: "WorldBane", key: "0xd003", value: null }]);
     game.draw();
     expect(host.textContent).toContain("Reading today's quest");
     expect(host.textContent).not.toContain("The Cull");
@@ -213,10 +213,10 @@ describe.each(["desktop", "phone"] as const)("bane collection on %s", (layout) =
     const game = worldDay(layout);
     const source = aspects.find((aspect) => aspect.id !== 2)!;
     game.store.applyFacts([
-      { model: "FirstTeamBane", key: "first-bane", value: { game_id: 1, issued_day: 0 } },
+      { model: "FirstTeamBane", key: "0xd006", value: { game_id: 1, issued_day: 0 } },
       {
         model: "TeamBane",
-        key: "team-day",
+        key: "0xd007",
         value: {
           game_id: 1,
           aspect: 2,
@@ -228,7 +228,7 @@ describe.each(["desktop", "phone"] as const)("bane collection on %s", (layout) =
       },
       {
         model: "QuestProgress",
-        key: "quest-day",
+        key: "0xd004",
         value: { game_id: 1, home: 7, day: 1, progress: 3, completed_level: 1 },
       },
       game.grant("LaborGrant"),

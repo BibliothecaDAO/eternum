@@ -156,7 +156,7 @@ describe("daily quest facts", () => {
     const { store, read, progress } = fixture();
     progress(15, 1);
     store.setSnapshot({ gameId: 1, complete: false, actor: "0x111", timestamp: 100 });
-    expect(read()?.reading.unknown).toContain("INCOMPLETE_SNAPSHOT: LaborGrant");
+    expect(read()?.reading.unknown).toBe("INCOMPLETE_SNAPSHOT: BaneRules");
     store.applyFacts([
       {
         model: "LaborGrant",
@@ -171,7 +171,9 @@ describe("daily quest facts", () => {
         },
       },
     ]);
-    expect(read()?.reading.unknown).toContain("INCOMPLETE_SNAPSHOT: CampaignHome");
+    expect(read()?.reading.unknown).toBe("INCOMPLETE_SNAPSHOT: BaneRules");
+    store.setSnapshot({ gameId: 1, complete: true, actor: "0x111", timestamp: 100 });
+    expect(read()?.reading.known).toMatchObject({ state: "collected", reward: { labor: 1n, essence: 1n } });
   });
 
   it("does not synthesize progress outside the actor's expedition", () => {
@@ -194,11 +196,11 @@ function worldQuestFixture() {
   const calendar = { seed: 5n, startMainAt: 100, endAt: 10_000, dayUnitSeconds: 100 };
   const startsAt = dayOf(calendar, 100)!.end;
   store.applyFacts([
-    { model: "HomeAspect", key: "aspect", value: { game_id: 1, home: 7, aspect: 1 } },
-    { model: "AspectActivity", key: "activity", value: { game_id: 1, aspect: 1, day: 0, active: 5 } },
+    { model: "HomeAspect", key: "0xd000", value: { game_id: 1, home: 7, aspect: 1 } },
+    { model: "AspectActivity", key: "0xd001", value: { game_id: 1, aspect: 1, day: 0, active: 5 } },
     {
       model: "BaneRules",
-      key: "banes",
+      key: "0xd002",
       value: {
         game_id: 1,
         chance_step: 20,
@@ -209,7 +211,7 @@ function worldQuestFixture() {
         quest_counts: [3, 6, 9, 12, 20, 40, 60, 80, 2500, 6000, 10_000, 15_000],
       },
     },
-    { model: "WorldBane", key: "world", value: { game_id: 1, day: 1, kind: nativeBaneConstants.ASH_FALL } },
+    { model: "WorldBane", key: "0xd003", value: { game_id: 1, day: 1, kind: nativeBaneConstants.ASH_FALL } },
   ]);
   store.setSnapshot({ gameId: 1, complete: true, actor: "0x111", timestamp: startsAt + 10 });
   const read = () => readDailyQuest(store, 1, 7, startsAt + 10);
@@ -217,7 +219,7 @@ function worldQuestFixture() {
     store.applyFacts([
       {
         model: "QuestProgress",
-        key: "finished",
+        key: "0xd004",
         value: {
           game_id: 1,
           home: 7,
@@ -231,7 +233,7 @@ function worldQuestFixture() {
     store.applyFacts([
       {
         model: "BaneProgress",
-        key: "quorum",
+        key: "0xd005",
         value: {
           game_id: 1,
           aspect: 1,
@@ -245,7 +247,7 @@ function worldQuestFixture() {
     store.applyFacts([
       {
         model,
-        key: `receipt-${model}`,
+        key: "0xff10",
         value: {
           game_id: 1,
           home: 7,
@@ -304,7 +306,7 @@ describe("recorded bane quest rewards", () => {
     const realm = store.require("Structure", { game_id: 1, entity_id: 7 });
     store.applyFacts([
       { model: "Structure", key: "1:7", value: { ...realm, base: { ...realm.base, level: 3 } } },
-      { model: "CampaignHome", key: "campaign", value: { game_id: 1, home: 7, campaign_id: 9, tier: 1 } },
+      { model: "CampaignHome", key: "0xd006", value: { game_id: 1, home: 7, campaign_id: 9, tier: 1 } },
     ]);
     win();
     expect(read()?.reading.known).toMatchObject({
@@ -315,10 +317,10 @@ describe("recorded bane quest rewards", () => {
 
   it("leaves the whole quest unknown when its recorded roll or second receipt is not known", () => {
     const { store, read, finish, win, receipt } = worldQuestFixture();
-    store.applyFacts([{ model: "WorldBane", key: "world", value: null }]);
+    store.applyFacts([{ model: "WorldBane", key: "0xd003", value: null }]);
     expect(read()?.reading).toEqual({ unknown: "MISSING_WORLD_BANE_DAY" });
     store.applyFacts([
-      { model: "WorldBane", key: "world", value: { game_id: 1, day: 1, kind: nativeBaneConstants.ASH_FALL } },
+      { model: "WorldBane", key: "0xd003", value: { game_id: 1, day: 1, kind: nativeBaneConstants.ASH_FALL } },
     ]);
     finish();
     win();
@@ -330,10 +332,10 @@ describe("recorded bane quest rewards", () => {
   it("uses a rival's quest and never adds a world reward to a completed team bane", () => {
     const { store, read, finish, win, receipt } = worldQuestFixture();
     store.applyFacts([
-      { model: "FirstTeamBane", key: "first", value: { game_id: 1, issued_day: 0 } },
+      { model: "FirstTeamBane", key: "0xd007", value: { game_id: 1, issued_day: 0 } },
       {
         model: "TeamBane",
-        key: "team",
+        key: "0xd008",
         value: { game_id: 1, aspect: 1, day: 1, source: 2, issued_day: 0, quest: nativeQuestConstants.STAND },
       },
     ]);
@@ -357,7 +359,7 @@ describe("recorded bane quest rewards", () => {
     store.applyFacts([
       {
         model: "BaneGrant",
-        key: "receipt-BaneGrant",
+        key: "0xff10",
         value: {
           game_id: 1,
           home: 7,
@@ -375,9 +377,6 @@ describe("recorded bane quest rewards", () => {
   });
 });
 
-// Append beside the existing daily quest fixture when applying the runtime reader.
-// Imports: readBaneDay/readBaneEffects from ./banes, dayOf from ../../utils/days,
-// nativeBaneConstants/nativeQuestConstants from the generated client module.
 const calendar = { seed: 5n, startMainAt: 100, endAt: 10_000, dayUnitSeconds: 100 };
 const firstDay = dayOf(calendar, 100)!;
 const secondDay = dayOf(calendar, firstDay.end)!;

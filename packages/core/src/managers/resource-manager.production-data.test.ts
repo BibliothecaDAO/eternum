@@ -10,15 +10,15 @@ function productionManager(resourceId: ResourcesIds, outputAmountLeft: bigint) {
   const store = new NativeFactStore();
   store.setSnapshot({ gameId: 1, complete: true, actor: null, timestamp: 100 });
   store.applyFacts([
-    { model: "SliceRules", key: "rules", value: { ...preset.rules, game_id: 1, mode_rules: 0 } },
+    { model: "SliceRules", key: "0xd000", value: { ...preset.rules, game_id: 1, mode_rules: 0 } },
     {
       model: "ResourceWeight",
-      key: "weight",
+      key: "0xd001",
       value: { game_id: 1, entity_id: 7, capacity: (1n << 128n) - 1n, weight: 0 },
     },
     {
       model: "ResourceProduction",
-      key: "production",
+      key: "0xd002",
       value: {
         game_id: 1,
         entity_id: 7,

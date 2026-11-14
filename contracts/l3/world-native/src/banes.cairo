@@ -74,6 +74,7 @@ pub const ASH_FALL_QUEST: u8 = crate::quests::CULL;
 
 #[starknet::interface]
 pub trait IWorldBanes<T> {
+    fn initialize_bane_calendar(ref self: T, game_id: u32);
     fn prepare_bane_day(ref self: T, game_id: u32, context: crate::commands::ActionContext);
 }
 

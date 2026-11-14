@@ -10,10 +10,10 @@ function baneProduction() {
   const start = dayOf({ seed: 5n, startMainAt: 100, endAt: 10_000, dayUnitSeconds: 100 }, 100)!.end;
   const now = start + 11;
   store.applyFacts([
-    { model: "SliceRules", key: "rules", value: { ...preset.rules, game_id: 1, day_unit_seconds: 100, mode_rules: 0 } },
+    { model: "SliceRules", key: "0xd000", value: { ...preset.rules, game_id: 1, day_unit_seconds: 100, mode_rules: 0 } },
     {
       model: "GameRegistry",
-      key: "game",
+      key: "0xd001",
       value: {
         game_id: 1,
         preset_id: 7,
@@ -30,7 +30,7 @@ function baneProduction() {
     },
     {
       model: "Structure",
-      key: "home",
+      key: "0xd002",
       value: {
         game_id: 1,
         entity_id: 7,
@@ -47,10 +47,10 @@ function baneProduction() {
         metadata: { realm_id: 1, village_realm: 0, mine_kind: 0, deepest_depth: 0, has_wonder: false, order: 0 },
       },
     },
-    { model: "HomeAspect", key: "aspect", value: { game_id: 1, home: 7, aspect: 1 } },
+    { model: "HomeAspect", key: "0xd003", value: { game_id: 1, home: 7, aspect: 1 } },
     {
       model: "BaneRules",
-      key: "banes",
+      key: "0xd004",
       value: {
         game_id: 1,
         chance_step: 20,
@@ -61,18 +61,18 @@ function baneProduction() {
         quest_counts: [3, 6, 9, 12, 20, 40, 60, 80, 2500, 6000, 10_000, 15_000],
       },
     },
-    { model: "WorldBane", key: "day0", value: { game_id: 1, day: 0, kind: 0 } },
-    { model: "WorldBane", key: "day1", value: { game_id: 1, day: 1, kind: nativeBaneConstants.ASH_FALL } },
-    { model: "AspectActivity", key: "active", value: { game_id: 1, aspect: 1, day: 0, active: 5 } },
+    { model: "WorldBane", key: "0xd005", value: { game_id: 1, day: 0, kind: 0 } },
+    { model: "WorldBane", key: "0xd006", value: { game_id: 1, day: 1, kind: nativeBaneConstants.ASH_FALL } },
+    { model: "AspectActivity", key: "0xd007", value: { game_id: 1, aspect: 1, day: 0, active: 5 } },
     {
       model: "ResourceWeight",
-      key: "weight",
+      key: "0xd008",
       value: { game_id: 1, entity_id: 7, capacity: (1n << 128n) - 1n, weight: 0 },
     },
-    { model: "ResourceBalance", key: "balance", value: { game_id: 1, entity_id: 7, resource_type: 3, balance: 0 } },
+    { model: "ResourceBalance", key: "0xd009", value: { game_id: 1, entity_id: 7, resource_type: 3, balance: 0 } },
     {
       model: "ResourceProduction",
-      key: "production",
+      key: "0xd00a",
       value: {
         game_id: 1,
         entity_id: 7,
@@ -91,7 +91,7 @@ function baneProduction() {
     store.applyFacts([
       {
         model: "BaneProgress",
-        key: "quorum",
+        key: "0xd00b",
         value: { game_id: 1, aspect: 1, day: 1, completed: 2, ended_at: start + 5 },
       },
     ]);
@@ -117,7 +117,7 @@ it("settles the old and reduced rate separately and refreshes both balance and r
 
 it("does not forecast an ordinary rate or balance through an unknown recorded day", () => {
   const { store, manager, now } = baneProduction();
-  store.applyFacts([{ model: "WorldBane", key: "day1", value: null }]);
+  store.applyFacts([{ model: "WorldBane", key: "0xd006", value: null }]);
   expect(manager.balanceWithProduction(now, 3)).toBeUndefined();
   expect(manager.productionData(3, now)).toBeUndefined();
   expect(manager.balance(3)).toBe(0n);
@@ -129,7 +129,7 @@ it("exhausts finite production at the slowed rate, carrying the fraction into th
   store.applyFacts([
     {
       model: "ResourceProduction",
-      key: "production",
+      key: "0xd00a",
       value: {
         ...production,
         last_settled_at: start,
