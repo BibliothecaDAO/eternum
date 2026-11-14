@@ -12,3 +12,5 @@ export * from "./resources";
 export * from "./structures";
 export * from "./troops";
 export * from "./utils";
+
+export * from "./quests";

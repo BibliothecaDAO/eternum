@@ -49,6 +49,7 @@ pub struct GamesStorage<
     pub buildings: crate::buildings::BuildingStateStorage<TBuilding, TStructureBuildings>,
     pub combat_domain: crate::combat_domain::CombatDomainStorage,
     pub entry: crate::entry::EntryAdministrationStorage,
+    pub quests: crate::quests::QuestStateStorage,
     pub games: crate::game::GameStateStorage<TGameRegistry, TGameOverrides>,
     pub guards: crate::guards::GuardStateStorage<TGuard>,
     pub guilds: crate::guilds::GuildStateStorage<TGuild>,

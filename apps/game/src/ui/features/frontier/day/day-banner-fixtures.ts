@@ -1,5 +1,7 @@
 import { orderMeaning } from "@/ui/design-system/icon-meaning";
 import { aspects, orders } from "@bibliothecadao/types";
+import { nativeQuestConstants as quest } from "@bibliothecadao/eternum/game-client";
+import { dayQuestFace } from "./day-quest-face";
 
 import type { DayBannerProps, DayHead } from "./day-banner-view";
 
@@ -24,7 +26,7 @@ const COUNTS = {
 const dailyCount = (base: number, level: Level) => base * (level + 1);
 
 /** A bane day's quest is the bane's own: Blood Moon the Stand, Mist Tide the Lights, a rival's the Cull. */
-const camps = { icon: "beast-troll", name: "Camp-breakers", unit: "camps" } as const;
+const camps = dayQuestFace(quest.CAMPS);
 const stand = { icon: "defend", name: "The Stand", unit: "sites" } as const;
 const lights = { icon: "sun", name: "The Lights", unit: "tiles" } as const;
 const cull = { icon: "skull", name: "The Cull", unit: "troops" } as const;

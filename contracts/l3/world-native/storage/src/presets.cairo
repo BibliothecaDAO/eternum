@@ -80,5 +80,7 @@ pub struct PresetStorage<
     pub exploration_rewards: Map<u32, TExplorationReward>,
     pub season_win_points: u128,
     pub labor_rules: Option<TLaborRules>,
+    pub quest_rewards: Option<(u128, u128, u16)>,
+    pub quest_counts: Map<u8, u32>,
     pub deep_rules: Option<TDeepRules>,
 }

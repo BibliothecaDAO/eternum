@@ -71,6 +71,7 @@ const TX_MESSAGES: Record<TransactionType, string> = {
   [TransactionType.END_GAME]: "Game ended",
   [TransactionType.OPEN_CHEST]: "Crate opened",
   [TransactionType.INTERACT_SITE]: "Site visited",
+  [TransactionType.CLAIM_DAILY_QUEST]: "Quest reward collected",
   [TransactionType.BURN_RESEARCH_FOR_RELIC]: "Relic crafted",
   [TransactionType.APPLY_RELIC]: "Relic activated",
 };

@@ -1,3 +1,5 @@
+use core::poseidon::poseidon_hash_span;
+
 pub const HUNT: u8 = 0;
 pub const CAMPS: u8 = 1;
 pub const RIFTS: u8 = 2;
@@ -44,6 +46,58 @@ pub trait IDailyQuest<T> {
 #[starknet::interface]
 pub trait IQuestProgress<T> {
     fn record_quest_progress(ref self: T, home: crate::resources::ResourceKey, kind: u8, amount: u128, timestamp: u64);
+}
+
+pub fn validate(rules: QuestRules) {
+    assert!(rules.base_counts.len() == QUEST_COUNT.into(), "daily quest bag must contain seven quests");
+    for count in rules.base_counts {
+        assert!(*count != 0, "empty quest target");
+    }
+    assert!(rules.labor != 0 && rules.essence != 0, "empty quest reward");
+    assert!(rules.bonus_percent >= 100, "quest bonus reduces reward");
+    let (labor, essence) = reward(rules.labor, rules.essence, rules.bonus_percent, 4);
+    let maximum: u128 = core::num::traits::Bounded::MAX;
+    assert!(
+        labor <= maximum / crate::rules::RESOURCE_PRECISION && essence <= maximum / crate::rules::RESOURCE_PRECISION,
+        "quest reward exceeds resource amount",
+    );
+}
+
+pub fn daily_quest(seed: felt252, day: u64) -> u8 {
+    let week = day / QUEST_COUNT.into();
+    let bag = shuffled_bag(seed, week);
+    let index: u32 = (day % QUEST_COUNT.into()).try_into().unwrap();
+    if week != 0 && index < 2 {
+        let previous = shuffled_bag(seed, week - 1);
+        if *previous.at(6) == *bag.at(0) {
+            return *bag.at(1 - index);
+        }
+    }
+    let selected = *bag.at(index);
+    selected
+}
+
+fn shuffled_bag(seed: felt252, week: u64) -> Array<u8> {
+    let mut bag = array![HUNT, CAMPS, RIFTS, RELICS, VETERANS, FINDS, REVEALS];
+    let seed: u256 = poseidon_hash_span(array![seed, week.into(), 'daily-quest'].span()).into();
+    let mut remaining: u32 = QUEST_COUNT.into();
+    while remaining > 1 {
+        let chosen: u32 = crate::random::range(seed, remaining.into(), remaining.into()).try_into().unwrap();
+        let last = remaining - 1;
+        let mut next = array![];
+        for index in 0_u32..QUEST_COUNT.into() {
+            next.append(*bag.at(if index == chosen {
+                last
+            } else if index == last {
+                chosen
+            } else {
+                index
+            }));
+        }
+        bag = next;
+        remaining -= 1;
+    }
+    bag
 }
 
 pub fn reward(labor: u128, essence: u128, labor_percent: u16, level: u8) -> (u128, u128) {

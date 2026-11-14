@@ -889,6 +889,55 @@ const buttonNamed = (name) => `JSON.stringify((() => {
  * phone's Menu), then its daily Claim; the result is the sheet saying that Realm's labor was claimed today, once the
  * chain has granted it.
  */
+const DAILY_QUEST_STEPS = [
+  { name: "enter-on-map", settleMs: 3_000, verify: inScene("map") },
+  {
+    name: "collect-daily-quest",
+    play: async ({ browser, extraScreenshot }) => {
+      const ready = await readUntil(
+        () =>
+          browser.read(`JSON.stringify((() => {
+        const panel = document.querySelector('[data-daily-quest]');
+        return { text: panel?.textContent, collect: [...(panel?.querySelectorAll('button') ?? [])].some(b => b.textContent === 'Collect' && !b.disabled) };
+      })())`),
+        (value) => value.collect,
+        PLAYABLE_WAIT_MS,
+      );
+      const before = extraScreenshot("quest-ready");
+      if (!ready?.collect) return { ready, before };
+      browser.click("Collect");
+      const collected = await readUntil(
+        () => browser.read(`Boolean(document.querySelector('[data-daily-quest] [aria-label="Collected"]'))`),
+        Boolean,
+        PLAYABLE_WAIT_MS,
+      );
+      const grants = browser.read(
+        `JSON.stringify((window.__labChain?.sent ?? []).filter(({command}) => command.kind === 'ClaimDailyQuest'))`,
+      );
+      return { ready, before, collected, grants };
+    },
+    settleMs: 0,
+    verify: ({ played }) => {
+      const [sent] = played.grants ?? [];
+      const receipt = sent?.answered.find(({ model }) => model === "LaborGrant")?.value;
+      const balances = sent?.answered.filter(({ model }) => model === "ResourceBalance") ?? [];
+      return played.ready?.collect &&
+        played.collected &&
+        played.grants?.length === 1 &&
+        Number(sent.command.fields.home) === 7 &&
+        Number(sent.command.fields.day) === 0 &&
+        Number(receipt?.home) === 7 &&
+        Number(receipt?.day) === 0 &&
+        receipt?.amount === "1000000000000" &&
+        receipt?.essence === "1500000000000" &&
+        balances.length === 2 &&
+        balances.every(({ value }) => value.balance === "1500000000000")
+        ? completed(played)
+        : failed("Collect must send the exact home/day and display its confirmed reward receipt", played);
+    },
+  },
+];
+
 const CLAIM_ACTION_STEPS = [
   { name: "enter-on-map", settleMs: 3_000, verify: inScene("map") },
   clickToResultStep("claim", "GrantLabor", claimARealmsLabor, ({ played }) => played.watching && { watch: "claimed" }),
@@ -4807,6 +4856,7 @@ export const STEP_SETS = {
   "lab-actions-transfer": { game: labSpireGame("merge-loses-xp"), steps: transferActionSteps() },
   "lab-actions-deploy": { game: labSpireGame("actions"), steps: DEPLOY_ACTION_STEPS },
   "lab-actions-research": { game: labSpireGame("research"), steps: RESEARCH_ACTION_STEPS },
+  "lab-daily-quest": { game: labSpireGame("quest"), steps: DAILY_QUEST_STEPS },
   "lab-actions-claim": { game: labSpireGame("claim"), steps: CLAIM_ACTION_STEPS },
   "lab-far-place": { game: labSpireGame("far-place"), steps: FAR_PLACE_STEPS, devOverlays: true },
   "lab-relic-forecasts": { game: labSpireGame("relics"), steps: RELIC_FORECAST_STEPS },

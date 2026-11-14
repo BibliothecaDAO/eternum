@@ -1314,3 +1314,15 @@ Presentation: `/lab/app/wallet-ready/doorway/aspect` and `/lab/app/wallet-ready/
 production picker. The full founding flow is `/lab/game?scenario=aspect-settle`; the canonical playtest's
 `--steps lab-aspect-settle` opens Play, verifies no automatic founding, taps an Aspect and checks the command plus
 resulting membership facts.
+
+## Daily quest collection
+
+Games with quest rules show today's shared quest on the Frontier HUD, with the home's progress and reward. Complete the
+count, then press Collect. The collected mark appears when the grant receipt arrives. A completed quest keeps the level
+at which it finished; upgrading before completion increases the required count. Held-Realm and campaign homes receive
+the configured labor bonus. Published presets keep quests disabled until their action producers are wired.
+
+`/lab/game?scenario=quest` opens a completed quest on the real HUD. The canonical
+`pnpm playtest --steps lab-daily-quest` run presses Collect, checks the provider's home/day payload, the receipt and
+both resource balances, then captures the collected state. Run the flow kind `playtest-daily-quest` for desktop and
+phone evidence.

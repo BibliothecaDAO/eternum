@@ -89,3 +89,34 @@ fn deep_troop_projection_stops_at_zero_and_never_drains_a_future_cursor() {
     assert_eq!(crate::deep::troops_after_ticks(1000, 10, 100, 200), 0);
     assert_eq!(crate::deep::troops_after_ticks(1000, 10, 9, 200), 1000);
 }
+
+#[test]
+fn daily_quests_match_the_client_calendar_vector() {
+    let expected = array![6_u8, 4, 0, 3, 1, 2, 5, 0, 2, 6, 3, 1, 4, 5, 4, 5, 2, 1, 3, 0, 6];
+    for day in 0_u32..expected.len() {
+        assert_eq!(crate::quests::daily_quest(5, day.into()), *expected.at(day));
+    }
+}
+
+#[test]
+fn every_week_has_every_quest_and_no_boundary_repeats() {
+    for seed in 0_u32..10 {
+        let mut previous = 255_u8;
+        for week in 0_u64..8 {
+            let mut seen = 0_u32;
+            for index in 0_u64..7 {
+                let quest = crate::quests::daily_quest(seed.into(), week * 7 + index);
+                assert!(quest < crate::quests::QUEST_COUNT);
+                assert!(quest != previous);
+                let mut bit = 1_u32;
+                for _ in 0..quest {
+                    bit *= 2;
+                }
+                assert_eq!(seen & bit, 0);
+                seen = seen | bit;
+                previous = quest;
+            }
+            assert_eq!(seen, 127);
+        }
+    }
+}

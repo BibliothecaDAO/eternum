@@ -144,6 +144,7 @@ export enum TransactionType {
 
   // Realms & Settlement
   SETTLE = "settle",
+  CLAIM_DAILY_QUEST = "claim_daily_quest",
 
   // Lords & Approvals
   SET_ACCESS = "set_access",

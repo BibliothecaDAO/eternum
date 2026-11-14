@@ -32,6 +32,7 @@ pub struct WithdrawalPreset {
 }
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]
 pub struct EconomyPreset {
+    pub quests: Option<crate::quests::QuestRules>,
     pub deep: Option<crate::deep::DeepRules>,
     pub labor: Option<crate::entry::LaborRules>,
     pub hyperstructures: crate::hyperstructures::HyperstructureRules,
@@ -55,6 +56,14 @@ pub struct PresetDefinition {
 
 pub fn validate(preset: PresetDefinition) {
     let rules = preset.rules;
+    if let Some(quests) = preset.economy.quests {
+        crate::quests::validate(quests);
+        assert!(
+            rules.day_unit_seconds != 0 && !preset.settlement.order_aspects.is_empty(),
+            "quests need Aspect expeditions",
+        );
+        assert!(preset.economy.labor.is_none(), "daily quests replace labor claims");
+    }
     if let Some(deep) = preset.economy.deep {
         assert!(
             rules.day_unit_seconds != 0 && !preset.settlement.order_aspects.is_empty(), "Deep needs Aspect expeditions",
@@ -67,7 +76,10 @@ pub fn validate(preset: PresetDefinition) {
             || (rules.entry_rule == crate::rules::ENTRY_OPEN && rules.day_unit_seconds != 0),
         "Aspects require open expeditions",
     );
-    assert!(preset.economy.labor.is_some() == (rules.day_unit_seconds != 0), "labor rules require expeditions");
+    assert!(
+        (preset.economy.labor.is_some() || preset.economy.quests.is_some()) == (rules.day_unit_seconds != 0),
+        "expeditions require daily rewards",
+    );
     if let Some(labor) = preset.economy.labor {
         assert!(labor.amount != 0, "zero daily labor grant");
         assert!(labor.golden_amount != 0, "zero golden labor grant");

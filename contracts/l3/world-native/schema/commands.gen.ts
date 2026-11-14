@@ -1,6 +1,7 @@
 // Generated from command routes and production payload ABIs. Run the native schema generator to update.
 import type { BigNumberish } from "starknet";
 export const nativeCommandBits = {
+  "ClaimDailyQuest": "4722366482869645213696",
   "CreateExplorer": "1",
   "Explore": "2",
   "Battle": "4",
@@ -55,6 +56,7 @@ export const nativeCommandBits = {
   "InteractSite": "590295810358705651712"
 } as const;
 export interface NativeCommandPayloads {
+  ClaimDailyQuest: { readonly home: BigNumberish; readonly day: BigNumberish };
   CreateExplorer: { readonly slot: BigNumberish; readonly structure_id: BigNumberish; readonly category: BigNumberish; readonly tier: BigNumberish; readonly amount: BigNumberish; readonly direction: BigNumberish };
   Explore: { readonly explorer_id: BigNumberish; readonly direction: BigNumberish };
   Battle: { readonly attacker_id: BigNumberish; readonly defender_id: BigNumberish; readonly steal_resources: readonly ({ readonly resource_type: BigNumberish; readonly amount: BigNumberish })[] };

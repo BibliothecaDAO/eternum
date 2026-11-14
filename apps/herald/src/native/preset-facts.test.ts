@@ -429,3 +429,24 @@ it("projects optional Deep rules from verified registration and publishes no row
     expect(store.get("DeepRules", { game_id: 1 })).toEqual(enabled ? { game_id: 1, ...deep } : undefined);
   }
 });
+
+it("projects daily quest rules from verified registration, without a legacy claim row", () => {
+  const rules = { base_counts: [1, 1, 1, 1, 1, 2, 15], labor: 1000n, essence: 1500n, bonus_percent: 150 };
+  for (const enabled of [false, true]) {
+    const world = setup();
+    const preset = registration(7, (definition) => {
+      if (enabled) {
+        definition.economy.quests = new CairoOption(CairoOptionVariant.Some, rules);
+        definition.economy.labor = new CairoOption(CairoOptionVariant.None);
+      }
+    });
+    applyRegistration(world, preset);
+    world.native.applyReceipt(world.fold, receipt(launch(preset)), 11, 0);
+    const store = new NativeFactStore();
+    store.applyFacts(
+      world.fold.gameRows("QuestRules", "1").map(({ key, value }) => ({ model: "QuestRules", key, value })),
+    );
+    expect(store.get("QuestRules", { game_id: 1 })).toEqual(enabled ? { game_id: 1, ...rules } : undefined);
+    expect(world.fold.gameRows("LaborRules", "1")).toHaveLength(enabled ? 0 : 1);
+  }
+});

@@ -155,6 +155,7 @@ export const SCOPE_INPUT_MODELS = [
   "PlayerEntry",
   "Structure",
   "ExplorerTroops",
+  "ArmyDay",
   "TileOccupancy",
   "ExpeditionSite",
 ] as const;

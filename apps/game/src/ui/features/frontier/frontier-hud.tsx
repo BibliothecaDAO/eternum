@@ -62,6 +62,7 @@ import { SceneFailureNotice } from "./hud/scene-failure-notice";
 import { NextOrderBar, OrderBar } from "./hud/order-bar";
 import { PickedArmy } from "./hud/picked-army";
 import { SpireButton, useArmyAtItsSpire } from "./spire-card";
+import { DailyQuest } from "./day/daily-quest";
 import { FrontierToday } from "./log/frontier-today";
 import { CARD_STORE_KINDS, type CardStore, FrontierStoreCard, isCardStore } from "./production/frontier-store-card";
 import { FrontierResearch } from "./research/frontier-research";
@@ -206,6 +207,7 @@ export const FrontierHud = ({
     ) : undefined;
   const notices = (
     <>
+      {own && <DailyQuest realm={own} layout={desktop ? "desktop" : "phone"} />}
       <OfflineNotice />
       <SceneFailureNotice />
       {own && <DayEndNotice dayEnd={dayEnd} onOpen={() => setSurface("today")} />}

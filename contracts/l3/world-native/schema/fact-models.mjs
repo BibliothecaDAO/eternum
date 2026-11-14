@@ -2,6 +2,14 @@
 // Production definitions, when present, must agree exactly with these fields.
 export const factWireTypes = [
   {
+    type: "struct",
+    name: "world_native::quests::QuestProgress",
+    members: [
+      { name: "progress", type: "core::integer::u128" },
+      { name: "completed_level", type: "core::integer::u8" },
+    ],
+  },
+  {
     type: "enum",
     name: "world_native::army_relics::RelicKind",
     variants: [
@@ -738,6 +746,7 @@ const presetDerivedModels = new Set([
   "SliceRules",
   "SettlementRules",
   "AspectRules",
+  "QuestRules",
   "ResourceRule",
   "ProductionRecipe",
   "MineKindConfig",
@@ -815,6 +824,13 @@ export function defineFactModels({ struct, model: declare }) {
         parentKeys: { entity_id: "structure_id" },
         value: "zero",
         meaning: "No troops or resurrection delay in this guard slot.",
+      };
+    if (row.name === "QuestProgress")
+      row.absence = {
+        parent: "Structure",
+        parentKeys: { entity_id: "home" },
+        value: "zero",
+        meaning: "This home has made no daily quest progress on this day.",
       };
     if (row.name === "AspectMembers")
       row.absence = { parent: "AspectRules", value: "zero", meaning: "No home has joined this Aspect in this game." };
@@ -946,6 +962,17 @@ export function defineFactModels({ struct, model: declare }) {
         { name: "id", type: "core::integer::u64" },
       ],
       struct("deposits::DepositReceipt"),
+    ),
+    model("QuestRules", "game", [{ name: "game_id", type: "core::integer::u32" }], struct("quests::QuestRules")),
+    model(
+      "QuestProgress",
+      "game",
+      [
+        { name: "game_id", type: "core::integer::u32" },
+        { name: "home", type: "core::integer::u64" },
+        { name: "day", type: "core::integer::u64" },
+      ],
+      struct("quests::QuestProgress"),
     ),
     model("LaborRules", "game", [{ name: "game_id", type: "core::integer::u32" }], struct("entry::LaborRules")),
     model("DeepRules", "game", [{ name: "game_id", type: "core::integer::u32" }], struct("deep::DeepRules")),
@@ -1459,6 +1486,8 @@ export const syncScopes = {
   EntryEntitlement: byOwner,
   PlayerEntry: byOwner,
   AspectRules: "shared",
+  QuestRules: "shared",
+  QuestProgress: { entities: ["home"] },
   HomeAspect: "shared",
   AspectMembers: "shared",
   VillagePass: byOwner,

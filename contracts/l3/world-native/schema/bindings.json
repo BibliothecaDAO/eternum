@@ -1,5 +1,5 @@
 {
-  "schemaIdentity": "17fd0d26e6aeda054f6c3b603f0b01af18c79a0982da4bf4d5847c5b6a8b9339",
+  "schemaIdentity": "7435a8eda29289bb6da1bbb8d073b5b472c069fbfa4689d7062a72f00cc6bd66",
   "commandAbi": [
     {
       "type": "interface",
@@ -23,6 +23,11 @@
       "type": "enum",
       "name": "world_native::commands::Command",
       "variants": [
+        {
+          "name": "ClaimDailyQuest",
+          "type": "world_native::quests::ClaimDailyQuest",
+          "wireId": 72
+        },
         {
           "name": "CreateExplorer",
           "type": "world_native::commands::CreateExplorer",
@@ -282,6 +287,20 @@
           "name": "InteractSite",
           "type": "world_native::relics::InteractSite",
           "wireId": 69
+        }
+      ]
+    },
+    {
+      "type": "struct",
+      "name": "world_native::quests::ClaimDailyQuest",
+      "members": [
+        {
+          "name": "home",
+          "type": "core::integer::u64"
+        },
+        {
+          "name": "day",
+          "type": "core::integer::u64"
         }
       ]
     },
@@ -1302,6 +1321,14 @@
       "scope": "game"
     },
     {
+      "name": "QuestRules",
+      "scope": "game"
+    },
+    {
+      "name": "QuestProgress",
+      "scope": "game"
+    },
+    {
       "name": "LaborRules",
       "scope": "game"
     },
@@ -1483,10 +1510,6 @@
     },
     {
       "name": "ArmyDay",
-      "scope": "game"
-    },
-    {
-      "name": "AspectActivity",
       "scope": "game"
     },
     {

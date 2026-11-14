@@ -165,3 +165,71 @@ fn invalid_deep_rules_leave_no_preset_registered() {
         assert_eq!(IRegistrarDispatcher { contract_address: d.games }.preset_commitment(preset_id), 0);
     }
 }
+
+fn optional_quest_rules() -> crate::quests::QuestRules {
+    crate::quests::QuestRules {
+        base_counts: array![1, 1, 1, 1, 1, 2, 15].span(), labor: 1000, essence: 1500, bonus_percent: 150,
+    }
+}
+
+#[test]
+fn optional_quests_store_every_target_and_reward_without_a_legacy_labor_claim() {
+    let d = super::registrar::setup();
+    start_cheat_caller_address(d.games, super::authority());
+    let (preset_id, mut definition) = current_definition("frontier");
+    assert!(definition.economy.quests.is_none());
+    let rules = optional_quest_rules();
+    definition.economy.quests = Some(rules);
+    definition.economy.labor = None;
+    let registrar = IRegistrarDispatcher { contract_address: d.games };
+    registrar.register_preset(preset_id, definition);
+    let commitment = registrar.preset_commitment(preset_id);
+    assert!(commitment != 0);
+    interact_with_state(
+        d.games,
+        || {
+            let preset = crate::state::read().presets.entry(commitment);
+            assert!(preset.labor_rules.read().is_none());
+            assert_eq!(preset.quest_rewards.read(), Some((1000, 1500, 150)));
+            for kind in 0_u8..crate::quests::QUEST_COUNT {
+                assert_eq!(preset.quest_counts.read(kind), *rules.base_counts.at(kind.into()));
+            }
+        },
+    );
+}
+
+#[test]
+#[feature("safe_dispatcher")]
+fn invalid_quest_rules_and_duplicate_reward_paths_refuse_registration() {
+    let d = super::registrar::setup();
+    start_cheat_caller_address(d.games, super::authority());
+    for invalid in 0_u8..10 {
+        let (preset_id, mut definition) = current_definition("frontier");
+        let mut rules = optional_quest_rules();
+        if invalid != 0 {
+            definition.economy.labor = None;
+        }
+        if invalid == 1 {
+            definition.rules.day_unit_seconds = 0;
+        } else if invalid == 2 {
+            definition.settlement.order_aspects = array![].span();
+        } else if invalid == 3 {
+            rules.base_counts = array![1].span();
+        } else if invalid == 4 {
+            rules.base_counts = array![1, 1, 1, 0, 1, 2, 15].span();
+        } else if invalid == 5 {
+            rules.labor = 0;
+        } else if invalid == 6 {
+            rules.essence = 0;
+        } else if invalid == 7 {
+            rules.bonus_percent = 99;
+        } else if invalid == 8 {
+            rules.labor = core::num::traits::Bounded::MAX;
+        } else if invalid == 9 {
+            rules.essence = core::num::traits::Bounded::MAX;
+        }
+        definition.economy.quests = Some(rules);
+        assert!(IRegistrarSafeDispatcher { contract_address: d.games }.register_preset(preset_id, definition).is_err());
+        assert_eq!(IRegistrarDispatcher { contract_address: d.games }.preset_commitment(preset_id), 0);
+    }
+}

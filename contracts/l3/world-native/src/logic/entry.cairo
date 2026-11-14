@@ -158,6 +158,9 @@ pub mod EntryAdministration {
             let founded = core::cmp::max(created_at.into(), game.start_main_at);
             let first = crate::days::day_of(game, unit, founded).index;
             let today = crate::days::day_of(game, unit, timestamp).index;
+            if preset.quest_rewards.read().is_some() {
+                return;
+            }
             let rules = preset.labor_rules.read().expect('labor is disabled');
             let resource_context = crate::entry::IResourceContext::resource_context(@self, key.game_id);
             let release_id = self.data.game_releases.read(key.game_id);

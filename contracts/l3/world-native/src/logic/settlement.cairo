@@ -395,9 +395,7 @@ pub mod SettlementState {
             );
             let preset = crate::logic::preset_record::for_game(key.game_id);
             assert!(
-                preset.rules.entry_rule.read() == crate::rules::ENTRY_OPEN
-                    && preset.rules.day_unit_seconds.read() != 0
-                    && preset.labor_rules.read().is_some(),
+                preset.rules.entry_rule.read() == crate::rules::ENTRY_OPEN && preset.rules.day_unit_seconds.read() != 0,
                 "campaign requires Frontier",
             );
         }

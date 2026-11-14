@@ -56,6 +56,8 @@ export function createSystemCalls({ provider, authHandler }: { provider: any; au
     }) as T;
   };
 
+  const claim_daily_quest = (props: Parameters<typeof provider.claim_daily_quest>[0]) =>
+    provider.claim_daily_quest(props);
   const settle_season = (props: Parameters<typeof provider.settle_season>[0]) => provider.settle_season(props);
   const enter_depth = (props: Parameters<typeof provider.enter_depth>[0]) => provider.enter_depth(props);
   const research = (props: Parameters<typeof provider.research>[0]) => provider.research(props);
@@ -324,6 +326,7 @@ export function createSystemCalls({ provider, authHandler }: { provider: any; au
     remove_guild_member: withAuth(remove_guild_member),
     disband_guild: withAuth(disband_guild),
     settle_season: withAuth(settle_season),
+    claim_daily_quest: withAuth(claim_daily_quest),
     enter_depth: withAuth(enter_depth),
     research: withAuth(research),
     spend_skill_point: withAuth(spend_skill_point),

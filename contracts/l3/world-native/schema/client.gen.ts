@@ -1,5 +1,5 @@
 // Generated from native fact models and contract ABIs. Run the native schema generator to update.
-export const nativeFactSchemaIdentity = "17fd0d26e6aeda054f6c3b603f0b01af18c79a0982da4bf4d5847c5b6a8b9339";
+export const nativeFactSchemaIdentity = "7435a8eda29289bb6da1bbb8d073b5b472c069fbfa4689d7062a72f00cc6bd66";
 export const nativeReleaseConstants = {
   "RUIN_DEPTH_LIMIT_RELEASE": 9
 } as const;
@@ -70,6 +70,19 @@ export const nativeRuleConstants = {
   "DEEP_SITE_COUNT": 3,
   "DEEP_ARRIVAL_Y": 5,
   "DEEP_GUARD_SLOTS": 4
+} as const;
+export const nativeQuestConstants = {
+  "HUNT": 0,
+  "CAMPS": 1,
+  "RIFTS": 2,
+  "RELICS": 3,
+  "VETERANS": 4,
+  "FINDS": 5,
+  "REVEALS": 6,
+  "QUEST_COUNT": 7,
+  "STAND": 7,
+  "LIGHTS": 8,
+  "CULL": 9
 } as const;
 export const nativeArrivalConstants = {
   "SLOTS_PER_DAY": 48
@@ -208,6 +221,8 @@ export interface NativeRows {
   SpendLords: { readonly game_id: number; readonly account: bigint; readonly available: bigint; readonly consumed: bigint; readonly swept: bigint };
   PrincipalWithdrawal: { readonly game_id: number; readonly account: bigint; readonly amount: bigint };
   DepositReceipt: { readonly game_id: number; readonly id: bigint; readonly commitment: bigint; readonly account: bigint; readonly amount: bigint; readonly cancelled: boolean };
+  QuestRules: { readonly game_id: number; readonly base_counts: readonly (number)[]; readonly labor: bigint; readonly essence: bigint; readonly bonus_percent: number };
+  QuestProgress: { readonly game_id: number; readonly home: bigint; readonly day: bigint; readonly progress: bigint; readonly completed_level: number };
   LaborRules: { readonly game_id: number; readonly amount: bigint; readonly campaign_essence: bigint; readonly golden_amount: bigint; readonly golden_essence: bigint };
   DeepRules: { readonly game_id: number; readonly foundation: { readonly alt: boolean; readonly x: number; readonly y: number }; readonly quarry: { readonly alt: boolean; readonly x: number; readonly y: number }; readonly altar: { readonly alt: boolean; readonly x: number; readonly y: number }; readonly beast_count: bigint; readonly loss_per_tick: bigint; readonly quarry_per_tick: bigint; readonly altar_per_tick: number; readonly altar_threshold: number };
   LaborGrant: { readonly game_id: number; readonly home: bigint; readonly day: bigint; readonly account: bigint; readonly amount: bigint; readonly essence: bigint };
@@ -254,7 +269,6 @@ export interface NativeRows {
   RuinRelic: { readonly game_id: number; readonly entity_id: bigint; readonly kind: "Blade" | "Ward" | "Plunder" | "FarEye" | "Tome"; readonly rank: number };
   ArmyProgress: { readonly game_id: number; readonly explorer_id: bigint; readonly xp: number; readonly common_points: number; readonly uncommon_points: number; readonly rare_points: number; readonly epic_points: number; readonly legendary_points: number; readonly battle: number; readonly logistics: number; readonly scouting: number; readonly homecoming: number; readonly scouting_kinds: number };
   ArmyDay: { readonly game_id: number; readonly explorer_id: bigint; readonly day: bigint };
-  AspectActivity: { readonly game_id: number; readonly aspect: number; readonly day: bigint; readonly active: number };
   ArmySlot: { readonly game_id: number; readonly structure_id: bigint; readonly epoch: bigint; readonly slot: number; readonly explorer_id: bigint; readonly stamina: { readonly amount: bigint; readonly settled_at: number; readonly remainder: number } };
   ExplorerTroops: { readonly game_id: number; readonly explorer_id: bigint; readonly owner: bigint; readonly troops: { readonly category: "Knight" | "Paladin" | "Crossbowman"; readonly tier: "T1" | "T2" | "T3"; readonly count: bigint; readonly stamina: { readonly Inline: { readonly amount: bigint; readonly settled_at: number; readonly remainder: number } } | { readonly Slot: number }; readonly boosts: { readonly incr_damage_dealt_percent_num: number; readonly incr_damage_dealt_end_at: number; readonly decr_damage_gotten_percent_num: number; readonly decr_damage_gotten_end_at: number; readonly incr_stamina_regen_percent_num: number; readonly incr_stamina_regen_seconds_left: number; readonly incr_explore_reward_percent_num: number; readonly incr_explore_reward_end_at: number }; readonly battle_cooldown_end: number } };
   ExpeditionSite: { readonly game_id: number; readonly entity_id: bigint; readonly category: number; readonly initial_guard_count: bigint; readonly alt: boolean; readonly col: number; readonly row: number; readonly clear: ({ readonly explorer_id: bigint; readonly home_id: bigint; readonly reward: ({ readonly resource_type: number; readonly amount: bigint }) | null }) | null };
@@ -306,6 +320,8 @@ export interface NativeKeys {
   SpendLords: { readonly game_id: number; readonly account: bigint };
   PrincipalWithdrawal: { readonly game_id: number; readonly account: bigint };
   DepositReceipt: { readonly game_id: number; readonly id: bigint };
+  QuestRules: { readonly game_id: number };
+  QuestProgress: { readonly game_id: number; readonly home: bigint; readonly day: bigint };
   LaborRules: { readonly game_id: number };
   DeepRules: { readonly game_id: number };
   LaborGrant: { readonly game_id: number; readonly home: bigint; readonly day: bigint };
@@ -352,7 +368,6 @@ export interface NativeKeys {
   RuinRelic: { readonly game_id: number; readonly entity_id: bigint };
   ArmyProgress: { readonly game_id: number; readonly explorer_id: bigint };
   ArmyDay: { readonly game_id: number; readonly explorer_id: bigint };
-  AspectActivity: { readonly game_id: number; readonly aspect: number; readonly day: bigint };
   ArmySlot: { readonly game_id: number; readonly structure_id: bigint; readonly epoch: bigint; readonly slot: number };
   ExplorerTroops: { readonly game_id: number; readonly explorer_id: bigint };
   ExpeditionSite: { readonly game_id: number; readonly entity_id: bigint };
@@ -645,6 +660,45 @@ export const nativeFactModels = {
       "account": "felt",
       "amount": "u128",
       "cancelled": "boolean"
+    }
+  },
+  "QuestRules": {
+    "keys": [
+      "game_id"
+    ],
+    "scope": "game",
+    "fields": {
+      "game_id": "u32",
+      "base_counts": [
+        "u32"
+      ],
+      "labor": "u128",
+      "essence": "u128",
+      "bonus_percent": "u16"
+    }
+  },
+  "QuestProgress": {
+    "keys": [
+      "game_id",
+      "home",
+      "day"
+    ],
+    "scope": "game",
+    "fields": {
+      "game_id": "u32",
+      "home": "u64",
+      "day": "u64",
+      "progress": "u128",
+      "completed_level": "u8"
+    },
+    "absence": {
+      "parent": "Structure",
+      "parentKeys": {
+        "game_id": "game_id",
+        "entity_id": "home"
+      },
+      "value": "zero",
+      "meaning": "This home has made no daily quest progress on this day."
     }
   },
   "LaborRules": {
@@ -1504,28 +1558,6 @@ export const nativeFactModels = {
       "day": "u64"
     }
   },
-  "AspectActivity": {
-    "keys": [
-      "game_id",
-      "aspect",
-      "day"
-    ],
-    "scope": "game",
-    "fields": {
-      "game_id": "u32",
-      "aspect": "u8",
-      "day": "u64",
-      "active": "u32"
-    },
-    "absence": {
-      "parent": "GameRegistry",
-      "value": "zero",
-      "meaning": "No home in this Aspect allocated an army on this day.",
-      "parentKeys": {
-        "game_id": "game_id"
-      }
-    }
-  },
   "ArmySlot": {
     "keys": [
       "game_id",
@@ -2383,6 +2415,12 @@ export const nativeSyncScopes = {
     ]
   },
   "AspectRules": "shared",
+  "QuestRules": "shared",
+  "QuestProgress": {
+    "entities": [
+      "home"
+    ]
+  },
   "HomeAspect": "shared",
   "AspectMembers": "shared",
   "VillagePass": {
@@ -2530,7 +2568,6 @@ export const nativeSyncScopes = {
       "explorer_id"
     ]
   },
-  "AspectActivity": "shared",
   "ArmySlot": {
     "realms": [
       "structure_id"

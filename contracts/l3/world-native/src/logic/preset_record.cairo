@@ -116,6 +116,7 @@ fn write_economy(
     preset: PresetWrite, commitment: felt252, rules: crate::rules::SliceRules, economy: crate::presets::EconomyPreset,
 ) {
     preset.labor_rules.write(economy.labor);
+    write_quests(preset, economy.quests);
     preset.deep_rules.write(economy.deep);
     write_hyperstructures(preset, rules, economy.hyperstructures);
     let classes = crate::state::read().releases.read(crate::state::read().current_release.read()).classes;
@@ -136,6 +137,16 @@ fn write_economy(
             commitment,
             withdrawals,
         );
+    }
+}
+
+fn write_quests(preset: PresetWrite, rules: Option<crate::quests::QuestRules>) {
+    let Some(rules) = rules else {
+        return;
+    };
+    preset.quest_rewards.write(Some((rules.labor, rules.essence, rules.bonus_percent)));
+    for index in 0..rules.base_counts.len() {
+        preset.quest_counts.write(index.try_into().unwrap(), *rules.base_counts.at(index));
     }
 }
 

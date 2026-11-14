@@ -182,10 +182,14 @@ cmd = 'cp /home/djizus/projects/eternum-lanes/showcase/apps/game/.env.local apps
 estimate_gb = 6
 
 [kind.test-aspect-founding]
-cmd = "pnpm run build:packages && pnpm --dir packages/types test src/constants/orders.test.ts && bun test deploy/athanor/harness/harness-game.test.ts && pnpm --dir apps/game test src/ui/features/game-entry src/lab/game/lab-games.test.ts src/lab/game/lab-home-entry.test.ts && pnpm --dir apps/game verify:assets scripts/client-playtest/steps.test.mjs scripts/client-playtest/player-entry.test.mjs"
+cmd = "pnpm run build:packages && pnpm --dir packages/types test src/constants/orders.test.ts src/constants/quests.test.ts && bun test deploy/athanor/harness/harness-game.test.ts && pnpm --dir apps/game test src/ui/features/game-entry src/lab/game/lab-games.test.ts src/lab/game/lab-home-entry.test.ts && pnpm --dir apps/game verify:assets scripts/client-playtest/steps.test.mjs scripts/client-playtest/player-entry.test.mjs"
 paths = "apps/game/ packages/ config/ deploy/ contracts/l3/world-native/ package.json pnpm-lock.yaml .tool-versions"
 estimate_gb = 5
 
 [kind.playtest-aspect-founding]
 cmd = 'cp /home/djizus/projects/eternum-lanes/showcase/apps/game/.env.local apps/game/.env.local && pnpm run build:packages && exec 8>"${FLOW_JOB%/running/*}/playtest-port-4188.lock" && flock 8 && for viewport in 1920x1080 390x844; do pnpm --dir apps/game playtest --port 4188 --steps lab-aspect-settle --iterations 1 --renderer-modes webgpu-force-webgl --viewport "$viewport" --out "$FLOW_TMP/playtest/$viewport" || exit $?; done'
+estimate_gb = 6
+
+[kind.playtest-daily-quest]
+cmd = 'cp /home/djizus/projects/eternum-lanes/showcase/apps/game/.env.local apps/game/.env.local && pnpm run build:packages && exec 8>"${FLOW_JOB%/running/*}/playtest-port-4188.lock" && flock 8 && for viewport in 1920x1080 390x844; do pnpm --dir apps/game playtest --port 4188 --steps lab-daily-quest --iterations 1 --renderer-modes webgpu-force-webgl --viewport "$viewport" --out "$FLOW_TMP/playtest/$viewport" || exit $?; done'
 estimate_gb = 6

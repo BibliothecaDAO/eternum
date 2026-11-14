@@ -8,7 +8,11 @@ export * from "./shard";
 export * from "./story-participants";
 
 export type { NativeRows, NativeKeys, NativeModelName } from "../../../../contracts/l3/world-native/schema/client.gen";
-export { nativeResearchConstants, nativeRuleConstants } from "../../../../contracts/l3/world-native/schema/client.gen";
+export {
+  nativeResearchConstants,
+  nativeRuleConstants,
+  nativeQuestConstants,
+} from "../../../../contracts/l3/world-native/schema/client.gen";
 
 export type { GameClientSetup } from "./game-client";
 

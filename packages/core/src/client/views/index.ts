@@ -29,6 +29,7 @@ import {
   readStructures,
 } from "./structures";
 export * from "./armies";
+export * from "./quests";
 export * from "./guilds";
 export * from "./resources";
 export * from "./structures";

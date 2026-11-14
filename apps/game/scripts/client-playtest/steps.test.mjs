@@ -1120,3 +1120,38 @@ it("requires the selected Aspect in both the founding command and its membership
     }).status,
   ).toBe("failed");
 });
+
+it("requires one quest command, its exact receipt, both credited balances and the collected UI", () => {
+  const verify = STEP_SETS["lab-daily-quest"].steps[1].verify;
+  const sent = {
+    command: { fields: { home: "7", day: "0" } },
+    answered: [
+      { model: "LaborGrant", value: { home: "7", day: "0", amount: "1000000000000", essence: "1500000000000" } },
+      { model: "ResourceBalance", value: { balance: "1500000000000" } },
+      { model: "ResourceBalance", value: { balance: "1500000000000" } },
+    ],
+  };
+  const played = { ready: { collect: true }, collected: true, grants: [sent] };
+  expect(verify({ played }).status).toBe("completed");
+  for (const failed of [
+    { ...played, collected: false },
+    { ...played, grants: [] },
+    { ...played, grants: [sent, sent] },
+    { ...played, grants: [{ ...sent, command: { fields: { home: "8", day: "0" } } }] },
+    { ...played, grants: [{ ...sent, command: { fields: { home: "7", day: "1" } } }] },
+    { ...played, grants: [{ ...sent, answered: sent.answered.slice(0, 1) }] },
+    {
+      ...played,
+      grants: [
+        {
+          ...sent,
+          answered: [
+            { ...sent.answered[0], value: { ...sent.answered[0].value, essence: "0" } },
+            ...sent.answered.slice(1),
+          ],
+        },
+      ],
+    },
+  ])
+    expect(verify({ played: failed }).status).toBe("failed");
+});

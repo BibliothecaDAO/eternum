@@ -72,6 +72,12 @@ export interface NativePreset {
     altarPerTick: number;
     altarThreshold: number;
   };
+  dailyQuest: null | {
+    baseCounts: readonly number[];
+    labor: number;
+    essence: number;
+    bonusPercent: number;
+  };
   discovery: null | {
     beastsBps: number;
     campBps: number;

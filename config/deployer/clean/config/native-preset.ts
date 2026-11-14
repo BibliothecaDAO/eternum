@@ -1,5 +1,6 @@
 import {
   nativeResearchConstants,
+  nativeQuestConstants as quest,
   nativeRuleConstants as presetRule,
 } from "../../../../contracts/l3/world-native/schema/client.gen";
 import { nativePresetForId } from "../../../source/native";
@@ -321,7 +322,7 @@ function buildEconomy(
     throw new Error("Depth reveal XP exceeds u32");
   const labor = preset.labor;
   if (
-    (labor !== null) !== (preset.dayUnitSeconds !== 0) ||
+    (labor !== null || preset.dailyQuest !== null) !== (preset.dayUnitSeconds !== 0) ||
     (labor !== null &&
       (!Number.isSafeInteger(labor.amount) ||
         labor.amount <= 0 ||
@@ -342,6 +343,7 @@ function buildEconomy(
           }),
     deep: buildDeep(preset),
     discovery: buildDiscovery(preset),
+    quests: buildQuests(preset),
     progression:
       progression === null
         ? new CairoOption(CairoOptionVariant.None)
@@ -556,6 +558,30 @@ function validateDeep(deep: NonNullable<ReturnType<typeof nativePresetForId>["de
     deep.altarThreshold % deep.altarPerTick !== 0
   )
     throw new Error("Invalid Deep tick amounts");
+}
+
+function buildQuests(preset: ReturnType<typeof nativePresetForId>) {
+  const rules = preset.dailyQuest;
+  if (rules === null) return new CairoOption(CairoOptionVariant.None);
+  if (!rules || preset.dayUnitSeconds === 0 || preset.orderAspects.length === 0 || preset.labor !== null)
+    throw new Error("Daily quests require Aspect expeditions and replace labor claims");
+  if (
+    rules.baseCounts.length !== quest.QUEST_COUNT ||
+    rules.baseCounts.some((count) => !Number.isSafeInteger(count) || count <= 0 || count > 0xffff_ffff)
+  )
+    throw new Error("Invalid daily quest counts");
+  if (
+    [rules.labor, rules.essence, rules.bonusPercent].some((value) => !Number.isSafeInteger(value) || value <= 0) ||
+    rules.bonusPercent < 100 ||
+    rules.bonusPercent > 0xffff
+  )
+    throw new Error("Invalid daily quest reward");
+  return new CairoOption(CairoOptionVariant.Some, {
+    base_counts: rules.baseCounts,
+    labor: BigInt(rules.labor),
+    essence: BigInt(rules.essence),
+    bonus_percent: rules.bonusPercent,
+  });
 }
 
 function buildDiscovery(preset: ReturnType<typeof nativePresetForId>) {

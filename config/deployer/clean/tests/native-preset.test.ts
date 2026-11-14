@@ -1118,3 +1118,52 @@ test("the Deep codec refuses invalid sites and tick amounts", () => {
     source.deep = previous;
   }
 });
+
+const questFixture = () => ({ baseCounts: [1, 1, 1, 1, 1, 2, 15], labor: 1000, essence: 1500, bonusPercent: 150 });
+
+test("published presets keep daily quests disabled until the progress producers land", () => {
+  for (const source of Object.values(nativePresets)) {
+    expect(source.dailyQuest).toBeNull();
+    const environment = source.gameType === "blitz" ? "madara.blitz" : "madara.frontier";
+    expect(
+      buildNativePreset(loadNativePresetConfiguration(environment, source.id), source.id).economy.quests.isNone(),
+    ).toBe(true);
+  }
+});
+
+test("the daily quest codec replaces legacy labor and preserves whole reward units", () => {
+  const source = nativePresets[FRONTIER_S1_PRESET_ID]!;
+  const previous = { dailyQuest: source.dailyQuest, labor: source.labor };
+  try {
+    source.dailyQuest = questFixture();
+    expect(() => buildNativePreset(loadNativePresetConfiguration("madara.frontier", source.id), source.id)).toThrow(
+      "replace labor",
+    );
+    source.labor = null;
+    const built = buildNativePreset(loadNativePresetConfiguration("madara.frontier", source.id), source.id);
+    expect(built.economy.labor.isNone()).toBe(true);
+    expect(built.economy.quests.unwrap()).toEqual({
+      base_counts: [1, 1, 1, 1, 1, 2, 15],
+      labor: 1000n,
+      essence: 1500n,
+      bonus_percent: 150,
+    });
+    codec.compile("register_preset", { preset_id: source.id, definition: built });
+    for (const invalid of [
+      { ...questFixture(), baseCounts: [1] },
+      { ...questFixture(), baseCounts: [1, 1, 1, 0, 1, 2, 15] },
+      { ...questFixture(), baseCounts: [1, 1, 1, 1, 1, 2, 0x1_0000_0000] },
+      { ...questFixture(), labor: 0 },
+      { ...questFixture(), essence: 0.5 },
+      { ...questFixture(), bonusPercent: 99 },
+      { ...questFixture(), bonusPercent: 0x1_0000 },
+    ]) {
+      source.dailyQuest = invalid;
+      expect(() => buildNativePreset(loadNativePresetConfiguration("madara.frontier", source.id), source.id)).toThrow(
+        "Invalid daily quest",
+      );
+    }
+  } finally {
+    Object.assign(source, previous);
+  }
+});

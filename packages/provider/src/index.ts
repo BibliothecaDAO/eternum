@@ -531,6 +531,14 @@ export class EternumProvider extends EventEmitter {
     );
   }
 
+  public async claim_daily_quest(props: SystemProps.SystemSigner & { home: number; day: number }) {
+    return this.submitCommand(
+      props.signer,
+      { kind: "ClaimDailyQuest", value: { home: props.home, day: props.day } },
+      TransactionType.CLAIM_DAILY_QUEST,
+    );
+  }
+
   public async settle_season(
     props: SystemProps.SystemSigner & { selectedRealm?: number; aspect?: SystemProps.AspectId },
   ) {

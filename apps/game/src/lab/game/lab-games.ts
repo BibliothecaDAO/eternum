@@ -1,3 +1,4 @@
+import { questScenario } from "./quest-scenario";
 import { aspectSettleScenario } from "./aspect-settle-scenario";
 import { actionsScenario } from "./actions-scenario";
 import { economyScenario } from "./economy-scenario";
@@ -64,6 +65,7 @@ export const LAB_SCENARIOS: Partial<Record<string, () => LabScenario>> = {
   "fight-lost": fightLostScenario,
   research: researchScenario,
   claim: claimScenario,
+  quest: questScenario,
   upkeep: upkeepScenario,
   settle: settleScenario,
   "aspect-settle": aspectSettleScenario,
