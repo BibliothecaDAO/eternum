@@ -20,7 +20,7 @@ it("answers a deploy with a new army of the troops sent beside the realm, its tr
   const game = researchScenario();
   const wheat = held(game, ResourcesIds.Wheat);
   const facts = game.answer(
-    command("CreateExplorer", { structure_id: "7", category: "0", tier: "0", amount: whole(420), direction: "0" }),
+    command("CreateExplorer", { structure_id: "7", slot: "1", category: "0", tier: "0", amount: whole(420), direction: "0" }),
     chainOf(game),
     game.startsAt + 30,
   );
@@ -31,6 +31,10 @@ it("answers a deploy with a new army of the troops sent beside the realm, its tr
     troops: { count: string };
   };
   expect([army.owner, army.troops.count]).toEqual(["7", whole(420)]);
+  expect(army.troops).toMatchObject({ stamina: { Slot: 1 } });
+  expect(facts.find(({ model }) => model === "ArmyDay")!.value).toMatchObject({ explorer_id: army.explorer_id, day: 0 });
+  expect(facts.find(({ model }) => model === "ArmySlot")!.value).toMatchObject({ explorer_id: army.explorer_id, epoch: 0, slot: 1 });
+  expect(facts.find(({ model }) => model === "ArmyProgress")!.value).toMatchObject({ explorer_id: army.explorer_id, xp: 0, common_points: 0 });
   const tile = facts.find(({ model }) => model === "TileOccupancy")!.value as { entity_id: string };
   expect(tile.entity_id).toBe(army.explorer_id);
   expect(balance(facts, ResourcesIds.Knight)?.balance).toBe("0");

@@ -42,7 +42,7 @@ it.each([ruinFightScenario, ruinFarScenario])(
       rank: 2,
     });
     expect(plan.fight).toEqual(
-      makeScenario === ruinFightScenario ? { troopsLost: 364, guardLeft: 0 } : { troopsLost: 1_109, guardLeft: 2_412 },
+      makeScenario === ruinFightScenario ? { troopsLost: 364, guardLeft: 0 } : { troopsLost: 1_109, guardLeft: 2_399 },
     );
   },
 );
@@ -135,5 +135,5 @@ it("stands the far ruin's army out of an attack's reach, and the card forecasts 
   expect(plan.guard?.count).toBe(3_000);
   expect(plan.inReach).toBe(false);
   // Forecast the next attack from beside the ruin; a possible second attack does not belong in this result.
-  expect(plan.fight).toEqual({ troopsLost: 1_109, guardLeft: 2_412 });
+  expect(plan.fight).toEqual({ troopsLost: 1_109, guardLeft: 2_399 });
 });

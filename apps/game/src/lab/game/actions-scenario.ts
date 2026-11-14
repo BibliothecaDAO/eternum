@@ -1,5 +1,9 @@
 import {
   entityHomeNamespace,
+  musterStamina,
+  openArmySlots,
+  researchChoice,
+  researchTier,
   seasonDay,
   expeditionRealmSite,
   getTroopResourceId,
@@ -15,7 +19,7 @@ import {
   TroopType,
 } from "@bibliothecadao/types";
 
-import type { NativeFactStore } from "@bibliothecadao/eternum/game-client";
+import { nativeResearchConstants as research, type NativeFactStore } from "@bibliothecadao/eternum/game-client";
 
 import { standTheArmyAtTheEdge } from "./explore-scenario";
 import { wire, type LabCommand, type LabFact, type LabScenario } from "./lab-chain";
@@ -141,12 +145,34 @@ const deployArmy: Answer = (command, chain, now) => {
   const whole = Number(amount / BigInt(RESOURCE_PRECISION));
   const raise = readTroopRaiseCost(chain, 1, Number(structureId), troops, whole, now);
   if (!raise) throw new Error(`The lab's realm ${structureId} holds an unknown balance its raise needs`);
-  const stamina = staminaRules(chain)[`stamina_${category.toLowerCase()}_max` as "stamina_knight_max"];
+  const realm = chain.require("Structure", { game_id: 1, entity_id: structureId });
+  const slot = openArmySlots(chain, {
+    game_id: 1,
+    entity_id: structureId,
+    allowedSlots: realm.base.troop_max_explorer_count,
+  })?.find((slot) => slot.slot === Number(command.fields.slot));
+  if (!slot) throw new Error("The lab deployment requires an open army slot");
+  const progress = deploymentProgress(chain, structureId, explorerId);
+  const rules = chain.require("SliceRules", { game_id: 1 });
+  const maximum = musterStamina(
+    { ...slot, inherited: null }, { category, tier }, now, rules.troop_stamina_config,
+    progress.logistics, rules.tick_config.armies_tick_in_seconds,
+  ).max;
+  const stamina = slot.inherited
+    ? { ...slot.inherited, amount: BigInt(Math.min(Number(slot.inherited.amount), maximum)) }
+    : { amount: BigInt(maximum), settled_at: BigInt(now), remainder: 0 };
+  const day = seasonDay(readExpeditionRules(chain, 1)!, now)!;
   return [
+    { model: "ArmyProgress", key: `0xaf${explorerId}`, value: wire(progress) },
+    {
+      model: "ArmySlot",
+      key: chain.wireKeyOf("ArmySlot", { game_id: 1, structure_id: structureId, epoch: BigInt(day), slot: slot.slot }) ?? `0xae${explorerId}`,
+      value: wire({ game_id: 1, structure_id: structureId, epoch: day, slot: slot.slot, explorer_id: explorerId, stamina }),
+    },
     {
       model: "ArmyDay",
       key: `0xad${explorerId}`,
-      value: wire({ game_id: 1, explorer_id: explorerId, day: seasonDay(readExpeditionRules(chain, 1)!, now)! }),
+      value: wire({ game_id: 1, explorer_id: explorerId, day }),
     },
     {
       model: "ExplorerTroops",
@@ -157,11 +183,35 @@ const deployArmy: Answer = (command, chain, now) => {
         troops: {
           ...first.troops,
           count: amount,
-          stamina: { Inline: { amount: stamina, settled_at: now, remainder: 0 } },
+          stamina: { Slot: slot.slot },
         },
       }),
     },
     { model: "TileOccupancy", key: `0x1b1${explorerId}`, value: wire({ ...firstAt, ...to, entity_id: explorerId }) },
     ...balancesPaid(chain, structureId, [{ resource: troops, amount }, ...raise]),
   ];
+};
+
+/** A new army starts with its realm's training and no earned XP or unspent points. */
+const deploymentProgress = (chain: NativeFactStore, home: bigint, explorerId: bigint) => {
+  const { learned } = chain.require("RealmKnowledge", { game_id: 1, structure_id: home });
+  const scouting = researchTier(learned, research.ROW_SCOUTS_LODGE);
+  let scoutingKinds = 0;
+  for (let rank = 1; rank <= scouting; rank += 1)
+    scoutingKinds += (researchChoice(learned, research.ROW_SCOUTS_LODGE, rank) + 1) * 4 ** (rank - 1);
+  return {
+    game_id: 1,
+    explorer_id: explorerId,
+    xp: 0,
+    common_points: 0,
+    uncommon_points: 0,
+    rare_points: 0,
+    epic_points: 0,
+    legendary_points: 0,
+    battle: researchTier(learned, research.ROW_WAR_HALL),
+    logistics: researchTier(learned, research.ROW_SUPPLY_YARD),
+    homecoming: researchTier(learned, research.ROW_HEARTH),
+    scouting,
+    scouting_kinds: scoutingKinds,
+  };
 };

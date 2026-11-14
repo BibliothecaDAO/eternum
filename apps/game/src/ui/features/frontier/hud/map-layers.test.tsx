@@ -244,6 +244,11 @@ const armyIn = (store: NativeFactStore, rules: ExpeditionRules, today: number, d
     const tile = [...store.entries("TileOccupancy")].find(([, row]) => row.entity_id === 201n)![1];
     const key = `0x75${today}${depth}`;
     store.applyFacts([
+      {
+        model: "ArmyDay",
+        key: store.wireKeyOf("ArmyDay", { game_id: 1, explorer_id: 201n })!,
+        value: { game_id: 1, explorer_id: 201, day: String(today) },
+      },
       { model: "TileOccupancy", key: armyTileKeys.get(store) ?? SITE_FIXTURE_ARMY_TILE_KEY, value: null },
       {
         model: "TileOccupancy",

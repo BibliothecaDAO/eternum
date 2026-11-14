@@ -209,6 +209,7 @@ export const labArmyOut = (store: NativeFactStore, stamina = LAB_ARMY_STAMINA): 
   const site = structureMapPosition(store, store.require("Structure", { game_id: 1, entity_id: 7 }));
   if (!site) throw new Error("The lab realm has no site today");
   return [
+    { model: "ArmyDay", key: "0x9ad", value: { game_id: 1, explorer_id: LAB_ARMY_ID, day: "0" } },
     {
       model: "ExplorerTroops",
       key: "0x9a0",
@@ -250,6 +251,7 @@ const enemyArmyBeside = (store: NativeFactStore): unknown[] => {
   const site = structureMapPosition(store, realm)!;
   return [
     { model: "Structure", key: "0x9b0", value: { ...realm, entity_id: ENEMY_REALM_ID, owner: ENEMY } },
+    { model: "ArmyDay", key: "0x9bd", value: { game_id: 1, explorer_id: ENEMY_ARMY_ID, day: "0" } },
     {
       model: "ExplorerTroops",
       key: "0x9b1",
