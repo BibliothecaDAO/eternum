@@ -1797,10 +1797,7 @@ pub mod GamesFixture {
         ) {
             let classes = fixture_classes(game_id);
             crate::guilds::IGuildsDispatcherTrait::leave_guild(
-                crate::guilds::IGuildsLibraryDispatcher { class_hash: classes.bridge.read() },
-                game_id,
-                actor,
-                context,
+                crate::guilds::IGuildsLibraryDispatcher { class_hash: classes.bridge.read() }, game_id, actor, context,
             )
         }
         fn set_guild_whitelist(

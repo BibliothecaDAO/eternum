@@ -1436,59 +1436,6 @@
       {
         "name": "RowSet",
         "prefix": [
-          "0x32b9e31144a312bfd38977e758d7e4ec46050185e704daab9d6ee1fa2ff49df",
-          "0x1381128f2a0228389d1eba9d3aa09f8ed24da656b884a49eea09a5ed2e87724"
-        ],
-        "members": [
-          {
-            "name": "version",
-            "type": "core::integer::u8",
-            "kind": "key"
-          },
-          {
-            "name": "model",
-            "type": "core::felt252",
-            "kind": "key"
-          },
-          {
-            "name": "keys",
-            "type": "core::array::Span::<core::felt252>",
-            "kind": "data"
-          },
-          {
-            "name": "values",
-            "type": "core::array::Span::<core::felt252>",
-            "kind": "data"
-          }
-        ]
-      },
-      {
-        "name": "RowDeleted",
-        "prefix": [
-          "0x32b9e31144a312bfd38977e758d7e4ec46050185e704daab9d6ee1fa2ff49df",
-          "0x34ee03e4825cf92d0335b5828e3389af6c145ecff05fce078c3753d871cc7f5"
-        ],
-        "members": [
-          {
-            "name": "version",
-            "type": "core::integer::u8",
-            "kind": "key"
-          },
-          {
-            "name": "model",
-            "type": "core::felt252",
-            "kind": "key"
-          },
-          {
-            "name": "keys",
-            "type": "core::array::Span::<core::felt252>",
-            "kind": "data"
-          }
-        ]
-      },
-      {
-        "name": "RowSet",
-        "prefix": [
           "0x3e037e958ba3b5c1cc99ac16aaf9896423eebd03183c41fbb26548a12336e5f",
           "0x1381128f2a0228389d1eba9d3aa09f8ed24da656b884a49eea09a5ed2e87724"
         ],
@@ -1608,6 +1555,59 @@
           {
             "name": "timestamp",
             "type": "core::integer::u64",
+            "kind": "data"
+          }
+        ]
+      },
+      {
+        "name": "RowSet",
+        "prefix": [
+          "0x32b9e31144a312bfd38977e758d7e4ec46050185e704daab9d6ee1fa2ff49df",
+          "0x1381128f2a0228389d1eba9d3aa09f8ed24da656b884a49eea09a5ed2e87724"
+        ],
+        "members": [
+          {
+            "name": "version",
+            "type": "core::integer::u8",
+            "kind": "key"
+          },
+          {
+            "name": "model",
+            "type": "core::felt252",
+            "kind": "key"
+          },
+          {
+            "name": "keys",
+            "type": "core::array::Span::<core::felt252>",
+            "kind": "data"
+          },
+          {
+            "name": "values",
+            "type": "core::array::Span::<core::felt252>",
+            "kind": "data"
+          }
+        ]
+      },
+      {
+        "name": "RowDeleted",
+        "prefix": [
+          "0x32b9e31144a312bfd38977e758d7e4ec46050185e704daab9d6ee1fa2ff49df",
+          "0x34ee03e4825cf92d0335b5828e3389af6c145ecff05fce078c3753d871cc7f5"
+        ],
+        "members": [
+          {
+            "name": "version",
+            "type": "core::integer::u8",
+            "kind": "key"
+          },
+          {
+            "name": "model",
+            "type": "core::felt252",
+            "kind": "key"
+          },
+          {
+            "name": "keys",
+            "type": "core::array::Span::<core::felt252>",
             "kind": "data"
           }
         ]
@@ -13509,5 +13509,5 @@
       ]
     }
   },
-  "identity": "c264987e3603c501b13a6323104c9c3118d9566133e811d0ae7db652d5af177a"
+  "identity": "3f4e076f404fae3eb90a4b1ae7aaba337d07953193b4d5f80b4c5a66893f4caf"
 }
