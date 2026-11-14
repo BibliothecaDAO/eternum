@@ -4683,6 +4683,33 @@
       "valueLength": 11
     },
     {
+      "name": "ArmyDay",
+      "identity": "0x41726d79446179",
+      "scope": "game",
+      "keys": [
+        {
+          "name": "game_id",
+          "type": "core::integer::u32",
+          "feltLength": 1
+        },
+        {
+          "name": "explorer_id",
+          "type": "core::integer::u64",
+          "feltLength": 1
+        }
+      ],
+      "members": [
+        {
+          "name": "day",
+          "type": "core::integer::u64",
+          "id": "0x646179",
+          "feltLength": 1
+        }
+      ],
+      "keyLength": 2,
+      "valueLength": 1
+    },
+    {
       "name": "ArmySlot",
       "identity": "0x41726d79536c6f74",
       "scope": "game",
@@ -12764,5 +12791,5 @@
       ]
     }
   },
-  "identity": "88a077a6771eaf900d7adce6fa13b990b154f92fefb7277a1cfc7063c4956f3e"
+  "identity": "9a624e27d4359b1e695345302d060108e4ad61c6ee20f8771b08bb77ffc58f69"
 }

@@ -114,9 +114,10 @@ describe("liveHomeArmies", () => {
   });
   const armiesStore = (rules: Record<string, unknown>, armies: ReturnType<typeof army>[]) => ({
     ...storeWith(rules),
-    require: (model: string, keys: { explorer_id: number }) => model === "ArmyDay"
-      ? { day: armies.find((army) => army.explorer_id === keys.explorer_id)!.day }
-      : storeWith(rules).require(model),
+    require: (model: string, keys: { explorer_id: number }) =>
+      model === "ArmyDay"
+        ? { day: armies.find((army) => army.explorer_id === keys.explorer_id)!.day }
+        : storeWith(rules).require(model),
     armiesAtHome: (_game: number, home: number) => armies.filter((army) => army.owner === home),
     entityOccupancy: (_game: number, id: number) => {
       const army = armies.find((army) => army.explorer_id === id);

@@ -332,7 +332,10 @@ describe("home ring", () => {
       });
       const army = (stamina: bigint) => rowEvent("ExplorerTroops", ["1", "20"], explorerValue("1", 1000n, stamina, 1n));
       const balance = (amount: bigint) => rowEvent("ResourceBalance", ["1", "1", "23"], { balance: amount });
-      const muster = receipt([rowEvent("ArmyDay", ["1", "20"], { day: TODAY.index }), army(30n), occupancy(51), balance(10n)], "0x71");
+      const muster = receipt(
+        [rowEvent("ArmyDay", ["1", "20"], { day: TODAY.index }), army(30n), occupancy(51), balance(10n)],
+        "0x71",
+      );
       if (!musterDuringStream) native.applyReceipt(fold, muster, 10, 0);
       const messages = connect(live, "0xa");
       const store = new NativeFactStore();

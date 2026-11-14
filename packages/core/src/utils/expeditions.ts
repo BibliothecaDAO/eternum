@@ -185,9 +185,7 @@ export const liveHomeArmies = (
   const rules = readExpeditionRules(store, gameId);
   if (!rules) return armies;
   const floor = floorSeconds ?? getBlockTimestamp().currentDefaultTick;
-  return armies.filter((army) =>
-    isArmyCurrent(store, gameId, army.explorer_id, floor),
-  );
+  return armies.filter((army) => isArmyCurrent(store, gameId, army.explorer_id, floor));
 };
 
 /**

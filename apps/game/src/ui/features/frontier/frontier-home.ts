@@ -71,9 +71,7 @@ export const endedHomeArmies = (
   now: number,
 ): NativeRows["ExplorerTroops"][] =>
   [...store.armiesAtHome(realm.game_id, realm.entity_id)].filter(
-    (army) =>
-      army.troops.count > 0n &&
-      !isArmyCurrent(store, realm.game_id, army.explorer_id, now),
+    (army) => army.troops.count > 0n && !isArmyCurrent(store, realm.game_id, army.explorer_id, now),
   );
 
 /** One troop stock as the realm's next deploy finds it, in whole troops. */

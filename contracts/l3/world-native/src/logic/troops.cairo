@@ -9,10 +9,7 @@ pub fn active_explorer(
     let rules = game_context.rules.unbox();
     if rules.day_unit_seconds != 0 {
         let today = crate::days::day_of(game_context.game.unbox(), rules.day_unit_seconds, timestamp).index;
-        assert!(
-            crate::logic::army_days::require(key) == today,
-            "EXPIRED_ARMY",
-        );
+        assert!(crate::logic::army_days::require(key) == today, "EXPIRED_ARMY");
     }
     let refill = crate::troops::StaminaRefill {
         timestamp,
@@ -711,10 +708,16 @@ pub mod TroopsLogic {
                         ResourceKey { game_id, entity_id: command.structure_id }, rules, context.timestamp, context,
                     );
             }
-            self.pay_troops(
-                game_id, command.structure_id, troop_type(command.category), troop_tier(command.tier),
-                command.amount, context.timestamp, context,
-            );
+            self
+                .pay_troops(
+                    game_id,
+                    command.structure_id,
+                    troop_type(command.category),
+                    troop_tier(command.tier),
+                    command.amount,
+                    context.timestamp,
+                    context,
+                );
             Allocation::allocate_army(ref self, game_id, actor, command, crate::commands::action_context(context));
         }
     }

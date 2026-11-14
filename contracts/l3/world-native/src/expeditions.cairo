@@ -118,7 +118,6 @@ pub fn spire(spacing: u32, region_id: u32, day: u64) -> Coord {
 }
 
 
-
 pub fn assert_same_region(origin: Coord, destination: Coord, spacing: u32) {
     assert!(inside_region(origin, destination, spacing), "outside expedition region");
 }

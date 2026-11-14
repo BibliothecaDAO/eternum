@@ -10,8 +10,8 @@ checks its unpaid claim. Then `--steps home-upgrade` starts with an unclaimed re
 marker, waits for the operator route and confirmed snapshots, then observes the golden home and claims normally. A
 separate `--steps home-golden` run checks the golden home and claimed day after a fresh load.
 
-Frontier armies live for their recorded allocation day, including after entering another map region. A reused slot
-keeps its stamina; the next day starts a fresh slot.
+Frontier armies live for their recorded allocation day, including after entering another map region. A reused slot keeps
+its stamina; the next day starts a fresh slot.
 
 Frontier army management: select an army from the dock or map; on a phone tap its selected token for details. The
 panel's red trash, right after its name at the top left, is **Delete**: it asks for confirmation in the panel (troops,

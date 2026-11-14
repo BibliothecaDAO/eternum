@@ -268,7 +268,9 @@ fn tests_knight_bulwark_reduces_guard_incoming_damage() {
             1,
         );
 
-    assert!(guard_bravo._incoming_damage_multiplier(true, 0) == FixedTrait::new(85, false) / FixedTrait::new(100, false));
+    assert!(
+        guard_bravo._incoming_damage_multiplier(true, 0) == FixedTrait::new(85, false) / FixedTrait::new(100, false),
+    );
     assert!(guard_bravo.count > field_bravo.count, "Knight guard should receive reduced incoming damage");
 }
 
@@ -337,7 +339,7 @@ fn combat_relics_change_casualties_for_their_full_window_and_replace_on_reapplic
 #[test]
 fn expedition_knights_use_one_damage_formula_for_armies_and_guards_even_without_defender_stamina() {
     let damage = TroopDamageConfig {
-        damage_scaling_factor: 36893488147419103232, damage_biome_bonus_num: 0, ..damage_config()
+        damage_scaling_factor: 36893488147419103232, damage_biome_bonus_num: 0, ..damage_config(),
     };
     let stamina = TroopStaminaConfig { damage_stamina_refund: false, ..stamina_config() };
     for attacker_is_structure_guard in array![false, true] {
@@ -345,20 +347,28 @@ fn expedition_knights_use_one_damage_formula_for_armies_and_guards_even_without_
             for defender_stamina in array![0_u64, 100] {
                 let mut attacker = test_troops(TroopType::Knight, TroopTier::T1, 1500, 100);
                 let mut defender = test_troops(TroopType::Knight, TroopTier::T1, 1000, defender_stamina);
-                attacker.attack_with_context(
-                    ref defender,
-                    CombatContext {
-                        day_unit_seconds: 14400,
-                        attacker_is_structure_guard,
-                        defender_is_structure_guard,
-                        ..context(Biome::Underground)
-                    },
-                    stamina, damage, 120, 0,
-                );
+                attacker
+                    .attack_with_context(
+                        ref defender,
+                        CombatContext {
+                            day_unit_seconds: 14400,
+                            attacker_is_structure_guard,
+                            defender_is_structure_guard,
+                            ..context(Biome::Underground),
+                        },
+                        stamina,
+                        damage,
+                        120,
+                        0,
+                    );
                 assert_eq!(attacker.count, (1500 - 418) * RESOURCE_PRECISION);
                 assert_eq!(defender.count, (1000 - 627) * RESOURCE_PRECISION);
                 assert_eq!(attacker.stamina.inline().amount, 50);
-                assert_eq!(defender.stamina.inline().amount, if defender_stamina == 0 { 0 } else { 60 });
+                assert_eq!(defender.stamina.inline().amount, if defender_stamina == 0 {
+                    0
+                } else {
+                    60
+                });
             }
         }
     }
