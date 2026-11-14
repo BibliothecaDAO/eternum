@@ -5,7 +5,9 @@ import type { NativePreset } from "../common/native-preset";
 import { FRONTIER_S1_PRESET_ID } from "../common/native-preset-modes";
 import { frontierPreset } from "./native";
 
-const orderAspects: NativePreset["orderAspects"] = orders.filter(({ aspect }) => aspect !== null).map(({ aspect }) => aspect!);
+const orderAspects: NativePreset["orderAspects"] = orders
+  .filter(({ aspect }) => aspect !== null)
+  .map(({ aspect }) => aspect!);
 
 export const frontierSeasonOnePreset = {
   ...frontierPreset,
