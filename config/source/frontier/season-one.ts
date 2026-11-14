@@ -5,7 +5,7 @@ import type { NativePreset } from "../common/native-preset";
 import { FRONTIER_S1_PRESET_ID } from "../common/native-preset-modes";
 import { frontierPreset } from "./native";
 
-export const frontierSeasonOnePreset = {
+export const frontierSeasonOnePreset: NativePreset = {
   ...frontierPreset,
   id: FRONTIER_S1_PRESET_ID,
   balance: {
@@ -20,4 +20,4 @@ export const frontierSeasonOnePreset = {
   chests: null,
   commandMask:
     (frontierPreset.commandMask | BigInt(nativeCommandBits.ApplyRelic)) & ~BigInt(nativeCommandBits.OpenRelicChest),
-} satisfies NativePreset;
+};

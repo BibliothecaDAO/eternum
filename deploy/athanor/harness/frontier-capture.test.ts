@@ -1,6 +1,11 @@
 import { expect, it, spyOn, afterEach } from "bun:test";
 import { deriveGameSyncScope, scopeInputKeys, rowInGameSyncScope } from "@bibliothecadao/eternum/game-sync-models";
-import { DAY_UNITS_PER_BAG, expeditionRealmSite, seasonDay, type ExpeditionRules } from "@bibliothecadao/eternum/expeditions";
+import {
+  DAY_UNITS_PER_BAG,
+  expeditionRealmSite,
+  seasonDay,
+  type ExpeditionRules,
+} from "@bibliothecadao/eternum/expeditions";
 import type { GameClient } from "@bibliothecadao/eternum";
 import { buildNativePreset } from "../../../config/deployer/clean/config/native-preset";
 import { loadNativePresetConfiguration } from "../../../config/deployer/clean/registrar/native-preset";
