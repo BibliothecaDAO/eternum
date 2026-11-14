@@ -28,13 +28,19 @@ const SCENE_IDS = [
 ];
 const QUALITY_TIERS = ["overview", "balanced", "detail"];
 
+/** The most animals the map shows at once, herds counted by their members. */
+const MAX_WILDLIFE = 48;
+
 function isWildlifePopulationValid(wildlife) {
-  if (!wildlife || !Number.isInteger(wildlife.count) || wildlife.count < 0 || wildlife.count > 32) return false;
+  if (!wildlife || !Number.isInteger(wildlife.count) || wildlife.count < 0 || wildlife.count > MAX_WILDLIFE)
+    return false;
   if (wildlife.visible && (wildlife.pending !== 0 || wildlife.failed.length > 0 || wildlife.loaded !== wildlife.count))
     return false;
+  // One herd to a region: every animal reports its herd and the region its herd's leader holds.
+  const herds = new Set(wildlife.creatures.map((creature) => creature.herd));
   return (
     wildlife.creatures.length === wildlife.count &&
-    new Set(wildlife.creatures.map((creature) => creature.region)).size === wildlife.count
+    new Set(wildlife.creatures.map((creature) => creature.region)).size === herds.size
   );
 }
 
@@ -261,8 +267,8 @@ export function evaluateTerrainGalleryResults(results, options = {}) {
     if (!isWildlifePopulationValid(wildlife)) {
       reasons.push(`${label}: wildlife loading or 8x8 density contract failed`);
     }
-    // Authored rigid joints cost at most 28 primitives per creature, drawn in color and shadow passes.
-    const drawCallBudget = 40 + (wildlife?.visible ? Math.min(wildlife.loaded, 32) * 56 : 0);
+    // A rigid-jointed creature costs at most 28 primitives, drawn in color and shadow passes; a skinned one costs one.
+    const drawCallBudget = 40 + (wildlife?.visible ? Math.min(wildlife.loaded, MAX_WILDLIFE) * 56 : 0);
     if (!(result.snapshot?.drawCalls > 0 && result.snapshot.drawCalls <= drawCallBudget)) {
       reasons.push(`${label}: draw-call count exceeded policy or was unavailable`);
     }
