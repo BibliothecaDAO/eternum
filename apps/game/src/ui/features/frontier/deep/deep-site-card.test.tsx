@@ -125,7 +125,7 @@ it("counts only actual army-tick boundaries before a day ending between ticks", 
         {
           model: "GameRegistry",
           key: hud.store.wireKeyOf("GameRegistry", { game_id: 1 })!,
-          value: { ...game, end_at: BigInt(end) },
+          value: { ...game, end_at: BigInt(end), scheduled_end_at: BigInt(end) },
         },
       ]),
     );

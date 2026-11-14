@@ -211,3 +211,7 @@ estimate_gb = 6
 [kind.test-banes]
 cmd = "bash contracts/l3/test-native.sh --package world_tests_lifecycle* ::tests::banes::"
 estimate_gb = 9
+
+[kind.test-calendar-consumers]
+cmd = "pnpm run build:packages && pnpm --dir apps/realms test server/day-open.test.ts server/shard-notifier.test.ts scripts/comeback-activity.test.ts && pnpm --dir apps/value-relay typecheck && pnpm --dir apps/value-relay test src/shard-labor.test.ts src/frontier-extension.test.ts src/deposit-verifier.test.ts && pnpm --dir apps/launch-service test src/shard-client.test.ts"
+estimate_gb = 5

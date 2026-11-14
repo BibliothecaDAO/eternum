@@ -68,6 +68,7 @@ export const spireScenario = (ground: LabGround = GRASSLAND): LabScenario => {
       value: {
         ...(wire(store.require("GameRegistry", { game_id: 1 })) as object),
         end_at: String(LAB_GAME_ENDS_AT),
+        scheduled_end_at: String(LAB_GAME_ENDS_AT),
       },
     },
     // The camp the card fixture keeps on another region is no part of this game.
