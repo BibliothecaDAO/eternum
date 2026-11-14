@@ -1,3 +1,4 @@
+use world_test_support::tests::registrar::{CreateGameParams, IRegistrarDispatcherTrait, params, registry};
 use snforge_std::{interact_with_state, spy_events};
 use starknet::storage::StorageMapReadAccess;
 use world_test_support::tests::{Deployment, deploy_player, GUARDIAN};
@@ -68,7 +69,6 @@ fn activity_counts_a_home_once_across_slot_choice_refusal_removal_and_reuse() {
 
 #[test]
 fn activity_separates_homes_aspects_and_games() {
-    use world_test_support::tests::registrar::{CreateGameParams, IRegistrarDispatcherTrait, params, registry};
     let (d, game_id) = super::aspects::setup_aspects(72);
     for (salt, aspect, expected) in array![(7201, 1_u8, 1_u32), (7202, 1, 2), (7203, 2, 1)] {
         let member = player(d, salt);
@@ -109,7 +109,7 @@ fn refused(d: Deployment, game_id: u32, command: Command, reason: ByteArray) {
 #[test]
 fn frontier_attacks_refuse_allies_and_personal_maps_but_allow_rivals_in_the_deep() {
     let (_, mut preset) = world_test_support::tests::preset_projection::current_definition("frontier");
-    preset.rules.command_mask |= 4;
+    preset.rules.command_mask = preset.rules.command_mask | 4;
     preset.rules.battle_config.regular_immunity_ticks = 0;
     let (d, game_id) = super::aspects::setup_aspect_preset(74, preset);
     let ally = player(d, 7401);
