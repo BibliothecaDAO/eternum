@@ -9,17 +9,29 @@ export function checkDiscoveryVectors(vectors, cases) {
   if (names.length !== live.length || live.some(({ name }, index) => names[index] !== name))
     throw new Error("Update typed_commands in roll_independence.cairo for every live permanent command, in wire order");
 
+  for (const name of [
+    "all_typed_entry_refusals_are_root_independent",
+    "all_real_domain_verdicts_are_root_independent",
+  ]) {
+    const attributes = cases.match(new RegExp(`((?:#\\[[^\\n]+\\]\\n)+)fn ${name}\\(`))?.[1] ?? "";
+    checkRootGroups(attributes, live.length);
+  }
+}
+
+function checkRootGroups(attributes, commands) {
   const coverage = new Map();
-  for (const match of cases.matchAll(/test_case\(name: "route_(\d+)_roots_(\d+)_(\d+)", (\d+), (\d+)\)/g)) {
+  for (const match of attributes.matchAll(/test_case\(name: "route_(\d+)_roots_(\d+)_(\d+)", (\d+), (\d+)\)/g)) {
     const [, namedIndex, namedStart, namedEnd, index, start] = match.map(Number);
-    if (namedIndex !== index || namedStart !== start || namedEnd !== start + 7 || index >= live.length)
+    if (namedIndex !== index || namedStart !== start || namedEnd !== start + 7 || index >= commands)
       throw new Error("Discovery root case names must match their command index and eight-root range");
     const key = `${index}:${start}`;
     coverage.set(key, (coverage.get(key) ?? 0) + 1);
   }
   if (
-    coverage.size !== live.length * 4 ||
-    live.some((_, index) => [0, 8, 16, 24].some((start) => coverage.get(`${index}:${start}`) !== 2))
+    coverage.size !== commands * 4 ||
+    Array.from({ length: commands }, (_, index) => index).some((index) =>
+      [0, 8, 16, 24].some((start) => coverage.get(`${index}:${start}`) !== 1),
+    )
   )
     throw new Error("Add all four root groups for each command to both discovery refusal tests");
 }

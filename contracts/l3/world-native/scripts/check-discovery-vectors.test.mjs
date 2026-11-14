@@ -19,3 +19,10 @@ test("adding a vector without its root cases is refused", () => {
   assert.notEqual(previous, cases);
   assert.throws(() => checkDiscoveryVectors(vectors, previous), /both discovery refusal tests/);
 });
+
+test("both refusal functions need every root group even when other tests reuse case names", () => {
+  const [vectors, cases] = discoveryVectorSources();
+  const missing = cases.replace(/^#\[test_case\(name: "route_52_roots_00_07".*\n/m, "");
+  assert.notEqual(missing, cases);
+  assert.throws(() => checkDiscoveryVectors(vectors, missing), /both discovery refusal tests/);
+});
