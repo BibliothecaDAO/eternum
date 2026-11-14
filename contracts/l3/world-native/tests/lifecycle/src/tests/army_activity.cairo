@@ -98,7 +98,12 @@ fn activity_separates_homes_aspects_and_games() {
     let other_game = registry(d)
         .create_game(
             CreateGameParams {
-                start_main_at: 360, duration_seconds: 288000, end_grace_seconds: 0, seed: 73, ..params(false),
+                name: 'activity other',
+                start_main_at: 360,
+                duration_seconds: 288000,
+                end_grace_seconds: 0,
+                seed: 73,
+                ..params(false),
             },
         );
     snforge_std::stop_cheat_caller_address(d.games);

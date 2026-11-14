@@ -16,7 +16,13 @@ export function armyCombatRefusal(
     const { x, y, alt } = entityMapPosition(store, game_id, army.explorer_id);
     if (!isDeepTile(spacing, { col: x, row: y, alt })) return "no-attack";
   }
-  const attackerAspect = store.require("HomeAspect", { game_id, home: store.require("ExplorerTroops", attacker).owner }).aspect;
-  const defenderAspect = store.require("HomeAspect", { game_id, home: store.require("ExplorerTroops", defender).owner }).aspect;
+  const attackerAspect = store.require("HomeAspect", {
+    game_id,
+    home: store.require("ExplorerTroops", attacker).owner,
+  }).aspect;
+  const defenderAspect = store.require("HomeAspect", {
+    game_id,
+    home: store.require("ExplorerTroops", defender).owner,
+  }).aspect;
   return attackerAspect === defenderAspect ? "allied" : undefined;
 }
