@@ -1,5 +1,7 @@
+pub use crate::day_schedule::{
+    DAYS_PER_BAG, Day, FRONTIER_REPORT_GRACE_SECONDS, UNITS_PER_BAG, bag_lengths, order_lengths,
+};
 use crate::game::GameRegistry;
-pub use crate::day_schedule::{Day, DAYS_PER_BAG, UNITS_PER_BAG, FRONTIER_REPORT_GRACE_SECONDS, bag_lengths, order_lengths};
 
 /// The day `timestamp` falls in, using only the game's calendar fields.
 #[inline(always)]

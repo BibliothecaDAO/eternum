@@ -24,7 +24,10 @@ test("a missing shared rule refuses schema generation instead of becoming a sile
     await mkdir(join(directory, "src"));
     await writeFile(join(directory, "src/rules.cairo"), "pub const MAX: u32 = crate::roster_limits::MISSING;\n");
     await writeFile(join(directory, "src/roster_limits.cairo"), "pub const MAX_BLITZ_ROSTER_PLAYERS: u32 = 24;\n");
-    await writeFile(join(directory, "src/day_schedule.cairo"), "pub const FRONTIER_REPORT_GRACE_SECONDS: u32 = 3600;\n");
+    await writeFile(
+      join(directory, "src/day_schedule.cairo"),
+      "pub const FRONTIER_REPORT_GRACE_SECONDS: u32 = 3600;\n",
+    );
     await assert.rejects(readRuleConstants(pathToFileURL(directory + sep)), /Unknown shared rule constant MISSING/);
   } finally {
     await rm(directory, { recursive: true, force: true });
