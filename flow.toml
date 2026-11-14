@@ -229,5 +229,5 @@ cmd = 'cp /home/djizus/projects/eternum-lanes/showcase/apps/game/.env.local apps
 estimate_gb = 6
 
 [kind.test-spire-consumers]
-cmd = "pnpm run build:packages && pnpm --dir apps/game test src/ui/features/frontier/spire-card.test.tsx src/ui/features/frontier/army/frontier-army.test.tsx src/three/scenes/worldmap-spire-dive.test.ts && node --test apps/game/scripts/client-playtest/*.test.mjs"
+cmd = "pnpm run build:packages && pnpm --dir apps/game test src/ui/features/frontier/spire-card.test.tsx src/ui/features/frontier/army/frontier-army.test.tsx src/three/scenes/worldmap-spire-dive.test.ts && pnpm --dir apps/game verify:assets scripts/client-playtest"
 estimate_gb = 5
