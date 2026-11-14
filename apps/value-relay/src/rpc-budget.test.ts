@@ -657,106 +657,6 @@ it("states the reads of one payment: its status read, the void check and its pro
   PAYMENT.proofUntilFinal = proof.cu;
 });
 
-// ---- the month -----------------------------------------------------------------------------------------------------
-
-/** Hourly passes strictly after an action at `action` minutes, up to the first at or after acceptance `delay` minutes later. */
-const proofPassesFor = (action: number, delay: number) => Math.ceil((action + delay) / 60) - Math.floor(action / 60);
-const averageProofPasses = (delay: number) =>
-  Array.from({ length: 60 }, (_, minute) => proofPassesFor(minute, delay)).reduce((all, count) => all + count, 0) / 60;
-interface Inputs {
-  announcedWritesPerDay: number;
-  endedGamesWaiting: number;
-  hoursToAcceptance: number;
-  targets: number;
-  depositors: number;
-  newDepositsPerDay: number;
-  payoutsPerDay: number;
-  ratingsPlayers: number;
-  ratingsRefreshesPerDay: number;
-  depositPassesPerDay: number;
-}
-/**
- * One environment's month in compute units: every term is a count measured above times 20 CU. The payment writes (a
- * report, a payment, their fee estimates and receipt polls) are not counted by a fake here; they are priced from
- * Alchemy's table at 800 CU a payment (`rpc-cost-3.md`).
- */
-const month = (inputs: Inputs) => {
-  const days = 30;
-  const hourly = 24 * days;
-  const writes = inputs.announcedWritesPerDay * days;
-  const audits = (hourly + writes) * AUDIT.steady;
-  const custody =
-    (hourly + writes) *
-    (inputs.targets * CUSTODY.perTarget + CUSTODY.perShard + inputs.depositors * CUSTODY.perUnpaidPrincipal);
-  const ticks = (hourly + writes) * LEDGER_TICK.steady;
-  const waiting = inputs.endedGamesWaiting * inputs.hoursToAcceptance * 60 * WAITING_MINUTE;
-  // An obligation is proven by the hourly passes after its action until the first at or after Ethereum's acceptance. That
-  // count depends on where in the hour the action falls, so it is averaged over every minute of the hour.
-  const proofPasses = averageProofPasses(inputs.hoursToAcceptance * 60);
-  const deposits =
-    inputs.depositPassesPerDay * days * DEPOSIT.quiet +
-    inputs.newDepositsPerDay * days * (DELIVERY.success + WRITE + proofPasses * DEPOSIT.proofSingle);
-  const payments = inputs.payoutsPerDay * days * (PAYMENT.read * 3 + PAYMENT.proofUntilFinal * proofPasses + 800);
-  const ratings = inputs.ratingsRefreshesPerDay * days * (inputs.ratingsPlayers + 6) * 20;
-  return {
-    audits,
-    custody,
-    ticks,
-    waiting,
-    deposits,
-    payments,
-    ratings,
-    total: audits + custody + ticks + waiting + deposits + payments + ratings,
-  };
-};
-it("derives the month for production and dev on one key from the counts above", () => {
-  // Inputs, stated: production has one ended game, 2 custody targets, 100 depositors, 5 new deposits and 40 payouts a day
-  // and 500 rated players; dev four ended games, 4 targets, 30 depositors, 5 new deposits and 10 payouts a day and 100
-  // rated players. Both see 20 announced relay writes a day (each causing one audit and one ledger tick), a deposit
-  // pass an hour, a ratings refresh an hour and one per result post (26 a day), and Ethereum takes six hours to accept
-  // a block (an assumption, not a measurement).
-  const productionInputs: Inputs = {
-    announcedWritesPerDay: 20,
-    endedGamesWaiting: 1,
-    hoursToAcceptance: 6,
-    targets: 2,
-    depositors: 100,
-    newDepositsPerDay: 5,
-    payoutsPerDay: 40,
-    ratingsPlayers: 500,
-    ratingsRefreshesPerDay: 26,
-    depositPassesPerDay: 24,
-  };
-  const production = month(productionInputs);
-  const dev = month({
-    announcedWritesPerDay: 20,
-    endedGamesWaiting: 4,
-    hoursToAcceptance: 6,
-    targets: 4,
-    depositors: 30,
-    newDepositsPerDay: 5,
-    payoutsPerDay: 10,
-    ratingsPlayers: 100,
-    ratingsRefreshesPerDay: 26,
-    depositPassesPerDay: 24,
-  });
-  expect(production.audits).toBe((720 + 600) * AUDIT.steady);
-  expect(production.total + dev.total).toBeLessThan(30_000_000);
-  expect([production.total, dev.total]).toEqual([13_546_000, 4_542_100]);
-  expect(production.total + dev.total).toBe(18_088_100);
-  // The proof count follows the action's place in the hour and the acceptance time: on the boundary six passes, ten minutes
-  // past it seven, and the same for twelve hours.
-  expect([0, 10, 59].map((minute) => proofPassesFor(minute, 360))).toEqual([6, 7, 7]);
-  expect([0, 10, 59].map((minute) => proofPassesFor(minute, 720))).toEqual([12, 13, 13]);
-  // The finality assumption drives the proof reads: twice the acceptance delay costs six more hours of proof passes for
-  // every new deposit and payment, and six more hours of waiting for each unclosed game.
-  const slower = month({ ...productionInputs, hoursToAcceptance: 12 });
-  expect(slower.total - production.total).toBe(
-    43_200 + 5 * 30 * 6 * DEPOSIT.proofSingle + 40 * 30 * 6 * PAYMENT.proofUntilFinal,
-  );
-  expect(slower.total).toBe(14_093_200);
-});
-
 // ---- the public delivery action: a real POST, its resolution, a retry, a recovery and a restart -------------------------
 
 /** The modeled price of a ledger write: fee estimate, nonce, the transaction and one receipt poll (`rpc-cost-3.md`). */
@@ -824,4 +724,110 @@ it("counts a deposit delivered through the public route: success, a repeat, a fa
   // Reads only; each resolution is one modeled write (WRITE), counted separately as `chain.writes`.
   expect(DELIVERY).toEqual({ failure: 160, success: 460, again: 180, recovery: 520, restart: 520 });
   vi.unstubAllGlobals();
+});
+
+// ---- the month -----------------------------------------------------------------------------------------------------
+
+/** Hourly passes strictly after an action at `action` minutes, up to the first at or after acceptance `delay` minutes later. */
+const proofPassesFor = (action: number, delay: number) => Math.ceil((action + delay) / 60) - Math.floor(action / 60);
+const averageProofPasses = (delay: number) =>
+  Array.from({ length: 60 }, (_, minute) => proofPassesFor(minute, delay)).reduce((all, count) => all + count, 0) / 60;
+interface Inputs {
+  announcedWritesPerDay: number;
+  endedGamesWaiting: number;
+  hoursToAcceptance: number;
+  targets: number;
+  depositors: number;
+  newDepositsPerDay: number;
+  payoutsPerDay: number;
+  ratingsPlayers: number;
+  ratingsRefreshesPerDay: number;
+  depositPassesPerDay: number;
+}
+const completedDeliveryReads = () => {
+  if (DELIVERY.success === 0) throw new Error("the delivery action was not measured before the month");
+  return DELIVERY.success;
+};
+/**
+ * One environment's month in compute units: every term is a count measured above times 20 CU. The payment writes (a
+ * report, a payment, their fee estimates and receipt polls) are not counted by a fake here; they are priced from
+ * Alchemy's table at 800 CU a payment (`rpc-cost-3.md`).
+ */
+const month = (inputs: Inputs, deliveryReads = completedDeliveryReads()) => {
+  const days = 30;
+  const hourly = 24 * days;
+  const writes = inputs.announcedWritesPerDay * days;
+  const audits = (hourly + writes) * AUDIT.steady;
+  const custody =
+    (hourly + writes) *
+    (inputs.targets * CUSTODY.perTarget + CUSTODY.perShard + inputs.depositors * CUSTODY.perUnpaidPrincipal);
+  const ticks = (hourly + writes) * LEDGER_TICK.steady;
+  const waiting = inputs.endedGamesWaiting * inputs.hoursToAcceptance * 60 * WAITING_MINUTE;
+  // An obligation is proven by the hourly passes after its action until the first at or after Ethereum's acceptance. That
+  // count depends on where in the hour the action falls, so it is averaged over every minute of the hour.
+  const proofPasses = averageProofPasses(inputs.hoursToAcceptance * 60);
+  const deposits =
+    inputs.depositPassesPerDay * days * DEPOSIT.quiet +
+    inputs.newDepositsPerDay * days * (deliveryReads + WRITE + proofPasses * DEPOSIT.proofSingle);
+  const payments = inputs.payoutsPerDay * days * (PAYMENT.read * 3 + PAYMENT.proofUntilFinal * proofPasses + 800);
+  const ratings = inputs.ratingsRefreshesPerDay * days * (inputs.ratingsPlayers + 6) * 20;
+  return {
+    audits,
+    custody,
+    ticks,
+    waiting,
+    deposits,
+    payments,
+    ratings,
+    total: audits + custody + ticks + waiting + deposits + payments + ratings,
+  };
+};
+it("derives the month for production and dev on one key from the counts above", () => {
+  // Inputs, stated: production has one ended game, 2 custody targets, 100 depositors, 5 new deposits and 40 payouts a day
+  // and 500 rated players; dev four ended games, 4 targets, 30 depositors, 5 new deposits and 10 payouts a day and 100
+  // rated players. Both see 20 announced relay writes a day (each causing one audit and one ledger tick), a deposit
+  // pass an hour, a ratings refresh an hour and one per result post (26 a day), and Ethereum takes six hours to accept
+  // a block (an assumption, not a measurement).
+  const productionInputs: Inputs = {
+    announcedWritesPerDay: 20,
+    endedGamesWaiting: 1,
+    hoursToAcceptance: 6,
+    targets: 2,
+    depositors: 100,
+    newDepositsPerDay: 5,
+    payoutsPerDay: 40,
+    ratingsPlayers: 500,
+    ratingsRefreshesPerDay: 26,
+    depositPassesPerDay: 24,
+  };
+  const production = month(productionInputs);
+  const dev = month({
+    announcedWritesPerDay: 20,
+    endedGamesWaiting: 4,
+    hoursToAcceptance: 6,
+    targets: 4,
+    depositors: 30,
+    newDepositsPerDay: 5,
+    payoutsPerDay: 10,
+    ratingsPlayers: 100,
+    ratingsRefreshesPerDay: 26,
+    depositPassesPerDay: 24,
+  });
+  expect(production.audits).toBe((720 + 600) * AUDIT.steady);
+  expect(production.total + dev.total).toBeLessThan(30_000_000);
+  expect([production.total, dev.total]).toEqual([13_615_000, 4_611_100]);
+  expect(production.total + dev.total).toBe(18_226_100);
+  // The proof count follows the action's place in the hour and the acceptance time: on the boundary six passes, ten minutes
+  // past it seven, and the same for twelve hours.
+  expect([0, 10, 59].map((minute) => proofPassesFor(minute, 360))).toEqual([6, 7, 7]);
+  expect([0, 10, 59].map((minute) => proofPassesFor(minute, 720))).toEqual([12, 13, 13]);
+  // The finality assumption drives the proof reads: twice the acceptance delay costs six more hours of proof passes for
+  // every new deposit and payment, and six more hours of waiting for each unclosed game.
+  const slower = month({ ...productionInputs, hoursToAcceptance: 12 });
+  expect(slower.total - production.total).toBe(
+    43_200 + 5 * 30 * 6 * DEPOSIT.proofSingle + 40 * 30 * 6 * PAYMENT.proofUntilFinal,
+  );
+  expect(slower.total).toBe(14_162_200);
+  // The delivery action's measured reads are in the month: each of the 150 new deposits a month pays for them.
+  expect(month(productionInputs, DELIVERY.success + 20).total - production.total).toBe(5 * 30 * 20);
 });

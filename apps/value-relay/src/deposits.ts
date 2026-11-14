@@ -136,7 +136,8 @@ const depositResolution = (
  */
 export async function relayDeposits(ports: DepositRelayPorts) {
   const { target, ledger } = ports;
-  if (!(await supportsDeposits(target))) return { enabled: false, processed: 0 };
+  if (!(await supportsDeposits(target)))
+    return { enabled: false, processed: 0, pending: 0, awaiting: 0, more: false, error: null, faults: [] as string[] };
   const key = `deposits:${BigInt(ledger.chainId)}:${BigInt(ledger.address)}:progress`;
   const stored = await ports.storage.get<Omit<DepositProgress, "open"> & { open?: (OpenDeposit | string)[] }>(key);
   let progress: DepositProgress = {
@@ -192,20 +193,45 @@ export async function relayDeposits(ports: DepositRelayPorts) {
   progress = { ...progress, open: progress.open.filter((entry) => !settled.has(keyOf(ports, entry))) };
   if (replaced.length) progress = await reconcileReplaced(ports, key, progress, replaced);
   else await ports.storage.put(key, progress);
-  const faults = await ports.storage.list<DepositFault>({ prefix: `deposit-fault:${BigInt(target.chainId)}:` });
-  for (const fault of faults.values())
-    errors.push({ obligation: `deposit:${fault.id}:${fault.commitment}`, error: `deposit_${fault.reason}` });
   return {
     enabled: true,
     processed: pass.attempted,
-    next: progress.next,
     total: String(count),
-    pending: pass.todo - replaced.length + faults.size,
-    awaiting: pass.awaiting,
-    more: BigInt(progress.next) <= count || pass.todo - replaced.length > 0,
+    ...(await summarize(ports, progress, count, errors)),
+  };
+}
+
+/**
+ * What a pass says about the work, derived from the store after everything the pass did, and nowhere else: the worker
+ * decides from this whether the next minute has anything to do, so it must describe the queue as it now stands. A queued
+ * deposit with no awaiting marker still needs an attempt (new, replaced, or failed); one with the marker waits for a
+ * proof pass; a fault needs an operator and an attempt would change nothing.
+ */
+async function summarize(
+  ports: DepositRelayPorts,
+  progress: DepositProgress,
+  count: bigint,
+  errors: { obligation: string; error: string }[],
+) {
+  let todo = 0;
+  let awaiting = 0;
+  for (const entry of progress.open)
+    if ((await ports.obligations.get<true>(`obligation:deposit:${keyOf(ports, entry)}`)) === true) awaiting++;
+    else todo++;
+  const faults = await ports.storage.list<DepositFault>({ prefix: `deposit-fault:${BigInt(ports.target.chainId)}:` });
+  return {
+    next: progress.next,
+    pending: todo,
+    awaiting,
+    faults: [...faults.values()].map((fault) => `deposit_${fault.reason}:${fault.id}:${fault.commitment}`),
+    more: BigInt(progress.next) <= count || todo > 0,
     error: errors.length ? errors : null,
   };
 }
+
+/** Whether the last pass left nothing for the next minute: no queued deposit to attempt, nothing failing, nothing to discover. */
+export const depositsSettled = (last: { error?: unknown; pending?: number | undefined; more?: boolean | undefined }) =>
+  !last.error && !last.pending && !last.more;
 
 /** A deposit enters the queue with its history row, or not at all. */
 const commit = (ports: DepositRelayPorts, key: string, progress: DepositProgress, rows: readonly LordsDeposit[]) =>

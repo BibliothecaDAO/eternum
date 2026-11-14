@@ -1,5 +1,5 @@
 import { checkDepositRetirement } from "./deposit-retirement";
-import { relayDeposits, depositHistory, clearDepositFault, type DepositMutation } from "./deposits";
+import { relayDeposits, depositHistory, clearDepositFault, depositsSettled, type DepositMutation } from "./deposits";
 import { mutateDeposit } from "./deposit-ledger";
 import { cosignerClient } from "./cosigner-client";
 import type { HeldRealm } from "@realms-world/identity";
@@ -99,12 +99,14 @@ const DELIVERY_DUE = "deposits:due";
 const DELIVERY_RETRY_SECONDS = 60;
 
 interface ShardObservation {
-  deposits?: { error?: unknown; pending?: number; more?: boolean };
+  deposits?: {
+    error?: unknown;
+    pending?: number | undefined;
+    more?: boolean | undefined;
+    faults?: readonly string[] | undefined;
+  };
   [field: string]: unknown;
 }
-/** A shard's deposits need no minute-by-minute look while the last pass left nothing pending and no error. */
-const depositsSettled = (deposits: NonNullable<ShardObservation["deposits"]>) =>
-  !deposits.error && !deposits.pending && !deposits.more;
 
 /** A single transaction stream per official chain, isolated from the shard host. */
 export class ValueRelay extends DurableObject<RelayEnv> {
@@ -560,7 +562,7 @@ export class ValueRelay extends DurableObject<RelayEnv> {
       checked_at: number;
       value: { status: string };
       funding_error: string | null;
-      deposits?: { error?: string | { obligation: string; error: string }[] | null };
+      deposits?: { error?: string | { obligation: string; error: string }[] | null; faults?: readonly string[] };
     }>("shardTick");
     return {
       ...progress,
@@ -570,6 +572,7 @@ export class ValueRelay extends DurableObject<RelayEnv> {
         observation.funding_error === null &&
         !!observation.deposits &&
         !observation.deposits.error &&
+        !observation.deposits.faults?.length &&
         !progress.halted &&
         Date.now() / 1000 - (observation?.checked_at ?? 0) <= 300,
     };

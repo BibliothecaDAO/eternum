@@ -23,7 +23,7 @@ import { depositCommitment } from "@realms-world/value-ledger/deposits";
 import { response } from "../../../packages/value-ledger/test-support/abi";
 import { ledgerAbi } from "../../../packages/value-ledger/test-support/ledger-abi";
 import { realmsAccountAddress } from "../../../packages/identity/src/account";
-import { depositHistory, relayDeposits, type DepositRelayPorts } from "./deposits";
+import { depositHistory, depositsSettled, relayDeposits, type DepositRelayPorts } from "./deposits";
 import { mutateDeposit } from "./deposit-ledger";
 import { ledgerPaymentProof, ledgerPaymentRead } from "./chain";
 import { durableFinalFacts } from "./final-facts";
@@ -412,6 +412,29 @@ const seedBlock: ConfirmedBlock = {
 };
 const ERRORS: string[] = [];
 
+/**
+ * Whenever a deposit is queued and not awaiting proof, the pass must say so: the worker takes "nothing pending" at its word
+ * and does not look again until the hour. The store is the truth the summary is checked against.
+ */
+async function summaryAgreesWithStore(
+  storage: { get<A>(key: string): Promise<A | undefined> },
+  result: { pending: number; more: boolean },
+) {
+  const progress = [...(await progressOf(storage))];
+  const todo = (
+    await Promise.all(
+      progress.map(
+        async (entry) =>
+          (await storage.get<true>(`obligation:deposit:2:${BigInt(entry.id)}:${entry.commitment}`)) !== true,
+      ),
+    )
+  ).filter(Boolean).length;
+  if (todo > 0 && !(result.pending > 0 && result.more))
+    throw new Error(`summary_disagrees: ${todo} queued, ${JSON.stringify(result)}`);
+}
+const progressOf = async (storage: { get<A>(key: string): Promise<A | undefined> }) =>
+  (await storage.get<{ open: { id: string; commitment: string }[] }>("deposits:1:16:progress"))?.open ?? [];
+
 /** What a pass of the three paths does, with a worker built fresh over `data`, as a restart would. */
 function worker(data: Map<string, unknown>, kill: Kill) {
   const storage = storageOver(data, kill);
@@ -481,9 +504,20 @@ function worker(data: Map<string, unknown>, kill: Kill) {
       });
     }
     await part(async () => {
+      // The worker's own decision: it looks at deposits on a proof pass, when the last pass left work, or never looked.
+      const last = await storage.get<{ deposits?: Parameters<typeof depositsSettled>[0] & { faults?: string[] } }>(
+        "shardTick",
+      );
+      if (!proofs && last?.deposits && depositsSettled(last.deposits)) {
+        // Skipped: what the health route serves is the last observation, faults included.
+        if (last.deposits.faults?.length) throw new Error(last.deposits.faults.join(","));
+        return;
+      }
       const result = await relayDeposits(depositPorts(proofs));
-      // The worker publishes a pass's per-deposit errors; a clean run publishes none.
-      if ("error" in result && result.error) throw new Error(JSON.stringify(result.error));
+      await storage.put("shardTick", { deposits: result });
+      await summaryAgreesWithStore(storage, result);
+      const published = [...(result.error ? [JSON.stringify(result.error)] : []), ...result.faults];
+      if (published.length) throw new Error(published.join(" | "));
     });
     await part(() =>
       sweepFrontierLords(
@@ -578,13 +612,21 @@ const scenarios: Scenario[] = [
   },
   {
     name: "an uncredited deposit is replaced by another before the relay notices",
+    after: {
+      // The pass that noticed the replacement (step 2) queued the new deposit; the very next minute (step 3) delivers it.
+      2: () => expect(world.canonical("resolve:D:delivered"), "the replacement, one minute after it was found").toBe(1),
+    },
     steps: [
       { proofs: false },
       {
         proofs: false,
         before: [() => world.rewrite(), arrive("D"), () => void (world.state.shardDown = false)],
       },
-      ...schedule({}, true).slice(2),
+      { proofs: false },
+      { proofs: false },
+      { proofs: true },
+      { proofs: false },
+      { proofs: true },
     ],
     start: [() => void (world.state.shardDown = true)],
     vanishes: "B",
@@ -746,6 +788,11 @@ async function expectOutcome(scenario: Scenario, outcome: Awaited<ReturnType<typ
       .filter(({ index }) => index >= from && index + 1 !== killStep);
   const tainted = !!scenario.vanishes && creditedBeforeVanish;
   const note = `errors: ${stepErrors.map((step) => step.join(",")).join(" | ")}`;
+  // Whenever a deposit was queued and waiting for an attempt, the pass that returned said so.
+  expect(
+    stepErrors.flat().filter((error) => error.includes("summary_disagrees")),
+    note,
+  ).toEqual([]);
   // Before anything arrives to reuse the vanished id, the unrelated work has already completed and nothing is stuck.
   expect(beforeLate, "before the late deposit").toMatchObject({
     a: 1,
