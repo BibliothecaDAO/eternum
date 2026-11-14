@@ -451,7 +451,7 @@ describe("the build sheet", () => {
         resource_type: ResourcesIds.Labor,
         building_count: 1,
         production_rate: String((100n * BigInt(RESOURCE_PRECISION)) / 3_600n),
-        output_amount_left: "0",
+        output_amount_left: (1n << 128n) - 1n,
         last_settled_at: 350,
       }),
     ] as never);

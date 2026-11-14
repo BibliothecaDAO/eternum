@@ -26,25 +26,7 @@ vi.mock("@/hooks/helpers/use-buildings", () => ({
       [BuildingType.ResourceCoal, ResourcesIds.Coal],
     ].map(([category, resource]) => ({ category, produced: { resource } })),
 }));
-vi.mock("@/hooks/helpers/use-resources", () => ({
-  useResourceManager: () => ({
-    current: (resourceId: ResourcesIds) => {
-      const production = PRODUCTION.get(resourceId);
-      if (!production) return undefined;
-      return {
-        balance: 0n,
-        production: {
-          remainder: 0,
 
-          building_count: 1,
-          production_rate: RATE,
-          output_amount_left: RATE * BigInt(production.seconds),
-          last_settled_at: NOW,
-        },
-      };
-    },
-  }),
-}));
 
 import { GameProvider } from "@/hooks/context/game-context";
 import { frontierDay } from "@/ui/features/frontier/deploy/deploy-fixture";
@@ -54,6 +36,11 @@ import { ProductionSidebar } from "./production-sidebar";
 it("reads each ring's full production: the time left, never running out, and none known", () => {
   (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
   const { store, row } = frontierDay();
+  store.applyFacts([...PRODUCTION].map(([resource_type, { seconds }]) => ({
+    model: "ResourceProduction", key: `0xe${resource_type}`,
+    value: { game_id: 1, entity_id: 7, resource_type, remainder: 0, building_count: 1,
+      production_rate: RATE, output_amount_left: RATE * BigInt(seconds), last_settled_at: NOW },
+  })));
   const realm = {
     entityId: 7,
     structure: row,
