@@ -91,6 +91,7 @@ function createTestSetup(systemCalls: Record<string, unknown> = {}, enabled: Par
   } as any;
 
   const read = (model: string, keys: { explorer_id?: number; alt?: boolean; col?: number; row?: number }) => {
+    if (model === "SliceRules") return { day_unit_seconds: 0 };
     if (model === "ExplorerTroops") return components.ExplorerTroops.get(String(keys.explorer_id));
     const tile = components.TileOpt.get(toTileEntityKey(keys.alt!, keys.col!, keys.row!));
     if (model === "TileOpt") return tile && { data: tile.data };

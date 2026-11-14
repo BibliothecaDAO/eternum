@@ -249,11 +249,17 @@ describe("the tile card", () => {
   it("is the same card for another player's army: its troops, the forecast, and Attack sent army against army", async () => {
     (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
     const { store } = campBeside();
-    const other = otherArmyAt(store, 42, 12);
+    store.applyFacts([
+      { model: "SettlementRules", key: "0x2", value: { ...store.require("SettlementRules", { game_id: 1 }), spacing: 1024 } },
+      { model: "HomeAspect", key: "0xa701", value: { game_id: 1, home: 7n, aspect: 1 } },
+      { model: "HomeAspect", key: "0xa901", value: { game_id: 1, home: 9n, aspect: 2 } },
+      { model: "TileOccupancy", key: "0x75", value: { game_id: 1, entity_id: 201n, col: 511, row: 3584, alt: false, category: 15, is_structure: false } },
+    ]);
+    const other = otherArmyAt(store, 512, 3584);
     useAccountStore.setState({ account: { address: "0x111" } as never });
     const attack = vi.fn(() => Promise.resolve({ transaction_hash: "0x1" }));
     const tile = {
-      hexCoords: { col: 42, row: 12, alt: false },
+      hexCoords: { col: 512, row: 3584, alt: false },
       biome: 11,
       occupierId: 301,
     } as unknown as TileSpatialRenderable;
@@ -280,6 +286,9 @@ describe("the tile card", () => {
     expect(attack).toHaveBeenCalledWith(
       expect.objectContaining({ aggressor_id: 201, defender_id: 301, steal_resources: [] }),
     );
+    act(() => store.applyFacts([{ model: "HomeAspect", key: "0xa901", value: { game_id: 1, home: 9n, aspect: 1 } }]));
+    expect([...host.querySelectorAll("button")].find((candidate) => candidate.textContent?.includes("Attack"))?.disabled).toBe(true);
+    expect(host.textContent).toContain("Allied armies cannot attack each other");
     act(() => root.unmount());
     host.remove();
   });

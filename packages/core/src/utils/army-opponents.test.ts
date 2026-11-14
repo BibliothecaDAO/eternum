@@ -11,9 +11,10 @@ it("uses the native home Aspects and shared Deep boundary for army orders", () =
   let dayUnit = 14400;
   const store = {
     get: () => undefined,
-    require: (model: string, key: { home?: bigint }) => {
+    require: (model: string, key: { home?: bigint; explorer_id?: bigint }) => {
       if (model === "SliceRules") return { day_unit_seconds: dayUnit };
       if (model === "SettlementRules") return { spacing: 1024 };
+      if (model === "ExplorerTroops") return key.explorer_id === army.explorer_id ? army : enemy;
       if (model === "HomeAspect") return { aspect: key.home === 1n ? 1 : aspect };
       throw new Error(`Unexpected fact ${model}`);
     },

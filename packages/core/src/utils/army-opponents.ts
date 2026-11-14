@@ -1,13 +1,12 @@
 import type { NativeFactStore } from "../client/native-fact-store";
-import type { NativeRows } from "../../../../contracts/l3/world-native/schema/client.gen";
 import { isDeepTile } from "./deep-geometry";
 import { entityMapPosition } from "./tile";
 
 /** The same Frontier boundary for the map's order and the selected target's card. */
 export function armyCombatRefusal(
   store: Pick<NativeFactStore, "get" | "require" | "entityOccupancy">,
-  attacker: NativeRows["ExplorerTroops"],
-  defender: NativeRows["ExplorerTroops"],
+  attacker: { game_id: number; explorer_id: number | bigint },
+  defender: { game_id: number; explorer_id: number | bigint },
 ): "no-attack" | "allied" | undefined {
   const game_id = attacker.game_id;
   if (game_id !== defender.game_id) return "no-attack";
@@ -17,7 +16,7 @@ export function armyCombatRefusal(
     const { x, y, alt } = entityMapPosition(store, game_id, army.explorer_id);
     if (!isDeepTile(spacing, { col: x, row: y, alt })) return "no-attack";
   }
-  const attackerAspect = store.require("HomeAspect", { game_id, home: attacker.owner }).aspect;
-  const defenderAspect = store.require("HomeAspect", { game_id, home: defender.owner }).aspect;
+  const attackerAspect = store.require("HomeAspect", { game_id, home: store.require("ExplorerTroops", attacker).owner }).aspect;
+  const defenderAspect = store.require("HomeAspect", { game_id, home: store.require("ExplorerTroops", defender).owner }).aspect;
   return attackerAspect === defenderAspect ? "allied" : undefined;
 }

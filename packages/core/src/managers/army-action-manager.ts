@@ -215,8 +215,8 @@ export class ArmyActionManager {
     const game_id = configManager.getActiveGameId();
     const reason = armyCombatRefusal(
       this.store,
-      this.store.require("ExplorerTroops", { game_id, explorer_id: this.entityId }),
-      this.store.require("ExplorerTroops", { game_id, explorer_id: target.id }),
+      { game_id, explorer_id: this.entityId },
+      { game_id, explorer_id: target.id },
     );
     return reason ? { reason } : undefined;
   }
