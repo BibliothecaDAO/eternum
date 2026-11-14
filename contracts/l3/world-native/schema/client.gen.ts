@@ -1,5 +1,5 @@
 // Generated from native fact models and contract ABIs. Run the native schema generator to update.
-export const nativeFactSchemaIdentity = "7435a8eda29289bb6da1bbb8d073b5b472c069fbfa4689d7062a72f00cc6bd66";
+export const nativeFactSchemaIdentity = "adadecd8f7b7ee2b61ef7ff53ee83a0b0cf7ee52e5b0dfd010f43f930b4cc6ea";
 export const nativeReleaseConstants = {
   "RUIN_DEPTH_LIMIT_RELEASE": 9
 } as const;
@@ -269,6 +269,7 @@ export interface NativeRows {
   RuinRelic: { readonly game_id: number; readonly entity_id: bigint; readonly kind: "Blade" | "Ward" | "Plunder" | "FarEye" | "Tome"; readonly rank: number };
   ArmyProgress: { readonly game_id: number; readonly explorer_id: bigint; readonly xp: number; readonly common_points: number; readonly uncommon_points: number; readonly rare_points: number; readonly epic_points: number; readonly legendary_points: number; readonly battle: number; readonly logistics: number; readonly scouting: number; readonly homecoming: number; readonly scouting_kinds: number };
   ArmyDay: { readonly game_id: number; readonly explorer_id: bigint; readonly day: bigint };
+  AspectActivity: { readonly game_id: number; readonly aspect: number; readonly day: bigint; readonly active: number };
   ArmySlot: { readonly game_id: number; readonly structure_id: bigint; readonly epoch: bigint; readonly slot: number; readonly explorer_id: bigint; readonly stamina: { readonly amount: bigint; readonly settled_at: number; readonly remainder: number } };
   ExplorerTroops: { readonly game_id: number; readonly explorer_id: bigint; readonly owner: bigint; readonly troops: { readonly category: "Knight" | "Paladin" | "Crossbowman"; readonly tier: "T1" | "T2" | "T3"; readonly count: bigint; readonly stamina: { readonly Inline: { readonly amount: bigint; readonly settled_at: number; readonly remainder: number } } | { readonly Slot: number }; readonly boosts: { readonly incr_damage_dealt_percent_num: number; readonly incr_damage_dealt_end_at: number; readonly decr_damage_gotten_percent_num: number; readonly decr_damage_gotten_end_at: number; readonly incr_stamina_regen_percent_num: number; readonly incr_stamina_regen_seconds_left: number; readonly incr_explore_reward_percent_num: number; readonly incr_explore_reward_end_at: number }; readonly battle_cooldown_end: number } };
   ExpeditionSite: { readonly game_id: number; readonly entity_id: bigint; readonly category: number; readonly initial_guard_count: bigint; readonly alt: boolean; readonly col: number; readonly row: number; readonly clear: ({ readonly explorer_id: bigint; readonly home_id: bigint; readonly reward: ({ readonly resource_type: number; readonly amount: bigint }) | null }) | null };
@@ -368,6 +369,7 @@ export interface NativeKeys {
   RuinRelic: { readonly game_id: number; readonly entity_id: bigint };
   ArmyProgress: { readonly game_id: number; readonly explorer_id: bigint };
   ArmyDay: { readonly game_id: number; readonly explorer_id: bigint };
+  AspectActivity: { readonly game_id: number; readonly aspect: number; readonly day: bigint };
   ArmySlot: { readonly game_id: number; readonly structure_id: bigint; readonly epoch: bigint; readonly slot: number };
   ExplorerTroops: { readonly game_id: number; readonly explorer_id: bigint };
   ExpeditionSite: { readonly game_id: number; readonly entity_id: bigint };
@@ -1558,6 +1560,28 @@ export const nativeFactModels = {
       "day": "u64"
     }
   },
+  "AspectActivity": {
+    "keys": [
+      "game_id",
+      "aspect",
+      "day"
+    ],
+    "scope": "game",
+    "fields": {
+      "game_id": "u32",
+      "aspect": "u8",
+      "day": "u64",
+      "active": "u32"
+    },
+    "absence": {
+      "parent": "GameRegistry",
+      "value": "zero",
+      "meaning": "No home in this Aspect allocated an army on this day.",
+      "parentKeys": {
+        "game_id": "game_id"
+      }
+    }
+  },
   "ArmySlot": {
     "keys": [
       "game_id",
@@ -2568,6 +2592,7 @@ export const nativeSyncScopes = {
       "explorer_id"
     ]
   },
+  "AspectActivity": "shared",
   "ArmySlot": {
     "realms": [
       "structure_id"

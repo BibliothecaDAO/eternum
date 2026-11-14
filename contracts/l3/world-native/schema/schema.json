@@ -5019,6 +5019,46 @@
       "valueLength": 1
     },
     {
+      "name": "AspectActivity",
+      "identity": "0x4173706563744163746976697479",
+      "scope": "game",
+      "keys": [
+        {
+          "name": "game_id",
+          "type": "core::integer::u32",
+          "feltLength": 1
+        },
+        {
+          "name": "aspect",
+          "type": "core::integer::u8",
+          "feltLength": 1
+        },
+        {
+          "name": "day",
+          "type": "core::integer::u64",
+          "feltLength": 1
+        }
+      ],
+      "members": [
+        {
+          "name": "active",
+          "type": "core::integer::u32",
+          "id": "0x616374697665",
+          "feltLength": 1
+        }
+      ],
+      "keyLength": 3,
+      "valueLength": 1,
+      "absence": {
+        "parent": "GameRegistry",
+        "value": "zero",
+        "meaning": "No home in this Aspect allocated an army on this day.",
+        "parentKeys": {
+          "game_id": "game_id"
+        }
+      }
+    },
+    {
       "name": "ArmySlot",
       "identity": "0x41726d79536c6f74",
       "scope": "game",
@@ -13237,5 +13277,5 @@
       ]
     }
   },
-  "identity": "7435a8eda29289bb6da1bbb8d073b5b472c069fbfa4689d7062a72f00cc6bd66"
+  "identity": "adadecd8f7b7ee2b61ef7ff53ee83a0b0cf7ee52e5b0dfd010f43f930b4cc6ea"
 }

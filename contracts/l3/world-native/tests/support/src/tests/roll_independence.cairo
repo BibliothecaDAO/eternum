@@ -171,13 +171,16 @@ pub fn typed_commands() -> Array<Command> {
                 explorer_id: 999999, coord: crate::troops::Coord { alt: false, x: 2000000, y: 2000000 },
             },
         ),
+        Command::ClaimDailyQuest(crate::quests::ClaimDailyQuest { home: 999999, day: 0 }),
     ]
 }
 pub fn fresh_world(ready: bool) -> Deployment {
     let d = super::setup_with_domains(true, "StructuresLogic", "TroopsLogic");
     let game = crate::game::IGameDispatcherTrait::game(crate::game::IGameDispatcher { contract_address: d.games }, 1);
     let rules = crate::rules::SliceRules {
-        command_mask: 0xffffffffffffffffff, entry_rule: crate::rules::ENTRY_ENTITLEMENT, ..play_fixture::rules(),
+        command_mask: 0xffffffffffffffffffffffffffffffff,
+        entry_rule: crate::rules::ENTRY_ENTITLEMENT,
+        ..play_fixture::rules(),
     };
     play_fixture::seed_game(
         d.games,
