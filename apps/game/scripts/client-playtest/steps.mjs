@@ -1179,7 +1179,7 @@ function staminaEffectSteps(wind) {
           () =>
             browser.read(`(() => {
           const sheet = document.querySelector('[data-kit-sheet][aria-label="' + ${JSON.stringify("Army 1")} + '"]');
-          const meter = sheet?.querySelector('[role="meter"][aria-label="Stamina"]');
+          const meter = sheet?.querySelector('[role="meter"][aria-label="stamina"]');
           const rect = meter?.getBoundingClientRect();
           return { current: Number(meter?.getAttribute('aria-valuenow')), maximum: Number(meter?.getAttribute('aria-valuemax')),
             text: sheet?.textContent, visible: Boolean(rect && rect.width && rect.height && rect.top >= 0 && rect.bottom <= innerHeight) };
