@@ -1,5 +1,6 @@
 use starknet::ContractAddress;
-use crate::resources::ResourceKey;
+use crate::resources::{IResourceOperationsDispatcherTrait, IResourceOperationsLibraryDispatcher, ResourceKey};
+use crate::troops::IBattleResolutionDispatcherTrait;
 use crate::structures::Structure;
 
 pub fn active_explorer(
@@ -1122,7 +1123,6 @@ pub fn command_explorer(
 }
 
 fn expire_explorer(key: ExplorerKey, mut explorer: ExplorerTroops, context: crate::commands::ExecutionContext) {
-    use crate::troops::IBattleResolutionDispatcherTrait;
     let today = crate::days::day_of(context.game.unbox(), context.rules.unbox().day_unit_seconds, context.timestamp)
         .index;
     assert!(crate::logic::army_days::require(key) < today, "army has not expired");
@@ -1141,7 +1141,6 @@ fn expire_explorer(key: ExplorerKey, mut explorer: ExplorerTroops, context: crat
 }
 
 fn return_homecoming(key: ExplorerKey, explorer: ExplorerTroops, context: crate::commands::ExecutionContext) {
-    use crate::resources::{IResourceOperationsDispatcherTrait, IResourceOperationsLibraryDispatcher};
     let Some(progress) = crate::logic::progression::read(key) else {
         return;
     };
@@ -1167,7 +1166,6 @@ fn return_homecoming(key: ExplorerKey, explorer: ExplorerTroops, context: crate:
 }
 
 fn destroy_explorer(key: ExplorerKey, explorer: ExplorerTroops) {
-    use crate::resources::{IResourceOperationsDispatcherTrait, IResourceOperationsLibraryDispatcher};
     crate::logic::army_slots::release(key, explorer);
     let state = crate::state::read();
     let release = state.releases.entry(state.game_releases.read(key.game_id)).classes;

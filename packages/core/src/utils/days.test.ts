@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import { bagLengths, dayOf, orderLengths, seasonSeconds } from "./days";
+import { bagLengths, dayOf, dayAtIndex, orderLengths, seasonSeconds } from "./days";
 
 const calendar = {
   seed: 0x5eedn,
@@ -33,6 +33,7 @@ describe("dayOf", () => {
       const day = dayOf(calendar, timestamp)!;
       expect(day).toEqual({ index, start: timestamp, end: day.end });
       expect(dayOf(calendar, day.end - 1)).toEqual(day);
+      expect(dayAtIndex(calendar, index)).toEqual(day);
       expect([8, 12, 16, 20, 24]).toContain((day.end - day.start) / 3600);
       timestamp = day.end;
       index += 1;
@@ -58,6 +59,7 @@ it("matches Cairo on clipped, merged, exact-minimum, very short and whole-bag se
     const [duration, timestamp, index, start, end] = values.slice(offset, offset + 5);
     const clock = { seed: 0x5eedn, startMainAt: 0, endAt: duration, dayUnitSeconds: 7200 };
     expect(dayOf(clock, timestamp)).toEqual({ index, start, end });
+    expect(dayAtIndex(clock, index)).toEqual({ index, start, end });
     expect(dayOf(clock, duration)).toBeNull();
   }
 });
@@ -78,9 +80,17 @@ it("covers any end without gaps, extra days or an unmerged short stub", () => {
       }
       for (const day of expected) {
         expect(dayOf(clock, day.start)).toEqual(day);
+        expect(dayAtIndex(clock, day.index)).toEqual(day);
         expect(dayOf(clock, day.end - 1)).toEqual(day);
       }
       expect(expected.at(-1)!.end).toBe(duration);
     }
   }
+});
+
+
+it("rejects an allocation day beyond the actual season or absorbed into its last day", () => {
+  expect(() => dayAtIndex(calendar, -1)).toThrow("Invalid day index");
+  expect(() => dayAtIndex(calendar, 105)).toThrow("Day index outside season");
+  expect(() => dayAtIndex({ ...calendar, startMainAt: 0, endAt: 5 * 7200, dayUnitSeconds: 7200 }, 1)).toThrow("Day index outside season");
 });

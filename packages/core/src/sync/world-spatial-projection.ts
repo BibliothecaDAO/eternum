@@ -1,6 +1,7 @@
+import { dayAtIndex } from "../utils/days";
 import { currentArmy, deepTiles, deepTerrain } from "../utils/deep";
 import { getBlockTimestamp } from "../utils/timestamp";
-import { readExpeditionRules, dayAtIndex, isArmyCurrent } from "../utils/expeditions";
+import { readExpeditionRules, isArmyCurrent } from "../utils/expeditions";
 import { activeTileOccupancy } from "../utils/ruins";
 import { safeInteger } from "../utils/safe-integer";
 import type { ID, Tile, TroopTier, TroopType } from "@bibliothecadao/types";

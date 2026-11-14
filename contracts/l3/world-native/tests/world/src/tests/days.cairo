@@ -43,6 +43,7 @@ fn day_of_matches_a_reference_walk_of_the_season() {
             let end = start + *units * unit;
             let day = Day { index, start, end };
             assert_eq!(day_of(game, UNIT, start), day);
+            assert_eq!(crate::days::day_at_index(game, UNIT, index), day);
             assert_eq!(day_of(game, UNIT, start + (end - start) / 2), day);
             assert_eq!(day_of(game, UNIT, end - 1), day);
             start = end;
@@ -93,6 +94,7 @@ fn cut_and_merged_days_match_the_shared_client_vectors() {
         let end: u64 = (*values.pop_front().unwrap()).try_into().unwrap();
         let game = GameRegistry { end_at: START + duration, ..season(0x5eed) };
         assert_eq!(day_of(game, 7200, START + timestamp), Day { index, start: START + start, end: START + end });
+        assert_eq!(crate::days::day_at_index(game, 7200, index), Day { index, start: START + start, end: START + end });
     }
 }
 
