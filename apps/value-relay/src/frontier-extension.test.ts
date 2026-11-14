@@ -161,7 +161,6 @@ it.each(["projection", "seed", "pool", "closed", "release", "expired", "l2chain"
   },
 );
 
-
 it("rejects a projected schedule that differs from the confirmed game", async () => {
   projected.scheduled_end_at = approved.oldEnd;
   await expect(run()).rejects.toThrow("extension_projection_differs");
