@@ -3,8 +3,14 @@ use starknet::storage::{StorageMapReadAccess, StoragePointerReadAccess};
 use world_test_support::tests::Deployment;
 use world_test_support::tests::preset_projection::optional_race_rules;
 use world_test_support::tests::resource_commands::execute_in_game;
+use world_test_support::tests::registrar::{
+    CreateGameParams, IRegistrarDispatcherTrait, IRegistrarSafeDispatcherTrait, params, registry, safe,
+};
 use crate::commands::Command;
-use crate::deep::{DeepShare, IDeepRewardsDispatcherTrait, IDeepRewardsLibraryDispatcher};
+use crate::deep::{
+    DeepShare, IDeepRewardsDispatcherTrait, IDeepRewardsLibraryDispatcher,
+    IDeepRewardsSafeDispatcherTrait, IDeepRewardsSafeLibraryDispatcher,
+};
 use crate::race::{AspectKey, IRaceDispatcherTrait, IRaceLibraryDispatcher, RaceMember, TriumphKey};
 use crate::resources::ResourceKey;
 use crate::rules::{DEEP_ALTAR, DEEP_FOUNDATION, RESOURCE_PRECISION};
@@ -115,7 +121,6 @@ fn foundation_splits_raw_glory_and_height_by_troops_while_altar_pays_only_glory(
 #[test]
 #[feature("safe_dispatcher")]
 fn rejected_payments_leave_height_and_both_member_totals_unchanged() {
-    use crate::deep::{IDeepRewardsSafeDispatcherTrait, IDeepRewardsSafeLibraryDispatcher};
     let (d, game_id) = setup(2000);
     let home = ResourceKey { game_id, entity_id: found(d, game_id, 1) };
     let valid = array![DeepShare { home: home.entity_id, troops: 1 }].span();
@@ -187,7 +192,6 @@ fn a_real_team_bane_blocks_height_but_not_glory_until_its_quest_is_completed() {
 #[test]
 #[feature("safe_dispatcher")]
 fn four_stages_schedule_triumphs_and_the_fifth_finishes_at_a_tick_inside_the_next_day() {
-    use crate::deep::{IDeepRewardsSafeDispatcherTrait, IDeepRewardsSafeLibraryDispatcher};
     let (d, game_id) = setup(20);
     let home = ResourceKey { game_id, entity_id: found(d, game_id, 1) };
     let shares = array![DeepShare { home: home.entity_id, troops: 1 }].span();
@@ -292,9 +296,6 @@ fn monument_attack_is_rejected_by_the_race_rule_before_any_capture_work() {
 #[test]
 #[feature("safe_dispatcher")]
 fn a_single_valid_payment_cannot_register_a_season_whose_total_would_overflow() {
-    use world_test_support::tests::registrar::{
-        CreateGameParams, IRegistrarDispatcherTrait, IRegistrarSafeDispatcherTrait, params, registry, safe,
-    };
     let d = world_test_support::tests::registrar::setup();
     let mut preset = definition(2000);
     let max: u128 = core::num::traits::Bounded::MAX;
