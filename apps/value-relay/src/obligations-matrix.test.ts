@@ -874,6 +874,7 @@ for (const scenario of scenarios) {
     await expectOutcome(scenario, dry);
     for (const [index, writes] of dry.writes.entries())
       for (let killAt = 1; killAt <= writes; killAt++) {
+        await new Promise((resolve) => setImmediate(resolve));
         const outcome = await run(scenario, index + 1, killAt);
         await expectOutcome(scenario, outcome).catch((error) => {
           throw new Error(
