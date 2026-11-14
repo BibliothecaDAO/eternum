@@ -1168,6 +1168,35 @@ const ARMY_ACTION_STEPS = [
   ),
 ];
 
+function staminaEffectSteps(wind) {
+  return [
+    ARMY_ACTION_STEPS[0],
+    {
+      name: "effect-refill",
+      play: async ({ browser }) => {
+        const panel = await openTheArmyPanel(browser);
+        const reading = await readUntil(() => browser.read(`(() => {
+          const sheet = document.querySelector('[data-kit-sheet][aria-label="' + ${JSON.stringify("Army 1")} + '"]');
+          const meter = sheet?.querySelector('[role="meter"][aria-label="Stamina"]');
+          const rect = meter?.getBoundingClientRect();
+          return { current: Number(meter?.getAttribute('aria-valuenow')), maximum: Number(meter?.getAttribute('aria-valuemax')),
+            text: sheet?.textContent, visible: Boolean(rect && rect.width && rect.height && rect.top >= 0 && rect.bottom <= innerHeight) };
+        })()`), state => state.visible, SHEET_WAIT_MS);
+        return { panel, reading };
+      },
+      settleMs: 0,
+      verify: ({ played }) => {
+        const { reading } = played;
+        const minimum = wind ? 60 : 50;
+        return reading.visible && reading.current >= minimum && reading.current < minimum + 10
+          && reading.maximum === 140 && reading.text.includes("Full in")
+          ? completed(played) : failed("Army bar and refill time must reflect the recorded stamina effects", played);
+      },
+    },
+    ARMY_ACTION_STEPS[1],
+  ];
+}
+
 async function openTheArmyPanel(browser) {
   const open = browser.read(SHEET_NAME);
   if (/^Army \d+$/.test(open ?? "")) {
@@ -5192,6 +5221,8 @@ export const STEP_SETS = {
   "lab-devcon-art": { game: { ...LAB_SPIRE, lab: "devcon-0" }, steps: devconArtSteps },
   "lab-devcon-season": { game: { ...LAB_SPIRE, lab: "devcon-season" }, steps: [devconSeasonStep] },
   "lab-spire": { game: LAB_SPIRE, steps: LAB_SPIRE_STEPS },
+  "lab-stamina-mist": { game: { ...LAB_SPIRE, lab: "stamina-mist" }, steps: staminaEffectSteps(false) },
+  "lab-stamina-wind": { game: { ...LAB_SPIRE, lab: "stamina-wind" }, steps: staminaEffectSteps(true) },
   "lab-layers": { game: LAB_SPIRE, steps: LAB_LAYERS_STEPS },
   ...Object.fromEntries(
     Object.keys(depthLooks).map((depth) => [

@@ -13,21 +13,7 @@ export function raceScenario(finished = false): LabScenario {
   const firstHome = store.require("Structure", { game_id: 1, entity_id: homes[0]!.home });
   const center = deepCenter(store.require("SettlementRules", { game_id: 1 }).spacing);
   const half = nativeRuleConstants.DEEP_MAP_SIZE / 2;
-  const rules: NativeRows["RaceRules"] = {
-    game_id: 1,
-    season_days: 50n,
-    glory_per_tick: 5n,
-    height_per_tick: 5,
-    stage_height: 2000,
-    clear_mist_percent: 200,
-    second_wind_percent: 200,
-    pale_moon_percent: 50,
-    spoils_percent: 200,
-    first: { alt: false, x: 5, y: 5 },
-    second: { alt: false, x: 45, y: 5 },
-    third: { alt: false, x: 5, y: 45 },
-    fourth: { alt: false, x: 45, y: 45 },
-  };
+  const rules = raceRules();
   const points = [rules.first, rules.second, rules.third, rules.fourth];
   const heights = [5200, finished ? 10_000 : 6400, 2800, 900];
   const facts: GameSyncFact[] = [
@@ -113,5 +99,23 @@ export function raceScenario(finished = false): LabScenario {
     startsAt: now,
     opensOn: { col: center.col + rules.first.x - half, row: center.row + rules.first.y - half },
     scoped: true,
+  };
+}
+
+export function raceRules(): NativeRows["RaceRules"] {
+  return {
+    game_id: 1,
+    season_days: 50n,
+    glory_per_tick: 5n,
+    height_per_tick: 5,
+    stage_height: 2000,
+    clear_mist_percent: 200,
+    second_wind_percent: 200,
+    pale_moon_percent: 50,
+    spoils_percent: 200,
+    first: { alt: false, x: 5, y: 5 },
+    second: { alt: false, x: 45, y: 5 },
+    third: { alt: false, x: 5, y: 45 },
+    fourth: { alt: false, x: 45, y: 45 },
   };
 }

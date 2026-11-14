@@ -17,7 +17,7 @@ import {
   liveHomeArmies,
 } from "@bibliothecadao/eternum";
 import { safeInteger, type NativeFactStore, type NativeRows } from "@bibliothecadao/eternum/game-client";
-import { armyNumber, resolveExplorerTroops } from "@bibliothecadao/eternum/troop-stamina";
+import { armyNumber, resolveExplorerTroops, STAMINA_MODELS } from "@bibliothecadao/eternum/troop-stamina";
 import { RESOURCE_PRECISION } from "@bibliothecadao/types";
 import { useMemo } from "react";
 
@@ -26,7 +26,7 @@ import { ARMY } from "@/ui/design-system/kit/words";
 import { availableRankUps, attributeTiers } from "../attributes/attributes";
 import type { AttributeKey } from "../army/army-detail";
 
-const ARMY_MODELS = ["ArmySlot", "ArmyProgress", "ExplorerTroops", "TileOccupancy", "EntityName"] as const;
+const ARMY_MODELS = [...STAMINA_MODELS, "EntityName"] as const;
 
 /** One army as the dock and the action bar read it. Unknown is undefined, never zero. */
 export type DockArmy = {

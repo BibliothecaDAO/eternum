@@ -109,10 +109,17 @@ export enum EntityType {
 
 export type RelicEffect = { id: ResourcesIds; endAt: number };
 
+/** Derived regeneration intervals and the last boundary this army can live through. */
+export type StaminaEffects = {
+  readonly until: number;
+  readonly windows: readonly { start: number; end: number; rateBps: number }[];
+};
+
 export type Troops = Omit<NativeRows["ExplorerTroops"]["troops"], "stamina"> & {
   readonly stamina: NativeRows["ArmySlot"]["stamina"];
   /** Derived from the slot army's current attributes; never a stored fact. */
   readonly staminaMax?: number;
+  readonly staminaEffects?: StaminaEffects;
 };
 export type TroopTier = Troops["tier"];
 /** Every troop tier the game's schema allows: a tier the schema adds fails to compile until it is named here. */

@@ -245,7 +245,10 @@ export class ShardNotifier extends DurableObject<Record<string, unknown>> {
   private async wakeActor(env: IdentityEnv, shard: Required<WatchedShard>, watches: RestWatch[], now: number) {
     const { gameId, actor } = watches[0]!;
     const armies = await readActorArmies(shard.url, gameId, actor, now);
-    const rested = watches.filter((watch) => armies.find((army) => army.armyId === watch.armyId)?.full);
+    const rested = watches.flatMap((watch) => {
+      const army = armies.find((army) => army.armyId === watch.armyId);
+      return army?.full && army.fullAt !== null ? [{ ...watch, fullAt: army.fullAt }] : [];
+    });
     const renewed = watches.flatMap((watch) => {
       const army = armies.find((candidate) => candidate.armyId === watch.armyId);
       return !army?.full && army?.fullAt ? [{ ...watch, fullAt: army.fullAt, attempts: 0 }] : [];

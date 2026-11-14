@@ -1,6 +1,6 @@
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { nextFrameOrTimeout } from "@/utils/frame-or-timeout";
-import { armyNumber, resolveExplorerTroops } from "@bibliothecadao/eternum/troop-stamina";
+import { armyNumber, resolveExplorerTroops, STAMINA_MODELS } from "@bibliothecadao/eternum/troop-stamina";
 import { projectionChangesForLayer } from "@bibliothecadao/eternum/game-sync";
 import { markShadowCastersChanged } from "@/three/shadow-refresh-policy";
 import { activeMapLayer } from "@/three/map-layer";
@@ -345,6 +345,15 @@ export class ArmyManager {
 
   private subscribeToExplorerTroopsPresentation(): void {
     this.unsubscribeExplorerTroopsPresentation = this.store?.subscribe((changes) => {
+      const effectsChanged = changes.some(change => change.model !== "ExplorerTroops"
+        && change.model !== "ArmySlot" && change.model !== "TileOccupancy"
+        && STAMINA_MODELS.some(model => model === change.model));
+      if (effectsChanged) {
+        for (const explorer of this.store!.inGame("ExplorerTroops", configManager.getActiveGameId())) {
+          if (explorer.troops.count > 0n) this.applyExplorerTroopsPresentationUpdate(explorer);
+        }
+        return;
+      }
       for (const change of changes) {
         const explorer =
           change.model === "ExplorerTroops"

@@ -1,3 +1,4 @@
+import { STAMINA_MODELS } from "@bibliothecadao/eternum/troop-stamina";
 import { useCurrentDefaultTick, useNowSeconds } from "@/hooks/helpers/use-block-timestamp";
 import { useNativeFacts } from "@/hooks/helpers/use-native-facts";
 import type { NativeRows } from "@bibliothecadao/eternum/game-client";
@@ -8,6 +9,7 @@ import { readDeployPlan } from "./deploy-plan";
 
 // Research sets what a troop costs and the Logistics a new army starts at; ended armies send Homecoming's troops back.
 const DEPLOY_MODELS = [
+  ...STAMINA_MODELS,
   "ArmyProgress",
   "ArmySlot",
   "ExplorerTroops",

@@ -577,3 +577,7 @@ The discovered-Spire path is `/lab/game?scenario=discovered-spire`: select Army 
 `build.sh playtest-spire-discovery` drives that path at desktop and phone sizes, asserts that only the next layer is
 offered and checks the command, new occupancy and camera arrival. The army panel then shows the new layer’s next-reveal
 Spire chance, read from its home/day/layer counter. Evidence stays in the flow result directory.
+
+The stamina effects paths are `/lab/game?scenario=stamina-mist` and `stamina-wind`: select Army 1, open its panel,
+read its bar and Full in timer, then spend its Battle skill point. `build.sh playtest-stamina-effects` drives both
+recorded-effect fixtures at desktop and phone sizes. Native lifecycle tests prove Explore settlement and quorum timing.

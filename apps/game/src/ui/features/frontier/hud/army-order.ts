@@ -17,14 +17,12 @@ import {
   FELT_CENTER,
   StaminaManager,
 } from "@bibliothecadao/eternum";
-import { resolveExplorerTroops } from "@bibliothecadao/eternum/troop-stamina";
+import { resolveExplorerTroops, STAMINA_MODELS } from "@bibliothecadao/eternum/troop-stamina";
 import { ResourcesIds, type Troops } from "@bibliothecadao/types";
 import { safeInteger } from "@bibliothecadao/eternum/game-client";
 
 const ORDER_MODELS = [
-  "ExplorerTroops",
-  "ArmySlot",
-  "ArmyProgress",
+  ...STAMINA_MODELS,
   ...RESOURCE_PRODUCTION_MODELS,
   "ArmyProgressionRules",
 ] as const;

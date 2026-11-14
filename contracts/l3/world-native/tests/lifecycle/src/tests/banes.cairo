@@ -77,7 +77,7 @@ fn found(d: Deployment, game_id: u32, timestamp: u64) -> ResourceKey {
     }
 }
 
-fn root_for(game_id: u32, day: u64, chance: u16, kind: u8) -> u256 {
+pub fn root_for(game_id: u32, day: u64, chance: u16, kind: u8) -> u256 {
     for value in 0_u32..10000 {
         let root: u256 = value.into();
         if crate::logic::bane_calendar::draw(game_id, day, root, chance) == kind {
@@ -85,6 +85,43 @@ fn root_for(game_id: u32, day: u64, chance: u16, kind: u8) -> u256 {
         }
     }
     panic!("no fixture root for world bane")
+}
+
+#[test]
+fn exploration_settles_mist_tide_until_the_exact_lights_quorum_second() {
+    let mut preset = definition();
+    preset.rules.tick_config.armies_tick_in_seconds = 60;
+    preset.rules.troop_stamina_config.stamina_gain_per_tick = 2;
+    let maximum: u64 = preset.rules.troop_stamina_config.stamina_knight_max.into();
+    let cost: u64 = preset.rules.troop_stamina_config.stamina_explore_stamina_cost.into();
+    let (d, game_id) = super::aspects::setup_aspect_preset(5, preset);
+    let home = found(d, game_id, 360);
+    train(d, home, 360);
+    let tomorrow = world_test_support::tests::registrar::day_start(d, game_id, 1);
+    assert!(play(d.games, TestAction { game_id, actor: d.actor, command: rename(home) },
+        root_for(game_id, 1, 20, crate::banes::MIST_TIDE), tomorrow));
+    assert!(execute_in_game(d, game_id, super::army_activity::muster(home.entity_id, 0, 0, 10), tomorrow));
+    let slot = crate::troops::ArmySlotKey { game_id, structure_id: home.entity_id, epoch: 1, slot: 0 };
+    let explorer_id = super::army_activity::slot_army(d, slot);
+    let discovery = interact_with_state(d.games, || crate::logic::preset_record::for_game(game_id).discovery_rules.read().unwrap());
+    for step in 0_u64..3 {
+        let root = world_test_support::tests::registrar::discovery_root(game_id,
+            crate::expeditions::FrontierDiscoveryRules { shrine_bps: 0, well_bps: 0, ..discovery },
+            step.try_into().unwrap(), Some(crate::army_relics::ArmyRelic { kind: crate::army_relics::RelicKind::FarEye, rank: 1 }),
+            crate::discovery::Discovery::None);
+        assert!(world_test_support::tests::registrar::explore_with_root(d, game_id, explorer_id, root, tomorrow + step * 60));
+        interact_with_state(d.games, || {
+            let bar = crate::logic::army_slot_storage::read(slot).unwrap().stamina;
+            let gained = if step == 0 { 0 } else if step == 1 { 1 } else { 3 };
+            assert_eq!(bar.amount, maximum - cost * (step + 1) + gained);
+            assert_eq!(bar.settled_at, (tomorrow + step * 60).try_into().unwrap());
+            assert_eq!(bar.remainder, 0);
+        });
+    }
+    interact_with_state(d.games, || {
+        let progress = crate::logic::banes::progress(game_id, 1, 1);
+        assert_eq!(progress.ended_at, tomorrow + 60);
+    });
 }
 
 fn rename(home: ResourceKey) -> Command {

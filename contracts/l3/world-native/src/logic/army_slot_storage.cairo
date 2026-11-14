@@ -49,14 +49,14 @@ pub fn resolve(key: ExplorerKey, mut explorer: ExplorerTroops, refill: Option<St
         if let Some(refill) = refill {
             let progress = crate::logic::progression::require(key);
             let maximum = crate::progression::stamina_max(progress, explorer.troops.category, refill.stamina_config);
-            stamina
-                .refill_to_max(
-                    ref explorer.troops.boosts,
-                    maximum,
-                    refill.stamina_config,
-                    refill.armies_tick_in_seconds,
-                    refill.timestamp,
-                );
+            crate::logic::stamina_effects::refill(
+                crate::resources::ResourceKey { game_id: key.game_id, entity_id: explorer.owner },
+                explorer.coord,
+                ref stamina,
+                ref explorer.troops.boosts,
+                maximum,
+                refill,
+            );
             stamina.clamp(maximum);
         }
         explorer.troops.stamina = StaminaSource::Inline(stamina);

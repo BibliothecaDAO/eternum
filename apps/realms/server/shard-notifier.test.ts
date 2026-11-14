@@ -1,6 +1,7 @@
 import { dayOf } from "@bibliothecadao/eternum/expeditions";
 import type { HeraldHistoryEvent } from "@bibliothecadao/eternum/game-sync";
 import type { PushEnvelope } from "@bibliothecadao/notifications";
+import { nativeBaneConstants } from "@bibliothecadao/eternum/game-client";
 import { beforeAll, describe, expect, it } from "vitest";
 
 import preset from "../../../contracts/l3/world-native/tests/fixtures/current-presets/conformance.json";
@@ -99,6 +100,8 @@ const createHerald = () => {
     /** Snapshot reads answered, and whether this Herald is failing them. */
     snapshotReads: 0,
     snapshotFails: false,
+    mistEndedAt: undefined as number | undefined,
+    requestedModels: [] as string[],
     seasonStart: SEASON_START,
     /** The season's end, when a test ends it early; else 420 day units after its start. */
     seasonEnd: null as number | null,
@@ -131,6 +134,7 @@ const createHerald = () => {
       };
     if (url.pathname === `/games/${GAME_ID}/snapshot`) {
       state.snapshotReads++;
+      state.requestedModels.push(url.searchParams.get("models") ?? "");
       if (url.searchParams.get("owner")) state.ownerReads.push(url.searchParams.get("owner")!);
     }
     if (url.pathname === `/games/${GAME_ID}/snapshot` && state.snapshotFails)
@@ -140,8 +144,8 @@ const createHerald = () => {
         { error: `Game ${GAME_ID} is finalized; its review snapshot holds GameRegistry` },
         { status: 409 },
       );
-    if (url.pathname === `/games/${GAME_ID}/snapshot`)
-      return snapshot(
+    if (url.pathname === `/games/${GAME_ID}/snapshot`) {
+      const read = snapshot(
         state.army,
         state.neighbourArmy,
         url.searchParams.get("owner"),
@@ -149,6 +153,8 @@ const createHerald = () => {
         state.homeSource,
         state.secondArmy,
       );
+      return { ...read, models: [...read.models, ...mistFacts(state.mistEndedAt)] };
+    }
     const page = { chain: state.chain, world_address: "0x5e45", complete_through_block: 10 + log.length };
     const after = url.searchParams.get("after");
     if (!after) return { ...page, next_cursor: { block: 10, transaction: 2147483647, event: 2147483647 }, items: [] };
@@ -237,6 +243,20 @@ const STRUCTURE_OWNERS = new Map([
   [HOME, PLAYER_ACCOUNT],
   [NEIGHBOUR_HOME, "0x7e1"],
 ]);
+
+function mistFacts(endedAt: number | undefined) {
+  if (endedAt === undefined) return [];
+  return [
+    { model: "BaneRules", rows: [{ key: "0xb01", value: { game_id: GAME_ID, chance_step: 20,
+      quorum_percent: 25, beast_percent: 150, stamina_percent: 50, production_percent: 50,
+      quest_counts: [3,6,9,12,20,40,60,80,2500,6000,10000,15000] } }] },
+    { model: "HomeAspect", rows: [{ key: "0xb02", value: { game_id: GAME_ID, home: HOME, aspect: 1 } }] },
+    { model: "AspectActivity", rows: [{ key: "0xb03", value: { game_id: GAME_ID, aspect: 1, day: TODAY - 1, active: 4 } }] },
+    { model: "WorldBane", rows: [{ key: "0xb04", value: { game_id: GAME_ID, day: TODAY, kind: nativeBaneConstants.MIST_TIDE } }] },
+    { model: "BaneProgress", rows: [{ key: "0xb05", value: { game_id: GAME_ID, aspect: 1, day: TODAY,
+      completed: endedAt === 0 ? 0 : 1, ended_at: endedAt } }] },
+  ];
+}
 
 const snapshot = (
   army: ArmyState | null,
@@ -705,6 +725,30 @@ describe.concurrent("shard notifications", () => {
       await worker.dispose();
     }
   }, 180_000);
+
+  it("rechecks Mist Tide when teammates can end it and alerts only after the actual bar is full", async () => {
+    const { herald, push, worker } = await createHarness("important");
+    try {
+      await worker.runCron();
+      await pause(polls(5));
+      herald.state.mistEndedAt = 0;
+      herald.act(0);
+      const spentAt = herald.state.army!.settledAt;
+      await pause(ticks(1));
+      herald.state.mistEndedAt = Math.floor(Date.now() / 1000);
+      const slowedSeconds = herald.state.mistEndedAt - spentAt;
+      const fullAt = spentAt + Math.ceil(REST_TICKS * ARMIES_TICK_SECONDS + slowedSeconds / 2);
+      await waitUntil(() => Date.now() / 1000 >= fullAt - 3, 45_000);
+      expect(push.received).toEqual([]);
+      await waitUntil(() => push.received.length > 0, 15_000);
+      expect(Date.now() / 1000).toBeGreaterThanOrEqual(fullAt);
+      expect(Date.now() / 1000).toBeLessThan(spentAt + 2 * REST_TICKS * ARMIES_TICK_SECONDS);
+      expect(await push.words()).toEqual(["Your armies are rested / Frontier: their stamina is full."]);
+      expect(herald.state.requestedModels.some(models => models.includes("BaneProgress") && models.includes("TriumphDay"))).toBe(true);
+    } finally {
+      await worker.dispose();
+    }
+  }, 100_000);
 
   it("a game that ends while an army rests alerts nothing for it, and every other alert still flows", async () => {
     const { herald, push, worker } = await createHarness("important");

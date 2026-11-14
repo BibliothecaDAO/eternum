@@ -3,7 +3,7 @@ import {
   getArmyStaminaRequirementWarnings,
 } from "@/ui/design-system/kit/words";
 import { useNativeFacts } from "@/hooks/helpers/use-native-facts";
-import { resolveExplorerTroops } from "@bibliothecadao/eternum/troop-stamina";
+import { resolveExplorerTroops, STAMINA_MODELS } from "@bibliothecadao/eternum/troop-stamina";
 import { useMemo } from "react";
 
 import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
@@ -124,7 +124,7 @@ export const useArmyMovementReadiness = (
   army: ExplorerTroopsValue | null | undefined,
   structureResources: ResourceValue | null | undefined,
 ): ArmyMovementReadiness | null => {
-  const slotFacts = useNativeFacts(["ArmySlot"]);
+  const slotFacts = useNativeFacts(STAMINA_MODELS);
   const currentDefaultTick = useCurrentDefaultTick();
 
   return useMemo(

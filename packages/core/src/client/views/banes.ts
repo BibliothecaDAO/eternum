@@ -1,6 +1,6 @@
+import { readOptionalSeasonRow } from "./season-rows";
 import { StructureType, worldBanes } from "@bibliothecadao/types";
-import type { NativeRows } from "../../../../../contracts/l3/world-native/schema/client.gen";
-import type { NativeFactResult, NativeFactStore, ReadKeys } from "../native-fact-store";
+import type { NativeFactResult, NativeFactStore } from "../native-fact-store";
 import { dayOf } from "../../utils/days";
 
 export const BANE_MODELS = [
@@ -30,7 +30,7 @@ export function readBaneDay(
   today: { index: number; start: number },
 ): NativeFactResult<{ bane: BaneDay | null }> {
   const day = today.index;
-  const ruleReading = optionalBaneRow(store, "BaneRules", { game_id: gameId });
+  const ruleReading = readOptionalSeasonRow(store, "BaneRules", { game_id: gameId });
   if (!ruleReading.known) return ruleReading;
   const rules = ruleReading.known.row;
   if (!rules) return { known: { bane: null } };
@@ -67,9 +67,9 @@ function readBaneIdentity(
   aspect: number,
   day: number,
 ): NativeFactResult<{ bane: BaneIdentity | null }> {
-  const first = optionalBaneRow(store, "FirstTeamBane", { game_id: gameId });
+  const first = readOptionalSeasonRow(store, "FirstTeamBane", { game_id: gameId });
   if (!first.known) return first;
-  const team = optionalBaneRow(store, "TeamBane", { game_id: gameId, aspect, day });
+  const team = readOptionalSeasonRow(store, "TeamBane", { game_id: gameId, aspect, day });
   if (!team.known) return team;
   const stopped = first.known.row && day > Number(first.known.row.issued_day);
   const world = store.get("WorldBane", { game_id: gameId, day });
@@ -96,17 +96,6 @@ function worldQuest(kind: number): number {
   return bane.quest;
 }
 
-function optionalBaneRow<M extends "BaneRules" | "FirstTeamBane" | "TeamBane">(
-  store: NativeFactStore,
-  model: M,
-  keys: ReadKeys<M>,
-): NativeFactResult<{ row: NativeRows[M] | undefined }> {
-  const row = store.get(model, keys);
-  if (row) return { known: { row } };
-  const absence = store.absenceKnown(model, keys);
-  return absence.known ? { known: { row: undefined } } : { unknown: absence.unknown };
-}
-
 function baneCalendar(store: NativeFactStore, gameId: number) {
   const game = store.require("GameRegistry", { game_id: gameId });
   const rules = store.require("SliceRules", { game_id: gameId });
@@ -126,16 +115,16 @@ export function readBaneEffects(
   home: number | bigint,
   from: number,
   until: number,
-): NativeFactResult<{ windows: { kind: number; start: number; end: number }[]; productionPercent: number }> {
-  const ruleReading = optionalBaneRow(store, "BaneRules", { game_id: gameId });
+): NativeFactResult<{ windows: { kind: number; start: number; end: number }[]; productionPercent: number; staminaPercent: number }> {
+  const ruleReading = readOptionalSeasonRow(store, "BaneRules", { game_id: gameId });
   if (!ruleReading.known) return ruleReading;
   const rules = ruleReading.known.row;
   const windows: { kind: number; start: number; end: number }[] = [];
-  if (!rules) return { known: { windows, productionPercent: 100 } };
+  if (!rules) return { known: { windows, productionPercent: 100, staminaPercent: 100 } };
   const structure = store.get("Structure", { game_id: gameId, entity_id: home });
   if (!structure) return { unknown: "MISSING_PRODUCTION_STRUCTURE" };
   if (structure.base.category !== StructureType.Realm)
-    return { known: { windows, productionPercent: rules.production_percent } };
+    return { known: { windows, productionPercent: rules.production_percent, staminaPercent: rules.stamina_percent } };
   const calendar = baneCalendar(store, gameId);
   const end = Math.min(until, calendar.endAt);
   let cursor = Math.max(from, calendar.startMainAt);
@@ -151,5 +140,5 @@ export function readBaneEffects(
     }
     cursor = day.end;
   }
-  return { known: { windows, productionPercent: rules.production_percent } };
+  return { known: { windows, productionPercent: rules.production_percent, staminaPercent: rules.stamina_percent } };
 }

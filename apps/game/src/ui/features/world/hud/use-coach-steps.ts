@@ -28,7 +28,7 @@ import {
   structureMapPosition,
 } from "@bibliothecadao/eternum";
 import type { NativeFactStore } from "@bibliothecadao/eternum/game-client";
-import { resolveExplorerTroops } from "@bibliothecadao/eternum/troop-stamina";
+import { resolveExplorerTroops, STAMINA_MODELS } from "@bibliothecadao/eternum/troop-stamina";
 import { BiomeType, StructureType, TROOP_TIERS, TROOP_TYPES } from "@bibliothecadao/types";
 import { useMemo } from "react";
 import {
@@ -227,7 +227,7 @@ const largestStack = (store: NativeFactStore, entityId: number, tick: number): T
  */
 const useCertainLoss = () => {
   const timestamp = useCurrentDefaultTick();
-  const facts = useNativeFacts(["ExplorerTroops", "Guard", "ArmySlot", "Structure", "TileOccupancy"]);
+  const facts = useNativeFacts([...STAMINA_MODELS, "Guard"]);
   return useMemo(() => {
     const gameId = configManager.getActiveGameId();
     return (army: CoachArmy, target: CoachTarget): boolean => {

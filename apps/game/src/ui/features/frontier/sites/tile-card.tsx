@@ -2,6 +2,7 @@ import { orderRefusalWords } from "../hud/order-tip";
 import { resourceMeaning } from "@/ui/design-system/icon-meaning";
 import { playUnitCommandSound } from "@/audio/unit-command-audio";
 import { useGame } from "@/hooks/context/game-context";
+import { STAMINA_MODELS } from "@bibliothecadao/eternum/troop-stamina";
 import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
 import { useNativeFacts, useNativeRevision } from "@/hooks/helpers/use-native-facts";
 import { useQuery } from "@/hooks/helpers/use-query";
@@ -37,6 +38,7 @@ import { useRuinRelicChoice } from "../relics/ruin-relic-choice";
 import { RelicReplacement } from "../relics/relic-replacement";
 
 const SITE_MODELS = [
+  ...STAMINA_MODELS,
   "ExpeditionSite",
   "ExpeditionDiscovery",
   "GameRelease",
