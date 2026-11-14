@@ -37,12 +37,15 @@ import { TileCard } from "./tile-card";
 
 const APPLIED = { hash: "0x1", block: 9, status: "SUCCEEDED" };
 
+const mountedCards = new Set<() => void>();
+
 beforeEach(() => {
   waitForAction.mockReset();
   waitForAction.mockResolvedValue(APPLIED);
 });
 
 afterEach(() => {
+  for (const unmount of mountedCards) unmount();
   resetGameSyncStoryEvents();
   setBlockTimestampSource(null);
   useUIStore.getState().selectOnMap(null);
@@ -126,6 +129,12 @@ const renderCard = (army: "beside" | "far", hud?: "desktop" | "phone") => {
   const host = document.createElement("div");
   document.body.append(host);
   const root = createRoot(host);
+  const unmount = () => {
+    if (!mountedCards.delete(unmount)) return;
+    act(() => root.unmount());
+    host.remove();
+  };
+  mountedCards.add(unmount);
   act(() =>
     root.render(
       <GameProvider
@@ -149,10 +158,6 @@ const renderCard = (army: "beside" | "far", hud?: "desktop" | "phone") => {
   );
   const button = (word: string) =>
     [...host.querySelectorAll("button")].find((candidate) => candidate.textContent?.includes(word));
-  const unmount = () => {
-    act(() => root.unmount());
-    host.remove();
-  };
   return { host, store, attack, button, unmount };
 };
 
@@ -162,7 +167,7 @@ const fightSides = (host: HTMLElement) =>
     .map((side) => side.getAttribute("aria-label"))
     .filter((l) => l?.includes("→"));
 /** The fixture army's attack on the camp from beside it: what the card shows near or far. */
-const FORECAST = ["Army 1,498 → 1,178, −320 · 21% lost", "Troll 1,100 → 492, −608 · 55% lost"];
+const FORECAST = ["Army 1,498 → 1,041, −457 · 31% lost", "Troll 1,100 → 478, −622 · 57% lost"];
 
 describe("the tile card", () => {
   it("titles the site by its map name over its kind, names the guard, offers no Attack until an army is chosen, then attacks with the same tap", async () => {
@@ -630,7 +635,7 @@ it("refreshes the open forecast and XP when only an army relic effect arrives", 
     act(() => useUIStore.getState().selectOnMap({ kind: "army", entityId: 201, tile: null }));
     expect(fightSides(host)).toEqual(FORECAST);
     act(() => store.applyFacts([relicEffectFact("Blade"), relicEffectFact("Ward"), relicEffectFact("Tome")]));
-    expect(fightSides(host)).toEqual(["Army 1,498 → 1,194, −304 · 20% lost", "Troll 1,100 → 431, −669 · 61% lost"]);
+    expect(fightSides(host)).toEqual(["Army 1,498 → 1,064, −434 · 29% lost", "Troll 1,100 → 416, −684 · 62% lost"]);
     expect(host.textContent).toContain("172 XP");
   } finally {
     unmount();

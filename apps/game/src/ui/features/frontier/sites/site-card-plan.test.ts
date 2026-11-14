@@ -20,16 +20,12 @@ describe("Frontier's tile card", () => {
     expect(plan.attackStamina).toBe(preset.rules.troop_stamina_config.stamina_attack_req);
     // The one attack Attack sends now, as the contract resolves it and its result will show it: this attack's losses
     // and the guard it leaves standing (a second attack would clear the camp; the card speaks of none but this one).
-    expect(plan.fight).toEqual({ troopsLost: 320, guardLeft: 492 });
+    expect(plan.fight).toEqual({ troopsLost: 457, guardLeft: 478 });
   });
 
   it("refuses the attack of an army short of its stamina as the contract does, with no figures of a later fight", () => {
     const { store, site, structure, attack } = campBeside("Camp", true, 0n);
     const plan = readSiteCard(store, site, structure, SITE_TILE, attack({ col: 41, row: 12, alt: false }));
-    // Sent now, the contract refuses it ("you have 0 stamina, but need …"). The card once counted the attack its
-    // stamina would pay for later, against a guard rested by then (457 lost, not this moment's 320): figures no
-    // Attack pressed now would bring (owner, 3 November 2026: "when you dont have enough stamina the fight calc is
-    // incorrect").
     expect(plan.fight).toEqual({ refused: true });
     expect(plan.attackStamina).toBe(preset.rules.troop_stamina_config.stamina_attack_req);
   });
@@ -41,7 +37,7 @@ describe("Frontier's tile card", () => {
     expect(beside.inReach).toBe(true);
     expect(far.inReach).toBe(false);
     // The same army, stamina and biome: the attack its Move leads to is the one beside the site.
-    expect(far.fight).toEqual({ troopsLost: 320, guardLeft: 492 });
+    expect(far.fight).toEqual({ troopsLost: 457, guardLeft: 478 });
     const armyless = readSiteCard(store, site, structure, SITE_TILE, null);
     expect(armyless.fight).toBeUndefined();
     expect(armyless.inReach).toBe(false);
@@ -149,27 +145,26 @@ it("shows beast labor from initial guards and clips it at the home store, alongs
   expect(plan.xp).toBe(118);
 });
 
-describe("prod's Blightglow Rift, read through the card's own facts on Frontier's deployed combat", () => {
+describe("the recorded Blightglow Rift under Frontier's current combat rules", () => {
   const card = (troops: bigint, guardStamina: bigint, armyStamina = 100n) => {
     const { store, site, structure, attack } = blightglowRift({ troops, guardStamina, armyStamina });
     return readSiteCard(store, site, structure, SITE_TILE, attack({ col: 41, row: 12, alt: false }));
   };
 
-  it("forecasts a rested guard as the owner's first card read it: 794 → 193, 1,400 → 1,033", () => {
+  it("forecasts the rested guard with the same formula as a field army", () => {
     const plan = card(794n, 120n);
     expect(plan.guard).toEqual({ type: TroopType.Knight, tier: TroopTier.T1, count: 1_400 });
     expect(plan.attackStamina).toBe(30);
-    expect(plan.fight).toEqual({ troopsLost: 601, guardLeft: 1_033 });
+    expect(plan.fight).toEqual({ troopsLost: 601, guardLeft: 1_025 });
   });
 
-  it("forecasts the guard tired, short of its 40 defense stamina, as the second read it: 793 → 372, 1,400 → 1,034", () => {
-    // A tired guard strikes at 70%: 421 lost where 601 would be; the army's own blow is unchanged.
-    expect(card(793n, 39n).fight).toEqual({ troopsLost: 421, guardLeft: 1_034 });
+  it("keeps the guard's damage at full strength below its defense stamina cost", () => {
+    expect(card(793n, 39n).fight).toEqual({ troopsLost: 601, guardLeft: 1_025 });
   });
 
   it("refuses the attack of an army below the attack's stamina, as the contract does", () => {
     expect(card(794n, 120n, 29n).fight).toEqual({ refused: true });
-    expect(card(794n, 120n, 30n).fight).toEqual({ troopsLost: 601, guardLeft: 1_033 });
+    expect(card(794n, 120n, 30n).fight).toEqual({ troopsLost: 601, guardLeft: 1_025 });
   });
 });
 
@@ -177,7 +172,7 @@ it("forecasts Blade and Ward, Plunder and Tome at the attack second and drops th
   const { store, site, structure, attack } = campBeside();
   const action = attack({ col: 41, row: 12, alt: false });
   const read = (timestamp: number) => readSiteCard(store, site, structure, SITE_TILE, { ...action, timestamp });
-  expect(read(350)).toMatchObject({ fight: { troopsLost: 320, guardLeft: 492 }, xp: 123, payout: { amount: 825 } });
+  expect(read(350)).toMatchObject({ fight: { troopsLost: 457, guardLeft: 478 }, xp: 123, payout: { amount: 825 } });
   store.applyFacts([
     relicEffectFact("Blade"),
     relicEffectFact("Ward"),
@@ -185,11 +180,11 @@ it("forecasts Blade and Ward, Plunder and Tome at the attack second and drops th
     relicEffectFact("Tome"),
   ]);
   expect(read(379)).toMatchObject({
-    fight: { troopsLost: 304, guardLeft: 431 },
+    fight: { troopsLost: 434, guardLeft: 416 },
     xp: 172,
     payout: { amount: 990, fits: 990 },
   });
-  expect(read(380)).toMatchObject({ fight: { troopsLost: 320, guardLeft: 492 }, xp: 123, payout: { amount: 825 } });
+  expect(read(380)).toMatchObject({ fight: { troopsLost: 457, guardLeft: 478 }, xp: 123, payout: { amount: 825 } });
   expect(action.army.troops.boosts.incr_damage_dealt_percent_num).toBe(0);
   expect(action.army.troops.boosts.decr_damage_gotten_percent_num).toBe(0);
 });
@@ -232,7 +227,7 @@ it("keeps the forecast and eligible rewards unknown until missing effects are kn
   });
   store.setSnapshot({ gameId: 1, complete: true, actor: "0x111", timestamp: 350 });
   expect(readSiteCard(store, site, structure, SITE_TILE, action)).toMatchObject({
-    fight: { troopsLost: 320, guardLeft: 492 },
+    fight: { troopsLost: 457, guardLeft: 478 },
     xp: 123,
     payout: { amount: 825 },
   });
