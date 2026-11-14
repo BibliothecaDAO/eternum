@@ -80,7 +80,9 @@ export const useArmySpireStatus = (explorerId: number) => {
   if (spire) return <SpireButton explorerId={explorerId} spire={spire} />;
   const chance = armySpireChance(setup.store, gameId, explorerId, now);
   return chance === null ? null : (
-    <p data-spire-chance className="text-hud-small text-hud-ink">{SPIRE_WORDS.nextReveal(chance)}</p>
+    <p data-spire-chance className="text-hud-small text-hud-ink">
+      {SPIRE_WORDS.nextReveal(chance)}
+    </p>
   );
 };
 

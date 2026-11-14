@@ -1,5 +1,5 @@
 // Generated from native fact models and contract ABIs. Run the native schema generator to update.
-export const nativeFactSchemaIdentity = "97e1ad509a8a1c1484c50ad995fd4c4192b2911d1b5c6e87586698128de72f8b";
+export const nativeFactSchemaIdentity = "b2eb60c73c58b8ca085d4e3eda16eded88828849dac32f949c0ef6759d14d81b";
 export const nativeReleaseConstants = {
   "RUIN_DEPTH_LIMIT_RELEASE": 9
 } as const;
@@ -63,6 +63,7 @@ export const nativeRuleConstants = {
   "PRODUCTION_START": 131072,
   "WELL_STAMINA_DIVISOR": 2,
   "FRONTIER_REPORT_GRACE_SECONDS": 3600,
+  "SPIRE_REVEAL_LIMIT": 10,
   "DEEP_MAP_SIZE": 50,
   "DEEP_FOUNDATION": 0,
   "DEEP_QUARRY": 1,
@@ -228,6 +229,7 @@ export interface NativeRows {
   RelicRules: { readonly game_id: number; readonly rules: readonly ({ readonly rate_bps: number; readonly duration: number; readonly uses: number; readonly essence_cost: bigint; readonly draw_weight: bigint })[] };
   ArmyProgressionRules: { readonly game_id: number; readonly reveal_xp: number; readonly reveal_xp_per_depth: number; readonly common_xp: number; readonly uncommon_xp: number; readonly rare_xp: number; readonly epic_xp: number; readonly legendary_xp: number };
   FrontierDiscoveryRules: { readonly game_id: number; readonly beasts_bps: number; readonly camp_bps: number; readonly rift_bps: number; readonly ruin_bps: number; readonly shrine_bps: number; readonly well_bps: number; readonly empty_reveal_limit: number };
+  ExpeditionSpire: { readonly game_id: number; readonly structure_id: bigint; readonly epoch: bigint; readonly depth: number; readonly reveals: number; readonly location: ({ readonly alt: boolean; readonly x: number; readonly y: number }) | null };
   ExpeditionDiscovery: { readonly game_id: number; readonly structure_id: bigint; readonly epoch: bigint; readonly empty_reveals: number; readonly ruin_cleared: boolean };
   DepositSource: { readonly game_id: number; readonly chain: bigint; readonly ledger: bigint; readonly signer: bigint; readonly epoch: bigint };
   SpendLords: { readonly game_id: number; readonly account: bigint; readonly available: bigint; readonly consumed: bigint; readonly swept: bigint };
@@ -343,6 +345,7 @@ export interface NativeKeys {
   RelicRules: { readonly game_id: number };
   ArmyProgressionRules: { readonly game_id: number };
   FrontierDiscoveryRules: { readonly game_id: number };
+  ExpeditionSpire: { readonly game_id: number; readonly structure_id: bigint; readonly epoch: bigint; readonly depth: number };
   ExpeditionDiscovery: { readonly game_id: number; readonly structure_id: bigint; readonly epoch: bigint };
   DepositSource: { readonly game_id: number };
   SpendLords: { readonly game_id: number; readonly account: bigint };
@@ -626,6 +629,38 @@ export const nativeFactModels = {
       "shrine_bps": "u16",
       "well_bps": "u16",
       "empty_reveal_limit": "u8"
+    }
+  },
+  "ExpeditionSpire": {
+    "keys": [
+      "game_id",
+      "structure_id",
+      "epoch",
+      "depth"
+    ],
+    "scope": "game",
+    "fields": {
+      "game_id": "u32",
+      "structure_id": "u64",
+      "epoch": "u64",
+      "depth": "u8",
+      "reveals": "u8",
+      "location": {
+        "option": {
+          "alt": "boolean",
+          "x": "u32",
+          "y": "u32"
+        }
+      }
+    },
+    "absence": {
+      "parent": "Structure",
+      "parentKeys": {
+        "game_id": "game_id",
+        "entity_id": "structure_id"
+      },
+      "value": "zero",
+      "meaning": "No eligible Spire reveals on this home, day and layer yet."
     }
   },
   "ExpeditionDiscovery": {
@@ -2894,6 +2929,12 @@ export const nativeSyncScopes = {
     ]
   },
   "ExpeditionDiscovery": {
+    "realms": [
+      "structure_id"
+    ],
+    "epoch": "epoch"
+  },
+  "ExpeditionSpire": {
     "realms": [
       "structure_id"
     ],

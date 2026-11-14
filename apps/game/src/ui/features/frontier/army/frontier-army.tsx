@@ -148,11 +148,7 @@ const ArmySheet = ({
       {deleting && !step.choosing && (
         <ArmyDeleteConfirm army={army} onCancel={() => setDeleting(false)} onDeleted={onClose} />
       )}
-      {spire && (
-        <HudWindowFoot>
-          {spire}
-        </HudWindowFoot>
-      )}
+      {spire && <HudWindowFoot>{spire}</HudWindowFoot>}
     </HudSheet>
   );
 };

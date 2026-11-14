@@ -407,7 +407,10 @@ export const armySpireChance = (
   const researched = researchedDepth(store, gameId, army.owner);
   if (position.alt || depth >= 3 || researched === undefined || researched === 0) return null;
   const progress = store.requireOrAbsent("ExpeditionSpire", {
-    game_id: gameId, structure_id: army.owner, epoch, depth,
+    game_id: gameId,
+    structure_id: army.owner,
+    epoch,
+    depth,
   });
   if (!progress.known || progress.known.location) return null;
   return ((progress.known.reveals + 1) * 100) / nativeRuleConstants.SPIRE_REVEAL_LIMIT;

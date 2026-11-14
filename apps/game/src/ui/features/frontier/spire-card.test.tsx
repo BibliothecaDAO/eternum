@@ -356,14 +356,21 @@ describe("a realm's spire, from the player's path", () => {
     try {
       act(() => useUIStore.getState().selectOnMap({ kind: "army", entityId: ARMY, tile: "own" }));
       expect(hud.host.textContent).toContain("Spire · next reveal 10%");
-      for (const [reveals, chance] of [[3, 40], [9, 100]]) {
-        act(() => store.applyFacts([{ model: "ExpeditionSpire", key: wireKey, value: { ...found, reveals, location: null } }]));
+      for (const [reveals, chance] of [
+        [3, 40],
+        [9, 100],
+      ]) {
+        act(() =>
+          store.applyFacts([{ model: "ExpeditionSpire", key: wireKey, value: { ...found, reveals, location: null } }]),
+        );
         expect(hud.host.textContent).toContain(`Spire · next reveal ${chance}%`);
       }
       act(() => store.applyFacts([{ model: "ExpeditionSpire", key: wireKey, value: found }]));
       expect(hud.host.querySelector("[data-spire-chance]")).toBeNull();
       expect(hud.host.querySelector("button")?.textContent).toBe("Spire");
-    } finally { hud.unmount(); }
+    } finally {
+      hud.unmount();
+    }
   });
 
   it("does not borrow another day's or layer's odds, or invent an unsynchronized counter", () => {
@@ -381,7 +388,13 @@ describe("a realm's spire, from the player's path", () => {
     expect(armySpireChance(store, 1, ARMY, NOW)).toBeNull();
     store.setSnapshot({ gameId: 1, complete: true, actor: "0x111", timestamp: NOW });
     const knowledge = store.require("RealmKnowledge", { game_id: 1, structure_id: 7 });
-    store.applyFacts([{ model: "RealmKnowledge", key: store.wireKeyOf("RealmKnowledge", knowledge)!, value: { ...knowledge, learned: 0n } }]);
+    store.applyFacts([
+      {
+        model: "RealmKnowledge",
+        key: store.wireKeyOf("RealmKnowledge", knowledge)!,
+        value: { ...knowledge, learned: 0n },
+      },
+    ]);
     expect(armySpireChance(store, 1, ARMY, NOW)).toBeNull();
     expect(armySpireChance(store, 1, ARMY, NOW + 86400)).toBeNull();
   });
