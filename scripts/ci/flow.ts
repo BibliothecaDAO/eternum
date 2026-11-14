@@ -17,12 +17,14 @@ export function validationPaths(): Record<string, string[]> {
 
 /** Run commands stay in their workflow. Only scheduling inputs are materialized for flow. */
 function definitions(jobs: ValidationJob[], paths: Record<string, string[]>): string {
-  return jobs.map((job) => {
-    const areaPaths = job.area === "static" ? [] : paths[job.area];
-    if (!areaPaths) throw new Error(`No validation paths for ${job.area}`);
-    const estimate = ["amm", "collectibles", "mmr", "season_pass", "native"].includes(job.area) ? 9 : 6;
-    return `[kind.${kindName(job)}]\ncmd = "bun scripts/ci/run.ts ${job.id}"\n${areaPaths.length ? `paths = "${areaPaths.join(" ")}"\n` : ""}estimate_gb = ${estimate}\n`;
-  }).join("\n");
+  return jobs
+    .map((job) => {
+      const areaPaths = job.area === "static" ? [] : paths[job.area];
+      if (!areaPaths) throw new Error(`No validation paths for ${job.area}`);
+      const estimate = ["amm", "collectibles", "mmr", "season_pass", "native"].includes(job.area) ? 9 : 6;
+      return `[kind.${kindName(job)}]\ncmd = "bun scripts/ci/run.ts ${job.id}"\n${areaPaths.length ? `paths = "${areaPaths.join(" ")}"\n` : ""}estimate_gb = ${estimate}\n`;
+    })
+    .join("\n");
 }
 
 export function parityProblems(source: string, jobs = validationJobs(), paths = validationPaths()): string[] {
@@ -32,9 +34,12 @@ export function parityProblems(source: string, jobs = validationJobs(), paths = 
     const kind = kindName(job);
     const actual = flow.kind[kind];
     const expectedPaths = job.area === "static" ? [] : paths[job.area];
-    if (!actual || !listed.has(kind)) return [`${job.id}: missing landing kind ${kind}; run bun scripts/ci/flow.ts --write`];
-    if (actual.cmd !== `bun scripts/ci/run.ts ${job.id}`) return [`${kind}: run the workflow through scripts/ci/run.ts`];
-    if (JSON.stringify((actual.paths ?? "").split(/\s+/).filter(Boolean)) !== JSON.stringify(expectedPaths)) return [`${kind}: paths differ from validation_areas.py; run bun scripts/ci/flow.ts --write`];
+    if (!actual || !listed.has(kind))
+      return [`${job.id}: missing landing kind ${kind}; run bun scripts/ci/flow.ts --write`];
+    if (actual.cmd !== `bun scripts/ci/run.ts ${job.id}`)
+      return [`${kind}: run the workflow through scripts/ci/run.ts`];
+    if (JSON.stringify((actual.paths ?? "").split(/\s+/).filter(Boolean)) !== JSON.stringify(expectedPaths))
+      return [`${kind}: paths differ from validation_areas.py; run bun scripts/ci/flow.ts --write`];
     return [];
   });
 }
@@ -42,8 +47,12 @@ export function parityProblems(source: string, jobs = validationJobs(), paths = 
 function writeFlow(source: string): string {
   const jobs = validationJobs();
   const base = source.split(marker)[0]!.trimEnd();
-  const rewritten = base.replace(/(\[land\]\nkinds = ")([^"]+)(")/, (_, start, listed, end) =>
-    start + [...listed.split(/\s+/).filter((kind: string) => !kind.startsWith("ci-")), ...jobs.map(kindName)].join(" ") + end,
+  const rewritten = base.replace(
+    /(\[land\]\nkinds = ")([^"]+)(")/,
+    (_, start, listed, end) =>
+      start +
+      [...listed.split(/\s+/).filter((kind: string) => !kind.startsWith("ci-")), ...jobs.map(kindName)].join(" ") +
+      end,
   );
   return `${rewritten}\n\n${marker}${definitions(jobs, validationPaths())}`;
 }

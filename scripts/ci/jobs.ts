@@ -39,7 +39,7 @@ function matrixRows(matrix: Job["strategy"]): Environment[] {
   const entries = Object.entries(matrix.matrix);
   if (entries.length !== 1) throw new Error("Validation matrices must have one axis or an include list");
   const [name, values] = entries[0]!;
-  return name === "include" ? values as Environment[] : (values as string[]).map((value) => ({ [name]: value }));
+  return name === "include" ? (values as Environment[]) : (values as string[]).map((value) => ({ [name]: value }));
 }
 
 /** Discover every concrete job the PR's validation aggregate requires. */
@@ -50,7 +50,8 @@ export function validationJobs(): ValidationJob[] {
       if (area !== "scope" && area !== "validation") throw new Error(`Unmapped validation job: ${area}`);
       return [];
     }
-    if (!caller.uses.startsWith("./.github/workflows/")) throw new Error(`External validation workflow: ${caller.uses}`);
+    if (!caller.uses.startsWith("./.github/workflows/"))
+      throw new Error(`External validation workflow: ${caller.uses}`);
     return Object.entries(workflow(caller.uses).jobs).flatMap(([name, job]) =>
       matrixRows(job.strategy).map((matrix) => ({
         id: [area, name, ...Object.values(matrix).slice(0, 1)].join("/"),
@@ -64,11 +65,15 @@ export function validationJobs(): ValidationJob[] {
 }
 
 export function interpolate(value: string, context: Record<string, Environment>): string {
-  return String(value).replace(/\$\{\{\s*(\w+)\.([\w-]+)\s*\}\}/g, (_, group, key) => {
-    const resolved = context[group]?.[key];
-    if (resolved === undefined) throw new Error(`Unsupported expression: ${group}.${key}`);
-    return resolved;
-  }).replace(/\$\{\{.*?\}\}/g, (expression) => { throw new Error(`Unsupported expression: ${expression}`); });
+  return String(value)
+    .replace(/\$\{\{\s*(\w+)\.([\w-]+)\s*\}\}/g, (_, group, key) => {
+      const resolved = context[group]?.[key];
+      if (resolved === undefined) throw new Error(`Unsupported expression: ${group}.${key}`);
+      return resolved;
+    })
+    .replace(/\$\{\{.*?\}\}/g, (expression) => {
+      throw new Error(`Unsupported expression: ${expression}`);
+    });
 }
 
 export function selectedStep(step: Step, matrix: Environment): boolean {

@@ -9,7 +9,7 @@ import fnmatch
 import re
 
 # A change to any of these runs every area: every area's checks install from them.
-SHARED = ["package.json", "pnpm-lock.yaml", "pnpm-workspace.yaml", ".npmrc", "scripts/ci/**", ".github/scripts/validation_areas.py"]
+SHARED = ["package.json", "pnpm-lock.yaml", "pnpm-workspace.yaml", ".npmrc", "scripts/ci/**"]
 # The checkout of every job that reads no media: a change to it runs each of them.
 MEDIA_FREE_CHECKOUT = ".github/actions/checkout-without-media/**"
 # CI files the static job owns. Static runs on every run, so a change to one selects no further area: static tests the

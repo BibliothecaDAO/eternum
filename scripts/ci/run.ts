@@ -1,10 +1,27 @@
 import { readFileSync, mkdtempSync } from "node:fs";
 import { delimiter, join, resolve } from "node:path";
 import { tmpdir } from "node:os";
-import { interpolate, root, selectedStep, stepEnvironment, validationJobs, type Environment, type Step, type ValidationJob } from "./jobs";
+import {
+  interpolate,
+  root,
+  selectedStep,
+  stepEnvironment,
+  validationJobs,
+  type Environment,
+  type Step,
+  type ValidationJob,
+} from "./jobs";
 
-const inherited = Object.fromEntries(Object.entries(process.env).filter((entry): entry is [string, string] => entry[1] !== undefined));
-const setupActions = new Set(["actions/checkout@v4", "./.github/actions/checkout-without-media", "pnpm/action-setup@v4", "actions/setup-node@v4", "oven-sh/setup-bun@v2", "software-mansion/setup-universal-sierra-compiler@v1"]);
+const inherited = Object.fromEntries(
+  Object.entries(process.env).filter((entry): entry is [string, string] => entry[1] !== undefined),
+);
+const setupActions = new Set([
+  "actions/checkout@v4",
+  "pnpm/action-setup@v4",
+  "actions/setup-node@v4",
+  "oven-sh/setup-bun@v2",
+  "software-mansion/setup-universal-sierra-compiler@v1",
+]);
 
 function command(argv: string[], env: Environment, cwd = root, capture = false): string {
   const result = Bun.spawnSync(argv, { cwd, env, stdout: capture ? "pipe" : "inherit", stderr: "inherit" });
@@ -15,7 +32,10 @@ function command(argv: string[], env: Environment, cwd = root, capture = false):
 function installToolchain(step: Step, context: Record<string, Environment>, env: Environment) {
   const file = interpolate(step.with?.["tool-versions"] ?? ".tool-versions", context);
   const tool = step.uses === "software-mansion/setup-scarb@v1" ? "scarb" : "starknet-foundry";
-  const version = readFileSync(resolve(root, file), "utf8").split(/\r?\n/).map((line) => line.split(/\s+/)).find(([name]) => name === tool)?.[1];
+  const version = readFileSync(resolve(root, file), "utf8")
+    .split(/\r?\n/)
+    .map((line) => line.split(/\s+/))
+    .find(([name]) => name === tool)?.[1];
   if (!version) throw new Error(`Missing ${tool} pin in ${file}`);
   const directory = command(["asdf", "where", tool, version], env, root, true);
   env.PATH = [join(directory, "bin"), env.PATH].join(delimiter);
@@ -27,7 +47,21 @@ async function startPostgres(job: ValidationJob, env: Environment): Promise<() =
   if (services.length === 0) return () => {};
   if (services.length !== 1 || services[0]![0] !== "postgres") throw new Error(`Unsupported services: ${job.id}`);
   const service = services[0]![1];
-  const id = command(["docker", "run", "--rm", "--detach", "--publish", "127.0.0.1::5432", ...Object.entries(service.env).flatMap(([key, value]) => ["--env", `${key}=${value}`]), service.image], env, root, true);
+  const id = command(
+    [
+      "docker",
+      "run",
+      "--rm",
+      "--detach",
+      "--publish",
+      "127.0.0.1::5432",
+      ...Object.entries(service.env).flatMap(([key, value]) => ["--env", `${key}=${value}`]),
+      service.image,
+    ],
+    env,
+    root,
+    true,
+  );
   const stop = () => command(["docker", "rm", "--force", id], env);
   try {
     const port = command(["docker", "port", id, "5432/tcp"], env, root, true).split(":").at(-1)!;
@@ -39,7 +73,10 @@ async function startPostgres(job: ValidationJob, env: Environment): Promise<() =
       }
     }
     for (let attempt = 0; attempt < 60; attempt++) {
-      const ready = Bun.spawnSync(["docker", "exec", id, "pg_isready", "-U", service.env.POSTGRES_USER!, "-d", service.env.POSTGRES_DB!], { stdout: "ignore", stderr: "ignore" });
+      const ready = Bun.spawnSync(
+        ["docker", "exec", id, "pg_isready", "-U", service.env.POSTGRES_USER!, "-d", service.env.POSTGRES_DB!],
+        { stdout: "ignore", stderr: "ignore" },
+      );
       if (ready.exitCode === 0) return stop;
       await Bun.sleep(1000);
     }
@@ -56,15 +93,37 @@ function runStep(step: Step, job: ValidationJob, env: Environment) {
   console.log(JSON.stringify({ job: job.id, step: step.name ?? step.run ?? step.uses }));
   if (step.run) {
     if (step.shell && step.shell !== "bash") throw new Error(`Unsupported shell: ${step.shell}`);
-    const cwd = resolve(root, interpolate(step["working-directory"] ?? job.job.defaults?.run?.["working-directory"] ?? ".", context));
-    command(["bash", "--noprofile", "--norc", "-eo", "pipefail", "-c", interpolate(step.run, context)], { ...env, ...stepEnvironment(step.env, context) }, cwd);
+    const cwd = resolve(
+      root,
+      interpolate(step["working-directory"] ?? job.job.defaults?.run?.["working-directory"] ?? ".", context),
+    );
+    command(
+      ["bash", "--noprofile", "--norc", "-eo", "pipefail", "-c", interpolate(step.run, context)],
+      { ...env, ...stepEnvironment(step.env, context) },
+      cwd,
+    );
   } else if (step.uses === "software-mansion/setup-scarb@v1" || step.uses === "foundry-rs/setup-snfoundry@v3") {
     installToolchain(step, context, env);
+  } else if (step.uses === "./.github/actions/checkout-without-media") {
+    command(["bash", ".github/actions/checkout-without-media/set-sparse-checkout.sh"], {
+      ...env,
+      KEEP: step.with?.keep ?? "",
+    });
   } else if (step.uses === "./.github/actions/fetch-cairo-dependencies") {
-    const action = Bun.YAML.parse(readFileSync(resolve(root, ".github/actions/fetch-cairo-dependencies/action.yml"), "utf8")) as { runs: { steps: Step[] } };
+    const action = Bun.YAML.parse(
+      readFileSync(resolve(root, ".github/actions/fetch-cairo-dependencies/action.yml"), "utf8"),
+    ) as { runs: { steps: Step[] } };
     for (const child of action.runs.steps) {
       const inputs = { inputs: step.with ?? {} };
-      runStep({ ...child, run: interpolate(child.run!, inputs), "working-directory": interpolate(child["working-directory"]!, inputs) }, job, env);
+      runStep(
+        {
+          ...child,
+          run: interpolate(child.run!, inputs),
+          "working-directory": interpolate(child["working-directory"]!, inputs),
+        },
+        job,
+        env,
+      );
     }
   } else if (!step.uses || !setupActions.has(step.uses)) {
     throw new Error(`Unsupported validation action: ${step.uses}`);
@@ -78,7 +137,10 @@ async function runJob(id: string) {
   const env: Environment = { ...inherited, ...stepEnvironment(job.job.env, { matrix: job.matrix }), CI: "true" };
   env.RUNNER_TEMP ??= mkdtempSync(join(env.FLOW_TMP ?? tmpdir(), "ci-"));
   const stop = await startPostgres(job, env);
-  const interrupted = () => { stop(); process.exit(130); };
+  const interrupted = () => {
+    stop();
+    process.exit(130);
+  };
   process.once("SIGINT", interrupted);
   process.once("SIGTERM", interrupted);
   try {
@@ -87,6 +149,7 @@ async function runJob(id: string) {
     process.removeListener("SIGINT", interrupted);
     process.removeListener("SIGTERM", interrupted);
     stop();
+    command(["git", "sparse-checkout", "disable"], env);
   }
 }
 

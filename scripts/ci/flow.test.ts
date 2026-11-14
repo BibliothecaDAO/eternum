@@ -17,25 +17,36 @@ test("every concrete validation job runs through its workflow with the same sele
 test.each(jobs)("refuses an omitted job: $id", (job) => {
   const kind = kindName(job);
   const missing = source.replace(`[kind.${kind}]`, `[kind.retired-${kind}]`);
-  expect(parityProblems(missing, jobs, paths)).toContain(`${job.id}: missing landing kind ${kind}; run bun scripts/ci/flow.ts --write`);
+  expect(parityProblems(missing, jobs, paths)).toContain(
+    `${job.id}: missing landing kind ${kind}; run bun scripts/ci/flow.ts --write`,
+  );
 });
 
 test("refuses the old partial harness command and a narrower dependency scope", () => {
-  const partial = source.replace("bun scripts/ci/run.ts runtime/offline-tests/harness", "bun test deploy/athanor/harness/confirmation.test.ts");
-  expect(parityProblems(partial, jobs, paths)).toContain("ci-runtime-offline-tests-harness: run the workflow through scripts/ci/run.ts");
+  const partial = source.replace(
+    "bun scripts/ci/run.ts runtime/offline-tests/harness",
+    "bun test deploy/athanor/harness/confirmation.test.ts",
+  );
+  expect(parityProblems(partial, jobs, paths)).toContain(
+    "ci-runtime-offline-tests-harness: run the workflow through scripts/ci/run.ts",
+  );
   const missingRelease = source.replaceAll("deploy/release/ ", "");
   expect(parityProblems(missingRelease, jobs, paths).some((problem) => problem.includes("paths differ"))).toBe(true);
 });
 
 test("a new workflow job cannot inherit a passing result from an existing job", () => {
   const added = { ...jobs[0]!, id: "static/new-check" };
-  expect(parityProblems(source, [...jobs, added], paths)).toContain("static/new-check: missing landing kind ci-static-new-check; run bun scripts/ci/flow.ts --write");
+  expect(parityProblems(source, [...jobs, added], paths)).toContain(
+    "static/new-check: missing landing kind ci-static-new-check; run bun scripts/ci/flow.ts --write",
+  );
 });
 
 test("matrix conditions and expressions preserve the workflow's actual command", () => {
   expect(selectedStep({ if: "matrix.suite == 'runner'" }, { suite: "harness" })).toBe(false);
   expect(selectedStep({ if: "matrix.suite == 'harness'" }, { suite: "harness" })).toBe(true);
-  expect(interpolate("${{ matrix.directory }}/Scarb.toml", { matrix: { directory: "contracts/l2/ledger" } })).toBe("contracts/l2/ledger/Scarb.toml");
+  expect(interpolate("${{ matrix.directory }}/Scarb.toml", { matrix: { directory: "contracts/l2/ledger" } })).toBe(
+    "contracts/l2/ledger/Scarb.toml",
+  );
   expect(() => selectedStep({ if: "success()" }, {})).toThrow("Unsupported validation condition");
   expect(() => interpolate("${{ matrix.missing }}", { matrix: {} })).toThrow("Unsupported expression");
 });
