@@ -1,5 +1,4 @@
 import { RESOURCE_PRODUCTION_MODELS } from "@bibliothecadao/eternum";
-import { getGameModeId } from "@/config/game-modes";
 import { NEW_ARMY, startsOn } from "@/ui/design-system/kit/words";
 import { musterStamina } from "@bibliothecadao/eternum/troop-stamina";
 import { useCurrentBlockTimestamp, useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
@@ -20,7 +19,7 @@ import { useGame } from "@/hooks/context/game-context";
 import { useNativeRow, useNativeFacts } from "@/hooks/helpers/use-native-facts";
 import {
   BuildingType,
-  buildingName,
+  resourceName,
   Direction,
   DISPLAYED_SLOT_NUMBER_MAP,
   getBuildingFromResource,
@@ -549,7 +548,7 @@ function readTroopSupply(
   timestamp: number,
 ): TroopSupply {
   const resourceId = getTroopResourceId(troop.type, troop.tier);
-  const name = buildingName(getBuildingFromResource(resourceId), getGameModeId() === "frontier");
+  const name = resourceName(resourceId);
   if (structureId === undefined) return { name, perHour: undefined, secondsToFullArmy: null };
   const manager = new ResourceManager(store, structureId);
   const production = manager.productionData(resourceId, timestamp);
