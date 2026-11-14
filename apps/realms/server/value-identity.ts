@@ -6,7 +6,7 @@ import { WorkerEntrypoint } from "cloudflare:workers";
 import { normalizeStarknetAddress, type LedgerPayDecision } from "@realms-world/identity";
 import { realmsAccountAddress } from "@realms-world/identity/account";
 import { ACCOUNT_CLASS_HASH, decodeIdentityEnv, type IdentityEnv } from "./env";
-import { encodeChainName } from "@realms-world/chain";
+import { encodeChainName, environmentL2 } from "@realms-world/chain";
 import { identityL2Configuration } from "./l2";
 import { heldRealms, holdsRealm } from "./realm-holdings";
 import { realmsIdsOfAccounts } from "./realms-accounts";
@@ -23,6 +23,12 @@ export class ValueIdentity extends WorkerEntrypoint<IdentityEnv> {
   }
   override fetch() {
     return new Response(null, { status: 404 });
+  }
+  /** The relay posted results: the ratings changed, so the rating reader drops what it kept. */
+  ratingsChanged() {
+    return this.env.RATING_READER.get(
+      this.env.RATING_READER.idFromName(environmentL2(this.env.ENVIRONMENT).chain),
+    ).ratingsChanged();
   }
   holdsRealm(wallet: string, realmId: number) {
     return holdsRealm(decodeIdentityEnv(this.env as unknown as Record<string, unknown>), wallet, realmId);

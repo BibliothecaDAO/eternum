@@ -10,6 +10,8 @@ import { createHeraldRequestHandler } from "./http";
 import { LiveWorld } from "./live-world";
 import type { MadaraRpc } from "./madara-rpc";
 import { receipt, rowEvent, rulesEvent, seedDerivedRows, setup, shardManifest } from "./native/fixtures";
+import { memoryFinalFacts } from "../../value-relay/src/final-facts";
+import { memoryObligations } from "../../value-relay/src/obligations";
 import { frontierSettlementEvidence, sweepFrontierLords } from "../../value-relay/src/frontier-sweep";
 import { shardConservationPort } from "../../value-relay/src/shard-conservation";
 
@@ -40,7 +42,13 @@ vi.mock("../../value-relay/src/frontier-games", async (original) => ({
 
 const heraldUrl = "https://herald.test";
 const shard = { chainId: "0x1", rpcUrl: "https://shard.test", gamesAddress: "0x10", firstRelease: 1 };
-const ledger = { rpcUrl: "https://ledger.test", address: "0x30" };
+let ledger = {
+  rpcUrl: "https://ledger.test",
+  address: "0x30",
+  finals: memoryFinalFacts(),
+  obligations: memoryObligations(),
+  proofs: true,
+};
 const winner = 0xan;
 const realm = "5";
 const wei = (lords: number) => String(BigInt(lords) * 10n ** 18n);
@@ -151,6 +159,7 @@ const funding = (chestPaid: number) => ({
 beforeEach(() => {
   vi.resetAllMocks();
   vi.unstubAllGlobals();
+  ledger = { ...ledger, finals: memoryFinalFacts(), obligations: memoryObligations() };
 });
 
 it("sweeps the season's realm LORDS and settles it once every receipt is paid, from Herald's snapshot", async () => {

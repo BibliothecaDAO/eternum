@@ -121,7 +121,7 @@ const restart = () => {
 };
 const tick = async () => {
   chain.reads = [];
-  await worker.scheduled({} as ScheduledController, env as never);
+  await worker.scheduled({ scheduledTime: 0 } as ScheduledController, env as never);
 };
 const health = async () =>
   (await (await worker.fetch(new Request("https://play.test/api/operator/monitor/health"), env as never)).json()) as {

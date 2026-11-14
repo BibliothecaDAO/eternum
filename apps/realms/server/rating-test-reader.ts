@@ -29,6 +29,8 @@ export function testRatingReader(configuration: Partial<ConstructorParameters<ty
       put: async (key: string, value: unknown) => {
         values.set(key, value);
       },
+      delete: async (key: string) => values.delete(key),
+      list: async ({ prefix }: { prefix: string }) => new Map([...values].filter(([key]) => key.startsWith(prefix))),
     },
   };
   const reader = new RatingReader(ctx as unknown as DurableObjectState, {

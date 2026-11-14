@@ -1,4 +1,6 @@
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
+import { memoryFinalFacts } from "./final-facts";
+import { memoryObligations } from "./obligations";
 import { awardFrontierPrizes } from "./frontier-prizes";
 const calls = vi.hoisted(() => ({
   admin: vi.fn(),
@@ -6,8 +8,13 @@ const calls = vi.hoisted(() => ({
   header: vi.fn(),
   snapshot: vi.fn(),
   games: vi.fn(),
+  finalHead: vi.fn(),
 }));
-vi.mock("@realms-world/value-ledger", () => ({ rpcAt: vi.fn(), readFrontierFunding: calls.funding }));
+vi.mock("@realms-world/value-ledger", () => ({
+  rpcAt: vi.fn(),
+  readFrontierFunding: calls.funding,
+  readFinalLedgerHead: calls.finalHead,
+}));
 vi.mock("@realms-world/value-ledger/shard", () => ({
   ShardOperator: class {
     admin = calls.admin;
@@ -35,6 +42,7 @@ vi.mock("./shard-snapshot", async (original) => ({
   ...(await original<typeof import("./shard-snapshot")>()),
   readConfirmedSnapshot: calls.snapshot,
 }));
+let finals = memoryFinalFacts();
 const target = {
   chainId: "0x1",
   rpcUrl: "https://shard.test",
@@ -44,7 +52,13 @@ const target = {
   privateKey: "0x1",
 };
 const run = () =>
-  awardFrontierPrizes(target, "https://herald.test", { rpcUrl: "https://ledger.test", address: "0x30" });
+  awardFrontierPrizes(target, "https://herald.test", {
+    rpcUrl: "https://ledger.test",
+    address: "0x30",
+    finals,
+    obligations: memoryObligations(),
+    proofs: true,
+  });
 const snapshot = (issued = "0") => ({
   confirmed_block: 10,
   game_id: "7",
@@ -64,12 +78,14 @@ const board = (addresses = ["0x8", "0x2", "0x5", "0x1"], block = "10", sites: nu
     { headers: { "X-Confirmed-Block": block } },
   );
 beforeEach(() => {
+  finals = memoryFinalFacts();
   vi.clearAllMocks();
   calls.games.mockResolvedValue({ confirmedBlock: 10, games: [{ game_id: 7, clock: { end_at: 100 } }] });
   calls.header.mockResolvedValue({ timestamp: 100 });
   calls.snapshot.mockResolvedValue(snapshot());
   calls.funding.mockResolvedValue({ closed: false, claimDeadline: 604900, prizePool: String(300n * 10n ** 18n) });
   calls.admin.mockResolvedValue(undefined);
+  calls.finalHead.mockResolvedValue({ number: 9, hash: "0xf", time: 1 });
   vi.stubGlobal(
     "fetch",
     vi.fn(async () => board()),
@@ -89,6 +105,25 @@ it("sends nothing before the season ends or after all awards were issued", async
   await run();
   calls.snapshot.mockResolvedValue(snapshot("300"));
   await run();
+  expect(calls.admin).not.toHaveBeenCalled();
+});
+it("keeps a closed season only once the Ethereum-accepted block shows it closed", async () => {
+  const closedAt = (final: boolean) => (_p: unknown, _a: unknown, _k: unknown, _t: unknown, block?: number) =>
+    Promise.resolve({
+      closed: block === undefined || final,
+      claimDeadline: 604900,
+      prizePool: String(300n * 10n ** 18n),
+    });
+  calls.funding.mockImplementation(closedAt(false));
+  for (let tick = 0; tick < 3; tick++) await run();
+  expect(calls.funding).toHaveBeenCalledTimes(6);
+  calls.funding.mockReset();
+  calls.funding.mockImplementation(closedAt(true));
+  await run();
+  calls.funding.mockClear();
+  await run();
+  await run();
+  expect(calls.funding).not.toHaveBeenCalled();
   expect(calls.admin).not.toHaveBeenCalled();
 });
 /**
@@ -228,4 +263,14 @@ it("does not award new prizes after the ledger has carried the expired reserve",
   calls.funding.mockResolvedValue({ closed: true, claimDeadline: 604900, prizePool: String(300n * 10n ** 18n) });
   await run();
   expect(calls.admin).not.toHaveBeenCalled();
+});
+it("keeps working, and keeps nothing, when the accepted block cannot be read", async () => {
+  calls.finalHead.mockRejectedValue(new Error("l1_accepted unsupported"));
+  calls.funding.mockResolvedValue({ closed: true, claimDeadline: 604900, prizePool: String(300n * 10n ** 18n) });
+  const logged = vi.spyOn(console, "error").mockImplementation(() => {});
+  await run();
+  await run();
+  expect(calls.funding).toHaveBeenCalledTimes(2);
+  expect(logged).toHaveBeenCalledWith("final_evidence_unavailable", expect.anything());
+  logged.mockRestore();
 });

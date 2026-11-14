@@ -16,6 +16,8 @@ export interface Withdrawal {
   realmsId: string;
   amount: string;
   confirmedAt: number;
+  /** Set by the relay once the ledger holds this claim's report: an unlinked player's claim then costs no read. */
+  reported?: true;
 }
 export interface WithdrawalReceipt extends Omit<Withdrawal, "realmsId"> {
   account: string;
@@ -160,6 +162,10 @@ export interface RelayPorts {
       prizeCount: number;
     } | null>;
     voided(withdrawal: Withdrawal): RelayEffect<boolean>;
+    /** Whether the head still shows the claim paid, and the evidence if the accepted block shows it paid too. */
+    paymentProof(
+      withdrawal: Withdrawal,
+    ): RelayEffect<{ atHead: boolean; final: { block: number; hash: string } | null }>;
     reportMany(withdrawals: readonly Withdrawal[]): RelayEffect<ClaimOutcome[]>;
     payMany(rows: readonly PayableClaim[]): RelayEffect<ClaimOutcome[]>;
     postResult(result: BlitzResult): RelayEffect<void>;
@@ -176,6 +182,11 @@ export interface MonitorPorts {
   };
   ledger: {
     frontierPool(chainId: string, gameId: number): RelayEffect<string>;
+    /** The same pool as of the newest Ethereum-accepted block, with that block; null if it was not funded there yet. */
+    finalFrontierPool(
+      chainId: string,
+      gameId: number,
+    ): RelayEffect<{ pool: string; block: number; hash: string } | null>;
     reportedClaims(
       after: string | null,
       fromBlock?: number,

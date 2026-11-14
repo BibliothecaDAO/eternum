@@ -115,3 +115,56 @@ persistent recipient record holds a changed wallet for 24 hours, while unchanged
 gameplay accounts cannot be reassigned to another Realms ID to bypass that record. First-seen identity bindings and
 sustained identity compromise remain outside this protection; see the box deployment procedure for backup and relink
 rehearsal. The relay uses Worker-supported manual redirect handling and refuses every non-success co-signer response.
+
+## When the ledger is read
+
+Payments and shard reads run every minute. The ledger side (season posts, chests, the monitor's audit) is read in two
+cases only: the hour (`isLedgerReadTick`, `packages/chain/src/ledger-reads.ts`), and the minute after the relay wrote to
+the ledger (a paid or reported claim, a posted result or season top, a settlement, a deposit or principal). A relay
+write calls `ledgerWritten` on the relay's ledger actor and on the monitor (`RosterMonitor`); each keeps a flag the next
+minute's tick consumes, so a burst of writes is one read. A lost notice costs at most the hour. A fact that can never
+change again (a closed season, a paid principal, a published or matched pool) is read once and kept (`final-facts.ts`);
+`read-budget.test.ts` fails if a later tick reads it again.
+
+Deposits follow the same rule. The ledger emits no event for a deposit, so the relay finds one by reading
+`deposit_count`; it does that on the hour, while a deposit is pending or failed, and when the player's page reports that
+its payment landed (`POST /api/value/deposits/deliver?chainId=`, same-origin and signed in, one pass per ten seconds per
+shard). A deposit nobody reported waits for the hour.
+
+A cause is kept until the work it asked for is finished: an audit or ledger tick that failed, or left events, pages or
+chests still to read, asks again after five minutes (`LEDGER_RETRY_SECONDS`), not on the next hour. A halted monitor is
+not retried: it waits for its operator. After an admin voids a forged report, the operator's `monitor/reset` (or the
+relay's `operator/reset`) asks the relay to ask the ledger about its held claims at the next tick; the hourly pass is
+the safety net. A stored deposit anchor whose block Ethereum never accepted is dropped when the chain replaced it, and
+the next payment is decided from the canonical chain; one whose block Ethereum accepted stays a fault.
+
+Nothing a page can poll reads the chain. The deposit history route answers from the deposits the relay already read
+(`deposit-row:` keys, written when a pass discovers a deposit and when it delivers or cancels it; deposits found before
+history was kept are read once). A report that a payment landed (`POST /api/value/deposits/deliver`) is stored as a
+cause before anything is tried, shared with reports made at the same time, kept if the pass fails, and retried by the
+next minute's tick. The identity service keeps each rating board and wallet answer for an hour and drops them when the
+relay says it posted results (`ratingsChanged`). `rpc-budget.test.ts` counts every call the ledger URL receives beneath
+the real readers and derives the month from those counts.
+
+## What the relay owes, and when it stops owing it
+
+Everything the relay owes the chain or a player (a deposit to deliver or refund, a principal to return, a withdrawal to
+pay, a reported cause to act on) is one shape (`obligations.ts`): an obligation, an idempotent attempt, and evidence. It
+is durable from the moment it is known until the accepted chain proves its outcome. It is never removed because a call
+returned, a receipt was accepted on L2, or a pass ended: the only removal is `settle`, which takes the evidence (the
+block Ethereum accepted and its hash). An obligation is to do (attempted every minute), awaiting proof (attempted again
+only in a proof pass: the hour, or an operator's request), or settled. A replaced block shows the work gone at the head,
+and the next attempt does it again, because the obligation was never removed. A cause (`ledger-cause.ts`) follows the
+same rule: beginning work does not remove it, only completing and publishing does, and only if no newer report arrived.
+`obligations-matrix.test.ts` kills the worker after every durable write of every pass, for every kind of obligation and
+every chain event (blocks replaced, a deposit vanishing, the accepted block unreadable, replies lost, the node failing),
+and replaces the unaccepted blocks at every stage; it asserts one canonical payment or refund each, settlement, and a
+history that says what the chain says.
+
+A deposit is identified by its commitment, not its id: the ledger can give a vanished deposit's id to a different one. A
+deposit the shard credited that the ledger no longer has (vanished, or replaced under its id) leaves the work queue and
+is kept as a fault under its commitment, with the row it had, apart from the history row its id is given to next. It is
+reported on every pass and stops nothing: the deposit that takes the id is its own obligation, resolved if it conflicts
+with nothing on the shard and failing loudly (`deposit_resolution_unconfirmed`) for itself alone if it does.
+`POST /api/value/operator/deposit-fault` (operator token, `{chainId, commitment, reason}`) clears that one fault, once
+the shard's credit has been dealt with, and keeps the cleared record.

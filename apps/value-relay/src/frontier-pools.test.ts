@@ -2,16 +2,20 @@ import { CallData } from "starknet";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { gamesAbi, response } from "../../../packages/value-ledger/test-support/abi";
 import { ledgerAbi } from "../../../packages/value-ledger/test-support/ledger-abi";
+import { memoryFinalFacts } from "./final-facts";
+import { memoryObligations } from "./obligations";
 import { publishFrontierPools } from "./frontier-pools";
 
+const FINAL_BLOCK = vi.hoisted(() => 5);
 const rpc = vi.hoisted(() => ({ call: vi.fn(), ledger: vi.fn(), execute: vi.fn(), receipt: vi.fn(), now: 50 }));
 vi.mock("../../../packages/value-ledger/src/rpc", async (original) => ({
   ...(await original<typeof import("../../../packages/value-ledger/src/rpc")>()),
   rpcAt: (url: string) => ({
     getChainId: async () => "0x1",
     getBlock: async (height: number | string) => ({
-      status: "ACCEPTED_ON_L2",
-      block_number: typeof height === "number" ? height : published === null ? 10 : 11,
+      status: height === "l1_accepted" ? "ACCEPTED_ON_L1" : "ACCEPTED_ON_L2",
+      block_number:
+        typeof height === "number" ? height : height === "l1_accepted" ? FINAL_BLOCK : published === null ? 10 : 11,
       block_hash: "0xa",
       parent_hash: "0x9",
       timestamp: rpc.now,
@@ -28,6 +32,7 @@ vi.mock("starknet", async (original) => ({
     return { execute: rpc.execute };
   }),
 }));
+let finals = memoryFinalFacts();
 const target = {
   rpcUrl: "https://shard.test",
   chainId: "0x1",
@@ -37,7 +42,13 @@ const target = {
   privateKey: "0x1",
 };
 const publish = () =>
-  publishFrontierPools(target, "https://herald.test", { rpcUrl: "https://ledger.test", address: "0x30" });
+  publishFrontierPools(target, "https://herald.test", {
+    rpcUrl: "https://ledger.test",
+    address: "0x30",
+    finals,
+    obligations: memoryObligations(),
+    proofs: true,
+  });
 let published: bigint | null;
 let lag: boolean;
 let reverted: boolean;
@@ -102,6 +113,7 @@ const snapshot = (id: number) => ({
   ],
 });
 beforeEach(() => {
+  finals = memoryFinalFacts();
   vi.clearAllMocks();
   rpc.now = 50;
   published = null;
@@ -211,8 +223,45 @@ it.each([null, "0"])(
 it("checks published custody without invoking when its immutable total matches", async () => {
   snapshotPool = "123";
   await publish();
-  expect(rpc.ledger).toHaveBeenCalledTimes(2);
+  // The head's funding (two views) and the same funding at the Ethereum-accepted block (two more).
+  expect(rpc.ledger).toHaveBeenCalledTimes(4);
   expect(rpc.execute).not.toHaveBeenCalled();
+});
+it("reads a published pool from the ledger once, not on every later tick", async () => {
+  snapshotPool = "123";
+  await publish();
+  await publish();
+  await publish();
+  expect(rpc.ledger).toHaveBeenCalledTimes(4);
+});
+it.each(["unfunded", "another amount"])(
+  "keeps reading a published pool until the Ethereum-accepted block holds it (%s there)",
+  async (kind) => {
+    snapshotPool = "123";
+    const answer = rpc.ledger.getMockImplementation()!;
+    rpc.ledger.mockImplementation(async (call: { entrypoint: string }, block?: number) => {
+      if (block !== FINAL_BLOCK) return answer(call, block);
+      if (kind === "unfunded")
+        throw Object.assign(new Error("revert"), { code: 40, data: "Ledger: unknown Frontier season" });
+      deposit = 124n * 10n ** 18n;
+      const other = await answer(call, block);
+      deposit = 123n * 10n ** 18n;
+      return other;
+    });
+    for (let tick = 0; tick < 3; tick++) await publish();
+    expect(rpc.ledger).toHaveBeenCalledTimes(kind === "unfunded" ? 9 : 12);
+    rpc.ledger.mockImplementation(answer);
+    await publish();
+    rpc.ledger.mockClear();
+    await publish();
+    expect(rpc.ledger).not.toHaveBeenCalled();
+  },
+);
+it("keeps checking a pool that differs from the ledger until it matches", async () => {
+  snapshotPool = "122";
+  await expect(publish()).rejects.toThrow("frontier_pool_differs_from_ledger");
+  await expect(publish()).rejects.toThrow("frontier_pool_differs_from_ledger");
+  expect(rpc.ledger).toHaveBeenCalledTimes(4);
 });
 it.each(["start", "end", "seed", "empty", "ended"])("never publishes invalid or ended funding: %s", async (kind) => {
   if (kind === "start") start = 11;

@@ -18,6 +18,8 @@ import {
   type ConfirmedSnapshot,
 } from "./shard-snapshot";
 import { ShardReader, type ShardConnection } from "./shard-rpc";
+import { driveObligations, type ObligationKind } from "./obligations";
+import { closedSeason, fundingAt, keepIfFinal, type FinalEvidence, type FrontierLedger } from "./final-facts";
 
 export interface PrincipalSweep {
   chainId: string;
@@ -25,7 +27,8 @@ export interface PrincipalSweep {
   account: string;
   amount: string;
 }
-type PayPrincipal = (claim: PrincipalSweep) => Promise<void>;
+/** Resolves with the evidence that the payment is final, or null while it is only on the head. */
+type PayPrincipal = (claim: PrincipalSweep) => Promise<FinalEvidence | null>;
 
 export interface FrontierSettlement {
   chainId: string;
@@ -38,7 +41,7 @@ export interface FrontierSettlement {
 export async function sweepFrontierLords(
   target: ShardTarget & ShardConnection,
   heraldUrl: string,
-  ledger: { rpcUrl: string; address: string },
+  ledger: FrontierLedger,
   settle: (settlement: FrontierSettlement) => Promise<void>,
   payPrincipal?: PayPrincipal,
 ) {
@@ -71,7 +74,7 @@ export async function sweepFrontierLords(
 async function sweepGame(
   target: ShardTarget & ShardConnection,
   heraldUrl: string,
-  ledger: { rpcUrl: string; address: string },
+  ledger: FrontierLedger,
   gameId: number,
   directoryBlock: number,
   reader: ShardReader,
@@ -86,28 +89,21 @@ async function sweepGame(
     (await reader.header(snapshot.confirmed_block)).timestamp < terms.end
   )
     throw new Error("frontier_sweep_snapshot_before_end");
-  const provider = rpcAt(ledger.rpcUrl);
-  const head = await readConfirmedLedgerHead(provider);
-  const funding = await readFrontierFunding(
-    provider,
-    ledger.address,
-    { chainId: target.chainId, gameId },
-    terms,
-    head.number,
-  );
-  const rewardError = funding.closed ? null : rewardPublicationError(snapshot, funding);
+  const open = await readOpenSeason(ledger, target.chainId, gameId, terms);
+  const rewardError = open ? rewardPublicationError(snapshot, open.funding) : null;
   const principalError = await sweepBalancesAndPayPrincipal(
     target,
+    ledger,
     gameId,
     snapshot,
     operator,
-    !funding.closed && !rewardError,
+    !!open && !rewardError,
     payPrincipal,
   );
   let settlementError: unknown = rewardError;
-  if (!funding.closed && !rewardError) {
+  if (open && !rewardError) {
     try {
-      await settleRewards(target.chainId, gameId, snapshot, funding, head.time, settle);
+      await settleRewards(target.chainId, gameId, snapshot, open.funding, open.time, settle);
     } catch (error) {
       settlementError = error;
     }
@@ -116,6 +112,28 @@ async function sweepGame(
 }
 
 type RewardFunding = Awaited<ReturnType<typeof readFrontierFunding>>;
+
+/** The ledger's view of a season still open; null once closed, which is final and read only the first time. */
+async function readOpenSeason(
+  ledger: FrontierLedger,
+  chainId: string,
+  gameId: number,
+  terms: ReturnType<typeof frontierTerms>,
+) {
+  const fact = closedSeason(chainId, gameId);
+  if (await ledger.finals.has(fact)) return null;
+  const provider = rpcAt(ledger.rpcUrl);
+  const head = await readConfirmedLedgerHead(provider);
+  const funding = await readFrontierFunding(provider, ledger.address, { chainId, gameId }, terms, head.number);
+  if (funding.closed) {
+    await keepIfFinal(ledger.finals, fact, provider, async (block) => {
+      const settled = await fundingAt(provider, ledger.address, { chainId, gameId }, terms, block);
+      return !!settled?.closed;
+    });
+    return null;
+  }
+  return { funding, time: head.time };
+}
 function rewardPublicationError(snapshot: ConfirmedSnapshot, funding: RewardFunding): Error | null {
   const budget = optionalRow(snapshot, "LordsBudget");
   const prize = optionalRow(snapshot, "FrontierPrize");
@@ -197,8 +215,19 @@ async function settlementSnapshot(target: ShardConnection, heraldUrl: string, ga
   ]);
 }
 
+/** A principal return is the obligation shape: the attempt asks the ledger actor, which reads before it sends. */
+const principalReturn = (pay?: PayPrincipal): ObligationKind<PrincipalSweep> => ({
+  name: "principal",
+  key: ({ chainId, gameId, account }) => `${BigInt(chainId)}:${gameId}:${BigInt(account)}`,
+  attempt: async (claim) => {
+    if (!pay) throw new Error("principal_payment_unavailable");
+    return { final: await pay(claim) };
+  },
+});
+
 async function sweepBalancesAndPayPrincipal(
   target: ShardConnection,
+  ledger: FrontierLedger,
   gameId: number,
   snapshot: ConfirmedSnapshot,
   operator: ShardOperator,
@@ -217,20 +246,16 @@ async function sweepBalancesAndPayPrincipal(
   } catch (error) {
     unavailable ??= error;
   }
-  for (const { value } of snapshot.models.find(({ model }) => model === "PrincipalWithdrawal")?.rows ?? []) {
-    try {
-      const receipt = decodeNativeRow("PrincipalWithdrawal", value);
-      if (!payPrincipal) throw new Error("principal_payment_unavailable");
-      await payPrincipal({
-        chainId: target.chainId,
-        gameId,
-        account: String(receipt.account),
-        amount: String(receipt.amount),
-      });
-    } catch (error) {
-      unavailable ??= error;
-    }
-  }
+  const owed = (snapshot.models.find(({ model }) => model === "PrincipalWithdrawal")?.rows ?? []).map(({ value }) => {
+    const receipt = decodeNativeRow("PrincipalWithdrawal", value);
+    return { chainId: target.chainId, gameId, account: String(receipt.account), amount: String(receipt.amount) };
+  });
+  const principals = await driveObligations(principalReturn(payPrincipal), owed, {
+    finals: ledger.finals,
+    state: ledger.obligations,
+    proofs: ledger.proofs,
+  });
+  unavailable ??= principals.errors.length ? new Error(principals.errors[0]!.error) : undefined;
   return unavailable;
 }
 

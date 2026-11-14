@@ -41,6 +41,7 @@ it("keeps checked-through block and page continuation across ticks without rerea
     },
     ledger: {
       frontierPool: () => Effect.succeed(String(100n * 10n ** 18n)),
+      finalFrontierPool: () => Effect.succeed(null),
       reportedClaims: () =>
         Effect.succeed({
           rows: [],
@@ -111,6 +112,7 @@ it("an exact row reset skips only that claim, still faults on the next unchecked
     },
     ledger: {
       frontierPool: () => Effect.succeed(String(100n * 10n ** 18n)),
+      finalFrontierPool: () => Effect.succeed(null),
       reportedClaims: () =>
         Effect.succeed({
           rows: [],
@@ -184,6 +186,7 @@ it("keeps every cleared conservation row cleared, not only the last one", async 
     },
     ledger: {
       frontierPool: () => Effect.succeed("0"),
+      finalFrontierPool: () => Effect.succeed(null),
       reportedClaims: () =>
         Effect.succeed({
           rows: [],
@@ -284,6 +287,7 @@ describe.each(["paidClaims", "postedResults"] as const)("a cleared %s fault", (s
       },
       ledger: {
         frontierPool: () => Effect.succeed("0"),
+        finalFrontierPool: () => Effect.succeed(null),
         reportedClaims: () =>
           Effect.succeed({
             rows: [],
@@ -380,6 +384,7 @@ it.each([null, "999"])(
       },
       ledger: {
         frontierPool: () => Effect.succeed("1000"),
+        finalFrontierPool: () => Effect.succeed(null),
         pause,
         paidClaims,
         reportedClaims: () => Effect.succeed({ ...page, rows: [report] }),

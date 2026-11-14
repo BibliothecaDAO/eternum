@@ -1,6 +1,8 @@
 import type { Abi, BlockIdentifier, RpcProvider } from "starknet";
 
-let cached: { hash: string; abi: Abi } | undefined;
+/** Class content is immutable. The ledger and each shard are different classes, so a few stay; the oldest leaves first. */
+const KEPT_CLASSES = 4;
+const cached = new Map<string, Abi>();
 
 /** A class's ABI, read by its hash. */
 export async function readClassAbi(provider: RpcProvider, classHash: string): Promise<Abi> {
@@ -13,7 +15,10 @@ export async function readClassAbi(provider: RpcProvider, classHash: string): Pr
 /** Class content is immutable; the address-to-class binding is checked at every requested block. */
 export async function readShardAbi(provider: RpcProvider, address: string, block: BlockIdentifier): Promise<Abi> {
   const hash = BigInt(await provider.getClassHashAt(address, block)).toString(16);
-  if (cached?.hash === hash) return cached.abi;
-  cached = { hash, abi: await readClassAbi(provider, `0x${hash}`) };
-  return cached.abi;
+  const known = cached.get(hash);
+  if (known) return known;
+  const abi = await readClassAbi(provider, `0x${hash}`);
+  if (cached.size >= KEPT_CLASSES) cached.delete(cached.keys().next().value!);
+  cached.set(hash, abi);
+  return abi;
 }

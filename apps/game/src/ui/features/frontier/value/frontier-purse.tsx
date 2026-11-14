@@ -102,7 +102,7 @@ function DepositForm({ realm, attemptKey }: { realm: NativeRows["Structure"]; at
   const confirmed = (request: string) => {
     if (savedAttempt(attemptKey)?.request === request) clearAttempt();
     setLanded(true);
-    void history.refetch();
+    void askRelayToDeliver(chainId).then(() => history.refetch());
   };
   /** The deposit's calls for these terms, once the ledger, its token and the session are read. */
   const callsOf = (terms: { amount: string; request: string }) =>
@@ -203,6 +203,19 @@ function depositStatus(receipt: LordsDeposit, native: readonly NativeRows["Depos
   if (row && !row.cancelled) return "Credited";
   if (row?.cancelled) return "Cancelled · refund pending";
   return receipt.status === "delivered" ? "Credited · syncing balance" : "Payment confirmed · credit pending";
+}
+
+/** The payment landed: the relay delivers the deposit now instead of finding it on its next look at the ledger. */
+async function askRelayToDeliver(chainId: string) {
+  try {
+    const response = await fetch(`/api/value/deposits/deliver?${new URLSearchParams({ chainId })}`, {
+      method: "POST",
+      credentials: "include",
+    });
+    if (!response.ok) console.error("deposit_delivery_refused", { status: response.status });
+  } catch (error) {
+    console.error("deposit_delivery_unreachable", { error });
+  }
 }
 
 async function readDeposits(chainId: string): Promise<LordsDeposit[]> {

@@ -6,6 +6,7 @@ const mocks = vi.hoisted(() => ({
   execute: vi.fn(),
   wait: vi.fn(),
   canonical: vi.fn(),
+  finalPrincipal: vi.fn(),
 }));
 vi.mock("starknet", async (original) => ({
   ...(await original<typeof import("starknet")>()),
@@ -21,6 +22,7 @@ vi.mock("@realms-world/value-ledger/deposits", async (original) => ({
     principal: mocks.principal,
     deposit: mocks.deposit,
     assertCanonical: mocks.canonical,
+    final: async () => ({ block: { number: 9, hash: "0xf" }, principal: mocks.finalPrincipal }),
   }),
 }));
 const credentials = {
@@ -37,6 +39,7 @@ const run = () => mutateDeposit(credentials, "0x1", claim, sign, anchors, wallet
 beforeEach(() => {
   vi.clearAllMocks();
   mocks.principal.mockResolvedValue(null);
+  mocks.finalPrincipal.mockResolvedValue(null);
   mocks.canonical.mockResolvedValue(undefined);
   mocks.execute.mockResolvedValue({ transaction_hash: "0x11" });
   mocks.wait.mockResolvedValue({ isReverted: () => false });
@@ -65,4 +68,27 @@ it("rejects conflicting terminal amounts and never signs against rewritten evide
   mocks.canonical.mockRejectedValue(new Error("deposit_head_rewritten"));
   await expect(run()).rejects.toThrow("deposit_head_rewritten");
   expect(mocks.execute).not.toHaveBeenCalled();
+});
+
+it("keeps a principal payment as final only once an Ethereum-accepted block holds it", async () => {
+  mocks.principal.mockResolvedValue({ wallet: "0x50", amount: "60" });
+  expect(await run()).toEqual({ wrote: false, final: null });
+  mocks.finalPrincipal.mockResolvedValue({ wallet: "0x50", amount: "60" });
+  expect(await run()).toEqual({ wrote: false, final: { block: 9, hash: "0xf" } });
+  mocks.finalPrincipal.mockResolvedValue({ wallet: "0x50", amount: "59" });
+  expect(await run()).toEqual({ wrote: false, final: null });
+  expect(mocks.execute).not.toHaveBeenCalled();
+});
+it("reports a payment it just sent as written and not yet final", async () => {
+  wallet.mockResolvedValue("0x50");
+  expect(await run()).toEqual({ wrote: true, final: null });
+  expect(mocks.execute).toHaveBeenCalledTimes(1);
+});
+it("still recognizes a paid principal when the accepted block cannot be read", async () => {
+  mocks.principal.mockResolvedValue({ wallet: "0x50", amount: "60" });
+  mocks.finalPrincipal.mockRejectedValue(new Error("l1_accepted unsupported"));
+  const logged = vi.spyOn(console, "error").mockImplementation(() => {});
+  expect(await run()).toEqual({ wrote: false, final: null });
+  expect(logged).toHaveBeenCalledWith("final_evidence_unavailable", expect.anything());
+  logged.mockRestore();
 });

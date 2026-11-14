@@ -1,3 +1,4 @@
+import { LEDGER_READ_STALE_SECONDS } from "@realms-world/chain";
 import { disposeWorker } from "../../../packages/value-ledger/test-support/workerd";
 import * as chain from "@realms-world/chain";
 import { expect, it, vi } from "vitest";
@@ -316,7 +317,7 @@ it("does not share the identity route with its direct guardian probe and rejects
       [valueTargets.playUrl + "/api/value/health"]: response({
         service: "value-relay",
         success: true,
-        checked_at: now - 301,
+        checked_at: now - (LEDGER_READ_STALE_SECONDS + 1),
       }),
     }),
     now,
@@ -386,7 +387,11 @@ it("derives all three health addresses from the play origin", async () => {
 });
 it.each([
   ["guardian", "/api/guardian", { publicKey: "0x1" }],
-  ["monitor", "/api/operator/monitor/health", { service: "value-monitor", success: true, checked_at: now - 301 }],
+  [
+    "monitor",
+    "/api/operator/monitor/health",
+    { service: "value-monitor", success: true, checked_at: now - (LEDGER_READ_STALE_SECONDS + 1) },
+  ],
   ["monitor", "/api/operator/monitor/health", { service: "value-relay", success: true, checked_at: now }],
 ] as const)("reports malformed or stale %s health as down", async (id, path, body) => {
   const result = await probeServices(network({ [valueTargets.playUrl + path]: response(body) }), now, [], valueTargets);

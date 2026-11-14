@@ -44,8 +44,13 @@ it("serializes ledger reports for different official shards and rechecks retirem
     ],
   };
   const relay = new ValueRelay(
-    { storage: {} } as DurableObjectState,
-    { IDENTITY: identity, COSIGNER_URL: "https://cosigner.test", COSIGNER_TOKEN: "test-token" } as never,
+    { storage: { get: async () => undefined, put: async () => {} } } as unknown as DurableObjectState,
+    {
+      IDENTITY: identity,
+      ROSTER_MONITOR: { ledgerWritten: async () => {} },
+      COSIGNER_URL: "https://cosigner.test",
+      COSIGNER_TOKEN: "test-token",
+    } as never,
   );
   let running = 0,
     maximum = 0;
@@ -73,4 +78,24 @@ it("serializes ledger reports for different official shards and rechecks retirem
   expect(submit).toHaveBeenCalledTimes(1);
   expect(running).toBe(0);
   expect(executed).toEqual(["0x1"]);
+});
+it.each([
+  { error: null, announced: 1 },
+  { error: "ledger_season_closed", announced: 0 },
+])("tells the monitor about a batch only if a claim was written (error: $error)", async ({ error, announced }) => {
+  const written = vi.fn(async () => {});
+  const relay = new ValueRelay(
+    { storage: { get: async () => undefined, put: async () => {} } } as unknown as DurableObjectState,
+    {
+      IDENTITY: { l2ChainId: async () => "0x3", shards: async () => [{ chainId: "0x1", status: "active" }] },
+      ROSTER_MONITOR: { ledgerWritten: written },
+      COSIGNER_URL: "https://cosigner.test",
+      COSIGNER_TOKEN: "test-token",
+    } as never,
+  );
+  submit.mockImplementation((rows) =>
+    Effect.succeed(rows.map((row: { transactionHash: string }) => ({ claimId: row.transactionHash, error }))),
+  );
+  await relay.reportMany([claim("0x1")]);
+  expect(written).toHaveBeenCalledTimes(announced);
 });

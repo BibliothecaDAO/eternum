@@ -43,7 +43,8 @@ local R2; they do not probe live hosts.
 and distributed by the deployment script. The environment selects the shared address book. The three health addresses
 come from `BASE_URL`: `/api/guardian`, `/api/value/health` and `/api/operator/monitor/health`. No additional hostname or
 health secret is required. Relay and value-monitor health must report the correct service and a completed check within
-five minutes. Guardian signing stays private to service bindings.
+two hours: the ledger side audits every hour, and sooner after a relay write. Guardian signing stays private to service
+bindings.
 
 The ledger probe reads the confirmed node head and `is_paused` at that same block, independently of the relay parser.
 Its `paused` fact is true, false or null on failed decoding. A paused ledger is degraded; a failed or stale L2 head is

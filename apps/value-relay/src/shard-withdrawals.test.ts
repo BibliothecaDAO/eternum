@@ -538,6 +538,7 @@ it.each([false, true])(
       ledger: {
         pause,
         frontierPool: () => Effect.succeed("0"),
+        finalFrontierPool: () => Effect.succeed(null),
         reportedClaims: () =>
           Effect.succeed({ ...page, rows: [...(leading ? [report("0xabc", 17n)] : []), report("0xdef", 6000n)] }),
         paidClaims: () => Effect.succeed({ ...page, rows: [] }),

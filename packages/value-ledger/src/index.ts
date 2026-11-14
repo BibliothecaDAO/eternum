@@ -11,8 +11,9 @@ export {
   decodeLedgerPreset,
   decodeBlitzSeason,
   readConfirmedLedgerHead,
+  readFinalLedgerHead,
 } from "./codecs";
-export { rpcAt, isDeploymentBlock } from "./rpc";
+export { rpcAt, isDeploymentBlock, isContractRevert } from "./rpc";
 export { BLITZ_SLOT_INTERVAL_SECONDS, BLITZ_SLOT_PREPARATION_SECONDS } from "./blitz-timetable";
 export { blitzSlotFitsSeason, readLedgerSlot, readLedgerRegistration, readRegistrationPage } from "./blitz-slots";
 export type { LedgerSlotKey, SlotRegistration, RegistrationPage, RegistrationQuery } from "./blitz-slots";

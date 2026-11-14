@@ -133,6 +133,26 @@ it("confirms one payment, resets the form and sends a second deposit with a fres
   view.unmount();
 });
 
+it("asks the relay to deliver the deposit once its payment landed, and only then refreshes the history", async () => {
+  const order: string[] = [];
+  const ask = vi.fn(async () => {
+    order.push("deliver");
+    return new Response("{}");
+  });
+  vi.stubGlobal("fetch", ask);
+  wallet.refetch.mockImplementation(() => void order.push("history"));
+  const view = await render();
+  await act(async () => view.button("Deposit LORDS").click());
+  await act(async () => land());
+  expect(ask).toHaveBeenCalledWith("/api/value/deposits/deliver?chainId=0x2", {
+    method: "POST",
+    credentials: "include",
+  });
+  expect(order).toEqual(["deliver", "history"]);
+  vi.unstubAllGlobals();
+  view.unmount();
+});
+
 it("says the network fee is shown before confirming, never that it is paid in STRK", async () => {
   const view = await render();
   expect(view.host.textContent).toContain("The network fee is shown before you confirm.");

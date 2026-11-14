@@ -104,17 +104,6 @@ test("a rerun at a commit whose client is live uploads its own build again, then
     "apps/game/scripts/verify-client-deployment.mjs",
   ]);
 });
-test("wrong client chain/RPC stops before a build or upload", async () => {
-  const value = platform();
-  value.inputs.rpc = "https://starknet-sepolia.g.alchemy.com/v2/throwaway";
-  const calls = commands();
-  try {
-    await expect(deployClient(value, revision)).rejects.toThrow("chain and Alchemy");
-    expect(calls).toEqual([]);
-  } finally {
-    value.inputs.rpc = "https://starknet-mainnet.g.alchemy.com/v2/throwaway";
-  }
-});
 test("every Worker deploys locally, migrations precede code, and public versions must match", async () => {
   const value = platform();
   const calls = commands();

@@ -1,3 +1,9 @@
+/**
+ * The free public Starknet mainnet endpoint for reads that carry no money: every browser read and the status probe.
+ * The paid Alchemy URL stays in the Workers that sign and audit, and is never shipped to a browser.
+ */
+export const PUBLIC_L2_RPC_URL = "https://api.zan.top/public/starknet-mainnet";
+
 const FORBIDDEN_HOST_SUFFIX = ["cartridge", "gg"].join(".");
 
 export interface ResolveEndpointOptions {

@@ -10,9 +10,10 @@ vi.mock("./environment", async (original) => ({
   ledgerContractOf: () => ({ contractAddress: address(), deploymentBlock: 1 }),
 }));
 import { Effect } from "effect";
-import { beforeEach, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { ValuePlaneAddressMissingError } from "@realms-world/chain";
 import worker, { ValueRelay } from "./worker";
+import { RelayFailure } from "./ports";
 
 vi.mock("cloudflare:workers", () => ({
   WorkerEntrypoint: class {},
@@ -36,6 +37,27 @@ vi.mock("@realms-world/value-ledger", async (importOriginal) => ({
     releaseSchemas: { "1": "0xs" },
   }),
 }));
+const deposits = vi.hoisted(() => vi.fn());
+vi.mock("./deposits", async (original) => ({
+  ...(await original<typeof import("./deposits")>()),
+  relayDeposits: deposits,
+}));
+const seasons = vi.hoisted(() => vi.fn());
+vi.mock("./season-tops", () => ({ processSeasonTops: seasons }));
+const runRelayCalls = vi.hoisted(() => vi.fn());
+const runRelayOutcome = vi.hoisted(() => ({ next: undefined as undefined | (() => unknown) }));
+vi.mock("./relay", async (original) => {
+  const real = await original<typeof import("./relay")>();
+  return {
+    ...real,
+    runRelay: (...args: Parameters<typeof real.runRelay>) => {
+      runRelayCalls(...args);
+      return runRelayOutcome.next
+        ? (runRelayOutcome.next() as ReturnType<typeof real.runRelay>)
+        : real.runRelay(...args);
+    },
+  };
+});
 const finish = vi.hoisted(() => vi.fn());
 vi.mock("./chests", () => ({ DurableChestStore: class {}, finishRequestedChests: finish }));
 it("runs ledger-wide chest work independently of any configured shard", async () => {
@@ -75,8 +97,13 @@ vi.mock("./shard-rpc", async (original) => ({
 }));
 vi.mock("./shard-labor", () => ({ currentLaborDay: () => Effect.succeed(4), writeLaborGrant: shard.grant }));
 vi.mock("./shard-account", () => ({ joinShardOperator: vi.fn(async () => "0x5") }));
+afterEach(() => {
+  vi.useRealTimers();
+});
 beforeEach(() => {
   vi.clearAllMocks();
+  runRelayOutcome.next = undefined;
+  seasons.mockReturnValue(Effect.fail(new RelayFailure({ operation: "season_unavailable" })));
   address.mockReturnValue("0x10");
 });
 it("records unavailable ledger work while shard ingestion and owned Realm labor continue", async () => {
@@ -134,7 +161,7 @@ it("records unavailable ledger work while shard ingestion and owned Realm labor 
   expect(shard.grant).toHaveBeenCalledWith(expect.anything(), claim);
   const tick = vi.fn();
   await worker.scheduled(
-    {} as ScheduledController,
+    { scheduledTime: 0 } as ScheduledController,
     {
       ENVIRONMENT: "staging",
       BASE_URL: "https://app.test",
@@ -145,11 +172,435 @@ it("records unavailable ledger work while shard ingestion and owned Realm labor 
       COSIGNER_TOKEN: "test-cosigner-token",
       LEDGER_OPERATOR_ADDRESS: "0x2",
       LEDGER_OPERATOR_PRIVATE_KEY: "0x3",
-      RELAY: { idFromName: (id: string) => id, get: () => ({ ledgerTick: () => relay.ledgerTick(), tick }) },
+      RELAY: { idFromName: (id: string) => id, get: () => ({ ledgerTickIfDue: () => relay.ledgerTick(), tick }) },
       IDENTITY: {},
     } as never,
   );
-  expect(tick).toHaveBeenCalledWith("0x1");
+  expect(tick).toHaveBeenCalledWith("0x1", true);
+});
+
+const settledDeposits = { enabled: true, processed: 0, next: "1", total: "0", pending: 0, more: false, error: null };
+/** Dies after its `n`th write (n = 0: never), and stays dead: a worker that was killed does nothing more. */
+interface Kill {
+  n: number;
+  writes: number;
+  dead: boolean;
+}
+class Died extends Error {}
+const shardRelay = (data = new Map<string, unknown>(), kill: Kill = { n: 0, writes: 0, dead: false }) => {
+  const alive = () => {
+    if (kill.dead) throw new Died();
+  };
+  const wrote = () => {
+    kill.writes++;
+    if (kill.n > 0 && kill.writes === kill.n) {
+      kill.dead = true;
+      throw new Died();
+    }
+  };
+  const storage = {
+    get: async (key: string) => (alive(), data.get(key)),
+    put: async (key: string, value: unknown) => {
+      alive();
+      data.set(key, value);
+      wrote();
+    },
+    setAlarm: async () => {},
+    list: async ({ prefix, end }: { prefix: string; end?: string }) => (
+      alive(),
+      new Map([...data].filter(([key]) => key.startsWith(prefix) && (!end || key < end)))
+    ),
+    delete: async (key: string) => {
+      alive();
+      const had = data.delete(key);
+      wrote();
+      return had;
+    },
+    transaction: async (run: (tx: unknown) => Promise<unknown>): Promise<unknown> => run(storage),
+  };
+  shard.head.mockResolvedValue(0);
+  shard.page.mockResolvedValue({
+    block: { block_number: 0, block_hash: "0x1", status: "ACCEPTED_ON_L2" },
+    first: { parent_hash: "0x0" },
+    anchors: [{ number: 0, hash: "0x1" }],
+    rows: [],
+    next: null,
+  });
+  return new ValueRelay(
+    { storage } as unknown as DurableObjectState,
+    {
+      ENVIRONMENT: "staging",
+      L2_RPC_URL: "https://ledger.test",
+      SHARD_LEDGER_OPERATOR_PRIVATE_KEY: "0x1",
+      COSIGNER_URL: "https://cosigner.test",
+      COSIGNER_TOKEN: "test-cosigner-token",
+      IDENTITY: {
+        l2ChainId: async () => "0x1",
+        accountForRealmsId: async () => "0x3",
+        linkedWallet: async () => "0x4",
+        holdsRealm: async () => true,
+      },
+    } as never,
+  );
+};
+it("asks the ledger about held claims on the next tick after an operator's request, and otherwise on the hour", async () => {
+  deposits.mockResolvedValue(settledDeposits);
+  const relay = shardRelay();
+  const reconciling = () => runRelayCalls.mock.calls.map((call) => call[3]);
+  await relay.tick("0x1");
+  await relay.tick("0x1");
+  await relay.requestReconcile();
+  await relay.tick("0x1");
+  await relay.tick("0x1");
+  await relay.tick("0x1", true);
+  expect(reconciling()).toEqual([false, false, true, false, true]);
+});
+it.each([
+  [
+    "a recovery read that failed",
+    () => Effect.succeed({ status: "ready", more: false, deferred: [], reconciled: false }),
+  ],
+  ["a tick that failed before the recovery", () => Effect.fail(new RelayFailure({ operation: "shard unavailable" }))],
+])(
+  "keeps an operator's request after %s, and a healthy tick a minute later completes it without another request",
+  async (_, outcome) => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date("2026-11-14T12:00:30Z"));
+    deposits.mockResolvedValue(settledDeposits);
+    const relay = shardRelay();
+    await relay.tick("0x1");
+    runRelayCalls.mockClear();
+    runRelayOutcome.next = outcome;
+    await relay.requestReconcile();
+    await relay.tick("0x1");
+    runRelayOutcome.next = () => Effect.succeed({ status: "ready", more: false, deferred: [], reconciled: true });
+    await relay.tick("0x1");
+    expect(runRelayCalls.mock.calls.map((call) => call[3])).toEqual([true, false]);
+    vi.setSystemTime(new Date(Date.now() + 60_000));
+    await relay.tick("0x1");
+    await relay.tick("0x1");
+    expect(runRelayCalls.mock.calls.map((call) => call[3])).toEqual([true, false, true, false]);
+  },
+);
+/** Kills a worker after each state write of `work`; a new worker over the same storage must finish it by itself. */
+async function everyKill(
+  work: (relay: ReturnType<typeof shardRelay>) => Promise<unknown>,
+  finish: (data: Map<string, unknown>) => Promise<void>,
+) {
+  const writes = await (async () => {
+    const kill = { n: 0, writes: 0, dead: false };
+    await work(
+      shardRelay(
+        new Map([["shardTick", { checked_at: 1, deposits: settledDeposits, value: { status: "ready" } }]]),
+        kill,
+      ),
+    );
+    return kill.writes;
+  })();
+  expect(writes).toBeGreaterThan(0);
+  for (let at = 1; at <= writes; at++) {
+    // The worker has already published a settled observation: the reviewer's starting state.
+    const data = new Map<string, unknown>([
+      ["shardTick", { checked_at: 1, deposits: settledDeposits, value: { status: "ready" } }],
+    ]);
+    const kill = { n: at, writes: 0, dead: false };
+    deposits.mockClear();
+    runRelayCalls.mockClear();
+    await work(shardRelay(data, kill)).catch((error) => {
+      if (!kill.dead) throw error;
+    });
+    await finish(data);
+  }
+}
+it("completes a reported deposit's work after the worker dies after any state write, without another report", async () => {
+  vi.useFakeTimers({ toFake: ["Date"] });
+  vi.setSystemTime(new Date("2026-11-14T12:00:30Z"));
+  deposits.mockResolvedValue(settledDeposits);
+  await everyKill(
+    async (relay) => relay.deliverDeposits("0x1"),
+    async (data) => {
+      const next = shardRelay(data);
+      vi.setSystemTime(new Date(Date.now() + 120_000));
+      await next.tick("0x1");
+      // The report was stored first; whatever died after, the pass ran (before or after the kill) and the cause is gone.
+      expect(deposits.mock.calls.length).toBeGreaterThan(0);
+      expect(data.get("deposits:due")).toBeUndefined();
+    },
+  );
+});
+it("completes an operator's request for held claims after the worker dies after any state write", async () => {
+  vi.useFakeTimers({ toFake: ["Date"] });
+  vi.setSystemTime(new Date("2026-11-14T12:00:30Z"));
+  deposits.mockResolvedValue(settledDeposits);
+  runRelayOutcome.next = () => Effect.succeed({ status: "ready", more: false, deferred: [], reconciled: true });
+  await everyKill(
+    async (relay) => {
+      await relay.requestReconcile();
+      await relay.tick("0x1");
+    },
+    async (data) => {
+      const next = shardRelay(data);
+      vi.setSystemTime(new Date(Date.now() + 120_000));
+      await next.tick("0x1");
+      await next.tick("0x1");
+      expect(runRelayCalls.mock.calls.map((call) => call[3])).toContain(true);
+      expect(data.get("reconcile:due")).toBeUndefined();
+    },
+  );
+});
+it.each([
+  [
+    "a deposit",
+    () =>
+      deposits.mockResolvedValueOnce({
+        ...settledDeposits,
+        error: [{ obligation: "deposit:1:2", error: "node unavailable" }],
+      }),
+  ],
+  ["the funding and principal returns", () => sweep.mockRejectedValueOnce(new Error("funding unavailable"))],
+])(
+  "keeps an operator's request while %s failed in the same pass, and completes it once they are healthy",
+  async (_, fail) => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date("2026-11-14T12:00:30Z"));
+    runRelayOutcome.next = () => Effect.succeed({ status: "ready", more: false, deferred: [], reconciled: true });
+    deposits.mockResolvedValue(settledDeposits);
+    const data = new Map<string, unknown>();
+    const relay = shardRelay(data);
+    await relay.tick("0x1");
+    await relay.requestReconcile();
+    fail();
+    await relay.tick("0x1");
+    // The withdrawal reconciliation succeeded, but another kind of work in the same pass did not: the request stays.
+    expect(data.get("reconcile:due")).toMatchObject({ at: Math.floor(Date.now() / 1000) + 60 });
+    vi.setSystemTime(new Date(Date.now() + 60_000));
+    await relay.tick("0x1");
+    expect(data.get("reconcile:due")).toBeUndefined();
+  },
+);
+
+it("asks again after an hourly reconciliation whose recovery read failed", async () => {
+  vi.useFakeTimers({ toFake: ["Date"] });
+  vi.setSystemTime(new Date("2026-11-14T12:00:30Z"));
+  deposits.mockResolvedValue(settledDeposits);
+  const relay = shardRelay();
+  await relay.tick("0x1");
+  runRelayCalls.mockClear();
+  runRelayOutcome.next = () => Effect.succeed({ status: "ready", more: false, deferred: [], reconciled: false });
+  await relay.tick("0x1", true);
+  runRelayOutcome.next = () => Effect.succeed({ status: "ready", more: false, deferred: [], reconciled: true });
+  await relay.tick("0x1");
+  expect(runRelayCalls.mock.calls.map((call) => call[3])).toEqual([true, false]);
+  vi.setSystemTime(new Date(Date.now() + 60_000));
+  await relay.tick("0x1");
+  await relay.tick("0x1");
+  expect(runRelayCalls.mock.calls.map((call) => call[3])).toEqual([true, false, true, false]);
+});
+it("answers an operator's request to clear a deposit fault, and refuses without the token or a reason", async () => {
+  const clearDepositFault = vi.fn(async () => ({ id: "2", commitment: "0xaa", row: {} }));
+  const env = {
+    ENVIRONMENT: "staging",
+    BASE_URL: "https://app.test",
+    L2_RPC_URL: "https://ledger.test",
+    OPERATOR_TOKEN: "operator-token",
+    SHARD_LEDGER_OPERATOR_PRIVATE_KEY: "0x1",
+    COSIGNER_URL: "https://cosigner.test",
+    COSIGNER_TOKEN: "test-cosigner-token",
+    LEDGER_OPERATOR_ADDRESS: "0x2",
+    LEDGER_OPERATOR_PRIVATE_KEY: "0x3",
+    RELAY: { idFromName: (id: string) => id, get: () => ({ clearDepositFault }) },
+    IDENTITY: {},
+  } as never;
+  const ask = (body: unknown, token = "operator-token") =>
+    worker.fetch(
+      new Request("https://app.test/api/value/operator/deposit-fault", {
+        method: "POST",
+        headers: { authorization: `Bearer ${token}` },
+        body: JSON.stringify(body),
+      }),
+      env,
+    );
+  const good = { chainId: "0x1", commitment: "0xaa", reason: "credit reversed on the shard" };
+  expect((await ask(good, "wrong")).status).toBe(401);
+  expect((await ask({ ...good, reason: " " })).status).toBe(400);
+  expect((await ask({ ...good, extra: 1 })).status).toBe(400);
+  expect((await ask(good)).status).toBe(200);
+  expect(clearDepositFault).toHaveBeenCalledExactlyOnceWith("0x1", "0xaa", "credit reversed on the shard");
+});
+it("looks for deposits on the hour, and between hours only while one is pending", async () => {
+  deposits.mockResolvedValue(settledDeposits);
+  const relay = shardRelay();
+  await relay.tick("0x1");
+  expect(deposits).toHaveBeenCalledTimes(1);
+  for (let minute = 0; minute < 5; minute++) await relay.tick("0x1");
+  expect(deposits).toHaveBeenCalledTimes(1);
+  await relay.tick("0x1", true);
+  expect(deposits).toHaveBeenCalledTimes(2);
+  deposits.mockResolvedValue({ ...settledDeposits, pending: 1, more: true });
+  await relay.tick("0x1", true);
+  await relay.tick("0x1");
+  await relay.tick("0x1");
+  expect(deposits).toHaveBeenCalledTimes(5);
+  deposits.mockResolvedValue({ ...settledDeposits, error: [{ obligation: "deposit:1", error: "offline" }] });
+  await relay.tick("0x1");
+  deposits.mockResolvedValue(settledDeposits);
+  await relay.tick("0x1");
+  await relay.tick("0x1");
+  expect(deposits).toHaveBeenCalledTimes(7);
+});
+it("delivers a landed deposit at once, and a second deposit by the same player right after it", async () => {
+  deposits.mockResolvedValue({ ...settledDeposits, processed: 1 });
+  const relay = shardRelay();
+  await relay.tick("0x1");
+  deposits.mockClear();
+  await relay.deliverDeposits("0x1");
+  await relay.deliverDeposits("0x1");
+  expect(deposits).toHaveBeenCalledTimes(2);
+});
+it("keeps a report that arrives during a pass for the next pass, and lets reports made before a pass share it", async () => {
+  const relay = shardRelay();
+  await relay.tick("0x1");
+  deposits.mockClear();
+  let release!: () => void;
+  const gate = new Promise<void>((resolve) => (release = resolve));
+  deposits.mockImplementationOnce(async () => {
+    await gate;
+    return settledDeposits;
+  });
+  deposits.mockResolvedValue(settledDeposits);
+  const first = relay.deliverDeposits("0x1");
+  while (!deposits.mock.calls.length) await new Promise((resolve) => setTimeout(resolve));
+  const during = relay.deliverDeposits("0x1");
+  release();
+  await Promise.all([first, during]);
+  expect(deposits).toHaveBeenCalledTimes(2);
+  deposits.mockClear();
+  await Promise.all([relay.deliverDeposits("0x1"), relay.deliverDeposits("0x1"), relay.deliverDeposits("0x1")]);
+  expect(deposits.mock.calls.length).toBeLessThan(3);
+  expect(deposits.mock.calls.length).toBeGreaterThan(0);
+});
+it("looks again at the next minute's tick after a reported deposit's first pass failed", async () => {
+  vi.useFakeTimers({ toFake: ["Date"] });
+  vi.setSystemTime(new Date("2026-11-14T12:00:30Z"));
+  try {
+    deposits.mockResolvedValue(settledDeposits);
+    const relay = shardRelay();
+    await relay.tick("0x1");
+    deposits.mockClear();
+    deposits.mockRejectedValueOnce(new Error("ledger unavailable"));
+    await expect(relay.deliverDeposits("0x1")).rejects.toThrow();
+    deposits.mockResolvedValue(settledDeposits);
+    await relay.tick("0x1");
+    expect(deposits).toHaveBeenCalledTimes(1);
+    vi.setSystemTime(new Date(Date.now() + 60_000));
+    await relay.tick("0x1");
+    expect(deposits).toHaveBeenCalledTimes(2);
+    await relay.tick("0x1");
+    await relay.tick("0x1");
+    expect(deposits).toHaveBeenCalledTimes(2);
+  } finally {
+    vi.useRealTimers();
+  }
+});
+
+it.each([
+  ["a chest still pending", Effect.succeed({ finished: 0, failed: 0, pending: 1 })],
+  ["a failed chest", Effect.succeed({ finished: 0, failed: 1, pending: 0 })],
+  ["an unavailable chest read", Effect.fail(new RelayFailure({ operation: "ledger chests unavailable" }))],
+])("asks the ledger tick again in five minutes, without a new write, after %s", async (_, outcome) => {
+  vi.useFakeTimers();
+  vi.setSystemTime(new Date("2026-11-14T12:00:30Z"));
+  try {
+    const data = new Map<string, unknown>();
+    const ctx = {
+      blockConcurrencyWhile: async (run: () => Promise<unknown>) => run(),
+      storage: {
+        setAlarm: async () => {},
+        get: async (key: string) => data.get(key),
+        list: async () => new Map(),
+        put: async (key: string, value: unknown) => void data.set(key, value),
+        delete: async (key: string) => data.delete(key),
+      },
+    };
+    finish.mockReturnValue(outcome);
+    seasons.mockReturnValue(Effect.succeed(null));
+    const relay = new ValueRelay(
+      ctx as unknown as DurableObjectState,
+      { IDENTITY: { l2ChainId: async () => "0x1" }, ROSTER_MONITOR: { ledgerWritten: async () => {} } } as never,
+    );
+    await (relay as unknown as { ledgerWritten(): Promise<void> }).ledgerWritten();
+    await relay.ledgerTickIfDue(false);
+    expect(finish).toHaveBeenCalledTimes(1);
+    for (let minute = 1; minute < 5; minute++) {
+      vi.advanceTimersByTime(60_000);
+      expect(await relay.ledgerTickIfDue(false)).toBeNull();
+    }
+    expect(finish).toHaveBeenCalledTimes(1);
+    vi.advanceTimersByTime(60_000);
+    finish.mockReturnValue(Effect.succeed({ finished: 1, failed: 0, pending: 0 }));
+    await relay.ledgerTickIfDue(false);
+    expect(finish).toHaveBeenCalledTimes(2);
+    vi.advanceTimersByTime(600_000);
+    expect(await relay.ledgerTickIfDue(false)).toBeNull();
+  } finally {
+    vi.useRealTimers();
+  }
+});
+it("asks the ledger side to read once an hour while shards tick every minute", async () => {
+  const ledgerTickIfDue = vi.fn();
+  const tick = vi.fn();
+  const env = {
+    ENVIRONMENT: "staging",
+    BASE_URL: "https://app.test",
+    L2_RPC_URL: "https://ledger.test",
+    OPERATOR_TOKEN: "test",
+    SHARD_LEDGER_OPERATOR_PRIVATE_KEY: "0x1",
+    COSIGNER_URL: "https://cosigner.test",
+    COSIGNER_TOKEN: "test-cosigner-token",
+    LEDGER_OPERATOR_ADDRESS: "0x2",
+    LEDGER_OPERATOR_PRIVATE_KEY: "0x3",
+    RELAY: { idFromName: (id: string) => id, get: () => ({ ledgerTickIfDue, tick }) },
+    IDENTITY: {},
+  } as never;
+  const minute = 60_000;
+  for (let elapsed = 0; elapsed < 120; elapsed++)
+    await worker.scheduled({ scheduledTime: elapsed * minute } as ScheduledController, env);
+  expect(ledgerTickIfDue).toHaveBeenCalledTimes(120);
+  expect(ledgerTickIfDue.mock.calls.filter(([hourly]) => hourly)).toHaveLength(2);
+  expect(tick).toHaveBeenCalledTimes(120);
+  expect(tick.mock.calls.filter(([, reconcile]) => reconcile)).toHaveLength(2);
+});
+
+it("reads the ledger between hours only after the relay wrote to it", async () => {
+  const data = new Map<string, unknown>();
+  const ctx = {
+    blockConcurrencyWhile: async (run: () => Promise<unknown>) => run(),
+    storage: {
+      setAlarm: async () => {},
+      get: async (key: string) => data.get(key),
+      list: async () => new Map(),
+      put: async (key: string, value: unknown) => {
+        data.set(key, value);
+      },
+      delete: async (key: string) => data.delete(key),
+    },
+  };
+  finish.mockReturnValue(Effect.succeed({ finished: 0, failed: 0, pending: 0 }));
+  const announced = vi.fn(async () => {});
+  const relay = new ValueRelay(
+    ctx as unknown as DurableObjectState,
+    { IDENTITY: { l2ChainId: async () => "0x1" }, ROSTER_MONITOR: { ledgerWritten: announced } } as never,
+  );
+  const written = () => (relay as unknown as { ledgerWritten(): Promise<void> }).ledgerWritten();
+  expect(await relay.ledgerTickIfDue(false)).toBeNull();
+  expect(finish).not.toHaveBeenCalled();
+  await written();
+  expect(announced).toHaveBeenCalledTimes(1);
+  expect(await relay.ledgerTickIfDue(false)).not.toBeNull();
+  expect(await relay.ledgerTickIfDue(false)).toBeNull();
+  expect(finish).toHaveBeenCalledTimes(1);
+  expect(await relay.ledgerTickIfDue(true)).not.toBeNull();
+  expect(finish).toHaveBeenCalledTimes(2);
 });
 
 it("continues a full confirmed page through its alarm and stops when caught up", async () => {

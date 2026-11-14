@@ -20,6 +20,7 @@ import {
   ledgerInteger,
   ledgerU256,
   readConfirmedLedgerHead,
+  readFinalLedgerHead,
 } from "./codecs";
 
 const WEI = 10n ** 18n;
@@ -240,6 +241,19 @@ it.each([
   { block_number: 12, block_hash: "0xab", timestamp: 100, status: [] },
 ])("refuses a malformed or preconfirmed header %j", async (block) => {
   await expect(readConfirmedLedgerHead({ getBlock: async () => block })).rejects.toThrow("ledger_head_unconfirmed");
+});
+
+it("calls a header final only when Ethereum has accepted it", async () => {
+  const asked: unknown[] = [];
+  const block = (status: string) => ({
+    getBlock: async (id: unknown) => {
+      asked.push(id);
+      return { block_number: 9, block_hash: "0xcd", timestamp: 90, status };
+    },
+  });
+  expect(await readFinalLedgerHead(block("ACCEPTED_ON_L1"))).toEqual({ number: 9, hash: "0xcd", time: 90 });
+  expect(asked).toEqual(["l1_accepted"]);
+  await expect(readFinalLedgerHead(block("ACCEPTED_ON_L2"))).rejects.toThrow("ledger_head_unconfirmed");
 });
 
 // preview_mmr's return type (mmr-1), encoded by starknet.js itself: the decoder must read what the library writes.
