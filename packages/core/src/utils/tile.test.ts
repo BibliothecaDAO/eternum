@@ -9,10 +9,14 @@ import { entityMapPosition, storedBiomeAt } from "./tile";
 const FAR_EAST = { col: 760245, row: 52, data: 0x20017336a0000006812000000aa1en };
 const storeWith = (data: bigint | undefined) => {
   const store = new NativeFactStore();
-  if (data !== undefined) store.applyFacts([{
-    model: "TileOpt", key: "0x11",
-    value: { game_id: 1, alt: false, col: FAR_EAST.col, row: FAR_EAST.row, data },
-  }]);
+  if (data !== undefined)
+    store.applyFacts([
+      {
+        model: "TileOpt",
+        key: "0x11",
+        value: { game_id: 1, alt: false, col: FAR_EAST.col, row: FAR_EAST.row, data },
+      },
+    ]);
   return store;
 };
 

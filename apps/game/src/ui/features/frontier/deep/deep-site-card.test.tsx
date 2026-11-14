@@ -65,9 +65,7 @@ describe("the Deep site's live native binding", () => {
       await act(async () => hud.button("Join")!.click());
       const site = readDeepSites(hud.store, hud.scenario.startsAt, 1).find((site) => site.name === "Quarry")!;
       expect(hud.join).toHaveBeenCalledTimes(1);
-      expect(hud.join).toHaveBeenCalledWith(
-        expect.objectContaining({ explorer_id: 201, coord: site.position }),
-      );
+      expect(hud.join).toHaveBeenCalledWith(expect.objectContaining({ explorer_id: 201, coord: site.position }));
       expect(hud.attack).not.toHaveBeenCalled();
       const answer = hud.scenario.answer(
         {

@@ -188,7 +188,9 @@ fn complete_guard_capture(
         return;
     }
     crate::deep::IDeepSitesDispatcherTrait::join_deep_site(
-        crate::logic::deep_sites::dispatcher(key.game_id), key.game_id, actor,
+        crate::logic::deep_sites::dispatcher(key.game_id),
+        key.game_id,
+        actor,
         crate::relics::InteractSite { explorer_id: key.explorer_id, coord: target.coord },
         crate::commands::action_context(context),
     );
