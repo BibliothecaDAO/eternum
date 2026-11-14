@@ -2,11 +2,15 @@ use starknet::storage::{StorageMapReadAccess, StorageMapWriteAccess, StoragePoin
 
 pub fn prepare(game_id: u32, context: crate::commands::ActionContext) {
     let context = crate::commands::execution_context(game_id, context);
-    prepare_at(game_id, context.game.unbox(), context.rules.unbox().day_unit_seconds, context.timestamp, context.raw_root);
+    prepare_at(
+        game_id, context.game.unbox(), context.rules.unbox().day_unit_seconds, context.timestamp, context.raw_root,
+    );
 }
 
 pub fn initialize(game_id: u32) {
-    if crate::logic::preset_record::for_game(game_id).bane_rules.read().is_none() { return; }
+    if crate::logic::preset_record::for_game(game_id).bane_rules.read().is_none() {
+        return;
+    }
     let game = crate::logic::game::game(game_id);
     let unit = crate::logic::preset_record::for_game(game_id).rules.day_unit_seconds.read();
     prepare_at(game_id, game, unit, game.start_main_at, 0);

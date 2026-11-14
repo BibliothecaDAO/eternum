@@ -10,7 +10,11 @@ function baneProduction() {
   const start = dayOf({ seed: 5n, startMainAt: 100, endAt: 10_000, dayUnitSeconds: 100 }, 100)!.end;
   const now = start + 11;
   store.applyFacts([
-    { model: "SliceRules", key: "0xd000", value: { ...preset.rules, game_id: 1, day_unit_seconds: 100, mode_rules: 0 } },
+    {
+      model: "SliceRules",
+      key: "0xd000",
+      value: { ...preset.rules, game_id: 1, day_unit_seconds: 100, mode_rules: 0 },
+    },
     {
       model: "GameRegistry",
       key: "0xd001",

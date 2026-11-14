@@ -29,12 +29,7 @@ import {
   RealmBuildingSummary,
 } from "./realm-building-summary";
 
-import {
-  configManager,
-  getBuildingCount,
-  getRealmInfo,
-  resolveUseSimpleCost,
-} from "@bibliothecadao/eternum";
+import { configManager, getBuildingCount, getRealmInfo, resolveUseSimpleCost } from "@bibliothecadao/eternum";
 import { requireActiveGameClient } from "@/sync/active-game-client";
 import { useGame } from "@/hooks/context/game-context";
 import { useQuery } from "@/hooks/helpers/use-query";
