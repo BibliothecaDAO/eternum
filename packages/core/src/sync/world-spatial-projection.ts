@@ -1,3 +1,6 @@
+import { currentArmy, deepTiles, deepTerrain } from "../utils/deep";
+import { getBlockTimestamp } from "../utils/timestamp";
+import { readExpeditionRules, dayAtIndex, isArmyCurrent } from "../utils/expeditions";
 import { activeTileOccupancy } from "../utils/ruins";
 import { safeInteger } from "../utils/safe-integer";
 import type { ID, Tile, TroopTier, TroopType } from "@bibliothecadao/types";
@@ -305,10 +308,13 @@ const resolveStructureRenderable = (tile: Tile | undefined): StructureSpatialRen
 };
 
 const resolveArmyRenderable = (
-  store: Pick<NativeFactStore, "entityOccupancy">,
+  store: Pick<NativeFactStore, "entityOccupancy" | "get" | "require">,
   explorerTroops: NativeRows["ExplorerTroops"] | undefined,
 ): ArmySpatialRenderable | undefined => {
   if (!explorerTroops || explorerTroops.troops.count <= 0n) return undefined;
+  const key = { game_id: explorerTroops.game_id, explorer_id: explorerTroops.explorer_id };
+  if (store.get("DeepGuard", key)) return undefined;
+  if (store.get("DeepArmy", key) && (!isArmyCurrent(store, key.game_id, key.explorer_id, getBlockTimestamp().currentDefaultTick) || currentArmy(store, explorerTroops).troops.count <= 0n)) return undefined;
 
   const position = entityMapPosition(store, explorerTroops.game_id, explorerTroops.explorer_id);
   const { x: col, y: row, alt } = position;
@@ -554,6 +560,7 @@ export class WorldSpatialProjection {
   private readonly armyListeners = new Set<ArmyProjectionListener>();
   private readonly tileListeners = new Set<TileProjectionListener>();
   private unsubscribe: (() => void) | null = null;
+  private nextTimeRefresh = Infinity;
 
   constructor({ store, bucketSize = DEFAULT_SPATIAL_BUCKET_SIZE }: WorldSpatialProjectionOptions) {
     if (!Number.isFinite(bucketSize) || bucketSize <= 0) {
@@ -588,6 +595,10 @@ export class WorldSpatialProjection {
   }
 
   private applyChanges(changes: readonly NativeFactChange[]): void {
+    if (changes.some((change) => change.model === "DeepRules" || change.model === "SettlementRules")) {
+      this.rebuild();
+      return;
+    }
     if (
       changes.some(
         (change) =>
@@ -596,14 +607,14 @@ export class WorldSpatialProjection {
           (change.model === "GameRelease" && change.current?.release_id !== change.previous?.release_id),
       )
     ) {
-      for (const [key, occupancy] of this.store.entries("TileOccupancy")) {
-        if (occupancy.category === TileOccupier.Ruin) this.applyTileUpdate(key, occupancy);
+      for (const [, occupancy] of this.store.entries("TileOccupancy")) {
+        if (occupancy.category === TileOccupier.Ruin) this.applyTileUpdate(occupancy);
       }
     }
     for (const change of changes) {
       if (change.model === "TileOpt" || change.model === "TileOccupancy") {
         const tile = change.current ?? change.previous;
-        if (tile) this.applyTileUpdate(change.key, tile);
+        if (tile) this.applyTileUpdate(tile);
       }
       if (change.model === "TileOccupancy") {
         for (const tile of [change.previous, change.current]) {
@@ -613,7 +624,15 @@ export class WorldSpatialProjection {
         }
       }
       if (change.model === "ExplorerTroops") this.applyExplorerTroopsUpdate([change.current, change.previous]);
+      if (change.model === "DeepGuard" || change.model === "DeepArmy" || change.model === "ArmyDay") {
+        const key = change.current ?? change.previous;
+        if (key) {
+          const army = this.store.get("ExplorerTroops", { game_id: key.game_id, explorer_id: key.explorer_id });
+          this.armyIndex.update(safeInteger(key.explorer_id), resolveArmyRenderable(this.store, army));
+        }
+      }
     }
+    if (changes.some((change) => change.model === "DeepArmy" || change.model === "ArmyDay")) this.nextTimeRefresh = this.nextTimedChangeAt();
     for (const change of changes) {
       if (change.model === "Structure" || change.model === "ExpeditionSite" || change.model === "TileOccupancy") {
         for (const source of [change.previous, change.current]) {
@@ -621,6 +640,27 @@ export class WorldSpatialProjection {
         }
       }
     }
+  }
+
+  /** Confirmed heads advance the same projection even when no entity changed. */
+  public refreshTime(): void {
+    if (this.nextTimeRefresh !== Infinity && getBlockTimestamp().currentDefaultTick >= this.nextTimeRefresh) this.rebuild();
+  }
+
+  private nextTimedChangeAt(): number {
+    let boundary = Infinity;
+    for (const [, deep] of this.store.entries("DeepArmy")) {
+      const army = this.store.get("ExplorerTroops", { game_id: deep.game_id, explorer_id: deep.explorer_id });
+      if (!army) continue;
+      const now = getBlockTimestamp().currentDefaultTick;
+      if (!isArmyCurrent(this.store, deep.game_id, deep.explorer_id, now) || currentArmy(this.store, army, now).troops.count === 0n) continue;
+      const birth = this.store.require("ArmyDay", { game_id: deep.game_id, explorer_id: deep.explorer_id });
+      const calendar = readExpeditionRules(this.store, deep.game_id);
+      if (!calendar) throw new Error("Deep projection requires expedition days");
+      const interval = Number(this.store.require("SliceRules", { game_id: deep.game_id }).tick_config.armies_tick_in_seconds);
+      boundary = Math.min(boundary, (Math.floor(now / interval) + 1) * interval, dayAtIndex(calendar, Number(birth.day)).end);
+    }
+    return boundary;
   }
 
   /**
@@ -636,8 +676,10 @@ export class WorldSpatialProjection {
     this.chestsByTileEntity.clear();
     this.structuresByTileEntity.clear();
 
-    const tiles = new Map<string, NativeKeys["TileOccupancy"]>(this.store.entries("TileOpt"));
-    for (const [key, occupancy] of this.store.entries("TileOccupancy")) tiles.set(key, occupancy);
+    const tiles = new Map<string, NativeKeys["TileOccupancy"]>();
+    for (const key of deepTiles(this.store)) tiles.set(tileSourceKey(key), key);
+    for (const [, tile] of this.store.entries("TileOpt")) tiles.set(tileSourceKey(tile), tile);
+    for (const [, occupancy] of this.store.entries("TileOccupancy")) tiles.set(tileSourceKey(occupancy), occupancy);
     for (const [entity, key] of tiles) {
       const projected = projectedRow("tile", () => {
         const source = this.tileAt(key);
@@ -682,6 +724,7 @@ export class WorldSpatialProjection {
       if (marker) nextStructures.set(marker.spatialId, marker);
     }
 
+    this.nextTimeRefresh = this.nextTimedChangeAt();
     this.chestIndex.replace(nextChests);
     this.structureIndex.replace(nextStructures);
     this.armyIndex.replace(nextArmies);
@@ -691,10 +734,11 @@ export class WorldSpatialProjection {
   }
 
   private tileAt(key: NativeKeys["TileOccupancy"]): Tile | undefined {
-    return tileFactsToTile(key, this.store.get("TileOpt", key), activeTileOccupancy(this.store, key));
+    return tileFactsToTile(key, deepTerrain(this.store, key) ?? this.store.get("TileOpt", key), activeTileOccupancy(this.store, key));
   }
 
-  private applyTileUpdate(tileEntity: string, key: NativeKeys["TileOccupancy"]): void {
+  private applyTileUpdate(key: NativeKeys["TileOccupancy"]): void {
+    const tileEntity = tileSourceKey(key);
     const source = this.tileAt(key);
     const previousTile = this.tilesByTileEntity.get(tileEntity);
     const currentTile = resolveTileRenderable(source);
@@ -928,4 +972,8 @@ export class WorldSpatialProjection {
     this.chestsByTileEntity.clear();
     this.structuresByTileEntity.clear();
   }
+}
+
+function tileSourceKey(key: NativeKeys["TileOccupancy"]): string {
+  return `${key.game_id}:${Number(key.alt)}:${key.col}:${key.row}`;
 }

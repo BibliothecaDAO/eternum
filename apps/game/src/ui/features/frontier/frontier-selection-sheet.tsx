@@ -1,3 +1,4 @@
+import { DeepSiteCard, useSelectedDeepSite } from "./deep/deep-site-card";
 import { ClearedSiteSheet, SiteReceipt, useSelectedClearedSite } from "./sites/site-receipt";
 import { useQuery } from "@/hooks/helpers/use-query";
 import { useChestOpening } from "@/hooks/store/use-chest-opening-store";
@@ -51,6 +52,7 @@ export const useSelectionCard = ({
   const target = useSelectedTarget();
   const cleared = useSelectedClearedSite();
   const mapSite = useSelectedMapSite();
+  const deepSite = useSelectedDeepSite();
   const tileObject = useSelectedTileObject();
   const keep = useKeepSelected(realm);
   const building = useTappedBuilding(realm);
@@ -73,6 +75,7 @@ export const useSelectionCard = ({
     return card("reinforce", <ReinforceSheet realm={realm} army={reinforcing} onClose={close} />);
   if (realm && openPlot)
     return card("plot", <BuildSheet realm={realm} plot={openPlot} onResearch={onResearch} onClose={close} />);
+  if (deepSite) return card("deep-site", <DeepSiteCard site={deepSite} onClose={close} />);
   if (target)
     return card(
       "target",

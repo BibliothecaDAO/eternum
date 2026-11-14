@@ -4,6 +4,7 @@ pub mod bitcoin;
 pub mod blitz_results;
 pub mod buildings;
 pub mod combat_domain;
+pub mod deep;
 pub mod entry;
 pub mod game;
 pub mod games;

@@ -166,3 +166,23 @@ it("drops expired armies before reading positions on the shared map", () => {
   expect(scope.expedition!.entities.has("101")).toBe(false);
   expect(scope.expedition!.day).toBe(1);
 });
+
+it("includes shared Deep field armies and all held guards with their home facts", () => {
+  const extra: typeof rows = [
+    { model: "DeepSite", value: { entity_id: "200", kind: 0, day: "0" } },
+    { model: "TileOccupancy", value: { entity_id: "200", category: "46", alt: false, col: 512, row: 3584 } },
+    { model: "TileOccupancy", value: { entity_id: "301", category: "26", alt: false, col: 511, row: 3584 } },
+    { model: "DeepGuard", value: { explorer_id: "302", site_id: "200", slot: 3 } },
+    { model: "ExplorerTroops", value: { explorer_id: "301", owner: "8", troops: { count: "1000000000" } } },
+    { model: "ExplorerTroops", value: { explorer_id: "302", owner: "9", troops: { count: "1000000000" } } },
+  ];
+  const shared: ScopeRowReader = (model, spacing, keys) => [...rows, ...extra].filter(
+    (row) => row.model === model && scopeInputKeys(model, row.value, spacing).some((key) => keys.includes(key)),
+  );
+  const scope = deriveGameSyncScope("0xa", 350, expedition, shared);
+  expect(scope.expedition?.regions).toContain("0:3");
+  for (const id of ["200", "301", "302", "8", "9"]) expect(scope.expedition?.entities).toContain(id);
+  expect(rowInGameSyncScope("ExplorerTroops", { explorer_id: "302", owner: "9" }, scope)).toBe(true);
+  expect(rowInGameSyncScope("DeepArmy", { explorer_id: "302" }, scope)).toBe(true);
+  expect(rowInGameSyncScope("Structure", { entity_id: "9" }, scope)).toBe(true);
+});

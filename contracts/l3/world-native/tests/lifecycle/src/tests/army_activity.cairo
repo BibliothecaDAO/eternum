@@ -6,7 +6,7 @@ use world_test_support::tests::{Deployment, GUARDIAN, deploy_player};
 use crate::commands::{Command, CreateExplorer};
 use crate::troops::{ArmySlotKey, ExplorerKey, ExplorerTroops};
 
-fn found(d: Deployment, game_id: u32, aspect: u8) -> u64 {
+pub fn found(d: Deployment, game_id: u32, aspect: u8) -> u64 {
     assert!(
         execute_in_game(
             d,
@@ -18,12 +18,12 @@ fn found(d: Deployment, game_id: u32, aspect: u8) -> u64 {
     interact_with_state(d.games, || crate::entity_ids::home_for_actor(game_id, d.actor))
 }
 
-fn player(d: Deployment, salt: felt252) -> Deployment {
+pub fn player(d: Deployment, salt: felt252) -> Deployment {
     let (actor, account_class) = deploy_player(salt, GUARDIAN);
     Deployment { actor, account_class, ..d }
 }
 
-fn muster(home: u64, slot: u8, direction: u8, count: u128) -> Command {
+pub fn muster(home: u64, slot: u8, direction: u8, count: u128) -> Command {
     Command::CreateExplorer(
         CreateExplorer {
             structure_id: home, slot, direction, category: 0, tier: 0, amount: count * crate::rules::RESOURCE_PRECISION,
@@ -35,7 +35,7 @@ fn active(d: Deployment, game_id: u32, aspect: u8, day: u64) -> u32 {
     interact_with_state(d.games, || crate::state::read().troops.aspect_activity.read((game_id, aspect, day)))
 }
 
-fn slot_army(d: Deployment, key: ArmySlotKey) -> u64 {
+pub fn slot_army(d: Deployment, key: ArmySlotKey) -> u64 {
     interact_with_state(d.games, || crate::logic::army_slot_storage::read(key).unwrap().explorer_id)
 }
 
@@ -113,7 +113,7 @@ fn activity_separates_homes_aspects_and_games() {
     assert_eq!(active(d, game_id, 1, 0), 2);
 }
 
-fn army(d: Deployment, key: ExplorerKey) -> ExplorerTroops {
+pub fn army(d: Deployment, key: ExplorerKey) -> ExplorerTroops {
     interact_with_state(d.games, || crate::logic::troops::explorer(key).unwrap())
 }
 
@@ -125,7 +125,7 @@ fn attack(attacker: u64, defender: u64) -> Command {
     )
 }
 
-fn refused(d: Deployment, game_id: u32, command: Command, reason: ByteArray) {
+pub fn refused(d: Deployment, game_id: u32, command: Command, reason: ByteArray) {
     let mut events = spy_events();
     assert!(!execute_in_game(d, game_id, command, 365));
     assert_eq!(world_test_support::tests::play_fixture::rejection(ref events, d.games).reason, reason);

@@ -146,6 +146,27 @@ export const factWireTypes = [
   },
   {
     type: "struct",
+    name: "world_native::deep::DeepArmy",
+    members: [{ name: "last_tick", type: "core::integer::u64" }],
+  },
+  {
+    type: "struct",
+    name: "world_native::deep::DeepGuard",
+    members: [
+      { name: "site_id", type: "core::integer::u64" },
+      { name: "slot", type: "core::integer::u8" },
+    ],
+  },
+  {
+    type: "struct",
+    name: "world_native::deep::DeepSite",
+    members: [
+      { name: "kind", type: "core::integer::u8" },
+      { name: "day", type: "core::integer::u64" },
+    ],
+  },
+  {
+    type: "struct",
     name: "world_native::troops::ArmySlotKey",
     members: [
       { name: "game_id", type: "core::integer::u32" },
@@ -1131,6 +1152,9 @@ export function defineFactModels({ struct, model: declare }) {
     model("RuinRelic", "game", struct("resources::ResourceKey"), struct("army_relics::ArmyRelic")),
     model("ArmyProgress", "game", struct("troops::ExplorerKey"), struct("progression::ArmyProgress")),
     model("ArmyDay", "game", struct("troops::ExplorerKey"), [{ name: "day", type: "core::integer::u64" }]),
+    model("DeepSite", "game", struct("resources::ResourceKey"), struct("deep::DeepSite")),
+    model("DeepGuard", "game", struct("troops::ExplorerKey"), struct("deep::DeepGuard")),
+    model("DeepArmy", "game", struct("troops::ExplorerKey"), struct("deep::DeepArmy")),
     model(
       "AspectActivity",
       "game",
@@ -1518,6 +1542,9 @@ export const syncScopes = {
   ExpeditionDiscovery: { realms: ["structure_id"], epoch: "epoch" },
   ArmyDay: { entities: ["explorer_id"] },
   AspectActivity: shared,
+  DeepSite: shared,
+  DeepGuard: shared,
+  DeepArmy: shared,
   ArmySlot: { realms: ["structure_id"], epoch: "epoch" },
   ExplorerTroops: { entities: ["explorer_id"] },
   Guard: { entities: ["structure_id"] },

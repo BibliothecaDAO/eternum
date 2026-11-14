@@ -1,3 +1,4 @@
+import { currentResourceWeight } from "./deep";
 import { safeInteger } from "./safe-integer";
 import { inlineTroops, resolveExplorerTroops } from "../managers/troop-stamina";
 import { entityMapPosition } from "./tile";
@@ -43,7 +44,7 @@ export const formatArmies = (
       {
         entityId: safeInteger(explorer.explorer_id),
         troops,
-        totalCapacity: weight ? getArmyTotalCapacityInKg(weight) : 0,
+        totalCapacity: weight ? getArmyTotalCapacityInKg(currentResourceWeight(store, weight)) : 0,
         weight: weight ? gramToKg(divideByPrecision(Number(weight.weight))) : 0,
         position,
         entity_owner_id: safeInteger(explorer.owner),

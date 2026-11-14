@@ -1,0 +1,162 @@
+use starknet::storage::{
+    StorageMapReadAccess, StorageMapWriteAccess, StoragePathEntry, StoragePointer, StoragePointerReadAccess,
+    SubPointersForward,
+};
+use crate::commands::ExecutionContext;
+use crate::deep::{DeepRules, DeepSite};
+use crate::guards::{Guard, GuardKey};
+use crate::resources::ResourceKey;
+use crate::troops::ExplorerKey;
+
+pub fn rules_entry(game_id: u32) -> Option<StoragePointer<DeepRules>> {
+    crate::logic::preset_record::for_game(game_id).deep_rules.sub_pointers()
+}
+
+pub fn site(key: ResourceKey) -> Option<DeepSite> {
+    crate::state::read().deep.sites.read((key.game_id, key.entity_id))
+}
+
+pub fn dispatcher(game_id: u32) -> crate::deep::IDeepSitesLibraryDispatcher {
+    let state = crate::state::read();
+    let release = state.game_releases.read(game_id);
+    assert!(release != 0, "game has no release");
+    crate::deep::IDeepSitesLibraryDispatcher { class_hash: state.releases.entry(release).classes.combat.read() }
+}
+
+pub fn grant_beast_xp(key: ExplorerKey, coord: crate::troops::Coord, timestamp: u64) {
+    let count = rules_entry(key.game_id).expect('missing Deep rules').beast_count.read();
+    let depth = crate::logic::expeditions::depth_at(key.game_id, coord);
+    let state = crate::state::read();
+    let release = state.releases.entry(state.game_releases.read(key.game_id)).classes;
+    crate::progression::IArmyProgressionDispatcherTrait::grant_army_xp(
+        crate::progression::IArmyProgressionLibraryDispatcher { class_hash: release.relics.read() },
+        key,
+        crate::progression::XpAward::Clear(crate::progression::clear_xp(count, depth)),
+        timestamp,
+    );
+}
+
+fn site_coord(rules: StoragePointer<DeepRules>, kind: u8, spacing: u32) -> crate::troops::Coord {
+    let local = if kind == crate::rules::DEEP_FOUNDATION {
+        rules.foundation
+    } else if kind == crate::rules::DEEP_QUARRY {
+        rules.quarry
+    } else if kind == crate::rules::DEEP_ALTAR {
+        rules.altar
+    } else {
+        panic!("invalid Deep site")
+    };
+    crate::deep::site_position(local.x.read(), local.y.read(), spacing)
+}
+
+fn initialize(game_id: u32) {
+    let Some(rules) = rules_entry(game_id) else {
+        return;
+    };
+    let state = crate::state::write();
+    let start = state.games.games.entry(game_id).start_main_at.read();
+    let spacing = crate::logic::preset_record::for_game(game_id).settlement_spacing.read();
+    for kind in 0..crate::rules::DEEP_SITE_COUNT {
+        if state.deep.site_ids.read((game_id, kind)) != 0 {
+            continue;
+        }
+        let entity_id: u64 = crate::logic::game::allocate_setup_entity(game_id).into();
+        let key = ResourceKey { game_id, entity_id };
+        state.deep.site_ids.write((game_id, kind), entity_id);
+        crate::logic::map::MapState::occupy(
+            crate::geometry::tile_key(game_id, site_coord(rules, kind, spacing)),
+            entity_id,
+            crate::taxonomy::DEEP_SITE_OCCUPIER,
+            false,
+        );
+        reset_beast(key, kind, 0, rules.beast_count.read(), start);
+    }
+}
+
+pub fn rollover(game_id: u32, context: ExecutionContext) {
+    let Some(rules) = rules_entry(game_id) else {
+        return;
+    };
+    let game = context.game.unbox();
+    if context.timestamp < game.start_main_at || (game.end_at != 0 && context.timestamp >= game.end_at) {
+        return;
+    }
+    let day = crate::days::day_of(game, context.rules.unbox().day_unit_seconds, context.timestamp);
+    let state = crate::state::read();
+    for kind in 0..crate::rules::DEEP_SITE_COUNT {
+        let key = ResourceKey { game_id, entity_id: state.deep.site_ids.read((game_id, kind)) };
+        let previous = site(key).expect('missing initialized Deep site');
+        if previous.day != day.index {
+            crate::logic::deep_guards::expire(key, context);
+            reset_beast(key, kind, day.index, rules.beast_count.read(), day.start);
+        } else {
+            crate::logic::deep_guards::settle(key, context);
+        }
+    }
+}
+
+fn reset_beast(key: ResourceKey, kind: u8, day: u64, count: u128, timestamp: u64) {
+    let value = DeepSite { kind, day };
+    crate::state::write().deep.sites.write((key.game_id, key.entity_id), Some(value));
+    let mut keys = array![];
+    key.serialize(ref keys);
+    let mut values = array![];
+    value.serialize(ref values);
+    crate::logic::troops::TroopState::emit(
+        crate::logic::troops::TroopState::Event::RowSet(
+            crate::events::RowSet { version: 1, model: 'DeepSite', keys: keys.span(), values: values.span() },
+        ),
+    );
+    crate::logic::guards::GuardState::save(
+        GuardKey { game_id: key.game_id, structure_id: key.entity_id, slot: 0 },
+        Guard {
+            troops: crate::troops::Troops {
+                count,
+                stamina: crate::troops::Stamina { amount: 0, settled_at: timestamp.try_into().unwrap(), remainder: 0 }
+                    .into(),
+                ..Default::default(),
+            },
+            destroyed_tick: 0,
+        },
+    );
+}
+
+#[starknet::component]
+pub mod DeepSites {
+    #[storage]
+    pub struct Storage {}
+    #[event]
+    #[derive(Drop, starknet::Event)]
+    pub enum Event {}
+    #[embeddable_as(DeepSitesImpl)]
+    pub impl Sites<
+        TContractState, +HasComponent<TContractState>, +Drop<TContractState>,
+    > of crate::deep::IDeepSites<ComponentState<TContractState>> {
+        fn join_deep_site(
+            ref self: ComponentState<TContractState>,
+            game_id: u32,
+            actor: starknet::ContractAddress,
+            command: crate::relics::InteractSite,
+            context: crate::commands::ActionContext,
+        ) {
+            let context = crate::commands::execution_context(game_id, context);
+            crate::logic::combat::authorize(game_id, context);
+            let key = crate::troops::ExplorerKey { game_id, explorer_id: command.explorer_id };
+            super::rollover(game_id, context);
+            let explorer = crate::logic::troops::field_explorer(key, actor, context.timestamp, context);
+            let occupied = crate::logic::map::occupancy(crate::geometry::tile_key(game_id, command.coord))
+                .expect('missing Deep site tile');
+            crate::logic::deep_guards::join(
+                key, explorer, crate::resources::ResourceKey { game_id, entity_id: occupied.entity_id },
+            );
+        }
+        fn initialize_deep(ref self: ComponentState<TContractState>, game_id: u32) {
+            super::initialize(game_id);
+        }
+        fn settle_deep(
+            ref self: ComponentState<TContractState>, game_id: u32, context: crate::commands::ActionContext,
+        ) {
+            super::rollover(game_id, crate::commands::execution_context(game_id, context));
+        }
+    }
+}

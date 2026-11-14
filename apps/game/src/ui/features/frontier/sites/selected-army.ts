@@ -4,9 +4,9 @@ import { useAccountAddress } from "@/hooks/store/use-account-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { canIssueOrders } from "@/utils/can-issue-orders";
 import { configManager, entityMapPosition, isViewerOwner } from "@bibliothecadao/eternum";
-import type { NativeRows } from "@bibliothecadao/eternum/game-client";
+import { currentArmy, type NativeRows } from "@bibliothecadao/eternum/game-client";
 
-const ARMY_MODELS = ["ExplorerTroops", "Structure", "TileOccupancy"] as const;
+const ARMY_MODELS = ["ExplorerTroops", "Structure", "TileOccupancy", "DeepGuard", "DeepArmy", "ArmyDay"] as const;
 
 /** The army the player has selected, where it stands, when it is theirs and orders are allowed: a site's actor. */
 export const useSelectedOwnArmy = (): {
@@ -25,5 +25,5 @@ export const useSelectedOwnArmy = (): {
   const home = setup.store.get("Structure", { game_id: gameId, entity_id: army.owner });
   if (!home || !isViewerOwner(home.owner, viewer)) return null;
   const position = entityMapPosition(setup.store, gameId, army.explorer_id);
-  return { army, armyTile: { col: position.x, row: position.y, alt: position.alt } };
+  return { army: currentArmy(setup.store, army), armyTile: { col: position.x, row: position.y, alt: position.alt } };
 };

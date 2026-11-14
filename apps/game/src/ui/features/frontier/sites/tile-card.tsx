@@ -46,6 +46,8 @@ const SITE_MODELS = [
   "ArmyProgress",
   "ArmyRelicEffect",
   "ArmySlot",
+  "DeepArmy",
+  "DeepGuard",
   "HomeAspect",
   "Guard",
   "Structure",

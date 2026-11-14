@@ -443,6 +443,9 @@ fn discovered_guard(
 
 #[starknet::interface]
 pub trait IBattleResolution<T> {
+    fn expire_explorer(
+        ref self: T, key: ExplorerKey, explorer: ExplorerTroops, context: crate::commands::ActionContext,
+    );
     // The explorer a command acts with: active this day, and owned by the actor when one is given.
     fn command_explorer(
         self: @T,

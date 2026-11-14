@@ -1,4 +1,7 @@
 pub fn biome(key: TileKey, game_context: crate::commands::BiomeContext) -> u8 {
+    if crate::logic::deep::contains(key.game_id, crate::troops::Coord { alt: key.alt, x: key.col, y: key.row }) {
+        return crate::biome::Biome::Underground.into();
+    }
     // Every reveal stores the biome derived here; deriving it again is the costliest step of a move or a battle. The
     // byte lives in the stored tile word alone, so one read answers revealed and unrevealed tiles alike.
     let terrain_word = crate::state::read().map.tiles.read((key.game_id, key.alt, key.col, key.row));
@@ -31,14 +34,26 @@ pub fn occupancy(key: TileKey) -> Option<crate::map::TileOccupancy> {
 
 pub fn entity_coord(key: crate::resources::ResourceKey) -> Option<crate::troops::Coord> {
     let state = crate::state::read();
-    crate::map::position_from_bits(state.map.entity_tiles.read((key.game_id, key.entity_id)))
+    let entity_id = match crate::logic::deep_guards::entry(
+        crate::troops::ExplorerKey { game_id: key.game_id, explorer_id: key.entity_id },
+    ) {
+        Some(guard) => guard.site_id.read(),
+        None => key.entity_id,
+    };
+    crate::map::position_from_bits(state.map.entity_tiles.read((key.game_id, entity_id)))
 }
 
 pub fn tile(key: TileKey) -> Option<TileOpt> {
     let state = crate::state::read();
     let storage_key = (key.game_id, key.alt, key.col, key.row);
     let occupier = occupancy(key);
-    let terrain = state.map.tiles.read(storage_key);
+    let terrain = if crate::logic::deep::contains(
+        key.game_id, crate::troops::Coord { alt: key.alt, x: key.col, y: key.row },
+    ) {
+        Into::<u8, u128>::into(crate::biome::Biome::Underground.into()) * crate::map::BIOME_SCALE
+    } else {
+        state.map.tiles.read(storage_key)
+    };
     if terrain / crate::map::BIOME_SCALE % crate::map::BYTE_RANGE != 0 || occupier.is_some() {
         Some(TileOpt { data: crate::map::coordinate_bits(key) + terrain })
     } else {

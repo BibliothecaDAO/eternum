@@ -54,7 +54,7 @@ export type DeepOrder =
 
 export interface DeepSiteProps {
   site: (typeof deepSites)[number]["position"];
-  pay: DeepTickPay;
+  pay: DeepTickPay | null;
   guard: DeepGuard;
   /** The order the selected army has, or why it has none. */
   order: DeepOrder | DeepBlock;
@@ -81,7 +81,7 @@ export const DeepSiteView = ({ site, pay, guard, order, onClose }: DeepSiteProps
         <Icon name={face.icon} size={48} />
         <div className="flex min-w-0 flex-col">
           <span className="text-hud-strong text-hud-ink">{face.purpose}</span>
-          <TickPay pay={pay} />
+          {pay && <TickPay pay={pay} />}
         </div>
       </div>
       <GuardRows guard={guard} />

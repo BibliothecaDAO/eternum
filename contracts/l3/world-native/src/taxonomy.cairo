@@ -42,6 +42,7 @@ pub const SHRINE_OCCUPIER: u8 = 40;
 pub const WELL_OCCUPIER: u8 = 41;
 // A spire found by a Blitz reveal: it paid its finder once and stands dormant, with no portal and no other use.
 pub const DORMANT_SPIRE_OCCUPIER: u8 = 45;
+pub const DEEP_SITE_OCCUPIER: u8 = 46;
 
 pub const RIFT_CATEGORY: u8 = 9;
 pub const RUIN_CATEGORY: u8 = 10;

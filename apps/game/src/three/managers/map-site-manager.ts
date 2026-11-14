@@ -1,6 +1,7 @@
+import { DEEP_SITE_FACES } from "@/ui/features/frontier/deep/deep-site-faces";
 import { configManager } from "@bibliothecadao/eternum";
 import { safeInteger, type NativeFactStore } from "@bibliothecadao/eternum/game-client";
-import { skillPointGain } from "@bibliothecadao/types";
+import { deepSites, TileOccupier, skillPointGain } from "@bibliothecadao/types";
 import { mapSite } from "@/ui/features/frontier/sites/map-site-plan";
 import type { MapPlateInput, MapPlateScope } from "../map-plates/map-plate-layer";
 import { PLATE_CLEARANCE } from "./structure-visible-presentation";
@@ -70,7 +71,7 @@ export class MapSiteManager {
       }
     });
     this.unsubscribeRewards = store.subscribe((changes) => {
-      if (changes.some(({ model }) => model === "ShrineReward")) this.refreshPlates();
+      if (changes.some(({ model }) => model === "ShrineReward" || model === "DeepSite")) this.refreshPlates();
     });
     this.refresh();
   }
@@ -84,7 +85,7 @@ export class MapSiteManager {
           (row) =>
             row.hexCoords.col === tile.col &&
             row.hexCoords.row === tile.row &&
-            mapSiteOf(row.occupierType)?.kind === "Shrine",
+            (mapSiteOf(row.occupierType)?.kind === "Shrine" || row.occupierType === TileOccupier.DeepSite),
         );
     if (site) this.plates.setHover(site.occupierId);
     else this.plates.clearHover();
@@ -137,17 +138,29 @@ export class MapSiteManager {
     const sites = this.modelVisible
       ? this.projection
           .getTiles(activeMapLayer())
-          .filter((tile) => mapSiteOf(tile.occupierType)?.kind === "Shrine")
+          .filter((tile) => mapSiteOf(tile.occupierType)?.kind === "Shrine" || tile.occupierType === TileOccupier.DeepSite)
           .slice(0, SITE_CAPACITY)
       : [];
     const placed: number[] = [];
     for (const tile of sites) {
-      const plate = this.shrinePlate(tile);
+      const plate = tile.occupierType === TileOccupier.DeepSite ? this.deepPlate(tile) : this.shrinePlate(tile);
       if (!plate) continue;
       this.plates.setLabel(plate);
       placed.push(safeInteger(plate.entityId));
     }
     this.plates.retainOnly(placed);
+  }
+
+  private deepPlate(tile: TileSpatialRenderable): MapPlateInput {
+    const site = this.store.require("DeepSite", { game_id: configManager.getActiveGameId(), entity_id: tile.occupierId });
+    const kind = deepSites.find((candidate) => candidate.id === site.kind);
+    if (!kind) throw new Error("Unknown Deep site kind");
+    const position = getWorldPositionForHex({ col: tile.hexCoords.col - FELT_CENTER(), row: tile.hexCoords.row - FELT_CENTER() });
+    placePositionOnTerrain(position, this.terrain, PLATE_CLEARANCE);
+    return { entityId: tile.occupierId, position, plate: {
+      kind: "structure", relation: "neutral", name: kind.name, named: false, owner: "",
+      icon: DEEP_SITE_FACES[kind.position].icon, guards: null, arrivals: [],
+    } };
   }
 
   private shrinePlate(tile: TileSpatialRenderable): MapPlateInput | undefined {
@@ -217,4 +230,4 @@ export class MapSiteManager {
 /** Sites a day's map can hold at once; the draw spaces them far below this. */
 const SITE_CAPACITY = 64;
 
-const isMapSite = (occupier: number | undefined): boolean => mapSiteOf(occupier) !== null;
+const isMapSite = (occupier: number | undefined): boolean => mapSiteOf(occupier) !== null || occupier === TileOccupier.DeepSite;

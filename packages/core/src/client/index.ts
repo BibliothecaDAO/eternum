@@ -22,3 +22,5 @@ export { entityMapPosition } from "../utils/tile";
 export { safeInteger } from "../utils/safe-integer";
 
 export { armyCombatRefusal } from "../utils/army-opponents";
+export { readDeepSites, type DeepSiteView } from "./views/deep-sites";
+export { currentArmy } from "../utils/deep";
