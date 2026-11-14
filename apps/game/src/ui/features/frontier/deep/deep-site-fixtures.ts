@@ -1,14 +1,24 @@
+import { formatDuration } from "@bibliothecadao/types";
+
 import type { DeepSiteProps, DeepSlot } from "./deep-site-view";
 
-const slot = (slot: number, realm: string, troops: number, mine = false): DeepSlot => ({
-  slot,
-  armyId: 100 + slot,
-  realm,
-  troops,
-  ticks: { left: 12 - slot, time: "6h" },
-  share: 0,
-  mine,
-});
+/** Season 1's Deep: an army tick is 120 seconds and takes 200 troops from each army there. */
+const TICK_SECONDS = 120;
+const LOSS_PER_TICK = 200;
+
+/** A guard slot whose lifetime follows from its troops: they last until the drain takes them all. */
+const slot = (slot: number, realm: string, troops: number, mine = false): DeepSlot => {
+  const left = Math.ceil(troops / LOSS_PER_TICK);
+  return {
+    slot,
+    armyId: 100 + slot,
+    realm,
+    troops,
+    ticks: { left, time: formatDuration(left * TICK_SECONDS, { days: false }) },
+    share: 0,
+    mine,
+  };
+};
 
 /** Shares are troops over the guard's, out of 100, rounded to whole percents. */
 const withShares = (slots: DeepSlot[]): DeepSlot[] => {

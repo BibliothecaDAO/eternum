@@ -59,6 +59,9 @@ describe("a Deep site's card", () => {
     expect(rows.indexOf("Aldor · fought next")).toBeGreaterThan(-1);
     expect(rows.indexOf("Aldor")).toBeLessThan(rows.indexOf("Brek"));
     expect(rows.match(/Free slot/g)).toHaveLength(2);
+    // 6,000 troops at 200 a tick last 30 ticks of 120 seconds; 2,000 last 10.
+    expect(rows).toContain("30 ticks left (1h)");
+    expect(rows).toContain("10 ticks left (20m)");
     expect(rows).toContain("75% of each tick");
     expect(rows).toContain("25% of each tick");
     expect(text()).toContain("Another Aspect holds it");
@@ -67,6 +70,7 @@ describe("a Deep site's card", () => {
   it("offers Join on a free slot of the player's own Aspect", () => {
     draw(DEEP_SITE_CASES["Quarry held by the player's Aspect, a free slot to join"]);
     expect(labels(["Join"])).toHaveLength(1);
+    expect(text()).toContain("20 ticks left (40m)");
     expect(text()).toContain("100% of each tick");
   });
 });
