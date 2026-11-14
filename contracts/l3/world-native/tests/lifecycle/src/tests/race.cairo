@@ -1,4 +1,4 @@
-use snforge_std::{EventSpyTrait, EventsFilterTrait, interact_with_state, spy_events};
+use snforge_std::{EventSpyTrait, interact_with_state, spy_events};
 use starknet::storage::{StorageMapReadAccess, StoragePointerReadAccess};
 use world_test_support::tests::Deployment;
 use world_test_support::tests::preset_projection::optional_race_rules;
@@ -73,7 +73,7 @@ fn factory_creates_four_fixed_monuments_once_and_disabled_games_have_none() {
             let mut repeated = spy_events();
             race(game_id).initialize_race(game_id);
             assert_eq!(crate::state::read().games.next_entity.read(game_id), before);
-            assert!(repeated.get_events().emitted_by(d.games).events.is_empty());
+            assert!(repeated.get_events().events.is_empty());
         },
     );
     let (ordinary, ordinary_game) = super::aspects::setup_aspects(5);
@@ -100,7 +100,7 @@ fn foundation_splits_raw_glory_and_height_by_troops_while_altar_pays_only_glory(
     let mut events = spy_events();
     pay(d, game_id, DEEP_FOUNDATION, 1, shares, 480);
     let quarter = 5 * RESOURCE_PRECISION / 4;
-    let emitted = events.get_events().emitted_by(d.games);
+    let emitted = events.get_events();
     assert_eq!(emitted.events.len(), 3);
     let (_, first_credit) = emitted.events.at(1);
     assert_eq!(first_credit.keys.span(), array![selector!("RaceEvent"), selector!("RowSet"), 1, 'RaceMember'].span());
