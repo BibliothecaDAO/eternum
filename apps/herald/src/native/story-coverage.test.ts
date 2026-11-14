@@ -140,12 +140,6 @@ const standalone = {
   },
 };
 
-function storyVariants() {
-  const type = schema.types["world_native::ownership::Story"];
-  if (type.type !== "enum") throw new Error("Missing compiled story enum");
-  return type.variants;
-}
-
 function assertDecoded(event: ReturnType<typeof raw>, key: unknown, value: Record<string, unknown>) {
   const decoded = setup().decoder.decode(event);
   if (decoded.kind !== "event") throw new Error("Expected native event");

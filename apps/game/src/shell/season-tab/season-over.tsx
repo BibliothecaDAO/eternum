@@ -49,7 +49,7 @@ const EndedRace = ({ withdraw }: { withdraw?: ReactNode }) => {
   return (
     <div
       data-race-ended
-      className="pointer-events-auto fixed inset-0 z-50 flex items-center justify-center bg-hud-night/90 p-2 lg:p-8"
+      className="pointer-events-auto fixed inset-0 z-50 flex items-center justify-center bg-kit-ground/90 p-2 lg:p-8"
     >
       <div className="flex max-h-full w-full max-w-2xl flex-col gap-2 overflow-y-auto">
         <FrontierAspectPage onClose={() => setClosed(true)} />

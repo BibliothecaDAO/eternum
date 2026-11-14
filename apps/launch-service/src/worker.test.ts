@@ -168,6 +168,7 @@ function blitzRpc(
         ready: (params.block_id === "pre_confirmed" ? game!.seated : game!.closedSeated) === game!.roster.length,
         settled: false,
         end_at: game!.start_main_at + game!.duration_seconds,
+        scheduled_end_at: game!.start_main_at + game!.duration_seconds,
       });
     case "blitz_roster":
       return response(gamesAbi, entry, game!.roster);

@@ -1,4 +1,5 @@
 import { D1CalendarStore } from "./calendar-store";
+import { nativePresetIdFor } from "../../../config/source/native";
 import { frontierPreset } from "../../../config/source/frontier/native";
 import { seasonSeconds } from "../../../packages/core/src/utils/days";
 import { frontierSeasonEnd } from "./test-dates";
@@ -35,7 +36,7 @@ test("supports both launch formats and refuses an unknown environment", async ()
   const frontier = await store.enqueue("game", { environment: "madara.frontier", gameName: "new-frontier" });
   expect((await store.find("game", "madara.blitz", blitz.name))?.id).toBe(blitz.id);
   expect((await store.list("madara.frontier")).map((run) => run.id)).toEqual([frontier.id]);
-  expect("version" in frontier.request && frontier.request.version).toBe("5");
+  expect("version" in frontier.request && frontier.request.version).toBe(String(nativePresetIdFor("frontier")));
   await expect(
     database.db.prepare("UPDATE launch_runs SET environment = 'unsupported' WHERE id = ?").bind(frontier.id).run(),
   ).rejects.toThrow("CHECK constraint failed");

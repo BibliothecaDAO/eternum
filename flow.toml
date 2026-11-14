@@ -239,3 +239,7 @@ estimate_gb = 6
 [kind.test-rpc-integration]
 cmd = "pnpm run build:packages && pnpm --dir packages/chain test && pnpm --dir packages/value-ledger typecheck && pnpm --dir packages/value-ledger test && pnpm --dir apps/value-relay typecheck && pnpm --dir apps/value-relay test && pnpm --dir apps/status-monitor typecheck && pnpm --dir apps/status-monitor test && pnpm --dir apps/realms typecheck && pnpm --dir apps/realms test server/rating-reader.test.ts server/rating-top.test.ts server/ratings-worker.test.ts && pnpm --dir apps/herald exec vitest run src/value-readers.test.ts && pnpm --dir apps/game test build/env-boundary.test.ts env.test.ts"
 estimate_gb = 6
+
+[kind.test-ci-recovery]
+cmd = "pnpm run build:packages && pnpm shell:check && python3 .github/scripts/check_validation_areas.py && python3 .github/scripts/test_validation_areas.py && pnpm --dir apps/herald typecheck && pnpm --dir apps/game-docs test && bun test deploy/first/*.test.ts deploy/athanor/harness && pnpm --dir apps/launch-service test"
+estimate_gb = 6

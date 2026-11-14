@@ -72,8 +72,8 @@ class CiFileOwnership(unittest.TestCase):
             with self.subTest(path=path):
                 self.assertEqual(areas_run_by(path), {"herald", "native", "runtime"})
 
-    def test_release_inputs_select_both_deployment_areas(self):
-        self.assertEqual(areas_run_by("deploy/release/dev.json"), {"native", "runtime"})
+    def test_release_inputs_select_every_area_reading_the_preset_tests(self):
+        self.assertEqual(areas_run_by("deploy/release/dev.json"), {"client", "herald", "services", "native", "runtime", "docs"})
 
     def test_landing_with_no_optional_inputs_runs_only_core_areas(self):
         for files in ([], ["README.md"], ["apps/value-relay/src/relay.ts"], ["apps/game/src/shell/blitz.ts"]):

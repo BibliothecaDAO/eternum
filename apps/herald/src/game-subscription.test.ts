@@ -6,7 +6,7 @@ import { setup } from "./native/fixtures";
 import { GameSubscription } from "./game-subscription";
 import type { WorldFold } from "./world-fold";
 
-const expeditionScope = (): GameSyncScope => ({
+const expeditionScope = (extraEntities: string[] = []): GameSyncScope => ({
   actor: "0x111",
   expedition: {
     day: 0,
@@ -15,7 +15,7 @@ const expeditionScope = (): GameSyncScope => ({
     realms: new Set(["7"]),
     realmTraits: new Set(["1"]),
     regions: new Set(["0:0"]),
-    entities: new Set(["7", "70"]),
+    entities: new Set(["7", "70", ...extraEntities]),
   },
 });
 
@@ -31,8 +31,7 @@ describe("GameSubscription", () => {
     { model: "DeepGuard", key: "guard", value: { game_id: "1", explorer_id: "301", site_id: "800", slot: 1 } },
     { model: "ArmyDay", key: "day", value: { game_id: "1", explorer_id: "70", day: "1" } },
   ])("sends newly visible armies when $model changes scope without an occupancy diff", (changed) => {
-    const initial = expeditionScope();
-    initial.expedition!.entities.add("800");
+    const initial = expeditionScope(["800"]);
     let scope = initial;
     const gained = army("9", "301");
     const subscriptionScope = vi.fn(() => scope);

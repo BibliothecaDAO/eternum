@@ -440,7 +440,7 @@ test("dev registers its mystery chests and their cosmetics metadata exactly as b
   const mystery = buildMysteryChestPreset();
   expect(setupOf(environments.dev, "register_preset").map(registered)).toEqual([
     buildRegisterLedgerPresetCalldata(1, buildLedgerEconomicPreset("blitz", { environment: "dev" }), mystery),
-    buildRegisterLedgerPresetCalldata(5, buildLedgerEconomicPreset("frontier"), mystery),
+    buildRegisterLedgerPresetCalldata(5, buildLedgerEconomicPreset("frontier", { presetId: 5 }), mystery),
   ]);
   const cosmetics = setupOf(environments.dev, "set_attrs_raw_to_ipfs_cid").filter(
     (call) => call.contractAddress === assets.cosmetics,
@@ -464,7 +464,7 @@ test("production's chests pay one entry of LORDS from a 90% reserve and award no
   // The ledger pays the reserve out of the pool left after its protocol cut; more would fail every result.
   expect(economics.chest_lords_bps + economics.protocol_cut_bps).toBeLessThanOrEqual(10000);
   expect(frontier).toEqual(
-    buildRegisterLedgerPresetCalldata(5, buildLedgerEconomicPreset("frontier", { chests: lords }), lords),
+    buildRegisterLedgerPresetCalldata(5, buildLedgerEconomicPreset("frontier", { chests: lords, presetId: 5 }), lords),
   );
   const metadata = setupOf(environments.production, "set_attrs_raw_to_ipfs_cid");
   expect(metadata.every((call) => call.contractAddress === assets.chests)).toBe(true);

@@ -34,7 +34,6 @@ export const LONG_DAY_UNITS = 6;
 const DAYS_PER_BAG = CONTRACT.daysPerBag;
 const UNITS_PER_BAG = CONTRACT.unitsPerBag;
 
-const EXPLORE_CHEST_ONE_IN = 10_000 / CONTRACT.frontierChestFindBps;
 // Refill's price, from logic/relics.cairo: 1 LORDS per missing point.
 const REFILL_LORDS_PER_POINT = 1;
 
@@ -108,7 +107,6 @@ export const FRONTIER = {
     shrine: pct(frontierPreset.discovery.shrineBps),
     well: pct(frontierPreset.discovery.wellBps),
     emptyRevealLimit: n(frontierPreset.discovery.emptyRevealLimit),
-    exploreChestOneIn: n(EXPLORE_CHEST_ONE_IN),
     /** A Shrine's skill point on the surface, Common to Legendary; each depth below lifts it one rank. */
     shrineRanks: [
       rule.SHRINE_COMMON_BPS,

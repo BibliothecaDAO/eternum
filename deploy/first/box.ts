@@ -87,6 +87,7 @@ export const valueSources = [
   "contracts/l2/mmr",
   "contracts/l2/collectibles",
   "contracts/l3/world-native/src/days.cairo",
+  "contracts/l3/world-native/src/day_schedule.cairo",
   "contracts/l3/world-native/src/approved_frontier_extension.cairo",
 ];
 export async function artifactsReady(store: PrivateStore, revision: string) {
