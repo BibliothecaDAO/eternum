@@ -17,8 +17,7 @@ const holding = { balance: 5_000_000_000, hasReachedMaxCapacity: false, amountPr
 const resourceManager = {
   entityId: 1,
   balanceWithProduction: () => holding,
-  current: () => undefined,
-  timeUntilValueReached: () => 0,
+  productionData: () => undefined,
   balance: () => 0,
 } as unknown as ResourceManager;
 

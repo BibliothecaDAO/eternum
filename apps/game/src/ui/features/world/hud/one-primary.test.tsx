@@ -18,9 +18,10 @@ vi.mock("@/sync/fact-views", () => ({ playerStructuresView: {} }));
 vi.mock("@/config/game-modes/use-game-mode-config", () => ({
   useGameModeConfig: () => ({ structure: { getName: () => ({ name: "Realm" }) } }),
 }));
-vi.mock("@bibliothecadao/eternum", () => ({
+vi.mock("@bibliothecadao/eternum", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@bibliothecadao/eternum")>()),
   ResourceManager: class {
-    current() {
+    productionData() {
       return undefined;
     }
   },

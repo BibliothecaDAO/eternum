@@ -16,7 +16,15 @@ import { setBlockTimestampSource } from "@bibliothecadao/eternum";
 import type { GameClientSetup } from "@bibliothecadao/eternum/game-client";
 import { ArmyDeploymentPicker } from "./army-deployment-picker";
 
-afterEach(() => setBlockTimestampSource(null));
+let mounted: { root: ReturnType<typeof createRoot>; host: HTMLDivElement } | undefined;
+afterEach(() => {
+  if (mounted) {
+    act(() => mounted!.root.unmount());
+    mounted.host.remove();
+    mounted = undefined;
+  }
+  setBlockTimestampSource(null);
+});
 
 describe("the shared deployment picker", () => {
   it("opens on the troop the structure holds, in a game that raises no crossbowmen", () => {
@@ -26,6 +34,7 @@ describe("the shared deployment picker", () => {
     const host = document.createElement("div");
     document.body.append(host);
     const root = createRoot(host);
+    mounted = { root, host };
     act(() =>
       root.render(
         <GameProvider value={{ store } as unknown as GameClientSetup} account={{ address: "0x111" } as never}>
@@ -34,8 +43,6 @@ describe("the shared deployment picker", () => {
       ),
     );
     expect(host.querySelector('[aria-pressed="true"]')?.getAttribute("aria-label")).toMatch(/^Knight T1, /);
-    act(() => root.unmount());
-    host.remove();
   });
 
   it("draws a column per troop under its name, every tier in place from T1 down", () => {
@@ -44,6 +51,7 @@ describe("the shared deployment picker", () => {
     const host = document.createElement("div");
     document.body.append(host);
     const root = createRoot(host);
+    mounted = { root, host };
     act(() =>
       root.render(
         <GameProvider value={{ store } as unknown as GameClientSetup} account={{ address: "0x111" } as never}>
@@ -80,8 +88,6 @@ describe("the shared deployment picker", () => {
         ["Paladin T3, 0 held", true],
       ],
     ]);
-    act(() => root.unmount());
-    host.remove();
   });
 
   it("chooses the amount in one row, with the cost beside Deploy and one reason under it when it cannot go", () => {
@@ -90,6 +96,7 @@ describe("the shared deployment picker", () => {
     const host = document.createElement("div");
     document.body.append(host);
     const root = createRoot(host);
+    mounted = { root, host };
     act(() =>
       root.render(
         <GameProvider value={{ store } as unknown as GameClientSetup} account={{ address: "0x111" } as never}>
@@ -132,8 +139,6 @@ describe("the shared deployment picker", () => {
     expect(field().disabled).toBe(true);
     expect(button(/^Max$/).disabled).toBe(true);
     expect(host.querySelectorAll('[role="status"]')).toHaveLength(1);
-    act(() => root.unmount());
-    host.remove();
   });
 });
 
@@ -151,6 +156,7 @@ describe("the picker's typed troop count", () => {
     const host = document.createElement("div");
     document.body.append(host);
     const root = createRoot(host);
+    mounted = { root, host };
     act(() =>
       root.render(
         <GameProvider value={{ store } as unknown as GameClientSetup} account={{ address: "0x111" } as never}>
@@ -169,7 +175,5 @@ describe("the picker's typed troop count", () => {
       typeInto(count(), text);
       expect(count().value, text).toBe(shown);
     }
-    act(() => root.unmount());
-    host.remove();
   });
 });

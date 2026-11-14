@@ -1,4 +1,4 @@
-import { configManager, setBlockTimestampSource } from "@bibliothecadao/eternum";
+import { FRONTIER_FIXTURE_PRESET_ID, configManager, setBlockTimestampSource } from "@bibliothecadao/eternum";
 import { NativeFactStore } from "@bibliothecadao/eternum/game-client";
 import { RESOURCE_PRECISION, StructureType } from "@bibliothecadao/types";
 import preset from "../../../../../../../contracts/l3/world-native/tests/fixtures/current-presets/conformance.json";
@@ -61,7 +61,7 @@ export const frontierDay = () => {
     set("0x9", "UpgradeLimits", { game_id: 1, realm_max: 3, village_max: 3 }),
     set("0x3", "GameRegistry", {
       game_id: 1,
-      preset_id: 2,
+      preset_id: FRONTIER_FIXTURE_PRESET_ID,
       name: "1",
       start_settling_at: "1",
       start_main_at: "100",
