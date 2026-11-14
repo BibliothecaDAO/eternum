@@ -21,7 +21,14 @@ it("answers a deploy with a new army of the troops sent beside the realm, its tr
   const wheat = held(game, ResourcesIds.Wheat);
   const chain = chainOf(game);
   const facts = game.answer(
-    command("CreateExplorer", { structure_id: "7", slot: "1", category: "0", tier: "0", amount: whole(420), direction: "0" }),
+    command("CreateExplorer", {
+      structure_id: "7",
+      slot: "1",
+      category: "0",
+      tier: "0",
+      amount: whole(420),
+      direction: "0",
+    }),
     chain,
     game.startsAt + 30,
   );
@@ -33,9 +40,20 @@ it("answers a deploy with a new army of the troops sent beside the realm, its tr
   };
   expect([army.owner, army.troops.count]).toEqual(["7", whole(420)]);
   expect(army.troops).toMatchObject({ stamina: { Slot: 1 } });
-  expect(facts.find(({ model }) => model === "ArmyDay")!.value).toMatchObject({ explorer_id: army.explorer_id, day: 0 });
-  expect(facts.find(({ model }) => model === "ArmySlot")!.value).toMatchObject({ explorer_id: army.explorer_id, epoch: 0, slot: 1 });
-  expect(facts.find(({ model }) => model === "ArmyProgress")!.value).toMatchObject({ explorer_id: army.explorer_id, xp: 0, common_points: 0 });
+  expect(facts.find(({ model }) => model === "ArmyDay")!.value).toMatchObject({
+    explorer_id: army.explorer_id,
+    day: 0,
+  });
+  expect(facts.find(({ model }) => model === "ArmySlot")!.value).toMatchObject({
+    explorer_id: army.explorer_id,
+    epoch: 0,
+    slot: 1,
+  });
+  expect(facts.find(({ model }) => model === "ArmyProgress")!.value).toMatchObject({
+    explorer_id: army.explorer_id,
+    xp: 0,
+    common_points: 0,
+  });
   const tile = facts.find(({ model }) => model === "TileOccupancy")!.value as { entity_id: string };
   expect(tile.entity_id).toBe(army.explorer_id);
   expect(balance(facts, ResourcesIds.Knight)?.balance).toBe("0");
@@ -51,7 +69,9 @@ it("answers a deploy with a new army of the troops sent beside the realm, its tr
   chain.applyFacts(moved as never);
   const cost = chain.require("SliceRules", { game_id: 1 }).troop_stamina_config.stamina_travel_stamina_cost;
   expect(chain.require("ArmySlot", slotKey).stamina.amount).toBe(before - BigInt(cost));
-  expect(chain.require("ExplorerTroops", { game_id: 1, explorer_id: BigInt(army.explorer_id) }).troops.stamina).toEqual({ Slot: 1 });
+  expect(chain.require("ExplorerTroops", { game_id: 1, explorer_id: BigInt(army.explorer_id) }).troops.stamina).toEqual(
+    { Slot: 1 },
+  );
 });
 
 it("answers a research with the row's next tier learned and its price paid", () => {

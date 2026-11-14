@@ -154,8 +154,12 @@ const deployArmy: Answer = (command, chain, now) => {
   const progress = deploymentProgress(chain, structureId, explorerId);
   const rules = chain.require("SliceRules", { game_id: 1 });
   const maximum = musterStamina(
-    { ...slot, inherited: null }, { category, tier }, now, rules.troop_stamina_config,
-    progress.logistics, rules.tick_config.armies_tick_in_seconds,
+    { ...slot, inherited: null },
+    { category, tier },
+    now,
+    rules.troop_stamina_config,
+    progress.logistics,
+    rules.tick_config.armies_tick_in_seconds,
   ).max;
   const stamina = slot.inherited
     ? { ...slot.inherited, amount: BigInt(Math.min(Number(slot.inherited.amount), maximum)) }
@@ -165,8 +169,17 @@ const deployArmy: Answer = (command, chain, now) => {
     { model: "ArmyProgress", key: `0xaf${explorerId}`, value: wire(progress) },
     {
       model: "ArmySlot",
-      key: chain.wireKeyOf("ArmySlot", { game_id: 1, structure_id: structureId, epoch: BigInt(day), slot: slot.slot }) ?? `0xae${explorerId}`,
-      value: wire({ game_id: 1, structure_id: structureId, epoch: day, slot: slot.slot, explorer_id: explorerId, stamina }),
+      key:
+        chain.wireKeyOf("ArmySlot", { game_id: 1, structure_id: structureId, epoch: BigInt(day), slot: slot.slot }) ??
+        `0xae${explorerId}`,
+      value: wire({
+        game_id: 1,
+        structure_id: structureId,
+        epoch: day,
+        slot: slot.slot,
+        explorer_id: explorerId,
+        stamina,
+      }),
     },
     {
       model: "ArmyDay",
