@@ -2,14 +2,14 @@ use snforge_std::{EventSpyTrait, EventsFilterTrait, interact_with_state, spy_eve
 use starknet::storage::{StorageMapReadAccess, StoragePointerReadAccess};
 use world_test_support::tests::Deployment;
 use world_test_support::tests::preset_projection::optional_race_rules;
-use world_test_support::tests::resource_commands::execute_in_game;
 use world_test_support::tests::registrar::{
     CreateGameParams, IRegistrarDispatcherTrait, IRegistrarSafeDispatcherTrait, params, registry, safe,
 };
+use world_test_support::tests::resource_commands::execute_in_game;
 use crate::commands::Command;
 use crate::deep::{
-    DeepShare, IDeepRewardsDispatcherTrait, IDeepRewardsLibraryDispatcher,
-    IDeepRewardsSafeDispatcherTrait, IDeepRewardsSafeLibraryDispatcher,
+    DeepShare, IDeepRewardsDispatcherTrait, IDeepRewardsLibraryDispatcher, IDeepRewardsSafeDispatcherTrait,
+    IDeepRewardsSafeLibraryDispatcher,
 };
 use crate::race::{AspectKey, IRaceDispatcherTrait, IRaceLibraryDispatcher, RaceMember, TriumphKey};
 use crate::resources::ResourceKey;

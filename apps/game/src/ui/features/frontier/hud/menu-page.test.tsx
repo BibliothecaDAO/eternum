@@ -30,8 +30,8 @@ it("opens named menu actions independently of their badges, with their own seman
       ["Season", "victory", onSeason],
       ["Settings", "settings", onSettings],
     ] as const) {
-      const button = [...host.querySelectorAll<HTMLButtonElement>("nav button")].find((b) =>
-        b.getAttribute("aria-label") === label,
+      const button = [...host.querySelectorAll<HTMLButtonElement>("nav button")].find(
+        (b) => b.getAttribute("aria-label") === label,
       )!;
       expect(button).toBeTruthy();
       expect(button.closest(".ui-row")?.querySelector("img")?.getAttribute("src")).toBe(
