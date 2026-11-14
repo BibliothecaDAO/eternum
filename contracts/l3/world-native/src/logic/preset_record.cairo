@@ -117,6 +117,7 @@ fn write_economy(
 ) {
     preset.labor_rules.write(economy.labor);
     write_quests(preset, economy.quests);
+    write_banes(preset, economy.banes);
     preset.deep_rules.write(economy.deep);
     write_hyperstructures(preset, rules, economy.hyperstructures);
     let classes = crate::state::read().releases.read(crate::state::read().current_release.read()).classes;
@@ -137,6 +138,14 @@ fn write_economy(
             commitment,
             withdrawals,
         );
+    }
+}
+
+fn write_banes(preset: PresetWrite, rules: Option<crate::banes::BaneRules>) {
+    let Some(rules) = rules else { return; };
+    preset.bane_rules.write(Some((rules.chance_step, rules.quorum_percent, rules.beast_percent, rules.stamina_percent, rules.production_percent)));
+    for index in 0..rules.quest_counts.len() {
+        preset.bane_quest_counts.write(index.try_into().unwrap(), *rules.quest_counts.at(index));
     }
 }
 

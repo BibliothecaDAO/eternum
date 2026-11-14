@@ -53,3 +53,15 @@ pub fn quest_kind(kind: u8) -> u8 {
         panic!("invalid world bane")
     }
 }
+
+pub fn validate(rules: BaneRules) {
+    assert!(rules.chance_step > 0 && rules.chance_step <= 100, "invalid bane chance step");
+    assert!(rules.quorum_percent > 0 && rules.quorum_percent <= 100, "invalid bane quorum");
+    assert!(rules.beast_percent >= 100, "world bane weakens beasts");
+    assert!(rules.stamina_percent > 0 && rules.stamina_percent <= 100, "invalid bane stamina rate");
+    assert!(rules.production_percent > 0 && rules.production_percent <= 100, "invalid bane production rate");
+    assert!(rules.quest_counts.len() == 12, "bane quests need four Realm levels each");
+    for count in rules.quest_counts {
+        assert!(*count > 0, "empty bane quest target");
+    }
+}

@@ -450,3 +450,25 @@ it("projects daily quest rules from verified registration, without a legacy clai
     expect(world.fold.gameRows("LaborRules", "1")).toHaveLength(enabled ? 0 : 1);
   }
 });
+
+it("projects optional bane rules from the verified preset with whole Cull counts", () => {
+  const rules = { chance_step: 20, quorum_percent: 25, beast_percent: 150, stamina_percent: 50, production_percent: 50,
+    quest_counts: [3n, 6n, 9n, 12n, 20n, 40n, 60n, 80n, 2500n, 6000n, 10000n, 15000n] };
+  for (const enabled of [false, true]) {
+    const world = setup();
+    const preset = registration(7, (definition) => {
+      if (enabled) {
+        definition.economy.banes = new CairoOption(CairoOptionVariant.Some, rules);
+        definition.economy.quests = new CairoOption(CairoOptionVariant.Some, {
+          base_counts: [1, 1, 1, 1, 1, 2, 15], labor: 1000n, essence: 1500n, bonus_percent: 150,
+        });
+        definition.economy.labor = new CairoOption(CairoOptionVariant.None);
+      }
+    });
+    applyRegistration(world, preset);
+    world.native.applyReceipt(world.fold, receipt(launch(preset)), 11, 0);
+    const store = new NativeFactStore();
+    store.applyFacts(world.fold.gameRows("BaneRules", "1").map(({ key, value }) => ({ model: "BaneRules", key, value })));
+    expect(store.get("BaneRules", { game_id: 1 })).toEqual(enabled ? { game_id: 1, ...rules } : undefined);
+  }
+});

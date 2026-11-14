@@ -34,6 +34,7 @@ export const frontierPreset = {
   deep: null,
   bitcoinEnabled: false,
   dailyQuest: null,
+  banes: null,
   startingTroops: Array.from({ length: 17 }, () => "Knight" as const),
   realmResources: [],
   relics: [],

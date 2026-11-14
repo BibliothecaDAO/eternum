@@ -131,6 +131,10 @@ function deriveEconomy(emit: EmitRule, economy: PresetRecord) {
     const deep = some(economy.deep);
     if (deep) emit("DeepRules", deep);
   }
+  if ("banes" in economy) {
+    const banes = some(economy.banes);
+    if (banes) emit("BaneRules", banes);
+  }
   if ("quests" in economy) {
     const quests = some(economy.quests);
     if (quests) emit("QuestRules", quests);

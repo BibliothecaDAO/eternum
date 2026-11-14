@@ -82,5 +82,7 @@ pub struct PresetStorage<
     pub labor_rules: Option<TLaborRules>,
     pub quest_rewards: Option<(u128, u128, u16)>,
     pub quest_counts: Map<u8, u32>,
+    pub bane_rules: Option<(u16, u16, u16, u16, u16)>,
+    pub bane_quest_counts: Map<u8, u128>,
     pub deep_rules: Option<TDeepRules>,
 }

@@ -344,6 +344,7 @@ function buildEconomy(
     deep: buildDeep(preset),
     discovery: buildDiscovery(preset),
     quests: buildQuests(preset),
+    banes: buildBanes(preset),
     progression:
       progression === null
         ? new CairoOption(CairoOptionVariant.None)
@@ -558,6 +559,24 @@ function validateDeep(deep: NonNullable<ReturnType<typeof nativePresetForId>["de
     deep.altarThreshold % deep.altarPerTick !== 0
   )
     throw new Error("Invalid Deep tick amounts");
+}
+
+function buildBanes(preset: ReturnType<typeof nativePresetForId>) {
+  const rules = preset.banes;
+  if (rules === null) return new CairoOption(CairoOptionVariant.None);
+  if (!rules || preset.dailyQuest === null) throw new Error("Banes require daily quests");
+  const percentages = [rules.chanceStep, rules.quorumPercent, rules.beastPercent, rules.staminaPercent, rules.productionPercent];
+  if (percentages.some((value) => !Number.isSafeInteger(value) || value <= 0 || value > 0xffff)
+    || rules.chanceStep > 100 || rules.quorumPercent > 100 || rules.beastPercent < 100
+    || rules.staminaPercent > 100 || rules.productionPercent > 100)
+    throw new Error("Invalid bane percentages");
+  if (rules.questCounts.length !== 12 || rules.questCounts.some((value) => !Number.isSafeInteger(value) || value <= 0))
+    throw new Error("Invalid bane quest counts");
+  return new CairoOption(CairoOptionVariant.Some, {
+    chance_step: rules.chanceStep, quorum_percent: rules.quorumPercent, beast_percent: rules.beastPercent,
+    stamina_percent: rules.staminaPercent, production_percent: rules.productionPercent,
+    quest_counts: rules.questCounts.map(BigInt),
+  });
 }
 
 function buildQuests(preset: ReturnType<typeof nativePresetForId>) {

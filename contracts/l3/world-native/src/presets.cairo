@@ -32,6 +32,7 @@ pub struct WithdrawalPreset {
 }
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]
 pub struct EconomyPreset {
+    pub banes: Option<crate::banes::BaneRules>,
     pub quests: Option<crate::quests::QuestRules>,
     pub deep: Option<crate::deep::DeepRules>,
     pub labor: Option<crate::entry::LaborRules>,
@@ -56,6 +57,10 @@ pub struct PresetDefinition {
 
 pub fn validate(preset: PresetDefinition) {
     let rules = preset.rules;
+    if let Some(banes) = preset.economy.banes {
+        assert!(preset.economy.quests.is_some(), "banes require daily quests");
+        crate::banes::validate(banes);
+    }
     if let Some(quests) = preset.economy.quests {
         crate::quests::validate(quests);
         assert!(

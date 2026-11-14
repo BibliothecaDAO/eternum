@@ -768,6 +768,7 @@ const presetDerivedModels = new Set([
   "SettlementRules",
   "AspectRules",
   "QuestRules",
+  "BaneRules",
   "ResourceRule",
   "ProductionRecipe",
   "MineKindConfig",
@@ -984,6 +985,7 @@ export function defineFactModels({ struct, model: declare }) {
       ],
       struct("deposits::DepositReceipt"),
     ),
+    model("BaneRules", "game", [{ name: "game_id", type: "core::integer::u32" }], struct("banes::BaneRules")),
     model("QuestRules", "game", [{ name: "game_id", type: "core::integer::u32" }], struct("quests::QuestRules")),
     model(
       "QuestProgress",
@@ -1511,6 +1513,7 @@ export const syncScopes = {
   PlayerEntry: byOwner,
   AspectRules: "shared",
   QuestRules: "shared",
+  BaneRules: "shared",
   QuestProgress: { entities: ["home"] },
   HomeAspect: "shared",
   AspectMembers: "shared",

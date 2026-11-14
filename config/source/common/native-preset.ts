@@ -72,6 +72,14 @@ export interface NativePreset {
     altarPerTick: number;
     altarThreshold: number;
   };
+  banes: null | {
+    chanceStep: number;
+    quorumPercent: number;
+    beastPercent: number;
+    staminaPercent: number;
+    productionPercent: number;
+    questCounts: readonly number[];
+  };
   dailyQuest: null | {
     baseCounts: readonly number[];
     labor: number;
