@@ -3297,13 +3297,19 @@ const DEEP_JOIN_STEPS = [
       extraScreenshot("quarry-before-join");
       if (!opened.text.includes("Join")) return { before, after: opened };
       browser.click("Join");
+      const confirmed = await readUntil(
+        () => browser.read(DEEP_JOIN_STATE),
+        (state) => state.joined.length === 1 && state.quarry !== null,
+        MERGE_WAIT_MS,
+      );
+      if (confirmed.quarry) browser.tap(confirmed.quarry);
       const after = await readUntil(
         () => browser.read(DEEP_JOIN_STATE),
-        (state) => state.joined.length === 1 && state.text.includes("Already guarding"),
+        (state) => state.sheet === "Quarry" && (state.slots.match(/Free slot/g) ?? []).length === 2,
         MERGE_WAIT_MS,
       );
       extraScreenshot("quarry-joined");
-      return { before, opened, after };
+      return { before, opened, confirmed, after };
     },
     verify: ({ played }) => {
       const joined = played.after.joined;
@@ -3313,7 +3319,7 @@ const DEEP_JOIN_STEPS = [
       return joined.length === 1 &&
         guard?.value.slot === 1 &&
         leftField &&
-        played.after.text.includes("Already guarding") &&
+        played.after.sheet === "Quarry" &&
         (played.after.slots.match(/Free slot/g) ?? []).length === 2
         ? completed(played)
         : failed("Join must submit InteractSite once, leave the field and show the second allied guard slot", played);
