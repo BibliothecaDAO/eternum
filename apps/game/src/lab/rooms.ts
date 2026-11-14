@@ -350,6 +350,12 @@ export const ROOMS: LabRoom[] = [
             "season-one/opening",
             load(() => import("./season-one/opening-lab"), "OpeningLab"),
           ),
+          view(
+            "Race",
+            "/lab/season-one/race",
+            "season-one/race",
+            load(() => import("./season-one/aspect-page-lab"), "AspectPageLab"),
+          ),
         ],
       },
       {

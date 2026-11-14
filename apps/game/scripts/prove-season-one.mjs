@@ -9,6 +9,7 @@ const VIEWS = [
   { name: "deep-site", path: "/lab/season-one/deep-site", cases: [0, 1, 2, 3, 4], shown: "section[role=dialog]" },
   { name: "day-banner", path: "/lab/season-one/day-banner", cases: [0, 1, 2, 3, 4, 5, 6], shown: "[data-day-banner]" },
   { name: "opening", path: "/lab/season-one/opening", cases: [0, 1, 3, 7, 8], shown: "[data-opening-line]" },
+  { name: "race", path: "/lab/season-one/race", cases: [0, 1, 2, 3], shown: "[data-aspect-page]" },
 ];
 const SIZES = [
   ["desktop", "1920", "1080"],

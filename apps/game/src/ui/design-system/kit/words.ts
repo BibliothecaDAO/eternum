@@ -569,6 +569,27 @@ export const OPENING_WORDS = {
   interface: "Interface",
   showEverything: "Show everything",
 } as const;
+/** The Aspect page (docs/plans/frontier-season-1.md, Aspects and the hyperstructure): the race, and the player's Aspect. */
+export const ASPECT_PAGE_WORDS = {
+  title: "Aspects",
+  race: "The hyperstructures",
+  height: (height: number, finish: number) => `${formatExact(height)} of ${formatExact(finish)}`,
+  stage: (stage: number, stages: number) => `Stage ${stage} of ${stages}`,
+  finished: "Finished",
+  won: (aspect: string) => `${aspect} finished first and won the age`,
+  yours: (aspect: string) => `Your Aspect: ${aspect}`,
+  triumphs: "Triumphs",
+  triumph: { 1: "Clear Mist", 2: "Second Wind", 3: "Pale Moon", 4: "Spoils" },
+  triumphOn: (day: number) => `day ${formatExact(day + 1)}`,
+  triumphAt: (stage: number) => `at stage ${stage}`,
+  baneBar: "Bane bar",
+  baneCharge: (charge: number, threshold: number) => `${formatExact(charge)} of ${formatExact(threshold)}`,
+  members: "Members",
+  glory: "Glory",
+  guards: (site: string) => `Guards the ${site}`,
+  noAspect: "Join an Aspect to see its members",
+  reading: "Reading the race…",
+} as const;
 export const RESEARCHING = "Researching…";
 export const BUILDING = "Building…";
 export const UPGRADING = "Upgrading…";
