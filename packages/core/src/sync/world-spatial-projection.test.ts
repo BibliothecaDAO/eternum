@@ -1041,6 +1041,7 @@ describe("shared Deep spatial projection", () => {
       const changes: ArmySpatialProjectionChange[][] = [];
       harness.projection.subscribeArmies((batch) => changes.push([...batch]));
       harness.joinDeep("field", 11, 20);
+      harness.projection.flush();
       expect(harness.projection.getArmy(11)).toBeUndefined();
       expect(changes).toHaveLength(1);
       expect(changes[0]).toHaveLength(1);
