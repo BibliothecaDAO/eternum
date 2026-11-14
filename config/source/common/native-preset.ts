@@ -71,7 +71,12 @@ export interface NativePreset {
     secondWindPercent: number;
     paleMoonPercent: number;
     spoilsPercent: number;
-    positions: readonly [readonly [number, number], readonly [number, number], readonly [number, number], readonly [number, number]];
+    positions: readonly [
+      readonly [number, number],
+      readonly [number, number],
+      readonly [number, number],
+      readonly [number, number],
+    ];
   };
   deep: null | {
     foundation: { x: number; y: number };

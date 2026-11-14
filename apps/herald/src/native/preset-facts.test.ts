@@ -485,28 +485,43 @@ it("projects optional bane rules from the verified preset with whole Cull counts
 });
 
 it("projects optional race rules from verified registration into the native fact store", () => {
-  const rules={
-    season_days:50n,glory_per_tick:5n,height_per_tick:5,stage_height:2_000,
-    clear_mist_percent:200,second_wind_percent:200,pale_moon_percent:50,spoils_percent:200,
-    first:{alt:false,x:5,y:5},second:{alt:false,x:45,y:5},
-    third:{alt:false,x:5,y:45},fourth:{alt:false,x:45,y:45},
+  const rules = {
+    season_days: 50n,
+    glory_per_tick: 5n,
+    height_per_tick: 5,
+    stage_height: 2_000,
+    clear_mist_percent: 200,
+    second_wind_percent: 200,
+    pale_moon_percent: 50,
+    spoils_percent: 200,
+    first: { alt: false, x: 5, y: 5 },
+    second: { alt: false, x: 45, y: 5 },
+    third: { alt: false, x: 5, y: 45 },
+    fourth: { alt: false, x: 45, y: 45 },
   };
-  for (const enabled of [false,true]) {
-    const world=setup();
-    const preset=registration(7,(definition)=>{
-      if(enabled) {
-        definition.economy.race=new CairoOption(CairoOptionVariant.Some,rules);
-        definition.economy.deep=new CairoOption(CairoOptionVariant.Some,{
-          foundation:{alt:false,x:25,y:35},quarry:{alt:false,x:12,y:20},altar:{alt:false,x:38,y:20},
-          beast_count:10000_000000000n,loss_per_tick:200_000000000n,quarry_per_tick:500_000000000n,
-          altar_per_tick:5,altar_threshold:1500,
+  for (const enabled of [false, true]) {
+    const world = setup();
+    const preset = registration(7, (definition) => {
+      if (enabled) {
+        definition.economy.race = new CairoOption(CairoOptionVariant.Some, rules);
+        definition.economy.deep = new CairoOption(CairoOptionVariant.Some, {
+          foundation: { alt: false, x: 25, y: 35 },
+          quarry: { alt: false, x: 12, y: 20 },
+          altar: { alt: false, x: 38, y: 20 },
+          beast_count: 10000_000000000n,
+          loss_per_tick: 200_000000000n,
+          quarry_per_tick: 500_000000000n,
+          altar_per_tick: 5,
+          altar_threshold: 1500,
         });
       }
     });
-    applyRegistration(world,preset);
-    world.native.applyReceipt(world.fold,receipt(launch(preset)),11,0);
-    const store=new NativeFactStore();
-    store.applyFacts(world.fold.gameRows("RaceRules","1").map(({key,value})=>({model:"RaceRules",key,value})));
-    expect(store.get("RaceRules",{game_id:1})).toEqual(enabled?{game_id:1,...rules}:undefined);
+    applyRegistration(world, preset);
+    world.native.applyReceipt(world.fold, receipt(launch(preset)), 11, 0);
+    const store = new NativeFactStore();
+    store.applyFacts(
+      world.fold.gameRows("RaceRules", "1").map(({ key, value }) => ({ model: "RaceRules", key, value })),
+    );
+    expect(store.get("RaceRules", { game_id: 1 })).toEqual(enabled ? { game_id: 1, ...rules } : undefined);
   }
 });

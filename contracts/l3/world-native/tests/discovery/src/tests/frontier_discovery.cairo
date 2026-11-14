@@ -166,6 +166,7 @@ fn discovery_reserves_the_combined_sanctuary_increase() {
             ruin_bps: 0,
             empty_reveal_limit: 7,
         },
+        100,
     );
 }
 

@@ -62,14 +62,14 @@ fn hyperstructure_weight(config: MapConfig, distance: u128, hyperstructures: u32
 }
 
 // All Scouting tiers on one kind double its base rate: reserve the largest increase among the three choices.
-pub fn validate_frontier(rules: crate::expeditions::FrontierDiscoveryRules) {
+pub fn validate_frontier(rules: crate::expeditions::FrontierDiscoveryRules, find_percent: u16) {
     // The floor must find a guarded site even when a draw has no ruin reward.
     let guarded: u32 = Into::<u16, u32>::into(rules.beasts_bps) + rules.camp_bps.into() + rules.rift_bps.into();
     assert!(guarded != 0 && rules.empty_reveal_limit != 0, "empty discovery floor");
     let sanctuaries: u32 = Into::<u16, u32>::into(rules.shrine_bps) + rules.well_bps.into();
     let reserve: u32 = core::cmp::max(sanctuaries, core::cmp::max(rules.camp_bps, rules.rift_bps).into());
     assert!(
-        guarded + rules.ruin_bps.into() + reserve + rules.shrine_bps.into() + rules.well_bps.into() <= 10000,
+        Into::<u32, u128>::into(guarded + rules.ruin_bps.into() + reserve + rules.shrine_bps.into() + rules.well_bps.into()) * find_percent.into() <= 1000000,
         "discovery odds exceed 100 percent",
     );
 }

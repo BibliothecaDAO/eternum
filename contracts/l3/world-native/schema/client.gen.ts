@@ -1,5 +1,5 @@
 // Generated from native fact models and contract ABIs. Run the native schema generator to update.
-export const nativeFactSchemaIdentity = "008753876f586d513afe61a60c55bb7d23694eabc1e809b7da99de098cff9b68";
+export const nativeFactSchemaIdentity = "3c79dec97ce46e79ba6c10efc1d43a1d97941af4cd08df511874ad2fcc9fed65";
 export const nativeReleaseConstants = {
   "RUIN_DEPTH_LIMIT_RELEASE": 9
 } as const;
@@ -91,6 +91,9 @@ export const nativeBaneConstants = {
   "BLOOD_MOON_QUEST": 7,
   "MIST_TIDE_QUEST": 8,
   "ASH_FALL_QUEST": 9
+} as const;
+export const nativeRaceConstants = {
+  "STAGE_COUNT": 5
 } as const;
 export const nativeArrivalConstants = {
   "SLOTS_PER_DAY": 48
@@ -230,6 +233,7 @@ export interface NativeRows {
   SpendLords: { readonly game_id: number; readonly account: bigint; readonly available: bigint; readonly consumed: bigint; readonly swept: bigint };
   PrincipalWithdrawal: { readonly game_id: number; readonly account: bigint; readonly amount: bigint };
   DepositReceipt: { readonly game_id: number; readonly id: bigint; readonly commitment: bigint; readonly account: bigint; readonly amount: bigint; readonly cancelled: boolean };
+  RaceRules: { readonly game_id: number; readonly season_days: bigint; readonly glory_per_tick: bigint; readonly height_per_tick: number; readonly stage_height: number; readonly clear_mist_percent: number; readonly second_wind_percent: number; readonly pale_moon_percent: number; readonly spoils_percent: number; readonly first: { readonly alt: boolean; readonly x: number; readonly y: number }; readonly second: { readonly alt: boolean; readonly x: number; readonly y: number }; readonly third: { readonly alt: boolean; readonly x: number; readonly y: number }; readonly fourth: { readonly alt: boolean; readonly x: number; readonly y: number } };
   BaneRules: { readonly game_id: number; readonly chance_step: number; readonly quorum_percent: number; readonly beast_percent: number; readonly stamina_percent: number; readonly production_percent: number; readonly quest_counts: readonly (bigint)[] };
   QuestRules: { readonly game_id: number; readonly base_counts: readonly (number)[]; readonly labor: bigint; readonly essence: bigint; readonly bonus_percent: number };
   QuestProgress: { readonly game_id: number; readonly home: bigint; readonly day: bigint; readonly progress: bigint; readonly completed_level: number };
@@ -340,6 +344,7 @@ export interface NativeKeys {
   SpendLords: { readonly game_id: number; readonly account: bigint };
   PrincipalWithdrawal: { readonly game_id: number; readonly account: bigint };
   DepositReceipt: { readonly game_id: number; readonly id: bigint };
+  RaceRules: { readonly game_id: number };
   BaneRules: { readonly game_id: number };
   QuestRules: { readonly game_id: number };
   QuestProgress: { readonly game_id: number; readonly home: bigint; readonly day: bigint };
@@ -691,6 +696,43 @@ export const nativeFactModels = {
       "account": "felt",
       "amount": "u128",
       "cancelled": "boolean"
+    }
+  },
+  "RaceRules": {
+    "keys": [
+      "game_id"
+    ],
+    "scope": "game",
+    "fields": {
+      "game_id": "u32",
+      "season_days": "u64",
+      "glory_per_tick": "u128",
+      "height_per_tick": "u32",
+      "stage_height": "u32",
+      "clear_mist_percent": "u16",
+      "second_wind_percent": "u16",
+      "pale_moon_percent": "u16",
+      "spoils_percent": "u16",
+      "first": {
+        "alt": "boolean",
+        "x": "u32",
+        "y": "u32"
+      },
+      "second": {
+        "alt": "boolean",
+        "x": "u32",
+        "y": "u32"
+      },
+      "third": {
+        "alt": "boolean",
+        "x": "u32",
+        "y": "u32"
+      },
+      "fourth": {
+        "alt": "boolean",
+        "x": "u32",
+        "y": "u32"
+      }
     }
   },
   "BaneRules": {
@@ -2623,6 +2665,7 @@ export const nativeSyncScopes = {
   "AspectRules": "shared",
   "QuestRules": "shared",
   "BaneRules": "shared",
+  "RaceRules": "shared",
   "WorldBane": "shared",
   "FirstTeamBane": "shared",
   "BaneProgress": "shared",

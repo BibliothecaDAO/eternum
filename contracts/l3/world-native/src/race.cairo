@@ -87,8 +87,14 @@ pub fn validate(rules: RaceRules, deep: crate::deep::DeepRules) {
             !coord.alt && coord.x < crate::rules::DEEP_MAP_SIZE && coord.y < crate::rules::DEEP_MAP_SIZE,
             "hyperstructure outside Deep",
         );
-        assert!(coord.x != crate::rules::DEEP_MAP_SIZE / 2 || coord.y != crate::rules::DEEP_ARRIVAL_Y, "hyperstructure blocks Deep arrival");
-        assert!(coord != deep.foundation && coord != deep.quarry && coord != deep.altar, "hyperstructure overlaps a Deep site");
+        assert!(
+            coord.x != crate::rules::DEEP_MAP_SIZE / 2 || coord.y != crate::rules::DEEP_ARRIVAL_Y,
+            "hyperstructure blocks Deep arrival",
+        );
+        assert!(
+            coord != deep.foundation && coord != deep.quarry && coord != deep.altar,
+            "hyperstructure overlaps a Deep site",
+        );
         for other in 1_u8..aspect {
             assert!(coord != local_coord(rules, other), "duplicate hyperstructure position");
         }

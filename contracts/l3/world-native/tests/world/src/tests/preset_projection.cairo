@@ -314,8 +314,14 @@ fn malformed_banes_and_banes_without_quests_refuse_registration() {
 
 fn optional_race_rules() -> crate::race::RaceRules {
     crate::race::RaceRules {
-        season_days: 50, glory_per_tick: 5, height_per_tick: 5, stage_height: 2000,
-        clear_mist_percent: 200, second_wind_percent: 200, pale_moon_percent: 50, spoils_percent: 200,
+        season_days: 50,
+        glory_per_tick: 5,
+        height_per_tick: 5,
+        stage_height: 2000,
+        clear_mist_percent: 200,
+        second_wind_percent: 200,
+        pale_moon_percent: 50,
+        spoils_percent: 200,
         first: crate::troops::Coord { alt: false, x: 5, y: 5 },
         second: crate::troops::Coord { alt: false, x: 45, y: 5 },
         third: crate::troops::Coord { alt: false, x: 5, y: 45 },
@@ -325,51 +331,78 @@ fn optional_race_rules() -> crate::race::RaceRules {
 
 #[test]
 fn an_optional_race_preset_stores_exact_payments_stages_triumphs_and_positions() {
-    let d=super::registrar::setup();
-    start_cheat_caller_address(d.games,super::authority());
-    let (preset_id,mut definition)=current_definition("frontier");
+    let d = super::registrar::setup();
+    start_cheat_caller_address(d.games, super::authority());
+    let (preset_id, mut definition) = current_definition("frontier");
     assert!(definition.economy.race.is_none());
-    let race=optional_race_rules();
-    definition.economy.race=Some(race);
-    definition.economy.deep=Some(optional_deep_rules());
-    definition.season_win_points=0;
-    let registrar=IRegistrarDispatcher {contract_address:d.games};
-    registrar.register_preset(preset_id,definition);
-    let commitment=registrar.preset_commitment(preset_id);
-    assert!(commitment!=0);
-    interact_with_state(d.games,||{
-        assert_eq!(crate::state::read().presets.entry(commitment).race_rules.read(),Some(race));
-    });
+    let race = optional_race_rules();
+    definition.economy.race = Some(race);
+    definition.economy.deep = Some(optional_deep_rules());
+    definition.season_win_points = 0;
+    let registrar = IRegistrarDispatcher { contract_address: d.games };
+    registrar.register_preset(preset_id, definition);
+    let commitment = registrar.preset_commitment(preset_id);
+    assert!(commitment != 0);
+    interact_with_state(
+        d.games, || {
+            assert_eq!(crate::state::read().presets.entry(commitment).race_rules.read(), Some(race));
+        },
+    );
 }
 
 #[test]
 #[feature("safe_dispatcher")]
 fn malformed_race_rules_leave_no_preset_registered() {
-    let d=super::registrar::setup();
-    start_cheat_caller_address(d.games,super::authority());
-    for invalid in 0_u8..16 {
-        let (preset_id,mut definition)=current_definition("frontier");
-        let mut race=optional_race_rules();
-        definition.economy.deep=Some(optional_deep_rules());
-        definition.season_win_points=0;
-        if invalid==0 {definition.economy.deep=None;}
-        else if invalid==1 {definition.season_win_points=1;}
-        else if invalid==2 {race.season_days=0;}
-        else if invalid==3 {race.season_days=49;}
-        else if invalid==4 {race.glory_per_tick=0;}
-        else if invalid==5 {race.height_per_tick=0;}
-        else if invalid==6 {race.stage_height=2001;}
-        else if invalid==7 {race.clear_mist_percent=99;}
-        else if invalid==8 {race.second_wind_percent=201;}
-        else if invalid==9 {race.pale_moon_percent=0;}
-        else if invalid==10 {race.spoils_percent=99;}
-        else if invalid==11 {race.first.alt=true;}
-        else if invalid==12 {race.first.x=crate::rules::DEEP_MAP_SIZE;}
-        else if invalid==13 {race.fourth=race.first;}
-        else if invalid==14 {race.first=optional_deep_rules().foundation;}
-        else {race.first=crate::troops::Coord {alt:false,x:crate::rules::DEEP_MAP_SIZE/2,y:crate::rules::DEEP_ARRIVAL_Y};}
-        definition.economy.race=Some(race);
-        assert!(IRegistrarSafeDispatcher{contract_address:d.games}.register_preset(preset_id,definition).is_err());
-        assert_eq!(IRegistrarDispatcher{contract_address:d.games}.preset_commitment(preset_id),0);
+    let d = super::registrar::setup();
+    start_cheat_caller_address(d.games, super::authority());
+    for invalid in 0_u8..17 {
+        let (preset_id, mut definition) = current_definition("frontier");
+        let mut race = optional_race_rules();
+        definition.economy.deep = Some(optional_deep_rules());
+        definition.season_win_points = 0;
+        if invalid == 0 {
+            definition.economy.deep = None;
+        } else if invalid == 1 {
+            definition.season_win_points = 1;
+        } else if invalid == 2 {
+            race.season_days = 0;
+        } else if invalid == 3 {
+            race.season_days = 49;
+        } else if invalid == 4 {
+            race.glory_per_tick = 0;
+        } else if invalid == 5 {
+            race.height_per_tick = 0;
+        } else if invalid == 6 {
+            race.stage_height = 2001;
+        } else if invalid == 7 {
+            race.clear_mist_percent = 99;
+        } else if invalid == 8 {
+            race.second_wind_percent = 201;
+        } else if invalid == 9 {
+            race.pale_moon_percent = 0;
+        } else if invalid == 10 {
+            race.spoils_percent = 99;
+        } else if invalid == 11 {
+            race.first.alt = true;
+        } else if invalid == 12 {
+            race.first.x = crate::rules::DEEP_MAP_SIZE;
+        } else if invalid == 13 {
+            race.fourth = race.first;
+        } else if invalid == 14 {
+            race.first = optional_deep_rules().foundation;
+        } else if invalid == 15 {
+            race
+                .first =
+                    crate::troops::Coord {
+                        alt: false, x: crate::rules::DEEP_MAP_SIZE / 2, y: crate::rules::DEEP_ARRIVAL_Y,
+                    };
+        }
+        if invalid == 16 {
+            let discovery = definition.economy.discovery.unwrap();
+            definition.economy.discovery = Some(crate::expeditions::FrontierDiscoveryRules { beasts_bps: 4000, ..discovery });
+        }
+        definition.economy.race = Some(race);
+        assert!(IRegistrarSafeDispatcher { contract_address: d.games }.register_preset(preset_id, definition).is_err());
+        assert_eq!(IRegistrarDispatcher { contract_address: d.games }.preset_commitment(preset_id), 0);
     }
 }

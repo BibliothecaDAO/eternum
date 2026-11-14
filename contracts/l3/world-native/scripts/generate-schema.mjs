@@ -1,7 +1,13 @@
 import { tupleTypes } from "../../../../apps/herald/src/native/serde.ts";
 import { compileCommandRoutes } from "./command-routes.mjs";
 import { assignWireIds, renderWireSerde } from "./wire-ids.mjs";
-import { readRuleConstants, readReleaseConstants, readQuestConstants, readBaneConstants, readRaceConstants } from "./rule-constants.mjs";
+import {
+  readRuleConstants,
+  readReleaseConstants,
+  readQuestConstants,
+  readBaneConstants,
+  readRaceConstants,
+} from "./rule-constants.mjs";
 import { generateSitePreviews } from "./generate-site-previews.mjs";
 import { execFileSync } from "node:child_process";
 import { mkdtemp, rm } from "node:fs/promises";

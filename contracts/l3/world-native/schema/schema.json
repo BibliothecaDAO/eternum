@@ -88,6 +88,9 @@
     "MIST_TIDE_QUEST": 8,
     "ASH_FALL_QUEST": 9
   },
+  "raceConstants": {
+    "STAGE_COUNT": 5
+  },
   "researchConstants": {
     "ROW_FARM": 0,
     "ROW_WORKSHOP": 1,
@@ -3035,6 +3038,95 @@
       ],
       "keyLength": 2,
       "valueLength": 4
+    },
+    {
+      "name": "RaceRules",
+      "identity": "0x5261636552756c6573",
+      "scope": "game",
+      "keys": [
+        {
+          "name": "game_id",
+          "type": "core::integer::u32",
+          "feltLength": 1
+        }
+      ],
+      "members": [
+        {
+          "name": "season_days",
+          "type": "core::integer::u64",
+          "id": "0x736561736f6e5f64617973",
+          "feltLength": 1
+        },
+        {
+          "name": "glory_per_tick",
+          "type": "core::integer::u128",
+          "id": "0x676c6f72795f7065725f7469636b",
+          "feltLength": 1
+        },
+        {
+          "name": "height_per_tick",
+          "type": "core::integer::u32",
+          "id": "0x6865696768745f7065725f7469636b",
+          "feltLength": 1
+        },
+        {
+          "name": "stage_height",
+          "type": "core::integer::u32",
+          "id": "0x73746167655f686569676874",
+          "feltLength": 1
+        },
+        {
+          "name": "clear_mist_percent",
+          "type": "core::integer::u16",
+          "id": "0x636c6561725f6d6973745f70657263656e74",
+          "feltLength": 1
+        },
+        {
+          "name": "second_wind_percent",
+          "type": "core::integer::u16",
+          "id": "0x7365636f6e645f77696e645f70657263656e74",
+          "feltLength": 1
+        },
+        {
+          "name": "pale_moon_percent",
+          "type": "core::integer::u16",
+          "id": "0x70616c655f6d6f6f6e5f70657263656e74",
+          "feltLength": 1
+        },
+        {
+          "name": "spoils_percent",
+          "type": "core::integer::u16",
+          "id": "0x73706f696c735f70657263656e74",
+          "feltLength": 1
+        },
+        {
+          "name": "first",
+          "type": "world_native::troops::Coord",
+          "id": "0x6669727374",
+          "feltLength": 3
+        },
+        {
+          "name": "second",
+          "type": "world_native::troops::Coord",
+          "id": "0x7365636f6e64",
+          "feltLength": 3
+        },
+        {
+          "name": "third",
+          "type": "world_native::troops::Coord",
+          "id": "0x7468697264",
+          "feltLength": 3
+        },
+        {
+          "name": "fourth",
+          "type": "world_native::troops::Coord",
+          "id": "0x666f75727468",
+          "feltLength": 3
+        }
+      ],
+      "keyLength": 1,
+      "valueLength": 20,
+      "derivedFrom": "preset"
     },
     {
       "name": "BaneRules",
@@ -8007,6 +8099,20 @@
         }
       ]
     },
+    "core::option::Option::<world_native::race::RaceRules>": {
+      "type": "enum",
+      "name": "core::option::Option::<world_native::race::RaceRules>",
+      "variants": [
+        {
+          "name": "Some",
+          "type": "world_native::race::RaceRules"
+        },
+        {
+          "name": "None",
+          "type": "()"
+        }
+      ]
+    },
     "core::option::Option::<world_native::relics::ChestRules>": {
       "type": "enum",
       "name": "core::option::Option::<world_native::relics::ChestRules>",
@@ -11126,6 +11232,10 @@
       "name": "world_native::presets::EconomyPreset",
       "members": [
         {
+          "name": "race",
+          "type": "core::option::Option::<world_native::race::RaceRules>"
+        },
+        {
           "name": "banes",
           "type": "core::option::Option::<world_native::banes::BaneRules>"
         },
@@ -11684,6 +11794,60 @@
         {
           "name": "bonus_percent",
           "type": "core::integer::u16"
+        }
+      ]
+    },
+    "world_native::race::RaceRules": {
+      "type": "struct",
+      "name": "world_native::race::RaceRules",
+      "members": [
+        {
+          "name": "season_days",
+          "type": "core::integer::u64"
+        },
+        {
+          "name": "glory_per_tick",
+          "type": "core::integer::u128"
+        },
+        {
+          "name": "height_per_tick",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "stage_height",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "clear_mist_percent",
+          "type": "core::integer::u16"
+        },
+        {
+          "name": "second_wind_percent",
+          "type": "core::integer::u16"
+        },
+        {
+          "name": "pale_moon_percent",
+          "type": "core::integer::u16"
+        },
+        {
+          "name": "spoils_percent",
+          "type": "core::integer::u16"
+        },
+        {
+          "name": "first",
+          "type": "world_native::troops::Coord"
+        },
+        {
+          "name": "second",
+          "type": "world_native::troops::Coord"
+        },
+        {
+          "name": "third",
+          "type": "world_native::troops::Coord"
+        },
+        {
+          "name": "fourth",
+          "type": "world_native::troops::Coord"
         }
       ]
     },
@@ -13886,5 +14050,5 @@
       ]
     }
   },
-  "identity": "008753876f586d513afe61a60c55bb7d23694eabc1e809b7da99de098cff9b68"
+  "identity": "3c79dec97ce46e79ba6c10efc1d43a1d97941af4cd08df511874ad2fcc9fed65"
 }

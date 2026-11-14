@@ -571,12 +571,18 @@ function buildRace(preset: ReturnType<typeof nativePresetForId>) {
   validateRace(race, preset.deep);
   const coord = ([x, y]: readonly [number, number]) => ({ alt: false, x, y });
   return new CairoOption(CairoOptionVariant.Some, {
-    season_days: BigInt(race.seasonDays), glory_per_tick: BigInt(race.gloryPerTick),
-    height_per_tick: race.heightPerTick, stage_height: race.stageHeight,
-    clear_mist_percent: race.clearMistPercent, second_wind_percent: race.secondWindPercent,
-    pale_moon_percent: race.paleMoonPercent, spoils_percent: race.spoilsPercent,
-    first: coord(race.positions[0]), second: coord(race.positions[1]),
-    third: coord(race.positions[2]), fourth: coord(race.positions[3]),
+    season_days: BigInt(race.seasonDays),
+    glory_per_tick: BigInt(race.gloryPerTick),
+    height_per_tick: race.heightPerTick,
+    stage_height: race.stageHeight,
+    clear_mist_percent: race.clearMistPercent,
+    second_wind_percent: race.secondWindPercent,
+    pale_moon_percent: race.paleMoonPercent,
+    spoils_percent: race.spoilsPercent,
+    first: coord(race.positions[0]),
+    second: coord(race.positions[1]),
+    third: coord(race.positions[2]),
+    fourth: coord(race.positions[3]),
   });
 }
 
@@ -585,21 +591,38 @@ function validateRace(
   deep: NonNullable<ReturnType<typeof nativePresetForId>["deep"]>,
 ) {
   const amounts = [race.seasonDays, race.gloryPerTick, race.heightPerTick, race.stageHeight];
-  if (amounts.some((value) => !Number.isSafeInteger(value) || value <= 0)
-    || race.seasonDays % DAYS_PER_BAG !== 0
-    || race.heightPerTick > 0xffff_ffff || race.stageHeight > Math.floor(0xffff_ffff / nativeRaceConstants.STAGE_COUNT)
-    || race.stageHeight % race.heightPerTick !== 0) throw new Error("Invalid race amounts");
+  if (
+    amounts.some((value) => !Number.isSafeInteger(value) || value <= 0) ||
+    race.seasonDays % DAYS_PER_BAG !== 0 ||
+    race.heightPerTick > 0xffff_ffff ||
+    race.stageHeight > Math.floor(0xffff_ffff / nativeRaceConstants.STAGE_COUNT) ||
+    race.stageHeight % race.heightPerTick !== 0
+  )
+    throw new Error("Invalid race amounts");
   const boosts = [race.clearMistPercent, race.secondWindPercent, race.spoilsPercent];
-  if (boosts.some((value) => !Number.isSafeInteger(value) || value < 100 || value > 200)
-    || !Number.isSafeInteger(race.paleMoonPercent) || race.paleMoonPercent <= 0 || race.paleMoonPercent > 100)
+  if (
+    boosts.some((value) => !Number.isSafeInteger(value) || value < 100 || value > 200) ||
+    !Number.isSafeInteger(race.paleMoonPercent) ||
+    race.paleMoonPercent <= 0 ||
+    race.paleMoonPercent > 100
+  )
     throw new Error("Invalid Triumph rates");
   const sites = [deep.foundation, deep.quarry, deep.altar];
-  if (race.positions.length !== 4 || race.positions.some(([x,y]) =>
-    !Number.isSafeInteger(x) || !Number.isSafeInteger(y) || x < 0 || y < 0
-    || x >= presetRule.DEEP_MAP_SIZE || y >= presetRule.DEEP_MAP_SIZE
-    || (x === presetRule.DEEP_MAP_SIZE / 2 && y === presetRule.DEEP_ARRIVAL_Y)
-    || sites.some((site) => site.x === x && site.y === y))
-    || new Set(race.positions.map(([x,y]) => `${x}:${y}`)).size !== race.positions.length)
+  if (
+    race.positions.length !== 4 ||
+    race.positions.some(
+      ([x, y]) =>
+        !Number.isSafeInteger(x) ||
+        !Number.isSafeInteger(y) ||
+        x < 0 ||
+        y < 0 ||
+        x >= presetRule.DEEP_MAP_SIZE ||
+        y >= presetRule.DEEP_MAP_SIZE ||
+        (x === presetRule.DEEP_MAP_SIZE / 2 && y === presetRule.DEEP_ARRIVAL_Y) ||
+        sites.some((site) => site.x === x && site.y === y),
+    ) ||
+    new Set(race.positions.map(([x, y]) => `${x}:${y}`)).size !== race.positions.length
+  )
     throw new Error("Invalid race positions");
 }
 
@@ -669,15 +692,9 @@ function buildDiscovery(preset: ReturnType<typeof nativePresetForId>) {
     rules.emptyRevealLimit < 1 ||
     rules.emptyRevealLimit > 255 ||
     rules.beastsBps + rules.campBps + rules.riftBps === 0 ||
-    rules.beastsBps +
-      rules.campBps +
-      rules.riftBps +
-      rules.ruinBps +
-      rules.shrineBps +
-      rules.wellBps +
-      // All ranks double one choice; Sanctuaries increases both sites together.
-      Math.max(rules.shrineBps + rules.wellBps, rules.campBps, rules.riftBps) >
-      10000
+    (rules.beastsBps + rules.campBps + rules.riftBps + rules.ruinBps + rules.shrineBps + rules.wellBps
+      + Math.max(rules.shrineBps + rules.wellBps, rules.campBps, rules.riftBps))
+      * (preset.race?.clearMistPercent ?? 100) > 1_000_000
   )
     throw new Error("Invalid categorical discovery rules");
   return new CairoOption(CairoOptionVariant.Some, {
