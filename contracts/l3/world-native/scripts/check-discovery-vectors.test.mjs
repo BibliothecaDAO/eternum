@@ -26,3 +26,16 @@ test("both refusal functions need every root group even when other tests reuse c
   assert.notEqual(missing, cases);
   assert.throws(() => checkDiscoveryVectors(vectors, missing), /both discovery refusal tests/);
 });
+
+test("permanent wire IDs do not define the generated route position", () => {
+  const [vectors, cases] = discoveryVectorSources();
+  const claim = vectors.match(/^.*Command::ClaimDailyQuest.*\n/m)?.[0];
+  assert.ok(claim);
+  const body = vectors.split("pub fn fresh_world(")[0];
+  const end = body.lastIndexOf("    ]");
+  assert.ok(end > 0);
+  const before = body.slice(0, end).replace(claim, "");
+  const previous = before + claim + vectors.slice(end);
+  assert.notEqual(previous, vectors);
+  assert.throws(() => checkDiscoveryVectors(previous, cases), /generated route order/);
+});

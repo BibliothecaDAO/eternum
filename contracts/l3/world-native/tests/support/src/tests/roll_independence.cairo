@@ -11,6 +11,7 @@ pub const ROOTS: u64 = 32;
 // refusals.
 pub fn typed_commands() -> Array<Command> {
     array![
+        Command::ClaimDailyQuest(crate::quests::ClaimDailyQuest { home: 999999, day: 0 }),
         Command::CreateExplorer(
             crate::commands::CreateExplorer {
                 slot: 0, structure_id: 999999, category: 0, tier: 0, amount: 1, direction: 0,
@@ -171,7 +172,6 @@ pub fn typed_commands() -> Array<Command> {
                 explorer_id: 999999, coord: crate::troops::Coord { alt: false, x: 2000000, y: 2000000 },
             },
         ),
-        Command::ClaimDailyQuest(crate::quests::ClaimDailyQuest { home: 999999, day: 0 }),
     ]
 }
 pub fn fresh_world(ready: bool) -> Deployment {

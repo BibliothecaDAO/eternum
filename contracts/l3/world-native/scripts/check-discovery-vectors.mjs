@@ -1,13 +1,16 @@
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
-import { wireIds } from "./wire-ids.mjs";
+import { commandRoutes } from "../schema/command-routes.mjs";
+import { assignWireIds } from "./wire-ids.mjs";
 
 export function checkDiscoveryVectors(vectors, cases) {
   const body = vectors.split("pub fn typed_commands()")[1]?.split("pub fn fresh_world(")[0] ?? "";
   const names = [...body.matchAll(/Command::(\w+)/g)].map((match) => match[1]);
-  const live = wireIds.commands.filter(({ retired }) => !retired);
+  const live = assignWireIds("commands", commandRoutes);
   if (names.length !== live.length || live.some(({ name }, index) => names[index] !== name))
-    throw new Error("Update typed_commands in roll_independence.cairo for every live permanent command, in wire order");
+    throw new Error(
+      "Update typed_commands in roll_independence.cairo for every live command, in generated route order",
+    );
 
   for (const name of [
     "all_typed_entry_refusals_are_root_independent",
