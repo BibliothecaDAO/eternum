@@ -5,7 +5,9 @@ import type { NativePreset } from "../common/native-preset";
 import { FRONTIER_S1_PRESET_ID } from "../common/native-preset-modes";
 import { frontierPreset } from "./native";
 
-export const frontierSeasonOnePreset: NativePreset = {
+const orderAspects: NativePreset["orderAspects"] = orders.filter(({ aspect }) => aspect !== null).map(({ aspect }) => aspect!);
+
+export const frontierSeasonOnePreset = {
   ...frontierPreset,
   id: FRONTIER_S1_PRESET_ID,
   balance: {
@@ -15,9 +17,9 @@ export const frontierSeasonOnePreset: NativePreset = {
       { resource: ResourcesIds.Labor, amount: 2000 },
     ],
   },
-  orderAspects: orders.filter(({ aspect }) => aspect !== null).map(({ aspect }) => aspect!),
+  orderAspects,
   modeRules: frontierPreset.modeRules & ~rules.DISCOVER_CHESTS,
   chests: null,
   commandMask:
     (frontierPreset.commandMask | BigInt(nativeCommandBits.ApplyRelic)) & ~BigInt(nativeCommandBits.OpenRelicChest),
-};
+} satisfies NativePreset;
