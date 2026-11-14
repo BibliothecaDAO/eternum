@@ -1,7 +1,5 @@
 import {
   entityHomeNamespace,
-  musterStamina,
-  openArmySlots,
   researchChoice,
   researchTier,
   seasonDay,
@@ -19,6 +17,7 @@ import {
   TroopType,
 } from "@bibliothecadao/types";
 
+import { musterStamina, openArmySlots } from "@bibliothecadao/eternum/troop-stamina";
 import { nativeResearchConstants as research, type NativeFactStore } from "@bibliothecadao/eternum/game-client";
 
 import { standTheArmyAtTheEdge } from "./explore-scenario";
