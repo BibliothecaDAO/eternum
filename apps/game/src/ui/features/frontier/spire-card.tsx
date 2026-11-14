@@ -150,7 +150,7 @@ const OwnSpire = ({ spire, onResearch }: { spire: Spire; onResearch: () => void 
       ? armies.find((army) => isAtExpeditionSpire(spire, at(army)))
       : armies.find((army) => army.explorerId === selectedId);
   const position = actor && at(actor);
-  const sourceDepth = spire.targetDepth === undefined ? 0 : spire.targetDepth - 1;
+  const sourceDepth = spire.targetDepth === 3 ? 2 : spire.targetDepth === 2 ? 1 : 0;
   const depthNow = actor?.ethereal ?? sourceDepth;
   const beside = position !== undefined && depthNow === sourceDepth && isAtExpeditionSpire(spire, position);
   const approach = useOrderAt(useApproachTile(spire, actor !== undefined && depthNow === sourceDepth && !beside));
