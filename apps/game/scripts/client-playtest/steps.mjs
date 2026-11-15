@@ -538,7 +538,9 @@ async function attackFromTheSiteCard({ browser }) {
   );
   if (!sheet.buttons.includes("Attack")) return { army, offered: target.offered, target: target.offset, sheet };
   const token = browser.read(armyToken(army));
-  const forecast = browser.read(`Array.from(document.querySelectorAll('[data-kit-sheet] [role="img"][aria-label*="→"]'), node => node.getAttribute('aria-label'))`);
+  const forecast = browser.read(
+    `Array.from(document.querySelectorAll('[data-kit-sheet] [role="img"][aria-label*="→"]'), node => node.getAttribute('aria-label'))`,
+  );
   watchFor(browser, "fought", tokensShowTheChainsCounts("BattleGuard"));
   browser.click("Attack");
   return { army, offered: target.offered, target: target.offset, forecast, watching: true, region: token?.region };
