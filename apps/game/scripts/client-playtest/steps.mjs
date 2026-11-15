@@ -435,12 +435,12 @@ const RELIC_FORECAST_STEPS = [
  * Attack (a desktop's right-click, a phone's two taps), then the card's Attack; the result is the army's token showing
  * exactly the troops the chain left it.
  */
-const CHARGE_STEPS = chargeSteps(attackFromTheSiteCard);
-const DEEP_CHARGE_STEPS = chargeSteps(attackFromTheDeepCard);
+const CHARGE_STEPS = chargeSteps(attackFromTheSiteCard, "Map");
+const DEEP_CHARGE_STEPS = chargeSteps(attackFromTheDeepCard, "Deep");
 
-function chargeSteps(attack) {
+function chargeSteps(attack, place) {
   return [
-    { name: "enter-on-map", settleMs: 3_000, verify: inScene("map") },
+    { name: "enter-on-map", settleMs: 3_000, verify: inScene("map", place) },
     { name: "select-army", play: selectTheReadiestArmy, settleMs: 1_500, verify: armySelected },
     ...[
       ["opening-charge", 658, 563],
@@ -4049,6 +4049,14 @@ async function attackFromTheDeepCard({ browser, extraScreenshot }) {
   })()`,
   );
   browser.click("Attack");
+  await readUntil(
+    () => browser.read(`(window.__labChain?.sent ?? []).slice(${after}).some(({ command, answered }) => command.kind === "BattleGuard" && answered.length > 0)`),
+    Boolean,
+    MERGE_WAIT_MS,
+  );
+  if (onADesktop()) browser.rightClick(before.quarry);
+  else browser.tap(before.quarry);
+  await readUntil(() => browser.read(DEEP_JOIN_STATE), (state) => state.sheet === "Quarry", SHEET_WAIT_MS);
   return { forecast, watching: true };
 }
 
