@@ -1,15 +1,18 @@
 import type { Config } from "@bibliothecadao/types";
 import { getConfigFromNetwork, type GameType } from "@config";
+import { nativePresetForId, nativePresetIdFor } from "../../../../config/source/native";
+import { mergeConfigPatches } from "../../../../config/source/common/merge-config";
 import { DOCS_CHAIN } from "../../env";
 
 /**
- * A mode's balance as the game reads it, from its generated config document. Every caller names its mode: a page is
- * Blitz's or Frontier's, and a shared component takes its page's mode, so a Blitz page never reads Frontier's numbers.
+ * A mode's active balance: its generated configuration with the current preset's overrides. Every caller names its
+ * mode, and a shared component takes its page's mode, so a Blitz page never reads Frontier's numbers.
  * A missing mode fails the build at prerender instead of falling back to one.
  */
 export const ETERNUM_CONFIG = (gameType: GameType): Config => {
   if (!gameType) throw new Error("ETERNUM_CONFIG needs the page's game mode");
-  return strict(getConfigFromNetwork(DOCS_CHAIN, gameType), gameType);
+  const preset = nativePresetForId(nativePresetIdFor(gameType));
+  return strict(mergeConfigPatches<Config>(getConfigFromNetwork(DOCS_CHAIN, gameType), preset.balance), gameType);
 };
 
 /**

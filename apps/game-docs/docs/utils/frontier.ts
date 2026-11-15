@@ -1,5 +1,6 @@
-import { frontierPreset } from "../../../../config/source/frontier/native";
-import { FRONTIER_DAY_UNIT_SECONDS } from "../../../../config/source/frontier/clock";
+import { frontierPreset as historicalFrontierPreset } from "../../../../config/source/frontier/native";
+import { nativePresetForId, nativePresetIdFor } from "../../../../config/source/native";
+import { seasonDayUnitSeconds } from "../../../../config/source/common/season-clock";
 import {
   previewRiftGuardBound,
   previewRuinGuardBounds,
@@ -14,9 +15,10 @@ import { CONTRACT } from "./contract-constants";
 
 /**
  * Frontier's rules as its pages state them, read from the preset the game is launched with (the generated config for
- * the board, troops and stamina; the native preset for days, sites, chests and research) and the contract's rule
+ * the board, troops and stamina; the active native preset for days, sites and research) and the contract's rule
  * constants. A page never writes one of these numbers by hand.
  */
+const frontierPreset = nativePresetForId(nativePresetIdFor("frontier"));
 const config = ETERNUM_CONFIG("frontier");
 const stamina = config.troop.stamina;
 const limit = config.troop.limit;
@@ -29,7 +31,7 @@ const range = (lower: number, upper: number) => `${n(lower)}–${n(upper)}`;
 
 const DEPTH_NAMES = ["Surface", "Ethereal I", "Ethereal II", "Ethereal III"] as const;
 const TIERS = ["common", "uncommon", "rare", "epic", "legendary"] as const;
-const hoursOf = (units: number) => (units * FRONTIER_DAY_UNIT_SECONDS) / 3600;
+const hoursOf = (units: number) => (units * seasonDayUnitSeconds(frontierPreset)) / 3600;
 
 // A bag of days holds one day of each length, 2 to 6 units (contracts/l3/world-native/src/days.cairo).
 export const SHORT_DAY_UNITS = 2;
@@ -129,7 +131,6 @@ export const FRONTIER = {
     ),
     beastWeak: range(depth.beastWeakLower, depth.beastWeakUpper),
     beastStrong: range(depth.beastStrongLower, depth.beastStrongUpper),
-    chest: TIERS.map((tier) => pct(depth.chest[tier])),
   })),
   ruinGuards: TIER_WORDS.map((name, index) => ({ name, count: range(...previewRuinGuardBounds(index + 1)) })),
   guards: {
@@ -149,10 +150,6 @@ export const FRONTIER = {
       frontierPreset.progression.epicXp,
       frontierPreset.progression.legendaryXp,
     ].map(n),
-  },
-  chests: {
-    shares: TIERS.map((tier) => n(frontierPreset.chests.shares[tier])),
-    priceCeiling: n(frontierPreset.chests.priceCeiling),
   },
   buildings: [
     ["Farm", research.FARM, "Wheat"],
@@ -203,11 +200,10 @@ export const FRONTIER = {
         rule.SCOUTING_LEGENDARY_BPS,
     ),
   },
-  /** The season's pool: the chests' share, and the rest to the board's top places among realms with a site cleared. */
-  claimWindow: {
-    days: n(Math.floor(frontierPreset.chests.claimWindowSeconds / 86400)),
+  quest: {
+    labor: n(frontierPreset.dailyQuest.labor),
+    essence: n(frontierPreset.dailyQuest.essence),
   },
-  labor: { perRealm: n(frontierPreset.labor.amount) },
   homecoming: [
     rule.HOMECOMING_COMMON_BPS,
     rule.HOMECOMING_UNCOMMON_BPS,
@@ -215,4 +211,16 @@ export const FRONTIER = {
     rule.HOMECOMING_EPIC_BPS,
     rule.HOMECOMING_LEGENDARY_BPS,
   ].map(pct),
+};
+
+
+/** Retired paying seasons; only the historical chest page reads these values. */
+export const HISTORICAL_FRONTIER_CHESTS = {
+  depths: historicalFrontierPreset.depths.map((depth, index) => ({
+    name: DEPTH_NAMES[index],
+    chest: TIERS.map((tier) => pct(depth.chest[tier])),
+  })),
+  shares: TIERS.map((tier) => n(historicalFrontierPreset.chests.shares[tier])),
+  priceCeiling: n(historicalFrontierPreset.chests.priceCeiling),
+  claimDays: n(Math.floor(historicalFrontierPreset.chests.claimWindowSeconds / 86400)),
 };

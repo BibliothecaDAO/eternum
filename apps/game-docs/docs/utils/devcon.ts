@@ -47,6 +47,7 @@ export const DEVCON = {
   ends: moment(campaign.redeemUntil),
   pool: n(POOL),
   chestShare: pct(chests.poolBps),
+  claimDays: n(Math.floor(chests.claimWindowSeconds / 86400)),
   chestPool: n((POOL * chests.poolBps) / 10_000),
   leaderboardShare: pct(10_000 - chests.poolBps),
   leaderboardPool: n(leaderboardPool),

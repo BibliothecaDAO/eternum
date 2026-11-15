@@ -147,7 +147,7 @@ export const frontierGuardPhrases = (preset, riftGuardBound) => {
   ];
 };
 
-const frontierPhrases = (config, preset, riftGuardBound) => {
+export const frontierPhrases = (config, preset, riftGuardBound) => {
   const stamina = config.troop.stamina;
   const tick = config.tick.armiesTickIntervalInSeconds;
   const start = (id) => n(config.startingResources.find((r) => r.resource === id).amount);
@@ -182,19 +182,10 @@ const frontierPhrases = (config, preset, riftGuardBound) => {
       ],
     },
     {
-      page: "frontier/chests",
-      phrases: [
-        ...preset.depths.map(
-          (depth, index) => `${DEPTH_NAMES[index]} ${TIERS.map((tier) => pct(depth.chest[tier])).join(" ")}`,
-        ),
-        `Shares ${TIERS.map((tier) => n(preset.chests.shares[tier])).join(" ")}`,
-        `never exceeds ${n(preset.chests.priceCeiling)} LORDS`,
-      ],
-    },
-    {
       page: "frontier/realm",
       phrases: [
         `A new realm starts with ${start(26)} troops, ${start(35)} wheat and ${start(23)} labor.`,
+        `receive ${n(preset.dailyQuest.labor)} Labor and ${n(preset.dailyQuest.essence)} Essence.`,
         `take ${n(preset.board.rationStep)} wheat off the ${n(wheatPerTroop(config))} wheat each troop costs to deploy`,
         ...armies.map((count, index) => `${index + 1} ${n(count)} ${n(caps[index])}`),
         // An ordinary building and a training building: each price whole, by resource (a training building takes two).
@@ -204,6 +195,20 @@ const frontierPhrases = (config, preset, riftGuardBound) => {
     },
   ];
 };
+
+/** The retired chest page remains tied to its historical paying preset. */
+const historicalChestPhrases = (preset) => [
+    {
+      page: "frontier/chests",
+      phrases: [
+        ...preset.depths.map(
+          (depth, index) => `${DEPTH_NAMES[index]} ${TIERS.map((tier) => pct(depth.chest[tier])).join(" ")}`,
+        ),
+        `Shares ${TIERS.map((tier) => n(preset.chests.shares[tier])).join(" ")}`,
+        `never exceeds ${n(preset.chests.priceCeiling)} LORDS`,
+      ],
+    },
+ ];
 
 /**
  * The entry page says a sword and a shield each cost one entry: true only while both registered prices equal the entry
@@ -299,7 +304,7 @@ export const expectedPhrases = (blitz, frontier, frontierPreset, ledger, chests,
  * The relic table, the Blitz preset's relic rules, Frontier's native preset, the text export's path, Blitz's ledger and
  * chest presets, and the co-signer's payout-wallet hold, read from their TypeScript sources through Vite.
  */
-const loadBalanceSources = async () => {
+export const loadBalanceSources = async () => {
   const { createServer } = await import("vite");
   const server = await createServer({ configFile: false, logLevel: "silent", appType: "custom" });
   try {
@@ -307,7 +312,17 @@ const loadBalanceSources = async () => {
       join(here, "../../../packages/types/src/constants/index.ts"),
     );
     const { blitzPreset } = await server.ssrLoadModule(join(here, "../../../config/source/blitz/native.ts"));
-    const { frontierPreset } = await server.ssrLoadModule(join(here, "../../../config/source/frontier/native.ts"));
+    const { nativePresetForId, nativePresetIdFor } = await server.ssrLoadModule(
+      join(here, "../../../config/source/native.ts"),
+    );
+    const frontierPreset = nativePresetForId(nativePresetIdFor("frontier"));
+    const { frontierPreset: historicalFrontierPreset } = await server.ssrLoadModule(
+      join(here, "../../../config/source/frontier/native.ts"),
+    );
+    const { loadNativePresetConfiguration } = await server.ssrLoadModule(
+      join(here, "../../../config/deployer/clean/registrar/native-preset.ts"),
+    );
+    const frontierConfig = loadNativePresetConfiguration("madara.frontier", frontierPreset.id);
     const { previewRiftGuardBound } = await server.ssrLoadModule(
       join(here, "../../../contracts/l3/world-native/schema/site-previews.gen.ts"),
     );
@@ -325,6 +340,8 @@ const loadBalanceSources = async () => {
       rules: blitzPreset.relics,
       firstRelicId: ResourcesIds.StaminaRelic1,
       frontierPreset,
+      frontierConfig,
+      historicalFrontierPreset,
       previewRiftGuardBound,
       ledger,
       chests,
@@ -465,6 +482,8 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
     rules,
     firstRelicId,
     frontierPreset,
+    frontierConfig,
+    historicalFrontierPreset,
     ledger,
     chests,
     previewRiftGuardBound,
@@ -472,7 +491,8 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
   } = await loadBalanceSources();
   const llm = readFileSync(join(dist, "llm.txt"), "utf8");
   const phrases = [
-    ...expectedPhrases(configOf("blitz"), configOf("frontier"), frontierPreset, ledger, chests, previewRiftGuardBound),
+    ...expectedPhrases(configOf("blitz"), frontierConfig, frontierPreset, ledger, chests, previewRiftGuardBound),
+    ...historicalChestPhrases(historicalFrontierPreset),
     ...payoutWalletPhrases(payoutWalletChangeSeconds),
   ];
   const missing = [

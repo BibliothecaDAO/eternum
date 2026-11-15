@@ -99,7 +99,7 @@ export default defineConfig({
         { text: "Your realm", link: "/frontier/realm" },
         { text: "Armies", link: "/frontier/armies" },
         { text: "The expedition", link: "/frontier/expedition" },
-        { text: "Chests and LORDS", link: "/frontier/chests" },
+        { text: "Historical chests", link: "/frontier/chests" },
       ],
     },
     {

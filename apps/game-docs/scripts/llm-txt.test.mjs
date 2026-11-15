@@ -98,9 +98,10 @@ test("NaN and a u64 maximum in the export are forbidden values", () => {
 test("the expedition page gives camps and rifts their own correct guard column at every depth", async () => {
   const server = await createServer({ configFile: false, logLevel: "silent", appType: "custom" });
   try {
-    const { frontierPreset } = await server.ssrLoadModule(
-      fileURLToPath(new URL("../../../config/source/frontier/native.ts", import.meta.url)),
+    const { nativePresetForId, nativePresetIdFor } = await server.ssrLoadModule(
+      fileURLToPath(new URL("../../../config/source/native.ts", import.meta.url)),
     );
+    const frontierPreset = nativePresetForId(nativePresetIdFor("frontier"));
     const { previewRiftGuardBound } = await server.ssrLoadModule(
       fileURLToPath(new URL("../../../contracts/l3/world-native/schema/site-previews.gen.ts", import.meta.url)),
     );
