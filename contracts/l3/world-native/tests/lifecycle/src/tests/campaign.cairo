@@ -360,7 +360,7 @@ fn the_normal_speed_labor_fixture_does_not_pay_devcon_essence() {
 
 #[test]
 #[feature("safe_dispatcher")]
-fn season_one_quests_refuse_the_legacy_campaign_labor_grant_without_paying_twice() {
+fn season_one_quests_refuse_legacy_campaign_labor_without_changing_balances() {
     let (d, home) = campaign_home("frontier", crate::settlement::CAMPAIGN_GOLDEN);
     let operator = IHomeGrantsSafeDispatcher { contract_address: d.games };
     let labor = balance(d, home, LABOR);

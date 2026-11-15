@@ -94,7 +94,8 @@ fn published_season_one_starts_all_systems_and_settles_its_fiftieth_day() {
             assert_eq!(game.preset_id, preset_id);
             assert!(crate::logic::quests::enabled(game_id));
             assert!(crate::logic::deep_sites::rules_entry(game_id).is_some());
-            assert_eq!(crate::logic::banes::kind(game_id, 0), Some(0));
+            assert_eq!(crate::state::read().banes.world_days.read((game_id, 0)), Some(0));
+            assert_eq!(crate::logic::banes::kind(game_id, 0), None);
             assert_eq!(
                 crate::logic::aspects::home_aspect(crate::resources::ResourceKey { game_id, entity_id: home }), 1,
             );
