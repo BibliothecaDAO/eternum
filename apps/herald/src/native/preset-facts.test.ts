@@ -1,4 +1,7 @@
-import { FRONTIER_FIXTURE_PRESET_ID, FRONTIER_S1_PRESET_ID } from "../../../../config/source/common/native-preset-modes";
+import {
+  FRONTIER_FIXTURE_PRESET_ID,
+  FRONTIER_S1_PRESET_ID,
+} from "../../../../config/source/common/native-preset-modes";
 import { NativeFactStore } from "../../../../packages/core/src/client/native-fact-store";
 import { TroopTier, TroopType, type Troops } from "@bibliothecadao/types";
 import { ClientConfigManager } from "../../../../packages/core/src/managers/config-manager";
@@ -524,7 +527,6 @@ it("projects optional race rules from verified registration into the native fact
     expect(store.get("RaceRules", { game_id: 1 })).toEqual(enabled ? { game_id: 1, ...rules } : undefined);
   }
 });
-
 
 it("publishes every active Season 1 rule through verified registration and launch", () => {
   const world = setup();
