@@ -1,10 +1,10 @@
 import { describe, expect, it, vi } from "vitest";
 import { BiomeType, TroopTier, TroopType } from "@bibliothecadao/types";
 
-import { configManager } from "../managers";
+import { configManager } from "../managers/config-manager";
 import { type Army, CombatSimulator } from "./combat-simulator";
 
-vi.mock("../managers", () => ({
+vi.mock("../managers/config-manager", () => ({
   configManager: {
     getBiomeCombatBonus: vi.fn(() => 1),
   },

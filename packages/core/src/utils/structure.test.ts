@@ -1,7 +1,7 @@
 import { siteName, StructureType } from "@bibliothecadao/types";
 import { describe, expect, it, vi } from "vitest";
 
-vi.mock("../managers", () => ({ configManager: {} }));
+vi.mock("../managers/config-manager", () => ({ configManager: {} }));
 // A player's own renaming lives in their browser; none here.
 vi.stubGlobal("localStorage", { getItem: () => null });
 

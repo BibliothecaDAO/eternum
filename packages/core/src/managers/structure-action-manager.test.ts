@@ -4,7 +4,7 @@ import { ActionPaths, ActionType } from "../utils/action-paths";
 import { configManager } from "./config-manager";
 import { StructureActionManager } from "./structure-action-manager";
 
-vi.mock("../utils", () => ({
+vi.mock("../utils/utils", () => ({
   FELT_CENTER: () => TEST_FELT_CENTER,
 }));
 
