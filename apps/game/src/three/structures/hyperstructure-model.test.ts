@@ -57,7 +57,7 @@ describe("procedural hyperstructures", () => {
     // The request moves to 40; the tower still draws 20 until time passes.
     model.setConstructionAt(0, { entityId: 7, progress: 40, completed: false });
     expect(heard.at(-1)).toEqual({ 7: { progress: 20, awake: false } });
-    model.updateAnimations(0.5);
+    model.updateAnimations(0.2);
     const rising = heard.at(-1)![7]!.progress;
     expect(rising).toBeGreaterThan(20);
     expect(rising).toBeLessThan(40);
