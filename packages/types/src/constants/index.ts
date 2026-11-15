@@ -8,6 +8,7 @@ export * from "./misc";
 export * from "./orders";
 export * from "./realmLevels";
 export * from "./relics";
+export * from "./shop";
 export * from "./resources";
 export * from "./structures";
 export * from "./troops";
