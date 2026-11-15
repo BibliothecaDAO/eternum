@@ -2087,4 +2087,6 @@ export const ASPECT_STEP_WORDS = {
   invitedTo: (sender: string | null, aspect: string) =>
     sender === null ? `You were invited to ${aspect}` : `${sender} invited you to ${aspect}`,
   invited: "Invited",
+  /** The step when the link the account came by could not be read: the Aspects stay open, and it can ask again. */
+  inviteUnread: "Your friend's invite could not be read. You can choose an Aspect, or try again.",
 } as const;

@@ -9,7 +9,7 @@ import { HudNotice } from "@/ui/design-system/kit/hud-elements";
  * hand-off to the game's route, where the doorway carries on while the map boots.
  */
 
-import { BLITZ_WORDS, HOME_STEP_WORDS } from "@/ui/design-system/kit/words";
+import { ASPECT_STEP_WORDS, BLITZ_WORDS, HOME_STEP_WORDS } from "@/ui/design-system/kit/words";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
@@ -652,7 +652,7 @@ export const GameEntryModal = ({
   const realmOrder = homeRealm === null ? null : canonicalRealm(homeRealm).order;
   const tapsAspect = choosesAspect && !choosingSource && realmOrder === null;
   // A friend's Aspect invite for this game is offered first; identity's answer is read for the signed-in account only.
-  const offered = joinedShare === undefined ? null : aspectOffer(joinedShare, game);
+  const offered = joinedShare.status === "ready" ? aspectOffer(joinedShare.joined, game) : null;
   const joinAspect = (chosen: AspectId) => {
     setAspect(chosen);
     void handleSettle(chosen);
@@ -717,12 +717,15 @@ export const GameEntryModal = ({
               disabled={isSettling}
             />
           )}
+          {choosesAspect && !choosingSource && joinedShare.status === "failed" && (
+            <HudNotice tone="warn" line={ASPECT_STEP_WORDS.inviteUnread} retry={joinedShare.retry} />
+          )}
           {choosesAspect && !choosingSource && (
             <AspectPicker
               members={worldMeta?.aspect_members ?? null}
               realmOrder={realmOrder}
               joining={isSettling ? aspect : null}
-              waiting={!homeSettled}
+              waiting={!homeSettled || joinedShare.status === "loading"}
               offered={offered}
               onJoin={joinAspect}
             />

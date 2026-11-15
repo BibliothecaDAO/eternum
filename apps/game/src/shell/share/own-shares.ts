@@ -64,11 +64,18 @@ export const useShareTally = (): ShareTally | null => {
   return owner !== null && tally.status === "success" ? tally.data : null;
 };
 
+/** What is known of the link the account came by: being read, unreadable (with a way to ask again), or read. */
+export type JoinedShareReading =
+  | { status: "loading" }
+  | { status: "failed"; retry: () => void }
+  | { status: "ready"; joined: JoinedShare };
+
 /**
- * The link the signed-in account came by, read once per account: undefined until identity answers (or without an account,
- * or when identity cannot say), null when no link brought it. Another account's answer is never reused.
+ * The link the signed-in account came by, read once per account: loading until identity answers, failed when it cannot
+ * say, ready with the link (null when none brought the account). Without an account there is nothing to read. Another
+ * account's answer is never reused.
  */
-export const useJoinedShare = (): JoinedShare | undefined => {
+export const useJoinedShare = (): JoinedShareReading => {
   const owner = useShareOwner();
   const joined = useQuery({
     queryKey: [OWN_SHARES, owner, "joined"],
@@ -77,5 +84,8 @@ export const useJoinedShare = (): JoinedShare | undefined => {
     staleTime: Number.POSITIVE_INFINITY,
     retry: 1,
   });
-  return owner !== null && joined.status === "success" ? joined.data : undefined;
+  if (owner === null) return { status: "ready", joined: null };
+  if (joined.status === "success") return { status: "ready", joined: joined.data };
+  if (joined.status === "error") return { status: "failed", retry: () => void joined.refetch() };
+  return { status: "loading" };
 };

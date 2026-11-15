@@ -861,6 +861,46 @@ describe("a friend's Aspect invite at a Season 1 campaign home's founding", () =
     }
   });
 
+  it("keeps every card shut until the account's invite is read, even when the home is settled first", async () => {
+    const joined = campaignHome(null);
+    let answer!: (link: ReturnType<typeof invite>) => void;
+    joined.mockReturnValue(new Promise((resolve) => (answer = resolve)));
+    const entry = await openEntry();
+    try {
+      // The home step is done and the cards are drawn, but the invite is on its way: none can found yet.
+      await vi.waitFor(() => expect(cards(entry.host)).toHaveLength(4));
+      await new Promise((later) => setTimeout(later, 300));
+      const shut = [...entry.host.querySelectorAll<HTMLButtonElement>(".aspect-picker__card")].map(
+        (card) => card.disabled,
+      );
+      expect(shut).toEqual([true, true, true, true]);
+      expect(settlement.calls).toEqual([]);
+      await act(async () => answer(invite(GAME)));
+      await vi.waitFor(() => expect(cards(entry.host)[0]).toEqual({ label: "Join Harmony", invite: "Invited" }));
+      await join(entry.host, "Harmony");
+      await vi.waitFor(() => expect(settlement.calls).toEqual([expect.objectContaining({ aspect: 2 })]));
+    } finally {
+      await entry.close();
+    }
+  });
+
+  it("says when the invite could not be read, leaves the Aspects open, and offers it again on a retry", async () => {
+    const joined = campaignHome(null);
+    joined.mockRejectedValueOnce(new Error("unavailable")).mockRejectedValueOnce(new Error("unavailable"));
+    joined.mockResolvedValue(invite(GAME));
+    const entry = await openEntry();
+    try {
+      await vi.waitFor(() => expect(entry.host.textContent).toContain("Your friend's invite could not be read"));
+      expect(cards(entry.host)).toEqual(plainOrder);
+      await act(async () =>
+        [...entry.host.querySelectorAll("button")].find((button) => button.textContent === "Try again")!.click(),
+      );
+      await vi.waitFor(() => expect(cards(entry.host)[0]).toEqual({ label: "Join Harmony", invite: "Invited" }));
+    } finally {
+      await entry.close();
+    }
+  });
+
   it("drops the offer when another account signs in on the same app", async () => {
     const joined = campaignHome(invite(GAME));
     joined.mockResolvedValueOnce(invite(GAME)).mockResolvedValueOnce(null);
