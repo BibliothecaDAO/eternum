@@ -80,13 +80,10 @@ pub mod MovementLogic {
             let seed = crate::random::game_root(ref raw_root, game_id);
             let mut discovery = crate::discovery::Discovery::None;
             if exploring {
-                crate::logic::map::MapState::reveal(tile, biome.into());
-                IPointsLibraryDispatcher { class_hash: self.release.classes(game_id).season.read() }
-                    .register_exploration(game_id, actor, crate::commands::action_context(context));
                 discovery =
                     if rules.day_unit_seconds != 0 {
-                        crate::discovery::IDiscoveryRollDispatcherTrait::roll_expedition_discovery(
-                            crate::discovery::IDiscoveryRollLibraryDispatcher {
+                        crate::discovery::IExpeditionRevealDispatcherTrait::reveal_expedition_tile(
+                            crate::discovery::IExpeditionRevealLibraryDispatcher {
                                 class_hash: self.release.classes(game_id).construction.read(),
                             },
                             tile,
@@ -95,6 +92,9 @@ pub mod MovementLogic {
                             crate::commands::action_context(context),
                         )
                     } else {
+                        crate::logic::map::MapState::reveal(tile, biome.into());
+                        IPointsLibraryDispatcher { class_hash: self.release.classes(game_id).season.read() }
+                            .register_exploration(game_id, actor, crate::commands::action_context(context));
                         if !destination.alt {
                             crate::relics::IRelicMapDispatcherTrait::discover_relic_chest(
                                 crate::relics::IRelicMapLibraryDispatcher {
@@ -124,7 +124,7 @@ pub mod MovementLogic {
                                 crate::commands::action_context(context),
                             )
                     };
-                if discovery != crate::discovery::Discovery::None
+                if rules.day_unit_seconds == 0 && discovery != crate::discovery::Discovery::None
                     && crate::discovery::tile_occupier(discovery).is_none() {
                     self
                         .structures_dispatcher(game_id)

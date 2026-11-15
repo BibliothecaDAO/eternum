@@ -29,9 +29,9 @@ pub mod RaidLogic {
     #[abi(embed_v0)]
     impl RelicMap of crate::relics::IRelicMap<ContractState> {
         fn reveal_relic_tiles(
-            ref self: ContractState, game_id: u32, coord: Coord, count: u8, game_context: crate::commands::BiomeContext,
-        ) -> u8 {
-            crate::logic::army_relics::reveal_tiles(game_id, coord, count, game_context)
+            ref self: ContractState, key: crate::troops::ExplorerKey, coord: Coord, count: u8, game_context: crate::commands::ActionContext,
+        ) {
+            crate::logic::army_relics::reveal_tiles(key, coord, count, game_context)
         }
 
         #[cfg(feature: "test_support")]

@@ -95,15 +95,15 @@ pub mod ConstructionLogic {
         }
     }
     #[abi(embed_v0)]
-    impl DiscoveryRoll of crate::discovery::IDiscoveryRoll<ContractState> {
-        fn roll_expedition_discovery(
+    impl ExpeditionReveal of crate::discovery::IExpeditionReveal<ContractState> {
+        fn reveal_expedition_tile(
             ref self: ContractState,
             key: TileKey,
             explorer_id: u64,
             seed: u256,
             context: crate::commands::ActionContext,
         ) -> crate::discovery::Discovery {
-            crate::logic::discovery::roll(key, explorer_id, seed, context)
+            crate::logic::discovery::reveal(key, explorer_id, seed, context)
         }
     }
     #[abi(embed_v0)]

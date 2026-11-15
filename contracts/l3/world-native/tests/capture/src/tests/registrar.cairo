@@ -1239,7 +1239,7 @@ fn frontier_site_discovery_reads_home_knowledge_and_stores_the_shrine_reward() {
     let army = GameState { contract_address: d.games }.resolved_explorer(key).unwrap();
     let home = ResourceKey { game_id, entity_id: army.owner };
     let rules = super::preset_projection::frontier_discovery_rules();
-    let discovery = crate::discovery::IDiscoveryRollLibraryDispatcher {
+    let discovery = crate::discovery::IExpeditionRevealLibraryDispatcher {
         class_hash: super::declare_logic("ConstructionLogic"),
     };
     for (expected, row, category) in array![
@@ -1268,7 +1268,8 @@ fn frontier_site_discovery_reads_home_knowledge_and_stores_the_shrine_reward() {
             }
         }
         let seed = chosen.expect('MISSING_SITE_ROOT');
-        let coord = crate::geometry::neighbor(army.coord, 0);
+        let direction = if row == crate::research::ROW_SHRINE { 0 } else { 1 };
+        let coord = crate::geometry::neighbor_at_distance(army.coord, direction, 5);
         let tile = crate::geometry::tile_key(game_id, coord);
         let context = crate::commands::action_context(
             crate::commands::ExecutionContext {
@@ -1278,7 +1279,7 @@ fn frontier_site_discovery_reads_home_knowledge_and_stores_the_shrine_reward() {
         start_cheat_caller_address(d.games, d.games);
         let locked = snforge_std::interact_with_state(
             d.games,
-            || crate::discovery::IDiscoveryRollDispatcherTrait::roll_expedition_discovery(
+            || crate::discovery::IExpeditionRevealDispatcherTrait::reveal_expedition_tile(
                 discovery, tile, key.explorer_id, seed, context,
             ),
         );
@@ -1295,9 +1296,10 @@ fn frontier_site_discovery_reads_home_knowledge_and_stores_the_shrine_reward() {
                 );
             },
         );
+        let tile = crate::geometry::tile_key(game_id, crate::geometry::neighbor_at_distance(army.coord, direction, 6));
         let found = snforge_std::interact_with_state(
             d.games,
-            || crate::discovery::IDiscoveryRollDispatcherTrait::roll_expedition_discovery(
+            || crate::discovery::IExpeditionRevealDispatcherTrait::reveal_expedition_tile(
                 discovery, tile, key.explorer_id, seed, context,
             ),
         );

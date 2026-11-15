@@ -2,7 +2,33 @@ use starknet::storage::{StoragePathEntry, StoragePointerReadAccess};
 use crate::map::TileKey;
 use crate::troops::Coord;
 
-pub fn roll(
+pub fn reveal(
+    key: TileKey, explorer_id: u64, seed: u256, context: crate::commands::ActionContext,
+) -> crate::discovery::Discovery {
+    let execution = crate::commands::execution_context(key.game_id, context);
+    let biome = crate::commands::biome_context(execution);
+    let already_revealed = crate::logic::map::tile(key)
+        .map(|tile| tile.data / crate::map::BIOME_SCALE % crate::map::BYTE_RANGE != 0)
+        .unwrap_or(false);
+    assert!(!already_revealed, "expedition tile already revealed");
+    crate::logic::map::MapState::reveal(key, crate::logic::map::biome(key, biome));
+    let home = crate::state::read().troops.explorers.entry((key.game_id, explorer_id)).owner.read();
+    let actor = crate::logic::structures::owner(crate::resources::ResourceKey { game_id: key.game_id, entity_id: home });
+    let classes = crate::logic::release::classes(key.game_id);
+    crate::game::IPointsDispatcherTrait::register_exploration(
+        crate::game::IPointsLibraryDispatcher { class_hash: classes.season.read() }, key.game_id, actor, context,
+    );
+    let result = roll(key, explorer_id, seed, context);
+    if result != crate::discovery::Discovery::None && crate::discovery::tile_occupier(result).is_none() {
+        crate::structures::IStructureOperationsDispatcherTrait::create_discovery(
+            crate::structures::IStructureOperationsLibraryDispatcher { class_hash: classes.structures.read() },
+            key.game_id, home, Coord { alt: key.alt, x: key.col, y: key.row }, result, seed, context.timestamp, context,
+        );
+    }
+    result
+}
+
+fn roll(
     key: TileKey, explorer_id: u64, seed: u256, context: crate::commands::ActionContext,
 ) -> crate::discovery::Discovery {
     let mut rules = crate::logic::preset_record::for_game(key.game_id)

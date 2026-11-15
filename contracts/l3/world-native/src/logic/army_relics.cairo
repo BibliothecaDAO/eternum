@@ -156,14 +156,16 @@ pub fn site_reward(
 }
 
 pub fn reveal_tiles(
-    game_id: u32, origin: crate::troops::Coord, count: u8, context: crate::commands::BiomeContext,
-) -> u8 {
+    army: ExplorerKey, origin: crate::troops::Coord, count: u8, context: crate::commands::ActionContext,
+) {
+    let game_id = army.game_id;
     assert!(count > 0 && count <= 5 * crate::rules::RELIC_TILES_PER_RANK, "invalid relic tile count");
     if crate::logic::deep::contains(game_id, origin) {
-        return 0;
+        return;
     }
     let spacing = crate::logic::settlement::rules(game_id).spacing;
     let mut revealed = 0;
+    let mut raw_root = context.raw_root;
     for radius in 1..spacing {
         for direction in 0_u8..6 {
             for step in 0..radius {
@@ -182,15 +184,31 @@ pub fn reveal_tiles(
                     .unwrap_or(false) {
                     continue;
                 }
-                crate::logic::map::MapState::reveal(key, crate::logic::map::biome(key, context));
+                let seed = crate::random::game_root(ref raw_root, game_id);
+                reveal_and_pay(army, point, seed, context);
                 revealed += 1;
                 if revealed == count {
-                    return revealed;
+                    return;
                 }
             }
         }
     }
-    revealed
+}
+
+fn reveal_and_pay(army: ExplorerKey, point: crate::troops::Coord, seed: u256, context: crate::commands::ActionContext) {
+    let game_id = army.game_id;
+    let classes = crate::logic::release::classes(game_id);
+    crate::discovery::IExpeditionRevealDispatcherTrait::reveal_expedition_tile(
+        crate::discovery::IExpeditionRevealLibraryDispatcher { class_hash: classes.construction.read() },
+        crate::geometry::tile_key(game_id, point), army.explorer_id, seed, context,
+    );
+    let explorer = crate::logic::troops::explorer(army).expect('missing revealing army');
+    let actor = crate::logic::structures::owner(ResourceKey { game_id, entity_id: explorer.owner });
+    crate::exploration_rewards::IExtractionDispatcherTrait::extract_exploration_reward(
+        crate::exploration_rewards::IExtractionLibraryDispatcher { class_hash: classes.prizes.read() },
+        game_id, actor, army.explorer_id, Some(point),
+        crate::commands::ActionContext { raw_root: seed, ..context },
+    );
 }
 
 #[starknet::component]

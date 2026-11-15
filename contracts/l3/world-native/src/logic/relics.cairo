@@ -435,16 +435,13 @@ pub mod RelicState {
             let explorer = crate::logic::troops::command_explorer(key, Some(actor), context.timestamp, context);
             let relic = crate::logic::army_relics::activate(key, index, command.relic_id, context.timestamp);
             if relic.kind == crate::army_relics::RelicKind::FarEye {
-                let revealed = IRelicMapLibraryDispatcher { class_hash: self.logic_classes(game_id).raid.read() }
+                IRelicMapLibraryDispatcher { class_hash: self.logic_classes(game_id).raid.read() }
                     .reveal_relic_tiles(
-                        game_id,
+                        key,
                         explorer.coord,
                         relic.rank * crate::rules::RELIC_TILES_PER_RANK,
-                        crate::commands::biome_context(context),
+                        crate::commands::action_context(context),
                     );
-                crate::logic::quest_progress::revealed(
-                    ResourceKey { game_id, entity_id: explorer.owner }, revealed.into(), context.timestamp,
-                );
             }
         }
 

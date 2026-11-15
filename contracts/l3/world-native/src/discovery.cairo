@@ -133,8 +133,8 @@ pub fn tile_occupier(discovery: Discovery) -> Option<u8> {
 
 
 #[starknet::interface]
-pub trait IDiscoveryRoll<T> {
-    fn roll_expedition_discovery(
+pub trait IExpeditionReveal<T> {
+    fn reveal_expedition_tile(
         ref self: T, key: crate::map::TileKey, explorer_id: u64, seed: u256, context: crate::commands::ActionContext,
     ) -> Discovery;
 }
