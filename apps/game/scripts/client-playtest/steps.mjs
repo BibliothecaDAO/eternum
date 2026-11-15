@@ -363,7 +363,8 @@ const FAR_EYE_STEPS = [
       played.answer.filter((row) => row.model === "TileOpt").length === 6 &&
       played.answer.some((row) => row.model === "ResourceBalance" && BigInt(row.value.balance) > 0n) &&
       played.answer.some((row) => row.model === "ArmyProgress" && row.value.xp === 6) &&
-      played.panel.includes("Empty slot") &&
+      played.answer.some((row) => row.model === "ArmyRelics" && row.value.first === null) &&
+      played.panel.includes("6 / 75 XP") &&
       !played.panel.includes("Switch on Common Far-Eye")
         ? completed(played)
         : failed("Far-Eye must spend its slot, reveal six tiles, find the Spire and pay resources and XP", played),
