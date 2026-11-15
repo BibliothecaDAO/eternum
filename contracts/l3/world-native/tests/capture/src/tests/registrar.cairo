@@ -639,7 +639,7 @@ fn beast_clear_payout(full: bool) {
         site.clear,
         Some(
             crate::expeditions::SiteClear {
-                xp: 0,
+                xp: 2,
                 explorer_id: key.explorer_id,
                 home_id: army.owner,
                 reward: Some(crate::resources::ResourceAmount { resource_type: crate::resources::LABOR, amount }),
