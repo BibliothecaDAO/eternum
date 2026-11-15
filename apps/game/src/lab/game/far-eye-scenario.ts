@@ -53,11 +53,12 @@ export function farEyeScenario(): LabScenario {
         throw new Error("Far-Eye fixture needs six unknown tiles");
       const portal = tiles[0]!;
       const progress = chain.require("ArmyProgress", { game_id: 1, explorer_id: SPIRE_ARMY });
-      const balance = chain.require("ResourceBalance", {
+      const balance = chain.requireOrAbsent("ResourceBalance", {
         game_id: 1,
         entity_id: army.owner,
         resource_type: ResourcesIds.Essence,
-      });
+      }).known;
+      if (!balance) throw new Error("Far-Eye fixture needs a synchronized Essence balance");
       const facts: LabFact[] = tiles.map((hex, index) => {
         const tile = revealedTile(`0xfae2${index}`, hex, BiomeType.Grassland);
         return {
@@ -78,7 +79,7 @@ export function farEyeScenario(): LabScenario {
         },
         {
           model: "ResourceBalance",
-          key: chain.wireKeyOf("ResourceBalance", balance)!,
+          key: chain.wireKeyOf("ResourceBalance", balance) ?? "0xfae5",
           value: wire({ ...balance, balance: balance.balance + BigInt(tiles.length) * (army.troops.count / 10n) }),
         },
         {
