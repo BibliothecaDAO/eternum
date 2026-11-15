@@ -191,7 +191,7 @@ describe("Frontier's selection sheet", () => {
         // Another player's army keeps its own card, titled as an army; the receipt in it names its site. Otherwise the
         // receipt is the sheet, titled by the site. Either way the site's name shows exactly once.
         const sheet = host.querySelector("[data-kit-sheet]")!;
-        expect(sheet.getAttribute("aria-label")).toBe(foreign ? "Army" : expectedName);
+        expect(sheet.getAttribute("aria-label")).toBe(foreign ? "Army" : `Supply post · ${expectedName}`);
         expect(sheet.textContent!.split(expectedName).length - 1).toBe(1);
         expect(host.textContent).toContain("Cleared · Troll");
         expect(host.textContent).toContain("550 Labor");
@@ -202,7 +202,7 @@ describe("Frontier's selection sheet", () => {
         expect(host.querySelector("[data-kit-sheet]")).toBeNull();
         await act(async () => useUIStore.getState().selectOnMap({ kind: "hex", hex: SITE_TILE }));
         expect(host.querySelector("[data-kit-sheet]")?.getAttribute("aria-label")).toBe(
-          foreign ? "Army" : expectedName,
+          foreign ? "Army" : `Supply post · ${expectedName}`,
         );
         expect(host.querySelector("[data-kit-sheet]")!.textContent).toContain(expectedName);
         expect(host.querySelector("[data-site-rewards]")?.textContent).toBe("550 Labor123 XP");
@@ -251,7 +251,7 @@ describe("Frontier's selection sheet", () => {
       expect(host.querySelector("[data-kit-sheet]")).toBeNull();
       // The clear's row in the Feed selects the tile itself, as every match link does (openOnMap's "tile").
       await act(async () => useUIStore.getState().selectOnMap({ kind: "hex", hex: SITE_TILE }));
-      expect(host.querySelector("[data-kit-sheet]")?.getAttribute("aria-label")).toBe(siteName(SITE));
+      expect(host.querySelector("[data-kit-sheet]")?.getAttribute("aria-label")).toBe(`Supply post · ${siteName(SITE)}`);
       expect(host.textContent).toContain("Cleared · Troll");
     } finally {
       act(() => root.unmount());

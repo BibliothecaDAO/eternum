@@ -131,7 +131,7 @@ it("shows Cyclops wheat from initial guards alongside clear XP", () => {
   store.applyFacts([
     {
       model: "ResourceBalance",
-      key: "0x79",
+      key: store.wireKeyOf("ResourceBalance", { game_id: 1, entity_id: own.army.owner, resource_type: ResourcesIds.Wheat })!,
       value: {
         game_id: 1,
         entity_id: own.army.owner,

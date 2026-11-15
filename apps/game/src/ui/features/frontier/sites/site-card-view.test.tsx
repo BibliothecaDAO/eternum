@@ -8,7 +8,7 @@ import { campBeside, SITE_TILE } from "./site-fixture";
 import { resourceMeaning } from "@/ui/design-system/icon-meaning";
 import { TARGET_MARKS, type AttackTargetKind } from "./site-marks";
 import { plateRows } from "@/three/map-plates/map-plate-rows";
-import { frontierSiteName, StructureType } from "@bibliothecadao/types";
+import { frontierSiteName, StructureType, ResourcesIds } from "@bibliothecadao/types";
 
 let host: HTMLDivElement;
 let root: Root;
@@ -32,7 +32,7 @@ describe("a guarded site's card", () => {
   it("renders the depth-I Beasts reward and XP in This attack earns", () => {
     const { store, site, structure, attack } = campBeside("Beasts");
     const plan = readSiteCard(store, site, structure, SITE_TILE, attack({ col: 41, row: 12, alt: false }));
-    expect(plan.payout).toEqual({ resourceId: 23, amount: 375, fits: 375 });
+    expect(plan.payout).toEqual({ resourceId: ResourcesIds.Wheat, amount: 6000, fits: 5000 });
     expect(plan.xp).toBe(118);
     const payout = plan.payout!;
     act(() =>
@@ -50,7 +50,7 @@ describe("a guarded site's card", () => {
         />,
       ),
     );
-    expect(document.querySelector(".ui-frame__body header")?.textContent).toBe("This attack earns+375+118 XP+1 site");
+    expect(document.querySelector(".ui-frame__body header")?.textContent).toBe("This attack earns+5,000Full: the rest did not fit+118 XP+1 site");
   });
 
   it("heads the attack with what it earns, and reads each side before and after as numbers alone", () => {
