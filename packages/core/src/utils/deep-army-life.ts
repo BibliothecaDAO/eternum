@@ -1,9 +1,11 @@
 import type { NativeFactStore } from "../client/native-fact-store";
+import type { NativeRows } from "../../../../contracts/l3/world-native/schema/client.gen";
 import { dayOf } from "./days";
+import { currentArmy } from "./deep";
 import { readExpeditionRules } from "./expeditions";
 
 /** What a Deep guard's troops can still do: how long they last at the army tick's loss, and how much of the day is left. */
-export interface DeepGuardLife {
+export interface DeepArmyLife {
   lossPerTick: bigint;
   /** Ticks until the last troop falls, however long the day. */
   ticksToEmpty: number;
@@ -14,7 +16,7 @@ export interface DeepGuardLife {
   secondsLeft: number;
 }
 
-export function deepGuardLife(store: NativeFactStore, game_id: number, troops: bigint, now: number): DeepGuardLife {
+export function deepArmyLife(store: NativeFactStore, game_id: number, troops: bigint, now: number): DeepArmyLife {
   const { loss_per_tick: lossPerTick } = store.require("DeepRules", { game_id });
   const interval = Number(store.require("SliceRules", { game_id }).tick_config.armies_tick_in_seconds);
   const calendar = readExpeditionRules(store, game_id);
@@ -31,4 +33,18 @@ export function deepGuardLife(store: NativeFactStore, game_id: number, troops: b
     ticksLeft: Math.min(ticksToEmpty, ticksInDay),
     secondsLeft: Math.min(day.end, emptiesAt) - now,
   };
+}
+
+/**
+ * What an army's place in the Deep costs it: its life at the tick's loss, from the troops it has now. Every army in the
+ * Deep drains, whether it holds a site (DeepGuard) or waits in the field (DeepArmy); an army above the Deep has none.
+ */
+export function armyDrain(
+  store: NativeFactStore,
+  army: NativeRows["ExplorerTroops"],
+  now: number,
+): DeepArmyLife | undefined {
+  const key = { game_id: army.game_id, explorer_id: army.explorer_id };
+  if (!store.get("DeepArmy", key) && !store.get("DeepGuard", key)) return undefined;
+  return deepArmyLife(store, army.game_id, currentArmy(store, army, now).troops.count, now);
 }

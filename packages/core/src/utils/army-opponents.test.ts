@@ -50,3 +50,24 @@ it("calls an army an ally only when its home shares the Aspect of one of the vie
   expect(isAspectAlly(store, 7, 9n, 5n)).toBe(false);
   expect(isAspectAlly(store, 7, null, 2n)).toBe(false);
 });
+
+it("takes the relation of whoever the viewer is now: a viewer of another Aspect sees the same army as no ally", () => {
+  let viewer = 1n;
+  const aspects = new Map<bigint, number>([
+    [1n, 3],
+    [2n, 3],
+    [4n, 4],
+  ]);
+  const store = {
+    get: (_model: string, key: { home: bigint | number }) => {
+      const aspect = aspects.get(BigInt(key.home));
+      return aspect === undefined ? undefined : { aspect };
+    },
+    *structuresOwnedBy() {
+      yield { entity_id: viewer };
+    },
+  } as unknown as NativeFactStore;
+  expect(isAspectAlly(store, 7, 9n, 2n)).toBe(true);
+  viewer = 4n;
+  expect(isAspectAlly(store, 7, 9n, 2n)).toBe(false);
+});

@@ -1,4 +1,4 @@
-import type { DeepGuardLife, NativeRows } from "@bibliothecadao/eternum/game-client";
+import type { DeepArmyLife, NativeRows } from "@bibliothecadao/eternum/game-client";
 import type { EtherealLayer } from "@bibliothecadao/eternum";
 import type { IconMeaning } from "@/ui/design-system/icon";
 import type { StaminaBar } from "@/ui/design-system/kit/hud-elements";
@@ -36,7 +36,7 @@ export interface ArmyDetailFacts {
   /** The Ethereal layer it stands in (armyEtherealLayer); none on the surface. */
   ethereal?: EtherealLayer;
   /** What its Deep site costs it: its troops fall each tick. None while it holds none. */
-  drain?: DeepGuardLife;
+  drain?: DeepArmyLife;
 }
 
 export interface AttributeView {
@@ -55,7 +55,7 @@ export interface ArmyView {
   name: string;
   art: IconMeaning;
   ethereal?: EtherealLayer;
-  drain?: DeepGuardLife;
+  drain?: DeepArmyLife;
   troops: number;
   xp: number;
   stamina: StaminaBar;

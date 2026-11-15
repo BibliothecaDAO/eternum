@@ -21,7 +21,7 @@ import {
   xpTowardTip,
 } from "@/ui/design-system/kit/words";
 import type { EtherealLayer } from "@bibliothecadao/eternum";
-import type { DeepGuardLife } from "@bibliothecadao/eternum/game-client";
+import type { DeepArmyLife } from "@bibliothecadao/eternum/game-client";
 
 import { OpeningPartGate } from "../opening/opening-context";
 import { reachMark } from "../depth-art";
@@ -122,7 +122,7 @@ export const ArmyToken = ({
 }: {
   label: string;
   /** What its Deep site costs it: its troops fall each tick. None while it holds none. */
-  drain?: DeepGuardLife;
+  drain?: DeepArmyLife;
   /** The army's number among its realm's; absent where a token stands for no numbered army. */
   number?: number;
   /** The Ethereal layer it stands in; none on the surface. */
@@ -271,7 +271,7 @@ export const HomecomingReturn = ({ troops, words = false }: { troops: number; wo
  * What a Deep guard's site costs it: its troops fall each tick, so the chip says how many ticks it holds and its bar
  * how much of the day those troops last for. On a desktop's row, where there is room, in words.
  */
-export const DeepDrain = ({ drain, words = false }: { drain: DeepGuardLife; words?: boolean }) => {
+export const DeepDrain = ({ drain, words = false }: { drain: DeepArmyLife; words?: boolean }) => {
   const line = `${DEEP_WORDS.drain(formatExact(Number(drain.lossPerTick) / RESOURCE_PRECISION))}; ${DEEP_WORDS.lasts(drain.ticksLeft, formatDuration(drain.secondsLeft))}`;
   return (
     <span

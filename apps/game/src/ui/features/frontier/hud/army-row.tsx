@@ -6,7 +6,7 @@ import type { StaminaBar } from "@/ui/design-system/kit/hud-elements";
 import type { ReactNode } from "react";
 
 import type { EtherealLayer } from "@bibliothecadao/eternum";
-import type { DeepGuardLife } from "@bibliothecadao/eternum/game-client";
+import type { DeepArmyLife } from "@bibliothecadao/eternum/game-client";
 
 import { OpeningPartGate } from "../opening/opening-context";
 import { DeepDrain, EtherealMark, HomecomingReturn, SlotRing, StaminaReading, xpLine, type XpGoal } from "./army-token";
@@ -36,7 +36,7 @@ export const ArmyRow = ({
   label: string;
   number: number | undefined;
   /** What its Deep site costs it: its troops fall each tick. None while it holds none. */
-  drain?: DeepGuardLife;
+  drain?: DeepArmyLife;
   /** The Ethereal layer it stands in; none on the surface. */
   ethereal?: EtherealLayer;
   art: IconMeaning | undefined;

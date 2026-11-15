@@ -17,9 +17,9 @@ import {
   liveHomeArmies,
 } from "@bibliothecadao/eternum";
 import {
-  deepGuardLife,
+  armyDrain,
   safeInteger,
-  type DeepGuardLife,
+  type DeepArmyLife,
   type NativeFactStore,
   type NativeRows,
 } from "@bibliothecadao/eternum/game-client";
@@ -36,6 +36,8 @@ const ARMY_MODELS = [
   ...STAMINA_MODELS,
   "EntityName",
   "DeepGuard",
+  "DeepArmy",
+  "ArmyDay",
   "DeepRules",
   "SliceRules",
   "SettlementRules",
@@ -65,7 +67,7 @@ export type DockArmy = {
   /** The Ethereal layer it stands in (armyEtherealLayer); none on the surface. */
   ethereal: EtherealLayer | undefined;
   /** What holding a Deep site costs it: its troops fall each tick. None while it holds no site. */
-  drain?: DeepGuardLife;
+  drain?: DeepArmyLife;
 };
 
 /** The realm's armies out today, in the order the castle granted their slots; none without a realm. */
@@ -122,9 +124,7 @@ export const useDockArmies = (realm: NativeRows["Structure"] | null): DockArmy[]
       returnsHome:
         progress && homecomingReturn(Number(army.troops.count / BigInt(RESOURCE_PRECISION)), progress.homecoming),
       ethereal: armyEtherealLayer(setup.store, army.game_id, explorerId),
-      drain: setup.store.get("DeepGuard", { game_id: army.game_id, explorer_id: army.explorer_id })
-        ? deepGuardLife(setup.store, army.game_id, army.troops.count, timestamp)
-        : undefined,
+      drain: armyDrain(setup.store, army, timestamp),
     };
   });
 };

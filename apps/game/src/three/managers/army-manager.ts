@@ -855,13 +855,11 @@ export class ArmyManager {
 
     const nextOwningStructureId =
       params.ownerStructureId !== undefined ? params.ownerStructureId : army.owningStructureId;
-    const nextIsMine = isAddressEqualToAccount(mergedOwner.address);
-    const nextIsAlly = this.isAllyArmy(nextOwningStructureId, nextIsMine);
-    const nextColor = this.getArmyColor({
+    const {
       isMine: nextIsMine,
       isAlly: nextIsAlly,
-      owner: { address: mergedOwner.address },
-    });
+      color: nextColor,
+    } = this.relationOf(mergedOwner.address, nextOwningStructureId);
 
     const ownerChanged =
       army.owner.address !== mergedOwner.address ||
@@ -1774,16 +1772,9 @@ export class ArmyManager {
       this.armyModel.assignCosmeticToEntity(numericEntityId, cosmetic.skin);
     }
 
-    const isMine = finalOwnerAddress ? isAddressEqualToAccount(finalOwnerAddress) : false;
-    const isAlly = this.isAllyArmy(finalOwningStructureId, isMine);
-
     // Determine the color based on ownership using the centralized player color system
     // Relation colours are shared with sails, structures and labels.
-    const color = this.getArmyColor({
-      isMine,
-      isAlly,
-      owner: { address: finalOwnerAddress || 0n },
-    });
+    const { isMine, isAlly, color } = this.relationOf(finalOwnerAddress || 0n, finalOwningStructureId);
 
     const initialStaminaPresentation = this.resolveArmyStaminaSnapshot(params.entityId);
     finalCurrentStamina = initialStaminaPresentation?.current ?? finalCurrentStamina;
@@ -2773,6 +2764,13 @@ export class ArmyManager {
     );
   }
 
+  /** How the viewer stands to an army, the one reading every visual of it takes: its side flags and its model's colour. */
+  private relationOf(owner: bigint, home: ID | null | undefined) {
+    const isMine = owner !== 0n && isAddressEqualToAccount(owner);
+    const isAlly = this.isAllyArmy(home, isMine);
+    return { isMine, isAlly, color: this.getArmyColor({ isMine, isAlly, owner: { address: owner } }) };
+  }
+
   /** An army of the viewer's Aspect: marked as an ally on the map, as it is in the Deep's orders. */
   private isAllyArmy(home: ID | null | undefined, isMine: boolean): boolean {
     if (isMine || !this.store || home === null || home === undefined) return false;
@@ -2799,18 +2797,14 @@ export class ArmyManager {
     const updatedVisible: ArmyData[] = [];
 
     this.armyPresentations.forEach((army, entityId) => {
-      const nextIsMine = isAddressEqualToAccount(army.owner.address);
-      const nextColor = this.getArmyColor({
-        isMine: nextIsMine,
-        owner: army.owner,
-      });
-
-      if (army.isMine === nextIsMine && army.color === nextColor) {
+      const next = this.relationOf(army.owner.address, army.owningStructureId);
+      if (army.isMine === next.isMine && army.isAlly === next.isAlly && army.color === next.color) {
         return;
       }
 
-      army.isMine = nextIsMine;
-      army.color = nextColor;
+      army.isMine = next.isMine;
+      army.isAlly = next.isAlly;
+      army.color = next.color;
       this.armyPresentations.set(entityId, army);
       this.refreshArmyCompactLabel(army);
 
