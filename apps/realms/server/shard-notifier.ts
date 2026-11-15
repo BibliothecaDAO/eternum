@@ -82,11 +82,11 @@ const DAY_MS = 86_400_000;
  * never recreated after. A device that receives a repeated id drops it by its own durable claim.
  */
 export class ShardNotifier extends DurableObject<Record<string, unknown>> {
-  private readonly siteStreams = new Map<number, { stop: () => void; enabled: boolean }>();
+  private readonly siteStreams = new Map<number, () => void>();
   private readonly changedSiteGames = new Set<number>();
 
   private closeSiteStreams(): void {
-    for (const stream of this.siteStreams.values()) stream.stop();
+    for (const stop of this.siteStreams.values()) stop();
     this.siteStreams.clear();
     this.changedSiteGames.clear();
   }
@@ -187,8 +187,6 @@ export class ShardNotifier extends DurableObject<Record<string, unknown>> {
       cursor ? `/history/story-events?limit=${STORY_PAGE}&after=${cursor}` : "/history/story-events?limit=1",
     );
     if (BigInt(page.chain) !== BigInt(shard.chainId)) throw new Error(`${shard.url} served chain ${page.chain}`);
-    for (const { gameId } of actorsWhoActed(page))
-      if (this.siteStreams.get(gameId)?.enabled) this.changedSiteGames.add(gameId);
     let entries: OutboxEntry[] = [];
     let resting: { actor: RestingActor; watches: RestWatch[] }[] = [];
     try {
@@ -243,20 +241,18 @@ export class ShardNotifier extends DurableObject<Record<string, unknown>> {
         .filter((game) => game.mode === "frontier" && game.status !== "Ended" && game.status !== "Settled")
         .map((game) => game.game_id),
     );
-    for (const [gameId, stream] of this.siteStreams) {
+    for (const [gameId, stop] of this.siteStreams) {
       if (running.has(gameId)) continue;
-      stream.stop();
+      stop();
       this.siteStreams.delete(gameId);
       this.changedSiteGames.delete(gameId);
     }
     for (const gameId of running) {
       if (this.siteStreams.has(gameId)) continue;
-      const stream = { stop: () => {}, enabled: false };
-      stream.stop = followDeepSites(shard.url, gameId, () => {
-        stream.enabled = true;
+      const stop = followDeepSites(shard.url, gameId, () => {
         this.changedSiteGames.add(gameId);
       });
-      this.siteStreams.set(gameId, stream);
+      this.siteStreams.set(gameId, stop);
     }
     await this.ctx.storage.transaction(async (txn) => {
       for (const [key, watch] of await txn.list<DeepSiteWatch>({ prefix: "site-watch:" }))
