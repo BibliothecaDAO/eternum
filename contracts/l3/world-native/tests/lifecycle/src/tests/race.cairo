@@ -497,7 +497,7 @@ fn recorded_clear_mist_changes_real_reveals_only_on_its_day() {
                         let tile = crate::logic::map::occupancy(crate::geometry::tile_key(game_id, destination))
                             .unwrap();
                         assert!(tile.is_structure);
-                        assert_eq!(tile.category, crate::taxonomy::BEASTS_CATEGORY);
+                        assert_eq!(tile.category, crate::taxonomy::BEASTS_OCCUPIER);
                     }
                 },
             );
