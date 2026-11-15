@@ -243,6 +243,15 @@ pub fn observe_economy(ref rows: Array<ObservedRow>, address: ContractAddress, g
         interact_with_state(address, || crate::logic::preset_record::for_game(game_id).deep_rules.read()) {
         row(ref rows, 'DeepRules', key, deep);
     }
+    if let Some(quests) = interact_with_state(address, || observed_quest_rules(game_id)) {
+        row(ref rows, 'QuestRules', key, quests);
+    }
+    if let Some(banes) = interact_with_state(address, || observed_bane_rules(game_id)) {
+        row(ref rows, 'BaneRules', key, banes);
+    }
+    if let Some(race) = interact_with_state(address, || crate::logic::race::rules(game_id)) {
+        row(ref rows, 'RaceRules', key, race);
+    }
     row(ref rows, 'HyperstructureRules', key, hyperstructures.hyperstructure_rules(game_id));
     row(ref rows, 'RelicRules', key, relics.relic_rules(game_id));
     if let Some(labor) =
@@ -302,4 +311,33 @@ pub fn optional_race_rules() -> crate::race::RaceRules {
         third: crate::troops::Coord { alt: false, x: 5, y: 45 },
         fourth: crate::troops::Coord { alt: false, x: 45, y: 45 },
     }
+}
+
+
+fn observed_quest_rules(game_id: u32) -> Option<crate::quests::QuestRules> {
+    let preset = crate::logic::preset_record::for_game(game_id);
+    let Some((labor, essence, bonus_percent)) = preset.quest_rewards.read() else {
+        return None;
+    };
+    let mut base_counts = array![];
+    for kind in 0_u8..crate::quests::QUEST_COUNT {
+        base_counts.append(preset.quest_counts.read(kind));
+    }
+    Some(crate::quests::QuestRules { base_counts: base_counts.span(), labor, essence, bonus_percent })
+}
+
+fn observed_bane_rules(game_id: u32) -> Option<crate::banes::BaneRules> {
+    let preset = crate::logic::preset_record::for_game(game_id);
+    let Some((chance_step, quorum_percent, beast_percent, stamina_percent, production_percent)) =
+        preset.bane_rules.read() else {
+        return None;
+    };
+    let mut quest_counts = array![];
+    for index in 0_u8..12 {
+        quest_counts.append(preset.bane_quest_counts.read(index));
+    }
+    Some(crate::banes::BaneRules {
+        chance_step, quorum_percent, beast_percent, stamina_percent, production_percent,
+        quest_counts: quest_counts.span(),
+    })
 }
