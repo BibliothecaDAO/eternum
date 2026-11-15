@@ -27,7 +27,11 @@ async function heldQuarry(now: number) {
     const keys = schema.models.find(({ name }) => name === model.model)?.keys;
     if (rows.length && !keys) throw new Error(`Missing keys for ${model.model}`);
     model.rows = rows.map((row) => ({
-      entity_id: nativeRowKey(keys!.map(({ name }) => typeof row.value[name] === "boolean" ? String(Number(row.value[name])) : String(row.value[name]))),
+      entity_id: nativeRowKey(
+        keys!.map(({ name }) =>
+          typeof row.value[name] === "boolean" ? String(Number(row.value[name])) : String(row.value[name]),
+        ),
+      ),
       key: Object.fromEntries(keys!.map(({ name }) => [name, row.value[name]])),
       value: row.value,
     }));
@@ -58,7 +62,9 @@ it("plans a Deep site opportunity from Herald's actor snapshot with public rival
   const now = Math.floor(Date.now() / 1000);
   const { live, confirmedFold, native } = await heldQuarry(now);
   const shared = live.snapshot(String(GAME_ID), ["Guard", "ExplorerTroops", "RealmKnowledge"], PLAYER_ACCOUNT);
-  expect(shared.models.find(({ model }) => model === "Guard")!.rows.map(({ value }) => Number(value.structure_id))).toEqual([800, 801, 802]);
+  expect(
+    shared.models.find(({ model }) => model === "Guard")!.rows.map(({ value }) => Number(value.structure_id)),
+  ).toEqual([800, 801, 802]);
   const ownerOnly = live.snapshot(String(GAME_ID), ["ExplorerTroops"], PLAYER_ACCOUNT, PLAYER_ACCOUNT);
   expect(ownerOnly.models[0]!.rows.map(({ value }) => Number(value.explorer_id))).toEqual([7]);
   vi.stubGlobal("fetch", async (address: string) => {
@@ -93,7 +99,12 @@ it("plans a Deep site opportunity from Herald's actor snapshot with public rival
       attempts: 0,
     }),
   ]);
-  native.applyReceipt(confirmedFold, receipt([rowEvent("DeepGuard", [String(GAME_ID), "8"], { site_id: 999, slot: 0 })]), 12, 0);
+  native.applyReceipt(
+    confirmedFold,
+    receipt([rowEvent("DeepGuard", [String(GAME_ID), "8"], { site_id: 999, slot: 0 })]),
+    12,
+    0,
+  );
   const moved = live.snapshot(String(GAME_ID), ["ExplorerTroops"], PLAYER_ACCOUNT);
   expect(moved.models[0]!.rows.map(({ value }) => Number(value.explorer_id))).toEqual([7]);
 });
