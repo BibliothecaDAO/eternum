@@ -1,4 +1,4 @@
-import { RealmLevels } from "@bibliothecadao/types";
+import { rankName } from "@bibliothecadao/types";
 import { usePlayerNames } from "@/hooks/use-player-profile";
 import { AudioManager } from "@/audio/core/AudioManager";
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
@@ -190,7 +190,7 @@ export const BuildSheet = ({
       return {
         refusal:
           "level" in option.standing
-            ? { reason: { kind: "failed", line: `Requires ${RealmLevels[option.standing.level]}` } }
+            ? { reason: { kind: "failed", line: `Requires ${rankName(option.standing.level)}` } }
             : gateRefusal(option.standing),
       };
     const shortCost = option.cost.find(({ resource, amount }) => (held(resource) ?? 0) < amount);

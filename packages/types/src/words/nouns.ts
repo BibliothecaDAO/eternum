@@ -76,6 +76,13 @@ export const TROOP_WORDS = {
   [TroopType.Paladin]: { one: "Paladin", many: "Paladins" },
 } as const satisfies Record<TroopType, { one: string; many: string }>;
 
+/** Frontier's troop names; its Scout uses the Paladin category. */
+export const FRONTIER_TROOP_NAMES = {
+  [TroopType.Knight]: TROOP_WORDS[TroopType.Knight].many,
+  [TroopType.Paladin]: "Scouts",
+  [TroopType.Crossbowman]: TROOP_WORDS[TroopType.Crossbowman].many,
+} satisfies Record<TroopType, string>;
+
 /** Many of a troop type, by its type or its name in the game's tables: "Crossbowmen". Unknown is undefined. */
 export const troopPlural = (troop: TroopType | string): string | undefined =>
   (TROOP_WORDS as Record<string, { many: string }>)[troop]?.many;

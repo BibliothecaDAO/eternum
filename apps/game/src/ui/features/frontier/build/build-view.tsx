@@ -1,4 +1,4 @@
-import { RealmLevels } from "@bibliothecadao/types";
+import { rankName } from "@bibliothecadao/types";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import {
   formatExact,
@@ -309,7 +309,7 @@ const Band = ({ standing }: { standing: BuildTile["standing"] }) => (
       {standing.kind === "level" && (
         <>
           <SemanticIcon name="lock" size={14} />
-          {RealmLevels[standing.level]}
+          {rankName(standing.level)}
         </>
       )}
       {standing.kind === "built" && <SemanticIcon name="check" size={16} />}
