@@ -4314,9 +4314,10 @@ const DEEP_JOIN_STEPS = [
         ...DEEP_SITE_NAMES.filter((each) => each.key === "deep:quarry"),
       ]) {
         const { name, key } = site;
-        // The card of the last visit is closed, so it does not stand over the frame being walked to.
-        browser.press("Escape");
         await panToHex(browser, browser.read(`window.__eternumMapSelection?.siteHexes?.["${key}"] ?? null`));
+        // The camera's hex stands at the frame's middle, which a phone's open card covers: a player drags the site up
+        // above the card before pressing it, so its model is under the finger and not under the card.
+        await panInto(browser, 1, ABOVE_THE_CARD_PX, ["KeyW", "KeyS"], () => browser.read(siteState(site)).token);
         await sleep(HOVER_SETTLE_MS);
         const before = browser.read(siteState(site));
         extraScreenshot(`site-${name.toLowerCase()}`);
@@ -4731,6 +4732,8 @@ function cameraWentToTheArmy({ played }) {
 const UNDER_THE_CARD_PX = [70, 160];
 /** How far from the middle a ruin may stand across a phone and still be tapped whole: a far ruin is panned within. */
 const ACROSS_THE_PHONE_PX = [-120, 120];
+/** Where a site's model stands clear of a phone's open card (page px from the centre, upward): below the top bar, above the card. */
+const ABOVE_THE_CARD_PX = [-300, -60];
 const PAN_BURSTS = 16;
 const underTheCard = (token) => token && token[1] >= UNDER_THE_CARD_PX[0] && token[1] <= UNDER_THE_CARD_PX[1];
 async function panTheRuinUnderTheCard(browser, state = FIGHT_STATE) {
