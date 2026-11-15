@@ -11,7 +11,7 @@ import { seeLine } from "./opening-store";
 export const SITE_ALERT_OFFER = "site-alert";
 
 /** What turning the alert on came to: delivering, or what stood in its way. */
-export type AlertOutcome = "on" | "preferences" | "device" | "blocked" | "install" | "unavailable";
+type AlertOutcome = "on" | "preferences" | "device" | "blocked" | "install" | "unavailable";
 
 /**
  * Turns the site alert on: the account's level raised to the one that carries it, and this device delivering. Each step is
