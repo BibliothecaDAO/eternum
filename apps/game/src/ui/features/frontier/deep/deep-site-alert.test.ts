@@ -166,10 +166,16 @@ it("uses the largest army across all of the player's homes without substituting 
 
 it("opens Charge again for a later guard after forecasting a different guard first", () => {
   const f = fixture([1000, 1]);
+  const rules = f.store.require("SliceRules", { game_id: 1 });
+  f.change("SliceRules", { game_id: 1 }, {
+    troop_stamina_config: { ...rules.troop_stamina_config, stamina_attack_req: 10 },
+  });
   const key = { game_id: 1, explorer_id: 201n };
   const army = f.store.require("ExplorerTroops", key);
   f.change("ExplorerTroops", key, { troops: { ...army.troops, count: 1000n * BigInt(RESOURCE_PRECISION) } });
   f.change("ArmyCombat", key, { charge: 5, last_target: 301n });
   expect(f.plan().map(({ dueAt }) => dueAt)).toEqual([f.startsAt * 1000]);
   expect(f.store.require("ArmyCombat", key).last_target).toBe(301n);
+  f.change("ArmyCombat", key, { charge: 0 });
+  expect(f.plan()[0]!.dueAt).toBeGreaterThan(f.startsAt * 1000);
 });

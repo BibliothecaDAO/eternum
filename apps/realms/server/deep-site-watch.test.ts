@@ -51,6 +51,14 @@ function equalArmies(lastTarget: number | undefined) {
     },
   ]);
   store.setSnapshot({ gameId: GAME_ID, actor: PLAYER_ACCOUNT, complete: true, timestamp });
+  const rules = store.require("SliceRules", { game_id: GAME_ID });
+  store.applyFacts([
+    {
+      model: "SliceRules",
+      key: store.wireKeyOf("SliceRules", rules)!,
+      value: { ...rules, troop_stamina_config: { ...rules.troop_stamina_config, stamina_attack_req: 10 } },
+    },
+  ]);
   return { store, timestamp };
 }
 
