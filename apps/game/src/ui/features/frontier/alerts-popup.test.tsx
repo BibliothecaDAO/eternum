@@ -96,7 +96,10 @@ it("opens once the map is clear, saying what the Important level pushes, with No
   expect(await open(false)).toBeNull();
   expect(await open()).toEqual({
     title: "Know when to come back",
-    lines: ["Know when to come back", "A push for each day's opening, Deep sites you can take, rested armies, fights, results and messages."],
+    lines: [
+      "Know when to come back",
+      "A push for each day's opening, Deep sites you can take, rested armies, fights, results and messages.",
+    ],
     buttons: ["Not now", "Turn on alerts"],
   });
   expect(useAskMemory.getState().shownAt).toBe(START);
