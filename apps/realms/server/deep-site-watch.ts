@@ -23,7 +23,7 @@ export interface DeepSiteWatch {
 /** A confirmed snapshot plans one wake per rival site, without polling guard counts. */
 export function planDeepSiteWatches(
   store: NativeFactStore,
-  player: Pick<DeepSiteWatch, "gameId" | "actor" | "owner" | "home">,
+  player: Pick<DeepSiteWatch, "gameId" | "actor" | "owner">,
   now: number,
 ): DeepSiteWatch[] {
   const gameId = player.gameId;
@@ -33,12 +33,12 @@ export function planDeepSiteWatches(
   const timestamp = Math.floor(now / 1000);
   const day = dayOf(calendar, timestamp);
   if (!day) return [];
-  const home = BigInt(player.home);
+  const army = largestOutsideArmy(store, gameId, BigInt(player.actor), day.index);
+  if (!army) return [];
+  const home = army.owner;
   const depth = researchedDepth(store, gameId, home);
   if (depth === undefined) throw new Error("Deep alerts require the home's research");
   if (depth === 0) return [];
-  const army = largestOutsideArmy(store, gameId, home, day.index);
-  if (!army) return [];
   const aspect = store.require("HomeAspect", { game_id: gameId, home }).aspect;
   const rules = combatRules(store, gameId);
   const center = mapCenter(store.require("SliceRules", { game_id: gameId }).map_center_offset);
@@ -50,14 +50,15 @@ export function planDeepSiteWatches(
     const due = firstClearableTick(store, army, site.id, timestamp, day.end, rules);
     return due === null
       ? []
-      : [{ ...player, siteId: String(site.id), siteName: site.name, col: site.position.x - center, row: site.position.y - center, day: day.index, dueAt: due * 1000, attempts: 0, until: day.end * 1000 }];
+      : [{ ...player, home: String(home), siteId: String(site.id), siteName: site.name, col: site.position.x - center, row: site.position.y - center, day: day.index, dueAt: due * 1000, attempts: 0, until: day.end * 1000 }];
   });
 }
 
-function largestOutsideArmy(store: NativeFactStore, gameId: number, home: bigint, day: number) {
+function largestOutsideArmy(store: NativeFactStore, gameId: number, actor: bigint, day: number) {
   let largest: NativeRows["ExplorerTroops"] | undefined;
   for (const army of store.inGame("ExplorerTroops", gameId)) {
-    if (army.owner !== home || army.troops.count === 0n) continue;
+    if (army.troops.count === 0n) continue;
+    if (store.require("Structure", { game_id: gameId, entity_id: army.owner }).owner !== actor) continue;
     const key = { game_id: gameId, explorer_id: army.explorer_id };
     if (store.get("DeepArmy", key) || store.get("DeepGuard", key)) continue;
     if (store.require("ArmyDay", key).day !== BigInt(day)) continue;
@@ -138,7 +139,5 @@ export async function readDeepSiteWatches(
   const store = new NativeFactStore();
   store.applyFacts(snapshot.models.flatMap(({ model, rows }) => rows.map((row) => ({ model, key: row.key, value: row.value }))));
   store.setSnapshot({ gameId: player.gameId, actor: player.actor, complete: true, timestamp: Math.floor(now / 1000) });
-  return [...store.inGame("Structure", player.gameId)]
-    .filter((home) => home.owner === BigInt(player.actor) && store.get("HomeAspect", { game_id: player.gameId, home: home.entity_id }))
-    .flatMap((home) => planDeepSiteWatches(store, { ...player, home: String(home.entity_id) }, now));
+  return planDeepSiteWatches(store, player, now);
 }
