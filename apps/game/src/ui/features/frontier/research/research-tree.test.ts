@@ -107,7 +107,11 @@ describe("Frontier's camp is its Troll on the progression views (the shared stru
   });
 
   it("names the army's Scouting kind by the Troll", () => {
-    const army = readArmyDetail({ ...VETERAN_ARMY, category: "Paladin", progress: { ...VETERAN_ARMY.progress, scouting: 1, scoutingKinds: ["camp"] } });
+    const army = readArmyDetail({
+      ...VETERAN_ARMY,
+      category: "Paladin",
+      progress: { ...VETERAN_ARMY.progress, scouting: 1, scoutingKinds: ["camp"] },
+    });
     expect(army.attributes.find(({ key }) => key === "scouting")?.now).toBe("+10% discovery on Trolls");
     expect(JSON.stringify(army)).not.toMatch(/Camp/);
   });
@@ -165,12 +169,15 @@ it("prices the Lodge's first research separately from construction", () => {
   const before = node(EARLY_REALM, key);
   expect(before.price).toEqual({ essence: 6000, labor: 1500 });
   expect(before.needs.some((need) => need.kind === "stands" && !need.met)).toBe(true);
-  const built = node({
-    ...EARLY_REALM,
-    standing: { ...EARLY_REALM.standing, [research.ROW_SCOUTS_LODGE]: 1 },
-    essence: 6000,
-    labor: 1500,
-  }, key);
+  const built = node(
+    {
+      ...EARLY_REALM,
+      standing: { ...EARLY_REALM.standing, [research.ROW_SCOUTS_LODGE]: 1 },
+      essence: 6000,
+      labor: 1500,
+    },
+    key,
+  );
   expect(built).toMatchObject({ tier: 0, nextTier: 1, state: "ready", price: { essence: 6000, labor: 1500 } });
 });
 

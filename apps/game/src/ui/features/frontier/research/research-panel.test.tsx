@@ -27,7 +27,10 @@ afterEach(() => {
   host.remove();
 });
 
-const nodes = readResearchTree({ ...MID_REALM, learned: { ...MID_REALM.learned, [research.ROW_BARRACKS]: { tier: 4, sides: [0, 0, 0, 0] } } });
+const nodes = readResearchTree({
+  ...MID_REALM,
+  learned: { ...MID_REALM.learned, [research.ROW_BARRACKS]: { tier: 4, sides: [0, 0, 0, 0] } },
+});
 const draw = (picked: string | null, onResearch = vi.fn(), onPick = vi.fn(), onFix = vi.fn(), onClose = vi.fn()) =>
   act(() =>
     root.render(

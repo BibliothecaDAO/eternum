@@ -118,7 +118,10 @@ it("reads each side now against the next tier, picks a side by its row, and rese
 
 it("keeps Research, dimmed, when the labor storage cannot hold the tier's price, saying why with its fix", () => {
   const { onResearch, onFix } = draw(research.ROW_BARRACKS, {
-    realm: { ...MID_REALM, learned: { ...MID_REALM.learned, [research.ROW_BARRACKS]: { tier: 4, sides: [0, 0, 0, 0] } } },
+    realm: {
+      ...MID_REALM,
+      learned: { ...MID_REALM.learned, [research.ROW_BARRACKS]: { tier: 4, sides: [0, 0, 0, 0] } },
+    },
   });
   const verb = button(/^Research$/)!;
   expect(verb.disabled).toBe(true);
