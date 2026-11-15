@@ -15,8 +15,12 @@ import {
 const dist = fileURLToPath(new URL("../dist", import.meta.url));
 const scratch = mkdtempSync(join(tmpdir(), "rendered-balance-"));
 after(() => rmSync(scratch, { recursive: true, force: true }));
-const { frontierPreset: current, frontierConfig, historicalFrontierPreset: historical, previewRiftGuardBound } =
-  await loadBalanceSources();
+const {
+  frontierPreset: current,
+  frontierConfig,
+  historicalFrontierPreset: historical,
+  previewRiftGuardBound,
+} = await loadBalanceSources();
 const pages = frontierPhrases(frontierConfig, current, previewRiftGuardBound);
 const n = (value) => value.toLocaleString("en-US");
 const range = (lower, upper) => `${n(lower)}–${n(upper)}`;

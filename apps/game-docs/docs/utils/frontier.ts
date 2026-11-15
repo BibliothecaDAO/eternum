@@ -213,7 +213,6 @@ export const FRONTIER = {
   ].map(pct),
 };
 
-
 /** Retired paying seasons; only the historical chest page reads these values. */
 export const HISTORICAL_FRONTIER_CHESTS = {
   depths: historicalFrontierPreset.depths.map((depth, index) => ({

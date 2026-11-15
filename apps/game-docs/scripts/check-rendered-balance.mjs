@@ -198,17 +198,17 @@ export const frontierPhrases = (config, preset, riftGuardBound) => {
 
 /** The retired chest page remains tied to its historical paying preset. */
 const historicalChestPhrases = (preset) => [
-    {
-      page: "frontier/chests",
-      phrases: [
-        ...preset.depths.map(
-          (depth, index) => `${DEPTH_NAMES[index]} ${TIERS.map((tier) => pct(depth.chest[tier])).join(" ")}`,
-        ),
-        `Shares ${TIERS.map((tier) => n(preset.chests.shares[tier])).join(" ")}`,
-        `never exceeds ${n(preset.chests.priceCeiling)} LORDS`,
-      ],
-    },
- ];
+  {
+    page: "frontier/chests",
+    phrases: [
+      ...preset.depths.map(
+        (depth, index) => `${DEPTH_NAMES[index]} ${TIERS.map((tier) => pct(depth.chest[tier])).join(" ")}`,
+      ),
+      `Shares ${TIERS.map((tier) => n(preset.chests.shares[tier])).join(" ")}`,
+      `never exceeds ${n(preset.chests.priceCeiling)} LORDS`,
+    ],
+  },
+];
 
 /**
  * The entry page says a sword and a shield each cost one entry: true only while both registered prices equal the entry
