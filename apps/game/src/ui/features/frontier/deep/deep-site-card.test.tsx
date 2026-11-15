@@ -51,10 +51,12 @@ const draw = (now?: number) => {
           value={{ store, systemCalls: { interact_site: join, attack_explorer_vs_guard: attack } } as never}
           account={{ address: scenario.player } as never}
         >
-          {content ?? <DeepSiteCard
-            site={readDeepSites(store, startsAt, 1).find((site) => site.name === "Quarry")!}
-            onClose={() => {}}
-          />}
+          {content ?? (
+            <DeepSiteCard
+              site={readDeepSites(store, startsAt, 1).find((site) => site.name === "Quarry")!}
+              onClose={() => {}}
+            />
+          )}
         </GameProvider>,
       ),
     );
@@ -65,7 +67,7 @@ const draw = (now?: number) => {
 };
 
 describe("the Deep site's live native binding", () => {
-  it("joins an ally through InteractSite and reads the resulting guard membership", async () => {
+  it("keeps the joined slot army's refilled stamina and panel after vacating its tile", async () => {
     const hud = draw();
     try {
       expect(hud.host.textContent).toContain("Held by Might");
@@ -138,9 +140,11 @@ it("refreshes stamina from guard membership alone and keeps a missing position u
     hud.render(<StaminaReading />);
     expect(hud.host.textContent).toBe("60");
     const personalTile = hud.store.entityOccupancy(1, 201)!;
-    act(() => hud.store.applyFacts([
-      { model: "TileOccupancy", key: hud.store.wireKeyOf("TileOccupancy", personalTile)!, value: null },
-    ]));
+    act(() =>
+      hud.store.applyFacts([
+        { model: "TileOccupancy", key: hud.store.wireKeyOf("TileOccupancy", personalTile)!, value: null },
+      ]),
+    );
     expect(hud.host.textContent).toBe("unknown");
     const site = readDeepSites(hud.store, hud.scenario.startsAt, 1).find((site) => site.name === "Quarry")!;
     const membership = { game_id: 1, explorer_id: 201n, site_id: site.id, slot: 1 };

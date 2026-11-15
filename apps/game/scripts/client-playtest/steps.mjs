@@ -3669,13 +3669,20 @@ const DEEP_JOIN_STEPS = [
     play: async ({ browser, extraScreenshot }) => {
       browser.press("Escape");
       const panel = await openTheArmyPanel(browser);
-      const reading = await readUntil(() => readArmyStamina(browser), (state) => state.visible, SHEET_WAIT_MS);
+      const reading = await readUntil(
+        () => readArmyStamina(browser),
+        (state) => state.visible,
+        SHEET_WAIT_MS,
+      );
       extraScreenshot("joined-guard-stamina");
       return { panel, reading };
     },
     verify: ({ played }) =>
-      played.panel.army && played.panel.sheet === played.panel.army &&
-      played.reading.visible && played.reading.current >= 60 && played.reading.current <= 140 &&
+      played.panel.army &&
+      played.panel.sheet === played.panel.army &&
+      played.reading.visible &&
+      played.reading.current >= 60 &&
+      played.reading.current <= 140 &&
       played.reading.maximum === 140
         ? completed(played)
         : failed("The joined slot army must reopen from the dock with its refilled stamina visible", played),
