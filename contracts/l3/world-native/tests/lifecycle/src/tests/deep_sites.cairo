@@ -35,27 +35,6 @@ pub fn preset() -> crate::presets::PresetDefinition {
 
 pub fn deployed(d: Deployment, game_id: u32, aspect: u8, count: u128) -> ExplorerKey {
     let home = found(d, game_id, aspect);
-    let depth_budget = interact_with_state(
-        d.games,
-        || {
-            let mut budget = 0;
-            for tier in 1_u8..4 {
-                budget += crate::logic::research::price(game_id, crate::research::ROW_DEPTH, tier).essence;
-            }
-            budget
-        },
-    );
-    grant(d, ResourceKey { game_id, entity_id: home }, crate::resources::ESSENCE, depth_budget);
-    for _ in 0_u8..3 {
-        applied(
-            d,
-            game_id,
-            Command::Research(
-                crate::research::Research { structure_id: home, row: crate::research::ROW_DEPTH, choice: 0 },
-            ),
-            360,
-        );
-    }
     assert!(count > 0 && count <= 1500, "invalid starting-army test count");
     let first = slot_army(d, ArmySlotKey { game_id, structure_id: home, epoch: 0, slot: 0 });
     let second = slot_army(d, ArmySlotKey { game_id, structure_id: home, epoch: 0, slot: 1 });
@@ -78,10 +57,41 @@ pub fn deployed(d: Deployment, game_id: u32, aspect: u8, count: u128) -> Explore
     let key = ExplorerKey {
         game_id, explorer_id: slot_army(d, ArmySlotKey { game_id, structure_id: home, epoch: 0, slot: 0 }),
     };
+    descend(d, key);
+    key
+}
+
+pub fn descend(d: Deployment, key: ExplorerKey) {
+    let game_id = key.game_id;
+    let home = army(d, key).owner;
+    let learned = interact_with_state(d.games, || crate::research::tier(
+        crate::logic::research::learned(ResourceKey { game_id, entity_id: home }),
+        crate::research::ROW_DEPTH,
+    ));
+    let depth_budget = interact_with_state(
+        d.games,
+        || {
+            let mut budget = 0;
+            for tier in learned + 1..4 {
+                budget += crate::logic::research::price(game_id, crate::research::ROW_DEPTH, tier).essence;
+            }
+            budget
+        },
+    );
+    grant(d, ResourceKey { game_id, entity_id: home }, crate::resources::ESSENCE, depth_budget);
+    for _ in learned..3 {
+        applied(
+            d,
+            game_id,
+            Command::Research(
+                crate::research::Research { structure_id: home, row: crate::research::ROW_DEPTH, choice: 0 },
+            ),
+            360,
+        );
+    }
     applied(
         d, game_id, Command::EnterDepth(crate::commands::EnterDepth { explorer_id: key.explorer_id, depth: 3 }), 360,
     );
-    key
 }
 
 pub fn applied(d: Deployment, game_id: u32, command: Command, now: u64) {

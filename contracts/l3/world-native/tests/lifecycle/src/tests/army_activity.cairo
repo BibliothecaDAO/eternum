@@ -302,6 +302,9 @@ fn charge_starts_on_a_new_target_and_rejected_attacks_keep_the_current_fight() {
         ),
         360,
     );
+    super::deep_sites::descend(d, attacker);
+    super::deep_sites::descend(rival, enemy);
+    super::deep_sites::descend(rival, other);
     let center = crate::deep::center(preset.settlement.spacing);
     let center = crate::troops::Coord { x: center.x + 3, ..center };
     set_explorer_fixture(d.games, attacker, ExplorerTroops { coord: center, ..army(d, attacker) });

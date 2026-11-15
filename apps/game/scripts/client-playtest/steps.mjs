@@ -541,7 +541,7 @@ async function attackFromTheSiteCard({ browser }) {
   const forecast = browser.read(
     `Array.from(document.querySelectorAll('[data-kit-sheet] [role="img"][aria-label*="→"]'), node => node.getAttribute('aria-label'))`,
   );
-  watchFor(browser, "fought", tokensShowTheChainsCounts("BattleGuard"));
+  watchFor(browser, "fought", tokensShowTheChainsCounts(browser, "BattleGuard"));
   browser.click("Attack");
   return { army, offered: target.offered, target: target.offset, forecast, watching: true, region: token?.region };
 }
@@ -579,13 +579,16 @@ const armyToken = (army) => `JSON.stringify((() => {
  * Every army the lab chain's last `kind` answer wrote troops for shows exactly that count on its token, as the token
  * writes a count: the fight's attacker, both armies of a transfer.
  */
-const tokensShowTheChainsCounts = (kind) => `(() => {
-  const answer = (window.__labChain?.sent ?? []).filter(({ command }) => command.kind === "${kind}").at(-1);
+const tokensShowTheChainsCounts = (browser, kind) => {
+  const after = browser.read("window.__labChain?.sent.length ?? 0");
+  return `(() => {
+  const answer = (window.__labChain?.sent ?? []).slice(${after}).filter(({ command }) => command.kind === "${kind}").at(-1);
   const rows = (answer?.answered ?? []).filter(({ model, value }) => model === "ExplorerTroops" && value !== null);
   return rows.length > 0 && rows.every(({ value }) =>
     document.querySelector('.mp-at[data-key="army:' + value.explorer_id + '"] .mp-count')?.textContent ===
       (BigInt(value.troops.count) / 1000000000n).toLocaleString("en-US"));
 })()`;
+};
 
 /**
  * A Shrine and a Well used (the lab's sites game): each beside the army, used as a player uses it (a desktop's
@@ -763,7 +766,7 @@ async function sendSomeTroops({ browser }, tiles) {
   if (!move) return { move };
   const tokens = Object.keys(tiles.byArmy ?? {}).map((army) => browser.read(armyToken(army))?.region);
   if (tokens.length !== 2 || !tokens.every(Boolean)) return { move: move.name, tokens };
-  watchFor(browser, "transferred", tokensShowTheChainsCounts("ManageTroops"));
+  watchFor(browser, "transferred", tokensShowTheChainsCounts(browser, "ManageTroops"));
   browser.tap(move.offset);
   return { move: move.name, watching: true, region: boxAround(tokens) };
 }
