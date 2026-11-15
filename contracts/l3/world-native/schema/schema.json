@@ -92,7 +92,9 @@
   "raceConstants": {
     "STAGE_COUNT": 5,
     "CLEAR_MIST_STAGE": 1,
-    "SECOND_WIND_STAGE": 2
+    "SECOND_WIND_STAGE": 2,
+    "PALE_MOON_STAGE": 3,
+    "SPOILS_STAGE": 4
   },
   "researchConstants": {
     "ROW_FARM": 0,
@@ -10470,6 +10472,10 @@
       "name": "world_native::expeditions::SiteClear",
       "members": [
         {
+          "name": "xp",
+          "type": "core::integer::u32"
+        },
+        {
           "name": "explorer_id",
           "type": "core::integer::u64"
         },
@@ -10487,6 +10493,10 @@
       "type": "struct",
       "name": "world_native::expeditions::SitePayout",
       "members": [
+        {
+          "name": "xp",
+          "type": "core::integer::u32"
+        },
         {
           "name": "structure_id",
           "type": "core::integer::u64"
@@ -12117,6 +12127,24 @@
         {
           "name": "aspect",
           "type": "core::integer::u8"
+        }
+      ]
+    },
+    "world_native::race::ExpeditionEffects": {
+      "type": "struct",
+      "name": "world_native::race::ExpeditionEffects",
+      "members": [
+        {
+          "name": "find_percent",
+          "type": "core::integer::u16"
+        },
+        {
+          "name": "beast_bps",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "spoils_percent",
+          "type": "core::integer::u16"
         }
       ]
     },
@@ -14459,5 +14487,5 @@
       ]
     }
   },
-  "identity": "c395d878ad3c3cd64aaef0c6dc7cbb1b5274dfb54073e9b9525114d08fd03ab3"
+  "identity": "f406f76abcb8052cca0b115d62867df62fefd5df1e56ee6e25861af07decdc9c"
 }

@@ -638,7 +638,8 @@ fn beast_clear_payout(full: bool) {
     assert_eq!(
         site.clear,
         Some(
-            crate::expeditions::SiteClear { xp: 0,
+            crate::expeditions::SiteClear {
+                xp: 0,
                 explorer_id: key.explorer_id,
                 home_id: army.owner,
                 reward: Some(crate::resources::ResourceAmount { resource_type: crate::resources::LABOR, amount }),

@@ -129,7 +129,14 @@ export function readBaneEffects(
   const structure = store.get("Structure", { game_id: gameId, entity_id: home });
   if (!structure) return { unknown: "MISSING_PRODUCTION_STRUCTURE" };
   if (structure.base.category !== StructureType.Realm)
-    return { known: { windows, productionPercent: rules.production_percent, staminaPercent: rules.stamina_percent, beastPercent: rules.beast_percent } };
+    return {
+      known: {
+        windows,
+        productionPercent: rules.production_percent,
+        staminaPercent: rules.stamina_percent,
+        beastPercent: rules.beast_percent,
+      },
+    };
   const calendar = baneCalendar(store, gameId);
   const end = Math.min(until, calendar.endAt);
   let cursor = Math.max(from, calendar.startMainAt);
@@ -145,5 +152,12 @@ export function readBaneEffects(
     }
     cursor = day.end;
   }
-  return { known: { windows, productionPercent: rules.production_percent, staminaPercent: rules.stamina_percent, beastPercent: rules.beast_percent } };
+  return {
+    known: {
+      windows,
+      productionPercent: rules.production_percent,
+      staminaPercent: rules.stamina_percent,
+      beastPercent: rules.beast_percent,
+    },
+  };
 }

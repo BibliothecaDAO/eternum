@@ -16,7 +16,8 @@ const clear = (store: NativeFactStore, amount: bigint | null, resourceType = 23)
       value: {
         ...site,
         clear: {
-          xp: siteClearXp(store, site), explorer_id: 201n,
+          xp: siteClearXp(store, site),
+          explorer_id: 201n,
           home_id: 7n,
           reward: amount === null ? null : { resource_type: resourceType, amount },
         },

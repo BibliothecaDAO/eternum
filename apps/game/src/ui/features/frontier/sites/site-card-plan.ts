@@ -10,7 +10,12 @@ import {
   getGuardsByStructure,
   siteKindOf,
 } from "@bibliothecadao/eternum";
-import { readSiteReward, safeInteger, type NativeFactStore, type NativeRows } from "@bibliothecadao/eternum/game-client";
+import {
+  readSiteReward,
+  safeInteger,
+  type NativeFactStore,
+  type NativeRows,
+} from "@bibliothecadao/eternum/game-client";
 import { resolveExplorerCombatTroops, resolveExplorerTroops } from "@bibliothecadao/eternum/troop-stamina";
 import {
   type BiomeType,

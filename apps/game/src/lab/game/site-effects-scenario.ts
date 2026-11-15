@@ -14,20 +14,27 @@ export function siteEffectsScenario(): LabScenario {
   const army = store.require("ExplorerTroops", { game_id: 1, explorer_id: SPIRE_ARMY });
   const tile = besideOnOpenLand(store, store.entityOccupancy(1, SPIRE_ARMY)!);
   const entityId = (7n << 32n) + BigInt(SITE);
-  const facts = siteAt(store, tile, { ...army.troops, count: 1_000_000_000_000n }, StructureType.Camp)
-    .map((fact): LabFact => {
+  const facts = siteAt(store, tile, { ...army.troops, count: 1_000_000_000_000n }, StructureType.Camp).map(
+    (fact): LabFact => {
       const value = fact.value as Record<string, unknown>;
-      return { ...fact, value: { ...value,
-        ...(value.entity_id !== undefined ? { entity_id: String(entityId) } : {}),
-        ...(value.structure_id !== undefined ? { structure_id: String(entityId) } : {}),
-      } };
-    });
+      return {
+        ...fact,
+        value: {
+          ...value,
+          ...(value.entity_id !== undefined ? { entity_id: String(entityId) } : {}),
+          ...(value.structure_id !== undefined ? { structure_id: String(entityId) } : {}),
+        },
+      };
+    },
+  );
   store.applyFacts([
     ...facts,
     { model: "RaceRules", key: "0xc100", value: wire(raceRules()) },
     { model: "HomeAspect", key: "0xc101", value: { game_id: 1, home: "7", aspect: 1 } },
     ...[nativeRaceConstants.PALE_MOON_STAGE, nativeRaceConstants.SPOILS_STAGE].map((stage) => ({
-      model: "TriumphDay", key: `0xc10${stage}`, value: { game_id: 1, aspect: 1, stage, day: 0 },
+      model: "TriumphDay",
+      key: `0xc10${stage}`,
+      value: { game_id: 1, aspect: 1, stage, day: 0 },
     })),
   ] as never);
   return scenario;

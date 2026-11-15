@@ -110,14 +110,22 @@ export const getTroopResourceId = (troopType: TroopType, troopTier: TroopTier): 
 export const GUARD_MODELS = ["Guard", ...SITE_EFFECT_MODELS] as const;
 
 export const getGuardsByStructure = (
-  structure: NativeRows["Structure"], store: NativeFactStore, timestamp?: number,
+  structure: NativeRows["Structure"],
+  store: NativeFactStore,
+  timestamp?: number,
 ) => {
   const site = store.get("ExpeditionSite", { game_id: structure.game_id, entity_id: structure.entity_id });
   let beastBps = 10_000;
   if (site) {
     const calendar = readExpeditionRules(store, structure.game_id);
     if (!calendar) return undefined;
-    const effects = readSiteEffects(store, structure.game_id, entityHomeNamespace(structure.entity_id), timestamp, expeditionDepth(calendar, { y: site.row }));
+    const effects = readSiteEffects(
+      store,
+      structure.game_id,
+      entityHomeNamespace(structure.entity_id),
+      timestamp,
+      expeditionDepth(calendar, { y: site.row }),
+    );
     if (!effects.known) return undefined;
     beastBps = effects.known.beastBps;
   }
@@ -133,7 +141,10 @@ export const getGuardsByStructure = (
       ? [
           {
             slot: guard.slot,
-            troops: inlineTroops({ ...guard.troops, count: effectiveGuardCount(guard.troops.count, beastBps) }, store.require("SliceRules", { game_id: structure.game_id })),
+            troops: inlineTroops(
+              { ...guard.troops, count: effectiveGuardCount(guard.troops.count, beastBps) },
+              store.require("SliceRules", { game_id: structure.game_id }),
+            ),
             destroyedTick: guard.destroyed_tick,
             cooldownEnd: guard.destroyed_tick === 0 ? 0 : guard.destroyed_tick * tickSeconds + delay,
           },

@@ -116,7 +116,8 @@ describe("a realm's daily ruin choice per depth", () => {
         value: {
           ...site(first, 40),
           clear: {
-            xp: 0, explorer_id: home + 4n,
+            xp: 0,
+            explorer_id: home + 4n,
             home_id: home,
             reward: { resource_type: 37, amount: 500n },
           },

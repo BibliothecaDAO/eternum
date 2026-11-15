@@ -3952,12 +3952,18 @@ const SITE_EFFECT_STEPS = [
     play: async (context) => {
       const state = FIGHT_STATE.replaceAll(`structure:${LAB_RUIN}`, `structure:${7 * 2 ** 32 + LAB_RUIN}`);
       const opened = await openTheRuinsCardUntil(showsBothSides, state)(context);
-      const text = context.browser.read(`JSON.stringify([...document.querySelectorAll('[data-kit-sheet]')].filter(node => node.getBoundingClientRect().width).map(node => node.textContent).join(' '))`);
+      const text = context.browser.read(
+        `JSON.stringify([...document.querySelectorAll('[data-kit-sheet]')].filter(node => node.getBoundingClientRect().width).map(node => node.textContent).join(' '))`,
+      );
       return { opened, text };
     },
     settleMs: 0,
-    verify: ({ played }) => played.opened.after.sides.some(side => side.includes("500")) && played.text.includes("272") && /3k|3,000/.test(played.text)
-      ? completed(played) : failed("The camp must show 500 guards, doubled payout and 272 XP", played),
+    verify: ({ played }) =>
+      played.opened.after.sides.some((side) => side.includes("500")) &&
+      played.text.includes("272") &&
+      /3k|3,000/.test(played.text)
+        ? completed(played)
+        : failed("The camp must show 500 guards, doubled payout and 272 XP", played),
   },
 ];
 

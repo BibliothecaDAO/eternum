@@ -31,7 +31,8 @@ export function ClearedSiteLab() {
         value: {
           ...source.site,
           clear: {
-            xp: siteClearXp(source.store, source.site), explorer_id: 201n,
+            xp: siteClearXp(source.store, source.site),
+            explorer_id: 201n,
             home_id: 7n,
             reward: reward ? { resource_type: reward.resourceType, amount: reward.amount } : null,
           },

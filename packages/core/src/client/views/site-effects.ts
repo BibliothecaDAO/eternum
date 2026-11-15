@@ -9,14 +9,27 @@ import { TRIUMPH_MODELS, readTriumphPeriod } from "./triumphs";
 import { readOptionalSeasonRow } from "./season-rows";
 
 export const SITE_EFFECT_MODELS = [
-  ...BANE_MODELS, ...TRIUMPH_MODELS, "GameRegistry", "SliceRules", "SettlementRules", "Structure", "ExpeditionSite",
+  ...BANE_MODELS,
+  ...TRIUMPH_MODELS,
+  "GameRegistry",
+  "SliceRules",
+  "SettlementRules",
+  "Structure",
+  "ExpeditionSite",
 ] as const;
 
-export interface SiteEffects { beastBps: number; spoilsPercent: number }
+export interface SiteEffects {
+  beastBps: number;
+  spoilsPercent: number;
+}
 
 /** Effects change current strength and numeric rewards; the Deep retains its native amounts. */
 export function readSiteEffects(
-  store: NativeFactStore, gameId: number, home: number | bigint, timestamp: number | undefined, depth: number,
+  store: NativeFactStore,
+  gameId: number,
+  home: number | bigint,
+  timestamp: number | undefined,
+  depth: number,
 ): NativeFactResult<SiteEffects> {
   if (depth === 3) return { known: { beastBps: 10_000, spoilsPercent: 100 } };
   const baneRules = readOptionalSeasonRow(store, "BaneRules", { game_id: gameId });
@@ -49,17 +62,26 @@ export const effectiveGuardCount = (base: bigint, bps: number): bigint => (base 
 
 /** Current numeric payout before the attacking army's relics; clear receipts retain the final credited award. */
 export function readSiteReward(
-  store: NativeFactStore, site: NativeRows["ExpeditionSite"], timestamp?: number,
+  store: NativeFactStore,
+  site: NativeRows["ExpeditionSite"],
+  timestamp?: number,
 ): NativeFactResult<{ reward: ReturnType<typeof siteReward>; xp: number }> {
   const calendar = readExpeditionRules(store, site.game_id);
   if (!calendar) return { unknown: "MISSING_EXPEDITION_RULES" };
-  const effects = readSiteEffects(store, site.game_id, entityHomeNamespace(site.entity_id), timestamp,
-    expeditionDepth(calendar, { y: site.row }));
+  const effects = readSiteEffects(
+    store,
+    site.game_id,
+    entityHomeNamespace(site.entity_id),
+    timestamp,
+    expeditionDepth(calendar, { y: site.row }),
+  );
   if (!effects.known) return effects;
   const percent = effects.known.spoilsPercent;
   const base = siteReward(store, site);
-  return { known: {
-    reward: base && { ...base, amount: base.amount * BigInt(percent) / 100n },
-    xp: Math.floor(siteClearXp(store, site) * percent / 100),
-  } };
+  return {
+    known: {
+      reward: base && { ...base, amount: (base.amount * BigInt(percent)) / 100n },
+      xp: Math.floor((siteClearXp(store, site) * percent) / 100),
+    },
+  };
 }

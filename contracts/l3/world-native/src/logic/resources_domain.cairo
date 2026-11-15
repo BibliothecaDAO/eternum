@@ -70,7 +70,9 @@ pub mod ResourcesLogic {
             let home = ResourceKey { game_id: key.game_id, entity_id: home_id };
             let spoils: u128 = if depth < 3 {
                 crate::logic::triumphs::effects(home, context.timestamp).spoils_percent.into()
-            } else { 100 };
+            } else {
+                100
+            };
             let reward = if let Some(reward) = reward {
                 let reward = crate::resources::ResourceAmount { amount: reward.amount * spoils / 100, ..reward };
                 let reward = crate::logic::army_relics::site_reward(explorer, reward, context.timestamp);
@@ -93,7 +95,9 @@ pub mod ResourcesLogic {
                 crate::progression::IArmyProgressionLibraryDispatcher {
                     class_hash: self.release.classes(key.game_id).relics.read(),
                 },
-                explorer, crate::progression::XpAward::Clear(boosted_xp), context.timestamp,
+                explorer,
+                crate::progression::XpAward::Clear(boosted_xp),
+                context.timestamp,
             );
             crate::logic::expeditions::clear_site(
                 key, crate::expeditions::SiteClear { explorer_id: explorer.explorer_id, home_id, reward, xp },

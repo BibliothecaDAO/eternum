@@ -1,9 +1,4 @@
-import {
-  configManager,
-  divideByPrecision,
-  getBlockTimestamp,
-  readResourceManager,
-} from "@bibliothecadao/eternum";
+import { configManager, divideByPrecision, getBlockTimestamp, readResourceManager } from "@bibliothecadao/eternum";
 import { readSiteReward, type NativeFactStore } from "@bibliothecadao/eternum/game-client";
 import { resourceName, ResourcesIds, RIFT_MINE_KIND, StructureType } from "@bibliothecadao/types";
 

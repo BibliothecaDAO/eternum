@@ -125,7 +125,9 @@ fn beast_bps(target: GuardTarget, timestamp: u64) -> u32 {
         || crate::logic::expeditions::depth_at(target.key.game_id, target.coord) == 3 {
         return 10000;
     }
-    let home = ResourceKey { game_id: target.key.game_id, entity_id: crate::entity_ids::namespace(target.key.entity_id).into() };
+    let home = ResourceKey {
+        game_id: target.key.game_id, entity_id: crate::entity_ids::namespace(target.key.entity_id).into(),
+    };
     crate::logic::triumphs::effects(home, timestamp).beast_bps
 }
 
@@ -151,11 +153,18 @@ fn save_guard_defender(defender: GuardDefender, before: u128, context: Execution
     match defender.source {
         GuardSource::Army(key) => combat_troops(key.game_id)
             .finish_battle(key, defender.army, before, crate::commands::action_context(context)),
-        GuardSource::Guard((key, bps)) => {
+        GuardSource::Guard((
+            key, bps,
+        )) => {
             let mut row = crate::logic::guards::guard(key);
             let base_before = row.troops.count;
             row.troops = defender.army.troops;
-            row.troops.count = core::cmp::min(base_before, (row.troops.count * 10000 + Into::<u32, u128>::into(bps) - 1) / bps.into());
+            row
+                .troops
+                .count =
+                    core::cmp::min(
+                        base_before, (row.troops.count * 10000 + Into::<u32, u128>::into(bps) - 1) / bps.into(),
+                    );
             if row.troops.count == 0 {
                 row.troops.stamina.reset();
                 row
