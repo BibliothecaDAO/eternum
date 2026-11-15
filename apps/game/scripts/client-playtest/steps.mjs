@@ -3724,6 +3724,27 @@ const POINTER_PARKED = [0, -300];
 /** An army's tile below its token at the map's default zoom (a player run never zooms): its label point's height. */
 const TOKEN_ABOVE_TILE_PX = 100;
 
+/** The Deep's three sites as the map draws them: the name on each plate and the key `drawnSites` counts it by. */
+const DEEP_SITE_NAMES = [
+  { name: "Foundation", key: "deep:foundation" },
+  { name: "Quarry", key: "deep:quarry" },
+  { name: "Altar", key: "deep:altar" },
+];
+
+/** One Deep site's plate, found by its name: where a press on its model lands (page px from the centre), whether its plate stands wholly in the frame, and the card open now. */
+const siteState = (name) => `JSON.stringify((() => {
+  const sheet = document.querySelector("[data-kit-sheet]")?.getAttribute("aria-label") ?? null;
+  const slot = [...document.querySelectorAll('.mp-at')].find((node) => node.querySelector('.mp-word')?.textContent === ${JSON.stringify(name)});
+  if (!slot || getComputedStyle(slot).display === "none" || !slot.firstElementChild) return { sheet, token: null, inView: false };
+  const box = slot.firstElementChild.getBoundingClientRect();
+  return {
+    sheet,
+    // The plate floats over the site's model: the press goes to the model under it, not to the hex behind the plate.
+    token: [Math.round(box.left + box.width / 2 - innerWidth / 2), Math.round(box.bottom + ${QUARRY_BELOW_PLATE} - innerHeight / 2)],
+    inView: box.left >= 0 && box.right <= innerWidth && box.top >= 0 && box.bottom <= innerHeight,
+  };
+})())`;
+
 /** How far under its plate the Quarry's model stands on the lab camera, in page pixels. */
 const QUARRY_BELOW_PLATE = 65;
 
@@ -3978,9 +3999,62 @@ function raceBoardSteps(result) {
         return { towers };
       },
       verify: ({ played }) =>
-        JSON.stringify(Object.entries(played.towers).sort()) === JSON.stringify(Object.entries(TOWER_PROGRESS).sort())
+        sameTowers(played.towers, TOWERS_AT_THE_START)
           ? completed(played)
-          : failed("Each of the four hyperstructures drawn stands the fifths its Aspect's stages built", played),
+          : failed(
+              "Each of the four hyperstructures drawn stands the fifths its Aspect's stages built, none awake",
+              played,
+            ),
+    },
+    {
+      name: "towers-rise-and-wake",
+      settleMs: 0,
+      play: async ({ browser, extraScreenshot }) => {
+        // The chain writes a block: the fourth Aspect's height crosses its second stage, the third's the whole race.
+        browser.run(["eval", TOWER_HEIGHTS_RISE]);
+        const risen = await readUntil(
+          () => browser.read(DRAWN_TOWERS),
+          (state) => sameTowers(state, TOWERS_AFTER_THE_BLOCK),
+          PLAYABLE_WAIT_MS,
+        );
+        extraScreenshot("towers-after-block");
+        return { risen };
+      },
+      verify: ({ played }) =>
+        sameTowers(played.risen, TOWERS_AFTER_THE_BLOCK)
+          ? completed(played)
+          : failed(
+              "A later stage must be drawn by the tower that reached it, and the finished tower's crown must wake",
+              played,
+            ),
+    },
+    {
+      name: "each-tower-visited",
+      settleMs: 0,
+      play: async ({ browser, extraScreenshot }) => {
+        // At the playing zoom the camera is brought to each tower in turn, so a phone sees all four, one at a time.
+        browser.run(["eval", `void window.__playtest.wheel(-100, ${ZOOM_IN_NOTCHES})`]);
+        await sleep(ZOOM_SETTLE_MS);
+        const visits = [];
+        for (const id of Object.keys(TOWERS_AFTER_THE_BLOCK)) {
+          const read = () => browser.read(towerPlate(id)).point;
+          await panToCentre(browser, read);
+          const seen = browser.read(towerPlate(id));
+          extraScreenshot(`tower-${id}`);
+          visits.push({ id, inView: seen.inView, drawn: browser.read(DRAWN_TOWERS)[id] });
+        }
+        return { visits };
+      },
+      verify: ({ played }) =>
+        played.visits.every(
+          (visit) =>
+            visit.inView === true && JSON.stringify(visit.drawn) === JSON.stringify(TOWERS_AFTER_THE_BLOCK[visit.id]),
+        )
+          ? completed(played)
+          : failed(
+              "Each tower must be visited with its plate in the frame, drawn at the stage the chain wrote",
+              played,
+            ),
     },
     {
       name: "no-site-rank-requests",
@@ -4023,11 +4097,44 @@ const DRAWN_SITES = `JSON.stringify({
   }),
 })`;
 
-/** How much of its tower each drawn hyperstructure stands, in percent, by structure id (the lab's are 901 to 904). */
+/** What each drawn hyperstructure's tower shows, by structure id: its animated progress in percent and whether its crown is awake. */
 const DRAWN_TOWERS = `JSON.stringify(window.__eternumMapSelection?.towers ?? {})`;
 
 /** The lab's Aspects' heights 5,200, 6,400, 2,800 and 900 over a 2,000 stage: two, three, one and no stage built. */
-const TOWER_PROGRESS = { 901: 40, 902: 60, 903: 20, 904: 0 };
+const TOWERS_AT_THE_START = {
+  901: { progress: 40, awake: false },
+  902: { progress: 60, awake: false },
+  903: { progress: 20, awake: false },
+  904: { progress: 0, awake: false },
+};
+
+/** After the block below: the fourth tower stands two stages, the third is whole with its crown awake. */
+const TOWERS_AFTER_THE_BLOCK = {
+  ...TOWERS_AT_THE_START,
+  903: { progress: 100, awake: true },
+  904: { progress: 40, awake: false },
+};
+
+const sameTowers = (drawn, expected) =>
+  JSON.stringify(Object.entries(drawn).sort()) === JSON.stringify(Object.entries(expected).sort());
+
+/** The chain's next block, as the Aspects' ticks would write it: the third Aspect's height past all five stages, the fourth's past two. */
+const TOWER_HEIGHTS_RISE = `void window.__labChain.writeBlock([903, 904].map((entity) => ({
+  model: "AspectHyperstructure",
+  key: "0xa51" + (entity - 900),
+  value: { game_id: 1, aspect: entity - 900, entity_id: String(entity), height: entity === 903 ? 10000 : 4000 },
+})))`;
+
+/** One tower's plate by structure id: where its token stands (page px from the centre) and whether it lies wholly in the frame. */
+const towerPlate = (id) => `JSON.stringify((() => {
+  const slot = document.querySelector('.mp-at[data-key="structure:${id}"]');
+  if (!slot || getComputedStyle(slot).display === "none" || !slot.firstElementChild) return { point: null, inView: false };
+  const box = slot.firstElementChild.getBoundingClientRect();
+  return {
+    point: [Math.round(box.left + box.width / 2 - innerWidth / 2), Math.round(box.top + box.height / 2 - innerHeight / 2)],
+    inView: box.left >= 0 && box.right <= innerWidth && box.top >= 0 && box.bottom <= innerHeight,
+  };
+})())`;
 
 async function attackFromTheDeepCard({ browser, extraScreenshot }) {
   browser.hover(POINTER_PARKED);
@@ -4238,20 +4345,58 @@ const DEEP_JOIN_STEPS = [
       const framed = await readUntil(
         () => browser.read(DRAWN_SITES),
         (state) =>
-          ["deep:foundation", "deep:quarry", "deep:altar"].every((site) => state.drawn[site] > 0) &&
-          state.plates.length >= (onADesktop() ? 3 : 1),
+          DEEP_SITE_NAMES.every((site) => state.drawn[site.key] > 0) &&
+          (!onADesktop() || state.plates.length >= DEEP_SITE_NAMES.length),
         PLAYABLE_WAIT_MS,
       );
       extraScreenshot("deep-sites");
       return { framed };
     },
     verify: ({ played }) =>
-      ["deep:foundation", "deep:quarry", "deep:altar"].every((site) => played.framed.drawn[site] === 1) &&
-      // A desktop frames all three sites with their plates; a phone's narrow frame holds the sites it reaches (the Quarry).
-      played.framed.plates.length >= (onADesktop() ? 3 : 1) &&
+      DEEP_SITE_NAMES.every((site) => played.framed.drawn[site.key] === 1) &&
+      // A desktop frames all three plates over their models; a phone's narrow frame is walked site by site in the next step.
+      (!onADesktop() || played.framed.plates.length >= DEEP_SITE_NAMES.length) &&
       played.framed.plates.every((plate) => plate.inView)
         ? completed(played)
-        : failed("The Deep's Foundation, Quarry and Altar each stand in the frame with their plate over them", played),
+        : failed("The Deep's Foundation, Quarry and Altar are each drawn, and a desktop frames their plates", played),
+  },
+  {
+    name: "deep-sites-each-selected",
+    settleMs: 0,
+    play: async ({ browser, extraScreenshot }) => {
+      // Back at the playing zoom, each site is visited and pressed as a player does: the camera brought to it, its
+      // plate and model in the frame, then a right-click (desktop) or tap (phone) on the model opens its card.
+      browser.press("Escape");
+      browser.run(["eval", `void window.__playtest.wheel(-100, ${ZOOM_IN_NOTCHES})`]);
+      await sleep(ZOOM_SETTLE_MS);
+      const visits = [];
+      for (const { name } of DEEP_SITE_NAMES) {
+        const read = () => browser.read(siteState(name)).token;
+        await panToCentre(browser, read);
+        const before = browser.read(siteState(name));
+        extraScreenshot(`site-${name.toLowerCase()}`);
+        if (before.token && before.inView) {
+          if (onADesktop()) browser.rightClick(before.token);
+          else browser.tap(before.token);
+        }
+        const opened = await readUntil(
+          () => browser.read(siteState(name)),
+          (state) => state.sheet === name,
+          SHEET_WAIT_MS,
+        );
+        visits.push({ name, inView: before.inView, sheet: opened.sheet });
+        browser.press("Escape");
+        await sleep(HOVER_SETTLE_MS);
+      }
+      return { visits };
+    },
+    verify: ({ played }) =>
+      played.visits.every((visit) => visit.inView === true && visit.sheet === visit.name)
+        ? completed(played)
+        : failed(
+            "Each of the Foundation, Quarry and Altar must be visited with its plate in the frame and open its own card",
+            played,
+          ),
   },
 ];
 
@@ -4583,27 +4728,35 @@ const ACROSS_THE_PHONE_PX = [-120, 120];
 const PAN_BURSTS = 16;
 const underTheCard = (token) => token && token[1] >= UNDER_THE_CARD_PX[0] && token[1] <= UNDER_THE_CARD_PX[1];
 async function panTheRuinUnderTheCard(browser, state = FIGHT_STATE) {
-  await panTheRuinInto(browser, 0, ACROSS_THE_PHONE_PX, ["KeyA", "KeyD"], state);
-  await panTheRuinInto(browser, 1, UNDER_THE_CARD_PX, ["KeyW", "KeyS"], state);
+  const readRuin = () => browser.read(state).ruinToken;
+  await panInto(browser, 0, ACROSS_THE_PHONE_PX, ["KeyA", "KeyD"], readRuin);
+  await panInto(browser, 1, UNDER_THE_CARD_PX, ["KeyW", "KeyS"], readRuin);
 }
 
 /**
- * Pans the map in bursts along one axis until the ruin's token stands within `band` on it. `keys` are first taken as
- * the one that moves the token forward on the axis and the one that moves it back; a key that moved it the other way
- * is turned round.
+ * Pans the map in bursts along one axis until the point `readPoint` gives (page px from the centre) stands within
+ * `band` on it. `keys` are first taken as the one that moves the point forward on the axis and the one that moves it
+ * back; a key that moved it the other way is turned round.
  */
-async function panTheRuinInto(browser, axis, band, keys, state) {
+async function panInto(browser, axis, band, keys, readPoint) {
   let [forward, back] = keys;
-  let last = browser.read(state).ruinToken;
+  let last = readPoint();
   for (let burst = 0; burst < PAN_BURSTS && last && (last[axis] < band[0] || last[axis] > band[1]); burst += 1) {
     const ahead = last[axis] < band[0];
     browser.run(["eval", `void window.__playtest.pan(["${ahead ? forward : back}"], 30)`]);
     await sleep(CAMERA_REPORT_MS);
-    const now = browser.read(state).ruinToken;
+    const now = readPoint();
     if (now && (ahead ? now[axis] < last[axis] : now[axis] > last[axis])) [forward, back] = [back, forward];
     last = now;
   }
 }
+
+/** Brings a point the page reads into the middle of the frame, along both axes. */
+async function panToCentre(browser, readPoint) {
+  await panInto(browser, 0, IN_THE_FRAME_PX, ["KeyA", "KeyD"], readPoint);
+  await panInto(browser, 1, IN_THE_FRAME_PX, ["KeyW", "KeyS"], readPoint);
+}
+const IN_THE_FRAME_PX = [-100, 100];
 
 function offersAttack(shown) {
   return shown.buttons.some((text) => text.startsWith("Attack"));

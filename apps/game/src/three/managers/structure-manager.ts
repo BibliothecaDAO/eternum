@@ -1001,7 +1001,8 @@ export class StructureManager {
   }
 
   private async loadStructureModel(structureType: StructureType, modelPath: string): Promise<StructureModel> {
-    if (structureType === StructureType.Hyperstructure) return new HyperstructureModel(STRUCTURE_INSTANCE_CAPACITY);
+    if (structureType === StructureType.Hyperstructure)
+      return new HyperstructureModel(STRUCTURE_INSTANCE_CAPACITY, (towers) => publishMapSelection({ towers }));
     const startedAt = performance.now();
     const gltf = await gltfLoader.loadAsync(modelPath);
     recordWorldmapRenderDuration("structureModelLoadMs", performance.now() - startedAt);
@@ -1624,9 +1625,6 @@ export class StructureManager {
     this.metrics.fullRefreshMaxSliceMs = Math.max(this.metrics.fullRefreshMaxSliceMs, sliceMs);
   }
 
-  /** How much of its tower each hyperstructure drawn now stands, in percent: published for the towers' proof, and let go with the instance. */
-  private readonly towerProgress = new Map<number, number>();
-
   private addVisibleStructureInstance(
     structure: StructureInfo,
     attachmentRetain: Set<number>,
@@ -1646,8 +1644,6 @@ export class StructureManager {
           construction,
           this.pendingHyperstructureBuilds.delete(structure.entityId),
         );
-        this.towerProgress.set(structure.entityId, construction.progress);
-        publishMapSelection({ towers: Object.fromEntries(this.towerProgress) });
       }
       if (binding.model instanceof SettlementModel) {
         binding.model.setRelationshipAt(binding.instanceIndex, resolveSettlementRelationship(structure.isMine));
@@ -1801,7 +1797,6 @@ export class StructureManager {
       dirtyModels.add(model);
     });
     this.structureInstanceBindings.delete(entityId);
-    if (this.towerProgress.delete(entityId)) publishMapSelection({ towers: Object.fromEntries(this.towerProgress) });
   }
 
   private updateVisibleStructureModelCounts(dirtyModels: Set<StructureModel>): void {

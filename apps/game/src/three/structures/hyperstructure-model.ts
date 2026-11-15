@@ -59,7 +59,14 @@ export class HyperstructureModel extends InstancedModel {
   private readonly power: ReturnType<typeof createHyperstructurePower>;
   private seconds = 0;
 
-  constructor(capacity: number) {
+  /** What each tower draws now, by structure id: the animated progress in whole percent, and whether its crown is awake. */
+  private drawn = "";
+
+  /** `observeDrawn` hears what the towers draw whenever it changes, for the proof that reads the screen's truth, not the request. */
+  constructor(
+    capacity: number,
+    private readonly observeDrawn?: (drawn: Record<string, { progress: number; awake: boolean }>) => void,
+  ) {
     const kit = createHyperstructureKit();
     super(kit, capacity, false, "Hyperstructure");
     this.stoneTexture = ((kit.scene.children[0] as Mesh).material as MeshStandardMaterial).map!;
@@ -133,6 +140,7 @@ export class HyperstructureModel extends InstancedModel {
     this.tintMasonry(index, placement);
     this.writeTower(index, placement);
     this.needsUpdate();
+    this.reportDrawn();
   }
 
   override setCount(count: number): void {
@@ -145,6 +153,7 @@ export class HyperstructureModel extends InstancedModel {
     const activeIds = new Set([...this.placements.values()].map((placement) => placement.construction.entityId));
     for (const id of this.presentations.keys()) if (!activeIds.has(id)) this.presentations.delete(id);
     super.setCount(count);
+    this.reportDrawn();
   }
 
   override updateAnimations(delta: number): void {
@@ -162,6 +171,23 @@ export class HyperstructureModel extends InstancedModel {
       }
     }
     if (boundsChanged) this.needsUpdate();
+    this.reportDrawn();
+  }
+
+  private reportDrawn(): void {
+    if (!this.observeDrawn) return;
+    const drawn = Object.fromEntries(
+      [...this.placements.values()]
+        .filter((placement) => placement.construction.entityId !== 0)
+        .map((placement) => [
+          placement.construction.entityId,
+          { progress: Math.round(placement.visualProgress), awake: isAwake(placement) },
+        ]),
+    );
+    const key = JSON.stringify(drawn);
+    if (key === this.drawn) return;
+    this.drawn = key;
+    this.observeDrawn(drawn);
   }
 
   override dispose(): void {

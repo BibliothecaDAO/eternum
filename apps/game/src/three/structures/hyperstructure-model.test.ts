@@ -46,6 +46,33 @@ describe("procedural hyperstructures", () => {
     model.dispose();
   });
 
+  it("reports what it draws: a stage change rises over time, and the crown wakes only once the tower stands whole", async () => {
+    const { HyperstructureModel } = await import("./hyperstructure-model");
+    const heard: Record<string, { progress: number; awake: boolean }>[] = [];
+    const model = new HyperstructureModel(1, (drawn) => heard.push(drawn));
+    model.setMatrixAt(0, new Matrix4());
+    model.setCount(1);
+    model.setConstructionAt(0, { entityId: 7, progress: 20, completed: false });
+    expect(heard.at(-1)).toEqual({ 7: { progress: 20, awake: false } });
+    // The request moves to 40; the tower still draws 20 until time passes.
+    model.setConstructionAt(0, { entityId: 7, progress: 40, completed: false });
+    expect(heard.at(-1)).toEqual({ 7: { progress: 20, awake: false } });
+    model.updateAnimations(0.5);
+    const rising = heard.at(-1)![7]!.progress;
+    expect(rising).toBeGreaterThan(20);
+    expect(rising).toBeLessThan(40);
+    model.updateAnimations(5);
+    expect(heard.at(-1)).toEqual({ 7: { progress: 40, awake: false } });
+    model.setConstructionAt(0, { entityId: 7, progress: 100, completed: true });
+    expect(heard.at(-1)![7]!.awake).toBe(false);
+    model.updateAnimations(5);
+    expect(heard.at(-1)).toEqual({ 7: { progress: 100, awake: true } });
+    model.setMatrixAt(0, new Matrix4().makeScale(0, 0, 0));
+    model.updateAnimations(0.1);
+    expect(heard.at(-1)).toEqual({});
+    model.dispose();
+  });
+
   it("builds additively inside the hex and preserves the completed landmark height", async () => {
     const { HyperstructureModel } = await import("./hyperstructure-model");
     const model = new HyperstructureModel(1);

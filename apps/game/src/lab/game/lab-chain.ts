@@ -104,6 +104,8 @@ interface LabChainRecord {
   streams: number;
   /** The stream goes silent, as a slept phone's does: its socket stays open and nothing more comes on it. */
   silence: () => void;
+  /** The chain writes these rows in its next block, as its own tick would (the lab's stand-in for time passing in the game). */
+  writeBlock: (facts: LabFact[]) => void;
   /** Each scope the lab's Herald served, in order: its selection and the structures and armies it carried. */
   scopes: { actor: string | null; visit: string | null; structures: number[]; armies: number[] }[];
 }
@@ -184,13 +186,23 @@ export const installLabChain = (makeScenario: () => LabScenario, startedAt: numb
   // after /lab/game, or a route's effect run twice) must not open the game before the tab answers its directory.
   (installing ??= installOnce(makeScenario, startedAt));
 
+/** The blocks the lab has written on its own, for their transaction hashes. */
+let blocksWritten = 0;
+
 /** This page's install of the chain, begun or done. */
 let installing: Promise<LabScenario> | undefined;
 
 const installOnce = async (makeScenario: () => LabScenario, startedAt: number): Promise<LabScenario> => {
   // Building a scenario seats its fixture's player, so it is built only here, once, never over the lab's signing account.
   const scenario = makeScenario();
-  const record: LabChainRecord = { sent: [], rejected: [], streams: 0, silence: () => herald.silence(), scopes: [] };
+  const record: LabChainRecord = {
+    sent: [],
+    rejected: [],
+    streams: 0,
+    silence: () => herald.silence(),
+    writeBlock: (facts) => herald.apply(`0xlab${(blocksWritten += 1)}`, facts),
+    scopes: [],
+  };
   window.__labChain = record;
   const { nativeBindings } = await import("@/runtime/world/native-bindings");
   const chain = chainOf(scenario);
