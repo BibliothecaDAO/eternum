@@ -51,13 +51,14 @@ test("matrix conditions and expressions preserve the workflow's actual command",
   expect(() => interpolate("${{ matrix.missing }}", { matrix: {} })).toThrow("Unsupported expression");
 });
 
-
 test("runtime setup follows the workflow rather than the host runtime", () => {
   expect(runtimePin({ uses: "actions/setup-node@v4", with: { "node-version": "22" } })).toEqual({
-    name: "node", version: "22",
+    name: "node",
+    version: "22",
   });
   expect(runtimePin({ uses: "oven-sh/setup-bun@v2", with: { "bun-version": "1.4.0" } })).toEqual({
-    name: "bun", version: "1.4.0",
+    name: "bun",
+    version: "1.4.0",
   });
   expect(runtimePin({ uses: "oven-sh/setup-bun@v2" })).toEqual({ name: "bun", version: "latest" });
   expect(() => runtimePin({ uses: "actions/setup-node@v4" })).toThrow("requires node-version");
