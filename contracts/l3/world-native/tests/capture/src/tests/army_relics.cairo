@@ -152,13 +152,19 @@ fn ruins_fill_replace_and_activate_an_armys_relics_through_commands() {
             552,
         ),
     );
-    let mut revealed = 0;
+    let mut revealed = array![];
     for (_, event) in spy.get_events().emitted_by(d.games).events {
         if event.keys.span() == array![selector!("MapEvent"), selector!("RowSet"), 1, 'TileOpt'].span() {
-            revealed += 1;
+            let mut data = event.data.span();
+            let tile: Span<felt252> = Serde::deserialize(ref data).unwrap();
+            let mut fresh = true;
+            for existing in revealed.span() {
+                if *existing == tile { fresh = false; }
+            }
+            if fresh { revealed.append(tile); }
         }
     }
-    assert_eq!(revealed, 6);
+    assert_eq!(revealed.len(), 6);
     assert_eq!(read_loadout(d, key).first, None);
 }
 
