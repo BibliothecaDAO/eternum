@@ -91,8 +91,9 @@ export const ArmyDetail = ({
         <div className="flex items-center justify-end gap-2">
           <HeldPoints points={army.points} />
         </div>
-        {pointChoices.map((option) =>
-          option.key === "stamina" ? (
+        {pointChoices.map((option) => {
+          const attribute = army.attributes.find(({ key }) => key === option.key);
+          return option.key === "stamina" ? (
             <button
               key={option.key}
               type="button"
@@ -108,15 +109,15 @@ export const ArmyDetail = ({
               <span className="flex-1 text-hud-strong text-hud-ink">{option.name}</span>
               <span className="text-hud-label text-hud-good">+{stamina?.refill ?? 0}</span>
             </button>
-          ) : (
+          ) : attribute ? (
             <Choice
               key={option.key}
-              attribute={army.attributes.find(({ key }) => key === option.key)!}
+              attribute={attribute}
               chosen={chosen === option.key}
               onChoose={() => setChosen(option.key)}
             />
-          ),
-        )}
+          ) : null;
+        })}
         {chosen === "scouting" && pick?.next && (
           <KindChoice kind={kind} available={army.scoutingKinds} onKind={setKind} />
         )}

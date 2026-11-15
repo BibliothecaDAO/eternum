@@ -62,7 +62,7 @@ it("keeps an open barracks figure fixed until the chain-proven floor advances", 
         </>,
       ),
     );
-    const troopRow = () => host.querySelector("section[aria-label='troops']")!.textContent;
+    const troopRow = () => host.querySelector("[data-store-card='troops']")!.closest("section")!.textContent;
     expect(troopRow()).toContain("420");
     act(() => vi.advanceTimersByTime(1000));
     expect(troopRow()).toContain("420");

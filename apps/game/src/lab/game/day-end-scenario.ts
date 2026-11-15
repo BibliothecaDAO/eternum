@@ -10,6 +10,8 @@ import {
 } from "@bibliothecadao/types";
 
 import { dayClock } from "@/ui/features/frontier/hud/day-clock";
+import { madePicks } from "@/ui/features/frontier/production/store-makers";
+import type { MadeResource } from "@/ui/features/frontier/stores";
 
 import { type LabFact, type LabScenario, wire } from "./lab-chain";
 import { PROGRESS_KEYS, spireScenario } from "./spire-scenario";
@@ -49,19 +51,14 @@ const STANDING: BuildingType[] = [
 const BARRACKS = 2;
 
 /**
- * Workshop tier 2 (Tools, Tools), Farm tier 1 (Fields), Barracks tier 1 (Drill), as research.cairo packs them; the
+ * Workshop tier 2 (Tools, Tools), Farm tier 1 (Fields), Barracks tier 1 (Charge), as research.cairo packs them; the
  * Ethereal reaches the spire's realm learned stay.
  */
 const LEARNED = (1n << 0n) | (2n << 7n) | (1n << 14n);
-const PICKS: Partial<Record<number, number>> = {
-  [ResourcesIds.Labor]: 2,
-  [ResourcesIds.Wheat]: 1,
-  [ResourcesIds.Knight]: 1,
-};
 
 /**
  * The spire's game in the day's last hour, the realm a City producing at Frontier's rates under its research: three Workshops (Tools twice),
- * three Farms (Fields) and two Barracks (Drill), the castle's own labor producer beside them, each store's rate as
+ * three Farms (Fields) and two Barracks (Charge), the castle's own labor producer beside them, each store's rate as
  * buildings.cairo's board_output sums it; the army at Uncommon Logistics and Homecoming, 70 stamina held
  * (/lab/game?scenario=day-end).
  */
@@ -163,11 +160,12 @@ const frontierRates = (store: NativeFactStore): LabFact[] => [
 ];
 
 /** A store's ResourceProduction as board_output sums it: each building's base and its picks, plus the castle's labor. */
-const production = (store: NativeFactStore, resource: ResourcesIds, buildings: number, castle: boolean): LabFact => {
+const production = (store: NativeFactStore, resource: MadeResource, buildings: number, castle: boolean): LabFact => {
   const board = store.require("BoardRules", { game_id: 1 });
   const realmRate = (of: ResourcesIds) => store.require("ResourceRule", { game_id: 1, resource_type: of }).realm_rate;
   const base = resource === ResourcesIds.Labor ? board.workshop_rate : realmRate(resource);
-  const boosted = (base * BigInt(10_000 + (PICKS[resource] ?? 0) * board.output_step_bps)) / 10_000n;
+  const learned = store.require("RealmKnowledge", { game_id: 1, structure_id: 7 }).learned | LEARNED;
+  const boosted = (base * BigInt(10_000 + madePicks(resource, learned) * board.output_step_bps)) / 10_000n;
   const rate = boosted * BigInt(buildings) + (castle ? realmRate(ResourcesIds.Labor) : 0n);
   return {
     model: "ResourceProduction",

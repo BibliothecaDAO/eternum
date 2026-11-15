@@ -14,7 +14,9 @@ import { GameProvider } from "@/hooks/context/game-context";
 import { frontierDay } from "@/ui/features/frontier/deploy/deploy-fixture";
 import { setBlockTimestampSource } from "@bibliothecadao/eternum";
 import type { GameClientSetup } from "@bibliothecadao/eternum/game-client";
+import { TROOP_TIERS, TROOP_TYPES, TroopTier, TroopType } from "@bibliothecadao/types";
 import { ArmyDeploymentPicker } from "./army-deployment-picker";
+import { formatTroopTypeLabel } from "./unified-army-creation-modal/field-army-room";
 
 let mounted: { root: ReturnType<typeof createRoot>; host: HTMLDivElement } | undefined;
 afterEach(() => {
@@ -61,33 +63,22 @@ describe("the shared deployment picker", () => {
     );
     const columns = [...host.querySelectorAll(".ui-deploy__troop")];
     // The troop catalog's order (TROOP_TYPES), the one every list of troops follows.
-    expect(columns.map((column) => column.querySelector(".ui-deploy__name")?.textContent)).toEqual([
-      "Knight",
-      "Crossbow",
-      "Paladin",
-    ]);
+    expect(columns.map((column) => column.querySelector(".ui-deploy__name")?.textContent)).toEqual(
+      TROOP_TYPES.map(formatTroopTypeLabel),
+    );
     // Each column holds its troop's tiers, T1 first, an empty one shut and saying so.
     expect(
       columns.map((column) =>
         [...column.querySelectorAll("button")].map((stack) => [stack.getAttribute("aria-label"), stack.disabled]),
       ),
-    ).toEqual([
-      [
-        ["Knight T1, 420 held", false],
-        ["Knight T2, 0 held", true],
-        ["Knight T3, 0 held", true],
-      ],
-      [
-        ["Crossbow T1, 0 held", true],
-        ["Crossbow T2, 0 held", true],
-        ["Crossbow T3, 0 held", true],
-      ],
-      [
-        ["Paladin T1, 0 held", true],
-        ["Paladin T2, 0 held", true],
-        ["Paladin T3, 0 held", true],
-      ],
-    ]);
+    ).toEqual(
+      TROOP_TYPES.map((type) =>
+        TROOP_TIERS.map((tier) => {
+          const held = type === TroopType.Knight && tier === TroopTier.T1 ? 420 : 0;
+          return [`${formatTroopTypeLabel(type)} ${tier}, ${held} held`, held === 0];
+        }),
+      ),
+    );
   });
 
   it("chooses the amount in one row, with the cost beside Deploy and one reason under it when it cannot go", () => {

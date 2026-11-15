@@ -98,7 +98,7 @@ it("spends the selected point on Stamina, doubles its refill and prevents wastin
 
 it("shows empty sockets, the way to the next point as the portrait's ring, and no point while none is held", () => {
   act(() => root.render(<Detail army={readArmyDetail(EARLY_ARMY)} sending={false} onLevelUp={vi.fn()} />));
-  expect(host.querySelectorAll('.ui-tier[data-tier="0"]')).toHaveLength(4);
+  expect(host.querySelectorAll('.ui-tier[data-tier="0"]')).toHaveLength(3);
   expect(host.querySelector('[aria-label="Skill points"]')!.textContent).toBe("");
   // No XP number (the owner, 13 November 2026): 12 of 75 is a ring 16% filled, its tip the same words as before.
   expect(host.textContent).not.toContain("12 / 75");
@@ -242,5 +242,11 @@ it.each([0n, learnResearch(0n, research.ROW_SHRINE, 0), learnResearch(0n, resear
 
 it("does not offer Scouting to a Knight", () => {
   const army = readArmyDetail({ ...EARLY_ARMY, points: [1, 0, 0, 0, 0] });
-  expect(army.attributes.map(({ key }) => key)).toEqual(["battle", "logistics", "homecoming"]);
+  const spent = vi.fn();
+  act(() => root.render(<Detail army={army} sending={false} choosing onLevelUp={spent} />));
+  expect([...host.querySelectorAll("[data-attribute]")].map((button) => button.getAttribute("data-attribute"))).toEqual(
+    ["battle", "logistics", "homecoming", "stamina"],
+  );
+  act(() => [...host.querySelectorAll("button")].find((button) => button.textContent === "Level up")!.click());
+  expect(spent).toHaveBeenCalledExactlyOnceWith({ kind: "Battle", value: undefined });
 });

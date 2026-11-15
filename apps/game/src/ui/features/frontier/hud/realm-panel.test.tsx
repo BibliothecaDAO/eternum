@@ -74,7 +74,7 @@ it("reads the player's realm as Blitz's card reads a holding: name, rank, a ring
       "Essence 18,250",
       "Labor 9,640 of 18,000 · +10/min · Full in 2h",
       "Wheat 4,410 of 6,000 · +10/min · Full in 2h",
-      "Troops 1,200 of 6,000 · +10/min · Full in 2h",
+      "Knights 1,200 of 6,000 · +10/min · Full in 2h",
       "LORDS 1,240",
     ]),
   );

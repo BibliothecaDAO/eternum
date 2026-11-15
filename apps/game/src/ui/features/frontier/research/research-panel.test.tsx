@@ -27,7 +27,7 @@ afterEach(() => {
   host.remove();
 });
 
-const nodes = readResearchTree({ ...MID_REALM, learned: { ...MID_REALM.learned, 2: { tier: 3, sides: [0, 0, 0] } } });
+const nodes = readResearchTree({ ...MID_REALM, learned: { ...MID_REALM.learned, [research.ROW_BARRACKS]: { tier: 4, sides: [0, 0, 0, 0] } } });
 const draw = (picked: string | null, onResearch = vi.fn(), onPick = vi.fn(), onFix = vi.fn(), onClose = vi.fn()) =>
   act(() =>
     root.render(
@@ -83,7 +83,7 @@ it("researches the Farm's next tier with the side picked", () => {
 it("holds a locked node's verb, says why, and offers the step that opens it", () => {
   const onFix = vi.fn();
   draw("row-2", vi.fn(), vi.fn(), onFix);
-  expect(host.textContent).toContain("Labor storage 18,000 / 24,000 · Kingdom");
+  expect(host.textContent).toContain("Labor storage 18,000 / 25,000 · Kingdom");
   expect(button(/^Research /)!.disabled).toBe(true);
   act(() => button(/Level up the castle/)!.click());
   expect(onFix).toHaveBeenCalledOnce();

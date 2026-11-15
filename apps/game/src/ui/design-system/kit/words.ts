@@ -1985,7 +1985,7 @@ export const RESEARCH_TREE = {
   foundMore: "Found more",
   sidesLine: (made: string) => `Improve ${made} output and storage separately`,
   charge: "Charge",
-  chargeLine: "Opening damage before the defender answers",
+  chargeLine: "Charge opening",
   hutLine: "Hut population",
   population: "Population",
   gateLine: "Opens the 4 training buildings",

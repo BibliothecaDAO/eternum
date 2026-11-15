@@ -41,7 +41,7 @@ describe("the castle's tree as the contract rules it", () => {
     expect(barracks.state).toBe("short");
     expect(barracks.sides).toBeUndefined();
     expect(barracks.price).toEqual({ essence: 25000, labor: 5000 });
-    expect(barracks.gives).toEqual({ line: "Opening damage before the defender answers", now: "20%", next: "30%" });
+    expect(barracks.gives).toEqual({ line: "Charge opening", now: "20%", next: "30%" });
   });
 
   it("opens the training rows once the Barracks is rare, and prices each next tier from the game's prices", () => {
@@ -107,7 +107,7 @@ describe("Frontier's camp is its Troll on the progression views (the shared stru
   });
 
   it("names the army's Scouting kind by the Troll", () => {
-    const army = readArmyDetail({ ...VETERAN_ARMY, progress: { ...VETERAN_ARMY.progress, scoutingKinds: ["camp"] } });
+    const army = readArmyDetail({ ...VETERAN_ARMY, category: "Paladin", progress: { ...VETERAN_ARMY.progress, scouting: 1, scoutingKinds: ["camp"] } });
     expect(army.attributes.find(({ key }) => key === "scouting")?.now).toBe("+10% discovery on Trolls");
     expect(JSON.stringify(army)).not.toMatch(/Camp/);
   });
@@ -120,7 +120,6 @@ describe("an army's detail as progression rules it", () => {
     expect(army.attributes.map(({ name, now, next }) => [name, now, next?.change])).toEqual([
       ["Battle", "0% damage", "0% → +10% damage"],
       ["Logistics", "120 max stamina", "120 → 140 max stamina"],
-      ["Scouting", "0% discovery", "0% discovery · +10% on the kind you pick"],
       ["Homecoming", "0% come home", "0% → 3% come home"],
     ]);
   });
@@ -130,7 +129,6 @@ describe("an army's detail as progression rules it", () => {
     expect(army.attributes.map(({ name, next }) => [name, next?.point])).toEqual([
       ["Battle", 3],
       ["Logistics", 1],
-      ["Scouting", 1],
       ["Homecoming", 1],
     ]);
     expect(army.available).toBe(2);
@@ -152,7 +150,7 @@ it("keeps the cheaper side open after the other reaches Legendary and displays t
 });
 
 it("requires construction for the first training level, with no separate research purchase", () => {
-  for (const row of [4, 5, 6, 7]) {
+  for (const row of [research.ROW_WAR_HALL, research.ROW_SUPPLY_YARD, research.ROW_HEARTH]) {
     const training = node(EARLY_REALM, `row-${row}`);
     expect(training.price).toBeUndefined();
     expect(training.nextTier).toBe(1);
@@ -160,6 +158,20 @@ it("requires construction for the first training level, with no separate researc
     expect(training.needs.some((need) => need.kind === "labor" || need.kind === "essence")).toBe(false);
     expect(training.state).toBe("locked");
   }
+});
+
+it("prices the Lodge's first research separately from construction", () => {
+  const key = `row-${research.ROW_SCOUTS_LODGE}`;
+  const before = node(EARLY_REALM, key);
+  expect(before.price).toEqual({ essence: 6000, labor: 1500 });
+  expect(before.needs.some((need) => need.kind === "stands" && !need.met)).toBe(true);
+  const built = node({
+    ...EARLY_REALM,
+    standing: { ...EARLY_REALM.standing, [research.ROW_SCOUTS_LODGE]: 1 },
+    essence: 6000,
+    labor: 1500,
+  }, key);
+  expect(built).toMatchObject({ tier: 0, nextTier: 1, state: "ready", price: { essence: 6000, labor: 1500 } });
 });
 
 // Owner, 30 October 2026: "bit loo long on mobile as well". A side's or figure's line stands on one line in a phone's

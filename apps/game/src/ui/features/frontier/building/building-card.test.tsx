@@ -118,11 +118,11 @@ it("reads each side now against the next tier, picks a side by its row, and rese
 
 it("keeps Research, dimmed, when the labor storage cannot hold the tier's price, saying why with its fix", () => {
   const { onResearch, onFix } = draw(research.ROW_BARRACKS, {
-    realm: { ...MID_REALM, learned: { ...MID_REALM.learned, 2: { tier: 3, sides: [0, 0, 0] } } },
+    realm: { ...MID_REALM, learned: { ...MID_REALM.learned, [research.ROW_BARRACKS]: { tier: 4, sides: [0, 0, 0, 0] } } },
   });
-  const verb = button(/^Research Drill$/)!;
+  const verb = button(/^Research$/)!;
   expect(verb.disabled).toBe(true);
-  expect(host.querySelector('[role="status"]')!.textContent).toBe("Labor storage 18,000 / 24,000 · Kingdom");
+  expect(host.querySelector('[role="status"]')!.textContent).toBe("Labor storage 18,000 / 25,000 · Kingdom");
   act(() => verb.click());
   expect(onResearch).not.toHaveBeenCalled();
   act(() => button(/^Level up the castle$/)!.click());

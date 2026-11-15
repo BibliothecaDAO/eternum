@@ -43,6 +43,7 @@ const army = {
   art: "knight-t1",
   xp: 12,
   troops: 1_500,
+  troopsFact: { category: "Knight" },
   stamina: { current: 4, max: 120 },
   secondsToFull: 232,
   canSpendSkillPoint: false,
