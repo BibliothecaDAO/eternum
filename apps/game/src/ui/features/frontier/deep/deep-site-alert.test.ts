@@ -63,7 +63,7 @@ function fixture(guardCounts = [1000]) {
   }
   store.setSnapshot({ gameId: 1, actor: player, complete: true, timestamp: startsAt });
   const owner = { gameId: 1, actor: player, owner: "0x123", home: String(army.owner) };
-  return { store, startsAt, owner, change, plan: (at = startsAt) => planDeepSiteWatches(store, owner, at * 1000) };
+  return { store, startsAt, owner, write, change, plan: (at = startsAt) => planDeepSiteWatches(store, owner, at * 1000) };
 }
 
 it("forecasts every rival guard in order with the same surviving attacker", () => {
@@ -125,4 +125,25 @@ it("clears four weak slots without resetting the attacker and closes the watch a
   expect(watches).toHaveLength(1);
   expect(watches[0]!.dueAt).toBe(four.startsAt * 1000);
   expect(four.plan(watches[0]!.until / 1000)).toEqual([]);
+});
+
+
+it("uses the largest army across all of the player's homes without substituting a smaller eligible army", () => {
+  const f = fixture();
+  const army = f.store.require("ExplorerTroops", { game_id: 1, explorer_id: 201 });
+  const home = f.store.require("Structure", { game_id: 1, entity_id: army.owner });
+  const slot = f.store.require("ArmySlot", { game_id: 1, structure_id: army.owner, epoch: 0n, slot: 0 });
+  const progress = f.store.require("ArmyProgress", { game_id: 1, explorer_id: 201 });
+  f.write("Structure", { ...home, entity_id: 12n });
+  f.write("HomeAspect", { game_id: 1, home: 12n, aspect: 1 });
+  f.write("RealmKnowledge", { game_id: 1, structure_id: 12n, learned: 0n });
+  f.write("ExplorerTroops", { ...army, explorer_id: 202n, owner: 12n, troops: { ...army.troops, count: 2000n * BigInt(RESOURCE_PRECISION) } });
+  f.write("ArmySlot", { ...slot, structure_id: 12n, explorer_id: 202n });
+  f.write("ArmyProgress", { ...progress, explorer_id: 202n });
+  f.write("ArmyDay", { game_id: 1, explorer_id: 202n, day: 0n });
+  f.write("TileOccupancy", { ...f.store.entityOccupancy(1, 201)!, entity_id: 202n, row: 51 });
+  expect(f.plan()).toEqual([]);
+  f.change("RealmKnowledge", { game_id: 1, structure_id: 12n }, { learned: 3n << 48n });
+  expect(f.plan()).toHaveLength(1);
+  expect(f.plan()[0]!.home).toBe("12");
 });

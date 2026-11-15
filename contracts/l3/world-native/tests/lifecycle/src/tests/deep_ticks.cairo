@@ -42,6 +42,7 @@ fn a_late_rejected_move_pays_all_sites_at_the_win_then_stops_before_later_ticks(
         guards.append(key);
         homes.append(ResourceKey { game_id, entity_id: army(d, key).owner });
     }
+    let homes = homes.span();
     let quarry = *homes.at(crate::rules::DEEP_QUARRY.into());
     let before = balance(d, quarry, crate::resources::LABOR);
     let essence_before = balance(d, quarry, crate::resources::ESSENCE);
