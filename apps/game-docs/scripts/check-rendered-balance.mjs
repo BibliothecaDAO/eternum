@@ -497,7 +497,15 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
   } = await loadBalanceSources();
   const llm = readFileSync(join(dist, "llm.txt"), "utf8");
   const phrases = [
-    ...expectedPhrases(configOf("blitz"), frontierConfig, frontierPreset, ledger, chests, previewRiftGuardBound, nativeRules),
+    ...expectedPhrases(
+      configOf("blitz"),
+      frontierConfig,
+      frontierPreset,
+      ledger,
+      chests,
+      previewRiftGuardBound,
+      nativeRules,
+    ),
     ...historicalChestPhrases(historicalFrontierPreset),
     ...payoutWalletPhrases(payoutWalletChangeSeconds),
   ];

@@ -386,7 +386,10 @@ async function prepareExplorerRoute(
       return;
     }
     const chainTicks = game.currentTicks();
-    if (game.explorerStamina(explorer.explorerId, chainTicks.default) < game.minimumStaminaFor(explorer.explorerId, "explore")) {
+    if (
+      game.explorerStamina(explorer.explorerId, chainTicks.default) <
+      game.minimumStaminaFor(explorer.explorerId, "explore")
+    ) {
       await sleep(ACTION_READINESS_POLL_INTERVAL_MS);
       continue;
     }
@@ -853,7 +856,9 @@ function planExplorerAction(
   const indexes = game.armyPathIndexes();
   const wantedActionType = kind === "explore" ? ActionType.Explore : ActionType.Move;
   const remaining = bot.explorers.filter(
-    (explorer) => game.explorerStamina(explorer.explorerId, chainTicks.default) >= game.minimumStaminaFor(explorer.explorerId, kind),
+    (explorer) =>
+      game.explorerStamina(explorer.explorerId, chainTicks.default) >=
+      game.minimumStaminaFor(explorer.explorerId, kind),
   );
   // No explorer can pay for the step, as after a battle: the bot has nothing to send this tick, and nothing failed.
   if (remaining.length === 0) return undefined;

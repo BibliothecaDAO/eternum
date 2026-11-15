@@ -96,11 +96,12 @@ export const DeploySheet = ({
   return (
     <DeployView
       troopSelection={{
-        choices: plan?.choices.map((troops) => ({
-          category: troops.type,
-          name: FRONTIER_TROOP_NAMES[troops.type],
-          art: armyArt({ category: troops.type, tier: troops.tier }),
-        })) ?? [],
+        choices:
+          plan?.choices.map((troops) => ({
+            category: troops.type,
+            name: FRONTIER_TROOP_NAMES[troops.type],
+            art: armyArt({ category: troops.type, tier: troops.tier }),
+          })) ?? [],
         selected: plan?.troops?.type,
         onPick: (type) => {
           setTroopType(type);

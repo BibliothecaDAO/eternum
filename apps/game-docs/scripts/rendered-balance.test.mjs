@@ -66,7 +66,6 @@ for (const [index, depth] of current.depths.entries()) {
   }
 }
 
-
 test("the rendered armies check rejects the Knight reveal cost for Scouts", () => {
   rejectsStaleValue(
     "frontier/armies",
