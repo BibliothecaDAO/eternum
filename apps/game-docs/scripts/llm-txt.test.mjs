@@ -39,13 +39,18 @@ test("the client build ships exactly the current docs pages without a tracked te
     gameRoot,
     "silent",
   );
-  const plugins = (await Promise.all(loaded.config.plugins)).flat(Infinity)
+  const plugins = (await Promise.all(loaded.config.plugins))
+    .flat(Infinity)
     .filter((plugin) => plugin && plugin.name === "vite-plugin-llm-txt");
   assert.equal(plugins.length, 1, "the serving client's build must own its text export");
   await writeFile(join(root, "index.html"), "<!doctype html><title>Export artifact</title>");
   const outDir = join(root, "client-dist");
   await build({
-    root, configFile: false, publicDir: false, logLevel: "silent", plugins,
+    root,
+    configFile: false,
+    publicDir: false,
+    logLevel: "silent",
+    plugins,
     build: { outDir, rollupOptions: { input: join(root, "index.html") } },
   });
   const shipped = await readFile(join(outDir, "llm.txt"), "utf8");
