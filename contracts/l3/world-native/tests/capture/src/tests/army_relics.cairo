@@ -139,8 +139,9 @@ fn ruins_fill_replace_and_activate_an_armys_relics_through_commands() {
         (preset.economy.progression.unwrap().reveal_xp * 140 / 100)
             + crate::progression::clear_xp(site_state.initial_guard_count, 0) * 140 / 100,
     );
-    let receipt = snforge_std::interact_with_state(d.games,
-        || crate::logic::expeditions::expedition_site(site).unwrap().clear.unwrap());
+    let receipt = snforge_std::interact_with_state(
+        d.games, || crate::logic::expeditions::expedition_site(site).unwrap().clear.unwrap(),
+    );
     assert_eq!(receipt.xp, crate::progression::clear_xp(site_state.initial_guard_count, 0) * 140 / 100);
     let mut spy = snforge_std::spy_events();
     assert!(

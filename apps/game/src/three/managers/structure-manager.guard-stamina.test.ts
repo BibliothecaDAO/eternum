@@ -253,7 +253,7 @@ describe("a Frontier site's guards on its map plate", () => {
   it.each(Object.keys(SITE_TYPES) as SiteKind[])(
     "tells no stamina on a standing %s's guard, only its count",
     (kind) => {
-      expect(guardOnPlate(kind, kind)).toEqual({ type: "knight", tier: 1, count: 1_100 });
+      expect(guardOnPlate(kind, kind)).toEqual({ type: "knight", tier: 1, count: kind === "Beasts" ? 1_000 : 1_100 });
     },
   );
 

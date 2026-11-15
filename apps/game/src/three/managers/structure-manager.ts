@@ -459,9 +459,15 @@ export class StructureManager {
     this.storeUnsubscribes.push(
       this.store.subscribe((changes) => {
         const touched = new Set<number>();
-        const refreshAll = changes.length === 0 || changes.some((change) =>
-          change.model !== "Guard" && change.model !== "Structure" && change.model !== "ExpeditionSite" && GUARD_MODELS.some((model) => model === change.model),
-        );
+        const refreshAll =
+          changes.length === 0 ||
+          changes.some(
+            (change) =>
+              change.model !== "Guard" &&
+              change.model !== "Structure" &&
+              change.model !== "ExpeditionSite" &&
+              GUARD_MODELS.some((model) => model === change.model),
+          );
         for (const change of changes) {
           if (change.model === "CampaignHome") {
             const home = change.current ?? change.previous;
@@ -694,7 +700,9 @@ export class StructureManager {
     return structure && getGuardsByStructure(structure, this.store);
   }
 
-  private resolveGuardArmies(guards: readonly { slot: number; troops: Pick<NativeRows["Guard"]["troops"], "category" | "tier" | "count"> }[]): GuardArmy[] {
+  private resolveGuardArmies(
+    guards: readonly { slot: number; troops: Pick<NativeRows["Guard"]["troops"], "category" | "tier" | "count"> }[],
+  ): GuardArmy[] {
     return guards.map(({ slot, troops }) => ({
       slot,
       category: troops.category,

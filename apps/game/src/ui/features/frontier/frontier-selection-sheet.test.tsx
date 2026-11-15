@@ -113,7 +113,7 @@ const clearedCamp = ({ occupied, reload }: { occupied: boolean; reload: boolean 
       value: {
         ...fixture.site,
         clear: {
-          xp: 0,
+          xp: 123,
           explorer_id: 201n,
           home_id: 7n,
           reward: { resource_type: 23, amount: 550_000_000_000n },

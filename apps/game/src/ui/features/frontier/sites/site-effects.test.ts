@@ -4,7 +4,7 @@ import { nativeBaneConstants, nativeRaceConstants, readSiteReward } from "@bibli
 import { raceRules } from "@/lab/game/race-scenario";
 import { readPlateReward } from "@/three/map-plates/plate-reward";
 import { ResourcesIds, StructureType } from "@bibliothecadao/types";
-import { campBeside, relicEffectFact, SITE, SITE_TILE } from "./site-fixture";
+import { campBeside, relicEffectFact, SITE_TILE } from "./site-fixture";
 import { readSiteCard } from "./site-card-plan";
 import { readClearedSite } from "./site-receipt";
 
@@ -12,13 +12,9 @@ const ENTITY = (7n << 32n) + 710n;
 afterEach(() => setBlockTimestampSource(null));
 
 function effectSite(blood: boolean, pale: boolean, spoils = false) {
-  const fixture = campBeside();
+  const fixture = campBeside("Camp",true,100n,ENTITY);
   const { store } = fixture;
-  const guard = store.require("Guard", { game_id: 1, structure_id: SITE, slot: 0 });
   store.applyFacts([
-    { model: "ExpeditionSite", key: "0x72", value: { ...fixture.site, entity_id: ENTITY } },
-    { model: "Structure", key: "0x71", value: { ...fixture.structure, entity_id: ENTITY } },
-    { model: "Guard", key: "0x73", value: { ...guard, structure_id: ENTITY } },
     { model: "RaceRules", key: "0xa001", value: raceRules() },
     { model: "HomeAspect", key: "0xa002", value: { game_id: 1, home: 7n, aspect: 1 } },
     {
@@ -125,13 +121,15 @@ it("leaves the Deep unchanged and refuses unknown effect facts", () => {
 });
 
 it("composes Spoils with Plunder and Tome at the selected attack second", () => {
-  const { store, site, structure, attack } = effectSite(false,false,true);
+  const { store, site, structure, attack } = effectSite(false, false, true);
   const action = { ...attack({ col: 41, row: 12, alt: false }), timestamp: 450 };
-  store.applyFacts([relicEffectFact("Plunder",1,500), relicEffectFact("Tome",1,500)]);
-  expect(readSiteCard(store,site,structure,SITE_TILE,action)).toMatchObject({
-    xp: 344, payout: { amount: 1980, fits: 1980 },
+  store.applyFacts([relicEffectFact("Plunder", 1, 500), relicEffectFact("Tome", 1, 500)]);
+  expect(readSiteCard(store, site, structure, SITE_TILE, action)).toMatchObject({
+    xp: 344,
+    payout: { amount: 1980, fits: 1980 },
   });
-  expect(readSiteCard(store,site,structure,SITE_TILE,{ ...action, timestamp: 500 })).toMatchObject({
-    xp: 246, payout: { amount: 1650, fits: 1650 },
+  expect(readSiteCard(store, site, structure, SITE_TILE, { ...action, timestamp: 500 })).toMatchObject({
+    xp: 246,
+    payout: { amount: 1650, fits: 1650 },
   });
 });

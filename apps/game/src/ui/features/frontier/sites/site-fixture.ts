@@ -49,7 +49,7 @@ const SITE_CATEGORY: Record<SiteKind, StructureType> = {
   Beasts: StructureType.Beasts,
 };
 
-export const campBeside = (kind: SiteKind = "Camp", guardKnown = true, armyStamina = 100n) => {
+export const campBeside = (kind: SiteKind = "Camp", guardKnown = true, armyStamina = 100n, entityId: number | bigint = SITE) => {
   const { store } = frontierDay();
   const guardCount = kind === "Beasts" ? 1000n : 1100n;
   const noDice =
@@ -91,7 +91,7 @@ export const campBeside = (kind: SiteKind = "Camp", guardKnown = true, armyStami
     }),
     set("0x71", "Structure", {
       ...store.require("Structure", { game_id: 1, entity_id: 7 }),
-      entity_id: SITE,
+      entity_id: entityId,
       owner: "0x0",
       base: {
         category: SITE_CATEGORY[kind],
@@ -104,20 +104,20 @@ export const campBeside = (kind: SiteKind = "Camp", guardKnown = true, armyStami
     }),
     set("0x72", "ExpeditionSite", {
       game_id: 1,
-      entity_id: SITE,
+      entity_id: entityId,
       category: SITE_CATEGORY[kind],
       initial_guard_count: String(guardCount * PRECISION),
       ...SITE_TILE,
       clear: null,
     }),
     ...(kind === "Ruin"
-      ? [set("0x76", "SiteChest", { game_id: 1, entity_id: SITE, tier: 3, amount: "500", reservation_day: "0" })]
+      ? [set("0x76", "SiteChest", { game_id: 1, entity_id: entityId, tier: 3, amount: "500", reservation_day: "0" })]
       : []),
     ...(guardKnown
       ? [
           set("0x73", "Guard", {
             game_id: 1,
-            structure_id: SITE,
+            structure_id: entityId,
             slot: 0,
             troops: troops(guardCount, 0n),
             destroyed_tick: 0,
@@ -145,8 +145,8 @@ export const campBeside = (kind: SiteKind = "Camp", guardKnown = true, armyStami
   });
   return {
     store,
-    site: store.require("ExpeditionSite", { game_id: 1, entity_id: SITE }),
-    structure: store.require("Structure", { game_id: 1, entity_id: SITE }),
+    site: store.require("ExpeditionSite", { game_id: 1, entity_id: entityId }),
+    structure: store.require("Structure", { game_id: 1, entity_id: entityId }),
     attack,
   };
 };
