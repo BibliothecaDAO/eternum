@@ -190,7 +190,7 @@ fn relic_root(
         let reward = crate::army_relics::draw(odds, seed);
         if reward == expected
             && crate::discovery::frontier(
-                rules, 0, 0, 0, 0, Some(reward), seed,
+                rules, 0, 0, 0, 100, 0, Some(reward), seed,
             ) == crate::discovery::Discovery::Ruin(reward) {
             return candidate.into();
         }

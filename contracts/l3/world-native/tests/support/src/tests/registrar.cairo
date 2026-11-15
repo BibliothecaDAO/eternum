@@ -353,7 +353,7 @@ pub fn assert_capture_with_reveal(depth: u8, count: u128, tier: crate::troops::T
 // Search roll inputs, never the gameplay clock. Every chosen input is passed to the action unchanged.
 pub fn discovery_root(
     game_id: u32,
-    rules: crate::expeditions::FrontierDiscoveryRules,
+    rules: crate::expeditions::FrontierDiscoveryRules, find_percent: u16,
     empty_reveals: u8,
     relic: Option<crate::army_relics::ArmyRelic>,
     expected: crate::discovery::Discovery,
@@ -362,7 +362,7 @@ pub fn discovery_root(
         let raw_root: u256 = sample.into();
         let mut root = raw_root;
         let seed = crate::random::game_root(ref root, game_id);
-        if crate::discovery::frontier(rules, 0, 0, 0, empty_reveals, relic, seed) == expected {
+        if crate::discovery::frontier(rules, 0, 0, 0, find_percent, empty_reveals, relic, seed) == expected {
             return raw_root;
         }
     }
@@ -576,7 +576,7 @@ pub fn assert_capture_at(
     let essence_supply = ResourceSlot { game_id, entity_id: 1, resource_type: 38 };
     let before_supplies = resources.resource_balance(labor_supply) + resources.resource_balance(essence_supply);
     let discovery_rules = preset.economy.discovery.unwrap();
-    let root = discovery_root(game_id, discovery_rules, 0, None, crate::discovery::Discovery::Camp);
+    let root = discovery_root(game_id, discovery_rules, 100, 0, None, crate::discovery::Discovery::Camp);
     let reveal_at = opening + 2;
     assert!(reveal_at < capture_at, "camp draw must precede the fixture capture");
     assert!(explore_with_root(d, game_id, explorer_id, root, reveal_at));
@@ -987,7 +987,7 @@ pub fn reveal_ruin(
     d: super::Deployment, key: ExplorerKey, rules: crate::expeditions::FrontierDiscoveryRules, timestamp: u64,
 ) -> (ResourceKey, u8) {
     let army = GameState { contract_address: d.games }.resolved_explorer(key).unwrap();
-    let root = discovery_root(key.game_id, rules, 0, Some(any_relic()), crate::discovery::Discovery::Ruin(any_relic()));
+    let root = discovery_root(key.game_id, rules, 100, 0, Some(any_relic()), crate::discovery::Discovery::Ruin(any_relic()));
     for direction in 0_u8..6 {
         let tile = crate::geometry::tile_key(key.game_id, crate::geometry::neighbor(army.coord, direction));
         let unseen = snforge_std::interact_with_state(d.games, || crate::logic::map::tile(tile).is_none());

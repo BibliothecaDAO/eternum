@@ -30,6 +30,7 @@ pub fn roll(
         ),
     };
     let depth = crate::logic::expeditions::depth_at(key.game_id, Coord { alt: key.alt, x: key.col, y: key.row });
+    let find_percent = if depth < 3 { crate::logic::triumphs::clear_mist(home_key, context.timestamp) } else { 100 };
     let day = crate::logic::expeditions::discovery(counter)
         .unwrap_or(crate::expeditions::ExpeditionDiscovery { empty_reveals: 0, ruin_cleared: false });
     let ruin = Some(crate::army_relics::draw(crate::logic::expeditions::depth_rules(key.game_id, depth).chest, seed));
@@ -39,11 +40,12 @@ pub fn roll(
         Coord { alt: key.alt, x: key.col, y: key.row },
         learned,
         crate::logic::preset_record::for_game(key.game_id).rules.mode_rules.read(),
+        find_percent,
         seed,
     ) {
         crate::discovery::Discovery::Spire
     } else {
-        crate::discovery::frontier(rules, camp, rift, sanctuaries, day.empty_reveals, ruin, seed)
+        crate::discovery::frontier(rules, camp, rift, sanctuaries, find_percent, day.empty_reveals, ruin, seed)
     };
     crate::logic::expeditions::record_discovery(counter, result);
     occupy_discovery(key, home, result, seed);

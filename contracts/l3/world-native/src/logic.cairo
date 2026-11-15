@@ -61,6 +61,7 @@ pub mod settlement_domain;
 pub mod shrines;
 pub mod spires;
 pub mod stamina_effects;
+pub mod triumphs;
 pub mod stories;
 
 pub mod structure_actions;

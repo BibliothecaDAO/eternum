@@ -1,3 +1,4 @@
+import { TRIUMPH_MODELS } from "@bibliothecadao/eternum/game-client";
 import { DEEP_WORDS } from "@/ui/design-system/kit/words";
 import { useGame } from "@/hooks/context/game-context";
 import { useCurrentBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
@@ -33,6 +34,7 @@ import { type DockArmy, useDockArmies } from "./hud/dock-armies";
 import { useApproachTile } from "./sites/approach";
 
 const SPIRE_MODELS = [
+  ...TRIUMPH_MODELS,
   "ArmySlot",
   "ArmyDay",
   "GameRegistry",

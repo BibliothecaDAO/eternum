@@ -4,7 +4,9 @@ import { entityHomeNamespace } from "./entity-home";
 import { researchedDepth } from "./realm-research";
 import { MAX_U32, ResourcesIds } from "@bibliothecadao/types";
 import type { NativeFactStore } from "../client/native-fact-store";
-import { nativeRuleConstants } from "../../../../contracts/l3/world-native/schema/client.gen";
+import { readOptionalSeasonRow } from "../client/views/season-rows";
+import { readTriumphPeriod } from "../client/views/triumphs";
+import { nativeRuleConstants, nativeRaceConstants } from "../../../../contracts/l3/world-native/schema/client.gen";
 import type { NativeRows } from "../../../../contracts/l3/world-native/schema/client.gen";
 import { getNeighborHexes, StructureType } from "@bibliothecadao/types";
 import { getBlockTimestamp } from "./timestamp";
@@ -390,7 +392,7 @@ export const armyRealmSpire = (
 
 /** The next eligible reveal's chance, from the same home/day/layer counter that discovers its Spire. */
 export const armySpireChance = (
-  store: Pick<NativeFactStore, "get" | "require" | "requireOrAbsent" | "entityOccupancy">,
+  store: NativeFactStore,
   gameId: number,
   explorerId: number | bigint,
   nowSeconds: number,
@@ -413,7 +415,16 @@ export const armySpireChance = (
     depth,
   });
   if (!progress.known || progress.known.location) return null;
-  return ((progress.known.reveals + 1) * 100) / nativeRuleConstants.SPIRE_REVEAL_LIMIT;
+  const race = readOptionalSeasonRow(store, "RaceRules", { game_id: gameId });
+  if (!race.known) return null;
+  let percent = 100;
+  if (race.known.row) {
+    const mist = readTriumphPeriod(store, gameId, army.owner, nativeRaceConstants.CLEAR_MIST_STAGE, rules);
+    if (!mist.known) return null;
+    const period = mist.known.period;
+    if (period && nowSeconds >= period.start && nowSeconds < period.end) percent = race.known.row.clear_mist_percent;
+  }
+  return Math.min(100, ((progress.known.reveals + 1) * percent) / nativeRuleConstants.SPIRE_REVEAL_LIMIT);
 };
 
 /** The army's own spire while it stands on or beside it. */

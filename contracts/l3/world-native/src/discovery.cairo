@@ -84,6 +84,7 @@ pub fn frontier(
     camp_bonus_bps: u32,
     rift_bonus_bps: u32,
     sanctuaries_bonus_bps: u32,
+    find_percent: u16,
     empty_reveals: u8,
     ruin: Option<crate::army_relics::ArmyRelic>,
     seed: u256,
@@ -102,7 +103,7 @@ pub fn frontier(
     ];
     let mut total: u128 = 0;
     for (_, weight) in kinds.span() {
-        total += *weight;
+        total += *weight * find_percent.into() / 100;
     }
     let floor = empty_reveals >= rules.empty_reveal_limit;
     let mut draw = crate::random::range(seed, 29, if floor {
@@ -110,7 +111,8 @@ pub fn frontier(
     } else {
         10000
     });
-    for (kind, weight) in kinds {
+    for (kind, base) in kinds {
+        let weight = base * find_percent.into() / 100;
         if draw < weight {
             return kind;
         }

@@ -19,7 +19,7 @@ fn root_for_spire(game_id: u32) -> u256 {
         let root: u256 = value.into();
         let mut remaining = root;
         let seed = crate::random::game_root(ref remaining, game_id);
-        if crate::random::range(seed, 0x5350495245, crate::rules::SPIRE_REVEAL_LIMIT.into()) == 0 {
+        if crate::random::range(seed, 0x5350495245, 10000) < 10000 / crate::rules::SPIRE_REVEAL_LIMIT.into() {
             return root;
         }
     }

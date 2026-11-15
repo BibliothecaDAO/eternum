@@ -1,4 +1,6 @@
 import { act } from "react";
+import { raceRules } from "@/lab/game/race-scenario";
+import { nativeRaceConstants } from "@bibliothecadao/eternum/game-client";
 import { createRoot } from "react-dom/client";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
@@ -371,6 +373,39 @@ describe("a realm's spire, from the player's path", () => {
     } finally {
       hud.unmount();
     }
+  });
+
+  it.each(["desktop", "phone"] as const)("updates Clear Mist odds from confirmed Triumph facts on a %s", (layout) => {
+    const { store } = discoveredSpireDay(0);
+    setBlockTimestampSource(() => NOW);
+    useBlockTimestampStore.setState({ currentBlockTimestamp: NOW, currentDefaultTick: NOW });
+    const key = { game_id: 1, structure_id: 7, epoch: 0, depth: 0 };
+    const found = store.require("ExpeditionSpire", key);
+    const wireKey = store.wireKeyOf("ExpeditionSpire", key)!;
+    store.applyFacts([
+      { model: "ExpeditionSpire", key: wireKey, value: null },
+      { model: "RaceRules", key: "0xc100", value: raceRules() },
+      { model: "HomeAspect", key: "0xc101", value: { game_id: 1, home: 7, aspect: 1 } },
+    ]);
+    const hud = renderLayoutHud(store, layout);
+    try {
+      act(() => useUIStore.getState().selectOnMap({ kind: "army", entityId: ARMY, tile: "own" }));
+      expect(hud.host.textContent).toContain("Spire · next reveal 10%");
+      act(() => store.applyFacts([{ model: "TriumphDay", key: "0xc102", value: {
+        game_id: 1, aspect: 1, stage: nativeRaceConstants.CLEAR_MIST_STAGE, day: 0,
+      } }]));
+      expect(hud.host.textContent).toContain("Spire · next reveal 20%");
+      for (const [reveals, chance] of [[3, 80], [4, 100]]) {
+        act(() => store.applyFacts([{ model: "ExpeditionSpire", key: wireKey, value: { ...found, reveals, location: null } }]));
+        expect(hud.host.textContent).toContain(`Spire · next reveal ${chance}%`);
+      }
+      act(() => store.applyFacts([{ model: "TriumphDay", key: "0xc102", value: {
+        game_id: 1, aspect: 1, stage: nativeRaceConstants.CLEAR_MIST_STAGE, day: 1,
+      } }]));
+      expect(hud.host.textContent).toContain("Spire · next reveal 50%");
+      act(() => store.applyFacts([{ model: "HomeAspect", key: "0xc101", value: null }]));
+      expect(hud.host.querySelector("[data-spire-chance]")).toBeNull();
+    } finally { hud.unmount(); }
   });
 
   it("does not borrow another day's or layer's odds, or invent an unsynchronized counter", () => {

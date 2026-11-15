@@ -974,7 +974,7 @@ fn frontier_floor_counts_seven_player_reveals_across_armies_and_depths_then_rese
         } else {
             crate::discovery::Discovery::Camp
         };
-        let root = discovery_root(game_id, discovery, index, Some(any_relic()), expected);
+        let root = discovery_root(game_id, discovery, 100, index, Some(any_relic()), expected);
         assert!(time < tomorrow);
         assert!(explore_with_root(d, game_id, key.explorer_id, root, time));
         let count = snforge_std::interact_with_state(
@@ -1022,7 +1022,7 @@ fn frontier_floor_counts_seven_player_reveals_across_armies_and_depths_then_rese
     );
     let third = *IStructureOperationsDispatcher { contract_address: d.games }.home_armies(home).at(0);
     let time = tomorrow + 1;
-    let root = discovery_root(game_id, discovery, 0, Some(any_relic()), crate::discovery::Discovery::None);
+    let root = discovery_root(game_id, discovery, 100, 0, Some(any_relic()), crate::discovery::Discovery::None);
     assert!(explore_with_root(d, game_id, third, root, time));
     assert_eq!(
         snforge_std::interact_with_state(
@@ -1262,7 +1262,7 @@ fn frontier_site_discovery_reads_home_knowledge_and_stores_the_shrine_reward() {
         let mut chosen = None;
         for sample in 0_u64..10000 {
             let seed: u256 = sample.into();
-            if crate::discovery::frontier(enabled, 0, 0, 0, 0, Some(any_relic()), seed) == expected {
+            if crate::discovery::frontier(enabled, 0, 0, 0, 100, 0, Some(any_relic()), seed) == expected {
                 chosen = Some(seed);
                 break;
             }

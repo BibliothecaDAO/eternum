@@ -1,6 +1,7 @@
 use crate::troops::Coord;
 
 pub const STAGE_COUNT: u8 = 5;
+pub const CLEAR_MIST_STAGE: u8 = 1;
 pub const SECOND_WIND_STAGE: u8 = 2;
 
 #[derive(Copy, Drop, Serde, Debug, PartialEq, starknet::Store)]

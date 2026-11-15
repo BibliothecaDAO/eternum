@@ -2,13 +2,13 @@ use starknet::storage::{StorageMapReadAccess, StorageMapWriteAccess};
 use crate::spires::{ExpeditionSpire, ExpeditionSpireKey};
 use crate::troops::Coord;
 
-pub fn discover_on_reveal(key: ExpeditionSpireKey, coord: Coord, learned: u64, mode_rules: u32, seed: u256) -> bool {
+pub fn discover_on_reveal(key: ExpeditionSpireKey, coord: Coord, learned: u64, mode_rules: u32, find_percent: u16, seed: u256) -> bool {
     if key.depth >= 3
         || mode_rules & crate::rules::DISCOVER_SPIRES == 0
         || crate::research::tier(learned, crate::research::ROW_DEPTH) == 0 {
         return false;
     }
-    discover(key, coord, seed)
+    discover(key, coord, find_percent, seed)
 }
 
 pub fn read(key: ExpeditionSpireKey) -> Option<ExpeditionSpire> {
@@ -29,13 +29,13 @@ pub fn read(key: ExpeditionSpireKey) -> Option<ExpeditionSpire> {
         )
 }
 
-pub fn discover(key: ExpeditionSpireKey, coord: Coord, seed: u256) -> bool {
+pub fn discover(key: ExpeditionSpireKey, coord: Coord, find_percent: u16, seed: u256) -> bool {
     assert!(key.depth < 3 && !coord.alt, "spires require an upper layer");
     let previous = read(key).unwrap_or(ExpeditionSpire { reveals: 0, location: None });
     if previous.location.is_some() {
         return false;
     }
-    let next = crate::spires::discover(previous, coord, seed);
+    let next = crate::spires::discover(previous, coord, find_percent, seed);
     write(key, next);
     next.location.is_some()
 }

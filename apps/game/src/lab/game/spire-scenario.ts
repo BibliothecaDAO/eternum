@@ -1,3 +1,5 @@
+import { nativeRaceConstants } from "@bibliothecadao/eternum/game-client";
+import { raceRules } from "./race-scenario";
 import { frontierArmyRules } from "../../ui/features/frontier/army/progression-rules-fixture";
 import { installLabGame } from "@/ui/features/debug/kit-lab/fixture-game";
 import { SPIRE_ARMY, SPIRE_DAY_NOW, applySpireDiscovery, spireDay } from "@/ui/features/frontier/spire-fixture";
@@ -235,3 +237,17 @@ export const discoveredSpireScenario = (): LabScenario => {
     },
   };
 };
+
+/** The recorded Clear Mist day, before this home has found its next-layer Spire. */
+export function clearMistScenario(): LabScenario {
+  const scenario = discoveredSpireScenario();
+  const store = scenario.store;
+  for (const [key] of store.entries("ExpeditionSpire"))
+    store.applyFacts([{ model: "ExpeditionSpire", key, value: null }]);
+  store.applyFacts([
+    { model: "RaceRules", key: "0xc100", value: wire(raceRules()) },
+    { model: "HomeAspect", key: "0xc101", value: { game_id: 1, home: "7", aspect: 1 } },
+    { model: "TriumphDay", key: "0xc102", value: { game_id: 1, aspect: 1, stage: nativeRaceConstants.CLEAR_MIST_STAGE, day: 0 } },
+  ] as never);
+  return scenario;
+}

@@ -1,6 +1,6 @@
 use starknet::storage::StoragePointerReadAccess;
 use crate::banes::MIST_TIDE;
-use crate::race::{IRaceDispatcherTrait, IRaceLibraryDispatcher, TriumphKey};
+use crate::race::{IRaceDispatcherTrait, IRaceLibraryDispatcher};
 use crate::resources::ResourceKey;
 use crate::stamina::StaminaTrait;
 use crate::troops::{Coord, Stamina, StaminaRefill, TroopBoosts};
@@ -30,7 +30,7 @@ pub fn refill(
         return;
     }
     let effects = crate::logic::banes::effects(home, since, request.timestamp);
-    let wind = second_wind(home, unit);
+    let wind = second_wind(home);
     for window in effects.windows {
         if *window.kind != MIST_TIDE {
             continue;
@@ -49,19 +49,11 @@ pub fn refill(
     settle_with_wind(ref stamina, ref boosts, maximum, request, request.timestamp, 10000, wind);
 }
 
-fn second_wind(home: ResourceKey, unit: u32) -> Option<Wind> {
+fn second_wind(home: ResourceKey) -> Option<Wind> {
     let race = IRaceLibraryDispatcher { class_hash: crate::logic::release::classes(home.game_id).economy.read() };
     let rules = race.race_rules(home.game_id)?;
-    let aspect = crate::logic::aspects::home_aspect(home);
-    let index = race.triumph_day(TriumphKey { game_id: home.game_id, aspect, stage: crate::race::SECOND_WIND_STAGE })?;
-    let game = crate::logic::game::game(home.game_id);
-    let planned = crate::game::GameRegistry { end_at: game.scheduled_end_at, ..game };
-    let day = crate::days::day_at_index(planned, unit, index);
-    let end = core::cmp::min(day.end, game.end_at);
-    if day.start >= end {
-        return None;
-    }
-    Some(Wind { start: day.start, end, rate_bps: Into::<u16, u32>::into(rules.second_wind_percent) * 100 })
+    let period = crate::logic::triumphs::period(home, crate::race::SECOND_WIND_STAGE)?;
+    Some(Wind { start: period.start, end: period.end, rate_bps: Into::<u16, u32>::into(rules.second_wind_percent) * 100 })
 }
 
 fn settle_with_wind(

@@ -106,7 +106,7 @@ fn discover(
     d: Deployment, key: ExplorerKey, rules: crate::expeditions::FrontierDiscoveryRules, expected: Discovery,
 ) -> ResourceKey {
     let destination = crate::geometry::neighbor(army(d, key).coord, 0);
-    let root = discovery_root(key.game_id, rules, 0, Some(far_eye()), expected);
+    let root = discovery_root(key.game_id, rules, 100, 0, Some(far_eye()), expected);
     let mut events = spy_events();
     if !explore_with_root(d, key.game_id, key.explorer_id, root, 360) {
         panic!("{}", world_test_support::tests::play_fixture::rejection(ref events, d.games).reason);
@@ -133,7 +133,7 @@ fn reveals_count_new_tiles_and_neither_refused_nor_repeated_moves() {
     assert_eq!(progress(d, home), 0);
     let root = discovery_root(
         key.game_id,
-        crate::expeditions::FrontierDiscoveryRules { shrine_bps: 0, ..rules },
+        crate::expeditions::FrontierDiscoveryRules { shrine_bps: 0, ..rules }, 100,
         0,
         Some(far_eye()),
         Discovery::None,
@@ -217,7 +217,7 @@ fn discover_far_eye(d: Deployment, key: ExplorerKey, rules: crate::expeditions::
         if crate::army_relics::draw(odds, seed) != far_eye() {
             continue;
         }
-        if crate::discovery::frontier(rules, 0, 0, 0, 0, Some(far_eye()), seed) != Discovery::Ruin(far_eye()) {
+        if crate::discovery::frontier(rules, 0, 0, 0, 100, 0, Some(far_eye()), seed) != Discovery::Ruin(far_eye()) {
             continue;
         }
         let destination = crate::geometry::neighbor(army(d, key).coord, 0);
@@ -291,7 +291,7 @@ fn reveal_xp_counts_every_point_crossed_across_ranks_and_cycles_once() {
     let home = home(d, key);
     let root = discovery_root(
         key.game_id,
-        crate::expeditions::FrontierDiscoveryRules { shrine_bps: 0, ..rules },
+        crate::expeditions::FrontierDiscoveryRules { shrine_bps: 0, ..rules }, 100,
         0,
         Some(far_eye()),
         Discovery::None,
@@ -329,7 +329,7 @@ fn earned_reveal_points_complete_the_real_quest_and_its_claim_pays_only_once() {
     assert!(!execute_in_game(d, key.game_id, claim, 360));
     let root = discovery_root(
         key.game_id,
-        crate::expeditions::FrontierDiscoveryRules { shrine_bps: 0, ..rules },
+        crate::expeditions::FrontierDiscoveryRules { shrine_bps: 0, ..rules }, 100,
         0,
         Some(far_eye()),
         Discovery::None,

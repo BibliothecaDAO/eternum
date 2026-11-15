@@ -4,13 +4,13 @@ import type { NativeFactResult, NativeFactStore } from "../native-fact-store";
 import { dayAtIndex } from "../../utils/days";
 import { readExpeditionRules } from "../../utils/expeditions";
 import { BANE_MODELS, readBaneEffects } from "./banes";
+import { readTriumphPeriod, TRIUMPH_MODELS } from "./triumphs";
 import { readOptionalSeasonRow } from "./season-rows";
 
 export const STAMINA_MODELS = [
   ...BANE_MODELS,
   "Structure",
-  "RaceRules",
-  "TriumphDay",
+  ...TRIUMPH_MODELS,
   "GameRegistry",
   "SliceRules",
   "SettlementRules",
@@ -47,17 +47,10 @@ export function readStaminaEffects(
     .filter((window) => window.kind === nativeBaneConstants.MIST_TIDE)
     .map((window) => ({ start: window.start, end: window.end, rateBps: staminaPercent * 100 }));
   if (race.known.row) {
-    const membership = store.get("HomeAspect", { game_id: gameId, home });
-    if (!membership) return { unknown: "MISSING_HOME_ASPECT" };
-    const wind = readOptionalSeasonRow(store, "TriumphDay", {
-      game_id: gameId,
-      aspect: membership.aspect,
-      stage: nativeRaceConstants.SECOND_WIND_STAGE,
-    });
+    const wind = readTriumphPeriod(store, gameId, home, nativeRaceConstants.SECOND_WIND_STAGE, calendar);
     if (!wind.known) return wind;
-    if (wind.known.row) {
-      const scheduled = dayAtIndex({ ...calendar, endAt: calendar.scheduledEndAt }, Number(wind.known.row.day));
-      periods.push({ start: scheduled.start, end: scheduled.end, rateBps: race.known.row.second_wind_percent * 100 });
+    if (wind.known.period) {
+      periods.push({ ...wind.known.period, rateBps: race.known.row.second_wind_percent * 100 });
     }
   }
   return { known: { until, windows: combinePeriods(periods, from, until) } };

@@ -12,7 +12,7 @@ fn exploring_at_each_depth_awards_exact_xp_once() {
 
         let before = read_progress(d, key);
         let target = exploration_destination(d, key);
-        let root = super::registrar::discovery_root(game_id, discovery, 0, None, crate::discovery::Discovery::Camp);
+        let root = super::registrar::discovery_root(game_id, discovery, 100, 0, None, crate::discovery::Discovery::Camp);
         explore(d, key, root, 360);
         let after = read_progress(d, key);
         assert_eq!(after, ArmyProgress { xp: before.xp + xp, ..before });
@@ -518,7 +518,7 @@ fn discovery_stores_a_depth_scaled_point_and_public_use_grants_it_once_without_x
             },
         );
         let root = super::registrar::discovery_root(
-            game_id, unlocked, 0, Some(super::registrar::any_relic()), crate::discovery::Discovery::Shrine,
+            game_id, unlocked, 100, 0, Some(super::registrar::any_relic()), crate::discovery::Discovery::Shrine,
         );
         let target = exploration_destination(d, key);
         explore(d, key, root, 360);

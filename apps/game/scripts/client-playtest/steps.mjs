@@ -1168,6 +1168,25 @@ const ARMY_ACTION_STEPS = [
   ),
 ];
 
+const CLEAR_MIST_STEPS = [
+  ARMY_ACTION_STEPS[0],
+  {
+    name: "clear-mist-odds",
+    play: async ({ browser }) => {
+      const panel = await openTheArmyPanel(browser);
+      const odds = await browser.read(`(() => {
+        const line = document.querySelector('[data-spire-chance]');
+        const rect = line?.getBoundingClientRect();
+        return { text: line?.textContent, visible: Boolean(rect && rect.width && rect.height && rect.top >= 0 && rect.bottom <= innerHeight) };
+      })()`);
+      return { panel, odds };
+    },
+    settleMs: 0,
+    verify: ({ played }) => played.odds.visible && played.odds.text.includes("next reveal 20%")
+      ? completed(played) : failed("The army's next Spire reveal must show Clear Mist's doubled chance", played),
+  },
+];
+
 function staminaEffectSteps(wind) {
   return [
     ARMY_ACTION_STEPS[0],
@@ -5265,6 +5284,7 @@ export const STEP_SETS = {
   "lab-devcon-art": { game: { ...LAB_SPIRE, lab: "devcon-0" }, steps: devconArtSteps },
   "lab-devcon-season": { game: { ...LAB_SPIRE, lab: "devcon-season" }, steps: [devconSeasonStep] },
   "lab-spire": { game: LAB_SPIRE, steps: LAB_SPIRE_STEPS },
+  "lab-clear-mist": { game: labSpireGame("clear-mist"), steps: CLEAR_MIST_STEPS },
   "lab-stamina-mist": { game: { ...LAB_SPIRE, lab: "stamina-mist" }, steps: staminaEffectSteps(false) },
   "lab-stamina-wind": { game: { ...LAB_SPIRE, lab: "stamina-wind" }, steps: staminaEffectSteps(true) },
   "lab-layers": { game: LAB_SPIRE, steps: LAB_LAYERS_STEPS },
