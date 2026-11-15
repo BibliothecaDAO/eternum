@@ -3738,7 +3738,8 @@ const DEEP_JOIN_STATE = `JSON.stringify({
   })(),
   joined: (window.__labChain?.sent ?? []).filter(({ command }) => command.kind === "InteractSite"),
   quarry: (() => {
-    const slot = document.querySelector('.mp-at[data-key="deep:quarry"]');
+    const slot = [...document.querySelectorAll('.mp-at')].find((node) =>
+      node.querySelector('[data-icon="pickaxe"]') || node.querySelector('.mp-word')?.textContent === "Quarry");
     if (!slot || getComputedStyle(slot).display === "none" || !slot.firstElementChild) return null;
     const token = slot.firstElementChild.getBoundingClientRect();
     // The plate floats over the site's model: the press goes to the model under it, not to the hex behind the plate.
