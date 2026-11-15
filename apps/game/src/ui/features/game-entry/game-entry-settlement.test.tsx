@@ -70,7 +70,7 @@ vi.mock("@/services/settlement", () => ({
 vi.mock("@/ui/layouts/game-entry-timeline", () => ({ markGameEntryMilestone: state.milestone }));
 
 import { useAccountStore } from "@/hooks/store/use-account-store";
-import { useIdentitySessionStore } from "@/hooks/context/identity-session";
+import { identityClient, useIdentitySessionStore } from "@/hooks/context/identity-session";
 import { ASPECT_STEP_WORDS } from "@/ui/design-system/kit/words";
 import { GameEntryModal } from "./game-entry-modal";
 import { FRONTIER_S1_PRESET_ID } from "../../../../../../config/source/common/native-preset-modes";
@@ -156,10 +156,12 @@ it("opens a returning player's session on the map: only the entry that created t
 it("asks a Season 1 free home for its Aspect, founds nothing without a tap, and founds into the one tapped", async () => {
   state.settled = false;
   state.founded = [];
+  const joined = vi.spyOn(identityClient, "joinedShare").mockResolvedValue(null);
   // Herald's directory row counts each Aspect's homes (AspectMembers), every Aspect named.
   state.entry = { ...state.entry, preset_id: FRONTIER_S1_PRESET_ID, aspect_members: { 1: 12, 2: 9, 3: 0, 4: 31 } };
   const { host, close } = await openEntry("settle");
   try {
+    await act(async () => vi.advanceTimersByTimeAsync(100));
     const cards = [...host.querySelectorAll<HTMLButtonElement>(".aspect-picker__card")];
     expect(cards.map((card) => card.getAttribute("aria-label"))).toEqual([
       "Join Might",
@@ -186,6 +188,7 @@ it("asks a Season 1 free home for its Aspect, founds nothing without a tap, and 
     expect(state.navigate).toHaveBeenCalledTimes(1);
   } finally {
     await close();
+    joined.mockRestore();
     state.entry = { ...state.entry, preset_id: 5, aspect_members: undefined };
   }
 });

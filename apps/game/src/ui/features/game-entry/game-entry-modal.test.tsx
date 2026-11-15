@@ -890,7 +890,10 @@ describe("a friend's Aspect invite at a Season 1 campaign home's founding", () =
     joined.mockResolvedValue(invite(GAME));
     const entry = await openEntry();
     try {
-      await vi.waitFor(() => expect(entry.host.textContent).toContain("Your friend's invite could not be read"));
+      // The read is tried once more after a second before it is called unreadable.
+      await vi.waitFor(() => expect(entry.host.textContent).toContain("Your friend's invite could not be read"), {
+        timeout: 4_000,
+      });
       expect(cards(entry.host)).toEqual(plainOrder);
       await act(async () =>
         [...entry.host.querySelectorAll("button")].find((button) => button.textContent === "Try again")!.click(),
