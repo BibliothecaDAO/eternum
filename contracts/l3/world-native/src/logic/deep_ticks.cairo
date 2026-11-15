@@ -1,9 +1,9 @@
 use starknet::storage::{StorageMapReadAccess, StorageMapWriteAccess, StoragePathEntry, StoragePointerReadAccess};
 use crate::commands::ExecutionContext;
 use crate::deep::{DeepShare, IDeepBanesDispatcherTrait, IDeepRewardsDispatcherTrait};
+use crate::race::IRaceDispatcherTrait;
 use crate::resources::{IResourceOperationsDispatcherTrait, IResourceOperationsLibraryDispatcher, ResourceKey};
 use crate::troops::{ExplorerKey, ExplorerTroops};
-use crate::race::IRaceDispatcherTrait;
 
 pub fn initialize(game_id: u32) {
     let state = crate::state::write();
@@ -50,9 +50,7 @@ pub fn settle(game_id: u32, context: ExecutionContext) {
 }
 
 fn settle_boundary(game_id: u32, boundary: u64, context: ExecutionContext) {
-    let historical = ExecutionContext {
-        timestamp: boundary - 1, ..context,
-    };
+    let historical = ExecutionContext { timestamp: boundary - 1, ..context };
     crate::logic::deep_sites::rollover(game_id, historical);
     for kind in 0..crate::rules::DEEP_SITE_COUNT {
         let guards = guards(game_id, kind);
@@ -153,9 +151,11 @@ fn pay_quarry(game_id: u32, shares: Span<DeepShare>, boundary: u64, context: Exe
 fn save_cursor(game_id: u32, tick: u64) {
     crate::state::write().deep.paid_tick.write(game_id, Some(tick));
     crate::logic::map::MapState::emit(
-        crate::logic::map::MapState::Event::RowSet(crate::events::RowSet {
-            version: 1, model: 'DeepTick', keys: array![game_id.into()].span(), values: array![tick.into()].span(),
-        }),
+        crate::logic::map::MapState::Event::RowSet(
+            crate::events::RowSet {
+                version: 1, model: 'DeepTick', keys: array![game_id.into()].span(), values: array![tick.into()].span(),
+            },
+        ),
     );
 }
 

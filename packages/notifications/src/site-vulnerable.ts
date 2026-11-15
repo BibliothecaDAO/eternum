@@ -16,16 +16,19 @@ export function buildSiteVulnerableNotification(input: {
 }): LocalNotificationPayload | null {
   if (input.until <= input.now) return null;
   const target = `${gamePath(input, "map")}?col=${input.col}&row=${input.row}`;
-  return parseNotificationPayload({
-    version: 1,
-    kind: "site-vulnerable",
-    id: `site:v1:${input.chainId}:${input.gameId}:${input.owner}:${input.siteId}:${input.day}`,
-    owner: input.owner,
-    title: `${input.siteName} can be taken`,
-    body: "Your largest army outside the Deep can clear its remaining guards.",
-    tag: kindTag("site-vulnerable", target),
-    target,
-    createdAt: input.now,
-    expiresAt: input.until,
-  }, input.now);
+  return parseNotificationPayload(
+    {
+      version: 1,
+      kind: "site-vulnerable",
+      id: `site:v1:${input.chainId}:${input.gameId}:${input.owner}:${input.siteId}:${input.day}`,
+      owner: input.owner,
+      title: `${input.siteName} can be taken`,
+      body: "Your largest army outside the Deep can clear its remaining guards.",
+      tag: kindTag("site-vulnerable", target),
+      target,
+      createdAt: input.now,
+      expiresAt: input.until,
+    },
+    input.now,
+  );
 }

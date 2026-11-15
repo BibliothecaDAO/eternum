@@ -70,7 +70,9 @@ const draw = (now?: number, scenario = deepScenario()) => {
 describe("the Deep site's live native binding", () => {
   it("reads every site's tick payment and Altar charge from its current rules and facts", () => {
     const scenario = raceScenario();
-    scenario.store.applyFacts([{ model: "BaneRules", key: "0xfee1", value: baneScenario("world").store.require("BaneRules", { game_id: 1 }) }]);
+    scenario.store.applyFacts([
+      { model: "BaneRules", key: "0xfee1", value: baneScenario("world").store.require("BaneRules", { game_id: 1 }) },
+    ]);
     const hud = draw(undefined, scenario);
     try {
       expect(hud.host.querySelector("[data-deep-pay]")?.textContent).toContain("500");
@@ -84,11 +86,21 @@ describe("the Deep site's live native binding", () => {
         if (site.name === "Altar") expect(pay).toContain("300 of 1,500");
       }
       const rules = hud.store.require("DeepRules", { game_id: 1 });
-      act(() => hud.store.applyFacts([{ model: "DeepRules", key: hud.store.wireKeyOf("DeepRules", rules)!, value: { ...rules, quarry_per_tick: 600n * BigInt(RESOURCE_PRECISION) } }]));
+      act(() =>
+        hud.store.applyFacts([
+          {
+            model: "DeepRules",
+            key: hud.store.wireKeyOf("DeepRules", rules)!,
+            value: { ...rules, quarry_per_tick: 600n * BigInt(RESOURCE_PRECISION) },
+          },
+        ]),
+      );
       hud.render();
       expect(hud.host.querySelector("[data-deep-pay]")?.textContent).toContain("600");
       expect(hud.host.querySelector("[data-deep-pay]")?.textContent).not.toContain("500");
-    } finally { hud.unmount(); }
+    } finally {
+      hud.unmount();
+    }
   });
 
   it("keeps the joined slot army's refilled stamina and panel after vacating its tile", async () => {

@@ -238,20 +238,37 @@ const createHerald = () => {
     server.addEventListener("close", () => sockets.delete(connection));
     server.addEventListener("message", (event) => {
       if (JSON.parse(String(event.data)).type !== "resume") return;
-      const snap = siteSnapshot(snapshot(state.army, state.neighbourArmy, null, state.members, state.homeSource, state.secondArmy), state.site);
-      for (const model of snap.models) server.send(JSON.stringify({ type: "snapshot", epoch: "site-test", seq: connection.seq, ...model }));
+      const snap = siteSnapshot(
+        snapshot(state.army, state.neighbourArmy, null, state.members, state.homeSource, state.secondArmy),
+        state.site,
+      );
+      for (const model of snap.models)
+        server.send(JSON.stringify({ type: "snapshot", epoch: "site-test", seq: connection.seq, ...model }));
       server.send(JSON.stringify({ type: "snapshot_end", epoch: "site-test", seq: connection.seq }));
     });
-    server.send(JSON.stringify({ type: "hello", epoch: "site-test", seq: 0, confirmed_block: 10, preconfirmed_block: null }));
+    server.send(
+      JSON.stringify({ type: "hello", epoch: "site-test", seq: 0, confirmed_block: 10, preconfirmed_block: null }),
+    );
     return new SocketResponse(null, { status: 101, webSocket: pair[0] }) as unknown as Response;
   };
   const siteChanged = (preconfirmed = false) => {
-    const snap = siteSnapshot(snapshot(state.army, state.neighbourArmy, null, state.members, state.homeSource, state.secondArmy), state.site);
+    const snap = siteSnapshot(
+      snapshot(state.army, state.neighbourArmy, null, state.members, state.homeSource, state.secondArmy),
+      state.site,
+    );
     const model = snap.models.find(({ model }) => model === "DeepGuard")!;
-    for (const connection of sockets) connection.socket.send(JSON.stringify({
-      type: "diff", epoch: "site-test", seq: ++connection.seq, block: 11, preconfirmed,
-      set: model.rows.map((row) => ({ model: model.model, ...row })), del: [],
-    }));
+    for (const connection of sockets)
+      connection.socket.send(
+        JSON.stringify({
+          type: "diff",
+          epoch: "site-test",
+          seq: ++connection.seq,
+          block: 11,
+          preconfirmed,
+          set: model.rows.map((row) => ({ model: model.model, ...row })),
+          del: [],
+        }),
+      );
   };
   return { answer, act, battle, newChain, state, story, stream, siteChanged };
 };
@@ -332,7 +349,10 @@ const snapshot = (
     },
     {
       model: "RealmKnowledge",
-      rows: [HOME, NEIGHBOUR_HOME].map((structure_id) => ({ key: `0x${structure_id}`, value: { game_id: GAME_ID, structure_id, learned: "0" } })),
+      rows: [HOME, NEIGHBOUR_HOME].map((structure_id) => ({
+        key: `0x${structure_id}`,
+        value: { game_id: GAME_ID, structure_id, learned: "0" },
+      })),
     },
     {
       model: "LaborRules",
@@ -516,36 +536,90 @@ const snapshot = (
 
 /** A realm as the contract writes it: the player's home holds Realm 711. */
 /** A confirmed shared Quarry held by a rival; the enrolled player's army stays outside the Deep. */
-function siteSnapshot(base: HeraldGameSnapshot, site: { troops: number; aspect: number; lore: boolean; lastTick: number } | null): HeraldGameSnapshot {
+function siteSnapshot(
+  base: HeraldGameSnapshot,
+  site: { troops: number; aspect: number; lore: boolean; lastTick: number } | null,
+): HeraldGameSnapshot {
   if (!site) return base;
   const put = (model: string, rows: HeraldGameSnapshot["models"][number]["rows"]) => {
     const existing = base.models.find((row) => row.model === model);
     if (existing) existing.rows = rows;
     else base.models.push({ model, rows });
   };
-  const row = (key: number, value: Record<string, unknown>) => ({ key: `0x${key.toString(16)}`, value: { game_id: GAME_ID, ...value } });
+  const row = (key: number, value: Record<string, unknown>) => ({
+    key: `0x${key.toString(16)}`,
+    value: { game_id: GAME_ID, ...value },
+  });
   const bar = { amount: 120, settledAt: Math.floor(Date.now() / 1000), day: TODAY };
   const armies = [armyRow(ARMY, HOME, bar), armyRow(NEIGHBOUR_ARMY, NEIGHBOUR_HOME, bar)];
   armies[0]!.value.troops.count = String(1500 * RESOURCE_PRECISION);
   armies[1]!.value.troops.count = String(site.troops * RESOURCE_PRECISION);
   put("ExplorerTroops", armies);
-  put("Structure", [HOME, NEIGHBOUR_HOME].map((home) => row(home, realmRow(home))));
+  put(
+    "Structure",
+    [HOME, NEIGHBOUR_HOME].map((home) => row(home, realmRow(home))),
+  );
   put("ArmySlot", [armySlotRow(ARMY, HOME, bar), armySlotRow(NEIGHBOUR_ARMY, NEIGHBOUR_HOME, bar)]);
   put("ArmyProgress", [armyProgressRow(ARMY, HOME), armyProgressRow(NEIGHBOUR_ARMY, NEIGHBOUR_HOME)]);
-  put("ArmyDay", [ARMY, NEIGHBOUR_ARMY].map((explorer_id) => row(explorer_id, { explorer_id, day: TODAY })));
-  put("HomeAspect", [row(HOME, { home: HOME, aspect: 1 }), row(NEIGHBOUR_HOME, { home: NEIGHBOUR_HOME, aspect: site.aspect })]);
+  put(
+    "ArmyDay",
+    [ARMY, NEIGHBOUR_ARMY].map((explorer_id) => row(explorer_id, { explorer_id, day: TODAY })),
+  );
+  put("HomeAspect", [
+    row(HOME, { home: HOME, aspect: 1 }),
+    row(NEIGHBOUR_HOME, { home: NEIGHBOUR_HOME, aspect: site.aspect }),
+  ]);
   put("RealmKnowledge", [row(HOME, { structure_id: HOME, learned: site.lore ? String(3n << 48n) : "0" })]);
-  const offsets = { foundation: { alt: false, x: 10, y: 25 }, quarry: { alt: false, x: 25, y: 25 }, altar: { alt: false, x: 40, y: 25 } };
-  put("DeepRules", [row(1, { ...offsets, beast_count: 10000 * RESOURCE_PRECISION, loss_per_tick: 200 * RESOURCE_PRECISION, quarry_per_tick: 500 * RESOURCE_PRECISION, altar_per_tick: 5, altar_threshold: 1500 })]);
-  put("DeepSite", deepSites.map((kind) => row(800 + kind.id, { entity_id: 800 + kind.id, kind: kind.id, day: TODAY })));
+  const offsets = {
+    foundation: { alt: false, x: 10, y: 25 },
+    quarry: { alt: false, x: 25, y: 25 },
+    altar: { alt: false, x: 40, y: 25 },
+  };
+  put("DeepRules", [
+    row(1, {
+      ...offsets,
+      beast_count: 10000 * RESOURCE_PRECISION,
+      loss_per_tick: 200 * RESOURCE_PRECISION,
+      quarry_per_tick: 500 * RESOURCE_PRECISION,
+      altar_per_tick: 5,
+      altar_threshold: 1500,
+    }),
+  ]);
+  put(
+    "DeepSite",
+    deepSites.map((kind) => row(800 + kind.id, { entity_id: 800 + kind.id, kind: kind.id, day: TODAY })),
+  );
   const quarry = deepSites.find((kind) => kind.position === "quarry")!;
   put("DeepGuard", [row(NEIGHBOUR_ARMY, { explorer_id: NEIGHBOUR_ARMY, site_id: 800 + quarry.id, slot: 0 })]);
   put("DeepArmy", [row(NEIGHBOUR_ARMY, { explorer_id: NEIGHBOUR_ARMY, last_tick: site.lastTick })]);
   put("TileOccupancy", [
     armyPosition(ARMY, HOME, bar),
-    ...deepSites.map((kind) => row(800 + kind.id, { entity_id: 800 + kind.id, col: offsets[kind.position].x + 25, row: offsets[kind.position].y + 325, alt: false, category: TileOccupier.DeepSite, is_structure: false })),
+    ...deepSites.map((kind) =>
+      row(800 + kind.id, {
+        entity_id: 800 + kind.id,
+        col: offsets[kind.position].x + 25,
+        row: offsets[kind.position].y + 325,
+        alt: false,
+        category: TileOccupier.DeepSite,
+        is_structure: false,
+      }),
+    ),
   ]);
-  put("Guard", deepSites.map((kind) => row(800 + kind.id, { structure_id: 800 + kind.id, slot: 0, destroyed_tick: 0, troops: { ...explorerFixture.expected.value.troops, stamina: { Inline: { amount: 120, settled_at: bar.settledAt, remainder: 0 } }, count: kind.id === quarry.id ? 0 : 10000 * RESOURCE_PRECISION } })));
+  put(
+    "Guard",
+    deepSites.map((kind) =>
+      row(800 + kind.id, {
+        structure_id: 800 + kind.id,
+        slot: 0,
+        destroyed_tick: 0,
+        troops: {
+          ...explorerFixture.expected.value.troops,
+          stamina: { Inline: { amount: 120, settled_at: bar.settledAt, remainder: 0 } },
+          count: kind.id === quarry.id ? 0 : 10000 * RESOURCE_PRECISION,
+        },
+      }),
+    ),
+  );
   const rules = base.models.find(({ model }) => model === "SliceRules")!.rows[0]!.value;
   rules.battle_config = { ...preset.rules.battle_config, cooldown_seconds: 0 };
   return base;
@@ -755,7 +829,9 @@ describe.concurrent("shard notifications", () => {
     herald.state.site.lastTick = armiesTick();
     herald.siteChanged();
     await waitUntil(() => push.received.length === 1, 20000);
-    expect(await push.words()).toEqual(["Quarry can be taken / Your largest army outside the Deep can clear its remaining guards."]);
+    expect(await push.words()).toEqual([
+      "Quarry can be taken / Your largest army outside the Deep can clear its remaining guards.",
+    ]);
     herald.siteChanged();
     await pause(polls(2));
     expect(push.received).toEqual([201]);
@@ -765,7 +841,9 @@ describe.concurrent("shard notifications", () => {
       await restarted.runCron();
       await pause(polls(3));
       expect(push.received).toEqual([201]);
-    } finally { await restarted.dispose(); }
+    } finally {
+      await restarted.dispose();
+    }
   }, 90000);
 
   it("wakes a Deep site opportunity at its computed drain tick without another player action", async () => {
@@ -776,8 +854,12 @@ describe.concurrent("shard notifications", () => {
       await pause(polls(2));
       expect(push.received).toEqual([]);
       await waitUntil(() => push.received.length === 1, 60000);
-      expect(await push.words()).toEqual(["Quarry can be taken / Your largest army outside the Deep can clear its remaining guards."]);
-    } finally { await worker.dispose(); }
+      expect(await push.words()).toEqual([
+        "Quarry can be taken / Your largest army outside the Deep can clear its remaining guards.",
+      ]);
+    } finally {
+      await worker.dispose();
+    }
   }, 90000);
 
   it("cancels a waiting Deep site opportunity when the rival reinforces before a delivery retry", async () => {
@@ -793,18 +875,25 @@ describe.concurrent("shard notifications", () => {
       push.status = 201;
       await pause(polls(5));
       expect(push.received).toEqual([503]);
-    } finally { await worker.dispose(); }
+    } finally {
+      await worker.dispose();
+    }
   }, 60000);
 
   it("suppresses a Deep site opportunity on a foreground device", async () => {
     const { herald, push, worker } = await createHarness("important");
     herald.state.site = { troops: 1000, aspect: 2, lore: true, lastTick: armiesTick() };
-    await worker.db.prepare('UPDATE "notification_push_subscriptions" SET "gameForegroundUntil" = ?').bind(Date.now() + 60000).run();
+    await worker.db
+      .prepare('UPDATE "notification_push_subscriptions" SET "gameForegroundUntil" = ?')
+      .bind(Date.now() + 60000)
+      .run();
     try {
       await worker.runCron();
       await pause(polls(5));
       expect(push.received).toEqual([]);
-    } finally { await worker.dispose(); }
+    } finally {
+      await worker.dispose();
+    }
   }, 60000);
 
   it("alerts the player's device once for a battle on a listed shard, and a restart resends nothing", async () => {

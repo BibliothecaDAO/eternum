@@ -13,15 +13,31 @@ function fixture(guardCounts = [1000]) {
   const write = <M extends NativeModelName>(model: M, row: NativeRows[M]) => {
     store.applyFacts([{ model, key: `0x${(key++).toString(16)}`, value: row }]);
   };
-  const change = <M extends NativeModelName>(model: M, keys: Parameters<typeof store.require<M>>[1], changes: Partial<NativeRows[M]>) => {
-    store.applyFacts([{ model, key: store.wireKeyOf(model, keys)!, value: { ...store.require(model, keys), ...changes } }]);
+  const change = <M extends NativeModelName>(
+    model: M,
+    keys: Parameters<typeof store.require<M>>[1],
+    changes: Partial<NativeRows[M]>,
+  ) => {
+    store.applyFacts([
+      { model, key: store.wireKeyOf(model, keys)!, value: { ...store.require(model, keys), ...changes } },
+    ]);
   };
-  store.applyFacts([{ model: "DeepArmy", key: store.wireKeyOf("DeepArmy", { game_id: 1, explorer_id: 201 })!, value: null }]);
+  store.applyFacts([
+    { model: "DeepArmy", key: store.wireKeyOf("DeepArmy", { game_id: 1, explorer_id: 201 })!, value: null },
+  ]);
   const position = store.entityOccupancy(1, 201)!;
   store.applyFacts([{ model: "TileOccupancy", key: store.wireKeyOf("TileOccupancy", position)!, value: null }]);
   write("TileOccupancy", { ...position, col: 50, row: 50 });
-  change("ExplorerTroops", { game_id: 1, explorer_id: 201 }, { troops: { ...army.troops, count: 1500n * BigInt(RESOURCE_PRECISION) } });
-  change("ArmySlot", { game_id: 1, structure_id: army.owner, epoch: 0n, slot: 0 }, { stamina: { amount: 120n, settled_at: startsAt, remainder: 0 } });
+  change(
+    "ExplorerTroops",
+    { game_id: 1, explorer_id: 201 },
+    { troops: { ...army.troops, count: 1500n * BigInt(RESOURCE_PRECISION) } },
+  );
+  change(
+    "ArmySlot",
+    { game_id: 1, structure_id: army.owner, epoch: 0n, slot: 0 },
+    { stamina: { amount: 120n, settled_at: startsAt, remainder: 0 } },
+  );
   change("HomeAspect", { game_id: 1, home: 9 }, { aspect: 2 });
   const guard = store.require("ExplorerTroops", { game_id: 1, explorer_id: 301 });
   const membership = store.require("DeepGuard", { game_id: 1, explorer_id: 301 });
@@ -36,7 +52,13 @@ function fixture(guardCounts = [1000]) {
       write("DeepGuard", { ...membership, explorer_id, slot: index });
       write("DeepArmy", { ...entered, explorer_id });
     }
-    write("ArmySlot", { ...slot, structure_id: guard.owner, slot: index, explorer_id, stamina: { amount: 120n, settled_at: startsAt, remainder: 0 } });
+    write("ArmySlot", {
+      ...slot,
+      structure_id: guard.owner,
+      slot: index,
+      explorer_id,
+      stamina: { amount: 120n, settled_at: startsAt, remainder: 0 },
+    });
     write("ArmyProgress", { ...progress, explorer_id });
   }
   store.setSnapshot({ gameId: 1, actor: player, complete: true, timestamp: startsAt });
@@ -53,7 +75,9 @@ it("forecasts every rival guard in order with the same surviving attacker", () =
   expect(watches).toHaveLength(1);
   expect(watches[0]!.dueAt).toBeGreaterThan(pair.startsAt * 1000);
   expect(pair.plan(watches[0]!.dueAt / 1000)[0]!.dueAt).toBe(watches[0]!.dueAt);
-  expect(pair.store.require("ExplorerTroops", { game_id: 1, explorer_id: 301 }).troops.count).toBe(1000n * BigInt(RESOURCE_PRECISION));
+  expect(pair.store.require("ExplorerTroops", { game_id: 1, explorer_id: 301 }).troops.count).toBe(
+    1000n * BigInt(RESOURCE_PRECISION),
+  );
 });
 
 it("does not offer allied sites, beasts, a realm without lore, or an army already in the Deep", () => {
@@ -65,16 +89,26 @@ it("does not offer allied sites, beasts, a realm without lore, or an army alread
   expect(noLore.plan()).toEqual([]);
   for (const depth of [1n, 2n]) {
     const shallow = fixture();
-    shallow.change("RealmKnowledge", { game_id: 1, structure_id: BigInt(shallow.owner.home) }, { learned: depth << 48n });
+    shallow.change(
+      "RealmKnowledge",
+      { game_id: 1, structure_id: BigInt(shallow.owner.home) },
+      { learned: depth << 48n },
+    );
     expect(shallow.plan()).toEqual([]);
   }
   const entered = fixture();
-  entered.store.applyFacts([{ model: "DeepArmy", key: "0xa001", value: { game_id: 1, explorer_id: 201, last_tick: 0 } }]);
+  entered.store.applyFacts([
+    { model: "DeepArmy", key: "0xa001", value: { game_id: 1, explorer_id: 201, last_tick: 0 } },
+  ]);
   expect(entered.plan()).toEqual([]);
   const beasts = fixture();
   const watch = beasts.plan()[0]!;
   const guard = beasts.store.require("Guard", { game_id: 1, structure_id: BigInt(watch.siteId), slot: 0 });
-  beasts.change("Guard", { game_id: 1, structure_id: BigInt(watch.siteId), slot: 0 }, { troops: { ...guard.troops, count: 1n } });
+  beasts.change(
+    "Guard",
+    { game_id: 1, structure_id: BigInt(watch.siteId), slot: 0 },
+    { troops: { ...guard.troops, count: 1n } },
+  );
   expect(beasts.plan()).toEqual([]);
 });
 

@@ -1348,7 +1348,12 @@ export function defineFactModels({ struct, model: declare }) {
     model("RuinRelic", "game", struct("resources::ResourceKey"), struct("army_relics::ArmyRelic")),
     model("ArmyProgress", "game", struct("troops::ExplorerKey"), struct("progression::ArmyProgress")),
     model("ArmyDay", "game", struct("troops::ExplorerKey"), [{ name: "day", type: "core::integer::u64" }]),
-    model("DeepTick", "game", [{ name: "game_id", type: "core::integer::u32" }], [{ name: "paid_tick", type: "core::integer::u64" }]),
+    model(
+      "DeepTick",
+      "game",
+      [{ name: "game_id", type: "core::integer::u32" }],
+      [{ name: "paid_tick", type: "core::integer::u64" }],
+    ),
     model("DeepSite", "game", struct("resources::ResourceKey"), struct("deep::DeepSite")),
     model("DeepGuard", "game", struct("troops::ExplorerKey"), struct("deep::DeepGuard")),
     model("DeepArmy", "game", struct("troops::ExplorerKey"), struct("deep::DeepArmy")),

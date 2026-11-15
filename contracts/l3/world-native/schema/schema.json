@@ -5643,6 +5643,28 @@
       "valueLength": 1
     },
     {
+      "name": "DeepTick",
+      "identity": "0x446565705469636b",
+      "scope": "game",
+      "keys": [
+        {
+          "name": "game_id",
+          "type": "core::integer::u32",
+          "feltLength": 1
+        }
+      ],
+      "members": [
+        {
+          "name": "paid_tick",
+          "type": "core::integer::u64",
+          "id": "0x706169645f7469636b",
+          "feltLength": 1
+        }
+      ],
+      "keyLength": 1,
+      "valueLength": 1
+    },
+    {
       "name": "DeepSite",
       "identity": "0x4465657053697465",
       "scope": "game",
@@ -14436,5 +14458,5 @@
       ]
     }
   },
-  "identity": "06bc2380bf86409fb981fdfda24fa7a6d738038c444e490713ba589bc28e1d80"
+  "identity": "7105d74fc7e361cb837e0deec25ab1bcda12d29156f142dbaa10189b7a37bf1a"
 }

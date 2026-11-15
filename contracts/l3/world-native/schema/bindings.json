@@ -1,5 +1,5 @@
 {
-  "schemaIdentity": "06bc2380bf86409fb981fdfda24fa7a6d738038c444e490713ba589bc28e1d80",
+  "schemaIdentity": "7105d74fc7e361cb837e0deec25ab1bcda12d29156f142dbaa10189b7a37bf1a",
   "commandAbi": [
     {
       "type": "interface",
@@ -1562,6 +1562,10 @@
     },
     {
       "name": "ArmyDay",
+      "scope": "game"
+    },
+    {
+      "name": "DeepTick",
       "scope": "game"
     },
     {
