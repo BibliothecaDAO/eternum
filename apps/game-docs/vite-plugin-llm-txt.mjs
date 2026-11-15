@@ -155,6 +155,7 @@ export const renderLlmTxt = async (files, root) => {
   }
 };
 
+/** @returns {import("vite").Plugin} */
 export default function llmTxtPlugin() {
   return {
     name: "vite-plugin-llm-txt",
