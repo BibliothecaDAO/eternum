@@ -22,6 +22,8 @@ interface MapSelectionSnapshot {
   camera: { col: number; row: number } | null;
   /** How many of each site kind the map draws a model for (the Deep's sites by `deep:<position>`), for the sites' proof. */
   drawnSites: Record<string, number>;
+  /** How much of its tower each drawn hyperstructure stands, in percent, by structure id (the stages proof). */
+  towers: Record<string, number>;
   /** The layer the map shows: the depth below (true) or the surface. */
   layer: boolean;
   /** Where the screen draws the selected hex (page px): a tapped chest, once a phone's camera has framed it. */

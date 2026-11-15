@@ -3,6 +3,7 @@ import { configManager } from "@bibliothecadao/eternum";
 import { RESOURCE_PRECISION } from "@bibliothecadao/types";
 import { hash } from "starknet";
 import { beforeEach, describe, expect, it } from "vitest";
+import { raceScenario } from "@/lab/game/race-scenario";
 import { readHyperstructureConstruction } from "./hyperstructure-state";
 
 let store: NativeFactStore;
@@ -59,5 +60,24 @@ describe("hyperstructure construction from native facts", () => {
     setStage("Foundation");
     contribute(1n);
     expect(() => readHyperstructureConstruction(store, 17)).toThrow("contributions without resource requirements");
+  });
+});
+
+describe("a Season 1 hyperstructure, built by its Aspect's height", () => {
+  it("stands each Aspect's tower by the stages its height has built: a fifth of the tower a stage", () => {
+    const { store, startsAt, player } = raceScenario();
+    store.setSnapshot({ gameId: 1, actor: player, timestamp: startsAt, complete: true });
+    configManager.setActiveGame(1, 7);
+    // The race lab: Might 6,400 of 10,000 in stages of 2,000 is three stages built, and so on down to Guile's 900.
+    const towers = [...store.inGame("AspectHyperstructure", 1)].map((row) => ({
+      height: row.height,
+      progress: readHyperstructureConstruction(store, Number(row.entity_id)).progress,
+    }));
+    expect(towers.toSorted((a, b) => b.height - a.height)).toEqual([
+      { height: 6400, progress: 60 },
+      { height: 5200, progress: 40 },
+      { height: 2800, progress: 20 },
+      { height: 900, progress: 0 },
+    ]);
   });
 });

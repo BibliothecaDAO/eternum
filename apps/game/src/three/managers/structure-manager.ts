@@ -1,3 +1,4 @@
+import { publishMapSelection } from "@/observability/map-selection";
 import { GUARD_MODELS } from "@bibliothecadao/eternum/game-client";
 import {
   readRealmSkin,
@@ -1612,6 +1613,9 @@ export class StructureManager {
     this.metrics.fullRefreshMaxSliceMs = Math.max(this.metrics.fullRefreshMaxSliceMs, sliceMs);
   }
 
+  /** How much of its tower each drawn hyperstructure stands, in percent: published for the towers' proof. */
+  private readonly towerProgress = new Map<number, number>();
+
   private addVisibleStructureInstance(
     structure: StructureInfo,
     attachmentRetain: Set<number>,
@@ -1625,11 +1629,14 @@ export class StructureManager {
       : this.addVisibleBaseStructureInstances(structure, dirtyModels);
     for (const binding of bindings) {
       if (binding.model instanceof HyperstructureModel && this.store) {
+        const construction = readHyperstructureConstruction(this.store, safeInteger(structure.entityId));
         binding.model.setConstructionAt(
           binding.instanceIndex,
-          readHyperstructureConstruction(this.store, safeInteger(structure.entityId)),
+          construction,
           this.pendingHyperstructureBuilds.delete(structure.entityId),
         );
+        this.towerProgress.set(structure.entityId, construction.progress);
+        publishMapSelection({ towers: Object.fromEntries(this.towerProgress) });
       }
       if (binding.model instanceof SettlementModel) {
         binding.model.setRelationshipAt(binding.instanceIndex, resolveSettlementRelationship(structure.isMine));

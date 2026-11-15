@@ -3889,6 +3889,27 @@ function raceBoardSteps(result) {
         ]
       : []),
     {
+      name: "towers-stand-by-stage",
+      settleMs: 0,
+      play: async ({ browser, extraScreenshot }) => {
+        const towers = await readUntil(
+          () => browser.read(DRAWN_TOWERS),
+          (state) => state.length >= 4,
+          PLAYABLE_WAIT_MS,
+        );
+        extraScreenshot("towers");
+        return { towers };
+      },
+      // Heights 5,200, 6,400, 2,800 and 900 of a 2,000 stage: two, three, one and no stage built, a fifth of the tower each.
+      verify: ({ played }) =>
+        JSON.stringify(played.towers) === JSON.stringify([0, 20, 40, 60])
+          ? completed(played)
+          : failed(
+              "Each Aspect's hyperstructure stands a fifth of its tower for each stage its height has built",
+              played,
+            ),
+    },
+    {
       name: "no-site-rank-requests",
       settleMs: 0,
       play: async ({ browser }) => ({ requests: browser.read(RANK_REQUESTS) }),
@@ -3917,6 +3938,9 @@ const XP_RINGS = `JSON.stringify([...document.querySelectorAll('svg[aria-label^=
 
 /** The site models the map draws, by kind (`deep:<position>` for the Deep's three): how many of each. */
 const DRAWN_SITES = `JSON.stringify(window.__eternumMapSelection?.drawnSites ?? {})`;
+
+/** How much of its tower each drawn hyperstructure stands, in percent, lowest first. */
+const DRAWN_TOWERS = `JSON.stringify(Object.values(window.__eternumMapSelection?.towers ?? {}).sort((a, b) => a - b))`;
 
 const DEEP_JOIN_STEPS = [
   { name: "enter-on-map", settleMs: 3_000, verify: inScene("map", "Deep") },

@@ -1378,3 +1378,7 @@ finisher. Canonical proof: `playtest --steps lab-race-expired`.
 The Deep's three sites stand in their chosen looks on the map: the Foundation as a hyperstructure's bare foundation, the
 Quarry as a fragment mine, the Altar as a Shrine until it has its own model (`DEEP_SITE_LOOKS`,
 `src/three/managers/map-site-manager.ts`). Each site's plate stays over its model.
+
+Each Aspect's hyperstructure in the Deep stands a fifth of its tower for each stage its height has built (the finished
+one complete), read from the race rows in `src/three/structures/hyperstructure-state.ts`; select it on the map or read
+it on the **Season, Aspects** page.
