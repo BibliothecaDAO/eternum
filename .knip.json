@@ -2,7 +2,6 @@
   "ignoreDependencies": [],
   "ignore": [
     "**/*.js",
-    "apps/game-docs/vocs.config.ts",
     "apps/game-docs/docs/**",
     "apps/game-docs/env.ts",
     "scripts/codemod-lucide-imports.mjs",
@@ -217,6 +216,7 @@
       }
     },
     "apps/game-docs": {
+      "entry": ["vocs.config.ts"],
       "paths": {
         "@bibliothecadao/types": [
           "../../packages/types/src/index.ts"
