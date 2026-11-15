@@ -200,7 +200,7 @@ const installOnce = async (makeScenario: () => LabScenario, startedAt: number): 
     rejected: [],
     streams: 0,
     silence: () => herald.silence(),
-    writeBlock: (facts) => herald.apply(`0xlab${(blocksWritten += 1)}`, facts),
+    writeBlock: (facts) => herald.apply(`0xlab${(blocksWritten += 1)}`, facts.map(keyedAsHeldOnChain)),
     scopes: [],
   };
   window.__labChain = record;
