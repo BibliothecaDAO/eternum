@@ -430,6 +430,11 @@ each closed by its cross, a tap outside, a swipe down or `Escape`. A right-click
   `apps/realms/server/shard-notifier.ts`. In the iOS app, **This device** turns on the app's own push (iOS asks once;
   APNs delivers), revoked on sign-out or another account's sign-in; a tapped alert opens its game, or chat on what it is
   about (`src/pwa/ios-app-push.ts`).
+- **Deep site opportunities**: Settings → Notifications → Important (or All), then enable **This device**. A push
+  opens a rival site on the map when the player's largest army outside the Deep can clear its remaining guards,
+  at most once per site per game day. A foreground device stays quiet. `build.sh test-deep-alerts` exercises the
+  confirmed watcher, timed wake, retry cancellation and restart through the real notifier. The site card's payment
+  and join path are at `/lab/game?scenario=deep`; `build.sh playtest-deep` drives desktop and phone views.
 - **The Blitz lobby** counts down to one moment: entry closing while the slot takes players, then the games' start (the
   lobby's title names the start time).
 
