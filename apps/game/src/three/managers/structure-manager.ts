@@ -1624,7 +1624,7 @@ export class StructureManager {
     this.metrics.fullRefreshMaxSliceMs = Math.max(this.metrics.fullRefreshMaxSliceMs, sliceMs);
   }
 
-  /** How much of its tower each drawn hyperstructure stands, in percent: published for the towers' proof. */
+  /** How much of its tower each hyperstructure drawn now stands, in percent: published for the towers' proof, and let go with the instance. */
   private readonly towerProgress = new Map<number, number>();
 
   private addVisibleStructureInstance(
@@ -1801,6 +1801,7 @@ export class StructureManager {
       dirtyModels.add(model);
     });
     this.structureInstanceBindings.delete(entityId);
+    if (this.towerProgress.delete(entityId)) publishMapSelection({ towers: Object.fromEntries(this.towerProgress) });
   }
 
   private updateVisibleStructureModelCounts(dirtyModels: Set<StructureModel>): void {

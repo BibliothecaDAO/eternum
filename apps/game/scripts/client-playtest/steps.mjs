@@ -3965,23 +3965,22 @@ function raceBoardSteps(result) {
       name: "towers-stand-by-stage",
       settleMs: 0,
       play: async ({ browser, extraScreenshot }) => {
+        // The Aspects sheet closed and the wheel all the way out: the camera frames the four hyperstructures.
+        browser.press("Escape");
+        browser.run(["eval", `void window.__playtest.wheel(100, ${ZOOM_IN_NOTCHES})`]);
+        await sleep(ZOOM_SETTLE_MS);
         const towers = await readUntil(
           () => browser.read(DRAWN_TOWERS),
-          (state) => Object.keys(state).length >= 2,
+          (state) => Object.keys(state).length >= 4,
           PLAYABLE_WAIT_MS,
         );
         extraScreenshot("towers");
         return { towers };
       },
-      // The lab's camera frames two of the four towers: each one drawn stands the fifths its Aspect's stages built.
       verify: ({ played }) =>
-        Object.keys(played.towers).length >= 2 &&
-        Object.entries(played.towers).every(([id, progress]) => TOWER_PROGRESS[id] === progress)
+        JSON.stringify(Object.entries(played.towers).sort()) === JSON.stringify(Object.entries(TOWER_PROGRESS).sort())
           ? completed(played)
-          : failed(
-              "Each Aspect's hyperstructure stands a fifth of its tower for each stage its height has built",
-              played,
-            ),
+          : failed("Each of the four hyperstructures drawn stands the fifths its Aspect's stages built", played),
     },
     {
       name: "no-site-rank-requests",
