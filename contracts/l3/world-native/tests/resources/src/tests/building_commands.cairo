@@ -733,12 +733,10 @@ fn workshop_sides_and_charge_each_follow_their_exact_ladder() {
                 assert!(execute(d, research(home, row, side), 40));
                 let (expected_essence, expected_labor) = *prices.at(at);
                 assert_eq!(
-                    before_e - resources.resource_balance(essence),
-                    expected_essence * crate::rules::RESOURCE_PRECISION,
+                    before_e - resources.resource_balance(essence), expected_essence * crate::rules::RESOURCE_PRECISION,
                 );
                 assert_eq!(
-                    before_l - resources.resource_balance(labor),
-                    expected_labor * crate::rules::RESOURCE_PRECISION,
+                    before_l - resources.resource_balance(labor), expected_labor * crate::rules::RESOURCE_PRECISION,
                 );
                 assert_eq!(crate::research::picks(learned(d, home), row, side), at.try_into().unwrap() + 1_u8);
             }
