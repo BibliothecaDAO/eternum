@@ -4,7 +4,7 @@ import { nativeBaneConstants, nativeRaceConstants, readSiteReward } from "@bibli
 import { raceRules } from "@/lab/game/race-scenario";
 import { readPlateReward } from "@/three/map-plates/plate-reward";
 import { ResourcesIds, StructureType } from "@bibliothecadao/types";
-import { campBeside, SITE, SITE_TILE } from "./site-fixture";
+import { campBeside, relicEffectFact, SITE, SITE_TILE } from "./site-fixture";
 import { readSiteCard } from "./site-card-plan";
 import { readClearedSite } from "./site-receipt";
 
@@ -79,4 +79,16 @@ it("leaves the Deep unchanged and refuses unknown effect facts", () => {
     { model: "HomeAspect", key: "0xa002", value: null }]);
   expect(readSiteReward(store,site).known).toBeUndefined();
   expect(getGuardsByStructure(structure,store)).toBeUndefined();
+});
+
+it("composes Spoils with Plunder and Tome at the selected attack second", () => {
+  const { store, site, structure, attack } = effectSite(false,false,true);
+  const action = { ...attack({ col: 41, row: 12, alt: false }), timestamp: 450 };
+  store.applyFacts([relicEffectFact("Plunder",1,500), relicEffectFact("Tome",1,500)]);
+  expect(readSiteCard(store,site,structure,SITE_TILE,action)).toMatchObject({
+    xp: 344, payout: { amount: 1980, fits: 1980 },
+  });
+  expect(readSiteCard(store,site,structure,SITE_TILE,{ ...action, timestamp: 500 })).toMatchObject({
+    xp: 246, payout: { amount: 1650, fits: 1650 },
+  });
 });

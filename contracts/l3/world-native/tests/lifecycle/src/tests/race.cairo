@@ -631,6 +631,7 @@ fn spoils_doubles_numeric_clears_and_records_xp_but_keeps_ruin_relics() {
         let site_key = interact_with_state(d.games, || ResourceKey { game_id,
             entity_id: crate::logic::map::occupancy(crate::geometry::tile_key(game_id, destination)).unwrap().entity_id });
         let site = interact_with_state(d.games, || crate::logic::expeditions::expedition_site(site_key).unwrap());
+        let discovered_relic = interact_with_state(d.games, || crate::logic::army_relics::ruin(site_key));
         let before = interact_with_state(d.games, || crate::logic::progression::require(key).xp);
         assert!(execute_in_game(d, game_id, Command::BattleGuard(crate::commands::Battle {
             attacker_id: key.explorer_id, defender_id: site_key.entity_id, relic_slot: None,
@@ -642,7 +643,8 @@ fn spoils_doubles_numeric_clears_and_records_xp_but_keeps_ruin_relics() {
             assert_eq!(crate::logic::progression::require(key).xp - before, expected_xp);
             if category == crate::taxonomy::RUIN_CATEGORY {
                 assert_eq!(receipt.reward, None);
-                assert_eq!(crate::logic::army_relics::read(key).first, Some(relic));
+                assert!(discovered_relic.is_some());
+                assert_eq!(crate::logic::army_relics::read(key).first, discovered_relic);
             } else {
                 let base = crate::expeditions::site_reward(category, site, 0).unwrap();
                 let paid = receipt.reward.unwrap();

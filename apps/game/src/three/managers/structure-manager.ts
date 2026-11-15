@@ -460,7 +460,7 @@ export class StructureManager {
       this.store.subscribe((changes) => {
         const touched = new Set<number>();
         const refreshAll = changes.length === 0 || changes.some((change) =>
-          change.model !== "Guard" && GUARD_MODELS.some((model) => model === change.model),
+          change.model !== "Guard" && change.model !== "Structure" && change.model !== "ExpeditionSite" && GUARD_MODELS.some((model) => model === change.model),
         );
         for (const change of changes) {
           if (change.model === "CampaignHome") {
