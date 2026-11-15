@@ -13,7 +13,7 @@ export const FRAGMENT_PRICES = { questReroll: 50, look: 200 } as const;
  * golden ticket home. The last two have the labor bonus free; the Wonder or golden holder has the Fragments free too.
  */
 export const SEAL_HOLDERS = ["none", "realm", "wonder"] as const;
-export type SealHolder = (typeof SEAL_HOLDERS)[number];
+type SealHolder = (typeof SEAL_HOLDERS)[number];
 
 /** What the Ancient Seal's holder already has free, so is not paid for: the daily quest's labor bonus, its Fragments. */
 export const SEAL_FREE = {
