@@ -10,6 +10,10 @@ import preset from "../../../contracts/l3/world-native/tests/fixtures/current-pr
 import explorerFixture from "../../../contracts/l3/world-native/schema/fixtures/row-set.json";
 import recordedPages from "./fixtures/staging-story-pages.json";
 import { realmsIdOf } from "./realms-id";
+import { LiveWorld } from "../../herald/src/live-world";
+import { WorldFold } from "../../herald/src/world-fold";
+import { setup as heraldSetup, schema as heraldSchema } from "../../herald/src/native/fixtures";
+import type { MadaraRpc } from "../../herald/src/madara-rpc";
 import {
   apnsKey,
   buildWorkerBundle,
@@ -151,12 +155,13 @@ const createHerald = () => {
       const read = snapshot(
         state.army,
         state.neighbourArmy,
-        url.searchParams.get("owner"),
+        state.site ? null : url.searchParams.get("owner"),
         state.members,
         state.homeSource,
         state.secondArmy,
       );
-      return siteSnapshot({ ...read, models: [...read.models, ...mistFacts(state.mistEndedAt)] }, state.site);
+      const full = siteSnapshot({ ...read, models: [...read.models, ...mistFacts(state.mistEndedAt)] }, state.site);
+      return state.site ? scopedSiteSnapshot(full, url) : full;
     }
     const page = { chain: state.chain, world_address: "0x5e45", complete_through_block: 10 + log.length };
     const after = url.searchParams.get("after");
@@ -568,7 +573,42 @@ const snapshot = (
   ],
 });
 
-/** A realm as the contract writes it: the player's home holds Realm 711. */
+/** The production snapshot path applies actor scope and then the optional ownership filter. */
+async function scopedSiteSnapshot(snapshot: HeraldGameSnapshot, url: URL): Promise<HeraldGameSnapshot> {
+  const { decoder, fold, native } = heraldSetup();
+  const checkpoint = fold.checkpoint();
+  for (const model of checkpoint.models) {
+    const keys = heraldSchema.models.find(({ name }) => name === model.model)!.keys;
+    model.rows = (snapshot.models.find((row) => row.model === model.model)?.rows ?? []).map((row) => ({
+      entity_id: row.key,
+      key: Object.fromEntries(keys.map(({ name }) => [name, row.value[name]])),
+      value: row.value,
+    }));
+  }
+  const head = { block_number: 11, timestamp: Math.floor(Date.now() / 1000), transactions: [] };
+  const live = new LiveWorld({
+    native,
+    registry: decoder.registry,
+    chain: CHAIN_ID,
+    checkpointEveryBlocks: 100,
+    checkpointStore: { save: async () => undefined },
+    confirmedBlock: 10,
+    confirmedFold: WorldFold.restore(decoder.registry, checkpoint),
+    rpc: {
+      getBlockHeader: async () => head,
+      getPreconfirmedHeader: async () => ({ ...head, block_number: 12 }),
+      readBlock: async () => head,
+    } as unknown as MadaraRpc,
+  });
+  await live.acceptSubscribedHead(head);
+  return live.snapshot(
+    String(GAME_ID),
+    url.searchParams.get("models")?.split(","),
+    url.searchParams.get("actor") ?? undefined,
+    url.searchParams.get("owner") ?? undefined,
+  );
+}
+
 /** A confirmed shared Quarry held by a rival; the enrolled player's army stays outside the Deep. */
 function siteSnapshot(
   base: HeraldGameSnapshot,
@@ -795,7 +835,7 @@ const createHarness = async (level: "off" | "important" | "all") => {
         if (url.origin === SHARD) {
           if (request.headers.get("upgrade") === "websocket")
             return herald.stream(new URL(request.url).searchParams.get("actor"));
-          const answer = herald.answer(url);
+          const answer = await herald.answer(url);
           return answer instanceof Response ? answer : Response.json(answer);
         }
         if (url.href.startsWith(PUSH_ENDPOINT)) {
