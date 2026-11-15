@@ -364,3 +364,7 @@ estimate_gb = 6
 cmd = 'cp /home/djizus/projects/eternum-lanes/showcase/apps/game/.env.local apps/game/.env.local && pnpm run build:packages && for view in 1920x1080 390x844; do pnpm --dir apps/game playtest --port 4194 --steps lab-charge --iterations 1 --renderer-modes webgpu-force-webgl --viewport "$view" --out "$FLOW_TMP/playtest/$view" || exit; done'
 paths = "apps/game/src/lab/game/charge-scenario apps/game/src/ui/features/frontier/sites/site-card-plan.ts packages/core/src/utils/army-charge.ts packages/core/src/utils/combat-exchange.ts"
 estimate_gb = 4
+
+[kind.test-charge]
+cmd = "bash contracts/l3/test-native.sh --package world_tests_lifecycle* charge"
+estimate_gb = 9
