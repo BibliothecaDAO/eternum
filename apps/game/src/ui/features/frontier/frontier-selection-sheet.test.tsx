@@ -251,7 +251,9 @@ describe("Frontier's selection sheet", () => {
       expect(host.querySelector("[data-kit-sheet]")).toBeNull();
       // The clear's row in the Feed selects the tile itself, as every match link does (openOnMap's "tile").
       await act(async () => useUIStore.getState().selectOnMap({ kind: "hex", hex: SITE_TILE }));
-      expect(host.querySelector("[data-kit-sheet]")?.getAttribute("aria-label")).toBe(`Supply post · ${siteName(SITE)}`);
+      expect(host.querySelector("[data-kit-sheet]")?.getAttribute("aria-label")).toBe(
+        `Supply post · ${siteName(SITE)}`,
+      );
       expect(host.textContent).toContain("Cleared · Troll");
     } finally {
       act(() => root.unmount());

@@ -238,7 +238,6 @@ pub fn complete(d: Deployment, home: ResourceKey, day: u64, timestamp: u64) {
                 timestamp,
             ),
         );
-
     }
     assert_eq!(interact_with_state(d.games, || crate::logic::quests::read(home, day).completed_level), 1);
 }

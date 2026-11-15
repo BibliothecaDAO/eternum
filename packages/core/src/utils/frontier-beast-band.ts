@@ -20,4 +20,3 @@ export function beastBand(initialCount: bigint, bounds: BeastBounds): BeastBand 
   if (initialCount >= strongLower && initialCount <= strongUpper) return "stronger";
   throw new Error(`Initial beast strength ${initialCount} is outside its depth ranges`);
 }
-

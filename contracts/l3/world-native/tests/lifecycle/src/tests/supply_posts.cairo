@@ -20,7 +20,9 @@ fn a_cleared_camp_reinforces_from_home_on_each_layer_above_the_deep() {
                 game_id,
                 Command::ManageTroops(
                     ManageTroops::RecruitExplorer(
-                        RecruitExplorer { explorer_id: key.explorer_id, amount: 99 * RESOURCE_PRECISION, supply_post: None },
+                        RecruitExplorer {
+                            explorer_id: key.explorer_id, amount: 99 * RESOURCE_PRECISION, supply_post: None,
+                        },
                     ),
                 ),
                 355,

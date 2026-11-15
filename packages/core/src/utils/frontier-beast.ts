@@ -1,10 +1,4 @@
-import {
-  StructureType,
-  BEAST_NAMES,
-  FALLEN_REALM_DEPTHS,
-  ROAMING_BEASTS,
-  SITE_GUARDS,
-} from "@bibliothecadao/types";
+import { StructureType, BEAST_NAMES, FALLEN_REALM_DEPTHS, ROAMING_BEASTS, SITE_GUARDS } from "@bibliothecadao/types";
 import type { NativeFactStore } from "../client/native-fact-store";
 import type { NativeRows } from "../../../../contracts/l3/world-native/schema/client.gen";
 import { beastBand, type BeastBand } from "./frontier-beast-band";

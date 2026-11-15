@@ -31,10 +31,18 @@ const site = (store: NativeFactStore, cleared: boolean, category: StructureType,
       model: "DepthRules",
       key: "0x901",
       value: {
-        game_id: GAME, depth: 0, reveal_percent: 15, site_guard_lower: 100, site_guard_upper: 100,
-        reveal_site_neighbors: false, guard_step: 1,
+        game_id: GAME,
+        depth: 0,
+        reveal_percent: 15,
+        site_guard_lower: 100,
+        site_guard_upper: 100,
+        reveal_site_neighbors: false,
+        guard_step: 1,
         chest: { common: 10000, uncommon: 0, rare: 0, epic: 0, legendary: 0 },
-        beast_weak_lower: 100, beast_weak_upper: 100, beast_strong_lower: 200, beast_strong_upper: 200,
+        beast_weak_lower: 100,
+        beast_weak_upper: 100,
+        beast_strong_lower: 200,
+        beast_strong_upper: 200,
       },
     },
     {
@@ -68,16 +76,19 @@ describe("what a plate says taking a camp or a rift gives", () => {
     [StructureType.Rift, "300 Essence", 100],
     [StructureType.Beasts, "400 Wheat", 100],
     [StructureType.Beasts, undefined, 200],
-  ])("says a Frontier site's payout until its cleared fact arrives, then nothing (category %s)", (category, payout, troops) => {
-    vi.spyOn(configManager, "getActiveGameId").mockReturnValue(GAME);
-    const { store } = frontierDay();
-    site(store, false, category, troops);
-    expect(said(store, structureOf(category))).toBe(payout);
+  ])(
+    "says a Frontier site's payout until its cleared fact arrives, then nothing (category %s)",
+    (category, payout, troops) => {
+      vi.spyOn(configManager, "getActiveGameId").mockReturnValue(GAME);
+      const { store } = frontierDay();
+      site(store, false, category, troops);
+      expect(said(store, structureOf(category))).toBe(payout);
 
-    // Cleared and taken: the site stays on the map, but its payout went home once and is not offered again.
-    site(store, true, category, troops);
-    expect(said(store, structureOf(category, 7n))).toBeUndefined();
-  });
+      // Cleared and taken: the site stays on the map, but its payout went home once and is not offered again.
+      site(store, true, category, troops);
+      expect(said(store, structureOf(category, 7n))).toBeUndefined();
+    },
+  );
 
   it("says what a Blitz camp or Essence Rift holds: a camp's Labor, a rift's Essence; nothing else holds", () => {
     vi.spyOn(configManager, "getActiveGameId").mockReturnValue(GAME);

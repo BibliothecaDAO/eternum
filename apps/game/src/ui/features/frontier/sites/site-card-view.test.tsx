@@ -50,7 +50,9 @@ describe("a guarded site's card", () => {
         />,
       ),
     );
-    expect(document.querySelector(".ui-frame__body header")?.textContent).toBe("This attack earns+5,000Full: the rest did not fit+118 XP+1 site");
+    expect(document.querySelector(".ui-frame__body header")?.textContent).toBe(
+      "This attack earns+5,000Full: the rest did not fit+118 XP+1 site",
+    );
   });
 
   it("heads the attack with what it earns, and reads each side before and after as numbers alone", () => {
