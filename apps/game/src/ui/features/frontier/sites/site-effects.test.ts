@@ -77,7 +77,7 @@ it.each([
 it("resolves effects through the actual realm ID inside a home namespace", () => {
   const { store, site, structure } = effectSite(true, true, true);
   const home = store.require("Structure", { game_id: 1, entity_id: 7n });
-  const homeKey = [...store.entries("Structure")].find(([, row]) => row.entity_id === 7n)![0];
+  const homeKey = store.wireKeyOf("Structure", { game_id: 1, entity_id: 7n })!;
   const actualHome = (7n << 32n) + 1n;
   store.applyFacts([
     { model: "Structure", key: homeKey, value: null },
