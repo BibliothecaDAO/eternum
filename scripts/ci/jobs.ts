@@ -86,3 +86,15 @@ export function selectedStep(step: Step, matrix: Environment): boolean {
 export function stepEnvironment(env: Environment = {}, context: Record<string, Environment>): Environment {
   return Object.fromEntries(Object.entries(env).map(([key, value]) => [key, interpolate(value, context)]));
 }
+
+/** Runtime pins belong to the workflow, including a numeric YAML Node major. */
+export function runtimePin(step: Step): { name: "node" | "bun"; version: string } | undefined {
+  if (step.uses === "actions/setup-node@v4") {
+    if (!step.with?.["node-version"]) throw new Error("Node setup requires node-version");
+    return { name: "node", version: String(step.with["node-version"]) };
+  }
+  if (step.uses === "oven-sh/setup-bun@v2") {
+    return { name: "bun", version: String(step.with?.["bun-version"] ?? "latest") };
+  }
+  return undefined;
+}

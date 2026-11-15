@@ -1,10 +1,11 @@
 import { readFileSync, mkdtempSync } from "node:fs";
-import { delimiter, join, resolve } from "node:path";
+import { delimiter, dirname, join, resolve } from "node:path";
 import { tmpdir } from "node:os";
 import {
   interpolate,
   root,
   selectedStep,
+  runtimePin,
   stepEnvironment,
   validationJobs,
   type Environment,
@@ -18,8 +19,6 @@ const inherited = Object.fromEntries(
 const setupActions = new Set([
   "actions/checkout@v4",
   "pnpm/action-setup@v4",
-  "actions/setup-node@v4",
-  "oven-sh/setup-bun@v2",
   "software-mansion/setup-universal-sierra-compiler@v1",
 ]);
 
@@ -27,6 +26,17 @@ function command(argv: string[], env: Environment, cwd = root, capture = false):
   const result = Bun.spawnSync(argv, { cwd, env, stdout: capture ? "pipe" : "inherit", stderr: "inherit" });
   if (result.exitCode !== 0) throw new Error(`Command failed (${result.exitCode}): ${argv.join(" ")}`);
   return capture ? result.stdout.toString().trim() : "";
+}
+
+function installRuntime(pin: NonNullable<ReturnType<typeof runtimePin>>, env: Environment) {
+  const executable = command(
+    ["npm", "exec", "--yes", `--package=${pin.name}@${pin.version}`, "--", pin.name, "-p", "process.execPath"],
+    env,
+    root,
+    true,
+  );
+  env.PATH = [dirname(executable), env.PATH].join(delimiter);
+  command([pin.name, "--version"], env);
 }
 
 function installToolchain(step: Step, context: Record<string, Environment>, env: Environment) {
@@ -91,7 +101,10 @@ function runStep(step: Step, job: ValidationJob, env: Environment) {
   const context = { matrix: job.matrix };
   if (!selectedStep(step, job.matrix)) return;
   console.log(JSON.stringify({ job: job.id, step: step.name ?? step.run ?? step.uses }));
-  if (step.run) {
+  const runtime = runtimePin(step);
+  if (runtime) {
+    installRuntime(runtime, env);
+  } else if (step.run) {
     if (step.shell && step.shell !== "bash") throw new Error(`Unsupported shell: ${step.shell}`);
     const cwd = resolve(
       root,

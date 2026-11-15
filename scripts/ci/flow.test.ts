@@ -2,7 +2,7 @@ import { expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { kindName, parityProblems, validationPaths } from "./flow";
-import { interpolate, root, selectedStep, validationJobs } from "./jobs";
+import { interpolate, root, runtimePin, selectedStep, validationJobs } from "./jobs";
 
 const source = readFileSync(resolve(root, "flow.toml"), "utf8");
 const jobs = validationJobs();
@@ -49,4 +49,19 @@ test("matrix conditions and expressions preserve the workflow's actual command",
   );
   expect(() => selectedStep({ if: "success()" }, {})).toThrow("Unsupported validation condition");
   expect(() => interpolate("${{ matrix.missing }}", { matrix: {} })).toThrow("Unsupported expression");
+});
+
+
+test("runtime setup follows the workflow rather than the host runtime", () => {
+  expect(runtimePin({ uses: "actions/setup-node@v4", with: { "node-version": "22" } })).toEqual({
+    name: "node", version: "22",
+  });
+  expect(runtimePin({ uses: "oven-sh/setup-bun@v2", with: { "bun-version": "1.4.0" } })).toEqual({
+    name: "bun", version: "1.4.0",
+  });
+  expect(runtimePin({ uses: "oven-sh/setup-bun@v2" })).toEqual({ name: "bun", version: "latest" });
+  expect(() => runtimePin({ uses: "actions/setup-node@v4" })).toThrow("requires node-version");
+  const pins = jobs.flatMap((job) => job.job.steps.flatMap((step) => runtimePin(step) ?? []));
+  expect(pins).toContainEqual({ name: "node", version: "22" });
+  expect(pins).toContainEqual({ name: "bun", version: "1.4.0" });
 });
