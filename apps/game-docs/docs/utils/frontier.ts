@@ -8,7 +8,7 @@ import {
   nativeResearchConstants as research,
   nativeRuleConstants as rule,
 } from "../../../../contracts/l3/world-native/schema/client.gen";
-import { BEAST_NAMES, ROAMING_BEASTS, SITE_GUARDS, resourceName } from "@bibliothecadao/types";
+import { BEAST_NAMES, TIER_WORDS, ROAMING_BEASTS, SITE_GUARDS, resourceName } from "@bibliothecadao/types";
 import { ETERNUM_CONFIG } from "./config";
 import { CONTRACT } from "./contract-constants";
 
@@ -131,7 +131,7 @@ export const FRONTIER = {
     beastStrong: range(depth.beastStrongLower, depth.beastStrongUpper),
     chest: TIERS.map((tier) => pct(depth.chest[tier])),
   })),
-  ruinGuards: TIERS.map((_, index) => range(...previewRuinGuardBounds(index + 1))),
+  ruinGuards: TIER_WORDS.map((name, index) => ({ name, count: range(...previewRuinGuardBounds(index + 1)) })),
   guards: {
     camp: BEAST_NAMES[SITE_GUARDS.camp.beast],
     rift: BEAST_NAMES[SITE_GUARDS.rift.beast],

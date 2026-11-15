@@ -244,61 +244,6 @@ pub mod MapLogic {
     use crate::logic::deep_sites::DeepSites;
     component!(path: DeepSites, storage: deep_sites, event: DeepSiteEvent);
     #[abi(embed_v0)]
-    impl DiscoveryGuards of crate::guards::IGuardInitialization<ContractState> {
-        fn initialize_structure_guards(
-            ref self: ContractState,
-            key: crate::resources::ResourceKey,
-            seed: u256,
-            timestamp: u64,
-            game_context: crate::commands::ActionContext,
-        ) {
-            let game_context = crate::commands::execution_context(key.game_id, game_context);
-
-            let base = crate::logic::structures::structure(key).expect('missing guarded structure').base;
-            let category = base.category;
-            let rules = game_context.rules.unbox();
-            // Every guarded structure an expedition discovers is a site whose guard follows its kind and depth.
-            let site = rules.day_unit_seconds != 0;
-            let guarded = if site {
-                crate::expeditions::is_site_category(category)
-            } else {
-                category == crate::taxonomy::HYPERSTRUCTURE_CATEGORY
-                    || category == crate::taxonomy::BANK_CATEGORY
-                    || category == crate::taxonomy::MINE_CATEGORY
-                    || category == crate::taxonomy::CAMP_CATEGORY
-                    || category == crate::taxonomy::BITCOIN_MINE_CATEGORY
-            };
-            assert!(guarded, "invalid guarded structure category");
-            let guards = if site {
-                assert!(crate::rules::rule_enabled(rules, crate::rules::DEPTH_CONTENTS), "site requires depth rules");
-                let depth = crate::logic::expeditions::depth_rules_at(
-                    key.game_id, crate::structures::structure_coord(key),
-                );
-                let guard = if category == crate::taxonomy::RUIN_CATEGORY {
-                    let relic = crate::logic::army_relics::ruin(key).expect('missing ruin relic');
-                    crate::troops::ruin_guard(relic, seed, rules, timestamp)
-                } else {
-                    crate::troops::frontier_guard(category, depth, seed, rules, timestamp)
-                };
-                array![guard].span()
-            } else {
-                crate::troops::discovery_guards(category, seed, rules, timestamp)
-            };
-            assert!(base.troop_max_guard_count <= 4, "invalid guard slot limit");
-            assert!(guards.len() <= base.troop_max_guard_count.into(), "guards exceed structure limit");
-            for slot in 0..guards.len() {
-                let troops = *guards.at(slot);
-                let slot: u8 = slot.try_into().unwrap();
-                let guard_key = crate::guards::GuardKey { game_id: key.game_id, structure_id: key.entity_id, slot };
-                assert!(crate::logic::guards::guard(guard_key) == Default::default(), "guards already initialized");
-                crate::logic::guards::GuardState::save(guard_key, crate::guards::Guard { troops, destroyed_tick: 0 });
-            }
-            if site {
-                crate::logic::expeditions::create_site(key, guards);
-            }
-        }
-    }
-    #[abi(embed_v0)]
     impl Sites = DeepSites::DeepSitesImpl<ContractState>;
     use crate::geometry::{distance, spire_neighbor, tile_key};
     use crate::logic::map::MapState;

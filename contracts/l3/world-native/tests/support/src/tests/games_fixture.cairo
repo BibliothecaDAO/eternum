@@ -335,7 +335,7 @@ pub mod GamesFixture {
         ) {
             let classes = fixture_classes(key.game_id);
             crate::guards::IGuardInitializationDispatcherTrait::initialize_structure_guards(
-                crate::guards::IGuardInitializationLibraryDispatcher { class_hash: classes.map.read() },
+                crate::guards::IGuardInitializationLibraryDispatcher { class_hash: classes.placement.read() },
                 key,
                 seed,
                 timestamp,
