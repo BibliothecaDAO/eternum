@@ -106,7 +106,7 @@ export function raceScenario(finished = false): LabScenario {
   return {
     ...scenario,
     startsAt: now,
-    opensOn: { col: center.col + rules.first.x - half, row: center.row + rules.first.y - half },
+    opensOn: { col: center.col, row: center.row },
     scoped: true,
     history: battleHistory(now, center, half),
   };
@@ -123,10 +123,11 @@ export function raceRules(): NativeRows["RaceRules"] {
     second_wind_percent: 200,
     pale_moon_percent: 50,
     spoils_percent: 200,
-    first: { alt: false, x: 5, y: 5 },
-    second: { alt: false, x: 45, y: 5 },
-    third: { alt: false, x: 5, y: 45 },
-    fourth: { alt: false, x: 45, y: 45 },
+    // The four monuments as the lab draws them: around the Deep's middle, so one zoomed-out camera frames all four.
+    first: { alt: false, x: 21, y: 19 },
+    second: { alt: false, x: 29, y: 19 },
+    third: { alt: false, x: 21, y: 31 },
+    fourth: { alt: false, x: 29, y: 31 },
   };
 }
 
