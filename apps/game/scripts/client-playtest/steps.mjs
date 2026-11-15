@@ -4043,7 +4043,13 @@ function raceBoardSteps(result) {
           await sleep(HOVER_SETTLE_MS);
           const seen = browser.read(towerPlate(id));
           extraScreenshot(`tower-${id}`);
-          visits.push({ id, inView: seen.inView, drawn: browser.read(DRAWN_TOWERS)[id] });
+          visits.push({
+            id,
+            inView: seen.inView,
+            drawn: browser.read(DRAWN_TOWERS)[id],
+            target: hexes[id],
+            camera: browser.read(`window.__eternumMapSelection?.camera ?? null`),
+          });
         }
         return { visits };
       },
