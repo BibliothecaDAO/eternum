@@ -648,7 +648,9 @@ pub fn assert_capture_at(
         site_after,
         crate::expeditions::ExpeditionSite {
             clear: Some(
-                crate::expeditions::SiteClear { xp: camp_xp, explorer_id, home_id: home.entity_id, reward: camp_reward },
+                crate::expeditions::SiteClear {
+                    xp: camp_xp, explorer_id, home_id: home.entity_id, reward: camp_reward,
+                },
             ),
             ..site_before,
         },
