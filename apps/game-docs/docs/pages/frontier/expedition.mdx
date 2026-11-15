@@ -77,13 +77,10 @@ rewards and clear XP have a depth premium; the site’s card shows the full payo
   caption="A site's card before an attack: both sides before and after, and what the attack earns."
 />
 
-| Relic     | Ruin guard, on every layer |
-| --------- | -------------------------- |
-| Common    | {FRONTIER.ruinGuards[0]}   |
-| Uncommon  | {FRONTIER.ruinGuards[1]}   |
-| Rare      | {FRONTIER.ruinGuards[2]}   |
-| Epic      | {FRONTIER.ruinGuards[3]}   |
-| Legendary | {FRONTIER.ruinGuards[4]}   |
+<table>
+  <thead><tr><th>Relic</th><th>Ruin guard, on every layer</th></tr></thead>
+  <tbody>{FRONTIER.ruinGuards.map(({ name, count }) => <tr key={name}><td>{name}</td><td>{count}</td></tr>)}</tbody>
+</table>
 
 A site pays once. A cleared site leaves a standard that shows what the clear paid, and armies can walk onto it.
 
