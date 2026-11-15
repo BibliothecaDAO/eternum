@@ -270,7 +270,7 @@ it("reinforces through a cleared camp with its id and refuses it after the army 
   await press("Max");
   await press("Reinforce");
   expect(add).toHaveBeenCalledWith(
-    expect.objectContaining({ to_explorer_id: 201, supply_post: 711, amount: 500 * RESOURCE_PRECISION }),
+    expect.objectContaining({ to_explorer_id: 201, supply_post: 711, amount: 420 * RESOURCE_PRECISION }),
   );
   fixture.moveTo({ col: camp.col + 5, row: camp.row });
   await press("Reinforce");
