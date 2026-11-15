@@ -1,6 +1,6 @@
 import { afterEach, expect, it } from "vitest";
 import { getGuardsByStructure, setBlockTimestampSource } from "@bibliothecadao/eternum";
-import { nativeBaneConstants, nativeRaceConstants, readSiteReward } from "@bibliothecadao/eternum/game-client";
+import { nativeBaneConstants, nativeRaceConstants, readSiteEffects, readSiteReward } from "@bibliothecadao/eternum/game-client";
 import { raceRules } from "@/lab/game/race-scenario";
 import { readPlateReward } from "@/three/map-plates/plate-reward";
 import { ResourcesIds, StructureType } from "@bibliothecadao/types";
@@ -85,6 +85,7 @@ it("resolves effects through the actual realm ID inside a home namespace", () =>
     { model: "Structure", key: "0xb001", value: { ...home, entity_id: actualHome } },
     { model: "HomeAspect", key: "0xb002", value: { game_id: 1, home: actualHome, aspect: 1 } },
   ]);
+  expect(readSiteEffects(store, site)).toEqual({ known: { beastBps: 7500, spoilsPercent: 200 } });
   expect(getGuardsByStructure(structure, store)?.[0].troops.count).toBe(825_000_000_000n);
   expect(readSiteReward(store, site).known).toMatchObject({ xp: 246, reward: { amount: 1_650_000_000_000n } });
 });
