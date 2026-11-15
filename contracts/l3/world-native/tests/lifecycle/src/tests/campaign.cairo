@@ -351,11 +351,24 @@ fn a_golden_claim_records_essence_even_when_the_labor_store_is_full() {
 
 #[test]
 #[feature("safe_dispatcher")]
-fn the_normal_speed_preset_does_not_pay_devcon_essence() {
-    let (d, home) = campaign_home("frontier", crate::settlement::CAMPAIGN_GOLDEN);
+fn the_normal_speed_labor_fixture_does_not_pay_devcon_essence() {
+    let (d, home) = campaign_home("frontier-check", crate::settlement::CAMPAIGN_GOLDEN);
     let grant = IHomeGrantsSafeDispatcher { contract_address: d.games }.grant_labor(home, 0, d.actor).unwrap();
     assert_eq!(grant.amount, 1000 * RESOURCE_PRECISION);
     assert_eq!(grant.essence, 0);
+}
+
+#[test]
+#[feature("safe_dispatcher")]
+fn season_one_quests_refuse_the_legacy_campaign_labor_grant_without_paying_twice() {
+    let (d, home) = campaign_home("frontier", crate::settlement::CAMPAIGN_GOLDEN);
+    let operator = IHomeGrantsSafeDispatcher { contract_address: d.games };
+    let labor = balance(d, home, LABOR);
+    let essence = balance(d, home, ESSENCE);
+    assert!(operator.grant_labor(home, 0, d.actor).is_err());
+    assert_eq!(operator.labor_grant(home, 0).unwrap(), None);
+    assert_eq!(balance(d, home, LABOR), labor);
+    assert_eq!(balance(d, home, ESSENCE), essence);
 }
 
 #[test]
