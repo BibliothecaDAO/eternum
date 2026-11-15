@@ -696,7 +696,19 @@ fn frontier_storage_grants_clip_at_each_exact_s2_cap_without_changing_troops() {
 
 #[test]
 fn workshop_sides_and_charge_each_follow_their_exact_ladder() {
-    for (row, category, essence_base, labor_base) in array![(1_u8, 25_u8, 2000_u128, 2000_u128), (2, 28, 4000, 3000)] {
+    let ladders = array![
+        (
+            crate::research::ROW_WORKSHOP,
+            crate::research::WORKSHOP,
+            array![(1000_u128, 1000_u128), (2000, 2000), (8000, 6000), (24000, 16000), (60000, 40000)].span(),
+        ),
+        (
+            crate::research::ROW_BARRACKS,
+            crate::research::BARRACKS,
+            array![(5000_u128, 1000_u128), (10000, 2500), (25000, 5000), (50000, 10000), (100000, 25000)].span(),
+        ),
+    ];
+    for (row, category, prices) in ladders {
         let (d, home, _) = research_world();
         let resources = IResourceOperationsDispatcher { contract_address: d.games };
         let essence = ResourceSlot {
@@ -719,13 +731,14 @@ fn workshop_sides_and_charge_each_follow_their_exact_ladder() {
                 let before_e = resources.resource_balance(essence);
                 let before_l = resources.resource_balance(labor);
                 assert!(execute(d, research(home, row, side), 40));
+                let (expected_essence, expected_labor) = *prices.at(at);
                 assert_eq!(
                     before_e - resources.resource_balance(essence),
-                    essence_base * *array![1_u128, 2, 8, 24, 60].at(at) / 2 * crate::rules::RESOURCE_PRECISION,
+                    expected_essence * crate::rules::RESOURCE_PRECISION,
                 );
                 assert_eq!(
                     before_l - resources.resource_balance(labor),
-                    labor_base * *array![1_u128, 2, 6, 16, 40].at(at) / 2 * crate::rules::RESOURCE_PRECISION,
+                    expected_labor * crate::rules::RESOURCE_PRECISION,
                 );
                 assert_eq!(crate::research::picks(learned(d, home), row, side), at.try_into().unwrap() + 1_u8);
             }
