@@ -328,16 +328,23 @@ fn observed_quest_rules(game_id: u32) -> Option<crate::quests::QuestRules> {
 
 fn observed_bane_rules(game_id: u32) -> Option<crate::banes::BaneRules> {
     let preset = crate::logic::preset_record::for_game(game_id);
-    let Some((chance_step, quorum_percent, beast_percent, stamina_percent, production_percent)) =
-        preset.bane_rules.read() else {
+    let Some((chance_step, quorum_percent, beast_percent, stamina_percent, production_percent)) = preset
+        .bane_rules
+        .read() else {
         return None;
     };
     let mut quest_counts = array![];
     for index in 0_u8..12 {
         quest_counts.append(preset.bane_quest_counts.read(index));
     }
-    Some(crate::banes::BaneRules {
-        chance_step, quorum_percent, beast_percent, stamina_percent, production_percent,
-        quest_counts: quest_counts.span(),
-    })
+    Some(
+        crate::banes::BaneRules {
+            chance_step,
+            quorum_percent,
+            beast_percent,
+            stamina_percent,
+            production_percent,
+            quest_counts: quest_counts.span(),
+        },
+    )
 }
