@@ -4032,12 +4032,14 @@ function raceBoardSteps(result) {
       name: "each-tower-visited",
       settleMs: 0,
       play: async ({ browser, extraScreenshot }) => {
-        // At the playing zoom the camera is brought to each tower in turn, so a phone sees all four, one at a time.
+        // The hexes are read while the wheel has all four towers drawn; at the playing zoom the camera is then brought
+        // to each in turn, so a phone sees all four, one at a time.
+        const hexes = browser.read(`window.__eternumMapSelection?.towerHexes ?? {}`);
         browser.run(["eval", `void window.__playtest.wheel(-100, ${ZOOM_IN_NOTCHES})`]);
         await sleep(ZOOM_SETTLE_MS);
         const visits = [];
         for (const id of Object.keys(TOWERS_AFTER_THE_BLOCK)) {
-          await panToHex(browser, browser.read(`window.__eternumMapSelection?.towerHexes?.["${id}"] ?? null`));
+          await panToHex(browser, hexes[id]);
           await sleep(HOVER_SETTLE_MS);
           const seen = browser.read(towerPlate(id));
           extraScreenshot(`tower-${id}`);
