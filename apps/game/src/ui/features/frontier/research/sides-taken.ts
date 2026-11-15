@@ -5,8 +5,7 @@ import { researchPicks } from "@bibliothecadao/eternum";
 import { nativeResearchConstants as research } from "@bibliothecadao/eternum/game-client";
 
 /**
- * Each choosing row's two sides as their marks, the one place they are named: make more, or store more (or deploy for
- * less wheat). The research tree, the Build sheet and a store's card all draw them from here.
+ * Each choosing row's two sides as their marks, the one place they are named: make more, or store more. The research tree, the Build sheet and a store's card all draw them from here.
  */
 const SIDE_MARKS: Partial<Record<number, readonly [IconMeaning, IconMeaning]>> = {
   [research.ROW_FARM]: ["fields", "granary"],

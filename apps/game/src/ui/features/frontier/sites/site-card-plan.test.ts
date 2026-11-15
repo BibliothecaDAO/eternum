@@ -4,7 +4,7 @@ import { armyRelicReward, setBlockTimestampSource } from "@bibliothecadao/eternu
 import { ResourcesIds, TroopTier, TroopType } from "@bibliothecadao/types";
 import preset from "../../../../../../../contracts/l3/world-native/tests/fixtures/current-presets/conformance.json";
 import { readArmyCard, readSiteCard } from "./site-card-plan";
-import { blightglowRift, campBeside, otherArmyAt, relicEffectFact, SITE_TILE } from "./site-fixture";
+import { blightglowRift, campBeside, otherArmyAt, relicEffectFact, reloadSiteFacts, SITE_TILE } from "./site-fixture";
 
 afterEach(() => setBlockTimestampSource(null));
 
@@ -290,4 +290,20 @@ it("adds active relics to a slot army's Battle skill without modifying stored tr
     decr_damage_gotten_percent_num: 0,
   });
   expect(current.troops.boosts.incr_damage_dealt_percent_num).toBe(0);
+});
+
+
+it("keeps the same site's opening Charge spent after a confirmed update and a fresh snapshot", () => {
+  const { store, site, structure, attack } = campBeside();
+  const key = { game_id: 1, explorer_id: 201n };
+  const combat = store.require("ArmyCombat", key);
+  const wireKey = store.wireKeyOf("ArmyCombat", key)!;
+  const army = attack({ col: 41, row: 12, alt: false });
+  store.applyFacts([{ model: "ArmyCombat", key: wireKey, value: { ...combat, charge: 5 } }]);
+  expect(readSiteCard(store, site, structure, SITE_TILE, army).fight).toEqual({ troopsLost: 327, guardLeft: 478 });
+  store.applyFacts([{ model: "ArmyCombat", key: wireKey, value: { ...combat, charge: 5, last_target: site.entity_id } }]);
+  expect(readSiteCard(store, site, structure, SITE_TILE, army).fight).toEqual({ troopsLost: 457, guardLeft: 478 });
+  const restored = reloadSiteFacts(store);
+  restored.setSnapshot({ gameId: 1, complete: true, actor: "0x111", timestamp: 350 });
+  expect(readSiteCard(restored, site, structure, SITE_TILE, army).fight).toEqual({ troopsLost: 457, guardLeft: 478 });
 });

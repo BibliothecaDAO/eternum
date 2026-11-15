@@ -243,9 +243,9 @@ const useCertainLoss = () => {
         : undefined;
       const explorer = facts.store.get("ExplorerTroops", { game_id: gameId, explorer_id: army.entityId });
       const troops = explorer ? resolveExplorerTroops(facts.store, explorer) : undefined;
-      if (!guard || !troops) return false;
+      if (!guard || !troops || !explorer || !structure) return false;
       const biome = tile && tile.biome !== 0 ? biomeTypeOf(tile.biome) : BiomeType.None;
-      const chargePercent = openingChargePercent(facts.store, explorer!, structure!.entity_id);
+      const chargePercent = openingChargePercent(facts.store, explorer, structure.entity_id);
       if (chargePercent === undefined) return false;
       const circumstances = {
         chargePercent,

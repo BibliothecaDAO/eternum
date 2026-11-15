@@ -454,7 +454,9 @@ const CHARGE_STEPS = [
         combat &&
         BigInt(army.troops.count) === BigInt(attacker) * 1_000_000_000n &&
         BigInt(guard.troops.count) === BigInt(defender) * 1_000_000_000n &&
-        BigInt(combat.last_target) === BigInt(guard.structure_id)
+        BigInt(combat.last_target) === BigInt(guard.structure_id) &&
+        played.forecast?.some((label) => label.includes(`→ ${attacker},`)) &&
+        played.forecast?.some((label) => label.includes(`→ ${defender},`))
         ? { watch: "fought" }
         : undefined;
     }),
@@ -536,9 +538,10 @@ async function attackFromTheSiteCard({ browser }) {
   );
   if (!sheet.buttons.includes("Attack")) return { army, offered: target.offered, target: target.offset, sheet };
   const token = browser.read(armyToken(army));
+  const forecast = browser.read(`Array.from(document.querySelectorAll('[data-kit-sheet] [role="img"][aria-label*="→"]'), node => node.getAttribute('aria-label'))`);
   watchFor(browser, "fought", tokensShowTheChainsCounts("BattleGuard"));
   browser.click("Attack");
-  return { army, offered: target.offered, target: target.offset, watching: true, region: token?.region };
+  return { army, offered: target.offered, target: target.offset, forecast, watching: true, region: token?.region };
 }
 
 /**
