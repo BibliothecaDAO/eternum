@@ -1068,7 +1068,9 @@ pub fn create_open_frontier(preset_id: u32, preset: PresetDefinition, duration: 
     registry(d).register_preset(preset_id, preset);
     let game_id = registry(d)
         .create_game(
-            CreateGameParams { preset_id, start_main_at: 360, end_grace_seconds: 0, duration_seconds: duration, ..params(false) },
+            CreateGameParams {
+                preset_id, start_main_at: 360, end_grace_seconds: 0, duration_seconds: duration, ..params(false),
+            },
         );
     let mut traits = array![];
     for _ in 0..crate::realms::CANONICAL_REALM_COUNT {
