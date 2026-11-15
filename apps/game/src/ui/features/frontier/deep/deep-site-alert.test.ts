@@ -1,0 +1,89 @@
+import { expect, it } from "vitest";
+import { deepScenario } from "@/lab/game/deep-scenario";
+import { planDeepSiteWatches } from "../../../../../../realms/server/deep-site-watch";
+import { RESOURCE_PRECISION } from "@bibliothecadao/types";
+import { type NativeModelName, type NativeRows } from "@bibliothecadao/eternum/game-client";
+
+function fixture(guardCounts = [1000]) {
+  const { store, startsAt, player } = deepScenario();
+  const army = store.require("ExplorerTroops", { game_id: 1, explorer_id: 201 });
+  const slot = store.require("ArmySlot", { game_id: 1, structure_id: army.owner, epoch: 0n, slot: 0 });
+  const progress = store.require("ArmyProgress", { game_id: 1, explorer_id: 201 });
+  let key = 0x9000;
+  const write = <M extends NativeModelName>(model: M, row: NativeRows[M]) => {
+    store.applyFacts([{ model, key: `0x${(key++).toString(16)}`, value: row }]);
+  };
+  const change = <M extends NativeModelName>(model: M, keys: Parameters<typeof store.require<M>>[1], changes: Partial<NativeRows[M]>) => {
+    store.applyFacts([{ model, key: store.wireKeyOf(model, keys)!, value: { ...store.require(model, keys), ...changes } }]);
+  };
+  store.applyFacts([{ model: "DeepArmy", key: store.wireKeyOf("DeepArmy", { game_id: 1, explorer_id: 201 })!, value: null }]);
+  const position = store.entityOccupancy(1, 201)!;
+  store.applyFacts([{ model: "TileOccupancy", key: store.wireKeyOf("TileOccupancy", position)!, value: null }]);
+  write("TileOccupancy", { ...position, col: 50, row: 50 });
+  change("ExplorerTroops", { game_id: 1, explorer_id: 201 }, { troops: { ...army.troops, count: 1500n * BigInt(RESOURCE_PRECISION) } });
+  change("ArmySlot", { game_id: 1, structure_id: army.owner, epoch: 0n, slot: 0 }, { stamina: { amount: 120n, settled_at: startsAt, remainder: 0 } });
+  change("HomeAspect", { game_id: 1, home: 9 }, { aspect: 2 });
+  const guard = store.require("ExplorerTroops", { game_id: 1, explorer_id: 301 });
+  const membership = store.require("DeepGuard", { game_id: 1, explorer_id: 301 });
+  const entered = store.require("DeepArmy", { game_id: 1, explorer_id: 301 });
+  for (const [index, count] of guardCounts.entries()) {
+    const explorer_id = 301n + BigInt(index);
+    const troops = { ...guard.troops, count: BigInt(count) * BigInt(RESOURCE_PRECISION), stamina: { Slot: index } };
+    if (index === 0) change("ExplorerTroops", { game_id: 1, explorer_id }, { troops });
+    else {
+      write("ExplorerTroops", { ...guard, explorer_id, troops });
+      write("ArmyDay", { game_id: 1, explorer_id, day: 0n });
+      write("DeepGuard", { ...membership, explorer_id, slot: index });
+      write("DeepArmy", { ...entered, explorer_id });
+    }
+    write("ArmySlot", { ...slot, structure_id: guard.owner, slot: index, explorer_id, stamina: { amount: 120n, settled_at: startsAt, remainder: 0 } });
+    write("ArmyProgress", { ...progress, explorer_id });
+  }
+  store.setSnapshot({ gameId: 1, actor: player, complete: true, timestamp: startsAt });
+  const owner = { gameId: 1, actor: player, owner: "0x123", home: String(army.owner) };
+  return { store, startsAt, owner, change, plan: (at = startsAt) => planDeepSiteWatches(store, owner, at * 1000) };
+}
+
+it("forecasts every rival guard in order with the same surviving attacker", () => {
+  const single = fixture();
+  expect(single.plan()).toHaveLength(1);
+  expect(single.plan()[0]!.dueAt).toBe(single.startsAt * 1000);
+  const pair = fixture([1000, 1000]);
+  const watches = pair.plan();
+  expect(watches).toHaveLength(1);
+  expect(watches[0]!.dueAt).toBeGreaterThan(pair.startsAt * 1000);
+  expect(pair.plan(watches[0]!.dueAt / 1000)[0]!.dueAt).toBe(watches[0]!.dueAt);
+  expect(pair.store.require("ExplorerTroops", { game_id: 1, explorer_id: 301 }).troops.count).toBe(1000n * BigInt(RESOURCE_PRECISION));
+});
+
+it("does not offer allied sites, beasts, a realm without lore, or an army already in the Deep", () => {
+  const allied = fixture();
+  allied.change("HomeAspect", { game_id: 1, home: 9 }, { aspect: 1 });
+  expect(allied.plan()).toEqual([]);
+  const noLore = fixture();
+  noLore.change("RealmKnowledge", { game_id: 1, structure_id: BigInt(noLore.owner.home) }, { learned: 0n });
+  expect(noLore.plan()).toEqual([]);
+  const entered = fixture();
+  entered.store.applyFacts([{ model: "DeepArmy", key: "0xa001", value: { game_id: 1, explorer_id: 201, last_tick: 0 } }]);
+  expect(entered.plan()).toEqual([]);
+  const beasts = fixture();
+  const watch = beasts.plan()[0]!;
+  const guard = beasts.store.require("Guard", { game_id: 1, structure_id: BigInt(watch.siteId), slot: 0 });
+  beasts.change("Guard", { game_id: 1, structure_id: BigInt(watch.siteId), slot: 0 }, { troops: { ...guard.troops, count: 1n } });
+  expect(beasts.plan()).toEqual([]);
+});
+
+it("does not promise a site whose last rival guard expires before the army can clear it", () => {
+  const tiny = fixture([400]);
+  const army = tiny.store.require("ExplorerTroops", { game_id: 1, explorer_id: 201 });
+  tiny.change("ExplorerTroops", { game_id: 1, explorer_id: 201 }, { troops: { ...army.troops, count: 1n } });
+  expect(tiny.plan()).toEqual([]);
+});
+
+it("clears four weak slots without resetting the attacker and closes the watch at day end", () => {
+  const four = fixture([100, 100, 100, 100]);
+  const watches = four.plan();
+  expect(watches).toHaveLength(1);
+  expect(watches[0]!.dueAt).toBe(four.startsAt * 1000);
+  expect(four.plan(watches[0]!.until / 1000)).toEqual([]);
+});

@@ -57,6 +57,7 @@ fn initialize(game_id: u32) {
         return;
     };
     let state = crate::state::write();
+    crate::logic::deep_ticks::initialize(game_id);
     let start = state.games.games.entry(game_id).start_main_at.read();
     let spacing = crate::logic::preset_record::for_game(game_id).settlement_spacing.read();
     for kind in 0..crate::rules::DEEP_SITE_COUNT {
@@ -76,7 +77,7 @@ fn initialize(game_id: u32) {
     }
 }
 
-fn rollover(game_id: u32, context: ExecutionContext) {
+pub fn rollover(game_id: u32, context: ExecutionContext) {
     let Some(rules) = rules_entry(game_id) else {
         return;
     };
@@ -92,8 +93,6 @@ fn rollover(game_id: u32, context: ExecutionContext) {
         if previous.day != day.index {
             crate::logic::deep_guards::expire(key, context);
             reset_beast(key, kind, day.index, rules.beast_count.read(), day.start);
-        } else {
-            crate::logic::deep_guards::settle(key, context);
         }
     }
 }
@@ -145,7 +144,6 @@ pub mod DeepSites {
             let context = crate::commands::execution_context(game_id, context);
             crate::logic::combat::authorize(game_id, context);
             let key = crate::troops::ExplorerKey { game_id, explorer_id: command.explorer_id };
-            super::rollover(game_id, context);
             let explorer = crate::logic::troops::field_explorer(key, actor, context.timestamp, context);
             let occupied = crate::logic::map::occupancy(crate::geometry::tile_key(game_id, command.coord))
                 .expect('missing Deep site tile');
@@ -159,7 +157,7 @@ pub mod DeepSites {
         fn settle_deep(
             ref self: ComponentState<TContractState>, game_id: u32, context: crate::commands::ActionContext,
         ) {
-            super::rollover(game_id, crate::commands::execution_context(game_id, context));
+            crate::logic::deep_ticks::settle(game_id, crate::commands::execution_context(game_id, context));
         }
     }
 }

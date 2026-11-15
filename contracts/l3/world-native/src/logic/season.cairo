@@ -268,8 +268,7 @@ pub mod SeasonLogic {
             raw_root: u256,
             timestamp: u64,
         ) -> Result<Span<felt252>, crate::commands::Rejection> {
-            // The one read of the game and its rules in a play; every library call below receives them.
-            let context = crate::commands::load_context(game_id, raw_root, timestamp);
+            let mut context = crate::commands::load_context(game_id, raw_root, timestamp);
 
             let (index, route, payload) = crate::commands::route_command(arguments).map_err(|code| rejection(code))?;
             let rules = context.rules.unbox();
@@ -287,6 +286,16 @@ pub mod SeasonLogic {
                     game_id,
                     crate::commands::action_context(context),
                 );
+            }
+            if crate::logic::preset_record::for_game(game_id).deep_rules.read().is_some() {
+                crate::deep::IDeepSitesDispatcherTrait::settle_deep(
+                    crate::deep::IDeepSitesLibraryDispatcher {
+                        class_hash: self.release.classes(game_id).map.read(),
+                    },
+                    game_id,
+                    crate::commands::action_context(context),
+                );
+                context.game = BoxTrait::new(crate::logic::game::game(game_id));
             }
             let result = dispatch(self.release.classes(game_id), route, game_id, actor, payload, context)
                 .map_err(|error| domain_rejection(error))?;

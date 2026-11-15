@@ -30,7 +30,7 @@ import { getBlockTimestamp } from "../utils/timestamp";
 import type { BiomeClimateConfig } from "../utils/biome";
 import type { CombatRules } from "../utils/combat-exchange";
 
-const MAP_CENTER = 2147483646;
+import { mapCenter } from "../utils/map-center";
 type ResourceAmount = { readonly resource_type: number; readonly amount: bigint };
 const displayAmounts = (rows: readonly ResourceAmount[]) =>
   rows.map(({ resource_type, amount }) => ({
@@ -614,7 +614,7 @@ export class ClientConfigManager {
     };
   }
   getMapCenter() {
-    return MAP_CENTER - this.rules().map_center_offset;
+    return mapCenter(this.rules().map_center_offset);
   }
   getBiomeClimateConfig(): BiomeClimateConfig {
     return this.rules().biome_climate_config;

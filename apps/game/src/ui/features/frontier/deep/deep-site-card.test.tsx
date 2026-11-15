@@ -6,6 +6,8 @@ import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useBlockTimestampStore } from "@/hooks/store/use-block-timestamp-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { deepScenario } from "@/lab/game/deep-scenario";
+import { raceScenario } from "@/lab/game/race-scenario";
+import { baneScenario } from "@/lab/game/bane-scenario";
 import { configManager, type ResourceManager, setBlockTimestampSource } from "@bibliothecadao/eternum";
 import { RESOURCE_PRECISION, ResourcesIds } from "@bibliothecadao/types";
 import { readArmyMovementReadiness } from "@/ui/features/world/components/armies/army-movement-readiness";
@@ -31,9 +33,8 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
-const draw = (now?: number) => {
+const draw = (now?: number, scenario = deepScenario()) => {
   (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
-  const scenario = deepScenario();
   const { store } = scenario;
   const startsAt = now ?? scenario.startsAt;
   setBlockTimestampSource(() => startsAt);
@@ -67,6 +68,29 @@ const draw = (now?: number) => {
 };
 
 describe("the Deep site's live native binding", () => {
+  it("reads every site's tick payment and Altar charge from its current rules and facts", () => {
+    const scenario = raceScenario();
+    scenario.store.applyFacts([{ model: "BaneRules", key: "0xfee1", value: baneScenario("world").store.require("BaneRules", { game_id: 1 }) }]);
+    const hud = draw(undefined, scenario);
+    try {
+      expect(hud.host.querySelector("[data-deep-pay]")?.textContent).toContain("500");
+      const sites = readDeepSites(hud.store, scenario.startsAt, 1);
+      for (const site of sites) {
+        hud.render(<DeepSiteCard site={site} onClose={() => {}} />);
+        const pay = hud.host.querySelector("[data-deep-pay]")!.textContent;
+        if (site.name === "Quarry") expect(pay).toContain("500");
+        else expect(pay).toContain("5 Glory");
+        if (site.name === "Foundation") expect(pay).toContain("+5 height");
+        if (site.name === "Altar") expect(pay).toContain("300 of 1,500");
+      }
+      const rules = hud.store.require("DeepRules", { game_id: 1 });
+      act(() => hud.store.applyFacts([{ model: "DeepRules", key: hud.store.wireKeyOf("DeepRules", rules)!, value: { ...rules, quarry_per_tick: 600n * BigInt(RESOURCE_PRECISION) } }]));
+      hud.render();
+      expect(hud.host.querySelector("[data-deep-pay]")?.textContent).toContain("600");
+      expect(hud.host.querySelector("[data-deep-pay]")?.textContent).not.toContain("500");
+    } finally { hud.unmount(); }
+  });
+
   it("keeps the joined slot army's refilled stamina and panel after vacating its tile", async () => {
     const hud = draw();
     try {

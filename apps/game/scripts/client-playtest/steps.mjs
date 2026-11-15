@@ -3542,6 +3542,11 @@ const DEEP_JOIN_STATE = `JSON.stringify({
   sheet: document.querySelector("[data-kit-sheet]")?.getAttribute("aria-label") ?? null,
   text: document.querySelector("[data-kit-sheet]")?.textContent ?? "",
   slots: document.querySelector("[data-deep-slots]")?.textContent ?? "",
+  pay: (() => {
+    const node = document.querySelector('[data-deep-pay]');
+    const rect = node?.getBoundingClientRect();
+    return { text: node?.textContent ?? "", visible: Boolean(rect && rect.width > 0 && rect.height > 0 && rect.top >= 0 && rect.bottom <= innerHeight) };
+  })(),
   joined: (window.__labChain?.sent ?? []).filter(({ command }) => command.kind === "InteractSite"),
   quarry: (() => {
     const slot = document.querySelector('.mp-at:has([data-icon="pickaxe"])');
@@ -3657,6 +3662,8 @@ const DEEP_JOIN_STEPS = [
       return joined.length === 1 &&
         guard?.value.slot === 1 &&
         leftField &&
+        played.opened.pay.visible &&
+        played.opened.pay.text.includes("500") &&
         played.after.sheet === "Quarry" &&
         (played.after.slots.match(/Free slot/g) ?? []).length === 2
         ? completed(played)

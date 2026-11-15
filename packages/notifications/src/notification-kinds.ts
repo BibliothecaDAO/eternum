@@ -12,6 +12,7 @@ const HOUR = 60 * MINUTE;
  */
 export const NOTIFICATION_KIND_RULES = {
   "day-open": { level: "important", lifetimeMs: 48 * HOUR },
+  "site-vulnerable": { level: "important", lifetimeMs: 48 * HOUR },
   "army-rested": { level: "important", lifetimeMs: 48 * HOUR },
   fights: { level: "important", lifetimeMs: HOUR },
   results: { level: "important", lifetimeMs: 24 * HOUR },

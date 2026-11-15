@@ -174,6 +174,10 @@ estimate_gb = 5
 cmd = "pnpm --dir apps/game-docs test"
 estimate_gb = 3
 
+[kind.test-deep-alerts]
+cmd = "pnpm run build:packages && pnpm --dir apps/realms typecheck && pnpm --dir packages/notifications test && pnpm --dir packages/core test src/sync/subscription-scope.test.ts && pnpm --dir apps/herald test src/game-subscription.test.ts && pnpm --dir apps/game test src/ui/features/frontier/deep/deep-site-alert.test.ts src/ui/features/frontier/deep/deep-site-card.test.tsx src/shell/profile/notifications.test.tsx src/pwa && pnpm --dir apps/realms test server/shard-notifier.test.ts -t 'Deep site opportunity'"
+estimate_gb = 5
+
 [kind.playtest-banes]
 cmd = 'cp /home/djizus/projects/eternum-lanes/showcase/apps/game/.env.local apps/game/.env.local && pnpm run build:packages && exec 8>"${FLOW_JOB%/running/*}/playtest-port-4188.lock" && flock 8 && for scenario in world again late team; do for viewport in 1920x1080 390x844; do pnpm --dir apps/game playtest --port 4188 --steps "lab-bane-$scenario" --iterations 1 --renderer-modes webgpu-force-webgl --viewport "$viewport" --out "$FLOW_TMP/playtest/$scenario/$viewport" || exit $?; done; done'
 estimate_gb = 6

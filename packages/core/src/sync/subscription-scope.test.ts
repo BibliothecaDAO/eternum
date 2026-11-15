@@ -193,6 +193,10 @@ it("includes shared Deep field armies and all held guards with their home facts"
   expect(rowInGameSyncScope("ExplorerTroops", { explorer_id: "302", owner: "9" }, scope)).toBe(true);
   expect(rowInGameSyncScope("DeepArmy", { explorer_id: "302" }, scope)).toBe(true);
   expect(rowInGameSyncScope("Structure", { entity_id: "9" }, scope)).toBe(true);
+  expect(rowInGameSyncScope("ArmySlot", { structure_id: "9", epoch: 0 }, scope)).toBe(true);
+  expect(rowInGameSyncScope("ArmySlot", { structure_id: "9", epoch: 1 }, scope)).toBe(false);
+  expect(rowInGameSyncScope("ArmySlot", { structure_id: "10", epoch: 0 }, scope)).toBe(false);
+  expect(rowInGameSyncScope("RealmKnowledge", { structure_id: "9" }, scope)).toBe(false);
 });
 
 it("includes the own Aspect's member identities and fixed monuments without adding their private map regions", () => {

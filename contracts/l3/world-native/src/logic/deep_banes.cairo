@@ -52,11 +52,13 @@ fn issue_next_day(game_id: u32, source: u8, boundary: u64) -> bool {
     if boundary >= end {
         return false;
     }
-    let day = day(game_id, boundary - 1).expect('Altar tick outside season');
+    let prepared_until = core::cmp::min(crate::state::read().banes.next_roll_at.read(game_id), end);
+    let issued_at = core::cmp::max(boundary, prepared_until) - 1;
+    let day = day(game_id, issued_at).expect('Altar tick outside season');
     if day.end >= end {
         return false;
     }
-    let Some(target) = target(game_id, source, day.index, boundary - 1) else {
+    let Some(target) = target(game_id, source, day.index, issued_at) else {
         return false;
     };
     issue(TeamBaneKey { game_id, aspect: target, day: day.index + 1 }, source, day.index);

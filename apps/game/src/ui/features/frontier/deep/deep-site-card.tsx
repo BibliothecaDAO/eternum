@@ -22,7 +22,7 @@ import { aspects, deepSites, formatDuration, RESOURCE_PRECISION } from "@bibliot
 import { isCovered, useArmyStamina, useOrderAt } from "../hud/army-order";
 import { useApproachTile } from "../sites/approach";
 import { useSelectedOwnArmy } from "../sites/selected-army";
-import { DeepSiteView, type DeepBlock, type DeepGuard, type DeepOrder } from "./deep-site-view";
+import { DeepSiteView, type DeepBlock, type DeepGuard, type DeepOrder, type DeepTickPay } from "./deep-site-view";
 
 const MODELS = [
   "DeepSite",
@@ -34,6 +34,10 @@ const MODELS = [
   "TileOccupancy",
   "HomeAspect",
   "Structure",
+  "DeepRules",
+  "RaceRules",
+  "BaneRules",
+  "AltarBar",
 ] as const;
 
 export function useSelectedDeepSite(): Site | null {
@@ -110,7 +114,7 @@ export function DeepSiteCard({ site, onClose }: { site: Site; onClose: () => voi
   return (
     <DeepSiteView
       site={catalog.position}
-      pay={null}
+      pay={tickPay(setup.store, game_id, site, selected)}
       guard={guardView(setup.store, game_id, site, selected, now)}
       order={order}
       onClose={onClose}
@@ -119,6 +123,30 @@ export function DeepSiteCard({ site, onClose }: { site: Site; onClose: () => voi
 }
 
 type Selected = ReturnType<typeof useSelectedOwnArmy>;
+
+function tickPay(store: NativeFactStore, game_id: number, site: Site, selected: Selected): DeepTickPay | null {
+  const deep = store.require("DeepRules", { game_id });
+  const race = store.get("RaceRules", { game_id });
+  if (!race && !store.absenceKnown("RaceRules", { game_id }).known) return null;
+  const banes = store.get("BaneRules", { game_id });
+  if (!banes && !store.absenceKnown("BaneRules", { game_id }).known) return null;
+  const quarry = site.kind === nativeRuleConstants.DEEP_QUARRY;
+  const altar = site.kind === nativeRuleConstants.DEEP_ALTAR;
+  const home = site.guards[0]?.army.owner ?? selected?.army.owner;
+  const holder = home === undefined ? undefined : aspect(store, game_id, home);
+  let bar: DeepTickPay["bar"] = null;
+  if (altar && banes && holder !== undefined) {
+    const reading = store.requireOrAbsent("AltarBar", { game_id, aspect: holder });
+    if (!reading.known) return null;
+    bar = { perTick: deep.altar_per_tick, charge: reading.known.charge, threshold: deep.altar_threshold };
+  }
+  return {
+    glory: quarry ? 0 : Number(race?.glory_per_tick ?? 0),
+    height: site.kind === nativeRuleConstants.DEEP_FOUNDATION ? (race?.height_per_tick ?? 0) : 0,
+    resources: quarry ? Number(deep.quarry_per_tick) / RESOURCE_PRECISION : 0,
+    bar,
+  };
+}
 
 function aspect(store: NativeFactStore, game_id: number, home: bigint): number {
   return store.require("HomeAspect", { game_id, home }).aspect;

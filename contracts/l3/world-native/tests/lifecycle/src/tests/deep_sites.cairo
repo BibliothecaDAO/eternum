@@ -8,6 +8,10 @@ use crate::troops::{ArmySlotKey, ExplorerKey, ExplorerTroops};
 use super::army_activity::{army, found, muster, player, slot_army};
 
 fn setup(seed: felt252) -> (Deployment, u32) {
+    super::aspects::setup_aspect_preset(seed, preset())
+}
+
+pub fn preset() -> crate::presets::PresetDefinition {
     let (_, mut preset) = world_test_support::tests::preset_projection::current_definition("frontier");
     preset.rules.command_mask = preset.rules.command_mask | 4;
     preset.rules.battle_config.regular_immunity_ticks = 0;
@@ -26,10 +30,10 @@ fn setup(seed: felt252) -> (Deployment, u32) {
                     altar_threshold: 10,
                 },
             );
-    super::aspects::setup_aspect_preset(seed, preset)
+    preset
 }
 
-fn deployed(d: Deployment, game_id: u32, aspect: u8, count: u128) -> ExplorerKey {
+pub fn deployed(d: Deployment, game_id: u32, aspect: u8, count: u128) -> ExplorerKey {
     let home = found(d, game_id, aspect);
     let depth_budget = interact_with_state(
         d.games,
@@ -80,7 +84,7 @@ fn deployed(d: Deployment, game_id: u32, aspect: u8, count: u128) -> ExplorerKey
     key
 }
 
-fn applied(d: Deployment, game_id: u32, command: Command, now: u64) {
+pub fn applied(d: Deployment, game_id: u32, command: Command, now: u64) {
     let mut events = spy_events();
     if !execute_in_game(d, game_id, command, now) {
         panic!("{}", world_test_support::tests::play_fixture::rejection(ref events, d.games).reason);
@@ -93,26 +97,26 @@ fn refused(d: Deployment, game_id: u32, command: Command, now: u64, reason: Byte
     assert_eq!(world_test_support::tests::play_fixture::rejection(ref events, d.games).reason, reason);
 }
 
-fn site(d: Deployment, game_id: u32, kind: u8) -> ResourceKey {
+pub fn site(d: Deployment, game_id: u32, kind: u8) -> ResourceKey {
     ResourceKey {
         game_id, entity_id: interact_with_state(d.games, || crate::state::read().deep.site_ids.read((game_id, kind))),
     }
 }
 
-fn beside(d: Deployment, key: ExplorerKey, target: ResourceKey, direction: u8) {
+pub fn beside(d: Deployment, key: ExplorerKey, target: ResourceKey, direction: u8) {
     let coord = interact_with_state(d.games, || crate::logic::map::entity_coord(target).unwrap());
     set_explorer_fixture(
         d.games, key, ExplorerTroops { coord: crate::geometry::neighbor(coord, direction), ..army(d, key) },
     );
 }
 
-fn fight(key: ExplorerKey, target: ResourceKey) -> Command {
+pub fn fight(key: ExplorerKey, target: ResourceKey) -> Command {
     Command::BattleGuard(
         crate::commands::Battle { attacker_id: key.explorer_id, defender_id: target.entity_id, relic_slot: None },
     )
 }
 
-fn join(d: Deployment, key: ExplorerKey, target: ResourceKey) -> Command {
+pub fn join(d: Deployment, key: ExplorerKey, target: ResourceKey) -> Command {
     Command::InteractSite(
         crate::relics::InteractSite {
             explorer_id: key.explorer_id,
@@ -121,7 +125,7 @@ fn join(d: Deployment, key: ExplorerKey, target: ResourceKey) -> Command {
     )
 }
 
-fn held(d: Deployment, key: ExplorerKey) -> Option<crate::deep::DeepGuard> {
+pub fn held(d: Deployment, key: ExplorerKey) -> Option<crate::deep::DeepGuard> {
     interact_with_state(d.games, || crate::state::read().deep.guards.read((key.game_id, key.explorer_id)))
 }
 

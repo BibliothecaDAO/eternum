@@ -69,7 +69,13 @@ tribe fixture is removed.
 
 `/lab/game?scenario=deep` opens beside the allied Quarry. Select Army 1, open the Quarry, Join, then close the site card
 and reopen Army 1 from the dock. Its panel keeps the slot's refilling stamina after the army leaves its personal tile.
-`build.sh playtest-deep` drives this path on desktop and phone and records the joined guard and visible bar.
+`build.sh playtest-deep` drives this path on desktop and phone and records the site's visible tick payment, the joined
+guard and its visible stamina bar. The site's payment reads DeepRules/RaceRules and the holder's AltarBar.
+
+With Important notifications enabled, a rival-held Deep site can send one opportunity alert per site and game day.
+Opening it selects the site's map coordinate. `build.sh test-deep-alerts` drives the real notifier worker through a
+confirmed rival change, a timed loss boundary, a reinforcement before retry, restart deduplication and foreground
+suppression; its same forecast tests retain the attacker through every guard slot.
 
 ### HUD room
 

@@ -37,9 +37,6 @@ struct GuardDefender {
 
 pub fn battle_guard(game_id: u32, actor: ContractAddress, command: Battle, context: ExecutionContext) {
     let rules = authorize(game_id, context);
-    crate::deep::IDeepSitesDispatcherTrait::settle_deep(
-        crate::logic::deep_sites::dispatcher(game_id), game_id, crate::commands::action_context(context),
-    );
     let key = ExplorerKey { game_id, explorer_id: command.attacker_id };
     let mut attacker = authorized_explorer(key, actor, context);
     let target = guard_target(ResourceKey { game_id, entity_id: command.defender_id }, actor, attacker, context);

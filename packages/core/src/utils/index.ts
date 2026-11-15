@@ -37,6 +37,7 @@ export * from "./travel";
 export * from "./utils";
 
 export * from "./realm-research";
+export * from "./map-center";
 
 export * from "./production-output";
 
