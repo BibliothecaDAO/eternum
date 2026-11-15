@@ -23,6 +23,7 @@ import { handleBuildOrders } from "./build-orders";
 import { handleLordsPrice } from "./lords-price";
 import { handleSeal } from "./seal";
 import { holderFactsOf } from "./seal-facts";
+import { handleStoreReceipt, storeVerifiersOf } from "./store-receipts";
 import { handleOpeningProgress } from "./opening-progress";
 import {
   campaignStandings,
@@ -149,6 +150,13 @@ export const routeIdentityRequest = async (
   if (pathname === "/api/notifications/preferences") return handleNotificationPreferences(request, auth, env.DB);
   if (pathname === "/api/build-orders") return handleBuildOrders(request, auth, env.DB);
   if (pathname === "/api/opening") return handleOpeningProgress(request, auth, env.DB);
+  if (pathname === "/api/shop/receipt")
+    return handleStoreReceipt(request, auth, {
+      db: env.DB,
+      holderFacts: holderFactsOf(env),
+      verifiers: storeVerifiersOf(env),
+      now: () => Math.floor(Date.now() / 1000),
+    });
   if (pathname === "/api/shop/seal") return handleSeal(request, auth, { db: env.DB, holderFacts: holderFactsOf(env) });
   if (pathname === "/api/shop/price" && request.method === "GET") {
     if (!(await withinPublicBudget(env, "shop-price", request))) return json({ error: "too_many_requests" }, 429);

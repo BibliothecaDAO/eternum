@@ -46,6 +46,11 @@ export const grantSeal = async (
   db: D1Database,
   seal: { owner: string; paidCents: number; source: "web" | "store"; receipt: string; now: number },
 ): Promise<"granted" | "held" | "receipt_used"> => {
+  const used = await db
+    .prepare('SELECT "owner" FROM "seal" WHERE "receipt" = ?')
+    .bind(seal.receipt)
+    .first<{ owner: string }>();
+  if (used) return used.owner === seal.owner ? "held" : "receipt_used";
   if (await readSeal(db, seal.owner)) return "held";
   try {
     await db

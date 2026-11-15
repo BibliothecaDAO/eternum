@@ -36,3 +36,19 @@ export const lordsFor = (cents: number, usdPerLords: number): number => {
   if (!Number.isFinite(usdPerLords) || usdPerLords <= 0) throw new Error(`LORDS price ${usdPerLords} is not positive`);
   return Math.ceil(cents / 100 / usdPerLords);
 };
+
+/**
+ * What the stores sell, by the product id the stores carry: a Fragment bundle (the Fragments and the cents the store
+ * charges) or the Ancient Seal (at the store price of a buyer who holds nothing, or of a holder). The seal's prices are
+ * the seal table's, so no price is written twice.
+ */
+export const STORE_PRODUCTS = {
+  "fragments-100": { kind: "fragments", fragments: 100, cents: 99 },
+  "fragments-500": { kind: "fragments", fragments: 500, cents: 499 },
+  "fragments-1000": { kind: "fragments", fragments: 1_000, cents: 999 },
+  seal: { kind: "seal", cents: SEAL_CENTS.store.none },
+  "seal-holder": { kind: "seal", cents: SEAL_CENTS.store.realm },
+} as const satisfies Record<
+  string,
+  { kind: "fragments"; fragments: number; cents: number } | { kind: "seal"; cents: number }
+>;

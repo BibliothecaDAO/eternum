@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { FRAGMENT, FRAGMENT_PRICES, lordsFor, SEAL_CENTS, SEAL_FREE, SEAL_HOLDERS } from "./shop";
+import { FRAGMENT, FRAGMENT_PRICES, lordsFor, SEAL_CENTS, SEAL_FREE, SEAL_HOLDERS, STORE_PRODUCTS } from "./shop";
 
 /** The frozen design's day: LORDS at $0.003637, so $1 is 275 LORDS. */
 const PRICE = 0.003637;
@@ -35,5 +35,18 @@ describe("the Ancient Seal's holder levels", () => {
       { labor: true, fragments: false },
       { labor: true, fragments: true },
     ]);
+  });
+});
+
+describe("what the stores sell", () => {
+  it("sells Fragments a cent each or a little under, and the seal at the seal's own store prices", () => {
+    for (const product of Object.values(STORE_PRODUCTS))
+      if (product.kind === "fragments") {
+        expect(product.fragments * FRAGMENT.cents).toBeGreaterThanOrEqual(product.cents);
+        expect(product.fragments * FRAGMENT.cents - product.cents).toBeLessThanOrEqual(1);
+      }
+    expect(STORE_PRODUCTS.seal.cents).toBe(SEAL_CENTS.store.none);
+    expect(STORE_PRODUCTS["seal-holder"].cents).toBe(SEAL_CENTS.store.realm);
+    expect(SEAL_CENTS.store.realm).toBe(SEAL_CENTS.store.wonder);
   });
 });
