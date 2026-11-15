@@ -28,19 +28,21 @@ export function useAspectFights(owners: readonly bigint[]): AspectFeedReading {
   const members = owners.map((owner) => `0x${owner.toString(16)}`).sort();
   const battles = useQuery({
     queryKey: ["aspectFights", chainId, game, members],
-    queryFn: () => {
-      const shard = requireShard(chainId);
-      const { spacing } = setup.store.require("SettlementRules", { game_id: game });
-      return readDeepFightWindow(
-        (offset) =>
-          fetchHeraldGameHistory(shard, game, { model: "BattleEvent", owner: members, limit: PAGE_SIZE, offset }),
-        spacing,
-        FEED_LENGTH,
-        PAGE_SIZE,
-      ).catch((error: unknown) => {
+    queryFn: async () => {
+      try {
+        const shard = requireShard(chainId);
+        const { spacing } = setup.store.require("SettlementRules", { game_id: game });
+        return await readDeepFightWindow(
+          (offset) =>
+            fetchHeraldGameHistory(shard, game, { model: "BattleEvent", owner: members, limit: PAGE_SIZE, offset }),
+          spacing,
+          FEED_LENGTH,
+          PAGE_SIZE,
+        );
+      } catch (error) {
         console.error("[aspect feed] the battle history could not be read", error);
         throw error;
-      });
+      }
     },
     enabled: members.length > 0 && chainId !== undefined,
     refetchInterval: FEED_REFRESH_MS,
