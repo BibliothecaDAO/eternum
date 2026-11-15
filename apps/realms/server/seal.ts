@@ -4,6 +4,7 @@ import { type TicketTier } from "@realms-world/identity";
 
 import type { IdentityAuth } from "./auth";
 import { json } from "./http";
+import { RealmHoldingsUnavailableError } from "./realm-holdings";
 
 /** What an account holds that the seal's price and free parts read: its Realms, and the tier of the campaign ticket it came by. */
 export interface HolderFacts {
@@ -53,7 +54,8 @@ export async function handleSeal(request: Request, auth: IdentityAuth, world: Se
   const session = await auth.api.getSession({ headers: request.headers });
   const owner = session?.user.realmsId;
   if (!owner) return json({ error: "unauthorized" }, 401);
-  const [held, facts] = await Promise.all([readSeal(world.db, owner), world.holderFacts(owner)]);
+  const [held, facts] = await Promise.all([readSeal(world.db, owner), readHolderFacts(world, owner)]);
+  if (!facts) return json({ error: "holdings_unavailable" }, 503);
   const holder = holderLevelOf(facts);
   return json({
     holder,
@@ -62,3 +64,13 @@ export async function handleSeal(request: Request, auth: IdentityAuth, world: Se
     store: sealOffer(holder, "store"),
   });
 }
+
+/** The account's holder facts, or null while the chain cannot say: no offer is made on a guess. */
+const readHolderFacts = async (world: SealWorld, owner: string) => {
+  try {
+    return await world.holderFacts(owner);
+  } catch (error) {
+    if (error instanceof RealmHoldingsUnavailableError) return null;
+    throw error;
+  }
+};

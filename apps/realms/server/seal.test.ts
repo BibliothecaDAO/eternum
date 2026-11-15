@@ -2,6 +2,7 @@ import { afterEach, expect, it } from "vitest";
 
 import type { IdentityAuth } from "./auth";
 import { handleSeal, holderLevelOf, sealOffer, type HolderFacts } from "./seal";
+import { RealmHoldingsUnavailableError } from "./realm-holdings";
 import { createTestD1 } from "./test-d1";
 import { migrationStatements } from "./workerd-harness";
 
@@ -72,4 +73,14 @@ it("serves the signed-in account its level, whether it holds the seal, and the t
     .bind(OWNER)
     .run();
   expect(((await (await ask(OWNER)).json()) as { owned: boolean }).owned).toBe(true);
+});
+
+it("offers no price while holdings cannot be verified", async () => {
+  const db = await migrated();
+  const auth = { api: { getSession: async () => ({ user: { realmsId: OWNER } }) } } as unknown as IdentityAuth;
+  const response = await handleSeal(new Request("https://realms.test/api/shop/seal"), auth, {
+    db,
+    holderFacts: () => Promise.reject(new RealmHoldingsUnavailableError()),
+  });
+  expect([response.status, await response.json()]).toEqual([503, { error: "holdings_unavailable" }]);
 });
