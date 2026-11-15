@@ -187,7 +187,7 @@ function battleHistory(now: number, center: { col: number; row: number }, half: 
     event_index: 0,
     game_id: "1",
     model: "BattleEvent",
-    transaction_hash: `0x${(0xb00 + (now - (at -= 60))).toString(16)}`,
+    transaction_hash: `0x${(0xb00 + (now - (at -= 1))).toString(16)}`,
     value: {
       version: 2,
       game_id: "0x1",
