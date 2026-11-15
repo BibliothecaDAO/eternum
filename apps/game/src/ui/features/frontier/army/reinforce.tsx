@@ -55,7 +55,9 @@ export const useSelectedReinforcement = (realm: NativeRows["Structure"] | null):
     return at !== undefined && !at.alt && at.col === tile.col && at.row === tile.row;
   };
   return (
-    armies.find((army) => standsThere(army) && reinforcementSource(setup.store, realm, army.explorerId, timestamp) !== null) ?? null
+    armies.find(
+      (army) => standsThere(army) && reinforcementSource(setup.store, realm, army.explorerId, timestamp) !== null,
+    ) ?? null
   );
 };
 

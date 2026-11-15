@@ -126,14 +126,31 @@ test("ruin bounds follow the Cairo relic rank and spread", async () => {
   assert.deepEqual(changed.previewRuinGuardBounds(2), [2400, 3600]);
 });
 
-
 test("Wraith rewards and XP follow the executable Cairo rules", async () => {
-  const load = async (expeditions) => import(`data:text/javascript;base64,${Buffer.from(ts.transpileModule(compileSitePreviews({ ...source, expeditions }), { compilerOptions: { target: ts.ScriptTarget.ES2020, module: ts.ModuleKind.ESNext } }).outputText).toString("base64")}`);
+  const load = async (expeditions) =>
+    import(
+      `data:text/javascript;base64,${Buffer.from(ts.transpileModule(compileSitePreviews({ ...source, expeditions }), { compilerOptions: { target: ts.ScriptTarget.ES2020, module: ts.ModuleKind.ESNext } }).outputText).toString("base64")}`
+    );
   const preview = await load(source.expeditions);
   assert.equal(preview.previewSiteReward(11, 450000000000n, 0, true), null);
   assert.equal(preview.previewSiteClearXp(450000000000n, 0, true), 159);
-  assert.deepEqual(preview.previewSiteReward(11, 350000000000n, 0, false), { resourceType: 35, amount: 1400000000000n });
-  const changed = await load(source.expeditions.replace("WRAITH_XP_MULTIPLIER: u32 = 3", "WRAITH_XP_MULTIPLIER: u32 = 4"));
+  assert.deepEqual(preview.previewSiteReward(11, 350000000000n, 0, false), {
+    resourceType: 35,
+    amount: 1400000000000n,
+  });
+  const changed = await load(
+    source.expeditions.replace("WRAITH_XP_MULTIPLIER: u32 = 3", "WRAITH_XP_MULTIPLIER: u32 = 4"),
+  );
   assert.equal(changed.previewSiteClearXp(450000000000n, 0, true), 212);
-  assert.throws(() => compileSitePreviews({ ...source, expeditions: source.expeditions.replace("if wraith {\n        return None;", "if wraith {\n        return Some(ResourceAmount { resource_type: WHEAT, amount: 1 });") }), /Unsupported/);
+  assert.throws(
+    () =>
+      compileSitePreviews({
+        ...source,
+        expeditions: source.expeditions.replace(
+          "if wraith {\n        return None;",
+          "if wraith {\n        return Some(ResourceAmount { resource_type: WHEAT, amount: 1 });",
+        ),
+      }),
+    /Unsupported/,
+  );
 });

@@ -25,6 +25,6 @@ mod season_finish;
 mod season_lifecycle;
 mod settlement;
 mod starting_armies;
-mod village;
 
 mod supply_posts;
+mod village;

@@ -60,7 +60,7 @@ const UNLIMITED_U128 = (1n << 128n) - 1n;
 const isUnlimitedOutput = (outputAmountLeft: bigint) => outputAmountLeft >= UNLIMITED_U128 - (1n << 64n);
 
 /** The stores a board realm's castle keeps up to a limit of their own, as the contract's has_castle_limit. */
-const hasCastleLimit = (resourceId: ResourcesIds): boolean =>
+export const hasCastleLimit = (resourceId: ResourcesIds): boolean =>
   resourceId === ResourcesIds.Wheat ||
   resourceId === ResourcesIds.Labor ||
   (resourceId >= ResourcesIds.Knight && resourceId <= ResourcesIds.PaladinT3);

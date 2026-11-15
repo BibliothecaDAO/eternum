@@ -789,7 +789,10 @@ fn spoils_doubles_numeric_clears_and_records_xp_but_keeps_ruin_relics() {
                     assert_eq!(crate::logic::army_relics::read(key).first, discovered_relic);
                 } else {
                     let base = crate::expeditions::site_reward(category, site, 0, wraith);
-                    assert_eq!(receipt.reward, base.map(|reward| crate::resources::ResourceAmount { amount: reward.amount * 2, ..reward }));
+                    assert_eq!(
+                        receipt.reward,
+                        base.map(|reward| crate::resources::ResourceAmount { amount: reward.amount * 2, ..reward }),
+                    );
                 }
                 assert_eq!(crate::logic::triumphs::effects(home, now - 1).spoils_percent, 100);
                 assert_eq!(crate::logic::triumphs::effects(home, now).spoils_percent, 200);

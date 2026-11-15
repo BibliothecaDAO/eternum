@@ -97,7 +97,9 @@ fn site_payout_counts_all_initial_guard_troops_without_tier_weighting() {
         crate::logic::expeditions::create_site(key, guards.span());
         let site = crate::logic::expeditions::expedition_site(key).unwrap();
         assert_eq!(site.initial_guard_count, 1100 * RESOURCE_PRECISION);
-        assert_eq!(site_reward(crate::taxonomy::CAMP_CATEGORY, site, 0, false).unwrap().amount, 550 * RESOURCE_PRECISION);
+        assert_eq!(
+            site_reward(crate::taxonomy::CAMP_CATEGORY, site, 0, false).unwrap().amount, 550 * RESOURCE_PRECISION,
+        );
         let receipt = crate::expeditions::SiteClear { xp: 0, explorer_id: 7, home_id: 1, reward: None };
         crate::logic::expeditions::clear_site(key, receipt);
         let cleared = crate::logic::expeditions::expedition_site(key).unwrap();
@@ -184,9 +186,23 @@ fn a_site_cannot_clear_again_after_an_army_enters_its_tile() {
 
 #[test]
 fn cyclops_pays_wheat_and_wraith_pays_only_triple_xp() {
-    for (depth, strength, wheat, xp) in array![(0_u8, 350_u128, 1400_u128, 46_u32), (1, 700, 4200, 99), (2, 1400, 11200, 186)] {
-        let site = ExpeditionSite { category: BEASTS_CATEGORY, initial_guard_count: strength * RESOURCE_PRECISION, alt: false, col: 0, row: 0, clear: None };
-        assert_eq!(site_reward(BEASTS_CATEGORY, site, depth, false).unwrap(), crate::resources::ResourceAmount { resource_type: crate::resources::WHEAT, amount: wheat * RESOURCE_PRECISION });
+    for (depth, strength, wheat, xp) in array![
+        (0_u8, 350_u128, 1400_u128, 46_u32), (1, 700, 4200, 99), (2, 1400, 11200, 186),
+    ] {
+        let site = ExpeditionSite {
+            category: BEASTS_CATEGORY,
+            initial_guard_count: strength * RESOURCE_PRECISION,
+            alt: false,
+            col: 0,
+            row: 0,
+            clear: None,
+        };
+        assert_eq!(
+            site_reward(BEASTS_CATEGORY, site, depth, false).unwrap(),
+            crate::resources::ResourceAmount {
+                resource_type: crate::resources::WHEAT, amount: wheat * RESOURCE_PRECISION,
+            },
+        );
         assert!(site_reward(BEASTS_CATEGORY, site, depth, true).is_none());
         assert_eq!(crate::expeditions::site_clear_xp(site, depth, false), xp);
         assert_eq!(crate::expeditions::site_clear_xp(site, depth, true), xp * 3);
@@ -198,7 +214,9 @@ fn site_resources_scale_by_depth_after_the_base_integer_payout() {
     let site = ExpeditionSite {
         category: BEASTS_CATEGORY, alt: false, col: 0, row: 0, initial_guard_count: 1001, clear: None,
     };
-    for (depth, wheat, essence) in array![(0_u8, 4004_u128, 3003_u128), (1, 6006, 4504), (2, 8008, 6006), (3, 10010, 7507)] {
+    for (depth, wheat, essence) in array![
+        (0_u8, 4004_u128, 3003_u128), (1, 6006, 4504), (2, 8008, 6006), (3, 10010, 7507),
+    ] {
         assert_eq!(site_reward(BEASTS_CATEGORY, site, depth, false).unwrap().amount, wheat);
         assert_eq!(site_reward(RIFT_CATEGORY, site, depth, false).unwrap().amount, essence);
         assert!(site_reward(RUIN_CATEGORY, site, depth, false).is_none());

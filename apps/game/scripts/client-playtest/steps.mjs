@@ -3840,27 +3840,40 @@ const LAB_SUPPLY_POST_STEPS = [
       if (!armyAt) return { found: false };
       for (const [dx, dy] of NEIGHBOUR_RING) {
         browser.tap([armyAt[0] + dx, armyAt[1] + dy]);
-        const state = await readUntil(() => browser.read(REINFORCE_STATE), (shown) => shown.sheet?.startsWith("Supply post"), SHEET_WAIT_MS);
+        const state = await readUntil(
+          () => browser.read(REINFORCE_STATE),
+          (shown) => shown.sheet?.startsWith("Supply post"),
+          SHEET_WAIT_MS,
+        );
         if (state.sheet?.startsWith("Supply post")) {
           extraScreenshot("supply-post");
           const button = state.buttons.find((text) => text.startsWith("Reinforce Army"));
           if (!button) return { found: false, state };
           browser.click(button);
-          const sheet = await readUntil(() => browser.read(REINFORCE_STATE), (shown) => shown.sheet?.startsWith("Reinforce"), SHEET_WAIT_MS);
+          const sheet = await readUntil(
+            () => browser.read(REINFORCE_STATE),
+            (shown) => shown.sheet?.startsWith("Reinforce"),
+            SHEET_WAIT_MS,
+          );
           return { found: sheet.sheet?.startsWith("Reinforce"), state, sheet };
         }
         browser.press("Escape");
       }
       return { found: false };
     },
-    verify: ({ played }) => played.found ? completed(played) : failed("The cleared camp must offer reinforcement for its adjacent army", played),
+    verify: ({ played }) =>
+      played.found
+        ? completed(played)
+        : failed("The cleared camp must offer reinforcement for its adjacent army", played),
   },
   {
     name: "reinforce-from-camp",
     settleMs: 1000,
     play: async (context) => {
       const result = await reinforceWithMax(context);
-      const calldata = context.browser.read(`JSON.stringify(window.__labChain?.sent.find(({command}) => command.kind === "ManageTroops")?.command.calldata)`);
+      const calldata = context.browser.read(
+        `JSON.stringify(window.__labChain?.sent.find(({command}) => command.kind === "ManageTroops")?.command.calldata)`,
+      );
       return { ...result, calldata };
     },
     verify: ({ played }) => {

@@ -580,7 +580,9 @@ fn a_wraith_clear_pays_triple_xp_without_resources() {
 
 fn beast_clear_payout(full: bool, wraith: bool) {
     let mut seed = 0_u256;
-    while (crate::random::range(seed, 2, 2) != 0) != wraith { seed += 1; };
+    while (crate::random::range(seed, 2, 2) != 0) != wraith {
+        seed += 1;
+    }
     let (_, frontier) = super::preset_projection::current_definition("frontier-check");
     let (d, game_id, key) = setup_frontier_relics_with_preset(None, frontier, frontier.structures.board);
     let army = strong_frontier_army(d, game_id, key);
@@ -641,17 +643,29 @@ fn beast_clear_payout(full: bool, wraith: bool) {
         site.clear,
         Some(
             crate::expeditions::SiteClear {
-                xp: if wraith { 9 } else { 2 },
+                xp: if wraith {
+                    9
+                } else {
+                    2
+                },
                 explorer_id: key.explorer_id,
                 home_id: army.owner,
-                reward: if wraith { None } else { Some(crate::resources::ResourceAmount { resource_type: crate::resources::WHEAT, amount }) },
+                reward: if wraith {
+                    None
+                } else {
+                    Some(crate::resources::ResourceAmount { resource_type: crate::resources::WHEAT, amount })
+                },
             },
         ),
     );
     assert_eq!(resources.resource_balance(wheat) - before, amount);
     assert_eq!(
         snforge_std::interact_with_state(d.games, || crate::logic::progression::require(key).xp),
-        xp + if wraith { 9 } else { 2 },
+        xp + if wraith {
+            9
+        } else {
+            2
+        },
     );
     assert_site_removed(d, site_key);
     assert!(
@@ -664,7 +678,11 @@ fn beast_clear_payout(full: bool, wraith: bool) {
     assert_eq!(resources.resource_balance(wheat), before + amount);
     assert_eq!(
         snforge_std::interact_with_state(d.games, || crate::logic::progression::require(key).xp),
-        xp + if wraith { 9 } else { 2 },
+        xp + if wraith {
+            9
+        } else {
+            2
+        },
     );
 }
 

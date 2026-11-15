@@ -135,13 +135,13 @@ it("shows Cyclops wheat from initial guards alongside clear XP", () => {
       value: {
         game_id: 1,
         entity_id: own.army.owner,
-        resource_type: ResourcesIds.Labor,
+        resource_type: ResourcesIds.Wheat,
         balance: limit - 10_000_000_000n,
       },
     },
   ]);
   const plan = readSiteCard(store, site, structure, SITE_TILE, own);
-  expect(plan.payout).toEqual({ resourceId: ResourcesIds.Wheat, amount: 6000, fits: 6000 });
+  expect(plan.payout).toEqual({ resourceId: ResourcesIds.Wheat, amount: 6000, fits: 10 });
   expect(plan.xp).toBe(118);
 });
 

@@ -68,7 +68,8 @@ const answerRecruit = (command: LabCommand, chain: NativeFactStore, now: number)
   if (!recruit) return null;
   const [key, army] = [...chain.entries("ExplorerTroops")].find(([, row]) => row.explorer_id === recruit.explorerId)!;
   const realm = chain.require("Structure", { game_id: army.game_id, entity_id: army.owner });
-  if (!reinforcementSource(chain, realm, Number(army.explorer_id), now, recruit.supplyPost)) throw new Error("Army is not beside its supply source");
+  if (!reinforcementSource(chain, realm, Number(army.explorer_id), now, recruit.supplyPost))
+    throw new Error("Army is not beside its supply source");
   const troop = getTroopResourceId(army.troops.category as TroopType, army.troops.tier as TroopTier);
   const whole = Number(recruit.amount / BigInt(RESOURCE_PRECISION));
   const raise = readTroopRaiseCost(chain, 1, Number(army.owner), troop, whole, now);

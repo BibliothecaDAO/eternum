@@ -6,6 +6,7 @@ import {
   configManager,
   getBlockTimestamp,
   ResourceManager,
+  hasCastleLimit,
   resolveExchange,
   getGuardsByStructure,
   siteKindOf,
@@ -154,7 +155,7 @@ const fittingPayout = (
   attack: SiteAttack | null,
 ): SiteCardPlan["payout"] => {
   const raw = Number(reward.amount) / Number(PRECISION);
-  if (reward.resourceType !== ResourcesIds.Labor) return { resourceId: reward.resourceType, amount: raw, fits: raw };
+  if (!hasCastleLimit(reward.resourceType)) return { resourceId: reward.resourceType, amount: raw, fits: raw };
   const actor = store.subscriptionScope().known?.actor;
   const home =
     attack?.army.owner ??

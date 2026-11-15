@@ -45,8 +45,16 @@ export const ClearedSiteSheet = ({ selected, onClose }: { selected: ClearedSite;
   const { setup } = useGame();
   const now = useCurrentDefaultTick();
   if (selected.site.clear && isSupplyPost(setup.store, selected.site, selected.site.clear.home_id, now))
-    return <SupplyPostSheet site={selected.site} onClose={onClose}><ReceiptLines selected={selected} /></SupplyPostSheet>;
-  return <HudSheet label={clearedSiteName(selected)} onClose={onClose}><ReceiptLines selected={selected} /></HudSheet>;
+    return (
+      <SupplyPostSheet site={selected.site} onClose={onClose}>
+        <ReceiptLines selected={selected} />
+      </SupplyPostSheet>
+    );
+  return (
+    <HudSheet label={clearedSiteName(selected)} onClose={onClose}>
+      <ReceiptLines selected={selected} />
+    </HudSheet>
+  );
 };
 
 /**

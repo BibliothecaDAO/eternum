@@ -44,11 +44,13 @@ pub struct SitePayout {
 }
 
 // Camps pay labor, Cyclops wheat, rifts Essence; Wraiths pay only XP.
-pub fn site_reward(category: u8, site: ExpeditionSite, depth: u8, wraith: bool) -> Option<crate::resources::ResourceAmount> {
+pub fn site_reward(
+    category: u8, site: ExpeditionSite, depth: u8, wraith: bool,
+) -> Option<crate::resources::ResourceAmount> {
     if wraith {
         return None;
     }
-    use crate::resources::{ESSENCE, LABOR, WHEAT, ResourceAmount};
+    use crate::resources::{ESSENCE, LABOR, ResourceAmount, WHEAT};
     let reward = if category == crate::taxonomy::CAMP_CATEGORY {
         Some(ResourceAmount { resource_type: LABOR, amount: site.initial_guard_count / 2 })
     } else if category == crate::taxonomy::BEASTS_CATEGORY {
@@ -65,16 +67,23 @@ pub const WRAITH_XP_MULTIPLIER: u32 = 3;
 
 pub fn is_wraith(site: ExpeditionSite, rules: DepthRules) -> bool {
     site.category == crate::taxonomy::BEASTS_CATEGORY
-        && site.initial_guard_count > Into::<u16, u128>::into(rules.beast_weak_upper) * crate::rules::RESOURCE_PRECISION
+        && site.initial_guard_count > Into::<u16, u128>::into(rules.beast_weak_upper)
+        * crate::rules::RESOURCE_PRECISION
 }
 
 pub fn site_clear_xp(site: ExpeditionSite, depth: u8, wraith: bool) -> u32 {
-    crate::progression::clear_xp(site.initial_guard_count, depth) * if wraith { WRAITH_XP_MULTIPLIER } else { 1 }
+    crate::progression::clear_xp(site.initial_guard_count, depth) * if wraith {
+        WRAITH_XP_MULTIPLIER
+    } else {
+        1
+    }
 }
 
 pub fn is_supply_post(site: ExpeditionSite, home: u64, today: u64, spacing: u32) -> bool {
-    !site.alt && site.category == crate::taxonomy::CAMP_CATEGORY
-        && (site.row / spacing) % 4 < 3 && Into::<u32, u64>::into(site.row / spacing / 4) == today
+    !site.alt
+        && site.category == crate::taxonomy::CAMP_CATEGORY
+        && (site.row / spacing) % 4 < 3
+        && Into::<u32, u64>::into(site.row / spacing / 4) == today
         && site.clear.map(|receipt| receipt.home_id == home).unwrap_or(false)
 }
 

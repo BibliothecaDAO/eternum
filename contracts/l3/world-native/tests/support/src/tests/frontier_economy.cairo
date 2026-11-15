@@ -73,7 +73,9 @@ pub fn raise(home: ResourceKey, troops: u128, direction: u8) -> Command {
 }
 pub fn reinforce(explorer_id: u64, troops: u128) -> Command {
     Command::ManageTroops(
-        ManageTroops::RecruitExplorer(RecruitExplorer { explorer_id, amount: troops * RESOURCE_PRECISION , supply_post: None }),
+        ManageTroops::RecruitExplorer(
+            RecruitExplorer { explorer_id, amount: troops * RESOURCE_PRECISION, supply_post: None },
+        ),
     )
 }
 pub fn resources(deployment: super::Deployment) -> IResourceOperationsDispatcher {

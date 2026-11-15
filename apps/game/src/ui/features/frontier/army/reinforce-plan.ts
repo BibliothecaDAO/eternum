@@ -70,7 +70,11 @@ export const reinforcementSource = (
   if (!army || army.alt) return null;
   if (supplyPost !== undefined) {
     const site = store.get("ExpeditionSite", { game_id: realm.game_id, entity_id: supplyPost });
-    return site && isSupplyPost(store, site, realm.entity_id, timestamp) && getDirectionBetweenAdjacentHexes(army, site) !== null ? { supplyPost } : null;
+    return site &&
+      isSupplyPost(store, site, realm.entity_id, timestamp) &&
+      getDirectionBetweenAdjacentHexes(army, site) !== null
+      ? { supplyPost }
+      : null;
   }
   const home = structureMapPosition(store, realm);
   return home && !home.alt && getDirectionBetweenAdjacentHexes(army, { col: home.x, row: home.y }) !== null ? {} : null;
