@@ -39,3 +39,14 @@ export function accountProgress(
     known: owner === null || (mine && store.status === "ready"),
   };
 }
+
+/**
+ * Whether the site alert's first-entry offer is due: the Deep entered, the account's progress known, and the offer not
+ * yet answered. Neither Show everything nor an unanswered explanatory line moves it.
+ */
+export const siteAlertOfferDue = (
+  opened: ReadonlySet<OpeningMoment>,
+  seen: ReadonlySet<string>,
+  known: boolean,
+  offer: string,
+): boolean => known && opened.has("deep") && !seen.has(offer);

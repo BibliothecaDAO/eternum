@@ -594,6 +594,16 @@ export const OPENING_WORDS = {
   /** The offer that comes with the first Deep line: the site alert, off until the player turns it on. */
   alertOffer: "Alert me when a Deep site can be taken",
   alertOn: "Turn on",
+  alertRetry: "Try again",
+  alertDecline: "Not now",
+  /** Why the alert is not on yet, by what stood in the way. */
+  alertProblem: {
+    preferences: "Your alert setting could not be saved.",
+    device: "This device could not turn alerts on.",
+    blocked: "This browser blocks alerts. Allow them in its settings, then try again.",
+    install: "Add the game to your home screen to get alerts on this phone.",
+    unavailable: "This browser cannot show alerts.",
+  },
   /** The week's quests on the Today page: the day, and the quest each brings. */
   week: "This week's quests",
   weekDay: (day: number, quest: string) => `Day ${formatExact(day)}: ${quest}`,

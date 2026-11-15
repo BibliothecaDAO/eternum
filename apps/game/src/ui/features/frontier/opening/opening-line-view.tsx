@@ -7,23 +7,15 @@ import { OPENING, type OpeningMoment } from "./opening";
 export const OpeningLineView = ({
   moment,
   rules,
-  offer,
   onGotIt,
 }: {
   moment: OpeningMoment;
   rules: OpeningRules;
-  /** What the line offers beside it, one press to accept; Got it leaves it. */
-  offer?: { line: string; accept: string; onAccept: () => void };
   onGotIt: () => void;
 }) => (
-  <>
-    <HudNotice
-      icon={OPENING[moment].icon}
-      line={OPENING_WORDS.lines[moment](rules)}
-      fix={{ label: OPENING_WORDS.gotIt, onClick: onGotIt }}
-    />
-    {offer && (
-      <HudNotice icon="notifications" line={offer.line} fix={{ label: offer.accept, onClick: offer.onAccept }} />
-    )}
-  </>
+  <HudNotice
+    icon={OPENING[moment].icon}
+    line={OPENING_WORDS.lines[moment](rules)}
+    fix={{ label: OPENING_WORDS.gotIt, onClick: onGotIt }}
+  />
 );

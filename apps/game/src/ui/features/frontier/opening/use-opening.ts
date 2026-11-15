@@ -20,7 +20,15 @@ import { useDockArmies } from "../hud/dock-armies";
 import { useRacesAspects } from "../aspect/races-aspects";
 import { useRealmStores } from "../realm-stores";
 import { type Opened, type OpeningMoment } from "./opening";
-import { type OpeningHeld, accountProgress, nextLine, openedMoments, reachedOnState } from "./opening-state";
+import {
+  type OpeningHeld,
+  accountProgress,
+  nextLine,
+  siteAlertOfferDue,
+  openedMoments,
+  reachedOnState,
+} from "./opening-state";
+import { SITE_ALERT_OFFER } from "./use-site-alert-offer";
 import { flush, loadOpening, reachMoments, seeLine, useOpeningStore } from "./opening-store";
 
 /** How often a failed read or send is tried again while the HUD is up. */
@@ -36,7 +44,13 @@ const RETRY_MS = 15_000;
 export function useOpening(
   rules: ExpeditionRules,
   realm: NativeRows["Structure"] | null,
-): { opened: Opened; line: { moment: OpeningMoment; rules: OpeningRules } | null; gotIt: () => void } {
+): {
+  opened: Opened;
+  line: { moment: OpeningMoment; rules: OpeningRules } | null;
+  gotIt: () => void;
+  /** The site alert's first-entry offer is due: the Deep entered, and the offer not yet answered. */
+  offerDue: boolean;
+} {
   const owner = notificationOwnerOf(useIdentitySession().session);
   useEffect(() => {
     void loadOpening(owner);
@@ -71,6 +85,8 @@ export function useOpening(
     opened: showEverything || !realm || races !== true ? "all" : opened,
     line: showEverything || !moment || !lineRules ? null : { moment, rules: lineRules },
     gotIt: () => moment && void seeLine(moment),
+    offerDue:
+      Boolean(realm) && races === true && siteAlertOfferDue(opened, progress.seen, progress.known, SITE_ALERT_OFFER),
   };
 }
 

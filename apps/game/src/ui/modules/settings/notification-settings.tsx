@@ -43,7 +43,7 @@ export const NotificationSettings = () => {
 };
 
 /** The device row's end: the switch, its step while it saves, or what stands in its way. */
-const DeviceEnd = ({ state, onToggle }: { state: ThisDeviceState; onToggle: () => Promise<void> }) => {
+const DeviceEnd = ({ state, onToggle }: { state: ThisDeviceState; onToggle: () => Promise<unknown> }) => {
   switch (state) {
     case "install":
       return <HudChip>{PROFILE_WORDS.install}</HudChip>;

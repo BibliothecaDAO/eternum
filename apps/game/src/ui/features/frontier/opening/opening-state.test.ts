@@ -1,6 +1,6 @@
 import { expect, it } from "vitest";
 
-import { accountProgress, nextLine, openedMoments, reachedOnState } from "./opening-state";
+import { accountProgress, nextLine, siteAlertOfferDue, openedMoments, reachedOnState } from "./opening-state";
 
 it("reaches the launch always and each moment whose state is held", () => {
   expect(reachedOnState({})).toEqual(["launch"]);
@@ -33,4 +33,14 @@ it("reads only the current account's progress, and calls it known only once its 
   // Another account's sets are never this one's.
   expect(accountProgress("b", progress("a", "ready"))).toEqual({ reached: new Set(), seen: new Set(), known: false });
   expect(accountProgress(null, progress(null, "signed-out")).known).toBe(true);
+});
+
+it("makes the site alert's offer once the Deep is entered, until it is answered, whatever lines are told", () => {
+  const entered = openedMoments(new Set(), ["launch", "deep"]);
+  expect(siteAlertOfferDue(entered, new Set(), true, "site-alert")).toBe(true);
+  // An earlier line left unanswered does not hold it back; an unread account does.
+  expect(siteAlertOfferDue(entered, new Set(["barracks"]), true, "site-alert")).toBe(true);
+  expect(siteAlertOfferDue(entered, new Set(), false, "site-alert")).toBe(false);
+  expect(siteAlertOfferDue(entered, new Set(["site-alert"]), true, "site-alert")).toBe(false);
+  expect(siteAlertOfferDue(openedMoments(new Set(), ["launch"]), new Set(), true, "site-alert")).toBe(false);
 });

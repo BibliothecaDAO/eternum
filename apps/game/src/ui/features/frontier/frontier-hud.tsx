@@ -65,6 +65,7 @@ import { useArmySpireStatus } from "./spire-card";
 import { DailyQuest } from "./day/daily-quest";
 import { OpeningProvider, usePartShown } from "./opening/opening-context";
 import { OpeningLineView } from "./opening/opening-line-view";
+import { OpeningOffer } from "./opening/opening-offer";
 import { useOpening } from "./opening/use-opening";
 import { useSiteAlertOffer } from "./opening/use-site-alert-offer";
 import { FrontierToday } from "./log/frontier-today";
@@ -96,8 +97,8 @@ type FrontierHudProps = {
 export const FrontierHud = (props: FrontierHudProps) => {
   const realm = useFrontierRealm();
   const visit = useRealmVisit();
-  const { opened, line, gotIt } = useOpening(props.rules, visit ? null : realm);
-  const offer = useSiteAlertOffer(line?.moment ?? null, gotIt);
+  const { opened, line, gotIt, offerDue } = useOpening(props.rules, visit ? null : realm);
+  const offer = useSiteAlertOffer(offerDue);
   return (
     <OpeningProvider opened={opened}>
       <FrontierHudBody {...props} opening={{ line, offer, gotIt }} />
@@ -231,13 +232,9 @@ const FrontierHudBody = ({
     <>
       {own && <DailyQuest realm={own} layout={desktop ? "desktop" : "phone"} />}
       {opening.line && (
-        <OpeningLineView
-          moment={opening.line.moment}
-          rules={opening.line.rules}
-          offer={opening.offer}
-          onGotIt={opening.gotIt}
-        />
+        <OpeningLineView moment={opening.line.moment} rules={opening.line.rules} onGotIt={opening.gotIt} />
       )}
+      {opening.offer && <OpeningOffer offer={opening.offer} />}
       <OfflineNotice />
       <SceneFailureNotice />
       {own && <DayEndNotice dayEnd={dayEnd} onOpen={() => setSurface("today")} />}
