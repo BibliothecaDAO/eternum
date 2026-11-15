@@ -4050,13 +4050,20 @@ async function attackFromTheDeepCard({ browser, extraScreenshot }) {
   );
   browser.click("Attack");
   await readUntil(
-    () => browser.read(`(window.__labChain?.sent ?? []).slice(${after}).some(({ command, answered }) => command.kind === "BattleGuard" && answered.length > 0)`),
+    () =>
+      browser.read(
+        `(window.__labChain?.sent ?? []).slice(${after}).some(({ command, answered }) => command.kind === "BattleGuard" && answered.length > 0)`,
+      ),
     Boolean,
     MERGE_WAIT_MS,
   );
   if (onADesktop()) browser.rightClick(before.quarry);
   else browser.tap(before.quarry);
-  await readUntil(() => browser.read(DEEP_JOIN_STATE), (state) => state.sheet === "Quarry", SHEET_WAIT_MS);
+  await readUntil(
+    () => browser.read(DEEP_JOIN_STATE),
+    (state) => state.sheet === "Quarry",
+    SHEET_WAIT_MS,
+  );
   return { forecast, watching: true };
 }
 
