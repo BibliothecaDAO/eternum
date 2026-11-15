@@ -13,7 +13,7 @@ export const XpRing = ({ share, inset = -4 }: { share: number; inset?: number })
       role="img"
       aria-label={XP_RING.label(Math.floor(filled * 100))}
       viewBox="0 0 40 40"
-      className="pointer-events-none absolute text-hud-gold"
+      className="ui-xp-ring pointer-events-none absolute"
       style={{ inset }}
     >
       <circle cx="20" cy="20" r="18.5" fill="none" stroke="currentColor" strokeOpacity={0.25} strokeWidth="3" />
