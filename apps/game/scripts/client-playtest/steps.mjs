@@ -3644,6 +3644,8 @@ const LAB_SETTLE = { ...labSpireGame("settle"), entersFromHome: true };
 const LAB_FROM_HOME = { ...labSpireGame("from-home"), entersFromHome: true };
 /** The spire's army, the one a player picks first: the fixture's SPIRE_ARMY. */
 const PICKED_ARMY = 201;
+/** The lab's ally in the field beside the player's army (`fieldAlly` in `deep-scenario.ts`). */
+const FIELD_ALLY_ARMY = 399;
 const MERGE_WAIT_MS = 10_000;
 /** Where the pointer rests between hovers: high on the map, on no army's tile. */
 const POINTER_PARKED = [0, -300];
@@ -3917,7 +3919,7 @@ const DEEP_JOIN_STEPS = [
     play: async ({ browser, extraScreenshot }) => {
       const sides = await readUntil(
         () => browser.read(ARMY_SIDES),
-        (read) => Boolean(read[`army:${PICKED_ARMY}`] && read["army:302"]),
+        (read) => Boolean(read[`army:${PICKED_ARMY}`] && read[`army:${FIELD_ALLY_ARMY}`]),
         PLAYABLE_WAIT_MS,
       );
       extraScreenshot("ally-on-the-map");
@@ -3925,8 +3927,8 @@ const DEEP_JOIN_STEPS = [
     },
     verify: ({ played }) =>
       played.sides[`army:${PICKED_ARMY}`] &&
-      played.sides["army:302"] &&
-      played.sides[`army:${PICKED_ARMY}`] !== played.sides["army:302"]
+      played.sides[`army:${FIELD_ALLY_ARMY}`] &&
+      played.sides[`army:${PICKED_ARMY}`] !== played.sides[`army:${FIELD_ALLY_ARMY}`]
         ? completed(played)
         : failed("An ally's army must be drawn in a side colour other than the player's own", played),
   },
