@@ -391,7 +391,7 @@ describe("the alerts popup, which waits for the day's end", () => {
     await settle();
     expect(host.querySelector(SUMMARY)).toBeNull();
     expect(popup()?.textContent).toContain(
-      "A push for each day's opening, rested armies, fights, results and messages.",
+      "A push for each day's opening, Deep sites you can take, rested armies, fights, results and messages.",
     );
     expect(useAskMemory.getState().shownAt).not.toBeNull();
   });
