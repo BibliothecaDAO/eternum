@@ -107,6 +107,14 @@ it("closes every elapsed day across empty blocks, without inventing days past th
   game.end_at = end;
 });
 
+it("closes no ranked day for a Season 1 game, which races Aspects by height", () => {
+  const day = dayOf(calendar, start)!;
+  const withRace = (model: string) =>
+    model === "RaceRules" ? [{ key: "1", value: { game_id: 1, stage_height: 100 } }] : read(model);
+  expect(closingFrontierDays(withRace, day.end - 1, day.end, 20, [])).toEqual([]);
+  expect(closingFrontierDays(read, day.end - 1, day.end, 20, [])).toHaveLength(1);
+});
+
 it("replays a checkpoint before closure, excluding changes at the boundary and rejecting partial replay", async () => {
   const { fold, native, decoder } = setup();
   const gameEvent = rowEvent("GameRegistry", ["1"], {

@@ -47,7 +47,8 @@ export interface HistoryQuery {
   model?: string;
   story?: string;
   offset: number;
-  owner?: string;
+  /** One player, or several: a story matches when any of them took part. */
+  owner?: string | readonly string[];
 }
 
 const scalarString = (value: unknown): string | null => {
@@ -409,7 +410,10 @@ export class HistoryStore {
     };
     if (query.model) addFilter("model = $value", query.model);
     if (query.story) addFilter("value->'story' ? $value", query.story);
-    if (query.owner) addFilter("(owner = $value OR participants @> ARRAY[$value]::text[])", normalizeFelt(query.owner));
+    if (query.owner?.length) {
+      const owners = [query.owner].flat().map(normalizeFelt);
+      addFilter("(owner = ANY($value::text[]) OR participants && $value::text[])", owners);
+    }
     if (query.entityId)
       addFilter(
         "(entity_id = $value::numeric OR entities @> ARRAY[$value]::text[])",

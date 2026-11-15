@@ -111,7 +111,7 @@ const historyQuery = (url: URL, gameId: string): HistoryQuery => ({
   model: url.searchParams.get("model") ?? undefined,
   story: url.searchParams.get("story") ?? undefined,
   offset: paginationValue(url, "offset", 0),
-  owner: url.searchParams.get("owner") ?? undefined,
+  owner: url.searchParams.has("owner") ? url.searchParams.getAll("owner") : undefined,
 });
 
 export const createHeraldRequestHandler = (state: HeraldHttpState): ((request: Request) => Promise<Response>) => {

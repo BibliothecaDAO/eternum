@@ -243,6 +243,17 @@ it("passes a battle-only history filter to the store before pagination", async (
   );
 });
 
+it("passes every requested owner to the store, so one read serves an Aspect's fights", async () => {
+  const queryEvents = vi.fn(async () => ({ items: [], total: 0, limit: 100, offset: 0, complete_through_block: 12 }));
+  const handler = createHeraldRequestHandler({
+    ...httpState,
+    history: { ...httpState.history!, queryEvents },
+  });
+  const response = await handler(new Request("http://herald/games/7/history?model=BattleEvent&owner=0x1&owner=0x2"));
+  expect(response.status).toBe(200);
+  expect(queryEvents).toHaveBeenCalledWith(expect.objectContaining({ model: "BattleEvent", owner: ["0x1", "0x2"] }));
+});
+
 it("serves the bounded story cursor only when history decoding is healthy", async () => {
   const healthy = createHeraldRequestHandler({ ...httpState, undecodableEventCount: () => 0 });
   const endpoint = "http://herald/history/story-events";
