@@ -82,6 +82,8 @@ AREAS = {
         "contracts/utils/**"
     ],
     "herald": [
+        "apps/realms/server/deep-site-watch.ts",
+        "apps/realms/server/fixtures/shard-world.ts",
         ".github/workflows/test-herald.yml",
         MEDIA_FREE_CHECKOUT,
         # deployment.bun.test.ts imports these through a spawned Python interpreter.

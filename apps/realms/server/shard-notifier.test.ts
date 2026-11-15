@@ -1,19 +1,12 @@
+import { type ArmyState, snapshot, siteSnapshot, mistFacts, GAME_ID, PLAYER_ACCOUNT, HOME, ARMY, ARMIES_TICK_SECONDS, DAY_UNIT_SECONDS, SEASON_START, TODAY } from "./fixtures/shard-world";
 import { dayOf } from "@bibliothecadao/eternum/expeditions";
-import type { HeraldGameSnapshot, HeraldHistoryEvent } from "@bibliothecadao/eternum/game-sync";
+import type { HeraldHistoryEvent } from "@bibliothecadao/eternum/game-sync";
 import type { PushEnvelope } from "@bibliothecadao/notifications";
-import { nativeBaneConstants } from "@bibliothecadao/eternum/game-client";
 import { Response as SocketResponse, WebSocketPair } from "miniflare";
-import { deepSites, RESOURCE_PRECISION, TileOccupier } from "@bibliothecadao/types";
 import { beforeAll, describe, expect, it } from "vitest";
 
-import preset from "../../../contracts/l3/world-native/tests/fixtures/current-presets/conformance.json";
-import explorerFixture from "../../../contracts/l3/world-native/schema/fixtures/row-set.json";
 import recordedPages from "./fixtures/staging-story-pages.json";
 import { realmsIdOf } from "./realms-id";
-import { LiveWorld } from "../../herald/src/live-world";
-import { WorldFold } from "../../herald/src/world-fold";
-import { setup as heraldSetup, schema as heraldSchema } from "../../herald/src/native/fixtures";
-import type { MadaraRpc } from "../../herald/src/madara-rpc";
 import {
   apnsKey,
   buildWorkerBundle,
@@ -33,15 +26,6 @@ import {
  */
 const SHARD = "https://shard-a.test";
 const CHAIN_ID = "0xa";
-const GAME_ID = 1;
-const PLAYER_ACCOUNT = "0x4b1d";
-const HOME = 5;
-const ARMY = 7;
-/** Another player on the shard, with no devices, whose army rests too: only an owner-narrowed read leaves it out. */
-const NEIGHBOUR_HOME = 6;
-const NEIGHBOUR_ARMY = 8;
-/** The player's second army, in its realm's second slot, which can rest on a clock of its own. */
-const SECOND_ARMY = 10;
 const PUSH_ENDPOINT = "https://fcm.googleapis.com/fcm/send/player-device";
 const APNS_DEVICE = "https://api.push.apple.com/3/device/";
 const DEVICE_ID = "00000000-0000-4000-8000-000000000001";
@@ -49,22 +33,8 @@ const OWNER = realmsIdOf("player-one");
 /** The notifier uses its deployed three-second interval; its retries wait 1, 2, 4, then 8 polls. */
 const POLL_MS = 3_000;
 const polls = (count: number) => count * POLL_MS;
-/**
- * A ten-second armies tick (the chain counts whole seconds) with the preset's knights (120) regaining 40 a tick: three
- * ticks from empty to rested, long enough that the notifier sees an army act again well before its first wake time.
- */
-const ARMIES_TICK_SECONDS = 10;
-const STAMINA_GAIN_PER_TICK = 40;
 const REST_TICKS = 3;
 const ticks = (count: number) => count * ARMIES_TICK_SECONDS * 1000;
-/**
- * A Frontier season in its second day, each day a row of 40-hex regions. Its four-hour units draw from seed 1, whose
- * first bag opens with a 12-hour day and a 16-hour one: the season started 13 hours ago, an hour into day 1.
- */
-const DAY_UNIT_SECONDS = 14_400;
-const REGION_SPACING = 40;
-const SEASON_START = Math.floor(Date.now() / 1000) - 13 * 3_600;
-const TODAY = 1;
 
 let bundle: string;
 
@@ -98,8 +68,7 @@ const createHerald = () => {
     site: null as null | { troops: number; aspect: number; lore: boolean; lastTick: number },
     /** The neighbour's army, spent whenever the player acts, so it rests alongside the player's. */
     neighbourArmy: null as null | ArmyState,
-    /** The player's second army, none until a test spends it. */
-    secondArmy: null as null | ArmyState,
+        secondArmy: null as null | ArmyState,
     status: "Live" as "Live" | "Settled",
     /** The game's mode in the directory: fights between players push only outside Frontier. */
     mode: "frontier" as "frontier" | "blitz",
@@ -155,13 +124,12 @@ const createHerald = () => {
       const read = snapshot(
         state.army,
         state.neighbourArmy,
-        state.site ? null : url.searchParams.get("owner"),
+        url.searchParams.get("owner"),
         state.members,
         state.homeSource,
         state.secondArmy,
       );
-      const full = siteSnapshot({ ...read, models: [...read.models, ...mistFacts(state.mistEndedAt)] }, state.site);
-      return state.site ? scopedSiteSnapshot(full, url) : full;
+      return siteSnapshot({ ...read, models: [...read.models, ...mistFacts(state.mistEndedAt)] }, state.site, url.searchParams.get("owner"));
     }
     const page = { chain: state.chain, world_address: "0x5e45", complete_through_block: 10 + log.length };
     const after = url.searchParams.get("after");
@@ -313,477 +281,6 @@ const createHerald = () => {
 };
 
 /** The game's rules with a short armies tick, the player's home realm, and their army if it still exists. */
-type ArmyState = {
-  amount: number;
-  settledAt: number;
-  day: number;
-  mapDay?: number;
-  guard?: boolean;
-  deepTick?: number;
-};
-
-/** Structure owners, so the fake narrows armies to one account's as Herald's owner filter does. */
-const STRUCTURE_OWNERS = new Map([
-  [HOME, PLAYER_ACCOUNT],
-  [NEIGHBOUR_HOME, "0x7e1"],
-]);
-
-function mistFacts(endedAt: number | undefined) {
-  if (endedAt === undefined) return [];
-  return [
-    {
-      model: "BaneRules",
-      rows: [
-        {
-          key: "0xb01",
-          value: {
-            game_id: GAME_ID,
-            chance_step: 20,
-            quorum_percent: 25,
-            beast_percent: 150,
-            stamina_percent: 50,
-            production_percent: 50,
-            quest_counts: [3, 6, 9, 12, 20, 40, 60, 80, 2500, 6000, 10000, 15000],
-          },
-        },
-      ],
-    },
-    { model: "HomeAspect", rows: [{ key: "0xb02", value: { game_id: GAME_ID, home: HOME, aspect: 1 } }] },
-    {
-      model: "AspectActivity",
-      rows: [{ key: "0xb03", value: { game_id: GAME_ID, aspect: 1, day: TODAY - 1, active: 4 } }],
-    },
-    {
-      model: "WorldBane",
-      rows: [{ key: "0xb04", value: { game_id: GAME_ID, day: TODAY, kind: nativeBaneConstants.MIST_TIDE } }],
-    },
-    {
-      model: "BaneProgress",
-      rows: [
-        {
-          key: "0xb05",
-          value: { game_id: GAME_ID, aspect: 1, day: TODAY, completed: endedAt === 0 ? 0 : 1, ended_at: endedAt },
-        },
-      ],
-    },
-  ];
-}
-
-const snapshot = (
-  army: ArmyState | null,
-  neighbour: ArmyState | null,
-  owner: string | null,
-  members: string[],
-  homeSource: "realm" | "campaign" | "golden" | null,
-  second: ArmyState | null,
-): HeraldGameSnapshot => ({
-  confirmed_block: 10,
-  game_id: String(GAME_ID),
-  models: [
-    {
-      model: "Structure",
-      rows: [HOME, NEIGHBOUR_HOME]
-        .filter((home) => owner === null || BigInt(STRUCTURE_OWNERS.get(home)!) === BigInt(owner))
-        .map((home) => ({ key: `0x${home.toString(16)}`, value: realmRow(home) })),
-    },
-    {
-      model: "RealmKnowledge",
-      rows: [HOME, NEIGHBOUR_HOME].map((structure_id) => ({
-        key: `0x${structure_id}`,
-        value: { game_id: GAME_ID, structure_id, learned: "0" },
-      })),
-    },
-    {
-      model: "LaborRules",
-      rows: [
-        {
-          key: "0x1",
-          value: { game_id: GAME_ID, amount: 1000, campaign_essence: 1000, golden_amount: 2000, golden_essence: 2000 },
-        },
-      ],
-    },
-    {
-      model: "SettledRealm",
-      rows: homeSource === "realm" ? [{ key: "0x2c7", value: { game_id: GAME_ID, realm_id: 711, home: HOME } }] : [],
-    },
-    {
-      model: "CampaignHome",
-      rows:
-        homeSource === "golden" || homeSource === "campaign"
-          ? [
-              {
-                key: "0x5",
-                value: {
-                  game_id: GAME_ID,
-                  home: HOME,
-                  campaign_id: "0x646576636f6e2d32303236",
-                  tier: homeSource === "golden" ? 2 : 1,
-                },
-              },
-            ]
-          : [],
-    },
-    {
-      model: "PlayerEntry",
-      rows: members.map((account) => ({
-        key: account,
-        value: {
-          game_id: GAME_ID,
-          owner: account,
-          player: "0xdead",
-        },
-      })),
-    },
-    {
-      model: "SliceRules",
-      rows: [
-        {
-          key: "0x1",
-          value: {
-            ...preset.rules,
-            game_id: GAME_ID,
-            tick_config: { ...preset.rules.tick_config, armies_tick_in_seconds: ARMIES_TICK_SECONDS },
-            troop_stamina_config: {
-              ...preset.rules.troop_stamina_config,
-              stamina_gain_per_tick: STAMINA_GAIN_PER_TICK,
-            },
-            day_unit_seconds: DAY_UNIT_SECONDS,
-          },
-        },
-      ],
-    },
-    {
-      model: "SettlementRules",
-      rows: [
-        {
-          key: "0x4",
-          value: {
-            game_id: GAME_ID,
-            registration_start: 0,
-            registration_limit: 0,
-            mode: "Single",
-            spacing: REGION_SPACING,
-          },
-        },
-      ],
-    },
-    {
-      model: "GameRegistry",
-      rows: [
-        {
-          key: "0x5",
-          value: {
-            game_id: GAME_ID,
-            name: "0x1",
-            preset_id: 1,
-            settled: false,
-            ready: true,
-            dev_mode_on: false,
-            start_settling_at: SEASON_START,
-            start_main_at: SEASON_START,
-            scheduled_end_at: SEASON_START + 2 * 20 * DAY_UNIT_SECONDS,
-            end_at: SEASON_START + 2 * 20 * DAY_UNIT_SECONDS,
-            end_grace_seconds: 0,
-            seed: "0x1",
-          },
-        },
-      ],
-    },
-    {
-      model: "TileOccupancy",
-      rows: [
-        ...(army ? [armyPosition(ARMY, HOME, army)] : []),
-        ...(second ? [armyPosition(SECOND_ARMY, HOME, second, 1)] : []),
-        ...(neighbour ? [armyPosition(NEIGHBOUR_ARMY, NEIGHBOUR_HOME, neighbour)] : []),
-      ]
-        .filter(({ home }) => owner === null || BigInt(STRUCTURE_OWNERS.get(home)!) === BigInt(owner))
-        .map(({ home: _home, ...row }) => row),
-    },
-    {
-      model: "ArmyDay",
-      rows: [
-        ...(army ? [{ id: ARMY, home: HOME, day: army.day }] : []),
-        ...(second ? [{ id: SECOND_ARMY, home: HOME, day: second.day }] : []),
-        ...(neighbour ? [{ id: NEIGHBOUR_ARMY, home: NEIGHBOUR_HOME, day: neighbour.day }] : []),
-      ]
-        .filter(({ home }) => owner === null || BigInt(STRUCTURE_OWNERS.get(home)!) === BigInt(owner))
-        .map(({ id, day }) => ({ key: `0x${id.toString(16)}`, value: { game_id: GAME_ID, explorer_id: id, day } })),
-    },
-    {
-      model: "DeepGuard",
-      rows: army?.guard
-        ? [{ key: "0xdee1", value: { game_id: GAME_ID, explorer_id: ARMY, site_id: 800, slot: 0 } }]
-        : [],
-    },
-    {
-      model: "DeepArmy",
-      rows:
-        army?.deepTick === undefined
-          ? []
-          : [{ key: "0xdee2", value: { game_id: GAME_ID, explorer_id: ARMY, last_tick: army.deepTick } }],
-    },
-    {
-      model: "DeepRules",
-      rows:
-        army?.deepTick === undefined
-          ? []
-          : [
-              {
-                key: "0xdee3",
-                value: {
-                  game_id: GAME_ID,
-                  foundation: { alt: false, x: 10, y: 25 },
-                  quarry: { alt: false, x: 25, y: 25 },
-                  altar: { alt: false, x: 40, y: 25 },
-                  beast_count: 100,
-                  loss_per_tick: 100,
-                  quarry_per_tick: 500,
-                  altar_per_tick: 5,
-                  altar_threshold: 1500,
-                },
-              },
-            ],
-    },
-    {
-      model: "ArmySlot",
-      rows: [
-        ...(army ? [armySlotRow(ARMY, HOME, army)] : []),
-        ...(second ? [armySlotRow(SECOND_ARMY, HOME, second, 1)] : []),
-        ...(neighbour ? [armySlotRow(NEIGHBOUR_ARMY, NEIGHBOUR_HOME, neighbour)] : []),
-      ].filter(({ value }) => owner === null || BigInt(STRUCTURE_OWNERS.get(value.structure_id)!) === BigInt(owner)),
-    },
-    {
-      model: "ArmyProgress",
-      rows: [
-        ...(army ? [armyProgressRow(ARMY, HOME)] : []),
-        ...(second ? [armyProgressRow(SECOND_ARMY, HOME)] : []),
-        ...(neighbour ? [armyProgressRow(NEIGHBOUR_ARMY, NEIGHBOUR_HOME)] : []),
-      ]
-        .filter(({ home }) => owner === null || BigInt(STRUCTURE_OWNERS.get(home)!) === BigInt(owner))
-        .map(({ home: _home, ...row }) => row),
-    },
-    {
-      model: "ExplorerTroops",
-      rows: [
-        ...(army ? [armyRow(ARMY, HOME, army)] : []),
-        ...(second ? [armyRow(SECOND_ARMY, HOME, second, 1)] : []),
-        ...(neighbour ? [armyRow(NEIGHBOUR_ARMY, NEIGHBOUR_HOME, neighbour)] : []),
-      ].filter(({ value }) => owner === null || BigInt(STRUCTURE_OWNERS.get(value.owner)!) === BigInt(owner)),
-    },
-  ],
-});
-
-/** The production snapshot path applies actor scope and then the optional ownership filter. */
-async function scopedSiteSnapshot(snapshot: HeraldGameSnapshot, url: URL): Promise<HeraldGameSnapshot> {
-  const { decoder, fold, native } = heraldSetup();
-  const checkpoint = fold.checkpoint();
-  for (const model of checkpoint.models) {
-    const keys = heraldSchema.models.find(({ name }) => name === model.model)!.keys;
-    model.rows = (snapshot.models.find((row) => row.model === model.model)?.rows ?? []).map((row) => ({
-      entity_id: row.key,
-      key: Object.fromEntries(keys.map(({ name }) => [name, row.value[name]])),
-      value: row.value,
-    }));
-  }
-  const head = { block_number: 11, timestamp: Math.floor(Date.now() / 1000), transactions: [] };
-  const live = new LiveWorld({
-    native,
-    registry: decoder.registry,
-    chain: CHAIN_ID,
-    checkpointEveryBlocks: 100,
-    checkpointStore: { save: async () => undefined },
-    confirmedBlock: 10,
-    confirmedFold: WorldFold.restore(decoder.registry, checkpoint),
-    rpc: {
-      getBlockHeader: async () => head,
-      getPreconfirmedHeader: async () => ({ ...head, block_number: 12 }),
-      readBlock: async () => head,
-    } as unknown as MadaraRpc,
-  });
-  await live.acceptSubscribedHead(head);
-  return live.snapshot(
-    String(GAME_ID),
-    url.searchParams.get("models")?.split(","),
-    url.searchParams.get("actor") ?? undefined,
-    url.searchParams.get("owner") ?? undefined,
-  );
-}
-
-/** A confirmed shared Quarry held by a rival; the enrolled player's army stays outside the Deep. */
-function siteSnapshot(
-  base: HeraldGameSnapshot,
-  site: { troops: number; aspect: number; lore: boolean; lastTick: number } | null,
-): HeraldGameSnapshot {
-  if (!site) return base;
-  const put = (model: string, rows: HeraldGameSnapshot["models"][number]["rows"]) => {
-    const existing = base.models.find((row) => row.model === model);
-    if (existing) existing.rows = rows;
-    else base.models.push({ model, rows });
-  };
-  const row = (key: number, value: Record<string, unknown>) => ({
-    key: `0x${key.toString(16)}`,
-    value: { game_id: GAME_ID, ...value },
-  });
-  const bar = { amount: 120, settledAt: Math.floor(Date.now() / 1000), day: TODAY };
-  const armies = [armyRow(ARMY, HOME, bar), armyRow(NEIGHBOUR_ARMY, NEIGHBOUR_HOME, bar)];
-  armies[0]!.value.troops.count = String(1500 * RESOURCE_PRECISION);
-  armies[1]!.value.troops.count = String(site.troops * RESOURCE_PRECISION);
-  put("ExplorerTroops", armies);
-  put(
-    "Structure",
-    [HOME, NEIGHBOUR_HOME].map((home) => row(home, realmRow(home))),
-  );
-  put("ArmySlot", [armySlotRow(ARMY, HOME, bar), armySlotRow(NEIGHBOUR_ARMY, NEIGHBOUR_HOME, bar)]);
-  put("ArmyProgress", [armyProgressRow(ARMY, HOME), armyProgressRow(NEIGHBOUR_ARMY, NEIGHBOUR_HOME)]);
-  put(
-    "ArmyDay",
-    [ARMY, NEIGHBOUR_ARMY].map((explorer_id) => row(explorer_id, { explorer_id, day: TODAY })),
-  );
-  put("HomeAspect", [
-    row(HOME, { home: HOME, aspect: 1 }),
-    row(NEIGHBOUR_HOME, { home: NEIGHBOUR_HOME, aspect: site.aspect }),
-  ]);
-  put("RealmKnowledge", [row(HOME, { structure_id: HOME, learned: site.lore ? String(3n << 48n) : "0" })]);
-  const offsets = {
-    foundation: { alt: false, x: 10, y: 25 },
-    quarry: { alt: false, x: 25, y: 25 },
-    altar: { alt: false, x: 40, y: 25 },
-  };
-  put("DeepRules", [
-    row(1, {
-      ...offsets,
-      beast_count: 10000 * RESOURCE_PRECISION,
-      loss_per_tick: 200 * RESOURCE_PRECISION,
-      quarry_per_tick: 500 * RESOURCE_PRECISION,
-      altar_per_tick: 5,
-      altar_threshold: 1500,
-    }),
-  ]);
-  put(
-    "DeepSite",
-    deepSites.map((kind) => row(800 + kind.id, { entity_id: 800 + kind.id, kind: kind.id, day: TODAY })),
-  );
-  const quarry = deepSites.find((kind) => kind.position === "quarry")!;
-  put("DeepGuard", [row(NEIGHBOUR_ARMY, { explorer_id: NEIGHBOUR_ARMY, site_id: 800 + quarry.id, slot: 0 })]);
-  put("DeepArmy", [row(NEIGHBOUR_ARMY, { explorer_id: NEIGHBOUR_ARMY, last_tick: site.lastTick })]);
-  put("TileOccupancy", [
-    armyPosition(ARMY, HOME, bar),
-    ...deepSites.map((kind) =>
-      row(800 + kind.id, {
-        entity_id: 800 + kind.id,
-        col: offsets[kind.position].x + 25,
-        row: offsets[kind.position].y + 325,
-        alt: false,
-        category: TileOccupier.DeepSite,
-        is_structure: false,
-      }),
-    ),
-  ]);
-  put(
-    "Guard",
-    deepSites.map((kind) =>
-      row(800 + kind.id, {
-        structure_id: 800 + kind.id,
-        slot: 0,
-        destroyed_tick: 0,
-        troops: {
-          ...explorerFixture.expected.value.troops,
-          stamina: { Inline: { amount: 120, settled_at: bar.settledAt, remainder: 0 } },
-          count: kind.id === quarry.id ? 0 : 10000 * RESOURCE_PRECISION,
-        },
-      }),
-    ),
-  );
-  const rules = base.models.find(({ model }) => model === "SliceRules")!.rows[0]!.value;
-  rules.battle_config = { ...preset.rules.battle_config, cooldown_seconds: 0 };
-  return base;
-}
-
-const realmRow = (home: number) => ({
-  game_id: GAME_ID,
-  entity_id: home,
-  owner: STRUCTURE_OWNERS.get(home)!,
-  base: {
-    troop_max_guard_count: 1,
-    troop_max_explorer_count: 1,
-    created_at: SEASON_START,
-    category: 1,
-    level: 0,
-    starting_troops_granted: true,
-  },
-  resources_packed: "0x0",
-  metadata: {
-    realm_id: home === HOME ? 711 : 712,
-    order: 0,
-    has_wonder: false,
-    village_realm: "0x0",
-    mine_kind: 0,
-    deepest_depth: 0,
-  },
-});
-
-const armyRow = (explorerId: number, home: number, _army: ArmyState, slot = 0) => ({
-  key: `0x${explorerId.toString(16)}`,
-  value: {
-    ...explorerFixture.expected.value,
-    game_id: GAME_ID,
-    explorer_id: explorerId,
-    owner: home,
-    troops: {
-      ...explorerFixture.expected.value.troops,
-      count: "0x64",
-      stamina: { Slot: slot },
-    },
-  },
-});
-
-const armyProgressRow = (explorerId: number, home: number) => ({
-  home,
-  key: `0x${explorerId.toString(16)}`,
-  value: {
-    common_points: 0,
-    uncommon_points: 0,
-    rare_points: 0,
-    epic_points: 0,
-    legendary_points: 0,
-    game_id: GAME_ID,
-    explorer_id: explorerId,
-    xp: 0,
-    battle: 0,
-    logistics: 0,
-    scouting: 0,
-    scouting_kinds: 0,
-    homecoming: 0,
-  },
-});
-
-const armySlotRow = (explorerId: number, home: number, army: ArmyState, slot = 0) => ({
-  key: `0x${(home * 16 + slot).toString(16)}`,
-  value: {
-    game_id: GAME_ID,
-    structure_id: home,
-    epoch: army.day,
-    slot,
-    explorer_id: explorerId,
-    stamina: { amount: army.amount, settled_at: army.settledAt, remainder: 0 },
-  },
-});
-
-/** An army's tile: in the region of the day it marched out on, the `step`th tile east of the realm's region middle. */
-const armyPosition = (explorerId: number, home: number, army: ArmyState, step = 0) => ({
-  home,
-  key: `0x${explorerId.toString(16)}`,
-  value: {
-    game_id: GAME_ID,
-    alt: false,
-    col: (home === HOME ? 0 : REGION_SPACING) + REGION_SPACING / 2 + step,
-    row: (army.mapDay ?? army.day) * 4 * REGION_SPACING + REGION_SPACING / 2,
-    entity_id: explorerId,
-    category: 15,
-    is_structure: false,
-  },
-});
-
 /**
  * The Worker in workerd over storage that survives a restart, a fake Herald, and push services answering `status`: a
  * browser's, and APNs for the iOS app.
@@ -835,7 +332,7 @@ const createHarness = async (level: "off" | "important" | "all") => {
         if (url.origin === SHARD) {
           if (request.headers.get("upgrade") === "websocket")
             return herald.stream(new URL(request.url).searchParams.get("actor"));
-          const answer = await herald.answer(url);
+          const answer = herald.answer(url);
           return answer instanceof Response ? answer : Response.json(answer);
         }
         if (url.href.startsWith(PUSH_ENDPOINT)) {
