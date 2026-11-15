@@ -53,6 +53,8 @@ export interface AspectPageProps {
   own: OwnAspect | null;
   /** The Aspect's fights, under its members. */
   fights?: ReactNode;
+  /** The player's invite of a friend to their Aspect, under the fights. */
+  invite?: ReactNode;
   onClose: () => void;
 }
 
@@ -61,7 +63,7 @@ export interface AspectPageProps {
  * ranked, each with its height and stage; then the player's Aspect, its Triumphs, its bane bar and its members by Glory
  * with the site each guards today.
  */
-export const AspectPageView = ({ race, own, fights, onClose }: AspectPageProps) => (
+export const AspectPageView = ({ race, own, fights, invite, onClose }: AspectPageProps) => (
   <HudPage label={WORDS.title} icon="hyperstructure" onClose={onClose} bodyClassName="gap-3">
     {race === null ? (
       <Muted>{WORDS.reading}</Muted>
@@ -70,6 +72,7 @@ export const AspectPageView = ({ race, own, fights, onClose }: AspectPageProps) 
         <Race race={race} />
         {own ? <YourAspect own={own} /> : <Muted>{WORDS.noAspect}</Muted>}
         {own && fights}
+        {own && invite}
       </div>
     )}
   </HudPage>

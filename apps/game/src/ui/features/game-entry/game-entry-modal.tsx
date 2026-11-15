@@ -1,4 +1,4 @@
-import { AspectPicker, aspectOfOrder } from "./aspect-picker";
+import { AspectPicker, aspectOfOrder, aspectOffer } from "./aspect-picker";
 import { canonicalRealm } from "@bibliothecadao/eternum";
 import { StructureType, type AspectId } from "@bibliothecadao/types";
 import { pageNavigation } from "@/utils/page-navigation";
@@ -20,6 +20,7 @@ import { createAutoSettleEntryKey, useAutoSettleStore } from "@/hooks/store/use-
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { identityUsername, useIdentitySession, useIdentitySessionStore } from "@/hooks/context/identity-session";
 import { useRequestSignIn } from "@/shell/sign-in/connect";
+import { useJoinedShare } from "@/shell/share/own-shares";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 
 import { useGameEntry } from "@/hooks/use-game-entry";
@@ -131,6 +132,7 @@ export const GameEntryModal = ({
     }
   }, [account?.address]);
 
+  const joinedShare = useJoinedShare();
   // The game's directory row is the one source for entry: it is polled while the modal waits on readiness.
   const gameEntry = useGameEntry(game, {
     enabled: isOpen,
@@ -649,6 +651,8 @@ export const GameEntryModal = ({
   const homeRealm = registeredRealmId ?? (heldRealmNumber !== "" && validHeldRealm ? Number(heldRealmNumber) : null);
   const realmOrder = homeRealm === null ? null : canonicalRealm(homeRealm).order;
   const tapsAspect = choosesAspect && !choosingSource && realmOrder === null;
+  // A friend's Aspect invite for this game is offered first; identity's answer is read for the signed-in account only.
+  const offered = joinedShare === undefined ? null : aspectOffer(joinedShare, game);
   const joinAspect = (chosen: AspectId) => {
     setAspect(chosen);
     void handleSettle(chosen);
@@ -719,6 +723,7 @@ export const GameEntryModal = ({
               realmOrder={realmOrder}
               joining={isSettling ? aspect : null}
               waiting={!homeSettled}
+              offered={offered}
               onJoin={joinAspect}
             />
           )}

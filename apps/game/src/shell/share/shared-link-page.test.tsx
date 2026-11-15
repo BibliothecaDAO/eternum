@@ -67,6 +67,18 @@ it("records the visit and says who shared which day, with the way into Frontier"
   expect(host.textContent).toBe("Play page");
 });
 
+it("names who invites the friend and to which Aspect, by the catalog's name", async () => {
+  service.openShare.mockResolvedValue({ kind: "aspect", moment: 2, name: "Linden" });
+  await open("/s/ABCD2347");
+  expect(frontierNames()).toEqual(["Linden invites you to Harmony in Frontier", "Frontier"]);
+});
+
+it("names an invite's sharer with no public name as a player", async () => {
+  service.openShare.mockResolvedValue({ kind: "aspect", moment: 1, name: null });
+  await open("/s/ABCD2348");
+  expect(frontierNames()[0]).toBe("A player invites you to Might in Frontier");
+});
+
 it("tells identity the channel the link was posted from, and nothing for one no player's link carries", async () => {
   service.openShare.mockResolvedValue({ kind: "frontier-day", moment: 12, name: "Ashwalker" });
   await open("/s/ABCD2345?via=system");

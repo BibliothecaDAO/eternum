@@ -114,6 +114,36 @@ export function createShareStore(db: D1Database) {
         row ? { sharer: row.sharer, kind: row.kind, moment: row.moment, name: profileOfIdentityUser(row).name } : null,
       );
 
+  /** The link an account came by, with its sharer's public name; null for an account no link brought. */
+  const joinedLink = (friend: string) =>
+    db
+      .prepare(
+        `SELECT l."kind", l."chain_id" AS "chainId", l."game_id" AS "gameId", l."moment", u."id", u."name", u."image"
+         FROM "share_joins" j JOIN "share_links" l ON l."code" = j."code"
+         JOIN "user" u ON u."realmsId" = l."sharer" WHERE j."friend" = ?`,
+      )
+      .bind(friend)
+      .first<{
+        kind: ShareKind;
+        chainId: string;
+        gameId: number;
+        moment: number;
+        id: string;
+        name: string;
+        image: string | null;
+      }>()
+      .then((row) =>
+        row
+          ? {
+              kind: row.kind,
+              chainId: row.chainId,
+              gameId: row.gameId,
+              moment: row.moment,
+              name: profileOfIdentityUser(row).name,
+            }
+          : null,
+      );
+
   /** The browser's first visit to the link, with the channel it came through; a later one keeps the first. */
   const recordVisit = (code: string, browser: string, via: ShareChannel | null) =>
     db
@@ -224,6 +254,7 @@ export function createShareStore(db: D1Database) {
     linkFor,
     markPosted,
     sharedLink,
+    joinedLink,
     recordVisit,
     settleJoins,
     pendingJoins,

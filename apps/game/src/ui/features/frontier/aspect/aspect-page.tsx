@@ -17,6 +17,7 @@ import { aspects, RESOURCE_PRECISION } from "@bibliothecadao/types";
 import { useMemo } from "react";
 import { useFrontierRealm } from "../frontier-home";
 import { lordsWorth } from "./aspect-worth";
+import { AspectInvite } from "../invite/aspect-invite";
 import { AspectFeedView } from "./aspect-feed-view";
 import { useAspectFights } from "./use-aspect-fights";
 import { AspectPageView, type AspectPageProps, type AspectTriumph } from "./aspect-page-view";
@@ -44,13 +45,15 @@ export function FrontierAspectPage({ onClose }: { onClose: () => void }) {
   const { setup } = useGame();
   const reading = useAspectBoard();
   const board = reading.known?.race;
-  const fights = useAspectFights(board?.own?.members.map(({ home }) => home.owner) ?? []);
+  const home = useFrontierRealm();
+  const fights = useAspectFights(board?.own?.members.map((member) => member.home.owner) ?? []);
   const now = useNowSeconds();
   if (!board) return <AspectPageView race={null} own={null} onClose={onClose} />;
   return (
     <AspectPageView
       {...aspectPage(board, (home) => getStructureName(home, setup.store).name)}
       fights={fights && <AspectFeedView fights={fights} now={now} />}
+      invite={home && <AspectInvite realm={home} />}
       onClose={onClose}
     />
   );

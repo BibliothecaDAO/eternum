@@ -131,3 +131,16 @@ export const aspects = [
 
 /** What an Aspect's hyperstructure height is worth, in whole LORDS: a rate per point, and a bonus for the first finish. */
 export const ASPECT_REWARD = { lordsPerHeight: 10, finishBonus: 100_000 } as const;
+
+/** An Aspect of the catalog by its id; an id outside the catalog is a fault, never a blank. */
+const catalogAspect = (aspect: number) => {
+  const named = aspects.find(({ id }) => id === aspect);
+  if (!named) throw new Error(`Unknown Aspect ${aspect}`);
+  return named;
+};
+
+/** An Aspect's name by its id; throws outside the catalog. */
+export const aspectName = (aspect: number): string => catalogAspect(aspect).name;
+
+/** A number read from elsewhere (a link, a row) as the catalog's Aspect; throws outside the catalog. */
+export const catalogAspectId = (aspect: number): AspectId => catalogAspect(aspect).id;

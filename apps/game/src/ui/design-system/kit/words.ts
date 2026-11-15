@@ -856,7 +856,7 @@ export const SHARED_DAYS_WORDS = {
 /** A shared link's landing: who shared which day, and the way into Frontier. */
 export const SHARED_LINK_WORDS = {
   /** Its title and pitch are the link's unfurl's too (@realms-world/identity's SHARED_MOMENT_WORDS), so both say one thing. */
-  sharedDay: SHARED_MOMENT_WORDS.title,
+  title: SHARED_MOMENT_WORDS.title,
   pitch: SHARED_MOMENT_WORDS.pitch,
   play: "Start your adventure",
   opening: "Opening…",
@@ -1659,6 +1659,18 @@ export const levelLine = (kinds: readonly NotificationKind[], below: Notificatio
     : `${LEVEL_WORDS[below]}, plus ${list}`;
 };
 
+/** Invite a friend to the player's Aspect (U13): the panel, its two ways to post the link, and what can go wrong. */
+export const INVITE_WORDS = {
+  title: (aspect: string) => `Invite a friend to ${aspect}`,
+  line: (aspect: string) => `Join me in ${aspect} in Frontier.`,
+  post: "Post on X",
+  copy: "Copy link",
+  copied: "Link copied",
+  making: "Making your link",
+  failed: "Your invite link could not be made.",
+  copyFailed: "The link could not be copied.",
+} as const;
+
 /** What's new: its patch notes, and the legal pages' date. */
 export const NEWS_WORDS = {
   updated: "Updated",
@@ -2055,4 +2067,8 @@ export const ASPECT_STEP_WORDS = {
   joining: (aspect: string) => `Joining ${aspect}…`,
   /** A held Realm's home: its Aspect is its Order's, so the step shows it and asks nothing. */
   realmsAspect: (order: string, aspect: string) => `Your Realm's ${order} plays for ${aspect}`,
+  /** The step's line for a friend's invite, and the invited card's tag; a sender with no name yet is not named. */
+  invitedTo: (sender: string | null, aspect: string) =>
+    sender === null ? `You were invited to ${aspect}` : `${sender} invited you to ${aspect}`,
+  invited: "Invited",
 } as const;

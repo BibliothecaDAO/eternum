@@ -29,6 +29,7 @@
   }
 }
 .aspect-picker__card {
+  position: relative;
   display: flex;
   width: 100%;
   min-height: 9rem;
@@ -69,4 +70,23 @@
   color: var(--hud-muted);
   font-size: var(--hud-text-label);
   line-height: var(--hud-leading-label);
+}
+/* A friend's invite rides the card's top edge, so the invited card keeps its siblings' size. */
+.aspect-picker__invite {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  white-space: nowrap;
+  transform: translate(-50%, -50%);
+  padding: 0.1rem 0.5rem;
+  border-radius: var(--hud-radius-chip);
+  background: rgb(var(--hud-gold));
+  color: rgb(var(--hud-dark));
+  font-size: var(--hud-text-label);
+  line-height: var(--hud-leading-label);
+  font-weight: 600;
+}
+.aspect-picker__invited {
+  color: rgb(var(--hud-gold));
+  font-weight: 600;
 }
