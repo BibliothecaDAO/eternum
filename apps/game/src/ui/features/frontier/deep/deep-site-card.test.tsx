@@ -5,6 +5,7 @@ import { GameProvider } from "@/hooks/context/game-context";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useBlockTimestampStore } from "@/hooks/store/use-block-timestamp-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
+import { wire } from "@/lab/game/lab-chain";
 import { deepChargeScenario } from "@/lab/game/charge-scenario";
 import { deepScenario } from "@/lab/game/deep-scenario";
 import { raceScenario } from "@/lab/game/race-scenario";
@@ -281,7 +282,7 @@ it("previews the Deep guard's opening and repeated exchange before sending each 
         hud.scenario.startsAt,
       );
       expect(answer.filter(({ model }) => model === "ArmyCombat")).toHaveLength(before === 1000 ? 1 : 0);
-      act(() => hud.store.applyFacts(answer));
+      act(() => hud.store.applyFacts(answer.map((fact) => ({ ...fact, value: fact.value === null ? null : wire(fact.value) }))));
       hud.render();
       expect(hud.store.require("ExplorerTroops", { game_id: 1, explorer_id: 201 }).troops.count).toBe(
         BigInt(ownLeft!) * BigInt(RESOURCE_PRECISION),
