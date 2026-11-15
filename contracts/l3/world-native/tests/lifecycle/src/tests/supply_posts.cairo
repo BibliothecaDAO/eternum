@@ -55,18 +55,13 @@ fn a_cleared_camp_reinforces_from_home_on_each_layer_above_the_deep() {
             ),
         );
         assert!(!execute_in_game(d, game_id, recruit, 361));
-        assert!(
-            execute_in_game(
-                d,
-                game_id,
-                Command::BattleGuard(
-                    crate::commands::Battle {
-                        attacker_id: key.explorer_id, defender_id: site_key.entity_id, relic_slot: None,
-                    },
-                ),
-                420,
-            ),
+        let battle = Command::BattleGuard(
+            crate::commands::Battle { attacker_id: key.explorer_id, defender_id: site_key.entity_id, relic_slot: None },
         );
+        let mut events = snforge_std::spy_events();
+        if !execute_in_game(d, game_id, battle, 420) {
+            panic!("{}", world_test_support::tests::play_fixture::rejection(ref events, d.games).reason);
+        }
         if !crate::geometry::adjacent(super::army_activity::army(d, key).coord, destination) {
             assert!(
                 execute_in_game(
