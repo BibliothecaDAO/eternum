@@ -3726,15 +3726,15 @@ const TOKEN_ABOVE_TILE_PX = 100;
 
 /** The Deep's three sites as the map draws them: the name on each plate and the key `drawnSites` counts it by. */
 const DEEP_SITE_NAMES = [
-  { name: "Foundation", key: "deep:foundation" },
-  { name: "Quarry", key: "deep:quarry" },
-  { name: "Altar", key: "deep:altar" },
+  { name: "Foundation", key: "deep:foundation", icon: "hyperstructure" },
+  { name: "Quarry", key: "deep:quarry", icon: "pickaxe" },
+  { name: "Altar", key: "deep:altar", icon: "flame" },
 ];
 
 /** One Deep site's plate, found by its name: where a press on its model lands (page px from the centre), whether its plate stands wholly in the frame, and the card open now. */
-const siteState = (name) => `JSON.stringify((() => {
+const siteState = ({ name, icon }) => `JSON.stringify((() => {
   const sheet = document.querySelector("[data-kit-sheet]")?.getAttribute("aria-label") ?? null;
-  const slot = [...document.querySelectorAll('.mp-at')].find((node) => node.querySelector('.mp-word')?.textContent === ${JSON.stringify(name)});
+  const slot = document.querySelector('.mp-at:has([data-icon="${icon}"])');
   if (!slot || getComputedStyle(slot).display === "none" || !slot.firstElementChild) return { sheet, token: null, inView: false };
   const box = slot.firstElementChild.getBoundingClientRect();
   return {
@@ -4089,7 +4089,7 @@ const XP_RINGS = `JSON.stringify([...document.querySelectorAll('svg[aria-label^=
  */
 const DRAWN_SITES = `JSON.stringify({
   drawn: window.__eternumMapSelection?.drawnSites ?? {},
-  plates: ["hyperstructure", "pickaxe", "flame"].flatMap((icon) => {
+  plates: ${JSON.stringify(DEEP_SITE_NAMES.map((site) => site.icon))}.flatMap((icon) => {
     const slot = document.querySelector('.mp-at:has([data-icon="' + icon + '"])');
     if (!slot || getComputedStyle(slot).display === "none" || !slot.firstElementChild) return [];
     const box = slot.firstElementChild.getBoundingClientRect();
@@ -4369,17 +4369,18 @@ const DEEP_JOIN_STEPS = [
       browser.run(["eval", `void window.__playtest.wheel(-100, ${ZOOM_IN_NOTCHES})`]);
       await sleep(ZOOM_SETTLE_MS);
       const visits = [];
-      for (const { name, key } of DEEP_SITE_NAMES) {
+      for (const site of DEEP_SITE_NAMES) {
+        const { name, key } = site;
         await panToHex(browser, browser.read(`window.__eternumMapSelection?.siteHexes?.["${key}"] ?? null`));
         await sleep(HOVER_SETTLE_MS);
-        const before = browser.read(siteState(name));
+        const before = browser.read(siteState(site));
         extraScreenshot(`site-${name.toLowerCase()}`);
         if (before.token && before.inView) {
           if (onADesktop()) browser.rightClick(before.token);
           else browser.tap(before.token);
         }
         const opened = await readUntil(
-          () => browser.read(siteState(name)),
+          () => browser.read(siteState(site)),
           (state) => state.sheet === name,
           SHEET_WAIT_MS,
         );
