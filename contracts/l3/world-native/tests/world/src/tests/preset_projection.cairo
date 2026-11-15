@@ -114,7 +114,7 @@ fn optional_deep_rules() -> crate::deep::DeepRules {
 fn an_optional_deep_preset_stores_the_exact_sites_and_tick_rules() {
     let d = super::registrar::setup();
     start_cheat_caller_address(d.games, super::authority());
-    let (preset_id, mut definition) = current_definition("frontier");
+    let (preset_id, mut definition) = current_definition("frontier-check");
     assert!(definition.economy.deep.is_none());
     let deep = optional_deep_rules();
     definition.economy.deep = Some(deep);
@@ -135,7 +135,7 @@ fn invalid_deep_rules_leave_no_preset_registered() {
     let d = super::registrar::setup();
     start_cheat_caller_address(d.games, super::authority());
     for invalid in 0_u8..9 {
-        let (preset_id, mut definition) = current_definition("frontier");
+        let (preset_id, mut definition) = current_definition("frontier-check");
         let mut deep = optional_deep_rules();
         if invalid == 0 {
             definition.settlement.order_aspects = array![].span();
@@ -176,7 +176,7 @@ fn optional_quest_rules() -> crate::quests::QuestRules {
 fn optional_quests_store_every_target_and_reward_without_a_legacy_labor_claim() {
     let d = super::registrar::setup();
     start_cheat_caller_address(d.games, super::authority());
-    let (preset_id, mut definition) = current_definition("frontier");
+    let (preset_id, mut definition) = current_definition("frontier-check");
     assert!(definition.economy.quests.is_none());
     let rules = optional_quest_rules();
     definition.economy.quests = Some(rules);
@@ -204,7 +204,7 @@ fn invalid_quest_rules_and_duplicate_reward_paths_refuse_registration() {
     let d = super::registrar::setup();
     start_cheat_caller_address(d.games, super::authority());
     for invalid in 0_u8..10 {
-        let (preset_id, mut definition) = current_definition("frontier");
+        let (preset_id, mut definition) = current_definition("frontier-check");
         let mut rules = optional_quest_rules();
         if invalid != 0 {
             definition.economy.labor = None;
@@ -249,7 +249,7 @@ fn optional_bane_rules() -> crate::banes::BaneRules {
 fn optional_banes_store_all_effects_and_whole_unit_targets() {
     let d = super::registrar::setup();
     start_cheat_caller_address(d.games, super::authority());
-    let (preset_id, mut definition) = current_definition("frontier");
+    let (preset_id, mut definition) = current_definition("frontier-check");
     assert!(definition.economy.banes.is_none());
     let rules = optional_bane_rules();
     definition.economy.banes = Some(rules);
@@ -277,7 +277,7 @@ fn malformed_banes_and_banes_without_quests_refuse_registration() {
     let d = super::registrar::setup();
     start_cheat_caller_address(d.games, super::authority());
     for invalid in 0_u8..12 {
-        let (preset_id, mut definition) = current_definition("frontier");
+        let (preset_id, mut definition) = current_definition("frontier-check");
         let mut rules = optional_bane_rules();
         if invalid != 0 {
             definition.economy.quests = Some(optional_quest_rules());
@@ -317,7 +317,7 @@ fn malformed_banes_and_banes_without_quests_refuse_registration() {
 fn an_optional_race_preset_stores_exact_payments_stages_triumphs_and_positions() {
     let d = super::registrar::setup();
     start_cheat_caller_address(d.games, super::authority());
-    let (preset_id, mut definition) = current_definition("frontier");
+    let (preset_id, mut definition) = current_definition("frontier-check");
     assert!(definition.economy.race.is_none());
     let race = optional_race_rules();
     definition.economy.race = Some(race);
@@ -340,7 +340,7 @@ fn malformed_race_rules_leave_no_preset_registered() {
     let d = super::registrar::setup();
     start_cheat_caller_address(d.games, super::authority());
     for invalid in 0_u8..19 {
-        let (preset_id, mut definition) = current_definition("frontier");
+        let (preset_id, mut definition) = current_definition("frontier-check");
         let mut race = optional_race_rules();
         definition.economy.deep = Some(optional_deep_rules());
         definition.season_win_points = 0;

@@ -147,7 +147,7 @@ pub fn refused(d: Deployment, game_id: u32, command: Command, reason: ByteArray)
 
 #[test]
 fn frontier_attacks_refuse_allies_and_personal_maps_but_allow_rivals_in_the_deep() {
-    let (_, mut preset) = world_test_support::tests::preset_projection::current_definition("frontier");
+    let (_, mut preset) = world_test_support::tests::preset_projection::current_definition("frontier-check");
     preset.rules.command_mask = preset.rules.command_mask | 4;
     preset.rules.battle_config.regular_immunity_ticks = 0;
     let (d, game_id) = super::aspects::setup_aspect_preset(74, preset);

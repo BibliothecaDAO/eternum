@@ -1053,15 +1053,6 @@ const deepFixture = () => ({
   altarThreshold: 1_500,
 });
 
-test("Deep remains disabled in published presets until its runtime lands", () => {
-  for (const source of Object.values(nativePresets)) {
-    expect(source.deep).toBeNull();
-    const environment = source.gameType === "blitz" ? "madara.blitz" : "madara.frontier";
-    expect(
-      buildNativePreset(loadNativePresetConfiguration(environment, source.id), source.id).economy.deep.isNone(),
-    ).toBe(true);
-  }
-});
 
 test("an optional Deep preset serializes exact coordinates, resource precision and Altar counts", () => {
   const source = nativePresets[FRONTIER_S1_PRESET_ID]!;
@@ -1112,21 +1103,13 @@ test("the Deep codec refuses invalid sites and tick amounts", () => {
 
 const questFixture = () => ({ baseCounts: [1, 1, 1, 1, 1, 2, 15], labor: 1000, essence: 1500, bonusPercent: 150 });
 
-test("published presets keep daily quests disabled until the progress producers land", () => {
-  for (const source of Object.values(nativePresets)) {
-    expect(source.dailyQuest).toBeNull();
-    const environment = source.gameType === "blitz" ? "madara.blitz" : "madara.frontier";
-    expect(
-      buildNativePreset(loadNativePresetConfiguration(environment, source.id), source.id).economy.quests.isNone(),
-    ).toBe(true);
-  }
-});
 
 test("the daily quest codec replaces legacy labor and preserves whole reward units", () => {
   const source = nativePresets[FRONTIER_S1_PRESET_ID]!;
   const previous = { dailyQuest: source.dailyQuest, labor: source.labor };
   try {
     source.dailyQuest = questFixture();
+    source.labor = nativePresets[FRONTIER_FIXTURE_PRESET_ID]!.labor;
     expect(() => buildNativePreset(loadNativePresetConfiguration("madara.frontier", source.id), source.id)).toThrow(
       "replace labor",
     );
@@ -1168,21 +1151,13 @@ const baneFixture = () => ({
   questCounts: [3, 6, 9, 12, 20, 40, 60, 80, 2500, 6000, 10000, 15000],
 });
 
-test("published presets keep banes disabled until their complete effect consumers land", () => {
-  for (const source of Object.values(nativePresets)) {
-    expect(source.banes).toBeNull();
-    const environment = source.gameType === "blitz" ? "madara.blitz" : "madara.frontier";
-    expect(
-      buildNativePreset(loadNativePresetConfiguration(environment, source.id), source.id).economy.banes.isNone(),
-    ).toBe(true);
-  }
-});
 
 test("the bane codec preserves whole quest units and refuses invalid effects", () => {
   const source = nativePresets[FRONTIER_S1_PRESET_ID]!;
   const previous = { banes: source.banes, dailyQuest: source.dailyQuest, labor: source.labor };
   try {
     source.banes = baneFixture();
+    source.dailyQuest = null;
     expect(() => buildNativePreset(loadNativePresetConfiguration("madara.frontier", source.id), source.id)).toThrow(
       "Banes require daily quests",
     );
@@ -1241,15 +1216,6 @@ const raceFixture = () => ({
   ] as const,
 });
 
-test("published presets keep the race disabled until its complete runtime lands", () => {
-  for (const source of Object.values(nativePresets)) {
-    expect(source.race).toBeNull();
-    const environment = source.gameType === "blitz" ? "madara.blitz" : "madara.frontier";
-    expect(
-      buildNativePreset(loadNativePresetConfiguration(environment, source.id), source.id).economy.race.isNone(),
-    ).toBe(true);
-  }
-});
 
 test("the race codec preserves whole Glory payments and four exact positions", () => {
   const source = nativePresets[FRONTIER_S1_PRESET_ID]!;
@@ -1351,6 +1317,7 @@ test("Clear Mist and maximum Scouting must fit one categorical discovery draw", 
   try {
     source.deep = deepFixture();
     source.discovery = { ...source.discovery!, beastsBps: 4000 };
+    source.race = null;
     const configuration = loadNativePresetConfiguration("madara.frontier", source.id);
     expect(() => buildNativePreset(configuration, source.id)).not.toThrow();
     source.race = raceFixture();
@@ -1374,5 +1341,26 @@ test("race registration excludes generated and reserved hyperstructures", () => 
     }
   } finally {
     Object.assign(source, previous);
+  }
+});
+
+test("preset 7 activates the complete Slice 1 rules while fixtures and historical definitions stay isolated", () => {
+  for (const source of Object.values(nativePresets)) {
+    const environment = source.gameType === "blitz" ? "madara.blitz" : "madara.frontier";
+    const built = buildNativePreset(loadNativePresetConfiguration(environment, source.id), source.id);
+    const active = source.id === FRONTIER_S1_PRESET_ID;
+    for (const name of ["deep", "race", "quests", "banes"] as const) expect(built.economy[name].isSome()).toBe(active);
+    if (!active) continue;
+    expect(source.dailyQuest).toEqual(questFixture());
+    expect(source.banes).toEqual(baneFixture());
+    expect(source.deep).toEqual(deepFixture());
+    expect(source.race).toEqual(raceFixture());
+    expect(built.economy.labor.isNone()).toBe(true);
+    expect(built.economy.chests.isNone()).toBe(true);
+    expect(built.rules.mode_rules & nativeRuleConstants.DISCOVER_SPIRES).not.toBe(0);
+    for (const command of ["ClaimDailyQuest", "Battle", "BattleGuard", "ApplyRelic", "InteractSite", "MarkGameSettled"] as const) expect(built.rules.command_mask & BigInt(nativeCommandBits[command])).not.toBe(0n);
+    expect(built.rules.troop_stamina_config).toMatchObject({ stamina_initial: 180, stamina_knight_max: 180, stamina_crossbowman_max: 180, stamina_paladin_max: 180, stamina_defense_req: 0 });
+    expect(built.rules.troop_limit_config.explore_reward_strength_cap).toBe(10000);
+    codec.compile("register_preset", { preset_id: source.id, definition: built });
   }
 });

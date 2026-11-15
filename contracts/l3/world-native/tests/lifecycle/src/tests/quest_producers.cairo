@@ -16,7 +16,7 @@ fn setup(kind: u8) -> (Deployment, ExplorerKey, crate::expeditions::FrontierDisc
 fn setup_progression(
     kind: u8, progression: Option<crate::progression::ArmyProgressionRules>,
 ) -> (Deployment, ExplorerKey, crate::expeditions::FrontierDiscoveryRules) {
-    let (_, mut preset) = world_test_support::tests::preset_projection::current_definition("frontier");
+    let (_, mut preset) = world_test_support::tests::preset_projection::current_definition("frontier-check");
     if progression.is_some() {
         preset.economy.progression = progression;
     }

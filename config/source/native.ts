@@ -1,3 +1,4 @@
+import { nativeRuleConstants } from "../../contracts/l3/world-native/schema/client.gen";
 import { frontierSeasonOnePreset } from "./frontier/season-one";
 import { buildingIds, frontierPreset } from "./frontier/native";
 import { frontierDevconPreset } from "./frontier/devcon";
@@ -29,6 +30,13 @@ const frontierAcceleratedPreset: NativePreset = {
 const frontierFixturePreset: NativePreset = {
   ...frontierSeasonOnePreset,
   id: FRONTIER_FIXTURE_PRESET_ID,
+  balance: { startingResources: frontierSeasonOnePreset.balance.startingResources },
+  modeRules: frontierPreset.modeRules & ~nativeRuleConstants.DISCOVER_CHESTS,
+  dailyQuest: frontierPreset.dailyQuest,
+  banes: frontierPreset.banes,
+  deep: frontierPreset.deep,
+  race: frontierPreset.race,
+  labor: frontierPreset.labor,
 };
 
 /** Labor, wheat and troops a Settlement's castle stores: two full deploys of its level. A grant above it is lost. */

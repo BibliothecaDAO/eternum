@@ -318,7 +318,7 @@ fn depth_entry_requires_research_and_keeps_stamina_at_every_depth() {
     preset.rules.day_unit_seconds = DAY_UNIT;
     preset.rules.tick_config.armies_tick_in_seconds = 60;
     preset.economy.discovery = Some(super::preset_projection::frontier_discovery_rules());
-    let (_, frontier) = super::preset_projection::current_definition("frontier");
+    let (_, frontier) = super::preset_projection::current_definition("frontier-check");
     preset.economy.chests = frontier.economy.chests;
     preset.economy.labor = frontier.economy.labor;
     preset.economy.relics = array![].span();

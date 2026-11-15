@@ -77,3 +77,35 @@ fn fifty_day_limit_finishes_once_before_a_rejected_order_and_keeps_settlement_in
     }
     assert_eq!(results, 1);
 }
+
+#[test]
+fn published_season_one_starts_all_systems_and_settles_its_fiftieth_day() {
+    let (preset_id, preset) = world_test_support::tests::preset_projection::current_definition("frontier");
+    assert_eq!(preset_id, 7);
+    let rules = preset.economy.race.unwrap();
+    assert_eq!(rules.season_days, 50);
+    let bags = rules.season_days / crate::days::DAYS_PER_BAG;
+    let (d, game_id) = world_test_support::tests::registrar::setup_open_frontier_preset("frontier", bags);
+    let home = super::army_activity::found(d, game_id, 1);
+    let end = interact_with_state(d.games, || {
+        let game = crate::logic::game::game(game_id);
+        assert!(crate::logic::quests::enabled(game_id));
+        assert!(crate::logic::deep_sites::rules_entry(game_id).is_some());
+        assert_eq!(crate::logic::banes::kind(game_id, 0), Some(0));
+        assert_eq!(crate::logic::aspects::home_aspect(crate::resources::ResourceKey { game_id, entity_id: home }), 1);
+        let race = IRaceLibraryDispatcher { class_hash: crate::logic::release::classes(game_id).economy.read() };
+        for aspect in 1_u8..5 {
+            let monument = race.aspect_hyperstructure(crate::aspects::AspectKey { game_id, aspect });
+            assert_eq!(monument.height, 0);
+            assert!(monument.entity_id != 0);
+        }
+        assert_eq!(game.end_at, crate::days::day_at_index(game, preset.rules.day_unit_seconds,49).end);
+        game.end_at
+    });
+    assert!(execute_in_game(d, game_id, Command::MarkGameSettled(()), end));
+    interact_with_state(d.games, || {
+        let race = IRaceLibraryDispatcher { class_hash: crate::logic::release::classes(game_id).economy.read() };
+        assert_eq!(race.race_result(game_id).unwrap().winner,None);
+        assert!(crate::logic::game::game(game_id).settled);
+    });
+}

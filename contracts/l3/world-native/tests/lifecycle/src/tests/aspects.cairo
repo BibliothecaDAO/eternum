@@ -8,7 +8,7 @@ use crate::realms::SettleSeason;
 use crate::resources::ResourceKey;
 
 pub fn setup_aspects(seed: felt252) -> (Deployment, u32) {
-    let (_, preset) = world_test_support::tests::preset_projection::current_definition("frontier");
+    let (_, preset) = world_test_support::tests::preset_projection::current_definition("frontier-check");
     setup_aspect_preset(seed, preset)
 }
 
@@ -115,7 +115,7 @@ fn held_realm_inherits_its_order_and_refuses_a_different_aspect() {
 
 #[test]
 fn orders_round_trip_without_loot_suffix_order() {
-    let (_, preset) = world_test_support::tests::preset_projection::current_definition("frontier");
+    let (_, preset) = world_test_support::tests::preset_projection::current_definition("frontier-check");
     let packed = crate::aspects::pack(preset.settlement.order_aspects).unwrap();
     for index in 0_u32..16 {
         assert_eq!(

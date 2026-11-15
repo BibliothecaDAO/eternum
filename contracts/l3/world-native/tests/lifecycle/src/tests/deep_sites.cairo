@@ -12,7 +12,7 @@ fn setup(seed: felt252) -> (Deployment, u32) {
 }
 
 pub fn preset() -> crate::presets::PresetDefinition {
-    let (_, mut preset) = world_test_support::tests::preset_projection::current_definition("frontier");
+    let (_, mut preset) = world_test_support::tests::preset_projection::current_definition("frontier-check");
     preset.rules.command_mask = preset.rules.command_mask | 4;
     preset.rules.battle_config.regular_immunity_ticks = 0;
     preset

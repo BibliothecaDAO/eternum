@@ -3,7 +3,7 @@ use super::registrar::*;
 
 #[test]
 fn ruins_fill_replace_and_activate_an_armys_relics_through_commands() {
-    let (_, mut preset) = super::preset_projection::current_definition("frontier");
+    let (_, mut preset) = super::preset_projection::current_definition("frontier-check");
     preset.rules.troop_limit_config.settlement_deployment_cap = 6000;
     let mut stock = array![];
     for grant in preset.settlement.realms.resources {

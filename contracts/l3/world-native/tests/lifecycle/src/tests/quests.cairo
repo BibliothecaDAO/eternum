@@ -9,7 +9,7 @@ use crate::quests::{IQuestProgressDispatcherTrait, IQuestProgressLibraryDispatch
 use crate::resources::{IResourceOperationsDispatcherTrait, IResourceOperationsLibraryDispatcher, ResourceKey};
 
 fn quest_game() -> (Deployment, u32) {
-    let (_, mut preset) = world_test_support::tests::preset_projection::current_definition("frontier");
+    let (_, mut preset) = world_test_support::tests::preset_projection::current_definition("frontier-check");
     preset.economy.labor = None;
     preset
         .economy
