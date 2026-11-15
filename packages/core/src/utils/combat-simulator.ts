@@ -9,7 +9,7 @@ import {
   TroopTier,
   TroopType,
 } from "@bibliothecadao/types";
-import { configManager } from "../managers";
+import { configManager } from "../managers/config-manager";
 import { COMBAT_DIE_FACES } from "./combat-exchange";
 import { divideWithPrecision } from "./utils";
 

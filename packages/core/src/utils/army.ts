@@ -17,7 +17,10 @@ import {
 } from "@bibliothecadao/types";
 import type { NativeFactStore } from "../client/native-fact-store";
 import type { NativeRows } from "../../../../contracts/l3/world-native/schema/client.gen";
-import { configManager, divideByPrecision, getArmyName, gramToKg, nanogramToKg, getTileAt } from "..";
+import { configManager } from "../managers/config-manager";
+import { divideByPrecision, gramToKg, nanogramToKg } from "./utils";
+import { getArmyName } from "./entities";
+import { getTileAt } from "./tile";
 import type { PlayerNameResolver } from "./entities";
 import { isViewerOwner } from "./viewer";
 

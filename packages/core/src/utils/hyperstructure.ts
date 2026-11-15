@@ -9,7 +9,7 @@ import {
 } from "@bibliothecadao/types";
 import type { NativeFactStore } from "../client/native-fact-store";
 import type { NativeRows } from "../../../../contracts/l3/world-native/schema/client.gen";
-import { configManager } from "../managers";
+import { configManager } from "../managers/config-manager";
 import { structureMapPosition } from "./expeditions";
 import { getTileAt } from "./tile";
 import { readRaceMonument } from "../client/views/race";

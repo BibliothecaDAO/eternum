@@ -1,6 +1,6 @@
 import { ResourcesIds, TroopType, type Troops } from "@bibliothecadao/types";
-import { configManager } from "..";
-import { divideByPrecision } from "../../utils";
+import { configManager } from "../config-manager";
+import { divideByPrecision } from "../../utils/utils";
 
 export const computeTravelFoodCosts = (troops: Pick<Troops, "count" | "category">) => {
   let foodConsumption;

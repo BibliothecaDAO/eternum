@@ -1,5 +1,5 @@
 import type { NativeCommandPayloads } from "@bibliothecadao/provider";
-import { nativeRuleConstants, type NativeRows } from "../client";
+import { nativeRuleConstants, type NativeRows } from "../../../../contracts/l3/world-native/schema/client.gen";
 import type { NativeFactStore } from "../client/native-fact-store";
 import { expeditionDepth, readExpeditionRules } from "./expeditions";
 

@@ -21,12 +21,13 @@ import {
 } from "@bibliothecadao/types";
 import type { NativeFactStore } from "../client/native-fact-store";
 import type { Account, AccountInterface } from "starknet";
-import { divideByPrecision, FELT_CENTER, getTileAt } from "..";
+import { divideByPrecision, FELT_CENTER } from "../utils/utils";
+import { getTileAt } from "../utils/tile";
 import { type ActionPath, ActionPaths, ActionType, type OrderRefusal } from "../utils/action-paths";
 import { configManager } from "./config-manager";
 import { ResourceManager } from "./resource-manager";
 import { StaminaManager } from "./stamina-manager";
-import { computeExploreFoodCosts, computeTravelFoodCosts } from "./utils";
+import { computeExploreFoodCosts, computeTravelFoodCosts } from "./utils/army-movement-utils";
 import { isViewerOwner } from "../utils/viewer";
 import { armyRealmSpire, isAtExpeditionSpire } from "../utils/expeditions";
 import { isTileOccupierMapSite, isTileOccupierUsableSite } from "../utils/map/hex";

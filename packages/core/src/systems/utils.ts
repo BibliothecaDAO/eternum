@@ -7,7 +7,7 @@ import {
   type TroopType,
 } from "@bibliothecadao/types";
 import type { NativeFactStore } from "../client/native-fact-store";
-import { getHyperstructureProgress } from "../utils";
+import { getHyperstructureProgress } from "../utils/hyperstructure";
 import { PROGRESS_FINAL_THRESHOLD, PROGRESS_HALF_THRESHOLD } from "../utils/constants";
 import { StructureProgress } from "./types";
 

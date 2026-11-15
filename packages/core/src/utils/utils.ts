@@ -1,6 +1,6 @@
 import { RESOURCE_PRECISION, ResourceMiningTypes, ResourcesIds } from "@bibliothecadao/types";
 import { getEntityIdFromKeys } from "../managers/game-entity-keys";
-import { configManager } from "..";
+import { configManager } from "../managers/config-manager";
 import { nativeGameModeOf } from "./native-preset-mode";
 
 export { getEntityIdFromKeys };

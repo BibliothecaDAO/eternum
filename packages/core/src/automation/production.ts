@@ -9,7 +9,9 @@ import {
   isAutomationResourceBlocked,
 } from "./types";
 import { resolveProductionPercentages, calculatePresetAllocations } from "./presets";
-import { configManager, divideByPrecision, ResourceManager } from "../index";
+import { configManager } from "../managers/config-manager";
+import { divideByPrecision } from "../utils/utils";
+import { ResourceManager } from "../managers/resource-manager";
 import { resourceName, ResourcesIds } from "@bibliothecadao/types";
 
 export const PROCESS_INTERVAL_MS = 60 * 1000;

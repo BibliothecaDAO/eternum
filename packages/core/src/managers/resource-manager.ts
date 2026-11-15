@@ -16,7 +16,8 @@ import {
 } from "@bibliothecadao/types";
 import type { NativeFactStore } from "../client/native-fact-store";
 import type { NativeRows } from "../../../../contracts/l3/world-native/schema/client.gen";
-import { divideByPrecision, getBuildingCount, gramToKg } from "../utils";
+import { divideByPrecision, gramToKg } from "../utils/utils";
+import { getBuildingCount } from "../utils/packed-data";
 import { configManager } from "./config-manager";
 
 export const RESOURCE_PRODUCTION_MODELS = [

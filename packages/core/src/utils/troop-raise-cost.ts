@@ -1,7 +1,7 @@
 import { RESOURCE_PRECISION, ResourcesIds } from "@bibliothecadao/types";
 import { nativeResearchConstants as research } from "../../../../contracts/l3/world-native/schema/client.gen";
 import type { NativeFactStore } from "../client/native-fact-store";
-import { ResourceManager } from "../managers";
+import { ResourceManager } from "../managers/resource-manager";
 import { realmLearned, researchPicks } from "./realm-research";
 
 /** The contract's refusal when a structure cannot pay what deploying troops costs it. */

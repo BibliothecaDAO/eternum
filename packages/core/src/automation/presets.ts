@@ -4,7 +4,7 @@ import {
   type RealmAutomationConfig,
   type ResourceAutomationPercentages,
 } from "./types";
-import { configManager } from "../index";
+import { configManager } from "../managers/config-manager";
 import { ResourcesIds } from "@bibliothecadao/types";
 
 const SMART_T1_RESOURCES: ResourcesIds[] = [ResourcesIds.Wood, ResourcesIds.Copper, ResourcesIds.Coal];

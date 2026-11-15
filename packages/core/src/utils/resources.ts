@@ -1,6 +1,6 @@
 import { type ID, ResourcesIds } from "@bibliothecadao/types";
 import type { NativeFactStore } from "../client/native-fact-store";
-import { ResourceManager } from "../managers";
+import { ResourceManager } from "../managers/resource-manager";
 
 // for entities that have production like realms
 export const getBalance = (

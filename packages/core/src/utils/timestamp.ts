@@ -1,7 +1,4 @@
 import { TickIds } from "@bibliothecadao/types";
-// Imported from the concrete module, not a barrel: barrel cycles leave this
-// module's consumers with uninitialized re-export bindings. configManager is
-// only dereferenced at call time, which keeps the remaining cycle harmless.
 import { configManager } from "../managers/config-manager";
 
 type TimestampSource = () => number;
