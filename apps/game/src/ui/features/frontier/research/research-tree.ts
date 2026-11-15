@@ -31,7 +31,7 @@ import { sideMarks } from "./sides-taken";
  * what it gives now and next.
  *
  *   - A building row opens once a building of its type stands, and climbs 0 to legendary (five buys);
- *   - the four training buildings open after two Barracks purchases, in any combination;
+ *   - the training buildings open at their configured Charge tier;
  *   - a tier's labor must fit the castle's labor store, which grows with the castle's level and Storeroom picks;
  *   - the Shrine and the Well are one buy each, Essence only;
  *   - the Ethereal reaches are bought in order, I then II then III, Essence only.
@@ -403,7 +403,7 @@ export const readResearchTree = (realm: RealmResearchFacts): TreeNode[] => {
         {
           figures: (tier) => [
             {
-              icon: "battle",
+              icon: "upgrade",
               name: RESEARCH_TREE.charge,
               line: RESEARCH_TREE.chargeLine,
               now: formatPercent(chargePercent(tier) / 100),
