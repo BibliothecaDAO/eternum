@@ -41,6 +41,17 @@ function setup() {
   return { provider, calls: createSystemCalls({ provider }), submit, signer, wait, decoded };
 }
 describe("player command callers", () => {
+  it("encodes both home and cleared-camp reinforcement through the compiled command ABI", async () => {
+    const { calls, signer, decoded } = setup();
+    await calls.explorer_add({ signer, to_explorer_id: 90, amount: 1000000000, supply_post: 711 });
+    const camp = decoded();
+    expect(camp.activeVariant()).toBe("RecruitExplorer");
+    expect(camp.unwrap().explorer_id).toBe(90n);
+    expect(camp.unwrap().amount).toBe(1000000000n);
+    expect(camp.unwrap().supply_post.unwrap()).toBe(711n);
+    await calls.explorer_add({ signer, to_explorer_id: 90, amount: 1000000000 });
+    expect(decoded().unwrap().supply_post.isNone()).toBe(true);
+  });
   it("collects the selected home's reward for its exact game day", async () => {
     const { calls, signer, submit, decoded } = setup();
     await calls.claim_daily_quest({ signer, home: 7, day: 3 });
