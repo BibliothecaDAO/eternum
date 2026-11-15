@@ -91,6 +91,7 @@ fn published_season_one_starts_all_systems_and_settles_its_fiftieth_day() {
         d.games,
         || {
             let game = crate::logic::game::game(game_id);
+            assert_eq!(game.preset_id, preset_id);
             assert!(crate::logic::quests::enabled(game_id));
             assert!(crate::logic::deep_sites::rules_entry(game_id).is_some());
             assert_eq!(crate::logic::banes::kind(game_id, 0), Some(0));

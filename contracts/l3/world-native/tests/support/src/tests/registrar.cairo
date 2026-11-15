@@ -1043,8 +1043,8 @@ pub fn setup_open_frontier() -> (super::Deployment, u32) {
 }
 
 pub fn setup_open_frontier_preset(name: ByteArray, bags: u64) -> (super::Deployment, u32) {
-    let (_, preset) = super::preset_projection::current_definition(name);
-    create_open_frontier(preset, Into::<u32, u64>::into(preset.rules.day_unit_seconds) * 20 * bags)
+    let (preset_id, preset) = super::preset_projection::current_definition(name);
+    create_open_frontier(preset_id, preset, Into::<u32, u64>::into(preset.rules.day_unit_seconds) * 20 * bags)
 }
 
 pub fn labor_home_definition(name: ByteArray) -> PresetDefinition {
@@ -1056,19 +1056,19 @@ pub fn labor_home_definition(name: ByteArray) -> PresetDefinition {
 
 pub fn setup_labor_home_game(name: ByteArray, bags: u64) -> (super::Deployment, u32) {
     let preset = labor_home_definition(name);
-    create_open_frontier(preset, Into::<u32, u64>::into(preset.rules.day_unit_seconds) * 20 * bags)
+    create_open_frontier(1, preset, Into::<u32, u64>::into(preset.rules.day_unit_seconds) * 20 * bags)
 }
 
 pub fn setup_labor_home_duration(name: ByteArray, duration: u64) -> (super::Deployment, u32) {
-    create_open_frontier(labor_home_definition(name), duration)
+    create_open_frontier(1, labor_home_definition(name), duration)
 }
 
-pub fn create_open_frontier(preset: PresetDefinition, duration: u64) -> (super::Deployment, u32) {
+pub fn create_open_frontier(preset_id: u32, preset: PresetDefinition, duration: u64) -> (super::Deployment, u32) {
     let d = setup();
-    registry(d).register_preset(1, preset);
+    registry(d).register_preset(preset_id, preset);
     let game_id = registry(d)
         .create_game(
-            CreateGameParams { start_main_at: 360, end_grace_seconds: 0, duration_seconds: duration, ..params(false) },
+            CreateGameParams { preset_id, start_main_at: 360, end_grace_seconds: 0, duration_seconds: duration, ..params(false) },
         );
     let mut traits = array![];
     for _ in 0..crate::realms::CANONICAL_REALM_COUNT {

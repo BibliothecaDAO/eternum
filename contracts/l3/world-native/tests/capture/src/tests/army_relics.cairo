@@ -44,7 +44,7 @@ fn ruins_fill_replace_and_activate_an_armys_relics_through_commands() {
             );
     }
     preset.settlement.depths = depths.span();
-    let (d, game_id) = create_open_frontier(preset, BAG_SECONDS);
+    let (d, game_id) = create_open_frontier(1, preset, BAG_SECONDS);
     assert!(
         execute_in_game(
             d,
