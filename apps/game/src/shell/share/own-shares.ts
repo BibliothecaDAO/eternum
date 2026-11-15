@@ -65,7 +65,7 @@ export const useShareTally = (): ShareTally | null => {
 };
 
 /** What is known of the link the account came by: being read, unreadable (with a way to ask again), or read. */
-export type JoinedShareReading =
+type JoinedShareReading =
   | { status: "loading" }
   | { status: "failed"; retry: () => void }
   | { status: "ready"; joined: JoinedShare };
