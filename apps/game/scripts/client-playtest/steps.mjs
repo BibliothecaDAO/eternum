@@ -4037,8 +4037,8 @@ function raceBoardSteps(result) {
         await sleep(ZOOM_SETTLE_MS);
         const visits = [];
         for (const id of Object.keys(TOWERS_AFTER_THE_BLOCK)) {
-          const read = () => browser.read(towerPlate(id)).point;
-          await panToCentre(browser, read);
+          await panToHex(browser, browser.read(`window.__eternumMapSelection?.towerHexes?.["${id}"] ?? null`));
+          await sleep(HOVER_SETTLE_MS);
           const seen = browser.read(towerPlate(id));
           extraScreenshot(`tower-${id}`);
           visits.push({ id, inView: seen.inView, drawn: browser.read(DRAWN_TOWERS)[id] });
@@ -4128,10 +4128,9 @@ const TOWER_HEIGHTS_RISE = `void window.__labChain.writeBlock([903, 904].map((en
 /** One tower's plate by structure id: where its token stands (page px from the centre) and whether it lies wholly in the frame. */
 const towerPlate = (id) => `JSON.stringify((() => {
   const slot = document.querySelector('.mp-at[data-key="structure:${id}"]');
-  if (!slot || getComputedStyle(slot).display === "none" || !slot.firstElementChild) return { point: null, inView: false };
+  if (!slot || getComputedStyle(slot).display === "none" || !slot.firstElementChild) return { inView: false };
   const box = slot.firstElementChild.getBoundingClientRect();
   return {
-    point: [Math.round(box.left + box.width / 2 - innerWidth / 2), Math.round(box.top + box.height / 2 - innerHeight / 2)],
     inView: box.left >= 0 && box.right <= innerWidth && box.top >= 0 && box.bottom <= innerHeight,
   };
 })())`;
@@ -4370,9 +4369,9 @@ const DEEP_JOIN_STEPS = [
       browser.run(["eval", `void window.__playtest.wheel(-100, ${ZOOM_IN_NOTCHES})`]);
       await sleep(ZOOM_SETTLE_MS);
       const visits = [];
-      for (const { name } of DEEP_SITE_NAMES) {
-        const read = () => browser.read(siteState(name)).token;
-        await panToCentre(browser, read);
+      for (const { name, key } of DEEP_SITE_NAMES) {
+        await panToHex(browser, browser.read(`window.__eternumMapSelection?.siteHexes?.["${key}"] ?? null`));
+        await sleep(HOVER_SETTLE_MS);
         const before = browser.read(siteState(name));
         extraScreenshot(`site-${name.toLowerCase()}`);
         if (before.token && before.inView) {
@@ -4751,12 +4750,42 @@ async function panInto(browser, axis, band, keys, readPoint) {
   }
 }
 
-/** Brings a point the page reads into the middle of the frame, along both axes. */
-async function panToCentre(browser, readPoint) {
-  await panInto(browser, 0, IN_THE_FRAME_PX, ["KeyA", "KeyD"], readPoint);
-  await panInto(browser, 1, IN_THE_FRAME_PX, ["KeyW", "KeyS"], readPoint);
+const PAN_TICKS = 30;
+const HEX_CLOSE = 1;
+
+/**
+ * Walks the camera to a contract hex as a player's keys do. Each key's pull is first measured (the camera's move for
+ * one burst of D and one of W, as the screen's axes lie across the hex grid), then bursts are sized to close the
+ * remaining distance until the camera is within a hex of the target.
+ */
+async function panToHex(browser, target) {
+  if (!target) throw new Error("The map has not published the hex to walk to");
+  const camera = () => browser.read(`window.__eternumMapSelection?.camera ?? null`);
+  const burst = async (key, ticks) => {
+    const from = camera();
+    browser.run(["eval", `void window.__playtest.pan(["${key}"], ${ticks})`]);
+    await sleep(CAMERA_REPORT_MS);
+    const to = camera();
+    return [to.col - from.col, to.row - from.row];
+  };
+  const right = await burst("KeyD", PAN_TICKS);
+  const up = await burst("KeyW", PAN_TICKS);
+  const determinant = right[0] * up[1] - right[1] * up[0];
+  if (determinant === 0) throw new Error("The camera's keys move it along one line only");
+  for (let attempt = 0; attempt < PAN_BURSTS; attempt += 1) {
+    const at = camera();
+    const miss = [target.col - at.col, target.row - at.row];
+    if (Math.hypot(...miss) <= HEX_CLOSE) return;
+    const rights = (miss[0] * up[1] - miss[1] * up[0]) / determinant;
+    const ups = (right[0] * miss[1] - right[1] * miss[0]) / determinant;
+    for (const [key, opposite, amount] of [
+      ["KeyD", "KeyA", rights],
+      ["KeyW", "KeyS", ups],
+    ])
+      if (Math.abs(amount) * PAN_TICKS >= 1)
+        await burst(amount > 0 ? key : opposite, Math.round(Math.abs(amount) * PAN_TICKS));
+  }
 }
-const IN_THE_FRAME_PX = [-100, 100];
 
 function offersAttack(shown) {
   return shown.buttons.some((text) => text.startsWith("Attack"));

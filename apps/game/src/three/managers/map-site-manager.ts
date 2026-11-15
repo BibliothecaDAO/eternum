@@ -180,6 +180,12 @@ export class MapSiteManager {
     }
     publishMapSelection({
       drawnSites: Object.fromEntries([...this.models].map(([key, model]) => [key, model.getCount()])),
+      siteHexes: Object.fromEntries(
+        this.sites.flatMap((site) => {
+          const [hex] = this.siteHexes(site);
+          return hex ? [[site.key, { col: hex.col, row: hex.row }]] : [];
+        }),
+      ),
     });
   }
 

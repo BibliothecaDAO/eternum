@@ -1625,6 +1625,9 @@ export class StructureManager {
     this.metrics.fullRefreshMaxSliceMs = Math.max(this.metrics.fullRefreshMaxSliceMs, sliceMs);
   }
 
+  /** The hex each hyperstructure drawn stands on: published for the towers' proof, and let go with the instance. */
+  private readonly towerHexes = new Map<number, { col: number; row: number }>();
+
   private addVisibleStructureInstance(
     structure: StructureInfo,
     attachmentRetain: Set<number>,
@@ -1639,6 +1642,8 @@ export class StructureManager {
     for (const binding of bindings) {
       if (binding.model instanceof HyperstructureModel && this.store) {
         const construction = readHyperstructureConstruction(this.store, safeInteger(structure.entityId));
+        this.towerHexes.set(structure.entityId, structure.hexCoords);
+        publishMapSelection({ towerHexes: Object.fromEntries(this.towerHexes) });
         binding.model.setConstructionAt(
           binding.instanceIndex,
           construction,
@@ -1797,6 +1802,7 @@ export class StructureManager {
       dirtyModels.add(model);
     });
     this.structureInstanceBindings.delete(entityId);
+    if (this.towerHexes.delete(entityId)) publishMapSelection({ towerHexes: Object.fromEntries(this.towerHexes) });
   }
 
   private updateVisibleStructureModelCounts(dirtyModels: Set<StructureModel>): void {
