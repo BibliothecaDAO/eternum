@@ -159,9 +159,13 @@ fn ruins_fill_replace_and_activate_an_armys_relics_through_commands() {
             let tile: Span<felt252> = Serde::deserialize(ref data).unwrap();
             let mut fresh = true;
             for existing in revealed.span() {
-                if *existing == tile { fresh = false; }
+                if *existing == tile {
+                    fresh = false;
+                }
             }
-            if fresh { revealed.append(tile); }
+            if fresh {
+                revealed.append(tile);
+            }
         }
     }
     assert_eq!(revealed.len(), 6);
