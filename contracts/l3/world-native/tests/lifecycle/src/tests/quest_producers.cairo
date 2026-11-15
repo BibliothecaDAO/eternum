@@ -235,6 +235,22 @@ fn far_eye_discovers_pays_and_grants_xp_for_each_new_tile_only_once() {
     for kind in array![crate::quests::RELICS, crate::quests::REVEALS] {
         let (d, key, rules) = setup(kind);
         let home = home(d, key);
+        let reserve = slot_army(
+            d, ArmySlotKey { game_id: key.game_id, structure_id: home.entity_id, epoch: 0, slot: 1 },
+        );
+        apply(
+            d,
+            key.game_id,
+            Command::ManageTroops(
+                crate::troop_management::ManageTroops::Transfer(
+                    crate::troop_management::TransferTroops {
+                        source: crate::troop_management::Army::Explorer(reserve),
+                        target: crate::troop_management::Army::Explorer(key.explorer_id),
+                        amount: army(d, ExplorerKey { explorer_id: reserve, ..key }).troops.count,
+                    },
+                ),
+            ),
+        );
         let site = discover_far_eye(d, key, rules);
         assert_eq!(progress(d, home), 1);
         apply(
@@ -270,16 +286,16 @@ fn far_eye_discovers_pays_and_grants_xp_for_each_new_tile_only_once() {
                 recipient: crate::relics::Recipient::ArmySlot(0),
             },
         );
-        assert!(
-            world_test_support::tests::play_fixture::play(
-                d.games,
-                world_test_support::tests::play_fixture::TestAction {
-                    game_id: key.game_id, actor: d.actor, command: activate,
-                },
-                far_eye_root(key.game_id, rules, spires),
-                360,
-            ),
-        );
+        if !world_test_support::tests::play_fixture::play(
+            d.games,
+            world_test_support::tests::play_fixture::TestAction {
+                game_id: key.game_id, actor: d.actor, command: activate,
+            },
+            far_eye_root(key.game_id, rules, spires),
+            360,
+        ) {
+            panic!("{}", world_test_support::tests::play_fixture::rejection(ref events, d.games).reason);
+        }
         let mut payments = 0_u128;
         let mut ruins = 0_u128;
         for (_, event) in events.get_events().emitted_by(d.games).events {
