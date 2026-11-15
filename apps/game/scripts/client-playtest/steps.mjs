@@ -4365,7 +4365,6 @@ const DEEP_JOIN_STEPS = [
     play: async ({ browser, extraScreenshot }) => {
       // Back at the playing zoom, each site is visited and pressed as a player does: the camera brought to it, its
       // plate and model in the frame, then a right-click (desktop) or tap (phone) on the model opens its card.
-      browser.press("Escape");
       browser.run(["eval", `void window.__playtest.wheel(-100, ${ZOOM_IN_NOTCHES})`]);
       await sleep(ZOOM_SETTLE_MS);
       const visits = [];
@@ -4385,8 +4384,6 @@ const DEEP_JOIN_STEPS = [
           SHEET_WAIT_MS,
         );
         visits.push({ name, inView: before.inView, sheet: opened.sheet });
-        browser.press("Escape");
-        await sleep(HOVER_SETTLE_MS);
       }
       return { visits };
     },
