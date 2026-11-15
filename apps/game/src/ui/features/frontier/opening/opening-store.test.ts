@@ -144,3 +144,15 @@ it("keeps sending after a flush while signed out: the account that signs in next
   await settle();
   expect(unsent()).toEqual({ reached: [], seen: [] });
 });
+
+it("says whether this device kept the account's progress: a cold load has none, a warm one has", async () => {
+  const calls = deferred();
+  void loadOpening("a");
+  await settle();
+  expect(useOpeningStore.getState().onDevice).toBe(false);
+  calls[0]!.answer({ reached: ["fight"], seen: [] });
+  await settle();
+  useOpeningStore.setState({ owner: null, status: "signed-out", reached: new Set(), seen: new Set() });
+  void loadOpening("a");
+  expect(useOpeningStore.getState().onDevice).toBe(true);
+});

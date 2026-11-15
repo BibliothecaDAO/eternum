@@ -30,13 +30,17 @@ export function accountProgress(
     status: "signed-out" | "loading" | "ready" | "error";
     reached: ReadonlySet<string>;
     seen: ReadonlySet<string>;
+    onDevice: boolean;
   },
-): { reached: ReadonlySet<string>; seen: ReadonlySet<string>; known: boolean } {
+): { reached: ReadonlySet<string>; seen: ReadonlySet<string>; known: boolean; ownsParts: boolean } {
   const mine = store.owner === owner;
   return {
     reached: mine ? store.reached : new Set(),
     seen: mine ? store.seen : new Set(),
     known: owner === null || (mine && store.status === "ready"),
+    // What the parts may rest on: the service's answer, or what this device kept of the account's own progress. Without
+    // either, the sets are empty only because nothing is read yet, and a part earned earlier must not be taken away.
+    ownsParts: owner === null || (mine && (store.status === "ready" || store.onDevice)),
   };
 }
 

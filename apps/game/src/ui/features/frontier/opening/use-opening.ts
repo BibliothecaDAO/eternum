@@ -82,7 +82,7 @@ export function useOpening(
   const moment = realm && progress.known ? nextLine(opened, progress.seen) : null;
   const lineRules = useOpeningRules(rules, realm);
   return {
-    opened: showEverything || !realm || races !== true ? "all" : opened,
+    opened: showEverything || !realm || races !== true || !progress.ownsParts ? "all" : opened,
     line: showEverything || !moment || !lineRules ? null : { moment, rules: lineRules },
     gotIt: () => moment && void seeLine(moment),
     offerDue:
