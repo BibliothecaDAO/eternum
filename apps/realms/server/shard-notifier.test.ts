@@ -1,4 +1,17 @@
-import { type ArmyState, snapshot, siteSnapshot, mistFacts, GAME_ID, PLAYER_ACCOUNT, HOME, ARMY, ARMIES_TICK_SECONDS, DAY_UNIT_SECONDS, SEASON_START, TODAY } from "./fixtures/shard-world";
+import {
+  type ArmyState,
+  snapshot,
+  siteSnapshot,
+  mistFacts,
+  GAME_ID,
+  PLAYER_ACCOUNT,
+  HOME,
+  ARMY,
+  ARMIES_TICK_SECONDS,
+  DAY_UNIT_SECONDS,
+  SEASON_START,
+  TODAY,
+} from "./fixtures/shard-world";
 import { dayOf } from "@bibliothecadao/eternum/expeditions";
 import type { HeraldHistoryEvent } from "@bibliothecadao/eternum/game-sync";
 import type { PushEnvelope } from "@bibliothecadao/notifications";
@@ -68,7 +81,7 @@ const createHerald = () => {
     site: null as null | { troops: number; aspect: number; lore: boolean; lastTick: number },
     /** The neighbour's army, spent whenever the player acts, so it rests alongside the player's. */
     neighbourArmy: null as null | ArmyState,
-        secondArmy: null as null | ArmyState,
+    secondArmy: null as null | ArmyState,
     status: "Live" as "Live" | "Settled",
     /** The game's mode in the directory: fights between players push only outside Frontier. */
     mode: "frontier" as "frontier" | "blitz",
@@ -129,7 +142,11 @@ const createHerald = () => {
         state.homeSource,
         state.secondArmy,
       );
-      return siteSnapshot({ ...read, models: [...read.models, ...mistFacts(state.mistEndedAt)] }, state.site, url.searchParams.get("owner"));
+      return siteSnapshot(
+        { ...read, models: [...read.models, ...mistFacts(state.mistEndedAt)] },
+        state.site,
+        url.searchParams.get("owner"),
+      );
     }
     const page = { chain: state.chain, world_address: "0x5e45", complete_through_block: 10 + log.length };
     const after = url.searchParams.get("after");

@@ -367,10 +367,21 @@ export function siteSnapshot(
   const rules = base.models.find(({ model }) => model === "SliceRules")!.rows[0]!.value;
   rules.battle_config = { ...preset.rules.battle_config, cooldown_seconds: 0 };
   if (!owner) return base;
-  const homes = new Set([...STRUCTURE_OWNERS].filter(([, account]) => BigInt(account) === BigInt(owner)).map(([home]) => BigInt(home)));
-  return { ...base, models: base.models.map(({ model, rows }) => ({
-    model, rows: rows.filter(({ value }) => value.owner === undefined || BigInt(value.owner as string) === BigInt(owner) || homes.has(BigInt(value.owner as string))),
-  })) };
+  const homes = new Set(
+    [...STRUCTURE_OWNERS].filter(([, account]) => BigInt(account) === BigInt(owner)).map(([home]) => BigInt(home)),
+  );
+  return {
+    ...base,
+    models: base.models.map(({ model, rows }) => ({
+      model,
+      rows: rows.filter(
+        ({ value }) =>
+          value.owner === undefined ||
+          BigInt(value.owner as string) === BigInt(owner) ||
+          homes.has(BigInt(value.owner as string)),
+      ),
+    })),
+  };
 }
 
 const realmRow = (home: number) => ({
@@ -457,4 +468,3 @@ const armyPosition = (explorerId: number, home: number, army: ArmyState, step = 
     is_structure: false,
   },
 });
-

@@ -8,6 +8,7 @@ import {
 import {
   deriveGameSyncScope,
   scopeInputKeys,
+  SCOPE_INPUT_MODELS,
   gameSyncRowKeys,
   gameSyncScopeKeys,
   isClientGameSyncModel,
@@ -131,6 +132,8 @@ const orderSnapshotModelsForStreaming = <TDefinition extends { name: string }>(
 
 /** The index owner of deployment-wide rows, beside one per game. */
 const DEPLOYMENT_ROWS = "deployment";
+const scopeInputs = new Set<string>(SCOPE_INPUT_MODELS);
+const isScopeIndexModel = (model: string) => isScopedGameSyncModel(model, true) || scopeInputs.has(model);
 
 /** The keys a row is indexed by: the lookups subscriptionScope makes, and the keys a scope holds rows by. */
 const indexKeys = (model: string, row: StoredModelRow, spacing: number): string[] => {
@@ -602,7 +605,7 @@ export class WorldFold {
     const index: ScopeIndex = { spacing, entityIds: new Map() };
     this.scopeIndexes.set(owner, index);
     for (const { definition } of this.registry.persistent) {
-      if (!isScopedGameSyncModel(definition.name, true)) continue;
+      if (!isScopeIndexModel(definition.name)) continue;
       if ((definition.scope === "deployment") !== (owner === DEPLOYMENT_ROWS)) continue;
       for (const [entityId, row] of this.ownRows(definition.name, owner))
         this.addToScopeIndex(definition.name, entityId, row);
@@ -628,7 +631,7 @@ export class WorldFold {
     current: StoredModelRow | null | undefined,
   ): void {
     if (this.scopeIndexes.size === 0) return;
-    if (!isScopedGameSyncModel(model, true)) return;
+    if (!isScopeIndexModel(model)) return;
     if (previous) this.removeFromScopeIndex(model, entityId, previous);
     if (current) this.addToScopeIndex(model, entityId, current);
   }
