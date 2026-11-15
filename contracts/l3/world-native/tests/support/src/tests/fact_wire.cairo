@@ -36,6 +36,7 @@ pub struct FactWire {
     pub deep_army: crate::deep::DeepArmy,
     pub army_slot: crate::troops::ArmySlot,
     pub army_progress: crate::progression::ArmyProgress,
+    pub army_combat: crate::combat::ArmyCombat,
     pub army_progression_rules: crate::progression::ArmyProgressionRules,
     pub explorer_record: crate::troops::ExplorerRecord,
     pub mine_kind_key: crate::mines::MineKindKey,
