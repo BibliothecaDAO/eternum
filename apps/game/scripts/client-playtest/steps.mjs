@@ -3679,7 +3679,7 @@ function raceBoardSteps(result) {
               context.browser.read(SHOW_EVERYTHING);
               const back = await reloadOn("Deep", "map", scenario)(context);
               // The lab's reloaded page offers the wallet step first; a player puts it away to play on.
-              if (context.browser.read(`Boolean(document.querySelector('[aria-label="Close"]'))`))
+              if (context.browser.read(`JSON.stringify(Boolean(document.querySelector('[aria-label="Close"]')))`))
                 context.browser.click(HUD_WORDS.close);
               const state = await readUntil(
                 () => context.browser.read(OPENING_STATE),
