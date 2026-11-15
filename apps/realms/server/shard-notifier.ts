@@ -86,8 +86,7 @@ export class ShardNotifier extends DurableObject<Record<string, unknown>> {
   private readonly changedSiteGames = new Set<number>();
 
   private closeSiteStreams(): void {
-    for (const streams of this.siteStreams.values())
-      for (const stop of streams.values()) stop();
+    for (const streams of this.siteStreams.values()) for (const stop of streams.values()) stop();
     this.siteStreams.clear();
     this.changedSiteGames.clear();
   }
@@ -272,9 +271,17 @@ export class ShardNotifier extends DurableObject<Record<string, unknown>> {
     }
     for (const actor of actors) {
       if (streams.has(actor)) continue;
-      streams.set(actor, followDeepSites(shard.url, gameId, () => {
-        this.changedSiteGames.add(gameId);
-      }, actor));
+      streams.set(
+        actor,
+        followDeepSites(
+          shard.url,
+          gameId,
+          () => {
+            this.changedSiteGames.add(gameId);
+          },
+          actor,
+        ),
+      );
     }
   }
 
@@ -863,7 +870,9 @@ const siteNotifiedKey = (watch: DeepSiteWatch) =>
 
 /** Enrollment, consent and current realm facts are read before planning the next threshold. */
 async function siteWatchesForGame(
-  env: IdentityEnv, shard: WatchedShard, gameId: number,
+  env: IdentityEnv,
+  shard: WatchedShard,
+  gameId: number,
 ): Promise<{ watches: DeepSiteWatch[]; actors: Set<string> }> {
   const accounts = await readEnrolledAccounts(shard.url, gameId);
   const planned = new Map<string, DeepSiteWatch>();

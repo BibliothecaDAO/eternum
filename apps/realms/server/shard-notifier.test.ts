@@ -278,18 +278,31 @@ const createHerald = () => {
     const model = snap.models.find(({ model }) => model === "RealmKnowledge")!;
     for (const connection of sockets) {
       if (connection.actor !== PLAYER_ACCOUNT) continue;
-      connection.socket.send(JSON.stringify({
-        type: "diff", epoch: "site-test", seq: ++connection.seq, block: 11, preconfirmed: false,
-        set: model.rows.map((row) => ({ model: model.model, ...row })), del: [],
-      }));
+      connection.socket.send(
+        JSON.stringify({
+          type: "diff",
+          epoch: "site-test",
+          seq: ++connection.seq,
+          block: 11,
+          preconfirmed: false,
+          set: model.rows.map((row) => ({ model: model.model, ...row })),
+          del: [],
+        }),
+      );
     }
   };
   const heartbeat = () => {
     for (const connection of sockets)
-      connection.socket.send(JSON.stringify({
-        type: "head", epoch: "site-test", seq: connection.seq, block: 11,
-        timestamp: Math.floor(Date.now() / 1000), preconfirmed: true,
-      }));
+      connection.socket.send(
+        JSON.stringify({
+          type: "head",
+          epoch: "site-test",
+          seq: ++connection.seq,
+          block: 11,
+          timestamp: Math.floor(Date.now() / 1000),
+          preconfirmed: true,
+        }),
+      );
   };
   return { answer, act, battle, newChain, state, story, stream, siteChanged, researchChanged, heartbeat };
 };
