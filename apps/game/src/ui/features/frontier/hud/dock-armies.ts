@@ -65,7 +65,7 @@ export type DockArmy = {
   /** The Ethereal layer it stands in (armyEtherealLayer); none on the surface. */
   ethereal: EtherealLayer | undefined;
   /** What holding a Deep site costs it: its troops fall each tick. None while it holds no site. */
-  drain: DeepGuardLife | undefined;
+  drain?: DeepGuardLife;
 };
 
 /** The realm's armies out today, in the order the castle granted their slots; none without a realm. */
