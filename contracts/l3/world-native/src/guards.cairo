@@ -51,6 +51,6 @@ pub trait IGuardInitialization<T> {
         key: crate::resources::ResourceKey,
         seed: u256,
         timestamp: u64,
-        game_context: crate::commands::ActionContext,
+        rules: crate::rules::SliceRules,
     );
 }

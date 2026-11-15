@@ -558,9 +558,7 @@ fn discovery_guard_initialization_rejects_more_guards_than_the_structure_allows(
             key,
             99,
             30,
-            crate::commands::action_context(
-                crate::commands::ExecutionContext { timestamp: 30, ..crate::tests::context(d.games, (key).game_id) },
-            ),
+            crate::tests::context(d.games, key.game_id).rules.unbox(),
         )
             .is_err(),
     );

@@ -331,15 +331,15 @@ pub mod GamesFixture {
             key: crate::resources::ResourceKey,
             seed: u256,
             timestamp: u64,
-            game_context: crate::commands::ActionContext,
+            rules: crate::rules::SliceRules,
         ) {
             let classes = fixture_classes(key.game_id);
             crate::guards::IGuardInitializationDispatcherTrait::initialize_structure_guards(
-                crate::guards::IGuardInitializationLibraryDispatcher { class_hash: classes.placement.read() },
+                crate::guards::IGuardInitializationLibraryDispatcher { class_hash: classes.map.read() },
                 key,
                 seed,
                 timestamp,
-                game_context,
+                rules,
             )
         }
     }
