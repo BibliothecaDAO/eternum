@@ -326,6 +326,7 @@ describe("native directory and leaderboard", () => {
         rowEvent("ExpeditionSite", ["1", "6"], {
           ...site,
           clear: new CairoOption(CairoOptionVariant.Some, {
+            xp: 85n,
             explorer_id: 201n,
             home_id: 7n,
             reward: new CairoOption(CairoOptionVariant.Some, { resource_type: 38, amount: 3_000_000_000_000n }),
@@ -541,7 +542,7 @@ describe("native directory and leaderboard", () => {
       fold,
       receipt([
         structure("6", RIFT, "0x111"),
-        site(new CairoOption(CairoOptionVariant.Some, { explorer_id: 2n, home_id: 1n, reward: none() })),
+        site(new CairoOption(CairoOptionVariant.Some, { xp: 85n, explorer_id: 2n, home_id: 1n, reward: none() })),
         vacated,
       ]),
       13,

@@ -73,8 +73,9 @@ const stories: Record<string, { fields: number[]; expected: unknown }> = {
     expected: { relic_id: 41n, recipient: "Explorer", rate_bps: 2000n, duration_seconds: 1800n, radius: 0n },
   },
   SitePayout: {
-    fields: [3, 7, 9, 7, 0, 23, 500],
+    fields: [85, 3, 7, 9, 7, 0, 23, 500],
     expected: {
+      xp: 85n,
       structure_id: 3n,
       explorer_id: 7n,
       site_id: 9n,
