@@ -163,7 +163,7 @@ describe("a realm's daily ruin choice per depth", () => {
 
   it("reopens other depths atomically on release application and closes a second depth from its receipt", () => {
     const store = setup();
-    const receipt = { explorer_id: home + 4n, home_id: home, reward: { resource_type: 37, amount: 500n } };
+    const receipt = { xp: 0, explorer_id: home + 4n, home_id: home, reward: { resource_type: 37, amount: 500n } };
     store.applyFacts([
       release(nativeReleaseConstants.RUIN_DEPTH_LIMIT_RELEASE - 1),
       close(true),
