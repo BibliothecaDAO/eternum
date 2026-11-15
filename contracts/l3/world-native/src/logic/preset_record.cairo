@@ -397,13 +397,10 @@ fn write_depths(
         assert!(
             value.site_guard_lower != 0 && value.site_guard_lower <= value.site_guard_upper, "invalid depth guards",
         );
-        assert!(value.ruin_guard_lower != 0 && value.ruin_guard_lower <= value.ruin_guard_upper, "invalid ruin guards");
         assert!(value.guard_step != 0, "zero guard step");
         assert!(
             Into::<u16, u32>::into(value.site_guard_lower) % value.guard_step == 0
-                && Into::<u16, u32>::into(value.site_guard_upper) % value.guard_step == 0
-                && value.ruin_guard_lower % value.guard_step == 0
-                && value.ruin_guard_upper % value.guard_step == 0,
+                && Into::<u16, u32>::into(value.site_guard_upper) % value.guard_step == 0,
             "guard bounds off grid",
         );
         validate_beast_guards(value);
@@ -417,9 +414,6 @@ fn validate_beast_guards(depth: crate::expeditions::DepthRules) {
     assert!(depth.beast_strong_lower <= depth.beast_strong_upper, "invalid strong beast range");
     assert!(depth.beast_weak_upper < depth.beast_strong_lower, "beast ranges overlap");
     assert!(depth.beast_strong_upper < depth.site_guard_lower, "beasts must be weaker than sites");
-    assert!(
-        Into::<u16, u32>::into(depth.beast_strong_upper) < depth.ruin_guard_lower, "beasts must be weaker than ruins",
-    );
 }
 
 fn write_hyperstructures(

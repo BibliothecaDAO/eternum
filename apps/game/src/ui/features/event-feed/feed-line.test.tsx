@@ -234,8 +234,6 @@ const depthWithBounds = () => {
         reveal_site_neighbors: false,
         reveal_percent: 10,
         chest: { common: 5000, uncommon: 2700, rare: 1400, epic: 600, legendary: 300 },
-        ruin_guard_lower: 2000,
-        ruin_guard_upper: 4000,
         guard_step: 100,
       },
     },

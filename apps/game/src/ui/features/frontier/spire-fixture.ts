@@ -22,8 +22,6 @@ const depthRules = (depth: number) => ({
     site_guard_upper: 2,
     reveal_site_neighbors: false,
     chest: { common: 10000, uncommon: 0, rare: 0, epic: 0, legendary: 0 },
-    ruin_guard_lower: 1,
-    ruin_guard_upper: 2,
     guard_step: 1,
     beast_weak_lower: 300,
     beast_weak_upper: 350,

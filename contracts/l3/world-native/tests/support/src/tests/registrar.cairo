@@ -467,8 +467,6 @@ pub fn assert_capture_at(
         depths
             .append(
                 crate::expeditions::DepthRules {
-                    ruin_guard_lower: 2000,
-                    ruin_guard_upper: 4000,
                     guard_step: 1,
                     beast_weak_lower: 1,
                     beast_weak_upper: 1,
@@ -879,8 +877,6 @@ pub fn setup_frontier_relics_with_preset(
         depths
             .append(
                 crate::expeditions::DepthRules {
-                    ruin_guard_lower: 2000,
-                    ruin_guard_upper: 4000,
                     guard_step: 1,
                     beast_weak_lower: 1,
                     beast_weak_upper: 1,

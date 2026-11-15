@@ -7,7 +7,7 @@ import { compileSitePreviews, generateSitePreviews } from "./generate-site-previ
 const root = new URL("../", import.meta.url);
 const source = Object.fromEntries(
   await Promise.all(
-    ["expeditions", "progression", "taxonomy", "resources", "rules", "troops"].map(async (name) => [
+    ["expeditions", "progression", "taxonomy", "resources", "rules", "troops", "army_relics"].map(async (name) => [
       name,
       await readFile(new URL(`src/${name}.cairo`, root), "utf8"),
     ]),
@@ -103,4 +103,12 @@ test("depth premiums come from the shared Cairo formula", () => {
     expeditions: source.expeditions.replace("amount * (2 + depth.into()) / 2", "amount * (3 + depth.into()) / 3"),
   };
   assert.match(compileSitePreviews(changed), /3n \+ BigInt\(depth\)/);
+});
+
+test("ruin bounds follow the Cairo relic rank and spread", async () => {
+  const load = async (rules) => import(`data:text/javascript;base64,${Buffer.from(ts.transpileModule(compileSitePreviews({ ...source, army_relics: rules }), { compilerOptions: { module: ts.ModuleKind.ESNext } }).outputText).toString("base64")}`);
+  const normal = await load(source.army_relics);
+  assert.deepEqual([1, 2, 3, 4, 5].map(normal.previewRuinGuardBounds), [[900, 1100], [2250, 2750], [4500, 5500], [9000, 11000], [22500, 27500]]);
+  const changed = await load(source.army_relics.replace("2 => 2500", "2 => 3000").replace("RUIN_GUARD_SPREAD_PERCENT: u128 = 10", "RUIN_GUARD_SPREAD_PERCENT: u128 = 20"));
+  assert.deepEqual(changed.previewRuinGuardBounds(2), [2400, 3600]);
 });

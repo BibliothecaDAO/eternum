@@ -1566,8 +1566,6 @@ const behaviouralFacts = {
       revealPercent: "reveal_percent",
       siteGuardLower: "site_guard_lower",
       siteGuardUpper: "site_guard_upper",
-      ruinGuardLower: "ruin_guard_lower",
-      ruinGuardUpper: "ruin_guard_upper",
       guardStep: "guard_step",
       beastWeakLower: "beast_weak_lower",
       beastWeakUpper: "beast_weak_upper",

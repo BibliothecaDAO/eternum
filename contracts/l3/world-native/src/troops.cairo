@@ -393,9 +393,7 @@ pub fn discovery_guards(category: u8, seed: u256, rules: crate::rules::SliceRule
 pub fn frontier_guard(
     category: u8, depth: crate::expeditions::DepthRules, seed: u256, rules: crate::rules::SliceRules, timestamp: u64,
 ) -> Troops {
-    let (lower, upper) = if category == crate::taxonomy::RUIN_CATEGORY {
-        (depth.ruin_guard_lower, depth.ruin_guard_upper)
-    } else if category == crate::taxonomy::RIFT_CATEGORY {
+    let (lower, upper) = if category == crate::taxonomy::RIFT_CATEGORY {
         (
             rift_guard_bound(depth.site_guard_lower, depth.guard_step),
             rift_guard_bound(depth.site_guard_upper, depth.guard_step),
@@ -417,6 +415,16 @@ pub fn frontier_guard(
         let step: u128 = depth.guard_step.into();
         lower + step * crate::random::range(seed, 1, (upper - lower) / step + 1)
     };
+    discovered_guard(TroopType::Knight, TroopTier::T1, count, rules, timestamp)
+}
+
+pub fn ruin_guard(
+    relic: crate::army_relics::ArmyRelic, seed: u256, rules: crate::rules::SliceRules, timestamp: u64,
+) -> Troops {
+    let base = crate::army_relics::ruin_strength(relic.rank);
+    let spread = base * crate::army_relics::RUIN_GUARD_SPREAD_PERCENT / 100;
+    let step = crate::army_relics::RUIN_GUARD_STEP;
+    let count = base - spread + step * crate::random::range(seed, 1, 2 * spread / step + 1);
     discovered_guard(TroopType::Knight, TroopTier::T1, count, rules, timestamp)
 }
 

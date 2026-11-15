@@ -131,7 +131,7 @@ const wheatPerTroop = (config) =>
 export const frontierGuardPhrases = (preset, riftGuardBound) => {
   const range = (lower, upper) => `${n(lower)}–${n(upper)}`;
   return [
-    "Ground Camps Rifts Ruins Weaker beasts Stronger beasts",
+    "Ground Camps Rifts Weaker beasts Stronger beasts",
     ...preset.depths.map((depth, index) =>
       [
         DEPTH_NAMES[index],
@@ -140,7 +140,6 @@ export const frontierGuardPhrases = (preset, riftGuardBound) => {
           riftGuardBound(depth.siteGuardLower, depth.guardStep),
           riftGuardBound(depth.siteGuardUpper, depth.guardStep),
         ),
-        range(depth.ruinGuardLower, depth.ruinGuardUpper),
         range(depth.beastWeakLower, depth.beastWeakUpper),
         range(depth.beastStrongLower, depth.beastStrongUpper),
       ].join(" "),

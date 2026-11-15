@@ -7,11 +7,8 @@ fn seeded_site_guards_are_knights_on_the_inclusive_preset_grid() {
     let rifts = array![(1400_u32, 1600_u32), (2800, 3200), (5400, 6600), (10700, 13200)];
     for depth_index in 0_u32..4 {
         let depth = *preset.settlement.depths.at(depth_index);
-        for category in array![crate::taxonomy::CAMP_CATEGORY, RIFT_CATEGORY, RUIN_CATEGORY] {
-            let ruin = category == RUIN_CATEGORY;
-            let (lower, upper) = if ruin {
-                (depth.ruin_guard_lower, depth.ruin_guard_upper)
-            } else if category == RIFT_CATEGORY {
+        for category in array![crate::taxonomy::CAMP_CATEGORY, RIFT_CATEGORY] {
+            let (lower, upper) = if category == RIFT_CATEGORY {
                 *rifts.at(depth_index)
             } else {
                 (depth.site_guard_lower.into(), depth.site_guard_upper.into())
@@ -48,7 +45,6 @@ fn beasts_draw_two_depth_scaled_ranges_below_every_other_site_guard() {
         let (weak_lower, weak_upper, strong_lower, strong_upper) = *expected.at(depth_index);
         assert!(weak_lower > previous_stronger && strong_lower > weak_upper);
         assert!(strong_upper < depth.site_guard_lower.into());
-        assert!(strong_upper < depth.ruin_guard_lower.into());
         assert_eq!((depth.beast_weak_lower.into(), depth.beast_weak_upper.into()), (weak_lower, weak_upper));
         assert_eq!((depth.beast_strong_lower.into(), depth.beast_strong_upper.into()), (strong_lower, strong_upper));
         let mut weak_draws = 0_u32;
@@ -98,14 +94,23 @@ fn beast_ranges_include_both_endpoints_at_every_depth() {
 }
 
 #[test]
-fn ruin_beasts_are_sized_by_layer_in_one_troop_type() {
+fn ruin_guards_follow_relic_rarity_on_the_inclusive_grid() {
     let (_, preset) = super::preset_projection::current_definition("frontier-check");
-    let mut bounds = array![];
-    for depth in preset.settlement.depths {
-        bounds.append((*depth.ruin_guard_lower, *depth.ruin_guard_upper));
+    for (rank, lower, upper) in array![(1_u8,900_u128,1100_u128),(2,2250,2750),(3,4500,5500),(4,9000,11000),(5,22500,27500)] {
+        let mut saw_lower = false;
+        let mut saw_upper = false;
+        for seed in 0_u32..1000 {
+            let guard = crate::troops::ruin_guard(crate::army_relics::ArmyRelic { kind: crate::army_relics::RelicKind::Blade, rank }, seed.into(),preset.rules,360);
+            let count = guard.count / RESOURCE_PRECISION;
+            assert!(count >= lower && count <= upper);
+            assert_eq!((count-lower)%50,0);
+            assert_eq!(guard.category,TroopType::Knight);
+            assert_eq!(guard.tier,TroopTier::T1);
+            saw_lower = saw_lower || count == lower;
+            saw_upper = saw_upper || count == upper;
+        }
+        assert!(saw_lower && saw_upper);
     }
-    // Surface, then Ethereal I-III; every band stays below a 1.25x spread.
-    assert_eq!(bounds, array![(2700, 3300), (4900, 6100), (9800, 12200), (19600, 24400)]);
 }
 
 #[test]
@@ -113,7 +118,7 @@ fn ruin_beasts_are_sized_by_layer_in_one_troop_type() {
 fn frontier_registration_refuses_invalid_site_and_beast_guard_ranges() {
     let d = super::registrar::setup();
     snforge_std::start_cheat_caller_address(d.games, super::authority());
-    for invalid in 0_u8..12 {
+    for invalid in array![0_u8, 1, 3, 5, 6, 7, 8, 9, 10] {
         let (id, mut preset) = super::preset_projection::current_definition("frontier-check");
         if invalid == 5 {
             preset.rules.troop_limit_config.t1_tier_strength = 2;
@@ -127,14 +132,8 @@ fn frontier_registration_refuses_invalid_site_and_beast_guard_ranges() {
             if invalid == 1 {
                 depth.site_guard_upper += 1;
             }
-            if invalid == 2 {
-                depth.ruin_guard_upper += 1;
-            }
             if invalid == 3 {
                 depth.site_guard_lower = depth.site_guard_upper + 100;
-            }
-            if invalid == 4 {
-                depth.ruin_guard_lower = depth.ruin_guard_upper + 100;
             }
             if invalid == 6 {
                 depth.beast_weak_lower = 0;
@@ -150,9 +149,6 @@ fn frontier_registration_refuses_invalid_site_and_beast_guard_ranges() {
             }
             if invalid == 10 {
                 depth.beast_strong_upper = depth.site_guard_lower;
-            }
-            if invalid == 11 {
-                depth.ruin_guard_lower = 100;
             }
             depths.append(depth);
         }

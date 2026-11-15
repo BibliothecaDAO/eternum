@@ -133,8 +133,6 @@ export interface NativePreset {
     revealPercent: number;
     siteGuardLower: number;
     siteGuardUpper: number;
-    ruinGuardLower: number;
-    ruinGuardUpper: number;
     guardStep: number;
     beastWeakLower: number;
     beastWeakUpper: number;

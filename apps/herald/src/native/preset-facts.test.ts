@@ -211,9 +211,6 @@ describe("verified preset configuration facts", () => {
     expect(Object.fromEntries(Object.entries(discovery).map(([key, value]) => [key, Number(value)]))).toEqual(
       preset.definition.economy.discovery.unwrap(),
     );
-    expect(depths.map((row) => [Number(row.ruin_guard_lower), Number(row.ruin_guard_upper)])).toEqual(
-      expectedDepths.map((row) => [row.ruin_guard_lower, row.ruin_guard_upper]),
-    );
 
     expect(world.fold.gameRows("GameOverrides", "1")).toHaveLength(1);
     for (const scope of [undefined, {}, world.fold.subscriptionScope("1", "0x123", 1234)]) {

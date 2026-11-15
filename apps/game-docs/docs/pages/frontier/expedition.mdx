@@ -61,15 +61,13 @@ grows.
 
 | Ground                    | Camps                          | Rifts                          | Ruins                          | Weaker beasts                  | Stronger beasts                  |
 | ------------------------- | ------------------------------ | ------------------------------ | ------------------------------ | ------------------------------ | -------------------------------- |
-| {FRONTIER.depths[0].name} | {FRONTIER.depths[0].campGuard} | {FRONTIER.depths[0].riftGuard} | {FRONTIER.depths[0].ruinGuard} | {FRONTIER.depths[0].beastWeak} | {FRONTIER.depths[0].beastStrong} |
-| {FRONTIER.depths[1].name} | {FRONTIER.depths[1].campGuard} | {FRONTIER.depths[1].riftGuard} | {FRONTIER.depths[1].ruinGuard} | {FRONTIER.depths[1].beastWeak} | {FRONTIER.depths[1].beastStrong} |
-| {FRONTIER.depths[2].name} | {FRONTIER.depths[2].campGuard} | {FRONTIER.depths[2].riftGuard} | {FRONTIER.depths[2].ruinGuard} | {FRONTIER.depths[2].beastWeak} | {FRONTIER.depths[2].beastStrong} |
-| {FRONTIER.depths[3].name} | {FRONTIER.depths[3].campGuard} | {FRONTIER.depths[3].riftGuard} | {FRONTIER.depths[3].ruinGuard} | {FRONTIER.depths[3].beastWeak} | {FRONTIER.depths[3].beastStrong} |
+| {FRONTIER.depths[0].name} | {FRONTIER.depths[0].campGuard} | {FRONTIER.depths[0].riftGuard} | {FRONTIER.depths[0].beastWeak} | {FRONTIER.depths[0].beastStrong} |
+| {FRONTIER.depths[1].name} | {FRONTIER.depths[1].campGuard} | {FRONTIER.depths[1].riftGuard} | {FRONTIER.depths[1].beastWeak} | {FRONTIER.depths[1].beastStrong} |
+| {FRONTIER.depths[2].name} | {FRONTIER.depths[2].campGuard} | {FRONTIER.depths[2].riftGuard} | {FRONTIER.depths[2].beastWeak} | {FRONTIER.depths[2].beastStrong} |
+| {FRONTIER.depths[3].name} | {FRONTIER.depths[3].campGuard} | {FRONTIER.depths[3].riftGuard} | {FRONTIER.depths[3].beastWeak} | {FRONTIER.depths[3].beastStrong} |
 
 A band of beasts is a {FRONTIER.guards.weakBeast} or a stronger {FRONTIER.guards.strongBeast}, as likely as each other.
-A camp is always guarded by a {FRONTIER.guards.camp} and a rift by a {FRONTIER.guards.rift}. A ruin's guard grows with
-depth: {FRONTIER.depths[0].ruinGuardName} on the surface, then {FRONTIER.depths[1].ruinGuardName},{" "}
-{FRONTIER.depths[2].ruinGuardName} and {FRONTIER.depths[3].ruinGuardName}. A clear gives the army XP by the guard's
+A camp is always guarded by a {FRONTIER.guards.camp} and a rift by a {FRONTIER.guards.rift}. A ruin's guard follows its relic's rarity on every layer. A clear gives the army XP by the guard's
 starting strength, beasts included. Resource rewards and clear XP have a depth premium; the site’s card shows the full
 payout before combat.
 
@@ -78,6 +76,14 @@ payout before combat.
   name="frontier/fight-card"
   caption="A site's card before an attack: both sides before and after, and what the attack earns."
 />
+
+| Relic | Ruin guard, on every layer |
+|---|---|
+| Common | {FRONTIER.ruinGuards[0]} |
+| Uncommon | {FRONTIER.ruinGuards[1]} |
+| Rare | {FRONTIER.ruinGuards[2]} |
+| Epic | {FRONTIER.ruinGuards[3]} |
+| Legendary | {FRONTIER.ruinGuards[4]} |
 
 A site pays once. A cleared site leaves a standard that shows what the clear paid, and armies can walk onto it.
 

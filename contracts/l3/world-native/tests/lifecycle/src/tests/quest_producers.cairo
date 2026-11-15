@@ -64,8 +64,6 @@ fn setup_progression(
                     beast_strong_upper: 2,
                     site_guard_lower: 3,
                     site_guard_upper: 3,
-                    ruin_guard_lower: 3,
-                    ruin_guard_upper: 3,
                     guard_step: 1,
                     ..*depth,
                 },

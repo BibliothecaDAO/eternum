@@ -156,8 +156,6 @@ pub struct DepthRules {
     pub reveal_site_neighbors: bool,
     // Each chest tier's odds, in basis points, for a ruin found at this depth.
     pub chest: crate::relics::ChestTiers,
-    pub ruin_guard_lower: u32,
-    pub ruin_guard_upper: u32,
     pub guard_step: u32,
     pub beast_weak_lower: u16,
     pub beast_weak_upper: u16,

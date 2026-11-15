@@ -125,3 +125,18 @@ pub fn draw(odds: crate::relics::ChestTiers, seed: u256) -> ArmyRelic {
         rank: crate::relics::roll_tier(odds, seed) + 1,
     }
 }
+
+pub const RUIN_GUARD_SPREAD_PERCENT: u128 = 10;
+pub const RUIN_GUARD_STEP: u128 = 50;
+
+/// A ruin keeps the strength of its recorded relic on every layer.
+pub fn ruin_strength(rank: u8) -> u128 {
+    match rank {
+        1 => 1000,
+        2 => 2500,
+        3 => 5000,
+        4 => 10000,
+        5 => 25000,
+        _ => panic!("invalid relic rank"),
+    }
+}

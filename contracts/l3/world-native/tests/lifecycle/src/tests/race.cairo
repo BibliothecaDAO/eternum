@@ -684,8 +684,6 @@ fn spoils_doubles_numeric_clears_and_records_xp_but_keeps_ruin_relics() {
                     crate::expeditions::DepthRules {
                         site_guard_lower: 3,
                         site_guard_upper: 3,
-                        ruin_guard_lower: 3,
-                        ruin_guard_upper: 3,
                         beast_weak_lower: 1,
                         beast_weak_upper: 1,
                         beast_strong_lower: 2,
@@ -713,11 +711,12 @@ fn spoils_doubles_numeric_clears_and_records_xp_but_keeps_ruin_relics() {
         world_test_support::tests::resource_commands::grant(
             d, home, crate::resources::WHEAT, 10000 * RESOURCE_PRECISION,
         );
+        world_test_support::tests::resource_commands::grant(d, home, crate::resources::KNIGHT, 3000 * RESOURCE_PRECISION);
         assert!(
             world_test_support::tests::play_fixture::play(
                 d.games,
                 world_test_support::tests::play_fixture::TestAction {
-                    game_id, actor: d.actor, command: super::army_activity::muster(home.entity_id, 0, 0, 10),
+                    game_id, actor: d.actor, command: super::army_activity::muster(home.entity_id, 0, 0, 3000),
                 },
                 super::banes::root_for(game_id, 1, 20, 0),
                 now,

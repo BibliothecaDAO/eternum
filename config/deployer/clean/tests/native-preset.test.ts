@@ -443,24 +443,19 @@ describe("native presets", () => {
       preset.settlement.depths.map((depth) => [
         depth.site_guard_lower,
         depth.site_guard_upper,
-        depth.ruin_guard_lower,
-        depth.ruin_guard_upper,
         depth.guard_step,
       ]),
     ).toEqual([
-      [1200, 1400, 2700, 3300, 100],
-      [2400, 2800, 4900, 6100, 100],
-      [4700, 5700, 9800, 12200, 100],
-      [9300, 11500, 19600, 24400, 100],
+      [1200, 1400, 100],
+      [2400, 2800, 100],
+      [4700, 5700, 100],
+      [9300, 11500, 100],
     ]);
     for (const depth of preset.settlement.depths) {
       expect(depth.site_guard_lower).toBeLessThanOrEqual(depth.site_guard_upper);
-      expect(depth.ruin_guard_lower).toBeLessThanOrEqual(depth.ruin_guard_upper);
       for (const bound of [
         depth.site_guard_lower,
         depth.site_guard_upper,
-        depth.ruin_guard_lower,
-        depth.ruin_guard_upper,
       ])
         expect(bound % depth.guard_step).toBe(0);
     }
@@ -1028,20 +1023,17 @@ test("Frontier discoveries use the approved narrow guard ranges at every depth",
     preset.settlement.depths.map((row) => [
       row.site_guard_lower,
       row.site_guard_upper,
-      row.ruin_guard_lower,
-      row.ruin_guard_upper,
     ]),
   ).toEqual([
-    [1200, 1400, 2700, 3300],
-    [2400, 2800, 4900, 6100],
-    [4700, 5700, 9800, 12200],
-    [9300, 11500, 19600, 24400],
+    [1200, 1400],
+    [2400, 2800],
+    [4700, 5700],
+    [9300, 11500],
   ]);
   for (const row of preset.settlement.depths) {
     expect(row).not.toHaveProperty("entry_stamina");
     for (const [lower, upper] of [
       [row.site_guard_lower, row.site_guard_upper],
-      [row.ruin_guard_lower, row.ruin_guard_upper],
       [row.beast_weak_lower, row.beast_weak_upper],
       [row.beast_strong_lower, row.beast_strong_upper],
     ]) {

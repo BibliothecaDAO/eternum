@@ -3,7 +3,7 @@ import { resolve } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
 const root = new URL("../", import.meta.url);
-const sources = ["expeditions", "progression", "taxonomy", "resources", "rules", "troops"];
+const sources = ["expeditions", "progression", "taxonomy", "resources", "rules", "troops", "army_relics"];
 
 /** Compile the pure site formulas. Unrecognized Cairo must fail, never leave a partial preview. */
 export function compileSitePreviews(source) {
@@ -12,7 +12,15 @@ export function compileSitePreviews(source) {
   const premium = depthRewardRule(source.expeditions);
   const precision = constant(source.rules, "RESOURCE_PRECISION");
   const rift = riftGuardRule(source.troops);
+  const ruin = ruinStrengthRule(source.army_relics);
   return `// From the site reward, clear XP and rift guard formulas in Cairo. Run scripts/generate-site-previews.mjs.
+export function previewRuinGuardBounds(rank: number): [number, number] {
+  const strength = [${ruin.strengths.join(", ")}][rank - 1];
+  if (strength === undefined) throw new Error("Invalid relic rank");
+  const spread = strength * ${ruin.spread} / 100;
+  return [strength - spread, strength + spread];
+}
+
 export function previewRiftGuardBound(camp: number, step: number): number {
   return Math.floor((camp * ${rift.percent} + step * ${rift.rounding}) / (step * ${rift.divisor})) * step;
 }
@@ -44,6 +52,13 @@ function integerSqrt(value: bigint): bigint {
   return root;
 }
 `;
+}
+
+function ruinStrengthRule(source) {
+  const body = functionBody(source, "ruin_strength", "rank:u8", "u128");
+  const match = body.match(/^matchrank\{1=>([0-9_]+),2=>([0-9_]+),3=>([0-9_]+),4=>([0-9_]+),5=>([0-9_]+),_=>panic!\("invalidrelicrank"\),?\}$/);
+  if (!match) throw new Error("Unsupported ruin strength rule; update the preview compiler");
+  return { strengths: match.slice(1).map(positiveInteger), spread: constant(source, "RUIN_GUARD_SPREAD_PERCENT") };
 }
 
 function resourceRewards(source) {

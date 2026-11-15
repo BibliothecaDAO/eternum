@@ -4,6 +4,12 @@ use super::registrar::*;
 #[test]
 fn ruins_fill_replace_and_activate_an_armys_relics_through_commands() {
     let (_, mut preset) = super::preset_projection::current_definition("frontier");
+    preset.rules.troop_limit_config.settlement_deployment_cap = 6000;
+    let mut stock = array![];
+    for grant in preset.settlement.realms.resources {
+        stock.append(crate::resources::ResourceAmount { amount: if *grant.resource_type == crate::resources::KNIGHT { 12000 * RESOURCE_PRECISION } else { *grant.amount }, ..*grant });
+    }
+    preset.settlement.realms.resources = stock.span();
     let discovery = crate::expeditions::FrontierDiscoveryRules {
         beasts_bps: 1, camp_bps: 0, rift_bps: 0, ruin_bps: 5000, shrine_bps: 0, well_bps: 0, empty_reveal_limit: 7,
     };
@@ -21,8 +27,6 @@ fn ruins_fill_replace_and_activate_an_armys_relics_through_commands() {
                     beast_weak_upper: 1,
                     beast_strong_lower: 2,
                     beast_strong_upper: 2,
-                    ruin_guard_lower: 10,
-                    ruin_guard_upper: 10,
                     guard_step: 1,
                     ..*depth,
                 },
@@ -57,6 +61,8 @@ fn ruins_fill_replace_and_activate_an_armys_relics_through_commands() {
         let reward = ArmyRelic { kind, rank: 1 };
         let site = discover_relic(d, key, discovery, *preset.settlement.depths.at(0).chest, reward, timestamp);
         assert_eq!(read_ruin(d, site), Some(reward));
+        let count = snforge_std::interact_with_state(d.games, || crate::logic::guards::guard(crate::guards::GuardKey { game_id, structure_id: site.entity_id, slot: 0 }).troops.count);
+        assert!(count >= 900 * RESOURCE_PRECISION && count <= 1100 * RESOURCE_PRECISION);
         let clear = Command::BattleGuard(
             crate::commands::Battle { attacker_id: explorer_id, defender_id: site.entity_id, relic_slot: None },
         );

@@ -290,7 +290,13 @@ pub mod TroopsLogic {
                 let depth = crate::logic::expeditions::depth_rules_at(
                     key.game_id, crate::structures::structure_coord(key),
                 );
-                array![crate::troops::frontier_guard(category, depth, seed, rules, timestamp)].span()
+                let guard = if category == crate::taxonomy::RUIN_CATEGORY {
+                    let relic = crate::logic::army_relics::ruin(key).expect('missing ruin relic');
+                    crate::troops::ruin_guard(relic, seed, rules, timestamp)
+                } else {
+                    crate::troops::frontier_guard(category, depth, seed, rules, timestamp)
+                };
+                array![guard].span()
             } else {
                 crate::troops::discovery_guards(category, seed, rules, timestamp)
             };

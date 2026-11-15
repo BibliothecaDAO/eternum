@@ -68,8 +68,6 @@ export const campBeside = (
       site_guard_upper: 5000,
       reveal_site_neighbors: false,
       chest: { common: 0, uncommon: 5000, rare: 2833, epic: 1500, legendary: 667 },
-      ruin_guard_lower: 6000,
-      ruin_guard_upper: 10500,
       guard_step: 100,
       beast_weak_lower: 900,
       beast_weak_upper: 1050,
