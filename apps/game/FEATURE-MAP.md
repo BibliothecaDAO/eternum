@@ -1383,4 +1383,6 @@ Each Aspect's hyperstructure in the Deep stands a fifth of its tower for each st
 one complete), read from the race rows in `src/three/structures/hyperstructure-state.ts`; select it on the map or read
 it on the **Season, Aspects** page.
 
-- Charge preview: select Knights, then a guarded site or rival Deep site. The two fight panels show survivors for the next attack, including the army's remaining opening Charge. Run `build.sh playtest-charge` and `build.sh playtest-deep-charge` for desktop and phone evidence of the opening and repeated attack.
+- Charge preview: select Knights, then a guarded site or rival Deep site. The two fight panels show survivors for the
+  next attack, including the army's remaining opening Charge. Run `build.sh playtest-charge` and
+  `build.sh playtest-deep-charge` for desktop and phone evidence of the opening and repeated attack.

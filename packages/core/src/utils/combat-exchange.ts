@@ -360,7 +360,7 @@ export const forecastFight = (
     attackerLoss += next.attackerLoss;
     defenderLoss += next.defenderLoss;
   }
-  const outcome = state.defender.count === 0n ? "wins" : state.attacker.count === 0n ? "loses" : "stalls";
+  const outcome = state.attacker.count === 0n ? "loses" : state.defender.count === 0n ? "wins" : "stalls";
   return {
     outcome,
     exchanges,

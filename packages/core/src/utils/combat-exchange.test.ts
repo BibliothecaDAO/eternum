@@ -341,6 +341,10 @@ it("forecasts Charge on the opening exchange only, for beasts and armies", () =>
       attackerIsStructureGuard: false,
       defenderIsStructureGuard,
     };
+    const small = { ...army, count: 10_000_000_000n };
+    expect(forecastFight(small, small, { ...context, chargePercent: 0 }, rules)).toMatchObject({
+      outcome: "loses", attacker: { count: 0n }, defender: { count: 0n },
+    });
     expect(forecastFight(army, army, context, rules)).toMatchObject({
       outcome: "wins",
       exchanges: 4,
