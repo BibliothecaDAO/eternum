@@ -3633,7 +3633,7 @@ const OPENING_STATE = `JSON.stringify({
 })`;
 
 /** Turns Show everything on in the page's saved settings and loads the lab game again, as a player's setting persists. */
-const SHOW_EVERYTHING = `localStorage.setItem("eternum-world-appearance", JSON.stringify({ state: { showEverything: true, fogStyle: "clear", reducedMotion: false, haptics: true, nextUpTips: true }, version: 0 }))`;
+const SHOW_EVERYTHING = `JSON.stringify((() => { localStorage.setItem("eternum-world-appearance", JSON.stringify({ state: { showEverything: true, fogStyle: "clear", reducedMotion: false, haptics: true, nextUpTips: true }, version: 0 })); return true; })())`;
 
 function raceBoardSteps(result) {
   const scenario = result === null ? "race" : result === "won" ? "race-finished" : "race-expired";
@@ -3728,7 +3728,7 @@ function raceBoardSteps(result) {
           race.text.includes(result === "won" ? "10,000 of 10,000" : "6,400 of 10,000") &&
           (result !== "expired" || race.text.includes("No Aspect finished its hyperstructure")) &&
           race.text.includes(result === "won" ? "200K" : "64K") &&
-          played.invite?.invite.text.includes("Invite a friend to Harmony") &&
+          played.invite?.invite.text.includes("Invite a friend to Might") &&
           members.text.includes("1.3K") &&
           members.text.includes("3.8K") &&
           scoped.includes(7) &&

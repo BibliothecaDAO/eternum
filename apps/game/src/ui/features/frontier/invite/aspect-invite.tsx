@@ -32,7 +32,7 @@ const InviteToAspect = ({ aspect, chainId, gameId }: { aspect: AspectId; chainId
   const link = useShareLink({ kind: "aspect", chainId, gameId, moment: aspect });
   const [copied, setCopied] = useState<"copied" | "failed" | null>(null);
   const name = aspectName(aspect);
-  const waiting = link.code === undefined ? INVITE_WORDS.making : undefined;
+  const waiting = link.code === undefined && !link.failed ? INVITE_WORDS.making : undefined;
   const post = () => {
     openXPost(INVITE_WORDS.line(name), link.url("x"));
     link.posted();
@@ -55,10 +55,24 @@ const InviteToAspect = ({ aspect, chainId, gameId }: { aspect: AspectId; chainId
         <span className="text-hud-strong text-hud-ink">{INVITE_WORDS.title(name)}</span>
       </span>
       <span className="flex gap-2">
-        <HudButton kind="primary" size="sm" icon="share" busy={waiting} onClick={post}>
+        <HudButton
+          kind="primary"
+          size="sm"
+          icon="share"
+          busy={waiting}
+          disabled={link.code === undefined}
+          onClick={post}
+        >
           {INVITE_WORDS.post}
         </HudButton>
-        <HudButton kind="secondary" size="sm" icon="copy" busy={waiting} onClick={copy}>
+        <HudButton
+          kind="secondary"
+          size="sm"
+          icon="copy"
+          busy={waiting}
+          disabled={link.code === undefined}
+          onClick={copy}
+        >
           {copied === "copied" ? INVITE_WORDS.copied : INVITE_WORDS.copy}
         </HudButton>
       </span>

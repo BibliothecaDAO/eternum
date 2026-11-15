@@ -24,6 +24,12 @@ export function raceScenario(finished = false): LabScenario {
       key: store.wireKeyOf("AspectMembers", { game_id: 1, aspect: 1 }) ?? "0xa501",
       value: { game_id: 1, aspect: 1, members: homes.length },
     },
+    // A daily quest on the day banner, which carries the Aspect's bane bar.
+    {
+      model: "QuestRules",
+      key: "0xa505",
+      value: { game_id: 1, base_counts: [1, 1, 1, 1, 1, 2, 15], labor: 1000, essence: 1500, bonus_percent: 150 },
+    },
     { model: "AltarBar", key: "0xa502", value: { game_id: 1, aspect: 1, charge: 300 } },
     { model: "TriumphDay", key: "0xa503", value: { game_id: 1, aspect: 1, stage: 1, day: 1 } },
     { model: "TriumphDay", key: "0xa504", value: { game_id: 1, aspect: 1, stage: 2, day: 1 } },
