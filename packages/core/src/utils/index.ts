@@ -42,6 +42,7 @@ export * from "./map-center";
 export * from "./production-output";
 
 export * from "./frontier-beast";
+export * from "./frontier-beast-band";
 
 export * from "./ruins";
 
