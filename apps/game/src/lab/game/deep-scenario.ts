@@ -24,7 +24,7 @@ export const deepScenario = (): LabScenario => {
   const tick = Math.floor(startsAt / tickSeconds);
   const slot = store.require("ArmySlot", { game_id: 1, structure_id: army.owner, epoch: 0n, slot: 0 });
   const at = store.entityOccupancy(1, SPIRE_ARMY)!;
-  const [allyHome, allyArmy, fieldAlly] = [9n, 301n, 302n];
+  const [allyHome, allyArmy, fieldAlly] = [9n, 301n, 399n];
   const local = {
     foundation: { x: 10, y: 25, alt: false },
     quarry: { x: 25, y: 25, alt: false },
