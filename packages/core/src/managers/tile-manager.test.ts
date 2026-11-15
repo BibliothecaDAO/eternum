@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import { OccupiedSpaceError, TileManager } from "../index";
 import type { NativeFactStore } from "../client/native-fact-store";
+import { nativeResearchConstants as research } from "../../../../contracts/l3/world-native/schema/client.gen";
 import { BUILDINGS_CENTER, BuildingType, type GameplayAccount, type SystemCalls } from "@bibliothecadao/types";
 
 const setup = (occupied = false) => {
@@ -44,11 +45,11 @@ describe("building occupancy errors", () => {
   });
 });
 
-it("supplies the realm model with the highest side tier, from Common through Legendary", () => {
-  for (const [category, offset] of [
-    [37, 0n],
-    [25, 7n],
-    [28, 14n],
+it("uses the highest production side for Farms and Workshops and the Charge tier for Barracks", () => {
+  for (const [category, offset, independentSides] of [
+    [research.FARM, 0n, true],
+    [research.WORKSHOP, 7n, true],
+    [research.BARRACKS, 14n, false],
   ] as const) {
     for (let a = 0; a <= 5; a++)
       for (let b = 0; b <= 5; b++) {
@@ -62,7 +63,9 @@ it("supplies the realm model with the highest side tier, from Common through Leg
                 : undefined,
         } as unknown as NativeFactStore;
         const manager = TileManager.forStructure(store, {} as SystemCalls, 1);
-        expect(manager.existingBuildings()).toEqual([expect.objectContaining({ category, tier: Math.max(1, a, b) })]);
+        expect(manager.existingBuildings()).toEqual([
+          expect.objectContaining({ category, tier: independentSides ? Math.max(1, a, b) : Math.max(1, a) }),
+        ]);
       }
   }
 });
