@@ -97,7 +97,7 @@ beforeEach(() => {
   game.learned = 0n;
   game.progress.xp = 12;
   game.progress.common_points = 0;
-  troopsFact.category = "Knight";
+  army.troopsFact = { category: "Knight" };
 });
 
 afterEach(() => {
@@ -119,7 +119,7 @@ it("opens the army's panel from its row on a desktop, whether it holds a point",
 });
 
 it("shows the army's figures, then its level-ups one step on, and buys the chosen level with spend_skill_point", async () => {
-  troopsFact.category = "Paladin";
+  army.troopsFact = { category: "Paladin" };
   game.progress.xp = 260;
   game.progress.common_points = 1;
   useUIStore.setState((state) => ({ entityActions: { ...state.entityActions, selectedEntityId: 12 } }));
