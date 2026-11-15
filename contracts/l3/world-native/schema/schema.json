@@ -13919,6 +13919,10 @@
         {
           "name": "amount",
           "type": "core::integer::u128"
+        },
+        {
+          "name": "supply_post",
+          "type": "core::option::Option::<core::integer::u64>"
         }
       ]
     },
@@ -14465,5 +14469,5 @@
       ]
     }
   },
-  "identity": "4d58b309a53408c9717c6cbce3505992e5826b429125b6fef0c1dc2ef85972b6"
+  "identity": "643ee190513c026a1196b9bc92bf43b0e2024f522e039f83a244c6a6b1d98b2d"
 }

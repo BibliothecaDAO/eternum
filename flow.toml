@@ -94,7 +94,7 @@ source = "contracts/l3/check-native-plan.sh"
 kinds = "gate-prelude gate-vrf gate-world gate-drift gate-events test-capture test-combat test-discovery test-economy test-lifecycle test-registration test-resources test-world"
 
 [land]
-kinds = "sizes gate-prelude gate-vrf gate-world gate-events gate-drift test-capture test-combat test-discovery test-economy test-lifecycle test-registration test-resources test-world test-native-plan workflow-parity ci-static-knip ci-client-test-client ci-herald-history-and-stream ci-services-workers ci-portal-portal ci-native-service-class-sizes-game_ledger ci-native-service-class-sizes-realms_vrf_verifier ci-native-player-account ci-native-native-deployer ci-native-native-stamping ci-native-native-provider ci-runtime-offline-tests-runner ci-runtime-offline-tests-harness ci-runtime-offline-tests-sandbox-proxy ci-amm-test-ammv2 ci-collectibles-test-collectibles ci-mmr-test-mmr ci-season_pass-test-season-pass ci-contract_scripts-runtime-tests ci-docs-docs"
+kinds = "sizes gate-prelude gate-vrf gate-world gate-events gate-drift test-capture test-combat test-discovery test-economy test-lifecycle test-registration test-resources test-world test-native-plan workflow-parity ci-static-knip ci-client-test-client ci-herald-history-and-stream ci-services-workers ci-portal-portal ci-native-service-class-sizes-game_ledger ci-native-service-class-sizes-realms_vrf_verifier ci-native-player-account ci-native-native-deployer ci-native-native-stamping ci-native-native-provider ci-runtime-offline-tests-runner ci-runtime-offline-tests-harness ci-runtime-offline-tests-sandbox-proxy ci-amm-test-ammv2 ci-collectibles-test-collectibles ci-mmr-test-mmr ci-season_pass-test-season-pass ci-contract_scripts-runtime-tests ci-docs-docs playtest-supply-post"
 forbid = "co-authored-by|claude|anthropic|codex|openai|generated with|session"
 
 [kind.test-client-retirement]
@@ -343,6 +343,7 @@ cmd = "bash contracts/l3/test-native.sh --package world_tests_resources* fixture
 estimate_gb = 9
 
 [kind.playtest-supply-post]
+paths = "apps/game/src/ui/features/frontier/army/reinforce apps/game/src/ui/features/frontier/sites/site-receipt apps/game/src/ui/features/frontier/sites/supply-post apps/game/src/lab/game/supply-post apps/game/src/lab/game/reinforce apps/game/scripts/client-playtest/steps.mjs packages/core/src/utils/expeditions.ts packages/provider/src/index.ts contracts/l3/world-native/src/troop_management.cairo"
 cmd = 'cp /home/djizus/projects/eternum-lanes/showcase/apps/game/.env.local apps/game/.env.local && pnpm run build:packages && exec 8>"${FLOW_JOB%/running/*}/playtest-port-4192.lock" && flock 8 && for viewport in 1920x1080 390x844; do pnpm --dir apps/game playtest --port 4192 --steps lab-supply-post --iterations 1 --renderer-modes webgpu-force-webgl --viewport "$viewport" --out "$FLOW_TMP/playtest/$viewport" || exit $?; done'
 estimate_gb = 6
 

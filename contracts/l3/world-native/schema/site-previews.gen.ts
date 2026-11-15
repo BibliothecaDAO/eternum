@@ -14,17 +14,19 @@ export function previewSiteReward(
   category: number,
   initialGuardCount: bigint,
   depth: number,
+  wraith: boolean,
 ): { resourceType: number; amount: bigint } | null {
+  if (wraith) return null;
   if (category === 7) return { resourceType: 23, amount: depthReward(initialGuardCount / 2n, depth) };
-  if (category === 11) return { resourceType: 23, amount: depthReward(initialGuardCount / 4n, depth) };
+  if (category === 11) return { resourceType: 35, amount: depthReward(initialGuardCount * 4n, depth) };
   if (category === 9) return { resourceType: 38, amount: depthReward(initialGuardCount * 3n, depth) };
   return null;
 }
 
-export function previewSiteClearXp(initialGuardCount: bigint, depth: number): number {
+export function previewSiteClearXp(initialGuardCount: bigint, depth: number, wraith: boolean): number {
   const xp = depthReward(integerSqrt((initialGuardCount / 1000000000n) * 25n) / 2n, depth);
   if (xp > 0xffff_ffffn) throw new Error("Site clear XP exceeds u32");
-  return Number(xp);
+  return Number(xp) * (wraith ? 3 : 1);
 }
 
 function depthReward(amount: bigint, depth: number): bigint {
