@@ -64,10 +64,12 @@ pub fn deployed(d: Deployment, game_id: u32, aspect: u8, count: u128) -> Explore
 pub fn descend(d: Deployment, key: ExplorerKey) {
     let game_id = key.game_id;
     let home = army(d, key).owner;
-    let learned = interact_with_state(d.games, || crate::research::tier(
-        crate::logic::research::learned(ResourceKey { game_id, entity_id: home }),
-        crate::research::ROW_DEPTH,
-    ));
+    let learned = interact_with_state(
+        d.games,
+        || crate::research::tier(
+            crate::logic::research::learned(ResourceKey { game_id, entity_id: home }), crate::research::ROW_DEPTH,
+        ),
+    );
     let depth_budget = interact_with_state(
         d.games,
         || {
