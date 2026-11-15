@@ -122,7 +122,7 @@ it("does not offer allied sites, beasts, a realm without lore, or an army alread
 it("does not promise a site whose last rival guard expires before the army can clear it", () => {
   const tiny = fixture([400]);
   const army = tiny.store.require("ExplorerTroops", { game_id: 1, explorer_id: 201 });
-  tiny.change("ExplorerTroops", { game_id: 1, explorer_id: 201 }, { troops: { ...army.troops, count: 1n } });
+  tiny.change("ExplorerTroops", { game_id: 1, explorer_id: 201 }, { troops: { ...army.troops, count: BigInt(RESOURCE_PRECISION) } });
   expect(tiny.plan()).toEqual([]);
 });
 
