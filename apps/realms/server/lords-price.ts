@@ -5,7 +5,7 @@ const SECONDS_PER_DAY = 86_400;
 const RETRY_MINUTES = 10;
 
 /** LORDS's price in dollars, from the market; throws when the market cannot say. */
-export type LordsPriceReader = () => Promise<number>;
+type LordsPriceReader = () => Promise<number>;
 
 /** The market's LORDS price in dollars (CoinGecko, as the comeback email reads it). */
 export const marketLordsPrice =
@@ -21,7 +21,7 @@ export const marketLordsPrice =
   };
 
 /** The price the shop quotes: dollars a LORDS, the day it was read for and when. */
-export interface LordsPrice {
+interface LordsPrice {
   usd: number;
   day: number;
   readAt: number;
