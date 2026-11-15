@@ -10,7 +10,7 @@ export interface FightSide {
 }
 
 /** How a fight ended, from the troops each side kept: one side wiped, both standing, or both wiped. */
-export type FightOutcome = "attacker" | "defender" | "standoff" | "mutual";
+type FightOutcome = "attacker" | "defender" | "standoff" | "mutual";
 
 /** A fight in the Deep between two players' armies that one of the player's Aspect's members was in, from Herald's battle history. */
 export interface AspectFight {
@@ -26,7 +26,7 @@ export interface AspectFight {
 export const wipedOut = (side: FightSide): boolean => side.after === 0;
 
 /** The outcome as the day log reads a fight: by the troops each side kept, never by an owner id the emitter fills. */
-export const outcomeOf = (attacker: Pick<FightSide, "after">, defender: Pick<FightSide, "after">): FightOutcome =>
+const outcomeOf = (attacker: Pick<FightSide, "after">, defender: Pick<FightSide, "after">): FightOutcome =>
   attacker.after === 0 && defender.after === 0
     ? "mutual"
     : defender.after === 0
@@ -44,7 +44,7 @@ function sideOf(store: NativeFactStore, game_id: number, home: bigint, report: R
 }
 
 /** A battle between two players' armies on a tile of the Deep (a neutral beast's owner is 0). */
-export const isPlayerDeepFight = (spacing: number, { value }: Pick<HeraldHistoryEvent, "value">): boolean => {
+const isPlayerDeepFight = (spacing: number, { value }: Pick<HeraldHistoryEvent, "value">): boolean => {
   const { x, y, alt } = value.coord as { x: unknown; y: unknown; alt: boolean };
   return (
     isDeepTile(spacing, { col: Number(x), row: Number(y), alt }) &&
@@ -54,7 +54,7 @@ export const isPlayerDeepFight = (spacing: number, { value }: Pick<HeraldHistory
 };
 
 /** One page of Herald's battle history, newest first, and how many battles it holds in all. */
-export type BattlePage = { items: readonly HeraldHistoryEvent[]; total: number };
+type BattlePage = { items: readonly HeraldHistoryEvent[]; total: number };
 
 /**
  * The newest battles until `want` of them are player fights in the Deep, or the history ends: the filter runs before the

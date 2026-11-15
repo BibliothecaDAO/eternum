@@ -2,7 +2,7 @@ import { expect, it } from "vitest";
 import type { HeraldHistoryEvent } from "@bibliothecadao/eternum/game-sync";
 import type { NativeFactStore } from "@bibliothecadao/eternum/game-client";
 import { RESOURCE_PRECISION } from "@bibliothecadao/types";
-import { aspectFights, outcomeOf, readDeepFightWindow, wipedOut } from "./aspect-feed";
+import { aspectFights, readDeepFightWindow, wipedOut } from "./aspect-feed";
 
 const SPACING = 1024;
 const DEEP = { x: 512, y: 3584 };
@@ -64,7 +64,6 @@ it("tells each fight by the troops each side kept, whatever its emitter wrote as
   expect(wins!.defender).toMatchObject({ aspect: "Harmony", before: 60, after: 0 });
   expect(wipedOut(wins!.defender)).toBe(true);
   expect(wipedOut(wins!.attacker)).toBe(false);
-  expect(outcomeOf({ after: 0 }, { after: 0 })).toBe("mutual");
 });
 
 it("leaves out a site's neutral beast, a fight outside the Deep and a fight it cannot name, and does not throw", () => {
