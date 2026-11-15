@@ -4298,7 +4298,7 @@ const DEEP_JOIN_STEPS = [
     settleMs: 0,
     play: async ({ browser, extraScreenshot }) => {
       // With the field army still picked, each site is visited and pressed as a player does: the camera brought to it,
-      // its plate and model in the frame, then a right-click (desktop) or tap (phone) on the model opens its card.
+      // its plate and model in the frame, then a click (desktop) or tap (phone) on the model selects its hex and opens its card.
       // The Quarry comes last, so the camera ends where the steps after this one expect it.
       const visits = [];
       for (const site of [
@@ -4310,10 +4310,7 @@ const DEEP_JOIN_STEPS = [
         await sleep(HOVER_SETTLE_MS);
         const before = browser.read(siteState(site));
         extraScreenshot(`site-${name.toLowerCase()}`);
-        if (before.token && before.inView) {
-          if (onADesktop()) browser.rightClick(before.token);
-          else browser.tap(before.token);
-        }
+        if (before.token && before.inView) browser.tap(before.token);
         const opened = await readUntil(
           () => browser.read(siteState(site)),
           (state) => state.sheet === name,
