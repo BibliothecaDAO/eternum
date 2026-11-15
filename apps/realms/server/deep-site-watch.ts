@@ -7,7 +7,7 @@ import {
 } from "@bibliothecadao/eternum/game-client";
 import { dayOf, expeditionDepth, readExpeditionRules } from "@bibliothecadao/eternum/expeditions";
 import { resolveExplorerCombatTroops, STAMINA_MODELS } from "@bibliothecadao/eternum/troop-stamina";
-import { forecastFight, mapCenter, researchedDepth, type CombatRules } from "@bibliothecadao/eternum";
+import { ARMY_CHARGE_MODELS, openingChargeForTarget, forecastFight, mapCenter, researchedDepth, type CombatRules } from "@bibliothecadao/eternum";
 
 export interface DeepSiteWatch {
   gameId: number;
@@ -114,13 +114,18 @@ function clearsEveryGuard(
 ): boolean {
   let attacker = resolveExplorerCombatTroops(store, army, timestamp);
   if (!attacker) throw new Error("Deep alert is missing the attacker's combat facts");
+  const combat = store.get("ArmyCombat", { game_id: army.game_id, explorer_id: army.explorer_id });
+  if (!combat) throw new Error("Deep alert is missing the attacker's Charge fact");
+  let lastTarget = combat.last_target;
   for (const guard of guards) {
     const defender = resolveExplorerCombatTroops(store, guard.army, timestamp);
     if (!defender) throw new Error("Deep alert is missing a guard's combat facts");
+    const chargePercent = openingChargeForTarget({ ...combat, last_target: lastTarget }, guard.army.explorer_id);
     const fight = forecastFight(
       attacker,
       defender,
       {
+        chargePercent,
         timestamp,
         attackDistance: 1,
         attackerBiome: BiomeType.Underground,
@@ -134,6 +139,7 @@ function clearsEveryGuard(
     );
     if (fight.outcome !== "wins") return false;
     attacker = fight.attacker;
+    lastTarget = guard.army.explorer_id;
   }
   return true;
 }
@@ -158,7 +164,7 @@ export async function readDeepSiteWatches(
   const snapshot = await fetchHeraldGameSnapshot(
     { url: shardUrl },
     player.gameId,
-    [...STAMINA_MODELS, "PlayerEntry", "RealmKnowledge", "ArmyRelicEffect", "ChestRules", "DeepSite", "Guard"],
+    [...STAMINA_MODELS, ...ARMY_CHARGE_MODELS, "PlayerEntry", "RealmKnowledge", "ArmyRelicEffect", "ChestRules", "DeepSite", "Guard"],
     player.actor,
   );
   if (BigInt(snapshot.game_id) !== BigInt(player.gameId)) throw new Error("Site watch read another game");

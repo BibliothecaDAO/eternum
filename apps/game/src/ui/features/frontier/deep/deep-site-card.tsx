@@ -11,7 +11,7 @@ import { requestOrderAt } from "@/three/scenes/worldmap-order-request";
 import { costLine } from "@/ui/design-system/kit/price-faces";
 import { staminaShortfall } from "@/ui/design-system/kit/reasons";
 import { toast } from "@/ui/features/event-feed/notify";
-import { configManager, getStructureName, journeyDistance } from "@bibliothecadao/eternum";
+import { ARMY_CHARGE_MODELS, configManager, getStructureName, journeyDistance } from "@bibliothecadao/eternum";
 import {
   deepArmyLife,
   readDeepSites,
@@ -20,13 +20,17 @@ import {
   type DeepSiteView as Site,
   type NativeFactStore,
 } from "@bibliothecadao/eternum/game-client";
-import { aspects, deepSites, formatDuration, RESOURCE_PRECISION } from "@bibliothecadao/types";
+import { BiomeType, aspects, deepSites, formatDuration, RESOURCE_PRECISION } from "@bibliothecadao/types";
 import { isCovered, useArmyStamina, useOrderAt } from "../hud/army-order";
 import { useApproachTile } from "../sites/approach";
+import { readDeepSiteFight } from "../sites/site-card-plan";
+import { STAMINA_MODELS } from "@bibliothecadao/eternum/troop-stamina";
 import { useSelectedOwnArmy } from "../sites/selected-army";
 import { DeepSiteView, type DeepBlock, type DeepGuard, type DeepOrder, type DeepTickPay } from "./deep-site-view";
 
 const MODELS = [
+  ...ARMY_CHARGE_MODELS,
+  ...STAMINA_MODELS,
   "DeepSite",
   "DeepGuard",
   "DeepArmy",
@@ -118,6 +122,9 @@ export function DeepSiteCard({ site, onClose }: { site: Site; onClose: () => voi
       site={catalog.position}
       pay={tickPay(setup.store, game_id, site, selected)}
       guard={guardView(setup.store, game_id, site, selected, now)}
+      fight={verb === "attack" && selected
+        ? readDeepSiteFight(setup.store, site, { ...selected, biome: BiomeType.Underground, timestamp: now })
+        : undefined}
       order={order}
       onClose={onClose}
     />

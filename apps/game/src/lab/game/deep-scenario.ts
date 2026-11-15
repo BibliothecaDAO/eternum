@@ -59,6 +59,7 @@ export const deepScenario = (): LabScenario => {
     { model: "HomeAspect", key: "0xdee2", value: { game_id: 1, home: String(allyHome), aspect: 1 } },
     { model: "Structure", key: "0xdee3", value: wire({ ...home, entity_id: allyHome, owner: "0x222" }) },
     { model: "ExplorerTroops", key: "0xdee4", value: wire({ ...army, explorer_id: allyArmy, owner: allyHome }) },
+    { model: "ArmyCombat", key: "0xded4", value: wire({ game_id: 1, explorer_id: allyArmy, charge: 0, last_target: 0 }) },
     { model: "ArmyDay", key: "0xdee5", value: { game_id: 1, explorer_id: String(allyArmy), day: "0" } },
     { model: "DeepArmy", key: "0xdee6", value: { game_id: 1, explorer_id: String(allyArmy), last_tick: String(tick) } },
     { model: "DeepArmy", key: "0xdee7", value: { game_id: 1, explorer_id: SPIRE_ARMY, last_tick: String(tick) } },

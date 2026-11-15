@@ -258,6 +258,14 @@ export const snapshot = (
       ].filter(({ value }) => owner === null || BigInt(STRUCTURE_OWNERS.get(value.structure_id)!) === BigInt(owner)),
     },
     {
+      model: "ArmyCombat",
+      rows: [
+        ...(army ? [armyCombatRow(ARMY)] : []),
+        ...(second ? [armyCombatRow(SECOND_ARMY)] : []),
+        ...(neighbour ? [armyCombatRow(NEIGHBOUR_ARMY)] : []),
+      ],
+    },
+    {
       model: "ArmyProgress",
       rows: [
         ...(army ? [armyProgressRow(ARMY, HOME)] : []),
@@ -305,6 +313,7 @@ export function siteSnapshot(
   );
   put("ArmySlot", [armySlotRow(ARMY, HOME, bar), armySlotRow(NEIGHBOUR_ARMY, NEIGHBOUR_HOME, bar)]);
   put("ArmyProgress", [armyProgressRow(ARMY, HOME), armyProgressRow(NEIGHBOUR_ARMY, NEIGHBOUR_HOME)]);
+  put("ArmyCombat", [armyCombatRow(ARMY), armyCombatRow(NEIGHBOUR_ARMY)]);
   put(
     "ArmyDay",
     [ARMY, NEIGHBOUR_ARMY].map((explorer_id) => row(explorer_id, { explorer_id, day: TODAY })),
@@ -420,6 +429,11 @@ const armyRow = (explorerId: number, home: number, _army: ArmyState, slot = 0) =
       stamina: { Slot: slot },
     },
   },
+});
+
+const armyCombatRow = (explorerId: number) => ({
+  key: `0x${explorerId.toString(16)}`,
+  value: { game_id: GAME_ID, explorer_id: explorerId, charge: 0, last_target: 0 },
 });
 
 const armyProgressRow = (explorerId: number, home: number) => ({

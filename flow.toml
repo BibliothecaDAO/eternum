@@ -179,7 +179,7 @@ cmd = "bash contracts/l3/test-native.sh --package world_tests_lifecycle* ::tests
 estimate_gb = 9
 
 [kind.test-deep-alerts]
-cmd = "pnpm run build:packages && pnpm --dir apps/realms typecheck && pnpm --dir packages/notifications test && pnpm --dir packages/core test src/sync/subscription-scope.test.ts && (cd apps/herald && pnpm exec vitest run src/game-subscription.test.ts src/deep-site-watch.test.ts) && pnpm --dir apps/game test src/ui/features/frontier/deep/deep-site-alert.test.ts src/ui/features/frontier/deep/deep-site-card.test.tsx src/shell/profile/notifications.test.tsx src/pwa && pnpm --dir apps/realms test server/shard-notifier.test.ts -t 'Deep site opportunity'"
+cmd = "pnpm run build:packages && pnpm --dir apps/realms typecheck && pnpm --dir packages/notifications test && pnpm --dir packages/core test src/sync/subscription-scope.test.ts && (cd apps/herald && pnpm exec vitest run src/game-subscription.test.ts src/deep-site-watch.test.ts) && pnpm --dir apps/game test src/ui/features/frontier/deep/deep-site-alert.test.ts src/ui/features/frontier/deep/deep-site-card.test.tsx src/shell/profile/notifications.test.tsx src/pwa && pnpm --dir apps/realms test server/shard-notifier.test.ts server/deep-site-watch.test.ts -t 'Deep site opportunity'"
 estimate_gb = 5
 
 [kind.playtest-banes]

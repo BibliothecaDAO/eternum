@@ -13,6 +13,11 @@ export function openingChargePercent(
   if (rules.day_unit_seconds === 0) return 0;
   const combat = store.get("ArmyCombat", { game_id: army.game_id, explorer_id: army.explorer_id });
   if (!combat) return undefined;
+  return openingChargeForTarget(combat, target);
+}
+
+/** A sequential forecast advances its last target after each guard without changing native facts. */
+export function openingChargeForTarget(combat: NativeRows["ArmyCombat"], target: bigint): number {
   return combat.last_target === target ? 0 : chargePercent(combat.charge);
 }
 

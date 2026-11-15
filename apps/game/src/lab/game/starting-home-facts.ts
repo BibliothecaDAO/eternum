@@ -96,6 +96,7 @@ function startingArmyRows(
   };
   return [
     { model: "ExplorerTroops", key: `0xb20${slot}`, value: wire(army) },
+    { model: "ArmyCombat", key: `0xb25${slot}`, value: wire({ game_id: 1, explorer_id: id, charge: 0, last_target: 0 }) },
     { model: "ArmyDay", key: `0xb21${slot}`, value: wire({ game_id: 1, explorer_id: id, day: 0 }) },
     {
       model: "ArmySlot",

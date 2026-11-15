@@ -15,10 +15,11 @@ import {
 import {
   readSiteReward,
   safeInteger,
+  type DeepSiteView,
   type NativeFactStore,
   type NativeRows,
 } from "@bibliothecadao/eternum/game-client";
-import { resolveExplorerCombatTroops, resolveExplorerTroops } from "@bibliothecadao/eternum/troop-stamina";
+import { inlineTroops, resolveExplorerCombatTroops, resolveExplorerTroops } from "@bibliothecadao/eternum/troop-stamina";
 import {
   type BiomeType,
   getLayeredAttackDistance,
@@ -150,6 +151,33 @@ export const readArmyCard = (
         : undefined,
   };
 };
+
+export interface DeepSiteFight {
+  army: number;
+  defender: number;
+  result: SiteFight | undefined;
+}
+
+/** One Deep attack faces the highest living guard army, or the site's beast. */
+export function readDeepSiteFight(
+  store: NativeFactStore,
+  site: DeepSiteView,
+  attack: SiteAttack,
+): DeepSiteFight | undefined {
+  const first = site.guards[0];
+  const troops = first
+    ? resolveExplorerCombatTroops(store, first.army, attack.timestamp)
+    : site.guard && site.beastTroops > 0n
+      ? inlineTroops(site.guard.troops, store.require("SliceRules", { game_id: attack.army.game_id }))
+      : undefined;
+  if (!troops || troops.count === 0n) return undefined;
+  const tile = { col: site.position.x, row: site.position.y, alt: site.position.alt };
+  return {
+    army: Number(attack.army.troops.count / PRECISION),
+    defender: Number(troops.count / PRECISION),
+    result: attackNow(store, troops, tile, attack, true, first?.army.explorer_id ?? site.id),
+  };
+}
 
 /** A capped reward fits only the room left after the home's accrued production settles. */
 const fittingPayout = (

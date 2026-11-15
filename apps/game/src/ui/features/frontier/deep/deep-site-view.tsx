@@ -8,9 +8,12 @@ import {
   HudSheet,
   HudWindowFoot,
 } from "@/ui/design-system/kit/hud-elements";
-import { DEEP_WORDS, MOVE } from "@/ui/design-system/kit/words";
+import { ARMY, DEEP_WORDS, MOVE, TROOPS } from "@/ui/design-system/kit/words";
 import { deepSites, formatExact } from "@bibliothecadao/types";
 import { nativeRuleConstants } from "../../../../../../../contracts/l3/world-native/schema/client.gen";
+
+import { FightSide } from "../sites/fight-side";
+import type { DeepSiteFight } from "../sites/site-card-plan";
 
 import { DEEP_SITE_FACES } from "./deep-site-faces";
 
@@ -56,6 +59,7 @@ export interface DeepSiteProps {
   site: (typeof deepSites)[number]["position"];
   pay: DeepTickPay | null;
   guard: DeepGuard;
+  fight?: DeepSiteFight;
   /** The order the selected army has, or why it has none. */
   order: DeepOrder | DeepBlock;
   onClose: () => void;
@@ -73,7 +77,7 @@ const siteName = (position: DeepSiteProps["site"]) => deepSites.find((each) => e
  * A Deep site's card: who it serves and what a tick held pays, who guards it (its beast, or its four slots with each
  * army's troops, how long they last and its share), then the selected army's order or why it has none.
  */
-export const DeepSiteView = ({ site, pay, guard, order, onClose }: DeepSiteProps) => {
+export const DeepSiteView = ({ site, pay, guard, fight, order, onClose }: DeepSiteProps) => {
   const face = DEEP_SITE_FACES[site];
   return (
     <HudSheet label={siteName(site)} onClose={onClose}>
@@ -84,10 +88,23 @@ export const DeepSiteView = ({ site, pay, guard, order, onClose }: DeepSiteProps
           {pay && <TickPay pay={pay} />}
         </div>
       </div>
+      {fight && <FightPreview fight={fight} />}
       <GuardRows guard={guard} />
       <OrderFoot order={order} />
       {typeof order === "object" && order.kind === "short" && <HudNotice tone="warn" line={order.line} />}
     </HudSheet>
+  );
+};
+
+const FightPreview = ({ fight }: { fight: DeepSiteFight }) => {
+  const result = fight.result && !("refused" in fight.result) ? fight.result : undefined;
+  return (
+    <div className="flex gap-2">
+      <FightSide label={ARMY} mark={null} before={fight.army}
+        kept={result && fight.army - result.troopsLost} side="ours" />
+      <FightSide label={TROOPS} mark={null} before={fight.defender}
+        kept={result?.guardLeft} side="theirs" />
+    </div>
   );
 };
 
