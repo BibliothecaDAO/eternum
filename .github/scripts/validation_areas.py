@@ -50,15 +50,8 @@ AREAS = {
         "apps/android/twa-manifest.json",
         # The other surfaces the brand check (apps/game/src/brand/brand.test.ts) reads, and what the docs config reads.
         "README.md",
-        "apps/game-docs/docs/styles.css",
-        "apps/game-docs/docs/pages/index.mdx",
-        # Each game's How to play guide, which apps/game/src/ui/modules/how-to-play.test.tsx requires to be a page.
-        "apps/game-docs/docs/pages/frontier/index.mdx",
-        "apps/game-docs/docs/pages/blitz/index.mdx",
-        "apps/game-docs/docs/brand.gen.json",
-        "apps/game-docs/vocs.config.ts",
-        "apps/game-docs/docs/utils/paths.ts",
-        "apps/game-docs/vite-plugin-llm-txt.mjs",
+        # The client artifact emits its documentation export from the current pages and renderer.
+        "apps/game-docs/**",
         "apps/status/public/index.html",
         # The iOS app's bundle id, which src/app-hosting.test.ts holds the site's apple-app-site-association to.
         "apps/ios/capacitor.config.ts",

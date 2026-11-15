@@ -312,7 +312,6 @@ const loadBalanceSources = async () => {
     const { previewRiftGuardBound } = await server.ssrLoadModule(
       join(here, "../../../contracts/l3/world-native/schema/site-previews.gen.ts"),
     );
-    const { llmTxtFile } = await server.ssrLoadModule(join(here, "../docs/utils/paths.ts"));
     const { PAYOUT_WALLET_CHANGE_SECONDS } = await server.ssrLoadModule(
       join(here, "../../../packages/value-ledger/src/payout-wallet.ts"),
     );
@@ -328,7 +327,6 @@ const loadBalanceSources = async () => {
       firstRelicId: ResourcesIds.StaminaRelic1,
       frontierPreset,
       previewRiftGuardBound,
-      llmTxtFile,
       ledger,
       chests,
       payoutWalletChangeSeconds: PAYOUT_WALLET_CHANGE_SECONDS,
@@ -468,13 +466,12 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
     rules,
     firstRelicId,
     frontierPreset,
-    llmTxtFile,
     ledger,
     chests,
     previewRiftGuardBound,
     payoutWalletChangeSeconds,
   } = await loadBalanceSources();
-  const llm = readFileSync(llmTxtFile, "utf8");
+  const llm = readFileSync(join(dist, "llm.txt"), "utf8");
   const phrases = [
     ...expectedPhrases(configOf("blitz"), configOf("frontier"), frontierPreset, ledger, chests, previewRiftGuardBound),
     ...payoutWalletPhrases(payoutWalletChangeSeconds),
