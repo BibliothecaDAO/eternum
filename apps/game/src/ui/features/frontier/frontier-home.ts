@@ -121,17 +121,6 @@ const homecomingByStock = (
   return returning;
 };
 
-/** Whole troops at home across every stock as the next deploy finds them; unknown while any stock is. */
-export const troopsAtHome = (
-  store: NativeFactStore,
-  realm: NativeRows["Structure"],
-  now: number,
-  tick: number,
-): number | undefined => {
-  const stocks = stocksAtNextDeploy(store, realm, now, tick);
-  return stocks && [...stocks.values()].reduce((sum, stock) => sum + stock.held + stock.fits, 0);
-};
-
 /**
  * What Homecoming returns at the realm's next deploy, in whole troops: what the armies whose day has ended send, and
  * what of it fits the troop stores. Unknown while any stock is.
