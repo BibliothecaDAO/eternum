@@ -732,14 +732,10 @@ fn spoils_doubles_numeric_clears_and_records_xp_but_keeps_ruin_relics() {
         };
         let units = super::army_activity::army(d, key).troops.count / RESOURCE_PRECISION;
         let stamina = preset.rules.troop_stamina_config;
-        for (resource, cost) in array![
-            (crate::resources::WHEAT, stamina.stamina_explore_wheat_cost),
-            (crate::resources::FISH, stamina.stamina_explore_fish_cost),
-        ] {
-            if cost != 0 {
-                world_test_support::tests::resource_commands::grant(d, home, resource, units * cost.into());
-            }
-        }
+        assert_eq!(stamina.stamina_explore_fish_cost, 0);
+        world_test_support::tests::resource_commands::grant(
+            d, home, crate::resources::WHEAT, units * stamina.stamina_explore_wheat_cost.into(),
+        );
         let relic = crate::army_relics::ArmyRelic { kind: crate::army_relics::RelicKind::Tome, rank: 1 };
         let expected = if category == crate::taxonomy::BEASTS_CATEGORY {
             crate::discovery::Discovery::Beasts
