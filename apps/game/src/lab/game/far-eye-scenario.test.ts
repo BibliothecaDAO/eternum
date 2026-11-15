@@ -10,11 +10,18 @@ import { installLabChain, LAB_GAME } from "./lab-chain";
 import { farEyeScenario } from "./far-eye-scenario";
 
 it("applies the Far-Eye command through the real fact decoder, including an initially empty Essence balance", async () => {
-  vi.stubGlobal("fetch", vi.fn(async () => Response.json({ shards: [] })));
+  vi.stubGlobal(
+    "fetch",
+    vi.fn(async () => Response.json({ shards: [] })),
+  );
   await installLabChain(farEyeScenario, Date.now());
   const span = encodeNativeCommand(nativeBindings.commandAbi, {
     kind: "ApplyRelic",
-    value: { entity_id: SPIRE_ARMY, relic_id: relicId({ kind: "FarEye", rank: 1 }), recipient: { kind: "ArmySlot", value: 0 } },
+    value: {
+      entity_id: SPIRE_ARMY,
+      relic_id: relicId({ kind: "FarEye", rank: 1 }),
+      recipient: { kind: "ArmySlot", value: 0 },
+    },
   });
   const errors = vi.spyOn(console, "error");
   vi.useFakeTimers();

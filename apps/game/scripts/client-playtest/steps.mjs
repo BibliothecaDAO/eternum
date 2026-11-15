@@ -354,7 +354,9 @@ const FAR_EYE_STEPS = [
       );
       return {
         answer,
-        panel: browser.read(`JSON.stringify(document.querySelector('[data-kit-sheet][aria-label^="Army "]')?.textContent ?? '')`),
+        panel: browser.read(
+          `JSON.stringify(document.querySelector('[data-kit-sheet][aria-label^="Army "]')?.textContent ?? '')`,
+        ),
       };
     },
     verify: ({ played }) =>
