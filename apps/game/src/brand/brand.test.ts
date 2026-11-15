@@ -40,10 +40,9 @@ function standaloneSurfaces(): string[] {
     path("../../index.html"),
     path("../../public/404.html"),
     path("../../public/offline.html"),
-    path("../../public/llm.txt"),
     path("../../../game-docs/vocs.config.ts"),
     path("../../../game-docs/docs/styles.css"),
-    path("../../../game-docs/docs/pages/index.mdx"),
+    ...sourcesUnder(path("../../../game-docs/docs/pages/")),
     path("../../../status/public/index.html"),
     path("../../../../packages/notifications/scripts/build-email-art.mjs"),
     path("../../../../packages/notifications/scripts/email-art-inputs.mjs"),
@@ -102,7 +101,7 @@ const NAMED_FILE = /\/(?:images\/logos|fonts)\/[\w.-]+/g;
 
 function sourcesUnder(dir: string): string[] {
   return readdirSync(dir, { recursive: true, encoding: "utf8" })
-    .filter((file) => /\.(ts|tsx|css|html)$/.test(file) && !file.endsWith("brand.test.ts"))
+    .filter((file) => /\.(ts|tsx|css|html|mdx)$/.test(file) && !file.endsWith("brand.test.ts"))
     .map((file) => `${dir}${file}`);
 }
 
