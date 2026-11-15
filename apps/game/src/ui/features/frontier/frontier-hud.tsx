@@ -63,7 +63,7 @@ import { NextOrderBar, OrderBar } from "./hud/order-bar";
 import { PickedArmy } from "./hud/picked-army";
 import { useArmySpireStatus } from "./spire-card";
 import { DailyQuest } from "./day/daily-quest";
-import { OpeningProvider } from "./opening/opening-context";
+import { OpeningProvider, usePartShown } from "./opening/opening-context";
 import { OpeningLineView } from "./opening/opening-line-view";
 import { useOpening } from "./opening/use-opening";
 import { useSiteAlertOffer } from "./opening/use-site-alert-offer";
@@ -180,6 +180,7 @@ const FrontierHudBody = ({
         },
   });
   const seasonRank = useSeasonRank();
+  const aspectsOpen = usePartShown("aspects");
   const layers = useMapLayers(rules, shown, visit ? null : realm);
   // The store card a ring or a plate opened, under the realm card on a desktop and under the strip on a phone.
   const [openStore, setOpenStore] = useState<CardStore | null>(null);
@@ -279,7 +280,7 @@ const FrontierHudBody = ({
 
   return desktop ? (
     <FrontierDesktop
-      season={{ rank: seasonRank, onOpen: () => setSurface("season") }}
+      season={aspectsOpen ? { rank: seasonRank, onOpen: () => setSurface("season") } : undefined}
       clock={<FrontierDayClock rules={rules} onOpenToday={() => setSurface("today")} />}
       worldTab={layers ? layerTab(layers) : undefined}
       realm={

@@ -126,6 +126,7 @@ export const FrontierPlaces = ({
 }) => {
   const unread = useUnreadImportantCount(surface === "feed");
   const researchOpen = usePartShown("research");
+  const aspectsOpen = usePartShown("aspects");
   const bubble = (to: HudSurface, icon: Parameters<typeof HudBubble>[0]["icon"], word: string, count?: number) => (
     <HudBubble
       key={to}
@@ -142,7 +143,7 @@ export const FrontierPlaces = ({
     <nav aria-label="Places" className="pointer-events-auto flex items-start gap-3">
       {research !== undefined && researchOpen && bubble("research", "research", RESEARCH, research ? 1 : undefined)}
       {bubble("feed", "chronicles", EVENTS_WORDS.feed, unread > 0 ? unread : undefined)}
-      {bubble("season", "victory", SEASON)}
+      {aspectsOpen && bubble("season", "victory", SEASON)}
     </nav>
   );
 };

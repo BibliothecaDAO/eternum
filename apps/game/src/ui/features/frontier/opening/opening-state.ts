@@ -17,3 +17,25 @@ export const openedMoments = (kept: ReadonlySet<string>, onState: readonly Openi
 /** The line to show now: the first reached moment, in the table's order, whose line the account has not seen. */
 export const nextLine = (opened: ReadonlySet<OpeningMoment>, seen: ReadonlySet<string>): OpeningMoment | null =>
   OPENING_MOMENTS.find((moment) => opened.has(moment) && !seen.has(moment) && moment in OPENING) ?? null;
+
+/**
+ * The account's progress as this render may read it: only the current account's counts, and only a signed-out player or
+ * an account whose service has answered is known. Another account's sets, or none yet, read as an empty account that is
+ * not known, so no line is told again and no earlier account's parts carry over.
+ */
+export function accountProgress(
+  owner: string | null,
+  store: {
+    owner: string | null;
+    status: "signed-out" | "loading" | "ready" | "error";
+    reached: ReadonlySet<string>;
+    seen: ReadonlySet<string>;
+  },
+): { reached: ReadonlySet<string>; seen: ReadonlySet<string>; known: boolean } {
+  const mine = store.owner === owner;
+  return {
+    reached: mine ? store.reached : new Set(),
+    seen: mine ? store.seen : new Set(),
+    known: owner === null || (mine && store.status === "ready"),
+  };
+}

@@ -588,6 +588,7 @@ export const OPENING_WORDS = {
     deep: (rules: OpeningRules) =>
       `Every tick (${formatAmount(rules.deepTick.tickSeconds)} seconds) here, each army loses ${formatAmount(rules.deepTick.lossPerTick)} troops. Hold a site to earn.`,
     bane: () => "A bane. Today's quest is the bane quest. Your Aspect ends the bane when enough members finish it.",
+    aspects: () => "Your Aspect races to build its hyperstructure. Its page shows where every Aspect stands.",
   },
   gotIt: "Got it",
   /** The offer that comes with the first Deep line: the site alert, off until the player turns it on. */

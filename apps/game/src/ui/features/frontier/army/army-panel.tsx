@@ -1,4 +1,5 @@
 import { SKILL_POINT_RANKS, type SkillPointChoice, type SkillPointRank } from "@bibliothecadao/eternum";
+import { OpeningPartGate } from "../opening/opening-context";
 import { DeepDrain, EtherealMark } from "../hud/army-token";
 import { formatExact, formatShort } from "@bibliothecadao/types";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
@@ -178,7 +179,9 @@ export const ArmyDetail = ({
           <AttributeRow key={attribute.key} attribute={attribute} onOpen={() => choose(attribute.key)} />
         ))}
       </div>
-      <XpBlock army={army} onLevelUp={() => setOpen(true)} />
+      <OpeningPartGate part="army-xp">
+        <XpBlock army={army} onLevelUp={() => setOpen(true)} />
+      </OpeningPartGate>
     </div>
   );
 };

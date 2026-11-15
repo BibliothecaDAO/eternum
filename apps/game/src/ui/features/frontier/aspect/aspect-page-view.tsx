@@ -124,12 +124,14 @@ const YourAspect = ({ own }: { own: OwnAspect }) => (
       ))}
     </div>
     {own.bar && (
-      <div data-aspect-bane className="flex flex-col gap-0.5">
-        <Muted>
-          {WORDS.baneBar}: {WORDS.baneCharge(own.bar.charge, own.bar.threshold)}
-        </Muted>
-        <HudMeter label={WORDS.baneBar} share={own.bar.charge / own.bar.threshold} />
-      </div>
+      <OpeningPartGate part="bane-row">
+        <div data-aspect-bane className="flex flex-col gap-0.5">
+          <Muted>
+            {WORDS.baneBar}: {WORDS.baneCharge(own.bar.charge, own.bar.threshold)}
+          </Muted>
+          <HudMeter label={WORDS.baneBar} share={own.bar.charge / own.bar.threshold} />
+        </div>
+      </OpeningPartGate>
     )}
     <Heading>{WORDS.members}</Heading>
     <div data-aspect-members className="flex flex-col gap-1">

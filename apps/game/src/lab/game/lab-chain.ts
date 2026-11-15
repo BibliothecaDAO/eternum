@@ -365,7 +365,28 @@ const signInLabPlayer = (wallet: string | undefined) => {
   identityClient.getSession = async () => session;
   identityClient.readDefaultWallet = async () => null;
   answerLabBuildOrders();
+  answerLabOpening();
   useIdentitySessionStore.getState().applySession(session);
+};
+
+/**
+ * The lab account's opening progress as its identity service keeps it: sets that only grow, kept for the tab (it outlives
+ * a reload, as the account's service outlives a page).
+ */
+const answerLabOpening = () => {
+  const key = "lab:opening";
+  identityClient.addOpeningProgress = async (additions) => {
+    const held = JSON.parse(sessionStorage.getItem(key) ?? '{"reached":[],"seen":[]}') as {
+      reached: string[];
+      seen: string[];
+    };
+    const next = {
+      reached: [...new Set([...held.reached, ...(additions.reached ?? [])])],
+      seen: [...new Set([...held.seen, ...(additions.seen ?? [])])],
+    };
+    sessionStorage.setItem(key, JSON.stringify(next));
+    return next;
+  };
 };
 
 /** A free lab home has no source to register, matching the relay's empty answer for an account with no holdings. */

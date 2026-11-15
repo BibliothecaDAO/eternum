@@ -59,7 +59,7 @@ import { ATTRIBUTE_MARKS } from "../research/research-tree";
 import { FRONTIER_STORES, madeStore, STORE_KINDS } from "../stores";
 import { usePartShown } from "../opening/opening-context";
 import { type BuildOption, readBuildOptions } from "./build-options";
-import { FIRST_BUILD } from "./first-build";
+import { disclosedBuildOptions } from "./first-build";
 import { type BuildTile, BuildView, type RoomAskChoices } from "./build-view";
 import { buildingIcon, buildingName } from "./building-names";
 
@@ -127,9 +127,13 @@ export const BuildSheet = ({
   // Until the first Barracks stands the sheet offers it alone: the list of buildings opens with it.
   const listOpen = usePartShown("building-list");
   const options = useMemo(() => {
-    const all = readBuildOptions(facts.store, realm, useSimpleCost, tick);
-    return listOpen ? all : all?.filter(({ category }) => category === FIRST_BUILD);
-  }, [realm, facts, tick, useSimpleCost, listOpen]);
+    const population = readRealmPopulation(facts.store, realmId);
+    return disclosedBuildOptions(
+      readBuildOptions(facts.store, realm, useSimpleCost, tick),
+      listOpen,
+      population && population.total - population.used,
+    );
+  }, [realm, realmId, facts, tick, useSimpleCost, listOpen]);
   const [picked, setPicked] = useState<BuildingType | null>(null);
   // Build pressed on the pick with no free population: the ask stands until the player answers or picks again.
   const [asking, setAsking] = useState(false);

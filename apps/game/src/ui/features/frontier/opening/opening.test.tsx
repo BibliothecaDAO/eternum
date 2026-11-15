@@ -60,6 +60,7 @@ describe("the interface that opens as you play", () => {
     expect(line("shrine-lore")).toContain("Your armies can now find shrines.");
     expect(line("deep")).toContain("Every tick (120 seconds) here, each army loses 200 troops. Hold a site to earn.");
     expect(line("bane")).toContain("A bane. Today's quest is the bane quest.");
+    expect(line("aspects")).toContain("Your Aspect races to build its hyperstructure.");
   });
 
   it("draws a gated part once its moment is reached, and every part outside the HUD's provider", () => {

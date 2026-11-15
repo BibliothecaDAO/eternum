@@ -16,6 +16,8 @@ export const OPENING = {
   "shrine-lore": { icon: "shrine", parts: [] },
   deep: { icon: "depth-3", parts: ["glory"] },
   bane: { icon: "flame", parts: ["bane-row"] },
+  // The Aspect's page opens with whichever comes first: the Deep, a bane on the Aspect or its first stage built.
+  aspects: { icon: "hyperstructure", parts: ["aspects"] },
 } as const satisfies Record<string, { icon: IconMeaning; parts: readonly string[] }>;
 
 export type OpeningMoment = keyof typeof OPENING;
