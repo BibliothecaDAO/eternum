@@ -146,7 +146,7 @@ const clearTheRuin = (chain: NativeFactStore, explorerId: bigint, player: string
     {
       model: "ExpeditionSite",
       key: chain.wireKeyOf("ExpeditionSite", { game_id: 1, entity_id: BigInt(SITE) })!,
-      value: wire({ ...site, clear: { explorer_id: explorerId, home_id: HOME, reward } }),
+      value: wire({ ...site, clear: { xp: siteClearXp(chain, site), explorer_id: explorerId, home_id: HOME, reward } }),
     },
     { model: "RuinRelic", key: chain.wireKeyOf("RuinRelic", { game_id: 1, entity_id: BigInt(SITE) })!, value: null },
     {

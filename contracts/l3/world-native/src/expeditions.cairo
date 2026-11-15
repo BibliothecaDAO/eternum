@@ -22,6 +22,7 @@ pub struct ExpeditionSite {
 
 #[derive(Copy, Drop, Serde, Debug, PartialEq, starknet::Store)]
 pub struct SiteClear {
+    pub xp: u32,
     pub explorer_id: u64,
     pub home_id: u64,
     pub reward: Option<crate::resources::ResourceAmount>,
@@ -34,6 +35,7 @@ pub trait IExpeditionSite<T> {
 
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]
 pub struct SitePayout {
+    pub xp: u32,
     pub structure_id: u64,
     pub explorer_id: u64,
     pub site_id: u64,

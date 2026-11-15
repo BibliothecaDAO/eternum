@@ -1,3 +1,4 @@
+import { GUARD_MODELS } from "@bibliothecadao/eternum/game-client";
 import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { useGoToStructure } from "@/hooks/helpers/use-navigate";
@@ -47,7 +48,7 @@ export const useStructureEntityDetail = ({ structureEntityId }: UseStructureEnti
   const facts = useNativeFacts([
     "GuildMember",
     "Guild",
-    "Guard",
+    ...GUARD_MODELS,
     "Hyperstructure",
     "HyperstructureProgress",
     "HyperstructureShares",

@@ -75,7 +75,7 @@ describe("the site-cleared moment", () => {
           {
             model: "ExpeditionSite",
             key: "0x72",
-            value: { ...site, clear: { explorer_id: 201n, home_id: 7n, reward } },
+            value: { ...site, clear: { xp: 0, explorer_id: 201n, home_id: 7n, reward } },
           },
           {
             model: "ResourceBalance",
@@ -142,7 +142,7 @@ describe("the site-cleared moment", () => {
         key: "0x72",
         value: {
           ...site,
-          clear: { explorer_id: 201n, home_id: 7n, reward: null },
+          clear: { xp: 0, explorer_id: 201n, home_id: 7n, reward: null },
         },
       },
     ]);

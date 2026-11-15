@@ -9,7 +9,7 @@ import { formatClockTime, formatShort } from "@bibliothecadao/types";
 
 import { readFeedStory, type ToldReading } from "./feed-reading";
 import { useStoryOpener } from "./story-feed-row";
-import { useSiteBeastMeaning, useSiteClearXp } from "./use-site-beast";
+import { useSiteBeastMeaning } from "./use-site-beast";
 
 const OUTCOME_TONES = { good: "text-hud-good", bad: "text-hud-bad", neutral: "text-hud-muted" } as const;
 
@@ -59,15 +59,14 @@ export const FeedLine = ({ story, own = false }: { story: ProcessedStoryEvent; o
           {reading.reward.amountText}
         </span>
       )}
-      {"clearOf" in reading && reading.clearOf !== undefined && <ClearXp site={reading.clearOf} />}
+      {"clearXp" in reading && reading.clearXp !== undefined && <ClearXp xp={reading.clearXp} />}
     </div>
   );
 };
 
 /** The XP a clear paid, at the row's end beside what it paid, as the site's receipt says it; none until it is known. */
-const ClearXp = ({ site }: { site: number }) => {
-  const xp = useSiteClearXp(site);
-  return xp === undefined ? null : (
+const ClearXp = ({ xp }: { xp: number }) => {
+  return (
     <span className="ui-feed-line__reward" data-feed-xp>
       {formatShort(xp, { signed: true })} {XP}
     </span>

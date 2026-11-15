@@ -29,3 +29,6 @@ export { readRaceBoard, readRaceMonument, RACE_MODELS, type RaceBoard } from "./
 export { currentArmy } from "../utils/deep";
 export { deepCenter, isDeepTile } from "../utils/deep-geometry";
 export { TRIUMPH_MODELS } from "./views/triumphs";
+
+export { SITE_EFFECT_MODELS, readSiteEffects, readSiteReward } from "./views/site-effects";
+export { GUARD_MODELS } from "../utils/army";

@@ -143,8 +143,8 @@ pub mod RelicState {
             key: ExplorerKey,
             award: crate::progression::XpAward,
             timestamp: u64,
-        ) {
-            crate::logic::progression::award_xp(key, award, timestamp);
+        ) -> u32 {
+            crate::logic::progression::award_xp(key, award, timestamp)
         }
         fn spend_skill_point(
             ref self: ComponentState<TContractState>,

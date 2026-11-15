@@ -1,3 +1,4 @@
+import { GUARD_MODELS } from "@bibliothecadao/eternum/game-client";
 import { resolveExplorerCombatTroops } from "@bibliothecadao/eternum/troop-stamina";
 import { useTileAt } from "@/hooks/helpers/use-tile-at";
 import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
@@ -45,7 +46,7 @@ export const useAttackTargetData = (
   } = useGame();
 
   const targetTile = useTileAt(targetHex.x, targetHex.y, targetAlt);
-  const guardsFacts = useNativeFacts(["ArmySlot", "ArmyRelicEffect", "ArmyProgress", "Guard", "Structure"]);
+  const guardsFacts = useNativeFacts(["ArmySlot", "ArmyRelicEffect", "ArmyProgress", ...GUARD_MODELS, "Structure"]);
 
   const currentDefaultTick = useCurrentDefaultTick();
   const attackerStructure = useNativeRow(

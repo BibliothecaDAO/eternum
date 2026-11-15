@@ -310,8 +310,9 @@ it("keeps a site's guard once the player's map lets the site go, as when their a
 });
 
 it("says a clear's XP at the row's end beside what it paid, as the site's receipt does, near or far", async () => {
-  const clear = (site: number) =>
+  const clear = (site: number, xp?: number) =>
     story(DJIZUS, "SitePayout", {
+      xp,
       site_id: site,
       category: StructureType.Camp,
       reward: { resource_type: ResourcesIds.Labor, amount: scaled(700) },
@@ -321,7 +322,7 @@ it("says a clear's XP at the row's end beside what it paid, as the site's receip
   // The camp the map holds: 1,400 guards at the start pay floor(sqrt(25 × 1,400) / 2) = 93 base XP, scaled by Ethereal I to 139.
   const near = game.store.require("ExpeditionSite", { game_id: 1, entity_id: CAMP });
   expect(siteClearXp(game.store, near)).toBe(139);
-  const read = await draw(clear(CAMP), true);
+  const read = await draw(clear(CAMP, 139), true);
   expect(read.words).toBe(`djizus cleared ${siteDisplayName(CAMP)}`);
   expect(xps()).toEqual(["+700", "+139 XP"]);
   // One the map does not hold, from Herald's row of that site.
@@ -336,7 +337,7 @@ it("says a clear's XP at the row's end beside what it paid, as the site's receip
     row: hex(near.row),
     clear: null,
   });
-  await draw(clear(far));
+  await draw(clear(far, 129));
   expect(xps()).toEqual(["+700", "+129 XP"]);
   // Neither holds it: what it paid alone, never a guessed XP.
   await draw(clear(4_401));

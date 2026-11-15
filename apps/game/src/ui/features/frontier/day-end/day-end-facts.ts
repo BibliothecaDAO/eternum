@@ -1,3 +1,4 @@
+import { GUARD_MODELS } from "@bibliothecadao/eternum/game-client";
 import { resolveExplorerTroops } from "@bibliothecadao/eternum/troop-stamina";
 import { useCurrentDefaultTick, useNowSeconds } from "@/hooks/helpers/use-block-timestamp";
 import { useNativeFacts } from "@/hooks/helpers/use-native-facts";
@@ -24,7 +25,7 @@ export interface DayEndFacts {
   armyCanExplore: boolean;
 }
 
-const DAY_END_MODELS = ["Structure", "ArmySlot", "ExplorerTroops", "TileOccupancy", "Guard"] as const;
+const DAY_END_MODELS = ["Structure", "ArmySlot", "ExplorerTroops", "TileOccupancy", ...GUARD_MODELS] as const;
 
 /** The player's day-end facts, recomputed as the store changes and the clock moves. */
 export const useDayEndFacts = (rules: ExpeditionRules, realm: NativeRows["Structure"] | null): DayEndFacts => {

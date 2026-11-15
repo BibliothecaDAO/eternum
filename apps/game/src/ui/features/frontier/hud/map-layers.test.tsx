@@ -232,7 +232,7 @@ const receipt = (rules: ExpeditionRules, home: number, day: number, depth: numbe
     alt: false,
     col: (home - 1) * rules.spacing + 1,
     row: (day * 4 + depth) * rules.spacing + 1,
-    clear: { explorer_id: 201n, home_id: BigInt(home), reward: null },
+    clear: { xp: 0, explorer_id: 201n, home_id: BigInt(home), reward: null },
   },
 });
 

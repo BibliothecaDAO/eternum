@@ -281,7 +281,7 @@ export const clearedCampAt = (
     col: tile.col,
     row: tile.row,
     clear: {
-      explorer_id: SPIRE_ARMY,
+      xp: 0, explorer_id: SPIRE_ARMY,
       home_id: 7,
       reward: { resource_type: ResourcesIds.Essence, amount: 4_800n * PRECISION },
     },

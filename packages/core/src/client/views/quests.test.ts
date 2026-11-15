@@ -444,7 +444,7 @@ it("reads the recorded bane and ceiling quorum, keeping its quest after the effe
   expect(readBaneEffects(store, 1, 7, secondDay.start - 10, secondDay.start + 120)).toEqual({
     known: {
       productionPercent: 50,
-      staminaPercent: 50,
+      staminaPercent: 50, beastPercent: 150,
       windows: [{ kind: nativeBaneConstants.ASH_FALL, start: secondDay.start, end: secondDay.start + 60 }],
     },
   });
@@ -472,7 +472,7 @@ it("ends a zero-quorum effect at day start while retaining the bane quest", () =
   expect(readBaneEffects(store, 1, 7, secondDay.start, secondDay.end)).toEqual({
     known: {
       productionPercent: 50,
-      staminaPercent: 50,
+      staminaPercent: 50, beastPercent: 150,
       windows: [],
     },
   });
@@ -510,7 +510,7 @@ it("keeps today's world bane when the first team bane is issued, then reads tomo
     endedAt: 0,
   });
   expect(readBaneEffects(store, 1, 7, thirdDay.start, thirdDay.end)).toEqual({
-    known: { productionPercent: 50, staminaPercent: 50, windows: [] },
+    known: { productionPercent: 50, staminaPercent: 50, beastPercent: 150, windows: [] },
   });
 });
 
@@ -523,7 +523,7 @@ it("waits for optional-rule absence before showing ordinary quests or production
   store.setSnapshot({ gameId: 1, actor: "0x111", complete: true, timestamp: 100 });
   expect(readBaneDay(store, 1, 7, firstDay)).toEqual({ known: { bane: null } });
   expect(readBaneEffects(store, 1, 7, 100, 101)).toEqual({
-    known: { windows: [], productionPercent: 100, staminaPercent: 100 },
+    known: { windows: [], productionPercent: 100, staminaPercent: 100, beastPercent: 100 },
   });
   expect(read()?.reading.known?.quest.id).toBe(nativeQuestConstants.REVEALS);
 });

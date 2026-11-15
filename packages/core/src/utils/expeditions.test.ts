@@ -398,7 +398,7 @@ describe("siteReward", () => {
         row: 0,
         category: StructureType.Camp,
         initial_guard_count: guard,
-        clear: { explorer_id: 1n, home_id: 7n, reward: null },
+        clear: { xp: 0, explorer_id: 1n, home_id: 7n, reward: null },
       }),
     ).toBeNull();
     expect(
@@ -407,7 +407,7 @@ describe("siteReward", () => {
         row: 0,
         category: StructureType.Rift,
         initial_guard_count: guard,
-        clear: { explorer_id: 1n, home_id: 7n, reward: null },
+        clear: { xp: 0, explorer_id: 1n, home_id: 7n, reward: null },
       }),
     ).toBeNull();
   });

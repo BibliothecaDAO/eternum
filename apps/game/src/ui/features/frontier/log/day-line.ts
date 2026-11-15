@@ -9,7 +9,7 @@ import {
   revealLine,
   xpGainedLine,
 } from "@/ui/design-system/kit/words";
-import { siteClearXp, configManager, findGain, readRevealXp } from "@bibliothecadao/eternum";
+import { configManager, findGain, readRevealXp } from "@bibliothecadao/eternum";
 import type { NativeFactStore } from "@bibliothecadao/eternum/game-client";
 import { formatExact, LORDS, type RankedWords, ResourcesIds, scaledToUnits } from "@bibliothecadao/types";
 
@@ -50,7 +50,7 @@ export const dayLogLine = (story: LoggedStory, store: NativeFactStore, fight?: L
     case "ExplorationReward":
       return withRevealXp(revealPayLine(payload) ?? story.presentation.title, payload.coord, store);
     case "SitePayout":
-      return withClearXp(withFightCost(story.presentation.title, fight), payload.site_id, store);
+      return withClearXp(withFightCost(story.presentation.title, fight), payload.xp);
     case "SkillPointSpent":
       return titleOf(story);
     case "BuildingPaymentStory":
@@ -77,12 +77,9 @@ const withRevealXp = (line: string, coord: unknown, store: NativeFactStore): str
   return xp === undefined ? line : xpGainedLine(line, formatExact(xp));
 };
 
-/** A clear's line with the XP it paid: the site's starting guard sets it, so it needs the site's row; else the title. */
-const withClearXp = (line: string, siteId: unknown, store: NativeFactStore): string => {
-  if (siteId === undefined) return line;
-  const site = store.get("ExpeditionSite", { game_id: configManager.getActiveGameId(), entity_id: Number(siteId) });
-  return site ? xpGainedLine(line, formatExact(siteClearXp(store, site))) : line;
-};
+/** A clear records its exact award, including effects that have since ended. */
+const withClearXp = (line: string, xp: unknown): string =>
+  xp === undefined ? line : xpGainedLine(line, formatExact(Number(xp)));
 
 /** "Farm built": the building by the name on its build card. */
 const builtLineOf = (payload: Record<string, unknown>): string | null => {

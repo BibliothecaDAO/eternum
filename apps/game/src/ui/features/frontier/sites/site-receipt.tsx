@@ -6,7 +6,7 @@ import { Icon } from "@/ui/design-system/icon";
 import { resourceMeaning } from "@/ui/design-system/icon-meaning";
 import { HudPanel, HudSheet } from "@/ui/design-system/kit/hud-elements";
 import { XP } from "@/ui/design-system/kit/words";
-import { configManager, siteDisplayName, siteClearXp } from "@bibliothecadao/eternum";
+import { configManager, siteDisplayName } from "@bibliothecadao/eternum";
 import type { NativeFactStore, NativeRows } from "@bibliothecadao/eternum/game-client";
 import { formatCharge, formatExact, resourceName, frontierSiteName, scaledToUnits } from "@bibliothecadao/types";
 
@@ -23,7 +23,7 @@ export function readClearedSite(
   const site = [...store.inGame("ExpeditionSite", gameId)].find(
     (site) => site.clear !== null && site.col === hex.col && site.row === hex.row && site.alt === hex.alt,
   );
-  return site ? { site, xp: siteClearXp(store, site) } : null;
+  return site?.clear ? { site, xp: site.clear.xp } : null;
 }
 
 export function useSelectedClearedSite(): ClearedSite | null {

@@ -9,10 +9,8 @@ import {
   resolveExchange,
   getGuardsByStructure,
   siteKindOf,
-  siteReward,
-  siteClearXp,
 } from "@bibliothecadao/eternum";
-import { safeInteger, type NativeFactStore, type NativeRows } from "@bibliothecadao/eternum/game-client";
+import { readSiteReward, safeInteger, type NativeFactStore, type NativeRows } from "@bibliothecadao/eternum/game-client";
 import { resolveExplorerCombatTroops, resolveExplorerTroops } from "@bibliothecadao/eternum/troop-stamina";
 import {
   type BiomeType,
@@ -81,17 +79,18 @@ export const readSiteCard = (
   siteTile: { col: number; row: number; alt: boolean },
   attack: SiteAttack | null,
 ): SiteCardPlan => {
-  const guards = getGuardsByStructure(structure, store);
+  const guards = getGuardsByStructure(structure, store, attack?.timestamp);
   const guard = guards && guards.find((candidate) => candidate.troops.count > 0n);
   const kind = siteKindOf(structure.base.category);
   const chest = kind === "Ruin" ? store.get("SiteChest", { game_id: site.game_id, entity_id: site.entity_id }) : null;
+  const payout = readSiteReward(store, site, attack?.timestamp);
   const baseReward =
     kind === "Ruin"
       ? chest && { resourceType: ResourcesIds.Lords, amount: chest.amount * PRECISION }
-      : siteReward(store, site);
+      : payout.known?.reward;
   const reward = baseReward && attack ? armyRelicReward(store, attack.army, baseReward, attack.timestamp) : baseReward;
-  const baseXp = siteClearXp(store, site);
-  const xp = attack ? armyRelicXp(store, attack.army, baseXp, attack.timestamp) : baseXp;
+  const baseXp = payout.known?.xp;
+  const xp = attack && baseXp !== undefined ? armyRelicXp(store, attack.army, baseXp, attack.timestamp) : baseXp;
   const beast = readStandingFrontierBeast(store, site.game_id, safeInteger(site.entity_id));
   return {
     name: beast?.name ?? attackTargetName(kind),

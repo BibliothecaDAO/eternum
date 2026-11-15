@@ -1,3 +1,4 @@
+import { GUARD_MODELS } from "@bibliothecadao/eternum/game-client";
 import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
 import { resolveExplorerCombatTroops } from "@bibliothecadao/eternum/troop-stamina";
 import {
@@ -50,7 +51,7 @@ export const useBattleLabLiveData = (
     "ArmyRelicEffect",
     "ArmyProgress",
     "Structure",
-    "Guard",
+    ...GUARD_MODELS,
     "ExplorerTroops",
     "TileOccupancy",
   ]);

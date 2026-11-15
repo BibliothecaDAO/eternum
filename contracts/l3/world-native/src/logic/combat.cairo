@@ -24,7 +24,7 @@ struct GuardTarget {
 #[derive(Copy, Drop)]
 enum GuardSource {
     Army: ExplorerKey,
-    Guard: crate::guards::GuardKey,
+    Guard: (crate::guards::GuardKey, u32),
     Empty,
 }
 
@@ -107,12 +107,26 @@ fn guard_defender(
         None => (0.try_into().unwrap(), 1),
     };
     let (source, troops) = match crate::logic::guards::GuardState::next(target.key, maximum) {
-        Some(key) => (GuardSource::Guard(key), crate::logic::guards::guard(key).troops),
+        Some(key) => {
+            let bps = beast_bps(target, context.timestamp);
+            let mut troops = crate::logic::guards::guard(key).troops;
+            troops.count = (troops.count * bps.into() + 9999) / 10000;
+            (GuardSource::Guard((key, bps)), troops)
+        },
         None => (GuardSource::Empty, Default::default()),
     };
     GuardDefender {
         source, actor: owner, army: ExplorerTroops { owner: target.key.entity_id, coord: target.coord, troops },
     }
+}
+
+fn beast_bps(target: GuardTarget, timestamp: u64) -> u32 {
+    if crate::logic::expeditions::expedition_site(target.key).is_none()
+        || crate::logic::expeditions::depth_at(target.key.game_id, target.coord) == 3 {
+        return 10000;
+    }
+    let home = ResourceKey { game_id: target.key.game_id, entity_id: crate::entity_ids::namespace(target.key.entity_id).into() };
+    crate::logic::triumphs::effects(home, timestamp).beast_bps
 }
 
 fn fight_guard(
@@ -137,9 +151,11 @@ fn save_guard_defender(defender: GuardDefender, before: u128, context: Execution
     match defender.source {
         GuardSource::Army(key) => combat_troops(key.game_id)
             .finish_battle(key, defender.army, before, crate::commands::action_context(context)),
-        GuardSource::Guard(key) => {
+        GuardSource::Guard((key, bps)) => {
             let mut row = crate::logic::guards::guard(key);
+            let base_before = row.troops.count;
             row.troops = defender.army.troops;
+            row.troops.count = core::cmp::min(base_before, (row.troops.count * 10000 + Into::<u32, u128>::into(bps) - 1) / bps.into());
             if row.troops.count == 0 {
                 row.troops.stamina.reset();
                 row

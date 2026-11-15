@@ -3,6 +3,8 @@ use crate::troops::Coord;
 pub const STAGE_COUNT: u8 = 5;
 pub const CLEAR_MIST_STAGE: u8 = 1;
 pub const SECOND_WIND_STAGE: u8 = 2;
+pub const PALE_MOON_STAGE: u8 = 3;
+pub const SPOILS_STAGE: u8 = 4;
 
 #[derive(Copy, Drop, Serde, Debug, PartialEq, starknet::Store)]
 pub struct RaceRules {
@@ -52,6 +54,13 @@ pub struct RaceResult {
     pub scheduled_end_at: u64,
 }
 
+#[derive(Copy, Drop, Serde, Debug, PartialEq)]
+pub struct ExpeditionEffects {
+    pub find_percent: u16,
+    pub beast_bps: u32,
+    pub spoils_percent: u16,
+}
+
 #[starknet::interface]
 pub trait IRace<T> {
     fn initialize_race(ref self: T, game_id: u32);
@@ -60,6 +69,7 @@ pub trait IRace<T> {
     fn aspect_hyperstructure(self: @T, key: AspectKey) -> AspectHyperstructure;
     fn triumph_day(self: @T, key: TriumphKey) -> Option<u64>;
     fn race_result(self: @T, game_id: u32) -> Option<RaceResult>;
+    fn expedition_effects(self: @T, home: crate::resources::ResourceKey, timestamp: u64) -> ExpeditionEffects;
 }
 
 pub fn local_coord(rules: RaceRules, aspect: u8) -> Coord {

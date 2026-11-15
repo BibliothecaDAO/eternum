@@ -116,7 +116,7 @@ describe("a realm's daily ruin choice per depth", () => {
         value: {
           ...site(first, 40),
           clear: {
-            explorer_id: home + 4n,
+            xp: 0, explorer_id: home + 4n,
             home_id: home,
             reward: { resource_type: 37, amount: 500n },
           },
@@ -145,7 +145,7 @@ describe("a realm's daily ruin choice per depth", () => {
     const store = setup();
     const cleared = {
       ...site(first, depth * 100 + 40),
-      clear: { explorer_id: home + 4n, home_id: home, reward: { resource_type: 37, amount: 500n } },
+      clear: { xp: 0, explorer_id: home + 4n, home_id: home, reward: { resource_type: 37, amount: 500n } },
     };
     store.applyFacts([close(true), { model: "ExpeditionSite", key: "0x20", value: cleared }]);
     for (const candidateDepth of [0, 1, 2, 3]) {
@@ -259,7 +259,7 @@ describe("each depth's ruin chest today", () => {
       {
         model: "ExpeditionSite",
         key: "0x22",
-        value: { ...site(otherHome + 1n, 140), clear: { explorer_id: 2n, home_id: 8n, reward: null } },
+        value: { ...site(otherHome + 1n, 140), clear: { xp: 0, explorer_id: 2n, home_id: 8n, reward: null } },
       },
       ...facts,
     ] as never);
@@ -268,7 +268,7 @@ describe("each depth's ruin chest today", () => {
   const surfaceClear = {
     model: "ExpeditionSite",
     key: "0x21",
-    value: { ...site(home + 1n, 40), clear: { explorer_id: 1n, home_id: 7n, reward: null } },
+    value: { ...site(home + 1n, 40), clear: { xp: 0, explorer_id: 1n, home_id: 7n, reward: null } },
   };
 
   it("opens every researched depth while today's discovery says nothing was cleared, and locks the rest", () => {

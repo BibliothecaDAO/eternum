@@ -1,3 +1,4 @@
+import { GUARD_MODELS } from "@bibliothecadao/eternum/game-client";
 import { orderRefusalWords } from "../hud/order-tip";
 import { resourceMeaning } from "@/ui/design-system/icon-meaning";
 import { playUnitCommandSound } from "@/audio/unit-command-audio";
@@ -51,7 +52,7 @@ const SITE_MODELS = [
   "DeepArmy",
   "DeepGuard",
   "HomeAspect",
-  "Guard",
+  ...GUARD_MODELS,
   "Structure",
   "TileOccupancy",
   "ResourceBalance",

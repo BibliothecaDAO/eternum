@@ -1,3 +1,4 @@
+import { GUARD_MODELS } from "@bibliothecadao/eternum/game-client";
 import { useMemo } from "react";
 import { useGame } from "@/hooks/context/game-context";
 import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
@@ -30,7 +31,7 @@ const MODELS = [
   "DeepArmy",
   "ArmyDay",
   "ExplorerTroops",
-  "Guard",
+  ...GUARD_MODELS,
   "TileOccupancy",
   "HomeAspect",
   "Structure",

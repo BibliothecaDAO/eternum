@@ -60,7 +60,7 @@ pub fn own_stamina_max(
     }
 }
 
-pub fn award_xp(key: ExplorerKey, award: XpAward, timestamp: u64) {
+pub fn award_xp(key: ExplorerKey, award: XpAward, timestamp: u64) -> u32 {
     let rules = rules(key.game_id).expect('missing progression rules');
     let mut progress = require(key);
     let amount = match award {
@@ -91,6 +91,7 @@ pub fn award_xp(key: ExplorerKey, award: XpAward, timestamp: u64) {
         timestamp,
     );
     write(key, progress);
+    amount
 }
 
 pub fn grant_point(key: ExplorerKey, rank: u8) {

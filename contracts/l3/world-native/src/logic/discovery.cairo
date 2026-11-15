@@ -65,7 +65,7 @@ fn roll(
     };
     let depth = crate::logic::expeditions::depth_at(key.game_id, Coord { alt: key.alt, x: key.col, y: key.row });
     let find_percent = if depth < 3 {
-        crate::logic::triumphs::clear_mist(home_key, context.timestamp)
+        crate::logic::triumphs::effects(home_key, context.timestamp).find_percent
     } else {
         100
     };

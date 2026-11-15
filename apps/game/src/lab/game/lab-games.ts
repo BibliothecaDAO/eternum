@@ -1,3 +1,4 @@
+import { siteEffectsScenario } from "./site-effects-scenario";
 import { farEyeScenario } from "./far-eye-scenario";
 import { clearMistScenario } from "./spire-scenario";
 import { baneScenario } from "./bane-scenario";
@@ -48,6 +49,7 @@ export const LAB_SCENARIOS: Partial<Record<string, () => LabScenario>> = {
   "discovered-spire": discoveredSpireScenario,
   "clear-mist": clearMistScenario,
   "far-eye": farEyeScenario,
+  "site-effects": siteEffectsScenario,
   deep: deepScenario,
   race: raceScenario,
   "race-finished": () => raceScenario(true),

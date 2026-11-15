@@ -545,7 +545,7 @@ describe("after the player's attack (owner, 30 October 2026: 'I'd like the army 
           key: "0x72",
           value: {
             ...store.require("ExpeditionSite", { game_id: 1, entity_id: SITE }),
-            clear: { explorer_id: 201, home_id: 7, reward: null },
+            clear: { xp: 0, explorer_id: 201, home_id: 7, reward: null },
           },
         },
       ] as never),

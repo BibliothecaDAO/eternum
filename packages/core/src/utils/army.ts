@@ -1,3 +1,6 @@
+import { SITE_EFFECT_MODELS, readSiteEffects, effectiveGuardCount } from "../client/views/site-effects";
+import { expeditionDepth, readExpeditionRules } from "./expeditions";
+import { entityHomeNamespace } from "./entity-home";
 import { currentResourceWeight } from "./deep";
 import { safeInteger } from "./safe-integer";
 import { inlineTroops, resolveExplorerTroops } from "../managers/troop-stamina";
@@ -104,7 +107,20 @@ export const getTroopResourceId = (troopType: TroopType, troopTier: TroopTier): 
   }
 };
 
-export const getGuardsByStructure = (structure: NativeRows["Structure"], store: NativeFactStore) => {
+export const GUARD_MODELS = ["Guard", ...SITE_EFFECT_MODELS] as const;
+
+export const getGuardsByStructure = (
+  structure: NativeRows["Structure"], store: NativeFactStore, timestamp?: number,
+) => {
+  const site = store.get("ExpeditionSite", { game_id: structure.game_id, entity_id: structure.entity_id });
+  let beastBps = 10_000;
+  if (site) {
+    const calendar = readExpeditionRules(store, structure.game_id);
+    if (!calendar) return undefined;
+    const effects = readSiteEffects(store, structure.game_id, entityHomeNamespace(structure.entity_id), timestamp, expeditionDepth(calendar, { y: site.row }));
+    if (!effects.known) return undefined;
+    beastBps = effects.known.beastBps;
+  }
   const delay = configManager.getTroopConfig().troop_limit_config.guard_resurrection_delay;
   const tickSeconds = configManager.getTick(TickIds.Armies);
   const slots = Array.from({ length: structure.base.troop_max_guard_count }, (_, slot) =>
@@ -117,7 +133,7 @@ export const getGuardsByStructure = (structure: NativeRows["Structure"], store: 
       ? [
           {
             slot: guard.slot,
-            troops: inlineTroops(guard.troops, store.require("SliceRules", { game_id: structure.game_id })),
+            troops: inlineTroops({ ...guard.troops, count: effectiveGuardCount(guard.troops.count, beastBps) }, store.require("SliceRules", { game_id: structure.game_id })),
             destroyedTick: guard.destroyed_tick,
             cooldownEnd: guard.destroyed_tick === 0 ? 0 : guard.destroyed_tick * tickSeconds + delay,
           },

@@ -1,3 +1,4 @@
+import { GUARD_MODELS } from "@bibliothecadao/eternum/game-client";
 import {
   readRealmSkin,
   realmSkinModel,
@@ -458,7 +459,9 @@ export class StructureManager {
     this.storeUnsubscribes.push(
       this.store.subscribe((changes) => {
         const touched = new Set<number>();
-        const refreshAll = changes.length === 0;
+        const refreshAll = changes.length === 0 || changes.some((change) =>
+          change.model !== "Guard" && GUARD_MODELS.some((model) => model === change.model),
+        );
         for (const change of changes) {
           if (change.model === "CampaignHome") {
             const home = change.current ?? change.previous;
@@ -685,21 +688,13 @@ export class StructureManager {
     );
   }
 
-  private readGuards(entityId: ID): NativeRows["Guard"][] | undefined {
+  private readGuards(entityId: ID): ReturnType<typeof getGuardsByStructure> {
     if (!this.store) return undefined;
-    const game = configManager.getActiveGameId();
-    const structure = this.store.get("Structure", { game_id: game, entity_id: entityId });
-    // A structure this client cannot see shows no guards.
-    if (!structure) return undefined;
-    const slots = Array.from({ length: structure.base.troop_max_guard_count }, (_, slot) =>
-      this.store!.requireOrAbsent("Guard", { game_id: game, structure_id: entityId, slot }),
-    );
-    const guards = slots.flatMap((slot) => (slot.known ? [slot.known] : []));
-    if (guards.length !== slots.length) return undefined;
-    return guards.filter((guard) => guard.troops.count !== 0n || guard.destroyed_tick !== 0);
+    const structure = this.store.get("Structure", { game_id: configManager.getActiveGameId(), entity_id: entityId });
+    return structure && getGuardsByStructure(structure, this.store);
   }
 
-  private resolveGuardArmies(guards: readonly NativeRows["Guard"][]): GuardArmy[] {
+  private resolveGuardArmies(guards: readonly { slot: number; troops: Pick<NativeRows["Guard"]["troops"], "category" | "tier" | "count"> }[]): GuardArmy[] {
     return guards.map(({ slot, troops }) => ({
       slot,
       category: troops.category,
@@ -708,27 +703,19 @@ export class StructureManager {
     }));
   }
 
-  /**
-   * A structure as its plate says it now: each guard slot with its stamina at the chain's second, read when the plate
-   * is said and never cached, as a holding is (owner, map labels 2026-10-19: "we do need to see army stamina on structure
-   * hover"). The guards are read through `getGuardsByStructure`, the one rule that resolves a guard's inline bar and its
-   * game's cap (Frontier's, with no tier bonus). The plates are said again each second (`refreshLivePlates`), so it
-   * follows regeneration. A Frontier site's guards tell none (tellsGuardStamina), so theirs is never read.
-   */
-  private withGuardStamina(structure: StructureInfo): StructureInfo {
-    if (!this.store || !structure.guardArmies?.length || !tellsGuardStamina(structure)) return structure;
-    const row = this.store.get("Structure", {
-      game_id: configManager.getActiveGameId(),
-      entity_id: structure.entityId,
-    });
-    const guards = row && getGuardsByStructure(row, this.store);
-    if (!guards) return structure;
+  /** Live strength and stamina follow the chain clock through the shared guard reader. */
+  private withLiveGuards(structure: StructureInfo): StructureInfo {
+    if (!this.store) return structure;
+    const guards = this.readGuards(structure.entityId);
+    if (!guards) return { ...structure, guardArmies: undefined };
+    const armies = guardsToTell(this.resolveGuardArmies(guards), configManager.hasGuardSlots());
+    if (!tellsGuardStamina(structure)) return { ...structure, guardArmies: armies };
     const now = getBlockTimestamp().currentDefaultTick;
     const bySlot = new Map(guards.map(({ slot, troops }) => [slot, getGuardStaminaSnapshot(troops, now)]));
     const perExplore = configManager.getExploreStaminaCost();
     return {
       ...structure,
-      guardArmies: structure.guardArmies.map((guard) => {
+      guardArmies: armies?.map((guard) => {
         const stamina = bySlot.get(guard.slot);
         return stamina && stamina.max > 0
           ? { ...guard, stamina: { current: stamina.current, max: stamina.max, perExplore } }
@@ -1839,7 +1826,7 @@ export class StructureManager {
       entityId: structure.entityId,
       position,
       plate: buildStructurePlate(
-        { ...this.withGuardStamina(structure), watched: watchedSide(this.store, structure.owner.address) },
+        { ...this.withLiveGuards(structure), watched: watchedSide(this.store, structure.owner.address) },
         useChainTimeStore.getState().getNowSeconds(),
         this.store && readPlateReward(this.store, structure),
       ),

@@ -476,7 +476,7 @@ describe("a realm's spire, from the player's path", () => {
           initial_guard_count: 1_600n * 1_000_000_000n,
           alt: false,
           ...tile,
-          clear: { explorer_id: BigInt(ARMY), home_id: 7n, reward: null },
+          clear: { xp: 0, explorer_id: BigInt(ARMY), home_id: 7n, reward: null },
         },
       },
     ] as never);

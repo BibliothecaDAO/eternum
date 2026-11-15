@@ -1,0 +1,65 @@
+import { getBlockTimestamp } from "../../utils/timestamp";
+import { nativeBaneConstants, nativeRaceConstants } from "../../../../../contracts/l3/world-native/schema/client.gen";
+import type { NativeFactResult, NativeFactStore } from "../native-fact-store";
+import type { NativeRows } from "../../../../../contracts/l3/world-native/schema/client.gen";
+import { entityHomeNamespace } from "../../utils/entity-home";
+import { expeditionDepth, siteReward, siteClearXp, readExpeditionRules } from "../../utils/expeditions";
+import { BANE_MODELS, readBaneEffects } from "./banes";
+import { TRIUMPH_MODELS, readTriumphPeriod } from "./triumphs";
+import { readOptionalSeasonRow } from "./season-rows";
+
+export const SITE_EFFECT_MODELS = [
+  ...BANE_MODELS, ...TRIUMPH_MODELS, "GameRegistry", "SliceRules", "SettlementRules", "Structure", "ExpeditionSite",
+] as const;
+
+export interface SiteEffects { beastBps: number; spoilsPercent: number }
+
+/** Effects change current strength and numeric rewards; the Deep retains its native amounts. */
+export function readSiteEffects(
+  store: NativeFactStore, gameId: number, home: number | bigint, timestamp: number | undefined, depth: number,
+): NativeFactResult<SiteEffects> {
+  if (depth === 3) return { known: { beastBps: 10_000, spoilsPercent: 100 } };
+  const baneRules = readOptionalSeasonRow(store, "BaneRules", { game_id: gameId });
+  if (!baneRules.known) return baneRules;
+  const race = readOptionalSeasonRow(store, "RaceRules", { game_id: gameId });
+  if (!race.known) return race;
+  if (!race.known.row && !baneRules.known.row) return { known: { beastBps: 10_000, spoilsPercent: 100 } };
+  const at = timestamp ?? getBlockTimestamp().currentDefaultTick;
+  const bane = readBaneEffects(store, gameId, home, at, at + 1);
+  if (!bane.known) return bane;
+  let moon = 100;
+  let spoilsPercent = 100;
+  if (race.known.row) {
+    const calendar = readExpeditionRules(store, gameId);
+    if (!calendar) return { unknown: "MISSING_EXPEDITION_RULES" };
+    const pale = readTriumphPeriod(store, gameId, home, nativeRaceConstants.PALE_MOON_STAGE, calendar);
+    if (!pale.known) return pale;
+    const spoils = readTriumphPeriod(store, gameId, home, nativeRaceConstants.SPOILS_STAGE, calendar);
+    if (!spoils.known) return spoils;
+    if (pale.known.period && at >= pale.known.period.start && at < pale.known.period.end)
+      moon = race.known.row.pale_moon_percent;
+    if (spoils.known.period && at >= spoils.known.period.start && at < spoils.known.period.end)
+      spoilsPercent = race.known.row.spoils_percent;
+  }
+  const blood = bane.known.windows.some((window) => window.kind === nativeBaneConstants.BLOOD_MOON);
+  return { known: { beastBps: moon * (blood ? bane.known.beastPercent : 100), spoilsPercent } };
+}
+
+export const effectiveGuardCount = (base: bigint, bps: number): bigint => (base * BigInt(bps) + 9_999n) / 10_000n;
+
+/** Current numeric payout before the attacking army's relics; clear receipts retain the final credited award. */
+export function readSiteReward(
+  store: NativeFactStore, site: NativeRows["ExpeditionSite"], timestamp?: number,
+): NativeFactResult<{ reward: ReturnType<typeof siteReward>; xp: number }> {
+  const calendar = readExpeditionRules(store, site.game_id);
+  if (!calendar) return { unknown: "MISSING_EXPEDITION_RULES" };
+  const effects = readSiteEffects(store, site.game_id, entityHomeNamespace(site.entity_id), timestamp,
+    expeditionDepth(calendar, { y: site.row }));
+  if (!effects.known) return effects;
+  const percent = effects.known.spoilsPercent;
+  const base = siteReward(store, site);
+  return { known: {
+    reward: base && { ...base, amount: base.amount * BigInt(percent) / 100n },
+    xp: Math.floor(siteClearXp(store, site) * percent / 100),
+  } };
+}

@@ -3944,6 +3944,23 @@ const LAB_RUIN_FAR_STEPS = [
   { name: "pick-army", play: pickTheArmyAndReadTheCamera, settleMs: 0, verify: cameraWentToTheArmy },
   { name: "open-the-far-card", play: openTheRuinsCardUntil(showsBothSides), settleMs: 0, verify: farCardForecasts },
 ];
+const SITE_EFFECT_STEPS = [
+  { name: "enter-on-map", settleMs: 3_000, verify: inScene("map") },
+  { name: "pick-army", play: pickTheArmyAndReadTheCamera, settleMs: 0, verify: cameraWentToTheArmy },
+  {
+    name: "site-effects-card",
+    play: async (context) => {
+      const state = FIGHT_STATE.replaceAll(`structure:${LAB_RUIN}`, `structure:${7 * 2 ** 32 + LAB_RUIN}`);
+      const opened = await openTheRuinsCardUntil(showsBothSides, state)(context);
+      const text = context.browser.read(`JSON.stringify([...document.querySelectorAll('[data-kit-sheet]')].filter(node => node.getBoundingClientRect().width).map(node => node.textContent).join(' '))`);
+      return { opened, text };
+    },
+    settleMs: 0,
+    verify: ({ played }) => played.opened.after.sides.some(side => side.includes("500")) && played.text.includes("272") && /3k|3,000/.test(played.text)
+      ? completed(played) : failed("The camp must show 500 guards, doubled payout and 272 XP", played),
+  },
+];
+
 /** The ruin beside the army (site-fixture.ts) and how near a framed army stands to the camera's target, in hexes. */
 const LAB_RUIN = 710;
 const FRAMED_WITHIN_HEXES = 6;
@@ -4000,9 +4017,9 @@ const UNDER_THE_CARD_PX = [70, 160];
 const ACROSS_THE_PHONE_PX = [-120, 120];
 const PAN_BURSTS = 16;
 const underTheCard = (token) => token && token[1] >= UNDER_THE_CARD_PX[0] && token[1] <= UNDER_THE_CARD_PX[1];
-async function panTheRuinUnderTheCard(browser) {
-  await panTheRuinInto(browser, 0, ACROSS_THE_PHONE_PX, ["KeyA", "KeyD"]);
-  await panTheRuinInto(browser, 1, UNDER_THE_CARD_PX, ["KeyW", "KeyS"]);
+async function panTheRuinUnderTheCard(browser, state = FIGHT_STATE) {
+  await panTheRuinInto(browser, 0, ACROSS_THE_PHONE_PX, ["KeyA", "KeyD"], state);
+  await panTheRuinInto(browser, 1, UNDER_THE_CARD_PX, ["KeyW", "KeyS"], state);
 }
 
 /**
@@ -4010,14 +4027,14 @@ async function panTheRuinUnderTheCard(browser) {
  * the one that moves the token forward on the axis and the one that moves it back; a key that moved it the other way
  * is turned round.
  */
-async function panTheRuinInto(browser, axis, band, keys) {
+async function panTheRuinInto(browser, axis, band, keys, state) {
   let [forward, back] = keys;
-  let last = browser.read(FIGHT_STATE).ruinToken;
+  let last = browser.read(state).ruinToken;
   for (let burst = 0; burst < PAN_BURSTS && last && (last[axis] < band[0] || last[axis] > band[1]); burst += 1) {
     const ahead = last[axis] < band[0];
     browser.run(["eval", `void window.__playtest.pan(["${ahead ? forward : back}"], 30)`]);
     await sleep(CAMERA_REPORT_MS);
-    const now = browser.read(FIGHT_STATE).ruinToken;
+    const now = browser.read(state).ruinToken;
     if (now && (ahead ? now[axis] < last[axis] : now[axis] > last[axis])) [forward, back] = [back, forward];
     last = now;
   }
@@ -4034,15 +4051,15 @@ function showsBothSides(shown) {
  * Opens the ruin's card from the map with the army selected, a desktop's right-click, a phone's tap, and reads it
  * once it shows what `ready` waits for.
  */
-function openTheRuinsCardUntil(ready) {
+function openTheRuinsCardUntil(ready, state = FIGHT_STATE) {
   return async ({ browser, extraScreenshot }) => {
-    if (!onADesktop()) await panTheRuinUnderTheCard(browser);
-    const before = browser.read(FIGHT_STATE);
+    if (!onADesktop()) await panTheRuinUnderTheCard(browser, state);
+    const before = browser.read(state);
     if (!before.ruinToken) return { before, after: before };
     extraScreenshot("before-fight");
     if (onADesktop()) browser.rightClick(before.ruinToken);
     else browser.tap(before.ruinToken);
-    const after = await readUntil(() => browser.read(FIGHT_STATE), ready, MERGE_WAIT_MS);
+    const after = await readUntil(() => browser.read(state), ready, MERGE_WAIT_MS);
     extraScreenshot("fight-card");
     return { before, after };
   };
@@ -5321,6 +5338,7 @@ export const STEP_SETS = {
   "lab-devcon-art": { game: { ...LAB_SPIRE, lab: "devcon-0" }, steps: devconArtSteps },
   "lab-devcon-season": { game: { ...LAB_SPIRE, lab: "devcon-season" }, steps: [devconSeasonStep] },
   "lab-spire": { game: LAB_SPIRE, steps: LAB_SPIRE_STEPS },
+  "lab-site-effects": { game: labSpireGame("site-effects"), steps: SITE_EFFECT_STEPS },
   "lab-clear-mist": { game: labSpireGame("clear-mist"), steps: CLEAR_MIST_STEPS },
   "lab-stamina-mist": { game: { ...LAB_SPIRE, lab: "stamina-mist" }, steps: staminaEffectSteps(false) },
   "lab-stamina-wind": { game: { ...LAB_SPIRE, lab: "stamina-wind" }, steps: staminaEffectSteps(true) },

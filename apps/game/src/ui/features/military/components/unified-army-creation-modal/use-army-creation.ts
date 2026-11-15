@@ -1,3 +1,4 @@
+import { GUARD_MODELS } from "@bibliothecadao/eternum/game-client";
 import { RESOURCE_PRODUCTION_MODELS } from "@bibliothecadao/eternum";
 import { NEW_ARMY, startsOn } from "@/ui/design-system/kit/words";
 import { musterStamina } from "@bibliothecadao/eternum/troop-stamina";
@@ -109,7 +110,7 @@ export const useArmyCreation = ({
       ? undefined
       : { game_id: configManager.getActiveGameId(), entity_id: activeStructureId },
   );
-  const facts = useNativeFacts([...RESOURCE_PRODUCTION_MODELS, "Guard", "ExplorerTroops"]);
+  const facts = useNativeFacts([...RESOURCE_PRODUCTION_MODELS, ...GUARD_MODELS, "ExplorerTroops"]);
   const provision = useBlitzRealmProvision(activeStructureId ?? null);
 
   const troopOptions = useMemo<TroopSelectionOption[]>(() => {

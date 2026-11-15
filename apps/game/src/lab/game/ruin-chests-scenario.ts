@@ -40,7 +40,7 @@ const chestsScenario = ({ researched, claimed }: { researched: bigint; claimed: 
       col: ruin.col,
       row: (today * 4 + depth) * spacing + Math.floor(spacing / 2),
       clear: {
-        explorer_id: 201n,
+        xp: 0, explorer_id: 201n,
         home_id: HOME,
         reward: { resource_type: ResourcesIds.Lords, amount: 100n * 1_000_000_000n },
       },

@@ -1,3 +1,4 @@
+import { GUARD_MODELS } from "@bibliothecadao/eternum/game-client";
 import { resolveExplorerCombatTroops } from "@bibliothecadao/eternum/troop-stamina";
 import { useStoredBiome } from "@/hooks/helpers/use-tile-at";
 import { type MouseEvent, useEffect, useMemo, useState } from "react";
@@ -75,7 +76,7 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
     "ArmyRelicEffect",
     "ArmyProgress",
     "Structure",
-    "Guard",
+    ...GUARD_MODELS,
     "ExplorerTroops",
     "TileOccupancy",
     "ResourceBalance",

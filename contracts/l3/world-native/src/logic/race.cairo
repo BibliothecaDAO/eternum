@@ -250,6 +250,9 @@ pub mod RaceState {
         fn triumph_day(self: @ComponentState<TContractState>, key: crate::race::TriumphKey) -> Option<u64> {
             super::triumph_day(key)
         }
+        fn expedition_effects(self: @ComponentState<TContractState>, home: crate::resources::ResourceKey, timestamp: u64) -> crate::race::ExpeditionEffects {
+            crate::logic::triumphs::read_effects(home, timestamp)
+        }
         fn race_result(self: @ComponentState<TContractState>, game_id: u32) -> Option<crate::race::RaceResult> {
             super::result(game_id)
         }

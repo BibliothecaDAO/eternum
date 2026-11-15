@@ -143,7 +143,7 @@ cmd = 'cp /home/djizus/projects/eternum-lanes/showcase/apps/game/.env.local apps
 estimate_gb = 6
 
 [kind.test-relic-forecasts]
-cmd = "pnpm run build:packages && pnpm --dir apps/game test src/lab/game/far-eye-scenario.test.ts src/ui/features/frontier/sites/site-card-plan.test.ts src/ui/features/frontier/sites/tile-card.test.tsx src/ui/features/military/battle/quick-attack-preview.test.tsx src/ui/features/frontier/relics/ruin-relic-attack.test.tsx src/ui/features/frontier/frontier-selection-sheet.test.tsx"
+cmd = "pnpm run build:packages && pnpm --dir apps/game test src/ui/features/frontier/sites/site-effects.test.ts src/ui/features/frontier/sites/site-receipt.test.tsx src/three/managers/structure-manager.guard-stamina.test.ts src/ui/features/event-feed/feed-line.test.tsx src/ui/features/frontier/log/day-line.test.ts src/lab/game/far-eye-scenario.test.ts src/ui/features/frontier/sites/site-card-plan.test.ts src/ui/features/frontier/sites/tile-card.test.tsx src/ui/features/military/battle/quick-attack-preview.test.tsx src/ui/features/frontier/relics/ruin-relic-attack.test.tsx src/ui/features/frontier/frontier-selection-sheet.test.tsx"
 estimate_gb = 4
 
 [kind.test-native-wire]
@@ -216,6 +216,10 @@ estimate_gb = 6
 
 [kind.playtest-far-eye]
 cmd = 'cp /home/djizus/projects/eternum-lanes/showcase/apps/game/.env.local apps/game/.env.local && pnpm run build:packages && exec 8>"${FLOW_JOB%/running/*}/playtest-port-4192.lock" && flock 8 && for viewport in 1920x1080 390x844; do pnpm --dir apps/game playtest --port 4192 --steps lab-far-eye --iterations 1 --renderer-modes webgpu-force-webgl --viewport "$viewport" --out "$FLOW_TMP/playtest/$viewport" || exit $?; done'
+estimate_gb = 6
+
+[kind.playtest-site-effects]
+cmd = 'cp /home/djizus/projects/eternum-lanes/showcase/apps/game/.env.local apps/game/.env.local && pnpm run build:packages && exec 8>"${FLOW_JOB%/running/*}/playtest-port-4192.lock" && flock 8 && for viewport in 1920x1080 390x844; do pnpm --dir apps/game playtest --port 4192 --steps lab-site-effects --iterations 1 --renderer-modes webgpu-force-webgl --viewport "$viewport" --out "$FLOW_TMP/playtest/$viewport" || exit $?; done'
 estimate_gb = 6
 
 [kind.playtest-stamina-effects]

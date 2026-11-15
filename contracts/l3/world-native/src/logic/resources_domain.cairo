@@ -68,7 +68,11 @@ pub mod ResourcesLogic {
                 crate::expeditions::site_reward(category, site, depth)
             };
             let home = ResourceKey { game_id: key.game_id, entity_id: home_id };
+            let spoils: u128 = if depth < 3 {
+                crate::logic::triumphs::effects(home, context.timestamp).spoils_percent.into()
+            } else { 100 };
             let reward = if let Some(reward) = reward {
+                let reward = crate::resources::ResourceAmount { amount: reward.amount * spoils / 100, ..reward };
                 let reward = crate::logic::army_relics::site_reward(explorer, reward, context.timestamp);
                 let amount = self
                     .grant_resource(
@@ -83,24 +87,25 @@ pub mod ResourcesLogic {
                 None
             };
             self.resources.destroy(key);
-            crate::logic::expeditions::clear_site(
-                key, crate::expeditions::SiteClear { explorer_id: explorer.explorer_id, home_id, reward },
-            );
-            crate::logic::quest_progress::cleared(home, category, site.initial_guard_count, context.timestamp);
-            crate::progression::IArmyProgressionDispatcherTrait::grant_army_xp(
+            let base_xp = crate::progression::clear_xp(site.initial_guard_count, depth);
+            let boosted_xp = (Into::<u32, u128>::into(base_xp) * spoils / 100).try_into().unwrap();
+            let xp = crate::progression::IArmyProgressionDispatcherTrait::grant_army_xp(
                 crate::progression::IArmyProgressionLibraryDispatcher {
                     class_hash: self.release.classes(key.game_id).relics.read(),
                 },
-                explorer,
-                crate::progression::XpAward::Clear(crate::progression::clear_xp(site.initial_guard_count, depth)),
-                context.timestamp,
+                explorer, crate::progression::XpAward::Clear(boosted_xp), context.timestamp,
             );
+            crate::logic::expeditions::clear_site(
+                key, crate::expeditions::SiteClear { explorer_id: explorer.explorer_id, home_id, reward, xp },
+            );
+            crate::logic::quest_progress::cleared(home, category, site.initial_guard_count, context.timestamp);
             let actor = crate::logic::structures::structure(home).expect('missing home structure').owner;
             crate::logic::stories::emit_entity_story(
                 key,
                 actor,
                 crate::ownership::Story::SitePayout(
                     crate::expeditions::SitePayout {
+                        xp,
                         structure_id: home_id,
                         explorer_id: explorer.explorer_id,
                         site_id: key.entity_id,

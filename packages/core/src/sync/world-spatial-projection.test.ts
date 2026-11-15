@@ -222,7 +222,7 @@ const createHarness = () => {
         alt: false,
         col: input.col,
         row: input.row,
-        clear: { explorer_id: 74n, home_id: 7n, reward: null },
+        clear: { xp: 0, explorer_id: 74n, home_id: 7n, reward: null },
       },
       false,
     );

@@ -75,7 +75,7 @@ describe("the day log's line for a story", () => {
     ] as never);
     const reveal = { resource_type: ResourcesIds.Labor, amount: "98400000000", coord: { x: 1, y: 1 } };
     expect(dayLogLine(story("ExplorationReward", reveal), store)).toBe("+98 Labor, +2 XP");
-    expect(dayLogLine(story("SitePayout", { site_id: SITE, reward: null }, "Troll cleared"), store)).toBe(
+    expect(dayLogLine(story("SitePayout", { site_id: SITE, reward: null, xp: 123 }, "Troll cleared"), store)).toBe(
       "Troll cleared, +123 XP",
     );
     expect(dayLogLine(story("SkillPointSpent", { price: "0x64" }, "Battle II"), store)).toBe("Battle II");
@@ -86,7 +86,7 @@ describe("the day log's line for a story", () => {
       attacker: { before: "500000000000", after: "432000000000" },
       defender: { before: "150000000000", after: "0" },
     });
-    expect(dayLogLine(story("SitePayout", { site_id: SITE, reward: null }, "Troll cleared"), store, won)).toBe(
+    expect(dayLogLine(story("SitePayout", { site_id: SITE, reward: null, xp: 123 }, "Troll cleared"), store, won)).toBe(
       "Troll cleared, lost 68, +123 XP",
     );
     // A clear of a site this client no longer holds keeps its title: no figure is guessed.

@@ -35,7 +35,7 @@ export const ownerDayLog = (now: number) => {
         alt: false,
         col: 44 + index,
         row: 12,
-        clear: { explorer_id: 201, home_id: 7, reward: null },
+        clear: { xp: 0, explorer_id: 201, home_id: 7, reward: null },
       },
     })),
   ] as never);

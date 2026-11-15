@@ -1,4 +1,4 @@
-use snforge_std::{EventSpyTrait, interact_with_state, spy_events};
+use snforge_std::{EventSpyTrait, EventsFilterTrait, interact_with_state, spy_events};
 use starknet::storage::{StorageMapReadAccess, StoragePointerReadAccess};
 use world_test_support::tests::Deployment;
 use world_test_support::tests::preset_projection::optional_race_rules;
@@ -475,7 +475,7 @@ fn recorded_clear_mist_changes_real_reveals_only_on_its_day() {
                     } else {
                         1
                     });
-                    assert_eq!(crate::logic::triumphs::clear_mist(home, now), if day == 1 {
+                    assert_eq!(crate::logic::triumphs::effects(home, now).find_percent, if day == 1 {
                         200
                     } else {
                         100
@@ -517,4 +517,140 @@ fn clear_mist_root(game_id: u32, spires: bool) -> u256 {
         }
     }
     panic!("missing Clear Mist reveal root")
+}
+
+#[test]
+fn blood_and_pale_moons_project_each_battle_and_preserve_base_losses() {
+    for (blood, pale) in array![(true, false), (false, true), (true, true)] {
+        let mut preset = definition(5);
+        let mut depths = array![];
+        for depth in preset.settlement.depths {
+            depths.append(crate::expeditions::DepthRules {
+                beast_weak_lower: 20, beast_weak_upper: 20,
+                beast_strong_lower: 20, beast_strong_upper: 20, guard_step: 1, ..*depth,
+            });
+        }
+        preset.settlement.depths = depths.span();
+        let (d, game_id) = super::aspects::setup_aspect_preset(5, preset);
+        let home = ResourceKey { game_id, entity_id: found(d, game_id, 1) };
+        super::banes::train(d, home, 360);
+        if pale {
+            for tick in 1_u64..4 {
+                pay(d, game_id, DEEP_FOUNDATION, 1, array![DeepShare { home: home.entity_id, troops: 1 }].span(), 360 + tick * 120);
+            }
+        }
+        let now = world_test_support::tests::registrar::day_start(d, game_id, 1);
+        world_test_support::tests::resource_commands::grant(d, home, crate::resources::WHEAT, 10000 * RESOURCE_PRECISION);
+        assert!(world_test_support::tests::play_fixture::play(d.games,
+            world_test_support::tests::play_fixture::TestAction { game_id, actor: d.actor,
+                command: super::army_activity::muster(home.entity_id, 0, 0, 10) },
+            super::banes::root_for(game_id, 1, 20, if blood { crate::banes::BLOOD_MOON } else { 0 }), now));
+        let key = crate::troops::ExplorerKey { game_id, explorer_id: super::army_activity::slot_army(d,
+            crate::troops::ArmySlotKey { game_id, structure_id: home.entity_id, epoch: 1, slot: 0 }) };
+        let discovery = preset.economy.discovery.unwrap();
+        let destination = crate::geometry::neighbor(super::army_activity::army(d, key).coord, 0);
+        let root = world_test_support::tests::registrar::discovery_root(game_id, discovery,
+            if pale { 200 } else { 100 }, 0, None, crate::discovery::Discovery::Beasts);
+        assert!(world_test_support::tests::registrar::explore_with_root(d, game_id, key.explorer_id, root, now));
+        let site = interact_with_state(d.games, || crate::logic::map::occupancy(crate::geometry::tile_key(game_id, destination)).unwrap().entity_id);
+        let guard = crate::guards::GuardKey { game_id, structure_id: site, slot: 0 };
+        let bps: u128 = if pale { if blood { 7500 } else { 5000 } } else { 15000 };
+        for attempt in 0_u64..2 {
+            let base = interact_with_state(d.games, || crate::logic::guards::guard(guard).troops.count);
+            assert!(base > 0);
+            let mut events = spy_events();
+            assert!(execute_in_game(d, game_id, Command::BattleGuard(crate::commands::Battle {
+                attacker_id: key.explorer_id, defender_id: site, relic_slot: None,
+            }), now + 60 + attempt * 120));
+            let battle = recorded_site_battle(ref events, d, site);
+            assert_eq!(battle.defender.before, (base * bps + 9999) / 10000);
+            assert!(battle.defender.after < battle.defender.before);
+            let stored = interact_with_state(d.games, || crate::logic::guards::guard(guard).troops.count);
+            assert_eq!(stored, (battle.defender.after * 10000 + bps - 1) / bps);
+            assert!(stored < base);
+            if battle.attacker.after == 0 || stored == 0 { break; }
+        }
+        let retained = interact_with_state(d.games, || crate::logic::guards::guard(guard).troops.count);
+        let tomorrow = world_test_support::tests::registrar::day_start(d, game_id, 2);
+        assert!(world_test_support::tests::play_fixture::play(d.games,
+            world_test_support::tests::play_fixture::TestAction { game_id, actor: d.actor,
+                command: Command::SetEntityName(crate::names::SetEntityName { entity_id: home.entity_id, name: 'after moons' }) },
+            super::banes::root_for(game_id, 2, if blood { 0 } else { 40 }, 0), tomorrow));
+        assert_eq!(interact_with_state(d.games, || crate::logic::guards::guard(guard).troops.count), retained);
+        assert_eq!(interact_with_state(d.games, || crate::logic::triumphs::effects(home, tomorrow).beast_bps), 10000);
+    }
+}
+
+fn recorded_site_battle(ref events: snforge_std::EventSpy, d: Deployment, site: u64) -> crate::troops::BattleEvent {
+    for (_, event) in events.get_events().emitted_by(d.games).events {
+        let keys = event.keys.span();
+        for prefix in 0..keys.len() {
+            if *keys.at(prefix) != selector!("BattleEvent") { continue; }
+            let mut fields = keys.slice(prefix + 1, keys.len() - prefix - 1);
+            let mut data = event.data.span();
+            let battle: crate::troops::BattleEvent = starknet::Event::deserialize(ref fields, ref data).unwrap();
+            if battle.defender_id == site { return battle; }
+        }
+    }
+    panic!("missing site battle")
+}
+
+#[test]
+fn spoils_doubles_numeric_clears_and_records_xp_but_keeps_ruin_relics() {
+    for category in array![crate::taxonomy::BEASTS_CATEGORY, crate::taxonomy::CAMP_CATEGORY,
+        crate::taxonomy::RIFT_CATEGORY, crate::taxonomy::RUIN_CATEGORY] {
+        let mut preset = definition(5);
+        let mut depths = array![];
+        for depth in preset.settlement.depths {
+            depths.append(crate::expeditions::DepthRules { site_guard_lower: 1, site_guard_upper: 1,
+                ruin_guard_lower: 1, ruin_guard_upper: 1, ..*depth });
+        }
+        preset.settlement.depths = depths.span();
+        let (d, game_id) = super::aspects::setup_aspect_preset(5, preset);
+        let home = ResourceKey { game_id, entity_id: found(d, game_id, 1) };
+        super::banes::train(d, home, 360);
+        for tick in 1_u64..5 {
+            pay(d, game_id, DEEP_FOUNDATION, 1, array![DeepShare { home: home.entity_id, troops: 1 }].span(), 360 + tick * 120);
+        }
+        let now = world_test_support::tests::registrar::day_start(d, game_id, 1);
+        world_test_support::tests::resource_commands::grant(d, home, crate::resources::WHEAT, 10000 * RESOURCE_PRECISION);
+        assert!(world_test_support::tests::play_fixture::play(d.games,
+            world_test_support::tests::play_fixture::TestAction { game_id, actor: d.actor,
+                command: super::army_activity::muster(home.entity_id, 0, 0, 10) },
+            super::banes::root_for(game_id, 1, 20, 0), now));
+        let key = crate::troops::ExplorerKey { game_id, explorer_id: super::army_activity::slot_army(d,
+            crate::troops::ArmySlotKey { game_id, structure_id: home.entity_id, epoch: 1, slot: 0 }) };
+        let relic = crate::army_relics::ArmyRelic { kind: crate::army_relics::RelicKind::Tome, rank: 1 };
+        let expected = if category == crate::taxonomy::BEASTS_CATEGORY { crate::discovery::Discovery::Beasts }
+            else if category == crate::taxonomy::CAMP_CATEGORY { crate::discovery::Discovery::Camp }
+            else if category == crate::taxonomy::RIFT_CATEGORY { crate::discovery::Discovery::Rift }
+            else { crate::discovery::Discovery::Ruin(relic) };
+        let destination = crate::geometry::neighbor(super::army_activity::army(d, key).coord, 0);
+        let root = world_test_support::tests::registrar::discovery_root(game_id, preset.economy.discovery.unwrap(), 200, 0, Some(relic), expected);
+        assert!(world_test_support::tests::registrar::explore_with_root(d, game_id, key.explorer_id, root, now));
+        let site_key = interact_with_state(d.games, || ResourceKey { game_id,
+            entity_id: crate::logic::map::occupancy(crate::geometry::tile_key(game_id, destination)).unwrap().entity_id });
+        let site = interact_with_state(d.games, || crate::logic::expeditions::expedition_site(site_key).unwrap());
+        let before = interact_with_state(d.games, || crate::logic::progression::require(key).xp);
+        assert!(execute_in_game(d, game_id, Command::BattleGuard(crate::commands::Battle {
+            attacker_id: key.explorer_id, defender_id: site_key.entity_id, relic_slot: None,
+        }), now + 60));
+        interact_with_state(d.games, || {
+            let receipt = crate::logic::expeditions::expedition_site(site_key).unwrap().clear.unwrap();
+            let expected_xp = crate::progression::clear_xp(site.initial_guard_count, 0) * 2;
+            assert_eq!(receipt.xp, expected_xp);
+            assert_eq!(crate::logic::progression::require(key).xp - before, expected_xp);
+            if category == crate::taxonomy::RUIN_CATEGORY {
+                assert_eq!(receipt.reward, None);
+                assert_eq!(crate::logic::army_relics::read(key).first, Some(relic));
+            } else {
+                let base = crate::expeditions::site_reward(category, site, 0).unwrap();
+                let paid = receipt.reward.unwrap();
+                assert_eq!(paid.resource_type, base.resource_type);
+                assert_eq!(paid.amount, base.amount * 2);
+            }
+            assert_eq!(crate::logic::triumphs::effects(home, now - 1).spoils_percent, 100);
+            assert_eq!(crate::logic::triumphs::effects(home, now).spoils_percent, 200);
+        });
+    }
 }

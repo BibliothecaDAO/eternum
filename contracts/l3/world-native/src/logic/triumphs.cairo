@@ -26,17 +26,28 @@ pub fn period(home: ResourceKey, stage: u8) -> Option<Period> {
     Some(Period { start: day.start, end })
 }
 
-pub fn clear_mist(home: ResourceKey, timestamp: u64) -> u16 {
-    let race = IRaceLibraryDispatcher { class_hash: crate::logic::release::classes(home.game_id).economy.read() };
-    let Some(rules) = race.race_rules(home.game_id) else {
-        return 100;
-    };
-    let Some(period) = period(home, crate::race::CLEAR_MIST_STAGE) else {
-        return 100;
-    };
-    if timestamp >= period.start && timestamp < period.end {
-        rules.clear_mist_percent
-    } else {
-        100
+pub fn effects(home: ResourceKey, timestamp: u64) -> crate::race::ExpeditionEffects {
+    IRaceLibraryDispatcher { class_hash: crate::logic::release::classes(home.game_id).economy.read() }
+        .expedition_effects(home, timestamp)
+}
+
+pub fn read_effects(home: ResourceKey, timestamp: u64) -> crate::race::ExpeditionEffects {
+    let mut effects = crate::race::ExpeditionEffects { find_percent: 100, beast_bps: 10000, spoils_percent: 100 };
+    if let Some(rules) = crate::logic::race::rules(home.game_id) {
+        effects.find_percent = active_percent(home, crate::race::CLEAR_MIST_STAGE, rules.clear_mist_percent, timestamp);
+        effects.beast_bps = Into::<u16, u32>::into(active_percent(home, crate::race::PALE_MOON_STAGE, rules.pale_moon_percent, timestamp)) * 100;
+        effects.spoils_percent = active_percent(home, crate::race::SPOILS_STAGE, rules.spoils_percent, timestamp);
     }
+    let bane = crate::logic::banes::effects(home, timestamp, timestamp + 1);
+    for window in bane.windows {
+        if *window.kind == crate::banes::BLOOD_MOON {
+            effects.beast_bps = effects.beast_bps * Into::<u16, u32>::into(bane.beast_percent) / 100;
+        }
+    }
+    effects
+}
+
+fn active_percent(home: ResourceKey, stage: u8, percent: u16, timestamp: u64) -> u16 {
+    let Some(period) = period(home, stage) else { return 100; };
+    if timestamp >= period.start && timestamp < period.end { percent } else { 100 }
 }

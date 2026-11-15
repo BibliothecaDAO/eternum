@@ -54,7 +54,7 @@ it("names the Frontier encounter itself across the plate, cards, Events, lists a
   });
   const clear = {
     ...site,
-    clear: { explorer_id: 201n, home_id: 7n, reward: { resource_type: 37, amount: 550_000_000_000n } },
+    clear: { xp: 0, explorer_id: 201n, home_id: 7n, reward: { resource_type: 37, amount: 550_000_000_000n } },
   };
   const events = [
     buildStoryEventPresentation(

@@ -1,3 +1,4 @@
+import { GUARD_MODELS } from "@bibliothecadao/eternum/game-client";
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { useGame } from "@/hooks/context/game-context";
 import { useCurrentDefaultTick, useNowMs } from "@/hooks/helpers/use-block-timestamp";
@@ -227,7 +228,7 @@ const largestStack = (store: NativeFactStore, entityId: number, tick: number): T
  */
 const useCertainLoss = () => {
   const timestamp = useCurrentDefaultTick();
-  const facts = useNativeFacts([...STAMINA_MODELS, "Guard"]);
+  const facts = useNativeFacts([...STAMINA_MODELS, ...GUARD_MODELS]);
   return useMemo(() => {
     const gameId = configManager.getActiveGameId();
     return (army: CoachArmy, target: CoachTarget): boolean => {
