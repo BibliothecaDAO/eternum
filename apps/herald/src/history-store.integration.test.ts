@@ -210,6 +210,7 @@ describe("Frontier confirmed season history", () => {
         (index) =>
           new CairoCustomEnum({
             SitePayout: {
+              xp: 85,
               structure_id: 1,
               explorer_id: 7,
               site_id: 20 + index,
@@ -221,6 +222,7 @@ describe("Frontier confirmed season history", () => {
       stories.push(
         new CairoCustomEnum({
           SitePayout: {
+            xp: 85,
             structure_id: 1,
             explorer_id: 7,
             site_id: 9,

@@ -81,6 +81,7 @@ describe("GameStreamHub", () => {
     });
     const payout = (category: number, amount: number) => ({
       SitePayout: {
+        xp: 85,
         structure_id: 7,
         explorer_id: 70,
         site_id: 99,
