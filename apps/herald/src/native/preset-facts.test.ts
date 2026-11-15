@@ -1,3 +1,4 @@
+import { FRONTIER_FIXTURE_PRESET_ID, FRONTIER_S1_PRESET_ID } from "../../../../config/source/common/native-preset-modes";
 import { NativeFactStore } from "../../../../packages/core/src/client/native-fact-store";
 import { TroopTier, TroopType, type Troops } from "@bibliothecadao/types";
 import { ClientConfigManager } from "../../../../packages/core/src/managers/config-manager";
@@ -415,7 +416,7 @@ it("projects optional Deep rules from verified registration and publishes no row
   };
   for (const enabled of [false, true]) {
     const world = setup();
-    const preset = registration(7, (definition) => {
+    const preset = registration(FRONTIER_FIXTURE_PRESET_ID, (definition) => {
       if (enabled) definition.economy.deep = new CairoOption(CairoOptionVariant.Some, deep);
     });
     applyRegistration(world, preset);
@@ -432,7 +433,7 @@ it("projects daily quest rules from verified registration, without a legacy clai
   const rules = { base_counts: [1, 1, 1, 1, 1, 2, 15], labor: 1000n, essence: 1500n, bonus_percent: 150 };
   for (const enabled of [false, true]) {
     const world = setup();
-    const preset = registration(7, (definition) => {
+    const preset = registration(FRONTIER_FIXTURE_PRESET_ID, (definition) => {
       if (enabled) {
         definition.economy.quests = new CairoOption(CairoOptionVariant.Some, rules);
         definition.economy.labor = new CairoOption(CairoOptionVariant.None);
@@ -460,7 +461,7 @@ it("projects optional bane rules from the verified preset with whole Cull counts
   };
   for (const enabled of [false, true]) {
     const world = setup();
-    const preset = registration(7, (definition) => {
+    const preset = registration(FRONTIER_FIXTURE_PRESET_ID, (definition) => {
       if (enabled) {
         definition.economy.banes = new CairoOption(CairoOptionVariant.Some, rules);
         definition.economy.quests = new CairoOption(CairoOptionVariant.Some, {
@@ -499,7 +500,7 @@ it("projects optional race rules from verified registration into the native fact
   };
   for (const enabled of [false, true]) {
     const world = setup();
-    const preset = registration(7, (definition) => {
+    const preset = registration(FRONTIER_FIXTURE_PRESET_ID, (definition) => {
       if (enabled) {
         definition.economy.race = new CairoOption(CairoOptionVariant.Some, rules);
         definition.economy.deep = new CairoOption(CairoOptionVariant.Some, {
@@ -522,4 +523,25 @@ it("projects optional race rules from verified registration into the native fact
     );
     expect(store.get("RaceRules", { game_id: 1 })).toEqual(enabled ? { game_id: 1, ...rules } : undefined);
   }
+});
+
+
+it("publishes every active Season 1 rule through verified registration and launch", () => {
+  const world = setup();
+  const preset = registration(FRONTIER_S1_PRESET_ID);
+  applyRegistration(world, preset);
+  world.native.applyReceipt(world.fold, receipt(launch(preset)), 11, 0);
+  const store = new NativeFactStore();
+  for (const [model, rules] of [
+    ["DeepRules", preset.definition.economy.deep],
+    ["QuestRules", preset.definition.economy.quests],
+    ["BaneRules", preset.definition.economy.banes],
+    ["RaceRules", preset.definition.economy.race],
+  ] as const) {
+    store.applyFacts(world.fold.gameRows(model, "1").map(({ key, value }) => ({ model, key, value })));
+    const { game_id, ...actual } = store.require(model, { game_id: 1 });
+    expect(game_id).toBe(1);
+    expect(actual).toEqual(rules.unwrap());
+  }
+  expect(world.fold.gameRows("LaborRules", "1")).toEqual([]);
 });

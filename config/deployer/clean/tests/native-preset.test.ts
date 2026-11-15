@@ -1371,7 +1371,7 @@ test("preset 7 activates the complete Slice 1 rules while fixtures and historica
       stamina_defense_req: 0,
     });
     expect(built.rules.troop_limit_config.explore_reward_strength_cap).toBe(10000);
-    expect(built.economy.progression.unwrap().common_xp).toBe(60);
+    expect(built.economy.progression.unwrap()).toMatchObject({ common_xp: 60 });
     expect(
       built.settlement.depths.map((row) => [
         row.beast_weak_lower,
