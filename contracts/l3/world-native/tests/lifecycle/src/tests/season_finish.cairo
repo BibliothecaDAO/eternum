@@ -95,7 +95,7 @@ fn published_season_one_starts_all_systems_and_settles_its_fiftieth_day() {
         assert_eq!(crate::logic::aspects::home_aspect(crate::resources::ResourceKey { game_id, entity_id: home }), 1);
         let race = IRaceLibraryDispatcher { class_hash: crate::logic::release::classes(game_id).economy.read() };
         for aspect in 1_u8..5 {
-            let monument = race.aspect_hyperstructure(crate::aspects::AspectKey { game_id, aspect });
+            let monument = race.aspect_hyperstructure(crate::race::AspectKey { game_id, aspect });
             assert_eq!(monument.height, 0);
             assert!(monument.entity_id != 0);
         }
