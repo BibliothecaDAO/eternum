@@ -9,6 +9,7 @@ import { RESOURCE_PRECISION, ResourcesIds } from "@bibliothecadao/types";
 import type { FoldRow } from "../types";
 import { address, gameRows, integer, number, record, required, type Row } from "./values";
 import { frontierRewardOf } from "./frontier-rewards";
+import { isSeasonOneGame } from "./season-one";
 
 interface Standing {
   entry: HeraldFrontierLeaderboardEntry;
@@ -21,6 +22,7 @@ export function buildFrontierLeaderboard(
   history: readonly HeraldHistoryEvent[],
 ): HeraldFrontierLeaderboard {
   required(modelRows("GameRegistry"), gameId, "GameRegistry");
+  if (isSeasonOneGame(modelRows, gameId)) throw new Error("Season 1 ranks Aspects by height, not players by sites");
   const players = settledPlayers(gameRows(modelRows("Structure"), gameId), gameRows(modelRows("CampaignHome"), gameId));
   const receipts = new Set<string>();
   for (const event of history) {

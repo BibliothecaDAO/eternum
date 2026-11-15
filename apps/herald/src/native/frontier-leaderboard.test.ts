@@ -231,3 +231,12 @@ it("keeps Wonder identity for every settled home in the complete board, without 
   delete (rows.Structure![1]!.value.metadata as Record<string, unknown>).has_wonder;
   expect(() => buildFrontierLeaderboard(read, "1", [])).toThrow("missing its Wonder identity");
 });
+
+describe("a Season 1 game", () => {
+  it("ranks no player by the sites it cleared, though a legacy game does", () => {
+    const { rows, read } = facts([1, 2]);
+    expect(buildFrontierLeaderboard(read, "1", []).entries).toHaveLength(2);
+    rows.RaceRules = [{ key: "0", value: { game_id: "1", stage_height: 2000 } }];
+    expect(() => buildFrontierLeaderboard(read, "1", [])).toThrow("Season 1 ranks Aspects by height");
+  });
+});

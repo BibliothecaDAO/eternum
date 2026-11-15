@@ -2,6 +2,7 @@ import type { NodeHealth } from "./node-health";
 import { buildFrontierLeaderboard } from "./native/frontier-leaderboard";
 import type { HeraldGameLeaderboard } from "@bibliothecadao/eternum/game-sync";
 import { required, number } from "./native/values";
+import { isSeasonOneGame } from "./native/season-one";
 import { parseStoryHistoryCursor } from "@bibliothecadao/eternum/game-sync";
 import { GameFinalizedError } from "./world-fold";
 import {
@@ -200,6 +201,8 @@ export const createHeraldRequestHandler = (state: HeraldHttpState): ((request: R
 
     const leaderboardMatch = request.method === "GET" ? leaderboardPath.exec(url.pathname) : null;
     if (leaderboardMatch) {
+      if (isSeasonOneGame(state.fold.modelRows, leaderboardMatch[1]))
+        return jsonResponse({ error: "season_one_ranks_aspects" }, 404);
       try {
         const gameId = leaderboardMatch[1];
         const timestamp = state.chainTimestamp();

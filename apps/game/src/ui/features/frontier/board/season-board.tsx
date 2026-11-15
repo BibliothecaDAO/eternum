@@ -20,6 +20,7 @@ import { SeasonList, type SeasonListRow, type SeasonPodiumPlace } from "./season
 import { type SeasonLords, seasonLordsOf, seasonPodium } from "./season-pool";
 import { findOwnEntry, ownRank, wholeLords, earnedResource } from "./standings";
 import { FrontierAspectPage, useAspectBoard } from "../aspect/aspect-page";
+import { useRacesAspects } from "../aspect/races-aspects";
 
 type Entry = HeraldFrontierLeaderboardEntry;
 
@@ -33,10 +34,12 @@ export const useSeasonBoard = (enabled = true) => useFrontierBoard((board) => bo
 
 /** Herald's Frontier board for the active game, its entries and prizes, read through `select`. */
 export const useFrontierBoard = <T,>(select: (board: HeraldFrontierLeaderboard) => T, enabled = true) => {
+  // A Season 1 game races Aspects: Herald serves no player ranking for it, so nothing asks.
+  const races = useRacesAspects();
   const shard = requireShard(getActiveGame()?.chainId);
   const gameId = configManager.getActiveGameId();
   return useQuery({
-    enabled,
+    enabled: enabled && races === false,
     queryKey: ["frontierSeasonBoard", shard.url, gameId],
     queryFn: async () => {
       const board = await fetchHeraldLeaderboard(shard, gameId);
@@ -75,7 +78,7 @@ export const useSeasonViewer = () => useAccountStore((state) => state.account?.a
 /** The player's season rank as the Menu's Season row shows it: "—" while unknown, none for a viewer without a realm. */
 export const useSeasonRank = (): string => {
   const race = useAspectBoard();
-  const legacy = useSeasonBoard(race.known?.race === null);
+  const legacy = useSeasonBoard();
   const viewer = useSeasonViewer();
   if (!race.known) return "—";
   if (race.known.race) {

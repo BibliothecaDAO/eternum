@@ -206,6 +206,19 @@ it("serves the prepared leaderboard aggregate without paging history", async () 
   expect(await response.json()).toEqual({ mode: "points", game_id: "7", entries: [] });
 });
 
+it("answers no site ranking for a Season 1 game, whose race is between Aspects", async () => {
+  const season = createHeraldRequestHandler({
+    ...httpState,
+    fold: {
+      ...httpState.fold,
+      modelRows: (model: string) => (model === "RaceRules" ? [{ key: "7", value: { game_id: "7" } }] : []),
+    },
+  });
+  const response = await season(new Request("http://herald/games/7/leaderboard"));
+  expect([response.status, await response.json()]).toEqual([404, { error: "season_one_ranks_aspects" }]);
+  expect((await handler(new Request("http://herald/games/7/leaderboard"))).status).toBe(200);
+});
+
 it("passes a battle-only history filter to the store before pagination", async () => {
   const queryEvents = vi.fn(async () => ({ items: [], total: 0, limit: 350, offset: 0, complete_through_block: 12 }));
   const battleHandler = createHeraldRequestHandler({

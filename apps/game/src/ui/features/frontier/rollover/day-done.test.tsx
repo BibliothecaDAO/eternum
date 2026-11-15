@@ -25,6 +25,8 @@ const herald = vi.hoisted(() => ({
 /** The game's facts as the HUD and the day's turn read them: its registry, and realm 7 owned by the player. */
 const facts = vi.hoisted(() => ({
   get: (model: string) => (model === "GameRegistry" ? herald.game : undefined),
+  // A game whose complete snapshot holds no race rules ranks players by the sites they cleared.
+  absenceKnown: () => ({ known: {} }),
   structuresOwnedBy: () => [{ entity_id: 7 }],
 }));
 

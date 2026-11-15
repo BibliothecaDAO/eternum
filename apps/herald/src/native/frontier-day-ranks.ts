@@ -3,7 +3,8 @@ import { isCheckGame } from "../game-directory";
 import { dayOf } from "@bibliothecadao/eternum/expeditions";
 import type { HeraldFrontierDayRanks, HeraldHistoryEvent } from "@bibliothecadao/eternum/game-sync";
 import { buildFrontierLeaderboard } from "./frontier-leaderboard";
-import { gameRows, integer, number, required } from "./values";
+import { integer, number, required } from "./values";
+import { isSeasonOneGame } from "./season-one";
 import { historyEventOf, type HistoryStore } from "../history-store";
 import type { FoldRow } from "../types";
 import type { NativeIngestion } from "./ingestion";
@@ -32,11 +33,6 @@ export function closingFrontierDays(
     }
     return { ...day, entries: boards.get(day.game_id)! };
   });
-}
-
-/** Season 1 races Aspects by height; only games without race rules rank players by the sites they cleared. */
-function isSeasonOneGame(modelRows: (model: string) => FoldRow[], gameId: unknown): boolean {
-  return gameRows(modelRows("RaceRules"), gameId).length > 0;
 }
 
 function closedDayBounds(
