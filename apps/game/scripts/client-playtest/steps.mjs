@@ -4057,8 +4057,9 @@ function showsBothSides(shown) {
  * Opens the ruin's card from the map with the army selected, a desktop's right-click, a phone's tap, and reads it
  * once it shows what `ready` waits for.
  */
-function openTheRuinsCardUntil(ready, state = FIGHT_STATE) {
+function openTheRuinsCardUntil(ready, requestedState) {
   return async ({ browser, extraScreenshot }) => {
+    const state = requestedState ?? FIGHT_STATE;
     if (!onADesktop()) await panTheRuinUnderTheCard(browser, state);
     const before = browser.read(state);
     if (!before.ruinToken) return { before, after: before };
