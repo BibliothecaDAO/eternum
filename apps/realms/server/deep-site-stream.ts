@@ -13,10 +13,10 @@ const WATCH_INPUTS = new Set([
   "PlayerEntry",
 ]);
 
-/** Rivals' confirmed changes re-arm every eligible player's watches; a reconnect re-reads the cohort. */
-export function followDeepSites(shardUrl: string, gameId: number, changed: () => void): () => void {
+/** Confirmed public or player-scoped facts re-arm watches; a reconnect re-reads the cohort. */
+export function followDeepSites(shardUrl: string, gameId: number, changed: () => void, actor?: string): () => void {
   const transport = new HeraldGameSyncTransport({
-    url: buildHeraldGameStreamUrl(shardUrl, gameId),
+    url: buildHeraldGameStreamUrl(shardUrl, gameId, actor),
     gameId,
     modelDefinition: nativeModelDefinition(bindings as unknown as NativeWorldBindings),
     socketFactory: workerSocket,

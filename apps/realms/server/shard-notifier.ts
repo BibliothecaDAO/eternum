@@ -82,11 +82,12 @@ const DAY_MS = 86_400_000;
  * never recreated after. A device that receives a repeated id drops it by its own durable claim.
  */
 export class ShardNotifier extends DurableObject<Record<string, unknown>> {
-  private readonly siteStreams = new Map<number, () => void>();
+  private readonly siteStreams = new Map<number, Map<string | undefined, () => void>>();
   private readonly changedSiteGames = new Set<number>();
 
   private closeSiteStreams(): void {
-    for (const stop of this.siteStreams.values()) stop();
+    for (const streams of this.siteStreams.values())
+      for (const stop of streams.values()) stop();
     this.siteStreams.clear();
     this.changedSiteGames.clear();
   }
@@ -241,9 +242,9 @@ export class ShardNotifier extends DurableObject<Record<string, unknown>> {
         .filter((game) => game.mode === "frontier" && game.status !== "Ended" && game.status !== "Settled")
         .map((game) => game.game_id),
     );
-    for (const [gameId, stop] of this.siteStreams) {
+    for (const [gameId, streams] of this.siteStreams) {
       if (running.has(gameId)) continue;
-      stop();
+      for (const stop of streams.values()) stop();
       this.siteStreams.delete(gameId);
       this.changedSiteGames.delete(gameId);
     }
@@ -252,7 +253,7 @@ export class ShardNotifier extends DurableObject<Record<string, unknown>> {
       const stop = followDeepSites(shard.url, gameId, () => {
         this.changedSiteGames.add(gameId);
       });
-      this.siteStreams.set(gameId, stop);
+      this.siteStreams.set(gameId, new Map([[undefined, stop]]));
     }
     await this.ctx.storage.transaction(async (txn) => {
       for (const [key, watch] of await txn.list<DeepSiteWatch>({ prefix: "site-watch:" }))
@@ -262,12 +263,28 @@ export class ShardNotifier extends DurableObject<Record<string, unknown>> {
     });
   }
 
-  /** A rival's confirmed change refreshes the whole eligible cohort, including players who did not act. */
+  private syncPlayerSiteStreams(shard: WatchedShard, gameId: number, actors: Set<string>): void {
+    const streams = this.siteStreams.get(gameId)!;
+    for (const [actor, stop] of streams) {
+      if (actor === undefined || actors.has(actor)) continue;
+      stop();
+      streams.delete(actor);
+    }
+    for (const actor of actors) {
+      if (streams.has(actor)) continue;
+      streams.set(actor, followDeepSites(shard.url, gameId, () => {
+        this.changedSiteGames.add(gameId);
+      }, actor));
+    }
+  }
+
+  /** Public rivals and private research/army changes refresh the eligible cohort, including idle players. */
   private async watchDeepSites(env: IdentityEnv, shard: Required<WatchedShard>): Promise<void> {
     for (const gameId of [...this.changedSiteGames]) {
       this.changedSiteGames.delete(gameId);
       try {
-        const watches = await siteWatchesForGame(env, shard, gameId);
+        const { watches, actors } = await siteWatchesForGame(env, shard, gameId);
+        this.syncPlayerSiteStreams(shard, gameId, actors);
         await this.ctx.storage.transaction(async (txn) => {
           await txn.delete([...(await txn.list({ prefix: `site-watch:${gameId}:` })).keys()]);
           for (const watch of watches)
@@ -845,9 +862,12 @@ const siteNotifiedKey = (watch: DeepSiteWatch) =>
   `site-notified:${watch.gameId}:${watch.owner}:${watch.siteId}:${watch.day}`;
 
 /** Enrollment, consent and current realm facts are read before planning the next threshold. */
-async function siteWatchesForGame(env: IdentityEnv, shard: WatchedShard, gameId: number): Promise<DeepSiteWatch[]> {
+async function siteWatchesForGame(
+  env: IdentityEnv, shard: WatchedShard, gameId: number,
+): Promise<{ watches: DeepSiteWatch[]; actors: Set<string> }> {
   const accounts = await readEnrolledAccounts(shard.url, gameId);
   const planned = new Map<string, DeepSiteWatch>();
+  const actors = new Set<string>();
   for (let offset = 0; offset < accounts.length; offset += 100) {
     const owners = await realmsIdsOfAccounts(env.DB, accounts.slice(offset, offset + 100));
     const wanted = await Effect.runPromise(
@@ -869,13 +889,14 @@ async function siteWatchesForGame(env: IdentityEnv, shard: WatchedShard, gameId:
     );
     for (const [actor, owner] of owners) {
       if (!wanted.has(owner)) continue;
+      actors.add(actor);
       for (const watch of await readDeepSiteWatches(shard.url, { gameId, actor, owner }, Date.now())) {
         const previous = planned.get(siteWatchKey(watch));
         if (!previous || previous.dueAt > watch.dueAt) planned.set(siteWatchKey(watch), watch);
       }
     }
   }
-  return [...planned.values()];
+  return { watches: [...planned.values()], actors };
 }
 
 async function siteAlerts(
