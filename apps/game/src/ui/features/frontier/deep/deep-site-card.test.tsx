@@ -1,4 +1,4 @@
-import { act } from "react";
+import { act, type ReactNode } from "react";
 import { createRoot } from "react-dom/client";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { GameProvider } from "@/hooks/context/game-context";
@@ -11,7 +11,11 @@ import { RESOURCE_PRECISION, ResourcesIds } from "@bibliothecadao/types";
 import { readArmyMovementReadiness } from "@/ui/features/world/components/armies/army-movement-readiness";
 import { readDeepSites } from "@bibliothecadao/eternum/game-client";
 import { DeepSiteCard } from "./deep-site-card";
-import { resolveExplorerCombatTroops } from "@bibliothecadao/eternum/troop-stamina";
+import { resolveExplorerCombatTroops, resolveExplorerTroops, staminaAt } from "@bibliothecadao/eternum/troop-stamina";
+import { FrontierArmy } from "../army/frontier-army";
+import { useArmyStamina } from "../hud/army-order";
+
+const StaminaReading = () => <output>{useArmyStamina(201, 0)?.held ?? "unknown"}</output>;
 
 vi.mock("@/sync/active-game-client", async (original) => ({
   ...(await original<typeof import("@/sync/active-game-client")>()),
@@ -40,17 +44,17 @@ const draw = (now?: number) => {
   const attack = vi.fn().mockResolvedValue({ transaction_hash: "0x1" });
   const host = document.createElement("div");
   const root = createRoot(host);
-  const render = () =>
+  const render = (content?: ReactNode) =>
     act(() =>
       root.render(
         <GameProvider
           value={{ store, systemCalls: { interact_site: join, attack_explorer_vs_guard: attack } } as never}
           account={{ address: scenario.player } as never}
         >
-          <DeepSiteCard
+          {content ?? <DeepSiteCard
             site={readDeepSites(store, startsAt, 1).find((site) => site.name === "Quarry")!}
             onClose={() => {}}
-          />
+          />}
         </GameProvider>,
       ),
     );
@@ -87,6 +91,20 @@ describe("the Deep site's live native binding", () => {
       expect(hud.button("Join")).toBeUndefined();
       expect(hud.host.textContent).toContain("Already guarding");
       expect(hud.host.querySelectorAll("[data-deep-slots] .ui-row")).toHaveLength(4);
+      const army = hud.store.require("ExplorerTroops", { game_id: 1, explorer_id: 201 });
+      expect(army.troops.stamina).toEqual({ Slot: 0 });
+      const resolved = resolveExplorerTroops(hud.store, army, hud.scenario.startsAt);
+      expect(resolved).toBeDefined();
+      const rules = hud.store.require("SliceRules", { game_id: 1 });
+      expect(staminaAt(resolved!, hud.scenario.startsAt, rules.troop_stamina_config, 60).amount).toBe(60n);
+      hud.render(
+        <FrontierArmy
+          realm={hud.store.require("Structure", { game_id: 1, entity_id: army.owner })}
+          choosing={false}
+          onClose={() => {}}
+        />,
+      );
+      expect(hud.host.querySelector("[data-stamina-line]")?.textContent).toContain("60/140");
     } finally {
       hud.unmount();
     }
@@ -112,6 +130,31 @@ describe("the Deep site's live native binding", () => {
       hud.unmount();
     }
   });
+});
+
+it("refreshes stamina from guard membership alone and keeps a missing position unknown", () => {
+  const hud = draw();
+  try {
+    hud.render(<StaminaReading />);
+    expect(hud.host.textContent).toBe("60");
+    const personalTile = hud.store.entityOccupancy(1, 201)!;
+    act(() => hud.store.applyFacts([
+      { model: "TileOccupancy", key: hud.store.wireKeyOf("TileOccupancy", personalTile)!, value: null },
+    ]));
+    expect(hud.host.textContent).toBe("unknown");
+    const site = readDeepSites(hud.store, hud.scenario.startsAt, 1).find((site) => site.name === "Quarry")!;
+    const membership = { game_id: 1, explorer_id: 201n, site_id: site.id, slot: 1 };
+    act(() => hud.store.applyFacts([{ model: "DeepGuard", key: "0xdeed", value: membership }]));
+    expect(hud.host.textContent).toBe("60");
+    const siteTile = hud.store.entityOccupancy(1, site.id)!;
+    const siteKey = hud.store.wireKeyOf("TileOccupancy", siteTile)!;
+    act(() => hud.store.applyFacts([{ model: "TileOccupancy", key: siteKey, value: null }]));
+    expect(hud.host.textContent).toBe("unknown");
+    act(() => hud.store.applyFacts([{ model: "TileOccupancy", key: siteKey, value: siteTile }]));
+    expect(hud.host.textContent).toBe("60");
+  } finally {
+    hud.unmount();
+  }
 });
 
 it("counts only actual army-tick boundaries before a day ending between ticks", () => {

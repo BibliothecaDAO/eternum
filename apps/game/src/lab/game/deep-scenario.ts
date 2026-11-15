@@ -14,7 +14,9 @@ export const deepScenario = (): LabScenario => {
   const army = store.require("ExplorerTroops", { game_id: 1, explorer_id: SPIRE_ARMY });
   const home = store.require("Structure", { game_id: 1, entity_id: army.owner });
   const slice = store.require("SliceRules", { game_id: 1 });
-  const tick = Math.floor(startsAt / Number(slice.tick_config.armies_tick_in_seconds));
+  const tickSeconds = Number(slice.tick_config.armies_tick_in_seconds);
+  const tick = Math.floor(startsAt / tickSeconds);
+  const slot = store.require("ArmySlot", { game_id: 1, structure_id: army.owner, epoch: 0n, slot: 0 });
   const at = store.entityOccupancy(1, SPIRE_ARMY)!;
   const [allyHome, allyArmy] = [9n, 301n];
   const local = {
@@ -32,6 +34,20 @@ export const deepScenario = (): LabScenario => {
     altar_threshold: 1500,
   };
   const facts: LabFact[] = [
+    {
+      model: "ExplorerTroops",
+      key: store.wireKeyOf("ExplorerTroops", army)!,
+      value: wire({ ...army, troops: { ...army.troops, stamina: { Slot: 0 } } }),
+    },
+    {
+      model: "ArmySlot",
+      key: store.wireKeyOf("ArmySlot", slot)!,
+      value: wire({
+        ...slot,
+        explorer_id: army.explorer_id,
+        stamina: { amount: 40n, settled_at: startsAt - tickSeconds, remainder: 0 },
+      }),
+    },
     { model: "DeepRules", key: "0xdee0", value: wire(rules) },
     { model: "HomeAspect", key: "0xdee1", value: { game_id: 1, home: String(home.entity_id), aspect: 1 } },
     { model: "HomeAspect", key: "0xdee2", value: { game_id: 1, home: String(allyHome), aspect: 1 } },
