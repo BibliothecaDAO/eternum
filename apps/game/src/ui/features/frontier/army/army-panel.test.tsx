@@ -248,5 +248,6 @@ it("does not offer Scouting to a Knight", () => {
     ["battle", "logistics", "homecoming", "stamina"],
   );
   act(() => [...host.querySelectorAll("button")].find((button) => button.textContent === "Level up")!.click());
-  expect(spent).toHaveBeenCalledExactlyOnceWith({ kind: "Battle", value: undefined });
+  expect(spent).toHaveBeenCalledOnce();
+  expect(spent).toHaveBeenCalledWith({ kind: "Battle", value: undefined });
 });

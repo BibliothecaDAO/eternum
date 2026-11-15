@@ -4,6 +4,7 @@ import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 
 import { useUIStore } from "@/hooks/store/use-ui-store";
+import type { DockArmy } from "../hud/dock-armies";
 
 const game = vi.hoisted(() => ({
   spendPoint: vi.fn(() => Promise.resolve({ transaction_hash: "0x7" })),
@@ -36,6 +37,7 @@ const game = vi.hoisted(() => ({
     legendary_xp: 1500,
   },
 }));
+const troopsFact: Pick<DockArmy["troopsFact"], "category"> = { category: "Knight" };
 const army = {
   explorerId: 12,
   number: 1,
@@ -43,7 +45,7 @@ const army = {
   art: "knight-t1",
   xp: 12,
   troops: 1_500,
-  troopsFact: { category: "Knight" },
+  troopsFact,
   stamina: { current: 4, max: 120 },
   secondsToFull: 232,
   canSpendSkillPoint: false,
@@ -95,6 +97,7 @@ beforeEach(() => {
   game.learned = 0n;
   game.progress.xp = 12;
   game.progress.common_points = 0;
+  troopsFact.category = "Knight";
 });
 
 afterEach(() => {
@@ -116,6 +119,7 @@ it("opens the army's panel from its row on a desktop, whether it holds a point",
 });
 
 it("shows the army's figures, then its level-ups one step on, and buys the chosen level with spend_skill_point", async () => {
+  troopsFact.category = "Paladin";
   game.progress.xp = 260;
   game.progress.common_points = 1;
   useUIStore.setState((state) => ({ entityActions: { ...state.entityActions, selectedEntityId: 12 } }));
