@@ -37,9 +37,14 @@ const outcomeOf = (attacker: Pick<FightSide, "after">, defender: Pick<FightSide,
 
 const troops = (amount: unknown): number => Number(BigInt(String(amount))) / RESOURCE_PRECISION;
 
-function sideOf(store: NativeFactStore, game_id: number, home: bigint, report: Record<string, unknown>): FightSide {
+function sideOf(
+  store: NativeFactStore,
+  game_id: number,
+  home: bigint,
+  report: Record<string, unknown>,
+): FightSide | undefined {
   const aspect = aspects.find((candidate) => candidate.id === store.get("HomeAspect", { game_id, home })?.aspect);
-  if (!aspect) throw new Error(`Fight has no Aspect for home ${home}`);
+  if (!aspect) return undefined;
   return { aspect: aspect.name, before: troops(report.before), after: troops(report.after) };
 }
 
@@ -77,35 +82,41 @@ export async function readDeepFightWindow(
   return battles;
 }
 
+/** The fights read, and how many of the Deep's player fights have a side the store cannot yet name an Aspect for. */
+interface AspectFights {
+  fights: AspectFight[];
+  unnamed: number;
+}
+
 /**
  * The player fights in the Deep among the battles, as Herald lists them: a fight elsewhere on the map is not the Aspect's,
- * and a site's neutral beast (owner 0) has no Aspect to name. A fight whose sides' Aspects the store cannot name is left
- * out and said in the console, never given an Aspect it does not have.
+ * and a site's neutral beast (owner 0) has no Aspect to name. A fight whose sides' Aspects the store cannot name is
+ * counted in `unnamed`, never given an Aspect it does not have and never passed over as if it had not happened.
  */
 export function aspectFights(
   store: NativeFactStore,
   game_id: number,
   battles: readonly HeraldHistoryEvent[],
-): AspectFight[] {
+): AspectFights {
   const { spacing } = store.require("SettlementRules", { game_id });
-  return battles.flatMap(({ value, transaction_hash, event_index }) => {
-    if (!isPlayerDeepFight(spacing, { value })) return [];
+  const fights: AspectFight[] = [];
+  let unnamed = 0;
+  for (const { value, transaction_hash, event_index } of battles) {
+    if (!isPlayerDeepFight(spacing, { value })) continue;
     const [attackerHome, defenderHome] = [BigInt(String(value.attacker_owner)), BigInt(String(value.defender_owner))];
-    try {
-      const attacker = sideOf(store, game_id, attackerHome, value.attacker as Record<string, unknown>);
-      const defender = sideOf(store, game_id, defenderHome, value.defender as Record<string, unknown>);
-      return [
-        {
-          id: `${transaction_hash}:${event_index}`,
-          at: Number(BigInt(String(value.timestamp))),
-          attacker,
-          defender,
-          outcome: outcomeOf(attacker, defender),
-        },
-      ];
-    } catch (error) {
-      console.error("[aspect feed] a fight was left out", error);
-      return [];
+    const attacker = sideOf(store, game_id, attackerHome, value.attacker as Record<string, unknown>);
+    const defender = sideOf(store, game_id, defenderHome, value.defender as Record<string, unknown>);
+    if (!attacker || !defender) {
+      unnamed++;
+      continue;
     }
-  });
+    fights.push({
+      id: `${transaction_hash}:${event_index}`,
+      at: Number(BigInt(String(value.timestamp))),
+      attacker,
+      defender,
+      outcome: outcomeOf(attacker, defender),
+    });
+  }
+  return { fights, unnamed };
 }

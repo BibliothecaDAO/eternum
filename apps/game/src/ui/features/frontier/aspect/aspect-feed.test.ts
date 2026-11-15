@@ -53,7 +53,7 @@ it("tells each fight by the troops each side kept, whatever its emitter wrote as
     battle({ winner: 800, attacker: [100, 0], defender: [60, 20] }, 2),
     battle({ winner: 0, attacker: [100, 70], defender: [60, 30] }, 3),
     battle({ winner: 0, attacker: [50, 0], defender: [50, 0] }, 4),
-  ]);
+  ]).fights;
   expect([wins, loses, standoff, mutual].map((fight) => fight!.outcome)).toEqual([
     "attacker",
     "defender",
@@ -66,14 +66,15 @@ it("tells each fight by the troops each side kept, whatever its emitter wrote as
   expect(wipedOut(wins!.attacker)).toBe(false);
 });
 
-it("leaves out a site's neutral beast, a fight outside the Deep and a fight it cannot name, and does not throw", () => {
-  const fights = aspectFights(store, 1, [
+it("leaves out a site's neutral beast and a fight outside the Deep, and counts a fight it cannot name", () => {
+  const { fights, unnamed } = aspectFights(store, 1, [
     battle({ defenderOwner: 0, winner: 7, attacker: [100, 90], defender: [10_000, 9_000] }, 1),
     battle({ winner: 7, attacker: [100, 80], defender: [60, 0], at: { x: 3, y: 3 } }, 2),
     battle({ defenderOwner: 99, winner: 7, attacker: [100, 80], defender: [60, 0] }, 3),
     battle({ winner: 7, attacker: [100, 80], defender: [60, 0] }, 4),
   ]);
   expect(fights.map(({ id }) => id)).toEqual(["0xabc:4"]);
+  expect(unnamed).toBe(1);
 });
 
 it("reads pages until the window holds enough Deep fights, however many fights elsewhere come first", async () => {
@@ -86,7 +87,7 @@ it("reads pages until the window holds enough Deep fights, however many fights e
   ];
   const read = async (offset: number) => ({ items: pages[offset / 3] ?? [], total: 7 });
   const window = await readDeepFightWindow(read, SPACING, 1, 3);
-  expect(aspectFights(store, 1, window).map(({ id }) => id)).toEqual(["0xabc:20"]);
+  expect(aspectFights(store, 1, window).fights.map(({ id }) => id)).toEqual(["0xabc:20"]);
   // A history that ends first returns what it has, and a failed page is the caller's to show.
   expect(await readDeepFightWindow(read, SPACING, 5, 3)).toHaveLength(7);
   await expect(
