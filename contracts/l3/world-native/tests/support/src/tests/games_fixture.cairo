@@ -325,13 +325,7 @@ pub mod GamesFixture {
         }
     }
     #[starknet::embeddable]
-    pub impl GuardsFixture<TContractState, +Drop<TContractState>> of crate::guards::IGuards<TContractState> {
-        fn guard(self: @TContractState, key: crate::guards::GuardKey) -> crate::guards::Guard {
-            let classes = fixture_classes(key.game_id);
-            crate::guards::IGuardsDispatcherTrait::guard(
-                crate::guards::IGuardsLibraryDispatcher { class_hash: classes.troops.read() }, key,
-            )
-        }
+    pub impl GuardInitializationFixture<TContractState, +Drop<TContractState>> of crate::guards::IGuardInitialization<TContractState> {
         fn initialize_structure_guards(
             ref self: TContractState,
             key: crate::resources::ResourceKey,
@@ -340,12 +334,21 @@ pub mod GamesFixture {
             game_context: crate::commands::ActionContext,
         ) {
             let classes = fixture_classes(key.game_id);
-            crate::guards::IGuardsDispatcherTrait::initialize_structure_guards(
-                crate::guards::IGuardsLibraryDispatcher { class_hash: classes.troops.read() },
+            crate::guards::IGuardInitializationDispatcherTrait::initialize_structure_guards(
+                crate::guards::IGuardInitializationLibraryDispatcher { class_hash: classes.map.read() },
                 key,
                 seed,
                 timestamp,
                 game_context,
+            )
+        }
+    }
+    #[starknet::embeddable]
+    pub impl GuardsFixture<TContractState, +Drop<TContractState>> of crate::guards::IGuards<TContractState> {
+        fn guard(self: @TContractState, key: crate::guards::GuardKey) -> crate::guards::Guard {
+            let classes = fixture_classes(key.game_id);
+            crate::guards::IGuardsDispatcherTrait::guard(
+                crate::guards::IGuardsLibraryDispatcher { class_hash: classes.troops.read() }, key,
             )
         }
         fn add_starting_guard(

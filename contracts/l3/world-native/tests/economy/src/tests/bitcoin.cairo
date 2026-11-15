@@ -553,8 +553,8 @@ fn discovery_guard_initialization_rejects_more_guards_than_the_structure_allows(
     }
     start_cheat_caller_address(d.games, d.games);
     assert!(
-        crate::guards::IGuardsSafeDispatcherTrait::initialize_structure_guards(
-            crate::guards::IGuardsSafeDispatcher { contract_address: d.games },
+        crate::guards::IGuardInitializationSafeDispatcherTrait::initialize_structure_guards(
+            crate::guards::IGuardInitializationSafeDispatcher { contract_address: d.games },
             key,
             99,
             30,

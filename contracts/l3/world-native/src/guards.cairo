@@ -34,18 +34,22 @@ pub trait IStructureCapture<T> {
 #[starknet::interface]
 pub trait IGuards<T> {
     fn guard(self: @T, key: GuardKey) -> Guard;
-    fn initialize_structure_guards(
-        ref self: T,
-        key: crate::resources::ResourceKey,
-        seed: u256,
-        timestamp: u64,
-        game_context: crate::commands::ActionContext,
-    );
     fn add_starting_guard(
         ref self: T,
         key: crate::resources::ResourceKey,
         category: crate::troops::TroopType,
         amount: u128,
+        timestamp: u64,
+        game_context: crate::commands::ActionContext,
+    );
+}
+
+#[starknet::interface]
+pub trait IGuardInitialization<T> {
+    fn initialize_structure_guards(
+        ref self: T,
+        key: crate::resources::ResourceKey,
+        seed: u256,
         timestamp: u64,
         game_context: crate::commands::ActionContext,
     );
