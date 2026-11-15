@@ -6,8 +6,9 @@ import type { StaminaBar } from "@/ui/design-system/kit/hud-elements";
 import type { ReactNode } from "react";
 
 import type { EtherealLayer } from "@bibliothecadao/eternum";
+import type { DeepGuardLife } from "@bibliothecadao/eternum/game-client";
 
-import { EtherealMark, HomecomingReturn, SlotRing, StaminaReading, xpLine, type XpGoal } from "./army-token";
+import { DeepDrain, EtherealMark, HomecomingReturn, SlotRing, StaminaReading, xpLine, type XpGoal } from "./army-token";
 
 /**
  * One army on a desktop's list: its painting with its number; its name with its XP beside it (what it buys next on
@@ -21,6 +22,7 @@ export const ArmyRow = ({
   art,
   troops,
   returnsHome,
+  drain,
   stamina,
   xp,
   xpGoal,
@@ -32,6 +34,8 @@ export const ArmyRow = ({
 }: {
   label: string;
   number: number | undefined;
+  /** What its Deep site costs it: its troops fall each tick. None while it holds none. */
+  drain?: DeepGuardLife;
   /** The Ethereal layer it stands in; none on the surface. */
   ethereal?: EtherealLayer;
   art: IconMeaning | undefined;
@@ -75,6 +79,7 @@ export const ArmyRow = ({
     detail={
       <span className="flex flex-col gap-1 tabular-nums">
         <RowLine words={troops === undefined ? "—" : troopCount(troops)} figure={<RowStamina stamina={stamina} />} />
+        {drain && <DeepDrain drain={drain} words />}
         {returnsHome !== undefined && <HomecomingReturn troops={returnsHome} words />}
       </span>
     }

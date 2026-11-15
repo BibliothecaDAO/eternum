@@ -23,7 +23,8 @@ export { hasSingleTilePosition } from "./native-occupancy";
 export { entityMapPosition } from "../utils/tile";
 export { safeInteger } from "../utils/safe-integer";
 
-export { armyCombatRefusal } from "../utils/army-opponents";
+export { armyCombatRefusal, isAspectAlly } from "../utils/army-opponents";
+export { deepGuardLife, type DeepGuardLife } from "../utils/deep-guard-life";
 export { readDeepSites, type DeepSiteView } from "./views/deep-sites";
 export { readRaceBoard, readRaceMonument, RACE_MODELS, type RaceBoard } from "./views/race";
 export { currentArmy } from "../utils/deep";

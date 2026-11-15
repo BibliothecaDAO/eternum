@@ -508,6 +508,8 @@ export const DEEP_WORDS = {
   freeSlot: "Free slot",
   foughtInOrder: "An attacker fights them one after the other, from the top",
   facesNext: "fought next",
+  /** What holding a site costs: the troops its army loses at each tick. */
+  drain: (troops: string) => `${troops} troops lost a tick`,
   /** How long a guard's troops last: its army ticks, and the time until the last of them. */
   lasts: (ticks: number, time: string) => `${formatExact(ticks)} ticks left (${time})`,
   /** What the army panel's chip of those ticks counts. */

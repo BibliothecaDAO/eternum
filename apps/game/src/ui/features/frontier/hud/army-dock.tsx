@@ -123,6 +123,7 @@ const DockToken = ({
     <ArmyToken
       label={army.label}
       returnsHome={returnsHome}
+      drain={army.drain}
       number={army.number}
       art={army.art}
       xp={army.xp}
@@ -154,6 +155,7 @@ const DockArmyRow = ({
     <ArmyRow
       label={army.label}
       returnsHome={returnsHome}
+      drain={army.drain}
       number={army.number}
       art={army.art}
       troops={army.troops}

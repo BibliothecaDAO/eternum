@@ -11,8 +11,9 @@ import { requestOrderAt } from "@/three/scenes/worldmap-order-request";
 import { costLine } from "@/ui/design-system/kit/price-faces";
 import { staminaShortfall } from "@/ui/design-system/kit/reasons";
 import { toast } from "@/ui/features/event-feed/notify";
-import { configManager, dayOf, getStructureName, journeyDistance, readExpeditionRules } from "@bibliothecadao/eternum";
+import { configManager, getStructureName, journeyDistance } from "@bibliothecadao/eternum";
 import {
+  deepGuardLife,
   readDeepSites,
   safeInteger,
   nativeRuleConstants,
@@ -185,12 +186,6 @@ function guardView(store: NativeFactStore, game_id: number, site: Site, selected
   if (site.beastTroops > 0n) return { kind: "beast", troops: Number(site.beastTroops) / RESOURCE_PRECISION };
   const next = site.guards[0];
   if (!next) return { kind: "open" };
-  const rules = store.require("DeepRules", { game_id });
-  const interval = Number(store.require("SliceRules", { game_id }).tick_config.armies_tick_in_seconds);
-  const calendar = readExpeditionRules(store, game_id);
-  if (!calendar) throw new Error("Deep guards require expedition days");
-  const day = dayOf(calendar, now);
-  if (!day) throw new Error("Deep site is outside its season");
   const total = site.guards.reduce((sum, { army }) => sum + army.troops.count, 0n);
   const holder = aspects.find((candidate) => candidate.id === aspect(store, game_id, next.army.owner));
   if (!holder) throw new Error("Unknown Deep holder Aspect");
@@ -200,17 +195,13 @@ function guardView(store: NativeFactStore, game_id: number, site: Site, selected
     next: safeInteger(next.army.explorer_id),
     slots: site.guards.map(({ slot, army }) => {
       const home = store.require("Structure", { game_id, entity_id: army.owner });
-      const ticks = Number((army.troops.count + rules.loss_per_tick - 1n) / rules.loss_per_tick);
-      const expires = Math.min(day.end, (Math.floor(now / interval) + ticks) * interval);
+      const life = deepGuardLife(store, game_id, army.troops.count, now);
       return {
         slot,
         armyId: safeInteger(army.explorer_id),
         realm: getStructureName(home, store).name,
         troops: Number(army.troops.count) / RESOURCE_PRECISION,
-        ticks: {
-          left: Math.min(ticks, Math.floor(day.end / interval) - Math.floor(now / interval)),
-          time: formatDuration(expires - now),
-        },
+        ticks: { left: life.ticksLeft, time: formatDuration(life.secondsLeft) },
         share: Number((army.troops.count * 100n) / total),
         mine: selected !== null && army.owner === selected.army.owner,
       };

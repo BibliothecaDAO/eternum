@@ -24,6 +24,7 @@ export type PickedArmyView = Pick<
   | "canSpendSkillPoint"
   | "tiers"
   | "ethereal"
+  | "drain"
 >;
 
 /**
@@ -57,6 +58,7 @@ export const PickedArmy = ({
       troops={army.troops}
       canSpendSkillPoint={army.canSpendSkillPoint}
       ethereal={army.ethereal}
+      drain={army.drain}
       selected
       flyTarget={attributeBadgeTarget(army.explorerId)}
       onPick={onDetails}

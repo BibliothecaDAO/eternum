@@ -26,3 +26,19 @@ export function armyCombatRefusal(
   }).aspect;
   return attackerAspect === defenderAspect ? "allied" : undefined;
 }
+
+/** Whether a home stands in the Aspect of one of the viewer's own realms: an Aspect's armies are allies in the Deep. */
+export function isAspectAlly(
+  store: Pick<NativeFactStore, "get" | "structuresOwnedBy">,
+  game_id: number,
+  viewer: bigint | null,
+  home: number | bigint,
+): boolean {
+  if (viewer === null) return false;
+  const aspect = store.get("HomeAspect", { game_id, home })?.aspect;
+  if (aspect === undefined) return false;
+  for (const realm of store.structuresOwnedBy(game_id, viewer)) {
+    if (store.get("HomeAspect", { game_id, home: realm.entity_id })?.aspect === aspect) return true;
+  }
+  return false;
+}

@@ -1,7 +1,7 @@
 import { expect, it } from "vitest";
 import type { NativeFactStore } from "../client/native-fact-store";
 import type { NativeRows } from "../../../../contracts/l3/world-native/schema/client.gen";
-import { armyCombatRefusal } from "./army-opponents";
+import { armyCombatRefusal, isAspectAlly } from "./army-opponents";
 
 it("uses the native home Aspects and shared Deep boundary for army orders", () => {
   const army = { game_id: 7, explorer_id: 11n, owner: 1n } as NativeRows["ExplorerTroops"];
@@ -28,4 +28,25 @@ it("uses the native home Aspects and shared Deep boundary for army orders", () =
   dayUnit = 0;
   expect(armyCombatRefusal(store, army, enemy)).toBeUndefined();
   expect(armyCombatRefusal(store, army, { ...enemy, game_id: 8 })).toBe("no-attack");
+});
+
+it("calls an army an ally only when its home shares the Aspect of one of the viewer's realms", () => {
+  const aspects = new Map<bigint, number>([
+    [1n, 3],
+    [2n, 3],
+    [4n, 4],
+  ]);
+  const store = {
+    get: (_model: string, key: { home: bigint | number }) => {
+      const aspect = aspects.get(BigInt(key.home));
+      return aspect === undefined ? undefined : { aspect };
+    },
+    *structuresOwnedBy() {
+      yield { entity_id: 1n };
+    },
+  } as unknown as NativeFactStore;
+  expect(isAspectAlly(store, 7, 9n, 2n)).toBe(true);
+  expect(isAspectAlly(store, 7, 9n, 4n)).toBe(false);
+  expect(isAspectAlly(store, 7, 9n, 5n)).toBe(false);
+  expect(isAspectAlly(store, 7, null, 2n)).toBe(false);
 });

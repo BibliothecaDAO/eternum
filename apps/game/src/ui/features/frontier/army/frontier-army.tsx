@@ -67,6 +67,7 @@ const ArmyPanel = ({
     name: army.label,
     art: army.art,
     ethereal: army.ethereal,
+    drain: army.drain,
     troops: army.troops,
     xp: progress.xp,
     stamina: army.stamina,

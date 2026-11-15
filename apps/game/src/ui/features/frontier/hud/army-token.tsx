@@ -1,10 +1,18 @@
-import { formatAmount, formatCharge, formatExact, formatGain } from "@bibliothecadao/types";
+import {
+  formatAmount,
+  formatCharge,
+  formatDuration,
+  formatExact,
+  formatGain,
+  RESOURCE_PRECISION,
+} from "@bibliothecadao/types";
 import { Icon as SemanticIcon, type IconMeaning } from "@/ui/design-system/icon";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 
-import { HudStamina, type StaminaBar, rankedTip } from "@/ui/design-system/kit/hud-elements";
+import { HudMeter, HudStamina, type StaminaBar, rankedTip } from "@/ui/design-system/kit/hud-elements";
 import {
   comesHomeAtDayEnd,
+  DEEP_WORDS,
   DEPTH_NUMERALS,
   depthName,
   type RankedWords,
@@ -13,6 +21,7 @@ import {
   xpTowardTip,
 } from "@/ui/design-system/kit/words";
 import type { EtherealLayer } from "@bibliothecadao/eternum";
+import type { DeepGuardLife } from "@bibliothecadao/eternum/game-client";
 
 import { reachMark } from "../depth-art";
 
@@ -103,6 +112,7 @@ export const ArmyToken = ({
   stamina,
   troops,
   returnsHome,
+  drain,
   canSpendSkillPoint,
   ethereal,
   selected,
@@ -110,6 +120,8 @@ export const ArmyToken = ({
   onPick,
 }: {
   label: string;
+  /** What its Deep site costs it: its troops fall each tick. None while it holds none. */
+  drain?: DeepGuardLife;
   /** The army's number among its realm's; absent where a token stands for no numbered army. */
   number?: number;
   /** The Ethereal layer it stands in; none on the surface. */
@@ -161,6 +173,7 @@ export const ArmyToken = ({
       >
         {formatAmount(troops)}
       </span>
+      {drain && <DeepDrain drain={drain} />}
       {returnsHome !== undefined && <HomecomingReturn troops={returnsHome} />}
     </>
   );
@@ -250,6 +263,28 @@ export const HomecomingReturn = ({ troops, words = false }: { troops: number; wo
     {words ? comesHomeAtDayEnd(formatExact(troops)) : formatGain(troops)}
   </span>
 );
+
+/**
+ * What a Deep guard's site costs it: its troops fall each tick, so the chip says how many ticks it holds and its bar
+ * how much of the day those troops last for. On a desktop's row, where there is room, in words.
+ */
+export const DeepDrain = ({ drain, words = false }: { drain: DeepGuardLife; words?: boolean }) => {
+  const line = `${DEEP_WORDS.drain(formatExact(Number(drain.lossPerTick) / RESOURCE_PRECISION))}; ${DEEP_WORDS.lasts(drain.ticksLeft, formatDuration(drain.secondsLeft))}`;
+  return (
+    <span
+      role="img"
+      aria-label={line}
+      data-tip={words ? undefined : line}
+      className="flex shrink-0 flex-col gap-0.5 self-stretch text-hud-label leading-none text-hud-bad tabular-nums"
+    >
+      <span className="flex items-center gap-1">
+        <SemanticIcon name="flame" size={16} />
+        {words ? line : formatExact(drain.ticksLeft)}
+      </span>
+      <HudMeter label={line} tone="warn" share={drain.ticksInDay === 0 ? 0 : drain.ticksToEmpty / drain.ticksInDay} />
+    </span>
+  );
+};
 
 /**
  * A desktop row's stamina: the bar in segments, and its exact count beside it ("58/120") in a column wide enough for

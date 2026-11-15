@@ -49,7 +49,12 @@ import { GRAPHICS_DEV_GUI_ENABLED, createGuiFolder } from "@/three/utils/gui-man
 import { isAddressEqualToAccount } from "@/three/utils/utils";
 import { getExplorerStaminaSnapshot } from "@/utils/explorer-stamina";
 import { readArmyMovementReadiness } from "@/ui/features/world/components/armies/army-movement-readiness";
-import { currentArmy, safeInteger, type GameClientSetup as SetupResult } from "@bibliothecadao/eternum/game-client";
+import {
+  currentArmy,
+  isAspectAlly,
+  safeInteger,
+  type GameClientSetup as SetupResult,
+} from "@bibliothecadao/eternum/game-client";
 import {
   FELT_CENTER,
   Position,
@@ -851,8 +856,10 @@ export class ArmyManager {
     const nextOwningStructureId =
       params.ownerStructureId !== undefined ? params.ownerStructureId : army.owningStructureId;
     const nextIsMine = isAddressEqualToAccount(mergedOwner.address);
+    const nextIsAlly = this.isAllyArmy(nextOwningStructureId, nextIsMine);
     const nextColor = this.getArmyColor({
       isMine: nextIsMine,
+      isAlly: nextIsAlly,
       owner: { address: mergedOwner.address },
     });
 
@@ -860,7 +867,7 @@ export class ArmyManager {
       army.owner.address !== mergedOwner.address ||
       army.owner.ownerName !== mergedOwner.ownerName ||
       army.owner.guildName !== mergedOwner.guildName;
-    const ownershipVisualChanged = army.isMine !== nextIsMine || army.color !== nextColor;
+    const ownershipVisualChanged = army.isMine !== nextIsMine || army.isAlly !== nextIsAlly || army.color !== nextColor;
     const structureChanged = army.owningStructureId !== nextOwningStructureId;
 
     if (!ownerChanged && !ownershipVisualChanged && !structureChanged) {
@@ -872,6 +879,7 @@ export class ArmyManager {
     army.owner.guildName = mergedOwner.guildName;
     army.owningStructureId = nextOwningStructureId;
     army.isMine = nextIsMine;
+    army.isAlly = nextIsAlly;
     army.color = nextColor;
     this.armyPresentations.set(params.entityId, army);
     this.refreshArmyCompactLabel(army);
@@ -1298,7 +1306,6 @@ export class ArmyManager {
       plate: buildArmyPlate(
         {
           ...army,
-          isAlly: false,
           watched: watchedSide(this.store, army.owner.address),
         },
         this.resolveHomeRealmName(army),
@@ -1768,11 +1775,13 @@ export class ArmyManager {
     }
 
     const isMine = finalOwnerAddress ? isAddressEqualToAccount(finalOwnerAddress) : false;
+    const isAlly = this.isAllyArmy(finalOwningStructureId, isMine);
 
     // Determine the color based on ownership using the centralized player color system
     // Relation colours are shared with sails, structures and labels.
     const color = this.getArmyColor({
       isMine,
+      isAlly,
       owner: { address: finalOwnerAddress || 0n },
     });
 
@@ -1788,6 +1797,7 @@ export class ArmyManager {
         entityId: params.entityId,
         hexCoords: params.hexCoords,
         isMine,
+        isAlly,
         owningStructureId: finalOwningStructureId,
         owner: {
           address: finalOwnerAddress || 0n,
@@ -2757,7 +2767,16 @@ export class ArmyManager {
   /** The army's path colour, as its plate tells its side: its side's, or its owner's seat colour to a watcher. */
   private pathColourOf(army: ArmyData): Color {
     const owner = army.owner.address;
-    return armyPathColour({ isMine: army.isMine, isAlly: false, owner: army.owner }, watchedSide(this.store, owner));
+    return armyPathColour(
+      { isMine: army.isMine, isAlly: army.isAlly, owner: army.owner },
+      watchedSide(this.store, owner),
+    );
+  }
+
+  /** An army of the viewer's Aspect: marked as an ally on the map, as it is in the Deep's orders. */
+  private isAllyArmy(home: ID | null | undefined, isMine: boolean): boolean {
+    if (isMine || !this.store || home === null || home === undefined) return false;
+    return isAspectAlly(this.store, configManager.getActiveGameId(), accountAddress() ?? null, home);
   }
 
   private getArmyColorProfile(army: {

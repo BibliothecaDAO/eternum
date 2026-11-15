@@ -16,7 +16,13 @@ import {
   homecomingReturn,
   liveHomeArmies,
 } from "@bibliothecadao/eternum";
-import { safeInteger, type NativeFactStore, type NativeRows } from "@bibliothecadao/eternum/game-client";
+import {
+  deepGuardLife,
+  safeInteger,
+  type DeepGuardLife,
+  type NativeFactStore,
+  type NativeRows,
+} from "@bibliothecadao/eternum/game-client";
 import { armyNumber, resolveExplorerTroops, STAMINA_MODELS } from "@bibliothecadao/eternum/troop-stamina";
 import { RESOURCE_PRECISION } from "@bibliothecadao/types";
 import { useMemo } from "react";
@@ -26,7 +32,15 @@ import { ARMY } from "@/ui/design-system/kit/words";
 import { availableRankUps, attributeTiers } from "../attributes/attributes";
 import type { AttributeKey } from "../army/army-detail";
 
-const ARMY_MODELS = [...STAMINA_MODELS, "EntityName"] as const;
+const ARMY_MODELS = [
+  ...STAMINA_MODELS,
+  "EntityName",
+  "DeepGuard",
+  "DeepRules",
+  "SliceRules",
+  "SettlementRules",
+  "GameRegistry",
+] as const;
 
 /** One army as the dock and the action bar read it. Unknown is undefined, never zero. */
 export type DockArmy = {
@@ -50,6 +64,8 @@ export type DockArmy = {
   returnsHome: number | undefined;
   /** The Ethereal layer it stands in (armyEtherealLayer); none on the surface. */
   ethereal: EtherealLayer | undefined;
+  /** What holding a Deep site costs it: its troops fall each tick. None while it holds no site. */
+  drain: DeepGuardLife | undefined;
 };
 
 /** The realm's armies out today, in the order the castle granted their slots; none without a realm. */
@@ -106,6 +122,9 @@ export const useDockArmies = (realm: NativeRows["Structure"] | null): DockArmy[]
       returnsHome:
         progress && homecomingReturn(Number(army.troops.count / BigInt(RESOURCE_PRECISION)), progress.homecoming),
       ethereal: armyEtherealLayer(setup.store, army.game_id, explorerId),
+      drain: setup.store.get("DeepGuard", { game_id: army.game_id, explorer_id: army.explorer_id })
+        ? deepGuardLife(setup.store, army.game_id, army.troops.count, timestamp)
+        : undefined,
     };
   });
 };

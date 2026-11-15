@@ -1,4 +1,4 @@
-import type { NativeRows } from "@bibliothecadao/eternum/game-client";
+import type { DeepGuardLife, NativeRows } from "@bibliothecadao/eternum/game-client";
 import type { EtherealLayer } from "@bibliothecadao/eternum";
 import type { IconMeaning } from "@/ui/design-system/icon";
 import type { StaminaBar } from "@/ui/design-system/kit/hud-elements";
@@ -35,6 +35,8 @@ export interface ArmyDetailFacts {
   rules: NativeRows["ArmyProgressionRules"];
   /** The Ethereal layer it stands in (armyEtherealLayer); none on the surface. */
   ethereal?: EtherealLayer;
+  /** What its Deep site costs it: its troops fall each tick. None while it holds none. */
+  drain?: DeepGuardLife;
 }
 
 export interface AttributeView {
@@ -53,6 +55,7 @@ export interface ArmyView {
   name: string;
   art: IconMeaning;
   ethereal?: EtherealLayer;
+  drain?: DeepGuardLife;
   troops: number;
   xp: number;
   stamina: StaminaBar;
@@ -116,6 +119,7 @@ export const readArmyDetail = (army: ArmyDetailFacts): ArmyView => {
     name: army.name,
     art: army.art,
     ethereal: army.ethereal,
+    drain: army.drain,
     troops: army.troops,
     xp: army.xp,
     stamina: army.stamina,

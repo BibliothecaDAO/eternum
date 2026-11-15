@@ -1,5 +1,5 @@
 import { SKILL_POINT_RANKS, type SkillPointChoice, type SkillPointRank } from "@bibliothecadao/eternum";
-import { EtherealMark } from "../hud/army-token";
+import { DeepDrain, EtherealMark } from "../hud/army-token";
 import { formatExact, formatShort } from "@bibliothecadao/types";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { Icon, IconGroup } from "@/ui/design-system/icon";
@@ -170,6 +170,7 @@ export const ArmyDetail = ({
             {refill && <span className="ml-auto flex">{refill}</span>}
           </span>
           <StaminaLine stamina={army.stamina} secondsToFull={army.secondsToFull} />
+          {army.drain && <DeepDrain drain={army.drain} words />}
         </div>
       </div>
       <div className="grid grid-cols-2 gap-1.5">
