@@ -4010,8 +4010,19 @@ const ARMY_SIDES = `JSON.stringify(Object.fromEntries([...document.querySelector
 /** Every XP ring on the page: an army's portrait ring on its dock row or token, and in its open panel. */
 const XP_RINGS = `JSON.stringify([...document.querySelectorAll('svg[aria-label^="XP: "]')].map((ring) => ring.getAttribute("aria-label")))`;
 
-/** The site models the map draws, by kind (`deep:<position>` for the Deep's three): how many of each. */
-const DRAWN_SITES = `JSON.stringify(window.__eternumMapSelection?.drawnSites ?? {})`;
+/**
+ * The site models the map draws, by kind (`deep:<position>` for the Deep's three): how many of each, and the plates of
+ * the Deep's three sites (the icons their catalog gives them) with whether each stands wholly inside the page.
+ */
+const DRAWN_SITES = `JSON.stringify({
+  drawn: window.__eternumMapSelection?.drawnSites ?? {},
+  plates: ["hyperstructure", "pickaxe", "flame"].flatMap((icon) => {
+    const slot = document.querySelector('.mp-at:has([data-icon="' + icon + '"])');
+    if (!slot || getComputedStyle(slot).display === "none" || !slot.firstElementChild) return [];
+    const box = slot.firstElementChild.getBoundingClientRect();
+    return [{ icon, inView: box.left >= 0 && box.right <= innerWidth && box.top >= 0 && box.bottom <= innerHeight }];
+  }),
+})`;
 
 /** How much of its tower each drawn hyperstructure stands, in percent, by structure id (the lab's are 901 to 904). */
 const DRAWN_TOWERS = `JSON.stringify(window.__eternumMapSelection?.towers ?? {})`;
@@ -4110,23 +4121,6 @@ const DEEP_JOIN_STEPS = [
       played.rings.length > 0 && played.rings.every((label) => label === "XP: 80% of the way to the next skill point")
         ? completed(played)
         : failed("An army four fifths of the way to its next skill point wears a ring four fifths filled", played),
-  },
-  {
-    name: "deep-sites-stand",
-    settleMs: 0,
-    play: async ({ browser, extraScreenshot }) => {
-      const drawn = await readUntil(
-        () => browser.read(DRAWN_SITES),
-        (state) => ["deep:foundation", "deep:quarry", "deep:altar"].every((site) => state[site] > 0),
-        PLAYABLE_WAIT_MS,
-      );
-      extraScreenshot("deep-sites");
-      return { drawn };
-    },
-    verify: ({ played }) =>
-      ["deep:foundation", "deep:quarry", "deep:altar"].every((site) => played.drawn[site] === 1)
-        ? completed(played)
-        : failed("The Deep's Foundation, Quarry and Altar each stand on the map in their own model", played),
   },
   {
     name: "field-army-drains",
@@ -4234,6 +4228,29 @@ const DEEP_JOIN_STEPS = [
       /200 troops lost a tick/.test(played.drain.panel) && /ticks left/.test(played.drain.panel)
         ? completed(played)
         : failed("A guard's panel must say its troop loss each tick and the ticks left", played),
+  },
+  {
+    name: "deep-sites-framed",
+    settleMs: 0,
+    play: async ({ browser, extraScreenshot }) => {
+      // Zoomed all the way out, as a player does with the wheel, the camera frames the whole Deep strip: the three sites.
+      browser.run(["eval", `void window.__playtest.wheel(100, ${ZOOM_IN_NOTCHES})`]);
+      await sleep(ZOOM_SETTLE_MS);
+      const framed = await readUntil(
+        () => browser.read(DRAWN_SITES),
+        (state) =>
+          ["deep:foundation", "deep:quarry", "deep:altar"].every((site) => state.drawn[site] > 0) &&
+          state.plates.length === 3,
+        PLAYABLE_WAIT_MS,
+      );
+      extraScreenshot("deep-sites");
+      return { framed };
+    },
+    verify: ({ played }) =>
+      ["deep:foundation", "deep:quarry", "deep:altar"].every((site) => played.framed.drawn[site] === 1) &&
+      played.framed.plates.every((plate) => plate.inView)
+        ? completed(played)
+        : failed("The Deep's Foundation, Quarry and Altar each stand in the frame with their plate over them", played),
   },
 ];
 
