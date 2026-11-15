@@ -1061,7 +1061,11 @@ fn frontier_sites_persist_the_seeded_guard_and_initial_count() {
                 .create_discovery(game_id, 1, coord, discovery, seed, 360, crate::commands::action_context(context));
             let guard = IGuardsDispatcher { contract_address: d.games }
                 .guard(GuardKey { game_id, structure_id: id, slot: 0 });
-            let expected = crate::troops::frontier_guard(category, depth, seed, context.rules.unbox(), 360);
+            let expected = if let crate::discovery::Discovery::Ruin(relic) = discovery {
+                crate::troops::ruin_guard(relic, seed, context.rules.unbox(), 360)
+            } else {
+                crate::troops::frontier_guard(category, depth, seed, context.rules.unbox(), 360)
+            };
             assert_eq!(guard.troops, expected);
             if category == crate::taxonomy::BEASTS_CATEGORY {
                 let count: u16 = (guard.troops.count / RESOURCE_PRECISION).try_into().unwrap();

@@ -5,7 +5,7 @@ import {
   nativeResearchConstants as research,
   nativeRuleConstants as rule,
 } from "../../../../contracts/l3/world-native/schema/client.gen";
-import { BEAST_NAMES, FALLEN_REALM_DEPTHS, ROAMING_BEASTS, SITE_GUARDS, resourceName } from "@bibliothecadao/types";
+import { BEAST_NAMES, ROAMING_BEASTS, SITE_GUARDS, resourceName } from "@bibliothecadao/types";
 import { ETERNUM_CONFIG } from "./config";
 import { CONTRACT } from "./contract-constants";
 
@@ -118,7 +118,6 @@ export const FRONTIER = {
   },
   depths: frontierPreset.depths.map((depth, index) => ({
     name: DEPTH_NAMES[index],
-    ruinGuardName: BEAST_NAMES[FALLEN_REALM_DEPTHS[index]!.beast],
     revealPercent: `${depth.revealPercent}%`,
     campGuard: range(depth.siteGuardLower, depth.siteGuardUpper),
     riftGuard: range(
