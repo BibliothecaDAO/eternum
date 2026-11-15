@@ -1372,7 +1372,7 @@ test("preset 7 activates the complete Slice 1 rules while fixtures and historica
     const scouts = built.resources.production.find(({ resource_type }) => resource_type === 32)!.recipe;
     expect(scouts.simple_inputs).toEqual([{ resource_type: 35, amount: 2_000_000_000n }]);
     expect(scouts.simple_output).toBe(1_000_000_000n);
-    expect(Number(scouts.complex_output) * 3600 / 1e9).toBeCloseTo(100, 5);
+    expect((Number(scouts.complex_output) * 3600) / 1e9).toBeCloseTo(100, 5);
     expect(built.structures.buildings.find(({ category }) => category === 43)!.rule.simple_cost).toEqual([
       { resource_type: 23, amount: 500_000_000_000n },
     ]);

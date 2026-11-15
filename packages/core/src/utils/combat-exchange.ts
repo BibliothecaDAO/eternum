@@ -200,8 +200,10 @@ const exchangeDamage = (
     incomingMultiplier(attacker, context.attackerIsStructureGuard, rules.dayUnitSeconds),
   );
   if (rules.dayUnitSeconds !== 0) {
-    if (attacker.category === "Paladin") attackerDamage = mul(attackerDamage, percent(nativeRuleConstants.SCOUT_DAMAGE_PERCENT));
-    if (defender.category === "Paladin") defenderDamage = mul(defenderDamage, percent(nativeRuleConstants.SCOUT_DAMAGE_PERCENT));
+    if (attacker.category === "Paladin")
+      attackerDamage = mul(attackerDamage, percent(nativeRuleConstants.SCOUT_DAMAGE_PERCENT));
+    if (defender.category === "Paladin")
+      defenderDamage = mul(defenderDamage, percent(nativeRuleConstants.SCOUT_DAMAGE_PERCENT));
   }
   if (context.attackDistance > 1) defenderDamage = ZERO;
 

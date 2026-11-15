@@ -454,7 +454,14 @@ pub mod ConstructionLogic {
         ) {
             if category == crate::research::SCOUTS_LODGE {
                 assert!(
-                    self.data.structures.structures.entry((key.game_id, key.entity_id)).base.read().level >= crate::research::SCOUTS_LODGE_LEVEL,
+                    self
+                        .data
+                        .structures
+                        .structures
+                        .entry((key.game_id, key.entity_id))
+                        .base
+                        .read()
+                        .level >= crate::research::SCOUTS_LODGE_LEVEL,
                     "Scouts Lodge needs City",
                 );
             }

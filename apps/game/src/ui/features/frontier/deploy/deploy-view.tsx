@@ -99,7 +99,13 @@ export const DeployView = ({
     {troopChoices.length > 1 && (
       <div role="group" aria-label="Troop type" className="flex gap-2">
         {troopChoices.map(({ category, name, art }) => (
-          <HudButton kind="secondary" key={category} icon={art} aria-pressed={selectedTroop === category} onClick={() => onTroop?.(category)}>
+          <HudButton
+            kind="secondary"
+            key={category}
+            icon={art}
+            aria-pressed={selectedTroop === category}
+            onClick={() => onTroop?.(category)}
+          >
             {name}
           </HudButton>
         ))}

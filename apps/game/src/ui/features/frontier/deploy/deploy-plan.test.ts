@@ -166,7 +166,6 @@ describe("Frontier's deploy", () => {
   });
 });
 
-
 it("selects Scouts from their own stock, price and Scouting bar without taking Knights", () => {
   const { store, row } = frontierDay();
   seedScouts(store);
@@ -181,5 +180,12 @@ it("selects Scouts from their own stock, price and Scouting bar without taking K
   expect(deployRange(plan).max).toBe(500);
   const actions = { createExplorerArmy: vi.fn() };
   deployArmy(actions, row, plan.troops!, 400, 0, 1);
-  expect(actions.createExplorerArmy).toHaveBeenCalledWith({ structureId: 7, troopType: TroopType.Paladin, troopTier: TroopTier.T1, troopCount: 400, spawnDirection: 0, slot: 1 });
+  expect(actions.createExplorerArmy).toHaveBeenCalledWith({
+    structureId: 7,
+    troopType: TroopType.Paladin,
+    troopTier: TroopTier.T1,
+    troopCount: 400,
+    spawnDirection: 0,
+    slot: 1,
+  });
 });

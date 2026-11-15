@@ -186,7 +186,13 @@ export const BuildSheet = ({
   /** Where the chosen building stands: open, refused with its reason, or open but for free population. */
   const standing = (): { refusal?: Refusal; noRoom?: true } => {
     if (option.standing === "built") return { refusal: { reason: { kind: "failed", line: ONE_A_REALM } } };
-    if (option.standing !== "open") return { refusal: "level" in option.standing ? { reason: { kind: "failed", line: `Requires ${RealmLevels[option.standing.level]}` } } : gateRefusal(option.standing) };
+    if (option.standing !== "open")
+      return {
+        refusal:
+          "level" in option.standing
+            ? { reason: { kind: "failed", line: `Requires ${RealmLevels[option.standing.level]}` } }
+            : gateRefusal(option.standing),
+      };
     const shortCost = option.cost.find(({ resource, amount }) => (held(resource) ?? 0) < amount);
     if (shortCost) {
       const have = held(shortCost.resource);
@@ -301,7 +307,10 @@ const buildTile = (option: BuildOption, holdings: Holdings): BuildTile => ({
 const standingOf = (option: BuildOption, { held, perHour, free }: Holdings): BuildTile["standing"] => {
   if (option.standing === "built") return { kind: "built" };
   // Training counts purchases across both Barracks sides.
-  if (option.standing !== "open") return "level" in option.standing ? { kind: "level", level: option.standing.level } : { kind: "locked", ...option.standing };
+  if (option.standing !== "open")
+    return "level" in option.standing
+      ? { kind: "level", level: option.standing.level }
+      : { kind: "locked", ...option.standing };
   const missing = option.cost.find(({ resource, amount }) => (held(resource) ?? 0) < amount);
   const short: Extract<BuildTile["standing"], { kind: "price" }>["short"] = missing
     ? {

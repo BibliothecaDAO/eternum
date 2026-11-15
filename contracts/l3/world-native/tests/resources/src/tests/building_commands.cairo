@@ -48,10 +48,7 @@ fn failed_building_payment_rolls_back_placement_population_rate_and_resources() 
         deployment,
         Command::CreateBuilding(
             CreateBuilding {
-                structure_id: home.entity_id,
-                directions: array![0_u8].span(),
-                category: 37,
-                use_simple: false,
+                structure_id: home.entity_id, directions: array![0_u8].span(), category: 37, use_simple: false,
             },
         ),
         40,
@@ -179,9 +176,7 @@ fn building_placement_rejects_invalid_paths_categories_and_occupied_tiles() {
         assert_terminal_rejection(
             deployment,
             Command::CreateBuilding(
-                CreateBuilding {
-                    structure_id: home.entity_id, directions, category: 37, use_simple: true,
-                },
+                CreateBuilding { structure_id: home.entity_id, directions, category: 37, use_simple: true },
             ),
             40,
         );
@@ -291,10 +286,7 @@ fn labor_buildings_cannot_be_destroyed_and_population_blocks_overbuilding() {
         deployment,
         Command::CreateBuilding(
             CreateBuilding {
-                structure_id: home.entity_id,
-                directions: array![1_u8].span(),
-                category: 37,
-                use_simple: true,
+                structure_id: home.entity_id, directions: array![1_u8].span(), category: 37, use_simple: true,
             },
         ),
         60,

@@ -211,7 +211,10 @@ export const readResearchTree = (realm: RealmResearchFacts): TreeNode[] => {
     const tier = researchHasIndependentSides(row) ? Math.max(picks(row, 0), picks(row, 1)) : learned(row).tier;
     const name = buildingName(category);
     const icon = buildingIcon(category);
-    const constructionGrant = tier === 0 && row !== research.ROW_SCOUTS_LODGE && Object.values(TRAINING).some((training) => training.row === row);
+    const constructionGrant =
+      tier === 0 &&
+      row !== research.ROW_SCOUTS_LODGE &&
+      Object.values(TRAINING).some((training) => training.row === row);
     const next = tier < 5 ? tier + 1 : undefined;
     const nextNeeds = (at: number) => {
       const needs = buildingNeeds(row, name, icon, at, options.extra ?? []);
@@ -401,7 +404,9 @@ export const readResearchTree = (realm: RealmResearchFacts): TreeNode[] => {
         }),
         {
           ...twoSides(ROWS.barracks, { words: sides.drill, at: output }, { words: sides.rations, at: rations }),
-          leadsTo: Object.values(TRAINING).filter(({ row }) => row !== research.ROW_SCOUTS_LODGE).map(({ row }) => `row-${row}`),
+          leadsTo: Object.values(TRAINING)
+            .filter(({ row }) => row !== research.ROW_SCOUTS_LODGE)
+            .map(({ row }) => `row-${row}`),
           gate: { name: gateBarracks, met: gateNeed.met, line: gateLine },
         },
       ),

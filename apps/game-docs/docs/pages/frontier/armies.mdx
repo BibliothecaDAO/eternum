@@ -10,10 +10,10 @@ import { Shot } from "@/components/Media";
 
 ## Deploying
 
-Barracks train Knights at your realm. From City, Scouts’ lodges train Scouts. Choose a troop kind in **Deploy** to put them on a tile beside the realm as an army, in one of its army
-slots: {FRONTIER.realm.armies[0]} for a new realm, up to {FRONTIER.realm.armies[3]} as its castle rises. Each troop
-deployed costs {FRONTIER.realm.deployWheat} wheat, and each castle level deploys more troops at once
-([Your realm](/frontier/realm#the-castle)).
+Barracks train Knights at your realm. From City, Scouts’ lodges train Scouts. Choose a troop kind in **Deploy** to put
+them on a tile beside the realm as an army, in one of its army slots: {FRONTIER.realm.armies[0]} for a new realm, up to
+{FRONTIER.realm.armies[3]} as its castle rises. Each troop deployed costs {FRONTIER.realm.deployWheat} wheat, and each
+castle level deploys more troops at once ([Your realm](/frontier/realm#the-castle)).
 
 <Shot
   name="frontier/deploy"
@@ -25,9 +25,9 @@ deployed costs {FRONTIER.realm.deployWheat} wheat, and each castle level deploys
 
 An army holds {FRONTIER.stamina.max} stamina and recovers {FRONTIER.stamina.perTick} every
 {FRONTIER.stamina.tickMinutes}{" "} minutes, so an empty bar fills in {FRONTIER.stamina.fullHours} hours. Revealing a
-tile costs {FRONTIER.stamina.reveal} for Knights and {FRONTIER.stamina.scoutReveal} for Scouts, a step over known ground {FRONTIER.stamina.step}, and an attack needs
-{FRONTIER.stamina.attack}. Every step and every reveal also costs {FRONTIER.stamina.wheatPerTroop} wheat per troop, so a
-big army needs farms behind it.
+tile costs {FRONTIER.stamina.reveal} for Knights and {FRONTIER.stamina.scoutReveal} for Scouts, a step over known ground
+{FRONTIER.stamina.step}, and an attack needs {FRONTIER.stamina.attack}. Every step and every reveal also costs
+{FRONTIER.stamina.wheatPerTroop} wheat per troop, so a big army needs farms behind it.
 
 **Refill** buys an army stamina at once for {FRONTIER.stamina.refillLords} LORDS a point, paid from your realm's LORDS:
 as much as it is missing, or as much as your LORDS cover. A well adds {FRONTIER.stamina.well} stamina, rounded down and
@@ -68,16 +68,15 @@ to the point spent. Choose Stamina instead to restore double that amount, up to 
 
 - **Battle** hits up to {FRONTIER.attributes.battleMax} harder.
 - **Logistics** carries up to {FRONTIER.stamina.logisticsMax} more stamina.
-- **Scouting**, for Scouts only, adds {FRONTIER.attributes.scouting.join(" / ")} to one kind’s find rate when all ranks go to that kind. The kinds
-  are Trolls (camps), Rifts, and Sanctuaries (Shrines and Wells together, once either is researched). Putting all five
-  ranks into one kind adds {FRONTIER.attributes.scoutingOneKind}.
+- **Scouting**, for Scouts only, adds {FRONTIER.attributes.scouting.join(" / ")} to one kind’s find rate when all ranks
+  go to that kind. The kinds are Trolls (camps), Rifts, and Sanctuaries (Shrines and Wells together, once either is
+  researched). Putting all five ranks into one kind adds {FRONTIER.attributes.scoutingOneKind}.
 - **Homecoming** sends a share of survivors home when the day ends
   ([The expedition](/frontier/expedition#the-days-end)).
 
 XP, ranks and unspent points end with the army. A full merge keeps the receiving army's progress and discards the
-source's. War halls, Supply yards and Hearths grant new armies rank I, and research raises their starting rank through V.
-Scouts inherit their Lodge’s researched Scouting choices
-([Your realm](/frontier/realm#research)).
+source's. War halls, Supply yards and Hearths grant new armies rank I, and research raises their starting rank through
+V. Scouts inherit their Lodge’s researched Scouting choices ([Your realm](/frontier/realm#research)).
 
 <Shot
   frame="panel"

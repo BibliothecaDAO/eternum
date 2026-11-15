@@ -52,7 +52,12 @@ export const readRealmStore = (
   return { amount, limit, perHour, nextIn, fullIn, tone: storeTone(fullIn) };
 };
 
-const troopStockAtHome = (store: NativeFactStore, realm: NativeRows["Structure"], resource: ResourcesIds, now: number) => {
+const troopStockAtHome = (
+  store: NativeFactStore,
+  realm: NativeRows["Structure"],
+  resource: ResourcesIds,
+  now: number,
+) => {
   const stock = stocksAtNextDeploy(store, realm, now, now)?.get(resource);
   return stock && stock.held + stock.fits;
 };

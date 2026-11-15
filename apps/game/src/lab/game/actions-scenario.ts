@@ -98,7 +98,15 @@ const exploreTile: Answer = (command, chain, now) => {
   return [
     revealedTile(`0x1ae${to.col}${to.row}`, to, BiomeType.Grassland),
     ...occupancyMoved(chain, explorerId, to),
-    armySpent(chain, explorerId, exploreStaminaCost(chain.require("SliceRules", { game_id: 1 }), chain.require("ExplorerTroops", { game_id: 1, explorer_id: explorerId }).troops.category), now),
+    armySpent(
+      chain,
+      explorerId,
+      exploreStaminaCost(
+        chain.require("SliceRules", { game_id: 1 }),
+        chain.require("ExplorerTroops", { game_id: 1, explorer_id: explorerId }).troops.category,
+      ),
+      now,
+    ),
   ];
 };
 
@@ -212,7 +220,11 @@ const deployArmy: Answer = (command, chain, now) => {
         },
       }),
     },
-    { model: "TileOccupancy", key: `0x1b1${explorerId}`, value: wire({ ...firstAt, ...to, entity_id: explorerId, category: occupier }) },
+    {
+      model: "TileOccupancy",
+      key: `0x1b1${explorerId}`,
+      value: wire({ ...firstAt, ...to, entity_id: explorerId, category: occupier }),
+    },
     ...balancesPaid(chain, structureId, [{ resource: troops, amount }, ...raise]),
   ];
 };

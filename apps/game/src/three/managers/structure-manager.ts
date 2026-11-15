@@ -726,7 +726,14 @@ export class StructureManager {
       guardArmies: armies?.map((guard) => {
         const stamina = bySlot.get(guard.slot);
         return stamina && stamina.max > 0
-          ? { ...guard, stamina: { current: stamina.current, max: stamina.max, perExplore: configManager.getExploreStaminaCost(guard.category) } }
+          ? {
+              ...guard,
+              stamina: {
+                current: stamina.current,
+                max: stamina.max,
+                perExplore: configManager.getExploreStaminaCost(guard.category),
+              },
+            }
           : guard;
       }),
     };

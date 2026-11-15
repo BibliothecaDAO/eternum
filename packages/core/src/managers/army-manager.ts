@@ -1,4 +1,12 @@
-import { Direction, ID, SystemCalls, TroopTier, troopTierIndex, TroopType, troopTypeIndex } from "@bibliothecadao/types";
+import {
+  Direction,
+  ID,
+  SystemCalls,
+  TroopTier,
+  troopTierIndex,
+  TroopType,
+  troopTypeIndex,
+} from "@bibliothecadao/types";
 import { Account, AccountInterface } from "starknet";
 import { multiplyByPrecision } from "../utils/utils";
 

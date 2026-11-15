@@ -13,7 +13,7 @@ describe("attribute tiers", () => {
   it("reads the ruled tier tables, zero giving nothing", () => {
     expect([0, 1, 2, 3, 4, 5].map(battleBonusBps)).toEqual([0, 1000, 2500, 4500, 7000, 10000]);
     expect([0, 1, 2, 3, 4, 5].map(logisticsStamina)).toEqual([0, 20, 45, 75, 110, 150]);
-    expect([0, 1, 2, 3, 4, 5].map(scoutingIncrementBps)).toEqual([0, 1000, 500, 500, 500, 500]);
+    expect([0, 1, 2, 3, 4, 5].map(scoutingIncrementBps)).toEqual([0, 1000, 1500, 2000, 2500, 3000]);
     expect([0, 1, 2, 3, 4, 5].map(homecomingBps)).toEqual([0, 300, 800, 1400, 2100, 3000]);
     expect(() => battleBonusBps(-1)).toThrow("Invalid attribute tier");
     expect(() => logisticsStamina(6)).toThrow("Invalid attribute tier");
@@ -35,16 +35,16 @@ describe("attribute tiers", () => {
     // Rifts at ranks I, III and V; Trolls at II; Sanctuaries at IV.
     const mixed = 2 + 1 * 4 + 2 * 16 + 3 * 64 + 2 * 256;
     expect(scoutingKindsOf(5, mixed)).toEqual(["Rift", "Camp", "Rift", "Sanctuaries", "Rift"]);
-    expect(scoutingBonusBps(5, mixed)).toEqual({ Camp: 500, Rift: 2000, Sanctuaries: 500 });
+    expect(scoutingBonusBps(5, mixed)).toEqual({ Camp: 1500, Rift: 6000, Sanctuaries: 2500 });
     expect(scoutingBonusBps(5, 2 + 2 * 4 + 2 * 16 + 2 * 64 + 2 * 256)).toEqual({
       Camp: 0,
-      Rift: 3000,
+      Rift: 10000,
       Sanctuaries: 0,
     });
     expect(scoutingBonusBps(5, 3 + 3 * 4 + 3 * 16 + 3 * 64 + 3 * 256)).toEqual({
       Camp: 0,
       Rift: 0,
-      Sanctuaries: 3000,
+      Sanctuaries: 10000,
     });
     // A lodge trained Rift, Camp, Sanctuaries, Rift, Sanctuaries.
     expect(scoutingKindsOf(5, 2 + 4 + 3 * 16 + 2 * 64 + 3 * 256)).toEqual([

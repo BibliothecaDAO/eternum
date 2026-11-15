@@ -61,10 +61,10 @@ pub fn scouting_increment_bps(tier: u8) -> u32 {
     match tier {
         0 => 0,
         1 => SCOUTING_COMMON_BPS,
-        2 => SCOUTING_UNCOMMON_BPS - SCOUTING_COMMON_BPS,
-        3 => SCOUTING_RARE_BPS - SCOUTING_UNCOMMON_BPS,
-        4 => SCOUTING_EPIC_BPS - SCOUTING_RARE_BPS,
-        5 => SCOUTING_LEGENDARY_BPS - SCOUTING_EPIC_BPS,
+        2 => SCOUTING_UNCOMMON_BPS,
+        3 => SCOUTING_RARE_BPS,
+        4 => SCOUTING_EPIC_BPS,
+        5 => SCOUTING_LEGENDARY_BPS,
         _ => panic!("invalid attribute tier"),
     }
 }

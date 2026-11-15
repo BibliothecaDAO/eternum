@@ -279,16 +279,29 @@ fn a_city_builds_lodges_and_deploys_their_scout_stock_at_two_wheat_each() {
     grant(d, home, 32, 600 * RESOURCE_PRECISION);
     grant(d, home, WHEAT, 1000 * RESOURCE_PRECISION);
     let knights = stored(d, home, KNIGHT);
-    assert!(execute(d, Command::CreateExplorer(CreateExplorer {
-        slot: 0, structure_id: home.entity_id, category: 1, tier: 0, amount: 400 * RESOURCE_PRECISION, direction: EAST,
-    }), 40));
+    assert!(
+        execute(
+            d,
+            Command::CreateExplorer(
+                CreateExplorer {
+                    slot: 0,
+                    structure_id: home.entity_id,
+                    category: 1,
+                    tier: 0,
+                    amount: 400 * RESOURCE_PRECISION,
+                    direction: EAST,
+                },
+            ),
+            40,
+        ),
+    );
     assert_eq!(stored(d, home, 32), 200 * RESOURCE_PRECISION);
     assert_eq!(stored(d, home, WHEAT), 200 * RESOURCE_PRECISION);
     assert_eq!(stored(d, home, KNIGHT), knights);
     let id = *IStructureOperationsDispatcher { contract_address: d.games }.home_armies(home).at(0);
-    let army = super::state::GameState { contract_address: d.games }.resolved_explorer(crate::troops::ExplorerKey {
-        game_id: home.game_id, explorer_id: id,
-    }).unwrap();
+    let army = super::state::GameState { contract_address: d.games }
+        .resolved_explorer(crate::troops::ExplorerKey { game_id: home.game_id, explorer_id: id })
+        .unwrap();
     assert_eq!(army.troops.category, crate::troops::TroopType::Paladin);
     assert_eq!(army.troops.count, 400 * RESOURCE_PRECISION);
 }

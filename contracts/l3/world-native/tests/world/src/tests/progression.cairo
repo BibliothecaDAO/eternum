@@ -126,7 +126,7 @@ fn each_scouting_rank_preserves_its_choice_including_the_fifth() {
     }
     assert_eq!(progress.scouting, 5);
     assert_eq!(progress.scouting_kinds, 2 + 4 + 2 * 16 + 3 * 64 + 2 * 256);
-    assert_eq!(crate::progression::scouting_bonus(progress), (500, 2000, 500));
+    assert_eq!(crate::progression::scouting_bonus(progress), (1500, 6000, 2500));
     for kind in array![ScoutingKind::Camp, ScoutingKind::Rift, ScoutingKind::Sanctuaries] {
         let mut all = crate::progression::initial();
         crate::progression::earn_xp(ref all, rules(), 1500);
@@ -134,9 +134,9 @@ fn each_scouting_rank_preserves_its_choice_including_the_fifth() {
             crate::progression::spend_skill_point(ref all, scout(kind));
         }
         let expected = match kind {
-            ScoutingKind::Camp => (3000, 0, 0),
-            ScoutingKind::Rift => (0, 3000, 0),
-            ScoutingKind::Sanctuaries => (0, 0, 3000),
+            ScoutingKind::Camp => (10000, 0, 0),
+            ScoutingKind::Rift => (0, 10000, 0),
+            ScoutingKind::Sanctuaries => (0, 0, 10000),
         };
         assert_eq!(crate::progression::scouting_bonus(all), expected);
     }

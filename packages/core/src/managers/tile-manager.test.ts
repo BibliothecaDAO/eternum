@@ -69,6 +69,18 @@ it("supplies the realm model with the highest side tier, from Common through Leg
 
 it("builds a Scout producer without buying Scouting research", async () => {
   const { manager, create_building } = setup();
-  await manager.placeBuilding({ address: "0xabc" } as GameplayAccount, 1, BuildingType.ScoutsLodge, { col: 11, row: 10 }, true);
-  expect(create_building).toHaveBeenCalledWith({ signer: { address: "0xabc" }, entity_id: 1, directions: expect.any(Array), building_category: BuildingType.ScoutsLodge, use_simple: true });
+  await manager.placeBuilding(
+    { address: "0xabc" } as GameplayAccount,
+    1,
+    BuildingType.ScoutsLodge,
+    { col: 11, row: 10 },
+    true,
+  );
+  expect(create_building).toHaveBeenCalledWith({
+    signer: { address: "0xabc" },
+    entity_id: 1,
+    directions: expect.any(Array),
+    building_category: BuildingType.ScoutsLodge,
+    use_simple: true,
+  });
 });

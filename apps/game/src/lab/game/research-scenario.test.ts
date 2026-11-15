@@ -89,12 +89,20 @@ it("answers a research with the row's next tier learned and its price paid", () 
   expect(BigInt(balance(facts, ResourcesIds.Essence)!.balance)).toBe(essence - BigInt(whole(2_000)));
 });
 
-
 it("answers native Paladin index 1 with Scouts and debits only their stock and wheat", () => {
   const game = scoutsScenario();
-  const facts = game.answer(command("CreateExplorer", {
-    structure_id: "7", slot: "1", category: "1", tier: "0", amount: whole(400), direction: "0",
-  }), chainOf(game), game.startsAt);
+  const facts = game.answer(
+    command("CreateExplorer", {
+      structure_id: "7",
+      slot: "1",
+      category: "1",
+      tier: "0",
+      amount: whole(400),
+      direction: "0",
+    }),
+    chainOf(game),
+    game.startsAt,
+  );
   expect(facts.find(({ model }) => model === "ExplorerTroops")!.value).toMatchObject({
     troops: { category: "Paladin", tier: "T1", count: whole(400) },
   });

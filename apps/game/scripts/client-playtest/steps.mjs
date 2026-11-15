@@ -752,7 +752,12 @@ const boxAround = (regions) => {
  */
 const SCOUT_DEPLOY_STEPS = [
   { name: "enter-on-map", settleMs: 3_000, verify: inScene("map") },
-  clickToResultStep("deploy-scouts", "CreateExplorer", (context) => deployFromTheDock(context, 400, "Scouts"), scoutsDeployed),
+  clickToResultStep(
+    "deploy-scouts",
+    "CreateExplorer",
+    (context) => deployFromTheDock(context, 400, "Scouts"),
+    scoutsDeployed,
+  ),
 ];
 
 const DEPLOY_ACTION_STEPS = [
@@ -788,9 +793,14 @@ function scoutsDeployed(context) {
   const army = answer.answered.find(({ model }) => model === "ExplorerTroops")?.value;
   const balances = answer.answered.filter(({ model }) => model === "ResourceBalance").map(({ value }) => value);
   const balance = (resource) => balances.find(({ resource_type }) => Number(resource_type) === resource)?.balance;
-  if (army?.troops.category !== "Paladin" || BigInt(army.troops.count) !== 400_000_000_000n ||
-      BigInt(balance(32) ?? -1) !== 200_000_000_000n || BigInt(balance(35) ?? -1) !== 200_000_000_000n ||
-      balance(26) !== undefined) throw new Error("Scout deployment changed the wrong troops or price");
+  if (
+    army?.troops.category !== "Paladin" ||
+    BigInt(army.troops.count) !== 400_000_000_000n ||
+    BigInt(balance(32) ?? -1) !== 200_000_000_000n ||
+    BigInt(balance(35) ?? -1) !== 200_000_000_000n ||
+    balance(26) !== undefined
+  )
+    throw new Error("Scout deployment changed the wrong troops or price");
   return armyDeployed(context);
 }
 

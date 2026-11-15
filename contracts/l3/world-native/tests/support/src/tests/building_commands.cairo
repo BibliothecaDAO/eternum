@@ -113,9 +113,7 @@ pub fn building_world(board: Option<crate::buildings::BoardRules>) -> (super::De
 }
 pub fn create(home: ResourceKey, category: u8) -> Command {
     Command::CreateBuilding(
-        CreateBuilding {
-            structure_id: home.entity_id, directions: array![0_u8].span(), category, use_simple: true,
-        },
+        CreateBuilding { structure_id: home.entity_id, directions: array![0_u8].span(), category, use_simple: true },
     )
 }
 pub fn east() -> BuildingKey {
@@ -301,10 +299,7 @@ pub fn research(home: ResourceKey, row: u8, choice: u8) -> Command {
 pub fn build_toward(home: ResourceKey, category: u8, direction: u8) -> Command {
     Command::CreateBuilding(
         CreateBuilding {
-            structure_id: home.entity_id,
-            directions: array![direction].span(),
-            category,
-            use_simple: true,
+            structure_id: home.entity_id, directions: array![direction].span(), category, use_simple: true,
         },
     )
 }

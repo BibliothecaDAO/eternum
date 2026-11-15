@@ -168,10 +168,7 @@ fn claim(d: Deployment, home: ResourceKey, day: u64, timestamp: u64) -> bool {
 fn build(d: Deployment, home: ResourceKey, category: u8, direction: u8, timestamp: u64) {
     let command = Command::CreateBuilding(
         crate::buildings::CreateBuilding {
-            structure_id: home.entity_id,
-            directions: array![direction].span(),
-            category,
-            use_simple: true,
+            structure_id: home.entity_id, directions: array![direction].span(), category, use_simple: true,
         },
     );
     let mut events = spy_events();

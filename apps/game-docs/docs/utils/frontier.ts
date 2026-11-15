@@ -194,7 +194,13 @@ export const FRONTIER = {
       rule.SCOUTING_EPIC_BPS,
       rule.SCOUTING_LEGENDARY_BPS,
     ].map(pct),
-    scoutingOneKind: pct(rule.SCOUTING_LEGENDARY_BPS),
+    scoutingOneKind: pct(
+      rule.SCOUTING_COMMON_BPS +
+        rule.SCOUTING_UNCOMMON_BPS +
+        rule.SCOUTING_RARE_BPS +
+        rule.SCOUTING_EPIC_BPS +
+        rule.SCOUTING_LEGENDARY_BPS,
+    ),
     scoutDamageReduction: `${100 - rule.SCOUT_DAMAGE_PERCENT}%`,
   },
   quest: {

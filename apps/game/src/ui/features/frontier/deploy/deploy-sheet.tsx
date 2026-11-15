@@ -95,9 +95,18 @@ export const DeploySheet = ({
 
   return (
     <DeployView
-      troopChoices={plan?.choices.map((troops) => ({ category: troops.type, name: FRONTIER_TROOP_NAMES[troops.type], art: armyArt({ category: troops.type, tier: troops.tier }) })) ?? []}
+      troopChoices={
+        plan?.choices.map((troops) => ({
+          category: troops.type,
+          name: FRONTIER_TROOP_NAMES[troops.type],
+          art: armyArt({ category: troops.type, tier: troops.tier }),
+        })) ?? []
+      }
       selectedTroop={plan?.troops?.type}
-      onTroop={(type) => { setTroopType(type); setCount(null); }}
+      onTroop={(type) => {
+        setTroopType(type);
+        setCount(null);
+      }}
       art={plan?.troops ? armyArt({ category: plan.troops.type, tier: plan.troops.tier }) : undefined}
       troopsAtHome={plan ? (plan.troops?.atHome ?? 0) : undefined}
       count={preview?.count}

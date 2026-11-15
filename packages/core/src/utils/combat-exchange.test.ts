@@ -279,12 +279,33 @@ it("applies the Scout damage reduction to attacker and defender only in Frontier
     battle_cooldown_end: 0,
     boosts: { ...base.attacker.boosts, incr_damage_dealt_percent_num: 0 },
   });
-  const context = { ...base.context, attackDistance: 1, attackerBiome: BiomeType.Grassland, defenderBiome: BiomeType.Grassland, attackerIsStructureGuard: false, defenderIsStructureGuard: false };
+  const context = {
+    ...base.context,
+    attackDistance: 1,
+    attackerBiome: BiomeType.Grassland,
+    defenderBiome: BiomeType.Grassland,
+    attackerIsStructureGuard: false,
+    defenderIsStructureGuard: false,
+  };
   for (const dayUnitSeconds of [0, 100]) {
-    for (const [attacker, outgoing] of [["Knight", 437n], ["Paladin", 328n]] as const) {
-      for (const [defender, incoming] of [["Knight", 437n], ["Paladin", 328n]] as const) {
-        const result = resolveExchange(troops(attacker), troops(defender), context, { ...rules, dayUnitSeconds, damage: { ...rules.damage, damage_scaling_factor: 36893488147419103232n, damage_biome_bonus_num: 0 } });
-        expect(result).toMatchObject({ ok: true, defenderLoss: (dayUnitSeconds === 0 ? 437n : outgoing) * 1_000_000_000n, attackerLoss: (dayUnitSeconds === 0 ? 437n : incoming) * 1_000_000_000n });
+    for (const [attacker, outgoing] of [
+      ["Knight", 437n],
+      ["Paladin", 328n],
+    ] as const) {
+      for (const [defender, incoming] of [
+        ["Knight", 437n],
+        ["Paladin", 328n],
+      ] as const) {
+        const result = resolveExchange(troops(attacker), troops(defender), context, {
+          ...rules,
+          dayUnitSeconds,
+          damage: { ...rules.damage, damage_scaling_factor: 36893488147419103232n, damage_biome_bonus_num: 0 },
+        });
+        expect(result).toMatchObject({
+          ok: true,
+          defenderLoss: (dayUnitSeconds === 0 ? 437n : outgoing) * 1_000_000_000n,
+          attackerLoss: (dayUnitSeconds === 0 ? 437n : incoming) * 1_000_000_000n,
+        });
       }
     }
   }

@@ -149,11 +149,7 @@ export const BuildView = ({
             </span>
           }
         >
-          <HudButton
-            kind="primary"
-            busy={sending ? BUILDING : undefined}
-            onClick={onBuild}
-          >
+          <HudButton kind="primary" busy={sending ? BUILDING : undefined} onClick={onBuild}>
             {BUILD}
           </HudButton>
         </HudWindowFoot>
@@ -310,7 +306,12 @@ const Band = ({ standing }: { standing: BuildTile["standing"] }) => (
     tip={standing.kind === "locked" ? needsResearchPurchases(BARRACKS, standing.bought, standing.gate) : undefined}
   >
     <span className="flex items-center gap-1 whitespace-nowrap tabular-nums">
-      {standing.kind === "level" && <><SemanticIcon name="lock" size={14} />{RealmLevels[standing.level]}</>}
+      {standing.kind === "level" && (
+        <>
+          <SemanticIcon name="lock" size={14} />
+          {RealmLevels[standing.level]}
+        </>
+      )}
       {standing.kind === "built" && <SemanticIcon name="check" size={16} />}
       {standing.kind === "locked" && (
         <>
