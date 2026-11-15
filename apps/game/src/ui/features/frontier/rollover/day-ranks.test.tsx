@@ -25,7 +25,9 @@ vi.mock("@/hooks/store/use-account-store", () => ({
     select({ account: { address: "0x1" } }),
 }));
 vi.mock("@/runtime/world", () => ({ getActiveGame: () => ({ chainId: "0x1" }) }));
-vi.mock("@/services/leaderboard/landing-leaderboard-service", () => ({ normalizeLeaderboardAddress: (a: string) => a }));
+vi.mock("@/services/leaderboard/landing-leaderboard-service", () => ({
+  normalizeLeaderboardAddress: (a: string) => a,
+}));
 vi.mock("@bibliothecadao/eternum", () => ({ configManager: { getActiveGameId: () => 1 } }));
 vi.mock("@bibliothecadao/eternum/game-client", () => ({
   fetchHeraldDayRanks: game.fetchRanks,
