@@ -34,17 +34,21 @@ const FightRow = ({ fight, now }: { fight: AspectFight; now: number }) => {
     <HudRow
       lead={<Icon name="attack" size={32} />}
       title={title}
-      detail={WORDS.fightLosses(attacker.aspect, lost(attacker), defender.aspect, lost(defender))}
-      trail={
-        <span className="flex items-center gap-1">
-          {[attacker, defender].filter(wipedOut).map((side) => (
-            <HudChip key={side.aspect} icons={["military"]} tone="bad">
-              {WORDS.wiped(side.aspect)}
-            </HudChip>
-          ))}
-          <span className="text-hud-label tabular-nums text-hud-muted">
-            {formatDuration(Math.max(0, now - fight.at))}
+      detail={
+        <span className="flex flex-col gap-1">
+          <span>{WORDS.fightLosses(attacker.aspect, lost(attacker), defender.aspect, lost(defender))}</span>
+          <span className="flex flex-wrap items-center gap-1">
+            {[attacker, defender].filter(wipedOut).map((side) => (
+              <HudChip key={side.aspect} icons={["military"]} tone="bad">
+                {WORDS.wiped(side.aspect)}
+              </HudChip>
+            ))}
           </span>
+        </span>
+      }
+      trail={
+        <span className="text-hud-label tabular-nums text-hud-muted">
+          {formatDuration(Math.max(0, now - fight.at))}
         </span>
       }
     />
