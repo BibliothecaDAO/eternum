@@ -121,14 +121,10 @@ fn guard_defender(
 }
 
 fn beast_bps(target: GuardTarget, timestamp: u64) -> u32 {
-    if crate::logic::expeditions::expedition_site(target.key).is_none()
-        || crate::logic::expeditions::depth_at(target.key.game_id, target.coord) == 3 {
-        return 10000;
-    }
-    let home = ResourceKey {
-        game_id: target.key.game_id, entity_id: crate::entity_ids::namespace(target.key.entity_id).into(),
-    };
-    crate::logic::triumphs::effects(home, timestamp).beast_bps
+    crate::race::IRaceDispatcherTrait::site_beast_bps(
+        crate::race::IRaceLibraryDispatcher { class_hash: crate::logic::release::classes(target.key.game_id).economy.read() },
+        target.key, timestamp,
+    )
 }
 
 fn fight_guard(
