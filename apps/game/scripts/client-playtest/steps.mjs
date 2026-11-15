@@ -3635,6 +3635,17 @@ const OPENING_STATE = `JSON.stringify({
 /** Turns Show everything on in the page's saved settings and loads the lab game again, as a player's setting persists. */
 const SHOW_EVERYTHING = `JSON.stringify((() => { localStorage.setItem("eternum-world-appearance", JSON.stringify({ state: { showEverything: true, fogStyle: "clear", reducedMotion: false, haptics: true, nextUpTips: true }, version: 0 })); return true; })())`;
 
+/** The Aspect page's feed: each fight's row, as a player reads it. */
+const ASPECT_FEED = `JSON.stringify((() => {
+  const feed = document.querySelector("[data-aspect-feed]");
+  const rect = feed?.getBoundingClientRect();
+  return {
+    visible: Boolean(rect && rect.width > 0 && rect.height > 0),
+    rows: [...(feed?.querySelectorAll(".ui-row") ?? [])].map((row) => row.textContent),
+    text: feed?.textContent ?? "",
+  };
+})())`;
+
 /** Every request this page made to a rank Herald serves a legacy game: a Season 1 game asks for none. */
 const RANK_REQUESTS = `JSON.stringify(performance.getEntriesByType("resource").map((entry) => entry.name).filter((name) => /\\/leaderboard|\\/days\\/\\d+\\/ranks/.test(name)))`;
 
@@ -3743,6 +3754,41 @@ function raceBoardSteps(result) {
           : failed("The scoped native race must show four heights, both members' Glory and the early winner", played);
       },
     },
+    ...(result === null
+      ? [
+          {
+            name: "aspect-feed-reads-real-fights",
+            settleMs: 0,
+            play: async ({ browser, extraScreenshot }) => {
+              browser.read(
+                `(() => { document.querySelector('[data-aspect-feed]')?.scrollIntoView({ block: 'nearest' }); return true; })()`,
+              );
+              const feed = await readUntil(
+                () => browser.read(ASPECT_FEED),
+                (state) => state.rows.length >= 4,
+                PLAYABLE_WAIT_MS,
+              );
+              extraScreenshot("aspect-feed");
+              return { feed };
+            },
+            verify: ({ played }) => {
+              const text = played.feed.rows.join(" | ");
+              return played.feed.visible &&
+                text.includes("Might beat Harmony") &&
+                text.includes("Harmony beat Might") &&
+                text.includes("Might and Harmony fought to a stand") &&
+                text.includes("Might and Harmony wiped each other out") &&
+                text.includes("Harmony wiped out") &&
+                played.feed.rows.length === 4
+                ? completed(played)
+                : failed(
+                    "The feed must name each Deep fight's winner by its troops, skip the beast, and find the Deep fights past 120 surface fights",
+                    played,
+                  );
+            },
+          },
+        ]
+      : []),
     {
       name: "no-site-rank-requests",
       settleMs: 0,

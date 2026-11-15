@@ -100,12 +100,15 @@ export function raceScenario(finished = false): LabScenario {
       },
     );
   }
+  // A rival Aspect's home, which the Aspect's fights name.
+  facts.push({ model: "HomeAspect", key: "0xa560", value: { game_id: 1, home: String(RIVAL_HOME), aspect: 2 } });
   store.applyFacts(facts);
   return {
     ...scenario,
     startsAt: now,
     opensOn: { col: center.col + rules.first.x - half, row: center.row + rules.first.y - half },
     scoped: true,
+    history: battleHistory(now, center, half),
   };
 }
 
@@ -148,4 +151,63 @@ export function expiredRaceScenario(): LabScenario {
     },
   ] as never);
   return { ...scenario, startsAt: Number(end) + 1 };
+}
+
+/** A home of the Harmony Aspect, rival to the player's. */
+const RIVAL_HOME = 11n;
+const SITE = 800n;
+
+/**
+ * The Aspect's fights as Herald holds them, in the shapes the contract emits (BattleEvent): owners are homes, a site's
+ * beast is owner 0, and winner_id is what each emitter writes (the winning home, or the site on a lost guard attack).
+ * Newest first: 120 fights on the surface, then the Deep's: a win that wipes its rival, a lost guard attack, a standoff,
+ * a mutual wipe-out, and an attack on the day's beast.
+ */
+function battleHistory(now: number, center: { col: number; row: number }, half: number) {
+  const players: Record<string, string> = { "7": "0x111", "9": "0x222", "11": "0x333", "0": "0x0" };
+  const deep = { x: center.col - half + 40, y: center.row - half + 25, alt: false };
+  const surface = { x: 12, y: 12, alt: false };
+  const side = (home: string, before: number, after: number) => ({
+    player: players[home],
+    category: "Knight",
+    tier: "T1",
+    before: `0x${(BigInt(before) * BigInt(RESOURCE_PRECISION)).toString(16)}`,
+    after: `0x${(BigInt(after) * BigInt(RESOURCE_PRECISION)).toString(16)}`,
+    roll: 3,
+  });
+  let at = now;
+  const fight = (
+    coord: typeof deep,
+    attacker: [string, number, number],
+    defender: [string, number, number],
+    winner: bigint,
+  ) => ({
+    block_number: 1_000 + (now - at),
+    transaction_index: 0,
+    event_index: 0,
+    game_id: "1",
+    model: "BattleEvent",
+    transaction_hash: `0x${(0xb00 + (now - (at -= 60))).toString(16)}`,
+    value: {
+      version: 2,
+      game_id: "0x1",
+      attacker_id: "0xa",
+      defender_id: "0xb",
+      attacker_owner: attacker[0],
+      defender_owner: defender[0],
+      winner_id: `0x${winner.toString(16)}`,
+      coord,
+      attacker: side(...attacker),
+      defender: side(...defender),
+      timestamp: `0x${at.toString(16)}`,
+    },
+  });
+  return [
+    ...Array.from({ length: 120 }, () => fight(surface, ["7", 100, 90], ["0", 300, 250], 7n)),
+    fight(deep, ["7", 100, 80], ["11", 60, 0], 7n),
+    fight(deep, ["9", 100, 0], ["11", 60, 20], SITE),
+    fight(deep, ["7", 100, 70], ["11", 60, 30], 0n),
+    fight(deep, ["9", 50, 0], ["11", 50, 0], 0n),
+    fight(deep, ["7", 100, 90], ["0", 10_000, 9_000], 7n),
+  ];
 }

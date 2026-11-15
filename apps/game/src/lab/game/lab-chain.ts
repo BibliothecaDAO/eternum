@@ -534,18 +534,24 @@ const answerHeraldRead = (
         setTimeout(() => answered(answerHeraldRead(url, scenario, chain, now, confirmedBlock)), heldFor * 1_000),
       );
     const query = url.searchParams;
-    const owner = query.get("owner");
-    const named = owner && `"0x${BigInt(owner).toString(16)}"`;
+    // Herald takes one owner or several: an event names any of them.
+    const named = query.getAll("owner").map((owner) => `"0x${BigInt(owner).toString(16)}"`);
     const limit = Math.min(Number(query.get("limit") ?? 100), HISTORY_PAGE);
     const offset = Number(query.get("offset") ?? 0);
     const items = (scenario.history ?? []).filter(
       (event) =>
         hasHappened(event, now()) &&
-        (!named || JSON.stringify(event.value).includes(named)) &&
+        (named.length === 0 || named.some((owner) => JSON.stringify(event.value).includes(owner))) &&
         (!query.get("model") || event.model === query.get("model")) &&
         (!query.get("story") || storyOf(event) === query.get("story")),
     );
-    return { complete_through_block: confirmedBlock, items: items.slice(offset, offset + limit), limit, offset };
+    return {
+      complete_through_block: confirmedBlock,
+      items: items.slice(offset, offset + limit),
+      limit,
+      offset,
+      total: items.length,
+    };
   }
   const site = url.pathname.match(new RegExp(`^${game}/sites/(\\d+)$`));
   if (site) {
