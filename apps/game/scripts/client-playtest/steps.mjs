@@ -4750,12 +4750,12 @@ async function panInto(browser, axis, band, keys, readPoint) {
   }
 }
 
-const PAN_TICKS = 30;
+const PAN_MS = 400;
 const HEX_CLOSE = 1;
 
 /**
  * Walks the camera to a contract hex as a player's keys do. Each key's pull is first measured (the camera's move for
- * one burst of D and one of W, as the screen's axes lie across the hex grid), then bursts are sized to close the
+ * one 400 ms hold of D and one of W, as the screen's axes lie across the hex grid), then bursts are sized to close the
  * remaining distance until the camera is within a hex of the target.
  */
 async function panToHex(browser, target) {
@@ -4768,10 +4768,11 @@ async function panToHex(browser, target) {
     const to = camera();
     return [to.col - from.col, to.row - from.row];
   };
-  const right = await burst("KeyD", PAN_TICKS);
-  const up = await burst("KeyW", PAN_TICKS);
+  const right = await burst("KeyD", PAN_MS);
+  const up = await burst("KeyW", PAN_MS);
   const determinant = right[0] * up[1] - right[1] * up[0];
-  if (determinant === 0) throw new Error("The camera's keys move it along one line only");
+  if (determinant === 0)
+    throw new Error(`The camera's keys move it along one line only: ${JSON.stringify([right, up])}`);
   for (let attempt = 0; attempt < PAN_BURSTS; attempt += 1) {
     const at = camera();
     const miss = [target.col - at.col, target.row - at.row];
@@ -4782,8 +4783,8 @@ async function panToHex(browser, target) {
       ["KeyD", "KeyA", rights],
       ["KeyW", "KeyS", ups],
     ])
-      if (Math.abs(amount) * PAN_TICKS >= 1)
-        await burst(amount > 0 ? key : opposite, Math.round(Math.abs(amount) * PAN_TICKS));
+      if (Math.abs(amount) * PAN_MS >= 1)
+        await burst(amount > 0 ? key : opposite, Math.round(Math.abs(amount) * PAN_MS));
   }
 }
 
