@@ -112,6 +112,8 @@ export const flush = (): Promise<void> => {
     again = true;
     return sending;
   }
+  // Nothing to send to: no request is begun, so none is left standing for the account that signs in next.
+  if (!useOpeningStore.getState().owner) return Promise.resolve();
   sending = (async () => {
     try {
       do {

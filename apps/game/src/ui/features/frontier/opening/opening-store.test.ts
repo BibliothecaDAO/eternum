@@ -126,3 +126,21 @@ it("never lets one account's answer or progress reach another's", async () => {
   calls[1]!.answer({ reached: [], seen: [] });
   await settle();
 });
+
+it("keeps sending after a flush while signed out: the account that signs in next is read and its progress sent", async () => {
+  const calls = deferred();
+  await flush();
+  expect(calls).toHaveLength(0);
+  void loadOpening("a");
+  await settle();
+  expect(calls).toHaveLength(1);
+  calls[0]!.answer({ reached: ["launch"], seen: [] });
+  await settle();
+  expect(useOpeningStore.getState().status).toBe("ready");
+  void seeLine("launch");
+  await settle();
+  expect(calls[1]!.sent).toEqual({ reached: [], seen: ["launch"] });
+  calls[1]!.answer({ reached: ["launch"], seen: ["launch"] });
+  await settle();
+  expect(unsent()).toEqual({ reached: [], seen: [] });
+});
