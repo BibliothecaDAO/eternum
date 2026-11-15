@@ -511,11 +511,11 @@ describe("the build sheet", () => {
       );
     // Independent Farm ranks occupy bits 0–2 and 3–5; the Hut rank starts at bit 21.
     // Two Fields purchases and one Granary purchase show different ranks.
-    learn(2n | (1n << 3n) | (3n << 21n));
+    learn(2n | (1n << 3n) | (3n << 14n) | (3n << 21n));
     const mixed = open(store, realm);
     expect(gems(mixed, "Farm")).toEqual(["fields II", "granary I"]);
     expect(gems(mixed, "Workshop")).toEqual(["tools Untrained", "storehouse Untrained"]);
-    expect(gems(mixed, "Barracks")).toEqual([]);
+    expect(gems(mixed, "Barracks")).toEqual(["III"]);
     // A row without sides keeps its type's one gem: the Hut at Rare III, a training building at Common I.
     expect(gems(mixed, "Hut")).toEqual(["III"]);
     expect(gems(mixed, "War hall")).toEqual(["I"]);
@@ -526,6 +526,7 @@ describe("the build sheet", () => {
     learn(2n);
     const fields = open(store, realm);
     expect(gems(fields, "Farm")).toEqual(["fields II", "granary Untrained"]);
+    expect(gems(fields, "Barracks")).toEqual(["Untrained"]);
     fields.close();
   });
 
