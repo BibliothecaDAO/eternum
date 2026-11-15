@@ -19,14 +19,23 @@ export function getTileAt(
   return tileFactsToTile(key, deepTerrain(store, key) ?? store.get("TileOpt", key), activeTileOccupancy(store, key));
 }
 
+/** A field entity occupies its own tile; a Deep guard occupies its site's tile. */
+export function entityMapOccupancy(
+  store: Pick<NativeFactStore, "entityOccupancy" | "get">,
+  gameId: number,
+  entityId: number | bigint,
+) {
+  const guard = store.get("DeepGuard", { game_id: gameId, explorer_id: BigInt(entityId) });
+  return store.entityOccupancy(gameId, guard?.site_id ?? entityId);
+}
+
 /** The canonical tile occupied by a live entity; a missing position is an incomplete fact set. */
 export function entityMapPosition(
   store: Pick<NativeFactStore, "entityOccupancy" | "get">,
   gameId: number,
   entityId: number | bigint,
 ): { x: number; y: number; alt: boolean } {
-  const guard = store.get("DeepGuard", { game_id: gameId, explorer_id: BigInt(entityId) });
-  const tile = store.entityOccupancy(gameId, guard?.site_id ?? entityId);
+  const tile = entityMapOccupancy(store, gameId, entityId);
   if (!tile) throw new Error(`Missing native position for entity ${gameId}:${entityId}`);
   return { x: tile.col, y: tile.row, alt: tile.alt };
 }

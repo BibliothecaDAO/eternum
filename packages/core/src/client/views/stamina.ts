@@ -20,6 +20,7 @@ export const STAMINA_MODELS = [
   "ExplorerTroops",
   "TileOccupancy",
   "DeepArmy",
+  "DeepGuard",
   "DeepRules",
 ] as const;
 

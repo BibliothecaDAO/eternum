@@ -2,6 +2,7 @@ import { readStaminaEffects } from "../client/views/stamina";
 import { expeditionDepth, readExpeditionRules } from "../utils/expeditions";
 export { STAMINA_MODELS } from "../client/views/stamina";
 import { currentArmy } from "../utils/deep";
+import { entityMapOccupancy } from "../utils/tile";
 import { troopTierIndex, TroopTier, TroopType, type Troops, type StaminaEffects } from "@bibliothecadao/types";
 import type { NativeFactStore } from "../client/native-fact-store";
 import { armyRelicBonus } from "../utils/army-relics";
@@ -179,7 +180,7 @@ export function resolveExplorerTroops(
   const rules = store.get("SliceRules", { game_id: explorer.game_id });
   if (!progress || !rules) return undefined;
   const calendar = readExpeditionRules(store, explorer.game_id);
-  const position = store.entityOccupancy(explorer.game_id, explorer.explorer_id);
+  const position = entityMapOccupancy(store, explorer.game_id, explorer.explorer_id);
   if (calendar && !position) return undefined;
   const effects = readStaminaEffects(
     store,

@@ -67,6 +67,10 @@ fetches (the client's own modules, every script, the bytes), when its last scrip
 beside the card. `pnpm --dir apps/game prove:app <base-url> <out-dir> phone` includes this path. The retired long-format
 tribe fixture is removed.
 
+`/lab/game?scenario=deep` opens beside the allied Quarry. Select Army 1, open the Quarry, Join, then close the site
+card and reopen Army 1 from the dock. Its panel keeps the slot's refilling stamina after the army leaves its personal
+tile. `build.sh playtest-deep` drives this path on desktop and phone and records the joined guard and visible bar.
+
 ### HUD room
 
 HUD → In game lists every state and part the lab draws for the game switched to: Frontier's HUD as the game mounts it

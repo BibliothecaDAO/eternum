@@ -167,7 +167,7 @@ cmd = 'cp /home/djizus/projects/eternum-lanes/showcase/apps/game/.env.local apps
 estimate_gb = 6
 
 [kind.test-deep-stamina]
-cmd = "pnpm run build:packages && pnpm --dir apps/game test src/ui/features/frontier/deep/deep-site-card.test.tsx"
+cmd = "pnpm run build:packages && pnpm --dir apps/game test src/ui/features/frontier/deep/deep-site-card.test.tsx && pnpm --dir apps/game verify:assets scripts/client-playtest/steps.test.mjs"
 estimate_gb = 5
 
 [kind.playtest-banes]

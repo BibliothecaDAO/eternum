@@ -1176,14 +1176,7 @@ function staminaEffectSteps(wind) {
       play: async ({ browser }) => {
         const panel = await openTheArmyPanel(browser);
         const reading = await readUntil(
-          () =>
-            browser.read(`(() => {
-          const sheet = document.querySelector('[data-kit-sheet][aria-label="' + ${JSON.stringify("Army 1")} + '"]');
-          const meter = sheet?.querySelector('[role="meter"][aria-label="stamina"]');
-          const rect = meter?.getBoundingClientRect();
-          return { current: Number(meter?.getAttribute('aria-valuenow')), maximum: Number(meter?.getAttribute('aria-valuemax')),
-            text: sheet?.textContent, visible: Boolean(rect && rect.width && rect.height && rect.top >= 0 && rect.bottom <= innerHeight) };
-        })()`),
+          () => readArmyStamina(browser),
           (state) => state.visible,
           SHEET_WAIT_MS,
         );
@@ -1204,6 +1197,17 @@ function staminaEffectSteps(wind) {
     },
     ARMY_ACTION_STEPS[1],
   ];
+}
+
+function readArmyStamina(browser) {
+  return browser.read(`(() => {
+    const sheet = document.querySelector('[data-kit-sheet][aria-label^="Army "]');
+    const line = sheet?.querySelector('[data-stamina-line]');
+    const meter = line?.querySelector('[role="meter"][aria-label="stamina"]');
+    const rect = line?.getBoundingClientRect();
+    return { current: Number(meter?.getAttribute('aria-valuenow')), maximum: Number(meter?.getAttribute('aria-valuemax')),
+      text: line?.textContent, visible: Boolean(rect && rect.width && rect.height && rect.top >= 0 && rect.bottom <= innerHeight) };
+  })()`);
 }
 
 async function openTheArmyPanel(browser) {
@@ -3658,6 +3662,23 @@ const DEEP_JOIN_STEPS = [
         ? completed(played)
         : failed("Join must submit InteractSite once, leave the field and show the second allied guard slot", played);
     },
+  },
+  {
+    name: "reselect-guard-from-dock",
+    settleMs: 0,
+    play: async ({ browser, extraScreenshot }) => {
+      browser.press("Escape");
+      const panel = await openTheArmyPanel(browser);
+      const reading = await readUntil(() => readArmyStamina(browser), (state) => state.visible, SHEET_WAIT_MS);
+      extraScreenshot("joined-guard-stamina");
+      return { panel, reading };
+    },
+    verify: ({ played }) =>
+      played.panel.army && played.panel.sheet === played.panel.army &&
+      played.reading.visible && played.reading.current >= 60 && played.reading.current <= 140 &&
+      played.reading.maximum === 140
+        ? completed(played)
+        : failed("The joined slot army must reopen from the dock with its refilled stamina visible", played),
   },
 ];
 
