@@ -15,13 +15,15 @@ its stamina; the next day starts a fresh slot.
 
 Frontier army management: select an army from the dock or map; on a phone tap its selected token for details. The
 panel's red trash, right after its name at the top left, is **Delete**: it asks for confirmation in the panel (troops,
-skills, XP and carried resources are lost; the freed slot keeps its stamina), then removes the army. Reinforce is the
-realm's, as in Blitz: select the realm on the map, then right-click (on a phone, hold) its army on a tile beside home
-(the tooltip reads **Reinforce**): the **Reinforce** sheet takes the count (Max, +500, slider), shows the army's troops
-before → after and the wheat price, and sends `explorer_add` from the realm's stock of the army's own troop. Proof: the
-standard client playtest with `--steps army-management --player <saved-test-player> --storage-state <file>` deploys ten
-troops, cancels Delete once, then confirms it and checks the army disappears. Dev: `/lab/kit/hud/army-crowded` (the
-owner's Army 4) and `army-crowded-ready` (a point held).
+skills, XP and carried resources are lost; the freed slot keeps its stamina), then removes the army. An army's way to
+its next skill point is a gold ring around its portrait (dock row or token, open panel, map plate; a hover says XP
+against the next milestone); proof: `/lab/game?scenario=deep` step `xp-ring-fills`. Reinforce is the realm's, as in
+Blitz: select the realm on the map, then right-click (on a phone, hold) its army on a tile beside home (the tooltip
+reads **Reinforce**): the **Reinforce** sheet takes the count (Max, +500, slider), shows the army's troops before →
+after and the wheat price, and sends `explorer_add` from the realm's stock of the army's own troop. Proof: the standard
+client playtest with `--steps army-management --player <saved-test-player> --storage-state <file>` deploys ten troops,
+cancels Delete once, then confirms it and checks the army disappears. Dev: `/lab/kit/hud/army-crowded` (the owner's
+Army 4) and `army-crowded-ready` (a point held).
 
 The optional `--steps army-stock` preparation builds a Barracks through the realm board when the saved home needs
 reserve troops.

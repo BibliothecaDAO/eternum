@@ -7,10 +7,9 @@ import {
   RESOURCE_PRECISION,
 } from "@bibliothecadao/types";
 import { Icon as SemanticIcon, type IconMeaning } from "@/ui/design-system/icon";
-import { XpRing } from "@/ui/design-system/kit/xp-ring";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 
-import { HudMeter, HudStamina, type StaminaBar, rankedTip } from "@/ui/design-system/kit/hud-elements";
+import { HudMeter, HudStamina, type StaminaBar, rankedTip, XpRing } from "@/ui/design-system/kit/hud-elements";
 import {
   comesHomeAtDayEnd,
   DEEP_WORDS,

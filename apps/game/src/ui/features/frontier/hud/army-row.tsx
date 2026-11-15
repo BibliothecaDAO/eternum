@@ -1,6 +1,5 @@
 import { Icon as SemanticIcon, type IconMeaning } from "@/ui/design-system/icon";
-import { HudPanel, HudPortrait, HudRow, rankedTip } from "@/ui/design-system/kit/hud-elements";
-import { XpRing } from "@/ui/design-system/kit/xp-ring";
+import { HudPanel, HudPortrait, HudRow, rankedTip, XpRing } from "@/ui/design-system/kit/hud-elements";
 import { ARMIES, TROOPS, troopCount, UPGRADE } from "@/ui/design-system/kit/words";
 import type { StaminaBar } from "@/ui/design-system/kit/hud-elements";
 import type { ReactNode } from "react";

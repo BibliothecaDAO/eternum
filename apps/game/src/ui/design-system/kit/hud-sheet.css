@@ -1033,7 +1033,7 @@ span.ui-row__choose {
   color: rgb(var(--hud-gold));
 }
 
-/* An army's way to its next skill point: the ring around its portrait is the HUD's gold (kit/xp-ring.tsx). */
+/* An army's way to its next skill point: the ring around its portrait is the HUD's gold (XpRing in hud-elements.tsx). */
 .ui-xp-ring {
   color: rgb(var(--hud-gold));
 }

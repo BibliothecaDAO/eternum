@@ -1,7 +1,6 @@
 import { SKILL_POINT_RANKS, type SkillPointChoice, type SkillPointRank } from "@bibliothecadao/eternum";
 import { OpeningPartGate } from "../opening/opening-context";
 import { DeepDrain, EtherealMark, xpLine } from "../hud/army-token";
-import { XpRing } from "@/ui/design-system/kit/xp-ring";
 import { formatExact, formatShort } from "@bibliothecadao/types";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { Icon, IconGroup } from "@/ui/design-system/icon";
@@ -13,6 +12,7 @@ import {
   HudTier,
   HudTierStep,
   rankedTip,
+  XpRing,
 } from "@/ui/design-system/kit/hud-elements";
 import { ARMY_DETAIL, tierNumeral, TROOPS, UPGRADING } from "@/ui/design-system/kit/words";
 import { type ReactNode, useState } from "react";

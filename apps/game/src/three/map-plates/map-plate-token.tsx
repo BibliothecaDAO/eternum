@@ -1,7 +1,6 @@
-import { XpRing } from "@/ui/design-system/kit/xp-ring";
 import { formatExact, formatPercent } from "@bibliothecadao/types";
 import { Icon, type IconMeaning } from "@/ui/design-system/icon";
-import { HudStamina, HudTierChip, type StaminaBar } from "@/ui/design-system/kit/hud-elements";
+import { HudStamina, HudTierChip, type StaminaBar, XpRing } from "@/ui/design-system/kit/hud-elements";
 import { UNDEFENDED } from "@/ui/design-system/kit/words";
 
 import { chipWidth, labelWidth } from "./map-plate-layout";
