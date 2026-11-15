@@ -3944,9 +3944,9 @@ const DEEP_JOIN_STEPS = [
       return { rings };
     },
     verify: ({ played }) =>
-      played.rings.length > 0 && played.rings.every((label) => label === "XP: 50% of the way to the next skill point")
+      played.rings.length > 0 && played.rings.every((label) => label === "XP: 80% of the way to the next skill point")
         ? completed(played)
-        : failed("An army half way to its next skill point wears a half-filled ring", played),
+        : failed("An army four fifths of the way to its next skill point wears a ring four fifths filled", played),
   },
   {
     name: "field-army-drains",
