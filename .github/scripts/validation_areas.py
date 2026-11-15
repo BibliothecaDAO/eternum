@@ -244,6 +244,12 @@ AREAS = {
         ".github/workflows/test-docs.yml",
         MEDIA_FREE_CHECKOUT,
         "apps/game-docs/**",
+        # The export regression loads the serving client's actual build configuration.
+        "apps/game/vite.config.ts",
+        "apps/game/build/**",
+        "apps/game/src/three/renderer-vite-config.ts",
+        "apps/game/src/tokens.ts",
+        "apps/game/src/brand/palette.json",
         "apps/launch-service/src/release.ts",
         "packages/**",
         "config/**",
