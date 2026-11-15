@@ -191,6 +191,12 @@ fn schedule_triumph(key: AspectKey, rules: RaceRules, before: u32, height: u32, 
     emit('TriumphDay', key, day.index + 1);
 }
 
+fn finish_expired(game_id: u32, timestamp: u64) {
+    if rules(game_id).is_none() || result(game_id).is_some() { return; }
+    let game = crate::logic::game::game(game_id);
+    if timestamp >= game.end_at { finish(game_id, None, game.end_at); }
+}
+
 fn finish(game_id: u32, winner: Option<u8>, timestamp: u64) {
     assert!(result(game_id).is_none(), "race already finished");
     let mut game = crate::logic::game::game(game_id);
@@ -238,6 +244,9 @@ pub mod RaceState {
             self: @ComponentState<TContractState>, site: crate::resources::ResourceKey, home: u64, timestamp: u64,
         ) -> u32 {
             crate::logic::triumphs::site_beast_bps(site, home, timestamp)
+        }
+        fn finish_expired_race(ref self: ComponentState<TContractState>, game_id: u32, timestamp: u64) {
+            super::finish_expired(game_id, timestamp);
         }
         fn race_rules(self: @ComponentState<TContractState>, game_id: u32) -> Option<crate::race::RaceRules> {
             super::rules(game_id)

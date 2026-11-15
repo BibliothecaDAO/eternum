@@ -1352,3 +1352,5 @@ appears, and the Realm and army receive resources and XP. Canonical proof: `pnpm
 Site effects: `/lab/game?scenario=site-effects`; select the army and camp to read Pale Moon guards and Spoils payout.
 Canonical proof: `playtest --steps lab-site-effects`. Clear receipts and the Feed retain awarded XP after effects
 expire.
+
+Season deadline: `/lab/game?scenario=race-expired` opens the final four heights and members after day50, with no finisher. Canonical proof: `playtest --steps lab-race-expired`.

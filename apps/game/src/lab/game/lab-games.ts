@@ -6,7 +6,7 @@ import { staminaScenario } from "./stamina-scenario";
 import { questScenario } from "./quest-scenario";
 import { aspectSettleScenario } from "./aspect-settle-scenario";
 import { deepScenario } from "./deep-scenario";
-import { raceScenario } from "./race-scenario";
+import { expiredRaceScenario, raceScenario } from "./race-scenario";
 import { actionsScenario } from "./actions-scenario";
 import { economyScenario } from "./economy-scenario";
 import { relicsScenario } from "./relics-scenario";
@@ -53,6 +53,7 @@ export const LAB_SCENARIOS: Partial<Record<string, () => LabScenario>> = {
   deep: deepScenario,
   race: raceScenario,
   "race-finished": () => raceScenario(true),
+  "race-expired": expiredRaceScenario,
   economy: economyScenario,
   relics: relicsScenario,
   "ethereal-depths": etherealDepthsScenario,

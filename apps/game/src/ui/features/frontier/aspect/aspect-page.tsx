@@ -63,8 +63,7 @@ export function aspectPage(
       })),
       finishHeight: board.rules.stage_height * nativeRaceConstants.STAGE_COUNT,
       stages: nativeRaceConstants.STAGE_COUNT,
-      winner:
-        board.result?.winner === undefined || board.result.winner === null ? null : aspectName(board.result.winner),
+      result: board.result && { winner: board.result.winner === null ? null : aspectName(board.result.winner) },
     },
     own: board.own && {
       aspect: aspectName(board.own.aspect),

@@ -44,7 +44,7 @@ export interface AspectPageProps {
     finishHeight: number;
     stages: number;
     /** The Aspect that finished first and ended the age. */
-    winner: string | null;
+    result: { winner: string | null } | null;
   } | null;
   /** The player's own Aspect; null for a player with none. */
   own: OwnAspect | null;
@@ -75,7 +75,7 @@ export const AspectPageView = ({ race, own, fights, onClose }: AspectPageProps) 
 const Race = ({ race }: { race: NonNullable<AspectPageProps["race"]> }) => (
   <section data-aspect-race className="flex flex-col gap-1">
     <Heading>{WORDS.race}</Heading>
-    {race.winner !== null && <Muted>{WORDS.won(race.winner)}</Muted>}
+    {race.result && <Muted>{race.result.winner === null ? WORDS.noFinisher : WORDS.won(race.result.winner)}</Muted>}
     {race.standings.map((standing) => (
       <StandingRow key={standing.aspect} standing={standing} race={race} />
     ))}

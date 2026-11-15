@@ -589,6 +589,7 @@ export const ASPECT_PAGE_WORDS = {
   stage: (stage: number, stages: number) => `Stage ${stage} of ${stages}`,
   finished: "Finished",
   won: (aspect: string) => `${aspect} finished first and won the age`,
+  noFinisher: "The age ended. No Aspect finished its hyperstructure.",
   yours: (aspect: string) => `Your Aspect: ${aspect}`,
   triumphs: "Triumphs",
   triumph: { 1: "Clear Mist", 2: "Second Wind", 3: "Pale Moon", 4: "Spoils" },

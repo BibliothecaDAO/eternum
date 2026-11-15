@@ -3622,13 +3622,13 @@ const RACE_BOARD_STATE = `JSON.stringify((() => {
     scopes: window.__labChain?.scopes ?? [], ended: Boolean(document.querySelector('[data-race-ended]')) };
 })())`;
 
-function raceBoardSteps(finished) {
+function raceBoardSteps(result) {
   return [
     { name: "enter-on-map", settleMs: 3_000, verify: inScene("map", "Deep") },
     {
       name: "read-aspect-race",
       play: async ({ browser, extraScreenshot }) => {
-        if (!finished) {
+        if (result === null) {
           if (!onADesktop()) {
             browser.click(HUD_WORDS.menu);
             await sleep(500);
@@ -3662,14 +3662,15 @@ function raceBoardSteps(finished) {
           race.text.includes("Might") &&
           race.text.includes("Chaos") &&
           race.text.includes("Guile") &&
-          race.text.includes(finished ? "10,000 of 10,000" : "6,400 of 10,000") &&
+          race.text.includes(result === "won" ? "10,000 of 10,000" : "6,400 of 10,000") &&
+          (result !== "expired" || race.text.includes("No Aspect finished its hyperstructure")) &&
           members.text.includes("1.3K") &&
           members.text.includes("3.8K") &&
           scoped.includes(7) &&
           scoped.includes(9) &&
           scoped.includes(901) &&
           scoped.includes(904) &&
-          (!finished || played.race.ended)
+          (result === null || played.race.ended)
           ? completed(played)
           : failed("The scoped native race must show four heights, both members' Glory and the early winner", played);
       },
@@ -5381,8 +5382,9 @@ export const STEP_SETS = {
   "lab-far-place": { game: labSpireGame("far-place"), steps: FAR_PLACE_STEPS, devOverlays: true },
   "lab-far-eye": { game: labSpireGame("far-eye"), steps: FAR_EYE_STEPS },
   "lab-relic-forecasts": { game: labSpireGame("relics"), steps: RELIC_FORECAST_STEPS },
-  "lab-race": { game: labSpireGame("race"), steps: raceBoardSteps(false) },
-  "lab-race-finished": { game: labSpireGame("race-finished"), steps: raceBoardSteps(true) },
+  "lab-race": { game: labSpireGame("race"), steps: raceBoardSteps(null) },
+  "lab-race-expired": { game: labSpireGame("race-expired"), steps: raceBoardSteps("expired") },
+  "lab-race-finished": { game: labSpireGame("race-finished"), steps: raceBoardSteps("won") },
 
   "lab-discovered-spire": { game: labSpireGame("discovered-spire"), steps: DISCOVERED_SPIRE_STEPS },
   "lab-deep-join": { game: labSpireGame("deep"), steps: DEEP_JOIN_STEPS },

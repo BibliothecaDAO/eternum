@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { raceScenario } from "@/lab/game/race-scenario";
+import { expiredRaceScenario, raceScenario } from "@/lab/game/race-scenario";
 import { rowsOf, wire } from "@/lab/game/lab-chain";
 import { NativeFactStore, readRaceBoard, readRaceMonument } from "@bibliothecadao/eternum/game-client";
 import { configManager, getHyperstructureProgress, getStructureName } from "@bibliothecadao/eternum";
@@ -80,7 +80,7 @@ describe("the race board from native facts", () => {
     });
     expect(game.end_at).toBeLessThan(game.scheduled_end_at);
     expect(board.own!.members.every((member) => member.guards.length === 0)).toBe(true);
-    expect(aspectPage(board, () => "Realm").race?.winner).toBe("Harmony");
+    expect(aspectPage(board, () => "Realm").race?.result?.winner).toBe("Harmony");
     expect(getHyperstructureProgress(902, store)).toEqual({ percentage: 100, initialized: true, completed: true });
   });
 
@@ -98,4 +98,15 @@ describe("the race board from native facts", () => {
     ]);
     expect(read().unknown).toBe("MISSING_ASPECT_MEMBER_HOME");
   });
+});
+
+it("reads an expired race from its final snapshot without inventing a finisher", () => {
+  const scenario = expiredRaceScenario();
+  scenario.store.setSnapshot({ gameId: 1, actor: scenario.player, timestamp: scenario.startsAt, complete: true });
+  const reading = readRaceBoard(scenario.store,1,7n,scenario.startsAt);
+  const board = reading.known!.race!;
+  expect(board.result?.winner).toBeNull();
+  expect(board.result?.ended_at).toBe(board.result?.scheduled_end_at);
+  expect(board.standings.map(row => row.height)).toEqual([6400,5200,2800,900]);
+  expect(aspectPage(board,() => "Realm").race?.result).toEqual({ winner: null });
 });

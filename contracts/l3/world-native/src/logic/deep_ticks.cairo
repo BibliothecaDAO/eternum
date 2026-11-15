@@ -44,6 +44,7 @@ pub fn settle(game_id: u32, context: ExecutionContext) {
     if crate::state::read().deep.paid_tick.read(game_id) != Some(cursor) {
         save_cursor(game_id, cursor);
     }
+    race.finish_expired_race(game_id, context.timestamp);
     if race.race_result(game_id).is_none() && context.timestamp < game.end_at {
         crate::logic::deep_sites::rollover(game_id, context);
     }

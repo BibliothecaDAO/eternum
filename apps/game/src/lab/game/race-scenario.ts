@@ -1,3 +1,4 @@
+import { DAYS_PER_BAG, seasonSeconds } from "@bibliothecadao/eternum";
 import { deepCenter, nativeRuleConstants, type NativeRows } from "@bibliothecadao/eternum/game-client";
 import { aspects, RESOURCE_PRECISION, StructureType, TileOccupier } from "@bibliothecadao/types";
 import { deepScenario } from "./deep-scenario";
@@ -118,4 +119,20 @@ export function raceRules(): NativeRows["RaceRules"] {
     third: { alt: false, x: 5, y: 45 },
     fourth: { alt: false, x: 45, y: 45 },
   };
+}
+
+/** The fiftieth day ends with all four monuments unfinished; the recorded result has no winner. */
+export function expiredRaceScenario(): LabScenario {
+  const scenario = raceScenario();
+  const { store } = scenario;
+  const game = store.require("GameRegistry", { game_id: 1 });
+  const rules = store.require("RaceRules", { game_id: 1 });
+  const unit = store.require("SliceRules", { game_id: 1 }).day_unit_seconds;
+  const end = game.start_main_at + BigInt(seasonSeconds(Number(rules.season_days) / DAYS_PER_BAG, unit));
+  store.applyFacts([
+    { model: "GameRegistry", key: store.wireKeyOf("GameRegistry", { game_id: 1 })!,
+      value: wire({ ...game, scheduled_end_at: end, end_at: end, settled: true }) },
+    { model: "RaceResult", key: "0xa550", value: wire({ game_id: 1, winner: null, ended_at: end, scheduled_end_at: end }) },
+  ] as never);
+  return { ...scenario, startsAt: Number(end) + 1 };
 }
