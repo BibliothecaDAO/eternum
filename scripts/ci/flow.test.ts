@@ -67,7 +67,6 @@ test("runtime setup follows the workflow rather than the host runtime", () => {
   expect(pins).toContainEqual({ name: "bun", version: "1.4.0" });
 });
 
-
 test("refuses a host binary that did not switch to the requested runtime", () => {
   expect(runtimeMatches("22", "v22.20.0")).toBe(true);
   expect(runtimeMatches("22", "v24.21.0")).toBe(false);
