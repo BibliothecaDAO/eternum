@@ -1361,6 +1361,8 @@ test("preset 7 activates the complete Slice 1 rules while fixtures and historica
     for (const command of ["ClaimDailyQuest", "Battle", "BattleGuard", "ApplyRelic", "InteractSite", "MarkGameSettled"] as const) expect(built.rules.command_mask & BigInt(nativeCommandBits[command])).not.toBe(0n);
     expect(built.rules.troop_stamina_config).toMatchObject({ stamina_initial: 180, stamina_knight_max: 180, stamina_crossbowman_max: 180, stamina_paladin_max: 180, stamina_defense_req: 0 });
     expect(built.rules.troop_limit_config.explore_reward_strength_cap).toBe(10000);
+    expect(built.economy.progression.unwrap().common_xp).toBe(60);
+    expect(built.settlement.depths.map(row => [row.beast_weak_lower, row.beast_weak_upper, row.beast_strong_lower, row.beast_strong_upper])).toEqual([[300,395,400,500],[600,790,800,1000],[1200,1580,1600,2000],[2400,3160,3200,4000]]);
     codec.compile("register_preset", { preset_id: source.id, definition: built });
   }
 });
