@@ -1,8 +1,9 @@
+import { beastBand } from "./frontier-beast-band";
 import { currentArmy } from "./deep";
 import { deepCenter } from "./deep-geometry";
 import { entityHomeNamespace } from "./entity-home";
 import { researchedDepth } from "./realm-research";
-import { MAX_U32, ResourcesIds, RESOURCE_PRECISION } from "@bibliothecadao/types";
+import { MAX_U32, ResourcesIds } from "@bibliothecadao/types";
 import type { NativeFactStore } from "../client/native-fact-store";
 import { readOptionalSeasonRow } from "../client/views/season-rows";
 import { readTriumphPeriod } from "../client/views/triumphs";
@@ -95,7 +96,7 @@ const siteIsWraith = (
 ): boolean => {
   if (site.category !== StructureType.Beasts) return false;
   const bounds = store.require("DepthRules", { game_id: site.game_id, depth: siteDepth(store, site) });
-  return site.initial_guard_count > BigInt(bounds.beast_weak_upper) * BigInt(RESOURCE_PRECISION);
+  return beastBand(site.initial_guard_count, bounds) === "stronger";
 };
 
 const siteDepth = (

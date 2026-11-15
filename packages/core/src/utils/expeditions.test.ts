@@ -42,7 +42,7 @@ const rules = {
   seed: 1n,
 };
 const expeditionRules = {
-  DepthRules: { beast_weak_upper: 395 },
+  DepthRules: { beast_weak_lower: 300, beast_weak_upper: 395, beast_strong_lower: 400, beast_strong_upper: 500 },
   SliceRules: { day_unit_seconds: rules.dayUnitSeconds },
   SettlementRules: { spacing: rules.spacing },
   GameRegistry: {
