@@ -1054,7 +1054,7 @@ const deepFixture = () => ({
 });
 
 test("an optional Deep preset serializes exact coordinates, resource precision and Altar counts", () => {
-  const source = nativePresets[FRONTIER_S1_PRESET_ID]!;
+  const source = nativePresets[FRONTIER_FIXTURE_PRESET_ID]!;
   const previous = source.deep;
   try {
     source.deep = deepFixture();
@@ -1076,7 +1076,7 @@ test("an optional Deep preset serializes exact coordinates, resource precision a
 });
 
 test("the Deep codec refuses invalid sites and tick amounts", () => {
-  const source = nativePresets[FRONTIER_S1_PRESET_ID]!;
+  const source = nativePresets[FRONTIER_FIXTURE_PRESET_ID]!;
   const previous = source.deep;
   const malformed = [
     { ...deepFixture(), quarry: { x: 25, y: 35 } },
@@ -1103,11 +1103,10 @@ test("the Deep codec refuses invalid sites and tick amounts", () => {
 const questFixture = () => ({ baseCounts: [1, 1, 1, 1, 1, 2, 15], labor: 1000, essence: 1500, bonusPercent: 150 });
 
 test("the daily quest codec replaces legacy labor and preserves whole reward units", () => {
-  const source = nativePresets[FRONTIER_S1_PRESET_ID]!;
+  const source = nativePresets[FRONTIER_FIXTURE_PRESET_ID]!;
   const previous = { dailyQuest: source.dailyQuest, labor: source.labor };
   try {
     source.dailyQuest = questFixture();
-    source.labor = nativePresets[FRONTIER_FIXTURE_PRESET_ID]!.labor;
     expect(() => buildNativePreset(loadNativePresetConfiguration("madara.frontier", source.id), source.id)).toThrow(
       "replace labor",
     );
@@ -1150,11 +1149,10 @@ const baneFixture = () => ({
 });
 
 test("the bane codec preserves whole quest units and refuses invalid effects", () => {
-  const source = nativePresets[FRONTIER_S1_PRESET_ID]!;
+  const source = nativePresets[FRONTIER_FIXTURE_PRESET_ID]!;
   const previous = { banes: source.banes, dailyQuest: source.dailyQuest, labor: source.labor };
   try {
     source.banes = baneFixture();
-    source.dailyQuest = null;
     expect(() => buildNativePreset(loadNativePresetConfiguration("madara.frontier", source.id), source.id)).toThrow(
       "Banes require daily quests",
     );
@@ -1214,7 +1212,7 @@ const raceFixture = () => ({
 });
 
 test("the race codec preserves whole Glory payments and four exact positions", () => {
-  const source = nativePresets[FRONTIER_S1_PRESET_ID]!;
+  const source = nativePresets[FRONTIER_FIXTURE_PRESET_ID]!;
   const previous = { race: source.race, deep: source.deep };
   try {
     source.race = raceFixture();
@@ -1241,7 +1239,7 @@ test("the race codec preserves whole Glory payments and four exact positions", (
 });
 
 test("the race codec refuses missing Deep rules, malformed amounts, effects and positions", () => {
-  const source = nativePresets[FRONTIER_S1_PRESET_ID]!;
+  const source = nativePresets[FRONTIER_FIXTURE_PRESET_ID]!;
   const previous = { race: source.race, deep: source.deep };
   const malformed = [
     { ...raceFixture(), seasonDays: 0 },
@@ -1308,12 +1306,11 @@ test("the race codec refuses missing Deep rules, malformed amounts, effects and 
 });
 
 test("Clear Mist and maximum Scouting must fit one categorical discovery draw", () => {
-  const source = nativePresets[FRONTIER_S1_PRESET_ID]!;
+  const source = nativePresets[FRONTIER_FIXTURE_PRESET_ID]!;
   const previous = { race: source.race, deep: source.deep, discovery: source.discovery };
   try {
     source.deep = deepFixture();
     source.discovery = { ...source.discovery!, beastsBps: 4000 };
-    source.race = null;
     const configuration = loadNativePresetConfiguration("madara.frontier", source.id);
     expect(() => buildNativePreset(configuration, source.id)).not.toThrow();
     source.race = raceFixture();
@@ -1324,7 +1321,7 @@ test("Clear Mist and maximum Scouting must fit one categorical discovery draw", 
 });
 
 test("race registration excludes generated and reserved hyperstructures", () => {
-  const source = nativePresets[FRONTIER_S1_PRESET_ID]!;
+  const source = nativePresets[FRONTIER_FIXTURE_PRESET_ID]!;
   const previous = { race: source.race, deep: source.deep, modeRules: source.modeRules };
   try {
     source.race = raceFixture();
