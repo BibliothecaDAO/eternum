@@ -53,7 +53,9 @@ pub fn battle_guard(game_id: u32, actor: ContractAddress, command: Battle, conte
     let rolls = if fought {
         fight_guard(key, ref attacker, ref defender, context)
     } else {
-        spend_claim(key, ref attacker, target.coord, context);
+        attacker = combat_troops(game_id).spend_claim(
+            key, attacker, target.coord, crate::commands::action_context(context),
+        );
         (0, 0)
     };
     complete_guard_capture(key, actor, attacker, target, defender, command.relic_slot, context);
@@ -176,25 +178,6 @@ fn save_guard_defender(defender: GuardDefender, before: u128, context: Execution
         },
         GuardSource::Empty => panic!("missing fought guard"),
     }
-}
-
-fn spend_claim(key: ExplorerKey, ref attacker: ExplorerTroops, destination: Coord, context: ExecutionContext) {
-    assert!(crate::geometry::adjacent(attacker.coord, destination), "structure claim requires adjacency");
-    let rules = context.rules.unbox();
-    attacker
-        .troops
-        .stamina
-        .spend(
-            ref attacker.troops.boosts,
-            attacker.troops.category,
-            attacker.troops.tier,
-            rules.troop_stamina_config,
-            rules.troop_stamina_config.stamina_attack_req.into(),
-            rules.tick_config.armies_tick_in_seconds,
-            context.timestamp,
-            true,
-        );
-    crate::logic::troops::TroopState::save(key, crate::troops::ExplorerRecordTrait::into_record(attacker));
 }
 
 fn complete_guard_capture(

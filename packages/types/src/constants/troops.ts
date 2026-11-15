@@ -1,3 +1,5 @@
+import { TroopType } from "../types/common";
+
 const DEFAULT_TROOP_ATTACK_RANGE = 1;
 const RANGED_TROOP_ATTACK_RANGE = 2;
 export const CROSSBOWMAN_RANGED_FIELD_DAMAGE_MULTIPLIER = 0.7;
@@ -42,4 +44,3 @@ export const GUARD_SLOT_NAMES: Record<GuardSlot, string> = {
   [GuardSlot.Beta]: "Outer Wall",
   [GuardSlot.Alpha]: "Watchtower",
 };
-import { TroopType } from "../types/common";

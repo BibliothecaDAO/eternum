@@ -460,6 +460,13 @@ fn discovered_guard(
 
 #[starknet::interface]
 pub trait IBattleResolution<T> {
+    fn spend_claim(
+        ref self: T,
+        key: ExplorerKey,
+        attacker: ExplorerTroops,
+        destination: Coord,
+        context: crate::commands::ActionContext,
+    ) -> ExplorerTroops;
     fn expire_explorer(
         ref self: T, key: ExplorerKey, explorer: ExplorerTroops, context: crate::commands::ActionContext,
     );

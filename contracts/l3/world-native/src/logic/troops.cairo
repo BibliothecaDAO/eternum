@@ -817,6 +817,32 @@ pub mod TroopsLogic {
     }
     #[abi(embed_v0)]
     impl BattleResolution of crate::troops::IBattleResolution<ContractState> {
+        fn spend_claim(
+            ref self: ContractState,
+            key: ExplorerKey,
+            mut attacker: ExplorerTroops,
+            destination: crate::troops::Coord,
+            context: crate::commands::ActionContext,
+        ) -> ExplorerTroops {
+            let context = crate::commands::execution_context(key.game_id, context);
+            assert!(crate::geometry::adjacent(attacker.coord, destination), "structure claim requires adjacency");
+            let rules = context.rules.unbox();
+            attacker
+                .troops
+                .stamina
+                .spend(
+                    ref attacker.troops.boosts,
+                    attacker.troops.category,
+                    attacker.troops.tier,
+                    rules.troop_stamina_config,
+                    rules.troop_stamina_config.stamina_attack_req.into(),
+                    rules.tick_config.armies_tick_in_seconds,
+                    context.timestamp,
+                    true,
+                );
+            crate::logic::troops::TroopState::save(key, crate::troops::ExplorerRecordTrait::into_record(attacker));
+            attacker
+        }
         fn expire_explorer(
             ref self: ContractState,
             key: ExplorerKey,
