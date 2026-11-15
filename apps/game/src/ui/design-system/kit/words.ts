@@ -482,6 +482,11 @@ export const SPIRE_WORDS = {
   locked: "Research it to open it",
   commits: (army: string, left: string) => `${army} stays until the day ends (${left})`,
 } as const;
+/** An army's ring of XP toward its next skill point, for whoever reads the map without seeing it. */
+export const XP_RING = {
+  label: (percent: number) => `${XP}: ${percent}% of the way to the next skill point`,
+} as const;
+
 /** The Deep's three sites (docs/plans/frontier-season-1.md, the Deep): who they serve, who guards them, what a tick pays. */
 export const DEEP_WORDS = {
   title: "Deep",

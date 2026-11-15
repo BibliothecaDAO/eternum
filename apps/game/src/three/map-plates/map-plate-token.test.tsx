@@ -59,7 +59,17 @@ describe("a thing's token, its plate closed (the owner's 2026-10-19 pick: tokens
       undefended: false,
       stamina: null,
       mark: null,
+      xpShare: null,
     });
+  });
+
+  it("rings the viewer's own army's disk with its way to the next skill point, and no one else's", () => {
+    expect(tokenReading({ ...army, xpShare: 0.4 }).xpShare).toBe(0.4);
+    expect(tokenReading(army).xpShare).toBeNull();
+    expect(renderToStaticMarkup(<Token plate={{ ...army, xpShare: 0.4 }} />)).toContain(
+      'aria-label="XP: 40% of the way to the next skill point"',
+    );
+    expect(renderToStaticMarkup(<Token plate={army} />)).not.toContain("of the way to the next skill point");
   });
 
   it("tells an undefended structure from a Frontier realm, which has no guard to tell", () => {

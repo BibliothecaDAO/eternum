@@ -3906,6 +3906,9 @@ const ARMY_SIDES = `JSON.stringify(Object.fromEntries([...document.querySelector
   getComputedStyle(slot.querySelector("[style*='--mp-side']") ?? slot.firstElementChild ?? slot).getPropertyValue("--mp-side").trim(),
 ])))`;
 
+/** Every XP ring on the page: an army's portrait ring on its dock row or token, and in its open panel. */
+const XP_RINGS = `JSON.stringify([...document.querySelectorAll('svg[aria-label^="XP: "]')].map((ring) => ring.getAttribute("aria-label")))`;
+
 const DEEP_JOIN_STEPS = [
   { name: "enter-on-map", settleMs: 3_000, verify: inScene("map", "Deep") },
   {
@@ -3928,6 +3931,23 @@ const DEEP_JOIN_STEPS = [
         : failed("An ally's army must be drawn in a side colour other than the player's own", played),
   },
   { name: "pick-army", play: pickTheSpireArmy, settleMs: 1_500, verify: spireArmyPicked },
+  {
+    name: "xp-ring-fills",
+    settleMs: 0,
+    play: async ({ browser, extraScreenshot }) => {
+      const rings = await readUntil(
+        () => browser.read(XP_RINGS),
+        (state) => state.length > 0,
+        SHEET_WAIT_MS,
+      );
+      extraScreenshot("xp-ring");
+      return { rings };
+    },
+    verify: ({ played }) =>
+      played.rings.length > 0 && played.rings.every((label) => label === "XP: 50% of the way to the next skill point")
+        ? completed(played)
+        : failed("An army half way to its next skill point wears a half-filled ring", played),
+  },
   {
     name: "field-army-drains",
     settleMs: 0,

@@ -1,7 +1,7 @@
-import { formatAmount } from "@bibliothecadao/types";
 import { Icon as SemanticIcon, type IconMeaning } from "@/ui/design-system/icon";
 import { HudPanel, HudPortrait, HudRow, rankedTip } from "@/ui/design-system/kit/hud-elements";
-import { ARMIES, TROOPS, troopCount, UPGRADE, XP } from "@/ui/design-system/kit/words";
+import { XpRing } from "@/ui/design-system/kit/xp-ring";
+import { ARMIES, TROOPS, troopCount, UPGRADE } from "@/ui/design-system/kit/words";
 import type { StaminaBar } from "@/ui/design-system/kit/hud-elements";
 import type { ReactNode } from "react";
 
@@ -12,8 +12,8 @@ import { OpeningPartGate } from "../opening/opening-context";
 import { DeepDrain, EtherealMark, HomecomingReturn, SlotRing, StaminaReading, xpLine, type XpGoal } from "./army-token";
 
 /**
- * One army on a desktop's list: its painting with its number; its name with its XP beside it (what it buys next on
- * hover) and, in the day's last hour, what its Homecoming sends home; under them its troops and its stamina as a bar with
+ * One army on a desktop's list: its painting with its number, ringed by its way to its next skill point (what it buys
+ * next on hover); its name and, in the day's last hour, what its Homecoming sends home; under them its troops and its stamina as a bar with
  * the exact count; at its end, while its XP buys a level now, the card fan. A press picks the army and opens its panel,
  * where its levels are bought. The desktop's form of the dock's token; a phone keeps the token. Read-only on a visit.
  */
@@ -57,6 +57,7 @@ export const ArmyRow = ({
     lead={
       <span data-fly-target={flyTarget} className="relative shrink-0">
         {art ? <HudPortrait icon={art} label={TROOPS} /> : <HudPortrait initial={String(number ?? "")} label={label} />}
+        <RowXp xp={xp} goal={xpGoal} />
         {number !== undefined && (
           <span className="absolute -left-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full border border-hud-line-strong bg-hud-dark px-1 text-hud-strong leading-none text-hud-ink tabular-nums">
             {number}
@@ -66,18 +67,7 @@ export const ArmyRow = ({
       </span>
     }
     label={label}
-    title={
-      <RowLine
-        words={label}
-        figure={
-          <OpeningPartGate part="army-xp">
-            <span {...rankedTip(xpLine(xp, xpGoal))} className="text-hud-gold">
-              {`${formatAmount(xp)} ${XP}`}
-            </span>
-          </OpeningPartGate>
-        }
-      />
-    }
+    title={label}
     // The troops line is figures throughout, set as the HUD sets figures.
     detail={
       <span className="flex flex-col gap-1 tabular-nums">
@@ -150,6 +140,16 @@ const RowStamina = ({ stamina }: { stamina: StaminaBar | undefined }) => (
 );
 
 /** A list row's trail, the same place on every row whether it holds the card fan or nothing. */
+/** The army's way to its next skill point, a ring around its portrait, once the HUD shows XP (the first fight won). */
+const RowXp = ({ xp, goal }: { xp: number | undefined; goal: XpGoal | undefined }) =>
+  goal ? (
+    <OpeningPartGate part="army-xp">
+      <span className="absolute inset-0" {...rankedTip(xpLine(xp, goal))}>
+        <XpRing share={goal.share} />
+      </span>
+    </OpeningPartGate>
+  ) : null;
+
 const RowTrail = ({ children }: { children?: ReactNode }) => (
   <span className="flex size-5 items-center justify-center">{children}</span>
 );

@@ -69,6 +69,15 @@ export const deepScenario = (): LabScenario => {
     },
     { model: "TileOccupancy", key: store.wireKeyOf("TileOccupancy", at)!, value: null },
     { model: "TileOccupancy", key: "0xdee9", value: wire({ ...at, col: center.col - 1, row: center.row }) },
+    // The player's army is half way to its first skill point: its portrait's ring is half filled.
+    {
+      model: "ArmyProgress",
+      key: store.wireKeyOf("ArmyProgress", { game_id: 1, explorer_id: SPIRE_ARMY })!,
+      value: wire({
+        ...store.require("ArmyProgress", { game_id: 1, explorer_id: SPIRE_ARMY }),
+        xp: store.require("ArmyProgressionRules", { game_id: 1 }).common_xp / 2,
+      }),
+    },
     // A second ally, in the field beside the player's army: it is drawn as an ally, not as a guard.
     { model: "ExplorerTroops", key: "0xdef1", value: wire({ ...army, explorer_id: fieldAlly, owner: allyHome }) },
     { model: "ArmyDay", key: "0xdef2", value: { game_id: 1, explorer_id: String(fieldAlly), day: "0" } },

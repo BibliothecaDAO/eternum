@@ -96,11 +96,14 @@ it("spends the selected point on Stamina, doubles its refill and prevents wastin
   );
 });
 
-it("shows empty sockets and the XP milestone, and no point while none is held", () => {
+it("shows empty sockets, the way to the next point as the portrait's ring, and no point while none is held", () => {
   act(() => root.render(<Detail army={readArmyDetail(EARLY_ARMY)} sending={false} onLevelUp={vi.fn()} />));
   expect(host.querySelectorAll('.ui-tier[data-tier="0"]')).toHaveLength(4);
   expect(host.querySelector('[aria-label="Skill points"]')!.textContent).toBe("");
-  expect(host.textContent).toContain("12 / 75 XP");
+  // No XP number (the owner, 13 November 2026): 12 of 75 is a ring 16% filled, its tip the same words as before.
+  expect(host.textContent).not.toContain("12 / 75");
+  expect(host.querySelector('[aria-label="XP: 16% of the way to the next skill point"]')).not.toBeNull();
+  expect(host.querySelector('[data-tip="XP 12 of 75 · next I point"]')).not.toBeNull();
 });
 
 it("shows only the ranks of the points held, beside Level up", () => {

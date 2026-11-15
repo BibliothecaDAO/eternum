@@ -7,6 +7,7 @@ import {
   RESOURCE_PRECISION,
 } from "@bibliothecadao/types";
 import { Icon as SemanticIcon, type IconMeaning } from "@/ui/design-system/icon";
+import { XpRing } from "@/ui/design-system/kit/xp-ring";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 
 import { HudMeter, HudStamina, type StaminaBar, rankedTip } from "@/ui/design-system/kit/hud-elements";
@@ -92,16 +93,16 @@ export const EtherealMark = ({ layer, at = "corner" }: { layer: EtherealLayer | 
   );
 
 /** The next cumulative XP milestone and the point it awards. */
-export type XpGoal = { at: number; rank: number };
+export type XpGoal = { at: number; rank: number; share: number };
 
 /** An army's XP for its tooltip: what it holds against the next point's milestone, the point's rank as its gem. */
 export const xpLine = (xp: number | undefined, goal: XpGoal | undefined): RankedWords | string =>
   goal ? xpTowardTip(formatAmount(xp), formatCharge(goal.at), goal.rank) : `${XP} ${formatAmount(xp)}`;
 
 /**
- * One army on a phone's dock: its number, the one its map plate carries; its portrait with its XP balance as the badge,
+ * One army on a phone's dock: its number, the one its map plate carries; its portrait ringed by its way to its next point,
  * a card fan when a tier is affordable now, what its Homecoming sends home in the day's last hour, its stamina in
- * segments, and its troops; the badge says what the XP buys next when asked. A desktop lists the armies as rows
+ * segments, and its troops; the ring says what the XP buys next when asked. A desktop lists the armies as rows
  * (ArmyRow). Read-only on a visit.
  */
 export const ArmyToken = ({
@@ -146,16 +147,13 @@ export const ArmyToken = ({
     <>
       <span data-fly-target={flyTarget} className="relative size-10 shrink-0">
         <Portrait art={art} />
-        <OpeningPartGate part="army-xp">
-          <span
-            role="img"
-            aria-label={`${XP} ${formatAmount(xp)}`}
-            {...rankedTip(xpLine(xp, xpGoal))}
-            className="absolute -bottom-1 -right-2.5 flex h-5 min-w-5 items-center justify-center rounded-full border border-hud-line bg-hud-dark px-1 text-hud-body leading-none text-hud-gold tabular-nums"
-          >
-            {formatAmount(xp)}
-          </span>
-        </OpeningPartGate>
+        {xpGoal && (
+          <OpeningPartGate part="army-xp">
+            <span className="absolute inset-0" {...rankedTip(xpLine(xp, xpGoal))}>
+              <XpRing share={xpGoal.share} />
+            </span>
+          </OpeningPartGate>
+        )}
         {number !== undefined && (
           <span className="absolute -left-2.5 -top-1.5 flex h-5 min-w-5 items-center justify-center rounded-full border border-hud-line-strong bg-hud-dark px-1 text-hud-strong leading-none text-hud-ink tabular-nums">
             {number}
