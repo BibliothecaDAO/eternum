@@ -3652,6 +3652,9 @@ const POINTER_PARKED = [0, -300];
 /** An army's tile below its token at the map's default zoom (a player run never zooms): its label point's height. */
 const TOKEN_ABOVE_TILE_PX = 100;
 
+/** How far under its plate the Quarry's model stands on the lab camera, in page pixels. */
+const QUARRY_BELOW_PLATE = 65;
+
 const DEEP_JOIN_STATE = `JSON.stringify({
   sheet: document.querySelector("[data-kit-sheet]")?.getAttribute("aria-label") ?? null,
   text: document.querySelector("[data-kit-sheet]")?.textContent ?? "",
@@ -3666,7 +3669,8 @@ const DEEP_JOIN_STATE = `JSON.stringify({
     const slot = document.querySelector('.mp-at:has([data-icon="pickaxe"])');
     if (!slot || getComputedStyle(slot).display === "none" || !slot.firstElementChild) return null;
     const token = slot.firstElementChild.getBoundingClientRect();
-    return [Math.round(token.left + token.width / 2 - innerWidth / 2), Math.round(token.bottom - innerHeight / 2)];
+    // The plate floats over the site's model: the press goes to the model under it, not to the hex behind the plate.
+    return [Math.round(token.left + token.width / 2 - innerWidth / 2), Math.round(token.bottom + ${QUARRY_BELOW_PLATE} - innerHeight / 2)];
   })(),
 })`;
 
