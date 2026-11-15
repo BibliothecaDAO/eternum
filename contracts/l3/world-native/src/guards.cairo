@@ -47,10 +47,6 @@ pub trait IGuards<T> {
 #[starknet::interface]
 pub trait IGuardInitialization<T> {
     fn initialize_structure_guards(
-        ref self: T,
-        key: crate::resources::ResourceKey,
-        seed: u256,
-        timestamp: u64,
-        rules: crate::rules::SliceRules,
+        ref self: T, key: crate::resources::ResourceKey, seed: u256, timestamp: u64, rules: crate::rules::SliceRules,
     );
 }

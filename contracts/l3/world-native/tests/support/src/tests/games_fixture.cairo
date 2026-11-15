@@ -325,7 +325,9 @@ pub mod GamesFixture {
         }
     }
     #[starknet::embeddable]
-    pub impl GuardInitializationFixture<TContractState, +Drop<TContractState>> of crate::guards::IGuardInitialization<TContractState> {
+    pub impl GuardInitializationFixture<
+        TContractState, +Drop<TContractState>,
+    > of crate::guards::IGuardInitialization<TContractState> {
         fn initialize_structure_guards(
             ref self: TContractState,
             key: crate::resources::ResourceKey,

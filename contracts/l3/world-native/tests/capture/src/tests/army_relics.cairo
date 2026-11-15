@@ -10,7 +10,8 @@ fn ruins_fill_replace_and_activate_an_armys_relics_through_commands() {
         stock
             .append(
                 crate::resources::ResourceAmount {
-                    amount: if *grant.resource_type == crate::troops::troop_resource(crate::troops::TroopType::Knight, 0) {
+                    amount: if *grant
+                        .resource_type == crate::troops::troop_resource(crate::troops::TroopType::Knight, 0) {
                         12000 * RESOURCE_PRECISION
                     } else {
                         *grant.amount

@@ -752,7 +752,9 @@ pub mod StructuresLogic {
             crate::logic::structures::StructureState::create(key, record);
             crate::logic::map::MapState::occupy(tile_key(game_id, coord), id, occupier, true);
             crate::guards::IGuardInitializationDispatcherTrait::initialize_structure_guards(
-                crate::guards::IGuardInitializationLibraryDispatcher { class_hash: self.release.classes(game_id).map.read() },
+                crate::guards::IGuardInitializationLibraryDispatcher {
+                    class_hash: self.release.classes(game_id).map.read(),
+                },
                 key,
                 seed,
                 timestamp,
