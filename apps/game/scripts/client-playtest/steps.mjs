@@ -1175,7 +1175,10 @@ const CLEAR_MIST_STEPS = [
     play: async ({ browser }) => {
       const panel = await openTheArmyPanel(browser);
       const odds = await browser.read(`(() => {
-        const line = document.querySelector('[data-spire-chance]');
+        const line = [...document.querySelectorAll('[data-spire-chance]')].find((candidate) => {
+          const rect = candidate.getBoundingClientRect();
+          return rect.width && rect.height;
+        });
         const rect = line?.getBoundingClientRect();
         return { text: line?.textContent, visible: Boolean(rect && rect.width && rect.height && rect.top >= 0 && rect.bottom <= innerHeight) };
       })()`);
