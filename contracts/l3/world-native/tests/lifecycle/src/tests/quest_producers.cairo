@@ -239,34 +239,60 @@ fn far_eye_discovers_pays_and_grants_xp_for_each_new_tile_only_once() {
         let home = home(d, key);
         let site = discover_far_eye(d, key, rules);
         assert_eq!(progress(d, home), 1);
-        apply(d, key.game_id, Command::BattleGuard(crate::commands::Battle {
-            attacker_id: key.explorer_id, defender_id: site.entity_id, relic_slot: None,
-        }));
+        apply(
+            d,
+            key.game_id,
+            Command::BattleGuard(
+                crate::commands::Battle { attacker_id: key.explorer_id, defender_id: site.entity_id, relic_slot: None },
+            ),
+        );
         let spires = kind == crate::quests::REVEALS;
         if spires {
-            let price = interact_with_state(d.games, || crate::logic::research::price(key.game_id, crate::research::ROW_DEPTH, 1));
+            let price = interact_with_state(
+                d.games, || crate::logic::research::price(key.game_id, crate::research::ROW_DEPTH, 1),
+            );
             grant(d, home, crate::resources::ESSENCE, price.essence);
-            apply(d, key.game_id, Command::Research(crate::research::Research {
-                structure_id: home.entity_id, row: crate::research::ROW_DEPTH, choice: 0,
-            }));
+            apply(
+                d,
+                key.game_id,
+                Command::Research(
+                    crate::research::Research {
+                        structure_id: home.entity_id, row: crate::research::ROW_DEPTH, choice: 0,
+                    },
+                ),
+            );
         }
         let before = far_eye_totals(d, key, home);
         let troops = army(d, key).troops.count;
         let mut events = spy_events();
-        let activate = Command::ApplyRelic(crate::relics::ApplyRelic {
-            entity_id: key.explorer_id, relic_id: crate::army_relics::encode(far_eye()), recipient: crate::relics::Recipient::ArmySlot(0),
-        });
-        assert!(world_test_support::tests::play_fixture::play(d.games,
-            world_test_support::tests::play_fixture::TestAction { game_id: key.game_id, actor: d.actor, command: activate },
-            far_eye_root(key.game_id, rules, spires), 360,
-        ));
+        let activate = Command::ApplyRelic(
+            crate::relics::ApplyRelic {
+                entity_id: key.explorer_id,
+                relic_id: crate::army_relics::encode(far_eye()),
+                recipient: crate::relics::Recipient::ArmySlot(0),
+            },
+        );
+        assert!(
+            world_test_support::tests::play_fixture::play(
+                d.games,
+                world_test_support::tests::play_fixture::TestAction {
+                    game_id: key.game_id, actor: d.actor, command: activate,
+                },
+                far_eye_root(key.game_id, rules, spires),
+                360,
+            ),
+        );
         let mut payments = 0_u128;
         let mut ruins = 0_u128;
         for (_, event) in events.get_events().emitted_by(d.games).events {
-            if event.keys.span() == array![selector!("ArmyRelicEvent"), selector!("RowSet"), 1, 'RuinRelic'].span() { ruins += 1; }
+            if event.keys.span() == array![selector!("ArmyRelicEvent"), selector!("RowSet"), 1, 'RuinRelic'].span() {
+                ruins += 1;
+            }
             let keys = event.keys.span();
             for prefix in 0..keys.len() {
-                if *keys.at(prefix) != selector!("StoryEvent") { continue; }
+                if *keys.at(prefix) != selector!("StoryEvent") {
+                    continue;
+                }
                 let mut fields = keys.slice(prefix + 1, keys.len() - prefix - 1);
                 let mut data = event.data.span();
                 let story: crate::ownership::StoryEvent = starknet::Event::deserialize(ref fields, ref data).unwrap();
@@ -274,7 +300,10 @@ fn far_eye_discovers_pays_and_grants_xp_for_each_new_tile_only_once() {
                     assert_eq!(paid.explorer_id, key.explorer_id);
                     assert_eq!(paid.receiver, home.entity_id);
                     assert_eq!(paid.amount, troops / 10);
-                    assert!(paid.resource_type == crate::resources::LABOR || paid.resource_type == crate::resources::ESSENCE);
+                    assert!(
+                        paid.resource_type == crate::resources::LABOR
+                            || paid.resource_type == crate::resources::ESSENCE,
+                    );
                     payments += 1;
                 }
             }
@@ -282,16 +311,30 @@ fn far_eye_discovers_pays_and_grants_xp_for_each_new_tile_only_once() {
         assert_eq!(payments, 6);
         let after = far_eye_totals(d, key, home);
         assert_eq!(after.0 - before.0, 6 * (troops / 10));
-        let reveal_xp = interact_with_state(d.games, || crate::logic::progression::rules(key.game_id).unwrap().reveal_xp);
+        let reveal_xp = interact_with_state(
+            d.games, || crate::logic::progression::rules(key.game_id).unwrap().reveal_xp,
+        );
         assert_eq!(after.1 - before.1, 6 * reveal_xp);
         if spires {
-            let spire = interact_with_state(d.games, || crate::logic::spires::read(crate::spires::ExpeditionSpireKey {
-                game_id: key.game_id, structure_id: home.entity_id, epoch: 0, depth: 0,
-            }).unwrap());
+            let spire = interact_with_state(
+                d.games,
+                || crate::logic::spires::read(
+                    crate::spires::ExpeditionSpireKey {
+                        game_id: key.game_id, structure_id: home.entity_id, epoch: 0, depth: 0,
+                    },
+                )
+                    .unwrap(),
+            );
             assert_eq!(spire.reveals, 1);
             assert!(spire.location.is_some());
-        } else { assert!(ruins >= 1); }
-        let expected = 1 + if spires { payments } else { ruins };
+        } else {
+            assert!(ruins >= 1);
+        }
+        let expected = 1 + if spires {
+            payments
+        } else {
+            ruins
+        };
         assert_eq!(progress(d, home), expected);
         assert!(!execute_in_game(d, key.game_id, activate, 360));
         assert_eq!(progress(d, home), expected);
@@ -300,10 +343,14 @@ fn far_eye_discovers_pays_and_grants_xp_for_each_new_tile_only_once() {
 }
 
 fn far_eye_totals(d: Deployment, key: ExplorerKey, home: ResourceKey) -> (u128, u32) {
-    interact_with_state(d.games, || (
-        crate::logic::resources::balance(home, crate::resources::LABOR) + crate::logic::resources::balance(home, crate::resources::ESSENCE),
-        crate::logic::progression::require(key).xp,
-    ))
+    interact_with_state(
+        d.games,
+        || (
+            crate::logic::resources::balance(home, crate::resources::LABOR)
+                + crate::logic::resources::balance(home, crate::resources::ESSENCE),
+            crate::logic::progression::require(key).xp,
+        ),
+    )
 }
 
 fn far_eye_root(game_id: u32, rules: crate::expeditions::FrontierDiscoveryRules, spires: bool) -> u256 {
@@ -312,8 +359,12 @@ fn far_eye_root(game_id: u32, rules: crate::expeditions::FrontierDiscoveryRules,
         let mut root = raw;
         let seed = crate::random::game_root(ref root, game_id);
         if spires {
-            if crate::random::range(seed, 0x5350495245, 10000) < 1000 { return raw; }
-        } else if crate::discovery::frontier(rules, 0, 0, 0, 100, 0, Some(far_eye()), seed) == Discovery::Ruin(far_eye()) {
+            if crate::random::range(seed, 0x5350495245, 10000) < 1000 {
+                return raw;
+            }
+        } else if crate::discovery::frontier(
+            rules, 0, 0, 0, 100, 0, Some(far_eye()), seed,
+        ) == Discovery::Ruin(far_eye()) {
             return raw;
         }
     }

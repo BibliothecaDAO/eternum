@@ -250,7 +250,10 @@ pub mod GamesFixture {
             let classes = fixture_classes(key.game_id);
             crate::relics::IRelicMapDispatcherTrait::reveal_relic_tiles(
                 crate::relics::IRelicMapLibraryDispatcher { class_hash: classes.raid.read() },
-                key, coord, count, game_context,
+                key,
+                coord,
+                count,
+                game_context,
             )
         }
         fn discover_relic_chest(

@@ -349,15 +349,22 @@ const FAR_EYE_STEPS = [
       browser.run(["find", "role", "button", "click", "--name", "Switch on Common Far-Eye"]);
       const answer = await readUntil(
         () => browser.read(`window.__labChain?.sent.find(row => row.command.kind === 'ApplyRelic')?.answered ?? []`),
-        (rows) => rows.some((row) => row.model === "ExpeditionSpire"), MERGE_WAIT_MS,
+        (rows) => rows.some((row) => row.model === "ExpeditionSpire"),
+        MERGE_WAIT_MS,
       );
-      return { answer, panel: browser.read(`document.querySelector('[data-kit-sheet][aria-label^="Army "]')?.textContent ?? ''`) };
+      return {
+        answer,
+        panel: browser.read(`document.querySelector('[data-kit-sheet][aria-label^="Army "]')?.textContent ?? ''`),
+      };
     },
-    verify: ({ played }) => played.answer.filter((row) => row.model === "TileOpt").length === 6 &&
+    verify: ({ played }) =>
+      played.answer.filter((row) => row.model === "TileOpt").length === 6 &&
       played.answer.some((row) => row.model === "ResourceBalance" && BigInt(row.value.balance) > 0n) &&
       played.answer.some((row) => row.model === "ArmyProgress" && row.value.xp === 6) &&
-      played.panel.includes("Empty slot") && !played.panel.includes("Switch on Common Far-Eye")
-      ? completed(played) : failed("Far-Eye must spend its slot, reveal six tiles, find the Spire and pay resources and XP", played),
+      played.panel.includes("Empty slot") &&
+      !played.panel.includes("Switch on Common Far-Eye")
+        ? completed(played)
+        : failed("Far-Eye must spend its slot, reveal six tiles, find the Spire and pay resources and XP", played),
   },
 ];
 

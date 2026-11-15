@@ -1268,7 +1268,11 @@ fn frontier_site_discovery_reads_home_knowledge_and_stores_the_shrine_reward() {
             }
         }
         let seed = chosen.expect('MISSING_SITE_ROOT');
-        let direction = if row == crate::research::ROW_SHRINE { 0 } else { 1 };
+        let direction = if row == crate::research::ROW_SHRINE {
+            0
+        } else {
+            1
+        };
         let coord = crate::geometry::neighbor_at_distance(army.coord, direction, 5);
         let tile = crate::geometry::tile_key(game_id, coord);
         let context = crate::commands::action_context(

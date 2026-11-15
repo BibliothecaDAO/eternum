@@ -124,7 +124,8 @@ pub mod MovementLogic {
                                 crate::commands::action_context(context),
                             )
                     };
-                if rules.day_unit_seconds == 0 && discovery != crate::discovery::Discovery::None
+                if rules.day_unit_seconds == 0
+                    && discovery != crate::discovery::Discovery::None
                     && crate::discovery::tile_occupier(discovery).is_none() {
                     self
                         .structures_dispatcher(game_id)

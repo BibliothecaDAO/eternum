@@ -13,7 +13,9 @@ pub fn reveal(
     assert!(!already_revealed, "expedition tile already revealed");
     crate::logic::map::MapState::reveal(key, crate::logic::map::biome(key, biome));
     let home = crate::state::read().troops.explorers.entry((key.game_id, explorer_id)).owner.read();
-    let actor = crate::logic::structures::owner(crate::resources::ResourceKey { game_id: key.game_id, entity_id: home });
+    let actor = crate::logic::structures::owner(
+        crate::resources::ResourceKey { game_id: key.game_id, entity_id: home },
+    );
     let classes = crate::logic::release::classes(key.game_id);
     crate::game::IPointsDispatcherTrait::register_exploration(
         crate::game::IPointsLibraryDispatcher { class_hash: classes.season.read() }, key.game_id, actor, context,
@@ -22,7 +24,13 @@ pub fn reveal(
     if result != crate::discovery::Discovery::None && crate::discovery::tile_occupier(result).is_none() {
         crate::structures::IStructureOperationsDispatcherTrait::create_discovery(
             crate::structures::IStructureOperationsLibraryDispatcher { class_hash: classes.structures.read() },
-            key.game_id, home, Coord { alt: key.alt, x: key.col, y: key.row }, result, seed, context.timestamp, context,
+            key.game_id,
+            home,
+            Coord { alt: key.alt, x: key.col, y: key.row },
+            result,
+            seed,
+            context.timestamp,
+            context,
         );
     }
     result
