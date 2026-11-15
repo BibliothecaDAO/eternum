@@ -3738,7 +3738,7 @@ const DEEP_JOIN_STATE = `JSON.stringify({
   })(),
   joined: (window.__labChain?.sent ?? []).filter(({ command }) => command.kind === "InteractSite"),
   quarry: (() => {
-    const slot = document.querySelector('.mp-at:has([data-icon="pickaxe"])');
+    const slot = document.querySelector('.mp-at[data-key="deep:quarry"]');
     if (!slot || getComputedStyle(slot).display === "none" || !slot.firstElementChild) return null;
     const token = slot.firstElementChild.getBoundingClientRect();
     // The plate floats over the site's model: the press goes to the model under it, not to the hex behind the plate.
@@ -4019,10 +4019,14 @@ const DRAWN_TOWERS = `JSON.stringify(window.__eternumMapSelection?.towers ?? {})
 const TOWER_PROGRESS = { 901: 40, 902: 60, 903: 20, 904: 0 };
 
 async function attackFromTheDeepCard({ browser, extraScreenshot }) {
+  browser.hover(POINTER_PARKED);
+  await sleep(HOVER_SETTLE_MS);
   const before = browser.read(DEEP_JOIN_STATE);
   if (!before.quarry) return { before };
-  if (onADesktop()) browser.rightClick(before.quarry);
-  else browser.tap(before.quarry);
+  if (before.sheet !== "Quarry") {
+    if (onADesktop()) browser.rightClick(before.quarry);
+    else browser.tap(before.quarry);
+  }
   const opened = await readUntil(
     () => browser.read(MERGE_STATE),
     (state) => state.buttons.includes("Attack"),
