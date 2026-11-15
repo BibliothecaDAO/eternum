@@ -9,7 +9,7 @@ import remarkMdx from "remark-mdx";
 import remarkStringify from "remark-stringify";
 import { createServer } from "vite";
 
-import { docsAliases, docsDir } from "./docs/utils/paths.ts";
+import { docsAliases, docsDir } from "./paths.ts";
 
 const processor = remark().use(remarkMdx).use(remarkInclude).use(remarkGfm).use(remarkStringify);
 

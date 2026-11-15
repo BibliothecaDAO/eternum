@@ -1,7 +1,6 @@
 import * as path from "node:path";
 
-// This file sits in docs/utils; the docs app is two folders up.
-const root = path.resolve(path.dirname(new URL(import.meta.url).pathname), "../..");
+const root = path.dirname(new URL(import.meta.url).pathname);
 
 /** The pages' source folder. */
 export const docsDir = path.resolve(root, "docs");

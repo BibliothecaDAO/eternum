@@ -4,7 +4,6 @@
     "**/*.js",
     "apps/game-docs/vocs.config.ts",
     "apps/game-docs/docs/**",
-    "apps/game-docs/vite-plugin-llm-txt.mjs",
     "apps/game-docs/env.ts",
     "scripts/codemod-lucide-imports.mjs",
     "config/generated/**",

@@ -1,5 +1,5 @@
 import { defineConfig } from "vocs";
-import { docsAliases, publicDir } from "./docs/utils/paths";
+import { docsAliases, publicDir } from "./paths";
 import llmTxtPlugin from "./vite-plugin-llm-txt.mjs";
 import BRAND from "./docs/brand.gen.json";
 import { linkPreviewUrl } from "../game/src/brand/link-preview";
