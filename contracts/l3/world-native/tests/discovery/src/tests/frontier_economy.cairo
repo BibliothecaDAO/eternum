@@ -1,4 +1,5 @@
 pub use world_test_support::tests::frontier_economy::*;
+use world_test_support::tests::TroopObservationTrait;
 
 
 #[test]

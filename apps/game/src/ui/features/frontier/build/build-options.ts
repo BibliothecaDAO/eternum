@@ -98,20 +98,24 @@ export const readBuildOptions = (
       rise: buildingCostRise(safeInteger(realm.entity_id), category, store),
       effect,
       populationCost: rule.population_cost,
-      standing:
-        category === BuildingType.ScoutsLodge && realm.base.level < nativeResearchConstants.SCOUTS_LODGE_LEVEL
-          ? { level: nativeResearchConstants.SCOUTS_LODGE_LEVEL }
-          : !TRAINS[category]
-            ? "open"
-            : getBuildingQuantity(safeInteger(realm.entity_id), category, store) > 0
-              ? "built"
-              : barracksPurchases < board.training_gate_tier
-                ? { gate: board.training_gate_tier, bought: barracksPurchases }
-                : "open",
+      standing: buildingStanding(store, realm, category, { gate: board.training_gate_tier, bought: barracksPurchases }),
       wheat: { change, after: wheat === undefined ? undefined : wheat + change },
     });
   }
   return options;
+};
+
+const buildingStanding = (
+  store: NativeFactStore,
+  realm: NativeRows["Structure"],
+  category: BuildingType,
+  training: { gate: number; bought: number },
+): BuildOption["standing"] => {
+  if (category === BuildingType.ScoutsLodge && realm.base.level < nativeResearchConstants.SCOUTS_LODGE_LEVEL)
+    return { level: nativeResearchConstants.SCOUTS_LODGE_LEVEL };
+  if (!TRAINS[category]) return "open";
+  if (getBuildingQuantity(safeInteger(realm.entity_id), category, store) > 0) return "built";
+  return training.bought < training.gate ? training : "open";
 };
 
 /**

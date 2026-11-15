@@ -20,8 +20,9 @@ const {
   frontierConfig,
   historicalFrontierPreset: historical,
   previewRiftGuardBound,
+  nativeRules,
 } = await loadBalanceSources();
-const pages = frontierPhrases(frontierConfig, current, previewRiftGuardBound);
+const pages = frontierPhrases(frontierConfig, current, previewRiftGuardBound, nativeRules);
 const n = (value) => value.toLocaleString("en-US");
 const range = (lower, upper) => `${n(lower)}–${n(upper)}`;
 
@@ -30,7 +31,7 @@ test("built current guides match the active preset, including its balance overri
   assert.deepEqual(missingPhrases(dist, pages), []);
 });
 
-function rejectsHistoricalValue(page, currentText, historicalText) {
+function rejectsStaleValue(page, currentText, historicalText) {
   assert.notEqual(currentText, historicalText, "the regression must change a current value");
   const original = pageLine(readFileSync(join(dist, page, "index.html"), "utf8"));
   assert.ok(original.includes(currentText), `the built ${page} must contain ${currentText}`);
@@ -44,7 +45,7 @@ function rejectsHistoricalValue(page, currentText, historicalText) {
 }
 
 test("the rendered armies check rejects the historical first-point XP", () => {
-  rejectsHistoricalValue(
+  rejectsStaleValue(
     "frontier/armies",
     `At ${n(current.progression.commonXp)} /`,
     `At ${n(historical.progression.commonXp)} /`,
@@ -60,7 +61,16 @@ for (const [index, depth] of current.depths.entries()) {
         range(depth[`beast${strength}Lower`], depth[`beast${strength}Upper`]),
         range(oldDepth[`beast${strength}Lower`], oldDepth[`beast${strength}Upper`]),
       );
-      rejectsHistoricalValue("frontier/expedition", row, stale);
+      rejectsStaleValue("frontier/expedition", row, stale);
     });
   }
 }
+
+
+test("the rendered armies check rejects the Knight reveal cost for Scouts", () => {
+  rejectsStaleValue(
+    "frontier/armies",
+    `${nativeRules.SCOUT_EXPLORE_STAMINA} for Scouts`,
+    `${frontierConfig.troop.stamina.staminaExploreStaminaCost} for Scouts`,
+  );
+});

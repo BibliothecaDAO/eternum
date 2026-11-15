@@ -13,7 +13,7 @@ import remarkMdx from "remark-mdx";
 import { readFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { resourceName } from "@bibliothecadao/types";
+import { resourceName, BuildingType } from "@bibliothecadao/types";
 
 const here = fileURLToPath(new URL(".", import.meta.url));
 const configOf = (mode) =>
@@ -147,7 +147,7 @@ export const frontierGuardPhrases = (preset, riftGuardBound) => {
   ];
 };
 
-export const frontierPhrases = (config, preset, riftGuardBound) => {
+export const frontierPhrases = (config, preset, riftGuardBound, nativeRules) => {
   const stamina = config.troop.stamina;
   const tick = config.tick.armiesTickIntervalInSeconds;
   const start = (id) => n(config.startingResources.find((r) => r.resource === id).amount);
@@ -167,7 +167,7 @@ export const frontierPhrases = (config, preset, riftGuardBound) => {
       page: "frontier/armies",
       phrases: [
         `An army holds ${n(stamina.staminaKnightMax)} stamina and recovers ${stamina.staminaGainPerTick} every ${tick / 60} minutes, so an empty bar fills in ${((stamina.staminaKnightMax / stamina.staminaGainPerTick) * tick) / 3600} hours.`,
-        `Revealing a tile costs ${stamina.staminaExploreStaminaCost}, a step over known ground ${stamina.staminaTravelStaminaCost}, and an attack needs ${stamina.staminaAttackReq}.`,
+        `Revealing a tile costs ${stamina.staminaExploreStaminaCost} for Knights and ${nativeRules.SCOUT_EXPLORE_STAMINA} for Scouts, a step over known ground ${stamina.staminaTravelStaminaCost}, and an attack needs ${stamina.staminaAttackReq}.`,
         `An army earns ${revealXp} XP per revealed tile at ${DEPTH_NAMES.join(" / ")}.`,
         `At ${TIERS.map((tier) => n(preset.progression[`${tier}Xp`])).join(" / ")} XP it earns Common I, Uncommon II, Rare III, Epic IV and Legendary V skill points.`,
         `The same milestones repeat every ${n(preset.progression.legendaryXp)} XP.`,
@@ -190,7 +190,8 @@ export const frontierPhrases = (config, preset, riftGuardBound) => {
         ...armies.map((count, index) => `${index + 1} ${n(count)} ${n(caps[index])}`),
         // An ordinary building and a training building: each price whole, by resource (a training building takes two).
         `Farm Wheat ${buildingPrice(config, FARM)}`,
-        `War hall, Supply yard, Scouts' lodge, Hearth A tier for every new army ${buildingPrice(config, WAR_HALL)}`,
+        `Scouts' lodge Scouts ${buildingPrice(config, BuildingType.ScoutsLodge)}`,
+        `War hall, Supply yard, Hearth A tier for every new army ${buildingPrice(config, WAR_HALL)}`,
       ],
     },
   ];
@@ -288,7 +289,7 @@ export const payoutWalletPhrases = (changeHoldSeconds) => [
 ];
 
 /** The phrases every rules page that states a stamina, guard, chest or points number must show. */
-export const expectedPhrases = (blitz, frontier, frontierPreset, ledger, chests, riftGuardBound) => [
+export const expectedPhrases = (blitz, frontier, frontierPreset, ledger, chests, riftGuardBound, nativeRules) => [
   ...blitzStaminaPhrases(blitz),
   {
     page: "blitz/map",
@@ -296,7 +297,7 @@ export const expectedPhrases = (blitz, frontier, frontierPreset, ledger, chests,
       `Opening a crate scores ${n(Number(blitz.victoryPoints.pointsForRelicDiscovery) / POINTS_PRECISION)} points`,
     ],
   },
-  ...frontierPhrases(frontier, frontierPreset, riftGuardBound),
+  ...frontierPhrases(frontier, frontierPreset, riftGuardBound, nativeRules),
   ...blitzLedgerPhrases(blitz, ledger, chests),
 ];
 
@@ -323,6 +324,9 @@ export const loadBalanceSources = async () => {
       join(here, "../../../config/deployer/clean/registrar/native-preset.ts"),
     );
     const frontierConfig = loadNativePresetConfiguration("madara.frontier", frontierPreset.id);
+    const { nativeRuleConstants: nativeRules } = await server.ssrLoadModule(
+      join(here, "../../../contracts/l3/world-native/schema/client.gen.ts"),
+    );
     const { previewRiftGuardBound } = await server.ssrLoadModule(
       join(here, "../../../contracts/l3/world-native/schema/site-previews.gen.ts"),
     );
@@ -343,6 +347,7 @@ export const loadBalanceSources = async () => {
       frontierConfig,
       historicalFrontierPreset,
       previewRiftGuardBound,
+      nativeRules,
       ledger,
       chests,
       payoutWalletChangeSeconds: PAYOUT_WALLET_CHANGE_SECONDS,
@@ -487,11 +492,12 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
     ledger,
     chests,
     previewRiftGuardBound,
+    nativeRules,
     payoutWalletChangeSeconds,
   } = await loadBalanceSources();
   const llm = readFileSync(join(dist, "llm.txt"), "utf8");
   const phrases = [
-    ...expectedPhrases(configOf("blitz"), frontierConfig, frontierPreset, ledger, chests, previewRiftGuardBound),
+    ...expectedPhrases(configOf("blitz"), frontierConfig, frontierPreset, ledger, chests, previewRiftGuardBound, nativeRules),
     ...historicalChestPhrases(historicalFrontierPreset),
     ...payoutWalletPhrases(payoutWalletChangeSeconds),
   ];

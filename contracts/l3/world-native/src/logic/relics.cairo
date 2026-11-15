@@ -158,27 +158,24 @@ pub mod RelicState {
             let key = ExplorerKey { game_id, explorer_id: command.explorer_id };
             let explorer = crate::logic::troops::command_explorer(key, Some(actor), context.timestamp, context);
             let mut progress = crate::logic::progression::require(key);
-            if let SkillPointUse::Stamina(_) = command.choice {
-                let maximum = crate::progression::stamina_max(
-                    progress, explorer.troops.category, context.rules.unbox().troop_stamina_config,
-                );
-                assert!(explorer.troops.stamina.inline().amount < maximum, "stamina is full");
-            }
-            if let SkillPointUse::Scouting(_) = command.choice {
+            if let SkillPointUse::Scouting(kind) = command.choice {
                 assert!(explorer.troops.category == TroopType::Paladin, "only Scouts learn Scouting");
-            }
-            if let SkillPointUse::Scouting(ScoutingKind::Sanctuaries) = command.choice {
-                let learned = crate::logic::research::learned(ResourceKey { game_id, entity_id: explorer.owner });
-                assert!(
-                    crate::research::scouting_available(learned, crate::research::KIND_SANCTUARIES),
-                    "research Shrine or Well first",
-                );
+                if kind == ScoutingKind::Sanctuaries {
+                    let learned = crate::logic::research::learned(ResourceKey { game_id, entity_id: explorer.owner });
+                    assert!(
+                        crate::research::scouting_available(learned, crate::research::KIND_SANCTUARIES),
+                        "research Shrine or Well first",
+                    );
+                }
             }
             let mut bought = crate::progression::spend_skill_point(ref progress, command);
-            crate::logic::progression::write(key, progress);
             let maximum = crate::progression::stamina_max(
                 progress, explorer.troops.category, context.rules.unbox().troop_stamina_config,
             );
+            if let SkillPointUse::Stamina(_) = command.choice {
+                assert!(explorer.troops.stamina.inline().amount < maximum, "stamina is full");
+            }
+            crate::logic::progression::write(key, progress);
             bought.stamina = self.grant_stamina(key, explorer, bought.stamina, maximum);
             self
                 .emit(
