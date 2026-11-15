@@ -38,10 +38,12 @@ const kept = (owner: string): { sets: Sets; unsent: Sets; onDevice: boolean } =>
       reached: string[];
       seen: string[];
       unsent: { reached: string[]; seen: string[] };
+      complete?: boolean;
     } | null;
     if (!stored) return { sets: none(), unsent: none(), onDevice: false };
     return {
-      onDevice: true,
+      // Only a cache the service once answered for is the account's own: one made of this device's additions alone is not.
+      onDevice: stored.complete === true,
       sets: { reached: new Set(stored.reached), seen: new Set(stored.seen) },
       unsent: { reached: new Set(stored.unsent.reached), seen: new Set(stored.unsent.seen) },
     };
@@ -51,7 +53,7 @@ const kept = (owner: string): { sets: Sets; unsent: Sets; onDevice: boolean } =>
 };
 
 const keep = (): void => {
-  const { owner, reached, seen, unsent } = useOpeningStore.getState();
+  const { owner, reached, seen, unsent, status, onDevice } = useOpeningStore.getState();
   if (!owner) return;
   try {
     localStorage.setItem(
@@ -60,6 +62,7 @@ const keep = (): void => {
         reached: [...reached],
         seen: [...seen],
         unsent: { reached: [...unsent.reached], seen: [...unsent.seen] },
+        complete: status === "ready" || onDevice,
       }),
     );
   } catch {

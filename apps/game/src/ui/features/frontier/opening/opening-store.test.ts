@@ -1,13 +1,15 @@
-import { beforeEach, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, expect, it, vi } from "vitest";
 
 const identity = vi.hoisted(() => ({
   add: vi.fn<(additions: { reached: string[]; seen: string[] }) => Promise<{ reached: string[]; seen: string[] }>>(),
 }));
 vi.mock("@/hooks/context/identity-session", () => ({ identityClient: { addOpeningProgress: identity.add } }));
 
+import { accountProgress } from "./opening-state";
 import { flush, loadOpening, reachMoments, seeLine, useOpeningStore } from "./opening-store";
 
 /** A request the test answers when it chooses: the service's answer for it, or its failure. */
+const unanswered: Array<() => void> = [];
 const deferred = () => {
   const calls: Array<{
     sent: { reached: string[]; seen: string[] };
@@ -18,6 +20,7 @@ const deferred = () => {
     (sent) =>
       new Promise((answer, fail) => {
         calls.push({ sent, answer, fail: () => fail(new Error("unreachable")) });
+        unanswered.push(() => fail(new Error("unreachable")));
       }),
   );
   return calls;
@@ -27,6 +30,12 @@ const unsent = () => {
   return { reached: [...pending.reached].sort(), seen: [...pending.seen].sort() };
 };
 const settle = () => new Promise((done) => setTimeout(done, 0));
+
+afterEach(async () => {
+  // A request a test left in flight fails here, so the next test's first request is its own.
+  for (const fail of unanswered.splice(0)) fail();
+  await settle();
+});
 
 beforeEach(async () => {
   localStorage.clear();
@@ -155,4 +164,26 @@ it("says whether this device kept the account's progress: a cold load has none, 
   useOpeningStore.setState({ owner: null, status: "signed-out", reached: new Set(), seen: new Set() });
   void loadOpening("a");
   expect(useOpeningStore.getState().onDevice).toBe(true);
+});
+
+it("does not take a cache of this device's own additions for the account's progress after a reload", async () => {
+  const calls = deferred();
+  const reload = () => {
+    useOpeningStore.setState({ owner: null, status: "signed-out", reached: new Set(), seen: new Set() });
+    void loadOpening("a");
+  };
+  void loadOpening("a");
+  await settle();
+  // The read never answers; the HUD records what the realm's state reaches, and the device keeps it.
+  void reachMoments(["launch", "barracks"]);
+  await settle();
+  reload();
+  expect(accountProgress("a", useOpeningStore.getState()).ownsParts).toBe(false);
+  // Once the service has answered, what the device keeps is the account's, and survives further additions.
+  calls[0]!.answer({ reached: ["fight", "launch", "barracks"], seen: [] });
+  await settle();
+  void reachMoments(["essence"]);
+  await settle();
+  reload();
+  expect(accountProgress("a", useOpeningStore.getState()).ownsParts).toBe(true);
 });
