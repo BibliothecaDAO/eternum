@@ -42,8 +42,6 @@ export const scoutingChoices = Object.entries(SCOUTING_CHOICES).map(([kind, opti
   choice: { kind: kind as ScoutingChoice["kind"], value: undefined },
 }));
 
-export type { ScoutingSide } from "@bibliothecadao/eternum";
-
 export const availableScoutingChoices = (tier: (row: number) => number) =>
   scoutingChoices.filter(
     (option) => option.key !== "sanctuaries" || tier(research.ROW_SHRINE) > 0 || tier(research.ROW_WELL) > 0,

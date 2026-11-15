@@ -68,7 +68,6 @@ export const homecomingReturn = (wholeTroops: number, homecomingTier: number): n
 
 /** The kinds a Scouting tier can raise, by the code progression.cairo packs for each (1, 2, 3). */
 type ScoutingKind = Extract<SkillPointChoice, { kind: "Scouting" }>["value"]["kind"];
-export type ScoutingSide = (typeof research)["KIND_CAMPS" | "KIND_RIFTS" | "KIND_SANCTUARIES"];
 const SCOUTING_CODES = {
   Camp: research.KIND_CAMPS + 1,
   Rift: research.KIND_RIFTS + 1,
