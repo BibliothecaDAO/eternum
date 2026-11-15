@@ -1,9 +1,11 @@
+import { deepChargeScenario } from "@/lab/game/charge-scenario";
+import { readDeepSites } from "@bibliothecadao/eternum/game-client";
 import { resolveExplorerCombatTroops } from "@bibliothecadao/eternum/troop-stamina";
 import { afterEach, describe, expect, it } from "vitest";
 import { armyRelicReward, setBlockTimestampSource } from "@bibliothecadao/eternum";
-import { ResourcesIds, TroopTier, TroopType } from "@bibliothecadao/types";
+import { BiomeType, ResourcesIds, TroopTier, TroopType } from "@bibliothecadao/types";
 import preset from "../../../../../../../contracts/l3/world-native/tests/fixtures/current-presets/conformance.json";
-import { readArmyCard, readSiteCard } from "./site-card-plan";
+import { readDeepSiteFight, readArmyCard, readSiteCard } from "./site-card-plan";
 import { blightglowRift, campBeside, otherArmyAt, relicEffectFact, reloadSiteFacts, SITE_TILE } from "./site-fixture";
 
 afterEach(() => setBlockTimestampSource(null));
@@ -307,4 +309,36 @@ it("keeps the same site's opening Charge spent after a confirmed update and a fr
   const restored = reloadSiteFacts(store);
   restored.setSnapshot({ gameId: 1, complete: true, actor: "0x111", timestamp: 350 });
   expect(readSiteCard(restored, site, structure, SITE_TILE, army).fight).toEqual({ troopsLost: 457, guardLeft: 478 });
+});
+
+
+it("keys a Deep beast's opening by the site and a new guard's opening by that army", () => {
+  const { store, startsAt } = deepChargeScenario();
+  setBlockTimestampSource(() => startsAt);
+  const key = { game_id: 1, explorer_id: 201n };
+  const army = store.require("ExplorerTroops", key);
+  const position = store.entityOccupancy(1, 201)!;
+  const attack = { army, armyTile: { col: position.col, row: position.row, alt: position.alt },
+    biome: BiomeType.Underground, timestamp: startsAt };
+  const combat = store.require("ArmyCombat", key);
+  const combatKey = store.wireKeyOf("ArmyCombat", key)!;
+  const quarry = () => readDeepSites(store, startsAt, 1).find(({ name }) => name === "Quarry")!;
+  store.applyFacts([{ model: "ArmyCombat", key: combatKey, value: { ...combat, last_target: 301n } }]);
+  expect(readDeepSiteFight(store, quarry(), attack)?.result).toEqual({ troopsLost: 437, guardLeft: 563 });
+  const oldGuard = { game_id: 1, explorer_id: 301n };
+  for (const [index, model] of (["ExplorerTroops", "DeepArmy", "ArmyDay", "ArmyCombat", "DeepGuard"] as const).entries()) {
+    const row = store.require(model, oldGuard);
+    store.applyFacts([{ model, key: `0xeef${index}`, value: { ...row, explorer_id: 302n } }]);
+  }
+  store.applyFacts([{ model: "DeepGuard", key: store.wireKeyOf("DeepGuard", oldGuard)!, value: null }]);
+  expect(readDeepSiteFight(store, quarry(), attack)?.result).toEqual({ troopsLost: 342, guardLeft: 563 });
+  store.applyFacts([{ model: "DeepGuard", key: store.wireKeyOf("DeepGuard", { game_id: 1, explorer_id: 302n })!, value: null }]);
+  const site = quarry();
+  store.applyFacts([{ model: "Guard", key: store.wireKeyOf("Guard", site.guard!)!,
+    value: { ...site.guard!, troops: army.troops } }]);
+  expect(readDeepSiteFight(store, quarry(), attack)?.result).toEqual({ troopsLost: 342, guardLeft: 563 });
+  store.applyFacts([{ model: "ArmyCombat", key: combatKey, value: { ...combat, last_target: site.id } }]);
+  expect(readDeepSiteFight(store, quarry(), attack)?.result).toEqual({ troopsLost: 437, guardLeft: 563 });
+  store.applyFacts([{ model: "ArmyCombat", key: combatKey, value: null }]);
+  expect(readDeepSiteFight(store, quarry(), attack)?.result).toBeUndefined();
 });
