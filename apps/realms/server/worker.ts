@@ -8,6 +8,7 @@ import { identityL2Configuration } from "./l2";
 import { finishRecoveries } from "./wallet-recovery";
 import { superviseNotifiers } from "./directory";
 import { decodeIdentityEnv, type IdentityEnv } from "./env";
+import { marketLordsPrice, refreshLordsPrice } from "./lords-price";
 import { routeIdentityRequest } from "./routes";
 
 /**
@@ -32,6 +33,7 @@ export default {
     await superviseNotifiers(env.DB, env.SHARD_NOTIFIER);
     await finishWalletRecoveries(env);
     await finishAccountDeletions(env);
+    await refreshLordsPrice(env.DB, marketLordsPrice(), Math.floor(Date.now() / 1000));
   },
 };
 

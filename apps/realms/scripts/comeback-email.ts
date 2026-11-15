@@ -22,6 +22,7 @@ import environments from "../../../deploy/first/environments.json";
 import playtest from "../../../packages/core/src/sync/season-archives/playtest.json";
 import { sendEmail, type Email } from "../../../packages/notifications/src/email";
 import BRAND from "../../../packages/notifications/src/brand.gen.json";
+import { marketLordsPrice } from "../server/lords-price";
 import { newsEmailOptOutLink } from "../server/news-email-opt-out";
 import {
   copyFiles,
@@ -105,7 +106,7 @@ async function readSeason(): Promise<Season> {
     herald(`/games/${GAME}/snapshot`),
     herald(`/games/${GAME}/leaderboard`),
     readHistory(),
-    readLordsPrice(),
+    marketLordsPrice()(),
   ]);
   const game = (directory.games as Row[]).find((entry) => entry.game_id === GAME)!;
   const model = (name: string) =>
@@ -162,14 +163,6 @@ async function catchUpActivity(season: Season) {
   season.activity.noteHistory(fresh as HistoryEvent[]);
   season.activity.noteClaims((claims.models as Row[])[0]?.rows.map((row: Row) => row.value) ?? []);
   season.confirmedBlock = Number(claims.confirmed_block);
-}
-
-async function readLordsPrice(): Promise<number> {
-  const response = await fetch("https://api.coingecko.com/api/v3/simple/price?ids=lords&vs_currencies=usd");
-  if (!response.ok) throw new Error(`CoinGecko: ${response.status}`);
-  const usd = ((await response.json()) as Row).lords?.usd;
-  if (typeof usd !== "number" || !(usd > 0)) throw new Error("CoinGecko: no LORDS price");
-  return usd;
 }
 
 // ---- Who gets which variant (counts only leave this file) -----------------------------------------------------------
