@@ -8,7 +8,7 @@ import {
   formatShort,
   formatShortDuration,
 } from "@bibliothecadao/types";
-import { Icon as SemanticIcon, IconGroup, type IconMeaning } from "@/ui/design-system/icon";
+import { Icon as SemanticIcon, type IconMeaning } from "@/ui/design-system/icon";
 import {
   HudButton,
   HudCard,
