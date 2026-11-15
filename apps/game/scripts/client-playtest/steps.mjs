@@ -4314,6 +4314,8 @@ const DEEP_JOIN_STEPS = [
         ...DEEP_SITE_NAMES.filter((each) => each.key === "deep:quarry"),
       ]) {
         const { name, key } = site;
+        // The card of the last visit is closed, so it does not stand over the frame being walked to.
+        browser.press("Escape");
         await panToHex(browser, browser.read(`window.__eternumMapSelection?.siteHexes?.["${key}"] ?? null`));
         await sleep(HOVER_SETTLE_MS);
         const before = browser.read(siteState(site));
