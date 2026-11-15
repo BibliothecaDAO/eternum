@@ -26,6 +26,11 @@ pub struct RecruitExplorer {
     pub supply_post: Option<u64>,
 }
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]
+pub struct ExplorerAdded {
+    pub explorer_id: u64,
+    pub amount: u128,
+}
+#[derive(Copy, Drop, Serde, Debug, PartialEq)]
 pub struct TransferTroops {
     pub source: Army,
     pub target: Army,
@@ -69,7 +74,10 @@ pub fn management_story(command: ManageTroops) -> (u64, crate::ownership::Story)
             ),
         ),
         ManageTroops::RemoveGuard(value) => (value.structure_id, Story::GuardDeleteStory(value)),
-        ManageTroops::RecruitExplorer(value) => (value.explorer_id, Story::ExplorerAddStory(value)),
+        ManageTroops::RecruitExplorer(value) => (
+            value.explorer_id,
+            Story::ExplorerAddStory(ExplorerAdded { explorer_id: value.explorer_id, amount: value.amount }),
+        ),
         ManageTroops::RemoveExplorer(id) => (id, Story::ExplorerDeleteStory(ExplorerRemoved { explorer_id: id })),
         ManageTroops::Transfer(value) => (
             match value.source {

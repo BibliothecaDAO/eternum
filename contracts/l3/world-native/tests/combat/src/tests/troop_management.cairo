@@ -534,3 +534,19 @@ fn occupied_explorer_destination_rejects_without_rewriting_the_tile_or_spending(
     assert_eq!(troop(d, first).unwrap(), explorer);
     assert_eq!(count(d, home), balance);
 }
+
+#[test]
+fn reinforcement_sources_preserve_the_recorded_recruitment_payload() {
+    for supply_post in array![None, Some(711_u64)] {
+        let (id, story) = crate::troop_management::management_story(ManageTroops::RecruitExplorer(RecruitExplorer { explorer_id: 7, amount: 10, supply_post }));
+        assert_eq!(id, 7);
+        match story {
+            crate::ownership::Story::ExplorerAddStory(value) => {
+                let mut fields = array![];
+                value.serialize(ref fields);
+                assert_eq!(fields.span(), array![7, 10].span());
+            },
+            _ => panic!("wrong reinforcement story"),
+        }
+    }
+}

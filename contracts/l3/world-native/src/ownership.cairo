@@ -27,7 +27,7 @@ pub enum Story {
     BlitzFinalized: felt252,
     RelicCrafted: u8,
     ExplorerCreateStory: crate::troop_management::ExplorerCreated,
-    ExplorerAddStory: crate::troop_management::RecruitExplorer,
+    ExplorerAddStory: crate::troop_management::ExplorerAdded,
     ExplorerDeleteStory: crate::troop_management::ExplorerRemoved,
     GuardDeleteStory: crate::troop_management::GuardSlot,
     TroopsTransferred: crate::troop_management::TransferTroops,
