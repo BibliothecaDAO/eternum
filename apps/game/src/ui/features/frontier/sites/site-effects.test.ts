@@ -74,6 +74,21 @@ it.each([
   expect(store.require("Guard", { game_id: 1, structure_id: ENTITY, slot: 0 }).troops.count).toBe(1_100_000_000_000n);
 });
 
+it("resolves effects through the actual realm ID inside a home namespace", () => {
+  const { store, site, structure } = effectSite(true, true, true);
+  const home = store.require("Structure", { game_id: 1, entity_id: 7n });
+  const homeKey = [...store.entries("Structure")].find(([, row]) => row.entity_id === 7n)![0];
+  const actualHome = (7n << 32n) + 1n;
+  store.applyFacts([
+    { model: "Structure", key: homeKey, value: null },
+    { model: "HomeAspect", key: "0xa002", value: null },
+    { model: "Structure", key: "0xb001", value: { ...home, entity_id: actualHome } },
+    { model: "HomeAspect", key: "0xb002", value: { game_id: 1, home: actualHome, aspect: 1 } },
+  ]);
+  expect(getGuardsByStructure(structure, store)?.[0].troops.count).toBe(825_000_000_000n);
+  expect(readSiteReward(store, site).known).toMatchObject({ xp: 246, reward: { amount: 1_650_000_000_000n } });
+});
+
 it("stops Blood Moon at the recorded quorum while preserving Pale Moon and base losses", () => {
   const { store, site, structure } = effectSite(true, true);
   const guard = store.require("Guard", { game_id: 1, structure_id: ENTITY, slot: 0 });
