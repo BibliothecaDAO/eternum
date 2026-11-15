@@ -82,44 +82,42 @@ export const armyAttributes = (category: ArmyDetailFacts["category"]) =>
   ATTRIBUTE_LIST.filter(({ key }) => key !== "scouting" || category === "Paladin");
 
 export const readArmyDetail = (army: ArmyDetailFacts): ArmyView => {
-  const attributes = armyAttributes(army.category).map(
-    ({ key, mark, name }): AttributeView => {
-      const level = army.progress[key];
-      const point = SKILL_POINT_RANKS.find((rank) => rank >= level + 1 && army.points[rank - 1]! > 0);
-      const figure = (at: number) =>
-        attributeFigure(key, at, army.stamina.max - logisticsStamina(army.progress.logistics));
-      const effect = RESEARCH_TREE.effects[key];
-      const now = key === "scouting" ? scoutingNow(army.progress.scoutingKinds) : effect(figure(level));
-      return {
-        key,
-        name,
-        mark,
-        level: level as Rank,
-        now,
-        next:
-          level === 5
-            ? undefined
-            : {
-                tier: (level + 1) as Tier,
-                // A Scouting level adds its step to the kind picked with it; every other attribute moves to its next figure.
-                change:
-                  key === "scouting"
-                    ? ARMY_DETAIL.scoutingNext(
-                        now,
-                        formatPercent(scoutingIncrementBps(level + 1) / 10_000, { signed: true }),
-                      )
-                    : RESEARCH_TREE.step(figure(level), effect(figure(level + 1))),
+  const attributes = armyAttributes(army.category).map(({ key, mark, name }): AttributeView => {
+    const level = army.progress[key];
+    const point = SKILL_POINT_RANKS.find((rank) => rank >= level + 1 && army.points[rank - 1]! > 0);
+    const figure = (at: number) =>
+      attributeFigure(key, at, army.stamina.max - logisticsStamina(army.progress.logistics));
+    const effect = RESEARCH_TREE.effects[key];
+    const now = key === "scouting" ? scoutingNow(army.progress.scoutingKinds) : effect(figure(level));
+    return {
+      key,
+      name,
+      mark,
+      level: level as Rank,
+      now,
+      next:
+        level === 5
+          ? undefined
+          : {
+              tier: (level + 1) as Tier,
+              // A Scouting level adds its step to the kind picked with it; every other attribute moves to its next figure.
+              change:
+                key === "scouting"
+                  ? ARMY_DETAIL.scoutingNext(
+                      now,
+                      formatPercent(scoutingIncrementBps(level + 1) / 10_000, { signed: true }),
+                    )
+                  : RESEARCH_TREE.step(figure(level), effect(figure(level + 1))),
+              point,
+              affordable: point !== undefined,
+              refill: levelRefill(
+                army,
                 point,
-                affordable: point !== undefined,
-                refill: levelRefill(
-                  army,
-                  point,
-                  key === "logistics" ? logisticsStamina(level + 1) - logisticsStamina(level) : 0,
-                ),
-              },
-      };
-    },
-  );
+                key === "logistics" ? logisticsStamina(level + 1) - logisticsStamina(level) : 0,
+              ),
+            },
+    };
+  });
   return {
     scoutingKinds: availableScoutingChoices((row) => researchTier(army.learned, row)).map((choice) => choice.key),
     name: army.name,

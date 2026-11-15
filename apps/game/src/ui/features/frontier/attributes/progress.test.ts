@@ -34,9 +34,16 @@ beforeEach(() => {
 describe("an army's progress", () => {
   it("offers only attributes for which a fitting point is held", () => {
     expect(availableRankUps({ ...ARMY, xp: 5000 }, "Paladin")).toEqual([]);
-    expect(availableRankUps({ ...ARMY, common_points: 1, battle: 1 }, "Paladin")).toEqual(["Logistics", "Scouting", "Homecoming"]);
+    expect(availableRankUps({ ...ARMY, common_points: 1, battle: 1 }, "Paladin")).toEqual([
+      "Logistics",
+      "Scouting",
+      "Homecoming",
+    ]);
     expect(
-      availableRankUps({ ...ARMY, legendary_points: 1, battle: 5, logistics: 5, scouting: 5, homecoming: 5 }, "Paladin"),
+      availableRankUps(
+        { ...ARMY, legendary_points: 1, battle: 5, logistics: 5, scouting: 5, homecoming: 5 },
+        "Paladin",
+      ),
     ).toEqual([]);
   });
 
@@ -67,7 +74,6 @@ describe("the progress flourish", () => {
     expect(plays).toEqual(["xp.tick"]);
   });
 });
-
 
 it("does not announce Scouting points for Knights", () => {
   const progress = { ...ARMY, legendary_points: 1, battle: 5, logistics: 5, scouting: 0, homecoming: 5 };

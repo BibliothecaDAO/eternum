@@ -18,9 +18,9 @@ export const attributeTiers = (progress: ArmyProgressFacts): Record<AttributeKey
 
 /** Attributes for which the army holds a fitting point. */
 export const availableRankUps = (progress: ArmyProgressFacts, category: TroopType): Attribute[] =>
-  armyAttributes(category).filter(({ key }) => lowestFittingPoint(progress, progress[key] + 1) !== undefined).map(
-    ({ attribute }) => attribute,
-  );
+  armyAttributes(category)
+    .filter(({ key }) => lowestFittingPoint(progress, progress[key] + 1) !== undefined)
+    .map(({ attribute }) => attribute);
 
 /** Lifetime XP earned between two readings. */
 export const xpGained = (before: Pick<ArmyProgressFacts, "xp">, after: Pick<ArmyProgressFacts, "xp">): number =>
