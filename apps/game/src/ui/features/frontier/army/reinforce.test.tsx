@@ -240,7 +240,8 @@ it("reinforces through a cleared camp with its id and refuses it after the army 
     category: StructureType.Camp,
     initial_guard_count: 1300_000_000_000n,
     alt: false,
-    ...camp,
+    col: camp.col,
+    row: camp.row,
     clear: { xp: 90, explorer_id: 201n, home_id: fixture.realm.entity_id, reward: null },
   };
   fixture.store.applyFacts([{ model: "ExpeditionSite", key: "0x712", value: site }] as never);

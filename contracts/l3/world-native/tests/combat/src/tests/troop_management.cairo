@@ -381,7 +381,9 @@ fn troop_actions_emit_one_unique_story_each_and_rejections_emit_none() {
                 amount: 3 * RESOURCE_PRECISION,
             },
         ),
-        Story::ExplorerAddStory(recruitment),
+        Story::ExplorerAddStory(
+            crate::troop_management::ExplorerAdded { explorer_id: recruitment.explorer_id, amount: recruitment.amount },
+        ),
     ];
     for (source, target) in array![
         (Army::Explorer(first), Army::Explorer(second)), (Army::Explorer(first), Army::Guard(slot)),

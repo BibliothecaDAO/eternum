@@ -26,7 +26,8 @@ export function supplyPostScenario(): LabScenario {
     category: StructureType.Camp,
     initial_guard_count: 1600_000_000_000n,
     alt: false,
-    ...camp,
+    col: camp.col,
+    row: camp.row,
     clear: null,
   };
   const reward = siteReward(store, site)!;

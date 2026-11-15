@@ -4,6 +4,7 @@ import { readReinforcePlan, reinforceRange } from "@/ui/features/frontier/army/r
 import { RESOURCE_PRECISION } from "@bibliothecadao/types";
 
 import { chainOf } from "./lab-chain";
+import { SUPPLY_POST, supplyPostScenario } from "./supply-post-scenario";
 import { reinforceScenario } from "./reinforce-scenario";
 
 const PRECISION = BigInt(RESOURCE_PRECISION);
@@ -33,4 +34,23 @@ it("raises the troops into the army beside home, its realm paying them from its 
   expect(chain.require("ExplorerTroops", ARMY).troops.count).toBe(1_598n * PRECISION);
   expect(after.stock).toBe(before.stock - 100);
   expect(after.raise.wheat).toBe(before.raise.wheat - before.raise.wheatFor(100));
+});
+
+it("opens the supply-post game and charges reinforcement to the clearing home's stores", () => {
+  const game = supplyPostScenario();
+  const chain = chainOf(game);
+  const realm = chain.require("Structure", { game_id: 1, entity_id: 7 });
+  const before = readReinforcePlan(chain, realm, SPIRE_ARMY, game.startsAt)!;
+  const command = {
+    kind: "ManageTroops",
+    fields: {},
+    calldata: ["1", "0", "0", "6", "0", "2", String(SPIRE_ARMY), String(100n * PRECISION), "0", String(SUPPLY_POST)],
+  };
+  expect(() => game.answer({ ...command, calldata: [...command.calldata.slice(0, -2), "1"] }, chain, game.startsAt)).toThrow("Army is not beside its supply source");
+  chain.applyFacts(game.answer(command, chain, game.startsAt) as never);
+  const after = readReinforcePlan(chain, realm, SPIRE_ARMY, game.startsAt)!;
+  expect(chain.require("ExplorerTroops", ARMY).troops.count).toBe(1598n * PRECISION);
+  expect(after.stock).toBe(before.stock - 100);
+  expect(after.raise.wheat).toBe(before.raise.wheat - before.raise.wheatFor(100));
+  expect(chain.require("ExpeditionSite", { game_id: 1, entity_id: SUPPLY_POST }).clear?.home_id).toBe(7n);
 });
