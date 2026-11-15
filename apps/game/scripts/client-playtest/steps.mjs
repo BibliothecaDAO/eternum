@@ -3894,15 +3894,16 @@ function raceBoardSteps(result) {
       play: async ({ browser, extraScreenshot }) => {
         const towers = await readUntil(
           () => browser.read(DRAWN_TOWERS),
-          (state) => state.length >= 4,
+          (state) => Object.keys(state).length >= 2,
           PLAYABLE_WAIT_MS,
         );
         extraScreenshot("towers");
         return { towers };
       },
-      // Heights 5,200, 6,400, 2,800 and 900 of a 2,000 stage: two, three, one and no stage built, a fifth of the tower each.
+      // The lab's camera frames two of the four towers: each one drawn stands the fifths its Aspect's stages built.
       verify: ({ played }) =>
-        JSON.stringify(played.towers) === JSON.stringify([0, 20, 40, 60])
+        Object.keys(played.towers).length >= 2 &&
+        Object.entries(played.towers).every(([id, progress]) => TOWER_PROGRESS[id] === progress)
           ? completed(played)
           : failed(
               "Each Aspect's hyperstructure stands a fifth of its tower for each stage its height has built",
@@ -3939,8 +3940,11 @@ const XP_RINGS = `JSON.stringify([...document.querySelectorAll('svg[aria-label^=
 /** The site models the map draws, by kind (`deep:<position>` for the Deep's three): how many of each. */
 const DRAWN_SITES = `JSON.stringify(window.__eternumMapSelection?.drawnSites ?? {})`;
 
-/** How much of its tower each drawn hyperstructure stands, in percent, lowest first. */
-const DRAWN_TOWERS = `JSON.stringify(Object.values(window.__eternumMapSelection?.towers ?? {}).sort((a, b) => a - b))`;
+/** How much of its tower each drawn hyperstructure stands, in percent, by structure id (the lab's are 901 to 904). */
+const DRAWN_TOWERS = `JSON.stringify(window.__eternumMapSelection?.towers ?? {})`;
+
+/** The lab's Aspects' heights 5,200, 6,400, 2,800 and 900 over a 2,000 stage: two, three, one and no stage built. */
+const TOWER_PROGRESS = { 901: 40, 902: 60, 903: 20, 904: 0 };
 
 const DEEP_JOIN_STEPS = [
   { name: "enter-on-map", settleMs: 3_000, verify: inScene("map", "Deep") },
