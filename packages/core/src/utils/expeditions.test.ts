@@ -321,7 +321,7 @@ describe("siteReward", () => {
   it.each([
     [350n, 1400n],
     [320n, 1280n],
-  ])("previews the Cyclops wheat for %s starting troops", (troops, labor) => {
+  ])("previews the Cyclops wheat for %s starting troops", (troops, wheat) => {
     expect(
       siteReward(storeWith(expeditionRules) as never, {
         game_id: 7,
@@ -330,7 +330,7 @@ describe("siteReward", () => {
         initial_guard_count: troops * 1_000_000_000n,
         clear: null,
       }),
-    ).toEqual({ resourceType: ResourcesIds.Wheat, amount: labor * 1_000_000_000n });
+    ).toEqual({ resourceType: ResourcesIds.Wheat, amount: wheat * 1_000_000_000n });
   });
   it("pays as the contract does: a camp half its first guard in labor, a rift three times it in Essence", () => {
     const guard = 1_100n * 1_000_000_000n;
@@ -373,7 +373,7 @@ describe("siteReward", () => {
         game_id: 7,
         row: 0,
         category: StructureType.Beasts,
-        initial_guard_count: guard,
+        initial_guard_count: 450n * 1_000_000_000n,
         clear: null,
       }),
     ).toBeNull();
