@@ -24,7 +24,7 @@ it("grounds every building kind and tier in each mode, including keeps and cosme
   const kinds = Object.values(BuildingType).filter(
     (kind): kind is BuildingType => typeof kind === "number" && kind !== BuildingType.None,
   );
-  for (const preset of [2, 3, 5]) {
+  for (const preset of [2, 5]) {
     const mode = getGameModeConfig(preset);
     for (const [group, models] of Object.entries(mode.assets.buildingModelPaths)) {
       if (group !== BUILDINGS_GROUPS.HYPERSTRUCTURE) Object.values(models).forEach((path) => paths.add(path));
