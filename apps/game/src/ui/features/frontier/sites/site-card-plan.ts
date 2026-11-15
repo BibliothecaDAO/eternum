@@ -19,7 +19,11 @@ import {
   type NativeFactStore,
   type NativeRows,
 } from "@bibliothecadao/eternum/game-client";
-import { inlineTroops, resolveExplorerCombatTroops, resolveExplorerTroops } from "@bibliothecadao/eternum/troop-stamina";
+import {
+  inlineTroops,
+  resolveExplorerCombatTroops,
+  resolveExplorerTroops,
+} from "@bibliothecadao/eternum/troop-stamina";
 import {
   type BiomeType,
   getLayeredAttackDistance,

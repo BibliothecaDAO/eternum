@@ -1,7 +1,8 @@
 import { SPIRE_ARMY } from "@/ui/features/frontier/spire-fixture";
 import { SITE } from "@/ui/features/frontier/sites/site-fixture";
 import { StructureType } from "@bibliothecadao/types";
-import { type NativeFactStore } from "@bibliothecadao/eternum/game-client";
+import { readDeepSites, type NativeFactStore } from "@bibliothecadao/eternum/game-client";
+import { deepScenario } from "./deep-scenario";
 import { siteAt } from "./after-battle-scenario";
 import { type LabFact, type LabScenario, wire } from "./lab-chain";
 import { besideOnOpenLand, spireScenario } from "./spire-scenario";
@@ -15,12 +16,53 @@ const EXCHANGES = [
 
 export function chargeScenario(): LabScenario {
   const game = spireScenario();
+  const troops = prepareChargeArmy(game);
+  const tile = besideOnOpenLand(game.store, game.store.entityOccupancy(1, SPIRE_ARMY)!);
+  game.store.applyFacts(siteAt(game.store, tile, troops, StructureType.Camp).map((fact) => ({ ...fact, value: wire(fact.value) })));
+  return {
+    ...game,
+    answer: (command, chain, now) =>
+      command.kind === "BattleGuard" && Number(command.fields.defender_id) === SITE
+        ? exchange(chain, BigInt(command.fields.attacker_id), now, BigInt(SITE))
+        : game.answer(command, chain, now),
+  };
+}
+
+/** The same native exchanges against the first rival army holding the Quarry. */
+export function deepChargeScenario(): LabScenario {
+  const game = deepScenario();
+  const troops = prepareChargeArmy(game);
+  const { store } = game;
+  const site = readDeepSites(store, game.startsAt, 1).find(({ name }) => name === "Quarry")!;
+  const guard = site.guards[0]!.army;
+  const aspect = store.require("HomeAspect", { game_id: 1, home: guard.owner });
+  const rules = store.require("SliceRules", { game_id: 1 });
+  const tickSeconds = 3600;
+  store.applyFacts([
+    { model: "ExplorerTroops", key: store.wireKeyOf("ExplorerTroops", guard)!, value: wire({ ...guard, troops }) },
+    { model: "HomeAspect", key: store.wireKeyOf("HomeAspect", aspect)!, value: wire({ ...aspect, aspect: 2 }) },
+    { model: "SliceRules", key: store.wireKeyOf("SliceRules", rules)!,
+      value: wire({ ...rules, tick_config: { ...rules.tick_config, armies_tick_in_seconds: tickSeconds } }) },
+    ...[SPIRE_ARMY, Number(guard.explorer_id)].map((id) => {
+      const row = store.require("DeepArmy", { game_id: 1, explorer_id: id });
+      return { model: "DeepArmy", key: store.wireKeyOf("DeepArmy", row)!,
+        value: wire({ ...row, last_tick: Math.floor(game.startsAt / tickSeconds) }) };
+    }),
+  ]);
+  return {
+    ...game,
+    answer: (command, chain, now) => command.kind === "BattleGuard" && BigInt(command.fields.defender_id) === site.id
+      ? exchange(chain, BigInt(command.fields.attacker_id), now, site.id, guard.explorer_id)
+      : game.answer(command, chain, now),
+  };
+}
+
+function prepareChargeArmy(game: LabScenario) {
   const { store } = game;
   const key = { game_id: 1, explorer_id: BigInt(SPIRE_ARMY) };
   const army = store.require("ExplorerTroops", key);
   const rules = store.require("SliceRules", { game_id: 1 });
   const progress = store.require("ArmyProgress", key);
-  const tile = besideOnOpenLand(store, store.entityOccupancy(1, SPIRE_ARMY)!);
   const troops = {
     ...army.troops,
     count: 1000n * PRECISION,
@@ -55,23 +97,19 @@ export function chargeScenario(): LabScenario {
         },
       }),
     },
-    ...siteAt(store, tile, troops, StructureType.Camp).map((fact) => ({ ...fact, value: wire(fact.value) })),
   ]);
-  return {
-    ...game,
-    answer: (command, chain, now) =>
-      command.kind === "BattleGuard" && Number(command.fields.defender_id) === SITE
-        ? exchange(chain, BigInt(command.fields.attacker_id), now)
-        : game.answer(command, chain, now),
-  };
+  return troops;
 }
 
-function exchange(store: NativeFactStore, explorerId: bigint, now: number): LabFact[] {
+function exchange(store: NativeFactStore, explorerId: bigint, now: number, siteId: bigint, guardId?: bigint): LabFact[] {
   const key = { game_id: 1, explorer_id: explorerId };
   const army = store.require("ExplorerTroops", key);
   const combat = store.require("ArmyCombat", key);
-  const guardKey = { game_id: 1, structure_id: BigInt(SITE), slot: 0 };
-  const guard = store.require("Guard", guardKey);
+  const guard = guardId === undefined
+    ? store.require("Guard", { game_id: 1, structure_id: siteId, slot: 0 })
+    : store.require("ExplorerTroops", { game_id: 1, explorer_id: guardId });
+  const guardModel = guardId === undefined ? "Guard" : "ExplorerTroops";
+  const target = guardId ?? siteId;
   const next = EXCHANGES.find(({ before }) => army.troops.count === before * PRECISION);
   if (!next || !("Inline" in army.troops.stamina)) throw new Error("Charge proof has no matching exchange");
   return [
@@ -88,17 +126,17 @@ function exchange(store: NativeFactStore, explorerId: bigint, now: number): LabF
       }),
     },
     {
-      model: "Guard",
-      key: store.wireKeyOf("Guard", guardKey)!,
+      model: guardModel,
+      key: store.wireKeyOf(guardModel, guard)!,
       value: wire({ ...guard, troops: { ...guard.troops, count: next.defender * PRECISION } }),
     },
-    ...(combat.last_target === BigInt(SITE)
+    ...(combat.last_target === target
       ? []
       : [
           {
             model: "ArmyCombat",
             key: store.wireKeyOf("ArmyCombat", key)!,
-            value: wire({ ...combat, last_target: BigInt(SITE) }),
+            value: wire({ ...combat, last_target: target }),
           },
         ]),
   ];

@@ -31,18 +31,10 @@ import { DeepSiteView, type DeepBlock, type DeepGuard, type DeepOrder, type Deep
 const MODELS = [
   ...ARMY_CHARGE_MODELS,
   ...STAMINA_MODELS,
-  "DeepSite",
-  "DeepGuard",
-  "DeepArmy",
-  "ArmyDay",
-  "ExplorerTroops",
   ...GUARD_MODELS,
-  "TileOccupancy",
-  "HomeAspect",
-  "Structure",
-  "DeepRules",
-  "RaceRules",
-  "BaneRules",
+  "DeepSite",
+  "ArmyRelicEffect",
+  "ChestRules",
   "AltarBar",
 ] as const;
 
@@ -122,9 +114,11 @@ export function DeepSiteCard({ site, onClose }: { site: Site; onClose: () => voi
       site={catalog.position}
       pay={tickPay(setup.store, game_id, site, selected)}
       guard={guardView(setup.store, game_id, site, selected, now)}
-      fight={verb === "attack" && selected
-        ? readDeepSiteFight(setup.store, site, { ...selected, biome: BiomeType.Underground, timestamp: now })
-        : undefined}
+      fight={
+        verb === "attack" && selected
+          ? readDeepSiteFight(setup.store, site, { ...selected, biome: BiomeType.Underground, timestamp: now })
+          : undefined
+      }
       order={order}
       onClose={onClose}
     />

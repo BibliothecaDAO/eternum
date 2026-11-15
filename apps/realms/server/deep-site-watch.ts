@@ -7,7 +7,14 @@ import {
 } from "@bibliothecadao/eternum/game-client";
 import { dayOf, expeditionDepth, readExpeditionRules } from "@bibliothecadao/eternum/expeditions";
 import { resolveExplorerCombatTroops, STAMINA_MODELS } from "@bibliothecadao/eternum/troop-stamina";
-import { ARMY_CHARGE_MODELS, openingChargeForTarget, forecastFight, mapCenter, researchedDepth, type CombatRules } from "@bibliothecadao/eternum";
+import {
+  ARMY_CHARGE_MODELS,
+  openingChargeForTarget,
+  forecastFight,
+  mapCenter,
+  researchedDepth,
+  type CombatRules,
+} from "@bibliothecadao/eternum";
 
 export interface DeepSiteWatch {
   gameId: number;
@@ -164,7 +171,16 @@ export async function readDeepSiteWatches(
   const snapshot = await fetchHeraldGameSnapshot(
     { url: shardUrl },
     player.gameId,
-    [...STAMINA_MODELS, ...ARMY_CHARGE_MODELS, "PlayerEntry", "RealmKnowledge", "ArmyRelicEffect", "ChestRules", "DeepSite", "Guard"],
+    [
+      ...STAMINA_MODELS,
+      ...ARMY_CHARGE_MODELS,
+      "PlayerEntry",
+      "RealmKnowledge",
+      "ArmyRelicEffect",
+      "ChestRules",
+      "DeepSite",
+      "Guard",
+    ],
     player.actor,
   );
   if (BigInt(snapshot.game_id) !== BigInt(player.gameId)) throw new Error("Site watch read another game");

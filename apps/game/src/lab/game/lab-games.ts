@@ -1,4 +1,4 @@
-import { chargeScenario } from "./charge-scenario";
+import { chargeScenario, deepChargeScenario } from "./charge-scenario";
 import { scoutsScenario } from "./scouts-scenario";
 import { siteEffectsScenario } from "./site-effects-scenario";
 import { farEyeScenario } from "./far-eye-scenario";
@@ -54,6 +54,7 @@ export const LAB_SCENARIOS: Partial<Record<string, () => LabScenario>> = {
   "far-eye": farEyeScenario,
   "site-effects": siteEffectsScenario,
   deep: deepScenario,
+  "deep-charge": deepChargeScenario,
   race: raceScenario,
   "race-finished": () => raceScenario(true),
   "race-expired": expiredRaceScenario,

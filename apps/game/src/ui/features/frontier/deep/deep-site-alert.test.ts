@@ -155,10 +155,21 @@ it("uses the largest army across all of the player's homes without substituting 
   });
   f.write("ArmySlot", { ...slot, structure_id: 12n, explorer_id: 202n });
   f.write("ArmyProgress", { ...progress, explorer_id: 202n });
+  f.write("ArmyCombat", { game_id: 1, explorer_id: 202n, charge: 0, last_target: 0n });
   f.write("ArmyDay", { game_id: 1, explorer_id: 202n, day: 0n });
   f.write("TileOccupancy", { ...f.store.entityOccupancy(1, 201)!, entity_id: 202n, row: 51 });
   expect(f.plan()).toEqual([]);
   f.change("RealmKnowledge", { game_id: 1, structure_id: 12n }, { learned: 3n << 48n });
   expect(f.plan()).toHaveLength(1);
   expect(f.plan()[0]!.home).toBe("12");
+});
+
+it("opens Charge again for a later guard after forecasting a different guard first", () => {
+  const f = fixture([1000, 1]);
+  const key = { game_id: 1, explorer_id: 201n };
+  const army = f.store.require("ExplorerTroops", key);
+  f.change("ExplorerTroops", key, { troops: { ...army.troops, count: 1000n * BigInt(RESOURCE_PRECISION) } });
+  f.change("ArmyCombat", key, { charge: 5, last_target: 301n });
+  expect(f.plan().map(({ dueAt }) => dueAt)).toEqual([f.startsAt * 1000]);
+  expect(f.store.require("ArmyCombat", key).last_target).toBe(301n);
 });

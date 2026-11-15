@@ -435,22 +435,27 @@ const RELIC_FORECAST_STEPS = [
  * Attack (a desktop's right-click, a phone's two taps), then the card's Attack; the result is the army's token showing
  * exactly the troops the chain left it.
  */
-const CHARGE_STEPS = [
+const CHARGE_STEPS = chargeSteps(attackFromTheSiteCard);
+const DEEP_CHARGE_STEPS = chargeSteps(attackFromTheDeepCard);
+
+function chargeSteps(attack) {
+  return [
   { name: "enter-on-map", settleMs: 3_000, verify: inScene("map") },
   { name: "select-army", play: selectTheReadiestArmy, settleMs: 1_500, verify: armySelected },
   ...[
     ["opening-charge", 658, 563],
     ["same-fight", 386, 245],
   ].map(([name, attacker, defender]) =>
-    clickToResultStep(name, "BattleGuard", attackFromTheSiteCard, ({ played, actionLatency }) => {
+    clickToResultStep(name, "BattleGuard", attack, ({ played, actionLatency }) => {
       const answer = (actionLatency.chainAnswers ?? []).filter(({ kind }) => kind === "BattleGuard").at(-1);
       const rows = answer?.answered ?? [];
       const army = rows.find(({ model }) => model === "ExplorerTroops")?.value;
-      const guard = rows.find(({ model }) => model === "Guard")?.value;
+      const guard = rows.find(({ model }) => model === "Guard")?.value
+        ?? rows.find(({ model, value }) => model === "ExplorerTroops" && value.explorer_id !== army?.explorer_id)?.value;
       const combat = rows.find(({ model }) => model === "ArmyCombat")?.value;
       const openingRecorded =
         name === "opening-charge"
-          ? combat && guard && BigInt(combat.last_target) === BigInt(guard.structure_id)
+          ? combat && guard && BigInt(combat.last_target) === BigInt(guard.explorer_id ?? guard.structure_id)
           : combat === undefined;
       return played.watching &&
         army &&
@@ -465,6 +470,7 @@ const CHARGE_STEPS = [
     }),
   ),
 ];
+}
 
 const FIGHT_ACTION_STEPS = [
   { name: "enter-on-map", settleMs: 3_000, verify: inScene("map") },
@@ -4011,6 +4017,31 @@ const DRAWN_TOWERS = `JSON.stringify(window.__eternumMapSelection?.towers ?? {})
 /** The lab's Aspects' heights 5,200, 6,400, 2,800 and 900 over a 2,000 stage: two, three, one and no stage built. */
 const TOWER_PROGRESS = { 901: 40, 902: 60, 903: 20, 904: 0 };
 
+async function attackFromTheDeepCard({ browser, extraScreenshot }) {
+  const before = browser.read(DEEP_JOIN_STATE);
+  if (!before.quarry) return { before };
+  if (onADesktop()) browser.rightClick(before.quarry);
+  else browser.tap(before.quarry);
+  const opened = await readUntil(() => browser.read(MERGE_STATE),
+    (state) => state.buttons.includes("Attack"), SHEET_WAIT_MS);
+  if (!opened.buttons.includes("Attack")) return { before, opened };
+  const forecast = browser.read(`Array.from(document.querySelectorAll('[data-kit-sheet] [role="img"][aria-label*="→"]'), node => node.getAttribute('aria-label'))`);
+  extraScreenshot("deep-forecast-before-attack");
+  const after = browser.read("window.__labChain?.sent.length ?? 0");
+  const armyId = browser.observe().selection?.army?.id;
+  watchFor(browser, "fought", `(() => {
+    const answer = (window.__labChain?.sent ?? []).slice(${after}).filter(({ command }) => command.kind === "BattleGuard").at(-1);
+    const rows = (answer?.answered ?? []).filter(({ model, value }) => model === "ExplorerTroops" && value !== null);
+    const ours = rows.find(({ value }) => Number(value.explorer_id) === ${armyId});
+    const theirs = rows.find(({ value }) => Number(value.explorer_id) !== ${armyId});
+    const count = (row) => (BigInt(row.value.troops.count) / 1000000000n).toLocaleString("en-US");
+    return ours && theirs && document.querySelector('.mp-at[data-key="army:${armyId}"] .mp-count')?.textContent === count(ours)
+      && document.querySelector('[data-deep-slots]')?.textContent.includes(count(theirs));
+  })()`);
+  browser.click("Attack");
+  return { forecast, watching: true };
+}
+
 const DEEP_JOIN_STEPS = [
   { name: "enter-on-map", settleMs: 3_000, verify: inScene("map", "Deep") },
   {
@@ -5853,6 +5884,7 @@ export const STEP_SETS = {
   "lab-economy": { game: { ...labSpireGame("economy"), mode: "blitz" }, steps: ECONOMY_STEPS },
   "lab-actions-transfer": { game: labSpireGame("merge-loses-xp"), steps: transferActionSteps() },
   "lab-charge": { game: labSpireGame("charge"), steps: CHARGE_STEPS },
+  "lab-deep-charge": { game: labSpireGame("deep-charge"), steps: DEEP_CHARGE_STEPS },
   "lab-scouts": { game: labSpireGame("scouts"), steps: SCOUT_DEPLOY_STEPS },
   "lab-actions-deploy": { game: labSpireGame("actions"), steps: DEPLOY_ACTION_STEPS },
   "lab-actions-research": { game: labSpireGame("research"), steps: RESEARCH_ACTION_STEPS },

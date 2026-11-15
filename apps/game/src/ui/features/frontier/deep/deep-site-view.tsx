@@ -100,10 +100,14 @@ const FightPreview = ({ fight }: { fight: DeepSiteFight }) => {
   const result = fight.result && !("refused" in fight.result) ? fight.result : undefined;
   return (
     <div className="flex gap-2">
-      <FightSide label={ARMY} mark={null} before={fight.army}
-        kept={result && fight.army - result.troopsLost} side="ours" />
-      <FightSide label={TROOPS} mark={null} before={fight.defender}
-        kept={result?.guardLeft} side="theirs" />
+      <FightSide
+        label={ARMY}
+        mark={null}
+        before={fight.army}
+        kept={result && fight.army - result.troopsLost}
+        side="ours"
+      />
+      <FightSide label={TROOPS} mark={null} before={fight.defender} kept={result?.guardLeft} side="theirs" />
     </div>
   );
 };

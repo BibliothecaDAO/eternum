@@ -5,6 +5,7 @@ import { GameProvider } from "@/hooks/context/game-context";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useBlockTimestampStore } from "@/hooks/store/use-block-timestamp-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
+import { deepChargeScenario } from "@/lab/game/charge-scenario";
 import { deepScenario } from "@/lab/game/deep-scenario";
 import { raceScenario } from "@/lab/game/race-scenario";
 import { baneScenario } from "@/lab/game/bane-scenario";
@@ -254,4 +255,32 @@ it("prices Deep movement from the troops left at the requested second", () => {
   expect(read(boundary + interval)?.foodBlock?.perStep.wheatPayAmount).toBe(
     (Number(army.troops.count - 2n * loss) / RESOURCE_PRECISION) * perTroop,
   );
+});
+
+
+it("previews the Deep guard's opening and repeated exchange before sending each attack", async () => {
+  const hud = draw(undefined, deepChargeScenario());
+  const labels = () => [...hud.host.querySelectorAll('[role="img"][aria-label*="→"]')]
+    .map((node) => node.getAttribute("aria-label"));
+  try {
+    for (const [before, ownLeft, enemyLeft] of [[1000, 658, 563], [658, 386, 245]]) {
+      expect(labels().some((label) => label?.includes(`→ ${ownLeft},`))).toBe(true);
+      expect(labels().some((label) => label?.includes(`→ ${enemyLeft},`))).toBe(true);
+      expect(hud.button("Attack")?.disabled).toBe(false);
+      await act(async () => hud.button("Attack")!.click());
+      const site = readDeepSites(hud.store, hud.scenario.startsAt, 1).find(({ name }) => name === "Quarry")!;
+      const answer = hud.scenario.answer({
+        kind: "BattleGuard", fields: { attacker_id: "201", defender_id: String(site.id) }, calldata: [],
+      }, hud.store, hud.scenario.startsAt);
+      expect(answer.filter(({ model }) => model === "ArmyCombat")).toHaveLength(before === 1000 ? 1 : 0);
+      act(() => hud.store.applyFacts(answer));
+      hud.render();
+      expect(hud.store.require("ExplorerTroops", { game_id: 1, explorer_id: 201 }).troops.count)
+        .toBe(BigInt(ownLeft!) * BigInt(RESOURCE_PRECISION));
+      expect(hud.store.require("ExplorerTroops", { game_id: 1, explorer_id: 301 }).troops.count)
+        .toBe(BigInt(enemyLeft!) * BigInt(RESOURCE_PRECISION));
+      expect(hud.store.require("ArmyCombat", { game_id: 1, explorer_id: 201 }).last_target).toBe(301n);
+    }
+    expect(hud.attack).toHaveBeenCalledTimes(2);
+  } finally { hud.unmount(); }
 });
