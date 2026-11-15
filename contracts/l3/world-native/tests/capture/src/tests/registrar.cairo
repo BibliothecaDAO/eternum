@@ -1391,8 +1391,8 @@ fn frontier_ruin_clear_awards_its_stored_relic_without_lords() {
     );
     assert_eq!(structures.structure(site_key).unwrap().base.category, crate::taxonomy::RUIN_CATEGORY);
     assert!(
-        initial.initial_guard_count >= 2000
-            * RESOURCE_PRECISION && initial.initial_guard_count <= 4000
+        initial.initial_guard_count >= 900
+            * RESOURCE_PRECISION && initial.initial_guard_count <= 1100
             * RESOURCE_PRECISION,
     );
     let resources = IResourceOperationsDispatcher { contract_address: d.games };
