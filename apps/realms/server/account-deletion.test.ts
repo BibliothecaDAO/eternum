@@ -71,6 +71,11 @@ const seedAccount = (worker: Worker, realmsId: string) =>
     worker.db
       .prepare(`INSERT INTO "opening_progress" ("owner", "moment", "kind") VALUES (?, 'barracks', 'reached')`)
       .bind(realmsId),
+    worker.db
+      .prepare(
+        `INSERT INTO "seal" ("owner", "paid_cents", "source", "receipt", "granted_at") VALUES (?, 999, 'store', 'tx-leaving', 1)`,
+      )
+      .bind(realmsId),
     worker.db.prepare(
       `INSERT INTO "campaign_codes" ("campaign", "code_hash", "tier") VALUES ('devcon-2026', 'golden-hash', 'golden')`,
     ),
@@ -129,6 +134,7 @@ it("deletes an account only with its emailed code: its old session opens nothing
   expect(await countOf(worker, "notification_preferences", "owner", leaving.realmsId)).toBe(0);
   expect(await countOf(worker, "build_order_books", "owner", leaving.realmsId)).toBe(0);
   expect(await countOf(worker, "opening_progress", "owner", leaving.realmsId)).toBe(0);
+  expect(await countOf(worker, "seal", "owner", leaving.realmsId)).toBe(0);
   expect(await countOf(worker, "user", "email", LEAVING)).toBe(0);
   expect(await inbox.threadMessages(threadId, undefined, 10)).toBeNull();
   expect(

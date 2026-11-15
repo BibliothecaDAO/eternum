@@ -21,6 +21,8 @@ import { json } from "./http";
 import { keepBrowser, noteBrowser } from "./browsers";
 import { handleBuildOrders } from "./build-orders";
 import { handleLordsPrice } from "./lords-price";
+import { handleSeal } from "./seal";
+import { holderFactsOf } from "./seal-facts";
 import { handleOpeningProgress } from "./opening-progress";
 import {
   campaignStandings,
@@ -147,6 +149,7 @@ export const routeIdentityRequest = async (
   if (pathname === "/api/notifications/preferences") return handleNotificationPreferences(request, auth, env.DB);
   if (pathname === "/api/build-orders") return handleBuildOrders(request, auth, env.DB);
   if (pathname === "/api/opening") return handleOpeningProgress(request, auth, env.DB);
+  if (pathname === "/api/shop/seal") return handleSeal(request, auth, { db: env.DB, holderFacts: holderFactsOf(env) });
   if (pathname === "/api/shop/price" && request.method === "GET") {
     if (!(await withinPublicBudget(env, "shop-price", request))) return json({ error: "too_many_requests" }, 429);
     return handleLordsPrice(env.DB);
