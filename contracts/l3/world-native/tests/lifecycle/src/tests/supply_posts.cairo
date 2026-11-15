@@ -12,12 +12,24 @@ fn a_cleared_camp_reinforces_from_home_on_each_layer_above_the_deep() {
     for depth in 0_u8..3 {
         let (d, game_id, key) = setup_frontier_relics();
         let home = ResourceKey { game_id, entity_id: 1 };
+        grant(d, home, crate::resources::WHEAT, 10000 * RESOURCE_PRECISION);
+        grant(d, home, 26, 100 * RESOURCE_PRECISION);
+        assert!(
+            execute_in_game(
+                d,
+                game_id,
+                Command::ManageTroops(
+                    ManageTroops::RecruitExplorer(
+                        RecruitExplorer { explorer_id: key.explorer_id, amount: 99 * RESOURCE_PRECISION, supply_post: None },
+                    ),
+                ),
+                355,
+            ),
+        );
         let mut army = super::army_activity::army(d, key);
         army.coord = crate::expeditions::site(1024, 1, 0, depth);
         army.coord.x += 10;
-        army.troops.count = 100 * RESOURCE_PRECISION;
         set_explorer_fixture(d.games, key, army);
-        grant(d, home, crate::resources::WHEAT, 10000 * RESOURCE_PRECISION);
         let destination = crate::geometry::neighbor(army.coord, 0);
         let discovery = interact_with_state(
             d.games, || crate::logic::preset_record::for_game(game_id).discovery_rules.read().unwrap(),
