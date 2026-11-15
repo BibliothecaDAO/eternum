@@ -37,7 +37,10 @@ export function useAspectFights(owners: readonly bigint[]): AspectFeedReading {
         spacing,
         FEED_LENGTH,
         PAGE_SIZE,
-      );
+      ).catch((error: unknown) => {
+        console.error("[aspect feed] the battle history could not be read", error);
+        throw error;
+      });
     },
     enabled: members.length > 0 && chainId !== undefined,
     refetchInterval: FEED_REFRESH_MS,
