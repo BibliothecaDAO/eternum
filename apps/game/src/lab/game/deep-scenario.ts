@@ -24,7 +24,7 @@ export const deepScenario = (): LabScenario => {
   const tick = Math.floor(startsAt / tickSeconds);
   const slot = store.require("ArmySlot", { game_id: 1, structure_id: army.owner, epoch: 0n, slot: 0 });
   const at = store.entityOccupancy(1, SPIRE_ARMY)!;
-  const [allyHome, allyArmy] = [9n, 301n];
+  const [allyHome, allyArmy, fieldAlly] = [9n, 301n, 302n];
   const local = {
     foundation: { x: 10, y: 25, alt: false },
     quarry: { x: 25, y: 25, alt: false },
@@ -69,6 +69,14 @@ export const deepScenario = (): LabScenario => {
     },
     { model: "TileOccupancy", key: store.wireKeyOf("TileOccupancy", at)!, value: null },
     { model: "TileOccupancy", key: "0xdee9", value: wire({ ...at, col: center.col - 1, row: center.row }) },
+    // A second ally, in the field beside the player's army: it is drawn as an ally, not as a guard.
+    { model: "ExplorerTroops", key: "0xdef1", value: wire({ ...army, explorer_id: fieldAlly, owner: allyHome }) },
+    { model: "ArmyDay", key: "0xdef2", value: { game_id: 1, explorer_id: String(fieldAlly), day: "0" } },
+    {
+      model: "TileOccupancy",
+      key: "0xdef3",
+      value: wire({ ...at, entity_id: fieldAlly, col: center.col - 3, row: center.row - 1 }),
+    },
   ];
   for (const site of deepSites) {
     const offset = local[site.position];

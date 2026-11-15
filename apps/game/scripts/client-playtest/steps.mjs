@@ -3763,7 +3763,7 @@ const DEEP_JOIN_STEPS = [
     play: async ({ browser, extraScreenshot }) => {
       const sides = await readUntil(
         () => browser.read(ARMY_SIDES),
-        (read) => Boolean(read[`army:${PICKED_ARMY}`] && read["army:301"]),
+        (read) => Boolean(read[`army:${PICKED_ARMY}`] && read["army:302"]),
         PLAYABLE_WAIT_MS,
       );
       extraScreenshot("ally-on-the-map");
@@ -3771,8 +3771,8 @@ const DEEP_JOIN_STEPS = [
     },
     verify: ({ played }) =>
       played.sides[`army:${PICKED_ARMY}`] &&
-      played.sides["army:301"] &&
-      played.sides[`army:${PICKED_ARMY}`] !== played.sides["army:301"]
+      played.sides["army:302"] &&
+      played.sides[`army:${PICKED_ARMY}`] !== played.sides["army:302"]
         ? completed(played)
         : failed("An ally's army must be drawn in a side colour other than the player's own", played),
   },
