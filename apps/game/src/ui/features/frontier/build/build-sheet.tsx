@@ -9,7 +9,7 @@ import { useQuery } from "@/hooks/helpers/use-query";
 import { useAllInFlight, useInFlight } from "@/hooks/store/use-actions-in-flight";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 
-import type { PriceKind } from "@/ui/design-system/kit/price-faces";
+import { PRICE_FACES, type PriceKind } from "@/ui/design-system/kit/price-faces";
 import type { Refusal } from "@/ui/design-system/kit/refusal";
 import {
   BARRACKS,
@@ -278,9 +278,11 @@ export const BuildSheet = ({
 /** A price's resource as the kit draws it, the realm store that holds it; a building priced in anything else is loud. */
 const priceKind = (resource: number): PriceKind => {
   const kind = STORE_KINDS.find((store) => FRONTIER_STORES[store].resource === resource);
-  if (!kind) throw new Error(`A Frontier building is priced in resource ${resource}`);
+  if (!kind || !isPriceKind(kind)) throw new Error(`A Frontier building is priced in resource ${resource}`);
   return kind;
 };
+
+const isPriceKind = (kind: string): kind is PriceKind => kind in PRICE_FACES;
 
 /** What the realm holds that a card weighs its building against: resources and how fast they arrive, and free population. */
 type Holdings = {

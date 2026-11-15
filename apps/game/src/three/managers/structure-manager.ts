@@ -720,7 +720,15 @@ export class StructureManager {
     const armies = guardsToTell(this.resolveGuardArmies(guards), configManager.hasGuardSlots());
     if (!tellsGuardStamina(structure)) return { ...structure, guardArmies: armies };
     const now = getBlockTimestamp().currentDefaultTick;
-    const bySlot = new Map(guards.map(({ slot, troops }) => [slot, getGuardStaminaSnapshot(troops, now)]));
+    const bySlot = new Map(
+      guards.map(({ slot, troops }) => [
+        slot,
+        {
+          ...getGuardStaminaSnapshot(troops, now),
+          perExplore: configManager.getExploreStaminaCost(troops.category),
+        },
+      ]),
+    );
     return {
       ...structure,
       guardArmies: armies?.map((guard) => {
@@ -731,7 +739,7 @@ export class StructureManager {
               stamina: {
                 current: stamina.current,
                 max: stamina.max,
-                perExplore: configManager.getExploreStaminaCost(guard.category),
+                perExplore: stamina.perExplore,
               },
             }
           : guard;
