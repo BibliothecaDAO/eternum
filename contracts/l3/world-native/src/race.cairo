@@ -64,7 +64,7 @@ pub struct ExpeditionEffects {
 #[starknet::interface]
 pub trait IRace<T> {
     fn initialize_race(ref self: T, game_id: u32);
-    fn site_beast_bps(self: @T, site: crate::resources::ResourceKey, timestamp: u64) -> u32;
+    fn site_beast_bps(self: @T, site: crate::resources::ResourceKey, home: u64, timestamp: u64) -> u32;
     fn race_rules(self: @T, game_id: u32) -> Option<RaceRules>;
     fn race_member(self: @T, key: crate::resources::ResourceKey) -> RaceMember;
     fn aspect_hyperstructure(self: @T, key: AspectKey) -> AspectHyperstructure;

@@ -1,6 +1,4 @@
 import { SITE_EFFECT_MODELS, readSiteEffects, effectiveGuardCount } from "../client/views/site-effects";
-import { expeditionDepth, readExpeditionRules } from "./expeditions";
-import { entityHomeNamespace } from "./entity-home";
 import { currentResourceWeight } from "./deep";
 import { safeInteger } from "./safe-integer";
 import { inlineTroops, resolveExplorerTroops } from "../managers/troop-stamina";
@@ -117,15 +115,7 @@ export const getGuardsByStructure = (
   const site = store.get("ExpeditionSite", { game_id: structure.game_id, entity_id: structure.entity_id });
   let beastBps = 10_000;
   if (site) {
-    const calendar = readExpeditionRules(store, structure.game_id);
-    if (!calendar) return undefined;
-    const effects = readSiteEffects(
-      store,
-      structure.game_id,
-      entityHomeNamespace(structure.entity_id),
-      timestamp,
-      expeditionDepth(calendar, { y: site.row }),
-    );
+    const effects = readSiteEffects(store, site, timestamp);
     if (!effects.known) return undefined;
     beastBps = effects.known.beastBps;
   }

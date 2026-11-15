@@ -1,3 +1,4 @@
+import { StructureType } from "@bibliothecadao/types";
 import { getBlockTimestamp } from "../../utils/timestamp";
 import { nativeBaneConstants, nativeRaceConstants } from "../../../../../contracts/l3/world-native/schema/client.gen";
 import type { NativeFactResult, NativeFactStore } from "../native-fact-store";
@@ -26,25 +27,29 @@ export interface SiteEffects {
 /** Effects change current strength and numeric rewards; the Deep retains its native amounts. */
 export function readSiteEffects(
   store: NativeFactStore,
-  gameId: number,
-  home: number | bigint,
-  timestamp: number | undefined,
-  depth: number,
+  site: NativeRows["ExpeditionSite"],
+  timestamp?: number,
 ): NativeFactResult<SiteEffects> {
+  const gameId = site.game_id;
+  const calendar = readExpeditionRules(store, gameId);
+  if (!calendar) return { unknown: "MISSING_EXPEDITION_RULES" };
+  const depth = expeditionDepth(calendar, { y: site.row });
   if (depth === 3) return { known: { beastBps: 10_000, spoilsPercent: 100 } };
   const baneRules = readOptionalSeasonRow(store, "BaneRules", { game_id: gameId });
   if (!baneRules.known) return baneRules;
   const race = readOptionalSeasonRow(store, "RaceRules", { game_id: gameId });
   if (!race.known) return race;
   if (!race.known.row && !baneRules.known.row) return { known: { beastBps: 10_000, spoilsPercent: 100 } };
+  const namespace = entityHomeNamespace(site.entity_id);
+  const home = [...store.inGame("Structure", gameId)].find((row) =>
+    row.base.category === StructureType.Realm && entityHomeNamespace(row.entity_id) === namespace)?.entity_id;
+  if (home === undefined) return { unknown: "MISSING_SITE_HOME" };
   const at = timestamp ?? getBlockTimestamp().currentDefaultTick;
   const bane = readBaneEffects(store, gameId, home, at, at + 1);
   if (!bane.known) return bane;
   let moon = 100;
   let spoilsPercent = 100;
   if (race.known.row) {
-    const calendar = readExpeditionRules(store, gameId);
-    if (!calendar) return { unknown: "MISSING_EXPEDITION_RULES" };
     const pale = readTriumphPeriod(store, gameId, home, nativeRaceConstants.PALE_MOON_STAGE, calendar);
     if (!pale.known) return pale;
     const spoils = readTriumphPeriod(store, gameId, home, nativeRaceConstants.SPOILS_STAGE, calendar);
@@ -66,15 +71,7 @@ export function readSiteReward(
   site: NativeRows["ExpeditionSite"],
   timestamp?: number,
 ): NativeFactResult<{ reward: ReturnType<typeof siteReward>; xp: number }> {
-  const calendar = readExpeditionRules(store, site.game_id);
-  if (!calendar) return { unknown: "MISSING_EXPEDITION_RULES" };
-  const effects = readSiteEffects(
-    store,
-    site.game_id,
-    entityHomeNamespace(site.entity_id),
-    timestamp,
-    expeditionDepth(calendar, { y: site.row }),
-  );
+  const effects = readSiteEffects(store, site, timestamp);
   if (!effects.known) return effects;
   const percent = effects.known.spoilsPercent;
   const base = siteReward(store, site);

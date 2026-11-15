@@ -108,7 +108,7 @@ fn guard_defender(
     };
     let (source, troops) = match crate::logic::guards::GuardState::next(target.key, maximum) {
         Some(key) => {
-            let bps = beast_bps(target, context.timestamp);
+            let bps = beast_bps(target, attacker.owner, context.timestamp);
             let mut troops = crate::logic::guards::guard(key).troops;
             troops.count = (troops.count * bps.into() + 9999) / 10000;
             (GuardSource::Guard((key, bps)), troops)
@@ -120,10 +120,10 @@ fn guard_defender(
     }
 }
 
-fn beast_bps(target: GuardTarget, timestamp: u64) -> u32 {
+fn beast_bps(target: GuardTarget, home: u64, timestamp: u64) -> u32 {
     crate::race::IRaceDispatcherTrait::site_beast_bps(
         crate::race::IRaceLibraryDispatcher { class_hash: crate::logic::release::classes(target.key.game_id).economy.read() },
-        target.key, timestamp,
+        target.key, home, timestamp,
     )
 }
 

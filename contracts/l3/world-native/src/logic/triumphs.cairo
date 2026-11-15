@@ -63,10 +63,10 @@ fn active_percent(home: ResourceKey, stage: u8, percent: u16, timestamp: u64) ->
     }
 }
 
-pub fn site_beast_bps(key: ResourceKey, timestamp: u64) -> u32 {
+pub fn site_beast_bps(key: ResourceKey, home: u64, timestamp: u64) -> u32 {
     let Some(site) = crate::logic::expeditions::expedition_site(key) else { return 10000; };
     let coord = crate::troops::Coord { alt: site.alt, x: site.col, y: site.row };
     if crate::logic::expeditions::depth_at(key.game_id, coord) == 3 { return 10000; }
-    let home = ResourceKey { game_id: key.game_id, entity_id: crate::entity_ids::namespace(key.entity_id).into() };
+    let home = ResourceKey { game_id: key.game_id, entity_id: home };
     read_effects(home, timestamp).beast_bps
 }

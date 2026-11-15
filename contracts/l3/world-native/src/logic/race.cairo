@@ -234,8 +234,8 @@ pub mod RaceState {
         fn initialize_race(ref self: ComponentState<TContractState>, game_id: u32) {
             super::initialize(game_id);
         }
-        fn site_beast_bps(self: @ComponentState<TContractState>, site: crate::resources::ResourceKey, timestamp: u64) -> u32 {
-            crate::logic::triumphs::site_beast_bps(site, timestamp)
+        fn site_beast_bps(self: @ComponentState<TContractState>, site: crate::resources::ResourceKey, home: u64, timestamp: u64) -> u32 {
+            crate::logic::triumphs::site_beast_bps(site, home, timestamp)
         }
         fn race_rules(self: @ComponentState<TContractState>, game_id: u32) -> Option<crate::race::RaceRules> {
             super::rules(game_id)
