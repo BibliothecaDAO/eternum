@@ -1,6 +1,11 @@
 import { afterEach, expect, it } from "vitest";
 import { getGuardsByStructure, setBlockTimestampSource } from "@bibliothecadao/eternum";
-import { nativeBaneConstants, nativeRaceConstants, readSiteEffects, readSiteReward } from "@bibliothecadao/eternum/game-client";
+import {
+  nativeBaneConstants,
+  nativeRaceConstants,
+  readSiteEffects,
+  readSiteReward,
+} from "@bibliothecadao/eternum/game-client";
 import { raceRules } from "@/lab/game/race-scenario";
 import { readPlateReward } from "@/three/map-plates/plate-reward";
 import { ResourcesIds, StructureType } from "@bibliothecadao/types";
