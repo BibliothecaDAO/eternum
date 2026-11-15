@@ -42,3 +42,4 @@ export const GUARD_SLOT_NAMES: Record<GuardSlot, string> = {
   [GuardSlot.Beta]: "Outer Wall",
   [GuardSlot.Alpha]: "Watchtower",
 };
+import { TroopType } from "../types/common";
