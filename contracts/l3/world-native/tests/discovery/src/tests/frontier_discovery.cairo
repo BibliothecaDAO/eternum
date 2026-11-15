@@ -147,7 +147,8 @@ fn sanctuaries_cannot_find_a_site_that_is_still_locked_even_at_the_floor() {
             assert!(frontier(shrine_only, 0, 0, 10000, 100, empty, None, seed) != Discovery::Well);
             assert!(frontier(well_only, 0, 0, 10000, 100, empty, None, seed) != Discovery::Shrine);
             assert_eq!(
-                frontier(rules(), 0, 0, 10000, 100, empty, None, seed), frontier(rules(), 0, 0, 0, 100, empty, None, seed),
+                frontier(rules(), 0, 0, 10000, 100, empty, None, seed),
+                frontier(rules(), 0, 0, 0, 100, empty, None, seed),
             );
         }
     }
@@ -174,12 +175,16 @@ fn discovery_reserves_the_combined_sanctuary_increase() {
 #[test]
 fn clear_mist_doubles_every_find_weight_and_preserves_the_empty_floor() {
     let rules = FrontierDiscoveryRules {
-        beasts_bps: 1000, camp_bps: 1000, rift_bps: 1000, ruin_bps: 1000,
-        shrine_bps: 500, well_bps: 500, empty_reveal_limit: 7,
+        beasts_bps: 1000,
+        camp_bps: 1000,
+        rift_bps: 1000,
+        ruin_bps: 1000,
+        shrine_bps: 500,
+        well_bps: 500,
+        empty_reveal_limit: 7,
     };
     let outcomes = array![
-        Discovery::Beasts, Discovery::Camp, Discovery::Rift, Discovery::Ruin(RELIC),
-        Discovery::Shrine, Discovery::Well,
+        Discovery::Beasts, Discovery::Camp, Discovery::Rift, Discovery::Ruin(RELIC), Discovery::Shrine, Discovery::Well,
     ];
     // Cover the boundaries of every interval in the categorical draw.
     for target in array![0_u128, 999, 1000, 1999, 2000, 3999, 4000, 5999, 6000, 7999, 8000, 8999, 9000, 9999] {
@@ -189,10 +194,16 @@ fn clear_mist_doubles_every_find_weight_and_preserves_the_empty_floor() {
             let seed = sample.into();
             if crate::random::range(seed, 29, 10000) == target {
                 let boosted = frontier(rules, 0, 0, 0, 200, 0, Some(RELIC), seed);
-                let index = if target < 8000 { target / 2000 } else { 4 + (target - 8000) / 1000 };
+                let index = if target < 8000 {
+                    target / 2000
+                } else {
+                    4 + (target - 8000) / 1000
+                };
                 assert_eq!(boosted, *outcomes.at(index.try_into().unwrap()));
                 assert!(frontier(rules, 0, 0, 0, 200, 7, None, seed) != Discovery::None);
-                if target >= 5000 { assert_eq!(frontier(rules, 0, 0, 0, 100, 0, Some(RELIC), seed), Discovery::None); }
+                if target >= 5000 {
+                    assert_eq!(frontier(rules, 0, 0, 0, 100, 0, Some(RELIC), seed), Discovery::None);
+                }
                 break;
             }
             sample += 1;

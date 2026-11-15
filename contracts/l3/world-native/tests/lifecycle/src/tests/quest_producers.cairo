@@ -133,7 +133,8 @@ fn reveals_count_new_tiles_and_neither_refused_nor_repeated_moves() {
     assert_eq!(progress(d, home), 0);
     let root = discovery_root(
         key.game_id,
-        crate::expeditions::FrontierDiscoveryRules { shrine_bps: 0, ..rules }, 100,
+        crate::expeditions::FrontierDiscoveryRules { shrine_bps: 0, ..rules },
+        100,
         0,
         Some(far_eye()),
         Discovery::None,
@@ -291,7 +292,8 @@ fn reveal_xp_counts_every_point_crossed_across_ranks_and_cycles_once() {
     let home = home(d, key);
     let root = discovery_root(
         key.game_id,
-        crate::expeditions::FrontierDiscoveryRules { shrine_bps: 0, ..rules }, 100,
+        crate::expeditions::FrontierDiscoveryRules { shrine_bps: 0, ..rules },
+        100,
         0,
         Some(far_eye()),
         Discovery::None,
@@ -329,7 +331,8 @@ fn earned_reveal_points_complete_the_real_quest_and_its_claim_pays_only_once() {
     assert!(!execute_in_game(d, key.game_id, claim, 360));
     let root = discovery_root(
         key.game_id,
-        crate::expeditions::FrontierDiscoveryRules { shrine_bps: 0, ..rules }, 100,
+        crate::expeditions::FrontierDiscoveryRules { shrine_bps: 0, ..rules },
+        100,
         0,
         Some(far_eye()),
         Discovery::None,

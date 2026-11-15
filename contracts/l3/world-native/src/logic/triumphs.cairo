@@ -28,7 +28,15 @@ pub fn period(home: ResourceKey, stage: u8) -> Option<Period> {
 
 pub fn clear_mist(home: ResourceKey, timestamp: u64) -> u16 {
     let race = IRaceLibraryDispatcher { class_hash: crate::logic::release::classes(home.game_id).economy.read() };
-    let Some(rules) = race.race_rules(home.game_id) else { return 100; };
-    let Some(period) = period(home, crate::race::CLEAR_MIST_STAGE) else { return 100; };
-    if timestamp >= period.start && timestamp < period.end { rules.clear_mist_percent } else { 100 }
+    let Some(rules) = race.race_rules(home.game_id) else {
+        return 100;
+    };
+    let Some(period) = period(home, crate::race::CLEAR_MIST_STAGE) else {
+        return 100;
+    };
+    if timestamp >= period.start && timestamp < period.end {
+        rules.clear_mist_percent
+    } else {
+        100
+    }
 }

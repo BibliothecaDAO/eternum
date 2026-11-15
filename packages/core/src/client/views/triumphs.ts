@@ -7,7 +7,11 @@ export const TRIUMPH_MODELS = ["RaceRules", "HomeAspect", "TriumphDay"] as const
 
 /** Recorded days use the planned calendar; a race finish clips their effect, never shifts it. */
 export function readTriumphPeriod(
-  store: NativeFactStore, gameId: number, home: number | bigint, stage: number, calendar: ExpeditionRules,
+  store: NativeFactStore,
+  gameId: number,
+  home: number | bigint,
+  stage: number,
+  calendar: ExpeditionRules,
 ): NativeFactResult<{ period: { start: number; end: number } | null }> {
   const membership = store.get("HomeAspect", { game_id: gameId, home });
   if (!membership) return { unknown: "MISSING_HOME_ASPECT" };

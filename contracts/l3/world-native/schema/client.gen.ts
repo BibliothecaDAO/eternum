@@ -1,5 +1,5 @@
 // Generated from native fact models and contract ABIs. Run the native schema generator to update.
-export const nativeFactSchemaIdentity = "7105d74fc7e361cb837e0deec25ab1bcda12d29156f142dbaa10189b7a37bf1a";
+export const nativeFactSchemaIdentity = "c395d878ad3c3cd64aaef0c6dc7cbb1b5274dfb54073e9b9525114d08fd03ab3";
 export const nativeReleaseConstants = {
   "RUIN_DEPTH_LIMIT_RELEASE": 9
 } as const;
@@ -95,6 +95,7 @@ export const nativeBaneConstants = {
 } as const;
 export const nativeRaceConstants = {
   "STAGE_COUNT": 5,
+  "CLEAR_MIST_STAGE": 1,
   "SECOND_WIND_STAGE": 2
 } as const;
 export const nativeArrivalConstants = {

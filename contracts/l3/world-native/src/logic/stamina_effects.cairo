@@ -53,7 +53,11 @@ fn second_wind(home: ResourceKey) -> Option<Wind> {
     let race = IRaceLibraryDispatcher { class_hash: crate::logic::release::classes(home.game_id).economy.read() };
     let rules = race.race_rules(home.game_id)?;
     let period = crate::logic::triumphs::period(home, crate::race::SECOND_WIND_STAGE)?;
-    Some(Wind { start: period.start, end: period.end, rate_bps: Into::<u16, u32>::into(rules.second_wind_percent) * 100 })
+    Some(
+        Wind {
+            start: period.start, end: period.end, rate_bps: Into::<u16, u32>::into(rules.second_wind_percent) * 100,
+        },
+    )
 }
 
 fn settle_with_wind(

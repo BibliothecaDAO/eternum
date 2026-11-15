@@ -11,7 +11,9 @@ fn locked_lore_disabled_discovery_and_the_deep_do_not_advance_spire_odds() {
     for (candidate, knowledge, mode_rules) in array![
         (key, 0_u64, enabled), (key, learned, 0_u32), (ExpeditionSpireKey { depth: 3, ..key }, learned, enabled),
     ] {
-        assert!(!world_native::logic::spires::discover_on_reveal(candidate, HERE, knowledge, mode_rules, 100, seed_for(0)));
+        assert!(
+            !world_native::logic::spires::discover_on_reveal(candidate, HERE, knowledge, mode_rules, 100, seed_for(0)),
+        );
         assert!(world_native::logic::spires::read(candidate).is_none());
     }
 }
@@ -110,9 +112,14 @@ fn clear_mist_doubles_each_spire_draw_and_the_fifth_cannot_miss() {
                 ExpeditionSpire { reveals: previous_reveals, location: None }, HERE, 200, seed_for(draw),
             );
             assert_eq!(result.reveals, previous_reveals + 1);
-            assert_eq!(result.location, if draw < Into::<u8, u128>::into(previous_reveals + 1) * 2 {
-                Some(HERE)
-            } else { None });
+            assert_eq!(
+                result.location,
+                if draw < Into::<u8, u128>::into(previous_reveals + 1) * 2 {
+                    Some(HERE)
+                } else {
+                    None
+                },
+            );
         }
     }
 }

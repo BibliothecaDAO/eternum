@@ -353,7 +353,8 @@ pub fn assert_capture_with_reveal(depth: u8, count: u128, tier: crate::troops::T
 // Search roll inputs, never the gameplay clock. Every chosen input is passed to the action unchanged.
 pub fn discovery_root(
     game_id: u32,
-    rules: crate::expeditions::FrontierDiscoveryRules, find_percent: u16,
+    rules: crate::expeditions::FrontierDiscoveryRules,
+    find_percent: u16,
     empty_reveals: u8,
     relic: Option<crate::army_relics::ArmyRelic>,
     expected: crate::discovery::Discovery,
@@ -987,7 +988,9 @@ pub fn reveal_ruin(
     d: super::Deployment, key: ExplorerKey, rules: crate::expeditions::FrontierDiscoveryRules, timestamp: u64,
 ) -> (ResourceKey, u8) {
     let army = GameState { contract_address: d.games }.resolved_explorer(key).unwrap();
-    let root = discovery_root(key.game_id, rules, 100, 0, Some(any_relic()), crate::discovery::Discovery::Ruin(any_relic()));
+    let root = discovery_root(
+        key.game_id, rules, 100, 0, Some(any_relic()), crate::discovery::Discovery::Ruin(any_relic()),
+    );
     for direction in 0_u8..6 {
         let tile = crate::geometry::tile_key(key.game_id, crate::geometry::neighbor(army.coord, direction));
         let unseen = snforge_std::interact_with_state(d.games, || crate::logic::map::tile(tile).is_none());

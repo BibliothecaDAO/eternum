@@ -12,7 +12,9 @@ fn exploring_at_each_depth_awards_exact_xp_once() {
 
         let before = read_progress(d, key);
         let target = exploration_destination(d, key);
-        let root = super::registrar::discovery_root(game_id, discovery, 100, 0, None, crate::discovery::Discovery::Camp);
+        let root = super::registrar::discovery_root(
+            game_id, discovery, 100, 0, None, crate::discovery::Discovery::Camp,
+        );
         explore(d, key, root, 360);
         let after = read_progress(d, key);
         assert_eq!(after, ArmyProgress { xp: before.xp + xp, ..before });

@@ -1343,4 +1343,5 @@ come from the native fact store.
 | `/lab/game?scenario=bane-late`  | Collect both world-bane rewards in one first collection | `playtest --steps lab-bane-late`  |
 | `/lab/game?scenario=bane-team`  | Collect a team-bane quest, with no world bonus          | `playtest --steps lab-bane-team`  |
 
-Clear Mist discovery: select the army in `/lab/game?scenario=clear-mist`; its next Spire reveal shows 20%. Canonical proof: `pnpm playtest --steps lab-clear-mist`, desktop and phone.
+Clear Mist discovery: select the army in `/lab/game?scenario=clear-mist`; its next Spire reveal shows 20%. Canonical
+proof: `pnpm playtest --steps lab-clear-mist`, desktop and phone.

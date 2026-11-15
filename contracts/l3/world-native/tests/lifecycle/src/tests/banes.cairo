@@ -115,7 +115,8 @@ fn exploration_settles_mist_tide_until_the_exact_lights_quorum_second() {
     for step in 0_u64..3 {
         let root = world_test_support::tests::registrar::discovery_root(
             game_id,
-            crate::expeditions::FrontierDiscoveryRules { shrine_bps: 0, well_bps: 0, ..discovery }, 100,
+            crate::expeditions::FrontierDiscoveryRules { shrine_bps: 0, well_bps: 0, ..discovery },
+            100,
             step.try_into().unwrap(),
             Some(crate::army_relics::ArmyRelic { kind: crate::army_relics::RelicKind::FarEye, rank: 1 }),
             crate::discovery::Discovery::None,
@@ -207,7 +208,8 @@ pub fn complete(d: Deployment, home: ResourceKey, day: u64, timestamp: u64) -> u
     };
     let root = world_test_support::tests::registrar::discovery_root(
         home.game_id,
-        crate::expeditions::FrontierDiscoveryRules { shrine_bps: 0, well_bps: 0, ..rules }, 100,
+        crate::expeditions::FrontierDiscoveryRules { shrine_bps: 0, well_bps: 0, ..rules },
+        100,
         0,
         Some(crate::army_relics::ArmyRelic { kind: crate::army_relics::RelicKind::FarEye, rank: 1 }),
         discovery,
@@ -697,7 +699,8 @@ fn mist_tide_counts_each_real_reveal_once_and_keeps_the_rolled_day() {
     );
     let root = world_test_support::tests::registrar::discovery_root(
         game_id,
-        crate::expeditions::FrontierDiscoveryRules { shrine_bps: 0, well_bps: 0, ..rules }, 100,
+        crate::expeditions::FrontierDiscoveryRules { shrine_bps: 0, well_bps: 0, ..rules },
+        100,
         0,
         Some(crate::army_relics::ArmyRelic { kind: crate::army_relics::RelicKind::FarEye, rank: 1 }),
         crate::discovery::Discovery::None,

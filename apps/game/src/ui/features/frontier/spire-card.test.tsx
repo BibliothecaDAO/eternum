@@ -391,21 +391,50 @@ describe("a realm's spire, from the player's path", () => {
     try {
       act(() => useUIStore.getState().selectOnMap({ kind: "army", entityId: ARMY, tile: "own" }));
       expect(hud.host.textContent).toContain("Spire · next reveal 10%");
-      act(() => store.applyFacts([{ model: "TriumphDay", key: "0xc102", value: {
-        game_id: 1, aspect: 1, stage: nativeRaceConstants.CLEAR_MIST_STAGE, day: 0,
-      } }]));
+      act(() =>
+        store.applyFacts([
+          {
+            model: "TriumphDay",
+            key: "0xc102",
+            value: {
+              game_id: 1,
+              aspect: 1,
+              stage: nativeRaceConstants.CLEAR_MIST_STAGE,
+              day: 0,
+            },
+          },
+        ]),
+      );
       expect(hud.host.textContent).toContain("Spire · next reveal 20%");
-      for (const [reveals, chance] of [[3, 80], [4, 100]]) {
-        act(() => store.applyFacts([{ model: "ExpeditionSpire", key: wireKey, value: { ...found, reveals, location: null } }]));
+      for (const [reveals, chance] of [
+        [3, 80],
+        [4, 100],
+      ]) {
+        act(() =>
+          store.applyFacts([{ model: "ExpeditionSpire", key: wireKey, value: { ...found, reveals, location: null } }]),
+        );
         expect(hud.host.textContent).toContain(`Spire · next reveal ${chance}%`);
       }
-      act(() => store.applyFacts([{ model: "TriumphDay", key: "0xc102", value: {
-        game_id: 1, aspect: 1, stage: nativeRaceConstants.CLEAR_MIST_STAGE, day: 1,
-      } }]));
+      act(() =>
+        store.applyFacts([
+          {
+            model: "TriumphDay",
+            key: "0xc102",
+            value: {
+              game_id: 1,
+              aspect: 1,
+              stage: nativeRaceConstants.CLEAR_MIST_STAGE,
+              day: 1,
+            },
+          },
+        ]),
+      );
       expect(hud.host.textContent).toContain("Spire · next reveal 50%");
       act(() => store.applyFacts([{ model: "HomeAspect", key: "0xc101", value: null }]));
       expect(hud.host.querySelector("[data-spire-chance]")).toBeNull();
-    } finally { hud.unmount(); }
+    } finally {
+      hud.unmount();
+    }
   });
 
   it("does not borrow another day's or layer's odds, or invent an unsynchronized counter", () => {

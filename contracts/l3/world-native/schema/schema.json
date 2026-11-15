@@ -91,6 +91,7 @@
   },
   "raceConstants": {
     "STAGE_COUNT": 5,
+    "CLEAR_MIST_STAGE": 1,
     "SECOND_WIND_STAGE": 2
   },
   "researchConstants": {
@@ -14458,5 +14459,5 @@
       ]
     }
   },
-  "identity": "7105d74fc7e361cb837e0deec25ab1bcda12d29156f142dbaa10189b7a37bf1a"
+  "identity": "c395d878ad3c3cd64aaef0c6dc7cbb1b5274dfb54073e9b9525114d08fd03ab3"
 }

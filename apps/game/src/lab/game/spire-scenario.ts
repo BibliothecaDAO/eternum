@@ -247,7 +247,11 @@ export function clearMistScenario(): LabScenario {
   store.applyFacts([
     { model: "RaceRules", key: "0xc100", value: wire(raceRules()) },
     { model: "HomeAspect", key: "0xc101", value: { game_id: 1, home: "7", aspect: 1 } },
-    { model: "TriumphDay", key: "0xc102", value: { game_id: 1, aspect: 1, stage: nativeRaceConstants.CLEAR_MIST_STAGE, day: 0 } },
+    {
+      model: "TriumphDay",
+      key: "0xc102",
+      value: { game_id: 1, aspect: 1, stage: nativeRaceConstants.CLEAR_MIST_STAGE, day: 0 },
+    },
   ] as never);
   return scenario;
 }

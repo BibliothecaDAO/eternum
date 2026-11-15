@@ -86,7 +86,8 @@ fn recorded_second_wind_multiplies_mist_tide_and_changes_real_exploration_refill
     for step in 0_u64..3 {
         let root = world_test_support::tests::registrar::discovery_root(
             game_id,
-            crate::expeditions::FrontierDiscoveryRules { shrine_bps: 0, well_bps: 0, ..discovery }, 200,
+            crate::expeditions::FrontierDiscoveryRules { shrine_bps: 0, well_bps: 0, ..discovery },
+            200,
             step.try_into().unwrap(),
             Some(crate::army_relics::ArmyRelic { kind: crate::army_relics::RelicKind::FarEye, rank: 1 }),
             crate::discovery::Discovery::None,
@@ -404,51 +405,102 @@ fn a_single_valid_payment_cannot_register_a_season_whose_total_would_overflow() 
 fn recorded_clear_mist_changes_real_reveals_only_on_its_day() {
     for spires in array![false, true] {
         let mut preset = definition(5);
-        preset.economy.discovery = Some(crate::expeditions::FrontierDiscoveryRules {
-            beasts_bps: 1000, camp_bps: 0, rift_bps: 0, ruin_bps: 0,
-            shrine_bps: 0, well_bps: 0, empty_reveal_limit: 7,
-        });
-        if spires { preset.rules.mode_rules = preset.rules.mode_rules | crate::rules::DISCOVER_SPIRES; }
+        preset
+            .economy
+            .discovery =
+                Some(
+                    crate::expeditions::FrontierDiscoveryRules {
+                        beasts_bps: 1000,
+                        camp_bps: 0,
+                        rift_bps: 0,
+                        ruin_bps: 0,
+                        shrine_bps: 0,
+                        well_bps: 0,
+                        empty_reveal_limit: 7,
+                    },
+                );
+        if spires {
+            preset.rules.mode_rules = preset.rules.mode_rules | crate::rules::DISCOVER_SPIRES;
+        }
         let (d, game_id) = super::aspects::setup_aspect_preset(5, preset);
         let home = ResourceKey { game_id, entity_id: found(d, game_id, 1) };
         super::banes::train(d, home, 360);
         if spires {
-            let price = interact_with_state(d.games, || crate::logic::research::price(game_id, crate::research::ROW_DEPTH, 1));
+            let price = interact_with_state(
+                d.games, || crate::logic::research::price(game_id, crate::research::ROW_DEPTH, 1),
+            );
             world_test_support::tests::resource_commands::grant(d, home, crate::resources::ESSENCE, price.essence);
-            assert!(execute_in_game(d, game_id, Command::Research(crate::research::Research {
-                structure_id: home.entity_id, row: crate::research::ROW_DEPTH, choice: 0,
-            }), 360));
+            assert!(
+                execute_in_game(
+                    d,
+                    game_id,
+                    Command::Research(
+                        crate::research::Research {
+                            structure_id: home.entity_id, row: crate::research::ROW_DEPTH, choice: 0,
+                        },
+                    ),
+                    360,
+                ),
+            );
         }
         pay(d, game_id, DEEP_FOUNDATION, 1, array![DeepShare { home: home.entity_id, troops: 1 }].span(), 480);
         let root = clear_mist_root(game_id, spires);
         for day in 0_u64..3 {
-            let now = if day == 0 { 600 } else { world_test_support::tests::registrar::day_start(d, game_id, day) };
-            if day > 0 { assert!(execute_in_game(d, game_id, super::army_activity::muster(home.entity_id, 0, 0, 10), now)); }
-            let explorer_id = super::army_activity::slot_army(d, crate::troops::ArmySlotKey {
-                game_id, structure_id: home.entity_id, epoch: day, slot: 0,
-            });
+            let now = if day == 0 {
+                600
+            } else {
+                world_test_support::tests::registrar::day_start(d, game_id, day)
+            };
+            if day > 0 {
+                assert!(execute_in_game(d, game_id, super::army_activity::muster(home.entity_id, 0, 0, 10), now));
+            }
+            let explorer_id = super::army_activity::slot_army(
+                d, crate::troops::ArmySlotKey { game_id, structure_id: home.entity_id, epoch: day, slot: 0 },
+            );
             let key = crate::troops::ExplorerKey { game_id, explorer_id };
             let origin = super::army_activity::army(d, key).coord;
             let destination = crate::geometry::neighbor(origin, 0);
             assert!(world_test_support::tests::registrar::explore_with_root(d, game_id, explorer_id, root, now));
-            interact_with_state(d.games, || {
-                let counter = crate::logic::expeditions::discovery(crate::expeditions::ExpeditionDiscoveryKey {
-                    game_id, structure_id: home.entity_id, epoch: day,
-                }).unwrap();
-                assert_eq!(counter.empty_reveals, if day == 1 { 0 } else { 1 });
-                assert_eq!(crate::logic::triumphs::clear_mist(home, now), if day == 1 { 200 } else { 100 });
-                if spires {
-                    let spire = crate::logic::spires::read(crate::spires::ExpeditionSpireKey {
-                        game_id, structure_id: home.entity_id, epoch: day, depth: 0,
-                    }).unwrap();
-                    assert_eq!(spire.reveals, 1);
-                    assert_eq!(spire.location, if day == 1 { Some(destination) } else { None });
-                } else if day == 1 {
-                    let tile = crate::logic::map::occupancy(crate::geometry::tile_key(game_id, destination)).unwrap();
-                    assert!(tile.is_structure);
-                    assert_eq!(tile.category, crate::taxonomy::BEASTS_CATEGORY);
-                }
-            });
+            interact_with_state(
+                d.games,
+                || {
+                    let counter = crate::logic::expeditions::discovery(
+                        crate::expeditions::ExpeditionDiscoveryKey {
+                            game_id, structure_id: home.entity_id, epoch: day,
+                        },
+                    )
+                        .unwrap();
+                    assert_eq!(counter.empty_reveals, if day == 1 {
+                        0
+                    } else {
+                        1
+                    });
+                    assert_eq!(crate::logic::triumphs::clear_mist(home, now), if day == 1 {
+                        200
+                    } else {
+                        100
+                    });
+                    if spires {
+                        let spire = crate::logic::spires::read(
+                            crate::spires::ExpeditionSpireKey {
+                                game_id, structure_id: home.entity_id, epoch: day, depth: 0,
+                            },
+                        )
+                            .unwrap();
+                        assert_eq!(spire.reveals, 1);
+                        assert_eq!(spire.location, if day == 1 {
+                            Some(destination)
+                        } else {
+                            None
+                        });
+                    } else if day == 1 {
+                        let tile = crate::logic::map::occupancy(crate::geometry::tile_key(game_id, destination))
+                            .unwrap();
+                        assert!(tile.is_structure);
+                        assert_eq!(tile.category, crate::taxonomy::BEASTS_CATEGORY);
+                    }
+                },
+            );
         }
     }
 }

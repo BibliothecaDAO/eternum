@@ -1182,8 +1182,10 @@ const CLEAR_MIST_STEPS = [
       return { panel, odds };
     },
     settleMs: 0,
-    verify: ({ played }) => played.odds.visible && played.odds.text.includes("next reveal 20%")
-      ? completed(played) : failed("The army's next Spire reveal must show Clear Mist's doubled chance", played),
+    verify: ({ played }) =>
+      played.odds.visible && played.odds.text.includes("next reveal 20%")
+        ? completed(played)
+        : failed("The army's next Spire reveal must show Clear Mist's doubled chance", played),
   },
 ];
 
