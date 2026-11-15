@@ -4240,7 +4240,7 @@ const DEEP_JOIN_STEPS = [
         () => browser.read(DRAWN_SITES),
         (state) =>
           ["deep:foundation", "deep:quarry", "deep:altar"].every((site) => state.drawn[site] > 0) &&
-          state.plates.length === 3,
+          state.plates.length >= (onADesktop() ? 3 : 1),
         PLAYABLE_WAIT_MS,
       );
       extraScreenshot("deep-sites");
@@ -4248,6 +4248,8 @@ const DEEP_JOIN_STEPS = [
     },
     verify: ({ played }) =>
       ["deep:foundation", "deep:quarry", "deep:altar"].every((site) => played.framed.drawn[site] === 1) &&
+      // A desktop frames all three sites with their plates; a phone's narrow frame holds the sites it reaches (the Quarry).
+      played.framed.plates.length >= (onADesktop() ? 3 : 1) &&
       played.framed.plates.every((plate) => plate.inView)
         ? completed(played)
         : failed("The Deep's Foundation, Quarry and Altar each stand in the frame with their plate over them", played),
