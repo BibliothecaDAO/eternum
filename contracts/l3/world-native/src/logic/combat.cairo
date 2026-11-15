@@ -53,9 +53,8 @@ pub fn battle_guard(game_id: u32, actor: ContractAddress, command: Battle, conte
     let rolls = if fought {
         fight_guard(key, ref attacker, ref defender, context)
     } else {
-        attacker = combat_troops(game_id).spend_claim(
-            key, attacker, target.coord, crate::commands::action_context(context),
-        );
+        attacker = combat_troops(game_id)
+            .spend_claim(key, attacker, target.coord, crate::commands::action_context(context));
         (0, 0)
     };
     complete_guard_capture(key, actor, attacker, target, defender, command.relic_slot, context);
