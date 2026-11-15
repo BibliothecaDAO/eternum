@@ -1,9 +1,13 @@
 import { BiomeType } from "@bibliothecadao/types";
-import { fetchHeraldGameSnapshot, readDeepSites, NativeFactStore, type NativeRows } from "@bibliothecadao/eternum/game-client";
+import {
+  fetchHeraldGameSnapshot,
+  readDeepSites,
+  NativeFactStore,
+  type NativeRows,
+} from "@bibliothecadao/eternum/game-client";
 import { dayOf, expeditionDepth, readExpeditionRules } from "@bibliothecadao/eternum/expeditions";
-import { forecastFight, type CombatRules } from "@bibliothecadao/eternum/combat-exchange";
 import { resolveExplorerCombatTroops, STAMINA_MODELS } from "@bibliothecadao/eternum/troop-stamina";
-import { mapCenter, researchedDepth } from "@bibliothecadao/eternum";
+import { forecastFight, mapCenter, researchedDepth, type CombatRules } from "@bibliothecadao/eternum";
 
 export interface DeepSiteWatch {
   gameId: number;
@@ -50,7 +54,20 @@ export function planDeepSiteWatches(
     const due = firstClearableTick(store, army, site.id, timestamp, day.end, rules);
     return due === null
       ? []
-      : [{ ...player, home: String(home), siteId: String(site.id), siteName: site.name, col: site.position.x - center, row: site.position.y - center, day: day.index, dueAt: due * 1000, attempts: 0, until: day.end * 1000 }];
+      : [
+          {
+            ...player,
+            home: String(home),
+            siteId: String(site.id),
+            siteName: site.name,
+            col: site.position.x - center,
+            row: site.position.y - center,
+            day: day.index,
+            dueAt: due * 1000,
+            attempts: 0,
+            until: day.end * 1000,
+          },
+        ];
   });
 }
 
@@ -66,7 +83,8 @@ function largestOutsideArmy(store: NativeFactStore, gameId: number, actor: bigin
       !largest ||
       army.troops.count > largest.troops.count ||
       (army.troops.count === largest.troops.count && army.explorer_id < largest.explorer_id)
-    ) largest = army;
+    )
+      largest = army;
   }
   return largest;
 }
@@ -99,16 +117,21 @@ function clearsEveryGuard(
   for (const guard of guards) {
     const defender = resolveExplorerCombatTroops(store, guard.army, timestamp);
     if (!defender) throw new Error("Deep alert is missing a guard's combat facts");
-    const fight = forecastFight(attacker, defender, {
-      timestamp,
-      attackDistance: 1,
-      attackerBiome: BiomeType.Underground,
-      defenderBiome: BiomeType.Underground,
-      attackerIsStructureGuard: false,
-      defenderIsStructureGuard: true,
-      attackerRoll: 0,
-      defenderRoll: 0,
-    }, rules);
+    const fight = forecastFight(
+      attacker,
+      defender,
+      {
+        timestamp,
+        attackDistance: 1,
+        attackerBiome: BiomeType.Underground,
+        defenderBiome: BiomeType.Underground,
+        attackerIsStructureGuard: false,
+        defenderIsStructureGuard: true,
+        attackerRoll: 0,
+        defenderRoll: 0,
+      },
+      rules,
+    );
     if (fight.outcome !== "wins") return false;
     attacker = fight.attacker;
   }
@@ -132,12 +155,18 @@ export async function readDeepSiteWatches(
   player: Pick<DeepSiteWatch, "gameId" | "actor" | "owner">,
   now: number,
 ): Promise<DeepSiteWatch[]> {
-  const snapshot = await fetchHeraldGameSnapshot({ url: shardUrl }, player.gameId, [
-    ...STAMINA_MODELS, "PlayerEntry", "RealmKnowledge", "ArmyRelicEffect", "ChestRules", "DeepSite", "Guard",
-  ], player.actor, player.actor);
+  const snapshot = await fetchHeraldGameSnapshot(
+    { url: shardUrl },
+    player.gameId,
+    [...STAMINA_MODELS, "PlayerEntry", "RealmKnowledge", "ArmyRelicEffect", "ChestRules", "DeepSite", "Guard"],
+    player.actor,
+    player.actor,
+  );
   if (BigInt(snapshot.game_id) !== BigInt(player.gameId)) throw new Error("Site watch read another game");
   const store = new NativeFactStore();
-  store.applyFacts(snapshot.models.flatMap(({ model, rows }) => rows.map((row) => ({ model, key: row.key, value: row.value }))));
+  store.applyFacts(
+    snapshot.models.flatMap(({ model, rows }) => rows.map((row) => ({ model, key: row.key, value: row.value }))),
+  );
   store.setSnapshot({ gameId: player.gameId, actor: player.actor, complete: true, timestamp: Math.floor(now / 1000) });
   return planDeepSiteWatches(store, player, now);
 }
