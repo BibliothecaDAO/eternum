@@ -4294,6 +4294,44 @@ const DEEP_JOIN_STEPS = [
     },
   },
   {
+    name: "deep-sites-each-selected",
+    settleMs: 0,
+    play: async ({ browser, extraScreenshot }) => {
+      // With the field army still picked, each site is visited and pressed as a player does: the camera brought to it,
+      // its plate and model in the frame, then a right-click (desktop) or tap (phone) on the model opens its card.
+      // The Quarry comes last, so the camera ends where the steps after this one expect it.
+      const visits = [];
+      for (const site of [
+        ...DEEP_SITE_NAMES.filter((each) => each.key !== "deep:quarry"),
+        ...DEEP_SITE_NAMES.filter((each) => each.key === "deep:quarry"),
+      ]) {
+        const { name, key } = site;
+        await panToHex(browser, browser.read(`window.__eternumMapSelection?.siteHexes?.["${key}"] ?? null`));
+        await sleep(HOVER_SETTLE_MS);
+        const before = browser.read(siteState(site));
+        extraScreenshot(`site-${name.toLowerCase()}`);
+        if (before.token && before.inView) {
+          if (onADesktop()) browser.rightClick(before.token);
+          else browser.tap(before.token);
+        }
+        const opened = await readUntil(
+          () => browser.read(siteState(site)),
+          (state) => state.sheet === name,
+          SHEET_WAIT_MS,
+        );
+        visits.push({ name, inView: before.inView, sheet: opened.sheet });
+      }
+      return { visits };
+    },
+    verify: ({ played }) =>
+      played.visits.every((visit) => visit.inView === true && visit.sheet === visit.name)
+        ? completed(played)
+        : failed(
+            "Each of the Foundation, Quarry and Altar must be visited with its plate in the frame and open its own card",
+            played,
+          ),
+  },
+  {
     name: "reselect-guard-from-dock",
     settleMs: 0,
     play: async ({ browser, extraScreenshot }) => {
@@ -4358,42 +4396,6 @@ const DEEP_JOIN_STEPS = [
       played.framed.plates.every((plate) => plate.inView)
         ? completed(played)
         : failed("The Deep's Foundation, Quarry and Altar are each drawn, and a desktop frames their plates", played),
-  },
-  {
-    name: "deep-sites-each-selected",
-    settleMs: 0,
-    play: async ({ browser, extraScreenshot }) => {
-      // Back at the playing zoom, each site is visited and pressed as a player does: the camera brought to it, its
-      // plate and model in the frame, then a right-click (desktop) or tap (phone) on the model opens its card.
-      browser.run(["eval", `void window.__playtest.wheel(-100, ${ZOOM_IN_NOTCHES})`]);
-      await sleep(ZOOM_SETTLE_MS);
-      const visits = [];
-      for (const site of DEEP_SITE_NAMES) {
-        const { name, key } = site;
-        await panToHex(browser, browser.read(`window.__eternumMapSelection?.siteHexes?.["${key}"] ?? null`));
-        await sleep(HOVER_SETTLE_MS);
-        const before = browser.read(siteState(site));
-        extraScreenshot(`site-${name.toLowerCase()}`);
-        if (before.token && before.inView) {
-          if (onADesktop()) browser.rightClick(before.token);
-          else browser.tap(before.token);
-        }
-        const opened = await readUntil(
-          () => browser.read(siteState(site)),
-          (state) => state.sheet === name,
-          SHEET_WAIT_MS,
-        );
-        visits.push({ name, inView: before.inView, sheet: opened.sheet });
-      }
-      return { visits };
-    },
-    verify: ({ played }) =>
-      played.visits.every((visit) => visit.inView === true && visit.sheet === visit.name)
-        ? completed(played)
-        : failed(
-            "Each of the Foundation, Quarry and Altar must be visited with its plate in the frame and open its own card",
-            played,
-          ),
   },
 ];
 
