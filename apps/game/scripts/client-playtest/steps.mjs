@@ -3619,12 +3619,66 @@ const RACE_BOARD_STATE = `JSON.stringify((() => {
     return { text: node?.textContent ?? "", visible: Boolean(rect && rect.width > 0 && rect.height > 0 && rect.top >= 0 && rect.bottom <= innerHeight) };
   };
   return { race: read('[data-aspect-race]'), members: read('[data-aspect-members]'), triumphs: read('[data-aspect-triumphs]'),
+    invite: read('[aria-label^="Invite a friend"]'), banner: read('[data-daily-quest]'),
     scopes: window.__labChain?.scopes ?? [], ended: Boolean(document.querySelector('[data-race-ended]')) };
 })())`;
 
+/** What the opening interface shows: the line over the map, the places on the bar and the day banner's parts. */
+const OPENING_STATE = `JSON.stringify({
+  lines: [...document.querySelectorAll(".ui-notice")].map((node) => node.textContent),
+  places: [...(document.querySelector('nav[aria-label="Places"]')?.querySelectorAll("button") ?? [])].map((node) => node.getAttribute("aria-label") ?? node.textContent),
+  banner: document.querySelector("[data-daily-quest]")?.textContent ?? "",
+  bar: Boolean(document.querySelector("[data-day-bane-bar]")),
+  stores: [...document.querySelectorAll("[data-store-kind], [data-kind]")].map((node) => node.getAttribute("data-store-kind") ?? node.getAttribute("data-kind")),
+})`;
+
+/** Turns Show everything on in the page's saved settings and loads the lab game again, as a player's setting persists. */
+const SHOW_EVERYTHING = `localStorage.setItem("eternum-world-appearance", JSON.stringify({ state: { showEverything: true, fogStyle: "clear", reducedMotion: false, haptics: true, nextUpTips: true }, version: 0 }))`;
+
 function raceBoardSteps(result) {
+  const scenario = result === null ? "race" : result === "won" ? "race-finished" : "race-expired";
   return [
     { name: "enter-on-map", settleMs: 3_000, verify: inScene("map", "Deep") },
+    ...(result === null
+      ? [
+          {
+            name: "opening-at-launch",
+            settleMs: 0,
+            play: async ({ browser, extraScreenshot }) => {
+              const state = await readUntil(
+                () => browser.read(OPENING_STATE),
+                (read) => read.lines.length > 0,
+                PLAYABLE_WAIT_MS,
+              );
+              extraScreenshot("opening-line");
+              return { state };
+            },
+            verify: ({ played }) =>
+              played.state.lines.length > 0
+                ? completed(played)
+                : failed("The first session must open on the interface's first line", played),
+          },
+          {
+            name: "show-everything-shows-the-banner",
+            settleMs: 0,
+            play: async (context) => {
+              context.browser.read(SHOW_EVERYTHING);
+              const back = await reloadOn("Deep", "map", scenario)(context);
+              const state = await readUntil(
+                () => context.browser.read(OPENING_STATE),
+                (read) => read.banner.length > 0,
+                PLAYABLE_WAIT_MS,
+              );
+              context.extraScreenshot("day-banner-everything");
+              return { back, state };
+            },
+            verify: ({ played }) =>
+              played.state.bar && played.state.banner.includes("300 of 1,500")
+                ? completed(played)
+                : failed("With Show everything the day banner must show the Aspect's bane bar", played),
+          },
+        ]
+      : []),
     {
       name: "read-aspect-race",
       play: async ({ browser, extraScreenshot }) => {
@@ -3650,7 +3704,16 @@ function raceBoardSteps(result) {
           PLAYABLE_WAIT_MS,
         );
         extraScreenshot("aspect-members");
-        return { race, members };
+        browser.read(
+          `(() => { document.querySelector('[aria-label^="Invite a friend"]')?.scrollIntoView({ block: 'nearest' }); return true; })()`,
+        );
+        const invite = await readUntil(
+          () => browser.read(RACE_BOARD_STATE),
+          (state) => state.invite.visible,
+          PLAYABLE_WAIT_MS,
+        );
+        extraScreenshot("aspect-invite");
+        return { race, members, invite };
       },
       verify: ({ played }) => {
         const race = played.race?.race;
@@ -3664,6 +3727,8 @@ function raceBoardSteps(result) {
           race.text.includes("Guile") &&
           race.text.includes(result === "won" ? "10,000 of 10,000" : "6,400 of 10,000") &&
           (result !== "expired" || race.text.includes("No Aspect finished its hyperstructure")) &&
+          race.text.includes(result === "won" ? "200K" : "64K") &&
+          played.invite?.invite.text.includes("Invite a friend to Harmony") &&
           members.text.includes("1.3K") &&
           members.text.includes("3.8K") &&
           scoped.includes(7) &&
@@ -3678,8 +3743,39 @@ function raceBoardSteps(result) {
   ];
 }
 
+/** The drain chip of the open army panel, and every drain chip on the page (a dock token's, a row's). */
+const DEEP_DRAIN_STATE = `JSON.stringify({
+  panel: document.querySelector("[data-kit-sheet] [data-deep-drain]")?.getAttribute("aria-label") ?? "",
+  all: [...document.querySelectorAll("[data-deep-drain]")].map((node) => node.getAttribute("aria-label")),
+})`;
+
+/** The side colour of a map label (`--mp-side`, map-plates.css): an ally's army is drawn in another colour than the player's own. */
+const ARMY_SIDES = `JSON.stringify(Object.fromEntries([...document.querySelectorAll('.mp-at[data-key^="army:"]')].map((slot) => [
+  slot.getAttribute("data-key"),
+  getComputedStyle(slot.querySelector("[style*='--mp-side']") ?? slot.firstElementChild ?? slot).getPropertyValue("--mp-side").trim(),
+])))`;
+
 const DEEP_JOIN_STEPS = [
   { name: "enter-on-map", settleMs: 3_000, verify: inScene("map", "Deep") },
+  {
+    name: "ally-is-marked",
+    settleMs: 0,
+    play: async ({ browser, extraScreenshot }) => {
+      const sides = await readUntil(
+        () => browser.read(ARMY_SIDES),
+        (read) => Boolean(read[`army:${PICKED_ARMY}`] && read["army:301"]),
+        PLAYABLE_WAIT_MS,
+      );
+      extraScreenshot("ally-on-the-map");
+      return { sides };
+    },
+    verify: ({ played }) =>
+      played.sides[`army:${PICKED_ARMY}`] &&
+      played.sides["army:301"] &&
+      played.sides[`army:${PICKED_ARMY}`] !== played.sides["army:301"]
+        ? completed(played)
+        : failed("An ally's army must be drawn in a side colour other than the player's own", played),
+  },
   { name: "pick-army", play: pickTheSpireArmy, settleMs: 1_500, verify: spireArmyPicked },
   {
     name: "join-the-quarry",
@@ -3750,6 +3846,23 @@ const DEEP_JOIN_STEPS = [
       played.reading.maximum === 140
         ? completed(played)
         : failed("The joined slot army must reopen from the dock with its refilled stamina visible", played),
+  },
+  {
+    name: "guard-shows-its-drain",
+    settleMs: 0,
+    play: async ({ browser, extraScreenshot }) => {
+      const drain = await readUntil(
+        () => browser.read(DEEP_DRAIN_STATE),
+        (state) => state.panel.length > 0,
+        SHEET_WAIT_MS,
+      );
+      extraScreenshot("guard-drain");
+      return { drain };
+    },
+    verify: ({ played }) =>
+      /200 troops lost a tick/.test(played.drain.panel) && /ticks left/.test(played.drain.panel)
+        ? completed(played)
+        : failed("A guard's panel must say its troop loss each tick and the ticks left", played),
   },
 ];
 

@@ -275,6 +275,7 @@ export const DeepDrain = ({ drain, words = false }: { drain: DeepArmyLife; words
   const line = `${DEEP_WORDS.drain(formatExact(Number(drain.lossPerTick) / RESOURCE_PRECISION))}; ${DEEP_WORDS.lasts(drain.ticksLeft, formatDuration(drain.secondsLeft))}`;
   return (
     <span
+      data-deep-drain
       role="img"
       aria-label={line}
       data-tip={words ? undefined : line}
