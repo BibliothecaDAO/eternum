@@ -412,11 +412,14 @@ fn fixture_grants_preserve_the_existing_production_clock() {
     let resources = IResourceOperationsDispatcher { contract_address: deployment.games };
     let slot = ResourceSlot { game_id: source.game_id, entity_id: source.entity_id, resource_type: 1 };
     start_cheat_caller_address(deployment.games, deployment.games);
-    resources.settle_production(
-        source,
-        40,
-        crate::commands::resource_context(ExecutionContext { timestamp: 40, ..context(deployment.games, source.game_id) }),
-    );
+    resources
+        .settle_production(
+            source,
+            40,
+            crate::commands::resource_context(
+                ExecutionContext { timestamp: 40, ..context(deployment.games, source.game_id) },
+            ),
+        );
     stop_cheat_caller_address(deployment.games);
     let production = resources.resource_production(slot);
     assert_eq!(production.last_settled_at, 40);

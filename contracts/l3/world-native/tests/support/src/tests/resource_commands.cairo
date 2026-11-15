@@ -222,9 +222,7 @@ pub fn grant(deployment: Deployment, key: ResourceKey, resource_type: u8, amount
             amount,
             timestamp,
             crate::commands::resource_context(
-                crate::commands::ExecutionContext {
-                    timestamp, ..crate::tests::context(deployment.games, key.game_id),
-                },
+                crate::commands::ExecutionContext { timestamp, ..crate::tests::context(deployment.games, key.game_id) },
             ),
         );
     stop_cheat_caller_address(deployment.games);
