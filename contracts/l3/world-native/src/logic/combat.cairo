@@ -122,8 +122,12 @@ fn guard_defender(
 
 fn beast_bps(target: GuardTarget, home: u64, timestamp: u64) -> u32 {
     crate::race::IRaceDispatcherTrait::site_beast_bps(
-        crate::race::IRaceLibraryDispatcher { class_hash: crate::logic::release::classes(target.key.game_id).economy.read() },
-        target.key, home, timestamp,
+        crate::race::IRaceLibraryDispatcher {
+            class_hash: crate::logic::release::classes(target.key.game_id).economy.read(),
+        },
+        target.key,
+        home,
+        timestamp,
     )
 }
 

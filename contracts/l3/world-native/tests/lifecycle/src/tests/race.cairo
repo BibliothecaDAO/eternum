@@ -682,8 +682,16 @@ fn spoils_doubles_numeric_clears_and_records_xp_but_keeps_ruin_relics() {
             depths
                 .append(
                     crate::expeditions::DepthRules {
-                        site_guard_lower: 3, site_guard_upper: 3, ruin_guard_lower: 3, ruin_guard_upper: 3,
-                        beast_weak_lower: 1, beast_weak_upper: 1, beast_strong_lower: 2, beast_strong_upper: 2, guard_step: 1, ..*depth,
+                        site_guard_lower: 3,
+                        site_guard_upper: 3,
+                        ruin_guard_lower: 3,
+                        ruin_guard_upper: 3,
+                        beast_weak_lower: 1,
+                        beast_weak_upper: 1,
+                        beast_strong_lower: 2,
+                        beast_strong_upper: 2,
+                        guard_step: 1,
+                        ..*depth,
                     },
                 );
         }

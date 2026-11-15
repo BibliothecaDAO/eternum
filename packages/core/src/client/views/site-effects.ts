@@ -41,8 +41,9 @@ export function readSiteEffects(
   if (!race.known) return race;
   if (!race.known.row && !baneRules.known.row) return { known: { beastBps: 10_000, spoilsPercent: 100 } };
   const namespace = entityHomeNamespace(site.entity_id);
-  const home = [...store.inGame("Structure", gameId)].find((row) =>
-    row.base.category === StructureType.Realm && entityHomeNamespace(row.entity_id) === namespace)?.entity_id;
+  const home = [...store.inGame("Structure", gameId)].find(
+    (row) => row.base.category === StructureType.Realm && entityHomeNamespace(row.entity_id) === namespace,
+  )?.entity_id;
   if (home === undefined) return { unknown: "MISSING_SITE_HOME" };
   const at = timestamp ?? getBlockTimestamp().currentDefaultTick;
   const bane = readBaneEffects(store, gameId, home, at, at + 1);

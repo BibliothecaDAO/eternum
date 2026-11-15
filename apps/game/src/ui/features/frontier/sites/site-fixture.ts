@@ -49,7 +49,12 @@ const SITE_CATEGORY: Record<SiteKind, StructureType> = {
   Beasts: StructureType.Beasts,
 };
 
-export const campBeside = (kind: SiteKind = "Camp", guardKnown = true, armyStamina = 100n, entityId: number | bigint = SITE) => {
+export const campBeside = (
+  kind: SiteKind = "Camp",
+  guardKnown = true,
+  armyStamina = 100n,
+  entityId: number | bigint = SITE,
+) => {
   const { store } = frontierDay();
   const guardCount = kind === "Beasts" ? 1000n : 1100n;
   const noDice =

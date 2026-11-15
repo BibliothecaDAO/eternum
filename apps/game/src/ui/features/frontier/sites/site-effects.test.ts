@@ -12,7 +12,7 @@ const ENTITY = (7n << 32n) + 710n;
 afterEach(() => setBlockTimestampSource(null));
 
 function effectSite(blood: boolean, pale: boolean, spoils = false) {
-  const fixture = campBeside("Camp",true,100n,ENTITY);
+  const fixture = campBeside("Camp", true, 100n, ENTITY);
   const { store } = fixture;
   store.applyFacts([
     { model: "RaceRules", key: "0xa001", value: raceRules() },
