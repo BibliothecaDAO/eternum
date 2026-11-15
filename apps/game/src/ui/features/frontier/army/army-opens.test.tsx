@@ -3,6 +3,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
+import { useWorldAppearanceStore } from "@/hooks/store/use-world-appearance-store";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 // The real Frontier HUD on the lab's game with an army out (the lab's frontier-army view); only the network and the
@@ -37,6 +38,8 @@ const layout = (desktop: boolean) =>
 
 beforeEach(() => {
   (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
+  // These tests play the whole HUD; the opening interface has its own tests.
+  useWorldAppearanceStore.setState({ showEverything: true });
   layout(true);
   vi.stubGlobal(
     "fetch",

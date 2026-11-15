@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { act, type ReactNode } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { MemoryRouter } from "react-router-dom";
+import { useWorldAppearanceStore } from "@/hooks/store/use-world-appearance-store";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { shortString } from "starknet";
 import type { NativeFactStore } from "@bibliothecadao/eternum/game-client";
@@ -83,6 +84,8 @@ let shownStore: NativeFactStore;
 
 beforeEach(() => {
   (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
+  // These tests play the whole HUD; the opening interface has its own tests.
+  useWorldAppearanceStore.setState({ showEverything: true });
   vi.stubGlobal(
     "fetch",
     vi.fn(async () => new Response(JSON.stringify({ blocked: [], version: 0 }), { status: 200 })),

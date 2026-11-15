@@ -2,6 +2,7 @@ import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+import { OpeningPartGate, OpeningProvider } from "./opening-context";
 import { OPENING, OPENING_MOMENTS, partShown, type OpeningMoment } from "./opening";
 import { OPENING_RULES } from "./opening-fixtures";
 import { OpeningLineView } from "./opening-line-view";
@@ -59,6 +60,31 @@ describe("the interface that opens as you play", () => {
     expect(line("shrine-lore")).toContain("Your armies can now find shrines.");
     expect(line("deep")).toContain("Every tick (120 seconds) here, each army loses 200 troops. Hold a site to earn.");
     expect(line("bane")).toContain("A bane. Today's quest is the bane quest.");
+  });
+
+  it("draws a gated part once its moment is reached, and every part outside the HUD's provider", () => {
+    const draw = (opened?: Set<OpeningMoment>) =>
+      act(() =>
+        root.render(
+          opened ? (
+            <OpeningProvider opened={opened}>
+              <OpeningPartGate part="research">
+                <i data-part />
+              </OpeningPartGate>
+            </OpeningProvider>
+          ) : (
+            <OpeningPartGate part="research">
+              <i data-part />
+            </OpeningPartGate>
+          ),
+        ),
+      );
+    draw(new Set(["launch"]));
+    expect(host.querySelector("[data-part]")).toBeNull();
+    draw(new Set(["launch", "essence"]));
+    expect(host.querySelector("[data-part]")).not.toBeNull();
+    draw();
+    expect(host.querySelector("[data-part]")).not.toBeNull();
   });
 
   it("puts the line away with Got it", () => {

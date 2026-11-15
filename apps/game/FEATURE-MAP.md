@@ -1358,13 +1358,13 @@ finisher. Canonical proof: `playtest --steps lab-race-expired`.
 
 ## Season 1 interface, feed and invites
 
-- The interface opens as the player plays: a Season 1 HUD shows the day's quest and clock at launch, the stores of troops
-  and Essence, the building list, an army's XP, the research place, the bane's banner and bar, Glory and the Today week
-  as each moment is reached (Barracks built, a guard found, XP earned, Essence held, the Deep entered, a bane on the
-  Aspect). One line says each moment, once per account. **Settings, Interface, Show everything** turns every part on.
-  Reached moments and told lines are kept on the identity account (`/api/opening`).
-- The first Deep line carries the offer **Alert me when a Deep site can be taken**; Turn on raises the notification level
-  to Important and turns this device on.
+- The interface opens as the player plays: a Season 1 HUD shows the day's quest and clock at launch, the stores of
+  troops and Essence, the building list, an army's XP, the research place, the bane's banner and bar, Glory and the
+  Today week as each moment is reached (Barracks built, a guard found, XP earned, Essence held, the Deep entered, a bane
+  on the Aspect). One line says each moment, once per account. **Settings, Interface, Show everything** turns every part
+  on. Reached moments and told lines are kept on the identity account (`/api/opening`).
+- The first Deep line carries the offer **Alert me when a Deep site can be taken**; Turn on raises the notification
+  level to Important and turns this device on.
 - The day banner heads with the player's active Triumph and shows the Aspect's bane bar.
 - **Season, Aspects**: each Aspect's height with its worth in LORDS (shown only), the Aspect's fights in the Deep with
   wipe-outs, and **Invite a friend to your Aspect** (Post on X, Copy link). A friend who opens the link is offered that
