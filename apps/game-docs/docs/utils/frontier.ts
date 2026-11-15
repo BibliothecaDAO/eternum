@@ -1,6 +1,9 @@
 import { frontierPreset } from "../../../../config/source/frontier/native";
 import { FRONTIER_DAY_UNIT_SECONDS } from "../../../../config/source/frontier/clock";
-import { previewRiftGuardBound, previewRuinGuardBounds } from "../../../../contracts/l3/world-native/schema/site-previews.gen";
+import {
+  previewRiftGuardBound,
+  previewRuinGuardBounds,
+} from "../../../../contracts/l3/world-native/schema/site-previews.gen";
 import {
   nativeResearchConstants as research,
   nativeRuleConstants as rule,

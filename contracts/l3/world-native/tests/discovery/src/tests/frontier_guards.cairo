@@ -96,16 +96,23 @@ fn beast_ranges_include_both_endpoints_at_every_depth() {
 #[test]
 fn ruin_guards_follow_relic_rarity_on_the_inclusive_grid() {
     let (_, preset) = super::preset_projection::current_definition("frontier-check");
-    for (rank, lower, upper) in array![(1_u8,900_u128,1100_u128),(2,2250,2750),(3,4500,5500),(4,9000,11000),(5,22500,27500)] {
+    for (rank, lower, upper) in array![
+        (1_u8, 900_u128, 1100_u128), (2, 2250, 2750), (3, 4500, 5500), (4, 9000, 11000), (5, 22500, 27500),
+    ] {
         let mut saw_lower = false;
         let mut saw_upper = false;
         for seed in 0_u32..1000 {
-            let guard = crate::troops::ruin_guard(crate::army_relics::ArmyRelic { kind: crate::army_relics::RelicKind::Blade, rank }, seed.into(),preset.rules,360);
+            let guard = crate::troops::ruin_guard(
+                crate::army_relics::ArmyRelic { kind: crate::army_relics::RelicKind::Blade, rank },
+                seed.into(),
+                preset.rules,
+                360,
+            );
             let count = guard.count / RESOURCE_PRECISION;
             assert!(count >= lower && count <= upper);
-            assert_eq!((count-lower)%50,0);
-            assert_eq!(guard.category,TroopType::Knight);
-            assert_eq!(guard.tier,TroopTier::T1);
+            assert_eq!((count - lower) % 50, 0);
+            assert_eq!(guard.category, TroopType::Knight);
+            assert_eq!(guard.tier, TroopTier::T1);
             saw_lower = saw_lower || count == lower;
             saw_upper = saw_upper || count == upper;
         }

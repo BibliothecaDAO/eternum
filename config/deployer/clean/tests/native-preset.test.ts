@@ -440,11 +440,7 @@ describe("native presets", () => {
     expect(preset.rules.map_config.camp_win_probability).toBe(0);
     expect(preset.rules.map_config.shards_mines_win_probability).toBe(0);
     expect(
-      preset.settlement.depths.map((depth) => [
-        depth.site_guard_lower,
-        depth.site_guard_upper,
-        depth.guard_step,
-      ]),
+      preset.settlement.depths.map((depth) => [depth.site_guard_lower, depth.site_guard_upper, depth.guard_step]),
     ).toEqual([
       [1200, 1400, 100],
       [2400, 2800, 100],
@@ -453,11 +449,7 @@ describe("native presets", () => {
     ]);
     for (const depth of preset.settlement.depths) {
       expect(depth.site_guard_lower).toBeLessThanOrEqual(depth.site_guard_upper);
-      for (const bound of [
-        depth.site_guard_lower,
-        depth.site_guard_upper,
-      ])
-        expect(bound % depth.guard_step).toBe(0);
+      for (const bound of [depth.site_guard_lower, depth.site_guard_upper]) expect(bound % depth.guard_step).toBe(0);
     }
   });
 
@@ -1019,12 +1011,7 @@ test("Frontier discoveries use the approved narrow guard ranges at every depth",
     FRONTIER_DEVCON_PRESET_ID,
   );
   expect(preset.economy.discovery.unwrap()).toMatchObject({ ruin_bps: 300 });
-  expect(
-    preset.settlement.depths.map((row) => [
-      row.site_guard_lower,
-      row.site_guard_upper,
-    ]),
-  ).toEqual([
+  expect(preset.settlement.depths.map((row) => [row.site_guard_lower, row.site_guard_upper])).toEqual([
     [1200, 1400],
     [2400, 2800],
     [4700, 5700],

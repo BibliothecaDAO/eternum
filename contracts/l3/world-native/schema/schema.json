@@ -7003,18 +7003,6 @@
           "feltLength": 5
         },
         {
-          "name": "ruin_guard_lower",
-          "type": "core::integer::u32",
-          "id": "0x7275696e5f67756172645f6c6f776572",
-          "feltLength": 1
-        },
-        {
-          "name": "ruin_guard_upper",
-          "type": "core::integer::u32",
-          "id": "0x7275696e5f67756172645f7570706572",
-          "feltLength": 1
-        },
-        {
           "name": "guard_step",
           "type": "core::integer::u32",
           "id": "0x67756172645f73746570",
@@ -7046,15 +7034,13 @@
         }
       ],
       "keyLength": 2,
-      "valueLength": 16,
+      "valueLength": 14,
       "observation": {
         "domain": "expedition",
         "fields": {
           "revealPercent": "reveal_percent",
           "siteGuardLower": "site_guard_lower",
           "siteGuardUpper": "site_guard_upper",
-          "ruinGuardLower": "ruin_guard_lower",
-          "ruinGuardUpper": "ruin_guard_upper",
           "guardStep": "guard_step",
           "beastWeakLower": "beast_weak_lower",
           "beastWeakUpper": "beast_weak_upper",
@@ -10340,14 +10326,6 @@
         {
           "name": "chest",
           "type": "world_native::relics::ChestTiers"
-        },
-        {
-          "name": "ruin_guard_lower",
-          "type": "core::integer::u32"
-        },
-        {
-          "name": "ruin_guard_upper",
-          "type": "core::integer::u32"
         },
         {
           "name": "guard_step",
@@ -14487,5 +14465,5 @@
       ]
     }
   },
-  "identity": "f406f76abcb8052cca0b115d62867df62fefd5df1e56ee6e25861af07decdc9c"
+  "identity": "4d58b309a53408c9717c6cbce3505992e5826b429125b6fef0c1dc2ef85972b6"
 }

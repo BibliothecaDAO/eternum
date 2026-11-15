@@ -56,7 +56,9 @@ function integerSqrt(value: bigint): bigint {
 
 function ruinStrengthRule(source) {
   const body = functionBody(source, "ruin_strength", "rank:u8", "u128");
-  const match = body.match(/^matchrank\{1=>([0-9_]+),2=>([0-9_]+),3=>([0-9_]+),4=>([0-9_]+),5=>([0-9_]+),_=>panic!\("invalidrelicrank"\),?\}$/);
+  const match = body.match(
+    /^matchrank\{1=>([0-9_]+),2=>([0-9_]+),3=>([0-9_]+),4=>([0-9_]+),5=>([0-9_]+),_=>panic!\("invalidrelicrank"\),?\}$/,
+  );
   if (!match) throw new Error("Unsupported ruin strength rule; update the preview compiler");
   return { strengths: match.slice(1).map(positiveInteger), spread: constant(source, "RUIN_GUARD_SPREAD_PERCENT") };
 }

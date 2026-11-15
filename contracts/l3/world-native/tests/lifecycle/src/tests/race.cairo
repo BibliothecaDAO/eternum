@@ -711,7 +711,9 @@ fn spoils_doubles_numeric_clears_and_records_xp_but_keeps_ruin_relics() {
         world_test_support::tests::resource_commands::grant(
             d, home, crate::resources::WHEAT, 10000 * RESOURCE_PRECISION,
         );
-        world_test_support::tests::resource_commands::grant(d, home, crate::resources::KNIGHT, 3000 * RESOURCE_PRECISION);
+        world_test_support::tests::resource_commands::grant(
+            d, home, crate::resources::KNIGHT, 3000 * RESOURCE_PRECISION,
+        );
         assert!(
             world_test_support::tests::play_fixture::play(
                 d.games,

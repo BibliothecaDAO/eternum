@@ -1,4 +1,11 @@
 // From the site reward, clear XP and rift guard formulas in Cairo. Run scripts/generate-site-previews.mjs.
+export function previewRuinGuardBounds(rank: number): [number, number] {
+  const strength = [1000, 2500, 5000, 10000, 25000][rank - 1];
+  if (strength === undefined) throw new Error("Invalid relic rank");
+  const spread = (strength * 10) / 100;
+  return [strength - spread, strength + spread];
+}
+
 export function previewRiftGuardBound(camp: number, step: number): number {
   return Math.floor((camp * 115 + step * 50) / (step * 100)) * step;
 }
