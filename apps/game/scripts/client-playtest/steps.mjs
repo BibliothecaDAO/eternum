@@ -3911,6 +3911,9 @@ const ARMY_SIDES = `JSON.stringify(Object.fromEntries([...document.querySelector
 /** Every XP ring on the page: an army's portrait ring on its dock row or token, and in its open panel. */
 const XP_RINGS = `JSON.stringify([...document.querySelectorAll('svg[aria-label^="XP: "]')].map((ring) => ring.getAttribute("aria-label")))`;
 
+/** The site models the map draws, by kind (`deep:<position>` for the Deep's three): how many of each. */
+const DRAWN_SITES = `JSON.stringify(window.__eternumMapSelection?.drawnSites ?? {})`;
+
 const DEEP_JOIN_STEPS = [
   { name: "enter-on-map", settleMs: 3_000, verify: inScene("map", "Deep") },
   {
@@ -3949,6 +3952,23 @@ const DEEP_JOIN_STEPS = [
       played.rings.length > 0 && played.rings.every((label) => label === "XP: 80% of the way to the next skill point")
         ? completed(played)
         : failed("An army four fifths of the way to its next skill point wears a ring four fifths filled", played),
+  },
+  {
+    name: "deep-sites-stand",
+    settleMs: 0,
+    play: async ({ browser, extraScreenshot }) => {
+      const drawn = await readUntil(
+        () => browser.read(DRAWN_SITES),
+        (state) => ["deep:foundation", "deep:quarry", "deep:altar"].every((site) => state[site] > 0),
+        PLAYABLE_WAIT_MS,
+      );
+      extraScreenshot("deep-sites");
+      return { drawn };
+    },
+    verify: ({ played }) =>
+      ["deep:foundation", "deep:quarry", "deep:altar"].every((site) => played.drawn[site] === 1)
+        ? completed(played)
+        : failed("The Deep's Foundation, Quarry and Altar each stand on the map in their own model", played),
   },
   {
     name: "field-army-drains",

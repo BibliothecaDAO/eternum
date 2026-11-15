@@ -1374,3 +1374,7 @@ finisher. Canonical proof: `playtest --steps lab-race-expired`.
 - A Deep guard shows its troop loss each tick and the ticks left on its army row, token and panel; an army of the
   player's Aspect is drawn as an ally on the map.
 - **Today** shows the week's seven quests with today marked.
+
+The Deep's three sites stand in their chosen looks on the map: the Foundation as a hyperstructure's bare foundation, the
+Quarry as a fragment mine, the Altar as a Shrine until it has its own model (`DEEP_SITE_LOOKS`,
+`src/three/managers/map-site-manager.ts`). Each site's plate stays over its model.
