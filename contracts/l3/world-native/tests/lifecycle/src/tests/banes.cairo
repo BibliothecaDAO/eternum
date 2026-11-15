@@ -185,7 +185,7 @@ pub fn train(d: Deployment, home: ResourceKey, timestamp: u64) {
     build(d, home, crate::research::BARRACKS, 1, timestamp);
 }
 
-pub fn complete(d: Deployment, home: ResourceKey, day: u64, timestamp: u64) -> u128 {
+pub fn complete(d: Deployment, home: ResourceKey, day: u64, timestamp: u64) {
     let slot = crate::troops::ArmySlotKey { game_id: home.game_id, structure_id: home.entity_id, epoch: day, slot: 0 };
     let existing = interact_with_state(d.games, || crate::logic::army_slot_storage::read(slot));
     if existing.is_none() {
@@ -224,7 +224,6 @@ pub fn complete(d: Deployment, home: ResourceKey, day: u64, timestamp: u64) -> u
     for _ in 0..reveals {
         assert!(world_test_support::tests::registrar::explore_with_root(d, home.game_id, explorer_id, root, timestamp));
     }
-    let mut labor_reward = 0;
     if fight {
         let site = interact_with_state(
             d.games, || crate::logic::map::occupancy(crate::geometry::tile_key(home.game_id, destination)).unwrap(),
@@ -239,24 +238,9 @@ pub fn complete(d: Deployment, home: ResourceKey, day: u64, timestamp: u64) -> u
                 timestamp,
             ),
         );
-        labor_reward =
-            interact_with_state(
-                d.games,
-                || {
-                    crate::logic::expeditions::expedition_site(
-                        ResourceKey { game_id: home.game_id, entity_id: site.entity_id },
-                    )
-                        .unwrap()
-                        .clear
-                        .unwrap()
-                        .reward
-                        .unwrap()
-                        .amount
-                },
-            );
+
     }
     assert_eq!(interact_with_state(d.games, || crate::logic::quests::read(home, day).completed_level), 1);
-    labor_reward
 }
 
 #[test]
@@ -470,11 +454,11 @@ fn real_production_splits_at_the_bane_start_and_quorum_end_and_army_stores_still
             tomorrow,
         ),
     );
-    let clear_reward = complete(d, home, 1, tomorrow + 600);
+    complete(d, home, 1, tomorrow + 600);
     let now = tomorrow + 1000;
     build(d, home, crate::research::FARM, 2, now);
     let ordinary_seconds: u128 = (tomorrow - 360 + 400).into();
-    let expected = rate * ordinary_seconds + rate * 600 / 2 - 800 * RESOURCE_PRECISION + clear_reward;
+    let expected = rate * ordinary_seconds + rate * 600 / 2 - 800 * RESOURCE_PRECISION;
     interact_with_state(
         d.games,
         || {
