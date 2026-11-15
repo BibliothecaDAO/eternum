@@ -62,11 +62,9 @@ pub mod ResourcesLogic {
             let depth = crate::logic::expeditions::depth_at(
                 key.game_id, crate::troops::Coord { alt: site.alt, x: site.col, y: site.row },
             );
-            let reward = if category == crate::taxonomy::RUIN_CATEGORY {
-                None
-            } else {
-                crate::expeditions::site_reward(category, site, depth)
-            };
+            let wraith = category == crate::taxonomy::BEASTS_CATEGORY
+                && crate::expeditions::is_wraith(site, crate::logic::expeditions::depth_rules(key.game_id, depth));
+            let reward = crate::expeditions::site_reward(category, site, depth, wraith);
             let home = ResourceKey { game_id: key.game_id, entity_id: home_id };
             let spoils: u128 = if depth < 3 {
                 crate::logic::triumphs::effects(home, context.timestamp).spoils_percent.into()
@@ -89,7 +87,7 @@ pub mod ResourcesLogic {
                 None
             };
             self.resources.destroy(key);
-            let base_xp = crate::progression::clear_xp(site.initial_guard_count, depth);
+            let base_xp = crate::expeditions::site_clear_xp(site, depth, wraith);
             let boosted_xp = (Into::<u32, u128>::into(base_xp) * spoils / 100).try_into().unwrap();
             let xp = crate::progression::IArmyProgressionDispatcherTrait::grant_army_xp(
                 crate::progression::IArmyProgressionLibraryDispatcher {

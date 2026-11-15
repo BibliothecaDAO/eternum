@@ -3828,6 +3828,49 @@ const LAB_REINFORCE_STEPS = [
   { name: "reinforce", play: reinforceWithMax, settleMs: 1_000, verify: armyReinforced },
 ];
 
+const LAB_SUPPLY_POST_STEPS = [
+  { name: "enter-on-map", settleMs: 3000, verify: inScene("map") },
+  { name: "pick-army", play: pickTheSpireArmy, settleMs: 0, verify: spireArmyPicked },
+  {
+    name: "open-supply-post",
+    settleMs: 0,
+    play: async ({ browser, extraScreenshot }) => {
+      const armyAt = armyOnScreen(browser, PICKED_ARMY);
+      browser.press("Escape");
+      if (!armyAt) return { found: false };
+      for (const [dx, dy] of NEIGHBOUR_RING) {
+        browser.tap([armyAt[0] + dx, armyAt[1] + dy]);
+        const state = await readUntil(() => browser.read(REINFORCE_STATE), (shown) => shown.sheet?.startsWith("Supply post"), SHEET_WAIT_MS);
+        if (state.sheet?.startsWith("Supply post")) {
+          extraScreenshot("supply-post");
+          const button = state.buttons.find((text) => text.startsWith("Reinforce Army"));
+          if (!button) return { found: false, state };
+          browser.click(button);
+          const sheet = await readUntil(() => browser.read(REINFORCE_STATE), (shown) => shown.sheet?.startsWith("Reinforce"), SHEET_WAIT_MS);
+          return { found: sheet.sheet?.startsWith("Reinforce"), state, sheet };
+        }
+        browser.press("Escape");
+      }
+      return { found: false };
+    },
+    verify: ({ played }) => played.found ? completed(played) : failed("The cleared camp must offer reinforcement for its adjacent army", played),
+  },
+  {
+    name: "reinforce-from-camp",
+    settleMs: 1000,
+    play: async (context) => {
+      const result = await reinforceWithMax(context);
+      const calldata = context.browser.read(`JSON.stringify(window.__labChain?.sent.find(({command}) => command.kind === "ManageTroops")?.command.calldata)`);
+      return { ...result, calldata };
+    },
+    verify: ({ played }) => {
+      if (!played.calldata || BigInt(played.calldata.at(-2)) !== 0n || BigInt(played.calldata.at(-1)) !== 711n)
+        return failed("Reinforcement must name the cleared camp", played);
+      return armyReinforced({ played });
+    },
+  },
+];
+
 /** A tap's finger and a hold's, as the map's gesture recognizer tells them apart (its long press is 500 ms). */
 const TAP_MS = 80;
 const HOLD_MS = 800;
@@ -5365,6 +5408,7 @@ export const STEP_SETS = {
     steps: labMergeSteps("Lose 100 XP, merge into Army 2"),
   },
   "lab-merge-keeps-tapped": { game: labSpireGame("merge-keeps-tapped"), steps: labMergeSteps(null) },
+  "lab-supply-post": { game: labSpireGame("supply-post"), steps: LAB_SUPPLY_POST_STEPS },
   "lab-reinforce": { game: labSpireGame("reinforce"), steps: LAB_REINFORCE_STEPS },
   "lab-actions": { game: labSpireGame("actions"), steps: ACTION_STEPS },
   "lab-actions-spire": { game: LAB_SPIRE, steps: SPIRE_ACTION_STEPS },

@@ -564,16 +564,23 @@ fn an_army_enters_a_depth_only_from_its_realms_spire_which_turns_each_day() {
 
 
 #[test]
-fn a_beast_clear_pays_labor_once_keeps_xp_and_removes_its_blocker() {
-    beast_clear_payout(false);
+fn a_cyclops_clear_pays_wheat_once_keeps_xp_and_removes_its_blocker() {
+    beast_clear_payout(false, false);
 }
 
 #[test]
-fn a_beast_clear_clips_labor_at_storage_but_keeps_all_xp() {
-    beast_clear_payout(true);
+fn a_cyclops_clear_clips_wheat_at_storage_but_keeps_all_xp() {
+    beast_clear_payout(true, false);
 }
 
-fn beast_clear_payout(full: bool) {
+#[test]
+fn a_wraith_clear_pays_triple_xp_without_resources() {
+    beast_clear_payout(false, true);
+}
+
+fn beast_clear_payout(full: bool, wraith: bool) {
+    let mut seed = 0_u256;
+    while (crate::random::range(seed, 2, 2) != 0) != wraith { seed += 1; };
     let (_, frontier) = super::preset_projection::current_definition("frontier-check");
     let (d, game_id, key) = setup_frontier_relics_with_preset(None, frontier, frontier.structures.board);
     let army = strong_frontier_army(d, game_id, key);
@@ -583,18 +590,18 @@ fn beast_clear_payout(full: bool) {
     let structures = IStructureOperationsDispatcher { contract_address: d.games };
     let id = structures
         .create_discovery(
-            game_id, 1, coord, crate::discovery::Discovery::Beasts, 123, 360, crate::commands::action_context(context),
+            game_id, 1, coord, crate::discovery::Discovery::Beasts, seed, 360, crate::commands::action_context(context),
         );
     stop_cheat_caller_address(d.games);
     let site_key = ResourceKey { game_id, entity_id: id };
     let resources = IResourceOperationsDispatcher { contract_address: d.games };
     let home = ResourceKey { game_id, entity_id: army.owner };
-    let labor = ResourceSlot { game_id, entity_id: army.owner, resource_type: crate::resources::LABOR };
+    let wheat = ResourceSlot { game_id, entity_id: army.owner, resource_type: crate::resources::WHEAT };
     start_cheat_caller_address(d.games, d.games);
     crate::resources::IResourceOperationsDispatcherTrait::grant_resource(
         resources,
         home,
-        crate::resources::LABOR,
+        crate::resources::WHEAT,
         if full {
             1000000 * RESOURCE_PRECISION
         } else {
@@ -604,11 +611,11 @@ fn beast_clear_payout(full: bool) {
         crate::commands::resource_context(context),
     );
     stop_cheat_caller_address(d.games);
-    let before = resources.resource_balance(labor);
+    let before = resources.resource_balance(wheat);
     let cap = 6000 * RESOURCE_PRECISION;
     assert_eq!(
         snforge_std::interact_with_state(
-            d.games, || crate::logic::resources::store_limit(home, crate::resources::LABOR),
+            d.games, || crate::logic::resources::store_limit(home, crate::resources::WHEAT),
         ),
         Some(cap),
     );
@@ -625,26 +632,26 @@ fn beast_clear_payout(full: bool) {
     let site = snforge_std::interact_with_state(
         d.games, || crate::logic::expeditions::expedition_site(site_key).unwrap(),
     );
-    let amount = if full {
+    let amount = if full || wraith {
         0
     } else {
-        site.initial_guard_count / 4
+        site.initial_guard_count * 4
     };
     assert_eq!(
         site.clear,
         Some(
             crate::expeditions::SiteClear {
-                xp: 2,
+                xp: if wraith { 9 } else { 2 },
                 explorer_id: key.explorer_id,
                 home_id: army.owner,
-                reward: Some(crate::resources::ResourceAmount { resource_type: crate::resources::LABOR, amount }),
+                reward: if wraith { None } else { Some(crate::resources::ResourceAmount { resource_type: crate::resources::WHEAT, amount }) },
             },
         ),
     );
-    assert_eq!(resources.resource_balance(labor) - before, amount);
+    assert_eq!(resources.resource_balance(wheat) - before, amount);
     assert_eq!(
         snforge_std::interact_with_state(d.games, || crate::logic::progression::require(key).xp),
-        xp + crate::progression::clear_xp(site.initial_guard_count, 0),
+        xp + if wraith { 9 } else { 2 },
     );
     assert_site_removed(d, site_key);
     assert!(
@@ -654,10 +661,10 @@ fn beast_clear_payout(full: bool) {
             .is_none(),
     );
     assert!(!execute_in_game(d, game_id, attack, 362));
-    assert_eq!(resources.resource_balance(labor), before + amount);
+    assert_eq!(resources.resource_balance(wheat), before + amount);
     assert_eq!(
         snforge_std::interact_with_state(d.games, || crate::logic::progression::require(key).xp),
-        xp + crate::progression::clear_xp(site.initial_guard_count, 0),
+        xp + if wraith { 9 } else { 2 },
     );
 }
 

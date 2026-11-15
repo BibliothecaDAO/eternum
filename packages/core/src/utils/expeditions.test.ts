@@ -42,6 +42,7 @@ const rules = {
   seed: 1n,
 };
 const expeditionRules = {
+  DepthRules: { beast_weak_upper: 395 },
   SliceRules: { day_unit_seconds: rules.dayUnitSeconds },
   SettlementRules: { spacing: rules.spacing },
   GameRegistry: {
@@ -318,9 +319,9 @@ it("counts season days from the exact start, whatever the time of day", () => {
 
 describe("siteReward", () => {
   it.each([
-    [548n, 137n],
-    [320n, 80n],
-  ])("previews the Beasts Labor for %s starting troops", (troops, labor) => {
+    [350n, 1400n],
+    [320n, 1280n],
+  ])("previews the Cyclops wheat for %s starting troops", (troops, labor) => {
     expect(
       siteReward(storeWith(expeditionRules) as never, {
         game_id: 7,
@@ -329,7 +330,7 @@ describe("siteReward", () => {
         initial_guard_count: troops * 1_000_000_000n,
         clear: null,
       }),
-    ).toEqual({ resourceType: ResourcesIds.Labor, amount: labor * 1_000_000_000n });
+    ).toEqual({ resourceType: ResourcesIds.Wheat, amount: labor * 1_000_000_000n });
   });
   it("pays as the contract does: a camp half its first guard in labor, a rift three times it in Essence", () => {
     const guard = 1_100n * 1_000_000_000n;
@@ -375,10 +376,7 @@ describe("siteReward", () => {
         initial_guard_count: guard,
         clear: null,
       }),
-    ).toEqual({
-      resourceType: ResourcesIds.Labor,
-      amount: guard / 4n,
-    });
+    ).toBeNull();
     expect(
       siteReward(storeWith(expeditionRules) as never, {
         game_id: 7,
@@ -423,7 +421,7 @@ describe("siteClearXp", () => {
   ])("matches the contract's clear vector for %s troops", (troops, xp) => {
     expect(
       siteClearXp(storeWith(expeditionRules) as never, {
-        game_id: 7,
+        category: StructureType.Camp, game_id: 7,
         row: 0,
         initial_guard_count: troops * 1_000_000_000n,
       }),
@@ -432,22 +430,22 @@ describe("siteClearXp", () => {
 
   it("floors fractional troops and keeps integer square-root boundaries exact", () => {
     expect(
-      siteClearXp(storeWith(expeditionRules) as never, { game_id: 7, row: 0, initial_guard_count: 999_999_999n }),
+      siteClearXp(storeWith(expeditionRules) as never, { category: StructureType.Camp, game_id: 7, row: 0, initial_guard_count: 999_999_999n }),
     ).toBe(0);
     expect(
-      siteClearXp(storeWith(expeditionRules) as never, { game_id: 7, row: 0, initial_guard_count: 1_999_999_999n }),
+      siteClearXp(storeWith(expeditionRules) as never, { category: StructureType.Camp, game_id: 7, row: 0, initial_guard_count: 1_999_999_999n }),
     ).toBe(2);
     const square = (2n * 30_000_000n) ** 2n;
     expect(
       siteClearXp(storeWith(expeditionRules) as never, {
-        game_id: 7,
+        category: StructureType.Camp, game_id: 7,
         row: 0,
         initial_guard_count: (square - 1n) * 1_000_000_000n,
       }),
     ).toBe(149_999_999);
     expect(
       siteClearXp(storeWith(expeditionRules) as never, {
-        game_id: 7,
+        category: StructureType.Camp, game_id: 7,
         row: 0,
         initial_guard_count: square * 1_000_000_000n,
       }),
@@ -515,4 +513,14 @@ it.each([
     amount: BigInt(1290 * multiplier) * 1_000_000_000n,
   });
   expect(siteClearXp(store, site)).toBe(xp);
+});
+
+
+it("gives Wraiths triple XP without resources, using the initial band", () => {
+  const store = storeWith(expeditionRules) as never;
+  const site = { game_id: 7, row: 0, category: StructureType.Beasts, initial_guard_count: 450_000_000_000n, clear: null };
+  expect(siteReward(store, site)).toBeNull();
+  expect(siteClearXp(store, site)).toBe(159);
+  expect(siteReward(store, { ...site, initial_guard_count: 350_000_000_000n })).toEqual({ resourceType: ResourcesIds.Wheat, amount: 1400_000_000_000n });
+  expect(siteClearXp(store, { ...site, initial_guard_count: 350_000_000_000n })).toBe(46);
 });

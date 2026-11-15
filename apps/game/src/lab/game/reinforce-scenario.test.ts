@@ -23,7 +23,7 @@ it("raises the troops into the army beside home, its realm paying them from its 
       {
         kind: "ManageTroops",
         fields: {},
-        calldata: ["1", "0", "0", "3", "0", "2", String(SPIRE_ARMY), String(amount * PRECISION)],
+        calldata: ["1", "0", "0", "3", "0", "2", String(SPIRE_ARMY), String(amount * PRECISION), "1"],
       },
       chain,
       game.startsAt,

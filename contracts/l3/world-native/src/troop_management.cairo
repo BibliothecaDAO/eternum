@@ -23,6 +23,7 @@ pub struct RecruitGuard {
 pub struct RecruitExplorer {
     pub explorer_id: u64,
     pub amount: u128,
+    pub supply_post: Option<u64>,
 }
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]
 pub struct TransferTroops {

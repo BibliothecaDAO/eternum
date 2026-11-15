@@ -22,7 +22,7 @@ fn recruitment_spends_troop_resources_and_updates_capacity_with_block_time_stami
         execute(
             d,
             manage(
-                ManageTroops::RecruitExplorer(RecruitExplorer { explorer_id: first, amount: 2 * RESOURCE_PRECISION }),
+                ManageTroops::RecruitExplorer(RecruitExplorer { explorer_id: first, amount: 2 * RESOURCE_PRECISION , supply_post: None }),
             ),
             140,
         ),
@@ -51,7 +51,7 @@ fn blitz_recruitment_still_caps_stamina_at_the_initial_bar() {
     assert!(
         execute(
             d,
-            manage(ManageTroops::RecruitExplorer(RecruitExplorer { explorer_id: first, amount: RESOURCE_PRECISION })),
+            manage(ManageTroops::RecruitExplorer(RecruitExplorer { explorer_id: first, amount: RESOURCE_PRECISION , supply_post: None })),
             140,
         ),
     );
@@ -136,7 +136,7 @@ fn malformed_amounts_overweight_transfers_and_wrong_categories_reject_without_sp
     let before = count(d, home);
     for amount in array![0, RESOURCE_PRECISION - 1, 100000000 * RESOURCE_PRECISION] {
         assert_terminal_rejection(
-            d, manage(ManageTroops::RecruitExplorer(RecruitExplorer { explorer_id: first, amount })), 140,
+            d, manage(ManageTroops::RecruitExplorer(RecruitExplorer { explorer_id: first, amount , supply_post: None })), 140,
         );
     }
     assert_eq!(count(d, home), before);
@@ -311,7 +311,7 @@ fn recruitment_and_transfers_enforce_army_size_before_any_balance_or_capacity_ch
         d,
         manage(
             ManageTroops::RecruitExplorer(
-                RecruitExplorer { explorer_id: first, amount: Into::<u32, u128>::into(maximum) * RESOURCE_PRECISION },
+                RecruitExplorer { explorer_id: first, amount: Into::<u32, u128>::into(maximum) * RESOURCE_PRECISION , supply_post: None },
             ),
         ),
         140,
@@ -346,7 +346,7 @@ fn troop_actions_emit_one_unique_story_each_and_rejections_emit_none() {
     assert!(execute(d, Command::CreateExplorer(created), 140));
     let third = *IStructureOperationsDispatcher { contract_address: d.games }.home_armies(home).at(2);
     assert!(execute(d, recruit(home, 0, 3), 140));
-    let recruitment = RecruitExplorer { explorer_id: first, amount: 2 * RESOURCE_PRECISION };
+    let recruitment = RecruitExplorer { explorer_id: first, amount: 2 * RESOURCE_PRECISION , supply_post: None };
     assert!(execute(d, manage(ManageTroops::RecruitExplorer(recruitment)), 140));
     let slot = GuardSlot { structure_id: home.entity_id, slot: 0 };
     let mut expected = array![

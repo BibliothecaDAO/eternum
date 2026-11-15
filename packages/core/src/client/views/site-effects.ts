@@ -17,6 +17,7 @@ export const SITE_EFFECT_MODELS = [
   "SettlementRules",
   "Structure",
   "ExpeditionSite",
+  "DepthRules",
 ] as const;
 
 export interface SiteEffects {

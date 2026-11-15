@@ -13,13 +13,13 @@ export class ArmyManager {
     signer: Account | AccountInterface,
     armyEntityId: ID,
     troopCount: number,
-    homeDirection: Direction,
+    supplyPost?: number,
   ): Promise<void> {
     await this.systemCalls.explorer_add({
       signer,
       to_explorer_id: armyEntityId,
       amount: multiplyByPrecision(troopCount),
-      home_direction: homeDirection,
+      supply_post: supplyPost,
     });
   }
 

@@ -440,9 +440,9 @@ pub mod TroopsLogic {
             let home = crate::logic::troops::owned_structure(game_id, explorer.owner, actor);
             assert!(
                 crate::geometry::adjacent(
-                    explorer.coord, self.army_home(ResourceKey { game_id, entity_id: explorer.owner }, game_context),
+                    explorer.coord, self.reinforcement_origin(ResourceKey { game_id, entity_id: explorer.owner }, command.supply_post, game_context),
                 ),
-                "explorer not adjacent to home",
+                "explorer not adjacent to supply",
             );
             self
                 .pay_troops(
@@ -879,6 +879,18 @@ pub mod troop_helpers {
     pub impl TroopHelpers<
         TContractState, impl Release: ReleaseState::HasComponent<TContractState>, +Drop<TContractState>,
     > of TroopHelpersTrait<TContractState> {
+        fn reinforcement_origin(self: @TContractState, home: ResourceKey, supply_post: Option<u64>, context: ExecutionContext) -> Coord {
+            let Some(site_id) = supply_post else { return self.army_home(home, context); };
+            let rules = context.rules.unbox();
+            assert!(rules.day_unit_seconds != 0, "supply post requires expeditions");
+            let site = crate::logic::expeditions::expedition_site(ResourceKey { entity_id: site_id, ..home }).expect('missing supply post');
+            let today = crate::days::day_of(context.game.unbox(), rules.day_unit_seconds, context.timestamp).index;
+            let spacing = self.expedition_spacing(home.game_id);
+            let coord = Coord { alt: site.alt, x: site.col, y: site.row };
+            assert!(crate::expeditions::is_supply_post(site, home.entity_id, today, spacing), "not today's cleared home camp");
+            coord
+        }
+
         fn army_home(self: @TContractState, home: ResourceKey, context: ExecutionContext) -> Coord {
             let rules = context.rules.unbox();
             if rules.day_unit_seconds == 0 {

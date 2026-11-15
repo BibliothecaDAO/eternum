@@ -2,7 +2,7 @@ import { currentArmy } from "./deep";
 import { deepCenter } from "./deep-geometry";
 import { entityHomeNamespace } from "./entity-home";
 import { researchedDepth } from "./realm-research";
-import { MAX_U32, ResourcesIds } from "@bibliothecadao/types";
+import { MAX_U32, ResourcesIds, RESOURCE_PRECISION } from "@bibliothecadao/types";
 import type { NativeFactStore } from "../client/native-fact-store";
 import { readOptionalSeasonRow } from "../client/views/season-rows";
 import { readTriumphPeriod } from "../client/views/triumphs";
@@ -79,13 +79,22 @@ export const siteReward = (
   store: Pick<NativeFactStore, "require">,
   site: Pick<NativeRows["ExpeditionSite"], "category" | "initial_guard_count" | "clear" | "game_id" | "row">,
 ): { resourceType: ResourcesIds; amount: bigint } | null =>
-  site.clear ? null : previewSiteReward(site.category, site.initial_guard_count, siteDepth(store, site));
+  site.clear ? null : previewSiteReward(site.category, site.initial_guard_count, siteDepth(store, site), siteIsWraith(store, site));
 
 /** The contract's integer XP formula, shared by the preview, receipt and local replay. */
 export const siteClearXp = (
   store: Pick<NativeFactStore, "require">,
-  site: Pick<NativeRows["ExpeditionSite"], "initial_guard_count" | "game_id" | "row">,
-): number => previewSiteClearXp(site.initial_guard_count, siteDepth(store, site));
+  site: Pick<NativeRows["ExpeditionSite"], "category" | "initial_guard_count" | "game_id" | "row">,
+): number => previewSiteClearXp(site.initial_guard_count, siteDepth(store, site), siteIsWraith(store, site));
+
+const siteIsWraith = (
+  store: Pick<NativeFactStore, "require">,
+  site: Pick<NativeRows["ExpeditionSite"], "category" | "initial_guard_count" | "game_id" | "row">,
+): boolean => {
+  if (site.category !== StructureType.Beasts) return false;
+  const bounds = store.require("DepthRules", { game_id: site.game_id, depth: siteDepth(store, site) });
+  return site.initial_guard_count > BigInt(bounds.beast_weak_upper) * BigInt(RESOURCE_PRECISION);
+};
 
 const siteDepth = (
   store: Pick<NativeFactStore, "require">,
@@ -446,3 +455,10 @@ export const expeditionSpires = (
   nowSeconds: number,
 ): ExpeditionSpireView[] =>
   [...store.inGame("Structure", gameId)].flatMap((realm) => realmSpires(store, realm, nowSeconds));
+
+/** A retained camp receipt is the supply post for its clearing home until that map's day ends. */
+export function isSupplyPost(store: Pick<NativeFactStore, "get">, site: NativeRows["ExpeditionSite"], home: bigint, timestamp: number): boolean {
+  const rules = readExpeditionRules(store, site.game_id);
+  if (!rules || site.alt || site.category !== StructureType.Camp || site.clear?.home_id !== home) return false;
+  return expeditionDepth(rules, { y: site.row }) < 3 && Math.floor(site.row / rules.spacing / 4) === dayOf(rules, timestamp)?.index;
+}

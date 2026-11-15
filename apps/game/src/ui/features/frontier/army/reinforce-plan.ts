@@ -4,10 +4,10 @@ import {
   getTroopResourceId,
   realmLearned,
   structureMapPosition,
+  isSupplyPost,
 } from "@bibliothecadao/eternum";
 import { safeInteger, type NativeFactStore, type NativeRows } from "@bibliothecadao/eternum/game-client";
 import {
-  type Direction,
   getDirectionBetweenAdjacentHexes,
   RESOURCE_PRECISION,
   type TroopTier,
@@ -58,17 +58,20 @@ export const reinforceRange = (plan: ReinforcePlan): TroopRange => troopRange(ro
 const roomFor = ({ current, cap, stock }: Pick<ReinforcePlan, "current" | "cap" | "stock">): number =>
   Math.max(0, Math.min(stock, cap - current));
 
-/**
- * Where the army stands against its realm's home today: the direction from it to the home when it stands on a tile
- * beside it on the surface, the one place the contract reinforces it; null anywhere else or while unknown.
- */
-export const homeDirectionOf = (
+/** The home or current cleared camp beside the army, checked again before sending. */
+export const reinforcementSource = (
   store: NativeFactStore,
   realm: NativeRows["Structure"],
   explorerId: number,
-): Direction | null => {
+  timestamp: number,
+  supplyPost?: number,
+): { supplyPost?: number } | null => {
   const army = store.entityOccupancy(realm.game_id, explorerId);
+  if (!army || army.alt) return null;
+  if (supplyPost !== undefined) {
+    const site = store.get("ExpeditionSite", { game_id: realm.game_id, entity_id: supplyPost });
+    return site && isSupplyPost(store, site, realm.entity_id, timestamp) && getDirectionBetweenAdjacentHexes(army, site) !== null ? { supplyPost } : null;
+  }
   const home = structureMapPosition(store, realm);
-  if (!army || army.alt || !home || home.alt) return null;
-  return getDirectionBetweenAdjacentHexes(army, { col: home.x, row: home.y });
+  return home && !home.alt && getDirectionBetweenAdjacentHexes(army, { col: home.x, row: home.y }) !== null ? {} : null;
 };

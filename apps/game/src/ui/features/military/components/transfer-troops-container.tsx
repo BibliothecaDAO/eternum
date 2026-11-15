@@ -731,7 +731,6 @@ export const TransferTroopsContainer = ({
             signer: account,
             to_explorer_id: targetEntityId,
             amount: troopAmountWithPrecision,
-            home_direction: homeDirection,
           });
         } else if (typeof guardSlot === "number") {
           await guard_explorer_swap({

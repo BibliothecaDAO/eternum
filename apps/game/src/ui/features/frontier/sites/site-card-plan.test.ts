@@ -124,7 +124,7 @@ it("shows a ruin's fixed quote but refuses funding when the shared budget is spe
   });
 });
 
-it("shows beast labor from initial guards and clips it at the home store, alongside clear XP", () => {
+it("shows Cyclops wheat from initial guards alongside clear XP", () => {
   const { store, site, structure, attack } = campBeside("Beasts");
   const own = attack({ col: 41, row: 12, alt: false });
   const limit = BigInt(store.require("BoardRules", { game_id: 1 }).settlement_resource_cap) * 1_000_000_000n;
@@ -141,7 +141,7 @@ it("shows beast labor from initial guards and clips it at the home store, alongs
     },
   ]);
   const plan = readSiteCard(store, site, structure, SITE_TILE, own);
-  expect(plan.payout).toEqual({ resourceId: ResourcesIds.Labor, amount: 375, fits: 10 });
+  expect(plan.payout).toEqual({ resourceId: ResourcesIds.Wheat, amount: 6000, fits: 6000 });
   expect(plan.xp).toBe(118);
 });
 

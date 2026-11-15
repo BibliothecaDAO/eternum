@@ -341,3 +341,11 @@ estimate_gb = 9
 [kind.test-ruin-effects]
 cmd = "bash contracts/l3/test-native.sh --package world_tests_resources* fixture_grants_preserve_the_existing_production_clock && bash contracts/l3/test-native.sh --package world_tests_lifecycle* far_eye_discovers_pays_and_grants_xp_for_each_new_tile_only_once && bash contracts/l3/test-native.sh --package world_tests_lifecycle* spoils_doubles_numeric_clears_and_records_xp_but_keeps_ruin_relics"
 estimate_gb = 9
+
+[kind.playtest-supply-post]
+cmd = 'cp /home/djizus/projects/eternum-lanes/showcase/apps/game/.env.local apps/game/.env.local && pnpm run build:packages && exec 8>"${FLOW_JOB%/running/*}/playtest-port-4192.lock" && flock 8 && for viewport in 1920x1080 390x844; do pnpm --dir apps/game playtest --port 4192 --steps lab-supply-post --iterations 1 --renderer-modes webgpu-force-webgl --viewport "$viewport" --out "$FLOW_TMP/playtest/$viewport" || exit $?; done'
+estimate_gb = 6
+
+[kind.test-surface-sites]
+cmd = "bash contracts/l3/test-native.sh --package world_tests_lifecycle* ::tests::supply_posts:: && bash contracts/l3/test-native.sh --package world_tests_capture* clear_pays && bash contracts/l3/test-native.sh --package world_tests_capture* clips_wheat"
+estimate_gb = 9

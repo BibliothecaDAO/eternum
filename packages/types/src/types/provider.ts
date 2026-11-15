@@ -342,8 +342,8 @@ export interface ExplorerAddProps extends SystemSigner {
   to_explorer_id: number;
   /** Number of troops to add */
   amount: number;
-  /** Direction to the explorer's home */
-  home_direction: number;
+  /** Cleared camp used instead of the home tile. */
+  supply_post?: number;
 }
 
 /**

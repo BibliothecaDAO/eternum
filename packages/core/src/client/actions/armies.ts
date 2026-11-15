@@ -71,7 +71,7 @@ export interface AddTroopsToExplorerInput {
   structureId: ID;
   explorerId: ID;
   troopCount: number;
-  homeDirection: Direction;
+  supplyPost?: number;
 }
 
 export interface AddTroopsToGuardInput {
@@ -161,7 +161,7 @@ export const addTroopsToExplorer = async (client: ActionClient, input: AddTroops
     requireSigner(client),
     input.explorerId,
     input.troopCount,
-    input.homeDirection,
+    input.supplyPost,
   );
 
 export const addTroopsToGuard = async (client: ActionClient, input: AddTroopsToGuardInput): Promise<void> =>

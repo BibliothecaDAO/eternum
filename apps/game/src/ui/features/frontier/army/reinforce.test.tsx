@@ -23,13 +23,14 @@ import {
 } from "@bibliothecadao/eternum";
 import {
   formatExact,
-  getDirectionBetweenAdjacentHexes,
   getNeighborHexes,
   RESOURCE_PRECISION,
   ResourcesIds,
   TroopTier,
 } from "@bibliothecadao/types";
 
+import { useDockArmies } from "../hud/dock-armies";
+import { StructureType } from "@bibliothecadao/types";
 import { ReinforceSheet, useSelectedReinforcement } from "./reinforce";
 import { transferArmies } from "./transfer-fixture";
 
@@ -138,7 +139,7 @@ it("opens on the army beside the realm at no troops, and raises the most it can 
   expect(add.mock.calls[0][0]).toMatchObject({
     to_explorer_id: 201,
     amount: 420 * RESOURCE_PRECISION,
-    home_direction: getDirectionBetweenAdjacentHexes(fixture.beside, fixture.home),
+    supply_post: undefined,
   });
   // The HUD hands the panel to the army once the troops land (useOrderSettledReturnsToTheArmy); the sheet closes nothing.
   expect(close).not.toHaveBeenCalled();
@@ -232,4 +233,23 @@ it("opens no card for the realm on its own, an army away from home, or a viewer"
   act(() => useUIStore.getState().selectOnMap({ kind: "structure", entityId: 7, tile: fixture.beside }));
   act(() => useUIStore.setState({ isSpectating: true }));
   expect(host.textContent).toBe("");
+});
+
+it("reinforces through a cleared camp with its id and refuses it after the army leaves", async () => {
+  const fixture = armyBesideHome();
+  const camp = getNeighborHexes(fixture.beside.col, fixture.beside.row).find((hex) => hex.col !== fixture.home.col || hex.row !== fixture.home.row)!;
+  const site = { game_id: 1, entity_id: 711n, category: StructureType.Camp, initial_guard_count: 1300_000_000_000n, alt: false, ...camp, clear: { xp: 90, explorer_id: 201n, home_id: fixture.realm.entity_id, reward: null } };
+  fixture.store.applyFacts([{ model: "ExpeditionSite", key: "0x712", value: site }] as never);
+  const add = vi.fn().mockResolvedValue({ transaction_hash: "0x2" });
+  const SupplyCard = () => {
+    const armies = useDockArmies(fixture.realm);
+    return <ReinforceSheet realm={fixture.realm} army={armies.find((army) => army.explorerId === 201)!} supplyPost={711} onClose={() => {}} />;
+  };
+  act(() => root.render(<GameProvider value={{ store: fixture.store, systemCalls: { explorer_add: add } } as never} account={{ address: "0x111" } as never}><SupplyCard /></GameProvider>));
+  await press("Max");
+  await press("Reinforce");
+  expect(add).toHaveBeenCalledWith(expect.objectContaining({ to_explorer_id: 201, supply_post: 711, amount: 500 * RESOURCE_PRECISION }));
+  fixture.moveTo({ col: camp.col + 5, row: camp.row });
+  await press("Reinforce");
+  expect(add).toHaveBeenCalledTimes(1);
 });

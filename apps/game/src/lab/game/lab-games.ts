@@ -32,6 +32,7 @@ import { mergeScenario } from "./merge-scenario";
 import { paintedBuildingsScenario } from "./painted-buildings-scenario";
 import { realmHeightScenario } from "./realm-height-scenario";
 import { realmScenario } from "./realm-scenario";
+import { supplyPostScenario } from "./supply-post-scenario";
 import { reinforceScenario } from "./reinforce-scenario";
 import { researchScenario } from "./research-scenario";
 import { ruinChestsScenario, ruinChestsSurfaceScenario } from "./ruin-chests-scenario";
@@ -67,6 +68,7 @@ export const LAB_SCENARIOS: Partial<Record<string, () => LabScenario>> = {
   "merge-loses-xp": mergeScenario("picked"),
   "merge-keeps-tapped": mergeScenario("tapped"),
   reinforce: reinforceScenario,
+  "supply-post": supplyPostScenario,
   "after-battle": afterBattleScenario,
   "point-spent": pointSpentScenario,
   "low-stamina": lowStaminaScenario,

@@ -580,3 +580,7 @@ Spire chance, read from its home/day/layer counter. Evidence stays in the flow r
 The stamina effects paths are `/lab/game?scenario=stamina-mist` and `stamina-wind`: select Army 1, open its panel, read
 its bar and Full in timer, then spend its Battle skill point. `build.sh playtest-stamina-effects` drives both
 recorded-effect fixtures at desktop and phone sizes. Native lifecycle tests prove Explore settlement and quorum timing.
+
+Supply posts: `/lab/game?scenario=supply-post`, select the cleared camp beside Army 1, choose Reinforce Army 1, then
+Max and Reinforce. `build.sh playtest-supply-post` checks the signed camp ID and resulting army and home balances on
+desktop and phone, retaining the camp banner, reinforcement sheet and response evidence.

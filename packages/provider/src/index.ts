@@ -664,7 +664,7 @@ export class EternumProvider extends EventEmitter {
       props.signer,
       {
         kind: "ManageTroops",
-        value: { kind: "RecruitExplorer", value: { explorer_id: props.to_explorer_id, amount: props.amount } },
+        value: { kind: "RecruitExplorer", value: { explorer_id: props.to_explorer_id, amount: props.amount, supply_post: props.supply_post ?? null } },
       },
       TransactionType.EXPLORER_ADD,
     );

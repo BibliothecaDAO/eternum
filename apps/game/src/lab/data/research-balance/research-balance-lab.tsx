@@ -19,7 +19,7 @@ import {
   type StudyRow,
 } from "./balance-options";
 
-/** The approved next-season rules, planned without sending a game command. */
+/** The October 2026 balance study, retained with its original replay inputs. */
 export function ResearchBalanceLab() {
   useHudMode("frontier");
   const [params, setParams] = useSearchParams();
@@ -28,7 +28,7 @@ export function ResearchBalanceLab() {
     <main className="min-h-screen bg-kit-ground p-4 text-hud-ink sm:p-8" data-lab="research-balance">
       <div className="mx-auto flex max-w-5xl flex-col gap-6">
         <header className="flex flex-col gap-2">
-          <p className="text-hud-label uppercase tracking-wide text-hud-muted">Next season · approved rules</p>
+          <p className="text-hud-label uppercase tracking-wide text-hud-muted">October 2026 · historical study</p>
           <h1 className="text-hud-display">Make each research pick count</h1>
           <p className="max-w-3xl text-hud-body text-hud-muted">
             Plan independent research levels, storage and labor from beast clears. Try a path below; nothing changes in

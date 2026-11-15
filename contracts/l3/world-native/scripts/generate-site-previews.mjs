@@ -8,6 +8,7 @@ const sources = ["expeditions", "progression", "taxonomy", "resources", "rules",
 /** Compile the pure site formulas. Unrecognized Cairo must fail, never leave a partial preview. */
 export function compileSitePreviews(source) {
   const rewards = resourceRewards(source);
+  const wraithMultiplier = wraithXpRule(source.expeditions);
   const xp = clearXpRule(source.progression);
   const premium = depthRewardRule(source.expeditions);
   const precision = constant(source.rules, "RESOURCE_PRECISION");
@@ -25,15 +26,16 @@ export function previewRiftGuardBound(camp: number, step: number): number {
   return Math.floor((camp * ${rift.percent} + step * ${rift.rounding}) / (step * ${rift.divisor})) * step;
 }
 
-export function previewSiteReward(category: number, initialGuardCount: bigint, depth: number): { resourceType: number; amount: bigint } | null {
+export function previewSiteReward(category: number, initialGuardCount: bigint, depth: number, wraith: boolean): { resourceType: number; amount: bigint } | null {
+  if (wraith) return null;
 ${rewards.map(({ category, resource, operator, operand }) => `  if (category === ${category}) return { resourceType: ${resource}, amount: depthReward(initialGuardCount ${operator} ${operand}n, depth) };`).join("\n")}
   return null;
 }
 
-export function previewSiteClearXp(initialGuardCount: bigint, depth: number): number {
+export function previewSiteClearXp(initialGuardCount: bigint, depth: number, wraith: boolean): number {
   const xp = depthReward(integerSqrt(initialGuardCount / ${precision}n * ${xp.multiplier}n) / ${xp.divisor}n, depth);
   if (xp > 0xffff_ffffn) throw new Error("Site clear XP exceeds u32");
-  return Number(xp);
+  return Number(xp) * (wraith ? ${wraithMultiplier} : 1);
 }
 
 function depthReward(amount: bigint, depth: number): bigint {
@@ -67,9 +69,11 @@ function resourceRewards(source) {
   let body = functionBody(
     source.expeditions,
     "site_reward",
-    "category:u8,site:ExpeditionSite,depth:u8",
+    "category:u8,site:ExpeditionSite,depth:u8,wraith:bool",
     "Option<crate::resources::ResourceAmount>",
   );
+  if (!body.startsWith("ifwraith{returnNone;}")) throw new Error("Unsupported Wraith payout rule");
+  body = body.slice("ifwraith{returnNone;}".length);
   const imports = body.match(/^usecrate::resources::\{([A-Z_a-z,]+)\};/);
   if (!imports) throw new Error("Unsupported site_reward imports");
   body = body.slice(imports[0].length);
@@ -101,6 +105,13 @@ function resourceRewards(source) {
   if (new Set(rules.map(({ category }) => category)).size !== rules.length)
     throw new Error("Duplicate site reward category");
   return rules;
+}
+
+function wraithXpRule(source) {
+  const body = functionBody(source, "site_clear_xp", "site:ExpeditionSite,depth:u8,wraith:bool", "u32");
+  if (body !== "crate::progression::clear_xp(site.initial_guard_count,depth)*ifwraith{WRAITH_XP_MULTIPLIER}else{1}")
+    throw new Error("Unsupported Wraith XP rule");
+  return constant(source, "WRAITH_XP_MULTIPLIER");
 }
 
 function clearXpRule(source) {
