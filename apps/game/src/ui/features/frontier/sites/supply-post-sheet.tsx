@@ -46,7 +46,7 @@ export function SupplyPostSheet({
   return (
     <HudSheet label={`Supply post · ${siteDisplayName(supplyPost)}`} onClose={onClose}>
       {children}
-      <HudNotice icon="flag" line="Armies beside this camp can take troops from their Realm until the day ends." />
+      <HudNotice icon="flag" line="The clearing Realm can reinforce armies beside this camp until the day ends." />
       {adjacent.map((entry) => (
         <HudButton
           key={entry.explorerId}
