@@ -59,7 +59,7 @@ const read = async () => {
       </QueryClientProvider>,
     ),
   );
-  await act(async () => {});
+  for (let turn = 0; turn < 5; turn++) await act(() => new Promise((resolve) => setTimeout(resolve, 0)));
 };
 
 it("asks Herald for no rank in a game that races Aspects, and tells no change", async () => {

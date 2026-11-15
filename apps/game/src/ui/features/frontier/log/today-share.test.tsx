@@ -56,6 +56,8 @@ vi.mock("@/hooks/helpers/use-block-timestamp", () => ({ useNowSeconds: () => REC
 vi.mock("@/hooks/context/game-context", async () => {
   const { NativeFactStore } = await import("@bibliothecadao/eternum/game-client");
   const store = new NativeFactStore();
+  // A game whose complete snapshot holds no race rules ranks players by the sites they cleared.
+  store.setSnapshot({ gameId: 1, complete: true, actor: null, timestamp: 0 });
   return { useGame: () => ({ setup: { store } }) };
 });
 vi.mock("../hud/dock-armies", async (importOriginal) => ({
