@@ -33,10 +33,14 @@ fn a_cleared_camp_reinforces_from_home_on_each_layer_above_the_deep() {
         army.coord.x += 10;
         set_explorer_fixture(d.games, key, army);
         let destination = crate::geometry::neighbor(army.coord, 0);
-        let discovery = interact_with_state(
-            d.games, || crate::logic::preset_record::for_game(game_id).discovery_rules.read().unwrap(),
+        let (discovery, find_percent) = interact_with_state(
+            d.games,
+            || (
+                crate::logic::preset_record::for_game(game_id).discovery_rules.read().unwrap(),
+                crate::logic::triumphs::effects(home, 360).find_percent,
+            ),
         );
-        let root = discovery_root(game_id, discovery, 200, 0, None, crate::discovery::Discovery::Camp);
+        let root = discovery_root(game_id, discovery, find_percent, 0, None, crate::discovery::Discovery::Camp);
         assert!(explore_with_root(d, game_id, key.explorer_id, root, 360));
         let site_key = interact_with_state(
             d.games,
@@ -47,6 +51,16 @@ fn a_cleared_camp_reinforces_from_home_on_each_layer_above_the_deep() {
                     .entity_id,
             },
         );
+        interact_with_state(
+            d.games,
+            || {
+                let site = crate::logic::expeditions::expedition_site(site_key).expect('camp was not discovered');
+                assert_eq!(site.category, crate::taxonomy::CAMP_CATEGORY);
+                assert!(site.clear.is_none());
+            },
+        );
+        let next_day = world_test_support::tests::registrar::day_start(d, game_id, 1);
+        assert!(365 < next_day, "camp actions must stay on the discovery day");
         let recruit = Command::ManageTroops(
             ManageTroops::RecruitExplorer(
                 RecruitExplorer {
@@ -59,7 +73,7 @@ fn a_cleared_camp_reinforces_from_home_on_each_layer_above_the_deep() {
             crate::commands::Battle { attacker_id: key.explorer_id, defender_id: site_key.entity_id, relic_slot: None },
         );
         let mut events = snforge_std::spy_events();
-        if !execute_in_game(d, game_id, battle, 420) {
+        if !execute_in_game(d, game_id, battle, 362) {
             panic!("{}", world_test_support::tests::play_fixture::rejection(ref events, d.games).reason);
         }
         if !crate::geometry::adjacent(super::army_activity::army(d, key).coord, destination) {
@@ -68,13 +82,13 @@ fn a_cleared_camp_reinforces_from_home_on_each_layer_above_the_deep() {
                     d,
                     game_id,
                     Command::Move(crate::commands::Move { explorer_id: key.explorer_id, directions: array![3].span() }),
-                    480,
+                    363,
                 ),
             );
         }
         let before = super::army_activity::army(d, key).troops.count;
         let stock = interact_with_state(d.games, || crate::logic::resources::balance(home, 26));
-        assert!(execute_in_game(d, game_id, recruit, 540));
+        assert!(execute_in_game(d, game_id, recruit, 364));
         assert_eq!(super::army_activity::army(d, key).troops.count, before + RESOURCE_PRECISION);
         interact_with_state(
             d.games,
@@ -83,9 +97,8 @@ fn a_cleared_camp_reinforces_from_home_on_each_layer_above_the_deep() {
                 assert_eq!(crate::logic::expeditions::expedition_site(site_key).unwrap().clear.unwrap().home_id, 1);
             },
         );
-        assert!(execute_in_game(d, game_id, recruit, 541));
+        assert!(execute_in_game(d, game_id, recruit, 365));
         assert_eq!(super::army_activity::army(d, key).troops.count, before + 2 * RESOURCE_PRECISION);
-        let next_day = world_test_support::tests::registrar::day_start(d, game_id, 1);
         assert!(!execute_in_game(d, game_id, recruit, next_day));
     }
 }
