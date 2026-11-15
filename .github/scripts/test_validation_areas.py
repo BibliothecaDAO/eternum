@@ -60,6 +60,9 @@ class CiFileOwnership(unittest.TestCase):
         self.assertIn("docs", areas_run_by("deploy/first/environments.json"))
         self.assertEqual(areas_run_by("apps/game-docs/docs/pages/blitz/entry.mdx"), {"client", "docs"})
 
+    def test_site_alert_planning_selects_its_client_fixture_and_worker_checks(self):
+        self.assertTrue({"client", "services"}.issubset(areas_run_by("apps/realms/server/deep-site-watch.ts")))
+
     def test_the_client_export_and_its_sources_select_the_artifact_regression(self):
         for path in (
             "apps/game/vite.config.ts",

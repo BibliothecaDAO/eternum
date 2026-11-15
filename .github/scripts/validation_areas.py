@@ -53,6 +53,7 @@ AREAS = {
         # The client artifact emits its documentation export from the current pages and renderer.
         "apps/game-docs/**",
         "apps/status/public/index.html",
+        "apps/realms/server/deep-site-watch.ts",
         # The iOS app's bundle id, which src/app-hosting.test.ts holds the site's apple-app-site-association to.
         "apps/ios/capacitor.config.ts",
         # The client job's own checkers, which its workflow runs through root package.json scripts.
