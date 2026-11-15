@@ -143,7 +143,7 @@ cmd = 'cp /home/djizus/projects/eternum-lanes/showcase/apps/game/.env.local apps
 estimate_gb = 6
 
 [kind.test-relic-forecasts]
-cmd = "pnpm run build:packages && pnpm --dir apps/game test src/ui/features/frontier/sites/site-card-plan.test.ts src/ui/features/frontier/sites/tile-card.test.tsx src/ui/features/military/battle/quick-attack-preview.test.tsx src/ui/features/frontier/relics/ruin-relic-attack.test.tsx src/ui/features/frontier/frontier-selection-sheet.test.tsx"
+cmd = "pnpm run build:packages && pnpm --dir apps/game test src/lab/game/far-eye-scenario.test.ts src/ui/features/frontier/sites/site-card-plan.test.ts src/ui/features/frontier/sites/tile-card.test.tsx src/ui/features/military/battle/quick-attack-preview.test.tsx src/ui/features/frontier/relics/ruin-relic-attack.test.tsx src/ui/features/frontier/frontier-selection-sheet.test.tsx"
 estimate_gb = 4
 
 [kind.test-native-wire]

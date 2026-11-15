@@ -99,7 +99,8 @@ export function farEyeScenario(): LabScenario {
           key: "0xfae4",
           value: wire({
             game_id: 1,
-            ...portal,
+            col: portal.col,
+            row: portal.row,
             alt: false,
             entity_id: 801,
             category: TileOccupier.Spire,
