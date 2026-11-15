@@ -125,7 +125,7 @@ it("grants the seal at the store price of the buyer's holder level, once", async
     await sendAs(db, OWNER, { store: "apple", receipt: "tx-6|seal-holder" }, { holderFacts: async () => holder }),
   ).toEqual([200, { status: "seal", repeated: false }]);
   expect(await readSeal(db, OWNER)).toEqual({ paid_cents: 499, source: "store", granted_at: 100 });
-  // The same receipt again is the same answer; the full price also buys a holder's seal.
+  // The same receipt again is the same answer; the full price also buys a holder's seal; another account's receipt is its own.
   expect(
     await sendAs(db, OWNER, { store: "apple", receipt: "tx-6|seal-holder" }, { holderFacts: async () => holder }),
   ).toEqual([200, { status: "seal", repeated: true }]);
@@ -134,5 +134,5 @@ it("grants the seal at the store price of the buyer's holder level, once", async
   ).toEqual([200, { status: "seal", repeated: false }]);
   expect(
     await sendAs(db, OTHER, { store: "apple", receipt: "tx-6|seal-holder" }, { holderFacts: async () => holder }),
-  ).toEqual([200, { status: "seal", repeated: true }]);
+  ).toEqual([409, { error: "receipt_used" }]);
 });
