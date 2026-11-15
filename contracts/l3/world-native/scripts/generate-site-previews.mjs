@@ -142,7 +142,7 @@ function riftGuardRule(source) {
 function functionBody(source, name, parameters, returns) {
   const declaration = source.match(new RegExp(`^(?:pub )?fn ${name}\\([^]*?^}`, "m"))?.[0];
   if (!declaration) throw new Error(`Missing Cairo function ${name}`);
-  const header = declaration.slice(0, declaration.indexOf("{")).replace(/\s+/g, "");
+  const header = declaration.slice(0, declaration.indexOf("{")).replace(/\s+/g, "").replace(/,\)/g, ")");
   if (header.replace(/^pub/, "") !== `fn${name}(${parameters})->${returns}`)
     throw new Error(`Unsupported ${name} signature`);
   return declaration
