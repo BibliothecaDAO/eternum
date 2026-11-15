@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { TIER_WORDS } from "@bibliothecadao/types";
 import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { existsSync } from "node:fs";
 import fg from "fast-glob";
@@ -114,13 +115,32 @@ test("the expedition page gives camps and rifts their own correct guard column a
       .map((line) => {
         if (!line.startsWith("|")) return line;
         const cells = line.split("|").map((cell) => cell.trim());
-        if (cells.length !== 8) return line;
+        if (cells.length !== 7) return line;
         if (cells[2] === "Camps") cells[2] = "Camps and rifts";
         cells.splice(3, 1);
         return cells.join(" | ");
       })
       .join("\n");
     assert.equal(exportProblems(combined, pages).length, 5);
+  } finally {
+    await server.close();
+  }
+});
+
+test("the expedition export states every relic rarity and its generated ruin guard range", async () => {
+  const server = await createServer({ configFile: false, logLevel: "silent", appType: "custom" });
+  try {
+    const { previewRuinGuardBounds } = await server.ssrLoadModule(
+      fileURLToPath(new URL("../../../contracts/l3/world-native/schema/site-previews.gen.ts", import.meta.url)),
+    );
+    const docs = fileURLToPath(new URL("../docs", import.meta.url));
+    const llm = await renderLlmTxt([join(docs, "pages/frontier/expedition.mdx")], docs);
+    for (const [index, name] of TIER_WORDS.entries()) {
+      const bounds = previewRuinGuardBounds(index + 1)
+        .map((value) => value.toLocaleString("en-US"))
+        .join("–");
+      assert.ok(llm.includes(`${name}: ${bounds}`), `missing ruin guards for ${name}`);
+    }
   } finally {
     await server.close();
   }
