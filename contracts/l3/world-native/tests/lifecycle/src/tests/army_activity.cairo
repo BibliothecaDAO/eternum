@@ -303,6 +303,7 @@ fn charge_starts_on_a_new_target_and_rejected_attacks_keep_the_current_fight() {
         360,
     );
     let center = crate::deep::center(preset.settlement.spacing);
+    let center = crate::troops::Coord { x: center.x + 3, ..center };
     set_explorer_fixture(d.games, attacker, ExplorerTroops { coord: center, ..army(d, attacker) });
     set_explorer_fixture(
         d.games, enemy, ExplorerTroops { coord: crate::geometry::neighbor(center, 0), ..army(d, enemy) },
@@ -322,6 +323,15 @@ fn charge_starts_on_a_new_target_and_rejected_attacks_keep_the_current_fight() {
     set_explorer_fixture(
         d.games, other, ExplorerTroops { coord: crate::geometry::neighbor(center, 1), ..army(d, other) },
     );
+    let rested = interact_with_state(d.games, || crate::logic::army_slot_storage::read(ArmySlotKey { game_id, structure_id: home.entity_id, epoch: 0, slot: 2 }).unwrap().stamina);
+    let before = army(d, attacker);
+    set_explorer_fixture(d.games, attacker, ExplorerTroops { troops: crate::troops::Troops {
+        stamina: crate::troops::Stamina { amount: 0, settled_at: 365, remainder: 0 }.into(), ..before.troops
+    }, ..before });
+    assert!(!execute_in_game(d, game_id, attack(attacker.explorer_id, other.explorer_id), 365));
+    assert_eq!(charge_at(d, attacker).last_target, enemy.explorer_id);
+    assert_eq!(army(d, attacker).troops.count, before.troops.count);
+    set_explorer_fixture(d.games, attacker, ExplorerTroops { troops: crate::troops::Troops { stamina: rested.into(), ..before.troops }, ..before });
     super::deep_sites::applied(d, game_id, attack(attacker.explorer_id, other.explorer_id), 365);
     assert!(interact_with_state(d.games, || crate::logic::army_combat::read(attacker)).is_none());
     assert!(interact_with_state(d.games, || crate::logic::troops::explorer(attacker)).is_none());
