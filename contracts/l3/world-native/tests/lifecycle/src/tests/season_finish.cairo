@@ -20,7 +20,12 @@ fn fifty_day_limit_finishes_once_before_a_rejected_order_and_keeps_settlement_in
         * crate::days::UNITS_PER_BAG
         * Into::<u32, u64>::into(preset.rules.day_unit_seconds);
     let launch = CreateGameParams {
-        name: 'full season', start_main_at: 360, duration_seconds: duration, end_grace_seconds: 0, seed: 5, ..params(false),
+        name: 'full season',
+        start_main_at: 360,
+        duration_seconds: duration,
+        end_grace_seconds: 0,
+        seed: 5,
+        ..params(false),
     };
     assert!(
         safe(d, world_test_support::tests::authority())
