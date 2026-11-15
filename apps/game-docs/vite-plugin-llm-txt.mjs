@@ -155,11 +155,9 @@ export const renderLlmTxt = async (files, root) => {
   }
 };
 
-/** @returns {import("vite").Plugin} */
 export default function llmTxtPlugin() {
   return {
     name: "vite-plugin-llm-txt",
-    apply: "build",
     async generateBundle() {
       const files = await fg([`${docsDir}/**/*.mdx`], { absolute: true });
       files.sort((left, right) => {
