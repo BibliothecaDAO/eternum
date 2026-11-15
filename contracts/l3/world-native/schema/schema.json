@@ -11405,7 +11405,7 @@
         },
         {
           "name": "ExplorerAddStory",
-          "type": "world_native::troop_management::RecruitExplorer",
+          "type": "world_native::troop_management::ExplorerAdded",
           "wireId": 26
         },
         {
@@ -13828,6 +13828,20 @@
         }
       ]
     },
+    "world_native::troop_management::ExplorerAdded": {
+      "type": "struct",
+      "name": "world_native::troop_management::ExplorerAdded",
+      "members": [
+        {
+          "name": "explorer_id",
+          "type": "core::integer::u64"
+        },
+        {
+          "name": "amount",
+          "type": "core::integer::u128"
+        }
+      ]
+    },
     "world_native::troop_management::ExplorerCreated": {
       "type": "struct",
       "name": "world_native::troop_management::ExplorerCreated",
@@ -14469,5 +14483,5 @@
       ]
     }
   },
-  "identity": "643ee190513c026a1196b9bc92bf43b0e2024f522e039f83a244c6a6b1d98b2d"
+  "identity": "06f0595ed0248eb30779f5f9309d4001d4bda1983ea45ced8d6cd4fbdc5ce39b"
 }
