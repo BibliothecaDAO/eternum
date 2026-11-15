@@ -121,6 +121,12 @@ pub impl TroopsImpl of TroopsTrait {
     }
 
     fn _refund_multiplier(a_damage: Fixed, b_damage: Fixed) -> Fixed {
+        if a_damage == FixedTrait::ZERO() {
+            return FixedTrait::ZERO();
+        }
+        if b_damage == FixedTrait::ZERO() {
+            return FixedTrait::ONE();
+        }
         let _2_POINT_5: Fixed = FixedTrait::new(46116860184273879040, false);
         let _10_POINT_0: Fixed = FixedTrait::new(184467440737095516160, false);
 

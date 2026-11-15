@@ -440,36 +440,37 @@ const DEEP_CHARGE_STEPS = chargeSteps(attackFromTheDeepCard);
 
 function chargeSteps(attack) {
   return [
-  { name: "enter-on-map", settleMs: 3_000, verify: inScene("map") },
-  { name: "select-army", play: selectTheReadiestArmy, settleMs: 1_500, verify: armySelected },
-  ...[
-    ["opening-charge", 658, 563],
-    ["same-fight", 386, 245],
-  ].map(([name, attacker, defender]) =>
-    clickToResultStep(name, "BattleGuard", attack, ({ played, actionLatency }) => {
-      const answer = (actionLatency.chainAnswers ?? []).filter(({ kind }) => kind === "BattleGuard").at(-1);
-      const rows = answer?.answered ?? [];
-      const army = rows.find(({ model }) => model === "ExplorerTroops")?.value;
-      const guard = rows.find(({ model }) => model === "Guard")?.value
-        ?? rows.find(({ model, value }) => model === "ExplorerTroops" && value.explorer_id !== army?.explorer_id)?.value;
-      const combat = rows.find(({ model }) => model === "ArmyCombat")?.value;
-      const openingRecorded =
-        name === "opening-charge"
-          ? combat && guard && BigInt(combat.last_target) === BigInt(guard.explorer_id ?? guard.structure_id)
-          : combat === undefined;
-      return played.watching &&
-        army &&
-        guard &&
-        openingRecorded &&
-        BigInt(army.troops.count) === BigInt(attacker) * 1_000_000_000n &&
-        BigInt(guard.troops.count) === BigInt(defender) * 1_000_000_000n &&
-        played.forecast?.some((label) => label.includes(`→ ${attacker},`)) &&
-        played.forecast?.some((label) => label.includes(`→ ${defender},`))
-        ? { watch: "fought" }
-        : undefined;
-    }),
-  ),
-];
+    { name: "enter-on-map", settleMs: 3_000, verify: inScene("map") },
+    { name: "select-army", play: selectTheReadiestArmy, settleMs: 1_500, verify: armySelected },
+    ...[
+      ["opening-charge", 658, 563],
+      ["same-fight", 386, 245],
+    ].map(([name, attacker, defender]) =>
+      clickToResultStep(name, "BattleGuard", attack, ({ played, actionLatency }) => {
+        const answer = (actionLatency.chainAnswers ?? []).filter(({ kind }) => kind === "BattleGuard").at(-1);
+        const rows = answer?.answered ?? [];
+        const army = rows.find(({ model }) => model === "ExplorerTroops")?.value;
+        const guard =
+          rows.find(({ model }) => model === "Guard")?.value ??
+          rows.find(({ model, value }) => model === "ExplorerTroops" && value.explorer_id !== army?.explorer_id)?.value;
+        const combat = rows.find(({ model }) => model === "ArmyCombat")?.value;
+        const openingRecorded =
+          name === "opening-charge"
+            ? combat && guard && BigInt(combat.last_target) === BigInt(guard.explorer_id ?? guard.structure_id)
+            : combat === undefined;
+        return played.watching &&
+          army &&
+          guard &&
+          openingRecorded &&
+          BigInt(army.troops.count) === BigInt(attacker) * 1_000_000_000n &&
+          BigInt(guard.troops.count) === BigInt(defender) * 1_000_000_000n &&
+          played.forecast?.some((label) => label.includes(`→ ${attacker},`)) &&
+          played.forecast?.some((label) => label.includes(`→ ${defender},`))
+          ? { watch: "fought" }
+          : undefined;
+      }),
+    ),
+  ];
 }
 
 const FIGHT_ACTION_STEPS = [
@@ -4022,14 +4023,22 @@ async function attackFromTheDeepCard({ browser, extraScreenshot }) {
   if (!before.quarry) return { before };
   if (onADesktop()) browser.rightClick(before.quarry);
   else browser.tap(before.quarry);
-  const opened = await readUntil(() => browser.read(MERGE_STATE),
-    (state) => state.buttons.includes("Attack"), SHEET_WAIT_MS);
+  const opened = await readUntil(
+    () => browser.read(MERGE_STATE),
+    (state) => state.buttons.includes("Attack"),
+    SHEET_WAIT_MS,
+  );
   if (!opened.buttons.includes("Attack")) return { before, opened };
-  const forecast = browser.read(`Array.from(document.querySelectorAll('[data-kit-sheet] [role="img"][aria-label*="→"]'), node => node.getAttribute('aria-label'))`);
+  const forecast = browser.read(
+    `Array.from(document.querySelectorAll('[data-kit-sheet] [role="img"][aria-label*="→"]'), node => node.getAttribute('aria-label'))`,
+  );
   extraScreenshot("deep-forecast-before-attack");
   const after = browser.read("window.__labChain?.sent.length ?? 0");
   const armyId = browser.observe().selection?.army?.id;
-  watchFor(browser, "fought", `(() => {
+  watchFor(
+    browser,
+    "fought",
+    `(() => {
     const answer = (window.__labChain?.sent ?? []).slice(${after}).filter(({ command }) => command.kind === "BattleGuard").at(-1);
     const rows = (answer?.answered ?? []).filter(({ model, value }) => model === "ExplorerTroops" && value !== null);
     const ours = rows.find(({ value }) => Number(value.explorer_id) === ${armyId});
@@ -4037,7 +4046,8 @@ async function attackFromTheDeepCard({ browser, extraScreenshot }) {
     const count = (row) => (BigInt(row.value.troops.count) / 1000000000n).toLocaleString("en-US");
     return ours && theirs && document.querySelector('.mp-at[data-key="army:${armyId}"] .mp-count')?.textContent === count(ours)
       && document.querySelector('[data-deep-slots]')?.textContent.includes(count(theirs));
-  })()`);
+  })()`,
+  );
   browser.click("Attack");
   return { forecast, watching: true };
 }

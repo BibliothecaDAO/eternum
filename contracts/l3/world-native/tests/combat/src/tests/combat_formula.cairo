@@ -468,3 +468,32 @@ fn charge_does_not_change_scout_or_blitz_damage() {
         );
     }
 }
+
+
+#[test]
+fn charge_wipeout_and_zero_damage_have_defined_refunds_and_cooldowns() {
+    let damage = TroopDamageConfig {
+        damage_biome_bonus_num: 0, damage_scaling_factor: 36893488147419103232, ..damage_config(),
+    };
+    let stamina = TroopStaminaConfig {
+        stamina_gain_per_tick: 0, stamina_attack_req: 10, stamina_defense_req: 20,
+        damage_stamina_refund: true, ..stamina_config(),
+    };
+    let context = CombatContext { day_unit_seconds: 100, charge_percent: 50, ..context(Biome::Grassland) };
+    for shielded in array![false, true] {
+        let mut attacker = test_troops(TroopType::Knight, TroopTier::T1, 1000, 100);
+        let mut defender = test_troops(TroopType::Knight, TroopTier::T1, 1, 100);
+        if shielded {
+            attacker.boosts.decr_damage_gotten_percent_num = 10000;
+            defender.boosts.decr_damage_gotten_percent_num = 10000;
+        }
+        attacker.attack_with_context(ref defender, context, stamina, damage, 1, 100);
+        assert_eq!(attacker.count, 1000 * RESOURCE_PRECISION);
+        assert_eq!(defender.count, if shielded { RESOURCE_PRECISION } else { 0 });
+        assert_eq!(attacker.stamina.inline().amount, if shielded { 90 } else { 100 });
+        assert_eq!(defender.stamina.inline().amount, 80);
+        let now: u32 = context.timestamp.try_into().unwrap();
+        assert_eq!(attacker.battle_cooldown_end, now + if shielded { 100 } else { 0 });
+        assert_eq!(defender.battle_cooldown_end, now + 100);
+    }
+}

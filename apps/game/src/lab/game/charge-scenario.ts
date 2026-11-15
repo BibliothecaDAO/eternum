@@ -18,7 +18,9 @@ export function chargeScenario(): LabScenario {
   const game = spireScenario();
   const troops = prepareChargeArmy(game);
   const tile = besideOnOpenLand(game.store, game.store.entityOccupancy(1, SPIRE_ARMY)!);
-  game.store.applyFacts(siteAt(game.store, tile, troops, StructureType.Camp).map((fact) => ({ ...fact, value: wire(fact.value) })));
+  game.store.applyFacts(
+    siteAt(game.store, tile, troops, StructureType.Camp).map((fact) => ({ ...fact, value: wire(fact.value) })),
+  );
   return {
     ...game,
     answer: (command, chain, now) =>
@@ -41,19 +43,26 @@ export function deepChargeScenario(): LabScenario {
   store.applyFacts([
     { model: "ExplorerTroops", key: store.wireKeyOf("ExplorerTroops", guard)!, value: wire({ ...guard, troops }) },
     { model: "HomeAspect", key: store.wireKeyOf("HomeAspect", aspect)!, value: wire({ ...aspect, aspect: 2 }) },
-    { model: "SliceRules", key: store.wireKeyOf("SliceRules", rules)!,
-      value: wire({ ...rules, tick_config: { ...rules.tick_config, armies_tick_in_seconds: tickSeconds } }) },
+    {
+      model: "SliceRules",
+      key: store.wireKeyOf("SliceRules", rules)!,
+      value: wire({ ...rules, tick_config: { ...rules.tick_config, armies_tick_in_seconds: tickSeconds } }),
+    },
     ...[SPIRE_ARMY, Number(guard.explorer_id)].map((id) => {
       const row = store.require("DeepArmy", { game_id: 1, explorer_id: id });
-      return { model: "DeepArmy", key: store.wireKeyOf("DeepArmy", row)!,
-        value: wire({ ...row, last_tick: Math.floor(game.startsAt / tickSeconds) }) };
+      return {
+        model: "DeepArmy",
+        key: store.wireKeyOf("DeepArmy", row)!,
+        value: wire({ ...row, last_tick: Math.floor(game.startsAt / tickSeconds) }),
+      };
     }),
   ]);
   return {
     ...game,
-    answer: (command, chain, now) => command.kind === "BattleGuard" && BigInt(command.fields.defender_id) === site.id
-      ? exchange(chain, BigInt(command.fields.attacker_id), now, site.id, guard.explorer_id)
-      : game.answer(command, chain, now),
+    answer: (command, chain, now) =>
+      command.kind === "BattleGuard" && BigInt(command.fields.defender_id) === site.id
+        ? exchange(chain, BigInt(command.fields.attacker_id), now, site.id, guard.explorer_id)
+        : game.answer(command, chain, now),
   };
 }
 
@@ -101,13 +110,20 @@ function prepareChargeArmy(game: LabScenario) {
   return troops;
 }
 
-function exchange(store: NativeFactStore, explorerId: bigint, now: number, siteId: bigint, guardId?: bigint): LabFact[] {
+function exchange(
+  store: NativeFactStore,
+  explorerId: bigint,
+  now: number,
+  siteId: bigint,
+  guardId?: bigint,
+): LabFact[] {
   const key = { game_id: 1, explorer_id: explorerId };
   const army = store.require("ExplorerTroops", key);
   const combat = store.require("ArmyCombat", key);
-  const guard = guardId === undefined
-    ? store.require("Guard", { game_id: 1, structure_id: siteId, slot: 0 })
-    : store.require("ExplorerTroops", { game_id: 1, explorer_id: guardId });
+  const guard =
+    guardId === undefined
+      ? store.require("Guard", { game_id: 1, structure_id: siteId, slot: 0 })
+      : store.require("ExplorerTroops", { game_id: 1, explorer_id: guardId });
   const guardModel = guardId === undefined ? "Guard" : "ExplorerTroops";
   const target = guardId ?? siteId;
   const next = EXCHANGES.find(({ before }) => army.troops.count === before * PRECISION);

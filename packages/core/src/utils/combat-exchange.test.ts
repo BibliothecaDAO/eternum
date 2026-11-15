@@ -352,3 +352,33 @@ it("forecasts Charge on the opening exchange only, for beasts and armies", () =>
     });
   }
 });
+
+
+it("matches native refunds and cooldowns when Charge wipes the defender or neither side deals damage", () => {
+  const fixture = readFixture();
+  const base = fixture.cases[0]!;
+  const rules: CombatRules = {
+    ...fixture.rules, dayUnitSeconds: 100, cooldownSeconds: 100,
+    damage: { ...fixture.rules.damage, damage_scaling_factor: 36893488147419103232n, damage_biome_bonus_num: 0 },
+    stamina: { ...fixture.rules.stamina, stamina_gain_per_tick: 0, stamina_attack_req: 10,
+      stamina_defense_req: 20, damage_stamina_refund: true },
+  };
+  const context = { ...base.context, chargePercent: 50, attackDistance: 1,
+    attackerBiome: BiomeType.Grassland, defenderBiome: BiomeType.Grassland,
+    attackerIsStructureGuard: false, defenderIsStructureGuard: true };
+  for (const shielded of [false, true]) {
+    const attacker: ExchangeTroops = {
+      ...base.attacker, category: "Knight", tier: "T1", count: 1000_000_000_000n,
+      battle_cooldown_end: 0, stamina: { amount: 100n, settled_at: context.timestamp, remainder: 0 },
+      boosts: { ...base.attacker.boosts, incr_damage_dealt_percent_num: 0,
+        decr_damage_gotten_percent_num: shielded ? 10000 : 0, decr_damage_gotten_end_at: 0 },
+    };
+    expect(resolveExchange(attacker, { ...attacker, count: 1_000_000_000n }, context, rules)).toMatchObject({
+      ok: true, attackerLoss: 0n, defenderLoss: shielded ? 0n : 1_000_000_000n,
+      attacker: { count: 1000_000_000_000n, stamina: { amount: shielded ? 90n : 100n },
+        battle_cooldown_end: context.timestamp + (shielded ? 100 : 0) },
+      defender: { count: shielded ? 1_000_000_000n : 0n, stamina: { amount: 80n },
+        battle_cooldown_end: context.timestamp + 100 },
+    });
+  }
+});

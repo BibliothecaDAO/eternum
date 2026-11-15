@@ -306,6 +306,8 @@ const activeBoosts = (troops: ExchangeTroops, timestamp: number) => ({
 });
 
 const refundMultiplier = (dealt: Fixed, taken: Fixed): Fixed => {
+  if (dealt.mag === 0n) return ZERO;
+  if (taken.mag === 0n) return ONE;
   const ratio = div(dealt, taken);
   if (gte(ratio, REFUND_CEILING)) return ONE;
   if (lte(ratio, REFUND_FLOOR)) return ZERO;
