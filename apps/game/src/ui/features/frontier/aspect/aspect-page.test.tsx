@@ -103,10 +103,10 @@ describe("the race board from native facts", () => {
 it("reads an expired race from its final snapshot without inventing a finisher", () => {
   const scenario = expiredRaceScenario();
   scenario.store.setSnapshot({ gameId: 1, actor: scenario.player, timestamp: scenario.startsAt, complete: true });
-  const reading = readRaceBoard(scenario.store,1,7n,scenario.startsAt);
+  const reading = readRaceBoard(scenario.store, 1, 7n, scenario.startsAt);
   const board = reading.known!.race!;
   expect(board.result?.winner).toBeNull();
   expect(board.result?.ended_at).toBe(board.result?.scheduled_end_at);
-  expect(board.standings.map(row => row.height)).toEqual([6400,5200,2800,900]);
-  expect(aspectPage(board,() => "Realm").race?.result).toEqual({ winner: null });
+  expect(board.standings.map((row) => row.height)).toEqual([6400, 5200, 2800, 900]);
+  expect(aspectPage(board, () => "Realm").race?.result).toEqual({ winner: null });
 });

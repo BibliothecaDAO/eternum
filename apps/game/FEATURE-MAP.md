@@ -1353,4 +1353,5 @@ Site effects: `/lab/game?scenario=site-effects`; select the army and camp to rea
 Canonical proof: `playtest --steps lab-site-effects`. Clear receipts and the Feed retain awarded XP after effects
 expire.
 
-Season deadline: `/lab/game?scenario=race-expired` opens the final four heights and members after day50, with no finisher. Canonical proof: `playtest --steps lab-race-expired`.
+Season deadline: `/lab/game?scenario=race-expired` opens the final four heights and members after day50, with no
+finisher. Canonical proof: `playtest --steps lab-race-expired`.

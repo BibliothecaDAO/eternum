@@ -192,9 +192,13 @@ fn schedule_triumph(key: AspectKey, rules: RaceRules, before: u32, height: u32, 
 }
 
 fn finish_expired(game_id: u32, timestamp: u64) {
-    if rules(game_id).is_none() || result(game_id).is_some() { return; }
+    if rules(game_id).is_none() || result(game_id).is_some() {
+        return;
+    }
     let game = crate::logic::game::game(game_id);
-    if timestamp >= game.end_at { finish(game_id, None, game.end_at); }
+    if timestamp >= game.end_at {
+        finish(game_id, None, game.end_at);
+    }
 }
 
 fn finish(game_id: u32, winner: Option<u8>, timestamp: u64) {

@@ -130,9 +130,16 @@ export function expiredRaceScenario(): LabScenario {
   const unit = store.require("SliceRules", { game_id: 1 }).day_unit_seconds;
   const end = game.start_main_at + BigInt(seasonSeconds(Number(rules.season_days) / DAYS_PER_BAG, unit));
   store.applyFacts([
-    { model: "GameRegistry", key: store.wireKeyOf("GameRegistry", { game_id: 1 })!,
-      value: wire({ ...game, scheduled_end_at: end, end_at: end, settled: true }) },
-    { model: "RaceResult", key: "0xa550", value: wire({ game_id: 1, winner: null, ended_at: end, scheduled_end_at: end }) },
+    {
+      model: "GameRegistry",
+      key: store.wireKeyOf("GameRegistry", { game_id: 1 })!,
+      value: wire({ ...game, scheduled_end_at: end, end_at: end, settled: true }),
+    },
+    {
+      model: "RaceResult",
+      key: "0xa550",
+      value: wire({ game_id: 1, winner: null, ended_at: end, scheduled_end_at: end }),
+    },
   ] as never);
   return { ...scenario, startsAt: Number(end) + 1 };
 }
