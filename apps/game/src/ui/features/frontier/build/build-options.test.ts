@@ -93,7 +93,7 @@ describe("Frontier's build options", () => {
     expect(readBuildOptions(store, realm, true, 350)).toBeUndefined();
   });
 
-  it("opens training after mixed Barracks purchases, trained at the training building’s own tier", () => {
+  it("opens training after Barracks tiers, trained at the training building’s own tier", () => {
     const { store, realm } = realmBoard();
     const warHall = () =>
       readBuildOptions(store, realm, true, 350)!.find(({ category }) => category === BuildingType.WarHall)!;
@@ -107,12 +107,10 @@ describe("Frontier's build options", () => {
       store.applyFacts([
         { model: "RealmKnowledge", key: "0x77", value: { game_id: 1, structure_id: realm.entity_id, learned } },
       ] as never);
-    // The owner's realm on prod (4 November): Drill I, no Rations. The contract refuses a training building.
+    // Charge I does not yet open training.
     learn(1n << 14n);
     expect(warHall().standing).toEqual({ gate: 2, bought: 1 });
-    // One Drill and one Rations purchase meet the two-purchase gate, as two Drill purchases do.
-    learn((1n << 14n) | (1n << 17n));
-    expect(warHall().standing).toBe("open");
+    // Charge II meets the two-purchase gate.
     learn(2n << 14n);
     expect(warHall().standing).toBe("open");
   });

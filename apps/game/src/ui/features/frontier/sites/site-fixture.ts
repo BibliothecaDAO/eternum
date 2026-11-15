@@ -228,6 +228,7 @@ export const blightglowRift = ({
       ...wire(army),
       troops: { ...wire(army.troops), count: String(armyTroops * PRECISION), stamina: { Slot: 0 } },
     }),
+    set("0xf2013", "ArmyCombat", { game_id: 1, explorer_id: 201, charge: 0, last_target: 0 }),
     set("0xf2012", "ArmyProgress", {
       game_id: 1,
       explorer_id: 201,

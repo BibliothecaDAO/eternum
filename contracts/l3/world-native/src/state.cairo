@@ -60,6 +60,7 @@ pub type Storage =
         crate::troops::ExplorerRecord,
         crate::troops::ArmySlotRecord,
         crate::progression::ArmyProgress,
+        crate::combat::ArmyCombat,
         crate::village::VillagePass,
         crate::deep::DeepSite,
         crate::deep::DeepGuard,

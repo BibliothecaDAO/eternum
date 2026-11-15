@@ -5,8 +5,16 @@ use crate::math::PercentageValueImpl;
 use crate::rules::{RESOURCE_PRECISION, TroopDamageConfig, TroopStaminaConfig};
 use crate::stamina::StaminaSourceTrait;
 use crate::troops::{TroopTier, TroopType, Troops};
+/// Research captured at muster and the last entity this army attacked. Entity zero means no attack yet.
+#[derive(Copy, Drop, Serde, Debug, PartialEq, starknet::Store)]
+pub struct ArmyCombat {
+    pub charge: u8,
+    pub last_target: u64,
+}
+
 #[derive(Copy, Drop, Serde)]
 pub struct CombatContext {
+    pub charge_percent: u8,
     pub timestamp: u64,
     pub day_unit_seconds: u32,
     pub attacker_roll: u8,
@@ -361,6 +369,15 @@ pub impl TroopsImpl of TroopsTrait {
         ALPHA_DAMAGE_DEALT -= ALPHA_DAMAGE_DEALT
             * bravo.boosts.decr_damage_gotten_percent_num.into()
             / PercentageValueImpl::_100().into();
+
+        if context.day_unit_seconds != 0 && alpha.category == TroopType::Knight && context.charge_percent != 0 {
+            let early = ALPHA_DAMAGE_DEALT.round() * Self::_combat_percent_multiplier(context.charge_percent.into());
+            BRAVO_DAMAGE_DEALT = if early >= BRAVO_NUM_TROOPS {
+                FixedTrait::ZERO()
+            } else {
+                BRAVO_DAMAGE_DEALT * (BRAVO_NUM_TROOPS - early) / BRAVO_NUM_TROOPS
+            };
+        }
 
         if is_ranged_attack {
             let half_battle_timer_length: u32 = (cooldown_seconds / 2).try_into().unwrap();

@@ -120,6 +120,7 @@ const fightOnGrassland = (attacker: ExchangeTroops, defender: ExchangeTroops, at
     attacker,
     defender,
     {
+      chargePercent: 0,
       timestamp: FIGHT_AT,
       attackDistance,
       attackerBiome: BiomeType.Grassland,

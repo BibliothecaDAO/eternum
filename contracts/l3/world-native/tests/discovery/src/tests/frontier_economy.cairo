@@ -70,6 +70,7 @@ fn raising_troops_pays_two_wheat_each_from_settled_wheat_and_fails_when_the_real
     assert!(execute(deployment, raise(home, 4, 1), 120));
     assert_eq!(stored(deployment, home, KNIGHT), 12 * RESOURCE_PRECISION);
     assert_eq!(stored(deployment, home, WHEAT), 4 * RESOURCE_PRECISION);
+
 }
 
 #[test]
@@ -89,19 +90,18 @@ fn stores_pay_every_second_independently_of_the_armies_tick() {
 }
 
 #[test]
-fn each_rations_pick_takes_a_quarter_wheat_off_every_troop_deployed() {
+fn charge_tiers_do_not_change_the_wheat_paid_for_each_muster() {
     let (deployment, home) = frontier_realm(frontier_preset());
     allow_armies(deployment, home);
     grant(deployment, home, KNIGHT, 20 * RESOURCE_PRECISION);
     grant(deployment, home, WHEAT, 20 * RESOURCE_PRECISION);
-    // Drill then Rations: 1.75 wheat a troop.
-    learn_barracks(deployment, home, array![crate::research::CHOICE_DRILL, crate::research::CHOICE_RATIONS].span());
+    learn_barracks(deployment, home, array![0_u8, 0].span());
     assert!(execute(deployment, raise(home, 4, 0), 40));
-    assert_eq!(stored(deployment, home, WHEAT), 13 * RESOURCE_PRECISION);
-    // Rations twice: 1.5 wheat a troop.
-    learn_barracks(deployment, home, array![crate::research::CHOICE_RATIONS, crate::research::CHOICE_RATIONS].span());
+    assert_eq!(stored(deployment, home, WHEAT), 12 * RESOURCE_PRECISION);
+    learn_barracks(deployment, home, array![0_u8, 0, 0, 0, 0].span());
     assert!(execute(deployment, raise(home, 4, 1), 40));
-    assert_eq!(stored(deployment, home, WHEAT), 7 * RESOURCE_PRECISION);
+    assert_eq!(stored(deployment, home, WHEAT), 4 * RESOURCE_PRECISION);
+
 }
 
 #[test]
@@ -279,6 +279,7 @@ fn a_city_builds_lodges_and_deploys_their_scout_stock_at_two_wheat_each() {
     assert!(execute(d, lodge, 40));
     grant(d, home, 32, 600 * RESOURCE_PRECISION);
     grant(d, home, WHEAT, 1000 * RESOURCE_PRECISION);
+    learn_barracks(d, home, array![0_u8, 0, 0, 0, 0].span());
     let knights = stored(d, home, KNIGHT);
     assert!(
         execute(

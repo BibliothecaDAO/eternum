@@ -99,6 +99,7 @@ fn tests_crossbowman_ranged_field_attack_uses_reduced_damage() {
         .attack_with_context(
             ref adjacent_bravo,
             CombatContext {
+                charge_percent: 0,
                 day_unit_seconds: 0,
                 timestamp: 1,
                 attacker_roll: 0,
@@ -118,6 +119,7 @@ fn tests_crossbowman_ranged_field_attack_uses_reduced_damage() {
         .attack_with_context(
             ref ranged_bravo,
             CombatContext {
+                charge_percent: 0,
                 day_unit_seconds: 0,
                 timestamp: 1,
                 attacker_roll: 0,
@@ -157,6 +159,7 @@ fn tests_crossbowman_ranged_structure_attack_uses_heavy_reduction() {
         .attack_with_context(
             ref field_bravo,
             CombatContext {
+                charge_percent: 0,
                 day_unit_seconds: 0,
                 timestamp: 1,
                 attacker_roll: 0,
@@ -176,6 +179,7 @@ fn tests_crossbowman_ranged_structure_attack_uses_heavy_reduction() {
         .attack_with_context(
             ref structure_bravo,
             CombatContext {
+                charge_percent: 0,
                 day_unit_seconds: 0,
                 timestamp: 1,
                 attacker_roll: 0,
@@ -214,6 +218,7 @@ fn tests_knight_assault_increases_adjacent_structure_guard_damage() {
         .attack_with_context(
             ref guard_bravo,
             CombatContext {
+                charge_percent: 0,
                 day_unit_seconds: 0,
                 timestamp: 1,
                 attacker_roll: 0,
@@ -252,6 +257,7 @@ fn tests_knight_bulwark_reduces_guard_incoming_damage() {
         .attack_with_context(
             ref guard_bravo,
             CombatContext {
+                charge_percent: 0,
                 day_unit_seconds: 0,
                 timestamp: 1,
                 attacker_roll: 0,
@@ -351,6 +357,7 @@ fn expedition_knights_use_one_damage_formula_for_armies_and_guards_even_without_
                     .attack_with_context(
                         ref defender,
                         CombatContext {
+                            charge_percent: 0,
                             day_unit_seconds: 14400,
                             attacker_is_structure_guard,
                             defender_is_structure_guard,
@@ -405,5 +412,51 @@ fn scouts_deal_three_quarters_damage_on_either_side_only_in_frontier() {
                 } * RESOURCE_PRECISION);
             }
         }
+    }
+}
+
+#[test]
+fn charge_reduces_the_opening_answer_against_beasts_and_armies() {
+    let damage = TroopDamageConfig {
+        damage_biome_bonus_num: 0, damage_scaling_factor: 36893488147419103232, ..damage_config(),
+    };
+    let stamina = TroopStaminaConfig { stamina_attack_req: 10, stamina_defense_req: 0, ..stamina_config() };
+    for defender_is_structure_guard in array![false, true] {
+        let mut attacker = test_troops(TroopType::Knight, TroopTier::T1, 1000, 100);
+        let mut defender = test_troops(TroopType::Knight, TroopTier::T1, 1000, 100);
+        let expected = array![(658_u128, 563_u128), (386, 245), (251, 32), (230, 0)];
+        for index in 0_u32..4 {
+            attacker.attack_with_context(
+                ref defender,
+                CombatContext {
+                    day_unit_seconds: 100,
+                    charge_percent: if index == 0 { 50 } else { 0 },
+                    defender_is_structure_guard,
+                    ..context(Biome::Grassland),
+                },
+                stamina,
+                damage,
+                1,
+                0,
+            );
+            let (left, guard) = *expected.at(index);
+            assert_eq!(attacker.count, left * RESOURCE_PRECISION);
+            assert_eq!(defender.count, guard * RESOURCE_PRECISION);
+        }
+    }
+}
+
+
+#[test]
+fn charge_does_not_change_scout_or_blitz_damage() {
+    let damage = TroopDamageConfig { damage_biome_bonus_num: 0, ..damage_config() };
+    for (category, day_unit_seconds) in array![(TroopType::Paladin, 100_u32), (TroopType::Knight, 0)] {
+        let mut attacker = test_troops(category, TroopTier::T1, 1000, 100);
+        let mut defender = test_troops(TroopType::Knight, TroopTier::T1, 1000, 100);
+        let plain = CombatContext { day_unit_seconds, ..context(Biome::Grassland) };
+        assert_eq!(
+            attacker.damage_with_context(ref defender, plain, stamina_config(), damage, 1, 0),
+            attacker.damage_with_context(ref defender, CombatContext { charge_percent: 50, ..plain }, stamina_config(), damage, 1, 0),
+        );
     }
 }

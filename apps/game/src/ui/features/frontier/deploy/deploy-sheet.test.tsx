@@ -436,18 +436,16 @@ describe("the Deploy sheet", () => {
   });
 
   it.each([
-    ["seven Wheat deploys four troops at 1.75 each", 7, "of 4", "7 WheatDeploy"],
-    ["three and a half Wheat deploys two", 3.5, "of 2", null],
-  ])("prices Max on the whole batch with Rations: %s", (_case, wheat, most, price) => {
+    ["eight Wheat deploys four troops", 8, "of 4", "8 WheatDeploy"],
+    ["four and a half Wheat deploys two", 4.5, "of 2", null],
+  ])("prices Max on the whole batch at the recipe cost: %s", (_case, wheat, most, price) => {
     (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
     const { store, row } = frontierDay();
-    const board = store.require("BoardRules", { game_id: 1 });
     store.applyFacts([
-      { model: "BoardRules", key: "0xa", value: { ...board, ration_step: "250000000" } },
       {
         model: "RealmKnowledge",
         key: "0xd",
-        value: { game_id: 1, structure_id: 7, learned: String((1n << 14n) | (1n << 17n)) },
+        value: { game_id: 1, structure_id: 7, learned: String(2n << 14n) },
       },
       {
         model: "ResourceBalance",

@@ -363,7 +363,7 @@ it("renders every generated research row and submits every permitted lodge kind"
 
 it("says on every side of every row what it does, in sight on the side, never only on a hover", () => {
   const sided = nodes.filter((node) => node.sides);
-  expect(sided.map(({ key }) => key)).toEqual(expect.arrayContaining(["row-0", "row-1", "row-2", "row-6"]));
+  expect(sided.map(({ key }) => key)).toEqual(expect.arrayContaining(["row-0", "row-1", "row-6"]));
   for (const node of sided) {
     draw(node.key);
     const choice = host.querySelector("[data-lab='node-choice']")!;
@@ -372,9 +372,7 @@ it("says on every side of every row what it does, in sight on the side, never on
     node.sides!.forEach((side, index) => expect(shown[index]).toContain(`${side.name}${side.line}`));
     expect(choice.querySelector("[title]")).toBeNull();
   }
-  // The Barracks' gate to the training buildings, said under its two sides.
   draw("row-2");
-  expect(host.querySelector("[data-lab='node-choice']")!.textContent).toContain(
-    nodes.find((n) => n.key === "row-2")!.gate!.line,
-  );
+  expect(host.textContent).toContain(nodes.find((n) => n.key === "row-2")!.gate!.line);
+  expect(host.textContent).toContain("Charge");
 });

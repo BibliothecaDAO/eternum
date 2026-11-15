@@ -11,7 +11,7 @@ import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { usePopoverStore } from "@/hooks/store/use-popover-store";
 import { usePlayerDisplayName } from "@/hooks/use-player-profile";
 import { surfaceAnchorFrom } from "@/ui/design-system/molecules/popover";
-import { configManager, getGuardsByStructure, getTroopResourceId, StaminaManager } from "@bibliothecadao/eternum";
+import { configManager, getGuardsByStructure, getTroopResourceId, StaminaManager, openingChargePercent, ARMY_CHARGE_MODELS } from "@bibliothecadao/eternum";
 import { useGame } from "@/hooks/context/game-context";
 import { useNativeFacts } from "@/hooks/helpers/use-native-facts";
 
@@ -75,6 +75,7 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
     "ArmySlot",
     "ArmyRelicEffect",
     "ArmyProgress",
+    ...ARMY_CHARGE_MODELS,
     "Structure",
     ...GUARD_MODELS,
     "ExplorerTroops",
@@ -181,11 +182,18 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
   // Every exchange is the contract's own arithmetic on both sides' troops, stamina and boosts at chain time: this
   // attack and the whole fight as successive attacks now, at both ends of the dice.
   const fight = useMemo(() => {
-    if (!attackerArmyData || !targetArmyData) return null;
+    if (!attackerArmyData || !targetArmyData || !targetData) return null;
+    const army = facts.store.get("ExplorerTroops", {
+      game_id: configManager.getActiveGameId(), explorer_id: attacker.id,
+    });
+    const chargePercent = attackerType === AttackerType.Structure ? 0
+      : army && openingChargePercent(facts.store, army, BigInt(targetData.id));
+    if (chargePercent === undefined) return null;
     return forecastAttack(
       attackerArmyData.troops,
       targetArmyData.troops,
       {
+        chargePercent,
         timestamp: executionSecond,
         attackDistance: targetDistance,
         attackerBiome: biome,
@@ -198,6 +206,9 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
   }, [
     attackerArmyData,
     targetArmyData,
+    targetData,
+    facts,
+    attacker.id,
     executionSecond,
     targetDistance,
     biome,

@@ -8,6 +8,7 @@ import {
   ResourceManager,
   hasCastleLimit,
   resolveExchange,
+  openingChargePercent,
   getGuardsByStructure,
   siteKindOf,
 } from "@bibliothecadao/eternum";
@@ -119,7 +120,7 @@ export const readSiteCard = (
     payout: reward && fittingPayout(store, site.game_id, reward, attack),
     attackStamina: configManager.getCombatRules().stamina.stamina_attack_req,
     inReach: attack !== null && reachOf(store, attack, siteTile) !== undefined,
-    fight: guard && attack ? attackNow(store, guard.troops, siteTile, attack, true) : undefined,
+    fight: guard && attack ? attackNow(store, guard.troops, siteTile, attack, true, structure.entity_id) : undefined,
   };
 };
 
@@ -143,7 +144,7 @@ export const readArmyCard = (
     payout: null,
     attackStamina: configManager.getCombatRules().stamina.stamina_attack_req,
     inReach: attack !== null && reachOf(store, attack, armyTile) !== undefined,
-    fight: troops && troops.count > 0n && attack ? attackNow(store, troops, armyTile, attack, false) : undefined,
+    fight: troops && troops.count > 0n && attack ? attackNow(store, troops, armyTile, attack, false, army.explorer_id) : undefined,
   };
 };
 
@@ -202,7 +203,7 @@ const BESIDE = 1;
  * The attack as the contract would resolve it at the army's clock, with no dice: Frontier's combat is exact. An army
  * out of reach is read from beside the target, with the stamina it holds now: how far it stands decides only whether
  * Attack can be sent yet (owner, 31 October 2026: "I should still have the projection even if I'm too far I think").
- * Both sides' stamina are this moment's, so the guard's (a tired guard strikes at 70%) is the one Attack meets.
+ * Both sides' stamina and the attacker's opening Charge come from the current facts.
  */
 const attackNow = (
   store: NativeFactStore,
@@ -210,15 +211,19 @@ const attackNow = (
   siteTile: { col: number; row: number; alt: boolean },
   attack: SiteAttack,
   defenderIsStructureGuard: boolean,
+  targetId: bigint,
 ): SiteFight | undefined => {
   if (configManager.rollsCombatDice(siteTile.alt))
     throw new Error("Frontier's site forecast is exact; this game rolls dice");
   const troops = resolveExplorerCombatTroops(store, attack.army, attack.timestamp);
   if (!troops) return undefined;
+  const chargePercent = openingChargePercent(store, attack.army, targetId);
+  if (chargePercent === undefined) return undefined;
   const exchange = resolveExchange(
     troops,
     guard,
     {
+      chargePercent,
       timestamp: attack.timestamp,
       attackDistance: reachOf(store, attack, siteTile) ?? BESIDE,
       attackerBiome: attack.biome,

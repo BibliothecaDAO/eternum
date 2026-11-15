@@ -3,6 +3,14 @@
 export const factWireTypes = [
   {
     type: "struct",
+    name: "world_native::combat::ArmyCombat",
+    members: [
+      { name: "charge", type: "core::integer::u8" },
+      { name: "last_target", type: "core::integer::u64" },
+    ],
+  },
+  {
+    type: "struct",
     name: "world_native::spires::ExpeditionSpireKey",
     members: [
       {
@@ -1346,6 +1354,7 @@ export function defineFactModels({ struct, model: declare }) {
     model("ArmyRelics", "game", struct("troops::ExplorerKey"), struct("army_relics::ArmyRelics")),
     model("ArmyRelicEffect", "game", struct("army_relics::ArmyRelicEffectKey"), struct("army_relics::ArmyRelicEffect")),
     model("RuinRelic", "game", struct("resources::ResourceKey"), struct("army_relics::ArmyRelic")),
+    model("ArmyCombat", "game", struct("troops::ExplorerKey"), struct("combat::ArmyCombat")),
     model("ArmyProgress", "game", struct("troops::ExplorerKey"), struct("progression::ArmyProgress")),
     model("ArmyDay", "game", struct("troops::ExplorerKey"), [{ name: "day", type: "core::integer::u64" }]),
     model(
@@ -1747,6 +1756,7 @@ export const syncScopes = {
   ShrineReward: { entities: ["entity_id"] },
   // A relic chest's pack is public: anyone may open the chest, so every player sees what it holds.
   RelicChest: shared,
+  ArmyCombat: { entities: ["explorer_id"] },
   ArmyProgress: { entities: ["explorer_id"] },
   ArmyRelics: { entities: ["explorer_id"] },
   ArmyRelicEffect: { entities: ["explorer_id"] },

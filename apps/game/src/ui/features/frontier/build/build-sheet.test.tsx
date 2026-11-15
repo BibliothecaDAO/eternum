@@ -515,12 +515,12 @@ describe("the build sheet", () => {
     const mixed = open(store, realm);
     expect(gems(mixed, "Farm")).toEqual(["fields II", "granary I"]);
     expect(gems(mixed, "Workshop")).toEqual(["tools Untrained", "storehouse Untrained"]);
-    expect(gems(mixed, "Barracks")).toEqual(["drill Untrained", "rations Untrained"]);
+    expect(gems(mixed, "Barracks")).toEqual([]);
     // A row without sides keeps its type's one gem: the Hut at Rare III, a training building at Common I.
     expect(gems(mixed, "Hut")).toEqual(["III"]);
     expect(gems(mixed, "War hall")).toEqual(["I"]);
     // Gems, never words for them (owner, 27 October: "why no gems instead of the text ?").
-    expect(mixed.host.textContent).not.toMatch(/ from (Fields|Tools|Drill)/);
+    expect(mixed.host.textContent).not.toMatch(/ from (Fields|Tools)/);
     mixed.close();
     // Two Fields purchases with Granary untrained.
     learn(2n);
@@ -603,7 +603,7 @@ describe("the build sheet", () => {
     act(() => gold().click());
     expect(onResearch).toHaveBeenCalledOnce();
 
-    // The owner's realm on prod (4 November): Drill I bought, so the lock counts it and asks for one more.
+    // Charge I counts toward the gate and leaves one tier to buy.
     store.applyFacts([
       fact("0x77", "RealmKnowledge", { game_id: 1, structure_id: 7, learned: String(1n << 14n) }),
     ] as never);
@@ -644,7 +644,7 @@ it("reds only the price lines the realm holds less of, so a training building sh
     {
       model: "RealmKnowledge",
       key: "0x77",
-      value: { game_id: 1, structure_id: 7, learned: (1n << 14n) | (1n << 17n) },
+      value: { game_id: 1, structure_id: 7, learned: 2n << 14n },
     },
   ] as never);
   const warHall = store.require("BuildingRule", { game_id: 1, category: BuildingType.WarHall });

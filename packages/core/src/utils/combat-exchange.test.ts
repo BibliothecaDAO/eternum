@@ -117,6 +117,7 @@ const readCase = (next: () => bigint, tickSeconds: number) => {
     defenderBiome: biome,
     attackerIsStructureGuard,
     defenderIsStructureGuard,
+    chargePercent: 0,
     attackerRoll: 0,
     defenderRoll: 0,
   };
@@ -308,5 +309,46 @@ it("applies the Scout damage reduction to attacker and defender only in Frontier
         });
       }
     }
+  }
+});
+
+it("forecasts Charge on the opening exchange only, for beasts and armies", () => {
+  const fixture = readFixture();
+  const base = fixture.cases[0]!;
+  const army: ExchangeTroops = {
+    ...base.attacker,
+    category: "Knight",
+    tier: "T1",
+    count: 1000_000_000_000n,
+    stamina: { amount: 100n, settled_at: base.context.timestamp, remainder: 0 },
+    battle_cooldown_end: 0,
+    boosts: { ...base.attacker.boosts, incr_damage_dealt_percent_num: 0, decr_damage_gotten_percent_num: 0 },
+  };
+  const rules = {
+    ...fixture.rules,
+    dayUnitSeconds: 100,
+    cooldownSeconds: 0,
+    damage: { ...fixture.rules.damage, damage_scaling_factor: 36893488147419103232n, damage_biome_bonus_num: 0 },
+    stamina: { ...fixture.rules.stamina, stamina_attack_req: 10, stamina_defense_req: 0 },
+  };
+  for (const defenderIsStructureGuard of [false, true]) {
+    const context = {
+      ...base.context,
+      chargePercent: 50,
+      attackDistance: 1,
+      attackerBiome: BiomeType.Grassland,
+      defenderBiome: BiomeType.Grassland,
+      attackerIsStructureGuard: false,
+      defenderIsStructureGuard,
+    };
+    expect(forecastFight(army, army, context, rules)).toMatchObject({
+      outcome: "wins",
+      exchanges: 4,
+      firstExchange: { attackerLoss: 342_000_000_000n, defenderLoss: 437_000_000_000n },
+      attackerLoss: 770_000_000_000n,
+      defenderLoss: 1000_000_000_000n,
+      attacker: { count: 230_000_000_000n },
+      defender: { count: 0n },
+    });
   }
 });

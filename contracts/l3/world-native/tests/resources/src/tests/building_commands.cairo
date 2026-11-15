@@ -515,31 +515,31 @@ fn each_hut_tier_adds_a_fifth_of_every_huts_population() {
 }
 
 #[test]
-fn frontier_barracks_make_one_troop_type_and_drill_adds_a_fifth() {
+fn charge_research_does_not_change_the_barracks_output() {
     let (d, home, _) = research_world();
     assert!(execute(d, build_toward(home, crate::research::BARRACKS, 0), 40));
     let base = rate(d, home, 26);
     assert_eq!(base, 40);
     for side in array![
-        crate::research::CHOICE_DRILL, crate::research::CHOICE_DRILL, crate::research::CHOICE_RATIONS,
-        crate::research::CHOICE_DRILL,
+        0, 0, 0,
+        0,
     ] {
         assert!(execute(d, research(home, crate::research::ROW_BARRACKS, side), 40));
     }
-    assert_eq!(rate(d, home, 26), base * 16000 / 10000);
+    assert_eq!(rate(d, home, 26), base);
     assert_eq!(rate(d, home, 27), 0);
     assert_eq!(rate(d, home, 28), 0);
 }
 
 #[test]
-fn a_training_building_is_unique_and_opens_after_two_mixed_barracks_purchases() {
+fn a_training_building_is_unique_and_opens_after_two_barracks_tiers() {
     let (d, home, _) = research_world();
     assert_terminal_rejection(d, build_toward(home, crate::research::WAR_HALL, 0), 40);
     assert_terminal_rejection(d, research(home, crate::research::ROW_WAR_HALL, 0), 40);
     assert!(execute(d, build_toward(home, crate::research::BARRACKS, 1), 40));
-    assert!(execute(d, research(home, crate::research::ROW_BARRACKS, crate::research::CHOICE_DRILL), 40));
+    assert!(execute(d, research(home, crate::research::ROW_BARRACKS, 0), 40));
     assert_terminal_rejection(d, build_toward(home, crate::research::WAR_HALL, 0), 40);
-    assert!(execute(d, research(home, crate::research::ROW_BARRACKS, crate::research::CHOICE_RATIONS), 40));
+    assert!(execute(d, research(home, crate::research::ROW_BARRACKS, 0), 40));
     assert!(execute(d, build_toward(home, crate::research::WAR_HALL, 0), 40));
     assert_terminal_rejection(d, build_toward(home, crate::research::WAR_HALL, 2), 40);
     assert!(execute(d, research(home, crate::research::ROW_WAR_HALL, 0), 40));
@@ -698,7 +698,7 @@ fn frontier_storage_grants_clip_at_each_exact_s2_cap_without_changing_troops() {
 }
 
 #[test]
-fn workshop_and_barracks_charge_each_sides_own_exact_ladder() {
+fn workshop_sides_and_charge_each_follow_their_exact_ladder() {
     for (row, category, essence_base, labor_base) in array![(1_u8, 25_u8, 2000_u128, 2000_u128), (2, 28, 4000, 3000)] {
         let (d, home, _) = research_world();
         let resources = IResourceOperationsDispatcher { contract_address: d.games };
@@ -707,7 +707,7 @@ fn workshop_and_barracks_charge_each_sides_own_exact_ladder() {
         };
         let labor = ResourceSlot { resource_type: crate::resources::LABOR, ..essence };
         assert!(execute(d, build_toward(home, category, 0), 40));
-        for side in 0_u8..2 {
+        for side in 0_u8..crate::research::choice_count(row) {
             for at in 0_u32..5 {
                 start_cheat_caller_address(d.games, d.games);
                 crate::resources::IResourceOperationsDispatcherTrait::grant_resource(
@@ -734,7 +734,7 @@ fn workshop_and_barracks_charge_each_sides_own_exact_ladder() {
             }
             assert_terminal_rejection(d, research(home, row, side), 40);
         }
-        assert_eq!(crate::research::purchases(learned(d, home), row), 10);
+        assert_eq!(crate::research::purchases(learned(d, home), row), 5 * crate::research::choice_count(row));
     }
 }
 
@@ -746,8 +746,8 @@ fn construction_grants_common_once_and_the_next_purchase_costs_uncommon(category
     let (d, home, preset) = research_world();
     let row = crate::research::ROW_WAR_HALL + category - crate::research::WAR_HALL;
     assert!(execute(d, build_toward(home, crate::research::BARRACKS, 1), 40));
-    for side in 0_u8..2 {
-        assert!(execute(d, research(home, crate::research::ROW_BARRACKS, side), 40));
+    for _ in 0_u8..2 {
+        assert!(execute(d, research(home, crate::research::ROW_BARRACKS, 0), 40));
     }
     let command = CreateBuilding {
         structure_id: home.entity_id, directions: array![0_u8].span(), category, use_simple: true,
@@ -786,8 +786,8 @@ fn construction_grants_common_once_and_the_next_purchase_costs_uncommon(category
 fn sanctuary_research_requires_a_site_unlock_without_spending_on_rejection(unlock: u8) {
     let (d, home, _) = research_world();
     assert!(execute(d, build_toward(home, crate::research::BARRACKS, 1), 40));
-    for side in 0_u8..2 {
-        assert!(execute(d, research(home, crate::research::ROW_BARRACKS, side), 40));
+    for _ in 0_u8..2 {
+        assert!(execute(d, research(home, crate::research::ROW_BARRACKS, 0), 40));
     }
     let lodge = CreateBuilding {
         structure_id: home.entity_id,

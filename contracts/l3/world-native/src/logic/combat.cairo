@@ -135,7 +135,13 @@ fn beast_bps(target: GuardTarget, home: u64, timestamp: u64) -> u32 {
 fn fight_guard(
     key: ExplorerKey, ref attacker: ExplorerTroops, ref defender: GuardDefender, context: ExecutionContext,
 ) -> (u8, u8) {
+    let target = match defender.source {
+        GuardSource::Army(key) => key.explorer_id,
+        GuardSource::Guard((key, _)) => key.structure_id,
+        GuardSource::Empty => panic!("missing fought guard"),
+    };
     let combat = CombatContext {
+        charge_percent: opening_charge(key, target, context),
         defender_is_structure_guard: true, ..combat_context(key.game_id, attacker, defender.army, context),
     };
     let attacker_before = attacker.troops.count;
@@ -268,7 +274,10 @@ pub fn battle(
     assert_loot_available(game_id, command.defender_id, command.steal_resources, context);
     let attacker_before = attacker.troops.count;
     let defender_before = defender.troops.count;
-    let combat = combat_context(game_id, attacker, defender, context);
+    let combat = CombatContext {
+        charge_percent: opening_charge(attacker_key, command.defender_id, context),
+        ..combat_context(game_id, attacker, defender, context),
+    };
     let (attacker_after, defender_after) = resolve_battle(game_id, attacker.troops, defender.troops, combat, context);
     attacker.troops = attacker_after;
     defender.troops = defender_after;
@@ -595,6 +604,7 @@ pub fn combat_context(
         (distance(attacker.coord, defender.coord) / stride).try_into().unwrap()
     };
     CombatContext {
+        charge_percent: 0,
         timestamp: context.timestamp,
         day_unit_seconds: context.rules.unbox().day_unit_seconds,
         attacker_roll,
@@ -679,4 +689,11 @@ fn emit<T, +starknet::event::Event<T>, +Into<T, crate::logic::combat_domain::Com
     let mut data = array![];
     starknet::event::Event::append_keys_and_data(@event, ref keys, ref data);
     starknet::syscalls::emit_event_syscall(keys.span(), data.span()).unwrap();
+}
+
+fn opening_charge(key: ExplorerKey, target: u64, context: ExecutionContext) -> u8 {
+    if context.rules.unbox().day_unit_seconds == 0 {
+        return 0;
+    }
+    crate::logic::army_combat::opening_charge(key, target)
 }

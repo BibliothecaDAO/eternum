@@ -139,25 +139,11 @@ it("opens on the army beside the realm at no troops, and raises the most it can 
   expect(close).not.toHaveBeenCalled();
 });
 
-/** One Rations pick on the Barracks row, a quarter wheat off each troop's 2: a knight raises for 1.75 wheat. */
-const withOneRations = (fixture: ReturnType<typeof armyBesideHome>) => {
-  const board = fixture.store.require("BoardRules", { game_id: 1 });
-  fixture.store.applyFacts([
-    { model: "BoardRules", key: "0xa", value: { ...board, ration_step: "250000000" } },
-    {
-      model: "RealmKnowledge",
-      key: "0xd",
-      value: { game_id: 1, structure_id: 7, learned: String((1n << 14n) | (1n << 17n)) },
-    },
-  ] as never);
-};
-
 it.each([
-  ["seven Wheat raises four troops at 1.75 each", 7, "600 → 604", "7 Wheat"],
-  ["three and a half Wheat raises two", 3.5, "600 → 602", null],
-])("prices Max on the whole batch with Rations: %s", async (_case, wheat, after, price) => {
+  ["eight Wheat raises four troops", 8, "600 → 604", "8 Wheat"],
+  ["four and a half Wheat raises two", 4.5, "600 → 602", null],
+])("prices Max on the whole batch at the recipe cost: %s", async (_case, wheat, after, price) => {
   const fixture = armyBesideHome();
-  withOneRations(fixture);
   fixture.holdWheat(wheat);
   render(fixture);
   await press("Max");

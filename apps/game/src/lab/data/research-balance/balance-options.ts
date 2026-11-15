@@ -1,4 +1,4 @@
-import { EARLY_REALM } from "@/ui/features/frontier/research/progression-fixture";
+import { frontierPreset } from "../../../../../../config/source/frontier/native";
 
 export type Counts = readonly [number, number];
 export type StudyRow = 0 | 1 | 2;
@@ -29,7 +29,9 @@ export const number = (value: number) => value.toLocaleString("en-US", { maximum
 
 export function nextPrice(row: StudyRow, counts: Counts, side: number) {
   if (counts[side]! >= 5) return undefined;
-  return EARLY_REALM.price(row, counts[side]! + 1);
+  const price = frontierPreset.research.find((entry) => entry.row === row && entry.tier === counts[side]! + 1);
+  if (!price) throw new Error(`Missing historical research price ${row}/${counts[side]! + 1}`);
+  return { essence: price.essenceCost, labor: price.laborCost };
 }
 
 export function capacity(level: number, picks: number) {

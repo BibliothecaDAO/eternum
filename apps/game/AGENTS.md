@@ -589,3 +589,8 @@ Scouts are raised in Deploy by selecting Scouts from the troop choices, then a c
 Lodge opens at City and produces the separate Scout stock; its Scouting research belongs to Scouts. `--steps lab-scouts`
 uses `/lab/game?scenario=scouts` to choose and deploy 400 Scouts, retaining the submitted command, army and balance
 changes on desktop and phone. Native tests prove the ten-stamina reveal and combat damage.
+
+Charge: `/lab/game?scenario=charge` puts Charge V Knights beside a camp. `build.sh playtest-charge` selects the army,
+attacks twice through the site card, and records each signed command and resulting army, guard and combat facts on
+desktop and phone. Native lifecycle tests prove research capture, repeated attacks, rejection and removal; the combat
+suite proves both beasts and armies use the opening share only once.

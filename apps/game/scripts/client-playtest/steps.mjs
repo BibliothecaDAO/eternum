@@ -435,6 +435,25 @@ const RELIC_FORECAST_STEPS = [
  * Attack (a desktop's right-click, a phone's two taps), then the card's Attack; the result is the army's token showing
  * exactly the troops the chain left it.
  */
+const CHARGE_STEPS = [
+  { name: "enter-on-map", settleMs: 3_000, verify: inScene("map") },
+  { name: "select-army", play: selectTheReadiestArmy, settleMs: 1_500, verify: armySelected },
+  ...[["opening-charge", 658, 563], ["same-fight", 386, 245]].map(([name, attacker, defender]) =>
+    clickToResultStep(name, "BattleGuard", attackFromTheSiteCard, ({ played, actionLatency }) => {
+      const answer = (actionLatency.chainAnswers ?? []).filter(({ kind }) => kind === "BattleGuard").at(-1);
+      const rows = answer?.answered ?? [];
+      const army = rows.find(({ model }) => model === "ExplorerTroops")?.value;
+      const guard = rows.find(({ model }) => model === "Guard")?.value;
+      const combat = rows.find(({ model }) => model === "ArmyCombat")?.value;
+      return played.watching && army && guard && combat &&
+        BigInt(army.troops.count) === BigInt(attacker) * 1_000_000_000n &&
+        BigInt(guard.troops.count) === BigInt(defender) * 1_000_000_000n &&
+        BigInt(combat.last_target) === BigInt(guard.structure_id)
+        ? { watch: "fought" } : undefined;
+    }),
+  ),
+];
+
 const FIGHT_ACTION_STEPS = [
   { name: "enter-on-map", settleMs: 3_000, verify: inScene("map") },
   { name: "select-army", play: selectTheReadiestArmy, settleMs: 1_500, verify: armySelected },
@@ -5815,6 +5834,7 @@ export const STEP_SETS = {
   "lab-actions-merge": { game: labSpireGame("merge-loses-xp"), steps: mergeActionSteps() },
   "lab-economy": { game: { ...labSpireGame("economy"), mode: "blitz" }, steps: ECONOMY_STEPS },
   "lab-actions-transfer": { game: labSpireGame("merge-loses-xp"), steps: transferActionSteps() },
+  "lab-charge": { game: labSpireGame("charge"), steps: CHARGE_STEPS },
   "lab-scouts": { game: labSpireGame("scouts"), steps: SCOUT_DEPLOY_STEPS },
   "lab-actions-deploy": { game: labSpireGame("actions"), steps: DEPLOY_ACTION_STEPS },
   "lab-actions-research": { game: labSpireGame("research"), steps: RESEARCH_ACTION_STEPS },

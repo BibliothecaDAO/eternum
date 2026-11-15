@@ -36,13 +36,12 @@ describe("the castle's tree as the contract rules it", () => {
     expect(canResearchNow(readResearchTree(EARLY_REALM))).toBe(true);
   });
 
-  it("locks a tier whose labor the castle's store cannot hold, naming the level that holds it", () => {
-    // Barracks epic costs 24,000 labor; a City's labor store holds 18,000, a Kingdom's 50,000.
+  it("shows the single Charge row and prices its next tier from the active preset", () => {
     const barracks = node(MID_REALM, "row-2");
-    expect(barracks.state).toBe("ready");
-    expect(barracks.sides?.[0].state).toBe("ready");
-    expect(barracks.sides?.[0].price).toEqual({ essence: 16000, labor: 9000 });
-    expect(barracks.sides?.[1]).toMatchObject({ state: "ready", price: { essence: 2000, labor: 1500 } });
+    expect(barracks.state).toBe("short");
+    expect(barracks.sides).toBeUndefined();
+    expect(barracks.price).toEqual({ essence: 25000, labor: 5000 });
+    expect(barracks.gives).toEqual({ line: "Opening damage before the defender answers", now: "20%", next: "30%" });
   });
 
   it("opens the training rows once the Barracks is rare, and prices each next tier from the game's prices", () => {
@@ -62,15 +61,14 @@ describe("the castle's tree as the contract rules it", () => {
     expect(canResearchNow(readResearchTree(MID_REALM))).toBe(true);
   });
 
-  it("counts the owner's one Barracks purchase toward the training gate, and opens it on a second on either side", () => {
-    // Prod, 4 November: Drill I bought, Rations none; the contract refuses a War hall until a second purchase.
-    const barracks = (sides: number[]) => ({
+  it("counts Charge tiers toward the training gate", () => {
+    const barracks = (tier: number) => ({
       ...EARLY_REALM,
-      learned: { ...EARLY_REALM.learned, [research.ROW_BARRACKS]: { tier: 1, sides } },
+      learned: { ...EARLY_REALM.learned, [research.ROW_BARRACKS]: { tier, sides: [] } },
     });
-    expect(why(barracks([0]), "row-4")).toBe("Barracks 1/2 purchases first");
-    expect(node(barracks([0]), "row-2").gate).toMatchObject({ name: "Barracks 1/2 purchases", met: false });
-    expect(node(barracks([0, 1]), "row-2").gate).toMatchObject({ name: "Barracks 2/2 purchases", met: true });
+    expect(why(barracks(1), "row-4")).toBe("Barracks 1/2 purchases first");
+    expect(node(barracks(1), "row-2").gate).toMatchObject({ name: "Barracks 1/2 purchases", met: false });
+    expect(node(barracks(2), "row-2").gate).toMatchObject({ name: "Barracks 2/2 purchases", met: true });
   });
 
   it("gives a Farm tier's two sides their figures now and with one more pick, and the lodge its three kinds", () => {

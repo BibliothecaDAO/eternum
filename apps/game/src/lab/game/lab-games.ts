@@ -1,3 +1,4 @@
+import { chargeScenario } from "./charge-scenario";
 import { scoutsScenario } from "./scouts-scenario";
 import { siteEffectsScenario } from "./site-effects-scenario";
 import { farEyeScenario } from "./far-eye-scenario";
@@ -63,6 +64,7 @@ export const LAB_SCENARIOS: Partial<Record<string, () => LabScenario>> = {
   "from-home": () => ({ ...spireScenario(), entersFromHome: true }),
   actions: actionsScenario,
   scouts: scoutsScenario,
+  charge: chargeScenario,
   "high-ground": highGroundScenario,
   "day-end": dayEndScenario,
   realm: realmScenario,

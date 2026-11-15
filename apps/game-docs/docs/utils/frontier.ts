@@ -181,7 +181,7 @@ export const FRONTIER = {
     trainingGate: frontierPreset.board.trainingGateTier,
     outputStep: pct(frontierPreset.board.outputStepBps),
     storageStep: pct(frontierPreset.board.storageStepBps),
-    rationWheat: n(frontierPreset.board.rationStep),
+    charge: Array.from({ length: 5 }, (_, index) => pct((index + 1) * rule.CHARGE_PERCENT_PER_TIER * 100)),
     troopWheat: n(wheatPerTroop),
     populationStep: pct(frontierPreset.board.populationStepBps),
   },

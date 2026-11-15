@@ -11,7 +11,6 @@ import { nativeResearchConstants as research } from "@bibliothecadao/eternum/gam
 const SIDE_MARKS: Partial<Record<number, readonly [IconMeaning, IconMeaning]>> = {
   [research.ROW_FARM]: ["fields", "granary"],
   [research.ROW_WORKSHOP]: ["tools", "storehouse"],
-  [research.ROW_BARRACKS]: ["drill", "rations"],
 };
 
 /** A choosing row's two side marks, make side first; loud for a row without two sides. */
@@ -23,9 +22,6 @@ export const sideMarks = (row: number): readonly [IconMeaning, IconMeaning] => {
 
 /** One side of a choosing row: its mark, and the tiers bought on it as its rank (0 before the first). */
 export type SidePick = { icon: IconMeaning; picks: Rank };
-
-/** The tiers a row spent on its make side (Fields, Tools, Drill): each adds a share of the building's base output. */
-export const makePicks = (learned: bigint, row: number): number => researchPicks(learned, row, 0);
 
 /**
  * Each side of a choosing row with the tiers bought on it, make side first ("fields" 2, "granary" 1); none for a row

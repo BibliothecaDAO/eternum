@@ -22,12 +22,9 @@ pub const ROW_WELL: u8 = 9;
 pub const ROW_DEPTH: u8 = 10;
 pub const ROW_COUNT: u8 = 11;
 
-// Farm and Workshop tiers make more (Fields, Tools) or store more (Granary, Storeroom); Barracks tiers make more troops
-// (Drill) or deploy them for less wheat (Rations).
+// Farm and Workshop tiers make more (Fields, Tools) or store more (Granary, Storeroom).
 pub const CHOICE_MAKE: u8 = 0;
 pub const CHOICE_STORE: u8 = 1;
-pub const CHOICE_DRILL: u8 = 0;
-pub const CHOICE_RATIONS: u8 = 1;
 // The kind each Scouts' lodge tier finds more of.
 pub const KIND_CAMPS: u8 = 0;
 pub const KIND_RIFTS: u8 = 1;
@@ -63,7 +60,7 @@ pub struct ResearchPriceConfig {
     pub price: ResearchPrice,
 }
 
-// Buys the next tier of a row. `choice` picks the tier's side on Farm, Workshop and Barracks rows and the kind on the
+// Buys the next tier of a row. `choice` picks the tier's side on Farm and Workshop rows and the kind on the
 // Scouts' lodge row; every other row takes 0.
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]
 pub struct Research {
@@ -104,10 +101,10 @@ pub fn max_tier(row: u8) -> u8 {
     }
 }
 
-// How many sides a row's choice has: two for Farm, Workshop and Barracks, three kinds for the Scouts' lodge.
+// How many sides a row's choice has: two for Farm and Workshop, three kinds for the Scouts' lodge.
 pub fn choice_count(row: u8) -> u8 {
     match row {
-        0 | 1 | 2 => 2,
+        0 | 1 => 2,
         6 => 3,
         _ => 1,
     }
@@ -140,7 +137,7 @@ fn choice_slot(row: u8) -> (u64, u64) {
 }
 
 pub fn independent_sides(row: u8) -> bool {
-    row <= ROW_BARRACKS
+    row <= ROW_WORKSHOP
 }
 
 pub fn tier(learned: u64, row: u8) -> u8 {
@@ -188,20 +185,18 @@ pub fn picks(learned: u64, row: u8, side: u8) -> u8 {
     count
 }
 
-// The Fields, Tools or Drill picks of a building type; a type without a make-or-store row has none.
+// The Fields or Tools picks of a building type; a type without a make-or-store row has none.
 pub fn make_picks(learned: u64, category: u8) -> u8 {
     if category == FARM {
         picks(learned, ROW_FARM, CHOICE_MAKE)
     } else if category == WORKSHOP {
         picks(learned, ROW_WORKSHOP, CHOICE_MAKE)
-    } else if category == BARRACKS {
-        picks(learned, ROW_BARRACKS, CHOICE_DRILL)
     } else {
         0
     }
 }
 
-// Total purchases open training even when the Barracks improvements are split across sides.
+// Total purchases across a row, including independent economy sides.
 pub fn purchases(learned: u64, row: u8) -> u8 {
     if independent_sides(row) {
         picks(learned, row, 0) + picks(learned, row, 1)

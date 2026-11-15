@@ -12,6 +12,7 @@ pub const SHRINE_LEGENDARY_BPS: u32 = 100;
 pub const ATTRIBUTE_CAP: u8 = 5;
 pub const SCOUT_EXPLORE_STAMINA: u8 = 10;
 pub const SCOUT_DAMAGE_PERCENT: u8 = 75;
+pub const CHARGE_PERCENT_PER_TIER: u8 = 10;
 pub const SKILL_POINT_REFILL_BASE: u8 = 10;
 pub const SKILL_POINT_REFILL_STEP: u8 = 10;
 // Rank 0 is untrained; Common I through Legendary V retain the original ceilings.

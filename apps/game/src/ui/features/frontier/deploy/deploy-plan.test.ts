@@ -16,19 +16,6 @@ const holdWheat = (store: Parameters<typeof readDeployPlan>[0], wheat: number) =
     },
   ] as never);
 
-/** One Rations pick on the Barracks row, a quarter wheat off each troop's 2: a knight raises for 1.75 wheat. */
-const withOneRations = (store: Parameters<typeof readDeployPlan>[0]) => {
-  const board = store.require("BoardRules", { game_id: 1 });
-  store.applyFacts([
-    { model: "BoardRules", key: "0xa", value: { ...board, ration_step: "250000000" } },
-    {
-      model: "RealmKnowledge",
-      key: "0xd",
-      value: { game_id: 1, structure_id: 7, learned: String((1n << 14n) | (1n << 17n)) },
-    },
-  ] as never);
-};
-
 /** The deploy plan at the fixture's moment: t=350, default tick 3. */
 const planOf = (store: Parameters<typeof readDeployPlan>[0], row: Parameters<typeof readDeployPlan>[1]) =>
   readDeployPlan(store, row, { now: 350, defaultTick: 3 });
@@ -64,14 +51,13 @@ describe("Frontier's deploy", () => {
     expect(deployRange({ ...plan, troops: null }).max).toBe(0);
   });
 
-  it("prices the whole batch with Rations' cut, from the wheat held to the unit: never one troop's price rounded", () => {
+  it("sends only the whole troops the held wheat pays for", () => {
     const { store, row } = frontierDay();
-    withOneRations(store);
-    holdWheat(store, 7);
+    holdWheat(store, 8);
     const plan = planOf(store, row)!;
     expect(deployRange(plan)).toMatchObject({ wheatMax: 4, max: 4 });
-    expect(plan.raise!.wheatFor(4)).toBe(7);
-    holdWheat(store, 3.5);
+    expect(plan.raise!.wheatFor(4)).toBe(8);
+    holdWheat(store, 4.5);
     expect(deployRange(planOf(store, row)!).max).toBe(2);
   });
 

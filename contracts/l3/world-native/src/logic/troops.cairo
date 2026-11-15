@@ -94,6 +94,9 @@ pub mod TroopState {
             state.troops.explorers.entry((key.game_id, key.explorer_id)).owner.read() == 0, "explorer already exists",
         );
         assert!(explorer.owner != 0, "missing explorer owner");
+        if let crate::troops::StaminaSource::Slot(_) = explorer.troops.stamina {
+            crate::logic::army_combat::create(key, explorer.owner, explorer.troops.category);
+        }
         write_home_membership(key, 0, explorer.owner);
         state.troops.explorers.write((key.game_id, key.explorer_id), explorer);
 
@@ -148,6 +151,7 @@ pub mod TroopState {
         crate::logic::deep_guards::remove(key);
         crate::logic::deep_armies::remove(key);
         crate::logic::army_days::remove(key);
+        crate::logic::army_combat::remove(key);
 
         // Owner zero marks absence; recreation overwrites the complete explorer.
         state.troops.explorers.entry((key.game_id, key.explorer_id)).owner.write(0);

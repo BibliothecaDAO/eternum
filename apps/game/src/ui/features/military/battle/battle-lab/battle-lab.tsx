@@ -83,7 +83,7 @@ export const BattleLab = ({
   const targetHex = targetRef?.hex ?? { x: 0, y: 0 };
 
   const { state, dispatch, isEdited } = useBattleLabState(mode, initialBiome);
-  const { snapshot, target, targetResources, isLoading } =
+  const { snapshot, target, targetResources, isLoading, chargePercent } =
     // Sim mode has no target: the live read is disabled, so its placeholder hex and layer are never read.
     useBattleLabLiveData(mode === "live", attackerEntityId, targetHex, targetRef?.alt ?? false);
 
@@ -112,7 +112,7 @@ export const BattleLab = ({
     }
   }, [mode, snapshot, dispatch, edited]);
 
-  const combatSimulator = useMemo(() => new CombatSimulator(parameters), [parameters]);
+  const combatSimulator = useMemo(() => new CombatSimulator(parameters, configManager.getCombatRules()), [parameters]);
 
   // Combat v3 context: range is derived from the live hex distance (crossbowmen poke at range 2),
   // and structure-guard flags drive the ranged structure reduction / Knight modifiers. In sim mode
@@ -127,12 +127,13 @@ export const BattleLab = ({
 
   const combatContext = useMemo(
     () => ({
+      chargePercent: mode === "sim" ? 0 : chargePercent,
       defenderAlt: state.defenderAlt,
       attackDistance: liveAttackDistance,
       attackerIsStructureGuard: snapshot?.attackerType === "structure",
       defenderIsStructureGuard: target?.targetType === TargetType.Structure,
     }),
-    [state.defenderAlt, liveAttackDistance, snapshot?.attackerType, target?.targetType],
+    [mode, chargePercent, state.defenderAlt, liveAttackDistance, snapshot?.attackerType, target?.targetType],
   );
   // CombatParameters holds bigint fields, so stringify with a bigint-safe replacer.
   const defaultParamsKey = useMemo(() => serializeParams(configManager.getCombatConfig()), []);
@@ -156,7 +157,7 @@ export const BattleLab = ({
 
   // ----- Prediction (single path for live + sim) -----
   const prediction = useMemo(() => {
-    if (!state.hasDefender) return null;
+    if (!state.hasDefender || combatContext.chargePercent === undefined) return null;
     const now = Math.floor(Date.now() / 1000);
     const range = combatSimulator.simulateBattleRange(
       now,
@@ -165,9 +166,10 @@ export const BattleLab = ({
       state.biome,
       state.attacker.relics,
       state.defender.relics,
-      combatContext,
+      { ...combatContext, chargePercent: combatContext.chargePercent },
       configManager.rollsCombatDice(state.defenderAlt),
     );
+    if (!range.ok) return null;
     const attacker = attackerSideRange(state.attacker.troopCount, range);
     const defender = defenderSideRange(state.defender.troopCount, range);
     const outcomeAt = (roll: "worst" | "best"): BattleOutcome =>
@@ -176,16 +178,8 @@ export const BattleLab = ({
       attacker,
       defender,
       // Stamina after the fight follows the attacker's worst roll, like every other planning figure.
-      newAttackerStamina: combatSimulator.calculateNewStaminaAttacker(
-        state.attacker.stamina,
-        range.worst.attackerRefundMultiplier,
-        combatContext,
-      ),
-      newDefenderStamina: combatSimulator.calculateNewStaminaDefender(
-        state.defender.stamina,
-        range.worst.defenderRefundMultiplier,
-        combatContext,
-      ),
+      newAttackerStamina: range.worst.attackerStamina,
+      newDefenderStamina: range.worst.defenderStamina,
       outcomes: { worst: outcomeAt("worst"), best: outcomeAt("best") },
     };
   }, [

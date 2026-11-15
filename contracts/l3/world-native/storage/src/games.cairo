@@ -34,6 +34,7 @@ pub struct GamesStorage<
     TExplorerTroops,
     TArmySlot,
     TArmyProgress,
+    TArmyCombat,
     TVillagePass,
     TDeepSite,
     TDeepGuard,
@@ -70,6 +71,6 @@ pub struct GamesStorage<
     pub settlements: crate::settlement::SettlementStateStorage<TSettlementProgress, TPlayerEntry, TEntryEntitlement>,
     pub structures: crate::structures::StructureStateStorage<TStructureRecord, TExpeditionSite, TSiteChest>,
     pub structure_rules: crate::structures::StructuresDomainStorage,
-    pub troops: crate::troops::TroopStateStorage<TExplorerTroops, TArmySlot, TArmyProgress>,
+    pub troops: crate::troops::TroopStateStorage<TExplorerTroops, TArmySlot, TArmyProgress, TArmyCombat>,
     pub village: crate::village::VillageStateStorage<TVillagePass>,
 }

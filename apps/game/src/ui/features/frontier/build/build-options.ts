@@ -53,7 +53,7 @@ export interface BuildOption {
   category: BuildingType;
   /** Its type's tier, 1 (common) to 5 (legendary): tiers apply to every building of the type. */
   tier: 0 | 1 | 2 | 3 | 4 | 5;
-  /** Each side of a choosing row (Farm, Workshop, Barracks) with the tiers bought on it, make side first. */
+  /** Each side of a choosing row (Farm, Workshop) with the tiers bought on it, make side first. */
   sides?: SidePick[];
   cost: { resource: number; amount: number }[];
   /** How the price has risen: the copies already standing and what they multiply the base price by (1 with none). */
@@ -62,7 +62,7 @@ export interface BuildOption {
   populationCost: number;
   /**
    * Whether it can rise now: a training building is unique on the board and opens when purchases across both
-   * Barracks sides reach the board's gate (the contract's assert_board_category).
+   * Charge tiers reach the board's gate (the contract's assert_board_category).
    */
   standing: "open" | "built" | { gate: number; bought: number } | { level: number };
   /** What it adds to the realm's wheat an hour, and the realm's wheat an hour once it stands (unknown while that is). */

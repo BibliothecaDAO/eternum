@@ -308,7 +308,6 @@ const buildTile = (option: BuildOption, holdings: Holdings): BuildTile => ({
  */
 const standingOf = (option: BuildOption, { held, perHour, free }: Holdings): BuildTile["standing"] => {
   if (option.standing === "built") return { kind: "built" };
-  // Training counts purchases across both Barracks sides.
   if (option.standing !== "open")
     return "level" in option.standing
       ? { kind: "level", level: option.standing.level }

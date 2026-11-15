@@ -4,7 +4,6 @@ import { useNativeFacts } from "@/hooks/helpers/use-native-facts";
 import { knownAmount } from "@/ui/utils/utils";
 import {
   getBalance,
-  rationedWheatPerTroop,
   realmLearned,
   researchChoice,
   researchHasIndependentSides,
@@ -35,14 +34,6 @@ const RESEARCH_MODELS = [
   "ResourceProduction",
   "ArmyProgressionRules",
 ] as const;
-
-/** The rows whose tiers each pick a side (or the lodge's kind). */
-const CHOOSING_ROWS = new Set<number>([
-  research.ROW_FARM,
-  research.ROW_WORKSHOP,
-  research.ROW_BARRACKS,
-  research.ROW_SCOUTS_LODGE,
-]);
 
 const whole = (amount: bigint): number => Number(amount / BigInt(RESOURCE_PRECISION));
 
@@ -107,7 +98,6 @@ const readResearchFacts = (
       if (base === undefined) throw new Error(`No castle store at level ${level}`);
       return (whole(base) * (10_000 + storeroomPicks * board.storage_step_bps)) / 10_000;
     },
-    wheatPerTroop: (rations) => rationedWheatPerTroop(store, realm.game_id, ResourcesIds.Knight, rations),
     wellRefillPercent: WELL_REFILL_PERCENT,
   };
 };
@@ -119,7 +109,7 @@ const decodeLearned = (learned: bigint): Partial<Record<number, LearnedRow>> =>
       const tier = researchTier(learned, row);
       const sides = researchHasIndependentSides(row)
         ? [0, 1].flatMap((side) => Array.from({ length: researchPicks(learned, row, side) }, () => side))
-        : CHOOSING_ROWS.has(row)
+        : row === research.ROW_SCOUTS_LODGE
           ? Array.from({ length: tier }, (_, index) => researchChoice(learned, row, index + 1))
           : [];
       return [row, { tier, sides }];

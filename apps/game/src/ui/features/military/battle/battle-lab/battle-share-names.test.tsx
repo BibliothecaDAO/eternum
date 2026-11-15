@@ -30,17 +30,11 @@ vi.mock("@/hooks/context/game-context", () => ({
 vi.mock("@bibliothecadao/eternum", async (original) => ({
   ...(await original<typeof import("@bibliothecadao/eternum")>()),
   getGuildFromPlayerAddress: () => null,
-  configManager: { getCombatConfig: () => ({ stamina_attack_req: 1 }), rollsCombatDice: () => false },
+  configManager: { getCombatRules: () => ({}), getCombatConfig: () => ({ stamina_attack_req: 1 }), rollsCombatDice: () => false },
   CombatSimulator: class {
     simulateBattleRange() {
-      const roll = { attackerDamage: 1, defenderDamage: 1, attackerRefundMultiplier: 1, defenderRefundMultiplier: 1 };
-      return { worst: roll, best: roll };
-    }
-    calculateNewStaminaAttacker() {
-      return 90;
-    }
-    calculateNewStaminaDefender() {
-      return 90;
+      const roll = { attackerDamage: 1, defenderDamage: 1, attackerStamina: 90, defenderStamina: 90 };
+      return { ok: true, worst: roll, best: roll };
     }
   },
 }));
@@ -75,6 +69,7 @@ it.each([
     await vi.waitFor(() => expect(getPlayerDisplayName(held.account.address)).toBe("Attacker"));
     const army = { stamina: 100, troopCount: 100, troopType: 1, tier: 1, battle_cooldown_end: 0, relics: [] };
     held.live = {
+      chargePercent: 0,
       snapshot: {
         biome: "Grassland",
         attackerType: "army",

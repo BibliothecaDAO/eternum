@@ -5,8 +5,10 @@ import { attackerSideRange, defenderSideRange, formatAcross, survivalOf } from "
 const outcome = (attackerDamage: number, defenderDamage: number) => ({
   attackerDamage,
   defenderDamage,
-  attackerRefundMultiplier: 0,
-  defenderRefundMultiplier: 0,
+  attackerStamina: 0,
+  defenderStamina: 0,
+  attackerCooldownEnd: 0,
+  defenderCooldownEnd: 0,
 });
 
 describe("battle range", () => {

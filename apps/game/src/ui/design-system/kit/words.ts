@@ -318,7 +318,7 @@ export const heldAgainstNeed = (held: number | undefined, need: number): string 
   return `${pair.held} / ${pair.need}`;
 };
 /**
- * A training building's gate with the purchases bought toward it, on either Barracks side: "1/2". The count shows so a
+ * A training building's gate with the purchases bought toward it, on the Charge row: "1/2". The count shows so a
  * first purchase visibly counts: a realm one purchase short read "2 research" before and after it.
  */
 export const purchasesOfGate = (bought: number, gate: number) => `${Math.min(bought, gate)}/${gate}`;
@@ -1974,8 +1974,6 @@ export const RESEARCH_TREE = {
     granary: ["Granary", "Wheat storage"],
     tools: ["Tools", "Workshop labor"],
     storeroom: ["Storeroom", "Labor storage"],
-    drill: ["Drill", "Barracks troops"],
-    rations: ["Rations", "Wheat per troop"],
   },
   /** The kinds a Scouting level finds more of; Frontier's camp is its Troll (the shared structure naming rule). */
   kinds: {
@@ -1986,6 +1984,8 @@ export const RESEARCH_TREE = {
   /** A Scouts' lodge kind's side: new armies find more of it. */
   foundMore: "Found more",
   sidesLine: (made: string) => `Improve ${made} output and storage separately`,
+  charge: "Charge",
+  chargeLine: "Opening damage before the defender answers",
   hutLine: "Hut population",
   population: "Population",
   gateLine: "Opens the 4 training buildings",

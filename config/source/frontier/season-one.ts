@@ -13,6 +13,12 @@ const orderAspects: NativePreset["orderAspects"] = orders
 export const frontierSeasonOnePreset = {
   ...frontierPreset,
   id: FRONTIER_S1_PRESET_ID,
+  research: [
+    ...frontierPreset.research.filter(({ row }) => row !== research.ROW_BARRACKS),
+    ...([[5000, 1000], [10000, 2500], [25000, 5000], [50000, 10000], [100000, 25000]] as const).map(([essenceCost, laborCost], index) => ({
+      row: research.ROW_BARRACKS, tier: index + 1, essenceCost, laborCost,
+    })),
+  ],
   balance: {
     troop: {
       stamina: {

@@ -11,6 +11,7 @@ import {
 } from "@/ui/design-system/kit/words";
 import {
   battleBonusBps,
+  chargePercent,
   homecomingBps,
   logisticsStamina,
   researchHasIndependentSides,
@@ -55,8 +56,6 @@ export interface RealmResearchFacts {
     populationStepBps: number;
     trainingGateTier: number;
   };
-  /** The wheat one deployed troop costs with this many Rations picks on the Barracks row. */
-  wheatPerTroop: (rations: number) => number;
   /** The castle's labor store at a level, with the realm's Storeroom picks. */
   laborStore: (level: number) => number;
   wellRefillPercent: number;
@@ -274,7 +273,7 @@ export const readResearchTree = (realm: RealmResearchFacts): TreeNode[] => {
   };
 
   type SideRule = { words: readonly [string, string]; at: (picks: number) => string };
-  /** Fields, Tools or Drill against Granary, Storeroom or Rations: what one more pick of each adds, under its mark. */
+  /** Fields or Tools against Granary or Storeroom: what one more pick of each adds, under its mark. */
   const twoSides = (row: number, make: SideRule, other: SideRule) => {
     const [makeMark, otherMark] = sideMarks(row);
     const mark = (side: number) => (side === 0 ? makeMark : otherMark);
@@ -293,7 +292,6 @@ export const readResearchTree = (realm: RealmResearchFacts): TreeNode[] => {
   };
   const output = (count: number) => percent(count * realm.board.outputStepBps);
   const storage = (count: number) => percent(count * realm.board.storageStepBps);
-  const rations = (count: number) => formatFigure(realm.wheatPerTroop(count));
   const { sides } = RESEARCH_TREE;
 
   /** A Hut row's population share now and with its next tier. */
@@ -315,8 +313,8 @@ export const readResearchTree = (realm: RealmResearchFacts): TreeNode[] => {
     { words: sides.tools, at: output },
     { words: sides.storeroom, at: storage },
   ];
-  // One side entry per purchase, on either side: the contract's purchases(learned, ROW_BARRACKS).
-  const barracksBought = learned(ROWS.barracks).sides.length;
+  // Charge has one tier per purchase.
+  const barracksBought = learned(ROWS.barracks).tier;
   const gateBarracks = `${buildingName(BuildingType.ResourceKnightT1)} ${purchasesOfGate(barracksBought, realm.board.trainingGateTier)} purchases`;
   const gateNeed: Need = {
     kind: "tier",
@@ -398,12 +396,18 @@ export const readResearchTree = (realm: RealmResearchFacts): TreeNode[] => {
         BuildingType.ResourceKnightT1,
         "army",
         (tier) => ({
-          line: gateLine,
-          now: [{ rank: tier }],
-          next: tier < 5 ? [{ rank: tier + 1 }] : undefined,
+          line: RESEARCH_TREE.chargeLine,
+          now: formatPercent(chargePercent(tier) / 100),
+          next: tier < 5 ? formatPercent(chargePercent(tier + 1) / 100) : undefined,
         }),
         {
-          ...twoSides(ROWS.barracks, { words: sides.drill, at: output }, { words: sides.rations, at: rations }),
+          figures: (tier) => [{
+            icon: "battle",
+            name: RESEARCH_TREE.charge,
+            line: RESEARCH_TREE.chargeLine,
+            now: formatPercent(chargePercent(tier) / 100),
+            next: tier < 5 ? formatPercent(chargePercent(tier + 1) / 100) : undefined,
+          }],
           leadsTo: Object.values(TRAINING)
             .filter(({ row }) => row !== research.ROW_SCOUTS_LODGE)
             .map(({ row }) => `row-${row}`),

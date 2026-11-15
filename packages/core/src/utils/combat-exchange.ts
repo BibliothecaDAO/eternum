@@ -38,6 +38,7 @@ export interface CombatRules {
 }
 
 interface ExchangeContext {
+  chargePercent: number;
   timestamp: number;
   attackDistance: number;
   attackerBiome: BiomeType;
@@ -213,6 +214,12 @@ const exchangeDamage = (
   defenderDamage = add(defenderDamage, div(mul(defenderDamage, unscaled(defenderBoosts.dealt)), BPS_100));
   defenderDamage = sub(defenderDamage, div(mul(defenderDamage, unscaled(attackerBoosts.gotten)), BPS_100));
   attackerDamage = sub(attackerDamage, div(mul(attackerDamage, unscaled(defenderBoosts.gotten)), BPS_100));
+  if (rules.dayUnitSeconds !== 0 && attacker.category === "Knight" && context.chargePercent !== 0) {
+    const early = mul(round(attackerDamage), percent(context.chargePercent));
+    defenderDamage = gte(early, defenderTroops)
+      ? ZERO
+      : div(mul(defenderDamage, sub(defenderTroops, early)), defenderTroops);
+  }
   return { attacker: attackerDamage, defender: defenderDamage };
 };
 
@@ -341,7 +348,7 @@ export const forecastFight = (
   let attackerLoss = first.attackerLoss;
   let defenderLoss = first.defenderLoss;
   while (state.attacker.count > 0n && state.defender.count > 0n) {
-    const next = resolveExchange(state.attacker, state.defender, context, rules);
+    const next = resolveExchange(state.attacker, state.defender, { ...context, chargePercent: 0 }, rules);
     if (!next.ok) {
       stoppedBy = next.refusal;
       break;

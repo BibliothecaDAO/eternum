@@ -186,7 +186,7 @@ export const frontierPhrases = (config, preset, riftGuardBound, nativeRules) => 
       phrases: [
         `A new realm starts with ${start(26)} troops, ${start(35)} wheat and ${start(23)} labor.`,
         `receive ${n(preset.dailyQuest.labor)} Labor and ${n(preset.dailyQuest.essence)} Essence.`,
-        `take ${n(preset.board.rationStep)} wheat off the ${n(wheatPerTroop(config))} wheat each troop costs to deploy`,
+        `The Barracks researches Charge: new Knight armies land ${Array.from({ length: 5 }, (_, index) => `${(index + 1) * nativeRules.CHARGE_PERCENT_PER_TIER}%`).join(" / ")} of their opening hit before the defender answers`,
         ...armies.map((count, index) => `${index + 1} ${n(count)} ${n(caps[index])}`),
         // An ordinary building and a training building: each price whole, by resource (a training building takes two).
         `Farm Wheat ${buildingPrice(config, FARM)}`,

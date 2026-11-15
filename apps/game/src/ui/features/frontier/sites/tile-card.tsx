@@ -15,7 +15,7 @@ import { requestOrderAt } from "@/three/scenes/worldmap-order-request";
 import { toast } from "@/ui/features/event-feed/notify";
 
 import { extractReadableErrorMessage } from "@/utils/error-message";
-import { biomeTypeOf, configManager, getStructureName, isViewerOwner, ruinDisappeared } from "@bibliothecadao/eternum";
+import { ARMY_CHARGE_MODELS, biomeTypeOf, configManager, getStructureName, isViewerOwner, ruinDisappeared } from "@bibliothecadao/eternum";
 import {
   armyCombatRefusal,
   safeInteger,
@@ -48,6 +48,7 @@ const SITE_MODELS = [
   "SiteChest",
   "ExplorerTroops",
   "ArmyProgress",
+  ...ARMY_CHARGE_MODELS,
   "ArmyRelicEffect",
   "ArmySlot",
   "DeepArmy",

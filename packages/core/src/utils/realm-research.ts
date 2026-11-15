@@ -3,7 +3,7 @@ import { nativeResearchConstants as research } from "../../../../contracts/l3/wo
 
 /**
  * Where each research row keeps its tier in RealmKnowledge.learned, exactly as research.cairo packs it: the field's
- * bit offset and width. Farm, Workshop and Barracks keep two three-bit side counts.
+ * bit offset and width. Farm and Workshop keep two three-bit side counts.
  * Scouts keeps a shared tier and two bits per purchased tier for its kind.
  */
 const tierFields: Record<number, readonly [offset: bigint, width: bigint]> = {
@@ -40,7 +40,7 @@ function sanctuariesAvailable(learned: bigint): boolean {
 }
 
 export function researchHasIndependentSides(row: number): boolean {
-  return row === research.ROW_FARM || row === research.ROW_WORKSHOP || row === research.ROW_BARRACKS;
+  return row === research.ROW_FARM || row === research.ROW_WORKSHOP;
 }
 
 /** Upgrades on one side; Scouts counts selections of its kind without changing the shared cap. */
@@ -144,4 +144,11 @@ export function buildingTypeTier(
 export function researchRowOf(category: number): number | undefined {
   const row = Object.entries(researchRowCategory).find(([, rowCategory]) => rowCategory === category)?.[0];
   return row === undefined ? undefined : Number(row);
+}
+
+/** Output research belongs to the Farm and Workshop; troop buildings inherit no production bonus from Charge. */
+export function buildingMakePicks(learned: bigint, category: number): number {
+  if (category === research.FARM) return researchPicks(learned, research.ROW_FARM, research.CHOICE_MAKE);
+  if (category === research.WORKSHOP) return researchPicks(learned, research.ROW_WORKSHOP, research.CHOICE_MAKE);
+  return 0;
 }

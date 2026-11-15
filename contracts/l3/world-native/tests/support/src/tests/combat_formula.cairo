@@ -6,6 +6,7 @@ pub use crate::stamina::StaminaSourceTrait;
 pub use crate::troops::{Stamina, TroopBoosts, TroopTier, TroopType, Troops};
 pub fn context(biome: Biome) -> CombatContext {
     CombatContext {
+        charge_percent: 0,
         day_unit_seconds: 0,
         timestamp: 1,
         attacker_roll: 0,
@@ -68,6 +69,7 @@ pub fn dice_damage(attacker_roll: u8, defender_roll: u8) -> (u128, u128) {
         .damage_with_context(
             ref defender,
             CombatContext {
+                charge_percent: 0,
                 day_unit_seconds: 0,
                 timestamp: 1,
                 attacker_roll,
