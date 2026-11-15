@@ -2,7 +2,7 @@ import { expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { kindName, parityProblems, validationPaths } from "./flow";
-import { interpolate, root, runtimePin, selectedStep, validationJobs } from "./jobs";
+import { interpolate, root, runtimeMatches, runtimePin, selectedStep, validationJobs } from "./jobs";
 
 const source = readFileSync(resolve(root, "flow.toml"), "utf8");
 const jobs = validationJobs();
@@ -65,4 +65,13 @@ test("runtime setup follows the workflow rather than the host runtime", () => {
   const pins = jobs.flatMap((job) => job.job.steps.flatMap((step) => runtimePin(step) ?? []));
   expect(pins).toContainEqual({ name: "node", version: "22" });
   expect(pins).toContainEqual({ name: "bun", version: "1.4.0" });
+});
+
+
+test("refuses a host binary that did not switch to the requested runtime", () => {
+  expect(runtimeMatches("22", "v22.20.0")).toBe(true);
+  expect(runtimeMatches("22", "v24.21.0")).toBe(false);
+  expect(runtimeMatches("1.4.0", "1.4.0")).toBe(true);
+  expect(runtimeMatches("1.4.0", "1.4.3")).toBe(false);
+  expect(() => runtimeMatches("lts/*", "v22.20.0")).toThrow("Unsupported runtime version");
 });

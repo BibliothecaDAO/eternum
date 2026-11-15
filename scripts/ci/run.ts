@@ -1,11 +1,12 @@
-import { readFileSync, mkdtempSync } from "node:fs";
-import { delimiter, dirname, join, resolve } from "node:path";
+import { readFileSync, mkdtempSync, symlinkSync } from "node:fs";
+import { delimiter, join, resolve } from "node:path";
 import { tmpdir } from "node:os";
 import {
   interpolate,
   root,
   selectedStep,
   runtimePin,
+  runtimeMatches,
   stepEnvironment,
   validationJobs,
   type Environment,
@@ -35,8 +36,12 @@ function installRuntime(pin: NonNullable<ReturnType<typeof runtimePin>>, env: En
     root,
     true,
   );
-  env.PATH = [dirname(executable), env.PATH].join(delimiter);
-  command([pin.name, "--version"], env);
+  const bin = mkdtempSync(join(env.RUNNER_TEMP!, "runtime-"));
+  symlinkSync(executable, join(bin, pin.name));
+  env.PATH = [bin, env.PATH].join(delimiter);
+  const actual = command([pin.name, "--version"], env, root, true);
+  if (!runtimeMatches(pin.version, actual)) throw new Error(`${pin.name}: wanted ${pin.version}, got ${actual}`);
+  console.log(JSON.stringify({ runtime: pin.name, requested: pin.version, actual }));
 }
 
 function installToolchain(step: Step, context: Record<string, Environment>, env: Environment) {

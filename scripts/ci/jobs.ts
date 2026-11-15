@@ -98,3 +98,11 @@ export function runtimePin(step: Step): { name: "node" | "bun"; version: string 
   }
   return undefined;
 }
+
+
+export function runtimeMatches(requested: string, actual: string): boolean {
+  if (requested === "latest") return true;
+  if (!/^\d+(?:\.\d+){0,2}$/.test(requested)) throw new Error(`Unsupported runtime version: ${requested}`);
+  const version = actual.trim().replace(/^v/, "");
+  return version === requested || (requested.split(".").length < 3 && version.startsWith(`${requested}.`));
+}
