@@ -23,6 +23,7 @@ import {
 import type { EtherealLayer } from "@bibliothecadao/eternum";
 import type { DeepGuardLife } from "@bibliothecadao/eternum/game-client";
 
+import { OpeningPartGate } from "../opening/opening-context";
 import { reachMark } from "../depth-art";
 
 // A token grows past its height only for the last hour's Homecoming line. Its parts stack from the top, so every
@@ -145,14 +146,16 @@ export const ArmyToken = ({
     <>
       <span data-fly-target={flyTarget} className="relative size-10 shrink-0">
         <Portrait art={art} />
-        <span
-          role="img"
-          aria-label={`${XP} ${formatAmount(xp)}`}
-          {...rankedTip(xpLine(xp, xpGoal))}
-          className="absolute -bottom-1 -right-2.5 flex h-5 min-w-5 items-center justify-center rounded-full border border-hud-line bg-hud-dark px-1 text-hud-body leading-none text-hud-gold tabular-nums"
-        >
-          {formatAmount(xp)}
-        </span>
+        <OpeningPartGate part="army-xp">
+          <span
+            role="img"
+            aria-label={`${XP} ${formatAmount(xp)}`}
+            {...rankedTip(xpLine(xp, xpGoal))}
+            className="absolute -bottom-1 -right-2.5 flex h-5 min-w-5 items-center justify-center rounded-full border border-hud-line bg-hud-dark px-1 text-hud-body leading-none text-hud-gold tabular-nums"
+          >
+            {formatAmount(xp)}
+          </span>
+        </OpeningPartGate>
         {number !== undefined && (
           <span className="absolute -left-2.5 -top-1.5 flex h-5 min-w-5 items-center justify-center rounded-full border border-hud-line-strong bg-hud-dark px-1 text-hud-strong leading-none text-hud-ink tabular-nums">
             {number}

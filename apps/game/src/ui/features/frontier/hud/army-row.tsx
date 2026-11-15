@@ -8,6 +8,7 @@ import type { ReactNode } from "react";
 import type { EtherealLayer } from "@bibliothecadao/eternum";
 import type { DeepGuardLife } from "@bibliothecadao/eternum/game-client";
 
+import { OpeningPartGate } from "../opening/opening-context";
 import { DeepDrain, EtherealMark, HomecomingReturn, SlotRing, StaminaReading, xpLine, type XpGoal } from "./army-token";
 
 /**
@@ -69,9 +70,11 @@ export const ArmyRow = ({
       <RowLine
         words={label}
         figure={
-          <span {...rankedTip(xpLine(xp, xpGoal))} className="text-hud-gold">
-            {`${formatAmount(xp)} ${XP}`}
-          </span>
+          <OpeningPartGate part="army-xp">
+            <span {...rankedTip(xpLine(xp, xpGoal))} className="text-hud-gold">
+              {`${formatAmount(xp)} ${XP}`}
+            </span>
+          </OpeningPartGate>
         }
       />
     }

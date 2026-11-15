@@ -1,3 +1,4 @@
+import { OpeningPartGate } from "../opening/opening-context";
 import { Icon } from "@/ui/design-system/icon";
 import { HudChip, HudMeter, HudPage, HudRow } from "@/ui/design-system/kit/hud-elements";
 import { ASPECT_PAGE_WORDS as WORDS } from "@/ui/design-system/kit/words";
@@ -12,6 +13,8 @@ export interface AspectStanding {
   stage: number;
   finished: boolean;
   own: boolean;
+  /** What its height is worth in whole LORDS (and the finish bonus, for the Aspect that finished first): shown, never paid here. */
+  lords: number;
 }
 
 /** A Triumph of the player's Aspect: its stage (1 to 4), and the game day it falls on, shown as given; null while its stage is unbuilt. */
@@ -89,6 +92,11 @@ const StandingRow = ({ standing, race }: { standing: AspectStanding; race: NonNu
       lead={<span className="w-6 text-center text-hud-strong text-hud-ink">{formatExact(standing.rank)}</span>}
       title={standing.aspect}
       selected={standing.own}
+      trail={
+        <HudChip icons={["lords"]} label={WORDS.worth}>
+          {formatShort(standing.lords)}
+        </HudChip>
+      }
       detail={
         <span className="flex flex-col gap-0.5">
           <span>
@@ -130,9 +138,11 @@ const YourAspect = ({ own }: { own: OwnAspect }) => (
           selected={member.mine}
           detail={member.guards ? WORDS.guards(member.guards) : undefined}
           trail={
-            <HudChip icons={["crown"]} label={WORDS.glory}>
-              {formatShort(member.glory)}
-            </HudChip>
+            <OpeningPartGate part="glory">
+              <HudChip icons={["crown"]} label={WORDS.glory}>
+                {formatShort(member.glory)}
+              </HudChip>
+            </OpeningPartGate>
           }
         />
       ))}

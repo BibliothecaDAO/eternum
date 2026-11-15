@@ -1396,6 +1396,25 @@ describe("identity Worker", () => {
     expect((await createBrowser().request("/api/build-orders")).status).toBe(401);
   });
 
+  it("keeps an account's opening progress as sets that any device can add to again, and shows it to its owner only", async () => {
+    const browser = createBrowser();
+    await signInWithCode(browser, "opening@realms.test");
+    const add = (body: unknown) => browser.request("/api/opening", { body });
+
+    expect(await (await browser.request("/api/opening")).json()).toEqual({ reached: [], seen: [] });
+    expect(await (await add({ reached: ["launch", "barracks"], seen: ["launch"] })).json()).toEqual({
+      reached: ["barracks", "launch"],
+      seen: ["launch"],
+    });
+    expect(await (await add({ reached: ["barracks", "fight"] })).json()).toEqual({
+      reached: ["barracks", "fight", "launch"],
+      seen: ["launch"],
+    });
+    expect((await add({ reached: ["Not A Name"] })).status).toBe(400);
+    expect((await add({ seen: "launch" })).status).toBe(400);
+    expect((await createBrowser().request("/api/opening")).status).toBe(401);
+  });
+
   /** A running Devcon season game in a shard's directory, as Herald answers it for one player. */
   const devconGame = (entered: boolean) => ({
     game_id: 41,

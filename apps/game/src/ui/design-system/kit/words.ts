@@ -554,6 +554,16 @@ export const DAY_BANNER_WORDS = {
   membersShort: (completed: number, required: number) => `${formatExact(completed)} of ${formatExact(required)}`,
   /** Today's claim waiting at the realm: "Labor and Essence waiting". */
   claimWaiting: "Waiting in Realms",
+  triumph: "Triumph",
+  /** What the Aspect's active Triumph does, by its stage, at the percent the game's rules set. */
+  triumphRule: {
+    1: (percent: number) => `Sites are found at ${formatExact(percent)}% of the usual odds`,
+    2: (percent: number) => `Stamina returns at ${formatExact(percent)}%`,
+    3: (percent: number) => `Guarded sites have ${formatExact(percent)}% strength`,
+    4: (percent: number) => `Site rewards and XP are ${formatExact(percent)}%`,
+  },
+  baneBar: "Your Aspect's bane bar",
+  barCharge: (charge: number, threshold: number) => `${formatExact(charge)} of ${formatExact(threshold)}`,
 } as const;
 /** What a moment's one line needs from the game's rules; the caller reads them, the line only names them. */
 export interface OpeningRules {
@@ -580,6 +590,12 @@ export const OPENING_WORDS = {
     bane: () => "A bane. Today's quest is the bane quest. Your Aspect ends the bane when enough members finish it.",
   },
   gotIt: "Got it",
+  /** The offer that comes with the first Deep line: the site alert, off until the player turns it on. */
+  alertOffer: "Alert me when a Deep site can be taken",
+  alertOn: "Turn on",
+  /** The week's quests on the Today page: the day, and the quest each brings. */
+  week: "This week's quests",
+  weekDay: (day: number, quest: string) => `Day ${formatExact(day)}: ${quest}`,
   interface: "Interface",
   showEverything: "Show everything",
 } as const;
@@ -603,6 +619,14 @@ export const ASPECT_PAGE_WORDS = {
   glory: "Glory",
   guards: (site: string) => `Guards the ${site}`,
   noAspect: "Join an Aspect to see its members",
+  /** What an Aspect's height is worth in LORDS at the game's rate: displayed only, nothing is paid in the game. */
+  lords: (amount: number) => `${formatExact(amount)} LORDS`,
+  worth: "Worth at season end",
+  fights: "Fights in the Deep",
+  noFights: "No fight in the Deep yet",
+  fight: (winner: string, loser: string) => `${winner} beat ${loser}`,
+  fightLoss: (troops: number) => `${formatExact(troops)} troops lost`,
+  wiped: (aspect: string) => `${aspect} wiped out`,
   reading: "Reading the race…",
 } as const;
 export const RESEARCHING = "Researching…";

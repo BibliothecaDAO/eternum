@@ -1,3 +1,4 @@
+import { usePartShown } from "../opening/opening-context";
 import { HUD_COLUMN_MARK } from "@/three/utils/labels/hud-clearance";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { HudBubble, SheetDock } from "@/ui/design-system/kit/hud-elements";
@@ -124,6 +125,7 @@ export const FrontierPlaces = ({
   research?: boolean;
 }) => {
   const unread = useUnreadImportantCount(surface === "feed");
+  const researchOpen = usePartShown("research");
   const bubble = (to: HudSurface, icon: Parameters<typeof HudBubble>[0]["icon"], word: string, count?: number) => (
     <HudBubble
       key={to}
@@ -138,7 +140,7 @@ export const FrontierPlaces = ({
   );
   return (
     <nav aria-label="Places" className="pointer-events-auto flex items-start gap-3">
-      {research !== undefined && bubble("research", "research", RESEARCH, research ? 1 : undefined)}
+      {research !== undefined && researchOpen && bubble("research", "research", RESEARCH, research ? 1 : undefined)}
       {bubble("feed", "chronicles", EVENTS_WORDS.feed, unread > 0 ? unread : undefined)}
       {bubble("season", "victory", SEASON)}
     </nav>

@@ -1,5 +1,5 @@
 import { orderMeaning, type IconMeaning } from "@/ui/design-system/icon-meaning";
-import { DAY_BANNER_WORDS as WORDS } from "@/ui/design-system/kit/words";
+import { ASPECT_PAGE_WORDS, DAY_BANNER_WORDS as WORDS } from "@/ui/design-system/kit/words";
 import { aspects, orders, worldBanes, type WorldBaneId } from "@bibliothecadao/types";
 import { nativeBaneConstants as bane, type NativeRows } from "@bibliothecadao/eternum/game-client";
 import type { BaneDay } from "@bibliothecadao/eternum";
@@ -36,4 +36,14 @@ export function baneMembers(bane: BaneDay, timestamp: number): DayMembers {
   return bane.endedAt !== 0 && bane.endedAt <= timestamp
     ? { ended: WORDS.baneEnded, endedShort: WORDS.baneEndedShort }
     : { completed: bane.completed, required: bane.required };
+}
+
+export function triumphHead(stage: keyof typeof WORDS.triumphRule, percent: number): DayHead {
+  return {
+    tone: "good",
+    icon: "star",
+    eyebrow: WORDS.triumph,
+    name: ASPECT_PAGE_WORDS.triumph[stage],
+    rule: WORDS.triumphRule[stage](percent),
+  };
 }

@@ -16,6 +16,9 @@ import {
 import { aspects, RESOURCE_PRECISION } from "@bibliothecadao/types";
 import { useMemo } from "react";
 import { useFrontierRealm } from "../frontier-home";
+import { lordsWorth } from "./aspect-worth";
+import { AspectFeedView } from "./aspect-feed-view";
+import { useAspectFights } from "./use-aspect-fights";
 import { AspectPageView, type AspectPageProps, type AspectTriumph } from "./aspect-page-view";
 
 export function useAspectBoard() {
@@ -41,9 +44,15 @@ export function FrontierAspectPage({ onClose }: { onClose: () => void }) {
   const { setup } = useGame();
   const reading = useAspectBoard();
   const board = reading.known?.race;
+  const fights = useAspectFights(board?.own?.members.map(({ home }) => home.owner) ?? []);
+  const now = useNowSeconds();
   if (!board) return <AspectPageView race={null} own={null} onClose={onClose} />;
   return (
-    <AspectPageView {...aspectPage(board, (home) => getStructureName(home, setup.store).name)} onClose={onClose} />
+    <AspectPageView
+      {...aspectPage(board, (home) => getStructureName(home, setup.store).name)}
+      fights={fights && <AspectFeedView fights={fights} now={now} />}
+      onClose={onClose}
+    />
   );
 }
 
@@ -60,6 +69,7 @@ export function aspectPage(
         stage: row.stage,
         finished: row.finished,
         own: row.aspect === board.own?.aspect,
+        lords: lordsWorth(row.height, board.result?.winner === row.aspect),
       })),
       finishHeight: board.rules.stage_height * nativeRaceConstants.STAGE_COUNT,
       stages: nativeRaceConstants.STAGE_COUNT,

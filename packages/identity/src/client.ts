@@ -138,6 +138,12 @@ export type PreparedWalletCall = typeof preparedWalletCallSchema.Type;
 /** An account's Blitz build orders as saved: their book is the game's to read, with its own build order reader. */
 const savedBuildOrdersSchema = Schema.Struct({ owner: Schema.String, revision: Schema.Number, book: Schema.Unknown });
 export type SavedBuildOrders = typeof savedBuildOrdersSchema.Type;
+/** The moments an account's interface has opened to and the lines it has been told, as sets of the game's own names. */
+const openingProgressSchema = Schema.Struct({
+  reached: Schema.Array(Schema.String),
+  seen: Schema.Array(Schema.String),
+});
+export type OpeningProgress = typeof openingProgressSchema.Type;
 /** An account's ticket to a campaign, told to that account only. */
 const campaignTicketSchema = Schema.Struct({
   campaign: Schema.String,
@@ -504,6 +510,15 @@ export const createIdentityClient = ({ apiUrl, fetch = globalThis.fetch }: Ident
     return readJson(response, decode(savedBuildOrdersSchema));
   };
 
+  const getOpeningProgress = async (): Promise<OpeningProgress> =>
+    readJson(await request("/opening", { method: "GET", cache: "no-store" }), decode(openingProgressSchema));
+  /** Adds moments to the account's sets; adding one it holds changes nothing. */
+  const addOpeningProgress = async (additions: Partial<OpeningProgress>): Promise<OpeningProgress> =>
+    readJson(
+      await request("/opening", { method: "POST", body: JSON.stringify(additions) }),
+      decode(openingProgressSchema),
+    );
+
   /**
    * Takes the account's one ticket to a campaign, from its flyer's code or a friend's referral link; without either, the
    * ticket it holds. Again, the same ticket.
@@ -621,6 +636,8 @@ export const createIdentityClient = ({ apiUrl, fetch = globalThis.fetch }: Ident
     saveNotificationPreferences,
     getBuildOrders,
     saveBuildOrders,
+    getOpeningProgress,
+    addOpeningProgress,
     redeemCampaignTicket,
     campaignReferral,
     campaignReferrer,

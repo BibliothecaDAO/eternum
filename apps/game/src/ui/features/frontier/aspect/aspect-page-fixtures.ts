@@ -1,5 +1,6 @@
 import { deepSites } from "@bibliothecadao/types";
 
+import { lordsWorth } from "./aspect-worth";
 import type { AspectMember, AspectPageProps, AspectStanding, AspectTriumph, OwnAspect } from "./aspect-page-view";
 
 /** Season 1's race: a hyperstructure of 10,000 in 5 stages of 2,000; each of the first 4 stages is a Triumph. */
@@ -11,7 +12,7 @@ const TRIUMPH_STAGES = [1, 2, 3, 4] as const;
 const BANE_THRESHOLD = 1_500;
 
 /** Four Aspects ranked by height: the stage being built follows from the height, and an Aspect is finished at 10,000. */
-const standings = (heights: Record<string, number>, own: string): AspectStanding[] =>
+const standings = (heights: Record<string, number>, own: string, winner?: string): AspectStanding[] =>
   Object.entries(heights)
     .toSorted(([, a], [, b]) => b - a)
     .map(([aspect, height], index) => ({
@@ -21,6 +22,7 @@ const standings = (heights: Record<string, number>, own: string): AspectStanding
       stage: Math.min(STAGES, Math.floor(height / STAGE) + 1),
       finished: height >= FINISH,
       own: aspect === own,
+      lords: lordsWorth(height, aspect === winner),
     }));
 
 /**
@@ -66,7 +68,7 @@ export const ASPECT_PAGE_CASES = {
   },
   "Age won by another Aspect": {
     race: {
-      standings: standings({ Might: 10_000, Harmony: 7_600, Chaos: 4_100, Guile: 3_900 }, "Harmony"),
+      standings: standings({ Might: 10_000, Harmony: 7_600, Chaos: 4_100, Guile: 3_900 }, "Harmony", "Might"),
       finishHeight: FINISH,
       stages: STAGES,
       result: { winner: "Might" },

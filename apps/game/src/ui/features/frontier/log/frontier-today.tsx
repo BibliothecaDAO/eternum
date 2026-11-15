@@ -9,6 +9,9 @@ import { type ReactNode, useState } from "react";
 import { dayBounds, dayClock, seasonDay } from "../hud/day-clock";
 import { useDockArmies } from "../hud/dock-armies";
 import { useDayShare } from "../rollover/day-share-sheet";
+import { OpeningPartGate } from "../opening/opening-context";
+import { readQuestWeek } from "./quest-week";
+import { TodayWeek } from "./today-week";
 import { dayLogLine } from "./day-line";
 import { usePlayerDay } from "./player-day";
 import { type LogLine, TodaySheet } from "./today-sheet";
@@ -51,6 +54,12 @@ export const FrontierToday = ({
   const ended = day !== undefined && today !== undefined && day < today;
   const { onShare, sheet } = useDayShare(realm, ended ? day : undefined, played);
   const buyers = useDockArmies(onOpenArmy ? realm : null).filter(({ canSpendSkillPoint }) => canSpendSkillPoint);
+  const week =
+    onOpenArmy && realm && today !== undefined && day === today ? (
+      <OpeningPartGate part="today">
+        <TodayWeek week={readQuestWeek(setup.store, realm.game_id, realm.entity_id, today - 1)} />
+      </OpeningPartGate>
+    ) : undefined;
   return (
     <>
       <TodaySheet
@@ -60,6 +69,7 @@ export const FrontierToday = ({
         clock={clock}
         totals={played.totals}
         dayEnd={dayEnd}
+        week={week}
         lines={logLines(played.stories, setup.store)}
         armiesToUpgrade={onOpenArmy && day === today ? buyers.length : undefined}
         onArmies={onOpenArmy && buyers[0] ? () => onOpenArmy(buyers[0]!.explorerId) : undefined}

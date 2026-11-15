@@ -46,6 +46,8 @@ export interface DayBannerProps {
   reading: DayQuestReading | null;
   heads: readonly DayHead[];
   members: DayMembers | null;
+  /** The Aspect's Altar bane bar: what it holds against the threshold that issues a bane; null where the game has none. */
+  bar: { charge: number; threshold: number } | null;
   /** The home's daily claim waiting today (its Labor), which opens Realms; null once claimed. */
   claim: { labor: number } | null;
   collecting: boolean;
@@ -72,7 +74,17 @@ export const DayBannerView = ({ quest, ...props }: DayBannerProps) => {
 
 type KnownQuestProps = Omit<DayBannerProps, "quest"> & { quest: DayQuestFace };
 
-const DesktopDay = ({ quest, reading, heads, members, claim, collecting, onCollect, onOpenClaim }: KnownQuestProps) => (
+const DesktopDay = ({
+  quest,
+  reading,
+  heads,
+  members,
+  bar,
+  claim,
+  collecting,
+  onCollect,
+  onOpenClaim,
+}: KnownQuestProps) => (
   <HudPanel label={WORDS.today} collapsible={false} className="pointer-events-auto" bodyClassName="flex flex-col gap-2">
     {heads.map((head) => (
       <HeadRow key={head.eyebrow} head={head} />
@@ -95,6 +107,7 @@ const DesktopDay = ({ quest, reading, heads, members, claim, collecting, onColle
       </span>
       {reading && <End state={reading.state} collecting={collecting} onCollect={onCollect} />}
     </span>
+    {bar && <BaneBar bar={bar} />}
     <span className="flex items-center justify-between gap-2">
       <span className="min-w-0 flex-1">{members && <Members members={members} />}</span>
       <Claim claim={claim} onOpen={onOpenClaim} />
@@ -102,7 +115,17 @@ const DesktopDay = ({ quest, reading, heads, members, claim, collecting, onColle
   </HudPanel>
 );
 
-const PhoneDay = ({ quest, reading, heads, members, claim, collecting, onCollect, onOpenClaim }: KnownQuestProps) => {
+const PhoneDay = ({
+  quest,
+  reading,
+  heads,
+  members,
+  bar,
+  claim,
+  collecting,
+  onCollect,
+  onOpenClaim,
+}: KnownQuestProps) => {
   const [open, setOpen] = useState<string | null>(null);
   const opened = heads.find((head) => head.eyebrow === open);
   return (
@@ -128,6 +151,7 @@ const PhoneDay = ({ quest, reading, heads, members, claim, collecting, onCollect
         {members && <MembersShort members={members} />}
         <Claim claim={claim} onOpen={onOpenClaim} />
       </span>
+      {bar && <BaneBar bar={bar} />}
       {heads.length > 0 && (
         <span className="flex flex-wrap items-center gap-1.5">
           {heads.map((head) => (
@@ -209,6 +233,19 @@ const End = ({
     <HudButton kind="primary" size="sm" busy={collecting ? WORDS.collecting : undefined} onClick={onCollect}>
       {state === "again" ? WORDS.collectAgain : WORDS.collect}
     </HudButton>
+  );
+};
+
+const BaneBar = ({ bar }: { bar: NonNullable<DayBannerProps["bar"]> }) => {
+  const line = `${WORDS.baneBar}: ${WORDS.barCharge(bar.charge, bar.threshold)}`;
+  return (
+    <span data-day-bane-bar className="flex items-center gap-2 text-hud-label tabular-nums text-hud-ink">
+      <Icon name="flame" size={20} />
+      <span className="shrink-0">{WORDS.barCharge(bar.charge, bar.threshold)}</span>
+      <span className="min-w-0 flex-1">
+        <HudMeter share={Math.min(1, bar.charge / bar.threshold)} label={line} />
+      </span>
+    </span>
   );
 };
 

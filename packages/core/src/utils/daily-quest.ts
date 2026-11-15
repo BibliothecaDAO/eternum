@@ -22,3 +22,12 @@ function shuffledBag(seed: bigint, week: number): number[] {
   }
   return bag;
 }
+
+/** The seven quests of the bag a day falls in, by day index: the week the Today page shows. */
+export function questWeek(seed: bigint, day: number): { day: number; quest: number }[] {
+  const first = Math.floor(day / quest.QUEST_COUNT) * quest.QUEST_COUNT;
+  return Array.from({ length: quest.QUEST_COUNT }, (_, index) => ({
+    day: first + index,
+    quest: dailyQuest(seed, first + index),
+  }));
+}

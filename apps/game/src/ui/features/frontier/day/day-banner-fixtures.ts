@@ -1,9 +1,9 @@
 import { aspects } from "@bibliothecadao/types";
 import { nativeQuestConstants as quest, nativeBaneConstants as bane } from "@bibliothecadao/eternum/game-client";
 import { dayQuestFace } from "./day-quest-face";
-import { worldBaneHead, teamBaneHead } from "./day-bane-face";
+import { worldBaneHead, teamBaneHead, triumphHead } from "./day-bane-face";
 
-import type { DayBannerProps, DayHead } from "./day-banner-view";
+import type { DayBannerProps } from "./day-banner-view";
 
 const noop = () => {};
 const base = { collecting: false, onCollect: noop, onOpenClaim: noop };
@@ -38,13 +38,7 @@ const baneRules = { beast_percent: 150, stamina_percent: 50, production_percent:
 const bloodMoon = worldBaneHead(bane.BLOOD_MOON, baneRules);
 const mistTide = worldBaneHead(bane.MIST_TIDE, baneRules);
 const rival = teamBaneHead(aspects[0].id);
-const triumph: DayHead = {
-  tone: "good",
-  icon: "eye",
-  eyebrow: "Triumph",
-  name: "Clear Mist",
-  rule: "A reveal finds something 2 times as often today",
-};
+const triumph = triumphHead(1, 200);
 
 /** The banner's states on fixtures of its props: what the lab draws and the test asserts. Layout is the caller's. */
 export const DAY_BANNER_CASES = {
@@ -54,6 +48,7 @@ export const DAY_BANNER_CASES = {
     reading: { progress: 1, target: dailyCount(1, 1), reward: rewardOf(1, false), state: "running" },
     heads: [],
     members: null,
+    bar: null,
     claim,
   },
   "Quest done, Collect waits": {
@@ -62,6 +57,7 @@ export const DAY_BANNER_CASES = {
     reading: { progress: 2, target: dailyCount(1, 1), reward: rewardOf(1, false), state: "done" },
     heads: [],
     members: null,
+    bar: null,
     claim,
   },
   "Quest collected, claim made": {
@@ -70,6 +66,7 @@ export const DAY_BANNER_CASES = {
     reading: { progress: 2, target: dailyCount(1, 1), reward: rewardOf(1, false), state: "collected" },
     heads: [],
     members: null,
+    bar: null,
     claim: null,
   },
   "World bane day, members at it": {
@@ -78,6 +75,7 @@ export const DAY_BANNER_CASES = {
     reading: { progress: 1, target: COUNTS.stand[0], reward: rewardOf(0, true), state: "running" },
     heads: [bloodMoon],
     members: { completed: 4, required: 6 },
+    bar: { charge: 30, threshold: 100 },
     claim,
   },
   "World bane ended, second reward": {
@@ -86,6 +84,7 @@ export const DAY_BANNER_CASES = {
     reading: { progress: COUNTS.lights[2], target: COUNTS.lights[2], reward: rewardOf(2, false), state: "again" },
     heads: [mistTide, triumph],
     members: { ended: "Your Aspect ended the bane", endedShort: "Ended" },
+    bar: { charge: 0, threshold: 100 },
     claim: null,
   },
   "Rival bane and Triumph": {
@@ -94,7 +93,8 @@ export const DAY_BANNER_CASES = {
     reading: { progress: 0, target: COUNTS.cull[1], reward: rewardOf(1, false), state: "running" },
     heads: [rival, triumph],
     members: { completed: 1, required: 6 },
+    bar: { charge: 60, threshold: 100 },
     claim,
   },
-  "Facts not settled": { ...base, quest: camps, reading: null, heads: [], members: null, claim },
+  "Facts not settled": { ...base, quest: camps, reading: null, heads: [], members: null, bar: null, claim },
 } as const satisfies Record<string, Omit<DayBannerProps, "layout">>;

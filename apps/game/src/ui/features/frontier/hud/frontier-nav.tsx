@@ -4,6 +4,7 @@ import { useQuery } from "@/hooks/helpers/use-query";
 import type { ExpeditionRules } from "@bibliothecadao/eternum";
 import type { NativeRows } from "@bibliothecadao/eternum/game-client";
 
+import { usePartShown } from "../opening/opening-context";
 import { useGoToFrontierPlace } from "../frontier-home";
 import { realmDot, useRealmStores } from "../realm-stores";
 import { useResearchTree } from "../research/research-facts";
@@ -66,6 +67,7 @@ export const FrontierNav = ({
         : null;
   const goToPlace = useGoToFrontierPlace(board);
   const researchDot = canResearchNow(useResearchTree(realm)?.nodes);
+  const researchOpen = usePartShown("research");
   const stores = useRealmStores(realm, rules);
   // A view choice shows its view, the Realm / World switch's and a layer's alike: the open page goes.
   const putPageAway = () => onSurface(null);
@@ -86,7 +88,7 @@ export const FrontierNav = ({
       onRealm={!isMapView}
       onGo={go}
       realmDot={stores ? realmDot([stores.wheat, stores.labor, stores.troops]) : undefined}
-      researchDot={realm ? researchDot : undefined}
+      researchDot={realm && researchOpen ? researchDot : undefined}
       events={events}
       unread={unread}
     />

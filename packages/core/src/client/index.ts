@@ -29,7 +29,8 @@ export { readDeepSites, type DeepSiteView } from "./views/deep-sites";
 export { readRaceBoard, readRaceMonument, RACE_MODELS, type RaceBoard } from "./views/race";
 export { currentArmy } from "../utils/deep";
 export { deepCenter, isDeepTile } from "../utils/deep-geometry";
-export { TRIUMPH_MODELS } from "./views/triumphs";
+export { questWeek } from "../utils/daily-quest";
+export { readActiveTriumph, TRIUMPH_MODELS } from "./views/triumphs";
 
 export { SITE_EFFECT_MODELS, readSiteEffects, readSiteReward } from "./views/site-effects";
 export { GUARD_MODELS } from "../utils/army";

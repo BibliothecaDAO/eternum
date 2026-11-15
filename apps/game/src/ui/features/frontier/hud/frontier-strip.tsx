@@ -4,6 +4,7 @@ import type { ExpeditionRules } from "@bibliothecadao/eternum";
 import type { NativeRows } from "@bibliothecadao/eternum/game-client";
 import type { ComponentProps } from "react";
 
+import { usePartShown } from "../opening/opening-context";
 import { useRealmStores } from "../realm-stores";
 import { FRONTIER_STORES, STORE_KINDS, type StoreKind } from "../stores";
 import { dayClock } from "./day-clock";
@@ -36,7 +37,11 @@ export const FrontierStrip = ({
 /** Each store of the realm (the strip's plates, the realm panel's rings): its reading and where a payout of it lands. */
 export const useStoreReadings = (realm: NativeRows["Structure"] | null, rules: ExpeditionRules): StoreReading[] => {
   const stores = useRealmStores(realm, rules);
-  return STORE_KINDS.map((kind) => {
+  const shown: Partial<Record<StoreKind, boolean>> = {
+    troops: usePartShown("troops-store"),
+    essence: usePartShown("essence-store"),
+  };
+  return STORE_KINDS.filter((kind) => shown[kind] ?? true).map((kind) => {
     const store = stores?.[kind];
     return {
       kind,

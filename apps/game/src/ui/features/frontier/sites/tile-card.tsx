@@ -25,7 +25,8 @@ import {
 } from "@bibliothecadao/eternum/game-client";
 import type { TileSpatialRenderable } from "@bibliothecadao/eternum/game-sync";
 import { RESOURCE_PRECISION } from "@bibliothecadao/types";
-import { useMemo, type ReactNode } from "react";
+import { useEffect, useMemo, type ReactNode } from "react";
+import { reachMoments } from "../opening/opening-store";
 
 import { useFrontierRealm, useGoToFrontierPlace } from "../frontier-home";
 import { type ArmyOrder, type Cost, isCovered, useArmyStamina, useOrderAt } from "../hud/army-order";
@@ -141,6 +142,11 @@ export const TileCard = ({
   const facts = useNativeFacts(SITE_MODELS);
   const siteTile = selected.tile.hexCoords;
   const plan = useMemo(() => readTarget(facts.store, selected, attack), [attack, facts, selected]);
+  // Finding a guard opens the fight preview's line; the account keeps it, so a guard met once is never met afresh.
+  const metGuard = plan.guard !== undefined;
+  useEffect(() => {
+    if (metGuard) void reachMoments(["guard"]);
+  }, [metGuard]);
   const approach = useOrderAt(useApproachTile(siteTile, actor !== null && !plan.inReach));
   const stamina = useArmyStamina(actor ? safeInteger(actor.army.explorer_id) : null, plan.attackStamina);
   const realm = useFrontierRealm();

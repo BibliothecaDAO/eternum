@@ -63,6 +63,10 @@ import { NextOrderBar, OrderBar } from "./hud/order-bar";
 import { PickedArmy } from "./hud/picked-army";
 import { useArmySpireStatus } from "./spire-card";
 import { DailyQuest } from "./day/daily-quest";
+import { OpeningProvider } from "./opening/opening-context";
+import { OpeningLineView } from "./opening/opening-line-view";
+import { useOpening } from "./opening/use-opening";
+import { useSiteAlertOffer } from "./opening/use-site-alert-offer";
 import { FrontierToday } from "./log/frontier-today";
 import { CARD_STORE_KINDS, type CardStore, FrontierStoreCard, isCardStore } from "./production/frontier-store-card";
 import { FrontierResearch } from "./research/frontier-research";
@@ -75,21 +79,38 @@ import { useDocumentClass } from "@/hooks/use-document-class";
 
 type ExpeditionRules = NonNullable<ReturnType<typeof useExpeditionRules>>;
 
-/**
- * Frontier's HUD, one set of parts in two compositions (the desktop's shared regions, a phone's bands): the realm and
- * its stores, a nav page or the map, the action bar while an army is selected, the armies and the places.
- * Everything else opens from these as a sheet.
- */
-export const FrontierHud = ({
-  rules,
-  seasonOver: SeasonOver,
-}: {
+type FrontierHudProps = {
   rules: ExpeditionRules;
   /** The host owns the shell recap; the HUD supplies the player's realm and pending payout. */
   seasonOver: ComponentType<{
     realm: NativeRows["Structure"] | null;
     withdraw?: ReactNode;
   }>;
+};
+
+/**
+ * Frontier's HUD, one set of parts in two compositions (the desktop's shared regions, a phone's bands): the realm and
+ * its stores, a nav page or the map, the action bar while an army is selected, the armies and the places.
+ * Everything else opens from these as a sheet. Its parts wait on their moment, and a moment's line shows once.
+ */
+export const FrontierHud = (props: FrontierHudProps) => {
+  const realm = useFrontierRealm();
+  const visit = useRealmVisit();
+  const { opened, line, gotIt } = useOpening(props.rules, visit ? null : realm);
+  const offer = useSiteAlertOffer(line?.moment ?? null, gotIt);
+  return (
+    <OpeningProvider opened={opened}>
+      <FrontierHudBody {...props} opening={{ line, offer, gotIt }} />
+    </OpeningProvider>
+  );
+};
+
+const FrontierHudBody = ({
+  rules,
+  seasonOver: SeasonOver,
+  opening,
+}: FrontierHudProps & {
+  opening: Pick<ReturnType<typeof useOpening>, "line" | "gotIt"> & { offer: ReturnType<typeof useSiteAlertOffer> };
 }) => {
   // Parts shared with the Blitz and Eternum HUD read upright, untracked and in sentence case here (index.css).
   useDocumentClass("frontier-hud");
@@ -208,6 +229,14 @@ export const FrontierHud = ({
   const notices = (
     <>
       {own && <DailyQuest realm={own} layout={desktop ? "desktop" : "phone"} />}
+      {opening.line && (
+        <OpeningLineView
+          moment={opening.line.moment}
+          rules={opening.line.rules}
+          offer={opening.offer}
+          onGotIt={opening.gotIt}
+        />
+      )}
       <OfflineNotice />
       <SceneFailureNotice />
       {own && <DayEndNotice dayEnd={dayEnd} onOpen={() => setSurface("today")} />}

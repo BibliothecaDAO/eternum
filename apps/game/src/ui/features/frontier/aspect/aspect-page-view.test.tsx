@@ -2,6 +2,7 @@ import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
+import { formatShort } from "@bibliothecadao/types";
 import { ASPECT_PAGE_CASES } from "./aspect-page-fixtures";
 import { AspectPageView, type AspectPageProps } from "./aspect-page-view";
 
@@ -32,6 +33,13 @@ describe("the Aspect page", () => {
     expect(race).toContain("Stage 4 of 5 · 6,400 of 10,000");
     expect(race).toContain("Stage 3 of 5 · 5,200 of 10,000");
     expect(race).toContain("Stage 1 of 5 · 900 of 10,000");
+  });
+
+  it("shows what each height is worth in LORDS, the finish bonus on the Aspect that won", () => {
+    draw(ASPECT_PAGE_CASES["Mid-season, the player's Aspect second"]);
+    expect(part("data-aspect-race")).toContain(formatShort(64_000));
+    draw(ASPECT_PAGE_CASES["Age won by another Aspect"]);
+    expect(part("data-aspect-race")).toContain(formatShort(200_000));
   });
 
   it("shows the Triumphs of built stages with the day after the build, and the rest with their stage", () => {
