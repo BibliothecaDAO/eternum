@@ -13,7 +13,7 @@ import { toast } from "@/ui/features/event-feed/notify";
 import { disposeGameSyncSession, installActiveGameClient } from "@/sync/active-game-client";
 import { configManager, type GameClient, setBlockTimestampSource, learnResearch } from "@bibliothecadao/eternum";
 import { nativeResearchConstants as research, type GameClientSetup } from "@bibliothecadao/eternum/game-client";
-import { BuildingType, RESOURCE_PRECISION, ResourcesIds } from "@bibliothecadao/types";
+import { buildingName, BuildingType, RESOURCE_PRECISION, ResourcesIds } from "@bibliothecadao/types";
 import preset from "../../../../../../../contracts/l3/world-native/tests/fixtures/current-presets/conformance.json";
 import { buildingCounts, realmBoard } from "./build-fixture";
 import { BuildingsInFlight, BuildSheet } from "./build-sheet";
@@ -647,13 +647,13 @@ it("reds only the price lines the realm holds less of, so a training building sh
       value: { game_id: 1, structure_id: 7, learned: (1n << 14n) | (1n << 17n) },
     },
   ] as never);
-  const lodge = store.require("BuildingRule", { game_id: 1, category: BuildingType.ScoutsLodge });
+  const warHall = store.require("BuildingRule", { game_id: 1, category: BuildingType.WarHall });
   store.applyFacts([
     {
       model: "BuildingRule",
-      key: `0x6${BuildingType.ScoutsLodge}`,
+      key: `0x6${BuildingType.WarHall}`,
       value: {
-        ...lodge,
+        ...warHall,
         population_cost: 0,
         simple_cost: [
           { resource_type: ResourcesIds.Essence, amount: 6000n * BigInt(RESOURCE_PRECISION) },
@@ -674,7 +674,7 @@ it("reds only the price lines the realm holds less of, so a training building sh
       ),
     );
     const card = [...host.querySelectorAll<HTMLButtonElement>(".ui-card__choose")].find((button) =>
-      button.textContent?.includes("Scouts"),
+      button.textContent?.includes(buildingName(BuildingType.WarHall, true)),
     )!;
     const line = (label: string) => {
       const element = card.querySelector(`[aria-label="${label}"]`)!;
