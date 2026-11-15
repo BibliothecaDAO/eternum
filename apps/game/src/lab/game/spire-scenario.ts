@@ -242,8 +242,14 @@ export const discoveredSpireScenario = (): LabScenario => {
 export function clearMistScenario(): LabScenario {
   const scenario = discoveredSpireScenario();
   const store = scenario.store;
-  for (const [key] of store.entries("ExpeditionSpire"))
-    store.applyFacts([{ model: "ExpeditionSpire", key, value: null }]);
+  for (const [, row] of [...store.entries("ExpeditionSpire")]) {
+    const position = row.location;
+    if (position) {
+      const tile = { game_id: row.game_id, alt: position.alt, col: position.x, row: position.y };
+      store.applyFacts([{ model: "TileOccupancy", key: store.wireKeyOf("TileOccupancy", tile)!, value: null }]);
+    }
+    store.applyFacts([{ model: "ExpeditionSpire", key: store.wireKeyOf("ExpeditionSpire", row)!, value: null }]);
+  }
   store.applyFacts([
     { model: "RaceRules", key: "0xc100", value: wire(raceRules()) },
     { model: "HomeAspect", key: "0xc101", value: { game_id: 1, home: "7", aspect: 1 } },
