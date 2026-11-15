@@ -21,6 +21,17 @@ fn race_preset(stage_height: u32) -> crate::presets::PresetDefinition {
                 },
             );
     preset.season_win_points = 0;
+    without_passive_labor(preset)
+}
+
+fn without_passive_labor(mut preset: crate::presets::PresetDefinition) -> crate::presets::PresetDefinition {
+    let mut resources = array![];
+    for rule in preset.resources.resources {
+        resources.append(if rule.resource_type == crate::resources::LABOR {
+            crate::resources::ResourceRule { realm_rate: 0, ..*rule }
+        } else { *rule });
+    }
+    preset.resources.resources = resources.span();
     preset
 }
 
@@ -33,6 +44,7 @@ fn a_late_rejected_move_pays_all_sites_at_the_win_then_stops_before_later_ticks(
     let (d, game_id) = super::aspects::setup_aspect_preset(98, race_preset(5));
     let mut guards = array![];
     let mut homes = array![];
+    let mut counts = array![];
     for kind in 0..crate::rules::DEEP_SITE_COUNT {
         let member = player(d, 9800 + kind.into());
         let key = deployed(member, game_id, 1, 11);
@@ -40,6 +52,7 @@ fn a_late_rejected_move_pays_all_sites_at_the_win_then_stops_before_later_ticks(
         beside(d, key, target, 0);
         applied(member, game_id, fight(key, target), 360);
         guards.append(key);
+        counts.append(army(d, key).troops.count);
         homes.append(ResourceKey { game_id, entity_id: army(d, key).owner });
     }
     let homes = homes.span();
@@ -56,8 +69,8 @@ fn a_late_rejected_move_pays_all_sites_at_the_win_then_stops_before_later_ticks(
         assert_eq!(world_test_support::tests::play_fixture::rejection(ref events, d.games).reason, "game ended");
         assert_eq!(balance(d, quarry, crate::resources::LABOR) - before, 5 * RESOURCE_PRECISION);
         assert_eq!(balance(d, quarry, crate::resources::ESSENCE) - essence_before, 5 * RESOURCE_PRECISION);
-        for guard in guards.span() {
-            assert_eq!(army(d, *guard).troops.count, 5 * RESOURCE_PRECISION);
+        for index in 0..guards.len() {
+            assert_eq!(army(d, *guards.at(index)).troops.count, *counts.at(index) - 5 * RESOURCE_PRECISION);
         }
         interact_with_state(
             d.games,
@@ -79,12 +92,15 @@ fn a_late_rejected_move_pays_all_sites_at_the_win_then_stops_before_later_ticks(
 
 #[test]
 fn delayed_altar_ticks_preserve_the_prepared_world_day_and_issue_for_the_following_day() {
-    let (d, game_id) = super::aspects::setup_aspect_preset(5, race_preset(2000));
+    let mut preset = race_preset(2000);
+    preset.economy.deep = Some(crate::deep::DeepRules { altar_threshold: 5, ..preset.economy.deep.unwrap() });
+    let (d, game_id) = super::aspects::setup_aspect_preset(5, preset);
     let key = deployed(d, game_id, 1, 3);
     let home = ResourceKey { game_id, entity_id: army(d, key).owner };
     let target = site(d, game_id, crate::rules::DEEP_ALTAR);
     beside(d, key, target, 0);
     applied(d, game_id, fight(key, target), 360);
+    assert_eq!(army(d, key).troops.count, RESOURCE_PRECISION);
     let tomorrow = world_test_support::tests::registrar::day_start(d, game_id, 1);
     assert!(
         world_test_support::tests::play_fixture::play(
@@ -103,7 +119,7 @@ fn delayed_altar_ticks_preserve_the_prepared_world_day_and_issue_for_the_followi
     interact_with_state(
         d.games,
         || {
-            assert_eq!(crate::logic::race::member(home).glory, 10 * RESOURCE_PRECISION);
+            assert_eq!(crate::logic::race::member(home).glory, 5 * RESOURCE_PRECISION);
             assert_eq!(crate::state::read().banes.first_team_day.read(game_id), Some(1));
             assert_eq!(crate::logic::banes::kind(game_id, 1), Some(crate::banes::ASH_FALL));
             assert_eq!(crate::logic::banes::quest_kind(home, 1), crate::quests::CULL);
@@ -130,14 +146,13 @@ fn delayed_altar_ticks_preserve_the_prepared_world_day_and_issue_for_the_followi
         || {
             assert_eq!(crate::state::read().banes.world_days.read((game_id, 2)), Some(0));
             assert_eq!(crate::logic::banes::kind(game_id, 1), Some(crate::banes::ASH_FALL));
-            assert_eq!(crate::logic::race::member(home).glory, 10 * RESOURCE_PRECISION);
+            assert_eq!(crate::logic::race::member(home).glory, 5 * RESOURCE_PRECISION);
         },
     );
 }
 
 fn setup(seed: felt252) -> (Deployment, u32) {
-    let mut preset = super::deep_sites::preset();
-    preset.economy.labor = None;
+    let preset = without_passive_labor(super::deep_sites::preset());
     super::aspects::setup_aspect_preset(seed, preset)
 }
 
