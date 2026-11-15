@@ -64,7 +64,8 @@ restore their network and identity overrides when you leave them.
 fetches (the client's own modules, every script, the bytes), when its last script arrived and whether it drew 3D.
 
 `/lab/kit/standings` shows the Blitz player list. Open a player, then press Players to return; on desktop the list stays
-beside the card. `prove:app-phone` includes this path. The retired long-format tribe fixture is removed.
+beside the card. `pnpm --dir apps/game prove:app <base-url> <out-dir> phone` includes this path. The retired long-format
+tribe fixture is removed.
 
 ### HUD room
 
