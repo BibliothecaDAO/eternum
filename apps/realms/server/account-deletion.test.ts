@@ -76,6 +76,21 @@ const seedAccount = (worker: Worker, realmsId: string) =>
         `INSERT INTO "seal" ("owner", "paid_cents", "source", "receipt", "granted_at") VALUES (?, 999, 'store', 'tx-leaving', 1)`,
       )
       .bind(realmsId),
+    worker.db
+      .prepare(
+        `INSERT INTO "store_receipts" ("receipt", "product", "received_at", "owner", "outcome") VALUES ('apple:tx-leaving', 'seal', 1, ?, 'seal')`,
+      )
+      .bind(realmsId),
+    worker.db
+      .prepare(
+        `INSERT INTO "store_receipts" ("receipt", "product", "received_at", "owner", "outcome") VALUES ('apple:tx-bundle', 'fragments-500', 1, ?, 'fragments')`,
+      )
+      .bind(realmsId),
+    worker.db
+      .prepare(
+        `INSERT INTO "fragment_credits" ("receipt", "owner", "fragments", "created_at") VALUES ('apple:tx-bundle', ?, 500, 1)`,
+      )
+      .bind(realmsId),
     worker.db.prepare(
       `INSERT INTO "campaign_codes" ("campaign", "code_hash", "tier") VALUES ('devcon-2026', 'golden-hash', 'golden')`,
     ),
@@ -135,6 +150,14 @@ it("deletes an account only with its emailed code: its old session opens nothing
   expect(await countOf(worker, "build_order_books", "owner", leaving.realmsId)).toBe(0);
   expect(await countOf(worker, "opening_progress", "owner", leaving.realmsId)).toBe(0);
   expect(await countOf(worker, "seal", "owner", leaving.realmsId)).toBe(0);
+  expect(await countOf(worker, "fragment_credits", "owner", leaving.realmsId)).toBe(0);
+  // The payments stay in the ledger, owned by no one, so neither receipt can be used again.
+  expect(
+    (await worker.db.prepare(`SELECT "receipt", "owner" FROM "store_receipts" ORDER BY "receipt"`).all()).results,
+  ).toEqual([
+    { receipt: "apple:tx-bundle", owner: null },
+    { receipt: "apple:tx-leaving", owner: null },
+  ]);
   expect(await countOf(worker, "user", "email", LEAVING)).toBe(0);
   expect(await inbox.threadMessages(threadId, undefined, 10)).toBeNull();
   expect(

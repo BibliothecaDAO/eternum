@@ -1,7 +1,7 @@
 import { afterEach, expect, it } from "vitest";
 
 import type { IdentityAuth } from "./auth";
-import { grantSeal, handleSeal, holderLevelOf, readSeal, sealOffer, type HolderFacts } from "./seal";
+import { handleSeal, holderLevelOf, sealOffer, type HolderFacts } from "./seal";
 import { createTestD1 } from "./test-d1";
 import { migrationStatements } from "./workerd-harness";
 
@@ -51,16 +51,6 @@ it("prices the seal by holder and channel, and says what each holder has free", 
   expect(sealOffer("wonder", "web")).toEqual({ cents: 499, free: { labor: true, fragments: true } });
 });
 
-it("writes a seal once: a second grant to the account is held, and a receipt reused by another account is refused", async () => {
-  const db = await migrated();
-  const seal = { owner: OWNER, paidCents: 999, source: "store" as const, receipt: "tx-1", now: 100 };
-  expect(await grantSeal(db, seal)).toBe("granted");
-  expect(await grantSeal(db, { ...seal, receipt: "tx-2" })).toBe("held");
-  expect(await readSeal(db, OWNER)).toEqual({ paid_cents: 999, source: "store", granted_at: 100 });
-  expect(await grantSeal(db, { ...seal, owner: OTHER })).toBe("receipt_used");
-  expect(await readSeal(db, OTHER)).toBeNull();
-});
-
 it("serves the signed-in account its level, whether it holds the seal, and the two prices", async () => {
   const db = await migrated();
   const auth = (realmsId: string | null) =>
@@ -75,6 +65,11 @@ it("serves the signed-in account its level, whether it holds the seal, and the t
     web: { cents: 499, free: { labor: true, fragments: false } },
     store: { cents: 499, free: { labor: true, fragments: false } },
   });
-  await grantSeal(db, { owner: OWNER, paidCents: 499, source: "web", receipt: "tx-web", now: 1 });
+  await db
+    .prepare(
+      'INSERT INTO "seal" ("owner", "paid_cents", "source", "receipt", "granted_at") VALUES (?, 499, \'web\', \'tx-web\', 1)',
+    )
+    .bind(OWNER)
+    .run();
   expect(((await (await ask(OWNER)).json()) as { owned: boolean }).owned).toBe(true);
 });

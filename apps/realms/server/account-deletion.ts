@@ -32,6 +32,8 @@ import { spendSignInCode } from "./wallet-changes";
  * | `realms_accounts`, `device_sessions`, `revoked_devices`,           | deleted: no device can be approved again       |
  * | `account_browsers`                                                 |                                                |
  * | `build_order_books`, `opening_progress`, `seal`, `news_email_sends` | deleted                                        |
+ * | `fragment_credits`                                                 | deleted                                        |
+ * | `store_receipts` (the payment ledger)                              | kept, its owner cleared: a receipt stays spent |
  * | `campaign_referrers`, `campaign_referrals` (as friend or referrer) | deleted; an inviter keeps what it earned       |
  * | `default_wallets`, `wallet_recoveries`, `sponsored_executions`     | deleted: the wallet stays on chain, owned by   |
  * |                                                                    | the player's passkey; email recovery ends      |
@@ -121,6 +123,7 @@ const DELETED_BY_REALMS_ID = [
   ["build_order_books", "owner"],
   ["opening_progress", "owner"],
   ["seal", "owner"],
+  ["fragment_credits", "owner"],
   ["news_email_sends", "realmsId"],
   ["campaign_referrers", "referrer"],
   ["campaign_referrals", "friend"],
@@ -138,6 +141,7 @@ const accountDeletion = (db: D1Database, user: User, realmsId: string, now: numb
   ...DELETED_BY_REALMS_ID.map(([table, column]) =>
     db.prepare(`DELETE FROM "${table}" WHERE "${column}" = ?`).bind(realmsId),
   ),
+  db.prepare(`UPDATE "store_receipts" SET "owner" = NULL WHERE "owner" = ?`).bind(realmsId),
   db.prepare(`DELETE FROM "session" WHERE "userId" = ?`).bind(user.id),
   db.prepare(`DELETE FROM "account" WHERE "userId" = ?`).bind(user.id),
   db.prepare(`DELETE FROM "verification" WHERE "identifier" = ?`).bind(`sign-in-otp-${user.email.toLowerCase()}`),

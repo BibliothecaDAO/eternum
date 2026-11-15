@@ -3,7 +3,8 @@ import { SEAL_CENTS, STORE_PRODUCTS } from "@bibliothecadao/types";
 import type { IdentityAuth } from "./auth";
 import type { IdentityEnv } from "./env";
 import { json, readBody } from "./http";
-import { grantSeal, holderLevelOf, type HolderFacts } from "./seal";
+import { RealmHoldingsUnavailableError } from "./realm-holdings";
+import { holderLevelOf, readSeal, type HolderFacts } from "./seal";
 
 const BODY_BYTES = 32 * 1024;
 const STORES = ["apple", "google"] as const;
@@ -25,11 +26,17 @@ export interface ReceiptWorld {
   now: () => number;
 }
 
+/** What came of a verified payment, as the ledger records it. */
+type Outcome = "seal" | "seal_held" | "fragments" | "unfulfilled_price" | "unfulfilled_product";
+
+type Product = (typeof STORE_PRODUCTS)[keyof typeof STORE_PRODUCTS];
+
 /**
- * POST /api/shop/receipt: a store purchase of the signed-in account, checked with its store. A Fragment bundle writes a
- * pending credit for the co-signed hand-off to deliver; the seal is granted at once, when the product's price covers the
- * seal's store price for this account's holder level. The same receipt sent again answers as it did the first time, and
- * never credits twice; one that another account used is refused.
+ * POST /api/shop/receipt: a store purchase of the signed-in account, checked with its store. Every verified payment is
+ * written once to the receipt ledger with its outcome, in one transaction with what it buys: the seal, when the
+ * product's price covers the seal's store price for this account's holder level, or a pending Fragment credit for the
+ * co-signed hand-off. A payment that cannot be honoured is recorded as unfulfilled for the owner to refund. The same
+ * receipt sent again answers as it did the first time; one another account used is refused.
  */
 export async function handleStoreReceipt(request: Request, auth: IdentityAuth, world: ReceiptWorld): Promise<Response> {
   if (request.method !== "POST") return json({ error: "method_not_allowed" }, 405);
@@ -47,66 +54,105 @@ export async function handleStoreReceipt(request: Request, auth: IdentityAuth, w
     return json({ error: "store_unavailable" }, 503);
   }
   if (!purchase) return json({ error: "receipt_refused" }, 402);
-  const product = Object.hasOwn(STORE_PRODUCTS, purchase.productId)
-    ? STORE_PRODUCTS[purchase.productId as keyof typeof STORE_PRODUCTS]
-    : undefined;
-  if (!product) return json({ error: "unknown_product" }, 422);
-  const receipt = `${asked.store}:${purchase.transactionId}`;
-  const now = world.now();
-  if (product.kind === "seal") {
-    const holder = holderLevelOf(await world.holderFacts(owner));
-    if (product.cents < SEAL_CENTS.store[holder]) return json({ error: "seal_price_not_for_holder" }, 409);
-    await world.db
-      .prepare(
-        'INSERT INTO "store_receipts" ("receipt", "product", "received_at") VALUES (?, ?, ?) ON CONFLICT DO NOTHING',
-      )
-      .bind(receipt, purchase.productId, now)
-      .run();
-    const outcome = await grantSeal(world.db, {
-      owner,
-      paidCents: product.cents,
-      source: "store",
-      receipt,
-      now,
-    });
-    if (outcome === "receipt_used") return json({ error: "receipt_used" }, 409);
-    return json({ status: "seal", repeated: outcome === "held" });
+  try {
+    return await settleReceipt(world, owner, `${asked.store}:${purchase.transactionId}`, purchase.productId);
+  } catch (error) {
+    if (error instanceof RealmHoldingsUnavailableError) return json({ error: "holdings_unavailable" }, 503);
+    throw error;
   }
-  const credit = await creditFragments(world.db, {
-    owner,
-    receipt,
-    productId: purchase.productId,
-    fragments: product.fragments,
-    now,
-  });
-  return credit === "used"
-    ? json({ error: "receipt_used" }, 409)
-    : json({ status: "fragments", fragments: product.fragments, repeated: credit === "repeated" });
 }
 
-/** Writes the receipt and its pending credit once; the same account sending it again is `repeated`, another account `used`. */
-const creditFragments = async (
+const SETTLE_ATTEMPTS = 3;
+
+/**
+ * Settles a verified payment through the ledger: an earlier row for the receipt answers it; otherwise the ledger row and
+ * what it buys are written in one batch. A batch that loses a race (the same receipt, or a seal this account just
+ * bought with another receipt) writes nothing, and the next pass reads the winner.
+ */
+const settleReceipt = async (world: ReceiptWorld, owner: string, receipt: string, productId: string) => {
+  const product = productOf(productId);
+  const now = world.now();
+  let lastError: unknown;
+  for (let attempt = 0; attempt < SETTLE_ATTEMPTS; attempt += 1) {
+    const recorded = await world.db
+      .prepare('SELECT "owner", "product", "outcome" FROM "store_receipts" WHERE "receipt" = ?')
+      .bind(receipt)
+      .first<{ owner: string | null; product: string; outcome: Outcome }>();
+    if (recorded)
+      return recorded.owner === owner
+        ? answerFor(recorded.outcome, productOf(recorded.product), true)
+        : json({ error: "receipt_used" }, 409);
+    const outcome = await outcomeOf(world, owner, product);
+    try {
+      await world.db.batch([
+        ledgerRow(world.db, { receipt, owner, productId, outcome, now }),
+        ...fulfilment(world.db, { receipt, owner, product, outcome, now }),
+      ]);
+      return answerFor(outcome, product, false);
+    } catch (error) {
+      lastError = error;
+    }
+  }
+  throw lastError;
+};
+
+/** What this payment can buy this account now; the seal's price is judged by the account's live holder level. */
+const outcomeOf = async (world: ReceiptWorld, owner: string, product: Product | undefined): Promise<Outcome> => {
+  if (!product) return "unfulfilled_product";
+  if (product.kind === "fragments") return "fragments";
+  const holder = product.cents < SEAL_CENTS.store.none ? holderLevelOf(await world.holderFacts(owner)) : "none";
+  if (product.cents < SEAL_CENTS.store[holder]) return "unfulfilled_price";
+  return (await readSeal(world.db, owner)) ? "seal_held" : "seal";
+};
+
+const productOf = (productId: string): Product | undefined =>
+  Object.hasOwn(STORE_PRODUCTS, productId) ? STORE_PRODUCTS[productId as keyof typeof STORE_PRODUCTS] : undefined;
+
+const ledgerRow = (
   db: D1Database,
-  credit: { owner: string; receipt: string; productId: string; fragments: number; now: number },
-): Promise<"credited" | "repeated" | "used"> => {
-  await db
+  row: { receipt: string; owner: string; productId: string; outcome: Outcome; now: number },
+) =>
+  db
     .prepare(
-      'INSERT INTO "store_receipts" ("receipt", "product", "received_at") VALUES (?, ?, ?) ON CONFLICT DO NOTHING',
+      'INSERT INTO "store_receipts" ("receipt", "product", "received_at", "owner", "outcome") VALUES (?, ?, ?, ?, ?)',
     )
-    .bind(credit.receipt, credit.productId, credit.now)
-    .run();
-  const written = await db
-    .prepare(
-      'INSERT INTO "fragment_credits" ("receipt", "owner", "fragments", "created_at") VALUES (?, ?, ?, ?) ON CONFLICT DO NOTHING RETURNING "receipt"',
-    )
-    .bind(credit.receipt, credit.owner, credit.fragments, credit.now)
-    .first();
-  if (written) return "credited";
-  const held = await db
-    .prepare('SELECT "owner" FROM "fragment_credits" WHERE "receipt" = ?')
-    .bind(credit.receipt)
-    .first<{ owner: string }>();
-  return held?.owner === credit.owner ? "repeated" : "used";
+    .bind(row.receipt, row.productId, row.now, row.owner, row.outcome);
+
+/** The rows an outcome buys, written in the same batch as its ledger row. */
+const fulfilment = (
+  db: D1Database,
+  buy: { receipt: string; owner: string; product: Product | undefined; outcome: Outcome; now: number },
+) => {
+  const { receipt, owner, product, outcome, now } = buy;
+  if (outcome === "seal" && product?.kind === "seal")
+    return [
+      db
+        .prepare('INSERT INTO "seal" ("owner", "paid_cents", "source", "receipt", "granted_at") VALUES (?, ?, ?, ?, ?)')
+        .bind(owner, product.cents, "store", receipt, now),
+    ];
+  if (outcome === "fragments" && product?.kind === "fragments")
+    return [
+      db
+        .prepare('INSERT INTO "fragment_credits" ("receipt", "owner", "fragments", "created_at") VALUES (?, ?, ?, ?)')
+        .bind(receipt, owner, product.fragments, now),
+    ];
+  return [];
+};
+
+const answerFor = (outcome: Outcome, product: Product | undefined, repeated: boolean) => {
+  switch (outcome) {
+    case "seal":
+      return json({ status: "seal", repeated });
+    case "seal_held":
+      return json({ status: "seal", repeated: true });
+    case "fragments":
+      if (product?.kind !== "fragments") throw new Error("ledger_fragments_for_unknown_product");
+      return json({ status: "fragments", fragments: product.fragments, repeated });
+    case "unfulfilled_price":
+      return json({ error: "seal_price_not_for_holder" }, 409);
+    case "unfulfilled_product":
+      return json({ error: "unknown_product" }, 422);
+  }
 };
 
 const readRequest = async (request: Request): Promise<{ store: (typeof STORES)[number]; evidence: string } | null> => {

@@ -1,6 +1,7 @@
 import { afterEach, expect, it, vi } from "vitest";
 
 import type { IdentityAuth } from "./auth";
+import { RealmHoldingsUnavailableError } from "./realm-holdings";
 import { readSeal } from "./seal";
 import { handleStoreReceipt, type ReceiptWorld, type StoreVerifier } from "./store-receipts";
 import { createTestD1 } from "./test-d1";
@@ -135,4 +136,121 @@ it("grants the seal at the store price of the buyer's holder level, once", async
   expect(
     await sendAs(db, OTHER, { store: "apple", receipt: "tx-6|seal-holder" }, { holderFacts: async () => holder }),
   ).toEqual([409, { error: "receipt_used" }]);
+});
+
+const HOLDER = { heldRealmIds: [1], ticket: null } as const;
+const ledger = async (db: D1Database) =>
+  (await db.prepare('SELECT "receipt", "owner", "outcome" FROM "store_receipts" ORDER BY "receipt"').all()).results;
+const seals = async (db: D1Database) =>
+  (await db.prepare('SELECT "owner", "receipt" FROM "seal" ORDER BY "owner"').all()).results;
+
+/** What an account's deletion does to the payment rows (account-deletion.ts): its seal and credits go, the ledger keeps the receipts. */
+const deleteAccountRows = (db: D1Database, owner: string) =>
+  db.batch([
+    db.prepare('DELETE FROM "seal" WHERE "owner" = ?').bind(owner),
+    db.prepare('DELETE FROM "fragment_credits" WHERE "owner" = ?').bind(owner),
+    db.prepare('UPDATE "store_receipts" SET "owner" = NULL WHERE "owner" = ?').bind(owner),
+  ]);
+
+it("keeps a seal receipt spent after the account that used it is deleted", async () => {
+  const db = await migrated();
+  await sendAs(db, OWNER, { store: "apple", receipt: "tx-1|seal" });
+  await deleteAccountRows(db, OWNER);
+  expect(await sendAs(db, OTHER, { store: "apple", receipt: "tx-1|seal" })).toEqual([409, { error: "receipt_used" }]);
+  expect(await seals(db)).toEqual([]);
+});
+
+it("binds a second paid receipt of an account that already holds the seal, so no one else can use it", async () => {
+  const db = await migrated();
+  await sendAs(db, OWNER, { store: "apple", receipt: "tx-1|seal" });
+  expect(await sendAs(db, OWNER, { store: "apple", receipt: "tx-2|seal" })).toEqual([
+    200,
+    { status: "seal", repeated: true },
+  ]);
+  expect(await ledger(db)).toEqual([
+    { receipt: "apple:tx-1", owner: OWNER, outcome: "seal" },
+    { receipt: "apple:tx-2", owner: OWNER, outcome: "seal_held" },
+  ]);
+  expect(await sendAs(db, OTHER, { store: "apple", receipt: "tx-2|seal" })).toEqual([409, { error: "receipt_used" }]);
+  expect(await seals(db)).toEqual([{ owner: OWNER, receipt: "apple:tx-1" }]);
+});
+
+it("keeps a Fragment receipt spent after the account's credits are deleted", async () => {
+  const db = await migrated();
+  await sendAs(db, OWNER, { store: "apple", receipt: "tx-1|fragments-500" });
+  await deleteAccountRows(db, OWNER);
+  expect(await credits(db)).toEqual([]);
+  expect(await sendAs(db, OTHER, { store: "apple", receipt: "tx-1|fragments-500" })).toEqual([
+    409,
+    { error: "receipt_used" },
+  ]);
+  expect(await credits(db)).toEqual([]);
+});
+
+it("records a verified payment it cannot honour, grants nothing, and answers its retry the same", async () => {
+  const db = await migrated();
+  const underpriced = { store: "apple", receipt: "tx-1|seal-holder" };
+  const unknown = { store: "apple", receipt: "tx-2|gold-pack" };
+  expect(await sendAs(db, OWNER, underpriced)).toEqual([409, { error: "seal_price_not_for_holder" }]);
+  expect(await sendAs(db, OWNER, unknown)).toEqual([422, { error: "unknown_product" }]);
+  expect(await sendAs(db, OWNER, underpriced, { holderFacts: async () => HOLDER })).toEqual([
+    409,
+    { error: "seal_price_not_for_holder" },
+  ]);
+  expect(await ledger(db)).toEqual([
+    { receipt: "apple:tx-1", owner: OWNER, outcome: "unfulfilled_price" },
+    { receipt: "apple:tx-2", owner: OWNER, outcome: "unfulfilled_product" },
+  ]);
+  expect(await seals(db)).toEqual([]);
+  expect(await sendAs(db, OTHER, underpriced, { holderFacts: async () => HOLDER })).toEqual([
+    409,
+    { error: "receipt_used" },
+  ]);
+});
+
+it("answers a retry from the recorded outcome even after the buyer stops being a holder", async () => {
+  const db = await migrated();
+  const receipt = { store: "apple", receipt: "tx-1|seal-holder" };
+  await sendAs(db, OWNER, receipt, { holderFacts: async () => HOLDER });
+  expect(await sendAs(db, OWNER, receipt)).toEqual([200, { status: "seal", repeated: true }]);
+});
+
+it("buys one seal and one answer when the same receipt arrives twice at once", async () => {
+  const db = await migrated();
+  const receipt = { store: "apple", receipt: "tx-1|seal" };
+  const answers = await Promise.all([sendAs(db, OWNER, receipt), sendAs(db, OWNER, receipt)]);
+  expect(answers.map(([status]) => status)).toEqual([200, 200]);
+  expect(answers.map(([, body]) => (body as { repeated: boolean }).repeated).sort()).toEqual([false, true]);
+  expect(await seals(db)).toEqual([{ owner: OWNER, receipt: "apple:tx-1" }]);
+});
+
+it("keeps one seal and records both receipts when two paid receipts of one account arrive at once", async () => {
+  const db = await migrated();
+  const answers = await Promise.all([
+    sendAs(db, OWNER, { store: "apple", receipt: "tx-1|seal" }),
+    sendAs(db, OWNER, { store: "apple", receipt: "tx-2|seal" }),
+  ]);
+  expect(answers.map(([status]) => status)).toEqual([200, 200]);
+  expect((await seals(db)).length).toBe(1);
+  expect((await ledger(db)).map(({ outcome }) => outcome).sort()).toEqual(["seal", "seal_held"]);
+});
+
+it("writes neither the ledger row nor the seal when fulfilment is interrupted", async () => {
+  const db = await migrated();
+  const interrupted = {
+    prepare: db.prepare.bind(db),
+    batch: () => Promise.reject(new Error("interrupted")),
+  } as unknown as D1Database;
+  await expect(sendAs(interrupted, OWNER, { store: "apple", receipt: "tx-1|seal" })).rejects.toThrow("interrupted");
+  expect(await ledger(db)).toEqual([]);
+  expect(await seals(db)).toEqual([]);
+});
+
+it("refuses a holder-priced seal while holdings cannot be verified, and records nothing", async () => {
+  const db = await migrated();
+  const unavailable = async () => Promise.reject(new RealmHoldingsUnavailableError());
+  expect(
+    await sendAs(db, OWNER, { store: "apple", receipt: "tx-1|seal-holder" }, { holderFacts: unavailable }),
+  ).toEqual([503, { error: "holdings_unavailable" }]);
+  expect(await ledger(db)).toEqual([]);
 });

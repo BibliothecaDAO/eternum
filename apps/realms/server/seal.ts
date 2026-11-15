@@ -38,32 +38,6 @@ export const readSeal = (db: D1Database, owner: string) =>
     .bind(owner)
     .first<{ paid_cents: number; source: "web" | "store"; granted_at: number }>();
 
-/**
- * Writes a seal down once. An account that has one keeps it ("held"); a receipt already written for another account
- * is refused ("receipt_used"), so one payment buys one seal.
- */
-export const grantSeal = async (
-  db: D1Database,
-  seal: { owner: string; paidCents: number; source: "web" | "store"; receipt: string; now: number },
-): Promise<"granted" | "held" | "receipt_used"> => {
-  const used = await db
-    .prepare('SELECT "owner" FROM "seal" WHERE "receipt" = ?')
-    .bind(seal.receipt)
-    .first<{ owner: string }>();
-  if (used) return used.owner === seal.owner ? "held" : "receipt_used";
-  if (await readSeal(db, seal.owner)) return "held";
-  try {
-    await db
-      .prepare('INSERT INTO "seal" ("owner", "paid_cents", "source", "receipt", "granted_at") VALUES (?, ?, ?, ?, ?)')
-      .bind(seal.owner, seal.paidCents, seal.source, seal.receipt, seal.now)
-      .run();
-    return "granted";
-  } catch (error) {
-    if (error instanceof Error && /UNIQUE|constraint/i.test(error.message)) return "receipt_used";
-    throw error;
-  }
-};
-
 /** What the seal's route reads beyond D1: the account's holder facts. */
 export interface SealWorld {
   db: D1Database;
