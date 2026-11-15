@@ -233,16 +233,20 @@ test("canonical launch requests never fill missing fields from normal-speed defa
   expect(await launches.list("madara.frontier")).toEqual([]);
 });
 
-
 test("the published race calendar admits its full season and refuses a tick beyond it before enqueue", async () => {
   const preset = frontierSeasonOnePreset;
   const start = Date.parse(normal.startsAt);
   const duration = seasonSeconds(preset.race!.seasonDays / DAYS_PER_BAG, preset.dayUnitSeconds);
   const season: FrontierSeasonPhase = {
-    phase: "frontier", presetId: preset.id, startsAt: normal.startsAt,
+    phase: "frontier",
+    presetId: preset.id,
+    startsAt: normal.startsAt,
     endsAt: new Date(start + duration * 1000).toISOString(),
   };
-  expect((await put({ ...season, endsAt: new Date(start + (duration + FRONTIER_ARMIES_TICK_SECONDS) * 1000).toISOString() })).status).toBe(409);
+  expect(
+    (await put({ ...season, endsAt: new Date(start + (duration + FRONTIER_ARMIES_TICK_SECONDS) * 1000).toISOString() }))
+      .status,
+  ).toBe(409);
   expect(await new D1CalendarStore(database.db).list()).toEqual([]);
   expect((await put(season)).status).toBe(200);
   const launches = new D1LaunchStore(database.db, testChain());

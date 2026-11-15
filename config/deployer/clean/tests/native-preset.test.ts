@@ -1053,7 +1053,6 @@ const deepFixture = () => ({
   altarThreshold: 1_500,
 });
 
-
 test("an optional Deep preset serializes exact coordinates, resource precision and Altar counts", () => {
   const source = nativePresets[FRONTIER_S1_PRESET_ID]!;
   const previous = source.deep;
@@ -1103,7 +1102,6 @@ test("the Deep codec refuses invalid sites and tick amounts", () => {
 
 const questFixture = () => ({ baseCounts: [1, 1, 1, 1, 1, 2, 15], labor: 1000, essence: 1500, bonusPercent: 150 });
 
-
 test("the daily quest codec replaces legacy labor and preserves whole reward units", () => {
   const source = nativePresets[FRONTIER_S1_PRESET_ID]!;
   const previous = { dailyQuest: source.dailyQuest, labor: source.labor };
@@ -1150,7 +1148,6 @@ const baneFixture = () => ({
   productionPercent: 50,
   questCounts: [3, 6, 9, 12, 20, 40, 60, 80, 2500, 6000, 10000, 15000],
 });
-
 
 test("the bane codec preserves whole quest units and refuses invalid effects", () => {
   const source = nativePresets[FRONTIER_S1_PRESET_ID]!;
@@ -1215,7 +1212,6 @@ const raceFixture = () => ({
     [45, 45],
   ] as const,
 });
-
 
 test("the race codec preserves whole Glory payments and four exact positions", () => {
   const source = nativePresets[FRONTIER_S1_PRESET_ID]!;
@@ -1358,11 +1354,37 @@ test("preset 7 activates the complete Slice 1 rules while fixtures and historica
     expect(built.economy.labor.isNone()).toBe(true);
     expect(built.economy.chests.isNone()).toBe(true);
     expect(built.rules.mode_rules & nativeRuleConstants.DISCOVER_SPIRES).not.toBe(0);
-    for (const command of ["ClaimDailyQuest", "Battle", "BattleGuard", "ApplyRelic", "InteractSite", "MarkGameSettled"] as const) expect(built.rules.command_mask & BigInt(nativeCommandBits[command])).not.toBe(0n);
-    expect(built.rules.troop_stamina_config).toMatchObject({ stamina_initial: 180, stamina_knight_max: 180, stamina_crossbowman_max: 180, stamina_paladin_max: 180, stamina_defense_req: 0 });
+    for (const command of [
+      "ClaimDailyQuest",
+      "Battle",
+      "BattleGuard",
+      "ApplyRelic",
+      "InteractSite",
+      "MarkGameSettled",
+    ] as const)
+      expect(built.rules.command_mask & BigInt(nativeCommandBits[command])).not.toBe(0n);
+    expect(built.rules.troop_stamina_config).toMatchObject({
+      stamina_initial: 180,
+      stamina_knight_max: 180,
+      stamina_crossbowman_max: 180,
+      stamina_paladin_max: 180,
+      stamina_defense_req: 0,
+    });
     expect(built.rules.troop_limit_config.explore_reward_strength_cap).toBe(10000);
     expect(built.economy.progression.unwrap().common_xp).toBe(60);
-    expect(built.settlement.depths.map(row => [row.beast_weak_lower, row.beast_weak_upper, row.beast_strong_lower, row.beast_strong_upper])).toEqual([[300,395,400,500],[600,790,800,1000],[1200,1580,1600,2000],[2400,3160,3200,4000]]);
+    expect(
+      built.settlement.depths.map((row) => [
+        row.beast_weak_lower,
+        row.beast_weak_upper,
+        row.beast_strong_lower,
+        row.beast_strong_upper,
+      ]),
+    ).toEqual([
+      [300, 395, 400, 500],
+      [600, 790, 800, 1000],
+      [1200, 1580, 1600, 2000],
+      [2400, 3160, 3200, 4000],
+    ]);
     codec.compile("register_preset", { preset_id: source.id, definition: built });
   }
 });
