@@ -1,9 +1,13 @@
 // @vitest-environment jsdom
+import { act } from "react";
+import { createRoot } from "react-dom/client";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 
 import { skillPointGain } from "@bibliothecadao/types";
 import { Plate } from "./map-plates";
+import { OpeningProvider } from "@/ui/features/frontier/opening/opening-context";
+import { type Opened } from "@/ui/features/frontier/opening/opening";
 import { Token, tokenReading, tokenSize } from "./map-plate-token";
 import type { ArmyPlate, StructurePlate } from "./map-plate-model";
 
@@ -132,5 +136,31 @@ describe("a Shrine's plate opened", () => {
     expect(html).toContain(
       '<span class="mp-label mp-ranked"><span class="ui-tier" data-tier="3" role="img" aria-label="III">III</span> +1</span>',
     );
+  });
+});
+
+describe("an army token's XP ring follows what the HUD has opened to", () => {
+  const ringShown = (opened: Opened, xpShare: number) => {
+    (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
+    const host = document.createElement("div");
+    const root = createRoot(host);
+    act(() =>
+      root.render(
+        <OpeningProvider opened={opened}>
+          <Token plate={{ ...army, xpShare }} />
+        </OpeningProvider>,
+      ),
+    );
+    const shown = host.querySelector('[aria-label^="XP: "]') !== null;
+    act(() => root.unmount());
+    return shown;
+  };
+
+  it("hides the ring on a fresh account's zero-XP army, shows it once the fight is reached, whatever the army's XP", () => {
+    expect(ringShown(new Set(["launch", "barracks"]), 0)).toBe(false);
+    expect(ringShown(new Set(["launch", "fight"]), 0.4)).toBe(true);
+    // A returning account that earned XP before keeps the ring on a new army with none.
+    expect(ringShown(new Set(["launch", "fight"]), 0)).toBe(true);
+    expect(ringShown("all", 0)).toBe(true);
   });
 });

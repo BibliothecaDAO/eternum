@@ -2,6 +2,7 @@ import { formatExact, formatPercent } from "@bibliothecadao/types";
 import { Icon, type IconMeaning } from "@/ui/design-system/icon";
 import { HudStamina, HudTierChip, type StaminaBar, XpRing } from "@/ui/design-system/kit/hud-elements";
 import { UNDEFENDED } from "@/ui/design-system/kit/words";
+import { OpeningPartGate } from "@/ui/features/frontier/opening/opening-context";
 
 import { chipWidth, labelWidth } from "./map-plate-layout";
 import { type MapPlate, type PlateTroops, type PlateWatched } from "./map-plate-model";
@@ -90,7 +91,11 @@ const TokenView = ({ reading }: { reading: TokenReading }) => (
   <div className="mp-token" role="img" aria-label={tokenWords(reading)}>
     <span className="mp-token__disk" data-undefended={reading.undefended}>
       <Icon name={reading.icon} size={20} />
-      {reading.xpShare !== null && <XpRing share={reading.xpShare} inset={-5} />}
+      {reading.xpShare !== null && (
+        <OpeningPartGate part="army-xp">
+          <XpRing share={reading.xpShare} inset={-5} />
+        </OpeningPartGate>
+      )}
       {reading.mark && (
         <span className="ui-seat mp-token__seat" data-ink={reading.mark.ink} aria-hidden>
           {reading.mark.letter}
