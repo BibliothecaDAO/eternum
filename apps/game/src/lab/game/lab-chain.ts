@@ -1,4 +1,5 @@
 import { identityClient, useIdentitySessionStore } from "@/hooks/context/identity-session";
+import type { JoinedShare } from "@realms-world/identity";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { LAB_GUARDIAN, LAB_SESSION } from "@/shell/lab/app-lab-fixtures";
 import { answerLabChat } from "@/shell/lab/lab-chat";
@@ -79,6 +80,8 @@ export interface LabScenario {
   wallet?: string;
   /** The player enters from the home page's game card, as one not yet settled does; otherwise on the map. */
   entersFromHome?: boolean;
+  /** The link the player's account came by, as identity answers it; none: no link brought the account. */
+  joined?: JoinedShare;
   /**
    * Herald serves each selection its scope alone, as a live shard does: the player's own expedition, and another
    * player's realm and armies only on a visit. None: the lab's game is all the player's to see.
@@ -216,7 +219,7 @@ const installOnce = async (makeScenario: () => LabScenario, startedAt: number): 
   if (scenario.entersFromHome) answerHomeEntry(scenario);
   answerLedgerReads(now);
   answerLabChat({ gameRooms: [gameChatZoneId(LAB_GAME.chainId, LAB_GAME.gameId)], history: scenario.chat });
-  signInLabPlayer(scenario.wallet);
+  signInLabPlayer(scenario.wallet, scenario.joined ?? null);
   seatPlayer(labAccount(scenario, chain, nativeBindings, record, herald, now, events));
   return scenario;
 };
@@ -357,14 +360,16 @@ const answerDirectory = (
 
 /**
  * The lab's player is signed in as the app lab's (its session and guardian), so the game's HUD reads as a signed-in
- * player's. The identity client holds its own fetch, so its session read is answered on the client itself, and so is
- * its default wallet's: the lab's player has none (a payout wallet it links is another wallet).
+ * player's. The identity client holds its own fetch, so its session read is answered on the client itself, and so are
+ * its default wallet's (the lab's player has none; a payout wallet it links is another wallet) and the link the account
+ * came by.
  */
-const signInLabPlayer = (wallet: string | undefined) => {
+const signInLabPlayer = (wallet: string | undefined, joined: JoinedShare) => {
   const session = wallet ? { ...LAB_SESSION, user: { ...LAB_SESSION.user, address: wallet } } : LAB_SESSION;
   identityClient.getSession = async () => session;
   identityClient.readDefaultWallet = async () => null;
   answerLabBuildOrders();
+  identityClient.joinedShare = async () => joined;
   answerLabOpening();
   useIdentitySessionStore.getState().applySession(session);
 };

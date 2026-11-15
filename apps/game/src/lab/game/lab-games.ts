@@ -4,7 +4,7 @@ import { clearMistScenario } from "./spire-scenario";
 import { baneScenario } from "./bane-scenario";
 import { staminaScenario } from "./stamina-scenario";
 import { questScenario } from "./quest-scenario";
-import { aspectSettleScenario } from "./aspect-settle-scenario";
+import { aspectSettleInvitedScenario, aspectSettleScenario } from "./aspect-settle-scenario";
 import { deepScenario } from "./deep-scenario";
 import { expiredRaceScenario, raceScenario } from "./race-scenario";
 import { actionsScenario } from "./actions-scenario";
@@ -92,6 +92,7 @@ export const LAB_SCENARIOS: Partial<Record<string, () => LabScenario>> = {
   "stamina-wind": () => staminaScenario(true),
   settle: settleScenario,
   "aspect-settle": aspectSettleScenario,
+  "aspect-settle-invited": aspectSettleInvitedScenario,
   explore: exploreScenario,
   "painted-buildings": () => paintedBuildingsScenario(),
   "painted-buildings-sands": () => paintedBuildingsScenario(SANDS),

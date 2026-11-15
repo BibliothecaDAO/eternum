@@ -3,7 +3,7 @@ import { aspects, orders, RESOURCE_PRECISION, ResourcesIds } from "@bibliothecad
 
 import frontierConfig from "../../../../../config/generated/frontier.madara.json";
 import { frontierSeasonOnePreset } from "../../../../../config/source/frontier/season-one";
-import { type LabScenario, wire } from "./lab-chain";
+import { LAB_GAME, type LabScenario, wire } from "./lab-chain";
 import { frontierCombatRules } from "../../ui/features/frontier/sites/site-fixture";
 import { startingHomeFacts } from "./starting-home-facts";
 import { settleScenario } from "./settle-scenario";
@@ -68,3 +68,13 @@ function realmForAspect(aspect: number): number {
   }
   throw new Error(`No canonical Realm for Aspect ${aspect}`);
 }
+
+/**
+ * The same founding by an account a friend's Aspect invite brought (/lab/game?scenario=aspect-settle-invited): identity
+ * answers its joined link as it answers a new account that opened Linden's Harmony link, so the Aspect step offers Harmony
+ * first and the founding carries the Aspect tapped.
+ */
+export const aspectSettleInvitedScenario = (): LabScenario => ({
+  ...aspectSettleScenario(),
+  joined: { kind: "aspect", chainId: LAB_GAME.chainId, gameId: LAB_GAME.gameId, moment: 2, name: "Linden" },
+});

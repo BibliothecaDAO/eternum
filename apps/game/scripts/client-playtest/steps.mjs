@@ -801,6 +801,62 @@ const STARTING_ARMY_BUTTONS = `JSON.stringify([...document.querySelectorAll('but
     max: node.querySelector("[role=meter]")?.getAttribute("aria-valuemax") };
 }))`;
 
+/** The Aspect step's cards in the order drawn: each one's label, invite tag and whether it can be tapped. */
+const ASPECT_CARDS = `JSON.stringify([...document.querySelectorAll(".aspect-picker__card")].map((card) => ({
+  label: card.getAttribute("aria-label"),
+  invite: card.querySelector(".aspect-picker__invite")?.textContent ?? null,
+  open: !card.disabled,
+})))`;
+const ASPECT_SETTLES = `JSON.stringify((window.__labChain?.sent ?? [])
+  .filter(({ command }) => command.kind === "SettleSeason")
+  .map(({ command }) => command.calldata.slice(5).map((felt) => BigInt(felt).toString())))`;
+
+/**
+ * A founding by an account a friend's Aspect invite brought: the Aspect step opens with Harmony first, tagged Invited and
+ * naming Linden, every card open only once the invite is read; tapping Harmony signs SettleSeason with that Aspect.
+ */
+const ASPECT_SETTLE_INVITED_STEPS = [
+  {
+    name: "found-from-the-invite",
+    settleMs: 0,
+    play: async ({ browser, owner, extraScreenshot }) => {
+      await playFromTheHomeCard({ browser, owner });
+      const cards = await readUntil(
+        () => browser.read(ASPECT_CARDS),
+        (shown) => shown.length === 4 && shown.every(({ open }) => open),
+        PLAYABLE_WAIT_MS,
+      );
+      const line = browser.read(
+        `JSON.stringify(document.querySelector(".aspect-picker__invited")?.textContent ?? null)`,
+      );
+      extraScreenshot("invited-aspect-step");
+      browser.click("Join Harmony");
+      const settles = await readUntil(
+        () => browser.read(ASPECT_SETTLES),
+        (signed) => signed.length > 0,
+        PLAYABLE_WAIT_MS,
+      );
+      return { cards, line, settles };
+    },
+    verify: ({ played }) =>
+      JSON.stringify(played.cards.map(({ label, invite }) => [label, invite])) ===
+        JSON.stringify([
+          ["Join Harmony", "Invited"],
+          ["Join Might", null],
+          ["Join Chaos", null],
+          ["Join Guile", null],
+        ]) &&
+      played.line === "Linden invited you to Harmony" &&
+      played.settles.length === 1 &&
+      JSON.stringify(played.settles[0]) === JSON.stringify(["1", "0", "2"])
+        ? completed(played)
+        : failed(
+            "The invited player must meet Harmony first, tagged and named, and found into the Aspect tapped",
+            played,
+          ),
+  },
+];
+
 const ASPECT_SETTLE_STEPS = [
   {
     name: "found-in-chosen-aspect",
@@ -5701,6 +5757,10 @@ export const STEP_SETS = {
   "lab-actions-demolish": { game: labSpireGame("upkeep"), steps: DEMOLISH_ACTION_STEPS },
   "lab-actions-settle": { game: LAB_SETTLE, steps: SETTLE_ACTION_STEPS },
   "lab-aspect-settle": { game: { ...labSpireGame("aspect-settle"), entersFromHome: true }, steps: ASPECT_SETTLE_STEPS },
+  "lab-aspect-settle-invited": {
+    game: { ...labSpireGame("aspect-settle-invited"), entersFromHome: true },
+    steps: ASPECT_SETTLE_INVITED_STEPS,
+  },
   "lab-actions-fight": { game: labSpireGame("fight"), steps: FIGHT_ACTION_STEPS },
   "lab-actions-fight-lost": { game: labSpireGame("fight-lost"), steps: FIGHT_LOST_STEPS },
   "lab-actions-sites": { game: labSpireGame("sites"), steps: SITE_ACTION_STEPS },
