@@ -625,7 +625,12 @@ export const ASPECT_PAGE_WORDS = {
   fights: "Fights in the Deep",
   noFights: "No fight in the Deep yet",
   fight: (winner: string, loser: string) => `${winner} beat ${loser}`,
-  fightLoss: (troops: number) => `${formatExact(troops)} troops lost`,
+  fightLosses: (first: string, firstLost: number, second: string, secondLost: number) =>
+    `${first} lost ${formatExact(firstLost)}, ${second} lost ${formatExact(secondLost)} troops`,
+  standoff: (first: string, second: string) => `${first} and ${second} fought to a stand`,
+  mutual: (first: string, second: string) => `${first} and ${second} wiped each other out`,
+  readingFights: "Reading the Deep's fights…",
+  fightsFailed: "The Deep's fights could not be read.",
   wiped: (aspect: string) => `${aspect} wiped out`,
   reading: "Reading the race…",
 } as const;

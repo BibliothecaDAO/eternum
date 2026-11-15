@@ -52,7 +52,7 @@ export function FrontierAspectPage({ onClose }: { onClose: () => void }) {
   return (
     <AspectPageView
       {...aspectPage(board, (home) => getStructureName(home, setup.store).name)}
-      fights={fights && <AspectFeedView fights={fights} now={now} />}
+      fights={<AspectFeedView reading={fights} now={now} />}
       invite={home && <AspectInvite realm={home} />}
       onClose={onClose}
     />
