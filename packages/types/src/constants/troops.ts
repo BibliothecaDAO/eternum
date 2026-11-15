@@ -1,4 +1,4 @@
-import { TroopType } from "../types/common";
+import { troopTypeIndex, TroopType } from "../types/common";
 
 const DEFAULT_TROOP_ATTACK_RANGE = 1;
 const RANGED_TROOP_ATTACK_RANGE = 2;
@@ -6,7 +6,8 @@ const RANGED_TROOP_ATTACK_RANGE = 2;
 type TroopCategory = TroopType | number | string | null | undefined;
 
 export const getTroopAttackRange = (troopType: TroopCategory): number => {
-  if (troopType === TroopType.Crossbowman || troopType === 2 || troopType === "2") {
+  const crossbowman = troopTypeIndex(TroopType.Crossbowman);
+  if (troopType === TroopType.Crossbowman || troopType === crossbowman || troopType === String(crossbowman)) {
     return RANGED_TROOP_ATTACK_RANGE;
   }
 
