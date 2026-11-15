@@ -228,12 +228,12 @@ const createHerald = () => {
     state.chain = chain;
     log.length = 0;
   };
-  const sockets = new Set<{ socket: InstanceType<typeof WebSocketPair>[0]; seq: number }>();
-  const stream = () => {
+  const sockets = new Set<{ socket: InstanceType<typeof WebSocketPair>[0]; seq: number; actor: string | null }>();
+  const stream = (actor: string | null) => {
     const pair = new WebSocketPair();
     const server = pair[1];
     server.accept();
-    const connection = { socket: server, seq: 0 };
+    const connection = { socket: server, seq: 0, actor };
     sockets.add(connection);
     server.addEventListener("close", () => sockets.delete(connection));
     server.addEventListener("message", (event) => {
@@ -270,7 +270,28 @@ const createHerald = () => {
         }),
       );
   };
-  return { answer, act, battle, newChain, state, story, stream, siteChanged };
+  const researchChanged = () => {
+    const snap = siteSnapshot(
+      snapshot(state.army, state.neighbourArmy, null, state.members, state.homeSource, state.secondArmy),
+      state.site,
+    );
+    const model = snap.models.find(({ model }) => model === "RealmKnowledge")!;
+    for (const connection of sockets) {
+      if (connection.actor !== PLAYER_ACCOUNT) continue;
+      connection.socket.send(JSON.stringify({
+        type: "diff", epoch: "site-test", seq: ++connection.seq, block: 11, preconfirmed: false,
+        set: model.rows.map((row) => ({ model: model.model, ...row })), del: [],
+      }));
+    }
+  };
+  const heartbeat = () => {
+    for (const connection of sockets)
+      connection.socket.send(JSON.stringify({
+        type: "head", epoch: "site-test", seq: connection.seq, block: 11,
+        timestamp: Math.floor(Date.now() / 1000), preconfirmed: true,
+      }));
+  };
+  return { answer, act, battle, newChain, state, story, stream, siteChanged, researchChanged, heartbeat };
 };
 
 /** The game's rules with a short armies tick, the player's home realm, and their army if it still exists. */
@@ -759,7 +780,8 @@ const createHarness = async (level: "off" | "important" | "all") => {
       outbound: async (request) => {
         const url = new URL(request.url);
         if (url.origin === SHARD) {
-          if (request.headers.get("upgrade") === "websocket") return herald.stream();
+          if (request.headers.get("upgrade") === "websocket")
+            return herald.stream(new URL(request.url).searchParams.get("actor"));
           const answer = herald.answer(url);
           return answer instanceof Response ? answer : Response.json(answer);
         }
@@ -816,6 +838,27 @@ const seed = async (db: D1Database, level: string, device: { p256dh: string; aut
 
 // Each case owns its Worker, persistent storage and network fixtures.
 describe.concurrent("shard notifications", () => {
+  it("finds a Deep site opportunity when private research makes the idle army eligible", async () => {
+    const { herald, push, worker } = await createHarness("important");
+    herald.state.site = { troops: 1000, aspect: 2, lore: false, lastTick: armiesTick() };
+    const heartbeat = setInterval(herald.heartbeat, 2000);
+    try {
+      await worker.runCron();
+      await pause(polls(3));
+      expect(push.received).toEqual([]);
+      herald.state.site.lore = true;
+      herald.state.site.lastTick = armiesTick();
+      herald.researchChanged();
+      await waitUntil(() => push.received.length === 1, 8000);
+      expect(await push.words()).toEqual([
+        "Quarry can be taken / Your largest army outside the Deep can clear its remaining guards.",
+      ]);
+    } finally {
+      clearInterval(heartbeat);
+      await worker.dispose();
+    }
+  }, 60000);
+
   it("pushes a Deep site opportunity on a rival's confirmed change for an idle player, once across restart", async () => {
     const { herald, push, worker, start } = await createHarness("important");
     herald.state.site = { troops: 1000, aspect: 1, lore: true, lastTick: armiesTick() };
