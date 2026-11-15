@@ -41,7 +41,9 @@ it("offers three levels, lights the saved one with what it brings, and saves the
     expect(levels.filter((level) => level.getAttribute("aria-selected") === "true").map((l) => l.textContent)).toEqual([
       "Important",
     ]);
-    expect(container.textContent).toContain("Each day's opening, Deep sites you can take, rested armies, fights, results and messages");
+    expect(container.textContent).toContain(
+      "Each day's opening, Deep sites you can take, rested armies, fights, results and messages",
+    );
     await act(async () => (levels[2] as HTMLButtonElement).click());
     expect(save).toHaveBeenCalledWith("all");
     expect(container.textContent).toContain("This device");

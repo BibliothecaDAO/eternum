@@ -27,9 +27,14 @@ fn race_preset(stage_height: u32) -> crate::presets::PresetDefinition {
 fn without_passive_labor(mut preset: crate::presets::PresetDefinition) -> crate::presets::PresetDefinition {
     let mut resources = array![];
     for rule in preset.resources.resources {
-        resources.append(if rule.resource_type == crate::resources::LABOR {
-            crate::resources::ResourceRule { realm_rate: 0, ..*rule }
-        } else { *rule });
+        resources
+            .append(
+                if *rule.resource_type == crate::resources::LABOR {
+                    crate::resources::ResourceRule { realm_rate: 0, ..*rule }
+                } else {
+                    *rule
+                },
+            );
     }
     preset.resources.resources = resources.span();
     preset
