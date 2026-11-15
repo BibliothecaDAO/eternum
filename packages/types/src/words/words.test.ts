@@ -35,7 +35,7 @@ import {
   structureName,
   troopPlural,
 } from "./nouns";
-import { TROOP_TIERS, TROOP_TYPES, troopTierIndex } from "../types/common";
+import { TROOP_TIERS, TROOP_TYPES, TroopType, troopTierIndex } from "../types/common";
 import { BuildingType } from "../constants/structures";
 import { formatAgo, formatClockTime, formatDuration, formatGameClock, formatMoment, formatShortDuration } from "./time";
 import { VOICE_RULES } from "./voice";
@@ -386,7 +386,11 @@ describe("time", () => {
 
 describe("troops", () => {
   it("names many of every troop type the schema allows, by its type or its table name", () => {
-    expect(TROOP_TYPES.map((troop) => troopPlural(troop))).toEqual(["Knights", "Crossbowmen", "Paladins"]);
+    expect(Object.fromEntries(TROOP_TYPES.map((troop) => [troop, troopPlural(troop)]))).toEqual({
+      [TroopType.Knight]: "Knights",
+      [TroopType.Paladin]: "Paladins",
+      [TroopType.Crossbowman]: "Crossbowmen",
+    });
     expect(troopPlural("Dragon")).toBeUndefined();
     expect(resourceName(ResourcesIds.CrossbowmanT2)).toBe("Crossbowman T2");
   });

@@ -370,7 +370,7 @@ cmd = "bash contracts/l3/test-native.sh --package world_tests_lifecycle* charge"
 estimate_gb = 9
 
 [kind.test-charge-callers]
-cmd = "pnpm run build:packages && pnpm --dir apps/game test src/ui/features/frontier/army/army-opens.test.tsx src/ui/features/frontier/army/army-panel.test.tsx src/ui/features/frontier/army/frontier-army.test.tsx src/ui/features/frontier/building/building-card.test.tsx src/ui/features/frontier/hud/realm-panel.test.tsx src/ui/features/frontier/production/frontier-store-card.test.tsx src/ui/features/frontier/production/store-makers.test.ts src/ui/features/frontier/research/research-panel.test.tsx src/ui/features/frontier/research/research-tree.test.ts src/ui/features/military/components/army-deployment-picker.test.tsx"
+cmd = "pnpm run build:packages && pnpm --dir apps/game test src/ui/features/frontier/army/army-opens.test.tsx src/ui/features/frontier/army/army-panel.test.tsx src/ui/features/frontier/army/frontier-army.test.tsx src/ui/features/frontier/building/building-card.test.tsx src/ui/features/frontier/hud/realm-panel.test.tsx src/ui/features/frontier/production/frontier-store-card.test.tsx src/ui/features/frontier/production/store-makers.test.ts src/ui/features/frontier/research/research-panel.test.tsx src/ui/features/frontier/research/research-tree.test.ts src/ui/features/military/components/army-deployment-picker.test.tsx && pnpm --dir packages/types exec vitest run && pnpm --dir packages/chain test && pnpm --dir packages/ammv2-sdk test"
 estimate_gb = 4
 
 [kind.playtest-deep-charge]
