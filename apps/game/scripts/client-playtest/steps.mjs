@@ -3668,9 +3668,43 @@ function raceBoardSteps(result) {
               return { state };
             },
             verify: ({ played }) =>
-              played.state.lines.length > 0
+              played.state.lines.length > 0 &&
+              played.state.lines[0].includes("This is your Realm") &&
+              !played.state.places.includes("Research")
                 ? completed(played)
-                : failed("The first session must open on the interface's first line", played),
+                : failed(
+                    "The first session must open on the launch line, with Research still waiting on Essence",
+                    played,
+                  ),
+          },
+          {
+            name: "each-line-once-then-none-after-reload",
+            settleMs: 0,
+            play: async (context) => {
+              const { browser } = context;
+              const told = [];
+              for (let attempt = 0; attempt < 12; attempt += 1) {
+                const state = browser.read(OPENING_STATE);
+                if (state.lines.length === 0) break;
+                told.push(state.lines[0].replace(/Got it$/, ""));
+                browser.click("Got it");
+                await sleep(400);
+              }
+              const back = await reloadOn("Deep", "map", scenario)(context);
+              if (browser.read(`JSON.stringify(Boolean(document.querySelector('[aria-label="Close"]')))`))
+                browser.click(HUD_WORDS.close);
+              await sleep(2_000);
+              const after = browser.read(OPENING_STATE);
+              context.extraScreenshot("opening-after-reload");
+              return { told, after, back: back.reloaded };
+            },
+            verify: ({ played }) =>
+              played.back &&
+              played.told.length >= 2 &&
+              new Set(played.told).size === played.told.length &&
+              played.after.lines.length === 0
+                ? completed(played)
+                : failed("Each line must be told once, and none again after the page loads again", played),
           },
           {
             name: "show-everything-shows-the-banner",
