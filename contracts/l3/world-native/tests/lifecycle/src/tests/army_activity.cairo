@@ -278,7 +278,7 @@ fn charge_starts_on_a_new_target_and_rejected_attacks_keep_the_current_fight() {
     buy_charge(d, home, 1);
     buy_charge(d, home, 2);
     world_test_support::tests::resource_commands::grant(d, home, 26, 1000 * crate::rules::RESOURCE_PRECISION);
-    super::deep_sites::applied(d, game_id, muster(home.entity_id, 2, 2, 1000), 360);
+    super::deep_sites::applied(d, game_id, muster(home.entity_id, 2, 5, 1000), 360);
     let attacker = ExplorerKey {
         game_id, explorer_id: slot_army(d, ArmySlotKey { game_id, structure_id: home.entity_id, epoch: 0, slot: 2 }),
     };
