@@ -3635,6 +3635,9 @@ const OPENING_STATE = `JSON.stringify({
 /** Turns Show everything on in the page's saved settings and loads the lab game again, as a player's setting persists. */
 const SHOW_EVERYTHING = `JSON.stringify((() => { localStorage.setItem("eternum-world-appearance", JSON.stringify({ state: { showEverything: true, fogStyle: "clear", reducedMotion: false, haptics: true, nextUpTips: true }, version: 0 })); return true; })())`;
 
+/** Every request this page made to a rank Herald serves a legacy game: a Season 1 game asks for none. */
+const RANK_REQUESTS = `JSON.stringify(performance.getEntriesByType("resource").map((entry) => entry.name).filter((name) => /\\/leaderboard|\\/days\\/\\d+\\/ranks/.test(name)))`;
+
 function raceBoardSteps(result) {
   const scenario = result === null ? "race" : result === "won" ? "race-finished" : "race-expired";
   return [
@@ -3740,6 +3743,15 @@ function raceBoardSteps(result) {
           : failed("The scoped native race must show four heights, both members' Glory and the early winner", played);
       },
     },
+    {
+      name: "no-site-rank-requests",
+      settleMs: 0,
+      play: async ({ browser }) => ({ requests: browser.read(RANK_REQUESTS) }),
+      verify: ({ played }) =>
+        played.requests.length === 0
+          ? completed(played)
+          : failed("A Season 1 game must ask Herald for no leaderboard and no day ranks", played),
+    },
   ];
 }
 
@@ -3777,6 +3789,26 @@ const DEEP_JOIN_STEPS = [
         : failed("An ally's army must be drawn in a side colour other than the player's own", played),
   },
   { name: "pick-army", play: pickTheSpireArmy, settleMs: 1_500, verify: spireArmyPicked },
+  {
+    name: "field-army-drains",
+    settleMs: 0,
+    play: async ({ browser, extraScreenshot }) => {
+      const drain = await readUntil(
+        () => browser.read(DEEP_DRAIN_STATE),
+        (state) => state.all.length > 0,
+        SHEET_WAIT_MS,
+      );
+      extraScreenshot("field-army-drain");
+      return { drain };
+    },
+    verify: ({ played }) =>
+      played.drain.all.some((line) => /200 troops lost a tick; \d+ ticks left/.test(line))
+        ? completed(played)
+        : failed(
+            "An army waiting in the Deep's field must show its troop loss each tick before it holds a site",
+            played,
+          ),
+  },
   {
     name: "join-the-quarry",
     settleMs: 0,
