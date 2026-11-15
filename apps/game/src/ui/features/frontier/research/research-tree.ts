@@ -401,13 +401,15 @@ export const readResearchTree = (realm: RealmResearchFacts): TreeNode[] => {
           next: tier < 5 ? formatPercent(chargePercent(tier + 1) / 100) : undefined,
         }),
         {
-          figures: (tier) => [{
-            icon: "battle",
-            name: RESEARCH_TREE.charge,
-            line: RESEARCH_TREE.chargeLine,
-            now: formatPercent(chargePercent(tier) / 100),
-            next: tier < 5 ? formatPercent(chargePercent(tier + 1) / 100) : undefined,
-          }],
+          figures: (tier) => [
+            {
+              icon: "battle",
+              name: RESEARCH_TREE.charge,
+              line: RESEARCH_TREE.chargeLine,
+              now: formatPercent(chargePercent(tier) / 100),
+              next: tier < 5 ? formatPercent(chargePercent(tier + 1) / 100) : undefined,
+            },
+          ],
           leadsTo: Object.values(TRAINING)
             .filter(({ row }) => row !== research.ROW_SCOUTS_LODGE)
             .map(({ row }) => `row-${row}`),

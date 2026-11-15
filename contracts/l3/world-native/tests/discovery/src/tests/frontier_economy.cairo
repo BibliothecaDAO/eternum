@@ -70,7 +70,6 @@ fn raising_troops_pays_two_wheat_each_from_settled_wheat_and_fails_when_the_real
     assert!(execute(deployment, raise(home, 4, 1), 120));
     assert_eq!(stored(deployment, home, KNIGHT), 12 * RESOURCE_PRECISION);
     assert_eq!(stored(deployment, home, WHEAT), 4 * RESOURCE_PRECISION);
-
 }
 
 #[test]
@@ -101,7 +100,6 @@ fn charge_tiers_do_not_change_the_wheat_paid_for_each_muster() {
     learn_barracks(deployment, home, array![0_u8, 0, 0, 0, 0].span());
     assert!(execute(deployment, raise(home, 4, 1), 40));
     assert_eq!(stored(deployment, home, WHEAT), 4 * RESOURCE_PRECISION);
-
 }
 
 #[test]

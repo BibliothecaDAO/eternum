@@ -4,7 +4,7 @@ export const NativeTroopType = {
   "Paladin": "Paladin",
   "Crossbowman": "Crossbowman"
 } as const;
-export const nativeFactSchemaIdentity = "8335062023160a37579d5ffd113eac2f33657940fad7964f6887dc075cd4795c";
+export const nativeFactSchemaIdentity = "e02baa4aea84e7b1d6f361ee57a28d4b583cbde4b298f0b784048f41bb098889";
 export const nativeReleaseConstants = {
   "RUIN_DEPTH_LIMIT_RELEASE": 9
 } as const;
@@ -23,6 +23,7 @@ export const nativeRuleConstants = {
   "ATTRIBUTE_CAP": 5,
   "SCOUT_EXPLORE_STAMINA": 10,
   "SCOUT_DAMAGE_PERCENT": 75,
+  "CHARGE_PERCENT_PER_TIER": 10,
   "SKILL_POINT_REFILL_BASE": 10,
   "SKILL_POINT_REFILL_STEP": 10,
   "BATTLE_COMMON_BPS": 1000,
@@ -125,8 +126,6 @@ export const nativeResearchConstants = {
   "ROW_COUNT": 11,
   "CHOICE_MAKE": 0,
   "CHOICE_STORE": 1,
-  "CHOICE_DRILL": 0,
-  "CHOICE_RATIONS": 1,
   "KIND_CAMPS": 0,
   "KIND_RIFTS": 1,
   "KIND_SANCTUARIES": 2,
@@ -305,6 +304,7 @@ export interface NativeRows {
   ArmyRelics: { readonly game_id: number; readonly explorer_id: bigint; readonly first: ({ readonly kind: "Blade" | "Ward" | "Plunder" | "FarEye" | "Tome"; readonly rank: number }) | null; readonly second: ({ readonly kind: "Blade" | "Ward" | "Plunder" | "FarEye" | "Tome"; readonly rank: number }) | null; readonly third: ({ readonly kind: "Blade" | "Ward" | "Plunder" | "FarEye" | "Tome"; readonly rank: number }) | null };
   ArmyRelicEffect: { readonly game_id: number; readonly explorer_id: bigint; readonly kind: "Blade" | "Ward" | "Plunder" | "FarEye" | "Tome"; readonly rank: number; readonly expires_at: bigint };
   RuinRelic: { readonly game_id: number; readonly entity_id: bigint; readonly kind: "Blade" | "Ward" | "Plunder" | "FarEye" | "Tome"; readonly rank: number };
+  ArmyCombat: { readonly game_id: number; readonly explorer_id: bigint; readonly charge: number; readonly last_target: bigint };
   ArmyProgress: { readonly game_id: number; readonly explorer_id: bigint; readonly xp: number; readonly common_points: number; readonly uncommon_points: number; readonly rare_points: number; readonly epic_points: number; readonly legendary_points: number; readonly battle: number; readonly logistics: number; readonly scouting: number; readonly homecoming: number; readonly scouting_kinds: number };
   ArmyDay: { readonly game_id: number; readonly explorer_id: bigint; readonly day: bigint };
   DeepTick: { readonly game_id: number; readonly paid_tick: bigint };
@@ -422,6 +422,7 @@ export interface NativeKeys {
   ArmyRelics: { readonly game_id: number; readonly explorer_id: bigint };
   ArmyRelicEffect: { readonly game_id: number; readonly explorer_id: bigint; readonly kind: "Blade" | "Ward" | "Plunder" | "FarEye" | "Tome" };
   RuinRelic: { readonly game_id: number; readonly entity_id: bigint };
+  ArmyCombat: { readonly game_id: number; readonly explorer_id: bigint };
   ArmyProgress: { readonly game_id: number; readonly explorer_id: bigint };
   ArmyDay: { readonly game_id: number; readonly explorer_id: bigint };
   DeepTick: { readonly game_id: number };
@@ -1831,6 +1832,19 @@ export const nativeFactModels = {
       "rank": "u8"
     }
   },
+  "ArmyCombat": {
+    "keys": [
+      "game_id",
+      "explorer_id"
+    ],
+    "scope": "game",
+    "fields": {
+      "game_id": "u32",
+      "explorer_id": "u64",
+      "charge": "u8",
+      "last_target": "u64"
+    }
+  },
   "ArmyProgress": {
     "keys": [
       "game_id",
@@ -2931,6 +2945,11 @@ export const nativeSyncScopes = {
     ]
   },
   "RelicChest": "shared",
+  "ArmyCombat": {
+    "entities": [
+      "explorer_id"
+    ]
+  },
   "ArmyProgress": {
     "entities": [
       "explorer_id"

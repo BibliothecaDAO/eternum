@@ -372,11 +372,12 @@ pub impl TroopsImpl of TroopsTrait {
 
         if context.day_unit_seconds != 0 && alpha.category == TroopType::Knight && context.charge_percent != 0 {
             let early = ALPHA_DAMAGE_DEALT.round() * Self::_combat_percent_multiplier(context.charge_percent.into());
-            BRAVO_DAMAGE_DEALT = if early >= BRAVO_NUM_TROOPS {
-                FixedTrait::ZERO()
-            } else {
-                BRAVO_DAMAGE_DEALT * (BRAVO_NUM_TROOPS - early) / BRAVO_NUM_TROOPS
-            };
+            BRAVO_DAMAGE_DEALT =
+                if early >= BRAVO_NUM_TROOPS {
+                    FixedTrait::ZERO()
+                } else {
+                    BRAVO_DAMAGE_DEALT * (BRAVO_NUM_TROOPS - early) / BRAVO_NUM_TROOPS
+                };
         }
 
         if is_ranged_attack {

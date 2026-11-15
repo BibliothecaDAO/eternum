@@ -142,7 +142,8 @@ fn fight_guard(
     };
     let combat = CombatContext {
         charge_percent: opening_charge(key, target, context),
-        defender_is_structure_guard: true, ..combat_context(key.game_id, attacker, defender.army, context),
+        defender_is_structure_guard: true,
+        ..combat_context(key.game_id, attacker, defender.army, context),
     };
     let attacker_before = attacker.troops.count;
     let defender_before = defender.army.troops.count;

@@ -438,18 +438,25 @@ const RELIC_FORECAST_STEPS = [
 const CHARGE_STEPS = [
   { name: "enter-on-map", settleMs: 3_000, verify: inScene("map") },
   { name: "select-army", play: selectTheReadiestArmy, settleMs: 1_500, verify: armySelected },
-  ...[["opening-charge", 658, 563], ["same-fight", 386, 245]].map(([name, attacker, defender]) =>
+  ...[
+    ["opening-charge", 658, 563],
+    ["same-fight", 386, 245],
+  ].map(([name, attacker, defender]) =>
     clickToResultStep(name, "BattleGuard", attackFromTheSiteCard, ({ played, actionLatency }) => {
       const answer = (actionLatency.chainAnswers ?? []).filter(({ kind }) => kind === "BattleGuard").at(-1);
       const rows = answer?.answered ?? [];
       const army = rows.find(({ model }) => model === "ExplorerTroops")?.value;
       const guard = rows.find(({ model }) => model === "Guard")?.value;
       const combat = rows.find(({ model }) => model === "ArmyCombat")?.value;
-      return played.watching && army && guard && combat &&
+      return played.watching &&
+        army &&
+        guard &&
+        combat &&
         BigInt(army.troops.count) === BigInt(attacker) * 1_000_000_000n &&
         BigInt(guard.troops.count) === BigInt(defender) * 1_000_000_000n &&
         BigInt(combat.last_target) === BigInt(guard.structure_id)
-        ? { watch: "fought" } : undefined;
+        ? { watch: "fought" }
+        : undefined;
     }),
   ),
 ];

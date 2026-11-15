@@ -42,7 +42,8 @@ const realmOn = (
       populationStepBps: preset.board.populationStepBps,
       trainingGateTier: preset.board.trainingGateTier,
     },
-    laborStore: (level) => (preset.board.resourceStoreCaps[level]! * (10_000 + storeroomPicks * preset.board.storageStepBps)) / 10_000,
+    laborStore: (level) =>
+      (preset.board.resourceStoreCaps[level]! * (10_000 + storeroomPicks * preset.board.storageStepBps)) / 10_000,
     wellRefillPercent: WELL_REFILL_PERCENT,
   };
 };

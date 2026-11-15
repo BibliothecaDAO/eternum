@@ -29,21 +29,40 @@ export function chargeScenario(): LabScenario {
   };
   store.applyFacts([
     { model: "ExplorerTroops", key: store.wireKeyOf("ExplorerTroops", key)!, value: wire({ ...army, troops }) },
-    { model: "ArmyCombat", key: store.wireKeyOf("ArmyCombat", key) ?? "0xc801", value: wire({ ...key, charge: 5, last_target: 0 }) },
+    {
+      model: "ArmyCombat",
+      key: store.wireKeyOf("ArmyCombat", key) ?? "0xc801",
+      value: wire({ ...key, charge: 5, last_target: 0 }),
+    },
     { model: "ArmyProgress", key: store.wireKeyOf("ArmyProgress", key)!, value: wire({ ...progress, battle: 0 }) },
-    { model: "SliceRules", key: store.wireKeyOf("SliceRules", { game_id: 1 })!, value: wire({
-      ...rules,
-      battle_config: { ...rules.battle_config, cooldown_seconds: 0 },
-      troop_damage_config: { ...rules.troop_damage_config, damage_biome_bonus_num: 0, damage_scaling_factor: 36893488147419103232n },
-      troop_stamina_config: { ...rules.troop_stamina_config, stamina_gain_per_tick: 0, stamina_attack_req: 10, stamina_defense_req: 0, damage_stamina_refund: false },
-    }) },
+    {
+      model: "SliceRules",
+      key: store.wireKeyOf("SliceRules", { game_id: 1 })!,
+      value: wire({
+        ...rules,
+        battle_config: { ...rules.battle_config, cooldown_seconds: 0 },
+        troop_damage_config: {
+          ...rules.troop_damage_config,
+          damage_biome_bonus_num: 0,
+          damage_scaling_factor: 36893488147419103232n,
+        },
+        troop_stamina_config: {
+          ...rules.troop_stamina_config,
+          stamina_gain_per_tick: 0,
+          stamina_attack_req: 10,
+          stamina_defense_req: 0,
+          damage_stamina_refund: false,
+        },
+      }),
+    },
     ...siteAt(store, tile, troops, StructureType.Camp).map((fact) => ({ ...fact, value: wire(fact.value) })),
   ]);
   return {
     ...game,
-    answer: (command, chain, now) => command.kind === "BattleGuard" && Number(command.fields.defender_id) === SITE
-      ? exchange(chain, BigInt(command.fields.attacker_id), now)
-      : game.answer(command, chain, now),
+    answer: (command, chain, now) =>
+      command.kind === "BattleGuard" && Number(command.fields.defender_id) === SITE
+        ? exchange(chain, BigInt(command.fields.attacker_id), now)
+        : game.answer(command, chain, now),
   };
 }
 
@@ -56,11 +75,27 @@ function exchange(store: NativeFactStore, explorerId: bigint, now: number): LabF
   const next = EXCHANGES.find(({ before }) => army.troops.count === before * PRECISION);
   if (!next || !("Inline" in army.troops.stamina)) throw new Error("Charge proof has no matching exchange");
   return [
-    { model: "ExplorerTroops", key: store.wireKeyOf("ExplorerTroops", key)!, value: wire({ ...army, troops: {
-      ...army.troops, count: next.attacker * PRECISION,
-      stamina: { Inline: { amount: army.troops.stamina.Inline.amount - 10n, settled_at: now, remainder: 0 } },
-    } }) },
-    { model: "Guard", key: store.wireKeyOf("Guard", guardKey)!, value: wire({ ...guard, troops: { ...guard.troops, count: next.defender * PRECISION } }) },
-    { model: "ArmyCombat", key: store.wireKeyOf("ArmyCombat", key)!, value: wire({ ...combat, last_target: BigInt(SITE) }) },
+    {
+      model: "ExplorerTroops",
+      key: store.wireKeyOf("ExplorerTroops", key)!,
+      value: wire({
+        ...army,
+        troops: {
+          ...army.troops,
+          count: next.attacker * PRECISION,
+          stamina: { Inline: { amount: army.troops.stamina.Inline.amount - 10n, settled_at: now, remainder: 0 } },
+        },
+      }),
+    },
+    {
+      model: "Guard",
+      key: store.wireKeyOf("Guard", guardKey)!,
+      value: wire({ ...guard, troops: { ...guard.troops, count: next.defender * PRECISION } }),
+    },
+    {
+      model: "ArmyCombat",
+      key: store.wireKeyOf("ArmyCombat", key)!,
+      value: wire({ ...combat, last_target: BigInt(SITE) }),
+    },
   ];
 }

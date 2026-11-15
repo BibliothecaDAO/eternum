@@ -8,7 +8,9 @@ pub fn read(key: ExplorerKey) -> Option<ArmyCombat> {
 
 pub fn create(key: ExplorerKey, home: u64, category: TroopType) {
     assert!(read(key).is_none(), "army combat already exists");
-    let learned = crate::logic::research::learned(crate::resources::ResourceKey { game_id: key.game_id, entity_id: home });
+    let learned = crate::logic::research::learned(
+        crate::resources::ResourceKey { game_id: key.game_id, entity_id: home },
+    );
     let charge = if category == TroopType::Knight {
         crate::research::tier(learned, crate::research::ROW_BARRACKS)
     } else {

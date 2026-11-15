@@ -1,5 +1,11 @@
 import { BiomeType, RELICS, RESOURCE_PRECISION, ResourcesIds, TroopTier, TroopType } from "@bibliothecadao/types";
-import { COMBAT_DIE_FACES, resolveExchange, type CombatRules, type ExchangeRefusal, type ExchangeTroops } from "./combat-exchange";
+import {
+  COMBAT_DIE_FACES,
+  resolveExchange,
+  type CombatRules,
+  type ExchangeRefusal,
+  type ExchangeTroops,
+} from "./combat-exchange";
 
 export interface Army {
   stamina: number;
@@ -91,8 +97,8 @@ export class CombatSimulator {
         timestamp: now,
         chargePercent: context.chargePercent,
         attackDistance: context.attackDistance ?? 1,
-        attackerBiome: context.defenderAlt ? BiomeType.Underground : context.attackerBiome ?? biome,
-        defenderBiome: context.defenderAlt ? BiomeType.Underground : context.defenderBiome ?? biome,
+        attackerBiome: context.defenderAlt ? BiomeType.Underground : (context.attackerBiome ?? biome),
+        defenderBiome: context.defenderAlt ? BiomeType.Underground : (context.defenderBiome ?? biome),
         attackerIsStructureGuard: context.attackerIsStructureGuard ?? false,
         defenderIsStructureGuard: context.defenderIsStructureGuard ?? false,
         attackerRoll: context.attackerRoll ?? 0,
@@ -124,7 +130,9 @@ export class CombatSimulator {
   ): ({ ok: true } & BattleRange) | RefusedBattle {
     const at = (attackerRoll: number, defenderRoll: number) =>
       this.simulateBattle(now, attacker, defender, biome, attackerRelics, defenderRelics, {
-        ...context, attackerRoll, defenderRoll,
+        ...context,
+        attackerRoll,
+        defenderRoll,
       });
     const worst = at(dice ? 1 : 0, dice ? COMBAT_DIE_FACES : 0);
     if (!worst.ok) return worst;
@@ -137,7 +145,10 @@ export class CombatSimulator {
 const combatTroops = (army: Army, relics: ResourcesIds[], now: number): ExchangeTroops => {
   const effects = RELICS.filter((relic) => relics.includes(relic.id));
   const dealt = Math.max(1, ...effects.filter((relic) => relic.type === "Damage").map((relic) => relic.bonus));
-  const taken = Math.min(1, ...effects.filter((relic) => relic.type === "Damage Reduction").map((relic) => relic.bonus));
+  const taken = Math.min(
+    1,
+    ...effects.filter((relic) => relic.type === "Damage Reduction").map((relic) => relic.bonus),
+  );
   return {
     category: army.troopType,
     tier: army.tier,

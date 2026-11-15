@@ -30,7 +30,11 @@ vi.mock("@/hooks/context/game-context", () => ({
 vi.mock("@bibliothecadao/eternum", async (original) => ({
   ...(await original<typeof import("@bibliothecadao/eternum")>()),
   getGuildFromPlayerAddress: () => null,
-  configManager: { getCombatRules: () => ({}), getCombatConfig: () => ({ stamina_attack_req: 1 }), rollsCombatDice: () => false },
+  configManager: {
+    getCombatRules: () => ({}),
+    getCombatConfig: () => ({ stamina_attack_req: 1 }),
+    rollsCombatDice: () => false,
+  },
   CombatSimulator: class {
     simulateBattleRange() {
       const roll = { attackerDamage: 1, defenderDamage: 1, attackerStamina: 90, defenderStamina: 90 };

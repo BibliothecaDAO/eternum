@@ -11,7 +11,14 @@ import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { usePopoverStore } from "@/hooks/store/use-popover-store";
 import { usePlayerDisplayName } from "@/hooks/use-player-profile";
 import { surfaceAnchorFrom } from "@/ui/design-system/molecules/popover";
-import { configManager, getGuardsByStructure, getTroopResourceId, StaminaManager, openingChargePercent, ARMY_CHARGE_MODELS } from "@bibliothecadao/eternum";
+import {
+  configManager,
+  getGuardsByStructure,
+  getTroopResourceId,
+  StaminaManager,
+  openingChargePercent,
+  ARMY_CHARGE_MODELS,
+} from "@bibliothecadao/eternum";
 import { useGame } from "@/hooks/context/game-context";
 import { useNativeFacts } from "@/hooks/helpers/use-native-facts";
 
@@ -184,10 +191,13 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
   const fight = useMemo(() => {
     if (!attackerArmyData || !targetArmyData || !targetData) return null;
     const army = facts.store.get("ExplorerTroops", {
-      game_id: configManager.getActiveGameId(), explorer_id: attacker.id,
+      game_id: configManager.getActiveGameId(),
+      explorer_id: attacker.id,
     });
-    const chargePercent = attackerType === AttackerType.Structure ? 0
-      : army && openingChargePercent(facts.store, army, BigInt(targetData.id));
+    const chargePercent =
+      attackerType === AttackerType.Structure
+        ? 0
+        : army && openingChargePercent(facts.store, army, BigInt(targetData.id));
     if (chargePercent === undefined) return null;
     return forecastAttack(
       attackerArmyData.troops,

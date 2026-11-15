@@ -178,8 +178,15 @@ export const useBattleLabLiveData = (
     targetRelicIds,
   ]);
 
-  const attackingArmy = facts.store.get("ExplorerTroops", { game_id: configManager.getActiveGameId(), explorer_id: attackerEntityId });
-  const chargePercent = !enabled || snapshot?.attackerType === "structure" ? 0
-    : attackingArmy && target ? openingChargePercent(facts.store, attackingArmy, BigInt(target.id)) : undefined;
+  const attackingArmy = facts.store.get("ExplorerTroops", {
+    game_id: configManager.getActiveGameId(),
+    explorer_id: attackerEntityId,
+  });
+  const chargePercent =
+    !enabled || snapshot?.attackerType === "structure"
+      ? 0
+      : attackingArmy && target
+        ? openingChargePercent(facts.store, attackingArmy, BigInt(target.id))
+        : undefined;
   return { chargePercent, snapshot, target, targetResources, isLoading };
 };

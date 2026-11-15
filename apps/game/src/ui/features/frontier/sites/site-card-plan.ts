@@ -144,7 +144,10 @@ export const readArmyCard = (
     payout: null,
     attackStamina: configManager.getCombatRules().stamina.stamina_attack_req,
     inReach: attack !== null && reachOf(store, attack, armyTile) !== undefined,
-    fight: troops && troops.count > 0n && attack ? attackNow(store, troops, armyTile, attack, false, army.explorer_id) : undefined,
+    fight:
+      troops && troops.count > 0n && attack
+        ? attackNow(store, troops, armyTile, attack, false, army.explorer_id)
+        : undefined,
   };
 };
 

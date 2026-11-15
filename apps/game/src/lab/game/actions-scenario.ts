@@ -187,10 +187,18 @@ const deployArmy: Answer = (command, chain, now) => {
   return [
     { model: "ArmyProgress", key: `0xaf${explorerId}`, value: wire(progress) },
     {
-      model: "ArmyCombat", key: `0xac${explorerId}`,
+      model: "ArmyCombat",
+      key: `0xac${explorerId}`,
       value: wire({
-        game_id: 1, explorer_id: explorerId,
-        charge: category === "Knight" ? researchTier(chain.require("RealmKnowledge", { game_id: 1, structure_id: structureId }).learned, research.ROW_BARRACKS) : 0,
+        game_id: 1,
+        explorer_id: explorerId,
+        charge:
+          category === "Knight"
+            ? researchTier(
+                chain.require("RealmKnowledge", { game_id: 1, structure_id: structureId }).learned,
+                research.ROW_BARRACKS,
+              )
+            : 0,
         last_target: 0,
       }),
     },

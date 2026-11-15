@@ -17,7 +17,12 @@ const rules: CombatRules = {
     t2_damage_multiplier: BigInt(damage.t2_damage_multiplier),
     t3_damage_multiplier: BigInt(damage.t3_damage_multiplier),
   },
-  stamina: { ...preset.rules.troop_stamina_config, stamina_attack_req: 10, stamina_defense_req: 0, damage_stamina_refund: false },
+  stamina: {
+    ...preset.rules.troop_stamina_config,
+    stamina_attack_req: 10,
+    stamina_defense_req: 0,
+    damage_stamina_refund: false,
+  },
 };
 const parameters: CombatParameters = {
   ...rules.damage,
@@ -26,7 +31,13 @@ const parameters: CombatParameters = {
   stamina_defense_req: rules.stamina.stamina_defense_req,
   tick_interval_seconds: rules.tickSeconds,
 };
-const army: Army = { stamina: 100, troopCount: 1000, troopType: TroopType.Knight, tier: TroopTier.T1, battle_cooldown_end: 0 };
+const army: Army = {
+  stamina: 100,
+  troopCount: 1000,
+  troopType: TroopType.Knight,
+  tier: TroopTier.T1,
+  battle_cooldown_end: 0,
+};
 const simulator = new CombatSimulator(parameters, rules);
 const simulate = (attacker: Army, defender: Army, chargePercent = 0) =>
   simulator.simulateBattle(100, attacker, defender, BiomeType.None, [], [], { chargePercent });
@@ -34,11 +45,19 @@ const simulate = (attacker: Army, defender: Army, chargePercent = 0) =>
 describe("battle lab exchange", () => {
   it("shows the exact native opening losses and stamina, with Charge on only the first exchange", () => {
     expect(simulate(army, army, 50)).toEqual({
-      ok: true, attackerDamage: 437, defenderDamage: 342,
-      attackerStamina: 90, defenderStamina: 100, attackerCooldownEnd: 100, defenderCooldownEnd: 100,
+      ok: true,
+      attackerDamage: 437,
+      defenderDamage: 342,
+      attackerStamina: 90,
+      defenderStamina: 100,
+      attackerCooldownEnd: 100,
+      defenderCooldownEnd: 100,
     });
     expect(simulate({ ...army, troopCount: 658, stamina: 90 }, { ...army, troopCount: 563 }, 0)).toMatchObject({
-      ok: true, attackerDamage: 318, defenderDamage: 272, attackerStamina: 80,
+      ok: true,
+      attackerDamage: 318,
+      defenderDamage: 272,
+      attackerStamina: 80,
     });
   });
 
@@ -55,14 +74,37 @@ describe("battle lab exchange", () => {
   });
 
   it("keeps Blitz ranged costs, cooldowns and structure reduction", () => {
-    const blitz = new CombatSimulator({ ...parameters, day_unit_seconds: 0, stamina_attack_req: 50, stamina_defense_req: 40 }, { ...rules, cooldownSeconds: 60 });
-    const result = blitz.simulateBattle(100, { ...army, troopType: TroopType.Crossbowman }, { ...army, troopType: TroopType.Paladin }, BiomeType.None, [], [], { chargePercent: 50, attackDistance: 2, defenderIsStructureGuard: true });
-    expect(result).toEqual({ ok: true, attackerDamage: 131, defenderDamage: 0, attackerStamina: 50, defenderStamina: 80, attackerCooldownEnd: 130, defenderCooldownEnd: 130 });
+    const blitz = new CombatSimulator(
+      { ...parameters, day_unit_seconds: 0, stamina_attack_req: 50, stamina_defense_req: 40 },
+      { ...rules, cooldownSeconds: 60 },
+    );
+    const result = blitz.simulateBattle(
+      100,
+      { ...army, troopType: TroopType.Crossbowman },
+      { ...army, troopType: TroopType.Paladin },
+      BiomeType.None,
+      [],
+      [],
+      { chargePercent: 50, attackDistance: 2, defenderIsStructureGuard: true },
+    );
+    expect(result).toEqual({
+      ok: true,
+      attackerDamage: 131,
+      defenderDamage: 0,
+      attackerStamina: 50,
+      defenderStamina: 80,
+      attackerCooldownEnd: 130,
+      defenderCooldownEnd: 130,
+    });
   });
 
   it("resolves both dice extremes, and one identical outcome without dice", () => {
     const range = simulator.simulateBattleRange(100, army, army, BiomeType.None, [], [], { chargePercent: 0 }, true);
-    expect(range).toMatchObject({ ok: true, worst: { attackerDamage: 442, defenderDamage: 525 }, best: { attackerDamage: 525, defenderDamage: 442 } });
+    expect(range).toMatchObject({
+      ok: true,
+      worst: { attackerDamage: 442, defenderDamage: 525 },
+      best: { attackerDamage: 525, defenderDamage: 442 },
+    });
     const plain = simulator.simulateBattleRange(100, army, army, BiomeType.None, [], [], { chargePercent: 0 }, false);
     expect(plain).toEqual({ ok: true, worst: simulate(army, army), best: simulate(army, army) });
   });

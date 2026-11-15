@@ -520,10 +520,7 @@ fn charge_research_does_not_change_the_barracks_output() {
     assert!(execute(d, build_toward(home, crate::research::BARRACKS, 0), 40));
     let base = rate(d, home, 26);
     assert_eq!(base, 40);
-    for side in array![
-        0, 0, 0,
-        0,
-    ] {
+    for side in array![0, 0, 0, 0] {
         assert!(execute(d, research(home, crate::research::ROW_BARRACKS, side), 40));
     }
     assert_eq!(rate(d, home, 26), base);

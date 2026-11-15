@@ -426,19 +426,24 @@ fn charge_reduces_the_opening_answer_against_beasts_and_armies() {
         let mut defender = test_troops(TroopType::Knight, TroopTier::T1, 1000, 100);
         let expected = array![(658_u128, 563_u128), (386, 245), (251, 32), (230, 0)];
         for index in 0_u32..4 {
-            attacker.attack_with_context(
-                ref defender,
-                CombatContext {
-                    day_unit_seconds: 100,
-                    charge_percent: if index == 0 { 50 } else { 0 },
-                    defender_is_structure_guard,
-                    ..context(Biome::Grassland),
-                },
-                stamina,
-                damage,
-                1,
-                0,
-            );
+            attacker
+                .attack_with_context(
+                    ref defender,
+                    CombatContext {
+                        day_unit_seconds: 100,
+                        charge_percent: if index == 0 {
+                            50
+                        } else {
+                            0
+                        },
+                        defender_is_structure_guard,
+                        ..context(Biome::Grassland),
+                    },
+                    stamina,
+                    damage,
+                    1,
+                    0,
+                );
             let (left, guard) = *expected.at(index);
             assert_eq!(attacker.count, left * RESOURCE_PRECISION);
             assert_eq!(defender.count, guard * RESOURCE_PRECISION);
@@ -456,7 +461,10 @@ fn charge_does_not_change_scout_or_blitz_damage() {
         let plain = CombatContext { day_unit_seconds, ..context(Biome::Grassland) };
         assert_eq!(
             attacker.damage_with_context(ref defender, plain, stamina_config(), damage, 1, 0),
-            attacker.damage_with_context(ref defender, CombatContext { charge_percent: 50, ..plain }, stamina_config(), damage, 1, 0),
+            attacker
+                .damage_with_context(
+                    ref defender, CombatContext { charge_percent: 50, ..plain }, stamina_config(), damage, 1, 0,
+                ),
         );
     }
 }

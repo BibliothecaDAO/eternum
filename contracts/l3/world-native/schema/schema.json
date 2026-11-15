@@ -14,6 +14,7 @@
     "ATTRIBUTE_CAP": 5,
     "SCOUT_EXPLORE_STAMINA": 10,
     "SCOUT_DAMAGE_PERCENT": 75,
+    "CHARGE_PERCENT_PER_TIER": 10,
     "SKILL_POINT_REFILL_BASE": 10,
     "SKILL_POINT_REFILL_STEP": 10,
     "BATTLE_COMMON_BPS": 1000,
@@ -113,8 +114,6 @@
     "ROW_COUNT": 11,
     "CHOICE_MAKE": 0,
     "CHOICE_STORE": 1,
-    "CHOICE_DRILL": 0,
-    "CHOICE_RATIONS": 1,
     "KIND_CAMPS": 0,
     "KIND_RIFTS": 1,
     "KIND_SANCTUARIES": 2,
@@ -5535,6 +5534,39 @@
       "valueLength": 2
     },
     {
+      "name": "ArmyCombat",
+      "identity": "0x41726d79436f6d626174",
+      "scope": "game",
+      "keys": [
+        {
+          "name": "game_id",
+          "type": "core::integer::u32",
+          "feltLength": 1
+        },
+        {
+          "name": "explorer_id",
+          "type": "core::integer::u64",
+          "feltLength": 1
+        }
+      ],
+      "members": [
+        {
+          "name": "charge",
+          "type": "core::integer::u8",
+          "id": "0x636861726765",
+          "feltLength": 1
+        },
+        {
+          "name": "last_target",
+          "type": "core::integer::u64",
+          "id": "0x6c6173745f746172676574",
+          "feltLength": 1
+        }
+      ],
+      "keyLength": 2,
+      "valueLength": 2
+    },
+    {
       "name": "ArmyProgress",
       "identity": "0x41726d7950726f6772657373",
       "scope": "game",
@@ -9485,6 +9517,20 @@
         },
         {
           "name": "explorer_id",
+          "type": "core::integer::u64"
+        }
+      ]
+    },
+    "world_native::combat::ArmyCombat": {
+      "type": "struct",
+      "name": "world_native::combat::ArmyCombat",
+      "members": [
+        {
+          "name": "charge",
+          "type": "core::integer::u8"
+        },
+        {
+          "name": "last_target",
           "type": "core::integer::u64"
         }
       ]
@@ -14482,5 +14528,5 @@
       ]
     }
   },
-  "identity": "8335062023160a37579d5ffd113eac2f33657940fad7964f6887dc075cd4795c"
+  "identity": "e02baa4aea84e7b1d6f361ee57a28d4b583cbde4b298f0b784048f41bb098889"
 }
