@@ -160,7 +160,6 @@ export async function readDeepSiteWatches(
     player.gameId,
     [...STAMINA_MODELS, "PlayerEntry", "RealmKnowledge", "ArmyRelicEffect", "ChestRules", "DeepSite", "Guard"],
     player.actor,
-    player.actor,
   );
   if (BigInt(snapshot.game_id) !== BigInt(player.gameId)) throw new Error("Site watch read another game");
   const store = new NativeFactStore();
