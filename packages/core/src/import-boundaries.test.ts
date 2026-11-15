@@ -12,7 +12,9 @@ function importedSource(file: string, specifier: string): string | undefined {
   if (specifier === manifest.name) return join(root, "index.ts");
   if (!specifier.startsWith(".")) return undefined;
   const path = resolve(dirname(file), specifier);
-  return [path, `${path}.ts`, join(path, "index.ts")].find((candidate) => candidate.endsWith(".ts") && existsSync(candidate));
+  return [path, `${path}.ts`, join(path, "index.ts")].find(
+    (candidate) => candidate.endsWith(".ts") && existsSync(candidate),
+  );
 }
 
 function barrelImports(file: string, source: string): string[] {
@@ -23,7 +25,9 @@ function barrelImports(file: string, source: string): string[] {
     if (!imported) return [];
     const statements = parse(imported, readFileSync(imported, "utf8")).statements;
     if (!statements.length || !statements.every(ts.isExportDeclaration)) return [];
-    return [`${relative(root, file)}: import concrete modules instead of the ${node.moduleSpecifier.text} re-export file`];
+    return [
+      `${relative(root, file)}: import concrete modules instead of the ${node.moduleSpecifier.text} re-export file`,
+    ];
   });
 }
 
