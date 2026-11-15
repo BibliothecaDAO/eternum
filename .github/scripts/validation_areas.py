@@ -31,6 +31,10 @@ VALUE_READERS = [
     for name in ("frontier-sweep", "deposit-destination", "frontier-games", "final-facts", "obligations", "shard-conservation", "shard-snapshot", "shard-rpc", "shard-page",
                  "source-url", "ports", "failure")
 ]
+DEEP_ALERT_READERS = [
+    "apps/realms/server/deep-site-watch.ts",
+    "apps/realms/server/fixtures/shard-world.ts",
+]
 AREAS = {
     "client": [
         ".prettierrc",
@@ -53,7 +57,7 @@ AREAS = {
         # The client artifact emits its documentation export from the current pages and renderer.
         "apps/game-docs/**",
         "apps/status/public/index.html",
-        "apps/realms/server/deep-site-watch.ts",
+        *DEEP_ALERT_READERS,
         # The iOS app's bundle id, which src/app-hosting.test.ts holds the site's apple-app-site-association to.
         "apps/ios/capacitor.config.ts",
         # The client job's own checkers, which its workflow runs through root package.json scripts.
@@ -82,8 +86,7 @@ AREAS = {
         "contracts/utils/**"
     ],
     "herald": [
-        "apps/realms/server/deep-site-watch.ts",
-        "apps/realms/server/fixtures/shard-world.ts",
+        *DEEP_ALERT_READERS,
         ".github/workflows/test-herald.yml",
         MEDIA_FREE_CHECKOUT,
         # deployment.bun.test.ts imports these through a spawned Python interpreter.
@@ -145,6 +148,7 @@ AREAS = {
         "contracts/common/addresses/**"
     ],
     "native": [
+        *DEEP_ALERT_READERS,
         ".tool-versions",
         "contracts/l2/ledger/**",
         "contracts/l2/collectibles/**",
