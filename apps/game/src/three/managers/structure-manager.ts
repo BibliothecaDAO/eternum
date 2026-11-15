@@ -721,13 +721,12 @@ export class StructureManager {
     if (!tellsGuardStamina(structure)) return { ...structure, guardArmies: armies };
     const now = getBlockTimestamp().currentDefaultTick;
     const bySlot = new Map(guards.map(({ slot, troops }) => [slot, getGuardStaminaSnapshot(troops, now)]));
-    const perExplore = configManager.getExploreStaminaCost();
     return {
       ...structure,
       guardArmies: armies?.map((guard) => {
         const stamina = bySlot.get(guard.slot);
         return stamina && stamina.max > 0
-          ? { ...guard, stamina: { current: stamina.current, max: stamina.max, perExplore } }
+          ? { ...guard, stamina: { current: stamina.current, max: stamina.max, perExplore: configManager.getExploreStaminaCost(guard.category) } }
           : guard;
       }),
     };

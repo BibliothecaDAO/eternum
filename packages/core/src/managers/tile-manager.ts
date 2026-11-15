@@ -1,4 +1,3 @@
-import type { ScoutingSide } from "../utils/attribute-tiers";
 import { extractErrorMessage } from "@bibliothecadao/provider";
 import { buildableRadius } from "../utils/castle-reach";
 import {
@@ -113,11 +112,7 @@ export class TileManager {
     buildingType: BuildingType,
     hexCoords: HexPosition,
     useSimpleCost: boolean,
-    scoutingKind?: ScoutingSide,
   ) => {
-    if (buildingType === BuildingType.ScoutsLodge && scoutingKind === undefined) {
-      throw new Error("Choose the Scouts' lodge's first kind before building");
-    }
     const { col, row } = hexCoords;
     if (this.isHexOccupied({ col, row })) {
       throw new OccupiedSpaceError();
@@ -133,7 +128,6 @@ export class TileManager {
         directions,
         building_category: buildingType,
         use_simple: useSimpleCost,
-        scouting_kind: scoutingKind ?? 0,
       });
     } catch (error) {
       console.error(error);

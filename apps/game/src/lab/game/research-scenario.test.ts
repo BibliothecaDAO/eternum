@@ -4,6 +4,7 @@ import { nativeResearchConstants as research } from "@bibliothecadao/eternum/gam
 import { expect, it } from "vitest";
 
 import { chainOf, type LabCommand, type LabFact } from "./lab-chain";
+import { scoutsScenario } from "./scouts-scenario";
 import { researchScenario } from "./research-scenario";
 
 const whole = (amount: number) => String(BigInt(amount) * BigInt(RESOURCE_PRECISION));
@@ -86,4 +87,19 @@ it("answers a research with the row's next tier learned and its price paid", () 
   const knowledge = facts.find(({ model }) => model === "RealmKnowledge")!.value as { learned: string };
   expect(researchTier(BigInt(knowledge.learned), research.ROW_SHRINE)).toBe(1);
   expect(BigInt(balance(facts, ResourcesIds.Essence)!.balance)).toBe(essence - BigInt(whole(2_000)));
+});
+
+
+it("answers native Paladin index 1 with Scouts and debits only their stock and wheat", () => {
+  const game = scoutsScenario();
+  const facts = game.answer(command("CreateExplorer", {
+    structure_id: "7", slot: "1", category: "1", tier: "0", amount: whole(400), direction: "0",
+  }), chainOf(game), game.startsAt);
+  expect(facts.find(({ model }) => model === "ExplorerTroops")!.value).toMatchObject({
+    troops: { category: "Paladin", tier: "T1", count: whole(400) },
+  });
+  expect(balance(facts, ResourcesIds.Paladin)?.balance).toBe(whole(200));
+  expect(balance(facts, ResourcesIds.Wheat)?.balance).toBe(whole(200));
+  expect(balance(facts, ResourcesIds.Knight)).toBeUndefined();
+  expect(facts.find(({ model }) => model === "ArmyProgress")!.value).toMatchObject({ scouting: 1, scouting_kinds: 1 });
 });

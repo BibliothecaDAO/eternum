@@ -1,4 +1,5 @@
 import {
+  getExplorerInfoFromTileOccupier,
   entityHomeNamespace,
   researchChoice,
   researchTier,
@@ -13,11 +14,13 @@ import {
   BUILDINGS_CENTER,
   getNeighborOffsets,
   RESOURCE_PRECISION,
-  TroopTier,
+  TileOccupier,
   TroopType,
+  TROOP_TYPES,
+  TROOP_TIERS,
 } from "@bibliothecadao/types";
 
-import { musterStamina, openArmySlots } from "@bibliothecadao/eternum/troop-stamina";
+import { exploreStaminaCost, musterStamina, openArmySlots } from "@bibliothecadao/eternum/troop-stamina";
 import {
   nativeResearchConstants as research,
   safeInteger,
@@ -95,7 +98,7 @@ const exploreTile: Answer = (command, chain, now) => {
   return [
     revealedTile(`0x1ae${to.col}${to.row}`, to, BiomeType.Grassland),
     ...occupancyMoved(chain, explorerId, to),
-    armySpent(chain, explorerId, staminaRules(chain).stamina_explore_stamina_cost, now),
+    armySpent(chain, explorerId, exploreStaminaCost(chain.require("SliceRules", { game_id: 1 }), chain.require("ExplorerTroops", { game_id: 1, explorer_id: explorerId }).troops.category), now),
   ];
 };
 
@@ -129,12 +132,11 @@ const placeBuilding: Answer = (command) => {
  */
 const deployArmy: Answer = (command, chain, now) => {
   const structureId = BigInt(command.fields.structure_id);
-  const category = Object.keys(TroopType)[Number(command.fields.category)] as TroopType;
-  const tier = Object.keys(TroopTier)[Number(command.fields.tier)] as TroopTier;
+  const category = TROOP_TYPES[Number(command.fields.category)];
+  const tier = TROOP_TIERS[Number(command.fields.tier)];
+  if (!category || !tier) throw new Error("Invalid deployment troop type or tier");
   const amount = BigInt(command.fields.amount);
   const [, first] = [...chain.entries("ExplorerTroops")].find(([, row]) => row.owner === structureId)!;
-  if (first.troops.category !== category || first.troops.tier !== tier)
-    throw new Error(`The lab deploys ${first.troops.category} ${first.troops.tier} only, not ${category} ${tier}`);
   const [, firstAt] = [...chain.entries("TileOccupancy")].find(([, row]) => row.entity_id === first.explorer_id)!;
   const explorerId =
     1n +
@@ -144,6 +146,11 @@ const deployArmy: Answer = (command, chain, now) => {
     );
   const site = expeditionRealmSite(readExpeditionRules(chain, 1)!, entityHomeNamespace(structureId), now)!;
   const to = walk(site, [Number(command.fields.direction)]);
+  const occupier = Object.values(TileOccupier).find((value) => {
+    const troop = typeof value === "number" ? getExplorerInfoFromTileOccupier(value) : undefined;
+    return troop?.troopType === category && troop?.troopTier === tier;
+  });
+  if (typeof occupier !== "number") throw new Error(`Missing occupancy for ${category} ${tier}`);
   const troops = getTroopResourceId(category, tier);
   const whole = Number(amount / BigInt(RESOURCE_PRECISION));
   const raise = readTroopRaiseCost(chain, 1, Number(structureId), troops, whole, now);
@@ -155,7 +162,7 @@ const deployArmy: Answer = (command, chain, now) => {
     allowedSlots: realm.base.troop_max_explorer_count,
   })?.find((slot) => slot.slot === Number(command.fields.slot));
   if (!slot) throw new Error("The lab deployment requires an open army slot");
-  const progress = deploymentProgress(chain, structureId, explorerId);
+  const progress = deploymentProgress(chain, structureId, explorerId, category);
   const rules = chain.require("SliceRules", { game_id: 1 });
   const maximum = musterStamina(
     { ...slot, inherited: null },
@@ -198,20 +205,22 @@ const deployArmy: Answer = (command, chain, now) => {
         explorer_id: explorerId,
         troops: {
           ...first.troops,
+          category,
+          tier,
           count: amount,
           stamina: { Slot: slot.slot },
         },
       }),
     },
-    { model: "TileOccupancy", key: `0x1b1${explorerId}`, value: wire({ ...firstAt, ...to, entity_id: explorerId }) },
+    { model: "TileOccupancy", key: `0x1b1${explorerId}`, value: wire({ ...firstAt, ...to, entity_id: explorerId, category: occupier }) },
     ...balancesPaid(chain, structureId, [{ resource: troops, amount }, ...raise]),
   ];
 };
 
 /** A new army starts with its realm's training and no earned XP or unspent points. */
-const deploymentProgress = (chain: NativeFactStore, home: bigint, explorerId: bigint) => {
+const deploymentProgress = (chain: NativeFactStore, home: bigint, explorerId: bigint, category: TroopType) => {
   const { learned } = chain.require("RealmKnowledge", { game_id: 1, structure_id: home });
-  const scouting = researchTier(learned, research.ROW_SCOUTS_LODGE);
+  const scouting = category === TroopType.Paladin ? researchTier(learned, research.ROW_SCOUTS_LODGE) : 0;
   let scoutingKinds = 0;
   for (let rank = 1; rank <= scouting; rank += 1)
     scoutingKinds += (researchChoice(learned, research.ROW_SCOUTS_LODGE, rank) + 1) * 4 ** (rank - 1);

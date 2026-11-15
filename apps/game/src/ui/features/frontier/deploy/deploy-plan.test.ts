@@ -1,4 +1,5 @@
-import { readExpeditionRules, setBlockTimestampSource, spawnRing } from "@bibliothecadao/eternum";
+import { seedScouts } from "@/lab/game/scouts-scenario";
+import { setBlockTimestampSource, spawnRing } from "@bibliothecadao/eternum";
 import { TroopTier, TroopType } from "@bibliothecadao/types";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import rowFixture from "../../../../../../../contracts/l3/world-native/schema/fixtures/row-set.json";
@@ -30,7 +31,7 @@ const withOneRations = (store: Parameters<typeof readDeployPlan>[0]) => {
 
 /** The deploy plan at the fixture's moment: t=350, default tick 3. */
 const planOf = (store: Parameters<typeof readDeployPlan>[0], row: Parameters<typeof readDeployPlan>[1]) =>
-  readDeployPlan(store, row, readExpeditionRules(store, 1)!, { now: 350, defaultTick: 3 });
+  readDeployPlan(store, row, { now: 350, defaultTick: 3 });
 
 afterEach(() => {
   setBlockTimestampSource(null);
@@ -122,7 +123,7 @@ describe("Frontier's deploy", () => {
     ] as never);
     store.setSnapshot({ gameId: 1, complete: true, actor: "0x111", timestamp: 450 });
     // Day 0 has ended. Epic Homecoming returns 21% of its 100 whole troops.
-    const tomorrow = readDeployPlan(store, row, readExpeditionRules(store, 1)!, { now: 450, defaultTick: 4 });
+    const tomorrow = readDeployPlan(store, row, { now: 450, defaultTick: 4 });
     expect(tomorrow!.troops!.atHome).toBe(441);
   });
 
@@ -163,4 +164,22 @@ describe("Frontier's deploy", () => {
       slot: 2,
     });
   });
+});
+
+
+it("selects Scouts from their own stock, price and Scouting bar without taking Knights", () => {
+  const { store, row } = frontierDay();
+  seedScouts(store);
+  const plan = readDeployPlan(store, row, { now: 350, defaultTick: 3 }, TroopType.Paladin)!;
+  expect(plan.choices.map(({ type, atHome }) => ({ type, atHome }))).toEqual([
+    { type: TroopType.Knight, atHome: 420 },
+    { type: TroopType.Paladin, atHome: 600 },
+  ]);
+  expect(plan.troops).toMatchObject({ type: TroopType.Paladin, atHome: 600 });
+  expect(plan.open[0]?.start).toEqual({ current: 150, max: 150, perExplore: 10 });
+  expect(previewDeploy(plan, 400)).toEqual({ count: 400, wheatCost: 800 });
+  expect(deployRange(plan).max).toBe(500);
+  const actions = { createExplorerArmy: vi.fn() };
+  deployArmy(actions, row, plan.troops!, 400, 0, 1);
+  expect(actions.createExplorerArmy).toHaveBeenCalledWith({ structureId: 7, troopType: TroopType.Paladin, troopTier: TroopTier.T1, troopCount: 400, spawnDirection: 0, slot: 1 });
 });

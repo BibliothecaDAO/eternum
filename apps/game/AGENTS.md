@@ -584,3 +584,8 @@ recorded-effect fixtures at desktop and phone sizes. Native lifecycle tests prov
 Supply posts: `/lab/game?scenario=supply-post`, select the cleared camp beside Army 1, choose Reinforce Army 1, then Max
 and Reinforce. `build.sh playtest-supply-post` checks the signed camp ID and resulting army and home balances on desktop
 and phone, retaining the camp banner, reinforcement sheet and response evidence.
+
+Scouts are raised in Deploy by selecting Scouts from the troop choices, then a count and an open army slot. The
+Scouts' Lodge opens at City and produces the separate Scout stock; its Scouting research belongs to Scouts.
+`--steps lab-scouts` uses `/lab/game?scenario=scouts` to choose and deploy 400 Scouts, retaining the submitted command,
+army and balance changes on desktop and phone. Native tests prove the ten-stamina reveal and combat damage.

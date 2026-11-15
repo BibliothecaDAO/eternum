@@ -129,7 +129,7 @@ const ExistingArmyRow = ({ army, structureId }: { army: ArmyInfo; structureId: I
               stamina={{
                 current: Number(stamina.amount),
                 max: maxStamina,
-                perExplore: configManager.getExploreStaminaCost(),
+                perExplore: configManager.getExploreStaminaCost(army.troops.category),
               }}
             />
           </span>

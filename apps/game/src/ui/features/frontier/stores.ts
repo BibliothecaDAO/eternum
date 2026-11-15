@@ -1,8 +1,8 @@
 import { type IconMeaning, resourceMeaning } from "@/ui/design-system/icon-meaning";
-import { ESSENCE, LABOR, TROOPS, WHEAT } from "@/ui/design-system/kit/words";
+import { ESSENCE, LABOR, WHEAT } from "@/ui/design-system/kit/words";
 import { researchRowCategory } from "@bibliothecadao/eternum";
 import { nativeResearchConstants as research } from "@bibliothecadao/eternum/game-client";
-import { type BuildingType, ResourcesIds } from "@bibliothecadao/types";
+import { FRONTIER_TROOP_NAMES, TroopType, type BuildingType, ResourcesIds } from "@bibliothecadao/types";
 
 /** Where a full store is spent: labor on the realm board, wheat and troops by Deploy. */
 export type SpentAt = "realm" | "deploy";
@@ -35,12 +35,17 @@ export const FRONTIER_STORES = {
     word: WHEAT,
     made: { row: research.ROW_FARM, spentAt: "deploy" },
   },
-  // One troop type: the barracks train the realm's troops, drawn as troops rather than one tier's painting.
   troops: {
     resource: ResourcesIds.Knight,
     icon: "troops",
-    word: TROOPS,
+    word: FRONTIER_TROOP_NAMES[TroopType.Knight],
     made: { row: research.ROW_BARRACKS, spentAt: "deploy" },
+  },
+  scouts: {
+    resource: ResourcesIds.Paladin,
+    icon: resourceMeaning(ResourcesIds.Paladin),
+    word: FRONTIER_TROOP_NAMES[TroopType.Paladin],
+    made: { row: research.ROW_SCOUTS_LODGE, spentAt: "deploy" },
   },
 } as const satisfies Record<string, Store>;
 

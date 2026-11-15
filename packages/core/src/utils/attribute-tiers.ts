@@ -51,7 +51,10 @@ export const battleBonusBps = (tier: number): number => BATTLE_BPS[tierIndex(tie
  * What reaching a Scouting tier adds to the kind chosen for it, in basis points of that kind's base rate
  * (rules::scouting_increment_bps); rank 0 adds nothing.
  */
-export const scoutingIncrementBps = (tier: number): number => SCOUTING_BPS[tierIndex(tier)]!;
+export const scoutingIncrementBps = (tier: number): number => {
+  const at = tierIndex(tier);
+  return SCOUTING_BPS[at]! - SCOUTING_BPS[Math.max(0, at - 1)]!;
+};
 
 /** Maximum stamina above the troop's base at a Logistics tier (rules::logistics_stamina). */
 export const logisticsStamina = (tier: number): number => LOGISTICS_STAMINA[tierIndex(tier)]!;

@@ -274,6 +274,7 @@ export function getProducedResource(category: BuildingType): ResourcesIds | unde
     case BuildingType.ResourceCrossbowmanT3:
       return ResourcesIds.CrossbowmanT3;
     case BuildingType.ResourcePaladinT1:
+    case BuildingType.ScoutsLodge:
       return ResourcesIds.Paladin;
     case BuildingType.ResourcePaladinT2:
       return ResourcesIds.PaladinT2;

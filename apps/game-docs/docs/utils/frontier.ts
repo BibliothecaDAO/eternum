@@ -44,7 +44,7 @@ const REFILL_LORDS_PER_POINT = 1;
 
 const tickMinutes = config.tick.armiesTickIntervalInSeconds / 60;
 
-// What one troop costs to deploy, in wheat: the Knight recipe's wheat over its output (Frontier deploys Knights only).
+// What one troop costs to deploy, in wheat: the Knight recipe's wheat over its output (Scouts have the same base price).
 // Each Rations pick takes the preset's rationStep off it, in whole wheat (resources_domain.cairo `ration_cut`).
 const KNIGHT = 26;
 const WHEAT = 35;
@@ -96,6 +96,7 @@ export const FRONTIER = {
     tickMinutes: n(tickMinutes),
     fullHours: n(((stamina.staminaKnightMax / stamina.staminaGainPerTick) * tickMinutes) / 60),
     reveal: n(stamina.staminaExploreStaminaCost),
+    scoutReveal: n(rule.SCOUT_EXPLORE_STAMINA),
     step: n(stamina.staminaTravelStaminaCost),
     attack: n(stamina.staminaAttackReq),
     wheatPerTroop: n(stamina.staminaExploreWheatCost),
@@ -156,7 +157,8 @@ export const FRONTIER = {
     ["Barracks", research.BARRACKS, "Troops"],
     ["Workshop", research.WORKSHOP, "Labor"],
     ["Workers' hut", research.HUT, "Population"],
-    ["War hall, Supply yard, Scouts' lodge, Hearth", research.WAR_HALL, "A tier for every new army"],
+    ["War hall, Supply yard, Hearth", research.WAR_HALL, "A tier for every new army"],
+    ["Scouts' lodge", research.SCOUTS_LODGE, "Scouts"],
   ].map(([name, id, makes]) => ({
     name: name as string,
     makes: makes as string,
@@ -192,13 +194,8 @@ export const FRONTIER = {
       rule.SCOUTING_EPIC_BPS,
       rule.SCOUTING_LEGENDARY_BPS,
     ].map(pct),
-    scoutingOneKind: pct(
-      rule.SCOUTING_COMMON_BPS +
-        rule.SCOUTING_UNCOMMON_BPS +
-        rule.SCOUTING_RARE_BPS +
-        rule.SCOUTING_EPIC_BPS +
-        rule.SCOUTING_LEGENDARY_BPS,
-    ),
+    scoutingOneKind: pct(rule.SCOUTING_LEGENDARY_BPS),
+    scoutDamageReduction: `${100 - rule.SCOUT_DAMAGE_PERCENT}%`,
   },
   quest: {
     labor: n(frontierPreset.dailyQuest.labor),

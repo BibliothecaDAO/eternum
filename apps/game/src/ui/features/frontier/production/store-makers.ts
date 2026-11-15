@@ -19,7 +19,7 @@ export const standingBuildings = (store: NativeFactStore, realmId: number, categ
 
 /** The picks on the make side (Fields, Tools, Drill) that raise a product's building. */
 export const madePicks = (resource: MadeResource, learned: bigint): number =>
-  makePicks(learned, FRONTIER_STORES[madeStore(resource)].made.row);
+  resource === ResourcesIds.Paladin ? 0 : makePicks(learned, FRONTIER_STORES[madeStore(resource)].made.row);
 
 /** What all of a type's standing buildings make: their product and its rate a second. */
 type BuildingsMake = { resource: MadeResource; perSecond: number };

@@ -48,7 +48,6 @@ fn failed_building_payment_rolls_back_placement_population_rate_and_resources() 
         deployment,
         Command::CreateBuilding(
             CreateBuilding {
-                scouting_kind: 0,
                 structure_id: home.entity_id,
                 directions: array![0_u8].span(),
                 category: 37,
@@ -181,7 +180,7 @@ fn building_placement_rejects_invalid_paths_categories_and_occupied_tiles() {
             deployment,
             Command::CreateBuilding(
                 CreateBuilding {
-                    scouting_kind: 0, structure_id: home.entity_id, directions, category: 37, use_simple: true,
+                    structure_id: home.entity_id, directions, category: 37, use_simple: true,
                 },
             ),
             40,
@@ -292,7 +291,6 @@ fn labor_buildings_cannot_be_destroyed_and_population_blocks_overbuilding() {
         deployment,
         Command::CreateBuilding(
             CreateBuilding {
-                scouting_kind: 0,
                 structure_id: home.entity_id,
                 directions: array![1_u8].span(),
                 category: 37,
@@ -366,7 +364,6 @@ fn castle_ring_limit_accepts_four_and_rejects_five() {
             deployment,
             Command::CreateBuilding(
                 CreateBuilding {
-                    scouting_kind: 0,
                     structure_id: home.entity_id,
                     directions: array![0_u8, 0, 0, 0].span(),
                     category: 37,
@@ -381,7 +378,6 @@ fn castle_ring_limit_accepts_four_and_rejects_five() {
         deployment,
         Command::CreateBuilding(
             CreateBuilding {
-                scouting_kind: 0,
                 structure_id: home.entity_id,
                 directions: array![0_u8, 0, 0, 0, 0].span(),
                 category: 37,
@@ -753,9 +749,6 @@ fn workshop_and_barracks_charge_each_sides_own_exact_ladder() {
 #[test]
 #[test_case(41, 0, name: "war_hall")]
 #[test_case(42, 0, name: "supply_yard")]
-#[test_case(43, 0, name: "scouts_camps")]
-#[test_case(43, 1, name: "scouts_rifts")]
-#[test_case(43, 2, name: "scouts_sanctuaries")]
 #[test_case(44, 0, name: "hearth")]
 fn construction_grants_common_once_and_the_next_purchase_costs_uncommon(category: u8, kind: u8) {
     let (d, home, preset) = research_world();
@@ -765,12 +758,8 @@ fn construction_grants_common_once_and_the_next_purchase_costs_uncommon(category
         assert!(execute(d, research(home, crate::research::ROW_BARRACKS, side), 40));
     }
     let command = CreateBuilding {
-        structure_id: home.entity_id, directions: array![0_u8].span(), category, use_simple: true, scouting_kind: kind,
+        structure_id: home.entity_id, directions: array![0_u8].span(), category, use_simple: true,
     };
-    if category == crate::research::SCOUTS_LODGE && kind == crate::research::KIND_SANCTUARIES {
-        assert_terminal_rejection(d, Command::CreateBuilding(command), 40);
-        assert!(execute(d, research(home, crate::research::ROW_SHRINE, 0), 40));
-    }
     let resources = IResourceOperationsDispatcher { contract_address: d.games };
     let essence = ResourceSlot {
         game_id: home.game_id, entity_id: home.entity_id, resource_type: crate::resources::ESSENCE,
@@ -778,18 +767,10 @@ fn construction_grants_common_once_and_the_next_purchase_costs_uncommon(category
     let labor = ResourceSlot { resource_type: crate::resources::LABOR, ..essence };
     let essence_before = resources.resource_balance(essence);
     let construction_labor_before = resources.resource_balance(labor);
-    let knowledge_before = learned(d, home);
-    assert_terminal_rejection(d, Command::CreateBuilding(CreateBuilding { scouting_kind: 3, ..command }), 40);
-    assert_eq!(learned(d, home), knowledge_before);
     assert!(execute(d, Command::CreateBuilding(command), 40));
     assert_eq!(essence_before - resources.resource_balance(essence), 6000 * crate::rules::RESOURCE_PRECISION);
     assert_eq!(construction_labor_before - resources.resource_balance(labor), 1500 * crate::rules::RESOURCE_PRECISION);
     assert_eq!(crate::research::tier(learned(d, home), row), 1);
-    if category == crate::research::SCOUTS_LODGE {
-        assert_eq!(crate::research::choice(learned(d, home), row, 1), kind);
-        let trained = crate::progression::trained(learned(d, home));
-        assert_eq!((trained.scouting, trained.scouting_kinds), (1, Into::<u8, u16>::into(kind) + 1));
-    }
     let price = research_price(preset.structures.research, row, 2);
     assert_eq!(
         (price.essence, price.labor),
@@ -821,7 +802,6 @@ fn sanctuary_research_requires_a_site_unlock_without_spending_on_rejection(unloc
         directions: array![0_u8].span(),
         category: crate::research::SCOUTS_LODGE,
         use_simple: true,
-        scouting_kind: crate::research::KIND_CAMPS,
     };
     assert!(execute(d, Command::CreateBuilding(lodge), 40));
     let before = learned(d, home);
@@ -837,7 +817,22 @@ fn sanctuary_research_requires_a_site_unlock_without_spending_on_rejection(unloc
     assert!(execute(d, research(home, unlock, 0), 40));
     assert!(execute(d, command, 40));
     assert_eq!(
-        crate::research::choice(learned(d, home), crate::research::ROW_SCOUTS_LODGE, 2),
+        crate::research::choice(learned(d, home), crate::research::ROW_SCOUTS_LODGE, 1),
         crate::research::KIND_SANCTUARIES,
     );
+}
+
+#[test]
+fn lodges_produce_scouts_without_a_training_gate_and_each_copy_adds_its_rate() {
+    let (d, home, _) = research_world();
+    assert_eq!(learned(d, home), 0);
+    assert!(execute(d, build_toward(home, crate::research::SCOUTS_LODGE, 0), 40));
+    assert_eq!(crate::research::tier(learned(d, home), crate::research::ROW_SCOUTS_LODGE), 0);
+    let expected: u64 = 40;
+    assert_eq!(rate(d, home, 32), expected);
+    assert!(execute(d, build_toward(home, crate::research::SCOUTS_LODGE, 1), 40));
+    assert_eq!(rate(d, home, 32), 2 * expected);
+    assert!(execute(d, research(home, crate::research::ROW_SCOUTS_LODGE, crate::research::KIND_CAMPS), 40));
+    assert_eq!(crate::research::tier(learned(d, home), crate::research::ROW_SCOUTS_LODGE), 1);
+    assert_eq!(rate(d, home, 32), 2 * expected);
 }

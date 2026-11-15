@@ -1,4 +1,4 @@
-import { availableScoutingChoices, type ScoutingSide } from "../progression-choices";
+import { RealmLevels } from "@bibliothecadao/types";
 import { usePlayerNames } from "@/hooks/use-player-profile";
 import { AudioManager } from "@/audio/core/AudioManager";
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
@@ -35,12 +35,10 @@ import {
   getBalance,
   getBuildingQuantity,
   getRealmInfo,
-  realmLearned,
-  researchTier,
   resolveUseSimpleCost,
 } from "@bibliothecadao/eternum";
 import { resolveConstructionBuildability } from "@bibliothecadao/eternum/automation";
-import { safeInteger, nativeResearchConstants, type NativeRows } from "@bibliothecadao/eternum/game-client";
+import { safeInteger, type NativeRows } from "@bibliothecadao/eternum/game-client";
 import {
   BUILDINGS_CENTER,
   BuildingType,
@@ -137,7 +135,6 @@ export const BuildSheet = ({
   const [picked, setPicked] = useState<BuildingType | null>(null);
   // Build pressed on the pick with no free population: the ask stands until the player answers or picks again.
   const [asking, setAsking] = useState(false);
-  const [scoutingKind, setScoutingKind] = useState<ScoutingSide>(nativeResearchConstants.KIND_RIFTS);
   const indexOf = (category: BuildingType | null) =>
     options?.findIndex((candidate) => candidate.category === category) ?? -1;
   const firstBuild = useUIStore((state) => state.firstBuild);
@@ -161,13 +158,6 @@ export const BuildSheet = ({
    * build's own outcome.
    */
   const build = async (category: BuildingType = option.category) => {
-    if (category === BuildingType.ScoutsLodge) {
-      const learned = realmLearned(setup.store, realm.game_id, realm.entity_id);
-      if (learned === undefined) return;
-      const needsChoice = researchTier(learned, nativeResearchConstants.ROW_SCOUTS_LODGE) === 0;
-      const choices = availableScoutingChoices((row) => researchTier(learned, row));
-      if (needsChoice && !choices.some(({ side }) => side === scoutingKind)) return;
-    }
     AudioManager.getInstance().play("ui.build_place");
     try {
       await sendBuilding({
@@ -175,7 +165,6 @@ export const BuildSheet = ({
         type: category,
         plot,
         useSimpleCost,
-        scoutingKind: category === BuildingType.ScoutsLodge ? scoutingKind : undefined,
         from: { isOpen: stillShowing, close: onClose },
       });
     } catch (error) {
@@ -197,7 +186,7 @@ export const BuildSheet = ({
   /** Where the chosen building stands: open, refused with its reason, or open but for free population. */
   const standing = (): { refusal?: Refusal; noRoom?: true } => {
     if (option.standing === "built") return { refusal: { reason: { kind: "failed", line: ONE_A_REALM } } };
-    if (option.standing !== "open") return { refusal: gateRefusal(option.standing) };
+    if (option.standing !== "open") return { refusal: "level" in option.standing ? { reason: { kind: "failed", line: `Requires ${RealmLevels[option.standing.level]}` } } : gateRefusal(option.standing) };
     const shortCost = option.cost.find(({ resource, amount }) => (held(resource) ?? 0) < amount);
     if (shortCost) {
       const have = held(shortCost.resource);
@@ -268,19 +257,6 @@ export const BuildSheet = ({
     <BuildView
       population={population}
       tiles={options.map((candidate) => buildTile(candidate, holdings))}
-      scouting={
-        option.category === BuildingType.ScoutsLodge &&
-        researchTier(
-          realmLearned(facts.store, realm.game_id, realm.entity_id)!,
-          nativeResearchConstants.ROW_SCOUTS_LODGE,
-        ) === 0
-          ? {
-              learned: realmLearned(facts.store, realm.game_id, realm.entity_id)!,
-              kind: scoutingKind,
-              onChoose: setScoutingKind,
-            }
-          : undefined
-      }
       chosen={chosen}
       onChoose={(index) => choose(options[index]!.category)}
       prices={option.cost.map(({ resource, amount }) => ({ of: priceKind(resource), amount }))}
@@ -325,7 +301,7 @@ const buildTile = (option: BuildOption, holdings: Holdings): BuildTile => ({
 const standingOf = (option: BuildOption, { held, perHour, free }: Holdings): BuildTile["standing"] => {
   if (option.standing === "built") return { kind: "built" };
   // Training counts purchases across both Barracks sides.
-  if (option.standing !== "open") return { kind: "locked", ...option.standing };
+  if (option.standing !== "open") return "level" in option.standing ? { kind: "level", level: option.standing.level } : { kind: "locked", ...option.standing };
   const missing = option.cost.find(({ resource, amount }) => (held(resource) ?? 0) < amount);
   const short: Extract<BuildTile["standing"], { kind: "price" }>["short"] = missing
     ? {

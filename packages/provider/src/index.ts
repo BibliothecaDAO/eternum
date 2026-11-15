@@ -604,7 +604,6 @@ export class EternumProvider extends EventEmitter {
           directions: props.directions,
           category: props.building_category,
           use_simple: props.use_simple,
-          scouting_kind: props.scouting_kind,
         },
       },
       TransactionType.CREATE_BUILDING,
@@ -620,7 +619,7 @@ export class EternumProvider extends EventEmitter {
           kind: "RecruitGuard",
           value: {
             guard: { structure_id: props.for_structure_id, slot: props.slot },
-            category: unitVariant(props.category, ["Knight", "Paladin", "Crossbowman"] as const),
+            category: unitVariant(props.category, SystemProps.TROOP_TYPES),
             tier: unitVariant(props.tier, ["T1", "T2", "T3"] as const),
             amount: props.amount,
           },

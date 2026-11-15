@@ -1,6 +1,5 @@
+import { RealmLevels } from "@bibliothecadao/types";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
-import { availableScoutingChoices, type ScoutingSide } from "../progression-choices";
-import { researchTier } from "@bibliothecadao/eternum";
 import {
   formatExact,
   formatCharge,
@@ -74,7 +73,8 @@ export type BuildTile = {
         short?: { of: Price["of"]; wait: number | undefined } | { of: "population" };
       }
     | { kind: "built" }
-    | { kind: "locked"; gate: number; bought: number };
+    | { kind: "locked"; gate: number; bought: number }
+    | { kind: "level"; level: number };
 };
 
 /**
@@ -88,7 +88,6 @@ export type BuildTile = {
  */
 export const BuildView = ({
   population,
-  scouting,
   tiles,
   chosen,
   onChoose,
@@ -101,7 +100,6 @@ export const BuildView = ({
 }: {
   /** The realm's population, used of all it can hold; unknown is left out. */
   population: RealmPopulation | undefined;
-  scouting?: { learned: bigint; kind: ScoutingSide; onChoose: (kind: ScoutingSide) => void };
   tiles: BuildTile[];
   chosen: number;
   onChoose: (index: number) => void;
@@ -120,8 +118,6 @@ export const BuildView = ({
       {chosenStanding.raised}
     </span>
   );
-  const scoutingOptions = scouting ? availableScoutingChoices((row) => researchTier(scouting.learned, row)) : [];
-  const needsScoutingChoice = scouting !== undefined && !scoutingOptions.some(({ side }) => side === scouting.kind);
   const choice = (
     <>
       <div className="grid grid-cols-3 gap-1.5">
@@ -129,26 +125,6 @@ export const BuildView = ({
           <TileButton key={tile.key} tile={tile} chosen={index === chosen} onChoose={() => onChoose(index)} />
         ))}
       </div>
-      {scouting && (
-        <fieldset className="flex flex-col gap-2">
-          <legend className="text-hud-label">Common Scouting</legend>
-          <div className="flex flex-wrap gap-2">
-            {scoutingOptions.map(({ name, side, icon }) => (
-              <HudButton
-                key={name}
-                kind={side === scouting.kind ? "secondary" : "quiet"}
-                aria-pressed={side === scouting.kind}
-                onClick={() => scouting.onChoose(side)}
-              >
-                <span className="flex flex-col items-center">
-                  <IconGroup name={icon} size={18} />
-                  {name}
-                </span>
-              </HudButton>
-            ))}
-          </div>
-        </fieldset>
-      )}
       {refusal ? (
         <HudWindowFoot
           note={
@@ -176,7 +152,6 @@ export const BuildView = ({
           <HudButton
             kind="primary"
             busy={sending ? BUILDING : undefined}
-            disabled={needsScoutingChoice}
             onClick={onBuild}
           >
             {BUILD}
@@ -335,6 +310,7 @@ const Band = ({ standing }: { standing: BuildTile["standing"] }) => (
     tip={standing.kind === "locked" ? needsResearchPurchases(BARRACKS, standing.bought, standing.gate) : undefined}
   >
     <span className="flex items-center gap-1 whitespace-nowrap tabular-nums">
+      {standing.kind === "level" && <><SemanticIcon name="lock" size={14} />{RealmLevels[standing.level]}</>}
       {standing.kind === "built" && <SemanticIcon name="check" size={16} />}
       {standing.kind === "locked" && (
         <>

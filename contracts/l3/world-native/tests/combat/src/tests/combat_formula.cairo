@@ -373,3 +373,24 @@ fn expedition_knights_use_one_damage_formula_for_armies_and_guards_even_without_
         }
     }
 }
+
+#[test]
+fn scouts_deal_three_quarters_damage_on_either_side_only_in_frontier() {
+    let damage = TroopDamageConfig {
+        damage_biome_bonus_num: 0, damage_scaling_factor: 36893488147419103232, ..damage_config()
+    };
+    for day_unit_seconds in array![0_u32, 100] {
+        for (attacker, outgoing) in array![(TroopType::Knight, 437_u128), (TroopType::Paladin, 328)] {
+            for (defender, incoming) in array![(TroopType::Knight, 437_u128), (TroopType::Paladin, 328)] {
+                let mut alpha = test_troops(attacker, TroopTier::T1, 1000, 100);
+                let mut bravo = test_troops(defender, TroopTier::T1, 1000, 100);
+                let (dealt, taken, _, _) = alpha.damage_with_context(
+                    ref bravo, CombatContext { day_unit_seconds, ..context(Biome::Grassland) },
+                    stamina_config(), damage, 1, 0,
+                );
+                assert_eq!(dealt, if day_unit_seconds == 0 { 437 } else { outgoing } * RESOURCE_PRECISION);
+                assert_eq!(taken, if day_unit_seconds == 0 { 437 } else { incoming } * RESOURCE_PRECISION);
+            }
+        }
+    }
+}

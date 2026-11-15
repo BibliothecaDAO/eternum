@@ -62,14 +62,14 @@ export class ArmyActionManager {
       explorer_id: this.entityId,
     });
 
-    return entityArmy?.troops.category as TroopType;
+    return entityArmy.troops.category;
   }
 
   /** Whether the army can explore one hex now: its stamina and its owner's food for the explore. */
   public canExplore(currentDefaultTick: number): boolean {
     const stamina = this.staminaManager.getStamina(currentDefaultTick);
 
-    if (Number(stamina?.amount ?? 0n) < configManager.getExploreStaminaCost()) {
+    if (Number(stamina?.amount ?? 0n) < this.exploreStaminaCost()) {
       return false;
     }
 
@@ -206,9 +206,13 @@ export class ArmyActionManager {
     return configManager.isCommandEnabled(targetIsArmy ? "Battle" : "BattleGuard");
   }
 
+  private exploreStaminaCost(): number {
+    return configManager.getExploreStaminaCost(this._getTroopType());
+  }
+
   /** Why the army cannot explore now: the explore's stamina, or else its owner's food for it (canExplore). */
   private exploreRefusal(armyStamina: number): OrderRefusal {
-    const need = configManager.getExploreStaminaCost();
+    const need = this.exploreStaminaCost();
     return armyStamina < need ? { reason: "stamina", need } : { reason: "food" };
   }
 
@@ -438,7 +442,7 @@ export class ArmyActionManager {
         }
       } else {
         actionType = ActionType.Explore;
-        staminaCost = configManager.getExploreStaminaCost();
+        staminaCost = this.exploreStaminaCost();
       }
 
       if (staminaCost > armyStamina) {

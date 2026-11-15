@@ -10,6 +10,8 @@ pub const SHRINE_RARE_BPS: u32 = 1500;
 pub const SHRINE_EPIC_BPS: u32 = 400;
 pub const SHRINE_LEGENDARY_BPS: u32 = 100;
 pub const ATTRIBUTE_CAP: u8 = 5;
+pub const SCOUT_EXPLORE_STAMINA: u8 = 10;
+pub const SCOUT_DAMAGE_PERCENT: u8 = 75;
 pub const SKILL_POINT_REFILL_BASE: u8 = 10;
 pub const SKILL_POINT_REFILL_STEP: u8 = 10;
 // Rank 0 is untrained; Common I through Legendary V retain the original ceilings.
@@ -59,10 +61,10 @@ pub fn scouting_increment_bps(tier: u8) -> u32 {
     match tier {
         0 => 0,
         1 => SCOUTING_COMMON_BPS,
-        2 => SCOUTING_UNCOMMON_BPS,
-        3 => SCOUTING_RARE_BPS,
-        4 => SCOUTING_EPIC_BPS,
-        5 => SCOUTING_LEGENDARY_BPS,
+        2 => SCOUTING_UNCOMMON_BPS - SCOUTING_COMMON_BPS,
+        3 => SCOUTING_RARE_BPS - SCOUTING_UNCOMMON_BPS,
+        4 => SCOUTING_EPIC_BPS - SCOUTING_RARE_BPS,
+        5 => SCOUTING_LEGENDARY_BPS - SCOUTING_EPIC_BPS,
         _ => panic!("invalid attribute tier"),
     }
 }

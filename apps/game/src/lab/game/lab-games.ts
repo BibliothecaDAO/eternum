@@ -1,3 +1,4 @@
+import { scoutsScenario } from "./scouts-scenario";
 import { siteEffectsScenario } from "./site-effects-scenario";
 import { farEyeScenario } from "./far-eye-scenario";
 import { clearMistScenario } from "./spire-scenario";
@@ -61,6 +62,7 @@ export const LAB_SCENARIOS: Partial<Record<string, () => LabScenario>> = {
   /** The spire's game opened on the home page, entered by its card's Resume: a way back home there is the app's own. */
   "from-home": () => ({ ...spireScenario(), entersFromHome: true }),
   actions: actionsScenario,
+  scouts: scoutsScenario,
   "high-ground": highGroundScenario,
   "day-end": dayEndScenario,
   realm: realmScenario,

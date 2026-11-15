@@ -145,6 +145,7 @@ const ArmyBannerEntityDetailContent = memo(
           <TroopChip troops={explorer.troops} size="sm" className="w-full" />
           {derivedData.stamina && derivedData.maxStamina ? (
             <InlineStaminaBar
+              perExplore={configManager.getExploreStaminaCost(explorer.troops.category)}
               currentStamina={currentStamina}
               maxStamina={maxStamina}
               isRecharging={derivedData.staminaDisplay?.isRecharging}
@@ -233,6 +234,7 @@ const formatRestTime = (seconds: number): string => {
 };
 
 const InlineStaminaBar = ({
+  perExplore,
   currentStamina,
   maxStamina,
   isRecharging,
@@ -240,6 +242,7 @@ const InlineStaminaBar = ({
   travelBlockedTitle,
   rightAccessory,
 }: {
+  perExplore: number;
   currentStamina: number;
   maxStamina: number;
   isRecharging?: boolean | null;
@@ -266,7 +269,7 @@ const InlineStaminaBar = ({
       <SemanticIcon name="stamina" className="h-3 w-3" />
       <span className="min-w-0 flex-1">
         <HudStamina
-          stamina={{ current: displayedCurrent, max: maxStamina, perExplore: configManager.getExploreStaminaCost() }}
+          stamina={{ current: displayedCurrent, max: maxStamina, perExplore }}
           tone={tone}
           filling={recharging}
         />

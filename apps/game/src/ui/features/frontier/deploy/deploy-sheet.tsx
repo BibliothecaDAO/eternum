@@ -10,7 +10,7 @@ import { openArmyDeployment } from "@/ui/features/military/utils/open-army-deplo
 import { useDeployRing } from "@/ui/features/military/components/unified-army-creation-modal/use-deploy-ring";
 import { type ExpeditionRules, ResourceManager } from "@bibliothecadao/eternum";
 import { safeInteger, type NativeRows } from "@bibliothecadao/eternum/game-client";
-import type { Direction } from "@bibliothecadao/types";
+import { FRONTIER_TROOP_NAMES, TroopType, type Direction } from "@bibliothecadao/types";
 import { useEffect, useRef, useState } from "react";
 
 import { useGoToFrontierPlace } from "../frontier-home";
@@ -38,7 +38,8 @@ export const DeploySheet = ({
 }) => {
   const { setup } = useGame();
   const defaultTick = useCurrentDefaultTick();
-  const plan = useDeployPlan(realm);
+  const [troopType, setTroopType] = useState<TroopType>();
+  const plan = useDeployPlan(realm, troopType);
   const range = plan ? deployRange(plan) : { troopsMax: 0, wheatMax: 0, max: 0 };
   const [count, setCount] = useState<number | "max" | null>(null);
   // The sheet opens at no troops, so +500 gives exactly 500 (owner, 26 October 2026: "it should be 0 so I can press 500
@@ -67,7 +68,8 @@ export const DeploySheet = ({
   useDeployOnMap(realmId, direction);
   const deploying = useInFlight("deploy", realmId) !== undefined;
   const wheatPerHour = new ResourceManager(setup.store, realmId).wheatPerHour(defaultTick);
-  const nextTroopIn = useRealmStores(realm, rules)?.troops.nextIn;
+  const stores = useRealmStores(realm, rules);
+  const nextTroopIn = plan?.troops?.type === TroopType.Paladin ? stores?.scouts.nextIn : stores?.troops.nextIn;
 
   /** The sheet closes as the army leaves; its slot on the dock carries the wait, and a refusal says why there. */
   const deploy = async () => {
@@ -93,6 +95,9 @@ export const DeploySheet = ({
 
   return (
     <DeployView
+      troopChoices={plan?.choices.map((troops) => ({ category: troops.type, name: FRONTIER_TROOP_NAMES[troops.type], art: armyArt({ category: troops.type, tier: troops.tier }) })) ?? []}
+      selectedTroop={plan?.troops?.type}
+      onTroop={(type) => { setTroopType(type); setCount(null); }}
       art={plan?.troops ? armyArt({ category: plan.troops.type, tier: plan.troops.tier }) : undefined}
       troopsAtHome={plan ? (plan.troops?.atHome ?? 0) : undefined}
       count={preview?.count}

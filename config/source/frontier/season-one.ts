@@ -1,5 +1,6 @@
 import { orders, ResourcesIds } from "../../../packages/types/src/constants";
 import { nativeCommandBits } from "../../../contracts/l3/world-native/schema/commands.gen";
+import { nativeResearchConstants as research } from "../../../contracts/l3/world-native/schema/client.gen";
 import { nativeRuleConstants as rules } from "../../../contracts/l3/world-native/schema/client.gen";
 import type { NativePreset } from "../common/native-preset";
 import { FRONTIER_S1_PRESET_ID } from "../common/native-preset-modes";
@@ -22,6 +23,14 @@ export const frontierSeasonOnePreset = {
         staminaDefenseReq: 0,
       },
       limit: { exploreRewardStrengthCap: 10000 },
+    },
+    resources: {
+      productionBySimpleRecipe: { [ResourcesIds.Paladin]: [{ resource: ResourcesIds.Wheat, amount: 2 }] },
+      productionBySimpleRecipeOutputs: { [ResourcesIds.Paladin]: 1 },
+      productionByComplexRecipeOutputs: { [ResourcesIds.Paladin]: 100 / 3600 },
+    },
+    buildings: {
+      simpleBuildingCost: { [research.SCOUTS_LODGE]: [{ resource: ResourcesIds.Labor, amount: 500 }] },
     },
     startingResources: [
       { resource: ResourcesIds.Knight, amount: 3000 },

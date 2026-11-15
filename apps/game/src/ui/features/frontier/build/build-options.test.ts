@@ -117,3 +117,12 @@ describe("Frontier's build options", () => {
     expect(warHall().standing).toBe("open");
   });
 });
+
+it("opens repeatable Scout production at City without Barracks research", () => {
+  const { store, realm } = realmBoard();
+  const lodge = (level: number) => readBuildOptions(store, { ...realm, base: { ...realm.base, level } }, true, 350)!.find(({ category }) => category === BuildingType.ScoutsLodge)!;
+  expect(lodge(0).standing).toEqual({ level: 1 });
+  expect(lodge(1).standing).toBe("open");
+  expect(lodge(1).effect).toMatchObject({ kind: "produces", resource: ResourcesIds.Paladin });
+  expect(lodge(1).tier).toBe(0);
+});

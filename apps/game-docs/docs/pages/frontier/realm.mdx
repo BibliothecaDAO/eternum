@@ -22,10 +22,11 @@ Tap an open plot to build there. Each building's price, in labor, and Essence fo
 | {FRONTIER.buildings[2].name} | {FRONTIER.buildings[2].makes} | {FRONTIER.buildings[2].price} | {FRONTIER.buildings[2].population} |
 | {FRONTIER.buildings[3].name} | {FRONTIER.buildings[3].makes} | {FRONTIER.buildings[3].price} | {FRONTIER.buildings[3].population} |
 | {FRONTIER.buildings[4].name} | {FRONTIER.buildings[4].makes} | {FRONTIER.buildings[4].price} | {FRONTIER.buildings[4].population} |
+| {FRONTIER.buildings[5].name} | {FRONTIER.buildings[5].makes} | {FRONTIER.buildings[5].price} | {FRONTIER.buildings[5].population} |
 
 Each workers' hut houses {FRONTIER.realm.hutHouses}, and every other building takes the population shown. Each further
 copy of a building costs more than the last, and pulling one down returns {FRONTIER.realm.demolitionRefund} of its
-price. Barracks train for free; deploying costs {FRONTIER.realm.deployWheat} wheat a troop.
+price. Barracks and Scouts’ lodges train for free; deploying costs {FRONTIER.realm.deployWheat} wheat a troop.
 
 <Shot
   frame="panel"
@@ -64,8 +65,11 @@ every building of its type at once, and each side advances independently: farms 
 | Each training building | {FRONTIER.research.training[0].essence} Essence, {FRONTIER.research.training[0].labor} labor | {FRONTIER.research.training[1].essence} Essence, {FRONTIER.research.training[1].labor} labor | {FRONTIER.research.training[2].essence} Essence, {FRONTIER.research.training[2].labor} labor | {FRONTIER.research.training[3].essence} Essence, {FRONTIER.research.training[3].labor} labor | {FRONTIER.research.training[4].essence} Essence, {FRONTIER.research.training[4].labor} labor |
 
 **Training buildings.** After {FRONTIER.research.trainingGate} Barracks research purchases, raise a War hall, a Supply
-yard, a Scouts' lodge and a Hearth. Construction includes rank I in Battle, Logistics, Scouting or Homecoming. Research
-raises that starting rank to II–V. Choose the first Scouting kind during construction. Rebuilding grants no extra rank.
+yard and a Hearth. Construction includes rank I in Battle, Logistics or Homecoming. Research
+raises that starting rank to II–V. Rebuilding grants no extra rank.
+
+**Scouts’ lodges** open at City and can be built more than once. Each produces its own Scouts. Research chooses which
+finds new Scout armies favour: camps, rifts or sanctuaries.
 
 **Shrines and wells.** Research them ({FRONTIER.research.shrine.essence} and {FRONTIER.research.well.essence} Essence)
 before reveals can find them.

@@ -1323,7 +1323,7 @@ export class ArmyManager {
           xpShare: army.isMine ? this.xpShareOf(army.entityId) : undefined,
         },
         this.resolveHomeRealmName(army),
-        configManager.getExploreStaminaCost(),
+        configManager.getExploreStaminaCost(army.category),
       ),
     });
   }

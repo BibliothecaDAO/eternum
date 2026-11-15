@@ -1,3 +1,4 @@
+import { exploreStaminaCost } from "../utils/explore-stamina";
 import { nativeCommandBits } from "../../../../contracts/l3/world-native/schema/commands.gen";
 import {
   BiomeType,
@@ -365,8 +366,8 @@ export class ClientConfigManager {
     return 1 + modifier;
   }
 
-  getExploreStaminaCost() {
-    return this.rules().troop_stamina_config.stamina_explore_stamina_cost;
+  getExploreStaminaCost(category: TroopType) {
+    return exploreStaminaCost(this.rules(), category);
   }
   getSeasonMainGameStartAt() {
     return Number(this.game().start_main_at);

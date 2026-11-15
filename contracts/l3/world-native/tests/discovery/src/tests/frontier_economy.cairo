@@ -261,3 +261,34 @@ fn outside_a_board_raising_troops_pays_no_recipe() {
     assert_eq!(stored(deployment, home, KNIGHT), 0);
     assert_eq!(stored(deployment, home, 2), 100);
 }
+
+
+#[test]
+fn a_city_builds_lodges_and_deploys_their_scout_stock_at_two_wheat_each() {
+    let mut preset = level_up_once(frontier_preset());
+    let (_, season_one) = super::preset_projection::current_definition("frontier");
+    preset.resources.production = season_one.resources.production;
+    let (d, home) = frontier_realm(preset);
+    allow_armies(d, home);
+    let lodge = build(home, crate::research::SCOUTS_LODGE, EAST);
+    let before = super::resource_commands::resource_facts(d, home);
+    assert_terminal_rejection(d, lodge, 40);
+    assert_eq!(super::resource_commands::resource_facts(d, home), before);
+    assert!(execute(d, Command::LevelUp(home.entity_id), 40));
+    assert!(execute(d, lodge, 40));
+    grant(d, home, 32, 600 * RESOURCE_PRECISION);
+    grant(d, home, WHEAT, 1000 * RESOURCE_PRECISION);
+    let knights = stored(d, home, KNIGHT);
+    assert!(execute(d, Command::CreateExplorer(CreateExplorer {
+        slot: 0, structure_id: home.entity_id, category: 1, tier: 0, amount: 400 * RESOURCE_PRECISION, direction: EAST,
+    }), 40));
+    assert_eq!(stored(d, home, 32), 200 * RESOURCE_PRECISION);
+    assert_eq!(stored(d, home, WHEAT), 200 * RESOURCE_PRECISION);
+    assert_eq!(stored(d, home, KNIGHT), knights);
+    let id = *IStructureOperationsDispatcher { contract_address: d.games }.home_armies(home).at(0);
+    let army = super::state::GameState { contract_address: d.games }.resolved_explorer(crate::troops::ExplorerKey {
+        game_id: home.game_id, explorer_id: id,
+    }).unwrap();
+    assert_eq!(army.troops.category, crate::troops::TroopType::Paladin);
+    assert_eq!(army.troops.count, 400 * RESOURCE_PRECISION);
+}

@@ -67,26 +67,8 @@ it("supplies the realm model with the highest side tier, from Common through Leg
   }
 });
 
-it("requires the Scouts first kind and sends each choice with construction", async () => {
+it("builds a Scout producer without buying Scouting research", async () => {
   const { manager, create_building } = setup();
-  const build = (kind?: 0 | 1 | 2) =>
-    manager.placeBuilding(
-      { address: "0xabc" } as GameplayAccount,
-      1,
-      BuildingType.ScoutsLodge,
-      { col: 11, row: 10 },
-      true,
-      kind,
-    );
-  await expect(build()).rejects.toThrow("Choose the Scouts");
-  expect(create_building).not.toHaveBeenCalled();
-  for (const kind of [0, 1, 2] as const) {
-    await build(kind);
-    expect(create_building).toHaveBeenLastCalledWith(
-      expect.objectContaining({
-        building_category: BuildingType.ScoutsLodge,
-        scouting_kind: kind,
-      }),
-    );
-  }
+  await manager.placeBuilding({ address: "0xabc" } as GameplayAccount, 1, BuildingType.ScoutsLodge, { col: 11, row: 10 }, true);
+  expect(create_building).toHaveBeenCalledWith({ signer: { address: "0xabc" }, entity_id: 1, directions: expect.any(Array), building_category: BuildingType.ScoutsLodge, use_simple: true });
 });

@@ -1,6 +1,6 @@
 // @vitest-environment node
 
-import { BUILDINGS_CENTER, BuildingType, getNeighborHexes, type SystemCalls } from "@bibliothecadao/types";
+import { BUILDINGS_CENTER, BuildingType, getNeighborHexes, TroopType, TroopTier, type SystemCalls } from "@bibliothecadao/types";
 import { NativeFactStore } from "../native-fact-store";
 import preset from "../../../../../contracts/l3/world-native/tests/fixtures/current-presets/conformance.json";
 import explorerFixture from "../../../../../contracts/l3/world-native/schema/fixtures/row-set.json";
@@ -18,6 +18,16 @@ const STRUCTURE_ID = 12;
 const SIGNER = { address: "0xabc" } as AccountInterface;
 
 describe("game actions", () => {
+  it.each([[TroopType.Knight, 0], [TroopType.Paladin, 1], [TroopType.Crossbowman, 2]] as const)(
+    "deploys %s with native category %i", async (troopType, category) => {
+      const { client, systemCalls } = createHarness(SIGNER);
+      await client.actions.createExplorerArmy({ structureId: STRUCTURE_ID, troopType, troopTier: TroopTier.T1,
+        troopCount: 400, spawnDirection: 0, slot: 1 });
+      expect(systemCalls.explorer_create).toHaveBeenCalledWith({ signer: SIGNER, for_structure_id: STRUCTURE_ID,
+        category, tier: 0, amount: 400_000_000_000, spawn_direction: 0, slot: 1 });
+    },
+  );
+
   it("placeBuilding submits for the structure's own hex", async () => {
     const { store, systemCalls, client } = createHarness(SIGNER);
     seedStructure(store, { x: 40, y: 50 });
@@ -36,7 +46,6 @@ describe("game actions", () => {
       directions: [expect.any(Number)],
       building_category: BuildingType.ResourceWheat,
       use_simple: true,
-      scouting_kind: 0,
     });
     expect(client.views.buildingTiles(STRUCTURE_ID).getHexCoords()).toEqual({ col: 40, row: 50 });
   });
@@ -74,6 +83,7 @@ const createHarness = (signer: AccountInterface | null) => {
   write(store, "SliceRules", [GAME_ID], { ...preset.rules, game_id: GAME_ID, map_center_offset: 2147483646 });
   ClientConfigManager.instance().setStore(store);
   const systemCalls = {
+    explorer_create: vi.fn(async () => ({ transaction_hash: "0x3" })),
     explorer_travel: vi.fn(async () => ({ transaction_hash: "0x1" })),
     create_building: vi.fn(async () => ({ transaction_hash: "0x2" })),
   } as unknown as SystemCalls;

@@ -162,7 +162,6 @@ pub struct CreateBuilding {
     pub directions: Span<u8>,
     pub category: u8,
     pub use_simple: bool,
-    pub scouting_kind: u8,
 }
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]
 pub struct ChangeBuilding {
@@ -203,7 +202,8 @@ pub trait IBuildingCommands<T> {
 
 pub fn produced_resource(category: u8) -> u8 {
     match category {
-        1 | 2 | 41 | 42 | 43 | 44 => 0,
+        1 | 2 | 41 | 42 | 44 => 0,
+        43 => 32,
         39 => 38,
         40 => 57,
         _ => {

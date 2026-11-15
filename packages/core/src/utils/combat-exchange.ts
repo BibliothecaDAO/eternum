@@ -1,6 +1,6 @@
 import { bonusActive } from "./relic";
 import { BiomeType, RESOURCE_PRECISION, type Troops } from "@bibliothecadao/types";
-import type { NativeRows } from "../../../../contracts/l3/world-native/schema/client.gen";
+import { nativeRuleConstants, type NativeRows } from "../../../../contracts/l3/world-native/schema/client.gen";
 import { staminaAt } from "../managers/troop-stamina";
 import {
   add,
@@ -199,6 +199,10 @@ const exchangeDamage = (
     defenderDamage,
     incomingMultiplier(attacker, context.attackerIsStructureGuard, rules.dayUnitSeconds),
   );
+  if (rules.dayUnitSeconds !== 0) {
+    if (attacker.category === "Paladin") attackerDamage = mul(attackerDamage, percent(nativeRuleConstants.SCOUT_DAMAGE_PERCENT));
+    if (defender.category === "Paladin") defenderDamage = mul(defenderDamage, percent(nativeRuleConstants.SCOUT_DAMAGE_PERCENT));
+  }
   if (context.attackDistance > 1) defenderDamage = ZERO;
 
   const attackerBoosts = activeBoosts(attacker, context.timestamp);

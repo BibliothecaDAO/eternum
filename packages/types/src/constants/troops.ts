@@ -1,4 +1,10 @@
 import { TroopType } from "../types/common";
+export const FRONTIER_TROOP_NAMES = {
+  [TroopType.Knight]: "Knights",
+  [TroopType.Paladin]: "Scouts",
+  [TroopType.Crossbowman]: "Crossbowmen",
+} satisfies Record<TroopType, string>;
+
 const DEFAULT_TROOP_ATTACK_RANGE = 1;
 const RANGED_TROOP_ATTACK_RANGE = 2;
 export const CROSSBOWMAN_RANGED_FIELD_DAMAGE_MULTIPLIER = 0.7;

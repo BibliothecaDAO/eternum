@@ -20,6 +20,7 @@ export type { AttributeKey, ScoutKind } from "../progression-choices";
 
 /** What the detail reads of an army and its game. */
 export interface ArmyDetailFacts {
+  category: NativeRows["ExplorerTroops"]["troops"]["category"];
   learned: bigint;
   name: string;
   art: IconMeaning;
@@ -78,7 +79,7 @@ export const ATTRIBUTE_LIST = pointChoices
 export const attributeMark = (key: AttributeKey): IconMeaning => ATTRIBUTE_LIST.find((row) => row.key === key)!.mark;
 
 export const readArmyDetail = (army: ArmyDetailFacts): ArmyView => {
-  const attributes = ATTRIBUTE_LIST.map(({ key, mark, name }): AttributeView => {
+  const attributes = ATTRIBUTE_LIST.filter(({ key }) => key !== "scouting" || army.category === "Paladin").map(({ key, mark, name }): AttributeView => {
     const level = army.progress[key];
     const point = SKILL_POINT_RANKS.find((rank) => rank >= level + 1 && army.points[rank - 1]! > 0);
     const figure = (at: number) =>

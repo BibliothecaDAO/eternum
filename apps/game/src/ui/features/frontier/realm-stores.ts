@@ -7,7 +7,7 @@ import { type ExpeditionRules, getBalance, ResourceManager } from "@bibliothecad
 import { safeInteger, type NativeFactStore, type NativeRows } from "@bibliothecadao/eternum/game-client";
 import { RESOURCE_PRECISION, type ResourcesIds } from "@bibliothecadao/types";
 
-import { troopsAtHome } from "./frontier-home";
+import { stocksAtNextDeploy } from "./frontier-home";
 import { realmPerHour, secondsUntilHeld } from "./hud/army-order";
 import { FRONTIER_STORES, STORE_KINDS, type StoreKind } from "./stores";
 
@@ -39,11 +39,10 @@ export const readRealmStore = (
   kind: StoreKind,
   clock: { now: number },
 ): RealmStore => {
-  // The one troop type's stock: the barracks train it, and its limit is every troop stock's.
   const stock = FRONTIER_STORES[kind].resource;
   const amount =
-    kind === "troops"
-      ? troopsAtHome(store, realm, clock.now, clock.now)
+    kind === "troops" || kind === "scouts"
+      ? troopStockAtHome(store, realm, stock, clock.now)
       : wholeBalance(store, safeInteger(realm.entity_id), stock, clock.now);
   const rawLimit = new ResourceManager(store, safeInteger(realm.entity_id), realm.game_id).storeLimit(stock);
   const limit = rawLimit === undefined ? undefined : Number(rawLimit / BigInt(RESOURCE_PRECISION));
@@ -51,6 +50,11 @@ export const readRealmStore = (
   const fullIn = secondsUntilFull(amount, limit, perHour);
   const nextIn = secondsUntilNextUnit(store, safeInteger(realm.entity_id), stock, clock.now, perHour);
   return { amount, limit, perHour, nextIn, fullIn, tone: storeTone(fullIn) };
+};
+
+const troopStockAtHome = (store: NativeFactStore, realm: NativeRows["Structure"], resource: ResourcesIds, now: number) => {
+  const stock = stocksAtNextDeploy(store, realm, now, now)?.get(resource);
+  return stock && stock.held + stock.fits;
 };
 
 const wholeBalance = (store: NativeFactStore, realmId: number, resourceId: ResourcesIds, tick: number) => {

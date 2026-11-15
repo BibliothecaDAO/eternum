@@ -46,6 +46,7 @@ pub const FARM: u8 = 37;
 pub const WAR_HALL: u8 = 41;
 pub const SUPPLY_YARD: u8 = 42;
 pub const SCOUTS_LODGE: u8 = 43;
+pub const SCOUTS_LODGE_LEVEL: u8 = 1;
 pub const HEARTH: u8 = 44;
 
 // A tier's price at the castle. Building rows charge Essence and labor; castle rows charge Essence only.
@@ -89,7 +90,7 @@ pub fn row_category(row: u8) -> u8 {
 }
 
 pub fn is_training(category: u8) -> bool {
-    category >= WAR_HALL && category <= HEARTH
+    category == WAR_HALL || category == SUPPLY_YARD || category == HEARTH
 }
 
 pub fn max_tier(row: u8) -> u8 {

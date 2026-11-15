@@ -110,7 +110,7 @@ export const DefenseSlotSelection = ({
                         {guardCountLabel}
                       </span>
                     </div>
-                    <GuardStaminaBar current={guardStaminaCurrent} max={guardStaminaMax} />
+                    {guardCategory && <GuardStaminaBar category={guardCategory} current={guardStaminaCurrent} max={guardStaminaMax} />}
                   </div>
                 ) : cooldownSeconds > 0 ? (
                   <GuardCooldownBadge seconds={cooldownSeconds} />

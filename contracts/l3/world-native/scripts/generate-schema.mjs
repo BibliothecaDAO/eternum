@@ -454,8 +454,13 @@ function storyVariants() {
   if (!story?.variants) throw new Error("No Story enum in the contract ABIs");
   return story.variants.map(({ name }) => name);
 }
+const troopType = schema.types["world_native::troops::TroopType"];
+if (!troopType?.variants?.every(({ type }) => type === "()")) throw new Error("Missing unit troop categories");
+const troopTypes = Object.fromEntries(troopType.variants.map(({ name }) => [name, name]));
+
 const declarations = [
   "// Generated from native fact models and contract ABIs. Run the native schema generator to update.",
+  `export const NativeTroopType = ${JSON.stringify(troopTypes, null, 2)} as const;`,
   `export const nativeFactSchemaIdentity = ${JSON.stringify(schema.identity)};`,
   `export const nativeReleaseConstants = ${JSON.stringify(releaseConstants, null, 2)} as const;`,
   `export const nativeRuleConstants = ${JSON.stringify(ruleConstants, null, 2)} as const;`,

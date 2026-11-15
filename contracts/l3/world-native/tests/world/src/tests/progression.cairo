@@ -126,7 +126,7 @@ fn each_scouting_rank_preserves_its_choice_including_the_fifth() {
     }
     assert_eq!(progress.scouting, 5);
     assert_eq!(progress.scouting_kinds, 2 + 4 + 2 * 16 + 3 * 64 + 2 * 256);
-    assert_eq!(crate::progression::scouting_bonus(progress), (1500, 6000, 2500));
+    assert_eq!(crate::progression::scouting_bonus(progress), (500, 2000, 500));
     for kind in array![ScoutingKind::Camp, ScoutingKind::Rift, ScoutingKind::Sanctuaries] {
         let mut all = crate::progression::initial();
         crate::progression::earn_xp(ref all, rules(), 1500);
@@ -134,9 +134,9 @@ fn each_scouting_rank_preserves_its_choice_including_the_fifth() {
             crate::progression::spend_skill_point(ref all, scout(kind));
         }
         let expected = match kind {
-            ScoutingKind::Camp => (10000, 0, 0),
-            ScoutingKind::Rift => (0, 10000, 0),
-            ScoutingKind::Sanctuaries => (0, 0, 10000),
+            ScoutingKind::Camp => (3000, 0, 0),
+            ScoutingKind::Rift => (0, 3000, 0),
+            ScoutingKind::Sanctuaries => (0, 0, 3000),
         };
         assert_eq!(crate::progression::scouting_bonus(all), expected);
     }
@@ -257,7 +257,7 @@ fn zero_rank_progress_exists_and_destroying_it_removes_its_points() {
             assert_eq!(crate::logic::progression::require(key).common_points, 1);
             crate::logic::progression::destroy(key);
             assert!(crate::logic::progression::read(key).is_none());
-            let recreated = crate::logic::progression::create(key, 0);
+            let recreated = crate::logic::progression::create(key, 0, crate::troops::TroopType::Knight);
             assert_eq!(recreated, crate::progression::initial());
             assert_eq!(crate::logic::progression::read(key), Some(recreated));
         },
@@ -467,7 +467,9 @@ fn trained_scouting_carries_every_choice_from_the_lodge() {
     ] {
         learned = crate::research::learn(learned, crate::research::ROW_SCOUTS_LODGE, kind);
     }
-    let progress = crate::progression::trained(learned);
+    let progress = crate::progression::trained(learned, crate::troops::TroopType::Paladin);
+    let knight = crate::progression::trained(learned, crate::troops::TroopType::Knight);
+    assert_eq!((knight.scouting, knight.scouting_kinds), (0, 0));
     assert_eq!(progress.scouting, 5);
     assert_eq!(progress.scouting_kinds, 2 + 4 + 3 * 16 + 2 * 64 + 3 * 256);
     assert_eq!(progress.xp, 0);
@@ -570,6 +572,9 @@ fn sanctuary_points_require_either_research_and_spend_once(row: u8) {
     let d = super::registrar::setup();
     let (game_id, _, category) = super::registrar::expedition_home(d);
     let (key, _) = super::registrar::expedition_armies(d, game_id, category);
+    let mut army = super::state::GameState { contract_address: d.games }.resolved_explorer(key).unwrap();
+    army.troops.category = crate::troops::TroopType::Paladin;
+    super::resource_commands::set_explorer_fixture(d.games, key, army);
     let progress = ArmyProgress { common_points: 1, ..crate::progression::initial() };
     write_progress(d, key, progress);
     let choice = SkillPointUse::Scouting(ScoutingKind::Sanctuaries);
@@ -614,4 +619,28 @@ fn sanctuary_spending_records_a_new_history_discriminant() {
         old.choice,
         crate::progression::RecordedSkillPointUse::Scouting(crate::progression::RecordedScoutingKind::Beasts),
     );
+}
+
+#[test]
+fn a_scout_reveals_for_ten_stamina_and_a_knight_cannot_buy_scouting() {
+    let discovery = crate::expeditions::FrontierDiscoveryRules {
+        camp_bps: 5000, rift_bps: 0, ruin_bps: 0, beasts_bps: 0, shrine_bps: 0, well_bps: 0, empty_reveal_limit: 7,
+    };
+    let (d, game_id, key) = super::registrar::setup_frontier_relics_with_rules(Some(discovery));
+    let held = ArmyProgress { common_points: 1, ..crate::progression::initial() };
+    write_progress(d, key, held);
+    assert!(!execute_spend(d, key, SkillPointUse::Scouting(ScoutingKind::Camp)));
+    assert_eq!(read_progress(d, key), held);
+    let mut army = super::state::GameState { contract_address: d.games }.resolved_explorer(key).unwrap();
+    army.troops.category = crate::troops::TroopType::Paladin;
+    super::resource_commands::set_explorer_fixture(d.games, key, army);
+    place_army_at_depth(d, key, 0);
+    set_bar(d, key, 10, 360);
+    let target = exploration_destination(d, key);
+    let root = super::registrar::discovery_root(game_id, discovery, 100, 0, None, crate::discovery::Discovery::Camp);
+    explore(d, key, root, 360);
+    assert_eq!(bar(d, key, game_id), 0);
+    assert_eq!(read_progress(d, key).xp, 2);
+    let map = crate::map::IMapLogicDispatcher { contract_address: d.games };
+    assert!(map.tile(crate::geometry::tile_key(game_id, target)).is_some());
 }

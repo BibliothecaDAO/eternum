@@ -1,5 +1,5 @@
 import type { IconMeaning } from "@/ui/design-system/icon";
-import { formatExact, formatWait } from "@bibliothecadao/types";
+import { type TroopType, formatExact, formatWait } from "@bibliothecadao/types";
 import {
   HudButton,
   HudCost,
@@ -45,6 +45,9 @@ import { slotStartLine } from "./slot-start";
  * most, 1 November). Below the most, its price in the foot is all that names the wheat.
  */
 export const DeployView = ({
+  troopChoices = [],
+  selectedTroop,
+  onTroop,
   art,
   troopsAtHome,
   count,
@@ -62,6 +65,9 @@ export const DeployView = ({
   onGoToRealm,
   onClose,
 }: {
+  troopChoices?: { category: TroopType; name: string; art: IconMeaning }[];
+  selectedTroop?: TroopType;
+  onTroop?: (category: TroopType) => void;
   art: IconMeaning | undefined;
   troopsAtHome: number | undefined;
   count: number | undefined;
@@ -90,6 +96,15 @@ export const DeployView = ({
   onClose: () => void;
 }) => (
   <HudSheet label={DEPLOY} onClose={onClose}>
+    {troopChoices.length > 1 && (
+      <div role="group" aria-label="Troop type" className="flex gap-2">
+        {troopChoices.map(({ category, name, art }) => (
+          <HudButton kind="secondary" key={category} icon={art} aria-pressed={selectedTroop === category} onClick={() => onTroop?.(category)}>
+            {name}
+          </HudButton>
+        ))}
+      </div>
+    )}
     <HudTroopAmount
       name={TROOPS}
       art={art}

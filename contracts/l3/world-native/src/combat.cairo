@@ -311,6 +311,14 @@ pub impl TroopsImpl of TroopsTrait {
             ._incoming_damage_multiplier(context.defender_is_structure_guard, context.day_unit_seconds);
         BRAVO_DAMAGE_DEALT *= alpha
             ._incoming_damage_multiplier(context.attacker_is_structure_guard, context.day_unit_seconds);
+        if context.day_unit_seconds != 0 {
+            if alpha.category == TroopType::Paladin {
+                ALPHA_DAMAGE_DEALT *= Self::_combat_percent_multiplier(crate::rules::SCOUT_DAMAGE_PERCENT.into());
+            }
+            if bravo.category == TroopType::Paladin {
+                BRAVO_DAMAGE_DEALT *= Self::_combat_percent_multiplier(crate::rules::SCOUT_DAMAGE_PERCENT.into());
+            }
+        }
         if is_ranged_attack {
             BRAVO_DAMAGE_DEALT = FixedTrait::ZERO();
         }

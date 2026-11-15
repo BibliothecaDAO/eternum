@@ -168,7 +168,6 @@ fn claim(d: Deployment, home: ResourceKey, day: u64, timestamp: u64) -> bool {
 fn build(d: Deployment, home: ResourceKey, category: u8, direction: u8, timestamp: u64) {
     let command = Command::CreateBuilding(
         crate::buildings::CreateBuilding {
-            scouting_kind: 0,
             structure_id: home.entity_id,
             directions: array![direction].span(),
             category,

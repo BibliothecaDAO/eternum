@@ -147,7 +147,7 @@ const GuardStack = ({ guard, troopCount }: { guard: DefenseTroop; troopCount: nu
         />
       </div>
       <span className="text-hud-label text-hud-accent tabular-nums">{formatAmount(knownAmount(troopCount))}</span>
-      <GuardStaminaBar current={stamina?.current} max={stamina?.max} />
+      <GuardStaminaBar category={guard.troops.category} current={stamina?.current} max={stamina?.max} />
     </div>
   );
 };

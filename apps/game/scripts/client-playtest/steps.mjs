@@ -750,12 +750,17 @@ const boxAround = (regions) => {
  * A new army deployed (the lab's actions game): the dock's Deploy slot, the sheet's Max, then its Deploy; the result is
  * the army the chain created drawn on the map, beside the realm.
  */
+const SCOUT_DEPLOY_STEPS = [
+  { name: "enter-on-map", settleMs: 3_000, verify: inScene("map") },
+  clickToResultStep("deploy-scouts", "CreateExplorer", (context) => deployFromTheDock(context, 400, "Scouts"), scoutsDeployed),
+];
+
 const DEPLOY_ACTION_STEPS = [
   { name: "enter-on-map", settleMs: 3_000, verify: inScene("map") },
   clickToResultStep("deploy", "CreateExplorer", deployFromTheDock, armyDeployed),
 ];
 
-async function deployFromTheDock({ browser }, amount) {
+async function deployFromTheDock({ browser }, amount, troopName) {
   const before = Object.keys(browser.read(ARMY_TILES));
   browser.click("Deploy");
   const sheet = await readUntil(
@@ -764,6 +769,7 @@ async function deployFromTheDock({ browser }, amount) {
     SHEET_WAIT_MS,
   );
   if (sheet !== "Deploy") return { sheet };
+  if (troopName) browser.click(troopName);
   if (amount === undefined) browser.click("Max");
   else browser.run(["fill", '[data-kit-sheet] input[aria-label="Troops"]', String(amount)]);
   const deploy = await readUntil(() => browser.read(sheetButton("^Deploy$")), Boolean, SHEET_WAIT_MS);
@@ -774,6 +780,18 @@ async function deployFromTheDock({ browser }, amount) {
     return arrived ? armyRegion(arrived[1]) : null;
   };
   return { sheet, before, locate };
+}
+
+function scoutsDeployed(context) {
+  const answer = (context.actionLatency.chainAnswers ?? []).filter(({ kind }) => kind === "CreateExplorer").at(-1);
+  if (!answer) return undefined;
+  const army = answer.answered.find(({ model }) => model === "ExplorerTroops")?.value;
+  const balances = answer.answered.filter(({ model }) => model === "ResourceBalance").map(({ value }) => value);
+  const balance = (resource) => balances.find(({ resource_type }) => Number(resource_type) === resource)?.balance;
+  if (army?.troops.category !== "Paladin" || BigInt(army.troops.count) !== 400_000_000_000n ||
+      BigInt(balance(32) ?? -1) !== 200_000_000_000n || BigInt(balance(35) ?? -1) !== 200_000_000_000n ||
+      balance(26) !== undefined) throw new Error("Scout deployment changed the wrong troops or price");
+  return armyDeployed(context);
 }
 
 /** The army the lab's chain created for the step's CreateExplorer, drawn on the map. */
@@ -5787,6 +5805,7 @@ export const STEP_SETS = {
   "lab-actions-merge": { game: labSpireGame("merge-loses-xp"), steps: mergeActionSteps() },
   "lab-economy": { game: { ...labSpireGame("economy"), mode: "blitz" }, steps: ECONOMY_STEPS },
   "lab-actions-transfer": { game: labSpireGame("merge-loses-xp"), steps: transferActionSteps() },
+  "lab-scouts": { game: labSpireGame("scouts"), steps: SCOUT_DEPLOY_STEPS },
   "lab-actions-deploy": { game: labSpireGame("actions"), steps: DEPLOY_ACTION_STEPS },
   "lab-actions-research": { game: labSpireGame("research"), steps: RESEARCH_ACTION_STEPS },
   "lab-daily-quest": { game: labSpireGame("quest"), steps: DAILY_QUEST_STEPS },

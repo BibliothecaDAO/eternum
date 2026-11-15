@@ -36,7 +36,6 @@ const FRONTIER_BUILDINGS = Object.values(researchRowCategory) as BuildingType[];
 const TRAINS: Partial<Record<BuildingType, "Battle" | "Logistics" | "Scouting" | "Homecoming">> = {
   [BuildingType.WarHall]: "Battle",
   [BuildingType.SupplyYard]: "Logistics",
-  [BuildingType.ScoutsLodge]: "Scouting",
   [BuildingType.Hearth]: "Homecoming",
 };
 
@@ -65,7 +64,7 @@ export interface BuildOption {
    * Whether it can rise now: a training building is unique on the board and opens when purchases across both
    * Barracks sides reach the board's gate (the contract's assert_board_category).
    */
-  standing: "open" | "built" | { gate: number; bought: number };
+  standing: "open" | "built" | { gate: number; bought: number } | { level: number };
   /** What it adds to the realm's wheat an hour, and the realm's wheat an hour once it stands (unknown while that is). */
   wheat: { change: number; after: number | undefined };
 }
@@ -99,7 +98,9 @@ export const readBuildOptions = (
       rise: buildingCostRise(safeInteger(realm.entity_id), category, store),
       effect,
       populationCost: rule.population_cost,
-      standing: !TRAINS[category]
+      standing: category === BuildingType.ScoutsLodge && realm.base.level < nativeResearchConstants.SCOUTS_LODGE_LEVEL
+        ? { level: nativeResearchConstants.SCOUTS_LODGE_LEVEL }
+        : !TRAINS[category]
         ? "open"
         : getBuildingQuantity(safeInteger(realm.entity_id), category, store) > 0
           ? "built"

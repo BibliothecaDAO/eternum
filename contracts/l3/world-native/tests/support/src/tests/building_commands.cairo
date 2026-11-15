@@ -114,7 +114,7 @@ pub fn building_world(board: Option<crate::buildings::BoardRules>) -> (super::De
 pub fn create(home: ResourceKey, category: u8) -> Command {
     Command::CreateBuilding(
         CreateBuilding {
-            scouting_kind: 0, structure_id: home.entity_id, directions: array![0_u8].span(), category, use_simple: true,
+            structure_id: home.entity_id, directions: array![0_u8].span(), category, use_simple: true,
         },
     )
 }
@@ -270,7 +270,7 @@ pub /// A board realm with its castle, every command open, room for many buildin
     for rule in preset.resources.resources {
         resources
             .append(
-                if *rule.resource_type == 26 || *rule.resource_type == 35 {
+                if *rule.resource_type == 26 || *rule.resource_type == 32 || *rule.resource_type == 35 {
                     crate::resources::ResourceRule { realm_rate: 40, ..*rule }
                 } else {
                     *rule
@@ -301,7 +301,6 @@ pub fn research(home: ResourceKey, row: u8, choice: u8) -> Command {
 pub fn build_toward(home: ResourceKey, category: u8, direction: u8) -> Command {
     Command::CreateBuilding(
         CreateBuilding {
-            scouting_kind: 0,
             structure_id: home.entity_id,
             directions: array![direction].span(),
             category,

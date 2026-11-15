@@ -183,7 +183,7 @@ const variants = (name: string) =>
 
 it("offers and submits every skill-point use and Scouting kind in the generated command catalog", () => {
   const spent = vi.fn();
-  const army = readArmyDetail({ ...VETERAN_ARMY, points: [1, 1, 1, 1, 1] });
+  const army = readArmyDetail({ ...VETERAN_ARMY, category: "Paladin", points: [1, 1, 1, 1, 1] });
   act(() => root.render(<Detail army={army} sending={false} choosing onLevelUp={spent} />));
   const uses = variants("SkillPointUse");
   expect([...host.querySelectorAll("[data-attribute]")].map((button) => button.getAttribute("data-attribute"))).toEqual(
@@ -224,7 +224,7 @@ it.each([0n, learnResearch(0n, research.ROW_SHRINE, 0), learnResearch(0n, resear
   "offers Sanctuaries only after either site unlock and submits its command (%s)",
   (learned) => {
     const spent = vi.fn();
-    const army = readArmyDetail({ ...EARLY_ARMY, learned, points: [1, 0, 0, 0, 0] });
+    const army = readArmyDetail({ ...EARLY_ARMY, category: "Paladin", learned, points: [1, 0, 0, 0, 0] });
     act(() => root.render(<Detail army={army} sending={false} choosing onLevelUp={spent} />));
     act(() => host.querySelector<HTMLButtonElement>('[data-attribute="scouting"]')!.click());
     expect(host.querySelector('[data-scout-kind="beasts"]')).toBeNull();
@@ -239,3 +239,8 @@ it.each([0n, learnResearch(0n, research.ROW_SHRINE, 0), learnResearch(0n, resear
     expect(spent).toHaveBeenCalledWith({ kind: "Scouting", value: { kind: "Sanctuaries", value: undefined } });
   },
 );
+
+it("does not offer Scouting to a Knight", () => {
+  const army = readArmyDetail({ ...EARLY_ARMY, points: [1, 0, 0, 0, 0] });
+  expect(army.attributes.map(({ key }) => key)).toEqual(["battle", "logistics", "homecoming"]);
+});

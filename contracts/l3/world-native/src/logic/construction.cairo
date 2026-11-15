@@ -123,13 +123,6 @@ pub mod ConstructionLogic {
             let location = crate::logic::buildings::building_key(key, coord);
             let rule = self.buildings.rule(crate::buildings::BuildingRuleKey { game_id, category: command.category });
             let board = self.buildings.board(game_id);
-            assert!(
-                command.scouting_kind == 0
-                    || (board.is_some()
-                        && command.category == crate::research::SCOUTS_LODGE
-                        && command.scouting_kind < 3),
-                "invalid construction scouting kind",
-            );
             if let Some(board) = board {
                 self.assert_board_category(key, command.category, board);
             }
@@ -164,7 +157,7 @@ pub mod ConstructionLogic {
             if board.is_some() {
                 let building = self.buildings.building(location).unwrap();
                 self.buildings.write_building(location, Building { labor_paid, ..building });
-                self.grant_training_start(key, command.category, command.scouting_kind);
+                self.grant_training_start(key, command.category);
             }
             ()
         }
@@ -441,7 +434,7 @@ pub mod ConstructionLogic {
             let resources = self.data.structures.structures.entry((key.game_id, key.entity_id)).resources_packed.read();
             assert!(crate::buildings::can_produce(category, resources), "structure cannot produce building resource");
         }
-        fn grant_training_start(ref self: ContractState, key: ResourceKey, category: u8, scouting_kind: u8) {
+        fn grant_training_start(ref self: ContractState, key: ResourceKey, category: u8) {
             if !crate::research::is_training(category) {
                 return;
             }
@@ -450,13 +443,8 @@ pub mod ConstructionLogic {
             if crate::research::tier(before, row) != 0 {
                 return;
             }
-            let choice = if category == crate::research::SCOUTS_LODGE {
-                scouting_kind
-            } else {
-                0
-            };
             crate::logic::research::write(
-                key, crate::research::RealmKnowledge { learned: crate::research::learn(before, row, choice) },
+                key, crate::research::RealmKnowledge { learned: crate::research::learn(before, row, 0) },
             );
         }
 
@@ -464,6 +452,12 @@ pub mod ConstructionLogic {
         fn assert_board_category(
             self: @ContractState, key: ResourceKey, category: u8, board: crate::buildings::BoardRules,
         ) {
+            if category == crate::research::SCOUTS_LODGE {
+                assert!(
+                    self.data.structures.structures.entry((key.game_id, key.entity_id)).base.read().level >= crate::research::SCOUTS_LODGE_LEVEL,
+                    "Scouts Lodge needs City",
+                );
+            }
             if !crate::research::is_training(category) {
                 return;
             }

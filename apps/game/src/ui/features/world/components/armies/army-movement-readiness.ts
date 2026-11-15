@@ -113,7 +113,7 @@ export const readArmyMovementReadiness = ({
   return deriveArmyMovementReadiness({
     currentStamina: Number(StaminaManager.getStamina(troops, currentDefaultTick).amount),
     minTravelStamina: resolveCheapestNeighborTravelStamina(army, store),
-    minExploreStamina: configManager.getExploreStaminaCost(),
+    minExploreStamina: configManager.getExploreStaminaCost(troops.category),
     travelFoodCosts: movementFoodCosts.travel,
     exploreFoodCosts: movementFoodCosts.explore,
     food: resolveStructureFoodBalance(structureResources, currentDefaultTick),
