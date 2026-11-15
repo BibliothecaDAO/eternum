@@ -1,5 +1,10 @@
 // Generated from native fact models and contract ABIs. Run the native schema generator to update.
-export const nativeFactSchemaIdentity = "06f0595ed0248eb30779f5f9309d4001d4bda1983ea45ced8d6cd4fbdc5ce39b";
+export const NativeTroopType = {
+  "Knight": "Knight",
+  "Paladin": "Paladin",
+  "Crossbowman": "Crossbowman"
+} as const;
+export const nativeFactSchemaIdentity = "8335062023160a37579d5ffd113eac2f33657940fad7964f6887dc075cd4795c";
 export const nativeReleaseConstants = {
   "RUIN_DEPTH_LIMIT_RELEASE": 9
 } as const;
@@ -16,6 +21,8 @@ export const nativeRuleConstants = {
   "SHRINE_EPIC_BPS": 400,
   "SHRINE_LEGENDARY_BPS": 100,
   "ATTRIBUTE_CAP": 5,
+  "SCOUT_EXPLORE_STAMINA": 10,
+  "SCOUT_DAMAGE_PERCENT": 75,
   "SKILL_POINT_REFILL_BASE": 10,
   "SKILL_POINT_REFILL_STEP": 10,
   "BATTLE_COMMON_BPS": 1000,
@@ -130,6 +137,7 @@ export const nativeResearchConstants = {
   "WAR_HALL": 41,
   "SUPPLY_YARD": 42,
   "SCOUTS_LODGE": 43,
+  "SCOUTS_LODGE_LEVEL": 1,
   "HEARTH": 44
 } as const;
 /** Structure categories named in src/taxonomy.cairo. */

@@ -12,6 +12,8 @@
     "SHRINE_EPIC_BPS": 400,
     "SHRINE_LEGENDARY_BPS": 100,
     "ATTRIBUTE_CAP": 5,
+    "SCOUT_EXPLORE_STAMINA": 10,
+    "SCOUT_DAMAGE_PERCENT": 75,
     "SKILL_POINT_REFILL_BASE": 10,
     "SKILL_POINT_REFILL_STEP": 10,
     "BATTLE_COMMON_BPS": 1000,
@@ -123,6 +125,7 @@
     "WAR_HALL": 41,
     "SUPPLY_YARD": 42,
     "SCOUTS_LODGE": 43,
+    "SCOUTS_LODGE_LEVEL": 1,
     "HEARTH": 44
   },
   "tileOccupierConstants": {
@@ -9371,10 +9374,6 @@
         {
           "name": "use_simple",
           "type": "core::bool"
-        },
-        {
-          "name": "scouting_kind",
-          "type": "core::integer::u8"
         }
       ]
     },
@@ -14483,5 +14482,5 @@
       ]
     }
   },
-  "identity": "06f0595ed0248eb30779f5f9309d4001d4bda1983ea45ced8d6cd4fbdc5ce39b"
+  "identity": "8335062023160a37579d5ffd113eac2f33657940fad7964f6887dc075cd4795c"
 }
