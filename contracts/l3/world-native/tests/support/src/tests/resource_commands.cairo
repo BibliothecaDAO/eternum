@@ -209,16 +209,21 @@ pub fn explorer_fixture(deployment: Deployment, id: u64, owner: u64, coord: Coor
     key
 }
 pub fn grant(deployment: Deployment, key: ResourceKey, resource_type: u8, amount: u128) {
+    let resources = IResourceOperationsDispatcher { contract_address: deployment.games };
+    let timestamp = resources
+        .resource_production(ResourceSlot { game_id: key.game_id, entity_id: key.entity_id, resource_type })
+        .last_settled_at
+        .into();
     start_cheat_caller_address(deployment.games, deployment.games);
-    IResourceOperationsDispatcher { contract_address: deployment.games }
+    resources
         .grant_resource(
             key,
             resource_type,
             amount,
-            30,
+            timestamp,
             crate::commands::resource_context(
                 crate::commands::ExecutionContext {
-                    timestamp: 30, ..crate::tests::context(deployment.games, (key).game_id),
+                    timestamp, ..crate::tests::context(deployment.games, key.game_id),
                 },
             ),
         );

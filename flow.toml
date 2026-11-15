@@ -339,5 +339,5 @@ cmd = "bash contracts/l3/test-native.sh --package world_tests_lifecycle* ::tests
 estimate_gb = 9
 
 [kind.test-ruin-effects]
-cmd = "SNFORGE_BACKTRACE=1 bash contracts/l3/test-native.sh --package world_tests_lifecycle* far_eye_discovers_pays_and_grants_xp_for_each_new_tile_only_once && SNFORGE_BACKTRACE=1 bash contracts/l3/test-native.sh --package world_tests_lifecycle* spoils_doubles_numeric_clears_and_records_xp_but_keeps_ruin_relics"
+cmd = "SNFORGE_BACKTRACE=1 bash contracts/l3/test-native.sh --package world_tests_resources* fixture_grants_preserve_the_existing_production_clock && SNFORGE_BACKTRACE=1 bash contracts/l3/test-native.sh --package world_tests_lifecycle* far_eye_discovers_pays_and_grants_xp_for_each_new_tile_only_once && SNFORGE_BACKTRACE=1 bash contracts/l3/test-native.sh --package world_tests_lifecycle* spoils_doubles_numeric_clears_and_records_xp_but_keeps_ruin_relics"
 estimate_gb = 9
