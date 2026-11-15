@@ -5011,6 +5011,8 @@ const DISMISSED_AT_EXPRESSION = `JSON.stringify(
  * fails a command that is neither.
  */
 export const UNMEASURED_COMMANDS = {
+  Battle: "Deep army combat has native and client regressions, but desktop and phone click timing baselines are not recorded",
+  ClaimDailyQuest: "lab-daily-quest checks collection on desktop and phone; click timing baselines are not recorded",
   ApplyRelic: "army relic activation has a control, but its desktop and phone timing baselines are not recorded",
   MarkGameSettled:
     "sent by the value relay's operator once a season's game has ended (apps/value-relay), never by a player",
