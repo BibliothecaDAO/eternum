@@ -92,10 +92,14 @@ function exchange(store: NativeFactStore, explorerId: bigint, now: number): LabF
       key: store.wireKeyOf("Guard", guardKey)!,
       value: wire({ ...guard, troops: { ...guard.troops, count: next.defender * PRECISION } }),
     },
-    {
-      model: "ArmyCombat",
-      key: store.wireKeyOf("ArmyCombat", key)!,
-      value: wire({ ...combat, last_target: BigInt(SITE) }),
-    },
+    ...(combat.last_target === BigInt(SITE)
+      ? []
+      : [
+          {
+            model: "ArmyCombat",
+            key: store.wireKeyOf("ArmyCombat", key)!,
+            value: wire({ ...combat, last_target: BigInt(SITE) }),
+          },
+        ]),
   ];
 }

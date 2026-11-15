@@ -448,13 +448,16 @@ const CHARGE_STEPS = [
       const army = rows.find(({ model }) => model === "ExplorerTroops")?.value;
       const guard = rows.find(({ model }) => model === "Guard")?.value;
       const combat = rows.find(({ model }) => model === "ArmyCombat")?.value;
+      const openingRecorded =
+        name === "opening-charge"
+          ? combat && guard && BigInt(combat.last_target) === BigInt(guard.structure_id)
+          : combat === undefined;
       return played.watching &&
         army &&
         guard &&
-        combat &&
+        openingRecorded &&
         BigInt(army.troops.count) === BigInt(attacker) * 1_000_000_000n &&
         BigInt(guard.troops.count) === BigInt(defender) * 1_000_000_000n &&
-        BigInt(combat.last_target) === BigInt(guard.structure_id) &&
         played.forecast?.some((label) => label.includes(`→ ${attacker},`)) &&
         played.forecast?.some((label) => label.includes(`→ ${defender},`))
         ? { watch: "fought" }
