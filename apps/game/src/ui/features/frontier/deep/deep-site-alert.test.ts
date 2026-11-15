@@ -63,6 +63,11 @@ it("does not offer allied sites, beasts, a realm without lore, or an army alread
   const noLore = fixture();
   noLore.change("RealmKnowledge", { game_id: 1, structure_id: BigInt(noLore.owner.home) }, { learned: 0n });
   expect(noLore.plan()).toEqual([]);
+  for (const depth of [1n, 2n]) {
+    const shallow = fixture();
+    shallow.change("RealmKnowledge", { game_id: 1, structure_id: BigInt(shallow.owner.home) }, { learned: depth << 48n });
+    expect(shallow.plan()).toEqual([]);
+  }
   const entered = fixture();
   entered.store.applyFacts([{ model: "DeepArmy", key: "0xa001", value: { game_id: 1, explorer_id: 201, last_tick: 0 } }]);
   expect(entered.plan()).toEqual([]);

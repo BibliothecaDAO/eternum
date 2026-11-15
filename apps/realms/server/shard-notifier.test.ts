@@ -534,7 +534,7 @@ function siteSnapshot(base: HeraldGameSnapshot, site: { troops: number; aspect: 
   put("ArmyProgress", [armyProgressRow(ARMY, HOME), armyProgressRow(NEIGHBOUR_ARMY, NEIGHBOUR_HOME)]);
   put("ArmyDay", [ARMY, NEIGHBOUR_ARMY].map((explorer_id) => row(explorer_id, { explorer_id, day: TODAY })));
   put("HomeAspect", [row(HOME, { home: HOME, aspect: 1 }), row(NEIGHBOUR_HOME, { home: NEIGHBOUR_HOME, aspect: site.aspect })]);
-  put("RealmKnowledge", [row(HOME, { structure_id: HOME, learned: site.lore ? String(1n << 48n) : "0" })]);
+  put("RealmKnowledge", [row(HOME, { structure_id: HOME, learned: site.lore ? String(3n << 48n) : "0" })]);
   const offsets = { foundation: { alt: false, x: 10, y: 25 }, quarry: { alt: false, x: 25, y: 25 }, altar: { alt: false, x: 40, y: 25 } };
   put("DeepRules", [row(1, { ...offsets, beast_count: 10000 * RESOURCE_PRECISION, loss_per_tick: 200 * RESOURCE_PRECISION, quarry_per_tick: 500 * RESOURCE_PRECISION, altar_per_tick: 5, altar_threshold: 1500 })]);
   put("DeepSite", deepSites.map((kind) => row(800 + kind.id, { entity_id: 800 + kind.id, kind: kind.id, day: TODAY })));

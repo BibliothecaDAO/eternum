@@ -1,4 +1,5 @@
-import { deepCenter, nativeRuleConstants, type NativeRows } from "@bibliothecadao/eternum/game-client";
+import { learnResearch } from "@bibliothecadao/eternum";
+import { deepCenter, nativeRuleConstants, nativeResearchConstants, type NativeRows } from "@bibliothecadao/eternum/game-client";
 import { deepSites, RESOURCE_PRECISION, TileOccupier } from "@bibliothecadao/types";
 import { SPIRE_ARMY } from "@/ui/features/frontier/spire-fixture";
 import { type LabFact, type LabScenario, wire } from "./lab-chain";
@@ -98,6 +99,8 @@ export const deepScenario = (): LabScenario => {
       },
     );
   }
+  const knowledge = store.require("RealmKnowledge", { game_id: 1, structure_id: army.owner });
+  facts.push({ model: "RealmKnowledge", key: store.wireKeyOf("RealmKnowledge", knowledge)!, value: wire({ ...knowledge, learned: learnResearch(knowledge.learned, nativeResearchConstants.ROW_DEPTH, 0) }) });
   store.applyFacts(facts as never);
   return {
     ...scenario,

@@ -1,6 +1,6 @@
 import { BiomeType } from "@bibliothecadao/types";
 import { fetchHeraldGameSnapshot, readDeepSites, NativeFactStore, type NativeRows } from "@bibliothecadao/eternum/game-client";
-import { dayOf, readExpeditionRules } from "@bibliothecadao/eternum/expeditions";
+import { dayOf, expeditionDepth, readExpeditionRules } from "@bibliothecadao/eternum/expeditions";
 import { forecastFight, type CombatRules } from "@bibliothecadao/eternum/combat-exchange";
 import { resolveExplorerCombatTroops, STAMINA_MODELS } from "@bibliothecadao/eternum/troop-stamina";
 import { mapCenter, researchedDepth } from "@bibliothecadao/eternum";
@@ -43,6 +43,7 @@ export function planDeepSiteWatches(
   const rules = combatRules(store, gameId);
   const center = mapCenter(store.require("SliceRules", { game_id: gameId }).map_center_offset);
   return readDeepSites(store, timestamp, gameId).flatMap((site) => {
+    if (depth < expeditionDepth(calendar, site.position)) return [];
     const defender = site.guards[0];
     if (!defender || site.beastTroops > 0n) return [];
     if (store.require("HomeAspect", { game_id: gameId, home: defender.army.owner }).aspect === aspect) return [];
