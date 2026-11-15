@@ -311,6 +311,9 @@ fn charge_starts_on_a_new_target_and_rejected_attacks_keep_the_current_fight() {
     set_explorer_fixture(
         d.games, enemy, ExplorerTroops { coord: crate::geometry::neighbor(center, 0), ..army(d, enemy) },
     );
+    set_explorer_fixture(
+        d.games, other, ExplorerTroops { coord: crate::troops::Coord { x: center.x + 5, ..center }, ..army(d, other) },
+    );
     super::deep_sites::applied(d, game_id, attack(attacker.explorer_id, enemy.explorer_id), 365);
     assert_eq!(charge_at(d, attacker), crate::combat::ArmyCombat { charge: 2, last_target: enemy.explorer_id });
     assert_eq!(army(d, attacker).troops.count, 601 * crate::rules::RESOURCE_PRECISION);

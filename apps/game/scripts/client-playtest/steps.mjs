@@ -576,8 +576,8 @@ const armyToken = (army) => `JSON.stringify((() => {
 })())`;
 
 /**
- * Every army the lab chain's last `kind` answer wrote troops for shows exactly that count on its token, as the token
- * writes a count: the fight's attacker, both armies of a transfer.
+ * Every army in the next command's answer shows its resulting count on its token: the fight's attacker, both armies
+ * of a transfer. A previous answer cannot satisfy the watch before the new command runs.
  */
 const tokensShowTheChainsCounts = (browser, kind) => {
   const after = browser.read("window.__labChain?.sent.length ?? 0");
