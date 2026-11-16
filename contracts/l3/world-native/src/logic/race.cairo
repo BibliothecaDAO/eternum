@@ -127,7 +127,7 @@ fn build_height(key: AspectKey, rules: RaceRules, timestamp: u64) -> u32 {
         return 0;
     }
     crate::state::write().season.aspect_heights.write((key.game_id, key.aspect), height);
-    emit('AspectHyperstructure', key, AspectHyperstructure { height, ..before });
+    emit('AspectHyperstructure', key, AspectHyperstructure { height });
     schedule_triumph(key, rules, before.height, height, timestamp);
     if height == finish_height {
         finish(key.game_id, Some(key.aspect), timestamp);

@@ -1,7 +1,6 @@
 use crate::resources::ResourceKey;
 
-// Two-sided rows store two independent three-bit counts. Scouts retains its ordered kind choices; other rows
-// store their tier. This next-season layout is part of the release schema, not a migration of existing knowledge.
+// Two-sided rows store independent three-bit counts; other rows store their tier.
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]
 pub struct RealmKnowledge {
     pub learned: u64,
@@ -20,11 +19,11 @@ pub const ROW_DEPTH: u8 = 10;
 // Farm and Workshop tiers make more (Fields, Tools) or store more (Granary, Storeroom).
 pub const CHOICE_MAKE: u8 = 0;
 pub const CHOICE_STORE: u8 = 1;
-// The kind each Scouts' lodge tier finds more of.
 
 
 
-// Building categories with a row; the four training buildings are unique on a realm board.
+
+// Building categories used by construction and research.
 pub const HUT: u8 = 1;
 pub const WORKSHOP: u8 = 25;
 pub const BARRACKS: u8 = 28;
@@ -47,8 +46,7 @@ pub struct ResearchPriceConfig {
     pub price: ResearchPrice,
 }
 
-// Buys the next tier of a row. `choice` picks the tier's side on Farm and Workshop rows and the kind on the
-// Scouts' lodge row; every other row takes 0.
+// Buys the next tier. `choice` selects the Farm or Workshop side; every other row takes 0.
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]
 pub struct Research {
     pub structure_id: u64,
@@ -58,11 +56,11 @@ pub struct Research {
 
 pub fn row_category(row: u8) -> u8 {
     match row {
-        ROW_FARM => FARM,
-        ROW_WORKSHOP => WORKSHOP,
-        ROW_HUT => HUT,
-        ROW_SUPPLY_YARD => SUPPLY_YARD,
-        ROW_SHRINE | ROW_WELL | ROW_DEPTH => 0,
+        crate::research::ROW_FARM => FARM,
+        crate::research::ROW_WORKSHOP => WORKSHOP,
+        crate::research::ROW_HUT => HUT,
+        crate::research::ROW_SUPPLY_YARD => SUPPLY_YARD,
+        crate::research::ROW_SHRINE | crate::research::ROW_WELL | crate::research::ROW_DEPTH => 0,
         _ => panic!("invalid research row"),
     }
 }
@@ -73,14 +71,14 @@ pub const ROWS: [u8; 7] = [ROW_FARM, ROW_WORKSHOP, ROW_HUT, ROW_SUPPLY_YARD, ROW
 
 pub fn max_tier(row: u8) -> u8 {
     match row {
-        ROW_FARM | ROW_WORKSHOP | ROW_HUT | ROW_SUPPLY_YARD => 5,
-        ROW_SHRINE | ROW_WELL => 1,
-        ROW_DEPTH => 3,
+        crate::research::ROW_FARM | crate::research::ROW_WORKSHOP | crate::research::ROW_HUT | crate::research::ROW_SUPPLY_YARD => 5,
+        crate::research::ROW_SHRINE | crate::research::ROW_WELL => 1,
+        crate::research::ROW_DEPTH => 3,
         _ => panic!("invalid research row"),
     }
 }
 
-// How many sides a row's choice has: two for Farm and Workshop, three kinds for the Scouts' lodge.
+// Farm and Workshop have two independent sides.
 pub fn choice_count(row: u8) -> u8 {
     match row {
         0 | 1 => 2,
@@ -102,7 +100,7 @@ fn tier_slot(row: u8) -> (u64, u64) {
     }
 }
 
-// Where a row's choices sit: the first tier's scale and the field size of one choice. Later tiers follow in order.
+
 
 
 pub fn independent_sides(row: u8) -> bool {
@@ -120,10 +118,10 @@ pub fn tier(learned: u64, row: u8) -> u8 {
     }
 }
 
-// The choice made at a tier, from 1 (Common) up to the row's tier.
 
 
-// The upgrades bought on one side; Scouts still counts its ordered kind selections.
+
+// The upgrades bought on one side.
 pub fn picks(learned: u64, row: u8, side: u8) -> u8 {
     assert!(side < choice_count(row), "invalid research choice");
     if independent_sides(row) {
@@ -161,7 +159,7 @@ pub fn side_tier(learned: u64, row: u8, side: u8) -> u8 {
     }
 }
 
-// Adds one upgrade to the chosen side, or the next shared tier for Scouts and single-sided rows.
+// Adds one upgrade to the chosen side.
 pub fn learn(learned: u64, row: u8, side: u8) -> u64 {
     assert!(side < choice_count(row), "invalid research choice");
 
