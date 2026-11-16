@@ -1,11 +1,11 @@
 import { describe, expect, it } from "vitest";
 import { FRAGMENT, lordsFor, SEAL_CENTS, SEAL_FREE, SEAL_HOLDERS, STORE_PRODUCTS } from "./shop";
 
-/** The frozen design's day: LORDS at $0.003637, so $1 is 275 LORDS. */
+/** The frozen design's price: LORDS at $0.003637, so $1 is 275 LORDS. */
 const PRICE = 0.003637;
 
 describe("the shop's prices in LORDS", () => {
-  it("quotes the design's numbers at its day's price", () => {
+  it("quotes the design's numbers at that price", () => {
     expect(lordsFor(100 * FRAGMENT.cents, PRICE)).toBe(275);
     expect(lordsFor(SEAL_CENTS.web.none, PRICE)).toBe(2_750);
     // The design says about 1,372; 1,373 whole LORDS rounds up to the next multiple of 5.

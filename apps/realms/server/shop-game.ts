@@ -1,5 +1,5 @@
 import type { IdentityAuth } from "./auth";
-import { gameDayStarts, readEnrolledAccounts } from "./day-open";
+import { readEnrolledAccounts, runningFrontierGameIds } from "./day-open";
 import { fetchShardGames, gamesUrl, listedShards } from "./directory";
 import type { IdentityEnv } from "./env";
 import { json } from "./http";
@@ -40,8 +40,8 @@ export const shopAccessOf = (
   return async (realmsId, { chainId, gameId }) => {
     const shard = (await listedShards(env.DB)).find((listed) => gameKey(listed.chainId) === chainId);
     if (!shard) return false;
-    const games = gameDayStarts(await fetchShardGames(shard, gamesUrl(shard, null), fetchShard), now());
-    if (!games.some((running) => running.gameId === gameId)) return false;
+    const running = runningFrontierGameIds(await fetchShardGames(shard, gamesUrl(shard, null), fetchShard), now());
+    if (!running.includes(gameId)) return false;
     const account = BigInt(await accountOf(realmsId));
     return (await readEnrolledAccounts(shard.url, gameId)).some((owner) => BigInt(owner) === account);
   };

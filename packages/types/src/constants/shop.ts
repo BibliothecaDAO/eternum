@@ -1,8 +1,7 @@
 /**
- * What the shop sells and what it costs, in dollars (the stores' unit): one source for the shop's screens, the day's
- * price and the store relay. A Fragment is 1 cent and refills 2 points of stamina outside the Deep; on the web an amount
- * of dollars is paid in LORDS, rounded up to 5 (`lordsFor`), at the shop's one price: the market price read at the start
- * of the price day.
+ * What the shop sells and what it costs, in dollars (the stores' unit): one source for the shop's screens, their
+ * LORDS amounts and the store relay. A Fragment is 1 cent and refills 2 points of stamina outside the Deep; on the web an amount
+ * of dollars is paid in LORDS, rounded up to 5 (`lordsFor`), at the market's price as the payment is requested.
  */
 export const FRAGMENT = { cents: 1, staminaPoints: 2 } as const;
 

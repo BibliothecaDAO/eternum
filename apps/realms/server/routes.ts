@@ -20,7 +20,7 @@ import { ACCOUNT_CLASS_HASH, socialProvidersOf, type IdentityEnv } from "./env";
 import { json } from "./http";
 import { keepBrowser, noteBrowser } from "./browsers";
 import { handleBuildOrders } from "./build-orders";
-import { handleLordsPrice } from "./lords-price";
+import { marketLordsPrice } from "./lords-price";
 import { handleSeal } from "./seal";
 import { holderFactsOf } from "./seal-facts";
 import { shopAccessOf } from "./shop-game";
@@ -170,16 +170,8 @@ export const routeIdentityRequest = async (
       db: env.DB,
       access: shopAccessOf(env, platform.fetchShard, nowSeconds),
       holderFacts: holderFactsOf(env),
-      now: nowSeconds,
+      readLordsPrice: marketLordsPrice(),
     });
-  if (pathname === "/api/shop/price" && request.method === "GET") {
-    if (!(await withinPublicBudget(env, "shop-price", request))) return json({ error: "too_many_requests" }, 429);
-    return handleLordsPrice(request, auth, {
-      db: env.DB,
-      access: shopAccessOf(env, platform.fetchShard, nowSeconds),
-      now: nowSeconds,
-    });
-  }
   if (pathname === "/api/operator/campaign-draw" && request.method === "POST") {
     if (!(await isOperator(env, request))) return json({ error: "unauthorized" }, 401);
     return handleCampaignDraw(request, env.DB, (realmsId, presets) =>
