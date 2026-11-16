@@ -197,6 +197,23 @@ it("records a second paid seal receipt of an account that already holds the seal
   expect(await seals(db)).toEqual([{ owner: OWNER, receipt: "apple:tx-1" }]);
 });
 
+it("records a second discounted seal payment for refund even while holdings cannot be read, and settles a pending one the same way", async () => {
+  const db = await migrated();
+  const unavailable = async () => Promise.reject(new RealmHoldingsUnavailableError());
+  const pending = { store: "apple", receipt: "tx-1|seal-holder" };
+  await sendAs(db, OWNER, pending, { holderFacts: unavailable });
+  await sendAs(db, OWNER, { store: "apple", receipt: "tx-2|seal" });
+  expect(await sendAs(db, OWNER, pending, { holderFacts: unavailable })).toEqual([409, { error: "seal_already_held" }]);
+  const second = { store: "apple", receipt: "tx-3|seal-holder" };
+  expect(await sendAs(db, OWNER, second, { holderFacts: unavailable })).toEqual([409, { error: "seal_already_held" }]);
+  expect(await ledger(db)).toEqual([
+    { receipt: "apple:tx-1", owner: OWNER, outcome: "unfulfilled_seal_held" },
+    { receipt: "apple:tx-2", owner: OWNER, outcome: "seal" },
+    { receipt: "apple:tx-3", owner: OWNER, outcome: "unfulfilled_seal_held" },
+  ]);
+  expect(await seals(db)).toEqual([{ owner: OWNER, receipt: "apple:tx-2" }]);
+});
+
 it("keeps a Fragment receipt spent after the account's credits are deleted", async () => {
   const db = await migrated();
   await sendAs(db, OWNER, { store: "apple", receipt: "tx-1|fragments-500" });

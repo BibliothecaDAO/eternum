@@ -110,14 +110,14 @@ const readLedger = (db: D1Database, receipt: string) =>
     .bind(receipt)
     .first<{ owner: string | null; product: string; outcome: Outcome }>();
 
-/** What this payment can buy this account now; the seal's price is judged by the account's live holder level. */
+/** What this payment can buy this account now: a seal already held settles it first, then the price against the account's live holder level. */
 const outcomeOf = async (world: ReceiptWorld, owner: string, product: Product | undefined): Promise<Outcome> => {
   if (!product) return "unfulfilled_product";
   if (product.kind === "fragments") return "fragments";
+  if (await readSeal(world.db, owner)) return "unfulfilled_seal_held";
   try {
     const holder = product.cents < SEAL_CENTS.store.none ? holderLevelOf(await world.holderFacts(owner)) : "none";
-    if (product.cents < SEAL_CENTS.store[holder]) return "unfulfilled_price";
-    return (await readSeal(world.db, owner)) ? "unfulfilled_seal_held" : "seal";
+    return product.cents < SEAL_CENTS.store[holder] ? "unfulfilled_price" : "seal";
   } catch (error) {
     if (error instanceof RealmHoldingsUnavailableError) return "pending_eligibility";
     throw error;
