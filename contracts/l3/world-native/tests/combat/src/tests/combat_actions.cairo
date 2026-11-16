@@ -582,9 +582,7 @@ fn preset_cooldown_keeps_blitz_at_sixty_seconds_and_allows_frontier_back_to_back
         let _: u32 = Serde::deserialize(ref input).unwrap();
         let preset: crate::presets::PresetDefinition = Serde::deserialize(ref input).unwrap();
         assert_eq!(preset.rules.battle_config.cooldown_seconds, expected);
-        let (d, _, _, attacker, defender) = setup_with_cooldown(
-            blitz, 0, 0, expected, (1000, 1000),
-        );
+        let (d, _, _, attacker, defender) = setup_with_cooldown(blitz, 0, 0, expected, (1000, 1000));
         let attack = Command::Battle(
             AttackExplorer { attacker_id: attacker, defender_id: defender, steal_resources: array![].span() },
         );
