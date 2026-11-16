@@ -37,6 +37,13 @@ export interface CombatRules {
   stamina: TroopStaminaConfig;
 }
 
+/** Only player-held slots receive Frontier guard protection; Blitz includes unowned structure guards. */
+export const isCombatGuard = (owner: bigint | null, dayUnitSeconds: number): boolean => {
+  if (dayUnitSeconds === 0) return true;
+  if (owner === null) throw new Error("Combat guard owner is missing");
+  return owner !== 0n;
+};
+
 interface ExchangeContext {
   timestamp: number;
   attackDistance: number;

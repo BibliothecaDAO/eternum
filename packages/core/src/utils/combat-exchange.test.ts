@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { BiomeType, BiomeTypeToId } from "@bibliothecadao/types";
 import { describe, expect, it } from "vitest";
-import { type CombatRules, type ExchangeTroops, forecastFight, resolveExchange } from "./combat-exchange";
+import { type CombatRules, type ExchangeTroops, forecastFight, resolveExchange, isCombatGuard } from "./combat-exchange";
 
 /**
  * The contract's own record of 200 exchanges (frontier-combat-v2.txt, written by its snforge producer): every loss and
@@ -404,4 +404,11 @@ it("resolves bow-first exchanges in both directions, including annihilation and 
     const result = resolveExchange(bowAttacks ? bow : blade, bowAttacks ? blade : bow, context, rules);
     expect(result).toMatchObject({ ok: true, attackerLoss: bowAttacks ? 0n : 1_000_000_000n, defenderLoss: bowAttacks ? 1_000_000_000n : 0n });
   }
+});
+
+it("separates a Frontier beast from a player guard without changing Blitz guards", () => {
+  expect(isCombatGuard(0n, 100)).toBe(false);
+  expect(isCombatGuard(1n, 100)).toBe(true);
+  expect(isCombatGuard(0n, 0)).toBe(true);
+  expect(() => isCombatGuard(null, 100)).toThrow("Combat guard owner is missing");
 });

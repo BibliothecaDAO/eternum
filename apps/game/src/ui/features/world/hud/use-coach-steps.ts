@@ -19,7 +19,7 @@ import { knownAmount } from "@/ui/utils/utils";
 import {
   ArmyActionManager,
   biomeTypeOf,
-  configManager,
+  configManager, isCombatGuard,
   getGuardsByStructure,
   getBalance,
   getTileAt,
@@ -249,7 +249,7 @@ const useCertainLoss = () => {
         attackerBiome: biome,
         defenderBiome: biome,
         attackerIsStructureGuard: false,
-        defenderIsStructureGuard: configManager.getCombatRules().dayUnitSeconds === 0 || structure.owner !== 0n,
+        defenderIsStructureGuard: isCombatGuard(structure.owner, configManager.getCombatRules().dayUnitSeconds),
       };
       const rules = { rules: configManager.getCombatRules() };
       return forecastAttack(troops, guard.troops, circumstances, rules).certainLoss;

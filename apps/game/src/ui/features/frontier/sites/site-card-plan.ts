@@ -2,7 +2,7 @@ import { readStandingFrontierBeast, type FrontierBeast } from "@/three/structure
 import {
   availableRuinLords,
   armyRelicReward,
-  configManager,
+  configManager, isCombatGuard,
   getBlockTimestamp,
   ResourceManager,
   hasCastleLimit,
@@ -116,7 +116,7 @@ export const readSiteCard = (
     payout: reward && fittingPayout(store, site.game_id, reward, attack),
     attackStamina: configManager.getCombatRules().stamina.stamina_attack_req,
     inReach: attack !== null && reachOf(store, attack, siteTile) !== undefined,
-    fight: guard && attack ? attackNow(store, guard.troops, siteTile, attack, false) : undefined,
+    fight: guard && attack ? attackNow(store, guard.troops, siteTile, attack, isCombatGuard(structure.owner, configManager.getCombatRules().dayUnitSeconds)) : undefined,
   };
 };
 

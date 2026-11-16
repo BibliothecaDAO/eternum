@@ -12,7 +12,7 @@ import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { usePopoverStore } from "@/hooks/store/use-popover-store";
 import { usePlayerDisplayName } from "@/hooks/use-player-profile";
 import { surfaceAnchorFrom } from "@/ui/design-system/molecules/popover";
-import { configManager, StaminaManager, getGuardsByStructure, getTroopResourceId } from "@bibliothecadao/eternum";
+import { configManager, isCombatGuard, StaminaManager, getGuardsByStructure, getTroopResourceId } from "@bibliothecadao/eternum";
 import { useGame } from "@/hooks/context/game-context";
 import { useNativeFacts } from "@/hooks/helpers/use-native-facts";
 
@@ -190,7 +190,7 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
         attackerBiome: biome,
         defenderBiome: biome,
         attackerIsStructureGuard: attackerType === AttackerType.Structure,
-        defenderIsStructureGuard: isStructureTarget && (configManager.getCombatRules().dayUnitSeconds === 0 || targetData.addressOwner !== 0n),
+        defenderIsStructureGuard: isStructureTarget && isCombatGuard(targetData.addressOwner, configManager.getCombatRules().dayUnitSeconds),
       },
       { rules: configManager.getCombatRules() },
     );

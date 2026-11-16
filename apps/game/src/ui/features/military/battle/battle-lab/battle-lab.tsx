@@ -9,7 +9,7 @@ import {
   type Army,
   CombatParameters,
   CombatSimulator,
-  configManager,
+  configManager, isCombatGuard,
   getGuildFromPlayerAddress,
 } from "@bibliothecadao/eternum";
 import { useGame } from "@/hooks/context/game-context";
@@ -130,7 +130,7 @@ export const BattleLab = ({
       defenderAlt: state.defenderAlt,
       attackDistance: liveAttackDistance,
       attackerIsStructureGuard: snapshot?.attackerType === "structure",
-      defenderIsStructureGuard: target?.targetType === TargetType.Structure && (parameters.day_unit_seconds === 0 || target.addressOwner !== 0n),
+      defenderIsStructureGuard: target?.targetType === TargetType.Structure && isCombatGuard(target.addressOwner, parameters.day_unit_seconds),
     }),
     [state.defenderAlt, liveAttackDistance, snapshot?.attackerType, target?.targetType, target?.addressOwner, parameters.day_unit_seconds],
   );
