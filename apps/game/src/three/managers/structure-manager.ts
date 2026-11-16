@@ -1625,7 +1625,7 @@ export class StructureManager {
     this.metrics.fullRefreshMaxSliceMs = Math.max(this.metrics.fullRefreshMaxSliceMs, sliceMs);
   }
 
-  /** The hex each hyperstructure drawn stands on: published for the towers' proof, and let go with the instance. */
+  /** The contract hex each hyperstructure drawn stands on: published for the towers' proof, and let go with the instance. */
   private readonly towerHexes = new Map<number, { col: number; row: number }>();
 
   private addVisibleStructureInstance(
@@ -1642,7 +1642,10 @@ export class StructureManager {
     for (const binding of bindings) {
       if (binding.model instanceof HyperstructureModel && this.store) {
         const construction = readHyperstructureConstruction(this.store, safeInteger(structure.entityId));
-        this.towerHexes.set(structure.entityId, structure.hexCoords);
+        this.towerHexes.set(structure.entityId, {
+          col: structure.hexCoords.col + FELT_CENTER(),
+          row: structure.hexCoords.row + FELT_CENTER(),
+        });
         publishMapSelection({ towerHexes: Object.fromEntries(this.towerHexes) });
         binding.model.setConstructionAt(
           binding.instanceIndex,
