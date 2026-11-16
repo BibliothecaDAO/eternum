@@ -12,7 +12,7 @@ describe("race facts through confirmed event ingestion", () => {
       world.fold,
       receipt([
         rowEvent("RaceMember", ["1", "7"], { glory: 1250000000001n, contribution: 1300000000000n }),
-        rowEvent("AspectHyperstructure", ["1", "2"], { entity_id: 902n, height: 10000 }),
+        rowEvent("AspectHyperstructure", ["1", "2"], { height: 10000 }),
         rowEvent("TriumphDay", ["1", "2", "4"], { day: 9n }),
         rowEvent("RaceResult", ["1"], {
           winner: new CairoOption(CairoOptionVariant.Some, 2),
@@ -39,7 +39,6 @@ describe("race facts through confirmed event ingestion", () => {
     expect(store.get("AspectHyperstructure", { game_id: 1, aspect: 2 })).toEqual({
       game_id: 1,
       aspect: 2,
-      entity_id: 902n,
       height: 10000,
     });
     expect(store.get("TriumphDay", { game_id: 1, aspect: 2, stage: 4 })).toEqual({

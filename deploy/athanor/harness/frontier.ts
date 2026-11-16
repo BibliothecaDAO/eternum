@@ -39,10 +39,7 @@ import {
   TroopTier,
 } from "@bibliothecadao/types";
 import type { NativeCommand } from "../../../contracts/l3/world-native/schema/commands.gen";
-import {
-  nativeResearchConstants as research,
-  type NativeRows,
-} from "../../../contracts/l3/world-native/schema/client.gen";
+import type { NativeRows } from "../../../contracts/l3/world-native/schema/client.gen";
 import { buildNativePreset } from "../../../config/deployer/clean/config/native-preset";
 import { nativePresetForId } from "../../../config/source/native";
 import { FRONTIER_FIXTURE_PRESET_ID } from "../../../config/source/common/native-preset-modes";

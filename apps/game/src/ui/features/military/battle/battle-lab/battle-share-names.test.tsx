@@ -72,7 +72,6 @@ it.each([
     await vi.waitFor(() => expect(getPlayerDisplayName(held.account.address)).toBe("Attacker"));
     const army = { stamina: 100, troopCount: 100, troopType: 1, tier: 1, battle_cooldown_end: 0, relics: [] };
     held.live = {
-      chargePercent: 0,
       snapshot: {
         biome: "Grassland",
         attackerType: "army",

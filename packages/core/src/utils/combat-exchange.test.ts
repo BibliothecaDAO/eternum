@@ -117,9 +117,6 @@ const readCase = (next: () => bigint, tickSeconds: number) => {
     defenderBiome: biome,
     attackerIsStructureGuard,
     defenderIsStructureGuard,
-    chargePercent: 0,
-    attackerRoll: 0,
-    defenderRoll: 0,
   };
   return { id, alt, attacker, defender, context, expected };
 };

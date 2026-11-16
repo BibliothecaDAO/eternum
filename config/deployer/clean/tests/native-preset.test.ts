@@ -498,16 +498,6 @@ describe("native presets", () => {
     ]).toEqual([0, 0, 0, 0]);
   });
 
-  test("Frontier disables both dice rules while Blitz preserves Ethereal dice", () => {
-    const diceRules = (environment: Parameters<typeof loadNativePresetConfiguration>[0], presetId: number) => {
-      const mask = buildNativePreset(loadNativePresetConfiguration(environment, presetId), presetId).rules.mode_rules;
-      return [(mask & nativeRuleConstants.COMBAT_DICE) !== 0, (mask & nativeRuleConstants.COMBAT_DICE_ETHEREAL) !== 0];
-    };
-
-    expect(diceRules("madara.frontier", FRONTIER_PRESET_ID)).toEqual([false, false]);
-    expect(diceRules("madara.blitz", 2)).toEqual([false, true]);
-  });
-
   // The HS held rule says a realm settled later counts from the next capture: a capture recounts the realms only where
   // shares follow the owner (transfer_hyperstructure_shares), so every preset that counts them must have that rule.
   test("every preset that counts the realms around a hyperstructure gives its shares to whoever captures it", () => {
