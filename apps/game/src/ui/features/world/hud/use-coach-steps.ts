@@ -19,7 +19,8 @@ import { knownAmount } from "@/ui/utils/utils";
 import {
   ArmyActionManager,
   biomeTypeOf,
-  configManager, isCombatGuard,
+  configManager,
+  isCombatGuard,
   getGuardsByStructure,
   getBalance,
   getTileAt,

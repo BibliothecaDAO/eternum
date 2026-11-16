@@ -318,7 +318,11 @@ it("keeps a replacement Knight guard protected and removes that protection from 
   ]);
   const site = quarry();
   store.applyFacts([
-    { model: "Guard", key: store.wireKeyOf("Guard", site.guard!)!, value: { ...site.guard!, troops: { ...army.troops, category: "Knight" } } },
+    {
+      model: "Guard",
+      key: store.wireKeyOf("Guard", site.guard!)!,
+      value: { ...site.guard!, troops: { ...army.troops, category: "Knight" } },
+    },
   ]);
   expect(readDeepSiteFight(store, quarry(), attack)?.result).toEqual({ troopsLost: 294, guardLeft: 672 });
   store.applyFacts([{ model: "ArmyCombat", key: combatKey, value: { ...combat, last_target: site.id } }]);

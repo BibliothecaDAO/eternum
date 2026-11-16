@@ -142,11 +142,7 @@ export const SiteCardView = ({
     <HudSheet label={title} onClose={onClose}>
       <header className="flex items-center gap-3">
         {typeof guard === "number" ? (
-          <GuardToken
-            label={beast?.name ?? TROOPS}
-            art={guardIcon}
-            troops={armyless ? guard : undefined}
-          />
+          <GuardToken label={beast?.name ?? TROOPS} art={guardIcon} troops={armyless ? guard : undefined} />
         ) : (
           <SiteMark icon={beast ? beastMeaning(beast.beast) : icon} />
         )}

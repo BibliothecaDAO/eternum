@@ -1,7 +1,13 @@
 import { readFileSync } from "node:fs";
 import { BiomeType, BiomeTypeToId } from "@bibliothecadao/types";
 import { describe, expect, it } from "vitest";
-import { type CombatRules, type ExchangeTroops, forecastFight, resolveExchange, isCombatGuard } from "./combat-exchange";
+import {
+  type CombatRules,
+  type ExchangeTroops,
+  forecastFight,
+  resolveExchange,
+  isCombatGuard,
+} from "./combat-exchange";
 
 /**
  * The contract's own record of 200 exchanges (frontier-combat-v2.txt, written by its snforge producer): every loss and

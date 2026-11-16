@@ -357,8 +357,17 @@ fn deep_beast_marks_control_public_attacks_without_knight_slot_protection() {
         let target = site(d, game_id, kind);
         beside(d, attacker, target, 0);
         applied(d, game_id, fight(attacker, target), 360);
-        let guard = interact_with_state(d.games, || crate::logic::guards::guard(crate::guards::GuardKey { game_id, structure_id: target.entity_id, slot: 0 }));
-        let (left, enemy) = if kind == crate::rules::DEEP_ALTAR { (1186_u128, 504_u128) } else { (1082, 373) };
+        let guard = interact_with_state(
+            d.games,
+            || crate::logic::guards::guard(
+                crate::guards::GuardKey { game_id, structure_id: target.entity_id, slot: 0 },
+            ),
+        );
+        let (left, enemy) = if kind == crate::rules::DEEP_ALTAR {
+            (1186_u128, 504_u128)
+        } else {
+            (1082, 373)
+        };
         assert_eq!(army(d, attacker).troops.count, left * crate::rules::RESOURCE_PRECISION);
         assert_eq!(guard.troops.count, enemy * crate::rules::RESOURCE_PRECISION);
         assert_eq!(held(d, attacker), None);
