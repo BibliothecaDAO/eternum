@@ -8,17 +8,18 @@ describe("the shop's prices in LORDS", () => {
   it("quotes the design's numbers at its day's price", () => {
     expect(lordsFor(100 * FRAGMENT.cents, PRICE)).toBe(275);
     expect(lordsFor(SEAL_CENTS.web.none, PRICE)).toBe(2_750);
-    // The design says about 1,372: whole LORDS rounded up make it 1,373.
-    expect(lordsFor(SEAL_CENTS.web.realm, PRICE)).toBe(1_373);
-    // A full bar of stamina: 90 Fragments, $0.90.
-    expect(lordsFor(90 * FRAGMENT.cents, PRICE)).toBe(248);
-    expect(lordsFor(FRAGMENT_PRICES.questReroll * FRAGMENT.cents, PRICE)).toBe(138);
+    // The design says about 1,372; 1,373 whole LORDS rounds up to the next multiple of 5.
+    expect(lordsFor(SEAL_CENTS.web.realm, PRICE)).toBe(1_375);
+    // A full bar of stamina: 90 Fragments, $0.90, is 247.5 LORDS.
+    expect(lordsFor(90 * FRAGMENT.cents, PRICE)).toBe(250);
+    expect(lordsFor(FRAGMENT_PRICES.questReroll * FRAGMENT.cents, PRICE)).toBe(140);
   });
 
-  it("rounds up, never down, so a price cannot undercharge", () => {
-    expect(lordsFor(1, 0.01)).toBe(1);
-    expect(lordsFor(101, 0.01)).toBe(101);
-    expect(lordsFor(1, 0.0099)).toBe(2);
+  it("rounds up to a multiple of 5, never down, so a price cannot undercharge and always ends in 5 or 0", () => {
+    expect(lordsFor(1, 0.01)).toBe(5);
+    expect(lordsFor(500, 0.01)).toBe(500);
+    expect(lordsFor(501, 0.01)).toBe(505);
+    expect(lordsFor(1, 0.0099)).toBe(5);
   });
 
   it("refuses a price that is missing, zero or broken", () => {

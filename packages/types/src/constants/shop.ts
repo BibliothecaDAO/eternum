@@ -1,7 +1,7 @@
 /**
  * What the shop sells and what it costs, in dollars (the stores' unit): one source for the shop's screens, the day's
  * price and the store relay. A Fragment is 1 cent and refills 2 points of stamina outside the Deep; on the web an amount
- * of dollars is paid in LORDS at the day's market price (`lordsFor`).
+ * of dollars is paid in LORDS, rounded up to 5, at the game day's market price (`lordsFor`).
  */
 export const FRAGMENT = { cents: 1, staminaPoints: 2 } as const;
 
@@ -28,13 +28,17 @@ export const SEAL_CENTS = {
   store: { none: 999, realm: 499, wonder: 499 },
 } as const satisfies Record<"web" | "store", Record<SealHolder, number>>;
 
+/** Every LORDS amount the shop shows or charges is a multiple of this, so a price ends in 5 or 0. */
+const LORDS_STEP = 5;
+
 /**
- * Whole LORDS that `cents` is worth at `usdPerLords`, rounded up so the shop never undercharges. A price that is not a
- * positive number is a fault: nothing quotes from a missing or broken price.
+ * LORDS that `cents` is worth at `usdPerLords`, rounded up to the next multiple of 5 so the shop never undercharges and
+ * a price ends in 5 or 0. A price that is not a positive number is a fault: nothing quotes from a missing or broken
+ * price.
  */
 export const lordsFor = (cents: number, usdPerLords: number): number => {
   if (!Number.isFinite(usdPerLords) || usdPerLords <= 0) throw new Error(`LORDS price ${usdPerLords} is not positive`);
-  return Math.ceil(cents / 100 / usdPerLords);
+  return Math.ceil(cents / 100 / usdPerLords / LORDS_STEP) * LORDS_STEP;
 };
 
 /**

@@ -42,15 +42,31 @@ export function planDayOpenings(
   return { prepare, nextAlarmAt };
 }
 
-function nextOpening(game: DayOpenGame, now: number): DayOpening | null {
+/** A Frontier game's day calendar, as its directory entry states it. */
+const calendarOf = (game: DayOpenGame) => {
   if (!game.expedition) throw new Error(`Game ${game.game_id} has no Frontier calendar`);
-  const calendar = {
+  return {
     seed: BigInt(game.expedition.seed),
     startMainAt: game.clock.start_main_at,
     scheduledEndAt: game.clock.scheduled_end_at,
     endAt: game.clock.end_at,
     dayUnitSeconds: game.expedition.day_unit_seconds,
   };
+};
+
+/**
+ * When the latest game day opened, in seconds: the newest start, across the running Frontier games, of the day each is
+ * in at `now`. Null while no Frontier game is running a day.
+ */
+export function latestGameDayStart(games: readonly DayOpenGame[], now: number): number | null {
+  const starts = games
+    .filter((game) => game.mode === "frontier" && game.status !== "Ended" && game.status !== "Settled")
+    .flatMap((game) => dayOf(calendarOf(game), now)?.start ?? []);
+  return starts.length > 0 ? Math.max(...starts) : null;
+}
+
+function nextOpening(game: DayOpenGame, now: number): DayOpening | null {
+  const calendar = calendarOf(game);
   const seasonEnd = game.clock.end_at;
   if (!Number.isSafeInteger(calendar.startMainAt) || !Number.isSafeInteger(seasonEnd))
     throw new Error(`Game ${game.game_id} has an invalid Frontier calendar`);
