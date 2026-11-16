@@ -310,7 +310,9 @@ const buildingLine = (option: BuildOption): RankedWords => {
       ? [makes(FRONTIER_STORES[madeStore(effect.resource)].word, formatRate(effect.output.total))]
       : effect.kind === "trains"
         ? startsNewArmies(effect.attribute, option.tier)
-        : effect.kind === "research" ? [effect.line] : [`${formatGain(effect.amount)} ${POPULATION}`];
+        : effect.kind === "research"
+          ? [effect.line]
+          : [`${formatGain(effect.amount)} ${POPULATION}`];
   const takes = option.populationCost > 0 ? `, ${takesPopulation(formatCharge(option.populationCost))}` : "";
   return [`${buildingName(option.category)}: `, ...does, ...(takes ? [takes] : [])];
 };
@@ -329,7 +331,9 @@ const givesOf = ({ effect }: BuildOption): BuildTile["gives"] =>
     ? { icon: FRONTIER_STORES[madeStore(effect.resource)].icon, value: formatRate(effect.output.total) }
     : effect.kind === "trains"
       ? { icon: "stamina" }
-      : effect.kind === "research" ? { icon: effect.icon } : { icon: "person", value: formatGain(effect.amount) };
+      : effect.kind === "research"
+        ? { icon: effect.icon }
+        : { icon: "person", value: formatGain(effect.amount) };
 
 /** A realm's plot, as the actions in flight name it. */
 

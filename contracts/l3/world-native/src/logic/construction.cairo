@@ -409,11 +409,24 @@ pub mod ConstructionLogic {
             let resources = self.data.structures.structures.entry((key.game_id, key.entity_id)).resources_packed.read();
             assert!(crate::buildings::can_produce(category, resources), "structure cannot produce building resource");
         }
-        fn grant_training_start(ref self: ContractState, key: ResourceKey, base: StructureBase, category: u8, board: crate::buildings::BoardRules, context: crate::commands::ExecutionContext) {
+        fn grant_training_start(
+            ref self: ContractState,
+            key: ResourceKey,
+            base: StructureBase,
+            category: u8,
+            board: crate::buildings::BoardRules,
+            context: crate::commands::ExecutionContext,
+        ) {
             if !crate::research::is_training(category) {
                 return;
             }
-            let row = if category == crate::research::CONSCRIPTION_CAMP { crate::research::ROW_CONSCRIPTION } else if category == crate::research::RATIONS_DEPOT { crate::research::ROW_RATIONS } else { crate::research::ROW_SUPPLY_YARD };
+            let row = if category == crate::research::CONSCRIPTION_CAMP {
+                crate::research::ROW_CONSCRIPTION
+            } else if category == crate::research::RATIONS_DEPOT {
+                crate::research::ROW_RATIONS
+            } else {
+                crate::research::ROW_SUPPLY_YARD
+            };
             let before = crate::logic::research::require(key).learned;
             if crate::research::tier(before, row) != 0 {
                 return;
@@ -426,7 +439,17 @@ pub mod ConstructionLogic {
         fn assert_board_category(
             self: @ContractState, key: ResourceKey, category: u8, board: crate::buildings::BoardRules,
         ) {
-            let minimum = if category == crate::research::SCOUTS_LODGE { crate::research::SCOUTS_LODGE_LEVEL } else if category == crate::research::RANGE { crate::research::RANGE_LEVEL } else if category == crate::research::CONSCRIPTION_CAMP { crate::research::CONSCRIPTION_CAMP_LEVEL } else if category == crate::research::RATIONS_DEPOT { crate::research::RATIONS_DEPOT_LEVEL } else { 0 };
+            let minimum = if category == crate::research::SCOUTS_LODGE {
+                crate::research::SCOUTS_LODGE_LEVEL
+            } else if category == crate::research::RANGE {
+                crate::research::RANGE_LEVEL
+            } else if category == crate::research::CONSCRIPTION_CAMP {
+                crate::research::CONSCRIPTION_CAMP_LEVEL
+            } else if category == crate::research::RATIONS_DEPOT {
+                crate::research::RATIONS_DEPOT_LEVEL
+            } else {
+                0
+            };
             let level = self.data.structures.structures.entry((key.game_id, key.entity_id)).base.read().level;
             assert!(level >= minimum, "building needs a higher realm level");
             if !crate::research::is_training(category) {
@@ -495,7 +518,9 @@ pub mod ConstructionLogic {
             game_context: crate::commands::ExecutionContext,
         ) {
             if row == crate::research::ROW_CONSCRIPTION {
-                for category in array![crate::research::BARRACKS, crate::research::RANGE, crate::research::SCOUTS_LODGE] {
+                for category in array![
+                    crate::research::BARRACKS, crate::research::RANGE, crate::research::SCOUTS_LODGE,
+                ] {
                     self.change_researched_output(key, base, category, board, before, after, game_context);
                 }
                 return;
@@ -516,9 +541,20 @@ pub mod ConstructionLogic {
                     );
             }
         }
-        fn change_researched_output(ref self: ContractState, key: ResourceKey, base: StructureBase, category: u8, board: crate::buildings::BoardRules, before: u64, after: u64, game_context: crate::commands::ExecutionContext) {
+        fn change_researched_output(
+            ref self: ContractState,
+            key: ResourceKey,
+            base: StructureBase,
+            category: u8,
+            board: crate::buildings::BoardRules,
+            before: u64,
+            after: u64,
+            game_context: crate::commands::ExecutionContext,
+        ) {
             let count: u64 = self.standing(key, category).into();
-            if count == 0 { return; }
+            if count == 0 {
+                return;
+            }
             let (resource_type, old_rate) = self.buildings.board_output(key, base, category, board, before);
             let (_, new_rate) = self.buildings.board_output(key, base, category, board, after);
             if old_rate != new_rate {

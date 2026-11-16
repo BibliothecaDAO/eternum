@@ -28,7 +28,12 @@ const rates: Record<number, number> = {
 const buildingCosts = Object.fromEntries(
   buildingIds.map((id) => {
     if (id === research.SUPPLY_YARD || id === research.CONSCRIPTION_CAMP || id === research.RATIONS_DEPOT) {
-      const row = id === research.CONSCRIPTION_CAMP ? research.ROW_CONSCRIPTION : id === research.RATIONS_DEPOT ? research.ROW_RATIONS : research.ROW_SUPPLY_YARD;
+      const row =
+        id === research.CONSCRIPTION_CAMP
+          ? research.ROW_CONSCRIPTION
+          : id === research.RATIONS_DEPOT
+            ? research.ROW_RATIONS
+            : research.ROW_SUPPLY_YARD;
       const rank = frontierPreset.research!.find((price) => price.row === row && price.tier === 1)!;
       return [
         id,
@@ -43,7 +48,7 @@ const buildingCosts = Object.fromEntries(
 );
 // Barracks train from nothing. A troop's recipe is what its realm pays, per troop, to raise it into an army.
 const troopRaiseCosts = Object.fromEntries(
-  resourceIds.map((id) => [id, (id === 26 || id === 29) ? [{ resource: 35, amount: 2 }] : []]),
+  resourceIds.map((id) => [id, id === 26 || id === 29 ? [{ resource: 35, amount: 2 }] : []]),
 );
 
 // Combat keeps the existing troop formula; the board and economy use Frontier's sheet.
@@ -73,7 +78,7 @@ export const frontierBaseConfig: ConfigPatch = mergeConfigPatches(arenaBaseConfi
   resources: {
     resourcePrecision: RESOURCE_PRECISION,
     productionBySimpleRecipe: troopRaiseCosts,
-    productionBySimpleRecipeOutputs: Object.fromEntries(resourceIds.map((id) => [id, (id === 26 || id === 29) ? 1 : 0])),
+    productionBySimpleRecipeOutputs: Object.fromEntries(resourceIds.map((id) => [id, id === 26 || id === 29 ? 1 : 0])),
     productionByComplexRecipe: Object.fromEntries(resourceIds.map((id) => [id, []])),
     productionByComplexRecipeOutputs: Object.fromEntries(resourceIds.map((id) => [id, rates[id] ?? 0])),
     resourceWeightsGrams: Object.fromEntries(

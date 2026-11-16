@@ -1,6 +1,7 @@
 import {
   BUILDINGS_CENTER,
   BuildingType,
+  isFrontierBuilding,
   getHexesWithinRadius,
   getNeighborHexes,
   TileOccupier,
@@ -14,16 +15,7 @@ const GUARD_PRECISION = 1_000_000_000n;
 /** A built Kingdom and its nearby sites, using the game's own board, map and placement controls, on the given ground. */
 export const paintedBuildingsScenario = (ground?: LabGround): LabScenario => {
   const game = spireScenario(ground);
-  const types = [
-    BuildingType.ResourceWheat,
-    BuildingType.ResourceLabor,
-    BuildingType.ResourceKnightT1,
-    BuildingType.WorkersHut,
-    BuildingType.RationsDepot,
-    BuildingType.SupplyYard,
-    BuildingType.ScoutsLodge,
-    BuildingType.ConscriptionCamp,
-  ];
+  const types = Object.values(BuildingType).filter((type): type is BuildingType => typeof type === "number" && isFrontierBuilding(type));
   const plots = getHexesWithinRadius(BUILDINGS_CENTER[0], BUILDINGS_CENTER[1], 2).filter(
     ({ col, row }) => col !== BUILDINGS_CENTER[0] || row !== BUILDINGS_CENTER[1],
   );

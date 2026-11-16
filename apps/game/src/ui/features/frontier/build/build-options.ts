@@ -106,17 +106,24 @@ export const readBuildOptions = (
   return options;
 };
 
-const isTraining = (category: BuildingType) => Boolean(TRAINS[category]) || category === BuildingType.ConscriptionCamp || category === BuildingType.RationsDepot;
+const isTraining = (category: BuildingType) =>
+  Boolean(TRAINS[category]) || category === BuildingType.ConscriptionCamp || category === BuildingType.RationsDepot;
 
 const buildingStanding = (
   store: NativeFactStore,
   realm: NativeRows["Structure"],
   category: BuildingType,
 ): BuildOption["standing"] => {
-  const minimum = category === BuildingType.ScoutsLodge ? nativeResearchConstants.SCOUTS_LODGE_LEVEL
-    : category === BuildingType.ResourceCrossbowmanT1 ? nativeResearchConstants.RANGE_LEVEL
-    : category === BuildingType.ConscriptionCamp ? nativeResearchConstants.CONSCRIPTION_CAMP_LEVEL
-    : category === BuildingType.RationsDepot ? nativeResearchConstants.RATIONS_DEPOT_LEVEL : 0;
+  const minimum =
+    category === BuildingType.ScoutsLodge
+      ? nativeResearchConstants.SCOUTS_LODGE_LEVEL
+      : category === BuildingType.ResourceCrossbowmanT1
+        ? nativeResearchConstants.RANGE_LEVEL
+        : category === BuildingType.ConscriptionCamp
+          ? nativeResearchConstants.CONSCRIPTION_CAMP_LEVEL
+          : category === BuildingType.RationsDepot
+            ? nativeResearchConstants.RATIONS_DEPOT_LEVEL
+            : 0;
   if (realm.base.level < minimum) return { level: minimum };
   if (!isTraining(category)) return "open";
   if (getBuildingQuantity(safeInteger(realm.entity_id), category, store) > 0) return "built";
@@ -134,8 +141,10 @@ const readBuildingEffect = (
   category: BuildingType,
   learned: bigint,
 ): BuildEffect => {
-  if (category === BuildingType.ConscriptionCamp) return { kind: "research", line: RESEARCH_TREE.conscriptionLine, icon: "troops" };
-  if (category === BuildingType.RationsDepot) return { kind: "research", line: RESEARCH_TREE.rationsLine, icon: "wheat" };
+  if (category === BuildingType.ConscriptionCamp)
+    return { kind: "research", line: RESEARCH_TREE.conscriptionLine, icon: "troops" };
+  if (category === BuildingType.RationsDepot)
+    return { kind: "research", line: RESEARCH_TREE.rationsLine, icon: "wheat" };
   const trains = TRAINS[category];
   if (trains) return { kind: "trains", attribute: trains };
   if (category === BuildingType.WorkersHut) return { kind: "population", amount: nextHutGrant(store, realm, learned) };

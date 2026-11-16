@@ -307,3 +307,8 @@ Knights in a guard slot. Select the army, open the site card and Attack twice. `
 `build.sh playtest-deep-battle-target` drive those paths on desktop and phone, compare the exact preview and resulting
 facts with the native-tested `frontier-marks.txt` receipts, and retain screenshots. Site cards show the guard's
 Blade/Bow mark from its troop fact. These are lab proofs.
+
+Frontier town: open the Realm, tap a free plot and choose Range or Conscription Camp from City, or Rations Depot
+from Kingdom. The Range produces Crossbows for Deploy. Tap the Camp or Depot to buy its next tier: Camp increases
+all troop buildings’ output; Depot reduces deployment and reinforcement wheat. Each is unique and construction buys
+its first tier. Logistics remains on the Supply Yard. The painted-buildings lab includes every town building.

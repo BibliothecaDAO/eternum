@@ -189,7 +189,10 @@ const frontierConfig: GameModeConfig = {
     getTiers: blitzConfig.resources.getTiers,
   },
   rules: {
-    isBuildingTypeAllowed: (key) => Object.entries(BuildingType).some(([name, value]) => name === key && typeof value === "number" && isFrontierBuilding(value)),
+    isBuildingTypeAllowed: (key) =>
+      Object.entries(BuildingType).some(
+        ([name, value]) => name === key && typeof value === "number" && isFrontierBuilding(value),
+      ),
   },
 };
 

@@ -328,8 +328,23 @@ fn range_produces_deployable_crossbows_and_depot_prices_deployment_and_reinforce
         }
         let before = stored(d, home, WHEAT);
         if tier == 0 {
-            assert!(execute(d, Command::CreateExplorer(CreateExplorer {slot: 0, structure_id: home.entity_id, category: 2, tier: 0, amount: 5 * RESOURCE_PRECISION, direction: EAST}), 100));
-            army = *IStructureOperationsDispatcher {contract_address: d.games}.home_armies(home).at(0);
+            assert!(
+                execute(
+                    d,
+                    Command::CreateExplorer(
+                        CreateExplorer {
+                            slot: 0,
+                            structure_id: home.entity_id,
+                            category: 2,
+                            tier: 0,
+                            amount: 5 * RESOURCE_PRECISION,
+                            direction: EAST,
+                        },
+                    ),
+                    100,
+                ),
+            );
+            army = *IStructureOperationsDispatcher { contract_address: d.games }.home_armies(home).at(0);
         } else {
             assert!(execute(d, reinforce(army, 5), 100));
         }

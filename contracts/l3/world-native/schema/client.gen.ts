@@ -4,7 +4,7 @@ export const NativeTroopType = {
   "Paladin": "Paladin",
   "Crossbowman": "Crossbowman"
 } as const;
-export const nativeFactSchemaIdentity = "77dae337e30822699b8be9c356d99190fc07b4de7d905e1297af26dd76492845";
+export const nativeFactSchemaIdentity = "590a5e2bd10bab685e1d609494029bec0f9589d26e76b5c32e25dd509e01fc6a";
 export const nativeReleaseConstants = {
   "RUIN_DEPTH_LIMIT_RELEASE": 9
 } as const;
@@ -89,7 +89,9 @@ export const nativeArrivalConstants = {
 export const nativeResearchConstants = {
   "ROW_FARM": 0,
   "ROW_WORKSHOP": 1,
+  "ROW_CONSCRIPTION": 2,
   "ROW_HUT": 3,
+  "ROW_RATIONS": 4,
   "ROW_SUPPLY_YARD": 5,
   "ROW_SHRINE": 8,
   "ROW_WELL": 9,
@@ -99,6 +101,12 @@ export const nativeResearchConstants = {
   "HUT": 1,
   "WORKSHOP": 25,
   "BARRACKS": 28,
+  "RANGE": 31,
+  "RATIONS_DEPOT": 41,
+  "CONSCRIPTION_CAMP": 44,
+  "RANGE_LEVEL": 1,
+  "CONSCRIPTION_CAMP_LEVEL": 1,
+  "RATIONS_DEPOT_LEVEL": 2,
   "FARM": 37,
   "SUPPLY_YARD": 42,
   "SCOUTS_LODGE": 43,

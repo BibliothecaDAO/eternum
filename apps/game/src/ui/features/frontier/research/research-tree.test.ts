@@ -104,15 +104,23 @@ it("offers independent Camp and Depot upgrades with their exact next output and 
   const realm: RealmResearchFacts = {
     ...MID_REALM,
     castleLevel: 2,
-    standing: {...MID_REALM.standing, [research.ROW_CONSCRIPTION]: 1, [research.ROW_RATIONS]: 1},
-    learned: {...MID_REALM.learned, [research.ROW_CONSCRIPTION]: {tier: 1, sides: []}, [research.ROW_RATIONS]: {tier: 3, sides: []}},
+    standing: { ...MID_REALM.standing, [research.ROW_CONSCRIPTION]: 1, [research.ROW_RATIONS]: 1 },
+    learned: {
+      ...MID_REALM.learned,
+      [research.ROW_CONSCRIPTION]: { tier: 1, sides: [] },
+      [research.ROW_RATIONS]: { tier: 3, sides: [] },
+    },
   };
   expect(node(realm, `row-${research.ROW_CONSCRIPTION}`)).toMatchObject({
-    name: "Conscription Camp", tier: 1, price: {essence: 5000, labor: 1000},
-    gives: {now: "120 an hour", next: "140 an hour"},
+    name: "Conscription Camp",
+    tier: 1,
+    price: { essence: 5000, labor: 1000 },
+    gives: { now: "120 an hour", next: "140 an hour" },
   });
   expect(node(realm, `row-${research.ROW_RATIONS}`)).toMatchObject({
-    name: "Rations Depot", tier: 3, price: {essence: 25000, labor: 5000},
-    gives: {now: "1.4 wheat a troop", next: "1.2 wheat a troop"},
+    name: "Rations Depot",
+    tier: 3,
+    price: { essence: 25000, labor: 5000 },
+    gives: { now: "1.4 wheat a troop", next: "1.2 wheat a troop" },
   });
 });

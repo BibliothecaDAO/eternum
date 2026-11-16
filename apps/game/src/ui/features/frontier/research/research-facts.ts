@@ -75,8 +75,8 @@ const readResearchFacts = (
 
   const board = store.get("BoardRules", { game_id: realm.game_id });
   if (learned === undefined || essence === undefined || labor === undefined || !board) return undefined;
-  const troop = store.require("ResourceRule", {game_id: realm.game_id, resource_type: ResourcesIds.Knight});
-  const recipe = store.require("ProductionRecipe", {game_id: realm.game_id, resource_type: ResourcesIds.Knight});
+  const troop = store.require("ResourceRule", { game_id: realm.game_id, resource_type: ResourcesIds.Knight });
+  const recipe = store.require("ProductionRecipe", { game_id: realm.game_id, resource_type: ResourcesIds.Knight });
   const wheat = recipe.simple_inputs.find((input) => input.resource_type === ResourcesIds.Wheat);
   if (!wheat || recipe.simple_output === 0n) throw new Error("Missing troop wheat recipe");
   const rows = decodeLearned(learned);
@@ -97,7 +97,7 @@ const readResearchFacts = (
       storageStepBps: board.storage_step_bps,
       populationStepBps: board.population_step_bps,
       rationStep: Number(board.ration_step) / RESOURCE_PRECISION,
-      troopPerHour: Number(troop.realm_rate) * 3600 / RESOURCE_PRECISION,
+      troopPerHour: (Number(troop.realm_rate) * 3600) / RESOURCE_PRECISION,
       wheatPerTroop: Number(wheat.amount) / Number(recipe.simple_output),
     },
     laborStore: (level) => {

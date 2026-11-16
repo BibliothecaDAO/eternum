@@ -19,7 +19,7 @@ const FIRST_RING = [
   BuildingType.ResourceWheat,
   BuildingType.ResourceLabor,
   BuildingType.ResourceKnightT1,
-  BuildingType.RationsDepot,
+  BuildingType.ResourceWheat,
   BuildingType.SupplyYard,
 ];
 

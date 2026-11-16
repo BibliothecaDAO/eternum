@@ -267,7 +267,10 @@ pub /// A board realm with its castle, every command open, room for many buildin
     for rule in preset.resources.resources {
         resources
             .append(
-                if *rule.resource_type == 26 || *rule.resource_type == 29 || *rule.resource_type == 32 || *rule.resource_type == 35 {
+                if *rule.resource_type == 26
+                    || *rule.resource_type == 29
+                    || *rule.resource_type == 32
+                    || *rule.resource_type == 35 {
                     crate::resources::ResourceRule { realm_rate: 40, ..*rule }
                 } else {
                     *rule

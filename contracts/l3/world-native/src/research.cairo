@@ -84,10 +84,17 @@ pub fn is_training(category: u8) -> bool {
     category == SUPPLY_YARD || category == CONSCRIPTION_CAMP || category == RATIONS_DEPOT
 }
 
-pub const ROWS: [u8; 9] = [ROW_FARM, ROW_WORKSHOP, ROW_CONSCRIPTION, ROW_HUT, ROW_RATIONS, ROW_SUPPLY_YARD, ROW_SHRINE, ROW_WELL, ROW_DEPTH];
+pub const ROWS: [u8; 9] = [
+    ROW_FARM, ROW_WORKSHOP, ROW_CONSCRIPTION, ROW_HUT, ROW_RATIONS, ROW_SUPPLY_YARD, ROW_SHRINE, ROW_WELL, ROW_DEPTH,
+];
 
 pub fn max_tier(row: u8) -> u8 {
-    if row == ROW_FARM || row == ROW_WORKSHOP || row == ROW_HUT || row == ROW_SUPPLY_YARD || row == ROW_CONSCRIPTION || row == ROW_RATIONS {
+    if row == ROW_FARM
+        || row == ROW_WORKSHOP
+        || row == ROW_HUT
+        || row == ROW_SUPPLY_YARD
+        || row == ROW_CONSCRIPTION
+        || row == ROW_RATIONS {
         5
     } else if row == ROW_SHRINE || row == ROW_WELL {
         1

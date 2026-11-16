@@ -105,9 +105,13 @@ describe("troop raise cost", () => {
 it("prices every Depot tier independently of Conscription and waits for knowledge", () => {
   const store = realm(true, 100n * PRECISION);
   for (let tier = 0n; tier <= 5n; tier++) {
-    store.applyFacts([upsert("0x8", "RealmKnowledge", {game_id: 1, structure_id: 7, learned: (5n << 14n) | (tier << 24n)})]);
-    expect(readTroopRaiseCost(store, 1, 7, 26, 4, 100)).toEqual([{resource: 35, amount: (8n - tier) * PRECISION, held: 100n * PRECISION}]);
+    store.applyFacts([
+      upsert("0x8", "RealmKnowledge", { game_id: 1, structure_id: 7, learned: (5n << 14n) | (tier << 24n) }),
+    ]);
+    expect(readTroopRaiseCost(store, 1, 7, 26, 4, 100)).toEqual([
+      { resource: 35, amount: (8n - tier) * PRECISION, held: 100n * PRECISION },
+    ]);
   }
-  store.applyFacts([{model: "RealmKnowledge", key: "0x8", value: null}]);
+  store.applyFacts([{ model: "RealmKnowledge", key: "0x8", value: null }]);
   expect(readTroopRaiseCost(store, 1, 7, 26, 4, 100)).toBeUndefined();
 });
