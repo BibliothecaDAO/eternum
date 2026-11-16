@@ -44,7 +44,6 @@ export interface RealmResearchFacts {
     storageStepBps: number;
     populationStepBps: number;
     rationStep: number;
-    troopPerHour: number;
     wheatPerTroop: number;
   };
   /** The castle's labor store at a level, with the realm's Storeroom picks. */
@@ -421,13 +420,12 @@ export const readResearchTree = (realm: RealmResearchFacts): TreeNode[] => {
 };
 
 const conscriptionStep = (tier: number, board: RealmResearchFacts["board"]): Pick<Figure, "now" | "next"> => {
-  const at = (rank: number) =>
-    `${formatFigure(board.troopPerHour * (1 + (rank * board.outputStepBps) / 10000))} an hour`;
+  const at = (rank: number) => formatPercent((rank * board.outputStepBps) / 10000, { signed: true });
   return { now: at(tier), next: tier < 5 ? at(tier + 1) : undefined };
 };
 const rationsStep = (tier: number, board: RealmResearchFacts["board"]): Pick<Figure, "now" | "next"> => {
   const at = (rank: number) =>
-    `${formatFigure(Math.max(0, board.wheatPerTroop - rank * board.rationStep))} wheat a troop`;
+    RESEARCH_TREE.effects.rations(formatFigure(Math.max(0, board.wheatPerTroop - rank * board.rationStep)));
   return { now: at(tier), next: tier < 5 ? at(tier + 1) : undefined };
 };
 const logisticsStep = (tier: number): Pick<Figure, "now" | "next"> => {

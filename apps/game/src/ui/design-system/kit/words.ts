@@ -2233,7 +2233,7 @@ export const RESEARCH_TREE = {
   hutLine: "Hut population",
   conscriptionLine: "More troops from every troop building.",
   rationsLine: "Armies leave for less wheat.",
-  conscriptionFigure: "Troops an hour",
+  conscriptionFigure: "Troop output",
   rationsFigure: "Wheat per troop",
   population: "Population",
   newArmiesStart: (attribute: string) => `New armies start with ${attribute}`,
@@ -2243,6 +2243,7 @@ export const RESEARCH_TREE = {
   at: (tier: number, effect: string): RankedWords => [{ rank: tier }, ` · ${effect}`],
   effects: {
     logistics: (value: string) => `${value} max stamina`,
+    rations: (value: string) => `${value} wheat a troop`,
   },
   nouns: { essence: ESSENCE, labor: LABOR },
   armiesFind: (site: string) => `Armies find ${site}s`,

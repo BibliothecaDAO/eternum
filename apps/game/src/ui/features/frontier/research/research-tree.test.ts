@@ -115,7 +115,7 @@ it("offers independent Camp and Depot upgrades with their exact next output and 
     name: "Conscription Camp",
     tier: 1,
     price: { essence: 5000, labor: 1000 },
-    gives: { now: "120 an hour", next: "140 an hour" },
+    gives: { now: "+20%", next: "+40%" },
   });
   expect(node(realm, `row-${research.ROW_RATIONS}`)).toMatchObject({
     name: "Rations Depot",
