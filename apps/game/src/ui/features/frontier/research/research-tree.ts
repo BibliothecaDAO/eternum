@@ -426,7 +426,7 @@ const conscriptionStep = (tier: number, board: RealmResearchFacts["board"]): Pic
 };
 const rationsStep = (tier: number, board: RealmResearchFacts["board"]): Pick<Figure, "now" | "next"> => {
   const at = (rank: number) =>
-    `${formatExact(Math.max(0, board.wheatPerTroop - rank * board.rationStep))} wheat a troop`;
+    `${formatFigure(Math.max(0, board.wheatPerTroop - rank * board.rationStep))} wheat a troop`;
   return { now: at(tier), next: tier < 5 ? at(tier + 1) : undefined };
 };
 const logisticsStep = (tier: number): Pick<Figure, "now" | "next"> => {

@@ -1,7 +1,7 @@
 import { learnResearch } from "@bibliothecadao/eternum";
 import { nativeResearchConstants as research } from "@bibliothecadao/eternum/game-client";
 import { RESOURCE_PRECISION, ResourcesIds } from "@bibliothecadao/types";
-import { frontierSeasonOnePreset } from "../../../../../../config/source/frontier/season-one";
+import { frontierSeasonOnePreset } from "../../../../../config/source/frontier/season-one";
 import { actionsScenario } from "./actions-scenario";
 import { wire, type LabScenario } from "./lab-chain";
 
