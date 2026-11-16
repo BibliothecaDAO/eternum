@@ -99,7 +99,7 @@ fn assert_start(d: Deployment, game_id: u32, timestamp: u64) -> Span<u64> {
                 assert_eq!(
                     bar.stamina.amount,
                     crate::progression::stamina_max(
-                        crate::progression::initial(), TroopType::Knight, rules.troop_stamina_config,
+                        Default::default(), TroopType::Knight, rules.troop_stamina_config,
                     ),
                 );
             }

@@ -7,7 +7,6 @@ pub mod RelicState {
     use crate::game::{IPointsDispatcherTrait, IPointsLibraryDispatcher, assert_playing};
     use crate::logic::release::ReleaseState;
     use crate::logic::release::ReleaseState::InternalTrait as LifeInternalTrait;
-    use crate::progression::{ScoutingKind, SkillPointUse};
     use crate::relics::{
         ApplyRelic, IRelicMapDispatcherTrait, IRelicMapLibraryDispatcher, IRelicProductionDispatcherTrait,
         IRelicProductionLibraryDispatcher, IRelicTroopsDispatcherTrait, IRelicTroopsLibraryDispatcher, OpenChest,
@@ -133,64 +132,9 @@ pub mod RelicState {
         ) -> Option<crate::progression::ArmyProgress> {
             crate::logic::progression::read(key)
         }
-        fn army_progression_rules(
-            self: @ComponentState<TContractState>, game_id: u32,
-        ) -> Option<crate::progression::ArmyProgressionRules> {
-            crate::logic::progression::rules(game_id)
-        }
-        fn grant_army_xp(
-            ref self: ComponentState<TContractState>,
-            key: ExplorerKey,
-            award: crate::progression::XpAward,
-            timestamp: u64,
-        ) -> u32 {
-            crate::logic::progression::award_xp(key, award, timestamp)
-        }
-        fn spend_skill_point(
-            ref self: ComponentState<TContractState>,
-            game_id: u32,
-            actor: ContractAddress,
-            command: crate::progression::SpendSkillPoint,
-            context: crate::commands::ActionContext,
-        ) -> () {
-            let context = crate::commands::execution_context(game_id, context);
-            self.assert_command(game_id, context.timestamp, context);
-            let key = ExplorerKey { game_id, explorer_id: command.explorer_id };
-            let explorer = crate::logic::troops::command_explorer(key, Some(actor), context.timestamp, context);
-            let mut progress = crate::logic::progression::require(key);
-            if let SkillPointUse::Scouting(kind) = command.choice {
-                assert!(explorer.troops.category == TroopType::Paladin, "only Scouts learn Scouting");
-                if kind == ScoutingKind::Sanctuaries {
-                    let learned = crate::logic::research::learned(ResourceKey { game_id, entity_id: explorer.owner });
-                    assert!(
-                        crate::research::scouting_available(learned, crate::research::KIND_SANCTUARIES),
-                        "research Shrine or Well first",
-                    );
-                }
-            }
-            let mut bought = crate::progression::spend_skill_point(ref progress, command);
-            let maximum = crate::progression::stamina_max(
-                progress, explorer.troops.category, context.rules.unbox().troop_stamina_config,
-            );
-            if let SkillPointUse::Stamina(_) = command.choice {
-                assert!(explorer.troops.stamina.inline().amount < maximum, "stamina is full");
-            }
-            crate::logic::progression::write(key, progress);
-            bought.stamina = self.grant_stamina(key, explorer, bought.stamina, maximum);
-            self
-                .emit(
-                    crate::ownership::StoryEvent {
-                        version: 2,
-                        game_id,
-                        entity_id: Some(command.explorer_id),
-                        owner: Some(actor),
-                        timestamp: context.timestamp,
-                        tx_hash: starknet::get_tx_info().unbox().transaction_hash,
-                        story: crate::ownership::Story::SkillPointSpent(bought),
-                    },
-                );
-            ()
-        }
+
+
+
     }
     #[embeddable_as(FrontierSitesImpl)]
     pub impl FrontierSites<
@@ -205,70 +149,13 @@ pub mod RelicState {
             actor: ContractAddress,
             command: crate::relics::InteractSite,
             context: crate::commands::ActionContext,
-        ) -> () {
-            let context = crate::commands::execution_context(game_id, context);
-            self.assert_command(game_id, context.timestamp, context);
-            assert!(context.rules.unbox().day_unit_seconds != 0, "site requires expedition");
-            if crate::logic::deep::contains(game_id, command.coord) {
-                crate::deep::IDeepSitesDispatcherTrait::join_deep_site(
-                    crate::logic::deep_sites::dispatcher(game_id),
-                    game_id,
-                    actor,
-                    command,
-                    crate::commands::action_context(context),
-                );
-                return;
-            }
-            let key = ExplorerKey { game_id, explorer_id: command.explorer_id };
-            let explorer = crate::logic::troops::command_explorer(key, Some(actor), context.timestamp, context);
-            assert!(explorer.troops.count != 0, "explorer is dead");
-            crate::expeditions::assert_same_region(
-                explorer.coord, command.coord, crate::logic::settlement::rules(game_id).spacing,
+        ) {
+            let execution = crate::commands::execution_context(game_id, context);
+            self.assert_command(game_id, execution.timestamp, execution);
+            assert!(crate::logic::deep::contains(game_id, command.coord), "site must be in the Deep");
+            crate::deep::IDeepSitesDispatcherTrait::join_deep_site(
+                crate::logic::deep_sites::dispatcher(game_id), game_id, actor, command, context,
             );
-            assert!(crate::geometry::adjacent(explorer.coord, command.coord), "explorer is not adjacent to site");
-            let point = crate::expeditions::IFrontierDiscoveryDispatcherTrait::consume_frontier_site(
-                crate::expeditions::IFrontierDiscoveryLibraryDispatcher {
-                    class_hash: self.logic_classes(game_id).construction.read(),
-                },
-                crate::geometry::tile_key(game_id, command.coord),
-                command.explorer_id,
-            );
-            let benefit = match point {
-                Some(rank) => {
-                    crate::logic::quest_progress::record(
-                        crate::resources::ResourceKey { game_id, entity_id: explorer.owner },
-                        crate::quests::VETERANS,
-                        1,
-                        context.timestamp,
-                    );
-                    crate::relics::SiteBenefit::ShrinePoint(rank)
-                },
-                None => {
-                    let maximum = crate::progression::stamina_max(
-                        crate::logic::progression::require(key),
-                        explorer.troops.category,
-                        context.rules.unbox().troop_stamina_config,
-                    );
-                    crate::relics::SiteBenefit::Well(
-                        self.grant_stamina(key, explorer, maximum / crate::rules::WELL_STAMINA_DIVISOR.into(), maximum),
-                    )
-                },
-            };
-            self
-                .emit(
-                    crate::ownership::StoryEvent {
-                        version: 2,
-                        game_id,
-                        entity_id: Some(command.explorer_id),
-                        owner: Some(actor),
-                        timestamp: context.timestamp,
-                        tx_hash: starknet::get_tx_info().unbox().transaction_hash,
-                        story: crate::ownership::Story::SiteUsed(
-                            crate::relics::SiteUsed { explorer_id: command.explorer_id, coord: command.coord, benefit },
-                        ),
-                    },
-                );
-            ()
         }
     }
 
@@ -284,7 +171,7 @@ pub mod RelicState {
             if let ArmySlotAction::Allocate(value) = action {
                 let home = crate::resources::ResourceKey { game_id: key.game_id, entity_id: value.home };
                 let progress = crate::logic::progression::create(
-                    key, crate::logic::research::learned(home), value.category,
+                    key, crate::logic::research::learned(home),
                 );
                 // A slot's first army of the day starts full at its own maximum, trained Logistics included.
                 let maximum = crate::progression::stamina_max(progress, value.category, value.stamina_config);
@@ -293,17 +180,11 @@ pub mod RelicState {
                     stamina: army_slot_storage::allocate(
                         key, value.home, value.epoch, value.allowance, value.slot, initial, maximum,
                     ),
-                    battle_bonus_percent: 0,
                 };
             }
             let mut explorer = crate::logic::troops::explorer(key).expect('missing slot explorer');
-            let mut battle_bonus_percent = 0;
             let stamina = match action {
                 ArmySlotAction::Resolve(refill) => {
-                    battle_bonus_percent =
-                        crate::rules::battle_bonus_bps(crate::logic::progression::require(key).battle)
-                        .try_into()
-                        .unwrap();
                     army_slot_storage::resolve(key, explorer, refill).troops.stamina
                 },
                 ArmySlotAction::Persist(stamina) => {
@@ -322,7 +203,7 @@ pub mod RelicState {
                 },
                 ArmySlotAction::Allocate(_) => panic!("allocation already handled"),
             };
-            ResolvedArmySlot { stamina, battle_bonus_percent }
+            ResolvedArmySlot { stamina }
         }
     }
 

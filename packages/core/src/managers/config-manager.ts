@@ -258,10 +258,7 @@ export class ClientConfigManager {
   }
   /** Whether a battle rolls a d20 per side: everywhere in a game with combat dice, on the ethereal layer in one with
    *  ethereal dice, and never otherwise. */
-  rollsCombatDice(defenderAlt: boolean): boolean {
-    const rules = this.rules();
-    return (defenderAlt && isModeRuleEnabled(rules, "COMBAT_DICE_ETHEREAL")) || isModeRuleEnabled(rules, "COMBAT_DICE");
-  }
+
   /** Whether a new reveal pays from the army's strength and depth (Frontier's reveal supplies) rather than the drawn
    *  exploration reward. */
   paysRevealSupplies(): boolean {

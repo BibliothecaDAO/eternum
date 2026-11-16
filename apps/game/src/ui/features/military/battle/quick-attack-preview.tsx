@@ -16,7 +16,7 @@ import {
   getGuardsByStructure,
   getTroopResourceId,
   StaminaManager,
-  openingChargePercent,
+
   ARMY_CHARGE_MODELS,
 } from "@bibliothecadao/eternum";
 import { useGame } from "@/hooks/context/game-context";
@@ -112,7 +112,6 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
   const ethereal = target.alt;
   const surfaceBiome = useStoredBiome(target.hex.x, target.hex.y) ?? BiomeType.None;
   const biome = ethereal ? BiomeType.Underground : surfaceBiome;
-  const rollsDice = useMemo(() => configManager.rollsCombatDice(ethereal), [ethereal]);
 
   const attackerType = useMemo(() => {
     const structure = facts.store.get("Structure", {
@@ -154,56 +153,11 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
 
   const attackerArmyData: { troops: Troops } | null = useMemo(() => {
     if (attackerType === AttackerType.Structure) return activeGuard ? { troops: activeGuard.troops } : null;
-    const army = facts.store.get("ExplorerTroops", {
-      game_id: configManager.getActiveGameId(),
-      explorer_id: attacker.id,
-    });
-    const troops = army ? resolveExplorerCombatTroops(facts.store, army, executionSecond) : undefined;
-    return troops ? { troops } : null;
-  }, [facts, attacker.id, attackerType, activeGuard, executionSecond]);
-  const attackerStamina = attackerArmyData
-    ? StaminaManager.getStamina(attackerArmyData.troops, executionSecond).amount
-    : undefined;
-  const requiredAttackStamina = Number(combatConfig.stamina_attack_req);
-  const readyAt = attackerArmyData
-    ? StaminaManager.getAffordableAt(attackerArmyData.troops, requiredAttackStamina, executionSecond)
-    : null;
-  const staminaWaitSeconds = readyAt === null ? null : Math.max(0, readyAt - executionSecond);
-
-  const targetTroopSnapshots = useMemo(() => targetData?.info ?? [], [targetData]);
-
-  const isStructureTarget = targetData?.targetType === TargetType.Structure;
-
-  const targetArmyData: { troops: Troops } | null = useMemo(() => {
-    if (!targetTroopSnapshots[0]) return null;
-    return { troops: targetTroopSnapshots[0] };
-  }, [targetTroopSnapshots]);
-
-  const queuedTargetGuards = useMemo(
-    () => (isStructureTarget ? targetTroopSnapshots.slice(1) : []),
-    [isStructureTarget, targetTroopSnapshots],
-  );
-
-  const totalGuardCount = isStructureTarget ? targetTroopSnapshots.length : 0;
-
-  // Every exchange is the contract's own arithmetic on both sides' troops, stamina and boosts at chain time: this
-  // attack and the whole fight as successive attacks now, at both ends of the dice.
-  const fight = useMemo(() => {
-    if (!attackerArmyData || !targetArmyData || !targetData) return null;
-    const army = facts.store.get("ExplorerTroops", {
-      game_id: configManager.getActiveGameId(),
-      explorer_id: attacker.id,
-    });
-    const chargePercent =
-      attackerType === AttackerType.Structure
-        ? 0
-        : army && openingChargePercent(facts.store, army, BigInt(targetData.id));
-    if (chargePercent === undefined) return null;
     return forecastAttack(
       attackerArmyData.troops,
       targetArmyData.troops,
       {
-        chargePercent,
+
         timestamp: executionSecond,
         attackDistance: targetDistance,
         attackerBiome: biome,
@@ -211,7 +165,7 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
         attackerIsStructureGuard: attackerType === AttackerType.Structure,
         defenderIsStructureGuard: isStructureTarget,
       },
-      { rules: configManager.getCombatRules(), rollsDice },
+      { rules: configManager.getCombatRules() },
     );
   }, [
     attackerArmyData,
@@ -224,7 +178,6 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
     biome,
     attackerType,
     isStructureTarget,
-    rollsDice,
   ]);
 
   const attackerTroopsTotal = useMemo(() => {
@@ -243,8 +196,8 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
   const certainLoss = fight?.certainLoss ?? false;
 
   // Capture and garrison are judged on the attacker's worst roll, so the atomic claim never counts on luck.
-  const attackerRemaining = attackerSide ? attackerSide.worst.remaining : attackerTroopsTotal;
-  const defenderRemaining = defenderSide ? defenderSide.worst.remaining : defenderTroopsTotal;
+  const attackerRemaining = attackerSide ? attackerSide.remaining : attackerTroopsTotal;
+  const defenderRemaining = defenderSide ? defenderSide.remaining : defenderTroopsTotal;
 
   // Per-slot defender view: the active guard (slot 0) shows its projected
   // post-fight remainder, queued guards show their untouched troop counts.
@@ -339,8 +292,7 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
   const title = combatTitle(accountName, targetOwnerName);
   const fightCost = (() => {
     if (!fight) return null;
-    const [worst, best] = [describeFightCost(fight.worst.forecast), describeFightCost(fight.best.forecast)];
-    return worst === best ? worst : `Worst roll: ${worst ?? "—"} · best: ${best ?? "—"}`;
+    return describeFightCost(fight.forecast);
   })();
 
   // Shared submit pipeline: guards, pending worldmap FX, sound, and teardown are identical across

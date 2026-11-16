@@ -134,7 +134,6 @@ pub struct BoardRules {
     pub population_step_bps: u16,
     pub ration_step: u128,
     // The number of Barracks purchases needed before building training.
-    pub training_gate_tier: u8,
     // Troop storage stays tied to deployment capacity; wheat and labor have their own per-level caps.
     pub troop_store_deploys: u8,
     pub settlement_resource_cap: u32,

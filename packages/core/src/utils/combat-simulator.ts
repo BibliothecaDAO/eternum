@@ -1,6 +1,5 @@
 import { BiomeType, RELICS, RESOURCE_PRECISION, ResourcesIds, TroopTier, TroopType } from "@bibliothecadao/types";
 import {
-  COMBAT_DIE_FACES,
   resolveExchange,
   type CombatRules,
   type ExchangeRefusal,
@@ -16,7 +15,6 @@ export interface Army {
 }
 
 export interface CombatSimulationContext {
-  chargePercent: number;
   attackDistance?: number;
   attackerBiome?: BiomeType;
   defenderBiome?: BiomeType;
@@ -24,8 +22,6 @@ export interface CombatSimulationContext {
   attackerIsStructureGuard?: boolean;
   defenderIsStructureGuard?: boolean;
   /** Each side's d20 where the battle rolls dice: it adds that many percent to the side's damage; 0 without dice. */
-  attackerRoll?: number;
-  defenderRoll?: number;
 }
 
 export interface CombatParameters {
@@ -40,7 +36,7 @@ export interface CombatParameters {
   tick_interval_seconds: number;
 }
 
-interface BattleOutcome {
+export interface BattleOutcome {
   attackerDamage: number;
   defenderDamage: number;
   attackerStamina: number;
@@ -49,10 +45,7 @@ interface BattleOutcome {
   defenderCooldownEnd: number;
 }
 
-export interface BattleRange {
-  worst: BattleOutcome;
-  best: BattleOutcome;
-}
+
 
 type RefusedBattle = { ok: false; refusal: ExchangeRefusal };
 type BattleSimulation = ({ ok: true } & BattleOutcome) | RefusedBattle;
@@ -95,14 +88,11 @@ export class CombatSimulator {
       combatTroops(defender, defenderRelics, now),
       {
         timestamp: now,
-        chargePercent: context.chargePercent,
         attackDistance: context.attackDistance ?? 1,
         attackerBiome: context.defenderAlt ? BiomeType.Underground : (context.attackerBiome ?? biome),
         defenderBiome: context.defenderAlt ? BiomeType.Underground : (context.defenderBiome ?? biome),
         attackerIsStructureGuard: context.attackerIsStructureGuard ?? false,
         defenderIsStructureGuard: context.defenderIsStructureGuard ?? false,
-        attackerRoll: context.attackerRoll ?? 0,
-        defenderRoll: context.defenderRoll ?? 0,
       },
       this.rules,
     );
@@ -118,28 +108,7 @@ export class CombatSimulator {
     };
   }
 
-  public simulateBattleRange(
-    now: number,
-    attacker: Army,
-    defender: Army,
-    biome: BiomeType,
-    attackerRelics: ResourcesIds[],
-    defenderRelics: ResourcesIds[],
-    context: CombatSimulationContext,
-    dice: boolean,
-  ): ({ ok: true } & BattleRange) | RefusedBattle {
-    const at = (attackerRoll: number, defenderRoll: number) =>
-      this.simulateBattle(now, attacker, defender, biome, attackerRelics, defenderRelics, {
-        ...context,
-        attackerRoll,
-        defenderRoll,
-      });
-    const worst = at(dice ? 1 : 0, dice ? COMBAT_DIE_FACES : 0);
-    if (!worst.ok) return worst;
-    const best = dice ? at(COMBAT_DIE_FACES, 1) : worst;
-    if (!best.ok) return best;
-    return { ok: true, worst, best };
-  }
+
 }
 
 const combatTroops = (army: Army, relics: ResourcesIds[], now: number): ExchangeTroops => {

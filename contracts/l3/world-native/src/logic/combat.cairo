@@ -50,16 +50,15 @@ pub fn battle_guard(game_id: u32, actor: ContractAddress, command: Battle, conte
         GuardSource::Empty => false,
         _ => true,
     };
-    let rolls = if fought {
-        fight_guard(key, ref attacker, ref defender, context)
+    if fought {
+        fight_guard(key, ref attacker, ref defender, context);
     } else {
         attacker = combat_troops(game_id)
             .spend_claim(key, attacker, target.coord, crate::commands::action_context(context));
-        (0, 0)
     };
     complete_guard_capture(key, actor, attacker, target, defender, command.relic_slot, context);
     if fought {
-        emit_guard_battle(key, actor, attacker, attacker_before, target, defender, defender_before, rolls, context);
+        emit_guard_battle(key, actor, attacker, attacker_before, target, defender, defender_before, context);
     }
 }
 
@@ -75,12 +74,7 @@ fn guard_target(
         return GuardTarget { key, coord, structure: None };
     }
     let structure = crate::logic::structures::structure(key).expect('missing guarded structure');
-    if structure.base.category == crate::taxonomy::HYPERSTRUCTURE_CATEGORY {
-        assert!(
-            crate::logic::preset_record::for_game(key.game_id).race_rules.sub_pointers().is_none(),
-            "race monuments cannot be attacked",
-        );
-    }
+
     if crate::rules::rule_enabled(rules, crate::rules::UNOWNED_TARGETS) {
         assert!(structure.owner == 0.try_into().unwrap(), "target must be unowned");
     }
@@ -134,14 +128,14 @@ fn beast_bps(target: GuardTarget, home: u64, timestamp: u64) -> u32 {
 
 fn fight_guard(
     key: ExplorerKey, ref attacker: ExplorerTroops, ref defender: GuardDefender, context: ExecutionContext,
-) -> (u8, u8) {
+) {
     let target = match defender.source {
         GuardSource::Army(key) => key.explorer_id,
         GuardSource::Guard((key, _)) => key.structure_id,
         GuardSource::Empty => panic!("missing fought guard"),
     };
+    record_target(key, target, context);
     let combat = CombatContext {
-        charge_percent: opening_charge(key, target, context),
         defender_is_structure_guard: true,
         ..combat_context(key.game_id, attacker, defender.army, context),
     };
@@ -154,7 +148,6 @@ fn fight_guard(
     defender.army.troops = defender_after;
     combat_troops(key.game_id).finish_battle(key, attacker, attacker_before, crate::commands::action_context(context));
     save_guard_defender(defender, defender_before, context);
-    (combat.attacker_roll, combat.defender_roll)
 }
 
 fn save_guard_defender(defender: GuardDefender, before: u128, context: ExecutionContext) {
@@ -224,7 +217,6 @@ fn emit_guard_battle(
     target: GuardTarget,
     defender: GuardDefender,
     defender_before: u128,
-    rolls: (u8, u8),
     context: ExecutionContext,
 ) {
     let winner = if attacker.troops.count == 0 && defender.army.troops.count != 0 {
@@ -234,7 +226,6 @@ fn emit_guard_battle(
     } else {
         0
     };
-    let (attacker_roll, defender_roll) = rolls;
     emit(
         crate::troops::BattleEvent {
             version: 2,
@@ -249,8 +240,8 @@ fn emit_guard_battle(
             winner_id: winner,
             coord: target.coord,
             max_reward: array![].span(),
-            attacker: battle_side(actor, attacker_before, attacker.troops, attacker_roll),
-            defender: battle_side(defender.actor, defender_before, defender.army.troops, defender_roll),
+            attacker: battle_side(actor, attacker_before, attacker.troops, 0),
+            defender: battle_side(defender.actor, defender_before, defender.army.troops, 0),
             timestamp: context.timestamp,
         },
     );
@@ -275,10 +266,8 @@ pub fn battle(
     assert_loot_available(game_id, command.defender_id, command.steal_resources, context);
     let attacker_before = attacker.troops.count;
     let defender_before = defender.troops.count;
-    let combat = CombatContext {
-        charge_percent: opening_charge(attacker_key, command.defender_id, context),
-        ..combat_context(game_id, attacker, defender, context),
-    };
+    record_target(attacker_key, command.defender_id, context);
+    let combat = combat_context(game_id, attacker, defender, context);
     let (attacker_after, defender_after) = resolve_battle(game_id, attacker.troops, defender.troops, combat, context);
     attacker.troops = attacker_after;
     defender.troops = defender_after;
@@ -308,8 +297,8 @@ pub fn battle(
             winner_id: battle_winner(attacker, defender),
             coord: defender.coord,
             max_reward: command.steal_resources,
-            attacker: battle_side(actor, attacker_before, attacker.troops, combat.attacker_roll),
-            defender: battle_side(defender_owner, defender_before, defender.troops, combat.defender_roll),
+            attacker: battle_side(actor, attacker_before, attacker.troops, 0),
+            defender: battle_side(defender_owner, defender_before, defender.troops, 0),
             timestamp: context.timestamp,
         },
     );
@@ -368,8 +357,8 @@ pub fn guard_attack(
             winner_id: battle_winner(ExplorerTroops { troops: guard.troops, ..attacker }, defender),
             coord: defender.coord,
             max_reward: array![].span(),
-            attacker: battle_side(actor, attacker.troops.count, guard.troops, combat.attacker_roll),
-            defender: battle_side(defender_owner, before, defender.troops, combat.defender_roll),
+            attacker: battle_side(actor, attacker.troops.count, guard.troops, 0),
+            defender: battle_side(defender_owner, before, defender.troops, 0),
             timestamp: context.timestamp,
         },
     );
@@ -582,18 +571,6 @@ pub fn combat_context(
     let biome: crate::biome::Biome = map_dispatcher(game_id)
         .biome(tile_key(game_id, defender.coord), crate::commands::biome_context(context))
         .into();
-    let mode_rules = context.rules.unbox().mode_rules;
-    let ethereal_dice = defender.coord.alt && mode_rules & crate::rules::COMBAT_DICE_ETHEREAL != 0;
-    let (attacker_roll, defender_roll) = if ethereal_dice || mode_rules & crate::rules::COMBAT_DICE != 0 {
-        let mut raw_root = context.raw_root;
-        let seed = crate::random::game_root(ref raw_root, game_id);
-        (
-            1_u8 + crate::random::range(seed, 1, 20).try_into().unwrap(),
-            1_u8 + crate::random::range(seed, 2, 20).try_into().unwrap(),
-        )
-    } else {
-        (0_u8, 0_u8)
-    };
     let attack_distance = if attacker.coord.alt != defender.coord.alt {
         1
     } else {
@@ -605,11 +582,8 @@ pub fn combat_context(
         (distance(attacker.coord, defender.coord) / stride).try_into().unwrap()
     };
     CombatContext {
-        charge_percent: 0,
         timestamp: context.timestamp,
         day_unit_seconds: context.rules.unbox().day_unit_seconds,
-        attacker_roll,
-        defender_roll,
         attacker_biome: biome,
         defender_biome: biome,
         attack_distance,
@@ -692,9 +666,8 @@ fn emit<T, +starknet::event::Event<T>, +Into<T, crate::logic::combat_domain::Com
     starknet::syscalls::emit_event_syscall(keys.span(), data.span()).unwrap();
 }
 
-fn opening_charge(key: ExplorerKey, target: u64, context: ExecutionContext) -> u8 {
-    if context.rules.unbox().day_unit_seconds == 0 {
-        return 0;
+fn record_target(key: ExplorerKey, target: u64, context: ExecutionContext) {
+    if context.rules.unbox().day_unit_seconds != 0 {
+        crate::logic::army_combat::record_target(key, target);
     }
-    crate::logic::army_combat::opening_charge(key, target)
 }

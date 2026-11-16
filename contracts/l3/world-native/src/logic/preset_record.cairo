@@ -130,7 +130,6 @@ fn write_economy(
         rules.mode_rules,
         rules.day_unit_seconds,
     );
-    preset.progression_rules.write(economy.progression);
     preset.discovery_rules.write(economy.discovery);
     preset.artificer_cost.write(economy.research_cost);
     if let Some(withdrawals) = economy.withdrawals {
@@ -283,7 +282,6 @@ fn write_buildings(
     if let Some(board) = board {
         assert!(board.demolition_refund_bps <= 10000, "invalid demolition refund");
         assert!(board.workshop_rate != 0, "zero workshop rate");
-        assert!(board.training_gate_tier <= 4, "invalid training gate tier");
         assert!(board.troop_store_deploys != 0, "zero troop store");
         assert!(
             board.settlement_resource_cap > 0
@@ -545,8 +543,8 @@ fn write_research(preset: PresetWrite, structures: crate::presets::StructurePres
     }
     // Every row's tiers are priced exactly once, from the first tier above common to the row's last.
     let mut expected = 0_u32;
-    for row in 0..crate::research::ROW_COUNT {
-        expected += crate::research::max_tier(row).into();
+    for row in crate::research::ROWS.span() {
+        expected += crate::research::max_tier(*row).into();
     }
     assert!(structures.research.len() == expected, "incomplete research prices");
     for entry in structures.research {

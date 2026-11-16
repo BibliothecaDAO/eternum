@@ -185,7 +185,7 @@ fn a_site_cannot_clear_again_after_an_army_enters_its_tile() {
 }
 
 #[test]
-fn cyclops_pays_wheat_and_wraith_pays_only_triple_xp() {
+fn herd_pays_wheat_and_band_pays_only_triple_xp() {
     for (depth, strength, wheat, xp) in array![
         (0_u8, 350_u128, 1400_u128, 46_u32), (1, 700, 4200, 99), (2, 1400, 11200, 186),
     ] {

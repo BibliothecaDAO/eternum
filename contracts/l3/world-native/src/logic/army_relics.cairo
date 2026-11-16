@@ -114,7 +114,7 @@ pub fn destroy(key: ExplorerKey) {
         crate::state::write().relics.army_relics.write((key.game_id, key.explorer_id), 0);
         delete_row('ArmyRelics', key);
     }
-    for kind_id in 0_u8..5 {
+    for kind_id in 0_u8..4 {
         let effect_key = ArmyRelicEffectKey {
             game_id: key.game_id, explorer_id: key.explorer_id, kind: crate::army_relics::kind_at(kind_id),
         };

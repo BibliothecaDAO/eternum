@@ -7,7 +7,6 @@ import {
 import { DAYS_PER_BAG } from "@bibliothecadao/eternum/expeditions";
 import { nativePresetForId } from "../../../source/native";
 import { clockScaled, seasonDayUnitSeconds } from "../../../source/common/season-clock";
-import { nativeProgressionRules } from "../../../source/common/progression";
 import { RESOURCE_PRECISION, ResourcesIds, type Config } from "@bibliothecadao/types";
 import { CairoCustomEnum, CairoOption, CairoOptionVariant } from "starknet";
 import {
@@ -307,19 +306,6 @@ function buildEconomy(
     )
       throw new Error("Invalid ruin chest rules");
   }
-  const progression = preset.progression;
-  if (progression === undefined || (progression !== null) !== (preset.dayUnitSeconds !== 0))
-    throw new Error("Explicit progression rules are required for expedition presets only");
-  if (
-    progression &&
-    Object.entries(progression).some(
-      ([key, value]) =>
-        !Number.isSafeInteger(value) || value < (key === "revealXpPerDepth" ? 0 : 1) || value > 0xffff_ffff,
-    )
-  )
-    throw new Error("Progression XP values must be positive u32 integers");
-  if (progression && progression.revealXp + 3 * progression.revealXpPerDepth > 0xffff_ffff)
-    throw new Error("Depth reveal XP exceeds u32");
   const labor = preset.labor;
   if (
     (labor !== null || preset.dailyQuest !== null) !== (preset.dayUnitSeconds !== 0) ||
@@ -346,10 +332,6 @@ function buildEconomy(
     quests: buildQuests(preset),
     banes: buildBanes(preset),
     race: buildRace(preset),
-    progression:
-      progression === null
-        ? new CairoOption(CairoOptionVariant.None)
-        : new CairoOption(CairoOptionVariant.Some, nativeProgressionRules(progression)),
     chests:
       chests === null
         ? new CairoOption(CairoOptionVariant.None)
@@ -567,9 +549,8 @@ function buildRace(preset: ReturnType<typeof nativePresetForId>) {
   if (race === null) return new CairoOption(CairoOptionVariant.None);
   if (!race || preset.deep === null) throw new Error("Race requires the Deep");
   if (preset.modeRules & (presetRule.DISCOVER_HYPERSTRUCTURES | presetRule.RESERVED_HYPERSTRUCTURES))
-    throw new Error("Race has only fixed monuments");
-  validateRace(race, preset.deep);
-  const coord = ([x, y]: readonly [number, number]) => ({ alt: false, x, y });
+    throw new Error("Race has no map hyperstructures");
+  validateRace(race);
   return new CairoOption(CairoOptionVariant.Some, {
     season_days: BigInt(race.seasonDays),
     glory_per_tick: BigInt(race.gloryPerTick),
@@ -579,16 +560,11 @@ function buildRace(preset: ReturnType<typeof nativePresetForId>) {
     second_wind_percent: race.secondWindPercent,
     pale_moon_percent: race.paleMoonPercent,
     spoils_percent: race.spoilsPercent,
-    first: coord(race.positions[0]),
-    second: coord(race.positions[1]),
-    third: coord(race.positions[2]),
-    fourth: coord(race.positions[3]),
   });
 }
 
 function validateRace(
   race: NonNullable<ReturnType<typeof nativePresetForId>["race"]>,
-  deep: NonNullable<ReturnType<typeof nativePresetForId>["deep"]>,
 ) {
   const amounts = [race.seasonDays, race.gloryPerTick, race.heightPerTick, race.stageHeight];
   if (
@@ -607,23 +583,6 @@ function validateRace(
     race.paleMoonPercent > 100
   )
     throw new Error("Invalid Triumph rates");
-  const sites = [deep.foundation, deep.quarry, deep.altar];
-  if (
-    race.positions.length !== 4 ||
-    race.positions.some(
-      ([x, y]) =>
-        !Number.isSafeInteger(x) ||
-        !Number.isSafeInteger(y) ||
-        x < 0 ||
-        y < 0 ||
-        x >= presetRule.DEEP_MAP_SIZE ||
-        y >= presetRule.DEEP_MAP_SIZE ||
-        (x === presetRule.DEEP_MAP_SIZE / 2 && y === presetRule.DEEP_ARRIVAL_Y) ||
-        sites.some((site) => site.x === x && site.y === y),
-    ) ||
-    new Set(race.positions.map(([x, y]) => `${x}:${y}`)).size !== race.positions.length
-  )
-    throw new Error("Invalid race positions");
 }
 
 function buildBanes(preset: ReturnType<typeof nativePresetForId>) {

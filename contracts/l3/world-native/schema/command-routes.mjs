@@ -265,11 +265,6 @@ export const commandRoutes = [
     entrypoint: "research",
   },
   {
-    name: "SpendSkillPoint",
-    logic: "relics",
-    entrypoint: "spend_skill_point",
-  },
-  {
     name: "InteractSite",
     logic: "movement",
     entrypoint: "interact_site",

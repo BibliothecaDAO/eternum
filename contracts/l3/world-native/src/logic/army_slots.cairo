@@ -17,8 +17,6 @@ pub fn resolve(key: ExplorerKey, mut explorer: ExplorerTroops, refill: Option<St
     if let StaminaSource::Slot(_) = explorer.troops.stamina {
         let slot = dispatch(key, ArmySlotAction::Resolve(refill));
         explorer.troops.stamina = slot.stamina;
-        explorer.troops.boosts.incr_damage_dealt_percent_num = slot.battle_bonus_percent;
-        explorer.troops.boosts.incr_damage_dealt_end_at = 0;
     }
     explorer
 }
@@ -40,4 +38,3 @@ pub fn persist(key: ExplorerKey, previous: ExplorerRecord, mut troops: Troops) -
 pub fn release(key: ExplorerKey, explorer: ExplorerTroops) {
     dispatch(key, ArmySlotAction::Release(explorer.troops.stamina));
 }
-

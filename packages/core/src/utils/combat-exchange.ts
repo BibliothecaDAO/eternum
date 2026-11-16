@@ -38,7 +38,6 @@ export interface CombatRules {
 }
 
 interface ExchangeContext {
-  chargePercent: number;
   timestamp: number;
   attackDistance: number;
   attackerBiome: BiomeType;
@@ -46,12 +45,9 @@ interface ExchangeContext {
   attackerIsStructureGuard: boolean;
   defenderIsStructureGuard: boolean;
   /** Each side's d20 where the game rolls dice, adding that many percent to its damage; 0 without dice. */
-  attackerRoll: number;
-  defenderRoll: number;
 }
 
 /** The faces of the die each side rolls where a game has combat dice. */
-export const COMBAT_DIE_FACES = 20;
 
 export type ExchangeRefusal = "no-troops" | "cooldown" | "insufficient-stamina";
 
@@ -187,10 +183,6 @@ const exchangeDamage = (
   let attackerDamage = [attackerTroops, attackerTier, ONE, attackerBiome, ONE].reduce(mul, base);
   attackerDamage = div(div(attackerDamage, defenderTier), scale);
 
-  if (context.attackerRoll > COMBAT_DIE_FACES || context.defenderRoll > COMBAT_DIE_FACES)
-    throw new Error("A combat die has twenty faces");
-  attackerDamage = mul(attackerDamage, percent(100 + context.attackerRoll));
-  defenderDamage = mul(defenderDamage, percent(100 + context.defenderRoll));
   attackerDamage = mul(attackerDamage, outgoingMultiplier(attacker, context, rules.dayUnitSeconds));
   attackerDamage = mul(
     attackerDamage,
@@ -214,12 +206,7 @@ const exchangeDamage = (
   defenderDamage = add(defenderDamage, div(mul(defenderDamage, unscaled(defenderBoosts.dealt)), BPS_100));
   defenderDamage = sub(defenderDamage, div(mul(defenderDamage, unscaled(attackerBoosts.gotten)), BPS_100));
   attackerDamage = sub(attackerDamage, div(mul(attackerDamage, unscaled(defenderBoosts.gotten)), BPS_100));
-  if (rules.dayUnitSeconds !== 0 && attacker.category === "Knight" && context.chargePercent !== 0) {
-    const early = mul(round(attackerDamage), percent(context.chargePercent));
-    defenderDamage = gte(early, defenderTroops)
-      ? ZERO
-      : div(mul(defenderDamage, sub(defenderTroops, early)), defenderTroops);
-  }
+
   return { attacker: attackerDamage, defender: defenderDamage };
 };
 
@@ -350,7 +337,7 @@ export const forecastFight = (
   let attackerLoss = first.attackerLoss;
   let defenderLoss = first.defenderLoss;
   while (state.attacker.count > 0n && state.defender.count > 0n) {
-    const next = resolveExchange(state.attacker, state.defender, { ...context, chargePercent: 0 }, rules);
+    const next = resolveExchange(state.attacker, state.defender, context, rules);
     if (!next.ok) {
       stoppedBy = next.refusal;
       break;

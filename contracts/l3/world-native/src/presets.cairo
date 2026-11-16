@@ -40,7 +40,6 @@ pub struct EconomyPreset {
     pub hyperstructures: crate::hyperstructures::HyperstructureRules,
     pub relics: Span<crate::relics::RelicRule>,
     pub chests: Option<crate::relics::ChestRules>,
-    pub progression: Option<crate::progression::ArmyProgressionRules>,
     pub discovery: Option<crate::expeditions::FrontierDiscoveryRules>,
     pub research_cost: u128,
     pub withdrawals: Option<WithdrawalPreset>,
@@ -62,9 +61,10 @@ pub fn validate(preset: PresetDefinition) {
         assert!(preset.season_win_points == 0, "race cannot use victory points");
         assert!(
             rules.mode_rules & (crate::rules::DISCOVER_HYPERSTRUCTURES | crate::rules::RESERVED_HYPERSTRUCTURES) == 0,
-            "race has only fixed monuments",
+            "race has no map hyperstructures",
         );
-        crate::race::validate(race, preset.economy.deep.expect('race requires the Deep'));
+        assert!(preset.economy.deep.is_some(), "race requires the Deep");
+        crate::race::validate(race);
     }
     if let Some(banes) = preset.economy.banes {
         assert!(preset.economy.quests.is_some(), "banes require daily quests");
@@ -113,19 +113,7 @@ pub fn validate(preset: PresetDefinition) {
             "expedition uses categorical odds",
         );
     }
-    assert!(preset.economy.progression.is_some() == (rules.day_unit_seconds != 0), "progression requires expedition");
-    if let Some(progression) = preset.economy.progression {
-        let _ = progression.reveal_xp + 3 * progression.reveal_xp_per_depth;
-        assert!(
-            progression.reveal_xp != 0
-                && progression.common_xp > 0
-                && progression.uncommon_xp > progression.common_xp
-                && progression.rare_xp > progression.uncommon_xp
-                && progression.epic_xp > progression.rare_xp
-                && progression.legendary_xp > progression.epic_xp,
-            "invalid progression thresholds",
-        );
-    }
+
     assert!(
         rules.day_unit_seconds == 0 || rules.troop_limit_config.t1_tier_strength == 1,
         "expedition troops must have strength one",

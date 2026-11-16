@@ -9,7 +9,7 @@ import { dayOf, expeditionDepth, readExpeditionRules } from "@bibliothecadao/ete
 import { resolveExplorerCombatTroops, STAMINA_MODELS } from "@bibliothecadao/eternum/troop-stamina";
 import {
   ARMY_CHARGE_MODELS,
-  openingChargeForTarget,
+
   forecastFight,
   mapCenter,
   researchedDepth,
@@ -121,32 +121,27 @@ function clearsEveryGuard(
 ): boolean {
   let attacker = resolveExplorerCombatTroops(store, army, timestamp);
   if (!attacker) throw new Error("Deep alert is missing the attacker's combat facts");
-  const combat = store.get("ArmyCombat", { game_id: army.game_id, explorer_id: army.explorer_id });
-  if (!combat) throw new Error("Deep alert is missing the attacker's Charge fact");
-  let lastTarget = combat.last_target;
   for (const guard of guards) {
     const defender = resolveExplorerCombatTroops(store, guard.army, timestamp);
     if (!defender) throw new Error("Deep alert is missing a guard's combat facts");
-    const chargePercent = openingChargeForTarget({ ...combat, last_target: lastTarget }, guard.army.explorer_id);
     const fight = forecastFight(
       attacker,
       defender,
       {
-        chargePercent,
+
         timestamp,
         attackDistance: 1,
         attackerBiome: BiomeType.Underground,
         defenderBiome: BiomeType.Underground,
         attackerIsStructureGuard: false,
         defenderIsStructureGuard: true,
-        attackerRoll: 0,
-        defenderRoll: 0,
+
+
       },
       rules,
     );
     if (fight.outcome !== "wins") return false;
     attacker = fight.attacker;
-    lastTarget = guard.army.explorer_id;
   }
   return true;
 }

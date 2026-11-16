@@ -6,7 +6,6 @@ pub enum RelicKind {
     Ward,
     Plunder,
     FarEye,
-    Tome,
 }
 
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]
@@ -49,7 +48,6 @@ pub fn kind_id(kind: RelicKind) -> u8 {
         RelicKind::Ward => 1,
         RelicKind::Plunder => 2,
         RelicKind::FarEye => 3,
-        RelicKind::Tome => 4,
     }
 }
 
@@ -59,7 +57,6 @@ pub fn kind_at(id: u8) -> RelicKind {
         1 => RelicKind::Ward,
         2 => RelicKind::Plunder,
         3 => RelicKind::FarEye,
-        4 => RelicKind::Tome,
         _ => panic!("invalid relic kind"),
     }
 }
@@ -70,7 +67,7 @@ pub fn encode(relic: ArmyRelic) -> u8 {
 }
 
 pub fn decode(value: u8) -> ArmyRelic {
-    assert!(value > 0 && value <= 25, "invalid army relic");
+    assert!(value > 0 && value <= 20, "invalid army relic");
     ArmyRelic { kind: kind_at((value - 1) / 5), rank: (value - 1) % 5 + 1 }
 }
 
@@ -113,7 +110,6 @@ pub fn bonus_bps(kind: RelicKind, rank: u8) -> u32 {
         RelicKind::Blade => crate::rules::RELIC_BLADE_BPS,
         RelicKind::Ward => crate::rules::RELIC_WARD_BPS,
         RelicKind::Plunder => crate::rules::RELIC_PLUNDER_BPS,
-        RelicKind::Tome => crate::rules::RELIC_TOME_BPS,
         RelicKind::FarEye => 0,
     };
     per_rank * rank.into()
@@ -121,7 +117,7 @@ pub fn bonus_bps(kind: RelicKind, rank: u8) -> u32 {
 
 pub fn draw(odds: crate::relics::ChestTiers, seed: u256) -> ArmyRelic {
     ArmyRelic {
-        kind: kind_at(crate::random::range(seed, 0x52454c4943, 5).try_into().unwrap()),
+        kind: kind_at(crate::random::range(seed, 0x52454c4943, 4).try_into().unwrap()),
         rank: crate::relics::roll_tier(odds, seed) + 1,
     }
 }

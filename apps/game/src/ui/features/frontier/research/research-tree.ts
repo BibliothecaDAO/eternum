@@ -11,7 +11,7 @@ import {
 } from "@/ui/design-system/kit/words";
 import {
   battleBonusBps,
-  chargePercent,
+
   homecomingBps,
   logisticsStamina,
   researchHasIndependentSides,

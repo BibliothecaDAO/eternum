@@ -22,7 +22,6 @@ pub struct ExpeditionSite {
 
 #[derive(Copy, Drop, Serde, Debug, PartialEq, starknet::Store)]
 pub struct SiteClear {
-    pub xp: u32,
     pub explorer_id: u64,
     pub home_id: u64,
     pub reward: Option<crate::resources::ResourceAmount>,
@@ -43,11 +42,11 @@ pub struct SitePayout {
     pub reward: Option<crate::resources::ResourceAmount>,
 }
 
-// Camps pay labor, Cyclops wheat, rifts Essence; Wraiths pay only XP.
+// Camps pay labor, herds wheat, and rifts Essence.
 pub fn site_reward(
-    category: u8, site: ExpeditionSite, depth: u8, wraith: bool,
+    category: u8, site: ExpeditionSite, depth: u8, band: bool,
 ) -> Option<crate::resources::ResourceAmount> {
-    if wraith {
+    if band {
         return None;
     }
     use crate::resources::{ESSENCE, LABOR, ResourceAmount, WHEAT};
@@ -63,21 +62,14 @@ pub fn site_reward(
     reward.map(|reward| ResourceAmount { amount: depth_reward(reward.amount, depth), ..reward })
 }
 
-pub const WRAITH_XP_MULTIPLIER: u32 = 3;
 
-pub fn is_wraith(site: ExpeditionSite, rules: DepthRules) -> bool {
+pub fn is_band(site: ExpeditionSite, rules: DepthRules) -> bool {
     site.category == crate::taxonomy::BEASTS_CATEGORY
         && site.initial_guard_count > Into::<u16, u128>::into(rules.beast_weak_upper)
         * crate::rules::RESOURCE_PRECISION
 }
 
-pub fn site_clear_xp(site: ExpeditionSite, depth: u8, wraith: bool) -> u32 {
-    crate::progression::clear_xp(site.initial_guard_count, depth) * if wraith {
-        WRAITH_XP_MULTIPLIER
-    } else {
-        1
-    }
-}
+
 
 pub fn is_supply_post(site: ExpeditionSite, home: u64, today: u64, spacing: u32) -> bool {
     !site.alt
@@ -223,8 +215,6 @@ pub struct ExpeditionDiscovery {
 }
 #[starknet::interface]
 pub trait IFrontierDiscovery<T> {
-    fn consume_frontier_site(ref self: T, key: crate::map::TileKey, explorer_id: u64) -> Option<u8>;
-    fn shrine_reward(self: @T, key: crate::resources::ResourceKey) -> Option<crate::relics::ShrineReward>;
     fn frontier_discovery_rules(self: @T, game_id: u32) -> Option<FrontierDiscoveryRules>;
     fn expedition_discovery(self: @T, key: ExpeditionDiscoveryKey) -> Option<ExpeditionDiscovery>;
 }

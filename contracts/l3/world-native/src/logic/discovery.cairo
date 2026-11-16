@@ -21,7 +21,11 @@ pub fn reveal(
         crate::game::IPointsLibraryDispatcher { class_hash: classes.season.read() }, key.game_id, actor, context,
     );
     let result = roll(key, explorer_id, seed, context);
-    if result != crate::discovery::Discovery::None && crate::discovery::tile_occupier(result).is_none() {
+    let guarded = match result {
+        crate::discovery::Discovery::Camp | crate::discovery::Discovery::Rift | crate::discovery::Discovery::Ruin(_) | crate::discovery::Discovery::Beasts => true,
+        _ => false,
+    };
+    if guarded {
         crate::structures::IStructureOperationsDispatcherTrait::create_discovery(
             crate::structures::IStructureOperationsLibraryDispatcher { class_hash: classes.structures.read() },
             key.game_id,
@@ -43,10 +47,8 @@ fn roll(
         .discovery_rules
         .read()
         .expect('missing discovery rules');
-    let explorer_key = crate::troops::ExplorerKey { game_id: key.game_id, explorer_id };
     let home = crate::state::read().troops.explorers.entry((key.game_id, explorer_id)).owner.read();
     assert!(home != 0, "missing exploring army");
-    let progress = crate::logic::progression::require(explorer_key);
     let home_key = crate::resources::ResourceKey { game_id: key.game_id, entity_id: home };
     let learned = crate::logic::research::require(home_key).learned;
     if crate::research::tier(learned, crate::research::ROW_SHRINE) == 0 {
@@ -72,7 +74,6 @@ fn roll(
     let day = crate::logic::expeditions::discovery(counter)
         .unwrap_or(crate::expeditions::ExpeditionDiscovery { empty_reveals: 0, ruin_cleared: false });
     let ruin = Some(crate::army_relics::draw(crate::logic::expeditions::depth_rules(key.game_id, depth).chest, seed));
-    let (camp, rift, sanctuaries) = crate::progression::scouting_bonus(progress);
     let result = if crate::logic::spires::discover_on_reveal(
         crate::spires::ExpeditionSpireKey { game_id: key.game_id, structure_id: home, epoch: counter.epoch, depth },
         Coord { alt: key.alt, x: key.col, y: key.row },
@@ -83,7 +84,7 @@ fn roll(
     ) {
         crate::discovery::Discovery::Spire
     } else {
-        crate::discovery::frontier(rules, camp, rift, sanctuaries, find_percent, day.empty_reveals, ruin, seed)
+        crate::discovery::frontier(rules, find_percent, day.empty_reveals, ruin, seed)
     };
     crate::logic::expeditions::record_discovery(counter, result);
     occupy_discovery(key, home, result, seed);
@@ -95,14 +96,7 @@ fn roll(
 fn occupy_discovery(key: TileKey, home: u64, result: crate::discovery::Discovery, seed: u256) {
     if let Some(category) = crate::discovery::tile_occupier(result) {
         let id = crate::entity_ids::allocate_home(key.game_id, home);
-        if category == crate::taxonomy::SHRINE_OCCUPIER {
-            let coord = Coord { alt: key.alt, x: key.col, y: key.row };
-            crate::logic::shrines::discover(
-                crate::resources::ResourceKey { game_id: key.game_id, entity_id: id },
-                crate::logic::expeditions::depth_at(key.game_id, coord),
-                seed,
-            );
-        }
+
         let category = if result == crate::discovery::Discovery::Spire {
             crate::taxonomy::SPIRE_OCCUPIER
         } else {

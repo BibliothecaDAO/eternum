@@ -343,7 +343,7 @@
     {
       "id": 68,
       "name": "SpendSkillPoint",
-      "retired": false
+      "retired": true
     },
     {
       "id": 69,

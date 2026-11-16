@@ -1,38 +1,14 @@
 pub const RELIC_BLADE_BPS: u32 = 1000;
 pub const RELIC_WARD_BPS: u32 = 500;
 pub const RELIC_PLUNDER_BPS: u32 = 2000;
-pub const RELIC_TOME_BPS: u32 = 4000;
 pub const RELIC_SECONDS_PER_RANK: u32 = 1800;
 pub const RELIC_TILES_PER_RANK: u8 = 6;
-pub const SHRINE_COMMON_BPS: u32 = 5000;
-pub const SHRINE_UNCOMMON_BPS: u32 = 3000;
-pub const SHRINE_RARE_BPS: u32 = 1500;
-pub const SHRINE_EPIC_BPS: u32 = 400;
-pub const SHRINE_LEGENDARY_BPS: u32 = 100;
 pub const ATTRIBUTE_CAP: u8 = 5;
 pub const SCOUT_EXPLORE_STAMINA: u8 = 10;
 pub const SCOUT_DAMAGE_PERCENT: u8 = 75;
-pub const CHARGE_PERCENT_PER_TIER: u8 = 10;
-pub const SKILL_POINT_REFILL_BASE: u8 = 10;
-pub const SKILL_POINT_REFILL_STEP: u8 = 10;
 // Rank 0 is untrained; Common I through Legendary V retain the original ceilings.
-pub const BATTLE_COMMON_BPS: u32 = 1000;
-pub const BATTLE_UNCOMMON_BPS: u32 = 2500;
-pub const BATTLE_RARE_BPS: u32 = 4500;
-pub const BATTLE_EPIC_BPS: u32 = 7000;
-pub const BATTLE_LEGENDARY_BPS: u32 = 10000;
 
-pub fn battle_bonus_bps(tier: u8) -> u32 {
-    match tier {
-        0 => 0,
-        1 => BATTLE_COMMON_BPS,
-        2 => BATTLE_UNCOMMON_BPS,
-        3 => BATTLE_RARE_BPS,
-        4 => BATTLE_EPIC_BPS,
-        5 => BATTLE_LEGENDARY_BPS,
-        _ => panic!("invalid attribute tier"),
-    }
-}
+
 
 pub const LOGISTICS_COMMON_STAMINA: u32 = 20;
 pub const LOGISTICS_UNCOMMON_STAMINA: u32 = 45;
@@ -52,41 +28,11 @@ pub fn logistics_stamina(tier: u8) -> u32 {
     }
 }
 
-pub const SCOUTING_COMMON_BPS: u32 = 1000;
-pub const SCOUTING_UNCOMMON_BPS: u32 = 1500;
-pub const SCOUTING_RARE_BPS: u32 = 2000;
-pub const SCOUTING_EPIC_BPS: u32 = 2500;
-pub const SCOUTING_LEGENDARY_BPS: u32 = 3000;
 
-pub fn scouting_increment_bps(tier: u8) -> u32 {
-    match tier {
-        0 => 0,
-        1 => SCOUTING_COMMON_BPS,
-        2 => SCOUTING_UNCOMMON_BPS,
-        3 => SCOUTING_RARE_BPS,
-        4 => SCOUTING_EPIC_BPS,
-        5 => SCOUTING_LEGENDARY_BPS,
-        _ => panic!("invalid attribute tier"),
-    }
-}
 
-pub const HOMECOMING_COMMON_BPS: u32 = 300;
-pub const HOMECOMING_UNCOMMON_BPS: u32 = 800;
-pub const HOMECOMING_RARE_BPS: u32 = 1400;
-pub const HOMECOMING_EPIC_BPS: u32 = 2100;
-pub const HOMECOMING_LEGENDARY_BPS: u32 = 3000;
 
-pub fn homecoming_bps(tier: u8) -> u32 {
-    match tier {
-        0 => 0,
-        1 => HOMECOMING_COMMON_BPS,
-        2 => HOMECOMING_UNCOMMON_BPS,
-        3 => HOMECOMING_RARE_BPS,
-        4 => HOMECOMING_EPIC_BPS,
-        5 => HOMECOMING_LEGENDARY_BPS,
-        _ => panic!("invalid attribute tier"),
-    }
-}
+
+
 
 pub const RESOURCE_PRECISION: u128 = 1000000000;
 
@@ -281,8 +227,6 @@ pub const CAPTURE_VILLAGES: u32 = 64;
 pub const DEPTH_CONTENTS: u32 = 128;
 pub const REVEAL_SUPPLIES: u32 = 262144;
 // Every battle rolls a d20 per side.
-pub const COMBAT_DICE: u32 = 524288;
-pub const COMBAT_DICE_ETHEREAL: u32 = 1048576;
 // Blitz finds dormant reward spires; expedition games discover one descent spire per home, day and layer.
 pub const DISCOVER_SPIRES: u32 = 2097152;
 pub const SAME_OWNER_TRANSFER: u32 = 256;

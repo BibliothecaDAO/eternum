@@ -32,7 +32,6 @@ const frontierFixturePreset: NativePreset = {
   id: FRONTIER_FIXTURE_PRESET_ID,
   balance: { startingResources: frontierSeasonOnePreset.balance.startingResources },
   depths: frontierPreset.depths,
-  progression: frontierPreset.progression,
   modeRules: frontierPreset.modeRules & ~nativeRuleConstants.DISCOVER_CHESTS,
   dailyQuest: frontierPreset.dailyQuest,
   banes: frontierPreset.banes,

@@ -59,7 +59,6 @@ pub mod resources_domain;
 pub mod season;
 pub mod settlement;
 pub mod settlement_domain;
-pub mod shrines;
 pub mod spires;
 pub mod stamina_effects;
 pub mod stories;

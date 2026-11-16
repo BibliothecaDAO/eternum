@@ -3,7 +3,7 @@ import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
 import { resolveExplorerCombatTroops } from "@bibliothecadao/eternum/troop-stamina";
 import {
   ARMY_CHARGE_MODELS,
-  openingChargePercent,
+
   configManager,
   divideByPrecision,
   getGuardsByStructure,
@@ -31,7 +31,7 @@ const toResourceIds = (effects: RelicEffect[]): ResourcesIds[] =>
   effects.map((effect) => Number(effect.id)) as ResourcesIds[];
 
 interface BattleLabLiveData {
-  chargePercent: number | undefined;
+
   snapshot: LiveSnapshot | null;
   target: AttackTarget | null;
   targetResources: Array<{ resourceId: number; amount: number }>;

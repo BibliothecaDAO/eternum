@@ -779,8 +779,8 @@ fn spoils_doubles_numeric_clears_and_records_xp_but_keeps_ruin_relics() {
             d.games,
             || {
                 let receipt = crate::logic::expeditions::expedition_site(site_key).unwrap().clear.unwrap();
-                let wraith = crate::expeditions::is_wraith(site, crate::logic::expeditions::depth_rules(game_id, 0));
-                let expected_xp = crate::expeditions::site_clear_xp(site, 0, wraith) * 2;
+                let band = crate::expeditions::is_band(site, crate::logic::expeditions::depth_rules(game_id, 0));
+                let expected_xp = crate::expeditions::site_clear_xp(site, 0, band) * 2;
                 assert_eq!(receipt.xp, expected_xp);
                 assert_eq!(crate::logic::progression::require(key).xp - before, expected_xp);
                 if category == crate::taxonomy::RUIN_CATEGORY {
@@ -788,7 +788,7 @@ fn spoils_doubles_numeric_clears_and_records_xp_but_keeps_ruin_relics() {
                     assert!(discovered_relic.is_some());
                     assert_eq!(crate::logic::army_relics::read(key).first, discovered_relic);
                 } else {
-                    let base = crate::expeditions::site_reward(category, site, 0, wraith);
+                    let base = crate::expeditions::site_reward(category, site, 0, band);
                     assert_eq!(
                         receipt.reward,
                         base.map(|reward| crate::resources::ResourceAmount { amount: reward.amount * 2, ..reward }),

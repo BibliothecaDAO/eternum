@@ -99,11 +99,11 @@ fn tests_crossbowman_ranged_field_attack_uses_reduced_damage() {
         .attack_with_context(
             ref adjacent_bravo,
             CombatContext {
-                charge_percent: 0,
+
                 day_unit_seconds: 0,
                 timestamp: 1,
-                attacker_roll: 0,
-                defender_roll: 0,
+
+
                 attacker_biome: Biome::Taiga,
                 defender_biome: Biome::Taiga,
                 attack_distance: 1,
@@ -119,11 +119,11 @@ fn tests_crossbowman_ranged_field_attack_uses_reduced_damage() {
         .attack_with_context(
             ref ranged_bravo,
             CombatContext {
-                charge_percent: 0,
+
                 day_unit_seconds: 0,
                 timestamp: 1,
-                attacker_roll: 0,
-                defender_roll: 0,
+
+
                 attacker_biome: Biome::Taiga,
                 defender_biome: Biome::Taiga,
                 attack_distance: 2,
@@ -159,11 +159,11 @@ fn tests_crossbowman_ranged_structure_attack_uses_heavy_reduction() {
         .attack_with_context(
             ref field_bravo,
             CombatContext {
-                charge_percent: 0,
+
                 day_unit_seconds: 0,
                 timestamp: 1,
-                attacker_roll: 0,
-                defender_roll: 0,
+
+
                 attacker_biome: Biome::Taiga,
                 defender_biome: Biome::Taiga,
                 attack_distance: 2,
@@ -179,11 +179,11 @@ fn tests_crossbowman_ranged_structure_attack_uses_heavy_reduction() {
         .attack_with_context(
             ref structure_bravo,
             CombatContext {
-                charge_percent: 0,
+
                 day_unit_seconds: 0,
                 timestamp: 1,
-                attacker_roll: 0,
-                defender_roll: 0,
+
+
                 attacker_biome: Biome::Taiga,
                 defender_biome: Biome::Taiga,
                 attack_distance: 2,
@@ -218,11 +218,11 @@ fn tests_knight_assault_increases_adjacent_structure_guard_damage() {
         .attack_with_context(
             ref guard_bravo,
             CombatContext {
-                charge_percent: 0,
+
                 day_unit_seconds: 0,
                 timestamp: 1,
-                attacker_roll: 0,
-                defender_roll: 0,
+
+
                 attacker_biome: Biome::Taiga,
                 defender_biome: Biome::Taiga,
                 attack_distance: 1,
@@ -257,11 +257,11 @@ fn tests_knight_bulwark_reduces_guard_incoming_damage() {
         .attack_with_context(
             ref guard_bravo,
             CombatContext {
-                charge_percent: 0,
+
                 day_unit_seconds: 0,
                 timestamp: 1,
-                attacker_roll: 0,
-                defender_roll: 0,
+
+
                 attacker_biome: Biome::Taiga,
                 defender_biome: Biome::Taiga,
                 attack_distance: 1,
@@ -357,7 +357,7 @@ fn expedition_knights_use_one_damage_formula_for_armies_and_guards_even_without_
                     .attack_with_context(
                         ref defender,
                         CombatContext {
-                            charge_percent: 0,
+
                             day_unit_seconds: 14400,
                             attacker_is_structure_guard,
                             defender_is_structure_guard,
@@ -431,7 +431,7 @@ fn charge_reduces_the_opening_answer_against_beasts_and_armies() {
                     ref defender,
                     CombatContext {
                         day_unit_seconds: 100,
-                        charge_percent: if index == 0 {
+
                             50
                         } else {
                             0

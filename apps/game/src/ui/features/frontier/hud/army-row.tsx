@@ -1,5 +1,5 @@
 import { Icon as SemanticIcon, type IconMeaning } from "@/ui/design-system/icon";
-import { HudPanel, HudPortrait, HudRow, rankedTip, XpRing } from "@/ui/design-system/kit/hud-elements";
+import { HudPanel, HudPortrait, HudRow,  } from "@/ui/design-system/kit/hud-elements";
 import { ARMIES, TROOPS, troopCount, UPGRADE } from "@/ui/design-system/kit/words";
 import type { StaminaBar } from "@/ui/design-system/kit/hud-elements";
 import type { ReactNode } from "react";
@@ -7,26 +7,15 @@ import type { ReactNode } from "react";
 import type { EtherealLayer } from "@bibliothecadao/eternum";
 import type { DeepArmyLife } from "@bibliothecadao/eternum/game-client";
 
-import { OpeningPartGate } from "../opening/opening-context";
-import { DeepDrain, EtherealMark, HomecomingReturn, SlotRing, StaminaReading, xpLine, type XpGoal } from "./army-token";
+import { DeepDrain, EtherealMark, SlotRing, StaminaReading } from "./army-token";
 
-/**
- * One army on a desktop's list: its painting with its number, ringed by its way to its next skill point (what it buys
- * next on hover); its name and, in the day's last hour, what its Homecoming sends home; under them its troops and its stamina as a bar with
- * the exact count; at its end, while its XP buys a level now, the card fan. A press picks the army and opens its panel,
- * where its levels are bought. The desktop's form of the dock's token; a phone keeps the token. Read-only on a visit.
- */
 export const ArmyRow = ({
   label,
   number,
   art,
   troops,
-  returnsHome,
   drain,
   stamina,
-  xp,
-  xpGoal,
-  canSpendSkillPoint,
   ethereal,
   selected,
   flyTarget,
@@ -40,12 +29,7 @@ export const ArmyRow = ({
   ethereal?: EtherealLayer;
   art: IconMeaning | undefined;
   troops: number | undefined;
-  /** In the day's last hour, the troops its Homecoming sends home when the day ends; none otherwise. */
-  returnsHome?: number;
-  stamina: StaminaBar | undefined;
-  xp: number | undefined;
-  xpGoal?: XpGoal;
-  canSpendSkillPoint: boolean;
+    stamina: StaminaBar | undefined;
   selected: boolean;
   /** Where a gain flies into the portrait. */
   flyTarget?: string;
@@ -56,7 +40,6 @@ export const ArmyRow = ({
     lead={
       <span data-fly-target={flyTarget} className="relative shrink-0">
         {art ? <HudPortrait icon={art} label={TROOPS} /> : <HudPortrait initial={String(number ?? "")} label={label} />}
-        <RowXp xp={xp} goal={xpGoal} />
         {number !== undefined && (
           <span className="absolute -left-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full border border-hud-line-strong bg-hud-dark px-1 text-hud-strong leading-none text-hud-ink tabular-nums">
             {number}
@@ -72,11 +55,9 @@ export const ArmyRow = ({
       <span className="flex flex-col gap-1 tabular-nums">
         <RowLine words={troops === undefined ? "—" : troopCount(troops)} figure={<RowStamina stamina={stamina} />} />
         {drain && <DeepDrain drain={drain} words />}
-        {returnsHome !== undefined && <HomecomingReturn troops={returnsHome} words />}
       </span>
     }
     // The trail is the card fan while a level is affordable now: the row itself opens the panel that buys it.
-    trail={<RowTrail>{canSpendSkillPoint && <SemanticIcon name="picks" size={20} data-tip={UPGRADE} />}</RowTrail>}
     selected={selected}
     onClick={onPick}
   />
@@ -139,15 +120,6 @@ const RowStamina = ({ stamina }: { stamina: StaminaBar | undefined }) => (
 );
 
 /** A list row's trail, the same place on every row whether it holds the card fan or nothing. */
-/** The army's way to its next skill point, a ring around its portrait, once the HUD shows XP (the first fight won). */
-const RowXp = ({ xp, goal }: { xp: number | undefined; goal: XpGoal | undefined }) =>
-  goal ? (
-    <OpeningPartGate part="army-xp">
-      <span className="absolute inset-0" {...rankedTip(xpLine(xp, goal))}>
-        <XpRing share={goal.share} />
-      </span>
-    </OpeningPartGate>
-  ) : null;
 
 const RowTrail = ({ children }: { children?: ReactNode }) => (
   <span className="flex size-5 items-center justify-center">{children}</span>

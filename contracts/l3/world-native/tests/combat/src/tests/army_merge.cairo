@@ -14,7 +14,7 @@ fn full_merges_keep_the_chosen_target_even_with_less_progression() {
         } else {
             (first, second, 0, 1)
         };
-        let veteran = ArmyProgress { battle: 2, scouting: 2, scouting_kinds: 15, ..crate::progression::initial() };
+        let veteran = ArmyProgress { battle: 2, scouting: 2, scouting_kinds: 15, ..Default::default() };
         write_progress(d, source, ArmyProgress { xp: source_xp, rare_points: 2, ..veteran });
         write_progress(d, target, ArmyProgress { xp: target_xp, uncommon_points: 1, ..veteran });
         let (winner, loser) = (target, source);
@@ -47,12 +47,12 @@ fn spent_and_trained_tiers_do_not_override_the_chosen_target() {
     let d = setup();
     let (game_id, _, category) = expedition_home(d);
     let (source, target) = expedition_armies(d, game_id, category);
-    let trained = ArmyProgress { xp: 2, homecoming: 2, ..crate::progression::initial() };
+    let trained = ArmyProgress { xp: 2, homecoming: 2, ..Default::default() };
     write_progress(d, source, trained);
-    write_progress(d, target, ArmyProgress { xp: 99, ..crate::progression::initial() });
+    write_progress(d, target, ArmyProgress { xp: 99, ..Default::default() });
     assert!(execute_in_game(d, game_id, transfer(source, target, 3), 360));
     assert!(progress(d, source).is_none());
-    assert_eq!(progress(d, target), Some(ArmyProgress { xp: 99, ..crate::progression::initial() }));
+    assert_eq!(progress(d, target), Some(ArmyProgress { xp: 99, ..Default::default() }));
 }
 
 #[test]
@@ -60,7 +60,7 @@ fn partial_transfers_keep_both_progress_bundles_and_slots() {
     let d = setup();
     let (game_id, _, category) = expedition_home(d);
     let (source, target) = expedition_armies(d, game_id, category);
-    let veteran = ArmyProgress { xp: 900, common_points: 1, rare_points: 1, ..crate::progression::initial() };
+    let veteran = ArmyProgress { xp: 900, common_points: 1, rare_points: 1, ..Default::default() };
     write_progress(d, source, veteran);
     timers(d, source, 0, 390);
     timers(d, target, 100, 400);
@@ -69,7 +69,7 @@ fn partial_transfers_keep_both_progress_bundles_and_slots() {
     assert_eq!(state.explorer(source).unwrap().troops.count, 2 * RESOURCE_PRECISION);
     assert_eq!(state.explorer(target).unwrap().troops.count, 4 * RESOURCE_PRECISION);
     assert_eq!(progress(d, source), Some(veteran));
-    assert_eq!(progress(d, target), Some(crate::progression::initial()));
+    assert_eq!(progress(d, target), Some(Default::default()));
     assert_eq!(slot(d, source, 0).explorer_id, source.explorer_id);
     assert_eq!(slot(d, target, 1).explorer_id, target.explorer_id);
     assert_eq!(slot(d, source, 0).stamina.amount, 0);
@@ -85,8 +85,8 @@ fn different_logistics_caps_and_exhausted_slots_never_refill_a_merge() {
         let d = setup();
         let (game_id, preset, category) = expedition_home(d);
         let (source, target) = expedition_armies(d, game_id, category);
-        let winning = ArmyProgress { xp: 5000, logistics: winner_logistics, ..crate::progression::initial() };
-        let losing = ArmyProgress { logistics: loser_logistics, ..crate::progression::initial() };
+        let winning = ArmyProgress { xp: 5000, logistics: winner_logistics, ..Default::default() };
+        let losing = ArmyProgress { logistics: loser_logistics, ..Default::default() };
         write_progress(d, target, winning);
         write_progress(d, source, losing);
         let state = GameState { contract_address: d.games };
@@ -119,7 +119,7 @@ fn a_full_merge_over_the_survivor_cap_is_atomic_and_expired_armies_cannot_merge(
     let d = setup();
     let (game_id, preset, category) = expedition_home(d);
     let (source, target) = expedition_armies(d, game_id, category);
-    write_progress(d, source, ArmyProgress { xp: 500, ..crate::progression::initial() });
+    write_progress(d, source, ArmyProgress { xp: 500, ..Default::default() });
     let state = GameState { contract_address: d.games };
     // The source belongs to a higher-level home; its cap must not replace the chosen target cap.
     // Recreate the fixture's source at that home, with its own daily slot and home index.
@@ -196,7 +196,7 @@ fn a_loaded_loser_cannot_be_destroyed_in_either_merge_direction() {
         } else {
             (target, source)
         };
-        write_progress(d, winner, ArmyProgress { xp: 500, ..crate::progression::initial() });
+        write_progress(d, winner, ArmyProgress { xp: 500, ..Default::default() });
         let key = crate::resources::ResourceKey { game_id, entity_id: loser.explorer_id };
         let weight = snforge_std::interact_with_state(d.games, || crate::logic::resources::weight(key));
         super::resource_commands::set_fixture(

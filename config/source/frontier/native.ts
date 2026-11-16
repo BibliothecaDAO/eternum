@@ -1,3 +1,4 @@
+import { BuildingType } from "../../../packages/types/src/constants";
 import {
   nativeResearchConstants as research,
   nativeRuleConstants as rule,
@@ -8,7 +9,7 @@ import { FRONTIER_PRESET_ID } from "../common/native-preset-modes";
 import { FRONTIER_DAY_UNIT_SECONDS } from "./clock";
 
 /** Every building a Frontier board can raise, by its category id. */
-export const buildingIds = Array.from({ length: research.HEARTH }, (_, index) => index + 1);
+export const buildingIds = Object.values(BuildingType).filter((id): id is BuildingType => typeof id === "number" && id !== BuildingType.None);
 
 // Common I is half the old first price; II–V retain the four established prices.
 const essenceLadder = [0.5, 1, 4, 12, 30];
@@ -16,9 +17,8 @@ const laborLadder = [0.5, 1, 3, 8, 20];
 const buildingRows = [
   { row: research.ROW_FARM, essence: 1000, labor: 1000 },
   { row: research.ROW_WORKSHOP, essence: 2000, labor: 2000 },
-  { row: research.ROW_BARRACKS, essence: 4000, labor: 3000 },
   { row: research.ROW_HUT, essence: 500, labor: 500 },
-  ...[research.ROW_WAR_HALL, research.ROW_SUPPLY_YARD, research.ROW_SCOUTS_LODGE, research.ROW_HEARTH].map((row) => ({
+  ...[research.ROW_SUPPLY_YARD].map((row) => ({
     row,
     essence: 12000,
     labor: 3000,
@@ -93,7 +93,7 @@ export const frontierPreset = {
         row,
         tier: index + 1,
         essenceCost:
-          row >= research.ROW_WAR_HALL && row <= research.ROW_HEARTH && index === 1 ? 16000 : essence * factor,
+          row === research.ROW_SUPPLY_YARD && index === 1 ? 16000 : essence * factor,
         laborCost: labor * laborLadder[index]!,
       })),
     ),
@@ -114,15 +114,6 @@ export const frontierPreset = {
     shrineBps: 300,
     wellBps: 300,
     emptyRevealLimit: 7,
-  },
-  progression: {
-    revealXp: 2,
-    revealXpPerDepth: 1,
-    commonXp: 75,
-    uncommonXp: 200,
-    rareXp: 400,
-    epicXp: 800,
-    legendaryXp: 1500,
   },
   labor: { amount: 1000, campaignEssence: 0, goldenAmount: 1000, goldenEssence: 0 },
   // Daily chest prices cannot exceed 50 LORDS per share.

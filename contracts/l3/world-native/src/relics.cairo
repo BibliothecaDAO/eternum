@@ -408,10 +408,6 @@ pub enum SiteBenefit {
     ShrinePoint: u8,
 }
 
-#[derive(Copy, Drop, Serde, Debug, PartialEq)]
-pub struct ShrineReward {
-    pub rank: u8,
-}
 
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]
 pub struct SiteUsed {

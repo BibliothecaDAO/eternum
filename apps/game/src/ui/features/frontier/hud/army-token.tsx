@@ -9,7 +9,7 @@ import {
 import { Icon as SemanticIcon, type IconMeaning } from "@/ui/design-system/icon";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 
-import { HudMeter, HudStamina, type StaminaBar, rankedTip, XpRing } from "@/ui/design-system/kit/hud-elements";
+import { HudMeter, HudStamina, type StaminaBar,  } from "@/ui/design-system/kit/hud-elements";
 import {
   comesHomeAtDayEnd,
   DEEP_WORDS,
@@ -23,11 +23,8 @@ import {
 import type { EtherealLayer } from "@bibliothecadao/eternum";
 import type { DeepArmyLife } from "@bibliothecadao/eternum/game-client";
 
-import { OpeningPartGate } from "../opening/opening-context";
 import { reachMark } from "../depth-art";
 
-// A token grows past its height only for the last hour's Homecoming line. Its parts stack from the top, so every
-// token's portrait or ring, and the stamina bar under it, stand at one height along the dock.
 const TOKEN_FRAME = "relative flex w-14 shrink-0 flex-col items-center justify-start gap-1 rounded-xl py-1";
 const TOKEN = `min-h-hud-frontier-token ${TOKEN_FRAME}`;
 
@@ -69,12 +66,6 @@ export const GuardToken = ({
   </div>
 );
 
-/**
- * The Ethereal layer an army stands in, on its portrait's left: the layer's painting and its numeral, named on its tip
- * ("Ethereal II"); nothing on the surface (owner, 4 November 2026: "add the little depth icon to the army so we know if
- * its an eth layer and if so which one"). A row and the panel wear it on the lower corner; a token, whose foot holds its
- * XP, under its number.
- */
 export const EtherealMark = ({ layer, at = "corner" }: { layer: EtherealLayer | undefined; at?: "corner" | "side" }) =>
   layer === undefined ? null : (
     <span
@@ -91,30 +82,15 @@ export const EtherealMark = ({ layer, at = "corner" }: { layer: EtherealLayer | 
     </span>
   );
 
-/** The next cumulative XP milestone and the point it awards. */
-export type XpGoal = { at: number; rank: number; share: number };
 
-/** An army's XP for its tooltip: what it holds against the next point's milestone, the point's rank as its gem. */
-export const xpLine = (xp: number | undefined, goal: XpGoal | undefined): RankedWords | string =>
-  goal ? xpTowardTip(formatAmount(xp), formatCharge(goal.at), goal.rank) : `${XP} ${formatAmount(xp)}`;
 
-/**
- * One army on a phone's dock: its number, the one its map plate carries; its portrait ringed by its way to its next point,
- * a card fan when a tier is affordable now, what its Homecoming sends home in the day's last hour, its stamina in
- * segments, and its troops; the ring says what the XP buys next when asked. A desktop lists the armies as rows
- * (ArmyRow). Read-only on a visit.
- */
 export const ArmyToken = ({
   label,
   number,
   art,
-  xp,
-  xpGoal,
   stamina,
   troops,
-  returnsHome,
   drain,
-  canSpendSkillPoint,
   ethereal,
   selected,
   flyTarget,
@@ -128,15 +104,9 @@ export const ArmyToken = ({
   /** The Ethereal layer it stands in; none on the surface. */
   ethereal?: EtherealLayer;
   art: IconMeaning | undefined;
-  xp: number | undefined;
-  /** The attribute tier the XP buys next; none once every attribute is legendary, or while unknown. */
-  xpGoal?: XpGoal;
-  stamina: StaminaBar | undefined;
+    stamina: StaminaBar | undefined;
   troops: number | undefined;
-  /** In the day's last hour, the troops its Homecoming sends home when the day ends; none otherwise. */
-  returnsHome?: number;
-  canSpendSkillPoint: boolean;
-  selected: boolean;
+    selected: boolean;
   /** Where a gain flies into the portrait. */
   flyTarget?: string;
   /** Absent on a visit: the token is shown, never picked. */
@@ -146,21 +116,9 @@ export const ArmyToken = ({
     <>
       <span data-fly-target={flyTarget} className="relative size-10 shrink-0">
         <Portrait art={art} />
-        {xpGoal && (
-          <OpeningPartGate part="army-xp">
-            <span className="absolute inset-0" {...rankedTip(xpLine(xp, xpGoal))}>
-              <XpRing share={xpGoal.share} />
-            </span>
-          </OpeningPartGate>
-        )}
         {number !== undefined && (
           <span className="absolute -left-2.5 -top-1.5 flex h-5 min-w-5 items-center justify-center rounded-full border border-hud-line-strong bg-hud-dark px-1 text-hud-strong leading-none text-hud-ink tabular-nums">
             {number}
-          </span>
-        )}
-        {canSpendSkillPoint && (
-          <span className="absolute -right-2 -top-1.5 size-5">
-            <SemanticIcon name="picks" className="size-full" />
           </span>
         )}
         <EtherealMark layer={ethereal} at="side" />
@@ -174,7 +132,6 @@ export const ArmyToken = ({
         {formatAmount(troops)}
       </span>
       {drain && <DeepDrain drain={drain} />}
-      {returnsHome !== undefined && <HomecomingReturn troops={returnsHome} />}
     </>
   );
   return onPick ? (
@@ -247,22 +204,6 @@ export const SlotRing = ({ pulse, filling }: { pulse: boolean; filling?: string 
   </span>
 );
 
-/**
- * In the day's last hour, what an army's Homecoming sends home when the day ends, by the army it is about, not a bubble
- * repeating the troops (player, 25 October): on a phone's token, under its troops, its mark and figure; on a desktop's
- * row, where there is room, in words ("450 come home at day end").
- */
-export const HomecomingReturn = ({ troops, words = false }: { troops: number; words?: boolean }) => (
-  <span
-    role="img"
-    aria-label={comesHomeAtDayEnd(formatExact(troops))}
-    data-tip={words ? undefined : comesHomeAtDayEnd(formatExact(troops))}
-    className="flex h-5 shrink-0 items-center self-start rounded-full border border-hud-line bg-hud-dark pr-1.5 text-hud-label leading-none text-hud-good tabular-nums"
-  >
-    <SemanticIcon name="order-enlightenment" size={16} />
-    {words ? comesHomeAtDayEnd(formatExact(troops)) : formatGain(troops)}
-  </span>
-);
 
 /**
  * What a Deep guard's site costs it: its troops fall each tick, so the chip says how many ticks it holds and its bar

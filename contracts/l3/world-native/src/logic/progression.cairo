@@ -1,10 +1,8 @@
 use starknet::storage::{StorageMapReadAccess, StorageMapWriteAccess, StoragePointerReadAccess};
-use crate::progression::{ArmyProgress, ArmyProgressionRules, XpAward};
+use crate::progression::ArmyProgress;
 use crate::troops::ExplorerKey;
 
-pub fn rules(game_id: u32) -> Option<ArmyProgressionRules> {
-    crate::logic::preset_record::for_game(game_id).progression_rules.read()
-}
+
 
 #[inline(never)]
 pub fn read(key: ExplorerKey) -> Option<ArmyProgress> {
@@ -16,10 +14,9 @@ pub fn require(key: ExplorerKey) -> ArmyProgress {
     read(key).expect('missing army progress')
 }
 
-pub fn create(key: ExplorerKey, learned: u64, category: crate::troops::TroopType) -> ArmyProgress {
+pub fn create(key: ExplorerKey, learned: u64) -> ArmyProgress {
     assert!(read(key).is_none(), "army progress already exists");
-    rules(key.game_id).expect('missing progression rules');
-    let progress = crate::progression::trained(learned, category);
+    let progress = crate::progression::trained(learned);
     write(key, progress);
     progress
 }
@@ -58,44 +55,4 @@ pub fn own_stamina_max(
         Some(progress) => crate::progression::stamina_max(progress, troops.category, rules),
         None => crate::stamina::StaminaImpl::max(troops.category, troops.tier, rules),
     }
-}
-
-pub fn award_xp(key: ExplorerKey, award: XpAward, timestamp: u64) -> u32 {
-    let rules = rules(key.game_id).expect('missing progression rules');
-    let mut progress = require(key);
-    let amount = match award {
-        XpAward::Reveal(coord) => {
-            let depth: u32 = crate::logic::expeditions::depth_at(key.game_id, coord).into();
-            rules.reveal_xp + depth * rules.reveal_xp_per_depth
-        },
-        XpAward::Clear(amount) => amount,
-    };
-    let tome = crate::logic::army_relics::bonus(key, crate::army_relics::RelicKind::Tome, timestamp);
-    let amount = (Into::<u32, u64>::into(amount) * (10_000 + Into::<u32, u64>::into(tome)) / 10_000)
-        .try_into()
-        .unwrap();
-    let before = progress;
-    crate::progression::earn_xp(ref progress, rules, amount);
-    let mut earned: u128 = 0;
-    for rank in 1_u8..6 {
-        earned +=
-            Into::<
-                u32, u128,
-            >::into(crate::progression::points(progress, rank) - crate::progression::points(before, rank));
-    }
-    let home = crate::logic::troops::explorer(key).expect('missing rewarded army').owner;
-    crate::logic::quest_progress::record(
-        crate::resources::ResourceKey { game_id: key.game_id, entity_id: home },
-        crate::quests::VETERANS,
-        earned,
-        timestamp,
-    );
-    write(key, progress);
-    amount
-}
-
-pub fn grant_point(key: ExplorerKey, rank: u8) {
-    let mut progress = require(key);
-    crate::progression::earn_point(ref progress, rank);
-    write(key, progress);
 }

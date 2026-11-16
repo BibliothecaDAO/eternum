@@ -13,23 +13,6 @@ const orderAspects: NativePreset["orderAspects"] = orders
 export const frontierSeasonOnePreset = {
   ...frontierPreset,
   id: FRONTIER_S1_PRESET_ID,
-  research: [
-    ...frontierPreset.research.filter(({ row }) => row !== research.ROW_BARRACKS),
-    ...(
-      [
-        [5000, 1000],
-        [10000, 2500],
-        [25000, 5000],
-        [50000, 10000],
-        [100000, 25000],
-      ] as const
-    ).map(([essenceCost, laborCost], index) => ({
-      row: research.ROW_BARRACKS,
-      tier: index + 1,
-      essenceCost,
-      laborCost,
-    })),
-  ],
   balance: {
     troop: {
       stamina: {
@@ -56,7 +39,6 @@ export const frontierSeasonOnePreset = {
     ],
   },
   orderAspects,
-  progression: { ...frontierPreset.progression, commonXp: 60 },
   depths: frontierPreset.depths.map((depth, index) => ({
     ...depth,
     beastWeakLower: 300 * 2 ** index,
@@ -93,12 +75,6 @@ export const frontierSeasonOnePreset = {
     secondWindPercent: 200,
     paleMoonPercent: 50,
     spoilsPercent: 200,
-    positions: [
-      [5, 5],
-      [45, 5],
-      [5, 45],
-      [45, 45],
-    ],
   },
   modeRules: (frontierPreset.modeRules | rules.DISCOVER_SPIRES) & ~rules.DISCOVER_CHESTS,
   chests: null,

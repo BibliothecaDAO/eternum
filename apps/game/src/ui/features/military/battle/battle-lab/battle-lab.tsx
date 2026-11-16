@@ -20,7 +20,7 @@ import { useLatest } from "@/hooks/use-latest";
 
 import { staminaShortfall } from "@/ui/design-system/kit/reasons";
 import { resolveAttackStaminaState } from "../attack-stamina-state";
-import { attackerSideRange, defenderSideRange } from "../battle-range";
+import { attackerSide, defenderSide } from "../battle-range";
 import { TargetType } from "../types";
 import { ActionFooter } from "./action-footer";
 import { ArmyColumn } from "./army-column";
@@ -83,7 +83,7 @@ export const BattleLab = ({
   const targetHex = targetRef?.hex ?? { x: 0, y: 0 };
 
   const { state, dispatch, isEdited } = useBattleLabState(mode, initialBiome);
-  const { snapshot, target, targetResources, isLoading, chargePercent } =
+  const { snapshot, target, targetResources, isLoading } =
     // Sim mode has no target: the live read is disabled, so its placeholder hex and layer are never read.
     useBattleLabLiveData(mode === "live", attackerEntityId, targetHex, targetRef?.alt ?? false);
 
@@ -127,13 +127,13 @@ export const BattleLab = ({
 
   const combatContext = useMemo(
     () => ({
-      chargePercent: mode === "sim" ? 0 : chargePercent,
+
       defenderAlt: state.defenderAlt,
       attackDistance: liveAttackDistance,
       attackerIsStructureGuard: snapshot?.attackerType === "structure",
       defenderIsStructureGuard: target?.targetType === TargetType.Structure,
     }),
-    [mode, chargePercent, state.defenderAlt, liveAttackDistance, snapshot?.attackerType, target?.targetType],
+    [mode, state.defenderAlt, liveAttackDistance, snapshot?.attackerType, target?.targetType],
   );
   // CombatParameters holds bigint fields, so stringify with a bigint-safe replacer.
   const defaultParamsKey = useMemo(() => serializeParams(configManager.getCombatConfig()), []);
@@ -157,30 +157,28 @@ export const BattleLab = ({
 
   // ----- Prediction (single path for live + sim) -----
   const prediction = useMemo(() => {
-    if (!state.hasDefender || combatContext.chargePercent === undefined) return null;
+    if (!state.hasDefender) return null;
     const now = Math.floor(Date.now() / 1000);
-    const range = combatSimulator.simulateBattleRange(
+    const range = combatSimulator.simulateBattle(
       now,
       toArmy(state.attacker),
       toArmy(state.defender),
       state.biome,
       state.attacker.relics,
       state.defender.relics,
-      { ...combatContext, chargePercent: combatContext.chargePercent },
-      configManager.rollsCombatDice(state.defenderAlt),
+      combatContext,
     );
     if (!range.ok) return null;
-    const attacker = attackerSideRange(state.attacker.troopCount, range);
-    const defender = defenderSideRange(state.defender.troopCount, range);
-    const outcomeAt = (roll: "worst" | "best"): BattleOutcome =>
-      attacker[roll].remaining <= 0 ? "Defeat" : defender[roll].remaining <= 0 ? "Victory" : "Draw";
+    const attacker = attackerSide(state.attacker.troopCount, range);
+    const defender = defenderSide(state.defender.troopCount, range);
+    const outcome: BattleOutcome = attacker.remaining === 0 ? "Defeat" : defender.remaining === 0 ? "Victory" : "Draw";
     return {
       attacker,
       defender,
       // Stamina after the fight follows the attacker's worst roll, like every other planning figure.
-      newAttackerStamina: range.worst.attackerStamina,
-      newDefenderStamina: range.worst.defenderStamina,
-      outcomes: { worst: outcomeAt("worst"), best: outcomeAt("best") },
+      newAttackerStamina: range.attackerStamina,
+      newDefenderStamina: range.defenderStamina,
+      outcome,
     };
   }, [
     combatSimulator,
@@ -374,7 +372,7 @@ export const BattleLab = ({
                 line={rangedClaimBlocked ? "No defenders: move adjacent to claim" : "No defenders: claim it"}
               />
             ) : (
-              prediction && <OutcomeBanner outcomes={prediction.outcomes} />
+              prediction && <OutcomeBanner outcome={prediction.outcome} />
             )}
 
             <ActionFooter

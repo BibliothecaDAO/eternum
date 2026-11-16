@@ -95,7 +95,7 @@ pub mod TroopState {
         );
         assert!(explorer.owner != 0, "missing explorer owner");
         if let crate::troops::StaminaSource::Slot(_) = explorer.troops.stamina {
-            crate::logic::army_combat::create(key, explorer.owner, explorer.troops.category);
+            crate::logic::army_combat::create(key);
         }
         write_home_membership(key, 0, explorer.owner);
         state.troops.explorers.write((key.game_id, key.explorer_id), explorer);
@@ -1140,34 +1140,10 @@ fn expire_explorer(key: ExplorerKey, mut explorer: ExplorerTroops, context: crat
     if explorer.troops.count == 0 {
         return;
     }
-    return_homecoming(key, explorer, context);
     destroy_explorer(key, explorer);
 }
 
-fn return_homecoming(key: ExplorerKey, explorer: ExplorerTroops, context: crate::commands::ExecutionContext) {
-    let Some(progress) = crate::logic::progression::read(key) else {
-        return;
-    };
-    let share: u128 = crate::rules::homecoming_bps(progress.homecoming).into();
-    let returned = explorer.troops.count
-        / crate::rules::RESOURCE_PRECISION
-        * share
-        / 10000
-        * crate::rules::RESOURCE_PRECISION;
-    if returned == 0 {
-        return;
-    }
-    let state = crate::state::read();
-    let release = state.releases.entry(state.game_releases.read(key.game_id)).classes;
-    IResourceOperationsLibraryDispatcher { class_hash: release.resources.read() }
-        .grant_resource(
-            ResourceKey { game_id: key.game_id, entity_id: explorer.owner },
-            crate::troops::stock_resource(explorer.troops.category, explorer.troops.tier),
-            returned,
-            context.timestamp,
-            crate::commands::resource_context(context),
-        );
-}
+
 
 fn destroy_explorer(key: ExplorerKey, explorer: ExplorerTroops) {
     crate::logic::army_slots::release(key, explorer);

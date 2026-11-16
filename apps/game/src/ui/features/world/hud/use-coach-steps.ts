@@ -20,7 +20,7 @@ import {
   ArmyActionManager,
   biomeTypeOf,
   configManager,
-  openingChargePercent,
+
   ARMY_CHARGE_MODELS,
   getGuardsByStructure,
   getBalance,
@@ -248,7 +248,7 @@ const useCertainLoss = () => {
       const chargePercent = openingChargePercent(facts.store, explorer, structure.entity_id);
       if (chargePercent === undefined) return false;
       const circumstances = {
-        chargePercent,
+
         timestamp,
         attackDistance: 1,
         attackerBiome: biome,

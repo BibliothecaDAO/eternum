@@ -61,17 +61,14 @@ fn hyperstructure_weight(config: MapConfig, distance: u128, hyperstructures: u32
     weighted - core::cmp::min(weighted, penalty)
 }
 
-// All Scouting tiers on one kind double its base rate: reserve the largest increase among the three choices.
 pub fn validate_frontier(rules: crate::expeditions::FrontierDiscoveryRules, find_percent: u16) {
     // The floor must find a guarded site even when a draw has no ruin reward.
     let guarded: u32 = Into::<u16, u32>::into(rules.beasts_bps) + rules.camp_bps.into() + rules.rift_bps.into();
     assert!(guarded != 0 && rules.empty_reveal_limit != 0, "empty discovery floor");
-    let sanctuaries: u32 = Into::<u16, u32>::into(rules.shrine_bps) + rules.well_bps.into();
-    let reserve: u32 = core::cmp::max(sanctuaries, core::cmp::max(rules.camp_bps, rules.rift_bps).into());
     assert!(
         Into::<
             u32, u128,
-        >::into(guarded + rules.ruin_bps.into() + reserve + rules.shrine_bps.into() + rules.well_bps.into())
+        >::into(guarded + rules.ruin_bps.into() + rules.shrine_bps.into() + rules.well_bps.into())
             * find_percent.into() <= 1000000,
         "discovery odds exceed 100 percent",
     );
@@ -81,18 +78,15 @@ pub fn validate_frontier(rules: crate::expeditions::FrontierDiscoveryRules, find
 // still allowed. Each ruin carries its relic from discovery until the winning army clears it.
 pub fn frontier(
     rules: crate::expeditions::FrontierDiscoveryRules,
-    camp_bonus_bps: u32,
-    rift_bonus_bps: u32,
-    sanctuaries_bonus_bps: u32,
     find_percent: u16,
     empty_reveals: u8,
     ruin: Option<crate::army_relics::ArmyRelic>,
     seed: u256,
 ) -> Discovery {
-    let camp = Into::<u16, u128>::into(rules.camp_bps) * (10000 + camp_bonus_bps.into()) / 10000;
-    let rift = Into::<u16, u128>::into(rules.rift_bps) * (10000 + rift_bonus_bps.into()) / 10000;
-    let shrine = Into::<u16, u128>::into(rules.shrine_bps) * (10000 + sanctuaries_bonus_bps.into()) / 10000;
-    let well = Into::<u16, u128>::into(rules.well_bps) * (10000 + sanctuaries_bonus_bps.into()) / 10000;
+    let camp: u128 = rules.camp_bps.into();
+    let rift: u128 = rules.rift_bps.into();
+    let shrine: u128 = rules.shrine_bps.into();
+    let well: u128 = rules.well_bps.into();
     let (ruin_kind, ruin_weight): (Discovery, u128) = match ruin {
         Some(reward) => (Discovery::Ruin(reward), rules.ruin_bps.into()),
         None => (Discovery::None, 0),
@@ -123,8 +117,6 @@ pub fn frontier(
 
 pub fn tile_occupier(discovery: Discovery) -> Option<u8> {
     match discovery {
-        Discovery::Shrine => Some(crate::taxonomy::SHRINE_OCCUPIER),
-        Discovery::Well => Some(crate::taxonomy::WELL_OCCUPIER),
         Discovery::Spire => Some(crate::taxonomy::DORMANT_SPIRE_OCCUPIER),
         Discovery::Chest => Some(crate::taxonomy::CHEST_OCCUPIER),
         _ => None,

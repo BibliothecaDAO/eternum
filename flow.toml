@@ -123,7 +123,7 @@ paths = "flow.toml contracts/l3/"
 estimate_gb = 1
 
 [kind.generate-native-retirement]
-cmd = 'node contracts/l3/world-native/scripts/generate-story-serde.mjs && bash contracts/l3/check-native.sh build && pnpm run schema:native && pnpm run fixtures:native-presets && (cd contracts/l3/world-native && scarb fmt) && (cd contracts/l3/world-native/tests && scarb fmt) && pnpm run format && git add -N -- contracts/l3/world-native/tests/fixtures/current-presets && git diff --binary > "$FLOW_TMP/generated.patch"'
+cmd = 'trap '\''git diff --binary > "$FLOW_TMP/generated.patch"'\'' EXIT; node contracts/l3/world-native/scripts/generate-story-serde.mjs && bash contracts/l3/check-native.sh build && pnpm run schema:native && pnpm run fixtures:native-presets && (cd contracts/l3/world-native && scarb fmt) && (cd contracts/l3/world-native/tests && scarb fmt) && pnpm run format && git add -N -- contracts/l3/world-native/tests/fixtures/current-presets && git diff --binary > "$FLOW_TMP/generated.patch"'
 estimate_gb = 9
 
 [kind.playtest-economy]

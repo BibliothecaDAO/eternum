@@ -1,4 +1,3 @@
-use crate::troops::Coord;
 
 pub const STAGE_COUNT: u8 = 5;
 pub const CLEAR_MIST_STAGE: u8 = 1;
@@ -16,10 +15,6 @@ pub struct RaceRules {
     pub second_wind_percent: u16,
     pub pale_moon_percent: u16,
     pub spoils_percent: u16,
-    pub first: Coord,
-    pub second: Coord,
-    pub third: Coord,
-    pub fourth: Coord,
 }
 
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]
@@ -30,7 +25,6 @@ pub struct AspectKey {
 
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]
 pub struct AspectHyperstructure {
-    pub entity_id: u64,
     pub height: u32,
 }
 
@@ -74,17 +68,9 @@ pub trait IRace<T> {
     fn expedition_effects(self: @T, home: crate::resources::ResourceKey, timestamp: u64) -> ExpeditionEffects;
 }
 
-pub fn local_coord(rules: RaceRules, aspect: u8) -> Coord {
-    match aspect {
-        1 => rules.first,
-        2 => rules.second,
-        3 => rules.third,
-        4 => rules.fourth,
-        _ => panic!("invalid Aspect"),
-    }
-}
 
-pub fn validate(rules: RaceRules, deep: crate::deep::DeepRules) {
+
+pub fn validate(rules: RaceRules) {
     assert!(rules.season_days != 0 && rules.season_days % crate::days::DAYS_PER_BAG == 0, "race needs whole day bags");
     assert!(rules.glory_per_tick != 0, "zero Glory payment");
     assert!(rules.height_per_tick != 0 && rules.stage_height != 0, "zero height payment or stage");
@@ -95,24 +81,7 @@ pub fn validate(rules: RaceRules, deep: crate::deep::DeepRules) {
     assert!(rules.spoils_percent >= 100 && rules.spoils_percent <= 200, "invalid Spoils rate");
     let _ = rules.stage_height * Into::<u8, u32>::into(STAGE_COUNT);
     let _ = rules.glory_per_tick * crate::rules::RESOURCE_PRECISION;
-    for aspect in 1_u8..5 {
-        let coord = local_coord(rules, aspect);
-        assert!(
-            !coord.alt && coord.x < crate::rules::DEEP_MAP_SIZE && coord.y < crate::rules::DEEP_MAP_SIZE,
-            "hyperstructure outside Deep",
-        );
-        assert!(
-            coord.x != crate::rules::DEEP_MAP_SIZE / 2 || coord.y != crate::rules::DEEP_ARRIVAL_Y,
-            "hyperstructure blocks Deep arrival",
-        );
-        assert!(
-            coord != deep.foundation && coord != deep.quarry && coord != deep.altar,
-            "hyperstructure overlaps a Deep site",
-        );
-        for other in 1_u8..aspect {
-            assert!(coord != local_coord(rules, other), "duplicate hyperstructure position");
-        }
-    }
+
 }
 
 // Largest remainders allocate the indivisible units; home identity breaks an exact tie.

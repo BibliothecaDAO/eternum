@@ -61,33 +61,9 @@ pub mod ConstructionLogic {
         ) -> Option<crate::expeditions::FrontierDiscoveryRules> {
             crate::logic::preset_record::for_game(game_id).discovery_rules.read()
         }
-        fn shrine_reward(
-            self: @ContractState, key: crate::resources::ResourceKey,
-        ) -> Option<crate::relics::ShrineReward> {
-            crate::logic::shrines::read(key)
-        }
 
-        fn consume_frontier_site(ref self: ContractState, key: TileKey, explorer_id: u64) -> Option<u8> {
-            let occupied = crate::logic::map::occupancy(key).expect('missing site');
-            assert!(
-                !occupied.is_structure
-                    && (occupied.category == crate::taxonomy::SHRINE_OCCUPIER
-                        || occupied.category == crate::taxonomy::WELL_OCCUPIER),
-                "tile is not a shrine or well",
-            );
-            let point = if occupied.category == crate::taxonomy::SHRINE_OCCUPIER {
-                Some(
-                    crate::logic::shrines::claim(
-                        crate::resources::ResourceKey { game_id: key.game_id, entity_id: occupied.entity_id },
-                        crate::troops::ExplorerKey { game_id: key.game_id, explorer_id },
-                    ),
-                )
-            } else {
-                None
-            };
-            crate::logic::map::MapState::vacate(key, occupied.entity_id);
-            point
-        }
+
+
         fn expedition_discovery(
             self: @ContractState, key: crate::expeditions::ExpeditionDiscoveryKey,
         ) -> Option<crate::expeditions::ExpeditionDiscovery> {
@@ -438,7 +414,7 @@ pub mod ConstructionLogic {
             if !crate::research::is_training(category) {
                 return;
             }
-            let row = crate::research::ROW_WAR_HALL + category - crate::research::WAR_HALL;
+            let row = crate::research::ROW_SUPPLY_YARD;
             let before = crate::logic::research::require(key).learned;
             if crate::research::tier(before, row) != 0 {
                 return;
@@ -469,11 +445,7 @@ pub mod ConstructionLogic {
                 return;
             }
             assert!(self.standing(key, category) == 0, "training building is unique");
-            assert!(
-                crate::research::purchases(crate::logic::research::learned(key), crate::research::ROW_BARRACKS) >= board
-                    .training_gate_tier,
-                "training building needs barracks tier",
-            );
+
         }
         // The buildings of a type standing on a realm board; the castle's own labor producer is not a workshop.
         fn standing(self: @ContractState, key: ResourceKey, category: u8) -> u8 {

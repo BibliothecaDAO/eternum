@@ -97,16 +97,7 @@ pub mod PrizesLogic {
             };
             let paid = self.pay_reveal(game_id, explorer_id, explorer, coord, reward, context);
             crate::logic::map::MapState::mark_reward_extracted(key);
-            if rules.day_unit_seconds != 0 {
-                crate::progression::IArmyProgressionDispatcherTrait::grant_army_xp(
-                    crate::progression::IArmyProgressionLibraryDispatcher {
-                        class_hash: self.release.classes(game_id).relics.read(),
-                    },
-                    crate::troops::ExplorerKey { game_id, explorer_id },
-                    crate::progression::XpAward::Reveal(coord),
-                    context.timestamp,
-                );
-            }
+
             self
                 .record_story(
                     game_id, actor, context.timestamp, paid, crate::ownership::Story::ExplorationReward(paid),

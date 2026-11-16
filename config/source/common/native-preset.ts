@@ -71,7 +71,6 @@ export interface NativePreset {
     secondWindPercent: number;
     paleMoonPercent: number;
     spoilsPercent: number;
-    positions: readonly [
       readonly [number, number],
       readonly [number, number],
       readonly [number, number],
@@ -110,16 +109,6 @@ export interface NativePreset {
     shrineBps: number;
     wellBps: number;
     emptyRevealLimit: number;
-  };
-  /** XP per reveal and the five cumulative skill-point thresholds. */
-  progression: null | {
-    revealXp: number;
-    revealXpPerDepth: number;
-    commonXp: number;
-    uncommonXp: number;
-    rareXp: number;
-    epicXp: number;
-    legendaryXp: number;
   };
   labor: null | { amount: number; campaignEssence: number; goldenAmount: number; goldenEssence: number };
   chests: null | {

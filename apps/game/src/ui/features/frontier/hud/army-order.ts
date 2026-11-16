@@ -13,7 +13,6 @@ import {
   divideByPrecision,
   getBalance,
   ResourceManager,
-  readRevealXp,
   FELT_CENTER,
   StaminaManager,
 } from "@bibliothecadao/eternum";
@@ -21,7 +20,7 @@ import { resolveExplorerTroops, STAMINA_MODELS } from "@bibliothecadao/eternum/t
 import { ResourcesIds, type Troops } from "@bibliothecadao/types";
 import { safeInteger } from "@bibliothecadao/eternum/game-client";
 
-const ORDER_MODELS = [...STAMINA_MODELS, ...RESOURCE_PRODUCTION_MODELS, "ArmyProgressionRules"] as const;
+const ORDER_MODELS = [...STAMINA_MODELS, ...RESOURCE_PRODUCTION_MODELS] as const;
 
 /** A cost the army or its realm pays, held against what it has, with the exact wait when it is short. */
 export type Cost = { cost: number; held: number | undefined; wait: number | undefined };
@@ -34,7 +33,6 @@ export type ArmyOrder = {
   stamina: Cost;
   wheat: Cost;
   /** Explore only: XP per new tile (read from the preset). */
-  xp: number | undefined;
 };
 
 /** Whether a cost is covered now; unknown is never covered. */
@@ -86,7 +84,6 @@ export const useOrderAt = (target: { col: number; row: number } | null): ArmyOrd
       wait: staminaHeld < staminaCost ? secondsUntilStamina(troops, staminaCost, tick) : undefined,
     },
     wheat: { cost: wheatCost, held: wheatHeld, wait: secondsUntilHeld(wheatHeld, wheatCost, wheatPerHour) },
-    xp: explore ? readRevealXp(setup.store, gameId, { y: target.row + FELT_CENTER() }) : undefined,
   };
 };
 

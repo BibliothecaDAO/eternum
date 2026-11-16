@@ -8,7 +8,7 @@ import {
   ResourceManager,
   hasCastleLimit,
   resolveExchange,
-  openingChargePercent,
+
   getGuardsByStructure,
   siteKindOf,
 } from "@bibliothecadao/eternum";
@@ -248,25 +248,21 @@ const attackNow = (
   defenderIsStructureGuard: boolean,
   targetId: bigint,
 ): SiteFight | undefined => {
-  if (configManager.rollsCombatDice(siteTile.alt))
-    throw new Error("Frontier's site forecast is exact; this game rolls dice");
   const troops = resolveExplorerCombatTroops(store, attack.army, attack.timestamp);
   if (!troops) return undefined;
-  const chargePercent = openingChargePercent(store, attack.army, targetId);
-  if (chargePercent === undefined) return undefined;
   const exchange = resolveExchange(
     troops,
     guard,
     {
-      chargePercent,
+
       timestamp: attack.timestamp,
       attackDistance: reachOf(store, attack, siteTile) ?? BESIDE,
       attackerBiome: attack.biome,
       defenderBiome: attack.biome,
       attackerIsStructureGuard: false,
       defenderIsStructureGuard,
-      attackerRoll: 0,
-      defenderRoll: 0,
+
+
     },
     configManager.getCombatRules(),
   );

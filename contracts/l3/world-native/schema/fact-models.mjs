@@ -914,7 +914,6 @@ const presetDerivedModels = new Set([
   "ChestRules",
   "LaborRules",
   "DeepRules",
-  "ArmyProgressionRules",
   "FrontierDiscoveryRules",
   "ArtificerCost",
   "DepositRules",
@@ -1082,12 +1081,6 @@ export function defineFactModels({ struct, model: declare }) {
       [{ name: "rules", type: "core::array::Span::<world_native::relics::RelicRule>" }],
     ),
     model(
-      "ArmyProgressionRules",
-      "game",
-      [{ name: "game_id", type: "core::integer::u32" }],
-      struct("progression::ArmyProgressionRules"),
-    ),
-    model(
       "FrontierDiscoveryRules",
       "game",
       [{ name: "game_id", type: "core::integer::u32" }],
@@ -1215,7 +1208,6 @@ export function defineFactModels({ struct, model: declare }) {
     model("FrontierPrize", "game", [{ name: "game_id", type: "core::integer::u32" }], struct("entry::FrontierPrize")),
     model("LordsBudget", "game", [{ name: "game_id", type: "core::integer::u32" }], struct("relics::LordsBudget")),
     model("SiteChest", "game", struct("resources::ResourceKey"), struct("relics::SiteChest")),
-    model("ShrineReward", "game", struct("resources::ResourceKey"), struct("relics::ShrineReward")),
     model("RelicChest", "game", struct("resources::ResourceKey"), struct("relics::RelicChest")),
     model(
       "LordsWithdrawal",
@@ -1676,7 +1668,6 @@ export const syncScopes = {
       "ChestRules",
       "LaborRules",
       "DeepRules",
-      "ArmyProgressionRules",
       "LordsBudget",
       "FrontierPrize",
       "FrontierDiscoveryRules",
@@ -1753,7 +1744,6 @@ export const syncScopes = {
   RealmKnowledge: { realms: ["structure_id"] },
   ExpeditionSite: { regions: [{ alt: "alt", x: "col", y: "row" }], entities: ["entity_id"] },
   SiteChest: { entities: ["entity_id"] },
-  ShrineReward: { entities: ["entity_id"] },
   // A relic chest's pack is public: anyone may open the chest, so every player sees what it holds.
   RelicChest: shared,
   ArmyCombat: { entities: ["explorer_id"] },

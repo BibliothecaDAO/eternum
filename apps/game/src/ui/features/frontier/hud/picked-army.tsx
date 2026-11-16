@@ -3,9 +3,6 @@ import { HudPanel, HudTier } from "@/ui/design-system/kit/hud-elements";
 import { PICKED_ARMY, type Rank, tierNumeral } from "@/ui/design-system/kit/words";
 import type { ReactNode } from "react";
 
-import { ATTRIBUTE_LIST, type AttributeKey } from "../army/army-detail";
-import { LevelUpButton } from "../army/army-panel";
-import { attributeBadgeTarget } from "../attributes/attributes";
 import { ArmyToken } from "./army-token";
 import type { DockArmy } from "./dock-armies";
 
@@ -16,13 +13,9 @@ export type PickedArmyView = Pick<
   | "label"
   | "number"
   | "art"
-  | "xp"
-  | "xpGoal"
   | "stamina"
   | "secondsToFull"
   | "troops"
-  | "canSpendSkillPoint"
-  | "tiers"
   | "ethereal"
   | "drain"
 >;
@@ -37,7 +30,6 @@ export const PickedArmy = ({
   refill,
   spire,
   onDetails,
-  onLevelUp,
 }: {
   army: PickedArmyView;
   /** The army's stamina as its refill's button. */
@@ -45,48 +37,24 @@ export const PickedArmy = ({
   /** Its next-reveal Spire chance, or the nearby discovered Spire's card. */
   spire?: ReactNode;
   onDetails: () => void;
-  onLevelUp: () => void;
 }) => (
   <HudPanel collapsible={false} className="pointer-events-auto" bodyClassName="flex items-center gap-3 pt-3">
     <ArmyToken
       label={PICKED_ARMY.details(army.label)}
       number={army.number}
       art={army.art}
-      xp={army.xp}
-      xpGoal={army.xpGoal}
       stamina={army.stamina}
       troops={army.troops}
-      canSpendSkillPoint={army.canSpendSkillPoint}
       ethereal={army.ethereal}
       drain={army.drain}
       selected
-      flyTarget={attributeBadgeTarget(army.explorerId)}
       onPick={onDetails}
     />
     <span data-picked-army className="min-w-0 flex-1">
-      {army.tiers && <Sides tiers={army.tiers} />}
     </span>
     <span className="grid w-24 shrink-0 gap-1.5">
       {refill}
-      <LevelUpButton affordable={army.canSpendSkillPoint} onPress={onLevelUp} />
       {spire}
     </span>
   </HudPanel>
-);
-
-/** The army's sides, every attribute the game levels, each its mark over its tier's gem. */
-const Sides = ({ tiers }: { tiers: Record<AttributeKey, number> }) => (
-  <span className="grid grid-cols-4 gap-1">
-    {ATTRIBUTE_LIST.map(({ key, name, mark }) => (
-      <span
-        key={key}
-        role="img"
-        aria-label={`${name} ${tierNumeral(tiers[key] as Rank)}`}
-        className="flex flex-col items-center gap-1"
-      >
-        <Icon name={mark} size={28} />
-        <HudTier tier={tiers[key] as Rank} />
-      </span>
-    ))}
-  </span>
 );

@@ -5,20 +5,16 @@ use crate::math::PercentageValueImpl;
 use crate::rules::{RESOURCE_PRECISION, TroopDamageConfig, TroopStaminaConfig};
 use crate::stamina::StaminaSourceTrait;
 use crate::troops::{TroopTier, TroopType, Troops};
-/// Research captured at muster and the last entity this army attacked. Entity zero means no attack yet.
+/// The last entity this army attacked. Entity zero means no attack yet.
 #[derive(Copy, Drop, Serde, Debug, PartialEq, starknet::Store)]
 pub struct ArmyCombat {
-    pub charge: u8,
     pub last_target: u64,
 }
 
 #[derive(Copy, Drop, Serde)]
 pub struct CombatContext {
-    pub charge_percent: u8,
     pub timestamp: u64,
     pub day_unit_seconds: u32,
-    pub attacker_roll: u8,
-    pub defender_roll: u8,
     pub attacker_biome: Biome,
     pub defender_biome: Biome,
     pub attack_distance: u32,
@@ -317,9 +313,6 @@ pub impl TroopsImpl of TroopsTrait {
             / BRAVO_TIER_BONUS
             / TOTAL_NUM_TROOPS.pow(EFFECTIVE_BETA));
 
-        assert!(context.attacker_roll <= 20 && context.defender_roll <= 20, "invalid combat die");
-        ALPHA_DAMAGE_DEALT *= Self::_combat_percent_multiplier(100 + context.attacker_roll.into());
-        BRAVO_DAMAGE_DEALT *= Self::_combat_percent_multiplier(100 + context.defender_roll.into());
         ALPHA_DAMAGE_DEALT *= alpha._outgoing_damage_multiplier(context);
         ALPHA_DAMAGE_DEALT *= bravo
             ._incoming_damage_multiplier(context.defender_is_structure_guard, context.day_unit_seconds);
@@ -376,15 +369,7 @@ pub impl TroopsImpl of TroopsTrait {
             * bravo.boosts.decr_damage_gotten_percent_num.into()
             / PercentageValueImpl::_100().into();
 
-        if context.day_unit_seconds != 0 && alpha.category == TroopType::Knight && context.charge_percent != 0 {
-            let early = ALPHA_DAMAGE_DEALT.round() * Self::_combat_percent_multiplier(context.charge_percent.into());
-            BRAVO_DAMAGE_DEALT =
-                if early >= BRAVO_NUM_TROOPS {
-                    FixedTrait::ZERO()
-                } else {
-                    BRAVO_DAMAGE_DEALT * (BRAVO_NUM_TROOPS - early) / BRAVO_NUM_TROOPS
-                };
-        }
+
 
         if is_ranged_attack {
             let half_battle_timer_length: u32 = (cooldown_seconds / 2).try_into().unwrap();

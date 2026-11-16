@@ -14,9 +14,7 @@ pub fn member(key: ResourceKey) -> RaceMember {
 pub fn hyperstructure(key: AspectKey) -> AspectHyperstructure {
     assert!(key.aspect >= 1 && key.aspect <= 4, "invalid Aspect");
     let state = crate::state::read();
-    let entity_id = state.season.aspect_hyperstructures.read((key.game_id, key.aspect));
-    assert!(entity_id != 0, "race hyperstructure is missing");
-    AspectHyperstructure { entity_id, height: state.season.aspect_heights.read((key.game_id, key.aspect)) }
+    AspectHyperstructure { height: state.season.aspect_heights.read((key.game_id, key.aspect)) }
 }
 
 pub fn triumph_day(key: TriumphKey) -> Option<u64> {
@@ -51,9 +49,9 @@ fn initialize(game_id: u32) {
         return;
     };
     validate_game(game_id, rules);
-    let spacing = crate::logic::preset_record::for_game(game_id).settlement_spacing.read();
     for aspect in 1_u8..5 {
-        initialize_hyperstructure(AspectKey { game_id, aspect }, rules, spacing);
+        let key = AspectKey { game_id, aspect };
+        emit('AspectHyperstructure', key, hyperstructure(key));
     }
 }
 
@@ -71,32 +69,7 @@ fn validate_game(game_id: u32, rules: RaceRules) {
     let _: u128 = maximum_glory.try_into().expect('race Glory exceeds limit');
 }
 
-fn initialize_hyperstructure(key: AspectKey, rules: RaceRules, spacing: u32) {
-    if crate::state::read().season.aspect_hyperstructures.read((key.game_id, key.aspect)) != 0 {
-        return;
-    }
-    let local = crate::race::local_coord(rules, key.aspect);
-    let coord = crate::deep::site_position(local.x, local.y, spacing);
-    let entity_id: u64 = crate::logic::game::allocate_setup_entity(key.game_id).into();
-    crate::logic::map::MapState::occupy(
-        crate::geometry::tile_key(key.game_id, coord), entity_id, crate::taxonomy::HYPERSTRUCTURE_OCCUPIER, true,
-    );
-    crate::logic::structures::StructureState::create(
-        ResourceKey { game_id: key.game_id, entity_id },
-        crate::structures::StructureRecord {
-            owner: 0.try_into().unwrap(),
-            base: crate::structures::StructureBase {
-                category: crate::taxonomy::HYPERSTRUCTURE_CATEGORY,
-                created_at: crate::logic::game::game(key.game_id).start_main_at.try_into().unwrap(),
-                ..Default::default(),
-            },
-            resources_packed: 0,
-            metadata: Default::default(),
-        },
-    );
-    crate::state::write().season.aspect_hyperstructures.write((key.game_id, key.aspect), entity_id);
-    emit('AspectHyperstructure', key, AspectHyperstructure { entity_id, height: 0 });
-}
+
 
 fn pay_tick(game_id: u32, kind: u8, aspect: u8, shares: Span<crate::deep::DeepShare>, timestamp: u64) {
     let rules = rules(game_id).expect('race is disabled');

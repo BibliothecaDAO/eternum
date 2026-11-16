@@ -17,7 +17,6 @@ pub type Preset =
         crate::hyperstructures::ConstructionResource,
         crate::relics::RelicRule,
         crate::relics::ChestRules,
-        crate::progression::ArmyProgressionRules,
         crate::expeditions::FrontierDiscoveryRules,
         crate::bridge::DepositRules,
         crate::withdrawals::WithdrawalTerms,

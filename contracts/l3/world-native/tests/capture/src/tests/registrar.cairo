@@ -564,23 +564,23 @@ fn an_army_enters_a_depth_only_from_its_realms_spire_which_turns_each_day() {
 
 
 #[test]
-fn a_cyclops_clear_pays_wheat_once_keeps_xp_and_removes_its_blocker() {
+fn a_herd_clear_pays_wheat_once_keeps_xp_and_removes_its_blocker() {
     beast_clear_payout(false, false);
 }
 
 #[test]
-fn a_cyclops_clear_clips_wheat_at_storage_but_keeps_all_xp() {
+fn a_herd_clear_clips_wheat_at_storage_but_keeps_all_xp() {
     beast_clear_payout(true, false);
 }
 
 #[test]
-fn a_wraith_clear_pays_triple_xp_without_resources() {
+fn a_band_clear_pays_triple_xp_without_resources() {
     beast_clear_payout(false, true);
 }
 
-fn beast_clear_payout(full: bool, wraith: bool) {
+fn beast_clear_payout(full: bool, band: bool) {
     let mut seed = 0_u256;
-    while (crate::random::range(seed, 2, 2) != 0) != wraith {
+    while (crate::random::range(seed, 2, 2) != 0) != band {
         seed += 1;
     }
     let (_, frontier) = super::preset_projection::current_definition("frontier-check");
@@ -634,7 +634,7 @@ fn beast_clear_payout(full: bool, wraith: bool) {
     let site = snforge_std::interact_with_state(
         d.games, || crate::logic::expeditions::expedition_site(site_key).unwrap(),
     );
-    let amount = if full || wraith {
+    let amount = if full || band {
         0
     } else {
         site.initial_guard_count * 4
@@ -643,14 +643,14 @@ fn beast_clear_payout(full: bool, wraith: bool) {
         site.clear,
         Some(
             crate::expeditions::SiteClear {
-                xp: if wraith {
+                xp: if band {
                     9
                 } else {
                     2
                 },
                 explorer_id: key.explorer_id,
                 home_id: army.owner,
-                reward: if wraith {
+                reward: if band {
                     None
                 } else {
                     Some(crate::resources::ResourceAmount { resource_type: crate::resources::WHEAT, amount })
@@ -661,7 +661,7 @@ fn beast_clear_payout(full: bool, wraith: bool) {
     assert_eq!(resources.resource_balance(wheat) - before, amount);
     assert_eq!(
         snforge_std::interact_with_state(d.games, || crate::logic::progression::require(key).xp),
-        xp + if wraith {
+        xp + if band {
             9
         } else {
             2
@@ -678,7 +678,7 @@ fn beast_clear_payout(full: bool, wraith: bool) {
     assert_eq!(resources.resource_balance(wheat), before + amount);
     assert_eq!(
         snforge_std::interact_with_state(d.games, || crate::logic::progression::require(key).xp),
-        xp + if wraith {
+        xp + if band {
             9
         } else {
             2
@@ -833,7 +833,7 @@ fn expedition_deploy_chooses_a_free_slot_and_refuses_occupied_or_unallowed_slots
     assert_eq!(
         fresh.stamina.amount,
         crate::progression::stamina_max(
-            crate::progression::initial(), army.troops.category, preset.rules.troop_stamina_config,
+            Default::default(), army.troops.category, preset.rules.troop_stamina_config,
         ),
     );
     assert!(read_slot(crate::troops::ArmySlotKey { slot: 0, ..key }).is_none());
@@ -904,7 +904,7 @@ fn expedition_slot_reuse_preserves_its_bar_and_the_next_day_allocates_a_fresh_ba
     assert_eq!(
         next.stamina.amount,
         crate::progression::stamina_max(
-            crate::progression::initial(), fresh.category, preset.rules.troop_stamina_config,
+            Default::default(), fresh.category, preset.rules.troop_stamina_config,
         ),
     );
     assert!(next.stamina.amount > preset.rules.troop_stamina_config.stamina_initial.into());
@@ -1128,7 +1128,7 @@ fn frontier_shrine_and_well_persist_once_and_use_the_public_progress_and_slot() 
         d.games,
         || {
             crate::logic::progression::write(
-                key, crate::progression::ArmyProgress { xp: 7, ..crate::progression::initial() },
+                key, crate::progression::ArmyProgress { xp: 7, ..Default::default() },
             );
             crate::logic::map::MapState::reveal(tile, 1);
             crate::logic::shrines::discover(ResourceKey { game_id, entity_id: 900 }, 2, 123);
