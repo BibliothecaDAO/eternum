@@ -72,12 +72,7 @@ const READ_ARMY_LIST = `(() => {
   };
 })()`;
 
-/**
- * Every army and open slot carries a stamina bar, and the bars line up whatever each entry's words say (owner, 27
- * October): one width, and one left edge down a list (or one top along a phone's row of tokens). On a list, each figure
- * (XP, stamina) stands on the line of the words it belongs to, whether the row has one line or two (owner, 28 October:
- * "text alignment with no troop line subtext").
- */
+
 const armyListProblems = ({ entries, bars, rows }) => {
   if (bars.length < 2 || bars.length !== entries) return [`${bars.length} stamina bars on ${entries} armies and slots`];
   const same = (key) => bars.every((bar) => Math.abs(bar[key] - bars[0][key]) <= 0.5);

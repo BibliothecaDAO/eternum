@@ -7,7 +7,7 @@ import { compileSitePreviews, generateSitePreviews } from "./generate-site-previ
 const root = new URL("../", import.meta.url);
 const source = Object.fromEntries(
   await Promise.all(
-    ["expeditions", "progression", "taxonomy", "resources", "rules", "troops", "army_relics"].map(async (name) => [
+    ["expeditions", "taxonomy", "resources", "rules", "troops", "army_relics"].map(async (name) => [
       name,
       await readFile(new URL(`src/${name}.cairo`, root), "utf8"),
     ]),
@@ -18,7 +18,7 @@ test("the shipped site previews match the current Cairo payout functions", async
   await generateSitePreviews(true);
 });
 
-test("a new category or a changed resource, ratio or XP rule comes from Cairo", () => {
+test("a new category or a changed resource or ratio comes from Cairo", () => {
   const changed = {
     ...source,
     expeditions: source.expeditions
@@ -27,19 +27,15 @@ test("a new category or a changed resource, ratio or XP rule comes from Cairo", 
         "else {\n        None\n    }",
         "else if category == crate::taxonomy::RUIN_CATEGORY {\n        Some(ResourceAmount { resource_type: ESSENCE, amount: site.initial_guard_count * 7 })\n    } else {\n        None\n    }",
       ),
-    progression: source.progression
-      .replace("RESOURCE_PRECISION * 25", "RESOURCE_PRECISION * 36")
-      .replace("(root / 2)", "(root / 3)"),
     resources: source.resources.replace("WHEAT: u8 = 35", "WHEAT: u8 = 22"),
     taxonomy: source.taxonomy.replace("BEASTS_CATEGORY: u8 = 11", "BEASTS_CATEGORY: u8 = 12"),
   };
   const output = compileSitePreviews(changed);
   assert.match(output, /category === 12\) return \{ resourceType: 22, amount: depthReward\(initialGuardCount \* 8n/);
   assert.match(output, /category === 10\) return \{ resourceType: 38, amount: depthReward\(initialGuardCount \* 7n/);
-  assert.match(output, /integerSqrt\(initialGuardCount \/ 1000000000n \* 36n\) \/ 3n/);
 });
 
-test("the old XP-only Beasts rule cannot match today's generated payout", () => {
+test("a missing beast resource rule cannot match today's generated payout", () => {
   const old = {
     ...source,
     expeditions: source.expeditions.replace(
@@ -56,17 +52,12 @@ test("unsupported formulas, missing constants and changed signatures refuse gene
     { expeditions: source.expeditions.replace("site.initial_guard_count * 4", "site.initial_guard_count * 4 + 1") },
     { expeditions: source.expeditions.replace("else {\n        None\n    }", 'else { panic!("missing") }') },
     { resources: source.resources.replace("pub const LABOR: u8 = 23;", "") },
-    { progression: source.progression.replace("(root / 2)", "(root / 2 + 1)") },
     { troops: source.troops.replace("const RIFT_GUARD_PERCENT: u32 = 115;", "") },
     { troops: source.troops.replace("(scaled + step * 50)", "(scaled + step * 50 + 1)") },
-    {
-      progression: source.progression.replace(
-        "clear_xp(strength: u128, depth: u8) -> u32",
-        "clear_xp(strength: u128, depth: u8) -> u64",
-      ),
-    },
-  ])
+  ]) {
+    for (const [name, input] of Object.entries(changed)) assert.notEqual(input, source[name]);
     assert.throws(() => compileSitePreviews({ ...source, ...changed }), /Unsupported|Missing/);
+  }
 });
 
 test("rift guard bounds execute Cairo's percentage and grid rounding at every depth", async () => {
@@ -126,29 +117,24 @@ test("ruin bounds follow the Cairo relic rank and spread", async () => {
   assert.deepEqual(changed.previewRuinGuardBounds(2), [2400, 3600]);
 });
 
-test("Wraith rewards and XP follow the executable Cairo rules", async () => {
+test("Band and Herd rewards follow the executable Cairo rules", async () => {
   const load = async (expeditions) =>
     import(
       `data:text/javascript;base64,${Buffer.from(ts.transpileModule(compileSitePreviews({ ...source, expeditions }), { compilerOptions: { target: ts.ScriptTarget.ES2020, module: ts.ModuleKind.ESNext } }).outputText).toString("base64")}`
     );
   const preview = await load(source.expeditions);
   assert.equal(preview.previewSiteReward(11, 450000000000n, 0, true), null);
-  assert.equal(preview.previewSiteClearXp(450000000000n, 0, true), 159);
   assert.deepEqual(preview.previewSiteReward(11, 350000000000n, 0, false), {
     resourceType: 35,
     amount: 1400000000000n,
   });
-  const changed = await load(
-    source.expeditions.replace("WRAITH_XP_MULTIPLIER: u32 = 3", "WRAITH_XP_MULTIPLIER: u32 = 4"),
-  );
-  assert.equal(changed.previewSiteClearXp(450000000000n, 0, true), 212);
   assert.throws(
     () =>
       compileSitePreviews({
         ...source,
         expeditions: source.expeditions.replace(
-          "if wraith {\n        return None;",
-          "if wraith {\n        return Some(ResourceAmount { resource_type: WHEAT, amount: 1 });",
+          "if band {\n        return None;",
+          "if band {\n        return Some(ResourceAmount { resource_type: WHEAT, amount: 1 });",
         ),
       }),
     /Unsupported/,
