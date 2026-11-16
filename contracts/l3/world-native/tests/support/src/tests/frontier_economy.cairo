@@ -154,4 +154,3 @@ pub fn allow_armies(deployment: super::Deployment, home: ResourceKey) {
         },
     );
 }
-

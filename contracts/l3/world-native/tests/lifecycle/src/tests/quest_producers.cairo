@@ -341,4 +341,3 @@ fn far_eye_root(game_id: u32, rules: crate::expeditions::FrontierDiscoveryRules,
     }
     panic!("missing Far Eye discovery root")
 }
-
