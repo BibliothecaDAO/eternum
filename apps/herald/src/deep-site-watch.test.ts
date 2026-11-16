@@ -95,7 +95,7 @@ it("plans a Deep site opportunity from Herald's actor snapshot with public rival
       home: "5",
       siteId: "801",
       siteName: "Quarry",
-      dueAt: now * 1000,
+      dueAt: (Math.floor(now / ARMIES_TICK_SECONDS) + 1) * ARMIES_TICK_SECONDS * 1000,
       attempts: 0,
     }),
   ]);

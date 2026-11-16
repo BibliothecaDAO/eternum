@@ -32,7 +32,7 @@
   {
     "key": "knightGuardPercent",
     "file": "combat.cairo",
-    "source": "return Self::_combat_percent_multiplier(85);",
+    "source": "if day_unit_seconds == 0 {\n                    85\n                }",
     "value": 85
   },
   {
