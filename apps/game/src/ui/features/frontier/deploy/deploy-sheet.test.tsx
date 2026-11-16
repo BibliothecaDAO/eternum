@@ -37,7 +37,13 @@ import { toast } from "@/ui/features/event-feed/notify";
 import { openArmyDeployment } from "@/ui/features/military/utils/open-army-deployment";
 import { disposeGameSyncSession, installActiveGameClient } from "@/sync/active-game-client";
 import { DEPLOY_ON_MAP_EVENT, type DeployOnMap, readDeployOnMap } from "@/three/scenes/worldmap-deploy-request";
-import { type GameClient, getTroopResourceId, readExpeditionRules, setBlockTimestampSource, spawnRing } from "@bibliothecadao/eternum";
+import {
+  type GameClient,
+  getTroopResourceId,
+  readExpeditionRules,
+  setBlockTimestampSource,
+  spawnRing,
+} from "@bibliothecadao/eternum";
 import type { GameClientSetup } from "@bibliothecadao/eternum/game-client";
 import { Direction, RESOURCE_PRECISION, TROOP_TYPES, TroopTier, TroopType } from "@bibliothecadao/types";
 import { frontierDay } from "./deploy-fixture";
