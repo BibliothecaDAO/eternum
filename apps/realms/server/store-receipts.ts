@@ -29,7 +29,7 @@ export interface ReceiptWorld {
 /** What came of a verified payment, as the ledger records it. */
 type Outcome =
   | "seal"
-  | "seal_held"
+  | "unfulfilled_seal_held"
   | "fragments"
   | "unfulfilled_price"
   | "unfulfilled_product"
@@ -42,7 +42,7 @@ type Product = (typeof STORE_PRODUCTS)[keyof typeof STORE_PRODUCTS];
  * POST /api/shop/receipt: a store purchase of the signed-in account, checked with its store. Every verified payment is
  * written once to the receipt ledger with its outcome, in one transaction with what it buys: the seal, when the
  * product's price covers the seal's store price for this account's holder level, or a pending Fragment credit for the
- * co-signed hand-off. A payment that cannot be honoured is recorded as unfulfilled for the owner to refund; one whose
+ * co-signed hand-off. A payment that cannot be honoured (an unknown product, a price below the buyer's, a seal the account already holds, an account already deleted) is recorded as unfulfilled for the owner to refund; one whose
  * holder level cannot be read is recorded as pending, grants nothing, and is resolved when the same receipt is sent
  * again. The same receipt sent again answers as it did the first time; one another account used is refused.
  */
@@ -117,7 +117,7 @@ const outcomeOf = async (world: ReceiptWorld, owner: string, product: Product | 
   try {
     const holder = product.cents < SEAL_CENTS.store.none ? holderLevelOf(await world.holderFacts(owner)) : "none";
     if (product.cents < SEAL_CENTS.store[holder]) return "unfulfilled_price";
-    return (await readSeal(world.db, owner)) ? "seal_held" : "seal";
+    return (await readSeal(world.db, owner)) ? "unfulfilled_seal_held" : "seal";
   } catch (error) {
     if (error instanceof RealmHoldingsUnavailableError) return "pending_eligibility";
     throw error;
@@ -179,8 +179,8 @@ const answerFor = (outcome: Outcome, product: Product | undefined, repeated: boo
   switch (outcome) {
     case "seal":
       return json({ status: "seal", repeated });
-    case "seal_held":
-      return json({ status: "seal", repeated: true });
+    case "unfulfilled_seal_held":
+      return json({ error: "seal_already_held" }, 409);
     case "fragments":
       if (product?.kind !== "fragments") throw new Error("ledger_fragments_for_unknown_product");
       return json({ status: "fragments", fragments: product.fragments, repeated });

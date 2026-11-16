@@ -47,19 +47,20 @@ export interface SealWorld {
 
 /**
  * GET /api/shop/seal: the signed-in account's holder level, whether it holds the seal, and the seal's price in cents on
- * the web and in a store with what is free to this holder. The LORDS amount is the client's (the day's price).
+ * the web and in a store with what is free to this holder. An account that holds the seal is offered no purchase. The LORDS amount is the client's (the day's price).
  */
 export async function handleSeal(request: Request, auth: IdentityAuth, world: SealWorld): Promise<Response> {
   if (request.method !== "GET") return json({ error: "method_not_allowed" }, 405);
   const session = await auth.api.getSession({ headers: request.headers });
   const owner = session?.user.realmsId;
   if (!owner) return json({ error: "unauthorized" }, 401);
-  const [held, facts] = await Promise.all([readSeal(world.db, owner), readHolderFacts(world, owner)]);
+  if (await readSeal(world.db, owner)) return json({ owned: true, web: null, store: null });
+  const facts = await readHolderFacts(world, owner);
   if (!facts) return json({ error: "holdings_unavailable" }, 503);
   const holder = holderLevelOf(facts);
   return json({
     holder,
-    owned: held !== null,
+    owned: false,
     web: sealOffer(holder, "web"),
     store: sealOffer(holder, "store"),
   });

@@ -183,16 +183,15 @@ it("keeps a seal receipt spent after the account that used it is deleted", async
   expect(await seals(db)).toEqual([]);
 });
 
-it("binds a second paid receipt of an account that already holds the seal, so no one else can use it", async () => {
+it("records a second paid seal receipt of an account that already holds the seal for refund, answers its retry the same, and lets no one else use it", async () => {
   const db = await migrated();
   await sendAs(db, OWNER, { store: "apple", receipt: "tx-1|seal" });
-  expect(await sendAs(db, OWNER, { store: "apple", receipt: "tx-2|seal" })).toEqual([
-    200,
-    { status: "seal", repeated: true },
-  ]);
+  const second = { store: "apple", receipt: "tx-2|seal" };
+  expect(await sendAs(db, OWNER, second)).toEqual([409, { error: "seal_already_held" }]);
+  expect(await sendAs(db, OWNER, second)).toEqual([409, { error: "seal_already_held" }]);
   expect(await ledger(db)).toEqual([
     { receipt: "apple:tx-1", owner: OWNER, outcome: "seal" },
-    { receipt: "apple:tx-2", owner: OWNER, outcome: "seal_held" },
+    { receipt: "apple:tx-2", owner: OWNER, outcome: "unfulfilled_seal_held" },
   ]);
   expect(await sendAs(db, OTHER, { store: "apple", receipt: "tx-2|seal" })).toEqual([409, { error: "receipt_used" }]);
   expect(await seals(db)).toEqual([{ owner: OWNER, receipt: "apple:tx-1" }]);
@@ -259,9 +258,9 @@ it("keeps one seal and records both receipts when two paid receipts of one accou
     sendAs(racing, OWNER, { store: "apple", receipt: "tx-2|seal" }),
   ]);
   expect(meeting.arrivals()).toBeGreaterThanOrEqual(2);
-  expect(answers.map(([status]) => status)).toEqual([200, 200]);
+  expect(answers.map(([status]) => status).sort()).toEqual([200, 409]);
   expect((await seals(db)).length).toBe(1);
-  expect((await ledger(db)).map(({ outcome }) => outcome).sort()).toEqual(["seal", "seal_held"]);
+  expect((await ledger(db)).map(({ outcome }) => outcome).sort()).toEqual(["seal", "unfulfilled_seal_held"]);
 });
 
 it("gives one seal to the first of two accounts that send the same receipt together, and refuses the other", async () => {

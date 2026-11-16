@@ -72,7 +72,7 @@ it("serves the signed-in account its level, whether it holds the seal, and the t
     )
     .bind(OWNER)
     .run();
-  expect(((await (await ask(OWNER)).json()) as { owned: boolean }).owned).toBe(true);
+  expect(await (await ask(OWNER)).json()).toEqual({ owned: true, web: null, store: null });
 });
 
 it("offers no price while holdings cannot be verified", async () => {
