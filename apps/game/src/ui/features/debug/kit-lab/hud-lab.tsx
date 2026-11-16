@@ -385,7 +385,7 @@ const BUILD_TILES: LabTile[] = [
     price(6_800),
   ),
   tile("hut", "workers-hut", "Hut", { icon: "person", value: "+6" }, gem(1), 0, price(5_100)),
-  tile("supply", "supply-yard", buildingName(BuildingType.SupplyYard, true), { icon: "order-skill" }, gem(1), 2, trainingPrice),
+  tile("supply", "supply-yard", buildingName(BuildingType.SupplyYard), { icon: "order-skill" }, gem(1), 2, trainingPrice),
 ];
 /**
  * The owner's realm on 3 November: every training building's Essence short while its Labor is held, and the Hut's Labor
@@ -427,7 +427,7 @@ const EARLY_TILES: LabTile[] = [
     price(800),
   ),
   tile("hut", "workers-hut", "Hut", { icon: "person", value: "+6" }, gem(1), 0, price(300)),
-  tile("supply", "supply-yard", buildingName(BuildingType.SupplyYard, true), { icon: "order-skill" }, gem(1), 2, trainingPrice),
+  tile("supply", "supply-yard", buildingName(BuildingType.SupplyYard), { icon: "order-skill" }, gem(1), 2, trainingPrice),
 ];
 const CASTLE_SIDE = (level: number, limit: number) => ({
   level,

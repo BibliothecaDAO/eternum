@@ -486,6 +486,7 @@ export const SETTINGS = "Settings";
 /** Settings' row for the keys, and the list it opens in Settings' place. */
 /** The Build order panel: its name, and what it says when no realm has a step it can take now. */
 export const BUILD_ORDER_WORDS = {
+  levelUp: "Level up",
   title: "Build order",
   /** A step's verb: the row's reason already names what it builds or deploys, or the level it reaches. */
   build: "Build",

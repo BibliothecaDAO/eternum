@@ -121,7 +121,7 @@ const readTroopsAtHome = (
         store,
       ).balance;
       if (stock === undefined) return undefined;
-      const atHome = Number(stock / BigInt(RESOURCE_PRECISION));
+      const atHome = Math.floor(stock / RESOURCE_PRECISION);
       if (atHome > 0) choices.push({ type, tier, atHome, cap: configManager.getMaxArmySize(realm.base.level, tier) });
     }
   return choices;

@@ -6,7 +6,7 @@ import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { HudButton, HudChip, HudCost, HudNotice, HudRarity, HudSheet, HudWindowFoot } from "@/ui/design-system/kit/hud-elements";
 import { costLine, type Price } from "@/ui/design-system/kit/price-faces";
 import { type Reason, reasonLine } from "@/ui/design-system/kit/reasons";
-import { type Tier, ARMY, ATTACK, ATTACKING, MOVE, REALM, REST_DID_NOT_FIT, ruinRule, SEASON_CLIMB, siteTitle, SITES_CLEARED, STORAGE, tooFarFrom, TROOPS, FIGHT_WORDS } from "@/ui/design-system/kit/words";
+import { type Tier, ON_ITS_WAY, ARMY, ATTACK, ATTACKING, MOVE, REALM, REST_DID_NOT_FIT, ruinRule, SEASON_CLIMB, siteTitle, SITES_CLEARED, STORAGE, tooFarFrom, TROOPS, FIGHT_WORDS } from "@/ui/design-system/kit/words";
 
 import type { OrderInFlight } from "@/hooks/store/use-actions-in-flight";
 import type { ReactNode } from "react";
@@ -315,6 +315,9 @@ const Verb = ({
  * The one line under the step: why an attack did not happen, in red, as the news; or, under Move, that the site is out
  * of reach. An attack that loses the army says so in the headline, from the same figures as the sides.
  */
+const inFlightWord = (inFlight: OrderInFlight | undefined, own: OrderInFlight, word: string) =>
+  inFlight && (inFlight === own ? word : ON_ITS_WAY);
+
 const verbLine = (verb: SiteVerb, site: string): { line: string | undefined; warns: boolean } => {
   if (verb.kind === "blocked") return { line: verb.reason, warns: true };
   if (verb.kind === "attack" && verb.refused && !verb.inFlight) return { line: verb.refused, warns: true };

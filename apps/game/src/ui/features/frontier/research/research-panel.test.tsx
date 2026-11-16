@@ -215,7 +215,7 @@ it("keeps the chosen Research action outside the tree scroll on every pick, incl
 });
 
 it.each([
-  [0, "+0 max stamina → +20 max stamina"],
+  [0, "0 max stamina → +20 max stamina"],
   [1, "+20 max stamina → +45 max stamina"],
   [2, "+45 max stamina → +75 max stamina"],
   [3, "+75 max stamina → +110 max stamina"],

@@ -80,7 +80,6 @@ it("names the Frontier encounter itself across the plate, cards, Events, lists a
     listHeading: kindsHeld([{ category: StructureType.Camp, structure }], mode.id)[0].plural,
     selectionLabel: attackTargetName("Camp", identity),
     unknownGuard: attackTargetName("Camp"),
-    scouting: RESEARCH_TREE.kinds.camp,
     dayEnd: dayEnd.map(({ line, verb }) => `${line} ${verb}`).join(" "),
     events: events.map(({ title, description }) => `${title} ${description}`).join(" "),
     card: publicText(

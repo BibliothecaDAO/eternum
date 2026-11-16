@@ -4,6 +4,8 @@ import { NativeFactStore } from "@bibliothecadao/eternum/game-client";
 import { RESOURCE_PRECISION, StructureType } from "@bibliothecadao/types";
 import preset from "../../../../../../../contracts/l3/world-native/tests/fixtures/current-presets/conformance.json";
 
+const DEPLOY_SLOT_KEY = "0x9";
+
 const set = (key: string, model: string, value: Record<string, unknown>) => ({ model, key, value });
 const realm = {
   game_id: 1,

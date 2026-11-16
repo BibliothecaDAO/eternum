@@ -245,7 +245,7 @@ the army two regions below, shown in Ethereal II; play it at `--viewport 390x844
 game: the view switch's list, World and each Ethereal layer, a phone's with Realm; Ethereal II and World each at the
 camera's same spot, then the realm from Ethereal II and back), `--steps lab-merge-loses-training`,
 `--steps lab-merge-keeps-tapped` and `--steps lab-after-battle` (the same game with two of the realm's armies merged
-through **Transfer troops**, under with and without lost XP (the target always survives; lost XP must be confirmed once
+through **Transfer troops**, under with and without lost Logistics training (the target always survives; lost Logistics training must be confirmed once
 more), or with the owner's army after its fight standing on the camp it cleared: each army's tile, found under its
 token, hovered with nothing selected must open that army's plate, and an emptied tile none), `--steps lab-reinforce`
 (`/lab/game?scenario=reinforce`, the army beside home: the realm selected from its tile, the army right-clicked for
@@ -325,13 +325,12 @@ armies merged from the transfer card (pressed, then confirmed), `--steps lab-act
 same card to the other army, `--steps lab-actions-spire`, Enter on Ethereal II from the spire's card;
 `--steps lab-actions-fight`, the ruin beside the army attacked from its card; `--steps lab-actions-fight-lost`, the same
 attack costing the army its life (`scenario=fight-lost`): the panel must show "Your army is lost", then close by itself
-with no army left selected; `--steps lab-actions-sites`, a Shrine and a Well beside the army used;
+with no army left selected;
 `--steps lab-actions-deploy`, a new army from the dock's Deploy (Max, then Deploy); `--steps lab-actions-research`, the
 Shrine researched from Research (`scenario=research`); and `--steps lab-actions-claim`, a Realm's labor claimed from
 Realms (a desktop's purse, a phone's Menu: Claim; `scenario=claim`, whose value relay the tab answers as the relay does:
 the grant's facts first, then the reply naming their transaction); on `scenario=upkeep` (LORDS held, the army short of
-stamina with XP to spend, a chest beside it, a payout wallet linked), `--steps lab-actions-army`, the army's panel's
-Refill (and its confirm) then Level up on Battle, `--steps lab-actions-demolish`, a first-ring building's Delete then
+stamina, with a chest beside it), `--steps lab-actions-demolish`, a first-ring building's Delete then
 Confirm delete, `--steps lab-actions-chest`, the chest beside the army opened (a desktop's right-click on the tile
 offering Open crate; a phone's tap, then Open), and `--steps lab-actions-withdraw`, the purse's LORDS withdrawn
 (Maximum, then Withdraw; the tab answers the L2 ledger's pause and payment reads); and `--steps lab-actions-settle`, a
@@ -578,7 +577,7 @@ offered and checks the command, new occupancy and camera arrival. The army panel
 Spire chance, read from its home/day/layer counter. Evidence stays in the flow result directory.
 
 The stamina effects paths are `/lab/game?scenario=stamina-mist` and `stamina-wind`: select Army 1, open its panel, read
-its bar and Full in timer, then spend its Battle skill point. `build.sh playtest-stamina-effects` drives both
+its bar and Full in timer. `build.sh playtest-stamina-effects` drives both
 recorded-effect fixtures at desktop and phone sizes. Native lifecycle tests prove Explore settlement and quorum timing.
 
 Supply posts: `/lab/game?scenario=supply-post`, select the cleared camp beside Army 1, choose Reinforce Army 1, then Max

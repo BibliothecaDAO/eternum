@@ -443,7 +443,7 @@ const main = async () => {
         run("screenshot", join(values.out, `${shot}.png`));
         if (name === "frontier-merge") {
           // Army 1 has 22 unspent XP and two upgrades; Army 3 has 20 unspent XP and one upgrade.
-          const confirmLabel = "Lose 222 XP, merge into Army 3";
+          const confirmLabel = "Confirm merge into Army 3";
           run("find", "role", "button", "click", "--name", "Merge into Army 3", "--exact");
           run("wait", "--text", confirmLabel);
 
@@ -459,7 +459,7 @@ const main = async () => {
               const box = element?.getBoundingClientRect();
               return !!box && box.left >= 0 && box.right <= innerWidth && box.top >= 0 && box.bottom <= innerHeight;
             };
-            return { text: sheet.textContent, totals: [...sheet.querySelectorAll('[role="group"][aria-label$="total XP"]')].map(group => group.textContent), struck: sheet.querySelector('s')?.textContent ?? null, reachable: visible(button), notice: sheet.querySelector('.ui-notice')?.textContent ?? null, typed: sheet.querySelector('input[aria-label^="Troops "]').value, slid: sheet.querySelector('input[type="range"]').value };
+            return { text: sheet.textContent, struck: sheet.querySelector('s')?.textContent ?? null, reachable: visible(button), notice: sheet.querySelector('.ui-notice')?.textContent ?? null, typed: sheet.querySelector('input[aria-label^="Troops "]').value, slid: sheet.querySelector('input[type="range"]').value };
           })()`,
               ),
             );
@@ -467,11 +467,10 @@ const main = async () => {
           writeFileSync(join(values.out, `${shot}-confirmation.json`), JSON.stringify(confirmed, null, 2));
           if (
             !confirmed.reachable ||
-            confirmed.notice !== "Army 1 loses its XP and upgrades." ||
-            confirmed.struck !== null ||
-            JSON.stringify(confirmed.totals) !== JSON.stringify(["Total XP222→0", "Total XP120→120"])
+            confirmed.notice !== "Army 1 loses its Logistics training." ||
+            confirmed.struck !== null
           ) {
-            throw new Error(`${shot}: both total XP values and their outcomes must agree with the loss confirmation`);
+            throw new Error(`${shot}: the Logistics loss must be visible and its confirmation reachable`);
           }
           // It opens at all Army 1 holds: the box and the slider both say 500, what the merge sends.
           if (confirmed.typed !== "500" || confirmed.slid !== "500") {
@@ -486,8 +485,7 @@ const main = async () => {
           if (
             partial.text.includes(confirmLabel) ||
             partial.struck !== null ||
-            partial.notice !== null ||
-            JSON.stringify(partial.totals) !== JSON.stringify(["Total XP222→222", "Total XP120→120"])
+            partial.notice !== null
           ) {
             throw new Error(`${shot}: changing the amount must clear confirmation and the merge's losses`);
           }

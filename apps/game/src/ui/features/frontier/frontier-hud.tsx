@@ -263,7 +263,7 @@ const FrontierHudBody = ({
           rules={rules}
           realm={realm ?? visited}
           dayEnd={own && <DayEndBlock dayEnd={dayEnd} />}
-          own={own}
+          own={Boolean(own)}
           onClose={close}
         />
       )}
@@ -283,7 +283,7 @@ const FrontierHudBody = ({
           <FrontierRealmPanel
             rules={rules}
             realm={shown}
-            own={own}
+            own={Boolean(own)}
             waiting={claimWaiting}
             storeCards={storeCards}
             onSurface={setSurface}

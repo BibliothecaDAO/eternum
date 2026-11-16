@@ -33,12 +33,11 @@ vi.mock("@bibliothecadao/eternum", async (original) => ({
   configManager: {
     getCombatRules: () => ({}),
     getCombatConfig: () => ({ stamina_attack_req: 1 }),
-    rollsCombatDice: () => false,
   },
   CombatSimulator: class {
-    simulateBattleRange() {
-      const roll = { attackerDamage: 1, defenderDamage: 1, attackerStamina: 90, defenderStamina: 90 };
-      return { ok: true, worst: roll, best: roll };
+    simulateBattle() {
+      const outcome = { attackerDamage: 1, defenderDamage: 1, attackerStamina: 90, defenderStamina: 90 };
+      return { ok: true, ...outcome };
     }
   },
 }));
