@@ -435,7 +435,13 @@ const BATTLE_TARGET_STEPS = battleTargetSteps(attackFromTheSiteCard, "Map");
 const DEEP_BATTLE_TARGET_STEPS = battleTargetSteps(attackFromTheDeepCard, "Deep");
 
 function battleTargetSteps(attack, place) {
-  const values = readFileSync(new URL("../../../../contracts/l3/world-native/tests/fixtures/frontier-marks.txt", import.meta.url), "utf8").trim().split(/\s+/).map(Number);
+  const values = readFileSync(
+    new URL("../../../../contracts/l3/world-native/tests/fixtures/frontier-marks.txt", import.meta.url),
+    "utf8",
+  )
+    .trim()
+    .split(/\s+/)
+    .map(Number);
   const offset = place === "Deep" ? 8 : 0;
   return [
     { name: "enter-on-map", settleMs: 3_000, verify: inScene("map", place) },

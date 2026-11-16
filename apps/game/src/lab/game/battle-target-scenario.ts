@@ -16,7 +16,10 @@ export function battleTargetScenario(): LabScenario {
   const troops = prepareBattleArmy(game);
   const tile = besideOnOpenLand(game.store, game.store.entityOccupancy(1, SPIRE_ARMY)!);
   game.store.applyFacts(
-    siteAt(game.store, tile, { ...troops, category: "Knight" }, StructureType.Camp).map((fact) => ({ ...fact, value: wire(fact.value) })),
+    siteAt(game.store, tile, { ...troops, category: "Knight" }, StructureType.Camp).map((fact) => ({
+      ...fact,
+      value: wire(fact.value),
+    })),
   );
   return {
     ...game,
@@ -38,7 +41,11 @@ export function deepBattleTargetScenario(): LabScenario {
   const rules = store.require("SliceRules", { game_id: 1 });
   const tickSeconds = 3600;
   store.applyFacts([
-    { model: "ExplorerTroops", key: store.wireKeyOf("ExplorerTroops", guard)!, value: wire({ ...guard, troops: { ...troops, category: "Knight" } }) },
+    {
+      model: "ExplorerTroops",
+      key: store.wireKeyOf("ExplorerTroops", guard)!,
+      value: wire({ ...guard, troops: { ...troops, category: "Knight" } }),
+    },
     { model: "HomeAspect", key: store.wireKeyOf("HomeAspect", aspect)!, value: wire({ ...aspect, aspect: 2 }) },
     {
       model: "SliceRules",
@@ -124,7 +131,11 @@ function exchange(
   const target = guardId ?? siteId;
   const offset = (guardId === undefined ? 0 : 8) + (combat.last_target === target ? 4 : 0);
   const [before, guardBefore, attackerAfter, defenderAfter] = EXCHANGES.slice(offset, offset + 4);
-  if (army.troops.count !== before! * PRECISION || guard.troops.count !== guardBefore! * PRECISION || !("Inline" in army.troops.stamina))
+  if (
+    army.troops.count !== before! * PRECISION ||
+    guard.troops.count !== guardBefore! * PRECISION ||
+    !("Inline" in army.troops.stamina)
+  )
     throw new Error("Battle proof has no matching exchange");
   return [
     {

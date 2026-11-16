@@ -4,7 +4,7 @@ export const NativeTroopType = {
   "Paladin": "Paladin",
   "Crossbowman": "Crossbowman"
 } as const;
-export const nativeFactSchemaIdentity = "46fa8fabaa04eb8d3e31cdd5e7aac78d207ba7d2dc4ed4d95e221e025b0a0626";
+export const nativeFactSchemaIdentity = "77dae337e30822699b8be9c356d99190fc07b4de7d905e1297af26dd76492845";
 export const nativeReleaseConstants = {
   "RUIN_DEPTH_LIMIT_RELEASE": 9
 } as const;
@@ -16,7 +16,8 @@ export const nativeRuleConstants = {
   "RELIC_TILES_PER_RANK": 6,
   "ATTRIBUTE_CAP": 5,
   "SCOUT_EXPLORE_STAMINA": 10,
-  "SCOUT_DAMAGE_PERCENT": 75,
+  "FRONTIER_LIGHT_DAMAGE_PERCENT": 75,
+  "FRONTIER_KNIGHT_GUARD_DAMAGE_PERCENT": 75,
   "LOGISTICS_COMMON_STAMINA": 20,
   "LOGISTICS_UNCOMMON_STAMINA": 45,
   "LOGISTICS_RARE_STAMINA": 75,

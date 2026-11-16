@@ -210,11 +210,13 @@ pub impl TroopsImpl of TroopsTrait {
 
     fn _incoming_damage_multiplier(ref self: Troops, is_structure_guard: bool, day_unit_seconds: u32) -> Fixed {
         if is_structure_guard && self.category == TroopType::Knight {
-            return Self::_combat_percent_multiplier(if day_unit_seconds == 0 {
-                85
-            } else {
-                crate::rules::FRONTIER_KNIGHT_GUARD_DAMAGE_PERCENT.into()
-            });
+            return Self::_combat_percent_multiplier(
+                if day_unit_seconds == 0 {
+                    85
+                } else {
+                    crate::rules::FRONTIER_KNIGHT_GUARD_DAMAGE_PERCENT.into()
+                },
+            );
         }
 
         1_u8.into()
@@ -333,10 +335,12 @@ pub impl TroopsImpl of TroopsTrait {
             ._incoming_damage_multiplier(context.attacker_is_structure_guard, context.day_unit_seconds);
         if context.day_unit_seconds != 0 {
             if alpha.category != TroopType::Knight {
-                ALPHA_DAMAGE_DEALT *= Self::_combat_percent_multiplier(crate::rules::FRONTIER_LIGHT_DAMAGE_PERCENT.into());
+                ALPHA_DAMAGE_DEALT *=
+                    Self::_combat_percent_multiplier(crate::rules::FRONTIER_LIGHT_DAMAGE_PERCENT.into());
             }
             if bravo.category != TroopType::Knight {
-                BRAVO_DAMAGE_DEALT *= Self::_combat_percent_multiplier(crate::rules::FRONTIER_LIGHT_DAMAGE_PERCENT.into());
+                BRAVO_DAMAGE_DEALT *=
+                    Self::_combat_percent_multiplier(crate::rules::FRONTIER_LIGHT_DAMAGE_PERCENT.into());
             }
         }
         if is_ranged_attack {

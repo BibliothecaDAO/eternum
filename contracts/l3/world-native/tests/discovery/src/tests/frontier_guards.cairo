@@ -24,7 +24,13 @@ fn seeded_site_guards_keep_their_family_mark_on_the_inclusive_preset_grid() {
                 saw_lower = saw_lower || count == lower.into();
                 saw_upper = saw_upper || count == upper.into();
                 assert_eq!(guard.tier, TroopTier::T1);
-                assert_eq!(guard.category, if category == RIFT_CATEGORY { TroopType::Crossbowman } else { TroopType::Knight });
+                assert_eq!(
+                    guard.category, if category == RIFT_CATEGORY {
+                        TroopType::Crossbowman
+                    } else {
+                        TroopType::Knight
+                    },
+                );
             }
             assert!(saw_lower && saw_upper, "inclusive endpoint never drawn");
         }
@@ -54,7 +60,14 @@ fn beasts_draw_two_depth_scaled_ranges_below_every_other_site_guard() {
         let mut strong_max = strong_lower;
         for seed in 0_u32..2000 {
             let guard = frontier_guard(BEASTS_CATEGORY, depth, seed.into(), preset.rules, 360);
-            assert_eq!(guard.category, if guard.count / RESOURCE_PRECISION <= weak_upper { TroopType::Knight } else { TroopType::Crossbowman });
+            assert_eq!(
+                guard.category,
+                if guard.count / RESOURCE_PRECISION <= weak_upper {
+                    TroopType::Knight
+                } else {
+                    TroopType::Crossbowman
+                },
+            );
             assert_eq!(guard.tier, TroopTier::T1);
             assert_eq!(guard.count % RESOURCE_PRECISION, 0);
             let count = guard.count / RESOURCE_PRECISION;

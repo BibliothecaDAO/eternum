@@ -172,7 +172,9 @@ const exchangeDamage = (
   const attackerTier = tierBonus(attacker.tier, rules.damage);
   const defenderTier = tierBonus(defender.tier, rules.damage);
   const attackerBiome =
-    rules.dayUnitSeconds === 0 && context.attackDistance > 1 ? ONE : biomeBonus(attacker.category, context.attackerBiome, rules.damage);
+    rules.dayUnitSeconds === 0 && context.attackDistance > 1
+      ? ONE
+      : biomeBonus(attacker.category, context.attackerBiome, rules.damage);
   const defenderBiome = biomeBonus(defender.category, context.defenderBiome, rules.damage);
   const scale = pow(add(attackerTroops, defenderTroops), EFFECTIVE_BETA);
 

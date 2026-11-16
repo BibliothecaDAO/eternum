@@ -176,7 +176,12 @@ function selectionBlock(
 }
 
 function guardView(store: NativeFactStore, game_id: number, site: Site, selected: Selected, now: number): DeepGuard {
-  if (site.beastTroops > 0n) return { kind: "beast", troops: Number(site.beastTroops) / RESOURCE_PRECISION, category: site.guard!.troops.category };
+  if (site.beastTroops > 0n)
+    return {
+      kind: "beast",
+      troops: Number(site.beastTroops) / RESOURCE_PRECISION,
+      category: site.guard!.troops.category,
+    };
   const next = site.guards[0];
   if (!next) return { kind: "open" };
   const total = site.guards.reduce((sum, { army }) => sum + army.troops.count, 0n);

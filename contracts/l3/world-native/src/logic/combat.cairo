@@ -134,7 +134,8 @@ fn fight_guard(key: ExplorerKey, ref attacker: ExplorerTroops, ref defender: Gua
     };
     record_target(key, target, context);
     let combat = CombatContext {
-        defender_is_structure_guard: context.rules.unbox().day_unit_seconds == 0 || defender.actor != 0.try_into().unwrap(),
+        defender_is_structure_guard: context.rules.unbox().day_unit_seconds == 0
+            || defender.actor != 0.try_into().unwrap(),
         ..combat_context(key.game_id, attacker, defender.army, context),
     };
     let attacker_before = attacker.troops.count;

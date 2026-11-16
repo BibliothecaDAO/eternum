@@ -130,7 +130,14 @@ const TickPay = ({ pay }: { pay: DeepTickPay }) => (
 
 const GuardRows = ({ guard }: { guard: DeepGuard }) => {
   if (guard.kind === "beast")
-    return <HudRow lead={<Icon name="beasts" size={32} />} title={DEEP_WORDS.beast(guard.troops)} trail={<CombatMark category={guard.category} />} state="beast" />;
+    return (
+      <HudRow
+        lead={<Icon name="beasts" size={32} />}
+        title={DEEP_WORDS.beast(guard.troops)}
+        trail={<CombatMark category={guard.category} />}
+        state="beast"
+      />
+    );
   if (guard.kind === "open") return <HudRow lead={<Icon name="flag" size={32} />} title={DEEP_WORDS.open} />;
   return (
     <div data-deep-slots className="flex flex-col gap-1">
