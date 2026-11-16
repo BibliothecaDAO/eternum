@@ -8,7 +8,7 @@ import { identityL2Configuration } from "./l2";
 import { finishRecoveries } from "./wallet-recovery";
 import { superviseNotifiers } from "./directory";
 import { decodeIdentityEnv, type IdentityEnv } from "./env";
-import { marketLordsPrice, refreshLordsPrice, runningGameDays } from "./lords-price";
+import { marketLordsPrice, readShopCalendar, refreshLordsPrice } from "./lords-price";
 import { routeIdentityRequest } from "./routes";
 
 /**
@@ -34,7 +34,7 @@ export default {
     await finishWalletRecoveries(env);
     await finishAccountDeletions(env);
     const now = Math.floor(Date.now() / 1000);
-    await refreshLordsPrice(env.DB, marketLordsPrice(), now, await runningGameDays(env.DB, now));
+    await refreshLordsPrice(env.DB, marketLordsPrice(), now, await readShopCalendar(env.DB, now));
   },
 };
 

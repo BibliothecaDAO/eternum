@@ -22,7 +22,7 @@ export const marketLordsPrice =
   };
 
 /** One running game's current day: the game's shard chain, its id, and when the day opened (seconds). */
-export interface RunningGameDay {
+interface RunningGameDay {
   chainId: string;
   gameId: number;
   dayStart: number;
@@ -51,36 +51,56 @@ const priceOfGame = async (db: D1Database, chainId: string, gameId: number): Pro
   return row ? { usd: row.usd, dayStart: row.day_start, readAt: row.read_at } : null;
 };
 
-/** The newest price read for any game, for an account in none: it has no game day of its own to hold. */
-const newestPrice = async (db: D1Database): Promise<LordsPrice | null> => {
-  const row = await db
-    .prepare('SELECT "usd", "day_start", "read_at" FROM "lords_price" ORDER BY "read_at" DESC LIMIT 1')
-    .first<{ usd: number; day_start: number; read_at: number }>();
-  return row ? { usd: row.usd, dayStart: row.day_start, readAt: row.read_at } : null;
-};
+const anyPrice = (db: D1Database) => db.prepare('SELECT 1 AS "any" FROM "lords_price" LIMIT 1').first();
+
+/** What the cron read: every running game's current day, and the chains whose game lists were read in full. */
+interface ShopCalendar {
+  days: RunningGameDay[];
+  readChains: string[];
+}
 
 /**
  * The current day of every running Frontier game on a listed shard. A shard that cannot be read says so in the log and
- * contributes nothing: an unreadable calendar is unknown, never "no game runs", and nothing is priced for it.
+ * contributes nothing: an unreadable calendar is unknown, never "no game runs", and nothing is priced or dropped for it.
  */
-export const runningGameDays = async (
+export const readShopCalendar = async (
   db: D1Database,
   now: number,
   get: typeof fetch = fetch,
-): Promise<RunningGameDay[]> =>
-  (
-    await Promise.all(
-      (await listedShards(db)).map(async (shard) => {
-        try {
-          const games = await fetchShardGames(shard, gamesUrl(shard, null), get);
-          return gameDayStarts(games, now).map((day) => ({ chainId: gameKey(shard.chainId), ...day }));
-        } catch (error) {
-          console.error(`[lords price] shard ${shard.url} games unread; its games get no new price`, error);
-          return [];
-        }
-      }),
-    )
-  ).flat();
+): Promise<ShopCalendar> => {
+  const reads = await Promise.all(
+    (await listedShards(db)).map(async (shard) => {
+      try {
+        const games = await fetchShardGames(shard, gamesUrl(shard, null), get);
+        const chainId = gameKey(shard.chainId);
+        return { chainId, days: gameDayStarts(games, now).map((day) => ({ chainId, ...day })) };
+      } catch (error) {
+        console.error(`[lords price] shard ${shard.url} games unread; its games get no new price`, error);
+        return null;
+      }
+    }),
+  );
+  const read = reads.flatMap((one) => one ?? []);
+  return { days: read.flatMap(({ days }) => days), readChains: read.map(({ chainId }) => chainId) };
+};
+
+/** A game that no longer runs has no shop: its prices go, on a chain whose games were read and did not list it. */
+const dropEndedGames = async (db: D1Database, { days, readChains }: ShopCalendar) => {
+  const { results } = await db.prepare('SELECT DISTINCT "chain_id", "game_id" FROM "lords_price"').all<{
+    chain_id: string;
+    game_id: number;
+  }>();
+  const ended = results.filter(
+    (row) =>
+      readChains.includes(row.chain_id) &&
+      !days.some((day) => day.chainId === row.chain_id && day.gameId === row.game_id),
+  );
+  await db.batch(
+    ended.map((row) =>
+      db.prepare('DELETE FROM "lords_price" WHERE "chain_id" = ? AND "game_id" = ?').bind(row.chain_id, row.game_id),
+    ),
+  );
+};
 
 /**
  * The cron's step: each running game's day is priced once, at the start of that day, and kept. A read that fails or is
@@ -91,10 +111,11 @@ export const refreshLordsPrice = async (
   db: D1Database,
   read: LordsPriceReader,
   now: number,
-  days: readonly RunningGameDay[],
+  calendar: ShopCalendar,
 ): Promise<"read" | "held" | "kept" | "waiting"> => {
+  await dropEndedGames(db, calendar);
   const unpriced: RunningGameDay[] = [];
-  for (const day of days) {
+  for (const day of calendar.days) {
     const held = await db
       .prepare('SELECT 1 AS "held" FROM "lords_price" WHERE "chain_id" = ? AND "game_id" = ? AND "day_start" = ?')
       .bind(gameKey(day.chainId), day.gameId, day.dayStart)
@@ -102,7 +123,7 @@ export const refreshLordsPrice = async (
     if (!held) unpriced.push(day);
   }
   if (unpriced.length === 0) return "held";
-  if (Math.floor(now / 60) % RETRY_MINUTES !== 0 && (await newestPrice(db))) return "waiting";
+  if (Math.floor(now / 60) % RETRY_MINUTES !== 0 && (await anyPrice(db))) return "waiting";
   try {
     const usd = await read();
     if (!(usd > 0)) throw new Error("LORDS price is not positive");
@@ -124,14 +145,14 @@ export const refreshLordsPrice = async (
 
 /**
  * GET /api/shop/price?chain=&game=: the LORDS price in dollars read at the start of that game's current day, held until
- * its next day has one; a game with no price yet, or none named, is quoted the newest price read. 503 until any has
- * been read, never a made-up one.
+ * its next day has one. The shop exists only inside a running Frontier game: no game named, or a game with no price (not
+ * running, or not priced yet), is 404 `no_shop_outside_a_frontier_game`; there is no other price to give.
  */
 export const handleLordsPrice = async (db: D1Database, url: URL): Promise<Response> => {
   const game = gameOf(url);
   if (game === "invalid") return json({ error: "invalid_game" }, 400);
-  const price = (game && (await priceOfGame(db, game.chainId, game.gameId))) || (await newestPrice(db));
-  return price ? json(price) : json({ error: "lords_price_unavailable" }, 503);
+  const price = game && (await priceOfGame(db, game.chainId, game.gameId));
+  return price ? json(price) : json({ error: "no_shop_outside_a_frontier_game" }, 404);
 };
 
 const gameOf = (url: URL): { chainId: string; gameId: number } | null | "invalid" => {

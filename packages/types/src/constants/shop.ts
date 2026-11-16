@@ -1,7 +1,8 @@
 /**
  * What the shop sells and what it costs, in dollars (the stores' unit): one source for the shop's screens, the day's
  * price and the store relay. A Fragment is 1 cent and refills 2 points of stamina outside the Deep; on the web an amount
- * of dollars is paid in LORDS, rounded up to 5, at the game day's market price (`lordsFor`).
+ * of dollars is paid in LORDS, rounded up to 5 (`lordsFor`): Fragments at the game day's market price, the seal at the
+ * price fixed at the season's launch.
  */
 export const FRAGMENT = { cents: 1, staminaPoints: 2 } as const;
 

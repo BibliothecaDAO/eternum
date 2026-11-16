@@ -1,5 +1,5 @@
 import { canonicalRealm } from "@bibliothecadao/eternum";
-import { SEAL_CENTS, SEAL_FREE } from "@bibliothecadao/types";
+import { lordsFor, SEAL_CENTS, SEAL_FREE } from "@bibliothecadao/types";
 import { type TicketTier } from "@realms-world/identity";
 
 import type { IdentityAuth } from "./auth";
@@ -39,6 +39,25 @@ export const readSeal = (db: D1Database, owner: string) =>
     .bind(owner)
     .first<{ paid_cents: number; source: "web" | "store"; granted_at: number }>();
 
+/** The market price of one LORDS in dollars fixed at the season's launch, or null before a season's launch has set it. */
+export const readSealLaunchPrice = async (db: D1Database): Promise<number | null> =>
+  (await db.prepare('SELECT "usd" FROM "seal_launch_price" WHERE "id" = 1').first<{ usd: number }>())?.usd ?? null;
+
+/**
+ * POST /api/operator/seal-price {usd}: the season's launch sets the seal's LORDS price once (dollars a LORDS). Setting the
+ * same value again is a no-op; a different one is refused, the price holds for the season.
+ */
+export async function handleSealLaunchPrice(request: Request, db: D1Database, now: number): Promise<Response> {
+  if (request.method !== "POST") return json({ error: "method_not_allowed" }, 405);
+  const usd = ((await request.json().catch(() => null)) as { usd?: unknown } | null)?.usd;
+  if (typeof usd !== "number" || !(usd > 0) || !Number.isFinite(usd)) return json({ error: "invalid_price" }, 400);
+  await db
+    .prepare('INSERT INTO "seal_launch_price" ("id", "usd", "set_at") VALUES (1, ?, ?) ON CONFLICT DO NOTHING')
+    .bind(usd, now)
+    .run();
+  return (await readSealLaunchPrice(db)) === usd ? json({ usd }) : json({ error: "seal_price_already_set" }, 409);
+}
+
 /** What the seal's route reads beyond D1: the account's holder facts. */
 export interface SealWorld {
   db: D1Database;
@@ -47,7 +66,7 @@ export interface SealWorld {
 
 /**
  * GET /api/shop/seal: the signed-in account's holder level, whether it holds the seal, and the seal's price in cents on
- * the web and in a store with what is free to this holder. An account that holds the seal is offered no purchase. The LORDS amount is the client's (the day's price).
+ * the web and in a store with what is free to this holder. An account that holds the seal is offered no purchase. The web price carries its LORDS amount, fixed at the season's launch (null before it is set).
  */
 export async function handleSeal(request: Request, auth: IdentityAuth, world: SealWorld): Promise<Response> {
   if (request.method !== "GET") return json({ error: "method_not_allowed" }, 405);
@@ -61,10 +80,16 @@ export async function handleSeal(request: Request, auth: IdentityAuth, world: Se
   return json({
     holder,
     owned: false,
-    web: sealOffer(holder, "web"),
+    web: { ...sealOffer(holder, "web"), lords: await sealLords(world.db, holder) },
     store: sealOffer(holder, "store"),
   });
 }
+
+/** The web price in whole LORDS at the launch price; null before launch has set it, never a made-up amount. */
+const sealLords = async (db: D1Database, holder: Holder) => {
+  const usd = await readSealLaunchPrice(db);
+  return usd === null ? null : lordsFor(sealOffer(holder, "web").cents, usd);
+};
 
 /** The account's holder facts, or null while the chain cannot say: no offer is made on a guess. */
 const readHolderFacts = async (world: SealWorld, owner: string) => {

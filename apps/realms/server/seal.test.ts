@@ -1,7 +1,7 @@
 import { afterEach, expect, it } from "vitest";
 
 import type { IdentityAuth } from "./auth";
-import { handleSeal, holderLevelOf, sealOffer, type HolderFacts } from "./seal";
+import { handleSeal, handleSealLaunchPrice, holderLevelOf, sealOffer, type HolderFacts } from "./seal";
 import { RealmHoldingsUnavailableError } from "./realm-holdings";
 import { createTestD1 } from "./test-d1";
 import { migrationStatements } from "./workerd-harness";
@@ -63,9 +63,17 @@ it("serves the signed-in account its level, whether it holds the seal, and the t
   expect(await (await ask(OWNER)).json()).toEqual({
     holder: "realm",
     owned: false,
-    web: { cents: 499, free: { labor: true, fragments: false } },
+    web: { cents: 499, free: { labor: true, fragments: false }, lords: null },
     store: { cents: 499, free: { labor: true, fragments: false } },
   });
+  const launch = (usd: unknown) =>
+    handleSealLaunchPrice(
+      new Request("https://realms.test/", { method: "POST", body: JSON.stringify({ usd }) }),
+      db,
+      5,
+    );
+  expect((await launch(0.003637)).status).toBe(200);
+  expect(((await (await ask(OWNER)).json()) as { web: { lords: number } }).web.lords).toBe(1_375);
   await db
     .prepare(
       'INSERT INTO "seal" ("owner", "paid_cents", "source", "receipt", "granted_at") VALUES (?, 499, \'web\', \'tx-web\', 1)',
@@ -83,4 +91,20 @@ it("offers no price while holdings cannot be verified", async () => {
     holderFacts: () => Promise.reject(new RealmHoldingsUnavailableError()),
   });
   expect([response.status, await response.json()]).toEqual([503, { error: "holdings_unavailable" }]);
+});
+
+it("fixes the seal's LORDS price at launch: set once, the same value again is a no-op, another is refused, and nothing is made up", async () => {
+  const db = await migrated();
+  const launch = async (usd: unknown) => {
+    const response = await handleSealLaunchPrice(
+      new Request("https://realms.test/", { method: "POST", body: JSON.stringify({ usd }) }),
+      db,
+      5,
+    );
+    return [response.status, await response.json()];
+  };
+  expect(await launch(0)).toEqual([400, { error: "invalid_price" }]);
+  expect(await launch(0.003637)).toEqual([200, { usd: 0.003637 }]);
+  expect(await launch(0.003637)).toEqual([200, { usd: 0.003637 }]);
+  expect(await launch(0.01)).toEqual([409, { error: "seal_price_already_set" }]);
 });

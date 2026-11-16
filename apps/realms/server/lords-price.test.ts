@@ -2,7 +2,7 @@ import { afterEach, expect, it, vi } from "vitest";
 
 import { dayOf } from "@bibliothecadao/eternum/expeditions";
 
-import { handleLordsPrice, marketLordsPrice, refreshLordsPrice, runningGameDays } from "./lords-price";
+import { handleLordsPrice, marketLordsPrice, readShopCalendar, refreshLordsPrice } from "./lords-price";
 import { createTestD1 } from "./test-d1";
 import { migrationStatements } from "./workerd-harness";
 
@@ -26,6 +26,7 @@ const migrated = async () => {
 };
 
 const dayOfGame = (gameId: number, dayStart: number) => ({ chainId: CHAIN, gameId, dayStart });
+const running = (...days: ReturnType<typeof dayOfGame>[]) => ({ days, readChains: [CHAIN] });
 const quote = async (db: D1Database, query = "") => {
   const response = await handleLordsPrice(db, new URL(`https://realms.test/api/shop/price${query}`));
   return [response.status, await response.json()];
@@ -34,8 +35,8 @@ const quote = async (db: D1Database, query = "") => {
 it("prices each game's day once, at its start, and keeps it", async () => {
   const db = await migrated();
   const read = vi.fn(async () => 0.003637);
-  expect(await refreshLordsPrice(db, read, MORNING, [dayOfGame(1, DAY)])).toBe("read");
-  expect(await refreshLordsPrice(db, read, MORNING + 3_600, [dayOfGame(1, DAY)])).toBe("held");
+  expect(await refreshLordsPrice(db, read, MORNING, running(dayOfGame(1, DAY)))).toBe("read");
+  expect(await refreshLordsPrice(db, read, MORNING + 3_600, running(dayOfGame(1, DAY)))).toBe("held");
   expect(read).toHaveBeenCalledTimes(1);
   expect(await quote(db, `?chain=${CHAIN}&game=1`)).toEqual([200, { usd: 0.003637, dayStart: DAY, readAt: MORNING }]);
 });
@@ -44,9 +45,9 @@ it("never reprices a player's day when another game's day opens", async () => {
   const db = await migrated();
   const a = dayOfGame(1, DAY);
   const b = dayOfGame(2, DAY + 7_200);
-  await refreshLordsPrice(db, async () => 0.003637, MORNING, [a]);
+  await refreshLordsPrice(db, async () => 0.003637, MORNING, running(a));
   // Game 2's day opens while game 1 stays in the same day, and the market has moved.
-  expect(await refreshLordsPrice(db, async () => 0.004, DAY + 7_200, [a, b])).toBe("read");
+  expect(await refreshLordsPrice(db, async () => 0.004, DAY + 7_200, running(a, b))).toBe("read");
   expect(await quote(db, `?chain=${CHAIN}&game=1`)).toEqual([200, { usd: 0.003637, dayStart: DAY, readAt: MORNING }]);
   expect(await quote(db, `?chain=${CHAIN}&game=2`)).toEqual([
     200,
@@ -54,7 +55,7 @@ it("never reprices a player's day when another game's day opens", async () => {
   ]);
   // Game 1's own next day reprices it.
   const next = dayOfGame(1, NEXT_DAY);
-  await refreshLordsPrice(db, async () => 0.0045, NEXT_DAY + 600, [next, b]);
+  await refreshLordsPrice(db, async () => 0.0045, NEXT_DAY + 600, running(next, b));
   expect((await quote(db, `?chain=${CHAIN}&game=1`))[1]).toEqual({
     usd: 0.0045,
     dayStart: NEXT_DAY,
@@ -63,23 +64,33 @@ it("never reprices a player's day when another game's day opens", async () => {
   expect((await quote(db, `?chain=${CHAIN}&game=2`))[1]).toMatchObject({ usd: 0.004 });
 });
 
-it("quotes an account in no game, or a game without a price yet, the newest price read, and refuses a malformed game", async () => {
+it("quotes nothing outside a running game, and refuses a malformed game", async () => {
   const db = await migrated();
-  expect(await quote(db)).toEqual([503, { error: "lords_price_unavailable" }]);
-  await refreshLordsPrice(db, async () => 0.003637, MORNING, [dayOfGame(1, DAY)]);
-  const newest = { usd: 0.003637, dayStart: DAY, readAt: MORNING };
-  expect(await quote(db)).toEqual([200, newest]);
-  expect(await quote(db, `?chain=${CHAIN}&game=9`)).toEqual([200, newest]);
+  const none = [404, { error: "no_shop_outside_a_frontier_game" }];
+  expect(await quote(db, `?chain=${CHAIN}&game=1`)).toEqual(none);
+  await refreshLordsPrice(db, async () => 0.003637, MORNING, running(dayOfGame(1, DAY)));
+  expect(await quote(db)).toEqual(none);
+  expect(await quote(db, `?chain=${CHAIN}&game=9`)).toEqual(none);
   expect((await quote(db, `?chain=${CHAIN}&game=zero`))[0]).toBe(400);
   expect((await quote(db, "?game=1"))[0]).toBe(400);
+});
+
+it("takes a game's price away when its shard lists it no longer, and keeps it while the shard cannot be read", async () => {
+  vi.spyOn(console, "error").mockImplementation(() => undefined);
+  const db = await migrated();
+  await refreshLordsPrice(db, async () => 0.003637, MORNING, running(dayOfGame(1, DAY)));
+  await refreshLordsPrice(db, async () => 0.003637, MORNING, { days: [], readChains: [] });
+  expect((await quote(db, `?chain=${CHAIN}&game=1`))[0]).toBe(200);
+  await refreshLordsPrice(db, async () => 0.003637, MORNING, { days: [], readChains: [CHAIN] });
+  expect((await quote(db, `?chain=${CHAIN}&game=1`))[0]).toBe(404);
 });
 
 it("keeps a game's last price when its next day's read fails, or is not a positive number", async () => {
   vi.spyOn(console, "error").mockImplementation(() => undefined);
   const db = await migrated();
-  await refreshLordsPrice(db, async () => 0.003637, MORNING, [dayOfGame(1, DAY)]);
+  await refreshLordsPrice(db, async () => 0.003637, MORNING, running(dayOfGame(1, DAY)));
   const tomorrow = NEXT_DAY + 600;
-  const next = [dayOfGame(1, NEXT_DAY)];
+  const next = running(dayOfGame(1, NEXT_DAY));
   expect(await refreshLordsPrice(db, () => Promise.reject(new Error("CoinGecko: 429")), tomorrow, next)).toBe("kept");
   expect(await refreshLordsPrice(db, async () => 0, tomorrow, next)).toBe("kept");
   expect((await quote(db, `?chain=${CHAIN}&game=1`))[1]).toEqual({ usd: 0.003637, dayStart: DAY, readAt: MORNING });
@@ -91,9 +102,9 @@ it("keeps a game's last price when its next day's read fails, or is not a positi
 it("tries an unanswered day again every ten minutes, not every minute", async () => {
   vi.spyOn(console, "error").mockImplementation(() => undefined);
   const db = await migrated();
-  await refreshLordsPrice(db, async () => 0.003637, MORNING, [dayOfGame(1, DAY)]);
+  await refreshLordsPrice(db, async () => 0.003637, MORNING, running(dayOfGame(1, DAY)));
   const read = vi.fn(() => Promise.reject(new Error("down")));
-  const next = [dayOfGame(1, NEXT_DAY)];
+  const next = running(dayOfGame(1, NEXT_DAY));
   expect(await refreshLordsPrice(db, read, NEXT_DAY + 60, next)).toBe("waiting");
   expect(await refreshLordsPrice(db, read, NEXT_DAY + 600, next)).toBe("kept");
   expect(read).toHaveBeenCalledTimes(1);
@@ -139,16 +150,16 @@ it("reads each running game's own current day, so the price changes at the start
   const second = dayOf(calendar, START + UNIT * 8)!;
   expect(second.start).toBeGreaterThan(first.start);
   const served = shardServing([gameOf(1)]);
-  expect(await runningGameDays(db, first.start + 10, served)).toEqual([dayOfGame(1, first.start)]);
-  expect(await runningGameDays(db, second.start - 1, served)).toEqual([dayOfGame(1, first.start)]);
-  expect(await runningGameDays(db, second.start, served)).toEqual([dayOfGame(1, second.start)]);
+  expect(await readShopCalendar(db, first.start + 10, served)).toMatchObject({ days: [dayOfGame(1, first.start)] });
+  expect(await readShopCalendar(db, second.start - 1, served)).toMatchObject({ days: [dayOfGame(1, first.start)] });
+  expect(await readShopCalendar(db, second.start, served)).toMatchObject({ days: [dayOfGame(1, second.start)] });
 });
 
 it("reads games on different calendars each in their own day and ignores an ended game", async () => {
   const db = await withShard();
   const now = START + UNIT * 4;
   const lateStart = START + UNIT;
-  const days = await runningGameDays(
+  const { days } = await readShopCalendar(
     db,
     now,
     shardServing([gameOf(1), gameOf(2, "Live", lateStart), gameOf(3, "Ended")]),
@@ -164,11 +175,11 @@ it("serves a running game's held price through a shard outage and writes nothing
   const db = await withShard();
   const day = dayOf(calendar, START)!;
   const up = shardServing([gameOf(1)]);
-  await refreshLordsPrice(db, async () => 0.003637, day.start + 60, await runningGameDays(db, day.start + 60, up));
+  await refreshLordsPrice(db, async () => 0.003637, day.start + 60, await readShopCalendar(db, day.start + 60, up));
   const held = { usd: 0.003637, dayStart: day.start, readAt: day.start + 60 };
   const down = (async () => new Response("no", { status: 502 })) as typeof fetch;
-  const unread = await runningGameDays(db, day.start + 3_600, down);
-  expect(unread).toEqual([]);
+  const unread = await readShopCalendar(db, day.start + 3_600, down);
+  expect(unread).toEqual({ days: [], readChains: [] });
   expect(error).toHaveBeenCalled();
   // The market answers while the shard cannot: no price is written, in UTC or otherwise.
   const market = vi.fn(async () => 0.01);
@@ -176,8 +187,8 @@ it("serves a running game's held price through a shard outage and writes nothing
   expect(market).not.toHaveBeenCalled();
   expect(await quote(db, `?chain=${CHAIN}&game=1`)).toEqual([200, held]);
   // The shard recovers inside the same game day: that day's price still stands.
-  expect(await refreshLordsPrice(db, market, day.start + 4_000, await runningGameDays(db, day.start + 4_000, up))).toBe(
-    "held",
-  );
+  expect(
+    await refreshLordsPrice(db, market, day.start + 4_000, await readShopCalendar(db, day.start + 4_000, up)),
+  ).toBe("held");
   expect(await quote(db, `?chain=${CHAIN}&game=1`)).toEqual([200, held]);
 });
