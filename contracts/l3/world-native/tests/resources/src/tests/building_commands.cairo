@@ -749,7 +749,6 @@ fn lodges_produce_scouts_without_a_training_gate_and_each_copy_adds_its_rate() {
     assert_eq!(rate(d, home, 32), expected);
     assert!(execute(d, build_toward(home, crate::research::SCOUTS_LODGE, 1), 40));
     assert_eq!(rate(d, home, 32), 2 * expected);
-    assert_eq!(rate(d, home, 32), 2 * expected);
 }
 
 #[test]

@@ -423,7 +423,6 @@ pub mod ConstructionLogic {
             );
         }
 
-        // A training building is unique and needs two Barracks purchases.
         fn assert_board_category(
             self: @ContractState, key: ResourceKey, category: u8, board: crate::buildings::BoardRules,
         ) {

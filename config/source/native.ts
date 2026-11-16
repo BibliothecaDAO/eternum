@@ -30,7 +30,10 @@ const frontierAcceleratedPreset: NativePreset = {
 const frontierFixturePreset: NativePreset = {
   ...frontierSeasonOnePreset,
   id: FRONTIER_FIXTURE_PRESET_ID,
-  balance: { startingResources: frontierSeasonOnePreset.balance.startingResources },
+  balance: {
+    buildings: frontierSeasonOnePreset.balance.buildings,
+    startingResources: frontierSeasonOnePreset.balance.startingResources,
+  },
   depths: frontierPreset.depths,
   modeRules: frontierPreset.modeRules & ~nativeRuleConstants.DISCOVER_CHESTS,
   dailyQuest: frontierPreset.dailyQuest,
