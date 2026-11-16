@@ -438,7 +438,10 @@ const DEEP_BATTLE_TARGET_STEPS = battleTargetSteps(attackFromTheDeepCard, "Deep"
 
 function battleTargetSteps(attack, place) {
   const values = readFileSync(
-    resolve(dirname(fileURLToPath(import.meta.url)), "../../../../contracts/l3/world-native/tests/fixtures/frontier-marks.txt"),
+    resolve(
+      dirname(fileURLToPath(import.meta.url)),
+      "../../../../contracts/l3/world-native/tests/fixtures/frontier-marks.txt",
+    ),
     "utf8",
   )
     .trim()
