@@ -13,20 +13,16 @@ const allowedIdentityConnectorPackages = [
   forbiddenScope + "penpal",
 ];
 const forbiddenHost = "cartridge" + ".gg";
-// AVNU is the one market source (`packages/chain/src/avnu.ts`): no price is read from CoinGecko. The name is split so
-// this file does not trip its own rule. A source scan cannot tell how a URL is built, so the rule bans the name itself
-// from code, whatever way a host is assembled from it, except in the files that only link to its web pages.
-const forbiddenPriceSource = "coin" + "gecko";
-const priceSourceCodeFile = /\.(?:[cm]?[jt]sx?)$/;
-const priceSourceLinkFiles = new Set([
-  "apps/game/scripts/prove-app-sheet.mjs",
-  "apps/game/src/shell/community.ts",
-  "apps/game/src/shell/news/news.test.tsx",
-  "apps/web/src/components/layout/app-sidebar.tsx",
-  "apps/web/src/site/data/socials.ts",
-  "scripts/check-forbidden-hosts.mjs",
-  "scripts/check-forbidden-hosts.test.mjs",
-]);
+// AVNU is the one market source: no price is read from the old provider. Its name is split so this file passes its own
+// rule; permitted link references are removed before a file is scanned, so no file is exempt.
+const priceProvider = "coin" + "gecko";
+const priceProviderCodeFile = /\.(?:[cm]?[jt]sx?)$/;
+const priceProviderLinkReferences = [
+  new RegExp(`https://www\\.${priceProvider}\\.com/en/coins/lords`, "g"),
+  new RegExp(`https://assets\\.${priceProvider}\\.com/coins/images/`, "g"),
+  new RegExp(`brand-${priceProvider}`, "g"),
+  new RegExp(`(?<!\\+\\s*)(["'])${priceProvider}\\1(?!\\s*\\+)`, "g"),
+];
 const plainHttp = "http" + "://";
 
 function listRepositoryFiles() {
@@ -89,8 +85,12 @@ function isIdentityConnectorPatch(path) {
   );
 }
 
-function isPriceSourceCode(path) {
-  return isOutsideDocumentation(path) && priceSourceCodeFile.test(path) && !priceSourceLinkFiles.has(path);
+function withoutPriceProviderLinks(contents) {
+  return priceProviderLinkReferences.reduce((rest, reference) => rest.replace(reference, ""), contents.toLowerCase());
+}
+
+function priceProviderNeedle(path) {
+  return priceProviderCodeFile.test(path) ? priceProvider : `${priceProvider}.com`;
 }
 
 function checkEnvironmentHttp(violations, path, contents, prefix) {
@@ -132,8 +132,9 @@ function runChecks() {
     if (isOutsideDocumentation(path) && !isIdentityConnectorPatch(path)) {
       recordLiteralMatches(violations, path, contents, forbiddenHost, "forbidden-host");
     }
-    if (isPriceSourceCode(path)) {
-      recordLiteralMatches(violations, path, contents.toLowerCase(), forbiddenPriceSource, "forbidden-price-source");
+    if (isOutsideDocumentation(path)) {
+      const rest = withoutPriceProviderLinks(contents);
+      recordLiteralMatches(violations, path, rest, priceProviderNeedle(path), "forbidden-price-source");
     }
     checkBrowserFacingHttp(violations, path, contents);
   }

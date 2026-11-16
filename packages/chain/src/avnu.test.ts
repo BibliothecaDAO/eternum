@@ -69,6 +69,12 @@ describe("AVNU quote", () => {
       [quote({ chainId: "0x534e5f5345504f4c4941" })],
       [quote({ routes: [] })],
       [quote({ routes: undefined })],
+      [quote({ routes: [null] })],
+      [quote({ routes: [{}] })],
+      [quote({ routes: [{ name: "Ekubo", percent: 0 }] })],
+      [quote({ routes: [{ name: "Ekubo", percent: "1" }] })],
+      [quote({ routes: [{ name: "", percent: 1 }] })],
+      [quote({ routes: [{ name: "Ekubo", percent: 1 }, null] })],
     ];
     for (const body of refused)
       await expect(avnuLordsWeiFor(1_000, answering(body).get)).rejects.toThrow(

@@ -15,7 +15,7 @@ const TOKENS = {
 const PRICES = { LORDS: 0.5, ETH: 2_000, STRK: 0.25, EKUBO: 1, SURVIVOR: 0.1 };
 
 /** The three services the treasury reads: Ethplorer (Ethereum), the Starknet RPC (balances, 1,000 of each token) and AVNU (prices). */
-const services = (omitPriceOf: string[] = []) =>
+const services = (omitPriceOf: string[] = [], balanceAnswer: Response | null = null) =>
   vi.fn(async (url: string | URL | Request) => {
     const address = String(url);
     if (address.includes("ethplorer"))
@@ -29,7 +29,7 @@ const services = (omitPriceOf: string[] = []) =>
         ],
       });
     if (address.includes("identity-rpc"))
-      return Response.json({ result: [`0x${(1_000n * 10n ** 18n).toString(16)}`, "0x0"] });
+      return balanceAnswer?.clone() ?? Response.json({ result: [`0x${(1_000n * 10n ** 18n).toString(16)}`, "0x0"] });
     return Response.json(
       Object.entries(TOKENS)
         .filter(([symbol]) => !omitPriceOf.includes(symbol))
@@ -52,6 +52,28 @@ it("rejects instead of returning a total when one token has no price, and the se
   vi.stubGlobal("fetch", services(["SURVIVOR"]));
   await expect(getTreasuryBalance()).rejects.toThrow("no price");
   expect(treasurySupply(undefined)).toEqual({ treasury: "~40%", circulating: "~60%", treasurySub: "Estimated" });
+});
+
+it.each([
+  ["a JSON-RPC error", Response.json({ error: { code: 20, message: "Contract not found" } })],
+  ["a missing result", Response.json({})],
+  ["a one-word result", Response.json({ result: ["0x1"] })],
+  ["an empty result", Response.json({ result: [] })],
+  ["an unsuccessful status", new Response("down", { status: 503 })],
+])(
+  "rejects instead of counting %s as a zero balance, and the section then shows its estimate",
+  async (_case, answer) => {
+    vi.stubGlobal("fetch", services([], answer));
+    await expect(getTreasuryBalance()).rejects.toThrow("Starknet balance read");
+    expect(treasurySupply(undefined).treasurySub).toBe("Estimated");
+  },
+);
+
+it("keeps a real two-word zero balance as a zero", async () => {
+  vi.stubGlobal("fetch", services([], Response.json({ result: ["0x0", "0x0"] })));
+  const totals = await getTreasuryBalance();
+  expect(totals.SURVIVOR).toEqual({ amount: 0, usdValue: 0 });
+  expect(totals.LORDS).toEqual({ amount: 4 * 5_000, usdValue: 4 * 2_500 });
 });
 
 it("shows the treasury's share of the supply only from a complete total", () => {

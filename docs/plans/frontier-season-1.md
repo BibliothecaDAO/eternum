@@ -1167,7 +1167,7 @@ quests.
   play daily.
 - **Payoff:** Armies back in the field sooner; more labor from every quest.
 - **Depth:** One currency priced in dollars: a credit is one cent, and two points of stamina. On the web it is paid in
-  LORDS at the day's market price.
+  LORDS at the market's price when the payment is requested.
 - **Choices:** Whether to spend at all, and on what.
 - **Against today:** Today a refill costs 1 LORDS a point from the Realm's LORDS or a deposit
   (`src/logic/lords.cairo:56-100` on `origin/next`); the apps have no store purchase yet (`apps/ios/package.json`; no
@@ -1175,7 +1175,7 @@ quests.
 
 | What money buys (new)            | On the web: LORDS from the wallet                                                                                                 | In the apps: the store                          | What the player gets                                                          |
 | -------------------------------- | --------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------- | ----------------------------------------------------------------------------- |
-| **Credits**, 1 cent each (tune)  | any amount at the day's LORDS price: 100 credits for about 275 LORDS today                                                        | 100 for $0.99 · 500 for $4.99 · 1,000 for $9.99 | the one currency for everything below                                         |
+| **Credits**, 1 cent each (tune)  | any amount at the market's LORDS price when the payment is requested: 100 credits for about 330 LORDS at the last check           | 100 for $0.99 · 500 for $4.99 · 1,000 for $9.99 | the one currency for everything below                                         |
 | Stamina, outside the Deep        | 1 credit for 2 points                                                                                                             | the same                                        | a refill above the Deep: a full bar is 90 credits, $0.90                      |
 | A quest reroll, once a day       | 50 credits: $0.50                                                                                                                 | the same                                        | today's quest drawn again                                                     |
 | A name, a banner line or a badge | 200 credits: $2                                                                                                                   | the same                                        | how others see you                                                            |
@@ -1249,14 +1249,16 @@ a bar is $0.90 (Season 0 charged $0.65 at today's LORDS price), a day's regenera
 and round: 50 for a reroll, 200 for a look, 10 a quest from the pass.
 
 **How a payment works. Web:** the shop quotes the credits in whole LORDS from AVNU's quote at the moment the payment is
-requested; the wallet signs one LORDS transfer on L2 (`apps/game/src/shell/value/deposit-payment.tsx:26-35` on
-`origin/next`); the relay verifies it and co-signs a receipt (`apps/value-relay/src/deposit-verifier.ts`,
-`deposits.ts`); the game delivers the receipt once to the account's balance (`src/logic/deposits.cairo:54-93`) and
-spends from it (`:120`). **Apps:** a store purchase of a bundle; the app sends the store's receipt to the server, which
-checks it with the store and signs the same kind of receipt. Nothing of it exists yet (`apps/ios/package.json`,
-`docs/store-submission.md:248`), and the stores keep 15 to 30%. **One change to today's deposit:** it sweeps unspent
-LORDS back at the season's end (`:104-118`); credits are priced in dollars, so they stay with the account for the next
-season instead.
+requested. What exists today ends in one LORDS transfer on L2 signed by the wallet
+(`apps/game/src/shell/value/deposit-payment.tsx:26-35` on `origin/next`); the owner's design (see "Paying" below) widens
+only what the player pays with: any Starknet token the player holds, converted to LORDS, so the transfer we receive is
+LORDS either way, and a credit card for the Seal or a refill. From the transfer on, nothing changes: the relay verifies
+it and co-signs a receipt (`apps/value-relay/src/deposit-verifier.ts`, `deposits.ts`); the game delivers the receipt
+once to the account's balance (`src/logic/deposits.cairo:54-93`) and spends from it (`:120`). **Apps:** a store purchase
+of a bundle; the app sends the store's receipt to the server, which checks it with the store and signs the same kind of
+receipt. Nothing of it exists yet (`apps/ios/package.json`, `docs/store-submission.md:248`), and the stores keep 15 to
+30%. **One change to today's deposit:** it sweeps unspent LORDS back at the season's end (`:104-118`); credits are
+priced in dollars, so they stay with the account for the next season instead.
 
 **Dollars first, priced live.** Every price is set in dollars, the stores' unit; the LORDS amount comes from the market
 at the moment a payment is requested, and nothing stores a price (owner: "UTC day always -> let's just do live pricing
@@ -1349,7 +1351,7 @@ Sources:
 - **The relics' steps** (Blade +10%, Ward −5%, Plunder +20%, Tome +40%, Far-Eye 6 tiles a tier) and 30 minutes a tier;
   ruin beasts 1,000 to 25,000.
 - **Charge** 10 to 50%; **the Scout's** −25%; the spire's odds, +10% a reveal.
-- **Not needed for the playtest:** the shop, the store builds and the day's LORDS price.
+- **Not needed for the playtest:** the shop, the store builds and the live LORDS quote.
 
 ## What a playtest will measure
 
@@ -1422,7 +1424,7 @@ Slices: 1 the first playtest · 2 the town and the troops · 3 the shop and the 
 | H1  | **Read the new facts.** The quest's reward, banes, relics, the three sites and who guards them, Aspects, Glory and height (`apps/herald/src/native/decoder.ts`, `read-models.ts`, `schema.ts`)                                                                                                                                                                                                                                                                     | M    | nothing                                                                               | C4 to C9 | 1     |
 | H2  | **The board and the Aspect feed.** The four hyperstructures by progress, from the rows the contract already publishes; each member's Glory, who guards which site, who was wiped (`apps/herald/src/native/frontier-leaderboard.ts:35-42`)                                                                                                                                                                                                                          | S    | the ranking by sites cleared, and the day ranks built on it (`frontier-day-ranks.ts`) | C17, H1  | 1     |
 | H5  | **Invites.** A second kind of shared link, "aspect", beside "frontier-day": the visit it records offers the new account its sender's Aspect first (`packages/identity/src/shares.ts:6-15`, `packages/identity/src/client.ts:176-201,539-575` on `origin/next`)                                                                                                                                                                                                     | S    | nothing                                                                               | C21      | 2     |
-| H3  | **The day's LORDS price.** Read once a game day as the comeback email does (`apps/realms/scripts/comeback-email.ts:166-170` on `origin/next`), published, the last one kept if a read fails; web prices quoted in whole LORDS from it                                                                                                                                                                                                                              | S    | nothing                                                                               | —        | 3     |
+| H3  | **The LORDS quote.** Asked from AVNU at the moment a payment is requested (`quoteLords`, `apps/realms/server/lords-price.ts`), nothing stored; web prices in whole LORDS from it; no quote, no amount                                                                                                                                                                                                                                                              | S    | nothing                                                                               | —        | 3     |
 | H4  | **The pass:** the labor bonus read from the home's source; the quest credits free for a held Wonder (`has_wonder`, `src/logic/structures.cairo:399`) or a golden ticket home (tier 2, `packages/core/src/utils/home-claim.ts:10`); the pass bought at $9.99, or $4.99 by a holder; quests done, 10 credits each; a record of the pass on the account, so its skin is kept                                                                                          | S    | nothing                                                                               | C8, C22  | 3     |
 | H7  | **The site alert.** A new kind of push beside "army rested": a watch per player and site that wakes when the guard, which loses 200 troops per slot each tick, drops to where the player's largest army outside the Deep is 150% of it; at most 1 per site per game day; the Important level (`packages/notifications/src/notification-kinds.ts:13-22`, `apps/realms/server/army-rest.ts:23-45`, `shard-notifier.ts:169-183,224-263`)                              | S    | nothing                                                                               | C5, H1   | 1     |
 | H6  | **Rewards.** Each member's Glory read from the shard; when the age ends the relay posts the amount of each member with 100 Glory or more (the finish pool to the finisher, the build pool by height built, then the member's share by Glory). The ledger upgrade: posted amounts in place of the rank check (`contracts/l2/ledger/src/contract.cairo:619-640`; `pay` already bounds them, `:739-741`) and a co-signed end that only shortens (`:768` only extends) | M    | the top 10 and its day ranks; the rank-share check                                    | H2, C17  | 3     |

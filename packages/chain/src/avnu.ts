@@ -64,6 +64,21 @@ interface Quote {
   routes?: unknown;
 }
 
+const isUsableRoute = (route: unknown): boolean => {
+  if (typeof route !== "object" || route === null) return false;
+  const { name, percent } = route as { name?: unknown; percent?: unknown };
+  return (
+    typeof name === "string" &&
+    name !== "" &&
+    typeof percent === "number" &&
+    Number.isFinite(percent) &&
+    percent > 0
+  );
+};
+
+const isUsableRoutes = (routes: unknown): boolean =>
+  Array.isArray(routes) && routes.length > 0 && routes.every(isUsableRoute);
+
 /**
  * The LORDS wei of an answer that sells LORDS on Starknet mainnet for exactly `buyAmount` of USDC through at least one
  * route, or null: an answer that does not buy the dollars asked gives no amount.
@@ -79,8 +94,7 @@ const lordsSoldFor = (quotes: unknown, buyAmount: bigint): bigint | null => {
     isAddress(quote.buyTokenAddress, USDC_ADDRESS) &&
     hexAmount(quote.buyAmount) === buyAmount &&
     quote.chainId === MAINNET_CHAIN_ID &&
-    Array.isArray(quote.routes) &&
-    quote.routes.length > 0;
+    isUsableRoutes(quote.routes);
   return buysTheDollarsAsked && sellAmount !== null && sellAmount > 0n
     ? sellAmount
     : null;

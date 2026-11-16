@@ -97,11 +97,13 @@ async function fetchStarknetBalance(tokenAddress: string, walletAddress: string)
       id: 1,
     }),
   });
+  if (!res.ok) throw new Error(`Starknet balance read failed: HTTP ${res.status}`);
   const data = await res.json();
-  if (data.error || !data.result?.length) return 0n;
-  const low = BigInt(data.result[0] || "0");
-  const high = BigInt(data.result[1] || "0");
-  return low + (high << 128n);
+  if (data.error || !Array.isArray(data.result) || data.result.length !== 2) {
+    throw new Error(`Starknet balance read of ${tokenAddress} returned no two-word balance`);
+  }
+  const [low, high] = data.result.map((word: string) => BigInt(word));
+  return low! + (high! << 128n);
 }
 
 async function getStarknetPrices(): Promise<Record<string, number>> {
