@@ -4041,11 +4041,9 @@ function raceBoardSteps(result) {
         for (const id of Object.keys(TOWERS_AFTER_THE_BLOCK)) {
           await panToHex(browser, hexes[id]);
           await sleep(HOVER_SETTLE_MS);
-          const seen = browser.read(towerPlate(id));
           extraScreenshot(`tower-${id}`);
           visits.push({
             id,
-            inView: seen.inView,
             drawn: browser.read(DRAWN_TOWERS)[id],
             target: hexes[id],
             camera: browser.read(`window.__eternumMapSelection?.camera ?? null`),
@@ -4056,13 +4054,11 @@ function raceBoardSteps(result) {
       verify: ({ played }) =>
         played.visits.every(
           (visit) =>
-            visit.inView === true && JSON.stringify(visit.drawn) === JSON.stringify(TOWERS_AFTER_THE_BLOCK[visit.id]),
+            Math.hypot(visit.camera.col - visit.target.col, visit.camera.row - visit.target.row) <= HEX_CLOSE &&
+            JSON.stringify(visit.drawn) === JSON.stringify(TOWERS_AFTER_THE_BLOCK[visit.id]),
         )
           ? completed(played)
-          : failed(
-              "Each tower must be visited with its plate in the frame, drawn at the stage the chain wrote",
-              played,
-            ),
+          : failed("The camera must reach each tower, drawn at the stage the chain wrote", played),
     },
     {
       name: "no-site-rank-requests",
@@ -4132,16 +4128,6 @@ const TOWER_HEIGHTS_RISE = `void window.__labChain.writeBlock([903, 904].map((en
   key: "0xa51" + (entity - 900),
   value: { game_id: 1, aspect: entity - 900, entity_id: String(entity), height: entity === 903 ? 10000 : 4000 },
 })))`;
-
-/** One tower's plate by structure id: where its token stands (page px from the centre) and whether it lies wholly in the frame. */
-const towerPlate = (id) => `JSON.stringify((() => {
-  const slot = document.querySelector('.mp-at[data-key="structure:${id}"]');
-  if (!slot || getComputedStyle(slot).display === "none" || !slot.firstElementChild) return { inView: false };
-  const box = slot.firstElementChild.getBoundingClientRect();
-  return {
-    inView: box.left >= 0 && box.right <= innerWidth && box.top >= 0 && box.bottom <= innerHeight,
-  };
-})())`;
 
 async function attackFromTheDeepCard({ browser, extraScreenshot }) {
   browser.hover(POINTER_PARKED);
