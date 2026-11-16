@@ -369,12 +369,12 @@ describe("native presets", () => {
     }
     for (const category of [research.CONSCRIPTION_CAMP, research.RATIONS_DEPOT]) {
       expect(preset.structures.buildings.find((row) => row.category === category)!.rule.simple_cost).toEqual([
-        {resource_type: 38, amount: 2500n * precision},
-        {resource_type: 23, amount: 500n * precision},
+        { resource_type: 38, amount: 2500n * precision },
+        { resource_type: 23, amount: 500n * precision },
       ]);
     }
     expect(preset.structures.buildings.find((row) => row.category === research.RANGE)!.rule.simple_cost).toEqual([
-      {resource_type: 23, amount: 500n * precision},
+      { resource_type: 23, amount: 500n * precision },
     ]);
     expect(preset.structures.board.unwrap()).toMatchObject({
       output_step_bps: 2000,
@@ -584,9 +584,9 @@ describe("native presets", () => {
       expect(production.recipe.simple_inputs).toEqual([{ resource_type: 35, amount: 2_000_000_000n }]);
       expect(perHour(resource) * 2).toBeCloseTo(201.6, 5);
     }
-    expect(design.resources.production.find(({resource_type}) => resource_type === 29)!.recipe.simple_inputs).toEqual([
-      {resource_type: 35, amount: 2_000_000_000n},
-    ]);
+    expect(design.resources.production.find(({ resource_type }) => resource_type === 29)!.recipe.simple_inputs).toEqual(
+      [{ resource_type: 35, amount: 2_000_000_000n }],
+    );
     for (const resource of [27, 28, 30, 31, 32, 33, 34]) {
       const production = design.resources.production.find(({ resource_type }) => resource_type === resource)!;
       expect(production.recipe.simple_inputs).toEqual([]);
