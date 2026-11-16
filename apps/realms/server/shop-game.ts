@@ -11,7 +11,7 @@ export interface NamedGame {
   gameId: number;
 }
 
-export const gameKey = (chainId: string) => `0x${BigInt(chainId).toString(16)}`;
+const gameKey = (chainId: string) => `0x${BigInt(chainId).toString(16)}`;
 
 /** The game a request names, or null when it names none or a malformed one. */
 export const namedGame = (chain: unknown, game: unknown): NamedGame | null => {
