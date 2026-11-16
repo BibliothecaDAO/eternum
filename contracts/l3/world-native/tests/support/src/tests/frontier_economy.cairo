@@ -23,6 +23,7 @@ pub /// A board realm carrying Frontier's own recipes: two wheat for each troop.
  fn frontier_preset() -> crate::presets::PresetDefinition {
     let mut preset = super::building_commands::building_preset(Some(super::building_commands::board_rules()));
     let (_, frontier) = super::preset_projection::current_definition("frontier-check");
+    preset.rules.command_mask = frontier.rules.command_mask;
     preset.resources.production = frontier.resources.production;
     preset
 }
