@@ -304,16 +304,19 @@ const referralWorld = (env: IdentityEnv, platform: WorkerPlatform): ReferralWorl
     }),
 });
 
-/** Cookie authority is accepted only from the app itself; operator endpoints authenticate a bearer token below. */
+/**
+ * Cookie authority is accepted only from the app itself; every operator route authenticates a bearer token, which a
+ * browser never attaches on its own, so the whole `/api/operator/` prefix is exempt from the origin rule.
+ */
 const requiresSameOrigin = (request: Request, pathname: string): boolean => {
-  const operatorRoute = [
-    "/api/operator/campaign-draw",
-    "/api/operator/chat-retention",
-    "/api/devices/bots",
-    "/api/directory/shards",
-    "/api/directory/shards/status",
-    "/api/directory/shards/pending",
-  ].includes(pathname);
+  const operatorRoute =
+    pathname.startsWith("/api/operator/") ||
+    [
+      "/api/devices/bots",
+      "/api/directory/shards",
+      "/api/directory/shards/status",
+      "/api/directory/shards/pending",
+    ].includes(pathname);
   if (operatorRoute) return false;
   return (
     !["GET", "HEAD", "OPTIONS"].includes(request.method) ||

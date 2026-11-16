@@ -13,6 +13,8 @@ vi.mock("./directory", () => ({
 vi.mock("./devices", () => ({ handleDeviceChange: handlers.devices, handleBotDeviceApproval: vi.fn() }));
 vi.mock("./chat/routes", () => ({ routeChat: handlers.chat }));
 import { routeIdentityRequest } from "./routes";
+import { createTestD1 } from "./test-d1";
+import { migrationStatements } from "./workerd-harness";
 
 const limiter = (limit: number) => {
   const counts = new Map<string, number>();
@@ -107,4 +109,44 @@ it("accepts app-origin mutations and leaves operator routes to bearer authentica
     platform,
   );
   expect(denied.status).toBe(401);
+});
+
+it.each(["/api/operator/chat-retention", "/api/operator/campaign-draw", "/api/operator/seal-price"])(
+  "answers an operator POST at %s without an Origin by its token, never by the origin rule",
+  async (path) => {
+    for (const authorization of [undefined, "Bearer wrong"]) {
+      const response = await routeIdentityRequest(
+        new Request(origin + path, { method: "POST", headers: authorization ? { authorization } : {}, body: "{}" }),
+        env,
+        auth,
+        platform,
+      );
+      expect([response.status, await response.json()]).toEqual([401, { error: "unauthorized" }]);
+    }
+  },
+);
+
+it("sets the seal's launch price for an operator with a valid token and no Origin, and refuses another method", async () => {
+  const database = createTestD1();
+  try {
+    await database.db.batch(migrationStatements().map((sql) => database.db.prepare(sql)));
+    env = { ...env, DB: database.db } as IdentityEnv;
+    const call = async (method: string) => {
+      const response = await routeIdentityRequest(
+        new Request(origin + "/api/operator/seal-price", {
+          method,
+          headers: { authorization: "Bearer operator-secret", "content-type": "application/json" },
+          ...(method === "POST" ? { body: JSON.stringify({ usd: 0.003637 }) } : {}),
+        }),
+        env,
+        auth,
+        platform,
+      );
+      return [response.status, await response.json()];
+    };
+    expect(await call("POST")).toEqual([200, { usd: 0.003637 }]);
+    expect(await call("PUT")).toEqual([405, { error: "method_not_allowed" }]);
+  } finally {
+    await database.close();
+  }
 });

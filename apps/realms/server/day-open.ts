@@ -55,7 +55,7 @@ const calendarOf = (game: DayOpenGame) => {
 };
 
 /** The day a running Frontier game is in, by when it opened (seconds). */
-export interface GameDayStart {
+interface GameDayStart {
   gameId: number;
   dayStart: number;
 }
