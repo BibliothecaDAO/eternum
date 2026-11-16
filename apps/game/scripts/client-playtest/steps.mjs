@@ -1,4 +1,5 @@
 import { ECONOMY_STEPS } from "./economy-steps.mjs";
+import { FRONTIER_TROOP_NAMES, TroopType } from "@bibliothecadao/types";
 import depthLooks from "../../src/three/terrain/ethereal-depths.json" with { type: "json" };
 import homeIcons from "../../src/ui/design-system/home-icons.json" with { type: "json" };
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
@@ -715,7 +716,7 @@ const SCOUT_DEPLOY_STEPS = [
   clickToResultStep(
     "deploy-scouts",
     "CreateExplorer",
-    (context) => deployFromTheDock(context, 400, "Scouts"),
+    (context) => deployFromTheDock(context, 400, FRONTIER_TROOP_NAMES[TroopType.Paladin]),
     scoutsDeployed,
   ),
 ];
@@ -725,7 +726,7 @@ const TOWN_DEPLOY_STEPS = [
   clickToResultStep(
     "deploy-crossbows",
     "CreateExplorer",
-    (context) => deployFromTheDock(context, 400, "Crossbows"),
+    (context) => deployFromTheDock(context, 400, FRONTIER_TROOP_NAMES[TroopType.Crossbowman]),
     crossbowsDeployed,
   ),
 ];
