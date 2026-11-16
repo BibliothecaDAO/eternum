@@ -18,6 +18,26 @@
  * screen's words), each spelled once. A screen that needs one imports it from here; nothing else spells it. The rules
  * every client and core's story text share (nouns, numbers, times, names, the voice) are @bibliothecadao/types' words.
  */
+/**
+ * The client's phrases (the glossary, frontier-narrative-2026-10/glossary.html, ruled final 7 October 2026, and every
+ * screen's words), each spelled once. A screen that needs one imports it from here; nothing else spells it. The rules
+ * every client and core's story text share (nouns, numbers, times, names, the voice) are @bibliothecadao/types' words.
+ */
+/**
+ * The client's phrases (the glossary, frontier-narrative-2026-10/glossary.html, ruled final 7 October 2026, and every
+ * screen's words), each spelled once. A screen that needs one imports it from here; nothing else spells it. The rules
+ * every client and core's story text share (nouns, numbers, times, names, the voice) are @bibliothecadao/types' words.
+ */
+/**
+ * The client's phrases (the glossary, frontier-narrative-2026-10/glossary.html, ruled final 7 October 2026, and every
+ * screen's words), each spelled once. A screen that needs one imports it from here; nothing else spells it. The rules
+ * every client and core's story text share (nouns, numbers, times, names, the voice) are @bibliothecadao/types' words.
+ */
+/**
+ * The client's phrases (the glossary, frontier-narrative-2026-10/glossary.html, ruled final 7 October 2026, and every
+ * screen's words), each spelled once. A screen that needs one imports it from here; nothing else spells it. The rules
+ * every client and core's story text share (nouns, numbers, times, names, the voice) are @bibliothecadao/types' words.
+ */
 import { APP_HOST } from "@/config/app-address";
 import type { ResolvedGameMode } from "@/config/game-modes/resolved-mode";
 import { SHARED_MOMENT_WORDS, type CampaignKey, type SocialProvider } from "@realms-world/identity";
@@ -579,7 +599,6 @@ export const OPENING_WORDS = {
     barracks: (rules: OpeningRules) =>
       `A Barracks raises ${formatAmount(rules.knightsAnHour)} Knights an hour. Knights fill your armies.`,
     guard: () => "Send 150% of the guard's troops to win.",
-    fight: () => "Armies earn XP by fighting. Enough XP gives a skill point.",
     essence: () => "Essence buys research and lores.",
     "well-lore": () => "Your armies can now find wells.",
     "shrine-lore": () => "Your armies can now find shrines.",

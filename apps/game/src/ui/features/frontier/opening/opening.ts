@@ -3,14 +3,13 @@ import type { IconMeaning } from "@/ui/design-system/icon";
 /**
  * The interface that opens as you play (the frozen design, "The interface opens as you play"): each moment, the painting
  * its one line wears, and the parts of the HUD that wait on it. Every other part shows from launch. The moments that open
- * nothing yet (a skill point's boons, the spire's odds, a layer down, the City, the shop) join this table in the change
+ * nothing yet (the spire's odds, a layer down, the City, the shop) join this table in the change
  * that brings their part.
  */
 export const OPENING = {
   launch: { icon: "realm", parts: [] },
   barracks: { icon: "barracks", parts: ["troops-store", "building-list"] },
   guard: { icon: "camp", parts: [] },
-  fight: { icon: "attack", parts: [] },
   essence: { icon: "essence", parts: ["essence-store", "research", "today"] },
   "well-lore": { icon: "well", parts: [] },
   "shrine-lore": { icon: "shrine", parts: [] },

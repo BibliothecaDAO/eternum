@@ -1,10 +1,10 @@
-import { costLine } from "@/ui/design-system/kit/price-faces";
+
 import type { EtherealLayer } from "@bibliothecadao/eternum";
 import { buildStoryEventPresentation } from "@bibliothecadao/eternum";
 import type { ProcessedStoryEvent } from "@/hooks/store/use-story-events-store";
 import { Tooltip } from "@/ui/design-system/molecules/tooltip";
 import { FeedLine } from "@/ui/features/event-feed/feed-line";
-import { MapSiteCardView } from "@/ui/features/frontier/sites/map-site-card";
+
 import { canonicalRealm, homeSourceClaim } from "@bibliothecadao/eternum";
 import { BuildingType } from "@bibliothecadao/types";
 import type { AlertsAsk, AlertsPopupAsk } from "@/shell/profile/alerts-ask";
@@ -44,8 +44,8 @@ import { DayEndScreen } from "@/ui/features/frontier/rollover/day-end-screen";
 import { RESTING, useDayEndStore } from "@/hooks/store/use-day-end-store";
 import { BuildView } from "@/ui/features/frontier/build/build-view";
 import { CastleResearch, CastleView } from "@/ui/features/frontier/upgrade/castle-view";
-import { type ArmyDetailFacts, readArmyDetail } from "@/ui/features/frontier/army/army-detail";
-import { ArmyDetail, useArmyStep } from "@/ui/features/frontier/army/army-panel";
+import { type ArmyView } from "@/ui/features/frontier/army/army-detail";
+import { ArmyDetail } from "@/ui/features/frontier/army/army-panel";
 import { MID_REALM, VETERAN_ARMY } from "@/ui/features/frontier/research/progression-fixture";
 import { ResearchPanel } from "@/ui/features/frontier/research/research-panel";
 import { BuildingCardView, type CardMakes } from "@/ui/features/frontier/building/building-card";
@@ -151,11 +151,11 @@ const UNKNOWN_STORES = [
   store("troops", undefined, 0),
 ];
 
-type LabArmy = { troops?: number; xp?: number; stamina?: number; tier?: boolean; ethereal?: EtherealLayer };
+type LabArmy = { troops?: number; stamina?: number; ethereal?: EtherealLayer };
 const ARMIES: LabArmy[] = [
-  { troops: 5_000, xp: 260, stamina: 90, tier: true },
-  { troops: 1, xp: 40, stamina: 150 },
-  { troops: 1_200, xp: 120, stamina: 21, tier: true },
+  { troops: 5_000, stamina: 90 },
+  { troops: 1, stamina: 150 },
+  { troops: 1_200, stamina: 21 },
 ];
 const UNKNOWN_ARMIES: LabArmy[] = [{}, {}, {}];
 /** The same armies through the spire: Army 2 in Ethereal II, Army 3 in Ethereal I, Army 1 on the surface. */
@@ -199,10 +199,7 @@ const holding = (stores: readonly StoreReading[], kind: StoreReading["kind"], am
 
 type LabSite = Omit<Parameters<typeof SiteCardView>[0], "onClose" | "onRealm">;
 
-type LabShrine = Pick<Parameters<typeof MapSiteCardView>[0], "taker" | "action">;
 /** A III Shrine's card (owner, 3 November 2026: "ok for D"): Army 2 holding one III point, Army 1 none. */
-const SHRINE_ARMY_2 = { art: "knight-t1" as const, label: "Army 2", held: 1 };
-const SHRINE_ARMY_1 = { art: "knight-t1" as const, label: "Army 1", held: 0 };
 
 const ARMY_CHIP = { art: "knight-t1" as const, troops: 5_000 };
 const ATTACK_30 = { kind: "attack" as const, stamina: 30, onAttack: () => undefined };
@@ -215,7 +212,6 @@ const CAMP_CARD: LabSite = {
   guard: 1_100,
   fight: FIGHT(180),
   pay: { icon: "labor", amount: 550 },
-  xp: 82,
   verb: ATTACK_30,
 };
 /** Blightglow Rift as the owner met it on prod (11-03): 794 knights against a rested guard of 1,400. */
@@ -227,7 +223,6 @@ const BLIGHTGLOW: LabSite = {
   guard: 1_400,
   fight: FIGHT(601, 1_033),
   pay: { icon: "essence", amount: 4_200 },
-  xp: 93,
   verb: ATTACK_30,
 };
 const RUIN_CARD: LabSite = {
@@ -239,7 +234,6 @@ const RUIN_CARD: LabSite = {
   pay: null,
   chest: { tier: 3, lords: 128 },
   ruinChoice: { depth: siteDepthName(0), perDepth: true },
-  xp: 145,
   verb: ATTACK_30,
 };
 
@@ -291,7 +285,6 @@ const DAY_DONE = {
   rank: { from: 14, to: 12 },
   armies: 3,
   troopsLost: 6_021,
-  returned: { sent: 470, fitted: 470 },
   onShare: () => undefined,
   onContinue: () => undefined,
 };
@@ -505,7 +498,6 @@ const STORE_LINES: StoreLine[] = [
   line({
     kind: "troops",
     perHour: 600,
-    sides: sidePicks(1n << 14n, research.ROW_BARRACKS),
     held: 1_200,
     fullIn: 28 * HOUR,
   }),
@@ -639,7 +631,6 @@ const OWNERS_CAMP: LabSite = {
   guard: 1_300,
   fight: FIGHT(180, 740),
   pay: { icon: "wood", amount: 650 },
-  xp: 90,
   verb: { kind: "short", stamina: { cost: 30, held: 14, wait: 31 * 60 } },
 };
 const FIGHT_STATES: Record<string, LabState> = Object.fromEntries(
@@ -652,7 +643,6 @@ const FIGHT_STATES: Record<string, LabState> = Object.fromEntries(
       guard: 1_100,
       fight: FIGHT(180),
       pay: { icon: "labor", amount: 550 },
-      xp: 82,
       verb: ATTACK_30,
     },
     loses: {
@@ -750,37 +740,6 @@ const STATES = {
     deploy: { count: 0, troopsWait: 6 * 60 },
   },
   "site-camp": { clock: CLOCK, stores: STORES, armies: ARMIES, site: CAMP_CARD },
-  "shrine-beside": {
-    clock: CLOCK,
-    stores: STORES,
-    armies: ARMIES,
-    shrine: {
-      taker: { ...SHRINE_ARMY_2, tiles: 1, nearest: false },
-      action: { kind: "use", busy: undefined, onUse: () => undefined },
-    },
-  },
-  "shrine-far": {
-    clock: CLOCK,
-    stores: STORES,
-    armies: ARMIES,
-    shrine: {
-      taker: { ...SHRINE_ARMY_1, tiles: 4, nearest: false },
-      action: {
-        kind: "move",
-        cost: costLine([
-          { of: "stamina", amount: 60 },
-          { of: "wheat", amount: 90 },
-        ]),
-        onMove: () => undefined,
-      },
-    },
-  },
-  "shrine-none": {
-    clock: CLOCK,
-    stores: STORES,
-    armies: ARMIES,
-    shrine: { taker: { ...SHRINE_ARMY_2, tiles: 3, nearest: true }, action: null },
-  },
   feed: { clock: CLOCK, stores: STORES, armies: ARMIES, feed: true },
   "site-full": {
     clock: CLOCK,
@@ -797,7 +756,7 @@ const STATES = {
     clock: CLOCK,
     stores: STORES,
     armies: ARMIES,
-    site: { ...CAMP_CARD, site: "Beasts", guard: 400, fight: FIGHT(15), pay: null, xp: 50 },
+    site: { ...CAMP_CARD, site: "Beasts", guard: 400, fight: FIGHT(15), pay: null },
   },
   "site-ruin": { clock: CLOCK, stores: STORES, armies: ARMIES, site: RUIN_CARD },
   // The owner's Titanwatch on 28 October, no army selected: a named ruin, its Ammit, its chest and XP on one row.
@@ -813,7 +772,6 @@ const STATES = {
       guard: 2_300,
       fight: undefined,
       chest: { tier: 2, lords: 100 },
-      xp: 119,
       verb: null,
     },
   },
@@ -858,7 +816,6 @@ const STATES = {
       guard: 1_300,
       fight: FIGHT(140),
       pay: { icon: "labor", amount: 650 },
-      xp: 90,
       verb: { kind: "far" },
     },
   },
@@ -911,7 +868,6 @@ const STATES = {
       guard: 150,
       fight: FIGHT(40),
       pay: null,
-      xp: 50,
     },
   },
   "last-hour": { clock: LAST_HOUR, stores: STORES, armies: ARMIES, lastHour: true },
@@ -921,12 +877,6 @@ const STATES = {
   "day-share": { clock: NIGHT, stores: STORES, armies: [], dayShare: DAY_SHARE },
   // A thin day, the owner's day 1 on dev: one site, no chest, no rank yet.
   "day-share-thin": { clock: NIGHT, stores: STORES, armies: [], dayShare: THIN_DAY_SHARE },
-  "day-done-full": {
-    clock: NIGHT,
-    stores: STORES,
-    armies: [],
-    dayDone: { ...DAY_DONE, returned: { sent: 470, fitted: 200 } },
-  },
   // The player's history no longer reaches back to the ended day's start: dashes, and why.
   "day-done-short": {
     clock: NIGHT,
@@ -1093,7 +1043,6 @@ const STATES = {
       guard: 3_500,
       fight: FIGHT(816, 1_650),
       chest: { tier: 2, lords: 100 },
-      xp: 147,
       verb: { kind: "short", stamina: { cost: 30, held: 26, wait: 7 * 60 + 38 } },
     },
   },
@@ -1318,8 +1267,6 @@ type LabState = {
   lastHour?: boolean;
   order?: LabOrder;
   site?: LabSite;
-  /** A Shrine's card (MapSiteCardView): the army that would take its point, and Use or Move. */
-  shrine?: LabShrine;
   /** The Feed's lines for ranked stories beside plain ones, to read their alignment. */
   feed?: boolean;
   deploy?: LabDeploy;
@@ -1472,7 +1419,6 @@ export const HudLab = () => {
               <OrderBar
                 {...lab.order}
                 revealYield={500}
-                xp={2}
                 refill={lab.refill === undefined ? undefined : <RefillButton held={lab.refill} onRefill={noop} />}
                 onCancel={noop}
                 onGo={noop}
@@ -1573,7 +1519,6 @@ export const HudLab = () => {
         )}
         {lab.building && <LabBuildingCard building={lab.building} />}
         {lab.site && <SiteCardView {...lab.site} onRealm={noop} onClose={noop} />}
-        {lab.shrine && <MapSiteCardView kind="Shrine" gain={3} army={undefined} {...lab.shrine} onClose={noop} />}
         {lab.feed && <LabFeed />}
         {lab.withdraw && <LabWithdrawSheet withdraw={lab.withdraw} />}
         {lab.realms && <LabRealmsSheet realms={lab.realms} />}
@@ -1641,12 +1586,11 @@ const LabPicked = ({ lab }: { lab: LabState }) => {
       army={army}
       refill={<StaminaRefill stamina={army.stamina!} held={lords} onRefill={noop} />}
       onDetails={noop}
-      onLevelUp={noop}
     />
   );
 };
 
-/** The owner's Army 2, it rested or its realm able to pay its refill (`picked`), else the state's selected army, with the realm's LORDS. */
+/** The owner's Army 2, rested or its realm able to pay its refill (`picked`), else the state's selected army, with the realm's LORDS. */
 const labPickedArmy = (lab: LabState): { army: PickedArmyView; lords: number } => {
   const index = lab.selected ?? 0;
   const base = {
@@ -1660,13 +1604,9 @@ const labPickedArmy = (lab: LabState): { army: PickedArmyView; lords: number } =
     const rested = lab.picked === "rested";
     const army = {
       ...base,
-      xp: rested ? 40 : 276,
-      xpGoal: undefined,
       troops: 1_342,
       stamina: { current: rested ? 140 : 14, max: 140, perExplore: 20 },
       secondsToFull: rested ? 0 : 4 * HOUR + 11 * 60,
-      canSpendSkillPoint: !rested,
-      tiers: { logistics: 2, },
     };
     return { army, lords: lab.picked === "pay" ? 500 : 100 };
   }
@@ -1675,29 +1615,22 @@ const labPickedArmy = (lab: LabState): { army: PickedArmyView; lords: number } =
   return {
     army: {
       ...base,
-      xp: army.xp,
-      xpGoal: undefined,
       troops: army.troops ?? 0,
       stamina: { current, max: 150, perExplore: LAB_EXPLORE },
       secondsToFull: (150 - current) * 60,
-      canSpendSkillPoint: army.tier === true,
-      tiers: { logistics: 3, },
     },
     lords: lab.purse?.lords ?? LAB_LORDS,
   };
 };
 
-/** The owner's Army 4 (4 November): 4.7K troops, +704 a tile, 17/140 full in 1h 22m, Battle III, Logistics I. */
-const OWNER_ARMY: ArmyDetailFacts = {
+/** The owner's Army 4 (4 November): 4.7K troops, +704 a tile, 17/140 full in 1h 22m. */
+const OWNER_ARMY: ArmyView = {
   ...VETERAN_ARMY,
   name: `${ARMY} 4`,
   troops: 4_700,
-  xp: 652,
   stamina: { current: 17, max: 140, perExplore: 20 },
   secondsToFull: 82 * 60,
   revealYield: 704,
-  progress: { logistics: 1, },
-  points: [0, 0, 0, 0, 0],
 };
 
 /**
@@ -1705,21 +1638,17 @@ const OWNER_ARMY: ArmyDetailFacts = {
  * given and its Delete after its name (on its status only), or the refill's confirm.
  */
 const LabArmy = ({ army }: { army: LabArmySheet }) => {
-  const base =
-    army.owner === "ready" ? { ...OWNER_ARMY, points: [0, 0, 1, 0, 0] } : army.owner ? OWNER_ARMY : VETERAN_ARMY;
+  const base = army.owner ? OWNER_ARMY : VETERAN_ARMY;
   const stamina = { ...base.stamina, current: army.stamina ?? base.stamina.current };
   const full = stamina.current >= stamina.max;
-  const view = readArmyDetail({ ...base, stamina, ethereal: army.ethereal, ...(full ? { secondsToFull: 0 } : {}) });
-  const step = useArmyStep(view.available);
+  const view = { ...base, stamina, ethereal: army.ethereal, ...(full ? { secondsToFull: 0 } : {}) };
   if (army.confirm)
     return <RefillConfirm stamina={stamina} held={army.lords} sending={false} onRefill={noop} onCancel={noop} />;
   return (
     <HudSheet
       label={base.name}
       beside={
-        !step.choosing && (
-          <HudIconButton icon="trash" label={ARMY_MANAGEMENT.remove} kind="danger" size="sm" onClick={noop} />
-        )
+        <HudIconButton icon="trash" label={ARMY_MANAGEMENT.remove} kind="danger" size="sm" onClick={noop} />
       }
       onClose={noop}
     >
@@ -1730,9 +1659,6 @@ const LabArmy = ({ army }: { army: LabArmySheet }) => {
             <RefillPrice price={stamina.max - stamina.current} held={army.lords} onRefill={noop} />
           )
         }
-        sending={false}
-        step={step}
-        onLevelUp={noop}
       />
     </HudSheet>
   );
@@ -1751,7 +1677,6 @@ const LAB_BUILDINGS = {
   },
   barracks: {
     category: BuildingType.ResourceKnightT1,
-    row: research.ROW_BARRACKS,
     standing: 3,
     makes: { icon: "troops", rate: "+10/min" },
   },
@@ -1762,12 +1687,12 @@ const LAB_BUILDINGS = {
     makes: { icon: "labor", rate: "+15/min" },
     essence: SHORT_ESSENCE,
   },
-  "war-hall": { category: BuildingType.WarHall, row: research.ROW_WAR_HALL, standing: 1, makes: undefined },
+  "war-hall": { category: BuildingType.WarHall, standing: 1, makes: undefined },
   hut: { category: BuildingType.WorkersHut, row: research.ROW_HUT, standing: 2, makes: undefined },
-  "scouts-lodge": { category: BuildingType.ScoutsLodge, row: research.ROW_SCOUTS_LODGE, standing: 1, makes: undefined },
+  "scouts-lodge": { category: BuildingType.ScoutsLodge, standing: 1, makes: undefined },
 } satisfies Record<string, LabBuilding>;
 
-type LabBuilding = { category: BuildingType; row: number; standing: number; makes?: CardMakes; essence?: number };
+type LabBuilding = { category: BuildingType; row?: number; standing: number; makes?: CardMakes; essence?: number };
 
 /** A building's card on the realm some days in, its Delete drawn as it rests. */
 const LabBuildingCard = ({ building }: { building: keyof typeof LAB_BUILDINGS }) => {
@@ -1898,9 +1823,6 @@ const LabDock = ({ lab }: { lab: LabState }) => {
   const armyArt = (army: LabArmy) => (army.troops === undefined ? undefined : ("knight-t1" as const));
   const stamina = (army: LabArmy) =>
     army.stamina === undefined ? undefined : { current: army.stamina, max: 150, perExplore: LAB_EXPLORE };
-  // In the last hour each army shows what its Homecoming (Uncommon: 9%) sends home.
-  const returnsHome = (army: LabArmy) =>
-    lab.lastHour && army.troops !== undefined ? Math.floor(army.troops * 0.09) : undefined;
   if (useLayout() === "desktop")
     return (
       <ArmyList used={lab.armies.length} allowed={lab.armies.length + open}>
@@ -1911,10 +1833,7 @@ const LabDock = ({ lab }: { lab: LabState }) => {
             number={index + 1}
             art={armyArt(army)}
             troops={army.troops}
-            returnsHome={returnsHome(army)}
             stamina={stamina(army)}
-            xp={army.xp}
-            canSpendSkillPoint={army.tier === true}
             ethereal={army.ethereal}
             selected={lab.selected === index}
             onPick={lab.visiting ? undefined : noop}
@@ -1932,11 +1851,8 @@ const LabDock = ({ lab }: { lab: LabState }) => {
           key={index}
           label={`Army ${index + 1}`}
           art={armyArt(army)}
-          xp={army.xp}
           stamina={stamina(army)}
           troops={army.troops}
-          returnsHome={returnsHome(army)}
-          canSpendSkillPoint={army.tier === true}
           ethereal={army.ethereal}
           selected={lab.selected === index}
           onPick={noop}

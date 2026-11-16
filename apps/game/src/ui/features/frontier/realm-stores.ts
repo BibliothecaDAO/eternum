@@ -7,7 +7,7 @@ import { type ExpeditionRules, getBalance, ResourceManager } from "@bibliothecad
 import { safeInteger, type NativeFactStore, type NativeRows } from "@bibliothecadao/eternum/game-client";
 import { RESOURCE_PRECISION, type ResourcesIds } from "@bibliothecadao/types";
 
-import { stocksAtNextDeploy } from "./frontier-home";
+
 import { realmPerHour, secondsUntilHeld } from "./hud/army-order";
 import { FRONTIER_STORES, STORE_KINDS, type StoreKind } from "./stores";
 
@@ -29,8 +29,7 @@ type RealmStore = {
 
 /**
  * A store of the realm read once for every surface: what it holds, its limit, its rate an hour, when it is full, and
- * its tone (amber within the hour of full, ember at the limit). Troops count what the next deploy finds, with
- * Homecoming's return.
+ * its tone (amber within the hour of full, ember at the limit).
  */
 export const readRealmStore = (
   store: NativeFactStore,
@@ -40,26 +39,13 @@ export const readRealmStore = (
   clock: { now: number },
 ): RealmStore => {
   const stock = FRONTIER_STORES[kind].resource;
-  const amount =
-    kind === "troops" || kind === "scouts"
-      ? troopStockAtHome(store, realm, stock, clock.now)
-      : wholeBalance(store, safeInteger(realm.entity_id), stock, clock.now);
+  const amount = wholeBalance(store, safeInteger(realm.entity_id), stock, clock.now);
   const rawLimit = new ResourceManager(store, safeInteger(realm.entity_id), realm.game_id).storeLimit(stock);
   const limit = rawLimit === undefined ? undefined : Number(rawLimit / BigInt(RESOURCE_PRECISION));
   const perHour = realmPerHour(store, safeInteger(realm.entity_id), stock, clock.now);
   const fullIn = secondsUntilFull(amount, limit, perHour);
   const nextIn = secondsUntilNextUnit(store, safeInteger(realm.entity_id), stock, clock.now, perHour);
   return { amount, limit, perHour, nextIn, fullIn, tone: storeTone(fullIn) };
-};
-
-const troopStockAtHome = (
-  store: NativeFactStore,
-  realm: NativeRows["Structure"],
-  resource: ResourcesIds,
-  now: number,
-) => {
-  const stock = stocksAtNextDeploy(store, realm, now, now)?.get(resource);
-  return stock && stock.held + stock.fits;
 };
 
 const wholeBalance = (store: NativeFactStore, realmId: number, resourceId: ResourcesIds, tick: number) => {

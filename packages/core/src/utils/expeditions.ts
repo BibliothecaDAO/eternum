@@ -12,7 +12,7 @@ import type { NativeRows } from "../../../../contracts/l3/world-native/schema/cl
 import { getNeighborHexes, StructureType } from "@bibliothecadao/types";
 import { getBlockTimestamp } from "./timestamp";
 import { dayOf } from "./days";
-import { previewSiteClearXp, previewSiteReward } from "../../../../contracts/l3/world-native/schema/site-previews.gen";
+import { previewSiteReward } from "../../../../contracts/l3/world-native/schema/site-previews.gen";
 
 import { entityMapPosition } from "./tile";
 
@@ -83,12 +83,6 @@ export const siteReward = (
   site.clear
     ? null
     : previewSiteReward(site.category, site.initial_guard_count, siteDepth(store, site), siteIsWraith(store, site));
-
-/** The contract's integer XP formula, shared by the preview, receipt and local replay. */
-export const siteClearXp = (
-  store: Pick<NativeFactStore, "require">,
-  site: Pick<NativeRows["ExpeditionSite"], "category" | "initial_guard_count" | "game_id" | "row">,
-): number => previewSiteClearXp(site.initial_guard_count, siteDepth(store, site), siteIsWraith(store, site));
 
 const siteIsWraith = (
   store: Pick<NativeFactStore, "require">,

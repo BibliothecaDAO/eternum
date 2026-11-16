@@ -1,6 +1,6 @@
 import { nativeReleaseConstants } from "../../../../../contracts/l3/world-native/schema/client.gen";
 import { SITE } from "@/ui/features/frontier/sites/site-fixture";
-import { siteClearXp } from "@bibliothecadao/eternum";
+
 import { SPIRE_ARMY } from "@/ui/features/frontier/spire-fixture";
 import type { NativeFactStore, NativeRows } from "@bibliothecadao/eternum/game-client";
 import { getNeighborHexes, StructureType } from "@bibliothecadao/types";
@@ -146,7 +146,7 @@ const clearTheRuin = (chain: NativeFactStore, explorerId: bigint, player: string
     {
       model: "ExpeditionSite",
       key: chain.wireKeyOf("ExpeditionSite", { game_id: 1, entity_id: BigInt(SITE) })!,
-      value: wire({ ...site, clear: { xp: siteClearXp(chain, site), explorer_id: explorerId, home_id: HOME, reward } }),
+      value: wire({ ...site, clear: { explorer_id: explorerId, home_id: HOME, reward } }),
     },
     { model: "RuinRelic", key: chain.wireKeyOf("RuinRelic", { game_id: 1, entity_id: BigInt(SITE) })!, value: null },
     {
@@ -171,11 +171,6 @@ const clearTheRuin = (chain: NativeFactStore, explorerId: bigint, player: string
           stamina: { Inline: { amount: stamina.Inline.amount - ATTACK_STAMINA, settled_at: now, remainder: 0 } },
         },
       }),
-    },
-    {
-      model: "ArmyProgress",
-      key: chain.wireKeyOf("ArmyProgress", { game_id: 1, explorer_id: explorerId })!,
-      value: wire({ ...progress, xp: progress.xp + siteClearXp(chain, site) }),
     },
     {
       model: "StoryEvent",

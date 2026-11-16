@@ -385,3 +385,7 @@ estimate_gb = 6
 [kind.audit-army-callers]
 cmd = 'pnpm exec tsc -p packages/core/tsconfig.json --noEmit'
 estimate_gb = 4
+
+[kind.audit-army-ui]
+cmd = 'pnpm run build:packages && pnpm exec tsc -p apps/game/tsconfig.json --noEmit'
+estimate_gb = 6

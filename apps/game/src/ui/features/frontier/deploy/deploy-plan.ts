@@ -1,34 +1,11 @@
 import { exploreStaminaOf } from "@/lib/army-stamina/explore-stamina";
 import type { StaminaBar } from "@/ui/design-system/kit/hud-elements";
-import {
-  configManager,
-  type GameActions,
-  getBalance,
-  getTroopResourceId,
-  canPayTroopRaise,
-  readTroopRaiseCost,
-  realmLearned,
-  researchTier,
-} from "@bibliothecadao/eternum";
-import {
-  nativeResearchConstants as research,
-  safeInteger,
-  type NativeFactStore,
-  type NativeRows,
-} from "@bibliothecadao/eternum/game-client";
+import { configManager, type GameActions, getBalance, getTroopResourceId, canPayTroopRaise, readTroopRaiseCost, realmLearned, researchTier } from "@bibliothecadao/eternum";
+import { nativeResearchConstants as research, safeInteger, type NativeFactStore, type NativeRows } from "@bibliothecadao/eternum/game-client";
 import { musterStamina, type OpenArmySlot, openArmySlots } from "@bibliothecadao/eternum/troop-stamina";
-import {
-  type Direction,
-  RESOURCE_PRECISION,
-  ResourcesIds,
-  TickIds,
-  TROOP_TIERS,
-  TROOP_TYPES,
-  type TroopTier,
-  type TroopType,
-} from "@bibliothecadao/types";
+import { type Direction, RESOURCE_PRECISION, ResourcesIds, TickIds, TROOP_TIERS, TROOP_TYPES, type TroopTier, type TroopType } from "@bibliothecadao/types";
 
-import { stocksAtNextDeploy } from "../frontier-home";
+
 
 /**
  * An open army slot and the stamina a new army starts on in it (the owner, 20 October 2026: "stamina is slot tied"):
@@ -128,7 +105,7 @@ const slotStart = (
 };
 
 /**
- * The troop stocks at home, Homecoming's fitting return included, with the castle's cap
+ * The troop stocks at home, with the castle's cap
  * on one army. Undefined while unknown.
  */
 const readTroopsAtHome = (
@@ -136,13 +113,12 @@ const readTroopsAtHome = (
   realm: NativeRows["Structure"],
   clock: { now: number; defaultTick: number },
 ): DeployPlan["choices"] | undefined => {
-  const stocks = stocksAtNextDeploy(store, realm, clock.now, clock.defaultTick);
-  if (!stocks) return undefined;
   const choices: DeployPlan["choices"] = [];
   for (const tier of TROOP_TIERS)
     for (const type of TROOP_TYPES) {
-      const stock = stocks.get(getTroopResourceId(type, tier))!;
-      const atHome = stock.held + stock.fits;
+      const stock = getBalance(safeInteger(realm.entity_id), getTroopResourceId(type, tier), clock.defaultTick, store).balance;
+      if (stock === undefined) return undefined;
+      const atHome = Number(stock) / RESOURCE_PRECISION;
       if (atHome > 0) choices.push({ type, tier, atHome, cap: configManager.getMaxArmySize(realm.base.level, tier) });
     }
   return choices;

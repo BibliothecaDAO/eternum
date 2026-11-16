@@ -1,5 +1,5 @@
 import { SPIRE_ARMY } from "@/ui/features/frontier/spire-fixture";
-import { siteClearXp, siteReward } from "@bibliothecadao/eternum";
+import { siteReward } from "@bibliothecadao/eternum";
 import { BiomeType, getNeighborHexes, StructureType } from "@bibliothecadao/types";
 import { reinforceScenario } from "./reinforce-scenario";
 import { revealedTile } from "./spire-scenario";
@@ -45,7 +45,6 @@ export function supplyPostScenario(): LabScenario {
         clear: {
           home_id: 7n,
           explorer_id: BigInt(SPIRE_ARMY),
-          xp: siteClearXp(store, site),
           reward: { resource_type: reward.resourceType, amount: reward.amount },
         },
       }),

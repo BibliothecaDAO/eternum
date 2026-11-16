@@ -25,6 +25,7 @@ const realmOn = (
   essence: number,
   labor: number,
   standing: Partial<Record<number, number>>,
+  learned: RealmResearchFacts["learned"],
 ): RealmResearchFacts => {
   const storeroomPicks = (learned[research.ROW_WORKSHOP]?.sides ?? []).filter((side) => side === 1).length;
   return {

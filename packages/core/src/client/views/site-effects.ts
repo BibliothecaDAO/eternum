@@ -4,7 +4,7 @@ import { nativeBaneConstants, nativeRaceConstants } from "../../../../../contrac
 import type { NativeFactResult, NativeFactStore } from "../native-fact-store";
 import type { NativeRows } from "../../../../../contracts/l3/world-native/schema/client.gen";
 import { entityHomeNamespace } from "../../utils/entity-home";
-import { expeditionDepth, siteReward, siteClearXp, readExpeditionRules } from "../../utils/expeditions";
+import { expeditionDepth, siteReward, readExpeditionRules } from "../../utils/expeditions";
 import { BANE_MODELS, readBaneEffects } from "./banes";
 import { TRIUMPH_MODELS, readTriumphPeriod } from "./triumphs";
 import { readOptionalSeasonRow } from "./season-rows";
@@ -72,7 +72,7 @@ export function readSiteReward(
   store: NativeFactStore,
   site: NativeRows["ExpeditionSite"],
   timestamp?: number,
-): NativeFactResult<{ reward: ReturnType<typeof siteReward>; xp: number }> {
+): NativeFactResult<{ reward: ReturnType<typeof siteReward> }> {
   const effects = readSiteEffects(store, site, timestamp);
   if (!effects.known) return effects;
   const percent = effects.known.spoilsPercent;
@@ -80,7 +80,6 @@ export function readSiteReward(
   return {
     known: {
       reward: base && { ...base, amount: (base.amount * BigInt(percent)) / 100n },
-      xp: Math.floor((siteClearXp(store, site) * percent) / 100),
     },
   };
 }

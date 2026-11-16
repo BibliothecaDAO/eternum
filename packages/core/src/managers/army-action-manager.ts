@@ -290,12 +290,6 @@ export class ArmyActionManager {
     const foodBoundsSteps = maxHex < this.staminaSteps(armyStamina);
 
     const troopType = this._getTroopType();
-    const alive =
-      currentArmy(
-        this.store,
-        this.store.require("ExplorerTroops", { game_id: configManager.getActiveGameId(), explorer_id: this.entityId }),
-        currentDefaultTick,
-      ).troops.count > 0n;
     // One truth: paths plan from the same ExplorerTroops coord the submit
     // freshness guard checks. Callers must not substitute a visual position.
     const startPos = this._getCurrentPosition();

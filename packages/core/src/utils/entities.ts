@@ -1,18 +1,7 @@
 import { safeInteger } from "./safe-integer";
 import { entityMapPosition } from "./tile";
 import { structureMapPosition } from "./expeditions";
-import {
-  armyName,
-  aspects,
-  realmName,
-  CapacityConfig,
-  ContractAddress,
-  ID,
-  NEUTRAL_OWNER_NAME,
-  StructureType,
-  structureName,
-  siteName,
-} from "@bibliothecadao/types";
+import { armyName, realmName, CapacityConfig, ContractAddress, ID, NEUTRAL_OWNER_NAME, StructureType, siteName } from "@bibliothecadao/types";
 import type { NativeFactStore } from "../client/native-fact-store";
 import type { NativeRows } from "../../../../contracts/l3/world-native/schema/client.gen";
 import { shortString } from "starknet";
@@ -21,7 +10,7 @@ import { configManager } from "../managers/config-manager";
 import { getHyperstructureName } from "./hyperstructure";
 import { getRealmNameById } from "./realm";
 import { isViewerOwner } from "./viewer";
-import { readRaceMonument } from "../client/views/race";
+
 
 const knownAddressesJSON: Record<string, string> = knownAddressesJSONData;
 
@@ -111,16 +100,6 @@ export const siteDisplayName = (entityId: ID): string => getEntityNameFromLocalS
  */
 export const getStructureName = (structure: NativeRows["Structure"], store: NativeFactStore) => {
   const entityId = safeInteger(structure.entity_id);
-  const monument =
-    structure.base.category === StructureType.Hyperstructure
-      ? readRaceMonument(store, structure.game_id, entityId)
-      : undefined;
-  if (monument) {
-    const aspect = aspects.find((aspect) => aspect.id === monument.aspect);
-    if (!aspect) throw new Error("Race monument has an unknown Aspect");
-    const name = `${aspect.name} ${structureName(StructureType.Hyperstructure)}`;
-    return { name, originalName: name };
-  }
   if (structure.base.category !== StructureType.Realm && structure.base.category !== StructureType.Hyperstructure) {
     return { name: siteDisplayName(entityId), originalName: siteName(entityId) };
   }

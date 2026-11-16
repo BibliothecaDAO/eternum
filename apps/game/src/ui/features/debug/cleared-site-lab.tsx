@@ -1,12 +1,12 @@
 import { readClearedSite, SiteReceipt } from "../frontier/sites/site-receipt";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
-import { siteClearXp, siteReward } from "@bibliothecadao/eternum";
+import { siteReward } from "@bibliothecadao/eternum";
 import { formatAmount, resourceName, frontierSiteName, StructureType, RESOURCE_PRECISION } from "@bibliothecadao/types";
 import { mountClearedSiteStudy, type ClearedSiteStudy } from "@/three/debug/model-lab/cleared-site-renderer";
 import { Icon } from "@/ui/design-system/icon";
 import { resourceMeaning } from "@/ui/design-system/icon-meaning";
-import { XP } from "@/ui/design-system/kit/words";
+
 import { campBeside } from "../frontier/sites/site-fixture";
 import "./cleared-site-lab.css";
 
@@ -31,7 +31,6 @@ export function ClearedSiteLab() {
         value: {
           ...source.site,
           clear: {
-            xp: siteClearXp(source.store, source.site),
             explorer_id: 201n,
             home_id: 7n,
             reward: reward ? { resource_type: reward.resourceType, amount: reward.amount } : null,
@@ -131,9 +130,6 @@ export function ClearedSiteLab() {
                       {resourceName(reward.resourceType)}
                     </span>
                   )}
-                  <span>
-                    <strong>{formatAmount(siteClearXp(fixture.store, fixture.site))}</strong> {XP}
-                  </span>
                 </div>
               </>
             )}

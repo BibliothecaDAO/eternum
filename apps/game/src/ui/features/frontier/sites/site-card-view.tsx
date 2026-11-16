@@ -1,38 +1,12 @@
 import type { FrontierBeast } from "@/three/structures/frontier-beast";
-import { formatExact, LORDS, formatShort } from "@bibliothecadao/types";
+import { formatExact, LORDS } from "@bibliothecadao/types";
 import { beastMeaning } from "@/ui/design-system/domain-icon-meaning";
 import { Icon as SemanticIcon, type IconMeaning } from "@/ui/design-system/icon";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
-import {
-  HudButton,
-  HudChip,
-  HudCost,
-  HudNotice,
-  HudRarity,
-  HudSheet,
-  HudWindowFoot,
-} from "@/ui/design-system/kit/hud-elements";
+import { HudButton, HudChip, HudCost, HudNotice, HudRarity, HudSheet, HudWindowFoot } from "@/ui/design-system/kit/hud-elements";
 import { costLine, type Price } from "@/ui/design-system/kit/price-faces";
 import { type Reason, reasonLine } from "@/ui/design-system/kit/reasons";
-import {
-  type Tier,
-  ARMY,
-  ATTACK,
-  ATTACKING,
-  MOVE,
-  ON_ITS_WAY,
-  REALM,
-  REST_DID_NOT_FIT,
-  ruinRule,
-  SEASON_CLIMB,
-  siteTitle,
-  SITES_CLEARED,
-  STORAGE,
-  tooFarFrom,
-  TROOPS,
-  FIGHT_WORDS,
-  XP,
-} from "@/ui/design-system/kit/words";
+import { type Tier, ARMY, ATTACK, ATTACKING, MOVE, ON_ITS_WAY, REALM, REST_DID_NOT_FIT, ruinRule, SEASON_CLIMB, siteTitle, SITES_CLEARED, STORAGE, tooFarFrom, TROOPS, FIGHT_WORDS } from "@/ui/design-system/kit/words";
 
 import type { OrderInFlight } from "@/hooks/store/use-actions-in-flight";
 import type { ReactNode } from "react";
@@ -68,7 +42,7 @@ export type SiteVerb =
  * (28 October 2026, layout V1: "v1 token header yes"). The guard stands at its head as the dock draws an army: its
  * portrait, its strength under it. Beside it, what the site is (its kind and its beast, where the title does not say
  * them), or with an army in reach what this attack comes to; then, on one row, what the clear pays (what fits, with its
- * XP, or a ruin's chest with its tier and exact LORDS): "This attack earns" over the reward when it clears the site, the
+ * or a ruin's chest with its tier and exact LORDS): "This attack earns" over the reward when it clears the site, the
  * reward dimmed when it does not (owner, 26 October 2026: "moving the clear rewards in the 'this attack clears it' ->
  * This attack earns xxx"). With an army selected, each side's troops before and after, the guard's strength said there
  * and not on its token. Its foot is the sheet's: Realm on the left, the one step alone on the right.
@@ -85,7 +59,6 @@ export const SiteCardView = ({
   relic,
   replacement,
   ruinChoice,
-  xp,
   verb,
   receipt,
   onRealm,
@@ -107,7 +80,6 @@ export const SiteCardView = ({
   /** Before a full army clears a ruin: the relic it replaces, chosen there. */
   replacement?: ReactNode;
   ruinChoice?: { depth: string; perDepth: boolean };
-  xp: number | undefined;
   verb: SiteVerb | null;
   receipt?: ReactNode;
   /** The way to make room when the payout does not all fit. */
@@ -128,14 +100,9 @@ export const SiteCardView = ({
   // an army is no site.
   const countsOnBoard = site !== "Army";
   const reward =
-    relic || chest || pay || xp !== undefined || countsOnBoard ? (
+    relic || chest || pay || countsOnBoard ? (
       <Reward dimmed={facing !== undefined && !clears(facing)}>
         {relic ? <RelicPay relic={relic} /> : chest ? <ChestPay chest={chest} /> : pay ? <Pay pay={pay} /> : null}
-        {xp !== undefined && !(chest && lost) && (
-          <HudChip>
-            {formatShort(xp, { signed: true })} {XP}
-          </HudChip>
-        )}
         {countsOnBoard && (
           <HudChip icons={["flag"]} label={SITES_CLEARED} tip={SEASON_CLIMB.rule}>
             {SEASON_CLIMB.plusOne}

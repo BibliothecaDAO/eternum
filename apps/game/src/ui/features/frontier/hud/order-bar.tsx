@@ -2,20 +2,7 @@ import { formatDuration, formatShort } from "@bibliothecadao/types";
 import { type IconMeaning } from "@/ui/design-system/icon";
 import { HudButton, HudChip, HudIconButton, HudPanel } from "@/ui/design-system/kit/hud-elements";
 
-import {
-  CANCEL,
-  ESSENCE,
-  EXPLORE,
-  LABOR,
-  LEFT,
-  MOVE,
-  NEXT_ORDER,
-  AFTER_THIS_ONE,
-  STAMINA,
-  WHEAT,
-  XP,
-  heldAgainstNeed,
-} from "@/ui/design-system/kit/words";
+import { CANCEL, ESSENCE, EXPLORE, LABOR, LEFT, MOVE, NEXT_ORDER, AFTER_THIS_ONE, STAMINA, WHEAT, heldAgainstNeed } from "@/ui/design-system/kit/words";
 import type { ReactNode } from "react";
 
 import { type Cost, isCovered } from "./army-order";
@@ -26,7 +13,7 @@ const VERBS = { explore: EXPLORE, move: MOVE } as const;
 
 /**
  * The action bar with an order pending, in one row: its costs (stamina before → after, the wheat, and for a new tile
- * what the reveal sends home and its XP), and × to drop it. The same tile tapped again sends it (owner, 27 October
+ * what the reveal sends home), and × to drop it. The same tile tapped again sends it (owner, 27 October
  * 2026: "Yes double tapping to explore on mobile, the confirm bar can be compacted into one single row"); Enter does on
  * a keyboard. A short cost turns ember with its exact wait, and the refill stands in the row; the gains are gone until
  * it is covered.
@@ -38,7 +25,6 @@ export const OrderBar = ({
   wheat,
   revealYield,
   laborFits,
-  xp,
   refill,
   onCancel,
   onGo,
@@ -51,7 +37,6 @@ export const OrderBar = ({
   revealYield: number | undefined | null;
   /** What of a labor reveal fits the labor store; less than the yield splits the chip, labor's half in ember. */
   laborFits?: number;
-  xp: number | undefined;
   /** Refill, offered in the row when the order's stamina is short. */
   refill?: ReactNode;
   onCancel: () => void;
@@ -66,11 +51,6 @@ export const OrderBar = ({
         <CostChip icon="wheat" label={WHEAT} cost={wheat} after={() => `−${formatShort(wheat.cost)}`} />
         {covered && kind === "explore" && revealYield !== null && (
           <RevealYield revealYield={revealYield} laborFits={laborFits} />
-        )}
-        {covered && kind === "explore" && (
-          <HudChip>
-            {formatShort(xp, { signed: true })} {XP}
-          </HudChip>
         )}
         {covered && kind === "move" && (
           <HudChip icons={["move"]} label={MOVE}>
