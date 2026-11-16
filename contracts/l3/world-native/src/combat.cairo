@@ -18,6 +18,7 @@ pub struct CombatContext {
     pub attacker_biome: Biome,
     pub defender_biome: Biome,
     pub attack_distance: u32,
+    // Frontier counts player-held slots; unowned beasts receive no Knight protection.
     pub attacker_is_structure_guard: bool,
     pub defender_is_structure_guard: bool,
 }

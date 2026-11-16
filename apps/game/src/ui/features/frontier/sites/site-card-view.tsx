@@ -146,7 +146,6 @@ export const SiteCardView = ({
             label={beast?.name ?? TROOPS}
             art={guardIcon}
             troops={armyless ? guard : undefined}
-            tip={beast?.combatClass}
           />
         ) : (
           <SiteMark icon={beast ? beastMeaning(beast.beast) : icon} />
@@ -256,7 +255,6 @@ const FightPanel = ({
           before={guard}
           kept={facing?.fight.guardLeft}
           side="theirs"
-          tip={beast?.combatClass}
         />
       )}
     </div>

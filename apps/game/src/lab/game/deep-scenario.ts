@@ -112,7 +112,7 @@ export const deepScenario = (): LabScenario => {
           game_id: 1,
           structure_id: siteId(site.position),
           slot: 0,
-          troops: { ...army.troops, count: site.position === "quarry" ? 0n : rules.beast_count },
+          troops: { ...army.troops, category: site.id === nativeRuleConstants.DEEP_ALTAR ? "Crossbowman" : "Knight", count: site.position === "quarry" ? 0n : rules.beast_count },
           destroyed_tick: 0,
         }),
       },

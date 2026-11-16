@@ -117,7 +117,7 @@ export const campBeside = (
             game_id: 1,
             structure_id: entityId,
             slot: 0,
-            troops: troops(guardCount, 0n),
+            troops: { ...troops(guardCount, 0n), category: kind === "Rift" ? "Crossbowman" : "Knight" },
             destroyed_tick: 0,
           }),
         ]
@@ -192,9 +192,8 @@ export const frontierCombatRules = () => {
 };
 
 /**
- * Prod's Blightglow Rift as the owner met it on 3 November 2026, on Frontier's deployed combat: the rift's guard of
- * 1,400 T1 knights holding `guardStamina` (40 or more rested; less, tired: it strikes at 70%), and the realm's army of
- * `troops` T1 knights beside it in its first army slot, at Battle 1 (+10% damage), its bar holding `armyStamina`.
+ * Blightglow's recorded troop counts, played under the current Frontier rules: its bow guard holds
+ * `guardStamina`, and the realm's Knights hold `armyStamina` in their shared slot.
  */
 export const blightglowRift = ({
   troops: armyTroops,
@@ -216,7 +215,7 @@ export const blightglowRift = ({
       game_id: 1,
       structure_id: SITE,
       slot: 0,
-      troops: troops(1_400n, guardStamina),
+      troops: { ...troops(1_400n, guardStamina), category: "Crossbowman" },
       destroyed_tick: 0,
     }),
     set("0x74", "ExplorerTroops", {

@@ -330,3 +330,25 @@ fn one_player_cannot_fill_two_slots_and_day_rollover_restores_every_beast() {
         });
     }
 }
+
+#[test]
+fn deep_beast_marks_control_public_attacks_without_knight_slot_protection() {
+    for kind in 0..crate::rules::DEEP_SITE_COUNT {
+        let mut definition = preset();
+        let mut deep = definition.economy.deep.unwrap();
+        deep.beast_count = 1000 * crate::rules::RESOURCE_PRECISION;
+        definition.economy.deep = Some(deep);
+        definition.rules.troop_damage_config.damage_scaling_factor = 36893488147419103232;
+        definition.rules.troop_damage_config.damage_biome_bonus_num = 0;
+        let (d, game_id) = super::aspects::setup_aspect_preset(860 + kind.into(), definition);
+        let attacker = deployed(d, game_id, 1, 1500);
+        let target = site(d, game_id, kind);
+        beside(d, attacker, target, 0);
+        applied(d, game_id, fight(attacker, target), 360);
+        let guard = interact_with_state(d.games, || crate::logic::guards::guard(crate::guards::GuardKey { game_id, structure_id: target.entity_id, slot: 0 }));
+        let (left, enemy) = if kind == crate::rules::DEEP_ALTAR { (1186_u128, 504_u128) } else { (1082, 373) };
+        assert_eq!(army(d, attacker).troops.count, left * crate::rules::RESOURCE_PRECISION);
+        assert_eq!(guard.troops.count, enemy * crate::rules::RESOURCE_PRECISION);
+        assert_eq!(held(d, attacker), None);
+    }
+}
