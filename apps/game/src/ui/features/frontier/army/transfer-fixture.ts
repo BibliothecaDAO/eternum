@@ -4,7 +4,7 @@ import { campBeside } from "../sites/site-fixture";
 
 const TRANSFER_PICKED = { col: 41, row: 12 };
 export const TRANSFER_TAPPED = getNeighborHexes(41, 12)[0]!;
-export const transferArmies = (pickedXp = 0, tappedXp = 99) => {
+export const transferArmies = (pickedLogistics = 1, tappedLogistics = 0) => {
   const { store } = campBeside();
   const first = store.require("ExplorerTroops", { game_id: 1, explorer_id: 201 });
   const facts = [
@@ -25,7 +25,7 @@ export const transferArmies = (pickedXp = 0, tappedXp = 99) => {
         value: {
           game_id: 1,
           explorer_id: id,
-          logistics: slot === 0 ? 1 : 0,
+          logistics: slot === 0 ? pickedLogistics : tappedLogistics,
         },
       },
       {
@@ -62,7 +62,7 @@ export const transferArmies = (pickedXp = 0, tappedXp = 99) => {
 };
 
 /** The reported 500 into 1,500 transfer: 222 total XP against 20 unspent XP, with logistics on both armies. */
-export const transferXpArmies = () => {
+export const transferTrainedArmies = () => {
   const store = transferArmies(222, 120);
   store.applyFacts([{ model: "ArmySlot", key: "0xf2023", value: null }]);
   const realm = store.require("Structure", { game_id: 1, entity_id: 7 });

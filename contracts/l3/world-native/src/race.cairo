@@ -1,4 +1,3 @@
-
 pub const STAGE_COUNT: u8 = 5;
 pub const CLEAR_MIST_STAGE: u8 = 1;
 pub const SECOND_WIND_STAGE: u8 = 2;
@@ -69,7 +68,6 @@ pub trait IRace<T> {
 }
 
 
-
 pub fn validate(rules: RaceRules) {
     assert!(rules.season_days != 0 && rules.season_days % crate::days::DAYS_PER_BAG == 0, "race needs whole day bags");
     assert!(rules.glory_per_tick != 0, "zero Glory payment");
@@ -81,7 +79,6 @@ pub fn validate(rules: RaceRules) {
     assert!(rules.spoils_percent >= 100 && rules.spoils_percent <= 200, "invalid Spoils rate");
     let _ = rules.stage_height * Into::<u8, u32>::into(STAGE_COUNT);
     let _ = rules.glory_per_tick * crate::rules::RESOURCE_PRECISION;
-
 }
 
 // Largest remainders allocate the indivisible units; home identity breaks an exact tie.

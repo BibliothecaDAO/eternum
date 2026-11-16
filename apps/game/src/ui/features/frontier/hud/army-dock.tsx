@@ -125,7 +125,6 @@ const DockToken = ({
       troops={army.troops}
       ethereal={army.ethereal}
       selected={selected}
-      flyTarget={attributeBadgeTarget(army.explorerId)}
       onPick={onPick}
     />
   );
@@ -151,7 +150,6 @@ const DockArmyRow = ({
       stamina={stamina}
       ethereal={army.ethereal}
       selected={selected}
-      flyTarget={attributeBadgeTarget(army.explorerId)}
       onPick={onPick}
     />
   );

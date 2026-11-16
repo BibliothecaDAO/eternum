@@ -3,7 +3,6 @@ use crate::progression::ArmyProgress;
 use crate::troops::ExplorerKey;
 
 
-
 #[inline(never)]
 pub fn read(key: ExplorerKey) -> Option<ArmyProgress> {
     crate::state::read().troops.progress.read((key.game_id, key.explorer_id))

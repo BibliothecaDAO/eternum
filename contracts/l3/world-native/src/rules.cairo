@@ -8,8 +8,6 @@ pub const SCOUT_EXPLORE_STAMINA: u8 = 10;
 pub const SCOUT_DAMAGE_PERCENT: u8 = 75;
 // Rank 0 is untrained; Common I through Legendary V retain the original ceilings.
 
-
-
 pub const LOGISTICS_COMMON_STAMINA: u32 = 20;
 pub const LOGISTICS_UNCOMMON_STAMINA: u32 = 45;
 pub const LOGISTICS_RARE_STAMINA: u32 = 75;
@@ -27,11 +25,6 @@ pub fn logistics_stamina(tier: u8) -> u32 {
         _ => panic!("invalid attribute tier"),
     }
 }
-
-
-
-
-
 
 
 pub const RESOURCE_PRECISION: u128 = 1000000000;

@@ -207,9 +207,6 @@ fn combat_at(d: Deployment, key: ExplorerKey) -> crate::combat::ArmyCombat {
 }
 
 
-
-
-
 #[test]
 fn successful_attacks_record_their_target_and_refusals_preserve_it() {
     let mut preset = super::deep_sites::preset();

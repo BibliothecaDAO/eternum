@@ -8,15 +8,15 @@ import { type LabFact, type LabScenario, wire } from "./lab-chain";
 import { besideOnOpenLand, spireScenario } from "./spire-scenario";
 
 const PRECISION = 1_000_000_000n;
-/** The native Charge V regression: one opening exchange followed by an ordinary exchange. */
+/** Two exact exchanges against the same target. */
 const EXCHANGES = [
-  { before: 1000n, attacker: 658n, defender: 563n },
-  { before: 658n, attacker: 386n, defender: 245n },
+  { before: 1000n, attacker: 563n, defender: 563n },
+  { before: 563n, attacker: 317n, defender: 317n },
 ];
 
-export function chargeScenario(): LabScenario {
+export function battleTargetScenario(): LabScenario {
   const game = spireScenario();
-  const troops = prepareChargeArmy(game);
+  const troops = prepareBattleArmy(game);
   const tile = besideOnOpenLand(game.store, game.store.entityOccupancy(1, SPIRE_ARMY)!);
   game.store.applyFacts(
     siteAt(game.store, tile, troops, StructureType.Camp).map((fact) => ({ ...fact, value: wire(fact.value) })),
@@ -31,9 +31,9 @@ export function chargeScenario(): LabScenario {
 }
 
 /** The same native exchanges against the first rival army holding the Quarry. */
-export function deepChargeScenario(): LabScenario {
+export function deepBattleTargetScenario(): LabScenario {
   const game = deepScenario();
-  const troops = prepareChargeArmy(game);
+  const troops = prepareBattleArmy(game);
   const { store } = game;
   const site = readDeepSites(store, game.startsAt, 1).find(({ name }) => name === "Quarry")!;
   const guard = site.guards[0]!.army;
@@ -66,12 +66,11 @@ export function deepChargeScenario(): LabScenario {
   };
 }
 
-function prepareChargeArmy(game: LabScenario) {
+function prepareBattleArmy(game: LabScenario) {
   const { store } = game;
   const key = { game_id: 1, explorer_id: BigInt(SPIRE_ARMY) };
   const army = store.require("ExplorerTroops", key);
   const rules = store.require("SliceRules", { game_id: 1 });
-  const progress = store.require("ArmyProgress", key);
   const troops = {
     ...army.troops,
     count: 1000n * PRECISION,
@@ -85,7 +84,6 @@ function prepareChargeArmy(game: LabScenario) {
       key: store.wireKeyOf("ArmyCombat", key) ?? "0xc801",
       value: wire({ ...key, last_target: 0 }),
     },
-    { model: "ArmyProgress", key: store.wireKeyOf("ArmyProgress", key)!, value: wire({ ...progress, battle: 0 }) },
     {
       model: "SliceRules",
       key: store.wireKeyOf("SliceRules", { game_id: 1 })!,
@@ -127,7 +125,7 @@ function exchange(
   const guardModel = guardId === undefined ? "Guard" : "ExplorerTroops";
   const target = guardId ?? siteId;
   const next = EXCHANGES.find(({ before }) => army.troops.count === before * PRECISION);
-  if (!next || !("Inline" in army.troops.stamina)) throw new Error("Charge proof has no matching exchange");
+  if (!next || !("Inline" in army.troops.stamina)) throw new Error("Battle proof has no matching exchange");
   return [
     {
       model: "ExplorerTroops",

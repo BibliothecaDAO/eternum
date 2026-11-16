@@ -1,3 +1,4 @@
+import { resolveExplorerCombatTroops } from "@bibliothecadao/eternum/troop-stamina";
 import { GUARD_MODELS } from "@bibliothecadao/eternum/game-client";
 
 import { useStoredBiome } from "@/hooks/helpers/use-tile-at";
@@ -11,7 +12,7 @@ import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { usePopoverStore } from "@/hooks/store/use-popover-store";
 import { usePlayerDisplayName } from "@/hooks/use-player-profile";
 import { surfaceAnchorFrom } from "@/ui/design-system/molecules/popover";
-import { configManager, getGuardsByStructure, getTroopResourceId } from "@bibliothecadao/eternum";
+import { configManager, StaminaManager, getGuardsByStructure, getTroopResourceId } from "@bibliothecadao/eternum";
 import { useGame } from "@/hooks/context/game-context";
 import { useNativeFacts } from "@/hooks/helpers/use-native-facts";
 
@@ -133,6 +134,42 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
 
   const attackerArmyData: { troops: Troops } | null = useMemo(() => {
     if (attackerType === AttackerType.Structure) return activeGuard ? { troops: activeGuard.troops } : null;
+    const army = facts.store.get("ExplorerTroops", {
+      game_id: configManager.getActiveGameId(),
+      explorer_id: attacker.id,
+    });
+    const troops = army ? resolveExplorerCombatTroops(facts.store, army, executionSecond) : undefined;
+    return troops ? { troops } : null;
+  }, [facts, attacker.id, attackerType, activeGuard, executionSecond]);
+  const attackerStamina = attackerArmyData
+    ? StaminaManager.getStamina(attackerArmyData.troops, executionSecond).amount
+    : undefined;
+  const requiredAttackStamina = Number(combatConfig.stamina_attack_req);
+  const readyAt = attackerArmyData
+    ? StaminaManager.getAffordableAt(attackerArmyData.troops, requiredAttackStamina, executionSecond)
+    : null;
+  const staminaWaitSeconds = readyAt === null ? null : Math.max(0, readyAt - executionSecond);
+
+  const targetTroopSnapshots = useMemo(() => targetData?.info ?? [], [targetData]);
+
+  const isStructureTarget = targetData?.targetType === TargetType.Structure;
+
+  const targetArmyData: { troops: Troops } | null = useMemo(() => {
+    if (!targetTroopSnapshots[0]) return null;
+    return { troops: targetTroopSnapshots[0] };
+  }, [targetTroopSnapshots]);
+
+  const queuedTargetGuards = useMemo(
+    () => (isStructureTarget ? targetTroopSnapshots.slice(1) : []),
+    [isStructureTarget, targetTroopSnapshots],
+  );
+
+  const totalGuardCount = isStructureTarget ? targetTroopSnapshots.length : 0;
+
+  // Every exchange is the contract's own arithmetic on both sides' troops, stamina and boosts at chain time: this
+  // attack and the whole fight as successive attacks now.
+  const fight = useMemo(() => {
+    if (!attackerArmyData || !targetArmyData || !targetData) return null;
     return forecastAttack(
       attackerArmyData.troops,
       targetArmyData.troops,
@@ -175,7 +212,7 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
   // The army falls at every roll: Attack steps back.
   const certainLoss = fight?.certainLoss ?? false;
 
-  // Capture and garrison are judged on the attacker's worst roll, so the atomic claim never counts on luck.
+  // Capture and garrison use the exact surviving troop counts.
   const attackerRemaining = attackerSide ? attackerSide.remaining : attackerTroopsTotal;
   const defenderRemaining = defenderSide ? defenderSide.remaining : defenderTroopsTotal;
 

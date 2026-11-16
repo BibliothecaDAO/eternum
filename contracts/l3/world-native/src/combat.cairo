@@ -369,8 +369,6 @@ pub impl TroopsImpl of TroopsTrait {
             * bravo.boosts.decr_damage_gotten_percent_num.into()
             / PercentageValueImpl::_100().into();
 
-
-
         if is_ranged_attack {
             let half_battle_timer_length: u32 = (cooldown_seconds / 2).try_into().unwrap();
             alpha.battle_cooldown_end += half_battle_timer_length;

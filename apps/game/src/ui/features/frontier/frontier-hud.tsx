@@ -498,7 +498,6 @@ const PendingOrder = ({
       laborFits={
         labor?.limit === undefined || labor.amount === undefined ? undefined : Math.max(0, labor.limit - labor.amount)
       }
-      xp={order.xp}
       onCancel={() => useUIStore.getState().updateEntityActionHoveredHex(null)}
       onGo={() => requestOrderAt(order.target)}
     />

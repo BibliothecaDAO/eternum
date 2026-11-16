@@ -21,8 +21,6 @@ pub const CHOICE_MAKE: u8 = 0;
 pub const CHOICE_STORE: u8 = 1;
 
 
-
-
 // Building categories used by construction and research.
 pub const HUT: u8 = 1;
 pub const WORKSHOP: u8 = 25;
@@ -55,23 +53,37 @@ pub struct Research {
 }
 
 pub fn row_category(row: u8) -> u8 {
-    if row == ROW_FARM { FARM }
-    else if row == ROW_WORKSHOP { WORKSHOP }
-    else if row == ROW_HUT { HUT }
-    else if row == ROW_SUPPLY_YARD { SUPPLY_YARD }
-    else if row == ROW_SHRINE || row == ROW_WELL || row == ROW_DEPTH { 0 }
-    else { panic!("invalid research row") }
+    if row == ROW_FARM {
+        FARM
+    } else if row == ROW_WORKSHOP {
+        WORKSHOP
+    } else if row == ROW_HUT {
+        HUT
+    } else if row == ROW_SUPPLY_YARD {
+        SUPPLY_YARD
+    } else if row == ROW_SHRINE || row == ROW_WELL || row == ROW_DEPTH {
+        0
+    } else {
+        panic!("invalid research row")
+    }
 }
 
-pub fn is_training(category: u8) -> bool { category == SUPPLY_YARD }
+pub fn is_training(category: u8) -> bool {
+    category == SUPPLY_YARD
+}
 
 pub const ROWS: [u8; 7] = [ROW_FARM, ROW_WORKSHOP, ROW_HUT, ROW_SUPPLY_YARD, ROW_SHRINE, ROW_WELL, ROW_DEPTH];
 
 pub fn max_tier(row: u8) -> u8 {
-    if row == ROW_FARM || row == ROW_WORKSHOP || row == ROW_HUT || row == ROW_SUPPLY_YARD { 5 }
-    else if row == ROW_SHRINE || row == ROW_WELL { 1 }
-    else if row == ROW_DEPTH { 3 }
-    else { panic!("invalid research row") }
+    if row == ROW_FARM || row == ROW_WORKSHOP || row == ROW_HUT || row == ROW_SUPPLY_YARD {
+        5
+    } else if row == ROW_SHRINE || row == ROW_WELL {
+        1
+    } else if row == ROW_DEPTH {
+        3
+    } else {
+        panic!("invalid research row")
+    }
 }
 
 // Farm and Workshop have two independent sides.
@@ -97,8 +109,6 @@ fn tier_slot(row: u8) -> (u64, u64) {
 }
 
 
-
-
 pub fn independent_sides(row: u8) -> bool {
     row <= ROW_WORKSHOP
 }
@@ -115,16 +125,20 @@ pub fn tier(learned: u64, row: u8) -> u8 {
 }
 
 
-
-
 // The upgrades bought on one side.
 pub fn picks(learned: u64, row: u8, side: u8) -> u8 {
     assert!(side < choice_count(row), "invalid research choice");
     if independent_sides(row) {
         let (scale, _) = tier_slot(row);
-        let scale = if side == 0 { scale } else { scale * 8 };
+        let scale = if side == 0 {
+            scale
+        } else {
+            scale * 8
+        };
         (learned / scale % 8).try_into().unwrap()
-    } else { tier(learned, row) }
+    } else {
+        tier(learned, row)
+    }
 }
 
 // The Fields or Tools picks of a building type; a type without a make-or-store row has none.

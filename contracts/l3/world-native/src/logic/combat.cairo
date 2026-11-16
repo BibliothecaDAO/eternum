@@ -55,7 +55,7 @@ pub fn battle_guard(game_id: u32, actor: ContractAddress, command: Battle, conte
     } else {
         attacker = combat_troops(game_id)
             .spend_claim(key, attacker, target.coord, crate::commands::action_context(context));
-    };
+    }
     complete_guard_capture(key, actor, attacker, target, defender, command.relic_slot, context);
     if fought {
         emit_guard_battle(key, actor, attacker, attacker_before, target, defender, defender_before, context);
@@ -126,9 +126,7 @@ fn beast_bps(target: GuardTarget, home: u64, timestamp: u64) -> u32 {
     )
 }
 
-fn fight_guard(
-    key: ExplorerKey, ref attacker: ExplorerTroops, ref defender: GuardDefender, context: ExecutionContext,
-) {
+fn fight_guard(key: ExplorerKey, ref attacker: ExplorerTroops, ref defender: GuardDefender, context: ExecutionContext) {
     let target = match defender.source {
         GuardSource::Army(key) => key.explorer_id,
         GuardSource::Guard((key, _)) => key.structure_id,
@@ -136,8 +134,7 @@ fn fight_guard(
     };
     record_target(key, target, context);
     let combat = CombatContext {
-        defender_is_structure_guard: true,
-        ..combat_context(key.game_id, attacker, defender.army, context),
+        defender_is_structure_guard: true, ..combat_context(key.game_id, attacker, defender.army, context),
     };
     let attacker_before = attacker.troops.count;
     let defender_before = defender.army.troops.count;

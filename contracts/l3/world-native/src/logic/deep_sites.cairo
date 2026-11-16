@@ -28,7 +28,6 @@ pub fn reward_beast_clear(key: ExplorerKey, home: u64, coord: crate::troops::Coo
     crate::logic::quest_progress::guarded_site_cleared(
         ResourceKey { game_id: key.game_id, entity_id: home }, count, timestamp,
     );
-
 }
 
 fn site_coord(rules: StoragePointer<DeepRules>, kind: u8, spacing: u32) -> crate::troops::Coord {

@@ -5,7 +5,6 @@ pub use crate::stamina::{StaminaSourceTrait, StaminaTrait};
 pub use crate::tests::state::{MapObservationTrait, ResourceObservationTrait, TroopObservationTrait};
 
 
-
 pub fn read_progress(d: super::Deployment, key: crate::troops::ExplorerKey) -> ArmyProgress {
     snforge_std::interact_with_state(d.games, || crate::logic::progression::require(key))
 }

@@ -12,7 +12,7 @@ const ARMY = BigInt(SPIRE_ARMY);
 /** What the army carries: three relics, so the ruin's relic asks which one it replaces. */
 const CARRIED: [ArmyRelic, ArmyRelic, ArmyRelic] = [
   { kind: "Blade", rank: 2 },
-  { kind: "Tome", rank: 1 },
+  { kind: "Ward", rank: 1 },
   { kind: "Plunder", rank: 3 },
 ];
 

@@ -66,9 +66,7 @@ pub fn validate_frontier(rules: crate::expeditions::FrontierDiscoveryRules, find
     let guarded: u32 = Into::<u16, u32>::into(rules.beasts_bps) + rules.camp_bps.into() + rules.rift_bps.into();
     assert!(guarded != 0 && rules.empty_reveal_limit != 0, "empty discovery floor");
     assert!(
-        Into::<
-            u32, u128,
-        >::into(guarded + rules.ruin_bps.into() + rules.shrine_bps.into() + rules.well_bps.into())
+        Into::<u32, u128>::into(guarded + rules.ruin_bps.into() + rules.shrine_bps.into() + rules.well_bps.into())
             * find_percent.into() <= 1000000,
         "discovery odds exceed 100 percent",
     );

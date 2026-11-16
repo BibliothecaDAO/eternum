@@ -1144,7 +1144,6 @@ fn expire_explorer(key: ExplorerKey, mut explorer: ExplorerTroops, context: crat
 }
 
 
-
 fn destroy_explorer(key: ExplorerKey, explorer: ExplorerTroops) {
     crate::logic::army_slots::release(key, explorer);
     let state = crate::state::read();

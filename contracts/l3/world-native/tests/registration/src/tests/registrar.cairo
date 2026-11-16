@@ -961,9 +961,7 @@ fn expedition_recruitment_uses_todays_home_and_preserves_progress_and_slot_stami
         }
         before.coord = crate::geometry::neighbor(center, direction);
         crate::tests::resource_commands::set_explorer_fixture(d.games, army, before);
-        let veteran = crate::progression::ArmyProgress {
-            logistics: 5,
-        };
+        let veteran = crate::progression::ArmyProgress { logistics: 5 };
         write_progress(d, army, veteran);
         let maximum = crate::progression::stamina_max(
             veteran, before.troops.category, preset.rules.troop_stamina_config,

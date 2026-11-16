@@ -63,7 +63,6 @@ pub mod ConstructionLogic {
         }
 
 
-
         fn expedition_discovery(
             self: @ContractState, key: crate::expeditions::ExpeditionDiscoveryKey,
         ) -> Option<crate::expeditions::ExpeditionDiscovery> {
@@ -445,7 +444,6 @@ pub mod ConstructionLogic {
                 return;
             }
             assert!(self.standing(key, category) == 0, "training building is unique");
-
         }
         // The buildings of a type standing on a realm board; the castle's own labor producer is not a workshop.
         fn standing(self: @ContractState, key: ResourceKey, category: u8) -> u8 {

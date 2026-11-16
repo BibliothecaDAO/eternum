@@ -24,7 +24,6 @@ fn frontier_draws_the_ruled_odds_over_100k_reveals() {
 }
 
 
-
 #[test]
 fn a_day_without_a_chest_never_draws_a_ruin_and_its_share_stays_empty() {
     let rules = rules();
@@ -105,7 +104,6 @@ fn shrine_and_well_appear_only_once_researched() {
         }
     }
 }
-
 
 
 #[test]

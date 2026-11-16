@@ -17,7 +17,7 @@ import { useUIStore } from "@/hooks/store/use-ui-store";
 import { setBlockTimestampSource } from "@bibliothecadao/eternum";
 import { getDirectionBetweenAdjacentHexes, getNeighborHexes, TileOccupier } from "@bibliothecadao/types";
 
-import { transferArmies, transferXpArmies } from "./transfer-fixture";
+import { transferArmies, transferTrainedArmies } from "./transfer-fixture";
 import { toast } from "@/ui/features/event-feed/notify";
 import { TransferTroopsSheet, useSelectedTransfer } from "./transfer-troops";
 
@@ -137,7 +137,7 @@ const sides = () =>
   ]);
 
 it("compares both total XP values in the reported 500 into 1,500 merge and confirms the exact loss", async () => {
-  const { swap, close } = render(transferXpArmies());
+  const { swap, close } = render(transferTrainedArmies());
   expect(sides()).toEqual([
     ["Army 1", "0"],
     ["Army 3", "2,000"],
@@ -163,7 +163,7 @@ it("compares both total XP values in the reported 500 into 1,500 merge and confi
 });
 
 it.each([0, 499])("keeps both total XP values when the reported transfer sends %s troops", (sent) => {
-  const { swap } = render(transferXpArmies());
+  const { swap } = render(transferTrainedArmies());
   slide(sent);
   expect(xpOn("Army 1")).toBe("Total XP222→222");
   expect(xpOn("Army 3")).toBe("Total XP120→120");
@@ -173,7 +173,7 @@ it.each([0, 499])("keeps both total XP values when the reported transfer sends %
 });
 
 it("shows the same totals when the map reverses the reported merge", async () => {
-  const { swap } = render(transferXpArmies(), { picked: 202 });
+  const { swap } = render(transferTrainedArmies(), { picked: 202 });
   expect(xpOn("Army 3")).toBe("Total XP120→0");
   expect(xpOn("Army 1")).toBe("Total XP222→222");
   expect(host.textContent).toContain("Army 3 loses its XP, points and upgrades.");
@@ -188,7 +188,7 @@ it("shows the same totals when the map reverses the reported merge", async () =>
 });
 
 it("keeps a receiving army's total XP unchanged when it spends a point on a rank", () => {
-  const store = transferXpArmies();
+  const store = transferTrainedArmies();
   const progress = store.require("ArmyProgress", { game_id: 1, explorer_id: 202 });
   store.applyFacts([
     { model: "ArmyProgress", key: "0xf2022", value: { ...progress, explorer_id: "202", xp: 120 } },
@@ -204,7 +204,7 @@ it("keeps a receiving army's total XP unchanged when it spends a point on a rank
 });
 
 it("waits for the XP price rules without substituting unspent XP or zero for either total", () => {
-  const store = transferXpArmies();
+  const store = transferTrainedArmies();
   store.applyFacts([{ model: "ArmyProgressionRules", key: "0xf1", value: null }]);
   const { swap } = render(store);
   expect(xpOn("Army 1")).toBeNull();

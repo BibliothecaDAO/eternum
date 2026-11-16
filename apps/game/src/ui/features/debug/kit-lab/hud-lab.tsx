@@ -13,7 +13,7 @@ import { homeIcon } from "@/ui/design-system/home-icons";
 import { REALM_SKINS } from "@/three/structures/realm-skins";
 import { GameProvider } from "@/hooks/context/game-context";
 import { useUIStore } from "@/hooks/store/use-ui-store";
-import { transferXpArmies, TRANSFER_TAPPED } from "@/ui/features/frontier/army/transfer-fixture";
+import { transferTrainedArmies, TRANSFER_TAPPED } from "@/ui/features/frontier/army/transfer-fixture";
 import { TransferTroopsSheet, useSelectedTransfer } from "@/ui/features/frontier/army/transfer-troops";
 import { useGame } from "@/hooks/context/game-context";
 import { realmMeaning } from "@/ui/design-system/domain-icon-meaning";
@@ -2049,7 +2049,7 @@ function LabDaySummary({ card }: { card: Parameters<typeof DayDoneCard>[0] }) {
  */
 const LabFeed = () => {
   useLabPlayer();
-  const [store] = useState(transferXpArmies);
+  const [store] = useState(transferTrainedArmies);
   const told = (id: string, storyType: string, storyPayload: Record<string, unknown>) =>
     ({
       id,
@@ -2096,7 +2096,7 @@ const LabFeed = () => {
 /** The same transfer selection as the map, on two adjacent armies; this lab never sends a transaction. */
 const LabMerge = () => {
   useLabPlayer();
-  const [store] = useState(transferXpArmies);
+  const [store] = useState(transferTrainedArmies);
   useEffect(() => {
     useUIStore.getState().selectOnMap({ kind: "army", entityId: 201, tile: TRANSFER_TAPPED });
     return () => useUIStore.getState().selectOnMap(null);

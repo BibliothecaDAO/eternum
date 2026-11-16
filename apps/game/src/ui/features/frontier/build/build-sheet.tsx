@@ -11,49 +11,20 @@ import { useUIStore } from "@/hooks/store/use-ui-store";
 
 import { PRICE_FACES, type PriceKind } from "@/ui/design-system/kit/price-faces";
 import type { Refusal } from "@/ui/design-system/kit/refusal";
-import {
-  BARRACKS,
-  BUILD,
-  makes,
-  needsResearchPurchases,
-  ONE_A_REALM,
-  POPULATION,
-  priceRaised,
-  RESEARCH,
-  ROOM_ASK,
-  startsNewArmies,
-  type RankedWords,
-  takesPopulation,
-} from "@/ui/design-system/kit/words";
+import { BARRACKS, BUILD, makes, needsResearchPurchases, ONE_A_REALM, POPULATION, priceRaised, RESEARCH, ROOM_ASK, startsNewArmies, type RankedWords, takesPopulation } from "@/ui/design-system/kit/words";
 import { toast } from "@/ui/features/event-feed/notify";
 import { knownAmount } from "@/ui/utils/utils";
 import { plotKey, sendBuilding, useStillShowing } from "@/ui/features/settlement/construction/send-building";
 import { canIssueOrders } from "@/utils/can-issue-orders";
-import {
-  buildableRadius,
-  configManager,
-  getBalance,
-  getBuildingQuantity,
-  getRealmInfo,
-  resolveUseSimpleCost,
-} from "@bibliothecadao/eternum";
+import { buildableRadius, configManager, getBalance, getBuildingQuantity, getRealmInfo, resolveUseSimpleCost } from "@bibliothecadao/eternum";
 import { resolveConstructionBuildability } from "@bibliothecadao/eternum/automation";
 import { safeInteger, type NativeRows } from "@bibliothecadao/eternum/game-client";
-import {
-  BUILDINGS_CENTER,
-  BuildingType,
-  formatAmount,
-  formatCharge,
-  formatGain,
-  formatRate,
-  getHexDistance,
-  type HexPosition,
-} from "@bibliothecadao/types";
+import { BUILDINGS_CENTER, BuildingType, formatAmount, formatCharge, formatGain, formatRate, getHexDistance, type HexPosition } from "@bibliothecadao/types";
 import { useEffect, useMemo, useState } from "react";
 
 import { readRealmPopulation } from "../realm/realm-population";
 import { realmPerHour, secondsUntilHeld } from "../hud/army-order";
-import { ATTRIBUTE_MARKS } from "../research/research-tree";
+
 import { FRONTIER_STORES, madeStore, STORE_KINDS } from "../stores";
 import { usePartShown } from "../opening/opening-context";
 import { type BuildOption, readBuildOptions } from "./build-options";
@@ -362,7 +333,7 @@ const givesOf = ({ effect }: BuildOption): BuildTile["gives"] =>
   effect.kind === "produces"
     ? { icon: FRONTIER_STORES[madeStore(effect.resource)].icon, value: formatRate(effect.output.total) }
     : effect.kind === "trains"
-      ? { icon: ATTRIBUTE_MARKS[effect.attribute] }
+      ? { icon: "stamina" }
       : { icon: "person", value: formatGain(effect.amount) };
 
 /** A realm's plot, as the actions in flight name it. */

@@ -1,6 +1,7 @@
+import { RESEARCH_ROWS } from "@bibliothecadao/eternum";
 
 import { readExpeditionRules, setBuildingCount } from "@bibliothecadao/eternum";
-import { nativeResearchConstants as research, type NativeFactStore } from "@bibliothecadao/eternum/game-client";
+import { type NativeFactStore } from "@bibliothecadao/eternum/game-client";
 import { BUILDINGS_CENTER, BuildingType, getNeighborHexes, RESOURCE_PRECISION, ResourcesIds } from "@bibliothecadao/types";
 
 import { dayClock } from "@/ui/features/frontier/hud/day-clock";
@@ -202,9 +203,9 @@ const armyProgressed = (store: NativeFactStore, startsAt: number): LabFact[] => 
   ];
 };
 
-/** The research page's rules: each row's tier priced (Essence 2,000 and labor 1,000 a tier), and XP's prices. */
+/** The research page's rules: each row's tier priced (Essence 2,000 and labor 1,000 a tier), on the surviving research rows. */
 export const researchPriced = (): LabFact[] => [
-  ...Array.from({ length: research.ROW_COUNT }, (_, row) =>
+  ...RESEARCH_ROWS.map((row) =>
     [1, 2, 3, 4].map((tier) => ({
       model: "ResearchPrice",
       key: `0x1ac3${row.toString(16)}${tier}`,

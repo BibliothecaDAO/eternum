@@ -810,9 +810,7 @@ fn expedition_deploy_chooses_a_free_slot_and_refuses_occupied_or_unallowed_slots
     assert_eq!(army.troops.stamina, crate::troops::StaminaSource::Slot(1));
     assert_eq!(
         fresh.stamina.amount,
-        crate::progression::stamina_max(
-            Default::default(), army.troops.category, preset.rules.troop_stamina_config,
-        ),
+        crate::progression::stamina_max(Default::default(), army.troops.category, preset.rules.troop_stamina_config),
     );
     assert!(read_slot(crate::troops::ArmySlotKey { slot: 0, ..key }).is_none());
     let home = ResourceKey { game_id, entity_id: 1 };
@@ -881,9 +879,7 @@ fn expedition_slot_reuse_preserves_its_bar_and_the_next_day_allocates_a_fresh_ba
     let fresh = troops.explorer(ExplorerKey { game_id, explorer_id: next.explorer_id }).unwrap().troops;
     assert_eq!(
         next.stamina.amount,
-        crate::progression::stamina_max(
-            Default::default(), fresh.category, preset.rules.troop_stamina_config,
-        ),
+        crate::progression::stamina_max(Default::default(), fresh.category, preset.rules.troop_stamina_config),
     );
     assert!(next.stamina.amount > preset.rules.troop_stamina_config.stamina_initial.into());
     assert_eq!(read_slot(slot_key).unwrap().stamina.amount, 7);
@@ -1093,7 +1089,6 @@ fn frontier_sites_persist_the_seeded_guard_and_initial_count() {
 }
 
 
-
 #[test]
 fn frontier_site_discovery_reads_home_knowledge_and_stores_the_shrine_reward() {
     let d = setup();
@@ -1173,7 +1168,9 @@ fn frontier_site_discovery_reads_home_knowledge_and_stores_the_shrine_reward() {
         assert_eq!(found, expected);
         stop_cheat_caller_address(d.games);
         assert!(snforge_std::interact_with_state(d.games, || crate::logic::map::occupancy(tile)).is_none());
-        snforge_std::interact_with_state(d.games, || crate::logic::research::write(home, crate::research::RealmKnowledge { learned: 0 }));
+        snforge_std::interact_with_state(
+            d.games, || crate::logic::research::write(home, crate::research::RealmKnowledge { learned: 0 }),
+        );
     }
 }
 

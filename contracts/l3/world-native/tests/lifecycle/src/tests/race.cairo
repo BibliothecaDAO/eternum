@@ -336,7 +336,6 @@ fn a_stage_on_the_last_tick_does_not_schedule_a_triumph_outside_the_season() {
 }
 
 
-
 #[test]
 #[feature("safe_dispatcher")]
 fn a_single_valid_payment_cannot_register_a_season_whose_total_would_overflow() {

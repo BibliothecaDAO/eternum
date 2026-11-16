@@ -132,9 +132,6 @@ pub mod RelicState {
         ) -> Option<crate::progression::ArmyProgress> {
             crate::logic::progression::read(key)
         }
-
-
-
     }
     #[embeddable_as(FrontierSitesImpl)]
     pub impl FrontierSites<
@@ -170,9 +167,7 @@ pub mod RelicState {
             use crate::logic::army_slot_storage;
             if let ArmySlotAction::Allocate(value) = action {
                 let home = crate::resources::ResourceKey { game_id: key.game_id, entity_id: value.home };
-                let progress = crate::logic::progression::create(
-                    key, crate::logic::research::learned(home),
-                );
+                let progress = crate::logic::progression::create(key, crate::logic::research::learned(home));
                 // A slot's first army of the day starts full at its own maximum, trained Logistics included.
                 let maximum = crate::progression::stamina_max(progress, value.category, value.stamina_config);
                 let initial = crate::troops::Stamina { amount: maximum, ..value.initial };
@@ -184,9 +179,7 @@ pub mod RelicState {
             }
             let mut explorer = crate::logic::troops::explorer(key).expect('missing slot explorer');
             let stamina = match action {
-                ArmySlotAction::Resolve(refill) => {
-                    army_slot_storage::resolve(key, explorer, refill).troops.stamina
-                },
+                ArmySlotAction::Resolve(refill) => { army_slot_storage::resolve(key, explorer, refill).troops.stamina },
                 ArmySlotAction::Persist(stamina) => {
                     let previous = explorer.into_record();
                     explorer.troops.stamina = stamina;

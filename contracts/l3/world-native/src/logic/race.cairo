@@ -70,7 +70,6 @@ fn validate_game(game_id: u32, rules: RaceRules) {
 }
 
 
-
 fn pay_tick(game_id: u32, kind: u8, aspect: u8, shares: Span<crate::deep::DeepShare>, timestamp: u64) {
     let rules = rules(game_id).expect('race is disabled');
     validate_tick(game_id, kind, aspect, shares, timestamp);

@@ -13,7 +13,6 @@ export function farEyeScenario(): LabScenario {
   const { store } = scenario;
   const army = store.require("ExplorerTroops", { game_id: 1, explorer_id: SPIRE_ARMY });
   const rules = store.require("SliceRules", { game_id: 1 });
-  const progression = store.require("ArmyProgressionRules", { game_id: 1 });
   store.applyFacts([
     {
       model: "SliceRules",
@@ -47,7 +46,6 @@ export function farEyeScenario(): LabScenario {
       if (tiles.length !== nativeRuleConstants.RELIC_TILES_PER_RANK)
         throw new Error("Far-Eye fixture needs six unknown tiles");
       const portal = tiles[0]!;
-      const progress = chain.require("ArmyProgress", { game_id: 1, explorer_id: SPIRE_ARMY });
       const balance = chain.requireOrAbsent("ResourceBalance", {
         game_id: 1,
         entity_id: army.owner,
@@ -67,11 +65,6 @@ export function farEyeScenario(): LabScenario {
       return [
         ...facts,
         { model: "ArmyRelics", key: chain.wireKeyOf("ArmyRelics", held)!, value: wire({ ...held, first: null }) },
-        {
-          model: "ArmyProgress",
-          key: chain.wireKeyOf("ArmyProgress", progress)!,
-          value: wire({ ...progress, xp: progress.xp + tiles.length }),
-        },
         {
           model: "ResourceBalance",
           key: chain.wireKeyOf("ResourceBalance", balance) ?? "0xfae5",

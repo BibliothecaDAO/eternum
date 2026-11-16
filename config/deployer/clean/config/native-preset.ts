@@ -1,5 +1,6 @@
-import { nativeResearchConstants, nativeRaceConstants, nativeQuestConstants as quest, nativeRuleConstants as presetRule } from "../../../../contracts/l3/world-native/schema/client.gen";
+import { nativeRaceConstants, nativeQuestConstants as quest, nativeRuleConstants as presetRule } from "../../../../contracts/l3/world-native/schema/client.gen";
 import { DAYS_PER_BAG } from "@bibliothecadao/eternum/expeditions";
+import { buildingIds } from "../../../source/frontier/native";
 import { nativePresetForId } from "../../../source/native";
 import { clockScaled, seasonDayUnitSeconds } from "../../../source/common/season-clock";
 import { RESOURCE_PRECISION, ResourcesIds, type Config } from "@bibliothecadao/types";
@@ -156,9 +157,6 @@ function buildMines(config: Config) {
   };
 }
 
-// The Hearth is the last building category: the four training buildings follow the forty older ones.
-const buildingCategoryCount = nativeResearchConstants.HEARTH;
-
 function buildStructures(config: Config, preset: ReturnType<typeof nativePresetForId>) {
   const precision = config.resources.resourcePrecision;
   const board = preset.board;
@@ -184,8 +182,7 @@ function buildStructures(config: Config, preset: ReturnType<typeof nativePresetF
       tier,
       price: { essence: scaled(essenceCost, precision), labor: scaled(laborCost, precision) },
     })),
-    buildings: Array.from({ length: buildingCategoryCount }, (_, index) => {
-      const category = index + 1;
+    buildings: buildingIds.map((category) => {
       // Essence is mine-only, and only a realm board has training buildings; legacy presets have no storehouse recipe.
       const isNotBuilt = category === 39 || (category > 40 && board === null);
       const hasNoRecipe = isNotBuilt || (category === 2 && board === null);

@@ -2,7 +2,7 @@
 import { BiomeType, StructureType, TileOccupier } from "@bibliothecadao/types";
 import type { SiteKind } from "@bibliothecadao/eternum";
 import { NativeFactStore } from "@bibliothecadao/eternum/game-client";
-import { nativeFactModels, nativeRuleConstants, type NativeModelName, type NativeRows } from "../../../../../../../contracts/l3/world-native/schema/client.gen";
+import { nativeFactModels, type NativeModelName, type NativeRows } from "../../../../../../../contracts/l3/world-native/schema/client.gen";
 import rowFixture from "../../../../../../../contracts/l3/world-native/schema/fixtures/row-set.json";
 
 import preset from "../../../../../../../contracts/l3/world-native/tests/fixtures/current-presets/conformance.json";
@@ -34,7 +34,7 @@ export const reloadSiteFacts = (store: NativeFactStore): NativeFactStore => {
 
 /**
  * The deploy fixture's Frontier day with a camp guarded by 1,100 T1 knights on row 12 and the realm's 1,498-knight army beside
- * it, in a game without combat dice as Frontier plays.
+ * it.
  */
 const SITE_CATEGORY: Record<SiteKind, StructureType> = {
   Camp: StructureType.Camp,
@@ -51,8 +51,6 @@ export const campBeside = (
 ) => {
   const { store } = frontierDay();
   const guardCount = kind === "Beasts" ? 1000n : 1100n;
-  const noDice =
-    preset.rules.mode_rules & ~(nativeRuleConstants.COMBAT_DICE | nativeRuleConstants.COMBAT_DICE_ETHEREAL);
   store.applyFacts([
     set("0x901", "DepthRules", {
       game_id: 1,
@@ -83,7 +81,7 @@ export const campBeside = (
       ...preset.rules,
       game_id: 1,
       day_unit_seconds: 100,
-      mode_rules: noDice,
+      mode_rules: preset.rules.mode_rules,
       battle_config: { ...preset.rules.battle_config, cooldown_seconds: 0 },
     }),
     set("0x71", "Structure", {

@@ -11,51 +11,7 @@ import { Sheet as KitSheet } from "@/ui/design-system/kit/sheet";
 import { costLine } from "@/ui/design-system/kit/price-faces";
 import { SurfaceFrame } from "@/ui/design-system/molecules/popover";
 import { Tooltip } from "@/ui/design-system/molecules/tooltip";
-import {
-  HudActions,
-  HudBubble,
-  HudBanner,
-  HudButton,
-  HudCheck,
-  HudCard,
-  HudDial,
-  HudChip,
-  HudConfirm,
-  HudCost,
-  HudEmpty,
-  HudEventRow,
-  HudField,
-  HudIconButton,
-  HudLoading,
-  HudMenu,
-  HudMeter,
-  HudStamina,
-  HudNumberField,
-  HudMinimapFrame,
-  HudNotice,
-  HudPanel,
-  HudRarity,
-  HudTier,
-  HudPill,
-  HudPortrait,
-  HudRelic,
-  HudRing,
-  HudRow,
-  HudSelect,
-  HudSlider,
-  HudSetting,
-  HudSkeleton,
-  HudSwitch,
-  HudTableHead,
-  HudTableRow,
-  HudTabs,
-  HudTierChip,
-  HudTroopAmount,
-  HudTransfer,
-  HudSheet,
-  HudWindow,
-  HudWindowFoot,
-} from "@/ui/design-system/kit/hud-elements";
+import { HudActions, HudBubble, HudBanner, HudButton, HudCheck, HudCard, HudDial, HudChip, HudConfirm, HudCost, HudEmpty, HudEventRow, HudField, HudIconButton, HudLoading, HudMenu, HudMeter, HudStamina, HudNumberField, HudMinimapFrame, HudNotice, HudPanel, HudRarity, HudTier, HudPill, HudPortrait, HudRelic, HudRing, HudRow, HudSelect, HudSlider, HudSetting, HudSkeleton, HudSwitch, HudTableHead, HudTableRow, HudTabs, HudTierChip, HudTroopAmount, HudTransfer, HudSheet, HudWindow, HudWindowFoot } from "@/ui/design-system/kit/hud-elements";
 import { LoadingAnimation } from "@/ui/design-system/molecules/loading-animation";
 import { playerReadings } from "@/ui/features/world/containers/top-header/identity-chip";
 import { HUD_DERIVED, HUD_MODES, HUD_SHEET, HUD_TYPE, type HudMode } from "@/tokens";
@@ -821,14 +777,6 @@ const ORDER_LINES = [
   { path: [orderStep(ActionType.Move), orderStep(ActionType.Explore)], food: { wheat: 100, fish: 0 } },
   { path: [orderStep(ActionType.Move), orderStep(ActionType.Move, 10), orderStep(ActionType.Move, 10)] },
   { path: [orderStep(ActionType.Move), orderStep(ActionType.Chest)] },
-  {
-    path: [orderStep(ActionType.Move), orderStep(ActionType.UseSite)],
-    site: { kind: "Shrine", gain: 3, stamina: undefined } as const,
-  },
-  {
-    path: [orderStep(ActionType.Move), orderStep(ActionType.UseSite)],
-    site: { kind: "Well", gain: 60, stamina: { current: 120, max: 120, perExplore: 20 } } as const,
-  },
   { path: undefined, refusal: { reason: "stamina", need: 30 } as const, staminaWait: 24, staminaHeld: 12 },
 ].flatMap((order) => {
   const tip = orderTip({

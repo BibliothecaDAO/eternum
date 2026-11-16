@@ -3,13 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { StructureType, frontierSiteName } from "@bibliothecadao/types";
 import { mountStaticLineup, type LineupAsset, type LineupSettings } from "@/three/debug/model-lab/static-model-lineup";
-import {
-  FRONTIER_BEASTS,
-  frontierBeast,
-  frontierSiteComposition,
-  FALLEN_REALM_RUIN_PATH,
-  FALLEN_REALM_DEPTHS,
-} from "@/three/structures/frontier-beast";
+import { FRONTIER_BEASTS, frontierBeast, frontierSiteComposition, FALLEN_REALM_RUIN_PATH, FALLEN_REALM_DEPTHS } from "@/three/structures/frontier-beast";
 import { CAMP_MODEL_PATH } from "@/three/constants/scene-constants";
 import { Token } from "@/three/map-plates/map-plate-token";
 import { Plate } from "@/three/map-plates/map-plates";
@@ -234,7 +228,6 @@ export function FrontierBeastLab() {
               guardLeft: Math.floor(strength / 3),
             }}
             pay={site === 0 ? { icon: "labor", amount: 1400 } : site === 1 ? { icon: "essence", amount: 8400 } : null}
-            xp={132}
             verb={null}
             onClose={() => setPanel(false)}
           />

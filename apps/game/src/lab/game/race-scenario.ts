@@ -1,6 +1,6 @@
 import { DAYS_PER_BAG, seasonSeconds } from "@bibliothecadao/eternum";
 import { deepCenter, nativeRuleConstants, type NativeRows } from "@bibliothecadao/eternum/game-client";
-import { aspects, RESOURCE_PRECISION, StructureType, TileOccupier } from "@bibliothecadao/types";
+import { aspects, RESOURCE_PRECISION } from "@bibliothecadao/types";
 import { deepScenario } from "./deep-scenario";
 import { wire, type LabScenario } from "./lab-chain";
 import type { GameSyncFact } from "@bibliothecadao/eternum/game-sync";
@@ -11,11 +11,9 @@ export function raceScenario(finished = false): LabScenario {
   const { store, startsAt } = scenario;
   const game = store.require("GameRegistry", { game_id: 1 });
   const homes = [...store.inGame("HomeAspect", 1)].filter((row) => row.aspect === 1);
-  const firstHome = store.require("Structure", { game_id: 1, entity_id: homes[0]!.home });
   const center = deepCenter(store.require("SettlementRules", { game_id: 1 }).spacing);
   const half = nativeRuleConstants.DEEP_MAP_SIZE / 2;
   const rules = raceRules();
-  const points = [rules.first, rules.second, rules.third, rules.fourth];
   const heights = [5200, finished ? 10_000 : 6400, 2800, 900];
   const facts: GameSyncFact[] = [
     { model: "RaceRules", key: "0xa500", value: wire(rules) },
@@ -35,40 +33,11 @@ export function raceScenario(finished = false): LabScenario {
     { model: "TriumphDay", key: "0xa504", value: { game_id: 1, aspect: 1, stage: 2, day: 1 } },
   ];
   aspects.forEach((aspect, index) => {
-    const entity_id = BigInt(900 + aspect.id);
-    const position = points[index]!;
-    facts.push(
-      {
-        model: "AspectHyperstructure",
-        key: `0xa51${aspect.id}`,
-        value: wire({ game_id: 1, aspect: aspect.id, entity_id, height: heights[index]! }),
-      },
-      {
-        model: "Structure",
-        key: `0xa52${aspect.id}`,
-        value: wire({
-          ...firstHome,
-          entity_id,
-          owner: 0n,
-          resources_packed: 0n,
-          base: { ...firstHome.base, category: StructureType.Hyperstructure, level: 0, troop_max_guard_count: 0 },
-          metadata: { ...firstHome.metadata, realm_id: 0, order: 0, has_wonder: false },
-        }),
-      },
-      {
-        model: "TileOccupancy",
-        key: `0xa53${aspect.id}`,
-        value: wire({
-          game_id: 1,
-          entity_id,
-          alt: false,
-          col: center.col + position.x - half,
-          row: center.row + position.y - half,
-          category: TileOccupier.Hyperstructure,
-          is_structure: true,
-        }),
-      },
-    );
+    facts.push({
+      model: "AspectHyperstructure",
+      key: `0xa51${aspect.id}`,
+      value: wire({ game_id: 1, aspect: aspect.id, height: heights[index]! }),
+    });
   });
   homes.forEach((home, index) =>
     facts.push({
@@ -123,11 +92,6 @@ export function raceRules(): NativeRows["RaceRules"] {
     second_wind_percent: 200,
     pale_moon_percent: 50,
     spoils_percent: 200,
-    // The four monuments as the lab draws them: around the Deep's middle, so one zoomed-out camera frames all four.
-    first: { alt: false, x: 21, y: 19 },
-    second: { alt: false, x: 29, y: 19 },
-    third: { alt: false, x: 21, y: 31 },
-    fourth: { alt: false, x: 29, y: 31 },
   };
 }
 
@@ -174,7 +138,7 @@ function battleHistory(now: number, center: { col: number; row: number }, half: 
     tier: "T1",
     before: `0x${(BigInt(before) * BigInt(RESOURCE_PRECISION)).toString(16)}`,
     after: `0x${(BigInt(after) * BigInt(RESOURCE_PRECISION)).toString(16)}`,
-    roll: 3,
+    roll: 0,
   });
   let at = now;
   const fight = (

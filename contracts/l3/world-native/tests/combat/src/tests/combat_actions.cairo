@@ -143,7 +143,6 @@ fn blitz_ethereal_battle_records_exact_damage_and_zero_rolls() {
         .attack_with_context(
             ref expected_defender,
             crate::combat::CombatContext {
-
                 day_unit_seconds: 0,
                 timestamp: 80,
                 attacker_biome: crate::biome::Biome::Underground,
@@ -220,11 +219,23 @@ fn combat_outcomes_ignore_random_roots_on_surface_and_ethereal() {
             );
             let mut alpha = attacker.troops;
             let mut bravo = defender.troops;
-            let rules = crate::game::IGameDispatcherTrait::rules(crate::game::IGameDispatcher { contract_address: d.games }, 3);
-            alpha.attack_with_context(ref bravo, context, rules.troop_stamina_config, rules.troop_damage_config, rules.tick_config.armies_tick_in_seconds, 0);
+            let rules = crate::game::IGameDispatcherTrait::rules(
+                crate::game::IGameDispatcher { contract_address: d.games }, 3,
+            );
+            alpha
+                .attack_with_context(
+                    ref bravo,
+                    context,
+                    rules.troop_stamina_config,
+                    rules.troop_damage_config,
+                    rules.tick_config.armies_tick_in_seconds,
+                    0,
+                );
             let outcome = (alpha.count, bravo.count);
             assert!(outcome != (attacker.troops.count, defender.troops.count));
-            if let Some(expected) = previous { assert_eq!(outcome, expected); }
+            if let Some(expected) = previous {
+                assert_eq!(outcome, expected);
+            }
             previous = Some(outcome);
         }
     }
@@ -262,7 +273,6 @@ fn surface_battle_records_exact_damage_and_zero_rolls() {
         .attack_with_context(
             ref expected_defender,
             crate::combat::CombatContext {
-
                 day_unit_seconds: 0,
                 timestamp: 80,
                 attacker_biome: surface,

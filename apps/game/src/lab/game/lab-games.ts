@@ -1,4 +1,4 @@
-import { chargeScenario, deepChargeScenario } from "./charge-scenario";
+import { battleTargetScenario, deepBattleTargetScenario } from "./battle-target-scenario";
 import { scoutsScenario } from "./scouts-scenario";
 import { siteEffectsScenario } from "./site-effects-scenario";
 import { farEyeScenario } from "./far-eye-scenario";
@@ -47,7 +47,7 @@ export const LAB_SCENARIOS: Partial<Record<string, () => LabScenario>> = {
   "far-eye": farEyeScenario,
   "site-effects": siteEffectsScenario,
   deep: deepScenario,
-  "deep-charge": deepChargeScenario,
+  "deep-battle-target": deepBattleTargetScenario,
   race: raceScenario,
   "race-finished": () => raceScenario(true),
   "race-expired": expiredRaceScenario,
@@ -58,7 +58,7 @@ export const LAB_SCENARIOS: Partial<Record<string, () => LabScenario>> = {
   "from-home": () => ({ ...spireScenario(), entersFromHome: true }),
   actions: actionsScenario,
   scouts: scoutsScenario,
-  charge: chargeScenario,
+  "battle-target": battleTargetScenario,
   "high-ground": highGroundScenario,
   "day-end": dayEndScenario,
   realm: realmScenario,

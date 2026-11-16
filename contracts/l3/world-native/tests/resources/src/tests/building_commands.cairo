@@ -505,9 +505,6 @@ fn each_hut_tier_adds_a_fifth_of_every_huts_population() {
 }
 
 
-
-
-
 #[test]
 fn a_tier_the_realm_cannot_pay_in_labor_is_refused_and_changes_nothing() {
     let (d, home, preset) = research_world();
@@ -741,7 +738,6 @@ fn construction_grants_common_once_and_the_next_purchase_costs_uncommon(category
     assert!(execute(d, Command::CreateBuilding(command), 40));
     assert_eq!(learned(d, home), knowledge);
 }
-
 
 
 #[test]

@@ -22,7 +22,8 @@ pub fn reveal(
     );
     let result = roll(key, explorer_id, seed, context);
     let guarded = match result {
-        crate::discovery::Discovery::Camp | crate::discovery::Discovery::Rift | crate::discovery::Discovery::Ruin(_) | crate::discovery::Discovery::Beasts => true,
+        crate::discovery::Discovery::Camp | crate::discovery::Discovery::Rift | crate::discovery::Discovery::Ruin(_) |
+        crate::discovery::Discovery::Beasts => true,
         _ => false,
     };
     if guarded {

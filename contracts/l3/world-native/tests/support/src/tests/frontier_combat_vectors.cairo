@@ -96,11 +96,8 @@ pub fn resolve_exchange(
         .attack_with_context(
             ref defender,
             CombatContext {
-
                 day_unit_seconds: 0,
                 timestamp: exchange.timestamp,
-
-
                 attacker_biome: exchange.biome.into(),
                 defender_biome: exchange.biome.into(),
                 attack_distance: exchange.attack_distance.into(),

@@ -70,7 +70,6 @@ pub fn is_band(site: ExpeditionSite, rules: DepthRules) -> bool {
 }
 
 
-
 pub fn is_supply_post(site: ExpeditionSite, home: u64, today: u64, spacing: u32) -> bool {
     !site.alt
         && site.category == crate::taxonomy::CAMP_CATEGORY

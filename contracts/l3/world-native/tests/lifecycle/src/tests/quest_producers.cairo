@@ -172,7 +172,6 @@ fn finds_counts_a_discovery_before_its_clear_and_never_counts_the_clear_twice() 
 }
 
 
-
 fn far_eye() -> crate::army_relics::ArmyRelic {
     crate::army_relics::ArmyRelic { kind: crate::army_relics::RelicKind::FarEye, rank: 1 }
 }
@@ -330,7 +329,7 @@ fn far_eye_totals(d: Deployment, home: ResourceKey) -> u128 {
     interact_with_state(
         d.games,
         || crate::logic::resources::balance(home, crate::resources::LABOR)
-                + crate::logic::resources::balance(home, crate::resources::ESSENCE),
+            + crate::logic::resources::balance(home, crate::resources::ESSENCE),
     )
 }
 
@@ -343,15 +342,10 @@ fn far_eye_root(game_id: u32, rules: crate::expeditions::FrontierDiscoveryRules,
             if crate::random::range(seed, 0x5350495245, 10000) < 1000 {
                 return raw;
             }
-        } else if crate::discovery::frontier(
-            rules, 100, 0, Some(far_eye()), seed,
-        ) == Discovery::Ruin(far_eye()) {
+        } else if crate::discovery::frontier(rules, 100, 0, Some(far_eye()), seed) == Discovery::Ruin(far_eye()) {
             return raw;
         }
     }
     panic!("missing Far Eye discovery root")
 }
-
-
-
 

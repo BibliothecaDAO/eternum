@@ -64,7 +64,6 @@ const line = (order: Partial<Parameters<typeof orderTip>[0]>) => {
     refusal: undefined,
     staminaWait: undefined,
     staminaHeld: undefined,
-    site: undefined,
     byRealm: false,
     ...order,
   });

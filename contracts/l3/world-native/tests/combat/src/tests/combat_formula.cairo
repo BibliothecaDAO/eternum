@@ -384,13 +384,6 @@ fn scouts_deal_three_quarters_damage_on_either_side_only_in_frontier() {
     }
 }
 
-
-}
-
-
-
-
-
 #[test]
 fn wipeout_and_zero_damage_have_defined_refunds_and_cooldowns() {
     let damage = TroopDamageConfig {

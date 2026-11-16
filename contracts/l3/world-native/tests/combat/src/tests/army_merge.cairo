@@ -42,7 +42,6 @@ fn full_merges_keep_the_chosen_target_even_with_less_progression() {
 }
 
 
-
 #[test]
 fn partial_transfers_keep_both_progress_bundles_and_slots() {
     let d = setup();
