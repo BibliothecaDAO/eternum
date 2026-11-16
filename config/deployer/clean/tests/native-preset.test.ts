@@ -971,7 +971,7 @@ describe("the Frontier playground preset", () => {
       (sum, { price }) => sum + whole(price.essence),
       0,
     );
-    expect(essenceForEveryTier).toBe(3_510_250);
+    expect(essenceForEveryTier).toBe(1_598_250);
     expect(start.get(ResourcesIds.Essence)).toBeGreaterThan(essenceForEveryTier);
     // A castle stores two full deploys of its level; a Settlement's stores hold what the realm starts with, no more.
     const config = load(FRONTIER_PLAYGROUND_PRESET_ID);
@@ -1172,7 +1172,7 @@ test("the bane codec preserves whole quest units and refuses invalid effects", (
   }
 });
 
-const raceFixture = () => ({
+const raceFixture = (): NonNullable<(typeof nativePresets)[number]["race"]> => ({
   seasonDays: 50,
   gloryPerTick: 5,
   heightPerTick: 5,
@@ -1181,15 +1181,10 @@ const raceFixture = () => ({
   secondWindPercent: 200,
   paleMoonPercent: 50,
   spoilsPercent: 200,
-  positions: [
-    [5, 5],
-    [45, 5],
-    [5, 45],
-    [45, 45],
-  ] as const,
+
 });
 
-test("the race codec preserves whole Glory payments and four exact positions", () => {
+test("the race codec preserves whole Glory payments and height rules", () => {
   const source = nativePresets[FRONTIER_FIXTURE_PRESET_ID]!;
   const previous = { race: source.race, deep: source.deep };
   try {
@@ -1205,10 +1200,6 @@ test("the race codec preserves whole Glory payments and four exact positions", (
       second_wind_percent: 200,
       pale_moon_percent: 50,
       spoils_percent: 200,
-      first: { alt: false, x: 5, y: 5 },
-      second: { alt: false, x: 45, y: 5 },
-      third: { alt: false, x: 5, y: 45 },
-      fourth: { alt: false, x: 45, y: 45 },
     });
     codec.compile("register_preset", { preset_id: source.id, definition: built });
   } finally {
@@ -1216,7 +1207,7 @@ test("the race codec preserves whole Glory payments and four exact positions", (
   }
 });
 
-test("the race codec refuses missing Deep rules, malformed amounts, effects and positions", () => {
+test("the race codec refuses missing Deep rules, malformed amounts and effects", () => {
   const source = nativePresets[FRONTIER_FIXTURE_PRESET_ID]!;
   const previous = { race: source.race, deep: source.deep };
   const malformed = [
@@ -1230,43 +1221,7 @@ test("the race codec refuses missing Deep rules, malformed amounts, effects and 
     { ...raceFixture(), secondWindPercent: 201 },
     { ...raceFixture(), paleMoonPercent: 0 },
     { ...raceFixture(), spoilsPercent: 99 },
-    {
-      ...raceFixture(),
-      positions: [
-        [50, 5],
-        [45, 5],
-        [5, 45],
-        [45, 45],
-      ] as const,
-    },
-    {
-      ...raceFixture(),
-      positions: [
-        [5, 5],
-        [45, 5],
-        [5, 45],
-        [5, 5],
-      ] as const,
-    },
-    {
-      ...raceFixture(),
-      positions: [
-        [25, 35],
-        [45, 5],
-        [5, 45],
-        [45, 45],
-      ] as const,
-    },
-    {
-      ...raceFixture(),
-      positions: [
-        [nativeRuleConstants.DEEP_MAP_SIZE / 2, nativeRuleConstants.DEEP_ARRIVAL_Y],
-        [45, 5],
-        [5, 45],
-        [45, 45],
-      ] as const,
-    },
-  ];
+  ] satisfies NonNullable<(typeof nativePresets)[number]["race"]>[];
   try {
     source.race = raceFixture();
     source.deep = null;
@@ -1283,7 +1238,7 @@ test("the race codec refuses missing Deep rules, malformed amounts, effects and 
   }
 });
 
-test("Clear Mist and maximum Scouting must fit one categorical discovery draw", () => {
+test("Clear Mist must fit one categorical discovery draw", () => {
   const source = nativePresets[FRONTIER_FIXTURE_PRESET_ID]!;
   const previous = { race: source.race, deep: source.deep, discovery: source.discovery };
   try {
@@ -1307,7 +1262,7 @@ test("race registration excludes generated and reserved hyperstructures", () => 
     for (const flag of [nativeRuleConstants.DISCOVER_HYPERSTRUCTURES, nativeRuleConstants.RESERVED_HYPERSTRUCTURES]) {
       source.modeRules = previous.modeRules | flag;
       expect(() => buildNativePreset(loadNativePresetConfiguration("madara.frontier", source.id), source.id)).toThrow(
-        "Race has only fixed monuments",
+        "Race has no map hyperstructures",
       );
     }
   } finally {

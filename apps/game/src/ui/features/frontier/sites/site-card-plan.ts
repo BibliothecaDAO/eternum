@@ -116,7 +116,7 @@ export const readSiteCard = (
     payout: reward && fittingPayout(store, site.game_id, reward, attack),
     attackStamina: configManager.getCombatRules().stamina.stamina_attack_req,
     inReach: attack !== null && reachOf(store, attack, siteTile) !== undefined,
-    fight: guard && attack ? attackNow(store, guard.troops, siteTile, attack, true, structure.entity_id) : undefined,
+    fight: guard && attack ? attackNow(store, guard.troops, siteTile, attack, true) : undefined,
   };
 };
 
@@ -141,7 +141,7 @@ export const readArmyCard = (
     inReach: attack !== null && reachOf(store, attack, armyTile) !== undefined,
     fight:
       troops && troops.count > 0n && attack
-        ? attackNow(store, troops, armyTile, attack, false, army.explorer_id)
+        ? attackNow(store, troops, armyTile, attack, false)
         : undefined,
   };
 };
@@ -169,7 +169,7 @@ export function readDeepSiteFight(
   return {
     army: Number(attack.army.troops.count / PRECISION),
     defender: Number(troops.count / PRECISION),
-    result: attackNow(store, troops, tile, attack, true, first?.army.explorer_id ?? site.id),
+    result: attackNow(store, troops, tile, attack, true),
   };
 }
 
@@ -230,7 +230,6 @@ const attackNow = (
   siteTile: { col: number; row: number; alt: boolean },
   attack: SiteAttack,
   defenderIsStructureGuard: boolean,
-  targetId: bigint,
 ): SiteFight | undefined => {
   const troops = resolveExplorerCombatTroops(store, attack.army, attack.timestamp);
   if (!troops) return undefined;

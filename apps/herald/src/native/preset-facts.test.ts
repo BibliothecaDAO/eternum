@@ -2,6 +2,7 @@ import {
   FRONTIER_FIXTURE_PRESET_ID,
   FRONTIER_S1_PRESET_ID,
 } from "../../../../config/source/common/native-preset-modes";
+import type { NativeRows } from "../../../../contracts/l3/world-native/schema/client.gen";
 import { NativeFactStore } from "../../../../packages/core/src/client/native-fact-store";
 import { TroopTier, TroopType, type Troops } from "@bibliothecadao/types";
 import { ClientConfigManager } from "../../../../packages/core/src/managers/config-manager";
@@ -496,11 +497,7 @@ it("projects optional race rules from verified registration into the native fact
     second_wind_percent: 200,
     pale_moon_percent: 50,
     spoils_percent: 200,
-    first: { alt: false, x: 5, y: 5 },
-    second: { alt: false, x: 45, y: 5 },
-    third: { alt: false, x: 5, y: 45 },
-    fourth: { alt: false, x: 45, y: 45 },
-  };
+  } satisfies Omit<NativeRows["RaceRules"], "game_id">;
   for (const enabled of [false, true]) {
     const world = setup();
     const preset = registration(FRONTIER_FIXTURE_PRESET_ID, (definition) => {
