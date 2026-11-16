@@ -106,9 +106,6 @@ const pickInDock = () =>
 
 /** A phone's picked army in the action row: its token, which opens its card. */
 const details = () => host.querySelector<HTMLButtonElement>('button[aria-label="Army 1: details"]');
-/** Beside the picked army's token: its four sides, its stamina and Level up. */
-const sides = () =>
-  [...host.querySelectorAll("[data-picked-army] > * > [role='img']")].map((side) => side.getAttribute("aria-label"));
 const rowButton = (name: RegExp) =>
   [...details()!.parentElement!.querySelectorAll<HTMLButtonElement>("button")].find((button) =>
     name.test(button.getAttribute("aria-label") ?? button.textContent ?? ""),

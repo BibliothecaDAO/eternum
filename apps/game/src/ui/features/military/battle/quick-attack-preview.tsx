@@ -198,8 +198,6 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
     attackerArmyData,
     targetArmyData,
     targetData,
-    facts,
-    attacker.id,
     executionSecond,
     targetDistance,
     biome,

@@ -4,7 +4,6 @@ import { expect, it } from "vitest";
 import { getGameModeConfig } from "@/config/game-modes";
 import { Plate } from "@/three/map-plates/map-plates";
 import { buildStructurePlate } from "@/three/map-plates/map-plate-model";
-import { RESEARCH_TREE } from "@/ui/design-system/kit/words";
 import { kindsHeld } from "@/ui/features/world/hud/holdings-model";
 import { buildStoryEventPresentation, frontierBeast, siteDisplayName } from "@bibliothecadao/eternum";
 import { StructureType } from "@bibliothecadao/types";

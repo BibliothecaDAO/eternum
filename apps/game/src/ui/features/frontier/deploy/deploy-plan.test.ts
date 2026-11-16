@@ -2,7 +2,6 @@ import { seedScouts } from "@/lab/game/scouts-scenario";
 import { setBlockTimestampSource, spawnRing } from "@bibliothecadao/eternum";
 import { TroopTier, TroopType } from "@bibliothecadao/types";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import rowFixture from "../../../../../../../contracts/l3/world-native/schema/fixtures/row-set.json";
 import { frontierDay } from "./deploy-fixture";
 import { deployArmy, deployDirection, deployRange, previewDeploy, readDeployPlan } from "./deploy-plan";
 

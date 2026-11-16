@@ -1,6 +1,6 @@
 import { getTroopResourceId, type SiteKind } from "@bibliothecadao/eternum";
 import { StructureType, type ID } from "@bibliothecadao/types";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { Vector3 } from "three";
 
@@ -86,8 +86,6 @@ export const MapLabelLabView = () => {
     setCounts,
   );
   useOrderLine(world, layer, overlayRef, hovered, selected);
-  // The sites open at the address's zoom, once placed; the zoom buttons aim the camera after.
-  const aimAt = useCallback((target: Vector3) => world && aimCamera(world, target, ZOOM_DISTANCE[zoom]), [world, zoom]);
   const set = (key: string, value: string | null) => {
     const next = new URLSearchParams(params);
     if (value === null) next.delete(key);

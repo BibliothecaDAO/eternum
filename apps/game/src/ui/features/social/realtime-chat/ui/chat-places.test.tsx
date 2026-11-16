@@ -72,11 +72,6 @@ const FAR_ARMY_TILE = { col: 66, row: 4, alt: true };
 const UNPLACED_CAMP = 712;
 /** The lab game, as the page plays it (LabGame's setActiveGame). */
 const LAB = { chainId: "0x1ab", gameId: 1, name: "Lab" };
-/**
- * The tile each of the map's sites stands on in these tests, in MAP_SITES' order: inside the region the lab player's
- * sync holds (6:0 at the lab's spacing of 10), as a site the player can see and share is.
- */
-const siteTile = (index: number) => ({ col: 61 + index, row: 8, alt: false });
 const sendWorldMessage = vi.fn(() => Promise.resolve());
 
 /**
@@ -269,8 +264,6 @@ const type = (text: string) =>
     field.dispatchEvent(new Event("input", { bubbles: true }));
   });
 const send = () => act(async () => host.querySelector<HTMLButtonElement>('button[type="submit"]')!.click());
-const sentPlace = () =>
-  (sendWorldMessage.mock.calls.at(-1) as unknown as [string, { metadata?: { place?: unknown } }])[1];
 /** A message from Aldric, added last to the room. */
 const arrives = (id: string, content: string, metadata: object) =>
   act(() =>

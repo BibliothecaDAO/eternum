@@ -106,7 +106,6 @@ const clearTheRuin = (chain: NativeFactStore, explorerId: bigint, player: string
   const army = chain.require("ExplorerTroops", { game_id: 1, explorer_id: explorerId });
   const guard = chain.require("Guard", { game_id: 1, structure_id: BigInt(SITE), slot: 0 });
   const site = chain.require("ExpeditionSite", { game_id: 1, entity_id: BigInt(SITE) });
-  const progress = chain.require("ArmyProgress", { game_id: 1, explorer_id: explorerId });
   const relic = chain.require("RuinRelic", { game_id: 1, entity_id: BigInt(SITE) });
   const stamina = army.troops.stamina as { Inline: { amount: bigint } };
   const before = army.troops.count;

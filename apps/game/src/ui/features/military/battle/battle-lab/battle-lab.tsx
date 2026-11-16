@@ -132,7 +132,7 @@ export const BattleLab = ({
       attackerIsStructureGuard: snapshot?.attackerType === "structure",
       defenderIsStructureGuard: target?.targetType === TargetType.Structure,
     }),
-    [mode, state.defenderAlt, liveAttackDistance, snapshot?.attackerType, target?.targetType],
+    [state.defenderAlt, liveAttackDistance, snapshot?.attackerType, target?.targetType],
   );
   // CombatParameters holds bigint fields, so stringify with a bigint-safe replacer.
   const defaultParamsKey = useMemo(() => serializeParams(configManager.getCombatConfig()), []);
@@ -158,7 +158,7 @@ export const BattleLab = ({
   const prediction = useMemo(() => {
     if (!state.hasDefender) return null;
     const now = Math.floor(Date.now() / 1000);
-    const range = combatSimulator.simulateBattle(
+    const result = combatSimulator.simulateBattle(
       now,
       toArmy(state.attacker),
       toArmy(state.defender),
@@ -167,16 +167,15 @@ export const BattleLab = ({
       state.defender.relics,
       combatContext,
     );
-    if (!range.ok) return null;
-    const attacker = attackerSide(state.attacker.troopCount, range);
-    const defender = defenderSide(state.defender.troopCount, range);
+    if (!result.ok) return null;
+    const attacker = attackerSide(state.attacker.troopCount, result);
+    const defender = defenderSide(state.defender.troopCount, result);
     const outcome: BattleOutcome = attacker.remaining === 0 ? "Defeat" : defender.remaining === 0 ? "Victory" : "Draw";
     return {
       attacker,
       defender,
-      // Stamina after the fight follows the attacker's worst roll, like every other planning figure.
-      newAttackerStamina: range.attackerStamina,
-      newDefenderStamina: range.defenderStamina,
+      newAttackerStamina: result.attackerStamina,
+      newDefenderStamina: result.defenderStamina,
       outcome,
     };
   }, [
@@ -185,7 +184,6 @@ export const BattleLab = ({
     state.defender,
     state.biome,
     state.hasDefender,
-    state.defenderAlt,
     combatContext,
   ]);
 
