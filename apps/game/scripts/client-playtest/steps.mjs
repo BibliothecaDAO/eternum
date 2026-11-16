@@ -5628,6 +5628,7 @@ const DISMISSED_AT_EXPRESSION = `JSON.stringify(
  * fails a command that is neither.
  */
 export const UNMEASURED_COMMANDS = {
+  InteractSite: "lab-deep-join checks joining on desktop and phone; click timing baselines are not recorded",
   Battle:
     "Deep army combat has native and client regressions, but desktop and phone click timing baselines are not recorded",
   ClaimDailyQuest: "lab-daily-quest checks collection on desktop and phone; click timing baselines are not recorded",

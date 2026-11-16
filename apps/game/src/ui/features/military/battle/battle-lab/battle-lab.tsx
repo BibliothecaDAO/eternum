@@ -178,14 +178,7 @@ export const BattleLab = ({
       newDefenderStamina: result.defenderStamina,
       outcome,
     };
-  }, [
-    combatSimulator,
-    state.attacker,
-    state.defender,
-    state.biome,
-    state.hasDefender,
-    combatContext,
-  ]);
+  }, [combatSimulator, state.attacker, state.defender, state.biome, state.hasDefender, combatContext]);
 
   // ----- Live action gating -----
   const hasAttacker =
