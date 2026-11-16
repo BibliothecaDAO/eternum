@@ -29,6 +29,7 @@ vi.mock("@/hooks/helpers/use-block-timestamp", () => ({
   useNowSeconds: () => 350,
 }));
 
+import { wire } from "@/lab/game/lab-chain";
 import { GameProvider } from "@/hooks/context/game-context";
 import { inFlight } from "@/hooks/store/use-actions-in-flight";
 import { useUIStore } from "@/hooks/store/use-ui-store";
@@ -36,9 +37,9 @@ import { toast } from "@/ui/features/event-feed/notify";
 import { openArmyDeployment } from "@/ui/features/military/utils/open-army-deployment";
 import { disposeGameSyncSession, installActiveGameClient } from "@/sync/active-game-client";
 import { DEPLOY_ON_MAP_EVENT, type DeployOnMap, readDeployOnMap } from "@/three/scenes/worldmap-deploy-request";
-import { type GameClient, readExpeditionRules, setBlockTimestampSource, spawnRing } from "@bibliothecadao/eternum";
+import { type GameClient, getTroopResourceId, readExpeditionRules, setBlockTimestampSource, spawnRing } from "@bibliothecadao/eternum";
 import type { GameClientSetup } from "@bibliothecadao/eternum/game-client";
-import { Direction, RESOURCE_PRECISION, TroopTier, TroopType } from "@bibliothecadao/types";
+import { Direction, RESOURCE_PRECISION, TROOP_TYPES, TroopTier, TroopType } from "@bibliothecadao/types";
 import { frontierDay } from "./deploy-fixture";
 import { DeploySheet } from "./deploy-sheet";
 
@@ -620,12 +621,18 @@ describe("the Deploy sheet", () => {
     host.remove();
   });
 
-  it("with no troops at home while the Barracks make them, counts down to the next and offers Deploy once it is in", () => {
+  it.each(TROOP_TYPES)("counts down to the next trained troop and offers Deploy when it arrives (%s)", (type) => {
     (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
     const { store, row } = frontierDay();
-    // Barracks training 360 knights an hour without end (the unlimited-output sentinel), from none at tick 3.
+    const resource = getTroopResourceId(type, TroopTier.T1);
+    const recipe = store.require("ProductionRecipe", { game_id: 1, resource_type: 26 });
     store.applyFacts([
       noTroops,
+      {
+        model: "ProductionRecipe",
+        key: store.wireKeyOf("ProductionRecipe", { game_id: 1, resource_type: resource }) ?? "0xb29",
+        value: wire({ ...recipe, resource_type: resource }),
+      },
       {
         model: "ResourceProduction",
         key: "0x826",
@@ -634,7 +641,7 @@ describe("the Deploy sheet", () => {
 
           game_id: 1,
           entity_id: 7,
-          resource_type: 26,
+          resource_type: resource,
           building_count: 1,
           production_rate: String((360n * BigInt(RESOURCE_PRECISION)) / 3_600n),
           output_amount_left: String((1n << 128n) - 1n),
@@ -648,12 +655,10 @@ describe("the Deploy sheet", () => {
     const build = () => [...host.querySelectorAll("button")].some((button) => button.textContent === "Build");
     expect([notice(), build(), deployButton(host)]).toEqual(["No troops at home · in 10s", false, undefined]);
 
-    // Half a knight made: the wait is what is left of it.
     clock.tick = 8;
     draw();
     expect([notice(), build(), deployButton(host)]).toEqual(["No troops at home · in 5s", false, undefined]);
 
-    // The knight is in, as promised: the notice goes and Deploy is offered.
     clock.tick = 13;
     draw();
     expect(notice()).toBeNull();

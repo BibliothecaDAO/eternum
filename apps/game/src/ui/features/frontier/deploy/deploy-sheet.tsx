@@ -8,13 +8,14 @@ import { showDeployOnMap } from "@/three/scenes/worldmap-deploy-request";
 import { toast } from "@/ui/features/event-feed/notify";
 import { openArmyDeployment } from "@/ui/features/military/utils/open-army-deployment";
 import { useDeployRing } from "@/ui/features/military/components/unified-army-creation-modal/use-deploy-ring";
-import { type ExpeditionRules, ResourceManager } from "@bibliothecadao/eternum";
+import { type ExpeditionRules, getTroopResourceId, ResourceManager } from "@bibliothecadao/eternum";
 import { safeInteger, type NativeRows } from "@bibliothecadao/eternum/game-client";
-import { FRONTIER_TROOP_NAMES, TroopType, type Direction } from "@bibliothecadao/types";
+import { FRONTIER_TROOP_NAMES, TROOP_TYPES, TroopTier, type TroopType, type Direction } from "@bibliothecadao/types";
 import { useEffect, useRef, useState } from "react";
 
 import { useGoToFrontierPlace } from "../frontier-home";
 import { useRealmStores } from "../realm-stores";
+import { madeStoreOf } from "../stores";
 import { secondsUntilHeld } from "../hud/army-order";
 import { armyArt } from "../hud/dock-armies";
 import { deployArmy, deployDirection, deployRange, previewDeploy, wheatStopsAt } from "./deploy-plan";
@@ -69,7 +70,12 @@ export const DeploySheet = ({
   const deploying = useInFlight("deploy", realmId) !== undefined;
   const wheatPerHour = new ResourceManager(setup.store, realmId).wheatPerHour(defaultTick);
   const stores = useRealmStores(realm, rules);
-  const nextTroopIn = plan?.troops?.type === TroopType.Paladin ? stores?.scouts.nextIn : stores?.troops.nextIn;
+  const troopWaits = TROOP_TYPES.flatMap((type) => {
+    const kind = madeStoreOf(getTroopResourceId(type, TroopTier.T1));
+    const wait = kind ? stores?.[kind].nextIn : undefined;
+    return wait === undefined ? [] : [wait];
+  });
+  const nextTroopIn = troopWaits.length ? Math.min(...troopWaits) : undefined;
 
   /** The sheet closes as the army leaves; its slot on the dock carries the wait, and a refusal says why there. */
   const deploy = async () => {
