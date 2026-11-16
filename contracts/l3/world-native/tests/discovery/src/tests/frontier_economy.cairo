@@ -315,11 +315,21 @@ fn range_produces_deployable_crossbows_and_depot_prices_deployment_and_reinforce
     if whole_recipe {
         let mut recipes = array![];
         for entry in preset.resources.production {
-            recipes.append(if *entry.resource_type == 29 {
-                crate::production::RecipeConfig {resource_type: 29, recipe: crate::production::ProductionRecipe {
-                    simple_output: 1, simple_inputs: array![ResourceAmount {resource_type: WHEAT, amount: 2}].span(), ..*entry.recipe
-                }}
-            } else { *entry });
+            recipes
+                .append(
+                    if *entry.resource_type == 29 {
+                        crate::production::RecipeConfig {
+                            resource_type: 29,
+                            recipe: crate::production::ProductionRecipe {
+                                simple_output: 1,
+                                simple_inputs: array![ResourceAmount { resource_type: WHEAT, amount: 2 }].span(),
+                                ..*entry.recipe,
+                            },
+                        }
+                    } else {
+                        *entry
+                    },
+                );
         }
         preset.resources.production = recipes.span();
     }

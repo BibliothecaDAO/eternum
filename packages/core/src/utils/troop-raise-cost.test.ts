@@ -119,8 +119,15 @@ it("prices every Depot tier independently of Conscription and waits for knowledg
 it("keeps fractional Rations discounts when the recipe is expressed in whole units", () => {
   const store = realm(true, 100n * PRECISION);
   store.applyFacts([
-    upsert("0x8", "RealmKnowledge", {game_id: 1, structure_id: 7, learned: 1n << 24n}),
-    upsert("0x5", "ProductionRecipe", {game_id: 1, resource_type: 26, simple_output: 1n, simple_inputs: [{resource_type: 35, amount: 2n}], complex_output: 0n, complex_inputs: []}),
+    upsert("0x8", "RealmKnowledge", { game_id: 1, structure_id: 7, learned: 1n << 24n }),
+    upsert("0x5", "ProductionRecipe", {
+      game_id: 1,
+      resource_type: 26,
+      simple_output: 1n,
+      simple_inputs: [{ resource_type: 35, amount: 2n }],
+      complex_output: 0n,
+      complex_inputs: [],
+    }),
   ]);
-  expect(readTroopRaiseCost(store, 1, 7, 26, 1, 100)![0]!.amount).toBe(7n * PRECISION / 4n);
+  expect(readTroopRaiseCost(store, 1, 7, 26, 1, 100)![0]!.amount).toBe((7n * PRECISION) / 4n);
 });

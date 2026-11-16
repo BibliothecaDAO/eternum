@@ -308,11 +308,11 @@ Knights in a guard slot. Select the army, open the site card and Attack twice. `
 facts with the native-tested `frontier-marks.txt` receipts, and retain screenshots. Site cards show the guard's
 Blade/Bow mark from its troop fact. These are lab proofs.
 
-Frontier town: open the Realm, tap a free plot and choose Range or Conscription Camp from City, or Rations Depot
-from Kingdom. The Range produces Crossbows for Deploy. Tap the Camp or Depot to buy its next tier: Camp increases
-all troop buildings’ output; Depot reduces deployment and reinforcement wheat. Each is unique and construction buys
-its first tier. Logistics remains on the Supply Yard. The painted-buildings lab includes every town building.
+Frontier town: open the Realm, tap a free plot and choose Range or Conscription Camp from City, or Rations Depot from
+Kingdom. The Range produces Crossbows for Deploy. Tap the Camp or Depot to buy its next tier: Camp increases all troop
+buildings’ output; Depot reduces deployment and reinforcement wheat. Each is unique and construction buys its first
+tier. Logistics remains on the Supply Yard. The painted-buildings lab includes every town building.
 
-`build.sh playtest-town` opens `/lab/game?scenario=town` on desktop and phone, selects Crossbows in Deploy,
-then deploys 400. It checks the new army, the 200 Crossbows left, and the 280 wheat left after the first Depot tier.
-This is a lab proof; the native command suite proves Range production and both town research ladders.
+`build.sh playtest-town` opens `/lab/game?scenario=town` on desktop and phone, selects Crossbows in Deploy, then
+deploys 400. It checks the new army, the 200 Crossbows left, and the 280 wheat left after the first Depot tier. This is
+a lab proof; the native command suite proves Range production and both town research ladders.

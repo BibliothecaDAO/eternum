@@ -111,11 +111,23 @@ it("answers native Paladin index 1 with Scouts and debits only their stock and w
   expect(facts.find(({ model }) => model === "ArmyProgress")!.value).toMatchObject({ logistics: 0 });
 });
 
-
 it("deploys Crossbows through the town recipe with the Depot discount", () => {
   const game = townScenario();
-  const facts = game.answer(command("CreateExplorer", {structure_id: "7", slot: "1", category: "2", tier: "0", amount: whole(400), direction: "0"}), chainOf(game), game.startsAt);
-  expect(facts.find(({model}) => model === "ExplorerTroops")!.value).toMatchObject({troops: {category: "Crossbowman", tier: "T1", count: whole(400)}});
+  const facts = game.answer(
+    command("CreateExplorer", {
+      structure_id: "7",
+      slot: "1",
+      category: "2",
+      tier: "0",
+      amount: whole(400),
+      direction: "0",
+    }),
+    chainOf(game),
+    game.startsAt,
+  );
+  expect(facts.find(({ model }) => model === "ExplorerTroops")!.value).toMatchObject({
+    troops: { category: "Crossbowman", tier: "T1", count: whole(400) },
+  });
   expect(balance(facts, ResourcesIds.Crossbowman)?.balance).toBe(whole(200));
   expect(balance(facts, ResourcesIds.Wheat)?.balance).toBe(whole(280));
   expect(balance(facts, ResourcesIds.Knight)).toBeUndefined();

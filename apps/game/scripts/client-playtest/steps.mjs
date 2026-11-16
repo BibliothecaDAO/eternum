@@ -721,8 +721,13 @@ const SCOUT_DEPLOY_STEPS = [
 ];
 
 const TOWN_DEPLOY_STEPS = [
-  {name: "enter-on-map", settleMs: 3000, verify: inScene("map")},
-  clickToResultStep("deploy-crossbows", "CreateExplorer", (context) => deployFromTheDock(context, 400, "Crossbows"), crossbowsDeployed),
+  { name: "enter-on-map", settleMs: 3000, verify: inScene("map") },
+  clickToResultStep(
+    "deploy-crossbows",
+    "CreateExplorer",
+    (context) => deployFromTheDock(context, 400, "Crossbows"),
+    crossbowsDeployed,
+  ),
 ];
 
 const DEPLOY_ACTION_STEPS = [
@@ -6019,7 +6024,7 @@ export const STEP_SETS = {
   "lab-actions-transfer": { game: labSpireGame("merge-loses-training"), steps: transferActionSteps() },
   "lab-battle-target": { game: labSpireGame("battle-target"), steps: BATTLE_TARGET_STEPS },
   "lab-deep-battle-target": { game: labSpireGame("deep-battle-target"), steps: DEEP_BATTLE_TARGET_STEPS },
-  "lab-town": {game: labSpireGame("town"), steps: TOWN_DEPLOY_STEPS},
+  "lab-town": { game: labSpireGame("town"), steps: TOWN_DEPLOY_STEPS },
   "lab-scouts": { game: labSpireGame("scouts"), steps: SCOUT_DEPLOY_STEPS },
   "lab-actions-deploy": { game: labSpireGame("actions"), steps: DEPLOY_ACTION_STEPS },
   "lab-actions-research": { game: labSpireGame("research"), steps: RESEARCH_ACTION_STEPS },

@@ -44,9 +44,7 @@ export const readTroopRaiseCost = (
     const held = manager.balanceWithProduction(tick, input.resource_type)?.balance;
     if (held === undefined) return undefined;
     const discount =
-      input.resource_type === ResourcesIds.Wheat
-        ? board.ration_step * rations * recipe.simple_output
-        : 0n;
+      input.resource_type === ResourcesIds.Wheat ? board.ration_step * rations * recipe.simple_output : 0n;
     const base = input.amount * BigInt(RESOURCE_PRECISION);
     const amount = base > discount ? base - discount : 0n;
     costs.push({
