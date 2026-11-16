@@ -21,11 +21,6 @@ export function farEyeScenario(): LabScenario {
       value: wire({ ...rules, mode_rules: rules.mode_rules | nativeRuleConstants.DISCOVER_SPIRES }),
     },
     {
-      model: "ArmyProgressionRules",
-      key: store.wireKeyOf("ArmyProgressionRules", progression)!,
-      value: wire({ ...progression, reveal_xp: 1 }),
-    },
-    {
       model: "ArmyRelics",
       key: "0xfae1",
       value: wire({

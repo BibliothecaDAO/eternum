@@ -64,8 +64,8 @@ fn ruins_fill_replace_and_activate_an_armys_relics_through_commands() {
     for index in 0_u8..4 {
         let timestamp = 400 + Into::<u8, u64>::into(index) * 30;
         let kind = match index {
-            0 => RelicKind::Tome,
-            1 => RelicKind::Blade,
+            0 => RelicKind::Blade,
+            1 => RelicKind::FarEye,
             2 => RelicKind::Ward,
             _ => RelicKind::Plunder,
         };
@@ -116,14 +116,14 @@ fn ruins_fill_replace_and_activate_an_armys_relics_through_commands() {
         );
     }
     let inventory = read_loadout(d, key);
-    assert_eq!(inventory.first, Some(ArmyRelic { kind: RelicKind::Tome, rank: 1 }));
+    assert_eq!(inventory.first, Some(ArmyRelic { kind: RelicKind::Blade, rank: 1 }));
     assert_eq!(inventory.second, Some(ArmyRelic { kind: RelicKind::Plunder, rank: 1 }));
     assert_eq!(inventory.third, Some(ArmyRelic { kind: RelicKind::Ward, rank: 1 }));
     let essence = ResourceSlot { game_id, entity_id: home_id, resource_type: crate::resources::ESSENCE };
     let essence_before = resources.resource_balance(essence);
     let activate = Command::ApplyRelic(
         crate::relics::ApplyRelic {
-            entity_id: explorer_id, relic_id: 21, recipient: crate::relics::Recipient::ArmySlot(0),
+            entity_id: explorer_id, relic_id: 1, recipient: crate::relics::Recipient::ArmySlot(0),
         },
     );
     assert!(execute_in_game(d, game_id, activate, 520));
@@ -134,17 +134,13 @@ fn ruins_fill_replace_and_activate_an_armys_relics_through_commands() {
         snforge_std::interact_with_state(
             d.games,
             || crate::logic::army_relics::effect(
-                crate::army_relics::ArmyRelicEffectKey { game_id, explorer_id, kind: RelicKind::Tome },
+                crate::army_relics::ArmyRelicEffectKey { game_id, explorer_id, kind: RelicKind::Blade },
             ),
         ),
         Some(crate::army_relics::ArmyRelicEffect { rank: 1, expires_at: 2320 }),
     );
-    let xp = super::progression::read_progress(d, key).xp;
     let site = discover_relic(
         d, key, discovery, *preset.settlement.depths.at(0).chest, ArmyRelic { kind: RelicKind::FarEye, rank: 1 }, 550,
-    );
-    let site_state = snforge_std::interact_with_state(
-        d.games, || crate::logic::expeditions::expedition_site(site).unwrap(),
     );
     assert!(
         execute_in_game(
@@ -156,15 +152,11 @@ fn ruins_fill_replace_and_activate_an_armys_relics_through_commands() {
             551,
         ),
     );
-    assert_eq!(
-        super::progression::read_progress(d, key).xp - xp,
-        (preset.economy.progression.unwrap().reveal_xp * 140 / 100)
-            + crate::progression::clear_xp(site_state.initial_guard_count, 0) * 140 / 100,
-    );
     let receipt = snforge_std::interact_with_state(
         d.games, || crate::logic::expeditions::expedition_site(site).unwrap().clear.unwrap(),
     );
-    assert_eq!(receipt.xp, crate::progression::clear_xp(site_state.initial_guard_count, 0) * 140 / 100);
+    assert_eq!(receipt.explorer_id, explorer_id);
+    assert_eq!(receipt.home_id, home_id);
     let mut spy = snforge_std::spy_events();
     assert!(
         execute_in_game(
@@ -226,7 +218,7 @@ fn relic_root(
         let reward = crate::army_relics::draw(odds, seed);
         if reward == expected
             && crate::discovery::frontier(
-                rules, 0, 0, 0, 100, 0, Some(reward), seed,
+                rules, 100, 0, Some(reward), seed,
             ) == crate::discovery::Discovery::Ruin(reward) {
             return candidate.into();
         }

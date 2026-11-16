@@ -1,6 +1,6 @@
-import { Icon } from "@/ui/design-system/icon";
-import { HudPanel, HudTier } from "@/ui/design-system/kit/hud-elements";
-import { PICKED_ARMY, type Rank, tierNumeral } from "@/ui/design-system/kit/words";
+
+import { HudPanel } from "@/ui/design-system/kit/hud-elements";
+import { PICKED_ARMY } from "@/ui/design-system/kit/words";
 import type { ReactNode } from "react";
 
 import { ArmyToken } from "./army-token";

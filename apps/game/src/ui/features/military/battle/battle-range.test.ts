@@ -1,4 +1,7 @@
 // @vitest-environment node
+// @vitest-environment node
+// @vitest-environment node
+// @vitest-environment node
 import { describe, expect, it } from "vitest";
 import { attackerSideRange, defenderSideRange, formatAcross, survivalOf } from "./battle-outcome";
 

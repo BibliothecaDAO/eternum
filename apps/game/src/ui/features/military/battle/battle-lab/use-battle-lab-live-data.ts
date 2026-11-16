@@ -1,24 +1,9 @@
 import { GUARD_MODELS } from "@bibliothecadao/eternum/game-client";
 import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
 import { resolveExplorerCombatTroops } from "@bibliothecadao/eternum/troop-stamina";
-import {
-
-  configManager,
-  divideByPrecision,
-  getGuardsByStructure,
-  StaminaManager,
-  storedBiomeAt,
-} from "@bibliothecadao/eternum";
+import { configManager, divideByPrecision, getGuardsByStructure, StaminaManager, storedBiomeAt } from "@bibliothecadao/eternum";
 import { useNativeFacts } from "@/hooks/helpers/use-native-facts";
-import {
-  BiomeType,
-  DISPLAYED_SLOT_NUMBER_MAP,
-  ID,
-  RelicEffect,
-  ResourcesIds,
-  TroopTier,
-  TroopType,
-} from "@bibliothecadao/types";
+import { BiomeType, DISPLAYED_SLOT_NUMBER_MAP, ID, RelicEffect, ResourcesIds, TroopTier, TroopType } from "@bibliothecadao/types";
 import { useMemo } from "react";
 
 import { getGuardStaminaSnapshot } from "../../utils/guard-stamina";

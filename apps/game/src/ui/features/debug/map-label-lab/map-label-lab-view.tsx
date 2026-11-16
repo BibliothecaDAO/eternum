@@ -4,28 +4,14 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { Vector3 } from "three";
 
-import {
-  createMapLabelFixture,
-  PLATE_CLEARANCE,
-  SEATS,
-  type MapLabelEntity,
-} from "@/three/debug/map-label-lab-fixture";
+import { createMapLabelFixture, PLATE_CLEARANCE, SEATS, type MapLabelEntity } from "@/three/debug/map-label-lab-fixture";
 import { WORLDMAP_CAMERA_ZOOM } from "@/three/scenes/worldmap-camera-view-profile";
-import {
-  mountProceduralTerrainBenchmarkRenderer,
-  type TerrainBenchmarkStage,
-} from "@/three/debug/procedural-terrain-benchmark-renderer";
+import { mountProceduralTerrainBenchmarkRenderer, type TerrainBenchmarkStage } from "@/three/debug/procedural-terrain-benchmark-renderer";
 import { MapPlateLayer, type MapPlateScope } from "@/three/map-plates/map-plate-layer";
 import { orderLineSize } from "@/three/map-plates/map-plate-layout";
 import { PointerOrderTip } from "@/three/scenes/worldmap-order-tip";
 import { Tooltip } from "@/ui/design-system/molecules/tooltip";
-import {
-  buildArmyPlate,
-  buildStructurePlate,
-  guardsToTell,
-  tellsGuardStamina,
-  type MapPlate,
-} from "@/three/map-plates/map-plate-model";
+import { buildArmyPlate, buildStructurePlate, guardsToTell, tellsGuardStamina, type MapPlate } from "@/three/map-plates/map-plate-model";
 import { PRODUCTION_TERRAIN_PROP_DENSITY_MULTIPLIER } from "@/three/terrain/terrain-props";
 import { seatSide } from "@/tokens";
 import { SeatMark } from "@/ui/design-system/seat-mark";

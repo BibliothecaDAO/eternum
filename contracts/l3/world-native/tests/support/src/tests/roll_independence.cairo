@@ -162,11 +162,6 @@ pub fn typed_commands() -> Array<Command> {
         Command::SetEntityName(crate::names::SetEntityName { entity_id: 999999, name: 'route' }),
         Command::EnterDepth(crate::commands::EnterDepth { explorer_id: 999999, depth: 0 }),
         Command::Research(crate::research::Research { structure_id: 999999, row: 0, choice: 0 }),
-        Command::SpendSkillPoint(
-            crate::progression::SpendSkillPoint {
-                explorer_id: 999999, choice: crate::progression::SkillPointUse::Battle,
-            },
-        ),
         Command::InteractSite(
             crate::relics::InteractSite {
                 explorer_id: 999999, coord: crate::troops::Coord { alt: false, x: 2000000, y: 2000000 },
@@ -262,7 +257,7 @@ pub fn explorer_case(explore: bool) -> (Deployment, TestAction, u64) {
 }
 pub fn battle_case() -> (Deployment, TestAction, u64) {
     let (d, _, _, attacker, defender) = super::combat_actions::setup_with_cooldown(
-        false, 0, super::play_fixture::TEST_RULES | crate::rules::COMBAT_DICE, 0, (1000, 1000),
+        false, 0, super::play_fixture::TEST_RULES, 0, (1000, 1000),
     );
     let command = Command::Battle(
         crate::combat_actions::AttackExplorer {
@@ -291,7 +286,7 @@ pub fn season_case() -> (Deployment, TestAction, u64) {
 }
 pub fn live_loot_case(insufficient: bool, full: bool) -> (Deployment, TestAction) {
     let (d, _, _, attacker, defender) = super::combat_actions::setup_with_cooldown(
-        false, 0, super::play_fixture::TEST_RULES | crate::rules::COMBAT_DICE, 0, (1000, 1000),
+        false, 0, super::play_fixture::TEST_RULES, 0, (1000, 1000),
     );
     super::resource_commands::grant(d, crate::resources::ResourceKey { game_id: 3, entity_id: defender }, 2, 90);
     if full {

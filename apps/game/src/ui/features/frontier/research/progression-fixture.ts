@@ -1,10 +1,10 @@
 import { frontierSeasonOnePreset as preset } from "../../../../../../../config/source/frontier/season-one";
 import { WELL_REFILL_PERCENT } from "@bibliothecadao/eternum/troop-stamina";
-import { learnResearch } from "@bibliothecadao/eternum";
+
 import { nativeResearchConstants as research } from "@bibliothecadao/eternum/game-client";
 
 import type { ArmyView } from "../army/army-detail";
-import type { LearnedRow, RealmResearchFacts } from "./research-tree";
+import type { RealmResearchFacts } from "./research-tree";
 
 /**
  * Two realms and two armies on the Frontier preset's numbers (config/source/frontier/native.ts), for the lab and the

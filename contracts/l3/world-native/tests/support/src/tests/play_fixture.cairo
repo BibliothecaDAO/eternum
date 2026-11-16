@@ -30,13 +30,12 @@ pub const BLITZ_RULES: u32 = crate::rules::HOME_REWARDS
     + crate::rules::OWNER_ONLY_SHARES
     + crate::rules::HYPERSTRUCTURE_MULTIPLIERS
     + crate::rules::PRODUCTION_START
-    + crate::rules::COMBAT_DICE_ETHEREAL
     + crate::rules::DISCOVER_SPIRES;
 pub const TEST_RULES: u32 = crate::rules::DISCOVER_HYPERSTRUCTURES
     + crate::rules::SPIRES
     + crate::rules::SEASON_CLOSE
     + crate::rules::DEV_VILLAGE_ENTRY
-    + crate::rules::COMBAT_DICE_ETHEREAL;
+;
 pub fn rules() -> crate::rules::SliceRules {
     let data = read_txt(@FileTrait::new("../fixtures/current-presets/conformance.txt"));
     let mut fields = data.span();
@@ -79,7 +78,6 @@ pub fn fixture_preset(rules: crate::rules::SliceRules) -> crate::presets::Preset
                         amount: 1000, campaign_essence: 0, golden_amount: 1000, golden_essence: 0,
                     },
                 );
-        preset.economy.progression = Some(super::preset_projection::frontier_progression_rules());
     }
     preset.season_win_points = 0;
     preset.economy.withdrawals = None;

@@ -40,18 +40,10 @@ import { accountAddress, useAccountStore } from "@/hooks/store/use-account-store
 import { resolveMovementStamina, type MovementStaminaResolution } from "@/lib/army-stamina/movement-affordability";
 import { resolveStoredWorldmapCameraDistance, useCameraZoomStore } from "@/hooks/store/use-camera-zoom-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
-import {
-  getCurrentPlayRouteBootToken,
-  onPlayRouteBootStarted,
-  usePlayRouteReadinessStore,
-} from "@/game-entry/play-route-readiness-store";
+import { getCurrentPlayRouteBootToken, onPlayRouteBootStarted, usePlayRouteReadinessStore } from "@/game-entry/play-route-readiness-store";
 import { parsePlayRoute } from "@/play/navigation/play-route";
 import { resolvePlayRouteWorldPosition } from "@/play/navigation/play-route-target";
-import {
-  clearPendingReservedHyperstructureCreation,
-  isPendingReservedHyperstructureCreation,
-  submitActiveWorldBlitzHyperstructureCreation,
-} from "@/services/blitz/blitz-hyperstructure-creation";
+import { clearPendingReservedHyperstructureCreation, isPendingReservedHyperstructureCreation, submitActiveWorldBlitzHyperstructureCreation } from "@/services/blitz/blitz-hyperstructure-creation";
 import { type DoubleClickTarget, runWorldmapDoubleClick } from "./worldmap-double-click";
 import { HEX_SIZE, WORLD_CHUNK_CONFIG } from "@/three/constants";
 import { ArmyManager } from "@/three/managers/army-manager";
@@ -75,56 +67,13 @@ import { type SceneSetupContext } from "@/three/scenes/hexagon-scene";
 import { type RenderVisualProfile } from "@/three/render-profile";
 import { WorldmapPerfSimulation } from "@/three/scenes/worldmap-perf-simulation";
 import type { CameraClaim } from "@/three/scenes/camera-moves";
-import {
-  createSpireVeil,
-  diveThroughSpire,
-  spireCrossing,
-  type SpireDive,
-  type SpireDiveStage,
-} from "@/three/scenes/worldmap-spire-dive";
+import { createSpireVeil, diveThroughSpire, spireCrossing, type SpireDive, type SpireDiveStage } from "@/three/scenes/worldmap-spire-dive";
 import { LAYER_VIEW_REQUEST_EVENT, type LayerViewRequest } from "@/three/scenes/worldmap-layer-request";
 import { useWorldAppearanceStore } from "@/hooks/store/use-world-appearance-store";
 import { LeftView } from "@/types";
-import {
-  armyRealmSpire,
-  configManager,
-  dayOf,
-  expeditionDepth,
-  expeditionSpires,
-  discoversSpires,
-  regionSpire,
-  isArmyCrossing,
-  NEUTRAL_BIOME_CLIMATE,
-  Position,
-  spireEtherealView,
-  isOpenSpawnHex,
-  isViewerOwner,
-  isExpeditionRealm,
-  readExpeditionRules,
-  type ExpeditionRules,
-  spawnRing,
-  structureMapPosition,
-} from "@bibliothecadao/eternum";
-import {
-  requireActiveGameSyncRuntime,
-  getActiveGameSyncRuntime,
-  type ArmySpatialProjectionChange,
-  type StructureSpatialProjectionChange,
-  type ArmySpatialRenderable,
-  type StructureSpatialRenderable,
-  type TileSpatialProjectionChange,
-  type WorldSpatialHex,
-  type TileSpatialRenderable,
-  type WorldSpatialProjection,
-  isStandingStructure,
-  projectionChangesForLayer,
-} from "@bibliothecadao/eternum/game-sync";
-import {
-  gameWorkerManager,
-  type GameWorkerEntityHex,
-  type GameWorkerExploredTile,
-  type GameWorkerWorldState,
-} from "../../managers/game-worker-manager";
+import { armyRealmSpire, configManager, dayOf, expeditionDepth, expeditionSpires, discoversSpires, regionSpire, isArmyCrossing, NEUTRAL_BIOME_CLIMATE, Position, spireEtherealView, isOpenSpawnHex, isViewerOwner, isExpeditionRealm, readExpeditionRules, type ExpeditionRules, spawnRing, structureMapPosition } from "@bibliothecadao/eternum";
+import { requireActiveGameSyncRuntime, getActiveGameSyncRuntime, type ArmySpatialProjectionChange, type StructureSpatialProjectionChange, type ArmySpatialRenderable, type StructureSpatialRenderable, type TileSpatialProjectionChange, type WorldSpatialHex, type TileSpatialRenderable, type WorldSpatialProjection, isStandingStructure, projectionChangesForLayer } from "@bibliothecadao/eternum/game-sync";
+import { gameWorkerManager, type GameWorkerEntityHex, type GameWorkerExploredTile, type GameWorkerWorldState } from "../../managers/game-worker-manager";
 
 import { FELT_CENTER } from "@/ui/config";
 import { HelpModal } from "@/ui/features/military";
@@ -134,52 +83,14 @@ import { traceFlightPlanner } from "../flight-trace";
 import { QuickAttackPreview } from "@/ui/features/military/battle/quick-attack-preview";
 import { SpireTravelModal } from "@/ui/features/world/components/actions/spire-travel-modal";
 import { markGameEntryMilestone, recordGameEntryDuration } from "@/ui/layouts/game-entry-timeline";
-import {
-  beginClientActionLatency,
-  type ClientActionLatencyPhase,
-  recordClientActionFailed,
-  recordClientActionPhase,
-  recordClientActionPreConfirmed,
-  recordClientActionRendered,
-  recordClientActionSubmitted,
-} from "@/observability/client-action-latency";
-import {
-  currentArmy,
-  safeInteger,
-  type GameClientSetup as SetupResult,
-  type NativeRows,
-} from "@bibliothecadao/eternum/game-client";
-import {
-  ActionPath,
-  ActionPaths,
-  ActionType,
-  BattleEventSystemUpdate,
-  ExplorerRewardSystemUpdate,
-  getBlockTimestamp,
-  findArmyReach,
-  getTileAt,
-  type OrderRefusal,
-  recordArmyMovementLatencyPhase,
-  SelectableArmy,
-  StaminaManager,
-} from "@bibliothecadao/eternum";
+import { beginClientActionLatency, type ClientActionLatencyPhase, recordClientActionFailed, recordClientActionPhase, recordClientActionPreConfirmed, recordClientActionRendered, recordClientActionSubmitted } from "@/observability/client-action-latency";
+import { currentArmy, safeInteger, type GameClientSetup as SetupResult, type NativeRows } from "@bibliothecadao/eternum/game-client";
+import { ActionPath, ActionPaths, ActionType, BattleEventSystemUpdate, ExplorerRewardSystemUpdate, getBlockTimestamp, findArmyReach, getTileAt, type OrderRefusal, recordArmyMovementLatencyPhase, SelectableArmy, StaminaManager } from "@bibliothecadao/eternum";
 import { requireActiveGameClient } from "@/sync/active-game-client";
 import { inFlight } from "@/hooks/store/use-actions-in-flight";
 import { type SentCommand, sentTransactionHash } from "@/sync/action-outcome";
 import { extractReadableErrorMessage } from "@/utils/error-message";
-import {
-  ActorType,
-  BiomeType,
-  ContractAddress,
-  Direction,
-  getDirectionBetweenAdjacentHexes,
-  getNeighborHexes,
-  HexEntityInfo,
-  HexPosition,
-  ID,
-  Structure,
-  StructureType,
-} from "@bibliothecadao/types";
+import { ActorType, BiomeType, ContractAddress, Direction, getDirectionBetweenAdjacentHexes, getNeighborHexes, HexEntityInfo, HexPosition, ID, Structure, StructureType } from "@bibliothecadao/types";
 import throttle from "lodash/throttle";
 import { Box3, Color, Group, type Ray, Raycaster, Sphere, Vector2, Vector3 } from "three";
 import { zoomTowardCursor } from "./worldmap-zoom/worldmap-zoom-anchor";
@@ -201,121 +112,46 @@ import type { TerrainMovementInteraction } from "@/three/terrain/terrain-movemen
 import { env } from "../../../env";
 import { FXManager } from "../managers/fx-manager";
 import { HoverLabelManager, type HoverLabelReconcileResult } from "../managers/hover-label-manager";
-import {
-  shouldReconcileWorldmapHover,
-  type WorldmapHoverReconciliationSnapshot,
-} from "./worldmap-hover-reconciliation";
+import { shouldReconcileWorldmapHover, type WorldmapHoverReconciliationSnapshot } from "./worldmap-hover-reconciliation";
 import { ResourceFXManager } from "../managers/resource-fx-manager";
 import { resolveHighlightLayerPalette, resolveHoverVisualPalette } from "../managers/worldmap-interaction-palette";
 import { isCommittedManagerChunk } from "../managers/manager-update-convergence";
 import { SceneName } from "../types/common";
 import { getWorldPositionForHex, isAddressEqualToAccount } from "../utils";
-import {
-  getChunkKeysContainingHexInRenderBoundsAnalytically,
-  getChunkCenter as getChunkCenterAligned,
-  getRenderBounds,
-} from "../utils/chunk-geometry";
+import { getChunkKeysContainingHexInRenderBoundsAnalytically, getChunkCenter as getChunkCenterAligned, getRenderBounds } from "../utils/chunk-geometry";
 import { MemoryMonitor } from "../utils/memory-monitor";
-import {
-  navigateToStructure,
-  toggleMapHexView,
-  selectNextStructure as utilSelectNextStructure,
-} from "../utils/navigation";
+import { navigateToStructure, toggleMapHexView, selectNextStructure as utilSelectNextStructure } from "../utils/navigation";
 import { snapshotRendererFxCapabilities } from "../renderer-fx-capabilities";
 import { SceneShortcutManager } from "../utils/shortcuts";
 import { createWorldmapInteractionAdapter } from "./worldmap-interaction-adapter";
-import {
-  claimWorldmapInteractionOwner,
-  getWorldmapInteractionOwnerInstanceId,
-  isWorldmapInteractionOwner,
-  releaseWorldmapInteractionOwner,
-} from "./worldmap-interaction-owner";
+import { claimWorldmapInteractionOwner, getWorldmapInteractionOwnerInstanceId, isWorldmapInteractionOwner, releaseWorldmapInteractionOwner } from "./worldmap-interaction-owner";
 import { getLiveWorldmapEntityActions, resetWorldmapEntityActions } from "./worldmap-interaction-state";
 import { resolveWorldmapHexClickPlan } from "./worldmap-selection-routing";
 import { getMinEffectCleanupDelayMs } from "./travel-effect";
-import {
-  createWorldmapHydratedRefreshQueueState,
-  flushWorldmapHydratedChunkRefreshQueue,
-  queueWorldmapHydratedChunkRefresh,
-  trackWorldmapHydratedRefreshQueueFlush,
-  waitForWorldmapHydratedRefreshQueueIdle,
-} from "./worldmap-hydrated-refresh-runtime";
-import {
-  renewWorldmapChunkRefreshRuntimeState,
-  createWorldmapChunkRefreshRuntimeState,
-  requestWorldmapChunkRefreshToken,
-  runWorldmapChunkRefreshExecution,
-  scheduleWorldmapChunkRefreshTimer,
-  waitForWorldmapRequestedChunkRefresh,
-} from "./worldmap-chunk-refresh-runtime";
-import {
-  createWorldmapChunkTransitionRuntimeState,
-  resolveWorldmapChunkTransitionTimeoutRecovery,
-  runWorldmapChunkTransition,
-  type WorldmapChunkTransitionHardTimeoutInfo,
-} from "./worldmap-chunk-transition-runtime";
-import {
-  settleWorldmapShortcutSelectionProtection,
-  shouldResetWorldmapShortcutRefreshUiReason,
-} from "./worldmap-shortcut-selection-runtime";
-import {
-  clearWorldmapPostCommitManagerCatchUpState,
-  createWorldmapPostCommitManagerCatchUpState,
-  drainWorldmapPostCommitManagerCatchUpQueue,
-  enqueueWorldmapPostCommitManagerCatchUpTask,
-  scheduleWorldmapPostCommitManagerCatchUpDrain,
-} from "./worldmap-post-commit-manager-catchup-runtime";
+import { createWorldmapHydratedRefreshQueueState, flushWorldmapHydratedChunkRefreshQueue, queueWorldmapHydratedChunkRefresh, trackWorldmapHydratedRefreshQueueFlush, waitForWorldmapHydratedRefreshQueueIdle } from "./worldmap-hydrated-refresh-runtime";
+import { renewWorldmapChunkRefreshRuntimeState, createWorldmapChunkRefreshRuntimeState, requestWorldmapChunkRefreshToken, runWorldmapChunkRefreshExecution, scheduleWorldmapChunkRefreshTimer, waitForWorldmapRequestedChunkRefresh } from "./worldmap-chunk-refresh-runtime";
+import { createWorldmapChunkTransitionRuntimeState, resolveWorldmapChunkTransitionTimeoutRecovery, runWorldmapChunkTransition, type WorldmapChunkTransitionHardTimeoutInfo } from "./worldmap-chunk-transition-runtime";
+import { settleWorldmapShortcutSelectionProtection, shouldResetWorldmapShortcutRefreshUiReason } from "./worldmap-shortcut-selection-runtime";
+import { clearWorldmapPostCommitManagerCatchUpState, createWorldmapPostCommitManagerCatchUpState, drainWorldmapPostCommitManagerCatchUpQueue, enqueueWorldmapPostCommitManagerCatchUpTask, scheduleWorldmapPostCommitManagerCatchUpDrain } from "./worldmap-post-commit-manager-catchup-runtime";
 import { prepareWorldmapChunkRuntime } from "./worldmap-chunk-preparation-runtime";
-import {
-  WorldmapExactTerrainPreparationRuntime,
-  type WorldmapExactTerrainPreparation,
-} from "./worldmap-exact-terrain-preparation-runtime";
+import { WorldmapExactTerrainPreparationRuntime, type WorldmapExactTerrainPreparation } from "./worldmap-exact-terrain-preparation-runtime";
 import { handleWorldmapChunkFinalizeResult } from "./worldmap-chunk-finalize-runtime";
 import { prepareWorldmapChunkSwitchRuntime } from "./worldmap-chunk-switch-runtime";
 import { commitOwnedWorldmapPreparedTerrain } from "./worldmap-owned-terrain-commit";
 import { catchUpCommittedWorldmapChunkManagers } from "./worldmap-committed-chunk-manager-catchup";
-import {
-  recordWorldmapChunkMemoryDelta,
-  resolveWorldmapChunkSwitchAnchorState,
-} from "./worldmap-chunk-success-runtime";
+import { recordWorldmapChunkMemoryDelta, resolveWorldmapChunkSwitchAnchorState } from "./worldmap-chunk-success-runtime";
 import { handleWorldmapRefreshCommitRuntime } from "./worldmap-refresh-commit-runtime";
 import { runWorldmapRefreshRuntime } from "./worldmap-refresh-runtime";
-import {
-  handleWorldmapCriticalManagerCatchUpFailures,
-  runWorldmapCriticalManagerCatchUp,
-  type WorldmapCriticalManagerCatchUpFailure,
-} from "./worldmap-critical-manager-catchup-runtime";
-import {
-  commitWorldmapPreparedTerrainPresentation,
-  recordWorldmapTerrainReadyDuration,
-} from "./worldmap-terrain-commit-runtime";
+import { handleWorldmapCriticalManagerCatchUpFailures, runWorldmapCriticalManagerCatchUp, type WorldmapCriticalManagerCatchUpFailure } from "./worldmap-critical-manager-catchup-runtime";
+import { commitWorldmapPreparedTerrainPresentation, recordWorldmapTerrainReadyDuration } from "./worldmap-terrain-commit-runtime";
 import { runWorldmapArmySelectionRecovery } from "./worldmap-army-selection-recovery-runtime";
-import {
-  ARMY_SELECT_REQUEST_EVENT,
-  takeArmySelectRequest,
-  type ArmySelectRequest,
-} from "./worldmap-army-select-request";
-import {
-  DEPLOY_ON_MAP_EVENT,
-  type DeployOnMap,
-  deployOrderPaths,
-  deployShownOnMap,
-  readDeployOnMap,
-} from "./worldmap-deploy-request";
+import { ARMY_SELECT_REQUEST_EVENT, takeArmySelectRequest, type ArmySelectRequest } from "./worldmap-army-select-request";
+import { DEPLOY_ON_MAP_EVENT, type DeployOnMap, deployOrderPaths, deployShownOnMap, readDeployOnMap } from "./worldmap-deploy-request";
 import { cameraHexOf, type CameraNavigation } from "./worldmap-camera-target";
 import { offerSelectedArmyOrdersAtOutcome, sendSelectedArmyTravel } from "./worldmap-army-order-selection";
 import { dropNextOrder, queueNextOrder, takeNextOrder } from "./worldmap-next-order";
 import { whenEntryDestinationSettled } from "@/game-entry/entry-destination";
-import {
-  attackConfirmsOnTileCard,
-  ORDER_REQUEST_EVENT,
-  isTouchHold,
-  orderOnTap,
-  orderVerbOnHud,
-  pinsOrder,
-  readOrderRequest,
-  stepBackOnEscape,
-} from "./worldmap-order-request";
+import { attackConfirmsOnTileCard, ORDER_REQUEST_EVENT, isTouchHold, orderOnTap, orderVerbOnHud, pinsOrder, readOrderRequest, stepBackOnEscape } from "./worldmap-order-request";
 import { hudFor } from "@/ui/layouts/hud-for";
 import { layoutNow } from "@/shell/frame/layout";
 import { type OrderTip, orderFood, orderTip, refusedOrderVerb } from "@/ui/features/frontier/hud/order-tip";
@@ -325,111 +161,38 @@ import { getGameModeId } from "@/config/game-modes";
 import { onChestOpenRequest } from "./worldmap-chest-open-request";
 import { shouldQueueArmySelectionRecovery } from "./worldmap-army-tab-selection";
 import { shouldPlayArmyMovementFx } from "./worldmap-movement-fx-policy";
-import {
-  resolveExploreCompletionVisualCleanup,
-  shouldCleanupTrackedTravelEffect,
-  type MovementEffectClearReason,
-  type TravelEffectType,
-} from "./worldmap-travel-effect-policy";
-import {
-  resolveEntityActionPathLookup,
-  resolveEntityActionPathsTransitionTokenForForcedRefresh,
-  resolveEntityActionPathsTransitionTokenSync,
-  resolvePendingChunkRefreshUiReason,
-  shouldRequestTileRefreshForStructureBoundsChange,
-  shouldClearEntitySelectionForEntityActionTransition,
-  shouldClearEntitySelectionForMissingActionPathOwnership,
-  shouldForceShortcutNavigationRefresh,
-  shouldRunShortcutForceFallback,
-  shouldRunManagerUpdate,
-  shouldForceChunkRefreshForZoomDistanceChange,
-  waitForChunkTransitionToSettle,
-} from "./worldmap-chunk-transition";
+import { resolveExploreCompletionVisualCleanup, shouldCleanupTrackedTravelEffect, type MovementEffectClearReason, type TravelEffectType } from "./worldmap-travel-effect-policy";
+import { resolveEntityActionPathLookup, resolveEntityActionPathsTransitionTokenForForcedRefresh, resolveEntityActionPathsTransitionTokenSync, resolvePendingChunkRefreshUiReason, shouldRequestTileRefreshForStructureBoundsChange, shouldClearEntitySelectionForEntityActionTransition, shouldClearEntitySelectionForMissingActionPathOwnership, shouldForceShortcutNavigationRefresh, shouldRunShortcutForceFallback, shouldRunManagerUpdate, shouldForceChunkRefreshForZoomDistanceChange, waitForChunkTransitionToSettle } from "./worldmap-chunk-transition";
 import { createWorldmapChunkPolicy } from "./worldmap-chunk-policy";
 import { createWorldmapZoomHardeningConfig } from "./worldmap-zoom-hardening";
 import { WorldmapCombatPresentation } from "./worldmap-combat-presentation";
 import { WorldmapHoverLabelRecovery, type HoverLabelRecoveryReason } from "./worldmap-hover-label-recovery";
 import { WorldmapTerrainVisibilityHealthMonitor } from "./worldmap-terrain-visibility-health-monitor";
 import { WorldmapZoomCoordinator } from "./worldmap-zoom/worldmap-zoom-coordinator";
-import {
-  normalizeWorldmapWheelDelta,
-  resolveWorldmapWheelPixelDelta,
-} from "./worldmap-zoom/worldmap-zoom-input-normalizer";
-import {
-  createWorldmapZoomRefreshPlannerState,
-  planWorldmapZoomRefresh,
-} from "./worldmap-zoom/worldmap-zoom-refresh-planner";
+import { normalizeWorldmapWheelDelta, resolveWorldmapWheelPixelDelta } from "./worldmap-zoom/worldmap-zoom-input-normalizer";
+import { createWorldmapZoomRefreshPlannerState, planWorldmapZoomRefresh } from "./worldmap-zoom/worldmap-zoom-refresh-planner";
 import type { WorldmapCameraSnapshot, ZoomIntent } from "./worldmap-zoom/worldmap-zoom-types";
-import {
-  resolveWorldmapChunkRefreshDebounceMs,
-  shouldDelayWorldmapChunkSwitch,
-} from "./worldmap-chunk-switch-delay-policy";
+import { resolveWorldmapChunkRefreshDebounceMs, shouldDelayWorldmapChunkSwitch } from "./worldmap-chunk-switch-delay-policy";
 import { classifyWorldmapUploadWork, resolveWorldmapPostCommitWorkAction } from "./worldmap-upload-budget-policy";
-import {
-  applyWorldmapSwitchOffRuntimeState,
-  invalidateWorldmapSwitchOffTransitionState,
-} from "./worldmap-runtime-lifecycle";
+import { applyWorldmapSwitchOffRuntimeState, invalidateWorldmapSwitchOffTransitionState } from "./worldmap-runtime-lifecycle";
 import { installWorldmapDebugHooks, uninstallWorldmapDebugHooks } from "./worldmap-debug-hooks";
 import { destroyWorldmapOwnedManagers } from "./worldmap-ownership-lifecycle";
-import {
-  shouldRejectCachedExploredTerrainSnapshot,
-  shouldRejectCachedTerrainFingerprintMismatch,
-  shouldRejectCachedTerrainSnapshot,
-} from "./worldmap-cache-safety";
-import {
-  getRenderAreaKeyForChunk as getCanonicalRenderAreaKeyForChunk,
-  getRenderFetchBoundsForArea as getCanonicalRenderFetchBoundsForArea,
-  isHexInsideAnyBounds,
-} from "./worldmap-chunk-bounds";
+import { shouldRejectCachedExploredTerrainSnapshot, shouldRejectCachedTerrainFingerprintMismatch, shouldRejectCachedTerrainSnapshot } from "./worldmap-cache-safety";
+import { getRenderAreaKeyForChunk as getCanonicalRenderAreaKeyForChunk, getRenderFetchBoundsForArea as getCanonicalRenderFetchBoundsForArea, isHexInsideAnyBounds } from "./worldmap-chunk-bounds";
 import { resolveTerrainPresentationWorldBounds } from "./worldmap-terrain-bounds-policy";
 import { getRenderOverlapChunkKeys, getRenderOverlapNeighborChunkKeys } from "./worldmap-chunk-neighbors";
 import { prunePrefetchQueueByAreaKey, type PrefetchQueueItem } from "./worldmap-prefetch-queue";
 import { resolveUrlChangedListenerLifecycle } from "./worldmap-lifecycle-policy";
-import {
-  disposeWorldmapStoreBridge,
-  registerWorldmapStoreBridge,
-  syncWorldmapStoreBridgeState,
-  type WorldmapStoreState,
-} from "./worldmap-store-bridge";
+import { disposeWorldmapStoreBridge, registerWorldmapStoreBridge, syncWorldmapStoreBridgeState, type WorldmapStoreState } from "./worldmap-store-bridge";
 import { shouldCastWorldmapDirectionalShadow } from "./worldmap-shadow-policy";
-import {
-  createWorldmapChunkDiagnostics,
-  recordChunkDiagnosticsEvent,
-  type WorldmapChunkDiagnostics,
-} from "./worldmap-chunk-diagnostics";
-import {
-  incrementWorldmapRenderCounter,
-  incrementWorldmapForceRefreshReason,
-  recordWorldmapRenderDuration,
-  resetWorldmapRenderDiagnostics,
-  setWorldmapRenderGauge,
-  snapshotWorldmapRenderDiagnostics,
-  type WorldmapForceRefreshReason,
-  type WorldmapRenderDurationMetric,
-} from "../perf/worldmap-render-diagnostics";
-import {
-  getActiveWorldmapTerrainPresentationMetrics,
-  recordWorldmapTerrainPresentationEvent,
-  recordWorldmapTerrainRenderedFrame,
-  syncWorldmapTerrainPresentationCoverage,
-} from "../perf/worldmap-terrain-presentation-metrics";
+import { createWorldmapChunkDiagnostics, recordChunkDiagnosticsEvent, type WorldmapChunkDiagnostics } from "./worldmap-chunk-diagnostics";
+import { incrementWorldmapRenderCounter, incrementWorldmapForceRefreshReason, recordWorldmapRenderDuration, resetWorldmapRenderDiagnostics, setWorldmapRenderGauge, snapshotWorldmapRenderDiagnostics, type WorldmapForceRefreshReason, type WorldmapRenderDurationMetric } from "../perf/worldmap-render-diagnostics";
+import { getActiveWorldmapTerrainPresentationMetrics, recordWorldmapTerrainPresentationEvent, recordWorldmapTerrainRenderedFrame, syncWorldmapTerrainPresentationCoverage } from "../perf/worldmap-terrain-presentation-metrics";
 import { resolveSpireTraversalAction } from "./worldmap-spire-travel-policy";
 import { createWorldmapTerrainFingerprint } from "./worldmap-terrain-fingerprint";
-import {
-  captureChunkDiagnosticsBaseline,
-  cloneChunkDiagnosticsBaselines,
-  snapshotChunkDiagnostics as snapshotChunkDiagnosticsState,
-  type WorldmapChunkDiagnosticsBaselineEntry,
-} from "./worldmap-chunk-diagnostics-baseline";
-import {
-  evaluateChunkSwitchP95Regression,
-  type ChunkSwitchP95RegressionMetric,
-  type ChunkSwitchP95RegressionResult,
-} from "./worldmap-chunk-latency-regression";
-import {
-  evaluateProjectionSyncVolumeRegression,
-  type ProjectionSyncVolumeRegressionResult,
-} from "./worldmap-projection-sync-volume-regression";
+import { captureChunkDiagnosticsBaseline, cloneChunkDiagnosticsBaselines, snapshotChunkDiagnostics as snapshotChunkDiagnosticsState, type WorldmapChunkDiagnosticsBaselineEntry } from "./worldmap-chunk-diagnostics-baseline";
+import { evaluateChunkSwitchP95Regression, type ChunkSwitchP95RegressionMetric, type ChunkSwitchP95RegressionResult } from "./worldmap-chunk-latency-regression";
+import { evaluateProjectionSyncVolumeRegression, type ProjectionSyncVolumeRegressionResult } from "./worldmap-projection-sync-volume-regression";
 import { prepareWarpTravelChunkBounds } from "./warp-travel-chunk-bounds-preparation";
 import { resolveWarpTravelDirectionalPrefetchPlan } from "./warp-travel-directional-prefetch";
 import { drainWarpTravelPrefetchQueue } from "./warp-travel-prefetch-drain";
@@ -442,63 +205,22 @@ import { WarpTravel, type WarpTravelLifecycleAdapter } from "./warp-travel";
 import { startWorldmapEntryReadiness } from "./worldmap-entry-readiness";
 import { completeWorldmapInteractiveRefresh, type WorldmapWarpTravelPhase } from "./worldmap-warp-travel-refresh";
 import { resolveWorldmapChunkHysteresis } from "./worldmap-chunk-hysteresis-policy";
-import {
-  prepareWorldmapChunkPresentation,
-  prewarmWorldmapChunkPresentation,
-  type WorldmapChunkPresentationTimeoutInfo,
-} from "./worldmap-chunk-presentation";
-import {
-  resolveWorldmapChunkFromHexPosition,
-  resolveWorldmapChunkFromWorldPosition,
-} from "./worldmap-chunk-selection-policy";
+import { prepareWorldmapChunkPresentation, prewarmWorldmapChunkPresentation, type WorldmapChunkPresentationTimeoutInfo } from "./worldmap-chunk-presentation";
+import { resolveWorldmapChunkFromHexPosition, resolveWorldmapChunkFromWorldPosition } from "./worldmap-chunk-selection-policy";
 import { registerActiveWorldmapRecoveryHandle } from "./worldmap-reconnect-recovery-handle";
 import { createWorldmapChunkRecoveryProgress } from "./worldmap-chunk-recovery-progress";
-import {
-  createReconnectRefreshQueueState,
-  drainReconnectRefreshQueue,
-  queueOrRunReconnectRefresh,
-} from "./worldmap-reconnect-refresh-queue";
+import { createReconnectRefreshQueueState, drainReconnectRefreshQueue, queueOrRunReconnectRefresh } from "./worldmap-reconnect-refresh-queue";
 import { computeTerrainCacheEvictions } from "./worldmap-terrain-cache-eviction";
 import { snapshotExploredTilesRegion, lookupSnapshotBiome } from "./explored-tiles-snapshot";
 import { subscribeWorldmapTileChanges } from "./worldmap-exploration-projection";
 import { resolveWorldmapCameraGroundBounds } from "./worldmap-camera-ground-bounds";
 import { createTerrainCacheGeneration, isTerrainCacheStale } from "./terrain-cache-generation";
-import {
-  bindWorldmapTerrainEcologyRefresh,
-  collectWorldmapTerrainEcologyAnchors,
-} from "./worldmap-terrain-ecology-refresh-runtime";
+import { bindWorldmapTerrainEcologyRefresh, collectWorldmapTerrainEcologyAnchors } from "./worldmap-terrain-ecology-refresh-runtime";
 import { takeShownTiles, WorldmapTerrainContent, type TerrainCellFacts } from "./worldmap-terrain-content";
 import { presentResult } from "@/three/presented-results";
-import {
-  WORLDMAP_CAMERA_ZOOM,
-  resolveWorldmapCameraFieldOfViewDegrees,
-  resolveWorldmapCameraPitchRadians,
-} from "./worldmap-camera-view-profile";
-import {
-  appendWorldmapChunkTrace,
-  createWorldmapChunkTraceBuffer,
-  formatWorldmapChunkWarning,
-  snapshotWorldmapChunkTrace,
-  type WorldmapChunkTraceEntry,
-  type WorldmapChunkTraceEvent,
-} from "./worldmap-chunk-trace";
-import {
-  applyWorldmapTerrainPresentation,
-  applyWorldmapVisualTerrainPage,
-  composeWorldmapTerrainPresentations,
-  createWorldmapTerrainPresentationState,
-  getPrioritizedWorldmapTerrainPresentations,
-  partitionPreparedTerrainIntoVisualPages,
-  resolveWorldmapVisualTerrainPageKeyForHex,
-  resolveWorldmapVisualTerrainWindow,
-  type WorldmapTerrainCellRef,
-  type WorldmapTerrainComposite,
-  type WorldmapTerrainPresentation,
-  type WorldmapTerrainPresentationKind,
-  type WorldmapTerrainPresentationRuntimeState,
-  type WorldmapTerrainSourceCellRef,
-  type WorldmapVisualTerrainWindow,
-} from "./worldmap-terrain-presentation-runtime";
+import { WORLDMAP_CAMERA_ZOOM, resolveWorldmapCameraFieldOfViewDegrees, resolveWorldmapCameraPitchRadians } from "./worldmap-camera-view-profile";
+import { appendWorldmapChunkTrace, createWorldmapChunkTraceBuffer, formatWorldmapChunkWarning, snapshotWorldmapChunkTrace, type WorldmapChunkTraceEntry, type WorldmapChunkTraceEvent } from "./worldmap-chunk-trace";
+import { applyWorldmapTerrainPresentation, applyWorldmapVisualTerrainPage, composeWorldmapTerrainPresentations, createWorldmapTerrainPresentationState, getPrioritizedWorldmapTerrainPresentations, partitionPreparedTerrainIntoVisualPages, resolveWorldmapVisualTerrainPageKeyForHex, resolveWorldmapVisualTerrainWindow, type WorldmapTerrainCellRef, type WorldmapTerrainComposite, type WorldmapTerrainPresentation, type WorldmapTerrainPresentationKind, type WorldmapTerrainPresentationRuntimeState, type WorldmapTerrainSourceCellRef, type WorldmapVisualTerrainWindow } from "./worldmap-terrain-presentation-runtime";
 
 /**
  * A desktop order preview's order, as the player read it: the army, the tile, and the order's verb and cost there, or

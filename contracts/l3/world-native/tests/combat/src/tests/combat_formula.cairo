@@ -1,42 +1,11 @@
 pub use world_test_support::tests::combat_formula::*;
 
 
-#[test]
-fn ethereal_d20_adds_each_sides_roll_as_a_positive_damage_percentage() {
-    let (base_outgoing, base_incoming) = dice_damage(0, 0);
-    for roll in 1_u8..21 {
-        let (outgoing, incoming) = dice_damage(roll, 0);
-        let expected = base_outgoing * (100 + roll.into()) / 100;
-        assert!(
-            outgoing <= expected + RESOURCE_PRECISION && expected <= outgoing + RESOURCE_PRECISION,
-            "attacker die percentage wrong",
-        );
-        assert_eq!(incoming, base_incoming);
-        let (outgoing, incoming) = dice_damage(0, roll);
-        let expected = base_incoming * (100 + roll.into()) / 100;
-        assert!(
-            incoming <= expected + RESOURCE_PRECISION && expected <= incoming + RESOURCE_PRECISION,
-            "defender die percentage wrong",
-        );
-        assert_eq!(outgoing, base_outgoing);
-    }
-    let (outgoing, incoming) = dice_damage(1, 20);
-    assert!(incoming > outgoing, "independent dice were not applied");
-}
 
-#[test]
-fn the_rolls_decide_which_of_two_even_armies_deals_more_damage() {
-    let (outgoing, incoming) = dice_damage(20, 1);
-    assert!(outgoing > incoming, "the attacker's best roll should win the exchange");
-    let (outgoing, incoming) = dice_damage(1, 20);
-    assert!(outgoing < incoming, "the defender's best roll should win the exchange");
-}
 
-#[test]
-#[should_panic(expected: "invalid combat die")]
-fn combat_rejects_a_die_above_twenty() {
-    dice_damage(21, 1);
-}
+
+
+
 
 #[test]
 fn tests_troop_attack_simple_1() {
@@ -415,63 +384,15 @@ fn scouts_deal_three_quarters_damage_on_either_side_only_in_frontier() {
     }
 }
 
-#[test]
-fn charge_reduces_the_opening_answer_against_beasts_and_armies() {
-    let damage = TroopDamageConfig {
-        damage_biome_bonus_num: 0, damage_scaling_factor: 36893488147419103232, ..damage_config(),
-    };
-    let stamina = TroopStaminaConfig { stamina_attack_req: 10, stamina_defense_req: 0, ..stamina_config() };
-    for defender_is_structure_guard in array![false, true] {
-        let mut attacker = test_troops(TroopType::Knight, TroopTier::T1, 1000, 100);
-        let mut defender = test_troops(TroopType::Knight, TroopTier::T1, 1000, 100);
-        let expected = array![(658_u128, 563_u128), (386, 245), (251, 32), (230, 0)];
-        for index in 0_u32..4 {
-            attacker
-                .attack_with_context(
-                    ref defender,
-                    CombatContext {
-                        day_unit_seconds: 100,
 
-                            50
-                        } else {
-                            0
-                        },
-                        defender_is_structure_guard,
-                        ..context(Biome::Grassland),
-                    },
-                    stamina,
-                    damage,
-                    1,
-                    0,
-                );
-            let (left, guard) = *expected.at(index);
-            assert_eq!(attacker.count, left * RESOURCE_PRECISION);
-            assert_eq!(defender.count, guard * RESOURCE_PRECISION);
-        }
-    }
 }
 
 
-#[test]
-fn charge_does_not_change_scout_or_blitz_damage() {
-    let damage = TroopDamageConfig { damage_biome_bonus_num: 0, ..damage_config() };
-    for (category, day_unit_seconds) in array![(TroopType::Paladin, 100_u32), (TroopType::Knight, 0)] {
-        let mut attacker = test_troops(category, TroopTier::T1, 1000, 100);
-        let mut defender = test_troops(TroopType::Knight, TroopTier::T1, 1000, 100);
-        let plain = CombatContext { day_unit_seconds, ..context(Biome::Grassland) };
-        assert_eq!(
-            attacker.damage_with_context(ref defender, plain, stamina_config(), damage, 1, 0),
-            attacker
-                .damage_with_context(
-                    ref defender, CombatContext { charge_percent: 50, ..plain }, stamina_config(), damage, 1, 0,
-                ),
-        );
-    }
-}
+
 
 
 #[test]
-fn charge_wipeout_and_zero_damage_have_defined_refunds_and_cooldowns() {
+fn wipeout_and_zero_damage_have_defined_refunds_and_cooldowns() {
     let damage = TroopDamageConfig {
         damage_biome_bonus_num: 0, damage_scaling_factor: 36893488147419103232, ..damage_config(),
     };
@@ -482,7 +403,7 @@ fn charge_wipeout_and_zero_damage_have_defined_refunds_and_cooldowns() {
         damage_stamina_refund: true,
         ..stamina_config(),
     };
-    let context = CombatContext { day_unit_seconds: 100, charge_percent: 50, ..context(Biome::Grassland) };
+    let context = CombatContext { day_unit_seconds: 100, ..context(Biome::Grassland) };
     for shielded in array![false, true] {
         let mut attacker = test_troops(TroopType::Knight, TroopTier::T1, 1000, 100);
         let mut defender = test_troops(TroopType::Knight, TroopTier::T1, 1, 100);

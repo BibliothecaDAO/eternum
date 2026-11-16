@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { FRAGMENT, FRAGMENT_PRICES, lordsFor, SEAL_CENTS, SEAL_FREE, SEAL_HOLDERS, STORE_PRODUCTS } from "./shop";
+import { FRAGMENT, lordsFor, SEAL_CENTS, SEAL_FREE, SEAL_HOLDERS, STORE_PRODUCTS } from "./shop";
 
 /** The frozen design's day: LORDS at $0.003637, so $1 is 275 LORDS. */
 const PRICE = 0.003637;

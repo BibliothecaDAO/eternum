@@ -1,16 +1,10 @@
-import { frontierArmyRules } from "../army/progression-rules-fixture";
-import { BiomeType, BiomeTypeToId, getNeighborHexes, StructureType, TileOccupier } from "@bibliothecadao/types";
+
+import { BiomeType, StructureType, TileOccupier } from "@bibliothecadao/types";
 import type { SiteKind } from "@bibliothecadao/eternum";
 import { NativeFactStore } from "@bibliothecadao/eternum/game-client";
-import {
-  nativeFactModels,
-  nativeRuleConstants,
-  nativeTilePackingConstants,
-  type NativeModelName,
-  type NativeRows,
-} from "../../../../../../../contracts/l3/world-native/schema/client.gen";
+import { nativeFactModels, nativeRuleConstants, type NativeModelName, type NativeRows } from "../../../../../../../contracts/l3/world-native/schema/client.gen";
 import rowFixture from "../../../../../../../contracts/l3/world-native/schema/fixtures/row-set.json";
-import { nativeCommandBits } from "../../../../../../../contracts/l3/world-native/schema/commands.gen";
+
 import preset from "../../../../../../../contracts/l3/world-native/tests/fixtures/current-presets/conformance.json";
 import frontierConfig from "../../../../../../../config/generated/frontier.madara.json";
 import { frontierDay } from "../deploy/deploy-fixture";
@@ -128,7 +122,7 @@ export const campBeside = (
         ]
       : []),
     set("0xad201", "ArmyDay", { game_id: 1, explorer_id: 201, day: 0 }),
-    set("0xf2013", "ArmyCombat", { game_id: 1, explorer_id: 201, charge: 0, last_target: 0 }),
+    set("0xf2013", "ArmyCombat", { game_id: 1, explorer_id: 201, last_target: 0 }),
     set("0x74", "ExplorerTroops", { game_id: 1, explorer_id: 201, owner: 7, troops: troops(1_498n, armyStamina) }),
     set("0x75", "TileOccupancy", {
       game_id: 1,
@@ -224,7 +218,6 @@ export const blightglowRift = ({
       troops: troops(1_400n, guardStamina),
       destroyed_tick: 0,
     }),
-    set("0xf1", "ArmyProgressionRules", frontierArmyRules()),
     set("0x74", "ExplorerTroops", {
       ...wire(army),
       troops: { ...wire(army.troops), count: String(armyTroops * PRECISION), stamina: { Slot: 0 } },
@@ -232,17 +225,7 @@ export const blightglowRift = ({
     set("0xf2012", "ArmyProgress", {
       game_id: 1,
       explorer_id: 201,
-      xp: 0,
-      common_points: 0,
-      uncommon_points: 0,
-      rare_points: 0,
-      epic_points: 0,
-      legendary_points: 0,
-      battle: 1,
       logistics: 0,
-      scouting: 0,
-      homecoming: 0,
-      scouting_kinds: 0,
     }),
     set("0x9", "ArmySlot", {
       game_id: 1,
@@ -291,69 +274,6 @@ export const otherArmyAt = (store: ReturnType<typeof campBeside>["store"], col: 
   ] as never);
   store.setSnapshot({ gameId: 1, complete: true, actor: "0x111", visit: "0x999", timestamp: 350 });
   return store.require("ExplorerTroops", { game_id: 1, explorer_id: 301 });
-};
-
-/** Where the sites fixture's army stands, and the Shrine and Well beside it; a second Shrine stands far off. */
-export const ARMY_TILE = { col: 41, row: 12, alt: false };
-export const SHRINE_TILE = { col: 40, row: 12, alt: false };
-export const WELL_TILE = { col: 42, row: 12, alt: false };
-export const FAR_SHRINE_TILE = { col: 49, row: 12, alt: false };
-
-type SiteTile = typeof SHRINE_TILE;
-/** Where each of the fixture's things stands. */
-export type SitesLayout = { army: SiteTile; shrine: SiteTile; well: SiteTile; far: SiteTile };
-const SITES_LAYOUT: SitesLayout = { army: ARMY_TILE, shrine: SHRINE_TILE, well: WELL_TILE, far: FAR_SHRINE_TILE };
-
-/**
- * The deploy fixture's Frontier day, where the game allows site use as Frontier's preset does, with the realm's
- * 1,498-knight army (explorer 201) on revealed grassland: a Shrine and a Well beside it, a Shrine eight tiles off, and the
- * Shrines' discovered ranks. The army's bar holds `stamina` of its 150. `layout` places them elsewhere (the lab
- * puts them on its drawn world); the Shrine and the Well must stand beside the army.
- */
-export const sitesBeside = (stamina: bigint, layout: SitesLayout = SITES_LAYOUT) => {
-  const { store } = frontierDay();
-  const grass = String(BigInt(BiomeTypeToId[BiomeType.Grassland]) * BigInt(nativeTilePackingConstants.BIOME_SCALE));
-  const revealed = [layout.army, ...getNeighborHexes(layout.army.col, layout.army.row), layout.far];
-  const sites = [
-    ["0x76", layout.shrine, 901, TileOccupier.Shrine],
-    ["0x77", layout.well, 902, TileOccupier.Well],
-    ["0x78", layout.far, 903, TileOccupier.Shrine],
-  ] as const;
-  const site = (key: string, tile: SiteTile, entity: number, category: TileOccupier) =>
-    set(key, "TileOccupancy", { game_id: 1, ...tile, alt: false, entity_id: entity, category, is_structure: false });
-  store.applyFacts([
-    set("0x100", "SliceRules", {
-      ...preset.rules,
-      game_id: 1,
-      day_unit_seconds: 100,
-      // The deploy fixture's bar: 150 at most for each troop type.
-      troop_stamina_config: {
-        ...preset.rules.troop_stamina_config,
-        stamina_initial: 150,
-        stamina_knight_max: 150,
-        stamina_paladin_max: 150,
-        stamina_crossbowman_max: 150,
-      },
-      command_mask: String(BigInt(preset.rules.command_mask) | BigInt(nativeCommandBits.InteractSite)),
-    }),
-    set("0x101", "ArmyProgressionRules", frontierArmyRules()),
-    ...revealed.map((tile, index) =>
-      set(`0x20${index}`, "TileOpt", { game_id: 1, alt: false, col: tile.col, row: tile.row, data: grass }),
-    ),
-    set("0xad201", "ArmyDay", { game_id: 1, explorer_id: 201, day: 0 }),
-    set("0xf2013", "ArmyCombat", { game_id: 1, explorer_id: 201, charge: 0, last_target: 0 }),
-    set("0x74", "ExplorerTroops", { game_id: 1, explorer_id: 201, owner: 7, troops: troops(1_498n, stamina) }),
-    site("0x75", layout.army, 201, TileOccupier.ExplorerKnightT1),
-    ...sites.map(([key, tile, entity, category]) => site(key, tile, entity, category)),
-    set("0xa901", "ShrineReward", { game_id: 1, entity_id: 901, rank: 3 }),
-    set("0xa903", "ShrineReward", { game_id: 1, entity_id: 903, rank: 5 }),
-  ] as never);
-  /** The chain's answer to a use: the site's tile emptied, as the contract vacates it. */
-  const vacate = (tile: { col: number; row: number }) => {
-    const [key] = sites.find(([, at]) => at.col === tile.col && at.row === tile.row)!;
-    store.applyFacts([{ model: "TileOccupancy", key, value: null }] as never);
-  };
-  return { store, vacate };
 };
 
 export const relicEffectFact = (kind: NativeRows["ArmyRelicEffect"]["kind"], rank = 1, expiresAt = 380) => ({

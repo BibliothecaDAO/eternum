@@ -16,31 +16,12 @@ import { LeftView } from "@/types";
 import { forecastAttack } from "@/ui/features/military/battle/fight-forecast";
 import { openArmyDeployment } from "@/ui/features/military/utils/open-army-deployment";
 import { knownAmount } from "@/ui/utils/utils";
-import {
-  ArmyActionManager,
-  biomeTypeOf,
-  configManager,
-  getGuardsByStructure,
-  getBalance,
-  getTileAt,
-  getTroopResourceId,
-  lostArmyLine,
-  Position,
-  structureMapPosition,
-} from "@bibliothecadao/eternum";
+import { ArmyActionManager, biomeTypeOf, configManager, getGuardsByStructure, getBalance, getTileAt, getTroopResourceId, lostArmyLine, Position, structureMapPosition } from "@bibliothecadao/eternum";
 import type { NativeFactStore } from "@bibliothecadao/eternum/game-client";
 import { resolveExplorerTroops, STAMINA_MODELS } from "@bibliothecadao/eternum/troop-stamina";
 import { BiomeType, StructureType, TROOP_TIERS, TROOP_TYPES } from "@bibliothecadao/types";
 import { useMemo } from "react";
-import {
-  type CoachAct,
-  type CoachArmy,
-  type CoachStep,
-  type CoachTarget,
-  coachSteps,
-  raiseStep,
-  type TroopsOnHand,
-} from "./coach";
+import { type CoachAct, type CoachArmy, type CoachStep, type CoachTarget, coachSteps, raiseStep, type TroopsOnHand } from "./coach";
 import type { NextStep } from "./next-step";
 import type { TroopStack } from "@/ui/features/military/components/unified-army-creation-modal/types";
 

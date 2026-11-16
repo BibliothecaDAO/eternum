@@ -1,39 +1,8 @@
 import { readStandingFrontierBeast, type FrontierBeast } from "@/three/structures/frontier-beast";
-import {
-  availableRuinLords,
-  armyRelicReward,
-  configManager,
-  getBlockTimestamp,
-  ResourceManager,
-  hasCastleLimit,
-  resolveExchange,
-
-  getGuardsByStructure,
-  siteKindOf,
-} from "@bibliothecadao/eternum";
-import {
-  readSiteReward,
-  safeInteger,
-  type DeepSiteView,
-  type NativeFactStore,
-  type NativeRows,
-} from "@bibliothecadao/eternum/game-client";
-import {
-  inlineTroops,
-  resolveExplorerCombatTroops,
-  resolveExplorerTroops,
-} from "@bibliothecadao/eternum/troop-stamina";
-import {
-  type BiomeType,
-  getLayeredAttackDistance,
-  getTroopAttackRange,
-  RESOURCE_PRECISION,
-  ResourcesIds,
-  StructureType,
-  type Troops,
-  type TroopTier,
-  type TroopType,
-} from "@bibliothecadao/types";
+import { availableRuinLords, armyRelicReward, configManager, getBlockTimestamp, ResourceManager, hasCastleLimit, resolveExchange, getGuardsByStructure, siteKindOf } from "@bibliothecadao/eternum";
+import { readSiteReward, safeInteger, type DeepSiteView, type NativeFactStore, type NativeRows } from "@bibliothecadao/eternum/game-client";
+import { inlineTroops, resolveExplorerCombatTroops, resolveExplorerTroops } from "@bibliothecadao/eternum/troop-stamina";
+import { type BiomeType, getLayeredAttackDistance, getTroopAttackRange, RESOURCE_PRECISION, ResourcesIds, StructureType, type Troops, type TroopTier, type TroopType } from "@bibliothecadao/types";
 
 import { siteDepthName } from "@/ui/design-system/kit/words";
 

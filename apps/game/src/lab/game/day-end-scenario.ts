@@ -1,13 +1,7 @@
-import { frontierArmyRules } from "../../ui/features/frontier/army/progression-rules-fixture";
+
 import { readExpeditionRules, setBuildingCount } from "@bibliothecadao/eternum";
 import { nativeResearchConstants as research, type NativeFactStore } from "@bibliothecadao/eternum/game-client";
-import {
-  BUILDINGS_CENTER,
-  BuildingType,
-  getNeighborHexes,
-  RESOURCE_PRECISION,
-  ResourcesIds,
-} from "@bibliothecadao/types";
+import { BUILDINGS_CENTER, BuildingType, getNeighborHexes, RESOURCE_PRECISION, ResourcesIds } from "@bibliothecadao/types";
 
 import { dayClock } from "@/ui/features/frontier/hud/day-clock";
 import { madePicks } from "@/ui/features/frontier/production/store-makers";
@@ -200,19 +194,9 @@ const armyProgressed = (store: NativeFactStore, startsAt: number): LabFact[] => 
       model: "ArmyProgress",
       key: PROGRESS_KEYS.spireArmy,
       value: {
-        common_points: 0,
-        uncommon_points: 0,
-        rare_points: 0,
-        epic_points: 0,
-        legendary_points: 0,
         game_id: 1,
         explorer_id: "201",
-        xp: 40,
-        battle: 1,
         logistics: 2,
-        scouting: 0,
-        scouting_kinds: 0,
-        homecoming: 3,
       },
     },
   ];
@@ -233,9 +217,4 @@ export const researchPriced = (): LabFact[] => [
       },
     })),
   ).flat(),
-  {
-    model: "ArmyProgressionRules",
-    key: PROGRESS_KEYS.rules,
-    value: frontierArmyRules(),
-  },
 ];

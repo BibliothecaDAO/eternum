@@ -393,21 +393,15 @@ fn realm_knowledge_packs_each_row_tier_and_choice_where_the_client_reads_them() 
     learned = crate::research::learn(learned, crate::research::ROW_FARM, crate::research::CHOICE_MAKE);
     learned = crate::research::learn(learned, crate::research::ROW_FARM, crate::research::CHOICE_STORE);
     learned = crate::research::learn(learned, crate::research::ROW_WORKSHOP, crate::research::CHOICE_MAKE);
-    learned = crate::research::learn(learned, crate::research::ROW_SCOUTS_LODGE, crate::research::KIND_RIFTS);
-    learned = crate::research::learn(learned, crate::research::ROW_SCOUTS_LODGE, crate::research::KIND_CAMPS);
     learned = crate::research::learn(learned, crate::research::ROW_SHRINE, 0);
-    learned = crate::research::learn(learned, crate::research::ROW_SCOUTS_LODGE, crate::research::KIND_SANCTUARIES);
     learned = crate::research::learn(learned, crate::research::ROW_DEPTH, 0);
     learned = crate::research::learn(learned, crate::research::ROW_DEPTH, 0);
-    assert_eq!(learned, 635589661556873);
+    assert_eq!(learned, 633318697599113);
     assert_eq!(crate::research::picks(learned, crate::research::ROW_FARM, crate::research::CHOICE_STORE), 1);
-    assert_eq!(
-        crate::research::choice(learned, crate::research::ROW_SCOUTS_LODGE, 3), crate::research::KIND_SANCTUARIES,
-    );
     // Both independent sides and all other rows fit without changing neighboring fields.
     let mut full = 0;
-    for offset in 0..crate::research::ROW_COUNT {
-        let row = (offset + crate::research::ROW_SHRINE) % crate::research::ROW_COUNT;
+    for row_ref in crate::research::ROWS.span() {
+        let row = *row_ref;
         if crate::research::independent_sides(row) {
             for _ in 0_u8..5 {
                 full = crate::research::learn(full, row, 0);
@@ -417,13 +411,9 @@ fn realm_knowledge_packs_each_row_tier_and_choice_where_the_client_reads_them() 
             full = crate::research::learn(full, row, crate::research::choice_count(row) - 1);
         }
     }
-    for row in 0..crate::research::ROW_COUNT {
+    for row_ref in crate::research::ROWS.span() {
+        let row = *row_ref;
         assert_eq!(crate::research::tier(full, row), crate::research::max_tier(row));
-        for at in 1..crate::research::max_tier(row) + 1 {
-            if row == crate::research::ROW_SCOUTS_LODGE {
-                assert_eq!(crate::research::choice(full, row, at), crate::research::choice_count(row) - 1);
-            }
-        }
     }
 }
 
@@ -514,34 +504,9 @@ fn each_hut_tier_adds_a_fifth_of_every_huts_population() {
     assert_eq!(structures.structure_buildings(home).population.max, before + 12 + 7);
 }
 
-#[test]
-fn charge_research_does_not_change_the_barracks_output() {
-    let (d, home, _) = research_world();
-    assert!(execute(d, build_toward(home, crate::research::BARRACKS, 0), 40));
-    let base = rate(d, home, 26);
-    assert_eq!(base, 40);
-    for side in array![0, 0, 0, 0] {
-        assert!(execute(d, research(home, crate::research::ROW_BARRACKS, side), 40));
-    }
-    assert_eq!(rate(d, home, 26), base);
-    assert_eq!(rate(d, home, 27), 0);
-    assert_eq!(rate(d, home, 28), 0);
-}
 
-#[test]
-fn a_training_building_is_unique_and_opens_after_two_barracks_tiers() {
-    let (d, home, _) = research_world();
-    assert_terminal_rejection(d, build_toward(home, crate::research::WAR_HALL, 0), 40);
-    assert_terminal_rejection(d, research(home, crate::research::ROW_WAR_HALL, 0), 40);
-    assert!(execute(d, build_toward(home, crate::research::BARRACKS, 1), 40));
-    assert!(execute(d, research(home, crate::research::ROW_BARRACKS, 0), 40));
-    assert_terminal_rejection(d, build_toward(home, crate::research::WAR_HALL, 0), 40);
-    assert!(execute(d, research(home, crate::research::ROW_BARRACKS, 0), 40));
-    assert!(execute(d, build_toward(home, crate::research::WAR_HALL, 0), 40));
-    assert_terminal_rejection(d, build_toward(home, crate::research::WAR_HALL, 2), 40);
-    assert!(execute(d, research(home, crate::research::ROW_WAR_HALL, 0), 40));
-    assert!(execute(d, build_toward(home, crate::research::HEARTH, 2), 40));
-}
+
+
 
 #[test]
 fn a_tier_the_realm_cannot_pay_in_labor_is_refused_and_changes_nothing() {
@@ -695,17 +660,12 @@ fn frontier_storage_grants_clip_at_each_exact_s2_cap_without_changing_troops() {
 }
 
 #[test]
-fn workshop_sides_and_charge_each_follow_their_exact_ladder() {
+fn workshop_sides_follow_their_exact_ladder() {
     let ladders = array![
         (
             crate::research::ROW_WORKSHOP,
             crate::research::WORKSHOP,
             array![(1000_u128, 1000_u128), (2000, 2000), (8000, 6000), (24000, 16000), (60000, 40000)].span(),
-        ),
-        (
-            crate::research::ROW_BARRACKS,
-            crate::research::BARRACKS,
-            array![(5000_u128, 1000_u128), (10000, 2500), (25000, 5000), (50000, 10000), (100000, 25000)].span(),
         ),
     ];
     for (row, category, prices) in ladders {
@@ -747,16 +707,10 @@ fn workshop_sides_and_charge_each_follow_their_exact_ladder() {
 }
 
 #[test]
-#[test_case(41, 0, name: "war_hall")]
 #[test_case(42, 0, name: "supply_yard")]
-#[test_case(44, 0, name: "hearth")]
 fn construction_grants_common_once_and_the_next_purchase_costs_uncommon(category: u8, kind: u8) {
     let (d, home, preset) = research_world();
-    let row = crate::research::ROW_WAR_HALL + category - crate::research::WAR_HALL;
-    assert!(execute(d, build_toward(home, crate::research::BARRACKS, 1), 40));
-    for _ in 0_u8..2 {
-        assert!(execute(d, research(home, crate::research::ROW_BARRACKS, 0), 40));
-    }
+    let row = crate::research::ROW_SUPPLY_YARD;
     let command = CreateBuilding {
         structure_id: home.entity_id, directions: array![0_u8].span(), category, use_simple: true,
     };
@@ -788,51 +742,26 @@ fn construction_grants_common_once_and_the_next_purchase_costs_uncommon(category
     assert_eq!(learned(d, home), knowledge);
 }
 
-#[test]
-#[test_case(8, name: "shrine")]
-#[test_case(9, name: "well")]
-fn sanctuary_research_requires_a_site_unlock_without_spending_on_rejection(unlock: u8) {
-    let (d, home, _) = research_world();
-    assert!(execute(d, build_toward(home, crate::research::BARRACKS, 1), 40));
-    for _ in 0_u8..2 {
-        assert!(execute(d, research(home, crate::research::ROW_BARRACKS, 0), 40));
-    }
-    let lodge = CreateBuilding {
-        structure_id: home.entity_id,
-        directions: array![0_u8].span(),
-        category: crate::research::SCOUTS_LODGE,
-        use_simple: true,
-    };
-    assert!(execute(d, Command::CreateBuilding(lodge), 40));
-    let before = learned(d, home);
-    let resources = IResourceOperationsDispatcher { contract_address: d.games };
-    let essence = ResourceSlot {
-        game_id: home.game_id, entity_id: home.entity_id, resource_type: crate::resources::ESSENCE,
-    };
-    let balance = resources.resource_balance(essence);
-    let command = research(home, crate::research::ROW_SCOUTS_LODGE, crate::research::KIND_SANCTUARIES);
-    assert_terminal_rejection(d, command, 40);
-    assert_eq!(learned(d, home), before);
-    assert_eq!(resources.resource_balance(essence), balance);
-    assert!(execute(d, research(home, unlock, 0), 40));
-    assert!(execute(d, command, 40));
-    assert_eq!(
-        crate::research::choice(learned(d, home), crate::research::ROW_SCOUTS_LODGE, 1),
-        crate::research::KIND_SANCTUARIES,
-    );
-}
+
 
 #[test]
 fn lodges_produce_scouts_without_a_training_gate_and_each_copy_adds_its_rate() {
     let (d, home, _) = research_world();
     assert_eq!(learned(d, home), 0);
     assert!(execute(d, build_toward(home, crate::research::SCOUTS_LODGE, 0), 40));
-    assert_eq!(crate::research::tier(learned(d, home), crate::research::ROW_SCOUTS_LODGE), 0);
     let expected: u64 = 40;
     assert_eq!(rate(d, home, 32), expected);
     assert!(execute(d, build_toward(home, crate::research::SCOUTS_LODGE, 1), 40));
     assert_eq!(rate(d, home, 32), 2 * expected);
-    assert!(execute(d, research(home, crate::research::ROW_SCOUTS_LODGE, crate::research::KIND_CAMPS), 40));
-    assert_eq!(crate::research::tier(learned(d, home), crate::research::ROW_SCOUTS_LODGE), 1);
     assert_eq!(rate(d, home, 32), 2 * expected);
+}
+
+#[test]
+fn supply_yard_is_unique_without_retired_research_prerequisites() {
+    let (d, home, _) = research_world();
+    assert_eq!(learned(d, home), 0);
+    assert!(execute(d, build_toward(home, crate::research::SUPPLY_YARD, 0), 40));
+    assert_eq!(crate::research::tier(learned(d, home), crate::research::ROW_SUPPLY_YARD), 1);
+    assert_terminal_rejection(d, build_toward(home, crate::research::SUPPLY_YARD, 2), 40);
+    assert_eq!(crate::research::tier(learned(d, home), crate::research::ROW_SUPPLY_YARD), 1);
 }

@@ -7,20 +7,8 @@ import { buildStaminaDisplayModel } from "@/lib/army-stamina/presentation";
 import { exploreStaminaOf } from "@/lib/army-stamina/explore-stamina";
 import type { StaminaBar } from "@/ui/design-system/kit/hud-elements";
 import { getExplorerStaminaSnapshot } from "@/utils/explorer-stamina";
-import {
-  armyEtherealLayer,
-  configManager,
-  type EtherealLayer,
-  getArmyName,
-  liveHomeArmies,
-} from "@bibliothecadao/eternum";
-import {
-  armyDrain,
-  safeInteger,
-  type DeepArmyLife,
-  type NativeFactStore,
-  type NativeRows,
-} from "@bibliothecadao/eternum/game-client";
+import { armyEtherealLayer, configManager, type EtherealLayer, getArmyName, liveHomeArmies } from "@bibliothecadao/eternum";
+import { armyDrain, safeInteger, type DeepArmyLife, type NativeFactStore, type NativeRows } from "@bibliothecadao/eternum/game-client";
 import { armyNumber, resolveExplorerTroops, STAMINA_MODELS } from "@bibliothecadao/eternum/troop-stamina";
 import { RESOURCE_PRECISION } from "@bibliothecadao/types";
 import { useMemo } from "react";

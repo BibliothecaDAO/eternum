@@ -126,7 +126,7 @@ fn losing_the_final_attacking_guard_transfers_the_structure_to_the_adjacent_surv
 }
 
 #[test]
-fn blitz_ethereal_battle_uses_both_root_d20_rolls_in_damage_and_history() {
+fn blitz_ethereal_battle_records_exact_damage_and_zero_rolls() {
     let (d, _, _, attacker, defender) = setup(true);
     move_to(d, attacker, Coord { alt: true, x: 2000000, y: 2000000 });
     move_to(d, defender, Coord { alt: true, x: 2000015, y: 2000000 });
@@ -135,13 +135,8 @@ fn blitz_ethereal_battle_uses_both_root_d20_rolls_in_damage_and_history() {
     let before_defender = troop(d, defender).unwrap();
     let game = crate::game::IGameDispatcher { contract_address: d.games };
     let rules = crate::game::IGameDispatcherTrait::rules(game, 3);
-    assert!(!crate::rules::rule_enabled(rules, crate::rules::COMBAT_DICE));
-    assert!(crate::rules::rule_enabled(rules, crate::rules::COMBAT_DICE_ETHEREAL));
-    let mut root = super::context(d.games, 3).raw_root;
-    let seed = crate::random::game_root(ref root, 3);
-    let attacker_roll: u8 = 1 + crate::random::range(seed, 1, 20).try_into().unwrap();
-    let defender_roll: u8 = 1 + crate::random::range(seed, 2, 20).try_into().unwrap();
-    assert!(attacker_roll >= 1 && attacker_roll <= 20 && defender_roll >= 1 && defender_roll <= 20);
+    let attacker_roll = 0;
+    let defender_roll = 0;
     let mut expected_attacker = before_attacker.troops;
     let mut expected_defender = before_defender.troops;
     expected_attacker
@@ -151,8 +146,6 @@ fn blitz_ethereal_battle_uses_both_root_d20_rolls_in_damage_and_history() {
 
                 day_unit_seconds: 0,
                 timestamp: 80,
-                attacker_roll,
-                defender_roll,
                 attacker_biome: crate::biome::Biome::Underground,
                 defender_biome: crate::biome::Biome::Underground,
                 attack_distance: 1,
@@ -204,7 +197,7 @@ fn blitz_ethereal_battle_uses_both_root_d20_rolls_in_damage_and_history() {
 }
 
 #[test]
-fn frontier_disabled_dice_ignore_random_roots_on_surface_and_ethereal() {
+fn combat_outcomes_ignore_random_roots_on_surface_and_ethereal() {
     let (d, _, _, attacker, defender) = setup_with_rule_mask(false, 0, 0);
     for alt in array![false, true] {
         let stride = if alt {
@@ -216,6 +209,7 @@ fn frontier_disabled_dice_ignore_random_roots_on_surface_and_ethereal() {
         move_to(d, defender, Coord { alt, x: 2000500 + stride, y: 2000500 });
         let attacker = troop(d, attacker).unwrap();
         let defender = troop(d, defender).unwrap();
+        let mut previous = None;
         for raw_root in array![123_u256, 987654321_u256] {
             let context = snforge_std::interact_with_state(
                 d.games,
@@ -224,15 +218,21 @@ fn frontier_disabled_dice_ignore_random_roots_on_surface_and_ethereal() {
                     crate::logic::combat::combat_context(3, attacker, defender, execution)
                 },
             );
-            assert_eq!(context.attacker_roll, 0);
-            assert_eq!(context.defender_roll, 0);
+            let mut alpha = attacker.troops;
+            let mut bravo = defender.troops;
+            let rules = crate::game::IGameDispatcherTrait::rules(crate::game::IGameDispatcher { contract_address: d.games }, 3);
+            alpha.attack_with_context(ref bravo, context, rules.troop_stamina_config, rules.troop_damage_config, rules.tick_config.armies_tick_in_seconds, 0);
+            let outcome = (alpha.count, bravo.count);
+            assert!(outcome != (attacker.troops.count, defender.troops.count));
+            if let Some(expected) = previous { assert_eq!(outcome, expected); }
+            previous = Some(outcome);
         }
     }
 }
 
 #[test]
-fn a_dice_game_rolls_both_root_d20s_on_the_surface_too() {
-    let (d, _, _, attacker, defender) = setup_with_mode(false, 0, crate::rules::COMBAT_DICE);
+fn surface_battle_records_exact_damage_and_zero_rolls() {
+    let (d, _, _, attacker, defender) = setup_with_mode(false, 0, 0);
     // Away from the realms the fixture settles around (2000000, 2000000), so both armies stand on open surface.
     let origin = Coord { alt: false, x: 2000500, y: 2000500 };
     move_to(d, attacker, origin);
@@ -254,11 +254,8 @@ fn a_dice_game_rolls_both_root_d20s_on_the_surface_too() {
     let before_defender = troop(d, defender).unwrap();
     let game = crate::game::IGameDispatcher { contract_address: d.games };
     let rules = crate::game::IGameDispatcherTrait::rules(game, 3);
-    let mut root = super::context(d.games, 3).raw_root;
-    let seed = crate::random::game_root(ref root, 3);
-    let attacker_roll: u8 = 1 + crate::random::range(seed, 1, 20).try_into().unwrap();
-    let defender_roll: u8 = 1 + crate::random::range(seed, 2, 20).try_into().unwrap();
-    assert!(attacker_roll >= 1 && attacker_roll <= 20 && defender_roll >= 1 && defender_roll <= 20);
+    let attacker_roll = 0;
+    let defender_roll = 0;
     let mut expected_attacker = before_attacker.troops;
     let mut expected_defender = before_defender.troops;
     expected_attacker
@@ -268,8 +265,6 @@ fn a_dice_game_rolls_both_root_d20s_on_the_surface_too() {
 
                 day_unit_seconds: 0,
                 timestamp: 80,
-                attacker_roll,
-                defender_roll,
                 attacker_biome: surface,
                 defender_biome: surface,
                 attack_distance: 1,
@@ -586,7 +581,7 @@ fn preset_cooldown_keeps_blitz_at_sixty_seconds_and_allows_frontier_back_to_back
         let preset: crate::presets::PresetDefinition = Serde::deserialize(ref input).unwrap();
         assert_eq!(preset.rules.battle_config.cooldown_seconds, expected);
         let (d, _, _, attacker, defender) = setup_with_cooldown(
-            blitz, 0, preset.rules.mode_rules & crate::rules::COMBAT_DICE_ETHEREAL, expected, (1000, 1000),
+            blitz, 0, preset.rules.mode_rules & 0_ETHEREAL, expected, (1000, 1000),
         );
         let attack = Command::Battle(
             AttackExplorer { attacker_id: attacker, defender_id: defender, steal_resources: array![].span() },

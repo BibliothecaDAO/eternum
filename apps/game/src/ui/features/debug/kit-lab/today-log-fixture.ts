@@ -1,4 +1,4 @@
-import { frontierArmyRules } from "../../frontier/army/progression-rules-fixture";
+
 import { buildStoryEventPresentation } from "@bibliothecadao/eternum";
 import { dayLogLine } from "@/ui/features/frontier/log/day-line";
 import { campBeside, SITE } from "@/ui/features/frontier/sites/site-fixture";
@@ -19,11 +19,6 @@ const troops = (count: bigint) => String(count * BigInt(RESOURCE_PRECISION));
 export const ownerDayLog = (now: number) => {
   const { store } = campBeside("Rift");
   store.applyFacts([
-    {
-      model: "ArmyProgressionRules",
-      key: "0x101",
-      value: frontierArmyRules(),
-    },
     ...BEASTS.map(({ id, guard }, index) => ({
       model: "ExpeditionSite",
       key: `0x7${index + 7}`,

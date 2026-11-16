@@ -7,7 +7,7 @@ import type { NativeFactStore, NativeRows } from "@bibliothecadao/eternum/game-c
 import { type ReactNode, useState } from "react";
 
 import { dayBounds, dayClock, seasonDay } from "../hud/day-clock";
-import { useDockArmies } from "../hud/dock-armies";
+
 import { useDayShare } from "../rollover/day-share-sheet";
 import { OpeningPartGate } from "../opening/opening-context";
 import { readQuestWeek } from "./quest-week";

@@ -626,7 +626,6 @@ fn beast_clear_payout(full: bool, band: bool) {
     } else {
         assert!(before + 250 * RESOURCE_PRECISION <= cap);
     }
-    let xp = snforge_std::interact_with_state(d.games, || crate::logic::progression::require(key).xp);
     let attack = Command::BattleGuard(
         crate::commands::Battle { attacker_id: key.explorer_id, defender_id: id, relic_slot: None },
     );
@@ -643,11 +642,6 @@ fn beast_clear_payout(full: bool, band: bool) {
         site.clear,
         Some(
             crate::expeditions::SiteClear {
-                xp: if band {
-                    9
-                } else {
-                    2
-                },
                 explorer_id: key.explorer_id,
                 home_id: army.owner,
                 reward: if band {
@@ -659,14 +653,6 @@ fn beast_clear_payout(full: bool, band: bool) {
         ),
     );
     assert_eq!(resources.resource_balance(wheat) - before, amount);
-    assert_eq!(
-        snforge_std::interact_with_state(d.games, || crate::logic::progression::require(key).xp),
-        xp + if band {
-            9
-        } else {
-            2
-        },
-    );
     assert_site_removed(d, site_key);
     assert!(
         snforge_std::interact_with_state(
@@ -676,14 +662,6 @@ fn beast_clear_payout(full: bool, band: bool) {
     );
     assert!(!execute_in_game(d, game_id, attack, 362));
     assert_eq!(resources.resource_balance(wheat), before + amount);
-    assert_eq!(
-        snforge_std::interact_with_state(d.games, || crate::logic::progression::require(key).xp),
-        xp + if band {
-            9
-        } else {
-            2
-        },
-    );
 }
 
 #[test]
@@ -1114,147 +1092,7 @@ fn frontier_sites_persist_the_seeded_guard_and_initial_count() {
     }
 }
 
-#[test]
-fn frontier_shrine_and_well_persist_once_and_use_the_public_progress_and_slot() {
-    let d = setup();
-    let mut stories = snforge_std::spy_events();
-    let (game_id, _, category) = expedition_home(d);
-    let (key, _) = expedition_armies(d, game_id, category);
-    let army = GameState { contract_address: d.games }.resolved_explorer(key).unwrap();
-    let coord = crate::geometry::neighbor(army.coord, 0);
-    let tile = crate::geometry::tile_key(game_id, coord);
-    let command = Command::InteractSite(crate::relics::InteractSite { explorer_id: key.explorer_id, coord });
-    snforge_std::interact_with_state(
-        d.games,
-        || {
-            crate::logic::progression::write(
-                key, crate::progression::ArmyProgress { xp: 7, ..Default::default() },
-            );
-            crate::logic::map::MapState::reveal(tile, 1);
-            crate::logic::shrines::discover(ResourceKey { game_id, entity_id: 900 }, 2, 123);
-            crate::logic::map::MapState::occupy(tile, 900, crate::taxonomy::SHRINE_OCCUPIER, false);
-        },
-    );
-    let first_reward = snforge_std::interact_with_state(
-        d.games, || crate::logic::shrines::read(ResourceKey { game_id, entity_id: 900 }).unwrap(),
-    );
-    let closed = snforge_std::interact_with_state(d.games, || crate::logic::map::occupancy(tile).unwrap());
-    start_cheat_block_timestamp_global(360);
-    assert_eq!(snforge_std::interact_with_state(d.games, || crate::logic::map::occupancy(tile).unwrap()), closed);
-    assert!(execute_in_game(d, game_id, command, 360));
-    let progress = snforge_std::interact_with_state(d.games, || crate::logic::progression::require(key));
-    assert_eq!(progress.xp, 7);
-    assert_eq!(crate::progression::points(progress, first_reward.rank), 1);
-    assert!(
-        snforge_std::interact_with_state(
-            d.games, || crate::logic::shrines::read(ResourceKey { game_id, entity_id: 900 }),
-        )
-            .is_none(),
-    );
-    assert!(snforge_std::interact_with_state(d.games, || crate::logic::map::occupancy(tile)).is_none());
-    assert!(!execute_in_game(d, game_id, command, 360));
-    snforge_std::interact_with_state(
-        d.games,
-        || {
-            crate::logic::shrines::discover(ResourceKey { game_id, entity_id: 901 }, 3, 456);
-            crate::logic::map::MapState::occupy(tile, 901, crate::taxonomy::SHRINE_OCCUPIER, false);
-        },
-    );
-    assert!(execute_in_game(d, game_id, command, 360));
-    let progress = snforge_std::interact_with_state(d.games, || crate::logic::progression::require(key));
-    let second_rank = crate::progression::shrine_point(
-        3, crate::random::range(456, 'shrine point', 10000).try_into().unwrap(),
-    );
-    assert_eq!(progress.xp, 7);
-    assert_eq!(
-        progress.common_points
-            + progress.uncommon_points
-            + progress.rare_points
-            + progress.epic_points
-            + progress.legendary_points,
-        2,
-    );
-    assert!(snforge_std::interact_with_state(d.games, || crate::logic::map::occupancy(tile)).is_none());
-    assert!(!execute_in_game(d, game_id, command, 360));
-    snforge_std::interact_with_state(
-        d.games,
-        || {
-            crate::logic::map::MapState::occupy(tile, 902, crate::taxonomy::WELL_OCCUPIER, false);
-            crate::logic::progression::write(key, crate::progression::ArmyProgress { logistics: 3, ..progress });
-            let mut army = crate::logic::troops::active_explorer(
-                key, 360, crate::commands::load_context(game_id, 0, 360),
-            );
-            army.troops.stamina.set_amount(10);
-            crate::logic::troops::TroopState::save(key, army.into_record());
-        },
-    );
-    // A well's stamina persists into the same occupied slot.
-    assert!(execute_in_game(d, game_id, command, 360));
-    let filled = GameState { contract_address: d.games }.resolved_explorer(key).unwrap();
-    assert_eq!(filled.troops.stamina.inline().amount, 107);
-    assert!(snforge_std::interact_with_state(d.games, || crate::logic::map::occupancy(tile)).is_none());
-    assert!(!execute_in_game(d, game_id, command, 360));
-    snforge_std::interact_with_state(
-        d.games,
-        || {
-            crate::logic::map::MapState::occupy(tile, 903, crate::taxonomy::WELL_OCCUPIER, false);
-            let mut army = crate::logic::troops::active_explorer(
-                key, 360, crate::commands::load_context(game_id, 0, 360),
-            );
-            let maximum = crate::progression::stamina_max(
-                crate::logic::progression::require(key),
-                army.troops.category,
-                crate::commands::load_context(game_id, 0, 360).rules.unbox().troop_stamina_config,
-            );
-            army.troops.stamina.set_amount(maximum - 5);
-            crate::logic::troops::TroopState::save(key, army.into_record());
-        },
-    );
-    let before = GameState { contract_address: d.games }.resolved_explorer(key).unwrap().troops.stamina.inline().amount;
-    assert!(execute_in_game(d, game_id, command, 360));
-    assert_eq!(
-        GameState { contract_address: d.games }.resolved_explorer(key).unwrap().troops.stamina.inline().amount,
-        before + 5,
-    );
 
-    // The story records actual gains: a near-full well gives 5, and a full well gives 0.
-    snforge_std::interact_with_state(
-        d.games, || crate::logic::map::MapState::occupy(tile, 904, crate::taxonomy::WELL_OCCUPIER, false),
-    );
-    assert!(execute_in_game(d, game_id, command, 360));
-    assert!(!execute_in_game(d, game_id, command, 360));
-    let expected = array![
-        crate::relics::SiteBenefit::ShrinePoint(first_reward.rank),
-        crate::relics::SiteBenefit::ShrinePoint(second_rank), crate::relics::SiteBenefit::Well(97),
-        crate::relics::SiteBenefit::Well(5), crate::relics::SiteBenefit::Well(0),
-    ];
-    let mut used = 0;
-    for (_, event) in stories.get_events().emitted_by(d.games).events.span() {
-        // Component stories may have their component selector before StoryEvent.
-        let offset = if *event.keys.at(0) == selector!("StoryEvent") {
-            1
-        } else {
-            if event.keys.len() < 2 || *event.keys.at(1) != selector!("StoryEvent") {
-                continue;
-            }
-            2
-        };
-        let mut keys = event.keys.span().slice(offset, event.keys.len() - offset);
-        let mut data = event.data.span();
-        let story: crate::ownership::StoryEvent = starknet::Event::deserialize(ref keys, ref data).unwrap();
-        if let crate::ownership::Story::SiteUsed(visit) = story.story {
-            assert_eq!(story.game_id, game_id);
-            assert_eq!(story.entity_id, Some(key.explorer_id));
-            assert_eq!(story.owner, Some(d.actor));
-            assert_eq!(story.timestamp, 360);
-            assert_eq!(visit.explorer_id, key.explorer_id);
-            assert_eq!(visit.coord, coord);
-            assert_eq!(visit.benefit, *expected.at(used));
-            used += 1;
-        }
-    }
-    assert_eq!(used, expected.len(), "one story per successful use, none for refusals");
-}
 
 #[test]
 fn frontier_site_discovery_reads_home_knowledge_and_stores_the_shrine_reward() {
@@ -1267,9 +1105,9 @@ fn frontier_site_discovery_reads_home_knowledge_and_stores_the_shrine_reward() {
     let discovery = crate::discovery::IExpeditionRevealLibraryDispatcher {
         class_hash: super::declare_logic("ConstructionLogic"),
     };
-    for (expected, row, category) in array![
-        (crate::discovery::Discovery::Shrine, crate::research::ROW_SHRINE, crate::taxonomy::SHRINE_OCCUPIER),
-        (crate::discovery::Discovery::Well, crate::research::ROW_WELL, crate::taxonomy::WELL_OCCUPIER),
+    for (expected, row) in array![
+        (crate::discovery::Discovery::Shrine, crate::research::ROW_SHRINE),
+        (crate::discovery::Discovery::Well, crate::research::ROW_WELL),
     ] {
         let enabled = crate::expeditions::FrontierDiscoveryRules {
             shrine_bps: if row == crate::research::ROW_SHRINE {
@@ -1287,7 +1125,7 @@ fn frontier_site_discovery_reads_home_knowledge_and_stores_the_shrine_reward() {
         let mut chosen = None;
         for sample in 0_u64..10000 {
             let seed: u256 = sample.into();
-            if crate::discovery::frontier(enabled, 0, 0, 0, 100, 0, Some(any_relic()), seed) == expected {
+            if crate::discovery::frontier(enabled, 100, 0, Some(any_relic()), seed) == expected {
                 chosen = Some(seed);
                 break;
             }
@@ -1334,31 +1172,8 @@ fn frontier_site_discovery_reads_home_knowledge_and_stores_the_shrine_reward() {
         );
         assert_eq!(found, expected);
         stop_cheat_caller_address(d.games);
-        let occupancy = snforge_std::interact_with_state(d.games, || crate::logic::map::occupancy(tile).unwrap());
-        assert_eq!(occupancy.category, category);
-        assert!(!occupancy.is_structure);
-        snforge_std::interact_with_state(
-            d.games,
-            || {
-                assert!(
-                    crate::logic::structures::structure(ResourceKey { game_id, entity_id: occupancy.entity_id })
-                        .is_none(),
-                );
-                let reward = crate::logic::shrines::read(ResourceKey { game_id, entity_id: occupancy.entity_id });
-                if category == crate::taxonomy::SHRINE_OCCUPIER {
-                    assert_eq!(
-                        reward.unwrap().rank,
-                        crate::progression::shrine_point(
-                            0, crate::random::range(seed, 'shrine point', 10000).try_into().unwrap(),
-                        ),
-                    );
-                } else {
-                    assert!(reward.is_none());
-                }
-                crate::logic::map::MapState::vacate(tile, occupancy.entity_id);
-                crate::logic::research::write(home, crate::research::RealmKnowledge { learned: 0 });
-            },
-        );
+        assert!(snforge_std::interact_with_state(d.games, || crate::logic::map::occupancy(tile)).is_none());
+        snforge_std::interact_with_state(d.games, || crate::logic::research::write(home, crate::research::RealmKnowledge { learned: 0 }));
     }
 }
 

@@ -15,20 +15,8 @@ import { requestOrderAt } from "@/three/scenes/worldmap-order-request";
 import { toast } from "@/ui/features/event-feed/notify";
 
 import { extractReadableErrorMessage } from "@/utils/error-message";
-import {
-  biomeTypeOf,
-  configManager,
-  getStructureName,
-  isViewerOwner,
-  ruinDisappeared,
-} from "@bibliothecadao/eternum";
-import {
-  armyCombatRefusal,
-  safeInteger,
-  type GameClientSetup,
-  type NativeFactStore,
-  type NativeRows,
-} from "@bibliothecadao/eternum/game-client";
+import { biomeTypeOf, configManager, getStructureName, isViewerOwner, ruinDisappeared } from "@bibliothecadao/eternum";
+import { armyCombatRefusal, safeInteger, type GameClientSetup, type NativeFactStore, type NativeRows } from "@bibliothecadao/eternum/game-client";
 import type { TileSpatialRenderable } from "@bibliothecadao/eternum/game-sync";
 import { RESOURCE_PRECISION } from "@bibliothecadao/types";
 import { useEffect, useMemo, type ReactNode } from "react";

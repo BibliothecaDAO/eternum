@@ -1,19 +1,8 @@
 import { BiomeType } from "@bibliothecadao/types";
-import {
-  fetchHeraldGameSnapshot,
-  readDeepSites,
-  NativeFactStore,
-  type NativeRows,
-} from "@bibliothecadao/eternum/game-client";
+import { fetchHeraldGameSnapshot, readDeepSites, NativeFactStore, type NativeRows } from "@bibliothecadao/eternum/game-client";
 import { dayOf, expeditionDepth, readExpeditionRules } from "@bibliothecadao/eternum/expeditions";
 import { resolveExplorerCombatTroops, STAMINA_MODELS } from "@bibliothecadao/eternum/troop-stamina";
-import {
-
-  forecastFight,
-  mapCenter,
-  researchedDepth,
-  type CombatRules,
-} from "@bibliothecadao/eternum";
+import { forecastFight, mapCenter, researchedDepth, type CombatRules } from "@bibliothecadao/eternum";
 
 export interface DeepSiteWatch {
   gameId: number;

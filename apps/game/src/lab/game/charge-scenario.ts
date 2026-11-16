@@ -83,7 +83,7 @@ function prepareChargeArmy(game: LabScenario) {
     {
       model: "ArmyCombat",
       key: store.wireKeyOf("ArmyCombat", key) ?? "0xc801",
-      value: wire({ ...key, charge: 5, last_target: 0 }),
+      value: wire({ ...key, last_target: 0 }),
     },
     { model: "ArmyProgress", key: store.wireKeyOf("ArmyProgress", key)!, value: wire({ ...progress, battle: 0 }) },
     {

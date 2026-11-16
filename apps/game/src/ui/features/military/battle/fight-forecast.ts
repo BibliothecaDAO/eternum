@@ -1,9 +1,4 @@
-import {
-  forecastFight,
-  resolveExchange,
-  type CombatRules,
-  type FightForecast,
-} from "@bibliothecadao/eternum";
+import { forecastFight, resolveExchange, type CombatRules, type FightForecast } from "@bibliothecadao/eternum";
 import { RESOURCE_PRECISION, type Troops, formatCount } from "@bibliothecadao/types";
 
 

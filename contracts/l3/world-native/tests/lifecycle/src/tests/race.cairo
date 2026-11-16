@@ -138,25 +138,19 @@ fn recorded_second_wind_multiplies_mist_tide_and_changes_real_exploration_refill
 }
 
 #[test]
-fn factory_creates_four_fixed_monuments_once_and_disabled_games_have_none() {
+fn factory_initializes_four_height_counters_without_map_structures() {
     let (d, game_id) = setup(2000);
     interact_with_state(
         d.games,
         || {
-            let rules = race(game_id).race_rules(game_id).unwrap();
-            let spacing = crate::logic::preset_record::for_game(game_id).settlement_spacing.read();
             let before = crate::state::read().games.next_entity.read(game_id);
             for aspect in 1_u8..5 {
-                let monument = race(game_id).aspect_hyperstructure(AspectKey { game_id, aspect });
-                assert_eq!(monument.height, 0);
-                let local = crate::race::local_coord(rules, aspect);
-                let coord = crate::deep::site_position(local.x, local.y, spacing);
-                let key = ResourceKey { game_id, entity_id: monument.entity_id };
-                assert_eq!(crate::logic::map::entity_coord(key), Some(coord));
-                assert!(crate::logic::map::occupancy(crate::geometry::tile_key(game_id, coord)).unwrap().is_structure);
-                let structure = crate::logic::structures::structure(key).unwrap();
-                assert_eq!(structure.base.category, crate::taxonomy::HYPERSTRUCTURE_CATEGORY);
-                assert_eq!(structure.owner, 0.try_into().unwrap());
+                assert_eq!(race(game_id).aspect_hyperstructure(AspectKey { game_id, aspect }).height, 0);
+            }
+            for entity_id in 1_u64..before {
+                if let Some(structure) = crate::logic::structures::structure(ResourceKey { game_id, entity_id }) {
+                    assert!(structure.base.category != crate::taxonomy::HYPERSTRUCTURE_CATEGORY);
+                }
             }
             let mut repeated = spy_events();
             race(game_id).initialize_race(game_id);
@@ -170,9 +164,6 @@ fn factory_creates_four_fixed_monuments_once_and_disabled_games_have_none() {
         || {
             assert_eq!(race(ordinary_game).race_rules(ordinary_game), None);
             assert_eq!(race(ordinary_game).race_result(ordinary_game), None);
-            for aspect in 1_u8..5 {
-                assert_eq!(crate::state::read().season.aspect_hyperstructures.read((ordinary_game, aspect)), 0);
-            }
         },
     );
 }
@@ -344,42 +335,7 @@ fn a_stage_on_the_last_tick_does_not_schedule_a_triumph_outside_the_season() {
     );
 }
 
-#[test]
-fn monument_attack_is_rejected_by_the_race_rule_before_any_capture_work() {
-    let (d, game_id) = setup(2000);
-    let home = found(d, game_id, 1);
-    let army = super::army_activity::slot_army(
-        d, crate::troops::ArmySlotKey { game_id, structure_id: home, epoch: 0, slot: 0 },
-    );
-    let monument = interact_with_state(
-        d.games, || race(game_id).aspect_hyperstructure(AspectKey { game_id, aspect: 2 }),
-    );
-    let mut events = spy_events();
-    assert!(
-        !execute_in_game(
-            d,
-            game_id,
-            Command::BattleGuard(
-                crate::commands::Battle { attacker_id: army, defender_id: monument.entity_id, relic_slot: None },
-            ),
-            480,
-        ),
-    );
-    assert_eq!(
-        world_test_support::tests::play_fixture::rejection(ref events, d.games).reason,
-        "race monuments cannot be attacked",
-    );
-    assert_eq!(height(d, game_id, 2), 0);
-    interact_with_state(
-        d.games,
-        || {
-            assert_eq!(
-                crate::logic::structures::record(ResourceKey { game_id, entity_id: monument.entity_id }).owner,
-                0.try_into().unwrap(),
-            );
-        },
-    );
-}
+
 
 #[test]
 #[feature("safe_dispatcher")]
@@ -671,7 +627,7 @@ fn recorded_site_battle(ref events: snforge_std::EventSpy, d: Deployment, site: 
 }
 
 #[test]
-fn spoils_doubles_numeric_clears_and_records_xp_but_keeps_ruin_relics() {
+fn spoils_doubles_numeric_clears_and_keeps_ruin_relics() {
     for category in array![
         crate::taxonomy::BEASTS_CATEGORY, crate::taxonomy::CAMP_CATEGORY, crate::taxonomy::RIFT_CATEGORY,
         crate::taxonomy::RUIN_CATEGORY,
@@ -736,7 +692,7 @@ fn spoils_doubles_numeric_clears_and_records_xp_but_keeps_ruin_relics() {
         world_test_support::tests::resource_commands::grant(
             d, home, crate::resources::WHEAT, units * stamina.stamina_explore_wheat_cost.into(),
         );
-        let relic = crate::army_relics::ArmyRelic { kind: crate::army_relics::RelicKind::Tome, rank: 1 };
+        let relic = crate::army_relics::ArmyRelic { kind: crate::army_relics::RelicKind::FarEye, rank: 1 };
         let expected = if category == crate::taxonomy::BEASTS_CATEGORY {
             crate::discovery::Discovery::Beasts
         } else if category == crate::taxonomy::CAMP_CATEGORY {
@@ -762,7 +718,6 @@ fn spoils_doubles_numeric_clears_and_records_xp_but_keeps_ruin_relics() {
         );
         let site = interact_with_state(d.games, || crate::logic::expeditions::expedition_site(site_key).unwrap());
         let discovered_relic = interact_with_state(d.games, || crate::logic::army_relics::ruin(site_key));
-        let before = interact_with_state(d.games, || crate::logic::progression::require(key).xp);
         assert!(
             execute_in_game(
                 d,
@@ -780,9 +735,6 @@ fn spoils_doubles_numeric_clears_and_records_xp_but_keeps_ruin_relics() {
             || {
                 let receipt = crate::logic::expeditions::expedition_site(site_key).unwrap().clear.unwrap();
                 let band = crate::expeditions::is_band(site, crate::logic::expeditions::depth_rules(game_id, 0));
-                let expected_xp = crate::expeditions::site_clear_xp(site, 0, band) * 2;
-                assert_eq!(receipt.xp, expected_xp);
-                assert_eq!(crate::logic::progression::require(key).xp - before, expected_xp);
                 if category == crate::taxonomy::RUIN_CATEGORY {
                     assert_eq!(receipt.reward, None);
                     assert!(discovered_relic.is_some());

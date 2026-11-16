@@ -1,31 +1,8 @@
-import {
-  getExplorerInfoFromTileOccupier,
-  entityHomeNamespace,
-  researchChoice,
-  researchTier,
-  seasonDay,
-  expeditionRealmSite,
-  getTroopResourceId,
-  readExpeditionRules,
-  readTroopRaiseCost,
-} from "@bibliothecadao/eternum";
-import {
-  BiomeType,
-  BUILDINGS_CENTER,
-  getNeighborOffsets,
-  RESOURCE_PRECISION,
-  TileOccupier,
-  TroopType,
-  TROOP_TYPES,
-  TROOP_TIERS,
-} from "@bibliothecadao/types";
+import { getExplorerInfoFromTileOccupier, entityHomeNamespace, researchTier, seasonDay, expeditionRealmSite, getTroopResourceId, readExpeditionRules, readTroopRaiseCost } from "@bibliothecadao/eternum";
+import { BiomeType, BUILDINGS_CENTER, getNeighborOffsets, RESOURCE_PRECISION, TileOccupier, TROOP_TYPES, TROOP_TIERS } from "@bibliothecadao/types";
 
 import { exploreStaminaCost, musterStamina, openArmySlots } from "@bibliothecadao/eternum/troop-stamina";
-import {
-  nativeResearchConstants as research,
-  safeInteger,
-  type NativeFactStore,
-} from "@bibliothecadao/eternum/game-client";
+import { nativeResearchConstants as research, safeInteger, type NativeFactStore } from "@bibliothecadao/eternum/game-client";
 
 import { standTheArmyAtTheEdge } from "./explore-scenario";
 import { wire, type LabCommand, type LabFact, type LabScenario } from "./lab-chain";
@@ -170,7 +147,7 @@ const deployArmy: Answer = (command, chain, now) => {
     allowedSlots: realm.base.troop_max_explorer_count,
   })?.find((slot) => slot.slot === Number(command.fields.slot));
   if (!slot) throw new Error("The lab deployment requires an open army slot");
-  const progress = deploymentProgress(chain, structureId, explorerId, category);
+  const progress = deploymentProgress(chain, structureId, explorerId);
   const rules = chain.require("SliceRules", { game_id: 1 });
   const maximum = musterStamina(
     { ...slot, inherited: null },
@@ -192,13 +169,6 @@ const deployArmy: Answer = (command, chain, now) => {
       value: wire({
         game_id: 1,
         explorer_id: explorerId,
-        charge:
-          category === "Knight"
-            ? researchTier(
-                chain.require("RealmKnowledge", { game_id: 1, structure_id: structureId }).learned,
-                research.ROW_BARRACKS,
-              )
-            : 0,
         last_target: 0,
       }),
     },
@@ -246,25 +216,11 @@ const deployArmy: Answer = (command, chain, now) => {
 };
 
 /** A new army starts with its realm's training and no earned XP or unspent points. */
-const deploymentProgress = (chain: NativeFactStore, home: bigint, explorerId: bigint, category: TroopType) => {
+const deploymentProgress = (chain: NativeFactStore, home: bigint, explorerId: bigint) => {
   const { learned } = chain.require("RealmKnowledge", { game_id: 1, structure_id: home });
-  const scouting = category === TroopType.Paladin ? researchTier(learned, research.ROW_SCOUTS_LODGE) : 0;
-  let scoutingKinds = 0;
-  for (let rank = 1; rank <= scouting; rank += 1)
-    scoutingKinds += (researchChoice(learned, research.ROW_SCOUTS_LODGE, rank) + 1) * 4 ** (rank - 1);
   return {
     game_id: 1,
     explorer_id: explorerId,
-    xp: 0,
-    common_points: 0,
-    uncommon_points: 0,
-    rare_points: 0,
-    epic_points: 0,
-    legendary_points: 0,
-    battle: researchTier(learned, research.ROW_WAR_HALL),
     logistics: researchTier(learned, research.ROW_SUPPLY_YARD),
-    homecoming: researchTier(learned, research.ROW_HEARTH),
-    scouting,
-    scouting_kinds: scoutingKinds,
   };
 };

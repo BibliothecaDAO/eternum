@@ -99,7 +99,7 @@ function startingArmyRows(
     {
       model: "ArmyCombat",
       key: `0xb25${slot}`,
-      value: wire({ game_id: 1, explorer_id: id, charge: 0, last_target: 0 }),
+      value: wire({ game_id: 1, explorer_id: id, last_target: 0 }),
     },
     { model: "ArmyDay", key: `0xb21${slot}`, value: wire({ game_id: 1, explorer_id: id, day: 0 }) },
     {
@@ -120,17 +120,7 @@ function startingArmyRows(
       value: wire({
         game_id: 1,
         explorer_id: id,
-        xp: 0,
-        common_points: 0,
-        uncommon_points: 0,
-        rare_points: 0,
-        epic_points: 0,
-        legendary_points: 0,
-        battle: 0,
         logistics: 0,
-        scouting: 0,
-        scouting_kinds: 0,
-        homecoming: 0,
       }),
     },
     {

@@ -1,16 +1,9 @@
 import { nativeRaceConstants } from "@bibliothecadao/eternum/game-client";
 import { raceRules } from "./race-scenario";
-import { frontierArmyRules } from "../../ui/features/frontier/army/progression-rules-fixture";
 import { installLabGame } from "@/ui/features/debug/kit-lab/fixture-game";
 import { SPIRE_ARMY, SPIRE_DAY_NOW, applySpireDiscovery, spireDay } from "@/ui/features/frontier/spire-fixture";
 import { entityHomeNamespace, expeditionRealmSite, readExpeditionRules } from "@bibliothecadao/eternum";
-import {
-  BiomeType,
-  BiomeTypeToId,
-  getHexesWithinRadius,
-  getNeighborHexes,
-  type ResourcesIds,
-} from "@bibliothecadao/types";
+import { BiomeType, BiomeTypeToId, getHexesWithinRadius, getNeighborHexes, type ResourcesIds } from "@bibliothecadao/types";
 
 import type { NativeFactStore, NativeRows } from "@bibliothecadao/eternum/game-client";
 
@@ -77,8 +70,7 @@ export const spireScenario = (ground: LabGround = GRASSLAND): LabScenario => {
     { model: "Structure", key: "0x71", value: null },
     { model: "ExpeditionSite", key: "0x72", value: null },
     { model: "Guard", key: "0x73", value: null },
-    progressionRules(),
-    armyProgress(PROGRESS_KEYS.spireArmy, SPIRE_ARMY, 0),
+    armyProgress(PROGRESS_KEYS.spireArmy, SPIRE_ARMY),
     ...[site, ...getHexesWithinRadius(site.col, site.row, 4)]
       .filter((hex) => !store.get("TileOpt", { game_id: 1, alt: false, col: hex.col, row: hex.row }))
       .map((hex, index) => tile(`0x1ab7${index.toString(16)}`, hex.col, hex.row)),
@@ -180,33 +172,16 @@ export const besideOnOpenLand = (store: NativeFactStore, beside: { col: number; 
 };
 
 /** Where the spire's game keeps its progression rows: a lab game that writes its own replaces them in place. */
-export const PROGRESS_KEYS = { rules: "0x1ab94", spireArmy: "0x1ab92" } as const;
-
-/** The game's progression rules, from the Frontier preset. */
-export const progressionRules = (): LabFact => ({
-  model: "ArmyProgressionRules",
-  key: PROGRESS_KEYS.rules,
-  value: frontierArmyRules(),
-});
+export const PROGRESS_KEYS = { spireArmy: "0x1ab92" } as const;
 
 /** The lab army's XP and trained sides, with no unspent skill points. */
-export const armyProgress = (key: string, explorerId: number, xp: number): LabFact => ({
+export const armyProgress = (key: string, explorerId: number, logistics = 1): LabFact => ({
   model: "ArmyProgress",
   key,
   value: {
     game_id: 1,
     explorer_id: String(explorerId),
-    xp,
-    common_points: 0,
-    uncommon_points: 0,
-    rare_points: 0,
-    epic_points: 0,
-    legendary_points: 0,
-    battle: 1,
-    logistics: 1,
-    scouting: 0,
-    scouting_kinds: 0,
-    homecoming: 1,
+    logistics,
   },
 });
 

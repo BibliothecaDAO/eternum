@@ -3,34 +3,27 @@
  * screen's words), each spelled once. A screen that needs one imports it from here; nothing else spells it. The rules
  * every client and core's story text share (nouns, numbers, times, names, the voice) are @bibliothecadao/types' words.
  */
+/**
+ * The client's phrases (the glossary, frontier-narrative-2026-10/glossary.html, ruled final 7 October 2026, and every
+ * screen's words), each spelled once. A screen that needs one imports it from here; nothing else spells it. The rules
+ * every client and core's story text share (nouns, numbers, times, names, the voice) are @bibliothecadao/types' words.
+ */
+/**
+ * The client's phrases (the glossary, frontier-narrative-2026-10/glossary.html, ruled final 7 October 2026, and every
+ * screen's words), each spelled once. A screen that needs one imports it from here; nothing else spells it. The rules
+ * every client and core's story text share (nouns, numbers, times, names, the voice) are @bibliothecadao/types' words.
+ */
+/**
+ * The client's phrases (the glossary, frontier-narrative-2026-10/glossary.html, ruled final 7 October 2026, and every
+ * screen's words), each spelled once. A screen that needs one imports it from here; nothing else spells it. The rules
+ * every client and core's story text share (nouns, numbers, times, names, the voice) are @bibliothecadao/types' words.
+ */
 import { APP_HOST } from "@/config/app-address";
 import type { ResolvedGameMode } from "@/config/game-modes/resolved-mode";
 import { SHARED_MOMENT_WORDS, type CampaignKey, type SocialProvider } from "@realms-world/identity";
 import type { NotificationKind, NotificationLevel } from "@bibliothecadao/notifications";
 import type { RuinChest } from "@bibliothecadao/eternum";
-import {
-  BuildingType,
-  XP,
-  buildingName,
-  formatAmount,
-  formatPercent,
-  formatExact,
-  formatCount,
-  formatClockTime,
-  formatDuration,
-  getRelicInfo,
-  relicEffect,
-  ResourcesIds,
-  formatCharge,
-  resourceName,
-  formatHeldAgainst,
-  structurePlural,
-  structureName,
-  StructureType,
-  tierNumeral as rankNumeral,
-  asRanked,
-  type RankedWords,
-} from "@bibliothecadao/types";
+import { BuildingType, XP, buildingName, formatAmount, formatPercent, formatExact, formatCount, formatClockTime, formatDuration, getRelicInfo, relicEffect, ResourcesIds, formatCharge, resourceName, formatHeldAgainst, structurePlural, structureName, StructureType, tierNumeral as rankNumeral, asRanked, type RankedWords } from "@bibliothecadao/types";
 
 /** One scale for chests, building types and attributes. */
 export { TIER_WORDS } from "@bibliothecadao/types";

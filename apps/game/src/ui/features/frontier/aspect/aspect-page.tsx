@@ -3,12 +3,7 @@ import { useNowSeconds } from "@/hooks/helpers/use-block-timestamp";
 import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
 import { ASPECT_PAGE_WORDS } from "@/ui/design-system/kit/words";
 import { configManager, getStructureName } from "@bibliothecadao/eternum";
-import {
-  RACE_MODELS,
-  readRaceBoard,
-  nativeRaceConstants,
-  type RaceBoard,
-} from "@bibliothecadao/eternum/game-client";
+import { RACE_MODELS, readRaceBoard, nativeRaceConstants, type RaceBoard } from "@bibliothecadao/eternum/game-client";
 import { aspects, RESOURCE_PRECISION } from "@bibliothecadao/types";
 import { useFrontierRealm } from "../frontier-home";
 import { lordsWorth } from "./aspect-worth";

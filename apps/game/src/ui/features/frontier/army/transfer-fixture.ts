@@ -1,4 +1,4 @@
-import { frontierArmyRules } from "./progression-rules-fixture";
+
 import { getNeighborHexes } from "@bibliothecadao/types";
 import { campBeside } from "../sites/site-fixture";
 
@@ -8,11 +8,6 @@ export const transferArmies = (pickedXp = 0, tappedXp = 99) => {
   const { store } = campBeside();
   const first = store.require("ExplorerTroops", { game_id: 1, explorer_id: 201 });
   const facts = [
-    {
-      model: "ArmyProgressionRules",
-      key: "0xf1",
-      value: frontierArmyRules(),
-    },
     ...[201, 202].flatMap((id, slot) => [
       { model: "ArmyDay", key: `0xad${id}`, value: { game_id: 1, explorer_id: id, day: 0 } },
       {
@@ -28,19 +23,9 @@ export const transferArmies = (pickedXp = 0, tappedXp = 99) => {
         model: "ArmyProgress",
         key: `0xf${id}2`,
         value: {
-          common_points: 0,
-          uncommon_points: 0,
-          rare_points: 0,
-          epic_points: 0,
-          legendary_points: 0,
           game_id: 1,
           explorer_id: id,
-          xp: slot === 0 ? pickedXp : tappedXp,
-          battle: 1,
           logistics: slot === 0 ? 1 : 0,
-          scouting: 0,
-          homecoming: 1,
-          scouting_kinds: 0,
         },
       },
       {
@@ -103,7 +88,7 @@ export const transferXpArmies = () => {
         {
           model: "ArmyProgress",
           key: `0xf${id}2`,
-          value: { ...progress, logistics: 1, homecoming: index === 0 ? 1 : 0 },
+          value: { ...progress, logistics: 1, },
         },
         {
           model: "ArmySlot",

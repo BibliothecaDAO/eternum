@@ -4,7 +4,7 @@ export const NativeTroopType = {
   "Paladin": "Paladin",
   "Crossbowman": "Crossbowman"
 } as const;
-export const nativeFactSchemaIdentity = "7e557ac7fdabdc9f15381a2e8071373c3d0bb8436de4411cf9b18d4c31e452e2";
+export const nativeFactSchemaIdentity = "d0936c5707cab6f970e8b4812cc9b1a38ad136e15926e533014dc92dad8bde5f";
 export const nativeReleaseConstants = {
   "RUIN_DEPTH_LIMIT_RELEASE": 9
 } as const;
@@ -145,8 +145,6 @@ export enum NativeTileOccupier {
   Camp = 37,
   BitcoinMine = 38,
   ReservedHyperstructure = 39,
-  Shrine = 40,
-  Well = 41,
   DormantSpire = 45,
   DeepSite = 46,
   Rift = 42,

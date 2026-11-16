@@ -6,16 +6,7 @@ import { useUIStore } from "@/hooks/store/use-ui-store";
 import { pinsOrder } from "@/three/scenes/worldmap-order-request";
 import { computeEffectiveStaminaCost } from "@/lib/army-stamina/path-cost";
 import { orderFood } from "./order-tip";
-import {
-  ActionPaths,
-  ActionType,
-  configManager,
-  divideByPrecision,
-  getBalance,
-  ResourceManager,
-  FELT_CENTER,
-  StaminaManager,
-} from "@bibliothecadao/eternum";
+import { ActionPaths, ActionType, configManager, divideByPrecision, getBalance, ResourceManager, StaminaManager } from "@bibliothecadao/eternum";
 import { resolveExplorerTroops, STAMINA_MODELS } from "@bibliothecadao/eternum/troop-stamina";
 import { ResourcesIds, type Troops } from "@bibliothecadao/types";
 import { safeInteger } from "@bibliothecadao/eternum/game-client";

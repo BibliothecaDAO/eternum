@@ -1,20 +1,5 @@
-import {
-  buildingCostRise,
-  getBuildingCosts,
-  getBuildingQuantity,
-  realmLearned,
-  researchPurchases,
-  researchRowCategory,
-  researchRowOf,
-  researchTier,
-  ResourceManager,
-} from "@bibliothecadao/eternum";
-import {
-  safeInteger,
-  nativeResearchConstants,
-  type NativeFactStore,
-  type NativeRows,
-} from "@bibliothecadao/eternum/game-client";
+import { buildingCostRise, getBuildingCosts, getBuildingQuantity, realmLearned, researchRowCategory, researchRowOf, researchTier, ResourceManager } from "@bibliothecadao/eternum";
+import { safeInteger, nativeResearchConstants, type NativeFactStore, type NativeRows } from "@bibliothecadao/eternum/game-client";
 import { BuildingType, getProducedResource, ResourcesIds } from "@bibliothecadao/types";
 
 import { type BuildingOutput, buildingOutput } from "@/ui/shared/lib/building-output";

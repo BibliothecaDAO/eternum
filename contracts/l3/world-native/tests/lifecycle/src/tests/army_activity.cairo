@@ -202,69 +202,16 @@ fn frontier_attacks_refuse_allies_and_personal_maps_but_allow_rivals_in_the_deep
 }
 
 
-fn charge_at(d: Deployment, key: ExplorerKey) -> crate::combat::ArmyCombat {
+fn combat_at(d: Deployment, key: ExplorerKey) -> crate::combat::ArmyCombat {
     interact_with_state(d.games, || crate::logic::army_combat::read(key).unwrap())
 }
 
-fn buy_charge(d: Deployment, home: crate::resources::ResourceKey, tier: u8) {
-    let price = interact_with_state(
-        d.games, || crate::logic::research::price(home.game_id, crate::research::ROW_BARRACKS, tier),
-    );
-    for (resource, amount) in array![
-        (crate::resources::ESSENCE, price.essence), (crate::resources::LABOR, price.labor),
-    ] {
-        world_test_support::tests::resource_commands::grant(d, home, resource, amount);
-    }
-    super::deep_sites::applied(
-        d,
-        home.game_id,
-        Command::Research(
-            crate::research::Research { structure_id: home.entity_id, row: crate::research::ROW_BARRACKS, choice: 0 },
-        ),
-        360,
-    );
-}
+
+
+
 
 #[test]
-fn new_knights_keep_the_charge_research_their_home_had_when_they_were_raised() {
-    let (_, preset) = world_test_support::tests::preset_projection::current_definition("frontier");
-    let (d, game_id) = super::aspects::setup_aspect_preset(81, preset);
-    let home = crate::resources::ResourceKey { game_id, entity_id: found(d, game_id, 1) };
-    let first = ExplorerKey {
-        game_id, explorer_id: slot_army(d, ArmySlotKey { game_id, structure_id: home.entity_id, epoch: 0, slot: 0 }),
-    };
-    assert_eq!(charge_at(d, first), crate::combat::ArmyCombat { charge: 0, last_target: 0 });
-    super::deep_sites::applied(
-        d, game_id, world_test_support::tests::building_commands::create(home, crate::research::BARRACKS), 360,
-    );
-    buy_charge(d, home, 1);
-    buy_charge(d, home, 2);
-    world_test_support::tests::resource_commands::grant(d, home, 26, 10 * crate::rules::RESOURCE_PRECISION);
-    super::deep_sites::applied(d, game_id, muster(home.entity_id, 2, 2, 1), 360);
-    let trained = ExplorerKey {
-        game_id, explorer_id: slot_army(d, ArmySlotKey { game_id, structure_id: home.entity_id, epoch: 0, slot: 2 }),
-    };
-    assert_eq!(charge_at(d, trained), crate::combat::ArmyCombat { charge: 2, last_target: 0 });
-    buy_charge(d, home, 3);
-    assert_eq!(charge_at(d, first).charge, 0);
-    assert_eq!(charge_at(d, trained).charge, 2);
-    super::deep_sites::applied(
-        d,
-        game_id,
-        Command::ManageTroops(crate::troop_management::ManageTroops::RemoveExplorer(trained.explorer_id)),
-        360,
-    );
-    assert!(interact_with_state(d.games, || crate::logic::army_combat::read(trained)).is_none());
-    super::deep_sites::applied(d, game_id, muster(home.entity_id, 2, 2, 1), 360);
-    let replacement = ExplorerKey {
-        game_id, explorer_id: slot_army(d, ArmySlotKey { game_id, structure_id: home.entity_id, epoch: 0, slot: 2 }),
-    };
-    assert_ne!(replacement.explorer_id, trained.explorer_id);
-    assert_eq!(charge_at(d, replacement), crate::combat::ArmyCombat { charge: 3, last_target: 0 });
-}
-
-#[test]
-fn charge_starts_on_a_new_target_and_rejected_attacks_keep_the_current_fight() {
+fn successful_attacks_record_their_target_and_refusals_preserve_it() {
     let mut preset = super::deep_sites::preset();
     preset.rules.troop_damage_config.damage_biome_bonus_num = 0;
     preset.rules.troop_damage_config.damage_scaling_factor = 36893488147419103232;
@@ -275,8 +222,6 @@ fn charge_starts_on_a_new_target_and_rejected_attacks_keep_the_current_fight() {
     super::deep_sites::applied(
         d, game_id, world_test_support::tests::building_commands::create(home, crate::research::BARRACKS), 360,
     );
-    buy_charge(d, home, 1);
-    buy_charge(d, home, 2);
     world_test_support::tests::resource_commands::grant(d, home, 26, 1000 * crate::rules::RESOURCE_PRECISION);
     super::deep_sites::applied(d, game_id, muster(home.entity_id, 2, 5, 1000), 360);
     let attacker = ExplorerKey {
@@ -315,17 +260,17 @@ fn charge_starts_on_a_new_target_and_rejected_attacks_keep_the_current_fight() {
         d.games, other, ExplorerTroops { coord: crate::troops::Coord { x: center.x + 5, ..center }, ..army(d, other) },
     );
     super::deep_sites::applied(d, game_id, attack(attacker.explorer_id, enemy.explorer_id), 365);
-    assert_eq!(charge_at(d, attacker), crate::combat::ArmyCombat { charge: 2, last_target: enemy.explorer_id });
-    assert_eq!(army(d, attacker).troops.count, 601 * crate::rules::RESOURCE_PRECISION);
+    assert_eq!(combat_at(d, attacker), crate::combat::ArmyCombat { last_target: enemy.explorer_id });
+    assert_eq!(army(d, attacker).troops.count, 563 * crate::rules::RESOURCE_PRECISION);
     assert_eq!(army(d, enemy).troops.count, 563 * crate::rules::RESOURCE_PRECISION);
     let before = army(d, attacker);
     assert!(!execute_in_game(d, game_id, attack(attacker.explorer_id, other.explorer_id), 365));
     assert_eq!(army(d, attacker), before);
-    assert_eq!(charge_at(d, attacker).last_target, enemy.explorer_id);
+    assert_eq!(combat_at(d, attacker).last_target, enemy.explorer_id);
     super::deep_sites::applied(d, game_id, attack(attacker.explorer_id, enemy.explorer_id), 365);
-    assert_eq!(charge_at(d, attacker).last_target, enemy.explorer_id);
-    assert_eq!(army(d, attacker).troops.count, 327 * crate::rules::RESOURCE_PRECISION);
-    assert_eq!(army(d, enemy).troops.count, 270 * crate::rules::RESOURCE_PRECISION);
+    assert_eq!(combat_at(d, attacker).last_target, enemy.explorer_id);
+    assert_eq!(army(d, attacker).troops.count, 317 * crate::rules::RESOURCE_PRECISION);
+    assert_eq!(army(d, enemy).troops.count, 317 * crate::rules::RESOURCE_PRECISION);
     set_explorer_fixture(
         d.games, other, ExplorerTroops { coord: crate::geometry::neighbor(center, 1), ..army(d, other) },
     );
@@ -349,7 +294,7 @@ fn charge_starts_on_a_new_target_and_rejected_attacks_keep_the_current_fight() {
         },
     );
     assert!(!execute_in_game(d, game_id, attack(attacker.explorer_id, other.explorer_id), 365));
-    assert_eq!(charge_at(d, attacker).last_target, enemy.explorer_id);
+    assert_eq!(combat_at(d, attacker).last_target, enemy.explorer_id);
     assert_eq!(army(d, attacker).troops.count, before.troops.count);
     set_explorer_fixture(
         d.games,

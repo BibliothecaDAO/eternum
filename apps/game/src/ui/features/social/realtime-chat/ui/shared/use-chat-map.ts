@@ -3,13 +3,13 @@ import { createContext, useContext } from "react";
 import { useGame } from "@/hooks/context/game-context";
 import { useSelectArmyOnMap } from "@/hooks/helpers/use-navigate";
 import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
-import { useUIStore } from "@/hooks/store/use-ui-store";
+
 import { linkFrom, openOnMap } from "@/play/navigation/open-place";
 import { getActiveGame } from "@/runtime/world/store";
 import { startRealmVisit } from "@/sync/active-game-client";
 import type { IconMeaning } from "@/ui/design-system/icon-meaning";
 import { isExpeditionRealm, Position, structureMapPosition } from "@bibliothecadao/eternum";
-import { type PlaceTile, placeLoaded, placeOnMap, sameGame, type SharedPlace } from "../../model/place";
+import { placeLoaded, placeOnMap, sameGame, type SharedPlace } from "../../model/place";
 
 /**
  * A place a message carries, as this client reads it (usePlaceReader): its name and painting, what opens it (none

@@ -1,4 +1,7 @@
 // Generated from command routes and production payload ABIs. Run the native schema generator to update.
+// Generated from command routes and production payload ABIs. Run the native schema generator to update.
+// Generated from command routes and production payload ABIs. Run the native schema generator to update.
+// Generated from command routes and production payload ABIs. Run the native schema generator to update.
 import type { BigNumberish } from "starknet";
 export const nativeCommandBits = {
   "ClaimDailyQuest": "4722366482869645213696",

@@ -1,23 +1,10 @@
-import {
-  nativeResearchConstants,
-  nativeRaceConstants,
-  nativeQuestConstants as quest,
-  nativeRuleConstants as presetRule,
-} from "../../../../contracts/l3/world-native/schema/client.gen";
+import { nativeResearchConstants, nativeRaceConstants, nativeQuestConstants as quest, nativeRuleConstants as presetRule } from "../../../../contracts/l3/world-native/schema/client.gen";
 import { DAYS_PER_BAG } from "@bibliothecadao/eternum/expeditions";
 import { nativePresetForId } from "../../../source/native";
 import { clockScaled, seasonDayUnitSeconds } from "../../../source/common/season-clock";
 import { RESOURCE_PRECISION, ResourcesIds, type Config } from "@bibliothecadao/types";
 import { CairoCustomEnum, CairoOption, CairoOptionVariant } from "starknet";
-import {
-  buildBiomeClimateConfig,
-  buildCapacityConfig,
-  buildMapConfig,
-  buildStructureCapacityConfig,
-  buildTroopDamageConfig,
-  buildTroopLimitConfig,
-  buildTroopStaminaConfig,
-} from "../registrar/preset";
+import { buildBiomeClimateConfig, buildCapacityConfig, buildMapConfig, buildStructureCapacityConfig, buildTroopDamageConfig, buildTroopLimitConfig, buildTroopStaminaConfig } from "../registrar/preset";
 import { villageResourcePool, withdrawalRetention } from "../../../source/common/native-data";
 
 function required<T>(values: Record<number, T> | Record<string, T>, key: number, name: string): T {

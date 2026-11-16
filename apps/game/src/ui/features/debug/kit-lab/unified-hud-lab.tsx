@@ -1,5 +1,5 @@
 import { SeasonOver } from "@/shell/season-tab/season-over";
-import { frontierArmyRules } from "../../frontier/army/progression-rules-fixture";
+
 import { useIdentitySessionStore } from "@/hooks/context/identity-session";
 import { LAB_SESSION } from "@/shell/lab/app-lab-fixtures";
 import { answerLabChat } from "@/shell/lab/lab-chat";
@@ -13,12 +13,7 @@ import { ArenaHud } from "@/ui/features/world/hud/arena-hud";
 import { useGoalLine } from "@/ui/features/world/hud/points-goal";
 import { gameStartHeadline } from "@/ui/features/news-headlines/news-headline-bridge";
 import { NewsHeadlineBanner } from "@/ui/features/news-headlines/news-headline-banner";
-import {
-  nativeGameModeOf,
-  readExpeditionRules,
-  structureMapPosition,
-  type SkillPointChoice,
-} from "@bibliothecadao/eternum";
+import { nativeGameModeOf, readExpeditionRules, structureMapPosition } from "@bibliothecadao/eternum";
 import type { NativeFactStore } from "@bibliothecadao/eternum/game-client";
 import { ActorType, RESOURCE_PRECISION, ResourcesIds, StructureType, TileOccupier } from "@bibliothecadao/types";
 import { useEffect } from "react";
@@ -115,7 +110,6 @@ const ViewLab = ({ view }: { view: View }) => {
                 ? lastRealmLost
                 : undefined
         }
-        systemCalls={army ? () => ({ spend_skill_point: recordSkillPointSpent }) : undefined}
       >
         {(store) => {
           const rules = frontier ? readExpeditionRules(store, 1) : null;
@@ -238,7 +232,6 @@ export const labArmyOut = (store: NativeFactStore, stamina = LAB_ARMY_STAMINA): 
       },
     },
     { model: "ArmyProgress", key: "0x9a2", value: { ...LAB_PROGRESS, explorer_id: LAB_ARMY_ID } },
-    { model: "ArmyProgressionRules", key: "0x9a3", value: LAB_PROGRESSION_RULES },
   ];
 };
 
@@ -307,25 +300,6 @@ const AttackForecast = ({ store }: { store: NativeFactStore }) => {
 };
 
 const LAB_PROGRESS = {
-  common_points: 1,
-  uncommon_points: 1,
-  rare_points: 0,
-  epic_points: 0,
-  legendary_points: 0,
   game_id: 1,
-  xp: 260,
-  battle: 1,
   logistics: 1,
-  scouting: 0,
-  scouting_kinds: 0,
-  homecoming: 1,
-};
-const LAB_PROGRESSION_RULES = frontierArmyRules();
-
-/** Records the army panel's command at the network boundary; native tests prove its state changes. */
-const recordSkillPointSpent = (call: { explorerId: number; choice: SkillPointChoice }) => {
-  const sent = { explorerId: call.explorerId, choice: call.choice };
-  const target = window as unknown as { __labSkillPointSpent?: unknown[] };
-  target.__labSkillPointSpent = [...(target.__labSkillPointSpent ?? []), sent];
-  return Promise.resolve();
 };

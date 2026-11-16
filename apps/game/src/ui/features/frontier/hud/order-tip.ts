@@ -1,25 +1,8 @@
 import { asRanked, formatCharge, type RankedWords } from "@bibliothecadao/types";
 import { computeEffectiveStaminaCost } from "@/lib/army-stamina/path-cost";
 import { staminaShortfall } from "@/ui/design-system/kit/reasons";
-import {
-  ATTACK,
-  EXPLORE,
-  MOVE,
-  REINFORCE,
-  SPIRE_WORDS,
-  STAMINA,
-  TRANSFER,
-  UNEXPLORED,
-  USE,
-} from "@/ui/design-system/kit/words";
-import {
-  type ActionPath,
-  ActionPaths,
-  ActionType,
-  computeExploreFoodCosts,
-  computeTravelFoodCosts,
-  type OrderRefusal,
-} from "@bibliothecadao/eternum";
+import { ATTACK, EXPLORE, MOVE, REINFORCE, SPIRE_WORDS, STAMINA, TRANSFER, UNEXPLORED } from "@/ui/design-system/kit/words";
+import { type ActionPath, ActionPaths, ActionType, computeExploreFoodCosts, computeTravelFoodCosts, type OrderRefusal } from "@bibliothecadao/eternum";
 import type { Troops } from "@bibliothecadao/types";
 
 type TileOrder = {

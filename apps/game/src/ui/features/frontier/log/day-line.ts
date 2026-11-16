@@ -1,17 +1,7 @@
-import {
-  builtLine,
-  clearCostLine,
-  deployedLine,
-  disbandedLine,
-  EXPLORED,
-  ESSENCE,
-  LABOR,
-  revealLine,
-  xpGainedLine,
-} from "@/ui/design-system/kit/words";
-import { configManager, findGain } from "@bibliothecadao/eternum";
+import { builtLine, clearCostLine, deployedLine, disbandedLine, EXPLORED, ESSENCE, LABOR, revealLine } from "@/ui/design-system/kit/words";
+import { findGain } from "@bibliothecadao/eternum";
 import type { NativeFactStore } from "@bibliothecadao/eternum/game-client";
-import { formatExact, LORDS, type RankedWords, ResourcesIds, scaledToUnits } from "@bibliothecadao/types";
+import { LORDS, type RankedWords, ResourcesIds, scaledToUnits } from "@bibliothecadao/types";
 
 import { frontierBuildingName } from "../build/building-names";
 import { armyLabel } from "../hud/dock-armies";

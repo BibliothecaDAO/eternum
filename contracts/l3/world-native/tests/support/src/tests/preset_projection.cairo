@@ -53,10 +53,7 @@ pub fn frontier_discovery_rules() -> crate::expeditions::FrontierDiscoveryRules 
     let (_, definition) = current_definition("frontier-check");
     definition.economy.discovery.unwrap()
 }
-pub fn frontier_progression_rules() -> crate::progression::ArmyProgressionRules {
-    let (_, definition) = current_definition("frontier-check");
-    definition.economy.progression.unwrap()
-}
+
 pub fn launch(address: ContractAddress, name: ByteArray) -> u32 {
     let (preset_id, definition) = current_definition(name.clone());
     let registrar = IRegistrarDispatcher { contract_address: address };
@@ -181,7 +178,8 @@ pub fn observe_structures(ref rows: Array<ObservedRow>, address: ContractAddress
     if let Some(board) =
         interact_with_state(address, || crate::logic::construction::ConstructionLogic::observed_board_rules(game_id)) {
         row(ref rows, 'BoardRules', key, board);
-        for research_row in 0..crate::research::ROW_COUNT {
+        for row_ref in crate::research::ROWS.span() {
+            let research_row = *row_ref;
             for tier in 1..crate::research::max_tier(research_row) + 1 {
                 row(
                     ref rows,
@@ -260,9 +258,6 @@ pub fn observe_economy(ref rows: Array<ObservedRow>, address: ContractAddress, g
     }
     if let Some(chests) = relics.chest_rules(game_id) {
         row(ref rows, 'ChestRules', key, chests);
-    }
-    if let Some(progression) = interact_with_state(address, || crate::logic::progression::rules(game_id)) {
-        row(ref rows, 'ArmyProgressionRules', key, progression);
     }
     if let Some(discovery) =
         interact_with_state(address, || crate::logic::preset_record::for_game(game_id).discovery_rules.read()) {

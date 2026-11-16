@@ -16,13 +16,7 @@ import { etherealDepthsScenario } from "./ethereal-depths-scenario";
 import { REALM_SKIN_MODELS } from "@/three/structures/realm-skins";
 import { campaignScenario, devconSeasonScenario, fullLaborCampaignScenario } from "./campaign-scenario";
 import { dayEndScenario } from "./day-end-scenario";
-import {
-  afterBattleScenario,
-  fightLostScenario,
-  fightScenario,
-  lowStaminaScenario,
-  pointSpentScenario,
-} from "./after-battle-scenario";
+import { afterBattleScenario, fightLostScenario, fightScenario, lowStaminaScenario, pointSpentScenario } from "./after-battle-scenario";
 import { campScenario } from "./camp-scenario";
 import { claimScenario } from "./claim-scenario";
 import { clearedCampScenario } from "./cleared-camp-scenario";
@@ -41,7 +35,6 @@ import { ruinChestsScenario, ruinChestsSurfaceScenario } from "./ruin-chests-sce
 import { ruinFarScenario, ruinFightScenario } from "./ruin-fight-scenario";
 import { seasonOpensScenario } from "./season-opens-scenario";
 import { settleScenario } from "./settle-scenario";
-import { sitesScenario } from "./sites-scenario";
 import { highGroundScenario, discoveredSpireScenario, SANDS, spireScenario } from "./spire-scenario";
 import { upkeepScenario } from "./upkeep-scenario";
 import { visitScenario } from "./visit-scenario";
@@ -103,7 +96,6 @@ export const LAB_SCENARIOS: Partial<Record<string, () => LabScenario>> = {
   "painted-buildings-sands": () => paintedBuildingsScenario(SANDS),
   visit: visitScenario,
   "far-place": farPlaceScenario,
-  sites: sitesScenario,
   "day-turn": dayTurnScenario("live"),
   "day-later": dayTurnScenario("later"),
   "day-turn-slow": dayTurnScenario("live", "late"),

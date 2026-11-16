@@ -2,7 +2,7 @@ import { formatExact, formatPercent } from "@bibliothecadao/types";
 import { Icon, type IconMeaning } from "@/ui/design-system/icon";
 import { HudStamina, HudTierChip, type StaminaBar } from "@/ui/design-system/kit/hud-elements";
 import { UNDEFENDED } from "@/ui/design-system/kit/words";
-import { OpeningPartGate } from "@/ui/features/frontier/opening/opening-context";
+
 
 import { chipWidth, labelWidth } from "./map-plate-layout";
 import { type MapPlate, type PlateTroops, type PlateWatched } from "./map-plate-model";

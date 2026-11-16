@@ -118,7 +118,6 @@ pub fn definition(blitz: bool) -> PresetDefinition {
             quests: None,
             deep: None,
             labor: None,
-            progression: None,
             discovery: None,
             hyperstructures: if blitz {
                 crate::hyperstructures::HyperstructureRules { initialize_shards: 0, resources: array![].span() }
@@ -237,7 +236,6 @@ pub // The expedition preset uses seeded day bags.
     preset.rules.mode_rules = preset.rules.mode_rules | crate::rules::DEPTH_CONTENTS;
     preset.rules.map_config.camp_win_probability = 0;
     preset.rules.map_config.shards_mines_win_probability = 0;
-    preset.economy.progression = Some(super::preset_projection::frontier_progression_rules());
     preset.rules.mode_rules = HOME_REWARDS | crate::rules::DEPTH_CONTENTS;
     preset.settlement.spacing = 1024;
     preset.rules.map_config.shards_mines_win_probability = 0;
@@ -363,7 +361,7 @@ pub fn discovery_root(
         let raw_root: u256 = sample.into();
         let mut root = raw_root;
         let seed = crate::random::game_root(ref root, game_id);
-        if crate::discovery::frontier(rules, 0, 0, 0, find_percent, empty_reveals, relic, seed) == expected {
+        if crate::discovery::frontier(rules, find_percent, empty_reveals, relic, seed) == expected {
             return raw_root;
         }
     }
@@ -417,7 +415,6 @@ pub fn assert_capture_at(
     preset.rules.mode_rules = preset.rules.mode_rules | crate::rules::DEPTH_CONTENTS;
     preset.rules.map_config.camp_win_probability = 0;
     preset.rules.map_config.shards_mines_win_probability = 0;
-    preset.economy.progression = Some(super::preset_projection::frontier_progression_rules());
     preset.rules.mode_rules = HOME_REWARDS
         | DISCOVER_CAMPS
         | crate::rules::UNOWNED_TARGETS
@@ -768,7 +765,7 @@ pub fn assert_capture_at(
                     (crate::taxonomy::RIFT_CATEGORY, rift)
                 };
                 assert_eq!(payout.category, category);
-                assert_eq!(payout.xp, crate::progression::clear_xp(expected.initial_guard_count, depth));
+                assert_eq!(payout.xp, 0);
                 assert_eq!(
                     payout.reward,
                     if payout.site_id == camp_id {
@@ -845,7 +842,6 @@ pub fn setup_frontier_relics_with_preset(
             );
     preset.rules.map_config.camp_win_probability = 0;
     preset.rules.map_config.shards_mines_win_probability = 0;
-    preset.economy.progression = Some(super::preset_projection::frontier_progression_rules());
     preset
         .rules
         .command_mask = (*read_txt(@FileTrait::new("../fixtures/frontier-command-mask.txt")).at(0))

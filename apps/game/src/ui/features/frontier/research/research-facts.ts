@@ -2,22 +2,8 @@ import { WELL_REFILL_PERCENT } from "@bibliothecadao/eternum/troop-stamina";
 import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
 import { useNativeFacts } from "@/hooks/helpers/use-native-facts";
 import { knownAmount } from "@/ui/utils/utils";
-import {
-  getBalance,
-  realmLearned,
-  RESEARCH_ROWS,
-  researchHasIndependentSides,
-  researchPicks,
-  researchRowCategory,
-  researchTier,
-  ResourceManager,
-} from "@bibliothecadao/eternum";
-import {
-  nativeResearchConstants as research,
-  safeInteger,
-  type NativeFactStore,
-  type NativeRows,
-} from "@bibliothecadao/eternum/game-client";
+import { getBalance, realmLearned, RESEARCH_ROWS, researchHasIndependentSides, researchPicks, researchRowCategory, researchTier, ResourceManager } from "@bibliothecadao/eternum";
+import { nativeResearchConstants as research, safeInteger, type NativeFactStore, type NativeRows } from "@bibliothecadao/eternum/game-client";
 import { RESOURCE_PRECISION, ResourcesIds } from "@bibliothecadao/types";
 import { useMemo } from "react";
 

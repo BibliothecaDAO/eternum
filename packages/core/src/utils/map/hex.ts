@@ -3,6 +3,18 @@
  * Based on https://www.redblobgames.com/grids/hexagons/
  */
 
+/**
+ * Hexagonal coordinate system implementation
+ * Based on https://www.redblobgames.com/grids/hexagons/
+ */
+/**
+ * Hexagonal coordinate system implementation
+ * Based on https://www.redblobgames.com/grids/hexagons/
+ */
+/**
+ * Hexagonal coordinate system implementation
+ * Based on https://www.redblobgames.com/grids/hexagons/
+ */
 import { TileOccupier } from "@bibliothecadao/types";
 
 type TileOccupantKind =

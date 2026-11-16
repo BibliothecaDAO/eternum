@@ -1,8 +1,8 @@
 use crate::army_relics::{ArmyRelic, ArmyRelics, RelicKind, decode, encode, receive, slot};
 
 #[test]
-fn all_twenty_five_relics_round_trip_without_an_empty_code() {
-    for kind in 0_u8..5 {
+fn all_twenty_relics_round_trip_without_an_empty_code() {
+    for kind in 0_u8..4 {
         for rank in 1_u8..6 {
             let relic = ArmyRelic { kind: crate::army_relics::kind_at(kind), rank };
             assert_eq!(encode(relic), kind * 5 + rank);
@@ -17,8 +17,8 @@ fn three_slots_fill_and_the_fourth_replaces_only_the_chosen_slot() {
     for index in 0_u8..3 {
         receive(ref loadout, decode(index + 1), None);
     }
-    receive(ref loadout, ArmyRelic { kind: RelicKind::Tome, rank: 5 }, Some(1));
-    assert_eq!(loadout, ArmyRelics { first: Some(decode(1)), second: Some(decode(25)), third: Some(decode(3)) });
+    receive(ref loadout, ArmyRelic { kind: RelicKind::FarEye, rank: 5 }, Some(1));
+    assert_eq!(loadout, ArmyRelics { first: Some(decode(1)), second: Some(decode(20)), third: Some(decode(3)) });
 }
 
 #[test]

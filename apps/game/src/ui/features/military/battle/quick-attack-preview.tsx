@@ -1,5 +1,5 @@
 import { GUARD_MODELS } from "@bibliothecadao/eternum/game-client";
-import { resolveExplorerCombatTroops } from "@bibliothecadao/eternum/troop-stamina";
+
 import { useStoredBiome } from "@/hooks/helpers/use-tile-at";
 import { type MouseEvent, useEffect, useMemo, useState } from "react";
 
@@ -11,12 +11,7 @@ import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { usePopoverStore } from "@/hooks/store/use-popover-store";
 import { usePlayerDisplayName } from "@/hooks/use-player-profile";
 import { surfaceAnchorFrom } from "@/ui/design-system/molecules/popover";
-import {
-  configManager,
-  getGuardsByStructure,
-  getTroopResourceId,
-  StaminaManager,
-} from "@bibliothecadao/eternum";
+import { configManager, getGuardsByStructure, getTroopResourceId } from "@bibliothecadao/eternum";
 import { useGame } from "@/hooks/context/game-context";
 import { useNativeFacts } from "@/hooks/helpers/use-native-facts";
 
@@ -30,18 +25,7 @@ import { combatTitle, describeFightCost, forecastAttack } from "./fight-forecast
 import { useAttackTargetData } from "./hooks/use-attack-target";
 import { AttackTarget, TargetType } from "./types";
 
-import {
-  BiomeType,
-  getDirectionBetweenAdjacentHexes,
-  getLayeredAttackDistance,
-  getTroopAttackRange,
-  RESOURCE_PRECISION,
-  type ActorType,
-  type ID,
-  type Troops,
-  formatWait,
-  formatExact,
-} from "@bibliothecadao/types";
+import { BiomeType, getDirectionBetweenAdjacentHexes, getLayeredAttackDistance, getTroopAttackRange, RESOURCE_PRECISION, type ActorType, type ID, type Troops, formatWait, formatExact } from "@bibliothecadao/types";
 import { TierChip } from "../utils/tier-chip";
 import { toast } from "@/ui/features/event-feed/notify";
 

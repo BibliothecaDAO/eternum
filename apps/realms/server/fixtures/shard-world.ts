@@ -433,26 +433,16 @@ const armyRow = (explorerId: number, home: number, _army: ArmyState, slot = 0) =
 
 const armyCombatRow = (explorerId: number) => ({
   key: `0x${explorerId.toString(16)}`,
-  value: { game_id: GAME_ID, explorer_id: explorerId, charge: 0, last_target: 0 },
+  value: { game_id: GAME_ID, explorer_id: explorerId, last_target: 0 },
 });
 
 const armyProgressRow = (explorerId: number, home: number) => ({
   home,
   key: `0x${explorerId.toString(16)}`,
   value: {
-    common_points: 0,
-    uncommon_points: 0,
-    rare_points: 0,
-    epic_points: 0,
-    legendary_points: 0,
     game_id: GAME_ID,
     explorer_id: explorerId,
-    xp: 0,
-    battle: 0,
     logistics: 0,
-    scouting: 0,
-    scouting_kinds: 0,
-    homecoming: 0,
   },
 });
 

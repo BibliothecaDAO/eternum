@@ -1,8 +1,5 @@
 import { BuildingType } from "../../../packages/types/src/constants";
-import {
-  nativeResearchConstants as research,
-  nativeRuleConstants as rule,
-} from "../../../contracts/l3/world-native/schema/client.gen";
+import { nativeResearchConstants as research, nativeRuleConstants as rule } from "../../../contracts/l3/world-native/schema/client.gen";
 import { nativeCommandBits } from "../../../contracts/l3/world-native/schema/commands.gen";
 import type { NativePreset } from "../common/native-preset";
 import { FRONTIER_PRESET_ID } from "../common/native-preset-modes";

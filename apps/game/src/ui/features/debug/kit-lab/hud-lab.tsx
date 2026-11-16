@@ -18,21 +18,7 @@ import { TransferTroopsSheet, useSelectedTransfer } from "@/ui/features/frontier
 import { useGame } from "@/hooks/context/game-context";
 import { realmMeaning } from "@/ui/design-system/domain-icon-meaning";
 import { HudIconButton, HudNotice, HudSheet } from "@/ui/design-system/kit/hud-elements";
-import {
-  ARMY,
-  ARMY_MANAGEMENT,
-  EVENTS_WORDS,
-  LINK_WALLET_FOR_LORDS,
-  OFFLINE,
-  PAYOUTS_PAUSED,
-  ROOM_ASK,
-  type Rank,
-  startsNewArmies,
-  TRAINING_BUILDINGS,
-  WITHDRAWALS_CLOSED,
-  YOU,
-  siteDepthName,
-} from "@/ui/design-system/kit/words";
+import { ARMY, ARMY_MANAGEMENT, EVENTS_WORDS, LINK_WALLET_FOR_LORDS, OFFLINE, PAYOUTS_PAUSED, ROOM_ASK, type Rank, startsNewArmies, TRAINING_BUILDINGS, WITHDRAWALS_CLOSED, YOU, siteDepthName } from "@/ui/design-system/kit/words";
 import { ArmyList, ArmyRow, OpenSlotRow } from "@/ui/features/frontier/hud/army-row";
 import { ArmyToken, OpenSlot } from "@/ui/features/frontier/hud/army-token";
 import type { DayClock } from "@/ui/features/frontier/hud/day-clock";
@@ -1680,7 +1666,7 @@ const labPickedArmy = (lab: LabState): { army: PickedArmyView; lords: number } =
       stamina: { current: rested ? 140 : 14, max: 140, perExplore: 20 },
       secondsToFull: rested ? 0 : 4 * HOUR + 11 * 60,
       canSpendSkillPoint: !rested,
-      tiers: { battle: 3, logistics: 2, scouting: 2, homecoming: 1 },
+      tiers: { logistics: 2, },
     };
     return { army, lords: lab.picked === "pay" ? 500 : 100 };
   }
@@ -1695,7 +1681,7 @@ const labPickedArmy = (lab: LabState): { army: PickedArmyView; lords: number } =
       stamina: { current, max: 150, perExplore: LAB_EXPLORE },
       secondsToFull: (150 - current) * 60,
       canSpendSkillPoint: army.tier === true,
-      tiers: { battle: 2, logistics: 3, scouting: 2, homecoming: 1 },
+      tiers: { logistics: 3, },
     },
     lords: lab.purse?.lords ?? LAB_LORDS,
   };
@@ -1710,7 +1696,7 @@ const OWNER_ARMY: ArmyDetailFacts = {
   stamina: { current: 17, max: 140, perExplore: 20 },
   secondsToFull: 82 * 60,
   revealYield: 704,
-  progress: { battle: 3, logistics: 1, scouting: 0, homecoming: 0, scoutingKinds: [] },
+  progress: { logistics: 1, },
   points: [0, 0, 0, 0, 0],
 };
 

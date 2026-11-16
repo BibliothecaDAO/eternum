@@ -1,15 +1,9 @@
 import type { MapSelectionIntent } from "@/hooks/store/map-selection";
 import { readStructureMeaning, troopMeaning } from "@/ui/design-system/domain-icon-meaning";
 import { type IconMeaning, iconMeanings } from "@/ui/design-system/icon-meaning";
-import {
-  activeTileOccupancy,
-  getEntityName,
-  isExpeditionRealm,
-  isRealmCategory,
-  structureMapPosition,
-} from "@bibliothecadao/eternum";
+import { getEntityName, isExpeditionRealm, isRealmCategory, structureMapPosition } from "@bibliothecadao/eternum";
 import type { GameRef, NativeFactStore } from "@bibliothecadao/eternum/game-client";
-import { rowInGameSyncScope } from "@bibliothecadao/eternum/game-sync";
+
 
 /** A tile of the map, on its layer (the surface, or the depth below). */
 export interface PlaceTile {

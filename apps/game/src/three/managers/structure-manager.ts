@@ -1,29 +1,12 @@
 import { publishMapSelection } from "@/observability/map-selection";
 import { GUARD_MODELS } from "@bibliothecadao/eternum/game-client";
-import {
-  readRealmSkin,
-  realmSkinModel,
-  isRealmSkinPath,
-  DEVCON_BANNER_ART,
-  type RealmSkin,
-} from "../structures/realm-skins";
+import { readRealmSkin, realmSkinModel, isRealmSkinPath, DEVCON_BANNER_ART, type RealmSkin } from "../structures/realm-skins";
 import { FrontierModel, frontierModelKind } from "../structures/frontier-model";
 import { nextFrameOrTimeout } from "@/utils/frame-or-timeout";
 import { realmModelIndex, isWonderModelPath } from "../structures/realm-design";
 import { MineKinds, structureName, troopTierIndex } from "@bibliothecadao/types";
-import {
-  configManager,
-  getHyperstructureProgress,
-  siteDisplayName,
-  siteKindOf,
-  type SiteKind,
-} from "@bibliothecadao/eternum";
-import {
-  FALLEN_REALM_RUIN_MODEL_INDEX,
-  frontierBeastModelIndex,
-  frontierSiteComposition,
-  readStandingFrontierBeast,
-} from "../structures/frontier-beast";
+import { configManager, getHyperstructureProgress, siteDisplayName, siteKindOf, type SiteKind } from "@bibliothecadao/eternum";
+import { FALLEN_REALM_RUIN_MODEL_INDEX, frontierBeastModelIndex, frontierSiteComposition, readStandingFrontierBeast } from "../structures/frontier-beast";
 import { projectionChangesForLayer } from "@bibliothecadao/eternum/game-sync";
 import { activeMapLayer } from "@/three/map-layer";
 import type { GLTF } from "three/addons/loaders/GLTFLoader.js";
@@ -42,11 +25,7 @@ import { useChainTimeStore } from "@/hooks/store/use-chain-time-store";
 import { getGameModeConfig } from "@/config/game-modes";
 import type { GameModeConfig } from "@/config/game-modes";
 import InstancedModel, { LAND_NAME } from "@/three/managers/instanced-model";
-import {
-  incrementWorldmapRenderCounter,
-  recordWorldmapRenderDuration,
-  setWorldmapRenderGauge,
-} from "@/three/perf/worldmap-render-diagnostics";
+import { incrementWorldmapRenderCounter, recordWorldmapRenderDuration, setWorldmapRenderGauge } from "@/three/perf/worldmap-render-diagnostics";
 import type { PipelineCompiler } from "@/three/pipeline-compiler";
 import { CameraView, HexagonScene } from "@/three/scenes/hexagon-scene";
 import { resolveWorldmapContentLadder, type WorldmapContentLadder } from "@/three/scenes/worldmap-content-ladder";
@@ -55,31 +34,12 @@ import { gltfLoader, isAddressEqualToAccount } from "@/three/utils/utils";
 import { FELT_CENTER } from "@/ui/config";
 import { getGuardStaminaSnapshot } from "@/ui/features/military/utils/guard-stamina";
 import { safeInteger, type GameClientSetup as SetupResult } from "@bibliothecadao/eternum/game-client";
-import {
-  divideByPrecision,
-  getBlockTimestamp,
-  getGuardsByStructure,
-  getStructureInfoFromTileOccupier,
-  getStructureName,
-  unpackBuildingCounts,
-  type GuardArmy,
-  type IncomingTroopArrival,
-} from "@bibliothecadao/eternum";
-import type {
-  StructureSpatialProjectionChange,
-  StructureSpatialRenderable,
-  WorldSpatialBounds,
-  WorldSpatialProjection,
-} from "@bibliothecadao/eternum/game-sync";
+import { divideByPrecision, getBlockTimestamp, getGuardsByStructure, getStructureInfoFromTileOccupier, getStructureName, unpackBuildingCounts, type GuardArmy, type IncomingTroopArrival } from "@bibliothecadao/eternum";
+import type { StructureSpatialProjectionChange, StructureSpatialRenderable, WorldSpatialBounds, WorldSpatialProjection } from "@bibliothecadao/eternum/game-sync";
 import { BuildingType, ID, StructureType } from "@bibliothecadao/types";
 import { Box3, Euler, Object3D, Scene, Sphere, Vector3 } from "three";
 import type { AttachmentTransform, CosmeticAttachmentTemplate } from "../cosmetics";
-import {
-  CosmeticAttachmentManager,
-  findCosmeticById,
-  resolveStructureCosmetic,
-  resolveStructureMountTransforms,
-} from "../cosmetics";
+import { CosmeticAttachmentManager, findCosmeticById, resolveStructureCosmetic, resolveStructureMountTransforms } from "../cosmetics";
 import { resolveAllSkinGltfs } from "../cosmetics/skin-asset-source";
 import type { StructureInfo } from "../types";
 import type { AnimationVisibilityContext } from "../types/animation";
@@ -92,50 +52,20 @@ import { presentedMineKind } from "@bibliothecadao/eternum";
 import { presentOrSkip } from "@/utils/presentation-miss";
 import { FXManager } from "./fx-manager";
 import type { HoverLabelShowResult } from "./hover-label-show-result";
-import {
-  bindManagerChunkRuntimeState,
-  recoverManagerChunkRuntimeAfterStall,
-  type ManagerChunkUpdateOptions,
-  type RecoverManagerChunkRuntimeAfterStallInput,
-  runManagerChunkUpdateRuntime,
-} from "./manager-chunk-runtime";
-import {
-  createAsyncPassFence,
-  createCoalescedAsyncUpdateRunner,
-  isCommittedManagerChunk,
-  MANAGER_UNCOMMITTED_CHUNK,
-  shouldAcceptManagerChunkRequest,
-  shouldRunManagerChunkUpdate,
-} from "./manager-update-convergence";
+import { bindManagerChunkRuntimeState, recoverManagerChunkRuntimeAfterStall, type ManagerChunkUpdateOptions, type RecoverManagerChunkRuntimeAfterStallInput, runManagerChunkUpdateRuntime } from "./manager-chunk-runtime";
+import { createAsyncPassFence, createCoalescedAsyncUpdateRunner, isCommittedManagerChunk, MANAGER_UNCOMMITTED_CHUNK, shouldAcceptManagerChunkRequest, shouldRunManagerChunkUpdate } from "./manager-update-convergence";
 import type { MapPlateScope } from "../map-plates/map-plate-layer";
 import { buildStructurePlate, guardsToTell, tellsGuardStamina } from "../map-plates/map-plate-model";
 import { holdsGrowingReward, readPlateReward } from "../map-plates/plate-reward";
 import { cleanupVisibleStructurePass } from "./structure-visible-pass-cleanup";
-import {
-  applyVisibleStructurePresentation,
-  PLATE_CLEARANCE,
-  STRUCTURE_SURFACE_LIFT,
-} from "./structure-visible-presentation";
-import {
-  commitManagerVisibilityDiff,
-  commitManagerVisibilityDiffSliced,
-  createManagerVisibilityDiff,
-  type ManagerVisibilityDiff,
-} from "./manager-visibility-diff";
+import { applyVisibleStructurePresentation, PLATE_CLEARANCE, STRUCTURE_SURFACE_LIFT } from "./structure-visible-presentation";
+import { commitManagerVisibilityDiff, commitManagerVisibilityDiffSliced, createManagerVisibilityDiff, type ManagerVisibilityDiff } from "./manager-visibility-diff";
 import { buildStructureModelPreloadPlan, type StructureModelPreloadPlan } from "./structure-model-preload-plan";
-import {
-  resolveStructureIncomingTroopArrivals,
-  resolveTimedStructureLabelState,
-  shouldTrackTimedStructureLabel,
-} from "./structure-label-state";
+import { resolveStructureIncomingTroopArrivals, resolveTimedStructureLabelState, shouldTrackTimedStructureLabel } from "./structure-label-state";
 import { normalizeStructureEntityId as normalizeEntityId } from "./structure-entity-id";
 import type { NativeFactStore, NativeRows } from "@bibliothecadao/eternum/game-client";
 import { recordGameEntryDuration } from "@/ui/layouts/game-entry-timeline";
-import {
-  scheduleFrameBudgetWork,
-  type FrameBudgetWorkLane,
-  type FrameBudgetWorkScheduler,
-} from "../frame-budget-work-queue";
+import { scheduleFrameBudgetWork, type FrameBudgetWorkLane, type FrameBudgetWorkScheduler } from "../frame-budget-work-queue";
 
 import { HyperstructureModel } from "../structures/hyperstructure-model";
 import { readHyperstructureConstruction } from "../structures/hyperstructure-state";

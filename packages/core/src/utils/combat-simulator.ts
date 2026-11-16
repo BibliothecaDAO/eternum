@@ -1,10 +1,5 @@
 import { BiomeType, RELICS, RESOURCE_PRECISION, ResourcesIds, TroopTier, TroopType } from "@bibliothecadao/types";
-import {
-  resolveExchange,
-  type CombatRules,
-  type ExchangeRefusal,
-  type ExchangeTroops,
-} from "./combat-exchange";
+import { resolveExchange, type CombatRules, type ExchangeRefusal, type ExchangeTroops } from "./combat-exchange";
 
 export interface Army {
   stamina: number;

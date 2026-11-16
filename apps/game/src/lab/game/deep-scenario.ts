@@ -1,10 +1,5 @@
 import { learnResearch } from "@bibliothecadao/eternum";
-import {
-  deepCenter,
-  nativeRuleConstants,
-  nativeResearchConstants,
-  type NativeRows,
-} from "@bibliothecadao/eternum/game-client";
+import { deepCenter, nativeRuleConstants, nativeResearchConstants, type NativeRows } from "@bibliothecadao/eternum/game-client";
 import { deepSites, RESOURCE_PRECISION, TileOccupier } from "@bibliothecadao/types";
 import { SPIRE_ARMY } from "@/ui/features/frontier/spire-fixture";
 import { type LabFact, type LabScenario, wire } from "./lab-chain";
@@ -63,7 +58,7 @@ export const deepScenario = (): LabScenario => {
     {
       model: "ArmyCombat",
       key: "0xded4",
-      value: wire({ game_id: 1, explorer_id: allyArmy, charge: 0, last_target: 0 }),
+      value: wire({ game_id: 1, explorer_id: allyArmy, last_target: 0 }),
     },
     { model: "ArmyDay", key: "0xdee5", value: { game_id: 1, explorer_id: String(allyArmy), day: "0" } },
     { model: "DeepArmy", key: "0xdee6", value: { game_id: 1, explorer_id: String(allyArmy), last_tick: String(tick) } },

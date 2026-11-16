@@ -1,25 +1,9 @@
-import {
-  formatAmount,
-  formatCharge,
-  formatDuration,
-  formatExact,
-  formatGain,
-  RESOURCE_PRECISION,
-} from "@bibliothecadao/types";
+import { formatAmount, formatDuration, formatExact, RESOURCE_PRECISION } from "@bibliothecadao/types";
 import { Icon as SemanticIcon, type IconMeaning } from "@/ui/design-system/icon";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 
-import { HudMeter, HudStamina, type StaminaBar,  } from "@/ui/design-system/kit/hud-elements";
-import {
-  comesHomeAtDayEnd,
-  DEEP_WORDS,
-  DEPTH_NUMERALS,
-  depthName,
-  type RankedWords,
-  TROOPS,
-  XP,
-  xpTowardTip,
-} from "@/ui/design-system/kit/words";
+import { HudMeter, HudStamina, type StaminaBar } from "@/ui/design-system/kit/hud-elements";
+import { DEEP_WORDS, DEPTH_NUMERALS, depthName, TROOPS } from "@/ui/design-system/kit/words";
 import type { EtherealLayer } from "@bibliothecadao/eternum";
 import type { DeepArmyLife } from "@bibliothecadao/eternum/game-client";
 
