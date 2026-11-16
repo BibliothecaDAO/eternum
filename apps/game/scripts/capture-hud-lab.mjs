@@ -72,7 +72,6 @@ const READ_ARMY_LIST = `(() => {
   };
 })()`;
 
-
 const armyListProblems = ({ entries, bars, rows }) => {
   if (bars.length < 2 || bars.length !== entries) return [`${bars.length} stamina bars on ${entries} armies and slots`];
   const same = (key) => bars.every((bar) => Math.abs(bar[key] - bars[0][key]) <= 0.5);

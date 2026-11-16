@@ -52,6 +52,7 @@ test("unsupported formulas, missing constants and changed signatures refuse gene
     { expeditions: source.expeditions.replace("site.initial_guard_count * 4", "site.initial_guard_count * 4 + 1") },
     { expeditions: source.expeditions.replace("else {\n        None\n    }", 'else { panic!("missing") }') },
     { resources: source.resources.replace("pub const LABOR: u8 = 23;", "") },
+    { expeditions: source.expeditions.replace("depth: u8, band: bool", "depth: u64, band: bool") },
     { troops: source.troops.replace("const RIFT_GUARD_PERCENT: u32 = 115;", "") },
     { troops: source.troops.replace("(scaled + step * 50)", "(scaled + step * 50 + 1)") },
   ]) {
