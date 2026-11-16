@@ -23,13 +23,11 @@ import type { DockArmy } from "./dock-armies";
 export const ArmyDock = ({
   realm,
   armies,
-  lastHour = false,
   onOpenArmy,
 }: {
   realm: NativeRows["Structure"];
   armies: DockArmy[];
   /** The day's last hour: each army shows what its Homecoming sends home when the day ends. */
-  lastHour?: boolean;
   /** An army's panel: its figures, its XP and its level-ups. */
   onOpenArmy?: (explorerId: number) => void;
 }) => {

@@ -243,7 +243,7 @@ from the dock, which must show its own panel, not the spire's card, and offer **
 card, its depths, costs and commitment read, then Enter on Ethereal II: the EnterDepth command signed for that army, and
 the army two regions below, shown in Ethereal II; play it at `--viewport 390x844` too), `--steps lab-layers` (the same
 game: the view switch's list, World and each Ethereal layer, a phone's with Realm; Ethereal II and World each at the
-camera's same spot, then the realm from Ethereal II and back), `--steps lab-merge-loses-xp`,
+camera's same spot, then the realm from Ethereal II and back), `--steps lab-merge-loses-training`,
 `--steps lab-merge-keeps-tapped` and `--steps lab-after-battle` (the same game with two of the realm's armies merged
 through **Transfer troops**, under with and without lost XP (the target always survives; lost XP must be confirmed once
 more), or with the owner's army after its fight standing on the camp it cleared: each army's tile, found under its
@@ -586,11 +586,11 @@ and Reinforce. `build.sh playtest-supply-post` checks the signed camp ID and res
 and phone, retaining the camp banner, reinforcement sheet and response evidence.
 
 Scouts are raised in Deploy by selecting Scouts from the troop choices, then a count and an open army slot. The Scouts'
-Lodge opens at City and produces the separate Scout stock; its Scouting research belongs to Scouts. `--steps lab-scouts`
+Lodge opens at City and produces the separate Scout stock; it has no Scouting research. `--steps lab-scouts`
 uses `/lab/game?scenario=scouts` to choose and deploy 400 Scouts, retaining the submitted command, army and balance
 changes on desktop and phone. Native tests prove the ten-stamina reveal and combat damage.
 
-Charge: `/lab/game?scenario=charge` puts Charge V Knights beside a camp. `build.sh playtest-charge` selects the army,
-attacks twice through the site card, and records each signed command and resulting army, guard and combat facts on
-desktop and phone. Native lifecycle tests prove research capture, repeated attacks, rejection and removal; the combat
-suite proves both beasts and armies use the opening share only once.
+Exact combat: `/lab/game?scenario=battle-target` puts Knights beside a camp. `build.sh playtest-battle-target` selects
+and attacks twice through the card, recording each command, army, guard and last-target fact on desktop and phone.
+`build.sh playtest-deep-battle-target` checks the same path against a rival Deep guard. Native tests check both exchanges,
+rejection and removal. The die, Charge and Battle skill no longer modify either forecast or settlement.

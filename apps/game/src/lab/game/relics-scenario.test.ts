@@ -14,16 +14,16 @@ it("answers ApplyRelic as army_relics.cairo applies it: the slot spent, its kind
   const scenario = relicsScenario();
   const chain = chainOf(scenario);
   const now = scenario.startsAt + 10;
-  // The Common Tome in the second slot: id 4 × 5 + 1.
-  const answered = scenario.answer(applyRelic(21, 1), chain, now);
+  // The Common Ward in the second slot: id 1 × 5 + 1.
+  const answered = scenario.answer(applyRelic(6, 1), chain, now);
   // The chain carries answers as Herald does: plain JSON.
   expect(() => JSON.stringify(answered)).not.toThrow();
   // Keyed as the chain holds each row, as the lab's Herald applies an answer.
   chain.applyFacts(answered.map(keyedAsHeldOnChain) as never);
   const carried = chain.require("ArmyRelics", { game_id: 1, explorer_id: 201 });
   expect([carried.first?.kind, carried.second, carried.third?.kind]).toEqual(["Blade", null, "Plunder"]);
-  const tome = chain.require("ArmyRelicEffect", { game_id: 1, explorer_id: 201, kind: "Ward" });
-  expect([tome.rank, tome.expires_at]).toEqual([1, BigInt(now + 1_800)]);
+  const ward = chain.require("ArmyRelicEffect", { game_id: 1, explorer_id: 201, kind: "Ward" });
+  expect([ward.rank, ward.expires_at]).toEqual([1, BigInt(now + 1_800)]);
 });
 
 it("answers nothing for a relic id the slot does not hold, as the contract refuses stale input", () => {

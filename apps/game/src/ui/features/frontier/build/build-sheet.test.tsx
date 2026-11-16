@@ -408,12 +408,12 @@ describe("the build sheet", () => {
       new RegExp(`^Farm: Wheat \\+[\\d,.]+/(?:s|min), takes ${farm} population$`),
     );
     expect(sheet.card("Hut").closest("[data-tip]")!.getAttribute("data-tip")).toMatch(/^Hut: \+\d+ population$/);
-    expect(sheet.card("War hall").closest("[data-tip]")!.getAttribute("data-tip")).toMatch(
-      /^War hall: new armies start with Battle I(, takes \d+ population)?$/,
+    expect(sheet.card("Supply yard").closest("[data-tip]")!.getAttribute("data-tip")).toMatch(
+      /^Supply yard: new armies start with Logistics I(, takes \d+ population)?$/,
     );
     // The tier is the tooltip's gem, not a numeral in the words.
-    const ranks = JSON.parse(sheet.card("War hall").closest("[data-tip]")!.getAttribute("data-tip-ranks")!);
-    expect(ranks.slice(0, 3)).toEqual(["War hall: ", "new armies start with Battle ", { rank: 1 }]);
+    const ranks = JSON.parse(sheet.card("Supply yard").closest("[data-tip]")!.getAttribute("data-tip-ranks")!);
+    expect(ranks.slice(0, 3)).toEqual(["Supply yard: ", "new armies start with Logistics ", { rank: 1 }]);
     // No Farm stands on the board yet (the fixture's wheat comes with the realm): its price is its base.
     expect(sheet.card("Farm").querySelector('[aria-label="price raised"]')).toBeNull();
     expect(document.querySelector("[data-price-raised]")).toBeNull();
@@ -467,7 +467,7 @@ describe("the build sheet", () => {
     expect(band(sheet, "Farm").getAttribute("data-tone")).toBe("bad");
     expect(band(sheet, "Farm").textContent).toMatch(/\d+[mhd]$/);
     // Training names its purchases against the gate instead of a building rarity.
-    expect(band(sheet, "War hall").textContent).toBe("0/2 research");
+    expect(band(sheet, "Supply yard").textContent).not.toContain("research");
     sheet.close();
 
     // Labor for all; the population full: a building that takes some says so in amber, the Hut stands ready.
@@ -483,13 +483,13 @@ describe("the build sheet", () => {
       fact("0x72", "StructureBuildings", {
         game_id: 1,
         entity_id: 7,
-        ...countsWith(BuildingType.WarHall, 1),
+        ...countsWith(BuildingType.SupplyYard, 1),
         population: { current: 2, max: 6 },
       }),
     ] as never);
     const built = open(store, realm);
-    expect(band(built, "War hall").getAttribute("data-tone")).toBe("good");
-    expect(band(built, "War hall").querySelector('[data-icon="check"]')).not.toBeNull();
+    expect(band(built, "Supply yard").getAttribute("data-tone")).toBe("good");
+    expect(band(built, "Supply yard").querySelector('[data-icon="check"]')).not.toBeNull();
     built.close();
   });
 
@@ -515,10 +515,10 @@ describe("the build sheet", () => {
     const mixed = open(store, realm);
     expect(gems(mixed, "Farm")).toEqual(["fields II", "granary I"]);
     expect(gems(mixed, "Workshop")).toEqual(["tools Untrained", "storehouse Untrained"]);
-    expect(gems(mixed, "Barracks")).toEqual(["III"]);
+    expect(gems(mixed, "Barracks")).toEqual(["I"]);
     // A row without sides keeps its type's one gem: the Hut at Rare III, a training building at Common I.
     expect(gems(mixed, "Hut")).toEqual(["III"]);
-    expect(gems(mixed, "War hall")).toEqual(["I"]);
+    expect(gems(mixed, "Supply yard")).toEqual(["I"]);
     // Gems, never words for them (owner, 27 October: "why no gems instead of the text ?").
     expect(mixed.host.textContent).not.toMatch(/ from (Fields|Tools)/);
     mixed.close();
@@ -526,7 +526,7 @@ describe("the build sheet", () => {
     learn(2n);
     const fields = open(store, realm);
     expect(gems(fields, "Farm")).toEqual(["fields II", "granary Untrained"]);
-    expect(gems(fields, "Barracks")).toEqual(["Untrained"]);
+    expect(gems(fields, "Barracks")).toEqual(["I"]);
     fields.close();
   });
 
@@ -593,13 +593,13 @@ it("reds only the price lines the realm holds less of, so a training building sh
       value: { game_id: 1, structure_id: 7, learned: 2n << 14n },
     },
   ] as never);
-  const warHall = store.require("BuildingRule", { game_id: 1, category: BuildingType.WarHall });
+  const supplyYard = store.require("BuildingRule", { game_id: 1, category: BuildingType.SupplyYard });
   store.applyFacts([
     {
       model: "BuildingRule",
-      key: `0x6${BuildingType.WarHall}`,
+      key: `0x6${BuildingType.SupplyYard}`,
       value: {
-        ...warHall,
+        ...supplyYard,
         population_cost: 0,
         simple_cost: [
           { resource_type: ResourcesIds.Essence, amount: 6000n * BigInt(RESOURCE_PRECISION) },
@@ -620,7 +620,7 @@ it("reds only the price lines the realm holds less of, so a training building sh
       ),
     );
     const card = [...host.querySelectorAll<HTMLButtonElement>(".ui-card__choose")].find((button) =>
-      button.textContent?.includes(buildingName(BuildingType.WarHall, true)),
+      button.textContent?.includes(buildingName(BuildingType.SupplyYard, true)),
     )!;
     const line = (label: string) => {
       const element = card.querySelector(`[aria-label="${label}"]`)!;

@@ -12,10 +12,6 @@ import { nativeRuleConstants, type NativeRows } from "../../../../contracts/l3/w
 
 export const WELL_REFILL_PERCENT = 100 / nativeRuleConstants.WELL_STAMINA_DIVISOR;
 
-/** The contract rounds down half of this army's own maximum, including Logistics. */
-export const wellRefillStamina = (maximum: number): number =>
-  Math.floor(maximum / nativeRuleConstants.WELL_STAMINA_DIVISOR);
-
 /** One game's stamina rules, exactly as its SliceRules carries them. */
 export type TroopStaminaRules = NativeRows["SliceRules"]["troop_stamina_config"];
 

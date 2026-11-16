@@ -11,7 +11,7 @@ const PRECISION = 1_000_000_000n;
 /** Two exact exchanges against the same target. */
 const EXCHANGES = [
   { before: 1000n, attacker: 563n, defender: 563n },
-  { before: 563n, attacker: 317n, defender: 317n },
+  { before: 563n, attacker: 287n, defender: 287n },
 ];
 
 export function battleTargetScenario(): LabScenario {

@@ -444,7 +444,7 @@ function battleTargetSteps(attack, place) {
     { name: "select-army", play: selectTheReadiestArmy, settleMs: 1_500, verify: armySelected },
     ...[
       ["first-attack", 563, 563],
-      ["same-fight", 317, 317],
+      ["same-fight", 287, 287],
     ].map(([name, attacker, defender]) =>
       clickToResultStep(name, "BattleGuard", attack, ({ played, actionLatency }) => {
         const answer = (actionLatency.chainAnswers ?? []).filter(({ kind }) => kind === "BattleGuard").at(-1);
@@ -708,8 +708,8 @@ function mergeActionSteps() {
 }
 
 /**
- * Presses the transfer card's merge, then confirms it as a player does: a merge that costs the army its XP asks once
- * more ("Lose 100 XP, merge into Army 2"), and that second press sends it. Each is pressed where it is drawn.
+ * Presses the transfer card's merge, then confirms it as a player does: a merge that costs the army its Logistics training asks once
+ * more ("Confirm merge into Army 2"), and that second press sends it. Each is pressed where it is drawn.
  */
 async function mergeTheArmies({ browser }, tiles) {
   const merge = browser.read(MERGE_BUTTON);
@@ -4434,9 +4434,9 @@ const DEEP_JOIN_STEPS = [
 /**
  * Two of the realm's armies merged as a player merges them, then hovered (owner, 2026-10-25: "due to an army merge I dont
  * see the hover label"): the spire's army picked, the other right-clicked for the transfer card, its Merge pressed (and
- * pressed again where the button then names the XP the merge loses) and answered by the chain, which keeps the army
- * tapped; then the surviving army's tile, hovered, opens its plate, and the emptied tile opens none. In merge-loses-xp
- * the picked army holds 100 XP, so the second press reads `confirm`; in merge-keeps-tapped one press merges.
+ * pressed again where the button then names the training the merge loses) and answered by the chain, which keeps the army
+ * tapped; then the surviving army's tile, hovered, opens its plate, and the emptied tile opens none. In merge-loses-training
+ * the picked army holds stronger Logistics training, so the second press reads `confirm`; in merge-keeps-tapped one press merges.
  */
 function labMergeSteps(confirm) {
   const tiles = { byArmy: null };
@@ -5132,7 +5132,7 @@ function mergeCardOpen({ played }) {
 }
 
 /**
- * Presses the card's Merge and, when the button then asks again with the XP the merge loses, that button too; then waits
+ * Presses the card's Merge and, when the button then asks again with the training the merge loses, that button too; then waits
  * for the chain's answer to leave the realm one army.
  */
 async function pressMerge({ browser }) {
@@ -5159,7 +5159,7 @@ function mergedIntoTheTapped({ played }, confirm) {
   if (!played.merge) return failed("no Merge to press", played);
   if (played.confirm !== confirm)
     return failed(
-      confirm ? `the merge never asked "${confirm}"` : `a merge that loses no XP asked "${played.confirm}"`,
+      confirm ? `the merge never asked "${confirm}"` : `a merge that loses no training asked "${played.confirm}"`,
       played,
     );
   if (!played.after.sent.includes("ManageTroops")) return failed("Merge sent no troop transfer", played);
@@ -6135,9 +6135,9 @@ export const STEP_SETS = {
       { game: { ...LAB_SPIRE, lab: "ethereal-depths" }, steps: etherealDepthSteps(Number(depth)) },
     ]),
   ),
-  "lab-merge-loses-xp": {
-    game: labSpireGame("merge-loses-xp"),
-    steps: labMergeSteps("Lose 100 XP, merge into Army 2"),
+  "lab-merge-loses-training": {
+    game: labSpireGame("merge-loses-training"),
+    steps: labMergeSteps("Confirm merge into Army 2"),
   },
   "lab-merge-keeps-tapped": { game: labSpireGame("merge-keeps-tapped"), steps: labMergeSteps(null) },
   "lab-supply-post": { game: labSpireGame("supply-post"), steps: LAB_SUPPLY_POST_STEPS },
@@ -6145,9 +6145,9 @@ export const STEP_SETS = {
   "lab-actions": { game: labSpireGame("actions"), steps: ACTION_STEPS },
   "lab-actions-spire": { game: LAB_SPIRE, steps: SPIRE_ACTION_STEPS },
   "lab-double-click": { game: { ...LAB_SPIRE, lab: "camp" }, steps: LAB_DOUBLE_CLICK_STEPS },
-  "lab-actions-merge": { game: labSpireGame("merge-loses-xp"), steps: mergeActionSteps() },
+  "lab-actions-merge": { game: labSpireGame("merge-loses-training"), steps: mergeActionSteps() },
   "lab-economy": { game: { ...labSpireGame("economy"), mode: "blitz" }, steps: ECONOMY_STEPS },
-  "lab-actions-transfer": { game: labSpireGame("merge-loses-xp"), steps: transferActionSteps() },
+  "lab-actions-transfer": { game: labSpireGame("merge-loses-training"), steps: transferActionSteps() },
   "lab-battle-target": { game: labSpireGame("battle-target"), steps: BATTLE_TARGET_STEPS },
   "lab-deep-battle-target": { game: labSpireGame("deep-battle-target"), steps: DEEP_BATTLE_TARGET_STEPS },
   "lab-scouts": { game: labSpireGame("scouts"), steps: SCOUT_DEPLOY_STEPS },
@@ -6209,7 +6209,7 @@ export const STEP_SETS = {
   "lab-ruin-fight": { game: labSpireGame("ruin-fight"), steps: LAB_RUIN_FIGHT_STEPS },
   "lab-ruin-far": { game: labSpireGame("ruin-far"), steps: LAB_RUIN_FAR_STEPS },
   "lab-hover-zoom": { game: labSpireGame("after-battle"), steps: LAB_HOVER_ZOOM_STEPS, devOverlays: true },
-  "lab-hover-zoom-pair": { game: labSpireGame("merge-loses-xp"), steps: LAB_HOVER_ZOOM_STEPS, devOverlays: true },
+  "lab-hover-zoom-pair": { game: labSpireGame("merge-loses-training"), steps: LAB_HOVER_ZOOM_STEPS, devOverlays: true },
   "lab-high-ground": { game: labSpireGame("high-ground"), steps: LAB_HIGH_GROUND_STEPS, devOverlays: true },
   "lab-day-turn": { game: labDayTurn("day-turn"), steps: labDayTurnSteps(RECORDED_DAY_2) },
   "lab-day-later": { game: labDayTurn("day-later"), steps: labDayTurnSteps(RECORDED_DAY_2) },

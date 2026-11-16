@@ -123,7 +123,7 @@ it("shows a ruin's fixed quote but refuses funding when the shared budget is spe
   });
 });
 
-it("shows Cyclops wheat from initial guards alongside clear XP", () => {
+it("shows Cyclops wheat from initial guards as its resource payout", () => {
   const { store, site, structure, attack } = campBeside("Beasts");
   const own = attack({ col: 41, row: 12, alt: false });
   const limit = BigInt(store.require("BoardRules", { game_id: 1 }).settlement_resource_cap) * 1_000_000_000n;
@@ -157,16 +157,16 @@ describe("the recorded Blightglow Rift under Frontier's current combat rules", (
     const plan = card(794n, 120n);
     expect(plan.guard).toEqual({ type: TroopType.Knight, tier: TroopTier.T1, count: 1_400 });
     expect(plan.attackStamina).toBe(30);
-    expect(plan.fight).toEqual({ troopsLost: 601, guardLeft: 1_025 });
+    expect(plan.fight).toEqual({ troopsLost: 601, guardLeft: 1_059 });
   });
 
   it("keeps the guard's damage at full strength below its defense stamina cost", () => {
-    expect(card(793n, 39n).fight).toEqual({ troopsLost: 601, guardLeft: 1_025 });
+    expect(card(793n, 39n).fight).toEqual({ troopsLost: 601, guardLeft: 1_060 });
   });
 
   it("refuses the attack of an army below the attack's stamina, as the contract does", () => {
     expect(card(794n, 120n, 29n).fight).toEqual({ refused: true });
-    expect(card(794n, 120n, 30n).fight).toEqual({ troopsLost: 601, guardLeft: 1_025 });
+    expect(card(794n, 120n, 30n).fight).toEqual({ troopsLost: 601, guardLeft: 1_059 });
   });
 });
 
@@ -219,17 +219,15 @@ it("keeps the forecast and eligible rewards unknown until missing effects are kn
   expect(readSiteCard(store, site, structure, SITE_TILE, action)).toMatchObject({
     fight: undefined,
     payout: undefined,
-    xp: undefined,
   });
   store.setSnapshot({ gameId: 1, complete: true, actor: "0x111", timestamp: 350 });
   expect(readSiteCard(store, site, structure, SITE_TILE, action)).toMatchObject({
     fight: { troopsLost: 457, guardLeft: 478 },
-    xp: 123,
     payout: { amount: 825 },
   });
 });
 
-it("adds active relics to a slot army's Battle skill without modifying stored troop boosts", () => {
+it("applies active relics to a slot army without modifying stored troop boosts", () => {
   const { store, attack } = campBeside();
   const { army } = attack({ col: 41, row: 12, alt: false });
   const slotKeys = {
@@ -264,24 +262,24 @@ it("adds active relics to a slot army's Battle skill without modifying stored tr
   ]);
   const current = store.require("ExplorerTroops", army);
   expect(resolveExplorerCombatTroops(store, current, 379)?.boosts).toMatchObject({
-    incr_damage_dealt_percent_num: 5500,
+    incr_damage_dealt_percent_num: 1000,
     decr_damage_gotten_percent_num: 500,
   });
   expect(resolveExplorerCombatTroops(store, current, 380)?.boosts).toMatchObject({
-    incr_damage_dealt_percent_num: 4500,
+    incr_damage_dealt_percent_num: 0,
     decr_damage_gotten_percent_num: 0,
   });
   expect(current.troops.boosts.incr_damage_dealt_percent_num).toBe(0);
 });
 
-it("keeps the same site's opening Charge spent after a confirmed update and a fresh snapshot", () => {
+it("keeps the exact forecast through a last-target update and a fresh snapshot", () => {
   const { store, site, structure, attack } = campBeside();
   const key = { game_id: 1, explorer_id: 201n };
   const combat = store.require("ArmyCombat", key);
   const wireKey = store.wireKeyOf("ArmyCombat", key)!;
   const army = attack({ col: 41, row: 12, alt: false });
-  store.applyFacts([{ model: "ArmyCombat", key: wireKey, value: { ...combat, charge: 5 } }]);
-  expect(readSiteCard(store, site, structure, SITE_TILE, army).fight).toEqual({ troopsLost: 327, guardLeft: 478 });
+  store.applyFacts([{ model: "ArmyCombat", key: wireKey, value: { ...combat, last_target: 0n } }]);
+  expect(readSiteCard(store, site, structure, SITE_TILE, army).fight).toEqual({ troopsLost: 457, guardLeft: 478 });
   store.applyFacts([{ model: "ArmyCombat", key: wireKey, value: { ...combat, last_target: site.entity_id } }]);
   expect(readSiteCard(store, site, structure, SITE_TILE, army).fight).toEqual({ troopsLost: 457, guardLeft: 478 });
   const restored = reloadSiteFacts(store);
@@ -289,7 +287,7 @@ it("keeps the same site's opening Charge spent after a confirmed update and a fr
   expect(readSiteCard(restored, site, structure, SITE_TILE, army).fight).toEqual({ troopsLost: 457, guardLeft: 478 });
 });
 
-it("keys a Deep beast's opening by the site and a new guard's opening by that army", () => {
+it("uses the same exact exchange for a replacement Deep guard and a site beast", () => {
   const { store, startsAt } = deepBattleTargetScenario();
   setBlockTimestampSource(() => startsAt);
   const key = { game_id: 1, explorer_id: 201n };
@@ -314,7 +312,7 @@ it("keys a Deep beast's opening by the site and a new guard's opening by that ar
     store.applyFacts([{ model, key: `0xeef${index}`, value: { ...row, explorer_id: 302n } }]);
   }
   store.applyFacts([{ model: "DeepGuard", key: store.wireKeyOf("DeepGuard", oldGuard)!, value: null }]);
-  expect(readDeepSiteFight(store, quarry(), attack)?.result).toEqual({ troopsLost: 342, guardLeft: 563 });
+  expect(readDeepSiteFight(store, quarry(), attack)?.result).toEqual({ troopsLost: 437, guardLeft: 563 });
   store.applyFacts([
     { model: "DeepGuard", key: store.wireKeyOf("DeepGuard", { game_id: 1, explorer_id: 302n })!, value: null },
   ]);
@@ -322,9 +320,9 @@ it("keys a Deep beast's opening by the site and a new guard's opening by that ar
   store.applyFacts([
     { model: "Guard", key: store.wireKeyOf("Guard", site.guard!)!, value: { ...site.guard!, troops: army.troops } },
   ]);
-  expect(readDeepSiteFight(store, quarry(), attack)?.result).toEqual({ troopsLost: 342, guardLeft: 563 });
+  expect(readDeepSiteFight(store, quarry(), attack)?.result).toEqual({ troopsLost: 437, guardLeft: 563 });
   store.applyFacts([{ model: "ArmyCombat", key: combatKey, value: { ...combat, last_target: site.id } }]);
   expect(readDeepSiteFight(store, quarry(), attack)?.result).toEqual({ troopsLost: 437, guardLeft: 563 });
   store.applyFacts([{ model: "ArmyCombat", key: combatKey, value: null }]);
-  expect(readDeepSiteFight(store, quarry(), attack)?.result).toBeUndefined();
+  expect(readDeepSiteFight(store, quarry(), attack)?.result).toEqual({ troopsLost: 437, guardLeft: 563 });
 });

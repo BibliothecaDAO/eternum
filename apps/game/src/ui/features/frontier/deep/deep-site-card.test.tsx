@@ -263,8 +263,8 @@ it("previews the Deep guard's opening and repeated exchange before sending each 
     [...hud.host.querySelectorAll('[role="img"][aria-label*="→"]')].map((node) => node.getAttribute("aria-label"));
   try {
     for (const [before, ownLeft, enemyLeft] of [
-      [1000, 658, 563],
-      [658, 386, 245],
+      [1000, 563, 563],
+      [563, 287, 287],
     ]) {
       expect(labels().some((label) => label?.includes(`→ ${ownLeft},`))).toBe(true);
       expect(labels().some((label) => label?.includes(`→ ${enemyLeft},`))).toBe(true);

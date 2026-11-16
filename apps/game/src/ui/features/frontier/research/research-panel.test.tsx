@@ -104,7 +104,7 @@ it("holds a locked node's verb, says why, and offers the step that opens it", ()
       />,
     ),
   );
-  expect(host.textContent).toContain("Labor storage 18,000 / 25,000 · Kingdom");
+  expect(host.textContent).toContain("Labor storage 18,000 / 60,000 · Empire");
   expect(button(/^Research /)!.disabled).toBe(true);
   act(() => button(/Level up the castle/)!.click());
   expect(onFix).toHaveBeenCalledOnce();
@@ -115,7 +115,7 @@ describe("the picked building's choice, at the panel's foot (the owner's pick C)
 
   it("keeps what a finished node gives: the Shrine researched, a Hut at Legendary", () => {
     draw("shrine");
-    expect(choice()!.textContent).toContain("Armies find Shrines · Opens");
+    expect(choice()!.textContent).toContain("Armies find Shrines · Open");
     const legendaryHut = readResearchTree({
       ...MID_REALM,
       learned: { ...MID_REALM.learned, 3: { tier: 5, sides: [] } },
@@ -215,15 +215,15 @@ it("keeps the chosen Research action outside the tree scroll on every pick, incl
 });
 
 it.each([
-  [0, "Untrained · +0 max stamina → I · +1+0 max stamina", ["Untrained", "I"]],
-  [1, "I · +1+0 max stamina → II · +45 max stamina", ["I", "II"]],
-  [2, "II · +45 max stamina → III · +75 max stamina", ["II", "III"]],
-  [3, "III · +75 max stamina → IV · +7+0 max stamina", ["III", "IV"]],
-  [4, "IV · +7+0 max stamina → V · +10+0 max stamina", ["IV", "V"]],
-  [5, "V · +10+0 max stamina", ["V"]],
+  [0, "+0 max stamina → +20 max stamina"],
+  [1, "+20 max stamina → +45 max stamina"],
+  [2, "+45 max stamina → +75 max stamina"],
+  [3, "+75 max stamina → +110 max stamina"],
+  [4, "+110 max stamina → +150 max stamina"],
+  [5, "+150 max stamina"],
 ] as const)(
-  "labels the Supply yard's current and next training ranks at rank %s as their gems",
-  (tier, label, gems) => {
+  "shows the Supply yard's exact stamina gain at rank %s",
+  (tier, label) => {
     const ranked = readResearchTree({
       ...MID_REALM,
       learned: { ...MID_REALM.learned, 5: { tier, sides: [] } },
@@ -246,7 +246,6 @@ it.each([
       line.textContent?.startsWith("New armies start with Logistics"),
     );
     // Each rank is its gem, read by its name, never a numeral in the words.
-    expect([...effect!.querySelectorAll(".ui-tier")].map((gem) => gem.getAttribute("aria-label"))).toEqual(gems);
     expect(saidWithGems(effect!)).toBe(`New armies start with Logistics · ${label}`);
   },
 );

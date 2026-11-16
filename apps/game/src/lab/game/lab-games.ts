@@ -63,7 +63,7 @@ export const LAB_SCENARIOS: Partial<Record<string, () => LabScenario>> = {
   "day-end": dayEndScenario,
   realm: realmScenario,
   "realm-height": realmHeightScenario,
-  "merge-loses-xp": mergeScenario("picked"),
+  "merge-loses-training": mergeScenario("picked"),
   "merge-keeps-tapped": mergeScenario("tapped"),
   reinforce: reinforceScenario,
   "supply-post": supplyPostScenario,

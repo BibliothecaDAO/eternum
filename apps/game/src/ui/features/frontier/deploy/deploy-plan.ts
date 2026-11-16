@@ -50,7 +50,7 @@ export interface TroopRaise {
 
 /**
  * The realm's deploy today; unknown while any slot, troop or wheat balance, or the realm's research, is. Troops at home
- * are what this deploy finds: the stock and Homecoming's return from the armies whose day has ended, as much as fits.
+ * come from the current stock, including settled production, rounded down to whole troops.
  */
 export const readDeployPlan = (
   store: NativeFactStore,
@@ -121,7 +121,7 @@ const readTroopsAtHome = (
         store,
       ).balance;
       if (stock === undefined) return undefined;
-      const atHome = Number(stock) / RESOURCE_PRECISION;
+      const atHome = Number(stock / BigInt(RESOURCE_PRECISION));
       if (atHome > 0) choices.push({ type, tier, atHome, cap: configManager.getMaxArmySize(realm.base.level, tier) });
     }
   return choices;

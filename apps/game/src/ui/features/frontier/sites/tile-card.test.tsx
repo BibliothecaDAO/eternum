@@ -175,7 +175,7 @@ describe("the tile card", () => {
     try {
       const card = host.querySelector(`section[aria-label="${siteName(SITE)}"]`);
       expect(card).not.toBeNull();
-      expect(card!.querySelector(".ui-frame__body header")?.textContent).toBe("1,100Troll+825+123 XP+1 site");
+      expect(card!.querySelector(".ui-frame__body header")?.textContent).toBe("1,100Troll+825+1 site");
       expect(host.querySelector('header [aria-label="Troll 1,100"]')).not.toBeNull();
       expect(button("Attack")).toBeUndefined();
 
@@ -197,7 +197,7 @@ describe("the tile card", () => {
       const card = host.querySelector('section[aria-label="North Watch"]')!;
       expect(card).not.toBeNull();
       expect(card.textContent?.match(/North Watch/g)).toHaveLength(1);
-      expect(card.querySelector(".ui-frame__body header")?.textContent).toBe("1,100Troll+825+123 XP+1 site");
+      expect(card.querySelector(".ui-frame__body header")?.textContent).toBe("1,100Troll+825+1 site");
       expect(card.textContent?.match(/Troll/g)).toHaveLength(1);
       expect(card.textContent).not.toMatch(/\bcamp\b/i);
     } finally {
@@ -239,7 +239,7 @@ describe("the tile card", () => {
     // Owner, 31 October 2026: "I should still have the projection even if I'm too far I think". The attack its army
     // would send from beside the site, and its headline; only Attack waits for the army to get there.
     expect(fightSides(host)).toEqual(FORECAST);
-    expect(host.querySelector(".ui-frame__body header")?.textContent).toBe("The guard holds+825+123 XP+1 site");
+    expect(host.querySelector(".ui-frame__body header")?.textContent).toBe("The guard holds+825+1 site");
     expect(button("Attack")?.disabled).toBe(true);
     expect(button("Move")).toBeUndefined();
     expect(host.querySelector('[role="status"]')?.textContent).toBe("Too far from the Troll");
@@ -649,14 +649,13 @@ describe("after the player's attack (owner, 30 October 2026: 'I'd like the army 
   });
 });
 
-it("refreshes the open forecast and XP when only an army relic effect arrives", () => {
+it("refreshes the open forecast when only an army relic effect arrives", () => {
   const { host, store, unmount } = renderCard("beside");
   try {
     act(() => useUIStore.getState().selectOnMap({ kind: "army", entityId: 201, tile: null }));
     expect(fightSides(host)).toEqual(FORECAST);
     act(() => store.applyFacts([relicEffectFact("Blade"), relicEffectFact("Ward")]));
     expect(fightSides(host)).toEqual(["Army 1,498 → 1,064, −434 · 29% lost", "Troll 1,100 → 416, −684 · 62% lost"]);
-    expect(host.textContent).toContain("172 XP");
   } finally {
     unmount();
   }

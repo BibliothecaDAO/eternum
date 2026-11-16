@@ -114,5 +114,5 @@ it("opens repeatable Scout production at City without Barracks research", () => 
   expect(lodge(0).standing).toEqual({ level: 1 });
   expect(lodge(1).standing).toBe("open");
   expect(lodge(1).effect).toMatchObject({ kind: "produces", resource: ResourcesIds.Paladin });
-  expect(lodge(1).tier).toBe(0);
+  expect(lodge(1).tier).toBe(1);
 });

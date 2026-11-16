@@ -107,5 +107,5 @@ it("answers native Paladin index 1 with Scouts and debits only their stock and w
   expect(balance(facts, ResourcesIds.Paladin)?.balance).toBe(whole(200));
   expect(balance(facts, ResourcesIds.Wheat)?.balance).toBe(whole(200));
   expect(balance(facts, ResourcesIds.Knight)).toBeUndefined();
-  expect(facts.find(({ model }) => model === "ArmyProgress")!.value).toMatchObject({ scouting: 1, scouting_kinds: 1 });
+  expect(facts.find(({ model }) => model === "ArmyProgress")!.value).toMatchObject({ logistics: 0 });
 });

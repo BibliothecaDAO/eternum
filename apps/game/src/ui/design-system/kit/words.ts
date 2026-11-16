@@ -260,7 +260,7 @@ export const CLOSE = "Close";
 /** The safe choice on a confirm: the primary. */
 export const KEEP = "Keep";
 
-export { XP, xpGainedLine } from "@bibliothecadao/types";
+
 /** The resources Frontier's stores hold, by the catalog's names: one casing, at a line's start or inside it. */
 export const ESSENCE = resourceName(ResourcesIds.Essence);
 export const LABOR = resourceName(ResourcesIds.Labor);
@@ -268,8 +268,6 @@ export const WHEAT = resourceName(ResourcesIds.Wheat);
 /** The realm's troops, as a store and an army's figure are named. */
 export const TROOPS = "Troops";
 export const STAMINA = "stamina";
-/** The explores a Well's stamina buys the army it refills: "+3 explores". */
-export const exploresBought = (count: number) => `+${count} ${count === 1 ? "explore" : "explores"}`;
 
 /** The HUD's tab for everything the player holds. */
 export const EMPIRE = "Empire";
@@ -450,16 +448,6 @@ export const heldAgainstNeed = (held: number | undefined, need: number): string 
   const pair = formatHeldAgainst(held, need);
   return `${pair.held} / ${pair.need}`;
 };
-/**
- * A training building's gate with the purchases bought toward it, on the Charge row: "1/2". The count shows so a
- * first purchase visibly counts: a realm one purchase short read "2 research" before and after it.
- */
-export const purchasesOfGate = (bought: number, gate: number) => `${Math.min(bought, gate)}/${gate}`;
-/** What a locked training building still waits for: "Needs 1 more Barracks research purchase (1/2)". */
-export const needsResearchPurchases = (building: string, bought: number, gate: number) => {
-  const left = gate - bought;
-  return `Needs ${left} more ${building} research ${left === 1 ? "purchase" : "purchases"} (${purchasesOfGate(bought, gate)})`;
-};
 /** A training building already standing: a realm holds one of each. */
 export const ONE_A_REALM = "Built. A realm holds one.";
 /** The arrow beside a price that has risen (a screen reader's words). */
@@ -473,16 +461,6 @@ export const takesPopulation = (amount: string) => `takes ${amount} ${POPULATION
 export const startsNewArmies = (attribute: string, tier: number): RankedWords => [
   `new armies start with ${attribute} `,
   { rank: tier },
-];
-
-/**
- * An army's XP on its tooltip, against the skill point it earns next: "XP 8 of 100 · next [II] point". XP is a balance
- * an army spends on its attributes; it has no level.
- */
-export const xpTowardTip = (held: string, milestone: string, rank: number): RankedWords => [
-  `${XP} ${held} of ${milestone} · next `,
-  { rank },
-  " point",
 ];
 
 /** The sites on the map, as their cards title them, and the verbs they take. */
@@ -507,23 +485,6 @@ export const CLEARED = "Cleared";
 export const CHESTS = "Chests";
 export const SHRINE = "Shrine";
 export const WELL = "Well";
-/**
- * What a Shrine's point does once spent, as the contract grants it: one attribute up a rank, up to the point's own, and
- * a refill never past the army's maximum: "Raises one attribute up to [III] · refills up to 40 stamina".
- */
-export const shrinePointUse = (rank: number, refill: string): RankedWords => [
-  "Raises one attribute up to ",
-  { rank },
-  ` · refills up to ${refill} ${STAMINA}`,
-];
-/**
- * Where an army stands from a Shrine, after its name: beside it (it can take the point now) or so many tiles off, said
- * as the player's nearest where no army is selected: "nearest, 3 tiles away".
- */
-export const shrineArmyAt = (tiles: number, nearest: boolean): string =>
-  `${nearest ? "nearest, " : ""}${tiles <= 1 ? "beside it" : `${formatExact(tiles)} tiles away`}`;
-/** A Well's refill share when no army is selected. */
-export const wellRefillShare = (percent: number): string => `${formatPercent(percent / 100)} max`;
 export const ATTACK = "Attack";
 export const ATTACKING = "Attacking…";
 /** On an army's step while the order it was given before is still in flight. */
@@ -558,22 +519,13 @@ export const FIGHT_WORDS = {
  */
 export const fightLost = (lost: string, share: string) => `−${lost} · ${share}% lost`;
 export const NONE_LOST = "None lost";
-export const USE = "Use";
-export const USING = "Using…";
 
 /** Making something you own better: the castle a level, a building type a tier, an army an attribute tier. */
 export const UPGRADE = "Upgrade";
 
 /** The realm: its castle and levels, its buildings, and the row that counts a full realm's common buildings. */
 export const CASTLE = "Castle";
-export const BARRACKS = buildingName(BuildingType.ResourceKnightT1, true);
 const HUT = buildingName(BuildingType.WorkersHut, true);
-export const TRAINING_BUILDINGS = [
-  buildingName(BuildingType.WarHall, true),
-  buildingName(BuildingType.SupplyYard, true),
-  buildingName(BuildingType.ScoutsLodge, true),
-  buildingName(BuildingType.Hearth, true),
-] as const;
 /** The castle rows that unlock the three depths beyond the spire. */
 /** The layer a realm's spire is the portal to (owner, 4 November 2026: "its a portal to the ethereal layer bro"). */
 export const ETHEREAL = "Ethereal";
@@ -614,10 +566,6 @@ export const SPIRE_WORDS = {
   landingTaken: "Its landing is taken",
   locked: "Research it to open it",
   commits: (army: string, left: string) => `${army} stays until the day ends (${left})`,
-} as const;
-/** An army's ring of XP toward its next skill point, for whoever reads the map without seeing it. */
-export const XP_RING = {
-  label: (percent: number) => `${XP}: ${percent}% of the way to the next skill point`,
 } as const;
 
 /** The Deep's three sites (docs/plans/frontier-season-1.md, the Deep): who they serve, who guards them, what a tick pays. */
@@ -897,8 +845,6 @@ export const STORE_MAKERS = {
   buildings: (count: string, total: string) => `${count} · ${total}`,
   castle: (rate: string) => `${CASTLE} · ${rate}`,
 };
-/** What an army's Homecoming sends home when the day ends, on its row or token in the day's last hour. */
-export const comesHomeAtDayEnd = (troops: string) => `${troops} come home at day end`;
 
 /** The day log's lines for what the player did, in the names the build cards and the dock use. */
 export const revealLine = (gain: string, resource: string) => `${gain} ${resource}`;

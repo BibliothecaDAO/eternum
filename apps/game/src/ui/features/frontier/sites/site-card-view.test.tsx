@@ -29,7 +29,7 @@ const army = { art: "knight-t1" as const, troops: 5_000 };
 const buttons = () => [...document.querySelectorAll<HTMLButtonElement>("section[role=dialog] button")];
 
 describe("a guarded site's card", () => {
-  it("renders the depth-I Beasts reward and XP in This attack earns", () => {
+  it("renders the depth-I Beasts reward in This attack earns", () => {
     const { store, site, structure, attack } = campBeside("Beasts");
     const plan = readSiteCard(store, site, structure, SITE_TILE, attack({ col: 41, row: 12, alt: false }));
     expect(plan.payout).toEqual({ resourceId: ResourcesIds.Wheat, amount: 6000, fits: 5000 });
@@ -49,7 +49,7 @@ describe("a guarded site's card", () => {
       ),
     );
     expect(document.querySelector(".ui-frame__body header")?.textContent).toBe(
-      "This attack earns+5,000Full: the rest did not fit+118 XP+1 site",
+      "This attack earns+5,000Full: the rest did not fit+1 site",
     );
   });
 
@@ -74,7 +74,7 @@ describe("a guarded site's card", () => {
     );
     const card = document.querySelector("section[aria-label='Troll']")!;
     // The owner, 26 October 2026: "moving the clear rewards in the 'this attack clears it' -> This attack earns xxx".
-    expect(card.querySelector(".ui-frame__body header")?.textContent).toBe("This attack earns+550+82 XP+1 site");
+    expect(card.querySelector(".ui-frame__body header")?.textContent).toBe("This attack earns+550+1 site");
     // Owner, 28 October 2026 ("v1 token header yes"): the guard heads the card as a token; with an army its strength is
     // the fight's to say, once.
     expect(card.querySelector("header [role='img']")?.getAttribute("aria-label")).toBe("Troll");
@@ -85,7 +85,6 @@ describe("a guarded site's card", () => {
     expect(sides).toEqual(["5,000 →4,820−180 · 4% lost", "1,100 →0−1,100 · 100% lost"]);
     expect(card.textContent).not.toContain("When cleared");
     expect(card.textContent).toContain("+550");
-    expect(card.textContent).toContain("+82 XP");
     const attack = buttons().find((button) => button.textContent?.startsWith("Attack"))!;
     expect(attack.textContent).toBe("Attack");
     expect(card.querySelector(".ui-cost")?.textContent).toBe("30 stamina");
@@ -182,8 +181,8 @@ describe("a guarded site's card", () => {
     );
     const card = document.querySelector("section[aria-label='Blightglow Rift']")!;
     const header = card.querySelector(".ui-frame__body header")!;
-    expect(header.textContent).toBe("The guard holds+4,200+93 XP+1 site");
-    expect(header.querySelector(".opacity-50")?.textContent).toBe("+4,200+93 XP+1 site");
+    expect(header.textContent).toBe("The guard holds+4,200+1 site");
+    expect(header.querySelector(".opacity-50")?.textContent).toBe("+4,200+1 site");
     expect(card.textContent).toContain("794");
     expect(card.textContent).toContain("193");
     expect(card.textContent).toContain("1,400");
@@ -261,7 +260,7 @@ describe("a guarded site's card", () => {
       ),
     );
     const header = document.querySelector(".ui-frame__body header")!;
-    expect(header.textContent).toBe("This attack earns+120Full: the rest did not fit+82 XP+1 site");
+    expect(header.textContent).toBe("This attack earns+120Full: the rest did not fit+1 site");
     // The loss is said in sight on the chip, never only on a hover a phone has not got.
     expect(header.querySelector('[data-tip*="did not fit"]')).toBeNull();
     act(() =>
@@ -380,7 +379,7 @@ describe("a guarded site's card with no army chosen", () => {
       ),
     );
     const card = document.querySelector("section[data-kit-sheet]")!;
-    expect(card.querySelector(".ui-frame__body header")?.textContent).toBe("1,100Dark fey+3,300+82 XP+1 site");
+    expect(card.querySelector(".ui-frame__body header")?.textContent).toBe("1,100Dark fey+3,300+1 site");
     expect(card.querySelectorAll(".ui-row")).toHaveLength(0);
     expect(card.querySelectorAll("button")).toHaveLength(1);
     expect(card.textContent).not.toContain("Pick an army");

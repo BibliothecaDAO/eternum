@@ -163,7 +163,7 @@ describe("the site-cleared moment", () => {
         expect(selected.site.clear?.reward).toBeNull();
         const receipt = renderToStaticMarkup(createElement(SiteReceipt, { selected }));
         expect(receipt).toContain("Cleared");
-        expect(receipt).toContain("XP");
+        expect(receipt).toContain("Cleared");
         expect(receipt).not.toContain("LORDS");
       }
     } finally {

@@ -28,10 +28,7 @@ interface ExchangeContext {
   defenderBiome: BiomeType;
   attackerIsStructureGuard: boolean;
   defenderIsStructureGuard: boolean;
-  /** Each side's d20 where the game rolls dice, adding that many percent to its damage; 0 without dice. */
 }
-
-/** The faces of the die each side rolls where a game has combat dice. */
 
 export type ExchangeRefusal = "no-troops" | "cooldown" | "insufficient-stamina";
 

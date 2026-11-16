@@ -94,55 +94,6 @@ const ARMIES_OUT = [
 }));
 
 it.each(["phone", "desktop"] as const)(
-  "shows by each army on a %s what its Homecoming sends home, in the day's last hour only",
-  (size) => {
-    (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
-    layout.current = size;
-    // The realm's player, whose armies are buttons on their dock.
-    useAccountStore.setState({ account: { address: "0x111" } as never });
-    const { store, row } = frontierDay();
-    const host = document.createElement("div");
-    document.body.append(host);
-    const root = createRoot(host);
-    const draw = (lastHour: boolean) =>
-      act(() =>
-        root.render(
-          <GameProvider value={{ store } as unknown as GameClientSetup} account={{ address: "0x111" } as never}>
-            <ArmyDock realm={row} armies={ARMIES_OUT} lastHour={lastHour} />
-          </GameProvider>,
-        ),
-      );
-    /** What each army's own button says comes home, beside its troops. */
-    const returns = () =>
-      ARMIES_OUT.map(({ label }) =>
-        host
-          .querySelector(`button[aria-label="${label}"]`)!
-          .querySelector('[aria-label$="come home at day end"]')
-          ?.getAttribute("aria-label"),
-      );
-    /** What each army's chip reads in sight: words on a desktop's row, the figure on a phone's token. */
-    const shown = () =>
-      ARMIES_OUT.map(
-        ({ label }) =>
-          host.querySelector(`button[aria-label="${label}"]`)!.querySelector('[aria-label$="come home at day end"]')
-            ?.textContent,
-      );
-    try {
-      draw(false);
-      expect(returns()).toEqual([undefined, undefined]);
-      draw(true);
-      expect(returns()).toEqual(["134 come home at day end", "0 come home at day end"]);
-      expect(shown()).toEqual(
-        size === "desktop" ? ["134 come home at day end", "0 come home at day end"] : ["+134", "+0"],
-      );
-    } finally {
-      act(() => root.unmount());
-      host.remove();
-    }
-  },
-);
-
-it.each(["phone", "desktop"] as const)(
   "marks on a %s each army in an Ethereal layer with that layer, and an army on the surface with nothing",
   (size) => {
     (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;

@@ -74,7 +74,7 @@ it("deletes from the trash only after confirming every loss, then closes the arm
   await trash();
   expect(remove).not.toHaveBeenCalled();
   expect(host.querySelector('[role="alertdialog"]')?.textContent).toContain(
-    "troops, skills, XP and carried resources are lost",
+    "troops and carried resources are lost",
   );
   await verb("Cancel");
   expect(host.querySelector('[role="alertdialog"]')).toBeNull();

@@ -349,7 +349,7 @@ const gems = () =>
     gem.getAttribute("data-size"),
   ]);
 
-it("says what an army spent its point on, the rank as its gem sized to the line", async () => {
+it("reads a historical skill purchase through the story formatter", async () => {
   const row = story(KRUMP, "SkillPointSpent", {
     explorer_id: 71,
     choice: "Battle",
@@ -357,9 +357,9 @@ it("says what an army spent its point on, the rank as its gem sized to the line"
     point_rank: 4,
     stamina: 30,
   });
-  expect((await draw(row)).words).toBe("Krump spent a point on Battle IV");
+  expect((await draw(row)).words).toBe("Krump · Battle IV");
   expect(gems()).toEqual([["IV", "line"]]);
-  expect(host.querySelector(".ui-event__text .ui-feed-line__glyph")!.getAttribute("data-icon")).toBe("order-rage");
+
 });
 
 it("draws a tier bought and a Shrine's point in the story's own words, each rank as its gem", async () => {

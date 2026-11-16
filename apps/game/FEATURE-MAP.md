@@ -788,9 +788,9 @@ at home: select the realm, right-click the army, **Max**, **Reinforce**; the lab
 contract does, and the army reads 1,918 (`--steps lab-reinforce`; with `--viewport 390x844` a finger taps the realm and
 holds the army).
 
-`/lab/game?scenario=merge-loses-xp` and `merge-keeps-tapped` stand the realm's two armies side by side (1,498 and 2,517
+`/lab/game?scenario=merge-loses-training` and `merge-keeps-tapped` stand the realm's two armies side by side (1,498 and 2,517
 knights): pick the spire's army, right-click the other for **Transfer troops**, **Merge into …**; the merge keeps the
-army tapped. In `merge-loses-xp` the picked army holds 100 XP, so the button then asks **Lose 100 XP, merge into Army
+army tapped. In `merge-loses-training` the picked army holds stronger Logistics training, so the button then asks **Lose 100 XP, merge into Army
 2** before it sends. `scenario=after-battle` is the owner's army after its fight on prod (25 October 2026): 4,015
 knights on the camp they cleared, beside the ruin they attacked (guard 999), both on battle cooldown; its Feed holds
 that fight and another player's lost fight at a site the map never loaded; `scenario=low-stamina` is that army beside
@@ -804,7 +804,7 @@ card, and it forecasts the attack (1,626 → 517, 3,000 → 2,412) with **Move**
 cleared camp empty: tap the army for its panel, and the empty camp shows its standard with no token. `scenario=camp`
 stands the spire's army beside a standing camp: hover its tile for the Troll's plate (its count, no stamina bar: a
 site's guards never move). `scenario=explore` stands the spire's army at the edge of the land it has seen, fog beside
-it: a phone's double tap or a desktop's right-click explores. `--steps lab-merge-loses-xp`, `lab-merge-keeps-tapped` and
+it: a phone's double tap or a desktop's right-click explores. `--steps lab-merge-loses-training`, `lab-merge-keeps-tapped` and
 `lab-after-battle` check that hovering the army's tile opens its plate, and that a tile a merge emptied opens none.
 `scenario=far-place` serves the player's own Herald scope alone, as a live shard does, with the neighbour's Kingdom and
 an army of theirs out of it, each shared in Global: a chip's press visits their owner and, once its rows arrive, opens
@@ -895,7 +895,7 @@ an eligible player. The lab proof does not establish those live actions.
   many the picked army sends: typed, or dragged on the slider from 0 to all it holds, each end labelled with its amount
   (a press on an end takes it); it opens at all, the merge, and stops where the tapped army is full. To send the other
   way, pick the other army on the map. If the dissolving army has 100 more lifetime XP, a higher rank, or more points of
-  any rank, **Merge into …** turns into **Confirm merge into …**, and a second click sends. The source loses its XP,
+  any rank, **Merge into …** turns into **Confirm merge into …**, and a second click sends. The source loses its Logistics training,
   points and ranks. Changing the amount or army facts clears confirmation. Dev: `/lab/kit/hud/merge`; tests drive the
   map’s actual selection card. Browser proof:
   `pnpm --dir apps/game capture:hud-lab --base-url https://127.0.0.1:<port> --out <new-directory> --only frontier-merge`.
@@ -1379,10 +1379,9 @@ The Deep's three sites stand in their chosen looks on the map: the Foundation as
 Quarry as a fragment mine, the Altar as a Shrine until it has its own model (`DEEP_SITE_LOOKS`,
 `src/three/managers/map-site-manager.ts`). Each site's plate stays over its model.
 
-Each Aspect's hyperstructure in the Deep stands a fifth of its tower for each stage its height has built (the finished
-one complete), read from the race rows in `src/three/structures/hyperstructure-state.ts`; select it on the map or read
-it on the **Season, Aspects** page.
+Each Aspect’s tower height appears on **Season, Aspects**. The towers have no map entities.
 
-- Charge preview: select Knights, then a guarded site or rival Deep site. The two fight panels show survivors for the
-  next attack, including the army's remaining opening Charge. Run `build.sh playtest-charge` and
-  `build.sh playtest-deep-charge` for desktop and phone evidence of the opening and repeated attack.
+- Exact combat preview: select Knights, then a guarded site or rival Deep site. Both fight panels show survivors for
+  the next attack. Run `build.sh playtest-battle-target` and `build.sh playtest-deep-battle-target` for desktop and phone
+  evidence of two attacks: 1,000 troops become 563, then 287, on each side. The lab records commands, resulting troops
+  and the attacker’s last target. These are lab proofs; the real-chain rehearsal follows the completed slices.

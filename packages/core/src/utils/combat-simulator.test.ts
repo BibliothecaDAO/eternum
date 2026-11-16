@@ -55,8 +55,8 @@ describe("battle lab exchange", () => {
     });
     expect(simulate({ ...army, troopCount: 563, stamina: 90 }, { ...army, troopCount: 563 })).toMatchObject({
       ok: true,
-      attackerDamage: 246,
-      defenderDamage: 246,
+      attackerDamage: 276,
+      defenderDamage: 276,
       attackerStamina: 80,
     });
   });

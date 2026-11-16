@@ -266,8 +266,8 @@ fn successful_attacks_record_their_target_and_refusals_preserve_it() {
     assert_eq!(combat_at(d, attacker).last_target, enemy.explorer_id);
     super::deep_sites::applied(d, game_id, attack(attacker.explorer_id, enemy.explorer_id), 365);
     assert_eq!(combat_at(d, attacker).last_target, enemy.explorer_id);
-    assert_eq!(army(d, attacker).troops.count, 317 * crate::rules::RESOURCE_PRECISION);
-    assert_eq!(army(d, enemy).troops.count, 317 * crate::rules::RESOURCE_PRECISION);
+    assert_eq!(army(d, attacker).troops.count, 287 * crate::rules::RESOURCE_PRECISION);
+    assert_eq!(army(d, enemy).troops.count, 287 * crate::rules::RESOURCE_PRECISION);
     set_explorer_fixture(
         d.games, other, ExplorerTroops { coord: crate::geometry::neighbor(center, 1), ..army(d, other) },
     );

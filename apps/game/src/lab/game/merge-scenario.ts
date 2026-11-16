@@ -12,13 +12,13 @@ const SECOND_ARMY_TROOPS = 2_517_000_000_000n;
 const LIMIT_RAISED = 3;
 
 /**
- * Which army holds the progression: the army picked, so merging it into the other loses its XP and the card asks twice,
- * or the army tapped, which a merge keeps with its XP.
+ * Which army holds the progression: the army picked, so merging it into the other loses its Logistics training and the card asks twice,
+ * or the army tapped, which a merge keeps with its Logistics training.
  */
 type Progressed = "picked" | "tapped";
 
 /**
- * Two of realm 7's armies side by side on the spire's game (/lab/game?scenario=merge-loses-xp or merge-keeps-tapped):
+ * Two of realm 7's armies side by side on the spire's game (/lab/game?scenario=merge-loses-training or merge-keeps-tapped):
  * the spire's 1,498 knights and 2,517 more beside them, alike and within the realm's army limit together, so they can
  * merge. The chain answers their transfer as troops.cairo's transfer_troops applies it between two explorers: a full
  * merge keeps the army merged into, the other is destroyed (its troops row and its tile's occupancy deleted). The owner's merge on prod (2026-10-25: "due to an army merge I dont see the hover label") ended

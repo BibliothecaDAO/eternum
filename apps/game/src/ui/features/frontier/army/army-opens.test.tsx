@@ -115,7 +115,6 @@ const rowButton = (name: RegExp) =>
   )!;
 const staminaMeter = () =>
   details()!.parentElement!.querySelector<HTMLElement>('[role="meter"][aria-label="Stamina"]')!;
-const levelUp = () => rowButton(/^Level/);
 /** The lab realm's LORDS. */
 const realmLords = (lords: number) => ({
   model: "ResourceBalance",
@@ -145,14 +144,11 @@ describe("the army's panel on a phone (owner, 22 October 2026: mobile direction 
     expect(useUIStore.getState().entityActions.selectedEntityId).toBe(ARMY);
   });
 
-  it("shows the picked army's four sides beside its token, its stamina over Level up, and no details button", async () => {
+  it("shows the picked army’s stamina and one way to open its details", async () => {
     await renderHud();
     await select(ARMY);
-    // The fixture has Common attributes except untrained Scouting.
-    expect(sides()).toEqual(["Battle I", "Logistics I", "Scouting 0", "Homecoming I"]);
     expect(staminaMeter().getAttribute("aria-valuenow")).toBe("90");
     expect(staminaMeter().getAttribute("aria-valuemax")).toBe("150");
-    expect(levelUp().textContent).toBe("Level up");
     // One way to the card: the token, which wears the army's XP, number and troops.
     expect(host.querySelectorAll('button[aria-label="Army 1: details"]')).toHaveLength(1);
     expect(details()!.textContent).toBe(TOKEN);
@@ -176,31 +172,6 @@ describe("the army's panel on a phone (owner, 22 October 2026: mobile direction 
     expect(reading()).toEqual(["90", "150"]);
     expect(rowButton(/^Refill /)).toBeUndefined();
     expect(host.querySelector("[data-kit-sheet]")).toBeNull();
-  });
-
-  it("opens the army's card on its level-up choices from Level up, and on its status while no level is bought", async () => {
-    const store = await renderHud();
-    await select(ARMY);
-    await act(async () => levelUp().click());
-    expect(host.querySelector("[data-kit-sheet] [data-army-step='choose']")).not.toBeNull();
-    await closePanel();
-
-    // Its points spent, the button reads Level-ups and opens the card; lifetime XP remains.
-    const progress = store.require("ArmyProgress", { game_id: 1, explorer_id: ARMY });
-    await act(async () =>
-      store.applyFacts([
-        {
-          model: "ArmyProgress",
-          key: "0x9a2",
-          value: {
-            ...progress,
-          },
-        },
-      ] as never),
-    );
-    expect(levelUp().textContent).toBe("Level-ups");
-    await act(async () => levelUp().click());
-    expect(panel()).not.toBeNull();
   });
 
   it("picks the army from the dock without opening its panel", async () => {

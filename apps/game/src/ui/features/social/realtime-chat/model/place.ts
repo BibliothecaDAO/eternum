@@ -5,7 +5,7 @@ import { getEntityName, isExpeditionRealm, isRealmCategory, structureMapPosition
 import type { GameRef, NativeFactStore } from "@bibliothecadao/eternum/game-client";
 
 /** A tile of the map, on its layer (the surface, or the depth below). */
-export interface PlaceTile {
+interface PlaceTile {
   col: number;
   row: number;
   alt: boolean;

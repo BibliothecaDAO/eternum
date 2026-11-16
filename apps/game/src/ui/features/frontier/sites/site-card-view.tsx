@@ -312,13 +312,6 @@ const Verb = ({
 };
 
 /**
- * The word on an army's step while an order of that army is in flight: the step's own word for its own order, and
- * that the army is on its way for another. Undefined once the army is free.
- */
-export const inFlightWord = (inFlight: OrderInFlight | undefined, own: OrderInFlight, word: string) =>
-  inFlight && (inFlight === own ? word : ON_ITS_WAY);
-
-/**
  * The one line under the step: why an attack did not happen, in red, as the news; or, under Move, that the site is out
  * of reach. An attack that loses the army says so in the headline, from the same figures as the sides.
  */

@@ -188,7 +188,6 @@ describe("Frontier's selection sheet", () => {
         expect(sheet.textContent!.split(expectedName).length - 1).toBe(1);
         expect(host.textContent).toContain("Cleared · Troll");
         expect(host.textContent).toContain("550 Labor");
-        expect(host.textContent).toContain("123 XP");
         const close = host.querySelector<HTMLButtonElement>('button[aria-label="Close"]');
         expect(close).not.toBeNull();
         await act(async () => close!.click());
@@ -528,7 +527,7 @@ it("selects a Frontier chest, follows missing metadata and expiry across clock t
 
 it("the map's actual transfer selection shows the survivor before the player confirms", async () => {
   Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
-  const store = transferArmies(100, 0);
+  const store = transferArmies(2, 0);
   useAccountStore.setState({ account: { address: "0x111" } as never });
   tiles.current = [];
   useUIStore.getState().selectOnMap({ kind: "army", entityId: 201, tile: TRANSFER_TAPPED });
@@ -555,7 +554,7 @@ it("the map's actual transfer selection shows the survivor before the player con
     const expectMergePreview = () => {
       expect(host.querySelector('[aria-label="Army 1 total XP"]')?.textContent).toBe("Total XP100→0");
       expect(host.querySelector('[aria-label="Army 2 total XP"]')?.textContent).toBe("Total XP0→0");
-      expect(host.querySelector(".ui-notice")?.textContent).toBe("Army 1 loses its XP, points and upgrades.");
+      expect(host.querySelector(".ui-notice")?.textContent).toBe("Army 1 loses its Logistics training.");
       expect(host.querySelector("s")).toBeNull();
       expect(host.textContent).toContain("100/120→7");
     };

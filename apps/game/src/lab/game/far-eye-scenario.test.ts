@@ -39,7 +39,6 @@ it("applies the Far-Eye command through the real fact decoder, including an init
     expect(tiles).toHaveLength(6);
     expect(new Set(tiles.map(({ value }) => JSON.stringify(value))).size).toBe(6);
     expect(facts.find(({ model }) => model === "ArmyRelics")?.value).toMatchObject({ first: null });
-    expect(facts.find(({ model }) => model === "ArmyProgress")?.value).toMatchObject({ xp: 6 });
     expect(facts.find(({ model }) => model === "ResourceBalance")?.value).toMatchObject({ balance: "898800000000" });
     expect(facts.find(({ model }) => model === "ExpeditionSpire")?.value).toMatchObject({ reveals: 1, depth: 0 });
   } finally {

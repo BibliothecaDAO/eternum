@@ -60,9 +60,9 @@ export const transferArmies = (pickedLogistics = 1, tappedLogistics = 0) => {
   return store;
 };
 
-/** The reported 500 into 1,500 transfer: 222 total XP against 20 unspent XP, with logistics on both armies. */
+/** The reported 500 into 1,500 transfer: stronger Logistics on the source army. */
 export const transferTrainedArmies = () => {
-  const store = transferArmies(222, 120);
+  const store = transferArmies(2, 1);
   store.applyFacts([{ model: "ArmySlot", key: "0xf2023", value: null }]);
   const realm = store.require("Structure", { game_id: 1, entity_id: 7 });
   const facts = [
@@ -87,7 +87,7 @@ export const transferTrainedArmies = () => {
         {
           model: "ArmyProgress",
           key: `0xf${id}2`,
-          value: { ...progress, logistics: 1 },
+          value: { ...progress, logistics: index === 0 ? 2 : 1 },
         },
         {
           model: "ArmySlot",

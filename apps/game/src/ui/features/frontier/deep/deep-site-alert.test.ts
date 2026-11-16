@@ -164,7 +164,7 @@ it("uses the largest army across all of the player's homes without substituting 
   expect(f.plan()[0]!.home).toBe("12");
 });
 
-it("opens Charge again for a later guard after forecasting a different guard first", () => {
+it("forecasts the same opportunity regardless of the last attacked guard", () => {
   const f = fixture([1000, 1]);
   const rules = f.store.require("SliceRules", { game_id: 1 });
   f.change(
@@ -178,8 +178,9 @@ it("opens Charge again for a later guard after forecasting a different guard fir
   const army = f.store.require("ExplorerTroops", key);
   f.change("ExplorerTroops", key, { troops: { ...army.troops, count: 1000n * BigInt(RESOURCE_PRECISION) } });
   f.change("ArmyCombat", key, { last_target: 301n });
-  expect(f.plan().map(({ dueAt }) => dueAt)).toEqual([f.startsAt * 1000]);
+  const due = f.plan().map(({ dueAt }) => dueAt);
+  expect(due).toEqual([360000]);
   expect(f.store.require("ArmyCombat", key).last_target).toBe(301n);
-  f.change("ArmyCombat", key, { charge: 0 });
-  expect(f.plan()[0]!.dueAt).toBeGreaterThan(f.startsAt * 1000);
+  f.change("ArmyCombat", key, { last_target: 302n });
+  expect(f.plan().map(({ dueAt }) => dueAt)).toEqual(due);
 });

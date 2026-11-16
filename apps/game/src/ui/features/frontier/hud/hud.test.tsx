@@ -436,7 +436,7 @@ describe("the order bar", () => {
       "Wheat −100",
       "Essence, Labor +500",
     ]);
-    expect(host.textContent).toBe("90 → 60−100+500+2 XP");
+    expect(host.textContent).toBe("90 → 60−100+500");
     expect(barButtons()).toEqual(["Cancel"]);
     act(() => host.querySelector("button")!.click());
     expect(onCancel).toHaveBeenCalled();

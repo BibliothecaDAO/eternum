@@ -67,42 +67,6 @@ describe("Frontier's deploy", () => {
     expect(previewDeploy(plan, 120.7)).toEqual({ count: 120, wheatCost: 240 });
   });
 
-  it("counts Homecoming's return from an army whose day has ended among the troops this deploy finds", () => {
-    const { store, row } = frontierDay();
-    expect(planOf(store, row)!.troops!.atHome).toBe(420);
-    store.applyFacts([
-      {
-        model: "ExplorerTroops",
-        key: "0x80",
-        value: {
-          game_id: 1,
-          explorer_id: 80,
-          owner: 7,
-          troops: { ...rowFixture.expected.value.troops, count: String(100n * 1_000_000_000n) },
-        },
-      },
-      { model: "ArmyDay", key: "0x8d", value: { game_id: 1, explorer_id: 80, day: "0" } },
-      {
-        model: "TileOccupancy",
-        key: "0x81",
-        value: { game_id: 1, alt: true, col: 3, row: 4, entity_id: 80, category: 15, is_structure: false },
-      },
-      {
-        model: "ArmyProgress",
-        key: "0x82",
-        value: {
-          game_id: 1,
-          explorer_id: 80,
-          logistics: 1,
-        },
-      },
-    ] as never);
-    store.setSnapshot({ gameId: 1, complete: true, actor: "0x111", timestamp: 450 });
-    // Day 0 has ended. Epic Homecoming returns 21% of its 100 whole troops.
-    const tomorrow = readDeployPlan(store, row, { now: 450, defaultTick: 4 });
-    expect(tomorrow!.troops!.atHome).toBe(441);
-  });
-
   it("deploys onto the picked tile while it stays open, else the first open one, never onto unknown or taken ground", () => {
     const { store, row } = frontierDay();
     const ring = (occupier: (col: number) => number | undefined) => spawnRing(store, row, (hex) => occupier(hex.col));
