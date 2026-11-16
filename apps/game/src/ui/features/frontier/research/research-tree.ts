@@ -169,7 +169,8 @@ export const readResearchTree = (realm: RealmResearchFacts): TreeNode[] => {
     const name = buildingName(category);
     const icon = buildingIcon(category);
     const constructionGrant =
-      tier === 0 && [research.ROW_SUPPLY_YARD, research.ROW_CONSCRIPTION, research.ROW_RATIONS].some((value) => value === row);
+      tier === 0 &&
+      [research.ROW_SUPPLY_YARD, research.ROW_CONSCRIPTION, research.ROW_RATIONS].some((value) => value === row);
     const next = tier < 5 ? tier + 1 : undefined;
     const nextNeeds = (at: number) => {
       const needs = buildingNeeds(row, name, icon, at, options.extra ?? []);
