@@ -149,10 +149,6 @@ export const factWireTypes = [
         name: "FarEye",
         type: "()",
       },
-      {
-        name: "Tome",
-        type: "()",
-      },
     ],
   },
   {
