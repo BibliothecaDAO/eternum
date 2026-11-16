@@ -1,8 +1,9 @@
-import { afterEach, expect, it } from "vitest";
+import { afterEach, expect, it, vi } from "vitest";
 
 import type { IdentityAuth } from "./auth";
-import { handleSeal, handleSealLaunchPrice, holderLevelOf, sealOffer, type HolderFacts } from "./seal";
+import { handleSeal, holderLevelOf, sealOffer, type HolderFacts } from "./seal";
 import { RealmHoldingsUnavailableError } from "./realm-holdings";
+import { refreshLordsPrice } from "./lords-price";
 import type { ShopAccess } from "./shop-game";
 import { createTestD1 } from "./test-d1";
 import { migrationStatements } from "./workerd-harness";
@@ -70,13 +71,7 @@ it("serves the signed-in account its level, whether it holds the seal, and the t
     web: { cents: 499, free: { labor: true, fragments: false }, lords: null },
     store: { cents: 499, free: { labor: true, fragments: false } },
   });
-  const launch = (usd: unknown) =>
-    handleSealLaunchPrice(
-      new Request("https://realms.test/", { method: "POST", body: JSON.stringify({ usd }) }),
-      db,
-      5,
-    );
-  expect((await launch(0.003637)).status).toBe(200);
+  await refreshLordsPrice(db, async () => 0.003637, 5, 0);
   expect(((await (await ask(OWNER)).json()) as { web: { lords: number } }).web.lords).toBe(1_375);
   await db
     .prepare(
@@ -98,26 +93,31 @@ it("offers no price while holdings cannot be verified", async () => {
   expect([response.status, await response.json()]).toEqual([503, { error: "holdings_unavailable" }]);
 });
 
-it("fixes the seal's LORDS price at launch: set once, the same value again is a no-op, another is refused, and nothing is made up", async () => {
+it("prices the web seal in LORDS from the shop's one price, rounded up to 5, and from none while the price day has no read", async () => {
+  vi.spyOn(console, "error").mockImplementation(() => undefined);
   const db = await migrated();
-  const launch = async (usd: unknown) => {
-    const response = await handleSealLaunchPrice(
-      new Request("https://realms.test/", { method: "POST", body: JSON.stringify({ usd }) }),
-      db,
-      5,
-    );
-    return [response.status, await response.json()];
-  };
-  const held = async () => {
-    const response = await handleSealLaunchPrice(new Request("https://realms.test/"), db, 5);
-    return [response.status, await response.json()];
-  };
-  expect(await held()).toEqual([404, { error: "seal_price_not_set" }]);
-  expect(await launch(0)).toEqual([400, { error: "invalid_price" }]);
-  expect(await launch(0.003637)).toEqual([200, { usd: 0.003637 }]);
-  expect(await launch(0.003637)).toEqual([200, { usd: 0.003637 }]);
-  expect(await launch(0.01)).toEqual([409, { error: "seal_price_already_set" }]);
-  expect(await held()).toEqual([200, { usd: 0.003637 }]);
+  const auth = { api: { getSession: async () => ({ user: { realmsId: OWNER } }) } } as unknown as IdentityAuth;
+  const lords = async (holderFacts: HolderFacts) =>
+    (
+      (await (
+        await handleSeal(new Request(`https://realms.test/api/shop/seal${GAME}`), auth, {
+          db,
+          access: seated,
+          holderFacts: async () => holderFacts,
+        })
+      ).json()) as { web: { lords: number | null } }
+    ).web.lords;
+  await refreshLordsPrice(db, () => Promise.reject(new Error("CoinGecko: 429")), 5, 0);
+  expect(await lords(facts({}))).toBeNull();
+  await refreshLordsPrice(db, async () => 0.003637, 6, 0);
+  // $10 is 2,749.5 LORDS and $4.99 is 1,372.01: both round up to a multiple of 5.
+  expect(await lords(facts({}))).toBe(2_750);
+  expect(await lords(facts({ heldRealmIds: [PLAIN_REALM] }))).toBe(1_375);
+  // A later day's price is the one every amount follows; a day with no read yet has none.
+  await refreshLordsPrice(db, async () => 0.005, 7_200, 7_200);
+  expect(await lords(facts({}))).toBe(2_000);
+  await refreshLordsPrice(db, () => Promise.reject(new Error("down")), 14_400, 14_400);
+  expect(await lords(facts({}))).toBeNull();
 });
 
 it("offers the seal only to a player of a running Frontier game the request names", async () => {

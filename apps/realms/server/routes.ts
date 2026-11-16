@@ -21,7 +21,7 @@ import { json } from "./http";
 import { keepBrowser, noteBrowser } from "./browsers";
 import { handleBuildOrders } from "./build-orders";
 import { handleLordsPrice } from "./lords-price";
-import { handleSeal, handleSealLaunchPrice } from "./seal";
+import { handleSeal } from "./seal";
 import { holderFactsOf } from "./seal-facts";
 import { shopAccessOf } from "./shop-game";
 import { handleStoreReceipt, storeVerifiersOf } from "./store-receipts";
@@ -168,10 +168,6 @@ export const routeIdentityRequest = async (
   if (pathname === "/api/shop/price" && request.method === "GET") {
     if (!(await withinPublicBudget(env, "shop-price", request))) return json({ error: "too_many_requests" }, 429);
     return handleLordsPrice(request, auth, { db: env.DB, access: shopAccessOf(env, platform.fetchShard, nowSeconds) });
-  }
-  if (pathname === "/api/operator/seal-price") {
-    if (!(await isOperator(env, request))) return json({ error: "unauthorized" }, 401);
-    return handleSealLaunchPrice(request, env.DB, Math.floor(Date.now() / 1000));
   }
   if (pathname === "/api/operator/campaign-draw" && request.method === "POST") {
     if (!(await isOperator(env, request))) return json({ error: "unauthorized" }, 401);

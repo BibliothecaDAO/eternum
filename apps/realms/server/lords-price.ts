@@ -105,6 +105,14 @@ interface PriceWorld {
   access: ShopAccess;
 }
 
+/** The shop's one price for the current price day, or null while that day has none. */
+export const currentLordsPrice = async (db: D1Database): Promise<LordsPrice | null> => {
+  const day = await currentDay(db);
+  return day?.usd != null && day.read_at !== null
+    ? { usd: day.usd, dayStart: day.day_start, readAt: day.read_at }
+    : null;
+};
+
 /**
  * GET /api/shop/price?chain=&game=: the one LORDS price in dollars, with the start of the price day it was read for, to a
  * signed-in player of a running Frontier game. While the current day has no price the answer is 503 `price_not_read_yet`
@@ -119,9 +127,8 @@ export const handleLordsPrice = async (request: Request, auth: IdentityAuth, wor
     namedGame(url.searchParams.get("chain"), url.searchParams.get("game")),
   );
   if (seat instanceof Response) return seat;
+  const price = await currentLordsPrice(world.db);
+  if (price) return json(price);
   const day = await currentDay(world.db);
-  if (!day) return json({ error: "price_not_read_yet", dayStart: null }, 503);
-  if (day.usd === null || day.read_at === null)
-    return json({ error: "price_not_read_yet", dayStart: day.day_start }, 503);
-  return json({ usd: day.usd, dayStart: day.day_start, readAt: day.read_at } satisfies LordsPrice);
+  return json({ error: "price_not_read_yet", dayStart: day?.day_start ?? null }, 503);
 };
