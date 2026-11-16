@@ -35,6 +35,10 @@ DEEP_ALERT_READERS = [
     "apps/realms/server/deep-site-watch.ts",
     "apps/realms/server/fixtures/shard-world.ts",
 ]
+NATIVE_FACT_SCHEMA = [
+    "contracts/l3/world-native/schema/**",
+    "contracts/l3/world-native/src/combat.cairo",
+]
 AREAS = {
     "client": [
         ".prettierrc",
@@ -79,7 +83,7 @@ AREAS = {
         "contracts/l2/ledger/scripts/chest-preset.js",
         "contracts/l2/ledger/schema/**",
         "contracts/l2/ledger/src/contract.cairo",
-        "contracts/l3/world-native/schema/**",
+        *NATIVE_FACT_SCHEMA,
         "contracts/l3/world-native/tests/fixtures/**",
         "contracts/l3/world-native/src/tests/fixtures/spatial-replay/**",
         "contracts/common/addresses/**",
@@ -103,7 +107,7 @@ AREAS = {
         "contracts/l2/ledger/scripts/chest-preset.js",
         "contracts/l2/ledger/schema/**",
         "contracts/l2/ledger/src/contract.cairo",
-        "contracts/l3/world-native/schema/**",
+        *NATIVE_FACT_SCHEMA,
         "contracts/l3/world-native/tests/fixtures/**",
         "contracts/l3/world-native/src/tests/fixtures/spatial-replay/**",
         "contracts/common/addresses/**",
@@ -133,7 +137,7 @@ AREAS = {
         "contracts/l2/ledger/scripts/chest-preset.js",
         "contracts/l2/ledger/schema/**",
         "contracts/l2/ledger/src/contract.cairo",
-        "contracts/l3/world-native/schema/**",
+        *NATIVE_FACT_SCHEMA,
         "contracts/l3/world-native/tests/fixtures/**",
         "contracts/common/addresses/**",
         "contracts/utils/**"
@@ -193,7 +197,7 @@ AREAS = {
         "apps/launch-service/**",
         "apps/herald/src/native/schema.ts",
         "apps/herald/src/shard-manifest.ts",
-        "contracts/l3/world-native/schema/**",
+        *NATIVE_FACT_SCHEMA,
         "contracts/l3/world-native/tests/fixtures/**",
         "contracts/common/addresses/**",
         "contracts/utils/**",
@@ -270,7 +274,7 @@ AREAS = {
         "deploy/release/*.json",
         "contracts/l2/ledger/scripts/chest-preset.js",
         "contracts/l2/ledger/schema/**",
-        "contracts/l3/world-native/schema/**",
+        *NATIVE_FACT_SCHEMA,
         "contracts/l3/world-native/src/**",
         "contracts/l3/world-native/tests/fixtures/**",
         "contracts/common/addresses/**",
