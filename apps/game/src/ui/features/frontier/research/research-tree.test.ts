@@ -16,6 +16,8 @@ describe("the castle's tree as the contract rules it", () => {
       ["row-0", "short"],
       ["row-1", "locked"],
       ["row-3", "ready"],
+      ["row-2", "locked"],
+      ["row-4", "locked"],
       ["row-5", "locked"],
       ["shrine", "short"],
       ["well", "short"],
@@ -77,7 +79,7 @@ it("keeps the cheaper side open after the other reaches Legendary and displays t
 });
 
 it("requires construction for the first training level, with no separate research purchase", () => {
-  for (const row of [research.ROW_SUPPLY_YARD]) {
+  for (const row of [research.ROW_SUPPLY_YARD, research.ROW_CONSCRIPTION, research.ROW_RATIONS]) {
     const training = node(EARLY_REALM, `row-${row}`);
     expect(training.price).toBeUndefined();
     expect(training.nextTier).toBe(1);
@@ -96,4 +98,21 @@ it("keeps every research line short enough for one line on a phone", () => {
         expect(line.length, line).toBeLessThanOrEqual(16);
     }
   }
+});
+
+it("offers independent Camp and Depot upgrades with their exact next output and wheat cost", () => {
+  const realm: RealmResearchFacts = {
+    ...MID_REALM,
+    castleLevel: 2,
+    standing: {...MID_REALM.standing, [research.ROW_CONSCRIPTION]: 1, [research.ROW_RATIONS]: 1},
+    learned: {...MID_REALM.learned, [research.ROW_CONSCRIPTION]: {tier: 1, sides: []}, [research.ROW_RATIONS]: {tier: 3, sides: []}},
+  };
+  expect(node(realm, `row-${research.ROW_CONSCRIPTION}`)).toMatchObject({
+    name: "Conscription Camp", tier: 1, price: {essence: 5000, labor: 1000},
+    gives: {now: "120 an hour", next: "140 an hour"},
+  });
+  expect(node(realm, `row-${research.ROW_RATIONS}`)).toMatchObject({
+    name: "Rations Depot", tier: 3, price: {essence: 25000, labor: 5000},
+    gives: {now: "1.4 wheat a troop", next: "1.2 wheat a troop"},
+  });
 });

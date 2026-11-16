@@ -12,6 +12,7 @@ const realm = (board: boolean, wheat: bigint) => {
   const store = new NativeFactStore();
   store.setSnapshot({ gameId: 1, complete: true, actor: null, timestamp: 100 });
   store.applyFacts([
+    upsert("0x8", "RealmKnowledge", { game_id: 1, structure_id: 7, learned: 0n }),
     upsert("0x1", "SliceRules", { ...preset.rules, game_id: 1, mode_rules: 0 }),
     upsert("0x2", "ResourceWeight", { game_id: 1, entity_id: 7, capacity: 1000n * PRECISION, weight: 0n }),
     upsert("0x3", "ResourceBalance", { game_id: 1, entity_id: 7, resource_type: 35, balance: wheat }),
@@ -66,7 +67,7 @@ describe("troop raise cost", () => {
     expect(canPayTroopRaise(readTroopRaiseCost(store, 1, 7, 26, 6, 100))).toBe(false);
   });
 
-  it("keeps the recipe cost unchanged by Charge research", () => {
+  it("keeps the recipe cost unchanged by Conscription research", () => {
     const store = realm(true, 10n * PRECISION);
     for (const tier of [0n, 1n, 5n]) {
       store.applyFacts([upsert("0x8", "RealmKnowledge", { game_id: 1, structure_id: 7, learned: tier << 14n })]);
@@ -99,4 +100,14 @@ describe("troop raise cost", () => {
     expect(readTroopRaiseCost(realm(true, 10n), 1, 8, 26, 5, 100)).toBeUndefined();
     expect(canPayTroopRaise(undefined)).toBe(false);
   });
+});
+
+it("prices every Depot tier independently of Conscription and waits for knowledge", () => {
+  const store = realm(true, 100n * PRECISION);
+  for (let tier = 0n; tier <= 5n; tier++) {
+    store.applyFacts([upsert("0x8", "RealmKnowledge", {game_id: 1, structure_id: 7, learned: (5n << 14n) | (tier << 24n)})]);
+    expect(readTroopRaiseCost(store, 1, 7, 26, 4, 100)).toEqual([{resource: 35, amount: (8n - tier) * PRECISION, held: 100n * PRECISION}]);
+  }
+  store.applyFacts([{model: "RealmKnowledge", key: "0x8", value: null}]);
+  expect(readTroopRaiseCost(store, 1, 7, 26, 4, 100)).toBeUndefined();
 });

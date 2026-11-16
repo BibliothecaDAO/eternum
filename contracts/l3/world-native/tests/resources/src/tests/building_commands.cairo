@@ -777,3 +777,81 @@ fn supply_yard_is_unique_without_retired_research_prerequisites() {
     assert_terminal_rejection(d, build_toward(home, crate::research::SUPPLY_YARD, 2), 40);
     assert_eq!(crate::research::tier(learned(d, home), crate::research::ROW_SUPPLY_YARD), 1);
 }
+
+#[test]
+fn camp_research_settles_and_raises_every_troop_building_while_rations_is_independent() {
+    let (d, home, _) = research_world();
+    let resources = IResourceOperationsDispatcher { contract_address: d.games };
+    for (category, direction) in array![(crate::research::BARRACKS, 0_u8), (crate::research::RANGE, 1), (crate::research::SCOUTS_LODGE, 2)] {
+        assert!(execute(d, build_toward(home, category, direction), 40));
+    }
+    assert!(execute(d, build_toward(home, crate::research::CONSCRIPTION_CAMP, 3), 100));
+    for resource_type in array![26_u8, 29, 32] {
+        assert_eq!(rate(d, home, resource_type), 48);
+        assert_eq!(resources.resource_balance(ResourceSlot {game_id: home.game_id, entity_id: home.entity_id, resource_type}), 2400);
+    }
+    assert_eq!(crate::research::tier(learned(d, home), crate::research::ROW_RATIONS), 0);
+    assert!(execute(d, research(home, crate::research::ROW_CONSCRIPTION, 0), 160));
+    assert!(execute(d, build_toward(home, crate::research::RATIONS_DEPOT, 4), 160));
+    for resource_type in array![26_u8, 29, 32] {
+        assert_eq!(rate(d, home, resource_type), 56);
+        assert_eq!(resources.resource_balance(ResourceSlot {game_id: home.game_id, entity_id: home.entity_id, resource_type}), 5280);
+    }
+    assert_terminal_rejection(d, build_toward(home, crate::research::CONSCRIPTION_CAMP, 5), 160);
+    assert_terminal_rejection(d, build_toward(home, crate::research::RATIONS_DEPOT, 5), 160);
+    assert!(execute(d, build_toward(home, crate::research::RANGE, 5), 160));
+    assert_eq!(rate(d, home, 29), 112);
+    assert!(execute(d, Command::DestroyBuilding(ChangeBuilding {structure_id: home.entity_id, coord: crate::geometry::neighbor(Coord {alt: false, x: 10, y: 10}, 5)}), 220));
+    assert_eq!(rate(d, home, 29), 56);
+    assert_eq!(resources.resource_balance(ResourceSlot {game_id: home.game_id, entity_id: home.entity_id, resource_type: 29}), 12000);
+}
+
+#[test]
+fn camp_and_depot_charge_their_own_exact_ladder_once_and_preserve_it_after_rebuilding() {
+    for (row, category) in array![(crate::research::ROW_CONSCRIPTION, crate::research::CONSCRIPTION_CAMP), (crate::research::ROW_RATIONS, crate::research::RATIONS_DEPOT)] {
+        let (d, home, _) = research_world();
+        let resources = IResourceOperationsDispatcher {contract_address: d.games};
+        let essence = ResourceSlot {game_id: home.game_id, entity_id: home.entity_id, resource_type: crate::resources::ESSENCE};
+        let labor = ResourceSlot {resource_type: crate::resources::LABOR, ..essence};
+        let prices = array![(2500_u128, 500_u128), (5000, 1000), (12500, 2500), (25000, 5000), (50000, 12500)];
+        for at in 0_u32..5 {
+            let before_e = resources.resource_balance(essence);
+            let before_l = resources.resource_balance(labor);
+            let command = if at == 0 {build_toward(home, category, 0)} else {research(home, row, 0)};
+            assert!(execute(d, command, 40));
+            let (cost_e, cost_l) = *prices.at(at);
+            assert_eq!(before_e - resources.resource_balance(essence), cost_e * crate::rules::RESOURCE_PRECISION);
+            assert_eq!(before_l - resources.resource_balance(labor), cost_l * crate::rules::RESOURCE_PRECISION);
+            assert_eq!(crate::research::tier(learned(d, home), row), at.try_into().unwrap() + 1_u8);
+        }
+        assert_terminal_rejection(d, research(home, row, 0), 40);
+        assert_terminal_rejection(d, research(home, row, 1), 40);
+        assert!(execute(d, Command::DestroyBuilding(change(home)), 40));
+        assert_terminal_rejection(d, research(home, row, 0), 40);
+        assert!(execute(d, build_toward(home, category, 0), 40));
+        assert_eq!(crate::research::tier(learned(d, home), row), 5);
+    }
+}
+
+#[test]
+fn range_and_camp_open_at_city_and_depot_at_kingdom() {
+    let (_, source) = super::preset_projection::current_definition("frontier-check");
+    let mut preset = building_preset(source.structures.board);
+    preset.structures.buildings = source.structures.buildings;
+    preset.rules.building_config.base_population = 40;
+    let (d, home) = building_world_with_preset(preset);
+    seed_board_castle(d, home);
+    super::resource_commands::grant(d, home, crate::resources::LABOR, 100000 * crate::rules::RESOURCE_PRECISION);
+    super::resource_commands::grant(d, home, crate::resources::ESSENCE, 100000 * crate::rules::RESOURCE_PRECISION);
+    for category in array![crate::research::RANGE, crate::research::CONSCRIPTION_CAMP, crate::research::RATIONS_DEPOT] {
+        assert_terminal_rejection(d, build_toward(home, category, 0), 40);
+    }
+    assert!(execute(d, Command::LevelUp(home.entity_id), 40));
+    assert!(execute(d, build_toward(home, crate::research::RANGE, 0), 40));
+    assert!(execute(d, build_toward(home, crate::research::CONSCRIPTION_CAMP, 1), 40));
+    assert_terminal_rejection(d, build_toward(home, crate::research::RATIONS_DEPOT, 2), 40);
+    assert!(execute(d, Command::LevelUp(home.entity_id), 40));
+    assert!(execute(d, build_toward(home, crate::research::RATIONS_DEPOT, 2), 40));
+    assert_eq!(crate::research::tier(learned(d, home), crate::research::ROW_CONSCRIPTION), 1);
+    assert_eq!(crate::research::tier(learned(d, home), crate::research::ROW_RATIONS), 1);
+}

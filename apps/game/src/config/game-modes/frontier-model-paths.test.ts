@@ -12,10 +12,10 @@ it("uses painted Frontier buildings on the board and in placement preview, witho
     BuildingType.ResourceLabor,
     BuildingType.ResourceKnightT1,
     BuildingType.WorkersHut,
-    BuildingType.WarHall,
+    BuildingType.ResourceCrossbowmanT1,
     BuildingType.SupplyYard,
     BuildingType.ScoutsLodge,
-    BuildingType.Hearth,
+    BuildingType.ConscriptionCamp,
   ] as const;
   for (const type of types) {
     expect(frontier.buildingModelPaths[BUILDINGS_GROUPS.BUILDINGS][type]).toBe(frontierPaintedBuildingPath(type));

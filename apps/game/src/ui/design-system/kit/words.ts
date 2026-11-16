@@ -2231,6 +2231,10 @@ export const RESEARCH_TREE = {
   },
   sidesLine: (made: string) => `Improve ${made} output and storage separately`,
   hutLine: "Hut population",
+  conscriptionLine: "More troops from every troop building.",
+  rationsLine: "Armies leave for less wheat.",
+  conscriptionFigure: "Troops an hour",
+  rationsFigure: "Wheat per troop",
   population: "Population",
   newArmiesStart: (attribute: string) => `New armies start with ${attribute}`,
   /** A training building's figure, under the attribute's name on its card: what that level is given to. */

@@ -10,7 +10,9 @@ pub struct RealmKnowledge {
 // castle rows unlock shrines, wells and the three depths.
 pub const ROW_FARM: u8 = 0;
 pub const ROW_WORKSHOP: u8 = 1;
+pub const ROW_CONSCRIPTION: u8 = 2;
 pub const ROW_HUT: u8 = 3;
+pub const ROW_RATIONS: u8 = 4;
 pub const ROW_SUPPLY_YARD: u8 = 5;
 pub const ROW_SHRINE: u8 = 8;
 pub const ROW_WELL: u8 = 9;
@@ -25,6 +27,12 @@ pub const CHOICE_STORE: u8 = 1;
 pub const HUT: u8 = 1;
 pub const WORKSHOP: u8 = 25;
 pub const BARRACKS: u8 = 28;
+pub const RANGE: u8 = 31;
+pub const RATIONS_DEPOT: u8 = 41;
+pub const CONSCRIPTION_CAMP: u8 = 44;
+pub const RANGE_LEVEL: u8 = 1;
+pub const CONSCRIPTION_CAMP_LEVEL: u8 = 1;
+pub const RATIONS_DEPOT_LEVEL: u8 = 2;
 pub const FARM: u8 = 37;
 pub const SUPPLY_YARD: u8 = 42;
 pub const SCOUTS_LODGE: u8 = 43;
@@ -57,6 +65,10 @@ pub fn row_category(row: u8) -> u8 {
         FARM
     } else if row == ROW_WORKSHOP {
         WORKSHOP
+    } else if row == ROW_CONSCRIPTION {
+        CONSCRIPTION_CAMP
+    } else if row == ROW_RATIONS {
+        RATIONS_DEPOT
     } else if row == ROW_HUT {
         HUT
     } else if row == ROW_SUPPLY_YARD {
@@ -69,13 +81,13 @@ pub fn row_category(row: u8) -> u8 {
 }
 
 pub fn is_training(category: u8) -> bool {
-    category == SUPPLY_YARD
+    category == SUPPLY_YARD || category == CONSCRIPTION_CAMP || category == RATIONS_DEPOT
 }
 
-pub const ROWS: [u8; 7] = [ROW_FARM, ROW_WORKSHOP, ROW_HUT, ROW_SUPPLY_YARD, ROW_SHRINE, ROW_WELL, ROW_DEPTH];
+pub const ROWS: [u8; 9] = [ROW_FARM, ROW_WORKSHOP, ROW_CONSCRIPTION, ROW_HUT, ROW_RATIONS, ROW_SUPPLY_YARD, ROW_SHRINE, ROW_WELL, ROW_DEPTH];
 
 pub fn max_tier(row: u8) -> u8 {
-    if row == ROW_FARM || row == ROW_WORKSHOP || row == ROW_HUT || row == ROW_SUPPLY_YARD {
+    if row == ROW_FARM || row == ROW_WORKSHOP || row == ROW_HUT || row == ROW_SUPPLY_YARD || row == ROW_CONSCRIPTION || row == ROW_RATIONS {
         5
     } else if row == ROW_SHRINE || row == ROW_WELL {
         1
@@ -99,7 +111,9 @@ fn tier_slot(row: u8) -> (u64, u64) {
     match row {
         0 => (0x1, 8),
         1 => (0x80, 8),
+        2 => (0x4000, 8),
         3 => (0x200000, 8),
+        4 => (0x1000000, 8),
         5 => (0x8000000, 8),
         8 => (0x400000000000, 2),
         9 => (0x800000000000, 2),
@@ -147,6 +161,8 @@ pub fn make_picks(learned: u64, category: u8) -> u8 {
         picks(learned, ROW_FARM, CHOICE_MAKE)
     } else if category == WORKSHOP {
         picks(learned, ROW_WORKSHOP, CHOICE_MAKE)
+    } else if category == BARRACKS || category == RANGE || category == SCOUTS_LODGE {
+        tier(learned, ROW_CONSCRIPTION)
     } else {
         0
     }

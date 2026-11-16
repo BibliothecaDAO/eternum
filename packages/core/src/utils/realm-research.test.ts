@@ -66,3 +66,16 @@ describe("realm research", () => {
     expect(() => learnResearch(well, research.ROW_WELL, 0)).toThrow("Research side is complete");
   });
 });
+
+it("keeps both town rows independent of every other packed research field", () => {
+  for (let camp = 0; camp <= 5; camp++) for (let depot = 0; depot <= 5; depot++) {
+    let value = learned;
+    for (let i = 0; i < camp; i++) value = learnResearch(value, research.ROW_CONSCRIPTION, 0);
+    for (let i = 0; i < depot; i++) value = learnResearch(value, research.ROW_RATIONS, 0);
+    expect(researchTier(value, research.ROW_CONSCRIPTION)).toBe(camp);
+    expect(researchTier(value, research.ROW_RATIONS)).toBe(depot);
+    expect(researchTier(value, research.ROW_FARM)).toBe(1);
+    expect(researchTier(value, research.ROW_WORKSHOP)).toBe(1);
+    expect(researchTier(value, research.ROW_DEPTH)).toBe(2);
+  }
+});

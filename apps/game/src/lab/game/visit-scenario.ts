@@ -18,12 +18,12 @@ export const NEIGHBOUR_REALM = 8;
 const NEIGHBOUR_BUILDINGS = [
   BuildingType.SupplyYard,
   BuildingType.ScoutsLodge,
-  BuildingType.Hearth,
+  BuildingType.ConscriptionCamp,
   BuildingType.ResourceWheat,
   BuildingType.ResourceLabor,
   BuildingType.ResourceKnightT1,
   BuildingType.WorkersHut,
-  BuildingType.WarHall,
+  BuildingType.RationsDepot,
 ];
 
 /**

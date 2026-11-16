@@ -52,7 +52,7 @@ it("says what all of a type's buildings make together for its card, and nothing 
   // Three Farms at 5 wheat a minute with one Fields pick: 3 × 6.3, the one figure the card shows.
   expect(farms.perSecond * 60).toBeCloseTo(3 * 5.04 * 1.25, 6);
   // Nothing a building type makes is stored for a War hall.
-  expect(buildingsMake(store, row, BuildingType.WarHall)).toBeUndefined();
+  expect(buildingsMake(store, row, BuildingType.RationsDepot)).toBeUndefined();
   const knowledge = store.require("RealmKnowledge", { game_id: 1, structure_id: 7 });
   store.applyFacts([{ model: "RealmKnowledge", key: "0xd", value: null }] as never);
   expect(buildingsMake(store, row, BuildingType.ResourceWheat)).toBeUndefined();

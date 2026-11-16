@@ -96,6 +96,9 @@ export const frontierPreset = {
         laborCost: labor * laborLadder[index]!,
       })),
     ),
+    ...[research.ROW_CONSCRIPTION, research.ROW_RATIONS].flatMap((row) =>
+      [2500, 5000, 12500, 25000, 50000].map((essenceCost, index) => ({ row, tier: index + 1, essenceCost, laborCost: [500, 1000, 2500, 5000, 12500][index]! })),
+    ),
     { row: research.ROW_SHRINE, tier: 1, essenceCost: 2000, laborCost: 0 },
     { row: research.ROW_WELL, tier: 1, essenceCost: 6000, laborCost: 0 },
     ...[100000, 250000, 500000].map((essenceCost, index) => ({

@@ -27,7 +27,7 @@ export const frontierSeasonOnePreset = {
     resources: {
       productionBySimpleRecipe: { [ResourcesIds.Paladin]: [{ resource: ResourcesIds.Wheat, amount: 2 }] },
       productionBySimpleRecipeOutputs: { [ResourcesIds.Paladin]: 1 },
-      productionByComplexRecipeOutputs: { [ResourcesIds.Paladin]: 100 / 3600 },
+      productionByComplexRecipeOutputs: { [ResourcesIds.Paladin]: 100 / 3600, [ResourcesIds.Knight]: 100 / 3600 },
     },
     buildings: {
       simpleBuildingCost: { [research.SCOUTS_LODGE]: [{ resource: ResourcesIds.Labor, amount: 500 }] },

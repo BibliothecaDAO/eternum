@@ -1,6 +1,8 @@
 import { RESOURCE_PRECISION, ResourcesIds } from "@bibliothecadao/types";
 import type { NativeFactStore } from "../client/native-fact-store";
 import { ResourceManager } from "../managers/resource-manager";
+import { realmLearned, researchTier } from "./realm-research";
+import { nativeResearchConstants as research } from "../../../../contracts/l3/world-native/schema/client.gen";
 
 /** The contract's refusal when a structure cannot pay what deploying troops costs it. */
 export const TROOP_RAISE_SHORT_REASON = "Realm cannot pay to raise troops.";
@@ -29,6 +31,9 @@ export const readTroopRaiseCost = (
 ): TroopRaiseCost[] | undefined => {
   const board = store.get("BoardRules", { game_id: gameId });
   if (!board) return [];
+  const learned = realmLearned(store, gameId, structureId);
+  if (learned === undefined) return undefined;
+  const rations = BigInt(researchTier(learned, research.ROW_RATIONS));
   const recipe = store.require("ProductionRecipe", { game_id: gameId, resource_type: troopResource });
   if (recipe.simple_output === 0n) throw new Error(`Troop ${troopResource} has no recipe to deploy from`);
   const deployed = BigInt(troops) * BigInt(RESOURCE_PRECISION);
@@ -37,9 +42,11 @@ export const readTroopRaiseCost = (
   for (const input of recipe.simple_inputs) {
     const held = manager.balanceWithProduction(tick, input.resource_type)?.balance;
     if (held === undefined) return undefined;
+    const discount = input.resource_type === ResourcesIds.Wheat ? board.ration_step * rations * recipe.simple_output / BigInt(RESOURCE_PRECISION) : 0n;
+    const amount = input.amount > discount ? input.amount - discount : 0n;
     costs.push({
       resource: input.resource_type,
-      amount: (input.amount * deployed + recipe.simple_output - 1n) / recipe.simple_output,
+      amount: (amount * deployed + recipe.simple_output - 1n) / recipe.simple_output,
       held: BigInt(held),
     });
   }

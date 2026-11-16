@@ -34,10 +34,10 @@ const BOARD_TYPES: Partial<Record<string, BuildingType>> = {
   workshop: BuildingType.ResourceLabor,
   barracks: BuildingType.ResourceKnightT1,
   "workers-hut": BuildingType.WorkersHut,
-  "war-hall": BuildingType.WarHall,
+  "war-hall": BuildingType.RationsDepot,
   "supply-yard": BuildingType.SupplyYard,
   "scouts-lodge": BuildingType.ScoutsLodge,
-  hearth: BuildingType.Hearth,
+  hearth: BuildingType.ConscriptionCamp,
 };
 const SHIPPED_SITES: Partial<Record<string, string>> = {
   camp: CAMP_MODEL_PATH,

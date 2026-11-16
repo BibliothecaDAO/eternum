@@ -365,7 +365,7 @@ const essenceShortPrice: LabTile["standing"] = {
 };
 /**
  * A city's build sheet, as the owner's realm stood on 27 October: Farm and Workshop researched twice on their make
- * side, Barracks once on Drill, the War hall and Hearth already standing, a fifth farm at 6,800 labor, and a second
+ * side, Barracks once on Drill, the War hall and ConscriptionCamp already standing, a fifth farm at 6,800 labor, and a second
  * Workshop at 34,000, raised by the one standing and 16 hours from held.
  */
 const BUILD_TILES: LabTile[] = [
@@ -1699,7 +1699,7 @@ const LAB_BUILDINGS = {
     makes: { icon: "labor", rate: "+15/min" },
     essence: SHORT_ESSENCE,
   },
-  "war-hall": { category: BuildingType.WarHall, standing: 1, makes: undefined },
+  "war-hall": { category: BuildingType.RationsDepot, standing: 1, makes: undefined },
   hut: { category: BuildingType.WorkersHut, row: research.ROW_HUT, standing: 2, makes: undefined },
   "scouts-lodge": { category: BuildingType.ScoutsLodge, standing: 1, makes: undefined },
 } satisfies Record<string, LabBuilding>;

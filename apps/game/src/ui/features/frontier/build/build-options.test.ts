@@ -116,3 +116,18 @@ it("opens repeatable Scout production at City without Barracks research", () => 
   expect(lodge(1).effect).toMatchObject({ kind: "produces", resource: ResourcesIds.Paladin });
   expect(lodge(1).tier).toBe(1);
 });
+
+it("opens the Range and Camp at City, the Depot at Kingdom, and keeps each research building unique", () => {
+  const {store, realm} = realmBoard();
+  const options = (level: number) => new Map(readBuildOptions(store, {...realm, base: {...realm.base, level}}, true, 350)!.map((option) => [option.category, option]));
+  expect(options(0).get(BuildingType.ResourceCrossbowmanT1)?.standing).toEqual({level: 1});
+  expect(options(0).get(BuildingType.ConscriptionCamp)?.standing).toEqual({level: 1});
+  expect(options(1).get(BuildingType.ResourceCrossbowmanT1)?.standing).toBe("open");
+  expect(options(1).get(BuildingType.ConscriptionCamp)?.standing).toBe("open");
+  expect(options(1).get(BuildingType.RationsDepot)?.standing).toEqual({level: 2});
+  expect(options(2).get(BuildingType.RationsDepot)?.standing).toBe("open");
+  const counts = store.require("StructureBuildings", {game_id: 1, structure_id: 7});
+  store.applyFacts([{model: "StructureBuildings", key: store.wireKeyOf("StructureBuildings", {game_id: 1, structure_id: 7})!, value: {...counts, packed_counts_3: (1n << 64n) | (1n << 88n)}}] as never);
+  expect(options(2).get(BuildingType.ConscriptionCamp)?.standing).toBe("built");
+  expect(options(2).get(BuildingType.RationsDepot)?.standing).toBe("built");
+});

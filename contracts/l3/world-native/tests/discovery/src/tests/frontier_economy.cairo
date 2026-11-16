@@ -302,3 +302,38 @@ fn a_city_builds_lodges_and_deploys_their_scout_stock_at_two_wheat_each() {
     assert_eq!(army.troops.category, crate::troops::TroopType::Paladin);
     assert_eq!(army.troops.count, 400 * RESOURCE_PRECISION);
 }
+
+#[test]
+fn range_produces_deployable_crossbows_and_depot_prices_deployment_and_reinforcement_at_each_tier() {
+    let (_, source) = super::preset_projection::current_definition("frontier-check");
+    let mut preset = frontier_preset();
+    preset.structures.board = source.structures.board;
+    preset.structures.buildings = source.structures.buildings;
+    preset.rules.building_config.base_population = 40;
+    let (d, home) = frontier_realm(with_realm_rate(preset, 29, RESOURCE_PRECISION.try_into().unwrap()));
+    allow_armies(d, home);
+    grant(d, home, crate::resources::LABOR, 100000 * RESOURCE_PRECISION);
+    grant(d, home, crate::resources::ESSENCE, 1000000 * RESOURCE_PRECISION);
+    grant(d, home, WHEAT, 10000 * RESOURCE_PRECISION);
+    assert!(execute(d, Command::LevelUp(home.entity_id), 40));
+    assert!(execute(d, build(home, crate::research::RANGE, WEST), 40));
+    assert!(execute(d, Command::LevelUp(home.entity_id), 40));
+    grant(d, home, crate::resources::LABOR, 100000 * RESOURCE_PRECISION);
+    let mut army = 0_u64;
+    for tier in 0_u8..6 {
+        if tier == 1 {
+            assert!(execute(d, build(home, crate::research::RATIONS_DEPOT, 2), 100));
+        } else if tier > 1 {
+            assert!(execute(d, super::building_commands::research(home, crate::research::ROW_RATIONS, 0), 100));
+        }
+        let before = stored(d, home, WHEAT);
+        if tier == 0 {
+            assert!(execute(d, Command::CreateExplorer(CreateExplorer {slot: 0, structure_id: home.entity_id, category: 2, tier: 0, amount: 5 * RESOURCE_PRECISION, direction: EAST}), 100));
+            army = *IStructureOperationsDispatcher {contract_address: d.games}.home_armies(home).at(0);
+        } else {
+            assert!(execute(d, reinforce(army, 5), 100));
+        }
+        assert_eq!(before - stored(d, home, WHEAT), (10 - Into::<u8, u128>::into(tier)) * RESOURCE_PRECISION);
+        assert_eq!(stored(d, home, 29), (60 - 5 * (Into::<u8, u128>::into(tier) + 1)) * RESOURCE_PRECISION);
+    }
+}

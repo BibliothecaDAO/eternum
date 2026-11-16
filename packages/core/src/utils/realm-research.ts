@@ -12,7 +12,9 @@ export const RESEARCH_ROWS = Object.entries(research)
 const tierFields: Record<number, readonly [offset: bigint, width: bigint]> = {
   [research.ROW_FARM]: [0n, 3n],
   [research.ROW_WORKSHOP]: [7n, 3n],
+  [research.ROW_CONSCRIPTION]: [14n, 3n],
   [research.ROW_HUT]: [21n, 3n],
+  [research.ROW_RATIONS]: [24n, 3n],
   [research.ROW_SUPPLY_YARD]: [27n, 3n],
   [research.ROW_SHRINE]: [46n, 1n],
   [research.ROW_WELL]: [47n, 1n],
@@ -89,6 +91,8 @@ export const researchRowCategory: Readonly<Partial<Record<number, number>>> = {
   [research.ROW_FARM]: research.FARM,
   [research.ROW_WORKSHOP]: research.WORKSHOP,
   [research.ROW_HUT]: research.HUT,
+  [research.ROW_CONSCRIPTION]: research.CONSCRIPTION_CAMP,
+  [research.ROW_RATIONS]: research.RATIONS_DEPOT,
   [research.ROW_SUPPLY_YARD]: research.SUPPLY_YARD,
 };
 
@@ -110,9 +114,10 @@ export function researchRowOf(category: number): number | undefined {
   return row === undefined ? undefined : Number(row);
 }
 
-/** Output research belongs to the Farm and Workshop; troop buildings have no production research. */
 export function buildingMakePicks(learned: bigint, category: number): number {
   if (category === research.FARM) return researchPicks(learned, research.ROW_FARM, research.CHOICE_MAKE);
   if (category === research.WORKSHOP) return researchPicks(learned, research.ROW_WORKSHOP, research.CHOICE_MAKE);
+  if (category === research.BARRACKS || category === research.RANGE || category === research.SCOUTS_LODGE)
+    return researchTier(learned, research.ROW_CONSCRIPTION);
   return 0;
 }

@@ -84,7 +84,6 @@ export const readDeployPlan = (
   const { defaultTick } = clock;
   const allowed = realm.base.troop_max_explorer_count;
   const open = openArmySlots(store, { game_id: realm.game_id, entity_id: realm.entity_id, allowedSlots: allowed });
-  // A troop's price waits on the realm's research: the Barracks' Rations lowers it.
   const learned = realmLearned(store, realm.game_id, realm.entity_id);
   if (!open || learned === undefined) return undefined;
   const choices = readTroopsAtHome(store, realm, clock);

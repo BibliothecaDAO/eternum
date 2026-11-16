@@ -3,6 +3,8 @@ import { WELL_REFILL_PERCENT } from "@bibliothecadao/eternum/troop-stamina";
 
 import { nativeResearchConstants as research } from "@bibliothecadao/eternum/game-client";
 
+import { frontierBaseConfig } from "../../../../../../../config/source/frontier/base";
+import { ResourcesIds } from "@bibliothecadao/types";
 import type { ArmyView } from "../army/army-detail";
 import type { RealmResearchFacts } from "./research-tree";
 
@@ -32,6 +34,9 @@ const realmOn = (
       outputStepBps: preset.board.outputStepBps,
       storageStepBps: preset.board.storageStepBps,
       populationStepBps: preset.board.populationStepBps,
+      rationStep: preset.board.rationStep,
+      troopPerHour: preset.balance.resources.productionByComplexRecipeOutputs[ResourcesIds.Knight] * 3600,
+      wheatPerTroop: Number(frontierBaseConfig.resources!.productionBySimpleRecipe![ResourcesIds.Knight]![0]!.amount),
     },
     laborStore: (level) =>
       (preset.board.resourceStoreCaps[level]! * (10_000 + storeroomPicks * preset.board.storageStepBps)) / 10_000,

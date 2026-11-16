@@ -40,6 +40,12 @@ export const FRONTIER_STORES = {
     word: FRONTIER_TROOP_NAMES[TroopType.Knight],
     made: { category: research.BARRACKS, spentAt: "deploy" },
   },
+  crossbows: {
+    resource: ResourcesIds.Crossbowman,
+    icon: resourceMeaning(ResourcesIds.Crossbowman),
+    word: FRONTIER_TROOP_NAMES[TroopType.Crossbowman],
+    made: { category: research.RANGE, spentAt: "deploy" },
+  },
   scouts: {
     resource: ResourcesIds.Paladin,
     icon: resourceMeaning(ResourcesIds.Paladin),

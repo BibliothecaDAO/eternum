@@ -130,14 +130,15 @@ const BUILDING_PAINTINGS: Partial<Record<BuildingType, IconMeaning>> = {
   [BuildingType.ResourceLabor]: "workshop",
   [BuildingType.WorkersHut]: "workers-hut",
   [BuildingType.Storehouse]: "storehouse",
-  [BuildingType.WarHall]: "war-hall",
+  [BuildingType.RationsDepot]: "storehouse",
   [BuildingType.SupplyYard]: "supply-yard",
   [BuildingType.ScoutsLodge]: "scout-lodge",
-  [BuildingType.Hearth]: "hearth",
+  [BuildingType.ConscriptionCamp]: "camp",
 };
 /** Frontier names its troop building Barracks (buildingName), and paints it so; elsewhere it is "Knight T1". */
 const FRONTIER_BUILDING_PAINTINGS: Partial<Record<BuildingType, IconMeaning>> = {
   [BuildingType.ResourceKnightT1]: "barracks",
+  [BuildingType.ResourceCrossbowmanT1]: "war-hall",
 };
 
 /**

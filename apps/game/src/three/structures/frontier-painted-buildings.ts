@@ -36,10 +36,10 @@ const TIERED_BUILDINGS: Partial<Record<BuildingType, string>> = {
 };
 
 const TRAINING_BUILDINGS: Partial<Record<BuildingType, string>> = {
-  [BuildingType.WarHall]: "war-hall",
+  [BuildingType.ResourceCrossbowmanT1]: "war-hall",
   [BuildingType.SupplyYard]: "supply-yard",
   [BuildingType.ScoutsLodge]: "scouts-lodge",
-  [BuildingType.Hearth]: "hearth",
+  [BuildingType.ConscriptionCamp]: "camp",
 };
 
 export function frontierPaintedBuildingPath(type: BuildingType, tier = 1): string | undefined {

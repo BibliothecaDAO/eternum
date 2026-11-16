@@ -27,6 +27,8 @@ import { type LearnedRow, readResearchTree, type RealmResearchFacts, type TreeNo
 const RESEARCH_MODELS = [
   "RealmKnowledge",
   "ResearchPrice",
+  "ResourceRule",
+  "ProductionRecipe",
   "BoardRules",
   "BuildingRule",
   "StructureBuildings",
@@ -73,6 +75,10 @@ const readResearchFacts = (
 
   const board = store.get("BoardRules", { game_id: realm.game_id });
   if (learned === undefined || essence === undefined || labor === undefined || !board) return undefined;
+  const troop = store.require("ResourceRule", {game_id: realm.game_id, resource_type: ResourcesIds.Knight});
+  const recipe = store.require("ProductionRecipe", {game_id: realm.game_id, resource_type: ResourcesIds.Knight});
+  const wheat = recipe.simple_inputs.find((input) => input.resource_type === ResourcesIds.Wheat);
+  if (!wheat || recipe.simple_output === 0n) throw new Error("Missing troop wheat recipe");
   const rows = decodeLearned(learned);
   const storeroomPicks = (rows[research.ROW_WORKSHOP]?.sides ?? []).filter((side) => side === 1).length;
   return {
@@ -90,6 +96,9 @@ const readResearchFacts = (
       outputStepBps: board.output_step_bps,
       storageStepBps: board.storage_step_bps,
       populationStepBps: board.population_step_bps,
+      rationStep: Number(board.ration_step) / RESOURCE_PRECISION,
+      troopPerHour: Number(troop.realm_rate) * 3600 / RESOURCE_PRECISION,
+      wheatPerTroop: Number(wheat.amount) / Number(recipe.simple_output),
     },
     laborStore: (level) => {
       const base = ResourceManager.castleStoreLimit(store, realm.game_id, level);

@@ -127,10 +127,11 @@ const FRONTIER_BUILDINGS: Partial<Record<BuildingType, string>> = {
   [BuildingType.ResourceLabor]: "Workshop",
   [BuildingType.ResourceKnightT1]: "Barracks",
   [BuildingType.WorkersHut]: "Hut",
-  [BuildingType.WarHall]: "War hall",
+  [BuildingType.RationsDepot]: "Rations Depot",
+  [BuildingType.ResourceCrossbowmanT1]: "Range",
   [BuildingType.SupplyYard]: "Supply yard",
   [BuildingType.ScoutsLodge]: "Scouts' lodge",
-  [BuildingType.Hearth]: "Hearth",
+  [BuildingType.ConscriptionCamp]: "Conscription Camp",
 };
 
 /** Whether Frontier raises this building. */

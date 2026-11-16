@@ -19,10 +19,10 @@ export const paintedBuildingsScenario = (ground?: LabGround): LabScenario => {
     BuildingType.ResourceLabor,
     BuildingType.ResourceKnightT1,
     BuildingType.WorkersHut,
-    BuildingType.WarHall,
+    BuildingType.RationsDepot,
     BuildingType.SupplyYard,
     BuildingType.ScoutsLodge,
-    BuildingType.Hearth,
+    BuildingType.ConscriptionCamp,
   ];
   const plots = getHexesWithinRadius(BUILDINGS_CENTER[0], BUILDINGS_CENTER[1], 2).filter(
     ({ col, row }) => col !== BUILDINGS_CENTER[0] || row !== BUILDINGS_CENTER[1],

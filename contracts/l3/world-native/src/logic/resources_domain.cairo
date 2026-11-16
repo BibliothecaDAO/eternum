@@ -335,9 +335,12 @@ pub mod ResourcesLogic {
             let recipe = self.production.recipe(crate::production::RecipeKey { game_id: key.game_id, resource_type });
             let per_troops: u128 = recipe.simple_output.into();
             let now: u32 = timestamp.try_into().unwrap();
+            let board = crate::logic::preset_record::for_game(key.game_id).board_terms.read().unwrap();
+            let rations: u128 = crate::research::tier(crate::logic::research::learned(key), crate::research::ROW_RATIONS).into();
             for input in recipe.simple_inputs {
                 let unit_weight = crate::logic::resources::rule(key.game_id, *input.resource_type).unit_weight;
-                let amount = *input.amount;
+                let discount = if *input.resource_type == crate::resources::WHEAT { board.ration_step * rations * per_troops / crate::rules::RESOURCE_PRECISION } else { 0 };
+                let amount = *input.amount - core::cmp::min(*input.amount, discount);
                 // A realm never underpays a fraction of a recipe.
                 let cost = (amount * troops + per_troops - 1) / per_troops;
                 let (previous, mut stock) = self

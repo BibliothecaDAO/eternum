@@ -32,7 +32,7 @@ describe("one source per fact: no copy of a catalog outside its modules", () => 
     ["a set of troop tiers", "export const LOW = new Set([TroopTier.T1, TroopTier.T2]);"],
     [
       "a partial map of buildings",
-      "export const ICONS: Partial<Record<BuildingType, string>> = { [BuildingType.WarHall]: 'a' };",
+      "export const ICONS: Partial<Record<BuildingType, string>> = { [BuildingType.RationsDepot]: 'a' };",
     ],
     [
       "an untyped map keyed by resources",

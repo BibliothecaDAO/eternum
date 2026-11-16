@@ -2,6 +2,7 @@ import type { NativeFactStore } from "@bibliothecadao/eternum/game-client";
 import { configManager, getEntityInfo, getStructureName, nativeGameModeOf } from "@bibliothecadao/eternum";
 import {
   BuildingType,
+  isFrontierBuilding,
   type ContractAddress,
   type ID,
   StructureType,
@@ -60,10 +61,10 @@ export interface GameModeConfig {
 
 const BASE_BUILDING_EXCLUSIONS = new Set<string>([
   // Frontier's training buildings stand only on its realm boards.
-  "WarHall",
+  "RationsDepot",
   "SupplyYard",
   "ScoutsLodge",
-  "Hearth",
+  "ConscriptionCamp",
   "Resource",
   "Castle",
   "Bank",
@@ -188,17 +189,7 @@ const frontierConfig: GameModeConfig = {
     getTiers: blitzConfig.resources.getTiers,
   },
   rules: {
-    isBuildingTypeAllowed: (key) =>
-      [
-        "WorkersHut",
-        "ResourceWheat",
-        "ResourceKnightT1",
-        "ResourceLabor",
-        "WarHall",
-        "SupplyYard",
-        "ScoutsLodge",
-        "Hearth",
-      ].includes(key),
+    isBuildingTypeAllowed: (key) => Object.entries(BuildingType).some(([name, value]) => name === key && typeof value === "number" && isFrontierBuilding(value)),
   },
 };
 

@@ -16,6 +16,7 @@ import {
 } from "@bibliothecadao/eternum/game-client";
 import { BuildingType, getProducedResource, ResourcesIds } from "@bibliothecadao/types";
 
+import { RESEARCH_TREE } from "@/ui/design-system/kit/words";
 import { type BuildingOutput, buildingOutput } from "@/ui/shared/lib/building-output";
 
 import { madePicks } from "../production/store-makers";
@@ -32,6 +33,7 @@ import { type SidePick, sidePicks } from "../research/sides-taken";
 const FRONTIER_BUILDINGS = [
   ...Object.values(researchRowCategory),
   nativeResearchConstants.BARRACKS,
+  nativeResearchConstants.RANGE,
   nativeResearchConstants.SCOUTS_LODGE,
 ] as BuildingType[];
 
@@ -48,7 +50,8 @@ const isProduct = (resource: ResourcesIds | undefined): resource is Product => m
 export type BuildEffect =
   | { kind: "produces"; resource: Product; perHour: number; output: BuildingOutput }
   | { kind: "population"; amount: number }
-  | { kind: "trains"; attribute: "Logistics" };
+  | { kind: "trains"; attribute: "Logistics" }
+  | { kind: "research"; line: string; icon: "troops" | "wheat" };
 
 export interface BuildOption {
   category: BuildingType;
@@ -90,7 +93,7 @@ export const readBuildOptions = (
       category,
       tier: (row === undefined
         ? 1
-        : Math.max(TRAINS[category] ? 1 : 0, researchTier(learned, row))) as BuildOption["tier"],
+        : Math.max(isTraining(category) ? 1 : 0, researchTier(learned, row))) as BuildOption["tier"],
       sides: row === undefined ? undefined : sidePicks(learned, row),
       cost,
       rise: buildingCostRise(safeInteger(realm.entity_id), category, store),
@@ -103,14 +106,19 @@ export const readBuildOptions = (
   return options;
 };
 
+const isTraining = (category: BuildingType) => Boolean(TRAINS[category]) || category === BuildingType.ConscriptionCamp || category === BuildingType.RationsDepot;
+
 const buildingStanding = (
   store: NativeFactStore,
   realm: NativeRows["Structure"],
   category: BuildingType,
 ): BuildOption["standing"] => {
-  if (category === BuildingType.ScoutsLodge && realm.base.level < nativeResearchConstants.SCOUTS_LODGE_LEVEL)
-    return { level: nativeResearchConstants.SCOUTS_LODGE_LEVEL };
-  if (!TRAINS[category]) return "open";
+  const minimum = category === BuildingType.ScoutsLodge ? nativeResearchConstants.SCOUTS_LODGE_LEVEL
+    : category === BuildingType.ResourceCrossbowmanT1 ? nativeResearchConstants.RANGE_LEVEL
+    : category === BuildingType.ConscriptionCamp ? nativeResearchConstants.CONSCRIPTION_CAMP_LEVEL
+    : category === BuildingType.RationsDepot ? nativeResearchConstants.RATIONS_DEPOT_LEVEL : 0;
+  if (realm.base.level < minimum) return { level: minimum };
+  if (!isTraining(category)) return "open";
   if (getBuildingQuantity(safeInteger(realm.entity_id), category, store) > 0) return "built";
   return "open";
 };
@@ -126,6 +134,8 @@ const readBuildingEffect = (
   category: BuildingType,
   learned: bigint,
 ): BuildEffect => {
+  if (category === BuildingType.ConscriptionCamp) return { kind: "research", line: RESEARCH_TREE.conscriptionLine, icon: "troops" };
+  if (category === BuildingType.RationsDepot) return { kind: "research", line: RESEARCH_TREE.rationsLine, icon: "wheat" };
   const trains = TRAINS[category];
   if (trains) return { kind: "trains", attribute: trains };
   if (category === BuildingType.WorkersHut) return { kind: "population", amount: nextHutGrant(store, realm, learned) };
