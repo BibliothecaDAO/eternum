@@ -9,7 +9,7 @@ const WEI = 10n ** 18n;
 it("prices dollars in whole LORDS rounded up to 5, from the quote read at the moment it is asked", async () => {
   const read = vi
     .fn<(cents: number) => Promise<bigint>>()
-    .mockResolvedValueOnce(2_749n * WEI + WEI / 2)
+    .mockResolvedValueOnce(2_749n * WEI + WEI / 2n)
     .mockResolvedValueOnce(2_000n * WEI);
   // 2,749.5 LORDS round up to 2,750; an exact 2,000 stays: nothing is kept between asks.
   expect(await quoteLords(1_000, read)).toBe(2_750);

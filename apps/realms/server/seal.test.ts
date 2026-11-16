@@ -37,11 +37,11 @@ const migrated = async () => {
 };
 
 const GAME = "?chain=0x1&game=1";
-/** The market as the Seal route reads it: a price in dollars, or an outage. */
+/** AVNU as the Seal route asks it: the LORDS wei that sell for the dollars asked at a price in dollars a LORDS. */
 const market =
-  (usd: number): LordsQuoteReader =>
-  async () =>
-    usd;
+  (usdPerLords: number): LordsQuoteReader =>
+  async (cents) =>
+    BigInt(Math.round((cents / 100 / usdPerLords) * 1e6)) * 10n ** 12n;
 const marketDown: LordsQuoteReader = () => Promise.reject(new Error("AVNU: 429"));
 const seated: ShopAccess = async () => true;
 
