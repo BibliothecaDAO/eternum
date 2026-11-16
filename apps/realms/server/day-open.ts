@@ -54,19 +54,20 @@ const calendarOf = (game: DayOpenGame) => {
   };
 };
 
-/** The day a running Frontier game is in, by when it opened (seconds). */
-interface GameDayStart {
+/** The day a running Frontier game is in: when it opened and when it ends (seconds). */
+interface GameDay {
   gameId: number;
   dayStart: number;
+  dayEnd: number;
 }
 
 /** The day each running Frontier game is in at `now`; a game between days, or not running, is left out. */
-export function gameDayStarts(games: readonly DayOpenGame[], now: number): GameDayStart[] {
+export function gameDayStarts(games: readonly DayOpenGame[], now: number): GameDay[] {
   return games
     .filter((game) => game.mode === "frontier" && game.status !== "Ended" && game.status !== "Settled")
     .flatMap((game) => {
       const day = dayOf(calendarOf(game), now);
-      return day ? [{ gameId: game.game_id, dayStart: day.start }] : [];
+      return day ? [{ gameId: game.game_id, dayStart: day.start, dayEnd: day.end }] : [];
     });
 }
 

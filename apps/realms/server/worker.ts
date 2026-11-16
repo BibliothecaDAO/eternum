@@ -34,7 +34,7 @@ export default {
     await finishWalletRecoveries(env);
     await finishAccountDeletions(env);
     const now = Math.floor(Date.now() / 1000);
-    await refreshLordsPrice(env.DB, marketLordsPrice(), now, await readPriceDay(env.DB, now));
+    await refreshLordsPrice(env.DB, marketLordsPrice(), now, () => readPriceDay(env.DB, now));
   },
 };
 

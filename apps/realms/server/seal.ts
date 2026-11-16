@@ -46,13 +46,14 @@ export interface SealWorld {
   db: D1Database;
   access: ShopAccess;
   holderFacts: (realmsId: string) => Promise<HolderFacts>;
+  now: () => number;
 }
 
 /**
  * GET /api/shop/seal?chain=&game=: for an account that plays in that running Frontier game (the shop's one rule), its
  * holder level, whether it holds the seal, and the seal's price in cents on the web and in a store with what is free to
  * this holder. An account that holds the seal is offered no purchase. The web price carries its LORDS amount at the shop's
- * one price, dollars first (null while the price day has none).
+ * one price, dollars first (null while there is no price now).
  */
 export async function handleSeal(request: Request, auth: IdentityAuth, world: SealWorld): Promise<Response> {
   if (request.method !== "GET") return json({ error: "method_not_allowed" }, 405);
@@ -72,14 +73,14 @@ export async function handleSeal(request: Request, auth: IdentityAuth, world: Se
   return json({
     holder,
     owned: false,
-    web: { ...sealOffer(holder, "web"), lords: await sealLords(world.db, holder) },
+    web: { ...sealOffer(holder, "web"), lords: await sealLords(world, holder) },
     store: sealOffer(holder, "store"),
   });
 }
 
-/** The web price in whole LORDS at the shop's one price; null while the price day has none, never a made-up amount. */
-const sealLords = async (db: D1Database, holder: Holder) => {
-  const price = await currentLordsPrice(db);
+/** The web price in whole LORDS at the shop's one price; null while there is no price now, never a made-up amount. */
+const sealLords = async ({ db, now }: SealWorld, holder: Holder) => {
+  const price = await currentLordsPrice(db, now());
   return price === null ? null : lordsFor(sealOffer(holder, "web").cents, price.usd);
 };
 

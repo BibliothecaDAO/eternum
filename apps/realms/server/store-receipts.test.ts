@@ -6,7 +6,7 @@ import type { IdentityAuth } from "./auth";
 import { RealmHoldingsUnavailableError } from "./realm-holdings";
 import { readSeal } from "./seal";
 import type { ShopAccess } from "./shop-game";
-import { handlePurchaseStart, handleStoreReceipt, type ReceiptWorld, type StoreVerifier } from "./store-receipts";
+import { handlePurchaseCheck, handleStoreReceipt, type ReceiptWorld, type StoreVerifier } from "./store-receipts";
 import { createTestD1 } from "./test-d1";
 import { migrationStatements } from "./workerd-harness";
 
@@ -404,53 +404,84 @@ it("asks the game the receipt names, and refuses a receipt that names none", asy
   expect((await sendAs(db, OWNER, { ...request, game: undefined }, { access }))[0]).toBe(400);
 });
 
-/** The purchase start as the shop's screens ask it before any payment is taken. */
-const startAs = async (db: D1Database, realmsId: string | null, body: unknown, access: ShopAccess = seated) => {
+/** The purchase check as a payment flow would ask it before taking a payment. */
+const checkAs = async (
+  db: D1Database,
+  realmsId: string | null,
+  body: unknown,
+  access: ShopAccess = seated,
+  holderFacts: ReceiptWorld["holderFacts"] = async () => ({ heldRealmIds: [], ticket: null }),
+) => {
   const auth = {
     api: { getSession: async () => (realmsId ? { user: { realmsId } } : null) },
   } as unknown as IdentityAuth;
-  const response = await handlePurchaseStart(
-    new Request("https://realms.test/api/shop/purchase", {
+  const response = await handlePurchaseCheck(
+    new Request("https://realms.test/api/shop/purchase-check", {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({ ...GAME, ...(body as object) }),
     }),
     auth,
-    { db, access },
+    { db, access, holderFacts },
   );
   return [response.status, await response.json()] as const;
 };
 
-it("refuses a purchase before payment for an account that does not play in the named running Frontier game", async () => {
+it("refuses a purchase check for an account that does not play in the named running Frontier game", async () => {
   const db = await migrated();
   const outside: ShopAccess = async () => false;
   for (const product of ["fragments-500", "seal"])
-    expect(await startAs(db, OWNER, { product }, outside)).toEqual([404, { error: "no_shop_outside_a_frontier_game" }]);
-  expect(await startAs(db, null, { product: "seal" })).toEqual([401, { error: "unauthorized" }]);
-  expect((await startAs(db, OWNER, { product: "seal", game: undefined }))[0]).toBe(400);
+    expect(await checkAs(db, OWNER, { product }, outside)).toEqual([404, { error: "no_shop_outside_a_frontier_game" }]);
+  expect(await checkAs(db, null, { product: "seal" })).toEqual([401, { error: "unauthorized" }]);
+  expect((await checkAs(db, OWNER, { product: "seal", game: undefined }))[0]).toBe(400);
   expect(await ledger(db)).toEqual([]);
 });
 
-it("starts a purchase of a product the shop sells for a player of the game it names, once per seal", async () => {
+it("approves a product the shop sells for a player of the game it names, once per seal", async () => {
   const db = await migrated();
   const asked: unknown[] = [];
   const access: ShopAccess = async (realmsId, game) => {
     asked.push([realmsId, game]);
     return true;
   };
-  expect(await startAs(db, OWNER, { product: "fragments-500", chain: "0x2a", game: 7 }, access)).toEqual([
+  expect(await checkAs(db, OWNER, { product: "fragments-500", chain: "0x2a", game: 7 }, access)).toEqual([
     200,
     { status: "ok" },
   ]);
   expect(asked).toEqual([[OWNER, { chainId: "0x2a", gameId: 7 }]]);
-  expect(await startAs(db, OWNER, { product: "gold-pack" })).toEqual([422, { error: "unknown_product" }]);
-  expect(await startAs(db, OWNER, { product: "seal" })).toEqual([200, { status: "ok" }]);
+  expect(await checkAs(db, OWNER, { product: "gold-pack" })).toEqual([422, { error: "unknown_product" }]);
+  expect(await checkAs(db, OWNER, { product: "seal" })).toEqual([200, { status: "ok" }]);
   await db
     .prepare(
       'INSERT INTO "seal" ("owner", "paid_cents", "source", "receipt", "granted_at") VALUES (?, 999, \'store\', \'tx-1\', 1)',
     )
     .bind(OWNER)
     .run();
-  expect(await startAs(db, OWNER, { product: "seal" })).toEqual([409, { error: "seal_already_held" }]);
-  expect(await startAs(db, OTHER, { product: "seal" })).toEqual([200, { status: "ok" }]);
+  expect(await checkAs(db, OWNER, { product: "seal" })).toEqual([409, { error: "seal_already_held" }]);
+  expect(await checkAs(db, OTHER, { product: "seal" })).toEqual([200, { status: "ok" }]);
+});
+
+it("approves the discounted seal only where settlement would honour it, and waits while holdings are unknown", async () => {
+  const db = await migrated();
+  const nobody = async () => ({ heldRealmIds: [], ticket: null });
+  const regular = async () => ({ heldRealmIds: [], ticket: "regular" as const });
+  const unknown = () => Promise.reject(new RealmHoldingsUnavailableError());
+  const product = { product: "seal-holder" };
+  // A non-holder is refused at authorisation, and the same payment is refused at settlement: the two agree.
+  expect(await checkAs(db, OWNER, product, seated, nobody)).toEqual([409, { error: "seal_price_not_for_holder" }]);
+  expect((await sendAs(db, OWNER, { store: "apple", receipt: "tx-n|seal-holder" }, { holderFacts: nobody }))[0]).toBe(
+    409,
+  );
+  expect(await seals(db)).toEqual([]);
+  // A holder is approved, and the payment settles as the seal.
+  expect(await checkAs(db, OTHER, product, seated, regular)).toEqual([200, { status: "ok" }]);
+  expect(await sendAs(db, OTHER, { store: "apple", receipt: "tx-h|seal-holder" }, { holderFacts: regular })).toEqual([
+    200,
+    { status: "seal", repeated: false },
+  ]);
+  // While holdings are unknown nothing is approved at the discount, and the full price needs no holdings.
+  const another = "0xc3";
+  expect(await checkAs(db, another, product, seated, unknown)).toEqual([503, { error: "holdings_unavailable" }]);
+  expect(await checkAs(db, another, { product: "seal" }, seated, unknown)).toEqual([200, { status: "ok" }]);
+  expect(await checkAs(db, another, { product: "fragments-500" }, seated, unknown)).toEqual([200, { status: "ok" }]);
 });

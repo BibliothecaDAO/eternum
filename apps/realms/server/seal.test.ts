@@ -3,7 +3,7 @@ import { afterEach, expect, it, vi } from "vitest";
 import type { IdentityAuth } from "./auth";
 import { handleSeal, holderLevelOf, sealOffer, type HolderFacts } from "./seal";
 import { RealmHoldingsUnavailableError } from "./realm-holdings";
-import { refreshLordsPrice } from "./lords-price";
+import { refreshLordsPrice, type PriceDay } from "./lords-price";
 import type { ShopAccess } from "./shop-game";
 import { createTestD1 } from "./test-d1";
 import { migrationStatements } from "./workerd-harness";
@@ -37,6 +37,12 @@ const migrated = async () => {
 };
 
 const GAME = "?chain=0x1&game=1";
+/** A priced-day clock: a day of this many seconds, and the instant the tests ask at (inside the first day). */
+const DAY_SECONDS = 7_200;
+const dayAt = (start: number): PriceDay => ({ calendar: "utc", start, end: start + DAY_SECONDS });
+const open = (db: D1Database, read: () => Promise<number>, now: number, start: number) =>
+  refreshLordsPrice(db, read, now, async () => dayAt(start));
+const NOW = 100;
 const seated: ShopAccess = async () => true;
 
 const facts = (overrides: Partial<HolderFacts>): HolderFacts => ({ heldRealmIds: [], ticket: null, ...overrides });
@@ -61,7 +67,7 @@ it("serves the signed-in account its level, whether it holds the seal, and the t
   const db = await migrated();
   const auth = (realmsId: string | null) =>
     ({ api: { getSession: async () => (realmsId ? { user: { realmsId } } : null) } }) as unknown as IdentityAuth;
-  const world = { db, access: seated, holderFacts: async () => facts({ ticket: "regular" }) };
+  const world = { db, access: seated, holderFacts: async () => facts({ ticket: "regular" }), now: () => NOW };
   const ask = (realmsId: string | null) =>
     handleSeal(new Request(`https://realms.test/api/shop/seal${GAME}`), auth(realmsId), world);
   expect((await ask(null)).status).toBe(401);
@@ -71,7 +77,7 @@ it("serves the signed-in account its level, whether it holds the seal, and the t
     web: { cents: 499, free: { labor: true, fragments: false }, lords: null },
     store: { cents: 499, free: { labor: true, fragments: false } },
   });
-  await refreshLordsPrice(db, async () => 0.003637, 5, 0);
+  await open(db, async () => 0.003637, 5, 0);
   expect(((await (await ask(OWNER)).json()) as { web: { lords: number } }).web.lords).toBe(1_375);
   await db
     .prepare(
@@ -89,6 +95,7 @@ it("offers no price while holdings cannot be verified", async () => {
     db,
     access: seated,
     holderFacts: () => Promise.reject(new RealmHoldingsUnavailableError()),
+    now: () => NOW,
   });
   expect([response.status, await response.json()]).toEqual([503, { error: "holdings_unavailable" }]);
 });
@@ -97,6 +104,7 @@ it("prices the web seal in LORDS from the shop's one price, rounded up to 5, and
   vi.spyOn(console, "error").mockImplementation(() => undefined);
   const db = await migrated();
   const auth = { api: { getSession: async () => ({ user: { realmsId: OWNER } }) } } as unknown as IdentityAuth;
+  let now = NOW;
   const lords = async (holderFacts: HolderFacts) =>
     (
       (await (
@@ -104,20 +112,24 @@ it("prices the web seal in LORDS from the shop's one price, rounded up to 5, and
           db,
           access: seated,
           holderFacts: async () => holderFacts,
+          now: () => now,
         })
       ).json()) as { web: { lords: number | null } }
     ).web.lords;
-  await refreshLordsPrice(db, () => Promise.reject(new Error("CoinGecko: 429")), 5, 0);
+  await open(db, () => Promise.reject(new Error("CoinGecko: 429")), 5, 0);
   expect(await lords(facts({}))).toBeNull();
-  await refreshLordsPrice(db, async () => 0.003637, 6, 0);
+  await open(db, async () => 0.003637, 6, 0);
   // $10 is 2,749.5 LORDS and $4.99 is 1,372.01: both round up to a multiple of 5.
   expect(await lords(facts({}))).toBe(2_750);
   expect(await lords(facts({ heldRealmIds: [PLAIN_REALM] }))).toBe(1_375);
-  // A later day's price is the one every amount follows; a day with no read yet has none.
-  await refreshLordsPrice(db, async () => 0.005, 7_200, 7_200);
-  expect(await lords(facts({}))).toBe(2_000);
-  await refreshLordsPrice(db, () => Promise.reject(new Error("down")), 14_400, 14_400);
+  // The price ends with its day: the next day has none until it is read, and then every amount follows that price.
+  now = DAY_SECONDS + 10;
   expect(await lords(facts({}))).toBeNull();
+  await open(db, () => Promise.reject(new Error("down")), now, DAY_SECONDS);
+  expect(await lords(facts({}))).toBeNull();
+  await open(db, async () => 0.005, now + 60, DAY_SECONDS);
+  now += 60;
+  expect(await lords(facts({}))).toBe(2_000);
 });
 
 it("offers the seal only to a player of a running Frontier game the request names", async () => {
@@ -128,6 +140,7 @@ it("offers the seal only to a player of a running Frontier game the request name
       db,
       access,
       holderFacts: async () => facts({ heldRealmIds: [PLAIN_REALM] }),
+      now: () => NOW,
     });
     return [response.status, await response.json()];
   };

@@ -42,15 +42,16 @@ type Outcome =
 type Product = (typeof STORE_PRODUCTS)[keyof typeof STORE_PRODUCTS];
 
 /**
- * POST /api/shop/purchase {chain, game, product}: asked before any payment is taken. Refuses, taking nothing, a caller
- * who is not a signed-in player of that running Frontier game (the shop's one rule), a product the shop does not sell,
- * and a second seal for an account that already holds one; otherwise 200. A refused purchase is never started, so there
- * is nothing to refund.
+ * POST /api/shop/purchase-check {chain, game, product}: whether this account may buy this product now, by the same
+ * rules settlement applies to a verified payment. Refuses a caller who is not a signed-in player of that running Frontier
+ * game (the shop's one rule), a product the shop does not sell, a second seal, and a discounted seal for an account that
+ * is not its holder (503 while its holdings cannot be read); otherwise 200. Nothing calls it yet: no shop screen or
+ * payment flow exists, so today no payment is stopped by it and settlement's recorded refund is the only refusal.
  */
-export async function handlePurchaseStart(
+export async function handlePurchaseCheck(
   request: Request,
   auth: IdentityAuth,
-  world: Pick<ReceiptWorld, "db" | "access">,
+  world: Pick<ReceiptWorld, "db" | "access" | "holderFacts">,
 ): Promise<Response> {
   if (request.method !== "POST") return json({ error: "method_not_allowed" }, 405);
   const asked = await readPurchase(request);
@@ -60,7 +61,9 @@ export async function handlePurchaseStart(
   if (!product) return json({ error: "unknown_product" }, 422);
   if (product.kind === "seal" && (await readSeal(world.db, seat.owner)))
     return json({ error: "seal_already_held" }, 409);
-  return json({ status: "ok" });
+  const covers = await sealPriceCovers(world, seat.owner, product);
+  if (covers === "short") return json({ error: "seal_price_not_for_holder" }, 409);
+  return covers === "unknown" ? json({ error: "holdings_unavailable" }, 503) : json({ status: "ok" });
 }
 
 const readPurchase = async (request: Request): Promise<{ game: NamedGame | null; product: string } | null> => {
@@ -82,8 +85,8 @@ const readPurchase = async (request: Request): Promise<{ game: NamedGame | null;
  * account already holds, an account already deleted) is recorded as unfulfilled for the owner to refund; one whose
  * holder level or game seat cannot be read is recorded as pending, grants nothing, and is resolved when the same receipt
  * is sent again. The same receipt sent again answers as it did the first time; one another account used is refused.
- * Whoever is not a player of the named running Frontier game was refused at `/api/shop/purchase` before paying, so a
- * payment of one that still arrives is the last net: recorded as unfulfilled for refund, never granted.
+ * A payment of someone who is not a player of the named running Frontier game is recorded as unfulfilled for refund,
+ * never granted; `/api/shop/purchase-check` would refuse it earlier once a payment flow asks it.
  */
 export async function handleStoreReceipt(request: Request, auth: IdentityAuth, world: ReceiptWorld): Promise<Response> {
   if (request.method !== "POST") return json({ error: "method_not_allowed" }, 405);
@@ -171,11 +174,26 @@ const outcomeOf = async (
   if (plays === null) return "pending_eligibility";
   if (!plays) return "unfulfilled_not_in_game";
   if (product.kind === "fragments") return "fragments";
+  const covers = await sealPriceCovers(world, owner, product);
+  return covers === "unknown" ? "pending_eligibility" : covers === "short" ? "unfulfilled_price" : "seal";
+};
+
+/**
+ * Whether a seal product's price covers the seal's store price for this account's holder level: the one rule authorisation
+ * and settlement both ask. The holder level is read only for a discounted product; `unknown` while holdings cannot be read.
+ * Fragment bundles are not priced against a holder, so they always cover.
+ */
+const sealPriceCovers = async (
+  world: Pick<ReceiptWorld, "holderFacts">,
+  owner: string,
+  product: Product,
+): Promise<"covers" | "short" | "unknown"> => {
+  if (product.kind !== "seal") return "covers";
   try {
     const holder = product.cents < SEAL_CENTS.store.none ? holderLevelOf(await world.holderFacts(owner)) : "none";
-    return product.cents < SEAL_CENTS.store[holder] ? "unfulfilled_price" : "seal";
+    return product.cents < SEAL_CENTS.store[holder] ? "short" : "covers";
   } catch (error) {
-    if (error instanceof RealmHoldingsUnavailableError) return "pending_eligibility";
+    if (error instanceof RealmHoldingsUnavailableError) return "unknown";
     throw error;
   }
 };
