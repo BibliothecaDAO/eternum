@@ -220,7 +220,6 @@ pub const UNOWNED_TARGETS: u32 = 32;
 pub const CAPTURE_VILLAGES: u32 = 64;
 pub const DEPTH_CONTENTS: u32 = 128;
 pub const REVEAL_SUPPLIES: u32 = 262144;
-// Every battle rolls a d20 per side.
 // Blitz finds dormant reward spires; expedition games discover one descent spire per home, day and layer.
 pub const DISCOVER_SPIRES: u32 = 2097152;
 pub const SAME_OWNER_TRANSFER: u32 = 256;

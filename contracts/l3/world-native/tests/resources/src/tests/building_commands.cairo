@@ -506,6 +506,23 @@ fn each_hut_tier_adds_a_fifth_of_every_huts_population() {
 
 
 #[test]
+fn a_barracks_produces_only_knights_at_the_ruled_rate() {
+    let (d, home, _) = research_world();
+    assert!(execute(d, build_toward(home, crate::research::BARRACKS, 0), 40));
+    assert_eq!(rate(d, home, 26), 40);
+    assert_eq!(rate(d, home, 27), 0);
+    assert_eq!(rate(d, home, 28), 0);
+    let resources = IResourceOperationsDispatcher { contract_address: d.games };
+    let knight = ResourceSlot { game_id: home.game_id, entity_id: home.entity_id, resource_type: 26 };
+    let before = resources.resource_balance(knight);
+    assert!(execute(d, Command::DestroyBuilding(change(home)), 100));
+    assert_eq!(resources.resource_balance(knight), before + 2400);
+    for resource_type in array![27_u8, 28] {
+        assert_eq!(resources.resource_balance(ResourceSlot { resource_type, ..knight }), 0);
+    }
+}
+
+#[test]
 fn a_tier_the_realm_cannot_pay_in_labor_is_refused_and_changes_nothing() {
     let (d, home, preset) = research_world();
     assert!(execute(d, build_toward(home, crate::research::FARM, 0), 40));

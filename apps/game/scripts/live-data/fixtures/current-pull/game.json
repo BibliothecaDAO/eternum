@@ -1,0 +1,8 @@
+{
+  "game_id": 1,
+  "clock": {
+    "start_main_at": 300,
+    "end_at": 86400
+  },
+  "day_ends_at": 3600
+}

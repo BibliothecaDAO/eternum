@@ -1,4 +1,5 @@
 use snforge_std::{EventSpyTrait, EventsFilterTrait, interact_with_state, spy_events};
+use starknet::storage::StorageMapReadAccess;
 use world_test_support::tests::Deployment;
 use world_test_support::tests::registrar::{discovery_root, explore_with_root};
 use world_test_support::tests::resource_commands::{execute_in_game, grant};
@@ -9,6 +10,10 @@ use crate::troops::{ArmySlotKey, ExplorerKey};
 use super::army_activity::{army, found, slot_army};
 
 fn setup(kind: u8) -> (Deployment, ExplorerKey, crate::expeditions::FrontierDiscoveryRules) {
+    setup_target(kind, 100)
+}
+
+fn setup_target(kind: u8, target: u32) -> (Deployment, ExplorerKey, crate::expeditions::FrontierDiscoveryRules) {
     let (_, mut preset) = world_test_support::tests::preset_projection::current_definition("frontier-check");
     preset.economy.labor = None;
     preset
@@ -16,7 +21,7 @@ fn setup(kind: u8) -> (Deployment, ExplorerKey, crate::expeditions::FrontierDisc
         .quests =
             Some(
                 crate::quests::QuestRules {
-                    base_counts: array![100, 100, 100, 100, 100, 100, 100].span(),
+                    base_counts: array![target, target, target, target, target, target, target].span(),
                     labor: 1000,
                     essence: 1500,
                     bonus_percent: 150,
@@ -132,6 +137,55 @@ fn reveals_count_new_tiles_and_neither_refused_nor_repeated_moves() {
     assert_eq!(progress(d, home), 1);
     apply(d, key.game_id, Command::Explore(crate::commands::Explore { explorer_id: key.explorer_id, direction: 3 }));
     assert_eq!(progress(d, home), 1);
+}
+
+#[test]
+fn a_real_reveal_completes_the_daily_quest_and_two_claims_pay_once() {
+    let (d, key, rules) = setup_target(crate::quests::REVEALS, 1);
+    let home = home(d, key);
+    let claim = Command::ClaimDailyQuest(crate::quests::ClaimDailyQuest { home: home.entity_id, day: 0 });
+    assert!(!execute_in_game(d, key.game_id, claim, 360));
+    let root = discovery_root(
+        key.game_id,
+        crate::expeditions::FrontierDiscoveryRules { shrine_bps: 0, ..rules },
+        100,
+        0,
+        Some(far_eye()),
+        Discovery::None,
+    );
+    assert!(explore_with_root(d, key.game_id, key.explorer_id, root, 360));
+    let (labor_before, essence_before) = interact_with_state(
+        d.games,
+        || {
+            assert_eq!(
+                crate::logic::quests::read(home, 0), crate::quests::QuestProgress { progress: 1, completed_level: 1 },
+            );
+            (
+                crate::logic::resources::balance(home, crate::resources::LABOR),
+                crate::logic::resources::balance(home, crate::resources::ESSENCE),
+            )
+        },
+    );
+    for _ in 0_u8..2 {
+        assert!(execute_in_game(d, key.game_id, claim, 360));
+        interact_with_state(
+            d.games,
+            || {
+                assert_eq!(
+                    crate::logic::resources::balance(home, crate::resources::LABOR),
+                    labor_before + 1000 * crate::rules::RESOURCE_PRECISION,
+                );
+                assert_eq!(
+                    crate::logic::resources::balance(home, crate::resources::ESSENCE),
+                    essence_before + 1500 * crate::rules::RESOURCE_PRECISION,
+                );
+                assert_eq!(
+                    crate::state::read().entry.home_labor_grants.read((key.game_id, home.entity_id, 0)),
+                    Some((d.actor, 1000 * crate::rules::RESOURCE_PRECISION, 1500 * crate::rules::RESOURCE_PRECISION)),
+                );
+            },
+        );
+    }
 }
 
 #[test]
